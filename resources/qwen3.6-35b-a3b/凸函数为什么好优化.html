@@ -1,0 +1,887 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>凸函数为什么好优化</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif; background: #0d1117; color: #e6edf3; line-height: 1.7; min-height: 100vh; }
+.app { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.header { text-align: center; padding: 20px 0 10px; }
+.header h1 { font-size: 28px; background: linear-gradient(135deg, #58a6ff, #3fb950); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.header .subtitle { color: #8b949e; font-size: 15px; margin-top: 6px; }
+.goal-bar { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px 18px; margin: 14px 0; font-size: 15px; }
+.goal-bar strong { color: #58a6ff; }
+.section { margin: 18px 0; }
+.section-title { font-size: 18px; color: #f0f6fc; border-left: 4px solid #f0883e; padding-left: 10px; margin-bottom: 12px; }
+.intuition-box { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px 18px; font-size: 15px; color: #c9d1d9; }
+.intuition-box .emoji { font-size: 22px; margin-right: 8px; }
+.main-layout { display: flex; gap: 16px; margin: 18px 0; }
+.control-panel { flex: 1; min-width: 300px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; }
+.canvas-panel { flex: 1.3; min-width: 340px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; align-items: center; }
+canvas { border-radius: 8px; max-width: 100%; }
+.func-select { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.func-btn { padding: 8px 14px; border: 1px solid #30363d; border-radius: 8px; background: #21262d; color: #c9d1d9; cursor: pointer; font-size: 14px; transition: all 0.2s; }
+.func-btn:hover { border-color: #58a6ff; }
+.func-btn.active { background: #1f6feb; border-color: #58a6ff; color: #fff; }
+.slider-group { margin: 12px 0; }
+.slider-group label { display: block; font-size: 13px; color: #8b949e; margin-bottom: 4px; }
+.slider-group input[type=range] { width: 100%; accent-color: #58a6ff; }
+.slider-val { font-size: 13px; color: #f0883e; font-weight: bold; }
+.decision-area { margin: 16px 0; padding: 14px; background: #0d1117; border-radius: 8px; border: 1px solid #30363d; }
+.decision-area p { font-size: 14px; margin-bottom: 10px; color: #c9d1d9; }
+.radio-group { display: flex; gap: 12px; margin-bottom: 12px; }
+.radio-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
+.radio-label input { accent-color: #3fb950; }
+.feedback-box { padding: 12px; border-radius: 8px; font-size: 14px; min-height: 60px; transition: all 0.3s; }
+.feedback-box.correct { background: rgba(63,185,80,0.1); border: 1px solid #3fb950; color: #3fb950; }
+.feedback-box.incorrect { background: rgba(212,167,113,0.1); border: 1px solid #f0883e; color: #f0883e; }
+.feedback-box.neutral { background: rgba(139,148,158,0.05); border: 1px solid #30363d; color: #8b949e; }
+.hint-btn { padding: 6px 14px; border: 1px solid #f0883e; border-radius: 6px; background: transparent; color: #f0883e; cursor: pointer; font-size: 13px; margin-top: 8px; }
+.hint-btn:hover { background: rgba(240,136,62,0.1); }
+.hint-text { font-size: 13px; color: #f0883e; margin-top: 8px; display: none; }
+.concept-card { background: linear-gradient(135deg, #161b22, #1c2333); border: 1px solid #30363d; border-radius: 10px; padding: 18px; margin: 18px 0; }
+.concept-card h3 { font-size: 16px; color: #58a6ff; margin-bottom: 8px; }
+.concept-card p { font-size: 14px; color: #c9d1d9; }
+.concept-card .formula { background: #0d1117; padding: 10px 14px; border-radius: 6px; font-family: "Courier New", monospace; font-size: 14px; color: #79c0ff; margin: 8px 0; }
+.confidence-section { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; margin: 18px 0; }
+.confidence-section h3 { font-size: 16px; color: #d2a8ff; margin-bottom: 10px; }
+.confidence-stars { display: flex; gap: 8px; margin-bottom: 10px; }
+.confidence-stars .star { font-size: 28px; cursor: pointer; color: #30363d; transition: all 0.2s; }
+.confidence-stars .star.active { color: #f0883e; }
+.confidence-stars .star:hover { transform: scale(1.2); }
+.confidence-val { font-size: 14px; color: #8b949e; }
+.reflection-section { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px; margin: 18px 0; }
+.reflection-section h3 { font-size: 16px; color: #3fb950; margin-bottom: 10px; }
+.reflection-section textarea { width: 100%; min-height: 80px; background: #0d1117; border: 1px solid #30363d; border-radius: 8px; color: #e6edf3; padding: 10px; font-size: 14px; resize: vertical; font-family: inherit; }
+.reflection-section textarea:focus { outline: none; border-color: #58a6ff; }
+.submit-btn { padding: 8px 20px; border: none; border-radius: 8px; background: #238636; color: #fff; cursor: pointer; font-size: 14px; margin-top: 10px; transition: background 0.2s; }
+.submit-btn:hover { background: #2ea043; }
+.submit-btn:disabled { background: #30363d; cursor: not-allowed; }
+.status-line { font-size: 12px; color: #8b949e; margin-top: 8px; }
+.point-locator { margin: 10px 0; }
+.point-locator p { font-size: 13px; color: #8b949e; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12px; color: #8b949e; margin-top: 8px; }
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+@media (max-width: 720px) { .main-layout { flex-direction: column; } }
+</style>
+</head>
+<body>
+<div class="app">
+<div class="header">
+<h1>凸函数为什么好优化</h1>
+<div class="subtitle">本节聚焦：凸函数直觉</div>
+</div>
+
+<div class="goal-bar">
+<strong>学习目标：</strong>通过交互探索理解"凸函数的局部最小点就是全局最小点"这一核心直觉，学会用图形区分凸与非凸曲线。
+</div>
+
+<div class="section">
+<div class="section-title">💡 直觉解释</div>
+<div class="intuition-box">
+<p>凸函数像一个<strong>碗</strong>——无论你从碗的哪个位置开始往下走，最终都会到达同一个最低点。这意味着在凸函数上，</p>
+<p style="margin-top:6px;">任何你找到的<strong>局部最低点</strong>，其实就是<strong>全局最低点</strong>。这让寻找最小值变得非常可靠：算法不用反复试探，直接找到最低点就行。</p>
+<p style="margin-top:6px; color:#f0883e;">反过来，非凸函数像有起伏的山谷——你可能掉进一个小坑（局部最优），却错过了更深的山谷（全局最优）。</p>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">🔬 核心互动：判断曲线类型与全局最小</div>
+<div class="main-layout">
+<div class="control-panel">
+<div style="font-size:15px; color:#f0f6fc; margin-bottom:10px;">选择曲线类型：</div>
+<div class="func-select">
+<button class="func-btn active" data-func="bowl">碗形曲线（凸函数）</button>
+<button class="func-btn" data-func="wave">波浪曲线（非凸）</button>
+<button class="func-btn" data-func="saddle">鞍面投影（非凸）</button>
+</div>
+
+<div class="slider-group">
+<label>调节参数：<span class="slider-val" id="paramVal">1.00</span></label>
+<input type="range" id="paramSlider" min="0.1" max="3" step="0.1" value="1.0">
+</div>
+
+<div class="point-locator">
+<p>🖱️ 在右侧图形上<strong>点击</strong>标记一个点，观察它是否为最低点</p>
+</div>
+
+<div style="margin-top:12px; border-top:1px solid #30363d; padding-top:12px;">
+<div style="font-size:15px; color:#f0f6fc; margin-bottom:8px;">请判断：</div>
+<p style="font-size:13px; color:#c9d1d9; margin-bottom:8px;">这条曲线是否<strong>容易</strong>找到全局最低点？</p>
+<div class="radio-group">
+<label class="radio-label"><input type="radio" name="decision" value="easy" id="decEasy"> 容易</label>
+<label class="radio-label"><input type="radio" name="decision" value="hard" id="decHard"> 不容易</label>
+<label class="radio-label"><input type="radio" name="decision" value="unsure" id="decUnsure"> 不确定</label>
+</div>
+</div>
+
+<button class="hint-btn" id="hintBtn">💡 需要提示？</button>
+<div class="hint-text" id="hintText">💡 提示：凸函数的二阶导数始终非负，图形上看起来像一个碗。非凸函数则可能出现多个"谷底"。</div>
+
+<div style="margin-top:14px; border-top:1px solid #30363d; padding-top:12px;">
+<div style="font-size:13px; color:#8b949e; margin-bottom:6px;">操作反馈：</div>
+<div class="feedback-box neutral" id="feedbackBox">点击右侧图形选择一点，然后做出你的判断...</div>
+</div>
+
+<div class="status-line" id="statusLine">已操作 0 次 · 用时 0 秒</div>
+</div>
+
+<div class="canvas-panel">
+<canvas id="mainCanvas" width="520" height="400"></canvas>
+<div class="legend">
+<span class="legend-item"><span class="legend-dot" style="background:#58a6ff"></span>函数曲线</span>
+<span class="legend-item"><span class="legend-dot" style="background:#f0883e"></span>当前选点</span>
+<span class="legend-item"><span class="legend-dot" style="background:#3fb950"></span>全局最低点</span>
+</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-title">📋 概念卡</div>
+<div class="concept-card">
+<h3>凸函数的核心性质</h3>
+<p>如果函数 <em>f</em>(x) 的二阶导数 <em>f''</em>(x) ≥ 0 对所有定义域内的 x 成立，那么 <em>f</em>(x) 是凸函数。</p>
+<div class="formula">f(x) = x² &nbsp;→&nbsp; f'(x) = 2x &nbsp;→&nbsp; f''(x) = 2 &gt; 0 &nbsp; ✅ 凸函数</div>
+<p style="margin-top:8px;">在凸优化中，一旦梯度为零（f'(x) = 0），该点就是全局最小点。这就是为什么梯度下降等算法在凸函数上表现良好——它们不会陷入局部最优陷阱。</p>
+</div>
+</div>
+
+<div class="section">
+<div class="confidence-section">
+<h3>🌟 信心评分</h3>
+<p style="font-size:13px; color:#8b949e; margin-bottom:10px;">你对自己掌握"凸函数局部最小=全局最小"这一直觉的信心如何？</p>
+<div class="confidence-stars" id="confStars">
+<span class="star" data-val="1">☆</span>
+<span class="star" data-val="2">☆</span>
+<span class="star" data-val="3">☆</span>
+<span class="star" data-val="4">☆</span>
+<span class="star" data-val="5">☆</span>
+</div>
+<div class="confidence-val" id="confVal">请选择信心等级</div>
+<input type="hidden" id="confInput" value="0">
+</div>
+</div>
+
+<div class="section">
+<div class="reflection-section">
+<h3>✍️ 简短反思</h3>
+<p style="font-size:13px; color:#8b949e; margin-bottom:10px;">用一句话描述：为什么凸函数能让优化问题"好解决"？</p>
+<textarea id="reflectionText" placeholder="在这里写下你的想法..."></textarea>
+<button class="submit-btn" id="submitReflect">提交反思</button>
+<div class="status-line" id="reflectStatus"></div>
+</div>
+</div>
+</div>
+
+<script>
+// ========== 课程元数据 ==========
+window.MAIC_LESSON_META = {
+  lesson_id: 'D-07',
+  module_id: 'OM-D2',
+  course_version: 'demo-closed-loop-v1',
+  concept_name: '凸函数直觉'
+};
+
+// ========== 行为追踪系统 ==========
+(function() {
+  var startTime = Date.now();
+  var eventCount = 0;
+
+  window.trackEvent = function(eventType, payload) {
+    var baseEvent = {
+      lesson_id: window.MAIC_LESSON_META.lesson_id,
+      module_id: window.MAIC_LESSON_META.module_id,
+      course_version: window.MAIC_LESSON_META.course_version,
+      event_type: eventType,
+      timestamp: new Date().toISOString(),
+      time_on_task_ms: Date.now() - startTime
+    };
+    var merged = Object.assign({}, baseEvent, payload || {});
+    var events = [];
+    try {
+      var raw = localStorage.getItem('maic_learning_events');
+      if (raw) events = JSON.parse(raw);
+    } catch(e) { events = []; }
+    events.push(merged);
+    try { localStorage.setItem('maic_learning_events', JSON.stringify(events)); } catch(e) {}
+    try {
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'maic_learning_event', payload: merged }, '*');
+      }
+    } catch(e) {}
+    eventCount++;
+  };
+
+  window.trackEvent('page_loaded', {
+    interaction_state: { funcType: 'bowl', param: 1.0, confidence: 0, reflection: '' }
+  });
+})();
+
+// ========== 全局状态 ==========
+var state = {
+  funcType: 'bowl',
+  param: 1.0,
+  selectedPoint: null,
+  decision: null,
+  confidence: 0,
+  reflection: '',
+  hintUsed: false,
+  interactionCount: 0,
+  reflectionSubmitted: false
+};
+
+// ========== Canvas 初始化 ==========
+var canvas, ctx;
+var W, H;
+var marginL, marginR, marginT, marginB;
+var plotW, plotH;
+
+function initCanvas() {
+  canvas = document.getElementById('mainCanvas');
+  ctx = canvas.getContext('2d');
+  W = canvas.width;
+  H = canvas.height;
+  marginL = 50;
+  marginR = 30;
+  marginT = 30;
+  marginB = 40;
+  plotW = W - marginL - marginR;
+  plotH = H - marginT - marginB;
+  drawCurrent();
+}
+
+// ========== 函数定义 ==========
+function fBowl(x, p) {
+  return (x * x) / p;
+}
+
+function fWave(x, p) {
+  return Math.sin(x * p) + 0.15 * x * x - 0.5 * x;
+}
+
+function fSaddleZ(x, y) {
+  return (x * x) / 1.5 - (y * y) / 2.0;
+}
+
+function fSaddleY(x, y, p) {
+  return (x * x) / (1.5 * p) - (y * y) / (2.0 * p);
+}
+
+// ========== 坐标系转换 ==========
+var viewXMin = -2.5, viewXMax = 2.5;
+var viewYMin = -1.0, viewYMax = 4.0;
+
+function toScreenX(x) {
+  return marginL + ((x - viewXMin) / (viewXMax - viewXMin)) * plotW;
+}
+
+function toScreenY(y) {
+  return marginT + plotH - ((y - viewYMin) / (viewYMax - viewYMin)) * plotH;
+}
+
+function toMathX(sx) {
+  return viewXMin + ((sx - marginL) / plotW) * (viewXMax - viewXMin);
+}
+
+function toMathY(sy) {
+  return viewYMin + ((marginT + plotH - sy) / plotH) * (viewYMax - viewYMin);
+}
+
+// ========== 绘制函数 ==========
+function drawCurrent() {
+  var funcType = state.funcType;
+
+  ctx.clearRect(0, 0, W, H);
+
+  if (funcType === 'bowl' || funcType === 'wave') {
+    draw2DChart(funcType);
+  } else if (funcType === 'saddle') {
+    drawSaddleContour();
+  }
+}
+
+function draw2DChart(funcType) {
+  var p = state.param;
+  var f = funcType === 'bowl' ? function(x) { return fBowl(x, p); } : function(x) { return fWave(x, p); };
+
+  // 背景
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+
+  // 坐标轴
+  ctx.strokeStyle = '#30363d';
+  ctx.lineWidth = 1;
+  // X轴
+  var xAxisY = toScreenY(0);
+  if (xAxisY >= marginT && xAxisY <= marginT + plotH) {
+    ctx.beginPath();
+    ctx.moveTo(marginL, xAxisY);
+    ctx.lineTo(marginL + plotW, xAxisY);
+    ctx.stroke();
+  }
+  // Y轴
+  var yAxisX = toScreenX(0);
+  if (yAxisX >= marginL && yAxisX <= marginL + plotW) {
+    ctx.beginPath();
+    ctx.moveTo(yAxisX, marginT);
+    ctx.lineTo(yAxisX, marginT + plotH);
+    ctx.stroke();
+  }
+
+  // 刻度标签
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  for (var xi = Math.ceil(viewXMin); xi <= Math.floor(viewXMax); xi++) {
+    var sx = toScreenX(xi);
+    if (sx >= marginL && sx <= marginL + plotW) {
+      ctx.fillText(xi, sx, marginT + plotH + 16);
+      ctx.beginPath();
+      ctx.strokeStyle = '#21262d';
+      ctx.moveTo(sx, marginT);
+      ctx.lineTo(sx, marginT + plotH);
+      ctx.stroke();
+    }
+  }
+  ctx.textAlign = 'right';
+  for (var yi = Math.ceil(viewYMin); yi <= Math.floor(viewYMax); yi++) {
+    var sy = toScreenY(yi);
+    if (sy >= marginT && sy <= marginT + plotH) {
+      ctx.fillText(yi, marginL - 8, sy + 4);
+    }
+  }
+
+  // 坐标轴名称
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('x', marginL + plotW + 18, xAxisY + 4);
+  ctx.fillText('y', yAxisX + 2, marginT - 8);
+
+  // 绘制曲线
+  ctx.beginPath();
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 2.5;
+  var started = false;
+  var steps = 400;
+  for (var i = 0; i <= steps; i++) {
+    var xv = viewXMin + (i / steps) * (viewXMax - viewXMin);
+    var yv = f(xv);
+    if (yv < viewYMin - 2 || yv > viewYMax + 2) {
+      started = false;
+      continue;
+    }
+    var sx = toScreenX(xv);
+    var sy = toScreenY(yv);
+    if (!started) {
+      ctx.moveTo(sx, sy);
+      started = true;
+    } else {
+      ctx.lineTo(sx, sy);
+    }
+  }
+  ctx.stroke();
+
+  // 标注函数名称
+  var label = funcType === 'bowl' ? 'f(x) = x²/p （凸函数 · 碗形）' : 'f(x) = sin(px) + 0.15x² − 0.5x （非凸 · 波浪）';
+  ctx.fillStyle = funcType === 'bowl' ? '#3fb950' : '#f0883e';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, marginL + 8, marginT + 16);
+
+  // 找到最小值点
+  var minX = 0, minY = 0;
+  if (funcType === 'bowl') {
+    minX = 0;
+    minY = f(0);
+  } else {
+    // 数值搜索最小值
+    var bestX = viewXMin, bestY = f(viewXMin);
+    for (var i = 0; i <= steps; i++) {
+      var xv = viewXMin + (i / steps) * (viewXMax - viewXMin);
+      var yv = f(xv);
+      if (yv < bestY) { bestY = yv; bestX = xv; }
+    }
+    minX = bestX;
+    minY = bestY;
+  }
+
+  // 标记全局最低点（绿色）
+  var gsx = toScreenX(minX);
+  var gsy = toScreenY(minY);
+  if (gsx >= marginL && gsx <= marginL + plotW && gsy >= marginT && gsy <= marginT + plotH) {
+    ctx.beginPath();
+    ctx.arc(gsx, gsy, 7, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(63,185,80,0.25)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(gsx, gsy, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#3fb950';
+    ctx.fill();
+    ctx.fillStyle = '#3fb950';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('全局最低', gsx, gsy - 12);
+  }
+
+  // 标记用户选点（橙色）
+  if (state.selectedPoint) {
+    var psx = toScreenX(state.selectedPoint.x);
+    var psy = toScreenY(state.selectedPoint.y);
+    if (psx >= marginL && psx <= marginL + plotW && psy >= marginT && psy <= marginT + plotH) {
+      ctx.beginPath();
+      ctx.arc(psx, psy, 7, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(240,136,62,0.25)';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(psx, psy, 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#f0883e';
+      ctx.fill();
+      // 虚线到全局最低
+      ctx.beginPath();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = 'rgba(240,136,62,0.5)';
+      ctx.lineWidth = 1;
+      ctx.moveTo(psx, psy);
+      ctx.lineTo(gsx, gsy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 数值标注
+      ctx.fillStyle = '#f0883e';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('你选的点: (' + state.selectedPoint.x.toFixed(2) + ', ' + state.selectedPoint.y.toFixed(2) + ')', marginL + 8, H - 10);
+      ctx.fillText('全局最低: (' + minX.toFixed(2) + ', ' + minY.toFixed(2) + ')', marginL + 250, H - 10);
+    }
+  }
+}
+
+function drawSaddleContour() {
+  var p = state.param;
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+
+  // 绘制等高线图
+  var cellSize = 8;
+  var cols = Math.floor(plotW / cellSize);
+  var rows = Math.floor(plotH / cellSize);
+  var offsetX = marginL;
+  var offsetY = marginT;
+
+  var saddleColors = [
+    '#1a0033', '#2d0066', '#4a0080', '#660099', '#802299',
+    '#994499', '#aa6699', '#b07888', '#b08877', '#aa9966',
+    '#99aa55', '#77aa55', '#55aa55', '#33aa55', '#22aa55',
+    '#11aa55', '#11aa66', '#11aa88', '#11aa99', '#11aa99'
+  ];
+
+  for (var row = 0; row < rows; row++) {
+    for (var col = 0; col < cols; col++) {
+      var x = toMathX(offsetX + col * cellSize + cellSize / 2);
+      var y = toMathY(offsetY + row * cellSize + cellSize / 2);
+      var z = fSaddleY(x, y, p);
+      // 映射到颜色索引
+      var normalized = (z + 2) / 5;
+      if (normalized < 0) normalized = 0;
+      if (normalized > 1) normalized = 1;
+      var ci = Math.floor(normalized * (saddleColors.length - 1));
+      ctx.fillStyle = saddleColors[ci];
+      ctx.fillRect(offsetX + col * cellSize, offsetY + row * cellSize, cellSize, cellSize);
+    }
+  }
+
+  // 坐标轴
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 1.5;
+  var xAxisY = toScreenY(0);
+  var yAxisX = toScreenX(0);
+  if (xAxisY >= marginT && xAxisY <= marginT + plotH) {
+    ctx.beginPath();
+    ctx.moveTo(marginL, xAxisY);
+    ctx.lineTo(marginL + plotW, xAxisY);
+    ctx.stroke();
+  }
+  if (yAxisX >= marginL && yAxisX <= marginL + plotW) {
+    ctx.beginPath();
+    ctx.moveTo(yAxisX, marginT);
+    ctx.lineTo(yAxisX, marginT + plotH);
+    ctx.stroke();
+  }
+
+  // 鞍点标注
+  var asx = toScreenX(0);
+  var asy = toScreenY(0);
+  ctx.beginPath();
+  ctx.arc(asx, asy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(240,136,62,0.6)';
+  ctx.fill();
+  ctx.fillStyle = '#f0883e';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('鞍点 (0,0)', asx + 12, asy - 8);
+
+  // 标签
+  ctx.fillStyle = '#f0883e';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('z = (x² − y²)/p （鞍面 · 非凸）', marginL + 8, marginT + 16);
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('沿x方向是碗形，沿y方向是倒碗', marginL + 8, marginT + 34);
+
+  // 坐标刻度
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'center';
+  for (var xi = -2; xi <= 2; xi++) {
+    var sx = toScreenX(xi);
+    if (sx >= marginL && sx <= marginL + plotW) {
+      ctx.fillText(xi, sx, marginT + plotH + 14);
+    }
+  }
+  ctx.textAlign = 'right';
+  for (var yi = -2; yi <= 2; yi++) {
+    var sy = toScreenY(yi);
+    if (sy >= marginT && sy <= marginT + plotH) {
+      ctx.fillText(yi, marginL - 6, sy + 3);
+    }
+  }
+  ctx.textAlign = 'center';
+  ctx.fillText('x', marginL + plotW + 14, xAxisY + 4);
+  ctx.fillText('y', yAxisX + 2, marginT - 6);
+
+  // 标记用户选点
+  if (state.selectedPoint) {
+    var psx = toScreenX(state.selectedPoint.x);
+    var psy = toScreenY(state.selectedPoint.y);
+    if (psx >= marginL && psx <= marginL + plotW && psy >= marginT && psy <= marginT + plotH) {
+      ctx.beginPath();
+      ctx.arc(psx, psy, 6, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(240,136,62,0.5)';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(psx, psy, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#f0883e';
+      ctx.fill();
+      ctx.fillStyle = '#f0883e';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'left';
+      var zVal = fSaddleY(state.selectedPoint.x, state.selectedPoint.y, p);
+      ctx.fillText('选点: (' + state.selectedPoint.x.toFixed(2) + ', ' + state.selectedPoint.y.toFixed(2) + ') z=' + zVal.toFixed(2), marginL + 8, H - 10);
+    }
+  }
+}
+
+// ========== Canvas 交互 ==========
+function handleCanvasClick(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = W / rect.width;
+  var scaleY = H / rect.height;
+  var sx = (e.clientX - rect.left) * scaleX;
+  var sy = (e.clientY - rect.top) * scaleY;
+
+  if (sx < marginL || sx > marginL + plotW || sy < marginT || sy > marginT + plotH) return;
+
+  var mx = toMathX(sx);
+  var my = toMathY(sy);
+
+  if (state.funcType === 'saddle') {
+    state.selectedPoint = { x: mx, y: my, z: fSaddleY(mx, my, state.param) };
+  } else {
+    var f = state.funcType === 'bowl' ? function(x) { return fBowl(x, state.param); } : function(x) { return fWave(x, state.param); };
+    state.selectedPoint = { x: mx, y: f(mx) };
+  }
+
+  state.interactionCount++;
+  updateStatus();
+  drawCurrent();
+  updateFeedback();
+  window.trackEvent('interaction_change', {
+    interaction_state: {
+      funcType: state.funcType,
+      param: state.param,
+      selectedPoint: state.selectedPoint,
+      decision: state.decision
+    },
+    interaction_count: state.interactionCount
+  });
+}
+
+canvas = document.getElementById('mainCanvas');
+canvas.addEventListener('click', handleCanvasClick);
+
+// ========== 函数切换 ==========
+var funcBtns = document.querySelectorAll('.func-btn');
+funcBtns.forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    funcBtns.forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    state.funcType = btn.getAttribute('data-func');
+    state.selectedPoint = null;
+    state.decision = null;
+    document.querySelectorAll('input[name="decision"]').forEach(function(r) { r.checked = false; });
+    updateFeedback();
+    drawCurrent();
+    updateStatus();
+    window.trackEvent('interaction_change', {
+      interaction_state: {
+        funcType: state.funcType,
+        param: state.param,
+        selectedPoint: state.selectedPoint,
+        decision: state.decision
+      }
+    });
+  });
+});
+
+// ========== 滑块 ==========
+var paramSlider = document.getElementById('paramSlider');
+var paramVal = document.getElementById('paramVal');
+paramSlider.addEventListener('input', function() {
+  state.param = parseFloat(this.value);
+  paramVal.textContent = state.param.toFixed(2);
+  state.selectedPoint = null;
+  state.decision = null;
+  document.querySelectorAll('input[name="decision"]').forEach(function(r) { r.checked = false; });
+  updateFeedback();
+  drawCurrent();
+  updateStatus();
+  window.trackEvent('interaction_change', {
+    interaction_state: {
+      funcType: state.funcType,
+      param: state.param,
+      selectedPoint: state.selectedPoint,
+      decision: state.decision
+    }
+  });
+});
+
+// ========== 决策选择 ==========
+var decRadios = document.querySelectorAll('input[name="decision"]');
+decRadios.forEach(function(r) {
+  r.addEventListener('change', function() {
+    state.decision = this.value;
+    updateFeedback();
+    window.trackEvent('interaction_change', {
+      interaction_state: {
+        funcType: state.funcType,
+        param: state.param,
+        selectedPoint: state.selectedPoint,
+        decision: state.decision
+      }
+    });
+  });
+});
+
+// ========== 反馈逻辑 ==========
+function getCorrectDecision(ft) {
+  if (ft === 'bowl') return 'easy';
+  if (ft === 'wave') return 'hard';
+  if (ft === 'saddle') return 'hard';
+  return 'unsure';
+}
+
+function updateFeedback() {
+  var fb = document.getElementById('feedbackBox');
+  var ft = state.funcType;
+  var sp = state.selectedPoint;
+  var dec = state.decision;
+
+  if (!sp) {
+    fb.className = 'feedback-box neutral';
+    fb.innerHTML = '请先在右侧图形上<strong>点击</strong>选择一个点，然后再做出你的判断。';
+    return;
+  }
+
+  var correctDec = getCorrectDecision(ft);
+  var feedbackHTML = '';
+
+  if (ft === 'bowl') {
+    if (sp.x === 0 || Math.abs(sp.x) < 0.05) {
+      feedbackHTML = '🎯 你选在了最低点 (x=0)！对于碗形凸函数，任何方向的移动都会让函数值变大——这就是凸函数的魅力：局部最小 = 全局最小。';
+    } else if (Math.abs(sp.x - 0) < 0.5) {
+      feedbackHTML = '你选的点靠近最低点。在凸函数上，即使从附近出发，梯度下降也会稳定地收敛到同一个全局最低点。';
+    } else {
+      feedbackHTML = '你选在了较远的位置。但凸函数的"碗形"保证：无论从哪开始下降，最终都会到达同一个全局最低点。';
+    }
+  } else if (ft === 'wave') {
+    var f = function(x) { return fWave(x, state.param); };
+    // 找几个局部极值
+    var localMins = [];
+    for (var xi = -2.5; xi <= 2.5; xi += 0.1) {
+      if (f(xi) < f(xi - 0.1) && f(xi) < f(xi + 0.1)) {
+        localMins.push(xi);
+      }
+    }
+    if (localMins.length > 0) {
+      var globalMinX = localMins.reduce(function(a, b) { return f(a) < f(b) ? a : b; });
+      if (Math.abs(sp.x - globalMinX) < 0.3) {
+        feedbackHTML = '🎯 你偶然找到了全局最低点！但注意：波浪函数有多个局部最低点（小坑），你选中的是其中一个。如果优化算法停在了其他局部最低点，就会错过更深的山谷。这就是非凸函数的挑战。';
+      } else {
+        feedbackHTML = '⚠️ 你选中的可能是一个局部最低点（小坑）。波浪函数有多个"谷底"，算法可能困在其中一个，而错过更深的山谷。这就是非凸函数不好优化的原因。';
+      }
+    } else {
+      feedbackHTML = '波浪函数 f(x) = sin(px) + 0.15x² − 0.5x 有多个极值点。你选中的点附近可能有局部最优，但不一定是全局最优。';
+    }
+  } else if (ft === 'saddle') {
+    if (Math.abs(sp.x) < 0.1 && Math.abs(sp.y) < 0.1) {
+      feedbackHTML = '🎯 你选在了鞍点！鞍点既不是最小也不是最大——沿x方向它是最小，但沿y方向它反而是最大。这说明：在鞍点处，梯度为零，但它不是最优解。这是非凸优化中的经典陷阱。';
+    } else {
+      feedbackHTML = '⚠️ 鞍面 z = (x²−y²)/p 在不同方向上有不同形状：沿x方向是碗（凸），沿y方向是倒碗（凹）。这意味着：从不同方向出发，优化算法会走向完全不同的结果。鞍点处的梯度为零，但并非最优。';
+    }
+  }
+
+  if (dec) {
+    if (dec === correctDec) {
+      feedbackHTML += '<br><br>✅ 你的判断正确！';
+      fb.className = 'feedback-box correct';
+    } else if (dec === 'unsure') {
+      feedbackHTML += '<br><br>🤔 不确定也没关系，继续探索吧。';
+      fb.className = 'feedback-box neutral';
+    } else {
+      feedbackHTML += '<br><br>❌ 你的判断与预期不符，再看看上面的分析吧。';
+      fb.className = 'feedback-box incorrect';
+    }
+  } else {
+    fb.className = 'feedback-box neutral';
+  }
+
+  fb.innerHTML = feedbackHTML;
+
+  if (dec && dec === correctDec) {
+    window.trackEvent('interaction_complete', {
+      interaction_state: {
+        funcType: state.funcType,
+        param: state.param,
+        selectedPoint: state.selectedPoint,
+        decision: state.decision,
+        correct: true
+      }
+    });
+  }
+}
+
+// ========== 提示按钮 ==========
+var hintBtn = document.getElementById('hintBtn');
+var hintText = document.getElementById('hintText');
+hintBtn.addEventListener('click', function() {
+  state.hintUsed = true;
+  hintText.style.display = 'block';
+  hintBtn.textContent = '💡 已显示提示';
+  hintBtn.disabled = true;
+  window.trackEvent('hint_used', {
+    interaction_state: {
+      funcType: state.funcType,
+      param: state.param,
+      hint_used: true
+    }
+  });
+});
+
+// ========== 信心评分 ==========
+var confStars = document.querySelectorAll('#confStars .star');
+var confValEl = document.getElementById('confVal');
+var confInput = document.getElementById('confInput');
+
+confStars.forEach(function(star) {
+  star.addEventListener('click', function() {
+    var val = parseInt(this.getAttribute('data-val'));
+    state.confidence = val;
+    confInput.value = val;
+    confStars.forEach(function(s, idx) {
+      if (idx < val) {
+        s.classList.add('active');
+        s.textContent = '★';
+      } else {
+        s.classList.remove('active');
+        s.textContent = '☆';
+      }
+    });
+    var labels = ['', '很低', '较低', '一般', '较高', '很高'];
+    confValEl.textContent = '信心评分：' + val + '/5 —— ' + labels[val];
+    window.trackEvent('confidence_submitted', {
+      interaction_state: {
+        funcType: state.funcType,
+        param: state.param,
+        confidence: val
+      },
+      confidence_score: val
+    });
+  });
+
+  star.addEventListener('mouseenter', function() {
+    var val = parseInt(this.getAttribute('data-val'));
+    confStars.forEach(function(s, idx) {
+      if (idx < val) {
+        s.style.color = '#f0883e';
+      }
+    });
+  });
+});
+
+document.getElementById('confStars').addEventListener('mouseleave', function() {
+  confStars.forEach(function(s, idx) {
+    var currentVal = parseInt(confInput.value);
+    if (idx >= currentVal) {
+      s.style.color = '#30363d';
+    }
+  });
+});
+
+// ========== 反思提交 ==========
+var reflectText = document.getElementById('reflectionText');
+var submitReflect = document.getElementById('submitReflect');
+var reflectStatus = document.getElementById('reflectStatus');
+
+submitReflect.addEventListener('click', function() {
+  state.reflection = reflectText.value.trim();
+  if (!state.reflection) {
+    reflectStatus.textContent = '请先写点什么再提交哦 😊';
+    reflectStatus.style.color = '#f0883e';
+    return;
+  }
+  reflectStatus.textContent = '✅ 反思已提交！你的想法已记录。';
+  reflectStatus.style.color = '#3fb950';
+  submitReflect.disabled = true;
+  state.reflectionSubmitted = true;
+  window.trackEvent('reflection_submitted', {
+    interaction_state: {
+      funcType: state.funcType,
+      param: state.param,
+      confidence: state.confidence,
+      reflection: state.reflection,
+      reflection_submitted: true
+    },
+    reflection_length: state.reflection.length
+  });
+});
+
+// ========== 状态更新 ==========
+function updateStatus() {
+  var elapsed = Math.round((Date.now() - Date.parse(new Date().toDateString())) / 1000);
+  var realElapsed = Math.round((Date.now() - (function() {
+    var ts = sessionStorage.getItem('maic_start_ts');
+    if (!ts) {
+      ts = Date.now();
+      sessionStorage.setItem('maic_start_ts', ts);
+    }
+    return parseInt(ts);
+  })()) / 1000);
+  document.getElementById('statusLine').textContent =
+    '已操作 ' + state.interactionCount + ' 次 · 用时 ' + realElapsed + ' 秒';
+}
+
+setInterval(updateStatus, 1000);
+
+// ========== 初始化 ==========
+document.addEventListener('DOMContentLoaded', function() {
+  initCanvas();
+  updateStatus();
+});
+</script>
+</body>
+</html>

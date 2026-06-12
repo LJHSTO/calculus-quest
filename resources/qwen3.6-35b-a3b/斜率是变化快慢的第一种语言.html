@@ -1,0 +1,650 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>斜率是变化快慢的第一种语言</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#c9d1d9;--text2:#8b949e;--accent:#58a6ff;--green:#3fb950;--orange:#d29922;--red:#f85149;--pink:#f778ba;--glow:rgba(88,166,255,0.15)}
+body{font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.header{text-align:center;padding:28px 20px 18px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#161b22 0%,#0d1117 100%)}
+.header h1{font-size:1.85rem;color:#fff;letter-spacing:1px;margin-bottom:6px}
+.header .subtitle{font-size:.95rem;color:var(--text2)}
+.main{display:flex;gap:0;min-height:calc(100vh - 100px);max-width:1400px;margin:0 auto}
+.left-panel{width:42%;min-width:340px;padding:24px 20px;border-right:1px solid var(--border);overflow-y:auto;max-height:calc(100vh - 100px)}
+.right-panel{width:58%;padding:20px 24px;display:flex;flex-direction:column;overflow-y:auto;max-height:calc(100vh - 100px)}
+.section-title{font-size:1.05rem;font-weight:700;color:var(--accent);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-title .icon{font-size:1.1rem}
+.obj{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px;font-size:.92rem;line-height:1.7}
+.obj strong{color:var(--green)}
+.explain{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px;font-size:.92rem;line-height:1.7}
+.step-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:14px;transition:border-color .3s}
+.step-box.active{border-color:var(--accent);box-shadow:0 0 12px var(--glow)}
+.step-num{display:inline-block;background:var(--accent);color:#000;font-size:.78rem;font-weight:700;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;margin-right:8px}
+.step-label{font-weight:600;font-size:.92rem;margin-bottom:6px}
+.step-desc{font-size:.85rem;color:var(--text2)}
+.step-detail{font-size:.82rem;color:var(--text);margin-top:6px;padding:8px;background:rgba(88,166,255,0.06);border-radius:6px;white-space:pre-line;line-height:1.6}
+.card{background:linear-gradient(135deg,rgba(88,166,255,0.08),rgba(63,185,80,0.06));border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:18px}
+.card h3{color:var(--green);font-size:.95rem;margin-bottom:8px}
+.card p{font-size:.85rem;color:var(--text);line-height:1.6}
+.card .tag{display:inline-block;background:rgba(88,166,255,0.15);color:var(--accent);font-size:.75rem;padding:2px 8px;border-radius:4px;margin-top:6px}
+.canvas-wrap{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:16px;position:relative}
+.canvas-wrap canvas{display:block;width:100%;border-radius:8px;cursor:crosshair}
+.live-display{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.live-chip{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;flex:1;min-width:100px;text-align:center}
+.live-chip .label{font-size:.75rem;color:var(--text2);margin-bottom:2px}
+.live-chip .value{font-size:1.2rem;font-weight:700;font-family:"Courier New",monospace}
+.live-chip.slope-pos .value{color:var(--green)}
+.live-chip.slope-neg .value{color:var(--red)}
+.live-chip.slope-zero .value{color:var(--orange)}
+.feedback-box{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;font-size:.88rem;line-height:1.6}
+.feedback-box .fb-title{font-weight:700;margin-bottom:6px;font-size:.9rem}
+.feedback-box .fb-pos{color:var(--green)}
+.feedback-box .fb-neg{color:var(--red)}
+.feedback-box .fb-zero{color:var(--orange)}
+.feedback-box .fb-tip{color:var(--text2);font-style:italic}
+.btn-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.btn{padding:8px 16px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:.85rem;cursor:pointer;transition:all .2s}
+.btn:hover{border-color:var(--accent);background:rgba(88,166,255,0.08)}
+.btn.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:600}
+.btn.primary:hover{opacity:.85}
+.hint-box{background:rgba(210,153,34,0.08);border:1px solid rgba(210,153,34,0.3);border-radius:8px;padding:12px;margin-bottom:16px;font-size:.84rem;color:var(--orange);line-height:1.6;display:none}
+.hint-box.show{display:block}
+.confidence-section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+.confidence-section h3{font-size:.92rem;margin-bottom:10px;color:var(--pink)}
+.confidence-stars{display:flex;gap:8px;margin-bottom:10px}
+.confidence-stars .star{font-size:1.6rem;cursor:pointer;transition:transform .15s;opacity:.35}
+.confidence-stars .star:hover,.confidence-stars .star.on{opacity:1;transform:scale(1.15)}
+.reflection-section{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+.reflection-section h3{font-size:.92rem;margin-bottom:10px;color:var(--text2)}
+.reflection-section textarea{width:100%;min-height:80px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:.88rem;resize:vertical;font-family:inherit}
+.reflection-section textarea:focus{outline:none;border-color:var(--accent)}
+.reflection-section .submit-row{display:flex;justify-content:flex-end;margin-top:8px}
+.sr{margin-bottom:14px}.sr:last-child{margin-bottom:0}
+.legend{font-size:.78rem;color:var(--text2);margin-top:8px;text-align:center}
+.drag-hint{font-size:.82rem;color:var(--accent);text-align:center;margin-bottom:8px}
+@media(max-width:800px){.main{flex-direction:column}.left-panel,.right-panel{width:100%;max-height:none}.left-panel{border-right:none;border-bottom:1px solid var(--border)}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>斜率是变化快慢的第一种语言</h1>
+<div class="subtitle">本节聚焦：斜率与变化率</div>
+</div>
+<div class="main">
+<div class="left-panel">
+<div class="sr">
+<div class="section-title"><span class="icon">🎯</span>学习目标</div>
+<div class="obj">学会<b>根据两点计算斜率</b>，能判断<b>正斜率、零斜率、负斜率</b>，并理解<b>斜率越大表示变化越快</b>。斜率是导数的前置概念——它描述一条直线每向右走 1 个单位，向上或向下变化多少。</div>
+</div>
+<div class="sr">
+<div class="section-title"><span class="icon">💡</span>直觉解释</div>
+<div class="explain">想象你在爬一座山坡。<b>斜率</b>就是你每向右走 1 步，海拔上升或下降的幅度。如果斜率是 <b>2</b>，说明每向右 1 单位，就向上爬 2 单位——变化很快；如果斜率是 <b>0.1</b>，变化就很平缓；如果是 <b>负数</b>，说明你在下坡。</div>
+</div>
+<div class="sr">
+<div class="section-title"><span class="icon">📐</span>核心互动步骤</div>
+<div class="step-box" id="step1">
+<div class="step-label"><span class="step-num">1</span>选择第一个点 P₁</div>
+<div class="step-desc">点击或拖动画布上的蓝色圆点</div>
+<div class="step-detail" id="step1detail">当前 P₁ 坐标：<b>（待定）</b>——请拖动画布中的蓝点</div>
+</div>
+<div class="step-box" id="step2">
+<div class="step-label"><span class="step-num">2</span>选择第二个点 P₂</div>
+<div class="step-desc">点击或拖动画布上的红色圆点</div>
+<div class="step-detail" id="step2detail">当前 P₂ 坐标：<b>（待定）</b>——请拖动画布中的红点</div>
+</div>
+<div class="step-box" id="step3">
+<div class="step-label"><span class="step-num">3</span>计算差商（平均变化率）</div>
+<div class="step-desc">斜率 = 上升量 ÷ 水平距离 = Δy ÷ Δx</div>
+<div class="step-detail" id="step3detail">拖动两个点以查看斜率计算...</div>
+</div>
+<div class="step-box" id="step4">
+<div class="step-label"><span class="step-num">4</span>判断斜率类型</div>
+<div class="step-desc">正斜率 ↑ 零斜率 → 负斜率 ↓</div>
+<div class="step-detail" id="step4detail">完成两个点的选择以查看判断...</div>
+</div>
+</div>
+<div class="sr">
+<div class="section-title"><span class="icon">🗂</span>概念卡</div>
+<div class="card">
+<h3>📌 斜率 = 变化率的"第一语言"</h3>
+<p>斜率描述一条直线<b>每向右走 1 个单位</b>，向上或向下变化多少。它是导数的前置概念——当两点无限靠近时，平均变化率就过渡为瞬时变化率（导数）。</p>
+<p style="margin-top:8px">公式：<b>k = (y₂ − y₁) / (x₂ − x₁) = Δy / Δx</b></p>
+<div class="tag">高中数学 · 函数与导数入门</div>
+</div>
+</div>
+</div>
+<div class="right-panel">
+<div class="drag-hint">👆 拖动蓝色圆点 P₁ 和红色圆点 P₂ 来探索斜率的变化</div>
+<div class="canvas-wrap">
+<canvas id="mainCanvas" width="600" height="420"></canvas>
+<div class="legend">鼠标拖动画布中的圆点，坐标范围：x ∈ [−6, 6]，y ∈ [−5, 5]</div>
+</div>
+<div class="live-display">
+<div class="live-chip">
+<div class="label">P₁ 坐标</div>
+<div class="value" id="vP1">— , —</div>
+</div>
+<div class="live-chip">
+<div class="label">P₂ 坐标</div>
+<div class="value" id="vP2">— , —</div>
+</div>
+<div class="live-chip">
+<div class="label">Δx 水平距离</div>
+<div class="value" id="vDx">—</div>
+</div>
+<div class="live-chip">
+<div class="label">Δy 上升量</div>
+<div class="value" id="vDy">—</div>
+</div>
+<div class="live-chip">
+<div class="label">斜率 k</div>
+<div class="value" id="vSlope">—</div>
+</div>
+</div>
+<div class="feedback-box" id="feedbackBox">
+<div class="fb-title">💬 即时反馈</div>
+<div id="fbContent">拖动两个点以开始探索斜率的变化规律...</div>
+</div>
+<div class="btn-row">
+<button class="btn primary" id="btnReset">重置两点</button>
+<button class="btn" id="btnHint">💡 提示</button>
+<button class="btn" id="btnDemo">🎬 演示预设</button>
+</div>
+<div class="hint-box" id="hintBox">💡 <b>小提示：</b>斜率的本质是"变化率"。Δx 向右为正，Δy 向上为正。斜率越大（绝对值越大），表示变化越快。正斜率表示上升，负斜率表示下降，零斜率表示水平不变。</div>
+<div class="confidence-section">
+<h3>😊 你的信心评分</h3>
+<p style="font-size:.84rem;color:var(--text2);margin-bottom:8px">你对"斜率与变化率"的理解程度如何？</p>
+<div class="confidence-stars" id="confStars">
+<span class="star" data-val="1">⭐</span>
+<span class="star" data-val="2">⭐</span>
+<span class="star" data-val="3">⭐</span>
+<span class="star" data-val="4">⭐</span>
+<span class="star" data-val="5">⭐</span>
+</div>
+<div style="font-size:.78rem;color:var(--text2)" id="confLabel">尚未评分</div>
+</div>
+<div class="reflection-section">
+<h3>🤔 简短反思</h3>
+<p style="font-size:.84rem;color:var(--text2);margin-bottom:8px">用一两句话描述：斜率和变化快慢之间有什么关系？</p>
+<textarea id="reflectionTA" placeholder="例如：斜率越大，变化越快..."></textarea>
+<div class="submit-row">
+<button class="btn primary" id="btnReflect">提交反思</button>
+</div>
+</div>
+</div>
+</div>
+<script>
+/* ========== 元数据 ========== */
+window.MAIC_LESSON_META = {lesson_id:'A-03', module_id:'OM-A1', course_version:'demo-closed-loop-v1', concept_name:'斜率与变化率'};
+
+/* ========== 行为追踪 ========== */
+var _maicStart = Date.now();
+function trackEvent(eventType, payload) {
+    var now = Date.now();
+    var evt = {
+        lesson_id: 'A-03',
+        module_id: 'OM-A1',
+        course_version: 'demo-closed-loop-v1',
+        event_type: eventType,
+        timestamp: new Date().toISOString(),
+        time_on_task_ms: now - _maicStart,
+        interaction_state: payload || {}
+    };
+    try {
+        var arr = [];
+        var raw = localStorage.getItem('maic_learning_events');
+        if (raw) arr = JSON.parse(raw);
+        arr.push(evt);
+        localStorage.setItem('maic_learning_events', JSON.stringify(arr));
+    } catch(e) {
+        console.warn('localStorage不可用', e);
+    }
+    try {
+        window.top.postMessage({type:'maic_learning_event', payload:evt}, '*');
+    } catch(e) {}
+    return evt;
+}
+
+/* ========== Canvas 初始化 ========== */
+var canvas, ctx;
+var W, H;
+var originX, originY, scaleX, scaleY;
+var P1 = {x: -3, y: 1, color:'#58a6ff', label:'P₁'};
+var P2 = {x: 2, y: 3, color:'#f85149', label:'P₂'};
+var dragging = null; // 'P1' or 'P2' or null
+var confScore = 0;
+var hintUsed = false;
+var demoUsed = false;
+var hasDragged = false;
+var demoPresets = [
+    {p1:{x:-3,y:1},p2:{x:2,y:3}},
+    {p1:{x:-4,y:-2},p2:{x:1,y:2}},
+    {p1:{x:-3,y:0},p2:{x:3,y:0}},
+    {p1:{x:-2,y:3},p2:{x:3,y:-1}}
+];
+var presetIdx = 0;
+
+function initCanvas() {
+    canvas = document.getElementById('mainCanvas');
+    ctx = canvas.getContext('2d');
+    var rect = canvas.getBoundingClientRect();
+    W = canvas.width;
+    H = canvas.height;
+    originX = W / 2;
+    originY = H / 2;
+    scaleX = W / 12;
+    scaleY = H / 10;
+    draw();
+}
+
+function toScreen(px, py) {
+    return {sx: originX + px * scaleX, sy: originY - py * scaleY};
+}
+function toWorld(sx, sy) {
+    return {x: (sx - originX) / scaleX, y: -(sy - originY) / scaleY};
+}
+
+function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // 背景
+    ctx.fillStyle = '#0d1117';
+    ctx.fillRect(0, 0, W, H);
+    // 网格
+    ctx.strokeStyle = '#1a2030';
+    ctx.lineWidth = 0.5;
+    for (var i = -6; i <= 6; i++) {
+        var s = toScreen(i, 0);
+        ctx.beginPath();
+        ctx.moveTo(s.sx, 0);
+        ctx.lineTo(s.sx, H);
+        ctx.stroke();
+    }
+    for (var j = -5; j <= 5; j++) {
+        var s2 = toScreen(0, j);
+        ctx.beginPath();
+        ctx.moveTo(0, s2.sy);
+        ctx.lineTo(W, s2.sy);
+        ctx.stroke();
+    }
+    // 坐标轴
+    ctx.strokeStyle = '#30363d';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, originY);
+    ctx.lineTo(W, originY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(originX, 0);
+    ctx.lineTo(originX, H);
+    ctx.stroke();
+    // 轴标签
+    ctx.fillStyle = '#8b949e';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('x', W - 16, originY - 8);
+    ctx.fillText('y', originX + 8, 14);
+    // 刻度数字
+    ctx.fillStyle = '#484f58';
+    ctx.font = '10px sans-serif';
+    for (var k = -6; k <= 6; k++) {
+        if (k === 0) continue;
+        var tk = toScreen(k, 0);
+        ctx.fillText(k, tk.sx - 4, originY + 14);
+    }
+    for (var m = -5; m <= 5; m++) {
+        if (m === 0) continue;
+        var tm = toScreen(0, m);
+        ctx.fillText(m, originX + 6, tm.sy + 4);
+    }
+    // Δx 标注
+    var dx = P2.x - P1.x;
+    var dy = P2.y - P1.y;
+    if (dx !== 0) {
+        var s1 = toScreen(P1.x, P1.y);
+        var s2 = toScreen(P2.x, P1.y);
+        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = '#d29922';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(s1.sx, s1.sy);
+        ctx.lineTo(s2.sx, s2.sy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Δx 文字
+        ctx.fillStyle = '#d29922';
+        ctx.font = 'bold 13px sans-serif';
+        var mx = (s1.sx + s2.sx) / 2;
+        var my = s1.sy + 18;
+        ctx.fillText('Δx = ' + roundNum(dx), mx - 20, my);
+    }
+    // Δy 标注
+    if (dy !== 0) {
+        var s3 = toScreen(P2.x, P1.y);
+        var s4 = toScreen(P2.x, P2.y);
+        ctx.setLineDash([4, 3]);
+        ctx.strokeStyle = '#3fb950';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(s3.sx, s3.sy);
+        ctx.lineTo(s4.sx, s4.sy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Δy 文字
+        ctx.fillStyle = '#3fb950';
+        ctx.font = 'bold 13px sans-serif';
+        var mx2 = s4.sx + 10;
+        var my2 = (s3.sy + s4.sy) / 2 + 4;
+        ctx.fillText('Δy = ' + roundNum(dy), mx2, my2);
+    }
+    // 连线 P1P2
+    var sp1 = toScreen(P1.x, P1.y);
+    var sp2 = toScreen(P2.x, P2.y);
+    ctx.strokeStyle = '#58a6ff';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(sp1.sx, sp1.sy);
+    ctx.lineTo(sp2.sx, sp2.sy);
+    ctx.stroke();
+    // 点 P1
+    ctx.beginPath();
+    ctx.arc(sp1.sx, sp1.sy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = P1.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(P1.label, sp1.sx - 12, sp1.sy - 14);
+    // 点 P2
+    ctx.beginPath();
+    ctx.arc(sp2.sx, sp2.sy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = P2.color;
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(P2.label, sp2.sx - 12, sp2.sy - 14);
+    // 斜率公式
+    if (dx !== 0) {
+        var k = dy / dx;
+        ctx.fillStyle = 'rgba(13,17,23,0.85)';
+        ctx.fillRect(W / 2 - 90, 10, 180, 48);
+        ctx.strokeStyle = '#30363d';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(W / 2 - 90, 10, 180, 48);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText('k = Δy / Δx = ' + roundNum(dy) + ' / ' + roundNum(dx), W / 2 - 85, 28);
+        ctx.fillStyle = k > 0 ? '#3fb950' : (k < 0 ? '#f85149' : '#d29922');
+        ctx.fillText('k = ' + roundNum(k), W / 2 - 30, 46);
+    }
+}
+
+function roundNum(v) {
+    if (Math.abs(v - Math.round(v)) < 0.001) return Math.round(v).toString();
+    return v.toFixed(2);
+}
+
+/* ========== 交互逻辑 ========== */
+function getMousePos(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX2 = canvas.width / rect.width;
+    var scaleY2 = canvas.height / rect.height;
+    return {
+        x: (e.clientX - rect.left) * scaleX2,
+        y: (e.clientY - rect.top) * scaleY2
+    };
+}
+
+function distToPoint(mx, my, pt) {
+    var sp = toScreen(pt.x, pt.y);
+    return Math.sqrt((mx - sp.sx) ** 2 + (my - sp.sy) ** 2);
+}
+
+function snapToGrid(val) {
+    var snap = Math.round(val * 2) / 2;
+    if (snap > 6) snap = 6;
+    if (snap < -6) snap = -6;
+    if (snap > 5) snap = 5;
+    if (snap < -5) snap = -5;
+    return snap;
+}
+
+function handlePointerDown(e) {
+    var pos = getMousePos(e);
+    var d1 = distToPoint(pos.x, pos.y, P1);
+    var d2 = distToPoint(pos.x, pos.y, P2);
+    if (d1 < 18) {
+        dragging = 'P1';
+        return;
+    }
+    if (d2 < 18) {
+        dragging = 'P2';
+        return;
+    }
+    // 点击空白区域设置对应的点
+    if (d1 > 18 && d2 > 18) {
+        var w = toWorld(pos.x, pos.y);
+        w.x = snapToGrid(w.x);
+        w.y = snapToGrid(w.y);
+        if (!hasDragged) {
+            P1.x = w.x; P1.y = w.y;
+            hasDragged = true;
+            updateUI();
+            draw();
+            trackEvent('interaction_change', {action:'initial_set', x1:P1.x, y1:P1.y, x2:P2.x, y2:P2.y, hasDragged:true});
+            return;
+        }
+        P2.x = w.x; P2.y = w.y;
+        hasDragged = true;
+        updateUI();
+        draw();
+        trackEvent('interaction_change', {action:'click_set_p2', x1:P1.x, y1:P1.y, x2:P2.x, y2:P2.y});
+    }
+}
+
+function handlePointerMove(e) {
+    if (!dragging) return;
+    var pos = getMousePos(e);
+    var w = toWorld(pos.x, pos.y);
+    w.x = snapToGrid(w.x);
+    w.y = snapToGrid(w.y);
+    if (dragging === 'P1') {
+        P1.x = w.x; P1.y = w.y;
+    } else {
+        P2.x = w.x; P2.y = w.y;
+    }
+    if (!hasDragged) hasDragged = true;
+    updateUI();
+    draw();
+}
+
+function handlePointerUp() {
+    if (dragging) {
+        var dx = P2.x - P1.x;
+        var dy = P2.y - P1.y;
+        var state = {x1:P1.x, y1:P1.y, x2:P2.x, y2:P2.y, dx:dx, dy:dy};
+        if (dx !== 0) {
+            state.k = dy / dx;
+        }
+        trackEvent('interaction_change', state);
+    }
+    dragging = null;
+}
+
+canvas = document.getElementById('mainCanvas');
+canvas.addEventListener('mousedown', handlePointerDown);
+canvas.addEventListener('mousemove', handlePointerMove);
+canvas.addEventListener('mouseup', handlePointerUp);
+canvas.addEventListener('mouseleave', function() { dragging = null; });
+canvas.addEventListener('touchstart', function(e) { e.preventDefault(); var t = e.touches[0]; handlePointerDown({clientX:t.clientX, clientY:t.clientY}); }, {passive:false});
+canvas.addEventListener('touchmove', function(e) { e.preventDefault(); var t = e.touches[0]; handlePointerMove({clientX:t.clientX, clientY:t.clientY}); }, {passive:false});
+canvas.addEventListener('touchend', function(e) { handlePointerUp(); });
+
+/* ========== UI 更新 ========== */
+function updateUI() {
+    var dx = P2.x - P1.x;
+    var dy = P2.y - P1.y;
+    var k = (dx !== 0) ? dy / dx : null;
+
+    // 坐标显示
+    document.getElementById('vP1').textContent = roundNum(P1.x) + ' , ' + roundNum(P1.y);
+    document.getElementById('vP2').textContent = roundNum(P2.x) + ' , ' + roundNum(P2.y);
+    document.getElementById('vDx').textContent = dx !== 0 ? roundNum(dx) : '—';
+    document.getElementById('vDy').textContent = dy !== 0 ? roundNum(dy) : '—';
+    var slopeEl = document.getElementById('vSlope');
+    if (k !== null) {
+        slopeEl.textContent = roundNum(k);
+        slopeEl.className = 'value ' + (k > 0.001 ? 'slope-pos' : (k < -0.001 ? 'slope-neg' : 'slope-zero'));
+    } else {
+        slopeEl.textContent = '—';
+        slopeEl.className = 'value';
+    }
+
+    // 步骤更新
+    var s1d = document.getElementById('step1detail');
+    var s2d = document.getElementById('step2detail');
+    var s3d = document.getElementById('step3detail');
+    var s4d = document.getElementById('step4detail');
+
+    s1d.innerHTML = '当前 P₁ 坐标：<b>（' + roundNum(P1.x) + ' , ' + roundNum(P1.y) + '）</b> — 拖动蓝点调整位置';
+    s2d.innerHTML = '当前 P₂ 坐标：<b>（' + roundNum(P2.x) + ' , ' + roundNum(P2.y) + '）</b> — 拖动红点调整位置';
+
+    if (dx !== 0) {
+        s3d.innerHTML = 'Δy = ' + roundNum(dy) + ' − ' + roundNum(P1.y) + ' = ' + roundNum(dy) + '\nΔx = ' + roundNum(dx) + ' − ' + roundNum(P1.x) + ' = ' + roundNum(dx) + '\nk = ' + roundNum(dy) + ' ÷ ' + roundNum(dx) + ' = ' + roundNum(k);
+    } else {
+        s3d.innerHTML = '⚠️ Δx = 0，无法计算斜率（两点在同一竖线上）\n请拖动 P₂ 使 x 坐标不同';
+    }
+
+    if (dx !== 0) {
+        if (k > 0.001) {
+            s4d.innerHTML = '✅ <b>正斜率</b>（k = ' + roundNum(k) + '）\n直线从左下到右上，y 随 x 增大而增大\n→ 表示<b>上升变化</b>';
+        } else if (k < -0.001) {
+            s4d.innerHTML = '✅ <b>负斜率</b>（k = ' + roundNum(k) + '）\n直线从左上到右下，y 随 x 增大而减小\n→ 表示<b>下降变化</b>';
+        } else {
+            s4d.innerHTML = '✅ <b>零斜率</b>（k = 0）\nΔy = 0，直线水平\n→ 表示<b>无变化</b>';
+        }
+        s4d.innerHTML += '\n\n📊 斜率绝对值 |k| = ' + roundNum(Math.abs(k));
+        if (Math.abs(k) > 1.5) {
+            s4d.innerHTML += '，变化<b>较快</b>';
+        } else if (Math.abs(k) > 0.5) {
+            s4d.innerHTML += '，变化<b>中等</b>';
+        } else {
+            s4d.innerHTML += '，变化<b>较慢</b>';
+        }
+    } else {
+        s4d.innerHTML = '⚠️ 请使 P₁ 和 P₂ 的 x 坐标不同';
+    }
+
+    // 步骤高亮
+    document.getElementById('step1').classList.toggle('active', hasDragged);
+    document.getElementById('step2').classList.toggle('active', hasDragged);
+    document.getElementById('step3').classList.toggle('active', dx !== 0);
+    document.getElementById('step4').classList.toggle('active', dx !== 0);
+
+    // 反馈
+    updateFeedback(dx, dy, k);
+}
+
+function updateFeedback(dx, dy, k) {
+    var fb = document.getElementById('fbContent');
+    if (!hasDragged) {
+        fb.innerHTML = '拖动两个点以开始探索斜率的变化规律...';
+        return;
+    }
+    if (dx === 0) {
+        fb.innerHTML = '<span class="fb-zero">⚠️ P₁ 和 P₂ 的 x 坐标相同（Δx = 0），无法计算斜率。</span><br>请拖动 P₂ 使其水平位置与 P₁ 不同。';
+        return;
+    }
+    if (k > 0.001) {
+        fb.innerHTML = '<span class="fb-pos">✅ 正斜率（k > 0）！</span><br>P₁(' + roundNum(P1.x) + ' , ' + roundNum(P1.y) + ') 到 P₂(' + roundNum(P2.x) + ' , ' + roundNum(P2.y) + ')，<br>每向右 1 单位，y 上升 ' + roundNum(k) + ' 单位。<br>斜率越大，变化越快。';
+    } else if (k < -0.001) {
+        fb.innerHTML = '<span class="fb-neg">✅ 负斜率（k < 0）！</span><br>P₁(' + roundNum(P1.x) + ' , ' + roundNum(P1.y) + ') 到 P₂(' + roundNum(P2.x) + ' , ' + roundNum(P2.y) + ')，<br>每向右 1 单位，y 下降 ' + roundNum(Math.abs(k)) + ' 单位。<br>这是"下坡"变化。';
+    } else {
+        fb.innerHTML = '<span class="fb-zero">✅ 零斜率（k = 0）！</span><br>P₁ 和 P₂ 在同一水平线上，y 没有变化。<br>无论 x 如何变化，y 保持不变。';
+    }
+}
+
+/* ========== 按钮事件 ========== */
+document.getElementById('btnReset').addEventListener('click', function() {
+    P1.x = -3; P1.y = 1;
+    P2.x = 2; P2.y = 3;
+    hasDragged = false;
+    updateUI();
+    draw();
+    trackEvent('interaction_change', {action:'reset', x1:P1.x, y1:P1.y, x2:P2.x, y2:P2.y});
+});
+
+document.getElementById('btnHint').addEventListener('click', function() {
+    var hb = document.getElementById('hintBox');
+    hb.classList.toggle('show');
+    if (!hintUsed) {
+        hintUsed = true;
+        trackEvent('hint_used', {hint_shown:true});
+    }
+});
+
+document.getElementById('btnDemo').addEventListener('click', function() {
+    var preset = demoPresets[presetIdx % demoPresets.length];
+    P1.x = preset.p1.x; P1.y = preset.p1.y;
+    P2.x = preset.p2.x; P2.y = preset.p2.y;
+    hasDragged = true;
+    presetIdx++;
+    updateUI();
+    draw();
+    trackEvent('interaction_change', {action:'demo_preset', preset_idx:presetIdx, x1:P1.x, y1:P1.y, x2:P2.x, y2:P2.y});
+    if (!demoUsed) {
+        demoUsed = true;
+    }
+});
+
+/* ========== 信心评分 ========== */
+var stars = document.querySelectorAll('#confStars .star');
+stars.forEach(function(s) {
+    s.addEventListener('click', function() {
+        var val = parseInt(this.getAttribute('data-val'));
+        confScore = val;
+        stars.forEach(function(st) {
+            var sv = parseInt(st.getAttribute('data-val'));
+            st.classList.toggle('on', sv <= val);
+        });
+        var labels = ['','不太确定','有些了解','基本掌握','比较熟练','完全掌握'];
+        document.getElementById('confLabel').textContent = '信心评分：' + val + ' 分 — ' + labels[val];
+        trackEvent('confidence_submitted', {confidence: val});
+    });
+});
+
+/* ========== 反思提交 ========== */
+document.getElementById('btnReflect').addEventListener('click', function() {
+    var text = document.getElementById('reflectionTA').value.trim();
+    trackEvent('reflection_submitted', {reflection: text || '(空)'});
+    var fb = document.getElementById('fbContent');
+    fb.innerHTML = '<span class="fb-pos">✅ 反思已记录！感谢你的思考。</span>';
+    setTimeout(function() {
+        updateUI();
+        trackEvent('interaction_complete', {
+            x1:P1.x, y1:P1.y, x2:P2.x, y2:P2.y,
+            dx: P2.x-P1.x, dy: P2.y-P1.y,
+            k: (P2.x-P1.x)!==0 ? (P2.y-P1.y)/(P2.x-P1.x) : null,
+            confidence: confScore,
+            reflection: text,
+            hintUsed: hintUsed,
+            demoUsed: demoUsed,
+            completed: true
+        });
+    }, 500);
+});
+
+/* ========== 页面加载事件 ========== */
+window.addEventListener('DOMContentLoaded', function() {
+    initCanvas();
+    updateUI();
+    trackEvent('page_loaded', {page:'slope-intro', lesson_id:'A-03'});
+});
+</script>
+</body>
+</html>

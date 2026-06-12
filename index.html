@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>微积分学习 Demo</title>
+    <meta
+      name="description"
+      content="一个可以在站内学习微积分课程的 Agentic AI 闯关 Demo。"
+    />
+    <link rel="stylesheet" href="styles.css?v=20260611f" />
+    <link rel="stylesheet" href="lib/katex.min.css?v=20260611" />
+  </head>
+  <body>
+    <div id="app-loader" aria-label="加载中">
+      <div class="loader-spinner"></div>
+      <p>Calculus Quest 加载中…</p>
+    </div>
+    <a class="skip-link" href="#learn-view">跳到学习播放器</a>
+
+    <header class="app-header">
+      <button class="brand" type="button" data-view="home" aria-label="回到首页">
+        <span class="brand-mark">∂</span>
+        <span>Calculus Quest</span>
+      </button>
+      <nav class="app-nav" aria-label="主导航">
+        <button class="nav-button active" type="button" data-view="home">首页</button>
+        <button class="nav-button" type="button" data-view="learn">学习</button>
+        <button class="nav-button" type="button" data-view="library">资源</button>
+        <button class="nav-button" type="button" data-view="progress">记录</button>
+      </nav>
+      <div class="auth-widget" id="auth-widget" aria-live="polite">
+        <span id="auth-status">未登录</span>
+        <button class="utility-button" id="auth-action" type="button">登录</button>
+      </div>
+      <button class="utility-button" id="reset-progress" type="button">重置</button>
+    </header>
+
+    <section id="auth-gate" class="auth-gate" hidden>
+      <form id="login-form" class="login-panel">
+        <p class="eyebrow">User login</p>
+        <h1>用户登录</h1>
+        <p>填写一个便于研究者识别的昵称。你的学习进度、测验提交和推荐补给会记录到测试数据中。</p>
+        <label>
+          <span>昵称</span>
+          <input id="nickname" name="nickname" autocomplete="nickname" maxlength="24" placeholder="请填写昵称" required />
+        </label>
+        <div id="login-feedback" class="login-feedback" role="status"></div>
+        <button class="button primary full" type="submit">进入学习</button>
+      </form>
+    </section>
+
+    <main>
+      <section id="home-view" class="view active">
+        <div class="hero">
+          <div class="hero-bg" aria-hidden="true"></div>
+          <div class="hero-copy">
+            <p class="eyebrow">Bridge from high school math</p>
+            <h1>从函数到微积分</h1>
+            <p>
+              这里从函数图像、斜率和方向感出发，结合前测诊断、互动实验<br>和AI个性化推荐课把微积分的直觉一步步搭起来。
+            </p>
+            <div class="hero-actions">
+              <button class="button primary" type="button" data-view="learn">开始学习</button>
+              <button class="button secondary" type="button" data-view="progress">查看学习记录</button>
+            </div>
+            <div class="student-starter" aria-label="预学路线">
+              <div>
+                <strong>1. 先测直觉</strong>
+                <span>不怕错，前测会暴露函数图像和斜率卡点。</span>
+              </div>
+              <div>
+                <strong>2. 动手看变化</strong>
+                <span>每章用互动实验把抽象概念变成可观察的运动。</span>
+              </div>
+              <div>
+                <strong>3. 卡住再补给</strong>
+                <span>系统会按测验证据推荐补充课程。</span>
+              </div>
+            </div>
+          </div>
+          <aside class="hero-panel">
+            <h2>预学路线</h2>
+            <p class="hero-panel-note">从函数图像出发，先建立“变化”的语言，再走向梯度下降和优化直觉。</p>
+            <dl class="metric-grid">
+              <div><dt id="metric-chapters">0</dt><dd>章节</dd></div>
+              <div><dt id="metric-scenes">0</dt><dd>站内课节</dd></div>
+              <div><dt id="metric-glm">0</dt><dd>补充课件</dd></div>
+              <div><dt id="metric-html">0</dt><dd>HTML 交互课件</dd></div>
+              <div><dt id="metric-audio">0</dt><dd>音频旁白</dd></div>
+            </dl>
+          </aside>
+        </div>
+        <section class="home-pathway" aria-label="微积分预学路线">
+          <div>
+            <p class="eyebrow">Starter route</p>
+            <h2>建议学习顺序</h2>
+          </div>
+          <article>
+            <span class="type-pill">第 1-3 章</span>
+            <h3>从函数图像到方向</h3>
+            <p>先把斜率、向量、内积和投影连起来，形成“变化有方向”的直觉。</p>
+          </article>
+          <article>
+            <span class="type-pill">第 4-5 章</span>
+            <h3>从曲线走向曲面</h3>
+            <p>用放大观察、局部线性和等高线理解多元函数的地形。</p>
+          </article>
+          <article>
+            <span class="type-pill">第 6-8 章</span>
+            <h3>进入梯度下降</h3>
+            <p>把梯度、驻点、步长和凸性串成优化算法的第一张地图。</p>
+          </article>
+        </section>
+      </section>
+
+      <section id="learn-view" class="view">
+        <div class="learning-shell">
+          <aside class="chapter-rail" aria-label="大章节">
+            <div class="rail-header">
+              <p class="eyebrow">Chapters</p>
+              <h2>选择章节</h2>
+            </div>
+            <div id="chapter-list" class="chapter-list"></div>
+          </aside>
+
+          <aside class="lesson-rail" aria-label="章节内模块">
+            <div class="rail-header">
+              <p class="eyebrow">Inside chapter</p>
+              <h2 id="chapter-title">章节内模块</h2>
+            </div>
+            <div id="lesson-list" class="lesson-list"></div>
+          </aside>
+
+          <section class="player" aria-live="polite">
+            <div class="player-top">
+              <div>
+                <p class="eyebrow" id="lesson-type">Learning unit</p>
+                <h1 id="lesson-title">选择一个学习模块</h1>
+                <p id="lesson-summary"></p>
+              </div>
+              <div class="player-actions">
+                <button class="button soft icon-button" id="fullscreen-player" type="button" aria-label="进入全屏学习">⛶</button>
+                <button class="button primary" id="complete-lesson" type="button">完成本节并跳到下一节</button>
+              </div>
+            </div>
+            <div id="recommendation-panel" class="recommendation-panel" hidden></div>
+            <div id="lesson-player" class="lesson-player"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="agent-view" class="view">
+        <div class="page">
+          <div class="page-heading">
+            <p class="eyebrow">Agent orchestration</p>
+            <h1>Agent 如何编排学习资源</h1>
+            <p>这里展示的不是资源文件名，而是用户会感知到的学习动作：预热、判断、实验、纠偏、复盘和通关。</p>
+          </div>
+          <div id="agent-board" class="agent-board"></div>
+        </div>
+      </section>
+
+      <section id="library-view" class="view">
+        <div class="page">
+          <div class="page-heading">
+            <p class="eyebrow">Resource index</p>
+            <h1>站内资源索引</h1>
+            <p>资源索引用简短概括命名。选择任何条目都会回到学习播放器内展示，不再跳转离开网站。</p>
+          </div>
+          <div class="library-toolbar">
+            <button class="filter active" type="button" data-filter="all">全部</button>
+            <button class="filter" type="button" data-filter="scene">主线课节</button>
+            <button class="filter" type="button" data-filter="recommended">推荐补给</button>
+            <button class="filter" type="button" data-filter="html">HTML</button>
+            <button class="filter" type="button" data-filter="quiz">测验</button>
+            <button class="filter" type="button" data-filter="interactive">互动</button>
+            <span id="library-count" class="count-pill">0 项</span>
+          </div>
+          <div id="resource-grid" class="resource-grid"></div>
+        </div>
+      </section>
+
+      <section id="progress-view" class="view">
+        <div class="page">
+          <div class="page-heading">
+            <p class="eyebrow">Learning memory</p>
+            <h1>长期学习记录</h1>
+            <p>这里会记录你学到哪一关、测验提交情况和反思笔记。小范围测试时，研究者可以据此观察学习路径。</p>
+          </div>
+          <div class="progress-grid">
+            <article class="progress-card">
+              <h2>通关进度</h2>
+              <div class="big-stat"><span id="completed-count">0</span><small>已完成模块</small></div>
+              <div id="chapter-progress" class="chapter-progress"></div>
+            </article>
+            <article class="progress-card">
+              <h2>测验表现</h2>
+              <div id="quiz-dashboard" class="quiz-dashboard"></div>
+            </article>
+            <article class="progress-card">
+              <h2>学习日志</h2>
+              <ol id="activity-log" class="activity-log"></ol>
+            </article>
+            <article class="progress-card">
+              <h2>反思笔记</h2>
+              <textarea id="reflection-note" rows="8" placeholder="写下你对导数、梯度、方向、凸性或下降过程的卡点。"></textarea>
+              <button class="button primary full" id="save-note" type="button">保存反思</button>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="evaluation-view" class="view">
+        <div class="page">
+          <div class="page-heading">
+            <p class="eyebrow">Benchmark evaluation</p>
+            <h1>Agentic AI 主动学习评测工作流</h1>
+            <p>研究者可以把生成任务、系统优化、界面优化、离线裁判、人类评分和真实学习成效放在同一条证据链里比较。</p>
+          </div>
+          <div id="evaluation-board" class="evaluation-board"></div>
+          <div id="evaluation-metrics" class="evaluation-metrics"></div>
+          <div id="evaluation-runs" class="evaluation-runs"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>资料来源于 OpenMAIC 与 MAIC UI</span>
+      <button class="text-button" type="button" data-view="learn">继续学习</button>
+    </footer>
+
+    <script src="lib/katex.min.js?v=20260611"></script>
+    <script src="app/main/data.js?v=20260612"></script>
+    <script src="app/main/core.js?v=20260612"></script>
+    <script src="app/main/render-learning.js?v=20260612"></script>
+    <script src="app/main/recommendations.js?v=20260612"></script>
+    <script src="app/main/progress.js?v=20260612"></script>
+    <script src="app/main/navigation.js?v=20260612"></script>
+    <script src="app/main/events.js?v=20260612"></script>
+    <script src="app/main/narration.js?v=20260612"></script>
+    <script src="app/main/quiz.js?v=20260612"></script>
+    <script src="app/main/bootstrap.js?v=20260612"></script>
+  </body>
+</html>

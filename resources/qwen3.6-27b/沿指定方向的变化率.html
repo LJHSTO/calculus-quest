@@ -1,0 +1,933 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沿指定方向的变化率</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+h1 {
+  text-align: center;
+  font-size: 1.8em;
+  color: #00d4ff;
+  margin-bottom: 6px;
+  letter-spacing: 2px;
+}
+.subtitle {
+  text-align: center;
+  font-size: 0.95em;
+  color: #8899aa;
+  margin-bottom: 18px;
+}
+.objective {
+  background: #16213e;
+  border-left: 4px solid #00d4ff;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  border-radius: 0 8px 8px 0;
+  font-size: 0.95em;
+}
+.objective strong { color: #00d4ff; }
+.intuition {
+  background: #1a1a2e;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  font-size: 0.95em;
+}
+.intuition h3 { color: #ffaa00; margin-bottom: 8px; font-size: 1.05em; }
+.intuition p { color: #c0c8d8; }
+.main-area {
+  display: flex;
+  gap: 18px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.canvas-panel {
+  flex: 1 1 520px;
+  background: #0f0f23;
+  border-radius: 12px;
+  border: 1px solid #2a2a4a;
+  padding: 14px;
+  min-width: 300px;
+}
+.canvas-panel h3 {
+  color: #00d4ff;
+  margin-bottom: 10px;
+  font-size: 1em;
+  text-align: center;
+}
+canvas {
+  display: block;
+  width: 100%;
+  border-radius: 8px;
+  cursor: crosshair;
+  background: #0a0a1a;
+}
+.control-panel {
+  flex: 0 0 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 240px;
+}
+.card {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 14px 16px;
+  border: 1px solid #2a2a4a;
+}
+.card h3 {
+  font-size: 0.95em;
+  color: #ffaa00;
+  margin-bottom: 10px;
+}
+.control-group {
+  margin-bottom: 10px;
+}
+.control-group label {
+  display: block;
+  font-size: 0.85em;
+  color: #a0a8b8;
+  margin-bottom: 4px;
+}
+.control-group input[type="range"] {
+  width: 100%;
+  accent-color: #00d4ff;
+}
+.val-display {
+  font-size: 0.85em;
+  color: #00d4ff;
+  font-weight: bold;
+}
+.feedback-box {
+  background: #0f0f23;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 60px;
+  font-size: 0.9em;
+  transition: border-color 0.3s;
+  border: 1px solid #2a2a4a;
+}
+.feedback-box.rising { border-color: #ff4444; }
+.feedback-box.falling { border-color: #44aaff; }
+.feedback-box.flat { border-color: #88cc88; }
+.feedback-label { font-weight: bold; margin-bottom: 4px; }
+.feedback-detail { color: #b0b8c8; font-size: 0.85em; }
+.btn {
+  background: #00d4ff;
+  color: #0a0a1a;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+.btn:hover { background: #00b8e6; }
+.btn-small {
+  padding: 5px 12px;
+  font-size: 0.8em;
+}
+.hint-btn {
+  background: #ffaa00;
+  color: #0a0a1a;
+}
+.hint-btn:hover { background: #e69900; }
+.concept-card {
+  background: linear-gradient(135deg, #16213e, #1a1a3e);
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin-bottom: 18px;
+  border: 1px solid #2a2a5a;
+}
+.concept-card h3 {
+  color: #ffaa00;
+  margin-bottom: 10px;
+  font-size: 1.05em;
+}
+.concept-card ul {
+  list-style: none;
+  padding: 0;
+}
+.concept-card li {
+  padding: 4px 0;
+  font-size: 0.9em;
+  color: #c0c8d8;
+}
+.concept-card li::before {
+  content: "▸ ";
+  color: #00d4ff;
+}
+.rating-section {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  border: 1px solid #2a2a4a;
+}
+.rating-section h3 {
+  color: #ffaa00;
+  margin-bottom: 12px;
+  font-size: 0.95em;
+}
+.stars {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.star-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #2a2a4a;
+  background: #0f0f23;
+  color: #ffaa00;
+  font-size: 1.2em;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.star-btn:hover, .star-btn.active {
+  border-color: #ffaa00;
+  background: #2a2a1a;
+  transform: scale(1.1);
+}
+.rating-text {
+  margin-left: 12px;
+  color: #a0a8b8;
+  font-size: 0.9em;
+}
+.reflection-section {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
+  border: 1px solid #2a2a4a;
+}
+.reflection-section h3 {
+  color: #ffaa00;
+  margin-bottom: 12px;
+  font-size: 0.95em;
+}
+.reflection-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.reflection-btn {
+  background: #0f0f23;
+  border: 1px solid #2a2a4a;
+  color: #c0c8d8;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85em;
+  transition: all 0.2s;
+}
+.reflection-btn:hover, .reflection-btn.active {
+  border-color: #00d4ff;
+  color: #00d4ff;
+  background: #1a2a3e;
+}
+.reflection-textarea {
+  width: 100%;
+  background: #0f0f23;
+  border: 1px solid #2a2a4a;
+  border-radius: 8px;
+  color: #e0e0e0;
+  padding: 10px;
+  font-size: 0.9em;
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+  margin-bottom: 10px;
+}
+.reflection-textarea:focus {
+  outline: none;
+  border-color: #00d4ff;
+}
+.submit-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.complete-badge {
+  display: inline-block;
+  background: #228B22;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  margin-left: 8px;
+}
+.instructions {
+  background: #0f0f23;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+  font-size: 0.85em;
+  color: #a0a8b8;
+  line-height: 1.6;
+}
+.instructions strong { color: #00d4ff; }
+.legend {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  margin-top: 8px;
+  font-size: 0.8em;
+  color: #8899aa;
+  flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-color {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  display: inline-block;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>沿指定方向的变化率</h1>
+  <p class="subtitle">本节聚焦：方向导数</p>
+
+  <div class="objective">
+    <strong>学习目标：</strong>通过等高线图上的交互操作，理解方向导数是梯度在指定方向上的投影，掌握"方向不同、变化率不同"的直觉。
+  </div>
+
+  <div class="intuition">
+    <h3>💡 直觉解释</h3>
+    <p>想象你站在一座山上，面向一个方向迈步。如果你面向山顶方向走，坡度最陡（上升最快）；如果沿山腰水平走，高度几乎不变；如果面向下坡走，高度下降。<strong>方向导数</strong>描述函数沿某个指定方向变化得多快，可看成<strong>梯度</strong>在这个方向上的<strong>投影</strong>。偏导数是方向导数的特例——沿坐标轴方向的方向导数。</p>
+  </div>
+
+  <div class="main-area">
+    <div class="canvas-panel">
+      <h3>📐 等高线交互图 — 点击选点，拖动方向箭头</h3>
+      <canvas id="mainCanvas" width="520" height="480"></canvas>
+      <div class="legend">
+        <div class="legend-item"><span class="legend-color" style="background:#ff4444;"></span> 梯度向量</div>
+        <div class="legend-item"><span class="legend-color" style="background:#00d4ff;"></span> 方向向量</div>
+        <div class="legend-item"><span class="legend-color" style="background:#ffaa00;"></span> 当前选点</div>
+        <div class="legend-item"><span class="legend-color" style="background:#556677;"></span> 等高线</div>
+      </div>
+    </div>
+
+    <div class="control-panel">
+      <div class="instructions">
+        <strong>操作步骤：</strong><br>
+        1. 在左侧图上<strong>点击</strong>选择一个点<br>
+        2. 拖动<strong>蓝色箭头</strong>改变方向<br>
+        3. 用下方滑块微调方向角度<br>
+        4. 观察右侧反馈中的变化率
+      </div>
+
+      <div class="card">
+        <h3>⚙️ 方向控制</h3>
+        <div class="control-group">
+          <label>方向角度（弧度）：<span class="val-display" id="angleVal">0.00</span></label>
+          <input type="range" id="angleSlider" min="-3.14" max="3.14" step="0.01" value="0">
+        </div>
+        <div class="control-group">
+          <label>方向角度（度）：<span class="val-display" id="angleDegVal">0.0°</span></label>
+          <input type="range" id="angleDegSlider" min="-180" max="180" step="1" value="0">
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-small" id="btnEast">→ 东 (0°)</button>
+          <button class="btn btn-small" id="btnNorth">↑ 北 (90°)</button>
+          <button class="btn btn-small" id="btnGrad">⟶ 梯度方向</button>
+          <button class="btn btn-small" id="btnOrtho">⟲ 垂直梯度</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>📊 实时数据</h3>
+        <div class="control-group">
+          <label>当前点坐标：</label>
+          <div class="val-display" id="pointCoord">(0.00, 0.00)</div>
+        </div>
+        <div class="control-group">
+          <label>梯度 ∇f：</label>
+          <div class="val-display" id="gradVec">(0.00, 0.00)</div>
+        </div>
+        <div class="control-group">
+          <label>方向导数 D<sub>u</sub>f：</label>
+          <div class="val-display" id="dirDeriv">0.000</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔍 即时反馈</h3>
+        <div class="feedback-box" id="feedbackBox">
+          <div class="feedback-label" id="feedbackLabel">请选择一个点开始</div>
+          <div class="feedback-detail" id="feedbackDetail">在左侧等高线图上点击任意位置</div>
+        </div>
+      </div>
+
+      <button class="btn hint-btn" id="hintBtn" style="width:100%;">💡 显示提示</button>
+      <div id="hintContent" style="display:none;background:#1a1a00;border:1px solid #4a4a2a;border-radius:8px;padding:12px;font-size:0.85em;color:#c8c8a8;margin-top:6px;">
+        <strong>提示：</strong><br>
+        1. 沿<strong>梯度方向</strong>走，变化率最大（上升最快）<br>
+        2. 沿<strong>垂直梯度方向</strong>走，变化率为0（高度不变）<br>
+        3. 沿<strong>反梯度方向</strong>走，变化率最小（下降最快）<br>
+        4. 方向导数 = 梯度 · 单位方向向量（点积/投影）
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-card">
+    <h3>📘 概念卡：方向导数</h3>
+    <ul>
+      <li><strong>定义：</strong>函数 f 在点 P 沿单位方向向量 u 的方向导数 D<sub>u</sub>f(P) = ∇f(P) · u</li>
+      <li><strong>几何意义：</strong>梯度在方向 u 上的投影长度（带符号）</li>
+      <li><strong>偏导数的关系：</strong>∂f/∂x 是沿 x 轴方向的方向导数，∂f/∂y 是沿 y 轴方向的方向导数</li>
+      <li><strong>最大变化率：</strong>沿梯度方向，变化率 = |∇f|</li>
+      <li><strong>零变化率：</strong>沿垂直于梯度的方向（等高线切线方向），变化率 = 0</li>
+    </ul>
+  </div>
+
+  <div class="rating-section">
+    <h3>📈 信心评分</h3>
+    <p style="font-size:0.85em;color:#a0a8b8;margin-bottom:10px;">你对"方向导数是梯度在指定方向上的投影"这一概念的理解程度：</p>
+    <div class="stars" id="starsContainer">
+      <button class="star-btn" data-score="1">1</button>
+      <button class="star-btn" data-score="2">2</button>
+      <button class="star-btn" data-score="3">3</button>
+      <button class="star-btn" data-score="4">4</button>
+      <button class="star-btn" data-score="5">5</button>
+      <span class="rating-text" id="ratingText">请选择</span>
+    </div>
+  </div>
+
+  <div class="reflection-section">
+    <h3>🤔 简短反思</h3>
+    <p style="font-size:0.85em;color:#a0a8b8;margin-bottom:10px;">在交互过程中，你观察到了哪些现象？（可多选）</p>
+    <div class="reflection-options" id="reflectionOptions">
+      <button class="reflection-btn" data-val="grad_max">沿梯度方向变化最快</button>
+      <button class="reflection-btn" data-val="orth_zero">垂直梯度方向变化率为0</button>
+      <button class="reflection-btn" data-val="dir_diff">不同方向变化率确实不同</button>
+      <button class="reflection-btn" data-val="proj">方向导数确实是投影</button>
+      <button class="reflection-btn" data-val="partial_rel">偏导数是方向导数的特例</button>
+      <button class="reflection-btn" data-val="contour">等高线密集处梯度大</button>
+    </div>
+    <textarea class="reflection-textarea" id="reflectionText" placeholder="写下你的思考（选填）…"></textarea>
+    <div class="submit-row">
+      <button class="btn" id="submitReflection">提交反思</button>
+      <span id="completeBadge" style="display:none;" class="complete-badge">✅ 已提交</span>
+    </div>
+  </div>
+</div>
+
+<script>
+window.MAIC_LESSON_META = {
+  lesson_id: 'C-07',
+  module_id: 'OM-C1',
+  course_version: 'demo-closed-loop-v1',
+  concept_name: '方向导数'
+};
+
+(function() {
+  var lessonId = 'C-07';
+  var moduleId = 'OM-C1';
+  var courseVersion = 'demo-closed-loop-v1';
+  var startTime = Date.now();
+  var selectedPoint = { x: 1.0, y: 0.8 };
+  var directionAngle = 0;
+  var isDragging = false;
+  var hintUsed = false;
+  var interactionComplete = false;
+  var confidenceScore = 0;
+  var interactionState = { point: null, angle: 0, dirDeriv: 0 };
+
+  var canvas = document.getElementById('mainCanvas');
+  var ctx = canvas.getContext('2d');
+
+  function getTimeOnTask() {
+    return Date.now() - startTime;
+  }
+
+  function trackEvent(eventType, payload) {
+    var event = {
+      lesson_id: lessonId,
+      module_id: moduleId,
+      course_version: courseVersion,
+      event_type: eventType,
+      timestamp: new Date().toISOString(),
+      time_on_task_ms: getTimeOnTask(),
+      interaction_state: JSON.parse(JSON.stringify(interactionState))
+    };
+    if (payload) {
+      for (var key in payload) {
+        if (payload.hasOwnProperty(key)) {
+          event[key] = payload[key];
+        }
+      }
+    }
+    try {
+      var events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+      events.push(event);
+      localStorage.setItem('maic_learning_events', JSON.stringify(events));
+    } catch(e) {
+      console.warn('localStorage unavailable');
+    }
+    try {
+      window.postMessage({ type: 'maic_learning_event', payload: event }, '*');
+    } catch(e) {}
+  }
+
+  function f(x, y) {
+    return -(x * x + 0.5 * y * y) + 3;
+  }
+
+  function gradF(x, y) {
+    return { gx: -2 * x, gy: -y };
+  }
+
+  function dirDerivative(x, y, angle) {
+    var g = gradF(x, y);
+    var ux = Math.cos(angle);
+    var uy = Math.sin(angle);
+    return g.gx * ux + g.gy * uy;
+  }
+
+  function worldToCanvas(wx, wy) {
+    var cw = canvas.width;
+    var ch = canvas.height;
+    var pad = 50;
+    var plotW = cw - 2 * pad;
+    var plotH = ch - 2 * pad;
+    var range = 3;
+    var cx = pad + (wx + range) / (2 * range) * plotW;
+    var cy = pad + (range - wy) / (2 * range) * plotH;
+    return { x: cx, y: cy };
+  }
+
+  function canvasToWorld(cx, cy) {
+    var cw = canvas.width;
+    var ch = canvas.height;
+    var pad = 50;
+    var plotW = cw - 2 * pad;
+    var plotH = ch - 2 * pad;
+    var range = 3;
+    var wx = (cx - pad) / plotW * 2 * range - range;
+    var wy = range - (cy - pad) / plotH * 2 * range;
+    return { x: wx, y: wy };
+  }
+
+  function drawContour() {
+    var cw = canvas.width;
+    var ch = canvas.height;
+    var pad = 50;
+    ctx.clearRect(0, 0, cw, ch);
+
+    ctx.fillStyle = '#0a0a1a';
+    ctx.fillRect(0, 0, cw, ch);
+
+    ctx.strokeStyle = '#334455';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(pad, 0);
+    ctx.lineTo(pad, ch);
+    ctx.lineTo(cw, ch);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#556677';
+    ctx.lineWidth = 0.8;
+    ctx.setLineDash([]);
+
+    var step = 0.02;
+    var range = 3;
+    var levels = [-1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3];
+
+    for (var i = 0; i < levels.length; i++) {
+      var target = levels[i];
+      ctx.strokeStyle = '#556677';
+      ctx.beginPath();
+      var started = false;
+      for (var py = pad; py <= ch - pad; py += 2) {
+        for (var px = pad; px <= cw - pad; px += 2) {
+          var w = canvasToWorld(px, py);
+          var v = f(w.x, w.y);
+          if (Math.abs(v - target) < 0.06) {
+            if (!started) {
+              ctx.moveTo(px, py);
+              started = true;
+            } else {
+              ctx.lineTo(px, py);
+            }
+          }
+        }
+      }
+      ctx.stroke();
+    }
+
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = '#334455';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    var origin = worldToCanvas(0, 0);
+    ctx.moveTo(pad, origin.y);
+    ctx.lineTo(cw - pad, origin.y);
+    ctx.moveTo(origin.x, pad);
+    ctx.lineTo(origin.x, ch - pad);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = '#667788';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    for (var tx = -2; tx <= 2; tx++) {
+      var p = worldToCanvas(tx, 0);
+      if (tx !== 0) ctx.fillText(tx.toString(), p.x, ch - pad + 16);
+    }
+    ctx.textAlign = 'right';
+    for (var ty = -2; ty <= 2; ty++) {
+      var p2 = worldToCanvas(0, ty);
+      if (ty !== 0) ctx.fillText(ty.toString(), pad - 6, p2.y + 4);
+    }
+    ctx.textAlign = 'center';
+    ctx.fillText('x', cw - pad + 20, origin.y + 4);
+    ctx.fillText('y', origin.x, pad - 8);
+
+    var sp = worldToCanvas(selectedPoint.x, selectedPoint.y);
+    ctx.fillStyle = '#ffaa00';
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    var g = gradF(selectedPoint.x, selectedPoint.y);
+    var scale = 0.5;
+    var gxEnd = sp.x + g.gx * scale * 40;
+    var gyEnd = sp.y - g.gy * scale * 40;
+    ctx.strokeStyle = '#ff4444';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(sp.x, sp.y);
+    ctx.lineTo(gxEnd, gyEnd);
+    ctx.stroke();
+    ctx.fillStyle = '#ff4444';
+    var angle_g = Math.atan2(-(gyEnd - sp.y), gxEnd - sp.x);
+    ctx.beginPath();
+    ctx.moveTo(gxEnd + 6 * Math.cos(angle_g - 0.4), gyEnd + 6 * Math.sin(angle_g - 0.4));
+    ctx.lineTo(gxEnd, gyEnd);
+    ctx.lineTo(gxEnd + 6 * Math.cos(angle_g + 0.4), gyEnd + 6 * Math.sin(angle_g + 0.4));
+    ctx.stroke();
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = '#ff4444';
+    ctx.textAlign = 'left';
+    ctx.fillText('∇f', gxEnd + 8, gyEnd - 4);
+
+    var uLen = 60;
+    var ux = sp.x + uLen * Math.cos(directionAngle);
+    var uy = sp.y - uLen * Math.sin(directionAngle);
+    ctx.strokeStyle = '#00d4ff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(sp.x, sp.y);
+    ctx.lineTo(ux, uy);
+    ctx.stroke();
+    ctx.fillStyle = '#00d4ff';
+    var arrowAngle = Math.atan2(-(uy - sp.y), ux - sp.x);
+    ctx.beginPath();
+    ctx.moveTo(ux + 8 * Math.cos(arrowAngle - 0.35), uy + 8 * Math.sin(arrowAngle - 0.35));
+    ctx.lineTo(ux, uy);
+    ctx.lineTo(ux + 8 * Math.cos(arrowAngle + 0.35), uy + 8 * Math.sin(arrowAngle + 0.35));
+    ctx.stroke();
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('u', ux + 8, uy - 4);
+
+    var dd = dirDerivative(selectedPoint.x, selectedPoint.y, directionAngle);
+    ctx.font = '13px sans-serif';
+    ctx.fillStyle = dd > 0.05 ? '#ff6666' : dd < -0.05 ? '#66aaff' : '#88cc88';
+    ctx.textAlign = 'left';
+    var label = dd > 0.05 ? '上升 ▲' : dd < -0.05 ? '下降 ▼' : '几乎不变 —';
+    ctx.fillText(label, sp.x + 14, sp.y - 14);
+    ctx.font = '11px sans-serif';
+    ctx.fillStyle = '#c0c8d8';
+    ctx.fillText('D_u f = ' + dd.toFixed(3), sp.x + 14, sp.y + 2);
+  }
+
+  function updateUI() {
+    var angleVal = document.getElementById('angleVal');
+    var angleDegVal = document.getElementById('angleDegVal');
+    angleVal.textContent = directionAngle.toFixed(2);
+    angleDegVal.textContent = (directionAngle * 180 / Math.PI).toFixed(1) + '°';
+
+    document.getElementById('pointCoord').textContent =
+      '(' + selectedPoint.x.toFixed(2) + ', ' + selectedPoint.y.toFixed(2) + ')';
+
+    var g = gradF(selectedPoint.x, selectedPoint.y);
+    document.getElementById('gradVec').textContent =
+      '(' + g.gx.toFixed(2) + ', ' + g.gy.toFixed(2) + ')';
+
+    var dd = dirDerivative(selectedPoint.x, selectedPoint.y, directionAngle);
+    document.getElementById('dirDeriv').textContent = dd.toFixed(3);
+
+    var fbBox = document.getElementById('feedbackBox');
+    var fbLabel = document.getElementById('feedbackLabel');
+    var fbDetail = document.getElementById('feedbackDetail');
+
+    fbBox.className = 'feedback-box';
+    var absDd = Math.abs(dd);
+    var gradMag = Math.sqrt(g.gx * g.gx + g.gy * g.gy);
+
+    if (absDd < 0.05 && gradMag > 0.01) {
+      fbBox.classList.add('flat');
+      fbLabel.style.color = '#88cc88';
+      fbLabel.textContent = '➡️ 几乎不变（变化率 ≈ 0）';
+      fbDetail.textContent = '当前方向几乎垂直于梯度，沿等高线方向移动，高度基本不变。这正是方向导数为零的情况。';
+    } else if (dd > 0.05) {
+      fbBox.classList.add('rising');
+      fbLabel.style.color = '#ff6666';
+      fbLabel.textContent = '📈 函数沿此方向上升（D_u f > 0）';
+      var proj = (dd / gradMag * 100).toFixed(1);
+      fbDetail.textContent = '方向导数 = ' + dd.toFixed(3) + '，梯度投影比例约 ' + proj + '%。你正在沿上坡方向移动。';
+    } else if (dd < -0.05) {
+      fbBox.classList.add('falling');
+      fbLabel.style.color = '#66aaff';
+      fbLabel.textContent = '📉 函数沿此方向下降（D_u f < 0）';
+      var proj2 = (dd / gradMag * 100).toFixed(1);
+      fbDetail.textContent = '方向导数 = ' + dd.toFixed(3) + '，梯度投影比例约 ' + proj2 + '%。你正在沿下坡方向移动。';
+    } else if (gradMag < 0.01) {
+      fbBox.classList.add('flat');
+      fbLabel.style.color = '#88cc88';
+      fbLabel.textContent = '⛰️ 你位于极值点附近';
+      fbDetail.textContent = '梯度接近零，所有方向的方向导数都接近零。这是一个驻点。';
+    } else {
+      fbBox.classList.add('flat');
+      fbLabel.textContent = '↔️ 变化率极小';
+      fbDetail.textContent = '方向导数接近零。';
+    }
+
+    interactionState = {
+      point: { x: selectedPoint.x, y: selectedPoint.y },
+      angle: directionAngle,
+      dirDeriv: dd
+    };
+  }
+
+  function setDirection(angle) {
+    directionAngle = angle;
+    document.getElementById('angleSlider').value = directionAngle;
+    document.getElementById('angleDegSlider').value = Math.round(directionAngle * 180 / Math.PI);
+    updateUI();
+    drawContour();
+    trackEvent('interaction_change', { angle: directionAngle, dirDeriv: dirDerivative(selectedPoint.x, selectedPoint.y, directionAngle) });
+  }
+
+  canvas.addEventListener('click', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var cx = (e.clientX - rect.left) * scaleX;
+    var cy = (e.clientY - rect.top) * scaleY;
+    var w = canvasToWorld(cx, cy);
+    selectedPoint.x = Math.max(-2.8, Math.min(2.8, w.x));
+    selectedPoint.y = Math.max(-2.8, Math.min(2.8, w.y));
+    updateUI();
+    drawContour();
+    trackEvent('interaction_change', {
+      action: 'select_point',
+      point_x: selectedPoint.x,
+      point_y: selectedPoint.y
+    });
+    if (!interactionComplete) {
+      interactionComplete = true;
+      trackEvent('interaction_complete', {
+        point_x: selectedPoint.x,
+        point_y: selectedPoint.y,
+        angle: directionAngle
+      });
+    }
+  });
+
+  canvas.addEventListener('mousedown', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var cx = (e.clientX - rect.left) * scaleX;
+    var cy = (e.clientY - rect.top) * scaleY;
+    var sp = worldToCanvas(selectedPoint.x, selectedPoint.y);
+    var dx = cx - sp.x;
+    var dy = cy - sp.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var arrowLen = 60;
+    var ux = sp.x + arrowLen * Math.cos(directionAngle);
+    var uy = sp.y - arrowLen * Math.sin(directionAngle);
+    var dArrow = Math.sqrt((cx - ux) * (cx - ux) + (cy - uy) * (cy - uy));
+    if (dist < 20 || dArrow < 25) {
+      isDragging = true;
+    }
+  });
+
+  canvas.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var cx = (e.clientX - rect.left) * scaleX;
+    var cy = (e.clientY - rect.top) * scaleY;
+    var sp = worldToCanvas(selectedPoint.x, selectedPoint.y);
+    directionAngle = Math.atan2(-(cy - sp.y), cx - sp.x);
+    document.getElementById('angleSlider').value = directionAngle;
+    document.getElementById('angleDegSlider').value = Math.round(directionAngle * 180 / Math.PI);
+    updateUI();
+    drawContour();
+  });
+
+  canvas.addEventListener('mouseup', function() { isDragging = false; });
+  canvas.addEventListener('mouseleave', function() { isDragging = false; });
+
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var cx = (touch.clientX - rect.left) * scaleX;
+    var cy = (touch.clientY - rect.top) * scaleY;
+    var w = canvasToWorld(cx, cy);
+    selectedPoint.x = Math.max(-2.8, Math.min(2.8, w.x));
+    selectedPoint.y = Math.max(-2.8, Math.min(2.8, w.y));
+    isDragging = true;
+    updateUI();
+    drawContour();
+    trackEvent('interaction_change', { action: 'touch_select', point_x: selectedPoint.x, point_y: selectedPoint.y });
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (!isDragging) return;
+    var touch = e.touches[0];
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var cx = (touch.clientX - rect.left) * scaleX;
+    var cy = (touch.clientY - rect.top) * scaleY;
+    var sp = worldToCanvas(selectedPoint.x, selectedPoint.y);
+    directionAngle = Math.atan2(-(cy - sp.y), cx - sp.x);
+    document.getElementById('angleSlider').value = directionAngle;
+    document.getElementById('angleDegSlider').value = Math.round(directionAngle * 180 / Math.PI);
+    updateUI();
+    drawContour();
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', function() {
+    isDragging = false;
+    if (!interactionComplete) {
+      interactionComplete = true;
+      trackEvent('interaction_complete', { point_x: selectedPoint.x, point_y: selectedPoint.y, angle: directionAngle });
+    }
+  });
+
+  document.getElementById('angleSlider').addEventListener('input', function() {
+    setDirection(parseFloat(this.value));
+  });
+
+  document.getElementById('angleDegSlider').addEventListener('input', function() {
+    setDirection(parseFloat(this.value) * Math.PI / 180);
+  });
+
+  document.getElementById('btnEast').addEventListener('click', function() {
+    setDirection(0);
+  });
+
+  document.getElementById('btnNorth').addEventListener('click', function() {
+    setDirection(Math.PI / 2);
+  });
+
+  document.getElementById('btnGrad').addEventListener('click', function() {
+    var g = gradF(selectedPoint.x, selectedPoint.y);
+    setDirection(Math.atan2(g.gy, g.gx));
+    trackEvent('interaction_change', { action: 'set_grad_direction' });
+  });
+
+  document.getElementById('btnOrtho').addEventListener('click', function() {
+    var g = gradF(selectedPoint.x, selectedPoint.y);
+    var orthAngle = Math.atan2(g.gy, g.gx) + Math.PI / 2;
+    setDirection(orthAngle);
+    trackEvent('interaction_change', { action: 'set_orthogonal_direction' });
+  });
+
+  document.getElementById('hintBtn').addEventListener('click', function() {
+    var hintContent = document.getElementById('hintContent');
+    hintContent.style.display = hintContent.style.display === 'none' ? 'block' : 'none';
+    if (!hintUsed) {
+      hintUsed = true;
+      trackEvent('hint_used', {});
+    }
+  });
+
+  var ratingLabels = { 1: '完全不懂', 2: '有些模糊', 3: '基本理解', 4: '比较清楚', 5: '完全掌握' };
+  document.querySelectorAll('.star-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      confidenceScore = parseInt(this.getAttribute('data-score'));
+      document.querySelectorAll('.star-btn').forEach(function(b) { b.classList.remove('active'); });
+      for (var i = 1; i <= confidenceScore; i++) {
+        document.querySelector('.star-btn[data-score="' + i + '"]').classList.add('active');
+      }
+      document.getElementById('ratingText').textContent = ratingLabels[confidenceScore];
+      trackEvent('confidence_submitted', { score: confidenceScore });
+    });
+  });
+
+  var selectedReflections = [];
+  document.querySelectorAll('.reflection-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      this.classList.toggle('active');
+      var val = this.getAttribute('data-val');
+      var idx = selectedReflections.indexOf(val);
+      if (idx >= 0) {
+        selectedReflections.splice(idx, 1);
+      } else {
+        selectedReflections.push(val);
+      }
+    });
+  });
+
+  document.getElementById('submitReflection').addEventListener('click', function() {
+    var text = document.getElementById('reflectionText').value;
+    trackEvent('reflection_submitted', {
+      selected_options: selectedReflections.slice(),
+      free_text: text,
+      confidence: confidenceScore
+    });
+    document.getElementById('completeBadge').style.display = 'inline-block';
+    document.getElementById('submitReflection').textContent = '已提交 ✓';
+    document.getElementById('submitReflection').style.background = '#228B22';
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    drawContour();
+    updateUI();
+    trackEvent('page_loaded', {});
+  });
+
+  if (document.readyState !== 'loading') {
+    drawContour();
+    updateUI();
+    trackEvent('page_loaded', {});
+  }
+})();
+</script>
+</body>
+</html>

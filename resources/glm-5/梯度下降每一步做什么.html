@@ -1,0 +1,1307 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>梯度下降每一步做什么</title>
+    <style>
+        :root {
+            --bg: #0a0f14;
+            --bg-secondary: #111820;
+            --card: #161d26;
+            --border: #2a3542;
+            --fg: #e8eaed;
+            --fg-muted: #8b949e;
+            --accent: #00c896;
+            --accent-dim: rgba(0, 200, 150, 0.15);
+            --warning: #e6a700;
+            --error: #f85149;
+            --radius: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .objective {
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .intuition {
+            background: linear-gradient(135deg, var(--card) 0%, var(--bg-secondary) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intuition::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--warning));
+        }
+
+        .intuition h2 {
+            font-size: 1rem;
+            color: var(--fg-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .intuition-content {
+            font-size: 1.05rem;
+            line-height: 1.8;
+        }
+
+        .formula {
+            display: inline-block;
+            background: var(--bg);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 8px 16px;
+            margin: 8px 4px;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .core-interaction {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            .core-interaction {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .algorithm-steps {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .algorithm-steps h3 {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: var(--fg);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .step-list {
+            list-style: none;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            margin-bottom: 8px;
+            background: var(--bg);
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .step-item.active {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .step-item.completed {
+            border-color: var(--accent);
+            opacity: 0.7;
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+
+        .step-item.active .step-number {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .step-item.completed .step-number {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .step-text {
+            font-size: 0.95rem;
+            color: var(--fg-muted);
+        }
+
+        .step-item.active .step-text {
+            color: var(--fg);
+        }
+
+        .visualization-area {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .canvas-container {
+            background: var(--bg);
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #mainCanvas {
+            display: block;
+            width: 100%;
+            height: 300px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
+            background: #00e0a5;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 200, 150, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: var(--border);
+            color: var(--fg-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .slider-label {
+            font-size: 0.85rem;
+            color: var(--fg-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider-value {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 120px;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border);
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .iteration-table {
+            background: var(--bg);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .iteration-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .iteration-table th {
+            background: var(--bg-secondary);
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--fg-muted);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .iteration-table td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            font-family: 'Courier New', monospace;
+        }
+
+        .iteration-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .iteration-table tr.highlight {
+            background: var(--accent-dim);
+        }
+
+        .iteration-table .value-x {
+            color: var(--warning);
+        }
+
+        .iteration-table .value-gradient {
+            color: var(--error);
+        }
+
+        .iteration-table .value-fx {
+            color: var(--accent);
+        }
+
+        .feedback-area {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+
+        .feedback-area h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: var(--fg);
+        }
+
+        .feedback-message {
+            padding: 16px;
+            background: var(--bg);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .concept-card {
+            background: linear-gradient(135deg, var(--card) 0%, var(--bg-secondary) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .concept-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: var(--accent);
+        }
+
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .concept-item {
+            background: var(--bg);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .concept-item h4 {
+            font-size: 0.9rem;
+            color: var(--warning);
+            margin-bottom: 8px;
+        }
+
+        .concept-item p {
+            font-size: 0.9rem;
+            color: var(--fg-muted);
+        }
+
+        .assessment-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 768px) {
+            .assessment-area {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .confidence-section, .reflection-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+        }
+
+        .confidence-section h3, .reflection-section h3 {
+            font-size: 1rem;
+            margin-bottom: 16px;
+            color: var(--fg);
+        }
+
+        .confidence-options {
+            display: flex;
+            gap: 8px;
+        }
+
+        .confidence-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--fg);
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .confidence-btn:hover {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+        }
+
+        .confidence-btn.selected {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: var(--bg);
+        }
+
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .reflection-btn {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--fg-muted);
+            font-size: 0.95rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reflection-btn:hover {
+            border-color: var(--accent);
+            color: var(--fg);
+        }
+
+        .reflection-btn.selected {
+            border-color: var(--accent);
+            background: var(--accent-dim);
+            color: var(--fg);
+        }
+
+        .hint-box {
+            background: rgba(230, 167, 0, 0.1);
+            border: 1px solid var(--warning);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: var(--warning);
+            display: none;
+        }
+
+        .hint-box.visible {
+            display: block;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background: var(--bg);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--fg-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .completion-badge {
+            display: none;
+            background: var(--accent);
+            color: var(--bg);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: 12px;
+        }
+
+        .completion-badge.visible {
+            display: inline-block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>梯度下降每一步做什么</h1>
+            <p class="objective">学习目标：读懂迭代公式，理解步长含义，能手动执行 2-3 步迭代</p>
+        </header>
+
+        <section class="intuition">
+            <h2>直觉解释</h2>
+            <div class="intuition-content">
+                梯度下降是一个「下山」的过程。想象你站在山坡上，想要到达山谷最低点。你每次都会：看清脚下最陡的下坡方向（梯度反方向）、沿着这个方向迈出一步、检查是否真的更低了。这个过程可以用公式表示：
+                <span class="formula">x_new = x_old - alpha × gradient</span>
+                其中 <span class="formula">alpha</span> 是步长，控制每次走多远；
+                <span class="formula">gradient</span> 是梯度，告诉你当前位置的「坡度」和方向。
+            </div>
+        </section>
+
+        <section class="core-interaction">
+            <div class="algorithm-steps">
+                <h3>
+                    <span class="status-indicator">
+                        <span class="status-dot"></span>
+                        四步迭代算法
+                    </span>
+                </h3>
+                <ul class="step-list">
+                    <li class="step-item active" data-step="1">
+                        <span class="step-number">1</span>
+                        <span class="step-text">计算当前位置的梯度<br><small style="color: var(--fg-muted);">gradient = 2x（对于 f(x)=x²）</small></span>
+                    </li>
+                    <li class="step-item" data-step="2">
+                        <span class="step-number">2</span>
+                        <span class="step-text">确定移动方向<br><small style="color: var(--fg-muted);">方向 = -gradient（反方向下山）</small></span>
+                    </li>
+                    <li class="step-item" data-step="3">
+                        <span class="step-number">3</span>
+                        <span class="step-text">按步长移动<br><small style="color: var(--fg-muted);">x_new = x_old - alpha × gradient</small></span>
+                    </li>
+                    <li class="step-item" data-step="4">
+                        <span class="step-number">4</span>
+                        <span class="step-text">更新位置并检查<br><small style="color: var(--fg-muted);">是否更接近最低点？</small></span>
+                    </li>
+                </ul>
+
+                <div class="controls" style="margin-top: 20px;">
+                    <div class="slider-group">
+                        <label class="slider-label">
+                            <span>步长 alpha</span>
+                            <span class="slider-value" id="alphaValue">0.5</span>
+                        </label>
+                        <input type="range" id="alphaSlider" min="0.1" max="1" step="0.1" value="0.5">
+                    </div>
+                    <div class="slider-group">
+                        <label class="slider-label">
+                            <span>起始位置</span>
+                            <span class="slider-value" id="startValue">3.0</span>
+                        </label>
+                        <input type="range" id="startSlider" min="1" max="5" step="0.5" value="3">
+                    </div>
+                </div>
+
+                <div class="hint-box" id="hintBox">
+                    提示：梯度告诉我们要往哪个方向走才能让函数值变小。对于 f(x)=x²，梯度是 2x，所以正 x 值时要往负方向走。
+                </div>
+
+                <button class="btn btn-secondary" id="hintBtn" style="margin-top: 12px;">显示提示</button>
+            </div>
+
+            <div class="visualization-area">
+                <div class="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+
+                <div class="controls">
+                    <button class="btn btn-primary" id="nextStepBtn">执行下一步</button>
+                    <button class="btn btn-secondary" id="resetBtn">重置</button>
+                    <button class="btn btn-secondary" id="autoBtn">自动运行</button>
+                    <span class="completion-badge" id="completionBadge">已完成 5 步迭代</span>
+                </div>
+
+                <div class="iteration-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>迭代次数</th>
+                                <th>x 值</th>
+                                <th>梯度</th>
+                                <th>步长×梯度</th>
+                                <th>新 x 值</th>
+                                <th>f(x)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="iterationBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <section class="feedback-area">
+            <h3>即时反馈</h3>
+            <div class="feedback-message" id="feedbackMessage">
+                点击「执行下一步」按钮开始迭代。观察每一步中 x 值如何逐渐靠近 0（最低点）。
+            </div>
+        </section>
+
+        <section class="concept-card">
+            <h3>概念卡片</h3>
+            <div class="concept-grid">
+                <div class="concept-item">
+                    <h4>梯度 gradient</h4>
+                    <p>函数在某点的「坡度」。对于 f(x)=x²，梯度 = 2x。正值表示函数向右上升，负值表示向左上升。</p>
+                </div>
+                <div class="concept-item">
+                    <h4>步长 alpha</h4>
+                    <p>每次迭代移动的距离系数。太大可能「跨过」最低点，太小则收敛很慢。通常取 0.01 到 0.5 之间。</p>
+                </div>
+                <div class="concept-item">
+                    <h4>迭代公式</h4>
+                    <p>x_new = x_old - alpha × gradient。核心思想：沿梯度反方向移动，每次都让函数值变小一点。</p>
+                </div>
+                <div class="concept-item">
+                    <h4>收敛条件</h4>
+                    <p>当梯度接近 0 时，说明已经到达或接近最低点。此时 x 不再明显变化，迭代可以停止。</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="assessment-area">
+            <div class="confidence-section">
+                <h3>信心评分</h3>
+                <p style="color: var(--fg-muted); font-size: 0.9rem; margin-bottom: 12px;">你对梯度下降迭代公式的理解有多自信？</p>
+                <div class="confidence-options" id="confidenceOptions">
+                    <button class="confidence-btn" data-score="1">1</button>
+                    <button class="confidence-btn" data-score="2">2</button>
+                    <button class="confidence-btn" data-score="3">3</button>
+                    <button class="confidence-btn" data-score="4">4</button>
+                    <button class="confidence-btn" data-score="5">5</button>
+                </div>
+                <p style="color: var(--fg-muted); font-size: 0.8rem; margin-top: 8px;">1 = 完全不懂，5 = 完全理解</p>
+            </div>
+
+            <div class="reflection-section">
+                <h3>简短反思</h3>
+                <p style="color: var(--fg-muted); font-size: 0.9rem; margin-bottom: 12px;">完成迭代后，你最大的收获是什么？</p>
+                <div class="reflection-options" id="reflectionOptions">
+                    <button class="reflection-btn" data-reflection="formula">理解了 x_new = x_old - alpha × gradient 的含义</button>
+                    <button class="reflection-btn" data-reflection="alpha">明白了步长 alpha 如何影响收敛速度</button>
+                    <button class="reflection-btn" data-reflection="gradient">理解了梯度方向与下山方向的关系</button>
+                    <button class="reflection-btn" data-reflection="process">整体上掌握了迭代的过程</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // 课程元数据（不显示在页面上）
+        window.MAIC_LESSON_META = {
+            lesson_id: 'D-06',
+            module_id: 'OM-D1',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '梯度下降迭代公式'
+        };
+
+        // 全局状态变量（先定义）
+        let currentStep = 1;
+        let iterationCount = 0;
+        let currentX = 3.0;
+        let alpha = 0.5;
+        let startX = 3.0;
+        let iterationHistory = [];
+        let isAutoRunning = false;
+        let autoInterval = null;
+        let pageLoadTime = Date.now();
+        let hintUsed = false;
+        let confidenceScore = null;
+        let reflectionChoice = null;
+        let interactionComplete = false;
+
+        // DOM 元素引用（在 DOMContentLoaded 后初始化）
+        let canvas = null;
+        let ctx = null;
+        let alphaSlider = null;
+        let startSlider = null;
+        let alphaValue = null;
+        let startValue = null;
+        let nextStepBtn = null;
+        let resetBtn = null;
+        let autoBtn = null;
+        let hintBtn = null;
+        let hintBox = null;
+        let feedbackMessage = null;
+        let iterationBody = null;
+        let completionBadge = null;
+        let confidenceOptions = null;
+        let reflectionOptions = null;
+        let stepItems = null;
+
+        // 行为追踪函数
+        function trackEvent(eventType, payload) {
+            const event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: Date.now() - pageLoadTime,
+                interaction_state: {
+                    current_x: currentX,
+                    iteration_count: iterationCount,
+                    alpha: alpha,
+                    hint_used: hintUsed,
+                    confidence_score: confidenceScore,
+                    reflection_choice: reflectionChoice,
+                    interaction_complete: interactionComplete
+                },
+                ...payload
+            };
+
+            // 存储到 localStorage
+            try {
+                let events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+                events.push(event);
+                localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            } catch (e) {
+                console.warn('无法存储事件到 localStorage');
+            }
+
+            // 发送给父窗口
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'maic_learning_event',
+                        payload: event
+                    }, '*');
+                }
+            } catch (e) {
+                console.warn('无法发送事件到父窗口');
+            }
+        }
+
+        // 函数定义
+        function f(x) {
+            return x * x;
+        }
+
+        function gradient(x) {
+            return 2 * x;
+        }
+
+        // 绘制 Canvas
+        function drawCanvas() {
+            if (!ctx || !canvas) return;
+
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // 清空画布
+            ctx.fillStyle = '#0a0f14';
+            ctx.fillRect(0, 0, width, height);
+
+            const scale = width / 12;
+            const originX = width / 2;
+            const originY = height - 40;
+
+            // 绘制坐标轴
+            ctx.strokeStyle = '#2a3542';
+            ctx.lineWidth = 1;
+
+            // X 轴
+            ctx.beginPath();
+            ctx.moveTo(20, originY);
+            ctx.lineTo(width - 20, originY);
+            ctx.stroke();
+
+            // Y 轴
+            ctx.beginPath();
+            ctx.moveTo(originX, 20);
+            ctx.lineTo(originX, height - 20);
+            ctx.stroke();
+
+            // 绘制刻度
+            ctx.fillStyle = '#8b949e';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+
+            for (let i = -5; i <= 5; i++) {
+                if (i !== 0) {
+                    const x = originX + i * scale;
+                    ctx.beginPath();
+                    ctx.moveTo(x, originY - 5);
+                    ctx.lineTo(x, originY + 5);
+                    ctx.stroke();
+                    ctx.fillText(i.toString(), x, originY + 18);
+                }
+            }
+
+            // 绘制函数曲线 f(x) = x²
+            ctx.strokeStyle = '#00c896';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            let firstPoint = true;
+            for (let px = 0; px < width; px++) {
+                const x = (px - originX) / scale;
+                const y = f(x);
+                const py = originY - y * scale * 0.15;
+
+                if (py > 20 && py < height - 20) {
+                    if (firstPoint) {
+                        ctx.moveTo(px, py);
+                        firstPoint = false;
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+            }
+            ctx.stroke();
+
+            // 绘制历史点
+            iterationHistory.forEach((item, index) => {
+                const px = originX + item.x * scale;
+                const py = originY - f(item.x) * scale * 0.15;
+
+                if (index < iterationHistory.length - 1) {
+                    const nextItem = iterationHistory[index + 1];
+                    const nextPx = originX + nextItem.x * scale;
+                    const nextPy = originY - f(nextItem.x) * scale * 0.15;
+
+                    ctx.strokeStyle = 'rgba(230, 167, 0, 0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(px, py);
+                    ctx.lineTo(nextPx, nextPy);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                ctx.fillStyle = index === iterationHistory.length - 1 ? '#e6a700' : 'rgba(230, 167, 0, 0.6)';
+                ctx.beginPath();
+                ctx.arc(px, py, index === iterationHistory.length - 1 ? 8 : 5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 绘制当前位置
+            if (iterationHistory.length > 0) {
+                const lastItem = iterationHistory[iterationHistory.length - 1];
+                const px = originX + lastItem.x * scale;
+                const py = originY - f(lastItem.x) * scale * 0.15;
+
+                // 绘制梯度方向箭头
+                const grad = gradient(lastItem.x);
+                const arrowLength = Math.min(Math.abs(grad) * 20, 60);
+                const arrowDir = grad > 0 ? -1 : 1;
+
+                ctx.strokeStyle = '#f85149';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(px, py);
+                ctx.lineTo(px + arrowDir * arrowLength, py);
+                ctx.stroke();
+
+                // 箭头头部
+                ctx.fillStyle = '#f85149';
+                ctx.beginPath();
+                ctx.moveTo(px + arrowDir * arrowLength, py);
+                ctx.lineTo(px + arrowDir * (arrowLength - 8), py - 5);
+                ctx.lineTo(px + arrowDir * (arrowLength - 8), py + 5);
+                ctx.closePath();
+                ctx.fill();
+
+                // 标签
+                ctx.fillStyle = '#e8eaed';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(`x = ${lastItem.x.toFixed(3)}`, px, py - 20);
+            }
+
+            // 绘制最低点标记
+            ctx.fillStyle = '#00c896';
+            ctx.beginPath();
+            ctx.arc(originX, originY, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#8b949e';
+            ctx.font = '10px sans-serif';
+            ctx.fillText('最低点 (0, 0)', originX, originY + 30);
+        }
+
+        // 更新步骤高亮
+        function updateStepHighlight() {
+            if (!stepItems) return;
+
+            stepItems.forEach(item => {
+                const step = parseInt(item.dataset.step);
+                item.classList.remove('active', 'completed');
+
+                if (step === currentStep) {
+                    item.classList.add('active');
+                } else if (step < currentStep || (currentStep === 1 && iterationCount > 0)) {
+                    if (step < currentStep) {
+                        item.classList.add('completed');
+                    }
+                }
+            });
+        }
+
+        // 执行一步迭代
+        function performIteration() {
+            const grad = gradient(currentX);
+            const step = alpha * grad;
+            const newX = currentX - step;
+            const fx = f(newX);
+
+            iterationHistory.push({
+                x: currentX,
+                gradient: grad,
+                step: step,
+                newX: newX,
+                fx: fx
+            });
+
+            // 添加表格行
+            if (iterationBody) {
+                const row = document.createElement('tr');
+                row.className = 'highlight';
+                row.innerHTML = `
+                    <td>${iterationCount + 1}</td>
+                    <td class="value-x">${currentX.toFixed(4)}</td>
+                    <td class="value-gradient">${grad.toFixed(4)}</td>
+                    <td>${step.toFixed(4)}</td>
+                    <td class="value-x">${newX.toFixed(4)}</td>
+                    <td class="value-fx">${fx.toFixed(4)}</td>
+                `;
+                iterationBody.appendChild(row);
+
+                // 滚动到最新行
+                row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            currentX = newX;
+            iterationCount++;
+
+            // 更新反馈
+            updateFeedback();
+
+            // 检查是否完成
+            if (iterationCount >= 5) {
+                interactionComplete = true;
+                if (completionBadge) {
+                    completionBadge.classList.add('visible');
+                }
+                trackEvent('interaction_complete', {
+                    final_state: {
+                        total_iterations: iterationCount,
+                        final_x: currentX,
+                        final_fx: f(currentX)
+                    }
+                });
+            }
+
+            // 绘制更新
+            drawCanvas();
+
+            // 追踪事件
+            trackEvent('interaction_change', {
+                action: 'iteration_performed',
+                iteration_number: iterationCount,
+                values: {
+                    old_x: iterationHistory[iterationHistory.length - 1].x,
+                    gradient: grad,
+                    step: step,
+                    new_x: newX
+                }
+            });
+        }
+
+        // 更新反馈消息
+        function updateFeedback() {
+            if (!feedbackMessage) return;
+
+            let message = '';
+
+            if (iterationCount === 0) {
+                message = '点击「执行下一步」按钮开始迭代。观察每一步中 x 值如何逐渐靠近 0（最低点）。';
+            } else if (iterationCount === 1) {
+                message = `第 1 步完成！x 从 ${iterationHistory[0].x.toFixed(2)} 移动到 ${currentX.toFixed(3)}。可以看到函数值 f(x) 变小了，说明我们在「下山」。继续点击「执行下一步」。`;
+            } else if (iterationCount < 5) {
+                const lastItem = iterationHistory[iterationHistory.length - 1];
+                message = `第 ${iterationCount} 步完成。当前 x = ${currentX.toFixed(4)}，f(x) = ${f(currentX).toFixed(4)}。梯度 = ${gradient(currentX).toFixed(4)}，说明还在下坡路上。`;
+            } else {
+                message = `已完成 ${iterationCount} 步迭代！x 从 ${startX} 降到了 ${currentX.toFixed(4)}，非常接近最低点 0 了。试着调整步长 alpha，观察收敛速度的变化！`;
+            }
+
+            feedbackMessage.textContent = message;
+        }
+
+        // 重置函数
+        function reset() {
+            // 停止自动运行
+            if (isAutoRunning) {
+                clearInterval(autoInterval);
+                isAutoRunning = false;
+                if (autoBtn) autoBtn.textContent = '自动运行';
+            }
+
+            currentX = startX;
+            iterationCount = 0;
+            currentStep = 1;
+            iterationHistory = [];
+            interactionComplete = false;
+
+            if (iterationBody) {
+                iterationBody.innerHTML = '';
+            }
+
+            if (completionBadge) {
+                completionBadge.classList.remove('visible');
+            }
+
+            updateStepHighlight();
+            updateFeedback();
+            drawCanvas();
+
+            trackEvent('interaction_change', {
+                action: 'reset',
+                new_start_x: startX,
+                new_alpha: alpha
+            });
+        }
+
+        // 初始化函数
+        function init() {
+            // 获取 DOM 元素
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas ? canvas.getContext('2d') : null;
+            alphaSlider = document.getElementById('alphaSlider');
+            startSlider = document.getElementById('startSlider');
+            alphaValue = document.getElementById('alphaValue');
+            startValue = document.getElementById('startValue');
+            nextStepBtn = document.getElementById('nextStepBtn');
+            resetBtn = document.getElementById('resetBtn');
+            autoBtn = document.getElementById('autoBtn');
+            hintBtn = document.getElementById('hintBtn');
+            hintBox = document.getElementById('hintBox');
+            feedbackMessage = document.getElementById('feedbackMessage');
+            iterationBody = document.getElementById('iterationBody');
+            completionBadge = document.getElementById('completionBadge');
+            confidenceOptions = document.getElementById('confidenceOptions');
+            reflectionOptions = document.getElementById('reflectionOptions');
+            stepItems = document.querySelectorAll('.step-item');
+
+            // 设置 Canvas 尺寸
+            if (canvas && ctx) {
+                canvas.width = canvas.offsetWidth * 2;
+                canvas.height = canvas.offsetHeight * 2;
+                ctx.scale(2, 2);
+                canvas.style.width = canvas.offsetWidth + 'px';
+                canvas.style.height = canvas.offsetHeight + 'px';
+            }
+
+            // 初始化状态
+            currentX = startX;
+
+            // 绑定事件
+            if (alphaSlider) {
+                alphaSlider.addEventListener('input', function() {
+                    alpha = parseFloat(this.value);
+                    if (alphaValue) alphaValue.textContent = alpha.toFixed(1);
+                });
+            }
+
+            if (startSlider) {
+                startSlider.addEventListener('input', function() {
+                    startX = parseFloat(this.value);
+                    if (startValue) startValue.textContent = startX.toFixed(1);
+                    if (iterationCount === 0) {
+                        currentX = startX;
+                        drawCanvas();
+                    }
+                });
+            }
+
+            if (nextStepBtn) {
+                nextStepBtn.addEventListener('click', function() {
+                    // 模拟四步流程
+                    currentStep = 1;
+                    updateStepHighlight();
+
+                    setTimeout(function() {
+                        currentStep = 2;
+                        updateStepHighlight();
+                    }, 200);
+
+                    setTimeout(function() {
+                        currentStep = 3;
+                        updateStepHighlight();
+                    }, 400);
+
+                    setTimeout(function() {
+                        currentStep = 4;
+                        updateStepHighlight();
+                        performIteration();
+
+                        setTimeout(function() {
+                            if (iterationCount < 5) {
+                                currentStep = 1;
+                                updateStepHighlight();
+                            }
+                        }, 300);
+                    }, 600);
+                });
+            }
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', reset);
+            }
+
+            if (autoBtn) {
+                autoBtn.addEventListener('click', function() {
+                    if (isAutoRunning) {
+                        clearInterval(autoInterval);
+                        isAutoRunning = false;
+                        this.textContent = '自动运行';
+                    } else {
+                        isAutoRunning = true;
+                        this.textContent = '停止';
+
+                        autoInterval = setInterval(function() {
+                            if (iterationCount >= 10 || Math.abs(gradient(currentX)) < 0.001) {
+                                clearInterval(autoInterval);
+                                isAutoRunning = false;
+                                if (autoBtn) autoBtn.textContent = '自动运行';
+                                return;
+                            }
+
+                            currentStep = 1;
+                            updateStepHighlight();
+
+                            setTimeout(function() {
+                                currentStep = 4;
+                                updateStepHighlight();
+                                performIteration();
+                            }, 200);
+                        }, 800);
+                    }
+                });
+            }
+
+            if (hintBtn) {
+                hintBtn.addEventListener('click', function() {
+                    hintUsed = true;
+                    if (hintBox) {
+                        hintBox.classList.toggle('visible');
+                        this.textContent = hintBox.classList.contains('visible') ? '隐藏提示' : '显示提示';
+                    }
+
+                    trackEvent('hint_used', {
+                        hint_type: 'gradient_direction'
+                    });
+                });
+            }
+
+            if (confidenceOptions) {
+                confidenceOptions.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('confidence-btn')) {
+                        const buttons = confidenceOptions.querySelectorAll('.confidence-btn');
+                        buttons.forEach(function(btn) {
+                            btn.classList.remove('selected');
+                        });
+                        e.target.classList.add('selected');
+
+                        confidenceScore = parseInt(e.target.dataset.score);
+
+                        trackEvent('confidence_submitted', {
+                            score: confidenceScore
+                        });
+                    }
+                });
+            }
+
+            if (reflectionOptions) {
+                reflectionOptions.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('reflection-btn')) {
+                        const buttons = reflectionOptions.querySelectorAll('.reflection-btn');
+                        buttons.forEach(function(btn) {
+                            btn.classList.remove('selected');
+                        });
+                        e.target.classList.add('selected');
+
+                        reflectionChoice = e.target.dataset.reflection;
+
+                        trackEvent('reflection_submitted', {
+                            reflection_type: reflectionChoice
+                        });
+                    }
+                });
+            }
+
+            // 初始绘制
+            drawCanvas();
+
+            // 记录页面加载事件
+            trackEvent('page_loaded', {
+                initial_state: {
+                    start_x: startX,
+                    alpha: alpha
+                }
+            });
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+
+        // 窗口大小变化时重绘
+        window.addEventListener('resize', function() {
+            if (canvas && ctx) {
+                canvas.width = canvas.offsetWidth * 2;
+                canvas.height = canvas.offsetHeight * 2;
+                ctx.scale(2, 2);
+                drawCanvas();
+            }
+        });
+    </script>
+</body>
+</html>

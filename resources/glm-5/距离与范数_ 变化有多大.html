@@ -1,0 +1,1084 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>距离与范数: 变化有多大</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-card: #21262d;
+            --border-color: #30363d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-cyan: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-orange: #f0883e;
+            --accent-purple: #a371f7;
+            --accent-red: #f85149;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            text-align: center;
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+
+        .learning-goal {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 32px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .intuition-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .intuition-section h2 {
+            font-size: 1.25rem;
+            color: var(--accent-cyan);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .intuition-section h2::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+        }
+
+        .intuition-content {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .intuition-content strong {
+            color: var(--text-primary);
+        }
+
+        .interaction-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: var(--bg-card);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .mode-switcher {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mode-btn {
+            padding: 6px 14px;
+            border: 1px solid var(--border-color);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+        }
+
+        .mode-btn.active {
+            background: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #0a0e14;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        #mainCanvas {
+            display: block;
+            width: 100%;
+            cursor: crosshair;
+        }
+
+        .formula-display {
+            padding: 20px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .formula-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 12px;
+        }
+
+        .formula-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .formula-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            min-width: 80px;
+        }
+
+        .formula-text {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 1rem;
+            color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            flex: 1;
+        }
+
+        .formula-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-orange);
+            min-width: 100px;
+            text-align: right;
+        }
+
+        .instructions {
+            padding: 16px 20px;
+            background: rgba(88, 166, 255, 0.05);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .instructions p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .instructions .icon {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-cyan);
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .concept-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .concept-card h3 {
+            font-size: 1.1rem;
+            color: var(--accent-purple);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .concept-card h3::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--accent-purple);
+            border-radius: 2px;
+        }
+
+        .concept-item {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .concept-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .concept-term {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .concept-def {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .feedback-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .feedback-panel h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+        }
+
+        .feedback-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            font-size: 0.9rem;
+        }
+
+        .feedback-label {
+            color: var(--text-secondary);
+        }
+
+        .feedback-value {
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+
+        .hint-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 12px;
+            transition: all 0.2s;
+        }
+
+        .hint-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--accent-cyan);
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .hint-content {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(163, 113, 247, 0.1);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: none;
+        }
+
+        .hint-content.visible {
+            display: block;
+        }
+
+        .confidence-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .confidence-section h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .confidence-scale {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .confidence-btn {
+            flex: 1;
+            padding: 12px 8px;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .confidence-btn:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+        }
+
+        .confidence-btn.selected {
+            background: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .confidence-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .reflection-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .reflection-section h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .reflection-option {
+            padding: 14px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .reflection-option:hover {
+            border-color: var(--accent-cyan);
+            color: var(--text-primary);
+        }
+
+        .reflection-option.selected {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.1);
+            color: var(--accent-green);
+        }
+
+        .completion-badge {
+            text-align: center;
+            padding: 20px;
+            background: rgba(63, 185, 80, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 12px;
+            margin-top: 16px;
+            display: none;
+        }
+
+        .completion-badge.visible {
+            display: block;
+        }
+
+        .completion-badge p {
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+        .step-indicators {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .step-dot.active {
+            background: var(--accent-cyan);
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        .step-dot.complete {
+            background: var(--accent-green);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>距离与范数: 变化有多大</h1>
+            <p class="learning-goal">掌握平面两点距离的计算方法，理解范数表示向量长度的含义，能用距离描述「离目标还有多远」。</p>
+        </header>
+
+        <div class="intuition-section">
+            <h2>直觉理解</h2>
+            <div class="intuition-content">
+                <p><strong>距离</strong>衡量两个点相隔多远——想象你要从 A 点走到 B 点，需要走多少步。</p>
+                <p style="margin-top: 8px;"><strong>范数</strong>衡量一个向量有多长——向量就像一支箭，范数告诉你这支箭有多长。</p>
+                <p style="margin-top: 8px;">在优化问题中，我们常用距离和范数来描述<strong>误差大小</strong>（当前解离最优解多远）和<strong>步子大小</strong>（每一步走多远）。</p>
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <div class="interaction-panel">
+                <div class="panel-header">
+                    <span class="panel-title">核心互动：拖动探索</span>
+                    <div class="mode-switcher">
+                        <button class="mode-btn active" data-mode="distance">两点距离</button>
+                        <button class="mode-btn" data-mode="norm">向量范数</button>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="mainCanvas" width="800" height="450"></canvas>
+                </div>
+                <div class="formula-display">
+                    <div class="formula-row">
+                        <span class="formula-label">点 A 坐标</span>
+                        <span class="formula-text" id="coordA">( 2.00, 3.00 )</span>
+                    </div>
+                    <div class="formula-row" id="rowB">
+                        <span class="formula-label">点 B 坐标</span>
+                        <span class="formula-text" id="coordB">( 6.00, 5.00 )</span>
+                    </div>
+                    <div class="formula-row" id="rowVector" style="display:none;">
+                        <span class="formula-label">向量 v</span>
+                        <span class="formula-text" id="vectorComp">v = ( 4.00, 2.00 )</span>
+                    </div>
+                    <div class="formula-row">
+                        <span class="formula-label" id="formulaLabel">距离公式</span>
+                        <span class="formula-text" id="formulaText">d = √[(x₂-x₁)² + (y₂-y₁)²]</span>
+                        <span class="formula-value" id="formulaValue">4.47</span>
+                    </div>
+                </div>
+                <div class="instructions">
+                    <p>
+                        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4M12 8h.01"></path>
+                        </svg>
+                        <span id="instructionText">拖动橙色点 A 和绿色点 B，观察距离如何变化。点击右上角切换模式。</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="sidebar">
+                <div class="concept-card">
+                    <h3>概念卡片</h3>
+                    <div class="concept-item">
+                        <div class="concept-term">欧几里得距离</div>
+                        <div class="concept-def">平面上两点 (x₁,y₁) 和 (x₂,y₂) 的距离：d = √[(x₂-x₁)² + (y₂-y₁)²]</div>
+                    </div>
+                    <div class="concept-item">
+                        <div class="concept-term">向量范数 ||v||</div>
+                        <div class="concept-def">向量 v = (a, b) 的长度（2-范数）：||v|| = √(a² + b²)</div>
+                    </div>
+                    <div class="concept-item">
+                        <div class="concept-term">优化中的意义</div>
+                        <div class="concept-def">距离 = 离目标还有多远（误差）；范数 = 每步走多远（步长）</div>
+                    </div>
+                </div>
+
+                <div class="feedback-panel">
+                    <h3>即时反馈</h3>
+                    <div class="feedback-item">
+                        <span class="feedback-label">当前模式</span>
+                        <span class="feedback-value" id="modeFeedback">两点距离</span>
+                    </div>
+                    <div class="feedback-item">
+                        <span class="feedback-label">操作次数</span>
+                        <span class="feedback-value" id="interactionCount">0</span>
+                    </div>
+                    <div class="feedback-item">
+                        <span class="feedback-label">学习进度</span>
+                        <span class="feedback-value" id="progressStatus">探索中</span>
+                    </div>
+                    <button class="hint-btn" id="hintBtn">显示提示</button>
+                    <div class="hint-content" id="hintContent">
+                        <strong>提示：</strong>尝试将两个点拉近，观察距离趋近于 0；将点拉远，观察距离增大。在向量模式下，箭头越长范数越大。
+                    </div>
+                </div>
+
+                <div class="confidence-section">
+                    <h3>信心评分</h3>
+                    <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:12px;">你觉得自己理解了这个概念吗？</p>
+                    <div class="confidence-scale">
+                        <button class="confidence-btn" data-score="1">1</button>
+                        <button class="confidence-btn" data-score="2">2</button>
+                        <button class="confidence-btn" data-score="3">3</button>
+                        <button class="confidence-btn" data-score="4">4</button>
+                        <button class="confidence-btn" data-score="5">5</button>
+                    </div>
+                    <div class="confidence-labels">
+                        <span>完全不懂</span>
+                        <span>非常自信</span>
+                    </div>
+                </div>
+
+                <div class="reflection-section">
+                    <h3>简短反思</h3>
+                    <p style="font-size:0.875rem;color:var(--text-secondary);margin-bottom:12px;">通过这次互动，你最大的收获是什么？</p>
+                    <div class="reflection-options">
+                        <div class="reflection-option" data-value="visual">理解了距离和范数的几何意义</div>
+                        <div class="reflection-option" data-value="formula">掌握了计算公式的由来</div>
+                        <div class="reflection-option" data-value="application">明白了它们在优化中的作用</div>
+                        <div class="reflection-option" data-value="need_more">还需要更多练习</div>
+                    </div>
+                    <div class="completion-badge" id="completionBadge">
+                        <p>学习记录已保存</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.MAIC_LESSON_META = {
+            lesson_id: 'A-06',
+            module_id: 'OM-A2a',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '距离与向量长度'
+        };
+
+        var startTime = Date.now();
+        var interactionCount = 0;
+        var currentMode = 'distance';
+        var hintUsed = false;
+        var confidenceScore = null;
+        var reflectionValue = null;
+        var interactionComplete = false;
+
+        var pointA = { x: 2, y: 3 };
+        var pointB = { x: 6, y: 5 };
+        var vectorEnd = { x: 4, y: 2 };
+
+        var dragging = null;
+        var canvas = null;
+        var ctx = null;
+        var canvasWidth = 800;
+        var canvasHeight = 450;
+        var scale = 40;
+        var originX = 400;
+        var originY = 225;
+
+        function trackEvent(eventType, payload) {
+            var now = Date.now();
+            var event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: now - startTime,
+                interaction_state: {
+                    mode: currentMode,
+                    pointA: { x: pointA.x.toFixed(2), y: pointA.y.toFixed(2) },
+                    pointB: { x: pointB.x.toFixed(2), y: pointB.y.toFixed(2) },
+                    vectorEnd: { x: vectorEnd.x.toFixed(2), y: vectorEnd.y.toFixed(2) }
+                }
+            };
+
+            if (payload) {
+                Object.assign(event, payload);
+            }
+
+            var events = [];
+            try {
+                var stored = localStorage.getItem('maic_learning_events');
+                if (stored) {
+                    events = JSON.parse(stored);
+                }
+            } catch (e) {
+                events = [];
+            }
+            events.push(event);
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'maic_learning_event',
+                    payload: event
+                }, '*');
+            }
+        }
+
+        function toCanvasX(x) {
+            return originX + x * scale;
+        }
+
+        function toCanvasY(y) {
+            return originY - y * scale;
+        }
+
+        function toMathX(canvasX) {
+            return (canvasX - originX) / scale;
+        }
+
+        function toMathY(canvasY) {
+            return (originY - canvasY) / scale;
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = '#21262d';
+            ctx.lineWidth = 1;
+
+            for (var x = -10; x <= 10; x++) {
+                ctx.beginPath();
+                ctx.moveTo(toCanvasX(x), 0);
+                ctx.lineTo(toCanvasX(x), canvasHeight);
+                ctx.stroke();
+            }
+
+            for (var y = -6; y <= 6; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, toCanvasY(y));
+                ctx.lineTo(canvasWidth, toCanvasY(y));
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, originY);
+            ctx.lineTo(canvasWidth, originY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(originX, 0);
+            ctx.lineTo(originX, canvasHeight);
+            ctx.stroke();
+
+            ctx.fillStyle = '#8b949e';
+            ctx.font = '12px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            for (var i = -8; i <= 8; i++) {
+                if (i !== 0) {
+                    ctx.fillText(i.toString(), toCanvasX(i), originY + 20);
+                }
+            }
+            ctx.textAlign = 'right';
+            for (var j = -4; j <= 4; j++) {
+                if (j !== 0) {
+                    ctx.fillText(j.toString(), originX - 10, toCanvasY(j) + 4);
+                }
+            }
+        }
+
+        function drawPoint(x, y, color, label) {
+            var cx = toCanvasX(x);
+            var cy = toCanvasY(y);
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#0d1117';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            ctx.fillStyle = '#e6edf3';
+            ctx.font = 'bold 14px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, cx, cy - 22);
+        }
+
+        function drawDistanceMode() {
+            var dx = pointB.x - pointA.x;
+            var dy = pointB.y - pointA.y;
+            var distance = Math.sqrt(dx * dx + dy * dy);
+
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([8, 4]);
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(pointA.x), toCanvasY(pointA.y));
+            ctx.lineTo(toCanvasX(pointB.x), toCanvasY(pointB.y));
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.strokeStyle = 'rgba(88, 166, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(pointA.x), toCanvasY(pointA.y));
+            ctx.lineTo(toCanvasX(pointB.x), toCanvasY(pointA.y));
+            ctx.lineTo(toCanvasX(pointB.x), toCanvasY(pointB.y));
+            ctx.stroke();
+
+            ctx.fillStyle = 'rgba(240, 136, 62, 0.8)';
+            ctx.font = '11px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Δx = ' + dx.toFixed(2), (toCanvasX(pointA.x) + toCanvasX(pointB.x)) / 2, toCanvasY(pointA.y) + 20);
+
+            ctx.save();
+            ctx.translate(toCanvasX(pointB.x) + 25, (toCanvasY(pointA.y) + toCanvasY(pointB.y)) / 2);
+            ctx.fillText('Δy = ' + dy.toFixed(2), 0, 0);
+            ctx.restore();
+
+            drawPoint(pointA.x, pointA.y, '#f0883e', 'A');
+            drawPoint(pointB.x, pointB.y, '#3fb950', 'B');
+
+            var midX = (pointA.x + pointB.x) / 2;
+            var midY = (pointA.y + pointB.y) / 2 + 0.8;
+            ctx.fillStyle = '#58a6ff';
+            ctx.font = 'bold 14px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('d = ' + distance.toFixed(2), toCanvasX(midX), toCanvasY(midY));
+        }
+
+        function drawNormMode() {
+            var norm = Math.sqrt(vectorEnd.x * vectorEnd.x + vectorEnd.y * vectorEnd.y);
+
+            ctx.strokeStyle = '#a371f7';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(toCanvasX(vectorEnd.x), toCanvasY(vectorEnd.y));
+            ctx.stroke();
+
+            var angle = Math.atan2(-vectorEnd.y, vectorEnd.x);
+            var arrowLen = 15;
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(vectorEnd.x), toCanvasY(vectorEnd.y));
+            ctx.lineTo(
+                toCanvasX(vectorEnd.x) - arrowLen * Math.cos(angle - Math.PI / 6),
+                toCanvasY(vectorEnd.y) + arrowLen * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.moveTo(toCanvasX(vectorEnd.x), toCanvasY(vectorEnd.y));
+            ctx.lineTo(
+                toCanvasX(vectorEnd.x) - arrowLen * Math.cos(angle + Math.PI / 6),
+                toCanvasY(vectorEnd.y) + arrowLen * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(163, 113, 247, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(toCanvasX(vectorEnd.x), originY);
+            ctx.lineTo(toCanvasX(vectorEnd.x), toCanvasY(vectorEnd.y));
+            ctx.stroke();
+
+            drawPoint(vectorEnd.x, vectorEnd.y, '#a371f7', 'v');
+
+            ctx.fillStyle = '#a371f7';
+            ctx.font = 'bold 14px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            var labelX = vectorEnd.x / 2;
+            var labelY = vectorEnd.y / 2 + 1;
+            ctx.fillText('||v|| = ' + norm.toFixed(2), toCanvasX(labelX), toCanvasY(labelY));
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            drawGrid();
+
+            if (currentMode === 'distance') {
+                drawDistanceMode();
+            } else {
+                drawNormMode();
+            }
+        }
+
+        function updateDisplay() {
+            if (currentMode === 'distance') {
+                var dx = pointB.x - pointA.x;
+                var dy = pointB.y - pointA.y;
+                var distance = Math.sqrt(dx * dx + dy * dy);
+
+                document.getElementById('coordA').textContent = '( ' + pointA.x.toFixed(2) + ', ' + pointA.y.toFixed(2) + ' )';
+                document.getElementById('coordB').textContent = '( ' + pointB.x.toFixed(2) + ', ' + pointB.y.toFixed(2) + ' )';
+                document.getElementById('formulaLabel').textContent = '距离公式';
+                document.getElementById('formulaText').textContent = 'd = √[(' + dx.toFixed(2) + ')² + (' + dy.toFixed(2) + ')²]';
+                document.getElementById('formulaValue').textContent = distance.toFixed(2);
+
+                document.getElementById('rowB').style.display = 'flex';
+                document.getElementById('rowVector').style.display = 'none';
+                document.getElementById('modeFeedback').textContent = '两点距离';
+                document.getElementById('instructionText').textContent = '拖动橙色点 A 和绿色点 B，观察距离如何变化。点击右上角切换模式。';
+            } else {
+                var norm = Math.sqrt(vectorEnd.x * vectorEnd.x + vectorEnd.y * vectorEnd.y);
+
+                document.getElementById('coordA').textContent = '原点 ( 0, 0 )';
+                document.getElementById('formulaLabel').textContent = '范数公式';
+                document.getElementById('formulaText').textContent = '||v|| = √[(' + vectorEnd.x.toFixed(2) + ')² + (' + vectorEnd.y.toFixed(2) + ')²]';
+                document.getElementById('formulaValue').textContent = norm.toFixed(2);
+
+                document.getElementById('rowB').style.display = 'none';
+                document.getElementById('rowVector').style.display = 'flex';
+                document.getElementById('vectorComp').textContent = 'v = ( ' + vectorEnd.x.toFixed(2) + ', ' + vectorEnd.y.toFixed(2) + ' )';
+                document.getElementById('modeFeedback').textContent = '向量范数';
+                document.getElementById('instructionText').textContent = '拖动紫色箭头端点，观察向量长度（范数）如何变化。';
+            }
+
+            document.getElementById('interactionCount').textContent = interactionCount;
+
+            if (interactionCount >= 5 && !interactionComplete) {
+                interactionComplete = true;
+                document.getElementById('progressStatus').textContent = '已完成探索';
+                trackEvent('interaction_complete', {
+                    final_state: {
+                        total_interactions: interactionCount,
+                        mode: currentMode
+                    },
+                    completion_status: true
+                });
+            }
+        }
+
+        function getMousePos(e) {
+            var rect = canvas.getBoundingClientRect();
+            var scaleX = canvas.width / rect.width;
+            var scaleY = canvas.height / rect.height;
+            return {
+                x: (e.clientX - rect.left) * scaleX,
+                y: (e.clientY - rect.top) * scaleY
+            };
+        }
+
+        function hitTest(mouseX, mouseY, point) {
+            var px = toCanvasX(point.x);
+            var py = toCanvasY(point.y);
+            var dx = mouseX - px;
+            var dy = mouseY - py;
+            return Math.sqrt(dx * dx + dy * dy) < 20;
+        }
+
+        function handleMouseDown(e) {
+            var pos = getMousePos(e);
+
+            if (currentMode === 'distance') {
+                if (hitTest(pos.x, pos.y, pointA)) {
+                    dragging = 'A';
+                } else if (hitTest(pos.x, pos.y, pointB)) {
+                    dragging = 'B';
+                }
+            } else {
+                if (hitTest(pos.x, pos.y, vectorEnd)) {
+                    dragging = 'V';
+                }
+            }
+        }
+
+        function handleMouseMove(e) {
+            if (!dragging) return;
+
+            var pos = getMousePos(e);
+            var mathX = toMathX(pos.x);
+            var mathY = toMathY(pos.y);
+
+            mathX = Math.max(-8, Math.min(8, mathX));
+            mathY = Math.max(-4, Math.min(4, mathY));
+
+            if (dragging === 'A') {
+                pointA.x = mathX;
+                pointA.y = mathY;
+            } else if (dragging === 'B') {
+                pointB.x = mathX;
+                pointB.y = mathY;
+            } else if (dragging === 'V') {
+                vectorEnd.x = mathX;
+                vectorEnd.y = mathY;
+            }
+
+            interactionCount++;
+            draw();
+            updateDisplay();
+
+            trackEvent('interaction_change', {
+                key_value: {
+                    dragging: dragging,
+                    new_position: { x: mathX.toFixed(2), y: mathY.toFixed(2) }
+                }
+            });
+        }
+
+        function handleMouseUp() {
+            dragging = null;
+        }
+
+        function initCanvas() {
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas.getContext('2d');
+
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+            canvas.addEventListener('mouseleave', handleMouseUp);
+
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                var touch = e.touches[0];
+                handleMouseDown({ clientX: touch.clientX, clientY: touch.clientY });
+            });
+
+            canvas.addEventListener('touchmove', function(e) {
+                e.preventDefault();
+                var touch = e.touches[0];
+                handleMouseMove({ clientX: touch.clientX, clientY: touch.clientY });
+            });
+
+            canvas.addEventListener('touchend', handleMouseUp);
+
+            draw();
+            updateDisplay();
+        }
+
+        function initModeSwitcher() {
+            var buttons = document.querySelectorAll('.mode-btn');
+            buttons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    buttons.forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    currentMode = btn.dataset.mode;
+                    draw();
+                    updateDisplay();
+                });
+            });
+        }
+
+        function initHintButton() {
+            var hintBtn = document.getElementById('hintBtn');
+            var hintContent = document.getElementById('hintContent');
+
+            hintBtn.addEventListener('click', function() {
+                hintContent.classList.toggle('visible');
+                if (!hintUsed) {
+                    hintUsed = true;
+                    hintBtn.textContent = '隐藏提示';
+                    trackEvent('hint_used', {
+                        hint_id: 'distance_norm_hint'
+                    });
+                } else {
+                    hintBtn.textContent = '显示提示';
+                }
+            });
+        }
+
+        function initConfidenceScale() {
+            var buttons = document.querySelectorAll('.confidence-btn');
+            buttons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    buttons.forEach(function(b) { b.classList.remove('selected'); });
+                    btn.classList.add('selected');
+                    confidenceScore = parseInt(btn.dataset.score);
+
+                    trackEvent('confidence_submitted', {
+                        confidence_score: confidenceScore
+                    });
+                });
+            });
+        }
+
+        function initReflectionOptions() {
+            var options = document.querySelectorAll('.reflection-option');
+            var completionBadge = document.getElementById('completionBadge');
+
+            options.forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    options.forEach(function(o) { o.classList.remove('selected'); });
+                    opt.classList.add('selected');
+                    reflectionValue = opt.dataset.value;
+
+                    completionBadge.classList.add('visible');
+
+                    trackEvent('reflection_submitted', {
+                        reflection_choice: reflectionValue
+                    });
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initCanvas();
+            initModeSwitcher();
+            initHintButton();
+            initConfidenceScale();
+            initReflectionOptions();
+
+            trackEvent('page_loaded');
+        });
+    </script>
+</body>
+</html>

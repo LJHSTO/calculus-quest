@@ -1,0 +1,518 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>步长决定走得稳不稳</title>
+<style>
+:root {
+  --bg-color: #1e1e1e;
+  --panel-bg: #252526;
+  --text-color: #d4d4d4;
+  --accent-color: #007acc;
+  --border-color: #333333;
+  --success-color: #2e7d32;
+  --warning-color: #f57c00;
+  --danger-color: #c62828;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  background: var(--bg-color);
+  color: var(--text-color);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.left-panel {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.right-panel {
+  width: 420px;
+  padding: 30px 20px;
+  background: var(--panel-bg);
+  border-left: 1px solid var(--border-color);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+}
+
+h2 {
+  font-size: 1.5rem;
+  margin: 0;
+  color: #ffffff;
+}
+
+.target, .intuition {
+  margin: 0;
+  padding: 12px;
+  border-left: 4px solid var(--accent-color);
+  background: rgba(0, 122, 204, 0.1);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  border-radius: 0 4px 4px 0;
+}
+
+.control-box {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#lr-val {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+input[type=range] {
+  width: 100%;
+  margin: 10px 0;
+  cursor: pointer;
+  accent-color: var(--accent-color);
+}
+
+.hint-container {
+  margin-top: 15px;
+}
+
+.feedback {
+  padding: 15px;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  min-height: 24px;
+  transition: all 0.3s ease;
+  background: #333;
+  border-left: 5px solid transparent;
+}
+
+.concept-card {
+  background: #2d2d30;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.rating-box {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 6px;
+}
+
+.stars {
+  display: flex;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 1.8rem;
+  color: #555;
+  margin-top: 8px;
+}
+
+.stars span:hover,
+.stars span.active {
+  color: #ffeb3b;
+}
+
+.reflection-box {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.reflection-box p {
+  margin-top: 0;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.reflection-box label {
+  display: block;
+  margin-bottom: 10px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.reflection-box label:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+button {
+  background: var(--accent-color);
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+button:hover {
+  background: #005999;
+}
+
+.canvas-title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #ccc;
+  text-align: center;
+}
+
+canvas {
+  background: #111;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  height: auto;
+  display: block;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+</style>
+</head>
+<body>
+
+<div class="left-panel">
+  <p class="canvas-title">参数下降路径 (y = x²)</p>
+  <canvas id="pathCanvas" width="800" height="400"></canvas>
+  <p class="canvas-title">函数值随迭代步数的变化</p>
+  <canvas id="lossCanvas" width="800" height="300"></canvas>
+</div>
+
+<div class="right-panel">
+  <h2>步长决定走得稳不稳</h2>
+  <p class="target"><strong>学习目标：</strong>能比较小步长、大步长的路径; 能解释震荡和发散; 能理解合适步长的重要性。</p>
+  <p class="intuition"><strong>直觉解释：</strong>步长控制每次沿下降方向走多远。太小会慢，太大可能越过低谷甚至发散。</p>
+
+  <div class="control-box">
+    <div class="control-header">
+      <label for="lr-slider">当前步长 (Learning Rate)：</label>
+      <span id="lr-val">0.10</span>
+    </div>
+    <input type="range" id="lr-slider" min="0.01" max="1.10" step="0.01" value="0.10">
+    
+    <div class="hint-container">
+      <button id="hint-btn">需要提示吗？</button>
+      <div id="hint-text" style="display:none; margin-top:10px; color:#aaa; font-size: 0.9rem;">
+        试试将滑块拖动到 1.05 的位置，观察右侧路径发生了怎样的“逃逸”现象。
+      </div>
+    </div>
+  </div>
+
+  <div class="feedback" id="feedback-msg">
+    请拖动滑块开始探索。
+  </div>
+
+  <div class="concept-card">
+    <strong>概念卡：步长</strong><br><br>
+    在梯度下降中，<strong>步长</strong>决定了参数每次更新的幅度。计算公式为：<br>
+    <code>新位置 = 当前位置 - 步长 × 坡度</code><br><br>
+    这是机器学习模型训练中最关键的参数之一。寻找最低点的过程犹如蒙眼下山，步长就是你迈出一步的距离。
+  </div>
+
+  <div class="rating-box">
+    <span>对本节概念掌握程度评分 (1-5)：</span>
+    <div class="stars" id="star-rating">
+      <span data-val="1">★</span>
+      <span data-val="2">★</span>
+      <span data-val="3">★</span>
+      <span data-val="4">★</span>
+      <span data-val="5">★</span>
+    </div>
+  </div>
+
+  <div class="reflection-box">
+    <p>反思：在使用过大步长(如 > 1.0)时，路径发生了什么现象？</p>
+    <label><input type="radio" name="ref" value="1"> “震荡”，但依然能缓慢走向谷底</label>
+    <label><input type="radio" name="ref" value="2"> “平稳”，会在谷底平稳停下</label>
+    <label><input type="radio" name="ref" value="3"> “发散”，跨度太大直接跨过最低点，向外弹飞</label>
+    <div style="margin-top: 10px;">
+      <button id="submit-ref">提交反思</button>
+      <span id="ref-feedback" style="margin-left:10px; color:#4caf50; display:none;"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+window.MAIC_LESSON_META = {
+  lesson_id: 'D-05',
+  module_id: 'OM-D1',
+  course_version: 'demo-closed-loop-v1',
+  concept_name: '学习率/步长'
+};
+
+const state = {
+  startTime: Date.now(),
+  exploredSmall: false,
+  exploredOptimal: false,
+  exploredOscillating: false,
+  exploredDiverging: false,
+  interactionCompleted: false
+};
+
+function trackEvent(eventType, payload) {
+  const event = {
+    lesson_id: window.MAIC_LESSON_META.lesson_id,
+    module_id: window.MAIC_LESSON_META.module_id,
+    course_version: window.MAIC_LESSON_META.course_version,
+    event_type: eventType,
+    timestamp: new Date().toISOString(),
+    time_on_task_ms: Date.now() - state.startTime,
+    interaction_state: payload
+  };
+  
+  let events = [];
+  try {
+    events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+  } catch (e) {}
+  events.push(event);
+  localStorage.setItem('maic_learning_events', JSON.stringify(events));
+  
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: 'maic_learning_event', payload: event }, '*');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  trackEvent('page_loaded', {});
+
+  const slider = document.getElementById('lr-slider');
+  const lrValLabel = document.getElementById('lr-val');
+  const feedbackMsg = document.getElementById('feedback-msg');
+  const hintBtn = document.getElementById('hint-btn');
+  const hintText = document.getElementById('hint-text');
+  
+  const pathCanvas = document.getElementById('pathCanvas');
+  const pathCtx = pathCanvas.getContext('2d');
+  
+  const lossCanvas = document.getElementById('lossCanvas');
+  const lossCtx = lossCanvas.getContext('2d');
+
+  function mapX(x) { return ((x + 5) / 10) * 800; }
+  function mapY(y) { return 380 - (y / 25) * 360; }
+  function mapStepX(s) { return (s / 15) * 760 + 20; }
+  function mapLossY(y) { return 270 - (y / 25) * 250; }
+
+  function draw() {
+    const lr = parseFloat(slider.value);
+    lrValLabel.textContent = lr.toFixed(2);
+    
+    // Check exploration states
+    if (lr < 0.2) state.exploredSmall = true;
+    else if (lr >= 0.2 && lr <= 0.4) state.exploredOptimal = true;
+    else if (lr > 0.4 && lr < 1.0) state.exploredOscillating = true;
+    else if (lr >= 1.0) state.exploredDiverging = true;
+
+    if (!state.interactionCompleted && state.exploredSmall && state.exploredOptimal && state.exploredDiverging) {
+      state.interactionCompleted = true;
+      trackEvent('interaction_complete', { reason: 'explored_all_ranges' });
+    }
+
+    // Generate points
+    let points = [];
+    let currentX = 4;
+    const maxSteps = 15;
+    
+    for(let i = 0; i <= maxSteps; i++) {
+      let currentY = currentX * currentX;
+      
+      if (currentY > 100) {
+        points.push({ x: currentX, y: 100, outOfBounds: true });
+        break;
+      }
+      
+      points.push({ x: currentX, y: currentY, outOfBounds: false });
+      
+      let gradient = 2 * currentX;
+      currentX = currentX - lr * gradient;
+    }
+
+    // 1. Draw Path Canvas
+    pathCtx.clearRect(0, 0, pathCanvas.width, pathCanvas.height);
+    
+    // Draw grid/axes
+    pathCtx.strokeStyle = '#444';
+    pathCtx.lineWidth = 1;
+    pathCtx.beginPath();
+    pathCtx.moveTo(mapX(-5), mapY(0));
+    pathCtx.lineTo(mapX(5), mapY(0));
+    pathCtx.moveTo(mapX(0), mapY(-2));
+    pathCtx.lineTo(mapX(0), mapY(25));
+    pathCtx.stroke();
+    
+    // Draw target line
+    pathCtx.setLineDash([5, 5]);
+    pathCtx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    pathCtx.beginPath();
+    pathCtx.moveTo(mapX(0), mapY(0));
+    pathCtx.lineTo(mapX(0), mapY(25));
+    pathCtx.stroke();
+    pathCtx.setLineDash([]);
+    
+    // Draw f(x) = x^2 curve
+    pathCtx.strokeStyle = '#757575';
+    pathCtx.lineWidth = 2;
+    pathCtx.beginPath();
+    for (let px = -5; px <= 5.01; px += 0.1) {
+      let py = px * px;
+      if (px === -5) pathCtx.moveTo(mapX(px), mapY(py));
+      else pathCtx.lineTo(mapX(px), mapY(py));
+    }
+    pathCtx.stroke();
+
+    // Draw lines between points
+    pathCtx.strokeStyle = '#00bcd4';
+    pathCtx.lineWidth = 2;
+    pathCtx.beginPath();
+    pathCtx.moveTo(mapX(points[0].x), mapY(Math.min(points[0].y, 25)));
+    for (let i = 1; i < points.length; i++) {
+      let py = Math.min(points[i].y, 25);
+      pathCtx.lineTo(mapX(points[i].x), mapY(py));
+    }
+    pathCtx.stroke();
+
+    // Draw points
+    for (let i = 0; i < points.length; i++) {
+      let py = Math.min(points[i].y, 25);
+      pathCtx.fillStyle = (i === 0) ? '#4caf50' : '#00bcd4';
+      pathCtx.beginPath();
+      pathCtx.arc(mapX(points[i].x), mapY(py), 5, 0, Math.PI * 2);
+      pathCtx.fill();
+    }
+
+    // 2. Draw Loss Canvas
+    lossCtx.clearRect(0, 0, lossCanvas.width, lossCanvas.height);
+    
+    lossCtx.strokeStyle = '#444';
+    lossCtx.lineWidth = 1;
+    lossCtx.beginPath();
+    lossCtx.moveTo(mapStepX(0), mapLossY(0));
+    lossCtx.lineTo(mapStepX(15), mapLossY(0));
+    lossCtx.moveTo(mapStepX(0), mapLossY(0));
+    lossCtx.lineTo(mapStepX(0), mapLossY(25));
+    lossCtx.stroke();
+    
+    lossCtx.strokeStyle = '#ff9800';
+    lossCtx.lineWidth = 2;
+    lossCtx.beginPath();
+    lossCtx.moveTo(mapStepX(0), mapLossY(Math.min(points[0].y, 25)));
+    for (let i = 1; i < points.length; i++) {
+      let py = Math.min(points[i].y, 25);
+      lossCtx.lineTo(mapStepX(i), mapLossY(py));
+    }
+    lossCtx.stroke();
+
+    lossCtx.fillStyle = '#ff9800';
+    for (let i = 0; i < points.length; i++) {
+      let py = Math.min(points[i].y, 25);
+      lossCtx.beginPath();
+      lossCtx.arc(mapStepX(i), mapLossY(py), 4, 0, Math.PI * 2);
+      lossCtx.fill();
+    }
+
+    // Update feedback text
+    if (lr < 0.15) {
+      feedbackMsg.textContent = '步长太小：“小步慢跑”，下降缓慢，需要很多步。';
+      feedbackMsg.style.backgroundColor = '#424242';
+      feedbackMsg.style.borderLeftColor = '#9e9e9e';
+      feedbackMsg.style.color = '#fff';
+    } else if (lr <= 0.45) {
+      feedbackMsg.textContent = '步长合适：“高效平稳”，能够快速准确地到达谷底！';
+      feedbackMsg.style.backgroundColor = 'var(--success-color)';
+      feedbackMsg.style.borderLeftColor = '#81c784';
+      feedbackMsg.style.color = '#fff';
+    } else if (lr < 1.0) {
+      feedbackMsg.textContent = '步长偏大：“来回震荡”，跨过了谷底，但最终依靠拉扯停了下来。';
+      feedbackMsg.style.backgroundColor = 'var(--warning-color)';
+      feedbackMsg.style.borderLeftColor = '#ffb74d';
+      feedbackMsg.style.color = '#fff';
+    } else if (lr === 1.0) {
+      feedbackMsg.textContent = '步长临界：在谷底两侧不停等距跳跃，既不收敛也不发散。';
+      feedbackMsg.style.backgroundColor = '#e65100';
+      feedbackMsg.style.borderLeftColor = '#ffcc80';
+      feedbackMsg.style.color = '#fff';
+    } else {
+      feedbackMsg.textContent = '步长过大：“向外发散”，每一步跨度越来越大，彻底跑飞了！';
+      feedbackMsg.style.backgroundColor = 'var(--danger-color)';
+      feedbackMsg.style.borderLeftColor = '#e57373';
+      feedbackMsg.style.color = '#fff';
+    }
+  }
+
+  slider.addEventListener('input', () => {
+    draw();
+    trackEvent('interaction_change', { lr_value: parseFloat(slider.value) });
+  });
+
+  hintBtn.addEventListener('click', () => {
+    hintText.style.display = 'block';
+    hintBtn.style.display = 'none';
+    trackEvent('hint_used', { hint_shown: true });
+  });
+
+  const stars = document.querySelectorAll('.stars span');
+  stars.forEach(star => {
+    star.addEventListener('click', (e) => {
+      const rating = e.target.getAttribute('data-val');
+      stars.forEach(s => {
+        if (parseInt(s.getAttribute('data-val')) <= parseInt(rating)) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('active');
+        }
+      });
+      trackEvent('confidence_submitted', { score: parseInt(rating) });
+    });
+  });
+
+  const submitRefBtn = document.getElementById('submit-ref');
+  const refFeedback = document.getElementById('ref-feedback');
+  submitRefBtn.addEventListener('click', () => {
+    const selected = document.querySelector('input[name="ref"]:checked');
+    if (selected) {
+      refFeedback.style.display = 'inline';
+      if (selected.value === '3') {
+        refFeedback.textContent = '回答正确！这就是发散现象。';
+        refFeedback.style.color = '#4caf50';
+      } else {
+        refFeedback.textContent = '再想一想，观察步长拖到最右边时的画面。';
+        refFeedback.style.color = '#ff9800';
+      }
+      trackEvent('reflection_submitted', { selected_option: selected.value, correct: selected.value === '3' });
+      if(!state.interactionCompleted) {
+        state.interactionCompleted = true;
+        trackEvent('interaction_complete', { reason: 'reflection_submitted' });
+      }
+    } else {
+      alert('请先选择一个选项');
+    }
+  });
+
+  // Initial draw
+  draw();
+});
+</script>
+</body>
+</html>

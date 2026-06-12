@@ -1,0 +1,1155 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优化就是在可能范围内找最好</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --accent-cyan: #58a6ff;
+            --accent-orange: #f78166;
+            --accent-green: #3fb950;
+            --accent-yellow: #d29922;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --border-color: #30363d;
+            --card-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .page-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 32px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 16px;
+        }
+        
+        .learning-goal {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .intuition-section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .intuition-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+        }
+        
+        .intuition-title {
+            font-size: 1rem;
+            color: var(--accent-cyan);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .intuition-content {
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .core-interaction {
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        @media (max-width: 900px) {
+            .core-interaction {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .interaction-main {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .interaction-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+        
+        .problem-display {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--accent-orange);
+        }
+        
+        .problem-label {
+            font-size: 0.85rem;
+            color: var(--accent-orange);
+            margin-bottom: 8px;
+        }
+        
+        .problem-text {
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+        
+        .drop-zones {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .drop-zones {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .drop-zone {
+            background: var(--bg-tertiary);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 140px;
+            transition: all 0.3s ease;
+        }
+        
+        .drop-zone.drag-over {
+            border-color: var(--accent-cyan);
+            background: rgba(88, 166, 255, 0.1);
+        }
+        
+        .drop-zone.correct {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.1);
+        }
+        
+        .drop-zone.incorrect {
+            border-color: var(--accent-orange);
+            background: rgba(247, 129, 102, 0.1);
+        }
+        
+        .zone-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .zone-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+        }
+        
+        .zone-icon.variable { background: var(--accent-cyan); color: var(--bg-primary); }
+        .zone-icon.objective { background: var(--accent-orange); color: var(--bg-primary); }
+        .zone-icon.constraint { background: var(--accent-green); color: var(--bg-primary); }
+        
+        .zone-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .zone-content {
+            min-height: 60px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .card-pool {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .pool-title {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .card-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .drag-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 16px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            user-select: none;
+        }
+        
+        .drag-card:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-cyan);
+            transform: translateX(-4px);
+        }
+        
+        .drag-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+        
+        .drag-card.placed {
+            background: var(--bg-primary);
+        }
+        
+        .card-tag {
+            display: inline-block;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+        }
+        
+        .card-tag.variable-tag { background: rgba(88, 166, 255, 0.2); color: var(--accent-cyan); }
+        .card-tag.objective-tag { background: rgba(247, 129, 102, 0.2); color: var(--accent-orange); }
+        .card-tag.constraint-tag { background: rgba(63, 185, 80, 0.2); color: var(--accent-green); }
+        
+        .interaction-controls {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+        
+        .btn-primary:hover {
+            background: #79b8ff;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--accent-cyan);
+        }
+        
+        .btn-hint {
+            background: transparent;
+            color: var(--accent-yellow);
+            border: 1px solid var(--accent-yellow);
+        }
+        
+        .btn-hint:hover {
+            background: rgba(210, 153, 34, 0.1);
+        }
+        
+        .feedback-area {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 12px;
+            display: none;
+        }
+        
+        .feedback-area.show {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .feedback-area.success {
+            background: rgba(63, 185, 80, 0.15);
+            border: 1px solid var(--accent-green);
+        }
+        
+        .feedback-area.partial {
+            background: rgba(210, 153, 34, 0.15);
+            border: 1px solid var(--accent-yellow);
+        }
+        
+        .feedback-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .concept-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .concept-card h3 {
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
+            margin-bottom: 16px;
+        }
+        
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        
+        .concept-item {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            border-radius: 10px;
+            border-left: 3px solid var(--accent-cyan);
+        }
+        
+        .concept-item h4 {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+        
+        .concept-item p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .canvas-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .canvas-title {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        
+        #optimizationCanvas {
+            width: 100%;
+            height: 200px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+        }
+        
+        .assessment-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        @media (max-width: 700px) {
+            .assessment-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .confidence-section, .reflection-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .confidence-slider-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .confidence-slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--bg-tertiary);
+            outline: none;
+        }
+        
+        .confidence-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .confidence-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .confidence-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .confidence-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .reflection-textarea {
+            width: 100%;
+            min-height: 100px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .reflection-textarea:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+        
+        .submit-section {
+            text-align: center;
+            margin-top: 32px;
+        }
+        
+        .progress-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-green));
+            width: 0%;
+            transition: width 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .hint-popup {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--accent-yellow);
+            border-radius: 12px;
+            padding: 16px 20px;
+            max-width: 320px;
+            box-shadow: var(--card-shadow);
+            display: none;
+            z-index: 100;
+        }
+        
+        .hint-popup.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .hint-close {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+        
+        .problem-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .problem-btn {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        
+        .problem-btn.active {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border-color: var(--accent-cyan);
+        }
+        
+        .problem-btn.completed {
+            border-color: var(--accent-green);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-indicator" id="progressIndicator"></div>
+    
+    <div class="page-container">
+        <header>
+            <h1>优化就是在可能范围内找最好</h1>
+            <p class="learning-goal">学会区分优化问题中的变量、目标和约束，理解如何将生活问题转化为数学优化问题。</p>
+        </header>
+        
+        <section class="intuition-section">
+            <div class="intuition-title">直觉理解</div>
+            <div class="intuition-content">
+                优化问题要明确三个核心要素：<strong>变量</strong>（可以调整的量）、<strong>目标函数</strong>（想要最大化或最小化的指标）、<strong>限制条件</strong>（必须满足的要求）。微积分通过求导找到极值点，帮助我们确定最优解。例如：用最少的材料造水箱、走最短的路线、用最低的成本生产——这些都是典型的优化问题。
+            </div>
+        </section>
+        
+        <section class="core-interaction">
+            <div class="interaction-main">
+                <div class="interaction-title">核心互动：把问题拆解成三要素</div>
+                
+                <div class="problem-nav" id="problemNav"></div>
+                
+                <div class="problem-display">
+                    <div class="problem-label">当前问题</div>
+                    <div class="problem-text" id="problemText">加载中...</div>
+                </div>
+                
+                <div class="drop-zones">
+                    <div class="drop-zone" data-type="variable" id="zoneVariable">
+                        <div class="zone-header">
+                            <div class="zone-icon variable">V</div>
+                            <span class="zone-title">变量</span>
+                        </div>
+                        <div class="zone-content" id="contentVariable"></div>
+                    </div>
+                    <div class="drop-zone" data-type="objective" id="zoneObjective">
+                        <div class="zone-header">
+                            <div class="zone-icon objective">O</div>
+                            <span class="zone-title">目标</span>
+                        </div>
+                        <div class="zone-content" id="contentObjective"></div>
+                    </div>
+                    <div class="drop-zone" data-type="constraint" id="zoneConstraint">
+                        <div class="zone-header">
+                            <div class="zone-icon constraint">C</div>
+                            <span class="zone-title">约束</span>
+                        </div>
+                        <div class="zone-content" id="contentConstraint"></div>
+                    </div>
+                </div>
+                
+                <div class="interaction-controls">
+                    <button class="btn btn-primary" id="checkBtn">检查答案</button>
+                    <button class="btn btn-secondary" id="resetBtn">重置本题</button>
+                    <button class="btn btn-hint" id="hintBtn">提示</button>
+                </div>
+                
+                <div class="feedback-area" id="feedbackArea">
+                    <div class="feedback-title" id="feedbackTitle"></div>
+                    <div class="feedback-text" id="feedbackText"></div>
+                </div>
+            </div>
+            
+            <div class="card-pool">
+                <div class="pool-title">拖拽卡片到对应栏目</div>
+                <div class="card-items" id="cardPool"></div>
+            </div>
+        </section>
+        
+        <section class="canvas-section">
+            <div class="canvas-title">可视化理解：函数的极值点</div>
+            <canvas id="optimizationCanvas"></canvas>
+        </section>
+        
+        <section class="concept-card">
+            <h3>概念卡片：优化问题三要素</h3>
+            <div class="concept-grid">
+                <div class="concept-item">
+                    <h4>变量</h4>
+                    <p>可以改变和调整的量，是我们寻求最优解时需要决定的未知数。例如：水箱的半径、高度。</p>
+                </div>
+                <div class="concept-item">
+                    <h4>目标函数</h4>
+                    <p>希望最大化或最小化的量。例如：材料最省、成本最低、利润最大。</p>
+                </div>
+                <div class="concept-item">
+                    <h4>约束条件</h4>
+                    <p>必须满足的限制。例如：容积固定、预算有限、时间限制。</p>
+                </div>
+                <div class="concept-item">
+                    <h4>微积分的作用</h4>
+                    <p>通过求导找极值点，确定变量取何值时目标函数达到最优。</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="assessment-section">
+            <div class="confidence-section">
+                <div class="section-title">信心评分</div>
+                <div class="confidence-slider-container">
+                    <input type="range" class="confidence-slider" id="confidenceSlider" min="1" max="5" value="3">
+                    <div class="confidence-value" id="confidenceValue">3</div>
+                </div>
+                <div class="confidence-labels">
+                    <span>完全不懂</span>
+                    <span>非常自信</span>
+                </div>
+            </div>
+            
+            <div class="reflection-section">
+                <div class="section-title">简短反思</div>
+                <textarea class="reflection-textarea" id="reflectionText" placeholder="写下你对优化问题的理解，或遇到的困惑..."></textarea>
+            </div>
+        </section>
+        
+        <div class="submit-section">
+            <button class="btn btn-primary" id="submitBtn">提交学习记录</button>
+        </div>
+    </div>
+    
+    <div class="hint-popup" id="hintPopup">
+        <button class="hint-close" id="hintClose">×</button>
+        <div id="hintContent"></div>
+    </div>
+
+    <script>
+        window.MAIC_LESSON_META = {
+            lesson_id: 'D-01',
+            module_id: 'OM-D1',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '优化问题'
+        };
+
+        var startTime = Date.now();
+        var currentProblemIndex = 0;
+        var problemStates = {};
+        var hintsUsed = {};
+        var confidenceScore = 3;
+        var reflectionText = '';
+
+        var problems = [
+            {
+                text: '用最少的铁皮制作一个容积为10升的圆柱形水桶。',
+                cards: [
+                    { text: '水桶的底面半径和高度', type: 'variable', tag: '变量' },
+                    { text: '铁皮总面积最小', type: 'objective', tag: '目标' },
+                    { text: '容积必须等于10升', type: 'constraint', tag: '约束' }
+                ],
+                hint: '思考：水桶的形状由什么决定？我们想优化什么？有什么条件必须满足？'
+            },
+            {
+                text: '工厂计划生产两种产品，在原料和工时有限的情况下，使总利润最大。',
+                cards: [
+                    { text: '两种产品的生产数量', type: 'variable', tag: '变量' },
+                    { text: '总利润最大化', type: 'objective', tag: '目标' },
+                    { text: '原料和工时有限', type: 'constraint', tag: '约束' }
+                ],
+                hint: '决策者可以调整什么？最终目标是什么？有什么资源限制？'
+            },
+            {
+                text: '从A地出发到B地，中间要经过一条河，求最短路线。',
+                cards: [
+                    { text: '过河点的位置', type: 'variable', tag: '变量' },
+                    { text: '总路程最短', type: 'objective', tag: '目标' },
+                    { text: '必须经过河流', type: 'constraint', tag: '约束' }
+                ],
+                hint: '路线的选择取决于什么？我们希望什么最小？必须满足什么条件？'
+            },
+            {
+                text: '设计一个矩形花坛，周长固定为20米，求面积最大的设计方案。',
+                cards: [
+                    { text: '矩形的长和宽', type: 'variable', tag: '变量' },
+                    { text: '花坛面积最大', type: 'objective', tag: '目标' },
+                    { text: '周长等于20米', type: 'constraint', tag: '约束' }
+                ],
+                hint: '花坛的形状由什么参数决定？想让什么最大？有什么固定条件？'
+            }
+        ];
+
+        function trackEvent(eventType, payload) {
+            var now = Date.now();
+            var event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: now - startTime,
+                interaction_state: payload && payload.interaction_state ? payload.interaction_state : {},
+                key_values: payload && payload.key_values ? payload.key_values : {},
+                final_state: payload && payload.final_state ? payload.final_state : false,
+                hint_used: payload && payload.hint_used ? payload.hint_used : false,
+                completion_status: payload && payload.completion_status ? payload.completion_status : 'in_progress',
+                confidence_score: payload && payload.confidence_score !== undefined ? payload.confidence_score : null,
+                reflection: payload && payload.reflection ? payload.reflection : null
+            };
+
+            var events = [];
+            try {
+                var stored = localStorage.getItem('maic_learning_events');
+                if (stored) {
+                    events = JSON.parse(stored);
+                }
+            } catch (e) {
+                events = [];
+            }
+            events.push(event);
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'maic_learning_event',
+                    payload: event
+                }, '*');
+            }
+        }
+
+        function initProblemNav() {
+            var nav = document.getElementById('problemNav');
+            nav.innerHTML = '';
+            for (var i = 0; i < problems.length; i++) {
+                var btn = document.createElement('button');
+                btn.className = 'problem-btn';
+                btn.textContent = '问题' + (i + 1);
+                btn.setAttribute('data-index', i);
+                if (i === currentProblemIndex) {
+                    btn.classList.add('active');
+                }
+                if (problemStates[i] && problemStates[i].completed) {
+                    btn.classList.add('completed');
+                }
+                btn.addEventListener('click', function() {
+                    var idx = parseInt(this.getAttribute('data-index'));
+                    switchProblem(idx);
+                });
+                nav.appendChild(btn);
+            }
+        }
+
+        function switchProblem(index) {
+            currentProblemIndex = index;
+            initProblemNav();
+            loadProblem(index);
+            trackEvent('interaction_change', {
+                interaction_state: { current_problem: index },
+                key_values: { action: 'switch_problem', problem_index: index }
+            });
+        }
+
+        function loadProblem(index) {
+            var problem = problems[index];
+            document.getElementById('problemText').textContent = problem.text;
+            
+            document.getElementById('contentVariable').innerHTML = '';
+            document.getElementById('contentObjective').innerHTML = '';
+            document.getElementById('contentConstraint').innerHTML = '';
+            
+            var pool = document.getElementById('cardPool');
+            pool.innerHTML = '';
+            
+            var shuffledCards = problem.cards.slice().sort(function() { return Math.random() - 0.5; });
+            
+            for (var i = 0; i < shuffledCards.length; i++) {
+                (function(card, idx) {
+                    var cardEl = document.createElement('div');
+                    cardEl.className = 'drag-card';
+                    cardEl.setAttribute('draggable', 'true');
+                    cardEl.setAttribute('data-type', card.type);
+                    cardEl.setAttribute('data-index', idx);
+                    cardEl.innerHTML = card.text + '<br><span class="card-tag ' + card.type + '-tag">' + card.tag + '</span>';
+                    
+                    cardEl.addEventListener('dragstart', function(e) {
+                        this.classList.add('dragging');
+                        e.dataTransfer.setData('text/plain', idx);
+                        e.dataTransfer.setData('type', card.type);
+                    });
+                    
+                    cardEl.addEventListener('dragend', function() {
+                        this.classList.remove('dragging');
+                    });
+                    
+                    pool.appendChild(cardEl);
+                })(shuffledCards[i], i);
+            }
+            
+            document.getElementById('feedbackArea').classList.remove('show', 'success', 'partial');
+            updateProgress();
+        }
+
+        function initDropZones() {
+            var zones = document.querySelectorAll('.drop-zone');
+            zones.forEach(function(zone) {
+                zone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('drag-over');
+                });
+                
+                zone.addEventListener('dragleave', function() {
+                    this.classList.remove('drag-over');
+                });
+                
+                zone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('drag-over');
+                    
+                    var cardIdx = e.dataTransfer.getData('text/plain');
+                    var cardType = e.dataTransfer.getData('type');
+                    var zoneType = this.getAttribute('data-type');
+                    
+                    var draggingCard = document.querySelector('.drag-card.dragging');
+                    if (draggingCard) {
+                        var contentId = 'content' + zoneType.charAt(0).toUpperCase() + zoneType.slice(1);
+                        var content = document.getElementById(contentId);
+                        
+                        var clone = draggingCard.cloneNode(true);
+                        clone.classList.remove('dragging');
+                        clone.classList.add('placed');
+                        clone.setAttribute('draggable', 'false');
+                        content.appendChild(clone);
+                        
+                        draggingCard.style.display = 'none';
+                        
+                        trackEvent('interaction_change', {
+                            interaction_state: { card_type: cardType, zone_type: zoneType },
+                            key_values: { action: 'drop_card', card_type: cardType, zone_type: zoneType }
+                        });
+                    }
+                });
+            });
+        }
+
+        function checkAnswer() {
+            var problem = problems[currentProblemIndex];
+            var correctCount = 0;
+            var totalCards = problem.cards.length;
+            
+            var zones = ['variable', 'objective', 'constraint'];
+            zones.forEach(function(zoneType) {
+                var contentId = 'content' + zoneType.charAt(0).toUpperCase() + zoneType.slice(1);
+                var content = document.getElementById(contentId);
+                var cards = content.querySelectorAll('.drag-card');
+                
+                cards.forEach(function(card) {
+                    var cardType = card.getAttribute('data-type');
+                    if (cardType === zoneType) {
+                        correctCount++;
+                        card.style.borderColor = '#3fb950';
+                    } else {
+                        card.style.borderColor = '#f78166';
+                    }
+                });
+            });
+            
+            var feedbackArea = document.getElementById('feedbackArea');
+            var feedbackTitle = document.getElementById('feedbackTitle');
+            var feedbackText = document.getElementById('feedbackText');
+            
+            feedbackArea.classList.remove('success', 'partial');
+            
+            if (correctCount === totalCards) {
+                feedbackArea.classList.add('show', 'success');
+                feedbackTitle.textContent = '完全正确';
+                feedbackText.textContent = '你已经掌握了优化问题三要素的区分方法。';
+                problemStates[currentProblemIndex] = { completed: true, score: correctCount };
+                trackEvent('interaction_complete', {
+                    interaction_state: { problem_index: currentProblemIndex },
+                    key_values: { correct_count: correctCount, total: totalCards },
+                    completion_status: 'completed',
+                    final_state: true
+                });
+            } else {
+                feedbackArea.classList.add('show', 'partial');
+                feedbackTitle.textContent = '部分正确';
+                feedbackText.textContent = '你答对了 ' + correctCount + '/' + totalCards + '。请思考：变量是可以调整的，目标是想优化什么，约束是必须满足的条件。';
+                problemStates[currentProblemIndex] = { completed: false, score: correctCount };
+                trackEvent('interaction_complete', {
+                    interaction_state: { problem_index: currentProblemIndex },
+                    key_values: { correct_count: correctCount, total: totalCards },
+                    completion_status: 'partial',
+                    final_state: false
+                });
+            }
+            
+            initProblemNav();
+        }
+
+        function resetProblem() {
+            loadProblem(currentProblemIndex);
+            trackEvent('interaction_change', {
+                key_values: { action: 'reset_problem', problem_index: currentProblemIndex }
+            });
+        }
+
+        function showHint() {
+            var problem = problems[currentProblemIndex];
+            var popup = document.getElementById('hintPopup');
+            var content = document.getElementById('hintContent');
+            content.textContent = problem.hint;
+            popup.classList.add('show');
+            
+            if (!hintsUsed[currentProblemIndex]) {
+                hintsUsed[currentProblemIndex] = true;
+                trackEvent('hint_used', {
+                    interaction_state: { problem_index: currentProblemIndex },
+                    hint_used: true
+                });
+            }
+        }
+
+        function hideHint() {
+            document.getElementById('hintPopup').classList.remove('show');
+        }
+
+        function updateProgress() {
+            var completed = 0;
+            for (var key in problemStates) {
+                if (problemStates[key].completed) {
+                    completed++;
+                }
+            }
+            var progress = (completed / problems.length) * 100;
+            document.getElementById('progressIndicator').style.width = progress + '%';
+        }
+
+        function drawCanvas() {
+            var canvas = document.getElementById('optimizationCanvas');
+            var ctx = canvas.getContext('2d');
+            
+            canvas.width = canvas.offsetWidth * 2;
+            canvas.height = canvas.offsetHeight * 2;
+            ctx.scale(2, 2);
+            
+            var width = canvas.offsetWidth;
+            var height = canvas.offsetHeight;
+            
+            ctx.fillStyle = '#21262d';
+            ctx.fillRect(0, 0, width, height);
+            
+            var padding = 40;
+            var graphWidth = width - padding * 2;
+            var graphHeight = height - padding * 1.5;
+            
+            ctx.strokeStyle = '#30363d';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            
+            for (var px = 0; px <= graphWidth; px++) {
+                var x = px / graphWidth * 4;
+                var y = -Math.pow(x - 2, 2) + 4;
+                var canvasX = padding + px;
+                var canvasY = height - padding - (y / 4) * graphHeight;
+                
+                if (px === 0) {
+                    ctx.moveTo(canvasX, canvasY);
+                } else {
+                    ctx.lineTo(canvasX, canvasY);
+                }
+            }
+            ctx.stroke();
+            
+            var minX = 2;
+            var minY = -Math.pow(minX - 2, 2) + 4;
+            var maxCanvasX = padding + (minX / 4) * graphWidth;
+            var maxCanvasY = height - padding - (minY / 4) * graphHeight;
+            
+            ctx.fillStyle = '#f78166';
+            ctx.beginPath();
+            ctx.arc(maxCanvasX, maxCanvasY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = '#8b949e';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(maxCanvasX, maxCanvasY);
+            ctx.lineTo(maxCanvasX, height - padding);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(padding, maxCanvasY);
+            ctx.lineTo(maxCanvasX, maxCanvasY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = '#e6edf3';
+            ctx.font = '12px -apple-system, sans-serif';
+            ctx.fillText('f(x)', padding - 5, padding - 10);
+            ctx.fillText('x', width - padding + 5, height - padding + 5);
+            
+            ctx.fillStyle = '#f78166';
+            ctx.font = 'bold 11px -apple-system, sans-serif';
+            ctx.fillText('最大值点', maxCanvasX - 20, maxCanvasY - 15);
+            
+            ctx.fillStyle = '#8b949e';
+            ctx.font = '11px -apple-system, sans-serif';
+            ctx.fillText('目标函数', padding + graphWidth / 2 - 25, height - 8);
+        }
+
+        function initConfidenceSlider() {
+            var slider = document.getElementById('confidenceSlider');
+            var value = document.getElementById('confidenceValue');
+            
+            slider.addEventListener('input', function() {
+                confidenceScore = parseInt(this.value);
+                value.textContent = confidenceScore;
+            });
+        }
+
+        function submitLearning() {
+            reflectionText = document.getElementById('reflectionText').value;
+            
+            trackEvent('confidence_submitted', {
+                confidence_score: confidenceScore
+            });
+            
+            trackEvent('reflection_submitted', {
+                reflection: reflectionText
+            });
+            
+            var completedCount = 0;
+            for (var key in problemStates) {
+                if (problemStates[key].completed) {
+                    completedCount++;
+                }
+            }
+            
+            trackEvent('page_loaded', {
+                interaction_state: {
+                    problems_completed: completedCount,
+                    total_problems: problems.length
+                },
+                completion_status: completedCount === problems.length ? 'completed' : 'partial',
+                final_state: true
+            });
+            
+            alert('学习记录已保存！你完成了 ' + completedCount + '/' + problems.length + ' 个问题。');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initProblemNav();
+            loadProblem(0);
+            initDropZones();
+            drawCanvas();
+            initConfidenceSlider();
+            
+            document.getElementById('checkBtn').addEventListener('click', checkAnswer);
+            document.getElementById('resetBtn').addEventListener('click', resetProblem);
+            document.getElementById('hintBtn').addEventListener('click', showHint);
+            document.getElementById('hintClose').addEventListener('click', hideHint);
+            document.getElementById('submitBtn').addEventListener('click', submitLearning);
+            
+            window.addEventListener('resize', drawCanvas);
+            
+            trackEvent('page_loaded', {
+                interaction_state: { current_problem: 0 },
+                completion_status: 'started'
+            });
+        });
+    </script>
+</body>
+</html>

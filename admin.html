@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calculus Quest - 研究数据分析面板</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="admin/admin.css?v=20260612" />
+</head>
+<body>
+<div id="login-gate" class="hidden">
+  <div class="login-card">
+    <h2>研究数据分析面板</h2>
+    <p>请输入管理员 Token 以查看学习数据</p>
+    <input id="admin-token-input" type="password" placeholder="Admin Token" autofocus />
+    <button class="btn btn-primary" id="login-btn">进入面板</button>
+    <div id="login-error" class="error hidden" style="margin-top:12px;"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="admin-header">
+    <h1><span>&#8706;</span> Calculus Quest 研究数据分析</h1>
+    <div class="status">
+      <span class="dot on" id="status-dot"></span>
+      <span id="status-text">已连接</span>
+      <span id="last-refresh"></span>
+      <button class="btn btn-sm range-btn active" data-range="">全部</button>
+      <button class="btn btn-sm range-btn" data-range="today">今天</button>
+      <button class="btn btn-sm range-btn" data-range="yesterday">昨天</button>
+      <button class="btn btn-sm range-btn" data-range="24h">近24小时</button>
+      <button class="btn btn-sm range-btn" data-range="14d">近14天</button>
+      <button class="btn btn-sm range-btn" data-range="30d">近30天</button>
+      <button class="btn btn-sm range-btn" data-range="month">本月</button>
+      <span style="opacity:0.4;">|</span>
+      <input type="date" id="date-start" style="padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);color:#fff;font-size:0.8rem;" title="起始日期" />
+      <span style="opacity:0.6;">—</span>
+      <input type="date" id="date-end" style="padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);color:#fff;font-size:0.8rem;" title="结束日期" />
+      <button class="btn btn-sm btn-outline" id="filter-apply-btn" style="color:#fff;border-color:rgba(255,255,255,0.3);">筛选</button>
+      <button class="btn btn-sm btn-outline" id="refresh-btn" style="color:#fff;border-color:rgba(255,255,255,0.3);">刷新</button>
+      <button class="btn btn-sm btn-outline" id="logout-btn" style="color:#fff;border-color:rgba(255,255,255,0.3);">退出</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Overview Metrics -->
+    <div class="metric-row" id="overview-metrics"></div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="overview">总览</button>
+      <button class="tab" data-tab="chapters">章节分析</button>
+      <button class="tab" data-tab="questions">题目分析</button>
+      <button class="tab" data-tab="effectiveness">学习效果</button>
+      <button class="tab" data-tab="users">用户详情</button>
+      <button class="tab" data-tab="activity">活跃趋势</button>
+      <button class="tab" data-tab="shortanswers">简答题</button>
+      <button class="tab" data-tab="interactions">交互追踪</button>
+    </div>
+
+    <!-- Tab: Overview -->
+    <div id="tab-overview" class="tab-content">
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h3>每日活跃用户 & Quiz 提交趋势</h3>
+          <p class="chart-desc">近30天平台活跃度变化</p>
+          <div class="chart-wrap"><canvas id="chart-daily"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>用户 Quiz 完成量排名 (Top 20)</h3>
+          <p class="chart-desc">按提交数量排序，正确率以橙色标记</p>
+          <div class="chart-wrap"><canvas id="chart-user-rank"></canvas></div>
+        </div>
+        <div class="chart-card full-width">
+          <h3>各章节用户正确率分布</h3>
+          <p class="chart-desc">每个点代表一位用户在某章节的平均正确率，同一章节使用相同颜色</p>
+          <div class="chart-wrap"><canvas id="chart-chapter-dist"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Chapters -->
+    <div id="tab-chapters" class="tab-content hidden">
+      <div class="chart-grid">
+        <div class="chart-card full-width">
+          <h3>用户 × 章节 正确率热图</h3>
+          <p class="chart-desc">绿=掌握良好 (≥80%), 黄=需要加强 (60-79%), 红=薄弱环节 (<60%), 灰=未答题</p>
+          <div class="table-wrap" id="heatmap-container"></div>
+        </div>
+        <div class="chart-card full-width">
+          <h3>各章节综合指标</h3>
+          <div class="table-wrap"><table id="table-chapter-summary">
+            <thead><tr><th>章节</th><th>答题次数</th><th>参与用户</th><th>平均正确率</th><th>平均得分</th><th>学习增益 (前→后)</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Questions -->
+    <div id="tab-questions" class="tab-content hidden">
+      <div class="chart-grid cols-3">
+        <div class="chart-card">
+          <h3>题型正确率对比</h3>
+          <p class="chart-desc">不同题型的学习难度差异</p>
+          <div class="chart-wrap"><canvas id="chart-question-type"></canvas></div>
+        </div>
+        <div class="chart-card" style="grid-column: span 2;">
+          <h3>各题目错误率排名 (Top 30)</h3>
+          <p class="chart-desc">颜色: 红=高错误率(>60%), 黄=中(30-60%), 绿=低(<30%)</p>
+          <div class="chart-wrap tall"><canvas id="chart-question-errors"></canvas></div>
+        </div>
+        <div class="chart-card full-width">
+          <h3>题目错误率明细</h3>
+          <div class="table-wrap"><table id="table-question-errors"></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Learning Effectiveness -->
+    <div id="tab-effectiveness" class="tab-content hidden">
+      <div class="chart-grid">
+        <div class="chart-card full-width">
+          <h3>前测 vs 后测 正确率对比 (按用户/章节)</h3>
+          <p class="chart-desc">实心圆=后测, 空心圆=前测, 连线表示同一用户同一章节的学习变化。绿色连线=进步, 红色连线=退步</p>
+          <div class="chart-wrap tall"><canvas id="chart-pre-post"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>得分率分布直方图</h3>
+          <p class="chart-desc">所有 Quiz 提交的得分比例分布</p>
+          <div class="chart-wrap"><canvas id="chart-score-dist"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>前测 vs 后测 变化明细表</h3>
+          <div class="table-wrap" style="max-height:340px;overflow-y:auto;">
+            <table id="table-phase-compact">
+              <thead><tr><th>用户</th><th>章节</th><th>前测</th><th>后测</th><th>变化</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="chart-card full-width">
+          <h3>学习增益排名 (后测-前测)</h3>
+          <p class="chart-desc">仅显示同时有前测和后测数据的用户/章节组合。正值(绿色)=进步, 负值(红色)=退步</p>
+          <div class="chart-wrap tall"><canvas id="chart-learning-gain"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Users -->
+    <div id="tab-users" class="tab-content hidden">
+      <div class="user-search">
+        <span id="user-total-count" style="font-size:0.85rem;color:var(--muted);align-self:center;"></span>
+        <input id="user-search-input" type="text" placeholder="搜索用户昵称..." />
+        <button class="btn btn-sm btn-primary" id="user-search-btn">搜索</button>
+        <button class="btn btn-sm btn-outline" id="export-users-csv">导出CSV</button>
+      </div>
+      <div class="chart-card full-width">
+        <h3>用户列表 & 学习进度</h3>
+        <div class="table-wrap"><table id="table-users"></table></div>
+      </div>
+      <div id="user-detail-section" class="hidden" style="margin-top:22px;">
+        <div class="chart-grid">
+          <div class="chart-card full-width">
+            <h3 id="user-detail-title">用户答题时间线</h3>
+            <div class="chart-wrap tall"><canvas id="chart-user-timeline"></canvas></div>
+          </div>
+          <div class="chart-card">
+            <h3>各章节表现</h3>
+            <div class="table-wrap"><table id="table-user-chapters"></table></div>
+          </div>
+          <div class="chart-card">
+            <h3>学习活动摘要</h3>
+            <div id="user-activity-summary" style="font-size:0.9rem;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Activity -->
+    <div id="tab-activity" class="tab-content hidden">
+      <div class="chart-grid">
+        <div class="chart-card">
+          <h3>每日活跃趋势 (30天)</h3>
+          <div class="chart-wrap"><canvas id="chart-activity-daily"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3>时段活跃分布 (24小时)</h3>
+          <p class="chart-desc">近30天各时段事件量分布</p>
+          <div class="chart-wrap"><canvas id="chart-hourly"></canvas></div>
+        </div>
+        <div class="chart-card full-width">
+          <h3>前测 / 后测对比明细</h3>
+          <div class="table-wrap"><table id="table-phase-comparison"></table></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Short Answers -->
+    <div id="tab-shortanswers" class="tab-content hidden">
+      <div class="chart-card full-width">
+       <h3>学生简答题答案审阅</h3>
+       <p class="chart-desc">仅显示 question_type=short_answer 的提交，按时间倒序</p>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <button class="btn btn-sm btn-primary" id="export-shortanswers-csv">导出 CSV</button>
+          <span id="shortanswer-summary" style="font-size:0.85rem;color:var(--muted);align-self:center;"></span>
+        </div>
+        <div class="table-wrap" style="max-height:600px;overflow-y:auto;">
+          <table id="table-shortanswers">
+            <thead><tr><th>学生</th><th>章节</th><th>单元</th><th>题目ID</th><th>答案</th><th>得分</th><th>状态</th><th>时间</th></tr></thead>
+            <tbody></tbody>
+         </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Interaction Tracking -->
+    <div id="tab-interactions" class="tab-content hidden">
+      <div class="metric-row" id="interaction-metrics"></div>
+      <div class="chart-grid cols-3">
+        <div class="chart-card">
+          <h3>交互类型分布</h3>
+          <p class="chart-desc">各类用户操作事件数量</p>
+          <div class="chart-wrap"><canvas id="chart-interaction-types"></canvas></div>
+        </div>
+        <div class="chart-card" style="grid-column: span 2;">
+          <h3>交互时间线</h3>
+          <p class="chart-desc">按日期分组的交互事件数</p>
+          <div class="chart-wrap"><canvas id="chart-interaction-timeline"></canvas></div>
+        </div>
+        <div class="chart-card full-width">
+          <h3>交互记录</h3>
+          <p class="chart-desc">按当前时间范围和用户筛选显示完整记录，支持分页浏览。</p>
+          <div class="interaction-toolbar">
+            <label>用户
+              <select id="interaction-user-filter">
+                <option value="">全部用户</option>
+              </select>
+            </label>
+            <label>每页
+              <select id="interaction-page-size">
+                <option value="50">50</option>
+                <option value="100" selected>100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+              </select>
+            </label>
+            <button class="btn btn-sm btn-outline" id="interaction-prev-page">上一页</button>
+            <button class="btn btn-sm btn-outline" id="interaction-next-page">下一页</button>
+            <span class="page-status" id="interaction-page-status">第 1 页</span>
+          </div>
+          <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
+            <table id="table-interactions">
+              <thead><tr><th>时间</th><th>用户</th><th>事件类型</th><th>数据摘要</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="load-error" class="error hidden"></div>
+  </div>
+</div>
+
+<script src="admin/admin.js?v=20260612"></script>
+</body>
+</html>

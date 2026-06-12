@@ -1,0 +1,643 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>坐标系把函数画成图像</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a1a2e;--panel:#16213e;--card:#0f3460;--accent:#e94560;--accent2:#533483;--text:#eee;--text2:#aab;--border:#2a2a4a;--success:#4ecca3;--warn:#f9a825}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+header{background:linear-gradient(135deg,var(--panel),var(--card));padding:20px 24px;border-radius:12px;margin-bottom:16px;border:1px solid var(--border)}
+header h1{font-size:1.6em;margin-bottom:4px;color:var(--accent)}
+header .goal{color:var(--text2);font-size:0.95em}
+.intuition{background:var(--panel);padding:16px 20px;border-radius:10px;margin-bottom:16px;border-left:4px solid var(--accent);font-size:0.95em;color:var(--text2);line-height:1.8}
+.intuition strong{color:var(--text)}
+.main-area{display:flex;gap:16px;margin-bottom:16px}
+.left-panel{flex:0 0 340px;display:flex;flex-direction:column;gap:12px}
+.right-panel{flex:1;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border-radius:10px;padding:16px;border:1px solid var(--border)}
+.card h3{font-size:1em;margin-bottom:10px;color:var(--accent)}
+.steps-list{list-style:none;padding:0}
+.steps-list li{padding:8px 12px;margin-bottom:6px;border-radius:6px;font-size:0.9em;color:var(--text2);border-left:3px solid transparent;transition:all .3s}
+.steps-list li.active{background:rgba(233,69,96,.12);border-left-color:var(--accent);color:var(--text)}
+.steps-list li.done{border-left-color:var(--success);color:var(--success)}
+.canvas-wrapper{position:relative;background:#0d1117;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+canvas{display:block;width:100%}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+.ctrl-group{background:var(--card);padding:10px 14px;border-radius:8px;flex:1;min-width:140px}
+.ctrl-group label{display:block;font-size:0.82em;color:var(--text2);margin-bottom:4px}
+.ctrl-group input[type=range]{width:100%;accent-color:var(--accent)}
+.ctrl-group .val{font-size:0.85em;color:var(--success);text-align:right;margin-top:2px}
+.func-btns{display:flex;gap:6px;margin-bottom:10px}
+.func-btns button{flex:1;padding:8px 6px;border:2px solid var(--border);background:transparent;color:var(--text2);border-radius:8px;cursor:pointer;font-size:0.85em;transition:all .2s}
+.func-btns button.active{border-color:var(--accent);color:var(--accent);background:rgba(233,69,96,.1)}
+.func-btns button:hover{border-color:var(--accent);color:var(--text)}
+.feedback{background:var(--panel);border-radius:10px;padding:14px 18px;margin-bottom:16px;border:1px solid var(--border);min-height:48px}
+.feedback .msg{font-size:0.92em}
+.feedback .highlight{color:var(--accent);font-weight:bold}
+.concept-card{background:linear-gradient(135deg,var(--card),var(--accent2));border-radius:10px;padding:18px 22px;margin-bottom:16px;color:#fff}
+.concept-card h3{margin-bottom:8px;font-size:1.05em}
+.concept-card p{font-size:0.9em;opacity:.9;line-height:1.7}
+.confidence-section,.reflection-section{background:var(--panel);border-radius:10px;padding:16px 20px;margin-bottom:16px;border:1px solid var(--border)}
+.confidence-section h3,.reflection-section h3{font-size:1em;margin-bottom:10px;color:var(--accent)}
+.stars{display:flex;gap:8px;margin-bottom:10px}
+.stars span{font-size:1.8em;cursor:pointer;transition:transform .15s;color:#555}
+.stars span:hover,.stars span.filled{color:var(--warn);transform:scale(1.15)}
+.reflection textarea{width:100%;height:80px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:0.9em;resize:vertical;font-family:inherit}
+.btn{padding:8px 20px;border:none;border-radius:8px;cursor:pointer;font-size:0.9em;font-weight:bold;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#d63050;transform:translateY(-1px)}
+.btn-secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--accent)}
+.hint-toggle{font-size:0.85em;color:var(--warn);cursor:pointer;text-decoration:underline;margin-top:6px}
+.hint-box{background:rgba(249,168,37,.1);border:1px solid var(--warn);border-radius:8px;padding:10px;margin-top:8px;font-size:0.85em;color:var(--warn);display:none}
+.hint-box.show{display:block}
+.point-info{font-size:0.85em;color:var(--success);margin-top:6px;min-height:20px}
+.bottom-actions{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.bottom-actions .btn{flex:1;min-width:120px}
+@media(max-width:800px){.main-area{flex-direction:column}.left-panel{flex:none}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>坐标系把函数画成图像</h1>
+<p class="goal">本节聚焦：坐标系与函数图像——理解横轴、纵轴如何把输入输出变成平面上的点，再用这些点连出函数图像。</p>
+</header>
+
+<div class="intuition">
+<strong>直觉解释：</strong>坐标系把每个输入 <em>x</em> 和输出 <em>f(x)</em> 变成平面上的一个点。许多这样的点排在一起，连成线，就是函数图像。一次函数是直线、二次函数是抛物线、正弦函数是波浪线。
+</div>
+
+<div class="main-area">
+<div class="left-panel">
+<div class="card">
+<h3>📐 坐标点生成曲线的步骤</h3>
+<ol class="steps-list" id="stepsList">
+<li id="step1">选择横轴上的 <em>x</em> 值</li>
+<li id="step2">计算对应的纵坐标 <em>f</em>(<em>x</em>)</li>
+<li id="step3">在图上描出点 (<em>x</em>，<em>f</em>(<em>x</em>))</li>
+<li id="step4">多点连线形成函数图像</li>
+</ol>
+<p class="hint-toggle" id="hintToggle">💡 需要提示？点击查看</p>
+<div class="hint-box" id="hintBox">试着在右侧 Canvas 上点击鼠标，点击位置会被投影到函数曲线上，显示坐标值。你可以通过左侧按钮切换函数类型，观察图像如何变化。</div>
+</div>
+
+<div class="card">
+<h3>🎛️ 函数控制面板</h3>
+<div class="func-btns" id="funcBtns">
+<button class="active" data-fn="linear">一次函数</button>
+<button data-fn="quadratic">二次函数</button>
+<button data-fn="sine">正弦函数</button>
+</div>
+<div class="controls" id="controlsArea"></div>
+<p class="point-info" id="pointInfo"></p>
+</div>
+
+<div class="card">
+<h3>🖱️ 操作说明</h3>
+<ul style="font-size:0.85em;color:var(--text2);padding-left:18px;line-height:2">
+<li>点击函数按钮切换类型</li>
+<li>拖动滑块改变参数</li>
+<li>在右侧 Canvas 上点击，描出该点的坐标</li>
+<li>观察曲线的上升、下降和转折</li>
+</ul>
+</div>
+</div>
+
+<div class="right-panel">
+<div class="canvas-wrapper">
+<canvas id="mainCanvas" width="700" height="480"></canvas>
+</div>
+<div class="card" style="margin-top:0">
+<h3>📊 实时数据面板</h3>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:0.85em">
+<div>当前函数：<span id="dispFn" class="highlight">y = 2x + 1</span></div>
+<div>选中点：<span id="dispPt" class="highlight">(0, 1)</span></div>
+<div>采样点数：<span id="dispN" class="highlight">21</span></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="feedback" id="feedbackBox">
+<div class="msg">👋 欢迎！选择一个函数类型开始探索。当前显示的是<span class="highlight">一次函数</span>。拖动滑块或点击 Canvas 来观察坐标点如何组成图像。</div>
+</div>
+
+<div class="concept-card">
+<h3>🔑 核心概念卡</h3>
+<p><strong>坐标系与函数图像：</strong>在直角坐标系中，横轴（x轴）表示输入值，纵轴（y轴）表示输出值。对于每一个输入 <em>x</em>，函数 <em>f</em> 给出唯一的输出 <em>f</em>(<em>x</em>)，在图上对应点 (<em>x</em>，<em>f</em>(<em>x</em>))。当 <em>x</em> 取值足够密时，这些点连成的曲线就是函数的图像。</p>
+<p style="margin-top:8px"><strong>关键观察：</strong>一次函数 <em>y</em>=<em>ax</em>+<em>b</em> 的图像是直线（恒定斜率）；二次函数 <em>y</em>=<em>ax</em>²+<em>bx</em>+<em>c</em> 是抛物线（有顶点转折）；正弦函数 <em>y</em>=<em>A</em>sin(<em>ωx</em>+<em>φ</em>) 是周期波浪（重复起伏）。</p>
+</div>
+
+<div class="bottom-actions">
+<button class="btn btn-primary" id="btnComplete">✅ 我已完成探索</button>
+<button class="btn btn-secondary" id="btnReset">🔄 重置 Canvas</button>
+</div>
+
+<div class="confidence-section">
+<h3>💪 信心评分</h3>
+<p style="font-size:0.9em;color:var(--text2);margin-bottom:8px">你对"坐标系把函数画成图像"的理解有多 confident？</p>
+<div class="stars" id="starsContainer">
+<span data-v="1">☆</span>
+<span data-v="2">☆</span>
+<span data-v="3">☆</span>
+<span data-v="4">☆</span>
+<span data-v="5">☆</span>
+</div>
+<p style="font-size:0.82em;color:var(--text2)" id="starLabel">点击星星选择你的信心等级</p>
+</div>
+
+<div class="reflection-section">
+<h3>🤔 简短反思</h3>
+<p style="font-size:0.9em;color:var(--text2);margin-bottom:8px">写一两句你今天的发现或疑惑（例如：二次函数的图像为什么会有转折？一次函数和正弦函数有什么区别？）</p>
+<textarea id="reflectionText" placeholder="写下你的想法..."></textarea>
+<br><br>
+<button class="btn btn-primary" id="btnReflect">提交反思</button>
+</div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===== 元数据 ===== */
+window.MAIC_LESSON_META = {
+  lesson_id: "A-02",
+  module_id: "OM-A1",
+  course_version: "demo-closed-loop-v1",
+  concept_name: "坐标系与函数图像"
+};
+
+var meta = window.MAIC_LESSON_META;
+
+/* ===== 行为追踪 ===== */
+var startTime = Date.now();
+var interactionState = { fnType: "linear", params: {}, pointsCount: 0, hintsUsed: 0, confidence: 0, reflected: false };
+
+function trackEvent(eventType, payload) {
+  var evt = {
+    lesson_id: meta.lesson_id,
+    module_id: meta.module_id,
+    course_version: meta.course_version,
+    event_type: eventType,
+    timestamp: new Date().toISOString(),
+    time_on_task_ms: Date.now() - startTime,
+    interaction_state: JSON.parse(JSON.stringify(interactionState)),
+    payload: payload || {}
+  };
+  try {
+    var arr = [];
+    var stored = localStorage.getItem("maic_learning_events");
+    if (stored) {
+      try { arr = JSON.parse(stored); } catch(e) { arr = []; }
+    }
+    arr.push(evt);
+    localStorage.setItem("maic_learning_events", JSON.stringify(arr));
+  } catch(e) {}
+  try {
+    window.parent.postMessage({ type: "maic_learning_event", payload: evt }, "*");
+  } catch(e) {}
+  return evt;
+}
+
+/* ===== Canvas 与绘图 ===== */
+var canvas, ctx;
+var W, H;
+var margin = { top: 30, right: 30, bottom: 40, left: 50 };
+var plotW, plotH;
+var xMin = -5, xMax = 5;
+var yMin = -5, yMax = 5;
+var clickedPoints = [];
+var animating = false;
+
+function initCanvas() {
+  canvas = document.getElementById("mainCanvas");
+  ctx = canvas.getContext("2d");
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+  canvas.addEventListener("click", onCanvasClick);
+  drawAll();
+}
+
+function resizeCanvas() {
+  var rect = canvas.parentElement.getBoundingClientRect();
+  var w = rect.width;
+  var h = Math.max(400, Math.min(500, w * 0.6));
+  canvas.width = w;
+  canvas.height = h;
+  W = canvas.width;
+  H = canvas.height;
+  plotW = W - margin.left - margin.right;
+  plotH = H - margin.top - margin.bottom;
+  drawAll();
+}
+
+function toScreenX(x) { return margin.left + (x - xMin) / (xMax - xMin) * plotW; }
+function toScreenY(y) { return margin.top + (yMax - y) / (yMax - yMin) * plotH; }
+function toMathX(sx) { return xMin + (sx - margin.left) / plotW * (xMax - xMin); }
+function toMathY(sy) { return yMax - (sy - margin.top) / plotH * (yMax - yMin); }
+
+function drawAll() {
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawAxes();
+  drawFunction();
+  drawSamplePoints();
+  drawClickedPoints();
+}
+
+function drawGrid() {
+  ctx.strokeStyle = "#1a1a3a";
+  ctx.lineWidth = 0.5;
+  for (var i = Math.ceil(xMin); i <= Math.floor(xMax); i++) {
+    var sx = toScreenX(i);
+    ctx.beginPath();
+    ctx.moveTo(sx, margin.top);
+    ctx.lineTo(sx, H - margin.bottom);
+    ctx.stroke();
+  }
+  for (var j = Math.ceil(yMin); j <= Math.floor(yMax); j++) {
+    var sy = toScreenY(j);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, sy);
+    ctx.lineTo(W - margin.right, sy);
+    ctx.stroke();
+  }
+}
+
+function drawAxes() {
+  ctx.strokeStyle = "#8888aa";
+  ctx.lineWidth = 1.5;
+  var originX = toScreenX(0);
+  var originY = toScreenY(0);
+  ctx.beginPath();
+  ctx.moveTo(margin.left, originY);
+  ctx.lineTo(W - margin.right, originY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(originX, margin.top);
+  ctx.lineTo(originX, H - margin.bottom);
+  ctx.stroke();
+  ctx.fillStyle = "#aab";
+  ctx.font = "13px sans-serif";
+  ctx.textAlign = "center";
+  for (var i = Math.ceil(xMin); i <= Math.floor(xMax); i++) {
+    if (i === 0) continue;
+    ctx.fillText(i, toScreenX(i), originY + 18);
+  }
+  ctx.textAlign = "right";
+  for (var j = Math.ceil(yMin); j <= Math.floor(yMax); j++) {
+    if (j === 0) continue;
+    ctx.fillText(j, originX - 8, toScreenY(j) + 4);
+  }
+  ctx.fillStyle = "#ccc";
+  ctx.font = "bold 14px sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("x 轴（输入）", W / 2, H - 6);
+  ctx.save();
+  ctx.translate(14, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText("y 轴（输出 f(x)）", 0, 0);
+  ctx.restore();
+}
+
+function getFuncDef() {
+  var type = interactionState.fnType;
+  var p = interactionState.params;
+  var params = { a: 1, b: 0, c: 0, A: 1, w: 1, phi: 0 };
+  if (p) {
+    for (var k in p) params[k] = p[k];
+  }
+  var fn;
+  if (type === "linear") {
+    fn = function(x) { return params.a * x + params.b; };
+  } else if (type === "quadratic") {
+    fn = function(x) { return params.a * x * x + params.b * x + params.c; };
+  } else {
+    fn = function(x) { return params.A * Math.sin(params.w * x + params.phi); };
+  }
+  return { fn: fn, type: type, params: params };
+}
+
+function drawFunction() {
+  var def = getFuncDef();
+  var fn = def.fn;
+  ctx.strokeStyle = "#e94560";
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  var first = true;
+  var steps = 400;
+  for (var i = 0; i <= steps; i++) {
+    var x = xMin + (xMax - xMin) * i / steps;
+    var y = fn(x);
+    if (y < yMin - 2 || y > yMax + 2) {
+      first = true;
+      continue;
+    }
+    var sx = toScreenX(x);
+    var sy = toScreenY(y);
+    if (first) {
+      ctx.moveTo(sx, sy);
+      first = false;
+    } else {
+      ctx.lineTo(sx, sy);
+    }
+  }
+  ctx.stroke();
+}
+
+function drawSamplePoints() {
+  var def = getFuncDef();
+  var fn = def.fn;
+  var n = 21;
+  var count = 0;
+  for (var i = 0; i < n; i++) {
+    var x = xMin + (xMax - xMin) * i / (n - 1);
+    var y = fn(x);
+    if (y < yMin || y > yMax) continue;
+    var sx = toScreenX(x);
+    var sy = toScreenY(y);
+    ctx.beginPath();
+    ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(78,204,163,0.6)";
+    ctx.fill();
+    count++;
+  }
+  document.getElementById("dispN").textContent = count;
+}
+
+function drawClickedPoints() {
+  for (var i = 0; i < clickedPoints.length; i++) {
+    var pt = clickedPoints[i];
+    var sx = toScreenX(pt.x);
+    var sy = toScreenY(pt.y);
+    ctx.beginPath();
+    ctx.arc(sx, sy, 5, 0, Math.PI * 2);
+    ctx.fillStyle = "#f9a825";
+    ctx.fill();
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#fff";
+    ctx.font = "11px sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("(" + pt.x.toFixed(2) + ", " + pt.y.toFixed(2) + ")", sx + 8, sy - 8);
+    /* 虚线投影 */
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = "rgba(249,168,37,0.4)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(sx, toScreenY(0));
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(sx, sy);
+    ctx.lineTo(toScreenX(0), sy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+}
+
+/* ===== 函数切换 ===== */
+var funcDefs = {
+  linear: {
+    label: "一次函数 y = ax + b",
+    disp: function(p) { return "y = " + p.a + "x " + (p.b >= 0 ? "+" : "") + p.b; },
+    controls: [
+      { id: "a", label: "斜率 a", min: -5, max: 5, step: 0.1, default: 2 },
+      { id: "b", label: "截距 b", min: -5, max: 5, step: 0.1, default: 1 }
+    ]
+  },
+  quadratic: {
+    label: "二次函数 y = ax² + bx + c",
+    disp: function(p) { return "y = " + p.a + "x² " + (p.b >= 0 ? "+" : "") + p.b + "x " + (p.c >= 0 ? "+" : "") + p.c; },
+    controls: [
+      { id: "a", label: "二次项系数 a", min: -3, max: 3, step: 0.1, default: 1 },
+      { id: "b", label: "一次项系数 b", min: -5, max: 5, step: 0.1, default: 0 },
+      { id: "c", label: "常数项 c", min: -5, max: 5, step: 0.1, default: 0 }
+    ]
+  },
+  sine: {
+    label: "正弦函数 y = A·sin(ωx + φ)",
+    disp: function(p) { return "y = " + p.A + "·sin(" + p.w + "x " + (p.phi >= 0 ? "+" : "") + p.phi + ")"; },
+    controls: [
+      { id: "A", label: "振幅 A", min: 0.1, max: 5, step: 0.1, default: 2 },
+      { id: "w", label: "角频率 ω", min: 0.1, max: 5, step: 0.1, default: 1 },
+      { id: "phi", label: "相位 φ", min: -3.14, max: 3.14, step: 0.01, default: 0 }
+    ]
+  }
+};
+
+function buildControls() {
+  var area = document.getElementById("controlsArea");
+  area.innerHTML = "";
+  var type = interactionState.fnType;
+  var def = funcDefs[type];
+  var controls = def.controls;
+  for (var i = 0; i < controls.length; i++) {
+    var c = controls[i];
+    var val = (interactionState.params[c.id] !== undefined ? interactionState.params[c.id] : c.default);
+    var group = document.createElement("div");
+    group.className = "ctrl-group";
+    group.innerHTML = "<label>" + c.label + " (" + c.min + " ~ " + c.max + ")</label>";
+    var slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = c.min;
+    slider.max = c.max;
+    slider.step = c.step;
+    slider.value = val;
+    slider.dataset.pid = c.id;
+    var valSpan = document.createElement("div");
+    valSpan.className = "val";
+    valSpan.id = "val_" + c.id;
+    valSpan.textContent = val.toFixed(2);
+    group.appendChild(slider);
+    group.appendChild(valSpan);
+    area.appendChild(group);
+    slider.addEventListener("input", onSliderChange);
+  }
+}
+
+function onSliderChange(e) {
+  var pid = e.target.dataset.pid;
+  var val = parseFloat(e.target.value);
+  interactionState.params[pid] = val;
+  document.getElementById("val_" + pid).textContent = val.toFixed(2);
+  updateDisplay();
+  drawAll();
+  trackEvent("interaction_change", { control: pid, value: val });
+}
+
+function updateDisplay() {
+  var def = funcDefs[interactionState.fnType];
+  var p = interactionState.params;
+  document.getElementById("dispFn").textContent = def.disp(p);
+}
+
+/* ===== 函数按钮 ===== */
+function setupFuncButtons() {
+  var btns = document.querySelectorAll("#funcBtns button");
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].addEventListener("click", function() {
+      var type = this.dataset.fn;
+      interactionState.fnType = type;
+      interactionState.params = {};
+      var def = funcDefs[type];
+      for (var j = 0; j < def.controls.length; j++) {
+        interactionState.params[def.controls[j].id] = def.controls[j].default;
+      }
+      for (var k = 0; k < btns.length; k++) btns[k].classList.remove("active");
+      this.classList.add("active");
+      buildControls();
+      clickedPoints = [];
+      updateDisplay();
+      updateStep(1);
+      drawAll();
+      trackEvent("interaction_change", { action: "switch_function", fnType: type });
+      setFeedback("已切换到" + def.label + "。观察曲线形状的变化：一次函数是直线，二次函数有顶点转折，正弦函数呈周期性波浪。拖动滑块看看参数如何影响图像。");
+    });
+  }
+}
+
+/* ===== Canvas 点击 ===== */
+function onCanvasClick(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  var sx = (e.clientX - rect.left) * scaleX;
+  var sy = (e.clientY - rect.top) * scaleY;
+  var mx = toMathX(sx);
+  var my = toMathY(sy);
+  var def = getFuncDef();
+  var fn = def.fn;
+  var fy = fn(mx);
+  if (fy < yMin - 1 || fy > yMax + 1) {
+    setFeedback("⚠️ 该 <em>x</em> 值对应的 <em>f</em>(<em>x</em>) 超出了当前坐标范围，换一个位置试试。");
+    return;
+  }
+  var pt = { x: mx, y: fy };
+  clickedPoints.push(pt);
+  if (clickedPoints.length > 10) {
+    clickedPoints.shift();
+  }
+  interactionState.pointsCount = clickedPoints.length;
+  document.getElementById("dispPt").textContent = "(" + mx.toFixed(2) + ", " + fy.toFixed(2) + ")";
+  updateStep(3);
+  drawAll();
+  setFeedback("📍 已描出点 (<em>" + mx.toFixed(2) + "</em>, <em>" + fy.toFixed(2) + "</em>)。这个点在函数曲线上，横坐标是输入 <em>x</em>，纵坐标是输出 <em>f</em>(<em>x</em>)。当前共描了 <span class=\"highlight\">" + clickedPoints.length + "</span> 个点。");
+  trackEvent("interaction_change", { action: "click_point", x: mx.toFixed(2), y: fy.toFixed(2) });
+}
+
+/* ===== 步骤管理 ===== */
+function updateStep(stepNum) {
+  var steps = document.querySelectorAll("#stepsList li");
+  for (var i = 1; i <= 4; i++) {
+    var el = document.getElementById("step" + i);
+    el.classList.remove("active", "done");
+    if (i < stepNum) el.classList.add("done");
+    else if (i === stepNum) el.classList.add("active");
+  }
+}
+
+/* ===== 提示 ===== */
+document.getElementById("hintToggle").addEventListener("click", function() {
+  var box = document.getElementById("hintBox");
+  if (box.classList.contains("show")) {
+    box.classList.remove("show");
+  } else {
+    box.classList.add("show");
+    interactionState.hintsUsed = (interactionState.hintsUsed || 0) + 1;
+    trackEvent("hint_used", { hint_count: interactionState.hintsUsed });
+  }
+});
+
+/* ===== 反馈 ===== */
+function setFeedback(html) {
+  document.getElementById("feedbackBox").innerHTML = "<div class=\"msg\">" + html + "</div>";
+}
+
+/* ===== 完成按钮 ===== */
+document.getElementById("btnComplete").addEventListener("click", function() {
+  interactionState.reflected = interactionState.reflected || (document.getElementById("reflectionText").value.length > 0);
+  trackEvent("interaction_complete", { points: clickedPoints.length, hintsUsed: interactionState.hintsUsed });
+  setFeedback("🎉 探索完成！你一共描了 <span class=\"highlight\">" + clickedPoints.length + "</span> 个点，观察了" + interactionState.fnType + "函数的图像。现在可以给下面的信心评分并写下反思。");
+  document.getElementById("btnComplete").disabled = true;
+  document.getElementById("btnComplete").textContent = "✅ 已记录";
+});
+
+/* ===== 重置 ===== */
+document.getElementById("btnReset").addEventListener("click", function() {
+  clickedPoints = [];
+  drawAll();
+  document.getElementById("dispPt").textContent = "(0, 0)";
+  setFeedback("🔄 Canvas 已重置。重新开始探索吧！点击 Canvas 描点，或切换函数类型。");
+  trackEvent("interaction_change", { action: "reset" });
+});
+
+/* ===== 信心评分 ===== */
+var selectedConfidence = 0;
+var stars = document.querySelectorAll("#starsContainer span");
+for (var i = 0; i < stars.length; i++) {
+  stars[i].addEventListener("click", function() {
+    selectedConfidence = parseInt(this.dataset.v);
+    interactionState.confidence = selectedConfidence;
+    for (var j = 0; j < stars.length; j++) {
+      stars[j].classList.remove("filled");
+      if (j < selectedConfidence) stars[j].classList.add("filled");
+    }
+    document.getElementById("starLabel").textContent = "你选择了 " + selectedConfidence + " 分";
+  });
+  stars[i].addEventListener("mouseenter", function() {
+    var v = parseInt(this.dataset.v);
+    for (var j = 0; j < stars.length; j++) {
+      if (j < v) stars[j].style.color = "#f9a825";
+      else stars[j].style.color = "#555";
+    }
+  });
+}
+document.getElementById("starsContainer").addEventListener("mouseleave", function() {
+  for (var i = 0; i < stars.length; i++) {
+    if (i < selectedConfidence) stars[i].style.color = "#f9a825";
+    else stars[i].style.color = "#555";
+  }
+});
+
+/* ===== 反思提交 ===== */
+document.getElementById("btnReflect").addEventListener("click", function() {
+  var text = document.getElementById("reflectionText").value.trim();
+  interactionState.reflected = true;
+  trackEvent("reflection_submitted", { text_length: text.length, text_preview: text.substring(0, 50) });
+  setFeedback("📝 你的反思已记录。感谢你的思考！坐标系是理解函数图像的基础工具。");
+  document.getElementById("btnReflect").textContent = "✅ 已提交";
+  document.getElementById("btnReflect").disabled = true;
+});
+
+/* ===== 初始化 ===== */
+function init() {
+  interactionState.params = {};
+  var linearDef = funcDefs.linear;
+  for (var i = 0; i < linearDef.controls.length; i++) {
+    interactionState.params[linearDef.controls[i].id] = linearDef.controls[i].default;
+  }
+  initCanvas();
+  buildControls();
+  setupFuncButtons();
+  updateDisplay();
+  updateStep(1);
+  trackEvent("page_loaded", {});
+  setFeedback("👋 欢迎！选择一个函数类型开始探索。当前显示的是<span class=\"highlight\">一次函数</span>。拖动滑块或点击 Canvas 来观察坐标点如何组成图像。");
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
+
+})();
+</script>
+</body>
+</html>

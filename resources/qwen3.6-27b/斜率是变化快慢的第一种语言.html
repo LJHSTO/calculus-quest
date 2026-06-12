@@ -1,0 +1,647 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>斜率是变化快慢的第一种语言</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",sans-serif;background:#1e1e2e;color:#cdd6f4;min-height:100vh;overflow-x:hidden}
+.header{text-align:center;padding:28px 20px 18px;background:linear-gradient(135deg,#1e1e2e 0%,#313244 100%);border-bottom:2px solid #89b4fa}
+.header h1{font-size:26px;color:#89b4fa;margin-bottom:6px;letter-spacing:1px}
+.header .subtitle{font-size:14px;color:#a6adc8;margin-bottom:10px}
+.header .objective{font-size:15px;color:#f9e2af;background:rgba(249,226,175,.1);display:inline-block;padding:6px 18px;border-radius:8px;border:1px solid rgba(249,226,175,.25)}
+.intuition{max-width:900px;margin:18px auto;padding:14px 22px;background:#262637;border-radius:10px;border-left:4px solid #a6e3a1;font-size:15px;line-height:1.8;color:#cdd6f4}
+.main-container{display:flex;gap:20px;max-width:1200px;margin:18px auto;padding:0 16px;align-items:flex-start}
+.left-panel{flex:0 0 320px;min-width:280px}
+.right-panel{flex:1;min-width:400px}
+.calc-panel{background:#262637;border-radius:12px;padding:18px;border:1px solid #45475a}
+.calc-panel h3{font-size:16px;color:#89b4fa;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.step{background:#1e1e2e;border-radius:8px;padding:12px;margin-bottom:10px;border-left:3px solid #585b70;transition:all .3s}
+.step.active{border-left-color:#a6e3a1;background:rgba(166,227,161,.06)}
+.step.warning{border-left-color:#f38ba8;background:rgba(243,139,168,.06)}
+.step h4{font-size:14px;color:#f9e2af;margin-bottom:6px}
+.step p{font-size:13px;color:#bac2de;line-height:1.6}
+.step .formula{font-family:"Courier New",monospace;color:#a6e3a1;font-size:14px;margin:6px 0;padding:6px 10px;background:rgba(166,227,161,.08);border-radius:6px;display:inline-block}
+.step .values{color:#89b4fa;font-weight:bold}
+.step .result{color:#f9e2af;font-weight:bold;font-size:15px}
+.canvas-wrapper{background:#1e1e2e;border-radius:12px;border:1px solid #45475a;overflow:hidden;position:relative}
+canvas{display:block;width:100%;cursor:crosshair}
+.toolbar{display:flex;gap:8px;padding:12px;background:#262637;border-radius:0 0 12px 12px;flex-wrap:wrap;justify-content:center}
+.toolbar button{padding:8px 18px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:bold;transition:all .2s;font-family:inherit}
+.btn-reset{background:#f38ba8;color:#1e1e2e}
+.btn-reset:hover{background:#eba0ac}
+.btn-hint{background:#fab387;color:#1e1e2e}
+.btn-hint:hover{background:#f9e2af}
+.btn-animate{background:#89b4fa;color:#1e1e2e}
+.btn-animate:hover{background:#74c7ec}
+.info-bar{display:flex;gap:16px;justify-content:center;padding:10px;background:#262637;border-radius:12px;margin-bottom:12px;flex-wrap:wrap}
+.info-item{text-align:center;padding:6px 14px;background:#1e1e2e;border-radius:8px;min-width:100px}
+.info-item .label{font-size:11px;color:#6c7086;margin-bottom:2px}
+.info-item .value{font-size:18px;font-weight:bold;font-family:"Courier New",monospace}
+.val-rise{color:#a6e3a1}
+.val-run{color:#89b4fa}
+.val-slope{color:#f9e2af}
+.val-zero{color:#f38ba8}
+.concept-card{max-width:1200px;margin:18px auto;padding:18px 22px;background:#262637;border-radius:12px;border:1px solid #45475a;display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.concept-card .card-visual{flex:0 0 120px;text-align:center;font-size:48px}
+.concept-card .card-text{flex:1;min-width:200px}
+.concept-card .card-text h3{color:#89b4fa;font-size:16px;margin-bottom:6px}
+.concept-card .card-text p{font-size:14px;line-height:1.7;color:#bac2de}
+.concept-card .card-text .key-points{margin-top:8px}
+.concept-card .card-text .key-points li{margin:4px 0;font-size:13px;color:#cdd6f4}
+.feedback-section{max-width:1200px;margin:18px auto;padding:18px 22px;background:#262637;border-radius:12px;border:1px solid #45475a}
+.feedback-section h3{color:#a6e3a1;font-size:16px;margin-bottom:12px}
+.feedback-box{padding:14px 18px;border-radius:8px;font-size:14px;line-height:1.7;min-height:60px;transition:all .3s}
+.feedback-box.positive{background:rgba(166,227,161,.1);border:1px solid rgba(166,227,161,.3);color:#a6e3a1}
+.feedback-box.neutral{background:rgba(137,180,250,.1);border:1px solid rgba(137,180,250,.3);color:#89b4fa}
+.feedback-box.info{background:rgba(249,226,175,.1);border:1px solid rgba(249,226,175,.3);color:#f9e2af}
+.feedback-box.negative{background:rgba(243,139,168,.1);border:1px solid rgba(243,139,168,.3);color:#f38ba8}
+.confidence-section{max-width:1200px;margin:18px auto;padding:18px 22px;background:#262637;border-radius:12px;border:1px solid #45475a;text-align:center}
+.confidence-section h3{color:#fab387;font-size:16px;margin-bottom:12px}
+.confidence-stars{display:flex;gap:8px;justify-content:center;margin-bottom:10px}
+.confidence-stars button{width:48px;height:48px;border:2px solid #45475a;border-radius:10px;background:#1e1e2e;color:#cdd6f4;font-size:18px;cursor:pointer;transition:all .2s;font-family:inherit}
+.confidence-stars button:hover{border-color:#fab387;background:rgba(250,179,135,.1)}
+.confidence-stars button.selected{border-color:#fab387;background:rgba(250,179,135,.2);color:#fab387;font-weight:bold}
+.confidence-stars button.submitted{opacity:.5;cursor:default}
+.confidence-label{font-size:13px;color:#6c7086;margin-top:4px}
+.reflection-section{max-width:1200px;margin:18px auto;padding:18px 22px;background:#262637;border-radius:12px;border:1px solid #45475a}
+.reflection-section h3{color:#cba6f7;font-size:16px;margin-bottom:12px}
+.reflection-options{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.reflection-options label{display:flex;align-items:center;gap:6px;padding:8px 14px;background:#1e1e2e;border-radius:8px;cursor:pointer;transition:all .2s;border:1px solid #45475a;font-size:13px}
+.reflection-options label:hover{border-color:#cba6f7}
+.reflection-options input{accent-color:#cba6f7}
+.reflection-options label:has(input:checked){border-color:#cba6f7;background:rgba(203,166,247,.1)}
+.reflection-textarea{width:100%;min-height:80px;background:#1e1e2e;border:1px solid #45475a;border-radius:8px;color:#cdd6f4;padding:12px;font-size:14px;font-family:inherit;resize:vertical;margin-bottom:12px}
+.reflection-textarea:focus{outline:none;border-color:#cba6f7}
+.reflection-actions{text-align:center}
+.reflection-actions button{padding:10px 28px;border:none;border-radius:8px;background:#cba6f7;color:#1e1e2e;font-size:14px;font-weight:bold;cursor:pointer;transition:all .2s;font-family:inherit}
+.reflection-actions button:hover{background:#ddb8f9}
+.reflection-actions button:disabled{opacity:.5;cursor:default}
+.hint-box{max-width:1200px;margin:12px auto;padding:14px 18px;background:rgba(250,179,135,.08);border:1px solid rgba(250,179,135,.3);border-radius:10px;font-size:13px;color:#fab387;line-height:1.7;display:none}
+.hint-box.visible{display:block}
+.status-badge{display:inline-block;padding:2px 10px;border-radius:6px;font-size:11px;font-weight:bold;margin-left:8px}
+.status-complete{background:rgba(166,227,161,.2);color:#a6e3a1}
+.status-working{background:rgba(137,180,250,.2);color:#89b4fa}
+@media(max-width:768px){.main-container{flex-direction:column}.left-panel{flex:none;width:100%}.right-panel{flex:none;width:100%}.concept-card{flex-direction:column;text-align:center}}
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>斜率是变化快慢的第一种语言</h1>
+    <div class="subtitle">本节聚焦：斜率与变化率</div>
+    <div class="objective">🎯 学习目标：通过拖动两点观察直线斜率的变化，理解「斜率越大，变化越快」的含义。</div>
+</div>
+
+<div class="intuition" id="intuition">
+    💡 <strong>直觉理解：</strong>斜率描述一条直线每向右走 1 个单位，向上或向下变化多少。它是导数的前置概念——当你把两个点靠得越来越近时，割线的斜率就趋近于某一点处的瞬时变化率（导数）。正斜率表示上升，负斜率表示下降，零斜率表示水平不变。
+</div>
+
+<div class="main-container">
+    <div class="left-panel">
+        <div class="calc-panel">
+            <h3>📐 计算步骤 <span class="status-badge status-working" id="statusBadge">操作中</span></h3>
+            <div class="step" id="step1">
+                <h4>第 1 步：确定两点坐标</h4>
+                <p>点 A <span class="values" id="valA">(2, 1)</span>，点 B <span class="values" id="valB">(6, 5)</span></p>
+            </div>
+            <div class="step" id="step2">
+                <h4>第 2 步：计算上升量（Δy）</h4>
+                <div class="formula">Δy = y₂ − y₁ = <span id="formulaDy" class="values">5</span> − <span id="formulaY1" class="values">1</span> = <span class="values" id="calcDy">4</span></div>
+            </div>
+            <div class="step" id="step3">
+                <h4>第 3 步：计算水平距离（Δx）</h4>
+                <div class="formula">Δx = x₂ − x₁ = <span id="formulaDx2" class="values">6</span> − <span id="formulaX1" class="values">2</span> = <span class="values" id="calcDx">4</span></div>
+            </div>
+            <div class="step" id="step4">
+                <h4>第 4 步：计算斜率</h4>
+                <div class="formula">斜率 = Δy / Δx = <span id="formulaSlope" class="values">4</span> / <span id="formulaSlopeDx" class="values">4</span> = <span class="result" id="calcSlope">1.00</span></div>
+            </div>
+            <div class="step" id="step5">
+                <h4>第 5 步：解释含义</h4>
+                <p id="interpretation">直线每向右移动 1 个单位，向上移动 <strong>1.00</strong> 个单位。这是<strong>正斜率</strong>，表示函数在上升。</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div class="info-bar">
+            <div class="info-item"><div class="label">上升量 Δy</div><div class="value val-rise" id="infoDy">4.00</div></div>
+            <div class="info-item"><div class="label">水平距离 Δx</div><div class="value val-run" id="infoDx">4.00</div></div>
+            <div class="info-item"><div class="label">斜率 m</div><div class="value val-slope" id="infoSlope">1.00</div></div>
+        </div>
+        <div class="canvas-wrapper">
+            <canvas id="mainCanvas" width="700" height="500"></canvas>
+        </div>
+        <div class="toolbar">
+            <button class="btn-reset" id="btnReset" title="重置到默认位置">🔄 重置</button>
+            <button class="btn-hint" id="btnHint" title="显示提示">💡 提示</button>
+            <button class="btn-animate" id="btnAnimate" title="自动演示：移动点B靠近点A">▶ 逼近演示</button>
+        </div>
+    </div>
+</div>
+
+<div class="hint-box" id="hintBox">
+    💡 <strong>提示：</strong>拖动画布上的 <strong style="color:#f9e2af">黄色圆点（点 A）</strong> 或 <strong style="color:#a6e3a1">绿色圆点（点 B）</strong>，观察左侧计算步骤和上方斜率数值的实时变化。试试把两点拖到同一高度（零斜率），或者让直线更陡峭（大斜率）！点击「逼近演示」可以看到当两点靠得非常近时，割线如何趋近于切线——这就是导数的思想。
+</div>
+
+<div class="concept-card" id="conceptCard">
+    <div class="card-visual">📈</div>
+    <div class="card-text">
+        <h3>核心概念卡：斜率 = 变化率</h3>
+        <p>斜率衡量的是「变化有多快」。斜率越大（绝对值），直线越陡，函数值变化越快；斜率为 0 时函数值不变；负斜率表示函数在减小。</p>
+        <ul class="key-points">
+            <li>✅ <strong>正斜率</strong>（m > 0）：直线从左下到右上，函数在增加</li>
+            <li>✅ <strong>零斜率</strong>（m = 0）：水平直线，函数值不变</li>
+            <li>✅ <strong>负斜率</strong>（m < 0）：直线从左上到右下，函数在减小</li>
+            <li>✅ <strong>斜率越大</strong>（|m| 越大），变化越剧烈</li>
+        </ul>
+    </div>
+</div>
+
+<div class="feedback-section">
+    <h3>📝 即时操作反馈</h3>
+    <div class="feedback-box neutral" id="feedbackBox">
+        拖动画布上的两点开始探索吧！观察斜率数值如何随两点位置变化。
+    </div>
+</div>
+
+<div class="confidence-section">
+    <h3>🙋 你对「根据两点计算斜率并判断正负」有多自信？</h3>
+    <div class="confidence-stars" id="confidenceStars">
+        <button data-val="1" title="一点也不自信">1</button>
+        <button data-val="2" title="不太自信">2</button>
+        <button data-val="3" title="一般">3</button>
+        <button data-val="4" title="比较自信">4</button>
+        <button data-val="5" title="非常自信">5</button>
+    </div>
+    <div class="confidence-label" id="confidenceLabel">点击数字表达你的信心水平</div>
+</div>
+
+<div class="reflection-section">
+    <h3>🤔 简短反思：今天你发现了什么？</h3>
+    <div class="reflection-options" id="reflectionOptions">
+        <label><input type="checkbox" name="refl" value="slope_meaning"> 我理解了斜率的实际含义</label>
+        <label><input type="checkbox" name="refl" value="positive_negative"> 我能区分正斜率和负斜率</label>
+        <label><input type="checkbox" name="refl" value="zero_slope"> 我注意到零斜率意味着水平不变</label>
+        <label><input type="checkbox" name="refl" value="steepness"> 我明白了斜率越大变化越快</label>
+        <label><input type="checkbox" name="refl" value="derivative_hint"> 我看到了斜率与导数的联系</label>
+    </div>
+    <textarea class="reflection-textarea" id="reflectionText" placeholder="写下你的思考或疑问，例如：「我发现当两点靠得越来越近时……」"></textarea>
+    <div class="reflection-actions">
+        <button id="btnSubmitReflection" disabled>提交反思</button>
+    </div>
+</div>
+
+<script>
+(function(){
+    window.MAIC_LESSON_META={lesson_id:'A-03',module_id:'OM-A1',course_version:'demo-closed-loop-v1',concept_name:'斜率与变化率'};
+    var lessonId='A-03',moduleId='OM-A1',courseVersion='demo-closed-loop-v1';
+    var startTime=Date.now();
+    var pageLoaded=false;
+    var interactionComplete=false;
+    var confidenceSubmitted=false;
+    var reflectionSubmitted=false;
+    var hintUsed=false;
+    var dragPoint=null;
+    var animating=false;
+    var animFrameId=null;
+
+    var defaultAx=2,defaultAy=1,defaultBx=6,defaultBy=5;
+    var pointA={x:defaultAx,y:defaultAy};
+    var pointB={x:defaultBx,y:defaultBy};
+    var canvasXMin=-2,canvasXMax=10,canvasYMin=-3,canvasYMax=8;
+
+    var canvas,ctx;
+    var canvasWidth,canvasHeight;
+    var padL=60,padR=20,padT=20,padB=50;
+    var plotW,plotH;
+
+    function mathToCanvasX(mx){return padL+(mx-canvasXMin)/(canvasXMax-canvasXMin)*plotW}
+    function mathToCanvasY(my){return padT+(canvasYMax-my)/(canvasYMax-canvasYMin)*plotH}
+    function canvasToMathX(cx){return canvasXMin+(cx-padL)/plotW*(canvasXMax-canvasXMin)}
+    function canvasToMathY(cy){return canvasYMax-(cy-padT)/plotH*(canvasYMax-canvasYMin)}
+
+    function trackEvent(eventType,payload){
+        var evt={
+            lesson_id:lessonId,
+            module_id:moduleId,
+            course_version:courseVersion,
+            event_type:eventType,
+            timestamp:new Date().toISOString(),
+            time_on_task_ms:Date.now()-startTime,
+            interaction_state:getInteractionState()
+        };
+        if(payload){for(var k in payload){if(payload.hasOwnProperty(k)){evt[k]=payload[k]}}}
+        try{
+            var arr=JSON.parse(localStorage.getItem('maic_learning_events')||'[]');
+            arr.push(evt);
+            localStorage.setItem('maic_learning_events',JSON.stringify(arr));
+        }catch(e){}
+        try{window.postMessage({type:'maic_learning_event',payload:evt},'*')}catch(e){}
+    }
+
+    function getInteractionState(){
+        var dy=pointB.y-pointA.y;
+        var dx=pointB.x-pointA.x;
+        var m=dx!==0?dy/dx:0;
+        var slopeType='positive';
+        if(Math.abs(dx)<0.01)slopeType='undefined';
+        else if(Math.abs(m)<0.05)slopeType='zero';
+        else if(m<0)slopeType='negative';
+        return JSON.stringify({ax:pointA.x.toFixed(2),ay:pointA.y.toFixed(2),bx:pointB.x.toFixed(2),by:pointB.y.toFixed(2),dy:dy.toFixed(2),dx:dx.toFixed(2),slope:m.toFixed(2),slopeType:slopeType});
+    }
+
+    function updateCalculations(){
+        var ax=pointA.x,ay=pointA.y,bx=pointB.x,by=pointB.y;
+        var dy=by-ay,dx=bx-ax;
+        var m=dx!==0?dy/dx:NaN;
+
+        document.getElementById('valA').textContent='('+ax.toFixed(2)+', '+ay.toFixed(2)+')';
+        document.getElementById('valB').textContent='('+bx.toFixed(2)+', '+by.toFixed(2)+')';
+        document.getElementById('formulaDy').textContent=by.toFixed(2);
+        document.getElementById('formulaY1').textContent=ay.toFixed(2);
+        document.getElementById('calcDy').textContent=dy.toFixed(2);
+        document.getElementById('formulaDx2').textContent=bx.toFixed(2);
+        document.getElementById('formulaX1').textContent=ax.toFixed(2);
+        document.getElementById('calcDx').textContent=dx.toFixed(2);
+
+        var infoDy=document.getElementById('infoDy');
+        var infoDx=document.getElementById('infoDx');
+        var infoSlope=document.getElementById('infoSlope');
+
+        infoDy.textContent=dy.toFixed(2);
+        infoDx.textContent=dx.toFixed(2);
+
+        if(isNaN(m)||Math.abs(dx)<0.001){
+            document.getElementById('formulaSlope').textContent=dy.toFixed(2);
+            document.getElementById('formulaSlopeDx').textContent=dx.toFixed(2);
+            document.getElementById('calcSlope').textContent='未定义（垂直）';
+            infoSlope.textContent='未定义';
+            infoSlope.className='value val-zero';
+            var step4El=document.getElementById('step4');
+            step4El.className='step warning';
+        }else{
+            document.getElementById('formulaSlope').textContent=dy.toFixed(2);
+            document.getElementById('formulaSlopeDx').textContent=dx.toFixed(2);
+            document.getElementById('calcSlope').textContent=m.toFixed(2);
+            infoSlope.textContent=m.toFixed(2);
+            document.getElementById('step4').className='step active';
+            if(Math.abs(m)<0.05){infoSlope.className='value val-zero'}
+            else if(m>0){infoSlope.className='value val-slope'}
+            else{infoSlope.className='value val-rise'}
+        }
+
+        var interp=document.getElementById('interpretation');
+        if(Math.abs(dx)<0.001){
+            interp.innerHTML='<strong style="color:#f38ba8">直线垂直</strong>，斜率未定义。两点在同一竖直线上。';
+            document.getElementById('step3').className='step warning';
+        }else if(Math.abs(m)<0.05){
+            interp.innerHTML='直线几乎<strong style="color:#89b4fa">水平</strong>，斜率≈0，函数值几乎不变。';
+        }else if(m>0){
+            interp.innerHTML='直线每向右移动 1 个单位，向上移动 <strong>'+m.toFixed(2)+'</strong> 个单位。这是<strong style="color:#a6e3a1">正斜率</strong>，表示函数在上升。';
+        }else{
+            interp.innerHTML='直线每向右移动 1 个单位，向下移动 <strong>'+Math.abs(m).toFixed(2)+'</strong> 个单位。这是<strong style="color:#f38ba8">负斜率</strong>，表示函数在下降。';
+        }
+    }
+
+    function updateFeedback(){
+        var dy=pointB.y-pointA.y;
+        var dx=pointB.x-pointA.x;
+        var m=dx!==0?dy/dx:NaN;
+        var box=document.getElementById('feedbackBox');
+
+        if(Math.abs(dx)<0.001){
+            box.className='feedback-box negative';
+            box.innerHTML='⚠️ 两点在同一竖直线上，Δx = 0，斜率<strong>未定义</strong>。这对应于垂直直线。试试把两点拉开一些水平距离。';
+            return;
+        }
+        if(Math.abs(dx)<0.5){
+            box.className='feedback-box info';
+            box.innerHTML='🔍 两点靠得很近！Δx = '+dx.toFixed(2)+'，割线正在逼近<strong>切线</strong>——这就是导数的核心思想：让 Δx→0，斜率趋近瞬时变化率。';
+        }else if(Math.abs(m)<0.05){
+            box.className='feedback-box positive';
+            box.innerHTML='✅ 斜率 ≈ 0！这是一条<strong>水平直线</strong>，函数值没有变化。正斜率、零斜率、负斜率——你已经体验了三种情况！';
+        }else if(m>0){
+            if(m>3){
+                box.className='feedback-box info';
+                box.innerHTML='📈 斜率 = '+m.toFixed(2)+'，直线<strong>很陡峭</strong>！斜率越大，函数值变化越快。试试减小斜率看看区别。';
+            }else if(m>1){
+                box.className='feedback-box positive';
+                box.innerHTML='📈 正斜率 = '+m.toFixed(2)+'，直线在上升。每向右 1 个单位，向上 '+m.toFixed(2)+' 个单位。变化速度不错！';
+            }else{
+                box.className='feedback-box positive';
+                box.innerHTML='📈 正斜率 = '+m.toFixed(2)+'，直线在上升。变化速度比较平缓。试试把点拖得更远来增大斜率。';
+            }
+        }else{
+            if(m<-3){
+                box.className='feedback-box info';
+                box.innerHTML='📉 斜率 = '+m.toFixed(2)+'，直线<strong>陡峭下降</strong>！负斜率的绝对值越大，下降越快。';
+            }else{
+                box.className='feedback-box positive';
+                box.innerHTML='📉 负斜率 = '+m.toFixed(2)+'，直线在下降。每向右 1 个单位，向下 '+Math.abs(m).toFixed(2)+' 个单位。';
+            }
+        }
+    }
+
+    function draw(){
+        ctx.clearRect(0,0,canvasWidth,canvasHeight);
+
+        ctx.fillStyle='#1e1e2e';
+        ctx.fillRect(0,0,canvasWidth,canvasHeight);
+
+        var x0=mathToCanvasX(0);
+        var y0=mathToCanvasY(0);
+
+        ctx.strokeStyle='#45475a';
+        ctx.lineWidth=1;
+
+        for(var v=Math.ceil(canvasXMin);v<=canvasXMax;v++){
+            var cx=mathToCanvasX(v);
+            ctx.beginPath();ctx.moveTo(cx,padT);ctx.lineTo(cx,padT+plotH);ctx.stroke();
+            if(v!==0){ctx.fillStyle='#6c7086';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText(v,cx,mathToCanvasY(0)+16)}
+        }
+        for(var v=Math.ceil(canvasYMin);v<=canvasYMax;v++){
+            var cy=mathToCanvasY(v);
+            ctx.beginPath();ctx.moveTo(padL,cy);ctx.lineTo(padL+plotW,cy);ctx.stroke();
+            if(v!==0){ctx.fillStyle='#6c7086';ctx.font='11px sans-serif';ctx.textAlign='right';ctx.fillText(v,mathToCanvasX(0)-8,cy+4)}
+        }
+
+        ctx.strokeStyle='#6c7086';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(padL,y0);ctx.lineTo(padL+plotW,y0);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(x0,padT);ctx.lineTo(x0,padT+plotH);ctx.stroke();
+        ctx.fillStyle='#6c7086';ctx.font='12px sans-serif';ctx.textAlign='right';
+        ctx.fillText('x',padL+plotW-4,y0-6);
+        ctx.fillText('y',x0+12,padT+14);
+
+        ctx.strokeStyle='rgba(137,180,250,0.25)';ctx.lineWidth=1.5;
+        ctx.beginPath();
+        var first=true;
+        for(var px=canvasXMin;px<=canvasXMax;px+=0.1){
+            var py=0.15*px*px-0.3*px-0.5;
+            if(py>=canvasYMin&&py<=canvasYMax){
+                var cx=mathToCanvasX(px),cy=mathToCanvasY(py);
+                if(first){ctx.moveTo(cx,cy);first=false}else{ctx.lineTo(cx,cy)}
+            }else{first=true}
+        }
+        ctx.stroke();
+        ctx.fillStyle='rgba(137,180,250,0.4)';ctx.font='11px sans-serif';ctx.textAlign='left';
+        ctx.fillText('y = 0.15x² − 0.3x − 0.5（参考曲线）',padL+8,padT+14);
+
+        var ax=pointA.x,ay=pointA.y,bx=pointB.x,by=pointB.y;
+        var cax=mathToCanvasX(ax),cay=mathToCanvasY(ay);
+        var cbx=mathToCanvasX(bx),cby=mathToCanvasY(by);
+
+        var ext=8;
+        var dx2=bx-ax,dy2=by-ay;
+        if(dx2!==0){
+            var extLen=ext*Math.sqrt(dx2*dx2+dy2*dy2)/Math.abs(dx2);
+            ctx.strokeStyle='rgba(249,226,175,0.6)';ctx.lineWidth=2;
+            ctx.setLineDash([]);
+            ctx.beginPath();
+            ctx.moveTo(cax-dx2>=0?cax-extLen:mathToCanvasX(canvasXMax),cay-dy2*(dx2>=0?extLen:0)/dx2);
+            ctx.lineTo(mathToCanvasX(canvasXMax),mathToCanvasY(ay+dy2*dx2>=0?extLen:0)/Math.abs(dx2)*dy2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        if(dx2!==0){
+            var lineExt=Math.max(4,Math.abs(dx2)*0.5);
+            var sign=dx2>=0?1:-1;
+            var lx1=mathToCanvasX(ax-sign*lineExt);
+            var ly1=mathToCanvasY(ay-sign*lineExt*dy2/dx2);
+            var lx2=mathToCanvasX(bx+sign*lineExt);
+            var ly2=mathToCanvasY(by+sign*lineExt*dy2/dx2);
+            ctx.strokeStyle='rgba(249,226,175,0.5)';ctx.lineWidth=2;ctx.setLineDash([]);
+            ctx.beginPath();ctx.moveTo(lx1,ly1);ctx.lineTo(lx2,ly2);ctx.stroke();
+        }
+
+        var rightX=Math.max(cax,cbx)+20;
+        var midY=(cay+cby)/2;
+        ctx.strokeStyle='rgba(166,227,161,0.7)';ctx.lineWidth=1.5;ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(mathToCanvasX(ax),mathToCanvasY(ay));
+        ctx.lineTo(mathToCanvasX(ax),mathToCanvasY(by));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle='#a6e3a1';ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+        var labelX=mathToCanvasX(ax)+6;
+        ctx.fillText('Δy='+(by-ay).toFixed(2),labelX,midY);
+
+        var midX=(cax+cbx)/2;
+        var bottomY=Math.max(cay,cby)+24;
+        ctx.strokeStyle='rgba(137,180,250,0.7)';ctx.lineWidth=1.5;ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(mathToCanvasX(ax),mathToCanvasY(by));
+        ctx.lineTo(mathToCanvasX(bx),mathToCanvasY(by));
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle='#89b4fa';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+        ctx.fillText('Δx='+(bx-ax).toFixed(2),midX,bottomY);
+
+        drawPoint(cax,cay,'#f9e2af','#fab387','A');
+        drawPoint(cbx,cby,'#a6e3a1','#94e29b','B');
+    }
+
+    function drawPoint(cx,cy,fillColor,strokeColor,label){
+        ctx.fillStyle='rgba(0,0,0,0.3)';
+        ctx.beginPath();ctx.arc(cx+2,cy+2,8,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=fillColor;
+        ctx.beginPath();ctx.arc(cx,cy,8,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle=strokeColor;ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(cx,cy,8,0,Math.PI*2);ctx.stroke();
+        ctx.fillStyle=strokeColor;ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+        ctx.fillText(label,cx,cy-14);
+        ctx.fillStyle='#cdd6f4';ctx.font='11px sans-serif';
+    }
+
+    function getMousePos(e){
+        var rect=canvas.getBoundingClientRect();
+        var scaleX=canvasWidth/rect.width;
+        var scaleY=canvasHeight/rect.height;
+        var clientX=e.touches?e.touches[0].clientX:e.clientX;
+        var clientY=e.touches?e.touches[0].clientY:e.clientY;
+        return{x:(clientX-rect.left)*scaleX,y:(clientY-rect.top)*scaleY};
+    }
+
+    function hitTestPoint(mx,my){
+        var radius=16;
+        var cax=mathToCanvasX(pointA.x),cay=mathToCanvasY(pointA.y);
+        var cbx=mathToCanvasX(pointB.x),cby=mathToCanvasY(pointB.y);
+        if((mx-cax)*(mx-cax)+(my-cay)*(my-cay)<radius*radius)return 'A';
+        if((mx-cbx)*(mx-cbx)+(my-cby)*(my-cby)<radius*radius)return 'B';
+        return null;
+    }
+
+    function clampPoint(pt){
+        pt.x=Math.max(canvasXMin+0.1,Math.min(canvasXMax-0.1,pt.x));
+        pt.y=Math.max(canvasYMin+0.1,Math.min(canvasYMax-0.1,pt.y));
+    }
+
+    function onMouseDown(e){
+        if(animating)return;
+        e.preventDefault();
+        var pos=getMousePos(e);
+        var hit=hitTestPoint(pos.x,pos.y);
+        if(hit==='A')dragPoint=pointA;
+        else if(hit==='B')dragPoint=pointB;
+    }
+
+    function onMouseMove(e){
+        if(!dragPoint||animating)return;
+        e.preventDefault();
+        var pos=getMousePos(e);
+        dragPoint.x=canvasToMathX(pos.x);
+        dragPoint.y=canvasToMathY(pos.y);
+        clampPoint(dragPoint);
+        updateCalculations();
+        updateFeedback();
+        draw();
+        trackEvent('interaction_change',{dx:(pointB.x-pointA.x).toFixed(2),dy:(pointB.y-pointA.y).toFixed(2)});
+        checkCompletion();
+    }
+
+    function onMouseUp(e){
+        dragPoint=null;
+    }
+
+    function resetPoints(){
+        if(animating){cancelAnimationFrame(animFrameId);animating=false}
+        pointA.x=defaultAx;pointA.y=defaultAy;
+        pointB.x=defaultBx;pointB.y=defaultBy;
+        updateCalculations();
+        updateFeedback();
+        draw();
+        trackEvent('interaction_change',{action:'reset'});
+    }
+
+    function toggleHint(){
+        var box=document.getElementById('hintBox');
+        if(box.classList.contains('visible')){
+            box.classList.remove('visible');
+        }else{
+            box.classList.add('visible');
+            hintUsed=true;
+            trackEvent('hint_used',{});
+        }
+    }
+
+    function animateApproach(){
+        if(animating){cancelAnimationFrame(animFrameId);animating=false;return}
+        animating=true;
+        var startX=pointA.x,startY=pointA.y;
+        var targetX=(pointA.x+pointB.x)/2,targetY=(pointA.y+pointB.y)/2;
+        var steps=60,step=0;
+        document.getElementById('btnAnimate').textContent='⏸ 停止演示';
+        (function loop(){
+            step++;
+            var t=step/steps;
+            var ease=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+            pointA.x=startX+(targetX-startX)*ease;
+            pointA.y=startY+(targetY-startY)*ease;
+            clampPoint(pointA);
+            updateCalculations();
+            updateFeedback();
+            draw();
+            if(step<steps){animFrameId=requestAnimationFrame(loop)}
+            else{
+                animating=false;
+                document.getElementById('btnAnimate').textContent='▶ 逼近演示';
+                trackEvent('interaction_change',{action:'animation_complete',dx:(pointB.x-pointA.x).toFixed(2)});
+                checkCompletion();
+            }
+        })();
+    }
+
+    function checkCompletion(){
+        if(interactionComplete)return;
+        var dx=Math.abs(pointB.x-pointA.x);
+        if(dx<0.3||dx>5||Math.abs(pointB.y-pointA.y)>5){
+            interactionComplete=true;
+            document.getElementById('statusBadge').textContent='已完成';
+            document.getElementById('statusBadge').className='status-badge status-complete';
+            trackEvent('interaction_complete',{});
+        }
+    }
+
+    function setupConfidence(){
+        var buttons=document.querySelectorAll('#confidenceStars button');
+        buttons.forEach(function(btn){
+            btn.addEventListener('click',function(){
+                if(confidenceSubmitted)return;
+                buttons.forEach(function(b){b.classList.remove('selected')});
+                btn.classList.add('selected');
+                var val=parseInt(btn.getAttribute('data-val'));
+                var labels=['','一点也不自信','不太自信','一般','比较自信','非常自信'];
+                document.getElementById('confidenceLabel').textContent='你选择了：'+labels[val];
+                trackEvent('confidence_submitted',{confidence_level:val});
+                confidenceSubmitted=true;
+                buttons.forEach(function(b){b.classList.add('submitted')});
+            });
+        });
+    }
+
+    function setupReflection(){
+        var checkboxes=document.querySelectorAll('#reflectionOptions input');
+        checkboxes.forEach(function(cb){
+            cb.addEventListener('change',function(){
+                var anyChecked=false;
+                checkboxes.forEach(function(c){if(c.checked)anyChecked=true});
+                document.getElementById('btnSubmitReflection').disabled=!anyChecked;
+            });
+        });
+        document.getElementById('btnSubmitReflection').addEventListener('click',function(){
+            if(reflectionSubmitted)return;
+            var selected=[];
+            checkboxes.forEach(function(cb){if(cb.checked)selected.push(cb.value)});
+            var text=document.getElementById('reflectionText').value;
+            trackEvent('reflection_submitted',{reflection_topics:selected,reflection_text:text});
+            reflectionSubmitted=true;
+            document.getElementById('btnSubmitReflection').disabled=true;
+            document.getElementById('btnSubmitReflection').textContent='✅ 已提交';
+            checkboxes.forEach(function(cb){cb.disabled=true});
+            document.getElementById('reflectionText').disabled=true;
+        });
+    }
+
+    function init(){
+        canvas=document.getElementById('mainCanvas');
+        var wrapper=canvas.parentElement;
+        canvasWidth=700;canvasHeight=500;
+        canvas.style.width='100%';
+        canvas.style.height='auto';
+        plotW=canvasWidth-padL-padR;
+        plotH=canvasHeight-padT-padB;
+        ctx=canvas.getContext('2d');
+
+        canvas.addEventListener('mousedown',onMouseDown);
+        canvas.addEventListener('mousemove',onMouseMove);
+        canvas.addEventListener('mouseup',onMouseUp);
+        canvas.addEventListener('mouseleave',onMouseUp);
+        canvas.addEventListener('touchstart',function(e){e.preventDefault();onMouseDown(e)},{passive:false});
+        canvas.addEventListener('touchmove',function(e){e.preventDefault();onMouseMove(e)},{passive:false});
+        canvas.addEventListener('touchend',onMouseUp);
+
+        document.getElementById('btnReset').addEventListener('click',resetPoints);
+        document.getElementById('btnHint').addEventListener('click',toggleHint);
+        document.getElementById('btnAnimate').addEventListener('click',animateApproach);
+
+        setupConfidence();
+        setupReflection();
+
+        updateCalculations();
+        updateFeedback();
+        draw();
+
+        if(!pageLoaded){
+            pageLoaded=true;
+            trackEvent('page_loaded',{});
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded',init);
+})();
+</script>
+</body>
+</html>

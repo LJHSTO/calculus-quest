@@ -1,0 +1,1337 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>亲手算出一个梯度</title>
+    <style>
+        :root {
+            --bg: #0a0e13;
+            --bg-secondary: #111920;
+            --card: #1a2332;
+            --card-hover: #222d3f;
+            --accent: #00c896;
+            --accent-dim: #009970;
+            --accent-glow: rgba(0, 200, 150, 0.15);
+            --fg: #e4e8ec;
+            --fg-muted: #8a9bb0;
+            --border: #2a3648;
+            --error: #ff6b6b;
+            --warning: #ffa94d;
+            --success: #00c896;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* 背景装饰 */
+        .bg-pattern {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: 
+                radial-gradient(ellipse 80% 50% at 20% 10%, rgba(0, 200, 150, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0, 150, 200, 0.06) 0%, transparent 50%);
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px 20px 60px;
+        }
+
+        /* 标题区 */
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .objective {
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+        .intuition {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 24px;
+            max-width: 700px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .intuition h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--fg-muted);
+            margin-bottom: 8px;
+        }
+
+        .intuition p {
+            font-size: 1rem;
+            color: var(--fg);
+        }
+
+        /* 主互动区 */
+        .main-interaction {
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 24px;
+            margin: 32px 0;
+        }
+
+        @media (max-width: 900px) {
+            .main-interaction {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 左侧填空区 */
+        .calculation-panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .hint-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--fg-muted);
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .hint-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .function-display {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .function-label {
+            font-size: 0.8rem;
+            color: var(--fg-muted);
+            margin-bottom: 6px;
+        }
+
+        .function-expr {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 步骤 */
+        .step {
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-left: 3px solid var(--border);
+            transition: border-color 0.3s;
+        }
+
+        .step.completed {
+            border-left-color: var(--success);
+        }
+
+        .step.active {
+            border-left-color: var(--accent);
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .step-num {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--border);
+            color: var(--fg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .step.completed .step-num {
+            background: var(--success);
+            color: var(--bg);
+        }
+
+        .step-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .step-content {
+            margin-left: 34px;
+        }
+
+        .step-content p {
+            font-size: 0.9rem;
+            color: var(--fg-muted);
+            margin-bottom: 10px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .input-row span {
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            color: var(--fg);
+        }
+
+        .calc-input {
+            width: 100px;
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            background: var(--card);
+            color: var(--fg);
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.2s;
+        }
+
+        .calc-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .calc-input.correct {
+            border-color: var(--success);
+            background: rgba(0, 200, 150, 0.1);
+        }
+
+        .calc-input.incorrect {
+            border-color: var(--error);
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .result-display {
+            margin-top: 12px;
+            padding: 10px;
+            background: var(--card);
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+        }
+
+        .result-display.success {
+            background: rgba(0, 200, 150, 0.1);
+            border: 1px solid var(--success);
+        }
+
+        /* 右侧可视化 */
+        .visualization-panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .viz-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .viz-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--fg);
+        }
+
+        .point-controls {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .point-input-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .point-input-group label {
+            font-size: 0.9rem;
+            color: var(--fg-muted);
+        }
+
+        .point-input-group input {
+            width: 60px;
+            padding: 6px 10px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg-secondary);
+            color: var(--fg);
+            font-size: 0.95rem;
+            text-align: center;
+        }
+
+        .point-input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .canvas-container {
+            flex: 1;
+            min-height: 400px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #mainCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .vector-info {
+            margin-top: 16px;
+            padding: 14px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .info-item {
+            text-align: center;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--fg-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* 概念卡 */
+        .concept-card {
+            background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin: 24px 0;
+        }
+
+        .concept-card h3 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .concept-card h3::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .concept-points {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .concept-point {
+            display: flex;
+            gap: 12px;
+        }
+
+        .concept-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: var(--accent-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .concept-text {
+            font-size: 0.95rem;
+            color: var(--fg-muted);
+        }
+
+        /* 反馈区 */
+        .feedback-area {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 24px 0;
+            min-height: 80px;
+            transition: all 0.3s;
+        }
+
+        .feedback-area.success {
+            border-color: var(--success);
+            background: rgba(0, 200, 150, 0.05);
+        }
+
+        .feedback-area.warning {
+            border-color: var(--warning);
+            background: rgba(255, 169, 77, 0.05);
+        }
+
+        .feedback-message {
+            font-size: 1rem;
+            color: var(--fg);
+        }
+
+        .feedback-message strong {
+            color: var(--accent);
+        }
+
+        /* 信心评分 */
+        .confidence-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+
+        .confidence-section h3 {
+            font-size: 1rem;
+            color: var(--fg);
+            margin-bottom: 16px;
+        }
+
+        .confidence-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .confidence-btn {
+            flex: 1;
+            min-width: 50px;
+            max-width: 80px;
+            padding: 12px 8px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-secondary);
+            color: var(--fg-muted);
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .confidence-btn:hover {
+            border-color: var(--accent);
+            color: var(--fg);
+        }
+
+        .confidence-btn.selected {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+            color: var(--accent);
+        }
+
+        .confidence-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: var(--fg-muted);
+        }
+
+        /* 反思区 */
+        .reflection-section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 24px 0;
+        }
+
+        .reflection-section h3 {
+            font-size: 1rem;
+            color: var(--fg);
+            margin-bottom: 16px;
+        }
+
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .reflection-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reflection-option:hover {
+            border-color: var(--accent-dim);
+        }
+
+        .reflection-option.selected {
+            border-color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .reflection-radio {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .reflection-option.selected .reflection-radio {
+            border-color: var(--accent);
+            background: var(--accent);
+        }
+
+        .reflection-text {
+            font-size: 0.95rem;
+            color: var(--fg);
+        }
+
+        /* 动画 */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; opacity: 0; }
+        .delay-2 { animation-delay: 0.2s; opacity: 0; }
+        .delay-3 { animation-delay: 0.3s; opacity: 0; }
+        .delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+        /* 提示框 */
+        .hint-popup {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--card);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 16px 20px;
+            max-width: 320px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            z-index: 100;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .hint-popup.show {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .hint-popup-title {
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .hint-popup-content {
+            font-size: 0.9rem;
+            color: var(--fg);
+        }
+
+        .hint-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--fg-muted);
+            cursor: pointer;
+            font-size: 1.2rem;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-pattern"></div>
+    
+    <div class="container">
+        <header class="animate-in">
+            <h1>亲手算出一个梯度</h1>
+            <p class="objective">通过填空计算，理解如何从偏导数构建梯度向量</p>
+            <div class="intuition">
+                <h3>直觉解释</h3>
+                <p>对每个变量分别求偏导，再按顺序排成向量，就得到梯度。梯度指向函数值增长最快的方向。</p>
+            </div>
+        </header>
+
+        <div class="main-interaction animate-in delay-1">
+            <div class="calculation-panel">
+                <div class="panel-header">
+                    <span class="panel-title">计算梯度</span>
+                    <button class="hint-btn" id="hintBtn">显示提示</button>
+                </div>
+                
+                <div class="function-display">
+                    <div class="function-label">目标函数</div>
+                    <div class="function-expr">f(x, y) = x² + 3xy + 2y²</div>
+                </div>
+
+                <!-- 步骤1: 求偏导 -->
+                <div class="step" id="step1">
+                    <div class="step-header">
+                        <span class="step-num">1</span>
+                        <span class="step-title">求偏导数</span>
+                    </div>
+                    <div class="step-content">
+                        <p>分别对 x 和 y 求偏导：</p>
+                        <div class="input-row" style="margin-bottom: 10px;">
+                            <span>∂f/∂x = </span>
+                            <input type="text" class="calc-input" id="partialX" placeholder="输入表达式">
+                        </div>
+                        <div class="input-row">
+                            <span>∂f/∂y = </span>
+                            <input type="text" class="calc-input" id="partialY" placeholder="输入表达式">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤2: 组装梯度 -->
+                <div class="step" id="step2">
+                    <div class="step-header">
+                        <span class="step-num">2</span>
+                        <span class="step-title">组装梯度向量</span>
+                    </div>
+                    <div class="step-content">
+                        <p>梯度 = (∂f/∂x, ∂f/∂y)</p>
+                        <div class="result-display" id="gradientDisplay">
+                            ∇f = (?, ?)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 步骤3: 代入点 -->
+                <div class="step" id="step3">
+                    <div class="step-header">
+                        <span class="step-num">3</span>
+                        <span class="step-title">代入具体点</span>
+                    </div>
+                    <div class="step-content">
+                        <p>在右侧选择或输入点的坐标，计算该点的梯度值。</p>
+                        <div class="input-row">
+                            <span>∇f(</span>
+                            <input type="number" class="calc-input" id="evalX" value="1" style="width: 60px;">
+                            <span>,</span>
+                            <input type="number" class="calc-input" id="evalY" value="1" style="width: 60px;">
+                            <span>) = ?</span>
+                        </div>
+                        <div class="result-display" id="evalResult" style="margin-top: 10px;">
+                            点击「计算」按钮查看结果
+                        </div>
+                        <button id="calcBtn" style="margin-top: 12px; width: 100%; padding: 10px; background: var(--accent); border: none; border-radius: 8px; color: var(--bg); font-weight: 600; cursor: pointer;">计算梯度值</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="visualization-panel">
+                <div class="viz-header">
+                    <span class="viz-title">梯度向量可视化</span>
+                    <div class="point-controls">
+                        <div class="point-input-group">
+                            <label>x =</label>
+                            <input type="number" id="pointX" value="1" step="0.5">
+                        </div>
+                        <div class="point-input-group">
+                            <label>y =</label>
+                            <input type="number" id="pointY" value="1" step="0.5">
+                        </div>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <div class="vector-info">
+                    <div class="info-item">
+                        <div class="info-label">梯度 X 分量</div>
+                        <div class="info-value" id="gradX">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">梯度 Y 分量</div>
+                        <div class="info-value" id="gradY">--</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">梯度模长</div>
+                        <div class="info-value" id="gradMag">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 即时反馈 -->
+        <div class="feedback-area animate-in delay-2" id="feedbackArea">
+            <div class="feedback-message" id="feedbackMsg">
+                完成左侧的计算步骤，系统会给出即时反馈。正确填写偏导数后，观察右侧图形中的梯度向量。
+            </div>
+        </div>
+
+        <!-- 概念卡 -->
+        <div class="concept-card animate-in delay-3">
+            <h3>关键概念</h3>
+            <div class="concept-points">
+                <div class="concept-point">
+                    <div class="concept-icon">1</div>
+                    <div class="concept-text">偏导数描述函数在单一方向上的变化率</div>
+                </div>
+                <div class="concept-point">
+                    <div class="concept-icon">2</div>
+                    <div class="concept-text">梯度向量由所有偏导数按顺序组成</div>
+                </div>
+                <div class="concept-point">
+                    <div class="concept-icon">3</div>
+                    <div class="concept-text">梯度方向是函数值增长最快的方向</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 信心评分 -->
+        <div class="confidence-section animate-in delay-4">
+            <h3>你对「梯度计算」的掌握程度如何？</h3>
+            <div class="confidence-buttons">
+                <button class="confidence-btn" data-score="1">1</button>
+                <button class="confidence-btn" data-score="2">2</button>
+                <button class="confidence-btn" data-score="3">3</button>
+                <button class="confidence-btn" data-score="4">4</button>
+                <button class="confidence-btn" data-score="5">5</button>
+            </div>
+            <div class="confidence-labels">
+                <span>完全不会</span>
+                <span>非常熟练</span>
+            </div>
+        </div>
+
+        <!-- 反思 -->
+        <div class="reflection-section animate-in delay-4">
+            <h3>简短反思</h3>
+            <div class="reflection-options">
+                <div class="reflection-option" data-reflection="understand">
+                    <div class="reflection-radio"></div>
+                    <div class="reflection-text">我理解了梯度是由偏导数组成的向量</div>
+                </div>
+                <div class="reflection-option" data-reflection="partial">
+                    <div class="reflection-radio"></div>
+                    <div class="reflection-text">我还需要更多练习求偏导数</div>
+                </div>
+                <div class="reflection-option" data-reflection="meaning">
+                    <div class="reflection-radio"></div>
+                    <div class="reflection-text">我想深入了解梯度的几何意义</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示框 -->
+    <div class="hint-popup" id="hintPopup">
+        <button class="hint-close" id="hintClose">×</button>
+        <div class="hint-popup-title">计算提示</div>
+        <div class="hint-popup-content" id="hintContent">
+            对 x 求偏导时，把 y 当作常数。例如 x² 的导数是 2x，3xy 对 x 的导数是 3y。
+        </div>
+    </div>
+
+    <script>
+        // 课程元数据
+        window.MAIC_LESSON_META = {
+            lesson_id: 'C-06',
+            module_id: 'OM-C1',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '梯度计算'
+        };
+
+        // 全局状态
+        var startTime = Date.now();
+        var interactionState = {
+            partialX: null,
+            partialY: null,
+            pointX: 1,
+            pointY: 1,
+            step1Complete: false,
+            step2Complete: false,
+            step3Complete: false,
+            hintUsed: false,
+            confidenceScore: null,
+            reflection: null
+        };
+
+        // 正确答案
+        var correctAnswers = {
+            partialX: ['2x+3y', '2x + 3y', '3y+2x', '3y + 2x'],
+            partialY: ['3x+4y', '3x + 4y', '4y+3x', '4y + 3x']
+        };
+
+        // 行为追踪函数
+        function trackEvent(eventType, payload) {
+            var event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: Date.now() - startTime,
+                interaction_state: JSON.parse(JSON.stringify(interactionState))
+            };
+
+            if (payload) {
+                Object.assign(event, payload);
+            }
+
+            // 存储到 localStorage
+            try {
+                var events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+                events.push(event);
+                localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            } catch (e) {
+                console.log('localStorage not available');
+            }
+
+            // postMessage 给父窗口
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'maic_learning_event',
+                        payload: event
+                    }, '*');
+                }
+            } catch (e) {
+                console.log('postMessage not available');
+            }
+        }
+
+        // Canvas 相关变量
+        var canvas = null;
+        var ctx = null;
+        var canvasWidth = 0;
+        var canvasHeight = 0;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化 Canvas
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas.getContext('2d');
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // 绑定事件
+            bindEvents();
+
+            // 触发页面加载事件
+            trackEvent('page_loaded');
+
+            // 初始绘制
+            drawVisualization();
+        });
+
+        function resizeCanvas() {
+            var container = canvas.parentElement;
+            canvasWidth = container.clientWidth;
+            canvasHeight = container.clientHeight;
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            drawVisualization();
+        }
+
+        function bindEvents() {
+            // 偏导数输入
+            document.getElementById('partialX').addEventListener('input', function(e) {
+                interactionState.partialX = e.target.value;
+                checkStep1();
+                trackEvent('interaction_change', { field: 'partialX', value: e.target.value });
+            });
+
+            document.getElementById('partialY').addEventListener('input', function(e) {
+                interactionState.partialY = e.target.value;
+                checkStep1();
+                trackEvent('interaction_change', { field: 'partialY', value: e.target.value });
+            });
+
+            // 点坐标输入
+            document.getElementById('pointX').addEventListener('input', function(e) {
+                interactionState.pointX = parseFloat(e.target.value) || 0;
+                document.getElementById('evalX').value = e.target.value;
+                drawVisualization();
+                trackEvent('interaction_change', { field: 'pointX', value: e.target.value });
+            });
+
+            document.getElementById('pointY').addEventListener('input', function(e) {
+                interactionState.pointY = parseFloat(e.target.value) || 0;
+                document.getElementById('evalY').value = e.target.value;
+                drawVisualization();
+                trackEvent('interaction_change', { field: 'pointY', value: e.target.value });
+            });
+
+            document.getElementById('evalX').addEventListener('input', function(e) {
+                interactionState.pointX = parseFloat(e.target.value) || 0;
+                document.getElementById('pointX').value = e.target.value;
+                drawVisualization();
+            });
+
+            document.getElementById('evalY').addEventListener('input', function(e) {
+                interactionState.pointY = parseFloat(e.target.value) || 0;
+                document.getElementById('pointY').value = e.target.value;
+                drawVisualization();
+            });
+
+            // 计算按钮
+            document.getElementById('calcBtn').addEventListener('click', function() {
+                calculateGradient();
+                trackEvent('interaction_change', { action: 'calculate_gradient' });
+            });
+
+            // 提示按钮
+            document.getElementById('hintBtn').addEventListener('click', function() {
+                showHint();
+                interactionState.hintUsed = true;
+                trackEvent('hint_used');
+            });
+
+            document.getElementById('hintClose').addEventListener('click', hideHint);
+
+            // 信心评分
+            var confBtns = document.querySelectorAll('.confidence-btn');
+            confBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    confBtns.forEach(function(b) { b.classList.remove('selected'); });
+                    btn.classList.add('selected');
+                    interactionState.confidenceScore = parseInt(btn.dataset.score);
+                    trackEvent('confidence_submitted', { score: interactionState.confidenceScore });
+                });
+            });
+
+            // 反思选项
+            var refOptions = document.querySelectorAll('.reflection-option');
+            refOptions.forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    refOptions.forEach(function(o) { o.classList.remove('selected'); });
+                    opt.classList.add('selected');
+                    interactionState.reflection = opt.dataset.reflection;
+                    trackEvent('reflection_submitted', { reflection: interactionState.reflection });
+                });
+            });
+        }
+
+        function checkStep1() {
+            var partialXInput = document.getElementById('partialX');
+            var partialYInput = document.getElementById('partialY');
+            var step1 = document.getElementById('step1');
+
+            var xCorrect = checkAnswer(partialXInput.value, correctAnswers.partialX);
+            var yCorrect = checkAnswer(partialYInput.value, correctAnswers.partialY);
+
+            partialXInput.classList.remove('correct', 'incorrect');
+            partialYInput.classList.remove('correct', 'incorrect');
+
+            if (partialXInput.value.trim()) {
+                partialXInput.classList.add(xCorrect ? 'correct' : 'incorrect');
+            }
+            if (partialYInput.value.trim()) {
+                partialYInput.classList.add(yCorrect ? 'correct' : 'incorrect');
+            }
+
+            if (xCorrect && yCorrect) {
+                step1.classList.add('completed');
+                interactionState.step1Complete = true;
+                updateGradientDisplay();
+                showFeedback('success', '偏导数计算正确！梯度 ∇f = (2x + 3y, 3x + 4y)');
+                
+                if (!interactionState.step2Complete) {
+                    interactionState.step2Complete = true;
+                    document.getElementById('step2').classList.add('completed');
+                }
+            } else {
+                step1.classList.remove('completed');
+                interactionState.step1Complete = false;
+            }
+        }
+
+        function checkAnswer(value, correctList) {
+            var normalized = value.replace(/\s+/g, '').toLowerCase();
+            return correctList.some(function(correct) {
+                return normalized === correct.replace(/\s+/g, '').toLowerCase();
+            });
+        }
+
+        function updateGradientDisplay() {
+            var display = document.getElementById('gradientDisplay');
+            if (interactionState.step1Complete) {
+                display.innerHTML = '∇f = (2x + 3y, 3x + 4y)';
+                display.classList.add('success');
+            } else {
+                display.innerHTML = '∇f = (?, ?)';
+                display.classList.remove('success');
+            }
+        }
+
+        function calculateGradient() {
+            var x = parseFloat(document.getElementById('evalX').value) || 0;
+            var y = parseFloat(document.getElementById('evalY').value) || 0;
+
+            var gradX = 2 * x + 3 * y;
+            var gradY = 3 * x + 4 * y;
+
+            document.getElementById('evalResult').innerHTML = 
+                '∇f(' + x + ', ' + y + ') = (' + gradX.toFixed(2) + ', ' + gradY.toFixed(2) + ')';
+            document.getElementById('evalResult').classList.add('success');
+
+            interactionState.step3Complete = true;
+            document.getElementById('step3').classList.add('completed');
+
+            trackEvent('interaction_complete', { 
+                pointX: x, 
+                pointY: y, 
+                gradX: gradX, 
+                gradY: gradY 
+            });
+        }
+
+        function showFeedback(type, message) {
+            var area = document.getElementById('feedbackArea');
+            var msg = document.getElementById('feedbackMsg');
+            
+            area.classList.remove('success', 'warning');
+            area.classList.add(type);
+            msg.innerHTML = message;
+        }
+
+        function showHint() {
+            var popup = document.getElementById('hintPopup');
+            popup.classList.add('show');
+        }
+
+        function hideHint() {
+            var popup = document.getElementById('hintPopup');
+            popup.classList.remove('show');
+        }
+
+        // Canvas 绘制函数
+        function drawVisualization() {
+            if (!ctx) return;
+
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            var centerX = canvasWidth / 2;
+            var centerY = canvasHeight / 2;
+            var scale = 40; // 每单位像素数
+
+            // 绘制网格
+            drawGrid(centerX, centerY, scale);
+
+            // 绘制等高线
+            drawContours(centerX, centerY, scale);
+
+            // 绘制坐标轴
+            drawAxes(centerX, centerY, scale);
+
+            // 绘制当前点
+            var px = parseFloat(document.getElementById('pointX').value) || 0;
+            var py = parseFloat(document.getElementById('pointY').value) || 0;
+            
+            // 计算梯度
+            var gx = 2 * px + 3 * py;
+            var gy = 3 * px + 4 * py;
+
+            // 更新信息显示
+            document.getElementById('gradX').textContent = gx.toFixed(2);
+            document.getElementById('gradY').textContent = gy.toFixed(2);
+            document.getElementById('gradMag').textContent = Math.sqrt(gx*gx + gy*gy).toFixed(2);
+
+            // 绘制梯度向量
+            drawGradientVector(centerX, centerY, scale, px, py, gx, gy);
+
+            // 绘制当前点
+            drawPoint(centerX, centerY, scale, px, py);
+        }
+
+        function drawGrid(cx, cy, scale) {
+            ctx.strokeStyle = 'rgba(42, 54, 72, 0.5)';
+            ctx.lineWidth = 1;
+
+            var gridStep = scale;
+            
+            // 垂直线
+            for (var x = cx % gridStep; x < canvasWidth; x += gridStep) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvasHeight);
+                ctx.stroke();
+            }
+
+            // 水平线
+            for (var y = cy % gridStep; y < canvasHeight; y += gridStep) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvasWidth, y);
+                ctx.stroke();
+            }
+        }
+
+        function drawContours(cx, cy, scale) {
+            var levels = [-4, -2, -1, 0, 1, 2, 4, 8, 16];
+            var colors = [
+                'rgba(100, 150, 255, 0.3)',
+                'rgba(100, 150, 255, 0.3)',
+                'rgba(100, 150, 255, 0.3)',
+                'rgba(150, 150, 150, 0.4)',
+                'rgba(0, 200, 150, 0.3)',
+                'rgba(0, 200, 150, 0.3)',
+                'rgba(0, 200, 150, 0.3)',
+                'rgba(0, 200, 150, 0.4)',
+                'rgba(0, 200, 150, 0.4)'
+            ];
+
+            ctx.lineWidth = 1.5;
+
+            for (var i = 0; i < levels.length; i++) {
+                drawContour(cx, cy, scale, levels[i], colors[i]);
+            }
+        }
+
+        function drawContour(cx, cy, scale, level, color) {
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+
+            var step = 4;
+            for (var screenX = 0; screenX < canvasWidth; screenX += step) {
+                for (var screenY = 0; screenY < canvasHeight; screenY += step) {
+                    var x = (screenX - cx) / scale;
+                    var y = -(screenY - cy) / scale;
+                    var f = x*x + 3*x*y + 2*y*y;
+
+                    // 检查等高线穿越
+                    var nextX = (screenX + step - cx) / scale;
+                    var nextY = -(screenY + step - cy) / scale;
+                    var fNextX = nextX*nextX + 3*nextX*y + 2*y*y;
+                    var fNextY = x*x + 3*x*nextY + 2*nextY*nextY;
+
+                    if ((f - level) * (fNextX - level) < 0) {
+                        ctx.moveTo(screenX, screenY);
+                        ctx.lineTo(screenX + step, screenY);
+                    }
+                    if ((f - level) * (fNextY - level) < 0) {
+                        ctx.moveTo(screenX, screenY);
+                        ctx.lineTo(screenX, screenY + step);
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+
+        function drawAxes(cx, cy, scale) {
+            ctx.strokeStyle = 'rgba(228, 232, 236, 0.6)';
+            ctx.lineWidth = 2;
+
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(0, cy);
+            ctx.lineTo(canvasWidth, cy);
+            ctx.stroke();
+
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, canvasHeight);
+            ctx.stroke();
+
+            // 轴标签
+            ctx.fillStyle = 'rgba(228, 232, 236, 0.8)';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('x', canvasWidth - 20, cy - 10);
+            ctx.fillText('y', cx + 10, 20);
+
+            // 刻度
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = 'rgba(138, 155, 176, 0.8)';
+            for (var i = -5; i <= 5; i++) {
+                if (i === 0) continue;
+                ctx.fillText(i.toString(), cx + i * scale - 5, cy + 15);
+                ctx.fillText((-i).toString(), cx + 5, cy + i * scale + 4);
+            }
+        }
+
+        function drawGradientVector(cx, cy, scale, px, py, gx, gy) {
+            if (gx === 0 && gy === 0) return;
+
+            var screenX = cx + px * scale;
+            var screenY = cy - py * scale;
+
+            // 向量归一化并缩放以便显示
+            var mag = Math.sqrt(gx * gx + gy * gy);
+            var arrowScale = scale * 1.5;
+            var vx = (gx / mag) * arrowScale;
+            var vy = -(gy / mag) * arrowScale;
+
+            // 绘制向量线
+            ctx.strokeStyle = '#00c896';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(screenX, screenY);
+            ctx.lineTo(screenX + vx, screenY + vy);
+            ctx.stroke();
+
+            // 绘制箭头
+            var angle = Math.atan2(vy, vx);
+            var arrowSize = 12;
+            
+            ctx.fillStyle = '#00c896';
+            ctx.beginPath();
+            ctx.moveTo(screenX + vx, screenY + vy);
+            ctx.lineTo(
+                screenX + vx - arrowSize * Math.cos(angle - Math.PI / 6),
+                screenY + vy - arrowSize * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+                screenX + vx - arrowSize * Math.cos(angle + Math.PI / 6),
+                screenY + vy - arrowSize * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fill();
+
+            // 标注
+            ctx.fillStyle = '#00c896';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('∇f', screenX + vx + 10, screenY + vy - 5);
+        }
+
+        function drawPoint(cx, cy, scale, px, py) {
+            var screenX = cx + px * scale;
+            var screenY = cy - py * scale;
+
+            // 外圈光晕
+            ctx.fillStyle = 'rgba(0, 200, 150, 0.3)';
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 内圈
+            ctx.fillStyle = '#00c896';
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 点标签
+            ctx.fillStyle = '#e4e8ec';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('(' + px + ', ' + py + ')', screenX + 15, screenY - 10);
+        }
+    </script>
+</body>
+</html>

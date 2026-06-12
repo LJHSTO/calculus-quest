@@ -1,0 +1,747 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>梯度为 0 不一定是最低点</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",sans-serif;background:#0d1117;color:#c9d1d9;line-height:1.6;overflow-x:hidden}
+.container{max-width:1200px;margin:0 auto;padding:16px}
+header{text-align:center;padding:20px 0 10px;border-bottom:1px solid #30363d;margin-bottom:16px}
+h1{font-size:1.8em;color:#58a6ff;margin-bottom:6px;letter-spacing:1px}
+.goal{color:#8b949e;font-size:.95em;margin-bottom:4px}
+.section-title{color:#58a6ff;font-size:1.15em;margin:18px 0 8px;padding-left:10px;border-left:3px solid #58a6ff}
+.intro-box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 18px;margin:10px 0 14px;font-size:.93em;color:#b0b8c0}
+.intro-box strong{color:#f0883e}
+.main-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0}
+.panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px}
+.panel h3{color:#58a6ff;font-size:1.05em;margin-bottom:10px}
+canvas#surfaceCanvas{background:#0d1117;border:1px solid #30363d;border-radius:8px;width:100%;display:block}
+.controls{margin:12px 0}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.btn{padding:8px 16px;border:1px solid #30363d;border-radius:6px;background:#21262d;color:#c9d1d9;cursor:pointer;font-size:.9em;transition:all .2s}
+.btn:hover{background:#30363d;border-color:#58a6ff}
+.btn.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.btn-hint{background:#2d1b00;border-color:#8b6914;color:#f0883e}
+.btn-hint:hover{background:#3d2b00}
+.btn-submit{background:#238636;border-color:#238636;color:#fff;width:100%;padding:10px;font-size:1em;margin-top:10px}
+.btn-submit:hover{background:#2ea043}
+.btn-next{background:#1f6feb;border-color:#1f6feb;color:#fff;width:100%;padding:10px;font-size:1em;margin-top:8px}
+.feedback-box{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:12px;margin:10px 0;min-height:60px;font-size:.9em}
+.feedback-correct{border-color:#238636;color:#3fb950}
+.feedback-wrong{border-color:#f85149;color:#f85149}
+.feedback-info{border-color:#1f6feb;color:#58a6ff}
+.option-row{display:flex;gap:8px;margin:8px 0}
+.option-btn{flex:1;padding:10px 8px;border:2px solid #30363d;border-radius:8px;background:#0d1117;color:#c9d1d9;cursor:pointer;text-align:center;font-size:.88em;transition:all .2s}
+.option-btn:hover{border-color:#58a6ff;background:#161b22}
+.option-btn.selected{border-color:#58a6ff;background:#1f6feb22}
+.option-btn.correct-reveal{border-color:#3fb950;background:#23863633;color:#3fb950}
+.option-btn.wrong-reveal{border-color:#f85149;background:#f8514922;color:#f85149}
+.slider-row{margin:10px 0;display:flex;align-items:center;gap:10px}
+.slider-row label{min-width:80px;font-size:.88em}
+.slider-row input[type=range]{flex:1;accent-color:#58a6ff}
+.slider-val{min-width:50px;text-align:right;font-family:monospace;color:#58a6ff;font-size:.9em}
+.hint-text{background:#2d1b00;border:1px solid #8b6914;border-radius:6px;padding:10px;margin:8px 0;font-size:.88em;color:#f0883e;display:none}
+.info-card{background:linear-gradient(135deg,#161b22,#1c2333);border:1px solid #30363d;border-radius:10px;padding:16px;margin:16px 0}
+.info-card h4{color:#f0883e;margin-bottom:8px}
+.info-card p{font-size:.9em;color:#b0b8c0;margin:4px 0}
+.info-card .tag{display:inline-block;background:#1f6feb33;color:#58a6ff;padding:2px 8px;border-radius:12px;font-size:.8em;margin-right:6px;margin-top:4px}
+.confidence-section{margin:16px 0}
+.confidence-label{color:#8b949e;font-size:.9em;margin-bottom:8px}
+.stars{display:flex;gap:6px}
+.star{font-size:1.8em;cursor:pointer;color:#30363d;transition:all .15s}
+.star:hover,.star.active{color:#f0883e;text-shadow:0 0 10px #f0883e66}
+.reflection-area{margin:16px 0}
+.reflection-area textarea{width:100%;min-height:80px;background:#0d1117;border:1px solid #30363d;border-radius:8px;color:#c9d1d9;padding:12px;font-size:.9em;resize:vertical;font-family:inherit}
+.reflection-area textarea:focus{outline:none;border-color:#58a6ff}
+.step-indicator{display:flex;gap:6px;margin:8px 0}
+.step-dot{width:28px;height:4px;border-radius:2px;background:#30363d;transition:all .3s}
+.step-dot.active{background:#58a6ff}
+.step-dot.done{background:#3fb950}
+.bottom-section{margin-top:16px}
+.meta{font-size:.75em;color:#484f58;text-align:center;margin-top:20px;padding:10px}
+@media(max-width:768px){.main-layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>梯度为 0 不一定是最低点</h1>
+<p class="goal">本节聚焦：驻点与鞍点 — 学会识别三种驻点形状，理解梯度为零只是最值候选，而非充分条件。</p>
+</header>
+
+<div class="intro-box">
+<strong>直觉解释：</strong>梯度为 0 的点叫<strong>驻点</strong>，它可能是<strong>局部最小</strong>（碗底）、<strong>局部最大</strong>（山顶）或<strong>鞍点</strong>（如马鞍中间）。需要结合曲面形状和二阶信息来判断。想象你站在山丘上——"平了"不一定意味着到了最低谷，你可能正在山顶或鞍部。
+</div>
+
+<div class="main-layout">
+<div class="panel" id="leftPanel">
+<h3>🎮 互动操作区</h3>
+<div class="step-indicator" id="stepIndicator">
+<div class="step-dot active" data-i="0"></div>
+<div class="step-dot" data-i="1"></div>
+<div class="step-dot" data-i="2"></div>
+<div class="step-dot" data-i="3"></div>
+</div>
+<div class="controls">
+<p style="font-size:.88em;color:#8b949e;margin-bottom:6px">当前曲面类型：</p>
+<div class="btn-group" id="surfaceBtns">
+<button class="btn active" data-s="0">🥣 碗形曲面</button>
+<button class="btn" data-s="1">⛰️ 山顶曲面</button>
+<button class="btn" data-s="2">🐴 鞍面</button>
+</div>
+</div>
+<div class="slider-row">
+<label>学习率 γ：</label>
+<input type="range" id="lrSlider" min="1" max="50" value="10">
+<span class="slider-val" id="lrVal">0.10</span>
+</div>
+<div class="slider-row">
+<label>迭代步数：</label>
+<input type="range" id="iterSlider" min="1" max="30" value="8">
+<span class="slider-val" id="iterVal">8</span>
+</div>
+<div style="margin:10px 0">
+<p style="font-size:.88em;color:#8b949e">点击「开始梯度下降」观察参数如何移动：</p>
+<div class="btn-group">
+<button class="btn" id="btnStart">▶ 开始迭代</button>
+<button class="btn" id="btnReset">↺ 重置</button>
+</div>
+</div>
+<div class="slider-row">
+<label>驻点位置 X：</label>
+<input type="range" id="pxSlider" min="-30" max="30" value="0">
+<span class="slider-val" id="pxVal">0.0</span>
+</div>
+<div class="slider-row">
+<label>驻点位置 Y：</label>
+<input type="range" id="pySlider" min="-30" max="30" value="0">
+<span class="slider-val" id="pyVal">0.0</span>
+</div>
+<p style="font-size:.88em;color:#8b949e;margin:8px 0 4px">你判断该点是什么类型？</p>
+<div class="option-row" id="typeOptions">
+<div class="option-btn" data-t="min">🔻 局部最小</div>
+<div class="option-btn" data-t="max">🔺 局部最大</div>
+<div class="option-btn" data-t="saddle">🐴 鞍点</div>
+</div>
+<button class="btn btn-submit" id="btnSubmit">✅ 提交判断</button>
+<button class="btn btn-hint" id="btnHint">💡 查看提示</button>
+<div class="hint-text" id="hintText"></div>
+<div class="feedback-box feedback-info" id="feedbackBox">
+<p style="color:#8b949e">点击上方曲面按钮切换类型，选择驻点位置后点击「提交判断」获取反馈。</p>
+</div>
+</div>
+
+<div class="panel" id="rightPanel">
+<h3>📊 可视化输出区</h3>
+<canvas id="surfaceCanvas" width="560" height="460"></canvas>
+<div style="margin-top:10px">
+<p style="font-size:.88em;color:#8b949e" id="surfInfo">函数：f(x,y) = x² + y² &nbsp;|&nbsp; 驻点：(0,0) &nbsp;|&nbsp; 海森矩阵：正定 → 局部最小</p>
+</div>
+<div style="margin-top:12px">
+<p style="font-size:.88em;color:#8b949e;margin-bottom:4px">迭代路径追踪：</p>
+<canvas id="pathCanvas" width="560" height="200"></canvas>
+</div>
+</div>
+</div>
+
+<div class="info-card">
+<h4>📋 概念卡：三种驻点</h4>
+<p><strong>局部最小</strong>：曲面像碗底，所有方向都是上坡。海森矩阵<strong>正定</strong>（特征值全为正）。</p>
+<p><strong>局部最大</strong>：曲面像山顶，所有方向都是下坡。海森矩阵<strong>负定</strong>（特征值全为负）。</p>
+<p><strong>鞍点</strong>：一个方向上坡、一个方向下坡，像马鞍中心。海森矩阵<strong>不定</strong>（特征值有正有负）。</p>
+<p style="margin-top:8px">梯度为零只是候选条件，真正最值还需要二阶信息 + 边界验证！</p>
+<div style="margin-top:8px">
+<span class="tag">驻点</span>
+<span class="tag">海森矩阵</span>
+<span class="tag">局部最优</span>
+<span class="tag">鞍点</span>
+<span class="tag">二阶判别</span>
+</div>
+</div>
+
+<div class="bottom-section">
+<div class="confidence-section">
+<h4 class="section-title">你的信心评分</h4>
+<p class="confidence-label">你对当前判断的信心有多高？（1 = 完全不确定，5 = 非常有信心）</p>
+<div class="stars" id="starsContainer">
+<span class="star" data-v="1">★</span>
+<span class="star" data-v="2">★</span>
+<span class="star" data-v="3">★</span>
+<span class="star" data-v="4">★</span>
+<span class="star" data-v="5">★</span>
+</div>
+</div>
+
+<div class="reflection-area">
+<h4 class="section-title">简短反思</h4>
+<p style="font-size:.88em;color:#8b949e;margin-bottom:6px">用一两句话解释：为什么"梯度为 0"的点不一定是函数的最低点？</p>
+<textarea id="reflectionText" placeholder="例如：因为驻点也可能是局部最大值或鞍点，需要看曲面形状才能确定..."></textarea>
+<button class="btn btn-next" id="btnReflectSubmit" style="margin-top:8px">📝 提交反思</button>
+</div>
+</div>
+
+<div class="meta">C-16 | OM-C1 | Demo闭环主动学习路径</div>
+</div>
+
+<script>
+window.MAIC_LESSON_META = {lesson_id:'C-16', module_id:'OM-C1', course_version:'demo-closed-loop-v1', concept_name:'驻点与鞍点'};
+
+var LESSON_ID = 'C-16';
+var MODULE_ID = 'OM-C1';
+var COURSE_VERSION = 'demo-closed-loop-v1';
+var CONCEPT_NAME = '驻点与鞍点';
+
+var startTimeMs = 0;
+var timeOnTaskMs = 0;
+var currentSurfaceIdx = 0;
+var currentStep = 0;
+var selectedType = '';
+var confidenceScore = 0;
+var hintUsedFlag = false;
+var hintDisplayFlag = false;
+var iterationPath = [];
+var isAnimating = false;
+var totalEvents = 0;
+
+var surfaces = [
+  {
+    name: '碗形（局部最小）',
+    func: function(x, y) { return x * x + y * y; },
+    gradX: function(x, y) { return 2 * x; },
+    gradY: function(x, y) { return 2 * y; },
+    hessianDesc: '正定',
+    eigenValues: 'λ₁>0, λ₂>0',
+    typeLabel: 'local_min',
+    label: '局部最小',
+    infoText: '函数：f(x,y) = x² + y²  |  驻点：(0,0)  |  海森矩阵正定 → 局部最小'
+  },
+  {
+    name: '山顶（局部最大）',
+    func: function(x, y) { return -x * x - y * y; },
+    gradX: function(x, y) { return -2 * x; },
+    gradY: function(x, y) { return -2 * y; },
+    hessianDesc: '负定',
+    eigenValues: 'λ₁<0, λ₂<0',
+    typeLabel: 'local_max',
+    label: '局部最大',
+    infoText: '函数：f(x,y) = -x² - y²  |  驻点：(0,0)  |  海森矩阵负定 → 局部最大'
+  },
+  {
+    name: '鞍面（鞍点）',
+    func: function(x, y) { return x * x - y * y; },
+    gradX: function(x, y) { return 2 * x; },
+    gradY: function(x, y) { return -2 * y; },
+    hessianDesc: '不定',
+    eigenValues: 'λ₁>0, λ₂<0',
+    typeLabel: 'saddle',
+    label: '鞍点',
+    infoText: '函数：f(x,y) = x² - y²  |  驻点：(0,0)  |  海森矩阵不定 → 鞍点'
+  }
+];
+
+function getStorageKey() {
+  return 'maic_learning_events';
+}
+
+function trackEvent(eventType, payload) {
+  var now = Date.now();
+  var eventData = {
+    lesson_id: LESSON_ID,
+    module_id: MODULE_ID,
+    course_version: COURSE_VERSION,
+    event_type: eventType,
+    timestamp: now,
+    time_on_task_ms: now - startTimeMs,
+    interaction_state: {
+      current_surface: currentSurfaceIdx,
+      current_step: currentStep,
+      selected_type: selectedType,
+      confidence: confidenceScore,
+      hint_used: hintUsedFlag,
+      lr: parseFloat(document.getElementById('lrSlider').value) / 100,
+      iter: parseInt(document.getElementById('iterSlider').value),
+      px: parseFloat(document.getElementById('pxSlider').value) / 10,
+      py: parseFloat(document.getElementById('pySlider').value) / 10
+    }
+  };
+  if (payload) {
+    var keys = Object.keys(payload);
+    for (var ki = 0; ki < keys.length; ki++) {
+      eventData[keys[ki]] = payload[keys[ki]];
+    }
+  }
+  var events = [];
+  try {
+    var stored = localStorage.getItem(getStorageKey());
+    if (stored) {
+      events = JSON.parse(stored);
+    }
+  } catch (e) {
+    events = [];
+  }
+  events.push(eventData);
+  totalEvents++;
+  try {
+    localStorage.setItem(getStorageKey(), JSON.stringify(events));
+  } catch (e) {}
+  if (window.parent && window.parent.postMessage) {
+    window.parent.postMessage({type:'maic_learning_event', payload:eventData}, '*');
+  }
+  return eventData;
+}
+
+function updateInfoBar() {
+  var s = surfaces[currentSurfaceIdx];
+  document.getElementById('surfInfo').textContent = s.infoText;
+}
+
+function drawSurface(canvasId, offsetX, offsetY) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width;
+  var H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  var padding = 50;
+  var plotW = W - 2 * padding;
+  var plotH = H - 2 * padding;
+  var xMin = -3;
+  var xMax = 3;
+  var yMin = -3;
+  var yMax = 3;
+
+  function toPixelX(x) { return padding + (x - xMin) / (xMax - xMin) * plotW; }
+  function toPixelY(y) { return padding + (yMax - y) / (yMax - yMin) * plotH; }
+
+  // Background
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines
+  ctx.strokeStyle = '#21262d';
+  ctx.lineWidth = 1;
+  for (var gx = -3; gx <= 3; gx++) {
+    var px = toPixelX(gx);
+    ctx.beginPath();
+    ctx.moveTo(px, padding);
+    ctx.lineTo(px, padding + plotH);
+    ctx.stroke();
+  }
+  for (var gy = -3; gy <= 3; gy++) {
+    var py = toPixelY(gy);
+    ctx.beginPath();
+    ctx.moveTo(padding, py);
+    ctx.lineTo(padding + plotW, py);
+    ctx.stroke();
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#8b949e';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  for (var la = -3; la <= 3; la++) {
+    ctx.fillText(la.toString(), toPixelX(la), padding + plotH + 18);
+  }
+  ctx.textAlign = 'right';
+  for (var la2 = -3; la2 <= 3; la2++) {
+    ctx.fillText(la2.toString(), padding - 8, toPixelY(la2) + 4);
+  }
+  ctx.textAlign = 'center';
+  ctx.fillText('x', padding + plotW / 2, H - 4);
+  ctx.save();
+  ctx.translate(14, padding + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('y', 0, 0);
+  ctx.restore();
+
+  // Draw contour fill
+  var surf = surfaces[currentSurfaceIdx];
+  var resolution = 4;
+  for (var bx = 0; bx < plotW; bx += resolution) {
+    for (var by = 0; by < plotH; by += resolution) {
+      var fx = xMin + (bx / plotW) * (xMax - xMin);
+      var fy = yMax - (by / plotH) * (yMax - yMin);
+      var fv = surf.func(fx, fy);
+      var color = valueToColor(fv);
+      ctx.fillStyle = color;
+      ctx.fillRect(padding + bx, padding + by, resolution, resolution);
+    }
+  }
+
+  // Contour lines
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  var contourLevels = [-4, -2, 0, 2, 4];
+  for (var cl = 0; cl < contourLevels.length; cl++) {
+    var targetVal = contourLevels[cl];
+    ctx.beginPath();
+    for (var cx = 0; cx < plotW - resolution; cx++) {
+      for (var cy = 0; cy < plotH - resolution; cy++) {
+        var v1 = surf.func(xMin + (cx / plotW) * (xMax - xMin), yMax - (cy / plotH) * (yMax - yMin));
+        var v2 = surf.func(xMin + ((cx + resolution) / plotW) * (xMax - xMin), yMax - (cy / plotH) * (yMax - yMin));
+        var v3 = surf.func(xMin + (cx / plotW) * (xMax - xMin), yMax - ((cy + resolution) / plotH) * (yMax - yMin));
+        var v4 = surf.func(xMin + ((cx + resolution) / plotW) * (xMax - xMin), yMax - ((cy + resolution) / plotH) * (yMax - yMin));
+        var seg1 = (v1 - targetVal) * (v2 - targetVal) < 0;
+        var seg2 = (v1 - targetVal) * (v3 - targetVal) < 0;
+        if (seg1 && seg2) {
+          ctx.moveTo(padding + cx, padding + cy);
+          ctx.lineTo(padding + cx + resolution, padding + cy + resolution);
+        }
+      }
+    }
+    ctx.stroke();
+  }
+
+  // Draw saddle contour for saddle surface
+  if (currentSurfaceIdx === 2) {
+    ctx.strokeStyle = '#f0883e';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    // x^2 - y^2 = 0 => y = ±x
+    ctx.moveTo(toPixelX(-3), toPixelY(3));
+    ctx.lineTo(toPixelX(3), toPixelY(-3));
+    ctx.moveTo(toPixelX(-3), toPixelY(-3));
+    ctx.lineTo(toPixelX(3), toPixelY(3));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw gradient descent path
+  if (iterationPath.length > 0) {
+    ctx.strokeStyle = '#58a6ff';
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([4, 3]);
+    ctx.beginPath();
+    ctx.moveTo(toPixelX(iterationPath[0].x), toPixelY(iterationPath[0].y));
+    for (var pi = 1; pi < iterationPath.length; pi++) {
+      ctx.lineTo(toPixelX(iterationPath[pi].x), toPixelY(iterationPath[pi].y));
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Draw path dots
+    for (var di = 0; di < iterationPath.length; di++) {
+      ctx.beginPath();
+      ctx.arc(toPixelX(iterationPath[di].x), toPixelY(iterationPath[di].y), 4, 0, Math.PI * 2);
+      ctx.fillStyle = di === 0 ? '#3fb950' : '#58a6ff';
+      ctx.fill();
+      ctx.strokeStyle = '#0d1117';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+  }
+
+  // Draw stationary point marker
+  var px = parseFloat(document.getElementById('pxSlider').value) / 10;
+  var py = parseFloat(document.getElementById('pySlider').value) / 10;
+  var markPx = toPixelX(px);
+  var markPy = toPixelY(py);
+
+  ctx.beginPath();
+  ctx.arc(markPx, markPy, 10, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(248, 81, 73, 0.3)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(markPx, markPy, 7, 0, Math.PI * 2);
+  ctx.fillStyle = '#f85149';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Label
+  ctx.fillStyle = '#f85149';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('(驻点)', markPx + 14, markPy - 8);
+
+  // Origin dot if point is at origin
+  if (Math.abs(px) < 0.1 && Math.abs(py) < 0.1) {
+    ctx.fillStyle = '#3fb950';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✓ 梯度为0', markPx, markPy - 18);
+  }
+
+  // Title
+  ctx.fillStyle = '#c9d1d9';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(surfaces[currentSurfaceIdx].name, W / 2, 24);
+}
+
+function valueToColor(val) {
+  var normalized;
+  if (currentSurfaceIdx === 0) {
+    normalized = Math.max(0, Math.min(1, val / 12));
+  } else if (currentSurfaceIdx === 1) {
+    normalized = Math.max(0, Math.min(1, -val / 12));
+  } else {
+    normalized = Math.max(0, Math.min(1, (val + 6) / 12));
+  }
+  var r = Math.floor(13 + normalized * 30);
+  var g = Math.floor(17 + (1 - Math.abs(normalized - 0.5) * 2) * 20);
+  var b = Math.floor(23 + (1 - normalized) * 40);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function init() {
+  startTimeMs = Date.now();
+  trackEvent('page_loaded', {interaction_state:{current_surface:0, current_step:0}});
+
+  var surfaceBtns = document.querySelectorAll('#surfaceBtns .btn');
+  for (var bi = 0; bi < surfaceBtns.length; bi++) {
+    surfaceBtns[bi].addEventListener('click', function() {
+      var idx = parseInt(this.getAttribute('data-s'));
+      if (idx !== currentSurfaceIdx) {
+        currentSurfaceIdx = idx;
+        currentStep = 1;
+        selectedType = '';
+        iterationPath = [];
+        updateStepDots();
+        updateButtons();
+        updateInfoBar();
+        updateOptions();
+        drawSurface('surfaceCanvas', 0, 0);
+        trackEvent('interaction_change', {surface_switched_to: currentSurfaceIdx});
+      }
+    });
+  }
+
+  var lrSlider = document.getElementById('lrSlider');
+  lrSlider.addEventListener('input', function() {
+    var val = parseFloat(this.value) / 100;
+    document.getElementById('lrVal').textContent = val.toFixed(2);
+  });
+
+  var iterSlider = document.getElementById('iterSlider');
+  iterSlider.addEventListener('input', function() {
+    document.getElementById('iterVal').textContent = this.value;
+  });
+
+  var pxSlider = document.getElementById('pxSlider');
+  pxSlider.addEventListener('input', function() {
+    document.getElementById('pxVal').textContent = (parseFloat(this.value) / 10).toFixed(1);
+    drawSurface('surfaceCanvas', 0, 0);
+    trackEvent('interaction_change', {param: 'point_x', value: parseFloat(this.value) / 10});
+  });
+
+  var pySlider = document.getElementById('pySlider');
+  pySlider.addEventListener('input', function() {
+    document.getElementById('pyVal').textContent = (parseFloat(this.value) / 10).toFixed(1);
+    drawSurface('surfaceCanvas', 0, 0);
+    trackEvent('interaction_change', {param: 'point_y', value: parseFloat(this.value) / 10});
+  });
+
+  var optBtns = document.querySelectorAll('#typeOptions .option-btn');
+  for (var oi = 0; oi < optBtns.length; oi++) {
+    optBtns[oi].addEventListener('click', function() {
+      optBtns.forEach(function(b) { b.classList.remove('selected'); });
+      this.classList.add('selected');
+      selectedType = this.getAttribute('data-t');
+      trackEvent('interaction_change', {selected_type: selectedType});
+    });
+  }
+
+  document.getElementById('btnSubmit').addEventListener('click', function() {
+    if (!selectedType) {
+      showFeedback('请先选择驻点类型（局部最小/局部最大/鞍点）！', 'info');
+      return;
+    }
+    var correctType = surfaces[currentSurfaceIdx].typeLabel;
+    var isCorrect = selectedType === correctType;
+    var typeName = surfaces[currentSurfaceIdx].label;
+
+    if (isCorrect) {
+      showFeedback('✅ 正确！该点确实是' + typeName + '。梯度为零只是候选条件，还需结合二阶信息判断。', 'correct');
+    } else {
+      var wrongDesc = '';
+      if (selectedType === 'min') wrongDesc = '该点不是局部最小。';
+      else if (selectedType === 'max') wrongDesc = '该点不是局部最大。';
+      else wrongDesc = '该点不是鞍点。';
+      showFeedback('❌ 不正确。这是' + typeName + '。' + wrongDesc + ' 梯度为零意味着切平面水平，但无法区分是"谷"、"峰"还是"鞍部"。', 'wrong');
+    }
+
+    // Highlight correct/wrong options
+    var allOpts = document.querySelectorAll('#typeOptions .option-btn');
+    for (var ao = 0; ao < allOpts.length; ao++) {
+      var t = allOpts[ao].getAttribute('data-t');
+      if (t === correctType) {
+        allOpts[ao].classList.add('correct-reveal');
+      } else if (t === selectedType && !isCorrect) {
+        allOpts[ao].classList.add('wrong-reveal');
+      }
+    }
+
+    trackEvent('interaction_complete', {
+      is_correct: isCorrect,
+      correct_type: correctType,
+      user_selection: selectedType
+    });
+    currentStep = 2;
+    updateStepDots();
+  });
+
+  document.getElementById('btnStart').addEventListener('click', function() {
+    startGradientDescent();
+  });
+
+  document.getElementById('btnReset').addEventListener('click', function() {
+    iterationPath = [];
+    drawSurface('surfaceCanvas', 0, 0);
+    showFeedback('已重置。点击「开始迭代」观察梯度下降过程。', 'info');
+  });
+
+  document.getElementById('btnHint').addEventListener('click', function() {
+    hintUsedFlag = true;
+    var hintDiv = document.getElementById('hintText');
+    var hints = [
+      '💡 提示：观察曲面的"碗口"方向。如果所有方向都是向上弯曲的，那是局部最小；如果所有方向都是向下弯曲的，那是局部最大；如果一个方向向上一个方向向下，就是鞍点。',
+      '💡 提示：回忆马鞍的形状——中间坐人的位置，前后方向是凹的，左右方向是凸的。这就是鞍点的几何直觉！',
+      '💡 提示：梯度为 0 说明切平面是水平的，但水平面既可以在谷底，也可以在山顶，还可以是马鞍的中心。需要看二阶导数（海森矩阵）才能区分。'
+    ];
+    hintDiv.textContent = hints[currentSurfaceIdx];
+    hintDiv.style.display = 'block';
+    hintDisplayFlag = true;
+    trackEvent('hint_used', {hint_index: currentSurfaceIdx});
+  });
+
+  var stars = document.querySelectorAll('#starsContainer .star');
+  for (var si = 0; si < stars.length; si++) {
+    stars[si].addEventListener('click', function() {
+      confidenceScore = parseInt(this.getAttribute('data-v'));
+      for (var ss = 0; ss < stars.length; ss++) {
+        if (ss < confidenceScore) {
+          stars[ss].classList.add('active');
+        } else {
+          stars[ss].classList.remove('active');
+        }
+      }
+      trackEvent('confidence_submitted', {confidence_score: confidenceScore});
+    });
+    stars[si].addEventListener('mouseenter', function() {
+      var val = parseInt(this.getAttribute('data-v'));
+      for (var ss2 = 0; ss2 < stars.length; ss2++) {
+        if (ss2 < val) {
+          stars[ss2].style.color = '#f0883e';
+          stars[ss2].style.textShadow = '0 0 10px #f0883e66';
+        } else {
+          stars[ss2].style.color = '#30363d';
+          stars[ss2].style.textShadow = 'none';
+        }
+      }
+    });
+    stars[si].addEventListener('mouseleave', function() {
+      for (var ss3 = 0; ss3 < stars.length; ss3++) {
+        if (ss3 < confidenceScore) {
+          stars[ss3].style.color = '#f0883e';
+          stars[ss3].style.textShadow = '0 0 10px #f0883e66';
+        } else {
+          stars[ss3].style.color = '#30363d';
+          stars[ss3].style.textShadow = 'none';
+        }
+      }
+    });
+  }
+
+  document.getElementById('btnReflectSubmit').addEventListener('click', function() {
+    var text = document.getElementById('reflectionText').value.trim();
+    if (!text) {
+      showFeedback('请先写一段反思再提交。', 'info');
+      return;
+    }
+    trackEvent('reflection_submitted', {reflection_length: text.length, reflection_text: text.substring(0, 100)});
+    showFeedback('📝 反思已提交！好的回答应该提到：驻点可能是局部最大或鞍点，梯度为零只是必要条件而非充分条件。', 'correct');
+    document.getElementById('btnReflectSubmit').textContent = '✅ 已提交';
+    document.getElementById('btnReflectSubmit').disabled = true;
+  });
+
+  updateButtons();
+  updateStepDots();
+  drawSurface('surfaceCanvas', 0, 0);
+  drawSurface('pathCanvas', 0, 0);
+
+  window.addEventListener('beforeunload', function() {
+    timeOnTaskMs = Date.now() - startTimeMs;
+    trackEvent('page_unloaded', {time_on_task_ms: timeOnTaskMs});
+  });
+}
+
+function updateButtons() {
+  var btns = document.querySelectorAll('#surfaceBtns .btn');
+  for (var i = 0; i < btns.length; i++) {
+    if (parseInt(btns[i].getAttribute('data-s')) === currentSurfaceIdx) {
+      btns[i].classList.add('active');
+    } else {
+      btns[i].classList.remove('active');
+    }
+  }
+}
+
+function updateOptions() {
+  var opts = document.querySelectorAll('#typeOptions .option-btn');
+  for (var i = 0; i < opts.length; i++) {
+    opts[i].classList.remove('selected', 'correct-reveal', 'wrong-reveal');
+  }
+  selectedType = '';
+}
+
+function updateStepDots() {
+  var dots = document.querySelectorAll('#stepIndicator .step-dot');
+  for (var i = 0; i < dots.length; i++) {
+    dots[i].classList.remove('active', 'done');
+    if (i < currentStep) {
+      dots[i].classList.add('done');
+    } else if (i === currentStep) {
+      dots[i].classList.add('active');
+    }
+  }
+}
+
+function showFeedback(msg, type) {
+  var box = document.getElementById('feedbackBox');
+  box.textContent = msg;
+  box.className = 'feedback-box feedback-' + type;
+}
+
+function startGradientDescent() {
+  if (isAnimating) return;
+  isAnimating = true;
+  var lr = parseFloat(document.getElementById('lrSlider').value) / 100;
+  var steps = parseInt(document.getElementById('iterSlider').value);
+  var startX = (Math.random() * 4 - 2).toFixed(1);
+  var startY = (Math.random() * 4 - 2).toFixed(1);
+  iterationPath = [{x: parseFloat(startX), y: parseFloat(startY)}];
+
+  var surf = surfaces[currentSurfaceIdx];
+  var x = parseFloat(startX);
+  var y = parseFloat(startY);
+
+  function doStep(idx) {
+    if (idx >= steps) {
+      isAnimating = false;
+      trackEvent('gradient_descent_complete', {steps_executed: steps, lr: lr, final_x: x.toFixed(3), final_y: y.toFixed(3)});
+      return;
+    }
+    var gx = surf.gradX(x, y);
+    var gy = surf.gradY(x, y);
+    x = x - lr * gx;
+    y = y - lr * gy;
+    x = Math.max(-2.9, Math.min(2.9, x));
+    y = Math.max(-2.9, Math.min(2.9, y));
+    iterationPath.push({x: x, y: y});
+    drawSurface('surfaceCanvas', 0, 0);
+    drawSurface('pathCanvas', 0, 0);
+    setTimeout(function() { doStep(idx + 1); }, 200);
+  }
+  doStep(0);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

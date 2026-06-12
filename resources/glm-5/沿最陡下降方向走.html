@@ -1,0 +1,1187 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沿最陡下降方向走</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent-green: #3fb950;
+            --accent-cyan: #58a6ff;
+            --accent-orange: #d29922;
+            --accent-red: #f85149;
+            --border-color: #30363d;
+            --card-bg: #1c2128;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-cyan) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+        
+        .objective {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--accent-cyan);
+            border-radius: 2px;
+        }
+        
+        .intuition-text {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+        
+        .intuition-text strong {
+            color: var(--accent-green);
+        }
+        
+        .controls-card {
+            background: var(--bg-secondary);
+        }
+        
+        .control-group {
+            margin-bottom: 16px;
+        }
+        
+        .control-label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .slider-value {
+            min-width: 50px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            flex: 1;
+            min-width: 100px;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: var(--accent-green);
+            color: var(--bg-primary);
+        }
+        
+        .btn-primary:hover {
+            background: #4ade80;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-panel {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .status-row:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .status-value {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+        
+        .status-value.high {
+            color: var(--accent-orange);
+        }
+        
+        .status-value.low {
+            color: var(--accent-cyan);
+        }
+        
+        .canvas-area {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .canvas-header {
+            padding: 16px 20px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .canvas-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .canvas-hint {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        #mainCanvas {
+            display: block;
+            width: 100%;
+            cursor: crosshair;
+        }
+        
+        .feedback-panel {
+            margin-top: 16px;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .feedback-title {
+            font-weight: 600;
+            color: var(--accent-orange);
+            margin-bottom: 8px;
+        }
+        
+        .feedback-content {
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        
+        .concept-card {
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-green);
+        }
+        
+        .concept-steps {
+            list-style: none;
+        }
+        
+        .concept-steps li {
+            padding: 10px 0;
+            padding-left: 28px;
+            position: relative;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .concept-steps li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            opacity: 0.2;
+        }
+        
+        .concept-steps li::after {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            background: var(--accent-green);
+            border-radius: 50%;
+        }
+        
+        .bottom-section {
+            margin-top: 32px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 700px) {
+            .bottom-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .confidence-card {
+            text-align: center;
+        }
+        
+        .confidence-stars {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        
+        .star-btn {
+            width: 48px;
+            height: 48px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-tertiary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .star-btn:hover {
+            border-color: var(--accent-orange);
+            transform: scale(1.1);
+        }
+        
+        .star-btn.active {
+            background: var(--accent-orange);
+            border-color: var(--accent-orange);
+        }
+        
+        .star-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-secondary);
+        }
+        
+        .star-btn.active svg {
+            fill: var(--bg-primary);
+        }
+        
+        .confidence-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .reflection-card textarea {
+            width: 100%;
+            min-height: 100px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .reflection-card textarea:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+        
+        .submit-btn {
+            margin-top: 12px;
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .submit-btn:hover {
+            background: #6bb3f8;
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--accent-green);
+            color: var(--bg-primary);
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>沿最陡下降方向走</h1>
+            <p class="objective">学会在函数曲面上找到下降最快的方向，一步步走向最低点。</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="card intuition-card">
+                    <div class="card-title">直觉解释</div>
+                    <p class="intuition-text">
+                        想象你站在山顶，闭着眼睛想下山。<strong>梯度</strong>就像指南针，指向<strong>上升最快</strong>的方向。
+                        反过来，<strong>负梯度</strong>就指向<strong>下降最快</strong>的方向！
+                        梯度下降就是：站在当前位置，朝负梯度方向迈一小步，重复直到到达山谷。
+                    </p>
+                </div>
+                
+                <div class="card controls-card">
+                    <div class="card-title">控制面板</div>
+                    
+                    <div class="control-group">
+                        <label class="control-label">步长系数 γ（学习率）</label>
+                        <div class="slider-container">
+                            <input type="range" id="stepSize" min="0.01" max="0.5" step="0.01" value="0.15">
+                            <span class="slider-value" id="stepSizeValue">0.15</span>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" id="nextStepBtn" disabled>下一步</button>
+                        <button class="btn btn-secondary" id="resetBtn">重置</button>
+                    </div>
+                    
+                    <div class="status-panel">
+                        <div class="status-row">
+                            <span class="status-label">当前步数</span>
+                            <span class="status-value" id="stepCount">0</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">当前位置 (x, y)</span>
+                            <span class="status-value" id="currentPos">( — , — )</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">函数值 f(x,y)</span>
+                            <span class="status-value high" id="funcValue">—</span>
+                        </div>
+                        <div class="status-row">
+                            <span class="status-label">梯度 ∇f</span>
+                            <span class="status-value" id="gradientValue">—</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card concept-card">
+                    <div class="card-title">核心步骤</div>
+                    <ul class="concept-steps">
+                        <li>选择起始点 (x₀, y₀)</li>
+                        <li>计算当前位置梯度 ∇f(x, y)</li>
+                        <li>沿负梯度方向移动：新位置 = 旧位置 - γ × 梯度</li>
+                        <li>重复直到收敛或达到最大步数</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="canvas-area">
+                <div class="canvas-header">
+                    <span class="canvas-title">等高线图 - 点击设置起点</span>
+                    <span class="canvas-hint">函数：f(x,y) = x² + 2y²</span>
+                </div>
+                <canvas id="mainCanvas" width="800" height="600"></canvas>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #3fb950;"></div>
+                        <span>当前位置</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #58a6ff;"></div>
+                        <span>下降路径</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #d29922;"></div>
+                        <span>梯度方向</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f85149;"></div>
+                        <span>最小值点</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="feedback-panel">
+            <div class="feedback-title">即时反馈</div>
+            <div class="feedback-content" id="feedbackText">
+                在等高线图上点击任意位置设置起点，然后点击「下一步」观察梯度下降的过程。
+                等高线越密的地方，函数值变化越剧烈；等高线越稀疏的地方，越接近平坦。
+            </div>
+        </div>
+        
+        <div class="bottom-section">
+            <div class="card confidence-card">
+                <div class="card-title">信心评分</div>
+                <p class="confidence-label">你对梯度下降的理解有多自信？</p>
+                <div class="confidence-stars">
+                    <button class="star-btn" data-score="1" title="1分 - 还不太明白">
+                        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </button>
+                    <button class="star-btn" data-score="2" title="2分 - 有点理解">
+                        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </button>
+                    <button class="star-btn" data-score="3" title="3分 - 基本掌握">
+                        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </button>
+                    <button class="star-btn" data-score="4" title="4分 - 比较自信">
+                        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </button>
+                    <button class="star-btn" data-score="5" title="5分 - 完全掌握">
+                        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card reflection-card">
+                <div class="card-title">反思总结</div>
+                <textarea id="reflectionText" placeholder="写下你的思考：为什么负梯度的方向就是下降最快的方向？步长大小对收敛有什么影响？"></textarea>
+                <button class="submit-btn" id="submitReflection" disabled>提交反思</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 课程元数据（不显示）
+        window.MAIC_LESSON_META = {
+            lesson_id: 'D-04',
+            module_id: 'OM-D1',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '梯度下降'
+        };
+
+        // 全局状态
+        let pageLoadTime = Date.now();
+        let currentPos = null;
+        let path = [];
+        let stepCount = 0;
+        let confidenceScore = 0;
+        let hasStarted = false;
+        let hintUsed = false;
+        let isComplete = false;
+
+        // Canvas相关变量
+        let canvas = null;
+        let ctx = null;
+        let canvasWidth = 800;
+        let canvasHeight = 600;
+        
+        // 数学范围
+        const xMin = -3;
+        const xMax = 3;
+        const yMin = -3;
+        const yMax = 3;
+
+        // 目标函数 f(x,y) = x² + 2y²
+        function f(x, y) {
+            return x * x + 2 * y * y;
+        }
+
+        // 梯度 ∇f = (2x, 4y)
+        function gradient(x, y) {
+            return { dx: 2 * x, dy: 4 * y };
+        }
+
+        // 数学坐标转画布坐标
+        function toCanvasX(x) {
+            return (x - xMin) / (xMax - xMin) * canvasWidth;
+        }
+
+        function toCanvasY(y) {
+            return canvasHeight - (y - yMin) / (yMax - yMin) * canvasHeight;
+        }
+
+        // 画布坐标转数学坐标
+        function toMathX(px) {
+            return xMin + px / canvasWidth * (xMax - xMin);
+        }
+
+        function toMathY(py) {
+            return yMax - py / canvasHeight * (yMax - yMin);
+        }
+
+        // 绘制等高线
+        function drawContours() {
+            const levels = [0.25, 0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12];
+            
+            levels.forEach((level, index) => {
+                const alpha = 0.3 + 0.4 * (1 - index / levels.length);
+                ctx.strokeStyle = `rgba(88, 166, 255, ${alpha})`;
+                ctx.lineWidth = 1;
+                
+                ctx.beginPath();
+                // 绘制椭圆等高线 x² + 2y² = level
+                const a = Math.sqrt(level);
+                const b = Math.sqrt(level / 2);
+                
+                if (a > 0 && b > 0) {
+                    for (let angle = 0; angle <= 360; angle += 2) {
+                        const rad = angle * Math.PI / 180;
+                        const x = a * Math.cos(rad);
+                        const y = b * Math.sin(rad);
+                        const px = toCanvasX(x);
+                        const py = toCanvasY(y);
+                        
+                        if (angle === 0) {
+                            ctx.moveTo(px, py);
+                        } else {
+                            ctx.lineTo(px, py);
+                        }
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // 绘制坐标轴
+        function drawAxes() {
+            ctx.strokeStyle = 'rgba(139, 148, 158, 0.5)';
+            ctx.lineWidth = 1;
+            
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(0, toCanvasY(0));
+            ctx.lineTo(canvasWidth, toCanvasY(0));
+            ctx.stroke();
+            
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(0), 0);
+            ctx.lineTo(toCanvasX(0), canvasHeight);
+            ctx.stroke();
+            
+            // 刻度
+            ctx.fillStyle = 'rgba(139, 148, 158, 0.8)';
+            ctx.font = '12px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            
+            for (let x = -2; x <= 2; x++) {
+                if (x !== 0) {
+                    const px = toCanvasX(x);
+                    ctx.fillText(x.toString(), px, toCanvasY(0) + 16);
+                }
+            }
+            
+            ctx.textAlign = 'right';
+            for (let y = -2; y <= 2; y++) {
+                if (y !== 0) {
+                    const py = toCanvasY(y);
+                    ctx.fillText(y.toString(), toCanvasX(0) - 8, py + 4);
+                }
+            }
+        }
+
+        // 绘制最小值点
+        function drawMinimum() {
+            const px = toCanvasX(0);
+            const py = toCanvasY(0);
+            
+            ctx.beginPath();
+            ctx.arc(px, py, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#f85149';
+            ctx.fill();
+            
+            ctx.fillStyle = '#e6edf3';
+            ctx.font = 'bold 11px -apple-system, sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('最小值', px + 12, py + 4);
+        }
+
+        // 绘制路径
+        function drawPath() {
+            if (path.length < 1) return;
+            
+            // 绘制连线
+            ctx.beginPath();
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 2;
+            
+            path.forEach((point, index) => {
+                const px = toCanvasX(point.x);
+                const py = toCanvasY(point.y);
+                
+                if (index === 0) {
+                    ctx.moveTo(px, py);
+                } else {
+                    ctx.lineTo(px, py);
+                }
+            });
+            ctx.stroke();
+            
+            // 绘制路径点
+            path.forEach((point, index) => {
+                const px = toCanvasX(point.x);
+                const py = toCanvasY(point.y);
+                
+                ctx.beginPath();
+                ctx.arc(px, py, index === path.length - 1 ? 8 : 4, 0, Math.PI * 2);
+                ctx.fillStyle = index === path.length - 1 ? '#3fb950' : 'rgba(88, 166, 255, 0.6)';
+                ctx.fill();
+            });
+        }
+
+        // 绘制当前位置和梯度
+        function drawCurrentPosition() {
+            if (!currentPos) return;
+            
+            const px = toCanvasX(currentPos.x);
+            const py = toCanvasY(currentPos.y);
+            
+            // 绘制当前位置
+            ctx.beginPath();
+            ctx.arc(px, py, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#3fb950';
+            ctx.fill();
+            ctx.strokeStyle = '#e6edf3';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 绘制梯度箭头（黄色）
+            const grad = gradient(currentPos.x, currentPos.y);
+            const gradLen = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+            
+            if (gradLen > 0.01) {
+                const scale = 0.5;
+                const arrowX = currentPos.x + grad.dx * scale;
+                const arrowY = currentPos.y + grad.dy * scale;
+                
+                const arrowPx = toCanvasX(arrowX);
+                const arrowPy = toCanvasY(arrowY);
+                
+                // 梯度方向（上升）
+                ctx.beginPath();
+                ctx.strokeStyle = '#d29922';
+                ctx.lineWidth = 3;
+                ctx.moveTo(px, py);
+                ctx.lineTo(arrowPx, arrowPy);
+                ctx.stroke();
+                
+                // 箭头头部
+                const angle = Math.atan2(py - arrowPy, arrowPx - px);
+                const headLen = 10;
+                
+                ctx.beginPath();
+                ctx.moveTo(arrowPx, arrowPy);
+                ctx.lineTo(
+                    arrowPx - headLen * Math.cos(angle - Math.PI / 6),
+                    arrowPy + headLen * Math.sin(angle - Math.PI / 6)
+                );
+                ctx.moveTo(arrowPx, arrowPy);
+                ctx.lineTo(
+                    arrowPx - headLen * Math.cos(angle + Math.PI / 6),
+                    arrowPy + headLen * Math.sin(angle + Math.PI / 6)
+                );
+                ctx.stroke();
+                
+                // 负梯度方向（下降）虚线
+                const negArrowX = currentPos.x - grad.dx * scale;
+                const negArrowY = currentPos.y - grad.dy * scale;
+                
+                const negArrowPx = toCanvasX(negArrowX);
+                const negArrowPy = toCanvasY(negArrowY);
+                
+                ctx.beginPath();
+                ctx.strokeStyle = '#3fb950';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.moveTo(px, py);
+                ctx.lineTo(negArrowPx, negArrowPy);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        // 主绘制函数
+        function draw() {
+            if (!ctx) return;
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            // 背景
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+            
+            // 绘制各元素
+            drawContours();
+            drawAxes();
+            drawMinimum();
+            drawPath();
+            drawCurrentPosition();
+        }
+
+        // 更新状态显示
+        function updateStatus() {
+            document.getElementById('stepCount').textContent = stepCount;
+            
+            if (currentPos) {
+                document.getElementById('currentPos').textContent = 
+                    `(${currentPos.x.toFixed(2)}, ${currentPos.y.toFixed(2)})`;
+                
+                const funcVal = f(currentPos.x, currentPos.y);
+                const funcValEl = document.getElementById('funcValue');
+                funcValEl.textContent = funcVal.toFixed(4);
+                
+                if (funcVal < 0.1) {
+                    funcValEl.className = 'status-value low';
+                } else if (funcVal < 1) {
+                    funcValEl.className = 'status-value';
+                } else {
+                    funcValEl.className = 'status-value high';
+                }
+                
+                const grad = gradient(currentPos.x, currentPos.y);
+                document.getElementById('gradientValue').textContent = 
+                    `(${grad.dx.toFixed(2)}, ${grad.dy.toFixed(2)})`;
+            } else {
+                document.getElementById('currentPos').textContent = '( — , — )';
+                document.getElementById('funcValue').textContent = '—';
+                document.getElementById('gradientValue').textContent = '—';
+            }
+        }
+
+        // 更新反馈文字
+        function updateFeedback() {
+            const feedbackEl = document.getElementById('feedbackText');
+            
+            if (!currentPos) {
+                feedbackEl.innerHTML = '在等高线图上点击任意位置设置起点，然后点击「下一步」观察梯度下降的过程。等高线越密的地方，函数值变化越剧烈；等高线越稀疏的地方，越接近平坦。';
+                return;
+            }
+            
+            const funcVal = f(currentPos.x, currentPos.y);
+            const grad = gradient(currentPos.x, currentPos.y);
+            const gradLen = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+            
+            if (funcVal < 0.01) {
+                feedbackEl.innerHTML = `<strong style="color: #3fb950;">已到达最小值附近！</strong> 函数值 ${funcVal.toFixed(6)} 已经非常接近 0。梯度长度 ${gradLen.toFixed(4)} 接近于 0，说明当前位置几乎是平坦的。`;
+            } else if (stepCount === 0) {
+                feedbackEl.innerHTML = `起点已设置！当前位置函数值为 <strong>${funcVal.toFixed(4)}</strong>。黄色箭头是梯度方向（上升最快），绿色虚线是负梯度方向（下降最快）。点击「下一步」开始下降！`;
+            } else {
+                feedbackEl.innerHTML = `第 ${stepCount} 步完成。函数值从上一步下降了，当前位置距离最小值还有 <strong>${funcVal.toFixed(4)}</strong>。梯度长度 ${gradLen.toFixed(4)}，继续点击「下一步」走向山谷！`;
+            }
+        }
+
+        // 行为追踪
+        function trackEvent(eventType, extraPayload) {
+            const now = Date.now();
+            const event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: now - pageLoadTime,
+                interaction_state: {
+                    step_count: stepCount,
+                    current_pos: currentPos,
+                    step_size: parseFloat(document.getElementById('stepSize').value),
+                    path_length: path.length
+                }
+            };
+            
+            if (extraPayload) {
+                Object.assign(event, extraPayload);
+            }
+            
+            // 存储到 localStorage
+            try {
+                let events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+                events.push(event);
+                localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            } catch (e) {
+                console.log('localStorage not available');
+            }
+            
+            // postMessage 给父窗口
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'maic_learning_event',
+                        payload: event
+                    }, '*');
+                }
+            } catch (e) {
+                console.log('postMessage not available');
+            }
+        }
+
+        // 显示提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 初始化
+        function init() {
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 响应式调整
+            function resizeCanvas() {
+                const container = canvas.parentElement;
+                const rect = container.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                
+                canvasWidth = Math.min(rect.width, 800);
+                canvasHeight = canvasWidth * 0.75;
+                
+                canvas.width = canvasWidth * dpr;
+                canvas.height = canvasHeight * dpr;
+                canvas.style.width = canvasWidth + 'px';
+                canvas.style.height = canvasHeight + 'px';
+                
+                ctx.scale(dpr, dpr);
+                draw();
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            
+            // Canvas点击事件
+            canvas.addEventListener('click', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const px = e.clientX - rect.left;
+                const py = e.clientY - rect.top;
+                
+                const x = toMathX(px);
+                const y = toMathY(py);
+                
+                // 检查是否在有效范围内
+                if (x >= xMin && x <= xMax && y >= yMin && y <= yMax) {
+                    currentPos = { x: x, y: y };
+                    path = [{ x: x, y: y }];
+                    stepCount = 0;
+                    hasStarted = true;
+                    
+                    document.getElementById('nextStepBtn').disabled = false;
+                    
+                    draw();
+                    updateStatus();
+                    updateFeedback();
+                    
+                    trackEvent('interaction_change', {
+                        key_operation: 'set_start_point',
+                        start_point: currentPos
+                    });
+                }
+            });
+            
+            // 步长滑块
+            const stepSizeInput = document.getElementById('stepSize');
+            const stepSizeValue = document.getElementById('stepSizeValue');
+            
+            stepSizeInput.addEventListener('input', function() {
+                stepSizeValue.textContent = this.value;
+                trackEvent('interaction_change', {
+                    key_operation: 'change_step_size',
+                    step_size: parseFloat(this.value)
+                });
+            });
+            
+            // 下一步按钮
+            document.getElementById('nextStepBtn').addEventListener('click', function() {
+                if (!currentPos) return;
+                
+                const stepSize = parseFloat(stepSizeInput.value);
+                const grad = gradient(currentPos.x, currentPos.y);
+                
+                // 梯度下降更新
+                const newX = currentPos.x - stepSize * grad.dx;
+                const newY = currentPos.y - stepSize * grad.dy;
+                
+                // 边界检查
+                if (Math.abs(newX) > 3 || Math.abs(newY) > 3) {
+                    showToast('步长太大，跑出边界了！试试减小步长。');
+                    trackEvent('hint_used', {
+                        hint_type: 'boundary_warning'
+                    });
+                    hintUsed = true;
+                    return;
+                }
+                
+                currentPos = { x: newX, y: newY };
+                path.push({ x: newX, y: newY });
+                stepCount++;
+                
+                // 检查是否收敛
+                const funcVal = f(newX, newY);
+                if (funcVal < 0.01) {
+                    isComplete = true;
+                    showToast('太棒了！你已经到达最小值附近！');
+                    trackEvent('interaction_complete', {
+                        final_state: currentPos,
+                        total_steps: stepCount,
+                        final_func_value: funcVal
+                    });
+                }
+                
+                draw();
+                updateStatus();
+                updateFeedback();
+                
+                trackEvent('interaction_change', {
+                    key_operation: 'next_step',
+                    new_pos: currentPos,
+                    step_number: stepCount
+                });
+            });
+            
+            // 重置按钮
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                currentPos = null;
+                path = [];
+                stepCount = 0;
+                hasStarted = false;
+                isComplete = false;
+                
+                document.getElementById('nextStepBtn').disabled = true;
+                
+                draw();
+                updateStatus();
+                updateFeedback();
+                
+                trackEvent('interaction_change', {
+                    key_operation: 'reset'
+                });
+            });
+            
+            // 信心评分
+            const starBtns = document.querySelectorAll('.star-btn');
+            starBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    confidenceScore = parseInt(this.dataset.score);
+                    
+                    starBtns.forEach(b => {
+                        b.classList.remove('active');
+                        if (parseInt(b.dataset.score) <= confidenceScore) {
+                            b.classList.add('active');
+                        }
+                    });
+                    
+                    document.getElementById('submitReflection').disabled = false;
+                    
+                    trackEvent('confidence_submitted', {
+                        confidence_score: confidenceScore
+                    });
+                    
+                    showToast(`信心评分：${confidenceScore} 分`);
+                });
+            });
+            
+            // 提交反思
+            document.getElementById('submitReflection').addEventListener('click', function() {
+                const reflectionText = document.getElementById('reflectionText').value.trim();
+                
+                if (!reflectionText) {
+                    showToast('请先写下你的反思');
+                    return;
+                }
+                
+                trackEvent('reflection_submitted', {
+                    reflection_content: reflectionText,
+                    confidence_score: confidenceScore
+                });
+                
+                showToast('反思已提交，继续探索吧！');
+            });
+            
+            // 页面加载完成事件
+            trackEvent('page_loaded');
+            
+            // 初始绘制
+            draw();
+        }
+
+        // DOM加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

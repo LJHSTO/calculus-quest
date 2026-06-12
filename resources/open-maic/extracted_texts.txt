@@ -1,0 +1,2178 @@
+
+================================================================================
+FILE: A1/manifest.json
+================================================================================
+  [stage.language] 本课程使用简体中文教学。数学专业术语（如函数、自变量、因变量、斜率、变化率等）应采用中国高中数学标准译名。教学语气应专业且具启发性，鼓励12年级学生通过互动实验构建数学直觉。
+  [agents[0].persona] 逻辑思维细密的学习者，擅长整理知识框架并进行跨场景迁移。她对一次、二次及正弦函数图像的细微差别有敏锐观察力，是课堂上的复盘小能手。
+  [agents[1].persona] 负责互动实验的操作引导和核心概念总结。性格活泼且条理分明，能将复杂的函数映射和斜率计算转化为通俗易懂的语言，并在关键环节提供即时反馈。
+  [agents[2].persona] 资深高中数学教师，擅长引导学生通过观察图像建立函数直觉。教学态度严谨且具有启发性，注重数学公式背后的几何物理意义，致力于培养学生的理性思维。
+  [agents[3].persona] 一名充满好奇心的12年级学生，喜欢通过实验挖掘数学规律。在涉及坐标系和动态变化的场景中表现活跃，敢于表达对“变化率”这一新概念的直觉认知。
+  [scenes[0].title] 前测：函数的直觉探索
+  [scenes[0].content.questions[0].options[0].label] 参数
+  [scenes[0].content.questions[0].options[1].label] 因变量
+  [scenes[0].content.questions[0].options[2].label] 常数
+  [scenes[0].content.questions[0].options[3].label] 斜率
+  [scenes[0].content.questions[0].analysis] 函数描述了两个变量之间的依赖关系。其中自变量是主动变化的输入值，而随之变化的输出值被称为因变量（Dependent Variable）。
+  [scenes[0].content.questions[0].question] 在一个函数关系中，如果我们将“输入”称为自变量（Independent Variable），那么对应的“输出”在数学术语中通常称为什么？
+  [scenes[0].content.questions[1].options[0].label] 随着自变量的增大，因变量也随之增大
+  [scenes[0].content.questions[1].options[1].label] 随着自变量的增大，因变量反而减小
+  [scenes[0].content.questions[1].options[2].label] 无论自变量如何变化，因变量保持不变
+  [scenes[0].content.questions[1].options[3].label] 该函数在该区间内没有定义
+  [scenes[0].content.questions[1].analysis] 函数图像的“下降”趋势表示因变量与自变量的变化方向相反，即当自变量（x轴）增大时，对应的因变量（y轴）值减小，这种特性称为函数的单调递减。
+  [scenes[0].content.questions[1].question] 如果一个函数的图像在某个区间内从左向右看是逐渐“下降”的，这在数学上意味着什么？
+  [scenes[0].content.questions[2].options[0].label] 当输入值为4时，对应的输出值是12
+  [scenes[0].content.questions[2].options[1].label] 该函数在该点的变化率一定是3
+  [scenes[0].content.questions[2].options[2].label] 这个点反映了自变量为4与因变量为12的一种映射关系
+  [scenes[0].content.questions[2].options[3].label] 在坐标系中，该点到y轴的距离为4个单位长度
+  [scenes[0].content.questions[2].analysis] 坐标点(x, y)中，x代表自变量，y代表因变量。A和C直接描述了映射关系；D项中，x坐标的绝对值即为点到y轴的距离。而B项中，单点无法决定斜率或变化率，需要至少两个点或导数信息。
+  [scenes[0].content.questions[2].question] 坐标平面上的一个点 (4, 12) 位于函数图像上。关于这个点所代表的意义，以下哪些表述是正确的？（请选择所有正确选项）
+  [scenes[0].content.questions[3].options[0].label] 每一个确定的输入必须有且仅有一个确定的输出
+  [scenes[0].content.questions[3].options[1].label] 不同的输入可以对应同一个输出（例如常数函数）
+  [scenes[0].content.questions[3].options[2].label] 同一个输入可以根据需要对应多个不同的输出
+  [scenes[0].content.questions[3].options[3].label] 函数关系可以被形象地理解为一台对输入数据进行唯一加工的机器
+  [scenes[0].content.questions[3].analysis] 函数的本质是“唯一性”映射，即一个输入对应唯一一个输出。虽然多个输入可以指向同一个输出（如y=x的平方，2和-2都对应4），但一个输入绝对不能对应多个输出（否则就不再是函数关系）。
+  [scenes[0].content.questions[3].question] 根据函数的定义，以下关于输入（自变量）与输出（因变量）对应关系的描述，哪些是合理的？（请选择所有正确选项）
+  [scenes[0].actions[0].text] 各位同学，大家好！欢迎来到今天的数学课堂，我是张老师。在正式开启微积分与函数的深度探索之前，我们需要先通过一个小练习来激活大家对函数最直观的感受。
+  [scenes[0].actions[1].text] 这组前测题涵盖了函数的核心要素：从自变量与因变量的定义，到图像趋势的直观判断，再到坐标点的物理意义。请大家根据直觉和已有的知识储备尝试回答，不用担心出错，这正是我们发现盲点的好机会。
+  [scenes[0].actions[2].text] 特别注意第2题关于‘图像下降’的描述，这实际上是我们在后续章节讨论‘负斜率’和‘变化率’的基础；而第4题提到的‘函数机器’模型，将帮助我们理解为什么每一个输入必须对应唯一的输出。
+  [scenes[0].actions[3].text] 完成测试后，我们会发现坐标平面上的每一个点 (4, 12) 都不只是一个位置，它代表了一次确定的映射。现在，请大家开始答题，看看你对这些‘数学机器’的了解程度如何。
+  [scenes[1].title] 知识地图：从变化到语言
+  [scenes[1].content.canvas.elements[0].content] <p style="font-size: 32px; color: #1a202c;"><strong>知识地图：从变化到语言</strong></p>
+  [scenes[1].content.canvas.elements[3].content] <p style="font-size: 20px;"><strong>函数</strong>：输入转输出的逻辑机器</p>
+  [scenes[1].content.canvas.elements[6].content] <p style="font-size: 20px;"><strong>坐标系</strong>：变化过程的视觉化呈现</p>
+  [scenes[1].content.canvas.elements[9].content] <p style="font-size: 20px;"><strong>斜率</strong>：量化变化的数学语言</p>
+  [scenes[1].content.canvas.elements[11].content] <p style="font-size: 16px; text-align: center; color: #718096;">图：微积分知识体系的关联路径</p>
+  [scenes[1].actions[1].text] 刚才我们通过前测探索了函数的映射直觉，大家已经注意到点 (4, 12) 背后的逻辑。现在，让我们把视野放大，看看本节课的知识全景：我们将如何一步步从感性的‘变化’，跨越到理性的‘数学语言’。
+  [scenes[1].actions[3].text] 首先是‘函数’。请记住，它不仅是代数式，更是一台‘逻辑机器’。只要给定一个合法的输入，它就会按照确定的规则产生输出。这是我们研究动态世界最基本的工具。
+  [scenes[1].actions[5].text] 有了机器，我们需要一个舞台来观察它。坐标系就是这个舞台。通过它，抽象的输入输出变化被转化为可见的轨迹，让复杂的数学关系变成了直观的几何图像。
+  [scenes[1].actions[7].text] 而为了精准地描述图像中变化快慢的特征，我们就需要用到‘斜率’。它是量化变化的数学核心语言，也是我们后续通往微积分殿堂的钥匙。
+  [scenes[1].actions[9].text] 这张地图展示了我们将要翻越的逻辑阶梯。接下来，我们将通过一系列实验，把这些点连成线，构建起完整的微积分知识体系。
+  [scenes[2].title] 函数机器同步器
+  [scenes[2].content.widgetConfig.variables[0].label] 输入值 (x)
+  [scenes[2].content.widgetConfig.variables[1].label] 映射规则
+  [scenes[2].content.widgetConfig.description] 通过模拟“机器”输入输出过程，直观理解自变量x与因变量f(x)的对应关系。
+  [scenes[2].content.teacherActions[0].label] 开始探索
+  [scenes[2].content.teacherActions[0].content] 欢迎来到函数映射实验室。在这里，我们将通过“机器”模型来直观理解自变量 $x$ 与因变量 $f(x)$ 之间的对应关系。
+  [scenes[2].content.teacherActions[1].label] 识别自变量
+  [scenes[2].content.teacherActions[1].content] 首先，观察这个滑块。拖动它会改变输入的自变量 $x$ 的值。
+  [scenes[2].content.teacherActions[2].label] 观察线性映射
+  [scenes[2].content.teacherActions[2].content] 在线性映射下，输出 $f(x)$ 随 $x$ 的变化是等比例的。当 $x$ 设为 3 时，请观察输出的变化。
+  [scenes[2].content.teacherActions[3].label] 切换映射法则
+  [scenes[2].content.teacherActions[3].content] 你可以通过这个菜单切换不同的映射规则，比如二次函数、正弦函数或绝对值函数。
+  [scenes[2].content.teacherActions[4].label] 观察二次映射
+  [scenes[2].content.teacherActions[4].content] 现在我们将规则切换为二次函数，并将 $x$ 设为 -2。注意看，即便输入是负数，输出却是正数。这体现了函数对应的唯一性和特定规律。
+  [scenes[2].content.teacherActions[5].label] 观察周期规律
+  [scenes[2].content.teacherActions[5].content] 切换到正弦函数并调节 $x$。你会发现输出值会在 -1 到 1 之间周期性波动。这就是周期函数的魅力。
+  [scenes[2].content.teacherActions[6].label] 总结练习
+  [scenes[2].content.teacherActions[6].content] 现在，请你自己动手尝试不同的输入和法则，看看你能否预测出机器的输出结果。
+  [scenes[2].actions[0].text] 欢迎来到函数映射实验室。在这里，我们将通过“机器”模型来直观理解自变量 $x$ 与因变量 $f(x)$ 之间的对应关系。
+  [scenes[2].actions[0].title] 开始探索
+  [scenes[2].actions[1].title] 识别自变量
+  [scenes[2].actions[2].text] 首先，观察这个滑块。拖动它会改变输入的自变量 $x$ 的值。
+  [scenes[2].actions[2].title] 识别自变量
+  [scenes[2].actions[3].title] 观察线性映射
+  [scenes[2].actions[4].text] 在线性映射下，输出 $f(x)$ 随 $x$ 的变化是等比例的。当 $x$ 设为 3 时，请观察输出的变化。
+  [scenes[2].actions[4].title] 观察线性映射
+  [scenes[2].actions[5].title] 切换映射法则
+  [scenes[2].actions[6].text] 你可以通过这个菜单切换不同的映射规则，比如二次函数、正弦函数或绝对值函数。
+  [scenes[2].actions[6].title] 切换映射法则
+  [scenes[2].actions[7].title] 观察二次映射
+  [scenes[2].actions[8].text] 现在我们将规则切换为二次函数，并将 $x$ 设为 -2。注意看，即便输入是负数，输出却是正数。这体现了函数对应的唯一性和特定规律。
+  [scenes[2].actions[8].title] 观察二次映射
+  [scenes[2].actions[9].title] 观察周期规律
+  [scenes[2].actions[10].text] 切换到正弦函数并调节 $x$。你会发现输出值会在 -1 到 1 之间周期性波动。这就是周期函数的魅力。
+  [scenes[2].actions[10].title] 观察周期规律
+  [scenes[2].actions[11].text] 现在，请你自己动手尝试不同的输入和法则，看看你能否预测出机器的输出结果。
+  [scenes[2].actions[11].title] 总结练习
+  [scenes[3].title] 坐标点生成器
+  [scenes[3].content.widgetConfig.variables[0].label] 自变量 x
+  [scenes[3].content.widgetConfig.variables[1].label] 函数类型
+  [scenes[3].content.widgetConfig.variables[2].label] 参数 a
+  [scenes[3].content.widgetConfig.description] 展示数值关系如何转化为坐标系中的几何点 (x, f(x))
+  [scenes[3].content.teacherActions[0].label] 开始探索
+  [scenes[3].content.teacherActions[0].content] 欢迎！今天我们将通过这个互动模拟，直观地探索数值关系是如何转化为坐标系中的几何点的。
+  [scenes[3].content.teacherActions[1].label] 调节自变量 x
+  [scenes[3].content.teacherActions[1].content] 首先，通过拖动这个滑块改变自变量 $x$ 的值。观察坐标平面上的点是如何随之水平移动的。
+  [scenes[3].content.teacherActions[2].label] 演示线性映射
+  [scenes[3].content.teacherActions[2].content] 在线性函数 $y=x$ 中，当 $x=2$ 时，生成的坐标点恰好是 $(2, 2)$。数值表与空间位置形成了一一对应。
+  [scenes[3].content.teacherActions[3].label] 观察二次函数
+  [scenes[3].content.teacherActions[3].content] 现在切换到二次函数。注意看，即使 $x$ 为负值，因变量 $f(x)$ 依然映射到了正区间。点的位置揭示了函数的非线性特征。
+  [scenes[3].content.teacherActions[4].label] 调整参数 a
+  [scenes[3].content.teacherActions[4].content] 改变参数 $a$ 会调整函数的伸缩或方向。观察随着参数的变化，同一个 $x$ 值对应的纵坐标是如何升降的。
+  [scenes[3].content.teacherActions[5].label] 探索周期性
+  [scenes[3].content.teacherActions[5].content] 在正弦函数中，当 $x$ 接近 $\pi/2$（约1.57）时，点达到了它的局部最高点。这展示了周期性数值如何转化为波浪形的轨迹。
+  [scenes[3].content.teacherActions[6].label] 自由练习
+  [scenes[3].content.teacherActions[6].content] 现在请你尝试切换不同的函数并自由移动滑块，构建从数值对到空间几何点的直觉联系。
+  [scenes[3].actions[0].text] 欢迎！今天我们将通过这个互动模拟，直观地探索数值关系是如何转化为坐标系中的几何点的。
+  [scenes[3].actions[0].title] 开始探索
+  [scenes[3].actions[1].title] 调节自变量 x
+  [scenes[3].actions[2].text] 首先，通过拖动这个滑块改变自变量 $x$ 的值。观察坐标平面上的点是如何随之水平移动的。
+  [scenes[3].actions[2].title] 调节自变量 x
+  [scenes[3].actions[3].title] 演示线性映射
+  [scenes[3].actions[4].text] 在线性函数 $y=x$ 中，当 $x=2$ 时，生成的坐标点恰好是 $(2, 2)$。数值表与空间位置形成了一一对应。
+  [scenes[3].actions[4].title] 演示线性映射
+  [scenes[3].actions[5].title] 观察二次函数
+  [scenes[3].actions[6].text] 现在切换到二次函数。注意看，即使 $x$ 为负值，因变量 $f(x)$ 依然映射到了正区间。点的位置揭示了函数的非线性特征。
+  [scenes[3].actions[6].title] 观察二次函数
+  [scenes[3].actions[7].title] 调整参数 a
+  [scenes[3].actions[8].text] 改变参数 $a$ 会调整函数的伸缩或方向。观察随着参数的变化，同一个 $x$ 值对应的纵坐标是如何升降的。
+  [scenes[3].actions[8].title] 调整参数 a
+  [scenes[3].actions[9].title] 探索周期性
+  [scenes[3].actions[10].text] 在正弦函数中，当 $x$ 接近 $\pi/2$（约1.57）时，点达到了它的局部最高点。这展示了周期性数值如何转化为波浪形的轨迹。
+  [scenes[3].actions[10].title] 探索周期性
+  [scenes[3].actions[11].text] 现在请你尝试切换不同的函数并自由移动滑块，构建从数值对到空间几何点的直觉联系。
+  [scenes[3].actions[11].title] 自由练习
+  [scenes[4].title] 三类函数图像大比拼
+  [scenes[4].content.widgetConfig.variables[0].label] 函数类型
+  [scenes[4].content.widgetConfig.variables[1].label] 参数 A (斜率/系数/振幅)
+  [scenes[4].content.widgetConfig.variables[2].label] 参数 B (截距/顶点x/频率)
+  [scenes[4].content.widgetConfig.description] 对比一次、二次及正弦函数的特征及增减区间
+  [scenes[4].content.teacherActions[0].label] 开始探索
+  [scenes[4].content.teacherActions[0].content] 欢迎来到函数特征实验室。今天我们将对比一次函数、二次函数和正弦函数，探索它们的增减性与独特性质。
+  [scenes[4].content.teacherActions[1].label] 观察斜率
+  [scenes[4].content.teacherActions[1].content] 在一次函数模式下，参数 A 代表斜率。调整它来观察函数是如何从递增变为递减的。
+  [scenes[4].content.teacherActions[2].label] 切换二次函数
+  [scenes[4].content.teacherActions[2].content] 现在切换到二次函数。注意观察抛物线的对称性，这决定了它在对称轴两侧具有不同的增减区间。
+  [scenes[4].content.teacherActions[3].label] 调整对称轴
+  [scenes[4].content.teacherActions[3].content] 调整参数 B 会改变顶点的位置。请注意，增减区间的分界点（即对称轴）是如何随之移动的。
+  [scenes[4].content.teacherActions[4].label] 探索正弦波
+  [scenes[4].content.teacherActions[4].content] 最后，让我们看看正弦函数。作为一种周期函数，它的增减区间会在定义域内循环往复地出现。
+  [scenes[4].content.teacherActions[5].label] 总结规律
+  [scenes[4].content.teacherActions[5].content] 对比这三种函数：一次函数全局单调，二次函数有一个转折点，而正弦函数有无数个。尝试组合不同参数，深入理解它们的数学特征。
+  [scenes[4].actions[0].text] 欢迎来到函数特征实验室。今天我们将对比一次函数、二次函数和正弦函数，探索它们的增减性与独特性质。
+  [scenes[4].actions[0].title] 开始探索
+  [scenes[4].actions[1].title] 观察斜率
+  [scenes[4].actions[2].text] 在一次函数模式下，参数 A 代表斜率。调整它来观察函数是如何从递增变为递减的。
+  [scenes[4].actions[2].title] 观察斜率
+  [scenes[4].actions[3].title] 切换二次函数
+  [scenes[4].actions[4].text] 现在切换到二次函数。注意观察抛物线的对称性，这决定了它在对称轴两侧具有不同的增减区间。
+  [scenes[4].actions[4].title] 切换二次函数
+  [scenes[4].actions[5].title] 调整对称轴
+  [scenes[4].actions[6].text] 调整参数 B 会改变顶点的位置。请注意，增减区间的分界点（即对称轴）是如何随之移动的。
+  [scenes[4].actions[6].title] 调整对称轴
+  [scenes[4].actions[7].title] 探索正弦波
+  [scenes[4].actions[8].text] 最后，让我们看看正弦函数。作为一种周期函数，它的增减区间会在定义域内循环往复地出现。
+  [scenes[4].actions[8].title] 探索正弦波
+  [scenes[4].actions[9].text] 对比这三种函数：一次函数全局单调，二次函数有一个转折点，而正弦函数有无数个。尝试组合不同参数，深入理解它们的数学特征。
+  [scenes[4].actions[9].title] 总结规律
+  [scenes[5].title] 核心框架与公式桥接
+  [scenes[5].content.canvas.elements[0].content] <p style="font-size: 32px; color: #333;"><strong>核心框架：从几何直观到符号语言</strong></p>
+  [scenes[5].content.canvas.elements[2].content] <p style="font-size: 24px; color: #444;">几何观察：割线斜率</p>
+  [scenes[5].content.canvas.elements[4].content] <p style="font-size: 16px; text-align: center; color: #666;">割线倾斜程度描述了函数在<br/>[x₀, x₀+δx] 范围内的平均变化趋势</p>
+  [scenes[5].content.canvas.elements[5].content] <p style="font-size: 24px; color: #444;">代数表达：差分商公式</p>
+  [scenes[5].content.canvas.elements[7].content] <p style="font-size: 18px;"><strong>• δy</strong>：因变量增量（纵向变化）</p><p style="font-size: 18px;"><strong>• δx</strong>：自变量增量（横向跨度）</p><p style="font-size: 18px;"><strong>• 比值</strong>：刻画该区间内的<strong>平均变化率</strong></p>
+  [scenes[5].content.canvas.elements[9].content] <p style="font-size: 18px; text-align: center; color: #333;"><strong>桥接核心：差分商的本质就是割线的斜率</strong></p>
+  [scenes[5].actions[1].text] 刚才我们通过对比，直观感受了不同函数的“脾气”。现在，我们要把这些直观的图形感受，转化为严谨的数学符号语言，建立起从几何到代数的逻辑桥梁。
+  [scenes[5].actions[3].text] 首先来看几何直观。当我们在函数图像上取两点并连成线，这条“割线”的倾斜程度，实质上描述了函数在这一特定区间内的平均变化趋势。
+  [scenes[5].actions[5].text] 为了更精确地量化这种变化，我们引入了代数表达：差分商公式。大家看这个式子，它将我们的观察浓缩成了简洁的数学语言。
+  [scenes[5].actions[7].text] 在这里，Δy 代表因变量的纵向变化，而 Δx 是自变量的横向跨度。两者的比值，精准地刻画了该区间内的“平均变化率”。
+  [scenes[5].actions[9].text] 所以，请大家务必记住这个核心逻辑：差分商的代数定义，其几何本质就是割线的斜率。掌握了这一点，我们就拿到了理解动态变化的钥匙。接下来，我们要通过实验来验证这个关系。
+  [scenes[6].title] 两点斜率实验
+  [scenes[6].content.widgetConfig.variables[0].label] 点A x坐标
+  [scenes[6].content.widgetConfig.variables[1].label] 点A y坐标
+  [scenes[6].content.widgetConfig.variables[2].label] 点B x坐标
+  [scenes[6].content.widgetConfig.variables[3].label] 点B y坐标
+  [scenes[6].content.widgetConfig.description] 通过拖动坐标系中的两点，直观观察自变量变化量(Δx)与因变量变化量(Δy)的比值，理解平均变化率（斜率）的几何意义。
+  [scenes[6].content.teacherActions[0].label] 开始探索
+  [scenes[6].content.teacherActions[0].content] 欢迎来到这个模拟实验室。今天我们将通过观察两点之间的“上升量”与“水平距离”，来深入理解平均变化率的几何意义。
+  [scenes[6].content.teacherActions[1].label] 认识控制滑块
+  [scenes[6].content.teacherActions[1].content] 你可以通过拖动这里的滑块来精确改变点 A 和点 B 的坐标位置。
+  [scenes[6].content.teacherActions[2].label] 观察正斜率
+  [scenes[6].content.teacherActions[2].content] 当点 B 位于点 A 的右上方时，随着自变量 x 的增加，因变量 y 也在增加。此时 Δy/Δx 为正，表示函数是递增的。
+  [scenes[6].content.teacherActions[3].label] 观察负斜率
+  [scenes[6].content.teacherActions[3].content] 现在看这种情况：随着 x 的增加，y 的值反而减小了。这就是负斜率，代表函数在这一段区间内是递减的。
+  [scenes[6].content.teacherActions[4].label] 理解零斜率
+  [scenes[6].content.teacherActions[4].content] 当两点的 y 坐标相等时，上升量 Δy 为零。这意味着函数在该区间内的平均变化率为零，表现为一条水平线。
+  [scenes[6].content.teacherActions[5].label] 总结回顾
+  [scenes[6].content.teacherActions[5].content] 平均变化率本质上就是连接两点的直线的斜率。请继续尝试手动拖动两点，感受 Δy 与 Δx 的比值是如何随位置变化的。
+  [scenes[6].actions[0].text] 欢迎来到这个模拟实验室。今天我们将通过观察两点之间的“上升量”与“水平距离”，来深入理解平均变化率的几何意义。
+  [scenes[6].actions[0].title] 开始探索
+  [scenes[6].actions[1].title] 认识控制滑块
+  [scenes[6].actions[2].text] 你可以通过拖动这里的滑块来精确改变点 A 和点 B 的坐标位置。
+  [scenes[6].actions[2].title] 认识控制滑块
+  [scenes[6].actions[3].title] 观察正斜率
+  [scenes[6].actions[4].text] 当点 B 位于点 A 的右上方时，随着自变量 x 的增加，因变量 y 也在增加。此时 Δy/Δx 为正，表示函数是递增的。
+  [scenes[6].actions[4].title] 观察正斜率
+  [scenes[6].actions[5].title] 观察负斜率
+  [scenes[6].actions[6].text] 现在看这种情况：随着 x 的增加，y 的值反而减小了。这就是负斜率，代表函数在这一段区间内是递减的。
+  [scenes[6].actions[6].title] 观察负斜率
+  [scenes[6].actions[7].title] 理解零斜率
+  [scenes[6].actions[8].text] 当两点的 y 坐标相等时，上升量 Δy 为零。这意味着函数在该区间内的平均变化率为零，表现为一条水平线。
+  [scenes[6].actions[8].title] 理解零斜率
+  [scenes[6].actions[9].text] 平均变化率本质上就是连接两点的直线的斜率。请继续尝试手动拖动两点，感受 Δy 与 Δx 的比值是如何随位置变化的。
+  [scenes[6].actions[9].title] 总结回顾
+  [scenes[7].title] 过程性测试：图像与斜率初步迁移
+  [scenes[7].content.questions[0].options[0].label] k 大于 0
+  [scenes[7].content.questions[0].options[1].label] k 小于 0
+  [scenes[7].content.questions[0].options[2].label] k 等于 0
+  [scenes[7].content.questions[0].options[3].label] k 的值不存在
+  [scenes[7].content.questions[0].analysis] 斜率反映了自变量变化时因变量的变化方向。当图像从左向右下降时，意味着随着 x 增大，y 反而减小，因此纵坐标的变化量与横坐标的变化量异号，比值（即斜率）为负数。
+  [scenes[7].content.questions[0].question] 在平面直角坐标系中，如果一条直线从左向右延伸时呈现下降趋势，则该直线的斜率 k 满足以下哪种情况？
+  [scenes[7].content.questions[1].options[0].label] 2
+  [scenes[7].content.questions[1].options[1].label] -2
+  [scenes[7].content.questions[1].options[2].label] 0.5
+  [scenes[7].content.questions[1].options[3].label] -0.5
+  [scenes[7].content.questions[1].analysis] 根据斜率公式 k = (y2 - y1) / (x2 - x1)，代入坐标得 k = (-1 - 5) / (5 - 2) = -6 / 3 = -2。因此该直线的斜率为 -2。
+  [scenes[7].content.questions[1].question] 已知坐标平面内有两个点 A(2, 5) 和 B(5, -1)，请计算连接这两点所成直线的斜率是多少？
+  [scenes[7].content.questions[2].options[0].label] 若斜率为正，则图像在该区间内呈上升趋势
+  [scenes[7].content.questions[2].options[1].label] 斜率的绝对值越大，表示图像的倾斜程度越陡峭
+  [scenes[7].content.questions[2].options[2].label] 若斜率为零，则图像在该区间内是一条水平直线
+  [scenes[7].content.questions[2].options[3].label] 斜率的大小反映了因变量随自变量变化的灵敏程度或快慢
+  [scenes[7].content.questions[2].analysis] 斜率是变化率的几何体现：正负决定升降趋势（A对）；绝对值决定陡峭度（B对）；零斜率代表因变量不随自变量改变而改变，即水平（C对）；斜率本质上描述了 y 随 x 变化的速率（D对）。
+  [scenes[7].content.questions[2].question] 关于函数图像在某一区间内的斜率与变化趋势，下列描述中正确的有哪些？（多选）
+  [scenes[7].content.questions[3].analysis] 几何特征：图像在该区间内先向上升起，坡度逐渐放缓直至水平，随后转而向下延伸，形成一个向上凸起的波峰。物理含义：在位移-时间图像中，斜率代表瞬时速度。斜率由正变负代表物体先向上运动，速度逐渐减小，在斜率为零处达到最高点（瞬时速度为零），随后开始向下坠落。
+  [scenes[7].content.questions[3].question] 观察某函数的局部图像，发现其斜率在该区间内由正数逐渐减小到零，然后再变为负数。请描述图像在该过程中的几何变化特征，并结合实际物理场景（如向上抛出的石子的位移与时间关系）解释这一斜率变化代表的物理含义。
+  [scenes[7].actions[0].text] 既然大家刚才在实验中已经亲手拖动了两点，直观感受了 Δy 与 Δx 的比值变化，现在让我们通过这组过程性测试来检验一下掌握情况。请大家结合刚才的操作经验，完成这四道练习题。
+  [scenes[7].actions[1].text] 在前两个单选题中，请特别注意直线的延伸趋势与斜率正负的对应关系。尤其是 Q2 的计算，一定要注意 y2 减 y1 与 x2 减 x1 的对应顺序，千万不要把坐标减反了。
+  [scenes[7].actions[2].text] 对于 Q3 这样考察概念理解的多选题，大家要思考：斜率的大小不仅仅是一个数字，它代表了函数变化的“灵敏程度”。斜率的绝对值越大，图像越“陡”，这其实就是我们之前提到的变化率的快慢。
+  [scenes[7].actions[3].text] 最后一题是关于图像的局部观察，这非常关键。请联想一下，当一个物体向上抛出到达最高点并开始下落时，它的位移随时间的变化率是如何从正数经过零变成负数的？尝试用我们刚刚建立的斜率语言来描述这个物理现象。
+  [scenes[8].title] 变化快慢排序大作战
+  [scenes[8].content.teacherActions[0].label] 开始挑战
+  [scenes[8].content.teacherActions[0].content] 欢迎来到斜率排序挑战。在这个互动练习中，我们将通过观察函数图像片段的倾斜程度，来直观感受斜率的大小。
+  [scenes[8].content.teacherActions[1].label] 观察图像
+  [scenes[8].content.teacherActions[1].content] 请观察这些图像片段。斜率的绝对值反映了函数变化的快慢，也就是图像的‘陡峭’程度。
+  [scenes[8].content.teacherActions[2].label] 理解绝对值
+  [scenes[8].content.teacherActions[2].content] 注意：我们按‘绝对值’排序。这意味着无论线段是向上还是向下倾斜，只要它越接近垂直，其斜率绝对值就越大。
+  [scenes[8].content.teacherActions[3].label] 排序技巧
+  [scenes[8].content.teacherActions[3].content] 试着先找出最陡峭的片段放在首位，将最平缓（接近水平）的片段放在末尾。这种视觉直觉对理解导数非常有帮助。
+  [scenes[8].content.teacherActions[4].label] 查看计分
+  [scenes[8].content.teacherActions[4].content] 这里会显示你的得分。准确完成排序可以获得基础分，如果你能快速识别，还能获得额外的速度奖励。
+  [scenes[8].actions[0].text] 欢迎来到斜率排序挑战。在这个互动练习中，我们将通过观察函数图像片段的倾斜程度，来直观感受斜率的大小。
+  [scenes[8].actions[0].title] 开始挑战
+  [scenes[8].actions[1].title] 观察图像
+  [scenes[8].actions[2].text] 请观察这些图像片段。斜率的绝对值反映了函数变化的快慢，也就是图像的‘陡峭’程度。
+  [scenes[8].actions[2].title] 观察图像
+  [scenes[8].actions[3].title] 理解绝对值
+  [scenes[8].actions[4].text] 注意：我们按‘绝对值’排序。这意味着无论线段是向上还是向下倾斜，只要它越接近垂直，其斜率绝对值就越大。
+  [scenes[8].actions[4].title] 理解绝对值
+  [scenes[8].actions[5].text] 试着先找出最陡峭的片段放在首位，将最平缓（接近水平）的片段放在末尾。这种视觉直觉对理解导数非常有帮助。
+  [scenes[8].actions[5].title] 排序技巧
+  [scenes[8].actions[6].title] 查看计分
+  [scenes[8].actions[7].text] 这里会显示你的得分。准确完成排序可以获得基础分，如果你能快速识别，还能获得额外的速度奖励。
+  [scenes[8].actions[7].title] 查看计分
+  [scenes[9].title] 局部斜率探针
+  [scenes[9].content.widgetConfig.variables[0].label] 探针位置 (x)
+  [scenes[9].content.widgetConfig.variables[1].label] 局部放大
+  [scenes[9].content.widgetConfig.variables[2].label] 显示切线
+  [scenes[9].content.widgetConfig.description] 通过移动探针并观察局部放大图像，直观理解非线性函数的局部线性性质及切线斜率变化。
+  [scenes[9].content.teacherActions[0].label] 开始探索
+  [scenes[9].content.teacherActions[0].content] 欢迎来到“导数直观”实验。今天我们将通过观察非线性函数的局部特征，来理解切线和斜率的本质。
+  [scenes[9].content.teacherActions[1].label] 移动探针
+  [scenes[9].content.teacherActions[1].content] 通过移动这个滑块，你可以在曲线上改变探针的位置，观察不同点的变化趋势。
+  [scenes[9].content.teacherActions[2].label] 局部放大
+  [scenes[9].content.teacherActions[2].content] 现在我们大幅度提高放大倍数。注意到在极小的窗口内，曲线看起来越来越像一条直线了吗？这就是“局部线性化”的思想。
+  [scenes[9].content.teacherActions[3].label] 观察波峰
+  [scenes[9].content.teacherActions[3].content] 观察波峰处（x ≈ 1.57）。这里的切线是水平的，意味着在该点的瞬时变化率为零。
+  [scenes[9].content.teacherActions[4].label] 微观视角
+  [scenes[9].content.teacherActions[4].content] 在原点位置（x = 0）并开启50倍放大。此时曲线与切线几乎完全重合，这便是导数在微观视角下的直观体现。
+  [scenes[9].actions[0].text] 欢迎来到“导数直观”实验。今天我们将通过观察非线性函数的局部特征，来理解切线和斜率的本质。
+  [scenes[9].actions[0].title] 开始探索
+  [scenes[9].actions[1].title] 移动探针
+  [scenes[9].actions[2].text] 通过移动这个滑块，你可以在曲线上改变探针的位置，观察不同点的变化趋势。
+  [scenes[9].actions[2].title] 移动探针
+  [scenes[9].actions[3].title] 局部放大
+  [scenes[9].actions[4].text] 现在我们大幅度提高放大倍数。注意到在极小的窗口内，曲线看起来越来越像一条直线了吗？这就是“局部线性化”的思想。
+  [scenes[9].actions[4].title] 局部放大
+  [scenes[9].actions[5].title] 观察波峰
+  [scenes[9].actions[6].text] 观察波峰处（x ≈ 1.57）。这里的切线是水平的，意味着在该点的瞬时变化率为零。
+  [scenes[9].actions[6].title] 观察波峰
+  [scenes[9].actions[7].title] 微观视角
+  [scenes[9].actions[8].text] 在原点位置（x = 0）并开启50倍放大。此时曲线与切线几乎完全重合，这便是导数在微观视角下的直观体现。
+  [scenes[9].actions[8].title] 微观视角
+  [scenes[10].title] 函数表示关系网
+  [scenes[10].content.widgetConfig.edges[0].label] 形式化
+  [scenes[10].content.widgetConfig.edges[1].label] 采样
+  [scenes[10].content.widgetConfig.edges[2].label] 可视化
+  [scenes[10].content.widgetConfig.edges[3].label] 描点
+  [scenes[10].content.widgetConfig.edges[4].label] 绘制
+  [scenes[10].content.widgetConfig.edges[5].label] 几何意义
+  [scenes[10].content.widgetConfig.edges[6].label] 微积分
+  [scenes[10].content.widgetConfig.edges[7].label] 观测数据
+  [scenes[10].content.widgetConfig.nodes[0].label] 函数的本质
+  [scenes[10].content.widgetConfig.nodes[1].label] 解析式 (公式法)
+  [scenes[10].content.widgetConfig.nodes[2].label] 数值表 (列表法)
+  [scenes[10].content.widgetConfig.nodes[3].label] 几何图像 (图像法)
+  [scenes[10].content.widgetConfig.nodes[4].label] 变化率与斜率
+  [scenes[10].content.widgetConfig.nodes[5].label] 实际背景
+  [scenes[10].content.teacherActions[0].label] 开始探索
+  [scenes[10].content.teacherActions[0].content] 欢迎来到函数的多维世界。我们将一起探索如何通过不同的表示形式，构建对函数本质的深刻理解。
+  [scenes[10].content.teacherActions[1].label] 函数本质
+  [scenes[10].content.teacherActions[1].content] 一切的起点是映射关系：每一个自变量输入都对应唯一的因变量输出。这是函数最核心的定义。
+  [scenes[10].content.teacherActions[2].label] 公式与图像
+  [scenes[10].content.teacherActions[2].content] 从解析式到几何图像的转化，是将抽象的代数结构转化为空间直觉的过程，有助于我们观察函数的单调性与极值。
+  [scenes[10].content.teacherActions[3].label] 数值表采样
+  [scenes[10].content.teacherActions[3].content] 数值表提供了离散的采样视角。通过观察表格中因变量的差值，我们可以直观地感知变化率的规律。
+  [scenes[10].content.teacherActions[4].label] 变化率与斜率
+  [scenes[10].content.teacherActions[4].content] 斜率是连接静态表示与动态分析的桥梁。无论是在图像中的切线斜率，还是公式中的导数，它们本质上都在描述变化率。
+  [scenes[10].content.teacherActions[5].label] 实际背景建模
+  [scenes[10].content.teacherActions[5].content] 最后，将这些数学抽象映射回实际背景。理解变量在物理或经济背景下的单位与意义，是数学建模的关键步骤。
+  [scenes[10].actions[0].text] 欢迎来到函数的多维世界。我们将一起探索如何通过不同的表示形式，构建对函数本质的深刻理解。
+  [scenes[10].actions[0].title] 开始探索
+  [scenes[10].actions[1].title] 函数本质
+  [scenes[10].actions[2].text] 一切的起点是映射关系：每一个自变量输入都对应唯一的因变量输出。这是函数最核心的定义。
+  [scenes[10].actions[2].title] 函数本质
+  [scenes[10].actions[3].title] 公式与图像
+  [scenes[10].actions[4].text] 从解析式到几何图像的转化，是将抽象的代数结构转化为空间直觉的过程，有助于我们观察函数的单调性与极值。
+  [scenes[10].actions[4].title] 公式与图像
+  [scenes[10].actions[5].title] 数值表采样
+  [scenes[10].actions[6].text] 数值表提供了离散的采样视角。通过观察表格中因变量的差值，我们可以直观地感知变化率的规律。
+  [scenes[10].actions[6].title] 数值表采样
+  [scenes[10].actions[7].title] 变化率与斜率
+  [scenes[10].actions[8].text] 斜率是连接静态表示与动态分析的桥梁。无论是在图像中的切线斜率，还是公式中的导数，它们本质上都在描述变化率。
+  [scenes[10].actions[8].title] 变化率与斜率
+  [scenes[10].actions[9].title] 实际背景建模
+  [scenes[10].actions[10].text] 最后，将这些数学抽象映射回实际背景。理解变量在物理或经济背景下的单位与意义，是数学建模的关键步骤。
+  [scenes[10].actions[10].title] 实际背景建模
+  [scenes[11].title] 复盘：知识完整性兜底
+  [scenes[11].content.canvas.elements[0].content] <p style="font-size: 32px; color: #1e293b;"><strong>复盘：知识完整性兜底</strong></p>
+  [scenes[11].content.canvas.elements[3].content] <p style="font-size: 24px; text-align: center; color: #2563eb;">函数三要素</p>
+  [scenes[11].content.canvas.elements[4].content] <p style="font-size: 18px;">• 定义域 (Domain)</p><p style="font-size: 18px;">• 值域 (Range)</p><p style="font-size: 18px;">• 对应法则 (Rule)</p>
+  [scenes[11].content.canvas.elements[6].content] <p style="font-size: 24px; text-align: center; color: #2563eb;">斜率分类</p>
+  [scenes[11].content.canvas.elements[8].content] <p style="font-size: 18px;">正向变化 (上升)</p>
+  [scenes[11].content.canvas.elements[10].content] <p style="font-size: 18px;">负向变化 (下降)</p>
+  [scenes[11].content.canvas.elements[12].content] <p style="font-size: 18px;">水平 (无变化)</p>
+  [scenes[11].content.canvas.elements[14].content] <p style="font-size: 24px; text-align: center; color: #0f172a;">微积分逻辑</p>
+  [scenes[11].content.canvas.elements[15].content] <p style="font-size: 18px;"><strong>研究“变化”：</strong></p><p style="font-size: 18px;">从静态赋值到</p><p style="font-size: 18px;">动态瞬时变化率</p>
+  [scenes[11].content.canvas.elements[17].content] <p style="font-size: 18px; color: #64748b;">重点：理解导数前，必须夯实函数与斜率的基础认知。</p>
+  [scenes[11].actions[1].text] 刚才我们通过实际背景理解了函数的意义，现在让我们停下来进行一次系统的复盘。在进入后续更复杂的挑战前，确保我们的知识地基足够稳固是非常重要的。
+  [scenes[11].actions[3].text] 首先，请大家再次看向函数的三要素。我们在前面的实验中反复调整自变量，观察因变量，其实就是在处理定义域、值域和它们之间的对应法则。这三者共同定义了一个完整的函数机器。
+  [scenes[11].actions[5].text] 接下来是关于斜率的总结。我们在排序大作战和探针实验中已经发现，斜率的正负和零直接决定了函数的走向。
+  [scenes[11].actions[7].text] 当斜率k大于0时，函数呈现正向变化，图像上升；
+  [scenes[11].actions[9].text] k小于0时，则是负向变化，图像下降；
+  [scenes[11].actions[11].text] 而k等于0则代表水平无变化。这种对“变化方向”的敏感度，是学习微积分的第一步。
+  [scenes[11].actions[13].text] 大家要注意，微积分的核心逻辑在于研究“变化”。我们正从这种对静态线条的赋值，逐步过渡到研究动态的瞬时变化率。这种思维的转变非常关键。
+  [scenes[11].actions[15].text] 最后，请大家务必内化这段重点：在深入理解导数之前，必须夯实对函数与斜率的基础认知。若曦，你作为我们的复盘达人，能不能谈谈你对“斜率即变化”这个观点的理解？
+  [scenes[12].title] 斜率正负判定挑战
+  [scenes[12].content.teacherActions[0].label] 开始教学
+  [scenes[12].content.teacherActions[0].content] 欢迎来到斜率特征快速分类挑战！在这个练习中，我们将通过快速辨识函数图像的升降趋势，来巩固你对导数符号的几何直觉。
+  [scenes[12].content.teacherActions[1].label] 观察游戏区域
+  [scenes[12].content.teacherActions[1].content] 游戏区域会随机出现具有不同斜率特征的函数片段，请仔细观察它们的几何形状。
+  [scenes[12].content.teacherActions[2].label] 选择分类按钮
+  [scenes[12].content.teacherActions[2].content] 利用这些按钮进行分类：正斜率对应上升趋势，负斜率对应下降趋势，而零斜率则代表函数在该点附近水平平坦。
+  [scenes[12].content.teacherActions[3].label] 查看得分规则
+  [scenes[12].content.teacherActions[3].content] 除了答对获得的基础分，你的反应速度越快，获得的额外奖励分就越高。这能训练你在处理复杂函数图像时的瞬时判断力。
+  [scenes[12].content.teacherActions[4].label] 准备挑战
+  [scenes[12].content.teacherActions[4].content] 准备好了吗？让我们通过这套策略训练，将斜率的代数意义转化为你的视觉直觉。点击按钮开始你的挑战吧！
+  [scenes[12].actions[0].text] 欢迎来到斜率特征快速分类挑战！在这个练习中，我们将通过快速辨识函数图像的升降趋势，来巩固你对导数符号的几何直觉。
+  [scenes[12].actions[0].title] 开始教学
+  [scenes[12].actions[1].title] 观察游戏区域
+  [scenes[12].actions[2].text] 游戏区域会随机出现具有不同斜率特征的函数片段，请仔细观察它们的几何形状。
+  [scenes[12].actions[2].title] 观察游戏区域
+  [scenes[12].actions[3].title] 选择分类按钮
+  [scenes[12].actions[4].text] 利用这些按钮进行分类：正斜率对应上升趋势，负斜率对应下降趋势，而零斜率则代表函数在该点附近水平平坦。
+  [scenes[12].actions[4].title] 选择分类按钮
+  [scenes[12].actions[5].title] 查看得分规则
+  [scenes[12].actions[6].text] 除了答对获得的基础分，你的反应速度越快，获得的额外奖励分就越高。这能训练你在处理复杂函数图像时的瞬时判断力。
+  [scenes[12].actions[6].title] 查看得分规则
+  [scenes[12].actions[7].text] 准备好了吗？让我们通过这套策略训练，将斜率的代数意义转化为你的视觉直觉。点击按钮开始你的挑战吧！
+  [scenes[12].actions[7].title] 准备挑战
+  [scenes[13].title] 微积分变化地图
+  [scenes[13].content.widgetConfig.variables[0].label] 定点 x₀
+  [scenes[13].content.widgetConfig.variables[1].label] 增量 Δx
+  [scenes[13].content.widgetConfig.variables[2].label] 演变速度
+  [scenes[13].content.widgetConfig.description] 探索平均变化率如何随区间 Δx 缩小而趋向导数（瞬时变化率）
+  [scenes[13].content.teacherActions[0].label] 开始探索
+  [scenes[13].content.teacherActions[0].content] 欢迎来到导数定义的探索实验室。今天我们将通过动态观察，理解割线斜率是如何演变为切线斜率的。
+  [scenes[13].content.teacherActions[1].label] 观察增量滑块
+  [scenes[13].content.teacherActions[1].content] 这个滑块控制增量 Δx 的大小。在几何上，它决定了割线两点之间的水平距离。
+  [scenes[13].content.teacherActions[2].label] 设定大增量
+  [scenes[13].content.teacherActions[2].content] 当 Δx 较大时，蓝色的割线反映的是区间内的平均变化率，它与函数在 x₀ 点的实际走势有明显偏差。
+  [scenes[13].content.teacherActions[3].label] 向极限逼近
+  [scenes[13].content.teacherActions[3].content] 现在注意看！随着我们将 Δx 缩小到 0.1，割线两点几乎重合，割线逐渐“变成了”该点的切线。
+  [scenes[13].content.teacherActions[4].label] 改变观察点
+  [scenes[13].content.teacherActions[4].content] 你还可以通过调节 x₀ 来改变观察点，观察不同位置下函数的变化率（斜率）有什么不同。
+  [scenes[13].content.teacherActions[5].label] 总结核心思想
+  [scenes[13].content.teacherActions[5].content] 这就是微分的核心思想：当 Δx 趋于 0 时，平均变化率的极限就是瞬时变化率，即该点的导数。
+  [scenes[13].actions[0].text] 欢迎来到导数定义的探索实验室。今天我们将通过动态观察，理解割线斜率是如何演变为切线斜率的。
+  [scenes[13].actions[0].title] 开始探索
+  [scenes[13].actions[1].title] 观察增量滑块
+  [scenes[13].actions[2].text] 这个滑块控制增量 Δx 的大小。在几何上，它决定了割线两点之间的水平距离。
+  [scenes[13].actions[2].title] 观察增量滑块
+  [scenes[13].actions[3].title] 设定大增量
+  [scenes[13].actions[4].text] 当 Δx 较大时，蓝色的割线反映的是区间内的平均变化率，它与函数在 x₀ 点的实际走势有明显偏差。
+  [scenes[13].actions[4].title] 设定大增量
+  [scenes[13].actions[5].title] 向极限逼近
+  [scenes[13].actions[6].text] 现在注意看！随着我们将 Δx 缩小到 0.1，割线两点几乎重合，割线逐渐“变成了”该点的切线。
+  [scenes[13].actions[6].title] 向极限逼近
+  [scenes[13].actions[7].title] 改变观察点
+  [scenes[13].actions[8].text] 你还可以通过调节 x₀ 来改变观察点，观察不同位置下函数的变化率（斜率）有什么不同。
+  [scenes[13].actions[8].title] 改变观察点
+  [scenes[13].actions[9].text] 这就是微分的核心思想：当 Δx 趋于 0 时，平均变化率的极限就是瞬时变化率，即该点的导数。
+  [scenes[13].actions[9].title] 总结核心思想
+  [scenes[14].title] 后测：综合迁移与应用
+  [scenes[14].content.questions[0].options[0].label] 2
+  [scenes[14].content.questions[0].options[1].label] 3
+  [scenes[14].content.questions[0].options[2].label] 4
+  [scenes[14].content.questions[0].options[3].label] 9
+  [scenes[14].content.questions[0].analysis] 斜率的计算公式为：(因变量的变化量) / (自变量的变化量)。在本题中，斜率 k = (14 - 5) / (5 - 2) = 9 / 3 = 3。因此正确选项为 B。
+  [scenes[14].content.questions[0].question] 已知某线性函数的图象经过点 (2, 5) 和点 (5, 14)，请问该函数的斜率是多少？
+  [scenes[14].content.questions[1].options[0].label] 每过 1 分钟，水箱内的水量增加 5 升
+  [scenes[14].content.questions[1].options[1].label] 每过 5 分钟，水箱内的水量减少 1 升
+  [scenes[14].content.questions[1].options[2].label] 每过 1 分钟，水箱内的水量减少 5 升
+  [scenes[14].content.questions[1].options[3].label] 水箱的初始总水量为 5 升
+  [scenes[14].content.questions[1].analysis] 斜率为 -5 表示自变量（时间）每增加一个单位，因变量（水量）减少 5 个单位。负号代表减少，数值代表变化量。选项 C 准确描述了这种变化关系。
+  [scenes[14].content.questions[1].question] 在描述一个水箱排水的过程中，自变量 t 代表时间（单位：分钟），因变量 V 代表水量（单位：升）。如果该过程的变化率（斜率）为 -5，下列哪种解释最为准确？
+  [scenes[14].content.questions[2].options[0].label] 当 k 大于 0 时，函数值随自变量的增大而增大
+  [scenes[14].content.questions[2].options[1].label] 斜率 k 表示自变量每增加一个单位时，因变量的对应变化量
+  [scenes[14].content.questions[2].options[2].label] 对于同一条直线，任意两点间计算出的斜率都是相等的
+  [scenes[14].content.questions[2].options[3].label] k 的绝对值越大，直线在坐标系中越趋于平缓
+  [scenes[14].content.questions[2].analysis] A、B、C 均为线性函数斜率的基本性质。对于 D 选项，k 的绝对值越大，代表变化率越快，直线在坐标系中应该越陡峭而非平缓。
+  [scenes[14].content.questions[2].question] 关于线性函数 f(x) = kx + b (k 不等于 0) 的斜率 k，以下描述正确的有哪些？（多选）
+  [scenes[14].content.questions[3].options[0].label] s-t 图像是一条倾斜的直线
+  [scenes[14].content.questions[3].options[1].label] 在等距离的时间间隔内，位移的增加量始终相等
+  [scenes[14].content.questions[3].options[2].label] 位移的变化量与时间的增加量的比值是一个常数
+  [scenes[14].content.questions[3].options[3].label] 物体的解析式为 s = t 的平方 + 2
+  [scenes[14].content.questions[3].analysis] “恒定的变化率”意味着函数是线性的。A 直线图象、B 等额增量、C 斜率定义均符合线性特征。D 选项中包含二次项，其变化率随时间改变，不属于恒定变化率。
+  [scenes[14].content.questions[3].question] 在物理实验中，若某物体的位移 s 与时间 t 的关系满足“恒定的变化率”，下列哪些表现形式符合这一特征？（多选）
+  [scenes[14].content.questions[4].analysis] 步骤如下：1. 计算端点值：s(1) = 1+2=3 米，s(3) = 9+6=15 米。2. 计算变化率：(15 - 3) / (3 - 1) = 12 / 2 = 6。物理含义：该数值表示赛车在 1 秒到 3 秒这段时间内的平均速度，结果为 6 米/秒。
+  [scenes[14].content.questions[4].question] 一辆赛车在赛道上行驶，其位移函数为 s(t) = t 的平方 + 2t（位移单位：米，时间单位：秒）。请计算该赛车在 t = 1 到 t = 3 这一时间段内的平均变化率，并说明该数值的物理含义。
+  [scenes[14].content.questions[5].analysis] 参考答案：随着 x 的增大，函数图像变得越来越平缓。原因：从变化率角度看，当 x 较小时，x 的微小增加会导致 1/x 剧烈减小；但随着 x 变大，相同的 x 增加量所引起的函数值减小量变得越来越微弱。因此，切线的斜率绝对值逐渐减小，趋近于 0。
+  [scenes[14].content.questions[5].question] 观察反比例函数 f(x) = 1/x (在 x > 0 的区间内)。随着自变量 x 的不断增大，该函数图像的“倾斜程度”是如何变化的？请结合“变化率”的概念解释原因。
+  [scenes[14].actions[0].text] 刚才我们探讨了瞬时变化率的奥秘，通过极限的思想触摸到了微分的门槛。现在，到了检验我们整节课学习成果的时刻。这套后测题不仅考察计算，更侧重于将“斜率”和“变化率”应用到物理和跨函数的综合场景中。请大家调动之前在知识地图和实验环节中积累的所有直觉。
+  [scenes[14].actions[1].text] 在处理前四道选择题时，请特别注意“变化率”在情境中的物理意义。例如第二题中水箱排水的斜率为负，这不仅仅是一个数值，它代表了水量随时间减少的速率。大家可以回想我们在第9页“变化快慢排序大作战”中的经验，通过正负号和绝对值来判定变化的趋势和快慢。
+  [scenes[14].actions[2].text] 对于最后两道简答题，挑战在于从“线性”跨越到“非线性”。计算赛车在一段时间内的平均变化率，本质上是在计算割线的斜率，这对应着物理上的平均速度。而考察反比例函数的倾斜程度时，建议大家在脑海中移动我们在第10页用过的“局部斜率探针”，观察随着 x 的增大，切线的倾斜程度是如何变化的。
+  [scenes[14].actions[3].text] 随着这最后一组练习的完成，我们今天的课程也接近尾声了。从最初对函数机器的直觉探索，到建立两点斜率的计算公式，再到最后触达微积分的变化地图，我们已经完整构建了描述“变化”的语言体系。大家表现得非常棒，尤其是能够将抽象的公式与动态的图像紧密结合起来。
+  [scenes[14].actions[4].text] 数学不仅仅是纸上的坐标和符号，它更是我们理解世界运行规律的透镜。希望通过这节课，当你们再次看到路边倾斜的坡道、赛车加速的曲线或者水滴落下的轨迹时，脑海中能浮现出那一个个跳动的新变化率。这就是数学直觉的力量，也是理性思维的魅力。下课！
+
+================================================================================
+FILE: A2a/manifest.json
+================================================================================
+  [stage.language] 使用简体中文进行教学。数学专业术语使用中文标准译名（如向量、范数、标量），但在涉及数学符号表示时保留标准拉丁/希腊字母。教学语气应专业且具启发性，适合高三学生水平，注重几何直觉与代数公式的结合。
+  [agents[0].persona] 充满好奇心的活力少年，喜欢通过动手操作来建立直觉。他更关注向量在导航和机器学习优化等实际场景中的应用。
+  [agents[1].persona] 资深数学教师，擅长将复杂的数学概念拆解为直观的几何图像。教学风格严谨且具有启发性，注重培养学生的空间想象力与代数逻辑的结合。
+  [agents[2].persona] 数字化教学助手，负责引导学生操作互动实验和实时仪表盘。性格亲和，能够快速捕捉学生的认知偏差并提供精准的技术支持与提示。
+  [agents[3].persona] 心思缜密的高三学生，喜欢钻研公式背后的严谨逻辑。她在学习向量时非常在意 ||x|| 等符号表示与几何意义的精准对应。
+  [scenes[0].title] 向量直觉前测
+  [scenes[0].content.questions[0].options[0].label] 温度（如 25 摄氏度）
+  [scenes[0].content.questions[0].options[1].label] 距离（如 跑步跑了 5 公里）
+  [scenes[0].content.questions[0].options[2].label] 位移（如 向北移动 5 公里）
+  [scenes[0].content.questions[0].options[3].label] 时间（如 经过了 10 秒）
+  [scenes[0].content.questions[0].analysis] 向量是既有大小又有方向的量。位移不仅描述了移动的远近（大小），还描述了移动的方位（方向），因此是向量。而温度、距离、时间都只有大小，没有方向，属于标量。
+  [scenes[0].content.questions[0].question] 在物理学和数学中，我们区分标量与向量。下列物理量中，属于向量的是哪一个？
+  [scenes[0].content.questions[1].options[0].label] 它们的长度相等，但方向可以不同
+  [scenes[0].content.questions[1].options[1].label] 它们的方向相同，但长度可以不同
+  [scenes[0].content.questions[1].options[2].label] 它们的起点必须在同一个坐标原点
+  [scenes[0].content.questions[1].options[3].label] 它们的长度相等且方向相同
+  [scenes[0].content.questions[1].analysis] 向量由大小（长度）和方向共同唯一确定。只要两个向量的长度相等且方向一致，它们就是相等的向量。在数学中，向量通常是‘自由’的，即平移不改变向量的本质，所以起点位置不影响向量是否相等。
+  [scenes[0].content.questions[1].question] 如果有两个向量 a 和 b 被称为‘相等向量’，那么它们必须满足什么条件？
+  [scenes[0].content.questions[2].options[0].label] 零向量（长度为 0 的向量）的方向是任意的
+  [scenes[0].content.questions[2].options[1].label] 如果向量 a 与向量 b 平行，那么它们的方向必须完全相同
+  [scenes[0].content.questions[2].options[2].label] 向量 a 的相反向量与 a 的长度相等，但方向相反
+  [scenes[0].content.questions[2].options[3].label] 向量可以用带箭头的线段表示，箭头的指向即为方向
+  [scenes[0].content.questions[2].analysis] A项，规定零向量的方向是任意的（或说与任何向量平行）。B项错误，平行向量（也称共线向量）的方向可以相同，也可以相反。C项，相反向量的定义即为模相等、方向相反。D项，这是向量最直观的几何表示方法。
+  [scenes[0].content.questions[2].question] 关于向量的‘方向’，下列说法中正确的有哪些？（多选）
+  [scenes[0].content.questions[3].options[0].label] 向量的长度是一个实数，且永远不会是负数
+  [scenes[0].content.questions[3].options[1].label] 所有的单位向量，其长度都等于 1
+  [scenes[0].content.questions[3].options[2].label] 如果向量 a 的长度大于向量 b 的长度，则可以说向量 a 大于向量 b
+  [scenes[0].content.questions[3].options[3].label] 零向量是唯一一个长度为 0 的向量
+  [scenes[0].content.questions[3].analysis] A项，长度（范数）定义为非负实数。B项，单位向量的定义就是长度为 1 的向量。C项错误，向量之间只能比较‘模’的大小，不能直接比较向量本身的大小，因为向量包含方向，方向是无法比较大小的。D项，长度为 0 的向量唯一定义为零向量。
+  [scenes[0].content.questions[3].question] 关于向量的长度（模），以下描述符合直觉且数学正确的是哪些？（多选）
+  [scenes[0].actions[0].text] 同学们，大家好！我是林老师。今天我们将开始一段奇妙的数学旅程，从直观的箭头出发，最终通往严谨的代数世界。在正式探索之前，我想先通过一个小测试，看看大家对“向量”这一概念的直觉认识如何。
+  [scenes[0].actions[1].text] 请大家先看前两道单选题。我们要区分清楚哪些物理量仅仅有“大小”，而哪些又带有“方向”。比如，你跑步跑了 5 公里，这只是距离；但如果你向北跑了 5 公里，这就是位移了。只有同时具备大小和方向的，才是我们今天要讨论的主角——向量。
+  [scenes[0].actions[2].text] 在处理第三和第四道多选题时，请大家特别关注“零向量”和“模”的概念。向量不仅仅是几何图形，它是携带了方向信息的数学实体。记住，只有当长度和方向完全一致时，两个向量才是相等的。
+  [scenes[0].actions[3].text] 关于向量的长度，也就是我们常说的模 $|\mathbf{a}|$，它永远是一个非负的实数。但要注意，我们通常不直接说”向量 $\mathbf{a}$ 大于向量 $\mathbf{b}$”，这在数学上是不严谨的，我们只能比较它们的模长。希望大家在答题时能体会这种几何与代数结合的严谨性。
+  [scenes[0].actions[4].text] 好，现在请大家独立完成这四道题目。不用担心出错，这些题目是为了暴露我们认知中的模糊点，帮助我们在接下来的环节中精准导航。完成之后，我们再来深入探讨其中的逻辑。
+  [scenes[1].title] 向量地图：从箭头到坐标
+  [scenes[1].content.canvas.elements[0].content] <p style="font-size: 32px; color: #1a1a1a;"><strong>向量地图：从箭头到坐标</strong></p>
+  [scenes[1].content.canvas.elements[2].content] <p style="font-size: 20px; line-height: 1.5;">❶ 基础属性：方向、模长与单位向量</p><p style="font-size: 20px; line-height: 1.5;">❷ 运算规则：平行四边形法则与数乘</p><p style="font-size: 20px; line-height: 1.5;">❸ 核心度量：内积、距离与范数定义</p>
+  [scenes[1].content.canvas.elements[5].content] <p style="font-size: 18px; text-align: center; color: #0056b3;"><strong>几何建模</strong></p><p style="font-size: 16px; text-align: center; color: #666;">直观理解箭头的物理意义</p>
+  [scenes[1].content.canvas.elements[7].content] <p style="font-size: 18px; text-align: center; color: #1e7e34;"><strong>代数运算</strong></p><p style="font-size: 16px; text-align: center; color: #666;">坐标系下的向量化简计算</p>
+  [scenes[1].content.canvas.elements[9].content] <p style="font-size: 18px; text-align: center; color: #d39e00;"><strong>距离度量</strong></p><p style="font-size: 16px; text-align: center; color: #666;">深入理解范数与空间距离</p>
+  [scenes[1].actions[1].text] 刚刚大家都完成了前测，可能有的同学凭直觉，有的同学凭记忆。现在，让我们正式进入这张“向量地图”，梳理一下从直观的“箭头”到抽象的“坐标”，我们要跨越哪些核心知识点。
+  [scenes[1].actions[3].text] 在这张地图上，我们梳理了三大模块。首先是基础属性与运算规则。这包括了方向、模长以及平行四边形法则，它们是向量作为“数学工具”的底层逻辑，只有掌握了这些，我们才能在向量空间里自由行走。
+  [scenes[1].actions[5].text] 林老师想提醒大家，左边的几何建模关注的是箭头的物理意义，这能帮我们建立直观的感受，正如浩然关注的实际应用一样。
+  [scenes[1].actions[7].text] 而右边的代数运算，则是把向量放入坐标系，通过坐标化简来解决问题，这是佳佳最喜欢的严谨逻辑，也是我们从几何跨越到代数的关键。
+  [scenes[1].actions[9].text] 最后，我们要重点关注底部的“距离度量”。我们会深入讨论范数与空间距离的联系。明确了这三大版块，我们就有了今天精准导航的路线图。接下来，我们就从最基础的坐标与属性开始探索。
+  [scenes[2].title] 向量探针：坐标与属性
+  [scenes[2].content.widgetConfig.variables[0].label] 终点 x
+  [scenes[2].content.widgetConfig.variables[1].label] 终点 y
+  [scenes[2].content.widgetConfig.description] 交互式向量分量与模的计算演示
+  [scenes[2].content.teacherActions[0].label] 课程导入
+  [scenes[2].content.teacherActions[0].content] 欢迎使用向量分量演示工具。我们将共同探讨向量的坐标表示、模长计算以及方向角之间的几何与代数联系。
+  [scenes[2].content.teacherActions[1].label] 控制横分量
+  [scenes[2].content.teacherActions[1].content] 通过调节这个滑块，你可以改变向量在 x 轴上的投影，即横坐标分量 vx。
+  [scenes[2].content.teacherActions[2].label] 典型向量演示
+  [scenes[2].content.teacherActions[2].content] 当我们将分量设为 (8, 6) 时，利用勾股定理可知模长为 10。请观察图中形成的直角三角形关系。
+  [scenes[2].content.teacherActions[3].label] 观察坐标数值
+  [scenes[2].content.teacherActions[3].content] 在这里可以实时看到分量数值。结合 vy 的数值，你可以验证方向角 θ 是否满足 tanθ = vy/vx。
+  [scenes[2].content.teacherActions[4].label] 探索负向向量
+  [scenes[2].content.teacherActions[4].content] 当分量均为负值时，向量指向第三象限。注意此时方向角的变化，以及模长计算公式中平方项的作用。
+  [scenes[2].content.teacherActions[5].label] 单位向量特例
+  [scenes[2].content.teacherActions[5].content] 这是单位圆上的一个向量。当 vx 和 vy 的平方和为 1 时，向量的模长恒等于 1。
+  [scenes[2].content.teacherActions[6].label] 自主探索
+  [scenes[2].content.teacherActions[6].content] 现在，请你尝试手动拖动图中的箭头终点，直观感受坐标分量与向量几何性质之间的动态关联。
+  [scenes[2].actions[0].text] 欢迎使用向量分量演示工具。我们将共同探讨向量的坐标表示、模长计算以及方向角之间的几何与代数联系。
+  [scenes[2].actions[0].title] 课程导入
+  [scenes[2].actions[1].title] 控制横分量
+  [scenes[2].actions[2].text] 通过调节这个滑块，你可以改变向量在 x 轴上的投影，即横坐标分量 vx。
+  [scenes[2].actions[2].title] 控制横分量
+  [scenes[2].actions[3].title] 典型向量演示
+  [scenes[2].actions[4].text] 当我们将分量设为 (8, 6) 时，利用勾股定理可知模长为 10。请观察图中形成的直角三角形关系。
+  [scenes[2].actions[4].title] 典型向量演示
+  [scenes[2].actions[5].title] 观察坐标数值
+  [scenes[2].actions[6].text] 在这里可以实时看到分量数值。结合 vy 的数值，你可以验证方向角 θ 是否满足 tanθ = vy/vx。
+  [scenes[2].actions[6].title] 观察坐标数值
+  [scenes[2].actions[7].title] 探索负向向量
+  [scenes[2].actions[8].text] 当分量均为负值时，向量指向第三象限。注意此时方向角的变化，以及模长计算公式中平方项的作用。
+  [scenes[2].actions[8].title] 探索负向向量
+  [scenes[2].actions[9].title] 单位向量特例
+  [scenes[2].actions[10].text] 这是单位圆上的一个向量。当 vx 和 vy 的平方和为 1 时，向量的模长恒等于 1。
+  [scenes[2].actions[10].title] 单位向量特例
+  [scenes[2].actions[11].text] 现在，请你尝试手动拖动图中的箭头终点，直观感受坐标分量与向量几何性质之间的动态关联。
+  [scenes[2].actions[11].title] 自主探索
+  [scenes[3].title] 加法实验：首尾相接的旅程
+  [scenes[3].content.widgetConfig.variables[0].label] 向量a长度
+  [scenes[3].content.widgetConfig.variables[1].label] 向量a角度
+  [scenes[3].content.widgetConfig.variables[2].label] 向量b长度
+  [scenes[3].content.widgetConfig.variables[3].label] 向量b角度
+  [scenes[3].content.widgetConfig.description] 通过动画演示向量b平移至向量a终点的过程，展示向量加法的三角形法则。
+  [scenes[3].content.teacherActions[0].label] 开始教学
+  [scenes[3].content.teacherActions[0].content] 欢迎学习向量加法。我们将通过几何演示，探索如何利用“三角形法则”寻找两个向量的合向量。
+  [scenes[3].content.teacherActions[1].label] 调整向量a
+  [scenes[3].content.teacherActions[1].content] 这里可以调整第一个向量 $\vec{a}$ 的模长。在坐标系中，它构成了加法运算的第一步。
+  [scenes[3].content.teacherActions[2].label] 演示直角加法
+  [scenes[3].content.teacherActions[2].content] 观察这个直角加法的例子。我们将向量 $\vec{b}$ 的始点平移到向量 $\vec{a}$ 的终点，合向量即为从 $\vec{a}$ 的始点指向 $\vec{b}$ 的终点的有向线段。
+  [scenes[3].content.teacherActions[3].label] 改变向量b方向
+  [scenes[3].content.teacherActions[3].content] 改变向量 $\vec{b}$ 的方向，观察三角形的形状是如何随之变化的。无论方向如何，“首尾相接”的原则始终适用。
+  [scenes[3].content.teacherActions[4].label] 演示反向抵消
+  [scenes[3].content.teacherActions[4].content] 当向量 $\vec{b}$ 与 $\vec{a}$ 方向相反且长度相等时，它们会完全抵消，此时合向量的模长为 0。
+  [scenes[3].content.teacherActions[5].label] 总结规律
+  [scenes[3].content.teacherActions[5].content] 请记住：向量加法的几何本质是位移的累加。只需将各向量首尾相连，从起点指向终点的向量就是最终的运算结果。
+  [scenes[3].actions[0].text] 欢迎学习向量加法。我们将通过几何演示，探索如何利用“三角形法则”寻找两个向量的合向量。
+  [scenes[3].actions[0].title] 开始教学
+  [scenes[3].actions[1].title] 调整向量a
+  [scenes[3].actions[2].text] 这里可以调整第一个向量 $\vec{a}$ 的模长。在坐标系中，它构成了加法运算的第一步。
+  [scenes[3].actions[2].title] 调整向量a
+  [scenes[3].actions[3].title] 演示直角加法
+  [scenes[3].actions[4].text] 观察这个直角加法的例子。我们将向量 $\vec{b}$ 的始点平移到向量 $\vec{a}$ 的终点，合向量即为从 $\vec{a}$ 的始点指向 $\vec{b}$ 的终点的有向线段。
+  [scenes[3].actions[4].title] 演示直角加法
+  [scenes[3].actions[5].title] 改变向量b方向
+  [scenes[3].actions[6].text] 改变向量 $\vec{b}$ 的方向，观察三角形的形状是如何随之变化的。无论方向如何，“首尾相接”的原则始终适用。
+  [scenes[3].actions[6].title] 改变向量b方向
+  [scenes[3].actions[7].title] 演示反向抵消
+  [scenes[3].actions[8].text] 当向量 $\vec{b}$ 与 $\vec{a}$ 方向相反且长度相等时，它们会完全抵消，此时合向量的模长为 0。
+  [scenes[3].actions[8].title] 演示反向抵消
+  [scenes[3].actions[9].text] 请记住：向量加法的几何本质是位移的累加。只需将各向量首尾相连，从起点指向终点的向量就是最终的运算结果。
+  [scenes[3].actions[9].title] 总结规律
+  [scenes[4].title] 数乘伸缩：方向的逆转
+  [scenes[4].content.widgetConfig.variables[0].label] 倍数 k
+  [scenes[4].content.widgetConfig.variables[1].label] 原向量 x
+  [scenes[4].content.widgetConfig.variables[2].label] 原向量 y
+  [scenes[4].content.widgetConfig.description] 探索向量数乘的几何意义：拉伸、缩短与反向
+  [scenes[4].content.teacherActions[0].label] 开始探索
+  [scenes[4].content.teacherActions[0].content] 同学们，让我们通过这个互动模型来直观感受向量数乘的几何本质：它是如何像橡皮筋一样改变向量的长度和方向的。
+  [scenes[4].content.teacherActions[1].label] 关注倍数 k
+  [scenes[4].content.teacherActions[1].content] 重点观察这里的标量 $k$，它是控制向量“形变”的关键参数。改变它，就是在对向量进行线性缩放。
+  [scenes[4].content.teacherActions[2].label] 观察拉伸
+  [scenes[4].content.teacherActions[2].content] 当 $k > 1$ 时（例如 $k=2.5$），结果向量与原向量同向，但模长被显著拉伸。这体现了数乘的“放大”作用。
+  [scenes[4].content.teacherActions[3].label] 观察反向
+  [scenes[4].content.teacherActions[3].content] 注意观察！当 $k$ 变为负数时，向量的方向瞬间发生了 180° 反转。在向量代数中，负号不仅代表大小，更代表了方向的相反。
+  [scenes[4].content.teacherActions[4].label] 零向量情况
+  [scenes[4].content.teacherActions[4].content] 当 $k=0$ 时，无论原向量指向何方，结果都会收缩回原点，这就是零向量 $\vec{0}$。
+  [scenes[4].content.teacherActions[5].label] 自由探索
+  [scenes[4].content.teacherActions[5].content] 现在，你可以尝试拖动原向量的坐标滑杆，再结合 $k$ 值的变化，验证一下向量数乘在不同象限下的表现吧。
+  [scenes[4].actions[0].text] 同学们，让我们通过这个互动模型来直观感受向量数乘的几何本质：它是如何像橡皮筋一样改变向量的长度和方向的。
+  [scenes[4].actions[0].title] 开始探索
+  [scenes[4].actions[1].title] 关注倍数 k
+  [scenes[4].actions[2].text] 重点观察这里的标量 $k$，它是控制向量“形变”的关键参数。改变它，就是在对向量进行线性缩放。
+  [scenes[4].actions[2].title] 关注倍数 k
+  [scenes[4].actions[3].title] 观察拉伸
+  [scenes[4].actions[4].text] 当 $k > 1$ 时（例如 $k=2.5$），结果向量与原向量同向，但模长被显著拉伸。这体现了数乘的“放大”作用。
+  [scenes[4].actions[4].title] 观察拉伸
+  [scenes[4].actions[5].title] 观察反向
+  [scenes[4].actions[6].text] 注意观察！当 $k$ 变为负数时，向量的方向瞬间发生了 180° 反转。在向量代数中，负号不仅代表大小，更代表了方向的相反。
+  [scenes[4].actions[6].title] 观察反向
+  [scenes[4].actions[7].title] 零向量情况
+  [scenes[4].actions[8].text] 当 $k=0$ 时，无论原向量指向何方，结果都会收缩回原点，这就是零向量 $\vec{0}$。
+  [scenes[4].actions[8].title] 零向量情况
+  [scenes[4].actions[9].text] 现在，你可以尝试拖动原向量的坐标滑杆，再结合 $k$ 值的变化，验证一下向量数乘在不同象限下的表现吧。
+  [scenes[4].actions[9].title] 自由探索
+  [scenes[5].title] 公式桥梁：从图像到代数
+  [scenes[5].content.canvas.elements[0].content] <p style="font-size: 32px; text-align: left;"><strong>公式总结：从代数运算到几何直观</strong></p>
+  [scenes[5].content.canvas.elements[2].content] <p style="font-size: 24px; color: #4472c4;">1. 线性运算 (Linear Operations)</p>
+  [scenes[5].content.canvas.elements[5].content] <p style="font-size: 24px; color: #c00000;">2. 范数与距离 (Norm)</p>
+  [scenes[5].content.canvas.elements[7].content] <p style="font-size: 18px;">定义了向量的几何长度与度量空间</p>
+  [scenes[5].content.canvas.elements[9].content] <p style="font-size: 16px; text-align: center; color: #888888;">几何直观：代数定义的范数决定了单位圆在不同坐标系下的几何形态</p>
+  [scenes[5].actions[1].text] 刚才我们通过动手实验，直观感受了向量的伸缩和合成。现在，让我们把这些动态的几何操作提炼成严谨的代数语言。这页总结的公式，就是连接几何直觉与代数运算的‘桥梁’。
+  [scenes[5].actions[4].text] 首先看线性运算。在坐标系中，向量加法就是对应分量相加。这意味着我们在水平和垂直方向上的位移是各自独立累加的，非常简洁。
+  [scenes[5].actions[6].text] 而数乘运算则是将缩放系数 $k$ 同时作用于每个分量。这就是我们刚才在实验中看到的，向量在保持方向或反向的前提下，长度发生的倍数变化。
+  [scenes[5].actions[9].text] 接下来是佳佳非常关注的范数概念。在代数上，我们用这个公式来定义向量的‘长度’。大家仔细看，这本质上就是坐标系里的勾股定理。它为我们定义了空间的度量衡。
+  [scenes[5].actions[11].text] 最后，请大家观察这张几何形态图。代数定义的范数不仅是一串字符，它还决定了‘单位圆’在不同坐标系下的样貌。有了这些公式，我们就能精准地计算后续导航中的距离偏差了。接下来，我们看看如何用这些公式来充当‘测距仪’。
+  [scenes[6].title] 测距仪：两点间的向量
+  [scenes[6].content.widgetConfig.variables[0].label] 点 A 横坐标
+  [scenes[6].content.widgetConfig.variables[1].label] 点 A 纵坐标
+  [scenes[6].content.widgetConfig.variables[2].label] 点 B 横坐标
+  [scenes[6].content.widgetConfig.variables[3].label] 点 B 纵坐标
+  [scenes[6].content.widgetConfig.description] 探索平面上两点间的距离与对应向量的模长关系。
+  [scenes[6].content.teacherActions[0].label] 开始探索
+  [scenes[6].content.teacherActions[0].content] 欢迎。今天我们将通过几何直观来理解向量减法与两点间距离的关系。请看屏幕上的点 A 和点 B。
+  [scenes[6].content.teacherActions[1].label] 定位点 A
+  [scenes[6].content.teacherActions[1].content] 通过调节这些滑块，你可以改变点 A 的坐标位置，它是差向量的起点。
+  [scenes[6].content.teacherActions[2].label] 勾股数示例
+  [scenes[6].content.teacherActions[2].content] 我们将 A 置于原点，B 置于 (3, 4)。根据勾股定理，向量 B-A 的模长，也就是这两点间的距离，正好是 5。
+  [scenes[6].content.teacherActions[3].label] 移动点 B
+  [scenes[6].content.teacherActions[3].content] 现在尝试移动点 B。注意观察代表差向量的箭头是如何随之伸缩和旋转的。
+  [scenes[6].content.teacherActions[4].label] 水平向量
+  [scenes[6].content.teacherActions[4].content] 当两点处于同一水平线上时，纵坐标之差为零，距离简化为横坐标之差的绝对值。
+  [scenes[6].content.teacherActions[5].label] 总结直觉
+  [scenes[6].content.teacherActions[5].content] 记住，向量 B-A 的范数（Norm）在几何上就对应了欧几里得空间中两点间的直线距离。这种代数与几何的统一是解析几何的核心。
+  [scenes[6].actions[0].text] 欢迎。今天我们将通过几何直观来理解向量减法与两点间距离的关系。请看屏幕上的点 A 和点 B。
+  [scenes[6].actions[0].title] 开始探索
+  [scenes[6].actions[1].title] 定位点 A
+  [scenes[6].actions[2].text] 通过调节这些滑块，你可以改变点 A 的坐标位置，它是差向量的起点。
+  [scenes[6].actions[2].title] 定位点 A
+  [scenes[6].actions[3].title] 勾股数示例
+  [scenes[6].actions[4].text] 我们将 A 置于原点，B 置于 (3, 4)。根据勾股定理，向量 B-A 的模长，也就是这两点间的距离，正好是 5。
+  [scenes[6].actions[4].title] 勾股数示例
+  [scenes[6].actions[5].title] 移动点 B
+  [scenes[6].actions[6].text] 现在尝试移动点 B。注意观察代表差向量的箭头是如何随之伸缩和旋转的。
+  [scenes[6].actions[6].title] 移动点 B
+  [scenes[6].actions[7].title] 水平向量
+  [scenes[6].actions[8].text] 当两点处于同一水平线上时，纵坐标之差为零，距离简化为横坐标之差的绝对值。
+  [scenes[6].actions[8].title] 水平向量
+  [scenes[6].actions[9].text] 记住，向量 B-A 的范数（Norm）在几何上就对应了欧几里得空间中两点间的直线距离。这种代数与几何的统一是解析几何的核心。
+  [scenes[6].actions[9].title] 总结直觉
+  [scenes[7].title] 过程纠偏测试
+  [scenes[7].content.questions[0].options[0].label] (4, -1)
+  [scenes[7].content.questions[0].options[1].label] (5, -1)
+  [scenes[7].content.questions[0].options[2].label] (4, -17)
+  [scenes[7].content.questions[0].options[3].label] (8, -1)
+  [scenes[7].content.questions[0].analysis] 根据向量的坐标运算法则，3a = (6, -9)，2b = (-2, 8)。因此 c = 3a + 2b = (6-2, -9+8) = (4, -1)。选项 A 正确。
+  [scenes[7].content.questions[0].question] 已知向量 a = (2, -3)，向量 b = (-1, 4)，若向量 c = 3a + 2b，则向量 c 的坐标为：
+  [scenes[7].content.questions[1].options[0].label] 若实数 k > 0，则向量 ka 与向量 a 的方向相同
+  [scenes[7].content.questions[1].options[1].label] 若实数 k < 0，则向量 ka 与向量 a 的方向相反
+  [scenes[7].content.questions[1].options[2].label] 向量 ka 的模等于 k 的绝对值与向量 a 的模的乘积
+  [scenes[7].content.questions[1].options[3].label] 当 k = -1 时，ka 与 a 互为相反向量
+  [scenes[7].content.questions[1].analysis] 根据数乘向量的定义：k > 0 时方向相同，k < 0 时方向相反，k = 0 时为零向量。ka 的模计算公式为 |k| * |a|。当 k = -1 时，-1 * a = -a，即为相反向量。所有选项均正确。
+  [scenes[7].content.questions[1].question] 关于向量的数乘运算与其几何意义，下列说法中正确的有：
+  [scenes[7].content.questions[2].options[0].label] (3, 4)
+  [scenes[7].content.questions[2].options[1].label] (6, 8)
+  [scenes[7].content.questions[2].options[2].label] (0.6, 0.8)
+  [scenes[7].content.questions[2].options[3].label] (12, 16)
+  [scenes[7].content.questions[2].analysis] 首先计算向量 v = AB = (4-1, 5-1) = (3, 4)。计算 v 的模长 |v| = sqrt(3^2 + 4^2) = 5。由于向量 u 的模长为 10 且方向与 v 相同，则 u = (10 / 5) * v = 2 * (3, 4) = (6, 8)。故选 B。
+  [scenes[7].content.questions[2].question] 已知点 A(1, 1) 和点 B(4, 5)，向量 v 的起点为 A，终点为 B。若要构造一个与向量 v 方向相同且模长为 10 的向量 u，则 u 的坐标为：
+  [scenes[7].content.questions[3].analysis] 1. 计算原向量模长：|m| = sqrt(1^2 + (sqrt(3))^2) = sqrt(1 + 3) = 2。 2. 计算新向量模长：|n| = |-2| * |m| = 2 * 2 = 4。 3. 方向判断：因为标量 k = -2 小于 0，根据数乘向量性质，新向量 n 的方向与原向量 m 的方向完全相反。总结：模长变为原来的 2 倍，方向反转 180 度。
+  [scenes[7].content.questions[3].question] 在平面直角坐标系中，已知向量 m = (1, sqrt(3))。请通过计算说明：若将向量 m 乘以标量 k = -2 得到新向量 n，向量 n 的模长是多少？并从几何直觉出发，描述向量 n 相对于原向量 m 在方向上发生了怎样的变化。
+  [scenes[7].actions[0].text] 刚才我们通过“测距仪”探讨了向量范数的几何意义，现在到了检验大家实战能力的时刻。这组“过程纠偏测试”旨在检查大家是否能将坐标运算、标量乘法与几何直觉完美融合。
+  [scenes[7].actions[1].text] 在处理第一题和第三题这类坐标运算时，请保持严谨：坐标的分量运算与我们在第 7 页提到的线性性质是一脉相承的。特别是 Q3，需要大家先找到向量 AB，再考虑如何通过缩放达到目标模长，这在路径规划中非常实用。
+  [scenes[7].actions[2].text] 而对于 Q2 和 Q4，我更希望大家能在大脑中浮现出向量“伸缩”与“掉头”的画面。标量 k 的正负号就像一个方向开关，而它的绝对值则决定了向量长度的变化倍数。请大家仔细审题，开始作答。
+  [scenes[7].actions[3].text] 完成测试后，请大家思考一个问题：在 Q4 中，当标量 k 从正数变为负数时，除了方向的反转，这种代数上的符号变化在物理位移或速度控制中意味着什么？
+  [scenes[8].title] 精准导航：双步策略游戏
+  [scenes[8].content.teacherActions[0].label] 开始教学
+  [scenes[8].content.teacherActions[0].content] 欢迎来到向量合成挑战。在这个练习中，我们将通过向量的线性组合，精确地到达目标旗帜的位置。
+  [scenes[8].content.teacherActions[1].label] 确认目标
+  [scenes[8].content.teacherActions[1].content] 观察目标旗帜在平面直角坐标系中的位置，这决定了我们需要合成出的目标向量。
+  [scenes[8].content.teacherActions[2].label] 选择基向量
+  [scenes[8].content.teacherActions[2].content] 首先，从给定的备选向量卡片中选出两个基向量。思考哪组向量能够张成到达目标的平面。
+  [scenes[8].content.teacherActions[3].label] 调整系数
+  [scenes[8].content.teacherActions[3].content] 通过滑动条调整每个向量的系数。这对应着向量的数乘运算 $k\vec{v}$，改变向量的大小或方向。
+  [scenes[8].content.teacherActions[4].label] 原理解析
+  [scenes[8].content.teacherActions[4].content] 我们要寻找满足 $a\vec{v}_1 + b\vec{v}_2 = \vec{target}$ 的标量 $a$ 和 $b$。这是线性代数中线性组合的核心直觉。
+  [scenes[8].content.teacherActions[5].label] 验证结果
+  [scenes[8].content.teacherActions[5].content] 点击开始按钮，角色将按照你设定的两步合成路径移动。观察几何加法是如何分步实现的。
+  [scenes[8].actions[0].text] 欢迎来到向量合成挑战。在这个练习中，我们将通过向量的线性组合，精确地到达目标旗帜的位置。
+  [scenes[8].actions[0].title] 开始教学
+  [scenes[8].actions[1].title] 确认目标
+  [scenes[8].actions[2].text] 观察目标旗帜在平面直角坐标系中的位置，这决定了我们需要合成出的目标向量。
+  [scenes[8].actions[2].title] 确认目标
+  [scenes[8].actions[3].title] 选择基向量
+  [scenes[8].actions[4].text] 首先，从给定的备选向量卡片中选出两个基向量。思考哪组向量能够张成到达目标的平面。
+  [scenes[8].actions[4].title] 选择基向量
+  [scenes[8].actions[5].title] 调整系数
+  [scenes[8].actions[6].text] 通过滑动条调整每个向量的系数。这对应着向量的数乘运算 $k\vec{v}$，改变向量的大小或方向。
+  [scenes[8].actions[6].title] 调整系数
+  [scenes[8].actions[7].text] 我们要寻找满足 $a\vec{v}_1 + b\vec{v}_2 = \vec{target}$ 的标量 $a$ 和 $b$。这是线性代数中线性组合的核心直觉。
+  [scenes[8].actions[7].title] 原理解析
+  [scenes[8].actions[8].title] 验证结果
+  [scenes[8].actions[9].text] 点击开始按钮，角色将按照你设定的两步合成路径移动。观察几何加法是如何分步实现的。
+  [scenes[8].actions[9].title] 验证结果
+  [scenes[9].title] 误差仪表盘：离目标还有多远？
+  [scenes[9].content.widgetConfig.variables[0].label] 预测点 X
+  [scenes[9].content.widgetConfig.variables[1].label] 预测点 Y
+  [scenes[9].content.widgetConfig.variables[2].label] 目标点 X
+  [scenes[9].content.widgetConfig.variables[3].label] 目标点 Y
+  [scenes[9].content.widgetConfig.description] 通过几何直觉理解误差向量及其范数（距离）作为损失函数的基础。
+  [scenes[9].content.teacherActions[0].label] 开始探索
+  [scenes[9].content.teacherActions[0].content] 欢迎来到损失函数的几何演示。我们将通过观察预测点与目标点之间的“差向量”，直观感受几何距离如何转化为数学上的损失值。
+  [scenes[9].content.teacherActions[1].label] 定位预测点
+  [scenes[9].content.teacherActions[1].content] 通过调节 predX 和 predY 滑块，你可以实时改变预测点在坐标系中的位置。
+  [scenes[9].content.teacherActions[2].label] 观察大误差
+  [scenes[9].content.teacherActions[2].content] 当预测点远离目标点时，连接两点的向量即为误差向量。此时向量的模长（即距离）很大，代表模型当前的损失值（Loss）较高。
+  [scenes[9].content.teacherActions[3].label] 减小损失值
+  [scenes[9].content.teacherActions[3].content] 注意看，随着我们将预测点移向目标，误差向量不断收缩。在机器学习的优化过程中，我们的目标就是让这个向量的模长趋近于零。
+  [scenes[9].content.teacherActions[4].label] 调整目标
+  [scenes[9].content.teacherActions[4].content] 你也可以尝试改变目标点的位置。无论目标在哪里，损失函数的核心始终是衡量预测与真实值之间的“差距”。
+  [scenes[9].content.teacherActions[5].label] 总结核心
+  [scenes[9].content.teacherActions[5].content] 总结一下：误差向量的几何意义是两点间的位移，而它的模长（范数）则是衡量模型好坏的标量损失。请试着通过手动调节，寻找损失最小的状态。
+  [scenes[9].actions[0].text] 欢迎来到损失函数的几何演示。我们将通过观察预测点与目标点之间的“差向量”，直观感受几何距离如何转化为数学上的损失值。
+  [scenes[9].actions[0].title] 开始探索
+  [scenes[9].actions[1].title] 定位预测点
+  [scenes[9].actions[2].text] 通过调节 predX 和 predY 滑块，你可以实时改变预测点在坐标系中的位置。
+  [scenes[9].actions[2].title] 定位预测点
+  [scenes[9].actions[3].title] 观察大误差
+  [scenes[9].actions[4].text] 当预测点远离目标点时，连接两点的向量即为误差向量。此时向量的模长（即距离）很大，代表模型当前的损失值（Loss）较高。
+  [scenes[9].actions[4].title] 观察大误差
+  [scenes[9].actions[5].title] 减小损失值
+  [scenes[9].actions[6].text] 注意看，随着我们将预测点移向目标，误差向量不断收缩。在机器学习的优化过程中，我们的目标就是让这个向量的模长趋近于零。
+  [scenes[9].actions[6].title] 减小损失值
+  [scenes[9].actions[7].title] 调整目标
+  [scenes[9].actions[8].text] 你也可以尝试改变目标点的位置。无论目标在哪里，损失函数的核心始终是衡量预测与真实值之间的“差距”。
+  [scenes[9].actions[8].title] 调整目标
+  [scenes[9].actions[9].text] 总结一下：误差向量的几何意义是两点间的位移，而它的模长（范数）则是衡量模型好坏的标量损失。请试着通过手动调节，寻找损失最小的状态。
+  [scenes[9].actions[9].title] 总结核心
+  [scenes[10].title] 向量关系图谱
+  [scenes[10].content.widgetConfig.edges[0].label] 定义属性
+  [scenes[10].content.widgetConfig.edges[1].label] 合成运算
+  [scenes[10].content.widgetConfig.edges[2].label] 伸缩运算
+  [scenes[10].content.widgetConfig.edges[3].label] 计算基石
+  [scenes[10].content.widgetConfig.edges[4].label] 位移差异
+  [scenes[10].content.widgetConfig.edges[5].label] 度量诱导
+  [scenes[10].content.widgetConfig.nodes[0].label] 向量 (Vector)
+  [scenes[10].content.widgetConfig.nodes[1].label] 范数 (Norm/Length)
+  [scenes[10].content.widgetConfig.nodes[2].label] 向量加法
+  [scenes[10].content.widgetConfig.nodes[3].label] 数乘运算
+  [scenes[10].content.widgetConfig.nodes[4].label] 内积 (Dot Product)
+  [scenes[10].content.widgetConfig.nodes[5].label] 距离 (Distance)
+  [scenes[10].content.teacherActions[0].label] 开始探索
+  [scenes[10].content.teacherActions[0].content] 欢迎来到向量与度量空间的探索之旅。我们将一起学习基础的向量概念是如何逐步构建出复杂的距离度量的。
+  [scenes[10].content.teacherActions[1].label] 认识向量
+  [scenes[10].content.teacherActions[1].content] 一切从向量开始。它不仅有大小，还有方向，是物理位移和代数坐标的完美结合。
+  [scenes[10].content.teacherActions[2].label] 理解范数
+  [scenes[10].content.teacherActions[2].content] 范数（Norm）为向量赋予了“长度”的概念。它是将抽象向量映射到实数轴上的关键桥梁。
+  [scenes[10].content.teacherActions[3].label] 向量加法
+  [scenes[10].content.teacherActions[3].content] 向量加法遵循平行四边形法则。它是构建线性空间的基石，允许我们将不同的位移进行合成。
+  [scenes[10].content.teacherActions[4].label] 内积应用
+  [scenes[10].content.teacherActions[4].content] 内积（Dot Product）连接了长度与角度。它能反映一个向量在另一个方向上的投影，是计算度量的核心工具。
+  [scenes[10].content.teacherActions[5].label] 定义距离
+  [scenes[10].content.teacherActions[5].content] 最后，通过向量减法的范数，我们定义了两点间的距离。这标志着我们从线性代数运算正式进入了度量几何的领域。
+  [scenes[10].actions[0].text] 欢迎来到向量与度量空间的探索之旅。我们将一起学习基础的向量概念是如何逐步构建出复杂的距离度量的。
+  [scenes[10].actions[0].title] 开始探索
+  [scenes[10].actions[1].title] 认识向量
+  [scenes[10].actions[2].text] 一切从向量开始。它不仅有大小，还有方向，是物理位移和代数坐标的完美结合。
+  [scenes[10].actions[2].title] 认识向量
+  [scenes[10].actions[3].title] 理解范数
+  [scenes[10].actions[4].text] 范数（Norm）为向量赋予了“长度”的概念。它是将抽象向量映射到实数轴上的关键桥梁。
+  [scenes[10].actions[4].title] 理解范数
+  [scenes[10].actions[5].title] 向量加法
+  [scenes[10].actions[6].text] 向量加法遵循平行四边形法则。它是构建线性空间的基石，允许我们将不同的位移进行合成。
+  [scenes[10].actions[6].title] 向量加法
+  [scenes[10].actions[7].title] 内积应用
+  [scenes[10].actions[8].text] 内积（Dot Product）连接了长度与角度。它能反映一个向量在另一个方向上的投影，是计算度量的核心工具。
+  [scenes[10].actions[8].title] 内积应用
+  [scenes[10].actions[9].title] 定义距离
+  [scenes[10].actions[10].text] 最后，通过向量减法的范数，我们定义了两点间的距离。这标志着我们从线性代数运算正式进入了度量几何的领域。
+  [scenes[10].actions[10].title] 定义距离
+  [scenes[11].title] 全景复盘：知识完整性回收
+  [scenes[11].content.canvas.elements[0].content] <p style="font-size: 32px; color: #1a1a1a;"><strong>全景复盘：知识完整性回收</strong></p>
+  [scenes[11].content.canvas.elements[2].content] <p style="font-size: 24px; color: #44546a;">1. 核心公式汇总</p>
+  [scenes[11].content.canvas.elements[5].content] <p style="font-size: 24px; color: #44546a;">2. 互动回顾与迁移</p>
+  [scenes[11].content.canvas.elements[6].data[0][0].text] 学习目标
+  [scenes[11].content.canvas.elements[6].data[0][1].text] 练习互动环节
+  [scenes[11].content.canvas.elements[6].data[1][0].text] 向量模长计算
+  [scenes[11].content.canvas.elements[6].data[1][1].text] 坐标系闯关 · 第一关
+  [scenes[11].content.canvas.elements[6].data[2][0].text] 夹角与投影分析
+  [scenes[11].content.canvas.elements[6].data[2][1].text] 动态向量实验 · 综合挑战
+  [scenes[11].content.canvas.elements[8].content] <p style="font-size: 18px; color: #d62728; text-align: center;"><strong>解题迁移提示</strong></p>
+  [scenes[11].content.canvas.elements[9].content] <p style="font-size: 16px; line-height: 1.5;">• 数形结合：代数式映射几何位置</p><p style="font-size: 16px; line-height: 1.5;">• 动态思维：观测参数的连续变化</p>
+  [scenes[11].actions[1].text] 经历了前面的探索，现在让我们停下来进行全景复盘。这一节课，我们从向量的几何直观出发，一路走到了复杂的代数运算，是时候把这些知识点进行完整性回收了。
+  [scenes[11].actions[3].text] 首先，我们对核心公式做一个汇总。这些公式是我们从“图像”跨越到“代数”的桥梁。
+  [scenes[11].actions[5].text] 看这个范数公式，它源于我们在第七章“测距仪”中的应用，将向量的几何长度转化为坐标的平方和再开方。佳佳，你之前关注的符号表示与几何意义的对应，在这里得到了最直观的体现。
+  [scenes[11].actions[7].text] 而点积公式则是处理向量间关系的核心，无论是计算夹角还是判断垂直，它都是最高效的代数工具。
+  [scenes[11].actions[9].text] 接下来，我们看互动回顾。这张表记录了大家在“数乘实验”和“精准导航”两个互动环节中的目标达成度。请大家重点观察自己在误差仪表盘上反馈的数据，思考这些偏差是如何通过调整代数参数来修正的。
+  [scenes[11].actions[11].text] 最后，我想给出几点解题迁移的提示。浩然，你在做导航挑战时表现出的直觉非常棒，但在面对更复杂的数学问题时，要记得：代数式不仅仅是字母的组合，它在空间中有着确定的几何映射。同时，要学会用动态的思维去观测参数变化对整个向量系统的影响。
+  [scenes[12].title] 向量拼图挑战
+  [scenes[12].content.widgetConfig.title] 向量拼图挑战
+  [scenes[12].content.teacherActions[0].label] 开始挑战
+  [scenes[12].content.teacherActions[0].content] 欢迎来到向量拼图挑战。在这个任务中，你需要运用向量加法的三角形法则或平行四边形法则，通过组合分向量来构建目标向量。
+  [scenes[12].content.teacherActions[1].label] 识别目标向量
+  [scenes[12].content.teacherActions[1].content] 观察画布中心的虚线箭头，这就是我们需要合成的目标向量。请思考如何通过平移、旋转和缩放来拼凑它。
+  [scenes[12].content.teacherActions[2].label] 运算法则提示
+  [scenes[12].content.teacherActions[2].content] 建议采用“首尾相接”法：将一个分向量的终点作为下一个分向量的起点，最终的合向量将从第一个起点指向最后一个终点。
+  [scenes[12].content.teacherActions[3].label] 查看得分规则
+  [scenes[12].content.teacherActions[3].content] 正确合成向量可获得10分基础分。注意，操作越快，获得的速度奖励分越多。
+  [scenes[12].content.teacherActions[4].label] 解题策略指导
+  [scenes[12].content.teacherActions[4].content] 尝试从最长的分向量开始布局，建立基本的框架，再利用短向量进行方向和长度的微调。准备好了吗？开始你的空间逻辑训练吧！
+  [scenes[12].actions[0].text] 欢迎来到向量拼图挑战。在这个任务中，你需要运用向量加法的三角形法则或平行四边形法则，通过组合分向量来构建目标向量。
+  [scenes[12].actions[0].title] 开始挑战
+  [scenes[12].actions[1].title] 识别目标向量
+  [scenes[12].actions[2].text] 观察画布中心的虚线箭头，这就是我们需要合成的目标向量。请思考如何通过平移、旋转和缩放来拼凑它。
+  [scenes[12].actions[2].title] 识别目标向量
+  [scenes[12].actions[3].title] 运算法则提示
+  [scenes[12].actions[4].text] 建议采用“首尾相接”法：将一个分向量的终点作为下一个分向量的起点，最终的合向量将从第一个起点指向最后一个终点。
+  [scenes[12].actions[4].title] 运算法则提示
+  [scenes[12].actions[5].title] 查看得分规则
+  [scenes[12].actions[6].text] 正确合成向量可获得10分基础分。注意，操作越快，获得的速度奖励分越多。
+  [scenes[12].actions[6].title] 查看得分规则
+  [scenes[12].actions[7].text] 尝试从最长的分向量开始布局，建立基本的框架，再利用短向量进行方向和长度的微调。准备好了吗？开始你的空间逻辑训练吧！
+  [scenes[12].actions[7].title] 解题策略指导
+  [scenes[13].title] 预演：优化中的“一步”
+  [scenes[13].content.widgetConfig.variables[0].label] 更新方向 (θ)
+  [scenes[13].content.widgetConfig.variables[1].label] 步长 (η)
+  [scenes[13].content.widgetConfig.variables[2].label] 初始 X
+  [scenes[13].content.widgetConfig.variables[3].label] 初始 Y
+  [scenes[13].content.widgetConfig.description] 模拟机器学习中的梯度下降更新过程：x_new = x_old + η * d
+  [scenes[13].content.teacherActions[0].label] 开始教学
+  [scenes[13].content.teacherActions[0].content] 欢迎来到优化算法的几何演示。在机器学习中，我们通过迭代更新来寻找函数的最优解，核心就在于确定更新的方向和步长。
+  [scenes[13].content.teacherActions[1].label] 讲解更新方向
+  [scenes[13].content.teacherActions[1].content] 更新方向 θ 决定了我们要往哪个方向“迈步”。在梯度下降算法中，这通常对应于梯度的反方向。
+  [scenes[13].content.teacherActions[2].label] 讲解步长
+  [scenes[13].content.teacherActions[2].content] 步长 η，也就是学习率，控制了我们在该方向上移动的距离。它是缩放方向向量的标量。
+  [scenes[13].content.teacherActions[3].label] 演示稳健更新
+  [scenes[13].content.teacherActions[3].content] 让我们观察一个稳健的更新过程。通过较小的步长 η，点会沿着指定方向平稳地向低洼处迈进。
+  [scenes[13].content.teacherActions[4].label] 演示大步更新
+  [scenes[13].content.teacherActions[4].content] 如果我们将步长 η 增大，单次移动的跨度会显著增加。在实际优化中，过大的步长可能会导致跳过最小值点，甚至引发震荡。
+  [scenes[13].content.teacherActions[5].label] 总结计算公式
+  [scenes[13].content.teacherActions[5].content] 总结一下，更新公式为 $x_{new} = x_{old} + η \cdot d$。通过数乘运算 $η \cdot d$，我们改变了向量的大小，最终实现了位置的更新。
+  [scenes[13].actions[0].text] 欢迎来到优化算法的几何演示。在机器学习中，我们通过迭代更新来寻找函数的最优解，核心就在于确定更新的方向和步长。
+  [scenes[13].actions[0].title] 开始教学
+  [scenes[13].actions[1].title] 讲解更新方向
+  [scenes[13].actions[2].text] 更新方向 θ 决定了我们要往哪个方向“迈步”。在梯度下降算法中，这通常对应于梯度的反方向。
+  [scenes[13].actions[2].title] 讲解更新方向
+  [scenes[13].actions[3].title] 讲解步长
+  [scenes[13].actions[4].text] 步长 η，也就是学习率，控制了我们在该方向上移动的距离。它是缩放方向向量的标量。
+  [scenes[13].actions[4].title] 讲解步长
+  [scenes[13].actions[5].title] 演示稳健更新
+  [scenes[13].actions[6].text] 让我们观察一个稳健的更新过程。通过较小的步长 η，点会沿着指定方向平稳地向低洼处迈进。
+  [scenes[13].actions[6].title] 演示稳健更新
+  [scenes[13].actions[7].title] 演示大步更新
+  [scenes[13].actions[8].text] 如果我们将步长 η 增大，单次移动的跨度会显著增加。在实际优化中，过大的步长可能会导致跳过最小值点，甚至引发震荡。
+  [scenes[13].actions[8].title] 演示大步更新
+  [scenes[13].actions[9].text] 总结一下，更新公式为 $x_{new} = x_{old} + η \cdot d$。通过数乘运算 $η \cdot d$，我们改变了向量的大小，最终实现了位置的更新。
+  [scenes[13].actions[9].title] 总结计算公式
+  [scenes[14].title] 综合迁移后测
+  [scenes[14].content.questions[0].options[0].label] m = 1/3, n = 2/3
+  [scenes[14].content.questions[0].options[1].label] m = 2/3, n = 1/3
+  [scenes[14].content.questions[0].options[2].label] m = 1/2, n = 1/2
+  [scenes[14].content.questions[0].options[3].label] m = 1/4, n = 3/4
+  [scenes[14].content.questions[0].analysis] 根据向量的线性运算，向量 AD = AB + BD。由于 BD = 2/3 BC，且 BC = AC - AB，代入得 AD = AB + 2/3 (AC - AB) = 1/3 AB + 2/3 AC。因此 m = 1/3, n = 2/3。
+  [scenes[14].content.questions[0].question] 在三角形 ABC 中，点 D 在边 BC 上，且满足向量 BD = 2 向量 DC。若向量 AD = m 向量 AB + n 向量 AC，则参数 m 和 n 的值分别为：
+  [scenes[14].content.questions[1].options[0].label] 若 a 与 b 同向，则 |a + b| = |a| + |b|
+  [scenes[14].content.questions[1].options[1].label] 向量 a 在向量 b 方向上的投影数量为 |a| 乘以 cos(theta)
+  [scenes[14].content.questions[1].options[2].label] 若 a 垂直于 b，则 a 点乘 b = 0
+  [scenes[14].content.questions[1].options[3].label] 向量 |a - b| 的几何意义是连接 a, b 终点的线段长度（当两向量共起点时）
+  [scenes[14].content.questions[1].analysis] A选项符合三角不等式取等号的特殊情况；B选项是投影强度的定义；C选项是向量垂直的充要条件；D选项体现了向量减法的几何直观，四项均正确。
+  [scenes[14].content.questions[1].question] 关于非零向量 a, b 及其夹角 theta，下列命题中正确的有：
+  [scenes[14].content.questions[2].options[0].label] 4
+  [scenes[14].content.questions[2].options[1].label] 5
+  [scenes[14].content.questions[2].options[2].label] 根号下 17
+  [scenes[14].content.questions[2].options[3].label] 3
+  [scenes[14].content.questions[2].analysis] 由向量垂直条件可知 a 点乘 b = 1乘以x + 2乘以(-2) = 0，解得 x = 4。此时 a + b = (1+4, 2-2) = (5, 0)，其模长为 5。
+  [scenes[14].content.questions[2].question] 已知坐标平面内向量 a = (1, 2)，b = (x, -2)。若 a 与 b 相互垂直，则复合向量 a + b 的模长为：
+  [scenes[14].content.questions[3].options[0].label] 1
+  [scenes[14].content.questions[3].options[1].label] 5
+  [scenes[14].content.questions[3].options[2].label] 7
+  [scenes[14].content.questions[3].options[3].label] 9
+  [scenes[14].content.questions[3].analysis] 根据向量三角不等式，||a| - |b|| 小于等于 |a + b| 小于等于 |a| + |b|。代入数据得 1 小于等于 |a + b| 小于等于 7。选项 A, B, C 在此闭区间内，而 D 超出范围。
+  [scenes[14].content.questions[3].question] 已知向量 a, b 满足 |a| = 3, |b| = 4，则和向量的模长 |a + b| 可能的取值包括：
+  [scenes[14].content.questions[4].analysis] 参考步骤：1. 作点 A 关于 x 轴的对称点 A'(1, -1)；2. 连接 A'B，该线段与 x 轴的交点即为使 PA+PB 最小的 P 点；3. 计算 A'B 所在直线的斜率 k = (5 - (-1)) / (4 - 1) = 2；4. 直线方程为 y - 5 = 2(x - 4)，令 y = 0 解得 x = 1.5。故 P 点横坐标为 1.5。
+  [scenes[14].content.questions[4].question] 在平面直角坐标系中，已知点 A(1, 1) 和点 B(4, 5)。若动点 P 在 x 轴上运动，请利用几何直观或向量性质求出当距离之和 PA + PB 取得最小值时，点 P 的横坐标，并简述计算过程。
+  [scenes[14].content.questions[5].analysis] 证明：根据数量积定义，a 点乘 b = |a| 乘以 |b| 乘以 cos(theta)，其中 theta 是两向量夹角。取绝对值后得 |a 点乘 b| = |a| 乘以 |b| 乘以 |cos(theta)|。因为对于任意角度 theta，|cos(theta)| 均小于等于 1，所以 |a 点乘 b| 小于等于 |a| 乘以 |b|。当且仅当 |cos(theta)| = 1 时（即 theta = 0 度或 180 度），等号成立，此时向量 a 与 b 方向相同或相反，即两向量共线（平行）。
+  [scenes[14].content.questions[5].question] 请利用向量数量积的定义证明：对于任意向量 a 和 b，恒有 |a 点乘 b| 小于等于 |a| 乘以 |b|，并说明等号成立时的几何位置关系。
+  [scenes[14].actions[0].text] 经过刚才对优化“一步”的预演，我们终于来到了本次课程的终点站：综合迁移后测。这不仅是对刚才路径决策的巩固，更是对整节课我们构建的“向量图谱”的完整检验。请大家沉下心来，将几何直觉与代数推理完美结合。
+  [scenes[14].actions[1].text] 在处理前三道题时，请特别注意几何比例与坐标表示的转换。比如第一题中点 D 对边 BC 的分割，实际上是在考察向量的线性运算；而第三题关于垂直向量的模长计算，则需要你熟练运用我们在第 6 页“公式桥梁”中学到的数量积坐标表示。
+  [scenes[14].actions[2].text] 对于后半部分的挑战，尤其是关于 Schwarz 不等式的证明和最短路径问题，我希望大家能跳出纯粹的数字。请试着在脑海中勾勒出向量的动态图像：当点 P 在 x 轴上滑动时，向量 PA 与 PB 的和如何变化？当两个向量共线时，数量积的绝对值为什么会达到最大？
+  [scenes[14].actions[3].text] 恭喜大家完成了所有的拼图挑战！从最初对“箭头”的直觉前测，到坐标系的精准导航，再到最后复杂的综合迁移，我们已经完整走过了向量从“形”到“数”的转化历程。这些工具将成为你们解决更高级空间问题的利刃。
+  [scenes[14].actions[4].text] 在结束这堂课之前，让我们回顾一下：向量不仅仅是黑板上的公式，它是连接几何美感与工程精度的桥梁。希望在未来的数学旅程中，大家能继续保持这种“数形结合”的视野。今天的课程到此结束，辛苦了！
+
+================================================================================
+FILE: A2b/manifest.json
+================================================================================
+  [stage.language] 本课程全过程使用简体中文教学。数学术语（如：内积、投影、正交等）应使用标准的简体中文表述。教学语言应符合高中生认知水平，强调几何直观，避免过于深奥的纯代数推导。
+  [agents[0].persona] 学习态度认真的笔记达人，擅长逻辑归纳。他总是试图在互动实验中寻找代数公式与几何意义之间的联系，关注内积为零等特殊情况的逻辑证明。
+  [agents[1].persona] 资深数学教师，擅长将抽象的向量概念转化为直观的几何图像，教学风格严谨而不失生动。他强调“数学直觉”的重要性，善于引导学生从物理现象中发现数学规律。
+  [agents[2].persona] 一名想象力丰富的高三学生，对几何图形的动态变化非常感兴趣。她喜欢提出“如果向量转动会怎样”这类探索性问题，非常享受在实验中观察投影影子的过程。
+  [agents[3].persona] 充满活力的教学助手，专门负责引导学生操作互动实验和挑战环节。她能用简洁明了的语言拆解操作步骤，鼓励学生在尝试和错误中掌握投影的本质。
+  [scenes[0].title] 前测：激活你的向量直觉
+  [scenes[0].content.questions[0].options[0].label] 相互抵消，结果为负数
+  [scenes[0].content.questions[0].options[1].label] 同向发力，达到正向的最大值
+  [scenes[0].content.questions[0].options[2].label] 没有任何影响，结果一定为零
+  [scenes[0].content.questions[0].options[3].label] 无法确定其正负性
+  [scenes[0].content.questions[0].analysis] 当两个向量方向一致时，它们在彼此方向上的‘投影’最长且方向相同，因此内积（点积）取正的最大值。这在物理上可以理解为两个力完全作用在同一个方向上。
+  [scenes[0].content.questions[0].question] 如果两个向量的方向完全相同，你认为它们做“内积”运算的结果会处于什么状态？
+  [scenes[0].content.questions[1].options[0].label] 影子与原向量一样长
+  [scenes[0].content.questions[1].options[1].label] 影子缩短了一半
+  [scenes[0].content.questions[1].options[2].label] 没有影子，缩成了一个点
+  [scenes[0].content.questions[1].options[3].label] 影子方向与原向量相反
+  [scenes[0].content.questions[1].analysis] 垂直意味着一个向量在另一个向量的方向上没有任何分量（分力）。从几何直观上看，垂直投射下来的影子就是一个点，长度为零，这也是内积为零的根本原因。
+  [scenes[0].content.questions[1].question] 当两个向量互相垂直（成90度角）时，其中一个向量在另一个向量的方向上所产生的“影子”（投影）是什么样的？
+  [scenes[0].content.questions[2].options[0].label] 被投影向量本身的长度
+  [scenes[0].content.questions[2].options[1].label] 两个向量之间的夹角
+  [scenes[0].content.questions[2].options[2].label] 两个向量在纸面上的绝对位置（平移）
+  [scenes[0].content.questions[2].options[3].label] 向量的颜色和粗细
+  [scenes[0].content.questions[2].analysis] 投影的长度由向量的模（长度）和夹角共同决定。由于向量具有平移不变性，仅仅移动向量的位置而不改变其长度和方向，是不会改变投影结果或内积值的。
+  [scenes[0].content.questions[2].question] 想象一个向量在另一个向量上的“投影”长度，下列哪些因素会直接改变这个影子的长短？（选择所有正确项）
+  [scenes[0].content.questions[3].options[0].label] 正号 (+)
+  [scenes[0].content.questions[3].options[1].label] 负号 (-)
+  [scenes[0].content.questions[3].options[2].label] 零 (0)
+  [scenes[0].content.questions[3].options[3].label] 无法定义符号
+  [scenes[0].content.questions[3].analysis] 当两个向量方向相反时，一个向量在另一个向量上的投影方向与参考方向相反。在数学约定中，这种‘背道而驰’的情况对应的内积值为负数。
+  [scenes[0].content.questions[3].question] 如果两个向量的指向完全相反（成180度角），它们内积运算的结果符号通常是什么？
+  [scenes[0].actions[0].text] 大家好，我是林老师。欢迎来到向量探索之旅的第一站！今天我们要深入研究一个在物理和几何中都至关重要的概念——向量内积。
+  [scenes[0].actions[1].text] 在本页，我们准备了一个简短的前测。这并不是要考倒大家，而是想通过这几道题，激活你们对向量“方向一致性”和“投影影子”的几何直觉。
+  [scenes[0].actions[2].text] 在答题时，你们可以试着闭上眼想象：当两个向量像赛跑一样同向发力，或者像路灯下的影子一样垂直交叠时，它们之间的相互影响会如何变化？重点感受一下题目中提到的“正负性”和“影子长度”。
+  [scenes[0].actions[3].text] 好了，现在请大家放松心情，根据第一反应来勾选答案。思悦、博文，还有屏幕前的同学们，准备好挑战你们的数学直觉了吗？让我们开始吧！
+  [scenes[1].title] 知识地图与学习路线
+  [scenes[1].content.canvas.elements[0].content] <p style="font-size: 36px; color: #1a365d;"><strong>知识地图与学习路线</strong></p>
+  [scenes[1].content.canvas.elements[3].content] <p style="font-size: 24px; color: #2d3748;"><strong>核心要点与目标</strong></p>
+  [scenes[1].content.canvas.elements[4].content] <p style="font-size: 18px; color: #4a5568;">• 核心概念：内积、夹角、投影</p><p style="font-size: 18px; color: #4a5568;">• 掌握重点：内积正负与夹角关系</p><p style="font-size: 18px; color: #4a5568;">• 几何直观：理解投影的几何意义</p>
+  [scenes[1].content.canvas.elements[7].content] <p style="font-size: 18px; color: #2b6cb0; text-align: center;"><strong>互动路线：</strong>9个环节，从向量旋转到完成挑战</p>
+  [scenes[1].actions[1].text] 刚刚大家已经通过前测挑战了自己的直觉。接下来的这节课，我们要把这些模糊的直觉转化为清晰的数学逻辑。现在，请大家看我们的这张‘全景地图’，明确一下接下来的学习路线。
+  [scenes[1].actions[3].text] 本节课的核心任务非常明确。我们要从三个维度去拆解向量之间的秘密。
+  [scenes[1].actions[5].text] 首先是内积、夹角和投影这三个核心概念。博文，你在做笔记时可以重点关注内积的正负号是如何暗示夹角变化的；同时，我们要像思悦喜欢的那样，从几何直观上去理解投影的意义，而不仅仅是背公式。
+  [scenes[1].actions[7].text] 大家看这张路线图，它展示了我们将如何一步步深入。从简单的向量旋转开始，到复杂的挑战环节，每一步都是在为你的知识大厦添砖加瓦。
+  [scenes[1].actions[9].text] 整个过程包含了9个互动环节。我们会一起操作‘夹角旋转台’，观察‘投影影子’。小数也会在每个实验中引导大家，帮助大家从实验现象中总结出数学规律。准备好了吗？让我们正式进入第一个实验环节。
+  [scenes[2].title] 夹角旋转台
+  [scenes[2].content.widgetConfig.variables[0].label] 向量 a 角度
+  [scenes[2].content.widgetConfig.variables[1].label] 向量 b 角度
+  [scenes[2].content.widgetConfig.description] 通过旋转两个向量，观察夹角改变时内积符号的变化规律。
+  [scenes[2].content.teacherActions[0].label] 开始教学
+  [scenes[2].content.teacherActions[0].content] 欢迎来到向量内积实验！今天我们要探索两个向量的夹角是如何影响内积符号的。
+  [scenes[2].content.teacherActions[1].label] 控制向量
+  [scenes[2].content.teacherActions[1].content] 你可以通过这两个滑动条分别控制向量 a 和向量 b 的旋转角度。
+  [scenes[2].content.teacherActions[2].label] 观察锐角
+  [scenes[2].content.teacherActions[2].content] 当两个向量的夹角是锐角（小于 90°）时，内积的值为正数。此时一个向量在另一个向量上的投影方向是相同的。
+  [scenes[2].content.teacherActions[3].label] 观察直角
+  [scenes[2].content.teacherActions[3].content] 注意看，当夹角正好是 90° 时，内积变成了 0。这就是我们常说的向量正交或垂直。
+  [scenes[2].content.teacherActions[4].label] 观察钝角
+  [scenes[2].content.teacherActions[4].content] 当夹角增加到钝角（大于 90°）时，内积变成了负数。这时候向量的投影方向是相反的。
+  [scenes[2].content.teacherActions[5].label] 教学总结
+  [scenes[2].content.teacherActions[5].content] 总结一下：内积的符号由两个向量夹角的余弦值决定。夹角在 0° 到 180° 之间变化时，内积符号会经历 正 -> 零 -> 负 的变化。
+  [scenes[2].actions[0].text] 欢迎来到向量内积实验！今天我们要探索两个向量的夹角是如何影响内积符号的。
+  [scenes[2].actions[0].title] 开始教学
+  [scenes[2].actions[1].title] 控制向量
+  [scenes[2].actions[2].text] 你可以通过这两个滑动条分别控制向量 a 和向量 b 的旋转角度。
+  [scenes[2].actions[2].title] 控制向量
+  [scenes[2].actions[3].title] 观察锐角
+  [scenes[2].actions[4].text] 当两个向量的夹角是锐角（小于 90°）时，内积的值为正数。此时一个向量在另一个向量上的投影方向是相同的。
+  [scenes[2].actions[4].title] 观察锐角
+  [scenes[2].actions[5].title] 观察直角
+  [scenes[2].actions[6].text] 注意看，当夹角正好是 90° 时，内积变成了 0。这就是我们常说的向量正交或垂直。
+  [scenes[2].actions[6].title] 观察直角
+  [scenes[2].actions[7].title] 观察钝角
+  [scenes[2].actions[8].text] 当夹角增加到钝角（大于 90°）时，内积变成了负数。这时候向量的投影方向是相反的。
+  [scenes[2].actions[8].title] 观察钝角
+  [scenes[2].actions[9].text] 总结一下：内积的符号由两个向量夹角的余弦值决定。夹角在 0° 到 180° 之间变化时，内积符号会经历 正 -> 零 -> 负 的变化。
+  [scenes[2].actions[9].title] 教学总结
+  [scenes[3].title] 内积数值仪表
+  [scenes[3].content.widgetConfig.variables[0].label] 向量 a 长度
+  [scenes[3].content.widgetConfig.variables[1].label] 向量 b 长度
+  [scenes[3].content.widgetConfig.variables[2].label] 夹角 θ
+  [scenes[3].content.widgetConfig.description] 通过调节向量长度和夹角，直观理解内积的大小受长度和方向（余弦值）的共同影响。
+  [scenes[3].content.teacherActions[0].label] 开始教学
+  [scenes[3].content.teacherActions[0].content] 欢迎！让我们通过这个互动模拟来探索两个向量内积的几何意义。
+  [scenes[3].content.teacherActions[1].label] 调节长度
+  [scenes[3].content.teacherActions[1].content] 内积的大小与向量的长度成正比。试着调节滑块改变向量 a 的长度，观察数值变化。
+  [scenes[3].content.teacherActions[2].label] 同向最大值
+  [scenes[3].content.teacherActions[2].content] 当两个向量同向（夹角为 0°）时，cos(0°)=1，此时内积达到最大值，等于两长度的直接乘积。
+  [scenes[3].content.teacherActions[3].label] 正交垂直
+  [scenes[3].content.teacherActions[3].content] 注意看，当夹角变为 90° 时，无论向量多长，内积都为 0。这就是“正交”的情况。
+  [scenes[3].content.teacherActions[4].label] 反向最小值
+  [scenes[3].content.teacherActions[4].content] 当向量方向相反（夹角 180°）时，cos(180°)=-1，内积变为负值并达到最小值。
+  [scenes[3].content.teacherActions[5].label] 调节夹角
+  [scenes[3].content.teacherActions[5].content] 最后，请尝试拖动夹角滑块，直观感受内积是如何受方向（余弦值）控制的。
+  [scenes[3].actions[0].text] 欢迎！让我们通过这个互动模拟来探索两个向量内积的几何意义。
+  [scenes[3].actions[0].title] 开始教学
+  [scenes[3].actions[1].title] 调节长度
+  [scenes[3].actions[2].text] 内积的大小与向量的长度成正比。试着调节滑块改变向量 a 的长度，观察数值变化。
+  [scenes[3].actions[2].title] 调节长度
+  [scenes[3].actions[3].title] 同向最大值
+  [scenes[3].actions[4].text] 当两个向量同向（夹角为 0°）时，cos(0°)=1，此时内积达到最大值，等于两长度的直接乘积。
+  [scenes[3].actions[4].title] 同向最大值
+  [scenes[3].actions[5].title] 正交垂直
+  [scenes[3].actions[6].text] 注意看，当夹角变为 90° 时，无论向量多长，内积都为 0。这就是“正交”的情况。
+  [scenes[3].actions[6].title] 正交垂直
+  [scenes[3].actions[7].title] 反向最小值
+  [scenes[3].actions[8].text] 当向量方向相反（夹角 180°）时，cos(180°)=-1，内积变为负值并达到最小值。
+  [scenes[3].actions[8].title] 反向最小值
+  [scenes[3].actions[9].title] 调节夹角
+  [scenes[3].actions[10].text] 最后，请尝试拖动夹角滑块，直观感受内积是如何受方向（余弦值）控制的。
+  [scenes[3].actions[10].title] 调节夹角
+  [scenes[4].title] 投影影子实验
+  [scenes[4].content.widgetConfig.variables[0].label] 向量角度
+  [scenes[4].content.widgetConfig.variables[1].label] 向量长度
+  [scenes[4].content.widgetConfig.variables[2].label] 基准线角度
+  [scenes[4].content.widgetConfig.variables[3].label] 光源偏角
+  [scenes[4].content.widgetConfig.description] 模拟光源照射向量在基准线上产生的投影，展示投影长度与角度的关系。
+  [scenes[4].content.teacherActions[0].label] 开始探索
+  [scenes[4].content.teacherActions[0].content] 欢迎来到向量投影实验室。我们将通过模拟光源照射，直观地观察向量在基准线上的“影子”变化。
+  [scenes[4].content.teacherActions[1].label] 改变向量角度
+  [scenes[4].content.teacherActions[1].content] 通过调节这个滑块，你可以改变向量的方向。注意观察蓝色向量在基准线上产生的投影长度。
+  [scenes[4].content.teacherActions[2].label] 演示正交投影
+  [scenes[4].content.teacherActions[2].content] 在正交投影下，向量与基准线夹角越小，投影就越长。此时投影是向量在基准线方向上的分量。
+  [scenes[4].content.teacherActions[3].label] 演示垂直无投影
+  [scenes[4].content.teacherActions[3].content] 当向量与基准线完全垂直时，投影变成了一个点，长度为零。这说明垂直方向的分量对投影没有贡献。
+  [scenes[4].content.teacherActions[4].label] 演示反向投影
+  [scenes[4].content.teacherActions[4].content] 当向量指向基准线的反方向时，投影会出现在负半轴。在数学运算中，这对应着投影值为负数的情况。
+  [scenes[4].content.teacherActions[5].label] 旋转基准线
+  [scenes[4].content.teacherActions[5].content] 最后，你也可以尝试旋转基准线。无论基准线如何旋转，投影始终定义在这一特定方向上。
+  [scenes[4].actions[0].text] 欢迎来到向量投影实验室。我们将通过模拟光源照射，直观地观察向量在基准线上的“影子”变化。
+  [scenes[4].actions[0].title] 开始探索
+  [scenes[4].actions[1].title] 改变向量角度
+  [scenes[4].actions[2].text] 通过调节这个滑块，你可以改变向量的方向。注意观察蓝色向量在基准线上产生的投影长度。
+  [scenes[4].actions[2].title] 改变向量角度
+  [scenes[4].actions[3].title] 演示正交投影
+  [scenes[4].actions[4].text] 在正交投影下，向量与基准线夹角越小，投影就越长。此时投影是向量在基准线方向上的分量。
+  [scenes[4].actions[4].title] 演示正交投影
+  [scenes[4].actions[5].title] 演示垂直无投影
+  [scenes[4].actions[6].text] 当向量与基准线完全垂直时，投影变成了一个点，长度为零。这说明垂直方向的分量对投影没有贡献。
+  [scenes[4].actions[6].title] 演示垂直无投影
+  [scenes[4].actions[7].title] 演示反向投影
+  [scenes[4].actions[8].text] 当向量指向基准线的反方向时，投影会出现在负半轴。在数学运算中，这对应着投影值为负数的情况。
+  [scenes[4].actions[8].title] 演示反向投影
+  [scenes[4].actions[9].title] 旋转基准线
+  [scenes[4].actions[10].text] 最后，你也可以尝试旋转基准线。无论基准线如何旋转，投影始终定义在这一特定方向上。
+  [scenes[4].actions[10].title] 旋转基准线
+  [scenes[5].title] 核心框架与公式桥接
+  [scenes[5].content.canvas.elements[0].content] <p style="font-size: 32px;"><strong>核心框架与公式桥接</strong></p>
+  [scenes[5].content.canvas.elements[4].content] <p style="font-size: 16px; text-align: center; color: #666;">注：内积是将几何投影代数化的核心</p>
+  [scenes[5].content.canvas.elements[5].content] <p style="font-size: 18px;"><strong>1. 数量积定义 (Dot Product)</strong></p>
+  [scenes[5].content.canvas.elements[7].content] <p style="font-size: 18px;"><strong>2. 投影公式 (Projection)</strong></p>
+  [scenes[5].content.canvas.elements[9].content] <p style="font-size: 18px;"><strong>3. 垂直/正交条件 (Orthogonality)</strong></p>
+  [scenes[5].actions[1].text] 刚才我们在实验中观察了向量投影的动态变化，现在，让我们把这些直观的几何观察转化为严谨的数学公式。这一节我们将完成核心框架与公式的桥接。
+  [scenes[5].actions[3].text] 首先来看数量积，也就是点积的定义。博文刚才已经在笔记本上记录了吧？向量 a 点乘向量 b，等于它们的模长乘积再乘以夹角 theta 的余弦值。
+  [scenes[5].actions[5].text] 这个公式里的 cos theta，正是我们在夹角旋转台中调节的那个变量。它是连接长度与方向的关键。
+  [scenes[5].actions[7].text] 接下来是投影公式。我们在影子实验中看到的那个“影子长度”，在代数上可以表示为向量 a 在向量 b 方向上的投影，也就是 a 的模长乘以 cos theta。
+  [scenes[5].actions[9].text] 大家可以发现，投影其实就是数量积公式中去掉向量 b 模长后的那一部分。思悦，你可以想象一下，如果向量 b 是单位向量，数量积和投影在数值上就完全相等了。
+  [scenes[5].actions[11].text] 最后，我们关注一个特殊而重要的情况：垂直，也叫正交。当两个向量垂直时，夹角为 90 度，cos theta 等于 0。
+  [scenes[5].actions[13].text] 所以，垂直的充要条件就是它们的内积为零。这在后面的‘垂直零贡献探针’环节中会非常有用。
+  [scenes[5].actions[15].text] 请记住这句话：内积是将几何投影代数化的核心。掌握了这套公式，我们就能从感性观察跨越到理性计算了。接下来，我们去‘方向贡献地图’里实战一下。
+  [scenes[6].title] 方向贡献地图
+  [scenes[6].content.widgetConfig.edges[0].label] 定义相似度
+  [scenes[6].content.widgetConfig.edges[1].label] 量化表现
+  [scenes[6].content.widgetConfig.edges[2].label] 零点极限
+  [scenes[6].content.widgetConfig.edges[3].label] 无投影即垂直
+  [scenes[6].content.widgetConfig.edges[4].label] 正交分解
+  [scenes[6].content.widgetConfig.nodes[0].label] 方向贡献
+  [scenes[6].content.widgetConfig.nodes[1].label] 内积：度量相似度
+  [scenes[6].content.widgetConfig.nodes[2].label] 投影：量化分量
+  [scenes[6].content.widgetConfig.nodes[3].label] 垂直：贡献的终点
+  [scenes[6].content.widgetConfig.nodes[4].label] 向量分解
+  [scenes[6].content.teacherActions[0].label] 开始探索
+  [scenes[6].content.teacherActions[0].content] 欢迎学习向量的核心逻辑。我们将通过这张思维导图，理清内积、投影与方向贡献之间的紧密联系。
+  [scenes[6].content.teacherActions[1].label] 核心：方向贡献
+  [scenes[6].content.teacherActions[1].content] 一切的起点是“方向贡献”，它直观地描述了一个向量在另一个方向上到底有多少“影响力”。
+  [scenes[6].content.teacherActions[2].label] 内积度量相似度
+  [scenes[6].content.teacherActions[2].content] 内积是度量相似度的代数工具。夹角越小，内积越大，说明两个向量的“志向”越一致。
+  [scenes[6].content.teacherActions[3].label] 投影量化分量
+  [scenes[6].content.teacherActions[3].content] 而投影是将这种贡献“具象化”。它像影子一样，量化了向量在特定方向上的实际分量长度。
+  [scenes[6].content.teacherActions[4].label] 垂直：贡献的终点
+  [scenes[6].content.teacherActions[4].content] 注意这个临界点：当向量垂直时，内积为0，投影也消失了。这代表在那个方向上，它完全没有贡献。
+  [scenes[6].content.teacherActions[5].label] 理解正交分解
+  [scenes[6].content.teacherActions[5].content] 最后，利用正交性，我们可以把任何向量分解为“有贡献”和“无贡献”两部分，这是受力分析等应用的基础。
+  [scenes[6].actions[0].text] 欢迎学习向量的核心逻辑。我们将通过这张思维导图，理清内积、投影与方向贡献之间的紧密联系。
+  [scenes[6].actions[0].title] 开始探索
+  [scenes[6].actions[1].title] 核心：方向贡献
+  [scenes[6].actions[2].text] 一切的起点是“方向贡献”，它直观地描述了一个向量在另一个方向上到底有多少“影响力”。
+  [scenes[6].actions[2].title] 核心：方向贡献
+  [scenes[6].actions[3].title] 内积度量相似度
+  [scenes[6].actions[4].text] 内积是度量相似度的代数工具。夹角越小，内积越大，说明两个向量的“志向”越一致。
+  [scenes[6].actions[4].title] 内积度量相似度
+  [scenes[6].actions[5].title] 投影量化分量
+  [scenes[6].actions[6].text] 而投影是将这种贡献“具象化”。它像影子一样，量化了向量在特定方向上的实际分量长度。
+  [scenes[6].actions[6].title] 投影量化分量
+  [scenes[6].actions[7].title] 垂直：贡献的终点
+  [scenes[6].actions[8].text] 注意这个临界点：当向量垂直时，内积为0，投影也消失了。这代表在那个方向上，它完全没有贡献。
+  [scenes[6].actions[8].title] 垂直：贡献的终点
+  [scenes[6].actions[9].title] 理解正交分解
+  [scenes[6].actions[10].text] 最后，利用正交性，我们可以把任何向量分解为“有贡献”和“无贡献”两部分，这是受力分析等应用的基础。
+  [scenes[6].actions[10].title] 理解正交分解
+  [scenes[7].title] 过程性测试：概念迁移
+  [scenes[7].content.questions[0].options[0].label] 0度到90度之间（锐角）
+  [scenes[7].content.questions[0].options[1].label] 恰好等于90度（直角）
+  [scenes[7].content.questions[0].options[2].label] 90度到180度之间（钝角）
+  [scenes[7].content.questions[0].options[3].label] 等于0度或180度
+  [scenes[7].content.questions[0].analysis] 根据内积的几何定义，向量 a 与 b 的内积等于它们的模长之积乘以夹角的余弦值。由于非零向量的模长恒为正，内积的正负完全由夹角的余弦值决定。当余弦值为负时，夹角在90度到180度之间，即为钝角。
+  [scenes[7].content.questions[0].question] 在平面几何中，已知两个非零向量 a 和 b，如果它们的内积（点积）计算结果为一个负数，则这两个向量之间的夹角属于什么范围？
+  [scenes[7].content.questions[1].options[0].label] 向量 a 在向量 b 方向上的投影长度为 0
+  [scenes[7].content.questions[1].options[1].label] 向量 a 与向量 b 的内积等于 0
+  [scenes[7].content.questions[1].options[2].label] 两个向量的夹角为 90 度
+  [scenes[7].content.questions[1].options[3].label] 向量 a 的长度与向量 b 的长度之积等于 0
+  [scenes[7].content.questions[1].analysis] 垂直意味着两个向量的夹角为90度，此时cos(90度)=0，因此内积为0。同时，从几何直观上看，一个向量向与其垂直的方向做投影，投影点会落在原点，故投影长度为0。D项错误，因为非零向量的长度之积不为0。
+  [scenes[7].content.questions[1].question] 当两个非零向量 a 与 b 满足“垂直”（正交）关系时，下列哪些描述是正确的？（多选）
+  [scenes[7].content.questions[2].analysis] 从几何角度看，向量 a 在向量 b 上的投影长度等于向量 a 的长度乘以夹角的余弦值。而内积的定义是向量 a 的长度、向量 b 的长度以及夹角余弦值的乘积。因此，内积在数值上等于“向量 a 在向量 b 上的投影长度”乘以“向量 b 的长度”。这种关系体现了内积是将一个向量在另一个向量方向上的效用进行累积的过程。
+  [scenes[7].content.questions[2].question] 请结合几何直观，简要说明向量 a 在向量 b 上的“投影长度”与这两个向量“内积”之间的数值关系。
+  [scenes[7].content.questions[3].options[0].label] 60
+  [scenes[7].content.questions[3].options[1].label] 40
+  [scenes[7].content.questions[3].options[2].label] 24
+  [scenes[7].content.questions[3].options[3].label] 10
+  [scenes[7].content.questions[3].analysis] 内积的几何意义是：一个向量在另一个向量方向上的投影长度乘以另一个向量的模长。本题中，内积 = (向量 a 在向量 b 方向上的投影长度) * (向量 b 的模长) = 4 * 6 = 24。
+  [scenes[7].content.questions[3].question] 已知向量 a 的长度为 10，向量 b 的长度为 6。若向量 a 在向量 b 方向上的投影长度为 4，则向量 a 与向量 b 的内积为：
+  [scenes[7].actions[0].text] 刚才我们分析了向量的方向贡献，学会了如何分解向量。现在，让我们停下来通过几道练习题，看看大家对刚才提到的内积正负、投影长度以及垂直关系这些核心概念掌握得怎么样。
+  [scenes[7].actions[1].text] 在第一题和第二题中，我们重点考察的是几何直观。请大家记住，内积的正负直接反映了两个向量的“步调”：负值意味着它们在方向上是背离的，也就是夹角大于 90 度的钝角状态。而当它们完全垂直时，内积为 0，这就意味着一个向量在另一个方向上完全没有“贡献”，影子长度自然也是 0。
+  [scenes[7].actions[2].text] 至于第三题和第四题，它们考查的是投影与内积的数值关系。内积其实就是“投影长度”与“被投影向量模长”的乘积。所以在第四题里，既然 a 在 b 方向上的投影是 4，b 的长度是 6，那么内积就是 4 乘以 6 等于 24。博文，你可以把这个关系记在你的逻辑归纳表里，这是从几何通往代数的关键公式。
+  [scenes[7].actions[3].text] 通过这组概念迁移练习，我相信大家已经能感受到，向量的计算不只是冷冰冰的数字，每一个正负号和数值背后都有生动的几何意义。接下来，我们将通过更具挑战性的实验来验证这些想法。
+  [scenes[8].title] 投影命中挑战
+  [scenes[8].content.teacherActions[0].label] 开始教学
+  [scenes[8].content.teacherActions[0].content] 欢迎来到向量投影挑战！在这个练习中，我们将探索向量的方向如何影响它在坐标轴上的投影长度。
+  [scenes[8].content.teacherActions[1].label] 观察操作区
+  [scenes[8].content.teacherActions[1].content] 这里是你的操作区。请注意观察中间的向量以及目标区间，你的任务是让向量的投影精确落入目标内。
+  [scenes[8].content.teacherActions[2].label] 了解控制面板
+  [scenes[8].content.teacherActions[2].content] 通过拖动这个角度滑块，你可以改变向量的方向。观察随着角度增大或减小，投影长度是如何变化的。
+  [scenes[8].content.teacherActions[3].label] 演示45度角
+  [scenes[8].content.teacherActions[3].content] 例如，当角度设为45度时，向量在水平和垂直方向上的分量是相等的。
+  [scenes[8].content.teacherActions[4].label] 查看计分规则
+  [scenes[8].content.teacherActions[4].content] 成功命中目标区间可以获得积分，调整得越快，速度奖分（Speed Bonus）就越高哦！
+  [scenes[8].content.teacherActions[5].label] 准备挑战
+  [scenes[8].content.teacherActions[5].content] 准备好了吗？尝试找到最精准的角度，开始你的挑战吧！
+  [scenes[8].actions[0].text] 欢迎来到向量投影挑战！在这个练习中，我们将探索向量的方向如何影响它在坐标轴上的投影长度。
+  [scenes[8].actions[0].title] 开始教学
+  [scenes[8].actions[1].title] 观察操作区
+  [scenes[8].actions[2].text] 这里是你的操作区。请注意观察中间的向量以及目标区间，你的任务是让向量的投影精确落入目标内。
+  [scenes[8].actions[2].title] 观察操作区
+  [scenes[8].actions[3].title] 了解控制面板
+  [scenes[8].actions[4].text] 通过拖动这个角度滑块，你可以改变向量的方向。观察随着角度增大或减小，投影长度是如何变化的。
+  [scenes[8].actions[4].title] 了解控制面板
+  [scenes[8].actions[5].title] 演示45度角
+  [scenes[8].actions[6].text] 例如，当角度设为45度时，向量在水平和垂直方向上的分量是相等的。
+  [scenes[8].actions[6].title] 演示45度角
+  [scenes[8].actions[7].title] 查看计分规则
+  [scenes[8].actions[8].text] 成功命中目标区间可以获得积分，调整得越快，速度奖分（Speed Bonus）就越高哦！
+  [scenes[8].actions[8].title] 查看计分规则
+  [scenes[8].actions[9].text] 准备好了吗？尝试找到最精准的角度，开始你的挑战吧！
+  [scenes[8].actions[9].title] 准备挑战
+  [scenes[9].title] 垂直零贡献探针
+  [scenes[9].content.widgetConfig.variables[0].label] 目标向量角度
+  [scenes[9].content.widgetConfig.variables[1].label] 探测向量角度
+  [scenes[9].content.widgetConfig.variables[2].label] 向量长度
+  [scenes[9].content.widgetConfig.description] 探索向量内积与垂直关系，直观理解内积为零的物理与几何意义。
+  [scenes[9].content.teacherActions[0].label] 开始探索
+  [scenes[9].content.teacherActions[0].content] 欢迎来到向量内积探索实验。今天我们将通过交互，直观感受向量正交的几何魅力。
+  [scenes[9].content.teacherActions[1].label] 设定基准
+  [scenes[9].content.teacherActions[1].content] 移动这个滑块可以改变基准向量的方向，它将作为我们比较的标准。
+  [scenes[9].content.teacherActions[2].label] 观察同向
+  [scenes[9].content.teacherActions[2].content] 当两个向量完全重合时，它们的内积达到正向最大值。观察此时它们的夹角为0度。
+  [scenes[9].content.teacherActions[3].label] 旋转探测
+  [scenes[9].content.teacherActions[3].content] 现在，请慢慢转动探测向量，留意内积数值是如何随夹角增大而减小的。
+  [scenes[9].content.teacherActions[4].label] 验证正交
+  [scenes[9].content.teacherActions[4].content] 看！当夹角精准达到90度时，内积变成了0。这就是‘正交’，意味着一个向量在另一个方向上没有投影。
+  [scenes[9].content.teacherActions[5].label] 观察反向
+  [scenes[9].content.teacherActions[5].content] 如果继续旋转到180度，向量方向完全相反，内积会变成负数最小值。
+  [scenes[9].content.teacherActions[6].label] 长度影响
+  [scenes[9].content.teacherActions[6].content] 最后，你可以尝试改变向量长度。你会发现，只要它们保持垂直，无论长度如何变化，内积始终为零。
+  [scenes[9].actions[0].text] 欢迎来到向量内积探索实验。今天我们将通过交互，直观感受向量正交的几何魅力。
+  [scenes[9].actions[0].title] 开始探索
+  [scenes[9].actions[1].title] 设定基准
+  [scenes[9].actions[2].text] 移动这个滑块可以改变基准向量的方向，它将作为我们比较的标准。
+  [scenes[9].actions[2].title] 设定基准
+  [scenes[9].actions[3].title] 观察同向
+  [scenes[9].actions[4].text] 当两个向量完全重合时，它们的内积达到正向最大值。观察此时它们的夹角为0度。
+  [scenes[9].actions[4].title] 观察同向
+  [scenes[9].actions[5].title] 旋转探测
+  [scenes[9].actions[6].text] 现在，请慢慢转动探测向量，留意内积数值是如何随夹角增大而减小的。
+  [scenes[9].actions[6].title] 旋转探测
+  [scenes[9].actions[7].title] 验证正交
+  [scenes[9].actions[8].text] 看！当夹角精准达到90度时，内积变成了0。这就是‘正交’，意味着一个向量在另一个方向上没有投影。
+  [scenes[9].actions[8].title] 验证正交
+  [scenes[9].actions[9].title] 观察反向
+  [scenes[9].actions[10].text] 如果继续旋转到180度，向量方向完全相反，内积会变成负数最小值。
+  [scenes[9].actions[10].title] 观察反向
+  [scenes[9].actions[11].title] 长度影响
+  [scenes[9].actions[12].text] 最后，你可以尝试改变向量长度。你会发现，只要它们保持垂直，无论长度如何变化，内积始终为零。
+  [scenes[9].actions[12].title] 长度影响
+  [scenes[10].title] 方向导数预备实验
+  [scenes[10].content.widgetConfig.variables[0].label] 梯度方向 (坡向)
+  [scenes[10].content.widgetConfig.variables[1].label] 梯度大小 (坡度)
+  [scenes[10].content.widgetConfig.variables[2].label] 行走方向
+  [scenes[10].content.widgetConfig.description] 通过模拟登山者在斜坡上的移动，直观理解内积如何决定变化率（爬升速度）。
+  [scenes[10].content.teacherActions[0].label] 开始探索
+  [scenes[10].content.teacherActions[0].content] 欢迎来到这个模拟实验。我们将通过登山者的移动，直观感受内积如何决定函数的变化率。
+  [scenes[10].content.teacherActions[1].label] 认识梯度方向
+  [scenes[10].content.teacherActions[1].content] 这里的“梯度方向”代表了山坡最陡的上升方向，也就是函数值增长最快的方向。
+  [scenes[10].content.teacherActions[2].label] 演示最快爬升
+  [scenes[10].content.teacherActions[2].content] 当我们朝着梯度方向行走时，行走方向与梯度重合。此时投影长度最大，爬升速度最快，两者的内积达到最大值。
+  [scenes[10].content.teacherActions[3].label] 改变行走方向
+  [scenes[10].content.teacherActions[3].content] 尝试拖动这个滑块改变“行走方向”，观察登山者的爬升速度（也就是变化率）是如何随之减小的。
+  [scenes[10].content.teacherActions[4].label] 沿等高线行走
+  [scenes[10].content.teacherActions[4].content] 注意看，当行走方向与梯度垂直时，我们实际上是在沿等高线移动，高度不再变化。在数学上，这对应着两个正交向量的内积为零。
+  [scenes[10].content.teacherActions[5].label] 总结规律
+  [scenes[10].content.teacherActions[5].content] 通过这个模拟你可以发现：变化率的大小其实就是行走向量在梯度向量上的“投影”。内积正是捕捉这种投影关系的数学工具。
+  [scenes[10].actions[0].text] 欢迎来到这个模拟实验。我们将通过登山者的移动，直观感受内积如何决定函数的变化率。
+  [scenes[10].actions[0].title] 开始探索
+  [scenes[10].actions[1].title] 认识梯度方向
+  [scenes[10].actions[2].text] 这里的“梯度方向”代表了山坡最陡的上升方向，也就是函数值增长最快的方向。
+  [scenes[10].actions[2].title] 认识梯度方向
+  [scenes[10].actions[3].title] 演示最快爬升
+  [scenes[10].actions[4].text] 当我们朝着梯度方向行走时，行走方向与梯度重合。此时投影长度最大，爬升速度最快，两者的内积达到最大值。
+  [scenes[10].actions[4].title] 演示最快爬升
+  [scenes[10].actions[5].title] 改变行走方向
+  [scenes[10].actions[6].text] 尝试拖动这个滑块改变“行走方向”，观察登山者的爬升速度（也就是变化率）是如何随之减小的。
+  [scenes[10].actions[6].title] 改变行走方向
+  [scenes[10].actions[7].title] 沿等高线行走
+  [scenes[10].actions[8].text] 注意看，当行走方向与梯度垂直时，我们实际上是在沿等高线移动，高度不再变化。在数学上，这对应着两个正交向量的内积为零。
+  [scenes[10].actions[8].title] 沿等高线行走
+  [scenes[10].actions[9].text] 通过这个模拟你可以发现：变化率的大小其实就是行走向量在梯度向量上的“投影”。内积正是捕捉这种投影关系的数学工具。
+  [scenes[10].actions[9].title] 总结规律
+  [scenes[11].title] 复盘：知识完整性回收
+  [scenes[11].content.canvas.elements[0].content] <p style="font-size: 32px;"><strong>复盘：知识完整性回收</strong></p>
+  [scenes[11].content.canvas.elements[3].content] <p style="font-size: 24px;"><strong>1. 内积符号判定法</strong></p>
+  [scenes[11].content.canvas.elements[7].content] <p style="font-size: 24px;"><strong>2. 垂直（正交）特征</strong></p>
+  [scenes[11].content.canvas.elements[10].content] <p style="font-size: 24px;"><strong>3. 投影几何计算</strong></p>
+  [scenes[11].content.canvas.elements[14].content] <p style="font-size: 24px;"><strong>4. Cauchy-Schwarz 不等式</strong></p>
+  [scenes[11].actions[1].text] 好，通过前面的一系列实验和探针挑战，我们已经对向量内积有了非常直观的感性认识。现在，让我们进入复盘环节，将这些零散的发现收拢为完整的知识体系。
+  [scenes[11].actions[3].text] 首先是我们在“夹角旋转台”中反复验证过的内积符号判定法。它是我们判断向量方向一致性的核心工具：同向为正，异向为负。
+  [scenes[11].actions[5].text] 接着是垂直，也就是正交特征。正如我们在“零贡献探针”实验中看到的，当两个向量垂直时，内积恒等于零，这在代数和几何之间搭建了一座完美的桥梁。
+  [scenes[11].actions[7].text] 关于投影的计算，这是贯穿全课的重难点。请大家注意这个公式，它量化了“影子”的长度和方向，是我们处理复杂几何问题的利器。
+  [scenes[11].actions[9].text] 最后，我们要补齐一个非常重要的理论边界：柯西-施瓦茨不等式。它告诉我们，无论向量如何摆放，内积的大小永远不会超过它们模长的乘积。只有当两向量共线时，内积才能达到最大或最小值。
+  [scenes[12].title] 方向关系分类游戏
+  [scenes[12].content.widgetConfig.description] 方向关系分类游戏：快速识别向量夹角与内积的正负关系
+  [scenes[12].content.teacherActions[0].label] 欢迎
+  [scenes[12].content.teacherActions[0].content] 欢迎来到向量内积挑战赛！通过这个游戏，我们可以快速建立向量夹角与内积正负之间的直觉联系。
+  [scenes[12].content.teacherActions[1].label] 观察向量
+  [scenes[12].content.teacherActions[1].content] 中间区域会随机显示一对向量。请快速判断它们的夹角类型是锐角、直角还是钝角。
+  [scenes[12].content.teacherActions[2].label] 选择分类
+  [scenes[12].content.teacherActions[2].content] 点击下方对应的分类区。记住：锐角内积为正，钝角内积为负，垂直（直角）则内积为零。
+  [scenes[12].content.teacherActions[3].label] 得分说明
+  [scenes[12].content.teacherActions[3].content] 这里显示你的当前得分。快速且连续地分类正确可以获得额外的速度奖励分！
+  [scenes[12].content.teacherActions[4].label] 准备开始
+  [scenes[12].content.teacherActions[4].content] 准备好了吗？点击开始按钮，在规定时间内完成尽可能多的分类挑战吧！
+  [scenes[12].actions[0].text] 欢迎来到向量内积挑战赛！通过这个游戏，我们可以快速建立向量夹角与内积正负之间的直觉联系。
+  [scenes[12].actions[0].title] 欢迎
+  [scenes[12].actions[1].title] 观察向量
+  [scenes[12].actions[2].text] 中间区域会随机显示一对向量。请快速判断它们的夹角类型是锐角、直角还是钝角。
+  [scenes[12].actions[2].title] 观察向量
+  [scenes[12].actions[3].title] 选择分类
+  [scenes[12].actions[4].text] 点击下方对应的分类区。记住：锐角内积为正，钝角内积为负，垂直（直角）则内积为零。
+  [scenes[12].actions[4].title] 选择分类
+  [scenes[12].actions[5].title] 得分说明
+  [scenes[12].actions[6].text] 这里显示你的当前得分。快速且连续地分类正确可以获得额外的速度奖励分！
+  [scenes[12].actions[6].title] 得分说明
+  [scenes[12].actions[7].text] 准备好了吗？点击开始按钮，在规定时间内完成尽可能多的分类挑战吧！
+  [scenes[12].actions[7].title] 准备开始
+  [scenes[13].title] 投影分解仪
+  [scenes[13].content.widgetConfig.variables[0].label] 向量角度
+  [scenes[13].content.widgetConfig.variables[1].label] 基准轴角度
+  [scenes[13].content.widgetConfig.variables[2].label] 向量长度
+  [scenes[13].content.widgetConfig.description] 演示向量如何在给定基准轴上分解为平行和垂直两个分量
+  [scenes[13].content.teacherActions[0].label] 开始引导
+  [scenes[13].content.teacherActions[0].content] 欢迎！今天我们来学习向量的正交分解。看，一个向量可以被拆解为沿着基准方向和垂直于基准方向的两个分量。
+  [scenes[13].content.teacherActions[1].label] 调整基准轴
+  [scenes[13].content.teacherActions[1].content] 通过调整这个滑块，你可以改变参考基准轴的方向，这就像是旋转我们的观察视角。
+  [scenes[13].content.teacherActions[2].label] 标准正交分解
+  [scenes[13].content.teacherActions[2].content] 当基准轴水平时，这就是我们最熟悉的坐标轴分解，向量被分成了水平和垂直两个部分。
+  [scenes[13].content.teacherActions[3].label] 旋转向量
+  [scenes[13].content.teacherActions[3].content] 现在尝试旋转原向量，观察平行于轴的分量（投影）和垂直分量是如何此消彼长的。
+  [scenes[13].content.teacherActions[4].label] 倾斜基准分解
+  [scenes[13].content.teacherActions[4].content] 即使基准轴是倾斜的，这种分解依然成立。注意看，这两个分量围成了一个矩形，它们的矢量和始终等于原向量。
+  [scenes[13].content.teacherActions[5].label] 总结要点
+  [scenes[13].content.teacherActions[5].content] 总结一下：平行分量其实就是向量在轴上的“投影”。掌握这种分解方法，是解决复杂力学问题的关键！
+  [scenes[13].actions[0].text] 欢迎！今天我们来学习向量的正交分解。看，一个向量可以被拆解为沿着基准方向和垂直于基准方向的两个分量。
+  [scenes[13].actions[0].title] 开始引导
+  [scenes[13].actions[1].title] 调整基准轴
+  [scenes[13].actions[2].text] 通过调整这个滑块，你可以改变参考基准轴的方向，这就像是旋转我们的观察视角。
+  [scenes[13].actions[2].title] 调整基准轴
+  [scenes[13].actions[3].title] 标准正交分解
+  [scenes[13].actions[4].text] 当基准轴水平时，这就是我们最熟悉的坐标轴分解，向量被分成了水平和垂直两个部分。
+  [scenes[13].actions[4].title] 标准正交分解
+  [scenes[13].actions[5].title] 旋转向量
+  [scenes[13].actions[6].text] 现在尝试旋转原向量，观察平行于轴的分量（投影）和垂直分量是如何此消彼长的。
+  [scenes[13].actions[6].title] 旋转向量
+  [scenes[13].actions[7].title] 倾斜基准分解
+  [scenes[13].actions[8].text] 即使基准轴是倾斜的，这种分解依然成立。注意看，这两个分量围成了一个矩形，它们的矢量和始终等于原向量。
+  [scenes[13].actions[8].title] 倾斜基准分解
+  [scenes[13].actions[9].text] 总结一下：平行分量其实就是向量在轴上的“投影”。掌握这种分解方法，是解决复杂力学问题的关键！
+  [scenes[13].actions[9].title] 总结要点
+  [scenes[14].title] 后测：综合迁移与深度理解
+  [scenes[14].content.questions[0].options[0].label] 3
+  [scenes[14].content.questions[0].options[1].label] 4
+  [scenes[14].content.questions[0].options[2].label] 5
+  [scenes[14].content.questions[0].options[3].label] 0
+  [scenes[14].content.questions[0].analysis] 向量 a 在 b 方向上的投影等于 a 与 b 的单位向量的内积，公式为 |a|cos(theta) = (a·b)/|b|。在本题中，a·b = 3*1 + 4*0 = 3，|b| = 1，因此投影为 3/1 = 3。
+  [scenes[14].content.questions[0].question] 已知向量 a = (3, 4)，向量 b = (1, 0)，则向量 a 在向量 b 方向上的投影（数量投影）为：
+  [scenes[14].content.questions[1].options[0].label] 锐角
+  [scenes[14].content.questions[1].options[1].label] 直角
+  [scenes[14].content.questions[1].options[2].label] 钝角
+  [scenes[14].content.questions[1].options[3].label] 以上都有可能
+  [scenes[14].content.questions[1].analysis] 根据内积公式 AB·AC = |AB||AC|cosA。因为向量的模长 |AB| 和 |AC| 恒为正，若内积大于 0，则必须满足 cosA > 0。在三角形内角（0到180度）范围内，余弦值为正对应的角 A 必为锐角。
+  [scenes[14].content.questions[1].question] 在三角形 ABC 中，如果向量 AB 与向量 AC 的内积大于 0，则角 A 的取值范围是：
+  [scenes[14].content.questions[2].options[0].label] 向量内积满足交换律，即 a·b = b·a
+  [scenes[14].content.questions[2].options[1].label] 向量内积满足结合律，即 (a·b)c = a(b·c)
+  [scenes[14].content.questions[2].options[2].label] 向量内积满足对加法的分配律，即 a·(b + c) = a·b + a·c
+  [scenes[14].content.questions[2].options[3].label] 若 a·b = a·c 且 a 不为零向量，则必有 b = c
+  [scenes[14].content.questions[2].analysis] A项和C项是内积的基本运算性质，表述正确。B项错误，内积不满足结合律，(a·b)c 是与向量 c 共线的向量，而 a(b·c) 是与向量 a 共线的向量，两者方向通常不同。D项错误，a·(b - c) = 0 仅说明向量 a 与 (b-c) 垂直，不能推出 b-c = 0。
+  [scenes[14].content.questions[2].question] 关于向量内积的运算律，下列说法正确的有（选择所有正确选项）：
+  [scenes[14].content.questions[3].options[0].label] 当 a 与 b 的夹角为钝角时，投影值为负数
+  [scenes[14].content.questions[3].options[1].label] 投影的大小不仅取决于向量 a 的模长，还取决于两向量的夹角
+  [scenes[14].content.questions[3].options[2].label] 投影是一个向量，其方向一定与向量 b 相同
+  [scenes[14].content.questions[3].options[3].label] 如果 a 垂直于 b，则 a 在 b 方向上的投影为 0
+  [scenes[14].content.questions[3].analysis] A正确，因为钝角的余弦值为负。B正确，投影公式为 |a|cos(theta)。C错误，数量投影是一个实数（标量）而非向量。D正确，垂直时夹角为 90 度，cos90 = 0，故投影为 0。
+  [scenes[14].content.questions[3].question] 关于向量 a 在向量 b 方向上的投影，下列描述正确的有（选择所有正确选项）：
+  [scenes[14].content.questions[4].analysis] 参考答案：x = 5 或 x = -5。解析：由 (a+b) 垂直于 (a-b) 可知 (a+b)·(a-b) = 0。根据平方差公式展开得 a·a - b·b = 0，即 |a|^2 = |b|^2。计算向量 a 的模长平方为 3的平方 + 4的平方 = 25；向量 b 的模长平方为 x的平方。因此 x^2 = 25，解得 x = 5 或 x = -5。
+  [scenes[14].content.questions[4].question] 已知向量 a = (3, 4)，向量 b = (x, 0)。若向量 (a + b) 与向量 (a - b) 垂直，求实数 x 的值。
+  [scenes[14].content.questions[5].analysis] 参考答案：向量 a 与 b 的内积可以理解为向量 a 的模长与向量 a 在 b 方向上投影值的乘积。当两向量夹角为钝角时，向量 a 在 b 方向上的正投影点会落在向量 b 的反向延长线上，这意味着此时的投影值为负数。由于向量 a 的模长恒为正数，正数与负数的乘积必然为负，因此内积为负数。
+  [scenes[14].content.questions[5].question] 请从投影的几何意义角度解释：为什么当两个向量的夹角为钝角时，它们的内积一定为负数？
+  [scenes[14].actions[0].text] 刚才我们通过实验观察了向量的投影分解，现在就到了本节课的最终实战环节。这组题目将检验大家能否将刚才学到的投影计算、内积正负判定以及垂直关系灵活运用到复杂的数学情境中。
+  [scenes[14].actions[1].text] 在答题时请特别注意：Q1和Q4重点考查投影的本质——它是数量还是向量？Q2和Q6则要求大家从几何直观出发，思考内积符号是如何反映角度范围的。而最后的填空题，需要你像博文那样，将代数运算与几何意义精准对接。
+  [scenes[14].actions[2].text] 特别是 Q5 关于垂直关系的判定，请回想我们在第10页“垂直零贡献探针”中讨论过的结论：当两个向量垂直时，它们的内积必为零。利用好这个代数工具，复杂的坐标运算就能迎刃而解。
+  [scenes[14].actions[3].text] 完成了这组后测，我们今天的向量探索之旅也就圆满结束了。从最初的夹角旋转台到最后的综合迁移，我们不仅掌握了公式，更建立了“内积即贡献”的直观地图。希望大家在以后的物理或工程问题中，也能一眼看出向量背后的“影子”。
+
+================================================================================
+FILE: A3/manifest.json
+================================================================================
+  [stage.language] 使用简体中文进行教学。专业术语如“矩阵”、“线性变换”、“基向量”等应使用标准中文译名。在介绍公式和编程相关变量名时可保留英文，但必须提供清晰的中文解释。针对12年级高中生，语气应专业且富有启发性，强调几何直观而非枯燥计算。
+  [agents[0].persona] 逻辑思维严密的高三学生，喜欢记录核心公式并寻找数学规律。他对“局部线性近似”这种前沿概念充满好奇，总是试图通过严谨的推理来验证观察到的几何现象。
+  [agents[1].persona] 直觉敏锐的学习者，比起公式更喜欢观察图形的形变。她具有很强的空间想象力，经常能通过网格的“惨状”直观地反推出矩阵的特征。
+  [agents[2].persona] 亲切友好的数学系研究生，负责引导学生操作互动实验并提供即时反馈。她擅长将抽象的线性变换步骤拆解为通俗易懂的指令，是师生沟通的桥梁。
+  [agents[3].persona] 资深数学特级教师，擅长通过几何直观破解复杂的代数概念。他语气专业且富有启发性，始终强调矩阵不是静态的数字表，而是赋予空间活力的“规则”。
+  [scenes[0].title] 矩阵直觉前测
+  [scenes[0].content.questions[0].options[0].label] 一个常数
+  [scenes[0].content.questions[0].options[1].label] 一个矩阵
+  [scenes[0].content.questions[0].options[2].label] 一个圆方程
+  [scenes[0].content.questions[0].options[3].label] 一个随机数序列
+  [scenes[0].content.questions[0].analysis] 在线性代数的几何直观中，矩阵是“线性变换”的代数载体。它能够描述如何将空间中的向量映射到新位置，并保持“原点固定”和“直线平行且等距”的特性。
+  [scenes[0].content.questions[0].question] 如果在二维平面上，我们想要描述一种将所有点进行整体移动的规则，且这种规则保证了原点不动、原来的直线在移动后依然是直线，这种规则在数学上最适合用什么来表达？
+  [scenes[0].content.questions[1].options[0].label] 变换后，原点的位置保持不变
+  [scenes[0].content.questions[1].options[1].label] 原本平行的网格线在变换后依然保持平行
+  [scenes[0].content.questions[1].options[2].label] 原本是直线的线条在变换后可能会变成曲线
+  [scenes[0].content.questions[1].options[3].label] 网格线在变换后依然保持等距分布
+  [scenes[0].content.questions[1].analysis] 线性变换的两个核心几何特征是：1. 原点固定；2. 直线变换后仍为直线。这两个特征共同决定了网格线在变换后必须保持平行且等距。如果直线变成了曲线，则该变换不是线性的。
+  [scenes[0].content.questions[1].question] 当我们说一个变换是“线性变换”时，从几何直观上看，它通常需要满足以下哪些特征？（请选择所有正确项）
+  [scenes[0].content.questions[2].options[0].label] 图像向右平移了2个单位
+  [scenes[0].content.questions[2].options[1].label] 图像整体缩小为原来的二分之一
+  [scenes[0].content.questions[2].options[2].label] 图像整体沿原点均匀放大了2倍
+  [scenes[0].content.questions[2].options[3].label] 图像发生了顺时针90度旋转
+  [scenes[0].content.questions[2].analysis] 矩阵对平面的作用可以完全由它对基向量（i 和 j）的作用来决定。既然水平方向和垂直方向的单位长度都变成了原来的2倍，那么平面上所有的图形都会随之均匀放大2倍。
+  [scenes[0].content.questions[2].question] 假设平面上有两个基本方向：向右的单位向量 i (1, 0) 和向上的单位向量 j (0, 1)。如果一个矩阵变换把 i 变成了 (2, 0)，把 j 变成了 (0, 2)，那么整个平面图像会发生什么变化？
+  [scenes[0].content.questions[3].options[0].label] 将照片水平翻转（镜像）
+  [scenes[0].content.questions[3].options[1].label] 将照片旋转一定的角度
+  [scenes[0].content.questions[3].options[2].label] 将照片拉伸或压缩
+  [scenes[0].content.questions[3].options[3].label] 让照片产生一种倾斜（斜切）的效果
+  [scenes[0].content.questions[3].analysis] 所有的线性几何变换，包括缩放（拉伸/压缩）、旋转、镜像翻转以及斜切（Shear），都可以通过左乘一个特定的 2x2 矩阵来实现。这是计算机图形学的基础。
+  [scenes[0].content.questions[3].question] 在图像处理软件中，以下哪些常见的操作可以利用矩阵变换来实现？（请选择所有正确项）
+  [scenes[0].actions[0].text] 同学们好，我是林老师。欢迎来到这堂充满想象力的数学课。在很多人眼里，矩阵只是一堆排列整齐的数字，但在接下来的旅程中，我会带大家通过几何直观去理解：矩阵其实是赋予空间活力的“规则”。
+  [scenes[0].actions[1].text] 我们首先进入“矩阵直觉前测”。这个环节不需要你进行复杂的计算，而是要请你动用空间想象力，去感受平面是如何在这些规则下发生形变的。
+  [scenes[0].actions[2].text] 在做题时，请大家重点观察几个核心点：原点有没有动？原本平行的网格线在变换后还是平行的吗？特别是像Q3提到的单位向量 i 和 j，它们就像是平面的“基座”，一旦它们动了，整个世界都会随之改变。
+  [scenes[0].actions[3].text] 通过这四道题，你会发现我们手机里常见的照片翻转、拉伸，其实背后都藏着矩阵的身影。现在，请大家凭直觉快速完成这些题目，开启我们的空间变形之旅。
+  [scenes[1].title] 知识地图：矩阵的变形之旅
+  [scenes[1].content.canvas.elements[0].content] <p style="font-size: 32px;"><strong>知识地图：矩阵的变形之旅</strong></p>
+  [scenes[1].content.canvas.elements[3].content] <p style="font-size: 18px;"><strong>核心概念</strong>：矩阵即空间变换规则</p>
+  [scenes[1].content.canvas.elements[5].content] <p style="font-size: 18px;"><strong>学习目标</strong>：建立代数与几何的直观联结</p>
+  [scenes[1].content.canvas.elements[7].content] <p style="font-size: 18px;"><strong>实践路径</strong>：9项交互实验助你从零进阶</p>
+  [scenes[1].content.canvas.elements[9].content] <p style="font-size: 14px; text-align: center; color: #6b7280;">本课程将重点关注：矩阵对基向量的操作</p>
+  [scenes[1].actions[1].text] 刚才的直觉测试只是小试牛刀，现在请大家看屏幕，我们要正式开启这段“矩阵的变形之旅”了。这张地图将指引我们如何从枯燥的数字阵列步入生动的几何世界。
+  [scenes[1].actions[3].text] 在这趟旅程中，请大家务必记住这个核心概念：矩阵不仅仅是一个静态的数字表格，它本质上是一套“空间变换规则”。就像我们手机滤镜改变照片像素一样，矩阵是在对整个数学空间进行“整形”。
+  [scenes[1].actions[5].text] 我们的首要目标，是帮你建立起代数公式与几何直观之间的强联系。在子轩看来，这可能是严谨的映射关系；而对思琪来说，这更像是观察网格如何被拉伸和扭曲。无论你的学习风格如何，我们都要达到“看透”矩阵的目标。
+  [scenes[1].actions[7].text] 为了实现这一目标，助教小悦会全程陪同大家完成这9项交互实验。从简单的网格形变到复杂的反推挑战，这些实验会让你亲手触摸到空间的律动。
+  [scenes[1].actions[9].text] 最后请大家特别关注这一点：我们学习的切入点是“矩阵对基向量的操作”。只要弄清楚了那两个基础单位向量去了哪里，整个空间的命运就尽在你的掌控之中。下面，我们就先来看看这些“基向量”到底是什么。
+  [scenes[2].title] 基向量变换器
+  [scenes[2].content.widgetConfig.variables[0].label] i_x (a11)
+  [scenes[2].content.widgetConfig.variables[1].label] i_y (a21)
+  [scenes[2].content.widgetConfig.variables[2].label] j_x (a12)
+  [scenes[2].content.widgetConfig.variables[3].label] j_y (a22)
+  [scenes[2].content.widgetConfig.description] 通过操纵矩阵的列向量（即变换后的基向量 i 和 j），观察整个线性空间如何随之变形。
+  [scenes[2].content.teacherActions[0].label] 开始探索
+  [scenes[2].content.teacherActions[0].content] 欢迎来到线性变换的几何世界。今天我们要探究矩阵是如何通过移动“基向量”来重塑整个平面的。
+  [scenes[2].content.teacherActions[1].label] 控制基向量 i
+  [scenes[2].content.teacherActions[1].content] 矩阵的第一列（a11 和 a21）决定了变换后基向量 i 的新位置。观察当你拖动它时，所有的垂直网格线是如何随之倾斜的。
+  [scenes[2].content.teacherActions[2].label] 演示旋转
+  [scenes[2].content.teacherActions[2].content] 看！当我们把 i 移到 (0,1)，把 j 移到 (-1,0) 时，整个平面完成了 90° 的逆时针旋转。
+  [scenes[2].content.teacherActions[3].label] 控制基向量 j
+  [scenes[2].content.teacherActions[3].content] 同样地，这组滑块控制基向量 j。矩阵的第二列决定了 j 的落点。
+  [scenes[2].content.teacherActions[4].label] 水平剪切
+  [scenes[2].content.teacherActions[4].content] 通过改变 a12 的值，我们可以实现“剪切变换”。注意看，虽然面积没变，但整个空间变得倾斜了。
+  [scenes[2].content.teacherActions[5].label] 空间坍缩
+  [scenes[2].content.teacherActions[5].content] 如果两个基向量共线（线性相关），整个二维平面就会“坍缩”成一条直线。这就是奇异矩阵的几何本质。
+  [scenes[2].actions[0].text] 欢迎来到线性变换的几何世界。今天我们要探究矩阵是如何通过移动“基向量”来重塑整个平面的。
+  [scenes[2].actions[0].title] 开始探索
+  [scenes[2].actions[1].title] 控制基向量 i
+  [scenes[2].actions[2].text] 矩阵的第一列（a11 和 a21）决定了变换后基向量 i 的新位置。观察当你拖动它时，所有的垂直网格线是如何随之倾斜的。
+  [scenes[2].actions[2].title] 控制基向量 i
+  [scenes[2].actions[3].title] 演示旋转
+  [scenes[2].actions[4].text] 看！当我们把 i 移到 (0,1)，把 j 移到 (-1,0) 时，整个平面完成了 90° 的逆时针旋转。
+  [scenes[2].actions[4].title] 演示旋转
+  [scenes[2].actions[5].title] 控制基向量 j
+  [scenes[2].actions[6].text] 同样地，这组滑块控制基向量 j。矩阵的第二列决定了 j 的落点。
+  [scenes[2].actions[6].title] 控制基向量 j
+  [scenes[2].actions[7].title] 水平剪切
+  [scenes[2].actions[8].text] 通过改变 a12 的值，我们可以实现“剪切变换”。注意看，虽然面积没变，但整个空间变得倾斜了。
+  [scenes[2].actions[8].title] 水平剪切
+  [scenes[2].actions[9].title] 空间坍缩
+  [scenes[2].actions[10].text] 如果两个基向量共线（线性相关），整个二维平面就会“坍缩”成一条直线。这就是奇异矩阵的几何本质。
+  [scenes[2].actions[10].title] 空间坍缩
+  [scenes[3].title] 网格形变实验
+  [scenes[3].content.widgetConfig.variables[0].label] a (i_x)
+  [scenes[3].content.widgetConfig.variables[1].label] b (j_x)
+  [scenes[3].content.widgetConfig.variables[2].label] c (i_y)
+  [scenes[3].content.widgetConfig.variables[3].label] d (j_y)
+  [scenes[3].content.widgetConfig.description] 可视化二维矩阵如何作为线性变换“揉捏”空间
+  [scenes[3].content.teacherActions[0].label] 开始探索
+  [scenes[3].content.teacherActions[0].content] 欢迎来到线性代数的几何世界！今天我们要探索矩阵是如何像“揉捏面团”一样，对二维空间进行变换的。
+  [scenes[3].content.teacherActions[1].label] 认识参数
+  [scenes[3].content.teacherActions[1].content] 这里的 a 和 c 共同决定了水平基向量变换后的位置，而 b 和 d 决定了垂直基向量的去向。
+  [scenes[3].content.teacherActions[2].label] 垂直拉伸演示
+  [scenes[3].content.teacherActions[2].content] 当我们把 d 设置为 1.5 时，你会发现空间在垂直方向上被拉伸了，但所有的网格线依然保持平行。
+  [scenes[3].content.teacherActions[3].label] 水平剪切演示
+  [scenes[3].content.teacherActions[3].content] 通过增加参数 b，我们实现了“剪切”变换。注意到网格是如何倾斜的了吗？虽然方块变成了平行四边形，但面积比例保持着某种规律。
+  [scenes[3].content.teacherActions[4].label] 奇异变换演示
+  [scenes[3].content.teacherActions[4].content] 看！当矩阵的列向量指向同一方向时，整个平面被压缩成了一条直线。这就是线性代数中非常关键的“降维”现象。
+  [scenes[3].content.teacherActions[5].label] 自由探索
+  [scenes[3].content.teacherActions[5].content] 线性变换的魅力在于它在改变空间形状的同时，保持了网格的平行性和原点的固定。现在，请亲自尝试拖动滑块，感受不同参数带来的空间形变吧！
+  [scenes[3].actions[0].text] 欢迎来到线性代数的几何世界！今天我们要探索矩阵是如何像“揉捏面团”一样，对二维空间进行变换的。
+  [scenes[3].actions[0].title] 开始探索
+  [scenes[3].actions[1].title] 认识参数
+  [scenes[3].actions[2].text] 这里的 a 和 c 共同决定了水平基向量变换后的位置，而 b 和 d 决定了垂直基向量的去向。
+  [scenes[3].actions[2].title] 认识参数
+  [scenes[3].actions[3].title] 垂直拉伸演示
+  [scenes[3].actions[4].text] 当我们把 d 设置为 1.5 时，你会发现空间在垂直方向上被拉伸了，但所有的网格线依然保持平行。
+  [scenes[3].actions[4].title] 垂直拉伸演示
+  [scenes[3].actions[5].title] 水平剪切演示
+  [scenes[3].actions[6].text] 通过增加参数 b，我们实现了“剪切”变换。注意到网格是如何倾斜的了吗？虽然方块变成了平行四边形，但面积比例保持着某种规律。
+  [scenes[3].actions[6].title] 水平剪切演示
+  [scenes[3].actions[7].title] 奇异变换演示
+  [scenes[3].actions[8].text] 看！当矩阵的列向量指向同一方向时，整个平面被压缩成了一条直线。这就是线性代数中非常关键的“降维”现象。
+  [scenes[3].actions[8].title] 奇异变换演示
+  [scenes[3].actions[9].text] 线性变换的魅力在于它在改变空间形状的同时，保持了网格的平行性和原点的固定。现在，请亲自尝试拖动滑块，感受不同参数带来的空间形变吧！
+  [scenes[3].actions[9].title] 自由探索
+  [scenes[4].title] 单位圆变椭圆
+  [scenes[4].content.widgetConfig.objects[0].description] 参考单位圆
+  [scenes[4].content.widgetConfig.objects[1].description] 变换后的椭圆
+  [scenes[4].content.widgetConfig.objects[2].description] 基向量 i 的变换结果
+  [scenes[4].content.widgetConfig.objects[3].description] 基向量 j 的变换结果
+  [scenes[4].content.widgetConfig.description] 线性变换下的单位圆形变可视化
+  [scenes[4].content.widgetConfig.interactions[0].label] 矩阵元素 m11
+  [scenes[4].content.widgetConfig.interactions[1].label] 矩阵元素 m12
+  [scenes[4].content.widgetConfig.interactions[2].label] 矩阵元素 m21
+  [scenes[4].content.widgetConfig.interactions[3].label] 矩阵元素 m22
+  [scenes[4].content.widgetConfig.interactions[4].label] 放大
+  [scenes[4].content.widgetConfig.interactions[5].label] 缩小
+  [scenes[4].content.teacherActions[0].label] 开始教学
+  [scenes[4].content.teacherActions[0].content] 欢迎来到线性变换的几何世界。今天我们将观察一个单位圆在矩阵作用下是如何发生形变的，这能帮助我们直观理解线性代数的核心概念。
+  [scenes[4].content.teacherActions[1].label] 观察单位圆
+  [scenes[4].content.teacherActions[1].content] 这个白色的圆是我们的参考单位圆。在线性变换中，所有的几何形变都是相对于这个初始状态发生的。
+  [scenes[4].content.teacherActions[2].label] 了解矩阵控制
+  [scenes[4].content.teacherActions[2].content] 通过这四个滑块，我们可以改变矩阵 m11, m12, m21, m22 的值。矩阵中的每一列其实决定了变换后基向量的位置。
+  [scenes[4].content.teacherActions[3].label] 演示剪切变换
+  [scenes[4].content.teacherActions[3].content] 现在我们将矩阵设为水平剪切变换。观察单位圆是如何拉伸成椭圆的，注意水平方向的长度并没有改变。
+  [scenes[4].content.teacherActions[4].label] 观察基向量
+  [scenes[4].content.teacherActions[4].content] 这两个箭头代表了基向量 i 和 j 变换后的结果。观察它们的方向和长度，你会发现整个空间的形变其实是由这两个向量定义的。
+  [scenes[4].content.teacherActions[5].label] 演示旋转变换
+  [scenes[4].content.teacherActions[5].content] 当矩阵满足特定条件时，它会表现为旋转。现在圆形在保持形状的情况下整体旋转了约45度，这种变换被称为正交变换。
+  [scenes[4].content.teacherActions[6].label] 自主探索
+  [scenes[4].content.teacherActions[6].content] 如果你想更细致地观察特征向量的变化，可以使用放大按钮来调整视角。现在请你尝试手动调节滑块，寻找能让圆坍缩成一条直线的矩阵值。
+  [scenes[4].actions[0].text] 欢迎来到线性变换的几何世界。今天我们将观察一个单位圆在矩阵作用下是如何发生形变的，这能帮助我们直观理解线性代数的核心概念。
+  [scenes[4].actions[0].title] 开始教学
+  [scenes[4].actions[1].title] 观察单位圆
+  [scenes[4].actions[2].text] 这个白色的圆是我们的参考单位圆。在线性变换中，所有的几何形变都是相对于这个初始状态发生的。
+  [scenes[4].actions[2].title] 观察单位圆
+  [scenes[4].actions[3].title] 了解矩阵控制
+  [scenes[4].actions[4].text] 通过这四个滑块，我们可以改变矩阵 m11, m12, m21, m22 的值。矩阵中的每一列其实决定了变换后基向量的位置。
+  [scenes[4].actions[4].title] 了解矩阵控制
+  [scenes[4].actions[5].title] 演示剪切变换
+  [scenes[4].actions[6].text] 现在我们将矩阵设为水平剪切变换。观察单位圆是如何拉伸成椭圆的，注意水平方向的长度并没有改变。
+  [scenes[4].actions[6].title] 演示剪切变换
+  [scenes[4].actions[7].title] 观察基向量
+  [scenes[4].actions[8].text] 这两个箭头代表了基向量 i 和 j 变换后的结果。观察它们的方向和长度，你会发现整个空间的形变其实是由这两个向量定义的。
+  [scenes[4].actions[8].title] 观察基向量
+  [scenes[4].actions[9].title] 演示旋转变换
+  [scenes[4].actions[10].text] 当矩阵满足特定条件时，它会表现为旋转。现在圆形在保持形状的情况下整体旋转了约45度，这种变换被称为正交变换。
+  [scenes[4].actions[10].title] 演示旋转变换
+  [scenes[4].actions[11].title] 自主探索
+  [scenes[4].actions[12].text] 如果你想更细致地观察特征向量的变化，可以使用放大按钮来调整视角。现在请你尝试手动调节滑块，寻找能让圆坍缩成一条直线的矩阵值。
+  [scenes[4].actions[12].title] 自主探索
+  [scenes[5].title] 从图像到公式：桥接概念
+  [scenes[5].content.canvas.elements[0].content] <p style="font-size: 32px;"><strong>从图像到公式：线性变换的代数桥梁</strong></p>
+  [scenes[5].content.canvas.elements[2].content] <p style="font-size: 18px;"><strong>1. 矩阵的列：变换后的基向量</strong></p><p style="font-size: 16px; color: #666;">矩阵 A 的每一列，记录了原始单位基向量变换后的新位置。</p>
+  [scenes[5].content.canvas.elements[5].content] <p style="font-size: 18px;"><strong>2. Ax = b：线性组合的视觉化</strong></p><p style="font-size: 16px; color: #666;">变换后的向量 b，是新基向量按照原坐标比例进行的缩放与叠加。</p>
+  [scenes[5].actions[1].text] 刚刚我们通过操作滑块，直观感受了图形随矩阵数值变化的“惨状”。现在，我们要把这些生动的形变抽象为严谨的数学语言，正式搭建起从图像到公式的代数桥梁。
+  [scenes[5].actions[3].text] 大家请看矩阵 A 的每一列。在线性变换中，它们并不是孤立的数字，而是记录了原始单位基向量 i 帽和 j 帽变换后的“新家”。
+  [scenes[5].actions[5].text] 如公式所示，原本在 (1,0) 和 (0,1) 的基向量，经过矩阵 A 的映射，变成了新的坐标。只要盯住了基向量的去向，你就掌握了整个空间的变动规则。
+  [scenes[5].actions[7].text] 有了新基向量作为“新刻度”，我们如何定位空间中任意一点呢？这就是方程 Ax = b 的几何本质：它实际上是在描述一种线性组合的叠加。
+  [scenes[5].actions[9].text] 观察这个公式：Ax 被拆解成了以 x 和 y 为权重的线性组合。这意味着变换后的向量 b，其实就是按照原始坐标的比例，在新的基向量方向上进行缩放和叠加的结果。
+  [scenes[5].actions[11].text] 看这张视觉示意图，它完美展示了原本整齐的网格是如何随着基向量的伸缩而重新排布的。记住，矩阵不是死板的数字，而是赋予空间活力的“翻译官”。理解了这一点，我们就掌握了代数的底层逻辑。接下来，让我们通过几个具体的点位，来实战追踪这些映射关系。
+  [scenes[6].title] 点对点映射追踪
+  [scenes[6].content.widgetConfig.variables[0].label] 输入点 X
+  [scenes[6].content.widgetConfig.variables[1].label] 输入点 Y
+  [scenes[6].content.widgetConfig.variables[2].label] 矩阵 a (1,1)
+  [scenes[6].content.widgetConfig.variables[3].label] 矩阵 b (1,2)
+  [scenes[6].content.widgetConfig.variables[4].label] 矩阵 c (2,1)
+  [scenes[6].content.widgetConfig.variables[5].label] 矩阵 d (2,2)
+  [scenes[6].content.widgetConfig.description] 观察点在 2x2 矩阵作用下的线性变换过程
+  [scenes[6].content.teacherActions[0].label] 开始探索
+  [scenes[6].content.teacherActions[0].content] 欢迎来到线性变换实验室。今天我们将直观地观察一个点在 2x2 矩阵的作用下，是如何发生位移并到达新位置的。
+  [scenes[6].content.teacherActions[1].label] 设置输入点
+  [scenes[6].content.teacherActions[1].content] 这里是输入点的控制区。你可以通过改变 pt_x 和 pt_y 滑块来定义初始点的坐标。
+  [scenes[6].content.teacherActions[2].label] 演示旋转变换
+  [scenes[6].content.teacherActions[2].content] 看！当我们应用这个矩阵时，点 (2, 0) 被映射到了 (0, 2)。在几何上，这代表了一个逆时针 90 度的旋转变换。
+  [scenes[6].content.teacherActions[3].label] 矩阵参数
+  [scenes[6].content.teacherActions[3].content] 矩阵的四个元素 a, b, c, d 实际上定义了基向量变换后的位置，从而决定了整个空间的映射规则。
+  [scenes[6].content.teacherActions[4].label] 演示切变变换
+  [scenes[6].content.teacherActions[4].content] 现在的配置是一个“切变”（Shear）变换。观察点在保持纵坐标不变的情况下，是如何根据横坐标的比例发生水平滑移的。
+  [scenes[6].content.teacherActions[5].label] 总结与探索
+  [scenes[6].content.teacherActions[5].content] 映射是连续的。你可以尝试拖动滑块，感受点在空间中连续飞行的轨迹，这能帮你建立更强的线性代数直觉。
+  [scenes[6].actions[0].text] 欢迎来到线性变换实验室。今天我们将直观地观察一个点在 2x2 矩阵的作用下，是如何发生位移并到达新位置的。
+  [scenes[6].actions[0].title] 开始探索
+  [scenes[6].actions[1].title] 设置输入点
+  [scenes[6].actions[2].text] 这里是输入点的控制区。你可以通过改变 pt_x 和 pt_y 滑块来定义初始点的坐标。
+  [scenes[6].actions[2].title] 设置输入点
+  [scenes[6].actions[3].title] 演示旋转变换
+  [scenes[6].actions[4].text] 看！当我们应用这个矩阵时，点 (2, 0) 被映射到了 (0, 2)。在几何上，这代表了一个逆时针 90 度的旋转变换。
+  [scenes[6].actions[4].title] 演示旋转变换
+  [scenes[6].actions[5].title] 矩阵参数
+  [scenes[6].actions[6].text] 矩阵的四个元素 a, b, c, d 实际上定义了基向量变换后的位置，从而决定了整个空间的映射规则。
+  [scenes[6].actions[6].title] 矩阵参数
+  [scenes[6].actions[7].title] 演示切变变换
+  [scenes[6].actions[8].text] 现在的配置是一个“切变”（Shear）变换。观察点在保持纵坐标不变的情况下，是如何根据横坐标的比例发生水平滑移的。
+  [scenes[6].actions[8].title] 演示切变变换
+  [scenes[6].actions[9].text] 映射是连续的。你可以尝试拖动滑块，感受点在空间中连续飞行的轨迹，这能帮你建立更强的线性代数直觉。
+  [scenes[6].actions[9].title] 总结与探索
+  [scenes[7].title] 过程性测试：空间感检查
+  [scenes[7].content.questions[0].options[0].label] 第一行为 (3, 1)，第二行为 (1, 2)
+  [scenes[7].content.questions[0].options[1].label] 第一列为 (3, 1)，第二列为 (1, 2)
+  [scenes[7].content.questions[0].options[2].label] 第一列为 (3, 2)，第二列为 (1, 1)
+  [scenes[7].content.questions[0].options[3].label] 第一行为 (3, 1)，第二列为 (1, 2)
+  [scenes[7].content.questions[0].analysis] 在线性代数的几何解释中，变换矩阵的每一列直接对应于变换后基向量的新坐标。第一列记录基向量 i 的去向，第二列记录基向量 j 的去向。因此，第一列应为 (3, 1)，第二列应为 (1, 2)。
+  [scenes[7].content.questions[0].question] 在线性变换中，如果我们将标准基向量 i (1, 0) 变换为 (3, 1)，将基向量 j (0, 1) 变换为 (1, 2)，那么描述这一空间变换的矩阵表示形式应该是：
+  [scenes[7].content.questions[1].options[0].label] 单位正方形网格的形状
+  [scenes[7].content.questions[1].options[1].label] 原本垂直的基向量之间的夹角
+  [scenes[7].content.questions[1].options[2].label] 图形在坐标系中的面积
+  [scenes[7].content.questions[1].options[3].label] 向量在变换后的共线性（原本在一条直线上的点变换后是否仍在直线上）
+  [scenes[7].content.questions[1].analysis] 剪切变换会使正方形变为平行四边形（改变形状），并改变基向量间的夹角。但由于该矩阵的行列式（1乘以1减去0乘以1）等于1，其面积保持不变。同时，线性变换的一个基本定义就是保持网格线平行且等距，即保持共线性。因此 C 和 D 错误。
+  [scenes[7].content.questions[1].question] 当我们观察一个“剪切变换”（Shear Transformation），例如矩阵的第一列为 (1, 0)，第二列为 (1, 1) 时，下列哪些几何性质发生了改变？（请选出所有正确项）
+  [scenes[7].content.questions[2].options[0].label] 空间被均匀地放大了，但方向没有改变
+  [scenes[7].content.questions[2].options[1].label] 整个平面被压缩到了一条直线或一个点上，造成了维度的丢失
+  [scenes[7].content.questions[2].options[2].label] 平面发生了 90 度的旋转，面积保持不变
+  [scenes[7].content.questions[2].options[3].label] 空间发生了镜像翻转，左手系变成了右手系
+  [scenes[7].content.questions[2].analysis] 行列式的几何意义是变换后图形面积的缩放比例。如果比例为 0，说明原本有面积的二维图形被压缩成了面积为 0 的形体（如直线或点），这意味着变换是不可逆的，空间发生了塌缩。
+  [scenes[7].content.questions[2].question] 如果一个二维线性变换矩阵的行列式（Determinant）计算结果为 0，这在几何直观上意味着什么？
+  [scenes[7].content.questions[3].analysis] 线性变换必须满足两条核心性质：加法和数乘。在几何上，这要求原点必须映射到原点（保持坐标系的参考点），且任意向量的线性组合变换后等于变换后向量的线性组合。这反映在视觉上就是网格线必须保持平行且等距，否则说明空间发生了弯曲或非均匀缩放，那就超出了线性变换的范畴。
+  [scenes[7].content.questions[3].question] 请结合你在实验中的观察，简述为什么“原点固定不动”和“网格线保持平行且等距”是识别一个变换为“线性变换”的关键几何特征？
+  [scenes[7].actions[0].text] 刚才我们亲手追踪了每一个点在空间中飞行的轨迹，那种连续的流动感非常关键。现在，让我们停下来做个“空间感检查”，看看你是否已经掌握了这些几何形变背后的数学规则。
+  [scenes[7].actions[1].text] 这四道题涵盖了我们互动的核心。第一题考查的是你对“矩阵作为记录器”的理解——记住，矩阵的每一列就是变换后基向量的坐标，这是从几何直观跨越到代数运算的桥梁。
+  [scenes[7].actions[2].text] 当你思考第二题和第三题时，请在脑海中复现网格的形变过程。一个剪切变换（Shear）会让矩形变成平行四边形，而当行列式变为 0 时，原本平坦的平面会发生极其剧烈的塌缩，就像被降维打击了一样。
+  [scenes[7].actions[3].text] 最后的简答题需要你结合之前的实验观察，归纳出“线性”这两个字的真正含义。为什么原点必须不动？为什么网格线不能弯曲？请把你的直观感受转化成逻辑严密的描述。
+  [scenes[7].actions[4].text] 不用担心出错，这不仅是测试，更是对你空间想象力的一次深度复盘。完成后，我们将挑战更高级的“矩阵反推”，看看你能不能从结果逆流而上找到变换的源头。
+  [scenes[8].title] 矩阵变换反推挑战
+  [scenes[8].content.teacherActions[0].label] 开始探索
+  [scenes[8].content.teacherActions[0].content] 欢迎来到空间侦查现场。这里的网格被某种线性变换“扭曲”了，你的任务是找出背后的“幕后黑手”——也就是对应的矩阵卡牌。
+  [scenes[8].content.teacherActions[1].label] 观察空间变形
+  [scenes[8].content.teacherActions[1].content] 观察这个变换后的空间。请重点关注原本的基向量 $\hat{i}$ 和 $\hat{j}$ 现在落在了什么位置？是发生了旋转、伸缩还是切变？
+  [scenes[8].content.teacherActions[2].label] 分数规则
+  [scenes[8].content.teacherActions[2].content] 正确识别矩阵可以获得10分，而快速反应还会为你带来额外的“速度加成”。
+  [scenes[8].content.teacherActions[3].label] 推理技巧
+  [scenes[8].content.teacherActions[3].content] 一个小技巧：矩阵的第一列向量代表变换后的 $\hat{i}$，第二列则代表变换后的 $\hat{j}$。利用这种几何直观，你可以迅速锁定正确答案。
+  [scenes[8].content.teacherActions[4].label] 选择卡牌
+  [scenes[8].content.teacherActions[4].content] 对比下方的矩阵卡牌，点击符合空间变形逻辑的那一个。准备好接受挑战了吗？
+  [scenes[8].actions[0].text] 欢迎来到空间侦查现场。这里的网格被某种线性变换“扭曲”了，你的任务是找出背后的“幕后黑手”——也就是对应的矩阵卡牌。
+  [scenes[8].actions[0].title] 开始探索
+  [scenes[8].actions[1].title] 观察空间变形
+  [scenes[8].actions[2].text] 观察这个变换后的空间。请重点关注原本的基向量 $\hat{i}$ 和 $\hat{j}$ 现在落在了什么位置？是发生了旋转、伸缩还是切变？
+  [scenes[8].actions[2].title] 观察空间变形
+  [scenes[8].actions[3].title] 分数规则
+  [scenes[8].actions[4].text] 正确识别矩阵可以获得10分，而快速反应还会为你带来额外的“速度加成”。
+  [scenes[8].actions[4].title] 分数规则
+  [scenes[8].actions[5].text] 一个小技巧：矩阵的第一列向量代表变换后的 $\hat{i}$，第二列则代表变换后的 $\hat{j}$。利用这种几何直观，你可以迅速锁定正确答案。
+  [scenes[8].actions[5].title] 推理技巧
+  [scenes[8].actions[6].title] 选择卡牌
+  [scenes[8].actions[7].text] 对比下方的矩阵卡牌，点击符合空间变形逻辑的那一个。准备好接受挑战了吗？
+  [scenes[8].actions[7].title] 选择卡牌
+  [scenes[9].title] 变换流程系统全景图
+  [scenes[9].content.widgetConfig.edges[0].label] 线性组合
+  [scenes[9].content.widgetConfig.edges[1].label] 定义列
+  [scenes[9].content.widgetConfig.edges[2].label] 作为输入
+  [scenes[9].content.widgetConfig.edges[3].label] 应用规则
+  [scenes[9].content.widgetConfig.edges[4].label] 映射结果
+  [scenes[9].content.widgetConfig.edges[5].label] 度量属性
+  [scenes[9].content.widgetConfig.edges[6].label] 不变性探索
+  [scenes[9].content.widgetConfig.nodes[0].label] 基向量 (Basis)
+  [scenes[9].content.widgetConfig.nodes[1].label] 输入向量 v
+  [scenes[9].content.widgetConfig.nodes[2].label] 变换矩阵 A
+  [scenes[9].content.widgetConfig.nodes[3].label] 矩阵乘法 Av
+  [scenes[9].content.widgetConfig.nodes[4].label] 线性变换结果
+  [scenes[9].content.widgetConfig.nodes[5].label] 行列式 det(A)
+  [scenes[9].content.widgetConfig.nodes[6].label] 特征分析
+  [scenes[9].content.teacherActions[0].label] 开始探索
+  [scenes[9].content.teacherActions[0].content] 欢迎来到线性代数的几何世界。在这个图谱中，我们将通过直观的联系，理解矩阵如何作为“动作”来重塑空间。
+  [scenes[9].content.teacherActions[1].label] 认识基向量
+  [scenes[9].content.teacherActions[1].content] 一切都始于基向量 i 和 j。它们是空间的“刻度尺”，所有的变换本质上都是在观察这两个基准向量去了哪里。
+  [scenes[9].content.teacherActions[2].label] 矩阵即变换
+  [scenes[9].content.teacherActions[2].content] 请记住，矩阵 A 不是枯燥的数字堆砌，而是“动作指令”。矩阵的列向量直接定义了变换后新基向量的具体位置。
+  [scenes[9].content.teacherActions[3].label] 查看运算映射
+  [scenes[9].content.teacherActions[3].content] 当我们进行矩阵乘法 Av 时，实际上是将输入向量按照新的基向量规则进行重新组合，从而得到变换后的结果。
+  [scenes[9].content.teacherActions[4].label] 行列式的几何意义
+  [scenes[9].content.teacherActions[4].content] 行列式 det(A) 衡量的是变换对面积或体积的“缩放比例”。如果行列式为 0，意味着空间被压缩到了更低的维度。
+  [scenes[9].content.teacherActions[5].label] 特征分析
+  [scenes[9].content.teacherActions[5].content] 最后，特征向量寻找的是那些在变换中“只缩放、不掉头”的特殊方向。它们揭示了线性变换最底层的轴心性质。
+  [scenes[9].actions[0].text] 欢迎来到线性代数的几何世界。在这个图谱中，我们将通过直观的联系，理解矩阵如何作为“动作”来重塑空间。
+  [scenes[9].actions[0].title] 开始探索
+  [scenes[9].actions[1].title] 认识基向量
+  [scenes[9].actions[2].text] 一切都始于基向量 i 和 j。它们是空间的“刻度尺”，所有的变换本质上都是在观察这两个基准向量去了哪里。
+  [scenes[9].actions[2].title] 认识基向量
+  [scenes[9].actions[3].title] 矩阵即变换
+  [scenes[9].actions[4].text] 请记住，矩阵 A 不是枯燥的数字堆砌，而是“动作指令”。矩阵的列向量直接定义了变换后新基向量的具体位置。
+  [scenes[9].actions[4].title] 矩阵即变换
+  [scenes[9].actions[5].title] 查看运算映射
+  [scenes[9].actions[6].text] 当我们进行矩阵乘法 Av 时，实际上是将输入向量按照新的基向量规则进行重新组合，从而得到变换后的结果。
+  [scenes[9].actions[6].title] 查看运算映射
+  [scenes[9].actions[7].title] 行列式的几何意义
+  [scenes[9].actions[8].text] 行列式 det(A) 衡量的是变换对面积或体积的“缩放比例”。如果行列式为 0，意味着空间被压缩到了更低的维度。
+  [scenes[9].actions[8].title] 行列式的几何意义
+  [scenes[9].actions[9].title] 特征分析
+  [scenes[9].actions[10].text] 最后，特征向量寻找的是那些在变换中“只缩放、不掉头”的特殊方向。它们揭示了线性变换最底层的轴心性质。
+  [scenes[9].actions[10].title] 特征分析
+  [scenes[10].title] 面积与方向观察器
+  [scenes[10].content.widgetConfig.variables[0].label] a (x→x)
+  [scenes[10].content.widgetConfig.variables[1].label] b (x→y)
+  [scenes[10].content.widgetConfig.variables[2].label] c (y→x)
+  [scenes[10].content.widgetConfig.variables[3].label] d (y→y)
+  [scenes[10].content.widgetConfig.description] 探索2x2矩阵如何通过线性变换影响空间的面积倍率与方向（行列式几何意义）
+  [scenes[10].content.teacherActions[0].label] 开始探索
+  [scenes[10].content.teacherActions[0].content] 欢迎来到行列式几何意义的探索之旅。我们将直观地观察矩阵如何改变空间的面积和方向。
+  [scenes[10].content.teacherActions[1].label] 控制参数
+  [scenes[10].content.teacherActions[1].content] 通过这些滑块，你可以实时改变 2x2 矩阵的四个元素 a, b, c, d。
+  [scenes[10].content.teacherActions[2].label] 观察面积翻倍
+  [scenes[10].content.teacherActions[2].content] 看，当我们把 a 设为 2，x 轴方向的基向量被拉伸。由于行列式变为 2，原本单位正方形的面积也翻了一倍。
+  [scenes[10].content.teacherActions[3].label] 观察镜像翻转
+  [scenes[10].content.teacherActions[3].content] 现在我们将 a 设为 -1。注意空间发生了镜像翻转。此时行列式为负数，它代表了空间的“正反”发生了改变。
+  [scenes[10].content.teacherActions[4].label] 观察奇异矩阵
+  [scenes[10].content.teacherActions[4].content] 当矩阵的两列成比例时，整个平面被压缩成了一条直线。此时面积为 0，也就是我们常说的奇异矩阵。
+  [scenes[10].content.teacherActions[5].label] 总结归纳
+  [scenes[10].content.teacherActions[5].content] 记住，行列式的绝对值代表面积的变化倍率，而符号则代表了空间的定向是否改变。现在请你尝试自己动手操作吧！
+  [scenes[10].actions[0].text] 欢迎来到行列式几何意义的探索之旅。我们将直观地观察矩阵如何改变空间的面积和方向。
+  [scenes[10].actions[0].title] 开始探索
+  [scenes[10].actions[1].title] 控制参数
+  [scenes[10].actions[2].text] 通过这些滑块，你可以实时改变 2x2 矩阵的四个元素 a, b, c, d。
+  [scenes[10].actions[2].title] 控制参数
+  [scenes[10].actions[3].title] 观察面积翻倍
+  [scenes[10].actions[4].text] 看，当我们把 a 设为 2，x 轴方向的基向量被拉伸。由于行列式变为 2，原本单位正方形的面积也翻了一倍。
+  [scenes[10].actions[4].title] 观察面积翻倍
+  [scenes[10].actions[5].title] 观察镜像翻转
+  [scenes[10].actions[6].text] 现在我们将 a 设为 -1。注意空间发生了镜像翻转。此时行列式为负数，它代表了空间的“正反”发生了改变。
+  [scenes[10].actions[6].title] 观察镜像翻转
+  [scenes[10].actions[7].title] 观察奇异矩阵
+  [scenes[10].actions[8].text] 当矩阵的两列成比例时，整个平面被压缩成了一条直线。此时面积为 0，也就是我们常说的奇异矩阵。
+  [scenes[10].actions[8].title] 观察奇异矩阵
+  [scenes[10].actions[9].text] 记住，行列式的绝对值代表面积的变化倍率，而符号则代表了空间的定向是否改变。现在请你尝试自己动手操作吧！
+  [scenes[10].actions[9].title] 总结归纳
+  [scenes[11].title] 复盘：我们学到了什么？
+  [scenes[11].content.canvas.elements[0].content] <p style="font-size: 32px; color: #333333;"><strong>复盘：核心知识点回顾</strong></p>
+  [scenes[11].content.canvas.elements[3].content] <p style="font-size: 24px; color: #1565c0;"><strong>矩阵：</strong>空间的“搬运工”</p>
+  [scenes[11].content.canvas.elements[5].content] <p style="font-size: 24px; color: #7b1fa2;"><strong>基向量：</strong>坐标系的“灵魂”</p>
+  [scenes[11].content.canvas.elements[7].content] <p style="font-size: 24px; color: #2e7d32;"><strong>行列式：</strong>面积“缩放因子”</p>
+  [scenes[11].content.canvas.elements[9].content] <p style="font-size: 16px; text-align: center; color: #666666;">线性变换的几何直观总结</p>
+  [scenes[11].actions[1].text] 经过刚才对面积和方向变化的实操观察，我们已经完整地领略了线性变换的魅力。现在，让我们暂时停下脚步，把这节课散落的知识点串联起来，形成一张清晰的思维地图。
+  [scenes[11].actions[3].text] 首先，大家要跳出“矩阵只是数字表格”的局限。在几何直观中，矩阵是空间的“搬运工”，它定义了空间从初始状态到目标状态的完整映射规则。只要给定一个矩阵，你就给定了一套改变空间的指令。
+  [scenes[11].actions[5].text] 而这套指令的效率极高，因为它只需要抓住坐标系的“灵魂”——也就是基向量。正如我们在基向量变换器中所看到的，只要确定了 $\hat{i}$ 和 $\hat{j}$ 的去向，整个平面上无数个点的位置就随之确定了。
+  [scenes[11].actions[7].text] 最后是我们刚刚重点讨论的行列式。它不仅是一个计算结果，更是面积的“缩放因子”。通过它，我们可以直观地判断空间是被拉伸了、压缩了，还是被像翻书一样翻转了定向。
+  [scenes[11].actions[9].text] 结合这张几何总结图，我们可以看到，原本抽象的线性代数公式，实际上是在描述一场严谨而优美的空间形变。在进入接下来的“网格复原大挑战”之前，我们要确保这些核心直觉已经扎根在脑海里。
+  [scenes[12].title] 网格复原大挑战
+  [scenes[12].content.teacherActions[0].label] 开始探索
+  [scenes[12].content.teacherActions[0].content] 欢迎来到线性变换实验室。这个坐标空间被一组矩阵参数“弄乱”了，我们需要通过你的几何直觉将其复原。
+  [scenes[12].content.teacherActions[1].label] 观察空间扭曲
+  [scenes[12].content.teacherActions[1].content] 观察当前倾斜的网格。想象一下，原本垂直的基向量 $i$ 和 $j$ 现在被移动到了什么位置？
+  [scenes[12].content.teacherActions[2].label] 识别矩阵参数
+  [scenes[12].content.teacherActions[2].content] 这些滑动条控制着变换矩阵的参数。例如，参数 $a$ 决定了基向量 $i$ 在 $x$ 轴上的缩放程度。
+  [scenes[12].content.teacherActions[3].label] 演示参数调节
+  [scenes[12].content.teacherActions[3].content] 如果我们尝试将矩阵的第一列还原为单位向量，你会发现网格在水平方向上开始回归正轨。
+  [scenes[12].content.teacherActions[4].label] 寻找逆变换
+  [scenes[12].content.teacherActions[4].content] 记住，复原的过程本质上是在寻找当前扭曲变换的“逆变换”。请调整剩余的参数，让网格重新恢复成完美的正方形吧！
+  [scenes[12].actions[0].text] 欢迎来到线性变换实验室。这个坐标空间被一组矩阵参数“弄乱”了，我们需要通过你的几何直觉将其复原。
+  [scenes[12].actions[0].title] 开始探索
+  [scenes[12].actions[1].title] 观察空间扭曲
+  [scenes[12].actions[2].text] 观察当前倾斜的网格。想象一下，原本垂直的基向量 $i$ 和 $j$ 现在被移动到了什么位置？
+  [scenes[12].actions[2].title] 观察空间扭曲
+  [scenes[12].actions[3].title] 识别矩阵参数
+  [scenes[12].actions[4].text] 这些滑动条控制着变换矩阵的参数。例如，参数 $a$ 决定了基向量 $i$ 在 $x$ 轴上的缩放程度。
+  [scenes[12].actions[4].title] 识别矩阵参数
+  [scenes[12].actions[5].title] 演示参数调节
+  [scenes[12].actions[6].text] 如果我们尝试将矩阵的第一列还原为单位向量，你会发现网格在水平方向上开始回归正轨。
+  [scenes[12].actions[6].title] 演示参数调节
+  [scenes[12].actions[7].text] 记住，复原的过程本质上是在寻找当前扭曲变换的“逆变换”。请调整剩余的参数，让网格重新恢复成完美的正方形吧！
+  [scenes[12].actions[7].title] 寻找逆变换
+  [scenes[13].title] 局部线性预告实验
+  [scenes[13].content.widgetConfig.variables[0].label] 放大倍率
+  [scenes[13].content.widgetConfig.variables[1].label] 观察点 X
+  [scenes[13].content.widgetConfig.variables[2].label] 观察点 Y
+  [scenes[13].content.widgetConfig.variables[3].label] 线性混合度
+  [scenes[13].content.widgetConfig.description] 展示非线性变换如何在无限放大下趋近于由雅可比矩阵定义的线性变换
+  [scenes[13].content.teacherActions[0].label] 开始探索
+  [scenes[13].content.teacherActions[0].content] 欢迎！今天我们要探索为什么复杂的非线性世界在微观下可以用简单的矩阵（线性变换）来描述。
+  [scenes[13].content.teacherActions[1].label] 关注放大倍率
+  [scenes[13].content.teacherActions[1].content] 这是放大倍率滑块。通过它，我们可以观察函数在极小区域内的几何表现。
+  [scenes[13].content.teacherActions[2].label] 局部放大观察
+  [scenes[13].content.teacherActions[2].content] 请注意，随着放大倍率的提高，原本弯曲的网格线开始变得越来越直。这被称为“局部线性化”。
+  [scenes[13].content.teacherActions[3].label] 对比线性矩阵
+  [scenes[13].content.teacherActions[3].content] 在极高放大倍率下，非线性变换几乎完全等同于由雅可比矩阵定义的线性变换。此时网格变为了标准的平行四边形。
+  [scenes[13].content.teacherActions[4].label] 切换观察点
+  [scenes[13].content.teacherActions[4].content] 不同的位置（观察点）对应的局部线性变换是不同的。让我们移动到鞍点区域，看看这里的曲率变化。
+  [scenes[13].content.teacherActions[5].label] 总结核心概念
+  [scenes[13].content.teacherActions[5].content] 这就是矩阵的威力：它能捕捉复杂函数在某一点处的瞬间变化率。理解了这一点，你就理解了微积分与线性代数的核心纽带。
+  [scenes[13].actions[0].text] 欢迎！今天我们要探索为什么复杂的非线性世界在微观下可以用简单的矩阵（线性变换）来描述。
+  [scenes[13].actions[0].title] 开始探索
+  [scenes[13].actions[1].title] 关注放大倍率
+  [scenes[13].actions[2].text] 这是放大倍率滑块。通过它，我们可以观察函数在极小区域内的几何表现。
+  [scenes[13].actions[2].title] 关注放大倍率
+  [scenes[13].actions[3].title] 局部放大观察
+  [scenes[13].actions[4].text] 请注意，随着放大倍率的提高，原本弯曲的网格线开始变得越来越直。这被称为“局部线性化”。
+  [scenes[13].actions[4].title] 局部放大观察
+  [scenes[13].actions[5].title] 对比线性矩阵
+  [scenes[13].actions[6].text] 在极高放大倍率下，非线性变换几乎完全等同于由雅可比矩阵定义的线性变换。此时网格变为了标准的平行四边形。
+  [scenes[13].actions[6].title] 对比线性矩阵
+  [scenes[13].actions[7].title] 切换观察点
+  [scenes[13].actions[8].text] 不同的位置（观察点）对应的局部线性变换是不同的。让我们移动到鞍点区域，看看这里的曲率变化。
+  [scenes[13].actions[8].title] 切换观察点
+  [scenes[13].actions[9].text] 这就是矩阵的威力：它能捕捉复杂函数在某一点处的瞬间变化率。理解了这一点，你就理解了微积分与线性代数的核心纽带。
+  [scenes[13].actions[9].title] 总结核心概念
+  [scenes[14].title] 最终综合挑战
+  [scenes[14].content.questions[0].options[0].label] 一个2x2矩阵的乘法运算
+  [scenes[14].content.questions[0].options[1].label] 一个简单的平移向量相加
+  [scenes[14].content.questions[0].options[2].label] 一个常数项不为零的二次函数
+  [scenes[14].content.questions[0].options[3].label] 任意一种连续的弯曲映射
+  [scenes[14].content.questions[0].analysis] 线性变换的核心特征是保持加法和数乘，在几何上表现为‘网格线保持平行且等距’以及‘原点固定’。这种性质允许我们仅通过记录基向量的变化来定义整个变换，而矩阵正是记录基向量去向的数学工具。
+  [scenes[14].content.questions[0].question] 在二维空间中，如果一个变换能够保持原点不动，并且将所有的平行直线在映射后依然保持为平行直线，那么这种变换在几何上通常可以用什么来精确描述？
+  [scenes[14].content.questions[1].options[0].label] 单位矩阵 (Identity Matrix)
+  [scenes[14].content.questions[1].options[1].label] 雅可比矩阵 (Jacobian Matrix)
+  [scenes[14].content.questions[1].options[2].label] 逆矩阵 (Inverse Matrix)
+  [scenes[14].content.questions[1].options[3].label] 零矩阵 (Zero Matrix)
+  [scenes[14].content.questions[1].analysis] 微积分的核心思想就是‘局部线性化’。雅可比矩阵包含了非线性函数在某一点的所有偏导数，它描述了在该点附近无穷小的区域内，输入空间是如何被线性地拉伸、旋转或压缩的。
+  [scenes[14].content.questions[1].question] 考虑一个复杂的非线性映射 f(x, y)。如果我们极度放大函数图像上的某一个点 (x0, y0)，这个局部区域看起来就像是一个平面。决定这个“局部平面”倾斜程度和变换特性的矩阵被称为：
+  [scenes[14].content.questions[2].options[0].label] 它将水平向右的基向量 i 映射到了垂直向上的位置
+  [scenes[14].content.questions[2].options[1].label] 这是一个将空间顺时针旋转 90 度的变换
+  [scenes[14].content.questions[2].options[2].label] 这是一个将空间逆时针旋转 90 度的变换
+  [scenes[14].content.questions[2].options[3].label] 该变换保持了图形的面积不变
+  [scenes[14].content.questions[2].analysis] 矩阵的列就是基向量变换后的坐标。第一列 (0, 1) 说明基向量 i 从 (1, 0) 移动到了 (0, 1)，这是逆时针旋转 90 度。同理第二列说明 j 从 (0, 1) 移动到 (-1, 0)。旋转变换不改变图形形状和面积（行列式绝对值为 1）。
+  [scenes[14].content.questions[2].question] 已知一个矩阵 M 的第一列为 (0, 1)，第二列为 (-1, 0)。关于这个矩阵所代表的几何变换，以下描述哪些是正确的？(注：(a, b) 表示从原点出发的向量)
+  [scenes[14].content.questions[3].options[0].label] 二维空间被压缩成了一条直线或一个点
+  [scenes[14].content.questions[3].options[1].label] 该变换是不可逆的，我们无法从结果完美还原输入
+  [scenes[14].content.questions[3].options[2].label] 该变换对应的矩阵没有逆矩阵
+  [scenes[14].content.questions[3].options[3].label] 变换后的图形面积变为原来的 0 倍
+  [scenes[14].content.questions[3].analysis] 行列式的几何意义是变换后的面积缩放倍率。若为 0，则说明空间发生了降维压缩，所有的输出都被挤压在一条线或一个点上，导致信息丢失，因此不可逆，也不存在逆矩阵。
+  [scenes[14].content.questions[3].question] 如果一个 2x2 矩阵的行列式 (Determinant) 等于 0，这在空间几何上可能意味着：
+  [scenes[14].content.questions[4].analysis] 这是微积分的思想。虽然整体轨迹是非线性的，但在极小的空间和时间尺度内，变化率趋于恒定。通过将曲线分解为无数段极小的线性位移（即切向量），我们可以利用矩阵和向量加法等简单的线性工具来描述和计算复杂的动力学系统，这种方法在计算物理中被称为数值积分。
+  [scenes[14].content.questions[4].question] 请结合‘局部线性’的概念，简述为什么在研究复杂的曲线运动（如行星轨道）时，我们可以通过极其微小的线段来近似模拟轨迹？
+  [scenes[14].content.questions[5].analysis] 思路：首先构造拉伸矩阵 S，其第一列为 (3, 0)，第二列为 (0, 1)；然后构造镜像矩阵 M，其第一列为 (-1, 0)，第二列为 (0, 1)。由于变换是按顺序进行的，在数学表示上，先进行的变换应该写在右侧，即最终变换矩阵 T = M 乘以 S。这样当 T 作用于向量 v 时，v 首先与 S 相乘完成拉伸，结果再与 M 相乘完成镜像。
+  [scenes[14].content.questions[5].question] 假设你想设计一个矩阵变换：先将物体沿 x 轴方向拉伸 3 倍，再将其关于 y 轴做镜像对称。请描述你构造这个综合变换矩阵的思路，并说明矩阵相乘的顺序。 (无需写出具体计算结果)
+  [scenes[14].actions[0].text] 刚才我们通过实验观察了局部线性的神奇之处，现在，是时候通过这组‘最终综合挑战’，来全面检验你对空间操纵艺术的掌握程度了。这组题目涵盖了从基向量变换到非线性映射的局部近似，是对我们整堂课知识点的深度串联。
+  [scenes[14].actions[1].text] 在答题时，请尤其关注 Q2 和 Q5。正如我们在第 14 页讨论过的，雅可比矩阵正是我们在研究复杂非线性运动时，用来捕捉局部‘平坦性’的核心工具。而 Q4 关于行列式为零的思考，则能帮你进一步理解空间坍缩的几何本质。
+  [scenes[14].actions[2].text] 最后的简答题需要你动手‘构造’变换。记住，矩阵相乘的顺序决定了变换发生的先后逻辑，这就像是在给空间下达指令。请发挥你的空间想象力，把这些抽象的字母还原成生动的几何形变。
+  [scenes[14].actions[3].text] 至此，我们的‘矩阵变形之旅’就圆满结束了。从最初对基向量的拆解，到最后能够理解复杂的局部线性近似，你已经掌握了线性代数最核心的直觉。希望今后当你再次看到矩阵时，脑海中浮现的不只是冰冷的数字，而是那张充满张力、可以随意拉伸与旋转的几何网格。下课！
+
+================================================================================
+FILE: A4/manifest.json
+================================================================================
+  [stage.language] 使用简体中文进行授课。数学术语（如正定 Positive Definite、等高线 Contours）应在首次出现时提供中英双语标注，后续以中文为主。保持学术性与直觉引导并重的教学语气。
+  [agents[0].persona] 浩然是一个充满好奇心的视觉学习者，对“最快上升方向（Direction of Steepest Ascent）”等直觉挑战充满热情。他通过不断提问和尝试，探索抽象公式与现实地形之间的联系。
+  [agents[1].persona] 思齐是一名思维缜密的十二年级学生，喜欢挑战“局部线性（Local Linearity）”背后的数学逻辑。他在课程中积极寻找不同二次曲面（Quadratic Surfaces）之间的细微差别，追求严谨的定义。
+  [agents[2].persona] 小助是课堂互动的协调者，专注于操作演示，如在“正定（Positive Definite）扫描仪”环节协助学生进行视觉观察。她语气活泼，能及时总结学生的发现并将其转化为明确的数学结论。
+  [agents[3].persona] 林老师是一位富有启发性的数学向导，擅长通过几何直观（Geometric Intuition）解释复杂的二元函数概念。他相信等高线（Contours）不仅仅是线条，而是理解函数高度变化的“地图”。
+  [scenes[0].title] 课前直觉扫查：你眼中的多维世界
+  [scenes[0].content.questions[0].options[0].label] 一个开口向上的碗状（圆抛物面）
+  [scenes[0].content.questions[0].options[1].label] 一个笔直的倾斜平面
+  [scenes[0].content.questions[0].options[2].label] 一个垂直于底面的圆柱面
+  [scenes[0].content.questions[0].options[3].label] 一个双曲鞍形（马鞍状）
+  [scenes[0].content.questions[0].analysis] 当 x 和 y 的绝对值增大时，z 的值总是正向增加且增长速度加快，形成一个从原点出发向上延伸的碗状结构。这是最典型的二次曲面之一。
+  [scenes[0].content.questions[0].question] 想象一个二元函数图像 (Bivariate Function Image) 的形状。对于方程 z = x的平方 + y的平方，它在三维空间中的几何形状最接近以下哪一种？
+  [scenes[0].content.questions[1].options[0].label] 该区域的地势非常陡峭
+  [scenes[0].content.questions[1].options[1].label] 高度随位置的变化率（梯度）很大
+  [scenes[0].content.questions[1].options[2].label] 该区域是一个平坦的低谷
+  [scenes[0].content.questions[1].options[3].label] 在相同的水平距离内，垂直高度变化显著
+  [scenes[0].content.questions[1].analysis] 等高线的疏密程度反映了坡度的陡缓。等高线越密集，表示单位水平距离内高度变化越大，即地势越陡峭，梯度 (Gradient) 越大。
+  [scenes[0].content.questions[1].question] 在观察地形图上的等高线 (Contours) 时，如果发现某区域的等高线分布非常密集，这通常意味着什么？（多选）
+  [scenes[0].content.questions[2].options[0].label] 与水平面完全平行
+  [scenes[0].content.questions[2].options[1].label] 垂直于水平面
+  [scenes[0].content.questions[2].options[2].label] 向任意一侧发生明显倾斜
+  [scenes[0].content.questions[2].options[3].label] 由该点的斜率决定，不能确定是否水平
+  [scenes[0].content.questions[2].analysis] 在平滑曲面的极值点（最高点或最低点），函数在各个方向上的变化率（偏导数）都为零，因此该点处的切平面必然是水平的。这是寻找多元函数极值的基础直觉。
+  [scenes[0].content.questions[2].question] 当你站在一个平滑的山峰最高点时，如果你试图在脚下放置一个微小的切平面 (Tangent Plane)，这个平面的姿态应该是：
+  [scenes[0].content.questions[3].options[0].label] 从底部中心向任何水平方向移动，海拔高度都会上升
+  [scenes[0].content.questions[3].options[1].label] 该曲面的中心点是一个局部最低点
+  [scenes[0].content.questions[3].options[2].label] 该曲面在任何方向上的弯曲趋势（曲率）都是向下的
+  [scenes[0].content.questions[3].options[3].label] 在这个形状的底部，所有的切线斜率都为零
+  [scenes[0].content.questions[3].analysis] 正定性在几何上对应一个凹向上的形状。底部是唯一最低点，向外移动高度必增加，且底部切线平齐。选项C描述错误，因为曲面是向上弯曲（开口向上）的。
+  [scenes[0].content.questions[3].question] 关于一个开口向上的“碗状”曲面（其性质常被称为正定 Positive Definite），以下哪些直觉描述是正确的？（多选）
+  [scenes[0].actions[0].text] 大家好！我是林老师。欢迎来到我们的多维函数探索之旅。今天，我们将从直觉出发，一起揭开二元函数（Bivariate Functions）的神秘面纱。在正式推导公式之前，我想先通过几道简单的测试，看看大家对这个立体世界的“感觉”如何。
+  [scenes[0].actions[1].text] 这些问题旨在扫描你的先验认知。比如，当你看到方程 $z = x^2 + y^2$ 时，你脑海中浮现的是不是一个优美的圆抛物面？这就是我们常说的“碗状”结构。而当我们观察等高线（Contours）的疏密时，其实就是在阅读地形的陡峭程度，也就是高度随位置的变化率。
+  [scenes[0].actions[2].text] 大家还要特别留意局部性质。想象你站在山峰最高点，尝试放置一个微小的切平面（Tangent Plane）。思齐，你可以思考一下那个平面的姿态；浩然，你可以凭视觉直觉想象一下，一个正定（Positive Definite）的曲面在底部是如何向四周伸展的。
+  [scenes[0].actions[3].text] 小助已经把题目准备好了。大家不要有压力，先凭第一反应来回答。这些关于曲面形状、斜率和稳定性的直觉，将是我们后续课程中构建严谨定义的基石。请开始你的“直觉扫查”吧！
+  [scenes[1].title] 探索路线：从弯曲到线性
+  [scenes[1].content.canvas.elements[0].content] <p style="font-size: 32px;"><strong>探索路线：从弯曲到线性</strong></p>
+  [scenes[1].content.canvas.elements[2].content] <p style="font-size: 24px;"><strong>学习目标 Goals</strong></p>
+  [scenes[1].content.canvas.elements[3].content] <p style="font-size: 18px;">• 识别三类基本曲面 (Surfaces)</p><p style="font-size: 18px;">• 理解局部平面 (Local Planes) 的几何意义</p>
+  [scenes[1].content.canvas.elements[6].content] <p style="font-size: 16px; text-align: center; color: #666666;">知识地图：曲线 → 曲面 → 等高线 → 线性近似</p>
+  [scenes[1].content.canvas.elements[7].content] <p style="font-size: 14px; color: #999999;">注：重点关注正定 (Positive Definite) 的几何直观</p>
+  [scenes[1].actions[1].text] 在刚刚的直觉扫查中，大家已经初步感受到了多维空间的奇妙。现在，让我们把这些碎片化的直觉整理成一条清晰的探索路线：从弯曲到线性。
+  [scenes[1].actions[3].text] 请看这张知识地图。我们将从大家熟悉的曲线（Curves）出发，跨越维度进入曲面（Surfaces）的世界。随后，我们会利用等高线（Contours）作为地图，学会如何在复杂的曲面上寻找方向，并最终引入线性近似（Linear Approximation）的思维方式。
+  [scenes[1].actions[5].text] 为了确保这次探索卓有成效，我们需要明确这节课的几个具体目标。
+  [scenes[1].actions[7].text] 首先，我们要学会识别三类基本的曲面，这是构建多维空间感的基础。更重要的是，我们要理解局部平面（Local Planes）的几何意义——它是我们将复杂的曲面转化为简单线性模型的核心桥梁。
+  [scenes[1].actions[9].text] 大家注意到下面的注释了吗？在学习过程中，请务必重点关注正定（Positive Definite）这一概念的几何直观，它决定了曲面的“开口方向”与稳定性。
+  [scenes[1].actions[10].text] 有了这张宏观地图，我们就不会在多维的森林里迷路了。准备好了吗？让我们正式开始下一环节：维度跃迁。
+  [scenes[2].title] 维度跃迁：曲线到曲面切换台
+  [scenes[2].content.widgetConfig.objects[0].description] 一元抛物线
+  [scenes[2].content.widgetConfig.objects[1].description] 二元旋转抛物面
+  [scenes[2].content.widgetConfig.objects[2].description] 切面/等高参考面
+  [scenes[2].content.widgetConfig.description] 维度跃迁：展示一元函数 y=x² 到二元函数 z=x²+y² 的几何演变
+  [scenes[2].content.widgetConfig.interactions[1].label] 定义域平移
+  [scenes[2].content.teacherActions[0].label] 开始探索
+  [scenes[2].content.teacherActions[0].content] 欢迎来到三维几何实验室。今天我们要见证一元函数向二元函数的“维度跃迁”（Dimension Leap）。
+  [scenes[2].content.teacherActions[1].label] 观察一元函数
+  [scenes[2].content.teacherActions[1].content] 我们先观察这条一元抛物线 $y=x^2$。在三维空间中，它可以被看作是某种曲面的一个特定切片。
+  [scenes[2].content.teacherActions[2].label] 演示切片平移
+  [scenes[2].content.teacherActions[2].content] 通过拖动滑块改变 $y$ 的值，你可以看到抛物线在定义域（Domain）平面上平移，这模拟了在不同位置对空间进行切割。
+  [scenes[2].content.teacherActions[3].label] 定位滑块
+  [scenes[2].content.teacherActions[3].content] 在这里调整 $y$ 的数值，直观感受曲线如何随变量变化。
+  [scenes[2].content.teacherActions[4].label] 切换至二元曲面
+  [scenes[2].content.teacherActions[4].content] 现在，我们将函数升级为 $z = x^2 + y^2$。此时，定义域扩展到了整个 $x-y$ 平面，形成了一个连续的曲面。
+  [scenes[2].content.teacherActions[5].label] 讲解曲面原理
+  [scenes[2].content.teacherActions[5].content] 这个碗状的结构被称为旋转抛物面。在这里，z 轴代表了函数的高度。你可以发现，之前的曲线正是这个曲面在特定 $y$ 值下的截面。
+  [scenes[2].content.teacherActions[6].label] 总结规律
+  [scenes[2].content.teacherActions[6].content] 请试着旋转视角，观察曲面上的等高线（Contours）。你会发现二元函数实际上是由无数个这样的维度切片叠加而成的。
+  [scenes[2].actions[0].text] 欢迎来到三维几何实验室。今天我们要见证一元函数向二元函数的“维度跃迁”（Dimension Leap）。
+  [scenes[2].actions[0].title] 开始探索
+  [scenes[2].actions[1].title] 观察一元函数
+  [scenes[2].actions[2].text] 我们先观察这条一元抛物线 $y=x^2$。在三维空间中，它可以被看作是某种曲面的一个特定切片。
+  [scenes[2].actions[2].title] 观察一元函数
+  [scenes[2].actions[3].title] 演示切片平移
+  [scenes[2].actions[4].text] 通过拖动滑块改变 $y$ 的值，你可以看到抛物线在定义域（Domain）平面上平移，这模拟了在不同位置对空间进行切割。
+  [scenes[2].actions[4].title] 演示切片平移
+  [scenes[2].actions[5].title] 定位滑块
+  [scenes[2].actions[6].text] 在这里调整 $y$ 的数值，直观感受曲线如何随变量变化。
+  [scenes[2].actions[6].title] 定位滑块
+  [scenes[2].actions[7].title] 切换至二元曲面
+  [scenes[2].actions[8].text] 现在，我们将函数升级为 $z = x^2 + y^2$。此时，定义域扩展到了整个 $x-y$ 平面，形成了一个连续的曲面。
+  [scenes[2].actions[8].title] 切换至二元曲面
+  [scenes[2].actions[9].title] 讲解曲面原理
+  [scenes[2].actions[10].text] 这个碗状的结构被称为旋转抛物面。在这里，z 轴代表了函数的高度。你可以发现，之前的曲线正是这个曲面在特定 $y$ 值下的截面。
+  [scenes[2].actions[10].title] 讲解曲面原理
+  [scenes[2].actions[11].text] 请试着旋转视角，观察曲面上的等高线（Contours）。你会发现二元函数实际上是由无数个这样的维度切片叠加而成的。
+  [scenes[2].actions[11].title] 总结规律
+  [scenes[3].title] 等高线地形阅读器
+  [scenes[3].content.widgetConfig.variables[0].label] 等高线间距 (Interval)
+  [scenes[3].content.widgetConfig.variables[1].label] 移动速度 (Speed)
+  [scenes[3].content.widgetConfig.variables[2].label] 山峰高度
+  [scenes[3].content.widgetConfig.description] 模拟等高线地形与垂直高度的关系，理解坡度与等高线密度的对应。
+  [scenes[3].content.teacherActions[0].label] 开始探索
+  [scenes[3].content.teacherActions[0].content] 欢迎来到等高线（Contours）地形模拟器。我们将一起探索如何通过俯视图中的线条来理解地形的高度与坡度（Slope）。
+  [scenes[3].content.teacherActions[1].label] 观察山峰高度
+  [scenes[3].content.teacherActions[1].content] 通过这个滑块，我们可以改变山峰的高度。观察当山峰变高时，等高线的数量是如何增加的。
+  [scenes[3].content.teacherActions[2].label] 模拟陡峭地形
+  [scenes[3].content.teacherActions[2].content] 当山峰较高且等高线间距（Interval）较小时，线条会变得非常密集。在等高线图上，线条越密集，代表坡度越陡峭。
+  [scenes[3].content.teacherActions[3].label] 了解等高线间距
+  [scenes[3].content.teacherActions[3].content] 等高线间距决定了每隔多少米绘制一条线。增大间距会使图面变得简洁，但会丢失一些微小的地形起伏。
+  [scenes[3].content.teacherActions[4].label] 模拟平缓地形
+  [scenes[3].content.teacherActions[4].content] 现在山峰变得平缓，等高线分布也变得稀疏。记住：等高线越稀疏，地势越平坦。
+  [scenes[3].content.teacherActions[5].label] 调整移动速度
+  [scenes[3].content.teacherActions[5].content] 你可以调整移动速度，在模拟器中尝试横穿这些等高线。你会发现，在密集处移动时，高度数值的变化会更加剧烈。
+  [scenes[3].actions[0].text] 欢迎来到等高线（Contours）地形模拟器。我们将一起探索如何通过俯视图中的线条来理解地形的高度与坡度（Slope）。
+  [scenes[3].actions[0].title] 开始探索
+  [scenes[3].actions[1].title] 观察山峰高度
+  [scenes[3].actions[2].text] 通过这个滑块，我们可以改变山峰的高度。观察当山峰变高时，等高线的数量是如何增加的。
+  [scenes[3].actions[2].title] 观察山峰高度
+  [scenes[3].actions[3].title] 模拟陡峭地形
+  [scenes[3].actions[4].text] 当山峰较高且等高线间距（Interval）较小时，线条会变得非常密集。在等高线图上，线条越密集，代表坡度越陡峭。
+  [scenes[3].actions[4].title] 模拟陡峭地形
+  [scenes[3].actions[5].title] 了解等高线间距
+  [scenes[3].actions[6].text] 等高线间距决定了每隔多少米绘制一条线。增大间距会使图面变得简洁，但会丢失一些微小的地形起伏。
+  [scenes[3].actions[6].title] 了解等高线间距
+  [scenes[3].actions[7].title] 模拟平缓地形
+  [scenes[3].actions[8].text] 现在山峰变得平缓，等高线分布也变得稀疏。记住：等高线越稀疏，地势越平坦。
+  [scenes[3].actions[8].title] 模拟平缓地形
+  [scenes[3].actions[9].title] 调整移动速度
+  [scenes[3].actions[10].text] 你可以调整移动速度，在模拟器中尝试横穿这些等高线。你会发现，在密集处移动时，高度数值的变化会更加剧烈。
+  [scenes[3].actions[10].title] 调整移动速度
+  [scenes[4].title] 二次曲面形状库
+  [scenes[4].content.widgetConfig.objects[0].label] 抛物面 (Elliptic Paraboloid)
+  [scenes[4].content.widgetConfig.objects[1].label] 柱面抛物面 (Ridge)
+  [scenes[4].content.widgetConfig.objects[2].label] 双曲抛物面 (Saddle)
+  [scenes[4].content.widgetConfig.description] Interactive gallery of quadratic surfaces showing curvature and normal vectors.
+  [scenes[4].content.widgetConfig.interactions[0].label] 切换形状
+  [scenes[4].content.widgetConfig.interactions[1].label] 探测点位置
+  [scenes[4].content.widgetConfig.interactions[2].label] 放大
+  [scenes[4].content.widgetConfig.interactions[3].label] 缩小
+  [scenes[4].content.teacherActions[0].label] 开始探索
+  [scenes[4].content.teacherActions[0].content] 欢迎来到二次曲面 (Quadratic Surfaces) 的几何实验室。我们将通过三种典型形状，直观地理解二阶导数与函数曲率的关系。
+  [scenes[4].content.teacherActions[1].label] 观察抛物面
+  [scenes[4].content.teacherActions[1].content] 首先观察这个抛物面 (Elliptic Paraboloid)。在中心点附近，无论沿哪个方向观察，曲面都向上弯曲，这对应了 Hessian 矩阵的正定 (Positive Definite) 性质。
+  [scenes[4].content.teacherActions[2].label] 调整探测点
+  [scenes[4].content.teacherActions[2].content] 移动这个滑块来改变探测点的位置。请观察探测点处的法向量如何随曲率变化，这能帮助我们理解梯度的几何意义。
+  [scenes[4].content.teacherActions[3].label] 查看鞍点
+  [scenes[4].content.teacherActions[3].content] 现在切换到双曲抛物面 (Saddle)。在原点处，它在某些方向向上弯曲，另一些方向向下弯曲。这种特殊形态被称为鞍点 (Saddle Point)。
+  [scenes[4].content.teacherActions[4].label] 分析马鞍面
+  [scenes[4].content.teacherActions[4].content] 注意这里的等高线 (Contours) 呈十字相交状。在多变量微积分中，识别这种形状对于寻找非极值驻点至关重要。
+  [scenes[4].content.teacherActions[5].label] 观察山脊面
+  [scenes[4].content.teacherActions[5].content] 最后看柱面抛物面 (Ridge)。它在一个方向上弯曲，而在另一个方向（山脊线）上保持水平，这代表了退化的二阶特征。
+  [scenes[4].actions[0].text] 欢迎来到二次曲面 (Quadratic Surfaces) 的几何实验室。我们将通过三种典型形状，直观地理解二阶导数与函数曲率的关系。
+  [scenes[4].actions[0].title] 开始探索
+  [scenes[4].actions[1].title] 观察抛物面
+  [scenes[4].actions[2].text] 首先观察这个抛物面 (Elliptic Paraboloid)。在中心点附近，无论沿哪个方向观察，曲面都向上弯曲，这对应了 Hessian 矩阵的正定 (Positive Definite) 性质。
+  [scenes[4].actions[2].title] 观察抛物面
+  [scenes[4].actions[3].title] 调整探测点
+  [scenes[4].actions[4].text] 移动这个滑块来改变探测点的位置。请观察探测点处的法向量如何随曲率变化，这能帮助我们理解梯度的几何意义。
+  [scenes[4].actions[4].title] 调整探测点
+  [scenes[4].actions[5].title] 查看鞍点
+  [scenes[4].actions[6].text] 现在切换到双曲抛物面 (Saddle)。在原点处，它在某些方向向上弯曲，另一些方向向下弯曲。这种特殊形态被称为鞍点 (Saddle Point)。
+  [scenes[4].actions[6].title] 查看鞍点
+  [scenes[4].actions[7].title] 分析马鞍面
+  [scenes[4].actions[8].text] 注意这里的等高线 (Contours) 呈十字相交状。在多变量微积分中，识别这种形状对于寻找非极值驻点至关重要。
+  [scenes[4].actions[8].title] 分析马鞍面
+  [scenes[4].actions[9].title] 观察山脊面
+  [scenes[4].actions[10].text] 最后看柱面抛物面 (Ridge)。它在一个方向上弯曲，而在另一个方向（山脊线）上保持水平，这代表了退化的二阶特征。
+  [scenes[4].actions[10].title] 观察山脊面
+  [scenes[5].title] 公式桥梁：从一维导数到局部平面
+  [scenes[5].content.canvas.elements[0].content] <p style="font-size: 32px; color: #1a365d;"><strong>公式桥梁：从一维导数到局部平面</strong></p>
+  [scenes[5].content.canvas.elements[2].content] <p style="font-size: 18px; line-height: 1.5;">• <strong>一元切线公式</strong>的二元线性扩展</p><p style="font-size: 18px; line-height: 1.5;">• <strong>偏导数</strong>定义了主轴方向的局部变化</p><p style="font-size: 18px; line-height: 1.5;">• <strong>梯度方向</strong>：函数上升最快的方向</p>
+  [scenes[5].content.canvas.elements[4].content] <p style="font-size: 14px; text-align: center; color: #718096;">局部平面由偏导数定义的等高线 (Contours) 映射而成</p>
+  [scenes[5].content.canvas.elements[6].content] <p style="font-size: 16px;"><strong>一维切线参考</strong></p>
+  [scenes[5].content.canvas.elements[8].content] <p style="font-size: 16px;"><strong>二维切平面扩展</strong></p>
+  [scenes[5].actions[1].text] 刚才我们通过几何直观观察了各种曲面的形状，比如那个特殊的柱面抛物面。现在，我们要更进一步，把这种图像语言转化为严谨的数学符号。这就是我们要搭建的‘公式桥梁’：从一维导数过渡到局部平面。
+  [scenes[5].actions[3].text] 大家对这个一元切线公式一定不陌生。它告诉我们，在局部，复杂的曲线可以用一条简单的直线来近似，其中的导数 $f'(a)$ 决定了这条直线的坡度。这是我们理解局部线性 (Local Linearity) 的起点。
+  [scenes[5].actions[5].text] 当我们步入二元世界，这个公式就演变成了切平面公式 (Tangent Plane)。请看，它的结构与一元公式高度对称，只是现在我们需要同时考虑 $x$ 和 $y$ 两个方向的变化。
+  [scenes[5].actions[7].text] 这里的偏导数 (Partial Derivatives) $f_x$ 和 $f_y$ 定义了主轴方向的局部变化。它们共同构成了一个非常有力的工具——梯度 (Gradient)。梯度方向就是函数值上升最快的方向，这在优化算法中至关重要。
+  [scenes[5].actions[9].text] 结合这张图看，局部平面实际上是由偏导数定义的等高线 (Contours) 映射而成的。在这个微小的局部，曲面看起来就像一个平整的斜坡。既然我们已经把公式建立起来了，大家思考一下，为什么我们在研究复杂的曲面时，非要先把它简化成一个平面呢？
+  [scenes[6].title] 正定方向扫描仪
+  [scenes[6].content.widgetConfig.variables[0].label] 探测角度
+  [scenes[6].content.widgetConfig.variables[1].label] 扫描速度
+  [scenes[6].content.widgetConfig.variables[2].label] 曲面类型
+  [scenes[6].content.widgetConfig.description] 通过360度全方位二阶变化探测，直观理解函数正定性。
+  [scenes[6].content.teacherActions[0].label] 课程导入
+  [scenes[6].content.teacherActions[0].content] 欢迎来到正定性探测实验室。我们将学习如何通过 360 度探测来判断一个函数的正定性 (Positive Definiteness)。
+  [scenes[6].content.teacherActions[1].label] 正定性演示
+  [scenes[6].content.teacherActions[1].content] 首先看这个典型的‘碗底’。在正定情况下，无论你朝哪个方向走，二阶变化都是向上的，这意味着原点是一个极其稳定的极小值点。
+  [scenes[6].content.teacherActions[2].label] 手动探测角度
+  [scenes[6].content.teacherActions[2].content] 你可以通过拖动探测角度滑块，手动观察不同方向上的曲率变化。注意观察探测线是否始终向上弯曲。
+  [scenes[6].content.teacherActions[3].label] 观察鞍点
+  [scenes[6].content.teacherActions[3].content] 现在切换到马鞍面 (Saddle Point)。你会发现，在某些方向它是向上弯曲的，但在另一些方向（如旋转 90 度后）它会向下弯曲。这种不一致说明它是非正定的。
+  [scenes[6].content.teacherActions[4].label] 调整扫描速度
+  [scenes[6].content.teacherActions[4].content] 通过调整扫描速度，你可以更快地完成 360 度的全方位‘体检’，确保没有漏掉任何一个可能导致不稳定的方向。
+  [scenes[6].content.teacherActions[5].label] 核心总结
+  [scenes[6].content.teacherActions[5].content] 总结一下：正定函数要求所有方向的二阶变化均为正。一旦出现负值或零（半正定 Semi-positive Definite），其稳定性就会发生变化。
+  [scenes[6].actions[0].text] 欢迎来到正定性探测实验室。我们将学习如何通过 360 度探测来判断一个函数的正定性 (Positive Definiteness)。
+  [scenes[6].actions[0].title] 课程导入
+  [scenes[6].actions[1].title] 正定性演示
+  [scenes[6].actions[2].text] 首先看这个典型的‘碗底’。在正定情况下，无论你朝哪个方向走，二阶变化都是向上的，这意味着原点是一个极其稳定的极小值点。
+  [scenes[6].actions[2].title] 正定性演示
+  [scenes[6].actions[3].title] 手动探测角度
+  [scenes[6].actions[4].text] 你可以通过拖动探测角度滑块，手动观察不同方向上的曲率变化。注意观察探测线是否始终向上弯曲。
+  [scenes[6].actions[4].title] 手动探测角度
+  [scenes[6].actions[5].title] 观察鞍点
+  [scenes[6].actions[6].text] 现在切换到马鞍面 (Saddle Point)。你会发现，在某些方向它是向上弯曲的，但在另一些方向（如旋转 90 度后）它会向下弯曲。这种不一致说明它是非正定的。
+  [scenes[6].actions[6].title] 观察鞍点
+  [scenes[6].actions[7].title] 调整扫描速度
+  [scenes[6].actions[8].text] 通过调整扫描速度，你可以更快地完成 360 度的全方位‘体检’，确保没有漏掉任何一个可能导致不稳定的方向。
+  [scenes[6].actions[8].title] 调整扫描速度
+  [scenes[6].actions[9].text] 总结一下：正定函数要求所有方向的二阶变化均为正。一旦出现负值或零（半正定 Semi-positive Definite），其稳定性就会发生变化。
+  [scenes[6].actions[9].title] 核心总结
+  [scenes[7].title] 过程自测：曲面形状与稳定性
+  [scenes[7].content.questions[0].options[0].label] 在所有运动方向上都呈现局部极小值
+  [scenes[7].content.questions[0].options[1].label] 在所有运动方向上都呈现局部极大值
+  [scenes[7].content.questions[0].options[2].label] 在某些方向上是局部极小值，而在另一些方向上是局部极大值
+  [scenes[7].content.questions[0].options[3].label] 该点的所有二阶偏导数均为零
+  [scenes[7].content.questions[0].analysis] 鞍点（Saddle point）的特征在于其曲率在不同方向上符号不同。就像马鞍一样，沿着马背方向是极小值（向上弯曲），而沿着腿部下垂方向是极大值（向下弯曲）。这在数学上对应海森矩阵的特征值有正有负。
+  [scenes[7].content.questions[0].question] 在多元函数的曲面分析中，鞍形（Saddle Shape）点的一个显著特征是什么？
+  [scenes[7].content.questions[1].options[0].label] 原点是该曲面的局部极小值点
+  [scenes[7].content.questions[1].options[1].label] 该函数对应的海森矩阵的所有特征值均为正数
+  [scenes[7].content.questions[1].options[2].label] 等高线（Contours）在原点附近通常呈现闭合的椭圆或圆形
+  [scenes[7].content.questions[1].options[3].label] 该曲面在原点处呈现出类似于山峰的向下开口形状
+  [scenes[7].content.questions[1].analysis] 正定性意味着曲面在所有方向上都向上弯曲。其数学特征是海森矩阵的所有特征值全为正数。在几何上，它形成一个开口向上的碗状结构（Bowl-shaped），因此原点是极小值点。对应的等高线是围绕极值点的闭合曲线。
+  [scenes[7].content.questions[1].question] 关于一个在原点具有正定（Positive Definite）性质的二次型曲面，以下描述正确的有哪些？（选择所有适用项）
+  [scenes[7].content.questions[2].analysis] 稳定平衡点通常对应于局部极小值，其特征是等高线数值由中心向外逐渐增大，这对应于函数的海森矩阵是正定的（所有特征值为正）。如果不稳定平衡点是极大值，等高线数值向外减小，对应矩阵负定；若是鞍点，则数值在不同方向增减不一。因此，正定性是判断系统在平衡点是否稳定的核心数学依据。
+  [scenes[7].content.questions[2].question] 请解释如何通过等高线（Contours）的数值分布来判断一个临界点是属于“稳定平衡”还是“不稳定平衡”，并简述这与正定（Positive Definite）概念的联系。
+  [scenes[7].content.questions[3].options[0].label] 数值逐渐增大
+  [scenes[7].content.questions[3].options[1].label] 数值逐渐减小
+  [scenes[7].content.questions[3].options[2].label] 数值先增大后减小
+  [scenes[7].content.questions[3].options[3].label] 数值保持恒定
+  [scenes[7].content.questions[3].analysis] 负定曲面在原点处取得局部极大值，其形状像一个倒扣的碗。因此，从中心（最高点）向任何方向移动时，函数的高度都会下降，表现为等高线的数值随着距离增加而逐渐减小。
+  [scenes[7].content.questions[3].question] 若一个曲面的形状由负定（Negative Definite）的矩阵描述，那么当观察者从原点沿任意射线向外移动时，等高线（Contours）的数值通常会如何变化？
+  [scenes[7].actions[0].text] 刚才我们详细讨论了正定函数中所有方向二阶变化均为正的情况，这种一致性赋予了系统稳定性。现在，让我们通过这组自测题，来检验一下大家对曲面形状（Surface Shapes）与稳定性（Stability）之间关联的掌握程度。
+  [scenes[7].actions[1].text] 在做第一题关于鞍形（Saddle Shape）的判断时，大家可以想象一下马鞍的几何结构：在某些截面上它像个山谷，而在另一些截面上它又像个山脊。这种“方向依赖性”是识别它的关键。
+  [scenes[7].actions[2].text] 对于第二和第四题，请重点关注正定（Positive Definite）与负定（Negative Definite）的物理意义。正定意味着从原点出发，无论朝哪个方向走，高度都会增加，这就像身处盆地的底部；而负定则恰恰相反。观察等高线（Contours）的数值演变，能帮你直观地读出这种趋势。
+  [scenes[7].actions[3].text] 最后，关于稳定平衡的简答题，请尝试将我们在第7页提到的“正定扫描仪”所见的图像，与等高线图的疏密和数值分布联系起来。大家先独立思考并完成这些题目，稍后我们来分析容易产生误解的地方。
+  [scenes[8].title] 局部放大镜：发现线性
+  [scenes[8].content.widgetConfig.variables[0].label] 放大倍数
+  [scenes[8].content.widgetConfig.variables[1].label] 观察点位置
+  [scenes[8].content.widgetConfig.variables[2].label] 显示切线
+  [scenes[8].content.widgetConfig.description] 展示复杂函数在无限放大下如何趋近于线性切面
+  [scenes[8].content.teacherActions[0].label] 开始探索
+  [scenes[8].content.teacherActions[0].content] 欢迎来到局部线性近似（Local Linear Approximation）的探索实验室。我们将观察复杂的曲线在极小尺度下，如何逐渐趋近于一个平坦的线性切面。
+  [scenes[8].content.teacherActions[1].label] 选择观察点
+  [scenes[8].content.teacherActions[1].content] 首先，我们可以通过这个滑块移动观察点的位置，寻找函数弯曲程度不同的地方。
+  [scenes[8].content.teacherActions[2].label] 观察原始曲线
+  [scenes[8].content.teacherActions[2].content] 在目前的倍率下，函数在原点附近的弯曲非常明显。注意那条切线（Tangent line），它是我们进行线性近似的参考。
+  [scenes[8].content.teacherActions[3].label] 关注放大操作
+  [scenes[8].content.teacherActions[3].content] 现在，请关注随着放大倍数（Zoom Level）的增加，图像形态的变化。
+  [scenes[8].content.teacherActions[4].label] 放大100倍
+  [scenes[8].content.teacherActions[4].content] 当我们放大 100 倍时，你会发现原本剧烈波动的函数在局部已经变得非常平缓，几乎变成了一条直线。
+  [scenes[8].content.teacherActions[5].label] 极限线性化
+  [scenes[8].content.teacherActions[5].content] 在 1000 倍的极限视角下，函数图像与其切线几乎完全重合。这就是微分学的核心：在足够小的范围内，任何平滑曲线都可以被视为线性的。
+  [scenes[8].actions[0].text] 欢迎来到局部线性近似（Local Linear Approximation）的探索实验室。我们将观察复杂的曲线在极小尺度下，如何逐渐趋近于一个平坦的线性切面。
+  [scenes[8].actions[0].title] 开始探索
+  [scenes[8].actions[1].title] 选择观察点
+  [scenes[8].actions[2].text] 首先，我们可以通过这个滑块移动观察点的位置，寻找函数弯曲程度不同的地方。
+  [scenes[8].actions[2].title] 选择观察点
+  [scenes[8].actions[3].title] 观察原始曲线
+  [scenes[8].actions[4].text] 在目前的倍率下，函数在原点附近的弯曲非常明显。注意那条切线（Tangent line），它是我们进行线性近似的参考。
+  [scenes[8].actions[4].title] 观察原始曲线
+  [scenes[8].actions[5].title] 关注放大操作
+  [scenes[8].actions[6].text] 现在，请关注随着放大倍数（Zoom Level）的增加，图像形态的变化。
+  [scenes[8].actions[6].title] 关注放大操作
+  [scenes[8].actions[7].title] 放大100倍
+  [scenes[8].actions[8].text] 当我们放大 100 倍时，你会发现原本剧烈波动的函数在局部已经变得非常平缓，几乎变成了一条直线。
+  [scenes[8].actions[8].title] 放大100倍
+  [scenes[8].actions[9].title] 极限线性化
+  [scenes[8].actions[10].text] 在 1000 倍的极限视角下，函数图像与其切线几乎完全重合。这就是微分学的核心：在足够小的范围内，任何平滑曲线都可以被视为线性的。
+  [scenes[8].actions[10].title] 极限线性化
+  [scenes[9].title] 多维关系全景图
+  [scenes[9].content.widgetConfig.edges[0].label] 扩展到高维
+  [scenes[9].content.widgetConfig.edges[1].label] 斜率到向量
+  [scenes[9].content.widgetConfig.edges[2].label] 指向最陡方向
+  [scenes[9].content.widgetConfig.edges[3].label] 等高线投影
+  [scenes[9].content.widgetConfig.edges[4].label] 一阶近似
+  [scenes[9].content.widgetConfig.edges[5].label] 曲率特征
+  [scenes[9].content.widgetConfig.nodes[0].label] 曲线 (Curve)
+  [scenes[9].content.widgetConfig.nodes[1].label] 曲面 (Surface)
+  [scenes[9].content.widgetConfig.nodes[2].label] 导数与梯度
+  [scenes[9].content.widgetConfig.nodes[3].label] 等高线 (Contours)
+  [scenes[9].content.widgetConfig.nodes[4].label] 局部线性
+  [scenes[9].content.widgetConfig.nodes[5].label] 二阶导与正定
+  [scenes[9].content.teacherActions[0].label] 开始探索
+  [scenes[9].content.teacherActions[0].content] 欢迎！今天我们将一起梳理从一元微积分到多元微积分的核心逻辑脉络，探索高维数学的美感。
+  [scenes[9].content.teacherActions[1].label] 从曲线到曲面
+  [scenes[9].content.teacherActions[1].content] 一切从一元函数的曲线 (Curve) 开始。当我们增加自变量的维度，曲线就自然地扩展成了复杂的曲面 (Surface)。
+  [scenes[9].content.teacherActions[2].label] 导数与梯度
+  [scenes[9].content.teacherActions[2].content] 在理解变化率时，我们要记住导数其实是梯度 (Gradient) 的特例。在曲面上，梯度向量始终指向数值上升最快的方向。
+  [scenes[9].content.teacherActions[3].label] 等高线投影
+  [scenes[9].content.teacherActions[3].content] 等高线 (Contours) 是曲面在特定高度的降维投影。有趣的是，梯度向量在几何上总是垂直于该点等高线的切线方向。
+  [scenes[9].content.teacherActions[4].label] 局部线性化
+  [scenes[9].content.teacherActions[4].content] 无论曲面多么复杂，局部线性 (Local Linearity) 告诉我们：在微观视角下，光滑曲面在某点附近都可以近似为一个切平面。
+  [scenes[9].content.teacherActions[5].label] 正定性分析
+  [scenes[9].content.teacherActions[5].content] 最后，正定 (Positive Definite) 是二阶导数的扩展。如果 Hessian 矩阵是正定的，说明曲面在该点附近像碗一样凹陷，存在局部极小值。
+  [scenes[9].actions[0].text] 欢迎！今天我们将一起梳理从一元微积分到多元微积分的核心逻辑脉络，探索高维数学的美感。
+  [scenes[9].actions[0].title] 开始探索
+  [scenes[9].actions[1].title] 从曲线到曲面
+  [scenes[9].actions[2].text] 一切从一元函数的曲线 (Curve) 开始。当我们增加自变量的维度，曲线就自然地扩展成了复杂的曲面 (Surface)。
+  [scenes[9].actions[2].title] 从曲线到曲面
+  [scenes[9].actions[3].title] 导数与梯度
+  [scenes[9].actions[4].text] 在理解变化率时，我们要记住导数其实是梯度 (Gradient) 的特例。在曲面上，梯度向量始终指向数值上升最快的方向。
+  [scenes[9].actions[4].title] 导数与梯度
+  [scenes[9].actions[5].title] 等高线投影
+  [scenes[9].actions[6].text] 等高线 (Contours) 是曲面在特定高度的降维投影。有趣的是，梯度向量在几何上总是垂直于该点等高线的切线方向。
+  [scenes[9].actions[6].title] 等高线投影
+  [scenes[9].actions[7].title] 局部线性化
+  [scenes[9].actions[8].text] 无论曲面多么复杂，局部线性 (Local Linearity) 告诉我们：在微观视角下，光滑曲面在某点附近都可以近似为一个切平面。
+  [scenes[9].actions[8].title] 局部线性化
+  [scenes[9].actions[9].title] 正定性分析
+  [scenes[9].actions[10].text] 最后，正定 (Positive Definite) 是二阶导数的扩展。如果 Hessian 矩阵是正定的，说明曲面在该点附近像碗一样凹陷，存在局部极小值。
+  [scenes[9].actions[10].title] 正定性分析
+  [scenes[10].title] 最快上升方向探针
+  [scenes[10].content.widgetConfig.variables[0].label] 探针旋转角度
+  [scenes[10].content.widgetConfig.variables[1].label] 显示垂直标记
+  [scenes[10].content.widgetConfig.description] 探究梯度（Gradient）与等高线（Contours）的垂直关系及方向导数（Directional Derivative）
+  [scenes[10].content.teacherActions[0].label] 开始探索
+  [scenes[10].content.teacherActions[0].content] 欢迎探索梯度（Gradient）与等高线（Contours）的关系。在这个模拟中，我们将验证为什么梯度方向是函数变化最快的方向。
+  [scenes[10].content.teacherActions[1].label] 调整探针角度
+  [scenes[10].content.teacherActions[1].content] 调整探针旋转角度（Angle），我们可以观察在不同方向上函数值的变化率，即方向导数（Directional Derivative）。
+  [scenes[10].content.teacherActions[2].label] 观察沿等高线方向
+  [scenes[10].content.teacherActions[2].content] 当角度设为 0° 时，探针沿等高线切线方向移动。此时函数值没有变化，方向导数为零。
+  [scenes[10].content.teacherActions[3].label] 观察最速上升
+  [scenes[10].content.teacherActions[3].content] 将角度调至 90°，这是最速上升方向。你会发现探针现在正对着坡度最陡的地方，这正是梯度的方向。
+  [scenes[10].content.teacherActions[4].label] 验证垂直关系
+  [scenes[10].content.teacherActions[4].content] 开启垂直标记可以更直观地看到：在任何一点，梯度方向总是与等高线保持垂直。
+  [scenes[10].content.teacherActions[5].label] 总结规律
+  [scenes[10].content.teacherActions[5].content] 请注意等高线的疏密：等高线越密集的地方，梯度的模长就越大，代表地形越陡峭。这就是梯度向量的几何意义。
+  [scenes[10].actions[0].text] 欢迎探索梯度（Gradient）与等高线（Contours）的关系。在这个模拟中，我们将验证为什么梯度方向是函数变化最快的方向。
+  [scenes[10].actions[0].title] 开始探索
+  [scenes[10].actions[1].title] 调整探针角度
+  [scenes[10].actions[2].text] 调整探针旋转角度（Angle），我们可以观察在不同方向上函数值的变化率，即方向导数（Directional Derivative）。
+  [scenes[10].actions[2].title] 调整探针角度
+  [scenes[10].actions[3].title] 观察沿等高线方向
+  [scenes[10].actions[4].text] 当角度设为 0° 时，探针沿等高线切线方向移动。此时函数值没有变化，方向导数为零。
+  [scenes[10].actions[4].title] 观察沿等高线方向
+  [scenes[10].actions[5].title] 观察最速上升
+  [scenes[10].actions[6].text] 将角度调至 90°，这是最速上升方向。你会发现探针现在正对着坡度最陡的地方，这正是梯度的方向。
+  [scenes[10].actions[6].title] 观察最速上升
+  [scenes[10].actions[7].title] 验证垂直关系
+  [scenes[10].actions[8].text] 开启垂直标记可以更直观地看到：在任何一点，梯度方向总是与等高线保持垂直。
+  [scenes[10].actions[8].title] 验证垂直关系
+  [scenes[10].actions[9].text] 请注意等高线的疏密：等高线越密集的地方，梯度的模长就越大，代表地形越陡峭。这就是梯度向量的几何意义。
+  [scenes[10].actions[9].title] 总结规律
+  [scenes[11].title] 复盘：从直觉到严谨定义
+  [scenes[11].content.canvas.elements[0].content] <p style="font-size: 32px; color: #1e293b;"><strong>复盘：从直觉到严谨定义</strong></p>
+  [scenes[11].content.canvas.elements[5].content] <p style="font-size: 18px; text-align: center; color: #334155;">局部线性 (Local Linearity)</p>
+  [scenes[11].content.canvas.elements[7].content] <p style="font-size: 18px; text-align: center; color: #166534;">正定性 (Positive Definite)</p>
+  [scenes[11].content.canvas.elements[9].content] <p style="font-size: 18px; text-align: center; color: #9a3412;">梯度下降 (Gradient Descent)</p>
+  [scenes[11].content.canvas.elements[10].content] <p style="font-size: 16px; text-align: center; color: #9a3412;">垂直于等高线 (Contours)</p>
+  [scenes[11].content.canvas.elements[12].content] <p style="font-size: 14px; text-align: center; color: #94a3b8;">核心知识点复盘：局部平面近似、Hessian 特征值与梯度几何方向</p>
+  [scenes[11].actions[1].text] 刚才我们通过直觉观察了等高线的疏密与梯度的关系。现在，让我们把这些感性认识上升到严谨的数学定义，完成从直觉到理论的闭环。
+  [scenes[11].actions[4].text] 首先是局部线性（Local Linearity）。我们在第九页放大曲面时看到的那个微小的“平面”，其数学本质就是二元泰勒展开的前两项。通过这个公式，我们可以将复杂的非线性曲面在局部简化为线性模型。
+  [scenes[11].actions[7].text] 其次是正定性（Positive Definite）。在之前的“扫描仪”环节中，我们观察到 Hessian 矩阵的特征值决定了开口方向。严谨地说，当 Hessian 矩阵满足正定条件，即所有特征值大于零时，该点就是一个局部极小值点。
+  [scenes[11].actions[10].text] 最后，梯度下降（Gradient Descent）的几何基础在于梯度向量永远垂直于等高线（Contours）。正是这个性质，保证了我们沿着梯度反方向走，一定是在局部下降最快的。
+  [scenes[11].actions[12].text] 好了，掌握了局部近似、Hessian 矩阵和梯度方向这三个核心点，大家就已经完成了从地形阅读者到数学专家的蜕变。接下来，我们要进入实战环节，看看大家能否应对接下来的挑战赛！
+  [scenes[12].title] 曲面识别挑战赛
+  [scenes[12].content.teacherActions[0].label] 开始教学
+  [scenes[12].content.teacherActions[0].content] 欢迎来到曲面识别挑战！在这个练习中，我们将通过局部的等高线 (Contours) 和法向量信息，推断隐藏曲面的整体几何特征。
+  [scenes[12].content.teacherActions[1].label] 观察局部线索
+  [scenes[12].content.teacherActions[1].content] 仔细观察这里的等高线形状。如果是闭合椭圆，可能暗示曲面在该点附近是正定 (Positive Definite) 的局部极值点。
+  [scenes[12].content.teacherActions[2].label] 分析法向量
+  [scenes[12].content.teacherActions[2].content] 注意法向量随位置的变化。法向量的转向速度和方向，反映了曲面的曲率以及切面的倾斜程度。
+  [scenes[12].content.teacherActions[3].label] 进行推断
+  [scenes[12].content.teacherActions[3].content] 综合所有证据后，请点击下方对应的曲面类型。你的推理越快，获得的速度奖励 (Speed Bonus) 就越高。
+  [scenes[12].content.teacherActions[4].label] 查看得分
+  [scenes[12].content.teacherActions[4].content] 每次正确回答将获得 10 分。保持连胜以挑战更高难度！
+  [scenes[12].actions[0].text] 欢迎来到曲面识别挑战！在这个练习中，我们将通过局部的等高线 (Contours) 和法向量信息，推断隐藏曲面的整体几何特征。
+  [scenes[12].actions[0].title] 开始教学
+  [scenes[12].actions[1].title] 观察局部线索
+  [scenes[12].actions[2].text] 仔细观察这里的等高线形状。如果是闭合椭圆，可能暗示曲面在该点附近是正定 (Positive Definite) 的局部极值点。
+  [scenes[12].actions[2].title] 观察局部线索
+  [scenes[12].actions[3].title] 分析法向量
+  [scenes[12].actions[4].text] 注意法向量随位置的变化。法向量的转向速度和方向，反映了曲面的曲率以及切面的倾斜程度。
+  [scenes[12].actions[4].title] 分析法向量
+  [scenes[12].actions[5].title] 进行推断
+  [scenes[12].actions[6].text] 综合所有证据后，请点击下方对应的曲面类型。你的推理越快，获得的速度奖励 (Speed Bonus) 就越高。
+  [scenes[12].actions[6].title] 进行推断
+  [scenes[12].actions[7].title] 查看得分
+  [scenes[12].actions[8].text] 每次正确回答将获得 10 分。保持连胜以挑战更高难度！
+  [scenes[12].actions[8].title] 查看得分
+  [scenes[13].title] 局部模型匹配拼图
+  [scenes[13].content.teacherActions[0].label] 开始教学
+  [scenes[13].content.teacherActions[0].content] 欢迎来到数学特征匹配挑战。我们将通过观察局部图像片段，来学习如何识别函数在不同点位的数学性质。
+  [scenes[13].content.teacherActions[1].label] 观察匹配区域
+  [scenes[13].content.teacherActions[1].content] 请观察这些图像片段。你需要根据它们的几何形状，判断它们属于哪种数学描述。
+  [scenes[13].content.teacherActions[2].label] 区分近似类型
+  [scenes[13].content.teacherActions[2].content] 在观察时，请注意区分线性近似 (Linear Approximation) 和二次近似 (Quadratic Approximation)。线性片段看起来像平坦的斜面，而二次近似则会表现出明显的曲率。
+  [scenes[13].content.teacherActions[3].label] 识别正定特征
+  [scenes[13].content.teacherActions[3].content] 寻找那些呈现‘碗状’且开口向上的图像，它们通常对应着正定 (Positive Definite) 的海森矩阵特征。
+  [scenes[13].content.teacherActions[4].label] 查看积分规则
+  [scenes[13].content.teacherActions[4].content] 系统会根据你的准确率和匹配速度进行评分。现在，尝试完成所有的拖拽匹配吧！
+  [scenes[13].actions[0].text] 欢迎来到数学特征匹配挑战。我们将通过观察局部图像片段，来学习如何识别函数在不同点位的数学性质。
+  [scenes[13].actions[0].title] 开始教学
+  [scenes[13].actions[1].title] 观察匹配区域
+  [scenes[13].actions[2].text] 请观察这些图像片段。你需要根据它们的几何形状，判断它们属于哪种数学描述。
+  [scenes[13].actions[2].title] 观察匹配区域
+  [scenes[13].actions[3].text] 在观察时，请注意区分线性近似 (Linear Approximation) 和二次近似 (Quadratic Approximation)。线性片段看起来像平坦的斜面，而二次近似则会表现出明显的曲率。
+  [scenes[13].actions[3].title] 区分近似类型
+  [scenes[13].actions[4].title] 识别正定特征
+  [scenes[13].actions[5].text] 寻找那些呈现‘碗状’且开口向上的图像，它们通常对应着正定 (Positive Definite) 的海森矩阵特征。
+  [scenes[13].actions[5].title] 识别正定特征
+  [scenes[13].actions[6].title] 查看积分规则
+  [scenes[13].actions[7].text] 系统会根据你的准确率和匹配速度进行评分。现在，尝试完成所有的拖拽匹配吧！
+  [scenes[13].actions[7].title] 查看积分规则
+  [scenes[14].title] 终极挑战：地形专家认证
+  [scenes[14].content.questions[0].options[0].label] 一个山峰（局部极大值）
+  [scenes[14].content.questions[0].options[1].label] 一个盆地或谷底（局部极小值）
+  [scenes[14].content.questions[0].options[2].label] 一个马鞍形区域（鞍点）
+  [scenes[14].content.questions[0].options[3].label] 一个平坦的平原
+  [scenes[14].content.questions[0].analysis] 当黑塞矩阵正定时，函数在该点附近的二阶导数在所有方向上都大于零。这意味着曲面在该点向所有方向都向上弯曲，因此该点是一个局部极小值点，对应地形中的盆地或谷底。如果黑塞矩阵是负定的，则是山峰；如果不确定（有正有负），则是鞍点。
+  [scenes[14].content.questions[0].question] 在地形分析中，如果某一点的黑塞矩阵（Hessian Matrix）是正定（Positive Definite）的，那么该点的地形特征最可能是什么？
+  [scenes[14].content.questions[1].options[0].label] 指向海拔高度下降最快的方向
+  [scenes[14].content.questions[1].options[1].label] 沿等高线（Contours）的切线方向
+  [scenes[14].content.questions[1].options[2].label] 指向海拔高度上升最快的方向
+  [scenes[14].content.questions[1].options[3].label] 指向与水平面垂直的上方
+  [scenes[14].content.questions[1].analysis] 梯度向量在数学和地理信息系统中定义为函数增长最快的方向。在地形图上，它总是垂直于等高线，并指向坡度最陡的上升方向。
+  [scenes[14].content.questions[1].question] 地形图上的梯度（Gradient）向量方向具有什么物理意义？
+  [scenes[14].content.questions[2].options[0].label] 其对应的矩阵的所有特征值（Eigenvalues）都大于零
+  [scenes[14].content.questions[2].options[1].label] 该曲面的等高线（Contours）在原点附近通常呈椭圆形
+  [scenes[14].content.questions[2].options[2].label] 在原点 (0,0) 处，该地形达到了海拔最高点
+  [scenes[14].content.questions[2].options[3].label] 该曲面的形状类似于一个开口向上的碗
+  [scenes[14].content.questions[2].analysis] 正定性的特征包括：1. 特征值全部为正；2. 二次型的图像是开口向上的，因此原点是最低点（谷底）而非最高点；3. 其水平截面（等高线）在正则情况下表现为椭圆。因此 A、B、D 正确。
+  [scenes[14].content.questions[2].question] 关于正定（Positive Definite）二次型曲面 f(x, y) = ax^2 + bxy + cy^2，以下哪些表述是正确的？（多选）
+  [scenes[14].content.questions[3].options[0].label] 在该点的梯度（Gradient）向量为零向量
+  [scenes[14].content.questions[3].options[1].label] 一阶线性近似无法区分该点与局部极值点
+  [scenes[14].content.questions[3].options[2].label] 在该点附近，地形沿着某些方向上升，沿着另一些方向下降
+  [scenes[14].content.questions[3].options[3].label] 该点的黑塞矩阵一定是正定的
+  [scenes[14].content.questions[3].analysis] 在鞍点处，一阶导数（梯度）为零，这与局部极值点一致，所以线性近似（切平面）是水平的，无法区分它们（A、B正确）。鞍点的特征是在不同方向上弯曲方向相反（C正确）。其黑塞矩阵具有正负混合的特征值，因此不是正定的（D错误）。
+  [scenes[14].content.questions[3].question] 当你在野外考察时发现一处马鞍点（Saddle Point），关于该位置的线性近似（Linear Approximation）与地形性质，下列描述正确的是？（多选）
+  [scenes[14].content.questions[4].analysis] 线性近似利用当前点的梯度构造一个切平面来估算附近点的海拔。作用：它能提供瞬时的坡度和方向预测，便于计算下一步的攀升努力。局限性：地形通常是高度非线性的，包含凹凸起伏。梯度只代表局部最陡方向。由于忽视了二阶导数（曲率），预测范围越远误差越大。一公里外的地形可能有巨大的弯曲（如翻过山脊或进入深谷），而线性近似只能预测出一条永无止境的直线坡面。
+  [scenes[14].content.questions[4].question] 请解释线性近似（Linear Approximation）在地形预测中的作用及其局限性。如果一个探险者仅依赖当前位置的梯度来预测一公里外的地形，可能会遇到什么问题？
+  [scenes[14].content.questions[5].analysis] 一阶导数为零仅能确定该点是驻点（平稳点），无法区分山峰、谷底或鞍点。考察正定性（二阶性质）可以确定曲面的弯曲方向：若矩阵正定，则是谷底。如果黑塞矩阵的行列式为负，意味着特征值符号相反（一正一负），地形在一个方向向上弯曲而在另一个方向向下弯曲，这在地形上表现为鞍点（Saddle Point），即两个山头之间的低海拔过道，或者两个深谷之间的高处连接点。
+  [scenes[14].content.questions[5].question] 在判定一个复杂地形函数 f(x, y) 的驻点性质时，我们已经通过一阶导数找到了驻点。请说明为什么接下来必须考察正定性（Positive Definiteness），以及如果黑塞矩阵的行列式为负，对地形形状意味着什么？
+  [scenes[14].actions[0].text] 完成了刚才的模型匹配，大家对地形的局部特征已经有了很直观的认识。现在，欢迎来到最后一站：“地形专家认证”。这组挑战将考验你是否能将直觉转化为严谨的数学判定。
+  [scenes[14].actions[1].text] 在答题时，请核心关注我们反复讨论的黑塞矩阵（Hessian Matrix）与正定性（Positive Definiteness）。正如我们在第7页看到的，正定性决定了能量最低点的稳定性。同时，别忘了梯度（Gradient）向量的物理意义——它总是指向海拔上升最快的方向。
+  [scenes[14].actions[2].text] 最后两道简答题需要你深入思考线性近似（Linear Approximation）的局限性。请记住，虽然局部看起来是平坦的，但地形的弯曲——也就是二阶导数的信息，决定了我们预测的远期可靠性。这正是从“爬山者”转变为“地形建模师”的关键所在。
+  [scenes[14].actions[3].text] 完成这些题目后，我们今天的多维地形探索旅程就正式告一段落了。从最初的等高线（Contours）直觉，到现在的严谨二阶判定，你们已经掌握了刻画复杂世界高度变化的有力工具。期待看到你们的精彩解答！

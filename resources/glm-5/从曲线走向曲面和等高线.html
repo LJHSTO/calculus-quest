@@ -1,0 +1,1271 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>从曲线走向曲面和等高线</title>
+    <style>
+        :root {
+            --bg: #0c1220;
+            --bg-card: #151d2e;
+            --bg-elevated: #1a2540;
+            --fg: #e4edff;
+            --fg-muted: #8a9bb8;
+            --accent: #00d4a4;
+            --accent-warm: #f07028;
+            --border: #2a3a58;
+            --success: #22c55e;
+            --warning: #eab308;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--fg);
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+        
+        .objective {
+            font-size: 1.1rem;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        
+        .intuition-section {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-elevated) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .intuition-section h2 {
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .intuition-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .intuition-item {
+            background: rgba(0, 212, 164, 0.05);
+            border: 1px solid rgba(0, 212, 164, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        
+        .intuition-item:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent);
+        }
+        
+        .intuition-item strong {
+            color: var(--accent);
+            display: block;
+            margin-bottom: 6px;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 24px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .interaction-area {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        
+        .interaction-header {
+            background: var(--bg-elevated);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .interaction-header h3 {
+            font-size: 1rem;
+            color: var(--fg);
+        }
+        
+        .hint-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        
+        .hint-btn:hover {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        
+        .canvas-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1px;
+            background: var(--border);
+        }
+        
+        @media (max-width: 768px) {
+            .canvas-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .canvas-panel {
+            background: var(--bg);
+            position: relative;
+        }
+        
+        .canvas-panel canvas {
+            display: block;
+            width: 100%;
+            height: 320px;
+        }
+        
+        .panel-label {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--fg);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .controls-panel {
+            background: var(--bg-elevated);
+            padding: 20px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        .control-label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--fg-muted);
+            margin-bottom: 8px;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .slider-container input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--border);
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .slider-container input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        
+        .slider-container input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        
+        .slider-value {
+            min-width: 50px;
+            text-align: right;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.875rem;
+            color: var(--accent);
+        }
+        
+        .feedback-panel {
+            background: linear-gradient(135deg, rgba(0, 212, 164, 0.1) 0%, rgba(240, 112, 40, 0.05) 100%);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+        }
+        
+        .feedback-title {
+            font-size: 0.875rem;
+            color: var(--accent);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .feedback-item {
+            text-align: center;
+        }
+        
+        .feedback-item .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'Monaco', 'Consolas', monospace;
+        }
+        
+        .feedback-item .label {
+            font-size: 0.75rem;
+            color: var(--fg-muted);
+        }
+        
+        .feedback-item.x .value { color: #ff6b6b; }
+        .feedback-item.y .value { color: #4ecdc4; }
+        .feedback-item.z .value { color: var(--accent-warm); }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .concept-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        
+        .concept-card h3 {
+            font-size: 1rem;
+            color: var(--fg);
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .concept-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        
+        .concept-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .concept-item:hover {
+            background: rgba(0, 212, 164, 0.08);
+        }
+        
+        .concept-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--bg);
+            flex-shrink: 0;
+        }
+        
+        .concept-text {
+            font-size: 0.875rem;
+            color: var(--fg-muted);
+            line-height: 1.5;
+        }
+        
+        .confidence-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        
+        .confidence-section h3 {
+            font-size: 1rem;
+            color: var(--fg);
+            margin-bottom: 16px;
+        }
+        
+        .confidence-scale {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .confidence-btn {
+            flex: 1;
+            padding: 12px 8px;
+            border: 2px solid var(--border);
+            background: var(--bg-elevated);
+            color: var(--fg-muted);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.25rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        
+        .confidence-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .confidence-btn.selected {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg);
+        }
+        
+        .confidence-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--fg-muted);
+        }
+        
+        .reflection-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+        }
+        
+        .reflection-section h3 {
+            font-size: 1rem;
+            color: var(--fg);
+            margin-bottom: 12px;
+        }
+        
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .reflection-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .reflection-option:hover {
+            border-color: var(--accent);
+            background: rgba(0, 212, 164, 0.05);
+        }
+        
+        .reflection-option.selected {
+            border-color: var(--accent);
+            background: rgba(0, 212, 164, 0.1);
+        }
+        
+        .reflection-option input {
+            display: none;
+        }
+        
+        .reflection-radio {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .reflection-option.selected .reflection-radio {
+            border-color: var(--accent);
+        }
+        
+        .reflection-option.selected .reflection-radio::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+        }
+        
+        .reflection-text {
+            font-size: 0.875rem;
+            color: var(--fg-muted);
+        }
+        
+        .reflection-option.selected .reflection-text {
+            color: var(--fg);
+        }
+        
+        .hint-popup {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-elevated);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 16px 24px;
+            max-width: 400px;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .hint-popup.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .hint-popup p {
+            font-size: 0.875rem;
+            color: var(--fg);
+            line-height: 1.6;
+        }
+        
+        .gradient-indicator {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(240, 112, 40, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(240, 112, 40, 0.3);
+        }
+        
+        .gradient-indicator .label {
+            font-size: 0.75rem;
+            color: var(--fg-muted);
+            margin-bottom: 6px;
+        }
+        
+        .gradient-indicator .arrow {
+            font-size: 1.5rem;
+            text-align: center;
+            color: var(--accent-warm);
+        }
+        
+        .completion-badge {
+            display: none;
+            background: var(--success);
+            color: var(--bg);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 12px;
+        }
+        
+        .completion-badge.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .function-display {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: var(--accent);
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>从曲线走向曲面和等高线</h1>
+            <p class="objective">学习目标：掌握二元函数图像特征，理解等高线与高度变化的对应关系</p>
+        </header>
+        
+        <section class="intuition-section">
+            <h2>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4M12 8h.01"/>
+                </svg>
+                直觉解释
+            </h2>
+            <div class="intuition-grid">
+                <div class="intuition-item">
+                    <strong>一元函数画成曲线</strong>
+                    <span>y = f(x) 只有一个自变量，在平面上画出一条曲线，每个 x 对应唯一的 y 值。</span>
+                </div>
+                <div class="intuition-item">
+                    <strong>二元函数画成曲面</strong>
+                    <span>z = f(x, y) 有两个自变量，在三维空间中形成一个曲面，每对 (x, y) 对应唯一的高度 z。</span>
+                </div>
+                <div class="intuition-item">
+                    <strong>等高线标记相同高度</strong>
+                    <span>把曲面上高度相同的点连成线，投影到 xy 平面，就得到等高线图，密集处坡度陡峭。</span>
+                </div>
+            </div>
+        </section>
+        
+        <div class="main-content">
+            <div class="interaction-area">
+                <div class="interaction-header">
+                    <h3>核心互动：探索曲面与等高线</h3>
+                    <button class="hint-btn" id="hintBtn">显示提示</button>
+                </div>
+                
+                <div class="function-display">
+                    z = sin(x) × cos(y) + 0.5sin(0.5x)cos(0.5y)
+                </div>
+                
+                <div class="canvas-container">
+                    <div class="canvas-panel">
+                        <span class="panel-label">3D 曲面视图</span>
+                        <canvas id="surfaceCanvas"></canvas>
+                    </div>
+                    <div class="canvas-panel">
+                        <span class="panel-label">等高线视图</span>
+                        <canvas id="contourCanvas"></canvas>
+                    </div>
+                </div>
+                
+                <div class="controls-panel">
+                    <div class="control-group">
+                        <label class="control-label">X 坐标位置</label>
+                        <div class="slider-container">
+                            <input type="range" id="xSlider" min="-3" max="3" step="0.05" value="0">
+                            <span class="slider-value" id="xValue">0.00</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Y 坐标位置</label>
+                        <div class="slider-container">
+                            <input type="range" id="ySlider" min="-3" max="3" step="0.05" value="0">
+                            <span class="slider-value" id="yValue">0.00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="feedback-panel">
+                        <div class="feedback-title">即时反馈：当前点信息</div>
+                        <div class="feedback-grid">
+                            <div class="feedback-item x">
+                                <div class="value" id="feedbackX">0.00</div>
+                                <div class="label">X 坐标</div>
+                            </div>
+                            <div class="feedback-item y">
+                                <div class="value" id="feedbackY">0.00</div>
+                                <div class="label">Y 坐标</div>
+                            </div>
+                            <div class="feedback-item z">
+                                <div class="value" id="feedbackZ">0.00</div>
+                                <div class="label">高度 Z</div>
+                            </div>
+                        </div>
+                        <div class="gradient-indicator">
+                            <div class="label">上升最快方向（梯度方向示意）</div>
+                            <div class="arrow" id="gradientArrow">—</div>
+                        </div>
+                    </div>
+                    
+                    <div class="completion-badge" id="completionBadge">
+                        任务完成！你已探索了曲面与等高线的对应关系
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="concept-card">
+                    <h3>概念卡片</h3>
+                    <div class="concept-item">
+                        <div class="concept-icon">1</div>
+                        <div class="concept-text">曲面上每一点的高度 z 由 (x, y) 唯一确定</div>
+                    </div>
+                    <div class="concept-item">
+                        <div class="concept-icon">2</div>
+                        <div class="concept-text">等高线越密集，说明该区域坡度越陡峭</div>
+                    </div>
+                    <div class="concept-item">
+                        <div class="concept-icon">3</div>
+                        <div class="concept-text">垂直于等高线的方向是高度变化最快的方向</div>
+                    </div>
+                </div>
+                
+                <div class="confidence-section">
+                    <h3>信心评分</h3>
+                    <div class="confidence-scale" id="confidenceScale">
+                        <button class="confidence-btn" data-value="1">1</button>
+                        <button class="confidence-btn" data-value="2">2</button>
+                        <button class="confidence-btn" data-value="3">3</button>
+                        <button class="confidence-btn" data-value="4">4</button>
+                        <button class="confidence-btn" data-value="5">5</button>
+                    </div>
+                    <div class="confidence-label">
+                        <span>不确定</span>
+                        <span>非常确定</span>
+                    </div>
+                </div>
+                
+                <div class="reflection-section">
+                    <h3>简短反思</h3>
+                    <div class="reflection-options" id="reflectionOptions">
+                        <label class="reflection-option">
+                            <input type="radio" name="reflection" value="understood">
+                            <span class="reflection-radio"></span>
+                            <span class="reflection-text">我能理解等高线与曲面高度的对应</span>
+                        </label>
+                        <label class="reflection-option">
+                            <input type="radio" name="reflection" value="partial">
+                            <span class="reflection-radio"></span>
+                            <span class="reflection-text">部分理解，需要更多练习</span>
+                        </label>
+                        <label class="reflection-option">
+                            <input type="radio" name="reflection" value="confused">
+                            <span class="reflection-radio"></span>
+                            <span class="reflection-text">还需要更多解释和示例</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="hint-popup" id="hintPopup">
+        <p>提示：移动滑块改变点的位置，观察曲面上的红点如何移动，以及等高线图上对应的点。注意等高线密集的地方，曲面坡度更陡峭！尝试找出哪个方向能让高度 z 增加最快。</p>
+    </div>
+    
+    <script>
+        window.MAIC_LESSON_META = {
+            lesson_id: 'A-10',
+            module_id: 'OM-A4',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '二元函数图像与等高线'
+        };
+        
+        var startTime = Date.now();
+        var interactionCount = 0;
+        var hintUsed = false;
+        var interactionComplete = false;
+        var confidenceScore = 0;
+        var reflectionChoice = '';
+        var lastInteractionState = { x: 0, y: 0, z: 0 };
+        
+        function trackEvent(eventType, payload) {
+            var now = Date.now();
+            var event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: now - startTime,
+                interaction_state: lastInteractionState
+            };
+            
+            if (payload) {
+                Object.keys(payload).forEach(function(key) {
+                    event[key] = payload[key];
+                });
+            }
+            
+            var events = [];
+            try {
+                var stored = localStorage.getItem('maic_learning_events');
+                if (stored) {
+                    events = JSON.parse(stored);
+                }
+            } catch (e) {
+                events = [];
+            }
+            events.push(event);
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'maic_learning_event',
+                    payload: event
+                }, '*');
+            }
+        }
+        
+        function f(x, y) {
+            return Math.sin(x) * Math.cos(y) + 0.5 * Math.sin(0.5 * x) * Math.cos(0.5 * y);
+        }
+        
+        function gradX(x, y) {
+            var h = 0.001;
+            return (f(x + h, y) - f(x - h, y)) / (2 * h);
+        }
+        
+        function gradY(x, y) {
+            var h = 0.001;
+            return (f(x, y + h) - f(x, y - h)) / (2 * h);
+        }
+        
+        var surfaceCanvas = null;
+        var contourCanvas = null;
+        var surfaceCtx = null;
+        var contourCtx = null;
+        var xSlider = null;
+        var ySlider = null;
+        var currentX = 0;
+        var currentY = 0;
+        var rotationAngle = 0.5;
+        var animationId = null;
+        
+        function heightToColor(z, minZ, maxZ) {
+            var t = (z - minZ) / (maxZ - minZ);
+            t = Math.max(0, Math.min(1, t));
+            
+            var r, g, b;
+            if (t < 0.5) {
+                r = Math.floor(20 + t * 2 * 80);
+                g = Math.floor(60 + t * 2 * 140);
+                b = Math.floor(120 + t * 2 * 80);
+            } else {
+                r = Math.floor(100 + (t - 0.5) * 2 * 155);
+                g = Math.floor(200 - (t - 0.5) * 2 * 60);
+                b = Math.floor(200 - (t - 0.5) * 2 * 130);
+            }
+            return 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+        
+        function project3D(x, y, z, width, height) {
+            var scale = 40;
+            var cosA = Math.cos(rotationAngle);
+            var sinA = Math.sin(rotationAngle);
+            
+            var px = x * cosA - y * sinA;
+            var py = x * sinA + y * cosA;
+            
+            var screenX = width / 2 + px * scale;
+            var screenY = height / 2 - z * scale * 1.5 + py * scale * 0.3;
+            
+            return { x: screenX, y: screenY, depth: py };
+        }
+        
+        function drawSurface() {
+            if (!surfaceCtx || !surfaceCanvas) return;
+            
+            var width = surfaceCanvas.width;
+            var height = surfaceCanvas.height;
+            
+            surfaceCtx.fillStyle = '#0c1220';
+            surfaceCtx.fillRect(0, 0, width, height);
+            
+            surfaceCtx.strokeStyle = '#2a3a58';
+            surfaceCtx.lineWidth = 1;
+            
+            var minZ = -2;
+            var maxZ = 2;
+            var gridSize = 25;
+            var points = [];
+            
+            for (var i = -gridSize; i <= gridSize; i++) {
+                for (var j = -gridSize; j <= gridSize; j++) {
+                    var x = i * 0.12;
+                    var y = j * 0.12;
+                    var z = f(x, y);
+                    var proj = project3D(x, y, z, width, height);
+                    points.push({ i: i, j: j, x: x, y: y, z: z, proj: proj });
+                }
+            }
+            
+            points.sort(function(a, b) { return b.proj.depth - a.proj.depth; });
+            
+            surfaceCtx.globalAlpha = 0.6;
+            
+            for (var k = 0; k < points.length; k++) {
+                var pt = points[k];
+                var color = heightToColor(pt.z, minZ, maxZ);
+                
+                if (pt.i < gridSize && pt.j < gridSize) {
+                    var ptRight = project3D((pt.i + 1) * 0.12, pt.y, f((pt.i + 1) * 0.12, pt.y), width, height);
+                    var ptDown = project3D(pt.x, (pt.j + 1) * 0.12, f(pt.x, (pt.j + 1) * 0.12), width, height);
+                    var ptDiag = project3D((pt.i + 1) * 0.12, (pt.j + 1) * 0.12, f((pt.i + 1) * 0.12, (pt.j + 1) * 0.12), width, height);
+                    
+                    surfaceCtx.fillStyle = color;
+                    surfaceCtx.beginPath();
+                    surfaceCtx.moveTo(pt.proj.x, pt.proj.y);
+                    surfaceCtx.lineTo(ptRight.x, ptRight.y);
+                    surfaceCtx.lineTo(ptDiag.x, ptDiag.y);
+                    surfaceCtx.lineTo(ptDown.x, ptDown.y);
+                    surfaceCtx.closePath();
+                    surfaceCtx.fill();
+                }
+            }
+            
+            surfaceCtx.globalAlpha = 1;
+            
+            for (var gx = -3; gx <= 3; gx++) {
+                for (var gy = -3; gy <= 3; gy++) {
+                    var gz = f(gx * 0.5, gy * 0.5);
+                    var gp = project3D(gx * 0.5, gy * 0.5, gz, width, height);
+                    surfaceCtx.fillStyle = 'rgba(255,255,255,0.1)';
+                    surfaceCtx.beginPath();
+                    surfaceCtx.arc(gp.x, gp.y, 1, 0, Math.PI * 2);
+                    surfaceCtx.fill();
+                }
+            }
+            
+            var z = f(currentX, currentY);
+            var pointProj = project3D(currentX, currentY, z, width, height);
+            
+            surfaceCtx.strokeStyle = '#ff4444';
+            surfaceCtx.lineWidth = 2;
+            surfaceCtx.setLineDash([4, 4]);
+            surfaceCtx.beginPath();
+            surfaceCtx.moveTo(pointProj.x, height / 2 + 60);
+            surfaceCtx.lineTo(pointProj.x, pointProj.y);
+            surfaceCtx.stroke();
+            surfaceCtx.setLineDash([]);
+            
+            surfaceCtx.fillStyle = '#ff4444';
+            surfaceCtx.beginPath();
+            surfaceCtx.arc(pointProj.x, pointProj.y, 8, 0, Math.PI * 2);
+            surfaceCtx.fill();
+            
+            surfaceCtx.fillStyle = '#ffffff';
+            surfaceCtx.beginPath();
+            surfaceCtx.arc(pointProj.x, pointProj.y, 4, 0, Math.PI * 2);
+            surfaceCtx.fill();
+            
+            surfaceCtx.fillStyle = '#ffffff';
+            surfaceCtx.font = '11px sans-serif';
+            surfaceCtx.textAlign = 'left';
+            surfaceCtx.fillText('z = ' + z.toFixed(2), pointProj.x + 12, pointProj.y - 5);
+        }
+        
+        function drawContours() {
+            if (!contourCtx || !contourCanvas) return;
+            
+            var width = contourCanvas.width;
+            var height = contourCanvas.height;
+            var padding = 30;
+            
+            contourCtx.fillStyle = '#0c1220';
+            contourCtx.fillRect(0, 0, width, height);
+            
+            var data = [];
+            var minZ = -2;
+            var maxZ = 2;
+            var resolution = 80;
+            
+            for (var i = 0; i <= resolution; i++) {
+                data[i] = [];
+                for (var j = 0; j <= resolution; j++) {
+                    var x = -3 + (i / resolution) * 6;
+                    var y = -3 + (j / resolution) * 6;
+                    data[i][j] = f(x, y);
+                }
+            }
+            
+            function toScreenX(x) {
+                return padding + ((x + 3) / 6) * (width - 2 * padding);
+            }
+            
+            function toScreenY(y) {
+                return height - padding - ((y + 3) / 6) * (height - 2 * padding);
+            }
+            
+            var levels = [-1.5, -1, -0.5, 0, 0.5, 1, 1.5];
+            var colors = ['#1a4a5e', '#1e6060', '#228866', '#33aa66', '#66cc66', '#99dd66', '#ccee66'];
+            
+            for (var k = 0; k < resolution; k++) {
+                for (var l = 0; l < resolution; l++) {
+                    var x0 = -3 + (k / resolution) * 6;
+                    var y0 = -3 + (l / resolution) * 6;
+                    var x1 = -3 + ((k + 1) / resolution) * 6;
+                    var y1 = -3 + ((l + 1) / resolution) * 6;
+                    
+                    var avgZ = (data[k][l] + data[k + 1][l] + data[k][l + 1] + data[k + 1][l + 1]) / 4;
+                    var t = (avgZ - minZ) / (maxZ - minZ);
+                    t = Math.max(0, Math.min(1, t));
+                    
+                    var fillColor;
+                    if (t < 0.3) {
+                        fillColor = 'rgba(20, 60, 80, 0.8)';
+                    } else if (t < 0.5) {
+                        fillColor = 'rgba(30, 90, 70, 0.8)';
+                    } else if (t < 0.7) {
+                        fillColor = 'rgba(50, 130, 80, 0.8)';
+                    } else {
+                        fillColor = 'rgba(80, 160, 90, 0.8)';
+                    }
+                    
+                    contourCtx.fillStyle = fillColor;
+                    contourCtx.fillRect(
+                        toScreenX(x0),
+                        toScreenY(y1),
+                        (width - 2 * padding) / resolution,
+                        (height - 2 * padding) / resolution
+                    );
+                }
+            }
+            
+            for (var m = 0; m < levels.length; m++) {
+                var level = levels[m];
+                contourCtx.strokeStyle = colors[m];
+                contourCtx.lineWidth = 1.5;
+                contourCtx.setLineDash([]);
+                
+                for (var n = 0; n < resolution; n++) {
+                    for (var o = 0; o < resolution; o++) {
+                        var cx = -3 + (n / resolution) * 6;
+                        var cy = -3 + (o / resolution) * 6;
+                        
+                        var v00 = data[n][o];
+                        var v10 = data[n + 1][o];
+                        var v01 = data[n][o + 1];
+                        var v11 = data[n + 1][o + 1];
+                        
+                        var edges = [];
+                        
+                        if ((v00 < level && v10 >= level) || (v00 >= level && v10 < level)) {
+                            var t1 = (level - v00) / (v10 - v00);
+                            edges.push({ x: cx + t1 * (6 / resolution), y: cy });
+                        }
+                        if ((v10 < level && v11 >= level) || (v10 >= level && v11 < level)) {
+                            var t2 = (level - v10) / (v11 - v10);
+                            edges.push({ x: cx + 6 / resolution, y: cy + t2 * (6 / resolution) });
+                        }
+                        if ((v01 < level && v11 >= level) || (v01 >= level && v11 < level)) {
+                            var t3 = (level - v01) / (v11 - v01);
+                            edges.push({ x: cx + t3 * (6 / resolution), y: cy + 6 / resolution });
+                        }
+                        if ((v00 < level && v01 >= level) || (v00 >= level && v01 < level)) {
+                            var t4 = (level - v00) / (v01 - v00);
+                            edges.push({ x: cx, y: cy + t4 * (6 / resolution) });
+                        }
+                        
+                        if (edges.length >= 2) {
+                            contourCtx.beginPath();
+                            contourCtx.moveTo(toScreenX(edges[0].x), toScreenY(edges[0].y));
+                            contourCtx.lineTo(toScreenX(edges[1].x), toScreenY(edges[1].y));
+                            contourCtx.stroke();
+                        }
+                    }
+                }
+            }
+            
+            contourCtx.strokeStyle = '#4a5a78';
+            contourCtx.lineWidth = 1;
+            
+            for (var px = -3; px <= 3; px++) {
+                contourCtx.beginPath();
+                contourCtx.moveTo(toScreenX(px), toScreenY(-3));
+                contourCtx.lineTo(toScreenX(px), toScreenY(3));
+                contourCtx.stroke();
+            }
+            
+            for (var py = -3; py <= 3; py++) {
+                contourCtx.beginPath();
+                contourCtx.moveTo(toScreenX(-3), toScreenY(py));
+                contourCtx.lineTo(toScreenX(3), toScreenY(py));
+                contourCtx.stroke();
+            }
+            
+            contourCtx.fillStyle = '#ffffff';
+            contourCtx.font = '10px sans-serif';
+            contourCtx.textAlign = 'center';
+            for (var lx = -3; lx <= 3; lx++) {
+                contourCtx.fillText(lx.toString(), toScreenX(lx), height - padding + 15);
+            }
+            contourCtx.textAlign = 'right';
+            for (var ly = -3; ly <= 3; ly++) {
+                contourCtx.fillText(ly.toString(), padding - 8, toScreenY(ly) + 4);
+            }
+            
+            var screenX = toScreenX(currentX);
+            var screenY = toScreenY(currentY);
+            
+            var gx = gradX(currentX, currentY);
+            var gy = gradY(currentX, currentY);
+            var gradMag = Math.sqrt(gx * gx + gy * gy);
+            
+            if (gradMag > 0.01) {
+                var arrowLen = Math.min(50, gradMag * 30);
+                var normGx = gx / gradMag;
+                var normGy = gy / gradMag;
+                
+                contourCtx.strokeStyle = '#f07028';
+                contourCtx.lineWidth = 3;
+                contourCtx.beginPath();
+                contourCtx.moveTo(screenX, screenY);
+                contourCtx.lineTo(screenX + normGx * arrowLen, screenY - normGy * arrowLen);
+                contourCtx.stroke();
+                
+                var angle = Math.atan2(-normGy, normGx);
+                var arrowSize = 8;
+                contourCtx.fillStyle = '#f07028';
+                contourCtx.beginPath();
+                contourCtx.moveTo(screenX + normGx * arrowLen, screenY - normGy * arrowLen);
+                contourCtx.lineTo(
+                    screenX + normGx * arrowLen - arrowSize * Math.cos(angle - 0.4),
+                    screenY - normGy * arrowLen + arrowSize * Math.sin(angle - 0.4)
+                );
+                contourCtx.lineTo(
+                    screenX + normGx * arrowLen - arrowSize * Math.cos(angle + 0.4),
+                    screenY - normGy * arrowLen + arrowSize * Math.sin(angle + 0.4)
+                );
+                contourCtx.closePath();
+                contourCtx.fill();
+            }
+            
+            contourCtx.fillStyle = '#ff4444';
+            contourCtx.beginPath();
+            contourCtx.arc(screenX, screenY, 10, 0, Math.PI * 2);
+            contourCtx.fill();
+            
+            contourCtx.fillStyle = '#ffffff';
+            contourCtx.beginPath();
+            contourCtx.arc(screenX, screenY, 5, 0, Math.PI * 2);
+            contourCtx.fill();
+        }
+        
+        function updateDisplay() {
+            var z = f(currentX, currentY);
+            
+            document.getElementById('xValue').textContent = currentX.toFixed(2);
+            document.getElementById('yValue').textContent = currentY.toFixed(2);
+            document.getElementById('feedbackX').textContent = currentX.toFixed(2);
+            document.getElementById('feedbackY').textContent = currentY.toFixed(2);
+            document.getElementById('feedbackZ').textContent = z.toFixed(2);
+            
+            var gx = gradX(currentX, currentY);
+            var gy = gradY(currentX, currentY);
+            var gradMag = Math.sqrt(gx * gx + gy * gy);
+            
+            var arrowText = '—';
+            if (gradMag > 0.01) {
+                var angle = Math.atan2(gy, gx) * 180 / Math.PI;
+                if (angle > -22.5 && angle <= 22.5) arrowText = '→ 右';
+                else if (angle > 22.5 && angle <= 67.5) arrowText = '↘ 右下';
+                else if (angle > 67.5 && angle <= 112.5) arrowText = '↓ 下';
+                else if (angle > 112.5 && angle <= 157.5) arrowText = '↙ 左下';
+                else if (angle > 157.5 || angle <= -157.5) arrowText = '← 左';
+                else if (angle > -157.5 && angle <= -112.5) arrowText = '↖ 左上';
+                else if (angle > -112.5 && angle <= -67.5) arrowText = '↑ 上';
+                else if (angle > -67.5 && angle <= -22.5) arrowText = '↗ 右上';
+            }
+            document.getElementById('gradientArrow').textContent = arrowText;
+            
+            lastInteractionState = {
+                x: parseFloat(currentX.toFixed(2)),
+                y: parseFloat(currentY.toFixed(2)),
+                z: parseFloat(z.toFixed(2))
+            };
+            
+            drawSurface();
+            drawContours();
+        }
+        
+        function animate() {
+            rotationAngle += 0.003;
+            drawSurface();
+            animationId = requestAnimationFrame(animate);
+        }
+        
+        function initializeApp() {
+            surfaceCanvas = document.getElementById('surfaceCanvas');
+            contourCanvas = document.getElementById('contourCanvas');
+            
+            if (!surfaceCanvas || !contourCanvas) {
+                console.error('Canvas elements not found');
+                return;
+            }
+            
+            var surfaceContainer = surfaceCanvas.parentElement;
+            var contourContainer = contourCanvas.parentElement;
+            
+            surfaceCanvas.width = surfaceContainer.offsetWidth || 400;
+            surfaceCanvas.height = 320;
+            contourCanvas.width = contourContainer.offsetWidth || 400;
+            contourCanvas.height = 320;
+            
+            surfaceCtx = surfaceCanvas.getContext('2d');
+            contourCtx = contourCanvas.getContext('2d');
+            
+            xSlider = document.getElementById('xSlider');
+            ySlider = document.getElementById('ySlider');
+            
+            if (!xSlider || !ySlider) {
+                console.error('Slider elements not found');
+                return;
+            }
+            
+            xSlider.addEventListener('input', function() {
+                currentX = parseFloat(this.value);
+                interactionCount++;
+                updateDisplay();
+                trackEvent('interaction_change', {
+                    key_value: { x: currentX },
+                    interaction_count: interactionCount
+                });
+                checkCompletion();
+            });
+            
+            ySlider.addEventListener('input', function() {
+                currentY = parseFloat(this.value);
+                interactionCount++;
+                updateDisplay();
+                trackEvent('interaction_change', {
+                    key_value: { y: currentY },
+                    interaction_count: interactionCount
+                });
+                checkCompletion();
+            });
+            
+            document.getElementById('hintBtn').addEventListener('click', function() {
+                hintUsed = true;
+                document.getElementById('hintPopup').classList.add('show');
+                trackEvent('hint_used', { hint_type: 'interaction_hint' });
+                
+                setTimeout(function() {
+                    document.getElementById('hintPopup').classList.remove('show');
+                }, 6000);
+            });
+            
+            document.querySelectorAll('.confidence-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.confidence-btn').forEach(function(b) {
+                        b.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    confidenceScore = parseInt(this.dataset.value);
+                    trackEvent('confidence_submitted', { confidence_score: confidenceScore });
+                });
+            });
+            
+            document.querySelectorAll('.reflection-option').forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    document.querySelectorAll('.reflection-option').forEach(function(o) {
+                        o.classList.remove('selected');
+                    });
+                    this.classList.add('selected');
+                    reflectionChoice = this.querySelector('input').value;
+                    trackEvent('reflection_submitted', { reflection_choice: reflectionChoice });
+                });
+            });
+            
+            updateDisplay();
+            animate();
+            
+            trackEvent('page_loaded', { initial_state: lastInteractionState });
+        }
+        
+        function checkCompletion() {
+            if (!interactionComplete && interactionCount >= 5) {
+                interactionComplete = true;
+                document.getElementById('completionBadge').classList.add('show');
+                trackEvent('interaction_complete', {
+                    final_state: lastInteractionState,
+                    total_interactions: interactionCount,
+                    hint_used: hintUsed
+                });
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', initializeApp);
+        
+        window.addEventListener('resize', function() {
+            if (surfaceCanvas && contourCanvas) {
+                var surfaceContainer = surfaceCanvas.parentElement;
+                var contourContainer = contourCanvas.parentElement;
+                
+                surfaceCanvas.width = surfaceContainer.offsetWidth || 400;
+                surfaceCanvas.height = 320;
+                contourCanvas.width = contourContainer.offsetWidth || 400;
+                contourCanvas.height = 320;
+                
+                updateDisplay();
+            }
+        });
+    </script>
+</body>
+</html>

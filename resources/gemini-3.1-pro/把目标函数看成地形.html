@@ -1,0 +1,453 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>把目标函数看成地形</title>
+    <style>
+        body { 
+            background: #121212; 
+            color: #e0e0e0; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            line-height: 1.6;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 0 auto; 
+        }
+        h1 { 
+            font-size: 28px; 
+            margin-bottom: 5px; 
+            color: #ffffff; 
+        }
+        .subtitle { 
+            font-size: 14px; 
+            color: #888; 
+            margin-bottom: 25px; 
+            border-bottom: 1px solid #333; 
+            padding-bottom: 15px;
+        }
+        
+        .section { 
+            background: #1e1e1e; 
+            border-radius: 8px; 
+            padding: 15px 20px; 
+            margin-bottom: 20px; 
+            border: 1px solid #333; 
+        }
+        .section.objective { border-left: 5px solid #4CAF50; }
+        .section.intuition { border-left: 5px solid #FF9800; }
+        .section h2 { margin-top: 0; font-size: 18px; color: #ffffff; margin-bottom: 8px;}
+        .section p { margin: 0; }
+
+        .interactive-area { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 20px; 
+            margin-bottom: 20px;
+        }
+        .left-panel { 
+            flex: 1; 
+            min-width: 300px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+        }
+        .right-panel { 
+            width: 400px; 
+            height: 400px; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            border: 1px solid #444; 
+            background: #000; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5); 
+            position: relative;
+        }
+        canvas { 
+            display: block; 
+            width: 100%; 
+            height: 100%; 
+            touch-action: none; 
+            cursor: crosshair; 
+        }
+
+        .concept-card { 
+            background: #252526; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid #444; 
+        }
+        .concept-card h3 { margin-top: 0; font-size: 16px; color: #bb86fc; }
+        
+        .status-panel { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 1px solid #444; 
+            flex-grow: 1;
+        }
+        .status-panel h3 { margin-top: 0; font-size: 16px; color: #fff; margin-bottom: 15px;}
+        .data-row { margin-bottom: 10px; font-size: 16px; }
+        .value-display { 
+            font-size: 20px; 
+            color: #03dac6; 
+            font-family: monospace; 
+            font-weight: bold;
+        }
+        .feedback { 
+            margin-top: 20px; 
+            padding: 10px;
+            background: #2c2c2c;
+            border-radius: 4px;
+            font-weight: bold; 
+            color: #ffeb3b; 
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+        }
+
+        button { 
+            background: #3700b3; 
+            color: #fff; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        button:hover { background: #6200ea; }
+        button:disabled { background: #555; cursor: not-allowed; color: #888;}
+
+        .assessment { 
+            background: #1e1e1e; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border: 1px solid #333; 
+        }
+        .assessment h3 { margin-top: 0; font-size: 18px; color: #ffffff; }
+        .rating-stars { 
+            display: flex; 
+            gap: 10px; 
+            cursor: pointer; 
+            font-size: 32px; 
+            color: #444;
+            margin-bottom: 15px;
+        }
+        .star:hover, .star.active { color: #ffeb3b; }
+        .reflection-options { margin: 15px 0; }
+        .reflection-options label { 
+            display: block; 
+            margin: 10px 0; 
+            cursor: pointer;
+            padding: 8px;
+            background: #252526;
+            border-radius: 4px;
+        }
+        .reflection-options label:hover { background: #2c2c2c; }
+        input[type="radio"] { margin-right: 10px; transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>把目标函数看成地形</h1>
+    <div class="subtitle">互动学习模块</div>
+
+    <div class="section objective">
+        <h2>学习目标</h2>
+        <p>能把函数值理解为高度；能在等高线图上寻找低处；能理解下降方向。</p>
+    </div>
+
+    <div class="section intuition">
+        <h2>直觉解释</h2>
+        <p>目标函数的值可以看成地形高度。寻找最小值就像在地形中找最低谷。</p>
+    </div>
+
+    <div class="interactive-area">
+        <div class="left-panel">
+            <div class="concept-card">
+                <h3>概念卡：等高线图</h3>
+                <p>“等高线”上的每一个点，目标函数的值（高度）都一样。圈越小、颜色越深（偏蓝），代表地势越低。垂直于等高线向内走，是高度下降最快的方向。</p>
+                <div style="margin-top: 15px;">
+                    <button id="hint-btn">需要提示吗？</button>
+                    <p id="hint-text" style="display:none; color: #ff9800; font-size: 14px; margin-top: 10px;"></p>
+                </div>
+            </div>
+            
+            <div class="status-panel">
+                <h3>即时状态面板</h3>
+                <div class="data-row">当前位置 X: <span class="value-display" id="val-x">0.00</span></div>
+                <div class="data-row">当前位置 Y: <span class="value-display" id="val-y">0.00</span></div>
+                <div class="data-row" style="margin-top: 15px; border-top: 1px solid #444; padding-top: 15px;">
+                    目标函数值 (当前高度): <br>
+                    <span class="value-display" id="val-z" style="color: #ff9800; font-size: 28px;">0.00</span>
+                </div>
+                <div class="feedback" id="feedback-text">“请拖动右侧的黄色小球，寻找地形的最低处！”</div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <canvas id="terrainCanvas" width="400" height="400"></canvas>
+        </div>
+    </div>
+
+    <div class="assessment">
+        <h3>学习反馈</h3>
+        <div>你对“目标函数值就是地形高度”的理解信心如何？（1星=迷茫，5星=完全掌握）</div>
+        <div class="rating-stars" id="star-container">
+            <span class="star" data-value="1">★</span>
+            <span class="star" data-value="2">★</span>
+            <span class="star" data-value="3">★</span>
+            <span class="star" data-value="4">★</span>
+            <span class="star" data-value="5">★</span>
+        </div>
+        
+        <div id="reflection-area" style="display:none; margin-top: 10px; border-top: 1px dashed #444; padding-top: 15px;">
+            <div style="font-size: 16px; font-weight: bold;">简短反思：</div>
+            <div>在刚才的互动中，当小球向什么方向移动时，高度下降最快？</div>
+            <div class="reflection-options">
+                <label><input type="radio" name="ref" value="tangent"> 沿着等高线方向（平移）</label>
+                <label><input type="radio" name="ref" value="perpendicular"> 垂直于等高线向内（负梯度方向）</label>
+                <label><input type="radio" name="ref" value="random"> 随便哪个方向都一样</label>
+            </div>
+            <button id="submit-reflection">提交反思</button>
+            <div id="reflection-msg" style="display:none; margin-top:15px; font-weight:bold;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 元数据
+    window.MAIC_LESSON_META = {
+        lesson_id: 'D-02',
+        module_id: 'OM-D1',
+        course_version: 'demo-closed-loop-v1',
+        concept_name: '目标函数地形图'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        let startTime = Date.now();
+        let isCompleted = false;
+
+        // 行为追踪函数
+        let trackEvent = (eventType, payload) => {
+            let event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: Date.now() - startTime,
+                interaction_state: payload
+            };
+            try {
+                let events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+                events.push(event);
+                localStorage.setItem('maic_learning_events', JSON.stringify(events));
+                window.parent.postMessage({type: 'maic_learning_event', payload: event}, '*');
+            } catch(e) {
+                console.error('事件追踪失败', e);
+            }
+        };
+
+        // 触发页面加载事件
+        trackEvent('page_loaded', {});
+
+        // Canvas 互动逻辑
+        const canvas = document.getElementById('terrainCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        let point = { x: 340, y: 60 }; // 初始位置：高处
+        let isDragging = false;
+        let lastZ = null;
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // 绘制等高线地形 (函数: z = x^2 + 0.5y^2)
+            const zLevels = [200, 150, 110, 75, 45, 25, 12, 5, 1.5, 0.3];
+            for(let i=0; i<zLevels.length; i++) {
+                let z = zLevels[i];
+                let a = Math.sqrt(z); 
+                let b = Math.sqrt(z * 2); 
+                
+                ctx.beginPath();
+                ctx.ellipse(width/2, height/2, a * 15, b * 15, 0, 0, 2*Math.PI);
+                
+                // 颜色映射：外层(高)为红橙色，内层(低)为深蓝色
+                let ratio = i / (zLevels.length - 1); 
+                let hue = 240 * ratio; 
+                ctx.fillStyle = `hsl(${hue}, 80%, 40%)`;
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.stroke();
+            }
+
+            // 中心最低点标识
+            ctx.beginPath();
+            ctx.moveTo(width/2 - 8, height/2);
+            ctx.lineTo(width/2 + 8, height/2);
+            ctx.moveTo(width/2, height/2 - 8);
+            ctx.lineTo(width/2, height/2 + 8);
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 若未完成，绘制引导方向参考虚线
+            if(lastZ !== null && !isCompleted) {
+                ctx.beginPath();
+                ctx.moveTo(point.x, point.y);
+                ctx.lineTo(width/2, height/2);
+                ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // 绘制可拖动小球
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 12, 0, 2*Math.PI);
+            ctx.fillStyle = '#ffeb3b'; // 亮黄色
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000';
+            ctx.stroke();
+        }
+
+        function updateState() {
+            // 将屏幕坐标转换为逻辑坐标系
+            let lx = (point.x - width/2) / 15;
+            let ly = (height/2 - point.y) / 15;
+            let z = lx*lx + 0.5*ly*ly;
+            
+            document.getElementById('val-x').textContent = lx.toFixed(2);
+            document.getElementById('val-y').textContent = ly.toFixed(2);
+            document.getElementById('val-z').textContent = z.toFixed(2);
+            
+            let fb = document.getElementById('feedback-text');
+            if (z < 0.3) {
+                fb.textContent = '“恭喜！你成功找到了这片地形的最低谷！”';
+                fb.style.color = '#4CAF50';
+                if (!isCompleted) {
+                    isCompleted = true;
+                    trackEvent('interaction_complete', { x: lx, y: ly, z: z });
+                }
+            } else {
+                if (lastZ !== null) {
+                    if (z < lastZ - 0.05) {
+                        fb.textContent = '“太棒了，高度正在下降，你离谷底越来越近了！”';
+                        fb.style.color = '#4CAF50';
+                    } else if (z > lastZ + 0.05) {
+                        fb.textContent = '“哎呀，你正在爬坡，高度增加了，请尝试反方向！”';
+                        fb.style.color = '#f44336';
+                    } else {
+                        fb.textContent = '“沿着等高线移动高度不会变化，请向圈内探索。”';
+                        fb.style.color = '#03dac6';
+                    }
+                }
+            }
+            
+            lastZ = z;
+            draw();
+        }
+
+        // 初始渲染
+        updateState();
+
+        // 鼠标与触摸事件处理
+        function getEventPos(e) {
+            let rect = canvas.getBoundingClientRect();
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+            }
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function startDrag(e) {
+            let pos = getEventPos(e);
+            let dx = pos.x - point.x;
+            let dy = pos.y - point.y;
+            // 扩大点击判定范围以便于操作
+            if (dx*dx + dy*dy <= 600) { 
+                isDragging = true;
+                if(e.type === 'touchstart') e.preventDefault();
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                let pos = getEventPos(e);
+                point.x = Math.max(15, Math.min(width - 15, pos.x));
+                point.y = Math.max(15, Math.min(height - 15, pos.y));
+                updateState();
+                if(e.type === 'touchmove') e.preventDefault();
+            }
+        }
+
+        function endDrag() {
+            if (isDragging) {
+                isDragging = false;
+                let lx = (point.x - width/2) / 15;
+                let ly = (height/2 - point.y) / 15;
+                let z = lx*lx + 0.5*ly*ly;
+                trackEvent('interaction_change', { x: lx, y: ly, z: z, is_completed: isCompleted });
+            }
+        }
+
+        canvas.addEventListener('mousedown', startDrag);
+        canvas.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', endDrag); 
+
+        canvas.addEventListener('touchstart', startDrag, {passive: false});
+        canvas.addEventListener('touchmove', drag, {passive: false});
+        window.addEventListener('touchend', endDrag);
+
+        // 提示功能
+        document.getElementById('hint-btn').addEventListener('click', () => {
+            let hintText = document.getElementById('hint-text');
+            hintText.style.display = 'block';
+            hintText.textContent = '“观察右侧画面，中心有十字标志的最内侧深蓝色区域是高度最低的地方。尝试把黄色小球往那里拖动！”';
+            trackEvent('hint_used', {});
+        });
+
+        // 评分与反思功能
+        const stars = document.querySelectorAll('.star');
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                let val = parseInt(this.getAttribute('data-value'));
+                stars.forEach(s => {
+                    s.classList.remove('active');
+                    if (parseInt(s.getAttribute('data-value')) <= val) {
+                        s.classList.add('active');
+                    }
+                });
+                trackEvent('confidence_submitted', { score: val });
+                document.getElementById('reflection-area').style.display = 'block';
+            });
+        });
+
+        document.getElementById('submit-reflection').addEventListener('click', () => {
+            let sel = document.querySelector('input[name="ref"]:checked');
+            let msgArea = document.getElementById('reflection-msg');
+            if (sel) {
+                trackEvent('reflection_submitted', { answer: sel.value });
+                msgArea.style.display = 'block';
+                msgArea.style.color = '#4CAF50';
+                msgArea.textContent = '“非常棒！垂直于等高线向内的方向就是最陡峭的下降方向，这也是我们后续学习梯度下降算法的核心直觉。”';
+                document.getElementById('submit-reflection').style.display = 'none';
+            } else {
+                msgArea.style.display = 'block';
+                msgArea.style.color = '#f44336';
+                msgArea.textContent = '“请先选择一个反思选项哦。”';
+            }
+        });
+    });
+</script>
+</body>
+</html>

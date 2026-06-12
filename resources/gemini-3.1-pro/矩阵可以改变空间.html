@@ -1,0 +1,593 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>矩阵可以改变空间</title>
+    <style>
+        :root {
+            --bg-dark: #1e1e1e;
+            --bg-panel: #252526;
+            --bg-header: #2d2d2d;
+            --text-main: #d4d4d4;
+            --accent-blue: #007acc;
+            --accent-green: #4caf50;
+            --accent-gold: #d7ba7d;
+            --border-color: #3e3e42;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3, h4 {
+            color: #ffffff;
+            margin-top: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .header-box {
+            background-color: var(--bg-header);
+            padding: 25px;
+            border-radius: 8px;
+            border-left: 5px solid var(--accent-blue);
+        }
+
+        .target-box {
+            font-weight: bold;
+            color: var(--accent-green);
+            margin-bottom: 10px;
+        }
+
+        .interactive-layout {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .left-col {
+            flex: 1;
+            min-width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .right-col {
+            flex: 1.2;
+            min-width: 450px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card {
+            background-color: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .step-title {
+            color: var(--accent-blue);
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #333333;
+            color: var(--text-main);
+            border: 1px solid #555555;
+            padding: 12px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            font-size: 15px;
+        }
+
+        .btn:hover {
+            background-color: #444444;
+            border-color: var(--accent-blue);
+        }
+
+        .btn.active {
+            background-color: rgba(0, 122, 204, 0.2);
+            border-color: var(--accent-blue);
+            color: #ffffff;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .feedback-box {
+            background-color: rgba(0, 122, 204, 0.1);
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 80px;
+        }
+
+        .vector-i { color: #ff5555; font-weight: bold; }
+        .vector-j { color: #55ff55; font-weight: bold; }
+
+        canvas {
+            background-color: #121212;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 100%;
+            height: 450px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+            cursor: crosshair;
+        }
+
+        .rating-group {
+            display: flex;
+            gap: 15px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .rating-group label {
+            cursor: pointer;
+            background: #333;
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            transition: 0.2s;
+        }
+
+        .rating-group label:hover {
+            background: #444;
+        }
+
+        .rating-group input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 6px;
+            font-size: 15px;
+            margin-top: 10px;
+        }
+
+        .hint-btn {
+            background: transparent;
+            color: var(--accent-gold);
+            border: 1px dashed var(--accent-gold);
+            text-align: center;
+        }
+
+        .hint-btn:hover {
+            background: rgba(215, 186, 125, 0.1);
+        }
+
+        .concept-card {
+            border-color: var(--accent-gold);
+            background: rgba(215, 186, 125, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- 头部区域 -->
+        <div class="header-box">
+            <h1>矩阵可以改变空间</h1>
+            <div class="target-box">
+                🎯 学习目标：能从网格图看出矩阵变换；能说出局部线性近似的意思；能理解“很小范围内像线性变换”。
+            </div>
+            <p>
+                <strong>直觉解释：</strong>矩阵可以把平面网格拉伸、旋转、压缩或剪切。在微积分中，复杂的非线性空间扭曲很难计算。但当我们放大到一个极其微小的局部时，这种复杂的变形看起来就像是简单的线性变换。<strong>Jacobian（雅可比矩阵）</strong>可理解为非线性函数在局部的这种“矩阵近似”。
+            </p>
+        </div>
+
+        <!-- 核心互动区域 -->
+        <div class="interactive-layout">
+            
+            <!-- 左侧：程序性控制与解释 -->
+            <div class="left-col">
+                <div class="card">
+                    <h3>程序性任务：提取核心概念</h3>
+                    <p style="font-size: 0.9em; color: #aaa;">按照以下步骤操作，从材料中找出最关键的概念和它们之间的关系。</p>
+                    
+                    <h4 class="step-title">步骤 1：定位主题（切换变换）</h4>
+                    <div class="btn-group" id="matrix-controls">
+                        <button class="btn active" id="btn-identity" onclick="onMatrixSelect('identity')">单位矩阵：[1, 0, 0, 1] (原状)</button>
+                        <button class="btn" id="btn-stretch" onclick="onMatrixSelect('stretch')">水平拉伸：[2, 0, 0, 1]</button>
+                        <button class="btn" id="btn-shear" onclick="onMatrixSelect('shear')">错切(剪切)：[1, 1, 0, 1]</button>
+                        <button class="btn" id="btn-rotate" onclick="onMatrixSelect('rotate')">旋转 45°：[0.71, -0.71, 0.71, 0.71]</button>
+                        <button class="btn" id="btn-compress" onclick="onMatrixSelect('compress')">整体压缩：[0.5, 0, 0, 0.5]</button>
+                    </div>
+
+                    <h4 class="step-title" style="margin-top: 20px;">步骤 2：解释概念（即时反馈）</h4>
+                    <div class="feedback-box">
+                        <strong id="fb-name" style="color: white;">单位矩阵 (原状)</strong>
+                        <p id="fb-desc" style="margin: 8px 0;">空间保持不变。<span class="vector-i">基向量 i=(1,0)</span> 和 <span class="vector-j">j=(0,1)</span> 停留在原处。</p>
+                    </div>
+
+                    <h4 class="step-title" style="margin-top: 20px;">步骤 3：应用练习（联系 Jacobian）</h4>
+                    <p id="fb-jacob" style="font-size: 0.95em;">如果一个非线性函数在某点不发生变化，其局部的 Jacobian 就是单位矩阵。</p>
+                </div>
+
+                <!-- 概念卡与提示 -->
+                <button class="btn hint-btn" onclick="toggleHint()">💡 需要提示：Jacobian 具体是什么意思？</button>
+                <div class="card concept-card" id="concept-hint" style="display: none;">
+                    <h3 style="color: var(--accent-gold); margin-top: 0;">概念卡：雅可比矩阵 (Jacobian)</h3>
+                    <p>想象一张柔软的橡胶网格被任意揉捏（非线性变换）。这很难用一个简单的数学公式全局描述。</p>
+                    <p>但如果你只盯着网格上<strong>非常非常小的一个方格</strong>，你会发现这个小方格只是被拉伸、倾斜或旋转了——它依然保持平行四边形的特性。这就是<strong>局部线性近似</strong>。</p>
+                    <p>Jacobian 矩阵正是记录这个“微小局部”是如何像线性矩阵一样发生变换的！</p>
+                </div>
+            </div>
+
+            <!-- 右侧：视觉呈现 -->
+            <div class="right-col">
+                <div class="card" style="padding: 10px; background: #121212;">
+                    <canvas id="transformCanvas" width="500" height="450"></canvas>
+                    <p style="text-align: center; font-size: 0.9em; margin: 10px 0 0 0; color: #888;">
+                        灰色虚线：原始空间网格 &nbsp;|&nbsp; 蓝色实线：变换后空间 &nbsp;|&nbsp; <span class="vector-i">i向量</span> &nbsp;|&nbsp; <span class="vector-j">j向量</span>
+                    </p>
+                </div>
+
+                <!-- 学习评估 -->
+                <div class="card" id="evaluation-card">
+                    <h3>学习评估</h3>
+                    
+                    <div id="confidence-section">
+                        <p>你对“能从网格图看出矩阵变换”有多大信心？(1-5分)</p>
+                        <div class="rating-group">
+                            <label><input type="radio" name="confidence" value="1"> 1 (完全没看懂)</label>
+                            <label><input type="radio" name="confidence" value="2"> 2</label>
+                            <label><input type="radio" name="confidence" value="3"> 3 (一半一半)</label>
+                            <label><input type="radio" name="confidence" value="4"> 4</label>
+                            <label><input type="radio" name="confidence" value="5"> 5 (非常有信心)</label>
+                        </div>
+                        <button class="btn" onclick="submitConfidence()" style="border-color: var(--accent-green);">确认评分</button>
+                    </div>
+                    
+                    <div id="reflection-section" style="display: none;">
+                        <p>快速反思：关于局部线性近似，你最大的收获是？</p>
+                        <select id="reflection-select">
+                            <option value="">请选择你的感悟...</option>
+                            <option value="visually_understood">我能直观看到网格是如何整体被拉伸、旋转或剪切的。</option>
+                            <option value="jacobian_connection">我明白了复杂的非线性变形在很小范围内看起来就像简单的矩阵变换。</option>
+                            <option value="need_more_practice">我还需要更多例子来理解 Jacobian 的含义。</option>
+                        </select>
+                        <button class="btn" onclick="submitReflection()" style="margin-top: 15px; border-color: var(--accent-green);">提交反思</button>
+                    </div>
+
+                    <div id="completion-message" style="display: none; color: var(--accent-green); font-weight: bold; padding: 10px 0;">
+                        ✅ 感谢参与！你的学习行为和反思已成功记录。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 课程元数据与追踪系统 ---
+        window.MAIC_LESSON_META = {
+            lesson_id: 'A-09',
+            module_id: 'OM-A3',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '矩阵作为线性变换'
+        };
+
+        const sessionStartTime = Date.now();
+        let interactedTransforms = new Set();
+        let interactionCompletedFlag = false;
+
+        function trackEvent(eventType, payload = {}) {
+            const eventRecord = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: Date.now() - sessionStartTime,
+                interaction_state: payload
+            };
+            
+            // 保存至 localStorage
+            let events = [];
+            try {
+                const stored = localStorage.getItem('maic_learning_events');
+                if (stored) events = JSON.parse(stored);
+            } catch (e) { console.warn('localStorage parse error'); }
+            
+            events.push(eventRecord);
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            
+            // 通信给父窗口
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'maic_learning_event', payload: eventRecord }, '*');
+            }
+        }
+
+        // --- 核心互动数据定义 ---
+        const matrixData = {
+            identity: {
+                mat: [1, 0, 0, 1],
+                name: '单位矩阵 (原状)',
+                desc: '空间保持不变。基向量 i=(1,0) 和 j=(0,1) 停留在原处。',
+                jacobian: '如果一个非线性函数在某点附近根本没有产生形变，其局部的 Jacobian 就是单位矩阵。'
+            },
+            stretch: {
+                mat: [2, 0, 0, 1],
+                name: '水平拉伸矩阵',
+                desc: '空间在水平方向被拉伸为两倍。i 变成了 (2,0)，而 j 保持 (0,1) 不变。',
+                jacobian: '局部来看，如果空间只在 x 轴方向被剧烈拉扯，Jacobian 矩阵就会呈现这种形式。'
+            },
+            shear: {
+                mat: [1, 1, 0, 1], // [1(a), 1(b), 0(c), 1(d)] -> x' = x+y, y' = y
+                name: '水平剪切 (错切)',
+                desc: '空间发生错切。y坐标越高的点，向右偏移越多。j 向量变成了 (1,1)。',
+                jacobian: '剪切代表变量之间的耦合，比如在极小范围内，y 方向的位置差异会“借力”影响 x 方向的输出。'
+            },
+            rotate: {
+                mat: [0.707, -0.707, 0.707, 0.707], // cos45, -sin45, sin45, cos45
+                name: '旋转矩阵 (45°)',
+                desc: '整个空间逆时针旋转 45度。网格仍然保持正方形，未被拉扯。',
+                jacobian: '当 Jacobian 矩阵具有旋转特征时，说明局部空间不仅在平移，还在发生“打转”。'
+            },
+            compress: {
+                mat: [0.5, 0, 0, 0.5],
+                name: '整体压缩矩阵',
+                desc: '空间在各个方向都缩小一半，点相互靠近。',
+                jacobian: '局部面积收缩。在多变量微积分中，这意味着该局部区域的变换“缩小”了空间体积。'
+            }
+        };
+
+        // --- Canvas 渲染逻辑 ---
+        const canvas = document.getElementById('transformCanvas');
+        const ctx = canvas.getContext('2d');
+        const scale = 35; // 网格缩放比例
+
+        let currentMatrix = [1, 0, 0, 1];
+        let targetMatrix = [1, 0, 0, 1];
+        let animProgress = 1;
+
+        function initCanvas() {
+            // 自适应画布内部坐标
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width - 20; // 留白
+            drawScene();
+            trackEvent('page_loaded', { initial_matrix: 'identity' });
+        }
+
+        function triggerAnimation(newMat) {
+            currentMatrix = getInterpolatedMatrix(); // 如果正在动画中，从当前状态出发
+            targetMatrix = newMat;
+            animProgress = 0;
+            animate();
+        }
+
+        function animate() {
+            if (animProgress < 1) {
+                animProgress += 0.04; // 动画速度
+                if (animProgress > 1) animProgress = 1;
+                drawScene();
+                if (animProgress < 1) requestAnimationFrame(animate);
+            }
+        }
+
+        function getInterpolatedMatrix() {
+            let t = animProgress;
+            // Ease Out Cubic 缓动
+            let p = 1 - Math.pow(1 - t, 3);
+            return [
+                currentMatrix[0] + (targetMatrix[0] - currentMatrix[0]) * p,
+                currentMatrix[1] + (targetMatrix[1] - currentMatrix[1]) * p,
+                currentMatrix[2] + (targetMatrix[2] - currentMatrix[2]) * p,
+                currentMatrix[3] + (targetMatrix[3] - currentMatrix[3]) * p
+            ];
+        }
+
+        function applyTransform(x, y, mat) {
+            // mat = [a, b, c, d] -> x' = ax + by, y' = cx + dy
+            // Canvas y轴向下，所以需要取反
+            return {
+                x: (x * mat[0] + y * mat[1]) * scale,
+                y: -(x * mat[2] + y * mat[3]) * scale 
+            };
+        }
+
+        function drawGrid(mat, isBackground) {
+            ctx.beginPath();
+            const maxLines = 12;
+            
+            // 垂直线系
+            for (let x = -maxLines; x <= maxLines; x++) {
+                let p1 = applyTransform(x, -maxLines, mat);
+                let p2 = applyTransform(x, maxLines, mat);
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+            }
+            // 水平线系
+            for (let y = -maxLines; y <= maxLines; y++) {
+                let p1 = applyTransform(-maxLines, y, mat);
+                let p2 = applyTransform(maxLines, y, mat);
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+            }
+
+            if (isBackground) {
+                ctx.strokeStyle = '#444444';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+            } else {
+                ctx.strokeStyle = '#007acc';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([]);
+            }
+            ctx.stroke();
+        }
+
+        function drawVector(vx, vy, color, label) {
+            let p = applyTransform(vx, vy, [1, 0, 0, 1]); // 使用单位矩阵因为传入的 vx vy 已经是变换后的坐标了
+            let px = p.x;
+            let py = p.y;
+            
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(px, py);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([]);
+            ctx.stroke();
+            
+            // 画箭头
+            let angle = Math.atan2(py, px);
+            const headlen = 12;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(px - headlen * Math.cos(angle - Math.PI / 6), py - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(px - headlen * Math.cos(angle + Math.PI / 6), py - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = color;
+            ctx.fill();
+            
+            // 标签
+            ctx.font = 'bold 15px sans-serif';
+            ctx.fillStyle = color;
+            ctx.fillText(label, px + 10, py - 10);
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            // 移到画布中心
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            
+            const mat = getInterpolatedMatrix();
+            
+            // 1. 画原始网格 (背景)
+            drawGrid([1, 0, 0, 1], true);
+            
+            // 2. 画变换后的网格
+            drawGrid(mat, false);
+            
+            // 3. 画坐标轴粗线
+            ctx.beginPath();
+            ctx.moveTo(-canvas.width/2, 0); ctx.lineTo(canvas.width/2, 0);
+            ctx.moveTo(0, -canvas.height/2); ctx.lineTo(0, canvas.height/2);
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([]);
+            ctx.stroke();
+
+            // 4. 画基向量 (由变换矩阵决定其终点坐标)
+            // 原 i=(1,0) -> 新坐标 (mat[0], mat[2])
+            drawVector(mat[0], mat[2], '#ff5555', 'i'); 
+            // 原 j=(0,1) -> 新坐标 (mat[1], mat[3])
+            drawVector(mat[1], mat[3], '#55ff55', 'j');
+
+            ctx.restore();
+        }
+
+        // --- 交互处理 ---
+        function onMatrixSelect(key) {
+            // 更新 UI 按钮状态
+            document.querySelectorAll('#matrix-controls .btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${key}`).classList.add('active');
+            
+            // 更新反馈文字
+            const data = matrixData[key];
+            document.getElementById('fb-name').innerText = data.name;
+            document.getElementById('fb-desc').innerHTML = data.desc.replace('i', '<span class="vector-i">i</span>').replace('j', '<span class="vector-j">j</span>');
+            document.getElementById('fb-jacob').innerText = data.jacobian;
+
+            // 触发动画
+            triggerAnimation(data.mat);
+
+            // 行为追踪
+            interactedTransforms.add(key);
+            trackEvent('interaction_change', { selected_matrix: key, target_matrix_values: data.mat });
+            
+            checkInteractionComplete();
+        }
+
+        function checkInteractionComplete() {
+            // 当用户尝试了至少3种不同的变换后，认为核心交互完成
+            if (interactedTransforms.size >= 3 && !interactionCompletedFlag) {
+                interactionCompletedFlag = true;
+                trackEvent('interaction_complete', { 
+                    unique_interactions: interactedTransforms.size,
+                    completed: true 
+                });
+            }
+        }
+
+        function toggleHint() {
+            const hintCard = document.getElementById('concept-hint');
+            if (hintCard.style.display === 'none') {
+                hintCard.style.display = 'block';
+                trackEvent('hint_used', { hint_name: 'jacobian_concept' });
+            } else {
+                hintCard.style.display = 'none';
+            }
+        }
+
+        // --- 评估与反思逻辑 ---
+        function submitConfidence() {
+            const selected = document.querySelector('input[name="confidence"]:checked');
+            if (!selected) {
+                alert('请先选择一个信心评分。');
+                return;
+            }
+            
+            const score = parseInt(selected.value, 10);
+            trackEvent('confidence_submitted', { confidence_score: score });
+            
+            document.getElementById('confidence-section').style.display = 'none';
+            document.getElementById('reflection-section').style.display = 'block';
+        }
+
+        function submitReflection() {
+            const select = document.getElementById('reflection-select');
+            if (!select.value) {
+                alert('请在下拉菜单中选择你的感悟。');
+                return;
+            }
+
+            trackEvent('reflection_submitted', { reflection_choice: select.value });
+            
+            document.getElementById('reflection-section').style.display = 'none';
+            document.getElementById('completion-message').style.display = 'block';
+        }
+
+        // --- 初始化 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            initCanvas();
+            // 处理窗口大小调整
+            window.addEventListener('resize', () => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width - 20;
+                drawScene(); // 重新绘制当前状态，不触发动画
+            });
+        });
+
+    </script>
+</body>
+</html>

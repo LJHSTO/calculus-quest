@@ -1,0 +1,789 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>从曲线走向曲面和等高线</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;background:#1a1a2e;color:#e0e0e0;line-height:1.7;min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+h1{font-size:1.8rem;color:#e94560;text-align:center;padding:20px 0;border-bottom:2px solid #16213e;margin-bottom:10px}
+.objective{background:#16213e;border-left:4px solid #0f3460;padding:14px 20px;margin:16px 0;border-radius:0 8px 8px 0;font-size:1.05rem}
+.objective strong{color:#e94560}
+.intuition{background:#16213e;padding:18px 22px;border-radius:10px;margin:16px 0;font-size:0.98rem}
+.intuition .tag{display:inline-block;background:#0f3460;color:#e94560;padding:2px 10px;border-radius:12px;font-size:0.82rem;margin-right:6px;margin-bottom:6px}
+.intuition p{margin-top:8px;color:#ccc}
+.main-area{display:flex;gap:20px;margin:20px 0;flex-wrap:wrap}
+.panel{background:#16213e;border-radius:12px;padding:18px;flex:1;min-width:280px}
+.panel-title{font-size:1.1rem;color:#e94560;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #0f3460}
+.controls{display:flex;flex-direction:column;gap:14px}
+.ctrl-group{display:flex;flex-direction:column;gap:4px}
+.ctrl-group label{font-size:0.88rem;color:#aaa}
+.ctrl-group .value-display{font-size:0.85rem;color:#e94560;font-weight:bold}
+input[type="range"]{-webkit-appearance:none;width:100%;height:6px;background:#0f3460;border-radius:3px;outline:none;cursor:pointer}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:#e94560;border-radius:50%;cursor:pointer}
+input[type="range"]::-moz-range-thumb{width:18px;height:18px;background:#e94560;border-radius:50%;cursor:pointer;border:none}
+.func-select{display:flex;flex-direction:column;gap:8px}
+.func-btn{padding:10px 14px;background:#0f3460;border:2px solid transparent;border-radius:8px;color:#ccc;cursor:pointer;text-align:left;font-size:0.9rem;transition:all 0.2s}
+.func-btn:hover{background:#1a1a4e}
+.func-btn.active{border-color:#e94560;background:#1a1a4e;color:#fff}
+.func-btn small{color:#888;display:block;margin-top:2px;font-size:0.78rem}
+.canvas-wrap{position:relative;width:100%;min-height:500px}
+canvas{display:block;border-radius:8px;background:#0a0a1a;width:100%;cursor:crosshair}
+.info-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:10px;padding:10px 14px;background:#0f3460;border-radius:8px}
+.info-item{font-size:0.88rem}
+.info-item span{color:#e94560;font-weight:bold}
+.hint-btn{background:#e94560;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:0.85rem;transition:opacity 0.2s}
+.hint-btn:hover{opacity:0.85}
+.hint-box{background:#1a1a4e;border:1px solid #e94560;border-radius:8px;padding:12px 16px;margin-top:10px;font-size:0.88rem;color:#ccc;display:none;line-height:1.8}
+.hint-box.visible{display:block}
+.concept-card{background:linear-gradient(135deg,#16213e,#0f3460);border-radius:12px;padding:20px 24px;margin:20px 0;border:1px solid #1a1a4e}
+.concept-card h3{color:#e94560;margin-bottom:12px;font-size:1.05rem}
+.concept-card ul{list-style:none;padding:0}
+.concept-card li{padding:6px 0;padding-left:20px;position:relative;color:#ccc;font-size:0.92rem}
+.concept-card li::before{content:"▸";position:absolute;left:0;color:#e94560}
+.feedback-box{background:#16213e;border-radius:10px;padding:16px 20px;margin:16px 0;min-height:60px}
+.feedback-box .fb-title{color:#e94560;font-size:0.95rem;margin-bottom:6px}
+.feedback-box .fb-text{color:#bbb;font-size:0.9rem}
+.confidence-section{background:#16213e;border-radius:12px;padding:20px;margin:20px 0;text-align:center}
+.confidence-section h3{color:#e94560;margin-bottom:14px}
+.rating-stars{display:flex;justify-content:center;gap:8px;margin:10px 0}
+.rating-stars .star{font-size:2rem;cursor:pointer;color:#0f3460;transition:all 0.15s;user-select:none}
+.rating-stars .star.active{color:#f5c518}
+.rating-stars .star:hover{transform:scale(1.2)}
+.rating-label{font-size:0.88rem;color:#888;margin-top:4px}
+.reflection-section{background:#16213e;border-radius:12px;padding:20px;margin:20px 0}
+.reflection-section h3{color:#e94560;margin-bottom:12px}
+.reflection-options{display:flex;flex-direction:column;gap:8px}
+.reflection-opt{padding:12px 16px;background:#0f3460;border:2px solid transparent;border-radius:8px;cursor:pointer;color:#ccc;font-size:0.9rem;transition:all 0.2s}
+.reflection-opt:hover{background:#1a1a4e}
+.reflection-opt.selected{border-color:#e94560;background:#1a1a4e;color:#fff}
+.reflection-text{width:100%;min-height:80px;background:#0a0a1a;border:1px solid #0f3460;border-radius:8px;padding:12px;color:#ccc;font-size:0.9rem;font-family:inherit;resize:vertical;margin-top:10px}
+.reflection-text:focus{outline:none;border-color:#e94560}
+.submit-btn{background:#e94560;color:#fff;border:none;padding:12px 30px;border-radius:8px;cursor:pointer;font-size:1rem;margin-top:12px;transition:opacity 0.2s}
+.submit-btn:hover{opacity:0.85}
+.submit-btn:disabled{opacity:0.4;cursor:not-allowed}
+.status-msg{margin-top:10px;font-size:0.88rem;color:#4ecca3;display:none}
+.status-msg.visible{display:block}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:0.82rem;color:#aaa}
+.legend-color{width:14px;height:14px;border-radius:3px}
+@media(max-width:700px){
+.main-area{flex-direction:column}
+.panel{min-width:auto}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>从曲线走向曲面和等高线</h1>
+
+<div class="objective">
+<strong>学习目标：</strong>通过交互操作，你能区分曲线、曲面和等高线，从等高线判断高度变化，并找出可能上升最快的方向。
+</div>
+
+<div class="intuition">
+<div>
+<span class="tag">一元函数</span>
+<span class="tag">二元函数</span>
+<span class="tag">等高线</span>
+</div>
+<p>一元函数 <strong>y = f(x)</strong> 画出来是一条<strong>曲线</strong>，横轴是 x，纵轴是 y。二元函数 <strong>z = f(x, y)</strong> 多了一个变量，它画出来是一个<strong>曲面</strong>——像地形一样有起伏。</p>
+<p style="margin-top:8px">如果把曲面上所有高度相同的点投影到 xy 平面上，就得到了<strong>等高线</strong>。就像地图上的等高线一样：线越密，坡度越陡；沿着垂直于等高线的方向走，上升最快。</p>
+</div>
+
+<div class="main-area">
+<div class="panel" style="flex:0 0 300px;max-width:320px">
+<div class="panel-title">🎮 操作面板</div>
+<div class="controls">
+<div class="ctrl-group">
+<label>选择函数：</label>
+<div class="func-select">
+<div class="func-btn active" data-func="0" onclick="selectFunction(0)">碗形曲面<small>z = x² + y²</small></div>
+<div class="func-btn" data-func="1" onclick="selectFunction(1)">马鞍面<small>z = x² − y²</small></div>
+<div class="func-btn" data-func="2" onclick="selectFunction(2)">倾斜曲面<small>z = 0.5x + 0.3y + x²·y</small></div>
+</div>
+</div>
+<div class="ctrl-group">
+<label>x 坐标：<span class="value-display" id="xVal">0.00</span></label>
+<input type="range" id="sliderX" min="-3" max="3" step="0.05" value="0">
+</div>
+<div class="ctrl-group">
+<label>y 坐标：<span class="value-display" id="yVal">0.00</span></label>
+<input type="range" id="sliderY" min="-3" max="3" step="0.05" value="0">
+</div>
+<div class="ctrl-group">
+<label>等高线密度：<span class="value-display" id="contourVal">8 条</span></label>
+<input type="range" id="sliderContour" min="3" max="15" step="1" value="8">
+</div>
+<div class="ctrl-group">
+<label>旋转角度 (°)：<span class="value-display" id="rotVal">30°</span></label>
+<input type="range" id="sliderRot" min="0" max="360" step="5" value="30">
+</div>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="hint-btn" onclick="showHint()">💡 提示</button>
+<button class="hint-btn" style="background:#0f3460" onclick="resetPoint()">↺ 重置</button>
+</div>
+<div class="hint-box" id="hintBox">
+<strong>操作提示：</strong><br>
+① 拖动滑块或在右侧画布上点击来移动点<br>
+② 观察高度值 z 如何随位置变化<br>
+③ 对比曲面和等高线——线密的地方坡度陡<br>
+④ 尝试找到最高点、最低点和鞍点
+</div>
+</div>
+</div>
+
+<div class="panel" style="flex:1;min-width:400px">
+<div class="panel-title">📊 曲面与等高线联动视图</div>
+<div class="canvas-wrap">
+<canvas id="mainCanvas" width="700" height="520"></canvas>
+</div>
+<div class="info-bar">
+<div class="info-item">当前点：(<span id="infoX">0.00</span>, <span id="infoY">0.00</span>)</div>
+<div class="info-item">高度 z = <span id="infoZ">0.00</span></div>
+<div class="info-item">坡度：<span id="infoSlope">平缓</span></div>
+</div>
+<div class="legend">
+<div class="legend-item"><div class="legend-color" style="background:#e94560"></div>当前点</div>
+<div class="legend-item"><div class="legend-color" style="background:#4ecca3"></div>曲面网格</div>
+<div class="legend-item"><div class="legend-color" style="background:#f5c518"></div>等高线</div>
+<div class="legend-item"><div class="legend-color" style="background:#888"></div>梯度方向（上升最快）</div>
+</div>
+</div>
+</div>
+
+<div class="feedback-box" id="feedbackBox">
+<div class="fb-title">📌 即时反馈</div>
+<div class="fb-text" id="feedbackText">移动滑块或在画布上点击，开始探索曲面和等高线的关系吧！</div>
+</div>
+
+<div class="concept-card">
+<h3>📖 概念卡片：曲线 · 曲面 · 等高线</h3>
+<ul>
+<li><strong>曲线</strong>——一元函数 y=f(x) 的图像，描述一个变量如何随另一个变量变化</li>
+<li><strong>曲面</strong>——二元函数 z=f(x,y) 的图像，描述高度如何随两个变量同时变化</li>
+<li><strong>等高线</strong>——将曲面上相同高度的点投影到平面上形成的线，线越密坡度越陡</li>
+<li><strong>梯度方向</strong>——垂直于等高线的方向，即高度上升最快的方向（法线方向）</li>
+<li><strong>鞍点</strong>——某个方向是极大值、另一个方向是极小值的特殊点（如马鞍面的中心）</li>
+</ul>
+</div>
+
+<div class="confidence-section">
+<h3>🎯 信心评分</h3>
+<p style="color:#aaa;font-size:0.9rem;margin-bottom:10px">你对"区分曲线、曲面、等高线，并判断高度变化"的信心如何？</p>
+<div class="rating-stars" id="ratingStars">
+<span class="star" data-val="1" onclick="setConfidence(1)">★</span>
+<span class="star" data-val="2" onclick="setConfidence(2)">★</span>
+<span class="star" data-val="3" onclick="setConfidence(3)">★</span>
+<span class="star" data-val="4" onclick="setConfidence(4)">★</span>
+<span class="star" data-val="5" onclick="setConfidence(5)">★</span>
+</div>
+<div class="rating-label" id="ratingLabel">点击星星评分（1=不太确定，5=非常自信）</div>
+</div>
+
+<div class="reflection-section">
+<h3>💭 简短反思</h3>
+<p style="color:#aaa;font-size:0.9rem;margin-bottom:12px">完成操作后，请选择最符合你感受的一项（可多选），并在下方写下你的想法：</p>
+<div class="reflection-options" id="reflectionOptions">
+<div class="reflection-opt" data-ref="1" onclick="toggleReflection(this)">我明白了曲线和曲面的区别：维度从2维变成了3维</div>
+<div class="reflection-opt" data-ref="2" onclick="toggleReflection(this)">等高线确实能告诉我哪里陡、哪里缓</div>
+<div class="reflection-opt" data-ref="3" onclick="toggleReflection(this)">我能想象梯度方向就是垂直等高线、往上走的方向</div>
+<div class="reflection-opt" data-ref="4" onclick="toggleReflection(this)">鞍点的概念让我困惑，需要更多例子</div>
+<div class="reflection-opt" data-ref="5" onclick="toggleReflection(this)">我想试试更多函数来验证我的理解</div>
+</div>
+<textarea class="reflection-text" id="reflectionText" placeholder="写下你的思考、疑问或发现……"></textarea>
+<button class="submit-btn" id="submitReflection" onclick="submitReflection()">提交反思</button>
+<div class="status-msg" id="statusMsg">✅ 已成功记录你的学习数据！</div>
+</div>
+
+</div>
+
+<script>
+window.MAIC_LESSON_META = {lesson_id:'A-10', module_id:'OM-A4', course_version:'demo-closed-loop-v1', concept_name:'二元函数图像与等高线'};
+
+var startTime = Date.now();
+var currentPageTime = function(){ return Date.now() - startTime; };
+var selectedFuncIdx = 0;
+var confidenceScore = 0;
+var reflectionSelected = [];
+var interactionCount = 0;
+var hintUsed = false;
+var interactionComplete = false;
+
+var functions = [
+  { name: '碗形曲面', formula: 'z = x² + y²', fn: function(x,y){ return x*x + y*y; }},
+  { name: '马鞍面', formula: 'z = x² − y²', fn: function(x,y){ return x*x - y*y; }},
+  { name: '倾斜曲面', formula: 'z = 0.5x + 0.3y + x²·y', fn: function(x,y){ return 0.5*x + 0.3*y + x*x*y; }}
+];
+
+var functions_dx = [
+  function(x,y){ return 2*x; },
+  function(x,y){ return 2*x; },
+  function(x,y){ return 0.5 + 2*x*y; }
+];
+var functions_dy = [
+  function(x,y){ return 2*y; },
+  function(x,y){ return -2*y; },
+  function(x,y){ return 0.3 + x*x; }
+];
+
+var cx = 0, cy = 0;
+var contourCount = 8;
+var rotAngle = 30;
+var dragging = false;
+
+var canvas, ctx;
+
+function trackEvent(eventType, payload){
+  var event = {
+    lesson_id: window.MAIC_LESSON_META.lesson_id,
+    module_id: window.MAIC_LESSON_META.module_id,
+    course_version: window.MAIC_LESSON_META.course_version,
+    event_type: eventType,
+    timestamp: new Date().toISOString(),
+    time_on_task_ms: currentPageTime(),
+    interaction_state: {
+      selected_func: selectedFuncIdx,
+      x: cx,
+      y: cy,
+      z: functions[selectedFuncIdx].fn(cx,cy),
+      contour_count: contourCount,
+      rotation: rotAngle,
+      interaction_count: interactionCount
+    }
+  };
+  if(payload){
+    for(var k in payload){
+      event[k] = payload[k];
+    }
+  }
+  try{
+    var events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+    events.push(event);
+    localStorage.setItem('maic_learning_events', JSON.stringify(events));
+  }catch(e){}
+  try{
+    window.postMessage({type:'maic_learning_event', payload:event}, '*');
+  }catch(e){}
+}
+
+function selectFunction(idx){
+  selectedFuncIdx = idx;
+  var btns = document.querySelectorAll('.func-btn');
+  for(var i=0;i<btns.length;i++){
+    btns[i].classList.toggle('active', i===idx);
+  }
+  updateDisplay();
+  interactionCount++;
+  trackEvent('interaction_change',{action:'function_select', func_idx:idx});
+  renderCanvas();
+}
+
+function showHint(){
+  var box = document.getElementById('hintBox');
+  box.classList.toggle('visible');
+  hintUsed = true;
+  trackEvent('hint_used',{});
+}
+
+function resetPoint(){
+  cx = 0; cy = 0;
+  document.getElementById('sliderX').value = 0;
+  document.getElementById('sliderY').value = 0;
+  updateDisplay();
+  renderCanvas();
+  interactionCount++;
+  trackEvent('interaction_change',{action:'reset_point', x:0, y:0});
+}
+
+function setConfidence(val){
+  confidenceScore = val;
+  var stars = document.querySelectorAll('#ratingStars .star');
+  for(var i=0;i<stars.length;i++){
+    stars[i].classList.toggle('active', i < val);
+  }
+  var labels = ['','不太确定','有点把握','比较确定','很自信','非常自信'];
+  document.getElementById('ratingLabel').textContent = labels[val] || '';
+  trackEvent('confidence_submitted',{confidence_score:val});
+}
+
+function toggleReflection(el){
+  el.classList.toggle('selected');
+  var val = parseInt(el.getAttribute('data-ref'));
+  if(el.classList.contains('selected')){
+    if(reflectionSelected.indexOf(val) === -1) reflectionSelected.push(val);
+  } else {
+    var idx2 = reflectionSelected.indexOf(val);
+    if(idx2 !== -1) reflectionSelected.splice(idx2, 1);
+  }
+}
+
+function submitReflection(){
+  var text = document.getElementById('reflectionText').value;
+  trackEvent('reflection_submitted',{
+    selected_items: reflectionSelected.slice(),
+    reflection_text: text,
+    confidence: confidenceScore
+  });
+  var msg = document.getElementById('statusMsg');
+  msg.classList.add('visible');
+  document.getElementById('submitReflection').disabled = true;
+  document.getElementById('submitReflection').textContent = '已提交 ✓';
+}
+
+function updateDisplay(){
+  var xStr = cx.toFixed(2);
+  var yStr = cy.toFixed(2);
+  var zVal = functions[selectedFuncIdx].fn(cx,cy);
+  document.getElementById('xVal').textContent = xStr;
+  document.getElementById('yVal').textContent = yStr;
+  document.getElementById('infoX').textContent = xStr;
+  document.getElementById('infoY').textContent = yStr;
+  document.getElementById('infoZ').textContent = zVal.toFixed(3);
+
+  var ddx = functions_dx[selectedFuncIdx](cx,cy);
+  var ddy = functions_dy[selectedFuncIdx](cx,cy);
+  var mag = Math.sqrt(ddx*ddx + ddy*ddy);
+  var slopeText = '平缓';
+  if(mag > 0.1 && mag <= 0.5) slopeText = '较缓';
+  else if(mag > 0.5 && mag <= 1.5) slopeText = '适中';
+  else if(mag > 1.5 && mag <= 3) slopeText = '较陡';
+  else if(mag > 3) slopeText = '很陡';
+  document.getElementById('infoSlope').textContent = slopeText;
+
+  var fb = document.getElementById('feedbackText');
+  if(mag < 0.05){
+    fb.textContent = '你来到了一个平坦的地方——梯度接近零，可能是极值点或鞍点！';
+  } else if(selectedFuncIdx === 1){
+    fb.textContent = '马鞍面的有趣之处：x方向和y方向的变化趋势相反。观察等高线的交叉形态！';
+  } else if(selectedFuncIdx === 0){
+    fb.textContent = '碗形曲面上，离原点越远高度越大。等高线是一圈圈同心圆。';
+  } else {
+    fb.textContent = '这个曲面比较复杂，等高线形状不规则。注意观察哪里线更密！';
+  }
+
+  if(interactionCount > 5 && !interactionComplete){
+    interactionComplete = true;
+    trackEvent('interaction_complete',{interaction_count:interactionCount});
+  }
+}
+
+function renderCanvas(){
+  if(!ctx) return;
+  var W = canvas.width, H = canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  var func = functions[selectedFuncIdx].fn;
+  var range = 3;
+  var nMesh = 20;
+
+  // Projection parameters
+  var angle = rotAngle * Math.PI / 180;
+  var cosA = Math.cos(angle), sinA = Math.sin(angle);
+  var elevAngle = 0.45;
+  var cosE = Math.cos(elevAngle), sinE = Math.sin(elevAngle);
+
+  var surfaceW = W * 0.42;
+  var surfaceH = H * 0.38;
+  var surfaceOX = W * 0.22;
+  var surfaceOY = H * 0.15;
+
+  var contourOX = W * 0.68;
+  var contourOY = H * 0.58;
+  var contourSize = H * 0.38;
+
+  // Find z range
+  var zMin = Infinity, zMax = -Infinity;
+  for(var xi=-range;xi<=range;xi+=range/10){
+    for(var yi=-range;yi<=range;yi+=range/10){
+      var zv = func(xi,yi);
+      if(zv < zMin) zMin = zv;
+      if(zv > zMax) zMax = zv;
+    }
+  }
+  var zRange = zMax - zMin || 1;
+  var zPad = zRange * 0.15;
+  zMin -= zPad;
+  zMax += zPad;
+  var zRangeF = zMax - zMin || 1;
+
+  function project3D(x,y,z){
+    var px = x, py = y, pz = z;
+    var rx = px * cosA - py * sinA;
+    var ry = px * sinA + py * cosA;
+    var sx = surfaceOX + rx / range * surfaceW * 0.5;
+    var sy = surfaceOY - ry / range * surfaceW * 0.3 - ((z - zMin) / zRangeF) * surfaceH;
+    return [sx, sy];
+  }
+
+  function projectContour(x,y){
+    var sx = contourOX + x / range * contourSize;
+    var sy = contourOY - y / range * contourSize;
+    return [sx, sy];
+  }
+
+  // Draw surface background
+  ctx.save();
+  ctx.fillStyle = '#0a0a1a';
+  ctx.fillRect(0,0,W,H);
+
+  // Draw grid on surface
+  ctx.strokeStyle = 'rgba(78,204,163,0.15)';
+  ctx.lineWidth = 0.5;
+  for(var i=0;i<=nMesh;i++){
+    var t = -range + 2*range*i/nMesh;
+    var p1 = project3D(t, -range, func(t,-range));
+    var p2 = project3D(t, range, func(t,range));
+    ctx.beginPath();
+    ctx.moveTo(p1[0], p1[1]);
+    ctx.lineTo(p2[0], p2[1]);
+    ctx.stroke();
+
+    var p3 = project3D(-range, t, func(-range,t));
+    var p4 = project3D(range, t, func(range,t));
+    ctx.beginPath();
+    ctx.moveTo(p3[0], p3[1]);
+    ctx.lineTo(p4[0], p4[1]);
+    ctx.stroke();
+  }
+
+  // Draw surface mesh with depth coloring
+  for(var i=0;i<nMesh;i++){
+    for(var j=0;j<nMesh;j++){
+      var x1=-range+2*range*i/nMesh, y1=-range+2*range*j/nMesh;
+      var x2=-range+2*range*(i+1)/nMesh, y2=-range+2*range*(j+1)/nMesh;
+      var z1=func(x1,y1), z2=func(x2,y1), z3=func(x2,y2), z4=func(x1,y2);
+      var avgZ = (z1+z2+z3+z4)/4;
+      var brightness = 0.15 + 0.25 * ((avgZ - zMin) / zRangeF);
+      var r = Math.floor(20 + 60*brightness);
+      var g = Math.floor(100 + 100*brightness);
+      var b = Math.floor(120 + 80*brightness);
+      var pts = [project3D(x1,y1,z1), project3D(x2,y1,z2), project3D(x2,y2,z3), project3D(x1,y2,z4)];
+      ctx.fillStyle = 'rgba('+r+','+g+','+b+',0.6)';
+      ctx.beginPath();
+      ctx.moveTo(pts[0][0], pts[0][1]);
+      ctx.lineTo(pts[1][0], pts[1][1]);
+      ctx.lineTo(pts[2][0], pts[2][1]);
+      ctx.lineTo(pts[3][0], pts[3][1]);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(78,204,163,0.2)';
+      ctx.lineWidth = 0.3;
+      ctx.stroke();
+    }
+  }
+
+  // Draw point on surface
+  var pPt = project3D(cx, cy, func(cx,cy));
+  ctx.fillStyle = '#e94560';
+  ctx.beginPath();
+  ctx.arc(pPt[0], pPt[1], 6, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Draw gradient arrow on surface
+  var ddx2 = functions_dx[selectedFuncIdx](cx,cy);
+  var ddy2 = functions_dy[selectedFuncIdx](cx,cy);
+  var mag2 = Math.sqrt(ddx2*ddx2 + ddy2*ddy2);
+  if(mag2 > 0.01){
+    var arrowLen = Math.min(0.8, mag2 * 0.3);
+    var nx = ddx2/mag2, ny = ddy2/mag2;
+    var xGrad = cx + nx * arrowLen;
+    var yGrad = cy + ny * arrowLen;
+    var zGrad = func(xGrad, yGrad);
+    var pGrad = project3D(xGrad, yGrad, zGrad);
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(pPt[0], pPt[1]);
+    ctx.lineTo(pGrad[0], pGrad[1]);
+    ctx.stroke();
+    // Arrowhead
+    var adx = pGrad[0]-pPt[0], ady = pGrad[1]-pPt[1];
+    var aLen = Math.sqrt(adx*adx+ady*ady);
+    if(aLen > 5){
+      var aAngle = Math.atan2(ady, adx);
+      ctx.fillStyle = '#888';
+      ctx.beginPath();
+      ctx.moveTo(pGrad[0], pGrad[1]);
+      ctx.lineTo(pGrad[0]-8*Math.cos(aAngle-0.4), pGrad[1]-8*Math.sin(aAngle-0.4));
+      ctx.lineTo(pGrad[0]-8*Math.cos(aAngle+0.4), pGrad[1]-8*Math.sin(aAngle+0.4));
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // Surface labels
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('3D 曲面视图', surfaceOX - 5, surfaceOY - 12);
+  ctx.fillText('z='+func(cx,cy).toFixed(2), pPt[0]+10, pPt[1]-5);
+  if(mag2 > 0.01){
+    ctx.fillStyle = '#888';
+    ctx.fillText('梯度→', pPt[0]+10, pPt[1]+18);
+  }
+
+  // === CONTOUR PLOT ===
+  // Axis
+  ctx.strokeStyle = '#333';
+  ctx.lineWidth = 1;
+  var cL = contourOX - contourSize;
+  var cR = contourOX + contourSize;
+  var cT = contourOY - contourSize;
+  var cB = contourOY + contourSize;
+  ctx.beginPath();
+  ctx.moveTo(cL, contourOY);
+  ctx.lineTo(cR, contourOY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(contourOX, cT);
+  ctx.lineTo(contourOX, cB);
+  ctx.stroke();
+
+  ctx.fillStyle = '#666';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('x', cR+4, contourOY+4);
+  ctx.fillText('y', contourOX+4, cT-4);
+  ctx.fillText('x='+(-range).toFixed(0), cL-14, contourOY+4);
+  ctx.fillText('x='+range.toFixed(0), cR+4, contourOY+4);
+  ctx.fillText('y='+(-range).toFixed(0), contourOX+4, cB+14);
+  ctx.fillText('y='+range.toFixed(0), contourOX+4, cT-4);
+
+  // Title
+  ctx.fillStyle = '#aaa';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('等高线图 (xy平面)', contourOX - 45, cT - 12);
+
+  // Draw contour lines
+  var zStep = zRangeF / contourCount;
+  var zLevel = zMin;
+
+  // For each contour level, trace using marching
+  var stepSize = 0.08;
+  var resStep = 100;
+
+  for(var ci=0; ci<contourCount; ci++){
+    var zTarget = zMin + (zRangeF * (ci + 0.5) / contourCount);
+    var colorIdx = ci / contourCount;
+    var cr = Math.floor(245 * colorIdx);
+    var cg = Math.floor(197 - 100*colorIdx);
+    var cb = Math.floor(24 + 100*colorIdx);
+    var color = 'rgb('+cr+','+cg+','+cb+')';
+
+    // Simple approach: sample grid and draw contour segments
+    var nStep = resStep;
+    var dxS = 2*range/nStep, dyS = 2*range/nStep;
+
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([]);
+
+    // Horizontal scan lines
+    for(var si=0; si<nStep; si++){
+      var yS = -range + si*dyS;
+      for(var sj=0; sj<nStep; sj++){
+        var xA = -range + sj*dxS;
+        var xB = xA + dxS;
+        var zA = func(xA, yS);
+        var zB = func(xB, yS);
+        if((zA - zTarget) * (zB - zTarget) < 0){
+          var frac = (zTarget - zA) / (zB - zA);
+          var xCross = xA + frac * dxS;
+          var pC = projectContour(xCross, yS);
+          ctx.fillStyle = color;
+          ctx.fillRect(pC[0]-1, pC[1]-1, 2, 2);
+        }
+      }
+    }
+
+    // Vertical scan lines
+    for(var si=0; si<nStep; si++){
+      var xS = -range + si*dxS;
+      for(var sj=0; sj<nStep; sj++){
+        var yA = -range + sj*dyS;
+        var yB = yA + dyS;
+        var zA2 = func(xS, yA);
+        var zB2 = func(xS, yB);
+        if((zA2 - zTarget) * (zB2 - zTarget) < 0){
+          var frac2 = (zTarget - zA2) / (zB2 - zA2);
+          var yCross = yA + frac2 * dyS;
+          var pC2 = projectContour(xS, yCross);
+          ctx.fillStyle = color;
+          ctx.fillRect(pC2[0]-1, pC2[1]-1, 2, 2);
+        }
+      }
+    }
+
+    // Label contour
+    if(ci % Math.max(1, Math.floor(contourCount/4)) === 0){
+      var lx = cx > 0 ? range*0.7 : -range*0.7;
+      var ly = 0;
+      var lp = projectContour(lx, ly);
+      ctx.fillStyle = color;
+      ctx.font = '10px sans-serif';
+      ctx.fillText(zTarget.toFixed(1), lp[0]+4, lp[1]-4);
+    }
+  }
+
+  // Draw point on contour
+  var pContourPt = projectContour(cx, cy);
+  ctx.fillStyle = '#e94560';
+  ctx.beginPath();
+  ctx.arc(pContourPt[0], pContourPt[1], 5, 0, Math.PI*2);
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Draw gradient arrow on contour
+  if(mag2 > 0.01){
+    var arrowLenC = Math.min(0.6, mag2 * 0.2);
+    var gx2 = cx + (ddx2/mag2) * arrowLenC;
+    var gy2 = cy + (ddy2/mag2) * arrowLenC;
+    var pGA = projectContour(gx2, gy2);
+    ctx.strokeStyle = '#888';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(pContourPt[0], pContourPt[1]);
+    ctx.lineTo(pGA[0], pGA[1]);
+    ctx.stroke();
+    var adx2 = pGA[0]-pContourPt[0], ady2 = pGA[1]-pContourPt[1];
+    var aLen2 = Math.sqrt(adx2*adx2+ady2*ady2);
+    if(aLen2 > 5){
+      var aAngle2 = Math.atan2(ady2, adx2);
+      ctx.fillStyle = '#888';
+      ctx.beginPath();
+      ctx.moveTo(pGA[0], pGA[1]);
+      ctx.lineTo(pGA[0]-6*Math.cos(aAngle2-0.4), pGA[1]-6*Math.sin(aAngle2-0.4));
+      ctx.lineTo(pGA[0]-6*Math.cos(aAngle2+0.4), pGA[1]-6*Math.sin(aAngle2+0.4));
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  // Vertical connecting lines
+  ctx.strokeStyle = 'rgba(233,69,96,0.4)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.beginPath();
+  ctx.moveTo(pPt[0], pPt[1]);
+  ctx.lineTo(pContourPt[0], pContourPt[1]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Height indicator on contour
+  ctx.fillStyle = '#e94560';
+  ctx.font = 'bold 11px sans-serif';
+  ctx.fillText('z='+func(cx,cy).toFixed(2), pContourPt[0]+8, pContourPt[1]-8);
+
+  ctx.restore();
+}
+
+function handleCanvasClick(e){
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  var mx = (e.clientX - rect.left) * scaleX;
+  var my = (e.clientY - rect.top) * scaleY;
+
+  // Determine if click is on contour area
+  var contourOX = canvas.width * 0.68;
+  var contourOY = canvas.height * 0.58;
+  var contourSize = canvas.height * 0.38;
+  var range = 3;
+
+  if(Math.abs(mx - contourOX) < contourSize && Math.abs(my - contourOY) < contourSize){
+    cx = ((mx - contourOX) / contourSize) * range;
+    cy = -((my - contourOY) / contourSize) * range;
+    cx = Math.max(-range, Math.min(range, cx));
+    cy = Math.max(-range, Math.min(range, cy));
+    document.getElementById('sliderX').value = cx;
+    document.getElementById('sliderY').value = cy;
+    updateDisplay();
+    renderCanvas();
+    interactionCount++;
+    trackEvent('interaction_change',{action:'canvas_click', x:cx, y:cy});
+  }
+}
+
+function init(){
+  canvas = document.getElementById('mainCanvas');
+  ctx = canvas.getContext('2d');
+
+  var sliderX = document.getElementById('sliderX');
+  var sliderY = document.getElementById('sliderY');
+  var sliderContour = document.getElementById('sliderContour');
+  var sliderRot = document.getElementById('sliderRot');
+
+  sliderX.addEventListener('input', function(){
+    cx = parseFloat(this.value);
+    updateDisplay();
+    renderCanvas();
+    interactionCount++;
+    trackEvent('interaction_change',{action:'slider_x', x:cx, y:cy});
+  });
+
+  sliderY.addEventListener('input', function(){
+    cy = parseFloat(this.value);
+    updateDisplay();
+    renderCanvas();
+    interactionCount++;
+    trackEvent('interaction_change',{action:'slider_y', x:cx, y:cy});
+  });
+
+  sliderContour.addEventListener('input', function(){
+    contourCount = parseInt(this.value);
+    document.getElementById('contourVal').textContent = contourCount + ' 条';
+    renderCanvas();
+    interactionCount++;
+    trackEvent('interaction_change',{action:'contour_density', contour_count:contourCount});
+  });
+
+  sliderRot.addEventListener('input', function(){
+    rotAngle = parseInt(this.value);
+    document.getElementById('rotVal').textContent = rotAngle + '°';
+    renderCanvas();
+    interactionCount++;
+    trackEvent('interaction_change',{action:'rotation', rotation:rotAngle});
+  });
+
+  canvas.addEventListener('click', handleCanvasClick);
+
+  // Drag support on canvas
+  canvas.addEventListener('mousedown', function(e){
+    dragging = true;
+    handleCanvasClick(e);
+  });
+  canvas.addEventListener('mousemove', function(e){
+    if(dragging) handleCanvasClick(e);
+  });
+  canvas.addEventListener('mouseup', function(){ dragging = false; });
+  canvas.addEventListener('mouseleave', function(){ dragging = false; });
+
+  // Touch support
+  canvas.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    var touch = e.touches[0];
+    handleCanvasClick({clientX: touch.clientX, clientY: touch.clientY});
+  }, {passive:false});
+  canvas.addEventListener('touchmove', function(e){
+    e.preventDefault();
+    var touch = e.touches[0];
+    handleCanvasClick({clientX: touch.clientX, clientY: touch.clientY});
+  }, {passive:false});
+
+  updateDisplay();
+  renderCanvas();
+  trackEvent('page_loaded',{});
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

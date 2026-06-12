@@ -1,0 +1,671 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一条曲线上怎样找最低点</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a1a2e;--card:#16213e;--card2:#0f3460;--accent:#e94560;--accent2:#533483;--text:#eee;--text2:#aab;--green:#00c897;--orange:#f5a623;--red:#e74c3c;--blue:#3498db;--border:#2a2a4a}
+body{font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",sans-serif;background:var(--bg);color:var(--text);line-height:1.7;min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+header{text-align:center;padding:24px 0 16px;border-bottom:2px solid var(--border);margin-bottom:20px}
+header h1{font-size:28px;color:var(--accent);margin-bottom:6px}
+header .subtitle{font-size:15px;color:var(--text2)}
+.objective{background:var(--card);border-left:4px solid var(--green);padding:14px 20px;margin-bottom:20px;border-radius:0 8px 8px 0;font-size:15px}
+.objective strong{color:var(--green)}
+.intuition{background:var(--card);padding:18px 22px;border-radius:10px;margin-bottom:20px;font-size:15px;line-height:1.9}
+.intuition h2{font-size:17px;color:var(--orange);margin-bottom:8px}
+.intuition p{color:var(--text2)}
+.intuition em{color:var(--accent);font-style:normal}
+.main-layout{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap}
+.canvas-panel{flex:1;min-width:420px;background:var(--card);border-radius:12px;padding:16px;position:relative}
+.canvas-panel h2{font-size:16px;color:var(--blue);margin-bottom:10px;text-align:center}
+.canvas-panel canvas{width:100%;border-radius:8px;background:#0d1b2a;cursor:crosshair;display:block}
+.info-panel{flex:0 0 300px;display:flex;flex-direction:column;gap:14px}
+.info-box{background:var(--card);border-radius:10px;padding:16px}
+.info-box h3{font-size:15px;color:var(--accent);margin-bottom:10px}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:14px}
+.info-row:last-child{border-bottom:none}
+.info-label{color:var(--text2)}
+.info-value{font-weight:bold;font-family:Consolas,monospace;font-size:14px}
+.sign-positive{color:var(--red)}
+.sign-negative{color:var(--blue)}
+.sign-zero{color:var(--green)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.btn{padding:8px 18px;border:none;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#d63851}
+.btn-secondary{background:var(--card2);color:var(--text)}
+.btn-secondary:hover{background:#1a4a7a}
+.btn-hint{background:var(--accent2);color:#fff}
+.btn-hint:hover{background:#6b44a0}
+.func-selector{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:14px;font-family:inherit;cursor:pointer}
+.feedback-area{min-height:60px;background:var(--card);border-radius:10px;padding:14px 18px;margin-bottom:20px;border-left:4px solid var(--border);transition:all .3s}
+.feedback-area.success{border-left-color:var(--green);background:#0a2a1a}
+.feedback-area.hint-show{border-left-color:var(--orange);background:#2a1a0a}
+.feedback-area.info{border-left-color:var(--blue)}
+.feedback-area p{font-size:14px;line-height:1.8}
+.concept-card{background:linear-gradient(135deg,var(--card),var(--card2));border-radius:12px;padding:20px;margin-bottom:20px;border:1px solid var(--border)}
+.concept-card h2{font-size:17px;color:var(--orange);margin-bottom:12px}
+.concept-card ul{list-style:none;padding:0}
+.concept-card li{padding:8px 0 8px 24px;position:relative;font-size:14px;color:var(--text2);border-bottom:1px solid var(--border)}
+.concept-card li:last-child{border-bottom:none}
+.concept-card li::before{content:"▸";position:absolute;left:4px;color:var(--accent);font-weight:bold}
+.concept-card li strong{color:var(--green)}
+.rating-section{background:var(--card);border-radius:10px;padding:20px;margin-bottom:20px;text-align:center}
+.rating-section h3{font-size:16px;margin-bottom:14px;color:var(--text)}
+.stars{display:flex;justify-content:center;gap:8px;margin-bottom:12px}
+.star-btn{width:48px;height:48px;border-radius:50%;border:2px solid var(--border);background:transparent;cursor:pointer;font-size:22px;color:var(--text2);transition:all .2s;display:flex;align-items:center;justify-content:center}
+.star-btn:hover,.star-btn.active{border-color:var(--orange);color:var(--orange);background:rgba(245,166,35,.15)}
+.rating-text{font-size:13px;color:var(--text2);min-height:20px}
+.reflection-section{background:var(--card);border-radius:10px;padding:20px;margin-bottom:20px}
+.reflection-section h3{font-size:16px;margin-bottom:12px;color:var(--text)}
+.reflection-options{display:flex;flex-wrap:wrap;gap:10px}
+.reflection-btn{padding:10px 16px;border-radius:8px;border:2px solid var(--border);background:transparent;color:var(--text);cursor:pointer;font-size:14px;font-family:inherit;transition:all .2s;flex:1;min-width:140px}
+.reflection-btn:hover{border-color:var(--blue);background:rgba(52,152,219,.1)}
+.reflection-btn.selected{border-color:var(--green);background:rgba(0,200,151,.15);color:var(--green)}
+.summary{background:var(--card2);border-radius:10px;padding:16px 20px;margin-bottom:20px;font-size:14px;color:var(--text2);display:none}
+.summary.show{display:block}
+footer{text-align:center;padding:20px;color:var(--text2);font-size:12px;border-top:1px solid var(--border)}
+@media(max-width:800px){
+.main-layout{flex-direction:column}
+.canvas-panel{min-width:auto}
+.info-panel{flex:none}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>一条曲线上怎样找最低点</h1>
+<p class="subtitle">本节聚焦：一元无约束优化</p>
+</header>
+
+<div class="objective">
+<strong>学习目标：</strong>能找出导数为 0 的候选点，检查端点，并用导数正负变化判断极小值位置。
+</div>
+
+<div class="intuition">
+<h2>💡 直觉解释</h2>
+<p>想象你在山谷中行走——当你到达最低点时，地面是平的（斜率为 0），然后开始上坡。<em>一元函数的局部极值通常出现在导数为 0 的点或端点</em>。如果导数从负变正（下坡→上坡），那个点就是局部最小值；如果从正变负（上坡→下坡），就是局部最大值。<em>导数符号变化能帮助判断最小值</em>。</p>
+</div>
+
+<div class="main-layout">
+<div class="canvas-panel">
+<h2>🖱️ 在曲线上点击任意位置，标注你怀疑的最低点</h2>
+<canvas id="mainCanvas" width="640" height="440"></canvas>
+<div class="controls">
+<button class="btn btn-primary" id="btnReset">重置所有点</button>
+<button class="btn btn-hint" id="btnHint">💡 提示</button>
+<button class="btn btn-secondary" id="btnCheckEndpoints">检查端点</button>
+<select class="func-selector" id="funcSelector">
+<option value="0">f(x) = x³ − 3x</option>
+<option value="1">f(x) = x⁴ − 4x² + 2</option>
+<option value="2">f(x) = x³/3 − x/2 − 2x</option>
+</select>
+</div>
+</div>
+
+<div class="info-panel">
+<div class="info-box">
+<h3>📊 当前标注点信息</h3>
+<div id="pointInfo">
+<p style="color:var(--text2);font-size:13px">点击曲线上的位置来标注候选点...</p>
+</div>
+</div>
+<div class="info-box">
+<h3>📋 已标注候选点</h3>
+<div id="candidatesList" style="max-height:200px;overflow-y:auto;font-size:13px">
+<p style="color:var(--text2)">暂无标注点</p>
+</div>
+</div>
+<div class="info-box">
+<h3>📐 函数信息</h3>
+<div id="funcInfo" style="font-size:13px;color:var(--text2)">
+</div>
+</div>
+</div>
+</div>
+
+<div class="feedback-area info" id="feedbackArea">
+<p>👆 在右侧曲线图上点击，标注你认为可能是最低点的位置。系统会帮你分析该点的导数情况。</p>
+</div>
+
+<div class="concept-card">
+<h2>📖 核心概念卡：找最低点的三步法</h2>
+<ul>
+<li><strong>第一步：找候选点</strong>——令 f′(x) = 0，解出所有临界点。这些点是斜率为 0 的"平坦"位置。</li>
+<li><strong>第二步：检查端点</strong>——定义区间的两个端点也可能是最小值位置，不要遗漏。</li>
+<li><strong>第三步：导数符号检验</strong>——在候选点左侧和右侧各取一点，若导数从 <strong>负</strong>（下坡）变为 <strong>正</strong>（上坡），则该点是局部极小值。</li>
+</ul>
+</div>
+
+<div class="rating-section">
+<h3>🎯 你对"找最低点"的信心有多高？</h3>
+<div class="stars" id="starsContainer">
+<button class="star-btn" data-val="1">1</button>
+<button class="star-btn" data-val="2">2</button>
+<button class="star-btn" data-val="3">3</button>
+<button class="star-btn" data-val="4">4</button>
+<button class="star-btn" data-val="5">5</button>
+</div>
+<div class="rating-text" id="ratingText"></div>
+</div>
+
+<div class="reflection-section">
+<h3>🤔 简短反思：你刚才的操作中，哪一步最有帮助？</h3>
+<div class="reflection-options" id="reflectionOptions">
+<button class="reflection-btn" data-ref="导数数值">看到导数数值</button>
+<button class="reflection-btn" data-ref="符号变化">观察左右导数符号变化</button>
+<button class="reflection-btn" data-ref="可视化曲线">曲线可视化</button>
+<button class="reflection-btn" data-ref="逐步对比">逐步对比不同点</button>
+<button class="reflection-btn" data-ref="提示">系统提示</button>
+</div>
+</div>
+
+<div class="summary" id="summaryArea">
+<strong>📝 学习总结：</strong>
+<span id="summaryText"></span>
+</div>
+
+<footer>
+<p>主动学习互动页 · 一元无约束优化</p>
+</footer>
+</div>
+
+<script>
+(function(){
+window.MAIC_LESSON_META={lesson_id:'D-03',module_id:'OM-D1',course_version:'demo-closed-loop-v1',concept_name:'一元无约束优化'};
+
+var startTime=Date.now();
+var markedPoints=[];
+var currentFunc=0;
+var confidenceSubmitted=false;
+var reflectionSubmitted=false;
+var hintUsed=false;
+var endpointsChecked=false;
+var interactionComplete=false;
+
+var functions=[
+{name:"f(x) = x³ − 3x",deriv:"f′(x) = 3x² − 3",critical:[-1,1],minima:[1],maxima:[-1],domain:[-3,3]},
+{name:"f(x) = x⁴ − 4x² + 2",deriv:"f′(x) = 4x³ − 8x",critical:[0,Math.sqrt(2),-Math.sqrt(2)],minima:[Math.sqrt(2),-Math.sqrt(2)],maxima:[0],domain:[-3,3]},
+{name:"f(x) = x³/3 − 3x/2",deriv:"f′(x) = x² − 3/2",critical:[Math.sqrt(1.5),-Math.sqrt(1.5)],minima:[Math.sqrt(1.5)],maxima:[-Math.sqrt(1.5)],domain:[-3,3]}
+];
+
+function f(x,fi){
+if(fi===0)return x*x*x-3*x;
+if(fi===1)return x*x*x*x-4*x*x+2;
+return x*x*x/3-1.5*x;
+}
+function fp(x,fi){
+if(fi===0)return 3*x*x-3;
+if(fi===1)return 4*x*x*x-8*x;
+return x*x-1.5;
+}
+
+var canvas,ctx,canvasW,canvasH;
+var margin={top:30,right:30,bottom:50,left:60};
+var xMin,xMax,yMin,yMax;
+var dragging=false;
+var mouseX=0,mouseY=0;
+var hoveredX=null;
+
+function setupCanvas(){
+canvas=document.getElementById('mainCanvas');
+ctx=canvas.getContext('2d');
+canvasW=canvas.width;
+canvasH=canvas.height;
+var fn=functions[currentFunc];
+xMin=fn.domain[0];
+xMax=fn.domain[1];
+var yVals=[];
+for(var i=0;i<=100;i++){
+var xx=xMin+(xMax-xMin)*i/100;
+yVals.push(f(xx,currentFunc));
+}
+yMin=Math.min.apply(null,yVals);
+yMax=Math.max.apply(null,yVals);
+var yPad=(yMax-yMin)*0.15||1;
+yMin-=yPad;
+yMax+=yPad;
+document.getElementById('funcInfo').innerHTML='<p style="color:#eee;margin-bottom:4px"><strong>'+fn.name+'</strong></p><p style="margin-bottom:4px">'+fn.deriv+'</p><p>定义区间：['+xMin+', '+xMax+']</p>';
+}
+
+function toCanvasX(x){return margin.left+(x-xMin)/(xMax-xMin)*(canvasW-margin.left-margin.right)}
+function toCanvasY(y){return margin.top+(1-(y-yMin)/(yMax-yMin))*(canvasH-margin.top-margin.bottom)}
+function toMathX(cx){return xMin+(cx-margin.left)/(canvasW-margin.left-margin.right)*(xMax-xMin)}
+function toMathY(cy){return yMax-(cy-margin.top)/(canvasH-margin.top-margin.bottom)*(yMax-yMin)}
+
+function draw(){
+ctx.clearRect(0,0,canvasW,canvasH);
+// Background
+ctx.fillStyle='#0d1b2a';
+ctx.fillRect(0,0,canvasW,canvasH);
+
+// Grid
+ctx.strokeStyle='#1a2a3a';
+ctx.lineWidth=1;
+for(var i=Math.ceil(xMin);i<=Math.floor(xMax);i++){
+var cx=toCanvasX(i);
+ctx.beginPath();ctx.moveTo(cx,margin.top);ctx.lineTo(cx,canvasH-margin.bottom);ctx.stroke();
+}
+for(var j=Math.ceil(yMin);j<=Math.floor(yMax);j++){
+var cy=toCanvasY(j);
+ctx.beginPath();ctx.moveTo(margin.left,cy);ctx.lineTo(canvasW-margin.right,cy);ctx.stroke();
+}
+
+// Axes
+ctx.strokeStyle='#446';
+ctx.lineWidth=2;
+// X axis
+var xAxisY=toCanvasY(0);
+if(xAxisY>=margin.top&&xAxisY<=canvasH-margin.bottom){
+ctx.beginPath();ctx.moveTo(margin.left,xAxisY);ctx.lineTo(canvasW-margin.right,xAxisY);ctx.stroke();
+}
+// Y axis
+var yAxisX=toCanvasX(0);
+if(yAxisX>=margin.left&&yAxisX<=canvasW-margin.right){
+ctx.beginPath();ctx.moveTo(yAxisX,margin.top);ctx.lineTo(yAxisX,canvasH-margin.bottom);ctx.stroke();
+}
+
+// Axis labels
+ctx.fillStyle='#668';
+ctx.font='12px sans-serif';
+ctx.textAlign='center';
+for(var i=Math.ceil(xMin);i<=Math.floor(xMax);i++){
+var cx=toCanvasX(i);
+ctx.fillText(i,cx,canvasH-margin.bottom+18);
+}
+ctx.textAlign='right';
+for(var j=Math.ceil(yMin);j<=Math.floor(yMax);j++){
+var cy=toCanvasY(j);
+if(cy>=margin.top+10&&cy<=canvasH-margin.bottom-10){
+ctx.fillText(j,margin.left-8,cy+4);
+}
+}
+
+// Function curve
+ctx.strokeStyle='#e94560';
+ctx.lineWidth=2.5;
+ctx.beginPath();
+var first=true;
+for(var px=margin.left;px<=canvasW-margin.right;px++){
+var mx=toMathX(px);
+var my=f(mx,currentFunc);
+var cy=toCanvasY(my);
+if(first){ctx.moveTo(px,cy);first=false;}
+else ctx.lineTo(px,cy);
+}
+ctx.stroke();
+
+// Hover effect
+if(hoveredX!==null){
+var hx=toCanvasX(hoveredX);
+ctx.strokeStyle='rgba(255,255,255,0.3)';
+ctx.lineWidth=1;
+ctx.setLineDash([4,4]);
+ctx.beginPath();ctx.moveTo(hx,margin.top);ctx.lineTo(hx,canvasH-margin.bottom);ctx.stroke();
+ctx.setLineDash([]);
+var hy=f(hoveredX,currentFunc);
+var hcy=toCanvasY(hy);
+ctx.fillStyle='rgba(233,69,96,0.8)';
+ctx.beginPath();ctx.arc(hx,hcy,5,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='#fff';
+ctx.font='11px monospace';
+ctx.textAlign='left';
+ctx.fillText('('+hoveredX.toFixed(2)+', '+hy.toFixed(2)+')',hx+10,hcy-8);
+}
+
+// Marked points
+for(var i=0;i<markedPoints.length;i++){
+var pt=markedPoints[i];
+var px=toCanvasX(pt.x);
+var py=toCanvasY(pt.y);
+
+// Point
+ctx.fillStyle=pt.isMin?'#00c897':(pt.isMax?'#3498db':'#f5a623');
+ctx.beginPath();ctx.arc(px,py,8,0,Math.PI*2);ctx.fill();
+ctx.strokeStyle='#fff';
+ctx.lineWidth=2;
+ctx.beginPath();ctx.arc(px,py,8,0,Math.PI*2);ctx.stroke();
+
+// Label
+ctx.fillStyle='#fff';
+ctx.font='bold 12px sans-serif';
+ctx.textAlign='center';
+ctx.fillText('P'+(i+1),px,py-14);
+
+// Tangent line
+var slope=pt.deriv;
+var tLen=60;
+var tAngle=Math.atan(-slope*(yMax-yMin)/(xMax-xMin)*(canvasW-margin.left-margin.right)/(canvasH-margin.top-margin.bottom));
+var tpx1=px+Math.cos(tAngle)*tLen;
+var tpy1=py+Math.sin(tAngle)*tLen;
+var tpx2=px-Math.cos(tAngle)*tLen;
+var tpy2=py-Math.sin(tAngle)*tLen;
+ctx.strokeStyle=pt.isMin?'#00c897':(pt.isMax?'#3498db':'rgba(245,166,35,0.6)');
+ctx.lineWidth=1.5;
+ctx.beginPath();ctx.moveTo(tpx1,tpy1);ctx.lineTo(tpx2,tpy2);ctx.stroke();
+}
+
+// Endpoints markers if checked
+if(endpointsChecked){
+[functions[currentFunc].domain[0],functions[currentFunc].domain[1]].forEach(function(ex){
+var ey=f(ex,currentFunc);
+var ecx=toCanvasX(ex);
+var ecy=toCanvasY(ey);
+ctx.fillStyle='#e94560';
+ctx.beginPath();ctx.arc(ecx,ecy,7,0,Math.PI*2);ctx.fill();
+ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(ecx,ecy,7,0,Math.PI*2);ctx.stroke();
+ctx.fillStyle='#fff';ctx.font='11px sans-serif';ctx.textAlign='center';
+ctx.fillText('端点 x='+ex,ecx,ecy+22);
+});
+}
+
+// Legend
+ctx.fillStyle='rgba(0,0,0,0.6)';
+ctx.fillRect(canvasW-160,8,152,55);
+ctx.strokeStyle='#333';ctx.lineWidth=1;ctx.strokeRect(canvasW-160,8,152,55);
+ctx.font='11px sans-serif';
+ctx.fillStyle='#e94560';ctx.fillRect(canvasW-152,16,16,3);ctx.fillStyle='#ddd';ctx.textAlign='left';ctx.fillText('函数曲线',canvasW-132,22);
+ctx.fillStyle='#f5a623';ctx.fillRect(canvasW-152,32,16,3);ctx.fillStyle='#ddd';ctx.fillText('候选点',canvasW-132,38);
+ctx.fillStyle='#00c897';ctx.fillRect(canvasW-152,48,16,3);ctx.fillStyle='#ddd';ctx.fillText('极小值',canvasW-132,54);
+
+// Title
+ctx.fillStyle='#889';ctx.font='12px sans-serif';ctx.textAlign='left';
+ctx.fillText(functions[currentFunc].name,margin.left+5,margin.top-8);
+}
+
+function updatePointInfo(pt){
+var div=document.getElementById('pointInfo');
+var signClass=function(v){if(v>0.01)return'sign-positive';if(v<-0.01)return'sign-negative';return'sign-zero';};
+var signText=function(v){if(v>0.01)return'正 (+)';if(v<-0.01)return'负 (−)';return'≈ 0';};
+var leftX=pt.x-0.1;
+var rightX=pt.x+0.1;
+if(leftX<xMin)leftX=xMin+0.01;
+if(rightX>xMax)rightX=xMax-0.01;
+var leftDeriv=fp(leftX,currentFunc);
+var rightDeriv=fp(rightX,currentFunc);
+var isMin=pt.isMin,isMax=pt.isMax;
+var judgment='';
+if(isMin)judgment='<span style="color:#00c897">✅ 极小值（导数由负变正）</span>';
+else if(isMax)judgment='<span style="color:#3498db">⬆️ 极大值（导数由正变负）</span>';
+else if(Math.abs(pt.deriv)<0.05)judgment='<span style="color:#f5a623">⚠️ 导数 ≈ 0，需进一步检查</span>';
+else if(pt.deriv>0)judgment='<span style="color:#e74c3c">上坡中，右侧更低</span>';
+else judgment='<span style="color:#3498db">下坡中，左侧更低</span>';
+
+div.innerHTML=
+'<div class="info-row"><span class="info-label">点坐标</span><span class="info-value">('+pt.x.toFixed(3)+', '+pt.y.toFixed(3)+')</span></div>'+
+'<div class="info-row"><span class="info-label">导数 f′(x)</span><span class="info-value '+signClass(pt.deriv)+'">'+pt.deriv.toFixed(4)+'</span></div>'+
+'<div class="info-row"><span class="info-label">左侧导数</span><span class="info-value '+signClass(leftDeriv)+'">f′('+leftX.toFixed(1)+') = '+leftDeriv.toFixed(4)+' ('+signText(leftDeriv)+')</span></div>'+
+'<div class="info-row"><span class="info-label">右侧导数</span><span class="info-value '+signClass(rightDeriv)+'">f′('+rightX.toFixed(1)+') = '+rightDeriv.toFixed(4)+' ('+signText(rightDeriv)+')</span></div>'+
+'<div class="info-row"><span class="info-label">判断</span><span class="info-value" style="font-size:13px">'+judgment+'</span></div>';
+}
+
+function updateCandidatesList(){
+var div=document.getElementById('candidatesList');
+if(markedPoints.length===0){div.innerHTML='<p style="color:var(--text2)">暂无标注点</p>';return;}
+var html='';
+for(var i=0;i<markedPoints.length;i++){
+var pt=markedPoints[i];
+var cls=pt.isMin?'sign-zero':(pt.isMax?'sign-positive':'sign-negative');
+html+='<div class="info-row"><span class="info-label">P'+(i+1)+' ('+pt.x.toFixed(2)+')</span><span class="info-value '+cls+'">f\'='+pt.deriv.toFixed(3)+(pt.isMin?' 极小':(pt.isMax?' 极大':''))+'</span></div>';
+}
+div.innerHTML=html;
+}
+
+function checkPoint(mx){
+var fn=functions[currentFunc];
+var isNearCritical=function(x){
+for(var k=0;k<fn.critical.length;k++){
+if(Math.abs(x-fn.critical[k])<0.15)return true;
+}
+return false;
+};
+var isNearMin=function(x){
+for(var k=0;k<fn.minima.length;k++){
+if(Math.abs(x-fn.minima[k])<0.15)return true;
+}
+return false;
+};
+var isNearMax=function(x){
+for(var k=0;k<fn.maxima.length;k++){
+if(Math.abs(x-fn.maxima[k])<0.15)return true;
+}
+return false;
+};
+var y=f(mx,currentFunc);
+var d=fp(mx,currentFunc);
+var isMin=isNearMin(mx);
+var isMax=isNearMax(mx);
+var pt={x:mx,y:y,deriv:d,isMin:isMin,isMax:isMax};
+markedPoints.push(pt);
+return pt;
+}
+
+function showFeedback(msg,type){
+var el=document.getElementById('feedbackArea');
+el.className='feedback-area '+(type||'info');
+el.innerHTML='<p>'+msg+'</p>';
+}
+
+function getInteractionState(){
+return JSON.stringify({
+points:markedPoints.length,
+hasMin:markedPoints.some(function(p){return p.isMin;}),
+hasMax:markedPoints.some(function(p){return p.isMax;}),
+funcId:currentFunc,
+hintUsed:hintUsed,
+endpointsChecked:endpointsChecked
+});
+}
+
+function trackEvent(eventType,payload){
+var event={
+lesson_id:'D-03',
+module_id:'OM-D1',
+course_version:'demo-closed-loop-v1',
+event_type:eventType,
+timestamp:Date.now(),
+time_on_task_ms:Date.now()-startTime,
+interaction_state:getInteractionState()
+};
+if(payload)Object.assign(event,payload);
+var events=[];
+try{var stored=localStorage.getItem('maic_learning_events');if(stored)events=JSON.parse(stored);}catch(e){}
+events.push(event);
+try{localStorage.setItem('maic_learning_events',JSON.stringify(events));}catch(e){}
+try{window.parent.postMessage({type:'maic_learning_event',payload:event},'*');}catch(e){}
+}
+
+// Canvas events
+function initCanvasEvents(){
+canvas.addEventListener('mousemove',function(e){
+var rect=canvas.getBoundingClientRect();
+var scaleX=canvas.width/rect.width;
+var scaleY=canvas.height/rect.height;
+var cx=(e.clientX-rect.left)*scaleX;
+var cy=(e.clientY-rect.top)*scaleY;
+if(cx>=margin.left&&cx<=canvasW-margin.right&&cy>=margin.top&&cy<=canvasH-margin.bottom){
+hoveredX=toMathX(cx);
+hoveredX=Math.max(xMin+0.01,Math.min(xMax-0.01,hoveredX));
+} else {
+hoveredX=null;
+}
+draw();
+});
+
+canvas.addEventListener('mouseleave',function(){
+hoveredX=null;
+draw();
+});
+
+canvas.addEventListener('click',function(e){
+var rect=canvas.getBoundingClientRect();
+var scaleX=canvas.width/rect.width;
+var scaleY=canvas.height/rect.height;
+var cx=(e.clientX-rect.left)*scaleX;
+var cy=(e.clientY-rect.top)*scaleY;
+if(cx<margin.left||cx>canvasW-margin.right||cy<margin.top||cy>canvasH-margin.bottom)return;
+var mx=toMathX(cx);
+mx=Math.max(xMin+0.01,Math.min(xMax-0.01,mx));
+var pt=checkPoint(mx);
+updatePointInfo(pt);
+updateCandidatesList();
+draw();
+trackEvent('interaction_change',{point_x:pt.x,point_y:pt.y,deriv:pt.deriv,is_min:pt.isMin,is_max:pt.isMax,point_index:markedPoints.length-1});
+
+if(pt.isMin){
+showFeedback('🎉 你找到了一个<em>极小值</em>点！该点导数 ≈ 0，且导数从左侧的<em>负</em>变为右侧的<em>正</em>，说明函数从下坡转为上坡。这就是局部最低点！','success');
+if(!interactionComplete){
+interactionComplete=true;
+trackEvent('interaction_complete',{final_points:markedPoints.length,found_minimum:true});
+}
+} else if(pt.isMax){
+showFeedback('你标注的是一个<em>极大值</em>点（局部最高点）。导数从正变负，函数从上坡转为下坡。要找最低点，继续探索其他位置！','info');
+} else if(Math.abs(pt.deriv)<0.1){
+showFeedback('该点导数接近 0，但可能不是极值点（可能是拐点）。检查左右导数符号是否发生变化。','hint-show');
+} else if(pt.deriv>0){
+showFeedback('该点导数 > 0，函数正在<em>上升</em>（上坡）。最低点应该在<em>左侧</em>，继续向左探索！','info');
+} else {
+showFeedback('该点导数 < 0，函数正在<em>下降</em>（下坡）。最低点应该在<em>右侧</em>，继续向右探索！','info');
+}
+});
+}
+
+function resetPoints(){
+markedPoints=[];
+hoveredX=null;
+interactionComplete=false;
+document.getElementById('pointInfo').innerHTML='<p style="color:var(--text2);font-size:13px">点击曲线上的位置来标注候选点...</p>';
+updateCandidatesList();
+draw();
+showFeedback('👆 已重置。在曲线上点击标注你认为可能是最低点的位置。','info');
+trackEvent('interaction_change',{reset:true});
+}
+
+function showHint(){
+hintUsed=true;
+var fn=functions[currentFunc];
+var minStr=fn.minima.map(function(v){return v.toFixed(2);}).join('、');
+showFeedback('💡 <em>提示</em>：最低点通常出现在导数 = 0 的位置。这个函数的临界点在 x ≈ '+fn.critical.map(function(v){return v.toFixed(2);}).join('、')+'。其中 x ≈ '+minStr+' 是极小值点。试试在这些位置附近点击！','hint-show');
+trackEvent('hint_used',{hint_message:'临界点和极小值位置提示'});
+}
+
+function checkEndpoints(){
+endpointsChecked=true;
+var fn=functions[currentFunc];
+var ep=fn.domain;
+var leftVal=f(ep[0],currentFunc);
+var rightVal=f(ep[1],currentFunc);
+var leftD=fp(ep[0],currentFunc);
+var rightD=fp(ep[1],currentFunc);
+var msg='📌 <em>端点检查</em>：';
+msg+='左端点 x='+ep[0]+'，f='+leftVal.toFixed(3)+'，f\'='+leftD.toFixed(3)+'；';
+msg+='右端点 x='+ep[1]+'，f='+rightVal.toFixed(3)+'，f\'='+rightD.toFixed(3)+'。';
+msg+='对比：f('+ep[0]+')='+leftVal.toFixed(3)+', f('+ep[1]+')='+rightVal.toFixed(3)+'。';
+msg+='端点也可能是最小值位置，需要与极值点比较函数值大小。';
+showFeedback(msg,'info');
+draw();
+trackEvent('interaction_change',{endpoints_checked:true,left_endpoint:ep[0],right_endpoint:ep[1]});
+}
+
+function changeFunc(val){
+currentFunc=parseInt(val);
+markedPoints=[];
+hoveredX=null;
+interactionComplete=false;
+endpointsChecked=false;
+setupCanvas();
+document.getElementById('pointInfo').innerHTML='<p style="color:var(--text2);font-size:13px">点击曲线上的位置来标注候选点...</p>';
+updateCandidatesList();
+draw();
+showFeedback('已切换到 '+functions[currentFunc].name+'。在曲线上点击标注候选点。','info');
+trackEvent('interaction_change',{func_changed:currentFunc});
+}
+
+// Rating
+function initRating(){
+var stars=document.querySelectorAll('.star-btn');
+stars.forEach(function(btn){
+btn.addEventListener('click',function(){
+var val=parseInt(btn.getAttribute('data-val'));
+stars.forEach(function(s){s.classList.remove('active');});
+for(var i=0;i<val;i++)stars[i].classList.add('active');
+var texts=['还不太理解，需要更多练习','有点模糊，需要再看看','基本明白，但不够熟练','比较自信，能独立操作','完全掌握，可以教别人'];
+document.getElementById('ratingText').textContent=texts[val-1];
+if(!confidenceSubmitted){
+confidenceSubmitted=true;
+trackEvent('confidence_submitted',{confidence:val});
+updateSummary();
+}
+});
+});
+}
+
+// Reflection
+function initReflection(){
+var btns=document.querySelectorAll('.reflection-btn');
+btns.forEach(function(btn){
+btn.addEventListener('click',function(){
+btns.forEach(function(b){b.classList.remove('selected');});
+btn.classList.add('selected');
+var ref=btn.getAttribute('data-ref');
+if(!reflectionSubmitted){
+reflectionSubmitted=true;
+trackEvent('reflection_submitted',{reflection:ref});
+updateSummary();
+}
+});
+});
+}
+
+function updateSummary(){
+if(!confidenceSubmitted||!reflectionSelected)return;
+var el=document.getElementById('summaryArea');
+var refEl=document.querySelector('.reflection-btn.selected');
+var refText=refEl?refEl.getAttribute('data-ref'):'未选择';
+var confVal=0;
+var activeStars=document.querySelectorAll('.star-btn.active');
+confVal=activeStars.length;
+var summaryText='你标注了 '+markedPoints.length+' 个点，'+(interactionComplete?'成功找到了极小值点。':'建议继续尝试找到导数从负变正的点。')+'信心评分：'+confVal+' 分，认为最有帮助的是「'+refText+'」。记住找最低点的关键：令 f\'(x)=0 找临界点，用导数符号变化判断极小，别忘了检查端点！';
+document.getElementById('summaryText').textContent=summaryText;
+el.classList.add('show');
+}
+
+// Track reflection selection for summary
+var reflectionSelected=false;
+(function patchReflection(){
+var origInit=initReflection;
+initReflection=function(){
+var btns=document.querySelectorAll('.reflection-btn');
+btns.forEach(function(btn){
+btn.addEventListener('click',function(){
+reflectionSelected=true;
+});
+});
+origInit();
+};
+})();
+
+// DOMContentLoaded
+document.addEventListener('DOMContentLoaded',function(){
+setupCanvas();
+initCanvasEvents();
+draw();
+trackEvent('page_loaded',{});
+
+document.getElementById('btnReset').addEventListener('click',resetPoints);
+document.getElementById('btnHint').addEventListener('click',showHint);
+document.getElementById('btnCheckEndpoints').addEventListener('click',checkEndpoints);
+document.getElementById('funcSelector').addEventListener('change',function(e){changeFunc(e.target.value);});
+
+initRating();
+initReflection();
+});
+
+})();
+</script>
+</body>
+</html>

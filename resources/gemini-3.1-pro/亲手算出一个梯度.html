@@ -1,0 +1,485 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>亲手算出一个梯度</title>
+<style>
+    body {
+        background-color: #1e1e1e;
+        color: #e0e0e0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        box-sizing: border-box;
+    }
+    header {
+        margin-bottom: 20px;
+        flex-shrink: 0;
+    }
+    h1 {
+        color: #ffffff;
+        margin: 0 0 10px 0;
+        font-size: 24px;
+    }
+    .target, .intuition {
+        margin: 8px 0;
+        padding: 10px 15px;
+        border-radius: 4px;
+        background-color: #252526;
+        font-size: 15px;
+        line-height: 1.4;
+    }
+    .target {
+        border-left: 4px solid #007acc;
+    }
+    .intuition {
+        border-left: 4px solid #4caf50;
+    }
+    .container {
+        display: flex;
+        flex: 1;
+        gap: 20px;
+        overflow: hidden;
+    }
+    .left-panel, .right-panel {
+        background-color: #252526;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 20px;
+        overflow-y: auto;
+    }
+    .left-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .right-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .concept-card {
+        background-color: #2d2d30;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #3e3e42;
+    }
+    .concept-card h3 {
+        margin-top: 0;
+        color: #4fc1ff;
+        font-size: 16px;
+    }
+    .concept-card p {
+        margin-bottom: 0;
+        line-height: 1.5;
+        font-size: 14px;
+    }
+    .step {
+        background-color: #2d2d30;
+        padding: 20px;
+        border-radius: 6px;
+        border: 1px solid #3e3e42;
+    }
+    .step h2 {
+        margin-top: 0;
+        font-size: 18px;
+        color: #dcdcaa;
+        border-bottom: 1px solid #444;
+        padding-bottom: 8px;
+    }
+    .equation-line {
+        font-family: monospace;
+        font-size: 16px;
+        background: #1e1e1e;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+    }
+    input[type="number"] {
+        width: 50px;
+        background: #3c3c3c;
+        color: white;
+        border: 1px solid #555;
+        padding: 4px 8px;
+        border-radius: 4px;
+        text-align: center;
+        font-size: 16px;
+        font-family: monospace;
+    }
+    input[type="number"]:focus {
+        outline: none;
+        border-color: #007acc;
+    }
+    button {
+        background: #007acc;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.2s;
+    }
+    button:hover {
+        background: #005999;
+    }
+    button:disabled {
+        background: #555;
+        cursor: not-allowed;
+    }
+    .feedback-area {
+        width: 100%;
+        padding: 15px;
+        background-color: #2d2d30;
+        border-left: 5px solid #007acc;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        min-height: 24px;
+        font-weight: 500;
+        box-sizing: border-box;
+        line-height: 1.5;
+    }
+    canvas {
+        background-color: #1e1e1e;
+        border: 1px solid #444;
+        border-radius: 6px;
+        max-width: 100%;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .hidden {
+        display: none !important;
+    }
+    .rating-btn {
+        background: #3e3e42;
+        margin-right: 8px;
+        width: 36px;
+        height: 36px;
+        border-radius: 18px;
+        padding: 0;
+        font-weight: bold;
+    }
+    .rating-btn.selected {
+        background: #4caf50;
+        color: white;
+    }
+    textarea {
+        width: 100%;
+        height: 80px;
+        background: #1e1e1e;
+        color: white;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 10px;
+        box-sizing: border-box;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        resize: vertical;
+        font-family: inherit;
+    }
+    textarea:focus {
+        outline: none;
+        border-color: #007acc;
+    }
+    #hint-text {
+        color: #ce9178;
+        font-size: 14px;
+        margin-top: 10px;
+        background: #1e1e1e;
+        padding: 8px;
+        border-radius: 4px;
+        border-left: 3px solid #ce9178;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>亲手算出一个梯度</h1>
+    <div class="target"><strong>本节聚焦：</strong>梯度计算。<strong>学习目标：</strong>能对二元函数求梯度；能代入点得到具体向量；能解释向量每个分量的含义。</div>
+    <div class="intuition"><strong>直觉解释：</strong>对每个变量分别求偏导，再按顺序排成向量，就得到梯度。</div>
+</header>
+
+<main class="container">
+    <div class="left-panel">
+        <div class="concept-card">
+            <h3>概念卡</h3>
+            <p>梯度是多变量函数在各个自变量方向上的偏导数组成的<strong>向量</strong>。对于二维空间中的函数，它表示为一个二维箭头，箭头的方向指向函数值增长最快的方向，箭头的长度代表了增长的速度。</p>
+        </div>
+
+        <div class="step">
+            <h2>第一步：分别求偏导数</h2>
+            <p>给定一个二元函数：</p>
+            <div class="equation-line">f(x, y) = x² + 3xy + 2y²</div>
+            <p>请分别对变量 x 和 y 求偏导（提示：对 x 求导时，把 y 看作不变的常数）：</p>
+            
+            <div class="equation-line">
+                f_x = <input id="fx_x" type="number" placeholder="?" /> x + <input id="fx_y" type="number" placeholder="?" /> y
+            </div>
+            
+            <div class="equation-line">
+                f_y = <input id="fy_x" type="number" placeholder="?" /> x + <input id="fy_y" type="number" placeholder="?" /> y
+            </div>
+            
+            <button id="hint-btn">需要求导提示吗？</button>
+            <div id="hint-text" class="hidden">
+                提示：“x²” 对 x 求导是 “2x”；“3xy” 对 x 求导时把 “3y” 当常数，结果是 “3y”；“2y²” 里没有 x，求导为 0。
+            </div>
+        </div>
+
+        <div class="step">
+            <h2>第二步：代入坐标点并组装梯度</h2>
+            <p>我们将刚刚求出的两个偏导数表达式按顺序放入向量 (f_x, f_y) 中。</p>
+            <p>现在，计算函数在点 <strong>(1, 1)</strong> 处的梯度向量，即分别把 x=1, y=1 代入上面的偏导数公式中计算出具体数值：</p>
+            
+            <div class="equation-line">
+                ∇f(1, 1) = ( <input id="grad_x" type="number" placeholder="?" /> , <input id="grad_y" type="number" placeholder="?" /> )
+            </div>
+        </div>
+
+        <div id="evaluation-area" class="step hidden">
+            <h2>任务完成反思</h2>
+            <p>你对“代入数值计算梯度并理解其向量含义”的信心如何？（1-5分）</p>
+            <div>
+                <button class="rating-btn" data-val="1">1</button>
+                <button class="rating-btn" data-val="2">2</button>
+                <button class="rating-btn" data-val="3">3</button>
+                <button class="rating-btn" data-val="4">4</button>
+                <button class="rating-btn" data-val="5">5</button>
+            </div>
+            <p style="margin-top:15px;">简短反思：你觉得求偏导和求梯度之间最大的联系是什么？</p>
+            <textarea id="reflection-text" placeholder="在这里写下你的想法..."></textarea>
+            <button id="submit-reflection">提交反思记录</button>
+        </div>
+    </div>
+
+    <div class="right-panel">
+        <div id="feedback-area" class="feedback-area">
+            请在左侧填写求导系数开始计算...
+        </div>
+        <canvas id="grad-canvas" width="400" height="400"></canvas>
+    </div>
+</main>
+
+<script>
+    // 课程元数据配置
+    window.MAIC_LESSON_META = {
+        lesson_id: 'C-06',
+        module_id: 'OM-C1',
+        course_version: 'demo-closed-loop-v1',
+        concept_name: '梯度计算'
+    };
+
+    const startTime = Date.now();
+
+    // 学习行为追踪函数
+    function trackEvent(eventType, payload) {
+        const event = {
+            lesson_id: window.MAIC_LESSON_META.lesson_id,
+            module_id: window.MAIC_LESSON_META.module_id,
+            course_version: window.MAIC_LESSON_META.course_version,
+            event_type: eventType,
+            timestamp: Date.now(),
+            time_on_task_ms: Date.now() - startTime,
+            interaction_state: payload
+        };
+        let events = [];
+        try {
+            events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+        } catch(e) {}
+        events.push(event);
+        localStorage.setItem('maic_learning_events', JSON.stringify(events));
+        
+        if (window.parent && window.parent !== window) {
+            window.parent.postMessage({ type: 'maic_learning_event', payload: event }, '*');
+        }
+    }
+
+    // 画布绘制逻辑
+    const canvas = document.getElementById('grad-canvas');
+    const ctx = canvas.getContext('2d');
+
+    function drawCanvas(showArrow) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const scale = 20; // 每个单位20像素
+        const cx = 200;   // 中心原点X
+        const cy = 200;   // 中心原点Y
+        
+        // 绘制背景
+        ctx.fillStyle = '#1e1e1e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // 绘制网格
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 1;
+        for(let i = -10; i <= 10; i++) {
+            ctx.beginPath(); ctx.moveTo(0, cy + i * scale); ctx.lineTo(400, cy + i * scale); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx + i * scale, 0); ctx.lineTo(cx + i * scale, 400); ctx.stroke();
+        }
+        
+        // 绘制坐标轴
+        ctx.strokeStyle = '#666666';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(400, cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, 400); ctx.stroke();
+        
+        ctx.fillStyle = '#888888';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('X 轴', 360, cy - 10);
+        ctx.fillText('Y 轴', cx + 10, 20);
+        
+        // 绘制固定点 (1, 1)
+        const pointX = cx + 1 * scale;
+        const pointY = cy - 1 * scale; // Canvas Y轴向下，因此减去
+        
+        ctx.fillStyle = '#dcdcaa';
+        ctx.beginPath();
+        ctx.arc(pointX, pointY, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.fillText('点 (1, 1)', pointX + 10, pointY - 10);
+        
+        // 如果正确计算了梯度，绘制箭头
+        if (showArrow) {
+            const gradX = 5;
+            const gradY = 7;
+            const endX = pointX + gradX * scale;
+            const endY = pointY - gradY * scale;
+            
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 3;
+            
+            // 绘制主干
+            ctx.beginPath();
+            ctx.moveTo(pointX, pointY);
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+            
+            // 绘制箭头头部
+            const angle = Math.atan2(endY - pointY, endX - pointX);
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 12 * Math.cos(angle - Math.PI / 6), endY - 12 * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(endX - 12 * Math.cos(angle + Math.PI / 6), endY - 12 * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fillStyle = '#ff6b6b';
+            ctx.fill();
+            
+            ctx.fillStyle = '#ff6b6b';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillText('∇f = (5, 7)', endX + 15, endY);
+        }
+    }
+
+    // 交互逻辑处理
+    const inputIds = ['fx_x', 'fx_y', 'fy_x', 'fy_y', 'grad_x', 'grad_y'];
+    let isTaskComplete = false;
+
+    function handleInput() {
+        const vals = {};
+        inputIds.forEach(id => {
+            vals[id] = parseInt(document.getElementById(id).value, 10);
+        });
+
+        const feedback = document.getElementById('feedback-area');
+        
+        // 判断是否所有框都是空的
+        if (Object.values(vals).every(v => isNaN(v))) {
+            feedback.innerHTML = '请在左侧填写求导系数开始计算...';
+            feedback.style.borderLeftColor = '#007acc';
+            drawCanvas(false);
+            return;
+        }
+
+        let step1Passed = false;
+        let step2Passed = false;
+        let messages = [];
+
+        // 验证步骤一（偏导数系数）
+        if (vals.fx_x === 2 && vals.fx_y === 3 && vals.fy_x === 3 && vals.fy_y === 4) {
+            step1Passed = true;
+            messages.push('✅ 偏导数系数填写完全正确！');
+        } else {
+            const isStep1Filled = !isNaN(vals.fx_x) && !isNaN(vals.fx_y) && !isNaN(fy_x) && !isNaN(fy_y);
+            if (isStep1Filled) {
+                messages.push('❌ 偏导数系数有误，请再仔细检查求偏导的规则。');
+            } else {
+                messages.push('👉 请继续完善第一步的偏导数系数。');
+            }
+        }
+
+        // 验证步骤二（代入坐标计算梯度）
+        if (step1Passed) {
+            if (!isNaN(vals.grad_x) || !isNaN(vals.grad_y)) {
+                if (vals.grad_x === 5 && vals.grad_y === 7) {
+                    step2Passed = true;
+                    messages.push('🎉 恭喜你！梯度向量数值完全正确。右侧画布已经绘制出了代表函数值上升最快方向的梯度箭头。');
+                } else {
+                    messages.push('❌ 梯度值计算不准确。请确认将 x=1, y=1 代入了正确的偏导数式子。');
+                }
+            } else {
+                messages.push('👉 现在，请将坐标 (1, 1) 代入你刚刚求出的偏导数中，填写出具体的梯度向量。');
+            }
+        }
+
+        // 渲染反馈信息和图表
+        feedback.innerHTML = messages.join('<br>');
+        feedback.style.borderLeftColor = step2Passed ? '#4caf50' : (step1Passed ? '#ffcc00' : '#007acc');
+        
+        drawCanvas(step2Passed);
+        
+        // 事件追踪
+        trackEvent('interaction_change', vals);
+
+        if (step2Passed && !isTaskComplete) {
+            isTaskComplete = true;
+            document.getElementById('evaluation-area').classList.remove('hidden');
+            trackEvent('interaction_complete', vals);
+        }
+    }
+
+    // 绑定事件
+    document.addEventListener('DOMContentLoaded', () => {
+        trackEvent('page_loaded', {});
+        drawCanvas(false);
+
+        inputIds.forEach(id => {
+            document.getElementById(id).addEventListener('input', handleInput);
+        });
+
+        // 提示按钮事件
+        document.getElementById('hint-btn').addEventListener('click', (e) => {
+            document.getElementById('hint-text').classList.remove('hidden');
+            e.target.classList.add('hidden');
+            trackEvent('hint_used', { hint_target: 'partial_derivatives' });
+        });
+
+        // 信心评分事件
+        const ratingBtns = document.querySelectorAll('.rating-btn');
+        ratingBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                ratingBtns.forEach(b => b.classList.remove('selected'));
+                e.target.classList.add('selected');
+                trackEvent('confidence_submitted', { score: parseInt(e.target.dataset.val, 10) });
+            });
+        });
+
+        // 反思提交事件
+        const submitBtn = document.getElementById('submit-reflection');
+        submitBtn.addEventListener('click', () => {
+            const text = document.getElementById('reflection-text').value;
+            if (text.trim() !== '') {
+                trackEvent('reflection_submitted', { reflection_text: text });
+                submitBtn.disabled = true;
+                submitBtn.innerText = '已提交，感谢你的思考！';
+            }
+        });
+    });
+</script>
+</body>
+</html>
