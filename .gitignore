@@ -19,6 +19,11 @@ logs/
 server.err.log
 server.out.log
 
+# Local deployment/tunnel configuration
+DEPLOY_ECNU_TUNNEL.md
+ops/cloudflared/
+ops/windows/
+
 # Browser test/check profiles
 .chrome-check-profile*/
 .edge-check-profile*/
@@ -32,3 +37,4 @@ Thumbs.db
 # Local share/export artifacts
 calculus-quest-source.zip
 calculus-quest-main.bundle
+PROJECT_GUIDE.md

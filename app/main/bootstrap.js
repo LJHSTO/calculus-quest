@@ -85,10 +85,16 @@ document.querySelector("#reset-progress").addEventListener("click", () => {
 
 // ==== Interaction Tracking System ====
 const interactionQueue = [];
+const onlinePeriodFlushMs = 5 * 60 * 1000;
+const minOnlinePeriodSeconds = 60;
 let interactionFlushTimer = null;
 let interactionUnitStart = null;
 let interactionUnitId = null;
 let interactionHeartbeat = null;
+let interactionViewTimer = null;
+let interactionUnitTimer = null;
+let interactionTrackingReady = false;
+let onlinePeriodStart = null;
 
 function trackInteraction(eventType, data = {}) {
   if (!isSignedIn()) return;
@@ -113,8 +119,36 @@ async function flushInteractions() {
   }
 }
 
+function currentInteractionView() {
+  return document.querySelector('.view.active')?.id || '';
+}
+
+function currentInteractionUnit() {
+  return document.querySelector('.lesson-card.active')?.dataset?.unit || currentUnitId || "";
+}
+
+function trackOnlinePeriod(reason = "interval") {
+  if (!isSignedIn() || !onlinePeriodStart) return;
+  const now = Date.now();
+  const seconds = Math.round((now - onlinePeriodStart) / 1000);
+  if (seconds >= minOnlinePeriodSeconds) {
+    trackInteraction('online_period', {
+      startedAt: new Date(onlinePeriodStart).toISOString(),
+      endedAt: new Date(now).toISOString(),
+      seconds,
+      view: currentInteractionView(),
+      unitId: currentInteractionUnit(),
+      reason
+    });
+  }
+  onlinePeriodStart = document.hidden ? null : now;
+}
+
 function setupInteractionTracking() {
   if (!isSignedIn()) return;
+  onlinePeriodStart = Date.now();
+  if (interactionTrackingReady) return;
+  interactionTrackingReady = true;
   // Click tracking on navigation and data- elements
   document.addEventListener("click", (e) => {
     const el = e.target.closest("[data-view], [data-unit], .chapter-card, .lesson-card, .nav-button");
@@ -129,7 +163,8 @@ function setupInteractionTracking() {
   });
   // View change tracking (polling-based to avoid monkey-patching)
   let lastTrackedView = '';
-  setInterval(() => {
+  clearInterval(interactionViewTimer);
+  interactionViewTimer = setInterval(() => {
     const active = document.querySelector('.view.active')?.id || '';
     if (active && active !== lastTrackedView) {
       trackInteraction('view_change', { view: active, prev: lastTrackedView });
@@ -137,7 +172,8 @@ function setupInteractionTracking() {
     }
   }, 300);
   // Unit timing
-  setInterval(() => {
+  clearInterval(interactionUnitTimer);
+  interactionUnitTimer = setInterval(() => {
     const currentUnit = document.querySelector('.lesson-card.active')?.dataset?.unit || '';
     if (currentUnit && currentUnit !== interactionUnitId) {
       if (interactionUnitId && interactionUnitStart) {
@@ -167,18 +203,23 @@ function setupInteractionTracking() {
         const sec = Math.round((Date.now() - interactionUnitStart) / 1000);
         if (sec >= 5) trackInteraction('leave_unit', { unitId: interactionUnitId, seconds: sec });
       }
+      trackOnlinePeriod("hidden");
       trackInteraction('visibility', { hidden: true });
     } else {
+      onlinePeriodStart = Date.now();
       trackInteraction('visibility', { hidden: false });
     }
   });
-  // Heartbeat
+  // Online presence is recorded as coarse periods instead of frequent raw heartbeats.
   clearInterval(interactionHeartbeat);
   interactionHeartbeat = setInterval(() => {
-    trackInteraction('heartbeat', { view: document.querySelector('.view.active')?.id || '' });
-  }, 30000);
+    if (!document.hidden) trackOnlinePeriod("interval");
+  }, onlinePeriodFlushMs);
   // Flush on unload
-  window.addEventListener("beforeunload", flushInteractions);
+  window.addEventListener("beforeunload", () => {
+    trackOnlinePeriod("unload");
+    flushInteractions();
+  });
 }
 
 

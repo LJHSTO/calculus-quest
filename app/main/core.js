@@ -334,6 +334,7 @@ async function loginParticipant(nickname) {
   
  saveState();
  renderAll();
+ setupInteractionTracking();
  await syncLearningSnapshot("login");
 }
 
@@ -342,6 +343,7 @@ function logoutParticipant() {
   stopNarrationQueue();
   state.participant = null;
   state.authToken = "";
+  onlinePeriodStart = null;
   localStorage.removeItem(AUTH_TOKEN_KEY);
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(LAST_PARTICIPANT_KEY);

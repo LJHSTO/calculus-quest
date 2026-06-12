@@ -820,6 +820,23 @@ function durationText(seconds) {
   return rest ? `${min} 分 ${rest} 秒` : `${min} 分钟`;
 }
 
+function shortDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
+  return date.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+}
+
+function interactionEventType(row) {
+  return row.payload?.eventType || row.type || "unknown";
+}
+
 function interactionTypeName(type) {
   return ({
     click: "点击",
@@ -828,6 +845,7 @@ function interactionTypeName(type) {
     leave_unit: "离开模块",
     visibility: "页面可见性",
     heartbeat: "在线心跳",
+    online_period: "在线时段",
     interactive_ready: "实验打开",
     interactive_click: "实验点击",
     interactive_input: "实验输入",
@@ -861,6 +879,15 @@ function humanInteractionSummary(row) {
   }
   if (type === "heartbeat") {
     return `仍在线学习，当前停留在${viewName(data.view)}。`;
+  }
+  if (type === "online_period") {
+    const range = data.startedAt || data.endedAt
+      ? `（${shortDateTime(data.startedAt)} - ${shortDateTime(data.endedAt)}）`
+      : "";
+    const estimated = data.estimated ? "约 " : "";
+    const merged = data.count ? `，合并 ${data.count} 条旧心跳` : "";
+    const unit = data.unitId ? `，模块：${unitName(data.unitId)}` : "";
+    return `在线学习 ${estimated}${durationText(data.seconds)}${range}，页面：${viewName(data.view)}${unit}${merged}。`;
   }
   if (type === "interactive_ready") {
     return `打开互动实验「${data.unitLabel || unitName(data.unitId)}」。`;
@@ -908,6 +935,72 @@ function normalizeInteractionData(data) {
   };
 }
 
+function collapseHeartbeatRows(rows) {
+  const heartbeatGapMs = 2 * 60 * 1000;
+  const legacyHeartbeatSeconds = 30;
+  const output = [];
+  const groups = new Map();
+  const flushGroup = (key) => {
+    const group = groups.get(key);
+    if (!group) return;
+    const observedSeconds = Math.max(0, Math.round((group.lastAt - group.firstAt) / 1000));
+    const seconds = Math.max(legacyHeartbeatSeconds, observedSeconds + legacyHeartbeatSeconds);
+    output.push({
+      ...group.lastRow,
+      created_at: group.endedAt,
+      payload: {
+        eventType: "online_period",
+        data: {
+          startedAt: group.startedAt,
+          endedAt: group.endedAt,
+          seconds,
+          view: group.view,
+          count: group.count,
+          estimated: true,
+          source: "heartbeat"
+        }
+      }
+    });
+    groups.delete(key);
+  };
+
+  [...rows].reverse().forEach((row) => {
+    const type = interactionEventType(row);
+    if (type !== "heartbeat") {
+      output.push(row);
+      return;
+    }
+    const data = row.payload?.data || {};
+    const at = new Date(row.created_at || "").getTime();
+    if (!at) {
+      output.push(row);
+      return;
+    }
+    const key = `${row.user_id || row.nickname || ""}|${data.view || ""}`;
+    const existing = groups.get(key);
+    if (!existing || at - existing.lastAt > heartbeatGapMs) {
+      if (existing) flushGroup(key);
+      groups.set(key, {
+        firstAt: at,
+        lastAt: at,
+        startedAt: row.created_at,
+        endedAt: row.created_at,
+        view: data.view || "",
+        count: 1,
+        lastRow: row
+      });
+      return;
+    }
+    existing.lastAt = at;
+    existing.endedAt = row.created_at;
+    existing.count += 1;
+    existing.lastRow = row;
+  });
+
+  [...groups.keys()].forEach(flushGroup);
+  return output.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+}
+
 function renderInteractionUserOptions(users = allUsers) {
   const select = document.getElementById("interaction-user-filter");
   if (!select) return;
@@ -939,7 +1032,8 @@ function updateInteractionPager(meta) {
 // ---- Interaction Tracking ----
 function renderInteractions(data) {
   const meta = normalizeInteractionData(data);
-  const rows = meta.rows.map(d => ({ ...d, payload: parsePayload(d.payload) }));
+  const rawRows = meta.rows.map(d => ({ ...d, payload: parsePayload(d.payload) }));
+  const rows = collapseHeartbeatRows(rawRows);
   updateInteractionPager(meta);
   if (!rows.length) {
     document.getElementById("interaction-metrics").innerHTML = '<div class="metric-card"><div class="value">0</div><div class="label">暂无交互数据</div></div>';
@@ -951,7 +1045,7 @@ function renderInteractions(data) {
   const types = {};
   const dates = {};
   rows.forEach(d => {
-    const rawType = d.payload?.eventType || d.type || "unknown";
+    const rawType = interactionEventType(d);
     const et = interactionTypeName(rawType).slice(0, 30);
     types[et] = (types[et] || 0) + 1;
     const day = (d.created_at || "").slice(0, 10);
@@ -959,10 +1053,10 @@ function renderInteractions(data) {
   });
   const userSet = new Set(rows.map(d => d.user_id));
   document.getElementById("interaction-metrics").innerHTML = `
-    <div class="metric-card highlight"><div class="label">交互事件总数</div><div class="value">${meta.total}</div><div class="sub">所选时间范围内</div></div>
+    <div class="metric-card highlight"><div class="label">折叠后显示</div><div class="value">${rows.length}</div><div class="sub">心跳按时段合并</div></div>
     <div class="metric-card good"><div class="label">活跃用户数</div><div class="value">${userSet.size}</div><div class="sub">有交互行为的用户</div></div>
     <div class="metric-card warn"><div class="label">事件类型数</div><div class="value">${Object.keys(types).length}</div><div class="sub">不同操作类型</div></div>
-    <div class="metric-card"><div class="label">当前页记录</div><div class="value">${rows.length}</div><div class="sub">本页显示数量</div></div>`;
+    <div class="metric-card"><div class="label">原始事件总数</div><div class="value">${meta.total}</div><div class="sub">所选时间范围内</div></div>`;
   // Type distribution chart
   destroyChart("interactionTypes");
   const ctx1 = document.getElementById("chart-interaction-types")?.getContext("2d");
@@ -989,7 +1083,7 @@ function renderInteractions(data) {
   const tbody = document.querySelector("#table-interactions tbody");
   if (tbody) {
     tbody.innerHTML = rows.map(d => {
-      const eventType = d.payload?.eventType || d.type || "";
+      const eventType = interactionEventType(d);
       const summary = humanInteractionSummary(d);
       const detail = interactionDetail(d);
       return `<tr>
