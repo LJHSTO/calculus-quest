@@ -1,0 +1,664 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>内积判断两个方向是否一致</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#1a1a2e;color:#e0e0e0;min-height:100vh;line-height:1.6}
+.header{background:linear-gradient(135deg,#16213e,#0f3460);padding:20px 30px;text-align:center;border-bottom:3px solid #e94560}
+.header h1{font-size:1.8em;color:#fff;margin-bottom:5px}
+.header p{color:#a0c4ff;font-size:0.95em}
+.container{display:flex;max-width:1200px;margin:20px auto;padding:0 15px;gap:20px}
+.left-panel{flex:1;min-width:0}
+.right-panel{flex:1.2;min-width:0}
+.section{background:#16213e;border-radius:12px;padding:20px;margin-bottom:18px;border:1px solid #0f3460}
+.section h2{color:#e94560;font-size:1.15em;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #0f3460}
+.section h3{color:#a0c4ff;font-size:1em;margin:10px 0 6px}
+.goal{background:#0f3460;border-left:4px solid #e94560;padding:12px 16px;border-radius:0 8px 8px 0;margin-bottom:18px;font-size:1em;color:#c0d8f0}
+.canvas-wrap{text-align:center;position:relative}
+canvas{background:#0d1b2a;border-radius:10px;border:2px solid #1a3a5c;display:block;margin:0 auto;cursor:crosshair;max-width:100%}
+.info-row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+.info-box{flex:1;min-width:120px;padding:10px 12px;border-radius:8px;font-size:0.9em;text-align:center;font-weight:bold}
+.positive{background:#1b4332;color:#95d5b2;border:1px solid #2d6a4f}
+.zero-b{background:#5c4a1e;color:#ffd166;border:1px solid #8a6d1e}
+.negative{background:#4a1942;color:#e0a0c0;border:1px solid #6b2d5b}
+.legend{display:flex;gap:12px;margin-top:12px;flex-wrap:wrap;justify-content:center}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.85em}
+.legend-color{width:18px;height:18px;border-radius:4px}
+.controls{margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center}
+.controls label{font-size:0.9em;color:#a0c4ff}
+.controls input[type=range]{width:120px;accent-color:#e94560}
+.controls button{background:#e94560;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:0.9em;transition:background 0.2s}
+.controls button:hover{background:#ff6b81}
+.controls button.secondary{background:#1a3a5c;border:1px solid #2a5a8c}
+.controls button.secondary:hover{background:#2a5a8c}
+.concept-card{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:12px}
+.card-item{background:#0f3460;padding:14px;border-radius:8px;text-align:center}
+.card-item .icon{font-size:1.8em;margin-bottom:6px}
+.card-item .label{font-size:0.85em;color:#a0c4ff;margin-bottom:4px}
+.card-item .value{font-size:1.1em;font-weight:bold}
+.confidence-section{margin-top:18px}
+.confidence-section h2{color:#e94560;font-size:1.15em;margin-bottom:10px}
+.confidence-btns{display:flex;gap:8px;justify-content:center;margin:10px 0}
+.conf-btn{width:44px;height:44px;border-radius:50%;border:2px solid #0f3460;background:#16213e;color:#e0e0e0;font-size:1.1em;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center}
+.conf-btn:hover,.conf-btn.active{background:#e94560;border-color:#e94560;color:#fff}
+.conf-label{color:#a0c4ff;font-size:0.85em;text-align:center;margin:6px 0}
+.reflection-section{margin-top:18px}
+.reflection-section h2{color:#e94560;font-size:1.15em;margin-bottom:10px}
+.reflection-section textarea{width:100%;min-height:80px;background:#0d1b2a;border:1px solid #1a3a5c;border-radius:8px;color:#e0e0e0;padding:12px;font-size:0.95em;resize:vertical;font-family:inherit}
+.reflection-section textarea:focus{outline:none;border-color:#e94560}
+.reflection-section .submit-row{margin-top:10px;text-align:right}
+.reflection-section .submit-row button{background:#e94560;color:#fff;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-size:0.9em}
+.feedback-msg{background:#1b4332;border:1px solid #2d6a4f;color:#95d5b2;padding:8px 14px;border-radius:6px;margin-top:8px;font-size:0.9em;display:none}
+.feedback-msg.show{display:block}
+.formula{background:#0d1b2a;padding:8px 14px;border-radius:6px;font-family:monospace;color:#ffd166;text-align:center;margin:8px 0;font-size:1em;border:1px solid #1a3a5c}
+.step-indicator{display:flex;gap:8px;margin-bottom:14px;justify-content:center}
+.step-dot{width:10px;height:10px;border-radius:50%;background:#1a3a5c;transition:background 0.3s}
+.step-dot.active{background:#e94560}
+.step-dot.done{background:#2d6a4f}
+@media(max-width:768px){.container{flex-direction:column}.header h1{font-size:1.4em}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>内积判断两个方向是否一致</h1>
+<p>本节聚焦：内积与夹角 — 通过拖动向量，直观感受内积符号与方向关系</p>
+</div>
+
+<div class="container">
+<div class="left-panel">
+<div class="goal" id="goalText">本节聚焦：内积与夹角<br>学习目标：能根据夹角判断内积符号；理解垂直时内积为 0；体会"沿某方向是否会增加"的直觉。</div>
+
+<div class="section">
+<h2>🎯 直觉解释</h2>
+<p>内积就像一个<strong>"方向一致性"检测仪</strong>：</p>
+<ul style="margin:10px 0 10px 20px;font-size:0.95em">
+<li style="margin-bottom:6px">🟢 <strong style="color:#95d5b2">正内积</strong>：夹角小于 90°，两个向量"大致朝同一个方向"</li>
+<li style="margin-bottom:6px">🟡 <strong style="color:#ffd166">零内积</strong>：夹角等于 90°，两个向量"垂直"，互不干扰</li>
+<li style="margin-bottom:6px">🔴 <strong style="color:#e0a0c0">负内积</strong>：夹角大于 90°，两个向量"方向相反"</li>
+</ul>
+<p style="font-size:0.9em;color:#a0c4ff">公式：a⃗·b⃗ = |a⃣||b⃣|cosθ — cosθ 的正负直接决定内积符号</p>
+</div>
+
+<div class="section">
+<h2>📋 概念卡</h2>
+<div class="concept-card">
+<div class="card-item">
+<div class="icon">🟢</div>
+<div class="label">θ &lt; 90°</div>
+<div class="value" style="color:#95d5b2">正内积</div>
+<div style="font-size:0.75em;color:#a0c4ff;margin-top:4px">方向一致</div>
+</div>
+<div class="card-item">
+<div class="icon">🟡</div>
+<div class="label">θ = 90°</div>
+<div class="value" style="color:#ffd166">零内积</div>
+<div style="font-size:0.75em;color:#a0c4ff;margin-top:4px">互相垂直</div>
+</div>
+<div class="card-item">
+<div class="icon">🔴</div>
+<div class="label">θ &gt; 90°</div>
+<div class="value" style="color:#e0a0c0">负内积</div>
+<div style="font-size:0.75em;color:#a0c4ff;margin-top:4px">方向相反</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<h2>💡 提示</h2>
+<div id="hintBox" style="font-size:0.9em;color:#a0c4ff">试试拖动右侧canvas中的向量端点，观察内积符号如何随夹角变化！</div>
+<div class="controls" style="margin-top:10px">
+<button class="secondary" id="hintBtn" onclick="showHint()">查看提示</button>
+<button class="secondary" id="resetBtn" onclick="resetVectors()">重置向量</button>
+</div>
+</div>
+</div>
+
+<div class="right-panel">
+<div class="section">
+<h2>🔧 核心互动 — 拖动向量，观察内积</h2>
+<div class="canvas-wrap">
+<canvas id="mainCanvas" width="500" height="420"></canvas>
+</div>
+<div class="info-row">
+<div class="info-box positive" id="posBox">夹角：--°<br>内积：--</div>
+<div class="info-box zero-b" id="zeroBox">cosθ = --<br>投影：--</div>
+<div class="info-box negative" id="negBox">方向关系：--<br>符号：--</div>
+</div>
+<div class="formula" id="formulaBox">a⃗ = (x₁, y₁), b⃗ = (x₂, y₂)</div>
+<div class="controls">
+<label>向量A角度：<input type="range" id="sliderA" min="0" max="360" value="30"> <span id="valA">30°</span></label>
+<label>向量B角度：<input type="range" id="sliderB" min="0" max="360" value="120"> <span id="valB">120°</span></label>
+</div>
+<div class="step-indicator">
+<div class="step-dot active" id="sd1"></div>
+<div class="step-dot" id="sd2"></div>
+<div class="step-dot" id="sd3"></div>
+</div>
+</div>
+
+<div class="section">
+<h2>📊 即时反馈</h2>
+<div id="feedbackText" class="feedback-msg show"></div>
+<div style="font-size:0.88em;color:#a0c4ff;margin-top:10px" id="stepExplain">拖动向量或滑块，观察内积符号的变化。正数表示方向大致相同，零表示垂直，负数表示方向相反。</div>
+</div>
+
+<div class="section">
+<h2>📝 信心评分</h2>
+<p style="font-size:0.9em;margin-bottom:8px;color:#a0c4ff">你有多大把握根据夹角判断内积符号？</p>
+<div class="confidence-btns">
+<button class="conf-btn" data-val="1" onclick="submitConfidence(1, this)">1</button>
+<button class="conf-btn" data-val="2" onclick="submitConfidence(2, this)">2</button>
+<button class="conf-btn" data-val="3" onclick="submitConfidence(3, this)">3</button>
+<button class="conf-btn" data-val="4" onclick="submitConfidence(4, this)">4</button>
+<button class="conf-btn" data-val="5" onclick="submitConfidence(5, this)">5</button>
+</div>
+<div class="conf-label" id="confLabel">选择你的信心等级</div>
+</div>
+
+<div class="section">
+<h2>🤔 简短反思</h2>
+<p style="font-size:0.9em;margin-bottom:8px;color:#a0c4ff">用一句话总结：内积的符号告诉我们关于向量方向的什么信息？</p>
+<textarea id="reflectionText" placeholder="写下你的理解..."></textarea>
+<div class="reflection-section submit-row">
+<button onclick="submitReflection()">提交反思</button>
+</div>
+<div id="reflectionFeedback" class="feedback-msg"></div>
+</div>
+</div>
+</div>
+
+<script>
+window.MAIC_LESSON_META = {lesson_id:'A-07', module_id:'OM-A2b', course_version:'demo-closed-loop-v1', concept_name:'内积与夹角'};
+
+var startTime = Date.now();
+var events = [];
+var hintCount = 0;
+var confidenceValue = 0;
+var isDragging = null;
+
+var canvas = document.getElementById('mainCanvas');
+var ctx = canvas.getContext('2d');
+var W = canvas.width;
+var H = canvas.height;
+var cx = W / 2;
+var cy = H / 2 + 20;
+
+var angleA = 30 * Math.PI / 180;
+var angleB = 120 * Math.PI / 180;
+var magA = 120;
+var magB = 120;
+
+var sliderA = document.getElementById('sliderA');
+var sliderB = document.getElementById('sliderB');
+var valAEl = document.getElementById('valA');
+var valBEl = document.getElementById('valB');
+
+sliderA.value = 30;
+sliderB.value = 120;
+valAEl.textContent = '30°';
+valBEl.textContent = '120°';
+
+sliderA.addEventListener('input', function(){
+  angleA = parseFloat(sliderA.value) * Math.PI / 180;
+  valAEl.textContent = sliderA.value + '°';
+  updateAndDraw();
+  trackEvent('interaction_change', {sliderA_val:sliderA.value, sliderB_val:sliderB.value, interaction_state:'slider_drag'});
+});
+
+sliderB.addEventListener('input', function(){
+  angleB = parseFloat(sliderB.value) * Math.PI / 180;
+  valBEl.textContent = sliderB.value + '°';
+  updateAndDraw();
+  trackEvent('interaction_change', {sliderA_val:sliderA.value, sliderB_val:sliderB.value, interaction_state:'slider_drag'});
+});
+
+canvas.addEventListener('mousedown', function(e){
+  var rect = canvas.getBoundingClientRect();
+  var sx = W / rect.width;
+  var sy = H / rect.height;
+  var mx = (e.clientX - rect.left) * sx;
+  var my = (e.clientY - rect.top) * sy;
+  var ax = cx + magA * Math.cos(angleA);
+  var ay = cy - magA * Math.sin(angleA);
+  var bx = cx + magB * Math.cos(angleB);
+  var by = cy - magB * Math.sin(angleB);
+  var dA = Math.sqrt((mx-ax)*(mx-ax)+(my-ay)*(my-ay));
+  var dB = Math.sqrt((mx-bx)*(mx-bx)+(my-by)*(my-by));
+  if(dA < 20){isDragging='A';}
+  else if(dB < 20){isDragging='B';}
+  else{return;}
+});
+
+canvas.addEventListener('mousemove', function(e){
+  if(!isDragging)return;
+  var rect = canvas.getBoundingClientRect();
+  var sx = W / rect.width;
+  var sy = H / rect.height;
+  var mx = (e.clientX - rect.left) * sx;
+  var my = (e.clientY - rect.top) * sy;
+  var dx = mx - cx;
+  var dy = -(my - cy);
+  var ang = Math.atan2(dy, dx);
+  var deg = Math.round(ang * 180 / Math.PI);
+  if(deg < 0) deg += 360;
+  if(isDragging==='A'){
+    angleA = ang;
+    sliderA.value = deg;
+    valAEl.textContent = deg + '°';
+  } else {
+    angleB = ang;
+    sliderB.value = deg;
+    valBEl.textContent = deg + '°';
+  }
+  updateAndDraw();
+  trackEvent('interaction_change', {sliderA_val:sliderA.value, sliderB_val:sliderB.value, interaction_state:'canvas_drag'});
+});
+
+canvas.addEventListener('mouseup', function(){isDragging=null;});
+canvas.addEventListener('mouseleave', function(){isDragging=null;});
+
+canvas.addEventListener('touchstart', function(e){
+  e.preventDefault();
+  var touch = e.touches[0];
+  var rect = canvas.getBoundingClientRect();
+  var sx = W / rect.width;
+  var sy = H / rect.height;
+  var mx = (touch.clientX - rect.left) * sx;
+  var my = (touch.clientY - rect.top) * sy;
+  var ax = cx + magA * Math.cos(angleA);
+  var ay = cy - magA * Math.sin(angleA);
+  var bx = cx + magB * Math.cos(angleB);
+  var by = cy - magB * Math.sin(angleB);
+  var dA = Math.sqrt((mx-ax)*(mx-ax)+(my-ay)*(my-ay));
+  var dB = Math.sqrt((mx-bx)*(mx-bx)+(my-by)*(my-by));
+  if(dA < 30){isDragging='A';}
+  else if(dB < 30){isDragging='B';}
+});
+
+canvas.addEventListener('touchmove', function(e){
+  e.preventDefault();
+  if(!isDragging)return;
+  var touch = e.touches[0];
+  var rect = canvas.getBoundingClientRect();
+  var sx = W / rect.width;
+  var sy = H / rect.height;
+  var mx = (touch.clientX - rect.left) * sx;
+  var my = (touch.clientY - rect.top) * sy;
+  var dx = mx - cx;
+  var dy = -(my - cy);
+  var ang = Math.atan2(dy, dx);
+  var deg = Math.round(ang * 180 / Math.PI);
+  if(deg < 0) deg += 360;
+  if(isDragging==='A'){
+    angleA = ang;
+    sliderA.value = deg;
+    valAEl.textContent = deg + '°';
+  } else {
+    angleB = ang;
+    sliderB.value = deg;
+    valBEl.textContent = deg + '°';
+  }
+  updateAndDraw();
+});
+
+canvas.addEventListener('touchend', function(){isDragging=null;});
+
+function updateAndDraw(){
+  draw();
+  calcAndDisplay();
+}
+
+function draw(){
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.strokeStyle = '#1a3a5c';
+  ctx.lineWidth = 1;
+
+  ctx.beginPath();
+  ctx.moveTo(30, cy);
+  ctx.lineTo(W - 30, cy);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(cx, 30);
+  ctx.lineTo(cx, H - 30);
+  ctx.stroke();
+
+  ctx.fillStyle = '#4a7a9c';
+  ctx.font = '13px Microsoft YaHei';
+  ctx.fillText('x', W - 35, cy - 8);
+  ctx.fillText('y', cx + 8, 38);
+  ctx.fillText('O', cx - 18, cy + 16);
+
+  var ticks = [-100, -50, 50, 100];
+  ctx.fillStyle = '#2a5a8c';
+  ctx.font = '10px Microsoft YaHei';
+  for(var i = 0; i < ticks.length; i++){
+    var tx = cx + ticks[i];
+    ctx.beginPath();
+    ctx.moveTo(tx, cy - 3);
+    ctx.lineTo(tx, cy + 3);
+    ctx.stroke();
+    ctx.fillText(ticks[i].toString(), tx - 5, cy + 16);
+  }
+
+  for(var j = 0; j < ticks.length; j++){
+    var ty = cy - ticks[j];
+    ctx.beginPath();
+    ctx.moveTo(cx - 3, ty);
+    ctx.lineTo(cx + 3, ty);
+    ctx.stroke();
+  }
+
+  var aEndX = cx + magA * Math.cos(angleA);
+  var aEndY = cy - magA * Math.sin(angleA);
+  var bEndX = cx + magB * Math.cos(angleB);
+  var bEndY = cy - magB * Math.sin(angleB);
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(100, 200, 255, 0.15)';
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(aEndX, aEndY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255, 150, 100, 0.15)';
+  ctx.setLineDash([4, 4]);
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(bEndX, bEndY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  var dotProd = magA * magB * Math.cos(angleA - angleB);
+  var signColor = '#95d5b2';
+  if(dotProd < -0.1) signColor = '#e0a0c0';
+  else if(dotProd > 0.1) signColor = '#95d5b2';
+  else signColor = '#ffd166';
+
+  ctx.beginPath();
+  ctx.strokeStyle = signColor;
+  ctx.lineWidth = 3;
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(aEndX, aEndY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.fillStyle = signColor;
+  ctx.arc(aEndX, aEndY, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.strokeStyle = '#e0a0c0';
+  ctx.lineWidth = 3;
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(bEndX, bEndY);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.fillStyle = '#e0a0c0';
+  ctx.arc(bEndX, bEndY, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 13px Microsoft YaHei';
+  ctx.fillText('a⃗', aEndX + 12, aEndY - 6);
+  ctx.fillText('b⃗', bEndX + 12, bEndY + 18);
+
+  var diff = angleA - angleB;
+  while(diff < 0) diff += Math.PI * 2;
+  while(diff > Math.PI * 2) diff -= Math.PI * 2;
+  var absDiff = diff;
+  if(absDiff > Math.PI) absDiff = Math.PI * 2 - absDiff;
+
+  var arrowR = Math.min(50, magA * 0.4);
+  var startAngleDraw = -angleA;
+  var endAngleDraw = -angleB;
+  if(absDiff < Math.PI){
+    ctx.beginPath();
+    ctx.strokeStyle = '#ffd166';
+    ctx.lineWidth = 2;
+    ctx.arc(cx, cy, arrowR, startAngleDraw, endAngleDraw, false);
+    ctx.stroke();
+  }
+
+  var midAng = (angleA + angleB) / 2;
+  var labelR = arrowR + 18;
+  var labelDeg = Math.round(absDiff * 180 / Math.PI);
+  ctx.fillStyle = '#ffd166';
+  ctx.font = 'bold 14px Microsoft YaHei';
+  ctx.fillText(labelDeg + '°', cx + labelR * Math.cos(midAng) - 14, cy - labelR * Math.sin(midAng) + 5);
+
+  var projLen = magB * Math.cos(angleA - angleB);
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([2, 3]);
+  ctx.moveTo(bEndX, bEndY);
+  ctx.lineTo(cx + projLen * Math.cos(angleA), cy - projLen * Math.sin(angleA));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  var hoverA = Math.sqrt(Math.pow((parseFloat(sliderA.value)||30) - parseFloat(sliderB.value||120), 2)) < 20;
+  if(isDragging === 'A'){
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(100,200,255,0.6)';
+    ctx.lineWidth = 2;
+    ctx.arc(aEndX, aEndY, 12, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  if(isDragging === 'B'){
+    ctx.beginPath();
+    ctx.strokeStyle = 'rgba(255,150,100,0.6)';
+    ctx.lineWidth = 2;
+    ctx.arc(bEndX, bEndY, 12, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+}
+
+function calcAndDisplay(){
+  var cosVal = Math.cos(angleA - angleB);
+  var dotProd = magA * magB * cosVal;
+  var degVal = Math.round(Math.abs(angleA - angleB) * 180 / Math.PI);
+  var rawDiff = (angleA - angleB) * 180 / Math.PI;
+  var absDeg = Math.abs(rawDiff);
+  if(absDeg > 180) absDeg = 360 - absDeg;
+  absDeg = Math.round(absDeg);
+
+  var aX = (magA * Math.cos(angleA)).toFixed(1);
+  var aY = (magA * Math.sin(angleA)).toFixed(1);
+  var bX = (magB * Math.cos(angleB)).toFixed(1);
+  var bY = (magB * Math.sin(angleB)).toFixed(1);
+  document.getElementById('formulaBox').textContent = 'a⃗ = (' + aX + ', ' + aY + '), b⃗ = (' + bX + ', ' + bY + ') | a⃗·b⃗ = ' + dotProd.toFixed(2);
+
+  var posBox = document.getElementById('posBox');
+  var zeroBox = document.getElementById('zeroBox');
+  var negBox = document.getElementById('negBox');
+  var signText = '';
+  var relText = '';
+
+  if(absDeg < 89){
+    posBox.style.display = 'block';
+    zeroBox.style.display = absDeg === 90 ? 'block' : 'none';
+    negBox.style.display = 'none';
+    posBox.innerHTML = '夹角：' + absDeg + '°<br>内积：' + dotProd.toFixed(2);
+    signText = '正（+）';
+    relText = '方向大致一致';
+  } else if(absDeg > 91){
+    posBox.style.display = 'none';
+    zeroBox.style.display = 'none';
+    negBox.style.display = 'block';
+    negBox.innerHTML = '夹角：' + absDeg + '°<br>内积：' + dotProd.toFixed(2);
+    signText = '负（-）';
+    relText = '方向大致相反';
+  } else {
+    posBox.style.display = 'none';
+    zeroBox.style.display = 'block';
+    negBox.style.display = 'none';
+    zeroBox.innerHTML = '夹角：' + absDeg + '°<br>内积：' + dotProd.toFixed(2);
+    signText = '零（0）';
+    relText = '垂直';
+  }
+
+  var cosDisplay = cosVal.toFixed(3);
+  var projDisplay = (magB * cosVal).toFixed(1);
+
+  zeroBox.innerHTML = 'cosθ = ' + cosDisplay + '<br>投影 = ' + projDisplay;
+  negBox.innerHTML = '方向关系：' + relText + '<br>符号：' + signText;
+
+  var feedbackEl = document.getElementById('feedbackText');
+  var explainEl = document.getElementById('stepExplain');
+  var sd1 = document.getElementById('sd1');
+  var sd2 = document.getElementById('sd2');
+  var sd3 = document.getElementById('sd3');
+
+  sd1.className = 'step-dot done';
+  sd2.className = 'step-dot';
+  sd3.className = 'step-dot';
+
+  if(absDeg < 89){
+    feedbackEl.className = 'feedback-msg show';
+    feedbackEl.style.background = '#1b4332';
+    feedbackEl.style.borderColor = '#2d6a4f';
+    feedbackEl.style.color = '#95d5b2';
+    feedbackEl.textContent = '🟢 夹角 ' + absDeg + '° < 90°，内积为正，说明两向量方向大致一致。向量 b⃗ 在 a⃗ 方向上的投影为正，沿 a⃗ 方向"会增加"。';
+    sd2.className = 'step-dot done';
+    sd3.className = 'step-dot done';
+    explainEl.textContent = '夹角越小（接近0°），内积越大正值；夹角接近90°时，内积趋近于0。';
+  } else if(absDeg > 91){
+    feedbackEl.className = 'feedback-msg show';
+    feedbackEl.style.background = '#4a1942';
+    feedbackEl.style.borderColor = '#6b2d5b';
+    feedbackEl.style.color = '#e0a0c0';
+    feedbackEl.textContent = '🔴 夹角 ' + absDeg + '° > 90°，内积为负，说明两向量方向大致相反。向量 b⃗ 在 a⃗ 方向上的投影为负，沿 a⃗ 方向"会减少"。';
+    sd2.className = 'step-dot done';
+    sd3.className = 'step-dot done';
+    explainEl.textContent = '夹角越大（接近180°），内积越大负值；夹角接近90°时，内积趋近于0。';
+  } else {
+    feedbackEl.className = 'feedback-msg show';
+    feedbackEl.style.background = '#3a3010';
+    feedbackEl.style.borderColor = '#8a6d1e';
+    feedbackEl.style.color = '#ffd166';
+    feedbackEl.textContent = '🟡 夹角 ' + absDeg + '° ≈ 90°，内积 ≈ 0，说明两向量互相垂直。向量 b⃗ 在 a⃗ 方向上的投影为0，沿 a⃗ 方向"不增不减"。';
+    sd2.className = 'step-dot done';
+    sd3.className = 'step-dot done';
+    explainEl.textContent = '垂直是内积从正变负的临界状态，cos90° = 0，所以内积为0。';
+  }
+}
+
+function showHint(){
+  hintCount++;
+  var hints = [
+    '💡 提示：cosθ 的符号决定了内积的符号。θ < 90° 时 cosθ > 0，θ = 90° 时 cosθ = 0，θ > 90° 时 cosθ < 0。',
+    '💡 提示：试着把两个向量调到完全相同方向（夹角0°），看看内积变成什么样？再调到相反方向（180°）试试。',
+    '💡 提示：内积 a⃗·b⃗ = |a⃣||b⃣|cosθ，当 θ 增大时，cosθ 从1逐渐减小到-1。'
+  ];
+  var hi = hints[hintCount % hints.length];
+  document.getElementById('hintBox').textContent = hi;
+  document.getElementById('hintBox').style.background = '#16213e';
+  document.getElementById('hintBox').style.border = '1px solid #0f3460';
+  document.getElementById('hintBox').style.borderLeft = '3px solid #ffd166';
+  trackEvent('hint_used', {hint_index:hintCount % 3, hint_count:hintCount});
+}
+
+function resetVectors(){
+  angleA = 30 * Math.PI / 180;
+  angleB = 120 * Math.PI / 180;
+  sliderA.value = 30;
+  sliderB.value = 120;
+  valAEl.textContent = '30°';
+  valBEl.textContent = '120°';
+  updateAndDraw();
+  trackEvent('interaction_complete', {sliderA_val:'30', sliderB_val:'120', interaction_state:'reset', hint_count:hintCount});
+}
+
+function submitConfidence(val, btn){
+  confidenceValue = val;
+  var btns = document.querySelectorAll('.conf-btn');
+  for(var i = 0; i < btns.length; i++){
+    btns[i].classList.remove('active');
+  }
+  btn.classList.add('active');
+  var labels = ['很不确定','不太确定','有点把握','比较有把握','很有把握'];
+  document.getElementById('confLabel').textContent = labels[val - 1];
+  trackEvent('confidence_submitted', {confidence_score:val, confidence_text:labels[val-1], sliderA_val:sliderA.value, sliderB_val:sliderB.value, interaction_state:'confidence_done', hint_count:hintCount});
+}
+
+function submitReflection(){
+  var text = document.getElementById('reflectionText').value.trim();
+  if(text.length < 3){
+    var rf = document.getElementById('reflectionFeedback');
+    rf.className = 'feedback-msg show';
+    rf.style.background = '#4a1942';
+    rf.style.borderColor = '#6b2d5b';
+    rf.style.color = '#e0a0c0';
+    rf.textContent = '请至少写几个字来表达你的理解。';
+    return;
+  }
+  var rf = document.getElementById('reflectionFeedback');
+  rf.className = 'feedback-msg show';
+  rf.style.background = '#1b4332';
+  rf.style.borderColor = '#2d6a4f';
+  rf.style.color = '#95d5b2';
+  rf.textContent = '✅ 反思已记录。内积的符号确实揭示了向量方向的深层关系：正号意味着"朝着同一个方向努力"，零意味着"各自独立互不影响"，负号意味着"背道而驰"。';
+  document.getElementById('reflectionText').value = '';
+  trackEvent('reflection_submitted', {reflection_length:text.length, interaction_state:'reflection_done', hint_count:hintCount, confidence:confidenceValue});
+}
+
+function trackEvent(eventType, payload){
+  var timeOnTask = Date.now() - startTime;
+  var evt = {
+    lesson_id: window.MAIC_LESSON_META.lesson_id,
+    module_id: window.MAIC_LESSON_META.module_id,
+    course_version: window.MAIC_LESSON_META.course_version,
+    event_type: eventType,
+    timestamp: new Date().toISOString(),
+    time_on_task_ms: timeOnTask,
+    interaction_state: payload.interaction_state || 'unknown'
+  };
+  for(var k in payload){
+    if(k !== 'interaction_state' && k !== 'hint_count' && k !== 'confidence'){
+      evt[k] = payload[k];
+    }
+  }
+  if(payload.hint_count !== undefined) evt.hint_count = payload.hint_count;
+  if(payload.confidence !== undefined) evt.confidence = payload.confidence;
+  evt.final_sliderA = sliderA.value;
+  evt.final_sliderB = sliderB.value;
+  events.push(evt);
+  try{
+    var stored = [];
+    var raw = localStorage.getItem('maic_learning_events');
+    if(raw) stored = JSON.parse(raw);
+    stored.push(evt);
+    localStorage.setItem('maic_learning_events', JSON.stringify(stored));
+  } catch(e){}
+  try{
+    window.parent.postMessage({type:'maic_learning_event', payload:evt}, '*');
+  } catch(e){}
+}
+
+window.addEventListener('load', function(){
+  setTimeout(function(){
+    trackEvent('page_loaded', {interaction_state:'initialized', hint_count:0});
+    draw();
+    calcAndDisplay();
+  }, 100);
+});
+
+window.addEventListener('beforeunload', function(){
+  trackEvent('page_unloaded', {time_on_task_ms:Date.now()-startTime, confidence:confidenceValue, hint_count:hintCount, interaction_state:'page_exit'});
+});
+</script>
+</body>
+</html>

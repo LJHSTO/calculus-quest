@@ -1,0 +1,770 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>函数是描述变化的机器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a1d23;--panel:#23272f;--accent:#4f8eff;--accent2:#3ddc84;--warm:#ff9f0a;--danger:#ff453a;--text:#e8eaed;--dim:#8b8fa3;--border:#3a3f4b;--card:#2a2e38}
+body{font-family:-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.header{background:linear-gradient(135deg,#1e2a3a,#2a1e3a);padding:24px 32px;border-bottom:1px solid var(--border);text-align:center}
+.header h1{font-size:28px;font-weight:700;color:#fff;margin-bottom:6px}
+.header .subtitle{font-size:14px;color:var(--dim)}
+.objective{background:var(--accent2);color:#000;padding:12px 24px;text-align:center;font-weight:600;font-size:15px;margin:16px 32px;border-radius:8px}
+.intuition{max-width:800px;margin:16px auto 8px;padding:16px 24px;background:var(--panel);border-radius:10px;border-left:4px solid var(--accent)}
+.intuition h2{font-size:18px;margin-bottom:8px;color:var(--accent)}
+.intuition p{font-size:14px;color:var(--dim);margin-bottom:6px}
+.intuition .example{background:var(--card);padding:8px 12px;border-radius:6px;margin-top:8px;font-size:13px}
+.intuition .example span{color:var(--warm);font-weight:600}
+.main-area{display:flex;gap:16px;padding:16px 24px;max-width:1200px;margin:0 auto}
+.left-panel{flex:0 0 320px;display:flex;flex-direction:column;gap:12px}
+.right-panel{flex:1;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border-radius:10px;padding:16px;border:1px solid var(--border)}
+.card h3{font-size:15px;color:var(--accent);margin-bottom:10px}
+.step-box{background:var(--card);border-radius:8px;padding:12px;margin-bottom:8px;border-left:3px solid var(--accent);transition:border-color .3s}
+.step-box.active{border-left-color:var(--accent2)}
+.step-box .step-label{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.step-box .step-value{font-size:22px;font-weight:700;color:#fff;margin-top:4px;font-family:"Courier New",monospace}
+.step-box .step-hint{font-size:12px;color:var(--dim);margin-top:2px}
+canvas{background:#1a1e28;border-radius:10px;border:1px solid var(--border);cursor:crosshair;display:block;width:100%}
+.slider-group{display:flex;align-items:center;gap:12px;padding:8px 0}
+.slider-group label{font-size:13px;color:var(--dim);white-space:nowrap;min-width:60px}
+.slider-group input[type=range]{flex:1;height:6px;-webkit-appearance:none;appearance:none;background:var(--border);border-radius:3px;outline:none}
+.slider-group input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid #fff}
+.slider-group .slider-val{font-size:16px;font-weight:700;color:var(--accent);min-width:60px;text-align:right;font-family:"Courier New",monospace}
+.func-selector{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.func-btn{padding:6px 12px;border:1px solid var(--border);background:var(--card);color:var(--dim);border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s}
+.func-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.func-btn:hover{border-color:var(--accent)}
+.question-area{margin-top:12px}
+.question-area .q-text{font-size:14px;font-weight:600;color:var(--warm);margin-bottom:8px}
+.q-options{display:flex;gap:8px;flex-wrap:wrap}
+.q-btn{padding:8px 16px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;font-size:13px;transition:all .2s}
+.q-btn:hover{border-color:var(--accent);background:rgba(79,142,255,.1)}
+.q-btn.correct{border-color:var(--accent2);background:rgba(61,220,132,.15);color:var(--accent2)}
+.q-btn.wrong{border-color:var(--danger);background:rgba(255,69,58,.15);color:var(--danger)}
+.feedback-msg{margin-top:8px;padding:8px 12px;border-radius:6px;font-size:13px;display:none}
+.feedback-msg.show{display:block}
+.feedback-msg.success{background:rgba(61,220,132,.12);color:var(--accent2);border:1px solid rgba(61,220,132,.3)}
+.feedback-msg.info{background:rgba(79,142,255,.12);color:var(--accent);border:1px solid rgba(79,142,255,.3)}
+.feedback-msg.warn{background:rgba(255,159,10,.12);color:var(--warm);border:1px solid rgba(255,159,10,.3)}
+.concept-card{max-width:800px;margin:16px auto;padding:16px 20px;background:linear-gradient(135deg,var(--panel),var(--card));border-radius:10px;border:1px solid var(--border)}
+.concept-card h3{font-size:16px;color:var(--accent);margin-bottom:8px}
+.concept-card p{font-size:13px;color:var(--dim);margin-bottom:4px}
+.rating-area{max-width:800px;margin:16px auto;padding:16px 20px;background:var(--panel);border-radius:10px;border:1px solid var(--border);text-align:center}
+.rating-area h3{font-size:15px;margin-bottom:12px;color:var(--text)}
+.rating-stars{display:flex;justify-content:center;gap:8px;margin-bottom:12px}
+.rating-star{font-size:32px;cursor:pointer;color:var(--border);transition:all .15s;user-select:none}
+.rating-star:hover,.rating-star.active{color:var(--warm);transform:scale(1.15)}
+.rating-label{font-size:13px;color:var(--dim);min-height:20px}
+.reflection-area{max-width:800px;margin:16px auto 24px;padding:16px 20px;background:var(--panel);border-radius:10px;border:1px solid var(--border)}
+.reflection-area h3{font-size:15px;margin-bottom:8px;color:var(--text)}
+.reflection-area textarea{width:100%;min-height:80px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);font-size:14px;resize:vertical;font-family:inherit}
+.reflection-area textarea:focus{outline:none;border-color:var(--accent)}
+.submit-btn{margin-top:10px;padding:10px 24px;background:var(--accent);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:background .2s}
+.submit-btn:hover{background:#3a7aee}
+.hint-btn{padding:6px 14px;background:var(--card);border:1px solid var(--warm);border-radius:6px;color:var(--warm);cursor:pointer;font-size:12px;transition:all .2s}
+.hint-btn:hover{background:rgba(255,159,10,.1)}
+.tangent-toggle{display:flex;align-items:center;gap:8px;margin-top:6px}
+.tangent-toggle label{font-size:13px;color:var(--dim);cursor:pointer}
+.tangent-toggle input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px;cursor:pointer}
+.secant-toggle{display:flex;align-items:center;gap:8px;margin-top:4px}
+.secant-toggle label{font-size:13px;color:var(--dim);cursor:pointer}
+.secant-toggle input[type=checkbox]{accent-color:var(--warm);width:16px;height:16px;cursor:pointer}
+@media(max-width:900px){.main-area{flex-direction:column}.left-panel{flex:none;width:100%}}
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>函数是描述变化的机器</h1>
+<div class="subtitle">本节聚焦：函数与输入输出</div>
+</div>
+
+<div class="objective" id="objectiveBox">
+🎯 学习目标：能说出输入、输出和函数规则；能从图像判断函数在上升还是下降；能理解微积分研究"变化"。
+</div>
+
+<div class="intuition" id="intuitionBox">
+<h2>💡 直觉理解</h2>
+<p>函数就像一台<strong>机器</strong>——你给它一个<input>输入</input>，它就按照一条固定的规则，给你一个<output>输出</output>。</p>
+<p>微积分研究的是<strong>输出如何随着输入改变</strong>。</p>
+<div class="example">
+<span>🌡️ 温度随时间变化</span>：输入是"时间"，输出是"温度"。函数规则由天气决定。<br>
+<span>🚗 路程随时间变化</span>：输入是"时间"，输出是"走过的路程"。<br>
+<span>📚 成绩随练习量变化</span>：输入是"练习次数"，输出是"考试成绩"。
+</div>
+</div>
+
+<div class="main-area">
+<!-- 左侧面板：输入-规则-输出 -->
+<div class="left-panel">
+<div class="card">
+<h3>⚙️ 输入 → 规则 → 输出</h3>
+<div class="func-selector" id="funcSelector">
+<button class="func-btn active" data-func="x2">f(x) = x²</button>
+<button class="func-btn" data-func="x3">f(x) = x³</button>
+<button class="func-btn" data-func="sin">f(x) = sin x</button>
+<button class="func-btn" data-func="sqrt">f(x) = √x</button>
+<button class="func-btn" data-func="exp">f(x) = eˣ</button>
+</div>
+
+<div class="step-box" id="stepInput">
+<div class="step-label">📥 输入 x</div>
+<div class="step-value" id="inputVal">x = 1.00</div>
+<div class="step-hint">通过右侧滑块改变输入</div>
+</div>
+
+<div class="step-box" id="stepRule">
+<div class="step-label">🔄 函数规则</div>
+<div class="step-value" id="ruleVal">f(x) = x²</div>
+<div class="step-hint" id="ruleHint">把 x 代入规则计算</div>
+</div>
+
+<div class="step-box" id="stepOutput">
+<div class="step-label">📤 输出 f(x)</div>
+<div class="step-value" id="outputVal">f(1) = 1.00</div>
+<div class="step-hint" id="outputHint">这就是函数的输出值</div>
+</div>
+
+<div class="slider-group">
+<label>滑块 Δx：</label>
+<input type="range" id="deltaSlider" min="-1" max="1" step="0.05" value="0.2">
+<div class="slider-val" id="deltaVal">0.20</div>
+</div>
+
+<div class="secant-toggle">
+<input type="checkbox" id="secantCheck" checked>
+<label for="secantCheck">显示割线（连接两点的直线）</label>
+</div>
+<div class="tangent-toggle">
+<input type="checkbox" id="tangentCheck">
+<label for="tangentCheck">显示近似切线方向</label>
+</div>
+</div>
+
+<div class="card">
+<h3>📊 变化率观察</h3>
+<div class="step-box">
+<div class="step-label">Δx（增量）</div>
+<div class="step-value" id="dxVal">0.20</div>
+</div>
+<div class="step-box">
+<div class="step-label">Δy = f(x+Δx) - f(x)</div>
+<div class="step-value" id="dyVal">0.41</div>
+</div>
+<div class="step-box active">
+<div class="step-label">差商 Δy/Δx（平均变化率）</div>
+<div class="step-value" id="quotVal">2.05</div>
+<div class="step-hint">当 Δx → 0 时，差商趋近于导数</div>
+</div>
+</div>
+
+<div class="card question-area">
+<h3>🤔 思考题</h3>
+<div class="q-text">在 f(x) = x² 的图像上，哪里变化更快？</div>
+<div class="q-options" id="qOptions">
+<button class="q-btn" data-qa="a">x = 0.5 附近</button>
+<button class="q-btn" data-qa="b">x = 2.0 附近</button>
+<button class="q-btn" data-qa="c">两者一样快</button>
+</div>
+<div class="feedback-msg" id="qaFeedback"></div>
+<button class="hint-btn" id="hintBtn" style="margin-top:8px">💡 提示</button>
+<div class="feedback-msg" id="hintFeedback"></div>
+</div>
+</div>
+
+<!-- 右侧面板：图像 -->
+<div class="right-panel">
+<div class="card" style="padding:12px">
+<div class="slider-group">
+<label style="min-width:80px">🎚️ 控制 x：</label>
+<input type="range" id="xSlider" min="-3" max="3" step="0.01" value="1">
+<div class="slider-val" id="xSliderVal">1.00</div>
+</div>
+<canvas id="graphCanvas" width="700" height="480"></canvas>
+<div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:var(--dim)">
+<span>◀ x 减小 → 输出变化</span>
+<span>函数图像上红点随 x 移动</span>
+<span>x 增大 → 输出变化 ▶</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 概念卡 -->
+<div class="concept-card" id="conceptCard">
+<h3>📇 概念卡：函数 = 变化的描述器</h3>
+<p>• <strong>输入</strong>（自变量 x）：你给机器的原料</p>
+<p>• <strong>规则</strong>（函数 f）：机器内部的加工方式</p>
+<p>• <strong>输出</strong>（因变量 y = f(x)）：机器生产的产品</p>
+<p>• <strong>变化率</strong>（差商 Δy/Δx）：输出变化快慢的度量——微积分的核心！</p>
+</div>
+
+<!-- 信心评分 -->
+<div class="rating-area" id="ratingArea">
+<h3>⭐ 你对本节内容的信心如何？</h3>
+<div class="rating-stars" id="ratingStars">
+<span class="rating-star" data-r="1">☆</span>
+<span class="rating-star" data-r="2">☆</span>
+<span class="rating-star" data-r="3">☆</span>
+<span class="rating-star" data-r="4">☆</span>
+<span class="rating-star" data-r="5">☆</span>
+</div>
+<div class="rating-label" id="ratingLabel">点击星星评分（1 = 完全不懂，5 = 完全掌握）</div>
+</div>
+
+<!-- 反思 -->
+<div class="reflection-area" id="reflectionArea">
+<h3>✍️ 简短反思</h3>
+<p style="font-size:13px;color:var(--dim);margin-bottom:8px">用一句话说说：今天你对"函数是描述变化的机器"有什么新理解？</p>
+<textarea id="reflectionText" placeholder="例如：我发现函数就像一台机器，输入不同的值，输出会按照规则变化……"></textarea>
+<button class="submit-btn" id="reflectionSubmit">提交反思</button>
+<div class="feedback-msg" id="reflectionFeedback"></div>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+// ========== 课程元数据 ==========
+window.MAIC_LESSON_META = {
+  lesson_id: 'A-01',
+  module_id: 'OM-A1',
+  course_version: 'demo-closed-loop-v1',
+  concept_name: '函数与输入输出'
+};
+
+var lessonId = 'A-01';
+var moduleId = 'OM-A1';
+var courseVersion = 'demo-closed-loop-v1';
+var pageLoadTime = Date.now();
+
+// ========== 全局状态 ==========
+var currentFunc = 'x2';
+var currentX = 1.0;
+var delta = 0.2;
+var showSecant = true;
+var showTangent = false;
+var confidenceScore = 0;
+var hintUsed = false;
+var qaAnswered = false;
+var interactionCount = 0;
+var reflectionSubmitted = false;
+
+// ========== 函数定义 ==========
+var funcMap = {
+  x2: { fn: function(t) { return t * t; }, label: 'f(x) = x²', domain: [-3, 3] },
+  x3: { fn: function(t) { return t * t * t; }, label: 'f(x) = x³', domain: [-2, 2] },
+  sin: { fn: function(t) { return Math.sin(t); }, label: 'f(x) = sin x', domain: [-3.14, 3.14] },
+  sqrt: { fn: function(t) { return t >= 0 ? Math.sqrt(t) : NaN; }, label: 'f(x) = √x', domain: [0, 4] },
+  exp: { fn: function(t) { return Math.exp(t); }, label: 'f(x) = eˣ', domain: [-2, 2.5] }
+};
+
+// ========== 行为追踪 ==========
+function trackEvent(eventType, payload) {
+  var event = {
+    lesson_id: lessonId,
+    module_id: moduleId,
+    course_version: courseVersion,
+    event_type: eventType,
+    timestamp: new Date().toISOString(),
+    time_on_task_ms: Date.now() - pageLoadTime,
+    interaction_state: buildInteractionState()
+  };
+  if (payload) {
+    for (var key in payload) {
+      if (payload.hasOwnProperty(key)) {
+        event[key] = payload[key];
+      }
+    }
+  }
+  // localStorage
+  try {
+    var events = [];
+    var stored = localStorage.getItem('maic_learning_events');
+    if (stored) {
+      try { events = JSON.parse(stored); } catch(e) { events = []; }
+    }
+    events.push(event);
+    localStorage.setItem('maic_learning_events', JSON.stringify(events));
+  } catch(e) {
+    console.warn('localStorage不可用');
+  }
+  // postMessage
+  try {
+    window.parent.postMessage({ type: 'maic_learning_event', payload: event }, '*');
+  } catch(e) {}
+}
+
+function buildInteractionState() {
+  return {
+    func: currentFunc,
+    x: currentX,
+    delta: delta,
+    showSecant: showSecant,
+    showTangent: showTangent,
+    confidence: confidenceScore,
+    qaAnswered: qaAnswered,
+    hintUsed: hintUsed,
+    interactionCount: interactionCount
+  };
+}
+
+// ========== Canvas 绘图 ==========
+var canvas, ctx;
+var canvasW, canvasH;
+var graphLeft, graphRight, graphTop, graphBottom;
+
+function initCanvas() {
+  canvas = document.getElementById('graphCanvas');
+  ctx = canvas.getContext('2d');
+  var rect = canvas.getBoundingClientRect();
+  canvasW = canvas.width;
+  canvasH = canvas.height;
+  graphLeft = 60;
+  graphRight = canvasW - 20;
+  graphTop = 20;
+  graphBottom = canvasH - 50;
+  drawGraph();
+}
+
+function toScreenX(x) {
+  var fn = funcMap[currentFunc];
+  var dMin = fn.domain[0];
+  var dMax = fn.domain[1];
+  return graphLeft + (x - dMin) / (dMax - dMin) * (graphRight - graphLeft);
+}
+
+function toScreenY(y) {
+  return graphBottom - (y - getYMin()) / (getYMax() - getYMin()) * (graphBottom - graphTop);
+}
+
+function getYMin() {
+  var fn = funcMap[currentFunc].fn;
+  var d = funcMap[currentFunc].domain;
+  var min = Infinity;
+  for (var i = 0; i <= 200; i++) {
+    var t = d[0] + (d[1] - d[0]) * i / 200;
+    var v = fn(t);
+    if (!isNaN(v) && isFinite(v) && v < min) min = v;
+  }
+  if (!isFinite(min)) min = -1;
+  return min - 0.5;
+}
+
+function getYMax() {
+  var fn = funcMap[currentFunc].fn;
+  var d = funcMap[currentFunc].domain;
+  var max = -Infinity;
+  for (var i = 0; i <= 200; i++) {
+    var t = d[0] + (d[1] - d[0]) * i / 200;
+    var v = fn(t);
+    if (!isNaN(v) && isFinite(v) && v > max) max = v;
+  }
+  if (!isFinite(max)) max = 1;
+  return max + 0.5;
+}
+
+function drawGraph() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  var fn = funcMap[currentFunc].fn;
+  var d = funcMap[currentFunc].domain;
+  var yMin = getYMin();
+  var yMax = getYMax();
+
+  // 背景网格
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  // 垂直网格
+  for (var gx = Math.ceil(d[0]); gx <= Math.floor(d[1]); gx++) {
+    var sx = toScreenX(gx);
+    ctx.beginPath();
+    ctx.moveTo(sx, graphTop);
+    ctx.lineTo(sx, graphBottom);
+    ctx.stroke();
+  }
+  // 水平网格
+  for (var gy = Math.ceil(yMin); gy <= Math.floor(yMax); gy++) {
+    var sy = toScreenY(gy);
+    ctx.beginPath();
+    ctx.moveTo(graphLeft, sy);
+    ctx.lineTo(graphRight, sy);
+    ctx.stroke();
+  }
+
+  // 坐标轴
+  ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+  ctx.lineWidth = 1.5;
+  // x轴
+  if (yMin <= 0 && yMax >= 0) {
+    var yAxisScreen = toScreenY(0);
+    ctx.beginPath();
+    ctx.moveTo(graphLeft, yAxisScreen);
+    ctx.lineTo(graphRight, yAxisScreen);
+    ctx.stroke();
+  }
+  // y轴
+  if (d[0] <= 0 && d[1] >= 0) {
+    var xAxisScreen = toScreenX(0);
+    ctx.beginPath();
+    ctx.moveTo(xAxisScreen, graphTop);
+    ctx.lineTo(xAxisScreen, graphBottom);
+    ctx.stroke();
+  }
+
+  // 坐标轴标签
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.font = '11px sans-serif';
+  for (var gx2 = Math.ceil(d[0]); gx2 <= Math.floor(d[1]); gx2++) {
+    if (gx2 !== 0) {
+      var sx2 = toScreenX(gx2);
+      var baseY = yMin <= 0 && yMax >= 0 ? toScreenY(0) : graphBottom;
+      ctx.fillText(gx2.toString(), sx2 - 4, baseY + 14);
+    }
+  }
+  for (var gy2 = Math.ceil(yMin); gy2 <= Math.floor(yMax); gy2++) {
+    if (gy2 !== 0) {
+      var sy2 = toScreenY(gy2);
+      var baseX = d[0] <= 0 && d[1] >= 0 ? toScreenX(0) : graphLeft;
+      ctx.fillText(gy2.toString(), baseX + 6, sy2 + 4);
+    }
+  }
+  // 原点
+  if (d[0] <= 0 && d[1] >= 0 && yMin <= 0 && yMax >= 0) {
+    ctx.fillText('0', toScreenX(0) - 10, toScreenY(0) + 14);
+  }
+
+  // 轴名称
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('x', graphRight - 16, (yMin <= 0 && yMax >= 0 ? toScreenY(0) : graphBottom) + 20);
+  ctx.fillText('y', (d[0] <= 0 && d[1] >= 0 ? toScreenX(0) : graphLeft) + 8, graphTop + 12);
+
+  // 绘制函数曲线
+  ctx.strokeStyle = '#4f8eff';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  var started = false;
+  var prevY = null;
+  for (var i = 0; i <= 400; i++) {
+    var t = d[0] + (d[1] - d[0]) * i / 400;
+    var val = fn(t);
+    if (isNaN(val) || !isFinite(val)) {
+      started = false;
+      prevY = null;
+      continue;
+    }
+    var scx = toScreenX(t);
+    var scy = toScreenY(val);
+    if (!started) {
+      ctx.moveTo(scx, scy);
+      started = true;
+    } else {
+      if (prevY !== null && Math.abs(val - prevY) > (yMax - yMin) * 2) {
+        ctx.moveTo(scx, scy);
+      } else {
+        ctx.lineTo(scx, scy);
+      }
+    }
+    prevY = val;
+  }
+  ctx.stroke();
+
+  // 计算点
+  var xVal = currentX;
+  var fxVal = fn(xVal);
+  var xp = xVal + delta;
+  var fxpVal = fn(xp);
+
+  // 割线
+  if (showSecant && !isNaN(fxpVal) && isFinite(fxpVal) && !isNaN(fxVal) && isFinite(fxVal)) {
+    ctx.strokeStyle = 'rgba(255,159,10,0.6)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    var p1x = toScreenX(xVal);
+    var p1y = toScreenY(fxVal);
+    var p2x = toScreenX(xp);
+    var p2y = toScreenY(fxpVal);
+    // 延长割线
+    var slope = (fxpVal - fxVal) / delta;
+    var extLeft = d[0];
+    var extRight = d[1];
+    ctx.beginPath();
+    ctx.moveTo(toScreenX(extLeft), toScreenY(fxVal + slope * (extLeft - xVal)));
+    ctx.lineTo(toScreenX(extRight), toScreenY(fxVal + slope * (extRight - xVal)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // 近似切线
+  if (showTangent && !isNaN(fxVal) && isFinite(fxVal)) {
+    var h = 0.001;
+    var fp = fn(xVal + h);
+    if (!isNaN(fp) && isFinite(fp)) {
+      var slope2 = (fp - fxVal) / h;
+      ctx.strokeStyle = 'rgba(61,220,132,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 3]);
+      var extL = d[0];
+      var extR = d[1];
+      ctx.beginPath();
+      ctx.moveTo(toScreenX(extL), toScreenY(fxVal + slope2 * (extL - xVal)));
+      ctx.lineTo(toScreenX(extR), toScreenY(fxVal + slope2 * (extR - xVal)));
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // x+δx 点
+  if (!isNaN(fxpVal) && isFinite(fxpVal)) {
+    var scx2 = toScreenX(xp);
+    var scy2 = toScreenY(fxpVal);
+    ctx.fillStyle = 'rgba(255,159,10,0.8)';
+    ctx.beginPath();
+    ctx.arc(scx2, scy2, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,159,10,0.9)';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('x+Δx=' + xp.toFixed(2), scx2 + 10, scy2 - 8);
+  }
+
+  // 主点 (x, f(x))
+  if (!isNaN(fxVal) && isFinite(fxVal)) {
+    var scx = toScreenX(xVal);
+    var scy = toScreenY(fxVal);
+    // 十字辅助线
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(scx, scy);
+    var axisY = yMin <= 0 && yMax >= 0 ? toScreenY(0) : graphBottom;
+    ctx.lineTo(scx, axisY);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(scx, scy);
+    var axisX = d[0] <= 0 && d[1] >= 0 ? toScreenX(0) : graphLeft;
+    ctx.lineTo(axisX, scy);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // 点
+    ctx.fillStyle = '#ff453a';
+    ctx.beginPath();
+    ctx.arc(scx, scy, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(scx, scy, 7, 0, Math.PI * 2);
+    ctx.stroke();
+    // 标签
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('(' + xVal.toFixed(2) + ', ' + fxVal.toFixed(2) + ')', scx + 12, scy - 12);
+  }
+
+  // 函数标签
+  ctx.fillStyle = '#4f8eff';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText(funcMap[currentFunc].label, graphLeft + 8, graphTop + 20);
+}
+
+// ========== 更新数值显示 ==========
+function updateValues() {
+  var fn = funcMap[currentFunc].fn;
+  var fxVal = fn(currentX);
+  var xp = currentX + delta;
+  var fxpVal = fn(xp);
+
+  document.getElementById('inputVal').textContent = 'x = ' + currentX.toFixed(2);
+  document.getElementById('ruleVal').textContent = funcMap[currentFunc].label;
+  document.getElementById('ruleHint').textContent = '把 x = ' + currentX.toFixed(2) + ' 代入规则';
+
+  if (!isNaN(fxVal) && isFinite(fxVal)) {
+    document.getElementById('outputVal').textContent = 'f(' + currentX.toFixed(2) + ') = ' + fxVal.toFixed(4);
+    document.getElementById('outputHint').textContent = '这就是函数在 x = ' + currentX.toFixed(2) + ' 处的输出';
+  } else {
+    document.getElementById('outputVal').textContent = 'f(' + currentX.toFixed(2) + ') = 未定义';
+    document.getElementById('outputHint').textContent = '该点不在函数定义域内';
+  }
+
+  document.getElementById('deltaVal').textContent = delta.toFixed(2);
+  document.getElementById('xSliderVal').textContent = currentX.toFixed(2);
+
+  // 变化率
+  var dxFixed = parseFloat(delta.toFixed(4));
+  var dyFixed = (!isNaN(fxpVal) && isFinite(fxpVal) && !isNaN(fxVal) && isFinite(fxVal)) ? fxpVal - fxVal : NaN;
+
+  document.getElementById('dxVal').textContent = dxFixed.toFixed(4);
+  if (!isNaN(dyFixed) && isFinite(dyFixed)) {
+    document.getElementById('dyVal').textContent = dyFixed.toFixed(6);
+    if (Math.abs(dxFixed) > 1e-10) {
+      document.getElementById('quotVal').textContent = (dyFixed / dxFixed).toFixed(6);
+    } else {
+      document.getElementById('quotVal').textContent = '除数为零';
+    }
+  } else {
+    document.getElementById('dyVal').textContent = '未定义';
+    document.getElementById('quotVal').textContent = '未定义';
+  }
+
+  drawGraph();
+  interactionCount++;
+}
+
+// ========== 事件绑定 ==========
+function bindEvents() {
+  // x 滑块
+  var xSlider = document.getElementById('xSlider');
+  xSlider.addEventListener('input', function() {
+    currentX = parseFloat(this.value);
+    updateValues();
+    trackEvent('interaction_change', { control: 'x_slider', x: currentX, delta: delta, func: currentFunc });
+  });
+
+  // delta 滑块
+  var deltaSlider = document.getElementById('deltaSlider');
+  deltaSlider.addEventListener('input', function() {
+    delta = parseFloat(this.value);
+    if (Math.abs(delta) < 0.01) delta = 0.01 * Math.sign(delta || 1);
+    deltaSlider.value = delta;
+    updateValues();
+    trackEvent('interaction_change', { control: 'delta_slider', delta: delta, x: currentX, func: currentFunc });
+  });
+
+  // 函数选择
+  var selector = document.getElementById('funcSelector');
+  selector.addEventListener('click', function(e) {
+    var btn = e.target.closest('.func-btn');
+    if (!btn) return;
+    var funcKey = btn.getAttribute('data-func');
+    if (!funcKey || funcKey === currentFunc) return;
+    currentFunc = funcKey;
+    var fn = funcMap[funcKey];
+    xSlider.min = fn.domain[0];
+    xSlider.max = fn.domain[1];
+    currentX = fn.domain[0] + (fn.domain[1] - fn.domain[0]) / 2;
+    if (currentX === 0) currentX = (fn.domain[1] - fn.domain[0]) / 3;
+    xSlider.value = currentX;
+    updateValues();
+    trackEvent('interaction_change', { control: 'func_selector', func: funcKey, x: currentX });
+  });
+
+  // 割线显示
+  document.getElementById('secantCheck').addEventListener('change', function() {
+    showSecant = this.checked;
+    drawGraph();
+    trackEvent('interaction_change', { control: 'secant_toggle', showSecant: showSecant });
+  });
+
+  // 切线显示
+  document.getElementById('tangentCheck').addEventListener('change', function() {
+    showTangent = this.checked;
+    drawGraph();
+    trackEvent('interaction_change', { control: 'tangent_toggle', showTangent: showTangent });
+  });
+
+  // 思考题
+  var qOptions = document.getElementById('qOptions');
+  qOptions.addEventListener('click', function(e) {
+    var btn = e.target.closest('.q-btn');
+    if (!btn || qaAnswered) return;
+    qaAnswered = true;
+    var answer = btn.getAttribute('data-qa');
+    var feedback = document.getElementById('qaFeedback');
+    if (answer === 'b') {
+      btn.classList.add('correct');
+      feedback.className = 'feedback-msg show success';
+      feedback.textContent = '✓ 正确！在 x = 2 附近，f(x) = x² 的斜率是 2x = 4，变化更快。在 x = 0.5 处斜率只有 1。你可以拖动滑块到这两个位置观察差商的变化！';
+      trackEvent('interaction_complete', { question: 'change_rate', answer: 'b', correct: true });
+    } else {
+      btn.classList.add('wrong');
+      feedback.className = 'feedback-msg show warn';
+      feedback.textContent = '✗ 不对哦。试试拖动滑块到 x = 0.5 和 x = 2 附近，观察差商（平均变化率）的数值，哪个更大？';
+      trackEvent('interaction_complete', { question: 'change_rate', answer: answer, correct: false });
+    }
+  });
+
+  // 提示按钮
+  document.getElementById('hintBtn').addEventListener('click', function() {
+    hintUsed = true;
+    var hintFeedback = document.getElementById('hintFeedback');
+    hintFeedback.className = 'feedback-msg show info';
+    hintFeedback.textContent = '💡 提示：把滑块移到 x = 0.5 和 x = 2 附近，观察"差商 Δy/Δx"的数值大小。差商越大，说明函数变化越快！';
+    trackEvent('hint_used', { hint: 'change_rate_hint' });
+  });
+
+  // 信心评分
+  var stars = document.getElementById('ratingStars');
+  stars.addEventListener('click', function(e) {
+    var star = e.target.closest('.rating-star');
+    if (!star) return;
+    confidenceScore = parseInt(star.getAttribute('data-r'));
+    var allStars = stars.querySelectorAll('.rating-star');
+    for (var i = 0; i < allStars.length; i++) {
+      if (i < confidenceScore) {
+        allStars[i].textContent = '★';
+        allStars[i].classList.add('active');
+      } else {
+        allStars[i].textContent = '☆';
+        allStars[i].classList.remove('active');
+      }
+    }
+    var labels = ['', '完全不懂', '有点模糊', '基本理解', '大部分掌握', '完全掌握！'];
+    document.getElementById('ratingLabel').textContent = '你选择了 ' + confidenceScore + '/5：' + labels[confidenceScore];
+    trackEvent('confidence_submitted', { confidence: confidenceScore });
+  });
+
+  // 反思提交
+  document.getElementById('reflectionSubmit').addEventListener('click', function() {
+    var text = document.getElementById('reflectionText').value.trim();
+    if (!text) {
+      var fb = document.getElementById('reflectionFeedback');
+      fb.className = 'feedback-msg show warn';
+      fb.textContent = '✏️ 请先写下你的反思内容再提交。';
+      return;
+    }
+    reflectionSubmitted = true;
+    var fb2 = document.getElementById('reflectionFeedback');
+    fb2.className = 'feedback-msg show success';
+    fb2.textContent = '✅ 反思已记录！你的思考非常宝贵。继续加油！';
+    trackEvent('reflection_submitted', { reflection: text });
+  });
+
+  // Canvas 点击交互：点击图像选择一个点
+  canvas.addEventListener('click', function(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    var clickX = (e.clientX - rect.left) * scaleX;
+    var fn = funcMap[currentFunc];
+    var dMin = fn.domain[0];
+    var dMax = fn.domain[1];
+    var xVal = dMin + (clickX - graphLeft) / (graphRight - graphLeft) * (dMax - dMin);
+    xVal = Math.round(Math.max(dMin, Math.min(dMax, xVal)) * 100) / 100;
+    currentX = xVal;
+    document.getElementById('xSlider').value = xVal;
+    updateValues();
+    trackEvent('interaction_change', { control: 'canvas_click', x: currentX });
+  });
+
+  // 标记完成
+  setTimeout(function() {
+    trackEvent('interaction_complete', { final_func: currentFunc, final_x: currentX, interactions: interactionCount });
+  }, 30000);
+}
+
+// ========== 初始化 ==========
+document.addEventListener('DOMContentLoaded', function() {
+  initCanvas();
+  bindEvents();
+  updateValues();
+  trackEvent('page_loaded', { lesson: lessonId, module: moduleId });
+});
+
+})();
+</script>
+</body>
+</html>

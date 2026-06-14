@@ -1,0 +1,642 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>凸函数为什么好优化</title>
+<style>
+    :root {
+        --bg-color: #1e1e1e;
+        --panel-bg: #252526;
+        --text-main: #d4d4d4;
+        --accent-blue: #007acc;
+        --accent-blue-hover: #005999;
+        --accent-green: #4CAF50;
+        --accent-red: #f44336;
+        --accent-orange: #ff8c00;
+        --border-color: #333;
+    }
+
+    body {
+        margin: 0;
+        padding: 20px;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        line-height: 1.6;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    h1 {
+        font-size: 24px;
+        border-bottom: 2px solid var(--accent-blue);
+        padding-bottom: 10px;
+        margin-top: 0;
+    }
+
+    .header-info {
+        background: var(--panel-bg);
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        border-left: 4px solid var(--accent-blue);
+    }
+
+    .header-info p {
+        margin: 8px 0;
+    }
+
+    .interactive-area {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        background: var(--panel-bg);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .left-panel {
+        flex: 1;
+        min-width: 300px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .right-panel {
+        flex: 1;
+        min-width: 450px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .radio-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+        background: var(--bg-color);
+        padding: 15px;
+        border-radius: 6px;
+    }
+
+    .radio-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    .radio-label input {
+        margin-right: 10px;
+        cursor: pointer;
+    }
+
+    .question-box {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .btn-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    button {
+        background-color: var(--accent-blue);
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: bold;
+        transition: background-color 0.2s;
+    }
+
+    button:hover {
+        background-color: var(--accent-blue-hover);
+    }
+
+    button:disabled {
+        background-color: #555;
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        background-color: #444;
+    }
+    .btn-secondary:hover {
+        background-color: #555;
+    }
+
+    canvas {
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        cursor: crosshair;
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .feedback-msg {
+        display: none;
+        margin-top: 15px;
+        padding: 12px;
+        border-radius: 4px;
+        font-size: 14px;
+        line-height: 1.5;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    .feedback-msg.correct {
+        background: rgba(76, 175, 80, 0.1);
+        border-left: 4px solid var(--accent-green);
+        color: #81c784;
+    }
+
+    .feedback-msg.incorrect {
+        background: rgba(244, 67, 54, 0.1);
+        border-left: 4px solid var(--accent-red);
+        color: #e57373;
+    }
+
+    .concept-card {
+        background: var(--panel-bg);
+        padding: 20px;
+        border-radius: 8px;
+        border-left: 4px solid var(--accent-orange);
+        margin-bottom: 20px;
+    }
+
+    .confidence-rating, .reflection {
+        background: var(--panel-bg);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+
+    .stars {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+    }
+
+    .star-btn {
+        width: 45px;
+        height: 45px;
+        border-radius: 25px;
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+
+    .star-btn.selected {
+        background: var(--accent-blue);
+        border-color: var(--accent-blue);
+    }
+
+    textarea {
+        width: 100%;
+        background: var(--bg-color);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        padding: 12px;
+        border-radius: 4px;
+        resize: vertical;
+        box-sizing: border-box;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        font-family: inherit;
+    }
+    
+    textarea:focus {
+        outline: none;
+        border-color: var(--accent-blue);
+    }
+
+    #hint-text {
+        display: none;
+        color: #ffd54f;
+        font-size: 13px;
+        margin-top: 15px;
+        background: rgba(255, 213, 79, 0.1);
+        padding: 10px;
+        border-radius: 4px;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>凸函数为什么好优化</h1>
+    
+    <div class="header-info">
+        <p><strong>本节聚焦：</strong>凸函数直觉</p>
+        <p><strong>学习目标：</strong>能用图像识别凸函数；能解释局部最小等于全局最小的直觉；能区分凸和非凸曲线。</p>
+        <p><strong>直觉解释：</strong>凸函数像一个碗，局部最低点就是全局最低点。这让寻找最小值变得更可靠，因为我们只要顺着坡往下走，就一定能到达真正的谷底。</p>
+    </div>
+
+    <div class="interactive-area">
+        <div class="left-panel">
+            <div class="radio-group">
+                <label class="radio-label">
+                    <input type="radio" name="curve" value="bowl" checked> 碗形曲线 (凸函数)
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="curve" value="wave"> 波浪曲线 (非凸函数)
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="curve" value="saddle"> 鞍面投影 (有平坦区)
+                </label>
+            </div>
+            
+            <div class="question-box">
+                <p><strong>动手试试：</strong>在右侧曲线上方<strong>点击</strong>放下小球，观察它的滚动路径（它会顺着当前的坡度滚向低处）。</p>
+                <p><strong>请判断：</strong> 对于当前的地形，无论从哪里放下小球，它<strong>容易找到全局唯一的最低点</strong>吗？</p>
+                
+                <div class="btn-group">
+                    <button id="btn-easy">容易 (一定能找到)</button>
+                    <button id="btn-hard">困难 (可能卡在半路)</button>
+                </div>
+                
+                <div class="btn-group">
+                    <button id="btn-hint" class="btn-secondary">需要提示吗？</button>
+                </div>
+                
+                <div id="hint-text">
+                    【提示】试着在画布的最左侧和最右侧分别点击放下小球。如果它停在了半山腰的“坑”里或者平地上，说明优化算法也容易在这里陷入局部最优停滞不前。
+                </div>
+                
+                <div id="feedback-msg" class="feedback-msg"></div>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <canvas id="curveCanvas" width="500" height="400"></canvas>
+        </div>
+    </div>
+
+    <div class="concept-card">
+        <p><strong>【概念卡】凸与非凸的本质差异</strong></p>
+        <p>当我们训练AI模型时，目标是让误差（Loss）降到最低。如果地形像一个“碗”（凸函数），那我们可以非常放心地顺坡而下，不用担心走错路。但现实中，复杂的AI模型（如深度神经网络）的地形往往像“波浪”一样充满无数个局部的“坑”，或者像“鞍面”一样存在大面积平坦却不是谷底的区域。识别这些特征是理解高级优化算法的第一步。</p>
+    </div>
+
+    <div class="confidence-rating">
+        <p><strong>信心评分：</strong>现在你对“理解凸函数为何容易优化”的直觉掌握程度有多少信心？ (1-5分)</p>
+        <div class="stars">
+            <button class="star-btn" data-val="1">1</button>
+            <button class="star-btn" data-val="2">2</button>
+            <button class="star-btn" data-val="3">3</button>
+            <button class="star-btn" data-val="4">4</button>
+            <button class="star-btn" data-val="5">5</button>
+        </div>
+        <p id="confidence-msg" style="display:none; color: var(--accent-green); margin-top: 10px;">感谢反馈！</p>
+    </div>
+
+    <div class="reflection">
+        <p><strong>简短反思：</strong>请用你自己的话一句话总结，为什么在训练AI时，我们希望损失函数的形状尽可能像一个“碗”？</p>
+        <textarea id="ref-text" rows="3" placeholder="写下你的理解..."></textarea>
+        <button id="btn-ref">提交反思</button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    
+    window.MAIC_LESSON_META = {
+        lesson_id: 'D-07',
+        module_id: 'OM-D2',
+        course_version: 'demo-closed-loop-v1',
+        concept_name: '凸函数直觉'
+    };
+
+    let startTime = Date.now();
+    let state = {
+        currentCurve: 'bowl',
+        ballX: null,
+        previewX: null,
+        animating: false
+    };
+    
+    let judgements = { bowl: null, wave: null, saddle: null };
+    let completed = false;
+
+    function trackEvent(eventType, payload) {
+        try {
+            const event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: Date.now() - startTime,
+                interaction_state: { 
+                    currentCurve: state.currentCurve,
+                    hasBall: state.ballX !== null,
+                    judgements: { ...judgements }
+                },
+                ...payload
+            };
+            
+            let events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+            events.push(event);
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            
+            window.parent.postMessage({
+                type: 'maic_learning_event',
+                payload: event
+            }, '*');
+        } catch (e) {
+            console.warn('Event track failed', e);
+        }
+    }
+
+    const canvas = document.getElementById('curveCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width;
+    const H = canvas.height;
+    
+    // 绘图参数
+    const CENTER_X = W / 2;
+    const CENTER_Y = 320;
+    const SCALE_X = 20;
+    const SCALE_Y = 10;
+    
+    // 逻辑函数定义
+    function getF(x, type) {
+        if(type === 'bowl') return 0.3 * x * x;
+        if(type === 'wave') return 0.015 * Math.pow(x*x - 36, 2) + x;
+        if(type === 'saddle') return 0.05 * x * x * x;
+        return 0;
+    }
+
+    function getDF(x, type) {
+        if(type === 'bowl') return 0.6 * x;
+        if(type === 'wave') return 0.06 * x * (x*x - 36) + 1;
+        if(type === 'saddle') return 0.15 * x * x;
+        return 0;
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        
+        // 绘制坐标轴
+        ctx.beginPath();
+        ctx.strokeStyle = '#555';
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(0, CENTER_Y);
+        ctx.lineTo(W, CENTER_Y);
+        ctx.moveTo(CENTER_X, 0);
+        ctx.lineTo(CENTER_X, H);
+        ctx.stroke();
+        ctx.setLineDash([]); // 恢复实线
+
+        // 绘制曲线
+        ctx.beginPath();
+        ctx.strokeStyle = '#4fc1ff';
+        ctx.lineWidth = 3;
+        for(let i=0; i<=W; i++) {
+            let x = (i - CENTER_X) / SCALE_X;
+            let y = getF(x, state.currentCurve);
+            let screenY = CENTER_Y - y * SCALE_Y;
+            if(i === 0) ctx.moveTo(i, screenY);
+            else ctx.lineTo(i, screenY);
+        }
+        ctx.stroke();
+
+        // 提示文字
+        if (state.ballX === null && !state.animating) {
+            ctx.fillStyle = '#888';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('在曲线上方点击，释放小球', CENTER_X, 40);
+        }
+
+        // 绘制预览小球
+        if (!state.animating && state.previewX !== null) {
+            let bx = state.previewX;
+            let by = getF(bx, state.currentCurve);
+            let sy = CENTER_Y - by * SCALE_Y;
+            let sx = CENTER_X + bx * SCALE_X;
+            
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(255, 140, 0, 0.4)';
+            ctx.arc(sx, sy, 8, 0, Math.PI*2);
+            ctx.fill();
+        }
+
+        // 绘制真实小球与切线
+        if (state.ballX !== null) {
+            let bx = state.ballX;
+            let by = getF(bx, state.currentCurve);
+            let sy = CENTER_Y - by * SCALE_Y;
+            let sx = CENTER_X + bx * SCALE_X;
+            
+            // 小球
+            ctx.beginPath();
+            ctx.fillStyle = '#ff8c00';
+            ctx.arc(sx, sy, 8, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 切线
+            let slope = getDF(bx, state.currentCurve);
+            let dx = 1;
+            let dy = slope;
+            let len = Math.sqrt(dx*dx + dy*dy);
+            let tLen = 30; // 屏幕长度
+            let p1x = sx - (dx/len)*tLen;
+            let p1y = sy - (-dy/len)*tLen; // canvas y 轴向下
+            let p2x = sx + (dx/len)*tLen;
+            let p2y = sy + (-dy/len)*tLen;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#ff8c00';
+            ctx.lineWidth = 2;
+            ctx.moveTo(p1x, p1y);
+            ctx.lineTo(p2x, p2y);
+            ctx.stroke();
+        }
+    }
+
+    // 动画逻辑
+    function startDescent() {
+        let step = () => {
+            if(!state.animating) return;
+            
+            let grad = getDF(state.ballX, state.currentCurve);
+            let move = 0.05 * grad;
+            
+            // 限制单步最大移动距离避免飞出
+            if(move > 0.15) move = 0.15;
+            if(move < -0.15) move = -0.15;
+
+            // 如果梯度极小则停止
+            if(Math.abs(grad) < 0.02) {
+                state.animating = false;
+                draw();
+                return;
+            }
+            
+            state.ballX -= move;
+            
+            // 越界停止
+            if (state.ballX < -15 || state.ballX > 15) {
+                state.animating = false;
+            }
+            
+            draw();
+            requestAnimationFrame(step);
+        };
+        step();
+    }
+
+    // Canvas 交互
+    canvas.addEventListener('mousemove', (e) => {
+        let rect = canvas.getBoundingClientRect();
+        let cx = e.clientX - rect.left;
+        state.previewX = (cx - CENTER_X) / SCALE_X;
+        if(!state.animating) draw();
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        state.previewX = null;
+        if(!state.animating) draw();
+    });
+
+    canvas.addEventListener('mousedown', (e) => {
+        let rect = canvas.getBoundingClientRect();
+        let cx = e.clientX - rect.left;
+        state.ballX = (cx - CENTER_X) / SCALE_X;
+        state.previewX = null;
+        state.animating = true;
+        
+        // 发送事件，只记录有效交互
+        trackEvent('interaction_change', { 
+            action: 'ball_dropped', 
+            x_position: state.ballX.toFixed(2) 
+        });
+        
+        startDescent();
+    });
+
+    // 曲线切换
+    document.querySelectorAll('input[name="curve"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            state.currentCurve = e.target.value;
+            state.ballX = null;
+            state.animating = false;
+            document.getElementById('feedback-msg').style.display = 'none';
+            draw();
+            trackEvent('interaction_change', { action: 'curve_changed', curve: state.currentCurve });
+        });
+    });
+
+    function checkComplete() {
+        if (!completed && judgements.bowl && judgements.wave && judgements.saddle) {
+            let allCorrect = judgements.bowl.correct && judgements.wave.correct && judgements.saddle.correct;
+            if (allCorrect) {
+                completed = true;
+                trackEvent('interaction_complete', { success: true });
+            }
+        }
+    }
+
+    function makeJudgement(isEasy) {
+        let type = state.currentCurve;
+        let correct = false;
+        let msg = '';
+        
+        if (type === 'bowl') {
+            if (isEasy) {
+                correct = true;
+                msg = '✅ 判断正确！碗形是凸函数，地形只有一个最低点。顺坡滚下一定能到达全局最优。';
+            } else {
+                msg = '🤔 再想想？试着在画布不同位置点击，不管从哪里放手，小球最后都会滚到中间的同一个谷底。';
+            }
+        } else if (type === 'wave') {
+            if (!isEasy) {
+                correct = true;
+                msg = '✅ 判断正确！波浪线存在多个“坑”。如果初始点在左边，小球就会卡在左边较高的坑里，永远找不到右侧真正的最低点。这就是“容易陷入局部最优”。';
+            } else {
+                msg = '🤔 你确定吗？请试着在画布的最左侧上方点击放下小球，看看它能滚到右边最低的那个谷底吗？';
+            }
+        } else if (type === 'saddle') {
+            if (!isEasy) {
+                correct = true;
+                msg = '✅ 判断正确！鞍面中间非常平坦，坡度（斜率）消失。算法在这里会误以为到底了而提前停止。';
+            } else {
+                msg = '🤔 仔细看中间平坦的部分。如果小球滚到这里或者从这里开始，它很难迅速判断正确的下坡方向。';
+            }
+        }
+        
+        judgements[type] = { isEasy, correct };
+        
+        const fb = document.getElementById('feedback-msg');
+        fb.innerHTML = msg;
+        fb.className = 'feedback-msg ' + (correct ? 'correct' : 'incorrect');
+        fb.style.display = 'block';
+
+        trackEvent('interaction_change', {
+            action: 'judgement_made',
+            curve: type,
+            choice: isEasy ? 'easy' : 'hard',
+            is_correct: correct
+        });
+
+        checkComplete();
+    }
+
+    document.getElementById('btn-easy').addEventListener('click', () => makeJudgement(true));
+    document.getElementById('btn-hard').addEventListener('click', () => makeJudgement(false));
+    
+    document.getElementById('btn-hint').addEventListener('click', () => {
+        document.getElementById('hint-text').style.display = 'block';
+        trackEvent('hint_used', { currentCurve: state.currentCurve });
+    });
+
+    document.querySelectorAll('.star-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            let val = e.target.getAttribute('data-val');
+            document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('selected'));
+            e.target.classList.add('selected');
+            document.getElementById('confidence-msg').style.display = 'block';
+            trackEvent('confidence_submitted', { score: val });
+        });
+    });
+
+    document.getElementById('btn-ref').addEventListener('click', () => {
+        let text = document.getElementById('ref-text').value;
+        if(text.trim() === '') return;
+        trackEvent('reflection_submitted', { reflection: text });
+        document.getElementById('btn-ref').innerText = '已保存';
+        document.getElementById('btn-ref').disabled = true;
+        document.getElementById('ref-text').disabled = true;
+    });
+
+    // 初始化画布与埋点
+    draw();
+    trackEvent('page_loaded', {});
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "calculus-quest",
+  "version": "2.0.0",
+  "description": "微积分闯关学习平台 - 带数据分析面板",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "migrate": "node migrate.js"
+  },
+  "dependencies": {
+    "katex": "^0.16.9",
+    "sql.js": "^1.12.0"
+  }
+}

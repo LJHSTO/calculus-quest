@@ -1,0 +1,1181 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正定意味着从中心往哪走都变大</title>
+    <style>
+        :root {
+            --bg-primary: #0a0f14;
+            --bg-secondary: #131a22;
+            --bg-card: #1a232d;
+            --border: #2a3a4a;
+            --text-primary: #e8f0f8;
+            --text-secondary: #8a9aaa;
+            --accent: #00d4aa;
+            --accent-dim: #00a080;
+            --warning: #ff6b4a;
+            --success: #4aff9f;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+        
+        .goal {
+            font-size: 16px;
+            color: var(--accent);
+            background: linear-gradient(135deg, rgba(0,212,170,0.1), rgba(0,212,170,0.05));
+            padding: 12px 24px;
+            border-radius: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,212,170,0.2);
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 32px;
+            align-items: start;
+        }
+        
+        .left-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            position: sticky;
+            top: 24px;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .card h3 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card h3::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+        
+        .intuition-text {
+            font-size: 15px;
+            color: var(--text-primary);
+            line-height: 1.8;
+        }
+        
+        .intuition-text strong {
+            color: var(--accent);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        
+        .summary-item {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .summary-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        
+        .summary-value.warning {
+            color: var(--warning);
+        }
+        
+        .summary-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+        
+        .direction-list {
+            max-height: 180px;
+            overflow-y: auto;
+            margin-top: 12px;
+        }
+        
+        .direction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+        
+        .direction-item.up {
+            border-left: 3px solid var(--success);
+        }
+        
+        .direction-item.down {
+            border-left: 3px solid var(--warning);
+        }
+        
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        
+        .interaction-area {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        
+        .interaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .interaction-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .surface-toggle {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .toggle-btn {
+            padding: 10px 20px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .toggle-btn:hover {
+            border-color: var(--accent);
+        }
+        
+        .toggle-btn.active {
+            background: var(--accent);
+            color: var(--bg-primary);
+            border-color: var(--accent);
+            font-weight: 600;
+        }
+        
+        .canvas-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .canvas-wrapper {
+            position: relative;
+        }
+        
+        .canvas-label {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            z-index: 10;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 300px;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            cursor: crosshair;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-top: 20px;
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+        }
+        
+        .control-group {
+            flex: 1;
+        }
+        
+        .control-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            -webkit-appearance: none;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .slider-value {
+            min-width: 50px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--accent);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-dim);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--accent);
+        }
+        
+        .feedback-area {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        
+        .feedback-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .feedback-result {
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        
+        .feedback-result.positive {
+            background: rgba(74,255,159,0.1);
+            border: 1px solid rgba(74,255,159,0.3);
+            color: var(--success);
+        }
+        
+        .feedback-result.negative {
+            background: rgba(255,107,74,0.1);
+            border: 1px solid rgba(255,107,74,0.3);
+            color: var(--warning);
+        }
+        
+        .feedback-result .detail {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+        
+        .assessment-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 32px;
+            padding-top: 32px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .confidence-rating {
+            text-align: center;
+        }
+        
+        .confidence-rating h4 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+        
+        .stars {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .star {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            background: var(--bg-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        
+        .star:hover {
+            border-color: var(--accent);
+            transform: scale(1.1);
+        }
+        
+        .star.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .star.active svg {
+            fill: var(--bg-primary);
+        }
+        
+        .star svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-secondary);
+        }
+        
+        .reflection-section textarea {
+            width: 100%;
+            height: 100px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+        }
+        
+        .reflection-section textarea:focus {
+            border-color: var(--accent);
+        }
+        
+        .reflection-section button {
+            margin-top: 12px;
+        }
+        
+        .hint-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .hint-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .hint-content {
+            display: none;
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(0,212,170,0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+        
+        .hint-content.visible {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .completion-badge {
+            display: none;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+        
+        .completion-badge.visible {
+            display: block;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0,212,170,0.4); }
+            50% { box-shadow: 0 0 20px 5px rgba(0,212,170,0.2); }
+        }
+        
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .left-panel {
+                position: static;
+            }
+            
+            .canvas-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .assessment-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>正定意味着从中心往哪走都变大</h1>
+            <div class="goal">学习目标：理解正定矩阵对应碗形曲面，从中心向任意方向走高度都上升</div>
+        </header>
+        
+        <div class="main-layout">
+            <div class="left-panel">
+                <div class="card">
+                    <h3>直觉解释</h3>
+                    <p class="intuition-text">
+                        <strong>正定</strong>可以先理解为<strong>碗形曲面</strong>：从中心向任意方向走，高度都会增加。它帮助判断一个点是否像最小值。<br><br>
+                        相反，<strong>鞍形曲面</strong>某些方向上升，某些方向下降——这不是正定。
+                    </p>
+                    <button class="hint-btn" id="hintBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        需要提示？
+                    </button>
+                    <div class="hint-content" id="hintContent">
+                        提示：试着在两种曲面上选择不同的方向（0度、90度、180度、270度），观察高度变化。碗形曲面所有方向都上升，鞍形曲面有升有降。
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>探索总结</h3>
+                    <div class="summary-grid">
+                        <div class="summary-item">
+                            <div class="summary-value" id="testedCount">0</div>
+                            <div class="summary-label">已测方向数</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-value" id="allUpCount">0</div>
+                            <div class="summary-label">上升方向数</div>
+                        </div>
+                    </div>
+                    <div class="direction-list" id="directionList"></div>
+                    <div class="completion-badge" id="completionBadge">
+                        太棒了！你已探索足够多的方向，理解了正定的含义。
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>概念卡</h3>
+                    <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.8;">
+                        <p><strong style="color: var(--accent);">正定矩阵</strong>：所有特征值为正</p>
+                        <p style="margin-top: 8px;"><strong style="color: var(--accent);">几何意义</strong>：对应的二次型曲面是碗形</p>
+                        <p style="margin-top: 8px;"><strong style="color: var(--accent);">优化含义</strong>：在该点附近是稳定的局部最小值</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="interaction-area">
+                    <div class="interaction-header">
+                        <div class="interaction-title">核心互动：选择方向，观察高度变化</div>
+                        <div class="surface-toggle">
+                            <button class="toggle-btn active" data-surface="bowl">碗形曲面（正定）</button>
+                            <button class="toggle-btn" data-surface="saddle">鞍形曲面（非正定）</button>
+                        </div>
+                    </div>
+                    
+                    <div class="canvas-container">
+                        <div class="canvas-wrapper">
+                            <div class="canvas-label">俯视图：点击选择方向</div>
+                            <canvas id="topViewCanvas"></canvas>
+                        </div>
+                        <div class="canvas-wrapper">
+                            <div class="canvas-label">截面图：该方向的高度曲线</div>
+                            <canvas id="crossSectionCanvas"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="controls">
+                        <div class="control-group">
+                            <label class="control-label">选择方向角度</label>
+                            <div class="slider-container">
+                                <input type="range" id="angleSlider" min="0" max="360" value="45">
+                                <span class="slider-value" id="angleValue">45°</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="testBtn">测试这个方向</button>
+                    </div>
+                </div>
+                
+                <div class="feedback-area">
+                    <div class="feedback-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        </svg>
+                        即时反馈
+                    </div>
+                    <div class="feedback-result positive" id="feedbackResult">
+                        选择一个方向进行测试，观察高度变化。
+                        <div class="detail">在俯视图上点击，或使用滑块选择角度。</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-section">
+                    <div class="confidence-rating">
+                        <h4>你对正定的理解有多少信心？</h4>
+                        <div class="stars" id="confidenceStars">
+                            <div class="star" data-rating="1">
+                                <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <div class="star" data-rating="2">
+                                <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <div class="star" data-rating="3">
+                                <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <div class="star" data-rating="4">
+                                <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                            <div class="star" data-rating="5">
+                                <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            </div>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-top: 12px;" id="confidenceText">点击星星评分</p>
+                    </div>
+                    
+                    <div class="reflection-section">
+                        <h4 style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">简短反思</h4>
+                        <textarea id="reflectionText" placeholder="用一两句话描述你对「正定」的理解，或者还有什么疑问..."></textarea>
+                        <button class="btn btn-secondary" id="submitReflection">提交反思</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 课程元数据
+        window.MAIC_LESSON_META = {
+            lesson_id: 'A-12',
+            module_id: 'OM-A4',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '正定直觉'
+        };
+        
+        // 状态变量 - 先声明所有变量
+        var startTime = Date.now();
+        var currentSurface = 'bowl';
+        var currentAngle = 45;
+        var testedDirections = [];
+        var allUpDirections = 0;
+        var confidenceRating = 0;
+        var isCompleted = false;
+        var hintUsed = false;
+        
+        // Canvas 变量
+        var topViewCanvas = null;
+        var crossSectionCanvas = null;
+        var topCtx = null;
+        var crossCtx = null;
+        
+        // 行为追踪函数
+        function trackEvent(eventType, payload) {
+            var now = Date.now();
+            var event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: now - startTime,
+                interaction_state: {
+                    current_surface: currentSurface,
+                    current_angle: currentAngle,
+                    tested_count: testedDirections.length,
+                    all_up_count: allUpDirections,
+                    is_completed: isCompleted
+                }
+            };
+            
+            if (payload) {
+                Object.assign(event, payload);
+            }
+            
+            // 保存到 localStorage
+            try {
+                var events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+                events.push(event);
+                localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            } catch (e) {
+                console.log('无法保存到 localStorage');
+            }
+            
+            // postMessage 给父窗口
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'maic_learning_event',
+                        payload: event
+                    }, '*');
+                }
+            } catch (e) {
+                console.log('无法发送 postMessage');
+            }
+        }
+        
+        // 计算曲面高度
+        function getHeight(x, y, surface) {
+            if (surface === 'bowl') {
+                return x * x + y * y;
+            } else {
+                return x * x - y * y;
+            }
+        }
+        
+        // 获取方向上的高度变化
+        function getHeightChange(angle, surface) {
+            var rad = angle * Math.PI / 180;
+            var x = Math.cos(rad);
+            var y = Math.sin(rad);
+            var h0 = getHeight(0, 0, surface);
+            var h1 = getHeight(x * 0.5, y * 0.5, surface);
+            return h1 - h0;
+        }
+        
+        // 绘制俯视图
+        function drawTopView() {
+            if (!topCtx) return;
+            
+            var w = topViewCanvas.width;
+            var h = topViewCanvas.height;
+            var cx = w / 2;
+            var cy = h / 2;
+            var scale = Math.min(w, h) / 3;
+            
+            topCtx.clearRect(0, 0, w, h);
+            
+            // 背景渐变
+            var bgGrad = topCtx.createRadialGradient(cx, cy, 0, cx, cy, scale * 1.5);
+            if (currentSurface === 'bowl') {
+                bgGrad.addColorStop(0, '#1a3a2a');
+                bgGrad.addColorStop(1, '#0a1a14');
+            } else {
+                bgGrad.addColorStop(0, '#3a2a1a');
+                bgGrad.addColorStop(1, '#1a140a');
+            }
+            topCtx.fillStyle = bgGrad;
+            topCtx.fillRect(0, 0, w, h);
+            
+            // 绘制等高线
+            topCtx.strokeStyle = currentSurface === 'bowl' ? 'rgba(0,212,170,0.3)' : 'rgba(255,107,74,0.3)';
+            topCtx.lineWidth = 1;
+            
+            for (var i = 1; i <= 5; i++) {
+                topCtx.beginPath();
+                if (currentSurface === 'bowl') {
+                    topCtx.arc(cx, cy, i * scale * 0.3, 0, Math.PI * 2);
+                } else {
+                    // 鞍形的等高线是双曲线
+                    var a = i * 0.2;
+                    topCtx.setLineDash([4, 4]);
+                    topCtx.moveTo(cx - scale * a, cy);
+                    topCtx.lineTo(cx + scale * a, cy);
+                    topCtx.moveTo(cx, cy - scale * a);
+                    topCtx.lineTo(cx, cy + scale * a);
+                }
+                topCtx.stroke();
+                topCtx.setLineDash([]);
+            }
+            
+            // 绘制坐标轴
+            topCtx.strokeStyle = 'rgba(255,255,255,0.2)';
+            topCtx.lineWidth = 1;
+            topCtx.beginPath();
+            topCtx.moveTo(0, cy);
+            topCtx.lineTo(w, cy);
+            topCtx.moveTo(cx, 0);
+            topCtx.lineTo(cx, h);
+            topCtx.stroke();
+            
+            // 绘制当前方向指示
+            var rad = currentAngle * Math.PI / 180;
+            var arrowLen = scale * 0.8;
+            var endX = cx + Math.cos(rad) * arrowLen;
+            var endY = cy - Math.sin(rad) * arrowLen;
+            
+            // 方向箭头
+            topCtx.strokeStyle = '#00d4aa';
+            topCtx.lineWidth = 3;
+            topCtx.beginPath();
+            topCtx.moveTo(cx, cy);
+            topCtx.lineTo(endX, endY);
+            topCtx.stroke();
+            
+            // 箭头头部
+            var arrowSize = 12;
+            var arrowAngle = 0.4;
+            topCtx.beginPath();
+            topCtx.moveTo(endX, endY);
+            topCtx.lineTo(
+                endX - arrowSize * Math.cos(rad - arrowAngle),
+                endY + arrowSize * Math.sin(rad - arrowAngle)
+            );
+            topCtx.moveTo(endX, endY);
+            topCtx.lineTo(
+                endX - arrowSize * Math.cos(rad + arrowAngle),
+                endY + arrowSize * Math.sin(rad + arrowAngle)
+            );
+            topCtx.stroke();
+            
+            // 中心点
+            topCtx.fillStyle = '#ffffff';
+            topCtx.beginPath();
+            topCtx.arc(cx, cy, 6, 0, Math.PI * 2);
+            topCtx.fill();
+            
+            // 角度标签
+            topCtx.fillStyle = '#00d4aa';
+            topCtx.font = '14px sans-serif';
+            topCtx.textAlign = 'center';
+            topCtx.fillText(currentAngle + '°', endX, endY - 15);
+        }
+        
+        // 绘制截面图
+        function drawCrossSection() {
+            if (!crossCtx) return;
+            
+            var w = crossSectionCanvas.width;
+            var h = crossSectionCanvas.height;
+            var cx = w / 2;
+            var cy = h / 2;
+            var scaleX = w / 4;
+            var scaleY = h / 4;
+            
+            crossCtx.clearRect(0, 0, w, h);
+            
+            // 背景
+            crossCtx.fillStyle = '#131a22';
+            crossCtx.fillRect(0, 0, w, h);
+            
+            // 坐标轴
+            crossCtx.strokeStyle = 'rgba(255,255,255,0.15)';
+            crossCtx.lineWidth = 1;
+            crossCtx.beginPath();
+            crossCtx.moveTo(0, cy);
+            crossCtx.lineTo(w, cy);
+            crossCtx.moveTo(cx, 0);
+            crossCtx.lineTo(cx, h);
+            crossCtx.stroke();
+            
+            // 绘制曲线
+            var rad = currentAngle * Math.PI / 180;
+            crossCtx.strokeStyle = currentSurface === 'bowl' ? '#00d4aa' : '#ff6b4a';
+            crossCtx.lineWidth = 3;
+            crossCtx.beginPath();
+            
+            for (var i = -50; i <= 50; i++) {
+                var t = i / 50 * 1.5;
+                var x = t * Math.cos(rad);
+                var y = t * Math.sin(rad);
+                var height = getHeight(x, y, currentSurface);
+                
+                var px = cx + t * scaleX;
+                var py = cy - height * scaleY * 0.3;
+                
+                if (i === -50) {
+                    crossCtx.moveTo(px, py);
+                } else {
+                    crossCtx.lineTo(px, py);
+                }
+            }
+            crossCtx.stroke();
+            
+            // 当前点标记
+            var currX = 0.5 * Math.cos(rad);
+            var currY = 0.5 * Math.sin(rad);
+            var currHeight = getHeight(currX, currY, currentSurface);
+            var px = cx + 0.5 * scaleX;
+            var py = cy - currHeight * scaleY * 0.3;
+            
+            crossCtx.fillStyle = '#ffffff';
+            crossCtx.beginPath();
+            crossCtx.arc(px, py, 8, 0, Math.PI * 2);
+            crossCtx.fill();
+            
+            crossCtx.fillStyle = currentSurface === 'bowl' ? '#00d4aa' : '#ff6b4a';
+            crossCtx.beginPath();
+            crossCtx.arc(px, py, 5, 0, Math.PI * 2);
+            crossCtx.fill();
+            
+            // 高度变化指示
+            var heightChange = getHeightChange(currentAngle, currentSurface);
+            var statusText = heightChange > 0 ? '高度上升' : (heightChange < 0 ? '高度下降' : '高度不变');
+            var statusColor = heightChange > 0 ? '#4aff9f' : '#ff6b4a';
+            
+            crossCtx.fillStyle = statusColor;
+            crossCtx.font = 'bold 16px sans-serif';
+            crossCtx.textAlign = 'center';
+            crossCtx.fillText(statusText, cx, h - 20);
+        }
+        
+        // 更新反馈
+        function updateFeedback() {
+            var heightChange = getHeightChange(currentAngle, currentSurface);
+            var feedbackEl = document.getElementById('feedbackResult');
+            var detailText = '';
+            
+            if (currentSurface === 'bowl') {
+                feedbackEl.className = 'feedback-result positive';
+                detailText = '碗形曲面：方向 ' + currentAngle + '° 处，高度变化为 ' + (heightChange > 0 ? '+' : '') + heightChange.toFixed(3);
+                feedbackEl.innerHTML = '这个方向高度<strong>上升</strong>了！' +
+                    '<div class="detail">' + detailText + '<br>碗形曲面（正定）：从中心往<strong>任意方向</strong>走，高度都会上升。</div>';
+            } else {
+                var quadrant = '';
+                if (currentAngle >= 315 || currentAngle < 45) quadrant = 'x 正方向';
+                else if (currentAngle >= 45 && currentAngle < 135) quadrant = 'y 正方向附近';
+                else if (currentAngle >= 135 && currentAngle < 225) quadrant = 'x 负方向';
+                else quadrant = 'y 负方向附近';
+                
+                if (heightChange > 0) {
+                    feedbackEl.className = 'feedback-result positive';
+                    feedbackEl.innerHTML = '这个方向高度<strong>上升</strong>了。' +
+                        '<div class="detail">方向 ' + currentAngle + '°（' + quadrant + '），高度变化 +' + heightChange.toFixed(3) + '</div>';
+                } else {
+                    feedbackEl.className = 'feedback-result negative';
+                    feedbackEl.innerHTML = '这个方向高度<strong>下降</strong>了！' +
+                        '<div class="detail">方向 ' + currentAngle + '°（' + quadrant + '），高度变化 ' + heightChange.toFixed(3) + '<br>鞍形曲面（非正定）：某些方向上升，某些方向下降。</div>';
+                }
+            }
+        }
+        
+        // 测试方向
+        function testDirection() {
+            var heightChange = getHeightChange(currentAngle, currentSurface);
+            var direction = {
+                angle: currentAngle,
+                surface: currentSurface,
+                heightChange: heightChange,
+                goesUp: heightChange > 0
+            };
+            
+            // 检查是否已测试过
+            var exists = testedDirections.some(function(d) {
+                return d.angle === currentAngle && d.surface === currentSurface;
+            });
+            
+            if (!exists) {
+                testedDirections.push(direction);
+                if (heightChange > 0) {
+                    allUpDirections++;
+                }
+                
+                // 更新UI
+                updateDirectionList();
+                document.getElementById('testedCount').textContent = testedDirections.length;
+                document.getElementById('allUpCount').textContent = allUpDirections;
+                
+                // 检查完成状态
+                checkCompletion();
+            }
+            
+            // 追踪事件
+            trackEvent('interaction_change', {
+                key_value: currentAngle,
+                final_state: direction
+            });
+            
+            updateFeedback();
+        }
+        
+        // 更新方向列表
+        function updateDirectionList() {
+            var listEl = document.getElementById('directionList');
+            var html = '';
+            
+            testedDirections.slice(-8).reverse().forEach(function(d) {
+                var cls = d.goesUp ? 'up' : 'down';
+                var status = d.goesUp ? '上升' : '下降';
+                var surfaceName = d.surface === 'bowl' ? '碗形' : '鞍形';
+                html += '<div class="direction-item ' + cls + '">' +
+                    '<span>' + surfaceName + ' · ' + d.angle + '°</span>' +
+                    '<span>' + status + '</span>' +
+                    '</div>';
+            });
+            
+            listEl.innerHTML = html;
+        }
+        
+        // 检查完成状态
+        function checkCompletion() {
+            var bowlTests = testedDirections.filter(function(d) { return d.surface === 'bowl'; }).length;
+            var saddleTests = testedDirections.filter(function(d) { return d.surface === 'saddle'; }).length;
+            
+            if (bowlTests >= 3 && saddleTests >= 3 && !isCompleted) {
+                isCompleted = true;
+                document.getElementById('completionBadge').classList.add('visible');
+                trackEvent('interaction_complete', {
+                    completion_status: 'completed',
+                    total_tests: testedDirections.length
+                });
+            }
+        }
+        
+        // 切换曲面类型
+        function switchSurface(surface) {
+            currentSurface = surface;
+            
+            document.querySelectorAll('.toggle-btn').forEach(function(btn) {
+                btn.classList.remove('active');
+                if (btn.dataset.surface === surface) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            drawTopView();
+            drawCrossSection();
+            updateFeedback();
+            
+            trackEvent('interaction_change', {
+                key_value: surface
+            });
+        }
+        
+        // 初始化
+        function init() {
+            // 获取 Canvas 元素
+            topViewCanvas = document.getElementById('topViewCanvas');
+            crossSectionCanvas = document.getElementById('crossSectionCanvas');
+            
+            // 设置 Canvas 尺寸
+            var container = topViewCanvas.parentElement;
+            var rect = container.getBoundingClientRect();
+            var dpr = window.devicePixelRatio || 1;
+            
+            topViewCanvas.width = rect.width * dpr;
+            topViewCanvas.height = 300 * dpr;
+            topViewCanvas.style.width = rect.width + 'px';
+            topViewCanvas.style.height = '300px';
+            
+            crossSectionCanvas.width = rect.width * dpr;
+            crossSectionCanvas.height = 300 * dpr;
+            crossSectionCanvas.style.width = rect.width + 'px';
+            crossSectionCanvas.style.height = '300px';
+            
+            topCtx = topViewCanvas.getContext('2d');
+            crossCtx = crossSectionCanvas.getContext('2d');
+            
+            topCtx.scale(dpr, dpr);
+            crossCtx.scale(dpr, dpr);
+            
+            // 初始绘制
+            drawTopView();
+            drawCrossSection();
+            
+            // 事件绑定
+            var angleSlider = document.getElementById('angleSlider');
+            angleSlider.addEventListener('input', function() {
+                currentAngle = parseInt(this.value);
+                document.getElementById('angleValue').textContent = currentAngle + '°';
+                drawTopView();
+                drawCrossSection();
+            });
+            
+            document.getElementById('testBtn').addEventListener('click', testDirection);
+            
+            // Canvas 点击
+            topViewCanvas.addEventListener('click', function(e) {
+                var rect = topViewCanvas.getBoundingClientRect();
+                var x = e.clientX - rect.left - rect.width / 2;
+                var y = -(e.clientY - rect.top - rect.height / 2);
+                var angle = Math.atan2(y, x) * 180 / Math.PI;
+                if (angle < 0) angle += 360;
+                currentAngle = Math.round(angle);
+                angleSlider.value = currentAngle;
+                document.getElementById('angleValue').textContent = currentAngle + '°';
+                drawTopView();
+                drawCrossSection();
+            });
+            
+            // 曲面切换
+            document.querySelectorAll('.toggle-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    switchSurface(this.dataset.surface);
+                });
+            });
+            
+            // 提示按钮
+            document.getElementById('hintBtn').addEventListener('click', function() {
+                var content = document.getElementById('hintContent');
+                content.classList.toggle('visible');
+                if (!hintUsed) {
+                    hintUsed = true;
+                    trackEvent('hint_used', {
+                        hint_type: 'intuition_hint'
+                    });
+                }
+            });
+            
+            // 信心评分
+            document.querySelectorAll('.star').forEach(function(star) {
+                star.addEventListener('click', function() {
+                    confidenceRating = parseInt(this.dataset.rating);
+                    document.querySelectorAll('.star').forEach(function(s, i) {
+                        if (i < confidenceRating) {
+                            s.classList.add('active');
+                        } else {
+                            s.classList.remove('active');
+                        }
+                    });
+                    document.getElementById('confidenceText').textContent = 
+                        confidenceRating + ' / 5 分';
+                    
+                    trackEvent('confidence_submitted', {
+                        confidence_score: confidenceRating
+                    });
+                });
+            });
+            
+            // 反思提交
+            document.getElementById('submitReflection').addEventListener('click', function() {
+                var text = document.getElementById('reflectionText').value.trim();
+                if (text) {
+                    trackEvent('reflection_submitted', {
+                        reflection_text: text.substring(0, 200)
+                    });
+                    alert('感谢你的反思！继续探索吧。');
+                }
+            });
+            
+            // 页面加载事件
+            trackEvent('page_loaded', {
+                viewport_width: window.innerWidth,
+                viewport_height: window.innerHeight
+            });
+        }
+        
+        // DOM 加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

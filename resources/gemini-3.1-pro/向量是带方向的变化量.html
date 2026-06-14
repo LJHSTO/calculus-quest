@@ -1,0 +1,665 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>向量是带方向的变化量</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --card-bg: #2d2d2d;
+            --text-primary: #e0e0e0;
+            --text-secondary: #aaaaaa;
+            --accent-color: #4da6ff;
+            --x-color: #ff6b6b;
+            --y-color: #69db7c;
+            --border-color: #333333;
+            --success-color: #20c997;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+        }
+
+        .objective {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .layout-container {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            flex: 1.2;
+            min-width: 350px;
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .section-card {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        .feedback-display {
+            background-color: var(--bg-color);
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 12px;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .value-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1.1rem;
+        }
+
+        .val-x { color: var(--x-color); font-weight: bold; }
+        .val-y { color: var(--y-color); font-weight: bold; }
+        .val-len { color: var(--accent-color); font-weight: bold; }
+
+        canvas {
+            background-color: #1a1a1a;
+            border-radius: 6px;
+            cursor: crosshair;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            max-width: 100%;
+            touch-action: none;
+        }
+
+        .hint-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 12px;
+            font-style: italic;
+        }
+
+        .concept-card {
+            background-color: #232b33;
+            border: 1px solid #2b3a4a;
+        }
+
+        .assessment-section {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            margin-top: 20px;
+        }
+
+        .confidence-rating {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .star-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .star-btn:hover, .star-btn.active {
+            background-color: #3a3a3a;
+            color: #ffd700;
+            border-color: #ffd700;
+        }
+
+        .reflection-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        button.submit-btn {
+            background-color: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            align-self: flex-start;
+            font-weight: bold;
+        }
+
+        button.submit-btn:hover {
+            background-color: #3399ff;
+        }
+
+        button.submit-btn:disabled {
+            background-color: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--success-color);
+            color: #000;
+            padding: 12px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        @media (max-width: 768px) {
+            .layout-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>向量是带方向的变化量</h1>
+        <p class="objective">本节聚焦：向量的大小与方向。学习目标：能区分标量和向量；能说出向量的长度、方向和分量；能理解箭头表示变化。</p>
+    </header>
+
+    <main class="layout-container">
+        <div class="left-panel">
+            <section class="section-card">
+                <h2>直觉解释</h2>
+                <p>在日常生活中，有些量只要说出大小就够了，比如“气温25度”，这被称为<strong>标量</strong>。但有些量不仅需要大小，还需要方向才能描述清楚。</p>
+                <p><strong>向量同时记录变化的大小和方向。</strong>想象你从一个地点走到另一个地点，这个位移不仅有距离（大小），还有明确的指向（方向）。在高级数学中，多变量微积分里的梯度也是一种向量，它指出函数值增加最快的方向。</p>
+            </section>
+
+            <section class="section-card concept-card">
+                <h3>📝 概念卡</h3>
+                <p>在坐标系中，我们常用一个带箭头的线段来表示向量。从起点到终点：</p>
+                <ul style="margin-left: 20px; margin-top: 8px;">
+                    <li><strong>X分量</strong>：水平方向上的变化量。</li>
+                    <li><strong>Y分量</strong>：垂直方向上的变化量。</li>
+                    <li><strong>长度(模)</strong>：变化的总大小，可通过勾股定理 √(x² + y²) 计算。</li>
+                </ul>
+            </section>
+
+            <section class="section-card">
+                <h2>操作反馈</h2>
+                <p>请在右侧画布拖动向量的箭头（终点），观察变化：</p>
+                <div class="feedback-display">
+                    <div class="value-row">
+                        <span>水平变化 (X分量):</span>
+                        <span class="val-x" id="disp-x">0.0</span>
+                    </div>
+                    <div class="value-row">
+                        <span>垂直变化 (Y分量):</span>
+                        <span class="val-y" id="disp-y">0.0</span>
+                    </div>
+                    <div class="value-row">
+                        <span>向量长度 (大小):</span>
+                        <span class="val-len" id="disp-len">0.00</span>
+                    </div>
+                </div>
+                <p class="hint-text" id="interaction-hint">💡 提示：按住蓝色圆点拖拽，试试把它拖到原点的左下方。</p>
+            </section>
+        </div>
+
+        <div class="right-panel">
+            <canvas id="vectorCanvas" width="480" height="480"></canvas>
+            <p style="margin-top: 10px; color: var(--text-secondary); font-size: 0.9rem;">
+                坐标系中心为起点 (0,0)
+            </p>
+        </div>
+    </main>
+
+    <footer class="assessment-section">
+        <h2>学习评估</h2>
+        
+        <div>
+            <p>1. 你对“向量包含大小和方向”这个概念的理解程度如何？（1-5分）</p>
+            <div class="confidence-rating" id="confidence-stars">
+                <button class="star-btn" data-val="1">1</button>
+                <button class="star-btn" data-val="2">2</button>
+                <button class="star-btn" data-val="3">3</button>
+                <button class="star-btn" data-val="4">4</button>
+                <button class="star-btn" data-val="5">5</button>
+            </div>
+        </div>
+
+        <div class="reflection-area">
+            <p>2. 简短反思：经过刚才的拖动互动，你发现向量的长度和它的分量（X, Y）是什么关系？</p>
+            <div class="radio-group" id="reflection-options">
+                <label class="radio-label">
+                    <input type="radio" name="reflection" value="sum">
+                    长度等于 X分量 和 Y分量 的直接相加。
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="reflection" value="pythagorean">
+                    长度是由 X分量 和 Y分量 构成的直角三角形的斜边。
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="reflection" value="independent">
+                    长度与分量无关，是一个独立的值。
+                </label>
+            </div>
+            <button id="submit-btn" class="submit-btn" disabled>提交反思</button>
+        </div>
+    </footer>
+
+    <div id="toast" class="toast">记录已保存</div>
+
+    <script>
+        // --- Metadata & Tracking Setup ---
+        window.MAIC_LESSON_META = {
+            lesson_id: 'A-04',
+            module_id: 'OM-A2a',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '向量的大小与方向'
+        };
+
+        const startTime = Date.now();
+        let interactionCompleted = false;
+        let hintUsed = false;
+
+        function trackEvent(eventType, payload = {}) {
+            const event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: Date.now() - startTime,
+                interaction_state: payload.interaction_state || getCurrentState(),
+                ...payload
+            };
+
+            try {
+                let events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+                events.push(event);
+                localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            } catch (e) {
+                console.warn('LocalStorage error', e);
+            }
+
+            if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'maic_learning_event', payload: event }, '*');
+            }
+        }
+
+        function getCurrentState() {
+            return {
+                vector_x: mathPos.x,
+                vector_y: mathPos.y,
+                vector_length: Math.sqrt(mathPos.x * mathPos.x + mathPos.y * mathPos.y)
+            };
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+        }
+
+        // --- Canvas & Interaction Logic ---
+        let canvas, ctx;
+        let centerX, centerY;
+        const scale = 40; // 1 math unit = 40 pixels
+        
+        let mathPos = { x: 4, y: 3 }; 
+        let isDragging = false;
+        
+        const COLOR_GRID = '#333333';
+        const COLOR_AXIS = '#777777';
+        const COLOR_VECTOR = '#4da6ff';
+        const COLOR_X = '#ff6b6b';
+        const COLOR_Y = '#69db7c';
+
+        function initCanvas() {
+            canvas = document.getElementById('vectorCanvas');
+            ctx = canvas.getContext('2d');
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+
+            draw();
+            updateUI();
+
+            // Event Listeners
+            canvas.addEventListener('mousedown', handlePointerDown);
+            canvas.addEventListener('mousemove', handlePointerMove);
+            window.addEventListener('mouseup', handlePointerUp);
+
+            canvas.addEventListener('touchstart', handleTouchDown, {passive: false});
+            canvas.addEventListener('touchmove', handleTouchMove, {passive: false});
+            window.addEventListener('touchend', handlePointerUp);
+            
+            trackEvent('page_loaded');
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function screenToMath(sx, sy) {
+            return {
+                x: (sx - centerX) / scale,
+                y: (centerY - sy) / scale 
+            };
+        }
+
+        function mathToScreen(mx, my) {
+            return {
+                x: centerX + mx * scale,
+                y: centerY - my * scale
+            };
+        }
+
+        function isPointerOnTarget(pos) {
+            const targetScreen = mathToScreen(mathPos.x, mathPos.y);
+            const dx = pos.x - targetScreen.x;
+            const dy = pos.y - targetScreen.y;
+            return Math.sqrt(dx*dx + dy*dy) < 20; 
+        }
+
+        function handlePointerDown(e) {
+            const pos = getMousePos(e);
+            if (isPointerOnTarget(pos)) {
+                isDragging = true;
+                if (!hintUsed) {
+                    hintUsed = true;
+                    trackEvent('hint_used', { hint_text: 'Started dragging' });
+                }
+            }
+        }
+
+        function handleTouchDown(e) {
+            e.preventDefault();
+            handlePointerDown(e);
+        }
+
+        function handlePointerMove(e) {
+            if (!isDragging) {
+                const pos = getMousePos(e);
+                canvas.style.cursor = isPointerOnTarget(pos) ? 'grab' : 'crosshair';
+                return;
+            }
+            
+            canvas.style.cursor = 'grabbing';
+            const pos = getMousePos(e);
+            
+            // Constrain within canvas bounds
+            const padding = 20;
+            pos.x = Math.max(padding, Math.min(canvas.width - padding, pos.x));
+            pos.y = Math.max(padding, Math.min(canvas.height - padding, pos.y));
+
+            const newMath = screenToMath(pos.x, pos.y);
+            
+            // Snap to grid slightly for cleaner numbers
+            mathPos.x = Math.round(newMath.x * 10) / 10;
+            mathPos.y = Math.round(newMath.y * 10) / 10;
+            
+            draw();
+            updateUI();
+        }
+
+        function handleTouchMove(e) {
+            if(isDragging) e.preventDefault();
+            handlePointerMove(e);
+        }
+
+        function handlePointerUp() {
+            if (isDragging) {
+                isDragging = false;
+                canvas.style.cursor = 'crosshair';
+                
+                trackEvent('interaction_change', {
+                    action: 'drag_vector_end',
+                    new_x: mathPos.x,
+                    new_y: mathPos.y
+                });
+
+                if (!interactionCompleted) {
+                    interactionCompleted = true;
+                    document.getElementById('interaction-hint').textContent = '✅ 干得漂亮！你改变了向量的大小和方向。';
+                    document.getElementById('interaction-hint').style.color = 'var(--success-color)';
+                    trackEvent('interaction_complete');
+                }
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Grid
+            ctx.beginPath();
+            ctx.strokeStyle = COLOR_GRID;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            
+            for (let x = centerX % scale; x < canvas.width; x += scale) {
+                ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height);
+            }
+            for (let y = centerY % scale; y < canvas.height; y += scale) {
+                ctx.moveTo(0, y); ctx.lineTo(canvas.width, y);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Axes
+            ctx.beginPath();
+            ctx.strokeStyle = COLOR_AXIS;
+            ctx.lineWidth = 2;
+            ctx.moveTo(0, centerY); ctx.lineTo(canvas.width, centerY);
+            ctx.moveTo(centerX, 0); ctx.lineTo(centerX, canvas.height);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = COLOR_AXIS;
+            ctx.font = '14px Arial';
+            ctx.fillText('X', canvas.width - 20, centerY - 10);
+            ctx.fillText('Y', centerX + 10, 20);
+            ctx.fillText('0', centerX + 5, centerY + 15);
+
+            const target = mathToScreen(mathPos.x, mathPos.y);
+
+            // Draw projections (components)
+            ctx.beginPath();
+            ctx.strokeStyle = COLOR_X;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(target.x, centerY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.strokeStyle = COLOR_Y;
+            ctx.moveTo(target.x, centerY);
+            ctx.lineTo(target.x, target.y);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Vector
+            drawArrow(ctx, centerX, centerY, target.x, target.y, COLOR_VECTOR);
+
+            // Draw draggable point
+            ctx.beginPath();
+            ctx.fillStyle = isDragging ? '#ffffff' : COLOR_VECTOR;
+            ctx.arc(target.x, target.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        function drawArrow(context, fromX, fromY, toX, toY, color) {
+            const headlen = 16; 
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            context.beginPath();
+            context.strokeStyle = color;
+            context.lineWidth = 4;
+            context.moveTo(fromX, fromY);
+            context.lineTo(toX, toY);
+            context.stroke();
+
+            context.beginPath();
+            context.fillStyle = color;
+            context.moveTo(toX, toY);
+            context.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            context.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            context.lineTo(toX, toY);
+            context.fill();
+        }
+
+        function updateUI() {
+            const len = Math.sqrt(mathPos.x * mathPos.x + mathPos.y * mathPos.y);
+            document.getElementById('disp-x').textContent = mathPos.x.toFixed(1);
+            document.getElementById('disp-y').textContent = mathPos.y.toFixed(1);
+            document.getElementById('disp-len').textContent = len.toFixed(2);
+        }
+
+        // --- Assessment Logic ---
+        function setupAssessment() {
+            const stars = document.querySelectorAll('.star-btn');
+            stars.forEach(star => {
+                star.addEventListener('click', (e) => {
+                    const rating = parseInt(e.target.dataset.val);
+                    stars.forEach(s => s.classList.remove('active'));
+                    for(let i=0; i<rating; i++) {
+                        stars[i].classList.add('active');
+                    }
+                    trackEvent('confidence_submitted', { score: rating });
+                    showToast('已记录信心评分');
+                });
+            });
+
+            const radios = document.querySelectorAll('input[name="reflection"]');
+            const submitBtn = document.getElementById('submit-btn');
+
+            radios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    submitBtn.disabled = false;
+                });
+            });
+
+            submitBtn.addEventListener('click', () => {
+                const selected = document.querySelector('input[name="reflection"]:checked');
+                if (selected) {
+                    trackEvent('reflection_submitted', { 
+                        selected_option: selected.value,
+                        is_correct: selected.value === 'pythagorean' 
+                    });
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '已提交';
+                    submitBtn.style.backgroundColor = 'var(--success-color)';
+                    
+                    if(selected.value === 'pythagorean') {
+                        showToast('回答正确！勾股定理将分量与长度联系起来。');
+                    } else {
+                        showToast('已记录你的思考。提示：注意观察刚才画出的直角三角形。');
+                    }
+                }
+            });
+        }
+
+        // Initialize on DOM Load
+        document.addEventListener('DOMContentLoaded', () => {
+            initCanvas();
+            setupAssessment();
+        });
+
+    </script>
+</body>
+</html>

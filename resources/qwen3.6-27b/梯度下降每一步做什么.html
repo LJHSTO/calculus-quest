@@ -1,0 +1,471 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>梯度下降每一步做什么</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",sans-serif;background:#1a1a2e;color:#e0e0e0;line-height:1.7;min-height:100vh;}
+.container{max-width:1100px;margin:0 auto;padding:20px 16px;}
+.header{text-align:center;padding:18px 0 10px;border-bottom:1px solid #333;margin-bottom:18px;}
+.header h1{font-size:26px;color:#00d2ff;margin-bottom:6px;}
+.objective{font-size:15px;color:#aab;margin-bottom:4px;}
+.section{margin-bottom:22px;}
+.section h2{font-size:18px;color:#00d2ff;margin-bottom:10px;border-left:3px solid #00d2ff;padding-left:10px;}
+.intuition{background:#16213e;border-radius:8px;padding:14px 18px;margin-bottom:16px;font-size:15px;line-height:1.9;}
+.intuition code{background:#0a3d62;color:#7fdbca;padding:2px 6px;border-radius:4px;font-size:14px;}
+.core-area{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;}
+.left-panel{flex:0 0 300px;min-width:280px;}
+.right-panel{flex:1;min-width:300px;}
+.step-list{background:#16213e;border-radius:8px;padding:12px 14px;}
+.step-list h3{font-size:15px;color:#f0c040;margin-bottom:10px;}
+.step-item{padding:9px 12px;margin-bottom:6px;border-radius:6px;background:#1a1a3e;border-left:3px solid #334;font-size:14px;transition:all 0.3s;cursor:default;}
+.step-item.active{background:#0a3d62;border-left-color:#00d2ff;color:#fff;box-shadow:0 0 8px rgba(0,210,255,0.2);}
+.step-item.done{border-left-color:#2ecc71;color:#8fc;}
+.step-num{font-weight:bold;color:#f0c040;margin-right:6px;}
+.canvas-wrap{background:#16213e;border-radius:8px;padding:10px;text-align:center;}
+canvas{background:#0d1b2a;border-radius:6px;display:block;margin:0 auto;}
+.controls{background:#16213e;border-radius:8px;padding:14px;margin-top:12px;}
+.control-row{display:flex;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap;}
+.control-row label{min-width:80px;font-size:14px;color:#aab;}
+.control-row input[type=range]{flex:1;min-width:100px;accent-color:#00d2ff;}
+.control-row .val{min-width:60px;text-align:right;color:#7fdbca;font-size:14px;font-weight:bold;}
+.btn-row{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;}
+.btn{padding:8px 20px;border:none;border-radius:6px;font-size:14px;cursor:pointer;transition:all 0.2s;font-family:inherit;}
+.btn-primary{background:#00d2ff;color:#111;font-weight:bold;}
+.btn-primary:hover{background:#33e0ff;}
+.btn-secondary{background:#334;color:#aab;}
+.btn-secondary:hover{background:#445;}
+.btn-hint{background:#f0c040;color:#111;}
+.btn-hint:hover{background:#f5d060;}
+.btn:disabled{opacity:0.4;cursor:default;}
+.table-wrap{background:#16213e;border-radius:8px;padding:12px;margin-top:12px;overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:#0a3d62;color:#7fdbca;padding:8px 10px;text-align:center;border-bottom:2px solid #00d2ff;}
+td{padding:7px 10px;text-align:center;border-bottom:1px solid #223;}
+tr.highlight{background:#0a3d62;color:#fff;}
+tr.current-row{background:#1a3a5e;box-shadow:inset 0 0 6px rgba(0,210,255,0.3);}
+.concept-card{background:linear-gradient(135deg,#16213e,#1a1a4e);border:1px solid #334;border-radius:10px;padding:16px 20px;margin-bottom:18px;}
+.concept-card h3{color:#f0c040;font-size:16px;margin-bottom:8px;}
+.concept-card p{font-size:14px;color:#bbc;line-height:1.8;}
+.concept-card .formula{background:#0a3d62;display:inline-block;padding:4px 12px;border-radius:6px;color:#7fdbca;font-size:16px;margin:6px 0;}
+.feedback-box{background:#16213e;border-radius:8px;padding:12px 16px;margin:12px 0;font-size:14px;min-height:40px;border-left:3px solid #334;transition:all 0.3s;}
+.feedback-box.success{border-left-color:#2ecc71;color:#8fc;}
+.feedback-box.info{border-left-color:#00d2ff;color:#7fdbca;}
+.feedback-box.warning{border-left-color:#f0c040;color:#f5d060;}
+.rating-section{background:#16213e;border-radius:8px;padding:16px;margin:18px 0;}
+.rating-section h3{font-size:15px;color:#f0c040;margin-bottom:10px;}
+.stars{display:flex;gap:8px;align-items:center;}
+.star{font-size:32px;cursor:pointer;color:#334;transition:all 0.2s;user-select:none;}
+.star.filled{color:#f0c040;}
+.star:hover{transform:scale(1.2);}
+.rating-text{margin-left:12px;font-size:14px;color:#aab;}
+.reflection-section{background:#16213e;border-radius:8px;padding:16px;margin:18px 0;}
+.reflection-section h3{font-size:15px;color:#f0c040;margin-bottom:10px;}
+.reflection-section p{font-size:14px;color:#bbc;margin-bottom:10px;}
+.reflection-options{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.reflection-opt{padding:8px 14px;border-radius:6px;border:1px solid #334;background:#1a1a3e;cursor:pointer;font-size:13px;color:#aab;transition:all 0.2s;}
+.reflection-opt:hover{border-color:#00d2ff;color:#fff;}
+.reflection-opt.selected{border-color:#00d2ff;background:#0a3d62;color:#7fdbca;}
+.reflection-input{width:100%;background:#0d1b2a;border:1px solid #334;border-radius:6px;padding:10px;color:#e0e0e0;font-size:14px;font-family:inherit;resize:vertical;min-height:60px;}
+.reflection-input:focus{outline:none;border-color:#00d2ff;}
+.submit-row{margin-top:12px;text-align:right;}
+.hint-box{background:#1a2a1a;border:1px solid #2ecc71;border-radius:6px;padding:10px 14px;margin-top:10px;font-size:13px;color:#8fc;display:none;}
+.hint-box.show{display:block;}
+@media(max-width:700px){
+.core-area{flex-direction:column;}
+.left-panel{flex:none;width:100%;}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>梯度下降每一步做什么</h1>
+<p class="objective">🎯 本节聚焦：梯度下降迭代公式</p>
+<p class="objective" style="color:#7fdbca;margin-top:4px;">学生掌握目标：能读懂迭代公式；能说出 alpha 是步长；能执行 2-3 步简单数值迭代</p>
+</div>
+
+<div class="section">
+<div class="intuition">
+💡 <strong>直觉解释：</strong>梯度下降可以写成 <code>x_new = x_old - alpha * gradient</code>。它重复<strong>计算方向</strong>、<strong>移动</strong>、<strong>检查是否更低</strong>。就像蒙着眼睛下山：每次摸一下地面最陡的方向（梯度），往反方向走一小步（步长 <code>alpha</code>），然后看看有没有变低。如果变低了，就继续；如果没变低，就退回并缩小步长。
+</div>
+</div>
+
+<div class="section">
+<div class="concept-card">
+<h3>📋 核心概念卡：梯度下降迭代公式</h3>
+<div class="formula">x<sub>k+1</sub> = x<sub>k</sub> - γ · ∇f(x<sub>k</sub>)</div>
+<p>其中 <code>x<sub>k</sub></code> 是当前参数位置，<code>γ</code>（gamma）是<strong>步长</strong>（也叫学习率），<code>∇f(x<sub>k</sub>)</code> 是函数在当前点的<strong>梯度</strong>。步长决定了每次走多远——步长太大可能 overshoot（冲过头），步长太小收敛很慢。</p>
+<p style="margin-top:6px;">本例使用函数 <code>f(x) = x²</code>，其梯度为 <code>f'(x) = 2x</code>，极小值在 <code>x = 0</code> 处。</p>
+</div>
+</div>
+
+<div class="section">
+<h2>🔄 核心互动：动手走一遍梯度下降</h2>
+<div class="core-area">
+<div class="left-panel">
+<div class="step-list">
+<h3>四步算法流程</h3>
+<div class="step-item" id="step1"><span class="step-num">步骤 1：</span>设定初始参数位置 x₀ 与步长 γ</div>
+<div class="step-item" id="step2"><span class="step-num">步骤 2：</span>计算当前点的梯度 ∇f(x<sub>k</sub>)</div>
+<div class="step-item" id="step3"><span class="step-num">步骤 3：</span>按公式更新参数 x<sub>k+1</sub> = x<sub>k</sub> - γ·∇f(x<sub>k</sub>)</div>
+<div class="step-item" id="step4"><span class="step-num">步骤 4：</span>检查是否收敛，不满足则返回步骤 2</div>
+</div>
+<div class="hint-box" id="hintBox">
+💡 <strong>提示：</strong>拖动滑块设置初始位置和步长，然后点「执行下一步」按钮。观察右侧图形和数值表中 x 值如何一步步靠近 0。试着用不同的步长看看效果有何不同！
+</div>
+</div>
+<div class="right-panel">
+<div class="canvas-wrap">
+<canvas id="mainCanvas" width="520" height="340"></canvas>
+</div>
+<div class="controls">
+<div class="control-row">
+<label>初始位置 x₀：</label>
+<input type="range" id="x0Slider" min="-30" max="30" value="25" step="1">
+<span class="val" id="x0Val">2.5</span>
+</div>
+<div class="control-row">
+<label>步长 γ (alpha)：</label>
+<input type="range" id="gammaSlider" min="5" max="40" value="20" step="1">
+<span class="val" id="gammaVal">0.20</span>
+</div>
+<div class="btn-row">
+<button class="btn btn-primary" id="btnNext" disabled>▶ 执行下一步</button>
+<button class="btn btn-secondary" id="btnReset">↺ 重置</button>
+<button class="btn btn-hint" id="btnHint">💡 提示</button>
+</div>
+</div>
+<div class="table-wrap">
+<table>
+<thead>
+<tr><th>迭代 k</th><th>x<sub>k</sub></th><th>f(x<sub>k</sub>)</th><th>梯度 f'(x<sub>k</sub>)</th><th>更新操作</th></tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+</div>
+<div class="feedback-box" id="feedbackBox">
+👆 请先设置初始参数，然后点击「执行下一步」开始迭代。
+</div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="rating-section">
+<h3>📊 信心评分</h3>
+<p style="font-size:14px;color:#aab;margin-bottom:10px;">你对「理解梯度下降每一步在做什么」的信心如何？（1 = 完全不懂，5 = 非常自信）</p>
+<div class="stars" id="starsContainer">
+<span class="star" data-val="1">★</span>
+<span class="star" data-val="2">★</span>
+<span class="star" data-val="3">★</span>
+<span class="star" data-val="4">★</span>
+<span class="star" data-val="5">★</span>
+</div>
+<span class="rating-text" id="ratingText">请选择你的信心评分</span>
+</div>
+</div>
+
+<div class="section">
+<div class="reflection-section">
+<h3>💭 简短反思</h3>
+<p>完成上述互动后，选出最符合你当前感受的一项（可多选），并在下方补充你的想法：</p>
+<div class="reflection-options" id="reflectionOptions">
+<div class="reflection-opt" data-val="步长太大会导致函数值上升">步长太大会导致函数值上升</div>
+<div class="reflection-opt" data-val="梯度方向就是最陡上升方向">梯度方向就是最陡上升方向</div>
+<div class="reflection-opt" data-val="每次迭代x都更接近0">每次迭代 x 都更接近 0</div>
+<div class="reflection-opt" data-val="步长太小时收敛很慢">步长太小时收敛很慢</div>
+<div class="reflection-opt" data-val="公式中负号表示往反方向走">公式中负号表示往反方向走</div>
+</div>
+<textarea class="reflection-input" id="reflectionInput" placeholder="写下你的思考或疑问，例如：我发现当步长超过0.5时…"></textarea>
+<div class="submit-row">
+<button class="btn btn-primary" id="btnSubmitReflection">提交反思</button>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+(function(){
+window.MAIC_LESSON_META={lesson_id:'D-06',module_id:'OM-D1',course_version:'demo-closed-loop-v1',concept_name:'梯度下降迭代公式'};
+var PAGE_LOAD_TIME=Date.now();
+var interactionState={iterations:0,currentX:0,gamma:0.2,x0:2.5,started:false,converged:false,hintUsed:false,confidence:0,reflectionChoices:[],reflectionText:'',currentStep:0,diverged:false};
+var canvas,ctx;
+var maxIter=0;
+var X_MIN=-4,X_MAX=4,Y_MIN=-0.5,Y_MAX=5;
+
+function timeOnTask(){return Date.now()-PAGE_LOAD_TIME;}
+
+function trackEvent(eventType,payload){
+var evt={lesson_id:'D-06',module_id:'OM-D1',course_version:'demo-closed-loop-v1',event_type:eventType,timestamp:Date.now(),time_on_task_ms:timeOnTask(),interaction_state:JSON.parse(JSON.stringify(interactionState))};
+for(var k in payload){evt[k]=payload[k];}
+try{var existing=JSON.parse(localStorage.getItem('maic_learning_events')||'[]');existing.push(evt);localStorage.setItem('maic_learning_events',JSON.stringify(existing));}catch(e){}
+try{window.parent.postMessage({type:'maic_learning_event',payload:evt},'*');}catch(e){}
+}
+
+function getX0(){return parseInt(document.getElementById('x0Slider').value)/10;}
+function getGamma(){return parseInt(document.getElementById('gammaSlider').value)/100;}
+
+function updateSliderDisplays(){
+document.getElementById('x0Val').textContent=getX0().toFixed(1);
+document.getElementById('gammaVal').textContent=getGamma().toFixed(2);
+}
+
+function canvasToX(px){var pad=50;return X_MIN+(px-pad)/(canvas.width-2*pad)*(X_MAX-X_MIN);}
+function canvasToY(py){var pad=40;return Y_MAX-(py-pad)/(canvas.height-2*pad)*(Y_MAX-Y_MIN);}
+function xToCanvasX(x){var pad=50;return pad+(x-X_MIN)/(X_MAX-X_MIN)*(canvas.width-2*pad);}
+function yToCanvasY(y){var pad=40;return pad+(Y_MAX-y)/(Y_MAX-Y_MIN)*(canvas.height-2*pad);}
+
+function drawCanvas(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+// Grid
+ctx.strokeStyle='#1a3050';ctx.lineWidth=0.5;
+for(var gx=Math.ceil(X_MIN);gx<=Math.floor(X_MAX);gx++){var cx=xToCanvasX(gx);ctx.beginPath();ctx.moveTo(cx,40);ctx.lineTo(cx,canvas.height-40);ctx.stroke();}
+for(var gy=Math.ceil(Y_MIN);gy<=Math.floor(Y_MAX);gy++){var cy=yToCanvasY(gy);ctx.beginPath();ctx.moveTo(50,cy);ctx.lineTo(canvas.width-50,cy);ctx.stroke();}
+// Axes
+ctx.strokeStyle='#556';ctx.lineWidth=1.5;
+ctx.beginPath();ctx.moveTo(50,yToCanvasY(0));ctx.lineTo(canvas.width-50,yToCanvasY(0));ctx.stroke();
+ctx.beginPath();ctx.moveTo(xToCanvasX(0),40);ctx.lineTo(xToCanvasX(0),canvas.height-40);ctx.stroke();
+// Axis labels
+ctx.fillStyle='#889';ctx.font='12px sans-serif';ctx.textAlign='center';
+for(var gx=Math.ceil(X_MIN);gx<=Math.floor(X_MAX);gx++){if(gx===0)continue;ctx.fillText(gx.toString(),xToCanvasX(gx),yToCanvasY(0)+16);}
+ctx.textAlign='right';
+for(var gy=0;gy<=Math.floor(Y_MAX);gy++){if(gy===0)continue;ctx.fillText(gy.toString(),xToCanvasX(0)-8,yToCanvasY(gy)+4);}
+// Axis titles
+ctx.fillStyle='#aab';ctx.font='13px sans-serif';ctx.textAlign='center';
+ctx.fillText('x',canvas.width-35,yToCanvasY(0)+16);
+ctx.fillText('f(x)',xToCanvasX(0)+16,30);
+// f(x)=x^2 curve
+ctx.strokeStyle='#00d2ff';ctx.lineWidth=2;ctx.beginPath();
+var first=true;
+for(var px=0;px<=canvas.width;px+=2){var x=canvasToX(px);var y=x*x;if(y>Y_MAX+1){first=true;continue;}if(first){ctx.moveTo(px,yToCanvasY(y));first=false;}else{ctx.lineTo(px,yToCanvasY(y));}}
+ctx.stroke();
+// Label f(x)=x^2
+ctx.fillStyle='#00d2ff';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+ctx.fillText('f(x) = x²',xToCanvasX(2.5),yToCanvasY(6.25)-8);
+// Draw iteration history
+var hist=getHistory();
+for(var i=0;i<hist.length;i++){var pt=hist[i];var px1=xToCanvasX(pt.x);var py1=yToCanvasY(pt.x*pt.x);
+if(i<hist.length-1){var pn=hist[i+1];var px2=xToCanvasX(pn.x);var py2=yToCanvasY(pn.x*pn.x);
+ctx.strokeStyle='rgba(240,192,64,0.5)';ctx.lineWidth=1;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(px1,py1);ctx.lineTo(px2,py2);ctx.stroke();ctx.setLineDash([]);}
+if(i===hist.length-1&&hist.length>0){
+// Current point
+ctx.fillStyle='#f0c040';ctx.beginPath();ctx.arc(px1,py1,6,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='#fff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText('x='+pt.x.toFixed(3),px1,py1-12);
+// Gradient arrow
+var grad=2*pt.x;
+var arrowLen=Math.min(Math.abs(grad)*0.15,1.5);
+if(Math.abs(grad)>0.001){
+var dir=-grad>0?1:-1;
+var ax=px1+dir*arrowLen*50;
+ctx.strokeStyle='#ff6b6b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px1,py1);ctx.lineTo(ax,py1);ctx.stroke();
+// Arrowhead
+var triSize=6;
+ctx.fillStyle='#ff6b6b';ctx.beginPath();
+if(dir>0){ctx.moveTo(ax,py1);ctx.lineTo(ax-triSize,py1-triSize/2);ctx.lineTo(ax-triSize,py1+triSize/2);}
+else{ctx.moveTo(ax,py1);ctx.lineTo(ax+triSize,py1-triSize/2);ctx.lineTo(ax+triSize,py1+triSize/2);}
+ctx.fill();
+ctx.fillStyle='#ff6b6b';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.fillText('梯度方向→',ax,py1-8);}
+// Step indicator
+ctx.fillStyle='#7fdbca';ctx.font='11px sans-serif';ctx.textAlign='center';
+ctx.fillText('k='+i,px1,py1+22);
+}else{
+ctx.fillStyle='rgba(240,192,64,0.4)';ctx.beginPath();ctx.arc(px1,py1,4,0,Math.PI*2);ctx.fill();}
+}
+// Minimum marker
+ctx.fillStyle='#2ecc71';ctx.beginPath();ctx.arc(xToCanvasX(0),yToCanvasY(0),5,0,Math.PI*2);ctx.fill();
+ctx.fillStyle='#2ecc71';ctx.font='12px sans-serif';ctx.textAlign='left';ctx.fillText('极小值 x=0',xToCanvasX(0)+8,yToCanvasY(0)+16);
+}
+
+function getHistory(){
+var x=getX0();var gamma=getGamma();var hist=[];
+hist.push({x:x,f:x*x,grad:2*x});
+for(var i=0;i<maxIter;i++){
+var xNew=x-gamma*(2*x);
+hist.push({x:xNew,f:xNew*xNew,grad:2*xNew});
+x=xNew;
+if(Math.abs(x)<0.0001)break;
+}
+return hist;
+}
+
+function buildTable(){
+var hist=getHistory();var tbody=document.getElementById('tableBody');tbody.innerHTML='';
+for(var i=0;i<hist.length;i++){
+var tr=document.createElement('tr');
+if(i===hist.length-1&&interactionState.started){tr.className='current-row';}
+var td_k=document.createElement('td');td_k.textContent=i;
+var td_x=document.createElement('td');td_x.textContent=hist[i].x.toFixed(4);
+var td_f=document.createElement('td');td_f.textContent=hist[i].f.toFixed(4);
+var td_g=document.createElement('td');td_g.textContent=hist[i].grad.toFixed(4);
+var td_op=document.createElement('td');
+if(i===0){td_op.textContent='初始值';}
+else{td_op.textContent='x'+i+' = x'+(i-1)+' - '+getGamma().toFixed(2)+'×'+hist[i-1].grad.toFixed(4);}
+tr.appendChild(td_k);tr.appendChild(td_x);tr.appendChild(td_f);tr.appendChild(td_g);tr.appendChild(td_op);
+tbody.appendChild(tr);
+}
+}
+
+function highlightStep(stepNum){
+for(var i=1;i<=4;i++){var el=document.getElementById('step'+i);el.className='step-item';}
+if(stepNum>=1)document.getElementById('step1').className='step-item done';
+if(stepNum>=2)document.getElementById('step2').className='step-item done';
+if(stepNum>=3)document.getElementById('step3').className='step-item done';
+if(stepNum>=4)document.getElementById('step4').className='step-item done';
+if(stepNum<=4&&stepNum>=1){
+var activeStep=stepNum;
+if(stepNum===4){activeStep=2;}
+document.getElementById('step'+activeStep).className='step-item active';
+}
+}
+
+function updateFeedback(msg,type){
+var fb=document.getElementById('feedbackBox');
+fb.textContent=msg;fb.className='feedback-box '+(type||'info');
+}
+
+function setButtonStates(){
+var btnNext=document.getElementById('btnNext');
+var sliderX0=document.getElementById('x0Slider');
+var sliderG=document.getElementById('gammaSlider');
+if(interactionState.started){
+btnNext.disabled=false;
+sliderX0.disabled=true;
+sliderG.disabled=true;
+}else{
+btnNext.disabled=false;
+sliderX0.disabled=false;
+sliderG.disabled=false;
+}
+}
+
+function executeStep(){
+if(!interactionState.started){
+interactionState.started=true;
+interactionState.x0=getX0();
+interactionState.gamma=getGamma();
+maxIter=0;
+updateFeedback('开始迭代！初始位置 x₀='+getX0().toFixed(1)+'，步长 γ='+getGamma().toFixed(2)+'。点击「执行下一步」继续。','info');
+highlightStep(1);
+}else{
+maxIter++;
+var hist=getHistory();
+var last=hist[hist.length-1];
+var grad=last.grad;
+var stepStr="- γ·f'(x) = -"+getGamma().toFixed(2)+'×'+grad.toFixed(4);
+updateFeedback('迭代 #'+maxIter+'：梯度='+grad.toFixed(4)+stepStr+'，新 x='+last.x.toFixed(4)+'，f(x)='+last.f.toFixed(4)+'。','success');
+if(Math.abs(last.x)<0.01){
+interactionState.converged=true;
+updateFeedback('🎉 恭喜！x='+last.x.toFixed(4)+' 已非常接近极小值 0！梯度下降成功收敛！','success');
+highlightStep(4);
+document.getElementById('btnNext').disabled=true;
+trackEvent('interaction_complete',{iterations:maxIter,finalX:last.x,finalF:last.f,converged:true,diverged:false});
+return;
+}
+if(last.x>10||last.x<-10){
+interactionState.diverged=true;
+updateFeedback('⚠️ 迭代发散！x='+last.x.toFixed(2)+' 远离了极小值。步长 γ='+getGamma().toFixed(2)+' 可能太大了，试试减小步长后重置。','warning');
+document.getElementById('btnNext').disabled=true;
+trackEvent('interaction_complete',{iterations:maxIter,finalX:last.x,finalF:last.f,converged:false,diverged:true});
+return;
+}
+highlightStep(2+((maxIter%3)));
+}
+trackEvent('interaction_change',{iterations:maxIter,currentX:hist[hist.length-1].x,gamma:getGamma()});
+drawCanvas();buildTable();setButtonStates();
+}
+
+function resetAll(){
+interactionState={iterations:0,currentX:0,gamma:0.2,x0:2.5,started:false,converged:false,hintUsed:interactionState.hintUsed,confidence:interactionState.confidence,reflectionChoices:interactionState.reflectionChoices,reflectionText:interactionState.reflectionText,currentStep:0,diverged:false};
+maxIter=0;
+updateSliderDisplays();
+updateFeedback('👆 请先设置初始参数，然后点击「执行下一步」开始迭代。','info');
+highlightStep(0);
+drawCanvas();buildTable();
+document.getElementById('x0Slider').disabled=false;
+document.getElementById('gammaSlider').disabled=false;
+document.getElementById('btnNext').disabled=false;
+trackEvent('interaction_change',{action:'reset'});
+}
+
+// Stars rating
+var selectedRating=0;
+var ratingLabels=['','完全不懂','有点概念','基本理解','掌握较好','非常自信'];
+var stars=document.querySelectorAll('.star');
+stars.forEach(function(s){
+s.addEventListener('click',function(){
+selectedRating=parseInt(this.getAttribute('data-val'));
+stars.forEach(function(st,i){st.className='star'+(i<selectedRating?' filled':'');});
+document.getElementById('ratingText').textContent='信心评分：'+selectedRating+' — '+ratingLabels[selectedRating];
+interactionState.confidence=selectedRating;
+trackEvent('confidence_submitted',{confidence:selectedRating});
+});
+s.addEventListener('mouseenter',function(){
+var v=parseInt(this.getAttribute('data-val'));
+stars.forEach(function(st,i){st.className='star'+(i<v?' filled':'');});
+});
+s.addEventListener('mouseleave',function(){
+stars.forEach(function(st,i){st.className='star'+(i<selectedRating?' filled':'');});
+});
+});
+
+// Reflection
+var reflOptions=document.querySelectorAll('.reflection-opt');
+var selectedRefl=[];
+reflOptions.forEach(function(opt){
+opt.addEventListener('click',function(){
+var val=this.getAttribute('data-val');
+var idx=selectedRefl.indexOf(val);
+if(idx>=0){selectedRefl.splice(idx,1);this.className='reflection-opt';}
+else{selectedRefl.push(val);this.className='reflection-opt selected';}
+interactionState.reflectionChoices=selectedRefl.slice();
+});
+});
+
+// Hint
+var hintUsed=false;
+document.getElementById('btnHint').addEventListener('click',function(){
+var hb=document.getElementById('hintBox');
+hb.className='hint-box show';
+if(!hintUsed){hintUsed=true;interactionState.hintUsed=true;trackEvent('hint_used',{});}
+});
+
+// Submit reflection
+document.getElementById('btnSubmitReflection').addEventListener('click',function(){
+var reflText=document.getElementById('reflectionInput').value;
+interactionState.reflectionText=reflText;
+trackEvent('reflection_submitted',{reflection_choices:selectedRefl.slice(),reflection_text:reflText.substring(0,200)});
+updateFeedback('✅ 反思已提交！感谢你的思考。','success');
+});
+
+// Main buttons
+document.getElementById('btnNext').addEventListener('click',function(){executeStep();});
+document.getElementById('btnReset').addEventListener('click',function(){resetAll();});
+
+// Sliders
+document.getElementById('x0Slider').addEventListener('input',function(){
+updateSliderDisplays();
+if(!interactionState.started){drawCanvas();buildTable();}
+trackEvent('interaction_change',{x0:getX0()});
+});
+document.getElementById('gammaSlider').addEventListener('input',function(){
+updateSliderDisplays();
+if(!interactionState.started){drawCanvas();buildTable();}
+trackEvent('interaction_change',{gamma:getGamma()});
+});
+
+document.addEventListener('DOMContentLoaded',function(){
+canvas=document.getElementById('mainCanvas');
+ctx=canvas.getContext('2d');
+updateSliderDisplays();
+highlightStep(0);
+buildTable();
+drawCanvas();
+trackEvent('page_loaded',{});
+});
+})();
+</script>
+</body>
+</html>

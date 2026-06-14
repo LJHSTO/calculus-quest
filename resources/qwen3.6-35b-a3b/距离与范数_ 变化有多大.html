@@ -1,0 +1,701 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>距离与范数: 变化有多大</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",sans-serif;background:#0d1117;color:#e6edf3;line-height:1.6;overflow-x:hidden}
+.container{max-width:1100px;margin:0 auto;padding:16px}
+header{text-align:center;padding:24px 0 12px;border-bottom:1px solid #30363d;margin-bottom:20px}
+header h1{font-size:1.8rem;color:#58a6ff;letter-spacing:1px}
+header .subtitle{font-size:0.95rem;color:#8b949e;margin-top:6px}
+.goal-box{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px 18px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px}
+.goal-box .icon{font-size:1.3rem;flex-shrink:0}
+.goal-box p{font-size:0.95rem;color:#c9d1d9}
+.intuition-box{background:linear-gradient(135deg,#1a1e2e,#161b22);border:1px solid #30363d;border-radius:10px;padding:18px;margin-bottom:20px}
+.intuition-box h3{color:#ffa657;font-size:1.05rem;margin-bottom:10px}
+.intuition-box p{color:#c9d1d9;font-size:0.93rem;margin-bottom:6px}
+.intuition-box .highlight{color:#58a6ff;font-weight:600}
+.main-area{display:flex;gap:20px;margin-bottom:20px;flex-wrap:wrap}
+.canvas-panel{flex:1;min-width:340px;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px}
+.controls-panel{width:300px;flex-shrink:0;background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px}
+canvas{display:block;width:100%;border-radius:6px;background:#0d1117}
+.control-group{margin-bottom:16px}
+.control-group label{display:block;font-size:0.88rem;color:#8b949e;margin-bottom:4px}
+.control-group .val{float:right;color:#58a6ff;font-weight:600;font-size:0.9rem}
+input[type=range]{width:100%;-webkit-appearance:none;background:#21262d;border-radius:4px;height:6px;outline:none;margin:6px 0}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#58a6ff;cursor:pointer;border:2px solid #0d1117}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#58a6ff;cursor:pointer;border:2px solid #0d1117}
+.result-box{background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:14px;margin-bottom:16px}
+.result-box h4{color:#ffa657;font-size:0.95rem;margin-bottom:8px}
+.formula{font-family:"Courier New",monospace;background:#161b22;padding:8px 12px;border-radius:6px;color:#79c0ff;font-size:0.92rem;margin-bottom:6px;word-break:break-all}
+.numeric-result{color:#e6edf3;font-size:1rem;font-weight:600}
+.concept-card{background:linear-gradient(135deg,#1a2332,#161b22);border:1px solid #30363d;border-radius:10px;padding:18px;margin-bottom:20px}
+.concept-card h3{color:#58a6ff;margin-bottom:10px;font-size:1.05rem}
+.concept-card .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.concept-card .card-item{background:#0d1117;border-radius:8px;padding:12px;border-left:3px solid #58a6ff}
+.concept-card .card-item h5{color:#ffa657;font-size:0.9rem;margin-bottom:4px}
+.concept-card .card-item p{color:#8b949e;font-size:0.85rem}
+.feedback-box{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:20px}
+.feedback-box h3{color:#58a6ff;font-size:1rem;margin-bottom:10px}
+.feedback-list{list-style:none;padding:0}
+.feedback-list li{padding:6px 0;border-bottom:1px solid #21262d;font-size:0.9rem;color:#c9d1d9;display:flex;align-items:center;gap:8px}
+.feedback-list li .check{color:#3fb950}
+.confidence-section{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:20px}
+.confidence-section h3{color:#ffa657;font-size:1rem;margin-bottom:10px}
+.confidence-buttons{display:flex;gap:8px;margin-bottom:8px}
+.confidence-btn{width:48px;height:48px;border-radius:50%;border:2px solid #30363d;background:#0d1117;color:#c9d1d9;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .2s}
+.confidence-btn:hover,.confidence-btn.active{border-color:#58a6ff;background:#1f2a37;color:#58a6ff;transform:scale(1.1)}
+.confidence-btn.active{background:#1f2a37;box-shadow:0 0 12px rgba(88,166,255,.3)}
+.reflection-section{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:16px;margin-bottom:24px}
+.reflection-section h3{color:#58a6ff;font-size:1rem;margin-bottom:10px}
+.reflection-section textarea{width:100%;height:80px;background:#0d1117;border:1px solid #30363d;border-radius:6px;color:#e6edf3;padding:10px;font-size:0.9rem;resize:vertical;font-family:inherit}
+.reflection-section textarea:focus{outline:none;border-color:#58a6ff}
+.btn-submit{background:#238636;color:#fff;border:none;padding:10px 24px;border-radius:6px;font-size:0.95rem;cursor:pointer;margin-top:10px;transition:background .2s}
+.btn-submit:hover{background:#2ea043}
+.btn-submit:disabled{background:#30363d;color:#8b949e;cursor:not-allowed}
+.hint-btn{background:#1f2a37;color:#ffa657;border:1px solid #ffa657;padding:6px 14px;border-radius:6px;font-size:0.85rem;cursor:pointer;margin-bottom:12px;transition:all .2s}
+.hint-btn:hover{background:#2a1f0d}
+.hint-content{background:#1a1e2e;border:1px solid #ffa657;border-radius:6px;padding:10px;margin-bottom:12px;font-size:0.88rem;color:#c9d1d9;display:none}
+.step-indicator{display:flex;gap:6px;margin-bottom:12px}
+.step-dot{width:10px;height:10px;border-radius:50%;background:#30363d;transition:all .3s}
+.step-dot.active{background:#58a6ff;box-shadow:0 0 6px rgba(88,166,255,.5)}
+.step-dot.done{background:#3fb950}
+.footer{text-align:center;padding:16px 0 24px;color:#484f58;font-size:0.8rem;border-top:1px solid #21262d}
+@media(max-width:768px){.main-area{flex-direction:column}.controls-panel{width:100%}.concept-card .card-grid{grid-template-columns:1fr}}
+.drag-hint{font-size:0.82rem;color:#8b949e;font-style:italic;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<h1>距离与范数: 变化有多大</h1>
+<div class="subtitle">本节聚焦：距离与向量长度</div>
+</header>
+
+<div class="goal-box">
+<span class="icon">🎯</span>
+<p>学习目标：能计算平面两点之间的欧几里得距离，理解范数 <span class="highlight">||x||</span> 表示向量的长度，并能用距离解释"离目标还有多远"。</p>
+</div>
+
+<div class="intuition-box">
+<h3>💡 直觉解释</h3>
+<p><span class="highlight">距离</span>衡量两个点相隔多远——比如从学校到家的直线距离。</p>
+<p><span class="highlight">范数</span>衡量一个向量有多长——比如从原点出发走到某个点的步长。</p>
+<p>在优化中，距离和范数常用来描述<span class="highlight">误差大小</span>和<span class="highlight">移动步子大小</span>。</p>
+</div>
+
+<div class="main-area">
+<div class="canvas-panel">
+<div class="step-indicator">
+<div class="step-dot active" id="step1"></div>
+<div class="step-dot" id="step2"></div>
+<div class="step-dot" id="step3"></div>
+</div>
+<canvas id="mainCanvas" width="580" height="420"></canvas>
+<div class="drag-hint">👆 拖动画布上的 <span style="color:#ff6b6b">红色点A</span> 和 <span style="color:#58a6ff">蓝色点B</span>，或右侧滑块调整坐标</div>
+</div>
+
+<div class="controls-panel">
+<button class="hint-btn" id="hintBtn" onclick="showHint()">💡 查看提示</button>
+<div class="hint-content" id="hintContent">
+<p>距离公式：两点 <span style="color:#ff6b6b">A(x₁,y₁)</span> 和 <span style="color:#58a6ff">B(x₂,y₂)</span> 之间的距离为：</p>
+<p style="color:#79c0ff;margin-top:4px">d = √[(x₂−x₁)² + (y₂−y₁)²]</p>
+<p style="margin-top:6px">向量 <span style="color:#ffa657">v = (x,y)</span> 的长度（范数）为：</p>
+<p style="color:#79c0ff;margin-top:2px">||v|| = √(x² + y²)</p>
+<p style="margin-top:6px;color:#8b949e;font-size:0.82rem">尝试把两个点靠得很近，再拉得很远，观察数值变化！</p>
+</div>
+
+<div class="result-box">
+<h4>📐 距离计算</h4>
+<div class="formula" id="formulaText">拖动点以查看公式</div>
+<div class="numeric-result" id="distResult">距离 = --</div>
+</div>
+
+<div class="result-box">
+<h4>➡️ 向量范数</h4>
+<div class="formula" id="normFormula">向量 = (--)</div>
+<div class="numeric-result" id="normResult">||v|| = --</div>
+</div>
+
+<div class="control-group">
+<label>点A 的 x 坐标 <span class="val" id="axVal">1.0</span></label>
+<input type="range" id="axSlider" min="-5" max="5" step="0.1" value="1">
+</div>
+<div class="control-group">
+<label>点A 的 y 坐标 <span class="val" id="ayVal">1.0</span></label>
+<input type="range" id="aySlider" min="-5" max="5" step="0.1" value="1">
+</div>
+<div class="control-group">
+<label>点B 的 x 坐标 <span class="val" id="bxVal">4.0</span></label>
+<input type="range" id="bxSlider" min="-5" max="5" step="0.1" value="4">
+</div>
+<div class="control-group">
+<label>点B 的 y 坐标 <span class="val" id="byVal">3.0</span></label>
+<input type="range" id="bySlider" min="-5" max="5" step="0.1" value="3">
+</div>
+<div class="control-group">
+<label>向量终点 x <span class="val" id="vxVal">3.0</span></label>
+<input type="range" id="vxSlider" min="-5" max="5" step="0.1" value="3">
+</div>
+<div class="control-group">
+<label>向量终点 y <span class="val" id="vyVal">2.0</span></label>
+<input type="range" id="vySlider" min="-5" max="5" step="0.1" value="2">
+</div>
+</div>
+</div>
+
+<div class="concept-card">
+<h3>🗂️ 概念卡</h3>
+<div class="card-grid">
+<div class="card-item">
+<h5>欧几里得距离</h5>
+<p>平面上两点 A(x₁,y₁) 与 B(x₂,y₂) 之间的直线距离：<br>d = √[(x₂−x₁)² + (y₂−y₁)²]</p>
+</div>
+<div class="card-item">
+<h5>向量范数 (L² 范数)</h5>
+<p>向量 v = (x, y) 的长度：<br>||v|| = √(x² + y²)<br>即从原点到该点的欧几里得距离</p>
+</div>
+<div class="card-item">
+<h5>距离 vs 范数</h5>
+<p>距离 = 两个点之间的差值向量的范数<br>d(A,B) = ||B − A||</p>
+</div>
+<div class="card-item">
+<h5>实际意义</h5>
+<p>在优化中，||x − x*|| 表示当前解离最优解的距离，是衡量"离目标还有多远"的核心指标</p>
+</div>
+</div>
+</div>
+
+<div class="feedback-box">
+<h3>📊 即时操作反馈</h3>
+<ul class="feedback-list" id="feedbackList">
+<li><span class="check">●</span> 页面已加载，开始拖动点 A 和点 B 探索距离变化</li>
+</ul>
+</div>
+
+<div class="confidence-section">
+<h3>📈 信心评分：你对以下内容的掌握程度？</h3>
+<p style="font-size:0.9rem;color:#8b949e;margin-bottom:10px">能计算平面两点距离，理解 ||x|| 表示长度，能用距离解释"离目标还有多远"</p>
+<div class="confidence-buttons" id="confidenceBtns">
+<button class="confidence-btn" data-val="1" onclick="selectConfidence(1)">1</button>
+<button class="confidence-btn" data-val="2" onclick="selectConfidence(2)">2</button>
+<button class="confidence-btn" data-val="3" onclick="selectConfidence(3)">3</button>
+<button class="confidence-btn" data-val="4" onclick="selectConfidence(4)">4</button>
+<button class="confidence-btn" data-val="5" onclick="selectConfidence(5)">5</button>
+</div>
+<p style="font-size:0.82rem;color:#484f58">1 = 完全不懂，5 = 非常自信</p>
+</div>
+
+<div class="reflection-section">
+<h3>✍️ 简短反思</h3>
+<p style="font-size:0.88rem;color:#8b949e;margin-bottom:8px">用一两句话描述：你发现距离和范数有什么关系？当你把两个点重合时距离变成多少？</p>
+<textarea id="reflectionText" placeholder="写下你的思考..."></textarea>
+<button class="btn-submit" id="reflectionSubmitBtn" onclick="submitReflection()">提交反思</button>
+</div>
+
+<div class="footer">距离与范数: 变化有多大 · 主动学习互动页</div>
+</div>
+
+<script>
+/* 课程元数据 */
+window.MAIC_LESSON_META = {lesson_id:'A-06', module_id:'OM-A2a', course_version:'demo-closed-loop-v1', concept_name:'距离与向量长度'};
+
+/* 行为追踪 */
+var MaicLearning = {};
+MaicLearning.startTime = null;
+MaicLearning.lastInteractionTime = null;
+MaicLearning.events = [];
+MaicLearning.confidenceValue = null;
+MaicLearning.hintUsed = false;
+MaicLearning.interactionCount = 0;
+
+(function initTracking() {
+    try {
+        var stored = localStorage.getItem('maic_learning_events');
+        if (stored) {
+            MaicLearning.events = JSON.parse(stored);
+        } else {
+            MaicLearning.events = [];
+        }
+    } catch(e) {
+        MaicLearning.events = [];
+    }
+    MaicLearning.startTime = Date.now();
+})();
+
+function trackEvent(eventType, payload) {
+    var eventObj = {
+        lesson_id: window.MAIC_LESSON_META.lesson_id,
+        module_id: window.MAIC_LESSON_META.module_id,
+        course_version: window.MAIC_LESSON_META.course_version,
+        event_type: eventType,
+        timestamp: new Date().toISOString(),
+        time_on_task_ms: Date.now() - MaicLearning.startTime,
+        interaction_state: getInteractionState(),
+        confidence: MaicLearning.confidenceValue
+    };
+    if (payload) {
+        var keys = Object.keys(payload);
+        for (var i = 0; i < keys.length; i++) {
+            eventObj[keys[i]] = payload[keys[i]];
+        }
+    }
+    MaicLearning.events.push(eventObj);
+    try {
+        localStorage.setItem('maic_learning_events', JSON.stringify(MaicLearning.events));
+    } catch(e) {}
+    try {
+        window.parent.postMessage({type:'maic_learning_event', payload:eventObj}, '*');
+    } catch(e) {}
+}
+
+function getInteractionState() {
+    return {
+        ax: parseFloat(document.getElementById('axSlider').value),
+        ay: parseFloat(document.getElementById('aySlider').value),
+        bx: parseFloat(document.getElementById('bxSlider').value),
+        by: parseFloat(document.getElementById('bySlider').value),
+        vx: parseFloat(document.getElementById('vxSlider').value),
+        vy: parseFloat(document.getElementById('vySlider').value),
+        distance: getCurrentDistance(),
+        norm: getCurrentNorm(),
+        hintUsed: MaicLearning.hintUsed,
+        interactionCount: MaicLearning.interactionCount
+    };
+}
+
+function getCurrentDistance() {
+    var ax = parseFloat(document.getElementById('axSlider').value);
+    var ay = parseFloat(document.getElementById('aySlider').value);
+    var bx = parseFloat(document.getElementById('bxSlider').value);
+    var by = parseFloat(document.getElementById('bySlider').value);
+    return Math.sqrt((bx-ax)*(bx-ax) + (by-ay)*(by-ay));
+}
+
+function getCurrentNorm() {
+    var vx = parseFloat(document.getElementById('vxSlider').value);
+    var vy = parseFloat(document.getElementById('vySlider').value);
+    return Math.sqrt(vx*vx + vy*vy);
+}
+
+/* Canvas 设置 */
+var canvas, ctx;
+var originX, originY;
+var scale;
+var pointA = {x: 1, y: 1};
+var pointB = {x: 4, y: 3};
+var vectorV = {x: 3, y: 2};
+var isDragging = null;
+var lastFeedbackMsg = '';
+
+function initCanvas() {
+    canvas = document.getElementById('mainCanvas');
+    ctx = canvas.getContext('2d');
+    originX = canvas.width / 2;
+    originY = canvas.height / 2;
+    scale = 40;
+    canvas.addEventListener('mousedown', onCanvasMouseDown);
+    canvas.addEventListener('mousemove', onCanvasMouseMove);
+    canvas.addEventListener('mouseup', onCanvasMouseUp);
+    canvas.addEventListener('mouseleave', onCanvasMouseUp);
+    canvas.addEventListener('touchstart', onCanvasTouchStart, {passive: false});
+    canvas.addEventListener('touchmove', onCanvasTouchMove, {passive: false});
+    canvas.addEventListener('touchend', onCanvasMouseUp);
+    drawCanvas();
+    trackEvent('page_loaded', {action: '页面初始化'});
+}
+
+function getCanvasCoords(clientX, clientY) {
+    var rect = canvas.getBoundingClientRect();
+    var x = (clientX - rect.left) * (canvas.width / rect.width);
+    var y = (clientY - rect.top) * (canvas.height / rect.height);
+    return {cx: x, cy: y};
+}
+
+function screenToWorld(cx, cy) {
+    return {
+        x: (cx - originX) / scale,
+        y: -(cy - originY) / scale
+    };
+}
+
+function worldToScreen(wx, wy) {
+    return {
+        cx: originX + wx * scale,
+        cy: originY - wy * scale
+    };
+}
+
+function onCanvasMouseDown(e) {
+    var coords = getCanvasCoords(e.clientX, e.clientY);
+    var world = screenToWorld(coords.cx, coords.cy);
+    var distA = Math.sqrt((world.x - pointA.x)**2 + (world.y - pointA.y)**2);
+    var distB = Math.sqrt((world.x - pointB.x)**2 + (world.y - pointB.y)**2);
+    if (distA < 0.35) {
+        isDragging = 'A';
+    } else if (distB < 0.35) {
+        isDragging = 'B';
+    }
+}
+
+function onCanvasMouseMove(e) {
+    if (!isDragging) return;
+    var coords = getCanvasCoords(e.clientX, e.clientY);
+    var world = screenToWorld(coords.cx, coords.cy);
+    var nx = Math.round(world.x * 10) / 10;
+    var ny = Math.round(world.y * 10) / 10;
+    nx = Math.max(-5, Math.min(5, nx));
+    ny = Math.max(-5, Math.min(5, ny));
+    if (isDragging === 'A') {
+        pointA.x = nx; pointA.y = ny;
+        document.getElementById('axSlider').value = nx;
+        document.getElementById('aySlider').value = ny;
+    } else if (isDragging === 'B') {
+        pointB.x = nx; pointB.y = ny;
+        document.getElementById('bxSlider').value = nx;
+        document.getElementById('bySlider').value = ny;
+    }
+    updateAll();
+}
+
+function onCanvasMouseUp() {
+    if (isDragging) {
+        MaicLearning.interactionCount++;
+        trackEvent('interaction_change', {dragging: isDragging, pointA: {x: pointA.x, y: pointA.y}, pointB: {x: pointB.x, y: pointB.y}});
+    }
+    isDragging = null;
+}
+
+function onCanvasTouchStart(e) {
+    e.preventDefault();
+    if (e.touches.length > 0) {
+        var t = e.touches[0];
+        onCanvasMouseDown({clientX: t.clientX, clientY: t.clientY});
+    }
+}
+
+function onCanvasTouchMove(e) {
+    e.preventDefault();
+    if (isDragging && e.touches.length > 0) {
+        var t = e.touches[0];
+        onCanvasMouseMove({clientX: t.clientX, clientY: t.clientY});
+    }
+}
+
+function drawCanvas() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawGrid();
+    drawAxes();
+    drawVector();
+    drawDistanceLine();
+    drawPoint(pointA.x, pointA.y, '#ff6b6b', 'A');
+    drawPoint(pointB.x, pointB.y, '#58a6ff', 'B');
+}
+
+function drawGrid() {
+    ctx.strokeStyle = '#1a2030';
+    ctx.lineWidth = 0.5;
+    for (var i = -5; i <= 5; i++) {
+        var s1 = worldToScreen(i, -5);
+        var s2 = worldToScreen(i, 5);
+        ctx.beginPath();
+        ctx.moveTo(s1.cx, s1.cy);
+        ctx.lineTo(s2.cx, s2.cy);
+        ctx.stroke();
+        var s3 = worldToScreen(-5, i);
+        var s4 = worldToScreen(5, i);
+        ctx.beginPath();
+        ctx.moveTo(s3.cx, s3.cy);
+        ctx.lineTo(s4.cx, s4.cy);
+        ctx.stroke();
+    }
+}
+
+function drawAxes() {
+    ctx.strokeStyle = '#484f58';
+    ctx.lineWidth = 1.5;
+    var top = worldToScreen(-5, 5);
+    var bottom = worldToScreen(-5, -5);
+    var left = worldToScreen(-5, 5);
+    var right = worldToScreen(5, -5);
+    ctx.beginPath();
+    ctx.moveTo(originX, top.cy);
+    ctx.lineTo(originX, bottom.cy);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(left.cx, originY);
+    ctx.lineTo(right.cx, originY);
+    ctx.stroke();
+    ctx.fillStyle = '#484f58';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    for (var i = -5; i <= 5; i++) {
+        if (i === 0) continue;
+        var s = worldToScreen(i, 0);
+        ctx.fillText(i, s.cx, originY + 14);
+        var s2 = worldToScreen(0, i);
+        ctx.textAlign = 'right';
+        ctx.fillText(i, originX - 6, s2.cy + 4);
+        ctx.textAlign = 'center';
+    }
+    ctx.fillText('O', originX - 10, originY + 16);
+    ctx.fillText('x', right.cx - 10, originY - 6);
+    ctx.fillText('y', originX + 10, top.cy + 12);
+}
+
+function drawPoint(wx, wy, color, label) {
+    var s = worldToScreen(wx, wy);
+    ctx.beginPath();
+    ctx.arc(s.cx, s.cy, 7, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#0d1117';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = '#e6edf3';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(label, s.cx, s.cy - 12);
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#8b949e';
+    ctx.fillText('(' + wx.toFixed(1) + ', ' + wy.toFixed(1) + ')', s.cx, s.cy + 20);
+}
+
+function drawDistanceLine() {
+    var sA = worldToScreen(pointA.x, pointA.y);
+    var sB = worldToScreen(pointB.x, pointB.y);
+    ctx.beginPath();
+    ctx.moveTo(sA.cx, sA.cy);
+    ctx.lineTo(sB.cx, sB.cy);
+    ctx.strokeStyle = '#ffa657';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    var mx = (sA.cx + sB.cx) / 2;
+    var my = (sA.cy + sB.cy) / 2;
+    var d = getCurrentDistance();
+    ctx.fillStyle = '#ffa657';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('d = ' + d.toFixed(2), mx, my - 10);
+}
+
+function drawVector() {
+    var sO = worldToScreen(0, 0);
+    var sV = worldToScreen(vectorV.x, vectorV.y);
+    ctx.beginPath();
+    ctx.moveTo(sO.cx, sO.cy);
+    ctx.lineTo(sV.cx, sV.cy);
+    ctx.strokeStyle = '#3fb950';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    var angle = Math.atan2(sV.cy - sO.cy, sV.cx - sO.cx);
+    var headLen = 12;
+    ctx.beginPath();
+    ctx.moveTo(sV.cx, sV.cy);
+    ctx.lineTo(sV.cx - headLen * Math.cos(angle - 0.4), sV.cy - headLen * Math.sin(angle - 0.4));
+    ctx.moveTo(sV.cx, sV.cy);
+    ctx.lineTo(sV.cx - headLen * Math.cos(angle + 0.4), sV.cy - headLen * Math.sin(angle + 0.4));
+    ctx.stroke();
+    ctx.fillStyle = '#3fb950';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    var labelX = (sO.cx + sV.cx) / 2 + 15;
+    var labelY = (sO.cy + sV.cy) / 2 - 10;
+    var n = getCurrentNorm();
+    ctx.fillText('v=(' + vectorV.x.toFixed(1) + ',' + vectorV.y.toFixed(1) + ')', labelX, labelY);
+    ctx.font = '11px sans-serif';
+    ctx.fillText('||v||=' + n.toFixed(2), labelX, labelY + 14);
+}
+
+/* 滑块事件 */
+function setupSliders() {
+    var sliders = [
+        {slider: 'axSlider', prop: 'ax', varRef: 'pointA'},
+        {slider: 'aySlider', prop: 'ay', varRef: 'pointA'},
+        {slider: 'bxSlider', prop: 'bx', varRef: 'pointB'},
+        {slider: 'bySlider', prop: 'by', varRef: 'pointB'},
+        {slider: 'vxSlider', prop: 'vx', varRef: 'vectorV'},
+        {slider: 'vySlider', prop: 'vy', varRef: 'vectorV'}
+    ];
+    for (var i = 0; i < sliders.length; i++) {
+        (function(s) {
+            var el = document.getElementById(s.slider);
+            el.addEventListener('input', function() {
+                var val = parseFloat(el.value);
+                if (s.varRef === 'pointA') {
+                    if (s.prop === 'ax') pointA.x = val;
+                    else pointA.y = val;
+                } else if (s.varRef === 'pointB') {
+                    if (s.prop === 'bx') pointB.x = val;
+                    else pointB.y = val;
+                } else {
+                    if (s.prop === 'vx') vectorV.x = val;
+                    else vectorV.y = val;
+                }
+                var valDisplay = val.toFixed(1);
+                if (s.prop === 'ax') document.getElementById('axVal').textContent = valDisplay;
+                else if (s.prop === 'ay') document.getElementById('ayVal').textContent = valDisplay;
+                else if (s.prop === 'bx') document.getElementById('bxVal').textContent = valDisplay;
+                else if (s.prop === 'by') document.getElementById('byVal').textContent = valDisplay;
+                else if (s.prop === 'vx') document.getElementById('vxVal').textContent = valDisplay;
+                else if (s.prop === 'vy') document.getElementById('vyVal').textContent = valDisplay;
+                updateAll();
+                MaicLearning.interactionCount++;
+                trackEvent('interaction_change', {sliderChanged: s.slider, value: val});
+            });
+        })(sliders[i]);
+    }
+}
+
+function updateAll() {
+    drawCanvas();
+    updateResults();
+}
+
+function updateResults() {
+    var ax = pointA.x, ay = pointA.y;
+    var bx = pointB.x, by = pointB.y;
+    var vx = vectorV.x, vy = vectorV.y;
+    var dist = Math.sqrt((bx-ax)**2 + (by-ay)**2);
+    var norm = Math.sqrt(vx*vx + vy*vy);
+
+    document.getElementById('formulaText').innerHTML =
+        'd = √[' + (bx.toFixed(1)) + '(' + ax.toFixed(1) + ')]² + [' + (by.toFixed(1)) + '(' + ay.toFixed(1) + ')]²<br>' +
+        'd = √(' + (bx-ax).toFixed(2) + ')² + (' + (by-ay).toFixed(2) + ')²<br>' +
+        'd = √' + (((bx-ax)**2).toFixed(2)) + ' + ' + (((by-ay)**2).toFixed(2)) + ' = √' + (((bx-ax)**2 + (by-ay)**2).toFixed(2));
+
+    document.getElementById('distResult').textContent = '距离 = ' + dist.toFixed(4);
+    document.getElementById('normFormula').textContent = '||v|| = √(' + vx.toFixed(1) + ')² + (' + vy.toFixed(1) + ')² = √' + ((vx*vx).toFixed(2)) + ' + ' + ((vy*vy).toFixed(2));
+    document.getElementById('normResult').textContent = '||v|| = ' + norm.toFixed(4);
+
+    updateFeedback(dist, norm, ax, ay, bx, by, vx, vy);
+    updateSteps(dist, norm);
+}
+
+function updateFeedback(dist, norm, ax, ay, bx, by, vx, vy) {
+    var list = document.getElementById('feedbackList');
+    var msgs = [];
+
+    if (Math.abs(dist) < 0.01) {
+        msgs.push('<span class="check">●</span> 两个点重合！距离为 0，说明 A 和 B 是同一个位置');
+    } else if (dist < 1.5) {
+        msgs.push('<span class="check">●</span> 两点距离很近（' + dist.toFixed(2) + '），说明它们靠得很近');
+    } else if (dist < 4) {
+        msgs.push('<span class="check">●</span> 两点距离适中（' + dist.toFixed(2) + '）');
+    } else {
+        msgs.push('<span class="check">●</span> 两点距离较远（' + dist.toFixed(2) + '）');
+    }
+
+    if (norm < 1.5) {
+        msgs.push('<span class="check">●</span> 向量长度较短（' + norm.toFixed(2) + '），步子较小');
+    } else if (norm < 4) {
+        msgs.push('<span class="check">●</span> 向量长度适中（' + norm.toFixed(2) + '）');
+    } else {
+        msgs.push('<span class="check">●</span> 向量长度较长（' + norm.toFixed(2) + '），步子较大');
+    }
+
+    var d_from_origin = Math.sqrt(bx*bx + by*by);
+    msgs.push('<span class="check">●</span> 点B离原点的距离为 ' + d_from_origin.toFixed(2) + '，可以理解为"B离目标(原点)还有多远"');
+
+    var newMsg = msgs.join('<br>');
+    if (newMsg !== lastFeedbackMsg) {
+        lastFeedbackMsg = newMsg;
+        list.innerHTML = msgs.join('');
+    }
+}
+
+function updateSteps(dist, norm) {
+    var s1 = document.getElementById('step1');
+    var s2 = document.getElementById('step2');
+    var s3 = document.getElementById('step3');
+    s1.className = 'step-dot done';
+    if (dist > 0.01) {
+        s2.className = 'step-dot done';
+        if (norm > 0.01) {
+            s3.className = 'step-dot active';
+        } else {
+            s3.className = 'step-dot';
+        }
+    } else {
+        s2.className = 'step-dot';
+        s3.className = 'step-dot';
+    }
+}
+
+function showHint() {
+    var hintEl = document.getElementById('hintContent');
+    if (hintEl.style.display === 'none' || hintEl.style.display === '') {
+        hintEl.style.display = 'block';
+        if (!MaicLearning.hintUsed) {
+            MaicLearning.hintUsed = true;
+            trackEvent('hint_used', {hintShown: true});
+        }
+    } else {
+        hintEl.style.display = 'none';
+    }
+}
+
+function selectConfidence(val) {
+    var btns = document.querySelectorAll('.confidence-btn');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.remove('active');
+        if (parseInt(btns[i].getAttribute('data-val')) === val) {
+            btns[i].classList.add('active');
+        }
+    }
+    MaicLearning.confidenceValue = val;
+}
+
+function submitConfidence() {
+    if (MaicLearning.confidenceValue === null) {
+        alert('请先选择信心评分');
+        return;
+    }
+    trackEvent('confidence_submitted', {confidence: MaicLearning.confidenceValue});
+    var section = document.querySelector('.confidence-section');
+    section.innerHTML = '<h3>📈 信心评分已记录</h3><p style="color:#3fb950;margin-top:8px">你选择了 ' + MaicLearning.confidenceValue + ' 分。继续完成反思部分吧！</p>';
+}
+
+function submitReflection() {
+    var text = document.getElementById('reflectionText').value.trim();
+    if (!text) {
+        alert('请写下你的反思内容');
+        return;
+    }
+    trackEvent('reflection_submitted', {reflection: text.substring(0, 100)});
+    var btn = document.getElementById('reflectionSubmitBtn');
+    btn.textContent = '已提交 ✓';
+    btn.disabled = true;
+    btn.style.background = '#30363d';
+    trackEvent('interaction_complete', {reflectionSubmitted: true, totalInteractions: MaicLearning.interactionCount});
+    var refEl = document.querySelector('.reflection-section');
+    var addedP = document.createElement('p');
+    addedP.style.color = '#3fb950';
+    addedP.style.marginTop = '10px';
+    addedP.textContent = '感谢你的反思！你的思考已被记录。';
+    refEl.appendChild(addedP);
+}
+
+/* 初始化 */
+document.addEventListener('DOMContentLoaded', function() {
+    initCanvas();
+    setupSliders();
+    updateAll();
+
+    /* 添加信心评分提交按钮 */
+    var confSection = document.querySelector('.confidence-section');
+    var submitConfBtn = document.createElement('button');
+    submitConfBtn.className = 'btn-submit';
+    submitConfBtn.id = 'submitConfBtn';
+    submitConfBtn.textContent = '提交信心评分';
+    submitConfBtn.onclick = submitConfidence;
+    confSection.appendChild(submitConfBtn);
+});
+</script>
+</body>
+</html>

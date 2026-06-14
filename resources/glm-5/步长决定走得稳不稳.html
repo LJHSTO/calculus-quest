@@ -1,0 +1,1205 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>步长决定走得稳不稳</title>
+    <style>
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #111827;
+            --bg-card: #1a2332;
+            --accent: #00d4aa;
+            --accent-dim: #00a080;
+            --warning: #ff6b35;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #2d3a4f;
+            --glow: rgba(0, 212, 170, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), #00f5d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+
+        .learning-goal {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .intuition-section {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .intuition-section h2 {
+            font-size: 1.2rem;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .intuition-section p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .main-interactive {
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .main-interactive {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .canvas-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .canvas-wrapper {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            gap: 16px;
+            height: 520px;
+        }
+
+        .canvas-container {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-container canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .canvas-label {
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: rgba(10, 15, 26, 0.8);
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .control-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .control-panel h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .control-label span {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .control-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent);
+            font-family: 'Consolas', monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 12px var(--glow);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-dim));
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--glow);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent);
+        }
+
+        .status-display {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 16px;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .status-value {
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .status-value.good { color: var(--success); }
+        .status-value.warning { color: var(--warning); }
+        .status-value.danger { color: var(--danger); }
+
+        .feedback-panel {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 16px;
+            min-height: 80px;
+        }
+
+        .feedback-title {
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin-bottom: 8px;
+        }
+
+        .feedback-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        .concept-card {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-card));
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 30px;
+        }
+
+        .concept-card h2 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .concept-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 700px) {
+            .concept-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .concept-item {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .concept-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .concept-item h4 {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .concept-item p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .assessment-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 700px) {
+            .assessment-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .confidence-panel, .reflection-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .confidence-panel h3, .reflection-panel h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 14px;
+        }
+
+        .confidence-scale {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .confidence-btn {
+            flex: 1;
+            padding: 12px 8px;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .confidence-btn:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .confidence-btn.selected {
+            border-color: var(--accent);
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--accent);
+        }
+
+        .confidence-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .reflection-option {
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .reflection-option:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .reflection-option.selected {
+            border-color: var(--accent);
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent);
+        }
+
+        .submit-section {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .submit-btn {
+            padding: 14px 40px;
+            font-size: 1rem;
+        }
+
+        .hint-btn {
+            background: transparent;
+            border: 1px dashed var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .hint-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .legend {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
+
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>步长决定走得稳不稳</h1>
+            <p class="learning-goal">通过调节学习率观察梯度下降的路径变化，理解步长对收敛速度和稳定性的影响。</p>
+        </header>
+
+        <section class="intuition-section">
+            <h2>直觉理解</h2>
+            <p>步长（学习率）控制每次沿下降方向走多远。<strong>太小</strong>会收敛很慢，像蜗牛爬坡；<strong>太大</strong>可能越过低谷甚至发散，像跳跃时踩空。合适的步长能让你既快又稳地找到最低点。</p>
+        </section>
+
+        <section class="main-interactive">
+            <div class="canvas-panel">
+                <div class="canvas-wrapper">
+                    <div class="canvas-container">
+                        <span class="canvas-label">函数曲线与下降路径</span>
+                        <canvas id="functionCanvas"></canvas>
+                    </div>
+                    <div class="canvas-container">
+                        <span class="canvas-label">函数值变化曲线</span>
+                        <canvas id="valueCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00d4aa;"></div>
+                        <span>当前点</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff6b35;"></div>
+                        <span>下降路径</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #22c55e;"></div>
+                        <span>最优解</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <h3>参数控制</h3>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>学习率（步长）</span>
+                        <span class="control-value" id="lrValue">0.10</span>
+                    </div>
+                    <input type="range" id="lrSlider" min="0.01" max="1.5" step="0.01" value="0.1">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>初始位置</span>
+                        <span class="control-value" id="initValue">3.00</span>
+                    </div>
+                    <input type="range" id="initSlider" min="-5" max="5" step="0.1" value="3">
+                </div>
+
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>最大迭代次数</span>
+                        <span class="control-value" id="iterValue">50</span>
+                    </div>
+                    <input type="range" id="iterSlider" min="10" max="200" step="10" value="50">
+                </div>
+
+                <button class="btn btn-primary" id="runBtn">开始下降</button>
+                <button class="btn btn-secondary" id="resetBtn">重置</button>
+
+                <div class="status-display">
+                    <div class="status-row">
+                        <span class="status-label">当前迭代</span>
+                        <span class="status-value" id="currentIter">0</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">当前 x</span>
+                        <span class="status-value" id="currentX">3.00</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">当前 f(x)</span>
+                        <span class="status-value" id="currentF">9.00</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">状态</span>
+                        <span class="status-value" id="statusText">等待开始</span>
+                    </div>
+                </div>
+
+                <div class="feedback-panel">
+                    <div class="feedback-title">即时反馈</div>
+                    <div class="feedback-text" id="feedbackText">拖动滑块调节学习率，观察不同步长对下降过程的影响。</div>
+                </div>
+
+                <button class="hint-btn" id="hintBtn">显示提示</button>
+            </div>
+        </section>
+
+        <section class="concept-card">
+            <h2>关键概念</h2>
+            <div class="concept-grid">
+                <div class="concept-item">
+                    <div class="concept-icon" style="color: var(--success);">○</div>
+                    <h4>小步长</h4>
+                    <p>收敛稳定但缓慢，需要多次迭代才能接近最优解</p>
+                </div>
+                <div class="concept-item">
+                    <div class="concept-icon" style="color: var(--accent);">◎</div>
+                    <h4>合适步长</h4>
+                    <p>既快又稳，能高效地到达最优解附近</p>
+                </div>
+                <div class="concept-item">
+                    <div class="concept-icon" style="color: var(--danger);">◉</div>
+                    <h4>大步长</h4>
+                    <p>可能震荡或发散，在最优解两侧来回跳跃</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="assessment-section">
+            <div class="confidence-panel">
+                <h3>信心评分</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">你对「选择合适学习率」的理解程度？</p>
+                <div class="confidence-scale">
+                    <button class="confidence-btn" data-value="1">1</button>
+                    <button class="confidence-btn" data-value="2">2</button>
+                    <button class="confidence-btn" data-value="3">3</button>
+                    <button class="confidence-btn" data-value="4">4</button>
+                    <button class="confidence-btn" data-value="5">5</button>
+                </div>
+                <div class="confidence-label">1=完全不懂，5=完全掌握</div>
+            </div>
+
+            <div class="reflection-panel">
+                <h3>反思总结</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">通过这次互动，你最大的收获是什么？</p>
+                <div class="reflection-options">
+                    <div class="reflection-option" data-value="path">理解了不同步长如何影响下降路径</div>
+                    <div class="reflection-option" data-value="tradeoff">认识到步长选择需要权衡速度与稳定性</div>
+                    <div class="reflection-option" data-value="visual">可视化帮助我直观理解了梯度下降</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="submit-section">
+            <button class="btn btn-primary submit-btn" id="submitBtn">提交学习记录</button>
+        </div>
+    </div>
+
+    <script>
+        // 课程元数据
+        window.MAIC_LESSON_META = {
+            lesson_id: 'D-05',
+            module_id: 'OM-D1',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '学习率/步长'
+        };
+
+        // 全局变量初始化
+        let startTime = Date.now();
+        let learningRate = 0.1;
+        let initX = 3.0;
+        let maxIterations = 50;
+        let path = [];
+        let values = [];
+        let currentStep = 0;
+        let isRunning = false;
+        let animationId = null;
+        let hintUsed = false;
+        let interactionComplete = false;
+        let selectedConfidence = 0;
+        let selectedReflection = '';
+
+        // Canvas相关变量
+        let funcCanvas = null;
+        let funcCtx = null;
+        let valCanvas = null;
+        let valCtx = null;
+
+        // 目标函数 f(x) = x^2
+        function f(x) {
+            return x * x;
+        }
+
+        // 梯度 f'(x) = 2x
+        function gradient(x) {
+            return 2 * x;
+        }
+
+        // 行为追踪函数
+        function trackEvent(eventType, payload) {
+            const event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: Date.now() - startTime,
+                interaction_state: {
+                    learning_rate: learningRate,
+                    init_x: initX,
+                    max_iterations: maxIterations,
+                    current_step: currentStep,
+                    path_length: path.length,
+                    final_x: path.length > 0 ? path[path.length - 1] : initX
+                },
+                ...payload
+            };
+
+            // 存储到localStorage
+            let events = [];
+            try {
+                const stored = localStorage.getItem('maic_learning_events');
+                if (stored) {
+                    events = JSON.parse(stored);
+                }
+            } catch (e) {
+                events = [];
+            }
+            events.push(event);
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+
+            // 发送给父窗口
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'maic_learning_event',
+                    payload: event
+                }, '*');
+            }
+        }
+
+        // 执行梯度下降
+        function gradientDescent() {
+            path = [initX];
+            values = [f(initX)];
+            let x = initX;
+
+            for (let i = 0; i < maxIterations; i++) {
+                const grad = gradient(x);
+                x = x - learningRate * grad;
+                path.push(x);
+                values.push(f(x));
+
+                // 检查是否收敛或发散
+                if (Math.abs(x) > 100) {
+                    break;
+                }
+                if (Math.abs(grad) < 0.0001) {
+                    break;
+                }
+            }
+
+            return path;
+        }
+
+        // 绘制函数曲线
+        function drawFunctionCanvas() {
+            if (!funcCtx || !funcCanvas) return;
+
+            const width = funcCanvas.width;
+            const height = funcCanvas.height;
+            const padding = 40;
+
+            funcCtx.clearRect(0, 0, width, height);
+
+            // 背景
+            funcCtx.fillStyle = '#0a0f1a';
+            funcCtx.fillRect(0, 0, width, height);
+
+            // 坐标系
+            const xMin = -6;
+            const xMax = 6;
+            const yMin = 0;
+            const yMax = 30;
+
+            const scaleX = (width - 2 * padding) / (xMax - xMin);
+            const scaleY = (height - 2 * padding) / (yMax - yMin);
+
+            function toCanvasX(x) {
+                return padding + (x - xMin) * scaleX;
+            }
+
+            function toCanvasY(y) {
+                return height - padding - (y - yMin) * scaleY;
+            }
+
+            // 绘制网格
+            funcCtx.strokeStyle = '#1a2332';
+            funcCtx.lineWidth = 1;
+
+            for (let x = Math.ceil(xMin); x <= xMax; x++) {
+                funcCtx.beginPath();
+                funcCtx.moveTo(toCanvasX(x), padding);
+                funcCtx.lineTo(toCanvasX(x), height - padding);
+                funcCtx.stroke();
+            }
+
+            for (let y = 0; y <= yMax; y += 5) {
+                funcCtx.beginPath();
+                funcCtx.moveTo(padding, toCanvasY(y));
+                funcCtx.lineTo(width - padding, toCanvasY(y));
+                funcCtx.stroke();
+            }
+
+            // 绘制坐标轴
+            funcCtx.strokeStyle = '#3d4a5f';
+            funcCtx.lineWidth = 2;
+
+            // X轴
+            funcCtx.beginPath();
+            funcCtx.moveTo(padding, toCanvasY(0));
+            funcCtx.lineTo(width - padding, toCanvasY(0));
+            funcCtx.stroke();
+
+            // Y轴
+            funcCtx.beginPath();
+            funcCtx.moveTo(toCanvasX(0), padding);
+            funcCtx.lineTo(toCanvasX(0), height - padding);
+            funcCtx.stroke();
+
+            // 绘制函数曲线
+            funcCtx.beginPath();
+            funcCtx.strokeStyle = '#00d4aa';
+            funcCtx.lineWidth = 2;
+
+            for (let px = padding; px <= width - padding; px++) {
+                const x = xMin + (px - padding) / scaleX;
+                const y = f(x);
+                const py = toCanvasY(y);
+
+                if (px === padding) {
+                    funcCtx.moveTo(px, py);
+                } else {
+                    funcCtx.lineTo(px, py);
+                }
+            }
+            funcCtx.stroke();
+
+            // 绘制下降路径
+            if (path.length > 1 && currentStep > 0) {
+                funcCtx.beginPath();
+                funcCtx.strokeStyle = '#ff6b35';
+                funcCtx.lineWidth = 2;
+                funcCtx.setLineDash([5, 3]);
+
+                const stepsToShow = Math.min(currentStep, path.length);
+                for (let i = 0; i < stepsToShow; i++) {
+                    const x = path[i];
+                    const y = f(x);
+                    const px = toCanvasX(x);
+                    const py = toCanvasY(y);
+
+                    if (i === 0) {
+                        funcCtx.moveTo(px, py);
+                    } else {
+                        funcCtx.lineTo(px, py);
+                    }
+                }
+                funcCtx.stroke();
+                funcCtx.setLineDash([]);
+
+                // 绘制路径点
+                for (let i = 0; i < stepsToShow; i++) {
+                    const x = path[i];
+                    const y = f(x);
+                    const px = toCanvasX(x);
+                    const py = toCanvasY(y);
+
+                    funcCtx.beginPath();
+                    funcCtx.arc(px, py, 4, 0, Math.PI * 2);
+                    funcCtx.fillStyle = i === stepsToShow - 1 ? '#ff6b35' : '#ffaa80';
+                    funcCtx.fill();
+                }
+            }
+
+            // 绘制当前点
+            if (path.length > 0 && currentStep > 0) {
+                const idx = Math.min(currentStep - 1, path.length - 1);
+                const x = path[idx];
+                const y = f(x);
+                const px = toCanvasX(x);
+                const py = toCanvasY(y);
+
+                // 发光效果
+                funcCtx.beginPath();
+                funcCtx.arc(px, py, 12, 0, Math.PI * 2);
+                const glow = funcCtx.createRadialGradient(px, py, 0, px, py, 12);
+                glow.addColorStop(0, 'rgba(0, 212, 170, 0.5)');
+                glow.addColorStop(1, 'rgba(0, 212, 170, 0)');
+                funcCtx.fillStyle = glow;
+                funcCtx.fill();
+
+                funcCtx.beginPath();
+                funcCtx.arc(px, py, 7, 0, Math.PI * 2);
+                funcCtx.fillStyle = '#00d4aa';
+                funcCtx.fill();
+            }
+
+            // 绘制最优解
+            funcCtx.beginPath();
+            funcCtx.arc(toCanvasX(0), toCanvasY(0), 5, 0, Math.PI * 2);
+            funcCtx.fillStyle = '#22c55e';
+            funcCtx.fill();
+
+            // 标注
+            funcCtx.fillStyle = '#94a3b8';
+            funcCtx.font = '11px Consolas, monospace';
+            funcCtx.fillText('x', width - padding + 5, toCanvasY(0) + 4);
+            funcCtx.fillText('f(x)', toCanvasX(0) - 12, padding - 5);
+        }
+
+        // 绘制函数值曲线
+        function drawValueCanvas() {
+            if (!valCtx || !valCanvas) return;
+
+            const width = valCanvas.width;
+            const height = valCanvas.height;
+            const padding = 40;
+
+            valCtx.clearRect(0, 0, width, height);
+
+            // 背景
+            valCtx.fillStyle = '#0a0f1a';
+            valCtx.fillRect(0, 0, width, height);
+
+            if (values.length === 0) {
+                valCtx.fillStyle = '#64748b';
+                valCtx.font = '14px sans-serif';
+                valCtx.textAlign = 'center';
+                valCtx.fillText('点击「开始下降」查看变化', width / 2, height / 2);
+                valCtx.textAlign = 'left';
+                return;
+            }
+
+            const xMin = 0;
+            const xMax = Math.max(values.length - 1, 1);
+            let yMin = 0;
+            let yMax = Math.max(...values) * 1.1;
+
+            // 如果发散，限制y轴范围
+            if (yMax > 100) yMax = 100;
+
+            const scaleX = (width - 2 * padding) / (xMax - xMin);
+            const scaleY = (height - 2 * padding) / (yMax - yMin);
+
+            function toCanvasX(x) {
+                return padding + (x - xMin) * scaleX;
+            }
+
+            function toCanvasY(y) {
+                return height - padding - (y - yMin) * scaleY;
+            }
+
+            // 网格
+            valCtx.strokeStyle = '#1a2332';
+            valCtx.lineWidth = 1;
+
+            for (let i = 0; i <= xMax; i += Math.max(1, Math.floor(xMax / 10))) {
+                valCtx.beginPath();
+                valCtx.moveTo(toCanvasX(i), padding);
+                valCtx.lineTo(toCanvasX(i), height - padding);
+                valCtx.stroke();
+            }
+
+            // 绘制曲线
+            valCtx.beginPath();
+            valCtx.strokeStyle = '#ff6b35';
+            valCtx.lineWidth = 2;
+
+            const stepsToShow = Math.min(currentStep, values.length);
+            for (let i = 0; i < stepsToShow; i++) {
+                const x = toCanvasX(i);
+                const y = toCanvasY(Math.min(values[i], yMax));
+
+                if (i === 0) {
+                    valCtx.moveTo(x, y);
+                } else {
+                    valCtx.lineTo(x, y);
+                }
+            }
+            valCtx.stroke();
+
+            // 绘制点
+            if (stepsToShow > 0) {
+                const lastIdx = stepsToShow - 1;
+                valCtx.beginPath();
+                valCtx.arc(toCanvasX(lastIdx), toCanvasY(Math.min(values[lastIdx], yMax)), 6, 0, Math.PI * 2);
+                valCtx.fillStyle = '#00d4aa';
+                valCtx.fill();
+            }
+
+            // 标签
+            valCtx.fillStyle = '#94a3b8';
+            valCtx.font = '11px Consolas, monospace';
+            valCtx.fillText('迭代次数', width / 2, height - 8);
+            valCtx.save();
+            valCtx.translate(12, height / 2);
+            valCtx.rotate(-Math.PI / 2);
+            valCtx.fillText('f(x)', 0, 0);
+            valCtx.restore();
+        }
+
+        // 更新显示
+        function updateDisplay() {
+            const iterEl = document.getElementById('currentIter');
+            const xEl = document.getElementById('currentX');
+            const fEl = document.getElementById('currentF');
+            const statusEl = document.getElementById('statusText');
+
+            if (path.length > 0 && currentStep > 0) {
+                const idx = Math.min(currentStep - 1, path.length - 1);
+                const x = path[idx];
+                const fx = f(x);
+
+                iterEl.textContent = currentStep;
+                xEl.textContent = x.toFixed(4);
+                fEl.textContent = fx.toFixed(4);
+
+                // 状态判断
+                if (Math.abs(x) < 0.01) {
+                    statusEl.textContent = '已收敛';
+                    statusEl.className = 'status-value good';
+                } else if (Math.abs(x) > 10) {
+                    statusEl.textContent = '已发散';
+                    statusEl.className = 'status-value danger';
+                } else if (Math.abs(path[idx] - path[Math.max(0, idx - 1)]) < 0.001) {
+                    statusEl.textContent = '已稳定';
+                    statusEl.className = 'status-value good';
+                } else {
+                    statusEl.textContent = '下降中';
+                    statusEl.className = 'status-value warning';
+                }
+            }
+
+            drawFunctionCanvas();
+            drawValueCanvas();
+        }
+
+        // 更新反馈
+        function updateFeedback() {
+            const feedbackEl = document.getElementById('feedbackText');
+
+            if (learningRate < 0.05) {
+                feedbackEl.textContent = '当前步长很小，收敛会非常缓慢。观察下降路径，需要很多步才能接近最低点。';
+            } else if (learningRate >= 0.05 && learningRate < 0.3) {
+                feedbackEl.textContent = '当前步长适中，可以较稳定地收敛到最优解。这是一个较为安全的选择。';
+            } else if (learningRate >= 0.3 && learningRate < 0.9) {
+                feedbackEl.textContent = '步长较大，可能出现震荡现象。观察路径是否在最优解两侧来回跳跃。';
+            } else {
+                feedbackEl.textContent = '步长过大！很可能导致发散，即函数值越来越大，远离最优解。注意观察路径变化。';
+            }
+        }
+
+        // 动画步骤
+        function animateStep() {
+            if (currentStep < path.length) {
+                currentStep++;
+                updateDisplay();
+                animationId = setTimeout(animateStep, 100);
+            } else {
+                isRunning = false;
+                interactionComplete = true;
+                trackEvent('interaction_complete', {
+                    final_state: {
+                        converged: Math.abs(path[path.length - 1]) < 0.1,
+                        final_x: path[path.length - 1],
+                        iterations_used: path.length - 1
+                    }
+                });
+            }
+        }
+
+        // 初始化Canvas
+        function initCanvas() {
+            funcCanvas = document.getElementById('functionCanvas');
+            valCanvas = document.getElementById('valueCanvas');
+
+            if (!funcCanvas || !valCanvas) return;
+
+            // 设置高分辨率
+            const dpr = window.devicePixelRatio || 1;
+            const funcRect = funcCanvas.parentElement.getBoundingClientRect();
+            const valRect = valCanvas.parentElement.getBoundingClientRect();
+
+            funcCanvas.width = funcRect.width * dpr;
+            funcCanvas.height = funcRect.height * dpr;
+            funcCanvas.style.width = funcRect.width + 'px';
+            funcCanvas.style.height = funcRect.height + 'px';
+
+            valCanvas.width = valRect.width * dpr;
+            valCanvas.height = valRect.height * dpr;
+            valCanvas.style.width = valRect.width + 'px';
+            valCanvas.style.height = valRect.height + 'px';
+
+            funcCtx = funcCanvas.getContext('2d');
+            valCtx = valCanvas.getContext('2d');
+
+            funcCtx.scale(dpr, dpr);
+            valCtx.scale(dpr, dpr);
+
+            // 初始绘制
+            drawFunctionCanvas();
+            drawValueCanvas();
+        }
+
+        // DOM加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化Canvas
+            initCanvas();
+
+            // 记录页面加载
+            trackEvent('page_loaded', {});
+
+            // 获取控件
+            const lrSlider = document.getElementById('lrSlider');
+            const initSlider = document.getElementById('initSlider');
+            const iterSlider = document.getElementById('iterSlider');
+            const runBtn = document.getElementById('runBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const hintBtn = document.getElementById('hintBtn');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // 学习率滑块
+            lrSlider.addEventListener('input', function() {
+                learningRate = parseFloat(this.value);
+                document.getElementById('lrValue').textContent = learningRate.toFixed(2);
+                updateFeedback();
+                trackEvent('interaction_change', { parameter: 'learning_rate', value: learningRate });
+            });
+
+            // 初始位置滑块
+            initSlider.addEventListener('input', function() {
+                initX = parseFloat(this.value);
+                document.getElementById('initValue').textContent = initX.toFixed(2);
+                trackEvent('interaction_change', { parameter: 'init_x', value: initX });
+            });
+
+            // 迭代次数滑块
+            iterSlider.addEventListener('input', function() {
+                maxIterations = parseInt(this.value);
+                document.getElementById('iterValue').textContent = maxIterations;
+                trackEvent('interaction_change', { parameter: 'max_iterations', value: maxIterations });
+            });
+
+            // 运行按钮
+            runBtn.addEventListener('click', function() {
+                if (isRunning) return;
+
+                isRunning = true;
+                currentStep = 0;
+                gradientDescent();
+                animateStep();
+            });
+
+            // 重置按钮
+            resetBtn.addEventListener('click', function() {
+                if (animationId) {
+                    clearTimeout(animationId);
+                }
+                isRunning = false;
+                currentStep = 0;
+                path = [];
+                values = [];
+
+                document.getElementById('currentIter').textContent = '0';
+                document.getElementById('currentX').textContent = initX.toFixed(2);
+                document.getElementById('currentF').textContent = f(initX).toFixed(2);
+                document.getElementById('statusText').textContent = '等待开始';
+                document.getElementById('statusText').className = 'status-value';
+
+                drawFunctionCanvas();
+                drawValueCanvas();
+            });
+
+            // 提示按钮
+            hintBtn.addEventListener('click', function() {
+                hintUsed = true;
+                trackEvent('hint_used', { hint_type: 'step_size_guidance' });
+
+                const feedbackEl = document.getElementById('feedbackText');
+                feedbackEl.innerHTML = '提示：尝试比较学习率 0.1 和 1.0 的效果。<br>0.1 会稳定但缓慢地下降；1.0 会在 3 和 -3 之间来回跳跃（震荡）。';
+            });
+
+            // 信心评分
+            const confidenceBtns = document.querySelectorAll('.confidence-btn');
+            confidenceBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    confidenceBtns.forEach(function(b) { b.classList.remove('selected'); });
+                    this.classList.add('selected');
+                    selectedConfidence = parseInt(this.dataset.value);
+                });
+            });
+
+            // 反思选择
+            const reflectionOpts = document.querySelectorAll('.reflection-option');
+            reflectionOpts.forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    reflectionOpts.forEach(function(o) { o.classList.remove('selected'); });
+                    this.classList.add('selected');
+                    selectedReflection = this.dataset.value;
+                });
+            });
+
+            // 提交按钮
+            submitBtn.addEventListener('click', function() {
+                trackEvent('confidence_submitted', { confidence_score: selectedConfidence });
+                trackEvent('reflection_submitted', { reflection_choice: selectedReflection });
+
+                alert('学习记录已保存！\n\n信心评分: ' + selectedConfidence + '/5\n反思选择: ' + (selectedReflection || '未选择'));
+            });
+
+            // 窗口大小改变时重新初始化Canvas
+            window.addEventListener('resize', function() {
+                initCanvas();
+                updateDisplay();
+            });
+
+            // 初始绘制
+            updateFeedback();
+        });
+    </script>
+</body>
+</html>

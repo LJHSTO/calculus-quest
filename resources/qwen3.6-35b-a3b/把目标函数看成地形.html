@@ -1,0 +1,1080 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>把目标函数看成地形</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+.header {
+  background: linear-gradient(135deg, #16213e, #0f3460);
+  padding: 18px 30px;
+  border-bottom: 2px solid #e94560;
+}
+.header h1 {
+  font-size: 26px;
+  color: #fff;
+  font-weight: 700;
+}
+.header .goal {
+  font-size: 14px;
+  color: #a0c4ff;
+  margin-top: 6px;
+}
+.main-container {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.left-panel {
+  flex: 0 0 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.card {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 18px;
+  border: 1px solid #233554;
+}
+.card h3 {
+  font-size: 16px;
+  color: #a0c4ff;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #233554;
+  padding-bottom: 8px;
+}
+.card p, .card li {
+  font-size: 14px;
+  line-height: 1.8;
+  color: #c0c0c0;
+}
+.card ul { padding-left: 20px; }
+.step-item {
+  padding: 10px 12px;
+  margin: 6px 0;
+  background: #1a1a2e;
+  border-radius: 8px;
+  border-left: 3px solid #e94560;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.step-item:hover { background: #233554; }
+.step-item.active { background: #233554; border-left-color: #53d8fb; }
+.step-item .step-num {
+  color: #e94560;
+  font-weight: 700;
+  margin-right: 8px;
+}
+.step-item.active .step-num { color: #53d8fb; }
+.control-group {
+  margin: 12px 0;
+}
+.control-group label {
+  display: block;
+  font-size: 13px;
+  color: #a0c4ff;
+  margin-bottom: 6px;
+}
+.control-group input[type="range"] {
+  width: 100%;
+  accent-color: #e94560;
+  cursor: pointer;
+}
+.control-value {
+  font-size: 13px;
+  color: #53d8fb;
+  float: right;
+  margin-top: -22px;
+}
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-primary {
+  background: #e94560;
+  color: #fff;
+}
+.btn-primary:hover { background: #ff6b81; }
+.btn-secondary {
+  background: #233554;
+  color: #a0c4ff;
+  border: 1px solid #233554;
+}
+.btn-secondary:hover { background: #2a4070; }
+.btn-hint {
+  background: #f0a500;
+  color: #1a1a2e;
+  font-size: 13px;
+  padding: 8px 14px;
+}
+.btn-hint:hover { background: #f5c542; }
+.canvas-container {
+  position: relative;
+  background: #0d1b2a;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #233554;
+}
+.canvas-container canvas {
+  display: block;
+  width: 100%;
+  cursor: grab;
+}
+.canvas-container canvas:active { cursor: grabbing; }
+.info-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  background: #16213e;
+  border-radius: 10px;
+  border: 1px solid #233554;
+}
+.info-bar .val {
+  font-size: 14px;
+  color: #e0e0e0;
+}
+.info-bar .val span {
+  color: #53d8fb;
+  font-weight: 700;
+  font-size: 16px;
+}
+.info-bar .gradient-info {
+  font-size: 13px;
+  color: #a0c4ff;
+}
+.concept-card {
+  background: linear-gradient(135deg, #16213e, #1a1a2e);
+  border-left: 4px solid #e94560;
+}
+.concept-card .icon {
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.confidence-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.confidence-stars {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.star-btn {
+  font-size: 32px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  transition: color 0.2s, transform 0.2s;
+}
+.star-btn.active { color: #f0a500; transform: scale(1.15); }
+.star-btn:hover { color: #f5c542; transform: scale(1.1); }
+.reflection-textarea {
+  width: 100%;
+  min-height: 80px;
+  background: #1a1a2e;
+  border: 1px solid #233554;
+  border-radius: 8px;
+  color: #e0e0e0;
+  padding: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+.reflection-textarea:focus {
+  outline: none;
+  border-color: #53d8fb;
+}
+.feedback-msg {
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-top: 8px;
+  display: none;
+}
+.feedback-msg.show { display: block; }
+.feedback-msg.success {
+  background: #0a3d2a;
+  color: #53d8fb;
+  border: 1px solid #1a5c4a;
+}
+.feedback-msg.info {
+  background: #0a2a3d;
+  color: #a0c4ff;
+  border: 1px solid #1a3d5c;
+}
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #888;
+  margin-top: 8px;
+}
+.legend-bar {
+  width: 120px;
+  height: 12px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #1a237e, #4fc3f7, #ffffff, #ff8a65, #b71c1c);
+}
+.tooltip {
+  position: absolute;
+  background: rgba(22,33,62,0.95);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  pointer-events: none;
+  display: none;
+  border: 1px solid #233554;
+  white-space: nowrap;
+}
+.reset-link {
+  font-size: 12px;
+  color: #e94560;
+  cursor: pointer;
+  text-decoration: underline;
+  background: none;
+  border: none;
+  font-family: inherit;
+}
+.reset-link:hover { color: #ff6b81; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>把目标函数看成地形</h1>
+  <p class="goal">本节聚焦：目标函数地形图 — 学会用等高线理解最优化的方向</p>
+</div>
+
+<div class="main-container">
+  <!-- 左侧面板 -->
+  <div class="left-panel">
+    <div class="card">
+      <h3>🎯 学习目标</h3>
+      <p>1. 能把目标函数的值理解为地形高度</p>
+      <p>2. 能在等高线图上寻找低处</p>
+      <p>3. 能理解梯度下降的方向</p>
+    </div>
+
+    <div class="card">
+      <h3>💡 直觉解释</h3>
+      <p>目标函数的值可以看成地形高度。寻找最小值就像在地形中找最低谷。等高线就是地图上的海拔线，站在山丘上你总想往低处走——梯度下降就是告诉你"最低处"的方向。</p>
+    </div>
+
+    <div class="card">
+      <h3>📋 操作步骤</h3>
+      <div class="step-item active" data-step="1" id="step1">
+        <span class="step-num">第一步</span>观察等高线地形图，理解颜色与高度的关系
+      </div>
+      <div class="step-item" data-step="2" id="step2">
+        <span class="step-num">第二步</span>拖动红色圆点，体验"向下走"的感觉
+      </div>
+      <div class="step-item" data-step="3" id="step3">
+        <span class="step-num">第三步</span>观察梯度方向箭头，理解下降方向
+      </div>
+      <div class="step-item" data-step="4" id="step4">
+        <span class="step-num">第四步</span>尝试找到最低点，感受最速下降
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>⚙️ 参数控制</h3>
+      <div class="control-group">
+        <label>等高线密度（地形精细度）<span class="control-value" id="densityVal">中等</span></label>
+        <input type="range" id="densitySlider" min="1" max="3" value="2" step="1">
+      </div>
+      <div class="control-group">
+        <label>梯度箭头缩放<span class="control-value" id="arrowVal">1.0×</span></label>
+        <input type="range" id="arrowSlider" min="0" max="30" value="10" step="1">
+      </div>
+      <div class="control-group">
+        <label>学习步长<span class="control-value" id="stepVal">0.30</span></label>
+        <input type="range" id="stepSlider" min="1" max="100" value="30" step="1">
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="autoDescendBtn">▶ 自动下降</button>
+        <button class="btn reset-link" id="resetBtn">重置位置</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>💡 提示</h3>
+      <button class="btn btn-hint" id="hintBtn">获取提示</button>
+      <div class="feedback-msg info" id="hintFeedback"></div>
+    </div>
+  </div>
+
+  <!-- 右侧面板 -->
+  <div class="right-panel">
+    <div class="card" style="padding:12px;">
+      <div class="canvas-container" id="canvasContainer">
+        <canvas id="terrainCanvas" width="700" height="560"></canvas>
+        <div class="tooltip" id="tooltip"></div>
+      </div>
+      <div class="legend">
+        <span>高</span>
+        <div class="legend-bar"></div>
+        <span>低</span>
+      </div>
+    </div>
+
+    <div class="info-bar">
+      <div class="val">当前位置：<span id="posDisplay">(3.00, 3.00)</span></div>
+      <div class="val">函数值 f(x,y) = <span id="fvalDisplay">13.00</span></div>
+      <div class="gradient-info">梯度方向：<span id="gradDisplay">← 指向低处</span></div>
+    </div>
+
+    <div class="card">
+      <h3>🃏 概念卡：目标函数地形图</h3>
+      <div style="display:flex; align-items:flex-start; gap:14px;">
+        <div style="font-size:40px; flex-shrink:0;">🏔️</div>
+        <div>
+          <p style="font-size:14px; color:#e0e0e0; line-height:1.8;">
+            把目标函数 <strong>f(x,y)</strong> 的每个输出值看作地面上的一点的高度。
+            整个函数定义了一片"地形"，等高线就是连接相同高度点的线。
+            梯度 ∇f 指向最陡上升的方向，负的梯度 -∇f 指向最速下降的方向——
+            就像站在山上，背对梯度的方向就是 downhill 的最快路。
+          </p>
+          <p style="font-size:13px; color:#a0c4ff; margin-top:8px;">
+            最小值点对应地形中的"谷底"，梯度为零。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📊 探索记录</h3>
+      <p style="font-size:13px; color:#888;">你已走过的步数：<span id="stepCount" style="color:#53d8fb; font-weight:700;">0</span></p>
+      <p style="font-size:13px; color:#888;">最低到达函数值：<span id="bestFval" style="color:#53d8fb; font-weight:700;">13.00</span></p>
+      <p style="font-size:13px; color:#888;">探索路径长度：<span id="pathLength" style="color:#53d8fb; font-weight:700;">0.00</span></p>
+    </div>
+
+    <div class="card">
+      <h3>⭐ 信心评分</h3>
+      <p style="font-size:13px; color:#888; margin-bottom:8px;">你对"理解目标函数地形"的信心如何？</p>
+      <div class="confidence-stars" id="confidenceStars">
+        <button class="star-btn" data-val="1">★</button>
+        <button class="star-btn" data-val="2">★</button>
+        <button class="star-btn" data-val="3">★</button>
+        <button class="star-btn" data-val="4">★</button>
+        <button class="star-btn" data-val="5">★</button>
+      </div>
+      <div class="feedback-msg success" id="confidenceMsg"></div>
+    </div>
+
+    <div class="card">
+      <h3>✍️ 简短反思</h3>
+      <p style="font-size:13px; color:#888; margin-bottom:8px;">用一两句话描述：你在等高线图中感受到的"下降方向"是什么？</p>
+      <textarea class="reflection-textarea" id="reflectionText" placeholder="例如：我发现从高处往低处走时，梯度箭头的方向总是指向最陡的下坡..."></textarea>
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="btn btn-primary" id="reflectionBtn">提交反思</button>
+        <div class="feedback-msg success" id="reflectionMsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var window = window;
+var _startTime = Date.now();
+var _interactionChangeCount = 0;
+var _hintUsed = false;
+var _autoDescending = false;
+var _autoDescendInterval = null;
+
+var canvas, ctx;
+var canvasW, canvasH;
+var margin = 50;
+var plotLeft = margin;
+var plotRight = canvasW - margin;
+var plotTop = margin;
+var plotBottom = canvasH - margin;
+var plotW = plotRight - plotLeft;
+var plotH = plotBottom - plotTop;
+
+var xMin = -1, xMax = 5, yMin = -1, yMax = 5;
+
+var currentX = 3.0, currentY = 3.0;
+var bestFVal = Infinity;
+var stepCount = 0;
+var totalPathLength = 0;
+var prevX = currentX, prevY = currentY;
+var isDragging = false;
+var confidenceScore = 0;
+var reflectionSubmitted = false;
+
+var step1Done = false, step2Done = false, step3Done = false;
+
+var densityLevel = 2;
+var arrowScale = 10;
+var learningRate = 0.3;
+
+var hints = [
+  "等高线越密集的地方，坡度越陡。你可以观察红色圆点周围的等高线分布。",
+  "梯度方向 ∇f 指向函数值上升最快的方向。所以往相反方向走就是下降最快的方向。",
+  "试着拖动到红色最深的区域，那通常接近函数的最低点。",
+  "点击'自动下降'按钮，观察算法如何沿着最陡方向一步步找到更低点。",
+  "注意看函数值的变化：如果函数值在下降，说明你走对了方向！"
+];
+var hintIndex = 0;
+
+function initCanvas() {
+  canvas = document.getElementById('terrainCanvas');
+  var container = document.getElementById('canvasContainer');
+  var cw = container.clientWidth;
+  canvas.width = cw;
+  canvas.height = Math.round(cw * 0.8);
+  canvasW = canvas.width;
+  canvasH = canvas.height;
+  plotLeft = 55;
+  plotRight = canvasW - 20;
+  plotTop = 30;
+  plotBottom = canvasH - 40;
+  plotW = plotRight - plotLeft;
+  plotH = plotBottom - plotTop;
+}
+
+function targetFunction(x, y) {
+  var fx = x - 2;
+  var fy = y - 1;
+  return fx * fx + 2 * fy * fy + 0.3 * Math.cos(Math.PI * x) * Math.cos(Math.PI * y);
+}
+
+function partialX(x, y) {
+  var eps = 1e-6;
+  return (targetFunction(x + eps, y) - targetFunction(x - eps, y)) / (2 * eps);
+}
+
+function partialY(x, y) {
+  var eps = 1e-6;
+  return (targetFunction(x, y + eps) - targetFunction(x, y - eps)) / (2 * eps);
+}
+
+function mapToPixel(nx, ny) {
+  var px = plotLeft + (nx - xMin) / (xMax - xMin) * plotW;
+  var py = plotBottom - (ny - yMin) / (yMax - yMin) * plotH;
+  return [px, py];
+}
+
+function mapToFunc(px, py) {
+  var nx = xMin + (px - plotLeft) / plotW * (xMax - xMin);
+  var ny = yMin + (plotBottom - py) / plotH * (yMax - yMin);
+  return [nx, ny];
+}
+
+var colorMap = [
+  [26, 35, 126],
+  [33, 102, 172],
+  [59, 148, 207],
+  [135, 206, 235],
+  [220, 240, 245],
+  [255, 228, 196],
+  [255, 182, 130],
+  [240, 128, 128],
+  [200, 80, 80],
+  [183, 28, 28]
+];
+
+function getValueColor(t) {
+  t = Math.max(0, Math.min(1, t));
+  var idx = t * (colorMap.length - 1);
+  var lo = Math.floor(idx);
+  var hi = Math.min(lo + 1, colorMap.length - 1);
+  var frac = idx - lo;
+  var r = Math.round(colorMap[lo][0] + (colorMap[hi][0] - colorMap[lo][0]) * frac);
+  var g = Math.round(colorMap[lo][1] + (colorMap[hi][1] - colorMap[lo][1]) * frac);
+  var b = Math.round(colorMap[lo][2] + (colorMap[hi][2] - colorMap[lo][2]) * frac);
+  return 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+function fMin() {
+  return 0;
+}
+
+function fMax() {
+  return targetFunction(-1, 5) || 20;
+}
+
+function fRange() {
+  var mn = Infinity, mx = -Infinity;
+  for (var ix = 0; ix <= 80; ix++) {
+    for (var iy = 0; iy <= 80; iy++) {
+      var x = xMin + ix / 80 * (xMax - xMin);
+      var y = yMin + iy / 80 * (yMax - yMin);
+      var v = targetFunction(x, y);
+      if (v < mn) mn = v;
+      if (v > mx) mx = v;
+    }
+  }
+  return [mn, mx];
+}
+
+function drawTerrain() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+
+  var fRange = fRange();
+  var fMinVal = fRange[0];
+  var fMaxVal = fRange[1];
+
+  var cellSize;
+  if (densityLevel === 1) cellSize = 8;
+  else if (densityLevel === 2) cellSize = 4;
+  else cellSize = 2;
+
+  for (var cx = 0; cx < plotW; cx += cellSize) {
+    for (var cy = 0; cy < plotH; cy += cellSize) {
+      var px = plotLeft + cx;
+      var py = plotTop + cy;
+      var fx2 = xMin + (px - plotLeft) / plotW * (xMax - xMin);
+      var fy2 = yMax - (py - plotTop) / plotH * (yMax - yMin);
+      var fv = targetFunction(fx2, fy2);
+      var norm = (fv - fMinVal) / (fMaxVal - fMinVal + 1e-10);
+      ctx.fillStyle = getValueColor(norm);
+      ctx.fillRect(px, py, cellSize, cellSize);
+    }
+  }
+
+  drawContourLines(fMinVal, fMaxVal);
+  drawGrid();
+  drawGradientField();
+  drawCurrentPoint();
+  drawPath();
+  drawAxisLabels();
+}
+
+function drawContourLines(fMinVal, fMaxVal) {
+  var numContours = 8;
+  var threshold = 0.08;
+  if (densityLevel === 3) threshold = 0.03;
+  if (densityLevel === 1) threshold = 0.15;
+
+  var step = (fMaxVal - fMinVal) / numContours;
+
+  ctx.setLineDash([4, 4]);
+  for (var i = 1; i < numContours; i++) {
+    var targetVal = fMinVal + i * step;
+    var norm = targetVal / (fMaxVal - fMinVal + 1e-10);
+    ctx.strokeStyle = getValueColor(norm);
+    ctx.lineWidth = 0.8;
+
+    for (var cx = 0; cx < plotW; cx += 2) {
+      for (var cy = 0; cy < plotH; cy += 2) {
+        var px = plotLeft + cx;
+        var py = plotTop + cy;
+        var fx3 = xMin + (px - plotLeft) / plotW * (xMax - xMin);
+        var fy3 = yMax - (py - plotTop) / plotH * (yMax - yMin);
+        var fv = targetFunction(fx3, fy3);
+
+        if (Math.abs(fv - targetVal) < threshold * (fMaxVal - fMinVal)) {
+          ctx.beginPath();
+          ctx.arc(px, py, 1.2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+    }
+  }
+  ctx.setLineDash([]);
+}
+
+function drawGrid() {
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 0.5;
+
+  for (var xi = Math.ceil(xMin); xi <= Math.floor(xMax); xi++) {
+    var p = mapToPixel(xi, yMin);
+    ctx.beginPath();
+    ctx.moveTo(p[0], plotTop);
+    ctx.lineTo(p[0], plotBottom);
+    ctx.stroke();
+  }
+  for (var yi = Math.ceil(yMin); yi <= Math.floor(yMax); yi++) {
+    var p2 = mapToPixel(xMin, yi);
+    ctx.beginPath();
+    ctx.moveTo(plotLeft, p2[1]);
+    ctx.lineTo(plotRight, p2[1]);
+    ctx.stroke();
+  }
+}
+
+function drawGradientField() {
+  var spacing = 60;
+  for (var gx = plotLeft + spacing; gx < plotRight; gx += spacing) {
+    for (var gy = plotTop + spacing; gy < plotBottom; gy += spacing) {
+      var fx4 = xMin + (gx - plotLeft) / plotW * (xMax - xMin);
+      var fy4 = yMax - (gy - plotTop) / plotH * (yMax - yMin);
+      var gxVal = partialX(fx4, fy4);
+      var gyVal = partialY(fx4, fy4);
+      var mag = Math.sqrt(gxVal * gxVal + gyVal * gyVal);
+      if (mag < 1e-10) continue;
+
+      var len = Math.min(mag * arrowScale * 0.5, 25);
+      var dx = -gxVal / mag * len;
+      var dy = gyVal / mag * len;
+
+      var sx = gx;
+      var sy = gy;
+      var ex = sx + dx;
+      var ey = sy + dy;
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+
+      var angle = Math.atan2(ey - sy, ex - sx);
+      var headLen = 4;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex - headLen * Math.cos(angle - 0.4), ey - headLen * Math.sin(angle - 0.4));
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex - headLen * Math.cos(angle + 0.4), ey - headLen * Math.sin(angle + 0.4));
+      ctx.stroke();
+    }
+  }
+}
+
+function drawCurrentPoint() {
+  var p = mapToPixel(currentX, currentY);
+  var fv = targetFunction(currentX, currentY);
+
+  ctx.beginPath();
+  ctx.arc(p[0], p[1], 10, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(233,69,96,0.25)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(p[0], p[1], 6, 0, Math.PI * 2);
+  ctx.fillStyle = '#e94560';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 11px Microsoft YaHei';
+  ctx.textAlign = 'center';
+  ctx.fillText('你', p[0], p[1] + 4);
+
+  if (!step1Done) {
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '12px Microsoft YaHei';
+    ctx.fillText('← 拖动我', p[0] + 50, p[1] - 10);
+    ctx.beginPath();
+    ctx.moveTo(p[0] + 30, p[1] - 10);
+    ctx.lineTo(p[0] + 45, p[1] - 10);
+    ctx.stroke();
+  }
+}
+
+function drawPath() {
+  if (pathPoints.length < 2) return;
+  ctx.strokeStyle = 'rgba(83,216,251,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  var first = mapToPixel(pathPoints[0].x, pathPoints[0].y);
+  ctx.moveTo(first[0], first[1]);
+  for (var i = 1; i < pathPoints.length; i++) {
+    var pp = mapToPixel(pathPoints[i].x, pathPoints[i].y);
+    ctx.lineTo(pp[0], pp[1]);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+var pathPoints = [];
+
+function drawAxisLabels() {
+  ctx.fillStyle = '#888';
+  ctx.font = '12px Microsoft YaHei';
+  ctx.textAlign = 'center';
+
+  for (var xi = Math.ceil(xMin); xi <= Math.floor(xMax); xi++) {
+    var p = mapToPixel(xi, yMin);
+    ctx.fillText(xi, p[0], plotBottom + 20);
+  }
+
+  ctx.textAlign = 'right';
+  for (var yi = Math.ceil(yMin); yi <= Math.floor(yMax); yi++) {
+    var p2 = mapToPixel(xMin, yi);
+    ctx.fillText(yi, plotLeft - 10, p2[1] + 4);
+  }
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#a0c4ff';
+  ctx.font = '13px Microsoft YaHei';
+  ctx.fillText('x', plotLeft + plotW / 2, plotBottom + 38);
+  ctx.fillText('y', plotLeft - 35, plotTop + plotH / 2);
+
+  ctx.fillStyle = '#53d8fb';
+  ctx.font = 'bold 13px Microsoft YaHei';
+  ctx.textAlign = 'center';
+  ctx.fillText('目标函数 f(x,y) 的地形图', plotLeft + plotW / 2, 20);
+}
+
+function updateDisplay() {
+  var fv = targetFunction(currentX, currentY);
+  document.getElementById('posDisplay').textContent = '(' + currentX.toFixed(2) + ', ' + currentY.toFixed(2) + ')';
+  document.getElementById('fvalDisplay').textContent = fv.toFixed(4);
+
+  var gxVal = partialX(currentX, currentY);
+  var gyVal = partialY(currentX, currentY);
+  var gradMag = Math.sqrt(gxVal * gxVal + gyVal * gyVal);
+  var gradAngle = Math.atan2(-gyVal, -gxVal);
+  var dirName = '';
+  if (gradMag < 0.01) dirName = '梯度≈0，已接近极值点';
+  else {
+    var deg = (gradAngle * 180 / Math.PI).toFixed(0);
+    if (gradAngle > -0.78 && gradAngle < 0.78) dirName = '← 左';
+    else if (gradAngle >= 0.78 && gradAngle < 2.36) dirName = '↙ 左下';
+    else if (gradAngle >= -2.36 && gradAngle < -0.78) dirName = '↘ 右下';
+    else if (gradAngle >= 2.36 || gradAngle < -2.36) dirName = '↑ 上';
+    else dirName = '↙ 下';
+  }
+  document.getElementById('gradDisplay').textContent = dirName;
+
+  if (fv < bestFVal) bestFVal = fv;
+  document.getElementById('bestFval').textContent = bestFVal.toFixed(4);
+  document.getElementById('stepCount').textContent = stepCount;
+  document.getElementById('pathLength').textContent = totalPathLength.toFixed(4);
+
+  if (stepCount >= 2) step2Done = true;
+  if (gradMag > 0.1) step3Done = true;
+  if (fv < 1.5) step4Done = true;
+
+  updateSteps();
+}
+
+var step4Done = false;
+
+function updateSteps() {
+  document.querySelectorAll('.step-item').forEach(function(el) {
+    var s = parseInt(el.getAttribute('data-step'));
+    el.classList.remove('active');
+    if (s === 1) step1Done = true;
+    if (s === 2 && step2Done) { el.classList.add('active'); return; }
+    if (s === 3 && step3Done) { el.classList.add('active'); return; }
+    if (s === 4 && step4Done) { el.classList.add('active'); return; }
+    if (!step1Done && s === 1) { el.classList.add('active'); return; }
+    if (step2Done && !step3Done && s === 2) { el.classList.add('active'); return; }
+    if (step3Done && !step4Done && s === 3) { el.classList.add('active'); return; }
+    if (step4Done) { el.classList.add('active'); return; }
+  });
+}
+
+function handlePointerDown(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  var px = (e.clientX - rect.left) * scaleX;
+  var py = (e.clientY - rect.top) * scaleY;
+
+  var p = mapToPixel(currentX, currentY);
+  var dist = Math.sqrt((px - p[0]) * (px - p[0]) + (py - p[1]) * (py - p[1]));
+  if (dist < 30) {
+    isDragging = true;
+  } else if (px >= plotLeft && px <= plotRight && py >= plotTop && py <= plotBottom) {
+    isDragging = true;
+  }
+}
+
+function handlePointerMove(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  var px = (e.clientX - rect.left) * scaleX;
+  var py = (e.clientY - rect.top) * scaleY;
+
+  if (isDragging && px >= plotLeft && px <= plotRight && py >= plotTop && py <= plotBottom) {
+    var fp = mapToFunc(px, py);
+    var nx = fp[0], ny = fp[1];
+    prevX = currentX;
+    prevY = currentY;
+    currentX = Math.max(xMin, Math.min(xMax, nx));
+    currentY = Math.max(yMin, Math.min(yMax, ny));
+    var d = Math.sqrt((currentX - prevX) ** 2 + (currentY - prevY) ** 2);
+    totalPathLength += d * 0.2;
+    stepCount++;
+    pathPoints.push({ x: currentX, y: currentY });
+    if (pathPoints.length > 200) pathPoints.shift();
+    _interactionChangeCount++;
+    updateDisplay();
+    drawTerrain();
+    trackEvent('interaction_change', {
+      position: [currentX, currentY],
+      function_value: targetFunction(currentX, currentY),
+      step_count: stepCount
+    });
+  }
+
+  var tooltip = document.getElementById('tooltip');
+  if (!isDragging && px >= plotLeft && px <= plotRight && py >= plotTop && py <= plotBottom) {
+    var fpx = mapToFunc(px, py);
+    var fvv = targetFunction(fpx[0], fpx[1]);
+    tooltip.style.display = 'block';
+    tooltip.style.left = (px / (canvas.width / canvas.parentElement.clientWidth) + 15) + 'px';
+    tooltip.style.top = (py / (canvas.height / canvas.parentElement.clientHeight) - 30) + 'px';
+    tooltip.textContent = '(' + fpx[0].toFixed(2) + ', ' + fpx[1].toFixed(2) + ')  f=' + fvv.toFixed(4);
+  } else {
+    tooltip.style.display = 'none';
+  }
+}
+
+function handlePointerUp() {
+  if (isDragging) {
+    isDragging = false;
+  }
+}
+
+function autoDescend() {
+  if (_autoDescending) return;
+  _autoDescending = true;
+  document.getElementById('autoDescendBtn').textContent = '⏸ 停止';
+  document.getElementById('autoDescendBtn').style.background = '#f0a500';
+  document.getElementById('autoDescendBtn').style.color = '#1a1a2e';
+
+  _autoDescendInterval = setInterval(function() {
+    var gxVal = partialX(currentX, currentY);
+    var gyVal = partialY(currentX, currentY);
+    var mag = Math.sqrt(gxVal * gxVal + gyVal * gyVal);
+    if (mag < 1e-6) {
+      clearInterval(_autoDescendInterval);
+      _autoDescending = false;
+      document.getElementById('autoDescendBtn').textContent = '▶ 自动下降';
+      document.getElementById('autoDescendBtn').style.background = '#e94560';
+      document.getElementById('autoDescendBtn').style.color = '#fff';
+      trackEvent('interaction_complete', {
+        auto_descend: true,
+        final_position: [currentX, currentY],
+        final_value: targetFunction(currentX, currentY)
+      });
+      return;
+    }
+    prevX = currentX;
+    prevY = currentY;
+    currentX -= learningRate * gxVal / mag * 0.5;
+    currentY -= learningRate * gyVal / mag * 0.5;
+    currentX = Math.max(xMin, Math.min(xMax, currentX));
+    currentY = Math.max(yMin, Math.min(yMax, currentY));
+    var d = Math.sqrt((currentX - prevX) ** 2 + (currentY - prevY) ** 2);
+    totalPathLength += d * 0.2;
+    stepCount++;
+    pathPoints.push({ x: currentX, y: currentY });
+    if (pathPoints.length > 200) pathPoints.shift();
+    _interactionChangeCount++;
+    updateDisplay();
+    drawTerrain();
+    trackEvent('interaction_change', {
+      position: [currentX, currentY],
+      function_value: targetFunction(currentX, currentY),
+      step_count: stepCount
+    });
+  }, 200);
+}
+
+function resetPosition() {
+  clearInterval(_autoDescendInterval);
+  _autoDescending = false;
+  currentX = 3.0;
+  currentY = 3.0;
+  prevX = currentX;
+  prevY = currentY;
+  bestFVal = Infinity;
+  stepCount = 0;
+  totalPathLength = 0;
+  pathPoints = [];
+  step1Done = false;
+  step2Done = false;
+  step3Done = false;
+  step4Done = false;
+  updateDisplay();
+  drawTerrain();
+  trackEvent('interaction_change', { action: 'reset', position: [currentX, currentY] });
+}
+
+function trackEvent(eventType, payload) {
+  var eventObj = {
+    lesson_id: 'D-02',
+    module_id: 'OM-D1',
+    course_version: 'demo-closed-loop-v1',
+    event_type: eventType,
+    timestamp: Date.now(),
+    time_on_task_ms: Date.now() - _startTime,
+    interaction_state: {
+      position: [currentX, currentY],
+      function_value: targetFunction(currentX, currentY),
+      step_count: stepCount,
+      best_fval: bestFVal,
+      total_path: totalPathLength,
+      density_level: densityLevel,
+      arrow_scale: arrowScale,
+      learning_rate: learningRate,
+      hint_used: _hintUsed,
+      auto_descending: _autoDescending,
+      confidence_score: confidenceScore,
+      reflection_submitted: reflectionSubmitted
+    }
+  };
+  if (payload) {
+    for (var k in payload) {
+      eventObj[k] = payload[k];
+    }
+  }
+
+  try {
+    var events;
+    try {
+      events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+    } catch(e2) {
+      events = [];
+    }
+    events.push(eventObj);
+    localStorage.setItem('maic_learning_events', JSON.stringify(events));
+  } catch(e3) {}
+
+  try {
+    window.parent.postMessage({ type: 'maic_learning_event', payload: eventObj }, '*');
+  } catch(e4) {}
+}
+
+function showHint() {
+  _hintUsed = true;
+  var fb = document.getElementById('hintFeedback');
+  fb.textContent = '💡 ' + hints[hintIndex % hints.length];
+  fb.classList.add('show');
+  hintIndex++;
+  trackEvent('hint_used', { hint_index: hintIndex, hint_text: fb.textContent });
+}
+
+window.MAIC_LESSON_META = {
+  lesson_id: 'D-02',
+  module_id: 'OM-D1',
+  course_version: 'demo-closed-loop-v1',
+  concept_name: '目标函数地形图'
+};
+
+function init() {
+  initCanvas();
+  pathPoints.push({ x: currentX, y: currentY });
+  drawTerrain();
+  updateDisplay();
+
+  trackEvent('page_loaded', {
+    initial_position: [currentX, currentY],
+    initial_function_value: targetFunction(currentX, currentY)
+  });
+
+  canvas.addEventListener('mousedown', handlePointerDown);
+  canvas.addEventListener('mousemove', handlePointerMove);
+  canvas.addEventListener('mouseup', handlePointerUp);
+  canvas.addEventListener('mouseleave', handlePointerUp);
+  canvas.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    handlePointerDown({ clientX: touch.clientX, clientY: touch.clientY });
+  });
+  canvas.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    var touch = e.touches[0];
+    handlePointerMove({ clientX: touch.clientX, clientY: touch.clientY });
+  });
+  canvas.addEventListener('touchend', handlePointerUp);
+
+  document.getElementById('densitySlider').addEventListener('input', function() {
+    densityLevel = parseInt(this.value);
+    var labels = ['粗糙', '中等', '精细'];
+    document.getElementById('densityVal').textContent = labels[densityLevel - 1];
+    drawTerrain();
+    trackEvent('interaction_change', { density_level: densityLevel });
+  });
+
+  document.getElementById('arrowSlider').addEventListener('input', function() {
+    arrowScale = parseInt(this.value);
+    document.getElementById('arrowVal').textContent = (arrowScale / 10).toFixed(1) + '×';
+    drawTerrain();
+  });
+
+  document.getElementById('stepSlider').addEventListener('input', function() {
+    learningRate = parseInt(this.value) / 100;
+    document.getElementById('stepVal').textContent = learningRate.toFixed(2);
+  });
+
+  document.getElementById('autoDescendBtn').addEventListener('click', autoDescend);
+  document.getElementById('resetBtn').addEventListener('click', resetPosition);
+  document.getElementById('hintBtn').addEventListener('click', showHint);
+
+  document.querySelectorAll('.star-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      confidenceScore = parseInt(this.getAttribute('data-val'));
+      document.querySelectorAll('.star-btn').forEach(function(s) {
+        var sv = parseInt(s.getAttribute('data-val'));
+        if (sv <= confidenceScore) s.classList.add('active');
+        else s.classList.remove('active');
+      });
+      var msg = document.getElementById('confidenceMsg');
+      msg.textContent = '已记录信心评分：' + confidenceScore + ' 分。继续探索以加深理解！';
+      msg.classList.add('show');
+      trackEvent('confidence_submitted', { score: confidenceScore });
+    });
+  });
+
+  document.getElementById('reflectionBtn').addEventListener('click', function() {
+    var text = document.getElementById('reflectionText').value.trim();
+    if (text.length > 5) {
+      reflectionSubmitted = true;
+      var msg = document.getElementById('reflectionMsg');
+      msg.textContent = '反思已提交，感谢你的思考！';
+      msg.classList.add('show');
+      trackEvent('reflection_submitted', { reflection: text.substring(0, 200) });
+    }
+  });
+
+  window.addEventListener('resize', function() {
+    initCanvas();
+    drawTerrain();
+  });
+
+  setTimeout(function() {
+    if (stepCount < 1) {
+      trackEvent('interaction_change', {
+        action: 'initial_draw',
+        position: [currentX, currentY],
+        function_value: targetFunction(currentX, currentY)
+      });
+    }
+  }, 500);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

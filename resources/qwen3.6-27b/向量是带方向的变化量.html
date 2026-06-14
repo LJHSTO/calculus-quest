@@ -1,0 +1,931 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>向量是带方向的变化量</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  min-height: 100vh;
+  line-height: 1.7;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+.header {
+  text-align: center;
+  padding: 30px 0 20px;
+  border-bottom: 2px solid #16213e;
+  margin-bottom: 24px;
+}
+.header h1 {
+  font-size: 28px;
+  color: #e94560;
+  margin-bottom: 6px;
+}
+.header .subtitle {
+  font-size: 15px;
+  color: #8888aa;
+}
+.objective {
+  background: #16213e;
+  border-left: 4px solid #e94560;
+  padding: 14px 20px;
+  margin-bottom: 20px;
+  border-radius: 0 8px 8px 0;
+  font-size: 15px;
+}
+.objective strong { color: #e94560; }
+.intuition {
+  background: #0f3460;
+  padding: 18px 22px;
+  border-radius: 10px;
+  margin-bottom: 22px;
+  font-size: 15px;
+}
+.intuition h3 { color: #e94560; margin-bottom: 8px; font-size: 16px; }
+.intuition p { margin-bottom: 6px; }
+.intuition em { color: #f0c040; font-style: normal; font-weight: bold; }
+.main-area {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.left-panel {
+  flex: 0 0 320px;
+  min-width: 280px;
+}
+.right-panel {
+  flex: 1;
+  min-width: 400px;
+}
+.explain-box {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.explain-box h3 {
+  color: #e94560;
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+.explain-box p {
+  font-size: 14px;
+  margin-bottom: 8px;
+  line-height: 1.8;
+}
+.live-values {
+  background: #0f3460;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+}
+.live-values h3 {
+  color: #f0c040;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+.value-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px solid #1a3a5c;
+  font-size: 14px;
+}
+.value-row:last-child { border-bottom: none; }
+.value-label { color: #8888aa; }
+.value-num { color: #00e5ff; font-weight: bold; font-family: "Courier New", monospace; }
+canvas {
+  background: #0d1b2a;
+  border-radius: 10px;
+  display: block;
+  cursor: grab;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+canvas:active { cursor: grabbing; }
+.controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.ctrl-btn {
+  background: #e94560;
+  color: #fff;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+.ctrl-btn:hover { background: #c73652; }
+.ctrl-btn.secondary { background: #0f3460; border: 1px solid #1a4a7a; }
+.ctrl-btn.secondary:hover { background: #1a4a7a; }
+.slider-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #16213e;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.slider-group label { color: #8888aa; white-space: nowrap; }
+.slider-group input[type="range"] {
+  width: 100px;
+  accent-color: #e94560;
+}
+.slider-group .slider-val {
+  color: #00e5ff;
+  font-family: "Courier New", monospace;
+  min-width: 32px;
+  text-align: right;
+}
+.concept-card {
+  background: linear-gradient(135deg, #16213e, #0f3460);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 22px;
+  border: 1px solid #1a3a5c;
+}
+.concept-card h3 {
+  color: #e94560;
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+.concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.concept-item {
+  background: rgba(255,255,255,0.04);
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.concept-item .term {
+  color: #f0c040;
+  font-weight: bold;
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+.feedback-area {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 22px;
+  min-height: 60px;
+}
+.feedback-area h3 { color: #e94560; font-size: 15px; margin-bottom: 8px; }
+.feedback-msg {
+  font-size: 14px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  display: none;
+}
+.feedback-msg.show { display: block; }
+.feedback-msg.success { background: #0a3d2a; border: 1px solid #1b7a52; color: #6fefb5; }
+.feedback-msg.info { background: #0f3460; border: 1px solid #2a5a8a; color: #7ec8e3; }
+.feedback-msg.hint { background: #3d2e0a; border: 1px solid #7a6a1b; color: #f0d060; }
+.confidence-section {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
+}
+.confidence-section h3 { color: #e94560; font-size: 15px; margin-bottom: 12px; }
+.stars {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.star-btn {
+  background: none;
+  border: 2px solid #333;
+  color: #555;
+  font-size: 28px;
+  cursor: pointer;
+  border-radius: 8px;
+  padding: 4px 10px;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.star-btn:hover, .star-btn.active {
+  border-color: #e94560;
+  color: #e94560;
+  background: rgba(233,69,96,0.1);
+}
+.confidence-label { font-size: 13px; color: #8888aa; }
+.reflection-section {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 18px 22px;
+  margin-bottom: 22px;
+}
+.reflection-section h3 { color: #e94560; font-size: 15px; margin-bottom: 12px; }
+.reflection-section textarea {
+  width: 100%;
+  background: #0d1b2a;
+  border: 1px solid #1a3a5c;
+  color: #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  margin-bottom: 12px;
+}
+.reflection-section textarea:focus {
+  outline: none;
+  border-color: #e94560;
+}
+.reflection-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.reflection-opt {
+  background: #0f3460;
+  border: 1px solid #1a4a7a;
+  color: #ccc;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.reflection-opt:hover, .reflection-opt.selected {
+  background: #e94560;
+  border-color: #e94560;
+  color: #fff;
+}
+.submit-btn {
+  background: #e94560;
+  color: #fff;
+  border: none;
+  padding: 10px 28px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+.submit-btn:hover { background: #c73652; }
+.hint-box {
+  background: #3d2e0a;
+  border: 1px solid #7a6a1b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #f0d060;
+  display: none;
+}
+.hint-box.show { display: block; }
+.footer {
+  text-align: center;
+  padding: 20px;
+  color: #444;
+  font-size: 12px;
+  border-top: 1px solid #16213e;
+  margin-top: 20px;
+}
+@media (max-width: 800px) {
+  .main-area { flex-direction: column; }
+  .left-panel { flex: 1; min-width: unset; }
+  .right-panel { min-width: unset; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>向量是带方向的变化量</h1>
+    <div class="subtitle">本节聚焦：向量的大小与方向</div>
+  </div>
+
+  <div class="objective">
+    <strong>学习目标：</strong>拖动箭头终点，观察向量的坐标分量和长度如何实时变化，从而理解向量同时记录了变化的大小和方向。
+  </div>
+
+  <div class="intuition">
+    <h3>💡 直觉理解</h3>
+    <p>想象你站在原地，往东走 3 步再往北走 4 步——你的位置变化不仅仅是一个数字"走了几步"，还包括了<em>往哪个方向走</em>。这就是向量的核心思想。</p>
+    <p>一个向量同时记录了变化的<em>大小</em>（走多远）和<em>方向</em>（往哪走）。多变量微积分里的梯度也是一种向量——它指向函数值增长最快的方向，长度代表增长的速率。</p>
+    <p>标量（如温度 25°C）只有大小；向量（如风力 北风 5m/s）既有大小又有方向。</p>
+  </div>
+
+  <div class="main-area">
+    <div class="left-panel">
+      <div class="explain-box">
+        <h3>📐 从起点到终点的变化</h3>
+        <p id="explain-text">向量用一条带箭头的线段表示：箭头从起点指向终点。起点到终点的<em>水平位移</em>是 x 分量，<em>垂直位移</em>是 y 分量。两个分量共同决定了向量的大小和方向。</p>
+        <p>拖动右侧箭头终点，观察下方数值如何变化。</p>
+      </div>
+      <div class="live-values">
+        <h3>📊 实时数据</h3>
+        <div class="value-row">
+          <span class="value-label">x 分量</span>
+          <span class="value-num" id="val-x">3.0</span>
+        </div>
+        <div class="value-row">
+          <span class="value-label">y 分量</span>
+          <span class="value-num" id="val-y">4.0</span>
+        </div>
+        <div class="value-row">
+          <span class="value-label">向量记法</span>
+          <span class="value-num" id="val-vec">⟨3.0, 4.0⟩</span>
+        </div>
+        <div class="value-row">
+          <span class="value-label">长度（模）</span>
+          <span class="value-num" id="val-len">5.00</span>
+        </div>
+        <div class="value-row">
+          <span class="value-label">方向角</span>
+          <span class="value-num" id="val-angle">53.1°</span>
+        </div>
+      </div>
+      <div class="controls">
+        <button class="ctrl-btn secondary" id="btn-reset" title="重置为默认位置">↺ 重置</button>
+        <button class="ctrl-btn secondary" id="btn-hint" title="显示提示">💡 提示</button>
+        <button class="ctrl-btn secondary" id="btn-random" title="随机位置">🎲 随机</button>
+      </div>
+      <div class="hint-box" id="hint-box">
+        <strong>提示：</strong>尝试把箭头拖到不同象限，观察 x、y 分量的正负号如何变化。当 x 为正、y 为负时，箭头指向右下方。长度始终为正，用公式 √(x² + y²) 计算。
+      </div>
+    </div>
+    <div class="right-panel">
+      <canvas id="vectorCanvas" width="560" height="480"></canvas>
+      <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; justify-content:center;">
+        <div class="slider-group">
+          <label>x 分量：</label>
+          <input type="range" id="slider-x" min="-5" max="5" step="0.1" value="3">
+          <span class="slider-val" id="slider-x-val">3.0</span>
+        </div>
+        <div class="slider-group">
+          <label>y 分量：</label>
+          <input type="range" id="slider-y" min="-5" max="5" step="0.1" value="4">
+          <span class="slider-val" id="slider-y-val">4.0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="concept-card">
+    <h3>📇 核心概念卡</h3>
+    <div class="concept-grid">
+      <div class="concept-item">
+        <span class="term">标量 (Scalar)</span>
+        只有大小的量，如温度、质量、时间。用单个实数表示。
+      </div>
+      <div class="concept-item">
+        <span class="term">向量 (Vector)</span>
+        同时具有大小和方向的量，如位移、速度、力。用分量 ⟨x, y⟩ 表示。
+      </div>
+      <div class="concept-item">
+        <span class="term">向量的长度（模）</span>
+        向量箭头线段的长度，计算公式：‖v‖ = √(x² + y²)，始终 ≥ 0。
+      </div>
+      <div class="concept-item">
+        <span class="term">向量的方向</span>
+        箭头从起点指向终点的方向，可用角度或单位向量描述。
+      </div>
+      <div class="concept-item">
+        <span class="term">分量</span>
+        向量在坐标轴上的投影值。x 分量是水平位移，y 分量是垂直位移。
+      </div>
+      <div class="concept-item">
+        <span class="term">零向量</span>
+        起点与终点重合的向量 ⟨0, 0⟩，长度为 0，方向不确定。
+      </div>
+    </div>
+  </div>
+
+  <div class="feedback-area">
+    <h3>✅ 即时反馈</h3>
+    <div class="feedback-msg info" id="feedback-drag">拖动箭头终点或调节滑块，观察向量各属性如何变化。</div>
+    <div class="feedback-msg success" id="feedback-quadrant"></div>
+    <div class="feedback-msg info" id="feedback-observation"></div>
+  </div>
+
+  <div class="confidence-section">
+    <h3>🎯 信心评分</h3>
+    <p style="font-size:13px; color:#8888aa; margin-bottom:10px;">你对「能区分标量和向量；能说出向量的长度、方向和分量；能理解箭头表示变化」的掌握程度：</p>
+    <div class="stars" id="stars-container">
+      <button class="star-btn" data-val="1">★</button>
+      <button class="star-btn" data-val="2">★</button>
+      <button class="star-btn" data-val="3">★</button>
+      <button class="star-btn" data-val="4">★</button>
+      <button class="star-btn" data-val="5">★</button>
+    </div>
+    <div class="confidence-label" id="confidence-label">请选择评分（1 = 还需帮助，5 = 完全掌握）</div>
+  </div>
+
+  <div class="reflection-section">
+    <h3>🤔 简短反思</h3>
+    <p style="font-size:14px; margin-bottom:10px;">关于向量的大小与方向，你目前的理解状态更接近以下哪一项？</p>
+    <div class="reflection-options" id="reflection-options">
+      <button class="reflection-opt" data-val="还需更多示例">还需更多示例</button>
+      <button class="reflection-opt" data-val="基本理解但需练习">基本理解但需练习</button>
+      <button class="reflection-opt" data-val="能解释给同学听">能解释给同学听</button>
+      <button class="reflection-opt" data-val="已完全掌握">已完全掌握</button>
+    </div>
+    <textarea id="reflection-text" placeholder="（可选）写下你对向量的一个疑问或新发现……"></textarea>
+    <button class="submit-btn" id="btn-submit-reflection">提交反思</button>
+  </div>
+
+  <div class="footer">
+    主动学习互动页 · 向量是带方向的变化量
+  </div>
+</div>
+
+<script>
+(function() {
+  // 课程元数据
+  window.MAIC_LESSON_META = {
+    lesson_id: 'A-04',
+    module_id: 'OM-A2a',
+    course_version: 'demo-closed-loop-v1',
+    concept_name: '向量的大小与方向'
+  };
+
+  var meta = window.MAIC_LESSON_META;
+  var pageLoadTime = Date.now();
+  var timeOnTask = 0;
+  var startTime = Date.now();
+  var currentX = 3.0;
+  var currentY = 4.0;
+  var isDragging = false;
+  var hintUsed = false;
+  var interactionComplete = false;
+  var dragCount = 0;
+  var selectedConfidence = 0;
+  var selectedReflection = '';
+  var visitedQuadrants = {};
+  var hasSlidX = false;
+  var hasSlidY = false;
+  var hasReset = false;
+  var hasRandom = false;
+  var hintBoxVisible = false;
+
+  // Canvas 相关
+  var canvas, ctx;
+  var W, H, originX, originY, scale;
+
+  // 行为追踪
+  function trackEvent(eventType, payload) {
+    var event = {
+      lesson_id: meta.lesson_id,
+      module_id: meta.module_id,
+      course_version: meta.course_version,
+      event_type: eventType,
+      timestamp: new Date().toISOString(),
+      time_on_task_ms: Date.now() - startTime,
+      interaction_state: getInteractionState()
+    };
+    if (payload) {
+      for (var k in payload) {
+        event[k] = payload[k];
+      }
+    }
+    try {
+      var existing = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+      existing.push(event);
+      localStorage.setItem('maic_learning_events', JSON.stringify(existing));
+    } catch(e) {
+      // localStorage 不可用时跳过
+    }
+    try {
+      window.postMessage({ type: 'maic_learning_event', payload: event }, '*');
+    } catch(e) {}
+  }
+
+  function getInteractionState() {
+    return {
+      x: currentX,
+      y: currentY,
+      length: Math.sqrt(currentX * currentX + currentY * currentY),
+      drag_count: dragCount,
+      hint_used: hintUsed,
+      interaction_complete: interactionComplete,
+      has_slid_x: hasSlidX,
+      has_slid_y: hasSlidY,
+      has_reset: hasReset,
+      has_random: hasRandom,
+      visited_quadrants: Object.keys(visitedQuadrants).length
+    };
+  }
+
+  function getQuadrant(x, y) {
+    if (x > 0.01 && y > 0.01) return '第一象限';
+    if (x < -0.01 && y > 0.01) return '第二象限';
+    if (x < -0.01 && y < -0.01) return '第三象限';
+    if (x > 0.01 && y < -0.01) return '第四象限';
+    return '坐标轴上';
+  }
+
+  function updateDisplay() {
+    var len = Math.sqrt(currentX * currentX + currentY * currentY);
+    var angleDeg = Math.atan2(currentY, currentX) * 180 / Math.PI;
+    if (angleDeg < 0) angleDeg += 360;
+
+    document.getElementById('val-x').textContent = currentX.toFixed(1);
+    document.getElementById('val-y').textContent = currentY.toFixed(1);
+    document.getElementById('val-vec').textContent = '⟨' + currentX.toFixed(1) + ', ' + currentY.toFixed(1) + '⟩';
+    document.getElementById('val-len').textContent = len.toFixed(2);
+    document.getElementById('val-angle').textContent = angleDeg.toFixed(1) + '°';
+
+    document.getElementById('slider-x').value = currentX;
+    document.getElementById('slider-y').value = currentY;
+    document.getElementById('slider-x-val').textContent = currentX.toFixed(1);
+    document.getElementById('slider-y-val').textContent = currentY.toFixed(1);
+
+    drawCanvas();
+    updateFeedback();
+  }
+
+  function updateFeedback() {
+    var q = getQuadrant(currentX, currentY);
+    var quadEl = document.getElementById('feedback-quadrant');
+    var obsEl = document.getElementById('feedback-observation');
+    var dragEl = document.getElementById('feedback-drag');
+
+    visitedQuadrants[q] = true;
+
+    if (dragCount > 0) {
+      dragEl.classList.remove('show');
+    }
+
+    var len = Math.sqrt(currentX * currentX + currentY * currentY);
+    var messages = [];
+
+    if (Math.abs(currentX) < 0.15 && Math.abs(currentY) < 0.15) {
+      quadEl.textContent = '⭕ 当前向量接近零向量 ⟨0, 0⟩，长度趋近于 0。零向量没有确定的方向。';
+      quadEl.className = 'feedback-msg success show';
+    } else {
+      quadEl.textContent = '📍 箭头终点在' + q + '，x分量' + (currentX >= 0 ? '≥' : '<') + '0，y分量' + (currentY >= 0 ? '≥' : '<') + '0。';
+      quadEl.className = 'feedback-msg success show';
+    }
+
+    var obsMsgs = [];
+    if (len > 6) obsMsgs.push('向量长度较大（>6），箭头伸得较长。');
+    if (len < 1) obsMsgs.push('向量很短（<1），接近原点。');
+    if (currentX === currentY && Math.abs(currentX) > 0.1) obsMsgs.push('x 与 y 分量相等，方向角约为 45°（或 225°）。');
+    if (currentX === 0 && currentY !== 0) obsMsgs.push('x 分量为 0，向量沿 y 轴方向。');
+    if (currentY === 0 && currentX !== 0) obsMsgs.push('y 分量为 0，向量沿 x 轴方向。');
+
+    if (obsMsgs.length > 0) {
+      obsEl.textContent = obsMsgs.join(' ');
+      obsEl.className = 'feedback-msg info show';
+    } else {
+      obsEl.className = 'feedback-msg info';
+      obsEl.style.display = 'none';
+    }
+
+    if (Object.keys(visitedQuadrants).length >= 4) {
+      if (!interactionComplete) {
+        interactionComplete = true;
+        trackEvent('interaction_complete', {
+          quadrants_visited: Object.keys(visitedQuadrants),
+          drag_count: dragCount
+        });
+      }
+    }
+  }
+
+  function drawCanvas() {
+    ctx.clearRect(0, 0, W, H);
+
+    // 背景网格
+    ctx.strokeStyle = '#1a2a4a';
+    ctx.lineWidth = 0.5;
+    for (var i = -5; i <= 5; i++) {
+      var px = originX + i * scale;
+      var py = originY + i * scale;
+      ctx.beginPath();
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, H);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, py);
+      ctx.lineTo(W, py);
+      ctx.stroke();
+    }
+
+    // 坐标轴
+    ctx.strokeStyle = '#4466aa';
+    ctx.lineWidth = 1.5;
+    // x 轴
+    ctx.beginPath();
+    ctx.moveTo(0, originY);
+    ctx.lineTo(W, originY);
+    ctx.stroke();
+    // y 轴
+    ctx.beginPath();
+    ctx.moveTo(originX, 0);
+    ctx.lineTo(originX, H);
+    ctx.stroke();
+
+    // 轴标签
+    ctx.fillStyle = '#6688bb';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('x', W - 16, originY - 6);
+    ctx.fillText('y', originX + 6, 16);
+    ctx.fillText('O', originX + 4, originY + 14);
+
+    // 刻度
+    ctx.fillStyle = '#5577aa';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    for (var t = -5; t <= 5; t++) {
+      if (t === 0) continue;
+      ctx.fillText(t, originX + t * scale, originY + 14);
+      ctx.textAlign = 'right';
+      ctx.fillText(t, originX - 6, originY - t * scale + 4);
+      ctx.textAlign = 'center';
+    }
+
+    // 绘制向量箭头
+    var endX = originX + currentX * scale;
+    var endY = originY - currentY * scale;
+
+    // 箭头线段
+    ctx.strokeStyle = '#e94560';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+
+    // 箭头头部
+    var angle = Math.atan2(originY - endY, endX - originX);
+    var headLen = 14;
+    ctx.fillStyle = '#e94560';
+    ctx.beginPath();
+    ctx.moveTo(endX, endY);
+    ctx.lineTo(endX - headLen * Math.cos(angle - 0.35), endY + headLen * Math.sin(angle - 0.35));
+    ctx.lineTo(endX - headLen * Math.cos(angle + 0.35), endY + headLen * Math.sin(angle + 0.35));
+    ctx.closePath();
+    ctx.fill();
+
+    // 起点圆
+    ctx.fillStyle = '#00e5ff';
+    ctx.beginPath();
+    ctx.arc(originX, originY, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 终点圆（可拖拽）
+    ctx.fillStyle = '#f0c040';
+    ctx.beginPath();
+    ctx.arc(endX, endY, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 分量虚线
+    ctx.strokeStyle = 'rgba(0,229,255,0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    // x 分量水平虚线
+    ctx.beginPath();
+    ctx.moveTo(originX, originY);
+    ctx.lineTo(endX, originY);
+    ctx.stroke();
+    // y 分量垂直虚线
+    ctx.beginPath();
+    ctx.moveTo(endX, originY);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 分量标注
+    ctx.font = 'bold 12px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    if (Math.abs(currentX) > 0.3) {
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillText('x=' + currentX.toFixed(1), (originX + endX) / 2, originY + 18);
+    }
+    ctx.textAlign = 'right';
+    if (Math.abs(currentY) > 0.3) {
+      ctx.fillStyle = '#00e5ff';
+      ctx.fillText('y=' + currentY.toFixed(1), endX - 10, (originY + endY) / 2 + 4);
+    }
+
+    // 长度标注
+    var len = Math.sqrt(currentX * currentX + currentY * currentY);
+    if (len > 0.5) {
+      var midX = (originX + endX) / 2;
+      var midY = (originY + endY) / 2;
+      ctx.font = 'bold 13px "Courier New", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#ff6b8a';
+      ctx.fillText('‖v‖=' + len.toFixed(2), midX + 12, midY - 8);
+    }
+
+    ctx.textAlign = 'start';
+  }
+
+  // 鼠标/触摸交互
+  function getCanvasCoords(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = W / rect.width;
+    var scaleY = H / rect.height;
+    var clientX, clientY;
+    if (e.touches) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    return {
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
+    };
+  }
+
+  function handleDragStart(e) {
+    e.preventDefault();
+    var pos = getCanvasCoords(e);
+    var endX = originX + currentX * scale;
+    var endY = originY - currentY * scale;
+    var dist = Math.sqrt((pos.x - endX) * (pos.x - endX) + (pos.y - endY) * (pos.y - endY));
+    if (dist < 20) {
+      isDragging = true;
+    }
+  }
+
+  function handleDragMove(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    var pos = getCanvasCoords(e);
+    var newX = (pos.x - originX) / scale;
+    var newY = -(pos.y - originY) / scale;
+
+    // 限制范围
+    newX = Math.max(-5, Math.min(5, newX));
+    newY = Math.max(-5, Math.min(5, newY));
+
+    newX = Math.round(newX * 10) / 10;
+    newY = Math.round(newY * 10) / 10;
+
+    currentX = newX;
+    currentY = newY;
+    dragCount++;
+
+    updateDisplay();
+    trackEvent('interaction_change', { x: currentX, y: currentY, source: 'drag' });
+  }
+
+  function handleDragEnd(e) {
+    isDragging = false;
+  }
+
+  // 滑块交互
+  function onSliderChange() {
+    var sx = parseFloat(document.getElementById('slider-x').value);
+    var sy = parseFloat(document.getElementById('slider-y').value);
+    currentX = sx;
+    currentY = sy;
+    document.getElementById('slider-x-val').textContent = sx.toFixed(1);
+    document.getElementById('slider-y-val').textContent = sy.toFixed(1);
+    updateDisplay();
+    trackEvent('interaction_change', { x: currentX, y: currentY, source: 'slider' });
+  }
+
+  // 按钮交互
+  function resetVector() {
+    currentX = 3.0;
+    currentY = 4.0;
+    hasReset = true;
+    updateDisplay();
+    trackEvent('interaction_change', { x: currentX, y: currentY, source: 'reset' });
+  }
+
+  function randomVector() {
+    currentX = Math.round((Math.random() * 10 - 5) * 2) / 2;
+    currentY = Math.round((Math.random() * 10 - 5) * 2) / 2;
+    hasRandom = true;
+    updateDisplay();
+    trackEvent('interaction_change', { x: currentX, y: currentY, source: 'random' });
+  }
+
+  function toggleHint() {
+    var box = document.getElementById('hint-box');
+    if (hintBoxVisible) {
+      box.classList.remove('show');
+      hintBoxVisible = false;
+    } else {
+      box.classList.add('show');
+      hintBoxVisible = true;
+      hintUsed = true;
+      trackEvent('hint_used', { interaction_state: getInteractionState() });
+    }
+  }
+
+  // 信心评分
+  function initStars() {
+    var btns = document.querySelectorAll('.star-btn');
+    var labels = ['', '还需帮助', '有些困难', '基本理解', '理解良好', '完全掌握'];
+    btns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var val = parseInt(this.getAttribute('data-val'));
+        selectedConfidence = val;
+        btns.forEach(function(b, i) {
+          b.classList.toggle('active', i < val);
+        });
+        document.getElementById('confidence-label').textContent = labels[val];
+        trackEvent('confidence_submitted', { confidence: val });
+      });
+    });
+  }
+
+  // 反思
+  function initReflection() {
+    var opts = document.querySelectorAll('.reflection-opt');
+    opts.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        opts.forEach(function(o) { o.classList.remove('selected'); });
+        this.classList.add('selected');
+        selectedReflection = this.getAttribute('data-val');
+      });
+    });
+
+    document.getElementById('btn-submit-reflection').addEventListener('click', function() {
+      var text = document.getElementById('reflection-text').value.trim();
+      trackEvent('reflection_submitted', {
+        reflection_choice: selectedReflection,
+        reflection_text: text,
+        confidence: selectedConfidence,
+        interaction_state: getInteractionState()
+      });
+      this.textContent = '✓ 已提交';
+      this.style.background = '#1b7a52';
+      this.disabled = true;
+    });
+  }
+
+  // 初始化
+  function init() {
+    canvas = document.getElementById('vectorCanvas');
+    ctx = canvas.getContext('2d');
+    W = canvas.width;
+    H = canvas.height;
+    originX = W / 2;
+    originY = H / 2;
+    scale = Math.min(W, H) / 12;
+
+    // 事件绑定
+    canvas.addEventListener('mousedown', handleDragStart);
+    canvas.addEventListener('mousemove', handleDragMove);
+    canvas.addEventListener('mouseup', handleDragEnd);
+    canvas.addEventListener('mouseleave', handleDragEnd);
+    canvas.addEventListener('touchstart', handleDragStart, { passive: false });
+    canvas.addEventListener('touchmove', handleDragMove, { passive: false });
+    canvas.addEventListener('touchend', handleDragEnd);
+
+    document.getElementById('slider-x').addEventListener('input', onSliderChange);
+    document.getElementById('slider-y').addEventListener('input', onSliderChange);
+    document.getElementById('btn-reset').addEventListener('click', resetVector);
+    document.getElementById('btn-random').addEventListener('click', randomVector);
+    document.getElementById('btn-hint').addEventListener('click', toggleHint);
+
+    initStars();
+    initReflection();
+
+    // 初始绘制
+    updateDisplay();
+
+    // 显示初始反馈
+    document.getElementById('feedback-drag').classList.add('show');
+
+    // 页面加载事件
+    trackEvent('page_loaded', {
+      initial_state: getInteractionState()
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

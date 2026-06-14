@@ -1,0 +1,1295 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一条曲线上怎样找最低点</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --text-muted: #6e7681;
+            --accent-gold: #f0b429;
+            --accent-orange: #ff7b00;
+            --accent-cyan: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-red: #f85149;
+            --border-color: #30363d;
+            --card-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+            position: relative;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-gold));
+            border-radius: 2px;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-gold), var(--accent-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+        
+        .learning-goal {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1000px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .interaction-panel {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .panel-header {
+            background: var(--bg-tertiary);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .panel-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+        }
+        
+        .canvas-container {
+            position: relative;
+            background: linear-gradient(180deg, #0a0e14 0%, #12171d 100%);
+        }
+        
+        #mainCanvas {
+            display: block;
+            cursor: crosshair;
+        }
+        
+        .canvas-overlay {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(13, 17, 23, 0.9);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .canvas-overlay .formula {
+            color: var(--accent-gold);
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .feedback-panel {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .feedback-section {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .feedback-section:last-child {
+            border-bottom: none;
+        }
+        
+        .section-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .derivative-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .derivative-display.negative {
+            color: var(--accent-red);
+        }
+        
+        .derivative-display.positive {
+            color: var(--accent-green);
+        }
+        
+        .derivative-display.zero {
+            color: var(--accent-gold);
+        }
+        
+        .sign-indicators {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .sign-box {
+            flex: 1;
+            padding: 14px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .sign-box.active {
+            border-color: var(--accent-cyan);
+            background: rgba(88, 166, 255, 0.1);
+        }
+        
+        .sign-box .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        
+        .sign-box .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        
+        .sign-box .value.negative { color: var(--accent-red); }
+        .sign-box .value.positive { color: var(--accent-green); }
+        .sign-box .value.zero { color: var(--accent-gold); }
+        
+        .candidate-status {
+            margin-top: 16px;
+            padding: 14px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .candidate-status.is-candidate {
+            background: linear-gradient(135deg, rgba(240, 180, 41, 0.2), rgba(255, 123, 0, 0.2));
+            border: 1px solid var(--accent-gold);
+            color: var(--accent-gold);
+        }
+        
+        .candidate-status.not-candidate {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+        
+        .point-coords {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .coord-item {
+            background: var(--bg-tertiary);
+            padding: 10px 14px;
+            border-radius: 8px;
+        }
+        
+        .coord-item .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .coord-item .value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            color: var(--accent-cyan);
+        }
+        
+        .intuition-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .intuition-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent-gold);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .intuition-content {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+        
+        .intuition-content strong {
+            color: var(--text-primary);
+        }
+        
+        .concept-card {
+            background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .concept-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-gold), var(--accent-cyan));
+        }
+        
+        .concept-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        
+        .concept-list {
+            list-style: none;
+        }
+        
+        .concept-list li {
+            padding: 10px 0;
+            padding-left: 28px;
+            position: relative;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .concept-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .concept-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+            background: var(--bg-primary);
+            border: 2px solid var(--accent-cyan);
+        }
+        
+        .concept-list li::after {
+            content: '✓';
+            position: absolute;
+            left: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent-green);
+            font-size: 0.7rem;
+            opacity: 0;
+        }
+        
+        .concept-list li.completed::after {
+            opacity: 1;
+        }
+        
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-gold));
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(240, 180, 41, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+        
+        .bottom-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        
+        @media (max-width: 800px) {
+            .bottom-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .confidence-panel, .reflection-panel {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .panel-heading {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        
+        .confidence-scale {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .confidence-btn {
+            flex: 1;
+            padding: 14px 8px;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .confidence-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--text-primary);
+        }
+        
+        .confidence-btn.selected {
+            border-color: var(--accent-gold);
+            background: rgba(240, 180, 41, 0.15);
+            color: var(--accent-gold);
+        }
+        
+        .confidence-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .reflection-option {
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+        
+        .reflection-option:hover {
+            border-color: var(--accent-cyan);
+            color: var(--text-primary);
+        }
+        
+        .reflection-option.selected {
+            border-color: var(--accent-green);
+            background: rgba(63, 185, 80, 0.1);
+            color: var(--accent-green);
+        }
+        
+        .hint-text {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(88, 166, 255, 0.1);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--accent-cyan);
+            display: none;
+        }
+        
+        .hint-text.visible {
+            display: block;
+        }
+        
+        .step-indicator {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border-color);
+            transition: all 0.3s ease;
+        }
+        
+        .step-dot.active {
+            background: var(--accent-gold);
+            box-shadow: 0 0 8px var(--accent-gold);
+        }
+        
+        .step-dot.completed {
+            background: var(--accent-green);
+        }
+        
+        .message-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--accent-gold);
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            color: var(--accent-gold);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .message-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+        }
+        
+        .tangent-line-info {
+            margin-top: 12px;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+        }
+        
+        .tangent-line-info .label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .tangent-line-info .equation {
+            font-family: 'Courier New', monospace;
+            color: var(--accent-cyan);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>一条曲线上怎样找最低点</h1>
+            <p class="learning-goal">掌握通过导数找一元函数极值的方法：找出导数为零的点，检查端点，用导数符号变化判断最小值。</p>
+        </header>
+        
+        <div class="intuition-section">
+            <div class="intuition-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                直觉解释
+            </div>
+            <div class="intuition-content">
+                <strong>一元函数的局部极值通常出现在导数为零的点或端点。</strong>想象你在山上行走，走到山谷底部时，无论往哪个方向走都是上坡——此时斜率为零。导数的<strong>符号变化</strong>能帮助判断：从负变正说明是山谷（最小值），从正变负说明是山顶（最大值）。
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="interaction-panel">
+                <div class="panel-header">
+                    <div class="panel-title">交互区域：在曲线上探索极值点</div>
+                    <div class="controls-row">
+                        <button class="btn btn-secondary" id="hintBtn">显示提示</button>
+                        <button class="btn btn-primary" id="resetBtn">重置</button>
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="mainCanvas" width="820" height="450"></canvas>
+                    <div class="canvas-overlay">
+                        <span>函数：</span>
+                        <span class="formula" id="formulaDisplay">f(x) = x³ - 3x + 1</span>
+                    </div>
+                </div>
+                <div class="feedback-section">
+                    <div class="legend">
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #58a6ff;"></div>
+                            <span>函数曲线</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #f0b429;"></div>
+                            <span>当前选中点</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: #3fb950;"></div>
+                            <span>切线</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: rgba(240,180,41,0.3);"></div>
+                            <span>候选极值点</span>
+                        </div>
+                    </div>
+                    <div class="hint-text" id="hintText">
+                        提示：将鼠标移到曲线上的"平坦"位置，观察导数值接近零的点。特别注意曲线从下降变为上升的位置——那里可能有最小值。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="feedback-panel">
+                <div class="feedback-section">
+                    <div class="section-label">当前点信息</div>
+                    <div class="point-coords">
+                        <div class="coord-item">
+                            <div class="label">x 坐标</div>
+                            <div class="value" id="xCoord">--</div>
+                        </div>
+                        <div class="coord-item">
+                            <div class="label">y 坐标</div>
+                            <div class="value" id="yCoord">--</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feedback-section">
+                    <div class="section-label">导数值 f'(x)</div>
+                    <div class="derivative-display" id="derivativeValue">--</div>
+                    <div class="tangent-line-info">
+                        <div class="label">切线方程</div>
+                        <div class="equation" id="tangentEquation">--</div>
+                    </div>
+                </div>
+                
+                <div class="feedback-section">
+                    <div class="section-label">导数符号变化</div>
+                    <div class="sign-indicators">
+                        <div class="sign-box" id="leftSign">
+                            <div class="label">左侧导数</div>
+                            <div class="value" id="leftSignValue">--</div>
+                        </div>
+                        <div class="sign-box" id="rightSign">
+                            <div class="label">右侧导数</div>
+                            <div class="value" id="rightSignValue">--</div>
+                        </div>
+                    </div>
+                    <div class="candidate-status not-candidate" id="candidateStatus">
+                        移动鼠标到曲线上探索
+                    </div>
+                </div>
+                
+                <div class="feedback-section">
+                    <div class="section-label">探索进度</div>
+                    <div class="step-indicator">
+                        <div class="step-dot" id="step1"></div>
+                        <div class="step-dot" id="step2"></div>
+                        <div class="step-dot" id="step3"></div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);" id="stepText">
+                        步骤1：找到一个导数接近零的点
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="concept-card">
+            <div class="concept-title">核心概念：一元无约束优化的关键步骤</div>
+            <ul class="concept-list">
+                <li id="concept1">找出使 f'(x) = 0 的点（驻点）</li>
+                <li id="concept2">检查函数定义域的端点</li>
+                <li id="concept3">用导数符号变化判断极小值（负→正）</li>
+            </ul>
+        </div>
+        
+        <div class="bottom-section">
+            <div class="confidence-panel">
+                <div class="panel-heading">信心评分</div>
+                <div class="confidence-labels">
+                    <span>完全不懂</span>
+                    <span>非常理解</span>
+                </div>
+                <div class="confidence-scale">
+                    <button class="confidence-btn" data-score="1">1</button>
+                    <button class="confidence-btn" data-score="2">2</button>
+                    <button class="confidence-btn" data-score="3">3</button>
+                    <button class="confidence-btn" data-score="4">4</button>
+                    <button class="confidence-btn" data-score="5">5</button>
+                </div>
+            </div>
+            
+            <div class="reflection-panel">
+                <div class="panel-heading">简短反思</div>
+                <div class="reflection-options">
+                    <button class="reflection-option" data-reflection="understand">我理解了如何通过导数找极值点</button>
+                    <button class="reflection-option" data-reflection="partial">我理解了一部分，还需要更多练习</button>
+                    <button class="reflection-option" data-reflection="confused">我还有疑问，需要进一步解释</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="message-toast" id="messageToast"></div>
+    
+    <script>
+        // 课程元数据
+        window.MAIC_LESSON_META = {
+            lesson_id: 'D-03',
+            module_id: 'OM-D1',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '一元无约束优化'
+        };
+        
+        // 全局状态
+        var startTime = Date.now();
+        var currentPoint = null;
+        var candidatePoints = [];
+        var completedSteps = [false, false, false];
+        var confidenceScore = null;
+        var reflectionChoice = null;
+        var hintUsed = false;
+        
+        // Canvas 相关变量
+        var canvas = null;
+        var ctx = null;
+        var canvasWidth = 820;
+        var canvasHeight = 450;
+        
+        // 坐标系参数
+        var xMin = -3;
+        var xMax = 3;
+        var yMin = -4;
+        var yMax = 4;
+        var padding = 50;
+        
+        // 函数定义
+        function f(x) {
+            return x * x * x - 3 * x + 1;
+        }
+        
+        function fPrime(x) {
+            return 3 * x * x - 3;
+        }
+        
+        // 坐标转换
+        function toCanvasX(x) {
+            return padding + (x - xMin) / (xMax - xMin) * (canvasWidth - 2 * padding);
+        }
+        
+        function toCanvasY(y) {
+            return canvasHeight - padding - (y - yMin) / (yMax - yMin) * (canvasHeight - 2 * padding);
+        }
+        
+        function toMathX(canvasX) {
+            return xMin + (canvasX - padding) / (canvasWidth - 2 * padding) * (xMax - xMin);
+        }
+        
+        function toMathY(canvasY) {
+            return yMax - (canvasY - padding) / (canvasHeight - 2 * padding) * (yMax - yMin);
+        }
+        
+        // 行为追踪
+        function trackEvent(eventType, payload) {
+            var now = Date.now();
+            var event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: now - startTime,
+                interaction_state: {
+                    current_point: currentPoint,
+                    candidate_points: candidatePoints,
+                    completed_steps: completedSteps,
+                    hint_used: hintUsed,
+                    confidence_score: confidenceScore,
+                    reflection_choice: reflectionChoice
+                }
+            };
+            
+            if (payload) {
+                Object.assign(event, payload);
+            }
+            
+            var events = [];
+            try {
+                var stored = localStorage.getItem('maic_learning_events');
+                if (stored) {
+                    events = JSON.parse(stored);
+                }
+            } catch (e) {
+                events = [];
+            }
+            events.push(event);
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'maic_learning_event',
+                    payload: event
+                }, '*');
+            }
+        }
+        
+        // 绘制网格
+        function drawGrid() {
+            ctx.strokeStyle = '#1e252d';
+            ctx.lineWidth = 1;
+            
+            for (var x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+                var cx = toCanvasX(x);
+                ctx.beginPath();
+                ctx.moveTo(cx, padding);
+                ctx.lineTo(cx, canvasHeight - padding);
+                ctx.stroke();
+            }
+            
+            for (var y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+                var cy = toCanvasY(y);
+                ctx.beginPath();
+                ctx.moveTo(padding, cy);
+                ctx.lineTo(canvasWidth - padding, cy);
+                ctx.stroke();
+            }
+        }
+        
+        // 绘制坐标轴
+        function drawAxes() {
+            ctx.strokeStyle = '#4a5568';
+            ctx.lineWidth = 2;
+            
+            // X轴
+            var yZero = toCanvasY(0);
+            ctx.beginPath();
+            ctx.moveTo(padding, yZero);
+            ctx.lineTo(canvasWidth - padding, yZero);
+            ctx.stroke();
+            
+            // Y轴
+            var xZero = toCanvasX(0);
+            ctx.beginPath();
+            ctx.moveTo(xZero, padding);
+            ctx.lineTo(xZero, canvasHeight - padding);
+            ctx.stroke();
+            
+            // 刻度标签
+            ctx.fillStyle = '#6e7681';
+            ctx.font = '12px -apple-system, sans-serif';
+            ctx.textAlign = 'center';
+            
+            for (var x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+                if (x !== 0) {
+                    ctx.fillText(x.toString(), toCanvasX(x), yZero + 18);
+                }
+            }
+            
+            ctx.textAlign = 'right';
+            for (var y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+                if (y !== 0) {
+                    ctx.fillText(y.toString(), xZero - 8, toCanvasY(y) + 4);
+                }
+            }
+        }
+        
+        // 绘制函数曲线
+        function drawCurve() {
+            ctx.strokeStyle = '#58a6ff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            var first = true;
+            for (var px = padding; px <= canvasWidth - padding; px += 2) {
+                var x = toMathX(px);
+                var y = f(x);
+                var py = toCanvasY(y);
+                
+                if (py >= padding && py <= canvasHeight - padding) {
+                    if (first) {
+                        ctx.moveTo(px, py);
+                        first = false;
+                    } else {
+                        ctx.lineTo(px, py);
+                    }
+                }
+            }
+            ctx.stroke();
+        }
+        
+        // 绘制候选点标记
+        function drawCandidatePoints() {
+            for (var i = 0; i < candidatePoints.length; i++) {
+                var pt = candidatePoints[i];
+                var cx = toCanvasX(pt.x);
+                var cy = toCanvasY(pt.y);
+                
+                ctx.beginPath();
+                ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(240, 180, 41, 0.3)';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+                ctx.fillStyle = '#f0b429';
+                ctx.fill();
+            }
+        }
+        
+        // 绘制当前点和切线
+        function drawCurrentPoint() {
+            if (!currentPoint) return;
+            
+            var cx = toCanvasX(currentPoint.x);
+            var cy = toCanvasY(currentPoint.y);
+            
+            // 切线
+            var slope = fPrime(currentPoint.x);
+            var dx = 1.5;
+            var x1 = currentPoint.x - dx;
+            var y1 = currentPoint.y + slope * (x1 - currentPoint.x);
+            var x2 = currentPoint.x + dx;
+            var y2 = currentPoint.y + slope * (x2 - currentPoint.x);
+            
+            ctx.strokeStyle = '#3fb950';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(toCanvasX(x1), toCanvasY(y1));
+            ctx.lineTo(toCanvasX(x2), toCanvasY(y2));
+            ctx.stroke();
+            
+            // 当前点
+            ctx.beginPath();
+            ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#f0b429';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+        
+        // 主绘制函数
+        function draw() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            
+            drawGrid();
+            drawAxes();
+            drawCurve();
+            drawCandidatePoints();
+            drawCurrentPoint();
+        }
+        
+        // 更新反馈面板
+        function updateFeedback() {
+            if (!currentPoint) {
+                document.getElementById('xCoord').textContent = '--';
+                document.getElementById('yCoord').textContent = '--';
+                document.getElementById('derivativeValue').textContent = '--';
+                document.getElementById('derivativeValue').className = 'derivative-display';
+                document.getElementById('leftSignValue').textContent = '--';
+                document.getElementById('rightSignValue').textContent = '--';
+                document.getElementById('tangentEquation').textContent = '--';
+                document.getElementById('leftSign').classList.remove('active');
+                document.getElementById('rightSign').classList.remove('active');
+                return;
+            }
+            
+            var x = currentPoint.x;
+            var y = currentPoint.y;
+            var deriv = fPrime(x);
+            
+            document.getElementById('xCoord').textContent = x.toFixed(3);
+            document.getElementById('yCoord').textContent = y.toFixed(3);
+            
+            var derivEl = document.getElementById('derivativeValue');
+            derivEl.textContent = deriv.toFixed(4);
+            derivEl.className = 'derivative-display';
+            if (Math.abs(deriv) < 0.1) {
+                derivEl.classList.add('zero');
+            } else if (deriv > 0) {
+                derivEl.classList.add('positive');
+            } else {
+                derivEl.classList.add('negative');
+            }
+            
+            // 导数符号
+            var leftDeriv = fPrime(x - 0.1);
+            var rightDeriv = fPrime(x + 0.1);
+            
+            var leftSignEl = document.getElementById('leftSignValue');
+            var rightSignEl = document.getElementById('rightSignValue');
+            
+            leftSignEl.textContent = leftDeriv > 0.1 ? '+' : (leftDeriv < -0.1 ? '−' : '0');
+            leftSignEl.className = 'value ' + (leftDeriv > 0.1 ? 'positive' : (leftDeriv < -0.1 ? 'negative' : 'zero'));
+            
+            rightSignEl.textContent = rightDeriv > 0.1 ? '+' : (rightDeriv < -0.1 ? '−' : '0');
+            rightSignEl.className = 'value ' + (rightDeriv > 0.1 ? 'positive' : (rightDeriv < -0.1 ? 'negative' : 'zero'));
+            
+            document.getElementById('leftSign').classList.add('active');
+            document.getElementById('rightSign').classList.add('active');
+            
+            // 切线方程
+            var b = y - deriv * x;
+            var bStr = b >= 0 ? '+ ' + b.toFixed(2) : '− ' + Math.abs(b).toFixed(2);
+            var slopeStr = deriv >= 0 ? deriv.toFixed(2) : '(' + deriv.toFixed(2) + ')';
+            document.getElementById('tangentEquation').textContent = 'y = ' + slopeStr + 'x ' + bStr;
+            
+            // 候选状态
+            var statusEl = document.getElementById('candidateStatus');
+            var isNearZero = Math.abs(deriv) < 0.2;
+            var signChange = (leftDeriv < 0 && rightDeriv > 0);
+            
+            if (isNearZero) {
+                if (signChange) {
+                    statusEl.textContent = '这是极小值候选点！导数由负变正';
+                    statusEl.className = 'candidate-status is-candidate';
+                } else if (leftDeriv > 0 && rightDeriv < 0) {
+                    statusEl.textContent = '这是极大值候选点！导数由正变负';
+                    statusEl.className = 'candidate-status is-candidate';
+                } else {
+                    statusEl.textContent = '驻点（导数为零），但不是极值点';
+                    statusEl.className = 'candidate-status not-candidate';
+                }
+            } else {
+                var direction = deriv > 0 ? '上升' : '下降';
+                statusEl.textContent = '曲线正在' + direction + '，不是极值点';
+                statusEl.className = 'candidate-status not-candidate';
+            }
+            
+            // 更新步骤进度
+            updateProgress();
+        }
+        
+        // 更新进度
+        function updateProgress() {
+            if (!currentPoint) return;
+            
+            var deriv = Math.abs(fPrime(currentPoint.x));
+            var leftDeriv = fPrime(currentPoint.x - 0.1);
+            var rightDeriv = fPrime(currentPoint.x + 0.1);
+            
+            // 步骤1：找到导数接近零的点
+            if (!completedSteps[0] && deriv < 0.3) {
+                completedSteps[0] = true;
+                document.getElementById('step1').classList.add('completed');
+                document.getElementById('step1').classList.remove('active');
+                document.getElementById('step2').classList.add('active');
+                document.getElementById('stepText').textContent = '步骤2：检查端点和定义域边界';
+                
+                trackEvent('interaction_change', { step_completed: 1, point_x: currentPoint.x });
+            }
+            
+            // 步骤2：观察符号变化
+            if (!completedSteps[1] && completedSteps[0] && leftDeriv * rightDeriv < 0) {
+                completedSteps[1] = true;
+                document.getElementById('step2').classList.add('completed');
+                document.getElementById('step2').classList.remove('active');
+                document.getElementById('step3').classList.add('active');
+                document.getElementById('stepText').textContent = '步骤3：用导数符号判断极小值（负→正）';
+                
+                trackEvent('interaction_change', { step_completed: 2, point_x: currentPoint.x });
+            }
+            
+            // 步骤3：确认极小值
+            if (!completedSteps[2] && completedSteps[1] && leftDeriv < 0 && rightDeriv > 0) {
+                completedSteps[2] = true;
+                document.getElementById('step3').classList.add('completed');
+                document.getElementById('step3').classList.remove('active');
+                document.getElementById('stepText').textContent = '完成！你找到了一个局部最小值点';
+                
+                // 标记概念卡
+                document.getElementById('concept1').classList.add('completed');
+                document.getElementById('concept3').classList.add('completed');
+                
+                // 添加到候选点
+                var exists = candidatePoints.some(function(p) {
+                    return Math.abs(p.x - currentPoint.x) < 0.2;
+                });
+                if (!exists) {
+                    candidatePoints.push({ x: currentPoint.x, y: currentPoint.y });
+                }
+                
+                trackEvent('interaction_complete', { 
+                    step_completed: 3, 
+                    point_x: currentPoint.x,
+                    candidate_points: candidatePoints.length
+                });
+                
+                showToast('太棒了！你成功找到了一个局部最小值点');
+            }
+        }
+        
+        // 显示提示
+        function showToast(message) {
+            var toast = document.getElementById('messageToast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // 初始化
+        function init() {
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 检查设备像素比
+            var dpr = window.devicePixelRatio || 1;
+            var rect = canvas.getBoundingClientRect();
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            canvasWidth = rect.width;
+            canvasHeight = rect.height;
+            
+            // 初始绘制
+            draw();
+            
+            // 事件监听
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('click', handleClick);
+            
+            document.getElementById('hintBtn').addEventListener('click', function() {
+                hintUsed = true;
+                document.getElementById('hintText').classList.add('visible');
+                trackEvent('hint_used', { hint_shown: true });
+            });
+            
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                currentPoint = null;
+                candidatePoints = [];
+                completedSteps = [false, false, false];
+                
+                document.getElementById('step1').className = 'step-dot active';
+                document.getElementById('step2').className = 'step-dot';
+                document.getElementById('step3').className = 'step-dot';
+                document.getElementById('stepText').textContent = '步骤1：找到一个导数接近零的点';
+                
+                document.getElementById('concept1').classList.remove('completed');
+                document.getElementById('concept3').classList.remove('completed');
+                
+                document.getElementById('hintText').classList.remove('visible');
+                
+                draw();
+                updateFeedback();
+                
+                trackEvent('interaction_change', { action: 'reset' });
+            });
+            
+            // 信心评分
+            var confBtns = document.querySelectorAll('.confidence-btn');
+            confBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    confBtns.forEach(function(b) { b.classList.remove('selected'); });
+                    btn.classList.add('selected');
+                    confidenceScore = parseInt(btn.dataset.score);
+                    
+                    trackEvent('confidence_submitted', { score: confidenceScore });
+                    showToast('已记录你的信心评分：' + confidenceScore + ' 分');
+                });
+            });
+            
+            // 反思选项
+            var refBtns = document.querySelectorAll('.reflection-option');
+            refBtns.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    refBtns.forEach(function(b) { b.classList.remove('selected'); });
+                    btn.classList.add('selected');
+                    reflectionChoice = btn.dataset.reflection;
+                    
+                    trackEvent('reflection_submitted', { choice: reflectionChoice });
+                    showToast('感谢你的反思！已记录');
+                });
+            });
+            
+            trackEvent('page_loaded', { canvas_initialized: true });
+        }
+        
+        function handleMouseMove(e) {
+            var rect = canvas.getBoundingClientRect();
+            var mouseX = e.clientX - rect.left;
+            var mouseY = e.clientY - rect.top;
+            
+            // 转换为数学坐标
+            var mathX = toMathX(mouseX);
+            
+            // 检查是否在有效范围内
+            if (mathX < xMin || mathX > xMax) {
+                currentPoint = null;
+                draw();
+                updateFeedback();
+                return;
+            }
+            
+            // 计算曲线上对应的点
+            var mathY = f(mathX);
+            var curveY = toCanvasY(mathY);
+            
+            // 检查鼠标是否接近曲线
+            if (Math.abs(mouseY - curveY) < 30) {
+                currentPoint = { x: mathX, y: mathY };
+                draw();
+                updateFeedback();
+            } else {
+                currentPoint = null;
+                draw();
+                updateFeedback();
+            }
+        }
+        
+        function handleClick(e) {
+            if (currentPoint && Math.abs(fPrime(currentPoint.x)) < 0.3) {
+                var exists = candidatePoints.some(function(p) {
+                    return Math.abs(p.x - currentPoint.x) < 0.2;
+                });
+                if (!exists) {
+                    candidatePoints.push({ x: currentPoint.x, y: currentPoint.y });
+                    draw();
+                    
+                    trackEvent('interaction_change', { 
+                        action: 'mark_candidate',
+                        point_x: currentPoint.x,
+                        total_candidates: candidatePoints.length
+                    });
+                    
+                    showToast('已标记候选点 x = ' + currentPoint.x.toFixed(2));
+                }
+            }
+        }
+        
+        // DOM加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

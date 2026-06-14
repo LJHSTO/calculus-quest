@@ -1,0 +1,676 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>斜率是变化快慢的第一种语言</title>
+    <style>
+        :root {
+            --bg-dark: #1e1e1e;
+            --panel-bg: #252526;
+            --text-main: #d4d4d4;
+            --accent-blue: #4fc1ff;
+            --accent-yellow: #dcdcaa;
+            --accent-green: #b5cea8;
+            --accent-red: #f48771;
+            --border-color: #404040;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .learning-objective, .intuition {
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .interactive-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .interactive-area {
+                flex-direction: row;
+            }
+        }
+
+        .left-panel, .right-panel {
+            background-color: var(--panel-bg);
+            border-radius: 8px;
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-panel {
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #1a1a1a;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: grab;
+            touch-action: none;
+            max-width: 100%;
+        }
+
+        canvas:active {
+            cursor: grabbing;
+        }
+
+        .math-expr {
+            font-family: "Cambria Math", "Times New Roman", serif;
+            font-size: 1.1em;
+            letter-spacing: 0.5px;
+        }
+
+        .frac {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            vertical-align: middle;
+            margin: 0 4px;
+        }
+
+        .frac > span {
+            padding: 2px 4px;
+            line-height: 1.2;
+        }
+
+        .frac .top {
+            border-bottom: 1px solid var(--text-main);
+        }
+
+        .step-box {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 3px solid var(--accent-yellow);
+        }
+
+        .derivation-box {
+            background-color: rgba(79, 193, 255, 0.1);
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 15px;
+            border: 1px dashed var(--accent-blue);
+        }
+
+        .feedback-banner {
+            text-align: center;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 10px;
+            background-color: #333;
+            transition: all 0.3s ease;
+        }
+
+        .concept-card {
+            background: linear-gradient(135deg, #2d2d30 0%, #1e1e1e 100%);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .rating-section, .reflection-section {
+            background-color: var(--panel-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .rating-stars {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .star-btn {
+            background-color: #333;
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .star-btn:hover, .star-btn.selected {
+            background-color: var(--accent-yellow);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        .reflection-btn {
+            background-color: #333;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            width: 80%;
+            max-width: 400px;
+            transition: all 0.2s;
+        }
+
+        .reflection-btn:hover, .reflection-btn.selected {
+            background-color: var(--accent-blue);
+            color: #fff;
+            border-color: var(--accent-blue);
+        }
+
+        .highlight-val {
+            font-weight: bold;
+            color: var(--accent-yellow);
+        }
+
+        .instruction {
+            color: #888;
+            font-size: 0.9em;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>斜率是变化快慢的第一种语言</h1>
+    
+    <div class="learning-objective">
+        <strong>学习目标：</strong>能根据两点计算斜率；能判断正斜率、零斜率、负斜率；能说出斜率越大表示变化越快，并体会极限思想如何推导导数。
+    </div>
+
+    <div class="intuition">
+        <strong>直觉解释：</strong>斜率描述一条直线每向右走 1 个单位，向上或向下变化多少。它是导数的前置概念。当我们计算函数曲线上两点之间的斜率时，得到的是“平均变化率”（差商）。如果让这两点无限靠近，割线就会变成切线，这时的斜率就是某一点的“瞬时变化率”，也就是导数。
+    </div>
+
+    <div class="interactive-area">
+        <!-- 左侧面板：计算步骤同步 -->
+        <div class="left-panel">
+            <h2 style="font-size: 1.2em; margin-top: 0; color: #fff;">计算步骤 (差商与极限)</h2>
+            <p>给定函数图象：<span class="math-expr" style="color: var(--accent-blue);">f(x) = 0.5x<sup>2</sup></span></p>
+            
+            <div class="step-box">
+                <strong>第 1 步：确定两点坐标</strong><br>
+                初始点 P<sub>1</sub>: (x, f(x)) = (<span id="txt-x1" class="highlight-val">1.00</span>, <span id="txt-y1">0.50</span>)<br>
+                第二点 P<sub>2</sub>: (x+δx, f(x+δx)) = (<span id="txt-x2" class="highlight-val">3.00</span>, <span id="txt-y2">4.50</span>)
+            </div>
+
+            <div class="step-box">
+                <strong>第 2 步：计算增量</strong><br>
+                水平增量 (δx) = <span id="txt-dx">2.00</span><br>
+                垂直上升量 (δy) = <span id="txt-dy">4.00</span>
+            </div>
+
+            <div class="step-box">
+                <strong>第 3 步：计算割线斜率 (平均变化率)</strong><br>
+                <div style="display: flex; align-items: center; margin-top: 5px;">
+                    斜率 m = 
+                    <div class="frac">
+                        <span class="top">δy</span>
+                        <span class="bottom">δx</span>
+                    </div>
+                    = 
+                    <div class="frac">
+                        <span class="top" id="txt-dy-frac">4.00</span>
+                        <span class="bottom" id="txt-dx-frac">2.00</span>
+                    </div>
+                    = <span id="txt-slope" class="highlight-val" style="margin-left: 5px;">2.00</span>
+                </div>
+            </div>
+
+            <div class="derivation-box">
+                <strong>极限定义推导导数思路：</strong><br>
+                将差商代数展开：<br>
+                <div class="frac">
+                    <span class="top">0.5(x+δx)<sup>2</sup> - 0.5x<sup>2</sup></span>
+                    <span class="bottom">δx</span>
+                </div>
+                = x + 0.5δx<br>
+                <span style="font-size: 0.9em; color: #aaa;">当 δx 趋近于 0 时，结果就是瞬时变化率 (导数) = x。</span>
+            </div>
+        </div>
+
+        <!-- 右侧面板：核心互动画布 -->
+        <div class="right-panel">
+            <p class="instruction">请用鼠标拖动图中的“红点”，观察斜率的变化。</p>
+            <canvas id="mathCanvas" width="500" height="400"></canvas>
+            <div id="feedback-banner" class="feedback-banner">
+                当前斜率为正，曲线正在上升。
+            </div>
+        </div>
+    </div>
+
+    <div class="concept-card">
+        <h3 style="margin-top: 0; color: var(--accent-yellow);">核心概念卡</h3>
+        <p><strong>差商（两点间的斜率）：</strong>通过计算两点之间的垂直上升量与水平距离的比值 <span class="math-expr">δy / δx</span> 得出。</p>
+        <p><strong>导数（瞬时变化率）：</strong>通过令水平增量（δx 或 h）趋近于 0，将两点间的差商转化为一点的切线斜率：<br>
+        <span class="math-expr" style="margin-left: 20px;">f'(x) = lim<sub>h→0</sub> <span class="frac"><span class="top">f(x+h) - f(x)</span><span class="bottom">h</span></span></span></p>
+    </div>
+
+    <div class="rating-section">
+        <h3>你对“使用两点计算斜率并理解极限转化”的掌握程度有几分信心？</h3>
+        <div class="rating-stars" id="confidence-stars">
+            <button class="star-btn" data-val="1">1</button>
+            <button class="star-btn" data-val="2">2</button>
+            <button class="star-btn" data-val="3">3</button>
+            <button class="star-btn" data-val="4">4</button>
+            <button class="star-btn" data-val="5">5</button>
+        </div>
+    </div>
+
+    <div class="reflection-section">
+        <h3>简短反思：在刚才的操作中，你最深的感触是什么？</h3>
+        <div class="reflection-options" id="reflection-options">
+            <button class="reflection-btn">我能清晰地看到 δy 和 δx 的比值如何决定直线的倾斜程度。</button>
+            <button class="reflection-btn">我明白了当两点无限接近时，割线就变成了切线（导数思想）。</button>
+            <button class="reflection-btn">正斜率上升、负斜率下降的几何意义非常直观。</button>
+            <button class="reflection-btn">代数公式展开和图形表现完美对应了起来。</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    window.MAIC_LESSON_META = {
+        lesson_id: 'A-03', 
+        module_id: 'OM-A1', 
+        course_version: 'demo-closed-loop-v1', 
+        concept_name: '斜率与变化率'
+    };
+
+    let startTime;
+    let canvas, ctx;
+    let canvasWidth, canvasHeight;
+    let x1 = 1.0, x2 = 3.0;
+    const dragRadius = 15;
+    let draggingPoint = null; // 1 or 2
+    let hasInteracted = false;
+    
+    // 逻辑坐标范围
+    const xMin = -4, xMax = 4;
+    const yMin = -2, yMax = 8;
+
+    // 函数定义
+    function f(x) {
+        return 0.5 * x * x;
+    }
+
+    // 追踪事件函数
+    function trackEvent(eventType, payload) {
+        const timeOnTask = Date.now() - startTime;
+        const event = {
+            lesson_id: window.MAIC_LESSON_META.lesson_id,
+            module_id: window.MAIC_LESSON_META.module_id,
+            course_version: window.MAIC_LESSON_META.course_version,
+            event_type: eventType,
+            timestamp: new Date().toISOString(),
+            time_on_task_ms: timeOnTask,
+            interaction_state: payload
+        };
+        
+        let events = [];
+        try {
+            const stored = localStorage.getItem('maic_learning_events');
+            if (stored) events = JSON.parse(stored);
+        } catch(e) {}
+        
+        events.push(event);
+        localStorage.setItem('maic_learning_events', JSON.stringify(events));
+        
+        // 跨窗口通信
+        window.parent.postMessage({
+            type: 'maic_learning_event', 
+            payload: event
+        }, '*');
+    }
+
+    // 坐标映射
+    function mapX(x) {
+        return ((x - xMin) / (xMax - xMin)) * canvasWidth;
+    }
+
+    function mapY(y) {
+        return canvasHeight - ((y - yMin) / (yMax - yMin)) * canvasHeight;
+    }
+
+    function unmapX(px) {
+        return (px / canvasWidth) * (xMax - xMin) + xMin;
+    }
+
+    function drawSystem() {
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+        // 画网格
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for(let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+            ctx.moveTo(mapX(x), 0);
+            ctx.lineTo(mapX(x), canvasHeight);
+        }
+        for(let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+            ctx.moveTo(0, mapY(y));
+            ctx.lineTo(canvasWidth, mapY(y));
+        }
+        ctx.stroke();
+
+        // 画坐标轴
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(mapX(xMin), mapY(0));
+        ctx.lineTo(mapX(xMax), mapY(0));
+        ctx.moveTo(mapX(0), mapY(yMin));
+        ctx.lineTo(mapX(0), mapY(yMax));
+        ctx.stroke();
+
+        // 原点标记
+        ctx.fillStyle = '#666';
+        ctx.font = '12px sans-serif';
+        ctx.fillText('0', mapX(0) + 5, mapY(0) + 15);
+    }
+
+    function drawFunction() {
+        ctx.strokeStyle = '#4fc1ff'; // 蓝色曲线
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for(let px = 0; px <= canvasWidth; px += 2) {
+            let x = unmapX(px);
+            let y = f(x);
+            let py = mapY(y);
+            if(px === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    }
+
+    function drawInteractiveElements() {
+        let y1 = f(x1);
+        let y2 = f(x2);
+        
+        let px1 = mapX(x1), py1 = mapY(y1);
+        let px2 = mapX(x2), py2 = mapY(y2);
+
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const isClose = Math.abs(dx) < 0.05;
+
+        // 画割线或切线
+        ctx.strokeStyle = '#dcdcaa'; // 黄色线
+        ctx.lineWidth = 2;
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        
+        if (isClose) {
+            // 画切线 (导数为 f'(x) = x)
+            let slope = x1;
+            let intercept = y1 - slope * x1;
+            let drawY1 = slope * xMin + intercept;
+            let drawY2 = slope * xMax + intercept;
+            ctx.moveTo(mapX(xMin), mapY(drawY1));
+            ctx.lineTo(mapX(xMax), mapY(drawY2));
+        } else {
+            // 画延长后的割线
+            let slope = dy / dx;
+            let intercept = y1 - slope * x1;
+            let drawY1 = slope * xMin + intercept;
+            let drawY2 = slope * xMax + intercept;
+            ctx.moveTo(mapX(xMin), mapY(drawY1));
+            ctx.lineTo(mapX(xMax), mapY(drawY2));
+        }
+        ctx.stroke();
+
+        if (!isClose) {
+            // 画辅助直角三角形 (δx 和 δy)
+            ctx.strokeStyle = '#b5cea8'; // 绿色辅助线
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(px1, py1);
+            ctx.lineTo(px2, py1); // 水平 δx
+            ctx.lineTo(px2, py2); // 垂直 δy
+            ctx.stroke();
+            ctx.setLineDash([]); // 恢复实线
+
+            // 标注文字
+            ctx.fillStyle = '#b5cea8';
+            ctx.font = '14px sans-serif';
+            ctx.fillText('δx', (px1 + px2)/2, py1 + (y1 > y2 ? -10 : 20));
+            ctx.fillText('δy', px2 + 10, (py1 + py2)/2);
+        }
+
+        // 画两个点
+        ctx.fillStyle = '#f48771'; // 红点
+        ctx.beginPath();
+        ctx.arc(px1, py1, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // 突出显示点1
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(px2, py2, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+    }
+
+    function updateUI() {
+        let y1 = f(x1);
+        let y2 = f(x2);
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+
+        document.getElementById('txt-x1').textContent = x1.toFixed(2);
+        document.getElementById('txt-y1').textContent = y1.toFixed(2);
+        document.getElementById('txt-x2').textContent = x2.toFixed(2);
+        document.getElementById('txt-y2').textContent = y2.toFixed(2);
+        
+        const isClose = Math.abs(dx) < 0.05;
+
+        if (isClose) {
+            document.getElementById('txt-dx').textContent = '≈ 0.00';
+            document.getElementById('txt-dy').textContent = '≈ 0.00';
+            document.getElementById('txt-dx-frac').textContent = 'h (趋于0)';
+            document.getElementById('txt-dy-frac').textContent = 'f(x+h)-f(x)';
+            
+            let derivative = x1; // f'(x) = x
+            document.getElementById('txt-slope').textContent = derivative.toFixed(2) + ' (瞬时变化率)';
+            
+            const banner = document.getElementById('feedback-banner');
+            banner.style.backgroundColor = '#10522a';
+            banner.innerHTML = '【极限触发】水平距离趋近于0！你正在计算 <strong>切线斜率（导数）</strong>！';
+        } else {
+            let m = dy / dx;
+            document.getElementById('txt-dx').textContent = dx.toFixed(2);
+            document.getElementById('txt-dy').textContent = dy.toFixed(2);
+            document.getElementById('txt-dx-frac').textContent = dx.toFixed(2);
+            document.getElementById('txt-dy-frac').textContent = dy.toFixed(2);
+            document.getElementById('txt-slope').textContent = m.toFixed(2);
+
+            const banner = document.getElementById('feedback-banner');
+            if (m > 0.05) {
+                banner.style.backgroundColor = '#5c2b29';
+                banner.innerHTML = '这是一个 <strong>正斜率</strong>。斜率越大，说明曲线向右上升得越快！';
+            } else if (m < -0.05) {
+                banner.style.backgroundColor = '#29435c';
+                banner.innerHTML = '这是一个 <strong>负斜率</strong>。说明曲线正在向右下降。';
+            } else {
+                banner.style.backgroundColor = '#4a4a4a';
+                banner.innerHTML = '斜率接近 <strong>零</strong>。两点连线几乎是水平的。';
+            }
+        }
+    }
+
+    function render() {
+        drawSystem();
+        drawFunction();
+        drawInteractiveElements();
+        updateUI();
+    }
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX = evt.clientX;
+        let clientY = evt.clientY;
+        
+        if (evt.touches && evt.touches.length > 0) {
+            clientX = evt.touches[0].clientX;
+            clientY = evt.touches[0].clientY;
+        }
+
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+
+    function handleDown(evt) {
+        evt.preventDefault();
+        const pos = getMousePos(evt);
+        let px1 = mapX(x1), py1 = mapY(f(x1));
+        let px2 = mapX(x2), py2 = mapY(f(x2));
+
+        let dist1 = Math.hypot(pos.x - px1, pos.y - py1);
+        let dist2 = Math.hypot(pos.x - px2, pos.y - py2);
+
+        if (dist1 < dragRadius) {
+            draggingPoint = 1;
+        } else if (dist2 < dragRadius) {
+            draggingPoint = 2;
+        }
+
+        if (draggingPoint && !hasInteracted) {
+            hasInteracted = true;
+            trackEvent('hint_used', { hint: 'Started dragging points' });
+        }
+    }
+
+    function handleMove(evt) {
+        if (!draggingPoint) return;
+        evt.preventDefault();
+        
+        const pos = getMousePos(evt);
+        let newX = unmapX(pos.x);
+        
+        // 限制在坐标系内
+        if (newX < xMin) newX = xMin;
+        if (newX > xMax) newX = xMax;
+
+        if (draggingPoint === 1) {
+            x1 = newX;
+        } else if (draggingPoint === 2) {
+            x2 = newX;
+        }
+
+        render();
+        trackEvent('interaction_change', {
+            x1: parseFloat(x1.toFixed(2)),
+            x2: parseFloat(x2.toFixed(2)),
+            dx: parseFloat((x2 - x1).toFixed(2))
+        });
+    }
+
+    function handleUp(evt) {
+        if (draggingPoint) {
+            evt.preventDefault();
+            trackEvent('interaction_complete', {
+                final_x1: parseFloat(x1.toFixed(2)),
+                final_x2: parseFloat(x2.toFixed(2)),
+                is_limit_state: Math.abs(x2 - x1) < 0.05
+            });
+            draggingPoint = null;
+        }
+    }
+
+    function initEvents() {
+        canvas.addEventListener('mousedown', handleDown);
+        canvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleUp); // 绑定在window防止移出画布丢失事件
+
+        canvas.addEventListener('touchstart', handleDown, {passive: false});
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
+        window.addEventListener('touchend', handleUp);
+
+        // 信心评分
+        const stars = document.querySelectorAll('.star-btn');
+        stars.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                stars.forEach(s => s.classList.remove('selected'));
+                e.target.classList.add('selected');
+                trackEvent('confidence_submitted', { score: parseInt(e.target.dataset.val) });
+            });
+        });
+
+        // 反思
+        const reflections = document.querySelectorAll('.reflection-btn');
+        reflections.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                reflections.forEach(r => r.classList.remove('selected'));
+                e.target.classList.add('selected');
+                trackEvent('reflection_submitted', { reflection_text: e.target.textContent });
+            });
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        startTime = Date.now();
+        canvas = document.getElementById('mathCanvas');
+        ctx = canvas.getContext('2d');
+        canvasWidth = canvas.width;
+        canvasHeight = canvas.height;
+
+        render();
+        initEvents();
+
+        trackEvent('page_loaded', { viewport: `${window.innerWidth}x${window.innerHeight}` });
+    });
+
+</script>
+</body>
+</html>

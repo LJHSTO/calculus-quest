@@ -1,0 +1,40 @@
+node_modules/
+
+# Runtime data and local credentials
+data/*
+!data/.gitignore
+*.db
+*.db-shm
+*.db-wal
+admin-token.txt
+
+# Local environment
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+server.err.log
+server.out.log
+
+# Local deployment/tunnel configuration
+DEPLOY_ECNU_TUNNEL.md
+ops/cloudflared/
+ops/windows/
+
+# Browser test/check profiles
+.chrome-check-profile*/
+.edge-check-profile*/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local share/export artifacts
+calculus-quest-source.zip
+calculus-quest-main.bundle
+PROJECT_GUIDE.md

@@ -1,0 +1,526 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>距离与范数: 变化有多大</title>
+<style>
+    :root {
+        --bg-color: #1e1e1e;
+        --panel-bg: #2d2d2d;
+        --text-main: #d4d4d4;
+        --text-muted: #858585;
+        --accent-blue: #569cd6;
+        --accent-orange: #ce9178;
+        --accent-green: #4ec9b0;
+        --border-color: #404040;
+        --btn-bg: #333333;
+        --btn-hover: #444444;
+        --btn-active: #007acc;
+    }
+    body {
+        margin: 0;
+        padding: 20px;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        line-height: 1.6;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    h1 {
+        font-size: 24px;
+        margin-top: 0;
+        margin-bottom: 10px;
+        text-align: center;
+        color: #ffffff;
+    }
+    .header-info {
+        max-width: 900px;
+        width: 100%;
+        background-color: var(--panel-bg);
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+        border: 1px solid var(--border-color);
+    }
+    .header-info p {
+        margin: 5px 0;
+    }
+    .goal { color: var(--accent-green); }
+    .intuition { color: var(--accent-orange); }
+    
+    .interactive-container {
+        display: flex;
+        flex-direction: row;
+        width: 100%;
+        max-width: 900px;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .left-panel {
+        flex: 1;
+        background-color: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .right-panel {
+        flex: 1;
+        background-color: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 10px;
+        position: relative;
+    }
+    
+    canvas {
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 4px;
+        cursor: grab;
+        touch-action: none;
+    }
+    canvas:active {
+        cursor: grabbing;
+    }
+    
+    .data-box {
+        background-color: #1e1e1e;
+        padding: 15px;
+        border-radius: 6px;
+        border-left: 4px solid;
+    }
+    .data-box.dist { border-left-color: var(--accent-blue); }
+    .data-box.norm { border-left-color: var(--accent-green); }
+    
+    .formula {
+        font-family: monospace;
+        font-size: 16px;
+        margin-top: 10px;
+        word-break: break-all;
+    }
+    
+    .feedback-msg {
+        max-width: 900px;
+        width: 100%;
+        padding: 12px 20px;
+        background-color: #2b3a42;
+        border-left: 4px solid var(--accent-blue);
+        border-radius: 6px;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+    
+    .concept-card {
+        max-width: 900px;
+        width: 100%;
+        background-color: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+    }
+    .concept-card h3 {
+        margin-top: 0;
+        color: var(--accent-blue);
+    }
+    .concept-card ul {
+        padding-left: 20px;
+        margin: 0;
+    }
+    
+    .interaction-section {
+        max-width: 900px;
+        width: 100%;
+        background-color: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        box-sizing: border-box;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .btn-group {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    
+    button {
+        background-color: var(--btn-bg);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background-color 0.2s;
+    }
+    button:hover {
+        background-color: var(--btn-hover);
+    }
+    button.selected {
+        background-color: var(--btn-active);
+        border-color: var(--btn-active);
+        color: #fff;
+    }
+    
+    @media (max-width: 768px) {
+        .interactive-container {
+            flex-direction: column;
+        }
+        .right-panel {
+            overflow: hidden;
+        }
+        canvas {
+            width: 100%;
+            height: auto;
+        }
+    }
+</style>
+</head>
+<body>
+
+    <h1>距离与范数: 变化有多大</h1>
+    
+    <div class="header-info">
+        <p class="goal"><strong>学习目标：</strong>能计算平面两点距离; 能理解 ||x|| 表示长度; 能用距离解释“离目标还有多远”.</p>
+        <p class="intuition"><strong>直觉解释：</strong>距离衡量两个点相隔多远, 范数衡量一个向量有多长. 优化中常用它描述误差大小和移动步子大小.</p>
+    </div>
+
+    <div class="interactive-container">
+        <div class="left-panel">
+            <p><strong>操作说明：</strong>拖动右侧画布上的点 A 和点 B，观察它们之间距离的计算过程。拖动向量终点 V，观察范数（长度）的变化。</p>
+            
+            <div class="data-box dist">
+                <strong>点 A 与点 B 的距离</strong><br>
+                A 坐标: (<span id="coordA"></span>)<br>
+                B 坐标: (<span id="coordB"></span>)<br>
+                <div class="formula" id="formulaDist"></div>
+            </div>
+            
+            <div class="data-box norm">
+                <strong>向量 V 的范数 (长度)</strong><br>
+                V 坐标: (<span id="coordV"></span>)<br>
+                <div class="formula" id="formulaNorm"></div>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <canvas id="mathCanvas" width="400" height="400"></canvas>
+        </div>
+    </div>
+    
+    <div class="feedback-msg" id="feedbackMsg">当前状态：等待你的探索。尝试拖动画布上的点！</div>
+
+    <div class="concept-card">
+        <h3>程序性概念卡：提取核心概念</h3>
+        <p>通过本次交互式操作，你可以遵循以下步骤掌握核心概念：</p>
+        <ul>
+            <li><strong>定位主题：</strong>观察画布中的元素，识别出“两点连线”代表距离，“原点出发的箭头”代表向量范数。</li>
+            <li><strong>解释概念：</strong>将数学公式转化为直观感受——距离即是线段长度，范数即是向量大小。两者本质都是勾股定理的应用。</li>
+            <li><strong>应用练习：</strong>当你拖动端点改变位置时，实时验证坐标变化如何影响距离或范数的值，确认你对计算公式的理解。</li>
+        </ul>
+    </div>
+
+    <div class="interaction-section">
+        <p><strong>信心评分：</strong>你对“能计算平面两点距离及理解向量范数”有多大信心？</p>
+        <div class="btn-group" id="confidenceGroup">
+            <button data-val="1">1 - 完全不懂</button>
+            <button data-val="2">2 - 有点模糊</button>
+            <button data-val="3">3 - 基本明白</button>
+            <button data-val="4">4 - 比较有信心</button>
+            <button data-val="5">5 - 完全掌握</button>
+        </div>
+    </div>
+
+    <div class="interaction-section">
+        <p><strong>简短反思：</strong>在移动点的过程中，你发现了什么规律？</p>
+        <div class="btn-group" id="reflectionGroup">
+            <button data-type="ref">坐标差值越大，距离和范数就越大</button>
+            <button data-type="ref">距离和范数都不可能是负数</button>
+            <button data-type="ref">范数其实就是点到原点的距离</button>
+            <button data-type="ref">以上全对</button>
+        </div>
+    </div>
+
+<script>
+    window.MAIC_LESSON_META = {
+        lesson_id: 'A-06', 
+        module_id: 'OM-A2a', 
+        course_version: 'demo-closed-loop-v1', 
+        concept_name: '距离与向量长度'
+    };
+
+    let startTime = Date.now();
+    let isInteractionComplete = false;
+    
+    // Tracking State
+    let interactedPoints = { A: false, B: false, V: false };
+
+    function trackEvent(eventType, payload = {}) {
+        const timeOnTask = Date.now() - startTime;
+        const event = {
+            lesson_id: window.MAIC_LESSON_META.lesson_id,
+            module_id: window.MAIC_LESSON_META.module_id,
+            course_version: window.MAIC_LESSON_META.course_version,
+            event_type: eventType,
+            timestamp: new Date().toISOString(),
+            time_on_task_ms: timeOnTask,
+            interaction_state: payload
+        };
+        
+        let events = [];
+        try {
+            events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+        } catch(e) {}
+        events.push(event);
+        localStorage.setItem('maic_learning_events', JSON.stringify(events));
+        
+        if (window.parent) {
+            window.parent.postMessage({type: 'maic_learning_event', payload: event}, '*');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        trackEvent('page_loaded');
+        initCanvas();
+        initInteractions();
+    });
+
+    // Canvas Logic
+    let canvas, ctx, width, height, origin, scale;
+    let pts = {
+        A: { x: -4, y: 3, color: '#569cd6', label: 'A', r: 8 },
+        B: { x: 3, y: 6, color: '#ce9178', label: 'B', r: 8 },
+        V: { x: 6, y: -5, color: '#4ec9b0', label: 'V', r: 8 }
+    };
+    let draggingPt = null;
+
+    function initCanvas() {
+        canvas = document.getElementById('mathCanvas');
+        ctx = canvas.getContext('2d');
+        width = canvas.width;
+        height = canvas.height;
+        origin = { x: width / 2, y: height / 2 };
+        scale = 20; // 1 math unit = 20px
+        
+        setupMouseEvents();
+        setupTouchEvents();
+        updateUI();
+        draw();
+    }
+
+    function toScreen(p) {
+        return { x: origin.x + p.x * scale, y: origin.y - p.y * scale };
+    }
+
+    function toMath(x, y) {
+        return { x: (x - origin.x) / scale, y: (origin.y - y) / scale };
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = '#404040';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i <= width; i += scale) {
+            ctx.moveTo(i, 0); ctx.lineTo(i, height);
+            ctx.moveTo(0, i); ctx.lineTo(width, i);
+        }
+        ctx.stroke();
+
+        ctx.strokeStyle = '#666';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, origin.y); ctx.lineTo(width, origin.y);
+        ctx.moveTo(origin.x, 0); ctx.lineTo(origin.x, height);
+        ctx.stroke();
+    }
+
+    function drawArrow(fromX, fromY, toX, toY, color) {
+        const headlen = 12;
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = 2;
+        
+        ctx.beginPath();
+        ctx.moveTo(fromX, fromY);
+        ctx.lineTo(toX, toY);
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.moveTo(toX, toY);
+        ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+        ctx.lineTo(toX, toY);
+        ctx.fill();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
+        drawGrid();
+
+        const sA = toScreen(pts.A);
+        const sB = toScreen(pts.B);
+        const sV = toScreen(pts.V);
+        const sO = toScreen({x: 0, y: 0});
+
+        // Line A to B
+        ctx.strokeStyle = '#858585';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(sA.x, sA.y);
+        ctx.lineTo(sB.x, sB.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Vector V
+        drawArrow(sO.x, sO.y, sV.x, sV.y, pts.V.color);
+
+        // Draw points
+        for (let key in pts) {
+            let sp = toScreen(pts[key]);
+            ctx.fillStyle = pts[key].color;
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, pts[key].r, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px sans-serif';
+            ctx.fillText(pts[key].label, sp.x + 12, sp.y - 12);
+        }
+    }
+
+    function getPointerPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+
+    function handleStart(e) {
+        e.preventDefault();
+        const pos = getPointerPos(e);
+        for (let key in pts) {
+            let sp = toScreen(pts[key]);
+            let dx = pos.x - sp.x;
+            let dy = pos.y - sp.y;
+            if (dx * dx + dy * dy < 200) {
+                draggingPt = key;
+                break;
+            }
+        }
+    }
+
+    function handleMove(e) {
+        if (!draggingPt) return;
+        e.preventDefault();
+        const pos = getPointerPos(e);
+        let mathPos = toMath(pos.x, pos.y);
+        // snap to integer for simplicity
+        pts[draggingPt].x = Math.round(mathPos.x);
+        pts[draggingPt].y = Math.round(mathPos.y);
+        
+        interactedPoints[draggingPt] = true;
+        updateUI();
+        draw();
+    }
+
+    function handleEnd(e) {
+        if (draggingPt) {
+            trackEvent('interaction_change', {
+                point_moved: draggingPt,
+                new_position: {x: pts[draggingPt].x, y: pts[draggingPt].y}
+            });
+            checkCompletion();
+            draggingPt = null;
+        }
+    }
+
+    function setupMouseEvents() {
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+    }
+
+    function setupTouchEvents() {
+        canvas.addEventListener('touchstart', handleStart, {passive: false});
+        canvas.addEventListener('touchmove', handleMove, {passive: false});
+        window.addEventListener('touchend', handleEnd);
+    }
+
+    function updateUI() {
+        document.getElementById('coordA').innerText = `${pts.A.x}, ${pts.A.y}`;
+        document.getElementById('coordB').innerText = `${pts.B.x}, ${pts.B.y}`;
+        document.getElementById('coordV').innerText = `${pts.V.x}, ${pts.V.y}`;
+        
+        let dx = pts.B.x - pts.A.x;
+        let dy = pts.B.y - pts.A.y;
+        let dist = Math.sqrt(dx * dx + dy * dy);
+        document.getElementById('formulaDist').innerHTML = `d = &radic;((${pts.B.x} - ${pts.A.x})&sup2; + (${pts.B.y} - ${pts.A.y})&sup2;)<br>&nbsp;&nbsp;= &radic;(${dx*dx} + ${dy*dy})<br>&nbsp;&nbsp;&approx; ${dist.toFixed(2)}`;
+        
+        let norm = Math.sqrt(pts.V.x * pts.V.x + pts.V.y * pts.V.y);
+        document.getElementById('formulaNorm').innerHTML = `||V|| = &radic;(${pts.V.x}&sup2; + ${pts.V.y}&sup2;)<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= &radic;(${pts.V.x * pts.V.x} + ${pts.V.y * pts.V.y})<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&approx; ${norm.toFixed(2)}`;
+    }
+
+    function checkCompletion() {
+        const msgBox = document.getElementById('feedbackMsg');
+        if (interactedPoints.A && interactedPoints.B && interactedPoints.V) {
+            msgBox.innerText = '太棒了！你已经分别探索了平面距离的计算和向量范数的原理！';
+            msgBox.style.borderLeftColor = 'var(--accent-green)';
+            if (!isInteractionComplete) {
+                isInteractionComplete = true;
+                trackEvent('interaction_complete', { all_points_moved: true });
+            }
+        } else if (interactedPoints.A || interactedPoints.B) {
+            msgBox.innerText = '很好，你观察了两点之间的距离变化。再去动动向量 V 看看！';
+        } else if (interactedPoints.V) {
+            msgBox.innerText = '不错，你观察了向量长度（范数）的变化。也试试拖动点 A 和 B！';
+        }
+    }
+
+    function initInteractions() {
+        const confBtns = document.querySelectorAll('#confidenceGroup button');
+        confBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                confBtns.forEach(b => b.classList.remove('selected'));
+                e.target.classList.add('selected');
+                trackEvent('confidence_submitted', { score: e.target.getAttribute('data-val') });
+            });
+        });
+
+        const refBtns = document.querySelectorAll('#reflectionGroup button');
+        refBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                refBtns.forEach(b => b.classList.remove('selected'));
+                e.target.classList.add('selected');
+                trackEvent('reflection_submitted', { selection: e.target.innerText });
+            });
+        });
+    }
+
+</script>
+</body>
+</html>

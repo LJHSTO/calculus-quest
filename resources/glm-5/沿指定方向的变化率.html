@@ -1,0 +1,1175 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沿指定方向的变化率</title>
+    <style>
+        :root {
+            --bg-primary: #0d1117;
+            --bg-secondary: #161b22;
+            --bg-tertiary: #21262d;
+            --fg-primary: #e6edf3;
+            --fg-secondary: #8b949e;
+            --fg-muted: #6e7681;
+            --accent-cyan: #00d4aa;
+            --accent-orange: #ff7b54;
+            --accent-blue: #58a6ff;
+            --border-color: #30363d;
+            --success: #3fb950;
+            --warning: #d29922;
+            --error: #f85149;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--fg-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--fg-primary);
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+
+        .goal {
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .intuition {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin-bottom: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intuition::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-cyan), var(--accent-orange));
+        }
+
+        .intuition h2 {
+            font-size: 1rem;
+            color: var(--fg-secondary);
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .intuition p {
+            color: var(--fg-primary);
+            font-size: 1rem;
+        }
+
+        .intuition strong {
+            color: var(--accent-cyan);
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .interaction-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: var(--bg-tertiary);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--fg-primary);
+        }
+
+        .panel-badge {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .canvas-container {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+        }
+
+        #mainCanvas {
+            border-radius: 8px;
+            cursor: crosshair;
+            background: var(--bg-primary);
+        }
+
+        .controls {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .control-group {
+            margin-bottom: 16px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--fg-secondary);
+        }
+
+        .control-value {
+            font-weight: 600;
+            color: var(--accent-cyan);
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--bg-tertiary);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 212, 170, 0.4);
+            transition: transform 0.15s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent-cyan);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: #00e6b8;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--fg-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .output-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .feedback-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .feedback-card h3 {
+            font-size: 0.85rem;
+            color: var(--fg-secondary);
+            margin-bottom: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .feedback-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .feedback-value.positive {
+            color: var(--success);
+        }
+
+        .feedback-value.negative {
+            color: var(--error);
+        }
+
+        .feedback-value.zero {
+            color: var(--warning);
+        }
+
+        .feedback-desc {
+            font-size: 0.9rem;
+            color: var(--fg-secondary);
+        }
+
+        .vector-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .vector-item {
+            background: var(--bg-tertiary);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .vector-label {
+            font-size: 0.75rem;
+            color: var(--fg-muted);
+            margin-bottom: 4px;
+        }
+
+        .vector-value {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: var(--fg-primary);
+        }
+
+        .concept-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 32px;
+        }
+
+        .concept-card h3 {
+            font-size: 1.1rem;
+            color: var(--fg-primary);
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .formula-box {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            text-align: center;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+
+        .formula-main {
+            font-size: 1.2rem;
+            color: var(--accent-cyan);
+            margin-bottom: 8px;
+        }
+
+        .formula-desc {
+            font-size: 0.85rem;
+            color: var(--fg-secondary);
+        }
+
+        .key-points {
+            list-style: none;
+        }
+
+        .key-points li {
+            position: relative;
+            padding-left: 24px;
+            margin-bottom: 10px;
+            color: var(--fg-primary);
+            font-size: 0.95rem;
+        }
+
+        .key-points li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+        }
+
+        .assessment-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 700px) {
+            .assessment-section {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .confidence-section, .reflection-section {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--fg-primary);
+            margin-bottom: 16px;
+        }
+
+        .confidence-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .confidence-btn {
+            flex: 1;
+            padding: 12px 8px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            color: var(--fg-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .confidence-btn:hover {
+            border-color: var(--accent-cyan);
+            color: var(--fg-primary);
+        }
+
+        .confidence-btn.selected {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--accent-cyan);
+        }
+
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .reflection-option {
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            color: var(--fg-primary);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+        }
+
+        .reflection-option:hover {
+            border-color: var(--accent-orange);
+        }
+
+        .reflection-option.selected {
+            border-color: var(--accent-orange);
+            background: rgba(255, 123, 84, 0.15);
+        }
+
+        .hint-box {
+            background: rgba(255, 123, 84, 0.1);
+            border: 1px solid var(--accent-orange);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            color: var(--fg-primary);
+            display: none;
+        }
+
+        .hint-box.visible {
+            display: block;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 12px 20px;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            color: var(--fg-secondary);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--fg-secondary);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .completion-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(63, 185, 80, 0.15);
+            color: var(--success);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .completion-badge.visible {
+            opacity: 1;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            color: var(--fg-muted);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border-color);
+            margin-top: 32px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>沿指定方向的变化率</h1>
+            <p class="goal">理解方向导数的含义，掌握如何计算函数沿任意方向的变化快慢。</p>
+        </header>
+
+        <section class="intuition">
+            <h2>直觉理解</h2>
+            <p><strong>方向导数</strong>描述函数沿某个指定方向变化得多快，可看成<strong>梯度在这个方向上的投影</strong>。想象你站在山坡上，朝不同方向走，坡度会不同——方向导数就是量化「沿某个方向走时的坡度」。当方向与梯度同向时上升最快，反向时下降最快，垂直时则沿等高线走、高度不变。</p>
+        </section>
+
+        <main class="main-content">
+            <div class="interaction-panel">
+                <div class="panel-header">
+                    <span class="panel-title">等高线图交互</span>
+                    <span class="panel-badge">核心互动</span>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="mainCanvas" width="520" height="400"></canvas>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00d4aa;"></div>
+                        <span>梯度方向</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ff7b54;"></div>
+                        <span>选择的方向</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #58a6ff;"></div>
+                        <span>当前点</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #888;"></div>
+                        <span>等高线</span>
+                    </div>
+                </div>
+                <div class="controls">
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>方向角度</span>
+                            <span class="control-value" id="angleValue">0°</span>
+                        </div>
+                        <input type="range" id="angleSlider" min="0" max="360" value="0" step="1">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>观察点 X 坐标</span>
+                            <span class="control-value" id="xValue">0.0</span>
+                        </div>
+                        <input type="range" id="xSlider" min="-2" max="2" value="0" step="0.1">
+                    </div>
+                    <div class="control-group">
+                        <div class="control-label">
+                            <span>观察点 Y 坐标</span>
+                            <span class="control-value" id="yValue">0.0</span>
+                        </div>
+                        <input type="range" id="ySlider" min="-2" max="2" value="0" step="0.1">
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-primary" id="randomBtn">随机探索</button>
+                        <button class="btn btn-secondary" id="hintBtn">提示</button>
+                    </div>
+                    <div class="hint-box" id="hintBox">
+                        沿梯度方向（绿色箭头）走，函数值上升最快；反向走则下降最快。试着调整方向，观察方向导数的变化！
+                    </div>
+                </div>
+            </div>
+
+            <div class="output-panel">
+                <div class="feedback-card">
+                    <h3>方向导数值</h3>
+                    <div class="feedback-value" id="directionalValue">0.00</div>
+                    <div class="feedback-desc" id="directionalDesc">沿当前方向几乎不变</div>
+                </div>
+
+                <div class="feedback-card">
+                    <h3>向量信息</h3>
+                    <div class="vector-display">
+                        <div class="vector-item">
+                            <div class="vector-label">梯度向量</div>
+                            <div class="vector-value" id="gradientVector">(0.00, 0.00)</div>
+                        </div>
+                        <div class="vector-item">
+                            <div class="vector-label">方向向量</div>
+                            <div class="vector-value" id="directionVector">(1.00, 0.00)</div>
+                        </div>
+                        <div class="vector-item">
+                            <div class="vector-label">梯度模长</div>
+                            <div class="vector-value" id="gradientMag">0.00</div>
+                        </div>
+                        <div class="vector-item">
+                            <div class="vector-label">夹角余弦</div>
+                            <div class="vector-value" id="cosineValue">1.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feedback-card">
+                    <h3>变化趋势</h3>
+                    <div class="feedback-desc" id="trendDesc">
+                        当前方向与梯度垂直，沿等高线方向行走，函数值几乎不变。
+                    </div>
+                    <span class="completion-badge" id="completionBadge">已完成探索</span>
+                </div>
+            </div>
+        </main>
+
+        <section class="concept-card">
+            <h3>核心概念</h3>
+            <div class="formula-box">
+                <div class="formula-main">D<sub>u</sub>f = ∇f · u = |∇f| cos(θ)</div>
+                <div class="formula-desc">方向导数 = 梯度向量与方向向量的点积</div>
+            </div>
+            <ul class="key-points">
+                <li><strong>偏导数</strong>是沿坐标轴方向的方向导数，只反映一个方向的变化率</li>
+                <li><strong>方向导数</strong>是沿任意单位向量 u 方向的变化率，取决于方向选择</li>
+                <li><strong>梯度方向</strong>是函数值增长最快的方向，梯度模长是最大变化率</li>
+                <li>当方向与梯度<strong>同向</strong>时方向导数最大，<strong>反向</strong>时最小，<strong>垂直</strong>时为零</li>
+            </ul>
+        </section>
+
+        <section class="assessment-section">
+            <div class="confidence-section">
+                <h3 class="section-title">信心评分</h3>
+                <p style="font-size: 0.9rem; color: var(--fg-secondary); margin-bottom: 12px;">你对「方向导数」的理解程度如何？</p>
+                <div class="confidence-buttons">
+                    <button class="confidence-btn" data-score="1">1</button>
+                    <button class="confidence-btn" data-score="2">2</button>
+                    <button class="confidence-btn" data-score="3">3</button>
+                    <button class="confidence-btn" data-score="4">4</button>
+                    <button class="confidence-btn" data-score="5">5</button>
+                </div>
+                <p style="font-size: 0.8rem; color: var(--fg-muted); margin-top: 8px;">1=完全不懂，5=非常理解</p>
+            </div>
+
+            <div class="reflection-section">
+                <h3 class="section-title">学习反思</h3>
+                <p style="font-size: 0.9rem; color: var(--fg-secondary); margin-bottom: 12px;">通过这次互动，你有什么发现？</p>
+                <div class="reflection-options">
+                    <button class="reflection-option" data-reflection="gradient">发现梯度方向就是上升最快的方向</button>
+                    <button class="reflection-option" data-reflection="perpendicular">理解了为什么垂直梯度时方向导数为零</button>
+                    <button class="reflection-option" data-reflection="projection">方向导数就是梯度的投影这个概念很直观</button>
+                    <button class="reflection-option" data-reflection="confused">还需要更多练习来理解这个概念</button>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>主动学习互动页面 · 方向导数</p>
+        </footer>
+    </div>
+
+    <div class="status-bar">
+        <div class="status-item">
+            <div class="status-dot"></div>
+            <span>学习中</span>
+        </div>
+        <div class="status-item">
+            <span>学习用时: </span>
+            <span id="timeDisplay">0:00</span>
+        </div>
+    </div>
+
+    <script>
+        // 课程元数据
+        window.MAIC_LESSON_META = {
+            lesson_id: 'C-07',
+            module_id: 'OM-C1',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '方向导数'
+        };
+
+        // 全局状态
+        let startTime = Date.now();
+        let interactionCount = 0;
+        let hintUsed = false;
+        let interactionComplete = false;
+        let confidenceScore = null;
+        let reflectionChoice = null;
+
+        // 当前状态
+        let currentX = 0;
+        let currentY = 0;
+        let currentAngle = 0;
+
+        // Canvas 相关
+        let canvas = null;
+        let ctx = null;
+        let centerX = 0;
+        let centerY = 0;
+        let scale = 80;
+
+        // 函数 f(x,y) = x^2 + y^2
+        function f(x, y) {
+            return x * x + y * y;
+        }
+
+        // 偏导数
+        function fx(x, y) {
+            return 2 * x;
+        }
+
+        function fy(x, y) {
+            return 2 * y;
+        }
+
+        // 梯度
+        function gradient(x, y) {
+            return { dx: fx(x, y), dy: fy(x, y) };
+        }
+
+        // 方向导数
+        function directionalDerivative(x, y, angle) {
+            const rad = angle * Math.PI / 180;
+            const ux = Math.cos(rad);
+            const uy = Math.sin(rad);
+            const grad = gradient(x, y);
+            return grad.dx * ux + grad.dy * uy;
+        }
+
+        // 行为追踪
+        function trackEvent(eventType, payload) {
+            const now = Date.now();
+            const event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: now - startTime,
+                interaction_state: {
+                    x: currentX,
+                    y: currentY,
+                    angle: currentAngle,
+                    directional_deriv: directionalDerivative(currentX, currentY, currentAngle)
+                },
+                ...payload
+            };
+
+            // 存储到 localStorage
+            try {
+                let events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+                events.push(event);
+                localStorage.setItem('maic_learning_events', JSON.stringify(events));
+            } catch (e) {
+                console.log('存储事件失败');
+            }
+
+            // postMessage 给父窗口
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'maic_learning_event',
+                        payload: event
+                    }, '*');
+                }
+            } catch (e) {
+                console.log('postMessage 失败');
+            }
+        }
+
+        // 绘制等高线
+        function drawContourLines() {
+            const levels = [0.5, 1, 2, 3, 4, 5, 6];
+            
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 1;
+            
+            for (let level of levels) {
+                ctx.beginPath();
+                const r = Math.sqrt(level) * scale;
+                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // 标注等高线值
+                ctx.fillStyle = '#666';
+                ctx.font = '11px -apple-system, sans-serif';
+                ctx.fillText(level.toString(), centerX + r + 5, centerY);
+            }
+        }
+
+        // 绘制坐标轴
+        function drawAxes() {
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            
+            // X 轴
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(canvas.width, centerY);
+            ctx.stroke();
+            
+            // Y 轴
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, canvas.height);
+            ctx.stroke();
+            
+            // 刻度
+            ctx.fillStyle = '#666';
+            ctx.font = '10px -apple-system, sans-serif';
+            for (let i = -2; i <= 2; i++) {
+                if (i !== 0) {
+                    const px = centerX + i * scale;
+                    ctx.fillText(i.toString(), px - 5, centerY + 15);
+                    
+                    const py = centerY - i * scale;
+                    ctx.fillText(i.toString(), centerX + 8, py + 4);
+                }
+            }
+            ctx.fillText('0', centerX + 5, centerY + 15);
+        }
+
+        // 绘制当前点
+        function drawPoint() {
+            const px = centerX + currentX * scale;
+            const py = centerY - currentY * scale;
+            
+            // 点
+            ctx.beginPath();
+            ctx.arc(px, py, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#58a6ff';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // 函数值标注
+            const val = f(currentX, currentY);
+            ctx.fillStyle = '#e6edf3';
+            ctx.font = 'bold 12px -apple-system, sans-serif';
+            ctx.fillText(`f = ${val.toFixed(2)}`, px + 12, py - 12);
+        }
+
+        // 绘制梯度向量
+        function drawGradient() {
+            const grad = gradient(currentX, currentY);
+            const mag = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+            
+            if (mag < 0.01) return;
+            
+            const px = centerX + currentX * scale;
+            const py = centerY - currentY * scale;
+            
+            const arrowLen = Math.min(mag * 25, 60);
+            const endX = px + (grad.dx / mag) * arrowLen;
+            const endY = py - (grad.dy / mag) * arrowLen;
+            
+            // 梯度箭头
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#00d4aa';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // 箭头头部
+            const angle = Math.atan2(py - endY, endX - px);
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 10 * Math.cos(angle - 0.4), endY + 10 * Math.sin(angle - 0.4));
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 10 * Math.cos(angle + 0.4), endY + 10 * Math.sin(angle + 0.4));
+            ctx.stroke();
+        }
+
+        // 绘制方向向量
+        function drawDirection() {
+            const rad = currentAngle * Math.PI / 180;
+            const ux = Math.cos(rad);
+            const uy = Math.sin(rad);
+            
+            const px = centerX + currentX * scale;
+            const py = centerY - currentY * scale;
+            
+            const arrowLen = 50;
+            const endX = px + ux * arrowLen;
+            const endY = py - uy * arrowLen;
+            
+            // 方向箭头
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#ff7b54';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // 箭头头部
+            const angle = Math.atan2(py - endY, endX - px);
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 10 * Math.cos(angle - 0.4), endY + 10 * Math.sin(angle - 0.4));
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - 10 * Math.cos(angle + 0.4), endY + 10 * Math.sin(angle + 0.4));
+            ctx.stroke();
+        }
+
+        // 主绘制函数
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawAxes();
+            drawContourLines();
+            drawGradient();
+            drawDirection();
+            drawPoint();
+            
+            updateUI();
+        }
+
+        // 更新 UI 显示
+        function updateUI() {
+            const dirDeriv = directionalDerivative(currentX, currentY, currentAngle);
+            const grad = gradient(currentX, currentY);
+            const gradMag = Math.sqrt(grad.dx * grad.dx + grad.dy * grad.dy);
+            
+            const rad = currentAngle * Math.PI / 180;
+            const ux = Math.cos(rad);
+            const uy = Math.sin(rad);
+            
+            // 计算夹角余弦
+            let cosTheta = 0;
+            if (gradMag > 0.01) {
+                cosTheta = (grad.dx * ux + grad.dy * uy) / gradMag;
+            }
+            
+            // 更新数值显示
+            const derivEl = document.getElementById('directionalValue');
+            derivEl.textContent = dirDeriv.toFixed(3);
+            derivEl.className = 'feedback-value ' + (dirDeriv > 0.1 ? 'positive' : (dirDeriv < -0.1 ? 'negative' : 'zero'));
+            
+            document.getElementById('gradientVector').textContent = `(${grad.dx.toFixed(2)}, ${grad.dy.toFixed(2)})`;
+            document.getElementById('directionVector').textContent = `(${ux.toFixed(2)}, ${uy.toFixed(2)})`;
+            document.getElementById('gradientMag').textContent = gradMag.toFixed(3);
+            document.getElementById('cosineValue').textContent = cosTheta.toFixed(3);
+            
+            // 更新描述
+            let desc = '';
+            let trend = '';
+            if (Math.abs(dirDeriv) < 0.1) {
+                desc = '沿当前方向几乎不变';
+                trend = '当前方向与梯度接近垂直，沿等高线方向行走，函数值几乎不变。';
+            } else if (dirDeriv > 0) {
+                desc = '沿当前方向上升';
+                trend = `方向导数为正，沿当前方向走函数值会增加。变化率约为 ${dirDeriv.toFixed(2)}。`;
+            } else {
+                desc = '沿当前方向下降';
+                trend = `方向导数为负，沿当前方向走函数值会减少。变化率约为 ${Math.abs(dirDeriv).toFixed(2)}。`;
+            }
+            
+            document.getElementById('directionalDesc').textContent = desc;
+            document.getElementById('trendDesc').textContent = trend;
+        }
+
+        // 更新时间显示
+        function updateTimeDisplay() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timeDisplay').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 初始化
+        function init() {
+            canvas = document.getElementById('mainCanvas');
+            ctx = canvas.getContext('2d');
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+            
+            // 滑块事件
+            document.getElementById('angleSlider').addEventListener('input', function(e) {
+                currentAngle = parseFloat(e.target.value);
+                document.getElementById('angleValue').textContent = `${currentAngle}°`;
+                interactionCount++;
+                
+                trackEvent('interaction_change', {
+                    control: 'angle',
+                    value: currentAngle,
+                    interaction_count: interactionCount
+                });
+                
+                draw();
+            });
+            
+            document.getElementById('xSlider').addEventListener('input', function(e) {
+                currentX = parseFloat(e.target.value);
+                document.getElementById('xValue').textContent = currentX.toFixed(1);
+                interactionCount++;
+                
+                trackEvent('interaction_change', {
+                    control: 'x',
+                    value: currentX,
+                    interaction_count: interactionCount
+                });
+                
+                draw();
+            });
+            
+            document.getElementById('ySlider').addEventListener('input', function(e) {
+                currentY = parseFloat(e.target.value);
+                document.getElementById('yValue').textContent = currentY.toFixed(1);
+                interactionCount++;
+                
+                trackEvent('interaction_change', {
+                    control: 'y',
+                    value: currentY,
+                    interaction_count: interactionCount
+                });
+                
+                draw();
+            });
+            
+            // 随机按钮
+            document.getElementById('randomBtn').addEventListener('click', function() {
+                currentX = (Math.random() * 3 - 1.5);
+                currentY = (Math.random() * 3 - 1.5);
+                currentAngle = Math.floor(Math.random() * 360);
+                
+                document.getElementById('xSlider').value = currentX;
+                document.getElementById('ySlider').value = currentY;
+                document.getElementById('angleSlider').value = currentAngle;
+                
+                document.getElementById('xValue').textContent = currentX.toFixed(1);
+                document.getElementById('yValue').textContent = currentY.toFixed(1);
+                document.getElementById('angleValue').textContent = `${currentAngle}°`;
+                
+                interactionCount++;
+                
+                trackEvent('interaction_change', {
+                    control: 'random',
+                    value: { x: currentX, y: currentY, angle: currentAngle },
+                    interaction_count: interactionCount
+                });
+                
+                draw();
+                
+                // 检查完成状态
+                if (interactionCount >= 5 && !interactionComplete) {
+                    interactionComplete = true;
+                    document.getElementById('completionBadge').classList.add('visible');
+                    
+                    trackEvent('interaction_complete', {
+                        final_state: {
+                            x: currentX,
+                            y: currentY,
+                            angle: currentAngle,
+                            directional_deriv: directionalDerivative(currentX, currentY, currentAngle)
+                        },
+                        total_interactions: interactionCount
+                    });
+                }
+            });
+            
+            // 提示按钮
+            document.getElementById('hintBtn').addEventListener('click', function() {
+                const hintBox = document.getElementById('hintBox');
+                hintBox.classList.toggle('visible');
+                hintUsed = true;
+                
+                trackEvent('hint_used', {
+                    hint_visible: hintBox.classList.contains('visible')
+                });
+            });
+            
+            // 信心评分
+            document.querySelectorAll('.confidence-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.confidence-btn').forEach(b => b.classList.remove('selected'));
+                    this.classList.add('selected');
+                    confidenceScore = parseInt(this.dataset.score);
+                    
+                    trackEvent('confidence_submitted', {
+                        score: confidenceScore
+                    });
+                });
+            });
+            
+            // 反思选择
+            document.querySelectorAll('.reflection-option').forEach(opt => {
+                opt.addEventListener('click', function() {
+                    document.querySelectorAll('.reflection-option').forEach(o => o.classList.remove('selected'));
+                    this.classList.add('selected');
+                    reflectionChoice = this.dataset.reflection;
+                    
+                    trackEvent('reflection_submitted', {
+                        reflection: reflectionChoice,
+                        reflection_text: this.textContent
+                    });
+                });
+            });
+            
+            // 定时更新时间
+            setInterval(updateTimeDisplay, 1000);
+            
+            // 初始绘制
+            draw();
+            
+            // 页面加载事件
+            trackEvent('page_loaded', {
+                initial_state: {
+                    x: currentX,
+                    y: currentY,
+                    angle: currentAngle
+                }
+            });
+        }
+
+        // DOM 加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

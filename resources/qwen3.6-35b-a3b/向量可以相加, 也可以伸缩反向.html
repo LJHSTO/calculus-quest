@@ -1,0 +1,745 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>向量可以相加, 也可以伸缩反向</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #0d1117;
+  color: #c9d1d9;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+header { text-align: center; padding: 30px 0 10px; border-bottom: 1px solid #21262d; margin-bottom: 24px; }
+header h1 { font-size: 2rem; color: #58a6ff; margin-bottom: 8px; }
+header .subtitle { color: #8b949e; font-size: 0.95rem; }
+.section { background: #161b22; border: 1px solid #21262d; border-radius: 10px; padding: 22px; margin-bottom: 20px; }
+.section h2 { font-size: 1.25rem; color: #f0883e; margin-bottom: 12px; border-bottom: 1px solid #21262d; padding-bottom: 8px; }
+.objective { font-size: 1.1rem; color: #7ee787; font-weight: 600; }
+.intuition { color: #c9d1d9; font-size: 1.05rem; line-height: 1.8; }
+.intuition strong { color: #ffa657; }
+#canvas-wrap { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; }
+canvas { background: #0d1117; border: 2px solid #30363d; border-radius: 8px; cursor: crosshair; display: block; }
+.controls { width: 100%; margin-top: 18px; display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; align-items: flex-end; }
+.ctrl-group { display: flex; flex-direction: column; align-items: center; min-width: 200px; }
+.ctrl-group label { font-size: 0.9rem; color: #8b949e; margin-bottom: 4px; }
+.ctrl-group input[type="range"] { width: 220px; accent-color: #58a6ff; }
+.ctrl-group .val { font-size: 1rem; color: #58a6ff; font-weight: 700; min-height: 1.4em; }
+.btn { padding: 8px 20px; border: 1px solid #30363d; border-radius: 6px; background: #21262d; color: #c9d1d9; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; }
+.btn:hover { background: #30363d; }
+.btn.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.btn.primary:hover { background: #388bfd; }
+.concept-card { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.card-inner { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 18px; }
+.card-inner h3 { color: #58a6ff; font-size: 1.05rem; margin-bottom: 8px; }
+.card-inner ul { padding-left: 20px; color: #8b949e; font-size: 0.95rem; }
+.card-inner ul li { margin-bottom: 4px; }
+.feedback-box { background: #0d1117; border-left: 4px solid #58a6ff; padding: 14px 18px; border-radius: 0 8px 8px 0; margin-top: 12px; font-size: 1rem; min-height: 2.5em; color: #c9d1d9; }
+.confidence-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.star-btn { background: none; border: 2px solid #30363d; border-radius: 6px; font-size: 1.6rem; cursor: pointer; padding: 4px 10px; transition: all 0.2s; }
+.star-btn.active { border-color: #f0883e; background: #f0883e22; }
+.reflection-area { width: 100%; min-height: 80px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9; padding: 12px; font-size: 1rem; resize: vertical; margin-top: 10px; font-family: inherit; }
+.reflection-area::placeholder { color: #484f58; }
+.hint-box { background: #1c2333; border: 1px dashed #58a6ff; border-radius: 6px; padding: 12px 16px; margin-top: 10px; font-size: 0.95rem; color: #79c0ff; display: none; }
+.hint-box.show { display: block; }
+.legend { display: flex; gap: 20px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+.legend span { font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+.legend-dot { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+.tab-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.tab-btn { padding: 6px 16px; border: 1px solid #30362d; border-radius: 6px 6px 0 0; background: #0d1117; color: #8b949e; cursor: pointer; font-size: 0.9rem; }
+.tab-btn.active { background: #161b22; border-bottom-color: #161b22; color: #58a6ff; border-bottom: 2px solid #58a6ff; }
+.coord-display { font-family: "Courier New", monospace; color: #7ee787; font-size: 0.95rem; margin-top: 4px; }
+@media (max-width: 700px) {
+  header h1 { font-size: 1.5rem; }
+  .controls { flex-direction: column; align-items: center; }
+  canvas { width: 100% !important; height: auto !important; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>向量可以相加, 也可以伸缩反向</h1>
+    <p class="subtitle">本节聚焦：向量加法与数乘</p>
+  </header>
+
+  <div class="section">
+    <p class="objective">🎯 学习目标：通过拖动向量和调节倍数，直观理解向量加法（首尾相接）和数乘（放大、缩小、反向）的几何意义。</p>
+  </div>
+
+  <div class="section">
+    <h2>💡 直觉解释</h2>
+    <p class="intuition">
+      <strong>向量加法</strong>表示连续做两次变化——就像先向东走 <strong>→</strong>，再向北走 <strong>↑</strong>，最终的位移就是两个向量的和。<br>
+      <strong>数乘</strong>表示把变化放大、缩小或反向——乘以 <strong>2</strong> 就是走两倍远，乘以 <strong>-1</strong> 就是掉头往回走。<br>
+      这为理解"负梯度"和"步长"做准备：优化算法就是在不断"加向量"（调整方向）和"乘系数"（决定步伐大小）。
+    </p>
+  </div>
+
+  <!-- 核心互动 -->
+  <div class="section">
+    <h2>🖱️ 核心互动：拖动向量，探索加法和数乘</h2>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tabAdd" onclick="switchMode('add')">向量加法</button>
+      <button class="tab-btn" id="tabScale" onclick="switchMode('scale')">向量数乘</button>
+    </div>
+    <div id="canvas-wrap">
+      <canvas id="mainCanvas" width="700" height="480"></canvas>
+      <div class="legend">
+        <span><span class="legend-dot" style="background:#58a6ff"></span> 向量 <b>a</b></span>
+        <span><span class="legend-dot" style="background:#3fb950"></span> 向量 <b>b</b></span>
+        <span><span class="legend-dot" style="background:#f0883e"></span> 和向量 <b>a+b</b></span>
+        <span><span class="legend-dot" style="background:#bc8cff"></span> 数乘结果 <b>k·a</b></span>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="ctrl-group">
+        <label>倍数 k</label>
+        <input type="range" id="kSlider" min="-3" max="3" step="0.1" value="2">
+        <div class="val" id="kVal">k = 2.0</div>
+      </div>
+      <div class="ctrl-group">
+        <label>显示选项</label>
+        <button class="btn" id="btnShowParallelogram" onclick="toggleParallelogram()">显示平行四边形</button>
+        <button class="btn" id="btnShowGrid" onclick="toggleGrid()">显示网格</button>
+      </div>
+      <div class="ctrl-group">
+        <label>操作</label>
+        <button class="btn primary" onclick="resetVectors()">重置向量</button>
+      </div>
+    </div>
+    <div class="coord-display" id="coordDisplay">向量 a = (2, 1)，向量 b = (-1, 3)，和向量 = (1, 4)</div>
+    <div class="feedback-box" id="feedbackBox">拖动蓝色或绿色向量端点，观察变化。当前显示向量加法模式：将向量 b 平移至向量 a 的终点，和向量从 a 的起点指向 b 的终点。</div>
+    <button class="btn" id="hintBtn" onclick="showHint()">💡 获取提示</button>
+    <div class="hint-box" id="hintBox">提示：在向量加法中，你可以尝试拖动向量端点使和向量 (1,4) 指向右上角。在数乘模式中，尝试拖动 k 滑块到 -1 或 -2，观察向量如何反向！</div>
+  </div>
+
+  <!-- 概念卡 -->
+  <div class="section">
+    <h2>📋 概念卡</h2>
+    <div class="concept-card">
+      <div class="card-inner">
+        <h3>向量加法（几何）</h3>
+        <ul>
+          <li>将第二个向量的起点平移至第一个向量的终点</li>
+          <li>连接第一个向量的起点与第二个向量的终点得到和向量</li>
+          <li>也可以画平行四边形：以两个向量为邻边，对角线即为和向量</li>
+        </ul>
+      </div>
+      <div class="card-inner">
+        <h3>向量加法（代数）</h3>
+        <ul>
+          <li>若已知坐标，则对应分量分别相加</li>
+          <li>例如 (2,1) + (-1,3) = (1,4)</li>
+          <li>满足交换律和结合律</li>
+        </ul>
+      </div>
+      <div class="card-inner">
+        <h3>向量数乘</h3>
+        <ul>
+          <li>正数倍：方向不变，长度缩放</li>
+          <li>负数倍：方向反向，长度缩放</li>
+          <li>零倍：结果为零向量</li>
+        </ul>
+      </div>
+      <div class="card-inner">
+        <h3>与优化的联系</h3>
+        <ul>
+          <li>梯度下降 = 当前位置 + 学习率 × 负梯度</li>
+          <li>学习率就是数乘系数（步长）</li>
+          <li>每次迭代都是向量的加法和数乘</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 信心评分 -->
+  <div class="section">
+    <h2>⭐ 信心评分</h2>
+    <p style="color:#8b949e; margin-bottom:12px;">你对以下内容的掌握程度如何？</p>
+    <p style="color:#c9d1d9; margin-bottom:8px;">① 能用首尾相接理解向量加法</p>
+    <div class="confidence-row" id="conf1">
+      <button class="star-btn" data-id="conf1" data-val="1">1</button>
+      <button class="star-btn" data-id="conf1" data-val="2">2</button>
+      <button class="star-btn" data-id="conf1" data-val="3">3</button>
+      <button class="star-btn" data-id="conf1" data-val="4">4</button>
+      <button class="star-btn" data-id="conf1" data-val="5">5</button>
+    </div>
+    <p style="color:#c9d1d9; margin-bottom:8px; margin-top:12px;">② 能解释正数、零、负数倍向量的变化</p>
+    <div class="confidence-row" id="conf2">
+      <button class="star-btn" data-id="conf2" data-val="1">1</button>
+      <button class="star-btn" data-id="conf2" data-val="2">2</button>
+      <button class="star-btn" data-id="conf2" data-val="3">3</button>
+      <button class="star-btn" data-id="conf2" data-val="4">4</button>
+      <button class="star-btn" data-id="conf2" data-val="5">5</button>
+    </div>
+    <p style="color:#c9d1d9; margin-bottom:8px; margin-top:12px;">③ 能联系"走一步"的方向和长度理解数乘</p>
+    <div class="confidence-row" id="conf3">
+      <button class="star-btn" data-id="conf3" data-val="1">1</button>
+      <button class="star-btn" data-id="conf3" data-val="2">2</button>
+      <button class="star-btn" data-id="conf3" data-val="3">3</button>
+      <button class="star-btn" data-id="conf3" data-val="4">4</button>
+      <button class="star-btn" data-id="conf3" data-val="5">5</button>
+    </div>
+    <p style="color:#f0883e; margin-top:10px; font-size:0.9rem;">选择后点击"提交信心评分"按钮以记录。</p>
+    <button class="btn primary" onclick="submitConfidence()">提交信心评分</button>
+  </div>
+
+  <!-- 反思 -->
+  <div class="section">
+    <h2>📝 简短反思</h2>
+    <p style="color:#8b949e; margin-bottom:8px;">请回答以下问题（任意选1-2个作答）：</p>
+    <ul style="color:#8b949e; padding-left:20px; margin-bottom:10px; font-size:0.95rem;">
+      <li>向量加法中的"首尾相接"让你联想到生活中的什么例子？</li>
+      <li>数乘中的负数倍为什么会让向量反向？用你自己的话解释。</li>
+      <li>向量加法和数乘与"负梯度下降"有什么相似之处？</li>
+    </ul>
+    <textarea class="reflection-area" id="reflectionText" placeholder="在这里写下你的思考..."></textarea>
+    <button class="btn primary" style="margin-top:10px;" onclick="submitReflection()">提交反思</button>
+  </div>
+</div>
+
+<script>
+window.MAIC_LESSON_META = {lesson_id:'A-05', module_id:'OM-A2a', course_version:'demo-closed-loop-v1', concept_name:'向量加法与数乘'};
+
+var startTime = Date.now();
+var interactionStartTime = Date.now();
+var hintCount = 0;
+var currentMode = 'add';
+var showParallelogram = false;
+var showGridOn = false;
+var confidenceScores = {conf1: 0, conf2: 0, conf3: 0};
+var eventLog = [];
+
+var vecA = {x: 2, y: 1};
+var vecB = {x: -1, y: 3};
+var vecK = 2.0;
+
+var dragging = null;
+var scaleDragging = false;
+
+var canvas, ctx;
+var canvasW, canvasH;
+var offsetX, offsetY, scale;
+
+function init() {
+  canvas = document.getElementById('mainCanvas');
+  ctx = canvas.getContext('2d');
+  canvasW = canvas.width;
+  canvasH = canvas.height;
+  offsetX = canvasW / 2;
+  offsetY = canvasH * 0.65;
+  scale = 60;
+
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup', onMouseUp);
+  canvas.addEventListener('mouseleave', onMouseUp);
+  canvas.addEventListener('touchstart', onTouchStart, {passive: false});
+  canvas.addEventListener('touchmove', onTouchMove, {passive: false});
+  canvas.addEventListener('touchend', onTouchEnd);
+
+  var kSlider = document.getElementById('kSlider');
+  kSlider.addEventListener('input', onSliderInput);
+
+  var starBtns = document.querySelectorAll('.star-btn');
+  for (var i = 0; i < starBtns.length; i++) {
+    (function(btn) {
+      btn.addEventListener('click', function() {
+        var id = btn.getAttribute('data-id');
+        var val = parseInt(btn.getAttribute('data-val'));
+        var siblings = document.querySelectorAll('.star-btn[data-id="' + id + '"]');
+        for (var j = 0; j < siblings.length; j++) {
+          siblings[j].classList.remove('active');
+        }
+        btn.classList.add('active');
+        confidenceScores[id] = val;
+      });
+    })(starBtns[i]);
+  }
+
+  drawCanvas();
+  trackEvent('page_loaded', {time_on_task_ms: 0, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK}});
+}
+
+function toScreen(vx, vy) {
+  return {
+    x: offsetX + vx * scale,
+    y: offsetY - vy * scale
+  };
+}
+
+function toWorld(sx, sy) {
+  return {
+    x: (sx - offsetX) / scale,
+    y: -(sy - offsetY) / scale
+  };
+}
+
+function drawArrow(fromX, fromY, toX, toY, color, lineWidth, label, labelOffsetX, labelOffsetY) {
+  ctx.beginPath();
+  ctx.moveTo(fromX, fromY);
+  ctx.lineTo(toX, toY);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth || 3;
+  ctx.stroke();
+
+  var angle = Math.atan2(toY - fromY, toX - fromX);
+  var headLen = 14;
+  ctx.beginPath();
+  ctx.moveTo(toX, toY);
+  ctx.lineTo(toX - headLen * Math.cos(angle - 0.4), toY - headLen * Math.sin(angle - 0.4));
+  ctx.lineTo(toX - headLen * Math.cos(angle + 0.4), toY - headLen * Math.sin(angle + 0.4));
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  if (label) {
+    var lx = toX + (labelOffsetX || 12);
+    var ly = toY + (labelOffsetY || -12);
+    ctx.font = 'bold 16px "Microsoft YaHei", sans-serif';
+    ctx.fillStyle = color;
+    ctx.fillText(label, lx, ly);
+  }
+}
+
+function drawDot(x, y, radius, color) {
+  ctx.beginPath();
+  ctx.arc(x, y, radius || 5, 0, 2 * Math.PI);
+  ctx.fillStyle = color || '#58a6ff';
+  ctx.fill();
+}
+
+function drawCanvas() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+
+  // 网格
+  if (showGridOn) {
+    ctx.strokeStyle = '#21262d';
+    ctx.lineWidth = 1;
+    for (var gx = 0; gx < canvasW; gx += scale) {
+      ctx.beginPath();
+      ctx.moveTo(gx, 0);
+      ctx.lineTo(gx, canvasH);
+      ctx.stroke();
+    }
+    for (var gy = 0; gy < canvasH; gy += scale) {
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(canvasW, gy);
+      ctx.stroke();
+    }
+  }
+
+  // 坐标轴
+  ctx.strokeStyle = '#484f58';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, offsetY);
+  ctx.lineTo(canvasW, offsetY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(offsetX, 0);
+  ctx.lineTo(offsetX, canvasH);
+  ctx.stroke();
+
+  // 轴标签
+  ctx.font = '12px "Microsoft YaHei", sans-serif';
+  ctx.fillStyle = '#484f58';
+  for (var i = -8; i <= 8; i++) {
+    if (i === 0) continue;
+    var px = offsetX + i * scale;
+    var py = offsetY - i * scale;
+    if (px > 20 && px < canvasW - 20) {
+      ctx.fillText(i.toString(), px - 4, offsetY + 16);
+    }
+    if (py > 20 && py < canvasH - 20) {
+      ctx.fillText(i.toString(), offsetX + 8, py + 4);
+    }
+  }
+  ctx.font = '13px "Microsoft YaHei", sans-serif';
+  ctx.fillStyle = '#8b949e';
+  ctx.fillText('x', canvasW - 20, offsetY - 8);
+  ctx.fillText('y', offsetX + 10, 16);
+
+  // 原点
+  drawDot(offsetX, offsetY, 4, '#484f58');
+  ctx.font = '12px "Microsoft YaHei", sans-serif';
+  ctx.fillStyle = '#484f58';
+  ctx.fillText('O', offsetX + 6, offsetY + 18);
+
+  var aScreen = toScreen(vecA.x, vecA.y);
+  var bScreen = toScreen(vecB.x, vecB.y);
+  var sumX = vecA.x + vecB.x;
+  var sumY = vecA.y + vecB.y;
+  var sumScreen = toScreen(sumX, sumY);
+  var scaledX = vecA.x * vecK;
+  var scaledY = vecA.y * vecK;
+  var scaledScreen = toScreen(scaledX, scaledY);
+
+  // 数乘模式：画 k·a
+  if (currentMode === 'scale') {
+    // 画原向量 a
+    drawArrow(offsetX, offsetY, aScreen.x, aScreen.y, '#58a6ff', 3, 'a', 12, -14);
+    // 画 k·a
+    drawArrow(offsetX, offsetY, scaledScreen.x, scaledScreen.y, '#bc8cff', 3, 'k·a=' + vecK.toFixed(1) + '·a', 12, 14);
+
+    // 显示倍数关系说明
+    ctx.font = '14px "Microsoft YaHei", sans-serif';
+    ctx.fillStyle = '#bc8cff';
+    var midX = offsetX + scaledScreen.x - offsetX;
+    var midY = offsetY + scaledScreen.y - offsetY;
+    var lenA = Math.sqrt(vecA.x * vecA.x + vecA.y * vecA.y);
+    var lenB = Math.sqrt(scaledX * scaledX + scaledY * scaledY);
+    ctx.fillText('|k·a| = |k| × |a| = ' + vecK.toFixed(1).replace('-', '') + ' × ' + lenA.toFixed(2) + ' = ' + lenB.toFixed(2), 20, 30);
+    if (vecK < 0) {
+      ctx.fillText('k 为负数，所以 k·a 与 a 方向相反', 20, 52);
+    } else if (vecK > 0) {
+      ctx.fillText('k 为正数，所以 k·a 与 a 方向相同', 20, 52);
+    } else {
+      ctx.fillText('k 为零，所以 k·a 是零向量', 20, 52);
+    }
+  }
+
+  // 加法模式
+  if (currentMode === 'add') {
+    // 画向量 a
+    drawArrow(offsetX, offsetY, aScreen.x, aScreen.y, '#58a6ff', 3, 'a', -30, -10);
+
+    // 画向量 b 从 a 的终点开始（首尾相接）
+    var bStartX = aScreen.x;
+    var bStartY = aScreen.y;
+    drawArrow(bStartX, bStartY, bScreen.x, bScreen.y, '#3fb950', 3, 'b', 14, 14);
+
+    // 和向量
+    drawArrow(offsetX, offsetY, sumScreen.x, sumScreen.y, '#f0883e', 3, 'a+b', 14, -14);
+
+    // 平行四边形
+    if (showParallelogram) {
+      ctx.setLineDash([6, 4]);
+      ctx.strokeStyle = '#58a6ff88';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(aScreen.x, aScreen.y);
+      ctx.lineTo(sumScreen.x, sumScreen.y);
+      ctx.stroke();
+      ctx.strokeStyle = '#3fb95088';
+      ctx.beginPath();
+      ctx.moveTo(bScreen.x, bScreen.y);
+      ctx.lineTo(sumScreen.x, sumScreen.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // 平行四边形标注
+      ctx.font = '12px "Microsoft YaHei", sans-serif';
+      ctx.fillStyle = '#8b949e';
+      ctx.fillText('平行四边形法则', sumScreen.x + 10, sumScreen.y - 20);
+    }
+
+    // 显示坐标信息
+    ctx.font = '14px "Microsoft YaHei", sans-serif';
+    ctx.fillStyle = '#7ee787';
+    ctx.fillText('a + b = (' + vecA.x + ',' + vecA.y + ') + (' + vecB.x + ',' + vecB.y + ') = (' + sumX + ',' + sumY + ')', 20, 30);
+  }
+
+  // 拖动点
+  drawDot(aScreen.x, aScreen.y, 8, '#58a6ff');
+  drawDot(bScreen.x, bScreen.y, 8, '#3fb950');
+
+  // 向量 b 在加法模式中也显示原始位置（从原点）
+  if (currentMode === 'add' && showParallelogram) {
+    // 已画
+  }
+
+  // 更新坐标显示
+  updateCoordDisplay();
+}
+
+function updateCoordDisplay() {
+  var el = document.getElementById('coordDisplay');
+  if (currentMode === 'add') {
+    var sx = vecA.x + vecB.x;
+    var sy = vecA.y + vecB.y;
+    el.textContent = '向量 a = (' + vecA.x + ', ' + vecA.y + ')，向量 b = (' + vecB.x + ', ' + vecB.y + ')，和向量 = (' + sx + ', ' + sy + ')';
+  } else {
+    var sx = vecA.x * vecK;
+    var sy = vecA.y * vecK;
+    el.textContent = '向量 a = (' + vecA.x + ', ' + vecA.y + ')，k = ' + vecK.toFixed(1) + '，k·a = (' + sx + ', ' + sy + ')';
+  }
+}
+
+function getCanvasPos(e) {
+  var rect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / rect.width;
+  var scaleY = canvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
+}
+
+function onTouchStart(e) {
+  e.preventDefault();
+  if (e.touches.length === 0) return;
+  var touch = e.touches[0];
+  var mouseEvent = new MouseEvent('mousedown', {clientX: touch.clientX, clientY: touch.clientY});
+  onMouseDown(mouseEvent);
+}
+
+function onTouchMove(e) {
+  e.preventDefault();
+  if (e.touches.length === 0) return;
+  var touch = e.touches[0];
+  var mouseEvent = new MouseEvent('mousemove', {clientX: touch.clientX, clientY: touch.clientY});
+  onMouseMove(mouseEvent);
+}
+
+function onTouchEnd(e) {
+  onMouseUp();
+}
+
+function onMouseDown(e) {
+  var pos = getCanvasPos(e);
+  var aScreen = toScreen(vecA.x, vecA.y);
+  var bScreen;
+
+  if (currentMode === 'add') {
+    bScreen = toScreen(vecB.x, vecB.y);
+  } else {
+    bScreen = toScreen(vecA.x * vecK, vecA.y * vecK);
+  }
+
+  var distA = Math.sqrt((pos.x - aScreen.x) ** 2 + (pos.y - aScreen.y) ** 2);
+  var distB = Math.sqrt((pos.x - bScreen.x) ** 2 + (pos.y - bScreen.y) ** 2);
+
+  if (distA < 20) {
+    dragging = 'A';
+    canvas.style.cursor = 'grabbing';
+  } else if (distB < 20) {
+    dragging = 'B';
+    canvas.style.cursor = 'grabbing';
+  }
+}
+
+function onMouseMove(e) {
+  var pos = getCanvasPos(e);
+  if (dragging === 'A') {
+    var w = toWorld(pos.x, pos.y);
+    vecA.x = Math.round(w.x * 10) / 10;
+    vecA.y = Math.round(w.y * 10) / 10;
+    updateFeedback();
+    trackEvent('interaction_change', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, action: 'drag_A'}});
+    drawCanvas();
+  } else if (dragging === 'B') {
+    var bScreenX, bScreenY;
+    if (currentMode === 'add') {
+      bScreenX = toScreen(vecB.x, vecB.y).x;
+      bScreenY = toScreen(vecB.y, vecB.y).y;
+      bScreenY = toScreen(vecB.y, vecB.y).y;
+    }
+    var w = toWorld(pos.x, pos.y);
+    vecB.x = Math.round(w.x * 10) / 10;
+    vecB.y = Math.round(w.y * 10) / 10;
+    updateFeedback();
+    trackEvent('interaction_change', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, action: 'drag_B'}});
+    drawCanvas();
+  } else {
+    var aScreen = toScreen(vecA.x, vecA.y);
+    var bScreen;
+    if (currentMode === 'add') {
+      bScreen = toScreen(vecB.x, vecB.y);
+    } else {
+      bScreen = toScreen(vecA.x * vecK, vecA.y * vecK);
+    }
+    var distA = Math.sqrt((pos.x - aScreen.x) ** 2 + (pos.y - aScreen.y) ** 2);
+    var distB = Math.sqrt((pos.x - bScreen.x) ** 2 + (pos.y - bScreen.y) ** 2);
+    if (distA < 20 || distB < 20) {
+      canvas.style.cursor = 'grab';
+    } else {
+      canvas.style.cursor = 'crosshair';
+    }
+  }
+}
+
+function onMouseUp() {
+  if (dragging) {
+    trackEvent('interaction_change', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, action: 'release'}});
+    dragging = null;
+    canvas.style.cursor = 'crosshair';
+  }
+}
+
+function onSliderInput() {
+  var slider = document.getElementById('kSlider');
+  vecK = parseFloat(slider.value);
+  document.getElementById('kVal').textContent = 'k = ' + vecK.toFixed(1);
+  updateFeedback();
+  trackEvent('interaction_change', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, action: 'slider_change'}});
+  drawCanvas();
+}
+
+function switchMode(mode) {
+  currentMode = mode;
+  var tabAdd = document.getElementById('tabAdd');
+  var tabScale = document.getElementById('tabScale');
+  if (mode === 'add') {
+    tabAdd.classList.add('active');
+    tabScale.classList.remove('active');
+  } else {
+    tabScale.classList.add('active');
+    tabAdd.classList.remove('active');
+  }
+  updateFeedback();
+  trackEvent('interaction_change', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, action: 'mode_switch'}});
+  drawCanvas();
+}
+
+function toggleParallelogram() {
+  showParallelogram = !showParallelogram;
+  var btn = document.getElementById('btnShowParallelogram');
+  btn.textContent = showParallelogram ? '隐藏平行四边形' : '显示平行四边形';
+  trackEvent('interaction_change', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, action: 'toggle_parallelogram', showParallelogram: showParallelogram}});
+  drawCanvas();
+}
+
+function toggleGrid() {
+  showGridOn = !showGridOn;
+  var btn = document.getElementById('btnShowGrid');
+  btn.textContent = showGridOn ? '隐藏网格' : '显示网格';
+  trackEvent('interaction_change', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, action: 'toggle_grid', showGridOn: showGridOn}});
+  drawCanvas();
+}
+
+function resetVectors() {
+  vecA = {x: 2, y: 1};
+  vecB = {x: -1, y: 3};
+  vecK = 2.0;
+  document.getElementById('kSlider').value = 2;
+  document.getElementById('kVal').textContent = 'k = 2.0';
+  updateFeedback();
+  trackEvent('interaction_change', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, action: 'reset'}});
+  drawCanvas();
+}
+
+function updateFeedback() {
+  var fb = document.getElementById('feedbackBox');
+  if (currentMode === 'add') {
+    var sx = vecA.x + vecB.x;
+    var sy = vecA.y + vecB.y;
+    var lenA = Math.sqrt(vecA.x * vecA.x + vecA.y * vecA.y).toFixed(2);
+    var lenB = Math.sqrt(vecB.x * vecB.x + vecB.y * vecB.y).toFixed(2);
+    var lenSum = Math.sqrt(sx * sx + sy * sy).toFixed(2);
+    fb.innerHTML = '<strong>向量加法反馈：</strong><br>';
+    fb.innerHTML += '向量 a = (' + vecA.x + ', ' + vecA.y + ')，长度 ≈ ' + lenA + '<br>';
+    fb.innerHTML += '向量 b = (' + vecB.x + ', ' + vecB.y + ')，长度 ≈ ' + lenB + '<br>';
+    fb.innerHTML += '和向量 a+b = (' + sx + ', ' + sy + ')，长度 ≈ ' + lenSum + '<br>';
+    fb.innerHTML += '👉 这就是"首尾相接"——从原点出发，先沿 a 走到 (' + vecA.x + ',' + vecA.y + ')，再沿 b 走到 (' + sx + ',' + sy + ')，等价的位移就是从原点到 (' + sx + ',' + sy + ') 的橙色向量。';
+  } else {
+    var sx = vecA.x * vecK;
+    var sy = vecA.y * vecK;
+    var lenA = Math.sqrt(vecA.x * vecA.x + vecA.y * vecA.y).toFixed(2);
+    var lenScaled = Math.sqrt(sx * sx + sy * sy).toFixed(2);
+    fb.innerHTML = '<strong>数乘反馈：</strong><br>';
+    fb.innerHTML += '向量 a = (' + vecA.x + ', ' + vecA.y + ')，长度 ≈ ' + lenA + '<br>';
+    fb.innerHTML += 'k = ' + vecK.toFixed(1) + '<br>';
+    fb.innerHTML += 'k·a = (' + sx + ', ' + sy + ')，长度 ≈ ' + lenScaled + '<br>';
+    if (vecK > 0) {
+      fb.innerHTML += '👉 k 为正数，' + (vecK > 1 ? '放大了 ' : vecK < 1 ? '缩小到了原来的 ' : '') + '方向不变！';
+    } else if (vecK < 0) {
+      fb.innerHTML += '👉 k 为负数，向量反向，长度变为原来的 ' + Math.abs(vecK).toFixed(1) + ' 倍。';
+    } else {
+      fb.innerHTML += '👉 k 为零，结果为零向量——"走零步"，回到原点。';
+    }
+  }
+}
+
+function showHint() {
+  hintCount++;
+  var hb = document.getElementById('hintBox');
+  hb.classList.add('show');
+  trackEvent('hint_used', {time_on_task_ms: Date.now() - interactionStartTime, interaction_state: {mode: currentMode, vecA: vecA, vecB: vecB, k: vecK, hint_count: hintCount}});
+}
+
+function submitConfidence() {
+  if (confidenceScores.conf1 === 0 && confidenceScores.conf2 === 0 && confidenceScores.conf3 === 0) {
+    alert('请先点击星星选择信心评分（1-5分）。');
+    return;
+  }
+  trackEvent('confidence_submitted', {
+    time_on_task_ms: Date.now() - interactionStartTime,
+    interaction_state: {
+      mode: currentMode,
+      vecA: vecA,
+      vecB: vecB,
+      k: vecK,
+      confidence: confidenceScores
+    }
+  });
+  var fb = document.getElementById('feedbackBox');
+  fb.innerHTML = '<strong>✅ 信心评分已记录！</strong><br>';
+  fb.innerHTML += '你的评分：① ' + confidenceScores.conf1 + '/5 分，② ' + confidenceScores.conf2 + '/5 分，③ ' + confidenceScores.conf3 + '/5 分。<br>';
+  fb.innerHTML += '评分不代表"对错"，它帮助你了解自己的掌握程度。如果某项评分较低，说明那是需要重点复习的地方。';
+  alert('信心评分已提交！你的评分已记录到学习日志中。');
+}
+
+function submitReflection() {
+  var text = document.getElementById('reflectionText').value.trim();
+  if (!text) {
+    alert('请至少写下一句话的反思内容。');
+    return;
+  }
+  trackEvent('reflection_submitted', {
+    time_on_task_ms: Date.now() - interactionStartTime,
+    interaction_state: {
+      mode: currentMode,
+      vecA: vecA,
+      vecB: vecB,
+      k: vecK,
+      reflection: text
+    }
+  });
+  var fb = document.getElementById('feedbackBox');
+  fb.innerHTML = '<strong>✅ 反思已提交！</strong><br>';
+  fb.innerHTML += '你的反思："' + text.substring(0, 100) + (text.length > 100 ? '...' : '') + '"<br>';
+  fb.innerHTML += '反思能帮助你把直觉感受转化为结构化理解。尝试把"走一步"的感觉和数学公式联系起来。';
+  document.getElementById('reflectionText').value = '';
+  alert('反思已提交！感谢你的思考。');
+}
+
+function trackEvent(eventType, payload) {
+  var eventRecord = {
+    lesson_id: window.MAIC_LESSON_META.lesson_id,
+    module_id: window.MAIC_LESSON_META.module_id,
+    course_version: window.MAIC_LESSON_META.course_version,
+    event_type: eventType,
+    timestamp: new Date().toISOString(),
+    time_on_task_ms: payload.time_on_task_ms || (Date.now() - startTime),
+    interaction_state: payload.interaction_state || {}
+  };
+  eventLog.push(eventRecord);
+  try {
+    var existing = [];
+    var stored = localStorage.getItem('maic_learning_events');
+    if (stored) {
+      existing = JSON.parse(stored);
+    }
+    existing.push(eventRecord);
+    localStorage.setItem('maic_learning_events', JSON.stringify(existing));
+  } catch (e) {
+    // localStorage 不可用，仅内存记录
+  }
+  try {
+    window.parent.postMessage({type: 'maic_learning_event', payload: eventRecord}, '*');
+  } catch (e) {
+    // postMessage 不可用
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

@@ -1,0 +1,1036 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>有很多山谷时可能走到局部最低</title>
+    <style>
+        :root {
+            --bg-primary: #0a0f1a;
+            --bg-secondary: #121a2e;
+            --bg-card: #1a2540;
+            --accent: #00d4aa;
+            --accent-dim: #008866;
+            --warning: #ff6b4a;
+            --text-primary: #e8f0f8;
+            --text-secondary: #8a9ab8;
+            --border: #2a3a5a;
+            --glow: rgba(0, 212, 170, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        header {
+            text-align: center;
+            padding: 32px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .learning-goal {
+            font-size: 16px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .intuition-text {
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .intuition-text strong {
+            color: var(--text-primary);
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .warning-text {
+            color: var(--warning);
+        }
+
+        /* 核心互动区域 */
+        .interaction-panel {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-card) 100%);
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .interaction-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--warning));
+        }
+
+        .interaction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .interaction-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: #00f0c0;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: var(--bg-primary);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        #terrainCanvas {
+            display: block;
+            width: 100%;
+            cursor: crosshair;
+        }
+
+        .feedback-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .feedback-item {
+            background: var(--bg-card);
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+        }
+
+        .feedback-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .feedback-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .feedback-value.local-min {
+            color: var(--warning);
+        }
+
+        .feedback-value.global-min {
+            color: var(--accent);
+        }
+
+        /* 概念卡 */
+        .concept-card {
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .concept-card h3 {
+            font-size: 16px;
+            color: var(--accent);
+            margin-bottom: 16px;
+        }
+
+        .concept-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+        }
+
+        .concept-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .concept-icon.good {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .concept-icon.bad {
+            background: var(--warning);
+            color: var(--bg-primary);
+        }
+
+        .concept-icon.neutral {
+            background: var(--text-secondary);
+            color: var(--bg-primary);
+        }
+
+        .concept-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* 提示区 */
+        .hint-section {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            border: 1px dashed var(--border);
+        }
+
+        .hint-title {
+            font-size: 13px;
+            color: var(--accent);
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .hint-content {
+            font-size: 14px;
+            color: var(--text-secondary);
+            display: none;
+        }
+
+        .hint-content.visible {
+            display: block;
+        }
+
+        /* 信心评分 */
+        .confidence-section {
+            text-align: center;
+            padding: 24px;
+        }
+
+        .confidence-question {
+            font-size: 16px;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .confidence-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .confidence-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: var(--bg-card);
+            color: var(--text-secondary);
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .confidence-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: scale(1.1);
+        }
+
+        .confidence-btn.selected {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .confidence-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* 反思区 */
+        .reflection-section {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .reflection-question {
+            font-size: 15px;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+
+        .reflection-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .reflection-option {
+            padding: 14px 18px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .reflection-option:hover {
+            border-color: var(--accent);
+            background: var(--bg-primary);
+        }
+
+        .reflection-option.selected {
+            border-color: var(--accent);
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* 路径历史 */
+        .path-history {
+            margin-top: 16px;
+        }
+
+        .path-history-title {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .path-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .path-item {
+            padding: 6px 12px;
+            background: var(--bg-card);
+            border-radius: 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+        }
+
+        .path-item.global {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .path-item.local {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+
+        /* 动画 */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .animating {
+            animation: pulse 0.5s ease infinite;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .status-message.success {
+            color: var(--accent);
+            background: rgba(0, 212, 170, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>有很多山谷时可能走到局部最低</h1>
+            <p class="learning-goal">学习目标：理解非凸优化中起点选择如何影响最终结果</p>
+        </header>
+
+        <div class="main-content">
+            <!-- 直觉解释 -->
+            <div class="section">
+                <div class="section-title">直觉解释</div>
+                <p class="intuition-text">
+                    想象你在一个<span class="highlight">多山地形</span>中，被蒙住眼睛，只能感觉脚下的坡度。
+                    你决定<span class="highlight">一直往下坡走</span>，希望到达最低点。
+                    但如果地形有<span class="warning-text">多个山谷</span>，你可能走入一个「局部山谷」就停下了，
+                    而错过更低的「全局最低点」。<br><br>
+                    <strong>关键问题：</strong>从<strong>不同起点</strong>出发，可能走向<strong>不同的终点</strong>。
+                </p>
+            </div>
+
+            <!-- 概念卡 -->
+            <div class="concept-card">
+                <h3>核心概念</h3>
+                <div class="concept-item">
+                    <div class="concept-icon good">G</div>
+                    <div class="concept-text"><strong>全局最小：</strong>整个地形中最低的点，是真正的最优解。</div>
+                </div>
+                <div class="concept-item">
+                    <div class="concept-icon bad">L</div>
+                    <div class="concept-text"><strong>局部最小：</strong>某个区域内的最低点，但不是全局最低。</div>
+                </div>
+                <div class="concept-item">
+                    <div class="concept-icon neutral">S</div>
+                    <div class="concept-text"><strong>起点敏感：</strong>下降算法的起点位置会直接影响最终结果。</div>
+                </div>
+            </div>
+
+            <!-- 核心互动区域 -->
+            <div class="interaction-panel">
+                <div class="interaction-header">
+                    <div class="interaction-title">互动实验：选择起点，观察下降路径</div>
+                    <div class="controls">
+                        <button class="btn btn-primary" id="resetBtn">重置地形</button>
+                        <button class="btn btn-secondary" id="clearPathsBtn">清除路径</button>
+                        <button class="btn btn-secondary" id="hintBtn">查看提示</button>
+                    </div>
+                </div>
+
+                <div class="canvas-container">
+                    <canvas id="terrainCanvas" width="800" height="400"></canvas>
+                </div>
+
+                <div class="status-message" id="statusMessage">
+                    点击地形图上方选择起点位置，系统将自动演示下降过程
+                </div>
+
+                <div class="feedback-bar">
+                    <div class="feedback-item">
+                        <div class="feedback-label">当前起点 X</div>
+                        <div class="feedback-value" id="startX">--</div>
+                    </div>
+                    <div class="feedback-item">
+                        <div class="feedback-label">到达高度</div>
+                        <div class="feedback-value" id="endHeight">--</div>
+                    </div>
+                    <div class="feedback-item">
+                        <div class="feedback-label">结果类型</div>
+                        <div class="feedback-value" id="resultType">--</div>
+                    </div>
+                    <div class="feedback-item">
+                        <div class="feedback-label">已探索路径</div>
+                        <div class="feedback-value" id="pathCount">0</div>
+                    </div>
+                </div>
+
+                <div class="path-history" id="pathHistory">
+                    <div class="path-history-title">路径记录：</div>
+                    <div class="path-list" id="pathList"></div>
+                </div>
+
+                <div class="hint-section">
+                    <div class="hint-title" id="hintTitle">点击展开提示</div>
+                    <div class="hint-content" id="hintContent">
+                        观察地形图：左边有一个较深的山谷（全局最小），右边有一个较浅的山谷（局部最小）。
+                        尝试从不同位置点击，看看哪些起点会导向全局最小，哪些会困在局部最小。
+                    </div>
+                </div>
+            </div>
+
+            <!-- 信心评分 -->
+            <div class="section confidence-section">
+                <div class="section-title">自我评估</div>
+                <p class="confidence-question">你现在对「起点影响优化结果」的理解程度如何？</p>
+                <div class="confidence-buttons" id="confidenceButtons">
+                    <button class="confidence-btn" data-value="1">1</button>
+                    <button class="confidence-btn" data-value="2">2</button>
+                    <button class="confidence-btn" data-value="3">3</button>
+                    <button class="confidence-btn" data-value="4">4</button>
+                    <button class="confidence-btn" data-value="5">5</button>
+                </div>
+                <div class="confidence-labels">
+                    <span>完全不理解</span>
+                    <span>非常理解</span>
+                </div>
+            </div>
+
+            <!-- 反思区 -->
+            <div class="section reflection-section">
+                <div class="section-title">反思</div>
+                <p class="reflection-question">在实际应用中（如训练神经网络），你觉得可以怎样尽量避免陷入局部最小？</p>
+                <div class="reflection-options" id="reflectionOptions">
+                    <div class="reflection-option" data-value="A">
+                        尝试多个不同的随机起点，选择结果最好的
+                    </div>
+                    <div class="reflection-option" data-value="B">
+                        使用更大的学习率，跳过小的局部山谷
+                    </div>
+                    <div class="reflection-option" data-value="C">
+                        引入随机扰动，帮助逃离局部最小
+                    </div>
+                    <div class="reflection-option" data-value="D">
+                        以上方法都可以尝试，视具体情况而定
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 课程元数据
+        window.MAIC_LESSON_META = {
+            lesson_id: 'D-08',
+            module_id: 'OM-D2',
+            course_version: 'demo-closed-loop-v1',
+            concept_name: '非凸优化直觉'
+        };
+
+        // 全局变量初始化
+        let canvas = null;
+        let ctx = null;
+        let terrain = [];
+        let paths = [];
+        let currentPath = [];
+        let isAnimating = false;
+        let globalMinX = 0;
+        let globalMinY = 0;
+        let localMinX = 0;
+        let localMinY = 0;
+        let pageLoadTime = Date.now();
+        let confidenceSubmitted = false;
+        let reflectionSubmitted = false;
+
+        // 行为追踪函数
+        function trackEvent(eventType, payload) {
+            const event = {
+                lesson_id: window.MAIC_LESSON_META.lesson_id,
+                module_id: window.MAIC_LESSON_META.module_id,
+                course_version: window.MAIC_LESSON_META.course_version,
+                event_type: eventType,
+                timestamp: new Date().toISOString(),
+                time_on_task_ms: Date.now() - pageLoadTime,
+                interaction_state: payload || {}
+            };
+
+            // 存储到 localStorage
+            let events = [];
+            try {
+                events = JSON.parse(localStorage.getItem('maic_learning_events') || '[]');
+            } catch (e) {
+                events = [];
+            }
+            events.push(event);
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+
+            // postMessage 给父窗口
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'maic_learning_event',
+                    payload: event
+                }, '*');
+            }
+
+            console.log('Event tracked:', eventType, event);
+        }
+
+        // 非凸函数：生成多峰多谷地形
+        function generateTerrain() {
+            terrain = [];
+            for (let x = 0; x <= 800; x++) {
+                const nx = x / 100;
+                // 创建两个山谷：左边深（全局最小），右边浅（局部最小）
+                const y = 50 + 
+                    0.5 * Math.pow(nx - 3, 2) + 
+                    0.3 * Math.pow(nx - 7, 2) - 
+                    2 * Math.exp(-Math.pow(nx - 3, 2)) - 
+                    1.2 * Math.exp(-Math.pow(nx - 7, 2)) +
+                    0.1 * Math.sin(nx * 2);
+                terrain.push({ x: x, y: y * 3 + 50 });
+            }
+
+            // 找到全局最小和局部最小
+            let minY = Infinity;
+            let secondMinY = Infinity;
+            globalMinX = 0;
+            localMinX = 0;
+
+            for (let i = 0; i < terrain.length; i++) {
+                if (terrain[i].y < minY) {
+                    secondMinY = minY;
+                    localMinX = globalMinX;
+                    minY = terrain[i].y;
+                    globalMinX = terrain[i].x;
+                } else if (terrain[i].y < secondMinY && Math.abs(terrain[i].x - globalMinX) > 50) {
+                    secondMinY = terrain[i].y;
+                    localMinX = terrain[i].x;
+                }
+            }
+
+            globalMinY = minY;
+            localMinY = secondMinY;
+        }
+
+        // 绘制地形
+        function drawTerrain() {
+            if (!ctx || !canvas) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 背景网格
+            ctx.strokeStyle = 'rgba(42, 58, 90, 0.3)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= canvas.width; x += 50) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= canvas.height; y += 50) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            // 绘制地形曲线
+            ctx.beginPath();
+            ctx.moveTo(terrain[0].x, terrain[0].y);
+            for (let i = 1; i < terrain.length; i++) {
+                ctx.lineTo(terrain[i].x, terrain[i].y);
+            }
+            ctx.strokeStyle = '#00d4aa';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 填充地形下方
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(0, 212, 170, 0.2)');
+            gradient.addColorStop(1, 'rgba(0, 212, 170, 0.05)');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // 标记全局最小
+            ctx.beginPath();
+            ctx.arc(globalMinX, globalMinY, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#00d4aa';
+            ctx.fill();
+            ctx.fillStyle = '#0a0f1a';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('G', globalMinX, globalMinY);
+
+            // 标记局部最小
+            ctx.beginPath();
+            ctx.arc(localMinX, localMinY, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff6b4a';
+            ctx.fill();
+            ctx.fillStyle = '#0a0f1a';
+            ctx.fillText('L', localMinX, localMinY);
+
+            // 绘制已有路径
+            for (let p = 0; p < paths.length; p++) {
+                const path = paths[p];
+                if (path.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(path[0].x, path[0].y);
+                    for (let i = 1; i < path.length; i++) {
+                        ctx.lineTo(path[i].x, path[i].y);
+                    }
+                    ctx.strokeStyle = path.isGlobal ? 'rgba(0, 212, 170, 0.6)' : 'rgba(255, 107, 74, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // 起点标记
+                    ctx.beginPath();
+                    ctx.arc(path[0].x, path[0].y, 6, 0, Math.PI * 2);
+                    ctx.fillStyle = path.isGlobal ? '#00d4aa' : '#ff6b4a';
+                    ctx.fill();
+                }
+            }
+
+            // 绘制当前路径
+            if (currentPath.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(currentPath[0].x, currentPath[0].y);
+                for (let i = 1; i < currentPath.length; i++) {
+                    ctx.lineTo(currentPath[i].x, currentPath[i].y);
+                }
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // 当前点
+                const lastPoint = currentPath[currentPath.length - 1];
+                ctx.beginPath();
+                ctx.arc(lastPoint.x, lastPoint.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+            }
+        }
+
+        // 计算某位置的梯度（近似）
+        function getGradient(x) {
+            const idx = Math.max(0, Math.min(Math.floor(x), terrain.length - 2));
+            if (idx >= terrain.length - 1) return 0;
+            return (terrain[idx + 1].y - terrain[idx].y);
+        }
+
+        // 获取地形高度
+        function getTerrainY(x) {
+            const idx = Math.max(0, Math.min(Math.floor(x), terrain.length - 1));
+            return terrain[idx].y;
+        }
+
+        // 梯度下降动画
+        function gradientDescent(startX) {
+            if (isAnimating) return;
+            isAnimating = true;
+
+            currentPath = [{ x: startX, y: getTerrainY(startX) }];
+            let x = startX;
+            const learningRate = 0.5;
+            const maxSteps = 200;
+            let step = 0;
+
+            document.getElementById('startX').textContent = startX.toFixed(0);
+            document.getElementById('statusMessage').textContent = '正在下降中...';
+            document.getElementById('statusMessage').classList.add('animating');
+
+            function animate() {
+                if (step >= maxSteps) {
+                    finishPath();
+                    return;
+                }
+
+                const grad = getGradient(x);
+                if (Math.abs(grad) < 0.1) {
+                    finishPath();
+                    return;
+                }
+
+                // 沿梯度反方向移动
+                x = x - learningRate * grad * 0.1;
+                x = Math.max(10, Math.min(790, x));
+
+                const y = getTerrainY(x);
+                currentPath.push({ x: x, y: y });
+
+                drawTerrain();
+
+                document.getElementById('endHeight').textContent = y.toFixed(1);
+
+                step++;
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+        }
+
+        // 完成路径
+        function finishPath() {
+            isAnimating = false;
+            document.getElementById('statusMessage').classList.remove('animating');
+
+            const endY = currentPath[currentPath.length - 1].y;
+            const isGlobal = Math.abs(currentPath[currentPath.length - 1].x - globalMinX) < 30;
+
+            currentPath.isGlobal = isGlobal;
+            paths.push([...currentPath]);
+            paths[paths.length - 1].isGlobal = isGlobal;
+
+            // 更新UI
+            document.getElementById('endHeight').textContent = endY.toFixed(1);
+            document.getElementById('pathCount').textContent = paths.length;
+
+            const resultTypeEl = document.getElementById('resultType');
+            if (isGlobal) {
+                resultTypeEl.textContent = '全局最小';
+                resultTypeEl.className = 'feedback-value global-min';
+                document.getElementById('statusMessage').textContent = '成功找到全局最小！这个起点位置很好。';
+                document.getElementById('statusMessage').className = 'status-message success';
+            } else {
+                resultTypeEl.textContent = '局部最小';
+                resultTypeEl.className = 'feedback-value local-min';
+                document.getElementById('statusMessage').textContent = '陷入局部最小！试试其他起点位置。';
+                document.getElementById('statusMessage').className = 'status-message';
+            }
+
+            // 添加路径记录
+            const pathList = document.getElementById('pathList');
+            const pathItem = document.createElement('span');
+            pathItem.className = 'path-item ' + (isGlobal ? 'global' : 'local');
+            pathItem.textContent = '路径' + paths.length + ': ' + (isGlobal ? '全局' : '局部');
+            pathList.appendChild(pathItem);
+
+            // 追踪事件
+            trackEvent('interaction_complete', {
+                start_x: currentPath[0].x,
+                end_y: endY,
+                is_global: isGlobal,
+                path_count: paths.length
+            });
+
+            drawTerrain();
+        }
+
+        // 初始化
+        function init() {
+            canvas = document.getElementById('terrainCanvas');
+            if (!canvas) return;
+
+            ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            // 设置 canvas 实际尺寸
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = 400;
+
+            generateTerrain();
+            drawTerrain();
+
+            // 追踪页面加载
+            trackEvent('page_loaded', {});
+
+            // Canvas 点击事件
+            canvas.addEventListener('click', function(e) {
+                if (isAnimating) return;
+
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const x = (e.clientX - rect.left) * scaleX;
+                const y = getTerrainY(x);
+
+                // 只允许在地形上方点击
+                if (e.clientY - rect.top < y / (canvas.height / rect.height) + 50) {
+                    trackEvent('interaction_change', {
+                        start_x: x,
+                        path_count: paths.length
+                    });
+                    gradientDescent(x);
+                }
+            });
+
+            // 重置按钮
+            document.getElementById('resetBtn').addEventListener('click', function() {
+                generateTerrain();
+                paths = [];
+                currentPath = [];
+                document.getElementById('pathList').innerHTML = '';
+                document.getElementById('pathCount').textContent = '0';
+                document.getElementById('startX').textContent = '--';
+                document.getElementById('endHeight').textContent = '--';
+                document.getElementById('resultType').textContent = '--';
+                document.getElementById('resultType').className = 'feedback-value';
+                document.getElementById('statusMessage').textContent = '地形已重置，点击选择新起点';
+                document.getElementById('statusMessage').className = 'status-message';
+                drawTerrain();
+
+                trackEvent('interaction_change', {
+                    action: 'reset_terrain'
+                });
+            });
+
+            // 清除路径按钮
+            document.getElementById('clearPathsBtn').addEventListener('click', function() {
+                paths = [];
+                currentPath = [];
+                document.getElementById('pathList').innerHTML = '';
+                document.getElementById('pathCount').textContent = '0';
+                drawTerrain();
+
+                trackEvent('interaction_change', {
+                    action: 'clear_paths'
+                });
+            });
+
+            // 提示按钮
+            document.getElementById('hintBtn').addEventListener('click', function() {
+                const content = document.getElementById('hintContent');
+                const title = document.getElementById('hintTitle');
+                content.classList.toggle('visible');
+                title.textContent = content.classList.contains('visible') ? '点击收起提示' : '点击展开提示';
+
+                trackEvent('hint_used', {
+                    hint_visible: content.classList.contains('visible')
+                });
+            });
+
+            // 提示标题点击
+            document.getElementById('hintTitle').addEventListener('click', function() {
+                document.getElementById('hintBtn').click();
+            });
+
+            // 信心评分
+            const confidenceButtons = document.querySelectorAll('.confidence-btn');
+            confidenceButtons.forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    if (confidenceSubmitted) return;
+
+                    confidenceButtons.forEach(function(b) {
+                        b.classList.remove('selected');
+                    });
+                    btn.classList.add('selected');
+
+                    const value = parseInt(btn.dataset.value);
+                    confidenceSubmitted = true;
+
+                    trackEvent('confidence_submitted', {
+                        confidence_value: value
+                    });
+
+                    document.getElementById('statusMessage').textContent = '感谢你的反馈！信心评分：' + value + ' 分';
+                });
+            });
+
+            // 反思选项
+            const reflectionOptions = document.querySelectorAll('.reflection-option');
+            reflectionOptions.forEach(function(opt) {
+                opt.addEventListener('click', function() {
+                    if (reflectionSubmitted) return;
+
+                    reflectionOptions.forEach(function(o) {
+                        o.classList.remove('selected');
+                    });
+                    opt.classList.add('selected');
+
+                    const value = opt.dataset.value;
+                    reflectionSubmitted = true;
+
+                    trackEvent('reflection_submitted', {
+                        reflection_choice: value
+                    });
+                });
+            });
+        }
+
+        // DOM 加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+
+        // 窗口大小改变时重绘
+        window.addEventListener('resize', function() {
+            if (canvas) {
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth;
+                drawTerrain();
+            }
+        });
+    </script>
+</body>
+</html>

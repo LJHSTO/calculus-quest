@@ -1,0 +1,606 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>正定意味着从中心往哪走都变大</title>
+<style>
+    :root {
+        --bg-color: #121212;
+        --panel-bg: #1e1e1e;
+        --card-bg: #2d2d2d;
+        --text-primary: #e0e0e0;
+        --text-secondary: #aaaaaa;
+        --accent-color: #4CAF50;
+        --border-color: #333333;
+        --rise-color: #ff6b6b;
+        --fall-color: #4da6ff;
+    }
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-primary);
+        margin: 0;
+        padding: 20px;
+        line-height: 1.6;
+    }
+    .header {
+        margin-bottom: 30px;
+    }
+    .header h1 {
+        font-size: 2rem;
+        margin: 0 0 10px 0;
+        color: #ffffff;
+    }
+    .focus-text {
+        font-size: 1.1rem;
+        color: var(--accent-color);
+        margin-bottom: 5px;
+    }
+    .objective, .intuition {
+        background-color: var(--card-bg);
+        padding: 12px 20px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        border-left: 4px solid #888;
+    }
+    .intuition {
+        border-left-color: var(--accent-color);
+    }
+    
+    .interactive-container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .left-panel, .right-panel {
+        background-color: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+        flex: 1;
+    }
+    h2 {
+        margin-top: 0;
+        font-size: 1.4rem;
+        color: #ffffff;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 10px;
+    }
+    
+    .control-group {
+        margin-bottom: 25px;
+    }
+    label {
+        display: block;
+        margin-bottom: 10px;
+        font-weight: 600;
+        color: #cccccc;
+    }
+    select {
+        width: 100%;
+        padding: 10px;
+        background-color: #333;
+        color: #fff;
+        border: 1px solid #555;
+        border-radius: 4px;
+        font-size: 1rem;
+    }
+    .function-display {
+        font-family: 'Courier New', Courier, monospace;
+        background-color: #000;
+        padding: 15px;
+        border-radius: 4px;
+        text-align: center;
+        font-size: 1.3rem;
+        color: #ffd700;
+        border: 1px solid #444;
+    }
+    input[type="range"] {
+        width: 100%;
+        margin-top: 10px;
+        cursor: pointer;
+    }
+    
+    .hint-btn {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px dashed #666;
+        padding: 6px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+    }
+    .hint-btn:hover {
+        color: #fff;
+        border-color: #fff;
+    }
+    .hint-text {
+        display: none;
+        margin-top: 10px;
+        font-size: 0.95rem;
+        color: #ffeb3b;
+        background: rgba(255, 235, 59, 0.1);
+        padding: 10px;
+        border-radius: 4px;
+    }
+    
+    .summary-box {
+        background-color: #2a2a2a;
+        padding: 15px;
+        border-radius: 6px;
+        border-left: 4px solid #fff;
+        margin-top: 20px;
+    }
+    
+    .canvas-wrapper {
+        text-align: center;
+        background-color: #000;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+    canvas {
+        background-color: #111;
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+    }
+    
+    .feedback-status {
+        font-size: 1.3rem;
+        text-align: center;
+        font-weight: bold;
+        padding: 15px;
+        background-color: #2a2a2a;
+        border-radius: 6px;
+    }
+    .rise { color: var(--rise-color); }
+    .fall { color: var(--fall-color); }
+    
+    .concept-card {
+        background-color: #2c3e50;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        border-left: 5px solid #3498db;
+    }
+    .concept-card h3 {
+        margin-top: 0;
+        color: #ecf0f1;
+    }
+    
+    .assessment-section {
+        background-color: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        padding: 20px;
+        border-radius: 8px;
+    }
+    .assessment-section h3 {
+        margin-top: 0;
+    }
+    .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .action-btn {
+        background-color: #333;
+        color: #fff;
+        border: 1px solid #555;
+        padding: 10px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+    .action-btn:hover {
+        background-color: #444;
+    }
+    .action-btn.selected {
+        background-color: var(--accent-color);
+        border-color: #fff;
+    }
+    
+    @media (max-width: 800px) {
+        .interactive-container {
+            flex-direction: column;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <h1>正定意味着从中心往哪走都变大</h1>
+    <p class="focus-text"><strong>本节聚焦：</strong>正定直觉</p>
+    <div class="objective">
+        <strong>学生掌握目标：</strong>能用图像解释正定; 能区分“碗形”和“鞍形”; 能理解正定与稳定最小点的关系。
+    </div>
+    <div class="intuition">
+        <strong>直觉解释：</strong>正定可以先理解为“碗形”曲面: 从中心向任意方向走, 高度都会增加. 它帮助判断一个点是否像最小值。
+    </div>
+</div>
+
+<div class="interactive-container">
+    <!-- 左侧控制与输入区 -->
+    <div class="left-panel">
+        <h2>探索操作区</h2>
+        
+        <div class="control-group">
+            <label for="surface-type">1. 选择矩阵曲面类型</label>
+            <select id="surface-type">
+                <option value="positive-definite">正定矩阵 (碗形曲面)</option>
+                <option value="saddle">非正定矩阵 (鞍形曲面)</option>
+            </select>
+        </div>
+        
+        <div class="control-group">
+            <label>当前二次型表达式：</label>
+            <div class="function-display" id="function-eq">f(x,y) = x² + y²</div>
+        </div>
+        
+        <div class="control-group">
+            <label for="angle-slider">2. 选择从中心行走的角度：<span id="angle-value" style="color:#fff;">0°</span></label>
+            <input type="range" id="angle-slider" min="0" max="360" value="0">
+        </div>
+        
+        <button class="hint-btn" id="hint-btn">💡 需要操作提示？</button>
+        <div class="hint-text" id="hint-text">
+            提示：滑动上方的角度滑块，相当于你在曲面中心转圈并向外走。观察右侧下方的高度剖面图，看看曲线是往上走还是往下走。
+        </div>
+        
+        <div class="summary-box">
+            <h3 style="margin-top:0; color:#fff;">总结观察</h3>
+            <p id="observation-text">在正定矩阵对应曲面上，<strong>所有方向都上升</strong>，形成一个稳定的“碗”。</p>
+        </div>
+    </div>
+    
+    <!-- 右侧可视化反馈区 -->
+    <div class="right-panel">
+        <h2>行走测试可视化</h2>
+        <div class="canvas-wrapper">
+            <canvas id="viz-canvas" width="400" height="400"></canvas>
+        </div>
+        <div class="feedback-status" id="feedback-status">
+            当前方向高度变化：<span class="rise">上升 📈</span>
+        </div>
+    </div>
+</div>
+
+<div class="concept-card">
+    <h3>核心概念卡：行走测试法 与 代数配方</h3>
+    <p><strong>基于几何直觉验证 (行走测试法)：</strong>将考察点设定在曲面中心。选择任意一个方向，沿着该方向向外移动。如果向所有方向走高度都上升，说明是“碗形”曲面（矩阵正定）；如果有的方向上升有的方向下降，则是“鞍形”曲面。</p>
+    <p><strong>代数视角：</strong>将矩阵转化为二次型多项式，如 f(x,y)。若结果为严格的正数平方和（如 x² + y²），则判定为正定；若可能出现负值（如 x² - y² 代入 y=1），则非正定。</p>
+</div>
+
+<div class="assessment-section">
+    <h3>学习反馈</h3>
+    
+    <div style="margin-bottom: 25px;">
+        <p>你对“正定直觉”这个概念的理解程度有多大把握？</p>
+        <div class="btn-group">
+            <button class="action-btn conf-btn" data-val="1">1 (完全不理解)</button>
+            <button class="action-btn conf-btn" data-val="2">2 (有些困惑)</button>
+            <button class="action-btn conf-btn" data-val="3">3 (一般)</button>
+            <button class="action-btn conf-btn" data-val="4">4 (比较清楚)</button>
+            <button class="action-btn conf-btn" data-val="5">5 (完全掌握)</button>
+        </div>
+    </div>
+    
+    <div>
+        <p>简短反思：通过刚才的行走测试，什么情况下曲面的中心才是一个稳定的最小值？</p>
+        <div class="btn-group">
+            <button class="action-btn ref-btn">有些方向下降</button>
+            <button class="action-btn ref-btn">所有方向都上升</button>
+            <button class="action-btn ref-btn">高度保持不变</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 注入课程元数据
+    window.MAIC_LESSON_META = {
+        lesson_id: 'A-12',
+        module_id: 'OM-A4',
+        course_version: 'demo-closed-loop-v1',
+        concept_name: '正定直觉'
+    };
+
+    let timeStart = Date.now();
+
+    // 状态获取函数
+    function getInteractionState() {
+        const typeSelect = document.getElementById('surface-type');
+        const angleSlider = document.getElementById('angle-slider');
+        return {
+            surface_type: typeSelect ? typeSelect.value : null,
+            angle_degree: angleSlider ? parseInt(angleSlider.value) : null
+        };
+    }
+
+    // 行为追踪函数
+    function trackEvent(eventType, payload = {}) {
+        const event = {
+            lesson_id: window.MAIC_LESSON_META.lesson_id,
+            module_id: window.MAIC_LESSON_META.module_id,
+            course_version: window.MAIC_LESSON_META.course_version,
+            event_type: eventType,
+            timestamp: new Date().toISOString(),
+            time_on_task_ms: Date.now() - timeStart,
+            interaction_state: getInteractionState(),
+            ...payload
+        };
+
+        let events = [];
+        try {
+            const stored = localStorage.getItem('maic_learning_events');
+            if (stored) events = JSON.parse(stored);
+        } catch(e) {}
+        
+        events.push(event);
+        
+        try {
+            localStorage.setItem('maic_learning_events', JSON.stringify(events));
+        } catch(e) {}
+
+        if (window.parent) {
+            window.parent.postMessage({ type: 'maic_learning_event', payload: event }, '*');
+        }
+    }
+
+    // DOM加载后初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        trackEvent('page_loaded');
+
+        const typeSelect = document.getElementById('surface-type');
+        const angleSlider = document.getElementById('angle-slider');
+        const angleValue = document.getElementById('angle-value');
+        const funcDisplay = document.getElementById('function-eq');
+        const obsText = document.getElementById('observation-text');
+        const canvas = document.getElementById('viz-canvas');
+        const ctx = canvas.getContext('2d');
+        const feedbackStatus = document.getElementById('feedback-status');
+        const hintBtn = document.getElementById('hint-btn');
+        const hintText = document.getElementById('hint-text');
+
+        let isComplete = false;
+        let anglesExplored = new Set();
+
+        // 计算二维坐标处的高度（映射回数学系）
+        function calcHeight(type, x, y) {
+            if (type === 'positive-definite') {
+                return x * x + y * y;
+            } else {
+                return x * x - y * y;
+            }
+        }
+
+        // 核心渲染逻辑
+        function drawCanvas() {
+            const type = typeSelect.value;
+            const angleDeg = parseInt(angleSlider.value);
+            const angleRad = angleDeg * Math.PI / 180;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // ==========================================
+            // 上半区 [0, 200]：等高热力俯视图
+            // ==========================================
+            const cx = 200;
+            const cy = 100;
+            const scale = 20; // 20像素 = 1单位
+
+            // 绘制网格热力背景
+            for (let px = 0; px < 400; px += 10) {
+                for (let py = 0; py < 200; py += 10) {
+                    let x = (px - cx) / scale;
+                    let y = (cy - py) / scale; // Canvas中Y向下，转化为数学坐标系
+                    let h = calcHeight(type, x, y);
+                    
+                    if (h > 0) {
+                        ctx.fillStyle = `rgba(255, 107, 107, ${Math.min(h / 25, 0.8)})`; // 上升偏红
+                    } else if (h < 0) {
+                        ctx.fillStyle = `rgba(77, 166, 255, ${Math.min(-h / 25, 0.8)})`; // 下降偏蓝
+                    } else {
+                        ctx.fillStyle = 'rgba(0,0,0,0)';
+                    }
+                    ctx.fillRect(px, py, 10, 10);
+                }
+            }
+
+            // 绘制俯视图坐标轴
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(400, cy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, 200); ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('X', 380, cy - 5);
+            ctx.fillText('Y', cx + 5, 15);
+            ctx.fillText('俯视图 (原点在中心)', 10, 20);
+
+            // 绘制当前行走方向射线
+            const rayLen = 80;
+            // 注意Canvas绘图: 角度顺时针，0度朝右
+            const endX = cx + rayLen * Math.cos(angleRad);
+            const endY = cy - rayLen * Math.sin(angleRad); // 减去是为了让0度在右，90度在上，符合常规数学直觉
+            
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 画箭头
+            const headlen = 10;
+            const angleForHead = Math.atan2(endY - cy, endX - cx);
+            ctx.beginPath();
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - headlen * Math.cos(angleForHead - Math.PI / 6), endY - headlen * Math.sin(angleForHead - Math.PI / 6));
+            ctx.lineTo(endX - headlen * Math.cos(angleForHead + Math.PI / 6), endY - headlen * Math.sin(angleForHead + Math.PI / 6));
+            ctx.lineTo(endX, endY);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+
+            // ==========================================
+            // 下半区 [200, 400]：沿方向的高度剖面图
+            // ==========================================
+            const px0 = 40;
+            const py0 = 300; // 基准高度
+            
+            ctx.fillStyle = '#161616';
+            ctx.fillRect(0, 200, 400, 200);
+            ctx.strokeStyle = '#333';
+            ctx.strokeRect(0, 200, 400, 200);
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.fillText('剖面图 (当前行走方向的高度变化)', 10, 220);
+
+            // 剖面图坐标轴
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            // Y轴 (高度 h)
+            ctx.beginPath(); ctx.moveTo(px0, 230); ctx.lineTo(px0, 380); ctx.stroke();
+            // X轴 (步数 r)
+            ctx.beginPath(); ctx.moveTo(px0 - 10, py0); ctx.lineTo(370, py0); ctx.stroke();
+            
+            ctx.fillText('高度', px0 - 30, 240);
+            ctx.fillText('离中心步数', 320, py0 + 15);
+
+            // 绘制剖面抛物线
+            ctx.beginPath();
+            for (let r = 0; r <= 5; r += 0.1) {
+                // 计算该步数对应的数学坐标
+                let dx = r * Math.cos(angleRad);
+                let dy = r * Math.sin(angleRad);
+                let h = calcHeight(type, dx, dy);
+                
+                let plotX = px0 + r * 60; // 1步 = 60像素
+                let plotY = py0 - h * 3;  // 1高度 = 3像素
+                
+                if (r === 0) ctx.moveTo(plotX, plotY);
+                else ctx.lineTo(plotX, plotY);
+            }
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // ==========================================
+            // 更新反馈状态
+            // ==========================================
+            // 采样 r=1 处的高度，判断升降
+            let testX = Math.cos(angleRad);
+            let testY = Math.sin(angleRad);
+            let hTest = calcHeight(type, testX, testY);
+
+            if (hTest > 0) {
+                feedbackStatus.innerHTML = `当前方向走动：<span class="rise">高度正在上升 📈</span>`;
+            } else if (hTest < 0) {
+                feedbackStatus.innerHTML = `当前方向走动：<span class="fall">高度正在下降 📉</span>`;
+            } else {
+                feedbackStatus.innerHTML = `当前方向走动：<span style="color:#aaa;">高度保持平坦 ➖</span>`;
+            }
+        }
+
+        // 更新左侧界面文本
+        function updateUI() {
+            const type = typeSelect.value;
+            const angleDeg = parseInt(angleSlider.value);
+            angleValue.textContent = angleDeg + '°';
+
+            if (type === 'positive-definite') {
+                funcDisplay.innerHTML = 'f(x,y) = x² + y²';
+                obsText.innerHTML = '在“正定矩阵”曲面上，无论你滑动到哪个角度，右下方的曲线始终开口向上，即<strong>所有方向都上升</strong>，这代表原点是一个稳定的“碗底”。';
+            } else {
+                funcDisplay.innerHTML = 'f(x,y) = x² - y²';
+                obsText.innerHTML = '在“非正定矩阵”曲面上，改变行走方向，你会发现在有些方向(如0°)高度上升，但在另一些方向(如90°)高度下降。这代表原点是一个不稳定的“马鞍”点。';
+            }
+
+            drawCanvas();
+        }
+
+        // 事件监听
+        typeSelect.addEventListener('change', () => {
+            updateUI();
+            trackEvent('interaction_change', { change_target: 'surface_type', new_value: typeSelect.value });
+        });
+
+        angleSlider.addEventListener('input', () => {
+            updateUI();
+            let angle = parseInt(angleSlider.value);
+            anglesExplored.add(angle);
+            
+            // 如果探索了多个代表性区域，标记互动完成
+            if (!isComplete && anglesExplored.size > 8) {
+                isComplete = true;
+                trackEvent('interaction_complete', { angles_explored_count: anglesExplored.size });
+            }
+        });
+
+        angleSlider.addEventListener('change', () => {
+            trackEvent('interaction_change', { change_target: 'angle_slider', new_value: angleSlider.value });
+        });
+
+        hintBtn.addEventListener('click', () => {
+            if (hintText.style.display === 'none' || hintText.style.display === '') {
+                hintText.style.display = 'block';
+                trackEvent('hint_used', { hint_type: 'operation_hint' });
+            } else {
+                hintText.style.display = 'none';
+            }
+        });
+
+        // 信心评分监听
+        const confBtns = document.querySelectorAll('.conf-btn');
+        confBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                confBtns.forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                trackEvent('confidence_submitted', { confidence_score: parseInt(btn.dataset.val) });
+            });
+        });
+
+        // 反思题目监听
+        const refBtns = document.querySelectorAll('.ref-btn');
+        refBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                refBtns.forEach(b => {
+                    b.classList.remove('selected');
+                    b.style.backgroundColor = '';
+                    b.style.borderColor = '';
+                });
+                btn.classList.add('selected');
+                
+                const isCorrect = btn.textContent.includes('所有方向都上升');
+                trackEvent('reflection_submitted', { 
+                    selected_answer: btn.textContent, 
+                    is_correct: isCorrect 
+                });
+                
+                if (isCorrect) {
+                    btn.style.backgroundColor = 'var(--accent-color)';
+                    btn.style.borderColor = '#ffffff';
+                } else {
+                    btn.style.backgroundColor = '#f44336';
+                    btn.style.borderColor = '#ffffff';
+                }
+            });
+        });
+
+        // 初始化
+        updateUI();
+    });
+</script>
+</body>
+</html>

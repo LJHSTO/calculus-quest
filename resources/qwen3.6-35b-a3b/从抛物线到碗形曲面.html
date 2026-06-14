@@ -1,0 +1,760 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>从抛物线到碗形曲面</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#1a1a2e;--panel:#16213e;--accent:#0f3460;--highlight:#e94560;--text:#e0e0e0;--dim:#8892a0;--success:#4ecca3;--warn:#f9a825}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.header{background:linear-gradient(135deg,#0f3460,#1a1a2e);padding:18px 24px;border-bottom:2px solid var(--highlight);text-align:center}
+.header h1{font-size:1.6em;color:#fff;letter-spacing:1px}
+.header .goal{font-size:.92em;color:var(--dim);margin-top:6px}
+.main{display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100vh - 100px)}
+.panel{background:var(--panel);padding:20px;border-right:1px solid #2a2a4a;overflow-y:auto}
+.panel h2{font-size:1.05em;color:var(--highlight);margin-bottom:12px;border-left:3px solid var(--highlight);padding-left:10px}
+.section{margin-bottom:18px;padding:12px;background:rgba(255,255,255,.03);border-radius:8px}
+.section h3{font-size:.9em;color:var(--dim);margin-bottom:8px}
+.btn{display:inline-block;padding:8px 16px;border:1px solid var(--accent);background:transparent;color:var(--text);border-radius:6px;cursor:pointer;font-size:.88em;transition:all .2s;margin:3px}
+.btn:hover{background:var(--accent);color:#fff}
+.btn.active{background:var(--highlight);border-color:var(--highlight);color:#fff}
+.btn-primary{background:var(--highlight);border-color:var(--highlight);color:#fff}
+.btn-primary:hover{background:#c73a52}
+.slider-group{margin:10px 0}
+.slider-group label{display:block;font-size:.85em;color:var(--dim);margin-bottom:4px}
+.slider-group input[type=range]{width:100%;accent-color:var(--highlight)}
+.slider-val{font-size:1.1em;color:var(--success);font-weight:bold;float:right}
+.canvas-wrap{background:#0d1117;border-radius:8px;overflow:hidden;position:relative}
+canvas{display:block;width:100%;cursor:crosshair}
+.feedback-bar{min-height:36px;padding:8px 12px;margin-top:8px;border-radius:6px;font-size:.9em;display:flex;align-items:center;gap:8px}
+.feedback-bar.ok{background:rgba(78,204,163,.15);color:var(--success);border:1px solid rgba(78,204,163,.3)}
+.feedback-bar.no{background:rgba(233,69,96,.15);color:var(--highlight);border:1px solid rgba(233,69,96,.3)}
+.feedback-bar.info{background:rgba(249,168,37,.1);color:var(--warn);border:1px solid rgba(249,168,37,.3)}
+.points-list{margin:8px 0;font-size:.82em;color:var(--dim)}
+.points-list span{color:var(--success)}
+.stepper{display:flex;gap:6px;margin:8px 0;flex-wrap:wrap}
+.step-item{font-size:.78em;padding:4px 10px;background:rgba(255,255,255,.05);border-radius:4px;color:var(--dim)}
+.step-item.done{background:rgba(78,204,163,.2);color:var(--success)}
+.bottom-section{background:var(--panel);padding:20px 24px;border-top:1px solid #2a2a4a;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.confidence-group{display:flex;gap:6px;margin:10px 0}
+.confidence-btn{flex:1;padding:10px 4px;border:1px solid #2a2a4a;background:transparent;color:var(--text);border-radius:6px;cursor:pointer;font-size:.85em;transition:all .2s}
+.confidence-btn:hover{border-color:var(--highlight)}
+.confidence-btn.selected{background:var(--highlight);border-color:var(--highlight)}
+textarea{width:100%;height:70px;background:rgba(255,255,255,.05);border:1px solid #2a2a4a;border-radius:6px;color:var(--text);padding:10px;font-size:.88em;resize:vertical;font-family:inherit}
+.reflection-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.reflection-tag{padding:5px 12px;border:1px solid #2a2a4a;background:transparent;color:var(--dim);border-radius:20px;cursor:pointer;font-size:.8em;transition:all .2s}
+.reflection-tag:hover{border-color:var(--highlight);color:var(--text)}
+.reflection-tag.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+.hint-box{background:rgba(249,168,37,.08);border:1px solid rgba(249,168,37,.25);border-radius:6px;padding:10px;font-size:.85em;color:var(--warn);margin-top:8px;display:none}
+.hint-box.show{display:block}
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:8px;font-size:.78em;color:var(--dim)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:4px;vertical-align:middle}
+.tag{font-size:.7em;padding:2px 8px;border-radius:10px;background:rgba(233,69,96,.2);color:var(--highlight);margin-left:8px;vertical-align:middle}
+@media(max-width:800px){.main{grid-template-columns:1fr;}.bottom-section{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>从抛物线到碗形曲面 <span class="tag">主动学习</span></h1>
+<div class="goal">本节聚焦：二次函数与二次曲面 — 你能识别碗形、山顶和鞍形吗？</div>
+</div>
+<div class="main">
+<div class="panel">
+<h2>🔧 操作面板</h2>
+
+<div class="section">
+<h3>曲面模式</h3>
+<div class="stepper" id="modeBtns">
+<button class="btn active" data-mode="parabola">抛物线 y=x²</button>
+<button class="btn" data-mode="bowl">碗形 z=x²+y²</button>
+<button class="btn" data-mode="saddle">鞍面 z=x²−y²</button>
+</div>
+</div>
+
+<div class="section">
+<h3>参数调节</h3>
+<div class="slider-group">
+<label>系数 a（x方向弯曲度）<span class="slider-val" id="valA">1.0</span></label>
+<input type="range" id="sliderA" min="0.2" max="3" step="0.1" value="1">
+</div>
+<div class="slider-group">
+<label>系数 b（y方向弯曲度）<span class="slider-val" id="valB">1.0</span></label>
+<input type="range" id="sliderB" min="-3" max="3" step="0.1" value="1">
+</div>
+<div class="slider-group">
+<label>坐标范围 <span class="slider-val" id="valRange">3.0</span></label>
+<input type="range" id="sliderRange" min="1.5" max="5" step="0.5" value="3">
+</div>
+</div>
+
+<div class="section">
+<h3>任务目标</h3>
+<p style="font-size:.85em;color:var(--dim);line-height:1.6">点击曲面上的关键点，判断它是<strong style="color:#fff">最低点（最小值）</strong>、<strong style="color:#fff">最高点（最大值）</strong>还是<strong style="color:#fff">鞍点</strong>。</p>
+<div class="points-list" id="pointsList">已识别：<span id="foundCount">0</span> / 3</div>
+</div>
+
+<div class="section">
+<h3>操作提示</h3>
+<div class="hint-box" id="hintBox"></div>
+<button class="btn" id="hintBtn">💡 查看提示</button>
+<button class="btn btn-primary" id="resetBtn">🔄 重置互动</button>
+</div>
+
+<div class="section">
+<h3>直觉解释</h3>
+<div style="font-size:.83em;line-height:1.7;color:var(--dim)">
+<p><strong style="color:var(--success)">y=x²</strong> 是一维的碗形 — 从侧面看，它像一个碗的剖面。</p>
+<p><strong style="color:var(--success)">z=x²+y²</strong> 是二维的碗形 — 把所有方向上的碗叠在一起，就是一个碗状曲面，碗底在原点。</p>
+<p><strong style="color:var(--warn)">z=x²−y²</strong> 是鞍面 — 一个方向向上弯、另一个方向向下弯，形状像马鞍。</p>
+<p style="margin-top:6px">二次曲面是理解<strong style="color:var(--highlight)">最小值</strong>和<strong style="color:var(--highlight)">Hessian矩阵</strong>的核心图像。碗底对应最小值，山顶对应最大值，鞍点既不是最大也不是最小。</p>
+</div>
+</div>
+
+<div class="section">
+<h3>学习要点</h3>
+<div class="points-list" id="learnPoints">
+<div class="step-item" id="lp1">⬜ 识别碗形 vs 山顶 vs 鞍形</div>
+<div class="step-item" id="lp2">⬜ 说出碗底对应最小值</div>
+<div class="step-item" id="lp3">⬜ 把二次函数扩展到二元函数</div>
+</div>
+</div>
+
+<div class="legend">
+<div><i style="background:#4ecca3"></i> 最低点（最小值）</div>
+<div><i style="background:#e94560"></i> 最高点（最大值）</div>
+<div><i style="background:#f9a825"></i> 鞍点</div>
+<div><i style="background:#6366f1"></i> 已标记点</div>
+</div>
+</div>
+
+<div style="flex:1;display:flex;flex-direction:column;padding:16px;overflow:hidden">
+<div class="canvas-wrap">
+<canvas id="mainCanvas" width="800" height="600"></canvas>
+</div>
+<div class="feedback-bar info" id="feedbackBar">
+<span id="feedbackIcon">👆</span>
+<span id="feedbackText">点击模式按钮开始，然后单击曲面上的点来识别关键临界点。</span>
+</div>
+</div>
+</div>
+
+<div class="bottom-section">
+<div class="section">
+<h3>📊 信心评分</h3>
+<p style="font-size:.85em;color:var(--dim);margin-bottom:8px">你对当前识别结果的信心如何？</p>
+<div class="confidence-group" id="confidenceGroup">
+<button class="confidence-btn" data-val="1">1<br><small>毫无信心</small></button>
+<button class="confidence-btn" data-val="2">2<br><small>不太确定</small></button>
+<button class="confidence-btn" data-val="3">3<br><small>一般</small></button>
+<button class="confidence-btn" data-val="4">4<br><small>比较确定</small></button>
+<button class="confidence-btn" data-val="5">5<br><small>非常确定</small></button>
+</div>
+</div>
+<div class="section">
+<h3>🤔 简短反思</h3>
+<p style="font-size:.85em;color:var(--dim);margin-bottom:8px">选一个最符合你感受的选项，或自由书写：</p>
+<div class="reflection-tags" id="reflectionTags">
+<button class="reflection-tag" data-tag="碗底就是最小值">碗底就是最小值</button>
+<button class="reflection-tag" data-tag="鞍点不是最大也不是最小">鞍点不是最大也不是最小</button>
+<button class="reflection-tag" data-tag="从一维到二维很自然">从一维到二维很自然</button>
+<button class="reflection-tag" data-tag="系数影响曲面形状">系数影响曲面形状</button>
+<button class="reflection-tag" data-tag="还需要更多练习">还需要更多练习</button>
+</div>
+<textarea id="reflectionText" placeholder="或者在这里写下你的想法…"></textarea>
+<button class="btn btn-primary" id="submitReflection" style="margin-top:8px">提交反思</button>
+</div>
+</div>
+
+<script>
+var MAIC_LESSON_META = {lesson_id:'A-11', module_id:'OM-A4', course_version:'demo-closed-loop-v1', concept_name:'二次函数与二次曲面'};
+var startTime = Date.now();
+var currentPage = {};
+var interactStartTime = Date.now();
+var mode = 'parabola';
+var coefA = 1.0;
+var coefB = 1.0;
+var coordRange = 3.0;
+var clickedPoints = [];
+var identifiedTypes = new Set();
+var hintUsed = false;
+var hintCount = 0;
+var confidenceVal = 0;
+var reflectionTags = [];
+var canvas, ctx;
+var canvasRect;
+var W, H;
+var isDrawing = false;
+
+function trackEvent(eventType, payload) {
+  var evt = {
+    lesson_id: MAIC_LESSON_META.lesson_id,
+    module_id: MAIC_LESSON_META.module_id,
+    course_version: MAIC_LESSON_META.course_version,
+    event_type: eventType,
+    timestamp: new Date().toISOString(),
+    time_on_task_ms: Date.now() - startTime,
+    interaction_state: {
+      mode: mode,
+      coefA: coefA,
+      coefB: coefB,
+      coordRange: coordRange,
+      clickedPoints: clickedPoints.length,
+      identifiedTypes: Array.from(identifiedTypes),
+      hintUsed: hintUsed,
+      hintCount: hintCount,
+      confidence: confidenceVal,
+      interaction_change: eventType === 'interaction_change'
+    }
+  };
+  if (payload) {
+    for (var k in payload) {
+      if (payload.hasOwnProperty(k)) evt[k] = payload[k];
+    }
+  }
+  try {
+    var events = [];
+    var stored = localStorage.getItem('maic_learning_events');
+    if (stored) events = JSON.parse(stored);
+    events.push(evt);
+    localStorage.setItem('maic_learning_events', JSON.stringify(events));
+  } catch(e) {}
+  if (window.parent) {
+    try { window.parent.postMessage({type:'maic_learning_event', payload:evt}, '*'); } catch(e) {}
+  }
+}
+
+function getCanvasCoords(e) {
+  canvasRect = canvas.getBoundingClientRect();
+  var scaleX = canvas.width / canvasRect.width;
+  var scaleY = canvas.height / canvasRect.height;
+  var x = (e.clientX - canvasRect.left) * scaleX;
+  var y = (e.clientY - canvasRect.top) * scaleY;
+  return {x: x, y: y};
+}
+
+function mathToCanvas(mx, my) {
+  var margin = 60;
+  var plotW = W - 2 * margin;
+  var plotH = H - 2 * margin;
+  var cx = margin + plotW / 2;
+  var cy = margin + plotH / 2;
+  var scaleX = plotW / (2 * coordRange);
+  var scaleY = plotH / (2 * coordRange);
+  return {
+    x: cx + mx * scaleX,
+    y: cy - my * scaleY
+  };
+}
+
+function canvasToMath(cx, cy) {
+  var margin = 60;
+  var plotW = W - 2 * margin;
+  var plotH = H - 2 * margin;
+  var centerX = margin + plotW / 2;
+  var centerY = margin + plotH / 2;
+  var scaleX = plotW / (2 * coordRange);
+  var scaleY = plotH / (2 * coordRange);
+  return {
+    x: (cx - centerX) / scaleX,
+    y: (centerY - cy) / scaleY
+  };
+}
+
+function f(x, y) {
+  return coefA * x * x + coefB * y * y;
+}
+
+function getCriticalPointType() {
+  if (coefA > 0 && coefB > 0) return 'minimum';
+  if (coefA < 0 && coefB < 0) return 'maximum';
+  return 'saddle';
+}
+
+function getCriticalPointLabel(type) {
+  if (type === 'minimum') return '最低点（最小值）';
+  if (type === 'maximum') return '最高点（最大值）';
+  return '鞍点';
+}
+
+function getCriticalPointColor(type) {
+  if (type === 'minimum') return '#4ecca3';
+  if (type === 'maximum') return '#e94560';
+  return '#f9a825';
+}
+
+function drawAxes() {
+  var margin = 60;
+  ctx.strokeStyle = '#3a3a5c';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([]);
+  var origin = mathToCanvas(0, 0);
+  ctx.beginPath();
+  ctx.moveTo(margin, origin.y);
+  ctx.lineTo(W - margin, origin.y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(origin.x, margin);
+  ctx.lineTo(origin.x, H - margin);
+  ctx.stroke();
+  var tickLabels = [];
+  var step = coordRange <= 3 ? 1 : 2;
+  for (var i = -Math.ceil(coordRange); i <= Math.ceil(coordRange); i += step) {
+    if (i === 0) continue;
+    var p1 = mathToCanvas(i, 0);
+    var p2 = mathToCanvas(0, i);
+    ctx.fillStyle = '#6a6a8a';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(i.toString(), p1.x, p1.y + 16);
+    ctx.textAlign = 'right';
+    ctx.fillText(i.toString(), p2.x - 8, p2.y + 4);
+  }
+  ctx.fillStyle = '#8a8aaa';
+  ctx.font = '13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('x', W - margin + 8, origin.y + 4);
+  ctx.textAlign = 'center';
+  ctx.fillText('y', origin.x, margin - 8);
+  ctx.textAlign = 'center';
+  ctx.fillText('O', origin.x - 12, origin.y + 14);
+}
+
+function drawContourLines() {
+  var margin = 60;
+  var plotW = W - 2 * margin;
+  var plotH = H - 2 * margin;
+  var pixelX, pixelY;
+  var step = 1;
+  var colors = ['#1a1a3e','#1e2250','#242d63','#2d3a78','#3a4a90','#4a5faa','#5d75c0','#748cd6','#8ea0e8','#a8b6f5','#c0ccff','#d8e2ff'];
+  for (var px = margin; px < W - margin; px += step) {
+    for (var py = margin; py < H - margin; py += step) {
+      var m = canvasToMath(px, py);
+      var val = f(m.x, m.y);
+      var ci = Math.max(0, Math.min(colors.length - 1, Math.floor((val + 5) / 10 * colors.length)));
+      ctx.fillStyle = colors[ci] || colors[0];
+      ctx.fillRect(px, py, step, step);
+    }
+  }
+  var contourLevels = [-3,-2,-1,0,1,2,3,4,5];
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  for (var li = 0; li < contourLevels.length; li++) {
+    var level = contourLevels[li];
+    ctx.beginPath();
+    drawContourPath(level);
+    ctx.stroke();
+  }
+}
+
+function drawContourPath(level) {
+  var step = 0.05;
+  var margin = 60;
+  var plotW = W - 2 * margin;
+  var plotH = H - 2 * margin;
+  var startM = canvasToMath(margin, margin);
+  var startX = startM.x;
+  var startY = startM.y;
+  var maxX = coordRange;
+  var maxY = coordRange;
+  var firstPt = null;
+  var prevOnContour = false;
+  var prevX = startX;
+  var prevY = startY;
+  for (var x = startX; x <= maxX; x += step) {
+    for (var y = startY; y <= maxY; y += step) {
+      var val = f(x, y);
+      var onContour = Math.abs(val - level) < step * 0.5;
+      if (onContour) {
+        var cp = mathToCanvas(x, y);
+        if (!prevOnContour) {
+          if (firstPt === null) firstPt = {x:cp.x, y:cp.y};
+          ctx.moveTo(cp.x, cp.y);
+        } else {
+          ctx.lineTo(cp.x, cp.y);
+        }
+      } else {
+        prevOnContour = false;
+      }
+      prevOnContour = onContour;
+      prevX = x;
+      prevY = y;
+    }
+  }
+  if (firstPt) ctx.moveTo(firstPt.x, firstPt.y);
+}
+
+function drawParabola2D() {
+  var margin = 60;
+  var plotH = H - 2 * margin;
+  ctx.strokeStyle = '#6a6a8a';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([]);
+  var xMin = -coordRange;
+  var xMax = coordRange;
+  var yMin = -coordRange * 0.3;
+  var yMax = coordRange * 3;
+  ctx.beginPath();
+  ctx.moveTo(margin, mathToCanvas(0, yMin).y);
+  ctx.lineTo(W - margin, mathToCanvas(0, yMin).y);
+  ctx.moveTo(mathToCanvas(xMin, 0).x, margin);
+  ctx.lineTo(mathToCanvas(xMin, 0).x, H - margin);
+  ctx.stroke();
+  ctx.strokeStyle = '#4ecca3';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  var first = true;
+  for (var px = margin; px <= W - margin; px += 2) {
+    var m = canvasToMath(px, H / 2);
+    var val = coefA * m.x * m.x;
+    if (val < yMin || val > yMax) { first = true; continue; }
+    var cp = mathToCanvas(m.x, val);
+    if (first) { ctx.moveTo(cp.x, cp.y); first = false; }
+    else ctx.lineTo(cp.x, cp.y);
+  }
+  ctx.stroke();
+  var origin = mathToCanvas(0, 0);
+  ctx.fillStyle = '#4ecca3';
+  ctx.beginPath();
+  ctx.arc(origin.x, origin.y, 8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('最低点 (0,0)', origin.x, origin.y - 16);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '13px sans-serif';
+  ctx.fillText('y = ' + coefA.toFixed(1) + 'x²', W - margin + 10, mathToCanvas(0, f(coordRange * 0.5, 0)).y);
+}
+
+function draw3DView() {
+  var cpType = getCriticalPointType();
+  var color = getCriticalPointColor(cpType);
+  drawContourLines();
+  var origin = mathToCanvas(0, 0);
+  if (!identifiedTypes.has(cpType)) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = '#6366f1';
+    ctx.beginPath();
+    ctx.arc(origin.x, origin.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'center';
+  var label = getCriticalPointLabel(cpType) + ' (0,0,0)';
+  ctx.fillText(label, origin.x, origin.y - 18);
+  ctx.font = '11px sans-serif';
+  ctx.fillStyle = '#aaa';
+  ctx.fillText('z = ' + coefA.toFixed(1) + 'x² + ' + coefB.toFixed(1) + 'y²', W / 2, H - 20);
+  ctx.fillText('曲面类型：' + (cpType === 'minimum' ? '碗形（开口向上）' : cpType === 'maximum' ? '山顶（开口向下）' : '鞍面（saddle）'), W / 2, H - 36);
+  var legendX = W - 180;
+  var legendY = 30;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(legendX, legendY, 160, 70);
+  ctx.strokeStyle = '#3a3a5c';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(legendX, legendY, 160, 70);
+  ctx.font = '10px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#4ecca3';
+  ctx.fillRect(legendX + 10, legendY + 16, 12, 12);
+  ctx.fillStyle = '#ddd';
+  ctx.fillText('最低点（最小值）', legendX + 28, legendY + 26);
+  ctx.fillStyle = '#e94560';
+  ctx.fillRect(legendX + 10, legendY + 36, 12, 12);
+  ctx.fillStyle = '#ddd';
+  ctx.fillText('最高点（最大值）', legendX + 28, legendY + 46);
+  ctx.fillStyle = '#f9a825';
+  ctx.fillRect(legendX + 10, legendY + 56, 12, 12);
+  ctx.fillStyle = '#ddd';
+  ctx.fillText('鞍点', legendX + 28, legendY + 66);
+}
+
+function drawSaddleView() {
+  draw3DView();
+}
+
+function drawBowlView() {
+  draw3DView();
+}
+
+function draw() {
+  W = canvas.width;
+  H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+  drawAxes();
+  if (mode === 'parabola') {
+    drawParabola2D();
+  } else {
+    draw3DView();
+  }
+  for (var i = 0; i < clickedPoints.length; i++) {
+    var pt = clickedPoints[i];
+    var cp = mathToCanvas(pt.mx, pt.my);
+    ctx.fillStyle = pt.found ? '#6366f1' : '#888';
+    ctx.beginPath();
+    ctx.arc(cp.x, cp.y, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function checkClick(mx, my) {
+  var cpType = getCriticalPointType();
+  var threshold = coordRange * 0.1;
+  var dx = mx;
+  var dy = my;
+  var dist = Math.sqrt(dx * dx + dy * dy);
+  var found = false;
+  var correctType = false;
+  if (dist < threshold) {
+    found = true;
+    correctType = true;
+    if (!identifiedTypes.has(cpType)) {
+      identifiedTypes.add(cpType);
+    }
+  }
+  var clickInfo = {mx: mx, my: my, found: found, type: cpType, correctType: correctType};
+  clickedPoints.push(clickInfo);
+  var label = getCriticalPointLabel(cpType);
+  var color = getCriticalPointColor(cpType);
+  var fb = document.getElementById('feedbackBar');
+  var fi = document.getElementById('feedbackIcon');
+  var ft = document.getElementById('feedbackText');
+  if (found && correctType) {
+    fb.className = 'feedback-bar ok';
+    fi.textContent = '✅';
+    ft.innerHTML = '正确！你识别出了 <strong style="color:' + color + '">' + label + '</strong>。这是二次曲面的关键临界点。';
+    updateLearnPoints();
+  } else if (found) {
+    fb.className = 'feedback-bar ok';
+    fi.textContent = '✅';
+    ft.innerHTML = '位置正确！这是 <strong style="color:' + color + '">' + label + '</strong>（z = ' + coefA.toFixed(1) + 'x² + ' + coefB.toFixed(1) + 'y² 在 (0,0) 处的临界点）。';
+  } else {
+    fb.className = 'feedback-bar no';
+    fi.textContent = '❌';
+    ft.innerHTML = '点击位置太远了。临界点在原点 (0,0) 附近，请靠近中心点击。';
+  }
+  document.getElementById('foundCount').textContent = identifiedTypes.size;
+  draw();
+  trackEvent('interaction_change', {action: 'point_click', found: found, type: cpType});
+}
+
+function updateLearnPoints() {
+  var cpType = getCriticalPointType();
+  if (identifiedTypes.has(cpType)) {
+    document.getElementById('lp1').className = 'step-item done';
+    document.getElementById('lp1').textContent = '✅ 识别碗形 vs 山顶 vs 鞍形';
+  }
+  if (cpType === 'minimum') {
+    document.getElementById('lp2').className = 'step-item done';
+    document.getElementById('lp2').textContent = '✅ 碗底对应最小值';
+  }
+  if (mode !== 'parabola') {
+    document.getElementById('lp3').className = 'step-item done';
+    document.getElementById('lp3').textContent = '✅ 把二次函数扩展到二元函数';
+  }
+}
+
+function setMode(m) {
+  mode = m;
+  identifiedTypes.clear();
+  clickedPoints = [];
+  document.getElementById('foundCount').textContent = '0';
+  document.getElementById('lp1').className = 'step-item';
+  document.getElementById('lp1').textContent = '⬜ 识别碗形 vs 山顶 vs 鞍形';
+  document.getElementById('lp2').className = 'step-item';
+  document.getElementById('lp2').textContent = '⬜ 说出碗底对应最小值';
+  document.getElementById('lp3').className = 'step-item';
+  document.getElementById('lp3').textContent = '⬜ 把二次函数扩展到二元函数';
+  var fb = document.getElementById('feedbackBar');
+  var fi = document.getElementById('feedbackIcon');
+  var ft = document.getElementById('feedbackText');
+  if (m === 'parabola') {
+    fb.className = 'feedback-bar info';
+    fi.textContent = '📐';
+    ft.textContent = '抛物线 y=ax² 的最低点在原点 (0,0)。点击原点附近的点来确认。';
+  } else if (m === 'bowl') {
+    fb.className = 'feedback-bar info';
+    fi.textContent = '🥣';
+    ft.textContent = '碗形曲面 z=ax²+by² 的最低点在原点 (0,0)。点击原点附近。';
+  } else {
+    fb.className = 'feedback-bar info';
+    fi.textContent = '🐎';
+    ft.textContent = '鞍面 z=ax²−by² 的鞍点在原点 (0,0)。点击原点附近。';
+  }
+  var btns = document.querySelectorAll('#modeBtns .btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove('active');
+    if (btns[i].dataset.mode === m) btns[i].classList.add('active');
+  }
+  draw();
+  trackEvent('interaction_change', {action: 'mode_switch', newMode: m});
+}
+
+function showHint() {
+  hintUsed = true;
+  hintCount++;
+  var box = document.getElementById('hintBox');
+  var hints = {
+    parabola: '提示：抛物线 y=ax² 在 x=0 处取得最小值。临界点就是顶点 (0,0)。试着点击坐标原点。',
+    bowl: '提示：碗形 z=ax²+by²（a>0,b>0）像一个碗，最低点在所有方向的交汇处，即原点 (0,0)。',
+    saddle: '提示：鞍面 z=ax²−by² 在一个方向上弯向上，另一个方向弯向下。原点是鞍点——既不是最高也不是最低。'
+  };
+  box.textContent = hints[mode] || '';
+  box.className = 'hint-box show';
+  trackEvent('hint_used', {hintCount: hintCount, mode: mode});
+}
+
+function resetInteraction() {
+  identifiedTypes.clear();
+  clickedPoints = [];
+  hintUsed = false;
+  hintCount = 0;
+  document.getElementById('foundCount').textContent = '0';
+  document.getElementById('lp1').className = 'step-item';
+  document.getElementById('lp1').textContent = '⬜ 识别碗形 vs 山顶 vs 鞍形';
+  document.getElementById('lp2').className = 'step-item';
+  document.getElementById('lp2').textContent = '⬜ 说出碗底对应最小值';
+  document.getElementById('lp3').className = 'step-item';
+  document.getElementById('lp3').textContent = '⬜ 把二次函数扩展到二元函数';
+  var box = document.getElementById('hintBox');
+  box.className = 'hint-box';
+  var fb = document.getElementById('feedbackBar');
+  fb.className = 'feedback-bar info';
+  document.getElementById('feedbackIcon').textContent = '👆';
+  document.getElementById('feedbackText').textContent = '点击模式按钮开始，然后单击曲面上的点来识别关键临界点。';
+  draw();
+  trackEvent('interaction_complete', {action: 'reset', completedPoints: 0});
+}
+
+function init() {
+  canvas = document.getElementById('mainCanvas');
+  var container = canvas.parentElement;
+  var cw = container.clientWidth || 800;
+  var ch = 600;
+  canvas.width = cw;
+  canvas.height = ch;
+  W = cw;
+  H = ch;
+  ctx = canvas.getContext('2d');
+  ctx.font = '13px sans-serif';
+
+  canvas.addEventListener('click', function(e) {
+    var coords = getCanvasCoords(e);
+    var m = canvasToMath(coords.x, coords.y);
+    if (mode === 'parabola') {
+      checkClick(m.x, 0);
+    } else {
+      checkClick(m.x, m.y);
+    }
+  });
+
+  var modeBtns = document.querySelectorAll('#modeBtns .btn');
+  for (var i = 0; i < modeBtns.length; i++) {
+    (function(btn) {
+      btn.addEventListener('click', function() {
+        interactStartTime = Date.now();
+        setMode(btn.dataset.mode);
+      });
+    })(modeBtns[i]);
+  }
+
+  document.getElementById('sliderA').addEventListener('input', function() {
+    coefA = parseFloat(this.value);
+    document.getElementById('valA').textContent = coefA.toFixed(1);
+    draw();
+    trackEvent('interaction_change', {action: 'param_change', param: 'a', value: coefA});
+  });
+
+  document.getElementById('sliderB').addEventListener('input', function() {
+    coefB = parseFloat(this.value);
+    document.getElementById('valB').textContent = coefB.toFixed(1);
+    draw();
+    trackEvent('interaction_change', {action: 'param_change', param: 'b', value: coefB});
+  });
+
+  document.getElementById('sliderRange').addEventListener('input', function() {
+    coordRange = parseFloat(this.value);
+    document.getElementById('valRange').textContent = coordRange.toFixed(1);
+    draw();
+    trackEvent('interaction_change', {action: 'param_change', param: 'range', value: coordRange});
+  });
+
+  document.getElementById('hintBtn').addEventListener('click', function() {
+    showHint();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function() {
+    resetInteraction();
+  });
+
+  var confBtns = document.querySelectorAll('.confidence-btn');
+  for (var i = 0; i < confBtns.length; i++) {
+    (function(btn) {
+      btn.addEventListener('click', function() {
+        confBtns.forEach(function(b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        confidenceVal = parseInt(btn.dataset.val);
+        trackEvent('confidence_submitted', {confidence: confidenceVal});
+      });
+    })(confBtns[i]);
+  }
+
+  var reflTags = document.querySelectorAll('.reflection-tag');
+  for (var i = 0; i < reflTags.length; i++) {
+    (function(tag) {
+      tag.addEventListener('click', function() {
+        var t = this.dataset.tag;
+        if (this.classList.contains('selected')) {
+          this.classList.remove('selected');
+          reflectionTags = reflectionTags.filter(function(x) { return x !== t; });
+        } else {
+          this.classList.add('selected');
+          reflectionTags.push(t);
+        }
+      });
+    })(reflTags[i]);
+  }
+
+  document.getElementById('submitReflection').addEventListener('click', function() {
+    var text = document.getElementById('reflectionText').value;
+    var data = {
+      tags: reflectionTags.slice(),
+      freeText: text
+    };
+    trackEvent('reflection_submitted', data);
+    var fb = document.getElementById('feedbackBar');
+    fb.className = 'feedback-bar ok';
+    document.getElementById('feedbackIcon').textContent = '💡';
+    document.getElementById('feedbackText').textContent = '感谢你的反思！"碗底对应最小值"是理解二次曲面优化的关键直觉。';
+  });
+
+  draw();
+  trackEvent('page_loaded', {});
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  init();
+});
+</script>
+</body>
+</html>
