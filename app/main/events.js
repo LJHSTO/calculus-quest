@@ -107,6 +107,8 @@ document.addEventListener("click", (event) => {
   }
 });
 
+const shortAnswerAnalyticsTimers = new Map();
+
 document.addEventListener("input", (event) => {
   const seek = event.target.closest("[data-narration-seek]");
   if (seek) {
@@ -120,15 +122,20 @@ document.addEventListener("input", (event) => {
 
   const shortAnswer = event.target.closest("[data-short-answer]");
   if (shortAnswer) {
-    analyticsTrack("short_answer_input", {
-      source: "quiz",
-      data: {
-        unitId: shortAnswer.dataset.unitId,
-        questionId: shortAnswer.dataset.questionId,
-        length: shortAnswer.value.length
-      }
-    });
     rememberQuizDraft(shortAnswer.dataset.unitId, shortAnswer.dataset.questionId, shortAnswer.value);
+    const key = `${shortAnswer.dataset.unitId}:${shortAnswer.dataset.questionId}`;
+    clearTimeout(shortAnswerAnalyticsTimers.get(key));
+    shortAnswerAnalyticsTimers.set(key, setTimeout(() => {
+      shortAnswerAnalyticsTimers.delete(key);
+      analyticsTrack("short_answer_input", {
+        source: "quiz",
+        data: {
+          unitId: shortAnswer.dataset.unitId,
+          questionId: shortAnswer.dataset.questionId,
+          length: shortAnswer.value.length
+        }
+      });
+    }, 3000));
   }
 });
 

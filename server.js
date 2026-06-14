@@ -418,6 +418,30 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/learning/events") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      const events = Array.isArray(body.events) ? body.events.slice(0, 100) : [];
+      const eventIds = [];
+      const timestamp = nowIso();
+
+      events.forEach((item) => {
+        const eventId = crypto.randomUUID();
+        eventIds.push(eventId);
+        db.insertEvent({
+          id: eventId,
+          user_id: auth.participant.id,
+          type: String(item.type || "event").slice(0, 80),
+          payload: item.payload || {},
+          created_at: timestamp
+        });
+      });
+
+      sendJson(res, 200, { ok: true, eventIds });
+      return;
+    }
+
     // ---- Learning Snapshot ----
     if (req.method === "GET" && url.pathname === "/api/learning/snapshot") {
       const auth = authenticate(req);
@@ -586,9 +610,18 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-dashboard") {
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      const dates = getDateRange(url);
+      dates.userId = url.searchParams.get("userId") || "";
+      sendJson(res, 200, { ok: true, data: db.interactionDashboard(dates) });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-summary") {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
       const dates = getDateRange(url);
+      dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionSummary(dates) });
       return;
     }
@@ -596,6 +629,7 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/admin/stats/unit-engagement") {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
       const dates = getDateRange(url);
+      dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.unitEngagement(dates) });
       return;
     }
@@ -603,6 +637,7 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/admin/stats/skip-repeat") {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
       const dates = getDateRange(url);
+      dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.skipRepeatStats(dates) });
       return;
     }
@@ -610,6 +645,7 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/admin/stats/parameter-changes") {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
       const dates = getDateRange(url);
+      dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.parameterChangeStats(dates) });
       return;
     }
@@ -617,6 +653,7 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/admin/stats/path-analysis") {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
       const dates = getDateRange(url);
+      dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.pathAnalysis(dates) });
       return;
     }

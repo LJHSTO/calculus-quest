@@ -139,7 +139,7 @@ function interactionQueryParams() {
 async function loadAll(signal) {
   document.getElementById("load-error").classList.add("hidden");
   try {
-    const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, interactions, interactionSummary, unitEngagement, skipRepeat, parameterChanges, pathAnalysis] = await Promise.all([
+    const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, interactions, interactionDashboard] = await Promise.all([
       fetchStats("overview", "", signal),
       fetchStats("daily-activity", "", signal),
       fetchStats("user-progress", "", signal),
@@ -151,16 +151,17 @@ async function loadAll(signal) {
       fetchStats("hourly-activity", "", signal),
       fetchStats("short-answer-responses", "", signal),
       fetchStats("interactions", interactionQueryParams(), signal),
-      fetchStats("interaction-summary", "", signal),
-      fetchStats("unit-engagement", "", signal),
-      fetchStats("skip-repeat", "", signal),
-      fetchStats("parameter-changes", "", signal),
-      fetchStats("path-analysis", "", signal)
+      fetchStats("interaction-dashboard", interactionQueryParams(), signal)
     ]);
     allUsers = userProg;
     cachedChapterData = chapter;
     cachedPhaseData = phase;
     interactionsData = interactions;
+    const interactionSummary = interactionDashboard?.summary || null;
+    const unitEngagement = interactionDashboard?.unitEngagement || [];
+    const skipRepeat = interactionDashboard?.skipRepeat || { rows: [] };
+    const parameterChanges = interactionDashboard?.parameterChanges || { summary: {}, rows: [] };
+    const pathAnalysis = interactionDashboard?.pathAnalysis || [];
 
     try { renderMetrics(overview, phase); } catch (e) { console.warn("Metrics:", e); }
     try { renderDailyChart(daily); } catch (e) { console.warn("Daily chart:", e); }

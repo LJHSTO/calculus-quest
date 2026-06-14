@@ -544,21 +544,27 @@ function getEventsByType(type, limitOrOptions = 500, dates) {
   return { rows, total, limit, offset };
 }
 
-function interactionRows(dates, limit = 20000) {
-  const df = dateFilter("e.created_at", dates);
+function interactionRows(filter = {}, limit = 20000) {
+  const df = dateFilter("e.created_at", filter);
+  const userId = String(filter?.userId || "").trim();
+  const userClause = userId ? " AND e.user_id = ?" : "";
   return queryAll(
     `SELECT e.*, u.nickname
      FROM events e
      JOIN users u ON u.id = e.user_id
-     WHERE e.type = 'interaction'${df.clause}
+     WHERE e.type = 'interaction'${df.clause}${userClause}
      ORDER BY e.created_at DESC
      LIMIT ?`,
-    [...df.params, limit]
+    [...df.params, ...(userId ? [userId] : []), limit]
   ).map((row) => {
     let payload = {};
     try { payload = JSON.parse(row.payload || "{}"); } catch { payload = {}; }
     return { ...row, payload };
   });
+}
+
+function interactionSourceRows(source) {
+  return Array.isArray(source) ? source : interactionRows(source);
 }
 
 function interactionPayloadType(payload) {
@@ -596,7 +602,7 @@ function isParameterOperation(meta) {
 }
 
 function interactionSummary(dates) {
-  const rows = interactionRows(dates);
+  const rows = interactionSourceRows(dates);
   const byType = new Map();
   const byRole = new Map();
   const activeUsers = new Set();
@@ -615,7 +621,7 @@ function interactionSummary(dates) {
 }
 
 function unitEngagement(dates) {
-  const rows = interactionRows(dates);
+  const rows = interactionSourceRows(dates);
   const units = new Map();
   rows.forEach((row) => {
     const meta = interactionMeta(row);
@@ -639,7 +645,7 @@ function unitEngagement(dates) {
       quiz_events: 0,
       last_at: meta.createdAt
     };
-    if (["unit_enter", "repeat_unit_enter", "unit_open", "interactive_ready", "quiz_render", "slide_render"].includes(meta.eventType)) item.opens += 1;
+    if (["unit_enter", "repeat_unit_enter", "unit_open"].includes(meta.eventType)) item.opens += 1;
     if (["unit_complete", "complete_unit"].includes(meta.eventType)) item.completes += 1;
     if (meta.eventType === "repeat_unit_enter") item.repeats += 1;
     if (["time_on_unit", "unit_leave", "leave_unit"].includes(meta.eventType)) item.seconds += Math.round((meta.durationMs || meta.data.seconds * 1000 || 0) / 1000);
@@ -660,7 +666,7 @@ function unitEngagement(dates) {
 }
 
 function skipRepeatStats(dates) {
-  const rows = interactionRows(dates);
+  const rows = interactionSourceRows(dates);
   const modules = new Map();
   const ensureModule = (unitId, fallback = {}) => {
     const labels = unitDisplayMeta(unitId, fallback);
@@ -718,7 +724,7 @@ function skipRepeatStats(dates) {
 }
 
 function parameterChangeStats(dates) {
-  const rows = interactionRows(dates);
+  const rows = interactionSourceRows(dates);
   const params = new Map();
   const users = new Set();
   const units = new Set();
@@ -758,7 +764,7 @@ function parameterChangeStats(dates) {
 }
 
 function pathAnalysis(dates) {
-  const rows = interactionRows(dates).reverse();
+  const rows = interactionSourceRows(dates).slice().reverse();
   const paths = new Map();
   rows.forEach((row) => {
     const meta = interactionMeta(row);
@@ -787,6 +793,17 @@ function pathAnalysis(dates) {
     step_count: item.steps.length,
     path_preview: item.steps.slice(0, 20).map((step) => step.unit_label || step.unit_id).join(" -> ")
   })).sort((a, b) => b.step_count - a.step_count).slice(0, 500);
+}
+
+function interactionDashboard(dates) {
+  const rows = interactionRows(dates);
+  return {
+    summary: interactionSummary(rows),
+    unitEngagement: unitEngagement(rows),
+    skipRepeat: skipRepeatStats(rows),
+    parameterChanges: parameterChangeStats(rows),
+    pathAnalysis: pathAnalysis(rows)
+  };
 }
 
 module.exports = {
@@ -820,5 +837,6 @@ module.exports = {
   unitEngagement,
   skipRepeatStats,
   parameterChangeStats,
-  pathAnalysis
+  pathAnalysis,
+  interactionDashboard
 };
