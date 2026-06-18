@@ -1,24 +1,27 @@
 # Calculus Quest
 
-微积分闯关学习平台，包含前台学习页面、管理后台和本地 SQLite 数据文件生成逻辑。
+Calculus Quest 是一个微积分闯关学习平台，包含学生学习页面、交互课件播放器、测验流程、学习记录和研究用管理后台。
 
 ## 本地运行
 
 ```bash
 npm install
-npm start
+node server.js 3789
 ```
 
-默认访问地址：
+访问地址：
 
-- 学习页面：http://127.0.0.1:8765/
-- 管理后台：http://127.0.0.1:8765/admin.html
+- 学习页面：`http://127.0.0.1:3789/`
+- 管理后台：`http://127.0.0.1:3789/admin.html`
+- 健康检查：`http://127.0.0.1:3789/api/health`
 
-也可以指定端口：
+也可以指定其他端口：
 
 ```bash
 node server.js 3000
 ```
+
+`npm start` 也可以启动服务，但默认端口取决于 `server.js` 的配置；如果要使用项目约定端口，建议显式运行 `node server.js 3789`。
 
 ## 管理员 token
 
@@ -26,19 +29,36 @@ node server.js 3000
 
 ```bash
 set ADMIN_TOKEN=your-token
-npm start
+node server.js 3789
 ```
 
 PowerShell：
 
 ```powershell
 $env:ADMIN_TOKEN="your-token"
-npm start
+node server.js 3789
+```
+
+如果未配置环境变量，服务会尝试读取本地文件：
+
+```text
+data/admin-token.txt
 ```
 
 ## 数据文件
 
-运行后会自动在 `data/` 下生成数据库和运行数据。
+运行后会自动在 `data/` 下生成本地数据文件。
 
 - `data/calculus-quest.db`
-- `data/learning-records.json`
+- `data/admin-token.txt`
+- `data/runtime-learn-ecnu.json`
+
+这些运行数据不会提交到 Git。课程知识图谱文件 `data/knowledge-graph.json` 会随项目代码保留。
+
+## 技术栈
+
+- 前端：HTML、CSS、JavaScript
+- 后端：Node.js
+- 数据库：sql.js / SQLite 文件
+- 数学渲染：KaTeX
+- 课件资源：站内 HTML 交互课件
