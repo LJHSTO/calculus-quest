@@ -44,6 +44,25 @@ function visibleNarrationSources() {
   return Array.from(document.querySelectorAll(".coach-line[data-audio-src]")).map((node) => node.dataset.audioSrc);
 }
 
+function toggleNarrationCollapse() {
+  state.narrationCollapsed = !state.narrationCollapsed;
+  saveState();
+  document.querySelectorAll("[data-coach-strip]").forEach((strip) => {
+    strip.classList.toggle("collapsed", Boolean(state.narrationCollapsed));
+    const content = strip.querySelector("[data-narration-content]");
+    if (content) content.hidden = Boolean(state.narrationCollapsed);
+    const button = strip.querySelector("[data-toggle-narration]");
+    if (button) {
+      button.textContent = state.narrationCollapsed ? "展开旁白" : "收起旁白";
+      button.setAttribute("aria-expanded", state.narrationCollapsed ? "false" : "true");
+    }
+  });
+  analyticsTrack("narration_toggle", {
+    source: "narration",
+    data: { collapsed: Boolean(state.narrationCollapsed), unitId: getUnit()?.id || "" }
+  });
+}
+
 function createNarrationQueue(sources, unitId, shouldPlay) {
   if (activeNarration && activeNarration.unitId !== unitId) stopNarrationQueue();
 

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculus Quest - 研究数据分析面板</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="admin/admin.css?v=20260613j" />
+    <link rel="stylesheet" href="admin/admin.css?v=20260618a" />
 </head>
 <body>
 <div id="login-gate" class="hidden">
@@ -220,48 +220,49 @@
       <div class="chart-grid interaction-grid">
         <div class="chart-card">
           <h3>交互类型分布</h3>
-          <p class="chart-desc">各类用户操作事件数量</p>
+          <p class="chart-desc">按当前筛选范围统计全部学习行为事件。</p>
           <div class="chart-wrap interaction-type-chart"><canvas id="chart-interaction-types"></canvas></div>
         </div>
         <div class="chart-card">
-          <h3>学习路径摘要</h3>
+          <h3>课件动作覆盖</h3>
+          <p class="chart-desc">只显示当前数据中真实记录到的课件内动作；没有发生的动作不会凑数展示。</p>
+          <div class="action-chip-row" id="action-coverage-summary"></div>
+          <div class="table-wrap interaction-side-scroll">
+            <table id="table-action-coverage">
+              <thead><tr><th>动作类别</th><th>事件</th><th>次数</th><th>学生</th><th>课件</th><th>最近样例</th><th>最近时间</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="chart-card full-width">
+          <h3>有效学习路径</h3>
+          <p class="chart-desc" id="path-rule-desc">只统计达到有效停留阈值的模块，过滤快速点击浏览。</p>
           <div class="table-wrap interaction-side-scroll">
             <table id="table-path-analysis">
-              <thead><tr><th>学生</th><th>步骤数</th><th>起止时间</th><th>路径预览</th></tr></thead>
+              <thead><tr><th>学生</th><th>模块数</th><th>有效停留</th><th>起止时间</th><th>路径预览</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
         <div class="chart-card full-width">
           <h3>模块参与度</h3>
-          <p class="chart-desc">按用户和模块聚合打开、完成、重复、停留与互动强度。</p>
+          <p class="chart-desc">按学生和模块聚合打开、完成、跳过、重复、停留，以及互动课件内的动作强度。</p>
           <div class="table-wrap interaction-main-scroll">
             <table id="table-unit-engagement">
-              <thead><tr><th>学生</th><th>章节</th><th>模块</th><th>打开</th><th>完成</th><th>重复</th><th>停留</th><th>点击/拖拽</th><th>调参</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="chart-card compact-card">
-          <h3>跳过与重复学习</h3>
-          <div class="table-wrap compact-scroll">
-            <table id="table-skip-repeat">
-              <thead><tr><th>章节</th><th>模块</th><th>被跳过</th><th>重复进入</th><th>涉及学生</th><th>最近时间</th></tr></thead>
-              <tbody></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="chart-card compact-card">
-          <h3>实验操作参与度</h3>
-          <p class="chart-desc">统计滑块操作，单次拖动完成计为一次操作。</p>
-          <div class="parameter-summary" id="parameter-summary">
-            <div><strong>0</strong><span>操作人数</span></div>
-            <div><strong>0</strong><span>操作次数</span></div>
-            <div><strong>0</strong><span>涉及实验</span></div>
-          </div>
-          <div class="table-wrap compact-scroll parameter-scroll">
-            <table id="table-parameter-changes">
-              <thead><tr><th>实验</th><th>操作控件</th><th>操作次数</th><th>操作人数</th></tr></thead>
+              <thead><tr>
+                <th data-sort="nickname">学生</th>
+                <th data-sort="chapter">章节</th>
+                <th data-sort="unit">模块</th>
+                <th data-sort="opens">打开</th>
+                <th data-sort="completes">完成</th>
+                <th data-sort="skips">跳过</th>
+                <th data-sort="repeats">重复</th>
+                <th data-sort="seconds">停留</th>
+                <th data-sort="courseware_actions" title="课件动作：互动 HTML 课件内部真实记录到的动作总数，包括打开、点击、拖拽、输入、参数、键盘、滚轮等。">课件动作</th>
+                <th data-sort="clicks" title="点击/拖拽：课件内部点击、画布/图形按下松开、指针移动和拖拽类操作。">点击/拖拽</th>
+                <th data-sort="parameter_changes" title="调参：滑块、范围输入等参数控件的调整和确认。">调参</th>
+                <th data-sort="keyboard_wheel" title="键盘/滚轮：课件内部键盘操作，以及滚轮滚动、触摸滚动、缩放类操作。">键盘/滚轮</th>
+              </tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -285,6 +286,7 @@
             </label>
             <button class="btn btn-sm btn-outline" id="interaction-prev-page">上一页</button>
             <button class="btn btn-sm btn-outline" id="interaction-next-page">下一页</button>
+            <button class="btn btn-sm btn-outline" id="export-interactions-csv">导出当前页CSV</button>
             <span class="page-status" id="interaction-page-status">第 1 页</span>
           </div>
           <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
@@ -301,6 +303,6 @@
   </div>
 </div>
 
-<script src="admin/admin.js?v=20260613n"></script>
+<script src="admin/admin.js?v=20260618a"></script>
 </body>
 </html>

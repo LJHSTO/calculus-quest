@@ -8,42 +8,48 @@ document.addEventListener("click", (event) => {
 
   const chapterButton = event.target.closest("[data-chapter]");
   if (chapterButton) {
-    selectChapter(chapterButton.dataset.chapter).catch((error) => console.warn("Chapter navigation failed:", error));
+    const cid = chapterButton.dataset.chapter;
+    if (typeof agenticIsChapterUnlocked === "function" && !agenticIsChapterUnlocked(cid)) {
+      addLog(`「${cid}」章节尚未解锁，请先完成当前下一步。`);
+      if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+    } else {
+      selectChapter(cid).catch((error) => console.warn("Chapter navigation failed:", error));
+    }
     return;
   }
 
   const unitButton = event.target.closest("[data-unit]");
   if (unitButton) {
-    selectUnit(unitButton.dataset.unit);
+    const uid = unitButton.dataset.unit;
+    const skipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(uid);
+    if (typeof agenticIsUnitUnlocked === "function" && !agenticIsUnitUnlocked(uid) && !skipped) {
+      if (typeof agenticLockedMessage === "function") agenticLockedMessage(uid);
+    } else {
+      selectUnit(uid);
+    }
     return;
   }
 
   const jumpButton = event.target.closest("[data-jump-unit]");
   if (jumpButton) {
-    analyticsTrack("jump_unit", { data: { unitId: jumpButton.dataset.jumpUnit, source: "library" } });
-    selectUnit(jumpButton.dataset.jumpUnit);
+    const uid = jumpButton.dataset.jumpUnit;
+    if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(uid, { allowPrevious: true })) return;
+    analyticsTrack("jump_unit", { data: { unitId: uid, source: "library" } });
+    selectUnit(uid);
     switchView("learn");
     return;
   }
 
-  if (event.target.closest("[data-toggle-recommendations]")) {
-    analyticsTrack("recommendation_toggle", { data: { collapsedBefore: Boolean(state.recommendationsCollapsed) } });
-    toggleRecommendationCollapse();
-    return;
-  }
-
-  const completeSupplementButton = event.target.closest("[data-complete-supplement]");
-  if (completeSupplementButton) {
-    analyticsTrack("supplement_complete_click", { data: { unitId: completeSupplementButton.dataset.completeSupplement } });
-    markSupplementComplete(completeSupplementButton.dataset.completeSupplement);
-    return;
-  }
-
-  const supplementButton = event.target.closest("[data-open-supplement]");
-  if (supplementButton) {
-    analyticsTrack("supplement_open", { data: { unitId: supplementButton.dataset.openSupplement } });
-    selectUnit(supplementButton.dataset.openSupplement);
-    switchView("learn");
+  const agenticActionBtn = event.target.closest("[data-agentic-action]");
+  if (agenticActionBtn) {
+    const type = agenticActionBtn.dataset.agenticAction;
+    if (typeof agenticApplyDecision === "function") {
+      agenticActionBtn.disabled = true;
+      agenticApplyDecision(type).catch((error) => {
+        console.warn("Agentic decision failed:", error);
+        addLog(`Agent 路径切换失败：${error.message || "请稍后重试"}`);
+      });
+    }
     return;
   }
 
@@ -65,6 +71,7 @@ document.addEventListener("click", (event) => {
 
   const quizNavBtn = event.target.closest(".quiz-nav-btn");
   if (quizNavBtn && quizNavBtn.dataset.unit) {
+    if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(quizNavBtn.dataset.unit, { allowPrevious: true })) return;
     selectUnit(quizNavBtn.dataset.unit);
     return;
   }
@@ -104,6 +111,11 @@ document.addEventListener("click", (event) => {
     trackLearningEvent("stop_narration", { unitId: getUnit().id }, false);
     analyticsTrack("narration_stop_click", { source: "narration", data: { unitId: getUnit().id } });
     stopNarrationQueue();
+    return;
+  }
+
+  if (event.target.closest("[data-toggle-narration]")) {
+    toggleNarrationCollapse();
   }
 });
 

@@ -2,36 +2,61 @@
 function renderBottomNextButton() {
   const unit = getUnit();
   if (!unit) return;
-  const all = currentNavigableUnits();
-  const idx = all.findIndex(u => u.id === unit.id);
-  const chapterIdx = curriculum.findIndex(c => c.id === unit.chapterId);
-  const showPrev = idx > 0 || chapterIdx > 0;
-  const showNext = (idx >= 0 && idx + 1 < all.length) || (chapterIdx >= 0 && chapterIdx + 1 < curriculum.length);
-  if (!showPrev && !showNext) return;
+
   const wrapper = document.createElement("div");
   wrapper.className = "bottom-next-wrapper";
-  if (showPrev) {
+
+  const previous = typeof agenticPreviousUnlockedUnitBefore === "function"
+    ? agenticPreviousUnlockedUnitBefore(unit.id)
+    : null;
+  if (previous) {
     const prevBtn = document.createElement("button");
     prevBtn.className = "button soft bottom-nav-btn bottom-nav-prev";
     prevBtn.type = "button";
-    prevBtn.textContent = "← 上一节";
+    prevBtn.textContent = "上一节";
     prevBtn.addEventListener("click", goToPrevUnit);
     wrapper.appendChild(prevBtn);
   }
-  if (showNext) {
-    const nextBtn = document.createElement("button");
-    nextBtn.className = "button primary bottom-nav-btn";
-    nextBtn.type = "button";
-    nextBtn.textContent = all[idx + 1]?.chapterId !== unit.chapterId ? "完成并跳到下一章 →" : "完成并跳到下一节 →";
-    nextBtn.addEventListener("click", async () => {
-      completeCurrentUnit();
-      await goToNextUnit();
-    });
-    wrapper.appendChild(nextBtn);
-  }
+
+  const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
+  const next = typeof agenticNextUnlockedUnitAfter === "function" ? agenticNextUnlockedUnitAfter(unit.id) : null;
+
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "button primary bottom-nav-btn";
+  nextBtn.type = "button";
+  const needsQuizSubmit = unit.type === "quiz" && !(state.submittedQuizzes || []).includes(unit.id);
+  nextBtn.textContent = needsQuizSubmit ? "先提交测验" : pending ? "先选择下一步" : next ? `下一步：${next.label}` : "完成本节";
+  nextBtn.addEventListener("click", async () => {
+    if (pending) {
+      addLog("请先在 Coach 卡片中选择下一步。");
+      if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+      else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+      return;
+    }
+
+    const current = getUnit();
+    if (current.type === "quiz" && !(state.submittedQuizzes || []).includes(current.id)) {
+      addLog("测验需要先提交，下一步才会出现。");
+      return;
+    }
+
+    const agenticNext = typeof agenticOnUnitCompleted === "function" ? agenticOnUnitCompleted(current) : null;
+    if (completeCurrentUnit() === false) return;
+    if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(current.id)) {
+      if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+      else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+      return;
+    }
+    if (agenticNext?.id && typeof agenticOpenUnit === "function") {
+      await agenticOpenUnit(agenticNext.id);
+      return;
+    }
+    await goToNextUnit();
+  });
+  wrapper.appendChild(nextBtn);
+
   els.lessonPlayer.appendChild(wrapper);
 }
-
 
 els.authAction?.addEventListener("click", () => {
   if (isSignedIn()) {
@@ -67,12 +92,12 @@ document.querySelector("#save-note").addEventListener("click", () => {
   renderProgress();
 });
 
-document.querySelector("#reset-progress").addEventListener("click", () => {
+document.querySelector("#reset-progress").addEventListener("click", async () => {
   if (!confirm("确定要重置所有学习记录吗？此操作不可撤销，所有测验结果和进度将被清除。")) return;
   trackLearningEvent("reset_progress", {
     completed: state.completed.length,
     quizResults: (state.quizResults || []).length
-  });
+  }, false);
   analyticsTrack("reset_progress", {
     data: {
       completedCount: state.completed.length,
@@ -83,46 +108,77 @@ document.querySelector("#reset-progress").addEventListener("click", () => {
   state.quizResults = [];
   state.quizDrafts = {};
   state.submittedQuizzes = [];
-  state.recommendationsCollapsed = false;
+  state.narrationCollapsed = false;
   state.logs = ["已重置学习记录。"];
   state.note = "";
+  state.agenticPath = null;
   currentChapterId = chapters[0].id;
-  currentUnitId = "";
+  currentUnitId = getChapter(currentChapterId)?.units?.[0]?.id || "A1-scene-1";
+  if (typeof ensureAgenticPath === "function") {
+    ensureAgenticPath();
+    if (typeof agenticUnlockUnit === "function") agenticUnlockUnit(currentUnitId, "reset_initial_load");
+  }
   saveState();
-  if (isSignedIn()) syncLearningSnapshot("reset");
+  if (isSignedIn()) {
+    clearTimeout(syncTimer);
+    const snapshot = learningSnapshot();
+    lastSnapshotJson = JSON.stringify(snapshot);
+    try {
+      await apiRequest("/api/learning/reset", {
+        token: state.authToken,
+        snapshot
+      });
+    } catch (error) {
+      console.warn("Learning reset sync failed:", error.message);
+      addLog("本地已重置，但服务器记录清空失败；请稍后再试一次重置。");
+    }
+  }
   renderAll();
 });
 
 async function init() {
-  // Safety timeout: always hide loader after 8 seconds
   const safetyTimer = setTimeout(() => {
     document.getElementById("app-loader")?.classList.add("hidden");
   }, 8000);
 
   try {
     renderAuth();
-    // Restore learning data from server if localStorage appears empty
     if (isSignedIn() && (!state.completed || !state.completed.length) && !(state.quizResults || []).length) {
       try {
-        const r = await fetch("/api/learning/snapshot", {
+        const response = await fetch("/api/learning/snapshot", {
           headers: { Authorization: `Bearer ${state.authToken}` }
         });
-        if (r.ok) {
-          const snap = await r.json();
+        if (response.ok) {
+          const snap = await response.json();
           if (snap.ok && snap.snapshot) {
             Object.assign(state, learningDefaults(), snap.snapshot);
             saveState();
           }
         }
-      } catch { /* server snapshot unavailable, use localStorage data */ }
+      } catch {
+        // Server snapshot is optional; local state is enough for the demo.
+      }
     }
+
     await loadCourseIndex();
     buildCurriculum();
     renderAll();
     clearTimeout(safetyTimer);
     document.getElementById("app-loader")?.classList.add("hidden");
+
     await ensureChapterLoaded(currentChapterId);
-    if (!currentUnitId) currentUnitId = getChapter().units[0]?.id || "";
+    if (!currentUnitId) currentUnitId = getChapter().units[0]?.id || "A1-scene-1";
+    if (typeof ensureAgenticPath === "function") {
+      ensureAgenticPath();
+      if (typeof agenticUnlockUnit === "function" && (!currentUnitId || currentUnitId === "A1-scene-1" || state.completed.includes(currentUnitId))) {
+        agenticUnlockUnit(currentUnitId || "A1-scene-1", "initial_load");
+      }
+      if (typeof agenticGuardNavigation === "function" && currentUnitId && !agenticGuardNavigation(currentUnitId, { allowPrevious: true, silent: true })) {
+        currentChapterId = "A1";
+        currentUnitId = "A1-scene-1";
+      }
+    }
+
     if (isSignedIn()) analyticsEnterUnit(getUnit(currentUnitId), "initial_load");
     preloadChapterResources(currentChapterId);
     renderAll();

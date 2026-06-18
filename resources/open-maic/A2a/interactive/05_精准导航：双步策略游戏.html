@@ -173,21 +173,32 @@
         /* Overlays */
         .overlay {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            inset: 0;
+            box-sizing: border-box;
             background: rgba(15, 23, 42, 0.9);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 100;
-            padding: 30px;
+            gap: 18px;
+            padding: clamp(18px, 5vh, 34px) clamp(18px, 5vw, 40px);
             text-align: center;
+            overflow-y: auto;
         }
 
         .hidden { display: none !important; }
 
-        h1 { color: var(--primary); margin-bottom: 10px; }
-        .instruction-text { margin-bottom: 25px; line-height: 1.6; color: #cbd5e1; }
+        .overlay > * {
+            max-width: min(680px, 100%);
+        }
+
+        .overlay .btn {
+            flex: 0 0 auto;
+        }
+
+        h1 { color: var(--primary); margin: 0; }
+        .instruction-text { margin: 0; line-height: 1.6; color: #cbd5e1; }
 
         .achievement-pop {
             position: absolute;
@@ -207,12 +218,52 @@
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
         .formula {
-            background: rgba(0,0,0,0.3);
-            padding: 10px;
-            border-radius: 6px;
+            box-sizing: border-box;
+            width: min(560px, 100%);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 6px 10px;
+            background: rgba(2, 6, 23, 0.76);
+            border: 1px solid rgba(148, 163, 184, 0.42);
+            padding: 12px 14px;
+            border-radius: 8px;
             font-family: 'Times New Roman', serif;
-            font-size: 1.2rem;
-            margin: 10px 0;
+            font-size: clamp(1rem, 3.2vw, 1.35rem);
+            margin: 0;
+            line-height: 1.45;
+        }
+
+        .formula-token {
+            display: inline-block;
+            font-style: italic;
+            white-space: nowrap;
+        }
+
+        .formula-token sub {
+            font-size: 0.62em;
+        }
+
+        .formula-token.vec {
+            position: relative;
+            padding-top: 0.2em;
+        }
+
+        .formula-token.vec::before {
+            content: "\2192";
+            position: absolute;
+            top: -0.45em;
+            left: 0;
+            right: 0;
+            font-size: 0.7em;
+            line-height: 1;
+            text-align: center;
+        }
+
+        .formula-operator {
+            color: #cbd5e1;
+            font-family: 'Times New Roman', serif;
         }
     </style>
 
@@ -231,34 +282,43 @@ document.addEventListener("DOMContentLoaded", function() {
         ],
         throwOnError: false,
         strict: false,
-        trust: true
+        trust: true,
+        ignoredClasses: ['no-auto-math', 'katex']
     };
 
+    const pendingMathNodes = new Set();
     let renderTimeout;
-    function safeRender() {
+
+    function renderMath(target) {
+        if (!target || !window.renderMathInElement) return;
+        try {
+            renderMathInElement(target, katexOptions);
+        } catch (error) {
+            console.warn('KaTeX render skipped:', error.message);
+        }
+    }
+
+    function queueMathNode(node) {
+        const target = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+        if (!target || target.closest?.('.katex')) return;
+        pendingMathNodes.add(target);
         if (renderTimeout) clearTimeout(renderTimeout);
         renderTimeout = setTimeout(() => {
-            renderMathInElement(document.body, katexOptions);
+            const targets = Array.from(pendingMathNodes);
+            pendingMathNodes.clear();
+            targets.forEach((item) => {
+                if (document.body.contains(item)) renderMath(item);
+            });
         }, 100);
     }
 
-    renderMathInElement(document.body, katexOptions);
+    renderMath(document.body);
 
     const observer = new MutationObserver((mutations) => {
-        let shouldRender = false;
         mutations.forEach((mutation) => {
-            if (mutation.target &&
-                mutation.target.className &&
-                typeof mutation.target.className === 'string' &&
-                mutation.target.className.includes('katex')) {
-                return;
-            }
-            shouldRender = true;
+            mutation.addedNodes.forEach(queueMathNode);
+            if (mutation.type === 'characterData') queueMathNode(mutation.target);
         });
-
-        if (shouldRender) {
-            safeRender();
-        }
     });
 
     observer.observe(document.body, {
@@ -266,13 +326,6 @@ document.addEventListener("DOMContentLoaded", function() {
         subtree: true,
         characterData: true
     });
-
-    setInterval(() => {
-        const text = document.body.innerText;
-        if (text.includes('\\(') || text.includes('$$')) {
-            safeRender();
-        }
-    }, 2000);
 });
 </script>
 </head>
@@ -336,10 +389,20 @@ document.addEventListener("DOMContentLoaded", function() {
         <h1>精准导航</h1>
         <p class="instruction-text">
             作为导航员，你需要通过<b>线性组合</b>让飞船到达目标旗帜。<br>
-            选取两个方向向量 \(\vec{u}, \vec{v}\)，调整倍数 \(a, b\)，<br>
-            使得结果向量满足：\(\vec{R} = a\vec{u} + b\vec{v}\)。
+            选取两个方向向量 u、v，调整倍数 a、b，<br>
+            使得结果向量满足下方关系。
         </p>
-        <div class="formula">\(\vec{P}_{target} = a \cdot \vec{u} + b \cdot \vec{v}\)</div>
+        <div class="formula no-auto-math" aria-label="P target equals a times vector u plus b times vector v">
+            <span class="formula-token vec">P<sub>target</sub></span>
+            <span class="formula-operator">=</span>
+            <span class="formula-token">a</span>
+            <span class="formula-operator">&times;</span>
+            <span class="formula-token vec">u</span>
+            <span class="formula-operator">+</span>
+            <span class="formula-token">b</span>
+            <span class="formula-operator">&times;</span>
+            <span class="formula-token vec">v</span>
+        </div>
         <button class="btn btn-success" style="width: 200px;" onclick="window.startGame()">开始导航</button>
     </div>
 
@@ -621,6 +684,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!state.isMoving) {
             drawVector({x:0, y:0}, midPoint, 'rgba(59, 130, 246, 0.5)', 'a' + state.vec1.label, true);
             drawVector(midPoint, endPoint, 'rgba(16, 185, 129, 0.5)', 'b' + state.vec2.label, true);
+
+            // Origin marker
+            const origin = toScreen(0,0);
+            ctx.fillStyle = 'var(--accent)';
+            ctx.beginPath(); ctx.arc(origin.x, origin.y, 5, 0, Math.PI*2); ctx.fill();
         } else {
             // Animation logic
             state.animProgress += 0.01;
@@ -649,11 +717,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const ship = toScreen(currentShipPos.x, currentShipPos.y);
             ctx.font = '24px Arial';
             ctx.fillText('🚀', ship.x, ship.y + 8);
-        } else {
-            // Origin marker
-            const origin = toScreen(0,0);
-            ctx.fillStyle = 'var(--accent)';
-            ctx.beginPath(); ctx.arc(origin.x, origin.y, 5, 0, Math.PI*2); ctx.fill();
         }
 
         requestAnimationFrame(gameLoop);

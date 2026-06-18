@@ -295,6 +295,11 @@ function getQuizResultsByUser(userId, limit = 200) {
   );
 }
 
+function clearLearningDataForUser(userId) {
+  execute("DELETE FROM quiz_results WHERE user_id = ?", [userId]);
+  execute("DELETE FROM snapshots WHERE user_id = ?", [userId]);
+}
+
 // ---- Events ----
 
 function insertEvent(record) {
@@ -580,6 +585,7 @@ function interactionMeta(row) {
   const data = interactionPayloadData(payload);
   return {
     eventType: interactionPayloadType(payload),
+    source: payload.source || data.source || "",
     userId: row.user_id,
     nickname: row.nickname || "",
     chapterId: payload.chapterId || data.chapterId || "",
@@ -599,6 +605,81 @@ function isParameterOperation(meta) {
   const id = meta.data.param || meta.data.id || meta.data.name || "";
   const inputType = String(meta.data.type || "").toLowerCase();
   return meta.eventType === "interactive_change" && (inputType === "range" || /slider/i.test(id));
+}
+
+function interactionActionCategory(eventType = "") {
+  if (eventType === "interactive_ready" || eventType === "interactive_render") return "ready";
+  if (eventType === "interactive_submit") return "submit";
+  if (eventType === "parameter_change" || eventType === "parameter_commit") return "parameter";
+  if (eventType === "interactive_input" || eventType === "interactive_change") return "input";
+  if (eventType === "interactive_keydown") return "keyboard";
+  if (eventType === "interactive_wheel" || eventType === "interactive_scroll") return "wheel";
+  if (eventType === "interactive_click" || eventType === "interactive_double_click" || eventType === "interactive_context_menu") return "click";
+  if (/^(interactive_|canvas_).*(pointer|drag)/.test(eventType)) return "gesture";
+  if (eventType.startsWith("interactive_") || eventType.startsWith("canvas_")) return "other";
+  return "";
+}
+
+function isCoursewareAction(meta) {
+  return meta.source === "iframe" || Boolean(interactionActionCategory(meta.eventType));
+}
+
+function coursewareActionCoverage(dates) {
+  const rows = interactionSourceRows(dates);
+  const byType = new Map();
+  const byCategory = new Map();
+  let total = 0;
+
+  rows.forEach((row) => {
+    const meta = interactionMeta(row);
+    if (!isCoursewareAction(meta)) return;
+    const category = interactionActionCategory(meta.eventType) || "other";
+    total += 1;
+
+    const typeItem = byType.get(meta.eventType) || {
+      event_type: meta.eventType,
+      category,
+      count: 0,
+      users: new Set(),
+      units: new Set(),
+      sample_unit_id: "",
+      sample_unit_label: "",
+      last_at: ""
+    };
+    typeItem.count += 1;
+    typeItem.users.add(meta.userId);
+    if (meta.unitId) typeItem.units.add(meta.unitId);
+    if (!typeItem.sample_unit_label && (meta.unitLabel || meta.unitId)) {
+      const labels = unitDisplayMeta(meta.unitId, meta);
+      typeItem.sample_unit_id = labels.unit_id || meta.unitId;
+      typeItem.sample_unit_label = labels.unit_label || meta.unitLabel || meta.unitId;
+    }
+    if (!typeItem.last_at || meta.createdAt > typeItem.last_at) typeItem.last_at = meta.createdAt;
+    byType.set(meta.eventType, typeItem);
+
+    const catItem = byCategory.get(category) || {
+      category,
+      count: 0,
+      users: new Set(),
+      units: new Set()
+    };
+    catItem.count += 1;
+    catItem.users.add(meta.userId);
+    if (meta.unitId) catItem.units.add(meta.unitId);
+    byCategory.set(category, catItem);
+  });
+
+  const serialize = (item) => ({
+    ...item,
+    users: item.users.size,
+    units: item.units.size
+  });
+
+  return {
+    total,
+    categories: Array.from(byCategory.values()).map(serialize).sort((a, b) => b.count - a.count),
+    types: Array.from(byType.values()).map(serialize).sort((a, b) => b.count - a.count)
+  };
 }
 
 function interactionSummary(dates) {
@@ -623,37 +704,79 @@ function interactionSummary(dates) {
 function unitEngagement(dates) {
   const rows = interactionSourceRows(dates);
   const units = new Map();
-  rows.forEach((row) => {
-    const meta = interactionMeta(row);
-    if (!meta.unitId) return;
-    const key = `${meta.unitId}|${meta.userId}`;
+  const ensureItem = (meta, unitId = meta.unitId, fallback = {}) => {
+    if (!unitId) return null;
+    const labels = unitDisplayMeta(unitId, { ...meta, ...fallback });
+    const key = `${labels.unit_id || unitId}|${meta.userId}`;
     const item = units.get(key) || {
       user_id: meta.userId,
       nickname: meta.nickname,
-      chapter_id: meta.chapterId,
-      chapter_label: meta.chapterLabel,
-      unit_id: meta.unitId,
-      unit_label: meta.unitLabel,
+      chapter_id: labels.chapter_id || meta.chapterId,
+      chapter_label: labels.chapter_label || meta.chapterLabel,
+      unit_id: labels.unit_id || unitId,
+      unit_label: labels.unit_label || fallback.unit_label || meta.unitLabel,
       unit_type: meta.unitType,
       module_role: meta.moduleRole,
       opens: 0,
       completes: 0,
+      skips: 0,
       repeats: 0,
       seconds: 0,
       clicks: 0,
+      gestures: 0,
+      inputs: 0,
+      submits: 0,
+      keyboard_actions: 0,
+      wheel_actions: 0,
+      courseware_actions: 0,
       parameter_changes: 0,
       quiz_events: 0,
       last_at: meta.createdAt
     };
-    if (["unit_enter", "repeat_unit_enter", "unit_open"].includes(meta.eventType)) item.opens += 1;
+    if (meta.createdAt > item.last_at) item.last_at = meta.createdAt;
+    units.set(key, item);
+    return item;
+  };
+  rows.forEach((row) => {
+    const meta = interactionMeta(row);
+    if (meta.eventType === "skip_units") {
+      const skippedIds = Array.isArray(meta.data.skippedUnitIds) ? meta.data.skippedUnitIds : [];
+      skippedIds.forEach((unitId) => {
+        const item = ensureItem(meta, unitId);
+        if (item) item.skips += 1;
+      });
+    }
+    if (meta.eventType === "skip_chapters") {
+      const skippedChapterIds = Array.isArray(meta.data.skippedChapterIds) ? meta.data.skippedChapterIds : [];
+      skippedChapterIds.forEach((chapterId) => {
+        const item = ensureItem(meta, `${chapterId}-chapter`, {
+          chapter_id: chapterId,
+          chapter_label: chapterDisplayLabel(chapterId),
+          unit_label: "整章"
+        });
+        if (item) item.skips += 1;
+      });
+    }
+    if (!meta.unitId) return;
+    const item = ensureItem(meta);
+    if (!item) return;
+    const isUnitOpen = ["unit_enter", "repeat_unit_enter", "unit_open"].includes(meta.eventType)
+      || (meta.eventType === "click" && Boolean(meta.data.unit));
+    if (isUnitOpen) item.opens += 1;
     if (["unit_complete", "complete_unit"].includes(meta.eventType)) item.completes += 1;
     if (meta.eventType === "repeat_unit_enter") item.repeats += 1;
     if (["time_on_unit", "unit_leave", "leave_unit"].includes(meta.eventType)) item.seconds += Math.round((meta.durationMs || meta.data.seconds * 1000 || 0) / 1000);
     if (/click|pointer|drag/.test(meta.eventType)) item.clicks += 1;
     if (isParameterOperation(meta)) item.parameter_changes += 1;
+    if (isCoursewareAction(meta)) item.courseware_actions += 1;
+    const actionCategory = interactionActionCategory(meta.eventType);
+    if (actionCategory === "gesture") item.gestures += 1;
+    if (actionCategory === "input") item.inputs += 1;
+    if (actionCategory === "submit") item.submits += 1;
+    if (actionCategory === "keyboard") item.keyboard_actions += 1;
+    if (actionCategory === "wheel") item.wheel_actions += 1;
     if (/quiz|answer|question|short_answer/.test(meta.eventType)) item.quiz_events += 1;
     if (meta.createdAt > item.last_at) item.last_at = meta.createdAt;
-    units.set(key, item);
   });
   return Array.from(units.values()).map((item) => {
     const labels = unitDisplayMeta(item.unit_id, item);
@@ -763,42 +886,66 @@ function parameterChangeStats(dates) {
   };
 }
 
+function interactionDurationSeconds(meta) {
+  const durationMs = Number(meta.durationMs || meta.data.durationMs || 0);
+  const seconds = Number(meta.data.seconds || 0);
+  return Math.max(0, Math.round(seconds || durationMs / 1000));
+}
+
+const EFFECTIVE_PATH_MIN_SECONDS = 10;
+
 function pathAnalysis(dates) {
   const rows = interactionSourceRows(dates).slice().reverse();
   const paths = new Map();
   rows.forEach((row) => {
     const meta = interactionMeta(row);
-    if (!["unit_enter", "repeat_unit_enter", "unit_open"].includes(meta.eventType) || !meta.unitId) return;
+    const isTimedUnitEvent = ["time_on_unit", "unit_leave", "leave_unit"].includes(meta.eventType);
+    if (!isTimedUnitEvent || !meta.unitId) return;
+    const seconds = interactionDurationSeconds(meta);
+    if (seconds < EFFECTIVE_PATH_MIN_SECONDS) return;
     const item = paths.get(meta.userId) || {
       user_id: meta.userId,
       nickname: meta.nickname,
       steps: [],
       first_at: meta.createdAt,
-      last_at: meta.createdAt
+      last_at: meta.createdAt,
+      total_seconds: 0
     };
-    if (item.steps[item.steps.length - 1]?.unit_id !== meta.unitId) {
+    item.total_seconds += seconds;
+    const lastStep = item.steps[item.steps.length - 1];
+    if (lastStep?.unit_id === meta.unitId) {
+      lastStep.seconds += seconds;
+      lastStep.events += 1;
+      lastStep.last_at = meta.createdAt;
+    } else {
+      const labels = unitDisplayMeta(meta.unitId, meta);
       item.steps.push({
-        chapter_id: meta.chapterId,
+        chapter_id: labels.chapter_id,
         unit_id: meta.unitId,
-        unit_label: meta.unitLabel,
+        unit_label: labels.unit_label,
         module_role: meta.moduleRole,
-        at: meta.createdAt
+        at: meta.createdAt,
+        last_at: meta.createdAt,
+        seconds,
+        events: 1
       });
     }
     item.last_at = meta.createdAt;
     paths.set(meta.userId, item);
   });
-  return Array.from(paths.values()).map((item) => ({
+  return Array.from(paths.values()).filter((item) => item.steps.length > 0).map((item) => ({
     ...item,
     step_count: item.steps.length,
     path_preview: item.steps.slice(0, 20).map((step) => step.unit_label || step.unit_id).join(" -> ")
-  })).sort((a, b) => b.step_count - a.step_count).slice(0, 500);
+  })).sort((a, b) => b.total_seconds - a.total_seconds || b.step_count - a.step_count).slice(0, 500);
 }
 
 function interactionDashboard(dates) {
   const rows = interactionRows(dates);
   return {
     summary: interactionSummary(rows),
+    actionCoverage: coursewareActionCoverage(rows),
+    pathRule: { minSeconds: EFFECTIVE_PATH_MIN_SECONDS, label: `单次模块停留至少 ${EFFECTIVE_PATH_MIN_SECONDS} 秒` },
     unitEngagement: unitEngagement(rows),
     skipRepeat: skipRepeatStats(rows),
     parameterChanges: parameterChangeStats(rows),
@@ -817,6 +964,7 @@ module.exports = {
   touchSession,
   insertQuizResult,
   getQuizResultsByUser,
+  clearLearningDataForUser,
   insertEvent,
   insertSnapshot,
   getLatestSnapshot,

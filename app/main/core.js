@@ -12,7 +12,6 @@ const els = {
   lessonTitle: document.querySelector("#lesson-title"),
   lessonSummary: document.querySelector("#lesson-summary"),
   lessonPlayer: document.querySelector("#lesson-player"),
-  recommendationPanel: document.querySelector("#recommendation-panel"),
   completeLesson: document.querySelector("#complete-lesson"),
   fullscreenPlayer: document.querySelector("#fullscreen-player"),
   authGate: document.querySelector("#auth-gate"),
@@ -22,6 +21,7 @@ const els = {
   authStatus: document.querySelector("#auth-status"),
   authAction: document.querySelector("#auth-action"),
   agentBoard: document.querySelector("#agent-board"),
+  agenticCoachPanel: document.querySelector("#agentic-coach-panel"),
   resourceGrid: document.querySelector("#resource-grid"),
   libraryCount: document.querySelector("#library-count"),
   completedCount: document.querySelector("#completed-count"),
@@ -44,7 +44,7 @@ function learningDefaults() {
     quizResults: [],
     quizDrafts: {},
     submittedQuizzes: [],
-    recommendationsCollapsed: false,
+    narrationCollapsed: false,
     logs: [],
     note: "",
     analytics: {
@@ -56,6 +56,8 @@ function learningDefaults() {
     currentChapterId: "A1",
     currentUnitId: "",
     currentView: "home"
+  ,
+    agenticPath: null
   };
 }
 
@@ -131,6 +133,44 @@ function renderInlineMath(text) {
   return parts.join("");
 }
 
+function quizLatestResultsByQuestion(records = []) {
+  const latest = {};
+  (records || []).forEach((entry) => {
+    const questionId = entry?.questionId || entry?.question?.id;
+    if (!questionId || latest[questionId]) return;
+    latest[questionId] = entry?.result ? { ...entry.result, questionId } : entry;
+  });
+  return latest;
+}
+
+function summarizeQuizAttempt(records = [], questions = []) {
+  const latest = quizLatestResultsByQuestion(records);
+  const results = Object.values(latest);
+  const objective = results.filter((result) => result?.isCorrect === true || result?.isCorrect === false);
+  const pendingReview = results.filter((result) => result?.status === "pending_review" || result?.isCorrect === null).length;
+  return {
+    totalQuestions: questions.length || results.length,
+    objectiveTotal: objective.length,
+    correctObjective: objective.filter((result) => result.isCorrect === true).length,
+    pendingReview
+  };
+}
+
+function quizOutcomeHtml(summary) {
+  const parts = [];
+  if (summary.objectiveTotal > 0) {
+    const objectiveLabel = summary.pendingReview > 0 ? "客观题" : "题";
+    parts.push(`${summary.objectiveTotal} 道${objectiveLabel}中答对了 <strong>${summary.correctObjective}</strong> 道`);
+  }
+  if (summary.pendingReview > 0) {
+    parts.push(`${summary.pendingReview} 道简答题待复核`);
+  }
+  if (!parts.length) {
+    parts.push(`${summary.totalQuestions} 道题已提交`);
+  }
+  return parts.join("，");
+}
+
 // Render $...$ math inside text that may already contain HTML tags
 function renderMathInHtml(html) {
   if (!html || typeof html !== "string") return escapeHtml(String(html || ""));
@@ -186,13 +226,14 @@ function learningSnapshot() {
     completed: state.completed || [],
     quizResults: state.quizResults || [],
     quizDrafts: state.quizDrafts || {},
-    recommendationsCollapsed: Boolean(state.recommendationsCollapsed),
+    narrationCollapsed: Boolean(state.narrationCollapsed),
     logs: state.logs || [],
     note: state.note || "",
     analytics: state.analytics || {},
     currentChapterId,
     currentUnitId,
     currentView,
+    agenticPath: state.agenticPath || null,
     capturedAt: beijingNow()
   };
 }
@@ -430,7 +471,9 @@ function chapterStats(chapterId) {
 }
 
 function totalMainUnitCount() {
-  return courseIndex?.totals?.scenes || allUnits().length;
+  const chapterCount = courseIndex?.chapters?.length || curriculum.length || chapters.length;
+  const coreCount = AGENTIC_CORE_SCENE_ORDERS.length;
+  return chapterCount && coreCount ? chapterCount * coreCount : allUnits().length || 0;
 }
 
 function isMainUnitId(id = "") {
@@ -440,6 +483,23 @@ function isMainUnitId(id = "") {
 function scheduleChapterPrefetch() {
   if (prefetchStarted) return;
   prefetchStarted = true;
+  const queue = chapters.map((chapter) => chapter.id).filter((id) => !manifests.has(id));
+  const loadNext = () => {
+    const chapterId = queue.shift();
+    if (!chapterId) return;
+    loadChapterManifest(chapterId)
+      .then(() => {
+        buildCurriculum();
+        renderMetrics();
+        renderChapters();
+        renderLessons();
+        if (currentView === "library") renderLibrary();
+        if (currentView === "progress") renderProgress();
+      })
+      .catch((error) => console.warn("Chapter prefetch failed:", chapterId, error))
+      .finally(() => window.setTimeout(loadNext, 80));
+  };
+  window.setTimeout(loadNext, 120);
 }
 
 function preloadChapterResources(chapterId) {
@@ -463,12 +523,55 @@ function renderLoadingStatus(chapterLabel = "课程") {
 function buildCurriculum() {
   curriculum = chapters.map(buildChapter);
 
-  supplementUnits = buildSupplementUnits();
   const currentChapter = getChapter();
-  const currentSupplement = supplementUnits.some((unit) => unit.id === currentUnitId);
-  if (currentChapter?.units?.length && (!currentUnitId || (!findMainUnit(currentUnitId) && !currentSupplement))) {
+  if (currentChapter?.units?.length && (!currentUnitId || !findMainUnit(currentUnitId))) {
     currentUnitId = currentChapter.units[0].id;
   }
+}
+
+function maicAdaptiveConfig(chapterId, sceneOrder) {
+  return AGENTIC_MAIC_UI_ADAPTIVE_MAP?.[chapterId]?.[sceneOrder] || null;
+}
+
+function stripHtmlExtension(file = "") {
+  return String(file).replace(/\.html$/i, "");
+}
+
+function buildMaicAdaptiveUnit(chapter, sceneOrder) {
+  const config = maicAdaptiveConfig(chapter.id, sceneOrder);
+  if (!config?.file) return null;
+  const flowLabel = AGENTIC_ADAPTIVE_SCENE_LABELS[sceneOrder] || "MAIC-UI";
+  const title = config.label || stripHtmlExtension(config.file);
+  const scene = {
+    type: "interactive",
+    title,
+    order: sceneOrder,
+    content: {
+      type: "interactive",
+      htmlPath: config.file,
+      resourceRoot: MAIC_UI_MODEL.id,
+      modelLabel: MAIC_UI_MODEL.label
+    },
+    actions: [],
+    whiteboards: null
+  };
+
+  return {
+    id: `${chapter.id}-scene-${sceneOrder}`,
+    kind: "scene",
+    chapterId: chapter.id,
+    scene,
+    sceneOrder,
+    flowKind: "adaptive",
+    flowLabel,
+    label: `${flowLabel}：${title}`,
+    summary: `${MAIC_UI_MODEL.label} 生成的 MAIC-UI 互动课件：${stripHtmlExtension(config.file)}`,
+    type: "interactive",
+    assessmentPhase: "",
+    modelId: MAIC_UI_MODEL.id,
+    modelLabel: MAIC_UI_MODEL.label,
+    resourceFile: config.file
+  };
 }
 
 function buildChapter(chapter) {
@@ -478,6 +581,7 @@ function buildChapter(chapter) {
       ...chapter,
       manifest: null,
       units: [],
+      allUnits: [],
       loaded: false
     };
   }
@@ -486,23 +590,34 @@ function buildChapter(chapter) {
     let quizIndex = 0;
     const scenes = manifest.scenes.map((scene, index) => {
       const assessmentPhase = scene.type === "quiz" ? assessmentPhaseFor(quizIndex++, quizTotal) : "";
+      const sceneOrder = scene.order || index + 1;
+      const isCorePath = AGENTIC_CORE_SCENE_ORDERS.includes(sceneOrder);
       return {
-        id: `${chapter.id}-scene-${scene.order || index + 1}`,
+        id: `${chapter.id}-scene-${sceneOrder}`,
         kind: "scene",
         chapterId: chapter.id,
         scene,
+        sceneOrder,
+        flowKind: isCorePath ? "core" : "adaptive",
+        flowLabel: isCorePath ? "核心路径" : (AGENTIC_ADAPTIVE_SCENE_LABELS[sceneOrder] || "新加课件"),
         label: summarizeScene(scene, index, assessmentPhase),
         summary: describeScene(scene),
         type: scene.type,
         assessmentPhase
       };
     });
+    const coreUnits = scenes.filter((unit) => unit.flowKind === "core");
+    const adaptiveUnits = [...AGENTIC_RELEARN_SCENE_ORDERS, ...AGENTIC_EXTENSION_SCENE_ORDERS]
+      .map((sceneOrder) => buildMaicAdaptiveUnit(chapter, sceneOrder))
+      .filter(Boolean);
+    const orderedScenes = orderMainScenes([...coreUnits, ...adaptiveUnits]);
 
     return {
       ...chapter,
       manifest,
-    units: orderMainScenes(scenes),
-    loaded: true
+      units: coreUnits,
+      allUnits: orderedScenes,
+      loaded: true
     };
 }
 
@@ -510,34 +625,6 @@ function orderMainScenes(scenes) {
   const pre = scenes.filter((unit) => unit.assessmentPhase === "pre");
   const rest = scenes.filter((unit) => unit.assessmentPhase !== "pre");
   return [...pre, ...rest];
-}
-
-function buildSupplementUnits() {
-  let index = 0;
-  return Object.entries(supplementAnalysis).flatMap(([file, analysis]) =>
-    supplementModels.map((model) => ({
-      id: `supplement-${model.id}-${hashString(file)}`,
-      kind: "supplement",
-      chapterId: analysis.chapterId,
-      file,
-      modelId: model.id,
-      modelLabel: model.label,
-      modelRole: model.role,
-      label: `${analysis.title} · ${model.label}`,
-      summary: `${model.role}：${analysis.bestFor}`,
-      type: "supplement",
-      analysis,
-      order: index++
-    }))
-  );
-}
-
-function hashString(value) {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-  return hash.toString(36);
 }
 
 function assessmentPhaseFor(index, total) {
@@ -598,16 +685,16 @@ function getChapter(id = currentChapterId) {
 
 function findMainUnit(id) {
   for (const chapter of curriculum) {
-    const unit = chapter.units.find((item) => item.id === id);
+    const unit = (chapter.allUnits || chapter.units || []).find((item) => item.id === id);
     if (unit) return unit;
   }
   return null;
 }
 
 function getUnit(id = currentUnitId) {
+  const explicitLookup = arguments.length > 0;
   const mainUnit = findMainUnit(id);
   if (mainUnit) return mainUnit;
-  const supplement = supplementUnits.find((item) => item.id === id);
-  if (supplement) return supplement;
+  if (explicitLookup) return null;
   return getChapter()?.units?.[0] || null;
 }

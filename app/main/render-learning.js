@@ -2,16 +2,18 @@
 function renderMetrics() {
   const totals = courseIndex?.totals;
   const loadedChapters = curriculum.filter((chapter) => chapter.loaded);
-  const sceneCount = totals?.scenes || loadedChapters.reduce((sum, chapter) => sum + chapter.manifest.scenes.length, 0);
-  const supplementCount = supplementUnits.length;
+  const chapterCount = courseIndex?.chapters?.length || curriculum.length || loadedChapters.length;
+  const coreSceneCount = chapterCount * AGENTIC_CORE_SCENE_ORDERS.length;
+  const sceneCount = coreSceneCount || loadedChapters.reduce((sum, chapter) => sum + (chapter.units || []).length, 0);
+  const adaptiveCount = chapterCount * (AGENTIC_RELEARN_SCENE_ORDERS.length + AGENTIC_EXTENSION_SCENE_ORDERS.length);
+  const coreInteractiveCount = chapterCount * AGENTIC_CORE_INTERACTIVE_SCENE_ORDERS.length;
   const htmlCount =
-    supplementCount +
-    (totals?.interactive ||
-      loadedChapters.reduce((sum, chapter) => sum + chapter.manifest.scenes.filter((scene) => scene.type === "interactive").length, 0));
+    coreInteractiveCount ||
+    loadedChapters.reduce((sum, chapter) => sum + (chapter.allUnits || chapter.units || []).filter((unit) => unit.type === "interactive").length, 0);
   const audioCount = totals?.audio || loadedChapters.reduce((sum, chapter) => sum + countAudio(chapter.manifest), 0);
   els.metricChapters.textContent = curriculum.length;
   els.metricScenes.textContent = sceneCount;
-  els.metricGlm.textContent = supplementCount;
+  els.metricGlm.textContent = adaptiveCount;
   els.metricHtml.textContent = htmlCount;
   els.metricAudio.textContent = audioCount;
 }
@@ -27,7 +29,7 @@ function renderChapters() {
   els.chapterList.innerHTML = curriculum
     .map((chapter, index) => {
       const done = chapter.units.filter((unit) => state.completed.includes(unit.id)).length;
-      const total = chapter.loaded ? chapter.units.length : chapterStats(chapter.id)?.scenes || "待载入";
+      const total = chapter.loaded ? chapter.units.length : AGENTIC_CORE_SCENE_ORDERS.length;
       const guide = chapterGuides[chapter.id];
       return `
         <button class="chapter-card ${chapter.id === currentChapterId ? "active" : ""}" type="button" data-chapter="${chapter.id}">
@@ -47,21 +49,25 @@ function renderLessons() {
   const chapter = getChapter();
   els.chapterTitle.textContent = chapter.label;
   if (!chapter.loaded) {
-    els.lessonList.innerHTML = `<div class="empty-state">点击左侧章节卡片来加载本章的学习模块，包括 slides、互动实验和测验。</div>`;
+    els.lessonList.innerHTML = '<div class="empty-state">点击左侧章节卡片来加载本章的学习模块，包括 slides、互动实验和测验。</div>';
     return;
   }
-  els.lessonList.innerHTML = chapter.units
-    .map((unit, index) => `
-      <button class="lesson-card ${unit.id === currentUnitId ? "active" : ""}" type="button" data-unit="${unit.id}">
-        <strong>${index + 1}. ${escapeHtml(unit.label)}</strong>
-        <small>${typeText(unit)} · ${state.completed.includes(unit.id) ? "已完成" : "未完成"}</small>
-      </button>
-    `)
-    .join("");
+  els.lessonList.innerHTML = chapter.units.map(function(unit, index) {
+    const isLocked = typeof agenticIsUnitUnlocked === "function"
+      && !agenticIsUnitUnlocked(unit.id)
+      && !agenticIsSkipped(unit.id);
+    const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
+    const statusText = isLocked ? "待解锁" : isSkipped ? "可回看" : state.completed.includes(unit.id) ? "已完成" : "未完成";
+    const lockIcon = isLocked ? " 🔒" : isSkipped ? " ⏭" : "";
+    const cls = ["lesson-card", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : ""].filter(Boolean).join(" ");
+    return "<button class=\"" + cls + "\" type=\"button\" data-unit=\"" + unit.id + "\"" + (isLocked ? " aria-disabled=\"true\"" : "") + ">"
+      + "<strong>" + (index + 1) + ". " + escapeHtml(unit.label) + "</strong>"
+      + "<small>" + typeText(unit) + " · " + statusText + lockIcon + "</small>"
+      + "</button>";
+  }).join("");
 }
 
 function typeText(unit) {
-  if (unit.kind === "supplement") return "推荐补给";
   if (unit.type === "quiz") return phaseText(unit.assessmentPhase) || "测验";
   return {
     slide: "讲解",
@@ -70,14 +76,6 @@ function typeText(unit) {
 }
 
 function unitLearningFocus(unit) {
-  if (unit.kind === "supplement") {
-    return {
-      action: "把刚才卡住的点换一种说法再学一遍。",
-      check: unit.analysis.bestFor,
-      help: `先看标题和例子，再回到主线关卡完成标记。`
-    };
-  }
-
   if (unit.type === "quiz") {
     return {
       action:
@@ -141,9 +139,7 @@ function renderPlayer() {
   updateFullscreenButton();
   renderRecommendationPanel();
 
-  if (unit.kind === "supplement") {
-    renderSupplement(unit);
-  } else if (unit.scene.type === "quiz") {
+  if (unit.scene.type === "quiz") {
     renderQuiz(unit);
   } else if (unit.scene.type === "slide") {
     renderSlide(unit);
@@ -151,6 +147,8 @@ function renderPlayer() {
     renderInteractive(unit);
   }
   renderBottomNextButton();
+  if (typeof syncAgenticPlayerCta === "function") syncAgenticPlayerCta(unit);
+  if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
   syncNarrationUi();
 }
 
@@ -158,9 +156,19 @@ function renderCoach(scene, chapterId, unitId) {
   const actions = (scene.actions || []).filter((action) => action.text || action.prompt).slice(0, 5);
   if (!actions.length) return "";
   const audioActions = actions.filter((action) => action.audioRef);
+  const collapsed = Boolean(state.narrationCollapsed);
 
   return `
-    <div class="coach-strip">
+    <div class="coach-strip ${collapsed ? "collapsed" : ""}" data-coach-strip>
+      <div class="coach-strip-header">
+        <div>
+          <span class="type-pill">语音旁白</span>
+          <strong>${audioActions.length ? `${audioActions.length} 段可播放` : "课堂提示"}</strong>
+        </div>
+        <button class="button soft" type="button" data-toggle-narration aria-expanded="${collapsed ? "false" : "true"}">
+          ${collapsed ? "展开旁白" : "收起旁白"}
+        </button>
+      </div>
       ${
         audioActions.length
           ? `<div class="coach-toolbar" data-narration-unit="${unitId}" data-narration-total="${audioActions.length}">
@@ -177,14 +185,16 @@ function renderCoach(scene, chapterId, unitId) {
             </div>`
           : ""
       }
-      ${actions
-        .map((action) => `
-          <div class="coach-line" ${action.audioRef ? `data-audio-src="${resourceUrl(`resources/open-maic/${chapterId}/${action.audioRef}`)}"` : ""}>
-            <strong>${action.type === "discussion" ? "讨论引导" : "教师旁白"}</strong>
-            <div>${renderInlineMath(action.text || action.prompt || "")}</div>
-          </div>
-        `)
-        .join("")}
+      <div class="coach-content" data-narration-content ${collapsed ? "hidden" : ""}>
+        ${actions
+          .map((action) => `
+            <div class="coach-line" ${action.audioRef ? `data-audio-src="${resourceUrl(`resources/open-maic/${chapterId}/${action.audioRef}`)}"` : ""}>
+              <strong>${action.type === "discussion" ? "讨论引导" : "教师旁白"}</strong>
+              <div>${renderInlineMath(action.text || action.prompt || "")}</div>
+            </div>
+          `)
+          .join("")}
+      </div>
     </div>
   `;
 }
@@ -224,24 +234,24 @@ function renderQuiz(unit) {
   let quizTopBanner = "";
   if (submitted) {
     const unitResults = (state.quizResults || []).filter(r => r.unitId === unit.id);
-    const correctCount = unitResults.filter(r => r.isCorrect === true).length;
-    const total = questions.length;
+    const summary = summarizeQuizAttempt(unitResults, questions);
+    const outcomeHtml = quizOutcomeHtml(summary);
     if (isPre) {
       quizTopBanner = `
         <div class="quiz-encouragement-banner" id="quiz-top-banner-${unit.id}">
-          前测提交成功！你在 ${total} 题中答对了 <strong>${correctCount}</strong> 题。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。
+          前测提交成功！你在 ${outcomeHtml}。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。
         </div>
         <p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`;
     } else if (unit.assessmentPhase === "post") {
       quizTopBanner = `
         <div class="quiz-encouragement-banner post" id="quiz-top-banner-${unit.id}">
-          后测提交成功！你在 ${total} 题中答对了 <strong>${correctCount}</strong> 题。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。
+          后测提交成功！你在 ${outcomeHtml}。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。
         </div>
         <p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`;
     } else {
       quizTopBanner = `
         <div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unit.id}">
-          形成性测验提交成功！你在 ${total} 题中答对了 <strong>${correctCount}</strong> 题。卡住的地方正好说明接下来要重点理解的内容——Agent 会根据你的答题情况推荐补给资源。
+          形成性测验提交成功！你在 ${outcomeHtml}。卡住的地方正好说明接下来要重点理解的内容——Agent 会用 MAIC-UI 互动课件帮你换种方式重学或解锁一步拓展。
         </div>
         <p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`;
     }
@@ -251,7 +261,7 @@ function renderQuiz(unit) {
   const latestByQuestion = {};
   if (submitted) {
     const unitResults = (state.quizResults || []).filter(r => r.unitId === unit.id);
-    for (const r of unitResults) { if (!latestByQuestion[r.questionId]) latestByQuestion[r.questionId] = r; }
+    Object.assign(latestByQuestion, quizLatestResultsByQuestion(unitResults));
   }
 
   els.lessonPlayer.innerHTML = `
@@ -466,22 +476,43 @@ function compactText(value = "", limit = 80) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
 }
 
+function normalizeIframeElement(node, doc) {
+  if (!node || node === doc) return doc.body || doc.documentElement;
+  if (node.nodeType === 1) return node;
+  return node.parentElement || doc.body || doc.documentElement;
+}
+
+function iframeClassName(element) {
+  const cls = element?.className;
+  if (typeof cls === "string") return cls;
+  if (cls?.baseVal) return cls.baseVal;
+  return "";
+}
+
+function cssEscapeIdent(value) {
+  return window.CSS?.escape ? CSS.escape(value) : String(value || "").replace(/["\\]/g, "\\$&");
+}
+
 function iframeElementLabel(element, doc) {
+  element = normalizeIframeElement(element, doc);
   if (!element) return "";
-  const id = element.getAttribute("id");
-  const labelByFor = id ? doc.querySelector(`label[for="${CSS.escape(id)}"]`) : null;
+  if (element === doc.body || element === doc.documentElement) return doc.title || "课件页面";
+  const id = element.getAttribute?.("id");
+  const labelByFor = id ? doc.querySelector(`label[for="${cssEscapeIdent(id)}"]`) : null;
   const wrappingLabel = element.closest?.("label");
   return compactText(
     element.getAttribute("aria-label") ||
       element.getAttribute("title") ||
       labelByFor?.textContent ||
       wrappingLabel?.textContent ||
+      (element.tagName?.toLowerCase() === "canvas" ? "画布" : "") ||
+      (element.tagName?.toLowerCase() === "svg" ? "图形区域" : "") ||
       element.textContent ||
       element.value ||
       element.getAttribute("placeholder") ||
       element.getAttribute("name") ||
       id ||
-      element.className ||
+      iframeClassName(element) ||
       element.tagName
   );
 }
@@ -492,12 +523,20 @@ function iframeElementValue(element) {
   const type = (element.getAttribute("type") || "").toLowerCase();
   if (type === "checkbox" || type === "radio") return element.checked ? "选中" : "未选中";
   if (tag === "select") return compactText(element.selectedOptions?.[0]?.textContent || element.value);
+  if (type === "password") return element.value ? "已输入" : "空";
+  if (["range", "number", "color", "date", "time", "month", "week"].includes(type)) return compactText(element.value, 120);
+  if (tag === "textarea" || element.isContentEditable || ["text", "search", "email", "url", "tel"].includes(type)) {
+    const text = element.isContentEditable ? element.textContent || "" : element.value || "";
+    return `已输入 ${text.length} 个字符`;
+  }
   if ("value" in element) return compactText(element.value, 120);
   return "";
 }
 
 function iframeElementInfo(element, event, unit) {
-  const doc = element?.ownerDocument || null;
+  let doc = element?.ownerDocument || event?.target?.ownerDocument || null;
+  element = doc ? normalizeIframeElement(element, doc) : element;
+  doc = element?.ownerDocument || doc;
   const rect = element?.getBoundingClientRect?.();
   const point =
     event && typeof event.clientX === "number" && rect
@@ -509,6 +548,7 @@ function iframeElementInfo(element, event, unit) {
         }
       : null;
   return {
+    source: "iframe",
     unitId: unit.id,
     unitLabel: unit.label,
     chapterId: unit.chapterId,
@@ -519,14 +559,21 @@ function iframeElementInfo(element, event, unit) {
     value: iframeElementValue(element),
     id: element?.getAttribute?.("id") || "",
     name: element?.getAttribute?.("name") || "",
-    className: compactText(element?.className || "", 80),
+    className: compactText(iframeClassName(element), 80),
     point
   };
 }
 
+function iframeActionTarget(event, doc, selector) {
+  const raw = normalizeIframeElement(event.target, doc);
+  const closest = raw?.closest?.(selector);
+  if (closest) return closest;
+  if (raw && raw !== doc && raw !== doc.documentElement) return raw;
+  return doc.body || doc.documentElement;
+}
+
 function setupIframeInteractionTracking(iframeEl, unit) {
-  if (!iframeEl || iframeEl.dataset.trackingAttached === "true") return;
-  iframeEl.dataset.trackingAttached = "true";
+  if (!iframeEl) return;
   let doc = null;
   try {
     doc = iframeEl.contentDocument || iframeEl.contentWindow?.document;
@@ -534,6 +581,8 @@ function setupIframeInteractionTracking(iframeEl, unit) {
     return;
   }
   if (!doc) return;
+  if (doc.__calculusQuestTrackingUnit === unit.id) return;
+  doc.__calculusQuestTrackingUnit = unit.id;
 
   const interactiveSelector = [
     "button",
@@ -546,20 +595,45 @@ function setupIframeInteractionTracking(iframeEl, unit) {
     "svg",
     "[role='button']",
     "[role='slider']",
+    "[contenteditable='true']",
+    "[tabindex]",
     "[data-action]",
     "[data-role]"
   ].join(",");
+  const inputSelector = "input, select, textarea, [contenteditable='true']";
   const lastInputAt = new WeakMap();
   const pointerStarts = new Map();
   const rangeStarts = new WeakMap();
   let lastPointerMoveAt = 0;
+  let lastWheelAt = 0;
+  let lastScrollAt = 0;
 
   doc.addEventListener(
     "click",
     (event) => {
-      const target = event.target?.closest?.(interactiveSelector) || event.target;
-      if (!target || target === doc || target === doc.documentElement || target === doc.body) return;
+      const target = iframeActionTarget(event, doc, interactiveSelector);
+      if (!target) return;
       trackInteraction("interactive_click", iframeElementInfo(target, event, unit));
+    },
+    true
+  );
+
+  doc.addEventListener(
+    "dblclick",
+    (event) => {
+      const target = iframeActionTarget(event, doc, interactiveSelector);
+      if (!target) return;
+      trackInteraction("interactive_double_click", iframeElementInfo(target, event, unit));
+    },
+    true
+  );
+
+  doc.addEventListener(
+    "contextmenu",
+    (event) => {
+      const target = iframeActionTarget(event, doc, interactiveSelector);
+      if (!target) return;
+      trackInteraction("interactive_context_menu", iframeElementInfo(target, event, unit));
     },
     true
   );
@@ -567,7 +641,7 @@ function setupIframeInteractionTracking(iframeEl, unit) {
   doc.addEventListener(
     "input",
     (event) => {
-      const target = event.target?.closest?.("input, select, textarea");
+      const target = event.target?.closest?.(inputSelector);
       if (!target) return;
       const now = Date.now();
       const last = lastInputAt.get(target) || 0;
@@ -598,7 +672,7 @@ function setupIframeInteractionTracking(iframeEl, unit) {
   doc.addEventListener(
     "change",
     (event) => {
-      const target = event.target?.closest?.("input, select, textarea");
+      const target = event.target?.closest?.(inputSelector);
       if (!target) return;
       const info = iframeElementInfo(target, event, unit);
       if ((target.getAttribute("type") || "").toLowerCase() === "range") {
@@ -633,10 +707,74 @@ function setupIframeInteractionTracking(iframeEl, unit) {
   );
 
   doc.addEventListener(
+    "keydown",
+    (event) => {
+      const target = iframeActionTarget(event, doc, interactiveSelector);
+      if (!target) return;
+      const isTextEntry = target.closest?.(inputSelector);
+      const isPlainCharacter = event.key?.length === 1 && !event.altKey && !event.ctrlKey && !event.metaKey;
+      if (isTextEntry && isPlainCharacter) return;
+      const key = isPlainCharacter ? "character" : event.key || "";
+      trackInteraction("interactive_keydown", {
+        source: "iframe",
+        ...iframeElementInfo(target, event, unit),
+        key,
+        code: event.code || "",
+        modifiers: {
+          alt: event.altKey,
+          ctrl: event.ctrlKey,
+          meta: event.metaKey,
+          shift: event.shiftKey
+        }
+      });
+    },
+    true
+  );
+
+  doc.addEventListener(
+    "wheel",
+    (event) => {
+      const now = Date.now();
+      if (now - lastWheelAt < 800) return;
+      lastWheelAt = now;
+      const target = iframeActionTarget(event, doc, interactiveSelector);
+      if (!target) return;
+      trackInteraction("interactive_wheel", {
+        source: "iframe",
+        ...iframeElementInfo(target, event, unit),
+        deltaX: Math.round(event.deltaX || 0),
+        deltaY: Math.round(event.deltaY || 0),
+        deltaMode: event.deltaMode || 0
+      });
+    },
+    { capture: true, passive: true }
+  );
+
+  doc.addEventListener(
+    "scroll",
+    (event) => {
+      const now = Date.now();
+      if (now - lastScrollAt < 1200) return;
+      lastScrollAt = now;
+      const rawTarget = normalizeIframeElement(event.target, doc);
+      const scrollNode = rawTarget === doc.body || rawTarget === doc.documentElement
+        ? doc.scrollingElement || doc.documentElement
+        : rawTarget;
+      trackInteraction("interactive_scroll", {
+        source: "iframe",
+        ...iframeElementInfo(scrollNode, event, unit),
+        scrollTop: Math.round(scrollNode?.scrollTop || 0),
+        scrollLeft: Math.round(scrollNode?.scrollLeft || 0)
+      });
+    },
+    { capture: true, passive: true }
+  );
+
+  doc.addEventListener(
     "pointerdown",
     (event) => {
-      const target = event.target?.closest?.(interactiveSelector) || event.target;
-      if (!target || target === doc || target === doc.documentElement || target === doc.body) return;
+      const target = iframeActionTarget(event, doc, interactiveSelector);
+      if (!target) return;
       pointerStarts.set(event.pointerId || 0, {
         at: Date.now(),
         x: event.clientX,
@@ -650,6 +788,22 @@ function setupIframeInteractionTracking(iframeEl, unit) {
   );
 
   doc.addEventListener(
+    "pointercancel",
+    (event) => {
+      const start = pointerStarts.get(event.pointerId || 0);
+      if (!start) return;
+      pointerStarts.delete(event.pointerId || 0);
+      const target = iframeActionTarget(event, doc, interactiveSelector) || start.target;
+      trackInteraction("interactive_pointer_cancel", {
+        source: "iframe",
+        ...iframeElementInfo(target, event, unit),
+        durationMs: Date.now() - start.at
+      });
+    },
+    true
+  );
+
+  doc.addEventListener(
     "pointermove",
     (event) => {
       const now = Date.now();
@@ -657,7 +811,7 @@ function setupIframeInteractionTracking(iframeEl, unit) {
       lastPointerMoveAt = now;
       const start = pointerStarts.get(event.pointerId || 0);
       if (!start) return;
-      const target = event.target?.closest?.(interactiveSelector) || start.target;
+      const target = iframeActionTarget(event, doc, interactiveSelector) || start.target;
       const distance = Math.round(Math.hypot(event.clientX - start.x, event.clientY - start.y));
       if (distance < 8) return;
       trackInteraction("interactive_drag_move", {
@@ -676,10 +830,14 @@ function setupIframeInteractionTracking(iframeEl, unit) {
       const start = pointerStarts.get(event.pointerId || 0);
       if (!start) return;
       pointerStarts.delete(event.pointerId || 0);
-      const target = event.target?.closest?.(interactiveSelector) || start.target;
+      const target = iframeActionTarget(event, doc, interactiveSelector) || start.target;
       const distance = Math.round(Math.hypot(event.clientX - start.x, event.clientY - start.y));
       const durationMs = Date.now() - start.at;
-      const eventName = distance >= 8 ? "interactive_drag_end" : "interactive_pointer_up";
+      const eventName = distance >= 8
+        ? "interactive_drag_end"
+        : target.matches?.("canvas, svg")
+          ? "canvas_pointer_up"
+          : "interactive_pointer_up";
       trackInteraction(eventName, {
         source: "iframe",
         ...iframeElementInfo(target, event, unit),
@@ -693,7 +851,7 @@ function setupIframeInteractionTracking(iframeEl, unit) {
   doc.addEventListener(
     "dragstart",
     (event) => {
-      const target = event.target?.closest?.(interactiveSelector) || event.target;
+      const target = iframeActionTarget(event, doc, interactiveSelector);
       trackInteraction("interactive_drag_start", { source: "iframe", ...iframeElementInfo(target, event, unit) });
     },
     true
@@ -702,18 +860,26 @@ function setupIframeInteractionTracking(iframeEl, unit) {
   doc.addEventListener(
     "dragend",
     (event) => {
-      const target = event.target?.closest?.(interactiveSelector) || event.target;
+      const target = iframeActionTarget(event, doc, interactiveSelector);
       trackInteraction("interactive_drag_end", { source: "iframe", ...iframeElementInfo(target, event, unit) });
     },
     true
   );
 
   trackInteraction("interactive_ready", {
+    source: "iframe",
     unitId: unit.id,
     unitLabel: unit.label,
     chapterId: unit.chapterId,
     title: compactText(doc.title || unit.label)
   });
+}
+
+function interactiveFrameSrc(unit, htmlPath) {
+  if (!htmlPath) return "";
+  const resourceRoot = unit.scene.content?.resourceRoot;
+  if (resourceRoot) return resourceUrl(`resources/${resourceRoot}/${htmlPath}`);
+  return resourceUrl(`resources/open-maic/${unit.chapterId}/${htmlPath}`);
 }
 
 function renderInteractive(unit) {
@@ -723,6 +889,7 @@ function renderInteractive(unit) {
       unitId: unit.id,
       chapterId: unit.chapterId,
       htmlPath: unit.scene.content?.htmlPath || "",
+      resourceRoot: unit.scene.content?.resourceRoot || "open-maic",
       moduleRole: moduleRoleForUnit(unit)
     }
   });
@@ -736,72 +903,83 @@ function renderInteractive(unit) {
     return;
   }
 
-  const frameSrc = htmlPath ? `src="${resourceUrl(`resources/open-maic/${unit.chapterId}/${htmlPath}`)}"` : "";
+  const frameSrc = interactiveFrameSrc(unit, htmlPath);
   const loadingHtml = '<div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>互动实验加载中…</p></div>';
   els.lessonPlayer.innerHTML = `
     ${renderCoach(unit.scene, unit.chapterId, unit.id)}
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" title="${escapeHtml(unit.label)}" ${frameSrc} sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe></div>`,
+      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe></div>`,
       "html-resource interactive-resource"
     )}
   `;
   const iframeEl = els.lessonPlayer.querySelector("iframe");
   if (iframeEl) {
-    if (html) iframeEl.srcdoc = html;
     let loaded = false;
+    const loader = () => iframeEl.parentElement?.querySelector(".iframe-loader");
+    const expectedFrameUrl = frameSrc ? new URL(frameSrc, window.location.href).href : "";
+    const isDocumentReady = () => {
+      try {
+        const doc = iframeEl.contentDocument || iframeEl.contentWindow?.document;
+        if (!doc?.body || doc.readyState !== "complete") return false;
+        if (expectedFrameUrl) {
+          const frameUrl = iframeEl.contentWindow?.location?.href || "";
+          if (!frameUrl || frameUrl === "about:blank" || frameUrl !== expectedFrameUrl) return false;
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const markLoaded = () => {
+      if (!loaded) {
+        loaded = true;
+        const node = loader();
+        if (node) {
+          node.classList.add("hidden");
+          window.setTimeout(() => node.remove(), 350);
+        }
+      }
+      try {
+        setupIframeInteractionTracking(iframeEl, unit);
+      } catch (error) {
+        console.warn("Interactive tracking unavailable:", error.message);
+      }
+    };
     iframeEl.addEventListener("load", () => {
-      loaded = true;
-      const loader = iframeEl.parentElement?.querySelector(".iframe-loader");
-      if (loader) loader.classList.add("hidden");
-      setupIframeInteractionTracking(iframeEl, unit);
+      if (isDocumentReady()) markLoaded();
     });
     iframeEl.addEventListener("error", () => {
-      const loader = iframeEl.parentElement?.querySelector(".iframe-loader");
-      if (loader) { loader.classList.add("hidden"); loader.innerHTML = "<p>互动实验加载失败，请刷新重试。</p>"; }
+      const node = loader();
+      if (node) { node.classList.add("hidden"); node.innerHTML = "<p>互动实验加载失败，请刷新重试。</p>"; }
     });
+    if (html) iframeEl.srcdoc = html;
+    else if (frameSrc) iframeEl.src = frameSrc;
+    if (html) {
+      requestAnimationFrame(() => {
+        if (!loaded && isDocumentReady()) markLoaded();
+      });
+    }
     setTimeout(() => {
       if (!loaded) {
-        const loader = iframeEl.parentElement?.querySelector(".iframe-loader");
-        if (loader) { loader.classList.add("hidden"); loader.innerHTML = "<p>互动实验加载超时，请检查网络连接后刷新。</p>"; }
+        if (isDocumentReady()) {
+          markLoaded();
+          return;
+        }
+        const node = loader();
+        if (node) { node.classList.add("hidden"); node.innerHTML = "<p>互动实验加载超时，请检查网络连接后刷新。</p>"; }
       }
     }, 20000);
   }
 }
 
-function renderSupplement(unit) {
-  analyticsTrack("supplement_render", {
-    data: {
-      unitId: unit.id,
-      chapterId: unit.chapterId,
-      modelId: unit.modelId,
-      file: unit.file
-    }
-  });
-  const model = supplementModels.find((item) => item.id === unit.modelId);
-  els.lessonPlayer.innerHTML = `
-        <div class="coach-strip">
-      <div class="coach-line">
-        <strong>Agent 推荐补给</strong>
-        <div>${escapeHtml(unit.analysis.bestFor)} ${escapeHtml(model?.useCase || "")}</div>
-      </div>
-    </div>
-    ${renderResourceShell(
-      unit,
-      unit.label,
-      `<iframe class="embed-frame" title="${escapeHtml(unit.label)}" src="${resourceUrl(`resources/${unit.modelId}/${unit.file}`)}" allow="fullscreen; autoplay" allowfullscreen></iframe>`,
-      "html-resource supplement-resource"
-    )}
-  `;
-}
-
 function renderAgent() {
   const rows = [
     ["前测先行", "每章第一步固定为 pre-test，先暴露已有直觉和概念缺口，再进入讲解、互动和形成性测验。"],
-    ["隐藏补给池", "四个模型生成的补充课件默认不进入闯关列表，只作为 Agent 可调用资源池。"],
-    ["证据匹配", "Agent 读取前测和形成性测验的错题、短答完整度与题干关键词，映射到函数、斜率、向量、梯度、凸性等知识点。"],
-    ["模型择优", "前测弱基础优先推荐直觉类比和快速纠偏；形成性测验卡住时推荐迁移挑战和结构化复盘。"]
+    ["MAIC-UI 重学/拓展", "换一种方式重学和一步拓展都来自同一套 MAIC-UI 互动课件，不再按测验结果推荐外部补充课程。"],
+    ["证据驱动", "Agent 读取前测、形成性测验和后测表现，只决定是否跳过、重学、拓展或继续主线。"],
+    ["学生确认", "每次路径改变都由学生确认；跳过不会直接落到形成性测验，而会先进入一个互动热身。"]
   ];
 
   els.agentBoard.innerHTML = rows
@@ -812,34 +990,110 @@ function renderAgent() {
         <p>${text}</p>
       </article>
     `)
-    .join("") + renderRecommendationBlueprint();
+    .join("") + renderAgenticBlueprint();
 }
 
-function renderRecommendationBlueprint() {
-  const modelRows = supplementModels
-    .map((model) => `<span class="type-pill">${model.label} · ${model.role}</span>`)
-    .join("");
+function renderAgenticBlueprint() {
   const chapterRows = curriculum
     .map((chapter) => {
-      const topics = Object.values(supplementAnalysis)
-        .filter((item) => item.chapterId === chapter.id)
-        .map((item) => item.title.replace(/^.*?：/, ""))
-        .join(" / ");
-      return `<tr><td>${chapter.label}</td><td>${topics}</td></tr>`;
+      const adaptiveLabel = (order) => AGENTIC_MAIC_UI_ADAPTIVE_MAP?.[chapter.id]?.[order]?.label || AGENTIC_ADAPTIVE_SCENE_LABELS[order];
+      const relearn = AGENTIC_RELEARN_SCENE_ORDERS.map((order) => `${AGENTIC_ADAPTIVE_SCENE_LABELS[order]}：${adaptiveLabel(order)}`).join(" / ");
+      const extension = AGENTIC_EXTENSION_SCENE_ORDERS.map((order) => `${AGENTIC_ADAPTIVE_SCENE_LABELS[order]}：${adaptiveLabel(order)}`).join(" / ");
+      return `<tr><td>${chapter.label}</td><td>${relearn}</td><td>${extension}</td></tr>`;
     })
     .join("");
   return `
     <article class="agent-card agent-wide">
-      <span class="type-pill">Recommendation design</span>
-      <h2>推荐生成方案</h2>
-      <p>把 26 个知识主题映射到 8 个微积分章节，每个主题保留 4 个模型版本，共 ${supplementUnits.length} 个隐藏补给。读取前测与形成性测验：客观题错误、短答待复核或估算得分偏低都会触发知识点匹配。按阶段选择模型：前测偏基础时推荐直觉类比和快速纠偏，形成性测验卡住时推荐迁移挑战和结构化复盘。</p>
-      <div class="model-row">${modelRows}</div>
+      <span class="type-pill">Agentic active-learning</span>
+      <h2>MAIC-UI 路径编排方案</h2>
+      <p>当前只使用 ${escapeHtml(MAIC_UI_MODEL.label)} 生成的 MAIC-UI 课件作为重学和拓展资源。主线保留前测、讲解、互动、形成性测验和后测；新加课件只在学生需要时出现，作为“换一种方式重学”或“解锁一步拓展”。</p>
+      <div class="model-row"><span class="type-pill">${escapeHtml(MAIC_UI_MODEL.label)} · ${escapeHtml(MAIC_UI_MODEL.role)}</span></div>
       <div class="blueprint-table-wrap">
         <table class="blueprint-table">
-          <thead><tr><th>章节</th><th>关联补给主题</th></tr></thead>
+          <thead><tr><th>章节</th><th>换一种方式重学</th><th>一步拓展</th></tr></thead>
           <tbody>${chapterRows}</tbody>
         </table>
       </div>
     </article>
   `;
+}
+
+function renderLessons() {
+  const chapter = getChapter();
+  els.chapterTitle.textContent = chapter.label;
+  if (!chapter.loaded) {
+    els.lessonList.innerHTML = '<div class="empty-state">点击左侧章节卡片加载本章学习模块。</div>';
+    return;
+  }
+
+  const displayUnits = typeof agenticDisplayUnitsForChapter === "function"
+    ? agenticDisplayUnitsForChapter(chapter)
+    : chapter.units;
+  els.lessonList.innerHTML = displayUnits.map((unit, index) => {
+    const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
+    const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
+    const isLocked = !isUnlocked && !isSkipped;
+    const isDone = state.completed.includes(unit.id);
+    const isRecommended = isUnlocked && !isSkipped && !isDone;
+    const cls = [
+      "lesson-card",
+      unit.id === currentUnitId ? "active" : "",
+      isLocked ? "locked" : "",
+      isSkipped ? "skipped" : "",
+      isRecommended ? "recommended" : "",
+      unit.flowKind === "adaptive" ? "adaptive" : ""
+    ].filter(Boolean).join(" ");
+    const statusText = isLocked ? "待解锁" : isSkipped ? "可回看" : isDone ? "已完成" : unit.flowKind === "adaptive" ? "新加课件" : "下一步";
+    const flowText = unit.flowKind === "adaptive" ? ` · ${escapeHtml(unit.flowLabel || "新加课件")}` : "";
+    return `
+      <button class="${cls}" type="button" data-unit="${unit.id}" ${isLocked ? 'aria-disabled="true"' : ""}>
+        <strong>${index + 1}. ${escapeHtml(unit.label)}</strong>
+        <small>${typeText(unit)}${flowText} · ${statusText}</small>
+      </button>
+    `;
+  }).join("");
+}
+
+function renderChapters() {
+  els.chapterList.innerHTML = curriculum
+    .map((chapter, index) => {
+      const isUnlocked = typeof agenticIsChapterUnlocked !== "function" || agenticIsChapterUnlocked(chapter.id);
+      const displayUnits = typeof agenticDisplayUnitsForChapter === "function"
+        ? agenticDisplayUnitsForChapter(chapter)
+        : chapter.units;
+      const done = chapter.units.filter((unit) => state.completed.includes(unit.id)).length;
+      const total = chapter.loaded ? chapter.units.length : AGENTIC_CORE_SCENE_ORDERS.length;
+      const adaptiveShown = displayUnits.filter((unit) => unit.flowKind === "adaptive").length;
+      const guide = chapterGuides[chapter.id];
+      const cls = [
+        "chapter-card",
+        chapter.id === currentChapterId ? "active" : "",
+        isUnlocked ? "" : "locked"
+      ].filter(Boolean).join(" ");
+      const status = isUnlocked ? `${done}/${total} 模块` : "未解锁";
+      return `
+        <button class="${cls}" type="button" data-chapter="${chapter.id}" ${isUnlocked ? "" : 'aria-disabled="true"'}>
+          <span class="chapter-card-top">
+            <strong>第 ${index + 1} 章 ${escapeHtml(chapter.label)}</strong>
+            <span>${isUnlocked ? (guide?.difficulty || "可学习") : "锁定"}</span>
+          </span>
+          <small>${status}${adaptiveShown ? ` · ${adaptiveShown} 个新加课件` : ""} · ${escapeHtml(chapter.summary)}</small>
+          ${guide && isUnlocked ? `<small class="chapter-bridge">${escapeHtml(guide.bridge)} · ${guide.pace}</small>` : ""}
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function syncAgenticPlayerCta(unit) {
+  if (!els.completeLesson || !unit) return;
+  if (unit.type === "quiz" && !(state.submittedQuizzes || []).includes(unit.id)) {
+    els.completeLesson.textContent = "提交测验后解锁下一步";
+  } else if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
+    els.completeLesson.textContent = "先选择下一步";
+  } else if (state.agenticPath?.activeDetour?.unitId === unit.id && state.agenticPath.activeDetour.phase === "post") {
+    els.completeLesson.textContent = state.completed.includes(unit.id) ? "复习完成后选择下一步" : "完成重学后选择下一步";
+  } else if (state.agenticPath?.oneStepExtension?.unitId === unit.id && typeof agenticIsCrossChapterResume === "function" && agenticIsCrossChapterResume(state.agenticPath.oneStepExtension.fromUnitId, state.agenticPath.oneStepExtension.resumeUnitId)) {
+    els.completeLesson.textContent = state.completed.includes(unit.id) ? "复习拓展并进入下一章" : "完成拓展并进入下一章";
+  }
 }
