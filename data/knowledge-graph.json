@@ -1,0 +1,2816 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "2026-06-16T16:07:26.460Z",
+  "description": "Knowledge graph for the calculus pre-course; modelled after KG-RAG / GraphMASAL conventions.",
+  "nodeKinds": {
+    "chapter": "粒度=章节",
+    "unit": "粒度=单元/场景"
+  },
+  "edgeKinds": {
+    "prerequisite": "B 要求先掌握 A",
+    "follows": "线性路径下一个单元",
+    "chapter_handoff": "本章末尾对接下一章首单元",
+    "extension": "一步可达的拓展知识点",
+    "alt_modality": "同一概念的不同呈现模态"
+  },
+  "roleKinds": [
+    "pre_test",
+    "formative_quiz",
+    "post_test",
+    "concept_map",
+    "lecture",
+    "formula_bridge",
+    "recap",
+    "experiment"
+  ],
+  "modalityKinds": [
+    "assessment",
+    "narrative",
+    "visual",
+    "symbolic",
+    "relational"
+  ],
+  "chapters": [
+    {
+      "id": "A1",
+      "title": "A1 函数、图像和局部变化语言",
+      "objective": "把输入-输出-图像-斜率串成一条直觉链，为导数和梯度做语言准备。",
+      "concepts": [
+        "函数与输入输出",
+        "坐标系与函数图像",
+        "斜率与变化率",
+        "局部线性近似"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "56-57,145-148,171-172,175"
+    },
+    {
+      "id": "A2a",
+      "title": "A2a 向量：方向与长度",
+      "objective": "用箭头-坐标-长度三件套描述带方向的变化，并理解向量加减与数乘。",
+      "concepts": [
+        "向量与方向",
+        "向量加法与数乘",
+        "距离与范数"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "23-25,43-45,77-84"
+    },
+    {
+      "id": "A2b",
+      "title": "A2b 内积与投影",
+      "objective": "用内积比较方向一致性，用投影抽出某方向上的分量，准备方向导数。",
+      "concepts": [
+        "内积与夹角",
+        "向量投影",
+        "方向贡献"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "77-84,87-92"
+    },
+    {
+      "id": "A3",
+      "title": "A3 矩阵作为空间变换",
+      "objective": "把矩阵看作改变空间的变换，识别基向量像与局部线性观感。",
+      "concepts": [
+        "矩阵变换",
+        "基向量与列空间",
+        "局部线性"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "43-66,153-158"
+    },
+    {
+      "id": "A4",
+      "title": "A4 曲面、等高线与二次曲面直觉",
+      "objective": "把二元函数看成曲面+等高线，识别凸碗/鞍/波浪等几何形态。",
+      "concepts": [
+        "曲面与等高线",
+        "二次型",
+        "正定/不定方向"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "146,153-158,239-245"
+    },
+    {
+      "id": "C1",
+      "title": "C1 多元函数、偏导、梯度与方向导数",
+      "objective": "用偏导看单方向变化，用梯度看最快上升方向，再用方向导数把两者打通。",
+      "concepts": [
+        "偏导数",
+        "梯度向量",
+        "方向导数",
+        "梯度与等高线"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "146,153-170"
+    },
+    {
+      "id": "D1",
+      "title": "D1 无约束优化与梯度下降",
+      "objective": "把目标函数看作地形，沿负梯度按步长一步步下降，理解收敛与步长效应。",
+      "concepts": [
+        "目标函数与地形",
+        "负梯度方向",
+        "步长与收敛",
+        "迭代终止"
+      ],
+      "mmlChapter": 7,
+      "mmlPages": "225-233"
+    },
+    {
+      "id": "D2",
+      "title": "D2 凸性与全局最优",
+      "objective": "区分凸/非凸地形，理解局部最低与全局最低的关系以及起点的影响。",
+      "concepts": [
+        "凸函数直觉",
+        "非凸多山谷",
+        "起点影响",
+        "路径与盆地"
+      ],
+      "mmlChapter": 7,
+      "mmlPages": "233-235,239-245"
+    }
+  ],
+  "chapterOrder": [
+    "A1",
+    "A2a",
+    "A2b",
+    "A3",
+    "A4",
+    "C1",
+    "D1",
+    "D2"
+  ],
+  "nodes": [
+    {
+      "id": "A1",
+      "kind": "chapter",
+      "chapterId": "A1",
+      "label": "A1 函数、图像和局部变化语言",
+      "objective": "把输入-输出-图像-斜率串成一条直觉链，为导数和梯度做语言准备。",
+      "concepts": [
+        "函数与输入输出",
+        "坐标系与函数图像",
+        "斜率与变化率",
+        "局部线性近似"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "56-57,145-148,171-172,175",
+      "sceneCount": 15
+    },
+    {
+      "id": "A1-scene-1",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 1,
+      "type": "quiz",
+      "title": "前测：函数的直觉探索",
+      "role": "pre_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-2",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 2,
+      "type": "slide",
+      "title": "知识地图：从变化到语言",
+      "role": "concept_map",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-3",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 3,
+      "type": "interactive",
+      "title": "函数机器同步器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-4",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 4,
+      "type": "interactive",
+      "title": "坐标点生成器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-5",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 5,
+      "type": "interactive",
+      "title": "三类函数图像大比拼",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-6",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 6,
+      "type": "slide",
+      "title": "核心框架与公式桥接",
+      "role": "formula_bridge",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-7",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 7,
+      "type": "interactive",
+      "title": "两点斜率实验",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-8",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 8,
+      "type": "quiz",
+      "title": "过程性测试：图像与斜率初步迁移",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-9",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 9,
+      "type": "interactive",
+      "title": "变化快慢排序大作战",
+      "role": "experiment",
+      "modality": "relational",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-10",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 10,
+      "type": "interactive",
+      "title": "局部斜率探针",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A1-scene-11",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 11,
+      "type": "interactive",
+      "title": "函数表示关系网",
+      "role": "experiment",
+      "modality": "relational",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A1-scene-12",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 12,
+      "type": "slide",
+      "title": "复盘：知识完整性兜底",
+      "role": "recap",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A1-scene-13",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 13,
+      "type": "interactive",
+      "title": "斜率正负判定挑战",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A1-scene-14",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 14,
+      "type": "interactive",
+      "title": "微积分变化地图",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A1-scene-15",
+      "kind": "unit",
+      "chapterId": "A1",
+      "order": 15,
+      "type": "quiz",
+      "title": "后测：综合迁移与应用",
+      "role": "post_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A2a",
+      "kind": "chapter",
+      "chapterId": "A2a",
+      "label": "A2a 向量：方向与长度",
+      "objective": "用箭头-坐标-长度三件套描述带方向的变化，并理解向量加减与数乘。",
+      "concepts": [
+        "向量与方向",
+        "向量加法与数乘",
+        "距离与范数"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "23-25,43-45,77-84",
+      "sceneCount": 15
+    },
+    {
+      "id": "A2a-scene-1",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 1,
+      "type": "quiz",
+      "title": "向量直觉前测",
+      "role": "pre_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-2",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 2,
+      "type": "slide",
+      "title": "向量地图：从箭头到坐标",
+      "role": "concept_map",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-3",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 3,
+      "type": "interactive",
+      "title": "向量探针：坐标与属性",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-4",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 4,
+      "type": "interactive",
+      "title": "加法实验：首尾相接的旅程",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-5",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 5,
+      "type": "interactive",
+      "title": "数乘伸缩：方向的逆转",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-6",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 6,
+      "type": "slide",
+      "title": "公式桥梁：从图像到代数",
+      "role": "formula_bridge",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-7",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 7,
+      "type": "interactive",
+      "title": "测距仪：两点间的向量",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-8",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 8,
+      "type": "quiz",
+      "title": "过程纠偏测试",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-9",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 9,
+      "type": "interactive",
+      "title": "精准导航：双步策略游戏",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-10",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 10,
+      "type": "interactive",
+      "title": "误差仪表盘：离目标还有多远？",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A2a-scene-11",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 11,
+      "type": "interactive",
+      "title": "向量关系图谱",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A2a-scene-12",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 12,
+      "type": "slide",
+      "title": "全景复盘：知识完整性回收",
+      "role": "recap",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2a-scene-13",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 13,
+      "type": "interactive",
+      "title": "向量拼图挑战",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A2a-scene-14",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 14,
+      "type": "interactive",
+      "title": "预演：优化中的“一步”",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A2a-scene-15",
+      "kind": "unit",
+      "chapterId": "A2a",
+      "order": 15,
+      "type": "quiz",
+      "title": "综合迁移后测",
+      "role": "post_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A2b",
+      "kind": "chapter",
+      "chapterId": "A2b",
+      "label": "A2b 内积与投影",
+      "objective": "用内积比较方向一致性，用投影抽出某方向上的分量，准备方向导数。",
+      "concepts": [
+        "内积与夹角",
+        "向量投影",
+        "方向贡献"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "77-84,87-92",
+      "sceneCount": 15
+    },
+    {
+      "id": "A2b-scene-1",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 1,
+      "type": "quiz",
+      "title": "前测：激活你的向量直觉",
+      "role": "pre_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-2",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 2,
+      "type": "slide",
+      "title": "知识地图与学习路线",
+      "role": "concept_map",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-3",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 3,
+      "type": "interactive",
+      "title": "夹角旋转台",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-4",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 4,
+      "type": "interactive",
+      "title": "内积数值仪表",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-5",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 5,
+      "type": "interactive",
+      "title": "投影影子实验",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-6",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 6,
+      "type": "slide",
+      "title": "核心框架与公式桥接",
+      "role": "formula_bridge",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-7",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 7,
+      "type": "interactive",
+      "title": "方向贡献地图",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-8",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 8,
+      "type": "quiz",
+      "title": "过程性测试：概念迁移",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-9",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 9,
+      "type": "interactive",
+      "title": "投影命中挑战",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-10",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 10,
+      "type": "interactive",
+      "title": "垂直零贡献探针",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A2b-scene-11",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 11,
+      "type": "interactive",
+      "title": "方向导数预备实验",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A2b-scene-12",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 12,
+      "type": "slide",
+      "title": "复盘：知识完整性回收",
+      "role": "recap",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A2b-scene-13",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 13,
+      "type": "interactive",
+      "title": "方向关系分类游戏",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A2b-scene-14",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 14,
+      "type": "interactive",
+      "title": "投影分解仪",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A2b-scene-15",
+      "kind": "unit",
+      "chapterId": "A2b",
+      "order": 15,
+      "type": "quiz",
+      "title": "后测：综合迁移与深度理解",
+      "role": "post_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A3",
+      "kind": "chapter",
+      "chapterId": "A3",
+      "label": "A3 矩阵作为空间变换",
+      "objective": "把矩阵看作改变空间的变换，识别基向量像与局部线性观感。",
+      "concepts": [
+        "矩阵变换",
+        "基向量与列空间",
+        "局部线性"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "43-66,153-158",
+      "sceneCount": 15
+    },
+    {
+      "id": "A3-scene-1",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 1,
+      "type": "quiz",
+      "title": "矩阵直觉前测",
+      "role": "pre_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-2",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 2,
+      "type": "slide",
+      "title": "知识地图：矩阵的变形之旅",
+      "role": "concept_map",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-3",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 3,
+      "type": "interactive",
+      "title": "基向量变换器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-4",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 4,
+      "type": "interactive",
+      "title": "网格形变实验",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-5",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 5,
+      "type": "interactive",
+      "title": "单位圆变椭圆",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-6",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 6,
+      "type": "slide",
+      "title": "从图像到公式：桥接概念",
+      "role": "formula_bridge",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-7",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 7,
+      "type": "interactive",
+      "title": "点对点映射追踪",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-8",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 8,
+      "type": "quiz",
+      "title": "过程性测试：空间感检查",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-9",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 9,
+      "type": "interactive",
+      "title": "矩阵变换反推挑战",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-10",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 10,
+      "type": "interactive",
+      "title": "变换流程系统全景图",
+      "role": "experiment",
+      "modality": "relational",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A3-scene-11",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 11,
+      "type": "interactive",
+      "title": "面积与方向观察器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A3-scene-12",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 12,
+      "type": "slide",
+      "title": "复盘：我们学到了什么？",
+      "role": "recap",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A3-scene-13",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 13,
+      "type": "interactive",
+      "title": "网格复原大挑战",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A3-scene-14",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 14,
+      "type": "interactive",
+      "title": "局部线性预告实验",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A3-scene-15",
+      "kind": "unit",
+      "chapterId": "A3",
+      "order": 15,
+      "type": "quiz",
+      "title": "最终综合挑战",
+      "role": "post_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A4",
+      "kind": "chapter",
+      "chapterId": "A4",
+      "label": "A4 曲面、等高线与二次曲面直觉",
+      "objective": "把二元函数看成曲面+等高线，识别凸碗/鞍/波浪等几何形态。",
+      "concepts": [
+        "曲面与等高线",
+        "二次型",
+        "正定/不定方向"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "146,153-158,239-245",
+      "sceneCount": 15
+    },
+    {
+      "id": "A4-scene-1",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 1,
+      "type": "quiz",
+      "title": "课前直觉扫查：你眼中的多维世界",
+      "role": "pre_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-2",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 2,
+      "type": "slide",
+      "title": "探索路线：从弯曲到线性",
+      "role": "concept_map",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-3",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 3,
+      "type": "interactive",
+      "title": "维度跃迁：曲线到曲面切换台",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-4",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 4,
+      "type": "interactive",
+      "title": "等高线地形阅读器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-5",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 5,
+      "type": "interactive",
+      "title": "二次曲面形状库",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-6",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 6,
+      "type": "slide",
+      "title": "公式桥梁：从一维导数到局部平面",
+      "role": "formula_bridge",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-7",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 7,
+      "type": "interactive",
+      "title": "正定方向扫描仪",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-8",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 8,
+      "type": "quiz",
+      "title": "过程自测：曲面形状与稳定性",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-9",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 9,
+      "type": "interactive",
+      "title": "局部放大镜：发现线性",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-10",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 10,
+      "type": "interactive",
+      "title": "多维关系全景图",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A4-scene-11",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 11,
+      "type": "interactive",
+      "title": "最快上升方向探针",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A4-scene-12",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 12,
+      "type": "slide",
+      "title": "复盘：从直觉到严谨定义",
+      "role": "recap",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "A4-scene-13",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 13,
+      "type": "interactive",
+      "title": "曲面识别挑战赛",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A4-scene-14",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 14,
+      "type": "interactive",
+      "title": "局部模型匹配拼图",
+      "role": "experiment",
+      "modality": "relational",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "A4-scene-15",
+      "kind": "unit",
+      "chapterId": "A4",
+      "order": 15,
+      "type": "quiz",
+      "title": "终极挑战：地形专家认证",
+      "role": "post_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "C1",
+      "kind": "chapter",
+      "chapterId": "C1",
+      "label": "C1 多元函数、偏导、梯度与方向导数",
+      "objective": "用偏导看单方向变化，用梯度看最快上升方向，再用方向导数把两者打通。",
+      "concepts": [
+        "偏导数",
+        "梯度向量",
+        "方向导数",
+        "梯度与等高线"
+      ],
+      "mmlChapter": 5,
+      "mmlPages": "146,153-170",
+      "sceneCount": 15
+    },
+    {
+      "id": "C1-scene-1",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 1,
+      "type": "quiz",
+      "title": "前测：直觉扫描",
+      "role": "pre_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-2",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 2,
+      "type": "slide",
+      "title": "知识地图与学习路线",
+      "role": "concept_map",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-3",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 3,
+      "type": "interactive",
+      "title": "一元极值斜率扫描",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-4",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 4,
+      "type": "interactive",
+      "title": "梯度箭头地形图",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-5",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 5,
+      "type": "interactive",
+      "title": "梯度计算填空板",
+      "role": "experiment",
+      "modality": "symbolic",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-6",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 6,
+      "type": "slide",
+      "title": "核心框架与公式桥接",
+      "role": "formula_bridge",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-7",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 7,
+      "type": "interactive",
+      "title": "方向导数旋转盘",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-8",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 8,
+      "type": "quiz",
+      "title": "过程性测试：中期检查",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-9",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 9,
+      "type": "interactive",
+      "title": "最快方向挑战游戏",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-10",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 10,
+      "type": "interactive",
+      "title": "驻点形状切换器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "C1-scene-11",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 11,
+      "type": "interactive",
+      "title": "概念关系系统图",
+      "role": "experiment",
+      "modality": "relational",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "C1-scene-12",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 12,
+      "type": "slide",
+      "title": "复盘兜底：知识点检查",
+      "role": "recap",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "C1-scene-13",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 13,
+      "type": "interactive",
+      "title": "驻点判断闯关",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "C1-scene-14",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 14,
+      "type": "interactive",
+      "title": "梯度为零反例实验",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "C1-scene-15",
+      "kind": "unit",
+      "chapterId": "C1",
+      "order": 15,
+      "type": "quiz",
+      "title": "后测：综合迁移与解释",
+      "role": "post_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "D1",
+      "kind": "chapter",
+      "chapterId": "D1",
+      "label": "D1 无约束优化与梯度下降",
+      "objective": "把目标函数看作地形，沿负梯度按步长一步步下降，理解收敛与步长效应。",
+      "concepts": [
+        "目标函数与地形",
+        "负梯度方向",
+        "步长与收敛",
+        "迭代终止"
+      ],
+      "mmlChapter": 7,
+      "mmlPages": "225-233",
+      "sceneCount": 15
+    },
+    {
+      "id": "D1-scene-1",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 1,
+      "type": "quiz",
+      "title": "前测：你的优化直觉",
+      "role": "pre_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-2",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 2,
+      "type": "slide",
+      "title": "知识地图与学习路线",
+      "role": "concept_map",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-3",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 3,
+      "type": "interactive",
+      "title": "优化三要素分类器",
+      "role": "experiment",
+      "modality": "symbolic",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-4",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 4,
+      "type": "interactive",
+      "title": "目标函数地形探索",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-5",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 5,
+      "type": "interactive",
+      "title": "一元最低点候选器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-6",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 6,
+      "type": "slide",
+      "title": "核心框架与公式桥接",
+      "role": "formula_bridge",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-7",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 7,
+      "type": "interactive",
+      "title": "负梯度下一步模拟",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-8",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 8,
+      "type": "quiz",
+      "title": "过程性测试：理解迁移",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-9",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 9,
+      "type": "interactive",
+      "title": "步长稳定性实验",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-10",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 10,
+      "type": "interactive",
+      "title": "迭代表格播放器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "D1-scene-11",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 11,
+      "type": "interactive",
+      "title": "梯度下降流程图",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "D1-scene-12",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 12,
+      "type": "slide",
+      "title": "复盘：知识完整性收拢",
+      "role": "recap",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D1-scene-13",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 13,
+      "type": "interactive",
+      "title": "下山路线策略游戏",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "D1-scene-14",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 14,
+      "type": "interactive",
+      "title": "收敛与停止条件仪表盘",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "D1-scene-15",
+      "kind": "unit",
+      "chapterId": "D1",
+      "order": 15,
+      "type": "quiz",
+      "title": "后测：综合迁移与解释",
+      "role": "post_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "D2",
+      "kind": "chapter",
+      "chapterId": "D2",
+      "label": "D2 凸性与全局最优",
+      "objective": "区分凸/非凸地形，理解局部最低与全局最低的关系以及起点的影响。",
+      "concepts": [
+        "凸函数直觉",
+        "非凸多山谷",
+        "起点影响",
+        "路径与盆地"
+      ],
+      "mmlChapter": 7,
+      "mmlPages": "233-235,239-245",
+      "sceneCount": 15
+    },
+    {
+      "id": "D2-scene-1",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 1,
+      "type": "quiz",
+      "title": "前测：优化直觉挑战",
+      "role": "pre_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-2",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 2,
+      "type": "slide",
+      "title": "知识地图与学习路线",
+      "role": "concept_map",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-3",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 3,
+      "type": "interactive",
+      "title": "凸碗形地形探索",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-4",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 4,
+      "type": "interactive",
+      "title": "非凸多山谷探索",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-5",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 5,
+      "type": "interactive",
+      "title": "凸/非凸曲线切换器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-6",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 6,
+      "type": "slide",
+      "title": "核心框架与公式桥接",
+      "role": "formula_bridge",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-7",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 7,
+      "type": "interactive",
+      "title": "概念关系全景图",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-8",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 8,
+      "type": "quiz",
+      "title": "过程性测试：中期检查",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-9",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 9,
+      "type": "interactive",
+      "title": "起点选择策略游戏",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-10",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 10,
+      "type": "interactive",
+      "title": "等高线低谷识别器",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "D2-scene-11",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 11,
+      "type": "interactive",
+      "title": "路径盆地可视化",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "D2-scene-12",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 12,
+      "type": "slide",
+      "title": "复盘：知识完整性检查",
+      "role": "recap",
+      "modality": "narrative",
+      "duration": 3,
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "D2-scene-13",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 13,
+      "type": "interactive",
+      "title": "凸性判断拼图",
+      "role": "experiment",
+      "modality": "relational",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "D2-scene-14",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 14,
+      "type": "interactive",
+      "title": "可靠优化对比实验",
+      "role": "experiment",
+      "modality": "visual",
+      "duration": 5,
+      "isCheckpoint": false,
+      "isOptional": true
+    },
+    {
+      "id": "D2-scene-15",
+      "kind": "unit",
+      "chapterId": "D2",
+      "order": 15,
+      "type": "quiz",
+      "title": "后测：综合迁移与解释",
+      "role": "post_test",
+      "modality": "assessment",
+      "duration": 4,
+      "isCheckpoint": true,
+      "isOptional": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "A1",
+      "to": "A2a",
+      "kind": "extension",
+      "scope": "chapter"
+    },
+    {
+      "from": "A1-scene-1",
+      "to": "A1-scene-2",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-2",
+      "to": "A1-scene-3",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-3",
+      "to": "A1-scene-4",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-4",
+      "to": "A1-scene-5",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-5",
+      "to": "A1-scene-6",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-6",
+      "to": "A1-scene-7",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-7",
+      "to": "A1-scene-8",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-8",
+      "to": "A1-scene-9",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-9",
+      "to": "A1-scene-10",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-10",
+      "to": "A1-scene-11",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-11",
+      "to": "A1-scene-12",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-12",
+      "to": "A1-scene-13",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-13",
+      "to": "A1-scene-14",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-14",
+      "to": "A1-scene-15",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-15",
+      "to": "A2a-scene-1",
+      "kind": "chapter_handoff",
+      "scope": "unit"
+    },
+    {
+      "from": "A1",
+      "to": "A2a",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "A2a",
+      "to": "A3",
+      "kind": "extension",
+      "scope": "chapter"
+    },
+    {
+      "from": "A2a-scene-1",
+      "to": "A2a-scene-2",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-2",
+      "to": "A2a-scene-3",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-3",
+      "to": "A2a-scene-4",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-4",
+      "to": "A2a-scene-5",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-5",
+      "to": "A2a-scene-6",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-6",
+      "to": "A2a-scene-7",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-7",
+      "to": "A2a-scene-8",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-8",
+      "to": "A2a-scene-9",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-9",
+      "to": "A2a-scene-10",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-10",
+      "to": "A2a-scene-11",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-11",
+      "to": "A2a-scene-12",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-12",
+      "to": "A2a-scene-13",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-13",
+      "to": "A2a-scene-14",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-14",
+      "to": "A2a-scene-15",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a-scene-15",
+      "to": "A2b-scene-1",
+      "kind": "chapter_handoff",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a",
+      "to": "A2b",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "A2b",
+      "to": "A3",
+      "kind": "extension",
+      "scope": "chapter"
+    },
+    {
+      "from": "A2b-scene-1",
+      "to": "A2b-scene-2",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-2",
+      "to": "A2b-scene-3",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-3",
+      "to": "A2b-scene-4",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-4",
+      "to": "A2b-scene-5",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-5",
+      "to": "A2b-scene-6",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-6",
+      "to": "A2b-scene-7",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-7",
+      "to": "A2b-scene-8",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-8",
+      "to": "A2b-scene-9",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-9",
+      "to": "A2b-scene-10",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-10",
+      "to": "A2b-scene-11",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-11",
+      "to": "A2b-scene-12",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-12",
+      "to": "A2b-scene-13",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-13",
+      "to": "A2b-scene-14",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-14",
+      "to": "A2b-scene-15",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A2b-scene-15",
+      "to": "A3-scene-1",
+      "kind": "chapter_handoff",
+      "scope": "unit"
+    },
+    {
+      "from": "A2a",
+      "to": "A3",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "A2b",
+      "to": "A3",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "A3",
+      "to": "A4",
+      "kind": "extension",
+      "scope": "chapter"
+    },
+    {
+      "from": "A3-scene-1",
+      "to": "A3-scene-2",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-2",
+      "to": "A3-scene-3",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-3",
+      "to": "A3-scene-4",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-4",
+      "to": "A3-scene-5",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-5",
+      "to": "A3-scene-6",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-6",
+      "to": "A3-scene-7",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-7",
+      "to": "A3-scene-8",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-8",
+      "to": "A3-scene-9",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-9",
+      "to": "A3-scene-10",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-10",
+      "to": "A3-scene-11",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-11",
+      "to": "A3-scene-12",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-12",
+      "to": "A3-scene-13",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-13",
+      "to": "A3-scene-14",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-14",
+      "to": "A3-scene-15",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A3-scene-15",
+      "to": "A4-scene-1",
+      "kind": "chapter_handoff",
+      "scope": "unit"
+    },
+    {
+      "from": "A1",
+      "to": "A4",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "A3",
+      "to": "A4",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "A4",
+      "to": "C1",
+      "kind": "extension",
+      "scope": "chapter"
+    },
+    {
+      "from": "A4-scene-1",
+      "to": "A4-scene-2",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-2",
+      "to": "A4-scene-3",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-3",
+      "to": "A4-scene-4",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-4",
+      "to": "A4-scene-5",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-5",
+      "to": "A4-scene-6",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-6",
+      "to": "A4-scene-7",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-7",
+      "to": "A4-scene-8",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-8",
+      "to": "A4-scene-9",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-9",
+      "to": "A4-scene-10",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-10",
+      "to": "A4-scene-11",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-11",
+      "to": "A4-scene-12",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-12",
+      "to": "A4-scene-13",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-13",
+      "to": "A4-scene-14",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-14",
+      "to": "A4-scene-15",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A4-scene-15",
+      "to": "C1-scene-1",
+      "kind": "chapter_handoff",
+      "scope": "unit"
+    },
+    {
+      "from": "A1",
+      "to": "C1",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "A2b",
+      "to": "C1",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "A4",
+      "to": "C1",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "C1",
+      "to": "D1",
+      "kind": "extension",
+      "scope": "chapter"
+    },
+    {
+      "from": "C1-scene-1",
+      "to": "C1-scene-2",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-2",
+      "to": "C1-scene-3",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-3",
+      "to": "C1-scene-4",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-4",
+      "to": "C1-scene-5",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-5",
+      "to": "C1-scene-6",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-6",
+      "to": "C1-scene-7",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-7",
+      "to": "C1-scene-8",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-8",
+      "to": "C1-scene-9",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-9",
+      "to": "C1-scene-10",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-10",
+      "to": "C1-scene-11",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-11",
+      "to": "C1-scene-12",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-12",
+      "to": "C1-scene-13",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-13",
+      "to": "C1-scene-14",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-14",
+      "to": "C1-scene-15",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "C1-scene-15",
+      "to": "D1-scene-1",
+      "kind": "chapter_handoff",
+      "scope": "unit"
+    },
+    {
+      "from": "C1",
+      "to": "D1",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "D1",
+      "to": "D2",
+      "kind": "extension",
+      "scope": "chapter"
+    },
+    {
+      "from": "D1-scene-1",
+      "to": "D1-scene-2",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-2",
+      "to": "D1-scene-3",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-3",
+      "to": "D1-scene-4",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-4",
+      "to": "D1-scene-5",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-5",
+      "to": "D1-scene-6",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-6",
+      "to": "D1-scene-7",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-7",
+      "to": "D1-scene-8",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-8",
+      "to": "D1-scene-9",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-9",
+      "to": "D1-scene-10",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-10",
+      "to": "D1-scene-11",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-11",
+      "to": "D1-scene-12",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-12",
+      "to": "D1-scene-13",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-13",
+      "to": "D1-scene-14",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-14",
+      "to": "D1-scene-15",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D1-scene-15",
+      "to": "D2-scene-1",
+      "kind": "chapter_handoff",
+      "scope": "unit"
+    },
+    {
+      "from": "D1",
+      "to": "D2",
+      "kind": "prerequisite",
+      "scope": "chapter"
+    },
+    {
+      "from": "D2-scene-1",
+      "to": "D2-scene-2",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-2",
+      "to": "D2-scene-3",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-3",
+      "to": "D2-scene-4",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-4",
+      "to": "D2-scene-5",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-5",
+      "to": "D2-scene-6",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-6",
+      "to": "D2-scene-7",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-7",
+      "to": "D2-scene-8",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-8",
+      "to": "D2-scene-9",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-9",
+      "to": "D2-scene-10",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-10",
+      "to": "D2-scene-11",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-11",
+      "to": "D2-scene-12",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-12",
+      "to": "D2-scene-13",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-13",
+      "to": "D2-scene-14",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "D2-scene-14",
+      "to": "D2-scene-15",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "A1-scene-7",
+      "to": "A1-scene-9",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A1"
+    },
+    {
+      "from": "A1-scene-9",
+      "to": "A1-scene-10",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A1"
+    },
+    {
+      "from": "A1-scene-10",
+      "to": "A1-scene-11",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A1"
+    },
+    {
+      "from": "A1-scene-11",
+      "to": "A1-scene-13",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A1"
+    },
+    {
+      "from": "A1-scene-11",
+      "to": "A1-scene-14",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A1"
+    },
+    {
+      "from": "A3-scene-7",
+      "to": "A3-scene-10",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A3"
+    },
+    {
+      "from": "A3-scene-9",
+      "to": "A3-scene-10",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A3"
+    },
+    {
+      "from": "A3-scene-10",
+      "to": "A3-scene-11",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A3"
+    },
+    {
+      "from": "A3-scene-10",
+      "to": "A3-scene-13",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A3"
+    },
+    {
+      "from": "A4-scene-11",
+      "to": "A4-scene-14",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A4"
+    },
+    {
+      "from": "A4-scene-13",
+      "to": "A4-scene-14",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "A4"
+    },
+    {
+      "from": "C1-scene-3",
+      "to": "C1-scene-5",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "C1"
+    },
+    {
+      "from": "C1-scene-4",
+      "to": "C1-scene-5",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "C1"
+    },
+    {
+      "from": "C1-scene-5",
+      "to": "C1-scene-7",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "C1"
+    },
+    {
+      "from": "C1-scene-9",
+      "to": "C1-scene-11",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "C1"
+    },
+    {
+      "from": "C1-scene-10",
+      "to": "C1-scene-11",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "C1"
+    },
+    {
+      "from": "C1-scene-11",
+      "to": "C1-scene-13",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "C1"
+    },
+    {
+      "from": "C1-scene-11",
+      "to": "C1-scene-14",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "C1"
+    },
+    {
+      "from": "D1-scene-3",
+      "to": "D1-scene-4",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "D1"
+    },
+    {
+      "from": "D1-scene-3",
+      "to": "D1-scene-5",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "D1"
+    },
+    {
+      "from": "D2-scene-10",
+      "to": "D2-scene-13",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "D2"
+    },
+    {
+      "from": "D2-scene-11",
+      "to": "D2-scene-13",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "D2"
+    },
+    {
+      "from": "D2-scene-13",
+      "to": "D2-scene-14",
+      "kind": "alt_modality",
+      "scope": "unit",
+      "chapterId": "D2"
+    }
+  ]
+}

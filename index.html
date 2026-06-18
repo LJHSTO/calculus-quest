@@ -8,7 +8,7 @@
       name="description"
       content="一个可以在站内学习微积分课程的 Agentic AI 闯关 Demo。"
     />
-    <link rel="stylesheet" href="styles.css?v=20260611f" />
+    <link rel="stylesheet" href="styles.css?v=20260618-coach-focus" />
     <link rel="stylesheet" href="lib/katex.min.css?v=20260611" />
   </head>
   <body>
@@ -40,7 +40,7 @@
       <form id="login-form" class="login-panel">
         <p class="eyebrow">User login</p>
         <h1>用户登录</h1>
-        <p>填写一个便于研究者识别的昵称。你的学习进度、测验提交和推荐补给会记录到测试数据中。</p>
+        <p>填写一个便于研究者识别的昵称。你的学习进度、测验提交和 MAIC-UI 重学/拓展选择会记录到测试数据中。</p>
         <label>
           <span>昵称</span>
           <input id="nickname" name="nickname" autocomplete="nickname" maxlength="24" placeholder="请填写昵称" required />
@@ -58,7 +58,7 @@
             <p class="eyebrow">Bridge from high school math</p>
             <h1>从函数到微积分</h1>
             <p>
-              这里从函数图像、斜率和方向感出发，结合前测诊断、互动实验<br>和AI个性化推荐课把微积分的直觉一步步搭起来。
+              这里从函数图像、斜率和方向感出发，结合前测诊断、互动实验<br>和适时出现的 MAIC-UI 重学/拓展课件把微积分的直觉一步步搭起来。
             </p>
             <div class="hero-actions">
               <button class="button primary" type="button" data-view="learn">开始学习</button>
@@ -74,8 +74,8 @@
                 <span>每章用互动实验把抽象概念变成可观察的运动。</span>
               </div>
               <div>
-                <strong>3. 卡住再补给</strong>
-                <span>系统会按测验证据推荐补充课程。</span>
+                <strong>3. 卡住换路径</strong>
+                <span>Agent 会用 MAIC-UI 互动课件让你换种方式重学或解锁一步拓展。</span>
               </div>
             </div>
           </div>
@@ -84,9 +84,9 @@
             <p class="hero-panel-note">从函数图像出发，先建立“变化”的语言，再走向梯度下降和优化直觉。</p>
             <dl class="metric-grid">
               <div><dt id="metric-chapters">0</dt><dd>章节</dd></div>
-              <div><dt id="metric-scenes">0</dt><dd>站内课节</dd></div>
-              <div><dt id="metric-glm">0</dt><dd>补充课件</dd></div>
-              <div><dt id="metric-html">0</dt><dd>HTML 交互课件</dd></div>
+              <div><dt id="metric-scenes">0</dt><dd>主线课节</dd></div>
+              <div><dt id="metric-glm">0</dt><dd>重学/拓展</dd></div>
+              <div><dt id="metric-html">0</dt><dd>互动实验</dd></div>
               <div><dt id="metric-audio">0</dt><dd>音频旁白</dd></div>
             </dl>
           </aside>
@@ -144,7 +144,7 @@
                 <button class="button primary" id="complete-lesson" type="button">完成本节并跳到下一节</button>
               </div>
             </div>
-            <div id="recommendation-panel" class="recommendation-panel" hidden></div>
+            <div id="agentic-coach-panel" class="agentic-coach-panel" aria-live="polite"></div>
             <div id="lesson-player" class="lesson-player"></div>
           </section>
         </div>
@@ -171,8 +171,7 @@
           <div class="library-toolbar">
             <button class="filter active" type="button" data-filter="all">全部</button>
             <button class="filter" type="button" data-filter="scene">主线课节</button>
-            <button class="filter" type="button" data-filter="recommended">推荐补给</button>
-            <button class="filter" type="button" data-filter="html">HTML</button>
+            <button class="filter" type="button" data-filter="adaptive">重学/拓展</button>
             <button class="filter" type="button" data-filter="quiz">测验</button>
             <button class="filter" type="button" data-filter="interactive">互动</button>
             <span id="library-count" class="count-pill">0 项</span>
@@ -231,16 +230,17 @@
     </footer>
 
     <script src="lib/katex.min.js?v=20260611"></script>
-    <script src="app/main/data.js?v=20260612"></script>
-    <script src="app/main/core.js?v=20260613a"></script>
+    <script src="app/main/data.js?v=20260618-coach-focus"></script>
+    <script src="app/main/core.js?v=20260618-coach-focus"></script>
     <script src="app/main/analytics.js?v=20260613a"></script>
-    <script src="app/main/render-learning.js?v=20260613a"></script>
-    <script src="app/main/recommendations.js?v=20260612"></script>
-    <script src="app/main/progress.js?v=20260612"></script>
-    <script src="app/main/navigation.js?v=20260613a"></script>
-    <script src="app/main/events.js?v=20260613a"></script>
-    <script src="app/main/narration.js?v=20260613a"></script>
-    <script src="app/main/quiz.js?v=20260613a"></script>
-    <script src="app/main/bootstrap.js?v=20260613a"></script>
+    <script src="app/main/render-learning.js?v=20260618-coach-focus"></script>
+    <script src="app/main/recommendations.js?v=20260618-coach-focus"></script>
+    <script src="app/main/progress.js?v=20260618-coach-focus"></script>
+    <script src="app/main/navigation.js?v=20260618-coach-focus"></script>
+    <script src="app/main/events.js?v=20260618-coach-focus"></script>
+    <script src="app/main/narration.js?v=20260618-coach-focus"></script>
+    <script src="app/main/quiz.js?v=20260618-coach-focus"></script>
+    <script src="app/main/agentic-path.js?v=20260618-coach-focus"></script>
+    <script src="app/main/bootstrap.js?v=20260618-coach-focus"></script>
   </body>
 </html>

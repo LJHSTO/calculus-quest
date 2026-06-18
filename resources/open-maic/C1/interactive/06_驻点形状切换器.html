@@ -139,31 +139,39 @@ document.addEventListener("DOMContentLoaded", function() {
         trust: true
     };
 
+    const pendingMathNodes = new Set();
     let renderTimeout;
-    function safeRender() {
+
+    function renderMath(target) {
+        if (!target || !window.renderMathInElement) return;
+        try {
+            renderMathInElement(target, katexOptions);
+        } catch (error) {
+            console.warn('KaTeX render skipped:', error.message);
+        }
+    }
+
+    function queueMathNode(node) {
+        const target = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
+        if (!target || target.closest?.('.katex')) return;
+        pendingMathNodes.add(target);
         if (renderTimeout) clearTimeout(renderTimeout);
         renderTimeout = setTimeout(() => {
-            renderMathInElement(document.body, katexOptions);
+            const targets = Array.from(pendingMathNodes);
+            pendingMathNodes.clear();
+            targets.forEach((item) => {
+                if (document.body.contains(item)) renderMath(item);
+            });
         }, 100);
     }
 
-    renderMathInElement(document.body, katexOptions);
+    renderMath(document.body);
 
     const observer = new MutationObserver((mutations) => {
-        let shouldRender = false;
         mutations.forEach((mutation) => {
-            if (mutation.target &&
-                mutation.target.className &&
-                typeof mutation.target.className === 'string' &&
-                mutation.target.className.includes('katex')) {
-                return;
-            }
-            shouldRender = true;
+            mutation.addedNodes.forEach(queueMathNode);
+            if (mutation.type === 'characterData') queueMathNode(mutation.target);
         });
-
-        if (shouldRender) {
-            safeRender();
-        }
     });
 
     observer.observe(document.body, {
@@ -171,13 +179,6 @@ document.addEventListener("DOMContentLoaded", function() {
         subtree: true,
         characterData: true
     });
-
-    setInterval(() => {
-        const text = document.body.innerText;
-        if (text.includes('\\(') || text.includes('$$')) {
-            safeRender();
-        }
-    }, 2000);
 });
 </script>
 </head>

@@ -6,9 +6,12 @@ let allUsers = [];
 let cachedChapterData = [];
 let cachedPhaseData = [];
 let interactionsData = { rows: [], total: 0, limit: 100, offset: 0 };
+let visibleInteractionRows = [];
 let interactionPage = Number(sessionStorage.getItem("cq_interaction_page") || 0);
 let interactionPageSize = Number(sessionStorage.getItem("cq_interaction_page_size") || 100);
 let interactionUserId = sessionStorage.getItem("cq_interaction_user") || "";
+let cachedUnitEngagementRows = [];
+let unitEngagementSort = { key: sessionStorage.getItem("cq_unit_engagement_sort_key") || "seconds", dir: sessionStorage.getItem("cq_unit_engagement_sort_dir") || "desc" };
 let currentRange = sessionStorage.getItem("cq_admin_range") || "";
 let loadController = null;
 let refreshCooldown = false;
@@ -158,9 +161,9 @@ async function loadAll(signal) {
     cachedPhaseData = phase;
     interactionsData = interactions;
     const interactionSummary = interactionDashboard?.summary || null;
+    const actionCoverage = interactionDashboard?.actionCoverage || null;
+    const pathRule = interactionDashboard?.pathRule || { minSeconds: 10 };
     const unitEngagement = interactionDashboard?.unitEngagement || [];
-    const skipRepeat = interactionDashboard?.skipRepeat || { rows: [] };
-    const parameterChanges = interactionDashboard?.parameterChanges || { summary: {}, rows: [] };
     const pathAnalysis = interactionDashboard?.pathAnalysis || [];
 
     try { renderMetrics(overview, phase); } catch (e) { console.warn("Metrics:", e); }
@@ -180,10 +183,9 @@ async function loadAll(signal) {
     try { renderShortAnswers(shortAnswers); } catch (e) { console.warn("Short answers:", e); }
     try { renderInteractionUserOptions(userProg); } catch (e) { console.warn("Interaction users:", e); }
     try { renderInteractionSummary(interactionSummary); } catch (e) { console.warn("Interaction summary:", e); }
+    try { renderActionCoverage(actionCoverage); } catch (e) { console.warn("Action coverage:", e); }
     try { renderUnitEngagement(unitEngagement); } catch (e) { console.warn("Unit engagement:", e); }
-    try { renderSkipRepeat(skipRepeat); } catch (e) { console.warn("Skip repeat:", e); }
-    try { renderParameterChanges(parameterChanges); } catch (e) { console.warn("Parameter changes:", e); }
-    try { renderPathAnalysis(pathAnalysis); } catch (e) { console.warn("Path analysis:", e); }
+    try { renderPathAnalysis(pathAnalysis, pathRule); } catch (e) { console.warn("Path analysis:", e); }
     try { renderInteractions(interactions); } catch (e) { console.warn("Interactions:", e); }
 
     document.getElementById("status-dot").className = "dot on";
@@ -1026,38 +1028,208 @@ function interactionEventType(row) {
 function interactionTypeName(type) {
   return ({
     click: "点击",
+    login_success: "登录成功",
     view_change: "页面切换",
+    ui_click: "页面点击",
+    ui_input: "页面输入",
+    ui_change: "页面改值",
+    ui_keydown: "页面键盘",
+    ui_wheel: "页面滚动",
+    switch_view: "切换页面",
+    chapter_select: "选择章节",
+    jump_unit: "跳转模块",
+    library_filter: "筛选资源库",
     time_on_unit: "模块停留",
+    unit_leave: "离开模块",
     leave_unit: "离开模块",
+    unit_enter: "进入模块",
+    unit_open: "打开模块",
+    repeat_unit_enter: "重复进入",
+    unit_complete: "完成模块",
+    complete_unit: "完成模块",
+    unit_review_complete: "复习完成",
     visibility: "页面可见性",
     heartbeat: "在线心跳",
     online_period: "在线时段",
+    quiz_render: "测验渲染",
+    slide_render: "讲解页渲染",
+    interactive_render: "实验渲染",
     interactive_ready: "实验打开",
     interactive_click: "实验点击",
+    interactive_double_click: "实验双击",
+    interactive_context_menu: "实验右键",
+    interactive_pointer_down: "实验按下",
+    interactive_pointer_up: "实验松开",
+    interactive_pointer_cancel: "实验指针取消",
+    canvas_pointer_down: "画布按下",
+    canvas_pointer_up: "画布松开",
+    interactive_drag_start: "实验拖拽开始",
+    interactive_drag_move: "实验拖拽中",
+    interactive_drag_end: "实验拖拽结束",
     interactive_input: "实验输入",
     interactive_change: "实验改值",
+    parameter_change: "参数调整",
+    parameter_commit: "参数确认",
+    interactive_keydown: "键盘操作",
+    interactive_wheel: "滚轮/滚动",
+    interactive_scroll: "课件滚动",
     interactive_submit: "实验提交",
+    resource_fullscreen: "课件全屏",
+    fullscreen_change: "全屏状态",
+    answer_select: "选择答案",
+    short_answer_input: "简答输入",
+    question_visible: "题目可见",
+    quiz_review_shown: "显示测验复盘",
+    quiz_submit_success: "测验提交",
+    quiz_submit_blocked: "测验未完整提交",
+    agentic_unlock: "智能教练解锁",
+    agentic_decision: "智能教练选择",
+    skip_units: "跳过模块",
+    skip_chapters: "跳过章节",
+    reset_progress: "重置进度",
+    recommendation_toggle: "推荐面板开关",
+    supplement_render: "补充资源渲染",
+    supplement_open: "打开补充资源",
+    narration_play_click: "播放旁白",
+    narration_pause_click: "暂停旁白",
+    narration_stop_click: "停止旁白",
+    narration_seek_input: "拖动旁白进度",
+    narration_toggle: "旁白面板开关",
+    narration_segment_play: "播放旁白片段",
+    narration_segment_end: "旁白片段结束",
+    narration_resume: "恢复旁白",
+    narration_pause: "旁白暂停",
+    narration_stop: "旁白停止",
+    narration_seek: "旁白定位",
+    narration_complete: "旁白完成",
+    learning_fullscreen_toggle: "学习区全屏切换",
     iframe_event: "互动实验",
     interaction: "交互"
-  })[type] || type || "未知事件";
+  })[type] || "未分类事件";
+}
+
+function actionCategoryName(category) {
+  return ({
+    ready: "打开",
+    click: "点击",
+    gesture: "拖拽/指针",
+    parameter: "参数",
+    input: "输入/改值",
+    keyboard: "键盘",
+    wheel: "滚轮/滚动",
+    submit: "提交",
+    other: "其它"
+  })[category] || "未分类";
+}
+
+function moduleRoleName(role) {
+  return ({
+    core: "主线课件",
+    adaptive: "MAIC-UI 自适应课件",
+    experiment: "互动实验",
+    pretest: "前测",
+    posttest: "后测",
+    formative_quiz: "形成性测验",
+    concept_map: "概念地图",
+    formula_bridge: "公式桥",
+    instruction: "讲解页",
+    relearn: "重学课件",
+    extension: "拓展课件",
+    quiz: "测验",
+    slide: "讲解页"
+  })[role] || "未标注";
+}
+
+function actionCategoryForType(type = "") {
+  if (type === "interactive_ready" || type === "interactive_render") return "ready";
+  if (type === "interactive_submit") return "submit";
+  if (type === "parameter_change" || type === "parameter_commit") return "parameter";
+  if (type === "interactive_input" || type === "interactive_change") return "input";
+  if (type === "interactive_keydown") return "keyboard";
+  if (type === "interactive_wheel" || type === "interactive_scroll") return "wheel";
+  if (type === "interactive_click" || type === "interactive_double_click" || type === "interactive_context_menu") return "click";
+  if (/^(interactive_|canvas_).*(pointer|drag)/.test(type)) return "gesture";
+  if (type.startsWith("interactive_") || type.startsWith("canvas_")) return "other";
+  return "";
+}
+
+function compactSummaryText(value = "", limit = 36) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  return text.length > limit ? text.slice(0, limit) + "..." : text;
+}
+
+function summaryTargetName(data = {}, fallback = "控件") {
+  const raw = data.label || data.text || data.id || data.name || data.tag || fallback;
+  return compactSummaryText(raw, 36) || fallback;
+}
+
+function summaryValueText(data = {}) {
+  if (data.valueSummary) return compactSummaryText(data.valueSummary, 36);
+  if (data.value?.valueSummary) return compactSummaryText(data.value.valueSummary, 36);
+  if (data.value?.new !== undefined) return `从「${data.value.old || ""}」到「${data.value.new}」`;
+  if (data.value !== undefined && data.value !== null && data.value !== "") return `为「${compactSummaryText(detailValue(data.value), 36)}」`;
+  return "";
 }
 
 function humanInteractionSummary(row) {
   const payload = parsePayload(row.payload);
   const data = payload.data || {};
   const type = payload.eventType || row.type || "unknown";
+  if (type === "login_success") {
+    return "学生登录成功，开始记录本次学习行为。";
+  }
   if (type === "click") {
     if (data.view) return `点击了「${data.text || viewName(data.view)}」，准备切换到${viewName(data.view)}。`;
     if (data.unit) return `点击打开${unitName(data.unit)}。`;
+    if (data.chapter) return `点击切换到${chapterName(data.chapter)}。`;
     return `点击了页面上的「${data.text || data.tag || "控件"}」。`;
+  }
+  if (type === "ui_click") {
+    if (data.view) return `点击「${data.text || viewName(data.view)}」。`;
+    if (data.unit) return `点击打开${unitName(data.unit)}。`;
+    if (data.chapter) return `点击切换到${chapterName(data.chapter)}。`;
+    return `点击页面控件「${summaryTargetName(data)}」。`;
+  }
+  if (type === "ui_input" || type === "ui_change") {
+    const action = type === "ui_input" ? "输入" : "修改";
+    const value = summaryValueText(data);
+    return `${action}页面控件「${summaryTargetName(data)}」${value ? `，${value}` : ""}。`;
+  }
+  if (type === "ui_keydown") {
+    const key = data.key === "character" ? "字符键" : keyName(data.key || data.code || "");
+    return `在页面控件「${summaryTargetName(data)}」使用 ${key} 键。`;
+  }
+  if (type === "ui_wheel") {
+    const direction = Number(data.deltaY || 0) < 0 ? "向上滚动" : "向下滚动";
+    return `在页面「${summaryTargetName(data, viewName(data.view || "learn"))}」${direction}。`;
   }
   if (type === "view_change") {
     return `页面从${viewName(data.prev)}切换到${viewName(data.view)}。`;
   }
+  if (type === "switch_view") {
+    return `从${viewName(data.from)}切换到${viewName(data.to)}。`;
+  }
+  if (type === "chapter_select") {
+    return `从${chapterName(data.fromChapterId)}切换到${chapterName(data.toChapterId)}。`;
+  }
+  if (type === "jump_unit") {
+    return `从资源列表跳转到${unitName(data.unitId)}。`;
+  }
+  if (type === "library_filter") {
+    return `将资源库筛选为「${data.filter || "全部"}」。`;
+  }
+  if (type === "unit_enter" || type === "repeat_unit_enter" || type === "unit_open") {
+    const source = data.source ? `，来源：${sourceName(data.source)}` : "";
+    return `${type === "repeat_unit_enter" ? "再次进入" : "进入"}${unitName(data.unitId)}${source}。`;
+  }
+  if (type === "unit_complete" || type === "complete_unit" || type === "unit_review_complete") {
+    return `${type === "unit_review_complete" ? "复习完成" : "完成"}${unitName(data.unitId)}。`;
+  }
   if (type === "time_on_unit") {
     return `在${unitName(data.unitId)}停留学习了 ${durationText(data.seconds)}。`;
   }
-  if (type === "leave_unit") {
+  if (type === "unit_leave" || type === "leave_unit") {
     return `离开${unitName(data.unitId)}，本次停留 ${durationText(data.seconds)}。`;
   }
   if (type === "visibility") {
@@ -1075,38 +1247,230 @@ function humanInteractionSummary(row) {
     const unit = data.unitId ? `，模块：${unitName(data.unitId)}` : "";
     return `在线学习 ${estimated}${durationText(data.seconds)}${range}，页面：${viewName(data.view)}${unit}${merged}。`;
   }
-  if (type === "interactive_ready") {
-    return `打开互动实验「${data.unitLabel || unitName(data.unitId)}」。`;
+  if (type === "quiz_render") {
+    return `打开测验「${data.unitLabel || unitName(data.unitId)}」。`;
   }
-  if (type === "interactive_click") {
-    const target = data.label || data.id || data.name || data.tag || "控件";
-    const value = data.value ? `，当前值为「${data.value}」` : "";
-    const point = data.point ? `，点击位置 (${data.point.x}, ${data.point.y})` : "";
-    return `在互动实验「${data.unitLabel || unitName(data.unitId)}」中点击了「${target}」${value}${point}。`;
+  if (type === "slide_render") {
+    return `打开讲解页「${data.unitLabel || unitName(data.unitId)}」。`;
+  }
+  if (type === "interactive_render" || type === "interactive_ready") {
+    const action = type === "interactive_render" ? "准备打开" : "已加载";
+    return `${action}互动实验「${data.unitLabel || unitName(data.unitId)}」。`;
+  }
+  if (type === "interactive_click" || type === "interactive_double_click" || type === "interactive_context_menu") {
+    const target = summaryTargetName(data);
+    const value = summaryValueText(data);
+    const action = type === "interactive_double_click" ? "双击了" : type === "interactive_context_menu" ? "右键打开了" : "点击了";
+    return `在「${data.unitLabel || unitName(data.unitId)}」中${action}「${target}」${value ? `，${value}` : ""}。`;
+  }
+  if (/^(interactive_|canvas_).*(pointer|drag)/.test(type)) {
+    const target = summaryTargetName(data, type.startsWith("canvas_") ? "画布" : "控件");
+    const distance = data.distance ? `，移动约 ${data.distance}px` : "";
+    const duration = data.durationMs ? `，持续 ${durationText(Math.max(1, Math.round(data.durationMs / 1000)))}` : "";
+    const action = type.includes("drag_start")
+      ? "开始拖动"
+      : type.includes("drag_move")
+        ? "正在拖动"
+        : type.includes("drag_end")
+          ? "完成拖动"
+          : type.includes("cancel")
+            ? "中断了一次指针操作"
+            : type.includes("down")
+              ? "按下"
+              : "松开";
+    return `在「${data.unitLabel || unitName(data.unitId)}」中${action}「${target}」${distance}${duration}。`;
+  }
+  if (type === "parameter_change" || type === "parameter_commit") {
+    const param = data.param || summaryTargetName(data, "参数");
+    const value = summaryValueText(data);
+    const action = type === "parameter_commit" ? "确认参数" : "调整参数";
+    return `在「${data.unitLabel || unitName(data.unitId)}」中${action}「${param}」${value ? `，${value}` : ""}。`;
   }
   if (type === "interactive_input" || type === "interactive_change") {
-    const action = type === "interactive_input" ? "调整" : "确认修改";
-    const target = data.label || data.id || data.name || data.tag || "控件";
-    const value = data.value ? `为「${data.value}」` : "";
-    return `在互动实验「${data.unitLabel || unitName(data.unitId)}」中${action}「${target}」${value}。`;
+    const action = type === "interactive_input" ? "输入" : "确认修改";
+    const target = summaryTargetName(data);
+    const value = summaryValueText(data);
+    return `在「${data.unitLabel || unitName(data.unitId)}」中${action}「${target}」${value ? `，${value}` : ""}。`;
+  }
+  if (type === "interactive_keydown") {
+    const target = summaryTargetName(data, "课件");
+    const key = data.key === "character" ? "字符键" : keyName(data.key || data.code || "");
+    return `在「${data.unitLabel || unitName(data.unitId)}」中对「${target}」使用 ${key} 键。`;
+  }
+  if (type === "interactive_wheel" || type === "interactive_scroll") {
+    const target = summaryTargetName(data, "课件");
+    const direction = Number(data.deltaY || 0) < 0 ? "向上滚动或放大" : "向下滚动或缩小";
+    const action = type === "interactive_scroll" ? "滚动查看" : direction;
+    return `在「${data.unitLabel || unitName(data.unitId)}」中对「${target}」${action}。`;
   }
   if (type === "interactive_submit") {
-    return `在互动实验「${data.unitLabel || unitName(data.unitId)}」中提交了表单或答案。`;
+    return `在「${data.unitLabel || unitName(data.unitId)}」中提交表单或答案。`;
+  }
+  if (type === "agentic_decision") {
+    const action = data.action === "remediate"
+      ? "选择 MAIC-UI 重学"
+      : data.action === "extension"
+        ? "选择一步拓展"
+        : data.action === "continue"
+          ? "继续主线"
+          : data.action === "skip"
+            ? "选择跳过已掌握内容"
+            : "选择下一步";
+    const target = data.targetLabel || unitName(data.targetId || "");
+    return `在智能教练中${action}${target ? `，目标为「${target}」` : ""}。`;
+  }
+  if (type === "agentic_unlock") {
+    return `智能教练解锁了${unitName(data.unitId)}。`;
+  }
+  if (type === "answer_select") {
+    const selected = Array.isArray(data.values) ? data.values.join("、") : data.value || data.response || "";
+    return `在${unitName(data.unitId)}的第 ${Number(data.index ?? data.questionIndex ?? 0) + 1} 题选择了${selected ? `「${selected}」` : "一个选项"}。`;
+  }
+  if (type === "short_answer_input") {
+    return `在${unitName(data.unitId)}的简答题中输入了约 ${data.length || data.noteLength || 0} 个字符。`;
+  }
+  if (type === "question_visible") {
+    return `浏览到${unitName(data.unitId)}的第 ${Number(data.index ?? 0) + 1} 题。`;
+  }
+  if (type === "quiz_submit_success") {
+    return `提交${unitName(data.unitId)}，客观题答对 ${data.correct || 0} 题，答错 ${data.incorrect || 0} 题。`;
+  }
+  if (type === "quiz_submit_blocked") {
+    const count = Array.isArray(data.missing) ? data.missing.length : data.missingCount || 0;
+    return `尝试提交${unitName(data.unitId)}，还有 ${count} 道题未完成。`;
+  }
+  if (type === "quiz_review_shown") {
+    return `查看${unitName(data.unitId)}的测验复盘。`;
+  }
+  if (type === "skip_units") {
+    const skipped = Array.isArray(data.skippedUnitIds) ? data.skippedUnitIds.length : 0;
+    const target = data.targetLabel || unitName(data.targetId || "");
+    return `根据智能教练建议跳过 ${skipped} 个已掌握模块${target ? `，下一步进入「${target}」` : ""}。`;
+  }
+  if (type === "skip_chapters") {
+    const skipped = Array.isArray(data.skippedChapterIds) ? data.skippedChapterIds.length : 0;
+    return `根据智能教练建议跳过 ${skipped} 个已掌握章节。`;
+  }
+  if (type === "reset_progress") {
+    return `重置学习记录；重置前已完成 ${data.completedCount ?? data.completed ?? 0} 个模块，已有 ${data.quizResultCount ?? data.quizResults ?? 0} 条测验结果。`;
+  }
+  if (type === "reflection_save") {
+    return `保存反思笔记，约 ${data.noteLength || 0} 个字符。`;
+  }
+  if (type === "resource_fullscreen" || type === "learning_fullscreen_toggle" || type === "fullscreen_change") {
+    const entering = data.entering ?? data.active;
+    return `${entering ? "进入" : "退出"}全屏学习状态。`;
+  }
+  if (type === "recommendation_toggle") {
+    return `${data.collapsed ? "收起" : "展开"}推荐面板。`;
+  }
+  if (type === "supplement_render") {
+    return `渲染补充资源「${data.title || data.unitLabel || unitName(data.unitId)}」。`;
+  }
+  if (type === "supplement_open") {
+    return `打开补充资源「${data.title || data.unitLabel || unitName(data.unitId)}」。`;
+  }
+  if (type.startsWith("narration_")) {
+    const label = data.segmentIndex !== undefined ? `第 ${Number(data.segmentIndex) + 1} 段` : "旁白";
+    const action = {
+      narration_toggle: data.collapsed ? "收起旁白面板" : "展开旁白面板",
+      narration_play_click: "点击播放旁白",
+      narration_pause_click: "点击暂停旁白",
+      narration_stop_click: "点击停止旁白",
+      narration_seek_input: "拖动旁白进度",
+      narration_segment_play: `播放${label}`,
+      narration_segment_end: `${label}播放结束`,
+      narration_resume: "恢复旁白播放",
+      narration_pause: "旁白暂停",
+      narration_stop: "旁白停止",
+      narration_seek: "拖动旁白进度",
+      narration_complete: "完成本节旁白"
+    }[type] || "操作旁白";
+    return `${action}，关联模块：${unitName(data.unitId)}。`;
   }
   if (type === "iframe_event") {
     return `在互动实验里触发了${data.action || data.event || "一次操作"}。`;
   }
-  if (payload.raw) return payload.raw.slice(0, 180);
+  if (payload.raw) return "记录到一条未分类学习行为，原始记录可在导出文件中追溯。";
   const pieces = [];
   if (data.view) pieces.push(`页面：${viewName(data.view)}`);
   if (data.unitId || data.unit) pieces.push(`模块：${unitName(data.unitId || data.unit)}`);
   if (data.text) pieces.push(`对象：「${data.text}」`);
-  return pieces.length ? pieces.join("；") : `${interactionTypeName(type)}事件。`;
+  return pieces.length ? pieces.join("；") : `${interactionTypeName(type)}。`;
 }
 
 function interactionDetail(row) {
   const payload = parsePayload(row.payload);
-  return JSON.stringify(payload, null, 2).slice(0, 800);
+  const data = payload.data || {};
+  const type = payload.eventType || row.type || "unknown";
+  const detail = [
+    ["事件", interactionTypeName(type)],
+    ["来源", sourceName(payload.source || data.source || "")],
+    ["章节", data.chapterLabel || payload.chapterLabel || chapterName(data.chapterId || payload.chapterId || "")],
+    ["模块", data.unitLabel || payload.unitLabel || unitName(data.unitId || data.unit || payload.unitId || "")],
+    ["对象", data.label || data.text || data.id || data.name || data.tag || ""],
+    ["数值", data.valueSummary || detailValue(data.value ?? payload.value)],
+    ["位置", data.point ? `x=${data.point.x}, y=${data.point.y}` : ""],
+    ["滚动", data.scrollTop !== undefined ? `top=${data.scrollTop}, left=${data.scrollLeft || 0}` : ""],
+    ["时长", data.durationMs ? durationText(Math.max(1, Math.round(data.durationMs / 1000))) : ""],
+    ["说明", humanInteractionSummary({ ...row, payload })]
+  ].filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== "");
+  return detail.map(([key, value]) => `${key}：${value}`).join("；").slice(0, 800);
+}
+
+function sourceName(source = "") {
+  return ({
+    main: "主页面",
+    iframe: "互动课件",
+    quiz: "测验",
+    narration: "旁白",
+    heartbeat: "在线状态",
+    library: "资源库"
+  })[source] || (source ? "其它来源" : "未标注");
+}
+
+function detailValue(value) {
+  if (value === undefined || value === null || value === "") return "";
+  if (typeof value === "object") {
+    if ("old" in value || "new" in value) return `从「${value.old ?? ""}」到「${value.new ?? ""}」`;
+    return Object.entries(value)
+      .slice(0, 6)
+      .map(([key, item]) => `${detailKeyName(key)}=${item}`)
+      .join("，");
+  }
+  return String(value);
+}
+
+function detailKeyName(key = "") {
+  return ({
+    old: "原值",
+    new: "新值",
+    min: "最小值",
+    max: "最大值",
+    x: "横坐标",
+    y: "纵坐标",
+    width: "宽度",
+    height: "高度"
+  })[key] || "字段";
+}
+
+function keyName(key = "") {
+  return ({
+    ArrowRight: "向右方向",
+    ArrowLeft: "向左方向",
+    ArrowUp: "向上方向",
+    ArrowDown: "向下方向",
+    Enter: "回车",
+    Escape: "退出",
+    Space: "空格",
+    Tab: "制表",
+    Backspace: "退格",
+    Delete: "删除",
+    Shift: "上档",
+    Control: "控制",
+    Alt: "换挡",
+    Meta: "系统"
+  })[key] || (key ? "功能" : "键盘");
 }
 
 function normalizeInteractionData(data) {
@@ -1219,23 +1583,81 @@ function safeRows(data) {
   return Array.isArray(data) ? data : [];
 }
 
+function renderActionCoverage(data) {
+  const summaryNode = document.getElementById("action-coverage-summary");
+  const tbody = document.querySelector("#table-action-coverage tbody");
+  if (!summaryNode || !tbody) return;
+  const categories = safeRows(data?.categories);
+  const types = safeRows(data?.types);
+  summaryNode.innerHTML = categories.length
+    ? categories.map((item) => `<span class="action-chip">${esc(actionCategoryName(item.category))}<span>${item.count || 0}</span></span>`).join("")
+    : '<span class="action-chip">暂无课件动作<span>0</span></span>';
+  tbody.innerHTML = types.length ? types.map((item) => `
+    <tr>
+      <td><span class="badge badge-blue">${esc(actionCategoryName(item.category))}</span></td>
+      <td>${esc(interactionTypeName(item.event_type))}</td>
+      <td>${item.count || 0}</td>
+      <td>${item.users || 0}</td>
+      <td>${item.units || 0}</td>
+      <td style="max-width:260px;white-space:normal;">${esc(moduleName(item.sample_unit_id, item.sample_unit_label || ""))}</td>
+      <td>${esc((item.last_at || "").slice(0, 16))}</td>
+    </tr>
+  `).join("") : "<tr><td colspan='7'>当前范围内还没有互动课件内部动作。</td></tr>";
+}
+
 function renderInteractionSummary(data) {
   if (!data) return;
   const topTypes = safeRows(data.byType).slice(0, 5).map(item => `${interactionTypeName(item.event_type)} ${item.count}`).join(" / ");
-  const topRoles = safeRows(data.byRole).slice(0, 5).map(item => `${item.module_role} ${item.count}`).join(" / ");
+  const topRoles = safeRows(data.byRole).slice(0, 5).map(item => `${moduleRoleName(item.module_role)} ${item.count}`).join(" / ");
   const node = document.getElementById("interaction-metrics");
   if (!node) return;
   node.innerHTML = `
-    <div class="metric-card highlight"><div class="label">交互总数</div><div class="value">${data.total || 0}</div><div class="sub">当前时间范围</div></div>
-    <div class="metric-card good"><div class="label">活跃用户</div><div class="value">${data.activeUsers || 0}</div><div class="sub">产生交互记录</div></div>
-    <div class="metric-card warn"><div class="label">主要事件</div><div class="value small">${esc(topTypes || "-")}</div><div class="sub">Top 5</div></div>
-    <div class="metric-card"><div class="label">模块角色</div><div class="value small">${esc(topRoles || "-")}</div><div class="sub">Top 5</div></div>`;
+    <div class="metric-card highlight"><div class="label">研究样本量</div><div class="value">${data.total || 0}</div><div class="sub">当前范围内可分析行为</div></div>
+    <div class="metric-card good"><div class="label">涉及学生</div><div class="value">${data.activeUsers || 0}</div><div class="sub">至少产生一条行为记录</div></div>
+    <div class="metric-card warn"><div class="label">主要行为</div><div class="value small">${esc(topTypes || "-")}</div><div class="sub">按事件数排序</div></div>
+    <div class="metric-card"><div class="label">课件角色</div><div class="value small">${esc(topRoles || "-")}</div><div class="sub">学生主要接触的学习材料</div></div>`;
 }
 
 function renderUnitEngagement(rows) {
+  cachedUnitEngagementRows = safeRows(rows);
+  renderUnitEngagementTable();
+}
+
+function unitEngagementValue(row, key) {
+  if (key === "nickname") return String(row.nickname || "").toLowerCase();
+  if (key === "chapter") return normalizedChapterName(row).toLowerCase();
+  if (key === "unit") return moduleName(row.unit_id, row.unit_label || "").toLowerCase();
+  if (key === "keyboard_wheel") return Number(row.keyboard_actions || 0) + Number(row.wheel_actions || 0);
+  return Number(row[key] || 0);
+}
+
+function sortUnitEngagementRows(rows) {
+  const { key, dir } = unitEngagementSort;
+  const direction = dir === "asc" ? 1 : -1;
+  return rows.slice().sort((a, b) => {
+    const av = unitEngagementValue(a, key);
+    const bv = unitEngagementValue(b, key);
+    if (typeof av === "string" || typeof bv === "string") {
+      return String(av).localeCompare(String(bv), "zh-CN") * direction;
+    }
+    return ((Number(av) || 0) - (Number(bv) || 0)) * direction;
+  });
+}
+
+function syncUnitEngagementSortHeaders() {
+  document.querySelectorAll("#table-unit-engagement th[data-sort]").forEach((th) => {
+    const active = th.dataset.sort === unitEngagementSort.key;
+    th.classList.toggle("sorted-asc", active && unitEngagementSort.dir === "asc");
+    th.classList.toggle("sorted-desc", active && unitEngagementSort.dir === "desc");
+    th.setAttribute("aria-sort", active ? (unitEngagementSort.dir === "asc" ? "ascending" : "descending") : "none");
+  });
+}
+
+function renderUnitEngagementTable() {
   const tbody = document.querySelector("#table-unit-engagement tbody");
   if (!tbody) return;
-  const list = safeRows(rows).slice(0, 150);
+  const list = sortUnitEngagementRows(cachedUnitEngagementRows).slice(0, 150);
+  syncUnitEngagementSortHeaders();
   tbody.innerHTML = list.length ? list.map((row) => `
     <tr>
       <td>${esc(row.nickname || "")}</td>
@@ -1243,96 +1665,51 @@ function renderUnitEngagement(rows) {
       <td>${esc(moduleName(row.unit_id, row.unit_label || ""))}</td>
       <td>${row.opens || 0}</td>
       <td>${row.completes || 0}</td>
+      <td>${row.skips || 0}</td>
       <td>${row.repeats || 0}</td>
       <td>${durationText(row.seconds || 0)}</td>
+      <td>${row.courseware_actions || 0}</td>
       <td>${row.clicks || 0}</td>
       <td>${row.parameter_changes || 0}</td>
+      <td>${Number(row.keyboard_actions || 0) + Number(row.wheel_actions || 0)}</td>
     </tr>
-  `).join("") : "<tr><td colspan='9'>暂无模块参与度数据。</td></tr>";
+  `).join("") : "<tr><td colspan='12'>暂无模块参与度数据。</td></tr>";
 }
 
-function renderSkipRepeat(data) {
-  const tbody = document.querySelector("#table-skip-repeat tbody");
-  if (!tbody) return;
-  const legacySkipRows = safeRows(data?.skips).flatMap((row) => {
-    const detail = parseJsonMaybe(row.detail);
-    const skippedUnitIds = Array.isArray(detail.skippedUnitIds) ? detail.skippedUnitIds : [];
-    if (skippedUnitIds.length) {
-      return skippedUnitIds.map((unitId) => ({
-        chapter_id: row.chapter_id || unitId,
-        unit_id: unitId,
-        skipped: 1,
-        repeated: 0,
-        users: 1,
-        last_at: row.created_at
-      }));
-    }
-    return [{
-      chapter_id: row.chapter_id || row.unit_id || "",
-      unit_id: row.unit_id || "",
-      unit_label: row.unit_label || "跳过记录",
-      skipped: 1,
-      repeated: 0,
-      users: 1,
-      last_at: row.created_at
-    }];
-  });
-  const legacyRows = [
-    ...legacySkipRows,
-    ...safeRows(data?.repeats).map((row) => ({
-      chapter_id: row.chapter_id || row.unit_id || "",
-      unit_id: row.unit_id || "",
-      unit_label: row.unit_label || "",
-      skipped: 0,
-      repeated: row.repeat_count || 0,
-      users: 1,
-      last_at: row.last_at
-    }))
-  ];
-  const rows = safeRows(Array.isArray(data) ? data : data?.rows || legacyRows).slice(0, 150);
-  tbody.innerHTML = rows.length ? rows.map((row) => `
-    <tr>
-      <td>${esc(normalizedChapterName(row))}</td>
-      <td style="max-width:260px;white-space:normal;">${esc(moduleName(row.unit_id, row.unit_label || ""))}</td>
-      <td>${row.skipped || 0}</td>
-      <td>${row.repeated || 0}</td>
-      <td>${row.users || 0}</td>
-      <td>${esc((row.last_at || "").slice(0, 16))}</td>
-    </tr>
-  `).join("") : "<tr><td colspan='6'>暂无跳过或重复学习记录。</td></tr>";
+function pathPreviewHtml(row) {
+  const steps = safeRows(row.steps);
+  const fallback = String(row.path_preview || "")
+    .split(/\s*->\s*/)
+    .filter(Boolean)
+    .map((label) => ({ unit_label: label }));
+  const allSteps = steps.length ? steps : fallback;
+  const compactCount = 8;
+  const list = allSteps.slice(0, compactCount);
+  if (!list.length) return '<span class="muted">暂无路径预览</span>';
+  const stepChip = (step, index, extraClass = "") => {
+    const label = step.unit_label || step.unit_id || `模块 ${index + 1}`;
+    const seconds = Number(step.seconds || 0);
+    const time = seconds ? `<span>${durationText(seconds)}</span>` : "";
+    return `<span class="path-step ${extraClass}"><b>${index + 1}</b>${esc(label)}${time}</span>`;
+  };
+  const visibleChips = list.map((step, index) => stepChip(step, index)).join("");
+  const hiddenChips = allSteps
+    .slice(compactCount)
+    .map((step, index) => stepChip(step, compactCount + index, "path-extra is-collapsed"))
+    .join("");
+  const rest = allSteps.length - list.length;
+  const toggle = rest > 0
+    ? `<button class="path-toggle" type="button" data-path-toggle aria-expanded="false" data-collapsed-label="展开全部 ${allSteps.length} 步" data-expanded-label="收起路径">展开全部 ${allSteps.length} 步</button>`
+    : "";
+  return `<div class="path-preview">${visibleChips}${hiddenChips}${toggle}</div>`;
 }
 
-function renderParameterChanges(data) {
-  const rows = Array.isArray(data) ? data : data?.rows;
-  const hasServerSummary = Boolean(data && !Array.isArray(data) && data.summary);
-  const derivedSummary = (() => {
-    const list = safeRows(rows);
-    const experiments = new Set(list.map((row) => row.unit_id || row.unit_label).filter(Boolean)).size;
-    const operations = list.reduce((sum, row) => sum + Number(row.changes || 0), 0);
-    return { operations, experiments };
-  })();
-  const summary = data?.summary || {};
-  const summaryNode = document.getElementById("parameter-summary");
-  if (summaryNode) {
-    summaryNode.innerHTML = `
-      <div><strong>${hasServerSummary ? summary.users || 0 : "-"}</strong><span>${hasServerSummary ? "操作人数" : "需重启服务端"}</span></div>
-      <div><strong>${summary.operations || derivedSummary.operations || 0}</strong><span>操作次数</span></div>
-      <div><strong>${summary.experiments || derivedSummary.experiments || 0}</strong><span>涉及实验</span></div>`;
+function renderPathAnalysis(rows, pathRule = { minSeconds: 10 }) {
+  const desc = document.getElementById("path-rule-desc");
+  const minSeconds = Number(pathRule?.minSeconds || 10);
+  if (desc) {
+    desc.textContent = `单次模块停留达到 ${minSeconds} 秒才计入有效学习路径；少于 ${minSeconds} 秒的快速点击只保留在原始交互表，不进入路径统计。`;
   }
-  const tbody = document.querySelector("#table-parameter-changes tbody");
-  if (!tbody) return;
-  const list = safeRows(rows).slice(0, 150);
-  tbody.innerHTML = list.length ? list.map((row) => `
-    <tr>
-      <td>${esc(row.unit_label || row.unit_id || "")}</td>
-      <td>${esc(row.param || "")}</td>
-      <td>${row.changes || 0}</td>
-      <td>${row.users || 0}</td>
-    </tr>
-  `).join("") : "<tr><td colspan='4'>暂无实验操作数据。</td></tr>";
-}
-
-function renderPathAnalysis(rows) {
   const tbody = document.querySelector("#table-path-analysis tbody");
   if (!tbody) return;
   const list = safeRows(rows).slice(0, 100);
@@ -1340,17 +1717,43 @@ function renderPathAnalysis(rows) {
     <tr>
       <td>${esc(row.nickname || "")}</td>
       <td>${row.step_count || 0}</td>
-      <td>${esc((row.first_at || "").slice(0, 16))} - ${esc((row.last_at || "").slice(0, 16))}</td>
-      <td style="max-width:780px;white-space:normal;">${esc(row.path_preview || "")}</td>
+      <td>${durationText(row.total_seconds || 0)}</td>
+      <td>${esc(shortDateTime(row.first_at))}<br><span class="muted">${esc(shortDateTime(row.last_at))}</span></td>
+      <td>${pathPreviewHtml(row)}</td>
     </tr>
-  `).join("") : "<tr><td colspan='4'>暂无学习路径数据。</td></tr>";
+  `).join("") : "<tr><td colspan='5'>当前筛选范围内还没有形成有效停留路径。</td></tr>";
 }
+
+document.addEventListener("click", (event) => {
+  const sortHeader = event.target.closest("#table-unit-engagement th[data-sort]");
+  if (sortHeader) {
+    const key = sortHeader.dataset.sort;
+    unitEngagementSort = {
+      key,
+      dir: unitEngagementSort.key === key && unitEngagementSort.dir === "desc" ? "asc" : "desc"
+    };
+    sessionStorage.setItem("cq_unit_engagement_sort_key", unitEngagementSort.key);
+    sessionStorage.setItem("cq_unit_engagement_sort_dir", unitEngagementSort.dir);
+    renderUnitEngagementTable();
+    return;
+  }
+
+  const button = event.target.closest("[data-path-toggle]");
+  if (!button) return;
+  const preview = button.closest(".path-preview");
+  if (!preview) return;
+  const expanded = !preview.classList.contains("expanded");
+  preview.classList.toggle("expanded", expanded);
+  button.setAttribute("aria-expanded", expanded ? "true" : "false");
+  button.textContent = expanded ? button.dataset.expandedLabel : button.dataset.collapsedLabel;
+});
 
 // ---- Interaction Tracking ----
 function renderInteractions(data) {
   const meta = normalizeInteractionData(data);
   const rawRows = meta.rows.map(d => ({ ...d, payload: parsePayload(d.payload) }));
   const rows = collapseHeartbeatRows(rawRows);
+  visibleInteractionRows = rows;
   updateInteractionPager(meta);
   if (!rows.length) {
     if (!document.getElementById("interaction-metrics").innerHTML.trim()) {
@@ -1507,6 +1910,20 @@ document.getElementById("user-search-input").addEventListener("keydown", (e) => 
 
 // ---- Init ----
 // ---- CSV Export (research) ----
+function csvCell(value) {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows.map(r => r.map(csvCell).join(",")).join("\n");
+  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;bom" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 document.getElementById("export-users-csv").addEventListener("click", () => {
   const data = allUsers;
   if (!data || !data.length) return;
@@ -1527,6 +1944,24 @@ document.getElementById("export-users-csv").addEventListener("click", () => {
   a.download = "user-progress-export.csv";
   a.click();
   URL.revokeObjectURL(a.href);
+});
+
+document.getElementById("export-interactions-csv").addEventListener("click", () => {
+  if (!visibleInteractionRows.length) return;
+  const rows = [["时间", "学生", "用户ID", "事件类型", "动作类别", "数据摘要", "原始详情"]];
+  visibleInteractionRows.forEach((row) => {
+    const eventType = interactionEventType(row);
+    rows.push([
+      row.created_at || "",
+      row.nickname || "",
+      row.user_id || "",
+      interactionTypeName(eventType),
+      actionCategoryName(actionCategoryForType(eventType)),
+      humanInteractionSummary(row),
+      interactionDetail(row)
+    ]);
+  });
+  downloadCsv("interaction-research-current-page.csv", rows);
 });
 
 document.getElementById("export-shortanswers-csv").addEventListener("click", () => {

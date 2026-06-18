@@ -44,7 +44,6 @@ function currentAnalyticsUnit() {
 
 function moduleRoleForUnit(unit) {
   if (!unit) return "";
-  if (unit.kind === "supplement") return "supplement";
   if (unit.type === "quiz") {
     if (unit.assessmentPhase === "pre") return "pretest";
     if (unit.assessmentPhase === "post") return "posttest";
@@ -120,6 +119,67 @@ function analyticsElementTarget(element, event) {
       jumpUnit: element.dataset?.jumpUnit || ""
     },
     point
+  };
+}
+
+function analyticsControlValue(element) {
+  if (!element) return null;
+  const tag = element.tagName?.toLowerCase() || "";
+  const type = String(element.getAttribute?.("type") || "").toLowerCase();
+  const isEditable = element.isContentEditable || element.matches?.("[contenteditable='true']");
+  if (type === "password") {
+    return { inputType: type, valueSummary: element.value ? "已输入" : "空", textLength: element.value?.length || 0 };
+  }
+  if (type === "checkbox" || type === "radio") {
+    return { inputType: type, valueSummary: element.checked ? "选中" : "未选中", checked: Boolean(element.checked) };
+  }
+  if (tag === "select") {
+    return {
+      inputType: "select",
+      valueSummary: compactAnalyticsText(element.selectedOptions?.[0]?.textContent || element.value || "", 80)
+    };
+  }
+  if (["range", "number", "color", "date", "time", "month", "week"].includes(type)) {
+    return { inputType: type, valueSummary: compactAnalyticsText(element.value || "", 80), value: element.value || "" };
+  }
+  if (tag === "textarea" || isEditable || ["text", "search", "email", "url", "tel"].includes(type)) {
+    const text = isEditable ? element.textContent || "" : element.value || "";
+    return { inputType: type || tag || "text", valueSummary: `已输入 ${text.length} 个字符`, textLength: text.length };
+  }
+  if ("value" in element) {
+    return { inputType: type || tag, valueSummary: compactAnalyticsText(element.value || "", 80), value: element.value || "" };
+  }
+  return null;
+}
+
+function analyticsControlData(element, event) {
+  const valueInfo = analyticsControlValue(element);
+  return {
+    text: compactAnalyticsText(element?.textContent || element?.getAttribute?.("aria-label") || element?.getAttribute?.("title") || "", 80),
+    label: compactAnalyticsText(
+      element?.getAttribute?.("aria-label") ||
+        element?.getAttribute?.("title") ||
+        element?.textContent ||
+        element?.getAttribute?.("name") ||
+        element?.id ||
+        "",
+      80
+    ),
+    name: element?.getAttribute?.("name") || "",
+    id: element?.id || "",
+    tag: element?.tagName?.toLowerCase() || "",
+    role: element?.getAttribute?.("role") || "",
+    inputType: valueInfo?.inputType || element?.getAttribute?.("type") || "",
+    valueSummary: valueInfo?.valueSummary || "",
+    textLength: valueInfo?.textLength || 0,
+    checked: valueInfo?.checked,
+    view: element?.dataset?.view || "",
+    chapter: element?.dataset?.chapter || "",
+    unit: element?.dataset?.unit || element?.dataset?.jumpUnit || "",
+    key: event?.key || "",
+    code: event?.code || "",
+    deltaX: typeof event?.deltaX === "number" ? Math.round(event.deltaX) : undefined,
+    deltaY: typeof event?.deltaY === "number" ? Math.round(event.deltaY) : undefined
   };
 }
 
@@ -331,6 +391,36 @@ function setupInteractionTracking() {
   if (analyticsTrackingReady) return;
   analyticsTrackingReady = true;
 
+  const uiActionSelector = [
+    "button",
+    "a",
+    "input",
+    "select",
+    "textarea",
+    "summary",
+    "[role='button']",
+    "[role='tab']",
+    "[role='switch']",
+    "[role='menuitem']",
+    "[contenteditable='true']",
+    "[data-view]",
+    "[data-unit]",
+    "[data-chapter]",
+    "[data-jump-unit]",
+    "[data-agentic-action]",
+    "[data-filter]",
+    "[data-submit-quiz]",
+    "[data-resource-fullscreen]",
+    "[data-play-narration]",
+    "[data-pause-narration]",
+    "[data-stop-narration]",
+    "[data-toggle-narration]"
+  ].join(",");
+  const uiInputSelector = "input, select, textarea, [contenteditable='true']";
+  const lastUiInputAt = new WeakMap();
+  let lastUiWheelAt = 0;
+  let lastUiKeyAt = 0;
+
   document.addEventListener("click", (event) => {
     const el = event.target.closest("[data-view], [data-unit], [data-chapter], [data-jump-unit], .chapter-card, .lesson-card, .nav-button");
     if (!el) return;
@@ -343,6 +433,95 @@ function setupInteractionTracking() {
       }
     });
   });
+
+  document.addEventListener(
+    "click",
+    (event) => {
+      const el = event.target.closest(uiActionSelector);
+      if (!el) return;
+      analyticsTrackTarget("ui_click", el, event, {
+        data: analyticsControlData(el, event)
+      });
+    },
+    true
+  );
+
+  document.addEventListener(
+    "input",
+    (event) => {
+      const el = event.target.closest(uiInputSelector);
+      if (!el) return;
+      const now = Date.now();
+      const last = lastUiInputAt.get(el) || 0;
+      if (now - last < 700) return;
+      lastUiInputAt.set(el, now);
+      const valueInfo = analyticsControlValue(el);
+      analyticsTrackTarget("ui_input", el, event, {
+        value: valueInfo,
+        data: analyticsControlData(el, event)
+      });
+    },
+    true
+  );
+
+  document.addEventListener(
+    "change",
+    (event) => {
+      const el = event.target.closest(uiInputSelector);
+      if (!el) return;
+      const valueInfo = analyticsControlValue(el);
+      analyticsTrackTarget("ui_change", el, event, {
+        value: valueInfo,
+        data: analyticsControlData(el, event)
+      });
+    },
+    true
+  );
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      const target = event.target.closest?.(uiActionSelector) || document.activeElement;
+      if (!target) return;
+      const isTextEntry = target.matches?.("input, textarea, [contenteditable='true']");
+      const isPlainCharacter = event.key?.length === 1 && !event.altKey && !event.ctrlKey && !event.metaKey;
+      if (isTextEntry && isPlainCharacter) return;
+      const now = Date.now();
+      if (now - lastUiKeyAt < 350) return;
+      lastUiKeyAt = now;
+      analyticsTrackTarget("ui_keydown", target, event, {
+        data: {
+          ...analyticsControlData(target, event),
+          key: isPlainCharacter ? "character" : event.key || "",
+          code: event.code || "",
+          modifiers: {
+            alt: event.altKey,
+            ctrl: event.ctrlKey,
+            meta: event.metaKey,
+            shift: event.shiftKey
+          }
+        }
+      });
+    },
+    true
+  );
+
+  document.addEventListener(
+    "wheel",
+    (event) => {
+      const now = Date.now();
+      if (now - lastUiWheelAt < 1500) return;
+      lastUiWheelAt = now;
+      const target =
+        event.target.closest?.(".lesson-list, .resource-shell, .library-grid, .chapter-list, .table-wrap, .view.active, main") ||
+        document.scrollingElement ||
+        document.body;
+      analyticsTrackTarget("ui_wheel", target, event, {
+        data: analyticsControlData(target, event)
+      });
+    },
+    { capture: true, passive: true }
+  );
 
   clearInterval(analyticsViewTimer);
   analyticsViewTimer = setInterval(() => {
@@ -361,7 +540,7 @@ function setupInteractionTracking() {
     });
   });
 
-  ["pointerdown", "keydown", "input", "scroll"].forEach((type) => {
+  ["pointerdown", "keydown", "input", "change", "scroll", "wheel"].forEach((type) => {
     document.addEventListener(type, () => {
       analyticsLastActiveAt = Date.now();
     }, { passive: true });

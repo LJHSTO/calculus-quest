@@ -29,6 +29,11 @@ function switchView(view) {
 }
 
 async function selectChapter(chapterId) {
+  if (typeof agenticIsChapterUnlocked === "function" && !agenticIsChapterUnlocked(chapterId)) {
+    addLog(`「${chapterId}」章节尚未解锁，请先完成当前下一步。`);
+    if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+    return;
+  }
   const previousChapterId = currentChapterId;
   analyticsTrack("chapter_select", {
     data: {
@@ -38,13 +43,20 @@ async function selectChapter(chapterId) {
   });
   currentChapterId = chapterId;
   const chapter = getChapter(chapterId);
-  currentUnitId = chapter.units[0]?.id || "";
+  const firstUnlocked = chapter.units.find((unit) =>
+    typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id)
+  );
+  currentUnitId = firstUnlocked?.id || chapter.units[0]?.id || "";
   trackLearningEvent("select_chapter", { chapterId, chapterLabel: chapter.label });
   if (!chapter.loaded) {
     renderAll();
     try {
       await ensureChapterLoaded(chapterId);
-      currentUnitId = getChapter(chapterId).units[0]?.id || "";
+      const loadedChapter = getChapter(chapterId);
+      const unlocked = loadedChapter.units.find((unit) =>
+        typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id)
+      );
+      currentUnitId = unlocked?.id || loadedChapter.units[0]?.id || "";
       preloadChapterResources(chapterId);
     } catch {
       // Chapter load failed; stay on current chapter view
@@ -61,15 +73,8 @@ async function selectChapter(chapterId) {
 function selectUnit(unitId) {
   const unit = getUnit(unitId);
   if (!unit) return;
+  if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unitId, { allowPrevious: true })) return;
   const previousUnit = getUnit(currentUnitId);
-  // Track entry point when navigating from main unit to supplement
-  const prevUnit = getUnit(currentUnitId);
-  if (unit.kind === "supplement" && prevUnit?.kind !== "supplement") {
-    supplementEntryUnitId = currentUnitId;
-  }
-  if (unit.kind !== "supplement") {
-    supplementEntryUnitId = "";
-  }
   currentChapterId = unit.chapterId;
   currentUnitId = unit.id;
   if (previousUnit?.id !== unit.id) analyticsEnterUnit(unit, "select_unit");
@@ -89,6 +94,7 @@ function selectUnit(unitId) {
 
 function completeCurrentUnit() {
   const unit = getUnit();
+  if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unit.id, { allowPrevious: true, silent: true })) return false;
   if (!state.completed.includes(unit.id)) {
     state.completed.push(unit.id);
     addLog(`完成「${getChapter(unit.chapterId).label}」中的「${unit.label}」。`);
@@ -131,32 +137,7 @@ function completeCurrentUnit() {
   }
   saveState();
   renderAll();
-}
-
-function markSupplementComplete(unitId) {
-  const unit = supplementUnits.find((item) => item.id === unitId);
-  if (!unit) return;
-  if (!state.completed.includes(unit.id)) {
-    state.completed.push(unit.id);
-    addLog(`完成推荐补给「${unit.analysis.title}」(${unit.modelLabel})。`);
-    trackLearningEvent("complete_supplement", {
-      unitId: unit.id,
-      chapterId: unit.chapterId,
-      modelId: unit.modelId,
-      file: unit.file,
-      title: unit.analysis.title
-    });
-  }
-  saveState();
-  renderRecommendationPanel();
-  renderLibrary();
-  renderProgress();
-}
-
-function toggleRecommendationCollapse() {
-  state.recommendationsCollapsed = !state.recommendationsCollapsed;
-  saveState();
-  renderRecommendationPanel();
+  return true;
 }
 
 function addLog(text) {

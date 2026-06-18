@@ -24,7 +24,7 @@ function renderQuestionReview({ question, result, index }) {
         </div>
         <p><b>你的回答：</b>${escapeHtml(result.response || "")}</p>
         <p><b>参考要点：</b>${renderInlineMath(question.analysis || "请围绕题目要求说明关键步骤、几何意义或实际含义。")}</p>
-        ${question.commentPrompt ? `<p><b>评分提示：</b>${renderInlineMath(question.commentPrompt)}</p>` : ""}
+        ${question.commentPrompt ? `<p><b>评分参考：</b>${renderInlineMath(question.commentPrompt)}</p>` : ""}
       </div>
     `;
   }
@@ -212,6 +212,10 @@ function submitQuiz(unitId) {
   });
   state.submittedQuizzes = state.submittedQuizzes || [];
   if (!state.submittedQuizzes.includes(unit.id)) state.submittedQuizzes.push(unit.id);
+  if (!state.completed.includes(unit.id)) {
+    state.completed.push(unit.id);
+    addLog(`提交并完成「${unit.label}」。`);
+  }
   saveState();
   // Lock all answer controls to prevent modification after submission
   document.querySelectorAll(`[data-question]`).forEach(card => {
@@ -233,18 +237,15 @@ function submitQuiz(unitId) {
     if (existingBanner) existingBanner.remove();
     const existingHint = quizCard.querySelector(".quiz-scroll-hint");
     if (existingHint) existingHint.remove();
-    const correctCount = records.filter(({ result }) => result.isCorrect === true).length;
-    const objectiveCount = records.filter(r => r.result.isCorrect !== null).length;
-    const shortAnswerCount = records.length - objectiveCount;
-    const displayTotal = (objectiveCount > 0 ? objectiveCount : records.length) + "道题中";
-    const shortNotice = shortAnswerCount > 0 ? `，${shortAnswerCount}道简答题待复核` : "";
+    const summary = summarizeQuizAttempt(records, questions);
+    const outcomeHtml = quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
     if (isPre) {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测提交成功！你在 ${displayTotal} 答对了 <strong>${correctCount}</strong> 题${shortNotice}。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测提交成功！你在 ${outcomeHtml}。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
     } else if (isPost) {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner post" id="quiz-top-banner-${unitId}">后测提交成功！你在 ${displayTotal} 答对了 <strong>${correctCount}</strong> 题${shortNotice}。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner post" id="quiz-top-banner-${unitId}">后测提交成功！你在 ${outcomeHtml}。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
     } else {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unitId}">形成性测验提交成功！你在 ${displayTotal} 答对了 <strong>${correctCount}</strong> 题${shortNotice}。卡住的地方正好说明接下来要重点理解的内容——Agent 会根据你的答题情况推荐补给资源。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unitId}">形成性测验提交成功！你在 ${outcomeHtml}。卡住的地方正好说明接下来要重点理解的内容——Agent 会用 MAIC-UI 互动实验帮你换种方式重学或解锁一步拓展。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
     }
   }
 
@@ -262,7 +263,12 @@ function submitQuiz(unitId) {
   renderProgress();
   renderRecommendationPanel();
   renderLibrary();
-  window.setTimeout(() => jumpToFeedback(unitId), 300);
+  window.setTimeout(function() { jumpToFeedback(unitId); }, 300);
+  if ((unit.assessmentPhase === "pre" || unit.assessmentPhase === "post" || unit.assessmentPhase === "formative") && typeof agenticAfterQuizSubmit === "function") {
+    agenticAfterQuizSubmit(unit, records);
+  } else if (typeof agenticOnUnitCompleted === "function") {
+    agenticOnUnitCompleted(unit);
+  }
   } finally {
     submitInProgress = null;
   }
@@ -310,7 +316,32 @@ function recordQuizResult(unit, question, result, options = {}) {
 }
 
 els.completeLesson.addEventListener("click", async () => {
-  completeCurrentUnit();
+  const unit = getUnit();
+  if (unit.type === "quiz" && !(state.submittedQuizzes || []).includes(unit.id)) {
+    addLog("测验需要先提交，Agent 才能根据证据解锁下一步。");
+    return;
+  }
+  if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
+    addLog("Agent 已给出下一步推荐，请先在 Coach 卡片中选择路径。");
+    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+    else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+    return;
+  }
+  const agenticNext = typeof agenticOnUnitCompleted === "function" ? agenticOnUnitCompleted(unit) : null;
+  if (completeCurrentUnit() === false) return;
+  if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
+    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+    else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+    return;
+  }
+  const unlockedNext = !agenticNext?.id && typeof agenticNextUnlockedUnitAfter === "function"
+    ? agenticNextUnlockedUnitAfter(unit.id)
+    : null;
+  const nextTarget = agenticNext?.id ? agenticNext : unlockedNext;
+  if (nextTarget?.id && typeof agenticOpenUnit === "function") {
+    await agenticOpenUnit(nextTarget.id);
+    return;
+  }
   // Navigate forward unless this is the very last unit
   const chapter = getChapter();
   const unitIdx = chapter.units.findIndex(u => u.id === currentUnitId);
@@ -325,6 +356,7 @@ async function goToPrevUnit() {
   const idx = all.findIndex(u => u.id === currentUnitId);
   if (idx > 0) {
     const prev = all[idx - 1];
+    if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(prev.id, { allowPrevious: true })) return;
     if (prev.chapterId !== currentChapterId) await selectChapter(prev.chapterId);
     selectUnit(prev.id);
     return;
@@ -339,16 +371,30 @@ async function goToPrevUnit() {
 }
 
 async function goToNextUnit() {
+  if (typeof agenticCanLeaveCurrent === "function" && !agenticCanLeaveCurrent()) {
+    addLog("请先在 Coach 卡片中选择下一步，再继续下一关。");
+    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+    else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+    return;
+  }
   const all = currentNavigableUnits();
   const idx = all.findIndex(u => u.id === currentUnitId);
   if (idx >= 0 && idx + 1 < all.length) {
     const next = all[idx + 1];
+    if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(next.id, { allowPrevious: true })) return;
     if (next.chapterId !== currentChapterId) await selectChapter(next.chapterId);
     selectUnit(next.id);
     return;
   }
   const chIdx = curriculum.findIndex(c => c.id === getChapter().id);
   if (chIdx >= 0 && chIdx + 1 < curriculum.length) {
-    await selectChapter(curriculum[chIdx + 1].id);
+    const nextChapter = curriculum[chIdx + 1];
+    if (typeof agenticIsChapterUnlocked === "function" && !agenticIsChapterUnlocked(nextChapter.id)) {
+      addLog(`下一章「${nextChapter.label}」尚未解锁，请先完成当前下一步。`);
+      if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+      else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+      return;
+    }
+    await selectChapter(nextChapter.id);
   }
 }

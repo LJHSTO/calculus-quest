@@ -4,6 +4,8 @@ const http = require("http");
 const path = require("path");
 const zlib = require("zlib");
 const db = require("./db");
+const kg = require("./lib/kg");
+const coach = require("./lib/agentic-coach");
 
 const root = process.cwd();
 const port = Number(process.argv[2] || process.env.PORT || 8765);
@@ -73,7 +75,7 @@ function contentSecurityPolicyFor(filePath) {
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://cdn.jsdelivr.net",
     "style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net",
     "img-src 'self' data: blob:",
-    "font-src 'self' data:",
+    "font-src 'self' data: about:",
     "media-src 'self' data: blob:",
     "frame-src 'self'",
     "child-src 'self'",
@@ -475,6 +477,28 @@ async function handleApi(req, res, url) {
      return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/learning/reset") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      const timestamp = nowIso();
+      const snapshotData = body.snapshot || {};
+      const snapshotId = crypto.randomUUID();
+
+      db.clearLearningDataForUser(auth.participant.id);
+      db.insertSnapshot({
+        id: snapshotId,
+        user_id: auth.participant.id,
+        reason: "reset",
+        data: snapshotData,
+        created_at: timestamp
+      });
+      db.upsertUser(auth.participant.id, auth.participant.nickname, auth.participant.created_at, timestamp);
+
+      sendJson(res, 200, { ok: true, snapshotId, cleared: true });
+      return;
+    }
+
     // ---- Learning Quiz Results (for cross-browser sync - authoritative source) ----
     if (req.method === "GET" && url.pathname === "/api/learning/quiz-results") {
       const auth = authenticate(req);
@@ -607,6 +631,43 @@ async function handleApi(req, res, url) {
       const userId = url.searchParams.get("userId") || "";
       const data = db.getEventsByType("interaction", { limit, offset, userId, dates });
       sendJson(res, 200, { ok: true, data });
+      return;
+    }
+
+    // ---- Learning KG plan + agentic narration ----
+    if (req.method === "GET" && url.pathname === "/api/learning/kg") {
+      sendJson(res, 200, { ok: true, kg: kg.getKg() });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/learning/kg/plan") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      const chapterId = String(body.chapterId || "").trim();
+      const currentUnitId = String(body.currentUnitId || "").trim();
+      if (!chapterId) { sendJson(res, 400, { ok: false, message: "chapterId required." }); return; }
+      const sourceResults = Array.isArray(body.quizResults)
+        ? body.quizResults.slice(0, 500)
+        : db.getQuizResultsByUser(auth.participant.id, 200);
+      const filtered = sourceResults.filter((row) => {
+        const unitId = row.unit_id || row.unitId || "";
+        const cid = row.chapter_id || row.chapterId || unitId.split("-scene-")[0];
+        return cid === chapterId;
+      });
+      const summary = kg.summariseQuizResults(filtered);
+      const planResult = coach.plan({ chapterId, currentUnitId, quizSummary: summary });
+      let narration = "";
+      let provider = "skip";
+      try {
+        const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "同学" });
+        narration = out.narration;
+        provider = out.provider;
+      } catch (error) {
+        narration = "（AI 助教暂时离线，下面是基于规则的建议。）";
+        provider = "fallback";
+      }
+      sendJson(res, 200, { ok: true, plan: planResult, narration, provider });
       return;
     }
 

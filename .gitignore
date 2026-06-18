@@ -3,6 +3,7 @@ node_modules/
 # Runtime data and local credentials
 data/*
 !data/.gitignore
+!data/knowledge-graph.json
 *.db
 *.db-shm
 *.db-wal
@@ -27,6 +28,7 @@ ops/windows/
 # Browser test/check profiles
 .chrome-check-profile*/
 .edge-check-profile*/
+output/
 
 # OS/editor noise
 .DS_Store

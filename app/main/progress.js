@@ -1,50 +1,38 @@
 // Progress, quiz dashboard, and evaluation rendering.
 function renderLibrary() {
-  if (libraryFilter === "recommended") {
-    const recommendations = generateRecommendations(currentChapterId, 12);
-    els.libraryCount.textContent = `${recommendations.length} 项`;
-    els.resourceGrid.innerHTML = recommendations.length
-      ? recommendations
-          .map(({ unit, reason }) => {
-            const done = state.completed.includes(unit.id);
-            return `
-            <article class="resource-card">
-              <span class="type-pill">${unit.modelLabel} · ${unit.modelRole}</span>
-              <h2>${escapeHtml(unit.analysis.title)}</h2>
-              <p>${escapeHtml(reason)}</p>
-              <span class="status-pill ${done ? "done" : "todo"}">${done ? "已学完" : "待学习"}</span>
-              <div class="resource-actions">
-                <button class="button soft" type="button" data-open-supplement="${unit.id}">学习补给</button>
-                <button class="button soft" type="button" data-complete-supplement="${unit.id}" ${done ? "disabled" : ""}>
-                  ${done ? "已学完" : "标记已学完"}
-                </button>
-              </div>
-            </article>
-          `;
-          })
-          .join("")
-      : `<div class="empty-state">完成本章前测或形成性测验后，系统会根据答题情况在这里推荐补充课程。</div>`;
-    return;
-  }
-
-  const units = allUnits().filter((unit) => {
+  const units = allResourceUnits().filter((unit) => {
     if (libraryFilter === "all") return true;
-    if (libraryFilter === "html") return unit.type === "interactive";
-    if (libraryFilter === "scene") return unit.kind === "scene";
+    if (libraryFilter === "scene") return unit.kind === "scene" && unit.flowKind !== "adaptive";
+    if (libraryFilter === "adaptive") return unit.flowKind === "adaptive";
     return unit.type === libraryFilter;
   });
 
   els.libraryCount.textContent = `${units.length} 项`;
   const unloadedCount = curriculum.filter((chapter) => !chapter.loaded).length;
   const cards = units
-    .map((unit) => `
+    .map((unit) => {
+      const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
+      const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
+      const isDone = state.completed.includes(unit.id);
+      const statusText = isDone
+        ? "已完成"
+        : isSkipped
+          ? "可回看"
+          : unit.flowKind === "adaptive" && !isUnlocked
+            ? "重学/拓展课件待解锁"
+            : "可学习";
+      const statusClass = isDone ? "done" : isSkipped || isUnlocked ? "todo" : "locked";
+      const flowText = unit.flowKind === "adaptive" ? ` · ${escapeHtml(unit.flowLabel || "新加课件")}` : "";
+      return `
       <article class="resource-card">
-        <span class="type-pill">${typeText(unit)}</span>
+        <span class="type-pill">${typeText(unit)}${flowText}</span>
         <h2>${renderInlineMath(unit.label)}</h2>
         <p>${renderInlineMath(unit.chapterLabel)} · ${renderInlineMath(unit.summary)}</p>
+        <span class="status-pill ${statusClass}">${statusText}</span>
         <button class="button soft" type="button" data-jump-unit="${unit.id}">在播放器中学习</button>
       </article>
-    `)
+    `;
+    })
     .join("");
   const loadingNotice = unloadedCount
     ? `<div class="empty-state">正在后台加载 ${unloadedCount} 章轻量目录，资源列表会自动补齐。</div>`
@@ -240,7 +228,7 @@ function renderEvaluation() {
     .join("");
 
   const metricCards = [
-    ["资源覆盖", `${curriculum.length} 章 / ${totalUnits} 主线模块`, `${supplementUnits.length} 个多模型补充课件作为隐藏推荐池`],
+    ["资源覆盖", `${curriculum.length} 章 / ${totalUnits} 主线模块`, `每章 ${AGENTIC_RELEARN_SCENE_ORDERS.length + AGENTIC_EXTENSION_SCENE_ORDERS.length} 个 MAIC-UI 重学/拓展课件`],
     ["完成率", `${completionRate}%`, "用于估计真实学习 deployment 的过程参与度"],
     ["Pre-test", `${pre.scoreRate}%`, `${pre.attempts} 次提交，作为先验水平基线`],
     ["Formative", `${formative.scoreRate}%`, `${formative.attempts} 次提交，观察过程性纠偏`],
