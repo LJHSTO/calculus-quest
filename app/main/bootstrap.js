@@ -136,6 +136,27 @@ document.querySelector("#reset-progress").addEventListener("click", async () => 
   renderAll();
 });
 
+function setupChapterRailToggle() {
+  const rail = document.getElementById("chapter-rail");
+  const toggle = document.getElementById("chapter-rail-toggle");
+  const shell = rail?.closest(".learning-shell");
+  if (!rail || !toggle) return;
+
+  const applyState = (collapsed) => {
+    rail.classList.toggle("collapsed", collapsed);
+    shell?.classList.toggle("chapter-collapsed", collapsed);
+    toggle.textContent = collapsed ? ">" : "<";
+    toggle.setAttribute("aria-label", collapsed ? "展开章节列表" : "折叠章节列表");
+    toggle.setAttribute("title", collapsed ? "展开章节列表" : "折叠章节列表");
+  };
+
+  applyState(localStorage.getItem("chapterRailCollapsed") !== "0");
+  toggle.addEventListener("click", () => {
+    const collapsed = !rail.classList.contains("collapsed");
+    applyState(collapsed);
+    localStorage.setItem("chapterRailCollapsed", collapsed ? "1" : "0");
+  });
+}
 async function init() {
   const safetyTimer = setTimeout(() => {
     document.getElementById("app-loader")?.classList.add("hidden");
@@ -163,6 +184,7 @@ async function init() {
     await loadCourseIndex();
     buildCurriculum();
     renderAll();
+    setupChapterRailToggle();
     clearTimeout(safetyTimer);
     document.getElementById("app-loader")?.classList.add("hidden");
 

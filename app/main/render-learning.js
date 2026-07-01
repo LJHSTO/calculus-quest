@@ -58,13 +58,28 @@ function renderLessons() {
       && !agenticIsSkipped(unit.id);
     const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
     const statusText = isLocked ? "待解锁" : isSkipped ? "可回看" : state.completed.includes(unit.id) ? "已完成" : "未完成";
-    const lockIcon = isLocked ? " 🔒" : isSkipped ? " ⏭" : "";
+    const lockIcon = isLocked ? " [锁定]" : isSkipped ? " [可回看]" : "";
     const cls = ["lesson-card", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : ""].filter(Boolean).join(" ");
+    const icon = unitIcon(unit);
     return "<button class=\"" + cls + "\" type=\"button\" data-unit=\"" + unit.id + "\"" + (isLocked ? " aria-disabled=\"true\"" : "") + ">"
+      + "<span class=\"lesson-card-icon\">" + icon + "</span>"
+      + "<span class=\"lesson-card-body\">"
       + "<strong>" + (index + 1) + ". " + escapeHtml(unit.label) + "</strong>"
       + "<small>" + typeText(unit) + " · " + statusText + lockIcon + "</small>"
+      + "</span>"
       + "</button>";
   }).join("");
+}
+
+function unitIcon(unit) {
+  if (unit.type === "quiz") {
+    if (unit.assessmentPhase === "pre") return "测";
+    if (unit.assessmentPhase === "post") return "后";
+    return "练";
+  }
+  if (unit.type === "slide") return "读";
+  if (unit.type === "interactive") return "互";
+  return "学";
 }
 
 function typeText(unit) {
@@ -134,7 +149,7 @@ function renderPlayer() {
   if (isLastUnit) {
     els.completeLesson.textContent = state.completed.includes(unit.id) ? "已完成，记录复习" : "完成本节";
   } else {
-    els.completeLesson.textContent = state.completed.includes(unit.id) ? "复习并跳到下一节 →" : "完成本节并跳到下一节 →";
+    els.completeLesson.textContent = state.completed.includes(unit.id) ? "复习并跳到下一节" : "完成本节并跳到下一节";
   }
   updateFullscreenButton();
   renderRecommendationPanel();
@@ -241,27 +256,30 @@ function renderQuiz(unit) {
         <div class="quiz-encouragement-banner" id="quiz-top-banner-${unit.id}">
           前测提交成功！你在 ${outcomeHtml}。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。
         </div>
-        <p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`;
+        <p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`;
     } else if (unit.assessmentPhase === "post") {
       quizTopBanner = `
         <div class="quiz-encouragement-banner post" id="quiz-top-banner-${unit.id}">
           后测提交成功！你在 ${outcomeHtml}。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。
         </div>
-        <p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`;
+        <p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`;
     } else {
       quizTopBanner = `
         <div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unit.id}">
           形成性测验提交成功！你在 ${outcomeHtml}。卡住的地方正好说明接下来要重点理解的内容——Agent 会用 MAIC-UI 互动课件帮你换种方式重学或解锁一步拓展。
         </div>
-        <p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`;
+        <p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`;
     }
   }
 
   // Build a lookup of latest result per question for persisted review
   const latestByQuestion = {};
+  let submittedTotalHtml = "";
   if (submitted) {
     const unitResults = (state.quizResults || []).filter(r => r.unitId === unit.id);
     Object.assign(latestByQuestion, quizLatestResultsByQuestion(unitResults));
+    const summary = summarizeQuizAttempt(unitResults, questions);
+    submittedTotalHtml = `<div class="quiz-section-total">${quizOutcomeHtml(summary)}</div>`;
   }
 
   els.lessonPlayer.innerHTML = `
@@ -276,11 +294,26 @@ function renderQuiz(unit) {
           ${questions
             .map((question, index) => {
               const result = latestByQuestion[question.id];
-              const review = result ? renderQuestionReview({ question, result, index }) : "";
+              const fallbackShortResult = submitted && question.type === "short_answer" && !result
+                ? {
+                    mode: "short_answer",
+                    response: readQuizDraft(unit.id, question.id, ""),
+                    isCorrect: null,
+                    status: "pending_review",
+                    score: null,
+                    maxScore: question.points || 0
+                  }
+                : null;
+              const reviewResult = result || fallbackShortResult;
+              const review = reviewResult ? renderQuestionReview({ question, result: reviewResult, index, unit }) : "";
+              const scoreLabel = quizQuestionScoreLabel(question, reviewResult || null);
               return `
               <article class="question-card" data-question="${question.id}">
-                <h3>${index + 1}. ${renderInlineMath(question.question)}</h3>
-                ${renderQuestionInput(unit, question, submitted)}
+                <div class="question-title-row">
+                  <h3>${index + 1}. ${renderInlineMath(question.question)}</h3>
+                  ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
+                </div>
+                ${renderQuestionInput(unit, question, submitted, reviewResult)}
                 ${review}
               </article>
             `;
@@ -288,8 +321,8 @@ function renderQuiz(unit) {
             .join("")}
           <div class="quiz-submit-panel${submitted ? ' submitted' : ''}">
             <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted ? "disabled" : ""}>${submitted ? '已提交' : '提交本次测验'}</button>
-            <p>${submitted ? '该测验已提交，答案和解析见下方。如需重做请点击右上角重置。' : '提交后会记录本次测验结果，并统一显示答案、解析和短答参考要点。'}</p>
-            <div class="answer-feedback" id="feedback-${unit.id}"></div>
+            <p>${submitted ? '该测验已提交，答案、解析、每题得分和小节总分见下方。' : '提交后会记录本次测验结果；评分参考会在提交后随解析显示。'}</p>
+            <div class="answer-feedback" id="feedback-${unit.id}">${submittedTotalHtml}</div>
           </div>
         </div>
       `,
@@ -309,10 +342,10 @@ function renderAssessmentBanner(unit) {
   `;
 }
 
-function renderQuestionInput(unit, question, submitted) {
+function renderQuestionInput(unit, question, submitted, result = null) {
   if (question.type === "short_answer") {
     const inputId = `answer-${unit.id}-${question.id}`;
-    const draft = readQuizDraft(unit.id, question.id, "");
+    const draft = submitted && result?.response != null ? result.response : readQuizDraft(unit.id, question.id, "");
     return `
       <div class="short-answer-box">
         <label for="${inputId}">写下你的推理或计算过程</label>
@@ -328,7 +361,6 @@ function renderQuestionInput(unit, question, submitted) {
         >${escapeHtml(draft)}</textarea>
         <div class="draft-status">本题草稿会自动保存在本地记录中</div>
       </div>
-      ${question.commentPrompt ? `<div class="rubric-box"><strong>评分提示</strong><p>${renderInlineMath(question.commentPrompt)}</p></div>` : ""}
     `;
   }
 
@@ -336,7 +368,7 @@ function renderQuestionInput(unit, question, submitted) {
     <fieldset>
       ${(question.options || [])
         .map((option) => {
-          const draft = readQuizDraft(unit.id, question.id, question.type === "multiple" ? [] : "");
+          const draft = submitted && result?.response != null ? result.response : readQuizDraft(unit.id, question.id, question.type === "multiple" ? [] : "");
           const selected = Array.isArray(draft) ? draft.includes(option.value) : draft === option.value;
           return `
           <label>
@@ -1018,40 +1050,48 @@ function renderAgenticBlueprint() {
   `;
 }
 
+function renderLessonSceneButton(unit) {
+  const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
+  const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
+  const isLocked = !isUnlocked && !isSkipped;
+  const isDone = state.completed.includes(unit.id);
+  const cls = ["lesson-scene-chip", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isSkipped ? "skipped" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
+  const statusText = isLocked ? "\u5f85\u89e3\u9501" : isSkipped ? "\u53ef\u56de\u770b" : isDone ? "\u5df2\u5b8c\u6210" : unit.flowKind === "adaptive" ? "\u53ef\u9009" : "\u53ef\u5b66";
+  return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '"' + (isLocked ? ' aria-disabled="true"' : '') + '>'
+    + '<span>' + unitIcon(unit) + '</span>'
+    + '<strong>' + escapeHtml(unit.label) + '</strong>'
+    + '<small>' + escapeHtml(learningSceneRole(unit)) + ' · ' + statusText + '</small>'
+    + '</button>';
+}
+
 function renderLessons() {
   const chapter = getChapter();
   els.chapterTitle.textContent = chapter.label;
   if (!chapter.loaded) {
-    els.lessonList.innerHTML = '<div class="empty-state">点击左侧章节卡片加载本章学习模块。</div>';
+    els.lessonList.innerHTML = '<div class="empty-state">\u70b9\u51fb\u5de6\u4fa7\u7ae0\u8282\u5361\u7247\u52a0\u8f7d\u672c\u7ae0\u5b66\u4e60\u6a21\u5757\u3002</div>';
     return;
   }
 
-  const displayUnits = typeof agenticDisplayUnitsForChapter === "function"
-    ? agenticDisplayUnitsForChapter(chapter)
-    : chapter.units;
+  const displayUnits = typeof agenticDisplayUnitsForChapter === "function" ? agenticDisplayUnitsForChapter(chapter) : chapter.units;
+  if (!displayUnits.length) {
+    els.lessonList.innerHTML = '<div class="empty-state">完成当前小节后，Agentic Coach 会把你选择的下一步显示在这里。</div>';
+    return;
+  }
   els.lessonList.innerHTML = displayUnits.map((unit, index) => {
     const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
     const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
     const isLocked = !isUnlocked && !isSkipped;
     const isDone = state.completed.includes(unit.id);
     const isRecommended = isUnlocked && !isSkipped && !isDone;
-    const cls = [
-      "lesson-card",
-      unit.id === currentUnitId ? "active" : "",
-      isLocked ? "locked" : "",
-      isSkipped ? "skipped" : "",
-      isRecommended ? "recommended" : "",
-      unit.flowKind === "adaptive" ? "adaptive" : ""
-    ].filter(Boolean).join(" ");
-    const statusText = isLocked ? "待解锁" : isSkipped ? "可回看" : isDone ? "已完成" : unit.flowKind === "adaptive" ? "新加课件" : "下一步";
-    const flowText = unit.flowKind === "adaptive" ? ` · ${escapeHtml(unit.flowLabel || "新加课件")}` : "";
-    return `
-      <button class="${cls}" type="button" data-unit="${unit.id}" ${isLocked ? 'aria-disabled="true"' : ""}>
-        <strong>${index + 1}. ${escapeHtml(unit.label)}</strong>
-        <small>${typeText(unit)}${flowText} · ${statusText}</small>
-      </button>
-    `;
-  }).join("");
+    const cls = ["lesson-card", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isSkipped ? "skipped" : "", isRecommended ? "recommended" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
+    const statusText = isLocked ? "\u5f85\u89e3\u9501" : isSkipped ? "\u53ef\u56de\u770b" : isDone ? "\u5df2\u5b8c\u6210" : unit.flowKind === "adaptive" ? "\u65b0\u52a0\u8bfe\u4ef6" : "\u4e0b\u4e00\u6b65";
+    const flowText = unit.flowKind === "adaptive" ? ' · ' + escapeHtml(unit.flowLabel || "\u65b0\u52a0\u8bfe\u4ef6") : "";
+    return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '"' + (isLocked ? ' aria-disabled="true"' : '') + '>'
+      + '<span class="lesson-card-icon">' + unitIcon(unit) + '</span>'
+      + '<span class="lesson-card-body"><strong>' + (index + 1) + '. ' + escapeHtml(unit.label) + '</strong>'
+      + '<small>' + typeText(unit) + flowText + ' · ' + statusText + '</small></span>'
+      + '</button>';
+  }).join('');
 }
 
 function renderChapters() {

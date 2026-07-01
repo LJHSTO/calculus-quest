@@ -245,6 +245,20 @@
           </div>
         </div>
         <div class="chart-card full-width">
+          <h3>Agentic Coach 决策证据链</h3>
+          <p class="chart-desc">串联交互证据、Coach 推荐、学生选择和后续测验结果，用于研究自适应路径是否真的基于证据。</p>
+          <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+            <button class="btn btn-sm btn-outline" id="export-agentic-trace-csv">导出证据链CSV</button>
+            <span id="agentic-trace-summary" style="font-size:0.85rem;color:var(--muted);"></span>
+          </div>
+          <div class="table-wrap interaction-main-scroll">
+            <table id="table-agentic-trace">
+              <thead><tr><th>时间</th><th>学生</th><th>触发模块</th><th>交互证据</th><th>Coach/Planner建议</th><th>学生选择</th><th>后续测验</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="chart-card full-width">
           <h3>模块参与度</h3>
           <p class="chart-desc">按学生和模块聚合打开、完成、跳过、重复、停留，以及互动课件内的动作强度。</p>
           <div class="table-wrap interaction-main-scroll">
@@ -303,6 +317,6 @@
   </div>
 </div>
 
-<script src="admin/admin.js?v=20260618a"></script>
+<script src="admin/admin.js?v=20260628-path-choice-research-trace"></script>
 </body>
 </html>

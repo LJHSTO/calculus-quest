@@ -6,6 +6,7 @@ function agenticDefaults() {
   return {
     enabled: true,
     unlocked: ["A1-scene-1"],
+    visibleUnits: ["A1-scene-1"],
     skipped: {},
     decisions: [],
     pendingPlan: null,
@@ -25,6 +26,7 @@ function ensureAgenticPath() {
     if (state.agenticPath[key] === undefined) state.agenticPath[key] = defaults[key];
   });
   state.agenticPath.unlocked = Array.from(new Set([...(state.agenticPath.unlocked || []), "A1-scene-1", ...(state.completed || [])]));
+  state.agenticPath.visibleUnits = Array.from(new Set([...(state.agenticPath.visibleUnits || []), "A1-scene-1", currentUnitId || "", ...(state.completed || [])].filter(Boolean)));
   state.agenticPath.skipped = state.agenticPath.skipped || {};
   state.agenticPath.decisions = state.agenticPath.decisions || [];
   state.agenticPath.chapterExtensionsUsed = state.agenticPath.chapterExtensionsUsed || {};
@@ -32,7 +34,67 @@ function ensureAgenticPath() {
   state.agenticPath.insertedAfter = state.agenticPath.insertedAfter || {};
   state.agenticPath.oneStepExtension = state.agenticPath.oneStepExtension || null;
   state.agenticPath.activeDetour = state.agenticPath.activeDetour || null;
+  agenticReconcilePathWithEvidence(state.agenticPath);
   return state.agenticPath;
+}
+
+function agenticEvidenceUnitIds() {
+  const ids = new Set(state.completed || []);
+  (state.submittedQuizzes || []).forEach((unitId) => ids.add(unitId));
+  (state.quizResults || []).forEach((entry) => {
+    const unitId = entry?.unitId || entry?.unit_id || "";
+    if (unitId) ids.add(unitId);
+  });
+  return ids;
+}
+
+function agenticReconcilePathWithEvidence(path) {
+  const unlocked = new Set(path.unlocked || []);
+  const visible = new Set(path.visibleUnits || []);
+  const completed = new Set(state.completed || []);
+  const submitted = new Set(state.submittedQuizzes || []);
+  const quizEvidence = new Set((state.quizResults || []).map((entry) => entry?.unitId || entry?.unit_id || "").filter(Boolean));
+
+  agenticEvidenceUnitIds().forEach((unitId) => {
+    if (!unitId) return;
+    unlocked.add(unitId);
+    visible.add(unitId);
+    if (submitted.has(unitId) || quizEvidence.has(unitId)) {
+      submitted.add(unitId);
+      completed.add(unitId);
+    }
+    const unit = findMainUnit(unitId);
+    if (!unit) return;
+
+    if (unit.type === "quiz") {
+      submitted.add(unit.id);
+      completed.add(unit.id);
+    }
+
+    const chapter = getChapter(unit.chapterId);
+    (chapter?.units || [])
+      .filter((candidate) => candidate.sceneOrder <= unit.sceneOrder)
+      .forEach((candidate) => unlocked.add(candidate.id));
+  });
+
+  if (currentUnitId) visible.add(currentUnitId);
+  if (path.oneStepExtension?.unitId) visible.add(path.oneStepExtension.unitId);
+  if (path.activeDetour?.unitId) visible.add(path.activeDetour.unitId);
+  Object.keys(path.insertedAfter || {}).forEach((unitId) => visible.add(unitId));
+
+  path.unlocked = Array.from(unlocked);
+  path.visibleUnits = Array.from(visible).filter((unitId) => findMainUnit(unitId) || agenticParseUnitId(unitId));
+  state.completed = Array.from(completed);
+  state.submittedQuizzes = Array.from(submitted);
+}
+
+function agenticRevealUnit(unitId) {
+  if (!unitId) return false;
+  const path = ensureAgenticPath();
+  path.visibleUnits = path.visibleUnits || [];
+  if (path.visibleUnits.includes(unitId)) return false;
+  path.visibleUnits.push(unitId);
+  return true;
 }
 
 function agenticAllMainUnits() {
@@ -112,6 +174,31 @@ function agenticMergeCandidates(...groups) {
   });
 }
 
+function agenticPlannerRankedCandidates(plan, { action = "", chapterId = "" } = {}) {
+  const choices = Array.isArray(plan?.rankedSceneChoices) ? plan.rankedSceneChoices : [];
+  const recommended = plan?.plannerInsight?.recommendedPath || {};
+  const preferredAction = action || recommended.action || "";
+  return choices
+    .filter((candidate) => !chapterId || candidate.chapterId === chapterId)
+    .filter((candidate) => {
+      if (!preferredAction || preferredAction === "continue") return true;
+      if (preferredAction === "extend") return candidate.difficultyBand === "extension" || ["extend", "preview", "transfer"].includes(candidate.scenarioType);
+      if (preferredAction === "remediate") return candidate.difficultyBand === "remedial" || ["remediate", "manipulate", "compare", "explain"].includes(candidate.scenarioType);
+      return true;
+    })
+    .map((candidate) => ({
+      id: candidate.id,
+      title: candidate.label || candidate.title || agenticUnitLabel(candidate.id),
+      label: candidate.label || candidate.title || agenticUnitLabel(candidate.id),
+      role: candidate.role || candidate.scenarioType || "planner",
+      modality: candidate.modality || candidate.representation || "",
+      chapterId: candidate.chapterId || chapterId,
+      reason: candidate.reason || `planner_${preferredAction || "ranked"}`,
+      plannerScore: candidate.score,
+      plannerReasons: candidate.reasons || []
+    }));
+}
+
 function agenticPreferredRelearnOrders(phase = "") {
   if (phase === "formative") return [5, 11, 12];
   if (phase === "post") return [11, 12, 5];
@@ -158,14 +245,14 @@ function agenticUnusedExtensionCandidate(chapterId, phase = "") {
   return agenticFirstUnusedCandidate(ranked, chapterId);
 }
 
-function agenticRememberAdaptiveUse(unitId, fromUnitId = "") {
+function agenticRememberAdaptiveUse(unitId, fromUnitId = "", options = {}) {
   if (!unitId) return;
   const path = ensureAgenticPath();
   const unit = findMainUnit(unitId);
   const chapterId = unit?.chapterId || agenticParseUnitId(unitId)?.chapterId || "";
   if (!chapterId) return;
   path.usedAdaptiveUnits[chapterId] = Array.from(new Set([...(path.usedAdaptiveUnits[chapterId] || []), unitId]));
-  if (fromUnitId) path.insertedAfter[unitId] = fromUnitId;
+  if (fromUnitId && options.insertAfter !== false) path.insertedAfter[unitId] = fromUnitId;
 }
 
 function agenticUnitIndex(unitId) {
@@ -194,6 +281,7 @@ function agenticIsChapterUnlocked(chapterId) {
 function agenticUnlockUnit(unitId, reason = "agent_recommended") {
   if (!unitId) return false;
   const path = ensureAgenticPath();
+  agenticRevealUnit(unitId);
   if (!path.unlocked.includes(unitId)) {
     path.unlocked.push(unitId);
     addLog(`Agent 解锁：${agenticUnitLabel(unitId)}。`);
@@ -213,6 +301,69 @@ function agenticActionUnitLabel(action, index = 0) {
   const candidate = action?.units?.[index];
   if (!candidate) return "";
   return candidate.label || candidate.title || agenticUnitLabel(candidate.id);
+}
+
+function agenticActionTargetIds(action, pending = null) {
+  const ids = (action?.units || []).map((unit) => unit?.id).filter(Boolean);
+  if (!ids.length && action?.type === "continue" && pending?.resumeUnitId) ids.push(pending.resumeUnitId);
+  if (!ids.length && action?.type === "continue" && pending) {
+    const anchorUnitId = pending.anchorUnitId || pending.unitId || "";
+    const nextId = agenticNextUnitIdAfter(anchorUnitId) || agenticNextMainUnitAfter(anchorUnitId)?.id || "";
+    if (nextId) ids.push(nextId);
+  }
+  return ids;
+}
+
+function agenticActionSummary(action, pending = null) {
+  const unitIds = agenticActionTargetIds(action, pending);
+  return {
+    type: action?.type || "",
+    label: action?.label || "",
+    primary: Boolean(action?.primary),
+    unitIds,
+    unitLabels: unitIds.map((unitId) => agenticUnitLabel(unitId)),
+    scenarioType: action?.scenarioType || (unitIds[0] ? findMainUnit(unitIds[0])?.scenarioType || "" : ""),
+    representation: unitIds[0] ? findMainUnit(unitIds[0])?.representation || "" : "",
+    reason: action?.reason || action?.units?.[0]?.reason || ""
+  };
+}
+
+function agenticPendingActionSummaries(pending = null) {
+  return (pending?.actions || []).map((action) => agenticActionSummary(action, pending));
+}
+
+function agenticPlanCreatedAtMs(pending = null) {
+  const stamp = pending?.createdAt || pending?.decisionCreatedAt || "";
+  const value = stamp ? Date.parse(stamp) : NaN;
+  return Number.isFinite(value) ? value : 0;
+}
+
+function agenticDecisionLatencyMs(pending = null) {
+  const createdAtMs = agenticPlanCreatedAtMs(pending);
+  return createdAtMs ? Math.max(0, Date.now() - createdAtMs) : null;
+}
+
+function agenticDecisionMeta(pending, action, targetId) {
+  const selectedCandidateIds = agenticActionTargetIds(action, pending);
+  const plannerPath = pending?.plan?.plannerInsight?.recommendedPath || pending?.plan?.recommendedPath || {};
+  return {
+    sourceAgentDecisionId: pending?.agentDecisionId || pending?.decisionId || "",
+    recommendationCreatedAt: pending?.createdAt || pending?.decisionCreatedAt || "",
+    choiceLatencyMs: agenticDecisionLatencyMs(pending),
+    candidateActions: agenticPendingActionSummaries(pending),
+    selectedActionLabel: action?.label || "",
+    selectedCandidateIds,
+    selectedSceneId: action?.type === "scene" ? targetId : "",
+    selectedScenarioType: action?.scenarioType || (targetId ? findMainUnit(targetId)?.scenarioType || "" : ""),
+    nextUnitId: pending?.nextUnitId || pending?.resumeUnitId || agenticNextUnitIdAfter(pending?.anchorUnitId || pending?.unitId || "") || "",
+    nextClusterId: pending?.nextClusterId || "",
+    nextClusterLabel: pending?.nextClusterLabel || "",
+    plannerStrategy: pending?.plan?.plannerInsight?.strategy || pending?.plan?.strategy || "",
+    plannerAction: plannerPath.action || "",
+    plannerTargetId: plannerPath.targetId || "",
+    phase: pending?.phase || "",
+    provider: pending?.provider || ""
+  };
 }
 
 function agenticParseUnitId(unitId = "") {
@@ -368,11 +519,12 @@ function agenticPreviousUnlockedUnitBefore(unitId) {
 
 function agenticShouldShowUnit(unit) {
   if (!unit) return false;
-  if (unit.flowKind !== "adaptive") return true;
   const path = ensureAgenticPath();
   if (unit.id === currentUnitId) return true;
-  if (path.unlocked.includes(unit.id) || state.completed.includes(unit.id) || agenticIsSkipped(unit.id)) return true;
+  if ((path.visibleUnits || []).includes(unit.id)) return true;
+  if (state.completed.includes(unit.id)) return true;
   if (path.oneStepExtension?.unitId === unit.id || path.activeDetour?.unitId === unit.id) return true;
+  if (path.pendingPlan?.unitId === unit.id) return true;
   return Boolean(path.insertedAfter?.[unit.id]);
 }
 
@@ -384,16 +536,14 @@ function agenticDisplayUnitsForChapter(chapter = getChapter()) {
 function agenticOrderDisplayedUnits(units = []) {
   const path = ensureAgenticPath();
   const insertedAfter = path.insertedAfter || {};
-  const pendingAnchor = path.pendingPlan?.anchorUnitId || path.pendingPlan?.unitId || "";
-  const pendingIds = new Set((path.pendingPlan?.actions || []).flatMap((action) => action.units || []).map((item) => item.id));
   const placed = new Set();
   const inserted = units
-    .filter((unit) => insertedAfter[unit.id] || pendingIds.has(unit.id))
+    .filter((unit) => insertedAfter[unit.id])
     .sort((a, b) => (agenticParseUnitId(a.id)?.order || 0) - (agenticParseUnitId(b.id)?.order || 0));
   const result = [];
   const appendInsertions = (anchorId) => {
     inserted
-      .filter((unit) => !placed.has(unit.id) && (insertedAfter[unit.id] || (pendingIds.has(unit.id) ? pendingAnchor : "")) === anchorId)
+      .filter((unit) => !placed.has(unit.id) && insertedAfter[unit.id] === anchorId)
       .forEach((unit) => {
         result.push(unit);
         placed.add(unit.id);
@@ -401,7 +551,7 @@ function agenticOrderDisplayedUnits(units = []) {
   };
 
   units.forEach((unit) => {
-    if (insertedAfter[unit.id] || pendingIds.has(unit.id)) return;
+    if (insertedAfter[unit.id]) return;
     result.push(unit);
     placed.add(unit.id);
     appendInsertions(unit.id);
@@ -526,13 +676,143 @@ function agenticQuizStats(records) {
   };
 }
 
-async function agenticRequestPlan(unit) {
+function agenticQuizQuestionsForPlan(records = [], unit = null) {
+  return records.map(({ question, result }) => ({
+    unitId: result.unitId || unit?.id || "",
+    chapterId: unit?.chapterId || "",
+    questionId: question.id,
+    questionType: question.type,
+    questionText: question.prompt || question.question || question.title || question.text || "",
+    referenceAnswer: question.referenceAnswer || question.answerText || question.analysis || "",
+    rubric: question.commentPrompt || question.rubric || "",
+    concepts: question.concepts || question.tags || [],
+    points: question.points || result.maxScore || 0,
+    response: result.response
+  }));
+}
+
+function interactionEvidenceForUnit(unitId) {
+  if (!unitId) return null;
+  const bucket = state.analytics?.interactionEvidence?.[unitId] || {};
+  const quizRows = (state.quizResults || []).filter((row) => (row.unitId || row.unit_id) === unitId);
+  const questionCount = new Set(quizRows.map((row) => row.questionId || row.question_id).filter(Boolean)).size;
+  const pendingReview = quizRows.filter((row) => row.status === "pending_review" || row.isCorrect === null).length;
+  const scoredRows = quizRows.filter((row) => row.isCorrect === true || row.isCorrect === false);
+  const correctRows = scoredRows.filter((row) => row.isCorrect === true);
+  const accuracy = scoredRows.length ? correctRows.length / scoredRows.length : null;
+  const repeatCount = Math.max(bucket.repeatCount || 0, state.analytics?.visitedUnits?.[unitId] || 0);
+  const dwellMs = bucket.dwellMs || 0;
+  const answerRevealCount = bucket.answerRevealCount || 0;
+  const shortAnswerLength = bucket.shortAnswerLength || 0;
+  const choiceChangeCount = bucket.choiceChangeCount || 0;
+  const narrationTouches = (bucket.narrationPlayCount || 0) + (bucket.narrationPauseCount || 0) + (bucket.narrationSeekCount || 0);
+  const frictionScore = Math.min(1, (
+    Math.min(1, answerRevealCount / 2) * 0.25 +
+    Math.min(1, repeatCount / 3) * 0.2 +
+    Math.min(1, choiceChangeCount / 6) * 0.2 +
+    Math.min(1, narrationTouches / 5) * 0.15 +
+    Math.min(1, dwellMs / 480000) * 0.2
+  ));
+  const engagementScore = Math.min(1, (
+    Math.min(1, (bucket.events || 0) / 30) * 0.25 +
+    Math.min(1, dwellMs / 360000) * 0.3 +
+    Math.min(1, (bucket.resourceFullscreenCount || 0) / 2) * 0.15 +
+    Math.min(1, narrationTouches / 4) * 0.15 +
+    Math.min(1, (bucket.uiWheelCount || 0) / 8) * 0.15
+  ));
+  const riskLevel = accuracy !== null && accuracy < 0.6 || frictionScore >= 0.65 ? "high" : frictionScore >= 0.35 ? "medium" : "low";
+  const suggestedMove = riskLevel === "high"
+    ? "alternate_scene"
+    : accuracy !== null && accuracy >= 0.8 && frictionScore < 0.35
+      ? "extend"
+      : engagementScore < 0.25
+        ? "make_interactive"
+        : "continue";
+  return {
+    unitId,
+    chapterId: bucket.chapterId || agenticChapterIdForUnitId(unitId),
+    events: bucket.events || 0,
+    dwellMs,
+    repeatCount,
+    answerRevealCount,
+    questionVisibleCount: bucket.questionVisibleCount || 0,
+    choiceChangeCount,
+    shortAnswerLength,
+    resourceFullscreenCount: bucket.resourceFullscreenCount || 0,
+    narrationPlayCount: bucket.narrationPlayCount || 0,
+    narrationPauseCount: bucket.narrationPauseCount || 0,
+    narrationSeekCount: bucket.narrationSeekCount || 0,
+    uiWheelCount: bucket.uiWheelCount || 0,
+    uiInputCount: bucket.uiInputCount || 0,
+    parameterChangeCount: bucket.parameterChangeCount || 0,
+    questionCount,
+    pendingReview,
+    accuracy,
+    frictionScore: Math.round(frictionScore * 1000) / 1000,
+    engagementScore: Math.round(engagementScore * 1000) / 1000,
+    riskLevel,
+    suggestedMove
+  };
+}
+
+function interactionEvidenceForChapter(chapterId) {
+  const ids = new Set();
+  Object.keys(state.analytics?.interactionEvidence || {}).forEach((unitId) => {
+    if (!chapterId || agenticChapterIdForUnitId(unitId) === chapterId || unitId.startsWith(`${chapterId}-scene-`)) ids.add(unitId);
+  });
+  (state.quizResults || []).forEach((row) => {
+    const unitId = row.unitId || row.unit_id || "";
+    if (unitId && (!chapterId || unitId.startsWith(`${chapterId}-scene-`))) ids.add(unitId);
+  });
+  return Array.from(ids).map(interactionEvidenceForUnit).filter(Boolean);
+}
+
+function agenticScenePreferenceScore(scene, anchorEvidence) {
+  if (!scene) return 0;
+  const role = learningSceneRole(scene);
+  const isInteractive = scene.type === "interactive";
+  const isSlide = scene.type === "slide";
+  const isAdaptive = scene.flowKind === "adaptive";
+  let score = 0;
+  if (anchorEvidence?.suggestedMove === "alternate_scene") {
+    if (isInteractive) score += 4;
+    if (isAdaptive) score += 3;
+    if (/重学|自适应|互动/.test(role)) score += 2;
+  } else if (anchorEvidence?.suggestedMove === "make_interactive") {
+    if (isInteractive) score += 4;
+    if (isSlide) score -= 1;
+  } else if (anchorEvidence?.suggestedMove === "extend") {
+    if (isAdaptive) score += 3;
+    if (/拓展|预告/.test(role)) score += 3;
+  } else {
+    if (!isAdaptive) score += 1;
+  }
+  if (state.completed.includes(scene.id)) score -= 1;
+  if (typeof agenticIsUnitUnlocked === "function" && agenticIsUnitUnlocked(scene.id)) score += 0.5;
+  return score;
+}
+
+function rankSiblingLearningScenes(unit, scenes = siblingLearningScenes(unit)) {
+  const evidence = interactionEvidenceForUnit(unit?.id || "");
+  return [...(scenes || [])].sort((a, b) => {
+    const scoreDiff = agenticScenePreferenceScore(b, evidence) - agenticScenePreferenceScore(a, evidence);
+    return scoreDiff || (a.sceneOrder || 0) - (b.sceneOrder || 0);
+  });
+}
+
+async function agenticRequestPlan(unit, records = []) {
   if (!isSignedIn()) return null;
   try {
     const payload = await apiRequest("/api/learning/kg/plan", {
       chapterId: unit.chapterId,
       currentUnitId: unit.id,
-      quizResults: state.quizResults || []
+      quizResults: state.quizResults || [],
+      quizQuestions: agenticQuizQuestionsForPlan(records, unit),
+      completedUnitIds: state.completed || [],
+      interactionEvidence: {
+        current: interactionEvidenceForUnit(unit.id),
+        chapter: interactionEvidenceForChapter(unit.chapterId).slice(-30)
+      }
     });
     return payload;
   } catch (error) {
@@ -541,13 +821,45 @@ async function agenticRequestPlan(unit) {
   }
 }
 
+function agenticApplyRemoteGrading(remote, unit) {
+  const gradingResults = Array.isArray(remote?.gradingResults) ? remote.gradingResults : [];
+  if (!gradingResults.length) return;
+  const byQuestion = new Map(gradingResults.map((result) => [result.questionId, result]));
+  let changed = false;
+  state.quizResults = (state.quizResults || []).map((entry) => {
+    if (entry.unitId !== unit.id) return entry;
+    const grade = byQuestion.get(entry.questionId);
+    if (!grade) return entry;
+    const maxScore = quizMaxScoreFor({}, entry);
+    const earnedScore = grade.score == null ? entry.score : quizScoreFromPercent(grade.score, maxScore);
+    changed = true;
+    return {
+      ...entry,
+      aiScore: grade.score,
+      aiConfidence: grade.confidence,
+      aiFeedback: grade.feedback || "",
+      aiErrorType: grade.errorType || "",
+      aiNeedsReview: Boolean(grade.needsReview),
+      status: grade.score == null ? "pending_review" : "ai_reviewed",
+      isCorrect: grade.score == null ? entry.isCorrect : grade.score >= 60,
+      score: grade.score == null ? entry.score : earnedScore
+    };
+  });
+  if (changed) {
+    saveState();
+    if (unit?.id === currentUnitId && typeof renderQuiz === "function") renderQuiz(unit);
+  }
+}
+
 async function agenticAfterQuizSubmit(unit, records) {
   ensureAgenticPath();
   const stats = agenticQuizStats(records);
   const phase = unit.assessmentPhase;
-  const remote = await agenticRequestPlan(unit);
+  const remote = await agenticRequestPlan(unit, records);
+  agenticApplyRemoteGrading(remote, unit);
   const plan = remote?.plan || null;
   const narration = remote?.narration || "Agent 已根据你的答题情况更新下一步。";
+  const plannerAction = plan?.plannerInsight?.recommendedPath?.action || plan?.recommendedPath?.action || "";
   const actions = [];
   const localSkipOrders = AGENTIC_CORE_SCENE_ORDERS.filter((order) => order > unit.sceneOrder && order < 8);
   const skipCandidates = agenticMergeCandidates(
@@ -558,6 +870,9 @@ async function agenticAfterQuizSubmit(unit, records) {
     agenticLocalCandidates(unit.chapterId, localSkipOrders, "pre_test_mastery")
   );
   const relearnCandidates = agenticMergeCandidates(
+    agenticResolvePlanUnits(agenticPlannerRankedCandidates(plan, { action: "remediate", chapterId: unit.chapterId }), {
+      chapterId: unit.chapterId
+    }),
     agenticResolvePlanUnits(plan?.remediationCandidates, {
       chapterId: unit.chapterId,
       flowKind: "adaptive",
@@ -566,6 +881,9 @@ async function agenticAfterQuizSubmit(unit, records) {
     agenticLocalCandidates(unit.chapterId, AGENTIC_RELEARN_SCENE_ORDERS, "post_test_relearn")
   );
   const extensionCandidates = agenticMergeCandidates(
+    agenticResolvePlanUnits(agenticPlannerRankedCandidates(plan, { action: "extend", chapterId: unit.chapterId }), {
+      chapterId: unit.chapterId
+    }),
     agenticLocalCandidates(unit.chapterId, AGENTIC_EXTENSION_SCENE_ORDERS, "same_chapter_extension"),
     agenticResolvePlanUnits(plan?.extensionCandidates, {
       chapterId: unit.chapterId,
@@ -615,6 +933,16 @@ async function agenticAfterQuizSubmit(unit, records) {
   }
 
   if (!actions.length) {
+    const sceneChoicePlan = agenticBuildSceneChoicePlan(unit, remote);
+    if (sceneChoicePlan) {
+      const path = ensureAgenticPath();
+      path.pendingPlan = sceneChoicePlan;
+      path.pendingAt = unit.id;
+      path.lastNarration = agenticStudentNarrationForPending(sceneChoicePlan);
+      saveState();
+      renderAll();
+      return;
+    }
     const next = agenticUnlockDefaultNext(unit.id, "quiz_no_special_plan");
     ensureAgenticPath().lastNarration = agenticNoSpecialPlanNarration(unit, next);
     if (next) ensureAgenticPath().oneStepExtension = null;
@@ -631,6 +959,8 @@ async function agenticAfterQuizSubmit(unit, records) {
     stats,
     narration,
     provider: remote?.provider || "mock",
+    agentDecisionId: remote?.decisionId || "",
+    decisionCreatedAt: remote?.decisionCreatedAt || "",
     plan,
     actions,
     createdAt: beijingNow()
@@ -664,6 +994,98 @@ function agenticBuildPostRelearnExtensionPlan(detour, completedUnit) {
     ],
     createdAt: beijingNow()
   };
+}
+
+function agenticBuildSceneChoicePlan(unit, remote = null) {
+  if (!unit) return null;
+  const next = agenticNextMainUnitAfter(unit.id);
+  if (!next?.id) return null;
+  const nextUnit = findMainUnit(next.id) || next;
+  if (!nextUnit || nextUnit.type === "quiz") return null;
+  const evidence = interactionEvidenceForUnit(unit.id);
+  const remotePlan = remote?.plan || remote;
+  const plannerAction = remotePlan?.plannerInsight?.recommendedPath?.action || remotePlan?.recommendedPath?.action || "";
+  const nextCluster = typeof learningClusterForUnit === "function" ? learningClusterForUnit(nextUnit) : null;
+  const nextClusterOrders = new Set(nextCluster?.orders || [nextUnit.sceneOrder]);
+  const plannerChoices = agenticResolvePlanUnits(agenticPlannerRankedCandidates(remotePlan, { chapterId: unit.chapterId }), {
+    chapterId: unit.chapterId
+  }).filter((candidate) => candidate.id !== unit.id && candidate.id !== nextUnit.id)
+    .filter((candidate) => nextClusterOrders.has((findMainUnit(candidate.id) || {}).sceneOrder))
+    .filter((scene) => (findMainUnit(scene.id) || scene).type !== "quiz")
+    .slice(0, 2)
+    .map((scene) => {
+      const resolved = findMainUnit(scene.id) || scene;
+      return {
+        ...agenticCandidateFromUnit(resolved, scene.reason || `next_scene_${evidence?.suggestedMove || "continue"}`),
+        plannerScore: scene.plannerScore,
+        plannerReasons: scene.plannerReasons || []
+      };
+    });
+  const localAlternatives = rankSiblingLearningScenes(nextUnit)
+    .filter((scene) => scene.id !== nextUnit.id && scene.id !== unit.id)
+    .filter((scene) => nextClusterOrders.has(scene.sceneOrder))
+    .filter((scene) => scene.type !== "quiz")
+    .filter((scene) => !state.completed.includes(scene.id) && !agenticIsSkipped(scene.id))
+    .slice(0, 2)
+    .map((scene) => agenticCandidateFromUnit(scene, `next_scene_${evidence?.suggestedMove || "continue"}`));
+  const alternatives = agenticMergeCandidates(plannerChoices, localAlternatives)
+    .filter((candidate) => candidate.id !== nextUnit.id)
+    .slice(0, 1);
+  const actions = [];
+  const alternate = alternatives[0];
+  const alternateUnit = alternate ? findMainUnit(alternate.id) : null;
+  const explicitPlannerMove = Boolean(plannerAction && plannerAction !== "continue");
+  const explicitEvidenceMove = Boolean(evidence?.suggestedMove && evidence.suggestedMove !== "continue");
+  const shouldPreferAlternate = Boolean(alternate && (explicitPlannerMove || explicitEvidenceMove));
+  if (alternate) {
+    actions.push({
+      type: "scene",
+      label: `${shouldPreferAlternate ? "推荐场景" : "可选场景"}：${alternate.label || agenticUnitLabel(alternate.id)}`,
+      primary: shouldPreferAlternate,
+      units: [alternate],
+      scenarioType: alternateUnit?.scenarioType || ""
+    });
+  }
+  actions.push({ type: "continue", label: `默认场景：${agenticUnitLabel(next.id)}`, primary: !shouldPreferAlternate, units: [] });
+  if (actions.length <= 1) return null;
+  return {
+    unitId: unit.id,
+    anchorUnitId: unit.id,
+    chapterId: unit.chapterId,
+    phase: "interaction_scene_choice",
+    stats: null,
+    evidence,
+    narration: remote?.narration || "",
+    provider: remote?.provider || (plannerChoices.length ? "planner-interaction-evidence" : "local-interaction-evidence"),
+    agentDecisionId: remote?.decisionId || "",
+    decisionCreatedAt: remote?.decisionCreatedAt || "",
+    plan: remotePlan || null,
+    resumeUnitId: next.id,
+    nextUnitId: next.id,
+    nextClusterId: nextCluster?.id || "",
+    nextClusterLabel: nextCluster?.label || "下一小节",
+    actions,
+    createdAt: beijingNow()
+  };
+}
+
+async function agenticRefreshPendingSceneChoicePlan(unit) {
+  if (!unit || unit.type === "quiz" || !isSignedIn()) return;
+  const path = ensureAgenticPath();
+  if (path.pendingPlan?.unitId !== unit.id || path.pendingPlan?.phase !== "interaction_scene_choice") return;
+  const remote = await agenticRequestPlan(unit, []);
+  const refreshed = agenticBuildSceneChoicePlan(unit, remote);
+  if (!refreshed) return;
+  const currentPath = ensureAgenticPath();
+  if (currentPath.pendingPlan?.unitId !== unit.id || currentPath.pendingPlan?.phase !== "interaction_scene_choice") return;
+  currentPath.pendingPlan = {
+    ...refreshed,
+    createdAt: currentPath.pendingPlan.createdAt || refreshed.createdAt
+  };
+  currentPath.pendingAt = unit.id;
+  currentPath.lastNarration = agenticStudentNarrationForPending(currentPath.pendingPlan);
+  saveState();
+  if (unit.id === currentUnitId) renderAll();
 }
 
 function agenticOnUnitCompleted(unit) {
@@ -705,6 +1127,14 @@ function agenticOnUnitCompleted(unit) {
     agenticUnlockUnit(adaptiveResume.id, "return_from_adaptive_review");
     path.lastNarration = `这节 MAIC-UI 课件已经复习完成，回到主线：${adaptiveResume.label}。`;
     return adaptiveResume;
+  }
+  const sceneChoicePlan = agenticBuildSceneChoicePlan(unit);
+  if (sceneChoicePlan) {
+    path.pendingPlan = sceneChoicePlan;
+    path.pendingAt = unit.id;
+    path.lastNarration = agenticStudentNarrationForPending(sceneChoicePlan);
+    agenticRefreshPendingSceneChoicePlan(unit).catch((error) => console.warn("Planner refresh failed:", error));
+    return null;
   }
   const unlockedNext = agenticNextUnlockedUnitAfter(unit.id);
   if (unlockedNext?.id) {
@@ -848,6 +1278,21 @@ function agenticStudentNarrationForPending(pending) {
   const hasSkip = Boolean(skipAction);
   const continueLabel = continueAction?.label || "继续主线";
 
+  if (phase === "interaction_scene_choice") {
+    const sceneAction = actions.find((action) => action.type === "scene") || remediateAction || extensionAction;
+    const label = agenticActionUnitLabel(sceneAction);
+    const defaultLabel = continueAction?.label || "默认场景";
+    const evidence = pending.evidence || {};
+    const reason = evidence.riskLevel === "high"
+      ? "刚才的交互里出现了反复查看、停留较久或答题卡顿"
+      : evidence.suggestedMove === "extend"
+        ? "刚才的完成比较顺畅"
+        : "下一小节有不同学习场景可选";
+    return label
+      ? `${reason}。下一节你可以选「${label}」，也可以走「${defaultLabel}」。选完后，Inside chapter 只显示你实际选择的路径。`
+      : `${reason}。请选择下一节要进入的学习场景；选完后，Inside chapter 只显示你实际选择的路径。`;
+  }
+
   if (phase === "post_relearn_complete") {
     const extensionLabel = agenticActionUnitLabel(extensionAction);
     return extensionLabel
@@ -930,6 +1375,7 @@ async function agenticApplyDecision(type) {
   path.decisionInFlight = type;
   renderAgenticCoachPanel();
   let targetId = "";
+  let decisionMeta = null;
 
   try {
     if (type === "skip") {
@@ -944,17 +1390,28 @@ async function agenticApplyDecision(type) {
         ? `已跳过 ${action.units.length} 个掌握度较高的模块，先进入热身学习：${agenticUnitLabel(targetId)}，再做阶段检查。`
         : `已跳过 ${action.units.length} 个掌握度较高的模块。`;
       addLog(`接受 Agent 建议，跳过 ${action.units.length} 个已掌握模块。`);
+    } else if (type === "scene") {
+      targetId = action.units[0]?.id || pending.resumeUnitId || "";
+      const targetUnit = findMainUnit(targetId);
+      if (targetUnit?.flowKind === "adaptive") agenticRememberAdaptiveUse(targetId, pending.anchorUnitId || pending.unitId, { insertAfter: false });
+      agenticUnlockUnit(targetId, "student_next_scene_choice");
+      path.lastNarration = targetId
+        ? `已选择下一节场景：${agenticUnitLabel(targetId)}。Inside chapter 只会显示你实际选择的学习路径。`
+        : "已记录下一节场景选择。";
+      addLog("选择下一节学习场景。 ");
     } else if (type === "remediate") {
       targetId = action.units[0]?.id || "";
       const anchorUnitId = pending.anchorUnitId || pending.unitId;
       agenticRememberAdaptiveUse(targetId, anchorUnitId);
-      agenticUnlockUnit(targetId, "posttest_alt_modality");
+      agenticUnlockUnit(targetId, pending.phase === "interaction_scene_choice" ? "interaction_scene_choice" : "posttest_alt_modality");
       const label = agenticActionUnitLabel(action) || agenticUnitLabel(targetId);
       const postRelearnExtension = pending.phase === "post"
         ? agenticUnusedExtensionCandidate(pending.chapterId, "post_relearn_complete")
         : null;
       const afterRelearnText =
-        pending.phase === "post"
+        pending.phase === "interaction_scene_choice"
+          ? "完成后再回到你刚才的主线下一步。"
+          : pending.phase === "post"
           ? postRelearnExtension
             ? "完成后你可以再选择一步拓展，或直接进入下一章。"
             : "完成后直接进入下一章。"
@@ -978,7 +1435,7 @@ async function agenticApplyDecision(type) {
       targetId = action.units[0]?.id || "";
       path.chapterExtensionsUsed[pending.chapterId] = true;
       agenticRememberAdaptiveUse(targetId, pending.anchorUnitId || pending.unitId);
-      agenticUnlockUnit(targetId, "chapter_extension_one_hop");
+      agenticUnlockUnit(targetId, pending.phase === "interaction_scene_choice" ? "interaction_scene_choice_extension" : "chapter_extension_one_hop");
       const label = agenticActionUnitLabel(action) || agenticUnitLabel(targetId);
       path.oneStepExtension = {
         unitId: targetId,
@@ -986,7 +1443,9 @@ async function agenticApplyDecision(type) {
         resumeUnitId: pending.resumeUnitId || agenticNextUnitIdAfter(pending.anchorUnitId || pending.unitId)
       };
       const afterExtensionText =
-        pending.phase === "post"
+        pending.phase === "interaction_scene_choice"
+          ? "完成后会回到你刚才的主线下一步。"
+          : pending.phase === "post"
           ? "本章不再安排重学，完成后进入下一章。"
           : pending.phase === "post_relearn_complete"
             ? "完成后进入下一章。"
@@ -1005,12 +1464,28 @@ async function agenticApplyDecision(type) {
       addLog("选择继续主线通关。 ");
     }
 
+    decisionMeta = agenticDecisionMeta(pending, action, targetId);
+
     agenticDecisionRecord(type, {
+      ...decisionMeta,
       fromUnitId: pending.anchorUnitId || pending.unitId,
       targetId,
       targetLabel: agenticActionUnitLabel(action) || agenticUnitLabel(targetId),
       chapterId: pending.chapterId,
+      selectedSceneId: type === "scene" ? targetId : "",
       skippedUnitIds: type === "skip" ? action.units.map((unit) => unit.id) : []
+    });
+    analyticsTrack("agentic_decision_executed", {
+      data: {
+        ...decisionMeta,
+        action: type,
+        fromUnitId: pending.anchorUnitId || pending.unitId,
+        targetId,
+        targetLabel: agenticActionUnitLabel(action) || agenticUnitLabel(targetId),
+        chapterId: pending.chapterId,
+        selectedSceneId: type === "scene" ? targetId : "",
+        skippedUnitIds: type === "skip" ? action.units.map((unit) => unit.id) : []
+      }
     });
     path.pendingPlan = null;
     path.pendingAt = "";
@@ -1028,6 +1503,28 @@ async function agenticApplyDecision(type) {
     addLog(`Agent 路径切换失败：${error.message || "请重试"}`);
     throw error;
   }
+}
+
+function agenticSceneChoicePanel(unit) {
+  if (!unit || typeof siblingLearningScenes !== "function") return "";
+  const cluster = typeof learningClusterForUnit === "function" ? learningClusterForUnit(unit) : null;
+  const evidence = interactionEvidenceForUnit(unit.id);
+  const scenes = rankSiblingLearningScenes(unit).filter((scene) => scene.id !== unit.id);
+  if (!cluster || !scenes.length) return "";
+  const chips = scenes.slice(0, 5).map((scene) => {
+    const locked = typeof agenticIsUnitUnlocked === "function" && !agenticIsUnitUnlocked(scene.id) && !(typeof agenticIsSkipped === "function" && agenticIsSkipped(scene.id));
+    const cls = ["agentic-scene-choice", scene.flowKind === "adaptive" ? "adaptive" : "", locked ? "locked" : ""].filter(Boolean).join(" ");
+    return '<button class="' + cls + '" type="button" data-unit="' + scene.id + '"' + (locked ? ' aria-disabled="true"' : '') + '>'
+      + '<span>' + escapeHtml(learningSceneRole(scene)) + '</span>'
+      + '<strong>' + escapeHtml(scene.label) + '</strong>'
+      + '</button>';
+  }).join('');
+  const reason = evidence?.suggestedMove === "alternate_scene"
+    ? "根据刚才的停留、回看答案或反复操作，优先给你排了同知识点的替代场景。"
+    : evidence?.suggestedMove === "extend"
+      ? "刚才比较顺畅，优先给你排了可以迁移或拓展的相邻场景。"
+      : "这些是同一知识点下的相邻学习场景，你可以自主切换。";
+  return '<div class="agentic-scene-choices"><div><strong>' + escapeHtml(cluster.label) + '</strong><small>' + escapeHtml(cluster.focus) + '</small><small>' + escapeHtml(reason) + '</small></div><div class="agentic-scene-choice-grid">' + chips + '</div></div>';
 }
 
 function renderAgenticCoachPanel() {

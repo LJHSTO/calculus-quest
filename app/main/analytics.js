@@ -15,6 +15,30 @@ let analyticsUnitStart = null;
 let analyticsLastEventAt = Date.now();
 let analyticsLastActiveAt = Date.now();
 let analyticsLastTrackedView = "";
+let analyticsCoachRefreshTimer = null;
+let analyticsCoachLastRefreshAt = 0;
+
+const analyticsCoachEvidenceEvents = new Set([
+  "quiz_answer_revealed",
+  "short_answer_input",
+  "answer_select",
+  "question_visible",
+  "time_on_unit",
+  "resource_fullscreen",
+  "ui_wheel",
+  "ui_input",
+  "parameter_commit",
+  "parameter_change",
+  "interactive_click",
+  "interactive_input",
+  "interactive_change",
+  "interactive_drag_end",
+  "interactive_scroll",
+  "interactive_wheel",
+  "narration_play_click",
+  "narration_pause_click",
+  "narration_seek"
+]);
 
 function analyticsSessionId() {
   let id = sessionStorage.getItem(ANALYTICS_SESSION_KEY);
@@ -31,7 +55,83 @@ function ensureAnalyticsState() {
   state.analytics.path = state.analytics.path || [];
   state.analytics.repeats = state.analytics.repeats || {};
   state.analytics.skips = state.analytics.skips || [];
+  state.analytics.interactionEvidence = state.analytics.interactionEvidence || {};
   return state.analytics;
+}
+
+function analyticsEvidenceBucket(unitId, event = {}) {
+  if (!unitId) return null;
+  const analytics = ensureAnalyticsState();
+  const bucket = analytics.interactionEvidence[unitId] || {
+    unitId,
+    chapterId: event.chapterId || "",
+    unitType: event.unitType || "",
+    moduleRole: event.moduleRole || "",
+    events: 0,
+    dwellMs: 0,
+    repeatCount: 0,
+    answerRevealCount: 0,
+    questionVisibleCount: 0,
+    choiceChangeCount: 0,
+    shortAnswerLength: 0,
+    resourceFullscreenCount: 0,
+    narrationPlayCount: 0,
+    narrationPauseCount: 0,
+    narrationSeekCount: 0,
+    uiWheelCount: 0,
+    uiInputCount: 0,
+    parameterChangeCount: 0,
+    firstAt: event.timing?.clientAt || new Date().toISOString(),
+    lastAt: ""
+  };
+  bucket.chapterId = bucket.chapterId || event.chapterId || "";
+  bucket.unitType = bucket.unitType || event.unitType || "";
+  bucket.moduleRole = bucket.moduleRole || event.moduleRole || "";
+  analytics.interactionEvidence[unitId] = bucket;
+  return bucket;
+}
+
+function analyticsRememberInteractionEvidence(event) {
+  const unitId = event?.unitId || event?.data?.unitId || "";
+  const bucket = analyticsEvidenceBucket(unitId, event);
+  if (!bucket) return;
+  const type = event.eventType || "";
+  bucket.events += 1;
+  bucket.repeatCount = Math.max(bucket.repeatCount || 0, state.analytics?.visitedUnits?.[unitId] || 0);
+  bucket.lastAt = event.timing?.clientAt || new Date().toISOString();
+  if (event.timing?.durationMs) bucket.dwellMs += Number(event.timing.durationMs) || 0;
+  if (type === "time_on_unit" && event.data?.seconds) bucket.dwellMs += Math.max(0, Number(event.data.seconds) || 0) * 1000;
+  if (type === "quiz_answer_revealed") bucket.answerRevealCount += 1;
+  if (type === "question_visible") bucket.questionVisibleCount += 1;
+  if (type === "answer_select") bucket.choiceChangeCount += 1;
+  if (type === "short_answer_input") bucket.shortAnswerLength = Math.max(bucket.shortAnswerLength || 0, Number(event.data?.length || 0));
+  if (type === "resource_fullscreen") bucket.resourceFullscreenCount += 1;
+  if (["narration_play_click", "narration_resume", "narration_segment_play"].includes(type)) bucket.narrationPlayCount += 1;
+  if (["narration_pause_click", "narration_pause", "narration_stop_click", "narration_stop"].includes(type)) bucket.narrationPauseCount += 1;
+  if (["narration_seek", "narration_seek_input"].includes(type)) bucket.narrationSeekCount += 1;
+  if (type === "ui_wheel") bucket.uiWheelCount += 1;
+  if (type === "ui_input") bucket.uiInputCount += 1;
+  if (["parameter_commit", "parameter_change"].includes(type)) bucket.parameterChangeCount += 1;
+}
+
+function analyticsScheduleCoachEvidenceRefresh(event) {
+  if (!event || !analyticsCoachEvidenceEvents.has(event.eventType || "")) return;
+  if (typeof renderAgenticCoachPanel !== "function") return;
+  if (event.unitId && event.unitId !== currentUnitId) return;
+  if (currentAnalyticsView() !== "learn") return;
+  if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(currentUnitId)) return;
+
+  const now = Date.now();
+  const elapsed = now - analyticsCoachLastRefreshAt;
+  const delay = elapsed > 2500 ? 350 : 2500 - elapsed;
+  clearTimeout(analyticsCoachRefreshTimer);
+  analyticsCoachRefreshTimer = setTimeout(() => {
+    analyticsCoachRefreshTimer = null;
+    if (currentAnalyticsView() !== "learn") return;
+    if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(currentUnitId)) return;
+    analyticsCoachLastRefreshAt = Date.now();
+    renderAgenticCoachPanel();
+  }, delay);
 }
 
 function currentAnalyticsView() {
@@ -220,6 +320,8 @@ function analyticsTrack(eventType, payload = {}) {
     data: payload.data || {}
   };
 
+  analyticsRememberInteractionEvidence(event);
+  analyticsScheduleCoachEvidenceRefresh(event);
   analyticsQueue.push(event);
   if (analyticsQueue.length >= 50) analyticsFlush();
   else if (!analyticsFlushTimer) analyticsFlushTimer = setTimeout(analyticsFlush, 5000);

@@ -45,6 +45,30 @@ node server.js 3789
 data/admin-token.txt
 ```
 
+## 大模型 API（AI 判题 / 诊断 / 助教）
+
+简答题判分、学习诊断、Coach 助教话术都走 `lib/llm.js` 适配的 Pioneer（OpenAI 兼容）接口。未配置时全部回退到本地 mock：
+
+- mock 下 Coach 话术仍可生成（基于规则草案），但简答题不会伪造 0 分；系统会返回 `score: null`、`errorType: "mock_provider"`，并保留为"待复核"，避免把本地开发环境误判成学生答错。
+- 要接通真实判题，把 `.env.example` 复制为 `.env` 并填写：
+
+```
+LLM_PROVIDER=pioneer
+PIONEER_API_KEY=你的 key
+# PIONEER_BASE_URL=https://api.pioneer.ai/v1
+# PIONEER_MODEL=pioneer/auto
+```
+
+服务启动时会自动读取项目根目录的 `.env`（已有 shell 环境变量优先）。也可以直接在 PowerShell 里设置：
+
+```powershell
+$env:LLM_PROVIDER="pioneer"
+$env:PIONEER_API_KEY="你的 key"
+node server.js 3789
+```
+
+判题/诊断模型默认使用 `PIONEER_MODEL`（未设置时为 `pioneer/auto`）；也可以分别用 `GRADING_MODEL`、`ASSESSMENT_MODEL` 覆盖。不要在当前区域不可用的模型上硬编码，否则简答题会降级为人工复核。
+
 ## 数据文件
 
 运行后会自动在 `data/` 下生成本地数据文件。

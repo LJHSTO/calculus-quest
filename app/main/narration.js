@@ -306,7 +306,7 @@ function updateFullscreenButton() {
   if (!els.fullscreenPlayer) return;
   const enabled = Boolean(document.fullscreenEnabled);
   els.fullscreenPlayer.disabled = !enabled;
-  els.fullscreenPlayer.textContent = document.fullscreenElement ? "退出全屏" : "⛶";
+  els.fullscreenPlayer.textContent = document.fullscreenElement ? "退出全屏" : "全屏";
   els.fullscreenPlayer.setAttribute("aria-label", document.fullscreenElement ? "退出全屏学习" : "进入全屏学习");
 }
 

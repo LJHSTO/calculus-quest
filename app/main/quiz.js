@@ -14,33 +14,161 @@ function formatAnswerValues(question, values) {
   return list.map((value) => optionText(question, value)).join("；");
 }
 
-function renderQuestionReview({ question, result, index }) {
+function questionConceptTags(question) {
+  const explicit = question.coachHint?.concepts || question.concepts || question.tags || [];
+  const tags = new Set(Array.isArray(explicit) ? explicit : [explicit].filter(Boolean));
+  const source = `${question.question || ""} ${question.analysis || ""} ${question.commentPrompt || ""}`;
+  [
+    "自变量", "因变量", "函数", "函数图像", "坐标", "映射", "唯一性", "斜率", "变化率",
+    "平均变化率", "局部线性", "切线", "导数", "速度", "方向", "向量", "矩阵", "梯度"
+  ].forEach((tag) => {
+    if (source.includes(tag)) tags.add(tag);
+  });
+  return Array.from(tags).slice(0, 4);
+}
+
+function coachReviewTarget(unit) {
+  if (!unit) return "刚才对应的讲解或互动实验";
+  const units = getChapter(unit.chapterId)?.allUnits || getChapter(unit.chapterId)?.units || [];
+  const prior = units
+    .filter((item) => item.sceneOrder < unit.sceneOrder && (item.type === "interactive" || item.type === "slide"))
+    .sort((a, b) => b.sceneOrder - a.sceneOrder)[0];
+  return prior?.label || "本章前面的互动实验";
+}
+
+function buildQuestionCoachHint(question, result, unit) {
+  const hint = question.coachHint || {};
+  const concepts = questionConceptTags(question);
+  const conceptText = concepts.length ? concepts.join("、") : "题干中的关键条件";
+  const selectedText = formatAnswerValues(question, result.response);
+  const reviewTarget = hint.reviewScene || hint.review_scene || coachReviewTarget(unit);
+  const promptText = String(question.question || "这道题").replace(/\s+/g, " ").slice(0, 80);
+  const typeMove = question.type === "multiple"
+    ? "这是一道多选题，先把每个选项单独判定为“符合题干”或“不符合题干”，再组合选择；不要只凭一个熟悉词就全选或漏选。"
+    : "这是一道单选题，先抓住题干里的限制条件，再检查你选的那句话是否和这个条件同向、同义。";
+  const calculationMove = /计算|求|公式|坐标|斜率|变化率|速度/.test(`${question.question || ""} ${question.commentPrompt || ""}`)
+    ? "如果题目涉及计算，先把已知量写成“输入变化量”和“输出变化量”，再决定用哪个关系式。"
+    : "如果题目偏概念，先用自己的话复述概念定义，再判断选项有没有偷换对象或方向。";
+  const guidance = hint.guidance || hint.prompt || `${typeMove}${calculationMove}`;
+  return {
+    conceptText,
+    selectedText,
+    promptText,
+    reviewTarget,
+    misconception: hint.misconception || hint.misconception_tag || "先定位你选项里的关键词和题干条件是否真的一致。",
+    guidance
+  };
+}
+
+function aiReviewStatus(result) {
+  const aiScore = result.aiScore ?? result.ai_score;
+  const aiErrorType = result.aiErrorType || result.ai_error_type || "";
+  const feedback = result.aiFeedback || result.ai_feedback || "";
+  const hasAiScore = aiScore !== undefined && aiScore !== null;
+  const aiFailed = ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(aiErrorType)
+    || /解析失败|评分超时|人工评阅|人工复核/.test(feedback)
+    || (result.status === "pending_review" && result.isCorrect === null && Number(aiScore) === 0);
+  const badgeText = hasAiScore && !aiFailed ? (Number(aiScore) === 0 ? "错误" : "已复核") : "待复核";
+  const badgeClass = hasAiScore && !aiFailed && Number(aiScore) > 0 ? "done" : "todo";
+  let line = "AI 评测正在等待模型返回；结果回来后会保留在这里，并同步到管理员后台。";
+  if (hasAiScore && !aiFailed) {
+    const confidence = result.aiConfidence != null ? ` · 置信度 ${Math.round(Number(result.aiConfidence) * 100)}%` : "";
+    line = `AI 评分：${Number(aiScore)}分${confidence}`;
+  } else if (aiFailed) {
+    line = aiErrorType === "mock_provider"
+      ? "本地 mock 环境未启用真实大模型，已保留给人工复核。"
+      : aiErrorType === "api_timeout"
+        ? "AI 评分超时，已保留给人工复核。"
+      : "AI 评测暂时未完成，已保留给人工复核。";
+  }
+  return { hasAiScore, aiFailed, badgeText, badgeClass, line, feedback };
+}
+
+function shortAnswerReferenceText(question) {
+  return question.referenceAnswer
+    || question.answerText
+    || question.analysis
+    || "请围绕题目要求说明关键步骤、几何意义或实际含义。";
+}
+
+function renderQuestionReview({ question, result, index, unit }) {
   if (question.type === "short_answer") {
+    const ai = aiReviewStatus(result);
+    const referenceText = shortAnswerReferenceText(question);
+    const rubricText = question.commentPrompt || question.rubric || "";
     return `
       <div class="question-review pending" data-question-review>
         <div class="review-heading">
-          <span class="status-pill todo">待复核</span>
+          <span class="status-pill ${ai.badgeClass}">${ai.badgeText}</span>
           <strong>第 ${index + 1} 题参考要点</strong>
+          <span class="question-score-pill">${escapeHtml(quizQuestionScoreLabel(question, result))}</span>
         </div>
         <p><b>你的回答：</b>${escapeHtml(result.response || "")}</p>
-        <p><b>参考要点：</b>${renderInlineMath(question.analysis || "请围绕题目要求说明关键步骤、几何意义或实际含义。")}</p>
-        ${question.commentPrompt ? `<p><b>评分参考：</b>${renderInlineMath(question.commentPrompt)}</p>` : ""}
+        <div class="ai-review-box" data-ai-review>
+          <strong>AI 复核</strong>
+          <p>${escapeHtml(ai.line)}</p>
+          ${ai.feedback ? `<p><b>反馈：</b>${escapeHtml(ai.feedback)}</p>` : ""}
+        </div>
+        <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示参考答案和解析</button>
+        <div class="question-answer-hidden" data-answer-hidden style="display:none">
+          <p><b>参考答案：</b>${renderInlineMath(referenceText)}</p>
+          ${rubricText ? `<p><b>解析/评分参考：</b>${renderInlineMath(rubricText)}</p>` : ""}
+        </div>
       </div>
     `;
   }
 
   const correct = result.isCorrect === true;
+  const coach = buildQuestionCoachHint(question, result, unit);
   return `
     <div class="question-review ${correct ? "correct" : "incorrect"}" data-question-review>
       <div class="review-heading">
         <span class="status-pill ${correct ? "done" : "todo"}">${correct ? "正确" : "需复盘"}</span>
         <strong>第 ${index + 1} 题答案解析</strong>
+        <span class="question-score-pill">${escapeHtml(quizQuestionScoreLabel(question, result))}</span>
       </div>
       <p><b>你的选择：</b>${renderInlineMath(formatAnswerValues(question, result.response))}</p>
-      <p><b>正确答案：</b>${renderInlineMath(formatAnswerValues(question, question.answer || []))}</p>
-      <p><b>解析：</b>${renderInlineMath(question.analysis || "这道题暂无解析。")}</p>
+      ${correct
+        ? `<p><b>正确答案：</b>${renderInlineMath(formatAnswerValues(question, question.answer || []))}</p>
+          <p><b>解析：</b>${renderInlineMath(question.analysis || "这道题暂无解析。")}</p>`
+        : `<div class="coach-hint-box" data-coach-hint>
+            <div class="coach-hint-icon">Coach</div>
+            <div class="coach-hint-content">
+              <strong>Agentic Coach 提示</strong>
+              <p><b>题目焦点：</b>${renderInlineMath(coach.promptText)}</p>
+              <p><b>你的选择：</b>${renderInlineMath(coach.selectedText)}</p>
+              <p><b>先复盘：</b>这题主要卡在 <em>${escapeHtml(coach.conceptText)}</em>。${escapeHtml(coach.misconception)}</p>
+              <p><b>行动建议：</b>${escapeHtml(coach.guidance)} 可以先回看「${escapeHtml(coach.reviewTarget)}」，再用一句话解释为什么自己的选择符合或不符合题干。</p>
+            </div>
+          </div>
+          <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示正确答案和解析</button>
+          <div class="question-answer-hidden" data-answer-hidden style="display:none">
+            <p><b>正确答案：</b>${renderInlineMath(formatAnswerValues(question, question.answer || []))}</p>
+            <p><b>解析：</b>${renderInlineMath(question.analysis || "这道题暂无解析。")}</p>
+          </div>`
+      }
     </div>
   `;
+}
+
+function revealQuestionAnswer(button) {
+  const card = button?.closest("[data-question]");
+  if (!card) return false;
+  const answerHidden = card.querySelector("[data-answer-hidden]");
+  if (!answerHidden) return false;
+  const coachHint = card.querySelector("[data-coach-hint]");
+  answerHidden.style.display = "";
+  if (coachHint) coachHint.style.display = "none";
+  button.style.display = "none";
+  analyticsTrack("quiz_answer_revealed", {
+    source: "quiz",
+    data: {
+      unitId: getUnit()?.id || "",
+      questionId: card.dataset.question || "",
+      phase: getUnit()?.assessmentPhase || ""
+    }
+  });
+  return true;
 }
 
 function showQuizReview(unit, records) {
@@ -48,7 +176,11 @@ function showQuizReview(unit, records) {
     const card = document.querySelector(`[data-question="${record.question.id}"]`);
     if (!card) return;
     card.querySelector("[data-question-review]")?.remove();
-    card.insertAdjacentHTML("beforeend", renderQuestionReview(record));
+    card.querySelector("[data-coach-hint]")?.remove();
+    card.querySelector(".coach-reveal-btn")?.remove();
+    card.insertAdjacentHTML("beforeend", renderQuestionReview({ ...record, unit }));
+    const revealBtn = card.querySelector("[data-reveal-answer]");
+    if (revealBtn) revealBtn.addEventListener("click", function() { revealQuestionAnswer(revealBtn); });
   });
   analyticsTrack("quiz_review_shown", {
     source: "quiz",
@@ -59,7 +191,6 @@ function showQuizReview(unit, records) {
     }
   });
 }
-
 function setupQuizVisibilityTracking(unit) {
   const cards = Array.from(document.querySelectorAll(`[data-question]`));
   if (!cards.length || typeof IntersectionObserver === "undefined") return;
@@ -129,6 +260,7 @@ function submitQuiz(unitId) {
       }
 
       const estimate = estimateShortAnswer(response, question);
+      const maxScore = question.points || 0;
       rememberQuizDraft(unit.id, question.id, response);
       records.push({
         index,
@@ -139,7 +271,7 @@ function submitQuiz(unitId) {
           isCorrect: null,
           status: "pending_review",
           score: estimate.score,
-          maxScore: question.points || 0,
+          maxScore,
           estimateLabel: estimate.label
         }
       });
@@ -241,20 +373,23 @@ function submitQuiz(unitId) {
     const outcomeHtml = quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
     if (isPre) {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测提交成功！你在 ${outcomeHtml}。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测提交成功！你在 ${outcomeHtml}。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。</div><p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`);
     } else if (isPost) {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner post" id="quiz-top-banner-${unitId}">后测提交成功！你在 ${outcomeHtml}。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner post" id="quiz-top-banner-${unitId}">后测提交成功！你在 ${outcomeHtml}。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。</div><p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`);
     } else {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unitId}">形成性测验提交成功！你在 ${outcomeHtml}。卡住的地方正好说明接下来要重点理解的内容——Agent 会用 MAIC-UI 互动实验帮你换种方式重学或解锁一步拓展。</div><p class="quiz-scroll-hint">向下滑动查看每道题的答案解析和参考要点。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unitId}">形成性测验提交成功！你在 ${outcomeHtml}。卡住的地方正好说明接下来要重点理解的内容——Agent 会用 MAIC-UI 互动实验帮你换种方式重学或解锁一步拓展。</div><p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`);
     }
   }
 
   // Navigation buttons in the submit panel
   if (feedback) {
+    const currentSummary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), questions);
+    const totalLine = quizOutcomeHtml(currentSummary);
     feedback.innerHTML = `
+    <div class="quiz-section-total">${totalLine}</div>
     <div class="quiz-nav-buttons">
-      <button class="button soft quiz-nav-btn" data-unit="${prevId || ''}" ${prevId ? '' : 'disabled'}>&larr; 上一节</button>
-      <button class="button primary quiz-nav-btn" data-unit="${nextId || ''}" ${nextId ? '' : 'disabled'}>下一节 &rarr;</button>
+      <button class="button soft quiz-nav-btn" data-unit="${prevId || ''}" ${prevId ? '' : 'disabled'}>上一节</button>
+      <button class="button primary quiz-nav-btn" data-unit="${nextId || ''}" ${nextId ? '' : 'disabled'}>下一节</button>
     </div>
   `;
   }

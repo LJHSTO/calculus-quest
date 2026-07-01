@@ -1,4 +1,4 @@
-﻿const fs = require("fs");
+const fs = require("fs");
 const path = require("path");
 const initSqlJs = require("sql.js");
 
@@ -204,6 +204,55 @@ function initSchema() {
     )
   `);
   d.run("CREATE INDEX IF NOT EXISTS idx_snap_user ON snapshots(user_id)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS agent_decisions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      agent_type TEXT NOT NULL,
+      decision_type TEXT DEFAULT '',
+      input_summary TEXT DEFAULT '{}',
+      output_summary TEXT DEFAULT '{}',
+      confidence REAL DEFAULT 0,
+      llm_provider TEXT DEFAULT '',
+      latency_ms INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_ad_user ON agent_decisions(user_id)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_ad_type ON agent_decisions(agent_type)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS interaction_evidence_snapshots (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      agent_decision_id TEXT DEFAULT '',
+      chapter_id TEXT DEFAULT '',
+      unit_id TEXT DEFAULT '',
+      evidence_scope TEXT DEFAULT 'current',
+      risk_level TEXT DEFAULT '',
+      suggested_move TEXT DEFAULT '',
+      friction_score REAL DEFAULT 0,
+      engagement_score REAL DEFAULT 0,
+      dwell_ms INTEGER DEFAULT 0,
+      repeat_count INTEGER DEFAULT 0,
+      answer_reveal_count INTEGER DEFAULT 0,
+      short_answer_length INTEGER DEFAULT 0,
+      parameter_change_count INTEGER DEFAULT 0,
+      evidence_json TEXT DEFAULT '{}',
+      created_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_ies_decision ON interaction_evidence_snapshots(agent_decision_id)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_ies_user ON interaction_evidence_snapshots(user_id)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_ies_unit ON interaction_evidence_snapshots(unit_id)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_ies_created ON interaction_evidence_snapshots(created_at)");
+
+  try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_score REAL"); } catch {}
+  try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_confidence REAL"); } catch {}
+  try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_feedback TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_error_type TEXT DEFAULT ''"); } catch {}
+
   scheduleSave();
 }
 
@@ -306,6 +355,84 @@ function insertEvent(record) {
   execute(
     "INSERT OR REPLACE INTO events (id, user_id, type, payload, created_at) VALUES (?, ?, ?, ?, ?)",
     [record.id, record.user_id, record.type, JSON.stringify(record.payload || {}), record.created_at]
+  );
+}
+
+// ---- Agent Decisions ----
+
+function insertAgentDecision(record) {
+  execute(
+    "INSERT OR REPLACE INTO agent_decisions (id, user_id, agent_type, decision_type, input_summary, output_summary, confidence, llm_provider, latency_ms, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [record.id, record.user_id, record.agent_type, record.decision_type || "", JSON.stringify(record.input_summary || {}), JSON.stringify(record.output_summary || {}), record.confidence || 0, record.llm_provider || "", record.latency_ms || 0, record.created_at]
+  );
+}
+
+function insertInteractionEvidenceSnapshot(record) {
+  const evidence = record.evidence && typeof record.evidence === "object" ? record.evidence : {};
+  execute(
+    `INSERT OR REPLACE INTO interaction_evidence_snapshots
+      (id, user_id, agent_decision_id, chapter_id, unit_id, evidence_scope,
+       risk_level, suggested_move, friction_score, engagement_score, dwell_ms,
+       repeat_count, answer_reveal_count, short_answer_length, parameter_change_count,
+       evidence_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id, record.user_id, record.agent_decision_id || "",
+      record.chapter_id || evidence.chapterId || "", record.unit_id || evidence.unitId || "",
+      record.evidence_scope || "current", evidence.riskLevel || "", evidence.suggestedMove || "",
+      Number(evidence.frictionScore || 0), Number(evidence.engagementScore || 0),
+      Math.round(Number(evidence.dwellMs || 0)), Number(evidence.repeatCount || 0),
+      Number(evidence.answerRevealCount || 0), Number(evidence.shortAnswerLength || 0),
+      Number(evidence.parameterChangeCount || 0), JSON.stringify(evidence), record.created_at
+    ]
+  );
+}
+
+function insertInteractionEvidenceBatch(userId, decisionId, chapterId, interactionEvidence, createdAt) {
+  if (!userId || !interactionEvidence || typeof interactionEvidence !== "object") return;
+  const current = interactionEvidence.current && typeof interactionEvidence.current === "object"
+    ? [interactionEvidence.current]
+    : [];
+  const chapter = Array.isArray(interactionEvidence.chapter) ? interactionEvidence.chapter : [];
+  const rows = [
+    ...current.map((evidence) => ({ evidence, scope: "current" })),
+    ...chapter.map((evidence) => ({ evidence, scope: "chapter" }))
+  ];
+  rows.forEach((row, index) => {
+    insertInteractionEvidenceSnapshot({
+      id: `${decisionId || createdAt}-${row.scope}-${index}`,
+      user_id: userId,
+      agent_decision_id: decisionId || "",
+      chapter_id: chapterId || row.evidence?.chapterId || "",
+      unit_id: row.evidence?.unitId || "",
+      evidence_scope: row.scope,
+      evidence: row.evidence,
+      created_at: createdAt
+    });
+  });
+}
+
+function updateQuizResultAiGrading(questionId, userId, { aiScore, aiConfidence, aiFeedback, aiErrorType, unitId = "" }) {
+  const unitScope = unitId ? " AND unit_id = ?" : "";
+  const unitParams = unitId ? [unitId] : [];
+
+  // Skip score overwrite when API failed (aiScore is null) - preserve any existing valid score
+  if (aiScore == null) {
+    execute(
+      `UPDATE quiz_results SET ai_confidence = ?, ai_feedback = ?, ai_error_type = ? WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1`,
+      [aiConfidence || 0, aiFeedback || "", aiErrorType || "", questionId, userId, ...unitParams]
+    );
+    return;
+  }
+  const existing = queryOne(
+    `SELECT max_score FROM quiz_results WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1 ORDER BY created_at DESC LIMIT 1`,
+    [questionId, userId, ...unitParams]
+  );
+  const maxScore = Number(existing?.max_score || 0);
+  const earnedScore = maxScore ? Math.round((Math.max(0, Math.min(100, Number(aiScore))) / 100) * maxScore * 10) / 10 : Number(aiScore);
+  execute(
+    `UPDATE quiz_results SET ai_score = ?, ai_confidence = ?, ai_feedback = ?, ai_error_type = ?, is_correct = CASE WHEN ? >= 60 THEN 1 ELSE 0 END, status = 'ai_reviewed', score = ? WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1`,
+    [aiScore, aiConfidence || 0, aiFeedback || "", aiErrorType || "", aiScore, earnedScore, questionId, userId, ...unitParams]
   );
 }
 
@@ -518,7 +645,8 @@ function shortAnswerResponses(dates) {
   return queryAll(`
     SELECT qr.id, u.nickname, qr.user_id, qr.chapter_label, qr.unit_label,
            qr.question_id, qr.response, qr.score, qr.max_score,
-           qr.is_correct, qr.status, qr.phase, qr.created_at
+           qr.is_correct, qr.status, qr.phase, qr.created_at,
+           qr.ai_score, qr.ai_confidence, qr.ai_feedback, qr.ai_error_type
     FROM quiz_results qr
     JOIN users u ON u.id = qr.user_id
     WHERE qr.question_type = 'short_answer'${df.clause}
@@ -953,6 +1081,137 @@ function interactionDashboard(dates) {
   };
 }
 
+function parseJsonField(value) {
+  if (!value) return {};
+  if (typeof value === "object") return value;
+  try { return JSON.parse(value); } catch { return {}; }
+}
+
+function agenticDecisionTrace(dates = {}) {
+  const df = dateFilter("ad.created_at", dates);
+  const userId = String(dates?.userId || "").trim();
+  const userClause = userId ? " AND ad.user_id = ?" : "";
+  const rows = queryAll(
+    `SELECT ad.*, u.nickname
+     FROM agent_decisions ad
+     LEFT JOIN users u ON u.id = ad.user_id
+     WHERE ad.agent_type = 'orchestrator'${df.clause}${userClause}
+     ORDER BY ad.created_at DESC
+     LIMIT 500`,
+    [...df.params, ...(userId ? [userId] : [])]
+  );
+  return rows.map((row) => {
+    const input = parseJsonField(row.input_summary);
+    const output = parseJsonField(row.output_summary);
+    const planner = output.planner || {};
+    const plannerTop = Array.isArray(planner.rankedSceneChoices) ? planner.rankedSceneChoices[0] || {} : {};
+    const snapshot = queryOne(
+      `SELECT * FROM interaction_evidence_snapshots
+       WHERE agent_decision_id = ? AND evidence_scope = 'current'
+       ORDER BY created_at DESC LIMIT 1`,
+      [row.id]
+    );
+    const snapshotEvidence = snapshot ? parseJsonField(snapshot.evidence_json) : {};
+    const evidence = Object.keys(snapshotEvidence).length ? snapshotEvidence : (output.interactionEvidence?.current || {});
+    const unitId = input.currentUnitId || evidence.unitId || "";
+    const unitMeta = unitDisplayMeta(unitId, { chapter_id: input.chapterId || evidence.chapterId || "" });
+    const executedEvents = queryAll(
+      `SELECT e.created_at, e.payload
+       FROM events e
+       WHERE e.user_id = ? AND e.type = 'interaction' AND e.created_at >= ?
+       ORDER BY e.created_at ASC
+       LIMIT 80`,
+      [row.user_id, row.created_at]
+    ).map((eventRow) => {
+      const payload = parseJsonField(eventRow.payload);
+      return { created_at: eventRow.created_at, payload };
+    });
+    const executed = executedEvents.find((eventRow) => {
+      const data = eventRow.payload?.data || {};
+      const eventType = eventRow.payload?.eventType || data.eventType || "";
+      return eventType === "agentic_decision_executed" && data.sourceAgentDecisionId === row.id;
+    }) || executedEvents.find((eventRow) => {
+      const payload = eventRow.payload || {};
+      const data = payload.data || {};
+      const eventType = payload.eventType || payload.data?.eventType || "";
+      return eventType === "agentic_decision_executed" && !data.sourceAgentDecisionId && (!unitId || data.fromUnitId === unitId);
+    });
+    const executedData = executed?.payload?.data || {};
+    const outcome = unitId ? queryOne(
+      `SELECT COUNT(*) as quiz_count,
+              ROUND(AVG(CASE WHEN is_correct >= 0 THEN CAST(is_correct AS REAL) END) * 100, 1) as accuracy,
+              SUM(score) as score,
+              SUM(max_score) as max_score,
+              MAX(created_at) as last_quiz_at
+       FROM quiz_results
+       WHERE user_id = ? AND created_at >= ? AND chapter_id = ?`,
+      [row.user_id, row.created_at, input.chapterId || unitMeta.chapter_id || ""]
+    ) : {};
+    return {
+      id: row.id,
+      user_id: row.user_id,
+      nickname: row.nickname || "",
+      created_at: row.created_at,
+      chapter_id: input.chapterId || unitMeta.chapter_id || evidence.chapterId || "",
+      chapter_label: unitMeta.chapter_label,
+      unit_id: unitId,
+      unit_label: unitMeta.unit_label,
+      suggested_action: output.action || "",
+      qa_pass: output.qa?.pass ?? output.qa?.ok ?? null,
+      evidence_snapshot_id: snapshot?.id || "",
+      planner_strategy: planner.strategy || "",
+      planner_action: planner.recommendedPath?.action || "",
+      planner_target_id: planner.recommendedPath?.targetId || plannerTop.id || "",
+      planner_target_label: planner.recommendedPath?.targetLabel || plannerTop.label || plannerTop.title || "",
+      planner_top_score: plannerTop.score ?? "",
+      planner_top_reasons: Array.isArray(plannerTop.reasons) ? plannerTop.reasons.join(";") : "",
+      risk_level: evidence.riskLevel || "",
+      suggested_move: evidence.suggestedMove || "",
+      friction_score: evidence.frictionScore ?? "",
+      engagement_score: evidence.engagementScore ?? "",
+      dwell_ms: evidence.dwellMs || 0,
+      repeat_count: evidence.repeatCount || 0,
+      answer_reveal_count: evidence.answerRevealCount || 0,
+      short_answer_length: evidence.shortAnswerLength || 0,
+      learner_action: executedData.action || "",
+      target_id: executedData.targetId || "",
+      target_label: executedData.targetLabel || unitDisplayMeta(executedData.targetId || "").unit_label || "",
+      executed_at: executed?.created_at || "",
+      source_agent_decision_id: executedData.sourceAgentDecisionId || "",
+      recommendation_created_at: executedData.recommendationCreatedAt || "",
+      choice_latency_ms: executedData.choiceLatencyMs ?? "",
+      candidate_actions: Array.isArray(executedData.candidateActions) ? executedData.candidateActions : [],
+      selected_action_label: executedData.selectedActionLabel || "",
+      selected_candidate_ids: Array.isArray(executedData.selectedCandidateIds) ? executedData.selectedCandidateIds : [],
+      selected_scene_id: executedData.selectedSceneId || "",
+      selected_scenario_type: executedData.selectedScenarioType || "",
+      next_unit_id: executedData.nextUnitId || "",
+      next_cluster_id: executedData.nextClusterId || "",
+      next_cluster_label: executedData.nextClusterLabel || "",
+      outcome_quiz_count: outcome?.quiz_count || 0,
+      outcome_accuracy: outcome?.accuracy ?? null,
+      outcome_score: outcome?.score || 0,
+      outcome_max_score: outcome?.max_score || 0,
+      outcome_last_quiz_at: outcome?.last_quiz_at || ""
+    };
+  });
+}
+
+function interactionEvidenceSnapshots(dates = {}) {
+  const df = dateFilter("ies.created_at", dates);
+  const userId = String(dates?.userId || "").trim();
+  const userClause = userId ? " AND ies.user_id = ?" : "";
+  return queryAll(
+    `SELECT ies.*, u.nickname
+     FROM interaction_evidence_snapshots ies
+     LEFT JOIN users u ON u.id = ies.user_id
+     WHERE 1=1${df.clause}${userClause}
+     ORDER BY ies.created_at DESC
+     LIMIT 1000`,
+    [...df.params, ...(userId ? [userId] : [])]
+  );
+}
+
 module.exports = {
   getDb,
   getDbSync,
@@ -986,5 +1245,12 @@ module.exports = {
   skipRepeatStats,
   parameterChangeStats,
   pathAnalysis,
-  interactionDashboard
+  interactionDashboard,
+  agenticDecisionTrace,
+  interactionEvidenceSnapshots,
+  insertAgentDecision,
+  insertInteractionEvidenceBatch,
+  insertInteractionEvidenceSnapshot,
+  updateQuizResultAiGrading,
+  interactionRows
 };

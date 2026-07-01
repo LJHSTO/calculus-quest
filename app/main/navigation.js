@@ -43,20 +43,26 @@ async function selectChapter(chapterId) {
   });
   currentChapterId = chapterId;
   const chapter = getChapter(chapterId);
-  const firstUnlocked = chapter.units.find((unit) =>
+  const chapterPathUnits = typeof agenticDisplayUnitsForChapter === "function"
+    ? agenticDisplayUnitsForChapter(chapter)
+    : chapter.units;
+  const firstUnlocked = chapterPathUnits.find((unit) =>
     typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id)
   );
-  currentUnitId = firstUnlocked?.id || chapter.units[0]?.id || "";
+  currentUnitId = firstUnlocked?.id || chapterPathUnits[0]?.id || chapter.units[0]?.id || "";
   trackLearningEvent("select_chapter", { chapterId, chapterLabel: chapter.label });
   if (!chapter.loaded) {
     renderAll();
     try {
       await ensureChapterLoaded(chapterId);
       const loadedChapter = getChapter(chapterId);
-      const unlocked = loadedChapter.units.find((unit) =>
+      const loadedPathUnits = typeof agenticDisplayUnitsForChapter === "function"
+        ? agenticDisplayUnitsForChapter(loadedChapter)
+        : loadedChapter.units;
+      const unlocked = loadedPathUnits.find((unit) =>
         typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id)
       );
-      currentUnitId = unlocked?.id || loadedChapter.units[0]?.id || "";
+      currentUnitId = unlocked?.id || loadedPathUnits[0]?.id || loadedChapter.units[0]?.id || "";
       preloadChapterResources(chapterId);
     } catch {
       // Chapter load failed; stay on current chapter view

@@ -11,6 +11,7 @@ let interactionPage = Number(sessionStorage.getItem("cq_interaction_page") || 0)
 let interactionPageSize = Number(sessionStorage.getItem("cq_interaction_page_size") || 100);
 let interactionUserId = sessionStorage.getItem("cq_interaction_user") || "";
 let cachedUnitEngagementRows = [];
+let cachedAgenticTraceRows = [];
 let unitEngagementSort = { key: sessionStorage.getItem("cq_unit_engagement_sort_key") || "seconds", dir: sessionStorage.getItem("cq_unit_engagement_sort_dir") || "desc" };
 let currentRange = sessionStorage.getItem("cq_admin_range") || "";
 let loadController = null;
@@ -142,7 +143,7 @@ function interactionQueryParams() {
 async function loadAll(signal) {
   document.getElementById("load-error").classList.add("hidden");
   try {
-    const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, interactions, interactionDashboard] = await Promise.all([
+    const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, interactions, interactionDashboard, agenticTrace] = await Promise.all([
       fetchStats("overview", "", signal),
       fetchStats("daily-activity", "", signal),
       fetchStats("user-progress", "", signal),
@@ -154,7 +155,8 @@ async function loadAll(signal) {
       fetchStats("hourly-activity", "", signal),
       fetchStats("short-answer-responses", "", signal),
       fetchStats("interactions", interactionQueryParams(), signal),
-      fetchStats("interaction-dashboard", interactionQueryParams(), signal)
+      fetchStats("interaction-dashboard", interactionQueryParams(), signal),
+      fetchStats("agentic-decision-trace", interactionUserId ? "userId=" + encodeURIComponent(interactionUserId) : "", signal)
     ]);
     allUsers = userProg;
     cachedChapterData = chapter;
@@ -186,6 +188,7 @@ async function loadAll(signal) {
     try { renderActionCoverage(actionCoverage); } catch (e) { console.warn("Action coverage:", e); }
     try { renderUnitEngagement(unitEngagement); } catch (e) { console.warn("Unit engagement:", e); }
     try { renderPathAnalysis(pathAnalysis, pathRule); } catch (e) { console.warn("Path analysis:", e); }
+    try { renderAgenticTrace(agenticTrace); } catch (e) { console.warn("Agentic trace:", e); }
     try { renderInteractions(interactions); } catch (e) { console.warn("Interactions:", e); }
 
     document.getElementById("status-dot").className = "dot on";
@@ -771,10 +774,15 @@ function renderShortAnswers(data) {
   }
   tbody.innerHTML = data.map(d => {
     let statusBadge = "";
-    const st = (d.status || "").toLowerCase();
-    if (st === "correct" || d.is_correct === 1) statusBadge = '<span class="badge badge-green">正确</span>';
-    else if (st === "incorrect" || d.is_correct === 0) statusBadge = '<span class="badge badge-red">错误</span>';
-    else statusBadge = '<span class="badge badge-amber">待复核</span>';
+    const aiScore = d.ai_score == null ? null : Number(d.ai_score);
+    const aiErrorType = d.ai_error_type || "";
+    const aiFeedback = d.ai_feedback || "";
+    const aiFailed = ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(aiErrorType)
+      || /解析失败|评分超时|人工评阅|人工复核/.test(aiFeedback);
+    if (aiScore === null) statusBadge = '<span class="badge badge-amber">待复核</span>';
+    else if (aiScore > 0) statusBadge = '<span class="badge badge-blue">已审核 '+aiScore+'分</span>';
+    else if (aiFailed) statusBadge = '<span class="badge badge-amber">待复核</span>';
+    else statusBadge = '<span class="badge badge-red">错误</span>';
     const answer = (d.response || "").length > 200
       ? d.response.slice(0, 200) + "..."
       : (d.response || "");
@@ -791,11 +799,14 @@ function renderShortAnswers(data) {
     </tr>`;
  }).join("");
   // Show summary
-  const reviewed = data.filter(d => d.is_correct === 1 || (d.status||"").toLowerCase() === "correct").length;
-  const incorrect = data.filter(d => d.is_correct === 0 || (d.status||"").toLowerCase() === "incorrect").length;
-  const pending = data.length - reviewed - incorrect;
+  const reviewed = data.filter(d => d.ai_score != null && Number(d.ai_score) > 0).length;
+  const isAiFailed = (d) => ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(d.ai_error_type || "")
+    || /解析失败|评分超时|人工评阅|人工复核/.test(d.ai_feedback || "");
+  const apiFailed = data.filter(d => d.ai_score != null && Number(d.ai_score) === 0 && isAiFailed(d)).length;
+  const incorrect = data.filter(d => d.ai_score != null && Number(d.ai_score) === 0 && !isAiFailed(d)).length;
+  const pending = data.filter(d => d.ai_score == null).length;
   document.getElementById("shortanswer-summary").textContent =
-     `共 ${data.length} 条 | 正确 ${reviewed} | 错误 ${incorrect} | 待复核 ${pending}`;
+     `共 ${data.length} 条 | 已审核 ${reviewed} | 错误 ${incorrect} | 待复核 ${pending + apiFailed}`;
 }
 function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
@@ -1724,6 +1735,92 @@ function renderPathAnalysis(rows, pathRule = { minSeconds: 10 }) {
   `).join("") : "<tr><td colspan='5'>当前筛选范围内还没有形成有效停留路径。</td></tr>";
 }
 
+function agenticChoiceLatencyText(ms) {
+  const value = Number(ms);
+  if (!Number.isFinite(value) || value < 0) return "";
+  if (value < 1000) return `${Math.round(value)}ms`;
+  return durationText(Math.round(value / 1000));
+}
+
+function agenticCandidateSummaryHtml(actions) {
+  if (!Array.isArray(actions) || !actions.length) return "";
+  return actions.slice(0, 5).map((action) => {
+    const labels = Array.isArray(action.unitLabels) && action.unitLabels.length
+      ? action.unitLabels
+      : Array.isArray(action.unitIds)
+        ? action.unitIds
+        : [];
+    const target = labels.length ? labels.join(" / ") : action.label || "";
+    const role = action.primary ? "推荐" : "备选";
+    return `<span class="muted">${esc(role)} ${esc(action.type || "")}: ${esc(action.label || target)}</span>`;
+  }).join("<br>");
+}
+
+function agenticCandidateSummaryText(actions) {
+  if (!Array.isArray(actions) || !actions.length) return "";
+  return actions.map((action) => {
+    const labels = Array.isArray(action.unitLabels) && action.unitLabels.length
+      ? action.unitLabels
+      : Array.isArray(action.unitIds)
+        ? action.unitIds
+        : [];
+    const role = action.primary ? "推荐" : "备选";
+    return `${role} ${action.type || ""}: ${action.label || labels.join(" / ") || ""}`;
+  }).join(" | ");
+}
+
+function renderAgenticTrace(rows) {
+  cachedAgenticTraceRows = safeRows(rows);
+  const tbody = document.querySelector("#table-agentic-trace tbody");
+  const summary = document.getElementById("agentic-trace-summary");
+  if (summary) {
+    const chosen = cachedAgenticTraceRows.filter((row) => row.learner_action).length;
+    const highRisk = cachedAgenticTraceRows.filter((row) => row.risk_level === "high").length;
+    summary.textContent = `共 ${cachedAgenticTraceRows.length} 条 Coach 计划 | 已选择 ${chosen} | 高风险证据 ${highRisk}`;
+  }
+  if (!tbody) return;
+  tbody.innerHTML = cachedAgenticTraceRows.length ? cachedAgenticTraceRows.slice(0, 200).map((row) => {
+    const evidence = [
+      row.risk_level ? `风险 ${row.risk_level}` : "",
+      row.suggested_move ? `建议 ${row.suggested_move}` : "",
+      row.friction_score !== "" ? `摩擦 ${row.friction_score}` : "",
+      row.engagement_score !== "" ? `参与 ${row.engagement_score}` : "",
+      row.dwell_ms ? `停留 ${durationText(Math.round(Number(row.dwell_ms || 0) / 1000))}` : "",
+      row.repeat_count ? `重复 ${row.repeat_count}` : "",
+      row.answer_reveal_count ? `看答案 ${row.answer_reveal_count}` : "",
+      row.short_answer_length ? `短答 ${row.short_answer_length}字` : ""
+    ].filter(Boolean).join("；");
+    const outcome = row.outcome_quiz_count
+      ? `${row.outcome_quiz_count} 次测验，正确率 ${row.outcome_accuracy ?? "-"}%<br><span class="muted">${row.outcome_score || 0}/${row.outcome_max_score || 0} 分</span>`
+      : '<span class="muted">暂无后续测验</span>';
+    const learner = row.learner_action
+      ? `${esc(row.learner_action)}<br><span class="muted">${esc(row.selected_action_label || row.target_label || row.target_id || "")}</span>`
+      : '<span class="muted">未选择/未记录</span>';
+    const latency = agenticChoiceLatencyText(row.choice_latency_ms);
+    const selectedIds = Array.isArray(row.selected_candidate_ids) ? row.selected_candidate_ids.join(", ") : "";
+    const choiceMeta = [
+      latency ? `选择耗时 ${latency}` : "",
+      row.next_cluster_label ? `下一小节 ${row.next_cluster_label}` : "",
+      selectedIds ? `候选ID ${selectedIds}` : ""
+    ].filter(Boolean).join(" | ");
+    const candidateLine = agenticCandidateSummaryHtml(row.candidate_actions);
+    const plannerLine = [
+      row.planner_action ? `Planner ${row.planner_action}` : "",
+      row.planner_target_label || row.planner_target_id ? `-> ${row.planner_target_label || row.planner_target_id}` : "",
+      row.planner_top_reasons ? `reasons: ${row.planner_top_reasons}` : ""
+    ].filter(Boolean).join(" | ");
+    return `<tr>
+      <td style="white-space:nowrap;font-size:0.78rem;">${esc(shortDateTime(row.created_at))}</td>
+      <td style="font-weight:600;">${esc(row.nickname || "")}</td>
+      <td>${esc(row.unit_label || row.unit_id || "")}<br><span class="muted">${esc(row.chapter_label || row.chapter_id || "")}</span></td>
+      <td style="font-size:0.82rem;line-height:1.45;">${esc(evidence || "无交互证据")}</td>
+      <td>${esc(row.suggested_action || "")}<br><span class="muted">QA ${row.qa_pass === null ? "-" : row.qa_pass ? "pass" : "check"}</span>${plannerLine ? `<br><span class="muted">${esc(plannerLine)}</span>` : ""}</td>
+      <td>${learner}${choiceMeta ? `<br><span class="muted">${esc(choiceMeta)}</span>` : ""}${candidateLine ? `<br>${candidateLine}` : ""}</td>
+      <td>${outcome}</td>
+    </tr>`;
+  }).join("") : "<tr><td colspan='7'>当前筛选范围内暂无 Agentic Coach 决策证据链。</td></tr>";
+}
+
 document.addEventListener("click", (event) => {
   const sortHeader = event.target.closest("#table-unit-engagement th[data-sort]");
   if (sortHeader) {
@@ -1962,6 +2059,55 @@ document.getElementById("export-interactions-csv").addEventListener("click", () 
     ]);
   });
   downloadCsv("interaction-research-current-page.csv", rows);
+});
+
+document.getElementById("export-agentic-trace-csv").addEventListener("click", () => {
+  if (!cachedAgenticTraceRows.length) return;
+  const rows = [["时间", "学生", "用户ID", "章节", "触发模块", "风险", "建议动作", "摩擦分", "参与分", "停留ms", "重复", "查看答案", "短答长度", "Coach建议", "QA", "学生选择", "选择按钮", "目标模块", "选择时间", "选择耗时ms", "候选动作", "选中候选ID", "下一模块", "下一概念簇", "后续测验数", "后续正确率", "后续得分", "后续满分"]];
+  cachedAgenticTraceRows.forEach((row) => {
+    rows.push([
+      row.created_at || "",
+      row.nickname || "",
+      row.user_id || "",
+      row.chapter_label || row.chapter_id || "",
+      row.unit_label || row.unit_id || "",
+      row.risk_level || "",
+      row.suggested_move || "",
+      row.friction_score ?? "",
+      row.engagement_score ?? "",
+      row.dwell_ms || 0,
+      row.repeat_count || 0,
+      row.answer_reveal_count || 0,
+      row.short_answer_length || 0,
+      row.suggested_action || "",
+      row.qa_pass === null ? "" : row.qa_pass ? "pass" : "check",
+      row.learner_action || "",
+      row.selected_action_label || "",
+      row.target_label || row.target_id || "",
+      row.executed_at || "",
+      row.choice_latency_ms ?? "",
+      agenticCandidateSummaryText(row.candidate_actions),
+      Array.isArray(row.selected_candidate_ids) ? row.selected_candidate_ids.join(" | ") : "",
+      row.next_unit_id || "",
+      row.next_cluster_label || row.next_cluster_id || "",
+      row.outcome_quiz_count || 0,
+      row.outcome_accuracy ?? "",
+      row.outcome_score || 0,
+      row.outcome_max_score || 0
+    ]);
+  });
+  rows[0].push("PlannerAction", "PlannerTarget", "PlannerScore", "PlannerReasons");
+  cachedAgenticTraceRows.forEach((row, index) => {
+    const target = rows[index + 1];
+    if (!target) return;
+    target.push(
+      row.planner_action || "",
+      row.planner_target_label || row.planner_target_id || "",
+      row.planner_top_score ?? "",
+      row.planner_top_reasons || ""
+    );
+  });
+  downloadCsv("agentic-coach-evidence-trace.csv", rows);
 });
 
 document.getElementById("export-shortanswers-csv").addEventListener("click", () => {

@@ -143,34 +143,109 @@ function quizLatestResultsByQuestion(records = []) {
   return latest;
 }
 
+function quizNumber(value, fallback = 0) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function quizFormatScore(value) {
+  const n = quizNumber(value, 0);
+  return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
+}
+
+function quizMaxScoreFor(question = {}, result = {}) {
+  return quizNumber(result.maxScore ?? result.max_score ?? question.points ?? result.points, 0);
+}
+
+function quizScoreFromPercent(percent, maxScore = 0) {
+  if (percent === undefined || percent === null || percent === "") return null;
+  const pct = Math.max(0, Math.min(100, quizNumber(percent, 0)));
+  const max = quizNumber(maxScore, 0);
+  return Math.round((pct / 100) * max * 10) / 10;
+}
+
+function quizAiReviewFailed(result = {}) {
+  const errorType = result.aiErrorType || result.ai_error_type || "";
+  const feedback = result.aiFeedback || result.ai_feedback || "";
+  const rawAiScore = result.aiScore ?? result.ai_score;
+  return ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(errorType)
+    || /解析失败|评分超时|人工评阅|人工复核/.test(feedback)
+    || (result.status === "pending_review" && result.isCorrect === null && Number(rawAiScore) === 0 && Boolean(errorType));
+}
+
+function quizEarnedScore(result = {}, question = {}) {
+  const max = quizMaxScoreFor(question, result);
+  if (!max) return 0;
+  if (quizAiReviewFailed(result)) return null;
+  if (result.aiScore !== undefined && result.aiScore !== null) return quizScoreFromPercent(result.aiScore, max);
+  if (result.status === "pending_review" || result.isCorrect === null) return null;
+  if (result.score !== undefined && result.score !== null) return Math.max(0, Math.min(max, quizNumber(result.score, 0)));
+  if (result.isCorrect === true) return max;
+  if (result.isCorrect === false) return 0;
+  return null;
+}
+
+function quizQuestionScoreLabel(question = {}, result = null) {
+  const max = quizMaxScoreFor(question, result || {});
+  if (!max) return "";
+  if (!result) return `\u672c\u9898 ${quizFormatScore(max)} \u5206`;
+  const earned = quizEarnedScore(result, question);
+  if (earned === null) return `\u672c\u9898\u5f97\u5206\uff1aAI \u590d\u6838\u4e2d / ${quizFormatScore(max)} \u5206`;
+  return `\u672c\u9898\u5f97\u5206\uff1a${quizFormatScore(earned)} / ${quizFormatScore(max)} \u5206`;
+}
+
 function summarizeQuizAttempt(records = [], questions = []) {
   const latest = quizLatestResultsByQuestion(records);
   const results = Object.values(latest);
   const objective = results.filter((result) => result?.isCorrect === true || result?.isCorrect === false);
   const pendingReview = results.filter((result) => result?.status === "pending_review" || result?.isCorrect === null).length;
+  const questionById = new Map((questions || []).map((question) => [question.id, question]));
+  const totalPossible = (questions || []).reduce((sum, question) => sum + quizMaxScoreFor(question, {}), 0) || results.reduce((sum, result) => sum + quizMaxScoreFor({}, result), 0);
+  let earnedScore = 0;
+  let scoredPossible = 0;
+  let scoredQuestions = 0;
+  results.forEach((result) => {
+    const question = questionById.get(result.questionId || result.question_id) || {};
+    const earned = quizEarnedScore(result, question);
+    if (earned === null) return;
+    earnedScore += earned;
+    scoredPossible += quizMaxScoreFor(question, result);
+    scoredQuestions += 1;
+  });
+  const totalQuestions = questions.length || results.length;
   return {
-    totalQuestions: questions.length || results.length,
+    totalQuestions,
     objectiveTotal: objective.length,
     correctObjective: objective.filter((result) => result.isCorrect === true).length,
-    pendingReview
+    pendingReview,
+    scoredQuestions,
+    earnedScore: Math.round(earnedScore * 10) / 10,
+    scoredPossible: Math.round(scoredPossible * 10) / 10,
+    totalPossible,
+    scoreReady: Boolean(totalPossible) && scoredQuestions >= totalQuestions && pendingReview === 0
   };
 }
 
 function quizOutcomeHtml(summary) {
   const parts = [];
+  if (summary.totalPossible > 0) {
+    const scoreText = summary.scoreReady
+      ? `\u603b\u5206 <strong>${quizFormatScore(summary.earnedScore)}</strong> / ${quizFormatScore(summary.totalPossible)} \u5206`
+      : `\u5df2\u5224\u5206 <strong>${quizFormatScore(summary.earnedScore)}</strong> / ${quizFormatScore(summary.scoredPossible || summary.totalPossible)} \u5206`;
+    parts.push(scoreText);
+  }
   if (summary.objectiveTotal > 0) {
-    const objectiveLabel = summary.pendingReview > 0 ? "客观题" : "题";
-    parts.push(`${summary.objectiveTotal} 道${objectiveLabel}中答对了 <strong>${summary.correctObjective}</strong> 道`);
+    const objectiveLabel = summary.pendingReview > 0 ? "\u5ba2\u89c2\u9898" : "\u9898";
+    parts.push(`${summary.objectiveTotal} \u9053${objectiveLabel}\u4e2d\u7b54\u5bf9\u4e86 <strong>${summary.correctObjective}</strong> \u9053`);
   }
   if (summary.pendingReview > 0) {
-    parts.push(`${summary.pendingReview} 道简答题待复核`);
+    parts.push(`${summary.pendingReview} \u9053\u7b80\u7b54\u9898\u7b49\u5f85 AI \u590d\u6838`);
   }
   if (!parts.length) {
-    parts.push(`${summary.totalQuestions} 道题已提交`);
+    parts.push(`${summary.totalQuestions} \u9053\u9898\u5df2\u63d0\u4ea4`);
   }
-  return parts.join("，");
+  return parts.join("\uff1b");
 }
-
 // Render $...$ math inside text that may already contain HTML tags
 function renderMathInHtml(html) {
   if (!html || typeof html !== "string") return escapeHtml(String(html || ""));
@@ -373,6 +448,10 @@ async function loginParticipant(nickname) {
               status: r.status,
               score: r.score,
               maxScore: r.max_score,
+              aiScore: r.ai_score,
+              aiConfidence: r.ai_confidence,
+              aiFeedback: r.ai_feedback || "",
+              aiErrorType: r.ai_error_type || "",
               estimateLabel: null
             };
           });
@@ -542,10 +621,14 @@ function buildMaicAdaptiveUnit(chapter, sceneOrder) {
   if (!config?.file) return null;
   const flowLabel = AGENTIC_ADAPTIVE_SCENE_LABELS[sceneOrder] || "MAIC-UI";
   const title = config.label || stripHtmlExtension(config.file);
+  const metadata = typeof inferredSceneMetadata === "function"
+    ? inferredSceneMetadata(chapter.id, { type: "interactive", title }, sceneOrder, "")
+    : {};
   const scene = {
     type: "interactive",
     title,
     order: sceneOrder,
+    ...metadata,
     content: {
       type: "interactive",
       htmlPath: config.file,
@@ -568,6 +651,12 @@ function buildMaicAdaptiveUnit(chapter, sceneOrder) {
     summary: `${MAIC_UI_MODEL.label} 生成的 MAIC-UI 互动课件：${stripHtmlExtension(config.file)}`,
     type: "interactive",
     assessmentPhase: "",
+    conceptClusterId: metadata.conceptClusterId || "",
+    conceptClusterLabel: metadata.conceptClusterLabel || "",
+    conceptClusterFocus: metadata.conceptClusterFocus || "",
+    representation: metadata.representation || "",
+    scenarioType: metadata.scenarioType || "",
+    difficultyBand: metadata.difficultyBand || "",
     modelId: MAIC_UI_MODEL.id,
     modelLabel: MAIC_UI_MODEL.label,
     resourceFile: config.file
@@ -591,6 +680,8 @@ function buildChapter(chapter) {
     const scenes = manifest.scenes.map((scene, index) => {
       const assessmentPhase = scene.type === "quiz" ? assessmentPhaseFor(quizIndex++, quizTotal) : "";
       const sceneOrder = scene.order || index + 1;
+      const metadata = typeof inferredSceneMetadata === "function" ? inferredSceneMetadata(chapter.id, scene, sceneOrder, assessmentPhase) : {};
+      Object.assign(scene, metadata);
       const isCorePath = AGENTIC_CORE_SCENE_ORDERS.includes(sceneOrder);
       return {
         id: `${chapter.id}-scene-${sceneOrder}`,
@@ -603,7 +694,13 @@ function buildChapter(chapter) {
         label: summarizeScene(scene, index, assessmentPhase),
         summary: describeScene(scene),
         type: scene.type,
-        assessmentPhase
+        assessmentPhase,
+        conceptClusterId: metadata.conceptClusterId || "",
+        conceptClusterLabel: metadata.conceptClusterLabel || "",
+        conceptClusterFocus: metadata.conceptClusterFocus || "",
+        representation: metadata.representation || "",
+        scenarioType: metadata.scenarioType || "",
+        difficultyBand: metadata.difficultyBand || ""
       };
     });
     const coreUnits = scenes.filter((unit) => unit.flowKind === "core");
@@ -679,6 +776,80 @@ function describeScene(scene) {
   return "站内互动实验。";
 }
 
+function learningClusterForUnit(unit) {
+  if (!unit) return null;
+  if (unit.conceptClusterId) {
+    const chapter = getChapter(unit.chapterId);
+    return learningClustersForChapter(chapter).find((cluster) => cluster.id === unit.conceptClusterId) || {
+      id: unit.conceptClusterId,
+      label: unit.conceptClusterLabel || "学习小节",
+      focus: unit.conceptClusterFocus || "同一知识点的多场景学习。",
+      orders: [unit.sceneOrder],
+      chapterId: unit.chapterId
+    };
+  }
+  const template = (typeof learningClusterTemplatesForChapter === "function" ? learningClusterTemplatesForChapter(unit.chapterId) : [])
+    .find((cluster) => cluster.orders.includes(unit.sceneOrder));
+  if (!template) return null;
+  return { ...template, chapterId: unit.chapterId };
+}
+
+function learningClustersForChapter(chapter) {
+  const units = typeof agenticDisplayUnitsForChapter === "function"
+    ? agenticDisplayUnitsForChapter(chapter)
+    : (chapter?.allUnits || chapter?.units || []);
+  const metadataGroups = new Map();
+  (units || []).forEach((unit) => {
+    if (!unit.conceptClusterId) return;
+    const item = metadataGroups.get(unit.conceptClusterId) || {
+      id: unit.conceptClusterId,
+      label: unit.conceptClusterLabel || "学习小节",
+      focus: unit.conceptClusterFocus || "同一知识点的多场景学习。",
+      chapterId: chapter?.id || unit.chapterId || "",
+      orders: [],
+      units: [],
+      completed: 0,
+      active: false,
+      source: "metadata"
+    };
+    item.orders.push(unit.sceneOrder);
+    item.units.push(unit);
+    if (state.completed.includes(unit.id)) item.completed += 1;
+    if (unit.id === currentUnitId) item.active = true;
+    metadataGroups.set(unit.conceptClusterId, item);
+  });
+  if (metadataGroups.size) {
+    return Array.from(metadataGroups.values())
+      .map((cluster) => ({ ...cluster, orders: Array.from(new Set(cluster.orders)).sort((a, b) => a - b), units: cluster.units.sort((a, b) => a.sceneOrder - b.sceneOrder) }))
+      .sort((a, b) => (a.orders[0] || 0) - (b.orders[0] || 0));
+  }
+  const byOrder = new Map((units || []).map((unit) => [unit.sceneOrder, unit]));
+  return (typeof learningClusterTemplatesForChapter === "function" ? learningClusterTemplatesForChapter(chapter?.id) : [])
+    .map((template) => {
+      const clusterUnits = template.orders.map((order) => byOrder.get(order)).filter(Boolean);
+      const completed = clusterUnits.filter((unit) => state.completed.includes(unit.id)).length;
+      const active = clusterUnits.some((unit) => unit.id === currentUnitId);
+      return { ...template, chapterId: chapter?.id || "", units: clusterUnits, completed, active };
+    })
+    .filter((cluster) => cluster.units.length);
+}
+
+function learningSceneRole(unit) {
+  if (!unit) return "学习模块";
+  if (unit.type === "quiz") return phaseText(unit.assessmentPhase) || "测验";
+  if (unit.flowKind === "adaptive") return unit.flowLabel || "自适应学习";
+  if (unit.type === "interactive") return "互动实验";
+  if (unit.type === "slide") return "概念讲解";
+  return "学习模块";
+}
+
+function siblingLearningScenes(unit) {
+  const cluster = learningClusterForUnit(unit);
+  if (!cluster) return [];
+  const chapter = getChapter(unit.chapterId);
+  const all = chapter?.allUnits || chapter?.units || [];
+  return all.filter((candidate) => cluster.orders.includes(candidate.sceneOrder));
+}
 function getChapter(id = currentChapterId) {
   return curriculum.find((chapter) => chapter.id === id) || curriculum[0] || chapters[0];
 }

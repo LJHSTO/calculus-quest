@@ -8,7 +8,8 @@
       name="description"
       content="一个可以在站内学习微积分课程的 Agentic AI 闯关 Demo。"
     />
-    <link rel="stylesheet" href="styles.css?v=20260618-coach-focus" />
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="styles.css?v=20260628-path-choice-research-trace" />
     <link rel="stylesheet" href="lib/katex.min.css?v=20260611" />
   </head>
   <body>
@@ -116,13 +117,18 @@
 
       <section id="learn-view" class="view">
         <div class="learning-shell">
-          <aside class="chapter-rail" aria-label="大章节">
+          <aside class="chapter-rail collapsed" aria-label="大章节" id="chapter-rail">
             <div class="rail-header">
-              <p class="eyebrow">Chapters</p>
-              <h2>选择章节</h2>
+              <div class="rail-header-row">
+                <div>
+                  <p class="eyebrow">Chapters</p>
+                  <h2>选择章节</h2>
+                </div>
+              </div>
             </div>
             <div id="chapter-list" class="chapter-list"></div>
           </aside>
+          <button class="icon-button rail-toggle" id="chapter-rail-toggle" type="button" aria-label="折叠章节列表" title="折叠章节列表">&lt;</button>
 
           <aside class="lesson-rail" aria-label="章节内模块">
             <div class="rail-header">
@@ -140,7 +146,7 @@
                 <p id="lesson-summary"></p>
               </div>
               <div class="player-actions">
-                <button class="button soft icon-button" id="fullscreen-player" type="button" aria-label="进入全屏学习">⛶</button>
+                <button class="button soft icon-button" id="fullscreen-player" type="button" aria-label="进入全屏学习">全屏</button>
                 <button class="button primary" id="complete-lesson" type="button">完成本节并跳到下一节</button>
               </div>
             </div>
@@ -230,17 +236,17 @@
     </footer>
 
     <script src="lib/katex.min.js?v=20260611"></script>
-    <script src="app/main/data.js?v=20260618-coach-focus"></script>
-    <script src="app/main/core.js?v=20260618-coach-focus"></script>
-    <script src="app/main/analytics.js?v=20260613a"></script>
-    <script src="app/main/render-learning.js?v=20260618-coach-focus"></script>
-    <script src="app/main/recommendations.js?v=20260618-coach-focus"></script>
-    <script src="app/main/progress.js?v=20260618-coach-focus"></script>
-    <script src="app/main/navigation.js?v=20260618-coach-focus"></script>
-    <script src="app/main/events.js?v=20260618-coach-focus"></script>
-    <script src="app/main/narration.js?v=20260618-coach-focus"></script>
-    <script src="app/main/quiz.js?v=20260618-coach-focus"></script>
-    <script src="app/main/agentic-path.js?v=20260618-coach-focus"></script>
-    <script src="app/main/bootstrap.js?v=20260618-coach-focus"></script>
+    <script src="app/main/data.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/core.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/analytics.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/render-learning.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/recommendations.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/progress.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/navigation.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/events.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/narration.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/quiz.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/agentic-path.js?v=20260628-path-choice-research-trace"></script>
+    <script src="app/main/bootstrap.js?v=20260628-path-choice-research-trace"></script>
   </body>
 </html>

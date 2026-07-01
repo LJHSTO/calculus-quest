@@ -3,10 +3,33 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const zlib = require("zlib");
+// Load .env (if present) so LLM_PROVIDER / PIONEER_API_KEY etc. can be configured without a process manager.
+(function loadEnvFile() {
+  try {
+    const envPath = path.join(process.cwd(), ".env");
+    if (!fs.existsSync(envPath)) return;
+    const text = fs.readFileSync(envPath, "utf8");
+    for (const line of text.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq < 0) continue;
+      const key = trimmed.slice(0, eq).trim();
+      let val = trimmed.slice(eq + 1).trim();
+      const first = val.charCodeAt(0);
+      const last = val.charCodeAt(val.length - 1);
+      if (val.length >= 2 && first === last && (first === 34 || first === 39)) val = val.slice(1, -1);
+      if (key && process.env[key] === undefined) process.env[key] = val;
+    }
+  } catch (e) {
+    console.warn(".env load skipped:", e.message);
+  }
+})();
+
 const db = require("./db");
 const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
-
+const orchestrator = require("./lib/agent-orchestrator");
 const root = process.cwd();
 const port = Number(process.argv[2] || process.env.PORT || 8765);
 const host = process.env.HOST || "127.0.0.1";
@@ -296,6 +319,59 @@ function authenticate(req, body = {}) {
   db.touchSession(token, ts);
   db.upsertUser(participant.id, participant.nickname, participant.created_at, ts);
   return { participant, token };
+}
+
+function persistClientQuizResults(participant, rows = []) {
+  if (!participant || !Array.isArray(rows)) return;
+  rows.forEach((row) => {
+    if (!row || !row.questionId && !row.question_id) return;
+    const questionId = row.questionId || row.question_id || "";
+    const unitId = row.unitId || row.unit_id || "";
+    db.insertQuizResult({
+      id: row.id || `${participant.id}-${unitId}-${questionId}`,
+      user_id: participant.id,
+      chapter_id: row.chapterId || row.chapter_id || "",
+      chapter_label: row.chapterLabel || row.chapter_label || "",
+      unit_id: unitId,
+      unit_label: row.unitLabel || row.unit_label || "",
+      question_id: questionId,
+      question_type: row.questionType || row.question_type || row.mode || "",
+      phase: row.phase || "",
+      points: row.points || 0,
+      response: row.response ?? "",
+      is_correct: row.isCorrect === true ? 1 : row.isCorrect === false ? 0 : -1,
+      status: row.status || "",
+      score: row.score || 0,
+      max_score: row.maxScore || row.max_score || 0,
+      created_at: row.timestamp || row.created_at || nowIso()
+    });
+  });
+}
+
+function persistGradingResults(participant, results = []) {
+  if (!participant || !Array.isArray(results)) return;
+  results.forEach((gr) => {
+    if (!gr?.questionId) return;
+    db.updateQuizResultAiGrading(gr.questionId, participant.id, {
+      unitId: gr.unitId || gr.unit_id || "",
+      aiScore: gr.score,
+      aiConfidence: gr.confidence,
+      aiFeedback: gr.feedback,
+      aiErrorType: gr.errorType
+    });
+    db.insertAgentDecision({
+      id: crypto.randomUUID(),
+      user_id: participant.id,
+      agent_type: "grading",
+      decision_type: "grade",
+      input_summary: { questionId: gr.questionId },
+      output_summary: { score: gr.score, confidence: gr.confidence, errorType: gr.errorType },
+      confidence: gr.confidence,
+      llm_provider: gr.provider || "",
+      latency_ms: 0,
+      created_at: new Date().toISOString()
+    });
+  });
 }
 
 function getAdminToken() {
@@ -640,6 +716,21 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/learning/grade") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      const questions = Array.isArray(body.questions) ? body.questions.slice(0, 50) : [];
+      try {
+        const results = await orchestrator.gradeOnly(questions);
+        persistGradingResults(auth.participant, results);
+        sendJson(res, 200, { ok: true, results });
+      } catch (err) {
+        sendJson(res, 500, { ok: false, message: err.message });
+      }
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/learning/kg/plan") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
@@ -650,24 +741,58 @@ async function handleApi(req, res, url) {
       const sourceResults = Array.isArray(body.quizResults)
         ? body.quizResults.slice(0, 500)
         : db.getQuizResultsByUser(auth.participant.id, 200);
+      persistClientQuizResults(auth.participant, sourceResults);
       const filtered = sourceResults.filter((row) => {
         const unitId = row.unit_id || row.unitId || "";
         const cid = row.chapter_id || row.chapterId || unitId.split("-scene-")[0];
         return cid === chapterId;
       });
-      const summary = kg.summariseQuizResults(filtered);
-      const planResult = coach.plan({ chapterId, currentUnitId, quizSummary: summary });
-      let narration = "";
-      let provider = "skip";
       try {
-        const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "同学" });
-        narration = out.narration;
-        provider = out.provider;
-      } catch (error) {
-        narration = "（AI 助教暂时离线，下面是基于规则的建议。）";
-        provider = "fallback";
+        // Fetch recent interaction events from DB (client queue is flushed and cleared)
+        const recentEvents = db.interactionRows({ userId: auth.participant.id }, 200)
+          .map(row => { try { return typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload; } catch { return {}; } })
+          .slice(-80);
+        const result = await orchestrator.orchestrate({
+          chapterId, currentUnitId, quizResults: filtered,
+          quizQuestions: Array.isArray(body.quizQuestions) ? body.quizQuestions : [],
+          interactionEvidence: body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null,
+          interactionEvents: recentEvents,
+          completedUnitIds: Array.isArray(body.completedUnitIds) ? body.completedUnitIds.slice(0, 500) : [],
+          studentName: auth.participant.nickname || "同学"
+        });
+        persistGradingResults(auth.participant, result.gradingResults);
+        const decisionId = crypto.randomUUID();
+        const decisionCreatedAt = nowIso();
+        db.insertAgentDecision({
+          id: decisionId, user_id: auth.participant.id, agent_type: "orchestrator",
+          decision_type: "plan", input_summary: { chapterId, currentUnitId },
+          output_summary: { action: result.assessment?.suggestedAction, qa: result.qa, planner: result.planner, interactionEvidence: result.interactionEvidence },
+          confidence: result.assessment?.confidenceLevel || 0, llm_provider: result.provider,
+          latency_ms: result.latencyMs || 0, created_at: decisionCreatedAt
+        });
+        db.insertInteractionEvidenceBatch(auth.participant.id, decisionId, chapterId, result.interactionEvidence, decisionCreatedAt);
+        sendJson(res, 200, { ok: true, decisionId, decisionCreatedAt, plan: result.plan, narration: result.narration, provider: result.provider, gradingResults: result.gradingResults, assessment: result.assessment, analytics: result.analytics, planner: result.planner, interactionEvidence: result.interactionEvidence });
+      } catch (err) {
+        const summary = kg.summariseQuizResults(filtered);
+        const planResult = coach.plan({ chapterId, currentUnitId, quizSummary: summary });
+        let narration = "", provider = "fallback";
+        try { const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "同学" }); narration = out.narration; provider = out.provider; } catch { narration = "（AI 助教暂时离线，下面是基于规则的建议。）"; }
+        const fallbackEvidence = body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null;
+        let decisionId = "";
+        let decisionCreatedAt = "";
+        if (fallbackEvidence) {
+          decisionId = crypto.randomUUID();
+          decisionCreatedAt = nowIso();
+          db.insertAgentDecision({
+            id: decisionId, user_id: auth.participant.id, agent_type: "orchestrator",
+            decision_type: "plan_fallback", input_summary: { chapterId, currentUnitId },
+            output_summary: { action: planResult?.suggestedAction || "", error: err.message, interactionEvidence: fallbackEvidence },
+            confidence: 0, llm_provider: provider, latency_ms: 0, created_at: decisionCreatedAt
+          });
+          db.insertInteractionEvidenceBatch(auth.participant.id, decisionId, chapterId, fallbackEvidence, decisionCreatedAt);
+        }
+        sendJson(res, 200, { ok: true, decisionId, decisionCreatedAt, plan: planResult, narration, provider });
       }
-      sendJson(res, 200, { ok: true, plan: planResult, narration, provider });
       return;
     }
 
@@ -676,6 +801,22 @@ async function handleApi(req, res, url) {
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionDashboard(dates) });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/stats/agentic-decision-trace") {
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      const dates = getDateRange(url);
+      dates.userId = url.searchParams.get("userId") || "";
+      sendJson(res, 200, { ok: true, data: db.agenticDecisionTrace(dates) });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-evidence-snapshots") {
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      const dates = getDateRange(url);
+      dates.userId = url.searchParams.get("userId") || "";
+      sendJson(res, 200, { ok: true, data: db.interactionEvidenceSnapshots(dates) });
       return;
     }
 

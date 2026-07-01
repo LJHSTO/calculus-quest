@@ -69,6 +69,12 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const revealAnswerButton = event.target.closest("[data-reveal-answer]");
+  if (revealAnswerButton) {
+    if (typeof revealQuestionAnswer === "function") revealQuestionAnswer(revealAnswerButton);
+    return;
+  }
+
   const quizNavBtn = event.target.closest(".quiz-nav-btn");
   if (quizNavBtn && quizNavBtn.dataset.unit) {
     if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(quizNavBtn.dataset.unit, { allowPrevious: true })) return;
