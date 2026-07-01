@@ -1,3 +1,5 @@
+> 成本修订说明：本文件对应早期“多学习方式画像逐条生成”的高覆盖方案，成本较高。当前推荐使用 `docs/maic-ui-fused-single-concept-prompt-pack-v14.md/json/csv`，每个知识点只生成 1 个融合型 MAIC-UI 页面提示词。
+
 # MAIC-UI 单知识点提示词包 v14
 
 这是面向 Calculus Quest / OpenMAIC 推荐流的中文 MAIC-UI 单知识点课件提示词包。
