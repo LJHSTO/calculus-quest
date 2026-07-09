@@ -1,4 +1,4 @@
-ï»¿const crypto = require("crypto");
+const crypto = require("crypto");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
@@ -160,7 +160,7 @@ function streamStaticFile(req, res, filePath, type, url, stat) {
   const stream = fs.createReadStream(filePath);
   stream.on("error", (error) => {
     console.error("Static stream error:", error.message);
-    if (!res.headersSent) send(res, 500, "æœåŠ¡å™¨å†…éƒ¨é”™è¯¯ã€‚");
+    if (!res.headersSent) send(res, 500, "·şÎñÆ÷ÄÚ²¿´íÎó¡£");
     else res.destroy(error);
   });
   stream.pipe(res);
@@ -308,7 +308,7 @@ function isUsablePassword(password = "") {
 }
 
 function publicDisplayName(row) {
-  return row?.nickname || row?.email || "æœªå‘½åç”¨æˆ·";
+  return row?.nickname || row?.email || "Î´ÃüÃûÓÃ»§";
 }
 
 function safePublicParticipant(row) {
@@ -495,8 +495,8 @@ function profileConflict(nicknameNorm = "", emailNorm = "", existingId = "") {
   const { nicknameOwners, emailOwners } = usersForIdentity(nicknameNorm, emailNorm);
   const nicknameOwner = firstOtherUser(nicknameOwners, existingId);
   const emailOwner = firstOtherUser(emailOwners, existingId);
-  if (nicknameOwner) return { field: "nickname", message: "è¿™ä¸ªæ˜µç§°å·²ç»è¢«ä½¿ç”¨ã€‚" };
-  if (emailOwner) return { field: "email", message: "è¿™ä¸ªé‚®ç®±å·²ç»è¢«ä½¿ç”¨ã€‚" };
+  if (nicknameOwner) return { field: "nickname", message: "Õâ¸öêÇ³ÆÒÑ¾­±»Ê¹ÓÃ¡£" };
+  if (emailOwner) return { field: "email", message: "Õâ¸öÓÊÏäÒÑ¾­±»Ê¹ÓÃ¡£" };
   return null;
 }
 
@@ -505,10 +505,10 @@ function registrationOwnerConflict(nicknameOwners = [], emailOwners = []) {
   if (owners.length > 1) {
     const sharedNickname = nicknameOwners.length > 1;
     const sharedEmail = emailOwners.length > 1;
-    if (sharedNickname && sharedEmail) return { field: "identity", message: "æ˜µç§°å’Œé‚®ç®±å·²ç»è¢«å…¶ä»–è´¦å·ä½¿ç”¨ï¼Œè¯·æ¢ä¸€ç»„è´¦å·ä¿¡æ¯ã€‚" };
-    if (sharedNickname) return { field: "nickname", message: "è¿™ä¸ªæ˜µç§°å·²ç»è¢«ä½¿ç”¨ã€‚" };
-    if (sharedEmail) return { field: "email", message: "è¿™ä¸ªé‚®ç®±å·²ç»è¢«ä½¿ç”¨ã€‚" };
-    return { field: "identity", message: "æ˜µç§°å’Œé‚®ç®±åˆ†åˆ«å±äºä¸åŒè´¦å·ï¼Œè¯·æ¢ä¸€ä¸ªã€‚" };
+    if (sharedNickname && sharedEmail) return { field: "identity", message: "êÇ³ÆºÍÓÊÏäÒÑ¾­±»ÆäËûÕËºÅÊ¹ÓÃ£¬Çë»»Ò»×éÕËºÅĞÅÏ¢¡£" };
+    if (sharedNickname) return { field: "nickname", message: "Õâ¸öêÇ³ÆÒÑ¾­±»Ê¹ÓÃ¡£" };
+    if (sharedEmail) return { field: "email", message: "Õâ¸öÓÊÏäÒÑ¾­±»Ê¹ÓÃ¡£" };
+    return { field: "identity", message: "êÇ³ÆºÍÓÊÏä·Ö±ğÊôÓÚ²»Í¬ÕËºÅ£¬Çë»»Ò»¸ö¡£" };
   }
   const owner = owners[0] || null;
   if (!owner?.password_hash) return { owner };
@@ -516,7 +516,7 @@ function registrationOwnerConflict(nicknameOwners = [], emailOwners = []) {
   return {
     owner,
     field: nicknameOwned ? "nickname" : "email",
-    message: nicknameOwned ? "è¿™ä¸ªæ˜µç§°å·²ç»è¢«ä½¿ç”¨ã€‚" : "è¿™ä¸ªé‚®ç®±å·²ç»è¢«ä½¿ç”¨ã€‚"
+    message: nicknameOwned ? "Õâ¸öêÇ³ÆÒÑ¾­±»Ê¹ÓÃ¡£" : "Õâ¸öÓÊÏäÒÑ¾­±»Ê¹ÓÃ¡£"
   };
 }
 
@@ -530,10 +530,10 @@ function sendIdentityConstraintError(res, error) {
     ok: false,
     field,
     message: field === "nickname"
-      ? "è¿™ä¸ªæ˜µç§°å·²ç»è¢«ä½¿ç”¨ã€‚"
+      ? "Õâ¸öêÇ³ÆÒÑ¾­±»Ê¹ÓÃ¡£"
       : field === "email"
-        ? "è¿™ä¸ªé‚®ç®±å·²ç»è¢«ä½¿ç”¨ã€‚"
-        : "è´¦å·ä¿¡æ¯å·²ç»è¢«ä½¿ç”¨ã€‚"
+        ? "Õâ¸öÓÊÏäÒÑ¾­±»Ê¹ÓÃ¡£"
+        : "ÕËºÅĞÅÏ¢ÒÑ¾­±»Ê¹ÓÃ¡£"
   });
   return true;
 }
@@ -632,7 +632,7 @@ function safeStaticPath(urlPath) {
 
 async function handleApi(req, res, url) {
   if (!checkRateLimit(req)) {
-    sendJson(res, 429, { ok: false, message: "è¯·æ±‚è¿‡äºé¢‘ç¹ï¼Œè¯·ç¨åå†è¯•ã€‚" });
+    sendJson(res, 429, { ok: false, message: "ÇëÇó¹ıÓÚÆµ·±£¬ÇëÉÔºóÔÙÊÔ¡£" });
     return;
   }
   try {
@@ -648,7 +648,7 @@ async function handleApi(req, res, url) {
         const route = JSON.parse(fs.readFileSync(routePath, "utf8"));
         sendJson(res, 200, route);
       } catch (error) {
-        sendJson(res, 404, { ok: false, message: "æœªæ‰¾åˆ° Open MAIC v14 å­¦ä¹ è·¯çº¿ã€‚" });
+        sendJson(res, 404, { ok: false, message: "Î´ÕÒµ½ Open MAIC v14 Ñ§Ï°Â·Ïß¡£" });
       }
       return;
     }
@@ -656,14 +656,14 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/course/openmaic-audio-map") {
       const resourceRoot = String(url.searchParams.get("root") || "").replace(/^resources[\\/]/, "").replace(/\\/g, "/");
       if (!/^open-maic\/[^/]+$/.test(resourceRoot)) {
-        sendJson(res, 400, { ok: false, message: "èµ„æºè·¯å¾„ä¸æ­£ç¡®ã€‚" });
+        sendJson(res, 400, { ok: false, message: "×ÊÔ´Â·¾¶²»ÕıÈ·¡£" });
         return;
       }
       const manifestPath = path.join(root, "resources", resourceRoot, "manifest.json");
       const resolved = path.resolve(manifestPath);
       const openMaicRoot = path.resolve(root, "resources", "open-maic");
       if (!resolved.startsWith(openMaicRoot + path.sep) || !fs.existsSync(resolved)) {
-        sendJson(res, 404, { ok: false, message: "æœªæ‰¾åˆ°éŸ³é¢‘æ˜ å°„ã€‚" });
+        sendJson(res, 404, { ok: false, message: "Î´ÕÒµ½ÒôÆµÓ³Éä¡£" });
         return;
       }
       const manifest = JSON.parse(fs.readFileSync(resolved, "utf8"));
@@ -689,19 +689,19 @@ async function handleApi(req, res, url) {
       const email = cleanEmail(body.email);
       const password = String(body.password || "");
       if (!nickname && !email) {
-        sendJson(res, 400, { ok: false, message: "è¯·è‡³å°‘å¡«å†™æ˜µç§°æˆ–é‚®ç®±ã€‚", field: "identity" });
+        sendJson(res, 400, { ok: false, message: "ÇëÖÁÉÙÌîĞ´êÇ³Æ»òÓÊÏä¡£", field: "identity" });
         return;
       }
       if (!isValidNickname(nickname)) {
-        sendJson(res, 400, { ok: false, message: "æ˜µç§°éœ€è¦ 2-24 ä¸ªå­—ç¬¦ã€‚", field: "nickname" });
+        sendJson(res, 400, { ok: false, message: "êÇ³ÆĞèÒª 2-24 ¸ö×Ö·û¡£", field: "nickname" });
         return;
       }
       if (email && !isValidEmail(email)) {
-        sendJson(res, 400, { ok: false, message: "é‚®ç®±æ ¼å¼ä¸æ­£ç¡®ã€‚", field: "email" });
+        sendJson(res, 400, { ok: false, message: "ÓÊÏä¸ñÊ½²»ÕıÈ·¡£", field: "email" });
         return;
       }
       if (!isUsablePassword(password)) {
-        sendJson(res, 400, { ok: false, message: "å¯†ç éœ€è¦ 8-72 ä¸ªå­—ç¬¦ã€‚", field: "password" });
+        sendJson(res, 400, { ok: false, message: "ÃÜÂëĞèÒª 8-72 ¸ö×Ö·û¡£", field: "password" });
         return;
       }
       const timestamp = nowIso();
@@ -747,14 +747,14 @@ async function handleApi(req, res, url) {
       const identifier = cleanLoginIdentifier(body.identifier || body.nickname || body.email);
       const password = String(body.password || "");
       if (!identifier || !password) {
-        sendJson(res, 400, { ok: false, message: "è¯·å¡«å†™æ˜µç§°æˆ–é‚®ç®±ï¼Œå¹¶è¾“å…¥å¯†ç ã€‚", field: !identifier ? "identifier" : "password" });
+        sendJson(res, 400, { ok: false, message: "ÇëÌîĞ´êÇ³Æ»òÓÊÏä£¬²¢ÊäÈëÃÜÂë¡£", field: !identifier ? "identifier" : "password" });
         return;
       }
       const authLimit = checkAuthAttemptLimit(req, identifier);
       if (!authLimit.ok) {
         sendJson(res, 429, {
           ok: false,
-          message: "å°è¯•æ¬¡æ•°è¿‡å¤šï¼Œè¯·ç¨åå†è¯•ã€‚",
+          message: "³¢ÊÔ´ÎÊı¹ı¶à£¬ÇëÉÔºóÔÙÊÔ¡£",
           retryAfterSeconds: authLimit.retryAfterSeconds
         });
         return;
@@ -763,7 +763,7 @@ async function handleApi(req, res, url) {
       const user = findUserByIdentifier(identifier);
       if (!user?.password_hash || !verifyPassword(password, user.password_hash)) {
         recordFailedAuthAttempt(req, identifier);
-        sendJson(res, 401, { ok: false, message: "è´¦å·æˆ–å¯†ç ä¸æ­£ç¡®ã€‚" });
+        sendJson(res, 401, { ok: false, message: "ÕËºÅ»òÃÜÂë²»ÕıÈ·¡£" });
         return;
       }
       clearAuthAttemptLimit(req, identifier);
@@ -792,7 +792,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/auth/profile") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const nickname = cleanNickname(body.nickname);
       const email = cleanEmail(body.email);
       const currentNickname = auth.participant.nickname || "";
@@ -806,20 +806,20 @@ async function handleApi(req, res, url) {
         sendJson(res, 403, {
           ok: false,
           field: "profile",
-          message: "è´¦å·ä¿¡æ¯åªèƒ½ä¿®æ”¹ä¸€æ¬¡ï¼Œå·²ä¸èƒ½å†æ¬¡ä¿®æ”¹ã€‚"
+          message: "ÕËºÅĞÅÏ¢Ö»ÄÜĞŞ¸ÄÒ»´Î£¬ÒÑ²»ÄÜÔÙ´ÎĞŞ¸Ä¡£"
         });
         return;
       }
       if (!nickname && !email) {
-        sendJson(res, 400, { ok: false, message: "æ˜µç§°å’Œé‚®ç®±è‡³å°‘ä¿ç•™ä¸€ä¸ªã€‚", field: "identity" });
+        sendJson(res, 400, { ok: false, message: "êÇ³ÆºÍÓÊÏäÖÁÉÙ±£ÁôÒ»¸ö¡£", field: "identity" });
         return;
       }
       if (!isValidNickname(nickname)) {
-        sendJson(res, 400, { ok: false, message: "æ˜µç§°éœ€è¦ 2-24 ä¸ªå­—ç¬¦ã€‚", field: "nickname" });
+        sendJson(res, 400, { ok: false, message: "êÇ³ÆĞèÒª 2-24 ¸ö×Ö·û¡£", field: "nickname" });
         return;
       }
       if (email && !isValidEmail(email)) {
-        sendJson(res, 400, { ok: false, message: "é‚®ç®±æ ¼å¼ä¸æ­£ç¡®ã€‚", field: "email" });
+        sendJson(res, 400, { ok: false, message: "ÓÊÏä¸ñÊ½²»ÕıÈ·¡£", field: "email" });
         return;
       }
       const nicknameNorm = normalizeIdentity(nickname);
@@ -845,7 +845,7 @@ async function handleApi(req, res, url) {
         throw error;
       }
       if (!updated) {
-        sendJson(res, 404, { ok: false, message: "è´¦å·ä¸å­˜åœ¨ï¼Œè¯·é‡æ–°ç™»å½•ã€‚" });
+        sendJson(res, 404, { ok: false, message: "ÕËºÅ²»´æÔÚ£¬ÇëÖØĞÂµÇÂ¼¡£" });
         return;
       }
       db.insertEvent({
@@ -870,7 +870,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/auth/me") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       sendJson(res, 200, { ok: true, participant: safePublicParticipant(auth.participant) });
       return;
     }
@@ -879,7 +879,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/event") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const eventId = crypto.randomUUID();
       const timestamp = nowIso();
       const eventType = String(body.type || "event").slice(0, 80);
@@ -922,7 +922,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/events") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const events = Array.isArray(body.events) ? body.events.slice(0, 100) : [];
       const eventIds = [];
       const timestamp = nowIso();
@@ -946,7 +946,7 @@ async function handleApi(req, res, url) {
     // ---- Learning Snapshot ----
     if (req.method === "GET" && url.pathname === "/api/learning/snapshot") {
       const auth = authenticate(req);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const snap = db.getLatestSnapshot(auth.participant.id);
       if (!snap) { sendJson(res, 200, { ok: true, snapshot: null }); return; }
       let data = {};
@@ -958,7 +958,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/snapshot") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
@@ -979,7 +979,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/reset") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
@@ -1001,7 +1001,7 @@ async function handleApi(req, res, url) {
     // ---- Learning Quiz Results (for cross-browser sync - authoritative source) ----
     if (req.method === "GET" && url.pathname === "/api/learning/quiz-results") {
       const auth = authenticate(req);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const results = db.getQuizResultsByUser(auth.participant.id, 500);
       sendJson(res, 200, { ok: true, data: results });
       return;
@@ -1009,7 +1009,7 @@ async function handleApi(req, res, url) {
 
     // ---- Admin: Export raw data (backward compat) ----
     if (req.method === "GET" && url.pathname === "/api/admin/export") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const d = db.getDbSync();
       const users = [];
       const us = d.prepare("SELECT * FROM users");
@@ -1035,49 +1035,49 @@ async function handleApi(req, res, url) {
 
     // ---- Admin Stats APIs ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/overview") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.statsOverview(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/chapter-accuracy") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.chapterAccuracy(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/question-errors") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.questionErrors(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/user-progress") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.userProgress(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/daily-activity") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.dailyActivity(30, dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/phase-comparison") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.phaseComparison(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/user-detail") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const userId = url.searchParams.get("userId") || "";
       if (!userId) { sendJson(res, 400, { ok: false, message: "userId required." }); return; }
       const dates = getDateRange(url);
@@ -1088,34 +1088,34 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/users") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       sendJson(res, 200, { ok: true, data: db.listUsers() });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/question-type-accuracy") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.questionTypeAccuracy(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/score-distribution") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.scoreDistribution(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/hourly-activity") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.hourlyActivity(30, dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/short-answer-responses") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.shortAnswerResponses(dates) });
       return;
@@ -1123,7 +1123,7 @@ async function handleApi(req, res, url) {
     
     // ---- Admin: Interactions tracking ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interactions") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 100), 1000));
       const offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
@@ -1142,7 +1142,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/grade") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const questions = Array.isArray(body.questions) ? body.questions.slice(0, 50) : [];
       try {
         const results = await orchestrator.gradeOnly(questions);
@@ -1157,7 +1157,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/kg/plan") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "è¯·å…ˆç™»å½•ã€‚" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
       const chapterId = String(body.chapterId || "").trim();
       const currentUnitId = String(body.currentUnitId || "").trim();
       if (!chapterId) { sendJson(res, 400, { ok: false, message: "chapterId required." }); return; }
@@ -1181,7 +1181,7 @@ async function handleApi(req, res, url) {
           interactionEvidence: body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null,
           interactionEvents: recentEvents,
           completedUnitIds: Array.isArray(body.completedUnitIds) ? body.completedUnitIds.slice(0, 500) : [],
-          studentName: auth.participant.nickname || "åŒå­¦"
+          studentName: auth.participant.nickname || "Í¬Ñ§"
         });
         persistGradingResults(auth.participant, result.gradingResults);
         const decisionId = crypto.randomUUID();
@@ -1199,7 +1199,7 @@ async function handleApi(req, res, url) {
         const summary = kg.summariseQuizResults(filtered);
         const planResult = coach.plan({ chapterId, currentUnitId, quizSummary: summary });
         let narration = "", provider = "fallback";
-        try { const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "åŒå­¦" }); narration = out.narration; provider = out.provider; } catch { narration = "ï¼ˆAI åŠ©æ•™æš‚æ—¶ç¦»çº¿ï¼Œä¸‹é¢æ˜¯åŸºäºè§„åˆ™çš„å»ºè®®ã€‚ï¼‰"; }
+        try { const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "Í¬Ñ§" }); narration = out.narration; provider = out.provider; } catch { narration = "£¨AI Öú½ÌÔİÊ±ÀëÏß£¬ÏÂÃæÊÇ»ùÓÚ¹æÔòµÄ½¨Òé¡££©"; }
         const fallbackEvidence = body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null;
         let decisionId = "";
         let decisionCreatedAt = "";
@@ -1220,7 +1220,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-dashboard") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionDashboard(dates) });
@@ -1228,7 +1228,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/agentic-decision-trace") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.agenticDecisionTrace(dates) });
@@ -1236,7 +1236,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-evidence-snapshots") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionEvidenceSnapshots(dates) });
@@ -1244,7 +1244,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-summary") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionSummary(dates) });
@@ -1252,7 +1252,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/unit-engagement") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.unitEngagement(dates) });
@@ -1260,7 +1260,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/skip-repeat") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.skipRepeatStats(dates) });
@@ -1268,7 +1268,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/parameter-changes") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.parameterChangeStats(dates) });
@@ -1276,22 +1276,22 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/path-analysis") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "éœ€è¦ç®¡ç†å‘˜å¯†ç ã€‚" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ĞèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.pathAnalysis(dates) });
       return;
     }
 
-    sendJson(res, 404, { ok: false, message: "æ¥å£ä¸å­˜åœ¨ã€‚" });
+    sendJson(res, 404, { ok: false, message: "½Ó¿Ú²»´æÔÚ¡£" });
   } catch (error) {
     console.error("API error:", error);
     const status = error.message === "Request body is too large" ? 413
       : error.message === "Invalid JSON body" ? 400
       : 500;
-    const message = status === 500 ? "æœåŠ¡å™¨å†…éƒ¨é”™è¯¯ã€‚"
-      : error.message === "Request body is too large" ? "è¯·æ±‚å†…å®¹è¿‡å¤§ã€‚"
-        : error.message === "Invalid JSON body" ? "è¯·æ±‚æ ¼å¼ä¸æ­£ç¡®ã€‚"
+    const message = status === 500 ? "·şÎñÆ÷ÄÚ²¿´íÎó¡£"
+      : error.message === "Request body is too large" ? "ÇëÇóÄÚÈİ¹ı´ó¡£"
+        : error.message === "Invalid JSON body" ? "ÇëÇó¸ñÊ½²»ÕıÈ·¡£"
           : error.message;
     sendJson(res, status, { ok: false, message });
   }
@@ -1304,7 +1304,14 @@ const server = http.createServer((req, res) => {
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
-  const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  // Strip sub-path prefix when behind reverse proxy at e.g. /calculus_quest/
+  const BASE_PATH = process.env.BASE_PATH || "";
+  let rawUrl = req.url || "/";
+  if (BASE_PATH && rawUrl.startsWith(BASE_PATH)) {
+    rawUrl = rawUrl.slice(BASE_PATH.length) || "/";
+  }
+  const url = new URL(rawUrl, `http://${req.headers.host || "localhost"}`);
+
   if (url.pathname.startsWith("/api/")) {
     handleApi(req, res, url);
     return;
@@ -1312,7 +1319,7 @@ const server = http.createServer((req, res) => {
 
   const filePath = safeStaticPath(url.pathname);
   if (!filePath) {
-    send(res, 403, "ç¦æ­¢è®¿é—®");
+    send(res, 403, "½ûÖ¹·ÃÎÊ");
     return;
   }
   if (isBlockedStaticResource(filePath)) {

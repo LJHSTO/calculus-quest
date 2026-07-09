@@ -13,6 +13,16 @@ admin-token.txt
 .env
 .env.*
 !.env.example
+config/model.env
+
+# Local OpenMAIC courseware inputs and generated imports.
+# Keep the folders, but do not commit real course packages or derived courseware.
+courseware-inbox/*
+!courseware-inbox/.gitkeep
+resources/open-maic/*
+!resources/open-maic/.gitkeep
+resources/open-maic-backups/*
+!resources/open-maic-backups/.gitkeep
 
 # Logs
 logs/
