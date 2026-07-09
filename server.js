@@ -8,6 +8,7 @@ const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 
 const root = process.cwd();
+const basePath = "/calculus_quest";
 const port = Number(process.argv[2] || process.env.PORT || 8765);
 const host = process.env.HOST || "127.0.0.1";
 const maxBodyBytes = 1024 * 1024;
@@ -324,7 +325,9 @@ function safeStaticPath(urlPath) {
     console.error("Failed to decode URL path:", urlPath, e.message);
     return null;
   }
-  const publicPath = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
+  const publicPath = decoded === "/" ? "index.html"
+    : decoded === "/admin" ? "admin.html"
+    : decoded.replace(/^\/+/, "");
   // Block access to sensitive directories
   if (/^(data|ops|config|node_modules|\.claude|\.git)(\/|$)/.test(publicPath)) return null;
   const filePath = path.resolve(root, publicPath);
@@ -737,6 +740,18 @@ const server = http.createServer((req, res) => {
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+
+  // Site lives under basePath: redirect "/" and bare basePath, strip prefix for routing
+  if (url.pathname === "/" || url.pathname === basePath) {
+    send(res, 302, "", "text/plain; charset=utf-8", { Location: `${basePath}/${url.search}` });
+    return;
+  }
+  if (!url.pathname.startsWith(basePath + "/")) {
+    send(res, 404, "Not found");
+    return;
+  }
+  url.pathname = url.pathname.slice(basePath.length);
+
   if (url.pathname.startsWith("/api/")) {
     handleApi(req, res, url);
     return;
@@ -815,8 +830,8 @@ db.getDb().then(() => {
    console.warn("Migration skipped:", e.message);
  }
  server.listen(port, host, () => {
-    console.log(`Calculus Quest running at http://${host}:${port}/`);
-    console.log(`Admin dashboard: http://${host}:${port}/admin.html`);
+    console.log(`Calculus Quest running at http://${host}:${port}${basePath}/`);
+    console.log(`Admin dashboard: http://${host}:${port}${basePath}/admin`);
   });
 }).catch((err) => {
   console.error("Failed to initialize database:", err);

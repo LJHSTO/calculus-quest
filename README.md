@@ -11,9 +11,9 @@ node server.js 3789
 
 访问地址：
 
-- 学习页面：`http://127.0.0.1:3789/`
-- 管理后台：`http://127.0.0.1:3789/admin.html`
-- 健康检查：`http://127.0.0.1:3789/api/health`
+- 学习页面：`http://127.0.0.1:3789/calculus_quest/`
+- 管理后台：`http://127.0.0.1:3789/calculus_quest/admin`
+- 健康检查：`http://127.0.0.1:3789/calculus_quest/api/health`
 
 也可以指定其他端口：
 

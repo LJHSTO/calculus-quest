@@ -529,7 +529,7 @@ function agenticQuizStats(records) {
 async function agenticRequestPlan(unit) {
   if (!isSignedIn()) return null;
   try {
-    const payload = await apiRequest("/api/learning/kg/plan", {
+    const payload = await apiRequest("api/learning/kg/plan", {
       chapterId: unit.chapterId,
       currentUnitId: unit.id,
       quizResults: state.quizResults || []

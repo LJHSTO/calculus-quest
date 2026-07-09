@@ -1,5 +1,6 @@
 // Admin dashboard behavior, data loading, charts, and exports.
-const API_BASE = window.location.origin;
+// Resolve against the page's directory so the site works under a path prefix (e.g. /calculus_quest)
+const API_BASE = new URL(".", window.location.href).href.replace(/\/$/, "");
 let adminToken = sessionStorage.getItem("cq_admin_token") || "";
 let charts = {};
 let allUsers = [];

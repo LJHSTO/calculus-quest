@@ -253,7 +253,7 @@ async function syncLearningSnapshot(reason = "manual") {
   if (reason === "state_change" && snapshotJson === lastSnapshotJson) return;
   lastSnapshotJson = snapshotJson;
   try {
-    await apiRequest("/api/learning/snapshot", {
+    await apiRequest("api/learning/snapshot", {
       token: state.authToken,
       reason,
       snapshot
@@ -266,7 +266,7 @@ async function syncLearningSnapshot(reason = "manual") {
 async function trackLearningEvent(type, payload = {}, syncSnapshot = true) {
   if (!isSignedIn()) return;
   try {
-    await apiRequest("/api/learning/event", {
+    await apiRequest("api/learning/event", {
       token: state.authToken,
       type,
       payload
@@ -281,7 +281,7 @@ async function loginParticipant(nickname) {
   // Save current state to current user's key before switching
   saveState();
 
-  const payload = await apiRequest("/api/auth/login", { nickname });
+  const payload = await apiRequest("api/auth/login", { nickname });
   const lastPid = localStorage.getItem(LAST_PARTICIPANT_KEY);
   const newPid = payload.participant.participantId;
   const isSameUser = lastPid === newPid;
@@ -320,7 +320,7 @@ async function loginParticipant(nickname) {
   // (otherwise syncLearningSnapshot uploads empty state and destroys progress)
   if (!isSameUser && !isNewAccount) {
     try {
-      const snapRes = await fetch("/api/learning/snapshot", {
+      const snapRes = await fetch("api/learning/snapshot", {
         headers: { Authorization: `Bearer ${state.authToken}` }
       });
       if (snapRes.ok) {
@@ -346,7 +346,7 @@ async function loginParticipant(nickname) {
   //  didn't sync before closing. This endpoint reads the actual DB rows.)
   if (!isSameUser && !isNewAccount) {
     try {
-      const qrRes = await fetch("/api/learning/quiz-results", {
+      const qrRes = await fetch("api/learning/quiz-results", {
         headers: { Authorization: `Bearer ${state.authToken}` }
       });
       if (qrRes.ok) {
