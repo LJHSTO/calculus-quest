@@ -1,1 +1,17 @@
-{"generatedAt":"2026-06-06T18:04:52.465Z","chapters":[{"id":"A1","scenes":15,"slides":3,"quizzes":3,"interactive":9,"audio":84,"indexBytes":197298},{"id":"A2a","scenes":15,"slides":3,"quizzes":3,"interactive":9,"audio":84,"indexBytes":196657},{"id":"A2b","scenes":15,"slides":3,"quizzes":3,"interactive":9,"audio":84,"indexBytes":171594},{"id":"A3","scenes":15,"slides":3,"quizzes":3,"interactive":9,"audio":82,"indexBytes":129106},{"id":"A4","scenes":15,"slides":3,"quizzes":3,"interactive":9,"audio":81,"indexBytes":95478},{"id":"C1","scenes":15,"slides":3,"quizzes":3,"interactive":9,"audio":84,"indexBytes":175743},{"id":"D1","scenes":15,"slides":3,"quizzes":3,"interactive":9,"audio":80,"indexBytes":95825},{"id":"D2","scenes":15,"slides":3,"quizzes":3,"interactive":9,"audio":81,"indexBytes":85523}],"totals":{"scenes":120,"slides":24,"quizzes":24,"interactive":72,"audio":660,"indexBytes":1147224}}
+{
+  "generatedAt": "example",
+  "versionId": "openmaic-import-example",
+  "chapters": [],
+  "totals": {
+    "chapters": 0,
+    "mainChapters": 0,
+    "extensionChapters": 0,
+    "modules": 0,
+    "knowledgePoints": 0,
+    "quizzes": 0,
+    "sourceQuizzes": 0,
+    "interactionChoices": 0,
+    "importedPackages": 0
+  },
+  "note": "This tracked file is a placeholder. Real imported OpenMAIC courseware indexes are generated locally and ignored by git."
+}

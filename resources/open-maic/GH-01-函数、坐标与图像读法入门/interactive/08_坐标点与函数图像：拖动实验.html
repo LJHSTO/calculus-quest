@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>坐标点与函数图像</title>
+<script type="application/json" id="widget-config">
+{
+  "type": "simulation",
+  "concept": "coordinate_points_function_graph",
+  "description": "在坐标系中手动放置点，通过拖动点到正确的(x, f(x))位置，理解函数图像的\"点成线\"直觉。",
+  "variables": [
+    {
+      "name": "num_dots",
+      "label": "点数",
+      "min": 3,
+      "max": 12,
+      "default": 6,
+      "unit": "个"
+    },
+    {
+      "name": "snap_tolerance",
+      "label": "容差范围",
+      "min": 10,
+      "max": 80,
+      "default": 35,
+      "unit": "像素"
+    },
+    {
+      "name": "show_hints",
+      "label": "显示提示线",
+      "min": 0,
+      "max": 1,
+      "default": 1,
+      "unit": ""
+    }
+  ],
+  "presets": [
+    {
+      "name": "简单：直线 y=2x+1",
+      "variables": {
+        "num_dots": 5,
+        "snap_tolerance": 50,
+        "show_hints": 1
+      },
+      "function": "linear"
+    },
+    {
+      "name": "中等：抛物线 y=x²",
+      "variables": {
+        "num_dots": 6,
+        "snap_tolerance": 40,
+        "show_hints": 1
+      },
+      "function": "quadratic"
+    },
+    {
+      "name": "挑战：正弦 y=sin(x)",
+      "variables": {
+        "num_dots": 8,
+        "snap_tolerance": 30,
+        "show_hints": 0
+      },
+      "function": "sine"
+    },
+    {
+      "name": "高手：三次 y=x³/5",
+      "variables": {
+        "num_dots": 7,
+        "snap_tolerance": 25,
+        "show_hints": 0
+      },
+      "function": "cubic"
+    }
+  ]
+}
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const katexOptions = {
+        delimiters: [
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false,
+        strict: false,
+        trust: true
+    };
+
+    let renderTimeout;
+    function safeRender() {
+        if (renderTimeout) clearTimeout(renderTimeout);
+        renderTimeout = setTimeout(() => {
+            if (window.__openMaicEnableKatexAutoRender === true && typeof renderMathInElement === 'function') renderMathInElement(document.body, katexOptions);
+        }, 100);
+    }
+
+    if (window.__openMaicEnableKatexAutoRender === true && typeof renderMathInElement === 'function') renderMathInElement(document.body, katexOptions);
+
+    // OpenMAIC audit fix: avoid a body-wide KaTeX mutation loop during automated checks.
+    // The initial render above is enough for static formulas; dynamic course widgets can call safeRender manually.
+});
+</script>
+<style id="openmaic-audit-repair-style-v49">
+*,*::before,*::after{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{min-width:0}
+svg,canvas,img,video{max-width:100%}
+button,[role="button"],input,select,textarea{max-width:100%;min-width:0}
+#diagram-area,#diagram-container,.diagram-container,.mindmap-container,.mind-map,.canvas-area,#canvas-container,.canvas-container,.game-area,#game-container,#gameContainer,.space,.scene,.panel,.controls,.stage,.world,.visualization,.viz,.container,.app{max-width:100%;min-width:0;overflow-x:hidden}
+.app-container,.canvas-area,#canvas-container,.canvas-container{min-height:0}
+.canvas-area canvas,#canvas-container>canvas,.canvas-container>canvas,#main-canvas{width:100%!important;height:100%!important;min-height:0!important;flex:1 1 auto!important}
+#canvas{display:block!important;max-width:100%!important;height:auto!important;max-height:calc(100vh - 120px)!important;object-fit:contain!important}
+body:has(#canvas-area):has(#controls-area){height:100vh!important;max-height:100vh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+body:has(#canvas-area):has(#controls-area) #app-header{flex:0 0 auto!important;padding:8px 12px!important}
+body:has(#canvas-area):has(#controls-area) #app-header h1{font-size:1rem!important;line-height:1.15!important;margin-bottom:2px!important}
+body:has(#canvas-area):has(#controls-area) #app-header p{font-size:.68rem!important;line-height:1.15!important}
+body:has(#canvas-area):has(#controls-area) #main-container{flex:1 1 auto!important;min-height:0!important;max-height:calc(100vh - 48px)!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+body:has(#canvas-area):has(#controls-area) #canvas-area{flex:1 1 auto!important;min-height:180px!important;max-height:calc(100vh - 300px)!important;overflow:hidden!important;padding:6px!important;gap:6px!important}
+body:has(#canvas-area):has(#controls-area) #canvas-area .canvas-row{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important;gap:6px!important}
+body:has(#canvas-area):has(#controls-area) #canvas-area .canvas-box{min-height:0!important;overflow:hidden!important}
+body:has(#canvas-area):has(#controls-area) #canvas-area canvas{width:100%!important;height:100%!important;max-height:none!important;object-fit:contain!important}
+body:has(#canvas-area):has(#controls-area) #controls-area{flex:0 0 auto!important;max-height:min(38vh,292px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding:8px 10px!important}
+body:has(#canvas-area):has(#controls-area) #presets-row{gap:5px!important;margin-bottom:6px!important}
+body:has(#canvas-area):has(#controls-area) .preset-btn{min-height:34px!important;padding:6px 9px!important;font-size:.68rem!important}
+body:has(#canvas-area):has(#controls-area) #sliders-grid{gap:6px!important;margin-bottom:6px!important}
+body:has(#canvas-area):has(#controls-area) .slider-group{gap:2px!important}
+body:has(#canvas-area):has(#controls-area) .slider-group label{font-size:.68rem!important}
+body:has(#canvas-area):has(#controls-area) input[type="range"]{height:22px!important;min-height:22px!important}
+body:has(#canvas-area):has(#controls-area) #action-row{gap:6px!important}
+body:has(#canvas-area):has(#controls-area) #main-btn,body:has(#canvas-area):has(#controls-area) #reset-btn{min-height:40px!important;padding:8px 10px!important}
+body:has(#canvas-area):has(#controls-area) #observation-box{margin-top:6px!important;min-height:0!important;max-height:46px!important;overflow-y:auto!important;padding:6px 8px!important}
+#gameCanvas{display:block!important;width:min(100%,calc((100vh - 88px) * 1.333333))!important;height:auto!important;max-height:calc(100vh - 88px)!important;margin-left:auto!important;margin-right:auto!important;object-fit:contain!important}
+#canvasWrapper #gameCanvas{width:100%!important;height:auto!important;min-height:240px!important;max-height:520px!important;object-fit:contain!important}
+body:has(#gameCanvas):has(#canvas-wrapper){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #game-container{height:100vh!important;max-height:100vh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;padding:6px 10px!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #game-header{flex:0 0 auto!important;padding:4px 0!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #game-header h1{font-size:1.18rem!important;line-height:1.15!important;margin:0!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #game-header .subtitle{font-size:.78rem!important;margin-top:0!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #hud{flex:0 0 auto!important;padding:6px 8px!important;margin-bottom:6px!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #progress-bar-container{flex:0 0 auto!important;margin-bottom:4px!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #canvas-wrapper{flex:1 1 auto!important;min-height:160px!important;max-height:calc(100vh - 340px)!important;overflow:hidden!important;margin-bottom:6px!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #gameCanvas{width:100%!important;height:100%!important;max-height:none!important;min-height:0!important;object-fit:contain!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #controls{flex:0 0 auto!important;padding:8px 10px!important;margin-bottom:6px!important;max-height:92px!important;overflow-y:auto!important}
+body:has(#gameCanvas):has(#canvas-wrapper) .slider-group{margin-bottom:6px!important}
+body:has(#gameCanvas):has(#canvas-wrapper) #message-area,body:has(#gameCanvas):has(#canvas-wrapper) #history-panel{flex:0 0 auto!important;max-height:44px!important;overflow-y:auto!important;margin-bottom:4px!important}
+body:has(#gameCanvas):has(#canvasWrapper){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#gameCanvas):has(#canvasWrapper) #gameContainer{height:100vh!important;max-height:100vh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important;padding:6px 10px!important}
+body:has(#gameCanvas):has(#canvasWrapper) #canvasWrapper{flex:1 1 auto!important;min-height:220px!important;max-height:calc(100vh - 330px)!important;overflow:hidden!important}
+body:has(#gameCanvas):has(#canvasWrapper) #gameCanvas{width:100%!important;height:100%!important;max-height:none!important;min-height:0!important;object-fit:contain!important}
+body:has(#gameCanvas):has(#canvasWrapper) #hud,body:has(#gameCanvas):has(#canvasWrapper) .hud,body:has(#gameCanvas):has(#canvasWrapper) #topBar,body:has(#gameCanvas):has(#canvasWrapper) #controlPanel,body:has(#gameCanvas):has(#canvasWrapper) #infoPanel{flex:0 0 auto!important}
+body:has(#gameCanvas):has(#canvasWrapper) #infoPanel{max-height:92px!important;overflow-y:auto!important}
+body:has(#gameCanvas):has(#canvasWrapper) .btn,body:has(#gameCanvas):has(#canvasWrapper) button{min-height:34px!important;padding-top:7px!important;padding-bottom:7px!important}
+.model{max-width:100%!important}
+#sidebar-toggle,#toggle-sidebar,#toggleBtn,.sidebar-toggle{z-index:2147483400!important;pointer-events:auto!important}
+#close-sidebar{position:relative;z-index:2147483001!important}
+#controls,#step-nav,#btn-prev,#btn-next,#next-btn,#prev-btn{position:relative!important;z-index:2147483001!important;pointer-events:auto!important}
+#controls button,#step-nav button,#btn-prev,#btn-next,#next-btn,#prev-btn{position:relative!important;z-index:2147483002!important;pointer-events:auto!important}
+#controls .btn,#controls button{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.18!important}
+#controls .btn small,#controls button small{display:block!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;font-size:.82em!important;line-height:1.05!important}
+#auto-btn{min-width:0!important;min-height:58px!important;height:auto!important;padding-left:8px!important;padding-right:8px!important;overflow:visible!important}
+body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls{position:absolute!important;left:0!important;right:0!important;bottom:0!important;z-index:2147482000!important;max-height:31vh!important;overflow-y:auto!important;pointer-events:auto!important}
+body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls{width:100vw!important;max-width:100vw!important;min-width:0!important;overflow-x:hidden!important;justify-content:flex-start!important;align-content:flex-start!important;gap:8px!important}
+body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls .control-group{flex:1 1 104px!important;min-width:0!important;max-width:calc(50vw - 14px)!important}
+body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls select,body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls input{width:100%!important;min-width:0!important}
+body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls .zoom-btns{flex:0 1 96px!important;min-width:0!important;max-width:104px!important}
+body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls button{flex:0 1 auto!important;min-width:40px!important;max-width:calc(50vw - 14px)!important;white-space:normal!important;overflow-wrap:anywhere!important}
+body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #canvas-container{height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+#sidebar.open #toggle-sidebar,#sidebar.expanded #toggle-sidebar,#sidebar.show #toggle-sidebar,#sidebar.active #toggle-sidebar,.sidebar.open #toggle-sidebar,.sidebar.expanded #toggle-sidebar,.sidebar.show #toggle-sidebar,.sidebar.active #toggle-sidebar{pointer-events:none!important}
+#sidebar.open #close-sidebar,#sidebar.expanded #close-sidebar,#sidebar.show #close-sidebar,#sidebar.active #close-sidebar,.sidebar.open #close-sidebar,.sidebar.expanded #close-sidebar,.sidebar.show #close-sidebar,.sidebar.active #close-sidebar{position:relative!important;z-index:2147483004!important;pointer-events:auto!important}
+body:has(#close-sidebar) #toggle-sidebar{top:52px!important;right:16px!important}
+body:has(#close-sidebar) #sidebar.open+#toggle-sidebar,body:has(#close-sidebar) #sidebar.expanded+#toggle-sidebar,body:has(#close-sidebar) #sidebar.show+#toggle-sidebar,body:has(#close-sidebar) #sidebar.active+#toggle-sidebar{pointer-events:none!important}
+.sidebar-content,.step-info,#sidebar-content,#step-info,#details-content,#detail-panel{min-width:0}
+#step-info,.step-info{width:auto!important;min-width:max-content!important;max-width:none!important;white-space:nowrap!important;overflow:visible!important;text-overflow:clip!important}
+#sidebar #step-info,.sidebar #step-info,#sidebar .step-info,.sidebar .step-info{min-width:0!important;max-width:100%!important;white-space:normal!important;overflow-x:hidden!important;overflow-y:auto!important;text-overflow:clip!important}
+#sidebar #step-info .detail-text,.sidebar #step-info .detail-text,#sidebar .step-info .detail-text,.sidebar .step-info .detail-text{white-space:normal!important;overflow-wrap:anywhere!important;word-break:normal!important}
+.sidebar-content button,.step-info button,#sidebar-content button,#step-info button,#step-nav,#step-nav *{pointer-events:auto!important}
+.overlay,.overlay-content,.overlay-card,#overlay-content,.tutorial-box,.screen-info,#pause-overlay,#start-screen,#startScreen,.start-screen,.startScreen,.modal,.modal-content{isolation:isolate}
+.overlay button,.overlay .btn,.overlay .game-btn,.overlay .overlay-btn,.overlay .start-btn,.overlay-content button,.overlay-card button,#overlay-content button,.tutorial-box button,.screen-info button,#pause-overlay button,#start-screen button,#start-screen .btn,#startScreen button,#startScreen .btn,.start-screen button,.start-screen .btn,.startScreen button,.startScreen .btn,.overlay-btn,.start-btn,.btn-submit,.btn-hint,.btn-reset{position:relative!important;z-index:2147482000!important;pointer-events:auto!important}
+.overlay p,.overlay li,.overlay ul,.overlay ol,.overlay-content p,.overlay-content li,.overlay-content ul,.overlay-content ol,.overlay-card p,.overlay-card li,.overlay-card ul,.overlay-card ol,#overlay-content p,#overlay-content li,#overlay-content ul,#overlay-content ol,.tutorial-box p,.tutorial-box li,.tutorial-box ul,.tutorial-box ol,.screen-info p,.screen-info li,.screen-info ul,.screen-info ol,#start-screen p,#start-screen li,#start-screen ul,#start-screen ol,#startScreen p,#startScreen li,#startScreen ul,#startScreen ol,.start-screen p,.start-screen li,.start-screen ul,.start-screen ol,.instruction-box p,.instruction-box li,.instruction-box ul,.instruction-box ol,.instructions p,.instructions li,.instructions ul,.instructions ol{pointer-events:none!important}
+.overlay>*:not(button):not(.btn):not(.game-btn):not(.overlay-btn):not(.start-btn):not(.btn-submit):not(.btn-hint):not(.btn-reset),#start-screen>*:not(button):not(.btn):not(.game-btn):not(.start-btn),#startScreen>*:not(button):not(.btn):not(.game-btn):not(.start-btn){pointer-events:none!important}
+.overlay :not(button):not(.btn):not(.game-btn):not(.overlay-btn):not(.start-btn):not(.btn-submit):not(.btn-hint):not(.btn-reset){pointer-events:none!important}
+.overlay button,.overlay button *,.overlay .btn,.overlay .btn *,.overlay .game-btn,.overlay .game-btn *,.overlay .overlay-btn,.overlay .overlay-btn *,.overlay .start-btn,.overlay .start-btn *,#start-screen .btn,#start-screen .btn *,#startScreen .btn,#startScreen .btn *{pointer-events:auto!important}
+#pauseScreen p,#pauseScreen h1,#pauseScreen h2,#levelCompleteScreen p,#levelCompleteScreen h1,#levelCompleteScreen h2,#gameCompleteScreen p,#gameCompleteScreen h1,#gameCompleteScreen h2{pointer-events:none!important;position:relative!important;z-index:1!important}
+#pauseScreen button,#levelCompleteScreen button,#gameCompleteScreen button{position:relative!important;z-index:2147482001!important;pointer-events:auto!important}
+#pauseScreen:not(.hidden),#pause-screen:not(.hidden),.pause-screen:not(.hidden),#pauseOverlay:not(.hidden),#pause-overlay:not(.hidden){z-index:2147483000!important;pointer-events:auto!important}
+#pauseScreen:not(.hidden) .pause-actions,#pause-screen:not(.hidden) .pause-actions,.pause-screen:not(.hidden) .pause-actions{position:relative!important;z-index:2147483002!important;display:flex!important;flex-direction:column!important;align-items:center!important;gap:10px!important;pointer-events:none!important}
+#pauseScreen:not(.hidden) .pause-actions button,#pause-screen:not(.hidden) .pause-actions button,.pause-screen:not(.hidden) .pause-actions button,#pauseScreen:not(.hidden) button,#pause-screen:not(.hidden) button,.pause-screen:not(.hidden) button{position:relative!important;z-index:2147483003!important;pointer-events:auto!important;transform:none!important}
+#pauseScreen:not(.hidden) :is(p,h1,h2,h3),#pause-screen:not(.hidden) :is(p,h1,h2,h3),.pause-screen:not(.hidden) :is(p,h1,h2,h3){position:static!important;z-index:auto!important;pointer-events:none!important;transform:none!important}
+body:has(#pauseScreen:not(.hidden)) #hintOverlay.show,body:has(#pause-screen:not(.hidden)) #hintOverlay.show,body:has(.pause-screen:not(.hidden)) #hintOverlay.show,body:has(#pauseScreen:not(.hidden)) .hint-overlay.show,body:has(#pause-screen:not(.hidden)) .hint-overlay.show,body:has(.pause-screen:not(.hidden)) .hint-overlay.show{display:none!important;visibility:hidden!important;pointer-events:none!important}
+body:has(#pauseScreen:not(.hidden)) .hint-content,body:has(#pause-screen:not(.hidden)) .hint-content,body:has(.pause-screen:not(.hidden)) .hint-content{pointer-events:none!important}
+.hidden[aria-hidden="false"]{display:block}
+#start-screen.hidden,#startScreen.hidden,.start-screen.hidden,.startScreen.hidden,#startOverlay.hidden,.start-overlay.hidden,#menu-screen.hidden,.overlay.hidden,#level-complete-overlay.hidden,#pause-overlay.hidden,#final-score-screen.hidden{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;z-index:-1!important}
+#start-screen.hidden *,#startScreen.hidden *,.start-screen.hidden *,.startScreen.hidden *,#startOverlay.hidden *,.start-overlay.hidden *,#menu-screen.hidden *,.overlay.hidden *,#level-complete-overlay.hidden *,#pause-overlay.hidden *,#final-score-screen.hidden *{pointer-events:none!important}
+#start-screen:not(.hidden),#startScreen:not(.hidden),.start-screen:not(.hidden),.startScreen:not(.hidden),#startOverlay:not(.hidden),.start-overlay:not(.hidden),#menu-screen:not(.hidden){position:fixed!important;inset:0!important;z-index:2147483400!important;pointer-events:auto!important;visibility:visible!important;opacity:1!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding:16px!important}
+#start-screen:not(.hidden) .start-card,#startScreen:not(.hidden) .start-card,.start-screen:not(.hidden) .start-card,.startScreen:not(.hidden) .start-card,#startOverlay:not(.hidden) .start-card,.start-overlay:not(.hidden) .start-card,#menu-screen:not(.hidden) .start-card{position:relative!important;z-index:2147483401!important;pointer-events:auto!important}
+#start-screen:not(.hidden) button,#start-screen:not(.hidden) .btn,#start-screen:not(.hidden) .start-btn,#startScreen:not(.hidden) button,#startScreen:not(.hidden) .btn,#startScreen:not(.hidden) .start-btn,.start-screen:not(.hidden) button,.start-screen:not(.hidden) .btn,.start-screen:not(.hidden) .start-btn,.startScreen:not(.hidden) button,.startScreen:not(.hidden) .btn,.startScreen:not(.hidden) .start-btn,#startOverlay:not(.hidden) button,#startOverlay:not(.hidden) .btn,#startOverlay:not(.hidden) .start-btn,.start-overlay:not(.hidden) button,.start-overlay:not(.hidden) .btn,.start-overlay:not(.hidden) .start-btn,#menu-screen:not(.hidden) button,#menu-screen:not(.hidden) .btn,#menu-screen:not(.hidden) .start-btn{position:relative!important;z-index:2147483402!important;pointer-events:auto!important;display:inline-flex!important;align-items:center!important;justify-content:center!important}
+body:has(#start-screen:not(.hidden)) .tool-card,body:has(#startScreen:not(.hidden)) .tool-card,body:has(.start-screen:not(.hidden)) .tool-card,body:has(.startScreen:not(.hidden)) .tool-card,body:has(#startOverlay:not(.hidden)) .tool-card,body:has(.start-overlay:not(.hidden)) .tool-card,body:has(#menu-screen:not(.hidden)) .tool-card{pointer-events:none!important;z-index:1!important}
+body:has(#simCanvas):has(.controls-panel){height:100vh!important;overflow:hidden!important}
+body:has(#simCanvas):has(.controls-panel) .app-container,body:has(#simCanvas):has(.controls-panel) .app{height:100vh!important;min-height:0!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#simCanvas):has(.controls-panel) .main-content{flex:1 1 auto!important;min-height:0!important;max-height:calc(100vh - 58px)!important;overflow:hidden!important}
+body:has(#simCanvas):has(.controls-panel) .canvas-wrapper,body:has(#simCanvas):has(.controls-panel) .canvas-container{flex:1 1 auto!important;min-height:220px!important;max-height:calc(100vh - 310px)!important;overflow:hidden!important}
+body:has(#simCanvas):has(.controls-panel) .controls-panel{flex:0 0 auto!important;max-height:min(32vh,250px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(#simCanvas):has(.controls-panel) .controls-grid{gap:8px!important}
+body:has(#simCanvas):has(.controls-panel) .control-group{padding:8px 10px!important}
+body:has(#simCanvas):has(.controls-panel) .control-group h3{margin-bottom:6px!important}
+body:has(#simCanvas):has(.controls-panel) .slider-row{margin-bottom:4px!important}
+body:has(#simCanvas):has(.controls-panel) .btn-row{margin-top:6px!important}
+body:has(#simCanvas):has(.controls-panel) #simCanvas{height:100%!important;max-height:none!important}
+body:has(#graphCanvas):has(.controls-panel){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#graphCanvas):has(.controls-panel) .app-container,body:has(#graphCanvas):has(.controls-panel) .app{height:100vh!important;min-height:0!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#graphCanvas):has(.controls-panel) .main-content{flex:1 1 auto!important;min-height:0!important;max-height:calc(100vh - 58px)!important;overflow:hidden!important}
+body:has(#graphCanvas):has(.controls-panel) .canvas-container{flex:1 1 auto!important;min-height:220px!important;max-height:calc(100vh - 315px)!important;overflow:hidden!important}
+body:has(#graphCanvas):has(.controls-panel) .controls-panel{flex:0 0 auto!important;max-height:min(34vh,285px)!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding-top:8px!important;padding-bottom:8px!important}
+body:has(#graphCanvas):has(.controls-panel) .controls-grid{gap:8px!important;margin-bottom:8px!important}
+body:has(#graphCanvas):has(.controls-panel) .control-group{padding:8px!important}
+body:has(#graphCanvas):has(.controls-panel) #graphCanvas{height:100%!important;max-height:none!important}
+body:has(#canvas):has(.controls-panel),body:has(#canvas):has(#controls-panel),body:has(#canvas):has(.control-panel),body:has(#canvas):has(.controls),body:has(#canvas):has(.hud-overlay){height:100vh!important;overflow:hidden!important}
+body:has(#canvas):has(.controls-panel) .app-container,body:has(#canvas):has(#controls-panel) .app-container,body:has(#canvas):has(.control-panel) .app-container,body:has(#canvas):has(.controls) .app-container,body:has(#canvas):has(.hud-overlay) .app-container,body:has(#canvas):has(.controls-panel) .app,body:has(#canvas):has(#controls-panel) .app,body:has(#canvas):has(.control-panel) .app,body:has(#canvas):has(.controls) .app,body:has(#canvas):has(.hud-overlay) .app,body:has(#canvas):has(.control-panel) .main-container{height:100vh!important;min-height:0!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#canvas):has(.control-panel) .status-bar{flex:0 0 auto!important}
+body:has(#canvas):has(.controls-panel) .canvas-wrapper,body:has(#canvas):has(#controls-panel) .canvas-wrapper,body:has(#canvas):has(.control-panel) .canvas-wrapper,body:has(#canvas):has(.controls) .canvas-wrapper,body:has(#canvas):has(.hud-overlay) .canvas-wrapper,body:has(#canvas):has(.controls-panel) .canvas-container,body:has(#canvas):has(#controls-panel) .canvas-container,body:has(#canvas):has(.control-panel) .canvas-container,body:has(#canvas):has(.controls) .canvas-container,body:has(#canvas):has(.hud-overlay) .canvas-container,body:has(#canvas):has(#controls-panel) #canvas-wrapper{flex:1 1 auto!important;min-height:180px!important;max-height:calc(100vh - 250px)!important;overflow:hidden!important}
+body:has(#canvas):has(.controls-panel) .controls-panel,body:has(#canvas):has(#controls-panel) #controls-panel,body:has(#canvas):has(.control-panel) .control-panel,body:has(#canvas):has(.controls) .controls{flex:0 0 auto!important;max-height:min(32vh,250px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(#canvas):has(.controls-panel) #canvas,body:has(#canvas):has(#controls-panel) #canvas,body:has(#canvas):has(.control-panel) #canvas,body:has(#canvas):has(.controls) #canvas,body:has(#canvas):has(.hud-overlay) #canvas{width:100%!important;height:100%!important;max-height:none!important;min-height:0!important;object-fit:contain!important}
+input[type="range"]{position:relative!important;z-index:2147483004!important;pointer-events:auto!important;min-height:24px!important}
+input[type="range"]{height:24px!important}
+input[type="range"]::-webkit-slider-thumb{position:relative!important;z-index:2147483005!important;pointer-events:auto!important}
+#speed-control{position:relative!important;z-index:2147483003!important;pointer-events:auto!important}
+#speed-slider{position:relative!important;z-index:2147483005!important;pointer-events:auto!important;min-height:24px!important}
+body:has(#canvas-container>canvas):not(:has(#gameCanvas)){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#canvas-container>canvas):not(:has(#gameCanvas)) #canvas-container{height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#canvas-container>canvas):not(:has(#gameCanvas)) canvas{height:100%!important;max-height:100vh!important;object-fit:contain!important}
+body:has(.canvas-container>#mainCanvas){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(.canvas-container>#mainCanvas) .app{height:100vh!important;min-height:0!important;max-height:100vh!important;overflow:hidden!important}
+body:has(.canvas-container>#mainCanvas) .main{flex:1 1 auto!important;min-height:0!important;max-height:calc(100vh - 78px)!important;overflow:hidden!important}
+body:has(.canvas-container>#mainCanvas) .canvas-container{flex:1 1 auto!important;min-height:220px!important;max-height:calc(100vh - 330px)!important;overflow:hidden!important}
+body:has(.canvas-container>#mainCanvas) .controls{flex:0 0 auto!important;max-height:min(32vh,250px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(.canvas-container>#mainCanvas) #mainCanvas{height:100%!important;max-height:none!important;object-fit:contain!important}
+body:has(#canvas):has(#canvas-container):not(:has(#gameCanvas)):not(:has(#canvasWrapper)){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#canvas):has(#canvas-container):not(:has(#gameCanvas)):not(:has(#canvasWrapper)) #canvas-container{height:calc(100vh - 350px)!important;max-height:calc(100vh - 350px)!important;overflow:hidden!important}
+body:has(#canvas):has(#canvas-container):not(:has(#gameCanvas)):not(:has(#canvasWrapper)) #canvas{height:100%!important;max-height:none!important;object-fit:contain!important}
+body:has(#app):has(#canvas-wrap) #app{height:100vh!important;max-height:100vh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+body:has(#app):has(#canvas-wrap) #controls{flex:0 0 auto!important;max-height:min(30vh,230px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(#app):has(#canvas-wrap) #canvas-wrap{flex:1 1 auto!important;min-height:180px!important;max-height:calc(100vh - 250px)!important;overflow:hidden!important}
+body:has(#app):has(#canvas-wrap) #canvas{width:100%!important;height:100%!important;max-height:none!important;object-fit:contain!important}
+body:has(.canvas-wrap>#canvas):has(.toggle-btn){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(.canvas-wrap>#canvas):has(.toggle-btn) .app{height:100vh!important;max-height:100vh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+body:has(.canvas-wrap>#canvas):has(.toggle-btn) .main{flex:1 1 auto!important;min-height:0!important;max-height:calc(100vh - 62px)!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+body:has(.canvas-wrap>#canvas):has(.toggle-btn) .canvas-wrap{flex:1 1 auto!important;min-height:220px!important;max-height:min(680px,calc(100vh - 180px))!important;overflow:hidden!important}
+body:has(.canvas-wrap>#canvas):has(.toggle-btn) .canvas-wrap>#canvas{width:100%!important;height:100%!important;max-height:none!important;object-fit:contain!important}
+body:has(.canvas-wrap>#canvas):has(.toggle-btn) .controls{flex:0 0 auto!important;max-height:min(34vh,250px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(.canvas-wrap>#graph):has(.toggle-btn){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(.canvas-wrap>#graph):has(.toggle-btn) .app{height:100vh!important;max-height:100vh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+body:has(.canvas-wrap>#graph):has(.toggle-btn) .controls{flex:0 0 auto!important;max-height:min(34vh,245px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(.canvas-wrap>#graph):has(.toggle-btn) .canvas-area{flex:1 1 auto!important;min-height:0!important;max-height:calc(100vh - 245px)!important;overflow:hidden!important}
+body:has(.canvas-wrap>#graph):has(.toggle-btn) .canvas-wrap{flex:1 1 auto!important;min-height:0!important;max-height:calc(100vh - 255px)!important;overflow:hidden!important}
+body:has(.canvas-wrap>#graph):has(.toggle-btn) .canvas-wrap>#graph{width:100%!important;height:100%!important;max-height:none!important;object-fit:contain!important}
+body:has(.diagram-wrap):has(#diagramSvg){width:100vw!important;max-width:100vw!important;overflow:hidden!important}
+body:has(.diagram-wrap):has(#diagramSvg) .app{width:100vw!important;max-width:100vw!important;overflow:hidden!important}
+body:has(.diagram-wrap):has(#diagramSvg) .diagram-wrap{min-width:0!important;max-width:100vw!important;overflow:hidden!important}
+body:has(.diagram-wrap):has(#diagramSvg) #sidebar.collapsed,body:has(.diagram-wrap):has(#diagramSvg) .sidebar.collapsed,body:has(#diagram-container):has(#sidebar) #sidebar.collapsed{display:none!important;transform:none!important}
+body:has(.diagram-wrap):has(#diagramSvg) #diagramSvg{width:100%!important;max-width:100vw!important}
+@media(max-width:768px){body:has(#main-svg):has(#sidebar),body:has(#diagram-container):has(#sidebar){width:100vw!important;max-width:100vw!important;min-height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}body:has(#main-svg):has(#sidebar) #diagram-container,body:has(#diagram-container):has(#sidebar) #diagram-container{flex:1 1 100vw!important;width:100vw!important;max-width:100vw!important;min-width:0!important;min-height:0!important;height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}body:has(#main-svg):has(#sidebar) #sidebar:not(.mobile-open):not(.open):not(.show):not(.active),body:has(#diagram-container):has(#sidebar) #sidebar:not(.mobile-open):not(.open):not(.show):not(.active){display:none!important;transform:none!important;width:0!important;min-width:0!important;max-width:0!important;border:0!important;overflow:hidden!important}body:has(#main-svg):has(#sidebar) #sidebar.mobile-open,body:has(#main-svg):has(#sidebar) #sidebar.open,body:has(#main-svg):has(#sidebar) #sidebar.show,body:has(#main-svg):has(#sidebar) #sidebar.active,body:has(#diagram-container):has(#sidebar) #sidebar.mobile-open,body:has(#diagram-container):has(#sidebar) #sidebar.open,body:has(#diagram-container):has(#sidebar) #sidebar.show,body:has(#diagram-container):has(#sidebar) #sidebar.active{position:fixed!important;right:0!important;top:0!important;bottom:0!important;width:min(88vw,320px)!important;min-width:0!important;max-width:min(88vw,320px)!important;height:100dvh!important;max-height:100dvh!important;overflow-y:auto!important}}
+body:has(#toggleBtn) #toggleBtn{position:fixed!important;top:60px!important;right:12px!important;z-index:2147483647!important;pointer-events:auto!important;isolation:isolate!important}
+body:has(#toggleBtn):has(#sidebar:not(.collapsed)) #toggleBtn{right:352px!important}
+body:has(#toggleBtn) #diagramSVG,body:has(#toggleBtn) #diagramSvg{position:relative!important;z-index:0!important}
+body:has(#toggleBtn) #toggleBtn::before{content:"";position:absolute;inset:-4px;border-radius:12px;background:rgba(13,17,23,.92);z-index:-1}
+body:has(#sidebarToggle) #sidebarToggle,body:has(#prevBtn) #prevBtn,body:has(#nextBtn) #nextBtn{position:relative!important;z-index:2147483006!important;pointer-events:auto!important}
+body:has(#sidebarToggle) #sidebar-overlay{pointer-events:none!important}
+body:has(#sidebarToggle) #main,body:has(#sidebarToggle) #svg-container,body:has(#sidebarToggle) #diagram{position:relative!important;z-index:0!important}
+body:has(#sidebarToggle) #sidebar:not(.open):not(.show):not(.active){pointer-events:none!important}
+body:has(#toggleBtn) .close-btn{position:relative!important;z-index:2147483005!important;pointer-events:auto!important}
+body:has(#toggleBtn) #toggleBtn.shifted{top:60px!important;right:12px!important}
+body:has(#toggleBtn) .sidebar:not(.collapsed) + #toggleBtn,body:has(#toggleBtn) #sidebar:not(.collapsed) + #toggleBtn{display:none!important;visibility:hidden!important;pointer-events:none!important}
+header h1{min-width:0!important;max-width:100%!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.2!important}
+#topbar h1,#header h1{min-width:0!important;max-width:100%!important;white-space:normal!important;overflow:visible!important;text-overflow:clip!important;overflow-wrap:anywhere!important;word-break:break-word!important;line-height:1.2!important}
+@media(max-width:768px){body:has(#diagramSvg) #header,body:has(#diagramSVG) #header,body:has(#svg-container):has(#diagram) #header{flex-wrap:wrap!important;align-items:center!important;gap:6px!important;padding:6px 8px!important;overflow:hidden!important;width:100vw!important;max-width:100vw!important}body:has(#diagramSvg) #header h1,body:has(#diagramSVG) #header h1,body:has(#svg-container):has(#diagram) #header h1{flex:1 1 100%!important;font-size:13px!important;line-height:1.15!important;min-width:0!important;max-width:100%!important}body:has(#diagramSvg) #controls,body:has(#diagramSVG) #controls,body:has(#svg-container):has(#diagram) #controls{flex:1 1 100%!important;width:100%!important;max-width:100%!important;min-width:0!important;display:flex!important;flex-wrap:wrap!important;justify-content:flex-start!important;gap:4px!important;overflow:hidden!important}body:has(#diagramSvg) #controls .btn,body:has(#diagramSVG) #controls .btn,body:has(#diagramSvg) #controls button,body:has(#diagramSVG) #controls button,body:has(#svg-container):has(#diagram) #controls .btn,body:has(#svg-container):has(#diagram) #controls button{flex:0 1 auto!important;min-width:0!important;max-width:calc(50vw - 12px)!important;padding:4px 7px!important;font-size:11px!important;line-height:1.15!important;white-space:normal!important;overflow-wrap:anywhere!important}}
+.matrix-bracket{line-height:1.25!important;min-height:1.25em!important;display:inline-flex!important;align-items:center!important;overflow:visible!important;padding-top:3px!important;padding-bottom:3px!important}
+.matrix-bracket{height:auto!important;min-width:.72em!important;width:auto!important;justify-content:center!important;white-space:nowrap!important;padding-left:4px!important;padding-right:4px!important}
+.matrix-display,#matrix-display{align-items:center!important;overflow:visible!important}
+#achievement-popup.show,#achievementPopup.show{pointer-events:none!important}
+#pause-btn,.btn-pause{position:relative!important;z-index:2147483100!important;pointer-events:auto!important}
+body:has(#hud):has(#pauseBtn) #hud{padding-right:68px!important;pointer-events:none!important}
+body:has(#hud):has(#pauseBtn) #hud>.hud-item:last-of-type{margin-right:10px!important}
+body:has(#hud):has(#pauseBtn) #hud>div{pointer-events:auto!important}
+body:has(#hud):has(#pauseBtn) #pauseBtn{position:absolute!important;right:12px!important;top:8px!important;z-index:2147483400!important;pointer-events:auto!important}
+#result-screen{z-index:2147482800!important;pointer-events:auto!important}
+#result-screen button,#result-screen .btn,#next-level-btn{position:relative!important;z-index:2147483100!important;pointer-events:auto!important;transform:none!important}
+#result-screen .result-explanation,#result-screen .stat-label,#result-screen .stat-value,#result-screen .stats,#result-screen p,#result-screen h1,#result-screen h2,#result-screen h3{pointer-events:none!important}
+body:has(#result-screen:not(.hidden)) #pause-btn{visibility:hidden!important;pointer-events:none!important}
+button[class*="md:hidden"],button[class*="toggle"],#toggle-panel-btn{position:relative!important;z-index:2147483200!important;pointer-events:auto!important}
+#func-label{pointer-events:none!important}
+body:has(#x_position-slider):has(#canvas) div:has(>#func-label){pointer-events:none!important;z-index:2147481000!important}
+@media(max-width:700px){body:has(#x_position-slider):has(#canvas) div:has(>#func-label){top:64px!important;right:8px!important;max-width:calc(100vw - 16px)!important;font-size:10px!important;line-height:1.2!important}body:has(#x_position-slider):has(#canvas) div:has(>#tangent-eq){left:8px!important;right:8px!important;bottom:8px!important;max-height:88px!important;overflow:hidden!important;pointer-events:none!important}body:has(#x_position-slider):has(#canvas) button[class*="md:hidden"]{position:relative!important;z-index:2147483300!important}}
+body:has(#gameContainer):has(.screen){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#gameContainer):has(.screen) #gameContainer{height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#gameContainer):has(.screen) .screen:not(.active){display:none!important}
+body:has(#gameContainer):has(.screen) .screen.active{max-height:100vh!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(#gameContainer):has(.screen) #pauseOverlay.show,body:has(#gameContainer):has(.screen) #pause-overlay.show{position:fixed!important;inset:0!important;z-index:2147483000!important}
+body:has(#btnNext) .sidebar{position:relative!important;z-index:2147483000!important;pointer-events:auto!important}
+body:has(#btnNext) .controls{position:relative!important;z-index:2147483100!important;pointer-events:auto!important}
+body:has(#btnNext) #btnNext,body:has(#btnNext) #btnPrev{position:relative!important;z-index:2147483200!important;pointer-events:auto!important}
+body:has(#btnNext) .main,body:has(#btnNext) .svg-container,body:has(#btnNext) #diagramSvg{z-index:0!important}
+body:has(#diagram-container):has(#sidebar):has(#nav-controls) #nav-controls{z-index:2147483400!important;pointer-events:auto!important;max-width:calc(100vw - 24px)!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important}
+body:has(#diagram-container):has(#sidebar):has(#nav-controls) #nav-controls button{position:relative!important;z-index:2147483401!important;pointer-events:auto!important;white-space:normal!important;overflow-wrap:anywhere!important}
+body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.open,body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.show,body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.active{bottom:88px!important;height:calc(100dvh - 88px)!important;max-height:calc(100dvh - 88px)!important;overflow:hidden!important}
+body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.open #sidebar-content,body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.show #sidebar-content,body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.active #sidebar-content{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;padding-bottom:16px!important}
+body:has(#diagram-container):has(#sidebar):has(#nav-controls) #diagram-container.shifted{margin-right:0!important}
+body:has(#toggle-panel):has(#detail-panel) #toggle-panel{position:fixed!important;top:15px!important;right:15px!important;z-index:2147483500!important;pointer-events:auto!important}
+body:has(#toggle-panel):has(#detail-panel) #controls{position:fixed!important;left:50%!important;right:auto!important;top:auto!important;bottom:15px!important;transform:translateX(-50%)!important;width:auto!important;max-width:calc(100vw - 24px)!important;z-index:2147483300!important;pointer-events:auto!important}
+body:has(#toggle-panel):has(#detail-panel) #controls button{position:relative!important;z-index:2147483301!important;pointer-events:auto!important}
+body:has(#toggle-panel):has(#detail-panel) #detail-panel.open{bottom:76px!important;height:calc(100dvh - 76px)!important;max-height:calc(100dvh - 76px)!important;overflow-y:auto!important}
+body:has(#targetCanvas):has(#playerCanvas){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#targetCanvas):has(#playerCanvas) .main-area{min-height:0!important;max-height:calc(100vh - 190px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(#targetCanvas):has(#playerCanvas) .double-canvas{gap:8px!important}
+body:has(#targetCanvas):has(#playerCanvas) .canvas-wrapper{min-height:0!important;overflow:hidden!important}
+body:has(#targetCanvas):has(#playerCanvas) #targetCanvas,body:has(#targetCanvas):has(#playerCanvas) #playerCanvas{width:100%!important;height:auto!important;max-height:min(34vh,300px)!important;object-fit:contain!important}
+body:has(#step_size-slider):has(#canvas){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#step_size-slider):has(#canvas) #controls{max-height:min(36vh,300px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(#step_size-slider):has(#canvas) canvas#canvas{width:100%!important;height:100%!important;max-height:none!important;object-fit:contain!important}
+body:has(#step_size-slider):has(#canvas) #controls+div,body:has(#step_size-slider):has(#canvas) .canvas-container{overflow:hidden!important}
+body:has(#canvasContainer):has(#controls){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#canvasContainer):has(#controls) #canvasContainer{flex:1 1 auto!important;min-height:180px!important;max-height:72vh!important;overflow:hidden!important}
+body:has(#canvasContainer):has(#controls) #canvas{width:100%!important;height:100%!important;max-height:none!important;min-height:0!important;object-fit:contain!important}
+body:has(#main-canvas):has(#controls-panel){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#main-canvas):has(#controls-panel) .app-container{height:100vh!important;min-height:0!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#main-canvas):has(#controls-panel) .header,body:has(#main-canvas):has(#controls-panel) .toggle-controls-btn{flex:0 0 auto!important}
+body:has(#main-canvas):has(#controls-panel) .main-area{flex:1 1 auto!important;min-height:0!important;overflow:hidden!important}
+body:has(#main-canvas):has(#controls-panel) #controls-panel{flex:0 0 auto!important;max-height:min(36vh,280px)!important;overflow-y:auto!important;overscroll-behavior:contain!important}
+body:has(#main-canvas):has(#controls-panel) #canvas-container{flex:1 1 auto!important;min-height:180px!important;max-height:none!important;overflow:hidden!important}
+body:has(#main-canvas):has(#controls-panel) #main-canvas{width:100%!important;height:100%!important;max-height:none!important;object-fit:contain!important}
+body:has(#canvas-container):has(#info){height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#canvas-container):has(#info) #canvas-container{height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+body:has(#canvas-container):has(#info) #info,body:has(#canvas-container):has(#info) #gradient-chart,body:has(#canvas-container):has(#hessian-info) #hessian-info{max-height:calc(100vh - 96px)!important;overflow-y:auto!important}
+body:has(#effect-canvas):has(#rule-builder-area) #effect-canvas{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;max-height:none!important}
+body:has(#effect-canvas):has(#rule-builder-area) #game-container{height:100vh!important;max-height:100vh!important;overflow-y:auto!important;overscroll-behavior:contain!important;padding-top:8px!important;padding-bottom:8px!important}
+body:has(#effect-canvas):has(#rule-builder-area) #hud{position:sticky!important;top:0!important;z-index:80!important;margin-bottom:8px!important}
+body:has(#effect-canvas):has(#rule-builder-area) #evidence-area{max-height:31vh!important;overflow-y:auto!important;margin-bottom:8px!important}
+body:has(#effect-canvas):has(#rule-builder-area) #machine-area{min-height:118px!important;padding:8px 5px!important;margin-bottom:8px!important}
+body:has(#effect-canvas):has(#rule-builder-area) .machine{width:112px!important;height:96px!important}
+body:has(#effect-canvas):has(#rule-builder-area) #number-pad{gap:7px!important;padding:8px!important;margin-bottom:8px!important}
+body:has(#effect-canvas):has(#rule-builder-area) .num-btn{min-height:42px!important;padding:9px 6px!important}
+body:has(#effect-canvas):has(#rule-builder-area) #rule-builder-area{max-height:25vh!important;overflow-y:auto!important;margin-bottom:8px!important}
+body:has(#effect-canvas):has(#rule-builder-area) .rule-slots{min-height:44px!important;padding:6px!important;margin-bottom:8px!important}
+body:has(#effect-canvas):has(#rule-builder-area) .rule-slot{min-height:38px!important}
+body:has(#effect-canvas):has(#rule-builder-area) .action-bar{position:sticky!important;bottom:0!important;z-index:90!important;background:linear-gradient(180deg,rgba(36,36,62,0.78),rgba(36,36,62,0.96))!important;padding:6px 0!important;margin-bottom:0!important}
+body:has(#effect-canvas):has(#rule-builder-area) .action-btn{min-height:42px!important;padding:9px 20px!important}
+body:has(#effect-canvas):has(#rule-builder-area) #feedback{min-height:30px!important;padding:6px!important}
+body:has(#main-svg):has(#sidebar),body:has(#diagram-container):has(#main-svg){width:100vw!important;max-width:100vw!important;overflow:hidden!important}
+body:has(#main-svg):has(#sidebar) #app{width:100vw!important;max-width:100vw!important;overflow:hidden!important}
+body:has(#main-svg):has(#sidebar) #diagram-container{min-width:0!important;max-width:100%!important;overflow:hidden!important}
+body:has(#main-svg):has(#sidebar) svg#main-svg{width:100%!important;max-width:100%!important;min-width:0!important;height:100%!important;max-height:100%!important}
+body:has(#main-svg):has(#sidebar) #sidebar{position:relative!important;z-index:2147483200!important}
+body:has(#main-svg):has(#sidebar) #title-bar{pointer-events:none!important;z-index:20!important}
+body:has(#main-svg):has(#sidebar) .sidebar-header,body:has(#main-svg):has(#sidebar) .sidebar-header h2{pointer-events:none!important}
+body:has(#main-svg):has(#sidebar) .sidebar-close{position:relative!important;z-index:2147483300!important;pointer-events:auto!important}
+@media (max-width:700px){
+  html,body{width:100%;max-width:100vw}
+  body{overflow-x:hidden!important}
+  .app-container{min-height:100dvh;max-height:100dvh}
+  .scene{grid-template-columns:minmax(0,1fr)!important;padding-left:12px!important;padding-right:12px!important}
+  .panel,.controls,aside,.chart,.plot,.surface,.surface-wrap,.math-panel{min-width:0!important;max-width:100%!important}
+  .canvas-area,#canvas-container,.canvas-container{min-height:220px!important;max-height:calc(100dvh - 96px)!important}
+  .canvas-area canvas,#canvas-container>canvas,.canvas-container>canvas,#main-canvas{height:100%!important;max-height:none!important}
+  #canvas{height:auto!important;max-height:calc(100dvh - 116px)!important}
+  body:has(#canvas):has(.controls-panel) #canvas,body:has(#canvas):has(#controls-panel) #canvas,body:has(#canvas):has(.control-panel) #canvas,body:has(#canvas):has(.controls) #canvas,body:has(#canvas):has(.hud-overlay) #canvas{height:100%!important;max-height:none!important}
+  body:has(#graphCanvas):has(.controls-panel){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#graphCanvas):has(.controls-panel) .app-container,body:has(#graphCanvas):has(.controls-panel) .app{height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#graphCanvas):has(.controls-panel) .main-content{max-height:calc(100dvh - 54px)!important}
+  body:has(#graphCanvas):has(.controls-panel) .canvas-container{min-height:190px!important;max-height:calc(100dvh - 300px)!important}
+  body:has(#graphCanvas):has(.controls-panel) .controls-panel{max-height:min(36dvh,275px)!important}
+  body:has(#canvas-container>canvas):not(:has(#gameCanvas)){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#canvas-container>canvas):not(:has(#gameCanvas)) #canvas-container{height:100dvh!important;max-height:100dvh!important}
+  body:has(#canvas):has(#canvas-container):not(:has(#gameCanvas)):not(:has(#canvasWrapper)) #canvas-container{height:calc(100dvh - 350px)!important;max-height:calc(100dvh - 350px)!important}
+  body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls{position:absolute!important;left:0!important;right:0!important;bottom:0!important;max-height:34dvh!important;overflow-y:auto!important}
+  body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #canvas-container{height:100dvh!important;max-height:100dvh!important}
+  body:has(.canvas-container>#mainCanvas) .app{height:100dvh!important;min-height:0!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(.canvas-container>#mainCanvas) .main{max-height:calc(100dvh - 76px)!important}
+  body:has(.canvas-container>#mainCanvas) .canvas-container{min-height:190px!important;max-height:calc(100dvh - 330px)!important}
+  body:has(.canvas-container>#mainCanvas) .controls{max-height:min(34dvh,270px)!important;overflow-y:auto!important}
+  canvas{max-height:85dvh}
+  body:has(#gameCanvas):has(#canvasWrapper){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#gameCanvas):has(#canvasWrapper) #gameContainer{height:100dvh!important;max-height:100dvh!important;padding:6px 8px!important}
+  body:has(#gameCanvas):has(#canvasWrapper) #canvasWrapper{min-height:200px!important;max-height:calc(100dvh - 320px)!important}
+  body:has(#gameCanvas):has(#canvasWrapper) #infoPanel{max-height:84px!important}
+  body:has(> #gameCanvas):has(> #controls){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+  body:has(> #gameCanvas):has(> #controls) #hud,body:has(> #gameCanvas):has(> #controls) #controls{flex:0 0 auto!important}
+  body:has(> #gameCanvas):has(> #controls) #gameCanvas{flex:0 0 min(60dvh,520px)!important;width:100%!important;height:min(60dvh,520px)!important;max-height:min(60dvh,520px)!important;min-height:min(60dvh,520px)!important;object-fit:contain!important}
+  body:has(#startScreen):has(#gameCanvas):has(#controls){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important;display:flex!important;flex-direction:column!important}
+  body:has(#startScreen):has(#gameCanvas):has(#controls) #hud,body:has(#startScreen):has(#gameCanvas):has(#controls) #controls{flex:0 0 auto!important}
+  body:has(#startScreen):has(#gameCanvas):has(#controls) #gameCanvas{flex:0 0 min(60dvh,520px)!important;width:100%!important;height:min(60dvh,520px)!important;max-height:min(60dvh,520px)!important;min-height:min(60dvh,520px)!important;object-fit:contain!important}
+  button,[role="button"]{white-space:normal}
+  header{min-width:0!important}
+  header h1,header .subtitle{min-width:0!important;max-width:100%!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;line-height:1.22!important;font-size:clamp(14px,3.6vw,18px)!important}
+  .header-controls{position:relative!important;z-index:2147482001!important;flex:0 0 auto!important}
+  #btnReset{position:relative!important;z-index:2147482002!important;pointer-events:auto!important}
+  body:has(#btnReset) header h1{max-width:calc(100vw - 140px)!important}
+  body:has(#btnReset) .header-controls{margin-left:auto!important}
+  body:has(#btnReset) #btnReset{min-width:72px!important}
+  body:has(#btnReset) header{position:relative!important;z-index:2147482500!important}
+  body:has(#btnReset) .sidebar h2,body:has(#btnReset) #sidebar h2{pointer-events:none!important}
+  .header:has(.header-controls){flex-wrap:wrap!important;height:auto!important;max-width:100vw!important;overflow:hidden!important;gap:6px!important}
+  .header:has(.header-controls) h1{flex:1 0 100%!important;max-width:100%!important;font-size:1rem!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+  .header:has(.header-controls) .header-controls{position:static!important;width:100%!important;max-width:100%!important;justify-content:center!important;gap:4px!important;overflow:hidden!important;transform:none!important}
+  .header:has(.header-controls) .header-controls .btn{min-width:0!important;padding:6px 8px!important;font-size:12px!important}
+  .header:has(.header-controls) .step-text{font-size:12px!important;min-width:0!important;white-space:nowrap!important}
+  #sidebar,#sidePanel,.sidebar{max-width:min(92vw,360px)!important}
+  #sidebar.collapsed,#sidePanel.collapsed,.sidebar.collapsed{display:none!important;transform:none!important}
+  #sidebar:not(.open):not(.expanded):not(.show):not(.active),#sidePanel:not(.open):not(.expanded):not(.show):not(.active),.sidebar:not(.open):not(.expanded):not(.show):not(.active){visibility:hidden;opacity:0;pointer-events:none}
+  #sidebar.open,#sidebar.expanded,#sidebar.show,#sidebar.active,#sidePanel.open,#sidePanel.expanded,#sidePanel.show,#sidePanel.active,.sidebar.open,.sidebar.expanded,.sidebar.show,.sidebar.active{visibility:visible;opacity:1;pointer-events:auto;max-height:calc(100dvh - 96px)!important;height:calc(100dvh - 96px)!important;overflow:hidden!important}
+  #sidebar.open .sidebar-content,#sidebar.expanded .sidebar-content,#sidebar.show .sidebar-content,#sidebar.active .sidebar-content,#sidebar.open #details-content,#sidebar.open #sidebar-content,#sidebar.open #detail-panel,.sidebar.open .sidebar-content{flex:1 1 auto!important;min-height:0!important;overflow-y:auto!important;padding-bottom:16px!important}
+  body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.open,body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.show,body:has(#diagram-container):has(#sidebar):has(#nav-controls) #sidebar.active{bottom:88px!important;height:calc(100dvh - 88px)!important;max-height:calc(100dvh - 88px)!important}
+  body:has(#diagram-container):has(#sidebar):has(#nav-controls) #nav-controls{bottom:12px!important;width:auto!important;max-width:calc(100vw - 16px)!important;padding:8px 12px!important;gap:8px!important}
+  body:has(#diagram-container):has(#sidebar):has(#nav-controls) #nav-controls button{min-width:0!important;max-width:calc(50vw - 24px)!important;padding:7px 10px!important;font-size:12px!important}
+  body:has(#toggle-panel):has(#detail-panel) #controls{bottom:12px!important;gap:8px!important}
+  body:has(#toggle-panel):has(#detail-panel) #controls button{min-width:0!important;max-width:calc(50vw - 16px)!important;padding:8px 10px!important}
+  body:has(> #diagram-wrap):has(> #sidebar){display:block!important;width:100vw!important;max-width:100vw!important;height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #diagram-wrap{width:100vw!important;height:100dvh!important;max-width:100vw!important;max-height:100dvh!important;min-width:0!important;overflow:hidden!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #diagram-wrap svg{width:100vw!important;height:calc(100dvh - 112px)!important;max-width:100vw!important;max-height:calc(100dvh - 112px)!important;margin:0 auto!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #sidebar{position:fixed!important;top:0!important;right:0!important;bottom:96px!important;left:auto!important;width:min(88vw,320px)!important;max-width:min(88vw,320px)!important;height:auto!important;max-height:calc(100dvh - 96px)!important;transform:translateX(100%)!important;overflow:hidden!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #sidebar.open,body:has(> #diagram-wrap):has(> #sidebar) #sidebar.expanded,body:has(> #diagram-wrap):has(> #sidebar) #sidebar.show,body:has(> #diagram-wrap):has(> #sidebar) #sidebar.active{transform:translateX(0)!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #sidebar.collapsed{display:none!important;transform:none!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #sidebar-toggle{position:fixed!important;top:12px!important;right:12px!important;left:auto!important;transform:none!important;z-index:2147483400!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #step-info{position:fixed!important;left:50%!important;right:auto!important;bottom:80px!important;transform:translateX(-50%)!important;max-width:calc(100vw - 24px)!important;text-align:center!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #controls{position:fixed!important;left:50%!important;right:auto!important;bottom:12px!important;transform:translateX(-50%)!important;width:auto!important;max-width:calc(100vw - 24px)!important;display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:8px!important;overflow:visible!important}
+  body:has(> #diagram-wrap):has(> #sidebar) #controls button{min-width:0!important;max-width:calc(50vw - 18px)!important;padding:8px 12px!important}
+  #controls,#step-nav{z-index:2147483003!important}
+  #controls{left:50%!important;right:auto!important;transform:translateX(-50%)!important;max-width:calc(100vw - 24px)!important}
+  #diagram,#diagram svg,#diagram-container svg{max-width:100%!important}
+  body:has(.sidebar):has(svg),body:has(#sidebar):has(svg),body:has(.mindmap-container):has(svg){width:100vw!important;max-width:100vw!important;overflow-x:hidden!important}
+  body:has(.sidebar):has(svg) svg,body:has(#sidebar):has(svg) svg,body:has(.mindmap-container):has(svg) svg{max-width:100vw!important}
+  body:has(#diagramSvg),body:has(#diagramSvg) .main-container,body:has(#diagramSvg) .diagram-area{width:100vw!important;max-width:100vw!important;overflow:hidden!important}
+  body:has(#diagramSvg) #diagramSvg{width:100%!important;max-width:100vw!important}
+  body:has(#toggleBtn) #toggleBtn{position:fixed!important;top:60px!important;right:12px!important;z-index:2147483647!important;pointer-events:auto!important}
+  body:has(#toggleBtn):has(#sidebar:not(.collapsed)) #toggleBtn{right:12px!important;top:108px!important}
+  body:has(#toggleBtn) #diagramSVG,body:has(#toggleBtn) #diagramSvg{z-index:0!important}
+  body:has(#effect-canvas):has(#rule-builder-area) #game-container{height:100dvh!important;max-height:100dvh!important}
+  body:has(#effect-canvas):has(#rule-builder-area) #evidence-area{max-height:22dvh!important}
+  body:has(#effect-canvas):has(#rule-builder-area) #machine-area{min-height:120px!important}
+  body:has(#effect-canvas):has(#rule-builder-area) #rule-builder-area{max-height:none!important;overflow:visible!important}
+  body:has(#effect-canvas):has(#rule-builder-area) .action-bar{position:relative!important;bottom:auto!important;background:transparent!important}
+  body:has(#canvasContainer):has(#controls){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#canvasContainer):has(#controls) #controls{max-height:42dvh!important;overflow-y:auto!important}
+  body:has(#canvasContainer):has(#controls) #controls.collapsed{max-height:76px!important}
+  body:has(#canvasContainer):has(#controls) #canvasContainer{height:58dvh!important;max-height:58dvh!important;min-height:220px!important;overflow:hidden!important}
+  body:has(#canvasContainer):has(#controls) #canvas{height:100%!important;max-height:none!important}
+  body:has(#gameCanvas):has(#canvas-wrapper) #canvas-wrapper{height:min(58dvh,490px)!important;max-height:min(58dvh,490px)!important;min-height:240px!important}
+  body:has(#gameCanvas):has(#canvas-wrapper) #gameCanvas{height:100%!important;max-height:none!important}
+  body:has(#targetCanvas):has(#playerCanvas){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#targetCanvas):has(#playerCanvas) .main-area{max-height:calc(100dvh - 174px)!important;overflow-y:auto!important}
+  body:has(#targetCanvas):has(#playerCanvas) .double-canvas{flex-direction:column!important;gap:6px!important}
+  body:has(#targetCanvas):has(#playerCanvas) .canvas-wrapper{max-height:min(24dvh,190px)!important}
+  body:has(#targetCanvas):has(#playerCanvas) #targetCanvas,body:has(#targetCanvas):has(#playerCanvas) #playerCanvas{height:min(21dvh,170px)!important;max-height:min(21dvh,170px)!important}
+  body:has(#step_size-slider):has(#canvas){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#step_size-slider):has(#canvas) #controls{max-height:min(34dvh,286px)!important}
+  body:has(#step_size-slider):has(#canvas) #controls+div{min-height:170px!important;height:calc(100dvh - min(34dvh,286px) - 54px)!important;max-height:calc(100dvh - min(34dvh,286px) - 54px)!important}
+  body:has(#canvas-container):has(#info){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#canvas-container):has(#info) #canvas-container{height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+  body:has(#canvas-container):has(#info) #info{max-width:min(84vw,320px)!important;max-height:44dvh!important;overflow-y:auto!important}
+  body:has(#canvas-container):has(#info) #gradient-chart{max-width:44vw!important;max-height:24dvh!important;overflow:hidden!important}
+  body:has(#canvas-container):has(#hessian-info) #hessian-info{max-height:34dvh!important;overflow-y:auto!important}
+  body:has(.diagram-wrap):has(#diagramSvg) .sidebar{max-width:min(88vw,320px)!important}
+  body:has(.diagram-wrap):has(#diagramSvg) #sidebar.collapsed,body:has(.diagram-wrap):has(#diagramSvg) .sidebar.collapsed{display:none!important;transform:none!important}
+  body:has(.diagram-wrap):has(#diagramSvg) #diagramSvg{width:100vw!important;max-width:100vw!important}
+}
+</style>
+</head>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    touch-action: manipulation;
+  }
+  #app-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  @media (min-width: 768px) {
+    #app-container { flex-direction: row; }
+  }
+  #controls {
+    width: 100%;
+    background: #1e293b;
+    padding: 12px;
+    overflow-y: auto;
+    max-height: 40vh;
+    border-bottom: 2px solid #334155;
+    flex-shrink: 0;
+  }
+  @media (min-width: 768px) {
+    #controls {
+      width: 280px;
+      max-height: 100vh;
+      border-bottom: none;
+      border-right: 2px solid #334155;
+    }
+  }
+  .control-group {
+    margin-bottom: 14px;
+  }
+  .control-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .control-group label span.val {
+    color: #a78bfa;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+  }
+  input[type="range"] {
+    width: 100%;
+    height: 28px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #334155;
+    border-radius: 14px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #a78bfa;
+    border: 3px solid #c4b5fd;
+    cursor: pointer;
+    touch-action: none;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #a78bfa;
+    border: 3px solid #c4b5fd;
+    cursor: pointer;
+  }
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px 8px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+    transition: all 0.2s;
+  }
+  .btn:active { transform: scale(0.95); }
+  #main-btn {
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    color: white;
+    box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4);
+  }
+  #main-btn:hover { box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6); }
+  #main-btn.ended {
+    background: linear-gradient(135deg, #059669, #34d399);
+    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+  }
+  #reset-btn {
+    background: #334155;
+    color: #cbd5e1;
+    flex: 0.6;
+  }
+  #reset-btn:hover { background: #475569; }
+  .preset-btn {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 6px;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    background: #1e293b;
+    color: #cbd5e1;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    transition: all 0.2s;
+  }
+  .preset-btn:hover, .preset-btn.active {
+    border-color: #a78bfa;
+    background: #2d2040;
+    color: #e9d5ff;
+  }
+  .preset-btn .preset-name { font-weight: bold; }
+  .preset-btn .preset-desc { color: #64748b; font-size: 11px; margin-top: 2px; }
+  #canvas-container {
+    flex: 1;
+    min-height: 300px;
+    position: relative;
+    overflow: hidden;
+  }
+  #canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+  }
+  #hud {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .hud-item {
+    background: rgba(15, 23, 42, 0.85);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    backdrop-filter: blur(8px);
+    border: 1px solid #334155;
+  }
+  .hud-item .hud-label { color: #64748b; font-size: 11px; }
+  .hud-item .hud-value { color: #a78bfa; font-weight: bold; font-family: 'Courier New', monospace; }
+  #message-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(15, 23, 42, 0.95);
+    padding: 24px 32px;
+    border-radius: 16px;
+    text-align: center;
+    border: 2px solid #a78bfa;
+    z-index: 20;
+    display: none;
+    animation: popIn 0.4s ease;
+    max-width: 90%;
+  }
+  #message-overlay.show { display: block; }
+  #message-overlay h2 { color: #a78bfa; margin-bottom: 8px; font-size: 22px; }
+  #message-overlay p { color: #94a3b8; font-size: 14px; }
+  #instructions {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    background: rgba(15, 23, 42, 0.85);
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    border: 1px solid #334155;
+    z-index: 10;
+    pointer-events: none;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+  .section-title {
+    font-size: 14px;
+    font-weight: bold;
+    color: #e2e8f0;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #334155;
+  }
+</style>
+<body>
+<div id="app-container">
+  <div id="controls">
+    <div class="section-title">🎯 坐标点与函数图像</div>
+    <div class="btn-row">
+      <button id="main-btn" class="btn" onclick="handleMainBtn()">启动</button>
+      <button id="reset-btn" class="btn" onclick="resetSimulation()">重置</button>
+    </div>
+    <div class="control-group">
+      <label>点数 <span class="val" id="num_dots-display">6</span></label>
+      <input type="range" id="num_dots-slider" min="3" max="12" value="6" step="1" oninput="onSliderChange('num_dots', this.value)">
+    </div>
+    <div class="control-group">
+      <label>容差范围 <span class="val" id="snap_tolerance-display">35</span></label>
+      <input type="range" id="snap_tolerance-slider" min="10" max="80" value="35" step="5" oninput="onSliderChange('snap_tolerance', this.value)">
+    </div>
+    <div class="control-group">
+      <label>显示提示线 <span class="val" id="show_hints-display">是</span></label>
+      <input type="range" id="show_hints-slider" min="0" max="1" value="1" step="1" oninput="onSliderChange('show_hints', this.value)">
+    </div>
+    <div class="section-title" style="margin-top:14px;">预设场景</div>
+    <button class="preset-btn active" onclick="applyPreset('linear', this)">
+      <div><div class="preset-name">简单：直线 y=2x+1</div><div class="preset-desc">5个点，容差大，有提示线</div></div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('quadratic', this)">
+      <div><div class="preset-name">中等：抛物线 y=x²</div><div class="preset-desc">6个点，中等容差</div></div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('sine', this)">
+      <div><div class="preset-name">挑战：正弦 y=sin(x)</div><div class="preset-desc">8个点，小容差，无提示</div></div>
+    </button>
+    <button class="preset-btn" onclick="applyPreset('cubic', this)">
+      <div><div class="preset-name">高手：三次函数 y=x³/5</div><div class="preset-desc">7个点，最小容差</div></div>
+    </button>
+  </div>
+  <div id="canvas-container">
+    <canvas id="canvas"></canvas>
+    <div id="hud">
+      <div class="hud-item">
+        <div class="hud-label">函数</div>
+        <div class="hud-value" id="func-display">y = 2x + 1</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">进度</div>
+        <div class="hud-value" id="progress-display">0 / 6</div>
+      </div>
+      <div class="hud-item">
+        <div class="hud-label">状态</div>
+        <div class="hud-value" id="state-display">等待中</div>
+      </div>
+    </div>
+    <div id="message-overlay">
+      <h2 id="msg-title">🎉 太棒了！</h2>
+      <p id="msg-text">所有点都已正确放置！</p>
+    </div>
+    <div id="instructions">👆 点击“启动”后，拖动橙色圆点到正确的高度（横轴x对应纵轴f(x)）</div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const container = document.getElementById('canvas-container');
+
+// State
+let state = {
+  running: false,
+  paused: false,
+  ended: false,
+  functionType: 'linear',
+  dots: [],
+  dragging: null,
+  lockedCount: 0,
+  animationId: null,
+  glowPhase: 0,
+  particles: []
+};
+
+// Config
+let config = {
+  numDots: 6,
+  snapTolerance: 35,
+  showHints: 1
+};
+
+// Coordinate system
+let origin = { x: 0, y: 0 };
+let scale = 60;
+let canvasW = 0, canvasH = 0;
+
+// Function definitions
+const functions = {
+  linear: {
+    fn: (x) => 2 * x + 1,
+    label: 'y = 2x + 1',
+    xRange: [-2, 3],
+    yRange: [-3, 8]
+  },
+  quadratic: {
+    fn: (x) => x * x,
+    label: 'y = x²',
+    xRange: [-3, 3],
+    yRange: [-1, 10]
+  },
+  sine: {
+    fn: (x) => Math.sin(x),
+    label: 'y = sin(x)',
+    xRange: [-Math.PI, Math.PI],
+    yRange: [-2, 2]
+  },
+  cubic: {
+    fn: (x) => Math.pow(x, 3) / 5,
+    label: 'y = x³/5',
+    xRange: [-3, 3],
+    yRange: [-5, 5]
+  }
+};
+
+function resizeCanvas() {
+  const rect = container.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  if (ctx) if (ctx) ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+  canvasW = rect.width;
+  canvasH = rect.height;
+  updateCoordinateSystem();
+  draw();
+}
+
+function updateCoordinateSystem() {
+  const fn = functions[state.functionType];
+  const xMin = fn.xRange[0], xMax = fn.xRange[1];
+  const yMin = fn.yRange[0], yMax = fn.yRange[1];
+
+  const padX = 50, padY = 60;
+  const availW = canvasW - padX * 2;
+  const availH = canvasH - padY * 2;
+
+  const xSpan = xMax - xMin;
+  const ySpan = yMax - yMin;
+  const scaleX = availW / xSpan;
+  const scaleY = availH / ySpan;
+  scale = Math.min(scaleX, scaleY);
+
+  const graphW = xSpan * scale;
+  const graphH = ySpan * scale;
+
+  origin.x = padX + (availW - graphW) / 2;
+  origin.y = canvasH - padY + (availH - graphH) / 2;
+
+  // Adjust origin for actual zero position
+  origin.y -= 0 * scale; // y=0 offset handled in mathToCanvas
+}
+
+function mathToCanvas(mx, my) {
+  const fn = functions[state.functionType];
+  const yMin = fn.yRange[0];
+  return {
+    x: origin.x + (mx - fn.xRange[0]) * scale / (fn.xRange[1] - fn.xRange[0]) * ((fn.xRange[1] - fn.xRange[0]) / ((canvasW - 100) / scale)) * scale,
+    y: origin.y + (0 - my) * scale
+  };
+}
+
+function canvasToMath(cx, cy) {
+  const fn = functions[state.functionType];
+  const xSpan = fn.xRange[1] - fn.xRange[0];
+  const graphW = xSpan * scale;
+  const xMin = fn.xRange[0];
+  const startX = origin.x;
+  const roughX = xMin + (cx - startX) / scale * (xSpan / (graphW / scale));
+  // Simpler approach
+  const pxPerUnit = scale;
+  const x = (cx - origin.x) / pxPerUnit + fn.xRange[0];
+  const y = (origin.y - cy) / pxPerUnit;
+  return { x, y };
+}
+
+function recalcCoords() {
+  const fn = functions[state.functionType];
+  const xSpan = fn.xRange[1] - fn.xRange[0];
+  const availW = canvasW - 100;
+  const availH = canvasH - 120;
+  const ySpan = fn.yRange[1] - fn.yRange[0];
+  scale = Math.min(availW / xSpan, availH / ySpan);
+
+  const graphW = xSpan * scale;
+  const graphH = ySpan * scale;
+
+  origin.x = (canvasW - graphW) / 2;
+  origin.y = canvasH / 2 + (graphH / 2) * (fn.yRange[1] + fn.yRange[0]) / ySpan * 0.3;
+
+  // Recenter
+  origin.x = canvasW / 2;
+  origin.y = canvasH / 2;
+}
+
+// Better coordinate mapping
+function m2c(mx, my) {
+  const fn = functions[state.functionType];
+  const xRange = fn.xRange[1] - fn.xRange[0];
+  const cx = canvasW / 2 + (mx - (fn.xRange[0] + fn.xRange[1]) / 2) * scale;
+  const cy = canvasH / 2 - (my - (fn.yRange[0] + fn.yRange[1]) / 2) * scale;
+  return { x: cx, y: cy };
+}
+
+function c2m(cx, cy) {
+  const fn = functions[state.functionType];
+  const mx = (cx - canvasW / 2) / scale + (fn.xRange[0] + fn.xRange[1]) / 2;
+  const my = -(cy - canvasH / 2) / scale + (fn.yRange[0] + fn.yRange[1]) / 2;
+  return { x: mx, y: my };
+}
+
+function initDots() {
+  const fn = functions[state.functionType];
+  const numDots = config.numDots;
+  const xMin = fn.xRange[0], xMax = fn.xRange[1];
+  state.dots = [];
+  state.lockedCount = 0;
+
+  for (let i = 0; i < numDots; i++) {
+    const t = numDots === 1 ? 0.5 : i / (numDots - 1);
+    const mx = xMin + t * (xMax - xMin);
+    const correctMy = fn.fn(mx);
+    const canvasPos = m2c(mx, correctMy);
+
+    state.dots.push({
+      mx: mx,
+      my: 0, // Start at y=0
+      correctMy: correctMy,
+      locked: false,
+      glowIntensity: 0,
+      canvasX: canvasPos.x,
+      canvasY: canvasPos.y,
+      color: '#f97316'
+    });
+  }
+  updateProgress();
+}
+
+function drawGrid() {
+  const fn = functions[state.functionType];
+
+  // Background
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  // Subtle grid
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+
+  const xMin = fn.xRange[0], xMax = fn.xRange[1];
+  const yMin = fn.yRange[0], yMax = fn.yRange[1];
+
+  // Vertical grid lines
+  for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+    const pos = m2c(x, 0);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, 20);
+    ctx.lineTo(pos.x, canvasH - 20);
+    ctx.stroke();
+  }
+
+  // Horizontal grid lines
+  for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+    const pos = m2c(0, y);
+    ctx.beginPath();
+    ctx.moveTo(20, pos.y);
+    ctx.lineTo(canvasW - 20, pos.y);
+    ctx.stroke();
+  }
+
+  // Axes
+  const originPos = m2c(0, 0);
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2;
+
+  // X-axis
+  ctx.beginPath();
+  ctx.moveTo(10, originPos.y);
+  ctx.lineTo(canvasW - 10, originPos.y);
+  ctx.stroke();
+
+  // Y-axis
+  ctx.beginPath();
+  ctx.moveTo(originPos.x, 10);
+  ctx.lineTo(originPos.x, canvasH - 10);
+  ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = '#64748b';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+
+  // X-axis numbers
+  for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+    if (x === 0) continue;
+    const pos = m2c(x, 0);
+    ctx.fillText(x.toString(), pos.x, originPos.y + 18);
+  }
+
+  // Y-axis numbers
+  ctx.textAlign = 'right';
+  for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+    if (y === 0) continue;
+    const pos = m2c(0, y);
+    ctx.fillText(y.toString(), originPos.x - 8, pos.y + 4);
+  }
+
+  // Origin label
+  ctx.textAlign = 'center';
+  ctx.fillText('O', originPos.x - 10, originPos.y + 16);
+
+  // Axis names
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('x', canvasW - 20, originPos.y - 10);
+  ctx.save();
+  ctx.translate(originPos.x + 15, 20);
+  ctx.fillText('y', 0, 0);
+  ctx.restore();
+}
+
+function drawFunctionCurve() {
+  const fn = functions[state.functionType];
+  const xMin = fn.xRange[0], xMax = fn.xRange[1];
+
+  ctx.strokeStyle = 'rgba(167, 139, 250, 0.25)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+
+  let started = false;
+  for (let px = 0; px <= canvasW; px += 2) {
+    const math = c2m(px, canvasH / 2);
+    const y = fn.fn(math.x);
+    const pos = m2c(math.x, y);
+    if (!started) {
+      ctx.moveTo(pos.x, pos.y);
+      started = true;
+    } else {
+      ctx.lineTo(pos.x, pos.y);
+    }
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawTargetMarkers() {
+  if (!state.running || state.ended) return;
+
+  state.dots.forEach((dot, i) => {
+    if (dot.locked) return;
+
+    const correctPos = m2c(dot.mx, dot.correctMy);
+
+    // Vertical dashed line from x-axis to correct y
+    const xAxPos = m2c(dot.mx, 0);
+    ctx.strokeStyle = 'rgba(249, 115, 22, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(xAxPos.x, xAxPos.y);
+    ctx.lineTo(correctPos.x, correctPos.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Correct position indicator (small circle)
+    ctx.beginPath();
+    ctx.arc(correctPos.x, correctPos.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(52, 211, 153, 0.3)';
+    ctx.fill();
+
+    // X label
+    ctx.fillStyle = 'rgba(249, 115, 22, 0.5)';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('x=' + dot.mx.toFixed(1), xAxPos.x, xAxPos.y + 24);
+  });
+}
+
+function drawHintLines() {
+  if (!config.showHints || !state.running || state.ended) return;
+
+  state.dots.forEach(dot => {
+    if (dot.locked) return;
+    const correctPos = m2c(dot.mx, dot.correctMy);
+    const dotPos = m2c(dot.mx, dot.my);
+
+    // Distance indicator
+    const dy = Math.abs(correctPos.y - dotPos.y);
+    if (dy > 5) {
+      ctx.strokeStyle = `rgba(${dy > config.snapTolerance ? '239,68,68' : '52,211,153'}, 0.4)`;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(dotPos.x + 15, dotPos.y);
+      ctx.lineTo(dotPos.x + 15, correctPos.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Arrow
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.beginPath();
+      if (correctPos.y < dotPos.y) {
+        ctx.moveTo(dotPos.x + 10, dotPos.y - 2);
+        ctx.lineTo(dotPos.x + 15, dotPos.y - 8);
+        ctx.lineTo(dotPos.x + 20, dotPos.y - 2);
+      } else {
+        ctx.moveTo(dotPos.x + 10, dotPos.y + 2);
+        ctx.lineTo(dotPos.x + 15, dotPos.y + 8);
+        ctx.lineTo(dotPos.x + 20, dotPos.y + 2);
+      }
+      ctx.fill();
+    }
+  });
+}
+
+function drawDot(dot, index) {
+  const pos = m2c(dot.mx, dot.my);
+  const radius = 12;
+
+  // Update canvas positions
+  dot.canvasX = pos.x;
+  dot.canvasY = pos.y;
+
+  // Glow effect for locked dots
+  if (dot.locked) {
+    dot.glowIntensity = Math.min(1, dot.glowIntensity + 0.05);
+    const glowRadius = radius + 8 + Math.sin(state.glowPhase + index) * 4;
+
+    const gradient = ctx.createRadialGradient(((Number.isFinite(Number(pos.x)) ? Number(pos.x) : 0)), ((Number.isFinite(Number(pos.y)) ? Number(pos.y) : 0)), Math.max(0, ((Number.isFinite(Number(radius)) ? Number(radius) : 0))), ((Number.isFinite(Number(pos.x)) ? Number(pos.x) : 0)), ((Number.isFinite(Number(pos.y)) ? Number(pos.y) : 0)), Math.max(1, ((Number.isFinite(Number(glowRadius)) ? Number(glowRadius) : 1))));
+    gradient.addColorStop(0, 'rgba(52, 211, 153, 0.6)');
+    gradient.addColorStop(0.5, 'rgba(52, 211, 153, 0.2)');
+    gradient.addColorStop(1, 'rgba(52, 211, 153, 0)');
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, glowRadius, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Ring animation
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, radius + 3, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(52, 211, 153, ' + (0.5 + Math.sin(state.glowPhase * 2 + index) * 0.3) + ')';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Check proximity for visual feedback
+  const dist = Math.abs(dot.my - dot.correctMy);
+  let dotColor = '#f97316';
+  let borderColor = '#ea580c';
+
+  if (dot.locked) {
+    dotColor = '#34d399';
+    borderColor = '#059669';
+  } else if (dist < 0.15) {
+    dotColor = '#fbbf24';
+    borderColor = '#d97706';
+  } else if (dist < 0.3) {
+    dotColor = '#f59e0b';
+  }
+
+  // Shadow
+  ctx.beginPath();
+  ctx.arc(pos.x + 2, pos.y + 2, radius, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.fill();
+
+  // Main circle
+  ctx.beginPath();
+  ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = dotColor;
+  ctx.fill();
+  ctx.strokeStyle = borderColor;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Inner highlight
+  ctx.beginPath();
+  ctx.arc(pos.x - 3, pos.y - 3, 4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.fill();
+
+  // Label
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 10px monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText((index + 1).toString(), pos.x, pos.y);
+  ctx.textBaseline = 'alphabetic';
+}
+
+function drawParticles() {
+  state.particles = state.particles.filter(p => p.life > 0);
+  state.particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= 0.02;
+    p.vy += 0.1;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.r}, ${p.g}, ${p.b}, ${p.life * 0.8})`;
+    ctx.fill();
+  });
+}
+
+function spawnParticles(x, y, count, r, g, b) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 3;
+    state.particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 2,
+      size: 2 + Math.random() * 3,
+      life: 1,
+      r, g, b
+    });
+  }
+}
+
+function drawConnectingLine() {
+  if (state.lockedCount < 2) return;
+
+  const lockedDots = state.dots.filter(d => d.locked);
+  if (lockedDots.length < 2) return;
+
+  // Sort by mx
+  lockedDots.sort((a, b) => a.mx - b.mx);
+
+  ctx.strokeStyle = 'rgba(52, 211, 153, 0.6)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+
+  lockedDots.forEach((dot, i) => {
+    const pos = m2c(dot.mx, dot.correctMy);
+    if (i === 0) ctx.moveTo(pos.x, pos.y);
+    else ctx.lineTo(pos.x, pos.y);
+  });
+  ctx.stroke();
+}
+
+function draw() {
+  drawGrid();
+  drawFunctionCurve();
+  drawTargetMarkers();
+  drawHintLines();
+  drawConnectingLine();
+
+  // Draw dots
+  state.dots.forEach((dot, i) => drawDot(dot, i));
+
+  drawParticles();
+
+  // Draw "not started" overlay
+  if (!state.running && !state.ended) {
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎯 点击“启动”开始', canvasW / 2, canvasH / 2 - 10);
+
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillText('拖动圆点到函数曲线上的正确位置', canvasW / 2, canvasH / 2 + 20);
+  }
+
+  // State indicator
+  if (state.running && !state.ended) {
+    const indicatorX = canvasW - 40;
+    const indicatorY = 30;
+    const color = state.paused ? '#fbbf24' : '#34d399';
+    ctx.beginPath();
+    ctx.arc(indicatorX, indicatorY, 8, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(state.paused ? '已暂停' : '进行中', indicatorX - 14, indicatorY + 4);
+  }
+}
+
+function animationLoop() {
+  state.glowPhase += 0.03;
+  draw();
+  state.animationId = requestAnimationFrame(animationLoop);
+}
+
+function updateProgress() {
+  document.getElementById('progress-display').textContent = state.lockedCount + ' / ' + state.dots.length;
+}
+
+function updateStateDisplay() {
+  const el = document.getElementById('state-display');
+  if (state.ended) el.textContent = '✅ 完成';
+  else if (state.paused) el.textContent = '⏸ 已暂停';
+  else if (state.running) el.textContent = '▶ 进行中';
+  else el.textContent = '等待中';
+}
+
+function handleMainBtn() {
+  if (state.ended) {
+    resetSimulation();
+    setTimeout(() => startSimulation(), 100);
+    return;
+  }
+
+  if (!state.running) {
+    if (state.dots.length === 0) initDots();
+    startSimulation();
+  } else if (!state.paused) {
+    pauseSimulation();
+  } else {
+    resumeSimulation();
+  }
+}
+
+function startSimulation() {
+  state.running = true;
+  state.paused = false;
+  state.ended = false;
+  document.getElementById('main-btn').textContent = '暂停';
+  document.getElementById('main-btn').classList.remove('ended');
+  document.getElementById('message-overlay').classList.remove('show');
+  updateStateDisplay();
+  initDots();
+  draw();
+}
+
+function pauseSimulation() {
+  state.paused = true;
+  document.getElementById('main-btn').textContent = '继续';
+  updateStateDisplay();
+  draw();
+}
+
+function resumeSimulation() {
+  state.paused = false;
+  document.getElementById('main-btn').textContent = '暂停';
+  updateStateDisplay();
+}
+
+function resetSimulation() {
+  if (state.animationId) cancelAnimationFrame(state.animationId);
+  state.running = false;
+  state.paused = false;
+  state.ended = false;
+  state.dragging = null;
+  state.lockedCount = 0;
+  state.dots = [];
+  state.particles = [];
+  state.glowPhase = 0;
+
+  document.getElementById('main-btn').textContent = '启动';
+  document.getElementById('main-btn').classList.remove('ended');
+  document.getElementById('message-overlay').classList.remove('show');
+  document.getElementById('instructions').style.display = '';
+
+  updateStateDisplay();
+  updateProgress();
+  draw();
+}
+
+function checkLock(dot) {
+  const dist = Math.abs(dot.my - dot.correctMy);
+  const threshold = config.snapTolerance / scale;
+
+  if (dist < threshold && !dot.locked) {
+    dot.locked = true;
+    dot.my = dot.correctMy;
+    state.lockedCount++;
+    updateProgress();
+
+    // Particles!
+    const pos = m2c(dot.mx, dot.correctMy);
+    spawnParticles(pos.x, pos.y, 20, 52, 211, 153);
+
+    // Check if all locked
+    if (state.lockedCount === state.dots.length) {
+      onSimulationComplete();
+    }
+  }
+}
+
+function onSimulationComplete() {
+  state.ended = true;
+  state.running = false;
+
+  document.getElementById('main-btn').textContent = '重新开始';
+  document.getElementById('main-btn').classList.add('ended');
+  document.getElementById('instructions').textContent = '🎉 全部完成！点击“重新开始”再试一次';
+
+  // Big celebration particles
+  state.dots.forEach(dot => {
+    const pos = m2c(dot.mx, dot.correctMy);
+    spawnParticles(pos.x, pos.y, 15, 52, 211, 153);
+  });
+
+  // Show message
+  const overlay = document.getElementById('message-overlay');
+  document.getElementById('msg-title').textContent = '🎉 太棒了！';
+  document.getElementById('msg-text').textContent = '所有 ' + state.dots.length + ' 个点都已正确放置！你理解了函数图像就是由无数个点组成的！';
+  overlay.classList.add('show');
+
+  updateStateDisplay();
+  draw();
+}
+
+// Touch/mouse handling
+function getCanvasPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  let clientX, clientY;
+  if (e.touches) {
+    clientX = e.touches[0].clientX;
+    clientY = e.touches[0].clientY;
+  } else {
+    clientX = e.clientX;
+    clientY = e.clientY;
+  }
+  return {
+    x: clientX - rect.left,
+    y: clientY - rect.top
+  };
+}
+
+function findDotAt(pos) {
+  for (let i = state.dots.length - 1; i >= 0; i--) {
+    const dot = state.dots[i];
+    if (dot.locked) continue;
+    const dotPos = m2c(dot.mx, dot.my);
+    const dx = pos.x - dotPos.x;
+    const dy = pos.y - dotPos.y;
+    if (dx * dx + dy * dy < 20 * 20) return dot;
+  }
+  return null;
+}
+
+function onPointerDown(e) {
+  if (!state.running || state.paused || state.ended) return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  const dot = findDotAt(pos);
+  if (dot) {
+    state.dragging = dot;
+    canvas.style.cursor = 'grabbing';
+  }
+}
+
+function onPointerMove(e) {
+  if (!state.dragging || state.paused) return;
+  e.preventDefault();
+  const pos = getCanvasPos(e);
+  const fn = functions[state.functionType];
+  const mathPos = c2m(pos.x, pos.y);
+
+  // Clamp x to the dot's mx
+  state.dragging.my = Math.max(fn.yRange[0], Math.min(fn.yRange[1], mathPos.y));
+
+  draw();
+}
+
+function onPointerUp(e) {
+  if (!state.dragging) return;
+  e.preventDefault();
+  checkLock(state.dragging);
+  state.dragging = null;
+  canvas.style.cursor = 'default';
+  draw();
+}
+
+canvas.addEventListener('mousedown', onPointerDown);
+canvas.addEventListener('mousemove', onPointerMove);
+canvas.addEventListener('mouseup', onPointerUp);
+canvas.addEventListener('mouseleave', onPointerUp);
+canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+canvas.addEventListener('touchend', onPointerUp, { passive: false });
+
+// Hover cursor
+canvas.addEventListener('mousemove', (e) => {
+  if (!state.running || state.paused || state.ended) return;
+  const pos = getCanvasPos(e);
+  const dot = findDotAt(pos);
+  canvas.style.cursor = dot ? 'grab' : 'default';
+});
+
+// Slider changes
+function onSliderChange(name, value) {
+  value = parseFloat(value);
+  if (name === 'num_dots') {
+    config.numDots = Math.round(value);
+    document.getElementById('num_dots-display').textContent = config.numDots;
+  } else if (name === 'snap_tolerance') {
+    config.snapTolerance = value;
+    document.getElementById('snap_tolerance-display').textContent = value;
+  } else if (name === 'show_hints') {
+    config.showHints = value;
+    document.getElementById('show_hints-display').textContent = value ? '是' : '否';
+  }
+  draw();
+}
+
+// Presets
+function applyPreset(type, btnEl) {
+  state.functionType = type;
+  const fn = functions[type];
+  document.getElementById('func-display').textContent = fn.label;
+
+  // Update active preset button
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+
+  // Update config based on preset
+  const configMap = {
+    linear: { numDots: 5, snapTolerance: 50, showHints: 1 },
+    quadratic: { numDots: 6, snapTolerance: 40, showHints: 1 },
+    sine: { numDots: 8, snapTolerance: 30, showHints: 0 },
+    cubic: { numDots: 7, snapTolerance: 25, showHints: 0 }
+  };
+
+  const preset = configMap[type] || configMap.linear;
+  config.numDots = preset.numDots;
+  config.snapTolerance = preset.snapTolerance;
+  config.showHints = preset.showHints;
+
+  // Update sliders
+  document.getElementById('num_dots-slider').value = preset.numDots;
+  document.getElementById('num_dots-display').textContent = preset.numDots;
+  document.getElementById('snap_tolerance-slider').value = preset.snapTolerance;
+  document.getElementById('snap_tolerance-display').textContent = preset.snapTolerance;
+  document.getElementById('show_hints-slider').value = preset.showHints;
+  document.getElementById('show_hints-display').textContent = preset.showHints ? '是' : '否';
+
+  resetSimulation();
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    handleMainBtn();
+  } else if (e.code === 'KeyR') {
+    resetSimulation();
+  }
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  resizeCanvas();
+});
+
+// postMessage listener
+window.addEventListener('message', function(event) {
+  const { type, target, state: msgState, content } = event.data || {};
+
+  switch (type) {
+    case 'SET_WIDGET_STATE':
+      if (msgState) {
+        Object.entries(msgState).forEach(([key, value]) => {
+          const slider = document.getElementById(key + '-slider') || document.querySelector('[data-var="' + key + '"]');
+          if (slider) {
+            slider.value = value;
+            slider.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        });
+      }
+      break;
+
+    case 'HIGHLIGHT_ELEMENT':
+      const highlightEl = document.querySelector(target);
+      if (highlightEl) {
+        highlightEl.style.outline = '3px solid rgba(139, 92, 246, 0.8)';
+        highlightEl.style.outlineOffset = '4px';
+        highlightEl.style.animation = 'pulse-highlight 2s infinite';
+        setTimeout(() => {
+          highlightEl.style.outline = '';
+          highlightEl.style.animation = '';
+        }, 3000);
+      }
+      break;
+
+    case 'ANNOTATE_ELEMENT':
+      const annotateEl = document.querySelector(target);
+      if (annotateEl && content) {
+        const rect = annotateEl.getBoundingClientRect();
+        const tooltip = document.createElement('div');
+        tooltip.className = 'teacher-annotation';
+        tooltip.style.cssText = 'position:fixed; top:' + (rect.top - 40) + 'px; left:' + rect.left + 'px; background:rgba(139,92,246,0.95); color:white; padding:8px 12px; border-radius:8px; font-size:14px; z-index:1000; animation:fadeIn 0.3s; pointer-events:none;';
+        tooltip.textContent = content;
+        document.body.appendChild(tooltip);
+        setTimeout(() => tooltip.remove(), 4000);
+      }
+      break;
+
+    case 'REVEAL_ELEMENT':
+      const revealEl = document.querySelector(target);
+      if (revealEl) {
+        revealEl.style.display = '';
+        revealEl.style.opacity = '1';
+      }
+      break;
+  }
+});
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(139, 92, 246, 0.8); } 50% { outline-color: rgba(139, 92, 246, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
+document.head.appendChild(style);
+
+// Init
+document.getElementById('func-display').textContent = functions.linear.label;
+resizeCanvas();
+animationLoop();
+</script>
+<script id="openmaic-audit-repair-shim-v5">
+(function(){
+  function hide(el){
+    if(!el) return;
+    el.classList.remove('show','active','open');
+    if (!el.classList.contains('hidden')) el.classList.add('hidden');
+    if (el.getAttribute('aria-hidden') !== 'true') el.setAttribute('aria-hidden','true');
+    if (el.style.display !== 'none') el.style.display='none';
+    if (el.style.visibility !== 'hidden') el.style.visibility='hidden';
+    if (el.style.opacity !== '0') el.style.opacity='0';
+    if (el.style.pointerEvents !== 'none') el.style.pointerEvents='none';
+    if (el.style.zIndex !== '-1') el.style.zIndex='-1';
+    el.querySelectorAll('button,[role="button"],a,input,select,textarea').forEach(function(child){
+      if (child.style.pointerEvents !== 'none') child.style.pointerEvents='none';
+    });
+  }
+  function show(el){ if(!el) return; el.classList.remove('hidden'); if(el.style.display==='none') el.style.display=''; }
+  function ensure(name, fn){ if(typeof window[name] !== 'function') window[name] = fn || function(){}; }
+  function safeCanvasContext(){
+    var noop = function(){};
+    return {
+      canvas: null,
+      fillStyle: '', strokeStyle: '', lineWidth: 1, globalAlpha: 1, font: '',
+      save: noop, restore: noop, clearRect: noop, fillRect: noop, strokeRect: noop,
+      beginPath: noop, closePath: noop, moveTo: noop, lineTo: noop, arc: noop, rect: noop,
+      fill: noop, stroke: noop, clip: noop, scale: noop, translate: noop, rotate: noop,
+      setTransform: noop, resetTransform: noop, setLineDash: noop,
+      fillText: noop, strokeText: noop, measureText: function(text){ return { width: String(text || '').length * 8 }; },
+      createLinearGradient: function(){ return { addColorStop: noop }; },
+      createRadialGradient: function(){ return { addColorStop: noop }; },
+      drawImage: noop, getImageData: function(){ return { data: new Uint8ClampedArray(4) }; },
+      putImageData: noop
+    };
+  }
+  window.__openMaicSafeCanvasContext = safeCanvasContext;
+  if (!window.__openMaicSafeCanvasPatched && window.HTMLCanvasElement && window.HTMLCanvasElement.prototype) {
+    var originalGetContext = window.HTMLCanvasElement.prototype.getContext;
+    window.HTMLCanvasElement.prototype.getContext = function(type){
+      var ctx = null;
+      try { ctx = originalGetContext.apply(this, arguments); } catch (_) {}
+      if (!ctx && String(type).toLowerCase() === '2d') {
+        ctx = safeCanvasContext();
+        ctx.canvas = this;
+      }
+      return ctx;
+    };
+    window.__openMaicSafeCanvasPatched = true;
+  }
+  function closeHintOverlays(){
+    document.querySelectorAll('#hintOverlay,.hint-overlay,[id*="hintOverlay"],[class*="hint-overlay"]').forEach(function(el){
+      el.classList.remove('show','active','open');
+      el.classList.add('hidden');
+      el.style.display='none';
+      el.style.pointerEvents='none';
+    });
+  }
+  function closeStartOverlays(){
+    ['startScreen','start-screen','startOverlay','menu-screen'].forEach(function(id){ hide(document.getElementById(id)); });
+    document.querySelectorAll('.start-screen,.startScreen,.start-overlay,#start-screen,#startScreen,#startOverlay,#menu-screen').forEach(hide);
+    document.querySelectorAll('canvas,#gameCanvas,#mainCanvas,.game-area,#main-area,#contract-area').forEach(show);
+    window.dispatchEvent(new Event('resize'));
+  }
+  function normalizePauseScreen(){
+    var pause = document.getElementById('pauseScreen') || document.getElementById('pause-screen') || document.querySelector('.pause-screen,#pauseOverlay,#pause-overlay');
+    if (!pause || pause.classList.contains('hidden')) return;
+    closeHintOverlays();
+    pause.style.zIndex='2147483000';
+    pause.style.pointerEvents='auto';
+    pause.querySelectorAll('p,h1,h2,h3').forEach(function(el){ el.style.pointerEvents='none'; });
+    pause.querySelectorAll('button,.game-btn,.overlay-btn,.start-btn').forEach(function(el){
+      el.style.position='relative';
+      el.style.zIndex='2147483003';
+      el.style.pointerEvents='auto';
+    });
+  }
+  function wrapAndNormalize(name, after){
+    var original = window[name];
+    if (typeof original !== 'function' || original.__openMaicAuditWrapped) return;
+    var wrapped = function(){
+      var result = original.apply(this, arguments);
+      try { after(); } catch (_) {}
+      return result;
+    };
+    wrapped.__openMaicAuditWrapped = true;
+    window[name] = wrapped;
+  }
+  ensure('startGame', function(){
+    closeStartOverlays();
+  });
+  ['useHint','showHint','clearPath','undoLast','submitPath','resetSelection','onSliderChange','nudgeBall','togglePause','resetLevel','resumeGame','backToMenu','retryLevel','startLevel','nextLevel','restartGame','showOptimal'].forEach(function(name){ ensure(name); });
+  wrapAndNormalize('togglePause', normalizePauseScreen);
+  wrapAndNormalize('restartGame', closeHintOverlays);
+  wrapAndNormalize('startGame', function(){ closeStartOverlays(); closeHintOverlays(); });
+  document.addEventListener('click', function(event){
+    var target = event.target && event.target.closest ? event.target.closest('.start-btn,#start-screen button,#startScreen button,.start-screen button,.startScreen button') : null;
+    if (target) setTimeout(closeStartOverlays, 0);
+    setTimeout(normalizePauseScreen, 0);
+  }, true);
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      wrapAndNormalize('startGame', function(){ closeStartOverlays(); closeHintOverlays(); });
+      wrapAndNormalize('restartGame', function(){ closeStartOverlays(); closeHintOverlays(); });
+      document.querySelectorAll('#start-screen.hidden,#startScreen.hidden,.start-screen.hidden,.startScreen.hidden').forEach(hide);
+    }, 0);
+  });
+  normalizePauseScreen();
+  window.__openMaicSafeNumber = function(value, fallback){ return Number.isFinite(value) ? value : fallback; };
+  window.__openMaicFinite = function(value, fallback){
+    var n = Number(value);
+    return Number.isFinite(n) ? n : Number(fallback || 0);
+  };
+})();
+</script>
+</body>
+</html>
