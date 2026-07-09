@@ -1,9 +1,9 @@
-const crypto = require("crypto");
+﻿const crypto = require("crypto");
 const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const zlib = require("zlib");
-// Load .env (if present) so LLM_PROVIDER / PIONEER_API_KEY etc. can be configured without a process manager.
+// Load .env (if present) so LLM_PROVIDER / OPENAI_COMPATIBLE_API_KEY etc. can be configured without a process manager.
 (function loadEnvFile() {
   try {
     const envPath = path.join(process.cwd(), ".env");
@@ -38,6 +38,10 @@ const maxBufferedStaticBytes = 512 * 1024;
 const maxGzipBytes = 256 * 1024;
 const gzipCache = new Map();
 const maxGzipCacheEntries = 32;
+const sessionTtlMs = 30 * 24 * 60 * 60 * 1000;
+const authAttemptWindowMs = 15 * 60 * 1000;
+const maxFailedAuthAttempts = 8;
+const authAttemptMap = new Map();
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -97,11 +101,11 @@ function contentSecurityPolicyFor(filePath) {
     "frame-ancestors 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' data: https://cdn.jsdelivr.net",
     "style-src 'self' 'unsafe-inline' data: https://cdn.jsdelivr.net",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https:",
     "font-src 'self' data: about:",
-    "media-src 'self' data: blob:",
-    "frame-src 'self'",
-    "child-src 'self'",
+    "media-src 'self' data: blob: https:",
+    "frame-src 'self' http://localhost:3000 http://127.0.0.1:3000 http://localhost:3001 http://127.0.0.1:3001 http://localhost:8765 http://127.0.0.1:8765",
+    "child-src 'self' http://localhost:3000 http://127.0.0.1:3000 http://localhost:3001 http://127.0.0.1:3001 http://localhost:8765 http://127.0.0.1:8765",
     "worker-src 'self' blob:",
     "connect-src 'self'"
   ].join("; ");
@@ -140,6 +144,7 @@ function isBlockedStaticResource(filePath) {
   return /^resources\/open-maic\/[^/]+\/manifest\.json$/.test(relative);
 }
 
+
 function streamStaticFile(req, res, filePath, type, url, stat) {
   const headers = staticHeaders(filePath, url, {
     "Content-Length": String(stat.size)
@@ -155,7 +160,7 @@ function streamStaticFile(req, res, filePath, type, url, stat) {
   const stream = fs.createReadStream(filePath);
   stream.on("error", (error) => {
     console.error("Static stream error:", error.message);
-    if (!res.headersSent) send(res, 500, "Internal server error");
+    if (!res.headersSent) send(res, 500, "服务器内部错误。");
     else res.destroy(error);
   });
   stream.pipe(res);
@@ -210,26 +215,112 @@ function getDateRange(url) {
   return { startDate: start, endDate: endInclusive };
 }
 
-function nowIso() {
-  const now = new Date();
-  const bj = new Date(now.getTime() + 8 * 3600 * 1000);
+function beijingIso(date = new Date()) {
+  const bj = new Date(date.getTime() + 8 * 3600 * 1000);
   return bj.toISOString().slice(0, -1) + "+08:00";
+}
+
+function nowIso() {
+  return beijingIso();
+}
+
+function futureIso(msFromNow) {
+  return beijingIso(new Date(Date.now() + msFromNow));
 }
 
 function cleanNickname(value = "") {
   return String(value).trim().replace(/\s+/g, " ").slice(0, 24);
 }
 
+function isValidNickname(value = "") {
+  return !value || (Array.from(String(value)).length >= 2 && Array.from(String(value)).length <= 24);
+}
+
+function cleanEmail(value = "") {
+  return String(value).trim().toLowerCase().slice(0, 254);
+}
+
+function normalizeIdentity(value = "") {
+  return String(value || "").normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function normalizeEmail(value = "") {
+  return cleanEmail(value).normalize("NFKC");
+}
+
+function isValidEmail(value = "") {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function cleanLoginIdentifier(value = "") {
+  return String(value).trim().replace(/\s+/g, " ").slice(0, 254);
+}
+
 function participantIdFor(nickname) {
   return `participant-${crypto.createHash("sha256").update(nickname).digest("hex").slice(0, 12)}`;
+}
+
+function participantIdForIdentity(nicknameNorm, emailNorm) {
+  return participantIdFor(nicknameNorm || emailNorm || crypto.randomUUID());
+}
+
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const params = { N: 16384, r: 8, p: 1, keylen: 64 };
+  const hash = crypto.scryptSync(String(password), salt, params.keylen, {
+    N: params.N,
+    r: params.r,
+    p: params.p,
+    maxmem: 32 * 1024 * 1024
+  }).toString("hex");
+  return `scrypt$${params.N}$${params.r}$${params.p}$${params.keylen}$${salt}$${hash}`;
+}
+
+function verifyPassword(password, stored = "") {
+  try {
+    const parts = String(stored || "").split("$");
+    if (parts.length !== 7 || parts[0] !== "scrypt") return false;
+    const [, n, r, p, keylen, salt, expectedHex] = parts;
+    const params = {
+      N: Number(n),
+      r: Number(r),
+      p: Number(p),
+      keylen: Number(keylen)
+    };
+    if (!params.N || !params.r || !params.p || !params.keylen || params.keylen > 128) return false;
+    if (!/^[a-f0-9]+$/i.test(expectedHex) || expectedHex.length !== params.keylen * 2) return false;
+    const expected = Buffer.from(expectedHex, "hex");
+    const actual = crypto.scryptSync(String(password), salt, params.keylen, {
+      N: params.N,
+      r: params.r,
+      p: params.p,
+      maxmem: 32 * 1024 * 1024
+    });
+    return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+  } catch {
+    return false;
+  }
+}
+
+function isUsablePassword(password = "") {
+  const value = String(password || "");
+  return value.length >= 8 && value.length <= 72;
+}
+
+function publicDisplayName(row) {
+  return row?.nickname || row?.email || "未命名用户";
 }
 
 function safePublicParticipant(row) {
   if (!row) return null;
   return {
     participantId: row.id,
-    loginMode: "nickname",
-    nickname: row.nickname,
+    loginMode: "password",
+    nickname: row.nickname || "",
+    email: row.email || "",
+    displayName: publicDisplayName(row),
+    profileUpdatedAt: row.profile_updated_at || "",
+    canEditProfile: !row.profile_updated_at,
     createdAt: row.created_at,
     lastSeenAt: row.last_seen_at
   };
@@ -273,6 +364,45 @@ function checkRateLimit(req) {
   return true;
 }
 
+function authAttemptKey(req, identifier = "") {
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+  return `${ip}|${normalizeIdentity(identifier) || "unknown"}`;
+}
+
+function authAttemptEntry(req, identifier = "") {
+  const key = authAttemptKey(req, identifier);
+  const now = Date.now();
+  let entry = authAttemptMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + authAttemptWindowMs };
+    authAttemptMap.set(key, entry);
+  }
+  if (authAttemptMap.size > 5000) {
+    for (const [itemKey, item] of authAttemptMap) {
+      if (now > item.resetAt) authAttemptMap.delete(itemKey);
+    }
+  }
+  return { key, entry, now };
+}
+
+function checkAuthAttemptLimit(req, identifier = "") {
+  const { entry, now } = authAttemptEntry(req, identifier);
+  if (entry.count < maxFailedAuthAttempts) return { ok: true, retryAfterSeconds: 0 };
+  return {
+    ok: false,
+    retryAfterSeconds: Math.max(1, Math.ceil((entry.resetAt - now) / 1000))
+  };
+}
+
+function recordFailedAuthAttempt(req, identifier = "") {
+  const { entry } = authAttemptEntry(req, identifier);
+  entry.count += 1;
+}
+
+function clearAuthAttemptLimit(req, identifier = "") {
+  authAttemptMap.delete(authAttemptKey(req, identifier));
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -313,12 +443,105 @@ function authenticate(req, body = {}) {
   if (!token) return null;
   const session = db.getSession(token);
   if (!session) return null;
+  const ts = nowIso();
+  if (session.revoked_at) return null;
+  if (session.expires_at && session.expires_at < ts) return null;
   const participant = db.getUser(session.user_id);
   if (!participant) return null;
-  const ts = nowIso();
   db.touchSession(token, ts);
-  db.upsertUser(participant.id, participant.nickname, participant.created_at, ts);
+  db.upsertUser(participant.id, participant.nickname || "", participant.created_at, ts, {
+    nicknameNorm: participant.nickname_norm || normalizeIdentity(participant.nickname || ""),
+    email: participant.email || "",
+    emailNorm: participant.email_norm || normalizeEmail(participant.email || ""),
+    passwordHash: participant.password_hash || "",
+    passwordUpdatedAt: participant.password_updated_at || "",
+    profileUpdatedAt: participant.profile_updated_at || ""
+  });
   return { participant, token };
+}
+
+function findUserByIdentifier(identifier = "") {
+  const cleaned = cleanLoginIdentifier(identifier);
+  if (!cleaned) return null;
+  const emailNorm = normalizeEmail(cleaned);
+  if (isValidEmail(emailNorm)) {
+    const byEmail = db.getUserByEmailNorm(emailNorm);
+    if (byEmail) return byEmail;
+  }
+  return db.getUserByNicknameNorm(normalizeIdentity(cleaned));
+}
+
+function uniqueUsers(rows = []) {
+  const seen = new Set();
+  return rows.filter((row) => {
+    if (!row?.id || seen.has(row.id)) return false;
+    seen.add(row.id);
+    return true;
+  });
+}
+
+function usersForIdentity(nicknameNorm = "", emailNorm = "") {
+  return {
+    nicknameOwners: uniqueUsers(nicknameNorm ? db.getUsersByNicknameNorm(nicknameNorm) : []),
+    emailOwners: uniqueUsers(emailNorm ? db.getUsersByEmailNorm(emailNorm) : [])
+  };
+}
+
+function firstOtherUser(rows = [], existingId = "") {
+  return rows.find((row) => row?.id && row.id !== existingId) || null;
+}
+
+function profileConflict(nicknameNorm = "", emailNorm = "", existingId = "") {
+  const { nicknameOwners, emailOwners } = usersForIdentity(nicknameNorm, emailNorm);
+  const nicknameOwner = firstOtherUser(nicknameOwners, existingId);
+  const emailOwner = firstOtherUser(emailOwners, existingId);
+  if (nicknameOwner) return { field: "nickname", message: "这个昵称已经被使用。" };
+  if (emailOwner) return { field: "email", message: "这个邮箱已经被使用。" };
+  return null;
+}
+
+function registrationOwnerConflict(nicknameOwners = [], emailOwners = []) {
+  const owners = uniqueUsers([...nicknameOwners, ...emailOwners]);
+  if (owners.length > 1) {
+    const sharedNickname = nicknameOwners.length > 1;
+    const sharedEmail = emailOwners.length > 1;
+    if (sharedNickname && sharedEmail) return { field: "identity", message: "昵称和邮箱已经被其他账号使用，请换一组账号信息。" };
+    if (sharedNickname) return { field: "nickname", message: "这个昵称已经被使用。" };
+    if (sharedEmail) return { field: "email", message: "这个邮箱已经被使用。" };
+    return { field: "identity", message: "昵称和邮箱分别属于不同账号，请换一个。" };
+  }
+  const owner = owners[0] || null;
+  if (!owner?.password_hash) return { owner };
+  const nicknameOwned = nicknameOwners.some((row) => row.id === owner.id);
+  return {
+    owner,
+    field: nicknameOwned ? "nickname" : "email",
+    message: nicknameOwned ? "这个昵称已经被使用。" : "这个邮箱已经被使用。"
+  };
+}
+
+function sendIdentityConstraintError(res, error) {
+  const message = String(error?.message || "");
+  if (!/UNIQUE constraint failed/i.test(message)) return false;
+  const field = message.includes("users.nickname_norm") ? "nickname"
+    : message.includes("users.email_norm") ? "email"
+      : "identity";
+  sendJson(res, 409, {
+    ok: false,
+    field,
+    message: field === "nickname"
+      ? "这个昵称已经被使用。"
+      : field === "email"
+        ? "这个邮箱已经被使用。"
+        : "账号信息已经被使用。"
+  });
+  return true;
+}
+
+function issueSession(participantId, timestamp) {
+  const token = crypto.randomBytes(32).toString("hex");
+  db.createSession(token, participantId, timestamp, futureIso(sessionTtlMs));
+  return token;
 }
 
 function persistClientQuizResults(participant, rows = []) {
@@ -409,7 +632,7 @@ function safeStaticPath(urlPath) {
 
 async function handleApi(req, res, url) {
   if (!checkRateLimit(req)) {
-    sendJson(res, 429, { ok: false, message: "Too many requests. Please slow down." });
+    sendJson(res, 429, { ok: false, message: "请求过于频繁，请稍后再试。" });
     return;
   }
   try {
@@ -419,24 +642,99 @@ async function handleApi(req, res, url) {
       return;
     }
 
-    if (req.method === "POST" && url.pathname === "/api/auth/login") {
+    if (req.method === "GET" && url.pathname === "/api/course/openmaic-v14-route") {
+      const routePath = path.join(root, "data", "openmaic-v14-route.json");
+      try {
+        const route = JSON.parse(fs.readFileSync(routePath, "utf8"));
+        sendJson(res, 200, route);
+      } catch (error) {
+        sendJson(res, 404, { ok: false, message: "未找到 Open MAIC v14 学习路线。" });
+      }
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/course/openmaic-audio-map") {
+      const resourceRoot = String(url.searchParams.get("root") || "").replace(/^resources[\\/]/, "").replace(/\\/g, "/");
+      if (!/^open-maic\/[^/]+$/.test(resourceRoot)) {
+        sendJson(res, 400, { ok: false, message: "资源路径不正确。" });
+        return;
+      }
+      const manifestPath = path.join(root, "resources", resourceRoot, "manifest.json");
+      const resolved = path.resolve(manifestPath);
+      const openMaicRoot = path.resolve(root, "resources", "open-maic");
+      if (!resolved.startsWith(openMaicRoot + path.sep) || !fs.existsSync(resolved)) {
+        sendJson(res, 404, { ok: false, message: "未找到音频映射。" });
+        return;
+      }
+      const manifest = JSON.parse(fs.readFileSync(resolved, "utf8"));
+      const scenes = (manifest.scenes || []).map((scene) => ({
+        order: scene.order,
+        title: scene.title || "",
+        actions: (scene.actions || [])
+          .filter((action) => action.audioRef)
+          .map((action) => ({
+            type: action.type || "speech",
+            text: action.text || action.prompt || "",
+            prompt: action.prompt || "",
+            audioRef: action.audioRef
+          }))
+      })).filter((scene) => scene.actions.length);
+      sendJson(res, 200, { ok: true, resourceRoot, scenes });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/register") {
       const body = await readJsonBody(req);
       const nickname = cleanNickname(body.nickname);
-      if (!nickname) {
-        sendJson(res, 400, { ok: false, message: "Nickname is required." });
+      const email = cleanEmail(body.email);
+      const password = String(body.password || "");
+      if (!nickname && !email) {
+        sendJson(res, 400, { ok: false, message: "请至少填写昵称或邮箱。", field: "identity" });
+        return;
+      }
+      if (!isValidNickname(nickname)) {
+        sendJson(res, 400, { ok: false, message: "昵称需要 2-24 个字符。", field: "nickname" });
+        return;
+      }
+      if (email && !isValidEmail(email)) {
+        sendJson(res, 400, { ok: false, message: "邮箱格式不正确。", field: "email" });
+        return;
+      }
+      if (!isUsablePassword(password)) {
+        sendJson(res, 400, { ok: false, message: "密码需要 8-72 个字符。", field: "password" });
         return;
       }
       const timestamp = nowIso();
-      const participantId = participantIdFor(nickname);
-      const existing = db.getUser(participantId);
-      db.upsertUser(participantId, nickname, existing?.created_at || timestamp, timestamp);
-      const token = crypto.randomBytes(24).toString("hex");
-      db.createSession(token, participantId, timestamp);
+      const nicknameNorm = normalizeIdentity(nickname);
+      const emailNorm = normalizeEmail(email);
+      const { nicknameOwners, emailOwners } = usersForIdentity(nicknameNorm, emailNorm);
+      const ownerConflict = registrationOwnerConflict(nicknameOwners, emailOwners);
+      if (ownerConflict?.message) {
+        sendJson(res, 409, { ok: false, message: ownerConflict.message, field: ownerConflict.field || "identity" });
+        return;
+      }
+      const legacyAccount = ownerConflict?.owner || null;
+      const participantId = legacyAccount?.id || participantIdForIdentity(nicknameNorm, emailNorm);
+      try {
+        db.upsertUser(participantId, nickname, legacyAccount?.created_at || timestamp, timestamp, {
+          nickname,
+          nicknameNorm,
+          email,
+          emailNorm,
+          passwordHash: hashPassword(password),
+          passwordUpdatedAt: timestamp,
+          profileUpdatedAt: legacyAccount?.profile_updated_at || ""
+        });
+      } catch (error) {
+        if (sendIdentityConstraintError(res, error)) return;
+        throw error;
+      }
+      const token = issueSession(participantId, timestamp);
       db.insertEvent({
         id: crypto.randomUUID(),
         user_id: participantId,
-        type: "login",
-        payload: { nickname },
+        type: legacyAccount ? "register_upgrade" : "register",
+        payload: { nickname, hasEmail: Boolean(email) },
         created_at: timestamp
       });
       const user = db.getUser(participantId);
@@ -444,10 +742,135 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/auth/login") {
+      const body = await readJsonBody(req);
+      const identifier = cleanLoginIdentifier(body.identifier || body.nickname || body.email);
+      const password = String(body.password || "");
+      if (!identifier || !password) {
+        sendJson(res, 400, { ok: false, message: "请填写昵称或邮箱，并输入密码。", field: !identifier ? "identifier" : "password" });
+        return;
+      }
+      const authLimit = checkAuthAttemptLimit(req, identifier);
+      if (!authLimit.ok) {
+        sendJson(res, 429, {
+          ok: false,
+          message: "尝试次数过多，请稍后再试。",
+          retryAfterSeconds: authLimit.retryAfterSeconds
+        });
+        return;
+      }
+      const timestamp = nowIso();
+      const user = findUserByIdentifier(identifier);
+      if (!user?.password_hash || !verifyPassword(password, user.password_hash)) {
+        recordFailedAuthAttempt(req, identifier);
+        sendJson(res, 401, { ok: false, message: "账号或密码不正确。" });
+        return;
+      }
+      clearAuthAttemptLimit(req, identifier);
+      db.upsertUser(user.id, user.nickname || "", user.created_at || timestamp, timestamp, {
+        nickname: user.nickname || "",
+        nicknameNorm: user.nickname_norm || normalizeIdentity(user.nickname || ""),
+        email: user.email || "",
+        emailNorm: user.email_norm || normalizeEmail(user.email || ""),
+        passwordHash: user.password_hash || "",
+        passwordUpdatedAt: user.password_updated_at || "",
+        profileUpdatedAt: user.profile_updated_at || ""
+      });
+      const token = issueSession(user.id, timestamp);
+      db.insertEvent({
+        id: crypto.randomUUID(),
+        user_id: user.id,
+        type: "login",
+        payload: { via: isValidEmail(normalizeEmail(identifier)) ? "email" : "nickname" },
+        created_at: timestamp
+      });
+      const updated = db.getUser(user.id);
+      sendJson(res, 200, { ok: true, participant: safePublicParticipant(updated), token });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/profile") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const nickname = cleanNickname(body.nickname);
+      const email = cleanEmail(body.email);
+      const currentNickname = auth.participant.nickname || "";
+      const currentEmail = auth.participant.email || "";
+      const noChange = nickname === currentNickname && email === currentEmail;
+      if (noChange) {
+        sendJson(res, 200, { ok: true, participant: safePublicParticipant(db.getUser(auth.participant.id)) });
+        return;
+      }
+      if (auth.participant.profile_updated_at) {
+        sendJson(res, 403, {
+          ok: false,
+          field: "profile",
+          message: "账号信息只能修改一次，已不能再次修改。"
+        });
+        return;
+      }
+      if (!nickname && !email) {
+        sendJson(res, 400, { ok: false, message: "昵称和邮箱至少保留一个。", field: "identity" });
+        return;
+      }
+      if (!isValidNickname(nickname)) {
+        sendJson(res, 400, { ok: false, message: "昵称需要 2-24 个字符。", field: "nickname" });
+        return;
+      }
+      if (email && !isValidEmail(email)) {
+        sendJson(res, 400, { ok: false, message: "邮箱格式不正确。", field: "email" });
+        return;
+      }
+      const nicknameNorm = normalizeIdentity(nickname);
+      const emailNorm = normalizeEmail(email);
+      const conflict = profileConflict(nicknameNorm, emailNorm, auth.participant.id);
+      if (conflict) {
+        sendJson(res, 409, { ok: false, message: conflict.message, field: conflict.field });
+        return;
+      }
+      const timestamp = nowIso();
+      let updated = null;
+      try {
+        updated = db.updateUserProfile(auth.participant.id, {
+          nickname,
+          nicknameNorm,
+          email,
+          emailNorm,
+          profileUpdatedAt: timestamp,
+          lastSeenAt: timestamp
+        });
+      } catch (error) {
+        if (sendIdentityConstraintError(res, error)) return;
+        throw error;
+      }
+      if (!updated) {
+        sendJson(res, 404, { ok: false, message: "账号不存在，请重新登录。" });
+        return;
+      }
+      db.insertEvent({
+        id: crypto.randomUUID(),
+        user_id: auth.participant.id,
+        type: "profile_update",
+        payload: { hasNickname: Boolean(nickname), hasEmail: Boolean(email) },
+        created_at: timestamp
+      });
+      sendJson(res, 200, { ok: true, participant: safePublicParticipant(updated) });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/logout") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (auth) db.revokeSession(auth.token, nowIso());
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/auth/me") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       sendJson(res, 200, { ok: true, participant: safePublicParticipant(auth.participant) });
       return;
     }
@@ -456,7 +879,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/event") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const eventId = crypto.randomUUID();
       const timestamp = nowIso();
       const eventType = String(body.type || "event").slice(0, 80);
@@ -499,7 +922,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/events") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const events = Array.isArray(body.events) ? body.events.slice(0, 100) : [];
       const eventIds = [];
       const timestamp = nowIso();
@@ -523,7 +946,7 @@ async function handleApi(req, res, url) {
     // ---- Learning Snapshot ----
     if (req.method === "GET" && url.pathname === "/api/learning/snapshot") {
       const auth = authenticate(req);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const snap = db.getLatestSnapshot(auth.participant.id);
       if (!snap) { sendJson(res, 200, { ok: true, snapshot: null }); return; }
       let data = {};
@@ -535,7 +958,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/snapshot") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
@@ -556,7 +979,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/reset") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
@@ -578,7 +1001,7 @@ async function handleApi(req, res, url) {
     // ---- Learning Quiz Results (for cross-browser sync - authoritative source) ----
     if (req.method === "GET" && url.pathname === "/api/learning/quiz-results") {
       const auth = authenticate(req);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const results = db.getQuizResultsByUser(auth.participant.id, 500);
       sendJson(res, 200, { ok: true, data: results });
       return;
@@ -586,7 +1009,7 @@ async function handleApi(req, res, url) {
 
     // ---- Admin: Export raw data (backward compat) ----
     if (req.method === "GET" && url.pathname === "/api/admin/export") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const d = db.getDbSync();
       const users = [];
       const us = d.prepare("SELECT * FROM users");
@@ -597,7 +1020,7 @@ async function handleApi(req, res, url) {
       for (const u of users) {
         const snap = db.getLatestSnapshot(u.id);
         participants[u.id] = {
-          participantId: u.id, loginMode: "nickname", nickname: u.nickname,
+          participantId: u.id, loginMode: u.password_hash ? "password" : "nickname", nickname: u.nickname || "", email: u.email || "", displayName: publicDisplayName(u),
           createdAt: u.created_at, updatedAt: u.last_seen_at, lastSeenAt: u.last_seen_at,
           stats: snap ? summaryFromData(snap.data) : {}
         };
@@ -612,49 +1035,49 @@ async function handleApi(req, res, url) {
 
     // ---- Admin Stats APIs ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/overview") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.statsOverview(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/chapter-accuracy") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.chapterAccuracy(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/question-errors") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.questionErrors(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/user-progress") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.userProgress(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/daily-activity") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.dailyActivity(30, dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/phase-comparison") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.phaseComparison(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/user-detail") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const userId = url.searchParams.get("userId") || "";
       if (!userId) { sendJson(res, 400, { ok: false, message: "userId required." }); return; }
       const dates = getDateRange(url);
@@ -665,34 +1088,34 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/users") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       sendJson(res, 200, { ok: true, data: db.listUsers() });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/question-type-accuracy") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.questionTypeAccuracy(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/score-distribution") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.scoreDistribution(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/hourly-activity") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.hourlyActivity(30, dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/short-answer-responses") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.shortAnswerResponses(dates) });
       return;
@@ -700,7 +1123,7 @@ async function handleApi(req, res, url) {
     
     // ---- Admin: Interactions tracking ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interactions") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 100), 1000));
       const offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
@@ -719,7 +1142,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/grade") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const questions = Array.isArray(body.questions) ? body.questions.slice(0, 50) : [];
       try {
         const results = await orchestrator.gradeOnly(questions);
@@ -734,7 +1157,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/kg/plan") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "Not signed in." }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const chapterId = String(body.chapterId || "").trim();
       const currentUnitId = String(body.currentUnitId || "").trim();
       if (!chapterId) { sendJson(res, 400, { ok: false, message: "chapterId required." }); return; }
@@ -797,7 +1220,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-dashboard") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionDashboard(dates) });
@@ -805,7 +1228,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/agentic-decision-trace") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.agenticDecisionTrace(dates) });
@@ -813,7 +1236,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-evidence-snapshots") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionEvidenceSnapshots(dates) });
@@ -821,7 +1244,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-summary") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionSummary(dates) });
@@ -829,7 +1252,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/unit-engagement") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.unitEngagement(dates) });
@@ -837,7 +1260,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/skip-repeat") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.skipRepeatStats(dates) });
@@ -845,7 +1268,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/parameter-changes") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.parameterChangeStats(dates) });
@@ -853,20 +1276,24 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/path-analysis") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "Admin token required." }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.pathAnalysis(dates) });
       return;
     }
 
-    sendJson(res, 404, { ok: false, message: "API endpoint not found." });
+    sendJson(res, 404, { ok: false, message: "接口不存在。" });
   } catch (error) {
     console.error("API error:", error);
     const status = error.message === "Request body is too large" ? 413
       : error.message === "Invalid JSON body" ? 400
       : 500;
-    sendJson(res, status, { ok: false, message: status === 500 ? "Internal server error." : error.message });
+    const message = status === 500 ? "服务器内部错误。"
+      : error.message === "Request body is too large" ? "请求内容过大。"
+        : error.message === "Invalid JSON body" ? "请求格式不正确。"
+          : error.message;
+    sendJson(res, status, { ok: false, message });
   }
 }
 
@@ -885,7 +1312,7 @@ const server = http.createServer((req, res) => {
 
   const filePath = safeStaticPath(url.pathname);
   if (!filePath) {
-    send(res, 403, "Forbidden");
+    send(res, 403, "禁止访问");
     return;
   }
   if (isBlockedStaticResource(filePath)) {
@@ -938,6 +1365,20 @@ const server = http.createServer((req, res) => {
     });
   });
 });
+
+function shutdown(signal) {
+  console.log(`${signal} received. Saving database before shutdown...`);
+  try {
+    db.saveNow();
+  } catch (error) {
+    console.error("Final database save failed:", error.message);
+  }
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(0), 3000).unref();
+}
+
+process.once("SIGINT", () => shutdown("SIGINT"));
+process.once("SIGTERM", () => shutdown("SIGTERM"));
 
 // Initialize database on startup, then start server
 db.getDb().then(() => {

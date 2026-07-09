@@ -8,10 +8,38 @@ function optionText(question, value) {
   return option ? `${option.value}. ${option.label}` : value;
 }
 
+function displayQuestionText(question = {}) {
+  const raw = String(question.question || question.prompt || question.title || question.text || "");
+  return raw.replace(/^\s*【[^】]{1,80}】\s*/, "").trim() || raw;
+}
+
 function formatAnswerValues(question, values) {
   const list = Array.isArray(values) ? values : values ? [values] : [];
   if (!list.length) return "未作答";
   return list.map((value) => optionText(question, value)).join("；");
+}
+
+function formatAnswerValuesHtml(question, values) {
+  const list = Array.isArray(values) ? values : values ? [values] : [];
+  if (!list.length) return '<div class="answer-lines muted">未作答</div>';
+  return `
+    <div class="answer-lines">
+      ${list.map((value) => `<div class="answer-line">${renderInlineMath(optionText(question, value))}</div>`).join("")}
+    </div>
+  `;
+}
+
+function renderReviewBlock(label, bodyHtml, className = "") {
+  return `
+    <div class="review-answer-block ${className}">
+      <b>${escapeHtml(label)}</b>
+      ${bodyHtml}
+    </div>
+  `;
+}
+
+function renderAnalysisBlock(text) {
+  return renderReviewBlock("解析", `<div class="answer-lines analysis-line">${renderInlineMath(text || "这道题暂无解析。")}</div>`);
 }
 
 function questionConceptTags(question) {
@@ -42,7 +70,7 @@ function buildQuestionCoachHint(question, result, unit) {
   const conceptText = concepts.length ? concepts.join("、") : "题干中的关键条件";
   const selectedText = formatAnswerValues(question, result.response);
   const reviewTarget = hint.reviewScene || hint.review_scene || coachReviewTarget(unit);
-  const promptText = String(question.question || "这道题").replace(/\s+/g, " ").slice(0, 80);
+  const promptText = displayQuestionText(question).replace(/\s+/g, " ").slice(0, 80);
   const typeMove = question.type === "multiple"
     ? "这是一道多选题，先把每个选项单独判定为“符合题干”或“不符合题干”，再组合选择；不要只凭一个熟悉词就全选或漏选。"
     : "这是一道单选题，先抓住题干里的限制条件，再检查你选的那句话是否和这个条件同向、同义。";
@@ -60,26 +88,33 @@ function buildQuestionCoachHint(question, result, unit) {
   };
 }
 
-function aiReviewStatus(result) {
+function aiReviewStatus(result, question = {}) {
   const aiScore = result.aiScore ?? result.ai_score;
   const aiErrorType = result.aiErrorType || result.ai_error_type || "";
   const feedback = result.aiFeedback || result.ai_feedback || "";
   const hasAiScore = aiScore !== undefined && aiScore !== null;
+  const maxScore = quizMaxScoreFor(question, result || {});
+  const displayScore = hasAiScore ? quizScoreFromAiScore(aiScore, maxScore) : null;
   const aiFailed = ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(aiErrorType)
     || /解析失败|评分超时|人工评阅|人工复核/.test(feedback)
-    || (result.status === "pending_review" && result.isCorrect === null && Number(aiScore) === 0);
-  const badgeText = hasAiScore && !aiFailed ? (Number(aiScore) === 0 ? "错误" : "已复核") : "待复核";
-  const badgeClass = hasAiScore && !aiFailed && Number(aiScore) > 0 ? "done" : "todo";
-  let line = "AI 评测正在等待模型返回；结果回来后会保留在这里，并同步到管理员后台。";
-  if (hasAiScore && !aiFailed) {
-    const confidence = result.aiConfidence != null ? ` · 置信度 ${Math.round(Number(result.aiConfidence) * 100)}%` : "";
-    line = `AI 评分：${Number(aiScore)}分${confidence}`;
+    || (result.status === "pending_review" && result.isCorrect === null && Number(aiScore) === 0 && Boolean(aiErrorType));
+  const fallbackScored = result.status === "ai_reviewed" && aiFailed && (result.fallbackScored || Number(aiScore) === 0 || Number(result.score) === 0);
+  const badgeText = hasAiScore && (!aiFailed || fallbackScored) ? (Number(displayScore) === 0 ? "需复盘" : "已批改") : "待批改";
+  const badgeClass = hasAiScore && (!aiFailed || fallbackScored) && Number(displayScore) > 0 ? "done" : "todo";
+  let line = "智能批改正在等待返回；结果回来后会保留在这里。";
+  if (fallbackScored) {
+    const denominator = maxScore ? ` / ${quizFormatScore(maxScore)}` : "";
+    line = `智能批改暂时失败，已先按 ${quizFormatScore(displayScore || 0)}${denominator} 分计入；你可以继续学习。`;
+  } else if (hasAiScore && !aiFailed) {
+    const confidence = result.aiConfidence != null ? ` · 判断把握 ${Math.round(Number(result.aiConfidence) * 100)}%` : "";
+    const denominator = maxScore ? ` / ${quizFormatScore(maxScore)}` : "";
+    line = `建议得分：${quizFormatScore(displayScore)}${denominator} 分${confidence}`;
   } else if (aiFailed) {
     line = aiErrorType === "mock_provider"
       ? "本地 mock 环境未启用真实大模型，已保留给人工复核。"
       : aiErrorType === "api_timeout"
-        ? "AI 评分超时，已保留给人工复核。"
-      : "AI 评测暂时未完成，已保留给人工复核。";
+        ? "评分超时，已保留给人工复核。"
+      : "评测暂时未完成，已保留给人工复核。";
   }
   return { hasAiScore, aiFailed, badgeText, badgeClass, line, feedback };
 }
@@ -93,7 +128,7 @@ function shortAnswerReferenceText(question) {
 
 function renderQuestionReview({ question, result, index, unit }) {
   if (question.type === "short_answer") {
-    const ai = aiReviewStatus(result);
+    const ai = aiReviewStatus(result, question);
     const referenceText = shortAnswerReferenceText(question);
     const rubricText = question.commentPrompt || question.rubric || "";
     return `
@@ -105,9 +140,11 @@ function renderQuestionReview({ question, result, index, unit }) {
         </div>
         <p><b>你的回答：</b>${escapeHtml(result.response || "")}</p>
         <div class="ai-review-box" data-ai-review>
-          <strong>AI 复核</strong>
+          <strong>智能批改建议</strong>
           <p>${escapeHtml(ai.line)}</p>
           ${ai.feedback ? `<p><b>反馈：</b>${escapeHtml(ai.feedback)}</p>` : ""}
+          ${Array.isArray(result.aiWeakConcepts) && result.aiWeakConcepts.length ? `<p><b>薄弱概念：</b>${escapeHtml(result.aiWeakConcepts.join("、"))}</p>` : ""}
+          ${result.aiReasoning ? `<p><b>评分依据：</b>${escapeHtml(result.aiReasoning)}</p>` : ""}
         </div>
         <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示参考答案和解析</button>
         <div class="question-answer-hidden" data-answer-hidden style="display:none">
@@ -127,14 +164,13 @@ function renderQuestionReview({ question, result, index, unit }) {
         <strong>第 ${index + 1} 题答案解析</strong>
         <span class="question-score-pill">${escapeHtml(quizQuestionScoreLabel(question, result))}</span>
       </div>
-      <p><b>你的选择：</b>${renderInlineMath(formatAnswerValues(question, result.response))}</p>
+      ${renderReviewBlock("你的选择", formatAnswerValuesHtml(question, result.response))}
       ${correct
-        ? `<p><b>正确答案：</b>${renderInlineMath(formatAnswerValues(question, question.answer || []))}</p>
-          <p><b>解析：</b>${renderInlineMath(question.analysis || "这道题暂无解析。")}</p>`
+        ? `${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, question.answer || []), "correct-answer")}
+          ${renderAnalysisBlock(question.analysis)}`
         : `<div class="coach-hint-box" data-coach-hint>
-            <div class="coach-hint-icon">Coach</div>
             <div class="coach-hint-content">
-              <strong>Agentic Coach 提示</strong>
+              <strong>学习建议</strong>
               <p><b>题目焦点：</b>${renderInlineMath(coach.promptText)}</p>
               <p><b>你的选择：</b>${renderInlineMath(coach.selectedText)}</p>
               <p><b>先复盘：</b>这题主要卡在 <em>${escapeHtml(coach.conceptText)}</em>。${escapeHtml(coach.misconception)}</p>
@@ -143,8 +179,8 @@ function renderQuestionReview({ question, result, index, unit }) {
           </div>
           <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示正确答案和解析</button>
           <div class="question-answer-hidden" data-answer-hidden style="display:none">
-            <p><b>正确答案：</b>${renderInlineMath(formatAnswerValues(question, question.answer || []))}</p>
-            <p><b>解析：</b>${renderInlineMath(question.analysis || "这道题暂无解析。")}</p>
+            ${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, question.answer || []), "correct-answer")}
+            ${renderAnalysisBlock(question.analysis)}
           </div>`
       }
     </div>
@@ -318,7 +354,10 @@ function submitQuiz(unitId) {
 
   // Clear old results for this quiz to avoid duplicate counting
   state.quizResults = (state.quizResults || []).filter(r => r.unitId !== unit.id);
-  records.forEach(({ question, result }) => recordQuizResult(unit, question, result, { sync: false }));
+  const storedRecords = records.map(({ question, result, index }) =>
+    recordQuizResult(unit, question, result, { sync: false, index })
+  );
+  rememberQuizAttempt(unit, storedRecords);
   trackLearningEvent("quiz_submission", {
     unitId: unit.id,
     chapterId: unit.chapterId,
@@ -373,11 +412,11 @@ function submitQuiz(unitId) {
     const outcomeHtml = quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
     if (isPre) {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测提交成功！你在 ${outcomeHtml}。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。</div><p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner" id="quiz-top-banner-${unitId}">前测已提交：${outcomeHtml}。</div><p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`);
     } else if (isPost) {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner post" id="quiz-top-banner-${unitId}">后测提交成功！你在 ${outcomeHtml}。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。</div><p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner post" id="quiz-top-banner-${unitId}">后测已提交：${outcomeHtml}。</div><p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`);
     } else {
-      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unitId}">形成性测验提交成功！你在 ${outcomeHtml}。卡住的地方正好说明接下来要重点理解的内容——Agent 会用 MAIC-UI 互动实验帮你换种方式重学或解锁一步拓展。</div><p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`);
+      quizCard.insertAdjacentHTML("afterbegin", `<div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unitId}">形成性测验已提交：${outcomeHtml}。</div><p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`);
     }
   }
 
@@ -434,10 +473,16 @@ function recordQuizResult(unit, question, result, options = {}) {
     id: `${unit.id}-${question.id}-${Date.now()}`,
     unitId: unit.id,
     questionId: question.id,
+    questionIndex: Number.isFinite(options.index) ? options.index : null,
+    questionText: displayQuestionText(question),
     chapterId: unit.chapterId,
     chapterLabel: chapter.label,
     unitLabel: unit.label,
     questionType: question.type,
+    moduleId: question.moduleId || "",
+    moduleTitle: question.moduleTitle || "",
+    knowledgePointIds: question.knowledgePointIds || question.coachHint?.knowledgePointIds || [],
+    concepts: questionConceptTags(question),
     points: question.points || 0,
     phase: unit.assessmentPhase || "",
     timestamp: beijingNow(),
@@ -448,16 +493,17 @@ function recordQuizResult(unit, question, result, options = {}) {
   state.quizResults = state.quizResults.slice(0, 200);
   if (options.sync !== false) saveState();
   if (options.track !== false) trackLearningEvent("quiz_result", record, options.sync !== false);
+  return record;
 }
 
 els.completeLesson.addEventListener("click", async () => {
   const unit = getUnit();
-  if (unit.type === "quiz" && !(state.submittedQuizzes || []).includes(unit.id)) {
-    addLog("测验需要先提交，Agent 才能根据证据解锁下一步。");
+  if (unit.type === "quiz" && !unit.placeholderQuiz && !(state.submittedQuizzes || []).includes(unit.id)) {
+    addLog("测验需要先提交，系统才能根据证据解锁下一步。");
     return;
   }
   if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
-    addLog("Agent 已给出下一步推荐，请先在 Coach 卡片中选择路径。");
+    addLog("学习建议已给出下一步，请先在建议卡片中选择路径。");
     if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
     else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
     return;
@@ -507,7 +553,7 @@ async function goToPrevUnit() {
 
 async function goToNextUnit() {
   if (typeof agenticCanLeaveCurrent === "function" && !agenticCanLeaveCurrent()) {
-    addLog("请先在 Coach 卡片中选择下一步，再继续下一关。");
+    addLog("请先在学习建议卡片中选择下一步，再继续下一关。");
     if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
     else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
     return;

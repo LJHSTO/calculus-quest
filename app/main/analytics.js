@@ -153,6 +153,7 @@ function moduleRoleForUnit(unit) {
   if (/知识地图|学习路线|概念地图/.test(title)) return "concept_map";
   if (/公式|桥梁|代数/.test(title)) return "formula_bridge";
   if (/复盘|总结|回顾/.test(title)) return "review";
+  if (unit.type === "knowledge") return "knowledge_point";
   if (unit.type === "interactive") return "experiment";
   if (unit.type === "slide") return "instruction";
   return unit.type || "";

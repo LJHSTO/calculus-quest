@@ -1,7 +1,9 @@
 // Narration queue, playback timeline, and fullscreen helpers.
-function playNarrationQueue() {
+function playNarrationQueue(scope = document) {
   const unit = getUnit();
-  if (activeNarration && activeNarration.unitId === unit.id) {
+  const toolbar = scope?.querySelector?.(".coach-toolbar[data-narration-unit]") || document.querySelector(".coach-toolbar[data-narration-unit]");
+  const narrationUnitId = toolbar?.dataset?.narrationUnit || unit.id;
+  if (activeNarration && activeNarration.unitId === narrationUnitId) {
     if (activeNarration.status === "ended") {
       setNarrationSegment(0, 0, true);
       return;
@@ -16,9 +18,9 @@ function playNarrationQueue() {
     return;
   }
 
-  const sources = visibleNarrationSources();
+  const sources = visibleNarrationSources(scope);
   if (!sources.length) return;
-  createNarrationQueue(sources, unit.id, true);
+  createNarrationQueue(sources, narrationUnitId, true);
 }
 
 function stopNarrationQueue() {
@@ -40,8 +42,8 @@ function pauseNarrationQueue() {
   syncNarrationUi();
 }
 
-function visibleNarrationSources() {
-  return Array.from(document.querySelectorAll(".coach-line[data-audio-src]")).map((node) => node.dataset.audioSrc);
+function visibleNarrationSources(scope = document) {
+  return Array.from((scope || document).querySelectorAll(".coach-line[data-audio-src]")).map((node) => node.dataset.audioSrc);
 }
 
 function toggleNarrationCollapse() {
@@ -53,7 +55,7 @@ function toggleNarrationCollapse() {
     if (content) content.hidden = Boolean(state.narrationCollapsed);
     const button = strip.querySelector("[data-toggle-narration]");
     if (button) {
-      button.textContent = state.narrationCollapsed ? "展开旁白" : "收起旁白";
+      button.textContent = state.narrationCollapsed ? "展开语音包" : "收起语音包";
       button.setAttribute("aria-expanded", state.narrationCollapsed ? "false" : "true");
     }
   });
@@ -140,12 +142,13 @@ function advanceNarration() {
   setNarrationSegment(nextIndex, 0, true);
 }
 
-function seekNarration(ratio) {
+function seekNarration(ratio, scope = document) {
   if (!activeNarration) {
     const unit = getUnit();
-    const sources = visibleNarrationSources();
+    const toolbar = scope?.querySelector?.(".coach-toolbar[data-narration-unit]") || document.querySelector(".coach-toolbar[data-narration-unit]");
+    const sources = visibleNarrationSources(scope);
     if (!sources.length) return;
-    createNarrationQueue(sources, unit.id, false);
+    createNarrationQueue(sources, toolbar?.dataset?.narrationUnit || unit.id, false);
   }
 
   const queue = activeNarration;

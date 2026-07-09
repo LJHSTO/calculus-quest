@@ -1,5 +1,15 @@
 // Learning shell, player, lesson, and resource rendering.
 function renderMetrics() {
+  if (isOpenMaicV14Route()) {
+    const totals = courseIndex?.totals || {};
+    const unitCount = allUnits().length || curriculum.reduce((sum, chapter) => sum + (chapter.units || []).length, 0);
+    els.metricChapters.textContent = totals.chapters || curriculum.length || chapters.length;
+    els.metricScenes.textContent = unitCount || ((totals.knowledgePoints || 0) + (totals.modules || 0) * 4);
+    els.metricGlm.textContent = totals.modules || 0;
+    els.metricHtml.textContent = totals.interactionChoices || (totals.knowledgePoints || 0) * routeInteractionTypes().length;
+    els.metricAudio.textContent = totals.knowledgePoints || curriculum.flatMap((chapter) => chapter.units || []).filter((unit) => unit.type === "knowledge").length;
+    return;
+  }
   const totals = courseIndex?.totals;
   const loadedChapters = curriculum.filter((chapter) => chapter.loaded);
   const chapterCount = courseIndex?.chapters?.length || curriculum.length || loadedChapters.length;
@@ -26,8 +36,11 @@ function countAudio(manifest) {
 }
 
 function renderChapters() {
-  els.chapterList.innerHTML = curriculum
-    .map((chapter, index) => {
+  const chapterEntries = typeof agenticVisibleChaptersForNav === "function"
+    ? agenticVisibleChaptersForNav()
+    : curriculum.map((chapter, index) => ({ chapter, index }));
+  els.chapterList.innerHTML = chapterEntries
+    .map(({ chapter, index }) => {
       const done = chapter.units.filter((unit) => state.completed.includes(unit.id)).length;
       const total = chapter.loaded ? chapter.units.length : AGENTIC_CORE_SCENE_ORDERS.length;
       const guide = chapterGuides[chapter.id];
@@ -49,7 +62,7 @@ function renderLessons() {
   const chapter = getChapter();
   els.chapterTitle.textContent = chapter.label;
   if (!chapter.loaded) {
-    els.lessonList.innerHTML = '<div class="empty-state">点击左侧章节卡片来加载本章的学习模块，包括 slides、互动实验和测验。</div>';
+    els.lessonList.innerHTML = '<div class="empty-state">点击左侧章节卡片来加载本章的学习模块，包括讲解页、互动实验和测验。</div>';
     return;
   }
   els.lessonList.innerHTML = chapter.units.map(function(unit, index) {
@@ -77,6 +90,7 @@ function unitIcon(unit) {
     if (unit.assessmentPhase === "post") return "后";
     return "练";
   }
+  if (unit.type === "knowledge") return "知";
   if (unit.type === "slide") return "读";
   if (unit.type === "interactive") return "互";
   return "学";
@@ -85,6 +99,7 @@ function unitIcon(unit) {
 function typeText(unit) {
   if (unit.type === "quiz") return phaseText(unit.assessmentPhase) || "测验";
   return {
+    knowledge: "知识点",
     slide: "讲解",
     interactive: "互动实验"
   }[unit.type] || "学习模块";
@@ -100,7 +115,7 @@ function unitLearningFocus(unit) {
             ? "像一次小通关一样整页完成，再提交。"
             : "把刚学过的想法迁移到题目里，整页完成后再提交。",
       check: "提交前不显示答案；提交后会跳回第一题，逐题复盘答案解析。",
-      help: "短答题写出推理过程即可，Agent/教师后续可以复核。"
+      help: "短答题写出推理过程即可，提交后会进入复核。"
     };
   }
 
@@ -109,6 +124,14 @@ function unitLearningFocus(unit) {
       action: "先抓住这一页想建立的一个核心图像或公式关系。",
       check: "看完后试着用自己的话解释标题里的关键词。",
       help: "可以点「播放全部」听完整旁白，再进入互动实验。"
+    };
+  }
+
+  if (unit.type === "knowledge") {
+    return {
+      action: "先看讲解页，再选一种互动场景试一试。",
+      check: "四种场景可自由切换，选最顺手的一种即可。",
+      help: "有配套资源时会直接加载到下方。"
     };
   }
 
@@ -138,8 +161,7 @@ function renderPlayer() {
 
   els.lessonType.textContent = typeText(unit);
   els.lessonTitle.innerHTML = renderInlineMath(unit.label);
-  const guide = chapterGuides[unit.chapterId];
-  els.lessonSummary.innerHTML = `${renderInlineMath(unit.summary)}${guide?.goal ? `<small style="display:block;margin-top:4px;color:var(--muted);">${renderInlineMath(guide.goal)}${guide?.checkpoint ? " " + renderInlineMath(guide.checkpoint) : ""}</small>` : ""}`;
+  els.lessonSummary.innerHTML = renderInlineMath(unit.summary);
   els.completeLesson.disabled = false;
   const chapter = getChapter();
   const unitIdx = chapter.units.findIndex(u => u.id === unit.id);
@@ -154,7 +176,9 @@ function renderPlayer() {
   updateFullscreenButton();
   renderRecommendationPanel();
 
-  if (unit.scene.type === "quiz") {
+  if (unit.type === "knowledge") {
+    renderKnowledgeUnit(unit);
+  } else if (unit.scene.type === "quiz") {
     renderQuiz(unit);
   } else if (unit.scene.type === "slide") {
     renderSlide(unit);
@@ -168,20 +192,29 @@ function renderPlayer() {
 }
 
 function renderCoach(scene, chapterId, unitId) {
-  const actions = (scene.actions || []).filter((action) => action.text || action.prompt).slice(0, 5);
+  const audioRoot = scene.audioRoot || `open-maic/${chapterId}`;
+  const actions = (scene.actions || []).filter((action) => action.text || action.prompt || action.audioRef).slice(0, 8);
   if (!actions.length) return "";
   const audioActions = actions.filter((action) => action.audioRef);
   const collapsed = Boolean(state.narrationCollapsed);
+  const sourceNodes = audioActions
+    .map((action, index) => `
+      <span class="coach-line" data-audio-src="${resourceUrl(`resources/${audioRoot}/${action.audioRef}`)}">
+        ${escapeHtml(action.text || action.prompt || `第 ${index + 1} 段语音`)}
+      </span>
+    `)
+    .join("");
+  const title = scene.audioTitle || "语音包";
 
   return `
     <div class="coach-strip ${collapsed ? "collapsed" : ""}" data-coach-strip>
       <div class="coach-strip-header">
         <div>
-          <span class="type-pill">语音旁白</span>
-          <strong>${audioActions.length ? `${audioActions.length} 段可播放` : "课堂提示"}</strong>
+          <span class="type-pill">语音包</span>
+          <strong>${escapeHtml(`${title} · ${audioActions.length} 段可播放`)}</strong>
         </div>
         <button class="button soft" type="button" data-toggle-narration aria-expanded="${collapsed ? "false" : "true"}">
-          ${collapsed ? "展开旁白" : "收起旁白"}
+          ${collapsed ? "展开语音包" : "收起语音包"}
         </button>
       </div>
       ${
@@ -200,18 +233,106 @@ function renderCoach(scene, chapterId, unitId) {
             </div>`
           : ""
       }
-      <div class="coach-content" data-narration-content ${collapsed ? "hidden" : ""}>
-        ${actions
-          .map((action) => `
-            <div class="coach-line" ${action.audioRef ? `data-audio-src="${resourceUrl(`resources/open-maic/${chapterId}/${action.audioRef}`)}"` : ""}>
-              <strong>${action.type === "discussion" ? "讨论引导" : "教师旁白"}</strong>
-              <div>${renderInlineMath(action.text || action.prompt || "")}</div>
-            </div>
-          `)
-          .join("")}
-      </div>
+      <div class="coach-content narration-sources" data-narration-content ${collapsed ? "hidden" : ""}>${sourceNodes}</div>
     </div>
   `;
+}
+
+function knowledgeAudioRoot(unit) {
+  const root = unit?.scene?.content?.module?.source?.resourceRoot
+    || (unit?.resourceCandidates || unit?.scene?.content?.knowledgePoint?.resourceCandidates || [])[0]?.root
+    || "";
+  return root || `open-maic/${unit?.chapterId || currentChapterId}`;
+}
+
+function knowledgeAudioActions(unit, sceneOrder = null) {
+  const root = knowledgeAudioRoot(unit);
+  const order = Number(sceneOrder || unit?.scene?.content?.knowledgePoint?.slide?.sceneOrder || 0);
+  if (!order) {
+    return (unit?.scene?.actions || []).filter((action) => action.audioRef);
+  }
+  const cached = root && audioMaps.get(root);
+  const scene = cached?.scenes?.find((item) => Number(item.order) === order);
+  return scene?.actions || [];
+}
+
+function loadKnowledgeAudioMap(unit) {
+  const root = knowledgeAudioRoot(unit);
+  if (!root) return Promise.resolve(null);
+  if (audioMaps.has(root)) return Promise.resolve(audioMaps.get(root));
+  const cached = audioMapPromises.get(root);
+  if (cached) return cached;
+  const promise = fetchJson(`/api/course/openmaic-audio-map?root=${root}`, "语音包加载失败")
+    .then((data) => {
+      audioMaps.set(root, data);
+      audioMapPromises.delete(root);
+      return data;
+    })
+    .catch((error) => {
+      audioMapPromises.delete(root);
+      audioMaps.set(root, { error, scenes: [] });
+      throw error;
+    });
+  audioMapPromises.set(root, promise);
+  return promise;
+}
+
+function renderKnowledgeAudioPack(unit, options = {}) {
+  const slotKey = options.slotKey || "slide";
+  const sceneOrder = Number(options.sceneOrder || unit?.scene?.content?.knowledgePoint?.slide?.sceneOrder || 0);
+  const title = options.title || "语音包";
+  const actions = knowledgeAudioActions(unit, sceneOrder);
+  const root = knowledgeAudioRoot(unit);
+  const loading = root && audioMapPromises.has(root) && !audioMaps.has(root);
+  const failed = root && audioMaps.get(root)?.error;
+  const slotAttrs = `class="knowledge-audio-slot" data-knowledge-audio-slot="${escapeHtml(slotKey)}" data-knowledge-audio-unit="${escapeHtml(unit.id)}" data-knowledge-audio-order="${escapeHtml(String(sceneOrder || ""))}" data-knowledge-audio-title="${escapeHtml(title)}"`;
+  if (!actions.length) {
+    return `
+      <div ${slotAttrs}>
+        <div class="coach-strip ${state.narrationCollapsed ? "collapsed" : ""}" data-coach-strip>
+          <div class="coach-strip-header">
+            <div>
+              <span class="type-pill">语音包</span>
+              <strong>${escapeHtml(failed ? `${title}暂不可用` : loading ? `正在读取${title}` : title)}</strong>
+            </div>
+            <button class="button soft" type="button" data-toggle-narration aria-expanded="${state.narrationCollapsed ? "false" : "true"}">
+              ${state.narrationCollapsed ? "展开语音包" : "收起语音包"}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <div ${slotAttrs}>
+      ${renderCoach(
+        {
+          ...(unit.scene || {}),
+          audioRoot: knowledgeAudioRoot(unit),
+          audioTitle: title,
+          actions
+        },
+        unit.chapterId,
+        `${unit.id}:${slotKey}`
+      )}
+    </div>
+  `;
+}
+
+function refreshKnowledgeAudioPack(unitId = currentUnitId) {
+  const unit = getUnit(unitId);
+  if (!unit || unit.type !== "knowledge") return;
+  const safeId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(unit.id) : String(unit.id).replace(/"/g, '\\"');
+  const slots = Array.from(document.querySelectorAll(`[data-knowledge-audio-unit="${safeId}"]`));
+  if (!slots.length) return;
+  slots.forEach((slot) => {
+    slot.outerHTML = renderKnowledgeAudioPack(unit, {
+      slotKey: slot.dataset.knowledgeAudioSlot || "slide",
+      sceneOrder: Number(slot.dataset.knowledgeAudioOrder || 0),
+      title: slot.dataset.knowledgeAudioTitle || "语音包"
+    });
+  });
+  syncNarrationUi();
 }
 
 function renderResourceShell(unit, title, body, className = "") {
@@ -231,6 +352,157 @@ function renderResourceShell(unit, title, body, className = "") {
   `;
 }
 
+function renderKnowledgeUnit(unit) {
+  const content = unit.scene.content || {};
+  const module = content.module || {};
+  const kp = content.knowledgePoint || {};
+  const slide = kp.slide || {};
+  const canvas = slide.canvas;
+  const types = knowledgeInteractionTypes(unit);
+  const selectedTypeId = selectedKnowledgeSceneType(unit);
+  const selectedType = types.find((type) => type.id === selectedTypeId) || types[0] || {};
+  const candidate = knowledgeResourceCandidate(unit, selectedTypeId);
+  const slideAudioTitle = "讲解页语音包";
+  const sceneAudioTitle = `${sceneChoiceCategoryLabel(selectedType)}语音包`;
+  analyticsTrack("knowledge_render", {
+    data: {
+      unitId: unit.id,
+      chapterId: unit.chapterId,
+      moduleId: unit.moduleId,
+      selectedSceneType: selectedTypeId,
+      hasResource: Boolean(candidate),
+      moduleRole: moduleRoleForUnit(unit),
+      hasRequiredSlide: Boolean(canvas)
+    }
+  });
+
+  const slideBody = canvas
+    ? `<div class="slide-wrap v14-required-slide">
+         <div class="slide-stage" style="background:${canvas.background?.color || canvas.theme?.backgroundColor || "#fff"}">
+           ${(canvas.elements || []).map((element) => renderSlideElement(element, canvas, unit.chapterId)).join("")}
+         </div>
+       </div>`
+    : `<div class="empty-state v14-empty-resource">
+         <h2>讲解页暂无可渲染画布</h2>
+         <p>当前知识点仍保留目标、误解和核心问题；后续重新导入课件时会自动补齐讲解页画布。</p>
+       </div>`;
+
+  const resourceBody = candidate
+    ? `<div class="v14-resource-note">
+         <span class="type-pill">${escapeHtml(selectedType.label || selectedTypeId)}</span>
+         <strong>${escapeHtml(cleanStudentResourceTitle(candidate.title || candidate.file, unit.label))}</strong>
+         <small>互动资源已就绪，可在下方直接体验。</small>
+        </div>
+       <div class="iframe-container">
+         <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
+         <iframe class="embed-frame" data-v14-frame title="${escapeHtml(`${unit.label} ${selectedType.label || selectedTypeId}`)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe>
+       </div>`
+    : `<div class="empty-state v14-empty-resource">
+         <h2>${escapeHtml(selectedType.label || "互动场景")} 课件暂未生成</h2>
+         <p>可以先换一个互动场景。</p>
+       </div>`;
+
+  els.lessonPlayer.innerHTML = `
+    ${renderResourceShell(
+      unit,
+      unit.label,
+      `<div class="v14-knowledge-player">
+        <section class="v14-slide-panel required">
+          <div class="v14-slide-heading">
+            <span class="type-pill">讲解页</span>
+            <h2>${renderInlineMath(slide.title || kp.name || unit.label)}</h2>
+            <p>${renderInlineMath(module.title || unit.moduleTitle || "")}</p>
+          </div>
+          ${slideBody}
+          ${renderKnowledgeAudioPack(unit, {
+            slotKey: "slide",
+            sceneOrder: slide.sceneOrder,
+            title: slideAudioTitle
+          })}
+        </section>
+        <section class="v14-scene-panel">
+          <div class="v14-scene-header">
+            <div>
+              <span class="type-pill">互动选择</span>
+              <h3>当前互动场景</h3>
+            </div>
+          </div>
+          <div class="v14-selected-resource">${resourceBody}</div>
+          ${renderKnowledgeAudioPack(unit, {
+            slotKey: `scene-${selectedTypeId}`,
+            sceneOrder: candidate?.sceneOrder,
+            title: sceneAudioTitle
+          })}
+        </section>
+      </div>`,
+      "v14-knowledge-resource"
+    )}
+  `;
+
+  const iframeEl = els.lessonPlayer.querySelector("iframe[data-v14-frame]");
+  if (iframeEl && candidate) {
+    const loader = () => iframeEl.parentElement?.querySelector(".iframe-loader");
+    iframeEl.addEventListener("load", () => {
+      const node = loader();
+      if (node) {
+        node.classList.add("hidden");
+        window.setTimeout(() => node.remove(), 300);
+      }
+      try {
+        setupIframeInteractionTracking(iframeEl, unit);
+      } catch (error) {
+        console.warn("Knowledge resource tracking unavailable:", error.message);
+      }
+    });
+    iframeEl.addEventListener("error", () => {
+      const node = loader();
+      if (node) node.innerHTML = "<p>课件加载失败，请稍后再试。</p>";
+    });
+    iframeEl.src = resourceUrl(`resources/${candidate.root}/${candidate.file}`);
+  }
+
+  loadKnowledgeAudioMap(unit)
+    .then(() => refreshKnowledgeAudioPack(unit.id))
+    .catch((error) => {
+      console.warn("Knowledge audio map unavailable:", error.message);
+      refreshKnowledgeAudioPack(unit.id);
+    });
+}
+
+function cleanStudentResourceTitle(title = "", fallback = "互动资源") {
+  const cleaned = String(title)
+    .replace(/\\/g, "/")
+    .split("/")
+    .pop()
+    .replace(/\.html?$/i, "")
+    .replace(/^GH-\d{1,2}-/i, "")
+    .replace(/拖动实验/g, "动手调一调")
+    .replace(/误解修复挑战/g, "找错并改正")
+    .replace(/误解挑战/g, "找错并改正")
+    .replace(/关系图/g, "知识怎么连")
+    .replace(/空间视角/g, "换个角度看")
+    .trim();
+  return cleaned || fallback;
+}
+
+function renderQuestionTextWithLinks(question = {}) {
+  const text = displayQuestionText(question);
+  const markerRe = /\[\[cq-unit:([^|\]]+)\|([^|\]]*)\|([^\]]+)\]\]/g;
+  let last = 0;
+  let html = "";
+  let match;
+  while ((match = markerRe.exec(text))) {
+    if (match.index > last) html += renderInlineMath(text.slice(last, match.index));
+    const unitId = match[1] || "";
+    const sceneType = match[2] || "";
+    const label = match[3] || "回看课件";
+    html += `<button class="quiz-resource-link" type="button" data-quiz-resource-link="${escapeHtml(unitId)}" data-quiz-resource-scene="${escapeHtml(sceneType)}">${escapeHtml(label)}</button>`;
+    last = markerRe.lastIndex;
+  }
+  if (last < text.length) html += renderInlineMath(text.slice(last));
+  return html;
+}
+
 function renderQuiz(unit) {
   analyticsTrack("quiz_render", {
     source: "quiz",
@@ -244,31 +516,35 @@ function renderQuiz(unit) {
   const questions = unit.scene.content?.questions || [];
   const submitted = (state.submittedQuizzes || []).includes(unit.id);
   const isPre = unit.assessmentPhase === "pre";
+  if (unit.placeholderQuiz || !questions.length) {
+    renderPlaceholderQuiz(unit);
+    return;
+  }
 
   // Persist encouragement banner for submitted quizzes
   let quizTopBanner = "";
+  const unitResults = quizRecordsForUnit(unit.id);
   if (submitted) {
-    const unitResults = (state.quizResults || []).filter(r => r.unitId === unit.id);
     const summary = summarizeQuizAttempt(unitResults, questions);
     const outcomeHtml = quizOutcomeHtml(summary);
     if (isPre) {
       quizTopBanner = `
         <div class="quiz-encouragement-banner" id="quiz-top-banner-${unit.id}">
-          前测提交成功！你在 ${outcomeHtml}。没答对的也不要紧——这正是接下来要学的内容。学完本章后会再做一次后测，对比看看自己进步了多少。
+          前测已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`;
+        <p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`;
     } else if (unit.assessmentPhase === "post") {
       quizTopBanner = `
         <div class="quiz-encouragement-banner post" id="quiz-top-banner-${unit.id}">
-          后测提交成功！你在 ${outcomeHtml}。和前测对比一下，看看这一章你攻克了多少一开始不会的题目。
+          后测已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`;
+        <p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`;
     } else {
       quizTopBanner = `
         <div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unit.id}">
-          形成性测验提交成功！你在 ${outcomeHtml}。卡住的地方正好说明接下来要重点理解的内容——Agent 会用 MAIC-UI 互动课件帮你换种方式重学或解锁一步拓展。
+          形成性测验已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">向下滑动查看 Agentic Coach 讲解，答错的题先思考再看答案。</p>`;
+        <p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`;
     }
   }
 
@@ -276,14 +552,12 @@ function renderQuiz(unit) {
   const latestByQuestion = {};
   let submittedTotalHtml = "";
   if (submitted) {
-    const unitResults = (state.quizResults || []).filter(r => r.unitId === unit.id);
     Object.assign(latestByQuestion, quizLatestResultsByQuestion(unitResults));
     const summary = summarizeQuizAttempt(unitResults, questions);
     submittedTotalHtml = `<div class="quiz-section-total">${quizOutcomeHtml(summary)}</div>`;
   }
 
   els.lessonPlayer.innerHTML = `
-    ${renderCoach(unit.scene, unit.chapterId, unit.id)}
     ${renderResourceShell(
       unit,
       unit.label,
@@ -294,23 +568,14 @@ function renderQuiz(unit) {
           ${questions
             .map((question, index) => {
               const result = latestByQuestion[question.id];
-              const fallbackShortResult = submitted && question.type === "short_answer" && !result
-                ? {
-                    mode: "short_answer",
-                    response: readQuizDraft(unit.id, question.id, ""),
-                    isCorrect: null,
-                    status: "pending_review",
-                    score: null,
-                    maxScore: question.points || 0
-                  }
-                : null;
-              const reviewResult = result || fallbackShortResult;
+              const restoredResult = submitted && !result ? restoredQuizResultFromDraft(unit, question, index) : null;
+              const reviewResult = result || restoredResult;
               const review = reviewResult ? renderQuestionReview({ question, result: reviewResult, index, unit }) : "";
               const scoreLabel = quizQuestionScoreLabel(question, reviewResult || null);
               return `
               <article class="question-card" data-question="${question.id}">
                 <div class="question-title-row">
-                  <h3>${index + 1}. ${renderInlineMath(question.question)}</h3>
+                  <h3>${index + 1}. ${renderQuestionTextWithLinks(question)}</h3>
                   ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
                 </div>
                 ${renderQuestionInput(unit, question, submitted, reviewResult)}
@@ -328,8 +593,35 @@ function renderQuiz(unit) {
       `,
       "quiz-resource"
     )}
+    ${renderCoach(unit.scene, unit.chapterId, unit.id)}
   `;
   setupQuizVisibilityTracking(unit);
+}
+
+function renderPlaceholderQuiz(unit) {
+  const config = unit.scene.content?.quizConfig || {};
+  els.lessonPlayer.innerHTML = `
+    ${renderResourceShell(
+      unit,
+      unit.label,
+      `<div class="v14-quiz-placeholder">
+        ${renderAssessmentBanner(unit)}
+        <div class="v14-placeholder-grid">
+          <div>
+            <span class="type-pill">${phaseText(unit.assessmentPhase) || "测验流程"}</span>
+            <h2>${escapeHtml(unit.scene.title || unit.label)}</h2>
+            <p>这一步来自 Open MAIC v14 提示词流程。真实题目尚未生成，因此这里仅展示测验位置与配置，不提交成绩。</p>
+          </div>
+          <dl>
+            <div><dt>${config.questionCount || 0}</dt><dd>建议题量</dd></div>
+            <div><dt>${escapeHtml(config.difficulty || "medium")}</dt><dd>难度</dd></div>
+            <div><dt>${(config.questionTypes || ["single", "multiple", "text"]).length}</dt><dd>题型</dd></div>
+          </dl>
+        </div>
+      </div>`,
+      "quiz-resource v14-placeholder-resource"
+    )}
+  `;
 }
 
 function renderAssessmentBanner(unit) {
@@ -400,16 +692,19 @@ function renderSlide(unit) {
     }
   });
   const canvas = unit.scene.content?.canvas;
+  if (unit.scene.content?.v14Review) {
+    renderV14Review(unit);
+    return;
+  }
   if (!canvas) {
     els.lessonPlayer.innerHTML = `
-      ${renderCoach(unit.scene, unit.chapterId, unit.id)}
       ${renderResourceShell(unit, unit.label, `<div class="empty-state">这一页没有可渲染的画布内容。</div>`, "slide-resource")}
+      ${renderCoach(unit.scene, unit.chapterId, unit.id)}
     `;
     return;
   }
 
   els.lessonPlayer.innerHTML = `
-    ${renderCoach(unit.scene, unit.chapterId, unit.id)}
     ${renderResourceShell(
       unit,
       unit.label,
@@ -419,6 +714,37 @@ function renderSlide(unit) {
         </div>
       </div>`,
       "slide-resource"
+    )}
+    ${renderCoach(unit.scene, unit.chapterId, unit.id)}
+  `;
+}
+
+function renderV14Review(unit) {
+  const module = unit.scene.content?.module || {};
+  const knowledgePoints = module.knowledgePoints || [];
+  els.lessonPlayer.innerHTML = `
+    ${renderResourceShell(
+      unit,
+      unit.label,
+      `<div class="v14-review-panel">
+        <span class="type-pill">全课整理</span>
+        <h2>${escapeHtml(readableRouteText(module.flow?.review?.title, "全课整理：证据链回看"))}</h2>
+        <p>${renderInlineMath(module.coreIntuition || "把本节知识点、互动证据和测验反馈连起来。")}</p>
+        <div class="v14-review-grid">
+          ${knowledgePoints.map((kp, index) => `
+            <article>
+              <span>${index + 1}</span>
+              <strong>${renderInlineMath(kp.name)}</strong>
+              <small>${renderInlineMath(typeof compactKnowledgeGoal === "function" ? compactKnowledgeGoal(kp, module) : (kp.goal || ""))}</small>
+            </article>
+          `).join("")}
+        </div>
+        <div class="v14-review-footer">
+          <strong>后测前自检</strong>
+          <p>能否用自己的话说出每个知识点修复了什么误解，以及你选择的互动场景给了什么证据。</p>
+        </div>
+      </div>`,
+      "slide-resource v14-review-resource"
     )}
   `;
 }
@@ -929,8 +1255,8 @@ function renderInteractive(unit) {
   const htmlPath = unit.scene.content?.htmlPath;
   if (!html && !htmlPath) {
     els.lessonPlayer.innerHTML = `
-      ${renderCoach(unit.scene, unit.chapterId, unit.id)}
       ${renderResourceShell(unit, unit.label, `<div class="empty-state">这一项没有内置互动 HTML。</div>`, "html-resource interactive-resource")}
+      ${renderCoach(unit.scene, unit.chapterId, unit.id)}
     `;
     return;
   }
@@ -938,13 +1264,13 @@ function renderInteractive(unit) {
   const frameSrc = interactiveFrameSrc(unit, htmlPath);
   const loadingHtml = '<div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>互动实验加载中…</p></div>';
   els.lessonPlayer.innerHTML = `
-    ${renderCoach(unit.scene, unit.chapterId, unit.id)}
     ${renderResourceShell(
       unit,
       unit.label,
       `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe></div>`,
       "html-resource interactive-resource"
     )}
+    ${renderCoach(unit.scene, unit.chapterId, unit.id)}
   `;
   const iframeEl = els.lessonPlayer.querySelector("iframe");
   if (iframeEl) {
@@ -1008,16 +1334,16 @@ function renderInteractive(unit) {
 
 function renderAgent() {
   const rows = [
-    ["前测先行", "每章第一步固定为 pre-test，先暴露已有直觉和概念缺口，再进入讲解、互动和形成性测验。"],
-    ["MAIC-UI 重学/拓展", "换一种方式重学和一步拓展都来自同一套 MAIC-UI 互动课件，不再按测验结果推荐外部补充课程。"],
-    ["证据驱动", "Agent 读取前测、形成性测验和后测表现，只决定是否跳过、重学、拓展或继续主线。"],
-    ["学生确认", "每次路径改变都由学生确认；跳过不会直接落到形成性测验，而会先进入一个互动热身。"]
+    ["前测定位", "每章先完成前测，用来判断哪些知识点可以跳过，哪些需要认真学。"],
+    ["自主选择", "系统先给建议，学生再勾选本章要学的知识点；跳过的内容保留回看入口。"],
+    ["阶段检查", "形成性测验承上启下：前半不稳就回看，跳过后暴露问题就选择补学或继续跳过。"],
+    ["后测收束", "后测检验本章整体掌握；通过后进入下一章，拓展课件等你补充后开放。"]
   ];
 
   els.agentBoard.innerHTML = rows
     .map(([title, text], index) => `
       <article class="agent-card">
-        <span class="type-pill">Agent ${index + 1}</span>
+        <span class="type-pill">规则 ${index + 1}</span>
         <h2>${title}</h2>
         <p>${text}</p>
       </article>
@@ -1030,19 +1356,18 @@ function renderAgenticBlueprint() {
     .map((chapter) => {
       const adaptiveLabel = (order) => AGENTIC_MAIC_UI_ADAPTIVE_MAP?.[chapter.id]?.[order]?.label || AGENTIC_ADAPTIVE_SCENE_LABELS[order];
       const relearn = AGENTIC_RELEARN_SCENE_ORDERS.map((order) => `${AGENTIC_ADAPTIVE_SCENE_LABELS[order]}：${adaptiveLabel(order)}`).join(" / ");
-      const extension = AGENTIC_EXTENSION_SCENE_ORDERS.map((order) => `${AGENTIC_ADAPTIVE_SCENE_LABELS[order]}：${adaptiveLabel(order)}`).join(" / ");
-      return `<tr><td>${chapter.label}</td><td>${relearn}</td><td>${extension}</td></tr>`;
+      return `<tr><td>${chapter.label}</td><td>${relearn}</td></tr>`;
     })
     .join("");
   return `
     <article class="agent-card agent-wide">
-      <span class="type-pill">Agentic active-learning</span>
-      <h2>MAIC-UI 路径编排方案</h2>
-      <p>当前只使用 ${escapeHtml(MAIC_UI_MODEL.label)} 生成的 MAIC-UI 课件作为重学和拓展资源。主线保留前测、讲解、互动、形成性测验和后测；新加课件只在学生需要时出现，作为“换一种方式重学”或“解锁一步拓展”。</p>
-      <div class="model-row"><span class="type-pill">${escapeHtml(MAIC_UI_MODEL.label)} · ${escapeHtml(MAIC_UI_MODEL.role)}</span></div>
+      <span class="type-pill">主动学习路径</span>
+      <h2>互动课件路径编排</h2>
+      <p>主线保留前测、讲解、互动、形成性测验和后测；重学课件只在学生需要时出现，拓展课件等新资源加入后再开放。</p>
+      <div class="model-row"><span class="type-pill">当前课件源 · ${escapeHtml(MAIC_UI_MODEL.role)}</span></div>
       <div class="blueprint-table-wrap">
         <table class="blueprint-table">
-          <thead><tr><th>章节</th><th>换一种方式重学</th><th>一步拓展</th></tr></thead>
+          <thead><tr><th>章节</th><th>换一种方式重学</th></tr></thead>
           <tbody>${chapterRows}</tbody>
         </table>
       </div>
@@ -1050,14 +1375,116 @@ function renderAgenticBlueprint() {
   `;
 }
 
+function lessonTimelineCaption(unit, statusText = "") {
+  if (!unit) return statusText || "学习步骤";
+  if (unit.type === "quiz") {
+    return {
+      pre: "诊断初始水平",
+      formative: "检查中段理解",
+      post: "检验学习成果"
+    }[unit.assessmentPhase] || "完成阶段测验";
+  }
+  if (unit.type === "knowledge") {
+    const goal = unit.summary || (typeof compactKnowledgeGoal === "function"
+      ? compactKnowledgeGoal(unit.scene?.content?.knowledgePoint || {}, unit.scene?.content?.module || {})
+      : unit.scene?.content?.knowledgePoint?.goal || "");
+    return goal || "先看讲解页，再选择互动场景";
+  }
+  if (unit.kind === "review" || unit.scenarioType === "review") return "回看证据链";
+  if (unit.type === "slide") return "整理关键证据";
+  return learningSceneRole(unit);
+}
+
+function lessonTimelineStatus(unit, isLocked, isSkipped, isDone, statusKind = "") {
+  if (isLocked) return "待解锁";
+  if (statusKind === "review") return "待复习";
+  if (isSkipped) return "已跳过";
+  if (isDone) return "已完成";
+  if (unit?.flowKind === "adaptive") return "可选";
+  return unit?.type === "quiz" ? "待完成" : "待学习";
+}
+
+function syncPathRailsToCurrent() {
+  const safeId = (value) => (typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : String(value).replace(/"/g, '\\"'));
+  window.requestAnimationFrame(() => {
+    const currentLesson = currentUnitId ? document.querySelector(`#lesson-list [data-unit="${safeId(currentUnitId)}"]`) : null;
+    if (currentLesson) currentLesson.scrollIntoView({ block: "nearest", inline: "nearest" });
+    const currentChapter = currentChapterId ? document.querySelector(`#chapter-list [data-chapter="${safeId(currentChapterId)}"]`) : null;
+    if (currentChapter) currentChapter.scrollIntoView({ block: "nearest", inline: "nearest" });
+  });
+}
+
+function sceneChoiceMeta(type = {}) {
+  const id = type.id === "diagram" ? "mindMap" : type.id;
+  const fallback = {
+    simulation: { icon: "~", title: "动手调一调", subtitle: "调一调，看变化" },
+    game: { icon: "◇", title: "找错并改正", subtitle: "找出问题并修正" },
+    mindMap: { icon: "※", title: "知识怎么连", subtitle: "看清概念关系" },
+    visualization3d: { icon: "⬡", title: "换个角度看", subtitle: "从不同视角观察" }
+  }[id] || { icon: type.icon || "•", title: type.label || id, subtitle: type.title || "选择一种学习方式" };
+  return {
+    id,
+    icon: fallback.icon,
+    title: fallback.title,
+    subtitle: fallback.subtitle
+  };
+}
+
+function sceneChoiceCategoryLabel(type = {}) {
+  const id = type.id === "diagram" ? "mindMap" : type.id;
+  return {
+    simulation: "交互模拟",
+    game: "闯关练习",
+    mindMap: "图解梳理",
+    visualization3d: "三维观察"
+  }[id] || type.categoryLabel || type.label || "互动场景";
+}
+
+function renderKnowledgeSceneChoicePanel(unit) {
+  if (!unit || unit.type !== "knowledge") return "";
+  const types = knowledgeInteractionTypes(unit);
+  if (!types.length) return "";
+  const selectedTypeId = selectedKnowledgeSceneType(unit);
+  const choices = types.map((type) => {
+    const hasResource = Boolean(knowledgeResourceCandidate(unit, type.id));
+    const active = type.id === selectedTypeId;
+    const meta = sceneChoiceMeta(type);
+    const cls = ["v14-scene-option", "coach-choice", active ? "active" : "", hasResource ? "available" : "pending"].filter(Boolean).join(" ");
+    return `
+      <div class="v14-scene-option-wrap">
+        <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" aria-pressed="${active ? "true" : "false"}" title="${escapeHtml(meta.title)}：${escapeHtml(meta.subtitle)}">
+          <span aria-hidden="true">${escapeHtml(meta.icon)}</span>
+          <strong>${escapeHtml(meta.title)}</strong>
+          <small>${escapeHtml(hasResource ? sceneChoiceCategoryLabel(type) : "待生成")}</small>
+        </button>
+        <button class="button soft v14-scene-fullscreen" type="button" data-knowledge-scene-fullscreen="${type.id}" data-unit="${unit.id}" ${hasResource ? "" : "disabled"} title="全屏打开${escapeHtml(meta.title)}">
+          全屏
+        </button>
+      </div>
+    `;
+  }).join("");
+  const selected = types.find((type) => type.id === selectedTypeId) || types[0] || {};
+  const selectedMeta = sceneChoiceMeta(selected);
+  return `
+    <div class="agentic-knowledge-choice">
+      <div>
+        <strong>四个互动场景由你选择</strong>
+        <small>当前选择：${escapeHtml(selectedMeta.title || selected.label || selectedTypeId)}</small>
+      </div>
+      <div class="v14-scene-selector agentic-knowledge-scene-selector">${choices}</div>
+    </div>
+  `;
+}
 function renderLessonSceneButton(unit) {
   const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
+  const statusKind = typeof agenticLessonStatusKind === "function" ? agenticLessonStatusKind(unit.id) : "";
+  const isPendingReview = statusKind === "review";
   const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
   const isLocked = !isUnlocked && !isSkipped;
   const isDone = state.completed.includes(unit.id);
-  const cls = ["lesson-scene-chip", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isSkipped ? "skipped" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
-  const statusText = isLocked ? "\u5f85\u89e3\u9501" : isSkipped ? "\u53ef\u56de\u770b" : isDone ? "\u5df2\u5b8c\u6210" : unit.flowKind === "adaptive" ? "\u53ef\u9009" : "\u53ef\u5b66";
-  return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '"' + (isLocked ? ' aria-disabled="true"' : '') + '>'
+  const cls = ["lesson-scene-chip", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isPendingReview ? "review-pending" : "", isSkipped ? "skipped" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
+  const statusText = isLocked ? "\u5f85\u89e3\u9501" : isPendingReview ? "\u5f85\u590d\u4e60" : isSkipped ? "\u5df2\u8df3\u8fc7" : isDone ? "\u5df2\u5b8c\u6210" : unit.flowKind === "adaptive" ? "\u53ef\u9009" : "\u5f85\u5b66\u4e60";
+  return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '"' + (isLocked ? ' aria-disabled="true" disabled' : '') + '>'
     + '<span>' + unitIcon(unit) + '</span>'
     + '<strong>' + escapeHtml(unit.label) + '</strong>'
     + '<small>' + escapeHtml(learningSceneRole(unit)) + ' · ' + statusText + '</small>'
@@ -1067,58 +1494,78 @@ function renderLessonSceneButton(unit) {
 function renderLessons() {
   const chapter = getChapter();
   els.chapterTitle.textContent = chapter.label;
+  els.lessonList.classList.toggle("v14-step-list", isOpenMaicV14Route());
   if (!chapter.loaded) {
     els.lessonList.innerHTML = '<div class="empty-state">\u70b9\u51fb\u5de6\u4fa7\u7ae0\u8282\u5361\u7247\u52a0\u8f7d\u672c\u7ae0\u5b66\u4e60\u6a21\u5757\u3002</div>';
+    syncPathRailsToCurrent();
     return;
   }
 
   const displayUnits = typeof agenticDisplayUnitsForChapter === "function" ? agenticDisplayUnitsForChapter(chapter) : chapter.units;
   if (!displayUnits.length) {
-    els.lessonList.innerHTML = '<div class="empty-state">完成当前小节后，Agentic Coach 会把你选择的下一步显示在这里。</div>';
+    els.lessonList.innerHTML = '<div class="empty-state">完成当前小节后，学习建议会把下一步显示在这里。</div>';
+    syncPathRailsToCurrent();
     return;
   }
   els.lessonList.innerHTML = displayUnits.map((unit, index) => {
     const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
+    const statusKind = typeof agenticLessonStatusKind === "function" ? agenticLessonStatusKind(unit.id) : "";
+    const isPendingReview = statusKind === "review";
     const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
     const isLocked = !isUnlocked && !isSkipped;
     const isDone = state.completed.includes(unit.id);
-    const isRecommended = isUnlocked && !isSkipped && !isDone;
-    const cls = ["lesson-card", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isSkipped ? "skipped" : "", isRecommended ? "recommended" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
-    const statusText = isLocked ? "\u5f85\u89e3\u9501" : isSkipped ? "\u53ef\u56de\u770b" : isDone ? "\u5df2\u5b8c\u6210" : unit.flowKind === "adaptive" ? "\u65b0\u52a0\u8bfe\u4ef6" : "\u4e0b\u4e00\u6b65";
-    const flowText = unit.flowKind === "adaptive" ? ' · ' + escapeHtml(unit.flowLabel || "\u65b0\u52a0\u8bfe\u4ef6") : "";
-    return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '"' + (isLocked ? ' aria-disabled="true"' : '') + '>'
-      + '<span class="lesson-card-icon">' + unitIcon(unit) + '</span>'
-      + '<span class="lesson-card-body"><strong>' + (index + 1) + '. ' + escapeHtml(unit.label) + '</strong>'
-      + '<small>' + typeText(unit) + flowText + ' · ' + statusText + '</small></span>'
+    const isRecommended = isUnlocked && !isSkipped && !isDone && !isPendingReview;
+    const cls = ["lesson-card", "lesson-step-card", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isPendingReview ? "review-pending" : "", isSkipped ? "skipped" : "", isRecommended ? "recommended" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
+    const statusText = lessonTimelineStatus(unit, isLocked, isSkipped, isDone, statusKind);
+    const caption = lessonTimelineCaption(unit, statusText);
+    return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '"' + (isLocked ? ' aria-disabled="true" disabled' : '') + '>'
+      + '<span class="lesson-step-index">' + (index + 1) + '</span>'
+      + '<span class="lesson-card-body"><strong>' + escapeHtml(unit.label) + '</strong>'
+      + '<small>' + escapeHtml(caption) + '</small></span>'
+      + '<em>' + escapeHtml(statusText) + '</em>'
       + '</button>';
   }).join('');
+  syncPathRailsToCurrent();
 }
 
 function renderChapters() {
-  els.chapterList.innerHTML = curriculum
-    .map((chapter, index) => {
+  const chapterEntries = typeof agenticVisibleChaptersForNav === "function"
+    ? agenticVisibleChaptersForNav()
+    : curriculum.map((chapter, index) => ({ chapter, index }));
+  els.chapterList.innerHTML = chapterEntries
+    .map(({ chapter, index, mainIndex, extensionIndex }) => {
       const isUnlocked = typeof agenticIsChapterUnlocked !== "function" || agenticIsChapterUnlocked(chapter.id);
       const displayUnits = typeof agenticDisplayUnitsForChapter === "function"
         ? agenticDisplayUnitsForChapter(chapter)
         : chapter.units;
-      const done = chapter.units.filter((unit) => state.completed.includes(unit.id)).length;
+      const done = chapter.units.filter((unit) => unitCountsTowardProgress(unit)).length;
       const total = chapter.loaded ? chapter.units.length : AGENTIC_CORE_SCENE_ORDERS.length;
       const adaptiveShown = displayUnits.filter((unit) => unit.flowKind === "adaptive").length;
       const guide = chapterGuides[chapter.id];
+      const isExtension = Boolean(chapter.extension || chapter.track === "extension");
       const cls = [
         "chapter-card",
+        isExtension ? "extension" : "",
         chapter.id === currentChapterId ? "active" : "",
         isUnlocked ? "" : "locked"
       ].filter(Boolean).join(" ");
       const status = isUnlocked ? `${done}/${total} 模块` : "未解锁";
+      const safeExtensionIndex = extensionIndex || curriculum.slice(0, index + 1).filter((item) => item.extension || item.track === "extension").length;
+      const safeMainIndex = mainIndex || curriculum.slice(0, index + 1).filter((item) => !(item.extension || item.track === "extension")).length;
+      const chapterCode = isExtension ? `扩展 ${safeExtensionIndex}` : `第 ${safeMainIndex} 章`;
+      const parentLabel = chapter.parentChapterId ? `${chapter.parentChapterId} · ${chapter.parentChapterLabel}` : "";
+      const displayCopy = chapterDisplayCopy(chapter);
+      const trackLabel = chapterTrackLabel(chapter);
+      const focusText = displayCopy.focus || guide?.checkpoint || "讲解页 + 自选互动场景";
       return `
-        <button class="${cls}" type="button" data-chapter="${chapter.id}" ${isUnlocked ? "" : 'aria-disabled="true"'}>
+        <button class="${cls}" type="button" data-chapter="${chapter.id}" ${isUnlocked ? "" : 'aria-disabled="true" disabled'}>
           <span class="chapter-card-top">
-            <strong>第 ${index + 1} 章 ${escapeHtml(chapter.label)}</strong>
-            <span>${isUnlocked ? (guide?.difficulty || "可学习") : "锁定"}</span>
+            <strong><span class="chapter-card-code">${escapeHtml(chapterCode)}</span>${escapeHtml(displayCopy.label)}</strong>
+            <span>${escapeHtml(trackLabel)}</span>
           </span>
-          <small>${status}${adaptiveShown ? ` · ${adaptiveShown} 个新加课件` : ""} · ${escapeHtml(chapter.summary)}</small>
-          ${guide && isUnlocked ? `<small class="chapter-bridge">${escapeHtml(guide.bridge)} · ${guide.pace}</small>` : ""}
+          ${parentLabel ? `<small class="chapter-parent">${escapeHtml(parentLabel)}</small>` : ""}
+          <small>${status}${adaptiveShown ? ` · ${adaptiveShown} 个新加课件` : ""} · ${escapeHtml(displayCopy.summary)}</small>
+          ${isUnlocked ? `<small class="chapter-bridge">${escapeHtml(focusText)}</small>` : ""}
         </button>
       `;
     })
@@ -1127,7 +1574,9 @@ function renderChapters() {
 
 function syncAgenticPlayerCta(unit) {
   if (!els.completeLesson || !unit) return;
-  if (unit.type === "quiz" && !(state.submittedQuizzes || []).includes(unit.id)) {
+  if (unit.type === "quiz" && unit.placeholderQuiz) {
+    els.completeLesson.textContent = state.completed.includes(unit.id) ? "已记录，继续下一步" : "记录此流程节点";
+  } else if (unit.type === "quiz" && !(state.submittedQuizzes || []).includes(unit.id)) {
     els.completeLesson.textContent = "提交测验后解锁下一步";
   } else if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
     els.completeLesson.textContent = "先选择下一步";

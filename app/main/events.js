@@ -1,8 +1,66 @@
 // User input, click, change, and fullscreen event wiring.
 document.addEventListener("click", (event) => {
+  const brandBackButton = event.target.closest(".brand[data-view]");
+  if (brandBackButton && state.returnToQuiz?.unitId && currentUnitId !== state.returnToQuiz.unitId) {
+    const quizUnitId = state.returnToQuiz.unitId;
+    const questionId = state.returnToQuiz.questionId || "";
+    const quizUnit = getUnit(quizUnitId);
+    state.returnToQuiz = null;
+    if (quizUnit) {
+      currentChapterId = quizUnit.chapterId;
+      currentUnitId = quizUnit.id;
+      switchView("learn");
+      renderAll();
+    } else {
+      saveState();
+    }
+    window.setTimeout(() => {
+      if (!questionId) return;
+      const safeQuestionId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(questionId) : String(questionId).replace(/"/g, '\\"');
+      const card = document.querySelector(`[data-question="${safeQuestionId}"]`);
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+    return;
+  }
+
   const viewButton = event.target.closest("[data-view]");
   if (viewButton) {
     switchView(viewButton.dataset.view);
+    return;
+  }
+
+  const quizResourceLink = event.target.closest("[data-quiz-resource-link]");
+  if (quizResourceLink) {
+    const targetUnitId = quizResourceLink.dataset.quizResourceLink || "";
+    const sceneType = quizResourceLink.dataset.quizResourceScene || "";
+    const sourceUnit = getUnit();
+    const targetUnit = getUnit(targetUnitId);
+    const questionCard = quizResourceLink.closest("[data-question]");
+    if (sourceUnit?.type === "quiz") {
+      state.returnToQuiz = {
+        unitId: sourceUnit.id,
+        questionId: questionCard?.dataset.question || "",
+        createdAt: beijingNow()
+      };
+      saveState();
+    }
+    if (sceneType && typeof setKnowledgeSceneType === "function") setKnowledgeSceneType(targetUnitId, sceneType);
+    if (targetUnit) {
+      currentChapterId = targetUnit.chapterId;
+      currentUnitId = targetUnit.id;
+      if (typeof analyticsEnterUnit === "function") analyticsEnterUnit(targetUnit, "quiz_resource_link");
+      trackLearningEvent("quiz_resource_link_open", {
+        fromUnitId: sourceUnit?.id || "",
+        targetUnitId,
+        sceneType
+      }, false);
+      switchView("learn");
+      renderAll();
+      window.setTimeout(() => {
+        const playerTop = document.querySelector(".player-top");
+        if (playerTop) window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+      }, 80);
+    }
     return;
   }
 
@@ -15,6 +73,32 @@ document.addEventListener("click", (event) => {
     } else {
       selectChapter(cid).catch((error) => console.warn("Chapter navigation failed:", error));
     }
+    return;
+  }
+
+  const knowledgeSceneButton = event.target.closest("[data-knowledge-scene]");
+  if (knowledgeSceneButton) {
+    const uid = knowledgeSceneButton.dataset.unit || currentUnitId;
+    const sceneType = knowledgeSceneButton.dataset.knowledgeScene;
+    if (setKnowledgeSceneType(uid, sceneType)) {
+      renderAll();
+    }
+    return;
+  }
+
+  const knowledgeSceneFullscreenButton = event.target.closest("[data-knowledge-scene-fullscreen]");
+  if (knowledgeSceneFullscreenButton) {
+    const uid = knowledgeSceneFullscreenButton.dataset.unit || currentUnitId;
+    const sceneType = knowledgeSceneFullscreenButton.dataset.knowledgeSceneFullscreen;
+    if (setKnowledgeSceneType(uid, sceneType)) renderAll();
+    window.setTimeout(() => {
+      const safeUid = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(uid) : String(uid).replace(/"/g, '\\"');
+      const shell = document.querySelector(`[data-resource-shell][data-resource-unit="${safeUid}"] .v14-selected-resource .iframe-container`)
+        || document.querySelector(`[data-resource-shell][data-resource-unit="${safeUid}"]`);
+      trackLearningEvent("knowledge_scene_fullscreen", { unitId: uid, sceneType }, false);
+      analyticsTrack("knowledge_scene_fullscreen", { data: { unitId: uid, sceneType } });
+      toggleResourceFullscreen(shell);
+    }, 80);
     return;
   }
 
@@ -47,8 +131,16 @@ document.addEventListener("click", (event) => {
       agenticActionBtn.disabled = true;
       agenticApplyDecision(type).catch((error) => {
         console.warn("Agentic decision failed:", error);
-        addLog(`Agent 路径切换失败：${error.message || "请稍后重试"}`);
+        addLog(`学习路径切换失败：${error.message || "请稍后重试"}`);
       });
+    }
+    return;
+  }
+
+  const reviewChoice = event.target.closest("[data-agentic-review-choice]");
+  if (reviewChoice) {
+    if (typeof agenticUpdateReviewChoiceMode === "function") {
+      agenticUpdateReviewChoiceMode(reviewChoice.dataset.agenticReviewChoice, reviewChoice.dataset.agenticReviewMode);
     }
     return;
   }
@@ -99,10 +191,11 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  if (event.target.closest("[data-play-narration]")) {
+  const playNarrationButton = event.target.closest("[data-play-narration]");
+  if (playNarrationButton) {
     trackLearningEvent("play_narration", { unitId: getUnit().id }, false);
     analyticsTrack("narration_play_click", { source: "narration", data: { unitId: getUnit().id } });
-    playNarrationQueue();
+    playNarrationQueue(playNarrationButton.closest("[data-coach-strip]") || document);
     return;
   }
 
@@ -134,7 +227,7 @@ document.addEventListener("input", (event) => {
       source: "narration",
       value: { new: Number(seek.value), max: Number(seek.max || 1000) }
     });
-    seekNarration(Number(seek.value) / Number(seek.max || 1000));
+    seekNarration(Number(seek.value) / Number(seek.max || 1000), seek.closest("[data-coach-strip]") || document);
     return;
   }
 
@@ -158,6 +251,14 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+  const knowledgeChoice = event.target.closest("[data-agentic-knowledge-choice]");
+  if (knowledgeChoice) {
+    if (typeof agenticUpdatePendingKnowledgeChoice === "function") {
+      agenticUpdatePendingKnowledgeChoice(knowledgeChoice.dataset.agenticKnowledgeChoice, knowledgeChoice.checked);
+    }
+    return;
+  }
+
   const choice = event.target.closest("[data-choice-answer]");
   if (!choice) return;
   const unitId = choice.dataset.unitId;

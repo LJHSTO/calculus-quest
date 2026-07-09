@@ -1,7 +1,9 @@
 // Course data, global state, and runtime flags.
-const STORAGE_KEY = "calculus-quest-learning-player-v1";
+const STORAGE_KEY = "calculus-quest-openmaic-v14-player-v1";
 const AUTH_TOKEN_KEY = "calculus-quest-auth-token-v1";
 const LAST_PARTICIPANT_KEY = "calculus-quest-last-participant-v1";
+const COURSE_MODE = "openmaic-v14";
+const OPENMAIC_V14_ROUTE_PATH = "/api/course/openmaic-v14-route";
 let activeNarration = null;
 let syncTimer = null;
 let lastSnapshotJson = "";
@@ -10,46 +12,94 @@ const narrationDurationCache = new Map();
 
 const chapters = [
   {
-    id: "A1",
-    label: "变化与斜率",
-    summary: "从函数、坐标图像和斜率建立微积分直觉。"
+    id: "V14-C1",
+    label: "函数、极限与导数入口",
+    summary: "从函数图像读法出发，进入极限、连续和导数的第一直觉。"
   },
   {
-    id: "A2a",
-    label: "向量：方向与长度",
-    summary: "把变化表示成可操作的方向、长度和步伐。"
+    id: "V14-C2",
+    label: "求导规则与导数应用",
+    summary: "把常见求导规则、函数组合、单调性、极值和弯曲连成可操作判断。"
   },
   {
-    id: "A2b",
-    label: "内积与投影",
-    summary: "理解夹角、内积和投影，为方向导数做准备。"
+    id: "V14-C3",
+    label: "积分直觉与积分方法",
+    summary: "从面积、累积和原函数建立积分直觉，再连接基本定理与方法。"
   },
   {
-    id: "A3",
-    label: "空间变换与局部线性",
-    summary: "用矩阵变换和放大观察理解局部近似。"
+    id: "V14-C4",
+    label: "多元函数、梯度与 Jacobian",
+    summary: "从曲面、偏导数、梯度和等高线走向多元链式法则与 Jacobian。"
   },
   {
-    id: "A4",
-    label: "曲面与正定性",
-    summary: "从曲线走向曲面、等高线和最快上升方向。"
+    id: "V14-C5",
+    label: "Taylor、Hessian 与无约束优化",
+    summary: "用局部近似、二阶信息和梯度下降理解无约束优化。"
   },
   {
-    id: "C1",
-    label: "导数、梯度与驻点",
-    summary: "学习导数、极值、梯度、方向导数和驻点判断。"
-  },
-  {
-    id: "D1",
-    label: "梯度下降",
-    summary: "把梯度转化为迭代步骤、步长策略和停止条件。"
-  },
-  {
-    id: "D2",
-    label: "凸性与全局最优",
-    summary: "比较凸地形与非凸山谷，理解优化可靠性。"
+    id: "V14-C6",
+    label: "约束优化与机器学习闭环",
+    summary: "在限制条件下寻找最优，并把导数、梯度和优化接入模型训练闭环。"
   }
 ];
+
+const CHAPTER_DISPLAY_COPY = {
+  "V14-C1": {
+    label: "一元基础",
+    summary: "函数、极限、连续、导数直觉",
+    focus: "先把变化、图像和瞬时变化率说清楚。"
+  },
+  "V14-C2": {
+    label: "求导与应用",
+    summary: "规则、链式、单调、极值",
+    focus: "把求导规则转成可操作的函数判断。"
+  },
+  "V14-C3": {
+    label: "积分方法",
+    summary: "面积、累积、原函数、基本定理",
+    focus: "从累积直觉走到常见积分方法。"
+  },
+  "V14-C4": {
+    label: "多元与梯度",
+    summary: "偏导、梯度、等高线、Jacobian",
+    focus: "把一元变化推广到曲面和方向。"
+  },
+  "V14-C5": {
+    label: "二阶与优化",
+    summary: "Taylor、Hessian、梯度下降",
+    focus: "用局部近似和二阶信息理解优化。"
+  },
+  "V14-C6": {
+    label: "约束与机器学习",
+    summary: "约束条件、拉格朗日、训练闭环",
+    focus: "把微积分工具接到模型训练问题。"
+  },
+  "V14-X1": {
+    label: "微分方程",
+    summary: "用变化率描述系统演化",
+    focus: "适合在积分方法后拓展。"
+  },
+  "V14-X2": {
+    label: "线性代数",
+    summary: "向量、矩阵、线性变换",
+    focus: "适合在多元与梯度后拓展。"
+  },
+  "V14-X3": {
+    label: "概率统计",
+    summary: "随机变量、分布、估计直觉",
+    focus: "适合在机器学习闭环后拓展。"
+  },
+  "V14-X4": {
+    label: "深度学习数学",
+    summary: "神经网络、反向传播、泛化",
+    focus: "适合在机器学习闭环后拓展。"
+  },
+  "V14-X5": {
+    label: "数值优化",
+    summary: "迭代、收敛、数值稳定",
+    focus: "适合在二阶与优化后拓展。"
+  }
+};
 
 const chapterGuides = {
   A1: {
@@ -113,10 +163,16 @@ const chapterGuides = {
 const MAIC_UI_MODEL = {
   id: "qwen3.6-35b-a3b",
   label: "Qwen 3.6 35B A3B",
-  role: "MAIC-UI 互动课件生成源"
+  role: "互动课件生成源"
 };
 
 const COURSE_INDEX_PATH = "resources/open-maic/course-index.json";
+const OPENMAIC_V14_INTERACTION_TYPES = [
+  { id: "simulation", label: "动手调一调", title: "动手调一调", icon: "调" },
+  { id: "game", label: "找错并改正", title: "找错并改正", icon: "改" },
+  { id: "mindMap", label: "知识怎么连", title: "知识怎么连", widgetType: "diagram", icon: "图" },
+  { id: "visualization3d", label: "换个角度看", title: "换个角度看", icon: "看" }
+];
 const AGENTIC_CORE_SCENE_ORDERS = [1, 2, 3, 4, 6, 7, 8, 9, 10, 15];
 const AGENTIC_CORE_INTERACTIVE_SCENE_ORDERS = [3, 4, 7, 9, 10];
 const AGENTIC_RELEARN_SCENE_ORDERS = [5, 11, 12];
@@ -235,14 +291,17 @@ function inferredSceneMetadata(chapterId = "", scene = {}, sceneOrder = 0, asses
     difficultyBand: scene.difficultyBand || (sceneOrder >= 13 ? "extension" : sceneOrder >= 11 ? "remedial" : "core")
   };
 }
-const validViews = new Set(["home", "learn", "library", "progress"]);
+const validViews = new Set(["home", "learn", "progress"]);
 let state = null;
 let currentView = "home";
 let currentChapterId = chapters[0].id;
 let currentUnitId = "";
 let libraryFilter = "all";
 let courseIndex = null;
+let openMaicV14Route = null;
 let prefetchStarted = false;
 let manifests = new Map();
 let manifestPromises = new Map();
+let audioMapPromises = new Map();
+let audioMaps = new Map();
 let curriculum = [];

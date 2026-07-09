@@ -5,8 +5,7 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "migrate": "node migrate.js",
-    "db:merge:dry-run": "node ops/merge-feature-db-to-main.js"
+    "migrate": "node migrate.js"
   },
   "dependencies": {
     "katex": "^0.16.9",

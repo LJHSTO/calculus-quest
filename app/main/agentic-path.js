@@ -1,39 +1,309 @@
-﻿// Agentic Coach path-locking and KG recommendation UI.
+// Agentic Coach path-locking and KG recommendation UI.
 const AGENTIC_PRE_SKIP_THRESHOLD = 0.8;
 const AGENTIC_POST_REMEDIATION_THRESHOLD = 0.6;
+const AGENTIC_ENABLE_EXTENSION = false;
+const AGENTIC_REMOTE_PLAN_TIMEOUT_MS = 2500;
+const AGENTIC_ALWAYS_RECOMMEND_EXTENSION_CHAPTERS = new Set(["V14-X2", "V14-X5"]);
+const AGENTIC_FINAL_MASTERY_EXTENSION_CHAPTERS = new Set(["V14-X3", "V14-X4"]);
+
+function agenticV14Mode() {
+  return typeof isOpenMaicV14Route === "function" && isOpenMaicV14Route();
+}
+function agenticInitialUnitId() {
+  const firstChapter = (typeof curriculum !== "undefined" && curriculum[0]) || getChapter?.();
+  return firstChapter?.units?.[0]?.id || currentUnitId || `${chapters[0]?.id || "V14-C1"}-pre`;
+}
+
+function agenticChapterPostUnit(chapter) {
+  const units = chapter?.units || chapter?.allUnits || [];
+  return [...units].reverse().find((unit) => unit.type === "quiz" && unit.assessmentPhase === "post") || null;
+}
+
+function agenticIsExtensionChapter(chapter = {}) {
+  return Boolean(chapter?.extension || chapter?.track === "extension");
+}
+
+function agenticExtensionChapterHasEvidence(chapterId = "") {
+  if (!chapterId) return false;
+  const belongs = (unitId) => agenticChapterIdForUnitId(unitId) === chapterId;
+  return (state.completed || []).some(belongs)
+    || (state.submittedQuizzes || []).some(belongs)
+    || (state.quizResults || []).some((entry) => (entry?.chapterId || agenticChapterIdForUnitId(entry?.unitId || "")) === chapterId)
+    || Object.keys(state.quizAttempts || {}).some((unitId) => belongs(unitId));
+}
+
+function agenticExtensionChapterVisible(chapterId = "", path = state.agenticPath || {}) {
+  if (!chapterId) return false;
+  const unlocked = new Set(path.unlockedExtensionChapters || []);
+  return unlocked.has(chapterId) || agenticExtensionChapterHasEvidence(chapterId);
+}
+
+function agenticExtensionChaptersForChapter(chapterId = "") {
+  return (curriculum || [])
+    .filter((chapter) => agenticIsExtensionChapter(chapter) && chapter.recommendedAfter === chapterId)
+    .sort((a, b) => (a.order || 0) - (b.order || 0) || String(a.id).localeCompare(String(b.id), "zh-Hans-CN"));
+}
+
+function agenticFirstLockedExtensionChapterFor(chapterId = "") {
+  return agenticLockedExtensionChaptersForChapter(chapterId)[0] || null;
+}
+
+function agenticLockedExtensionChaptersForChapter(chapterId = "") {
+  const path = state.agenticPath || {};
+  return agenticExtensionChaptersForChapter(chapterId)
+    .filter((chapter) => !agenticExtensionChapterVisible(chapter.id, path));
+}
+
+function agenticRecordsForChapterPost(chapterId = "", fallbackRecords = []) {
+  const chapter = getChapter?.(chapterId) || (curriculum || []).find((item) => item.id === chapterId);
+  const post = agenticChapterPostUnit(chapter);
+  if (post?.id) {
+    const records = agenticQuizRecordsForUnit(post.id);
+    if (records.length) return records;
+  }
+  return fallbackRecords || [];
+}
+
+function agenticChapterPostMasteryIsHigh(chapterId = "", fallbackRecords = []) {
+  const records = agenticRecordsForChapterPost(chapterId, fallbackRecords);
+  const stats = agenticQuizStats(records);
+  if (stats.accuracy === null || stats.accuracy < AGENTIC_PRE_SKIP_THRESHOLD) return false;
+  const assessedMastery = agenticQuizKnowledgeMastery(records, chapterId)
+    .filter((item) => item.attempts > 0 && item.status !== "pending" && item.status !== "unknown");
+  return assessedMastery.length > 0 && assessedMastery.every((item) => item.status === "strong");
+}
+
+function agenticMainChaptersThrough(chapterId = "") {
+  const main = (curriculum || []).filter((chapter) => !agenticIsExtensionChapter(chapter));
+  const index = main.findIndex((chapter) => chapter.id === chapterId);
+  return index >= 0 ? main.slice(0, index + 1) : [];
+}
+
+function agenticCumulativeMasteryIsHighThrough(chapterId = "", currentRecords = []) {
+  const chaptersToCheck = agenticMainChaptersThrough(chapterId);
+  return chaptersToCheck.length > 0 && chaptersToCheck.every((chapter) =>
+    agenticChapterPostMasteryIsHigh(chapter.id, chapter.id === chapterId ? currentRecords : [])
+  );
+}
+
+function agenticShouldRecommendExtensionChapter(chapter = {}, unit = {}, records = []) {
+  if (!chapter?.id) return false;
+  if (AGENTIC_ALWAYS_RECOMMEND_EXTENSION_CHAPTERS.has(chapter.id)) return true;
+  if (AGENTIC_FINAL_MASTERY_EXTENSION_CHAPTERS.has(chapter.id)) {
+    return agenticCumulativeMasteryIsHighThrough(unit.chapterId || chapter.recommendedAfter, records);
+  }
+  return agenticChapterPostMasteryIsHigh(unit.chapterId || chapter.recommendedAfter, records);
+}
+
+function agenticRecommendedExtensionChaptersForPost(unit = {}, records = []) {
+  return agenticLockedExtensionChaptersForChapter(unit.chapterId)
+    .filter((chapter) => agenticShouldRecommendExtensionChapter(chapter, unit, records));
+}
+
+function agenticExtensionChapterCandidate(chapter) {
+  if (!chapter) return null;
+  const firstUnit = chapter.units?.[0] || chapter.allUnits?.[0] || null;
+  const copy = typeof chapterDisplayCopy === "function" ? chapterDisplayCopy(chapter) : { label: chapter.label };
+  return {
+    id: firstUnit?.id || "",
+    chapterId: chapter.id,
+    title: copy.label || chapter.label,
+    label: copy.label || chapter.label,
+    role: "extension_chapter",
+    modality: "chapter",
+    reason: `recommended_after_${chapter.recommendedAfter || "main"}`
+  };
+}
+
+function agenticUnlockExtensionChapter(chapterId = "", fromChapterId = "", reason = "posttest_extension_recommended") {
+  const path = ensureAgenticPath();
+  const chapter = getChapter?.(chapterId) || (curriculum || []).find((item) => item.id === chapterId);
+  if (!chapter || !agenticIsExtensionChapter(chapter)) return null;
+  path.unlockedExtensionChapters = Array.from(new Set([...(path.unlockedExtensionChapters || []), chapter.id]));
+  if (fromChapterId) {
+    path.extensionRecommendations = path.extensionRecommendations || {};
+    path.extensionRecommendations[chapter.id] = {
+      fromChapterId,
+      reason,
+      unlockedAt: beijingNow()
+    };
+  }
+  const firstUnit = chapter.units?.[0] || chapter.allUnits?.[0] || null;
+  if (firstUnit?.id) agenticUnlockUnit(firstUnit.id, reason);
+  analyticsTrack("agentic_extension_chapter_unlocked", { data: { chapterId: chapter.id, fromChapterId, reason } });
+  trackLearningEvent("agentic_extension_chapter_unlocked", { chapterId: chapter.id, fromChapterId, reason }, false);
+  return firstUnit;
+}
+
+function agenticVisibleChapterEntries() {
+  const path = state.agenticPath || {};
+  const main = (curriculum || []).filter((chapter) => !agenticIsExtensionChapter(chapter));
+  const extensions = (curriculum || []).filter((chapter) =>
+    agenticIsExtensionChapter(chapter) && agenticExtensionChapterVisible(chapter.id, path)
+  );
+  const entries = [];
+  let extensionIndex = 0;
+  main.forEach((chapter, mainIndex) => {
+    entries.push({ chapter, index: curriculum.indexOf(chapter), mainIndex: mainIndex + 1, extensionIndex: 0 });
+    extensions
+      .filter((extension) => extension.recommendedAfter === chapter.id)
+      .forEach((extension) => {
+        extensionIndex += 1;
+        entries.push({ chapter: extension, index: curriculum.indexOf(extension), mainIndex: 0, extensionIndex });
+      });
+  });
+  extensions
+    .filter((extension) => !main.some((chapter) => chapter.id === extension.recommendedAfter))
+    .forEach((extension) => {
+      extensionIndex += 1;
+      entries.push({ chapter: extension, index: curriculum.indexOf(extension), mainIndex: 0, extensionIndex });
+    });
+  return entries;
+}
+
+function agenticMarkChapterReadyOnPath(path, chapterId, reason = "") {
+  if (!path || !chapterId) return false;
+  const chapter = getChapter?.(chapterId) || (curriculum || []).find((item) => item.id === chapterId);
+  const post = agenticChapterPostUnit(chapter);
+  path.chapterAdvanceReady = path.chapterAdvanceReady || {};
+  path.chapterAdvanceReady[chapterId] = true;
+  if (post?.id) path.chapterAdvanceReady[post.id] = true;
+  if (reason) {
+    path.chapterAdvanceReasons = path.chapterAdvanceReasons || {};
+    path.chapterAdvanceReasons[chapterId] = reason;
+    if (post?.id) path.chapterAdvanceReasons[post.id] = reason;
+  }
+  return true;
+}
+
+function agenticMarkChapterReadyToAdvance(chapterId, reason = "") {
+  return agenticMarkChapterReadyOnPath(ensureAgenticPath(), chapterId, reason);
+}
+
+function agenticDecisionShowsPostAdvance(chapter, path = state.agenticPath || {}) {
+  const post = agenticChapterPostUnit(chapter);
+  if (!post?.id) return false;
+  return (path.decisions || []).some((decision) =>
+    decision?.fromUnitId === post.id &&
+    decision.action === "continue" &&
+    (decision.targetId || decision.nextUnitId)
+  );
+}
+
+function agenticChapterReadyToAdvance(chapter, path = state.agenticPath || {}) {
+  const post = agenticChapterPostUnit(chapter);
+  if (!post?.id) return false;
+  const ready = path.chapterAdvanceReady || {};
+  if (ready[chapter.id] || ready[post.id]) return true;
+  const submitted = (state.submittedQuizzes || []).includes(post.id);
+  const completed = (state.completed || []).includes(post.id);
+  if (!submitted && !completed) return false;
+  return agenticDecisionShowsPostAdvance(chapter, path);
+}
+
+function agenticV14ChapterUnlockedBySequence(chapterId) {
+  if (!agenticV14Mode()) return true;
+  const list = typeof curriculum !== "undefined" ? curriculum : [];
+  const index = list.findIndex((chapter) => chapter.id === chapterId);
+  const target = list[index];
+  if (agenticIsExtensionChapter(target)) return agenticExtensionChapterVisible(chapterId, state.agenticPath || {});
+  if (index <= 0) return index === 0 || !chapterId;
+  for (let i = 0; i < index; i += 1) {
+    if (list[i]?.extension || list[i]?.track === "extension") continue;
+    if (!agenticChapterReadyToAdvance(list[i], state.agenticPath || {})) return false;
+  }
+  return true;
+}
+
+function agenticCurrentUnitIsAllowed(unitId = "") {
+  if (!unitId || !agenticV14Mode()) return true;
+  const chapterId = agenticChapterIdForUnitId(unitId) || currentChapterId;
+  return agenticV14ChapterUnlockedBySequence(chapterId);
+}
+
+function agenticNormalizeCurrentPosition() {
+  if (!agenticV14Mode()) return;
+  const firstChapter = curriculum?.[0];
+  if (!firstChapter) return;
+  if (!agenticV14ChapterUnlockedBySequence(currentChapterId)) {
+    currentChapterId = firstChapter.id;
+    currentUnitId = firstChapter.units?.[0]?.id || "";
+    return;
+  }
+  if (currentUnitId && !agenticCurrentUnitIsAllowed(currentUnitId)) {
+    currentUnitId = getChapter(currentChapterId)?.units?.[0]?.id || firstChapter.units?.[0]?.id || "";
+  }
+}
 
 function agenticDefaults() {
+  const firstUnitId = agenticInitialUnitId();
   return {
     enabled: true,
-    unlocked: ["A1-scene-1"],
-    visibleUnits: ["A1-scene-1"],
+    unlocked: [firstUnitId],
+    visibleUnits: [firstUnitId],
     skipped: {},
     decisions: [],
     pendingPlan: null,
     pendingAt: "",
     chapterExtensionsUsed: {},
+    unlockedExtensionChapters: [],
+    extensionRecommendations: {},
     usedAdaptiveUnits: {},
     insertedAfter: {},
     activeDetour: null,
+    activeExtensionChapter: null,
+    reviewResume: null,
+    reviewQueue: null,
+    chapterAdvanceReady: {},
+    chapterAdvanceReasons: {},
     lastNarration: "完成当前小节后，我会为你准备合适的下一步。"
   };
 }
 
+function agenticPruneLockedV14Path(path) {
+  if (!agenticV14Mode() || !path) return;
+  const allowedChapters = new Set((curriculum || [])
+    .filter((chapter) => agenticV14ChapterUnlockedBySequence(chapter.id))
+    .map((chapter) => chapter.id));
+  const keepUnit = (unitId) => {
+    const chapterId = agenticChapterIdForUnitId(unitId);
+    return !chapterId || allowedChapters.has(chapterId);
+  };
+  path.unlocked = (path.unlocked || []).filter(keepUnit);
+  path.visibleUnits = (path.visibleUnits || []).filter(keepUnit);
+  Object.keys(path.skipped || {}).forEach((unitId) => {
+    if (!keepUnit(unitId)) delete path.skipped[unitId];
+  });
+  Object.keys(path.chapterAdvanceReady || {}).forEach((key) => {
+    const chapterId = getChapter?.(key)?.id || agenticChapterIdForUnitId(key) || key;
+    if (chapterId && !allowedChapters.has(chapterId)) delete path.chapterAdvanceReady[key];
+  });
+}
 function ensureAgenticPath() {
   if (!state.agenticPath) state.agenticPath = agenticDefaults();
   const defaults = agenticDefaults();
   Object.keys(defaults).forEach((key) => {
     if (state.agenticPath[key] === undefined) state.agenticPath[key] = defaults[key];
   });
-  state.agenticPath.unlocked = Array.from(new Set([...(state.agenticPath.unlocked || []), "A1-scene-1", ...(state.completed || [])]));
-  state.agenticPath.visibleUnits = Array.from(new Set([...(state.agenticPath.visibleUnits || []), "A1-scene-1", currentUnitId || "", ...(state.completed || [])].filter(Boolean)));
+  if (agenticV14Mode()) agenticNormalizeCurrentPosition();
+  const firstUnitId = agenticInitialUnitId();
+  const safeCurrentUnitId = agenticCurrentUnitIsAllowed(currentUnitId) ? currentUnitId : "";
+  state.agenticPath.unlocked = Array.from(new Set([...(state.agenticPath.unlocked || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
+  state.agenticPath.visibleUnits = Array.from(new Set([...(state.agenticPath.visibleUnits || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
   state.agenticPath.skipped = state.agenticPath.skipped || {};
   state.agenticPath.decisions = state.agenticPath.decisions || [];
   state.agenticPath.chapterExtensionsUsed = state.agenticPath.chapterExtensionsUsed || {};
+  state.agenticPath.unlockedExtensionChapters = state.agenticPath.unlockedExtensionChapters || [];
+  state.agenticPath.extensionRecommendations = state.agenticPath.extensionRecommendations || {};
   state.agenticPath.usedAdaptiveUnits = state.agenticPath.usedAdaptiveUnits || {};
   state.agenticPath.insertedAfter = state.agenticPath.insertedAfter || {};
   state.agenticPath.oneStepExtension = state.agenticPath.oneStepExtension || null;
   state.agenticPath.activeDetour = state.agenticPath.activeDetour || null;
+  state.agenticPath.activeExtensionChapter = state.agenticPath.activeExtensionChapter || null;
+  state.agenticPath.reviewResume = state.agenticPath.reviewResume || null;
+  state.agenticPath.reviewQueue = state.agenticPath.reviewQueue || null;
+  state.agenticPath.chapterAdvanceReady = state.agenticPath.chapterAdvanceReady || {};
+  state.agenticPath.chapterAdvanceReasons = state.agenticPath.chapterAdvanceReasons || {};
   agenticReconcilePathWithEvidence(state.agenticPath);
   return state.agenticPath;
 }
@@ -80,6 +350,8 @@ function agenticReconcilePathWithEvidence(path) {
   if (currentUnitId) visible.add(currentUnitId);
   if (path.oneStepExtension?.unitId) visible.add(path.oneStepExtension.unitId);
   if (path.activeDetour?.unitId) visible.add(path.activeDetour.unitId);
+  if (path.reviewResume?.unitId) visible.add(path.reviewResume.unitId);
+  (path.reviewQueue?.queue || []).forEach((unitId) => visible.add(unitId));
   Object.keys(path.insertedAfter || {}).forEach((unitId) => visible.add(unitId));
 
   path.unlocked = Array.from(unlocked);
@@ -98,7 +370,9 @@ function agenticRevealUnit(unitId) {
 }
 
 function agenticAllMainUnits() {
-  return curriculum.flatMap((chapter) => chapter.units || []);
+  return (curriculum || [])
+    .filter((chapter) => !agenticV14Mode() || !agenticIsExtensionChapter(chapter) || agenticExtensionChapterVisible(chapter.id))
+    .flatMap((chapter) => chapter.units || []);
 }
 
 function agenticAllChapterUnits(chapterId) {
@@ -260,7 +534,42 @@ function agenticUnitIndex(unitId) {
 }
 
 function agenticIsSkipped(unitId) {
+  if ((state.completed || []).includes(unitId)) return false;
   return Boolean(ensureAgenticPath().skipped?.[unitId]);
+}
+
+function agenticIsPendingReviewUnit(unitId) {
+  const path = ensureAgenticPath();
+  if (!unitId) return false;
+  const activeQueue = agenticActiveReviewQueueIds(path);
+  const unskipIds = new Set(path.reviewQueue?.unskipIds || path.reviewResume?.unskipIds || []);
+  if (path.reviewResume?.unitId === unitId) return !unskipIds.has(unitId) && path.reviewResume?.type !== "unskip_knowledge";
+  if (activeQueue.includes(unitId)) return !unskipIds.has(unitId) && path.reviewQueue?.type !== "unskip_knowledge";
+  const pending = path.pendingPlan;
+  const action = (pending?.actions || []).find((item) =>
+    item.type === "review_knowledge" ||
+    item.type === "unskip_knowledge" ||
+    item.type === "review_and_unskip_knowledge"
+  );
+  const choices = action?.knowledgeChoices || action?.units || [];
+  return choices.some((choice) => {
+    if (choice?.id !== unitId || choice.checked === false) return false;
+    const reviewMode = choice.reviewMode || (action?.type === "unskip_knowledge" ? "unskip" : "review");
+    return reviewMode !== "unskip";
+  });
+}
+
+function agenticLessonStatusKind(unitId) {
+  const path = ensureAgenticPath();
+  const activeQueue = agenticActiveReviewQueueIds(path);
+  const unskipIds = new Set(path.reviewQueue?.unskipIds || path.reviewResume?.unskipIds || []);
+  if (
+    (path.reviewResume?.unitId === unitId && (path.reviewResume?.type === "unskip_knowledge" || unskipIds.has(unitId))) ||
+    (activeQueue.includes(unitId) && (path.reviewQueue?.type === "unskip_knowledge" || unskipIds.has(unitId)))
+  ) return "learn";
+  if (agenticIsPendingReviewUnit(unitId)) return "review";
+  if (agenticIsSkipped(unitId)) return "skipped";
+  return "";
 }
 
 function agenticIsUnitUnlocked(unitId) {
@@ -270,6 +579,7 @@ function agenticIsUnitUnlocked(unitId) {
 }
 
 function agenticIsChapterUnlocked(chapterId) {
+  if (agenticV14Mode()) return agenticV14ChapterUnlockedBySequence(chapterId);
   const chapter = getChapter(chapterId);
   const path = ensureAgenticPath();
   if (path.unlocked.some((id) => id.startsWith(`${chapterId}-scene-`))) return true;
@@ -278,13 +588,20 @@ function agenticIsChapterUnlocked(chapterId) {
   return chapter.units.some((unit) => agenticIsUnitUnlocked(unit.id) || agenticIsSkipped(unit.id));
 }
 
+function agenticVisibleChaptersForNav() {
+  if (!agenticV14Mode()) return curriculum.map((chapter, index) => ({ chapter, index }));
+  return agenticVisibleChapterEntries().map((entry) => ({
+    ...entry,
+    unlocked: agenticIsChapterUnlocked(entry.chapter.id)
+  }));
+}
 function agenticUnlockUnit(unitId, reason = "agent_recommended") {
   if (!unitId) return false;
   const path = ensureAgenticPath();
   agenticRevealUnit(unitId);
   if (!path.unlocked.includes(unitId)) {
     path.unlocked.push(unitId);
-    addLog(`Agent 解锁：${agenticUnitLabel(unitId)}。`);
+    addLog(`学习路径已解锁：${agenticUnitLabel(unitId)}。`);
     analyticsTrack("agentic_unlock", { data: { unitId, reason } });
     trackLearningEvent("agentic_unlock", { unitId, reason }, false);
     return true;
@@ -308,7 +625,7 @@ function agenticActionTargetIds(action, pending = null) {
   if (!ids.length && action?.type === "continue" && pending?.resumeUnitId) ids.push(pending.resumeUnitId);
   if (!ids.length && action?.type === "continue" && pending) {
     const anchorUnitId = pending.anchorUnitId || pending.unitId || "";
-    const nextId = agenticNextUnitIdAfter(anchorUnitId) || agenticNextMainUnitAfter(anchorUnitId)?.id || "";
+    const nextId = agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId) || "";
     if (nextId) ids.push(nextId);
   }
   return ids;
@@ -355,7 +672,7 @@ function agenticDecisionMeta(pending, action, targetId) {
     selectedCandidateIds,
     selectedSceneId: action?.type === "scene" ? targetId : "",
     selectedScenarioType: action?.scenarioType || (targetId ? findMainUnit(targetId)?.scenarioType || "" : ""),
-    nextUnitId: pending?.nextUnitId || pending?.resumeUnitId || agenticNextUnitIdAfter(pending?.anchorUnitId || pending?.unitId || "") || "",
+    nextUnitId: pending?.nextUnitId || pending?.resumeUnitId || agenticNextMainUnitAfter(pending?.anchorUnitId || pending?.unitId || "")?.id || agenticNextUnitIdAfter(pending?.anchorUnitId || pending?.unitId || "") || "",
     nextClusterId: pending?.nextClusterId || "",
     nextClusterLabel: pending?.nextClusterLabel || "",
     plannerStrategy: pending?.plan?.plannerInsight?.strategy || pending?.plan?.strategy || "",
@@ -386,13 +703,21 @@ function agenticNextUnitIdAfter(unitId) {
 }
 
 function agenticPendingAppliesToCurrent(pending = ensureAgenticPath().pendingPlan) {
+  return agenticPendingAppliesToUnitId(pending, currentUnitId);
+}
+
+function agenticPendingAppliesToUnitId(pending = null, unitId = "") {
   if (!pending) return false;
-  return !pending.chapterId || pending.chapterId === currentChapterId;
+  if (pending.unitId) return pending.unitId === unitId;
+  if (pending.anchorUnitId) return pending.anchorUnitId === unitId;
+  const unit = findMainUnit(unitId);
+  const chapterId = unit?.chapterId || currentChapterId;
+  return !pending.chapterId || pending.chapterId === chapterId;
 }
 
 function agenticPendingAppliesToUnit(unitId) {
   const pending = ensureAgenticPath().pendingPlan;
-  return Boolean(pending && pending.unitId === unitId);
+  return agenticPendingAppliesToUnitId(pending, unitId);
 }
 
 function agenticChapterIdForUnitId(unitId = "") {
@@ -493,8 +818,47 @@ function agenticTrimSkipCandidates(candidates = []) {
   return trimmed;
 }
 
+function agenticNormalizeReviewQueue(path = ensureAgenticPath()) {
+  const queueState = path.reviewQueue;
+  if (!queueState?.queue?.length) return [];
+  const seen = new Set();
+  const queue = queueState.queue.filter((unitId) => {
+    if (!unitId || seen.has(unitId) || !findMainUnit(unitId)) return false;
+    seen.add(unitId);
+    return true;
+  });
+  queueState.queue = queue;
+  queueState.currentIndex = Math.min(
+    Math.max(Number(queueState.currentIndex) || 0, 0),
+    Math.max(queue.length - 1, 0)
+  );
+  return queue;
+}
+
+function agenticActiveReviewQueueIds(path = ensureAgenticPath()) {
+  const queue = agenticNormalizeReviewQueue(path);
+  if (!queue.length) return [];
+  const index = Math.min(
+    Math.max(Number(path.reviewQueue?.currentIndex) || 0, 0),
+    queue.length - 1
+  );
+  return queue.slice(index);
+}
+
+function agenticReviewQueueTargetAfter(unitId) {
+  const path = ensureAgenticPath();
+  const queue = agenticActiveReviewQueueIds(path);
+  if (!queue.length) return null;
+  const idx = queue.indexOf(unitId);
+  if (idx < 0) return null;
+  const nextId = queue[idx + 1] || "";
+  return nextId ? (findMainUnit(nextId) || { id: nextId, label: agenticUnitLabel(nextId), chapterId: agenticChapterIdForUnitId(nextId) }) : null;
+}
+
 function agenticNextUnlockedUnitAfter(unitId) {
   if (agenticPendingAppliesToUnit(unitId)) return null;
+  const reviewNext = agenticReviewQueueTargetAfter(unitId);
+  if (reviewNext?.id) return reviewNext;
   const current = findMainUnit(unitId) || getUnit(unitId);
   const adaptiveResume = agenticResumeAfterInsertedAdaptive(current);
   if (adaptiveResume?.id && (agenticIsUnitUnlocked(adaptiveResume.id) || state.completed.includes(adaptiveResume.id))) {
@@ -523,13 +887,16 @@ function agenticShouldShowUnit(unit) {
   if (unit.id === currentUnitId) return true;
   if ((path.visibleUnits || []).includes(unit.id)) return true;
   if (state.completed.includes(unit.id)) return true;
-  if (path.oneStepExtension?.unitId === unit.id || path.activeDetour?.unitId === unit.id) return true;
+  if (path.oneStepExtension?.unitId === unit.id || path.activeDetour?.unitId === unit.id || path.reviewResume?.unitId === unit.id) return true;
+  if ((path.reviewQueue?.queue || []).includes(unit.id)) return true;
   if (path.pendingPlan?.unitId === unit.id) return true;
   return Boolean(path.insertedAfter?.[unit.id]);
 }
 
 function agenticDisplayUnitsForChapter(chapter = getChapter()) {
-  const units = chapter?.allUnits || chapter?.units || [];
+  const units = agenticV14Mode() ? chapter?.units || [] : chapter?.allUnits || chapter?.units || [];
+  if (agenticV14Mode() && agenticIsExtensionChapter(chapter) && !agenticExtensionChapterVisible(chapter.id)) return [];
+  if (agenticV14Mode()) return agenticOrderDisplayedUnits(units);
   return agenticOrderDisplayedUnits(units.filter(agenticShouldShowUnit));
 }
 
@@ -582,7 +949,7 @@ function agenticUnlockDefaultNext(unitId, reason = "linear_progress") {
 function agenticNoSpecialPlanNarration(unit, next) {
   const nextText = next?.label ? `下一步进入：${next.label}。` : "本章已完成。";
   if (unit?.assessmentPhase === "post") {
-    return `后测已经完成。本章当前没有新的 MAIC-UI 重学或拓展需要安排，${nextText}`;
+    return `后测已经完成，整体表现已记录。先${nextText}`;
   }
   if (unit?.assessmentPhase === "formative") {
     return `形成性测验已经记录。本节暂时不用插入额外课件，${nextText}`;
@@ -591,6 +958,11 @@ function agenticNoSpecialPlanNarration(unit, next) {
     return `前测已经记录。先按主线继续学习，${nextText}`;
   }
   return next ? `下一步已解锁：${next.label}` : "本章已完成。";
+}
+
+function agenticRenderLearningUpdate() {
+  renderAll();
+  if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
 }
 
 async function agenticOpenUnit(unitId) {
@@ -614,7 +986,7 @@ function agenticCanLeaveCurrent() {
 
 function agenticIsCurrentPending(unitId = currentUnitId) {
   const pending = ensureAgenticPath().pendingPlan;
-  return Boolean(pending && pending.unitId === unitId);
+  return agenticPendingAppliesToUnitId(pending, unitId);
 }
 
 function agenticGuardNavigation(targetUnitId, { allowPrevious = false, silent = false } = {}) {
@@ -631,7 +1003,8 @@ function agenticGuardNavigation(targetUnitId, { allowPrevious = false, silent = 
   const pendingBlocksTarget = path.pendingPlan && (!target.chapterId || target.chapterId === path.pendingPlan.chapterId);
   if (pendingBlocksTarget && targetUnitId !== path.pendingPlan.unitId && !isReviewTarget) {
     if (!silent) {
-      addLog("Agent 正在等待你选择下一步，先处理推荐卡片，再继续通关。");
+      const pendingLabel = agenticUnitLabel(path.pendingPlan.unitId || path.pendingPlan.anchorUnitId || "");
+      addLog(`请先回到「${pendingLabel || "当前测验"}」处理学习建议，再继续通关。`);
       renderAgenticCoachPanel();
     }
     return false;
@@ -667,13 +1040,194 @@ function focusAgenticCoachPanel() {
 }
 
 function agenticQuizStats(records) {
-  const objective = records.filter(({ result }) => result.isCorrect !== null);
+  const objective = records.filter(({ result }) => result.isCorrect !== null && result.status !== "pending_review");
   const correct = objective.filter(({ result }) => result.isCorrect === true).length;
   return {
     objective: objective.length,
     correct,
     accuracy: objective.length ? correct / objective.length : null
   };
+}
+
+function agenticQuizRecordsForUnit(unitId) {
+  const unit = getUnit(unitId);
+  if (!unit?.scene?.content?.questions) return [];
+  const sourceRecords = typeof quizRecordsForUnit === "function" ? quizRecordsForUnit(unitId) : (state.quizResults || []).filter((row) => row.unitId === unitId);
+  const byQuestion = new Map();
+  sourceRecords.forEach((row) => {
+    if (row?.questionId && !byQuestion.has(row.questionId)) byQuestion.set(row.questionId, row);
+  });
+  return (unit.scene.content.questions || [])
+    .map((question, index) => {
+      const result = byQuestion.get(question.id);
+      return result ? { index, question, result } : null;
+    })
+    .filter(Boolean);
+}
+
+function agenticQuizHasPendingShortAnswer(records = []) {
+  return records.some(({ question, result }) =>
+    question?.type === "short_answer" &&
+    (result?.status === "pending_review" || result?.isCorrect === null)
+  );
+}
+function agenticKnowledgePointsForChapter(chapterId) {
+  const chapter = getChapter(chapterId);
+  return (chapter?.modules || []).flatMap((module) => (module.knowledgePoints || []).map((point) => ({
+    id: point.id,
+    name: point.name || point.id,
+    goal: point.goal || "",
+    misconception: point.misconception || "",
+    moduleId: module.id,
+    moduleTitle: module.title || module.id
+  })));
+}
+
+function agenticQuestionKnowledgePointIds(question = {}, chapterId = "") {
+  const explicit = question.knowledgePointIds || question.knowledge_point_ids || question.coachHint?.knowledgePointIds || [];
+  if (Array.isArray(explicit) && explicit.length) return explicit;
+  const moduleId = question.moduleId || question.module_id || "";
+  const points = agenticKnowledgePointsForChapter(chapterId).filter((point) => !moduleId || point.moduleId === moduleId);
+  return points.length ? [points[0].id] : [];
+}
+
+function agenticQuizKnowledgeMastery(records = [], chapterId = "") {
+  const points = agenticKnowledgePointsForChapter(chapterId);
+  const byId = new Map(points.map((point) => [point.id, {
+    ...point,
+    attempts: 0,
+    correct: 0,
+    wrong: 0,
+    earned: 0,
+    possible: 0,
+    pending: 0,
+    questions: []
+  }]));
+
+  records.forEach(({ question, result }) => {
+    const ids = agenticQuestionKnowledgePointIds(question, chapterId);
+    ids.forEach((id) => {
+      const item = byId.get(id);
+      if (!item) return;
+      item.attempts += 1;
+      item.questions.push(question.id);
+      const maxScore = quizMaxScoreFor(question, result);
+      const earned = quizEarnedScore(result, question);
+      if (earned !== null && earned !== undefined) {
+        if (maxScore) item.possible += maxScore;
+        item.earned += earned;
+      }
+      if (result.isCorrect === true) item.correct += 1;
+      else if (result.isCorrect === false) item.wrong += 1;
+      else item.pending += 1;
+    });
+  });
+
+  return Array.from(byId.values()).map((item) => {
+    const scoreRate = item.possible ? item.earned / item.possible : null;
+    const objectiveRate = item.correct + item.wrong ? item.correct / (item.correct + item.wrong) : null;
+    const mastery = scoreRate ?? objectiveRate;
+    const hasScoredEvidence = item.possible > 0 || item.correct + item.wrong > 0;
+    const status = item.attempts === 0
+      ? "unknown"
+      : !hasScoredEvidence
+        ? "pending"
+        : mastery !== null && mastery >= AGENTIC_PRE_SKIP_THRESHOLD && item.wrong === 0
+        ? "strong"
+        : (mastery !== null && mastery < AGENTIC_POST_REMEDIATION_THRESHOLD) || item.wrong > item.correct
+          ? "weak"
+          : "partial";
+    return {
+      ...item,
+      mastery: mastery === null ? null : Math.round(mastery * 100) / 100,
+      status
+    };
+  });
+}
+
+function agenticKnowledgeUnitsFromMastery(records = [], chapterId = "", statuses = ["weak", "partial"]) {
+  const statusSet = new Set(statuses);
+  const chapter = getChapter(chapterId);
+  const masteryById = new Map(agenticQuizKnowledgeMastery(records, chapterId).map((item) => [item.id, item]));
+  return (chapter?.units || [])
+    .filter((unit) => unit.type === "knowledge")
+    .map((unit) => ({ unit, mastery: masteryById.get(unit.id) }))
+    .filter(({ mastery }) => mastery && statusSet.has(mastery.status))
+    .sort((a, b) => (a.unit.sceneOrder || 0) - (b.unit.sceneOrder || 0));
+}
+
+function agenticKnowledgeCandidatesFromMastery(records = [], chapterId = "", reason = "quiz_weak_knowledge", statuses = ["weak", "partial"]) {
+  return agenticKnowledgeUnitsFromMastery(records, chapterId, statuses).map(({ unit, mastery }) => ({
+    ...agenticCandidateFromUnit(unit, reason),
+    mastery: mastery.mastery,
+    status: mastery.status,
+    moduleId: mastery.moduleId,
+    moduleTitle: mastery.moduleTitle,
+    reason
+  }));
+}
+
+function agenticBuildPreKnowledgeSelectionPlan(unit, records = [], remote = null) {
+  const choices = agenticQuizKnowledgeMastery(records, unit.chapterId);
+  if (!choices.length) return null;
+  const stats = agenticQuizStats(records);
+  const highMastery = stats.accuracy !== null && stats.accuracy >= AGENTIC_PRE_SKIP_THRESHOLD;
+  const knowledgeChoices = choices.map((choice) => {
+    const checked = highMastery ? choice.status !== "strong" : true;
+    const reason = choice.status === "strong"
+      ? "前测表现较稳，可考虑跳过。"
+      : choice.status === "weak"
+        ? "前测暴露卡点，建议保留学习。"
+        : choice.status === "partial"
+          ? "已有部分基础，建议快速巩固。"
+          : "前测证据不足，建议先学习。";
+    return {
+      id: choice.id,
+      name: choice.name,
+      moduleId: choice.moduleId,
+      moduleTitle: choice.moduleTitle,
+      goal: choice.goal,
+      mastery: choice.mastery,
+      status: choice.status,
+      checked,
+      reason
+    };
+  });
+  return {
+    unitId: unit.id,
+    anchorUnitId: unit.id,
+    chapterId: unit.chapterId,
+    phase: "pre_knowledge_selection",
+    stats,
+    narration: remote?.narration || "前测已完成。请确认本章哪些知识点要继续学习；未勾选的知识点会暂时跳过，并保留回看入口。",
+    provider: remote?.provider || "local-pretest-knowledge-selection",
+    plan: remote?.plan || null,
+    resumeUnitId: agenticNextMainUnitAfter(unit.id)?.id || "",
+    actions: [
+      {
+        type: "select_knowledge",
+        label: "按勾选知识点开始学习",
+        primary: true,
+        knowledgeChoices,
+        units: []
+      }
+    ],
+    createdAt: beijingNow()
+  };
+}
+
+function agenticKnowledgeCandidatesFromQuiz(unit, records = [], reason = "quiz_weak_concept") {
+  const weakIds = new Set(agenticQuizKnowledgeMastery(records, unit.chapterId)
+    .filter((choice) => choice.status === "weak" || choice.status === "partial")
+    .map((choice) => choice.id));
+  if (!weakIds.size) return [];
+  const chapter = getChapter(unit.chapterId);
+  return (chapter?.allUnits || chapter?.units || [])
+    .filter((candidate) => candidate.type === "knowledge" && weakIds.has(candidate.id))
+    .map((candidate) => ({
+      ...agenticCandidateFromUnit(candidate, reason),
+      reason
+    }));
 }
 
 function agenticQuizQuestionsForPlan(records = [], unit = null) {
@@ -689,6 +1243,54 @@ function agenticQuizQuestionsForPlan(records = [], unit = null) {
     points: question.points || result.maxScore || 0,
     response: result.response
   }));
+}
+
+function agenticApplyGradingResults(gradingResults = [], unit = null) {
+  const results = Array.isArray(gradingResults) ? gradingResults : [];
+  if (!results.length || !unit?.id) return false;
+  const byQuestion = new Map(results.map((result) => [result.questionId, result]));
+  let changed = false;
+  state.quizResults = (state.quizResults || []).map((entry) => {
+    if (entry.unitId !== unit.id) return entry;
+    const grade = byQuestion.get(entry.questionId);
+    if (!grade) return entry;
+    const maxScore = quizMaxScoreFor({}, entry);
+    if (grade.score == null) {
+      const fallbackFeedback = grade.feedback || "智能批改暂时失败，已先按 0 分计入，不影响继续学习。";
+      changed = true;
+      return {
+        ...entry,
+        aiScore: 0,
+        aiConfidence: grade.confidence ?? 0,
+        aiFeedback: fallbackFeedback,
+        aiErrorType: grade.errorType || "pending_review",
+        aiWeakConcepts: Array.isArray(grade.weakConcepts) ? grade.weakConcepts : [],
+        aiReasoning: grade.reasoning || "",
+        aiNeedsReview: true,
+        status: "ai_reviewed",
+        isCorrect: false,
+        score: 0,
+        fallbackScored: true
+      };
+    }
+    const earnedScore = Math.max(0, Math.min(maxScore, Number(grade.score) || 0));
+    changed = true;
+    return {
+      ...entry,
+      aiScore: grade.score,
+      aiConfidence: grade.confidence,
+      aiFeedback: grade.feedback || "",
+      aiErrorType: grade.errorType || "",
+      aiWeakConcepts: Array.isArray(grade.weakConcepts) ? grade.weakConcepts : [],
+      aiReasoning: grade.reasoning || "",
+      aiNeedsReview: Boolean(grade.needsReview),
+      status: "ai_reviewed",
+      isCorrect: grade.isCorrect === false ? false : earnedScore >= maxScore * 0.6,
+      score: earnedScore
+    };
+  });
+  if (changed) saveState();
+  return changed;
 }
 
 function interactionEvidenceForUnit(unitId) {
@@ -821,44 +1423,112 @@ async function agenticRequestPlan(unit, records = []) {
   }
 }
 
+function agenticApplyRemotePlanWhenReady(unit, records = []) {
+  agenticRequestPlan(unit, records)
+    .then((remote) => agenticApplyRemoteGrading(remote, unit))
+    .catch((error) => console.warn("Agentic remote grading refresh failed:", error));
+}
+
+async function agenticRequestPlanForLocalDecision(unit, records = []) {
+  const remotePromise = agenticRequestPlan(unit, records);
+  let applied = false;
+  remotePromise
+    .then((remote) => {
+      if (!remote || applied) return;
+      applied = true;
+      agenticApplyRemoteGrading(remote, unit);
+    })
+    .catch((error) => console.warn("Agentic delayed plan failed:", error));
+  const remote = await Promise.race([
+    remotePromise,
+    new Promise((resolve) => window.setTimeout(() => resolve(null), AGENTIC_REMOTE_PLAN_TIMEOUT_MS))
+  ]);
+  if (remote && !applied) {
+    applied = true;
+    agenticApplyRemoteGrading(remote, unit);
+  }
+  return remote;
+}
+
 function agenticApplyRemoteGrading(remote, unit) {
-  const gradingResults = Array.isArray(remote?.gradingResults) ? remote.gradingResults : [];
-  if (!gradingResults.length) return;
-  const byQuestion = new Map(gradingResults.map((result) => [result.questionId, result]));
-  let changed = false;
-  state.quizResults = (state.quizResults || []).map((entry) => {
-    if (entry.unitId !== unit.id) return entry;
-    const grade = byQuestion.get(entry.questionId);
-    if (!grade) return entry;
-    const maxScore = quizMaxScoreFor({}, entry);
-    const earnedScore = grade.score == null ? entry.score : quizScoreFromPercent(grade.score, maxScore);
-    changed = true;
-    return {
-      ...entry,
-      aiScore: grade.score,
-      aiConfidence: grade.confidence,
-      aiFeedback: grade.feedback || "",
-      aiErrorType: grade.errorType || "",
-      aiNeedsReview: Boolean(grade.needsReview),
-      status: grade.score == null ? "pending_review" : "ai_reviewed",
-      isCorrect: grade.score == null ? entry.isCorrect : grade.score >= 60,
-      score: grade.score == null ? entry.score : earnedScore
-    };
-  });
-  if (changed) {
-    saveState();
-    if (unit?.id === currentUnitId && typeof renderQuiz === "function") renderQuiz(unit);
+  const changed = agenticApplyGradingResults(remote?.gradingResults, unit);
+  if (changed && unit?.id === currentUnitId && typeof renderQuiz === "function") {
+    renderQuiz(unit);
   }
 }
 
-async function agenticAfterQuizSubmit(unit, records) {
+function agenticScorePendingShortAnswersAsZero(unit, reason = "智能批改暂时失败，已先按 0 分计入，不影响继续学习。") {
+  if (!unit?.id) return false;
+  let changed = false;
+  state.quizResults = (state.quizResults || []).map((entry) => {
+    if (entry.unitId !== unit.id || entry.questionType !== "short_answer") return entry;
+    if (entry.status !== "pending_review" && entry.isCorrect !== null) return entry;
+    changed = true;
+    return {
+      ...entry,
+      aiScore: 0,
+      aiConfidence: 0,
+      aiFeedback: reason,
+      aiErrorType: entry.aiErrorType || "api_error",
+      aiWeakConcepts: Array.isArray(entry.aiWeakConcepts) ? entry.aiWeakConcepts : [],
+      aiReasoning: entry.aiReasoning || "",
+      aiNeedsReview: true,
+      status: "ai_reviewed",
+      isCorrect: false,
+      score: 0,
+      fallbackScored: true
+    };
+  });
+  if (changed) saveState();
+  return changed;
+}
+
+function agenticBuildPendingGradingPlan(unit, records = [], options = {}) {
+  const shortCount = records.filter(({ question }) => question?.type === "short_answer").length;
+  return {
+    unitId: unit.id,
+    anchorUnitId: unit.id,
+    chapterId: unit.chapterId,
+    phase: "grading_pending",
+    stats: agenticQuizStats(records),
+    narration: options.message || `还有 ${shortCount || "若干"} 道简答题正在批改。批改完成后，我会把简答题得分一起纳入掌握度，再给出回看、补学或继续主线的建议。`,
+    provider: options.provider || "grading-pending",
+    plan: null,
+    resumeUnitId: agenticNextMainUnitAfter(unit.id)?.id || "",
+    actions: [],
+    createdAt: beijingNow()
+  };
+}
+
+function agenticSetPendingGrading(unit, records = [], options = {}) {
+  const path = ensureAgenticPath();
+  path.pendingPlan = agenticBuildPendingGradingPlan(unit, records, options);
+  path.pendingAt = unit.id;
+  path.lastNarration = path.pendingPlan.narration;
+  saveState();
+  agenticRenderLearningUpdate();
+}
+
+async function agenticBuildRecommendationAfterGrading(unit, records, remote = null) {
   ensureAgenticPath();
   const stats = agenticQuizStats(records);
   const phase = unit.assessmentPhase;
-  const remote = await agenticRequestPlan(unit, records);
-  agenticApplyRemoteGrading(remote, unit);
+
+  if (phase === "pre") {
+    const knowledgePlan = agenticBuildPreKnowledgeSelectionPlan(unit, records, null);
+    if (knowledgePlan) {
+      const path = ensureAgenticPath();
+      path.pendingPlan = knowledgePlan;
+      path.pendingAt = unit.id;
+      path.lastNarration = agenticStudentNarrationForPending(knowledgePlan);
+      saveState();
+      agenticRenderLearningUpdate();
+      return;
+    }
+  }
+
   const plan = remote?.plan || null;
-  const narration = remote?.narration || "Agent 已根据你的答题情况更新下一步。";
+  const narration = remote?.narration || "学习建议已根据你的答题情况更新下一步。";
   const plannerAction = plan?.plannerInsight?.recommendedPath?.action || plan?.recommendedPath?.action || "";
   const actions = [];
   const localSkipOrders = AGENTIC_CORE_SCENE_ORDERS.filter((order) => order > unit.sceneOrder && order < 8);
@@ -870,6 +1540,7 @@ async function agenticAfterQuizSubmit(unit, records) {
     agenticLocalCandidates(unit.chapterId, localSkipOrders, "pre_test_mastery")
   );
   const relearnCandidates = agenticMergeCandidates(
+    agenticKnowledgeCandidatesFromQuiz(unit, records, "quiz_weak_knowledge"),
     agenticResolvePlanUnits(agenticPlannerRankedCandidates(plan, { action: "remediate", chapterId: unit.chapterId }), {
       chapterId: unit.chapterId
     }),
@@ -880,7 +1551,7 @@ async function agenticAfterQuizSubmit(unit, records) {
     }),
     agenticLocalCandidates(unit.chapterId, AGENTIC_RELEARN_SCENE_ORDERS, "post_test_relearn")
   );
-  const extensionCandidates = agenticMergeCandidates(
+  const extensionCandidates = AGENTIC_ENABLE_EXTENSION ? agenticMergeCandidates(
     agenticResolvePlanUnits(agenticPlannerRankedCandidates(plan, { action: "extend", chapterId: unit.chapterId }), {
       chapterId: unit.chapterId
     }),
@@ -890,7 +1561,7 @@ async function agenticAfterQuizSubmit(unit, records) {
       flowKind: "adaptive",
       sceneOrders: AGENTIC_EXTENSION_SCENE_ORDERS
     })
-  );
+  ) : [];
   const rankedRelearnCandidates = agenticRankAdaptiveCandidates(
     relearnCandidates,
     agenticPreferredRelearnOrders(phase),
@@ -901,6 +1572,8 @@ async function agenticAfterQuizSubmit(unit, records) {
     agenticPreferredExtensionOrders(phase),
     unit.chapterId
   );
+  const weakKnowledgeCandidates = agenticKnowledgeCandidatesFromMastery(records, unit.chapterId, "quiz_weak_knowledge");
+  const extensionChapters = phase === "post" ? agenticRecommendedExtensionChaptersForPost(unit, records) : [];
 
   if (phase === "pre" && stats.accuracy !== null && stats.accuracy >= AGENTIC_PRE_SKIP_THRESHOLD && skipCandidates.length) {
     const safeSkipCandidates = agenticTrimSkipCandidates(skipCandidates).slice(0, 6);
@@ -911,47 +1584,89 @@ async function agenticAfterQuizSubmit(unit, records) {
   }
 
   if (phase === "post") {
-    if (stats.accuracy !== null && stats.accuracy < AGENTIC_POST_REMEDIATION_THRESHOLD && rankedRelearnCandidates.length) {
-      actions.push({ type: "remediate", label: "换一种 MAIC-UI 互动重学", primary: true, units: rankedRelearnCandidates.slice(0, 1) });
+    if ((stats.accuracy !== null && stats.accuracy < AGENTIC_POST_REMEDIATION_THRESHOLD || weakKnowledgeCandidates.length) && weakKnowledgeCandidates.length) {
+      actions.push({ type: "review_knowledge", label: "选择回看知识点", primary: true, units: weakKnowledgeCandidates });
+    } else if (stats.accuracy !== null && stats.accuracy < AGENTIC_POST_REMEDIATION_THRESHOLD && rankedRelearnCandidates.length) {
+      actions.push({ type: "remediate", label: "换一种互动方式重学", primary: true, units: rankedRelearnCandidates.slice(0, 1) });
     }
     const extension = agenticFirstUnusedCandidate(rankedExtensionCandidates, unit.chapterId);
-    if (extension) actions.push({ type: "extension", label: "解锁一步 MAIC-UI 拓展", primary: actions.length === 0, units: [extension] });
-    actions.push({ type: "continue", label: "进入下一章", units: [] });
+    if (extension) actions.push({ type: "extension", label: "解锁一步拓展", primary: actions.length === 0, units: [extension] });
+    if (extensionChapters.length) {
+      const candidate = agenticExtensionChapterCandidate(extensionChapters[0]);
+      if (candidate?.id) {
+        const labels = extensionChapters
+          .map((chapter) => (typeof chapterDisplayCopy === "function" ? chapterDisplayCopy(chapter).label : chapter.label))
+          .filter(Boolean)
+          .join(" / ");
+        actions.push({
+          type: "extension_chapter",
+          label: `解锁扩展：${labels || candidate.label}`,
+          primary: actions.length === 0,
+          units: [candidate],
+          extensionChapterId: extensionChapters[0].id,
+          extensionChapterIds: extensionChapters.map((chapter) => chapter.id)
+        });
+      }
+    }
+    actions.push({ type: "continue", label: "进入下一章", primary: actions.length === 0, units: [] });
   }
 
   if (phase === "formative") {
-    if (stats.accuracy !== null && stats.accuracy < AGENTIC_POST_REMEDIATION_THRESHOLD && rankedRelearnCandidates.length) {
-      actions.push({ type: "remediate", label: "换一种 MAIC-UI 互动重学", primary: true, units: rankedRelearnCandidates.slice(0, 1) });
-      actions.push({ type: "continue", label: "继续巩固主线", units: [] });
+    const skippedWeak = weakKnowledgeCandidates.filter((candidate) => agenticIsSkipped(candidate.id));
+    const priorWeak = weakKnowledgeCandidates.filter((candidate) => {
+      if (agenticIsSkipped(candidate.id)) return false;
+      const target = findMainUnit(candidate.id);
+      return !target?.sceneOrder || !unit.sceneOrder || target.sceneOrder <= unit.sceneOrder;
+    });
+    if (priorWeak.length && skippedWeak.length) {
+      actions.push({
+        type: "review_and_unskip_knowledge",
+        label: "选择回看和补学",
+        primary: true,
+        units: [
+          ...priorWeak.map((candidate) => ({ ...candidate, reviewMode: "review" })),
+          ...skippedWeak.map((candidate) => ({ ...candidate, reviewMode: "unskip" }))
+        ]
+      });
+    } else if (priorWeak.length) {
+      actions.push({ type: "review_knowledge", label: "选择回看知识点", primary: true, units: priorWeak });
+    }
+    if (!priorWeak.length && skippedWeak.length) {
+      actions.push({
+        type: "unskip_knowledge",
+        label: "选择是否补学已跳过内容",
+        primary: actions.length === 0,
+        units: skippedWeak.map((candidate) => ({ ...candidate, reviewMode: "unskip" }))
+      });
+    }
+    if (!actions.length && stats.accuracy !== null && stats.accuracy < AGENTIC_POST_REMEDIATION_THRESHOLD && rankedRelearnCandidates.length) {
+      actions.push({ type: "remediate", label: "换一种互动方式重学", primary: true, units: rankedRelearnCandidates.slice(0, 1) });
+    }
+    if (actions.length) {
+      actions.push({ type: "continue", label: "继续主线", units: [] });
     } else if (stats.accuracy !== null && stats.accuracy >= AGENTIC_PRE_SKIP_THRESHOLD) {
       const extension = agenticFirstUnusedCandidate(rankedExtensionCandidates, unit.chapterId);
       if (extension) {
-        actions.push({ type: "extension", label: "解锁一步 MAIC-UI 拓展", primary: true, units: [extension] });
+        actions.push({ type: "extension", label: "解锁一步拓展", primary: true, units: [extension] });
         actions.push({ type: "continue", label: "继续主线", units: [] });
       }
     }
   }
 
   if (!actions.length) {
-    const sceneChoicePlan = agenticBuildSceneChoicePlan(unit, remote);
-    if (sceneChoicePlan) {
-      const path = ensureAgenticPath();
-      path.pendingPlan = sceneChoicePlan;
-      path.pendingAt = unit.id;
-      path.lastNarration = agenticStudentNarrationForPending(sceneChoicePlan);
-      saveState();
-      renderAll();
-      return;
-    }
+    if (phase === "post") agenticMarkChapterReadyToAdvance(unit.chapterId, "post_no_special_plan");
     const next = agenticUnlockDefaultNext(unit.id, "quiz_no_special_plan");
     ensureAgenticPath().lastNarration = agenticNoSpecialPlanNarration(unit, next);
     if (next) ensureAgenticPath().oneStepExtension = null;
     saveState();
-    renderAll();
+    agenticRenderLearningUpdate();
     return;
   }
 
   const path = ensureAgenticPath();
+  const activeExtensionResume = path.activeExtensionChapter?.chapterId === unit.chapterId
+    ? path.activeExtensionChapter.resumeUnitId || ""
+    : "";
   path.pendingPlan = {
     unitId: unit.id,
     chapterId: unit.chapterId,
@@ -959,6 +1674,8 @@ async function agenticAfterQuizSubmit(unit, records) {
     stats,
     narration,
     provider: remote?.provider || "mock",
+    anchorUnitId: unit.id,
+    resumeUnitId: activeExtensionResume || agenticNextMainUnitAfter(unit.id)?.id || "",
     agentDecisionId: remote?.decisionId || "",
     decisionCreatedAt: remote?.decisionCreatedAt || "",
     plan,
@@ -968,10 +1685,34 @@ async function agenticAfterQuizSubmit(unit, records) {
   path.pendingAt = unit.id;
   path.lastNarration = agenticStudentNarrationForPending(path.pendingPlan);
   saveState();
-  renderAll();
+  agenticRenderLearningUpdate();
+}
+
+async function agenticAfterQuizSubmit(unit, records) {
+  ensureAgenticPath();
+  if (agenticQuizHasPendingShortAnswer(records)) {
+    agenticSetPendingGrading(unit, records);
+    const remote = await agenticRequestPlan(unit, records);
+    agenticApplyRemoteGrading(remote, unit);
+    const scoredRecords = agenticQuizRecordsForUnit(unit.id);
+    if (agenticQuizHasPendingShortAnswer(scoredRecords)) {
+      agenticScorePendingShortAnswersAsZero(unit);
+      const fallbackRecords = agenticQuizRecordsForUnit(unit.id);
+      if (unit?.id === currentUnitId && typeof renderQuiz === "function") renderQuiz(unit);
+      await agenticBuildRecommendationAfterGrading(unit, fallbackRecords.length ? fallbackRecords : records, remote);
+      return;
+    }
+    await agenticBuildRecommendationAfterGrading(unit, scoredRecords, remote);
+    return;
+  }
+
+  const remote = await agenticRequestPlanForLocalDecision(unit, records);
+  const scoredRecords = agenticQuizRecordsForUnit(unit.id);
+  await agenticBuildRecommendationAfterGrading(unit, scoredRecords.length ? scoredRecords : records, remote);
 }
 
 function agenticBuildPostRelearnExtensionPlan(detour, completedUnit) {
+  if (!AGENTIC_ENABLE_EXTENSION) return null;
   const path = ensureAgenticPath();
   const sourceUnit = findMainUnit(detour?.fromUnitId);
   const chapterId = detour?.chapterId || sourceUnit?.chapterId || completedUnit?.chapterId || "";
@@ -989,7 +1730,7 @@ function agenticBuildPostRelearnExtensionPlan(detour, completedUnit) {
     plan: null,
     resumeUnitId,
     actions: [
-      { type: "extension", label: "解锁一步 MAIC-UI 拓展", primary: true, units: [extension] },
+      { type: "extension", label: "解锁一步拓展", primary: true, units: [extension] },
       { type: "continue", label: resumeUnitId ? "进入下一章" : "继续主线", units: [] }
     ],
     createdAt: beijingNow()
@@ -1085,7 +1826,7 @@ async function agenticRefreshPendingSceneChoicePlan(unit) {
   currentPath.pendingAt = unit.id;
   currentPath.lastNarration = agenticStudentNarrationForPending(currentPath.pendingPlan);
   saveState();
-  if (unit.id === currentUnitId) renderAll();
+  if (unit.id === currentUnitId) agenticRenderLearningUpdate();
 }
 
 function agenticOnUnitCompleted(unit) {
@@ -1093,16 +1834,64 @@ function agenticOnUnitCompleted(unit) {
   const path = ensureAgenticPath();
   if (path.pendingPlan?.unitId === unit.id) return;
   if (unit.type === "quiz" && (unit.assessmentPhase === "pre" || unit.assessmentPhase === "post")) return;
+  const reviewQueue = agenticNormalizeReviewQueue(path);
+  const reviewIndex = reviewQueue.indexOf(unit.id);
+  if (reviewIndex >= 0) {
+    const nextReviewId = reviewQueue[reviewIndex + 1] || "";
+    if (nextReviewId) {
+      path.reviewQueue.currentIndex = reviewIndex + 1;
+      path.reviewResume = {
+        ...(path.reviewResume || {}),
+        type: path.reviewQueue?.type || path.reviewResume?.type || "review_knowledge",
+        unitId: nextReviewId,
+        fromUnitId: path.reviewQueue?.fromUnitId || path.reviewResume?.fromUnitId || unit.id,
+        chapterId: path.reviewQueue?.chapterId || path.reviewResume?.chapterId || unit.chapterId,
+        phase: path.reviewQueue?.phase || path.reviewResume?.phase || "",
+        resumeUnitId: path.reviewQueue?.resumeUnitId || path.reviewResume?.resumeUnitId || ""
+      };
+      agenticUnlockUnit(nextReviewId, path.reviewQueue?.type === "unskip_knowledge" ? "continue_unskip_review_queue" : "continue_review_queue");
+      path.lastNarration = `继续处理你勾选的下一个知识点：${agenticUnitLabel(nextReviewId)}。`;
+      return { id: nextReviewId, label: agenticUnitLabel(nextReviewId) };
+    }
+    const resumeId =
+      path.reviewQueue?.resumeUnitId ||
+      path.reviewResume?.resumeUnitId ||
+      agenticNextMainUnitAfter(path.reviewQueue?.fromUnitId || path.reviewResume?.fromUnitId || unit.id)?.id ||
+      "";
+    const queuePhase = path.reviewQueue?.phase || path.reviewResume?.phase || "";
+    const queueChapterId = path.reviewQueue?.chapterId || path.reviewResume?.chapterId || unit.chapterId;
+    path.reviewQueue = null;
+    path.reviewResume = null;
+    if (queuePhase === "post") agenticMarkChapterReadyOnPath(path, queueChapterId, "post_review_queue_completed");
+    if (resumeId) agenticUnlockUnit(resumeId, "return_from_review_queue");
+    path.lastNarration = resumeId
+      ? `你勾选的回看知识点已完成，回到主线：${agenticUnitLabel(resumeId)}。`
+      : "你勾选的回看知识点已完成。";
+    return resumeId ? { id: resumeId, label: agenticUnitLabel(resumeId) } : null;
+  }
   if (path.oneStepExtension?.unitId === unit.id) {
     const resumeId = path.oneStepExtension.resumeUnitId || agenticNextUnitIdAfter(path.oneStepExtension.fromUnitId);
     const fromUnitId = path.oneStepExtension.fromUnitId || unit.id;
     const isCrossChapter = agenticIsCrossChapterResume(fromUnitId, resumeId);
+    const extensionChapterId = path.oneStepExtension.chapterId || agenticChapterIdForUnitId(fromUnitId) || unit.chapterId;
+    if (path.oneStepExtension.phase === "post") agenticMarkChapterReadyOnPath(path, extensionChapterId, "post_extension_completed");
     path.oneStepExtension = null;
     agenticUnlockUnit(resumeId, isCrossChapter ? "advance_from_one_step_extension" : "return_from_one_step_extension");
     path.lastNarration = isCrossChapter
       ? `跨章预告已完成，进入下一章：${agenticUnitLabel(resumeId)}。`
       : `拓展一步已完成，回到主线：${agenticUnitLabel(resumeId)}。`;
     return { id: resumeId, label: agenticUnitLabel(resumeId) };
+  }
+  if (path.reviewResume?.unitId === unit.id) {
+    const reviewResume = path.reviewResume;
+    const resumeId = reviewResume.resumeUnitId || agenticNextMainUnitAfter(reviewResume.fromUnitId || unit.id)?.id || "";
+    path.reviewResume = null;
+    if (reviewResume.phase === "post") agenticMarkChapterReadyOnPath(path, reviewResume.chapterId || unit.chapterId, "post_review_completed");
+    if (resumeId) agenticUnlockUnit(resumeId, "return_from_quiz_review");
+    path.lastNarration = resumeId
+      ? `回看知识点已完成，回到主线：${agenticUnitLabel(resumeId)}。`
+      : "回看知识点已完成。";
+    return resumeId ? { id: resumeId, label: agenticUnitLabel(resumeId) } : null;
   }
   if (path.activeDetour?.unitId === unit.id) {
     const detour = path.activeDetour;
@@ -1117,6 +1906,7 @@ function agenticOnUnitCompleted(unit) {
         path.lastNarration = agenticStudentNarrationForPending(followUp);
         return null;
       }
+      agenticMarkChapterReadyOnPath(path, detour.chapterId || unit.chapterId, "post_relearn_completed");
     }
     if (resumeId) agenticUnlockUnit(resumeId, "return_from_relearn_detour");
     path.lastNarration = resumeId ? `重学支线已完成，回到主线：${label}。` : "重学支线已完成。";
@@ -1125,11 +1915,11 @@ function agenticOnUnitCompleted(unit) {
   const adaptiveResume = agenticResumeAfterInsertedAdaptive(unit);
   if (adaptiveResume?.id) {
     agenticUnlockUnit(adaptiveResume.id, "return_from_adaptive_review");
-    path.lastNarration = `这节 MAIC-UI 课件已经复习完成，回到主线：${adaptiveResume.label}。`;
+    path.lastNarration = `这节互动课件已经复习完成，回到主线：${adaptiveResume.label}。`;
     return adaptiveResume;
   }
   const sceneChoicePlan = agenticBuildSceneChoicePlan(unit);
-  if (sceneChoicePlan) {
+  if (!agenticV14Mode() && sceneChoicePlan) {
     path.pendingPlan = sceneChoicePlan;
     path.pendingAt = unit.id;
     path.lastNarration = agenticStudentNarrationForPending(sceneChoicePlan);
@@ -1155,9 +1945,14 @@ function agenticDecisionRecord(action, detail = {}) {
 function agenticDecisionText(decision) {
   const actionText = {
     skip: "跳过已掌握",
+    select_knowledge: "自主勾选知识点",
+    review_knowledge: "回看知识点",
+    unskip_knowledge: "补学已跳过内容",
+    review_and_unskip_knowledge: "回看/补学知识点",
     continue: "按顺序巩固",
     remediate: "换方式重学",
-    extension: "一步拓展"
+    extension: "一步拓展",
+    extension_chapter: "扩展章节"
   }[decision.action] || decision.action;
   const target = decision.targetLabel || agenticUnitLabel(decision.targetId);
   const skipText = decision.skippedUnitIds?.length ? `，跳过 ${decision.skippedUnitIds.length} 节` : "";
@@ -1194,6 +1989,7 @@ function agenticCoachTitleForUnit(unit) {
     return "概念讲解";
   }
   if (unit.type === "interactive") return "互动实验";
+  if (unit.type === "knowledge") return "选择互动场景";
   return "学习建议";
 }
 
@@ -1207,10 +2003,10 @@ function agenticCurrentUnitNarration(unit, path) {
   if (unit.flowKind === "adaptive") {
     const activeDetour = path.activeDetour?.unitId === unit.id ? path.activeDetour : null;
     if (activeDetour?.phase === "post") {
-      const hasExtension = Boolean(agenticUnusedExtensionCandidate(activeDetour.chapterId || unit.chapterId, "post_relearn_complete"));
+      const hasExtension = AGENTIC_ENABLE_EXTENSION && Boolean(agenticUnusedExtensionCandidate(activeDetour.chapterId || unit.chapterId, "post_relearn_complete"));
       return hasExtension
-        ? `当前是后测后的 MAIC-UI 重学「${unit.label}」。完成后我会先给出一步拓展选项，你可以选择跨章预告，也可以直接进入下一章；不会直接把你跳走。`
-        : `当前是后测后的 MAIC-UI 重学「${unit.label}」。完成后本章就收束，下一步进入下一章。`;
+        ? `当前是后测后的互动重学「${unit.label}」。完成后我会先给出一步拓展选项，你可以选择跨章预告，也可以直接进入下一章。`
+        : `当前是后测后的互动重学「${unit.label}」。完成后本章就收束，下一步进入下一章。`;
     }
     const resume = agenticResumeAfterInsertedAdaptive(unit);
     const anchorUnitId =
@@ -1223,9 +2019,9 @@ function agenticCurrentUnitNarration(unit, path) {
         : `完成后回到「${resume.label}」。`
       : nextText;
     if (AGENTIC_EXTENSION_SCENE_ORDERS.includes(unit.sceneOrder)) {
-      return `当前是 MAIC-UI 拓展「${unit.label}」。这一步是额外挑战，不会替代主线学习；先试一个新情境，再把它和本章核心概念连起来。${resumeText}`;
+      return `当前是拓展小节「${unit.label}」。这一步是额外挑战，不会替代主线学习；先试一个新情境，再把它和本章核心概念连起来。${resumeText}`;
     }
-    return `当前是 MAIC-UI 重学「${unit.label}」。这节用另一种交互方式补稳刚才暴露的卡点；重点是重新操作、重新解释，而不是只看一遍答案。${resumeText}`;
+    return `当前是互动重学「${unit.label}」。这节用另一种交互方式补稳刚才暴露的卡点；重点是重新操作、重新解释，而不是只看一遍答案。${resumeText}`;
   }
 
   if (unit.assessmentPhase === "pre") {
@@ -1236,14 +2032,14 @@ function agenticCurrentUnitNarration(unit, path) {
 
   if (unit.assessmentPhase === "formative") {
     return submitted
-      ? `形成性测验已经提交。我会根据这次小检查判断是否插入 MAIC-UI 重学或一步拓展；没有待选择建议时，就按已解锁路径继续。${nextText}`
-      : `当前是形成性测验。它用来发现“刚学完但还没稳”的地方；提交后我会只在本节后面安排必要的重学或拓展。`;
+      ? `形成性测验已提交。先看学习建议，再决定回看或继续。${nextText}`
+      : "当前是形成性测验。按真实理解作答，提交后再选下一步。";
   }
 
   if (unit.assessmentPhase === "post") {
     return submitted
-      ? `后测已经提交。这一步用于收束本章证据；如果仍有卡点，我会提供重学或拓展二选一，选择拓展后就不再安排重学。${nextText}`
-      : `当前是本章后测。先独立完成，再由 Coach 判断是否需要 MAIC-UI 重学、一步拓展，或直接进入下一章。`;
+      ? `后测已提交。先看学习建议，再决定回看或进入下一章。${nextText}`
+      : "当前是本章后测。先独立完成，提交后再选下一步。";
   }
 
   if (unit.type === "slide") {
@@ -1263,6 +2059,14 @@ function agenticCurrentUnitNarration(unit, path) {
     return `当前是主线互动实验「${unit.label}」。至少做一次关键操作，再反向试一次，观察图像、数值或公式是否同步变化。${nextText}`;
   }
 
+  if (unit.type === "knowledge") {
+    const selectedType = typeof selectedKnowledgeSceneType === "function" ? selectedKnowledgeSceneType(unit) : "";
+    const types = typeof knowledgeInteractionTypes === "function" ? knowledgeInteractionTypes(unit) : [];
+    const selected = types.find((type) => type.id === selectedType) || {};
+    const selectedLabel = selected.label || selected.title || selectedType || "互动场景";
+    return `当前知识点是「${unit.label}」。先看讲解页，再体验「${selectedLabel}」。${nextText}`;
+  }
+
   return path?.lastNarration || nextText;
 }
 
@@ -1270,13 +2074,28 @@ function agenticStudentNarrationForPending(pending) {
   const actions = pending?.actions || [];
   const phase = pending?.phase || "";
   const remediateAction = actions.find((action) => action.type === "remediate");
-  const extensionAction = actions.find((action) => action.type === "extension");
+  const extensionChapterAction = actions.find((action) => action.type === "extension_chapter");
+  const extensionAction = actions.find((action) => action.type === "extension") || extensionChapterAction;
   const skipAction = actions.find((action) => action.type === "skip");
+  const reviewAction = actions.find((action) => action.type === "review_knowledge");
+  const unskipAction = actions.find((action) => action.type === "unskip_knowledge");
+  const combinedReviewAction = actions.find((action) => action.type === "review_and_unskip_knowledge");
   const continueAction = actions.find((action) => action.type === "continue");
   const hasRemediate = Boolean(remediateAction);
   const hasExtension = Boolean(extensionAction);
   const hasSkip = Boolean(skipAction);
+  const hasReview = Boolean(reviewAction);
+  const hasUnskip = Boolean(unskipAction);
+  const hasCombinedReview = Boolean(combinedReviewAction);
   const continueLabel = continueAction?.label || "继续主线";
+
+  if (phase === "pre_knowledge_selection") {
+    const action = actions.find((item) => item.type === "select_knowledge") || {};
+    const choices = action.knowledgeChoices || [];
+    const learnCount = choices.filter((choice) => choice.checked).length;
+    const skipCount = choices.length - learnCount;
+    return `前测已经完成。我把本章 ${choices.length} 个知识点列出来了：建议继续学习 ${learnCount} 个，暂时跳过 ${skipCount} 个。你可以自己勾选，确认后再改变学习路径。`;
+  }
 
   if (phase === "interaction_scene_choice") {
     const sceneAction = actions.find((action) => action.type === "scene") || remediateAction || extensionAction;
@@ -1289,56 +2108,92 @@ function agenticStudentNarrationForPending(pending) {
         ? "刚才的完成比较顺畅"
         : "下一小节有不同学习场景可选";
     return label
-      ? `${reason}。下一节你可以选「${label}」，也可以走「${defaultLabel}」。选完后，Inside chapter 只显示你实际选择的路径。`
-      : `${reason}。请选择下一节要进入的学习场景；选完后，Inside chapter 只显示你实际选择的路径。`;
+      ? `${reason}。下一节你可以选「${label}」，也可以走「${defaultLabel}」。选完后，本章路径会记录你的实际选择。`
+      : `${reason}。请选择下一节要进入的学习场景；选完后，本章路径会记录你的实际选择。`;
   }
 
   if (phase === "post_relearn_complete") {
     const extensionLabel = agenticActionUnitLabel(extensionAction);
     return extensionLabel
-      ? `你已经完成后测后的 MAIC-UI 重学。现在可以再做一步拓展「${extensionLabel}」，把刚补稳的想法迁移到新情境；也可以直接${continueLabel}。`
-      : `你已经完成后测后的 MAIC-UI 重学。本章当前没有新的拓展可选，可以直接${continueLabel}。`;
+      ? `你已经完成后测后的互动重学。现在可以再做一步拓展「${extensionLabel}」，把刚补稳的想法迁移到新情境；也可以直接${continueLabel}。`
+      : `你已经完成后测后的互动重学。本章当前没有新的拓展可选，可以直接${continueLabel}。`;
   }
 
   if (phase === "post" && hasRemediate && hasExtension) {
     const relearnLabel = agenticActionUnitLabel(remediateAction);
     const extensionLabel = agenticActionUnitLabel(extensionAction);
-    const targets = [relearnLabel ? `重学「${relearnLabel}」` : "", extensionLabel ? `拓展「${extensionLabel}」` : ""].filter(Boolean).join("，");
+    const extensionKind = extensionChapterAction ? "扩展章节" : "拓展";
+    const targets = [relearnLabel ? `重学「${relearnLabel}」` : "", extensionLabel ? `${extensionKind}「${extensionLabel}」` : ""].filter(Boolean).join("，");
     return targets
-      ? `后测已经完成。你可以在${targets}之间选一个，或者直接${continueLabel}。如果选择拓展，本章就不再安排重学。`
-      : `后测已经完成。你可以二选一：先换一种 MAIC-UI 互动重学，或者直接做一步 MAIC-UI 拓展；选择拓展后，本章就不再安排重学。`;
+      ? `后测已经完成。你可以在${targets}之间选一个，或者直接${continueLabel}。`
+      : `后测已经完成。你可以二选一：先换一种方式互动重学，或者解锁扩展；也可以直接继续主线。`;
+  }
+
+  if (phase === "post" && hasReview && hasExtension) {
+    const reviewLabel = agenticActionUnitLabel(reviewAction);
+    const extensionLabel = agenticActionUnitLabel(extensionAction);
+    return `后测已经完成。${reviewLabel ? `建议先回看「${reviewLabel}」；` : "有知识点建议回看；"}也可以选择解锁扩展${extensionLabel ? `「${extensionLabel}」` : ""}，或直接${continueLabel}。`;
   }
 
   if (phase === "post" && hasExtension) {
     const label = agenticActionUnitLabel(extensionAction);
+    const extensionKind = extensionChapterAction ? "扩展章节" : "一步拓展";
     return label
-      ? `后测已经完成。你的主线学习可以收束了；如果还想多挑战一步，可以解锁「${label}」，完成后再进入下一章。`
-      : `后测已经完成。你的主线学习可以收束了；如果还想多挑战一步，可以解锁一节 MAIC-UI 拓展课。`;
+      ? `后测已经完成。你的主线学习可以收束了；如果还想多挑战，可以解锁${extensionKind}「${label}」。`
+      : `后测已经完成。你的主线学习可以收束了；如果还想多挑战，可以解锁扩展课。`;
   }
 
   if (phase === "post" && hasRemediate) {
     const label = agenticActionUnitLabel(remediateAction);
     return label
-      ? `后测显示还有一个点值得补稳。我已把「${label}」放到本节后面，你可以换一种 MAIC-UI 互动方式再学一遍。`
-      : "后测显示还有一个点值得补稳。我为你加了一节 MAIC-UI 互动重学课。";
+      ? `后测显示还有一个点值得补稳。我已把「${label}」放到本节后面，你可以换一种互动方式再学一遍。`
+      : "后测显示还有一个点值得补稳。我为你加了一节互动重学课。";
+  }
+
+  if (phase === "post" && hasReview) {
+    const label = agenticActionUnitLabel(reviewAction);
+    return label
+      ? `后测显示「${label}」还需要补稳。建议先回看这个知识点，再决定是否进入下一章。`
+      : `后测显示还有知识点需要补稳。建议先回看薄弱点，再决定是否进入下一章。`;
   }
 
   if (phase === "post") {
-    return `后测已经完成。本章当前没有新的 MAIC-UI 重学或拓展需要安排，可以${continueLabel}。`;
+    return `后测已经完成，整体表现已达标。建议后续挑战拓展课件；当前拓展课件暂未添加，可以${continueLabel}。`;
+  }
+
+  if (phase === "formative" && hasCombinedReview) {
+    const choices = agenticReviewChoicesForAction(combinedReviewAction);
+    const reviewCount = choices.filter((choice) => choice.reviewMode !== "unskip").length;
+    const unskipCount = choices.filter((choice) => choice.reviewMode === "unskip").length;
+    return `形成性测验提示两类调整：前面学过但不稳的 ${reviewCount} 个知识点建议回看；之前跳过但这次暴露薄弱的 ${unskipCount} 个知识点建议补学。你可以逐项选择。`;
+  }
+
+  if (phase === "formative" && hasUnskip) {
+    const label = agenticActionUnitLabel(unskipAction);
+    return label
+      ? `形成性测验显示「${label}」虽然前测表现不错，但现在还不够稳。建议补学这个已跳过的知识点。`
+      : `形成性测验显示有被跳过的知识点还不够稳。建议补学这一段。`;
+  }
+
+  if (phase === "formative" && hasReview) {
+    const label = agenticActionUnitLabel(reviewAction);
+    return label
+      ? `形成性测验显示前半内容里的「${label}」还需要回看。先把这个点补稳，再继续主线。`
+      : `形成性测验显示前半内容还需要回看。先补稳薄弱点，再继续主线。`;
   }
 
   if (phase === "formative" && hasRemediate) {
     const label = agenticActionUnitLabel(remediateAction);
     return label
       ? `形成性测验显示这个知识点还需要换个角度稳一稳。我已把「${label}」加在本节后面，你可以先重学再回到主线。`
-      : "形成性测验显示这个知识点还需要换个角度稳一稳。我为你加了一节 MAIC-UI 互动重学课。";
+      : "形成性测验显示这个知识点还需要换个角度稳一稳。我为你加了一节互动重学课。";
   }
 
   if (phase === "formative" && hasExtension) {
     const label = agenticActionUnitLabel(extensionAction);
     return label
       ? `形成性测验表现不错。你可以解锁一步拓展「${label}」，也可以直接继续主线。`
-      : "形成性测验表现不错。你可以解锁一步 MAIC-UI 拓展，也可以直接继续主线。";
+      : "形成性测验表现不错。你可以解锁一步拓展，也可以直接继续主线。";
   }
 
   if (phase === "formative") {
@@ -1352,14 +2207,14 @@ function agenticStudentNarrationForPending(pending) {
   if (hasRemediate) {
     const label = agenticActionUnitLabel(remediateAction);
     return label
-      ? `刚才这组题暴露出一个值得再稳一稳的点。我已经把「${label}」加在本节后面，你可以先换一种 MAIC-UI 互动方式再学一遍。`
-      : "刚才这组题暴露出一个值得再稳一稳的点。我为你加了一节 MAIC-UI 互动重学课。";
+      ? `刚才这组题暴露出一个值得再稳一稳的点。我已经把「${label}」加在本节后面，你可以先换一种互动方式再学一遍。`
+      : "刚才这组题暴露出一个值得再稳一稳的点。我为你加了一节互动重学课。";
   }
   if (hasExtension) {
     const label = agenticActionUnitLabel(extensionAction);
     return label
       ? `你刚才的表现已经可以向前多看一步。我把「${label}」作为本节后的可选拓展，完成后再回到主线。`
-      : "你刚才的表现已经可以向前多看一步。我为你加了一节可选 MAIC-UI 拓展课。";
+      : "你刚才的表现已经可以向前多看一步。我为你加了一节可选拓展课。";
   }
   if (hasSkip) return "这组题说明你已经掌握了不少基础内容，可以少走几步，直接进入下一个更有价值的练习。";
   return `请选择接下来最适合你的学习方式：${continueLabel}。`;
@@ -1376,12 +2231,14 @@ async function agenticApplyDecision(type) {
   renderAgenticCoachPanel();
   let targetId = "";
   let decisionMeta = null;
+  let skippedUnitIds = [];
 
   try {
     if (type === "skip") {
       action.units.forEach((unit) => {
         path.skipped[unit.id] = true;
       });
+      skippedUnitIds = action.units.map((unit) => unit.id);
       const lastSkipped = action.units[action.units.length - 1]?.id || pending.unitId;
       const target = agenticNextNonQuizMainUnitAfter(lastSkipped) || agenticNextMainUnitAfter(lastSkipped) || agenticNextMainUnitAfter(pending.unitId);
       targetId = target?.id || "";
@@ -1389,14 +2246,97 @@ async function agenticApplyDecision(type) {
       path.lastNarration = targetId
         ? `已跳过 ${action.units.length} 个掌握度较高的模块，先进入热身学习：${agenticUnitLabel(targetId)}，再做阶段检查。`
         : `已跳过 ${action.units.length} 个掌握度较高的模块。`;
-      addLog(`接受 Agent 建议，跳过 ${action.units.length} 个已掌握模块。`);
+      addLog(`接受学习建议，跳过 ${action.units.length} 个已掌握模块。`);
+    } else if (type === "select_knowledge") {
+      const choices = action.knowledgeChoices || [];
+      const selectedIds = new Set(choices.filter((choice) => choice.checked).map((choice) => choice.id));
+      const skippedChoices = choices.filter((choice) => !selectedIds.has(choice.id));
+      skippedChoices.forEach((choice) => {
+        const unit = findMainUnit(choice.id);
+        if (unit?.type === "knowledge") path.skipped[unit.id] = true;
+      });
+      skippedUnitIds = skippedChoices.map((choice) => choice.id).filter((id) => findMainUnit(id));
+      const anchorUnitId = pending.anchorUnitId || pending.unitId;
+      const next = agenticNextMainUnitAfter(anchorUnitId) || agenticNextUnitIdAfter(anchorUnitId);
+      targetId = next?.id || (typeof next === "string" ? next : "");
+      choices.forEach((choice) => {
+        if (selectedIds.has(choice.id)) delete path.skipped[choice.id];
+      });
+      agenticUnlockUnit(targetId, "pretest_knowledge_selection");
+      const learnCount = choices.length - skippedChoices.length;
+      path.lastNarration = targetId
+        ? `已按你的选择保留 ${learnCount} 个知识点，暂时跳过 ${skippedChoices.length} 个；下一步进入：${agenticUnitLabel(targetId)}。`
+        : `已按你的选择保留 ${learnCount} 个知识点，暂时跳过 ${skippedChoices.length} 个。`;
+      addLog(`前测后自主选择学习 ${learnCount} 个知识点，跳过 ${skippedChoices.length} 个。`);
+    } else if (type === "review_knowledge" || type === "unskip_knowledge" || type === "review_and_unskip_knowledge") {
+      const choices = agenticReviewChoicesForAction(action);
+      const selectedIds = choices.filter((choice) => choice.checked).map((choice) => choice.id).filter((id) => findMainUnit(id));
+      if (!selectedIds.length) {
+        const continueTarget = pending.resumeUnitId || agenticNextMainUnitAfter(pending.anchorUnitId || pending.unitId)?.id || agenticNextUnitIdAfter(pending.anchorUnitId || pending.unitId) || "";
+        targetId = continueTarget;
+        if (pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_review_declined");
+        agenticUnlockUnit(targetId, "student_skip_review_selection");
+        path.reviewQueue = null;
+        path.reviewResume = null;
+        path.lastNarration = targetId ? `已继续主线：${agenticUnitLabel(targetId)}。` : "已继续主线。";
+        addLog("已按你的选择不回看薄弱知识点，继续主线。");
+      } else {
+      const selectedChoices = choices.filter((choice) => choice.checked && findMainUnit(choice.id));
+      const unskipIds = selectedChoices
+        .filter((choice) => type === "unskip_knowledge" || choice.reviewMode === "unskip")
+        .map((choice) => choice.id);
+      if (unskipIds.length) {
+        unskipIds.forEach((unitId) => {
+          delete path.skipped[unitId];
+        });
+      }
+        const anchorUnitId = pending.anchorUnitId || pending.unitId;
+        const resumeUnitId = pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId) || "";
+        targetId = selectedIds[0] || resumeUnitId || "";
+        selectedIds.forEach((unitId) => agenticUnlockUnit(unitId, unskipIds.includes(unitId) ? "formative_unskip_knowledge" : "quiz_review_knowledge"));
+        agenticUnlockUnit(targetId, unskipIds.includes(targetId) ? "formative_unskip_knowledge" : "quiz_review_knowledge");
+        const queueType = unskipIds.length && unskipIds.length === selectedIds.length
+          ? "unskip_knowledge"
+          : type;
+        path.reviewQueue = targetId
+          ? {
+              type: queueType,
+              queue: selectedIds,
+              currentIndex: 0,
+              fromUnitId: anchorUnitId,
+              chapterId: pending.chapterId,
+              phase: pending.phase,
+              resumeUnitId,
+              unskipIds
+            }
+          : null;
+        path.reviewResume = targetId
+          ? {
+              type: unskipIds.includes(targetId) ? "unskip_knowledge" : "review_knowledge",
+              unitId: targetId,
+              fromUnitId: anchorUnitId,
+              chapterId: pending.chapterId,
+              phase: pending.phase,
+              resumeUnitId,
+              unskipIds
+            }
+          : null;
+        path.lastNarration = targetId
+          ? type === "unskip_knowledge"
+            ? `已按你的选择安排补学 ${selectedIds.length} 个知识点，先学习：${agenticUnitLabel(targetId)}。`
+            : type === "review_and_unskip_knowledge"
+              ? `已按你的选择安排 ${selectedIds.length} 个知识点，其中 ${unskipIds.length} 个会补学；先进入：${agenticUnitLabel(targetId)}。`
+            : `已按你的选择安排 ${selectedIds.length} 个回看知识点，先回看：${agenticUnitLabel(targetId)}。`
+          : "已记录回看知识点的选择。";
+        addLog(type === "unskip_knowledge" ? "根据形成性测验补学已跳过知识点。" : type === "review_and_unskip_knowledge" ? "根据形成性测验合并处理回看和补学知识点。" : "根据测验结果回看薄弱知识点。 ");
+      }
     } else if (type === "scene") {
       targetId = action.units[0]?.id || pending.resumeUnitId || "";
       const targetUnit = findMainUnit(targetId);
       if (targetUnit?.flowKind === "adaptive") agenticRememberAdaptiveUse(targetId, pending.anchorUnitId || pending.unitId, { insertAfter: false });
       agenticUnlockUnit(targetId, "student_next_scene_choice");
       path.lastNarration = targetId
-        ? `已选择下一节场景：${agenticUnitLabel(targetId)}。Inside chapter 只会显示你实际选择的学习路径。`
+        ? `已选择下一节场景：${agenticUnitLabel(targetId)}。本章路径会记录你的实际选择。`
         : "已记录下一节场景选择。";
       addLog("选择下一节学习场景。 ");
     } else if (type === "remediate") {
@@ -1424,13 +2364,37 @@ async function agenticApplyDecision(type) {
             chapterId: pending.chapterId,
             phase: pending.phase,
             stats: pending.stats || null,
-            resumeUnitId: pending.resumeUnitId || agenticNextUnitIdAfter(anchorUnitId)
+            resumeUnitId: pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId)
           }
         : null;
+      if (!targetId && pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_relearn_unavailable");
       path.lastNarration = targetId
-        ? `已切换到 MAIC-UI 重学：${label}。${afterRelearnText}`
+        ? `已切换到互动重学：${label}。${afterRelearnText}`
         : "已记录换一种方式重学的选择。";
-      addLog("接受 Agent 建议，换一种方式重新学习。 ");
+      addLog("接受学习建议，换一种方式重新学习。 ");
+    } else if (type === "extension_chapter") {
+      const extensionChapterId = action.extensionChapterId || action.units[0]?.chapterId || "";
+      const extensionChapterIds = (action.extensionChapterIds?.length ? action.extensionChapterIds : [extensionChapterId]).filter(Boolean);
+      const extensionChapter = getChapter(extensionChapterId);
+      let firstUnit = null;
+      extensionChapterIds.forEach((chapterId, index) => {
+        const unlockedFirst = agenticUnlockExtensionChapter(chapterId, pending.chapterId, "posttest_extension_chapter");
+        if (index === 0) firstUnit = unlockedFirst;
+      });
+      targetId = firstUnit?.id || action.units[0]?.id || "";
+      const anchorUnitId = pending.anchorUnitId || pending.unitId;
+      const resumeUnitId = pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId) || "";
+      path.chapterExtensionsUsed[pending.chapterId] = true;
+      if (pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_extension_chapter_unlocked");
+      if (resumeUnitId) agenticUnlockUnit(resumeUnitId, "post_extension_resume_ready");
+      path.activeExtensionChapter = targetId
+        ? { chapterId: extensionChapterId, fromChapterId: pending.chapterId, fromUnitId: anchorUnitId, resumeUnitId }
+        : null;
+      const label = action.label?.replace(/^解锁扩展：/, "") || action.units[0]?.label || (typeof chapterDisplayCopy === "function" ? chapterDisplayCopy(extensionChapter).label : extensionChapter?.label) || agenticUnitLabel(targetId);
+      path.lastNarration = targetId
+        ? `已解锁扩展章节：${label}。章节列表会把它插到推荐位置，完成后可回到主线下一章。`
+        : "已记录扩展章节推荐。";
+      addLog(`接受学习建议，解锁扩展章节「${label}」。`);
     } else if (type === "extension") {
       targetId = action.units[0]?.id || "";
       path.chapterExtensionsUsed[pending.chapterId] = true;
@@ -1440,8 +2404,11 @@ async function agenticApplyDecision(type) {
       path.oneStepExtension = {
         unitId: targetId,
         fromUnitId: pending.anchorUnitId || pending.unitId,
-        resumeUnitId: pending.resumeUnitId || agenticNextUnitIdAfter(pending.anchorUnitId || pending.unitId)
+        resumeUnitId: pending.resumeUnitId || agenticNextMainUnitAfter(pending.anchorUnitId || pending.unitId)?.id || agenticNextUnitIdAfter(pending.anchorUnitId || pending.unitId),
+        chapterId: pending.chapterId,
+        phase: pending.phase
       };
+      if (!targetId && pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_extension_unavailable");
       const afterExtensionText =
         pending.phase === "interaction_scene_choice"
           ? "完成后会回到你刚才的主线下一步。"
@@ -1453,11 +2420,15 @@ async function agenticApplyDecision(type) {
       path.lastNarration = targetId
         ? `已解锁一步拓展：${label}。${afterExtensionText}`
         : "已记录一步拓展选择。";
-      addLog("接受 Agent 建议，只解锁一步拓展知识点。 ");
+      addLog("接受学习建议，只解锁一步拓展知识点。 ");
     } else {
       const anchorUnitId = pending.anchorUnitId || pending.unitId;
-      targetId = pending.resumeUnitId || agenticNextUnitIdAfter(anchorUnitId) || agenticNextMainUnitAfter(anchorUnitId)?.id || "";
+      targetId = pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId) || "";
+      if (pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_continue_confirmed");
+      if (path.activeExtensionChapter?.chapterId === pending.chapterId) path.activeExtensionChapter = null;
       agenticUnlockUnit(targetId, "student_continue_linear");
+      path.reviewQueue = null;
+      path.reviewResume = null;
       path.lastNarration = targetId
         ? `已保留顺序学习，下一步进入：${agenticUnitLabel(targetId)}。`
         : "已保留顺序学习。";
@@ -1473,7 +2444,7 @@ async function agenticApplyDecision(type) {
       targetLabel: agenticActionUnitLabel(action) || agenticUnitLabel(targetId),
       chapterId: pending.chapterId,
       selectedSceneId: type === "scene" ? targetId : "",
-      skippedUnitIds: type === "skip" ? action.units.map((unit) => unit.id) : []
+      skippedUnitIds
     });
     analyticsTrack("agentic_decision_executed", {
       data: {
@@ -1484,7 +2455,7 @@ async function agenticApplyDecision(type) {
         targetLabel: agenticActionUnitLabel(action) || agenticUnitLabel(targetId),
         chapterId: pending.chapterId,
         selectedSceneId: type === "scene" ? targetId : "",
-        skippedUnitIds: type === "skip" ? action.units.map((unit) => unit.id) : []
+        skippedUnitIds
       }
     });
     path.pendingPlan = null;
@@ -1494,13 +2465,13 @@ async function agenticApplyDecision(type) {
     if (targetId) {
       await agenticOpenUnit(targetId);
     } else {
-      renderAll();
+      agenticRenderLearningUpdate();
     }
   } catch (error) {
     path.decisionInFlight = "";
     saveState();
     renderAgenticCoachPanel();
-    addLog(`Agent 路径切换失败：${error.message || "请重试"}`);
+    addLog(`学习路径切换失败：${error.message || "请重试"}`);
     throw error;
   }
 }
@@ -1527,6 +2498,193 @@ function agenticSceneChoicePanel(unit) {
   return '<div class="agentic-scene-choices"><div><strong>' + escapeHtml(cluster.label) + '</strong><small>' + escapeHtml(cluster.focus) + '</small><small>' + escapeHtml(reason) + '</small></div><div class="agentic-scene-choice-grid">' + chips + '</div></div>';
 }
 
+function agenticUpdatePendingKnowledgeChoice(choiceId, checked) {
+  const path = ensureAgenticPath();
+  const pending = path.pendingPlan;
+  if (!pending) return false;
+  const action = (pending.actions || []).find((item) => item.type === "select_knowledge" || item.type === "review_knowledge" || item.type === "unskip_knowledge" || item.type === "review_and_unskip_knowledge");
+  const choice = (action?.knowledgeChoices || []).find((item) => item.id === choiceId);
+  if (!choice) return false;
+  choice.checked = Boolean(checked);
+  choice.studentChanged = true;
+  path.lastNarration = agenticStudentNarrationForPending(pending);
+  saveState();
+  renderAgenticCoachPanel();
+  return true;
+}
+
+function agenticUpdateReviewChoiceMode(choiceId, mode) {
+  const path = ensureAgenticPath();
+  const pending = path.pendingPlan;
+  if (!pending) return false;
+  const action = (pending.actions || []).find((item) => item.type === "review_knowledge" || item.type === "unskip_knowledge" || item.type === "review_and_unskip_knowledge");
+  const choices = action ? agenticReviewChoicesForAction(action) : [];
+  const choice = choices.find((item) => item.id === choiceId);
+  if (!choice) return false;
+  const actionMode = choice.reviewMode === "unskip" ? "learn" : "review";
+  choice.choiceMode = mode === actionMode ? actionMode : "skip";
+  choice.checked = choice.choiceMode === actionMode;
+  choice.studentChanged = true;
+  path.lastNarration = agenticStudentNarrationForPending(pending);
+  saveState();
+  renderAgenticCoachPanel();
+  return true;
+}
+
+function agenticReviewChoicesForAction(action = {}) {
+  if (action.knowledgeChoices?.length) {
+    action.knowledgeChoices.forEach((choice) => {
+      const mastery = Number(choice.mastery);
+      const actionMode = choice.reviewMode === "unskip" ? "learn" : "review";
+      if (!choice.choiceMode) choice.choiceMode = choice.checked === false ? "skip" : actionMode;
+      if (Number.isFinite(mastery) && mastery < AGENTIC_POST_REMEDIATION_THRESHOLD && choice.checked !== false && !choice.studentChanged) {
+        choice.checked = true;
+        choice.choiceMode = actionMode;
+      }
+      if (Number.isFinite(mastery) && mastery < AGENTIC_POST_REMEDIATION_THRESHOLD && choice.checked === false && !choice.studentChanged) {
+        choice.checked = true;
+        choice.choiceMode = actionMode;
+      }
+    });
+    return action.knowledgeChoices;
+  }
+  action.knowledgeChoices = (action.units || []).map((candidate, index) => {
+    const unit = findMainUnit(candidate.id) || {};
+    const reviewMode = candidate.reviewMode || (action.type === "unskip_knowledge" ? "unskip" : "review");
+    const mastery = Number(candidate.mastery);
+    const shouldCheck = Number.isFinite(mastery) ? mastery < AGENTIC_POST_REMEDIATION_THRESHOLD : index < 3;
+    return {
+      id: candidate.id,
+      name: candidate.label || candidate.title || unit.label || candidate.id,
+      moduleId: candidate.moduleId || unit.moduleId || "",
+      moduleTitle: candidate.moduleTitle || unit.moduleTitle || "本章知识点",
+      goal: unit.conceptClusterFocus || unit.scene?.content?.knowledgePoint?.goal || "",
+      mastery: candidate.mastery,
+      status: candidate.status || "",
+      reviewMode,
+      checked: shouldCheck,
+      choiceMode: shouldCheck ? (reviewMode === "unskip" ? "learn" : "review") : "skip",
+      reason: reviewMode === "unskip" ? "前测选择跳过，但本次测验暴露薄弱，建议补学。" : "前面已学内容本次测验不稳，建议回看。"
+    };
+  });
+  return action.knowledgeChoices;
+}
+
+function agenticRenderReviewSelectionPlan(pending, inFlight = "") {
+  const action = (pending.actions || []).find((item) => item.type === "review_and_unskip_knowledge" || item.type === "review_knowledge" || item.type === "unskip_knowledge") || {};
+  const choices = agenticReviewChoicesForAction(action);
+  const checkedCount = choices.filter((choice) => choice.checked).length;
+  const extensionButtons = (pending.actions || [])
+    .filter((item) => item.type === "extension_chapter" || item.type === "extension")
+    .map((item) => `
+      <button class="button ${item.primary ? "primary" : "soft"}" type="button" data-agentic-action="${escapeHtml(item.type)}" ${inFlight ? "disabled" : ""}>
+        ${escapeHtml(inFlight === item.type ? "处理中..." : item.label)}
+      </button>
+    `).join("");
+  const renderGroups = (itemsToRender) => {
+    const sectionGrouped = itemsToRender.reduce((map, choice) => {
+      const key = choice.moduleTitle || choice.moduleId || "本章知识点";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(choice);
+      return map;
+    }, new Map());
+    return Array.from(sectionGrouped.entries()).map(([moduleTitle, items]) => `
+      <div class="agentic-knowledge-group">
+        <strong>${escapeHtml(moduleTitle)}</strong>
+        ${items.map((choice) => {
+          const mastery = choice.mastery === null || choice.mastery === undefined ? "" : `掌握度 ${Math.round(Number(choice.mastery) * 100)}%`;
+          const isUnskip = choice.reviewMode === "unskip";
+          const activeMode = choice.choiceMode || (choice.checked ? (isUnskip ? "learn" : "review") : "skip");
+          const primaryMode = isUnskip ? "learn" : "review";
+          const primaryText = isUnskip ? "补学" : "回看";
+          const skipText = isUnskip ? "仍然跳过" : "暂不回看";
+          const statusText = isUnskip ? "已跳过" : "已学过";
+          return `
+            <article class="agentic-knowledge-decision ${activeMode === primaryMode ? "selected" : "skipped"}">
+              <div class="agentic-knowledge-copy">
+                <span class="status-pill ${isUnskip ? "locked" : "todo"}">${statusText}</span>
+                <b>${escapeHtml(choice.name)}</b>
+                <small>${escapeHtml([mastery, choice.reason].filter(Boolean).join(" · "))}</small>
+              </div>
+              <div class="agentic-choice-toggle" role="group" aria-label="${escapeHtml(choice.name)}处理方式">
+                <button class="${activeMode === primaryMode ? "active" : ""}" type="button" data-agentic-review-choice="${escapeHtml(choice.id)}" data-agentic-review-mode="${primaryMode}" ${inFlight ? "disabled" : ""}>${primaryText}</button>
+                <button class="${activeMode === "skip" ? "active" : ""}" type="button" data-agentic-review-choice="${escapeHtml(choice.id)}" data-agentic-review-mode="skip" ${inFlight ? "disabled" : ""}>${skipText}</button>
+              </div>
+            </article>
+          `;
+        }).join("")}
+      </div>
+    `).join("");
+  };
+  const reviewChoices = choices.filter((choice) => choice.reviewMode !== "unskip");
+  const unskipChoices = choices.filter((choice) => choice.reviewMode === "unskip");
+  const combined = action.type === "review_and_unskip_knowledge";
+  const groups = combined
+    ? [
+        reviewChoices.length ? `<div class="agentic-knowledge-section"><h4>建议回看已学内容</h4>${renderGroups(reviewChoices)}</div>` : "",
+        unskipChoices.length ? `<div class="agentic-knowledge-section"><h4>建议补学已跳过内容</h4>${renderGroups(unskipChoices)}</div>` : ""
+      ].filter(Boolean).join("")
+    : renderGroups(choices);
+  const title = "根据这次测验，建议调整学习路径";
+  const buttonText = "按我的选择开始学习";
+  return `
+    <section class="agentic-coach-card decision knowledge-selection">
+      <div class="agentic-coach-header">
+        <strong>${title}</strong>
+      </div>
+      <p>${checkedCount ? `建议先处理 ${checkedCount} 个知识点。你可以逐项选择“回看”“补学”或暂时不处理。` : "如果暂时不处理这些建议，可以直接继续主线。"}</p>
+      <div class="agentic-knowledge-selection">${groups}</div>
+      <div class="agentic-actions">
+        <button class="button primary" type="button" data-agentic-action="${escapeHtml(action.type)}" ${inFlight ? "disabled" : ""}>
+          ${escapeHtml(inFlight === action.type ? "处理中..." : buttonText)}
+        </button>
+        ${extensionButtons}
+        ${(pending.actions || []).some((item) => item.type === "continue")
+          ? `<button class="button soft" type="button" data-agentic-action="continue" ${inFlight ? "disabled" : ""}>继续主线</button>`
+          : ""}
+      </div>
+    </section>
+  `;
+}
+
+function agenticRenderKnowledgeSelectionPlan(pending, inFlight = "") {
+  const action = (pending.actions || []).find((item) => item.type === "select_knowledge") || {};
+  const choices = action.knowledgeChoices || [];
+  const grouped = choices.reduce((map, choice) => {
+    const key = choice.moduleTitle || choice.moduleId || "本章知识点";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(choice);
+    return map;
+  }, new Map());
+  const groups = Array.from(grouped.entries()).map(([moduleTitle, items]) => `
+    <div class="agentic-knowledge-group">
+      <strong>${escapeHtml(moduleTitle)}</strong>
+      ${items.map((choice) => {
+        const mastery = choice.mastery === null || choice.mastery === undefined ? "证据不足" : `掌握度 ${Math.round(Number(choice.mastery) * 100)}%`;
+        return `
+          <label class="agentic-knowledge-check ${choice.checked ? "checked" : ""}">
+            <input type="checkbox" data-agentic-knowledge-choice="${escapeHtml(choice.id)}" ${choice.checked ? "checked" : ""} ${inFlight ? "disabled" : ""} />
+            <span><b>${escapeHtml(choice.name)}</b><small>${escapeHtml(mastery)} · ${escapeHtml(choice.reason || "")}</small></span>
+          </label>
+        `;
+      }).join("")}
+    </div>
+  `).join("");
+  return `
+    <section class="agentic-coach-card decision knowledge-selection">
+      <div class="agentic-coach-header">
+        <strong>选择本章要学的知识点</strong>
+      </div>
+      <p>${escapeHtml(agenticStudentNarrationForPending(pending))}</p>
+      <div class="agentic-knowledge-selection">${groups}</div>
+      <div class="agentic-actions">
+        <button class="button primary" type="button" data-agentic-action="select_knowledge" ${inFlight ? "disabled" : ""}>
+          ${escapeHtml(inFlight === "select_knowledge" ? "处理中..." : action.label || "按勾选知识点开始学习")}
+        </button>
+      </div>
+    </section>
+  `;
+}
 function renderAgenticCoachPanel() {
   const node = document.querySelector("#agentic-coach-panel");
   if (!node) return;
@@ -1539,23 +2697,46 @@ function renderAgenticCoachPanel() {
     const currentChapter = getChapter(currentChapterId);
     const narration =
       pending && !agenticPendingAppliesToCurrent(pending)
-        ? `当前是「${currentChapter?.label || "本章"}」。这里没有待选择的 Coach 建议，完成测验或当前小节后，我会根据本章表现更新下一步。`
+        ? `当前是「${currentChapter?.label || "本章"}」。这里没有待选择的学习建议，完成测验或当前小节后，我会根据本章表现更新下一步。`
         : agenticCurrentUnitNarration(currentUnit, path);
     const title = agenticCoachTitleForUnit(currentUnit);
     node.hidden = false;
+    const knowledgeChoices = typeof renderKnowledgeSceneChoicePanel === "function" ? renderKnowledgeSceneChoicePanel(currentUnit) : "";
     node.innerHTML = `
-      <section class="agentic-coach-card calm">
+      <section class="agentic-coach-card calm ${knowledgeChoices ? "knowledge-choice-card" : ""}">
         <div class="agentic-coach-header">
-          <span>Agentic Coach</span>
           <strong>${escapeHtml(title)}</strong>
         </div>
         <p>${escapeHtml(narration)}</p>
+        ${knowledgeChoices}
       </section>
     `;
     return;
   }
 
   const inFlight = path.decisionInFlight || "";
+  if (pending.phase === "grading_pending") {
+    node.hidden = false;
+    node.innerHTML = `
+      <section class="agentic-coach-card decision grading-pending">
+        <div class="agentic-coach-header">
+          <strong>正在批改简答题</strong>
+        </div>
+        <p>${escapeHtml(pending.narration || "简答题批改完成后，我会再给出学习路径建议。")}</p>
+      </section>
+    `;
+    return;
+  }
+  if (pending.phase === "pre_knowledge_selection") {
+    node.hidden = false;
+    node.innerHTML = agenticRenderKnowledgeSelectionPlan(pending, inFlight);
+    return;
+  }
+  if ((pending.actions || []).some((action) => action.type === "review_and_unskip_knowledge" || action.type === "review_knowledge" || action.type === "unskip_knowledge")) {
+    node.hidden = false;
+    node.innerHTML = agenticRenderReviewSelectionPlan(pending, inFlight);
+    return;
+  }
   const actionButtons = pending.actions.map((action) => `
     <button class="button ${action.primary ? "primary" : "soft"}" type="button" data-agentic-action="${action.type}" ${inFlight ? "disabled" : ""}>
       ${escapeHtml(inFlight === action.type ? "处理中..." : action.label)}
@@ -1566,7 +2747,6 @@ function renderAgenticCoachPanel() {
   node.innerHTML = `
     <section class="agentic-coach-card decision">
       <div class="agentic-coach-header">
-        <span>Agentic Coach</span>
         <strong>选择你的下一步</strong>
       </div>
       <p>${escapeHtml(narration)}</p>

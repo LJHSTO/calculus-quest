@@ -3,17 +3,33 @@ const path = require("path");
 const initSqlJs = require("sql.js");
 
 const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), "data", "calculus-quest.db");
-const chapterOrder = ["A1", "A2a", "A2b", "A3", "A4", "C1", "D1", "D2"];
-const chapterLabels = {
-  A1: "变化与斜率",
-  A2a: "向量：方向与长度",
-  A2b: "内积与投影",
-  A3: "空间变换与局部线性",
-  A4: "曲面与正定性",
-  C1: "导数、梯度与驻点",
-  D1: "梯度下降",
-  D2: "凸性与全局最优"
-};
+const OPENMAIC_V14_ROUTE_PATH = path.join(process.cwd(), "data", "openmaic-v14-route.json");
+
+function loadOpenMaicRouteSync() {
+  try {
+    if (!fs.existsSync(OPENMAIC_V14_ROUTE_PATH)) return null;
+    return JSON.parse(fs.readFileSync(OPENMAIC_V14_ROUTE_PATH, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+const openMaicRoute = loadOpenMaicRouteSync();
+const chapterOrder = openMaicRoute?.chapters?.length
+  ? openMaicRoute.chapters.map((chapter) => chapter.id)
+  : ["A1", "A2a", "A2b", "A3", "A4", "C1", "D1", "D2"];
+const chapterLabels = openMaicRoute?.chapters?.length
+  ? Object.fromEntries(openMaicRoute.chapters.map((chapter) => [chapter.id, chapter.title]))
+  : {
+      A1: "变化与斜率",
+      A2a: "向量：方向与长度",
+      A2b: "内积与投影",
+      A3: "空间变换与局部线性",
+      A4: "曲面与正定性",
+      C1: "导数、梯度与驻点",
+      D1: "梯度下降",
+      D2: "凸性与全局最优"
+    };
 let courseLabelCache = null;
 
 let db = null;
@@ -95,9 +111,38 @@ function sceneLabel(scene = {}, index = 0, quizIndex = 0, quizTotal = 0) {
   return `实验：${compactTitle(scene.title || `模块${index + 1}`)}`;
 }
 
+function addV14UnitLabel(labels, chapter, module, unitId, unitLabel) {
+  labels.set(unitId, {
+    chapter_id: chapter.id,
+    chapter_label: chapterDisplayLabel(chapter.id, chapter.title),
+    unit_id: unitId,
+    unit_label: unitLabel
+  });
+}
+
+function addV14ModuleLabels(labels, chapter, module) {
+  const knowledgePoints = module.knowledgePoints || [];
+  const splitIndex = Math.max(1, Math.ceil(knowledgePoints.length / 2));
+  addV14UnitLabel(labels, chapter, module, `${module.id}-pre`, `${module.id} 前测`);
+  knowledgePoints.forEach((kp, index) => {
+    if (index === splitIndex) addV14UnitLabel(labels, chapter, module, `${module.id}-formative`, `${module.id} 形成性测验`);
+    addV14UnitLabel(labels, chapter, module, kp.id, `${module.id} 知识点：${kp.name}`);
+  });
+  if (knowledgePoints.length <= splitIndex) addV14UnitLabel(labels, chapter, module, `${module.id}-formative`, `${module.id} 形成性测验`);
+  addV14UnitLabel(labels, chapter, module, `${module.id}-review`, `${module.id} 全课整理`);
+  addV14UnitLabel(labels, chapter, module, `${module.id}-post`, `${module.id} 后测`);
+}
+
 function courseLabels() {
   if (courseLabelCache) return courseLabelCache;
   const labels = new Map();
+  if (openMaicRoute?.chapters?.length) {
+    openMaicRoute.chapters.forEach((chapter) => {
+      (chapter.modules || []).forEach((module) => addV14ModuleLabels(labels, chapter, module));
+    });
+    courseLabelCache = labels;
+    return labels;
+  }
   chapterOrder.forEach((chapterId) => {
     try {
       const manifestPath = path.join(process.cwd(), "resources", "open-maic", chapterId, "manifest.json");
@@ -248,6 +293,34 @@ function initSchema() {
   d.run("CREATE INDEX IF NOT EXISTS idx_ies_unit ON interaction_evidence_snapshots(unit_id)");
   d.run("CREATE INDEX IF NOT EXISTS idx_ies_created ON interaction_evidence_snapshots(created_at)");
 
+  try { d.run("ALTER TABLE users ADD COLUMN nickname_norm TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE users ADD COLUMN email TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE users ADD COLUMN email_norm TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE users ADD COLUMN password_hash TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE users ADD COLUMN password_updated_at TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE users ADD COLUMN profile_updated_at TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE sessions ADD COLUMN expires_at TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE sessions ADD COLUMN revoked_at TEXT DEFAULT ''"); } catch {}
+  try {
+    d.run("UPDATE users SET nickname_norm = lower(trim(nickname)) WHERE (nickname_norm IS NULL OR nickname_norm = '') AND nickname <> ''");
+    d.run("UPDATE users SET email = '' WHERE email IS NULL");
+    d.run("UPDATE users SET email_norm = '' WHERE email_norm IS NULL");
+    d.run("UPDATE users SET password_hash = '' WHERE password_hash IS NULL");
+    d.run("UPDATE users SET password_updated_at = '' WHERE password_updated_at IS NULL");
+    d.run("UPDATE users SET profile_updated_at = '' WHERE profile_updated_at IS NULL");
+  } catch {}
+  try {
+    d.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_norm_unique ON users(nickname_norm) WHERE nickname_norm IS NOT NULL AND nickname_norm <> ''");
+  } catch (error) {
+    console.warn("Skipping users.nickname_norm unique index because existing data contains duplicates:", error.message);
+  }
+  try {
+    d.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_norm_unique ON users(email_norm) WHERE email_norm IS NOT NULL AND email_norm <> ''");
+  } catch (error) {
+    console.warn("Skipping users.email_norm unique index because existing data contains duplicates:", error.message);
+  }
+  d.run("CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)");
+
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_score REAL"); } catch {}
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_confidence REAL"); } catch {}
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_feedback TEXT DEFAULT ''"); } catch {}
@@ -289,10 +362,70 @@ function execute(sql, params = []) {
 
 // ---- Users ----
 
-function upsertUser(id, nickname, createdAt, lastSeenAt) {
+function normalizeIdentity(value = "") {
+  return String(value || "").normalize("NFKC").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function upsertUser(id, nickname, createdAt, lastSeenAt, options = {}) {
+  const existing = queryOne("SELECT * FROM users WHERE id = ?", [id]);
+  const finalNickname = options.nickname !== undefined
+    ? options.nickname
+    : nickname !== undefined
+      ? nickname
+      : existing?.nickname || "";
+  const finalEmail = options.email !== undefined ? options.email : existing?.email || "";
+  const finalNicknameNorm = options.nicknameNorm !== undefined
+    ? options.nicknameNorm
+    : normalizeIdentity(finalNickname);
+  const finalEmailNorm = options.emailNorm !== undefined
+    ? options.emailNorm
+    : normalizeIdentity(finalEmail);
+  const finalPasswordHash = options.passwordHash !== undefined
+    ? options.passwordHash
+    : existing?.password_hash || "";
+  const finalPasswordUpdatedAt = options.passwordUpdatedAt !== undefined
+    ? options.passwordUpdatedAt
+    : existing?.password_updated_at || "";
+  const finalProfileUpdatedAt = options.profileUpdatedAt !== undefined
+    ? options.profileUpdatedAt
+    : existing?.profile_updated_at || "";
+
+  if (existing) {
+    execute(
+      `UPDATE users
+       SET nickname = ?, nickname_norm = ?, email = ?, email_norm = ?,
+           password_hash = ?, password_updated_at = ?, profile_updated_at = ?, last_seen_at = ?
+       WHERE id = ?`,
+      [
+        finalNickname,
+        finalNicknameNorm,
+        finalEmail,
+        finalEmailNorm,
+        finalPasswordHash,
+        finalPasswordUpdatedAt,
+        finalProfileUpdatedAt,
+        lastSeenAt,
+        id
+      ]
+    );
+    return;
+  }
   execute(
-    "INSERT OR REPLACE INTO users (id, nickname, created_at, last_seen_at) VALUES (?, ?, ?, ?)",
-    [id, nickname, createdAt, lastSeenAt]
+    `INSERT INTO users
+      (id, nickname, nickname_norm, email, email_norm, password_hash, password_updated_at, profile_updated_at, created_at, last_seen_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      finalNickname,
+      finalNicknameNorm,
+      finalEmail,
+      finalEmailNorm,
+      finalPasswordHash,
+      finalPasswordUpdatedAt,
+      finalProfileUpdatedAt,
+      createdAt,
+      lastSeenAt
+    ]
   );
 }
 
@@ -300,12 +433,47 @@ function getUser(id) {
   return queryOne("SELECT * FROM users WHERE id = ?", [id]);
 }
 
+function getUserByNicknameNorm(nicknameNorm) {
+  if (!nicknameNorm) return null;
+  return queryOne("SELECT * FROM users WHERE nickname_norm = ?", [nicknameNorm]);
+}
+
+function getUsersByNicknameNorm(nicknameNorm) {
+  if (!nicknameNorm) return [];
+  return queryAll("SELECT * FROM users WHERE nickname_norm = ?", [nicknameNorm]);
+}
+
+function getUserByEmailNorm(emailNorm) {
+  if (!emailNorm) return null;
+  return queryOne("SELECT * FROM users WHERE email_norm = ?", [emailNorm]);
+}
+
+function getUsersByEmailNorm(emailNorm) {
+  if (!emailNorm) return [];
+  return queryAll("SELECT * FROM users WHERE email_norm = ?", [emailNorm]);
+}
+
+function updateUserProfile(id, fields = {}) {
+  const existing = getUser(id);
+  if (!existing) return null;
+  upsertUser(id, existing.nickname || "", existing.created_at || "", fields.lastSeenAt || existing.last_seen_at || "", {
+    nickname: fields.nickname !== undefined ? fields.nickname : existing.nickname || "",
+    nicknameNorm: fields.nicknameNorm !== undefined ? fields.nicknameNorm : existing.nickname_norm || "",
+    email: fields.email !== undefined ? fields.email : existing.email || "",
+    emailNorm: fields.emailNorm !== undefined ? fields.emailNorm : existing.email_norm || "",
+    passwordHash: fields.passwordHash !== undefined ? fields.passwordHash : existing.password_hash || "",
+    passwordUpdatedAt: fields.passwordUpdatedAt !== undefined ? fields.passwordUpdatedAt : existing.password_updated_at || "",
+    profileUpdatedAt: fields.profileUpdatedAt !== undefined ? fields.profileUpdatedAt : existing.profile_updated_at || ""
+  });
+  return getUser(id);
+}
+
 // ---- Sessions ----
 
-function createSession(token, userId, createdAt) {
+function createSession(token, userId, createdAt, expiresAt = "") {
   execute(
-    "INSERT OR REPLACE INTO sessions (token, user_id, created_at, last_seen_at) VALUES (?, ?, ?, ?)",
-    [token, userId, createdAt, createdAt]
+    "INSERT OR REPLACE INTO sessions (token, user_id, created_at, last_seen_at, expires_at, revoked_at) VALUES (?, ?, ?, ?, ?, '')",
+    [token, userId, createdAt, createdAt, expiresAt]
   );
 }
 
@@ -315,6 +483,10 @@ function getSession(token) {
 
 function touchSession(token, timestamp) {
   execute("UPDATE sessions SET last_seen_at = ? WHERE token = ?", [timestamp, token]);
+}
+
+function revokeSession(token, timestamp) {
+  execute("UPDATE sessions SET revoked_at = ?, last_seen_at = ? WHERE token = ?", [timestamp, timestamp, token]);
 }
 
 // ---- Quiz Results ----
@@ -429,10 +601,14 @@ function updateQuizResultAiGrading(questionId, userId, { aiScore, aiConfidence, 
     [questionId, userId, ...unitParams]
   );
   const maxScore = Number(existing?.max_score || 0);
-  const earnedScore = maxScore ? Math.round((Math.max(0, Math.min(100, Number(aiScore))) / 100) * maxScore * 10) / 10 : Number(aiScore);
+  const rawScore = Number(aiScore);
+  const earnedScore = maxScore
+    ? Math.round(Math.max(0, Math.min(maxScore, rawScore)) * 10) / 10
+    : rawScore;
+  const passScore = maxScore ? maxScore * 0.6 : 60;
   execute(
-    `UPDATE quiz_results SET ai_score = ?, ai_confidence = ?, ai_feedback = ?, ai_error_type = ?, is_correct = CASE WHEN ? >= 60 THEN 1 ELSE 0 END, status = 'ai_reviewed', score = ? WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1`,
-    [aiScore, aiConfidence || 0, aiFeedback || "", aiErrorType || "", aiScore, earnedScore, questionId, userId, ...unitParams]
+    `UPDATE quiz_results SET ai_score = ?, ai_confidence = ?, ai_feedback = ?, ai_error_type = ?, is_correct = CASE WHEN ? >= ? THEN 1 ELSE 0 END, status = 'ai_reviewed', score = ? WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1`,
+    [aiScore, aiConfidence || 0, aiFeedback || "", aiErrorType || "", earnedScore, passScore, earnedScore, questionId, userId, ...unitParams]
   );
 }
 
@@ -1218,9 +1394,15 @@ module.exports = {
   saveNow,
   upsertUser,
   getUser,
+  getUserByNicknameNorm,
+  getUsersByNicknameNorm,
+  getUserByEmailNorm,
+  getUsersByEmailNorm,
+  updateUserProfile,
   createSession,
   getSession,
   touchSession,
+  revokeSession,
   insertQuizResult,
   getQuizResultsByUser,
   clearLearningDataForUser,

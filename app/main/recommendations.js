@@ -1,16 +1,25 @@
 function allUnits() {
-  return curriculum.flatMap((chapter) => chapter.units.map((unit) => ({ ...unit, chapterLabel: chapter.label })));
+  const chapterEntries = typeof agenticVisibleChaptersForNav === "function"
+    ? agenticVisibleChaptersForNav()
+    : curriculum.map((chapter, index) => ({ chapter, index }));
+  return chapterEntries.flatMap(({ chapter }) => chapter.units.map((unit) => ({ ...unit, chapterLabel: chapter.label })));
 }
 
 function allResourceUnits() {
-  return curriculum.flatMap((chapter) =>
+  const chapterEntries = typeof agenticVisibleChaptersForNav === "function"
+    ? agenticVisibleChaptersForNav()
+    : curriculum.map((chapter, index) => ({ chapter, index }));
+  return chapterEntries.flatMap(({ chapter }) =>
     (chapter.allUnits || chapter.units || []).map((unit) => ({ ...unit, chapterLabel: chapter.label }))
   );
 }
 
 function displayMainUnits() {
   if (typeof agenticDisplayUnitsForChapter !== "function") return allUnits();
-  return curriculum.flatMap((chapter) =>
+  const chapterEntries = typeof agenticVisibleChaptersForNav === "function"
+    ? agenticVisibleChaptersForNav()
+    : curriculum.map((chapter, index) => ({ chapter, index }));
+  return chapterEntries.flatMap(({ chapter }) =>
     agenticDisplayUnitsForChapter(chapter).map((unit) => ({ ...unit, chapterLabel: chapter.label }))
   );
 }
@@ -25,6 +34,9 @@ function currentNavigableUnits() {
 
 function mainCompletedCount() {
   const mainIds = new Set(allUnits().map((unit) => unit.id));
+  if (typeof unitCountsTowardProgress === "function") {
+    return allUnits().filter((unit) => mainIds.has(unit.id) && unitCountsTowardProgress(unit)).length;
+  }
   return state.completed.filter((id) => mainIds.has(id)).length;
 }
 
