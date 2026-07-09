@@ -6,6 +6,8 @@ cd "$(dirname "$0")"
 
 # 端口可通过第一个参数指定，默认使用项目约定端口 3789
 PORT="${1:-3789}"
+# 监听地址：默认 0.0.0.0（server.js 通过 HOST 环境变量读取），可用 HOST 环境变量覆盖
+export HOST="${HOST:-0.0.0.0}"
 which pnpm
 # 安装依赖
 pnpm install
