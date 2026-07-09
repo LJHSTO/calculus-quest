@@ -3,44 +3,46 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Open MAIC 高数路线工作�?/title>
+    <title>Open MAIC 高数路线工作台</title>
     <meta
       name="description"
-      content="基于 Open MAIC v14 提示词重编排的高等数学学习路线工作台�?
+      content="基于 Open MAIC v14 提示词重编排的高等数学学习路线工作台。"
     />
     <link rel="icon" href="data:," />
     <script>
-// Auto-detect sub-path deployment (e.g., /calculus_quest/) for API calls
+// Auto-detect sub-path deployment for API calls
 (function() {
-  const m = location.pathname.match(/^(\/[^/]+\/)/);
-  const basePath = m ? m[1].replace(/\/+$/, "") : "";
+  var m = location.pathname.match(/^(\/[^/]+\/)/);
+  var basePath = m ? m[1].replace(/\/+$/, "") : "";
   if (!basePath) return;
   window.__BASE_PATH__ = basePath;
-  const origFetch = window.fetch;
-  window.fetch = function(url, ...args) {
+  var origFetch = window.fetch;
+  window.fetch = function(url) {
+    var args = Array.prototype.slice.call(arguments, 1);
     if (typeof url === "string" && url.startsWith("/api/")) {
       url = basePath + url;
     }
-    return origFetch.call(window, url, ...args);
+    return origFetch.apply(window, [url].concat(args));
   };
 })();
 </script>
+
     <link rel="stylesheet" href="styles.css?v=20260707-extension-entry-v1" />
     <link rel="stylesheet" href="lib/katex.min.css?v=20260611" />
   </head>
   <body>
-    <div id="app-loader" aria-label="加载�?>
+    <div id="app-loader" aria-label="加载中">
       <div class="loader-spinner"></div>
-      <p>Calculus Quest 加载中�?/p>
+      <p>Calculus Quest 加载中…</p>
     </div>
-    <a class="skip-link" href="#learn-view">跳到学习播放�?/a>
+    <a class="skip-link" href="#learn-view">跳到学习播放器</a>
 
     <header class="app-header">
       <button class="brand" type="button" data-view="home" aria-label="回到首页">
-        <span class="brand-mark">�?/span>
+        <span class="brand-mark">∂</span>
         <span>返回</span>
       </button>
-      <nav class="app-nav" aria-label="主导�?>
+      <nav class="app-nav" aria-label="主导航">
         <button class="nav-button active" type="button" data-view="home">首页</button>
         <button class="nav-button" type="button" data-view="learn">学习</button>
         <button class="nav-button" type="button" data-view="progress">记录</button>
@@ -51,17 +53,17 @@
           <button class="user-menu-toggle" id="auth-menu-toggle" type="button" aria-haspopup="menu" aria-expanded="false">
             <span class="user-avatar" id="auth-avatar">U</span>
             <span class="user-menu-copy">
-              <span id="auth-status">未登�?/span>
+              <span id="auth-status">未登录</span>
               <span id="auth-subtitle">User</span>
             </span>
-            <span class="user-menu-caret" aria-hidden="true">�?/span>
+            <span class="user-menu-caret" aria-hidden="true">⌄</span>
           </button>
           <div class="user-menu-panel" id="auth-menu-panel" hidden>
             <div class="user-menu-head">
               <span class="user-avatar large" id="auth-avatar-large">U</span>
               <div>
-                <strong id="auth-menu-name">未登�?/strong>
-                <span id="auth-menu-identity">补充昵称或邮箱，让账号更好识别�?/span>
+                <strong id="auth-menu-name">未登录</strong>
+                <span id="auth-menu-identity">补充昵称或邮箱，让账号更好识别。</span>
               </div>
             </div>
             <form class="profile-form" id="profile-form">
@@ -73,13 +75,13 @@
                 <span>邮箱</span>
                 <input id="profile-email" name="email" type="email" autocomplete="email" placeholder="补充邮箱" />
               </label>
-              <p class="profile-edit-note" id="profile-edit-note">账号信息只能修改一次，保存后将锁定�?/p>
+              <p class="profile-edit-note" id="profile-edit-note">账号信息只能修改一次，保存后将锁定。</p>
               <div id="profile-feedback" class="profile-feedback" role="status"></div>
               <button class="button secondary full" id="profile-save" type="submit">保存账号信息</button>
             </form>
             <button class="user-menu-item" type="button" data-view="progress">记录</button>
             <button class="user-menu-item" id="reset-progress" type="button">重置</button>
-            <button class="user-menu-item danger" id="auth-logout" type="button">退�?/button>
+            <button class="user-menu-item danger" id="auth-logout" type="button">退出</button>
           </div>
         </div>
       </div>
@@ -89,23 +91,23 @@
       <form id="login-form" class="login-panel is-login" data-auth-form-mode="login">
         <p class="eyebrow">学习登录</p>
         <h1 id="login-title">登录账号</h1>
-        <p id="login-copy">输入注册时使用的昵称或邮箱，继续你的学习进度�?/p>
+        <p id="login-copy">输入注册时使用的昵称或邮箱，继续你的学习进度。</p>
         <div class="auth-mode-tabs" role="tablist" aria-label="账号操作">
           <button class="active" type="button" data-auth-mode="login">登录</button>
           <button type="button" data-auth-mode="register">注册</button>
         </div>
         <div class="auth-mode-note" data-login-note>
           <strong>登录</strong>
-          <span>昵称或邮�?+ 密码</span>
+          <span>昵称或邮箱 + 密码</span>
         </div>
         <div class="auth-mode-note register-note" data-register-note hidden>
           <strong>注册</strong>
-          <span>昵称 / 邮箱至少填一项，密码 8-72 个字�?/span>
+          <span>昵称 / 邮箱至少填一项，密码 8-72 个字符</span>
         </div>
         <label data-login-field>
-          <span>昵称或邮�?/span>
-          <input id="login-identifier" name="identifier" autocomplete="username" maxlength="254" placeholder="输入昵称或邮�? required />
-          <small>使用注册时填写过的任一项�?/small>
+          <span>昵称或邮箱</span>
+          <input id="login-identifier" name="identifier" autocomplete="username" maxlength="254" placeholder="输入昵称或邮箱" required />
+          <small>使用注册时填写过的任一项。</small>
         </label>
         <label data-login-field>
           <span>密码</span>
@@ -114,22 +116,22 @@
         <div data-register-fields hidden>
           <label class="identity-field">
             <span>昵称 <em>选填</em></span>
-            <input id="nickname" name="nickname" autocomplete="nickname" minlength="2" maxlength="24" placeholder="2-24 个字�? />
-            <small>填写后可用昵称登录�?/small>
+            <input id="nickname" name="nickname" autocomplete="nickname" minlength="2" maxlength="24" placeholder="2-24 个字符" />
+            <small>填写后可用昵称登录。</small>
           </label>
           <label class="identity-field">
             <span>邮箱 <em>选填</em></span>
-            <input id="email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="可只填邮�? />
-            <small>填写后可用邮箱登录�?/small>
+            <input id="email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="可只填邮箱" />
+            <small>填写后可用邮箱登录。</small>
           </label>
           <label>
             <span>密码</span>
-            <input id="register-password" name="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" placeholder="8-72 个字�? />
-            <small>建议混合字母、数字和符号�?/small>
+            <input id="register-password" name="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" placeholder="8-72 个字符" />
+            <small>建议混合字母、数字和符号。</small>
           </label>
           <label>
             <span>确认密码</span>
-            <input id="register-password-confirm" name="new-password-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="72" placeholder="再输入一次密�? />
+            <input id="register-password-confirm" name="new-password-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="72" placeholder="再输入一次密码" />
           </label>
         </div>
         <div id="login-feedback" class="login-feedback" role="status"></div>
@@ -142,38 +144,39 @@
         <div class="hero">
           <div class="hero-bg" aria-hidden="true"></div>
           <div class="hero-copy">
-            <p class="eyebrow">Open MAIC 互动数学�?/p>
-            <h1>数学—从理解开�?/h1>
+            <p class="eyebrow">Open MAIC 互动数学课</p>
+            <h1>数学—从理解开始</h1>
             <p>
-              AI 自动分析你的基础，规划专属学习路径。每个知识点都配有交互课件、实验模拟与即时反馈，让抽象数学真正看得见、摸得着�?            </p>
+              AI 自动分析你的基础，规划专属学习路径。每个知识点都配有交互课件、实验模拟与即时反馈，让抽象数学真正看得见、摸得着。
+            </p>
             <div class="hero-actions">
-              <button class="button primary" type="button" data-view="learn">开始探�?/button>
+              <button class="button primary" type="button" data-view="learn">开始探索</button>
               <button class="button secondary" type="button" data-view="progress">查看学习记录</button>
             </div>
             <div class="student-starter" aria-label="预学路线">
               <div>
                 <strong>🎯 AI能力诊断</strong>
-                <span>通过几分钟前测，快速定位你的数学基础，自动生成专属学习路线�?/span>
+                <span>通过几分钟前测，快速定位你的数学基础，自动生成专属学习路线。</span>
               </div>
               <div>
                 <strong>🧭 个性化学习路线</strong>
-                <span>AI 根据你的掌握情况动态调整学习顺序，跳过已掌握内容，把时间花在真正需要突破的地方�?/span>
+                <span>AI 根据你的掌握情况动态调整学习顺序，跳过已掌握内容，把时间花在真正需要突破的地方。</span>
               </div>
               <div>
-                <strong>🚀 实时掌握检�?/strong>
-                <span>每学完一个知识模块立即检测，查漏补缺，确保真正掌握，而不�?学过�?�?/span>
+                <strong>🚀 实时掌握检测</strong>
+                <span>每学完一个知识模块立即检测，查漏补缺，确保真正掌握，而不是"学过了"。</span>
               </div>
             </div>
           </div>
           <aside class="hero-panel">
             <h2>学习档案</h2>
-            <p class="hero-panel-note">从函数、导数到积分和优化，用互动场景把抽象概念一步步看清楚�?/p>
+            <p class="hero-panel-note">从函数、导数到积分和优化，用互动场景把抽象概念一步步看清楚。</p>
             <dl class="metric-grid">
               <div><dt id="metric-chapters">0</dt><dd>章节</dd></div>
               <div><dt id="metric-scenes">0</dt><dd>学习环节</dd></div>
               <div><dt id="metric-glm">0</dt><dd>知识模块</dd></div>
               <div><dt id="metric-html">0</dt><dd>互动场景</dd></div>
-              <div><dt id="metric-audio">0</dt><dd>知识�?/dd></div>
+              <div><dt id="metric-audio">0</dt><dd>知识点</dd></div>
             </dl>
           </aside>
         </div>
@@ -181,7 +184,7 @@
 
       <section id="learn-view" class="view">
         <div class="learning-shell">
-          <aside class="chapter-rail collapsed" aria-label="大章�? id="chapter-rail">
+          <aside class="chapter-rail collapsed" aria-label="大章节" id="chapter-rail">
             <div class="rail-header">
               <div class="rail-header-row">
                 <div>
@@ -206,12 +209,12 @@
             <div class="player-top">
               <div>
                 <p class="eyebrow" id="lesson-type">学习单元</p>
-                <h1 id="lesson-title">选择一个学习模�?/h1>
+                <h1 id="lesson-title">选择一个学习模块</h1>
                 <p id="lesson-summary"></p>
               </div>
               <div class="player-actions">
                 <button class="button soft icon-button" id="fullscreen-player" type="button" aria-label="进入全屏学习">全屏</button>
-                <button class="button primary" id="complete-lesson" type="button">完成本节并跳到下一�?/button>
+                <button class="button primary" id="complete-lesson" type="button">完成本节并跳到下一节</button>
               </div>
             </div>
             <div id="agentic-coach-panel" class="agentic-coach-panel" aria-live="polite"></div>
@@ -225,7 +228,7 @@
           <div class="page-heading">
             <p class="eyebrow">路径编排</p>
             <h1>学习路径如何编排</h1>
-            <p>这里展示学生会经历的学习动作：前测定位、主动选择、互动学习、阶段检查、回看和通关�?/p>
+            <p>这里展示学生会经历的学习动作：前测定位、主动选择、互动学习、阶段检查、回看和通关。</p>
           </div>
           <div id="agent-board" class="agent-board"></div>
         </div>
@@ -236,15 +239,15 @@
           <div class="page-heading">
             <p class="eyebrow">资源索引</p>
             <h1>站内资源索引</h1>
-            <p>资源索引用简短概括命名。选择任何条目都会回到学习播放器内展示，不再跳转离开网站�?/p>
+            <p>资源索引用简短概括命名。选择任何条目都会回到学习播放器内展示，不再跳转离开网站。</p>
           </div>
           <div class="library-toolbar">
             <button class="filter active" type="button" data-filter="all">全部</button>
             <button class="filter" type="button" data-filter="scene">流程节点</button>
-            <button class="filter" type="button" data-filter="knowledge">知识�?/button>
+            <button class="filter" type="button" data-filter="knowledge">知识点</button>
             <button class="filter" type="button" data-filter="quiz">测验</button>
             <button class="filter" type="button" data-filter="interactive">互动</button>
-            <span id="library-count" class="count-pill">0 �?/span>
+            <span id="library-count" class="count-pill">0 项</span>
           </div>
           <div id="resource-grid" class="resource-grid"></div>
         </div>
@@ -255,28 +258,28 @@
           <div class="page-heading">
             <p class="eyebrow">学习记录</p>
             <h1>我的学习记录</h1>
-            <p>这里汇总你的完成进度、测验表现、最近学习动态和反思笔记，方便回看卡点并继续下一步�?/p>
+            <p>这里汇总你的完成进度、测验表现、最近学习动态和反思笔记，方便回看卡点并继续下一步。</p>
           </div>
           <div class="progress-grid">
             <article class="progress-card">
               <h2>通关进度</h2>
-              <p>看你已经完成哪些模块，哪些章节还可以继续推进�?/p>
-              <div class="big-stat"><span id="completed-count">0</span><small>已完成模�?/small></div>
+              <p>看你已经完成哪些模块，哪些章节还可以继续推进。</p>
+              <div class="big-stat"><span id="completed-count">0</span><small>已完成模块</small></div>
               <div id="chapter-progress" class="chapter-progress"></div>
             </article>
             <article class="progress-card">
               <h2>测验表现</h2>
-              <p>把前测、过程测和后测放在一起，帮助你发现需要回看的知识点�?/p>
+              <p>把前测、过程测和后测放在一起，帮助你发现需要回看的知识点。</p>
               <div id="quiz-dashboard" class="quiz-dashboard"></div>
             </article>
             <article class="progress-card">
-              <h2>最近学习动�?/h2>
-              <p>自动记录完成、复习、测验和路径切换，方便你接着上次的位置继续�?/p>
+              <h2>最近学习动态</h2>
+              <p>自动记录完成、复习、测验和路径切换，方便你接着上次的位置继续。</p>
               <ol id="activity-log" class="activity-log"></ol>
             </article>
             <article class="progress-card">
-              <h2>学习反�?/h2>
-              <p>把今天的清楚点、卡点和想回看的题目写下来�?/p>
+              <h2>学习反思</h2>
+              <p>把今天的清楚点、卡点和想回看的题目写下来。</p>
               <textarea id="reflection-note" rows="8" placeholder="例如：今天我理解了什么？哪一步还卡住？下一次想先回看哪个知识点或题目？"></textarea>
               <button class="button primary full" id="save-note" type="button">保存笔记</button>
             </article>
@@ -288,8 +291,8 @@
         <div class="page">
           <div class="page-heading">
             <p class="eyebrow">研究评估</p>
-            <h1>主动学习评测工作�?/h1>
-            <p>研究者可以把生成任务、系统优化、界面优化、离线裁判、人类评分和真实学习成效放在同一条证据链里比较�?/p>
+            <h1>主动学习评测工作流</h1>
+            <p>研究者可以把生成任务、系统优化、界面优化、离线裁判、人类评分和真实学习成效放在同一条证据链里比较。</p>
           </div>
           <div id="evaluation-board" class="evaluation-board"></div>
           <div id="evaluation-metrics" class="evaluation-metrics"></div>
@@ -299,7 +302,7 @@
     </main>
 
     <footer class="app-footer">
-      <span>课件资料来源�?OpenMAIC</span>
+      <span>课件资料来源于 OpenMAIC</span>
       <button class="text-button" type="button" data-view="learn">继续学习</button>
     </footer>
 
