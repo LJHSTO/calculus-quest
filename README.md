@@ -1,95 +1,56 @@
 # Calculus Quest
 
-Calculus Quest 是一个面向高等数学学习的互动学习平台，包含章节路线、讲解页、互动课件、前测、形成性测验、后测、学习记录和管理后台。
+一个面向高等数学的交互式学习平台。章节路线、讲解页、互动课件、三段式测验、学习记录和管理后台。前端零框架、零打包工具，后端仅依赖 Node.js 内置模块和 SQLite。
 
-当前版本使用 Open MAIC 生成的高数路线作为课程内容来源，并把每章 quiz 调整为适合网页学习流程的三段式测验。
+## 功能
 
-## 本地运行
+- 章节式学习路径 — 每章包含讲解 slides、互动课件、以及前测/形成性测验/后测三段评估
+- AI 简答题批改 — 接入任意 OpenAI 兼容接口的大模型，自动批改简答题并给出反馈
+- 知识点图谱 — 按知识点追踪掌握程度，可视化学习进度
+- 学习分析后台 — 查看学生进度、测验正确率、活跃度图表、简答题复核
 
-```powershell
+## 快速开始
+
+```bash
 npm install
-Copy-Item .env.example .env
+cp .env.example .env
 npm start
 ```
 
-默认访问：
+访问 http://127.0.0.1:8765/。
 
-```text
-http://127.0.0.1:8765/
-```
-
-健康检查：
-
-```text
-http://127.0.0.1:8765/api/health
-```
+健康检查：http://127.0.0.1:8765/api/health
 
 ## 环境变量
 
-`.env.example` 只提供占位配置，不包含真实密钥。
+复制 .env.example 为 .env，按需修改：
 
-```dotenv
-HOST=127.0.0.1
-PORT=8765
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| HOST | 127.0.0.1 | 监听地址 |
+| PORT | 8765 | 监听端口 |
+| LLM_PROVIDER | mock | mock（不调用真实模型）或 openai-compatible |
+| OPENAI_COMPATIBLE_BASE_URL | — | API 基础地址 |
+| OPENAI_COMPATIBLE_API_KEY | — | API 密钥 |
+| OPENAI_COMPATIBLE_MODEL | — | 默认模型名 |
+| GRADING_MODEL | — | 简答题批改专用模型 |
+| ASSESSMENT_MODEL | — | 评估生成专用模型 |
+| ADMIN_TOKEN | — | 管理后台登录密码 |
 
-LLM_PROVIDER=mock
-# LLM_PROVIDER=openai-compatible
-# OPENAI_COMPATIBLE_BASE_URL=https://api.example.com/v1
-# OPENAI_COMPATIBLE_API_KEY=replace-with-your-key
-# OPENAI_COMPATIBLE_MODEL=replace-with-your-model
-# GRADING_MODEL=replace-with-your-model
-# ASSESSMENT_MODEL=replace-with-your-model
-
-# Optional admin password for the learning analytics dashboard.
-# ADMIN_TOKEN=replace-with-a-strong-password
-```
-
-`LLM_PROVIDER=mock` 时不会调用真实模型，简答题会按 0 分兜底并标记需复核，以免学习流程被卡住。需要真实简答题批改时，部署环境中设置 `LLM_PROVIDER=openai-compatible`、接口地址、密钥和模型名即可。不要提交 `.env`、密钥文件或任何真实 token。
+当 LLM_PROVIDER=mock 时，简答题统一按 0 分兜底并标记需人工复核，不会卡住学习流程。
 
 ## 课程数据
 
-核心课程路线位于：
+核心课程路线文件：data/openmaic-v14-route.json。包含章节、知识点、讲解页、互动资源引用和每章三段 quiz。
 
-```text
-data/openmaic-v14-route.json
-```
+互动课件资源（HTML 交互、音频、图片）位于 resources/open-maic/ 目录。
 
-该文件包含章节、知识点、讲解页、互动资源候选、前测、形成性测验和后测。当前 quiz 已按以下规则校验：
+## 技术栈
 
-- 每章前测、形成性测验、后测各 10 题。
-- 形成性测验和后测至少包含 1 道简答题。
-- 每章 quiz 覆盖该章全部知识点。
-- 题干不再出现 `scene x` 这类 Open MAIC 内部场景编号。
-- 需要回看课件的题目使用可点击的 `[[cq-unit:...]]` 标记渲染为“回看课件”按钮。
-- 题面提示需要图片但没有媒体或回看链接的题目已清理。
-
-## 部署到子路径
-
-如果通过反向代理挂到：
-
-```text
-https://edusys3.sii.edu.cn/calculus_quest/
-```
-
-建议让代理把 `/calculus_quest/` 转发到本服务根路径，并保留静态资源与 API 路径。示例思路：
-
-```nginx
-location /calculus_quest/ {
-  proxy_pass http://127.0.0.1:8765/;
-  proxy_set_header Host $host;
-  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  proxy_set_header X-Forwarded-Proto $scheme;
-}
-```
-
-## 常用命令
-
-```powershell
-npm start
-node server.js 8765
-node migrate.js
-```
-
-## Git 提交注意
-
-只提交学习平台运行所需文件。不要提交本地真实数据、临时脚本、浏览器测试产物、模型密钥或管理员 token。
+| 层 | 技术 |
+|---|---|
+| 运行时 | Node.js（内置 http、fs、zlib） |
+| 数据库 | SQLite（better-sqlite3） |
+| 前端 | 原生 JavaScript，无框架，无打包工具 |
+| 数学渲染 | KaTeX |
+| AI | OpenAI 兼容接口（可选） |
