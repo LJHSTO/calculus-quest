@@ -160,7 +160,7 @@ function streamStaticFile(req, res, filePath, type, url, stat) {
   const stream = fs.createReadStream(filePath);
   stream.on("error", (error) => {
     console.error("Static stream error:", error.message);
-    if (!res.headersSent) send(res, 500, "·þÎñÆ÷ÄÚ²¿´íÎó¡£");
+    if (!res.headersSent) send(res, 500, "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½");
     else res.destroy(error);
   });
   stream.pipe(res);
@@ -308,7 +308,7 @@ function isUsablePassword(password = "") {
 }
 
 function publicDisplayName(row) {
-  return row?.nickname || row?.email || "Î´ÃüÃûÓÃ»§";
+  return row?.nickname || row?.email || "Î´ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½";
 }
 
 function safePublicParticipant(row) {
@@ -495,8 +495,8 @@ function profileConflict(nicknameNorm = "", emailNorm = "", existingId = "") {
   const { nicknameOwners, emailOwners } = usersForIdentity(nicknameNorm, emailNorm);
   const nicknameOwner = firstOtherUser(nicknameOwners, existingId);
   const emailOwner = firstOtherUser(emailOwners, existingId);
-  if (nicknameOwner) return { field: "nickname", message: "Õâ¸öêÇ³ÆÒÑ¾­±»Ê¹ÓÃ¡£" };
-  if (emailOwner) return { field: "email", message: "Õâ¸öÓÊÏäÒÑ¾­±»Ê¹ÓÃ¡£" };
+  if (nicknameOwner) return { field: "nickname", message: "ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½" };
+  if (emailOwner) return { field: "email", message: "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½" };
   return null;
 }
 
@@ -505,10 +505,10 @@ function registrationOwnerConflict(nicknameOwners = [], emailOwners = []) {
   if (owners.length > 1) {
     const sharedNickname = nicknameOwners.length > 1;
     const sharedEmail = emailOwners.length > 1;
-    if (sharedNickname && sharedEmail) return { field: "identity", message: "êÇ³ÆºÍÓÊÏäÒÑ¾­±»ÆäËûÕËºÅÊ¹ÓÃ£¬Çë»»Ò»×éÕËºÅÐÅÏ¢¡£" };
-    if (sharedNickname) return { field: "nickname", message: "Õâ¸öêÇ³ÆÒÑ¾­±»Ê¹ÓÃ¡£" };
-    if (sharedEmail) return { field: "email", message: "Õâ¸öÓÊÏäÒÑ¾­±»Ê¹ÓÃ¡£" };
-    return { field: "identity", message: "êÇ³ÆºÍÓÊÏä·Ö±ðÊôÓÚ²»Í¬ÕËºÅ£¬Çë»»Ò»¸ö¡£" };
+    if (sharedNickname && sharedEmail) return { field: "identity", message: "ï¿½Ç³Æºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ëºï¿½Ê¹ï¿½Ã£ï¿½ï¿½ë»»Ò»ï¿½ï¿½ï¿½Ëºï¿½ï¿½ï¿½Ï¢ï¿½ï¿½" };
+    if (sharedNickname) return { field: "nickname", message: "ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½" };
+    if (sharedEmail) return { field: "email", message: "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½" };
+    return { field: "identity", message: "ï¿½Ç³Æºï¿½ï¿½ï¿½ï¿½ï¿½Ö±ï¿½ï¿½ï¿½ï¿½Ú²ï¿½Í¬ï¿½ËºÅ£ï¿½ï¿½ë»»Ò»ï¿½ï¿½ï¿½ï¿½" };
   }
   const owner = owners[0] || null;
   if (!owner?.password_hash) return { owner };
@@ -516,7 +516,7 @@ function registrationOwnerConflict(nicknameOwners = [], emailOwners = []) {
   return {
     owner,
     field: nicknameOwned ? "nickname" : "email",
-    message: nicknameOwned ? "Õâ¸öêÇ³ÆÒÑ¾­±»Ê¹ÓÃ¡£" : "Õâ¸öÓÊÏäÒÑ¾­±»Ê¹ÓÃ¡£"
+    message: nicknameOwned ? "ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½" : "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½"
   };
 }
 
@@ -530,10 +530,10 @@ function sendIdentityConstraintError(res, error) {
     ok: false,
     field,
     message: field === "nickname"
-      ? "Õâ¸öêÇ³ÆÒÑ¾­±»Ê¹ÓÃ¡£"
+      ? "ï¿½ï¿½ï¿½ï¿½Ç³ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½"
       : field === "email"
-        ? "Õâ¸öÓÊÏäÒÑ¾­±»Ê¹ÓÃ¡£"
-        : "ÕËºÅÐÅÏ¢ÒÑ¾­±»Ê¹ÓÃ¡£"
+        ? "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½"
+        : "ï¿½Ëºï¿½ï¿½ï¿½Ï¢ï¿½Ñ¾ï¿½ï¿½ï¿½Ê¹ï¿½Ã¡ï¿½"
   });
   return true;
 }
@@ -623,7 +623,10 @@ function safeStaticPath(urlPath) {
     console.error("Failed to decode URL path:", urlPath, e.message);
     return null;
   }
-  const publicPath = decoded === "/" ? "index.html" : decoded.replace(/^\/+/, "");
+  const publicPath =
+    decoded === "/" ? "index.html"
+    : decoded === "/admin" ? "admin.html"
+    : decoded.replace(/^\/+/, "");
   // Block access to sensitive directories
   if (/^(data|ops|config|node_modules|\.claude|\.git)(\/|$)/.test(publicPath)) return null;
   const filePath = path.resolve(root, publicPath);
@@ -632,7 +635,7 @@ function safeStaticPath(urlPath) {
 
 async function handleApi(req, res, url) {
   if (!checkRateLimit(req)) {
-    sendJson(res, 429, { ok: false, message: "ÇëÇó¹ýÓÚÆµ·±£¬ÇëÉÔºóÔÙÊÔ¡£" });
+    sendJson(res, 429, { ok: false, message: "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ôºï¿½ï¿½ï¿½ï¿½Ô¡ï¿½" });
     return;
   }
   try {
@@ -648,7 +651,7 @@ async function handleApi(req, res, url) {
         const route = JSON.parse(fs.readFileSync(routePath, "utf8"));
         sendJson(res, 200, route);
       } catch (error) {
-        sendJson(res, 404, { ok: false, message: "Î´ÕÒµ½ Open MAIC v14 Ñ§Ï°Â·Ïß¡£" });
+        sendJson(res, 404, { ok: false, message: "Î´ï¿½Òµï¿½ Open MAIC v14 Ñ§Ï°Â·ï¿½ß¡ï¿½" });
       }
       return;
     }
@@ -656,14 +659,14 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/course/openmaic-audio-map") {
       const resourceRoot = String(url.searchParams.get("root") || "").replace(/^resources[\\/]/, "").replace(/\\/g, "/");
       if (!/^open-maic\/[^/]+$/.test(resourceRoot)) {
-        sendJson(res, 400, { ok: false, message: "×ÊÔ´Â·¾¶²»ÕýÈ·¡£" });
+        sendJson(res, 400, { ok: false, message: "ï¿½ï¿½Ô´Â·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½" });
         return;
       }
       const manifestPath = path.join(root, "resources", resourceRoot, "manifest.json");
       const resolved = path.resolve(manifestPath);
       const openMaicRoot = path.resolve(root, "resources", "open-maic");
       if (!resolved.startsWith(openMaicRoot + path.sep) || !fs.existsSync(resolved)) {
-        sendJson(res, 404, { ok: false, message: "Î´ÕÒµ½ÒôÆµÓ³Éä¡£" });
+        sendJson(res, 404, { ok: false, message: "Î´ï¿½Òµï¿½ï¿½ï¿½ÆµÓ³ï¿½ä¡£" });
         return;
       }
       const manifest = JSON.parse(fs.readFileSync(resolved, "utf8"));
@@ -689,19 +692,19 @@ async function handleApi(req, res, url) {
       const email = cleanEmail(body.email);
       const password = String(body.password || "");
       if (!nickname && !email) {
-        sendJson(res, 400, { ok: false, message: "ÇëÖÁÉÙÌîÐ´êÇ³Æ»òÓÊÏä¡£", field: "identity" });
+        sendJson(res, 400, { ok: false, message: "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½Ç³Æ»ï¿½ï¿½ï¿½ï¿½ä¡£", field: "identity" });
         return;
       }
       if (!isValidNickname(nickname)) {
-        sendJson(res, 400, { ok: false, message: "êÇ³ÆÐèÒª 2-24 ¸ö×Ö·û¡£", field: "nickname" });
+        sendJson(res, 400, { ok: false, message: "ï¿½Ç³ï¿½ï¿½ï¿½Òª 2-24 ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½", field: "nickname" });
         return;
       }
       if (email && !isValidEmail(email)) {
-        sendJson(res, 400, { ok: false, message: "ÓÊÏä¸ñÊ½²»ÕýÈ·¡£", field: "email" });
+        sendJson(res, 400, { ok: false, message: "ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½", field: "email" });
         return;
       }
       if (!isUsablePassword(password)) {
-        sendJson(res, 400, { ok: false, message: "ÃÜÂëÐèÒª 8-72 ¸ö×Ö·û¡£", field: "password" });
+        sendJson(res, 400, { ok: false, message: "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òª 8-72 ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½", field: "password" });
         return;
       }
       const timestamp = nowIso();
@@ -747,14 +750,14 @@ async function handleApi(req, res, url) {
       const identifier = cleanLoginIdentifier(body.identifier || body.nickname || body.email);
       const password = String(body.password || "");
       if (!identifier || !password) {
-        sendJson(res, 400, { ok: false, message: "ÇëÌîÐ´êÇ³Æ»òÓÊÏä£¬²¢ÊäÈëÃÜÂë¡£", field: !identifier ? "identifier" : "password" });
+        sendJson(res, 400, { ok: false, message: "ï¿½ï¿½ï¿½ï¿½Ð´ï¿½Ç³Æ»ï¿½ï¿½ï¿½ï¿½ä£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë¡£", field: !identifier ? "identifier" : "password" });
         return;
       }
       const authLimit = checkAuthAttemptLimit(req, identifier);
       if (!authLimit.ok) {
         sendJson(res, 429, {
           ok: false,
-          message: "³¢ÊÔ´ÎÊý¹ý¶à£¬ÇëÉÔºóÔÙÊÔ¡£",
+          message: "ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½à£¬ï¿½ï¿½ï¿½Ôºï¿½ï¿½ï¿½ï¿½Ô¡ï¿½",
           retryAfterSeconds: authLimit.retryAfterSeconds
         });
         return;
@@ -763,7 +766,7 @@ async function handleApi(req, res, url) {
       const user = findUserByIdentifier(identifier);
       if (!user?.password_hash || !verifyPassword(password, user.password_hash)) {
         recordFailedAuthAttempt(req, identifier);
-        sendJson(res, 401, { ok: false, message: "ÕËºÅ»òÃÜÂë²»ÕýÈ·¡£" });
+        sendJson(res, 401, { ok: false, message: "ï¿½ËºÅ»ï¿½ï¿½ï¿½ï¿½ë²»ï¿½ï¿½È·ï¿½ï¿½" });
         return;
       }
       clearAuthAttemptLimit(req, identifier);
@@ -792,7 +795,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/auth/profile") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const nickname = cleanNickname(body.nickname);
       const email = cleanEmail(body.email);
       const currentNickname = auth.participant.nickname || "";
@@ -806,20 +809,20 @@ async function handleApi(req, res, url) {
         sendJson(res, 403, {
           ok: false,
           field: "profile",
-          message: "ÕËºÅÐÅÏ¢Ö»ÄÜÐÞ¸ÄÒ»´Î£¬ÒÑ²»ÄÜÔÙ´ÎÐÞ¸Ä¡£"
+          message: "ï¿½Ëºï¿½ï¿½ï¿½Ï¢Ö»ï¿½ï¿½ï¿½Þ¸ï¿½Ò»ï¿½Î£ï¿½ï¿½Ñ²ï¿½ï¿½ï¿½ï¿½Ù´ï¿½ï¿½Þ¸Ä¡ï¿½"
         });
         return;
       }
       if (!nickname && !email) {
-        sendJson(res, 400, { ok: false, message: "êÇ³ÆºÍÓÊÏäÖÁÉÙ±£ÁôÒ»¸ö¡£", field: "identity" });
+        sendJson(res, 400, { ok: false, message: "ï¿½Ç³Æºï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ù±ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½", field: "identity" });
         return;
       }
       if (!isValidNickname(nickname)) {
-        sendJson(res, 400, { ok: false, message: "êÇ³ÆÐèÒª 2-24 ¸ö×Ö·û¡£", field: "nickname" });
+        sendJson(res, 400, { ok: false, message: "ï¿½Ç³ï¿½ï¿½ï¿½Òª 2-24 ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½", field: "nickname" });
         return;
       }
       if (email && !isValidEmail(email)) {
-        sendJson(res, 400, { ok: false, message: "ÓÊÏä¸ñÊ½²»ÕýÈ·¡£", field: "email" });
+        sendJson(res, 400, { ok: false, message: "ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½", field: "email" });
         return;
       }
       const nicknameNorm = normalizeIdentity(nickname);
@@ -845,7 +848,7 @@ async function handleApi(req, res, url) {
         throw error;
       }
       if (!updated) {
-        sendJson(res, 404, { ok: false, message: "ÕËºÅ²»´æÔÚ£¬ÇëÖØÐÂµÇÂ¼¡£" });
+        sendJson(res, 404, { ok: false, message: "ï¿½ËºÅ²ï¿½ï¿½ï¿½ï¿½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Âµï¿½Â¼ï¿½ï¿½" });
         return;
       }
       db.insertEvent({
@@ -870,7 +873,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/auth/me") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       sendJson(res, 200, { ok: true, participant: safePublicParticipant(auth.participant) });
       return;
     }
@@ -879,7 +882,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/event") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const eventId = crypto.randomUUID();
       const timestamp = nowIso();
       const eventType = String(body.type || "event").slice(0, 80);
@@ -922,7 +925,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/events") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const events = Array.isArray(body.events) ? body.events.slice(0, 100) : [];
       const eventIds = [];
       const timestamp = nowIso();
@@ -946,7 +949,7 @@ async function handleApi(req, res, url) {
     // ---- Learning Snapshot ----
     if (req.method === "GET" && url.pathname === "/api/learning/snapshot") {
       const auth = authenticate(req);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const snap = db.getLatestSnapshot(auth.participant.id);
       if (!snap) { sendJson(res, 200, { ok: true, snapshot: null }); return; }
       let data = {};
@@ -958,7 +961,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/snapshot") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
@@ -979,7 +982,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/reset") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
@@ -1001,7 +1004,7 @@ async function handleApi(req, res, url) {
     // ---- Learning Quiz Results (for cross-browser sync - authoritative source) ----
     if (req.method === "GET" && url.pathname === "/api/learning/quiz-results") {
       const auth = authenticate(req);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const results = db.getQuizResultsByUser(auth.participant.id, 500);
       sendJson(res, 200, { ok: true, data: results });
       return;
@@ -1009,7 +1012,7 @@ async function handleApi(req, res, url) {
 
     // ---- Admin: Export raw data (backward compat) ----
     if (req.method === "GET" && url.pathname === "/api/admin/export") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const d = db.getDbSync();
       const users = [];
       const us = d.prepare("SELECT * FROM users");
@@ -1035,49 +1038,49 @@ async function handleApi(req, res, url) {
 
     // ---- Admin Stats APIs ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/overview") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.statsOverview(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/chapter-accuracy") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.chapterAccuracy(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/question-errors") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.questionErrors(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/user-progress") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.userProgress(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/daily-activity") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.dailyActivity(30, dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/phase-comparison") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.phaseComparison(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/user-detail") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const userId = url.searchParams.get("userId") || "";
       if (!userId) { sendJson(res, 400, { ok: false, message: "userId required." }); return; }
       const dates = getDateRange(url);
@@ -1088,34 +1091,34 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/users") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       sendJson(res, 200, { ok: true, data: db.listUsers() });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/question-type-accuracy") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.questionTypeAccuracy(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/score-distribution") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.scoreDistribution(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/hourly-activity") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.hourlyActivity(30, dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/short-answer-responses") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.shortAnswerResponses(dates) });
       return;
@@ -1123,7 +1126,7 @@ async function handleApi(req, res, url) {
     
     // ---- Admin: Interactions tracking ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interactions") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 100), 1000));
       const offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
@@ -1142,7 +1145,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/grade") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const questions = Array.isArray(body.questions) ? body.questions.slice(0, 50) : [];
       try {
         const results = await orchestrator.gradeOnly(questions);
@@ -1157,7 +1160,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/kg/plan") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "ÇëÏÈµÇÂ¼¡£" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "ï¿½ï¿½ï¿½Èµï¿½Â¼ï¿½ï¿½" }); return; }
       const chapterId = String(body.chapterId || "").trim();
       const currentUnitId = String(body.currentUnitId || "").trim();
       if (!chapterId) { sendJson(res, 400, { ok: false, message: "chapterId required." }); return; }
@@ -1199,7 +1202,7 @@ async function handleApi(req, res, url) {
         const summary = kg.summariseQuizResults(filtered);
         const planResult = coach.plan({ chapterId, currentUnitId, quizSummary: summary });
         let narration = "", provider = "fallback";
-        try { const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "Í¬Ñ§" }); narration = out.narration; provider = out.provider; } catch { narration = "£¨AI Öú½ÌÔÝÊ±ÀëÏß£¬ÏÂÃæÊÇ»ùÓÚ¹æÔòµÄ½¨Òé¡££©"; }
+        try { const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "Í¬Ñ§" }); narration = out.narration; provider = out.provider; } catch { narration = "ï¿½ï¿½AI ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ß£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç»ï¿½ï¿½Ú¹ï¿½ï¿½ï¿½Ä½ï¿½ï¿½é¡£ï¿½ï¿½"; }
         const fallbackEvidence = body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null;
         let decisionId = "";
         let decisionCreatedAt = "";
@@ -1220,7 +1223,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-dashboard") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionDashboard(dates) });
@@ -1228,7 +1231,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/agentic-decision-trace") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.agenticDecisionTrace(dates) });
@@ -1236,7 +1239,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-evidence-snapshots") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionEvidenceSnapshots(dates) });
@@ -1244,7 +1247,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-summary") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionSummary(dates) });
@@ -1252,7 +1255,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/unit-engagement") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.unitEngagement(dates) });
@@ -1260,7 +1263,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/skip-repeat") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.skipRepeatStats(dates) });
@@ -1268,7 +1271,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/parameter-changes") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.parameterChangeStats(dates) });
@@ -1276,22 +1279,22 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/path-analysis") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ÐèÒª¹ÜÀíÔ±ÃÜÂë¡£" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ë¡£" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.pathAnalysis(dates) });
       return;
     }
 
-    sendJson(res, 404, { ok: false, message: "½Ó¿Ú²»´æÔÚ¡£" });
+    sendJson(res, 404, { ok: false, message: "ï¿½Ó¿Ú²ï¿½ï¿½ï¿½ï¿½Ú¡ï¿½" });
   } catch (error) {
     console.error("API error:", error);
     const status = error.message === "Request body is too large" ? 413
       : error.message === "Invalid JSON body" ? 400
       : 500;
-    const message = status === 500 ? "·þÎñÆ÷ÄÚ²¿´íÎó¡£"
-      : error.message === "Request body is too large" ? "ÇëÇóÄÚÈÝ¹ý´ó¡£"
-        : error.message === "Invalid JSON body" ? "ÇëÇó¸ñÊ½²»ÕýÈ·¡£"
+    const message = status === 500 ? "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú²ï¿½ï¿½ï¿½ï¿½ï¿½"
+      : error.message === "Request body is too large" ? "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý¹ï¿½ï¿½ï¿½"
+        : error.message === "Invalid JSON body" ? "ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½"
           : error.message;
     sendJson(res, status, { ok: false, message });
   }
@@ -1319,7 +1322,7 @@ const server = http.createServer((req, res) => {
 
   const filePath = safeStaticPath(url.pathname);
   if (!filePath) {
-    send(res, 403, "½ûÖ¹·ÃÎÊ");
+    send(res, 403, "ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½");
     return;
   }
   if (isBlockedStaticResource(filePath)) {
