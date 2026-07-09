@@ -345,7 +345,7 @@ async function analyticsFlush() {
   if (!analyticsQueue.length) return;
   const batch = analyticsQueue.splice(0);
   try {
-    await apiRequest("/api/learning/events", {
+    await apiRequest("api/learning/events", {
       token: state.authToken,
       events: batch.map((event) => ({ type: "interaction", payload: event }))
     });
@@ -366,10 +366,10 @@ function analyticsFlushBeforeUnload() {
 
   if (navigator.sendBeacon) {
     const blob = new Blob([body], { type: "application/json" });
-    if (navigator.sendBeacon("/api/learning/events", blob)) return;
+    if (navigator.sendBeacon("api/learning/events", blob)) return;
   }
 
-  fetch("/api/learning/events", {
+  fetch("api/learning/events", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body,

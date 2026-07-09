@@ -332,7 +332,7 @@ document.querySelector("#reset-progress").addEventListener("click", async () => 
     const snapshot = learningSnapshot();
     lastSnapshotJson = JSON.stringify(snapshot);
     try {
-      await apiRequest("/api/learning/reset", {
+      await apiRequest("api/learning/reset", {
         token: state.authToken,
         snapshot
       });
@@ -374,7 +374,7 @@ async function init() {
     renderAuth();
     if (isSignedIn() && (!state.completed || !state.completed.length) && !(state.quizResults || []).length) {
       try {
-        const response = await fetch("/api/learning/snapshot", {
+        const response = await fetch("api/learning/snapshot", {
           headers: { Authorization: `Bearer ${state.authToken}` }
         });
         if (response.ok) {

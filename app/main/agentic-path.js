@@ -1405,7 +1405,7 @@ function rankSiblingLearningScenes(unit, scenes = siblingLearningScenes(unit)) {
 async function agenticRequestPlan(unit, records = []) {
   if (!isSignedIn()) return null;
   try {
-    const payload = await apiRequest("/api/learning/kg/plan", {
+    const payload = await apiRequest("api/learning/kg/plan", {
       chapterId: unit.chapterId,
       currentUnitId: unit.id,
       quizResults: state.quizResults || [],
