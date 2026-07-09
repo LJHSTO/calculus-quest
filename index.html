@@ -12,6 +12,13 @@
     <script>
 // Auto-detect sub-path deployment for API calls
 (function() {
+  // 子路径部署时若 URL 缺尾斜杠（如 /calculus_quest），相对路径资源会解析到根目录，
+  // 这里补斜杠重定向（反代剥掉前缀时服务端无法感知，只能在前端兜底）
+  var p = location.pathname;
+  if (!/\/$/.test(p) && !/\.[a-zA-Z0-9]+$/.test(p)) {
+    location.replace(p + "/" + location.search + location.hash);
+    return;
+  }
   var m = location.pathname.match(/^(\/[^/]+\/)/);
   var basePath = m ? m[1].replace(/\/+$/, "") : "";
   if (!basePath) return;

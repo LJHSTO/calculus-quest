@@ -1311,7 +1311,14 @@ const server = http.createServer((req, res) => {
   const BASE_PATH = process.env.BASE_PATH || "";
   let rawUrl = req.url || "/";
   if (BASE_PATH && rawUrl.startsWith(BASE_PATH)) {
-    rawUrl = rawUrl.slice(BASE_PATH.length) || "/";
+    const rest = rawUrl.slice(BASE_PATH.length);
+    // 不带尾斜杠访问 BASE_PATH 时补斜杠重定向，否则页面里的相对路径资源会丢失前缀
+    if (rest === "" || rest.startsWith("?")) {
+      res.writeHead(301, { Location: BASE_PATH + "/" + rest });
+      res.end();
+      return;
+    }
+    rawUrl = rest || "/";
   }
   const url = new URL(rawUrl, `http://${req.headers.host || "localhost"}`);
 
