@@ -8,6 +8,13 @@ function renderAll() {
   renderPlayer();
   renderLibrary();
   renderProgress();
+  if (window.EarthOnlineUI && typeof window.EarthOnlineUI.sync === "function") {
+    try {
+      window.EarthOnlineUI.sync();
+    } catch (error) {
+      console.warn("Earth Online UI sync failed:", error);
+    }
+  }
 }
 
 function applyView(view) {

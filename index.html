@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Open MAIC 高数路线工作台</title>
+    <title>Calculus Quest</title>
     <meta
       name="description"
       content="基于 Open MAIC v14 提示词重编排的高等数学学习路线工作台。"
@@ -34,7 +34,7 @@
 })();
 </script>
 
-    <link rel="stylesheet" href="styles.css?v=20260707-extension-entry-v1" />
+    <link rel="stylesheet" href="styles.css?v=20260714-decision-contrast-v1" />
     <link rel="stylesheet" href="lib/katex.min.css?v=20260611" />
   </head>
   <body>
@@ -46,8 +46,8 @@
 
     <header class="app-header">
       <button class="brand" type="button" data-view="home" aria-label="回到首页">
-        <span class="brand-mark">∂</span>
-        <span>返回</span>
+        <span class="brand-mark">CQ</span>
+        <span>Calculus Quest</span>
       </button>
       <nav class="app-nav" aria-label="主导航">
         <button class="nav-button active" type="button" data-view="home">首页</button>
@@ -150,16 +150,35 @@
       <section id="home-view" class="view active">
         <div class="hero">
           <div class="hero-bg" aria-hidden="true"></div>
+          <div id="earth-awakening" class="earth-awakening" aria-live="polite">
+            <section class="earth-boot-panel">
+              <p class="eyebrow">System Boot</p>
+              <h1>Earth Online</h1>
+              <div id="earth-boot-type" class="earth-boot-type"></div>
+              <button id="earth-boot-continue" class="button primary earth-boot-continue" type="button" hidden>进入 Earth Online</button>
+            </section>
+          </div>
+          <div id="earth-region-map" class="earth-region-map earth-world-map" aria-live="polite"></div>
+          <div id="earth-region-clear" class="earth-region-clear" aria-live="polite" hidden>
+            <section class="earth-region-clear-panel">
+              <p class="eyebrow">Region Clear Broadcast</p>
+              <h1 id="region-clear-title">Region Restored</h1>
+              <div id="region-clear-type" class="earth-boot-type region-clear-type"></div>
+              <button id="region-clear-continue" class="button primary earth-boot-continue" type="button" hidden>继续探索</button>
+            </section>
+          </div>
           <div class="hero-copy">
-            <p class="eyebrow">Open MAIC 互动数学课</p>
-            <h1>数学—从理解开始</h1>
+            <p class="eyebrow">今日探索目标<br><span>TODAY'S MISSION</span></p>
+            <h1>继续挑战</h1>
             <p>
-              AI 自动分析你的基础，规划专属学习路径。每个知识点都配有交互课件、实验模拟与即时反馈，让抽象数学真正看得见、摸得着。
+              完成一个微积分关卡，获得 XP，解锁下一段学习地图。
             </p>
+            <div id="earth-online-hud" class="earth-online-hud" aria-live="polite"></div>
             <div class="hero-actions">
-              <button class="button primary" type="button" data-view="learn">开始探索</button>
-              <button class="button secondary" type="button" data-view="progress">查看学习记录</button>
+              <button class="button primary" type="button" data-view="learn">开始学习</button>
+              <button class="button secondary" type="button" data-view="progress">个人中心</button>
             </div>
+            <div id="earth-current-mission" class="earth-current-mission" aria-live="polite"></div>
             <div class="student-starter" aria-label="预学路线">
               <div>
                 <strong>🎯 AI能力诊断</strong>
@@ -176,14 +195,15 @@
             </div>
           </div>
           <aside class="hero-panel">
-            <h2>学习档案</h2>
-            <p class="hero-panel-note">从函数、导数到积分和优化，用互动场景把抽象概念一步步看清楚。</p>
+            <h2>冒险档案</h2>
+            <p class="hero-panel-note">系统会保留前测、后测、跳过、回看和拓展资源逻辑，只把学习过程包装成连续闯关。</p>
+            <div id="earth-mission-brief" class="earth-mission-brief" aria-live="polite"></div>
             <dl class="metric-grid">
-              <div><dt id="metric-chapters">0</dt><dd>章节</dd></div>
-              <div><dt id="metric-scenes">0</dt><dd>学习环节</dd></div>
-              <div><dt id="metric-glm">0</dt><dd>知识模块</dd></div>
-              <div><dt id="metric-html">0</dt><dd>互动场景</dd></div>
-              <div><dt id="metric-audio">0</dt><dd>知识点</dd></div>
+              <div><dt id="metric-chapters">0</dt><dd>地图区域</dd></div>
+              <div><dt id="metric-scenes">0</dt><dd>关卡</dd></div>
+              <div><dt id="metric-glm">0</dt><dd>技能模块</dd></div>
+              <div><dt id="metric-html">0</dt><dd>互动挑战</dd></div>
+              <div><dt id="metric-audio">0</dt><dd>概念技能</dd></div>
             </dl>
           </aside>
         </div>
@@ -206,10 +226,22 @@
 
           <aside class="lesson-rail" aria-label="本章路径">
             <div class="rail-header">
-              <p class="eyebrow">本章路径</p>
+              <p class="eyebrow">Mission Route</p>
               <h2 id="chapter-title">本章路径</h2>
             </div>
             <div id="lesson-list" class="lesson-list"></div>
+          </aside>
+
+          <aside id="earth-ai-companion" class="earth-ai-companion" aria-label="AI Companion">
+            <div>
+              <p class="eyebrow">AI Companion</p>
+              <h2>需要帮助吗？</h2>
+              <p>Ask anything about this mission...</p>
+            </div>
+            <div class="ai-companion-input">
+              <input type="text" placeholder="输入你的问题" aria-label="输入你的问题" disabled />
+              <button class="button soft" type="button" disabled>发送</button>
+            </div>
           </aside>
 
           <section class="player" aria-live="polite">
@@ -320,6 +352,8 @@
     <script src="app/main/render-learning.js?v=20260709-quiz-links"></script>
     <script src="app/main/recommendations.js?v=20260709-quiz-links"></script>
     <script src="app/main/progress.js?v=20260709-quiz-links"></script>
+    <script src="app/main/game-state.js?v=20260714-world-recovery-live-v1"></script>
+    <script src="app/main/game-ui.js?v=20260714-region-broadcast-v2"></script>
     <script src="app/main/navigation.js?v=20260709-quiz-links"></script>
     <script src="app/main/events.js?v=20260709-quiz-links"></script>
     <script src="app/main/narration.js?v=20260709-quiz-links"></script>

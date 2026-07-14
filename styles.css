@@ -4945,3 +4945,2528 @@ textarea,
     min-height: 40px;
   }
 }
+
+/* =====================================================
+   Calculus Quest UX/UI redesign layer
+   Visual-only: preserves existing learning logic.
+   ===================================================== */
+:root {
+  --cq-bg: #090c18;
+  --cq-card: rgba(20, 27, 45, 0.78);
+  --cq-card-solid: #141b2d;
+  --cq-line: rgba(116, 151, 255, 0.24);
+  --cq-text: #f7fbff;
+  --cq-muted: #9fb0cc;
+  --cq-cyan: #00e5ff;
+  --cq-blue: #4d7cfe;
+  --cq-purple: #7c4dff;
+  --cq-success: #00f5a0;
+  --cq-warn: #ffd93d;
+  --cq-fail: #ff4d6d;
+  --cq-radius: 22px;
+  --cq-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+}
+
+body {
+  background:
+    radial-gradient(circle at 16% 8%, rgba(0, 229, 255, 0.18), transparent 28vw),
+    radial-gradient(circle at 84% 12%, rgba(124, 77, 255, 0.18), transparent 34vw),
+    linear-gradient(180deg, #111731 0%, var(--cq-bg) 52%, #060814 100%);
+  color: var(--cq-text);
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85), transparent 78%);
+}
+
+.app-header {
+  border-bottom: 1px solid var(--cq-line);
+  background: rgba(9, 12, 24, 0.74);
+  backdrop-filter: blur(22px);
+}
+
+.brand,
+.nav-button,
+.utility-button {
+  color: var(--cq-text);
+}
+
+.brand-mark {
+  border-color: rgba(0, 229, 255, 0.5);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.22), rgba(124, 77, 255, 0.18));
+  color: var(--cq-cyan);
+  font-size: 0.78rem;
+}
+
+.app-nav {
+  opacity: 0.62;
+}
+
+.nav-button,
+.utility-button {
+  border-radius: 999px;
+}
+
+.nav-button.active,
+.nav-button:hover,
+.utility-button:hover {
+  background: rgba(0, 229, 255, 0.1);
+}
+
+.hero {
+  min-height: calc(100vh - 58px);
+  background: transparent;
+}
+
+.hero-bg {
+  background:
+    linear-gradient(90deg, rgba(9, 12, 24, 0.95), rgba(9, 12, 24, 0.7) 46%, rgba(9, 12, 24, 0.9)),
+    url("assets/agentic-learning-loop.png") center right / cover no-repeat;
+  filter: saturate(1.25) contrast(1.08);
+  animation: cqHeroDrift 18s ease-in-out infinite alternate;
+}
+
+@keyframes cqHeroDrift {
+  from { transform: scale(1.03) translateX(-8px); }
+  to { transform: scale(1.08) translateX(10px); }
+}
+
+.hero-copy {
+  display: grid;
+  align-content: center;
+  min-height: 520px;
+  border: 1px solid var(--cq-line);
+  border-radius: 32px;
+  background: linear-gradient(180deg, rgba(20, 27, 45, 0.74), rgba(12, 18, 35, 0.64));
+  box-shadow: var(--cq-shadow);
+  padding: clamp(28px, 5vw, 58px);
+  backdrop-filter: blur(24px);
+}
+
+.hero .eyebrow,
+.eyebrow {
+  color: var(--cq-cyan);
+  letter-spacing: 0;
+}
+
+.hero-copy h1 {
+  color: #ffffff;
+  font-size: clamp(3rem, 7vw, 5.6rem);
+  line-height: 0.95;
+}
+
+.hero-copy p {
+  max-width: 560px;
+  color: var(--cq-muted);
+  font-size: 1.08rem;
+}
+
+.student-starter {
+  display: none;
+}
+
+.button {
+  border-radius: 18px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.button.primary {
+  min-height: 56px;
+  border: 0;
+  background: linear-gradient(135deg, var(--cq-cyan), var(--cq-blue) 58%, var(--cq-purple));
+  color: #ffffff;
+  box-shadow: 0 18px 42px rgba(0, 229, 255, 0.22);
+}
+
+.button.primary:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 24px 58px rgba(77, 124, 254, 0.34);
+}
+
+.button.secondary,
+.button.soft {
+  border-color: var(--cq-line);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--cq-text);
+}
+
+.hero-panel,
+.chapter-rail,
+.lesson-rail,
+.player,
+.page,
+.progress-card,
+.resource-card,
+.agent-card,
+.login-panel {
+  border: 1px solid var(--cq-line);
+  border-radius: var(--cq-radius);
+  background: linear-gradient(180deg, rgba(20, 27, 45, 0.82), rgba(12, 18, 34, 0.78));
+  box-shadow: var(--cq-shadow);
+  color: var(--cq-text);
+  backdrop-filter: blur(22px);
+}
+
+.hero-panel {
+  padding: 26px;
+}
+
+.hero-panel h2,
+.rail-header h2,
+.player-top h1,
+.page-heading h1,
+.progress-card h2,
+.resource-card h2 {
+  color: #ffffff;
+}
+
+.hero-panel-note,
+.chapter-card small,
+.lesson-card small,
+.player-top p,
+.page-heading p,
+.progress-card p {
+  color: var(--cq-muted);
+}
+
+.metric-grid {
+  border-color: var(--cq-line);
+}
+
+.metric-grid div {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.metric-grid dt {
+  color: var(--cq-cyan);
+}
+
+.learning-shell {
+  grid-template-columns: 250px 330px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.chapter-card,
+.lesson-card {
+  border-color: rgba(116, 151, 255, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--cq-text);
+}
+
+.chapter-card:hover,
+.lesson-card:hover {
+  background: rgba(0, 229, 255, 0.09);
+}
+
+.chapter-card.active,
+.lesson-card.active {
+  border-color: rgba(0, 229, 255, 0.62);
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.18), rgba(77, 124, 254, 0.12));
+  box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.08), 0 18px 44px rgba(0, 229, 255, 0.12);
+}
+
+.chapter-card-code,
+.type-pill,
+.status-pill {
+  border-radius: 999px;
+}
+
+.lesson-list.v14-step-list .lesson-step-card {
+  grid-template-columns: 50px minmax(0, 1fr) auto;
+  min-height: 84px;
+}
+
+.lesson-list.v14-step-list .lesson-step-card:not(:last-child)::after {
+  left: 24px;
+  top: 54px;
+  bottom: -18px;
+  width: 3px;
+  background: linear-gradient(180deg, rgba(0, 229, 255, 0.42), rgba(124, 77, 255, 0.28));
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.24);
+}
+
+.lesson-step-index {
+  width: 50px;
+  height: 50px;
+  border-color: rgba(0, 229, 255, 0.36);
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--cq-cyan);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.14);
+}
+
+.lesson-step-card.active .lesson-step-index {
+  border-color: var(--cq-cyan);
+  background: linear-gradient(135deg, var(--cq-cyan), var(--cq-blue));
+  box-shadow: 0 0 0 6px rgba(0, 229, 255, 0.1), 0 0 28px rgba(0, 229, 255, 0.4);
+}
+
+.lesson-step-card.recommended:not(.active) .lesson-step-index {
+  border-color: var(--cq-warn);
+  background: rgba(255, 217, 61, 0.12);
+  color: var(--cq-warn);
+}
+
+.lesson-step-card.locked {
+  opacity: 0.52;
+}
+
+.lesson-step-card em {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--cq-muted);
+}
+
+.lesson-step-card.active em {
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--cq-cyan);
+}
+
+.player {
+  overflow: hidden;
+}
+
+.player-top {
+  border-bottom-color: var(--cq-line);
+  padding: 24px;
+}
+
+.player-top h1 {
+  font-size: clamp(1.7rem, 3vw, 2.45rem);
+}
+
+.lesson-player {
+  background: #f7fbff;
+  color: #111827;
+}
+
+.lesson-player h1,
+.lesson-player h2,
+.lesson-player h3,
+.lesson-player strong {
+  color: #0b1220;
+}
+
+.lesson-player p,
+.lesson-player li,
+.lesson-player small,
+.lesson-player label {
+  color: #26364a;
+}
+
+.v14-slide-panel,
+.v14-scene-panel,
+.v14-review-panel,
+.v14-quiz-placeholder,
+.question-card,
+.resource-shell {
+  border-radius: 18px;
+}
+
+.v14-scene-option {
+  border-radius: 18px;
+}
+
+.v14-scene-option.active {
+  border-color: var(--cq-blue);
+  background: #f1f5ff;
+}
+
+.agentic-coach-card {
+  border-radius: 18px;
+}
+
+.app-footer {
+  border-top: 1px solid var(--cq-line);
+  background: rgba(9, 12, 24, 0.78);
+  color: var(--cq-muted);
+}
+
+@media (max-width: 1180px) {
+  .learning-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .chapter-rail,
+  .lesson-rail {
+    position: static;
+    max-height: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .app-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .app-nav {
+    display: none;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-copy {
+    min-height: 440px;
+  }
+}
+
+/* =====================================================
+   Earth Online Phase 1 Design Tokens + Earth Map Shell
+   Scope: decorative UI only, preserves legacy DOM/events.
+   ===================================================== */
+:root {
+  --eo-bg: #080b18;
+  --eo-bg-soft: #0d1224;
+  --eo-card: #111827;
+  --eo-card-glass: rgba(17, 24, 39, 0.72);
+  --eo-card-strong: rgba(20, 27, 45, 0.92);
+  --eo-line: rgba(0, 229, 255, 0.22);
+  --eo-line-strong: rgba(0, 229, 255, 0.52);
+  --eo-cyan: #00e5ff;
+  --eo-blue: #4d7cfe;
+  --eo-purple: #7c3aed;
+  --eo-green: #00f5a0;
+  --eo-gold: #ffd700;
+  --eo-red: #ff4d6d;
+  --eo-text: #f8fafc;
+  --eo-muted: #9ca3af;
+  --eo-subtle: #64748b;
+  --eo-radius-sm: 10px;
+  --eo-radius-md: 16px;
+  --eo-radius-lg: 24px;
+  --eo-radius-xl: 32px;
+  --eo-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
+  --eo-glow-cyan: 0 0 28px rgba(0, 229, 255, 0.32);
+  --eo-glow-purple: 0 0 28px rgba(124, 58, 237, 0.32);
+  --eo-fast: 160ms ease;
+  --eo-normal: 260ms ease;
+  --eo-slow: 600ms ease;
+  --eo-font: Inter, "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+.earth-online-hud {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 24px 0 4px;
+}
+
+.earth-online-hud div,
+.earth-current-mission,
+.earth-region-map {
+  border: 1px solid var(--eo-line);
+  border-radius: var(--eo-radius-md);
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.72), rgba(8, 11, 24, 0.62));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), var(--eo-glow-cyan);
+  backdrop-filter: blur(18px);
+}
+
+.earth-online-hud div {
+  padding: 12px;
+}
+
+.earth-online-hud strong,
+.earth-online-hud span {
+  display: block;
+}
+
+.earth-online-hud strong {
+  color: var(--eo-text);
+  font-size: 0.98rem;
+  line-height: 1.2;
+}
+
+.earth-online-hud span {
+  margin-top: 4px;
+  color: var(--eo-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.earth-current-mission {
+  display: grid;
+  gap: 4px;
+  margin-top: 16px;
+  padding: 16px 18px;
+}
+
+.earth-current-mission span {
+  color: var(--eo-cyan);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.earth-current-mission strong {
+  color: var(--eo-text);
+  font-size: 1.18rem;
+  line-height: 1.25;
+}
+
+.earth-current-mission small {
+  color: var(--eo-muted);
+  font-weight: 700;
+}
+
+.earth-region-map {
+  position: relative;
+  overflow: hidden;
+  margin: 18px 0;
+  padding: 16px;
+}
+
+.earth-region-map::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 22%, rgba(0, 229, 255, 0.24), transparent 22%),
+    radial-gradient(circle at 78% 34%, rgba(124, 58, 237, 0.22), transparent 24%),
+    linear-gradient(115deg, transparent 0 36%, rgba(255, 255, 255, 0.1) 44%, transparent 52% 100%);
+  background-size: auto, auto, 220% 220%;
+  animation: eoMapSweep 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes eoMapSweep {
+  0%, 100% { background-position: center, center, 0% 50%; }
+  50% { background-position: center, center, 100% 50%; }
+}
+
+.earth-region-map-head,
+.earth-region-grid {
+  position: relative;
+  z-index: 1;
+}
+
+.earth-region-map-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.earth-region-map-head span {
+  color: var(--eo-cyan);
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.earth-region-map-head strong {
+  color: var(--eo-text);
+}
+
+.earth-region-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.earth-region-node {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 2px 10px;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--eo-radius-md);
+  background: rgba(255, 255, 255, 0.07);
+  padding: 10px;
+}
+
+.earth-region-node i {
+  grid-row: span 3;
+  width: 30px;
+  height: 30px;
+  border: 2px solid rgba(0, 229, 255, 0.44);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--eo-cyan), rgba(0, 229, 255, 0.08) 62%);
+  box-shadow: var(--eo-glow-cyan);
+}
+
+.earth-region-node span {
+  color: var(--eo-text);
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.earth-region-node strong,
+.earth-region-node small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--eo-muted);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.earth-region-node.active {
+  border-color: var(--eo-line-strong);
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.16), rgba(77, 124, 254, 0.1));
+}
+
+.earth-region-node.locked {
+  opacity: 0.48;
+  filter: grayscale(0.75);
+}
+
+.earth-region-node.locked i {
+  border-color: rgba(156, 163, 175, 0.35);
+  background: radial-gradient(circle, #6b7280, rgba(107, 114, 128, 0.08) 62%);
+  box-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .earth-online-hud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =====================================================
+   Earth Online Phase 1.2 - true 2D Earth Map home
+   ===================================================== */
+#home-view .hero {
+  position: relative;
+  display: block;
+  min-height: calc(100vh - 58px);
+  padding: 0;
+  overflow: hidden;
+  background: #080b18;
+}
+
+#home-view .hero-bg {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(0, 229, 255, 0.2), transparent 34%),
+    radial-gradient(circle at 70% 24%, rgba(124, 58, 237, 0.18), transparent 28%),
+    linear-gradient(180deg, rgba(8, 11, 24, 0.12), rgba(8, 11, 24, 0.82)),
+    url("assets/agentic-learning-loop.png") center / cover no-repeat;
+  opacity: 0.94;
+}
+
+#home-view .hero-copy {
+  position: absolute;
+  z-index: 6;
+  left: clamp(18px, 3vw, 42px);
+  top: clamp(76px, 9vh, 112px);
+  width: min(420px, calc(100vw - 36px));
+  min-height: auto;
+  padding: 22px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(8, 11, 24, 0.74), rgba(17, 24, 39, 0.56));
+}
+
+#home-view .hero-copy h1 {
+  margin-bottom: 10px;
+  font-size: clamp(2.3rem, 4vw, 4.2rem);
+}
+
+#home-view .hero-copy > p:not(.eyebrow),
+#home-view .student-starter {
+  display: none;
+}
+
+#home-view .hero-actions {
+  margin-top: 16px;
+}
+
+#home-view .hero-actions .button.secondary {
+  display: none;
+}
+
+#home-view .hero-actions .button.primary {
+  width: 100%;
+  min-height: 58px;
+}
+
+#home-view .hero-panel {
+  position: absolute;
+  z-index: 5;
+  right: clamp(18px, 3vw, 42px);
+  top: clamp(76px, 9vh, 112px);
+  width: 300px;
+  padding: 16px;
+  opacity: 0.82;
+}
+
+#home-view .hero-panel h2,
+#home-view .hero-panel-note,
+#home-view .metric-grid {
+  display: none;
+}
+
+#home-view .earth-online-hud {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 18px 0 0;
+}
+
+#home-view .earth-current-mission {
+  position: absolute;
+  z-index: 7;
+  left: 50%;
+  bottom: clamp(20px, 5vh, 48px);
+  width: min(720px, calc(100vw - 40px));
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 18px;
+  padding: 18px 22px;
+  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(8, 11, 24, 0.82), rgba(17, 24, 39, 0.72));
+}
+
+#home-view .earth-current-mission span,
+#home-view .earth-current-mission small {
+  grid-column: 1;
+}
+
+#home-view .earth-current-mission::after {
+  content: "开始探索";
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  align-self: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--eo-cyan), var(--eo-blue), var(--eo-purple));
+  color: #fff;
+  padding: 12px 18px;
+  font-weight: 1000;
+  box-shadow: 0 16px 36px rgba(0, 229, 255, 0.24);
+}
+
+.earth-world-map {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  top: 50%;
+  width: min(82vw, 1100px);
+  height: min(74vh, 760px);
+  min-height: 520px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: translate(-50%, -48%);
+  backdrop-filter: none;
+}
+
+.earth-world-map::before {
+  display: none;
+}
+
+.earth-map-title {
+  position: absolute;
+  left: 50%;
+  top: 4%;
+  z-index: 5;
+  display: grid;
+  gap: 3px;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.earth-map-title span {
+  color: var(--eo-cyan);
+  font-size: 0.8rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.earth-map-title strong {
+  color: #fff;
+  font-size: clamp(1.4rem, 2.4vw, 2.5rem);
+  text-shadow: 0 0 24px rgba(0, 229, 255, 0.28);
+}
+
+.earth-map-planet {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: min(58vw, 740px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(0, 245, 160, 0.22), transparent 14%),
+    radial-gradient(circle at 66% 34%, rgba(0, 229, 255, 0.24), transparent 16%),
+    radial-gradient(circle at 44% 68%, rgba(124, 58, 237, 0.28), transparent 18%),
+    radial-gradient(circle at center, rgba(20, 70, 108, 0.8), rgba(8, 11, 24, 0.92) 66%);
+  box-shadow:
+    inset 0 0 80px rgba(0, 229, 255, 0.12),
+    0 0 80px rgba(0, 229, 255, 0.2),
+    0 0 180px rgba(124, 58, 237, 0.18);
+  transform: translate(-50%, -50%);
+  animation: eoPlanetFloat 8s ease-in-out infinite;
+}
+
+@keyframes eoPlanetFloat {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -52%) scale(1.015); }
+}
+
+.earth-map-planet::before,
+.earth-map-planet::after {
+  content: "";
+  position: absolute;
+  inset: 9%;
+  border: 1px solid rgba(0, 229, 255, 0.16);
+  border-radius: 50%;
+}
+
+.earth-map-planet::after {
+  inset: 20%;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.earth-map-continent,
+.earth-map-energy {
+  position: absolute;
+  display: block;
+  filter: drop-shadow(0 0 14px rgba(0, 229, 255, 0.35));
+}
+
+.earth-map-continent.c1 {
+  left: 22%;
+  top: 30%;
+  width: 24%;
+  height: 18%;
+  border-radius: 58% 42% 48% 52%;
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.55), rgba(0, 229, 255, 0.14));
+}
+
+.earth-map-continent.c2 {
+  right: 21%;
+  top: 28%;
+  width: 22%;
+  height: 24%;
+  border-radius: 46% 54% 58% 42%;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.48), rgba(77, 124, 254, 0.14));
+}
+
+.earth-map-continent.c3 {
+  left: 38%;
+  bottom: 22%;
+  width: 28%;
+  height: 19%;
+  border-radius: 50% 50% 42% 58%;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.48), rgba(255, 215, 0, 0.13));
+}
+
+.earth-map-energy.e1,
+.earth-map-energy.e2 {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 18px var(--eo-cyan), 0 0 36px var(--eo-cyan);
+}
+
+.earth-map-energy.e1 { left: 47%; top: 37%; }
+.earth-map-energy.e2 { left: 59%; top: 61%; }
+
+.earth-map-paths {
+  position: absolute;
+  inset: 9% 8% 8%;
+  z-index: 4;
+  width: 84%;
+  height: 83%;
+  left: 8%;
+  top: 9%;
+  overflow: visible;
+}
+
+.earth-map-paths path {
+  fill: none;
+  stroke: rgba(0, 229, 255, 0.55);
+  stroke-width: 0.7;
+  stroke-dasharray: 4 4;
+  filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.8));
+  animation: eoRouteMove 2.4s linear infinite;
+}
+
+@keyframes eoRouteMove {
+  to { stroke-dashoffset: -16; }
+}
+
+.earth-map-node {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  z-index: 6;
+  width: 150px;
+  min-height: 98px;
+  display: grid;
+  gap: 3px;
+  justify-items: center;
+  text-align: center;
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 20px;
+  background: rgba(8, 11, 24, 0.68);
+  padding: 12px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(14px);
+}
+
+.earth-map-node i {
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(0, 229, 255, 0.6);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--eo-cyan), rgba(0, 229, 255, 0.08) 65%);
+  box-shadow: 0 0 18px rgba(0, 229, 255, 0.52);
+}
+
+.earth-map-node span {
+  color: #fff;
+  font-weight: 1000;
+  line-height: 1.15;
+}
+
+.earth-map-node strong,
+.earth-map-node small {
+  color: var(--eo-muted);
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.earth-map-node.active {
+  border-color: rgba(255, 215, 0, 0.62);
+  background: linear-gradient(180deg, rgba(255, 215, 0, 0.18), rgba(8, 11, 24, 0.72));
+  box-shadow: 0 0 0 5px rgba(255, 215, 0, 0.08), 0 0 42px rgba(255, 215, 0, 0.22);
+}
+
+.earth-map-node.active i {
+  border-color: var(--eo-gold);
+  background: radial-gradient(circle, var(--eo-gold), rgba(255, 215, 0, 0.1) 65%);
+  box-shadow: 0 0 24px rgba(255, 215, 0, 0.62);
+}
+
+.earth-map-node.locked {
+  opacity: 0.48;
+  filter: grayscale(0.9);
+}
+
+.earth-map-node.locked i {
+  border-color: rgba(156, 163, 175, 0.45);
+  background: radial-gradient(circle, #6b7280, rgba(107, 114, 128, 0.08) 65%);
+  box-shadow: none;
+}
+
+.earth-mini-map {
+  position: absolute;
+  right: 3%;
+  bottom: 8%;
+  z-index: 8;
+  width: 132px;
+  height: 92px;
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  border-radius: 18px;
+  background: rgba(8, 11, 24, 0.72);
+  box-shadow: var(--eo-glow-cyan);
+  backdrop-filter: blur(14px);
+}
+
+.earth-mini-map span {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--eo-cyan);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.7);
+}
+
+.earth-mini-map span:nth-child(1) { left: 24px; top: 32px; }
+.earth-mini-map span:nth-child(2) { left: 64px; top: 22px; opacity: 0.55; }
+.earth-mini-map span:nth-child(3) { left: 92px; top: 58px; opacity: 0.35; }
+
+@media (max-width: 1100px) {
+  #home-view .hero-panel { display: none; }
+  .earth-world-map { width: 94vw; }
+  .earth-map-node { width: 128px; }
+}
+
+@media (max-width: 760px) {
+  #home-view .hero-copy {
+    top: 72px;
+    width: calc(100vw - 28px);
+    padding: 16px;
+  }
+
+  .earth-world-map {
+    top: 58%;
+    width: 100vw;
+    min-height: 440px;
+  }
+
+  .earth-map-node {
+    width: 108px;
+    min-height: 86px;
+    padding: 9px;
+  }
+
+  .earth-map-node strong {
+    display: none;
+  }
+
+  .earth-mini-map {
+    display: none;
+  }
+
+  #home-view .earth-current-mission {
+    grid-template-columns: 1fr;
+    bottom: 12px;
+  }
+
+  #home-view .earth-current-mission::after {
+    grid-column: 1;
+    grid-row: auto;
+    text-align: center;
+  }
+}
+
+/* =====================================================
+   Earth Online Phase 1.3 - Awakening + stable 3-column home
+   ===================================================== */
+#home-view .hero {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(460px, 1fr) minmax(280px, 360px);
+  gap: clamp(20px, 2.4vw, 32px);
+  align-items: stretch;
+  min-height: calc(100vh - 58px);
+  padding: clamp(76px, 9vh, 104px) clamp(22px, 4vw, 48px) clamp(26px, 4vh, 44px);
+}
+
+#home-view .hero-copy,
+#home-view .hero-panel,
+#home-view .earth-world-map,
+#home-view .earth-current-mission {
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+  transform: none;
+}
+
+#home-view .hero-copy {
+  z-index: 6;
+  grid-column: 1;
+  width: auto;
+  min-height: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 28px;
+}
+
+#home-view .hero-copy h1 {
+  font-size: clamp(2.1rem, 3.4vw, 3.8rem);
+  line-height: 0.98;
+}
+
+#home-view .hero-copy > p:not(.eyebrow),
+#home-view .student-starter {
+  display: none;
+}
+
+#home-view .earth-online-hud {
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+#home-view .earth-online-hud div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+}
+
+#home-view .earth-online-hud span {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+#home-view .earth-online-hud strong {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+}
+
+#home-view .hero-actions {
+  margin-top: auto;
+}
+
+#home-view .hero-actions .button.primary {
+  width: 100%;
+  min-height: 60px;
+}
+
+#home-view .hero-actions .button.secondary {
+  display: none;
+}
+
+#home-view .earth-current-mission {
+  z-index: 7;
+  width: auto;
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 16px;
+  border-radius: 22px;
+}
+
+#home-view .earth-current-mission::after {
+  display: none;
+}
+
+#home-view .earth-world-map {
+  z-index: 3;
+  grid-column: 2;
+  width: 100%;
+  height: auto;
+  min-height: 620px;
+  align-self: stretch;
+  border-radius: 36px;
+  overflow: hidden;
+  background: radial-gradient(circle at center, rgba(0, 229, 255, 0.08), rgba(8, 11, 24, 0.18) 58%, rgba(8, 11, 24, 0.4));
+}
+
+#home-view .hero-panel {
+  z-index: 6;
+  grid-column: 3;
+  width: auto;
+  align-self: stretch;
+  padding: 24px;
+  opacity: 1;
+}
+
+#home-view .hero-panel h2 {
+  margin-bottom: 8px;
+}
+
+#home-view .hero-panel-note,
+#home-view .metric-grid {
+  display: none;
+}
+
+.earth-mission-brief {
+  display: grid;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.mission-brief-head {
+  display: grid;
+  gap: 4px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.18);
+  padding-bottom: 14px;
+}
+
+.mission-brief-head span {
+  color: var(--eo-cyan);
+  font-size: 0.78rem;
+  font-weight: 1000;
+  text-transform: uppercase;
+}
+
+.mission-brief-head strong {
+  color: #fff;
+  font-size: 1.45rem;
+  line-height: 1.15;
+}
+
+.earth-mission-brief dl {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.earth-mission-brief dl div {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 12px;
+}
+
+.earth-mission-brief dt {
+  color: var(--eo-muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.earth-mission-brief dd {
+  margin: 4px 0 0;
+  color: #fff;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.earth-map-node:nth-of-type(5) i,
+.earth-map-node:nth-of-type(6) i {
+  border-color: rgba(255, 77, 109, 0.62);
+  background: radial-gradient(circle, var(--eo-red), rgba(255, 77, 109, 0.08) 65%);
+  box-shadow: 0 0 22px rgba(255, 77, 109, 0.5);
+}
+
+.earth-awakening {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    linear-gradient(180deg, rgba(8, 11, 24, 0.32), rgba(8, 11, 24, 0.78)),
+    url("assets/agentic-learning-loop.png") center / cover no-repeat;
+}
+
+.earth-awakening[hidden] {
+  display: none;
+}
+
+.earth-boot-panel {
+  width: min(760px, 100%);
+  min-height: 460px;
+  display: grid;
+  align-content: center;
+  gap: 18px;
+  border: 1px solid rgba(0, 229, 255, 0.34);
+  border-radius: 34px;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.78), rgba(8, 11, 24, 0.68));
+  box-shadow: 0 34px 120px rgba(0, 0, 0, 0.46), 0 0 64px rgba(0, 229, 255, 0.18);
+  padding: clamp(28px, 5vw, 56px);
+  backdrop-filter: blur(26px);
+  transition: transform 620ms ease, opacity 620ms ease;
+}
+
+.earth-boot-panel h1 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(3rem, 7vw, 6rem);
+  line-height: 0.92;
+}
+
+.earth-boot-type {
+  min-height: 160px;
+  color: #d8f7ff;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-weight: 800;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.earth-boot-type::after {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 1.1em;
+  margin-left: 4px;
+  background: var(--eo-cyan);
+  vertical-align: -0.16em;
+  animation: eoCursor 0.7s steps(1) infinite;
+}
+
+@keyframes eoCursor {
+  50% { opacity: 0; }
+}
+
+.earth-boot-continue {
+  justify-self: start;
+  min-width: 220px;
+}
+
+.earth-awakening.is-complete .earth-boot-panel {
+  transform: translate(36vw, -16vh) scale(0.58);
+  opacity: 0;
+}
+
+@media (max-width: 1180px) {
+  #home-view .hero {
+    grid-template-columns: minmax(240px, 320px) minmax(420px, 1fr);
+  }
+
+  #home-view .hero-panel {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  #home-view .hero {
+    grid-template-columns: 1fr;
+    padding-top: 74px;
+  }
+
+  #home-view .hero-copy,
+  #home-view .earth-world-map {
+    grid-column: 1;
+  }
+
+  #home-view .earth-world-map {
+    min-height: 520px;
+  }
+
+  .earth-map-node {
+    width: 112px;
+  }
+}
+
+/* HUD rows are informational, not nested cards. */
+#home-view .earth-online-hud div {
+  border: 0;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.14);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 12px 0;
+  backdrop-filter: none;
+}
+
+#home-view .earth-online-hud div:last-child {
+  border-bottom: 0;
+}
+
+/* =====================================================
+   Earth Online Home V2 - single focus lobby
+   ===================================================== */
+#home-view .hero {
+  grid-template-columns: minmax(330px, 35%) minmax(0, 65%);
+  gap: clamp(24px, 3vw, 40px);
+  padding: clamp(78px, 9vh, 108px) clamp(28px, 4vw, 56px) clamp(28px, 4vh, 48px);
+}
+
+#home-view .hero-copy {
+  grid-column: 1;
+  max-width: none;
+  padding: clamp(28px, 3vw, 38px);
+  border-radius: 34px;
+}
+
+#home-view .hero-copy .eyebrow {
+  font-size: 1rem;
+}
+
+#home-view .hero-copy h1 {
+  margin: 10px 0 6px;
+  font-size: clamp(3rem, 4.8vw, 4rem);
+}
+
+#home-view .earth-online-hud {
+  margin: 28px 0 10px;
+}
+
+#home-view .earth-online-hud div {
+  border-bottom: 0;
+  padding: 0;
+}
+
+#home-view .earth-online-hud span {
+  color: var(--eo-cyan);
+  font-size: 1rem;
+}
+
+#home-view .earth-online-hud strong {
+  color: #fff;
+  font-size: 2rem;
+}
+
+#home-view .earth-current-mission {
+  margin-top: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.explorer-panel-title {
+  display: none;
+}
+
+.world-recovery {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 24px;
+  border-top: 1px solid rgba(0, 229, 255, 0.16);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.16);
+  padding: 22px 0;
+}
+
+.world-recovery div {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+}
+
+.world-recovery span,
+.explorer-panel-mission dt {
+  color: var(--eo-muted);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.world-recovery strong {
+  color: #fff;
+  font-size: 2rem;
+}
+
+.world-recovery i {
+  display: block;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.world-recovery b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--eo-green), var(--eo-cyan));
+  box-shadow: 0 0 22px rgba(0, 245, 160, 0.34);
+}
+
+.explorer-panel-mission {
+  display: grid;
+  gap: 18px;
+  margin: 0;
+}
+
+.explorer-panel-mission div {
+  display: grid;
+  gap: 6px;
+}
+
+.explorer-panel-mission dd {
+  margin: 0;
+  color: #fff;
+  font-size: 1.22rem;
+  font-weight: 950;
+  line-height: 1.28;
+}
+
+#home-view .hero-actions {
+  margin-top: auto;
+}
+
+#home-view .hero-actions .button.primary {
+  min-height: 68px;
+  border-radius: 24px;
+  font-size: 1.45rem;
+}
+
+#home-view .hero-actions .button.primary::after {
+  content: "  →";
+}
+
+#home-view .hero-panel {
+  display: none;
+}
+
+#home-view .earth-world-map {
+  grid-column: 2;
+  min-height: min(76vh, 780px);
+  border-radius: 42px;
+}
+
+.earth-map-title {
+  top: 5%;
+}
+
+.earth-map-title span {
+  font-size: 1rem;
+}
+
+.earth-map-title strong {
+  font-size: clamp(2rem, 3.8vw, 3.6rem);
+}
+
+.earth-map-planet {
+  width: min(62vw, 860px);
+}
+
+.earth-map-node {
+  width: 160px;
+  min-height: 104px;
+}
+
+.earth-map-node.active {
+  width: 196px;
+  min-height: 126px;
+  border-width: 2px;
+  transform: translate(-50%, -50%) scale(1.08);
+  animation: eoCurrentRegionPulse 2.4s ease-in-out infinite;
+}
+
+.earth-map-node.active::before,
+.earth-map-node.active::after {
+  content: "";
+  position: absolute;
+  inset: -13px;
+  border: 1px solid rgba(255, 215, 0, 0.54);
+  border-radius: 28px;
+  animation: eoEnergyRing 5s linear infinite;
+}
+
+.earth-map-node.active::after {
+  inset: -22px;
+  border-color: rgba(255, 215, 0, 0.24);
+  animation-duration: 8s;
+  animation-direction: reverse;
+}
+
+@keyframes eoCurrentRegionPulse {
+  0%, 100% { box-shadow: 0 0 0 7px rgba(255, 215, 0, 0.08), 0 0 42px rgba(255, 215, 0, 0.22); }
+  50% { box-shadow: 0 0 0 12px rgba(255, 215, 0, 0.14), 0 0 70px rgba(255, 215, 0, 0.38); }
+}
+
+@keyframes eoEnergyRing {
+  to { transform: rotate(360deg); }
+}
+
+.earth-map-node.active span {
+  font-size: 1.15rem;
+}
+
+.earth-map-node.complete i {
+  border-color: rgba(0, 245, 160, 0.64);
+  background: radial-gradient(circle, var(--eo-green), rgba(0, 245, 160, 0.08) 65%);
+  box-shadow: 0 0 22px rgba(0, 245, 160, 0.48);
+}
+
+.earth-map-node.boss i {
+  border-color: rgba(255, 77, 109, 0.66);
+  background: radial-gradient(circle, var(--eo-red), rgba(255, 77, 109, 0.08) 65%);
+  box-shadow: 0 0 24px rgba(255, 77, 109, 0.52);
+}
+
+.earth-mini-map {
+  right: 24px;
+  bottom: 24px;
+}
+
+@media (max-width: 1180px) {
+  #home-view .hero {
+    grid-template-columns: minmax(300px, 38%) minmax(0, 62%);
+  }
+
+  .earth-map-node {
+    width: 132px;
+  }
+
+  .earth-map-node.active {
+    width: 160px;
+  }
+}
+
+@media (max-width: 860px) {
+  #home-view .hero {
+    grid-template-columns: 1fr;
+  }
+
+  #home-view .earth-world-map {
+    grid-column: 1;
+    min-height: 540px;
+  }
+
+  #home-view .hero-copy {
+    grid-column: 1;
+    order: 2;
+  }
+}
+
+/* Earth Online Home V2 alignment fix */
+#home-view .hero {
+  align-items: start;
+}
+
+#home-view .hero-copy,
+#home-view .earth-world-map {
+  align-self: start;
+  margin-top: 0;
+}
+
+/* Earth Online Home V4 hard alignment: fixed two-column stage */
+#home-view .hero {
+  display: block;
+  min-height: calc(100vh - 58px);
+  padding: 0;
+}
+
+#home-view .hero-copy {
+  position: absolute !important;
+  left: clamp(24px, 4vw, 56px) !important;
+  top: clamp(78px, 9vh, 108px) !important;
+  width: min(35vw, 420px) !important;
+  max-width: 420px;
+  min-width: 320px;
+  height: calc(100vh - clamp(78px, 9vh, 108px) - clamp(28px, 4vh, 48px));
+  min-height: 560px;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+#home-view .earth-world-map {
+  position: absolute !important;
+  left: calc(clamp(24px, 4vw, 56px) + min(35vw, 420px) + clamp(24px, 3vw, 40px)) !important;
+  right: clamp(24px, 4vw, 56px) !important;
+  top: clamp(78px, 9vh, 108px) !important;
+  width: auto !important;
+  height: calc(100vh - clamp(78px, 9vh, 108px) - clamp(28px, 4vh, 48px));
+  min-height: 560px;
+  transform: none !important;
+  margin: 0 !important;
+}
+
+#home-view .hero-panel {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  #home-view .hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding: 74px 16px 24px;
+  }
+
+  #home-view .hero-copy,
+  #home-view .earth-world-map {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: auto !important;
+    min-width: 0;
+    height: auto;
+    min-height: 420px;
+  }
+}
+
+/* Earth Online Home V6 compact left panel spacing */
+#home-view .hero-actions {
+  margin-top: 24px !important;
+}
+
+#home-view .earth-online-hud {
+  margin: 18px 0 0 !important;
+}
+
+/* Earth Online Boot Narrative V1 */
+.earth-awakening {
+  background:
+    radial-gradient(circle at 50% 32%, rgba(0, 229, 255, 0.2), transparent 34%),
+    linear-gradient(180deg, rgba(8, 11, 24, 0.2), rgba(8, 11, 24, 0.84)),
+    url("assets/agentic-learning-loop.png") center / cover no-repeat;
+}
+
+.earth-boot-panel {
+  width: min(900px, calc(100vw - 44px));
+  min-height: min(720px, calc(100vh - 56px));
+  align-content: start;
+  padding: clamp(28px, 4vw, 54px);
+}
+
+.earth-boot-panel .eyebrow {
+  color: var(--eo-cyan);
+  font-size: 1rem;
+}
+
+.earth-boot-panel h1 {
+  font-size: clamp(3.4rem, 8vw, 7rem);
+  letter-spacing: 0;
+}
+
+.earth-boot-type {
+  max-height: min(430px, 48vh);
+  overflow: auto;
+  border: 1px solid rgba(0, 229, 255, 0.18);
+  border-radius: 22px;
+  background: rgba(3, 8, 18, 0.42);
+  padding: 20px;
+  color: #dffbff;
+  font-family: var(--eo-font);
+  font-size: clamp(1rem, 1.7vw, 1.18rem);
+  line-height: 1.72;
+  white-space: pre-line;
+  scrollbar-width: thin;
+}
+
+.earth-boot-continue {
+  min-width: 280px;
+  min-height: 66px;
+  border-radius: 24px;
+  font-size: 1.3rem;
+}
+
+/* Re-enable the right-side Mission Brief as a single lore panel, not a stats dashboard. */
+#home-view .hero-panel {
+  display: block !important;
+  position: absolute !important;
+  right: clamp(24px, 4vw, 56px) !important;
+  bottom: clamp(28px, 4vh, 48px) !important;
+  top: auto !important;
+  width: min(340px, 28vw) !important;
+  min-width: 300px;
+  padding: 20px;
+  transform: none !important;
+  opacity: 1;
+}
+
+#home-view .hero-panel > h2,
+#home-view .hero-panel > .hero-panel-note,
+#home-view .hero-panel > .metric-grid {
+  display: none !important;
+}
+
+#home-view .earth-mission-brief {
+  margin-top: 0;
+}
+
+.mission-brief-lore {
+  margin: 0;
+  color: #d9f7ff;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+@media (max-width: 1180px) {
+  #home-view .hero-panel {
+    display: none !important;
+  }
+}
+
+/* Earth Online right Mission Brief compact card */
+#home-view .hero-panel {
+  bottom: clamp(28px, 4vh, 48px) !important;
+}
+
+#home-view .earth-mission-brief {
+  gap: 12px;
+}
+
+.mission-brief-head.compact {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.mission-brief-head.compact strong {
+  font-size: 1.32rem;
+}
+
+#home-view .mission-brief-lore {
+  color: #d9f7ff;
+  font-size: 0.96rem;
+  line-height: 1.55;
+}
+
+/* Earth Online Map Copy P1.2 */
+.earth-map-title small,
+.earth-map-title em {
+  display: block;
+  color: rgba(216, 247, 255, 0.82);
+  font-size: clamp(0.9rem, 1.3vw, 1.05rem);
+  font-style: normal;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.earth-map-title em {
+  color: rgba(0, 229, 255, 0.72);
+  font-size: clamp(0.78rem, 1vw, 0.95rem);
+}
+
+#home-view .hero-copy .eyebrow span {
+  display: block;
+  margin-top: 2px;
+  color: rgba(216, 247, 255, 0.72);
+  font-size: 0.78rem;
+}
+
+#home-view .hero-copy h1 small,
+.explorer-panel-mission dd small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(216, 247, 255, 0.72);
+  font-size: 0.52em;
+  line-height: 1.1;
+}
+
+/* =====================================================
+   Earth Online Mission Flow UI - Learn View P1
+   Preserves original DOM and learning logic.
+   ===================================================== */
+#learn-view {
+  background:
+    radial-gradient(circle at 22% 8%, rgba(0, 229, 255, 0.12), transparent 28vw),
+    radial-gradient(circle at 86% 20%, rgba(124, 58, 237, 0.14), transparent 30vw),
+    #080b18;
+}
+
+#learn-view .learning-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
+  grid-template-rows: auto minmax(260px, 1fr);
+  gap: 18px;
+  width: min(1560px, calc(100% - 40px));
+  padding: 22px 0 42px;
+}
+
+#learn-view .chapter-rail,
+#learn-view .rail-toggle {
+  display: none !important;
+}
+
+#learn-view .player {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  min-height: calc(100vh - 116px);
+  border: 1px solid rgba(0, 229, 255, 0.24);
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.84), rgba(8, 11, 24, 0.88));
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.36), 0 0 50px rgba(0, 229, 255, 0.08);
+  backdrop-filter: blur(22px);
+}
+
+#learn-view .player-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.18);
+  padding: 30px 32px;
+}
+
+#learn-view .player-top .eyebrow {
+  color: var(--eo-cyan);
+  font-size: 0.92rem;
+}
+
+#learn-view .player-top h1 {
+  color: #fff;
+  font-size: clamp(2rem, 4vw, 4rem);
+  line-height: 1;
+}
+
+#learn-view .player-top p {
+  max-width: 720px;
+  color: rgba(216, 247, 255, 0.74);
+  font-size: 1rem;
+}
+
+#learn-view .player-actions {
+  display: flex;
+  gap: 10px;
+}
+
+#learn-view #complete-lesson {
+  min-height: 58px;
+  border-radius: 22px;
+  padding-inline: 22px;
+  font-size: 1.02rem;
+}
+
+#learn-view .lesson-player {
+  min-height: calc(100vh - 260px);
+  background: #f7fbff;
+  color: #111827;
+  padding: 28px;
+}
+
+#learn-view .lesson-rail {
+  grid-column: 2;
+  grid-row: 1;
+  position: sticky;
+  top: 82px;
+  max-height: calc(58vh - 82px);
+  border: 1px solid rgba(0, 229, 255, 0.22);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.78), rgba(8, 11, 24, 0.72));
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28), var(--eo-glow-cyan);
+  padding: 20px;
+  backdrop-filter: blur(18px);
+}
+
+#learn-view .lesson-rail .rail-header h2 {
+  color: #fff;
+  font-size: 1.45rem;
+}
+
+#learn-view .lesson-list.v14-step-list .lesson-step-card {
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 70px;
+  border: 0;
+  background: transparent;
+  padding: 8px 0 18px;
+}
+
+#learn-view .lesson-list.v14-step-list .lesson-step-card em {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: -8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(216, 247, 255, 0.78);
+}
+
+#learn-view .lesson-step-index {
+  width: 42px;
+  height: 42px;
+  border-color: rgba(0, 229, 255, 0.34);
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--eo-cyan);
+}
+
+#learn-view .lesson-step-card.active .lesson-step-index {
+  border-color: var(--eo-cyan);
+  background: linear-gradient(135deg, var(--eo-cyan), var(--eo-blue));
+  color: #fff;
+  box-shadow: 0 0 0 6px rgba(0, 229, 255, 0.1), 0 0 28px rgba(0, 229, 255, 0.46);
+}
+
+#learn-view .lesson-step-card.review-pending .lesson-step-index,
+#learn-view .lesson-step-card.skipped .lesson-step-index {
+  border-color: var(--eo-gold);
+  background: rgba(255, 215, 0, 0.16);
+  color: var(--eo-gold);
+}
+
+#learn-view .lesson-step-card.locked .lesson-step-index {
+  border-color: rgba(156, 163, 175, 0.38);
+  background: rgba(156, 163, 175, 0.12);
+  color: #9ca3af;
+}
+
+#learn-view .lesson-card-body strong {
+  color: #fff;
+  font-size: 0.96rem;
+}
+
+#learn-view .lesson-card-body small {
+  color: rgba(216, 247, 255, 0.62);
+}
+
+.earth-ai-companion {
+  grid-column: 2;
+  grid-row: 2;
+  align-self: stretch;
+  display: grid;
+  align-content: space-between;
+  gap: 18px;
+  border: 1px solid rgba(124, 58, 237, 0.28);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.72), rgba(8, 11, 24, 0.68));
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.28), var(--eo-glow-purple);
+  padding: 20px;
+  backdrop-filter: blur(18px);
+}
+
+.earth-ai-companion h2 {
+  color: #fff;
+  font-size: 1.35rem;
+}
+
+.earth-ai-companion p {
+  color: rgba(216, 247, 255, 0.68);
+}
+
+.ai-companion-input {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-companion-input input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  padding: 12px 14px;
+}
+
+.ai-companion-input input::placeholder {
+  color: rgba(216, 247, 255, 0.42);
+}
+
+#learn-view .mission-kind-scan .player-top {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(77, 124, 254, 0.08));
+}
+
+#learn-view .mission-kind-boss .player-top {
+  background: linear-gradient(135deg, rgba(255, 77, 109, 0.14), rgba(124, 58, 237, 0.1));
+}
+
+#learn-view .mission-kind-boss .player-top::after {
+  content: "Boss HP  ███████░░";
+  grid-column: 1 / -1;
+  color: #ffb3c0;
+  font-weight: 900;
+}
+
+#learn-view .mission-kind-scan .player-top::after {
+  content: "Knowledge Scan  ·  能力诊断系统";
+  grid-column: 1 / -1;
+  color: #9befff;
+  font-weight: 900;
+}
+
+#learn-view .v14-scene-selector {
+  gap: 14px;
+}
+
+#learn-view .v14-scene-option {
+  min-height: 128px;
+  border-radius: 24px;
+  border-color: rgba(0, 229, 255, 0.18);
+  background: linear-gradient(180deg, #fff, #f3f8ff);
+}
+
+#learn-view .v14-scene-option.active {
+  border-color: var(--eo-blue);
+  background: #eef4ff;
+  box-shadow: 0 0 0 4px rgba(77, 124, 254, 0.1);
+}
+
+@media (max-width: 1180px) {
+  #learn-view .learning-shell {
+    grid-template-columns: 1fr;
+  }
+
+  #learn-view .player,
+  #learn-view .lesson-rail,
+  .earth-ai-companion {
+    grid-column: 1;
+    grid-row: auto;
+    position: static;
+    max-height: none;
+  }
+}
+
+/* =====================================================
+   Mission Flow V2 - animated sci-fi background + contrast fix
+   ===================================================== */
+#learn-view {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 16% 12%, rgba(0, 229, 255, 0.2), transparent 30vw),
+    radial-gradient(circle at 78% 18%, rgba(124, 58, 237, 0.22), transparent 34vw),
+    linear-gradient(135deg, rgba(8, 11, 24, 0.92), rgba(13, 18, 36, 0.88)),
+    url("assets/agentic-learning-loop.png") center / cover no-repeat !important;
+  overflow: hidden;
+}
+
+#learn-view::before {
+  content: "";
+  position: fixed;
+  inset: 58px 0 0;
+  z-index: -2;
+  background:
+    linear-gradient(90deg, rgba(0, 229, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(rgba(0, 229, 255, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 50% 46%, rgba(0, 229, 255, 0.12), transparent 34%);
+  background-size: 46px 46px, 46px 46px, auto;
+  animation: eoMissionGridDrift 18s linear infinite;
+  pointer-events: none;
+}
+
+#learn-view::after {
+  content: "";
+  position: fixed;
+  inset: 58px 0 0;
+  z-index: -1;
+  background:
+    linear-gradient(115deg, transparent 0 34%, rgba(0, 229, 255, 0.12) 44%, transparent 54% 100%),
+    radial-gradient(circle at 84% 72%, rgba(255, 215, 0, 0.1), transparent 20vw);
+  background-size: 240% 240%, auto;
+  animation: eoMissionLightSweep 10s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes eoMissionGridDrift {
+  from { background-position: 0 0, 0 0, center; }
+  to { background-position: 46px 46px, 46px 46px, center; }
+}
+
+@keyframes eoMissionLightSweep {
+  0%, 100% { background-position: 0% 50%, center; opacity: 0.72; }
+  50% { background-position: 100% 50%, center; opacity: 1; }
+}
+
+#learn-view .player,
+#learn-view .lesson-rail,
+#learn-view .earth-ai-companion {
+  background: linear-gradient(180deg, rgba(8, 14, 28, 0.9), rgba(10, 17, 32, 0.86)) !important;
+  border-color: rgba(0, 229, 255, 0.34) !important;
+}
+
+#learn-view .player-top {
+  background:
+    linear-gradient(135deg, rgba(3, 12, 24, 0.98), rgba(14, 26, 48, 0.94)) !important;
+  border-bottom-color: rgba(0, 229, 255, 0.32) !important;
+}
+
+#learn-view .player-top .eyebrow,
+#learn-view .lesson-rail .eyebrow,
+#learn-view .earth-ai-companion .eyebrow {
+  color: #7eeeff !important;
+  text-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+}
+
+#learn-view .player-top h1,
+#learn-view .lesson-rail .rail-header h2,
+#learn-view .earth-ai-companion h2 {
+  color: #ffffff !important;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.42);
+}
+
+#learn-view .player-top p,
+#learn-view .earth-ai-companion p {
+  color: #cbe8f4 !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.28);
+}
+
+#learn-view .lesson-card-body strong {
+  color: #f8fcff !important;
+}
+
+#learn-view .lesson-card-body small,
+#learn-view .lesson-step-card em {
+  color: #b9d4e2 !important;
+}
+
+#learn-view .lesson-step-card.active .lesson-card-body strong,
+#learn-view .lesson-step-card.active .lesson-card-body small {
+  color: #ffffff !important;
+}
+
+#learn-view .mission-kind-scan .player-top,
+#learn-view .mission-kind-challenge .player-top,
+#learn-view .mission-kind-experiment .player-top,
+#learn-view .mission-kind-knowledge .player-top {
+  background:
+    linear-gradient(135deg, rgba(4, 20, 34, 0.98), rgba(14, 30, 54, 0.94)) !important;
+}
+
+#learn-view .mission-kind-boss .player-top {
+  background:
+    linear-gradient(135deg, rgba(46, 9, 22, 0.98), rgba(28, 14, 48, 0.94)) !important;
+}
+
+#learn-view .mission-kind-scan .player-top::after {
+  color: #bff7ff !important;
+}
+
+#learn-view .mission-kind-boss .player-top::after {
+  color: #ffd2da !important;
+}
+
+/* =====================================================
+   Mission Flow V3 - standalone Learning Mode / Decision pages
+   ===================================================== */
+#learn-view .mission-awaiting-mode .lesson-player,
+#learn-view .mission-decision-page .lesson-player {
+  display: none !important;
+}
+
+#learn-view .mission-mode-selected #agentic-coach-panel .agentic-knowledge-choice,
+#learn-view .mission-mode-selected #agentic-coach-panel .knowledge-choice-card {
+  display: none !important;
+}
+
+#learn-view .mission-awaiting-mode #agentic-coach-panel,
+#learn-view .mission-decision-page #agentic-coach-panel {
+  display: grid;
+  min-height: calc(100vh - 260px);
+  place-items: center;
+  padding: clamp(24px, 4vw, 48px);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(0, 229, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(6, 16, 30, 0.96), rgba(8, 11, 24, 0.94));
+}
+
+#learn-view .mission-awaiting-mode .agentic-coach-card,
+#learn-view .mission-decision-page .agentic-coach-card {
+  width: min(900px, 100%);
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.82), rgba(8, 11, 24, 0.74));
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.34), var(--eo-glow-cyan);
+  padding: clamp(24px, 4vw, 42px);
+  color: #f8fcff;
+}
+
+#learn-view .mission-awaiting-mode .agentic-coach-header strong,
+#learn-view .mission-decision-page .agentic-coach-header strong {
+  color: #ffffff;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  line-height: 1.08;
+}
+
+#learn-view .mission-awaiting-mode .agentic-coach-card > p,
+#learn-view .mission-decision-page .agentic-coach-card > p {
+  color: #cbe8f4;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+#learn-view .mission-awaiting-mode .agentic-knowledge-choice > div:first-child strong {
+  display: block;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 3.6rem);
+  line-height: 1;
+}
+
+#learn-view .mission-awaiting-mode .agentic-knowledge-choice > div:first-child small {
+  display: block;
+  margin-top: 10px;
+  color: #aeefff;
+  font-size: 1rem;
+}
+
+#learn-view .mission-awaiting-mode .agentic-knowledge-scene-selector {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 26px;
+}
+
+#learn-view .mission-awaiting-mode .v14-scene-option-wrap {
+  grid-template-rows: 1fr;
+}
+
+#learn-view .v14-scene-fullscreen {
+  display: none !important;
+}
+
+#learn-view .mission-awaiting-mode .v14-scene-option {
+  min-height: 174px;
+  border: 1px solid rgba(0, 229, 255, 0.24);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(245, 251, 255, 0.98), rgba(229, 240, 255, 0.96));
+  color: #101827;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.18);
+}
+
+#learn-view .mission-awaiting-mode .v14-scene-option strong {
+  color: #0b1220;
+  font-size: 1.2rem;
+}
+
+#learn-view .mission-awaiting-mode .v14-scene-option small {
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+#learn-view .mission-awaiting-mode .v14-scene-option > span {
+  width: 54px;
+  height: 54px;
+  background: linear-gradient(135deg, var(--eo-cyan), var(--eo-blue));
+  color: #ffffff;
+}
+
+#learn-view .mission-awaiting-mode .v14-scene-option.active,
+#learn-view .mission-awaiting-mode .v14-scene-option:hover {
+  border-color: var(--eo-blue);
+  transform: translateY(-3px);
+  box-shadow: 0 24px 60px rgba(77, 124, 254, 0.24);
+}
+
+#learn-view .mission-decision-page .agentic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+#learn-view .mission-decision-page .agentic-actions .button {
+  min-height: 54px;
+  border-radius: 20px;
+  padding-inline: 18px;
+}
+
+@media (max-width: 760px) {
+  #learn-view .mission-awaiting-mode .agentic-knowledge-scene-selector {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =====================================================
+   Mission Flow V4 - light-surface contrast guardrails
+   Any control inside light learning surfaces uses dark text.
+   ===================================================== */
+#learn-view .lesson-player,
+#learn-view .lesson-player .resource-shell,
+#learn-view .lesson-player .v14-slide-panel,
+#learn-view .lesson-player .v14-scene-panel,
+#learn-view .lesson-player .v14-review-panel,
+#learn-view .lesson-player .v14-quiz-placeholder,
+#learn-view .lesson-player .question-card,
+#learn-view .lesson-player .coach-line,
+#learn-view .lesson-player .assessment-banner,
+#learn-view .lesson-player .rubric-box,
+#learn-view .lesson-player .recommendation-card {
+  color: #111827 !important;
+}
+
+#learn-view .lesson-player p,
+#learn-view .lesson-player small,
+#learn-view .lesson-player span,
+#learn-view .lesson-player label,
+#learn-view .lesson-player li,
+#learn-view .lesson-player td,
+#learn-view .lesson-player dd,
+#learn-view .lesson-player .v14-slide-heading p,
+#learn-view .lesson-player .v14-scene-header small,
+#learn-view .lesson-player .v14-resource-note,
+#learn-view .lesson-player .quiz-submit-panel p,
+#learn-view .lesson-player .draft-status {
+  color: #334155 !important;
+}
+
+#learn-view .lesson-player h1,
+#learn-view .lesson-player h2,
+#learn-view .lesson-player h3,
+#learn-view .lesson-player strong,
+#learn-view .lesson-player dt,
+#learn-view .lesson-player th,
+#learn-view .lesson-player .resource-toolbar strong,
+#learn-view .lesson-player .question-title-row h3,
+#learn-view .lesson-player .v14-slide-heading h2,
+#learn-view .lesson-player .v14-scene-header h3 {
+  color: #0f172a !important;
+}
+
+#learn-view .lesson-player .button.soft,
+#learn-view .lesson-player .button.secondary,
+#learn-view .lesson-player .v14-scene-fullscreen,
+#learn-view .lesson-player [data-resource-fullscreen],
+#learn-view .lesson-player [data-knowledge-scene-fullscreen],
+#learn-view .lesson-player .quiz-nav-btn,
+#learn-view .lesson-player .text-button {
+  border-color: #94a3b8 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08) !important;
+}
+
+#learn-view .lesson-player .button.soft:hover,
+#learn-view .lesson-player .button.secondary:hover,
+#learn-view .lesson-player .v14-scene-fullscreen:hover,
+#learn-view .lesson-player [data-resource-fullscreen]:hover,
+#learn-view .lesson-player [data-knowledge-scene-fullscreen]:hover,
+#learn-view .lesson-player .quiz-nav-btn:hover {
+  border-color: #2563eb !important;
+  background: #eff6ff !important;
+  color: #0f172a !important;
+}
+
+#learn-view .lesson-player .type-pill,
+#learn-view .lesson-player .status-pill,
+#learn-view .lesson-player .question-score-pill,
+#learn-view .lesson-player .quiz-section-total {
+  border: 1px solid #cbd5e1 !important;
+  background: #eaf2ff !important;
+  color: #1e3a8a !important;
+}
+
+#learn-view .lesson-player .status-pill.done {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+#learn-view .lesson-player .status-pill.todo,
+#learn-view .lesson-player .status-pill.locked {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+#learn-view .lesson-player input,
+#learn-view .lesson-player textarea,
+#learn-view .lesson-player select {
+  border-color: #94a3b8 !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+#learn-view .lesson-player input::placeholder,
+#learn-view .lesson-player textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Light option cards must never use white text. */
+#learn-view .mission-awaiting-mode .v14-scene-option,
+#learn-view .mission-awaiting-mode .v14-scene-option * {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+#learn-view .mission-awaiting-mode .v14-scene-option > span {
+  color: #ffffff !important;
+}
+
+#learn-view .mission-awaiting-mode .v14-scene-option small {
+  color: #475569 !important;
+}
+
+/* =====================================================
+   Region Clear Broadcast - chapter completion overlay
+   ===================================================== */
+.earth-region-clear {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: grid;
+  place-items: center;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(0, 245, 160, 0.2), transparent 32%),
+    linear-gradient(180deg, rgba(8, 11, 24, 0.28), rgba(8, 11, 24, 0.86)),
+    url("assets/agentic-learning-loop.png") center / cover no-repeat;
+}
+
+.earth-region-clear[hidden] {
+  display: none;
+}
+
+.earth-region-clear-panel {
+  width: min(860px, calc(100vw - 44px));
+  min-height: min(620px, calc(100vh - 56px));
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  border: 1px solid rgba(0, 245, 160, 0.34);
+  border-radius: 34px;
+  background: linear-gradient(180deg, rgba(17, 24, 39, 0.82), rgba(8, 11, 24, 0.72));
+  box-shadow: 0 34px 120px rgba(0, 0, 0, 0.46), 0 0 64px rgba(0, 245, 160, 0.18);
+  padding: clamp(28px, 4vw, 54px);
+  backdrop-filter: blur(26px);
+  transition: transform 520ms ease, opacity 520ms ease;
+}
+
+.earth-region-clear-panel .eyebrow {
+  color: var(--eo-green);
+  font-size: 1rem;
+}
+
+.earth-region-clear-panel h1 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2.8rem, 6vw, 5.4rem);
+  line-height: 0.95;
+}
+
+.region-clear-type {
+  border-color: rgba(0, 245, 160, 0.18);
+  color: #e5fff5;
+}
+
+.earth-region-clear.is-complete .earth-region-clear-panel {
+  transform: scale(0.72) translateY(-24px);
+  opacity: 0;
+}
+
+/* Knowledge selection option text contrast only */
+#learn-view .mission-decision-page .agentic-knowledge-group > strong,
+#learn-view .mission-decision-page .agentic-knowledge-check b,
+#learn-view .mission-decision-page .agentic-knowledge-check span,
+#learn-view .mission-decision-page .agentic-knowledge-check label {
+  color: #0f172a !important;
+}
+
+#learn-view .mission-decision-page .agentic-knowledge-check small {
+  color: #475569 !important;
+}
+
+/* Decision option cards: keep every selectable option readable on light cards. */
+#learn-view .mission-decision-page .agentic-knowledge-decision,
+#learn-view .mission-decision-page .agentic-knowledge-decision.selected,
+#learn-view .mission-decision-page .agentic-knowledge-decision.skipped {
+  color: #0f172a !important;
+}
+
+#learn-view .mission-decision-page .agentic-knowledge-section h4,
+#learn-view .mission-decision-page .agentic-knowledge-copy,
+#learn-view .mission-decision-page .agentic-knowledge-copy b,
+#learn-view .mission-decision-page .agentic-knowledge-decision b {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+#learn-view .mission-decision-page .agentic-knowledge-copy small,
+#learn-view .mission-decision-page .agentic-knowledge-decision small {
+  color: #475569 !important;
+  text-shadow: none !important;
+}
+
+#learn-view .mission-decision-page .agentic-knowledge-copy .status-pill {
+  border-color: #cbd5e1 !important;
+  background: #eaf2ff !important;
+  color: #1e3a8a !important;
+}
+
+#learn-view .mission-decision-page .agentic-knowledge-copy .status-pill.locked,
+#learn-view .mission-decision-page .agentic-knowledge-copy .status-pill.todo {
+  border-color: #facc15 !important;
+  background: #fef3c7 !important;
+  color: #92400e !important;
+}
+
+#learn-view .mission-decision-page .agentic-choice-toggle {
+  border-color: #cbd5e1 !important;
+  background: #f8fafc !important;
+}
+
+#learn-view .mission-decision-page .agentic-choice-toggle button {
+  color: #334155 !important;
+  text-shadow: none !important;
+}
+
+#learn-view .mission-decision-page .agentic-choice-toggle button.active {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+#learn-view .mission-decision-page .agentic-actions .button.soft,
+#learn-view .mission-decision-page .agentic-actions .button.secondary {
+  border-color: rgba(148, 163, 184, 0.75) !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Keep submitted quizzes in review mode: focus on wrong-answer analysis first. */
+#learn-view .lesson-player .quiz-submit-panel.submitted .quiz-nav-buttons {
+  display: none !important;
+}
+
+#learn-view .mission-quiz-review #agentic-coach-panel {
+  display: none !important;
+}
+
+#learn-view .eo-quiz-decision-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(320px, 100%);
+  min-height: 58px;
+  margin: 22px auto 4px;
+  font-size: 1.05rem;
+}
