@@ -674,7 +674,7 @@ function renderQuestionInput(unit, question, submitted, result = null) {
               ${selected ? "checked" : ""}
               ${submitted ? "disabled" : ""}
             />
-            <span>${option.value}. ${renderInlineMath(option.label)}</span>
+            <span>${option.value}. ${renderInlineMath(displayOptionLabel(option))}</span>
           </label>
         `;
         })

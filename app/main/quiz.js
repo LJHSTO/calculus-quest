@@ -5,7 +5,7 @@ function selectedChoiceValues(unitId, questionId) {
 
 function optionText(question, value) {
   const option = (question.options || []).find((item) => item.value === value);
-  return option ? `${option.value}. ${option.label}` : value;
+  return option ? `${option.value}. ${displayOptionLabel(option)}` : value;
 }
 
 function displayQuestionText(question = {}) {
@@ -171,7 +171,7 @@ function renderQuestionReview({ question, result, index, unit }) {
         : `<div class="coach-hint-box" data-coach-hint>
             <div class="coach-hint-content">
               <strong>学习建议</strong>
-              <p><b>题目焦点：</b>${renderInlineMath(coach.promptText)}</p>
+              <p><b>题目焦点：</b>${renderQuestionTextWithLinks(question)}</p>
               <p><b>你的选择：</b>${renderInlineMath(coach.selectedText)}</p>
               <p><b>先复盘：</b>这题主要卡在 <em>${escapeHtml(coach.conceptText)}</em>。${escapeHtml(coach.misconception)}</p>
               <p><b>行动建议：</b>${escapeHtml(coach.guidance)} 可以先回看「${escapeHtml(coach.reviewTarget)}」，再用一句话解释为什么自己的选择符合或不符合题干。</p>

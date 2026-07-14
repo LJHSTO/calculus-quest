@@ -1,6 +1,9 @@
 // Admin dashboard behavior, data loading, charts, and exports.
-// Resolve against the page's directory so the site works under a path prefix (e.g. /calculus_quest)
-const API_BASE = new URL(".", window.location.href).href.replace(/\/$/, "");
+// Derive the deployment root from this script, so /admin, /admin.html and path-prefixed deployments agree.
+const ADMIN_SCRIPT_URL = document.currentScript?.src ? new URL(document.currentScript.src, window.location.href) : null;
+const API_BASE = ADMIN_SCRIPT_URL
+  ? new URL("../", ADMIN_SCRIPT_URL).href.replace(/\/$/, "")
+  : new URL(".", window.location.href).href.replace(/\/admin(?:\.html)?\/?$/, "").replace(/\/$/, "");
 let adminToken = sessionStorage.getItem("cq_admin_token") || "";
 let charts = {};
 let allUsers = [];
@@ -28,7 +31,7 @@ function checkAuth() {
         // Network error — keep token, show login with error
         showLogin();
         document.getElementById("login-error").classList.remove("hidden");
-        document.getElementById("login-error").textContent = "无法连接服务器，请确认服务正在运行。";
+        document.getElementById("login-error").textContent = adminConnectionError(result);
       } else {
         adminToken = ""; sessionStorage.removeItem("cq_admin_token"); showLogin();
       }
@@ -56,9 +59,14 @@ async function testToken() {
       headers: { Authorization: `Bearer ${adminToken}` }
     });
     return { ok: r.ok, status: r.status };
-  } catch {
-    return { ok: false, status: 0 }; // network error
+  } catch (error) {
+    return { ok: false, status: 0, error: error?.message || "网络请求失败" };
   }
+}
+
+function adminConnectionError(result = {}) {
+  const detail = result.error ? `（${result.error}）` : "";
+  return `无法连接管理接口 ${API_BASE}/api/admin/stats/overview${detail}`;
 }
 
 document.getElementById("login-btn").addEventListener("click", async () => {
@@ -73,7 +81,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
     // Network error — keep token, show server-down message
     adminToken = ""; // clear to avoid retrying
     document.getElementById("login-error").classList.remove("hidden");
-    document.getElementById("login-error").textContent = "无法连接服务器，请确认服务正在运行。";
+    document.getElementById("login-error").textContent = adminConnectionError(result);
   } else {
     adminToken = "";
     document.getElementById("login-error").classList.remove("hidden");

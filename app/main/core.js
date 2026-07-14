@@ -256,6 +256,14 @@ function escapeHtml(value = "") {
     .replaceAll('"', "&quot;");
 }
 
+function displayOptionLabel(option = {}) {
+  const label = String(option.label ?? option.text ?? "").trim();
+  const value = String(option.value ?? "").trim();
+  if (!label || !value) return label;
+  const escapedValue = value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return label.replace(new RegExp(`^\\s*${escapedValue}\\s*[.．、:：)）-]\\s*`, "i"), "").trim() || label;
+}
+
 function compactLearningCopy(value = "", fallback = "", maxLength = 42) {
   const text = String(value || fallback || "")
     .replace(/<[^>]*>/g, "")

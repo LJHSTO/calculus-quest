@@ -1528,7 +1528,7 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
   }
 
   const plan = remote?.plan || null;
-  const narration = remote?.narration || "学习建议已根据你的答题情况更新下一步。";
+  const narration = agenticStudentFacingText(remote?.narration, "学习建议已根据你的答题情况更新下一步。");
   const plannerAction = plan?.plannerInsight?.recommendedPath?.action || plan?.recommendedPath?.action || "";
   const actions = [];
   const localSkipOrders = AGENTIC_CORE_SCENE_ORDERS.filter((order) => order > unit.sceneOrder && order < 8);
@@ -2220,6 +2220,16 @@ function agenticStudentNarrationForPending(pending) {
   return `请选择接下来最适合你的学习方式：${continueLabel}。`;
 }
 
+function agenticStudentFacingText(value = "", fallback = "") {
+  return String(value || fallback || "")
+    .replace(/\[\[cq-unit:[^|\]\n]+\|[^|\]\n]*\|([^\]\n]+?)(?:\]\]|$)/gi, "$1")
+    .replace(/\[\[cq-unit:[^\]\n]*(?:\]\]|$)/gi, "回看课件")
+    .replace(/\b(?:GH|EXT)-\d{2}-[A-Z0-9_-]+\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([，。；：！？])/g, "$1")
+    .trim();
+}
+
 async function agenticApplyDecision(type) {
   const path = ensureAgenticPath();
   const pending = path.pendingPlan;
@@ -2695,10 +2705,11 @@ function renderAgenticCoachPanel() {
   if (!shouldShowPending) {
     const currentUnit = getUnit(currentUnitId);
     const currentChapter = getChapter(currentChapterId);
-    const narration =
+    const narration = agenticStudentFacingText(
       pending && !agenticPendingAppliesToCurrent(pending)
         ? `当前是「${currentChapter?.label || "本章"}」。这里没有待选择的学习建议，完成测验或当前小节后，我会根据本章表现更新下一步。`
-        : agenticCurrentUnitNarration(currentUnit, path);
+        : agenticCurrentUnitNarration(currentUnit, path)
+    );
     const title = agenticCoachTitleForUnit(currentUnit);
     node.hidden = false;
     const knowledgeChoices = typeof renderKnowledgeSceneChoicePanel === "function" ? renderKnowledgeSceneChoicePanel(currentUnit) : "";
@@ -2722,7 +2733,7 @@ function renderAgenticCoachPanel() {
         <div class="agentic-coach-header">
           <strong>正在批改简答题</strong>
         </div>
-        <p>${escapeHtml(pending.narration || "简答题批改完成后，我会再给出学习路径建议。")}</p>
+        <p>${escapeHtml(agenticStudentFacingText(pending.narration, "简答题批改完成后，我会再给出学习路径建议。"))}</p>
       </section>
     `;
     return;
@@ -2742,7 +2753,7 @@ function renderAgenticCoachPanel() {
       ${escapeHtml(inFlight === action.type ? "处理中..." : action.label)}
     </button>
   `).join("");
-  const narration = agenticStudentNarrationForPending(pending);
+  const narration = agenticStudentFacingText(agenticStudentNarrationForPending(pending));
   node.hidden = false;
   node.innerHTML = `
     <section class="agentic-coach-card decision">

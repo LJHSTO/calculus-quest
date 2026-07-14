@@ -160,7 +160,7 @@ function streamStaticFile(req, res, filePath, type, url, stat) {
   const stream = fs.createReadStream(filePath);
   stream.on("error", (error) => {
     console.error("Static stream error:", error.message);
-    if (!res.headersSent) send(res, 500, "�������ڲ�����");
+    if (!res.headersSent) send(res, 500, "服务器内部错误。");
     else res.destroy(error);
   });
   stream.pipe(res);
@@ -308,7 +308,7 @@ function isUsablePassword(password = "") {
 }
 
 function publicDisplayName(row) {
-  return row?.nickname || row?.email || "δ�����û�";
+  return row?.nickname || row?.email || "未命名用户";
 }
 
 function safePublicParticipant(row) {
@@ -495,8 +495,8 @@ function profileConflict(nicknameNorm = "", emailNorm = "", existingId = "") {
   const { nicknameOwners, emailOwners } = usersForIdentity(nicknameNorm, emailNorm);
   const nicknameOwner = firstOtherUser(nicknameOwners, existingId);
   const emailOwner = firstOtherUser(emailOwners, existingId);
-  if (nicknameOwner) return { field: "nickname", message: "����ǳ��Ѿ���ʹ�á�" };
-  if (emailOwner) return { field: "email", message: "��������Ѿ���ʹ�á�" };
+  if (nicknameOwner) return { field: "nickname", message: "这个昵称已经被使用。" };
+  if (emailOwner) return { field: "email", message: "这个邮箱已经被使用。" };
   return null;
 }
 
@@ -505,10 +505,10 @@ function registrationOwnerConflict(nicknameOwners = [], emailOwners = []) {
   if (owners.length > 1) {
     const sharedNickname = nicknameOwners.length > 1;
     const sharedEmail = emailOwners.length > 1;
-    if (sharedNickname && sharedEmail) return { field: "identity", message: "�ǳƺ������Ѿ��������˺�ʹ�ã��뻻һ���˺���Ϣ��" };
-    if (sharedNickname) return { field: "nickname", message: "����ǳ��Ѿ���ʹ�á�" };
-    if (sharedEmail) return { field: "email", message: "��������Ѿ���ʹ�á�" };
-    return { field: "identity", message: "�ǳƺ�����ֱ����ڲ�ͬ�˺ţ��뻻һ����" };
+    if (sharedNickname && sharedEmail) return { field: "identity", message: "昵称和邮箱已经被其他账号使用，请换一组账号信息。" };
+    if (sharedNickname) return { field: "nickname", message: "这个昵称已经被使用。" };
+    if (sharedEmail) return { field: "email", message: "这个邮箱已经被使用。" };
+    return { field: "identity", message: "昵称和邮箱分别属于不同账号，请换一个。" };
   }
   const owner = owners[0] || null;
   if (!owner?.password_hash) return { owner };
@@ -516,7 +516,7 @@ function registrationOwnerConflict(nicknameOwners = [], emailOwners = []) {
   return {
     owner,
     field: nicknameOwned ? "nickname" : "email",
-    message: nicknameOwned ? "����ǳ��Ѿ���ʹ�á�" : "��������Ѿ���ʹ�á�"
+    message: nicknameOwned ? "这个昵称已经被使用。" : "这个邮箱已经被使用。"
   };
 }
 
@@ -530,10 +530,10 @@ function sendIdentityConstraintError(res, error) {
     ok: false,
     field,
     message: field === "nickname"
-      ? "����ǳ��Ѿ���ʹ�á�"
+      ? "这个昵称已经被使用。"
       : field === "email"
-        ? "��������Ѿ���ʹ�á�"
-        : "�˺���Ϣ�Ѿ���ʹ�á�"
+        ? "这个邮箱已经被使用。"
+        : "账号信息已经被使用。"
   });
   return true;
 }
@@ -635,7 +635,7 @@ function safeStaticPath(urlPath) {
 
 async function handleApi(req, res, url) {
   if (!checkRateLimit(req)) {
-    sendJson(res, 429, { ok: false, message: "�������Ƶ�������Ժ����ԡ�" });
+    sendJson(res, 429, { ok: false, message: "请求过于频繁，请稍后再试。" });
     return;
   }
   try {
@@ -651,7 +651,7 @@ async function handleApi(req, res, url) {
         const route = JSON.parse(fs.readFileSync(routePath, "utf8"));
         sendJson(res, 200, route);
       } catch (error) {
-        sendJson(res, 404, { ok: false, message: "δ�ҵ� Open MAIC v14 ѧϰ·�ߡ�" });
+        sendJson(res, 404, { ok: false, message: "未找到 Open MAIC v14 学习路线。" });
       }
       return;
     }
@@ -659,14 +659,14 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/course/openmaic-audio-map") {
       const resourceRoot = String(url.searchParams.get("root") || "").replace(/^resources[\\/]/, "").replace(/\\/g, "/");
       if (!/^open-maic\/[^/]+$/.test(resourceRoot)) {
-        sendJson(res, 400, { ok: false, message: "��Դ·������ȷ��" });
+        sendJson(res, 400, { ok: false, message: "资源路径不正确。" });
         return;
       }
       const manifestPath = path.join(root, "resources", resourceRoot, "manifest.json");
       const resolved = path.resolve(manifestPath);
       const openMaicRoot = path.resolve(root, "resources", "open-maic");
       if (!resolved.startsWith(openMaicRoot + path.sep) || !fs.existsSync(resolved)) {
-        sendJson(res, 404, { ok: false, message: "δ�ҵ���Ƶӳ�䡣" });
+        sendJson(res, 404, { ok: false, message: "未找到音频映射。" });
         return;
       }
       const manifest = JSON.parse(fs.readFileSync(resolved, "utf8"));
@@ -692,19 +692,19 @@ async function handleApi(req, res, url) {
       const email = cleanEmail(body.email);
       const password = String(body.password || "");
       if (!nickname && !email) {
-        sendJson(res, 400, { ok: false, message: "��������д�ǳƻ����䡣", field: "identity" });
+        sendJson(res, 400, { ok: false, message: "请至少填写昵称或邮箱。", field: "identity" });
         return;
       }
       if (!isValidNickname(nickname)) {
-        sendJson(res, 400, { ok: false, message: "�ǳ���Ҫ 2-24 ���ַ���", field: "nickname" });
+        sendJson(res, 400, { ok: false, message: "昵称需要 2-24 个字符。", field: "nickname" });
         return;
       }
       if (email && !isValidEmail(email)) {
-        sendJson(res, 400, { ok: false, message: "�����ʽ����ȷ��", field: "email" });
+        sendJson(res, 400, { ok: false, message: "邮箱格式不正确。", field: "email" });
         return;
       }
       if (!isUsablePassword(password)) {
-        sendJson(res, 400, { ok: false, message: "������Ҫ 8-72 ���ַ���", field: "password" });
+        sendJson(res, 400, { ok: false, message: "密码需要 8-72 个字符。", field: "password" });
         return;
       }
       const timestamp = nowIso();
@@ -750,14 +750,14 @@ async function handleApi(req, res, url) {
       const identifier = cleanLoginIdentifier(body.identifier || body.nickname || body.email);
       const password = String(body.password || "");
       if (!identifier || !password) {
-        sendJson(res, 400, { ok: false, message: "����д�ǳƻ����䣬���������롣", field: !identifier ? "identifier" : "password" });
+        sendJson(res, 400, { ok: false, message: "请填写昵称或邮箱，并输入密码。", field: !identifier ? "identifier" : "password" });
         return;
       }
       const authLimit = checkAuthAttemptLimit(req, identifier);
       if (!authLimit.ok) {
         sendJson(res, 429, {
           ok: false,
-          message: "���Դ������࣬���Ժ����ԡ�",
+          message: "尝试次数过多，请稍后再试。",
           retryAfterSeconds: authLimit.retryAfterSeconds
         });
         return;
@@ -766,7 +766,7 @@ async function handleApi(req, res, url) {
       const user = findUserByIdentifier(identifier);
       if (!user?.password_hash || !verifyPassword(password, user.password_hash)) {
         recordFailedAuthAttempt(req, identifier);
-        sendJson(res, 401, { ok: false, message: "�˺Ż����벻��ȷ��" });
+        sendJson(res, 401, { ok: false, message: "账号或密码不正确。" });
         return;
       }
       clearAuthAttemptLimit(req, identifier);
@@ -795,7 +795,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/auth/profile") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const nickname = cleanNickname(body.nickname);
       const email = cleanEmail(body.email);
       const currentNickname = auth.participant.nickname || "";
@@ -809,20 +809,20 @@ async function handleApi(req, res, url) {
         sendJson(res, 403, {
           ok: false,
           field: "profile",
-          message: "�˺���Ϣֻ���޸�һ�Σ��Ѳ����ٴ��޸ġ�"
+          message: "账号信息只能修改一次，已不能再次修改。"
         });
         return;
       }
       if (!nickname && !email) {
-        sendJson(res, 400, { ok: false, message: "�ǳƺ��������ٱ���һ����", field: "identity" });
+        sendJson(res, 400, { ok: false, message: "昵称和邮箱至少保留一个。", field: "identity" });
         return;
       }
       if (!isValidNickname(nickname)) {
-        sendJson(res, 400, { ok: false, message: "�ǳ���Ҫ 2-24 ���ַ���", field: "nickname" });
+        sendJson(res, 400, { ok: false, message: "昵称需要 2-24 个字符。", field: "nickname" });
         return;
       }
       if (email && !isValidEmail(email)) {
-        sendJson(res, 400, { ok: false, message: "�����ʽ����ȷ��", field: "email" });
+        sendJson(res, 400, { ok: false, message: "邮箱格式不正确。", field: "email" });
         return;
       }
       const nicknameNorm = normalizeIdentity(nickname);
@@ -848,7 +848,7 @@ async function handleApi(req, res, url) {
         throw error;
       }
       if (!updated) {
-        sendJson(res, 404, { ok: false, message: "�˺Ų����ڣ������µ�¼��" });
+        sendJson(res, 404, { ok: false, message: "账号不存在，请重新登录。" });
         return;
       }
       db.insertEvent({
@@ -873,7 +873,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/auth/me") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       sendJson(res, 200, { ok: true, participant: safePublicParticipant(auth.participant) });
       return;
     }
@@ -882,7 +882,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/event") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const eventId = crypto.randomUUID();
       const timestamp = nowIso();
       const eventType = String(body.type || "event").slice(0, 80);
@@ -925,7 +925,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/events") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const events = Array.isArray(body.events) ? body.events.slice(0, 100) : [];
       const eventIds = [];
       const timestamp = nowIso();
@@ -949,7 +949,7 @@ async function handleApi(req, res, url) {
     // ---- Learning Snapshot ----
     if (req.method === "GET" && url.pathname === "/api/learning/snapshot") {
       const auth = authenticate(req);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const snap = db.getLatestSnapshot(auth.participant.id);
       if (!snap) { sendJson(res, 200, { ok: true, snapshot: null }); return; }
       let data = {};
@@ -961,7 +961,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/snapshot") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
@@ -982,7 +982,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/reset") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
@@ -1004,7 +1004,7 @@ async function handleApi(req, res, url) {
     // ---- Learning Quiz Results (for cross-browser sync - authoritative source) ----
     if (req.method === "GET" && url.pathname === "/api/learning/quiz-results") {
       const auth = authenticate(req);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const results = db.getQuizResultsByUser(auth.participant.id, 500);
       sendJson(res, 200, { ok: true, data: results });
       return;
@@ -1012,7 +1012,7 @@ async function handleApi(req, res, url) {
 
     // ---- Admin: Export raw data (backward compat) ----
     if (req.method === "GET" && url.pathname === "/api/admin/export") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const d = db.getDbSync();
       const users = [];
       const us = d.prepare("SELECT * FROM users");
@@ -1038,49 +1038,49 @@ async function handleApi(req, res, url) {
 
     // ---- Admin Stats APIs ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/overview") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.statsOverview(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/chapter-accuracy") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.chapterAccuracy(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/question-errors") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.questionErrors(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/user-progress") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.userProgress(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/daily-activity") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.dailyActivity(30, dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/phase-comparison") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.phaseComparison(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/user-detail") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const userId = url.searchParams.get("userId") || "";
       if (!userId) { sendJson(res, 400, { ok: false, message: "userId required." }); return; }
       const dates = getDateRange(url);
@@ -1091,34 +1091,34 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/users") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       sendJson(res, 200, { ok: true, data: db.listUsers() });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/question-type-accuracy") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.questionTypeAccuracy(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/score-distribution") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.scoreDistribution(dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/hourly-activity") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.hourlyActivity(30, dates) });
       return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/short-answer-responses") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.shortAnswerResponses(dates) });
       return;
@@ -1126,7 +1126,7 @@ async function handleApi(req, res, url) {
     
     // ---- Admin: Interactions tracking ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interactions") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 100), 1000));
       const offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
@@ -1145,7 +1145,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/grade") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const questions = Array.isArray(body.questions) ? body.questions.slice(0, 50) : [];
       try {
         const results = await orchestrator.gradeOnly(questions);
@@ -1160,7 +1160,7 @@ async function handleApi(req, res, url) {
     if (req.method === "POST" && url.pathname === "/api/learning/kg/plan") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
-      if (!auth) { sendJson(res, 401, { ok: false, message: "���ȵ�¼��" }); return; }
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const chapterId = String(body.chapterId || "").trim();
       const currentUnitId = String(body.currentUnitId || "").trim();
       if (!chapterId) { sendJson(res, 400, { ok: false, message: "chapterId required." }); return; }
@@ -1202,7 +1202,7 @@ async function handleApi(req, res, url) {
         const summary = kg.summariseQuizResults(filtered);
         const planResult = coach.plan({ chapterId, currentUnitId, quizSummary: summary });
         let narration = "", provider = "fallback";
-        try { const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "ͬѧ" }); narration = out.narration; provider = out.provider; } catch { narration = "��AI ������ʱ���ߣ������ǻ��ڹ���Ľ��顣��"; }
+        try { const out = await coach.explain(planResult, { studentName: auth.participant.nickname || "同学" }); narration = out.narration; provider = out.provider; } catch { narration = "（AI 助教暂时离线，下面是基于规则的建议。）"; }
         const fallbackEvidence = body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null;
         let decisionId = "";
         let decisionCreatedAt = "";
@@ -1223,7 +1223,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-dashboard") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionDashboard(dates) });
@@ -1231,7 +1231,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/agentic-decision-trace") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.agenticDecisionTrace(dates) });
@@ -1239,7 +1239,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-evidence-snapshots") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionEvidenceSnapshots(dates) });
@@ -1247,7 +1247,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interaction-summary") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.interactionSummary(dates) });
@@ -1255,7 +1255,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/unit-engagement") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.unitEngagement(dates) });
@@ -1263,7 +1263,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/skip-repeat") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.skipRepeatStats(dates) });
@@ -1271,7 +1271,7 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/parameter-changes") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.parameterChangeStats(dates) });
@@ -1279,22 +1279,22 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/path-analysis") {
-      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "��Ҫ����Ա���롣" }); return; }
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
       sendJson(res, 200, { ok: true, data: db.pathAnalysis(dates) });
       return;
     }
 
-    sendJson(res, 404, { ok: false, message: "�ӿڲ����ڡ�" });
+    sendJson(res, 404, { ok: false, message: "接口不存在。" });
   } catch (error) {
     console.error("API error:", error);
     const status = error.message === "Request body is too large" ? 413
       : error.message === "Invalid JSON body" ? 400
       : 500;
-    const message = status === 500 ? "�������ڲ�����"
-      : error.message === "Request body is too large" ? "�������ݹ���"
-        : error.message === "Invalid JSON body" ? "�����ʽ����ȷ��"
+    const message = status === 500 ? "服务器内部错误。"
+      : error.message === "Request body is too large" ? "请求内容过大。"
+        : error.message === "Invalid JSON body" ? "请求格式不正确。"
           : error.message;
     sendJson(res, status, { ok: false, message });
   }
@@ -1329,7 +1329,7 @@ const server = http.createServer((req, res) => {
 
   const filePath = safeStaticPath(url.pathname);
   if (!filePath) {
-    send(res, 403, "��ֹ����");
+    send(res, 403, "禁止访问");
     return;
   }
   if (isBlockedStaticResource(filePath)) {
