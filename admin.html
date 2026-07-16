@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculus Quest - 研究数据分析面板</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="admin/admin.css?v=20260618a" />
+    <link rel="stylesheet" href="admin/admin.css?v=20260716-learning-feedback" />
 </head>
 <body>
 <div id="login-gate" class="hidden">
@@ -43,9 +43,6 @@
   </header>
 
   <div class="container">
-    <!-- Overview Metrics -->
-    <div class="metric-row" id="overview-metrics"></div>
-
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" data-tab="overview">总览</button>
@@ -53,6 +50,7 @@
       <button class="tab" data-tab="questions">题目分析</button>
       <button class="tab" data-tab="effectiveness">学习效果</button>
       <button class="tab" data-tab="users">用户详情</button>
+      <button class="tab" data-tab="feedback">问题反馈</button>
       <button class="tab" data-tab="activity">活跃趋势</button>
       <button class="tab" data-tab="shortanswers">简答题</button>
       <button class="tab" data-tab="interactions">交互追踪</button>
@@ -60,6 +58,7 @@
 
     <!-- Tab: Overview -->
     <div id="tab-overview" class="tab-content">
+      <div class="metric-row" id="overview-metrics"></div>
       <div class="chart-grid">
         <div class="chart-card">
           <h3>每日活跃用户 & Quiz 提交趋势</h3>
@@ -177,13 +176,44 @@
       </div>
     </div>
 
+    <!-- Tab: Feedback -->
+    <div id="tab-feedback" class="tab-content hidden">
+      <div class="metric-row" id="feedback-metrics"></div>
+      <div class="chart-card full-width">
+        <div class="feedback-toolbar">
+          <label>类型
+            <select id="feedback-type-filter">
+              <option value="">全部类型</option>
+              <option value="learning_content">学习内容</option>
+              <option value="courseware">课件反馈</option>
+              <option value="platform">平台功能</option>
+              <option value="other">其他建议</option>
+            </select>
+          </label>
+          <label>对象
+            <select id="feedback-scope-filter">
+              <option value="">全部对象</option>
+              <option value="global">全局反馈</option>
+              <option value="courseware">具体课件</option>
+            </select>
+          </label>
+          <label class="feedback-search-label">搜索
+            <input id="feedback-query-filter" type="search" placeholder="学生、正文、课件或知识点" />
+          </label>
+          <button class="btn btn-sm btn-outline" id="export-feedback-csv" type="button">导出 CSV</button>
+        </div>
+        <div class="table-wrap feedback-table-wrap">
+          <table id="table-feedback">
+            <thead><tr><th>时间</th><th>学生</th><th>类型</th><th>反馈对象</th><th>学习位置</th><th>反馈正文</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- Tab: Activity -->
     <div id="tab-activity" class="tab-content hidden">
       <div class="chart-grid">
-        <div class="chart-card">
-          <h3>每日活跃趋势 (30天)</h3>
-          <div class="chart-wrap"><canvas id="chart-activity-daily"></canvas></div>
-        </div>
         <div class="chart-card">
           <h3>时段活跃分布 (24小时)</h3>
           <p class="chart-desc">近30天各时段事件量分布</p>
@@ -317,6 +347,6 @@
   </div>
 </div>
 
-<script src="admin/admin.js?v=20260715-admin-api-base-v2"></script>
+<script src="admin/admin.js?v=20260716-learning-feedback"></script>
 </body>
 </html>

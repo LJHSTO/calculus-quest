@@ -9,6 +9,7 @@ let charts = {};
 let allUsers = [];
 let cachedChapterData = [];
 let cachedPhaseData = [];
+let cachedFeedbackRows = [];
 let interactionsData = { rows: [], total: 0, limit: 100, offset: 0 };
 let visibleInteractionRows = [];
 let interactionPage = Number(sessionStorage.getItem("cq_interaction_page") || 0);
@@ -152,7 +153,7 @@ function interactionQueryParams() {
 async function loadAll(signal) {
   document.getElementById("load-error").classList.add("hidden");
   try {
-    const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, interactions, interactionDashboard, agenticTrace] = await Promise.all([
+    const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, feedbackDashboard, interactions, interactionDashboard, agenticTrace] = await Promise.all([
       fetchStats("overview", "", signal),
       fetchStats("daily-activity", "", signal),
       fetchStats("user-progress", "", signal),
@@ -163,6 +164,7 @@ async function loadAll(signal) {
       fetchStats("score-distribution", "", signal),
       fetchStats("hourly-activity", "", signal),
       fetchStats("short-answer-responses", "", signal),
+      fetchStats("feedback", "", signal),
       fetchStats("interactions", interactionQueryParams(), signal),
       fetchStats("interaction-dashboard", interactionQueryParams(), signal),
       fetchStats("agentic-decision-trace", interactionUserId ? "userId=" + encodeURIComponent(interactionUserId) : "", signal)
@@ -190,7 +192,8 @@ async function loadAll(signal) {
     try { renderLearningGainChart(phase); } catch (e) { console.warn("Learning gain chart:", e); }
     try { renderPhaseCompactTable(phase); } catch (e) { console.warn("Phase table:", e); }
     try { renderUserTable(userProg); } catch (e) { console.warn("User table:", e); }
-    try { renderActivityTab(daily, hourly, phase); } catch (e) { console.warn("Activity tab:", e); }
+    try { renderFeedbackDashboard(feedbackDashboard); } catch (e) { console.warn("Feedback:", e); }
+    try { renderActivityTab(hourly, phase); } catch (e) { console.warn("Activity tab:", e); }
     try { renderShortAnswers(shortAnswers); } catch (e) { console.warn("Short answers:", e); }
     try { renderInteractionUserOptions(userProg); } catch (e) { console.warn("Interaction users:", e); }
     try { renderInteractionSummary(interactionSummary); } catch (e) { console.warn("Interaction summary:", e); }
@@ -618,7 +621,7 @@ function renderPhaseCompactTable(data) {
 function renderUserTable(users) {
   const table = document.getElementById("table-users");
   document.getElementById("user-total-count").textContent = `共 ${users.length} 位用户`;
-  table.innerHTML = `<thead><tr><th>昵称</th><th>用户ID</th><th>最后活跃</th><th>Quiz 数</th><th>覆盖单元</th><th>正确率</th><th>总得分</th><th>操作</th></tr></thead>
+  table.innerHTML = `<thead><tr><th>昵称</th><th>用户ID</th><th>最后活跃</th><th>测验提交</th><th>测验覆盖单元</th><th>正确率</th><th>总得分</th><th>操作</th></tr></thead>
     <tbody>${users.map(u => `<tr>
       <td style="font-weight:600;">${u.nickname}</td>
       <td style="font-size:0.75rem;color:var(--muted);">${(u.user_id || "").slice(-12)}</td>
@@ -689,7 +692,7 @@ async function loadUserDetail(userId) {
       <p><strong>总答题数:</strong> ${detail.quizResults.length}</p>
       <p><strong>前测次数:</strong> ${preCount} | <strong>后测次数:</strong> ${postCount}</p>
       <p><strong>覆盖章节:</strong> ${detail.chapterSummary.length} 个</p>
-      <p><strong>总事件数:</strong> ${detail.events.length}</p>
+      <p><strong>总事件数:</strong> ${detail.eventCount}</p>
       <p><strong>注册时间:</strong> ${(detail.user.created_at || "").slice(0, 16)}</p>
     `;
 
@@ -699,31 +702,92 @@ async function loadUserDetail(userId) {
   }
 }
 
-// ---- Activity Tab ----
-function renderActivityTab(dailyData, hourlyData, phaseData) {
-  // Daily activity (duplicate the overview chart for this tab)
-  destroyChart("activityDaily");
-  const ctx1 = document.getElementById("chart-activity-daily").getContext("2d");
-  charts.activityDaily = new Chart(ctx1, {
-    type: "line",
-    data: {
-      labels: dailyData.map(d => d.date),
-      datasets: [
-        { label: "活跃用户", data: dailyData.map(d => d.active_users), borderColor: "#0b8f8a", backgroundColor: "rgba(11,143,138,0.1)", fill: true, tension: 0.3, pointRadius: 2 },
-        { label: "总事件", data: dailyData.map(d => d.events_count), borderColor: "#3f6fa4", backgroundColor: "rgba(63,111,164,0.08)", fill: true, tension: 0.3, pointRadius: 2, yAxisID: "y1" }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      interaction: { intersect: false, mode: "index" },
-      plugins: { legend: { position: "bottom" } },
-      scales: {
-        y: { beginAtZero: true, title: { display: true, text: "活跃用户" }, grid: { color: "#f0ece4" } },
-        y1: { position: "right", beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: "总事件" } }
-      }
-    }
-  });
+// ---- Learning Feedback ----
+const feedbackTypeLabels = {
+  learning_content: "学习内容",
+  courseware: "课件反馈",
+  platform: "平台功能",
+  other: "其他建议"
+};
 
+function visibleFeedbackRows() {
+  const type = document.getElementById("feedback-type-filter")?.value || "";
+  const scope = document.getElementById("feedback-scope-filter")?.value || "";
+  const query = (document.getElementById("feedback-query-filter")?.value || "").trim().toLowerCase();
+  return cachedFeedbackRows.filter((row) => {
+    if (type && row.feedback_type !== type) return false;
+    if (scope && row.target_scope !== scope) return false;
+    if (!query) return true;
+    return [
+      row.nickname,
+      row.user_id,
+      row.content,
+      row.resource_title,
+      row.knowledge_point,
+      row.chapter_id,
+      row.unit_id
+    ].some((value) => String(value || "").toLowerCase().includes(query));
+  });
+}
+
+function feedbackTargetLabel(row) {
+  if (row.feedback_type !== "courseware") return "全局反馈";
+  if (row.target_scope !== "courseware") return "全局课件反馈";
+  return row.resource_title || row.resource_file || "具体课件";
+}
+
+function renderFeedbackDashboard(data = {}) {
+  if (Array.isArray(data.rows)) cachedFeedbackRows = data.rows;
+  const rows = visibleFeedbackRows();
+  const metrics = document.getElementById("feedback-metrics");
+  if (metrics) {
+    metrics.innerHTML = `
+      <div class="metric-card highlight">
+        <div class="label">总反馈数</div><div class="value">${rows.length}</div>
+        <div class="sub">当前日期与筛选范围</div>
+      </div>
+      <div class="metric-card">
+        <div class="label">课件反馈数</div><div class="value">${rows.filter((row) => row.feedback_type === "courseware").length}</div>
+        <div class="sub">具体课件与全局课件建议</div>
+      </div>
+      <div class="metric-card good">
+        <div class="label">反馈学生数</div><div class="value">${new Set(rows.map((row) => row.user_id)).size}</div>
+        <div class="sub">提交过反馈的学生</div>
+      </div>
+    `;
+  }
+
+  const tbody = document.querySelector("#table-feedback tbody");
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = "<tr><td colspan='6'>当前筛选条件下暂无问题反馈。</td></tr>";
+    return;
+  }
+  tbody.innerHTML = rows.map((row) => {
+    const location = [row.knowledge_point, row.chapter_id, row.unit_id]
+      .filter(Boolean)
+      .map((value) => esc(value))
+      .join("<br>");
+    const content = String(row.content || "");
+    const preview = content.length > 90 ? content.slice(0, 90) + "…" : content;
+    return `<tr>
+      <td class="nowrap">${esc(shortDateTime(row.created_at))}</td>
+      <td><strong>${esc(row.nickname || "未命名")}</strong><br><span class="muted">${esc((row.user_id || "").slice(-8))}</span></td>
+      <td><span class="badge badge-blue">${esc(feedbackTypeLabels[row.feedback_type] || row.feedback_type)}</span></td>
+      <td>${esc(feedbackTargetLabel(row))}${row.scene_type ? `<br><span class="muted">${esc(row.scene_type)}</span>` : ""}</td>
+      <td>${location || "—"}</td>
+      <td class="feedback-content-cell">
+        <details class="feedback-details">
+          <summary>${esc(preview)}</summary>
+          <p>${esc(content)}</p>
+        </details>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+// ---- Activity Tab ----
+function renderActivityTab(hourlyData, phaseData) {
   // Hourly activity
   destroyChart("hourly");
   if (hourlyData && hourlyData.length > 0) {
@@ -2014,6 +2078,10 @@ document.getElementById("user-search-input").addEventListener("keydown", (e) => 
   if (e.key === "Enter") document.getElementById("user-search-btn").click();
 });
 
+document.getElementById("feedback-type-filter")?.addEventListener("change", () => renderFeedbackDashboard());
+document.getElementById("feedback-scope-filter")?.addEventListener("change", () => renderFeedbackDashboard());
+document.getElementById("feedback-query-filter")?.addEventListener("input", () => renderFeedbackDashboard());
+
 // ---- Init ----
 // ---- CSV Export (research) ----
 function csvCell(value) {
@@ -2033,7 +2101,7 @@ function downloadCsv(filename, rows) {
 document.getElementById("export-users-csv").addEventListener("click", () => {
   const data = allUsers;
   if (!data || !data.length) return;
-  const rows = [["昵称","用户ID","最后活跃","Quiz数","覆盖单元数","正确率%","总得分","总分"]];
+  const rows = [["昵称","用户ID","最后活跃","测验提交","测验覆盖单元","正确率%","总得分","总分"]];
   data.forEach(u => {
     rows.push([
       u.nickname || "", u.user_id || "",
@@ -2050,6 +2118,33 @@ document.getElementById("export-users-csv").addEventListener("click", () => {
   a.download = "user-progress-export.csv";
   a.click();
   URL.revokeObjectURL(a.href);
+});
+
+document.getElementById("export-feedback-csv")?.addEventListener("click", () => {
+  const data = visibleFeedbackRows();
+  if (!data.length) return;
+  const rows = [[
+    "时间", "学生", "用户ID", "类型", "目标范围", "章节ID", "模块ID",
+    "单元ID", "知识点", "场景类型", "课件标题", "课件资源", "反馈正文"
+  ]];
+  data.forEach((row) => {
+    rows.push([
+      row.created_at || "",
+      row.nickname || "",
+      row.user_id || "",
+      feedbackTypeLabels[row.feedback_type] || row.feedback_type || "",
+      row.target_scope || "",
+      row.chapter_id || "",
+      row.module_id || "",
+      row.unit_id || "",
+      row.knowledge_point || "",
+      row.scene_type || "",
+      row.resource_title || "",
+      row.resource_file || "",
+      row.content || ""
+    ]);
+  });
+  downloadCsv("learning-feedback-export.csv", rows);
 });
 
 document.getElementById("export-interactions-csv").addEventListener("click", () => {
