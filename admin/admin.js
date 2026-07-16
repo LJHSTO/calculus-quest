@@ -10,6 +10,7 @@ let allUsers = [];
 let cachedChapterData = [];
 let cachedPhaseData = [];
 let cachedFeedbackRows = [];
+let cachedFeedbackSummary = { total: 0, courseware: 0, users: 0 };
 let interactionsData = { rows: [], total: 0, limit: 100, offset: 0 };
 let visibleInteractionRows = [];
 let interactionPage = Number(sessionStorage.getItem("cq_interaction_page") || 0);
@@ -20,8 +21,10 @@ let cachedAgenticTraceRows = [];
 let unitEngagementSort = { key: sessionStorage.getItem("cq_unit_engagement_sort_key") || "seconds", dir: sessionStorage.getItem("cq_unit_engagement_sort_dir") || "desc" };
 let currentRange = sessionStorage.getItem("cq_admin_range") || "";
 let loadController = null;
+let feedbackLoadController = null;
 let refreshCooldown = false;
 let refreshTimer = null;
+let feedbackFilterTimer = null;
 
 // ---- Auth ----
 function checkAuth() {
@@ -164,7 +167,7 @@ async function loadAll(signal) {
       fetchStats("score-distribution", "", signal),
       fetchStats("hourly-activity", "", signal),
       fetchStats("short-answer-responses", "", signal),
-      fetchStats("feedback", "", signal),
+      fetchStats("feedback", feedbackFilterQueryParams(), signal),
       fetchStats("interactions", interactionQueryParams(), signal),
       fetchStats("interaction-dashboard", interactionQueryParams(), signal),
       fetchStats("agentic-decision-trace", interactionUserId ? "userId=" + encodeURIComponent(interactionUserId) : "", signal)
@@ -710,24 +713,19 @@ const feedbackTypeLabels = {
   other: "其他建议"
 };
 
-function visibleFeedbackRows() {
+function feedbackFilterQueryParams() {
   const type = document.getElementById("feedback-type-filter")?.value || "";
   const scope = document.getElementById("feedback-scope-filter")?.value || "";
-  const query = (document.getElementById("feedback-query-filter")?.value || "").trim().toLowerCase();
-  return cachedFeedbackRows.filter((row) => {
-    if (type && row.feedback_type !== type) return false;
-    if (scope && row.target_scope !== scope) return false;
-    if (!query) return true;
-    return [
-      row.nickname,
-      row.user_id,
-      row.content,
-      row.resource_title,
-      row.knowledge_point,
-      row.chapter_id,
-      row.unit_id
-    ].some((value) => String(value || "").toLowerCase().includes(query));
-  });
+  const query = (document.getElementById("feedback-query-filter")?.value || "").trim();
+  const parts = [];
+  if (type) parts.push("type=" + encodeURIComponent(type));
+  if (scope) parts.push("scope=" + encodeURIComponent(scope));
+  if (query) parts.push("q=" + encodeURIComponent(query));
+  return parts.join("&");
+}
+
+function visibleFeedbackRows() {
+  return cachedFeedbackRows;
 }
 
 function feedbackTargetLabel(row) {
@@ -738,23 +736,38 @@ function feedbackTargetLabel(row) {
 
 function renderFeedbackDashboard(data = {}) {
   if (Array.isArray(data.rows)) cachedFeedbackRows = data.rows;
+  if (data.summary && typeof data.summary === "object") {
+    cachedFeedbackSummary = {
+      total: Number(data.summary.total || 0),
+      courseware: Number(data.summary.courseware || 0),
+      users: Number(data.summary.users || 0)
+    };
+  }
   const rows = visibleFeedbackRows();
+  const summary = cachedFeedbackSummary;
   const metrics = document.getElementById("feedback-metrics");
   if (metrics) {
     metrics.innerHTML = `
       <div class="metric-card highlight">
-        <div class="label">总反馈数</div><div class="value">${rows.length}</div>
-        <div class="sub">当前日期与筛选范围</div>
+        <div class="label">总反馈数</div><div class="value">${summary.total}</div>
+        <div class="sub">当前日期与筛选条件</div>
       </div>
       <div class="metric-card">
-        <div class="label">课件反馈数</div><div class="value">${rows.filter((row) => row.feedback_type === "courseware").length}</div>
+        <div class="label">课件反馈数</div><div class="value">${summary.courseware}</div>
         <div class="sub">具体课件与全局课件建议</div>
       </div>
       <div class="metric-card good">
-        <div class="label">反馈学生数</div><div class="value">${new Set(rows.map((row) => row.user_id)).size}</div>
+        <div class="label">反馈学生数</div><div class="value">${summary.users}</div>
         <div class="sub">提交过反馈的学生</div>
       </div>
     `;
+  }
+
+  const resultNote = document.getElementById("feedback-result-note");
+  if (resultNote) {
+    resultNote.textContent = summary.total > rows.length
+      ? `共 ${summary.total} 条匹配记录，当前显示最近 ${rows.length} 条；CSV 导出当前显示结果。`
+      : `当前显示 ${rows.length} 条匹配记录；CSV 包含完整正文。`;
   }
 
   const tbody = document.querySelector("#table-feedback tbody");
@@ -784,6 +797,28 @@ function renderFeedbackDashboard(data = {}) {
       </td>
     </tr>`;
   }).join("");
+}
+
+async function loadFeedbackDashboard() {
+  if (feedbackLoadController) feedbackLoadController.abort();
+  feedbackLoadController = new AbortController();
+  const note = document.getElementById("feedback-result-note");
+  if (note) note.textContent = "正在加载反馈…";
+  try {
+    const data = await fetchStats("feedback", feedbackFilterQueryParams(), feedbackLoadController.signal);
+    renderFeedbackDashboard(data);
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    if (note) note.textContent = "反馈加载失败，请检查连接后重试。";
+  }
+}
+
+function debouncedLoadFeedbackDashboard() {
+  if (feedbackFilterTimer) clearTimeout(feedbackFilterTimer);
+  feedbackFilterTimer = setTimeout(() => {
+    feedbackFilterTimer = null;
+    loadFeedbackDashboard();
+  }, 250);
 }
 
 // ---- Activity Tab ----
@@ -2078,14 +2113,14 @@ document.getElementById("user-search-input").addEventListener("keydown", (e) => 
   if (e.key === "Enter") document.getElementById("user-search-btn").click();
 });
 
-document.getElementById("feedback-type-filter")?.addEventListener("change", () => renderFeedbackDashboard());
-document.getElementById("feedback-scope-filter")?.addEventListener("change", () => renderFeedbackDashboard());
-document.getElementById("feedback-query-filter")?.addEventListener("input", () => renderFeedbackDashboard());
+document.getElementById("feedback-type-filter")?.addEventListener("change", loadFeedbackDashboard);
+document.getElementById("feedback-scope-filter")?.addEventListener("change", loadFeedbackDashboard);
+document.getElementById("feedback-query-filter")?.addEventListener("input", debouncedLoadFeedbackDashboard);
 
 // ---- Init ----
 // ---- CSV Export (research) ----
 function csvCell(value) {
-  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+  return AdminCsv.csvCell(value);
 }
 
 function downloadCsv(filename, rows) {

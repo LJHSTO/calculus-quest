@@ -892,12 +892,18 @@ async function handleApi(req, res, url) {
         sendJson(res, 400, normalized);
         return;
       }
+      const validatedTarget = feedback.validateCoursewareFeedbackTarget(normalized.value, kg.nodeById);
+      if (!validatedTarget.ok) {
+        sendJson(res, 400, validatedTarget);
+        return;
+      }
+      const feedbackValue = validatedTarget.value;
       const feedbackId = crypto.randomUUID();
       const timestamp = nowIso();
       db.insertFeedback({
         id: feedbackId,
         user_id: auth.participant.id,
-        ...normalized.value,
+        ...feedbackValue,
         created_at: timestamp
       });
       db.insertEvent({
@@ -906,9 +912,9 @@ async function handleApi(req, res, url) {
         type: "feedback_submit",
         payload: {
           feedbackId,
-          feedbackType: normalized.value.feedback_type,
-          targetScope: normalized.value.target_scope,
-          contentLength: normalized.value.content.length
+          feedbackType: feedbackValue.feedback_type,
+          targetScope: feedbackValue.target_scope,
+          contentLength: feedbackValue.content.length
         },
         created_at: timestamp
       });

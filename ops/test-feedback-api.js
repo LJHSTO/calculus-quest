@@ -118,6 +118,23 @@ async function main() {
     assert.equal(tooLong.response.status, 400);
     assert.equal(tooLong.payload.code, "feedback_content_too_long");
 
+    const forgedCourseware = await jsonRequest(baseUrl, "/api/learning/feedback", {
+      method: "POST",
+      token: learnerToken,
+      body: {
+        feedbackType: "courseware",
+        content: "这条反馈伪造了一个不存在的课件目标。",
+        targetScope: "courseware",
+        unitId: "forged-unit",
+        sceneType: "simulation",
+        resourceFile: "../forged.html",
+        resourceTitle: "伪造课件",
+        currentView: "feedback"
+      }
+    });
+    assert.equal(forgedCourseware.response.status, 400);
+    assert.equal(forgedCourseware.payload.code, "feedback_target_invalid");
+
     const globalFeedback = await jsonRequest(baseUrl, "/api/learning/feedback", {
       method: "POST",
       token: learnerToken,
@@ -131,6 +148,25 @@ async function main() {
     assert.equal(globalFeedback.response.status, 200);
     assert.ok(globalFeedback.payload.feedbackId);
 
+    const route = JSON.parse(fs.readFileSync(
+      path.resolve(__dirname, "..", "data", "openmaic-v14-route.json"),
+      "utf8"
+    ));
+    let legalTarget = null;
+    for (const chapter of route.chapters || []) {
+      for (const module of chapter.modules || []) {
+        for (const knowledgePoint of module.knowledgePoints || []) {
+          const candidate = knowledgePoint.resourceCandidates?.[0];
+          if (!candidate) continue;
+          legalTarget = { chapter, module, knowledgePoint, candidate };
+          break;
+        }
+        if (legalTarget) break;
+      }
+      if (legalTarget) break;
+    }
+    assert.ok(legalTarget, "route must contain at least one legal courseware feedback target");
+
     const coursewareFeedback = await jsonRequest(baseUrl, "/api/learning/feedback", {
       method: "POST",
       token: learnerToken,
@@ -138,13 +174,13 @@ async function main() {
         feedbackType: "courseware",
         content: "拖动滑块后图像没有及时变化。",
         targetScope: "courseware",
-        chapterId: "V14-C1",
-        moduleId: "V14-C1-M1",
-        unitId: "V14-C1-M1-KP1",
-        knowledgePoint: "函数与变化",
-        sceneType: "simulation",
-        resourceFile: "simulation.html",
-        resourceTitle: "函数变化拖动实验",
+        chapterId: "forged-chapter",
+        moduleId: "forged-module",
+        unitId: legalTarget.knowledgePoint.id,
+        knowledgePoint: "伪造知识点名称",
+        sceneType: legalTarget.candidate.type || legalTarget.candidate.widgetType,
+        resourceFile: legalTarget.candidate.file,
+        resourceTitle: "伪造课件标题",
         currentView: "feedback"
       }
     });
@@ -165,7 +201,10 @@ async function main() {
     assert.equal(dashboard.payload.data.summary.users, 1);
     assert.equal(dashboard.payload.data.rows.length, 2);
     assert.equal(dashboard.payload.data.rows[0].content, "拖动滑块后图像没有及时变化。");
-    assert.equal(dashboard.payload.data.rows[0].resource_title, "函数变化拖动实验");
+    assert.equal(dashboard.payload.data.rows[0].chapter_id, legalTarget.chapter.id);
+    assert.equal(dashboard.payload.data.rows[0].module_id, legalTarget.module.id);
+    assert.equal(dashboard.payload.data.rows[0].knowledge_point, legalTarget.knowledgePoint.name);
+    assert.equal(dashboard.payload.data.rows[0].resource_title, legalTarget.candidate.title);
     assert.equal(dashboard.payload.data.rows[0].nickname, nickname);
 
     const coursewareOnly = await jsonRequest(baseUrl, "/api/admin/stats/feedback?type=courseware", {

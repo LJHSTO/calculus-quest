@@ -224,6 +224,9 @@
     }
     .feedback-search-label { flex: 1 1 280px; }
     .feedback-search-label input { width: 100%; }
+    .feedback-result-note {
+      min-height: 20px; margin: -3px 0 10px; color: var(--muted); font-size: 0.8rem;
+    }
     .feedback-table-wrap { max-height: 620px; overflow: auto; }
     #table-feedback { min-width: 1080px; }
     #table-feedback .nowrap { white-space: nowrap; font-variant-numeric: tabular-nums; }

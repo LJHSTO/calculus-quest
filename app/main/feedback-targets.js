@@ -57,5 +57,10 @@
     return [globalTarget, ...concrete];
   }
 
-  return { buildCoursewareFeedbackTargets };
+  function feedbackTargetIdFromPointer(eventTarget, dragState = null) {
+    const directTarget = eventTarget?.closest?.("[data-feedback-target]")?.dataset?.feedbackTarget || "";
+    return directTarget || String(dragState?.startTargetId || "");
+  }
+
+  return { buildCoursewareFeedbackTargets, feedbackTargetIdFromPointer };
 });

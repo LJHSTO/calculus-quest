@@ -10,8 +10,24 @@ assert.equal(
   "function",
   "target builder must exist"
 );
+assert.equal(
+  typeof targetModule.feedbackTargetIdFromPointer,
+  "function",
+  "pointer target resolver must exist"
+);
 
-const { buildCoursewareFeedbackTargets } = targetModule;
+const { buildCoursewareFeedbackTargets, feedbackTargetIdFromPointer } = targetModule;
+
+const directPointerTarget = feedbackTargetIdFromPointer({
+  closest: () => ({ dataset: { feedbackTarget: "courseware:game:game.html" } })
+});
+assert.equal(directPointerTarget, "courseware:game:game.html");
+
+const capturedPointerTarget = feedbackTargetIdFromPointer(
+  { closest: () => null },
+  { startTargetId: "courseware:game:game.html" }
+);
+assert.equal(capturedPointerTarget, "courseware:game:game.html");
 
 const unit = {
   id: "V14-C1-M1-KP1",

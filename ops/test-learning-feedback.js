@@ -13,10 +13,15 @@ try {
 } catch {}
 
 assert.equal(typeof feedbackModule.normalizeFeedbackInput, "function", "normalizeFeedbackInput must exist");
+assert.equal(
+  typeof feedbackModule.validateCoursewareFeedbackTarget,
+  "function",
+  "validateCoursewareFeedbackTarget must exist"
+);
 assert.equal(typeof db.insertFeedback, "function", "db.insertFeedback must exist");
 assert.equal(typeof db.feedbackDashboard, "function", "db.feedbackDashboard must exist");
 
-const { normalizeFeedbackInput } = feedbackModule;
+const { normalizeFeedbackInput, validateCoursewareFeedbackTarget } = feedbackModule;
 
 async function main() {
   await db.getDb();
@@ -53,6 +58,39 @@ async function main() {
   assert.equal(normalized.ok, true);
   assert.equal(normalized.value.content, "拖动滑块后图像没有变化。");
   assert.equal(normalized.value.target_scope, "courseware");
+
+  const canonicalTarget = validateCoursewareFeedbackTarget(normalized.value, (unitId) => (
+    unitId === "V14-C1-M1-KP1"
+      ? {
+          id: unitId,
+          kind: "unit",
+          role: "knowledge",
+          chapterId: "V14-C1",
+          moduleId: "GH-01",
+          title: "函数与变化",
+          resourceCandidates: [{
+            file: "demo.html",
+            title: "函数变化拖动实验（route）",
+            type: "simulation"
+          }]
+        }
+      : null
+  ));
+  assert.equal(canonicalTarget.ok, true);
+  assert.equal(canonicalTarget.value.module_id, "GH-01");
+  assert.equal(canonicalTarget.value.resource_title, "函数变化拖动实验（route）");
+
+  const forgedTarget = validateCoursewareFeedbackTarget(
+    { ...normalized.value, resource_file: "forged.html" },
+    () => ({
+      id: "V14-C1-M1-KP1",
+      kind: "unit",
+      role: "knowledge",
+      resourceCandidates: [{ file: "demo.html", title: "合法课件", type: "simulation" }]
+    })
+  );
+  assert.equal(forgedTarget.ok, false);
+  assert.equal(forgedTarget.code, "feedback_target_invalid");
 
   const platform = normalizeFeedbackInput({
     feedbackType: "platform",

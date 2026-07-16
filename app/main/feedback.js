@@ -141,9 +141,9 @@ const feedbackTargetStrip = document.querySelector("#feedback-target-strip");
 
 feedbackTargetStrip?.addEventListener("click", (event) => {
   if (feedbackDrag?.moved) return;
-  const button = event.target.closest("[data-feedback-target]");
-  if (!button) return;
-  feedbackUiState.selectedTargetId = button.dataset.feedbackTarget;
+  const targetId = FeedbackTargets.feedbackTargetIdFromPointer(event.target, feedbackDrag);
+  if (!targetId) return;
+  feedbackUiState.selectedTargetId = targetId;
   setFeedbackStatus("");
   renderFeedbackTargets();
 });
@@ -151,6 +151,7 @@ feedbackTargetStrip?.addEventListener("click", (event) => {
 feedbackTargetStrip?.addEventListener("pointerdown", (event) => {
   feedbackDrag = {
     pointerId: event.pointerId,
+    startTargetId: FeedbackTargets.feedbackTargetIdFromPointer(event.target),
     startX: event.clientX,
     scrollLeft: feedbackTargetStrip.scrollLeft,
     moved: false

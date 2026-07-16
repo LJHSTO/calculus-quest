@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculus Quest - 研究数据分析面板</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-    <link rel="stylesheet" href="admin/admin.css?v=20260716-learning-feedback" />
+  <link rel="stylesheet" href="admin/admin.css?v=20260716-learning-feedback-v2" />
 </head>
 <body>
 <div id="login-gate" class="hidden">
@@ -182,7 +182,7 @@
       <div class="chart-card full-width">
         <div class="feedback-toolbar">
           <label>类型
-            <select id="feedback-type-filter">
+            <select id="feedback-type-filter" name="feedback-type-filter">
               <option value="">全部类型</option>
               <option value="learning_content">学习内容</option>
               <option value="courseware">课件反馈</option>
@@ -191,17 +191,18 @@
             </select>
           </label>
           <label>对象
-            <select id="feedback-scope-filter">
+            <select id="feedback-scope-filter" name="feedback-scope-filter">
               <option value="">全部对象</option>
               <option value="global">全局反馈</option>
               <option value="courseware">具体课件</option>
             </select>
           </label>
           <label class="feedback-search-label">搜索
-            <input id="feedback-query-filter" type="search" placeholder="学生、正文、课件或知识点" />
+            <input id="feedback-query-filter" name="feedback-query" type="search" autocomplete="off" placeholder="学生、正文、课件或知识点" />
           </label>
           <button class="btn btn-sm btn-outline" id="export-feedback-csv" type="button">导出 CSV</button>
         </div>
+        <p class="feedback-result-note" id="feedback-result-note" role="status" aria-live="polite"></p>
         <div class="table-wrap feedback-table-wrap">
           <table id="table-feedback">
             <thead><tr><th>时间</th><th>学生</th><th>类型</th><th>反馈对象</th><th>学习位置</th><th>反馈正文</th></tr></thead>
@@ -347,6 +348,7 @@
   </div>
 </div>
 
-<script src="admin/admin.js?v=20260716-learning-feedback"></script>
+<script src="admin/csv.js?v=20260716-feedback-csv-safe"></script>
+<script src="admin/admin.js?v=20260716-learning-feedback-v2"></script>
 </body>
 </html>
