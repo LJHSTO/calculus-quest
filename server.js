@@ -30,6 +30,7 @@ const db = require("./db");
 const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
+const feedback = require("./lib/feedback");
 const root = process.cwd();
 const port = Number(process.argv[2] || process.env.PORT || 8765);
 const host = process.env.HOST || "127.0.0.1";
@@ -878,6 +879,43 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    // ---- Learning Feedback ----
+    if (req.method === "POST" && url.pathname === "/api/learning/feedback") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const normalized = feedback.normalizeFeedbackInput(body);
+      if (!normalized.ok) {
+        sendJson(res, 400, normalized);
+        return;
+      }
+      const feedbackId = crypto.randomUUID();
+      const timestamp = nowIso();
+      db.insertFeedback({
+        id: feedbackId,
+        user_id: auth.participant.id,
+        ...normalized.value,
+        created_at: timestamp
+      });
+      db.insertEvent({
+        id: crypto.randomUUID(),
+        user_id: auth.participant.id,
+        type: "feedback_submit",
+        payload: {
+          feedbackId,
+          feedbackType: normalized.value.feedback_type,
+          targetScope: normalized.value.target_scope,
+          contentLength: normalized.value.content.length
+        },
+        created_at: timestamp
+      });
+      sendJson(res, 200, { ok: true, feedbackId, createdAt: timestamp });
+      return;
+    }
+
     // ---- Learning Events ----
     if (req.method === "POST" && url.pathname === "/api/learning/event") {
       const body = await readJsonBody(req);
@@ -1041,6 +1079,25 @@ async function handleApi(req, res, url) {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       sendJson(res, 200, { ok: true, data: db.statsOverview(dates) });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/stats/feedback") {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
+      const dates = getDateRange(url);
+      sendJson(res, 200, {
+        ok: true,
+        data: db.feedbackDashboard({
+          ...dates,
+          feedbackType: url.searchParams.get("type") || "",
+          targetScope: url.searchParams.get("scope") || "",
+          query: url.searchParams.get("q") || "",
+          limit: 1000
+        })
+      });
       return;
     }
 
