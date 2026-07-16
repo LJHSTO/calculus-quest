@@ -251,6 +251,28 @@ function initSchema() {
   d.run("CREATE INDEX IF NOT EXISTS idx_snap_user ON snapshots(user_id)");
 
   d.run(`
+    CREATE TABLE IF NOT EXISTS feedback (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      feedback_type TEXT NOT NULL,
+      content TEXT NOT NULL,
+      target_scope TEXT NOT NULL DEFAULT 'global',
+      chapter_id TEXT DEFAULT '',
+      module_id TEXT DEFAULT '',
+      unit_id TEXT DEFAULT '',
+      knowledge_point TEXT DEFAULT '',
+      scene_type TEXT DEFAULT '',
+      resource_file TEXT DEFAULT '',
+      resource_title TEXT DEFAULT '',
+      current_view TEXT DEFAULT '',
+      created_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_feedback_user ON feedback(user_id)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_feedback_type ON feedback(feedback_type)");
+
+  d.run(`
     CREATE TABLE IF NOT EXISTS agent_decisions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -628,6 +650,91 @@ function getLatestSnapshot(userId) {
   );
 }
 
+// ---- Feedback ----
+
+function insertFeedback(record) {
+  execute(
+    `INSERT INTO feedback
+      (id, user_id, feedback_type, content, target_scope, chapter_id, module_id,
+       unit_id, knowledge_point, scene_type, resource_file, resource_title,
+       current_view, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.user_id,
+      record.feedback_type,
+      record.content,
+      record.target_scope || "global",
+      record.chapter_id || "",
+      record.module_id || "",
+      record.unit_id || "",
+      record.knowledge_point || "",
+      record.scene_type || "",
+      record.resource_file || "",
+      record.resource_title || "",
+      record.current_view || "",
+      record.created_at
+    ]
+  );
+}
+
+function feedbackDashboard(filters = {}) {
+  const df = dateFilter("f.created_at", filters);
+  const where = [`1=1${df.clause}`];
+  const params = [...df.params];
+  const feedbackType = String(filters.feedbackType || "").trim();
+  const targetScope = String(filters.targetScope || "").trim();
+  const searchQuery = String(filters.query || "").trim();
+  const limit = Math.max(1, Math.min(Number(filters.limit || 1000), 1000));
+
+  if (feedbackType) {
+    where.push("f.feedback_type = ?");
+    params.push(feedbackType);
+  }
+  if (targetScope) {
+    where.push("f.target_scope = ?");
+    params.push(targetScope);
+  }
+  if (searchQuery) {
+    const like = `%${searchQuery}%`;
+    where.push(`(
+      COALESCE(u.nickname, '') LIKE ? OR f.content LIKE ? OR
+      f.resource_title LIKE ? OR f.knowledge_point LIKE ?
+    )`);
+    params.push(like, like, like, like);
+  }
+
+  const whereSql = where.join(" AND ");
+  const summaryRow = queryOne(
+    `SELECT
+       COUNT(*) as total,
+       SUM(CASE WHEN f.feedback_type = 'courseware' THEN 1 ELSE 0 END) as courseware,
+       COUNT(DISTINCT f.user_id) as users
+     FROM feedback f
+     LEFT JOIN users u ON u.id = f.user_id
+     WHERE ${whereSql}`,
+    params
+  );
+  const rows = queryAll(
+    `SELECT f.*, COALESCE(u.nickname, '') as nickname
+     FROM feedback f
+     LEFT JOIN users u ON u.id = f.user_id
+     WHERE ${whereSql}
+     ORDER BY f.created_at DESC
+     LIMIT ?`,
+    [...params, limit]
+  );
+
+  return {
+    summary: {
+      total: Number(summaryRow?.total || 0),
+      courseware: Number(summaryRow?.courseware || 0),
+      users: Number(summaryRow?.users || 0)
+    },
+    rows
+  };
+}
+
 // ==================== Analytics Queries ====================
 
 function dateFilter(prefix, dates) {
@@ -749,6 +856,10 @@ function userDetail(userId, dates) {
     `SELECT * FROM events WHERE user_id = ?${evDf.clause} ORDER BY created_at DESC LIMIT 200`,
     [userId, ...evDf.params]
   );
+  const eventCount = queryOne(
+    `SELECT COUNT(*) as count FROM events WHERE user_id = ?${evDf.clause}`,
+    [userId, ...evDf.params]
+  ).count || 0;
   const chapterSummary = queryAll(`
     SELECT chapter_id, chapter_label,
            COUNT(*) as total, SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
@@ -756,7 +867,7 @@ function userDetail(userId, dates) {
            ROUND(AVG(score), 1) as avg_score
     FROM quiz_results WHERE user_id = ?${qrDf.clause} GROUP BY chapter_id ORDER BY chapter_id
   `, [userId, ...qrDf.params]);
-  return { user, quizResults, events, chapterSummary };
+  return { user, quizResults, events, eventCount, chapterSummary };
 }
 
 function listUsers() {
@@ -1409,6 +1520,8 @@ module.exports = {
   insertEvent,
   insertSnapshot,
   getLatestSnapshot,
+  insertFeedback,
+  feedbackDashboard,
   statsOverview,
   chapterAccuracy,
   questionErrors,
