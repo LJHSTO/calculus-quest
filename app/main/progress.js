@@ -61,7 +61,6 @@ function renderProgress() {
   els.activityLog.innerHTML = state.logs.length
     ? state.logs.map((log) => `<li>${escapeHtml(log)}</li>`).join("")
     : "<li>还没有学习动态。完成模块、提交测验或切换章节后，这里会出现可回看的学习轨迹。</li>";
-  els.reflectionNote.value = state.note || "";
 }
 
 function renderQuizDashboard() {

@@ -289,14 +289,6 @@ els.profileForm?.addEventListener("submit", async (event) => {
   });
 });
 
-document.querySelector("#save-note").addEventListener("click", () => {
-  state.note = els.reflectionNote.value.trim();
-  addLog("保存了一条反思笔记。");
-  trackLearningEvent("save_note", { noteLength: state.note.length });
-  analyticsTrack("reflection_save", { data: { noteLength: state.note.length } });
-  renderProgress();
-});
-
 document.querySelector("#reset-progress").addEventListener("click", async () => {
   setUserMenuOpen(false);
   if (!confirm("确定要重置所有学习记录吗？此操作不可撤销，所有测验结果和进度将被清除。")) return;

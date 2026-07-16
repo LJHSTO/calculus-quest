@@ -8,6 +8,7 @@ function renderAll() {
   renderPlayer();
   renderLibrary();
   renderProgress();
+  if (typeof renderFeedbackPage === "function") renderFeedbackPage();
 }
 
 function applyView(view) {
@@ -23,6 +24,7 @@ function switchView(view) {
   analyticsTrack("switch_view", { data: { from: currentView, to: view } });
   currentView = view;
   applyView(currentView);
+  if (currentView === "feedback" && typeof renderFeedbackPage === "function") renderFeedbackPage();
   saveState();
   window.scrollTo({ top: 0, behavior: "smooth" });
   trackLearningEvent("switch_view", { view: currentView });

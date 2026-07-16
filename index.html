@@ -53,6 +53,7 @@
         <button class="nav-button active" type="button" data-view="home">首页</button>
         <button class="nav-button" type="button" data-view="learn">学习</button>
         <button class="nav-button" type="button" data-view="progress">记录</button>
+        <button class="nav-button" type="button" data-view="feedback">反馈</button>
       </nav>
       <div class="auth-widget" id="auth-widget" aria-live="polite">
         <button class="utility-button" id="auth-action" type="button">登录</button>
@@ -265,7 +266,7 @@
           <div class="page-heading">
             <p class="eyebrow">学习记录</p>
             <h1>我的学习记录</h1>
-            <p>这里汇总你的完成进度、测验表现、最近学习动态和反思笔记，方便回看卡点并继续下一步。</p>
+            <p>这里汇总你的完成进度、测验表现和最近学习动态，方便回看卡点并继续下一步。</p>
           </div>
           <div class="progress-grid">
             <article class="progress-card">
@@ -284,13 +285,54 @@
               <p>自动记录完成、复习、测验和路径切换，方便你接着上次的位置继续。</p>
               <ol id="activity-log" class="activity-log"></ol>
             </article>
-            <article class="progress-card">
-              <h2>学习反思</h2>
-              <p>把今天的清楚点、卡点和想回看的题目写下来。</p>
-              <textarea id="reflection-note" rows="8" placeholder="例如：今天我理解了什么？哪一步还卡住？下一次想先回看哪个知识点或题目？"></textarea>
-              <button class="button primary full" id="save-note" type="button">保存笔记</button>
-            </article>
           </div>
+        </div>
+      </section>
+
+      <section id="feedback-view" class="view">
+        <div class="page feedback-page">
+          <div class="page-heading">
+            <p class="eyebrow">学习问题反馈</p>
+            <h1>告诉我们哪里可以做得更好</h1>
+            <p>反馈会保存给管理员查看，不会改变你的学习路径或测验结果。</p>
+          </div>
+          <form id="learning-feedback-form" class="feedback-form-card">
+            <fieldset class="feedback-type-fieldset">
+              <legend>反馈类型</legend>
+              <div class="feedback-type-grid">
+                <label>
+                  <input type="radio" name="feedback-type" value="learning_content" checked />
+                  <span><b>学习内容</b><small>讲解、题目或知识点建议</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="feedback-type" value="courseware" />
+                  <span><b>课件反馈</b><small>互动、显示或操作问题</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="feedback-type" value="platform" />
+                  <span><b>平台功能</b><small>导航、账号或使用体验</small></span>
+                </label>
+                <label>
+                  <input type="radio" name="feedback-type" value="other" />
+                  <span><b>其他建议</b><small>其他想告诉我们的内容</small></span>
+                </label>
+              </div>
+            </fieldset>
+            <section id="courseware-feedback-targets" class="feedback-target-panel" hidden>
+              <div>
+                <h2>选择反馈对象</h2>
+                <p>默认是你刚才学习的课件，也可以拖动选择全局反馈或同知识点其他课件。</p>
+              </div>
+              <div id="feedback-target-strip" class="feedback-target-strip" role="group" aria-label="课件反馈对象"></div>
+            </section>
+            <label class="feedback-content-label" for="feedback-content">反馈正文</label>
+            <textarea id="feedback-content" maxlength="2000" rows="9" required placeholder="请描述遇到的问题、建议，以及你原本希望看到的结果。"></textarea>
+            <div class="feedback-form-meta">
+              <span id="feedback-char-count">0 / 2000</span>
+              <span id="feedback-form-status" role="status" aria-live="polite"></span>
+            </div>
+            <button class="button primary" id="submit-feedback" type="submit">提交反馈</button>
+          </form>
         </div>
       </section>
 
@@ -315,6 +357,7 @@
 
     <script src="lib/katex.min.js?v=20260611"></script>
     <script src="app/main/data.js?v=20260709-quiz-links"></script>
+    <script src="app/main/feedback-config.js?v=20260716-learning-feedback"></script>
     <script src="app/main/core.js?v=20260715-learning-links-v2"></script>
     <script src="app/main/analytics.js?v=20260709-quiz-links"></script>
     <script src="app/main/render-learning.js?v=20260715-learning-links-v2"></script>
@@ -325,6 +368,8 @@
     <script src="app/main/narration.js?v=20260709-quiz-links"></script>
     <script src="app/main/quiz.js?v=20260715-learning-links-v2"></script>
     <script src="app/main/agentic-path.js?v=20260715-learning-links-v2"></script>
+    <script src="app/main/feedback-targets.js?v=20260716-learning-feedback"></script>
+    <script src="app/main/feedback.js?v=20260716-learning-feedback"></script>
     <script src="app/main/bootstrap.js?v=20260709-quiz-links"></script>
   </body>
 </html>
