@@ -741,6 +741,20 @@ tools/_encoding_test.txt
 - Git 提交：与学习快照、反馈、管理员导出和四场景选择修复一起提交，最终提交号见 Git 历史。
 - 剩余风险与下一步：完成最新暂存快照全量验证和提交范围审计后推送；服务器管理员仍需按 `docs/production-release.md` 在生产机备份数据库、快进拉取、安装锁定依赖、运行门控、以 `BASE_PATH=/calculus_quest` 单进程重启并执行历史账号 smoke。
 
+### 2026-07-19：无尾斜杠子路径资源前缀加固
+
+- 目标：修复访问 `https://edusys3.sii.edu.cn/calculus_quest` 时，浏览器在 301 跳转提交前可能把相对 CSS/JS 解析为站点根路径 `/app/...`、`/styles.css` 的竞态，避免页面退化为无样式 HTML。
+- 线上取证：公网首页字节长度为 `16604`，Git blob 为 `8c647fe9b371ab0c645e026ee82087da7fecea03`，与提交 `1d4d3c4` 的 `index.html` 完全一致；公网无尾斜杠入口当前返回 `301 Location: /calculus_quest/`，健康接口仍只返回 `ok/time`。远端 `origin/main` 在修复前为 `9972f7c`。
+- 根因：旧启动脚本先调用 `location.replace()` 并立即返回，尚未给文档安装 `<base>`、设置 `window.__BASE_PATH__` 或包装 `/api/` 请求。浏览器可在导航完成前继续解析后续相对资源，因此截图中出现 `/app/main/*.js` 404；这不是课程数据或数据库问题。
+- 修改：`index.html` 根据规范化后的路径同步安装同源 `<base href="/calculus_quest/">`，并在跳转前设置 API 前缀；`ops/test-subpath-deployment.js` 新增 `/`、`/calculus_quest`、`/calculus_quest/`、`/calculus_quest/index.html` 四种入口的启动脚本回归，断言资源路径和 API 前缀只应用一次。
+- 自动验证：从 Git 索引导出不含本地未提交 V14 的纯净快照，15 个已跟踪 `ops/test-*.js` 全部通过；51 个 JavaScript 文件通过 `node --check`；暂存文件通过严格 UTF-8；`npm audit --omit=dev` 为 0；`git diff --cached --check` 无空白错误。
+- 浏览器验证：隔离临时数据库和随机端口、`BASE_PATH=/calculus_quest`、`LLM_PROVIDER=mock`。Chromium 从无尾斜杠入口进入后，301、首页、CSS、KaTeX、17 个学习端脚本、课程 API 和图片均从 `/calculus_quest/...` 返回 200；控制台 0 error，`document.baseURI` 为 `/calculus_quest/`，页面样式正常。
+- 数据保护：未重启本地 `8765`，其 PID 仍为 `28324`、`basePath=""`、`appVersion="4cb9dbb"`；本地数据库仍为 6 用户、27 会话、99 条测验、8816 条事件、657 条快照、19 条 Agent 决策和 63 条交互证据快照，没有减行。未访问或修改生产数据库。
+- 是否真实调用 LLM（provider/model）：否；浏览器隔离服务使用 `LLM_PROVIDER=mock`。
+- 是否修改源 `.maic.zip`：否。
+- Git 提交：本条与前缀修复一起精确提交，最终提交号见 Git 历史。
+- 剩余风险与下一步：GitHub 推送不会自动更新公网服务；服务器管理员仍需备份外置数据库、快进拉取、运行发布门控并以 `BASE_PATH=/calculus_quest` 重启。生产 smoke 应访问无尾斜杠和带尾斜杠两个入口，但不得用真实学生账号点击重置。
+
 ## 11. 后续记录模板
 
 每次工作完成后追加：

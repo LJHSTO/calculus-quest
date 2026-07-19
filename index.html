@@ -12,25 +12,28 @@
     <script>
 // Auto-detect sub-path deployment for API calls
 (function() {
-  // 子路径部署时若 URL 缺尾斜杠（如 /calculus_quest），相对路径资源会解析到根目录，
-  // 这里补斜杠重定向（反代剥掉前缀时服务端无法感知，只能在前端兜底）
   var p = location.pathname;
-  if (!/\/$/.test(p) && !/\.[a-zA-Z0-9]+$/.test(p)) {
-    location.replace(p + "/" + location.search + location.hash);
-    return;
-  }
-  var m = location.pathname.match(/^(\/[^/]+\/)/);
+  var canonicalPath = !/\/$/.test(p) && !/\.[a-zA-Z0-9]+$/.test(p) ? p + "/" : p;
+  var m = canonicalPath.match(/^(\/[^/]+\/)/);
   var basePath = m ? m[1].replace(/\/+$/, "") : "";
-  if (!basePath) return;
-  window.__BASE_PATH__ = basePath;
-  var origFetch = window.fetch;
-  window.fetch = function(url) {
-    var args = Array.prototype.slice.call(arguments, 1);
-    if (typeof url === "string" && url.startsWith("/api/")) {
-      url = basePath + url;
-    }
-    return origFetch.apply(window, [url].concat(args));
-  };
+  if (basePath) {
+    // 先固定资源解析目录，再跳转补尾斜杠，避免浏览器在跳转提交前请求 /app 或 /styles.css。
+    var base = document.createElement("base");
+    base.href = basePath + "/";
+    document.head.appendChild(base);
+    window.__BASE_PATH__ = basePath;
+    var origFetch = window.fetch;
+    window.fetch = function(url) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      if (typeof url === "string" && url.startsWith("/api/")) {
+        url = basePath + url;
+      }
+      return origFetch.apply(window, [url].concat(args));
+    };
+  }
+  if (canonicalPath !== p) {
+    location.replace(canonicalPath + location.search + location.hash);
+  }
 })();
 </script>
 
