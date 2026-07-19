@@ -4304,7 +4304,81 @@ textarea,
 }
 
 .v14-scene-option.active {
+  border-color: var(--teal-dark);
+  background: #edf8f5;
   box-shadow: inset 0 0 0 1px var(--teal-dark), 0 10px 24px rgba(15, 143, 131, 0.16);
+}
+
+.v14-scene-option.active > span {
+  background: var(--teal-dark);
+}
+
+.agentic-knowledge-choice {
+  margin-top: 12px;
+  border: 1px solid rgba(20, 120, 112, 0.16);
+  border-radius: 8px;
+  background: #f7fbfa;
+  padding: 14px;
+}
+
+.agentic-knowledge-choice.awaiting-selection {
+  border-color: rgba(217, 151, 42, 0.42);
+  background: #fffaf0;
+  box-shadow: inset 4px 0 0 rgba(217, 151, 42, 0.82);
+}
+
+.agentic-knowledge-choice > div:first-child strong {
+  color: #17342e;
+  font-size: 1rem;
+}
+
+.agentic-knowledge-choice > div:first-child small {
+  color: #5d6c67;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.v14-scene-option {
+  min-height: 96px;
+  transition-property: transform, border-color, background-color, box-shadow;
+  transition-duration: 0.16s;
+}
+
+.v14-scene-option:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.v14-scene-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.v14-scene-awaiting {
+  min-height: 180px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  border: 1px dashed rgba(217, 151, 42, 0.55);
+  border-radius: 8px;
+  background: #fffdf8;
+  padding: 24px;
+  text-align: center;
+}
+
+.v14-scene-awaiting h2 {
+  margin: 0;
+  color: #273731;
+  font-size: 1.18rem;
+  text-wrap: balance;
+}
+
+.v14-scene-awaiting p {
+  max-width: 620px;
+  margin: 0;
+  color: #65716d;
+  line-height: 1.6;
+  text-wrap: pretty;
 }
 
 @media (max-width: 760px) {
@@ -5257,5 +5331,248 @@ textarea,
 
   #submit-feedback {
     width: 100%;
+  }
+}
+
+/* ---- Learning panel layout and return context ---- */
+.progress-page {
+  max-width: 1320px;
+}
+
+.progress-page .page-heading {
+  max-width: 100%;
+  margin-bottom: 18px;
+}
+
+.progress-summary {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.progress-summary-item {
+  display: grid;
+  min-height: 92px;
+  align-content: center;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper-2);
+  padding: 16px 18px;
+  box-shadow: 0 8px 22px rgba(23, 33, 31, 0.05);
+}
+
+.progress-summary-item.primary {
+  border-color: rgba(15, 143, 131, 0.28);
+  background: var(--teal-light);
+}
+
+.progress-summary-item span,
+.progress-summary-item small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.progress-summary-item strong {
+  color: var(--ink);
+  font-size: 1.8rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-grid {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.progress-column {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.progress-page .progress-card {
+  min-width: 0;
+  padding: 22px;
+}
+
+.progress-page .chapter-progress {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 20px;
+  row-gap: 0;
+}
+
+.progress-page .chapter-progress > div {
+  min-width: 0;
+  padding: 8px 0 10px;
+  border-bottom: 1px solid rgba(49, 71, 64, 0.1);
+}
+
+.progress-page .chapter-progress strong {
+  display: block;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.progress-page .quiz-dashboard {
+  gap: 14px;
+}
+
+.progress-page .activity-log {
+  max-height: 280px;
+  grid-template-columns: 1fr;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.feedback-page::before {
+  display: none;
+}
+
+.feedback-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.48fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.feedback-intro {
+  position: sticky;
+  top: 92px;
+}
+
+.feedback-page .page-heading {
+  max-width: 420px;
+  margin-bottom: 0;
+}
+
+.feedback-page .page-heading h1 {
+  font-size: clamp(2rem, 3.2vw, 2.8rem);
+  line-height: 1.12;
+}
+
+.feedback-context-callout {
+  display: grid;
+  gap: 4px;
+  max-width: 420px;
+  margin-top: 16px;
+  border-left: 4px solid var(--amber);
+  border-radius: 8px;
+  background: #fff7e8;
+  padding: 12px 16px;
+}
+
+.feedback-context-callout strong {
+  color: #68490d;
+  font-size: 0.92rem;
+}
+
+.feedback-context-callout p {
+  margin: 0;
+  color: #735c2a;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.feedback-page .feedback-form-card {
+  width: 100%;
+  max-width: none;
+  gap: 18px;
+  border-radius: 8px;
+  padding: 22px;
+}
+
+.feedback-page .feedback-type-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.feedback-page .feedback-type-grid label > span,
+.feedback-page .feedback-target-panel,
+.feedback-page .feedback-target-option,
+.feedback-page #feedback-content {
+  border-radius: 8px;
+}
+
+.feedback-page .feedback-target-panel {
+  border: 1px solid rgba(15, 143, 131, 0.16);
+  background: #f1f8f5;
+  box-shadow: none;
+  padding: 16px;
+}
+
+.feedback-page .feedback-target-option {
+  flex-basis: min(230px, 78vw);
+  min-height: 96px;
+}
+
+.feedback-target-empty {
+  display: grid;
+  min-height: 96px;
+  place-items: center;
+  margin: 0;
+  padding: 18px;
+  color: var(--muted);
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.feedback-page #feedback-content {
+  min-height: 168px;
+}
+
+@media (max-width: 900px) {
+  .progress-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-column {
+    display: contents;
+  }
+
+  .progress-column .progress-card:first-child {
+    order: 1;
+  }
+
+  .progress-grid > .progress-card {
+    order: 2;
+  }
+
+  .progress-column .progress-card:last-child {
+    order: 3;
+  }
+
+  .feedback-layout {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .feedback-intro {
+    position: static;
+  }
+
+  .feedback-page .page-heading,
+  .feedback-context-callout {
+    max-width: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .progress-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-page .chapter-progress,
+  .progress-page .activity-log {
+    grid-template-columns: 1fr;
+  }
+
+  .progress-page .progress-card {
+    padding: 18px;
+  }
+
+  .feedback-page .feedback-type-grid {
+    grid-template-columns: 1fr;
   }
 }

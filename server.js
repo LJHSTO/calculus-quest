@@ -32,8 +32,29 @@ const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
 const feedback = require("./lib/feedback");
 const root = process.cwd();
+const openMaicRoutePath = path.join(root, "data", "openmaic-v14-route.json");
+let openMaicRoute = null;
+try {
+  openMaicRoute = JSON.parse(fs.readFileSync(openMaicRoutePath, "utf8"));
+} catch (error) {
+  console.warn("Open MAIC v14 route load skipped:", error.message);
+}
+const coursewareFeedbackTargetLookup = feedback.buildCoursewareFeedbackTargetLookup(
+  openMaicRoute,
+  kg.nodeById
+);
+const packageInfo = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const port = Number(process.argv[2] || process.env.PORT || 8765);
 const host = process.env.HOST || "127.0.0.1";
+const configuredBasePath = String(process.env.BASE_PATH || "").trim();
+const normalizedBasePath = configuredBasePath.replace(/^\/+|\/+$/g, "");
+const basePath = normalizedBasePath ? `/${normalizedBasePath}` : "";
+const researchConfig = {
+  appVersion: String(process.env.APP_VERSION || packageInfo.version || "").slice(0, 80),
+  experimentId: String(process.env.EXPERIMENT_ID || "").slice(0, 120),
+  condition: String(process.env.EXPERIMENT_CONDITION || "").slice(0, 120),
+  cohort: String(process.env.EXPERIMENT_COHORT || "").slice(0, 120)
+};
 const maxBodyBytes = 1024 * 1024;
 const maxBufferedStaticBytes = 512 * 1024;
 const maxGzipBytes = 256 * 1024;
@@ -634,6 +655,30 @@ function safeStaticPath(urlPath) {
   return filePath === root || filePath.startsWith(root + path.sep) ? filePath : null;
 }
 
+function snapshotVersion(body = {}) {
+  const generation = Number(body.generation);
+  const baseRevision = Number(body.baseRevision);
+  return {
+    generation,
+    baseRevision,
+    validGeneration: Number.isInteger(generation) && generation > 0,
+    validBaseRevision: Number.isInteger(baseRevision) && baseRevision >= 0
+  };
+}
+
+function sendSnapshotConflict(res, result) {
+  const generationConflict = result.conflict === "generation";
+  sendJson(res, 409, {
+    ok: false,
+    code: generationConflict ? "snapshot_generation_conflict" : "snapshot_revision_conflict",
+    message: generationConflict
+      ? "学习记录已在其他页面重置或更新，请刷新后继续。"
+      : "学习记录已在其他页面更新，请刷新后再重置。",
+    generation: result.generation,
+    revision: result.revision
+  });
+}
+
 async function handleApi(req, res, url) {
   if (!checkRateLimit(req)) {
     sendJson(res, 429, { ok: false, message: "请求过于频繁，请稍后再试。" });
@@ -642,7 +687,22 @@ async function handleApi(req, res, url) {
   try {
     // ---- Auth ----
     if (req.method === "GET" && url.pathname === "/api/health") {
-      sendJson(res, 200, { ok: true, time: nowIso() });
+      sendJson(res, 200, {
+        ok: true,
+        time: nowIso(),
+        appVersion: researchConfig.appVersion,
+        basePath
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/research/config") {
+      let courseVersion = "";
+      try {
+        const route = JSON.parse(fs.readFileSync(path.join(root, "data", "openmaic-v14-route.json"), "utf8"));
+        courseVersion = String(route.versionId || "").slice(0, 120);
+      } catch {}
+      sendJson(res, 200, { ok: true, data: { ...researchConfig, courseVersion } });
       return;
     }
 
@@ -765,9 +825,34 @@ async function handleApi(req, res, url) {
       }
       const timestamp = nowIso();
       const user = findUserByIdentifier(identifier);
-      if (!user?.password_hash || !verifyPassword(password, user.password_hash)) {
+      if (!user) {
         recordFailedAuthAttempt(req, identifier);
-        sendJson(res, 401, { ok: false, message: "账号或密码不正确。" });
+        sendJson(res, 404, {
+          ok: false,
+          code: "account_not_found",
+          field: "identifier",
+          message: "没有找到这个账号，请检查昵称或邮箱，或先注册账号。"
+        });
+        return;
+      }
+      if (!user.password_hash) {
+        recordFailedAuthAttempt(req, identifier);
+        sendJson(res, 409, {
+          ok: false,
+          code: "password_not_set",
+          field: "identifier",
+          message: "这个历史账号尚未设置密码。请切换到“注册”，使用同一昵称设置密码，原有学习记录会保留。"
+        });
+        return;
+      }
+      if (!verifyPassword(password, user.password_hash)) {
+        recordFailedAuthAttempt(req, identifier);
+        sendJson(res, 401, {
+          ok: false,
+          code: "password_incorrect",
+          field: "password",
+          message: "密码不正确，请重新输入。"
+        });
         return;
       }
       clearAuthAttemptLimit(req, identifier);
@@ -892,7 +977,10 @@ async function handleApi(req, res, url) {
         sendJson(res, 400, normalized);
         return;
       }
-      const validatedTarget = feedback.validateCoursewareFeedbackTarget(normalized.value, kg.nodeById);
+      const validatedTarget = feedback.validateCoursewareFeedbackTarget(
+        normalized.value,
+        coursewareFeedbackTargetLookup
+      );
       if (!validatedTarget.ok) {
         sendJson(res, 400, validatedTarget);
         return;
@@ -994,11 +1082,29 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/learning/snapshot") {
       const auth = authenticate(req);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      const snap = db.getLatestSnapshot(auth.participant.id);
-      if (!snap) { sendJson(res, 200, { ok: true, snapshot: null }); return; }
+      const state = db.getLearningSnapshotState(auth.participant.id, nowIso());
+      const snap = state.snapshot;
+      if (!snap) {
+        sendJson(res, 200, {
+          ok: true,
+          snapshot: null,
+          generation: state.generation,
+          revision: state.revision
+        });
+        return;
+      }
       let data = {};
       try { data = JSON.parse(snap.data); } catch { /* use empty */ }
-      sendJson(res, 200, { ok: true, snapshot: { ...data, capturedAt: snap.created_at } });
+      sendJson(res, 200, {
+        ok: true,
+        snapshot: {
+          ...data,
+          clientCapturedAt: data.capturedAt || "",
+          capturedAt: snap.created_at
+        },
+        generation: state.generation,
+        revision: state.revision
+      });
       return;
     }
 
@@ -1006,42 +1112,87 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const version = snapshotVersion(body);
+      if (!version.validGeneration || !version.validBaseRevision) {
+        const state = db.getLearningSnapshotState(auth.participant.id, nowIso());
+        sendJson(res, 409, {
+          ok: false,
+          code: "snapshot_version_required",
+          message: "当前页面版本过旧，请刷新页面后继续学习。",
+          generation: state.generation,
+          revision: state.revision
+        });
+        return;
+      }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
 
-      db.insertSnapshot({
+      const result = db.saveLearningSnapshot({
         id: snapshotId,
         user_id: auth.participant.id,
         reason: String(body.reason || "manual").slice(0, 80),
         data: snapshotData,
+        generation: version.generation,
+        baseRevision: version.baseRevision,
         created_at: timestamp
       });
+      if (!result.ok) {
+        sendSnapshotConflict(res, result);
+        return;
+      }
 
-     db.upsertUser(auth.participant.id, auth.participant.nickname, auth.participant.created_at, timestamp);
-     sendJson(res, 200, { ok: true, snapshotId });
-     return;
+      db.upsertUser(auth.participant.id, auth.participant.nickname, auth.participant.created_at, timestamp);
+      sendJson(res, 200, {
+        ok: true,
+        snapshotId,
+        generation: result.generation,
+        revision: result.revision
+      });
+      return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/learning/reset") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const version = snapshotVersion(body);
+      if (!version.validGeneration || !version.validBaseRevision) {
+        const state = db.getLearningSnapshotState(auth.participant.id, nowIso());
+        sendJson(res, 409, {
+          ok: false,
+          code: "snapshot_version_required",
+          message: "当前页面版本过旧，请刷新页面后再重置学习记录。",
+          generation: state.generation,
+          revision: state.revision
+        });
+        return;
+      }
       const timestamp = nowIso();
       const snapshotData = body.snapshot || {};
       const snapshotId = crypto.randomUUID();
 
-      db.clearLearningDataForUser(auth.participant.id);
-      db.insertSnapshot({
+      const result = db.resetLearningSnapshot({
         id: snapshotId,
         user_id: auth.participant.id,
-        reason: "reset",
         data: snapshotData,
+        generation: version.generation,
+        baseRevision: version.baseRevision,
         created_at: timestamp
       });
+      if (!result.ok) {
+        sendSnapshotConflict(res, result);
+        return;
+      }
       db.upsertUser(auth.participant.id, auth.participant.nickname, auth.participant.created_at, timestamp);
 
-      sendJson(res, 200, { ok: true, snapshotId, cleared: true });
+      sendJson(res, 200, {
+        ok: true,
+        snapshotId,
+        cleared: true,
+        generation: result.generation,
+        revision: result.revision
+      });
       return;
     }
 
@@ -1080,6 +1231,16 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/admin/shutdown") {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
+      sendJson(res, 202, { ok: true, message: "服务正在保存数据库并安全停止。" });
+      setTimeout(() => shutdown("ADMIN_SHUTDOWN"), 50);
+      return;
+    }
+
     // ---- Admin Stats APIs ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/overview") {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
@@ -1101,7 +1262,8 @@ async function handleApi(req, res, url) {
           feedbackType: url.searchParams.get("type") || "",
           targetScope: url.searchParams.get("scope") || "",
           query: url.searchParams.get("q") || "",
-          limit: 1000
+          limit: Math.max(1, Math.min(Number(url.searchParams.get("limit") || 1000), 1000)),
+          offset: Math.max(0, Number(url.searchParams.get("offset") || 0))
         })
       });
       return;
@@ -1183,6 +1345,8 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/admin/stats/short-answer-responses") {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
+      dates.limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 500), 1000));
+      dates.offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
       sendJson(res, 200, { ok: true, data: db.shortAnswerResponses(dates) });
       return;
     }
@@ -1194,7 +1358,14 @@ async function handleApi(req, res, url) {
       const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 100), 1000));
       const offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
       const userId = url.searchParams.get("userId") || "";
-      const data = db.getEventsByType("interaction", { limit, offset, userId, dates });
+      const detailMode = url.searchParams.get("detail") === "all" ? "all" : "meaningful";
+      const data = db.getEventsByType("interaction", {
+        limit,
+        offset,
+        userId,
+        detailMode,
+        dates
+      });
       sendJson(res, 200, { ok: true, data });
       return;
     }
@@ -1297,6 +1468,8 @@ async function handleApi(req, res, url) {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
       const dates = getDateRange(url);
       dates.userId = url.searchParams.get("userId") || "";
+      dates.limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 500), 1000));
+      dates.offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
       sendJson(res, 200, { ok: true, data: db.agenticDecisionTrace(dates) });
       return;
     }
@@ -1371,13 +1544,17 @@ const server = http.createServer((req, res) => {
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
 
   // Strip sub-path prefix when behind reverse proxy at e.g. /calculus_quest/
-  const BASE_PATH = process.env.BASE_PATH || "";
   let rawUrl = req.url || "/";
-  if (BASE_PATH && rawUrl.startsWith(BASE_PATH)) {
-    const rest = rawUrl.slice(BASE_PATH.length);
+  const hasBasePath = basePath && (
+    rawUrl === basePath
+    || rawUrl.startsWith(basePath + "/")
+    || rawUrl.startsWith(basePath + "?")
+  );
+  if (hasBasePath) {
+    const rest = rawUrl.slice(basePath.length);
     // 不带尾斜杠访问 BASE_PATH 时补斜杠重定向，否则页面里的相对路径资源会丢失前缀
     if (rest === "" || rest.startsWith("?")) {
-      res.writeHead(301, { Location: BASE_PATH + "/" + rest });
+      res.writeHead(301, { Location: basePath + "/" + rest });
       res.end();
       return;
     }
@@ -1453,14 +1630,27 @@ function shutdown(signal) {
   } catch (error) {
     console.error("Final database save failed:", error.message);
   }
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(0), 3000).unref();
+  server.close(() => {
+    db.releaseWriteLock();
+    process.exit(0);
+  });
+  setTimeout(() => {
+    db.releaseWriteLock();
+    process.exit(0);
+  }, 3000).unref();
 }
 
 process.once("SIGINT", () => shutdown("SIGINT"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 
 // Initialize database on startup, then start server
+try {
+  db.acquireWriteLock();
+} catch (error) {
+  console.error("Database writer lock failed:", error.message);
+  process.exit(1);
+}
+
 db.getDb().then(() => {
  console.log("Database initialized.");
   // Migration: fix existing is_correct bug where pending short answers (-1) were stored as 1
@@ -1481,6 +1671,7 @@ db.getDb().then(() => {
     console.log(`Admin dashboard: http://${host}:${port}/admin.html`);
   });
 }).catch((err) => {
+  db.releaseWriteLock();
   console.error("Failed to initialize database:", err);
   process.exit(1);
 });

@@ -57,11 +57,15 @@ const rows = buildCoursewareFeedbackTargets({
 });
 
 assert.deepEqual(rows.map((row) => row.id), [
-  "global",
+  "courseware:slide:V14-C1-M1-KP1",
   "courseware:simulation:simulation.html",
   "courseware:game:game.html"
 ]);
-assert.equal(rows[0].targetScope, "global");
+assert.ok(rows.every((row) => row.targetScope === "courseware"));
+assert.equal(rows[0].isCurrent, false);
+assert.equal(rows[0].sceneType, "slide");
+assert.equal(rows[0].resourceFile, "");
+assert.equal(rows[0].resourceTitle, "函数与变化 · 讲解页");
 assert.equal(rows[1].isCurrent, true);
 assert.equal(rows[1].resourceTitle, "函数拖动实验");
 assert.equal(rows[1].knowledgePoint, "函数与变化");
@@ -74,7 +78,7 @@ const noUnitRows = buildCoursewareFeedbackTargets({
   candidateForType: () => null,
   cleanTitle: () => ""
 });
-assert.deepEqual(noUnitRows.map((row) => row.id), ["global"]);
+assert.deepEqual(noUnitRows, []);
 
 const nonKnowledgeRows = buildCoursewareFeedbackTargets({
   unit: { ...unit, type: "quiz" },
@@ -83,6 +87,6 @@ const nonKnowledgeRows = buildCoursewareFeedbackTargets({
   candidateForType: (typeId) => candidates[typeId] || null,
   cleanTitle: (candidate) => candidate.title
 });
-assert.deepEqual(nonKnowledgeRows.map((row) => row.id), ["global"]);
+assert.deepEqual(nonKnowledgeRows, []);
 
 console.log("feedback target tests passed");

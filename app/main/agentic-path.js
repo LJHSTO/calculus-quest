@@ -2063,7 +2063,12 @@ function agenticCurrentUnitNarration(unit, path) {
     const selectedType = typeof selectedKnowledgeSceneType === "function" ? selectedKnowledgeSceneType(unit) : "";
     const types = typeof knowledgeInteractionTypes === "function" ? knowledgeInteractionTypes(unit) : [];
     const selected = types.find((type) => type.id === selectedType) || {};
-    const selectedLabel = selected.label || selected.title || selectedType || "互动场景";
+    if (!selectedType) {
+      return `当前知识点是「${unit.label}」。先看讲解页，再从下方四种互动方式中自己选一种；系统不会替你默认选择。${nextText}`;
+    }
+    const selectedLabel = typeof knowledgeSceneDisplayLabel === "function"
+      ? knowledgeSceneDisplayLabel(selected)
+      : selected.label || selected.title || selectedType;
     return `当前知识点是「${unit.label}」。先看讲解页，再体验「${selectedLabel}」。${nextText}`;
   }
 
@@ -2712,14 +2717,12 @@ function renderAgenticCoachPanel() {
     );
     const title = agenticCoachTitleForUnit(currentUnit);
     node.hidden = false;
-    const knowledgeChoices = typeof renderKnowledgeSceneChoicePanel === "function" ? renderKnowledgeSceneChoicePanel(currentUnit) : "";
     node.innerHTML = `
-      <section class="agentic-coach-card calm ${knowledgeChoices ? "knowledge-choice-card" : ""}">
+      <section class="agentic-coach-card calm">
         <div class="agentic-coach-header">
           <strong>${escapeHtml(title)}</strong>
         </div>
         <p>${escapeHtml(narration)}</p>
-        ${knowledgeChoices}
       </section>
     `;
     return;

@@ -6,7 +6,7 @@ const feedbackUiState = {
 };
 
 function currentFeedbackType() {
-  return document.querySelector('input[name="feedback-type"]:checked')?.value || "learning_content";
+  return document.querySelector('input[name="feedback-type"]:checked')?.value || "courseware";
 }
 
 function feedbackTargetsForCurrentUnit() {
@@ -17,6 +17,7 @@ function feedbackTargetsForCurrentUnit() {
     unit,
     types,
     selectedTypeId,
+    currentSceneType: selectedTypeId,
     candidateForType: (typeId) => knowledgeResourceCandidate(unit, typeId),
     cleanTitle: (candidate) =>
       cleanStudentResourceTitle(candidate.title || candidate.file, unit.label)
@@ -26,7 +27,7 @@ function feedbackTargetsForCurrentUnit() {
 function selectedFeedbackTarget() {
   return feedbackUiState.targets.find((target) => target.id === feedbackUiState.selectedTargetId)
     || feedbackUiState.targets[0]
-    || { id: "global", targetScope: "global" };
+    || null;
 }
 
 function renderFeedbackTargets() {
@@ -36,11 +37,11 @@ function renderFeedbackTargets() {
     <button class="feedback-target-option" type="button"
       data-feedback-target="${escapeHtml(target.id)}"
       aria-pressed="${target.id === feedbackUiState.selectedTargetId ? "true" : "false"}">
-      <span class="feedback-target-kicker">${target.isCurrent ? "当前课件" : target.targetScope === "global" ? "全部课件" : "同知识点课件"}</span>
+      <span class="feedback-target-kicker">${target.isCurrent ? "当前课件" : target.isLecture ? "讲解页" : "同知识点课件"}</span>
       <strong>${escapeHtml(target.label)}</strong>
       <span>${escapeHtml(target.description || "")}</span>
     </button>
-  `).join("");
+  `).join("") || '<p class="feedback-target-empty">请先在“学习”页面打开要反馈的讲解页或互动课件。</p>';
 }
 
 function renderFeedbackPage() {
@@ -55,7 +56,7 @@ function renderFeedbackPage() {
     (target) => target.id === feedbackUiState.selectedTargetId
   );
   if (contextChanged || !selectedStillValid) {
-    feedbackUiState.selectedTargetId = current?.id || "global";
+    feedbackUiState.selectedTargetId = current?.id || feedbackUiState.targets[0]?.id || "";
   }
   feedbackUiState.lastUnitId = nextUnitId;
 
@@ -93,6 +94,11 @@ async function submitLearningFeedback(event) {
   const target = currentFeedbackType() === "courseware"
     ? selectedFeedbackTarget()
     : { targetScope: "global" };
+  if (currentFeedbackType() === "courseware" && !target) {
+    setFeedbackStatus("请先在“学习”页面打开要反馈的具体课件。", "error");
+    document.querySelector("#feedback-target-strip")?.focus();
+    return;
+  }
   const currentUnit = getUnit(currentUnitId);
   feedbackUiState.submitting = true;
   if (submitButton) submitButton.disabled = true;

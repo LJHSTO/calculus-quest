@@ -21,7 +21,11 @@ assert.equal(
 assert.equal(typeof db.insertFeedback, "function", "db.insertFeedback must exist");
 assert.equal(typeof db.feedbackDashboard, "function", "db.feedbackDashboard must exist");
 
-const { normalizeFeedbackInput, validateCoursewareFeedbackTarget } = feedbackModule;
+const {
+  normalizeFeedbackInput,
+  buildCoursewareFeedbackTargetLookup,
+  validateCoursewareFeedbackTarget
+} = feedbackModule;
 
 async function main() {
   await db.getDb();
@@ -59,26 +63,49 @@ async function main() {
   assert.equal(normalized.value.content, "拖动滑块后图像没有变化。");
   assert.equal(normalized.value.target_scope, "courseware");
 
-  const canonicalTarget = validateCoursewareFeedbackTarget(normalized.value, (unitId) => (
-    unitId === "V14-C1-M1-KP1"
-      ? {
-          id: unitId,
-          kind: "unit",
-          role: "knowledge",
-          chapterId: "V14-C1",
-          moduleId: "GH-01",
-          title: "函数与变化",
-          resourceCandidates: [{
-            file: "demo.html",
-            title: "函数变化拖动实验（route）",
-            type: "simulation"
+  let fallbackLookupCalled = false;
+  const routeTargetLookup = buildCoursewareFeedbackTargetLookup(
+    {
+      chapters: [{
+        id: "V14-C1",
+        modules: [{
+          id: "GH-01",
+          knowledgePoints: [{
+            id: "V14-C1-M1-KP1",
+            name: "函数与变化",
+            resourceCandidates: [{
+              file: "demo.html",
+              title: "函数变化拖动实验（route）",
+              type: "simulation"
+            }]
           }]
-        }
-      : null
-  ));
+        }]
+      }]
+    },
+    () => {
+      fallbackLookupCalled = true;
+      return null;
+    }
+  );
+  const canonicalTarget = validateCoursewareFeedbackTarget(normalized.value, routeTargetLookup);
   assert.equal(canonicalTarget.ok, true);
+  assert.equal(fallbackLookupCalled, false, "route target must not depend on the KG fallback");
   assert.equal(canonicalTarget.value.module_id, "GH-01");
   assert.equal(canonicalTarget.value.resource_title, "函数变化拖动实验（route）");
+
+  const lectureTarget = validateCoursewareFeedbackTarget(
+    {
+      ...normalized.value,
+      scene_type: "slide",
+      resource_file: "",
+      resource_title: "伪造讲解页标题"
+    },
+    routeTargetLookup
+  );
+  assert.equal(lectureTarget.ok, true);
+  assert.equal(lectureTarget.value.scene_type, "slide");
+  assert.equal(lectureTarget.value.resource_file, "");
+  assert.equal(lectureTarget.value.resource_title, "函数与变化 · 讲解页");
 
   const forgedTarget = validateCoursewareFeedbackTarget(
     { ...normalized.value, resource_file: "forged.html" },
@@ -136,16 +163,32 @@ async function main() {
   assert.equal(dashboard.summary.total, 2);
   assert.equal(dashboard.summary.courseware, 1);
   assert.equal(dashboard.summary.users, 1);
+  assert.equal(dashboard.summary.targets, 1);
+  assert.equal(dashboard.summary.byType.platform, 1);
+  assert.equal(dashboard.summary.byType.courseware, 1);
   assert.equal(dashboard.rows[0].content, "拖动滑块后图像没有变化。");
   assert.equal(dashboard.rows[0].nickname, "反馈学生");
+  assert.ok(dashboard.rows[0].chapter_label);
+  assert.doesNotMatch(dashboard.rows[0].unit_label, /V14-C1|GH-01/);
 
   const filtered = db.feedbackDashboard({ feedbackType: "platform" });
   assert.deepEqual(filtered.rows.map((row) => row.id), ["feedback-global"]);
 
   const detail = db.userDetail("u-feedback", {});
   assert.equal(detail.eventCount, 1);
+  assert.equal(detail.researchSummary.feedbackCount, 2);
+  assert.equal(detail.researchSummary.activeDays, 1);
 
-  db.clearLearningDataForUser("u-feedback");
+  const learningState = db.getLearningSnapshotState("u-feedback", now);
+  const reset = db.resetLearningSnapshot({
+    id: "feedback-reset-snapshot",
+    user_id: "u-feedback",
+    data: { completed: [], quizResults: [], note: "" },
+    generation: learningState.generation,
+    baseRevision: learningState.revision,
+    created_at: new Date(Date.now() + 2000).toISOString()
+  });
+  assert.equal(reset.ok, true);
   assert.equal(db.feedbackDashboard({ query: "希望按钮" }).summary.total, 1);
 
   db.saveNow();

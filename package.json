@@ -8,7 +8,7 @@
     "migrate": "node migrate.js"
   },
   "dependencies": {
-    "katex": "^0.16.9",
+    "katex": "^0.17.0",
     "sql.js": "^1.12.0"
   }
 }

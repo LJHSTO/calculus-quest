@@ -10,14 +10,23 @@ let allUsers = [];
 let cachedChapterData = [];
 let cachedPhaseData = [];
 let cachedFeedbackRows = [];
-let cachedFeedbackSummary = { total: 0, courseware: 0, users: 0 };
+let cachedFeedbackSummary = {
+  total: 0,
+  courseware: 0,
+  users: 0,
+  targets: 0,
+  lastAt: "",
+  byType: { learning_content: 0, courseware: 0, platform: 0, other: 0 }
+};
 let interactionsData = { rows: [], total: 0, limit: 100, offset: 0 };
 let visibleInteractionRows = [];
 let interactionPage = Number(sessionStorage.getItem("cq_interaction_page") || 0);
 let interactionPageSize = Number(sessionStorage.getItem("cq_interaction_page_size") || 100);
 let interactionUserId = sessionStorage.getItem("cq_interaction_user") || "";
+let interactionDetailMode = sessionStorage.getItem("cq_interaction_detail") === "all" ? "all" : "meaningful";
 let cachedUnitEngagementRows = [];
 let cachedAgenticTraceRows = [];
+const adminQuestionMeta = Object.create(null);
 let unitEngagementSort = { key: sessionStorage.getItem("cq_unit_engagement_sort_key") || "seconds", dir: sessionStorage.getItem("cq_unit_engagement_sort_dir") || "desc" };
 let currentRange = sessionStorage.getItem("cq_admin_range") || "";
 let loadController = null;
@@ -127,6 +136,86 @@ async function fetchStats(endpoint, params = "", signal) {
   return j.data;
 }
 
+function normalizePageData(data, fallbackLimit = 500) {
+  return AdminCsv.normalizePageData(data, fallbackLimit);
+}
+
+function courseLabelById(value = "") {
+  const id = String(value || "").trim();
+  if (!id) return "";
+  const unitKey = Object.keys(adminUnitLabels).find((key) => key.toLowerCase() === id.toLowerCase());
+  if (unitKey) return adminUnitLabels[unitKey];
+  const chapterKey = Object.keys(adminChapterLabels).find((key) => key.toLowerCase() === id.toLowerCase());
+  return chapterKey ? adminChapterLabels[chapterKey] : "";
+}
+
+function publicCourseText(value = "", fallback = "") {
+  return courseLabelById(value)
+    || AdminPresentation.publicCourseText(value, courseLabelById(fallback) || fallback);
+}
+
+let courseDisplayIndexPromise = null;
+
+function registerCourseDisplayIndex(route = {}) {
+  const chapters = Array.isArray(route.chapters) ? route.chapters : [];
+  if (!chapters.length) return;
+  (route.interactionTypes || []).forEach((type) => {
+    const id = type.id === "diagram" ? "mindMap" : type.id;
+    if (id) adminSceneTypeLabels[id] = AdminPresentation.sceneTypeLabel(id);
+  });
+  adminChapterOrder = chapters.map((chapter) => chapter.id);
+  chapters.forEach((chapter) => {
+    adminChapterLabels[chapter.id] = chapter.title || "未命名章节";
+    adminUnitLabels[`${chapter.id}-pre`] = `${chapter.title || "本章"} · 知识前测`;
+    adminUnitLabels[`${chapter.id}-formative`] = `${chapter.title || "本章"} · 形成测验`;
+    adminUnitLabels[`${chapter.id}-post`] = `${chapter.title || "本章"} · 结业后测`;
+    (chapter.modules || []).forEach((module) => {
+      const moduleTitle = module.title || chapter.title || "本节";
+      adminUnitLabels[module.id] = moduleTitle;
+      adminUnitLabels[`${module.id}-pre`] = `${moduleTitle} · 前测`;
+      adminUnitLabels[`${module.id}-formative`] = `${moduleTitle} · 形成性测验`;
+      adminUnitLabels[`${module.id}-review`] = `${moduleTitle} · 全课整理`;
+      adminUnitLabels[`${module.id}-post`] = `${moduleTitle} · 后测`;
+      (module.knowledgePoints || []).forEach((knowledgePoint) => {
+        adminUnitLabels[knowledgePoint.id] = knowledgePoint.name || `${moduleTitle} · 知识点`;
+        adminKnowledgePointIds.add(knowledgePoint.id);
+      });
+    });
+    [
+      ["preQuiz", "pre"],
+      ["formativeQuiz", "formative"],
+      ["postQuiz", "post"]
+    ].forEach(([flowKey, phase]) => {
+      const questions = chapter.flow?.[flowKey]?.questions || [];
+      questions.forEach((question, index) => {
+        const id = String(question.id || "").trim();
+        if (!id) return;
+        adminQuestionMeta[id.toLowerCase()] = {
+          questionId: id,
+          phase,
+          order: Number(question.selectionOrder || index + 1),
+          moduleId: question.moduleId || "",
+          moduleTitle: question.moduleTitle || adminUnitLabels[question.moduleId] || "",
+          questionText: question.question || question.prompt || question.title || question.text || "",
+          knowledgePointIds: Array.isArray(question.knowledgePointIds) ? question.knowledgePointIds : []
+        };
+      });
+    });
+  });
+}
+
+async function loadCourseDisplayIndex(signal) {
+  if (!courseDisplayIndexPromise) {
+    courseDisplayIndexPromise = fetch(`${API_BASE}/api/course/openmaic-v14-route`, { signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((route) => registerCourseDisplayIndex(route || {}))
+      .catch((error) => {
+        if (error.name === "AbortError") throw error;
+      });
+  }
+  return courseDisplayIndexPromise;
+}
+
 // ---- Chart helpers ----
 function destroyChart(key) {
   if (charts[key]) { charts[key].destroy(); delete charts[key]; }
@@ -134,6 +223,112 @@ function destroyChart(key) {
 
 function destroyAllCharts() {
   Object.keys(charts).forEach(k => destroyChart(k));
+}
+
+function setChartState(canvasId, hasData, message, options = {}) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return false;
+  const wrap = canvas.parentElement;
+  const itemCount = Math.max(0, Number(options.itemCount || 0));
+  const minHeight = Math.max(120, Number(options.minHeight || 220));
+  const maxHeight = Math.max(minHeight, Number(options.maxHeight || 520));
+  const perItem = Math.max(0, Number(options.perItem || 0));
+  const preferredHeight = perItem && itemCount
+    ? Math.min(maxHeight, Math.max(minHeight, itemCount * perItem + 72))
+    : minHeight;
+
+  wrap.querySelector(".chart-empty-state")?.remove();
+  wrap.classList.toggle("is-empty", !hasData);
+  wrap.style.setProperty("--chart-height", `${hasData ? preferredHeight : 112}px`);
+  canvas.hidden = !hasData;
+  if (!hasData) {
+    wrap.insertAdjacentHTML(
+      "beforeend",
+      `<p class="chart-empty-state">${esc(message || "当前筛选范围内暂无可展示数据。")}</p>`
+    );
+  }
+  return Boolean(hasData);
+}
+
+function tableCellValue(row, index) {
+  const cell = row.cells[index];
+  if (!cell) return "";
+  return cell.dataset.sortValue || cell.textContent || "";
+}
+
+function tableRowIsEmptyState(row) {
+  return row.cells.length === 1 && Number(row.cells[0].colSpan || 1) > 1;
+}
+
+function syncTableDensity(table) {
+  if (!table) return;
+  const wrap = table.closest(".table-wrap");
+  if (!wrap) return;
+  const rows = Array.from(table.tBodies || []).flatMap((body) => Array.from(body.rows));
+  const dataRows = rows.filter((row) => !tableRowIsEmptyState(row));
+  wrap.classList.toggle("is-empty", dataRows.length === 0);
+  wrap.classList.toggle("is-scrollable", dataRows.length > 10);
+  wrap.classList.toggle("is-compact", dataRows.length > 0 && dataRows.length <= 4);
+}
+
+function applyTableSort(table, columnIndex, direction) {
+  const tbody = table?.tBodies?.[0];
+  if (!tbody) return;
+  const rows = Array.from(tbody.rows).map((row, originalIndex) => ({ row, originalIndex }));
+  rows.sort((left, right) => {
+    const leftEmpty = tableRowIsEmptyState(left.row);
+    const rightEmpty = tableRowIsEmptyState(right.row);
+    if (leftEmpty && rightEmpty) return left.originalIndex - right.originalIndex;
+    if (leftEmpty) return 1;
+    if (rightEmpty) return -1;
+    const compared = AdminPresentation.compareTableValues(
+      tableCellValue(left.row, columnIndex),
+      tableCellValue(right.row, columnIndex),
+      direction
+    );
+    return compared || left.originalIndex - right.originalIndex;
+  });
+  const fragment = document.createDocumentFragment();
+  rows.forEach(({ row }) => fragment.appendChild(row));
+  tbody.appendChild(fragment);
+
+  table.dataset.sortColumn = String(columnIndex);
+  table.dataset.sortDirection = direction;
+  table.querySelectorAll("thead th.table-sortable").forEach((header) => {
+    const active = Number(header.dataset.tableSortIndex) === columnIndex;
+    header.classList.toggle("sorted-asc", active && direction === "asc");
+    header.classList.toggle("sorted-desc", active && direction === "desc");
+    header.setAttribute("aria-sort", active ? (direction === "asc" ? "ascending" : "descending") : "none");
+  });
+  syncTableDensity(table);
+}
+
+function prepareSortableTables(root = document) {
+  const tables = root.matches?.("table")
+    ? [root]
+    : Array.from(root.querySelectorAll?.("table") || []);
+  tables.forEach((table) => {
+    const customSort = table.querySelector("thead th[data-sort]");
+    table.querySelectorAll("thead th").forEach((header, index) => {
+      const label = header.textContent.trim();
+      const disabled = customSort
+        || header.dataset.sortDisabled === "true"
+        || label === "操作";
+      if (disabled) return;
+      header.classList.add("table-sortable");
+      header.dataset.tableSortIndex = String(index);
+      header.tabIndex = 0;
+      header.setAttribute("role", "button");
+      header.setAttribute("aria-sort", "none");
+      header.title = `${label}：点击排序`;
+    });
+    const columnIndex = Number(table.dataset.sortColumn);
+    if (Number.isInteger(columnIndex) && columnIndex >= 0) {
+      applyTableSort(table, columnIndex, table.dataset.sortDirection || "asc");
+    } else {
+      syncTableDensity(table);
+    }
+  });
 }
 
 function resetInteractionPage() {
@@ -149,6 +344,7 @@ function interactionQueryParams() {
     "offset=" + encodeURIComponent(offset)
   ];
   if (interactionUserId) parts.push("userId=" + encodeURIComponent(interactionUserId));
+  parts.push("detail=" + encodeURIComponent(interactionDetailMode));
   return parts.join("&");
 }
 
@@ -156,6 +352,7 @@ function interactionQueryParams() {
 async function loadAll(signal) {
   document.getElementById("load-error").classList.add("hidden");
   try {
+    await loadCourseDisplayIndex(signal);
     const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, feedbackDashboard, interactions, interactionDashboard, agenticTrace] = await Promise.all([
       fetchStats("overview", "", signal),
       fetchStats("daily-activity", "", signal),
@@ -205,6 +402,7 @@ async function loadAll(signal) {
     try { renderPathAnalysis(pathAnalysis, pathRule); } catch (e) { console.warn("Path analysis:", e); }
     try { renderAgenticTrace(agenticTrace); } catch (e) { console.warn("Agentic trace:", e); }
     try { renderInteractions(interactions); } catch (e) { console.warn("Interactions:", e); }
+    prepareSortableTables();
 
     document.getElementById("status-dot").className = "dot on";
     document.getElementById("status-text").textContent = "已连接";
@@ -241,7 +439,7 @@ function renderMetrics(o, phase) {
       <div class="sub">已注册学习者</div>
     </div>
     <div class="metric-card">
-      <div class="label">Quiz 提交总数</div><div class="value">${o.totalQuizResults}</div>
+      <div class="label">测验提交总数</div><div class="value">${o.totalQuizResults}</div>
       <div class="sub">${dateDesc}</div>
     </div>
     <div class="metric-card">
@@ -257,8 +455,41 @@ function renderMetrics(o, phase) {
       <div class="sub">${gainEntries.length} 组前/后测对比, ${improvedCount} 组进步</div>
     </div>
     <div class="metric-card warn">
-      <div class="label">总事件数</div><div class="value">${o.totalEvents}</div>
-      <div class="sub">${dateDesc} · 学习行为记录</div>
+      <div class="label">关键学习行为</div><div class="value">${o.meaningfulInteractions ?? o.totalEvents}</div>
+      <div class="sub">${dateDesc} · 原始交互 ${o.rawInteractionEvents ?? o.totalEvents} 条</div>
+    </div>
+  `;
+  renderResearchCoverage(o);
+}
+
+function renderResearchCoverage(data = {}) {
+  const node = document.getElementById("research-coverage");
+  if (!node) return;
+  const totalUsers = Math.max(0, Number(data.totalUsers || 0));
+  const coverage = [
+    ["有测验数据", data.usersWithQuiz, "学习结果"],
+    ["有交互数据", data.usersWithInteractions, "过程行为"],
+    ["有前后测配对", data.pairedPrePostUsers, "学习增益"],
+    ["提交过反馈", data.usersWithFeedback, "主观体验"]
+  ];
+  node.innerHTML = `
+    <div class="research-coverage-heading">
+      <div>
+        <span>研究数据覆盖</span>
+        <strong>${data.activeDays || 0} 个活跃日期</strong>
+      </div>
+      <p>${data.feedbackCount || 0} 条反馈 · ${data.agentDecisionCount || 0} 次智能教练决策</p>
+    </div>
+    <div class="research-coverage-grid">
+      ${coverage.map(([label, value, note]) => {
+        const count = Number(value || 0);
+        const percent = totalUsers ? Math.round((count / totalUsers) * 100) : 0;
+        return `<div class="coverage-item">
+          <div><span>${label}</span><strong>${count}/${totalUsers}</strong></div>
+          <div class="coverage-bar" aria-label="${label} ${percent}%"><span style="width:${percent}%"></span></div>
+          <small>${percent}% · ${note}</small>
+        </div>`;
+      }).join("")}
     </div>
   `;
 }
@@ -266,14 +497,19 @@ function renderMetrics(o, phase) {
 // ---- Daily Activity Chart ----
 function renderDailyChart(data) {
   destroyChart("daily");
+  const rows = safeRows(data);
+  if (!setChartState("chart-daily", rows.length > 0, "当前范围内还没有活跃或测验提交记录。", {
+    itemCount: rows.length,
+    minHeight: 240
+  })) return;
   const ctx = document.getElementById("chart-daily").getContext("2d");
   charts.daily = new Chart(ctx, {
     type: "line",
     data: {
-      labels: data.map(d => d.date),
+      labels: rows.map(d => d.date),
       datasets: [
-        { label: "活跃用户", data: data.map(d => d.active_users), borderColor: "#0b8f8a", backgroundColor: "rgba(11,143,138,0.1)", fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 5 },
-        { label: "Quiz 提交", data: data.map(d => d.quiz_submissions), borderColor: "#d9972a", backgroundColor: "rgba(217,151,42,0.1)", fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 5, yAxisID: "y1" }
+        { label: "活跃用户", data: rows.map(d => d.active_users), borderColor: "#0b8f8a", backgroundColor: "rgba(11,143,138,0.1)", fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 5 },
+        { label: "测验提交", data: rows.map(d => d.quiz_submissions), borderColor: "#d9972a", backgroundColor: "rgba(217,151,42,0.1)", fill: true, tension: 0.3, pointRadius: 3, pointHoverRadius: 5, yAxisID: "y1" }
       ]
     },
     options: {
@@ -282,7 +518,7 @@ function renderDailyChart(data) {
       plugins: { legend: { position: "bottom" } },
       scales: {
         y: { beginAtZero: true, title: { display: true, text: "活跃用户数" }, grid: { color: "#f0ece4" } },
-        y1: { position: "right", beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: "Quiz 提交数" } }
+        y1: { position: "right", beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: "测验提交数" } }
       }
     }
   });
@@ -291,14 +527,22 @@ function renderDailyChart(data) {
 // ---- User Rank Chart ----
 function renderUserRankChart(data) {
   destroyChart("userRank");
-  const sorted = [...data].sort((a, b) => b.quiz_count - a.quiz_count).slice(0, 20);
+  const sorted = safeRows(data).filter((row) => Number(row.quiz_count || 0) > 0)
+    .sort((a, b) => b.quiz_count - a.quiz_count)
+    .slice(0, 20);
+  if (!setChartState("chart-user-rank", sorted.length > 0, "当前范围内还没有用户提交测验。", {
+    itemCount: sorted.length,
+    minHeight: 190,
+    maxHeight: 520,
+    perItem: 25
+  })) return;
   const ctx = document.getElementById("chart-user-rank").getContext("2d");
   charts.userRank = new Chart(ctx, {
     type: "bar",
     data: {
       labels: sorted.map(d => d.nickname),
       datasets: [
-        { label: "Quiz 数量", data: sorted.map(d => d.quiz_count), backgroundColor: "#0b8f8a", borderRadius: 4 },
+        { label: "测验数量", data: sorted.map(d => d.quiz_count), backgroundColor: "#0b8f8a", borderRadius: 4 },
         { label: "正确率 %", data: sorted.map(d => d.avg_accuracy), backgroundColor: "#d9972a", borderRadius: 4, yAxisID: "y1" }
       ]
     },
@@ -316,7 +560,10 @@ function renderUserRankChart(data) {
 // ---- Chapter Distribution Scatter ----
 function renderChapterDistChart(data) {
   destroyChart("chapterDist");
-  if (!data || !data.length) return;
+  if (!setChartState("chart-chapter-dist", safeRows(data).length > 0, "当前范围内还没有章节正确率数据。", {
+    itemCount: safeRows(data).length,
+    minHeight: 250
+  })) return;
   const chapters = [...new Set(data.map(d => d.chapter_label))];
   const palette = ["#0b8f8a","#d9972a","#cf6048","#4c7847","#3f6fa4","#8b5cf6","#ec4899","#64748b"];
   const datasets = chapters.map((ch, i) => {
@@ -348,6 +595,11 @@ function renderChapterDistChart(data) {
 
 // ---- Heatmap ----
 function renderHeatmap(data) {
+  const container = document.getElementById("heatmap-container");
+  if (!data || !data.length) {
+    container.innerHTML = '<p class="inline-empty-state">当前范围内还没有可生成热图的章节答题数据。</p>';
+    return;
+  }
   const users = [...new Set(data.map(d => d.nickname))];
   const chapters = [...new Set(data.map(d => d.chapter_label))];
   // Sort chapters by ID
@@ -363,10 +615,10 @@ function renderHeatmap(data) {
   }
 
   let html = '<div class="heatmap-table"><table><thead><tr><th>用户</th>';
-  for (const ch of chapters) html += `<th>${ch}</th>`;
+  for (const ch of chapters) html += `<th>${esc(ch)}</th>`;
   html += '</tr></thead><tbody>';
   for (let i = 0; i < users.length; i++) {
-    html += `<tr><td style="font-weight:600;white-space:nowrap;">${users[i]}</td>`;
+    html += `<tr><td style="font-weight:600;white-space:nowrap;">${esc(users[i])}</td>`;
     for (let j = 0; j < chapters.length; j++) {
       const v = matrix[i][j];
       if (v === null) {
@@ -383,7 +635,7 @@ function renderHeatmap(data) {
     html += '</tr>';
   }
   html += '</tbody></table></div>';
-  document.getElementById("heatmap-container").innerHTML = html;
+  container.innerHTML = html;
 }
 
 // ---- Chapter Summary Table ----
@@ -391,6 +643,10 @@ function renderChapterSummary(chapterData, phaseData) {
   const chapters = [...new Set(chapterData.map(d => d.chapter_label))];
   chapters.sort();
   const tbody = document.getElementById("table-chapter-summary").querySelector("tbody");
+  if (!chapters.length) {
+    tbody.innerHTML = "<tr><td colspan='6'>当前范围内还没有章节测验数据。</td></tr>";
+    return;
+  }
 
   // Build chapter stats
   const stats = chapters.map(ch => {
@@ -410,7 +666,7 @@ function renderChapterSummary(chapterData, phaseData) {
   });
 
   tbody.innerHTML = stats.map(s => `<tr>
-    <td style="font-weight:600;">${s.chapter}</td>
+    <td style="font-weight:600;">${esc(s.chapter)}</td>
     <td>${s.total}</td><td>${s.users}</td>
     <td><span class="badge ${s.avgAcc === '-' ? '' : Number(s.avgAcc) >= 80 ? 'badge-green' : Number(s.avgAcc) >= 60 ? 'badge-amber' : 'badge-red'}">${s.avgAcc === '-' ? '-' : s.avgAcc + '%'}</span></td>
     <td>-</td>
@@ -421,12 +677,19 @@ function renderChapterSummary(chapterData, phaseData) {
 // ---- Question Errors ----
 function renderQuestionErrors(data) {
   destroyChart("questionErrors");
-  const top = data.slice(0, 30);
-  const ctx = document.getElementById("chart-question-errors").getContext("2d");
-  charts.questionErrors = new Chart(ctx, {
+  const rows = safeRows(data);
+  const top = rows.slice(0, 30);
+  if (setChartState("chart-question-errors", top.length > 0, "当前范围内还没有题目作答记录。", {
+    itemCount: top.length,
+    minHeight: 220,
+    maxHeight: 680,
+    perItem: 24
+  })) {
+    const ctx = document.getElementById("chart-question-errors").getContext("2d");
+    charts.questionErrors = new Chart(ctx, {
     type: "bar",
     data: {
-      labels: top.map(d => d.question_id + " (" + (d.unit_label || "") + ")"),
+      labels: top.map(d => `${AdminPresentation.questionDisplayLabel(d.question_id, d.phase)}（${moduleName(d.unit_id, d.unit_label || "")}）`),
       datasets: [{
         label: "错误率 %", data: top.map(d => d.error_rate),
         backgroundColor: top.map(d => d.error_rate > 60 ? "#cf6048" : d.error_rate > 30 ? "#d9972a" : "#4c7847"),
@@ -438,31 +701,35 @@ function renderQuestionErrors(data) {
       plugins: { legend: { display: false } },
       scales: { x: { beginAtZero: true, max: 100, ticks: { callback: v => v + "%" } } }
     }
-  });
+    });
+  }
 
   const table = document.getElementById("table-question-errors");
-  table.innerHTML = `<thead><tr><th>题目 ID</th><th>单元</th><th>章节</th><th>题型</th><th>尝试次数</th><th>错误率</th><th>平均得分/满分</th></tr></thead>
-    <tbody>${data.map(d => `<tr>
-      <td style="font-weight:600;">${d.question_id}</td><td>${d.unit_label}</td><td>${d.chapter_label}</td><td>${d.question_type}</td>
+  table.innerHTML = `<thead><tr><th>题目</th><th>单元</th><th>章节</th><th>题型</th><th>尝试次数</th><th>错误率</th><th>平均得分/满分</th></tr></thead>
+    <tbody>${rows.length ? rows.map(d => `<tr>
+      <td style="font-weight:600;">${esc(AdminPresentation.questionDisplayLabel(d.question_id, d.phase))}</td>
+      <td>${esc(moduleName(d.unit_id, d.unit_label || ""))}</td>
+      <td>${esc(publicCourseText(d.chapter_label || chapterName(d.chapter_id), "未命名章节"))}</td>
+      <td>${esc(AdminPresentation.questionTypeLabel(d.question_type))}</td>
       <td>${d.attempts}</td>
       <td><span class="badge ${d.error_rate > 60 ? 'badge-red' : d.error_rate > 30 ? 'badge-amber' : 'badge-green'}">${d.error_rate}%</span></td>
       <td>${d.avg_score} / ${d.avg_max}</td>
-    </tr>`).join("")}</tbody>`;
+    </tr>`).join("") : "<tr><td colspan='7'>当前范围内还没有题目作答记录。</td></tr>"}</tbody>`;
 }
 
 // ---- Question Type Chart (Polar Area) ----
 function renderQuestionTypeChart(data) {
   destroyChart("questionType");
-  if (!data || data.length === 0) {
-    document.getElementById("chart-question-type").parentElement.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px;">尚无题型数据</p>';
-    return;
-  }
+  if (!setChartState("chart-question-type", safeRows(data).length > 0, "当前范围内还没有题型统计。", {
+    itemCount: safeRows(data).length,
+    minHeight: 230
+  })) return;
   const ctx = document.getElementById("chart-question-type").getContext("2d");
   const palette = ["#0b8f8a","#d9972a","#cf6048","#4c7847","#3f6fa4","#8b5cf6","#ec4899"];
   charts.questionType = new Chart(ctx, {
     type: "polarArea",
     data: {
-      labels: data.map(d => d.question_type),
+      labels: data.map(d => AdminPresentation.questionTypeLabel(d.question_type)),
       datasets: [{
         data: data.map(d => d.accuracy),
         backgroundColor: data.map((_, i) => palette[i % palette.length] + "88"),
@@ -484,16 +751,14 @@ function renderQuestionTypeChart(data) {
 // ---- Pre/Post Comparison Chart (Dumbbell-style using scatter + line) ----
 function renderPrePostChart(data) {
   destroyChart("prePost");
-  if (!data || data.length === 0) {
-    document.getElementById("chart-pre-post").parentElement.innerHTML = '<p style="color:var(--muted);text-align:center;padding:60px;">尚无前测/后测对比数据</p>';
-    return;
-  }
   // Filter to only entries that have both pre and post
-  const entries = data.filter(d => d.pre_count > 0 && d.post_count > 0);
-  if (entries.length === 0) {
-    document.getElementById("chart-pre-post").parentElement.innerHTML = '<p style="color:var(--muted);text-align:center;padding:60px;">尚无同时具有前测和后测的数据</p>';
-    return;
-  }
+  const entries = safeRows(data).filter(d => d.pre_count > 0 && d.post_count > 0);
+  if (!setChartState("chart-pre-post", entries.length > 0, "当前范围内还没有同时完成前测和后测的数据。", {
+    itemCount: entries.length,
+    minHeight: 220,
+    maxHeight: 680,
+    perItem: 26
+  })) return;
 
   const labels = entries.map(d => `${d.nickname} / ${d.chapter_label}`);
   const ctx = document.getElementById("chart-pre-post").getContext("2d");
@@ -525,10 +790,15 @@ function renderPrePostChart(data) {
 // ---- Score Distribution Histogram ----
 function renderScoreDistChart(data) {
   destroyChart("scoreDist");
-  if (!data || data.length === 0) return;
+  const rows = safeRows(data);
+  const hasScores = rows.some((row) => Number(row.count || 0) > 0);
+  if (!setChartState("chart-score-dist", hasScores, "当前范围内还没有可统计的测验得分。", {
+    itemCount: rows.length,
+    minHeight: 230
+  })) return;
   const buckets = ["0-19%", "20-39%", "40-59%", "60-79%", "80-99%", "满分 (100%)"];
   const map = {};
-  data.forEach(d => { map[d.bucket] = d.count; });
+  rows.forEach(d => { map[d.bucket] = d.count; });
 
   const ctx = document.getElementById("chart-score-dist").getContext("2d");
   charts.scoreDist = new Chart(ctx, {
@@ -556,12 +826,13 @@ function renderScoreDistChart(data) {
 // ---- Learning Gain Chart ----
 function renderLearningGainChart(data) {
   destroyChart("learningGain");
-  if (!data || data.length === 0) return;
-  const entries = data.filter(d => d.pre_count > 0 && d.post_count > 0);
-  if (entries.length === 0) {
-    document.getElementById("chart-learning-gain").parentElement.innerHTML = '<p style="color:var(--muted);text-align:center;padding:60px;">尚无学习增益数据</p>';
-    return;
-  }
+  const entries = safeRows(data).filter(d => d.pre_count > 0 && d.post_count > 0);
+  if (!setChartState("chart-learning-gain", entries.length > 0, "当前范围内还没有可计算的学习增益。", {
+    itemCount: entries.length,
+    minHeight: 220,
+    maxHeight: 680,
+    perItem: 26
+  })) return;
 
   const sorted = [...entries].sort((a, b) => {
     const gainA = (a.post_accuracy || 0) - (a.pre_accuracy || 0);
@@ -607,12 +878,16 @@ function renderPhaseCompactTable(data) {
     return;
   }
   const entries = data.filter(d => d.pre_count > 0 || d.post_count > 0);
+  if (!entries.length) {
+    tbody.innerHTML = "<tr><td colspan='5'>当前范围内还没有前测或后测提交。</td></tr>";
+    return;
+  }
   tbody.innerHTML = entries.map(d => {
     const diff = (d.post_count > 0 && d.pre_count > 0) ? ((d.post_accuracy || 0) - (d.pre_accuracy || 0)).toFixed(1) : null;
     const diffStr = diff === null ? "-" : (Number(diff) >= 0 ? "+" + diff + "%" : diff + "%");
     const badgeCls = diff === null ? "" : Number(diff) > 0 ? "badge-green" : Number(diff) < 0 ? "badge-red" : "badge-amber";
     return `<tr>
-      <td>${d.nickname}</td><td>${d.chapter_label}</td>
+      <td>${esc(d.nickname || "")}</td><td>${esc(publicCourseText(d.chapter_label, "未命名章节"))}</td>
       <td>${d.pre_accuracy ?? "-"}% (n=${d.pre_count})</td>
       <td>${d.post_accuracy ?? "-"}% (n=${d.post_count || 0})</td>
       <td><span class="badge ${badgeCls}">${diffStr}</span></td>
@@ -624,21 +899,24 @@ function renderPhaseCompactTable(data) {
 function renderUserTable(users) {
   const table = document.getElementById("table-users");
   document.getElementById("user-total-count").textContent = `共 ${users.length} 位用户`;
-  table.innerHTML = `<thead><tr><th>昵称</th><th>用户ID</th><th>最后活跃</th><th>测验提交</th><th>测验覆盖单元</th><th>正确率</th><th>总得分</th><th>操作</th></tr></thead>
-    <tbody>${users.map(u => `<tr>
-      <td style="font-weight:600;">${u.nickname}</td>
-      <td style="font-size:0.75rem;color:var(--muted);">${(u.user_id || "").slice(-12)}</td>
-      <td>${(u.last_seen_at || "").slice(0, 16)}</td>
-      <td>${u.quiz_count}</td>
+  table.innerHTML = `<thead><tr><th>昵称</th><th>最后活跃</th><th>活跃天数</th><th>行为记录</th><th>测验提交</th><th>覆盖单元</th><th>正确率</th><th>反馈</th><th>智能教练决策</th><th>操作</th></tr></thead>
+    <tbody>${users.length ? users.map(u => `<tr>
+      <td style="font-weight:600;">${esc(u.nickname || "未命名")}</td>
+      <td>${esc(shortDateTime(u.last_seen_at))}</td>
+      <td>${u.active_days || 0}</td>
+      <td>${u.event_count || 0}</td>
+      <td>${u.quiz_count || 0}</td>
       <td>${u.units_attempted || 0}</td>
       <td><span class="badge ${(u.avg_accuracy||0) >= 80 ? 'badge-green' : (u.avg_accuracy||0) >= 50 ? 'badge-amber' : 'badge-red'}">${u.avg_accuracy || 0}%</span></td>
-      <td>${u.total_score || 0} / ${u.total_max || 0}</td>
-      <td><button class="btn btn-sm btn-primary view-user-btn" data-user-id="${u.user_id}">详情</button></td>
-    </tr>`).join("")}</tbody>`;
+      <td>${u.feedback_count || 0}</td>
+      <td>${u.agent_decision_count || 0}</td>
+      <td><button class="btn btn-sm btn-primary view-user-btn" data-user-id="${esc(u.user_id || "")}">详情</button></td>
+    </tr>`).join("") : "<tr><td colspan='10'>当前筛选范围内没有匹配用户。</td></tr>"}</tbody>`;
 
   table.querySelectorAll(".view-user-btn").forEach(btn => {
     btn.addEventListener("click", () => loadUserDetail(btn.dataset.userId));
   });
+  prepareSortableTables(table);
 }
 
 // ---- User Detail ----
@@ -652,53 +930,105 @@ async function loadUserDetail(userId) {
     // Timeline chart
     destroyChart("userTimeline");
     const sorted = detail.quizResults.slice().reverse();
-    const ctx = document.getElementById("chart-user-timeline").getContext("2d");
-    charts.userTimeline = new Chart(ctx, {
-      type: "scatter",
-      data: {
-        datasets: [
-          { label: "正确", data: sorted.filter(d => d.is_correct === 1).map(d => ({ x: d.created_at.slice(0, 16), y: d.score, questionId: d.question_id })),
-            backgroundColor: "#4c7847", pointRadius: 5, pointHoverRadius: 8 },
-          { label: "部分正确", data: sorted.filter(d => d.is_correct === -1).map(d => ({ x: d.created_at.slice(0, 16), y: d.score, questionId: d.question_id })),
-            backgroundColor: "#d9972a", pointRadius: 5, pointHoverRadius: 8 },
-          { label: "错误", data: sorted.filter(d => d.is_correct === 0).map(d => ({ x: d.created_at.slice(0, 16), y: d.score, questionId: d.question_id })),
-            backgroundColor: "#cf6048", pointRadius: 5, pointHoverRadius: 8 }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: "bottom" },
-          tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw.questionId || ""} - 得分: ${ctx.raw.y}` } }
+    const timelineCanvas = document.getElementById("chart-user-timeline");
+    if (setChartState("chart-user-timeline", sorted.length > 0, "该学生在当前筛选范围内还没有测验提交。", {
+      itemCount: sorted.length,
+      minHeight: 220,
+      maxHeight: 420
+    })) {
+      const point = (row) => ({
+        x: row.created_at.slice(0, 16),
+        y: row.score,
+        questionLabel: AdminPresentation.questionDisplayLabel(row.question_id, row.phase)
+      });
+      const ctx = timelineCanvas.getContext("2d");
+      charts.userTimeline = new Chart(ctx, {
+        type: "scatter",
+        data: {
+          datasets: [
+            { label: "正确", data: sorted.filter(d => d.is_correct === 1).map(point),
+              backgroundColor: "#4c7847", pointRadius: 5, pointHoverRadius: 8 },
+            { label: "部分正确", data: sorted.filter(d => d.is_correct === -1).map(point),
+              backgroundColor: "#d9972a", pointRadius: 5, pointHoverRadius: 8 },
+            { label: "错误", data: sorted.filter(d => d.is_correct === 0).map(point),
+              backgroundColor: "#cf6048", pointRadius: 5, pointHoverRadius: 8 }
+          ]
         },
-        scales: {
-          x: { ticks: { maxRotation: 45, font: { size: 9 } } },
-          y: { beginAtZero: true, title: { display: true, text: "得分" } }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom" },
+            tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw.questionLabel} · 得分 ${ctx.raw.y}` } }
+          },
+          scales: {
+            x: { ticks: { maxRotation: 45, font: { size: 9 } } },
+            y: { beginAtZero: true, title: { display: true, text: "得分" } }
+          }
         }
-      }
-    });
+      });
+    }
 
     // Chapter summary table
     const table = document.getElementById("table-user-chapters");
     table.innerHTML = `<thead><tr><th>章节</th><th>答题数</th><th>正确数</th><th>正确率</th><th>平均得分</th></tr></thead>
-      <tbody>${detail.chapterSummary.map(c => `<tr>
-        <td>${c.chapter_label}</td><td>${c.total}</td><td>${c.correct}</td>
+      <tbody>${detail.chapterSummary.length ? detail.chapterSummary.map(c => `<tr>
+        <td>${esc(publicCourseText(c.chapter_label || chapterName(c.chapter_id), "未命名章节"))}</td><td>${c.total}</td><td>${c.correct}</td>
         <td><span class="badge ${c.accuracy >= 80 ? 'badge-green' : c.accuracy >= 50 ? 'badge-amber' : 'badge-red'}">${c.accuracy}%</span></td>
         <td>${c.avg_score}</td>
-      </tr>`).join("")}</tbody>`;
+      </tr>`).join("") : "<tr><td colspan='5'>该学生在当前范围内还没有章节测验数据。</td></tr>"}</tbody>`;
 
     // Activity summary
     const prePostEvents = detail.quizResults.filter(r => r.phase === "pre" || r.phase === "post");
     const preCount = prePostEvents.filter(r => r.phase === "pre").length;
     const postCount = prePostEvents.filter(r => r.phase === "post").length;
+    const research = detail.researchSummary || {};
+    const environment = research.latestEnvironment || {};
+    document.getElementById("user-research-metrics").innerHTML = `
+      <div class="metric-card highlight"><div class="label">活跃天数</div><div class="value">${research.activeDays || 0}</div><div class="sub">${research.sessions || 0} 个浏览器学习会话</div></div>
+      <div class="metric-card"><div class="label">估算在线</div><div class="value small">${durationText(research.estimatedOnlineSeconds || 0)}</div><div class="sub">由在线时段事件累计</div></div>
+      <div class="metric-card good"><div class="label">有效学习停留</div><div class="value small">${durationText(research.unitStudySeconds || 0)}</div><div class="sub">${research.unitsVisited || 0} 个学习模块</div></div>
+      <div class="metric-card"><div class="label">课件动作</div><div class="value">${research.coursewareActions || 0}</div><div class="sub">点击、拖拽、调参、输入与滚动</div></div>
+      <div class="metric-card warn"><div class="label">反馈</div><div class="value">${research.feedbackCount || 0}</div><div class="sub">学生主动提交的问题与建议</div></div>
+      <div class="metric-card"><div class="label">智能教练决策</div><div class="value">${research.agentDecisionCount || 0}</div><div class="sub">已形成的路径建议证据</div></div>
+    `;
     document.getElementById("user-activity-summary").innerHTML = `
-      <p><strong>总答题数:</strong> ${detail.quizResults.length}</p>
-      <p><strong>前测次数:</strong> ${preCount} | <strong>后测次数:</strong> ${postCount}</p>
-      <p><strong>覆盖章节:</strong> ${detail.chapterSummary.length} 个</p>
-      <p><strong>总事件数:</strong> ${detail.eventCount}</p>
-      <p><strong>注册时间:</strong> ${(detail.user.created_at || "").slice(0, 16)}</p>
+      <dl class="research-fact-list">
+        <div><dt>总答题数</dt><dd>${detail.quizResults.length}</dd></div>
+        <div><dt>前测 / 后测</dt><dd>${preCount} / ${postCount}</dd></div>
+        <div><dt>覆盖章节</dt><dd>${detail.chapterSummary.length}</dd></div>
+        <div><dt>总事件数</dt><dd>${detail.eventCount}</dd></div>
+        <div><dt>完成 / 重复访问</dt><dd>${research.completedUnits || 0} / ${research.repeatVisits || 0}</dd></div>
+        <div><dt>注册时间</dt><dd>${esc(shortDateTime(detail.user.created_at))}</dd></div>
+        <div><dt>最近设备</dt><dd>${esc(environment.deviceType || "尚未记录")}</dd></div>
+        <div><dt>视口 / 时区</dt><dd>${esc(environment.viewport ? `${environment.viewport.width}×${environment.viewport.height}` : "尚未记录")} / ${esc(environment.timezone || "尚未记录")}</dd></div>
+      </dl>
     `;
 
+    const recentEventsBody = document.querySelector("#table-user-recent-events tbody");
+    recentEventsBody.innerHTML = (detail.events || []).length
+      ? detail.events.slice(0, 40).map((row) => `<tr>
+          <td class="nowrap">${esc(shortDateTime(row.created_at))}</td>
+          <td>${esc(humanInteractionSummary(row))}</td>
+        </tr>`).join("")
+      : "<tr><td colspan='2'>当前范围内暂无学习行为。</td></tr>";
+
+    const userFeedbackBody = document.querySelector("#table-user-feedback tbody");
+    userFeedbackBody.innerHTML = (detail.feedbackRows || []).length
+      ? detail.feedbackRows.map((row) => {
+          const location = row.target_scope === "courseware" ? [
+            publicCourseText(row.chapter_label || chapterName(row.chapter_id), ""),
+            publicCourseText(row.knowledge_point || row.unit_label, "")
+          ].filter(Boolean).join(" · ") : "";
+          return `<tr>
+            <td class="nowrap">${esc(shortDateTime(row.created_at))}</td>
+            <td>${esc(feedbackTypeLabels[row.feedback_type] || row.feedback_type)}</td>
+            <td>${esc(location || "全局反馈")}</td>
+            <td>${AdminPresentation.feedbackContentHtml(row.content || "", esc)}</td>
+          </tr>`;
+        }).join("")
+      : "<tr><td colspan='4'>该学生尚未提交问题反馈。</td></tr>";
+
+    prepareSortableTables(section);
     section.scrollIntoView({ behavior: "smooth" });
   } catch (e) {
     alert("加载用户详情失败: " + e.message);
@@ -731,7 +1061,7 @@ function visibleFeedbackRows() {
 function feedbackTargetLabel(row) {
   if (row.feedback_type !== "courseware") return "全局反馈";
   if (row.target_scope !== "courseware") return "全局课件反馈";
-  return row.resource_title || row.resource_file || "具体课件";
+  return publicCourseText(row.resource_title || row.unit_label, "具体课件");
 }
 
 function renderFeedbackDashboard(data = {}) {
@@ -740,7 +1070,15 @@ function renderFeedbackDashboard(data = {}) {
     cachedFeedbackSummary = {
       total: Number(data.summary.total || 0),
       courseware: Number(data.summary.courseware || 0),
-      users: Number(data.summary.users || 0)
+      users: Number(data.summary.users || 0),
+      targets: Number(data.summary.targets || 0),
+      lastAt: data.summary.lastAt || "",
+      byType: {
+        learning_content: Number(data.summary.byType?.learning_content || 0),
+        courseware: Number(data.summary.byType?.courseware || 0),
+        platform: Number(data.summary.byType?.platform || 0),
+        other: Number(data.summary.byType?.other || 0)
+      }
     };
   }
   const rows = visibleFeedbackRows();
@@ -760,43 +1098,59 @@ function renderFeedbackDashboard(data = {}) {
         <div class="label">反馈学生数</div><div class="value">${summary.users}</div>
         <div class="sub">提交过反馈的学生</div>
       </div>
+      <div class="metric-card warn">
+        <div class="label">涉及课件数</div><div class="value">${summary.targets}</div>
+        <div class="sub">被明确反馈的讲解页或互动课件</div>
+      </div>
     `;
+  }
+
+  const breakdown = document.getElementById("feedback-breakdown");
+  if (breakdown) {
+    breakdown.innerHTML = Object.entries(summary.byType || {}).map(([type, count]) => `
+      <span><b>${esc(feedbackTypeLabels[type] || type)}</b><strong>${Number(count || 0)}</strong></span>
+    `).join("");
   }
 
   const resultNote = document.getElementById("feedback-result-note");
   if (resultNote) {
-    resultNote.textContent = summary.total > rows.length
+    const lastAt = summary.lastAt ? `最近提交 ${shortDateTime(summary.lastAt)}。` : "";
+    resultNote.textContent = (summary.total > rows.length
       ? `共 ${summary.total} 条匹配记录，当前显示最近 ${rows.length} 条；CSV 导出当前显示结果。`
-      : `当前显示 ${rows.length} 条匹配记录；CSV 包含完整正文。`;
+      : `当前显示 ${rows.length} 条匹配记录；CSV 包含完整正文。`) + lastAt;
   }
 
   const tbody = document.querySelector("#table-feedback tbody");
   if (!tbody) return;
   if (!rows.length) {
     tbody.innerHTML = "<tr><td colspan='6'>当前筛选条件下暂无问题反馈。</td></tr>";
+    prepareSortableTables(document.getElementById("table-feedback"));
     return;
   }
   tbody.innerHTML = rows.map((row) => {
-    const location = [row.knowledge_point, row.chapter_id, row.unit_id]
-      .filter(Boolean)
+    const location = (row.target_scope === "courseware" ? [
+      publicCourseText(row.chapter_label || chapterName(row.chapter_id), ""),
+      publicCourseText(row.knowledge_point || row.unit_label, "")
+    ] : [])
+      .filter((value, index, values) => value && values.indexOf(value) === index)
       .map((value) => esc(value))
       .join("<br>");
     const content = String(row.content || "");
-    const preview = content.length > 90 ? content.slice(0, 90) + "…" : content;
+    const targetLabel = feedbackTargetLabel(row);
+    const sceneLabel = row.scene_type ? AdminPresentation.sceneTypeLabel(row.scene_type) : "";
+    const sceneMeta = sceneLabel && !targetLabel.includes(sceneLabel)
+      ? `<br><span class="muted">${esc(sceneLabel)}</span>`
+      : "";
     return `<tr>
       <td class="nowrap">${esc(shortDateTime(row.created_at))}</td>
-      <td><strong>${esc(row.nickname || "未命名")}</strong><br><span class="muted">${esc((row.user_id || "").slice(-8))}</span></td>
+      <td><strong>${esc(row.nickname || "未命名")}</strong></td>
       <td><span class="badge badge-blue">${esc(feedbackTypeLabels[row.feedback_type] || row.feedback_type)}</span></td>
-      <td>${esc(feedbackTargetLabel(row))}${row.scene_type ? `<br><span class="muted">${esc(row.scene_type)}</span>` : ""}</td>
+      <td>${esc(targetLabel)}${sceneMeta}</td>
       <td>${location || "—"}</td>
-      <td class="feedback-content-cell">
-        <details class="feedback-details">
-          <summary>${esc(preview)}</summary>
-          <p>${esc(content)}</p>
-        </details>
-      </td>
+      <td class="feedback-content-cell">${AdminPresentation.feedbackContentHtml(content, esc)}</td>
     </tr>`;
   }).join("");
+  prepareSortableTables(document.getElementById("table-feedback"));
 }
 
 async function loadFeedbackDashboard() {
@@ -825,18 +1179,22 @@ function debouncedLoadFeedbackDashboard() {
 function renderActivityTab(hourlyData, phaseData) {
   // Hourly activity
   destroyChart("hourly");
-  if (hourlyData && hourlyData.length > 0) {
+  const hourlyRows = safeRows(hourlyData);
+  if (setChartState("chart-hourly", hourlyRows.length > 0, "当前范围内还没有可统计的分时段活动。", {
+    itemCount: hourlyRows.length,
+    minHeight: 230
+  })) {
     const ctx2 = document.getElementById("chart-hourly").getContext("2d");
     // Fill missing hours with 0
     const hourlyMap = {};
-    hourlyData.forEach(d => { hourlyMap[d.hour] = d; });
+    hourlyRows.forEach(d => { hourlyMap[d.hour] = d; });
     const hours = Array.from({length: 24}, (_, i) => i);
     charts.hourly = new Chart(ctx2, {
       type: "bar",
       data: {
         labels: hours.map(h => `${h}:00`),
         datasets: [
-          { label: "Quiz 提交", data: hours.map(h => hourlyMap[h]?.quiz_submissions || 0), backgroundColor: "#d9972a", borderRadius: 3 },
+          { label: "测验提交", data: hours.map(h => hourlyMap[h]?.quiz_submissions || 0), backgroundColor: "#d9972a", borderRadius: 3 },
           { label: "其它事件", data: hours.map(h => (hourlyMap[h]?.events_count || 0) - (hourlyMap[h]?.quiz_submissions || 0)), backgroundColor: "#0b8f8a", borderRadius: 3 }
         ]
       },
@@ -847,7 +1205,7 @@ function renderActivityTab(hourlyData, phaseData) {
           tooltip: { callbacks: { footer: ctx => `活跃用户: ${hourlyMap[ctx[0].dataIndex]?.active_users || 0}` } }
         },
         scales: {
-          x: { title: { display: true, text: "小时 (UTC)" }, ticks: { maxRotation: 0 } },
+          x: { title: { display: true, text: "小时" }, ticks: { maxRotation: 0 } },
           y: { stacked: true, beginAtZero: true, title: { display: true, text: "事件数" } }
         }
       }
@@ -857,7 +1215,8 @@ function renderActivityTab(hourlyData, phaseData) {
   // Phase comparison table
   const table = document.getElementById("table-phase-comparison");
   if (!phaseData || phaseData.length === 0) {
-    table.innerHTML = "<tr><td colspan='7'>还没有前测/后测对比数据。</td></tr>";
+    table.innerHTML = "<thead><tr><th>用户</th><th>章节</th><th>前测正确率</th><th>前测数量</th><th>后测正确率</th><th>后测数量</th><th>变化</th></tr></thead><tbody><tr><td colspan='7'>还没有前测/后测对比数据。</td></tr></tbody>";
+    prepareSortableTables(table);
     return;
   }
   table.innerHTML = `<thead><tr><th>用户</th><th>章节</th><th>前测正确率</th><th>前测数量</th><th>后测正确率</th><th>后测数量</th><th>变化</th></tr></thead>
@@ -865,56 +1224,66 @@ function renderActivityTab(hourlyData, phaseData) {
       const diff = (d.post_accuracy || 0) - (d.pre_accuracy || 0);
       const noPost = !d.post_count || d.post_count === 0;
       return `<tr>
-        <td>${d.nickname}</td><td>${d.chapter_label}</td>
+        <td>${esc(d.nickname || "")}</td><td>${esc(publicCourseText(d.chapter_label, "未命名章节"))}</td>
         <td>${d.pre_accuracy ?? "-"}%</td><td>${d.pre_count}</td>
         <td>${d.post_accuracy ?? "-"}%</td><td>${d.post_count || 0}</td>
         <td>${noPost ? '<span style="color:#999;">-</span>' : `<span class="badge ${diff > 0 ? 'badge-green' : diff < 0 ? 'badge-red' : 'badge-amber'}">${diff > 0 ? '+' : ''}${diff}%</span>`}</td>
       </tr>`;
     }).join("")}</tbody>`;
+  prepareSortableTables(table);
 }
 
 // ---- Short Answer Responses ----
+function shortAnswerReviewState(row = {}) {
+  const aiScore = row.ai_score == null ? null : Number(row.ai_score);
+  const aiErrorType = row.ai_error_type || "";
+  const aiFeedback = row.ai_feedback || "";
+  const aiFailed = ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(aiErrorType)
+    || /解析失败|评分超时|人工评阅|人工复核/.test(aiFeedback);
+  if (aiScore === null) return { label: "待复核", badgeClass: "badge-amber", kind: "pending" };
+  if (aiScore > 0) return { label: `已审核 ${aiScore} 分`, badgeClass: "badge-blue", kind: "reviewed" };
+  if (aiFailed) return { label: "待复核", badgeClass: "badge-amber", kind: "pending" };
+  return { label: "错误", badgeClass: "badge-red", kind: "incorrect" };
+}
+
 function renderShortAnswers(data) {
+  const table = document.getElementById("table-shortanswers");
   const tbody = document.getElementById("table-shortanswers").querySelector("tbody");
-  if (!data || data.length === 0) {
+  const page = normalizePageData(data, 500);
+  const rows = page.rows;
+  if (!rows.length) {
     tbody.innerHTML = "<tr><td colspan='8'>尚无简答题提交数据。</td></tr>";
+    document.getElementById("shortanswer-summary").textContent = `共 ${page.total} 条简答题提交`;
+    prepareSortableTables(table);
     return;
   }
-  tbody.innerHTML = data.map(d => {
-    let statusBadge = "";
-    const aiScore = d.ai_score == null ? null : Number(d.ai_score);
-    const aiErrorType = d.ai_error_type || "";
-    const aiFeedback = d.ai_feedback || "";
-    const aiFailed = ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(aiErrorType)
-      || /解析失败|评分超时|人工评阅|人工复核/.test(aiFeedback);
-    if (aiScore === null) statusBadge = '<span class="badge badge-amber">待复核</span>';
-    else if (aiScore > 0) statusBadge = '<span class="badge badge-blue">已审核 '+aiScore+'分</span>';
-    else if (aiFailed) statusBadge = '<span class="badge badge-amber">待复核</span>';
-    else statusBadge = '<span class="badge badge-red">错误</span>';
+  tbody.innerHTML = rows.map(d => {
+    const status = shortAnswerReviewState(d);
+    const statusBadge = `<span class="badge ${status.badgeClass}">${esc(status.label)}</span>`;
     const answer = (d.response || "").length > 200
       ? d.response.slice(0, 200) + "..."
       : (d.response || "");
     const scoreDisplay = d.max_score > 0 ? `${d.score} / ${d.max_score}` : `${d.score} (预估)`;
     return `<tr>
-      <td style="font-weight:600;">${d.nickname}</td>
-      <td>${d.chapter_label}</td>
-      <td>${d.unit_label}</td>
-      <td>${d.question_id}</td>
-      <td style="max-width:350px;word-break:break-word;font-size:0.82rem;" title="${(d.response||'').replace(/"/g,'&quot;')}">${answer}</td>
+      <td style="font-weight:600;">${esc(d.nickname)}</td>
+      <td>${esc(publicCourseText(d.chapter_label, "未命名章节"))}</td>
+      <td>${esc(moduleName(d.unit_id, d.unit_label || ""))}</td>
+      <td>${esc(AdminPresentation.questionDisplayLabel(d.question_id, d.phase))}</td>
+      <td style="max-width:350px;word-break:break-word;font-size:0.82rem;" title="${esc(d.response || "")}">${esc(answer)}</td>
       <td>${scoreDisplay}</td>
       <td>${statusBadge}</td>
       <td style="font-size:0.78rem;white-space:nowrap;">${(d.created_at||"").slice(0,16)}</td>
     </tr>`;
  }).join("");
   // Show summary
-  const reviewed = data.filter(d => d.ai_score != null && Number(d.ai_score) > 0).length;
-  const isAiFailed = (d) => ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(d.ai_error_type || "")
-    || /解析失败|评分超时|人工评阅|人工复核/.test(d.ai_feedback || "");
-  const apiFailed = data.filter(d => d.ai_score != null && Number(d.ai_score) === 0 && isAiFailed(d)).length;
-  const incorrect = data.filter(d => d.ai_score != null && Number(d.ai_score) === 0 && !isAiFailed(d)).length;
-  const pending = data.filter(d => d.ai_score == null).length;
+  const statuses = rows.map(shortAnswerReviewState);
+  const reviewed = statuses.filter((status) => status.kind === "reviewed").length;
+  const incorrect = statuses.filter((status) => status.kind === "incorrect").length;
+  const pending = statuses.filter((status) => status.kind === "pending").length;
+  const loadedLabel = page.total > rows.length ? ` · 当前加载 ${rows.length} 条` : "";
   document.getElementById("shortanswer-summary").textContent =
-     `共 ${data.length} 条 | 已审核 ${reviewed} | 错误 ${incorrect} | 待复核 ${pending + apiFailed}`;
+     `共 ${page.total} 条${loadedLabel} | 已审核 ${reviewed} | 错误 ${incorrect} | 待复核 ${pending}`;
+  prepareSortableTables(table);
 }
 function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
@@ -931,12 +1300,13 @@ function viewName(value) {
     learn: "学习页",
     library: "资源页",
     progress: "学习记录页",
+    feedback: "问题反馈页",
     evaluation: "评测页",
     agent: "Agent 编排页"
   })[key] || (key ? key : "未知页面");
 }
 
-const adminChapterOrder = ["A1", "A2a", "A2b", "A3", "A4", "C1", "D1", "D2"];
+let adminChapterOrder = ["A1", "A2a", "A2b", "A3", "A4", "C1", "D1", "D2"];
 const adminChapterLabels = {
   A1: "变化与斜率",
   A2a: "向量：方向与长度",
@@ -954,6 +1324,13 @@ const adminUnitOverrides = {
   8: "形成性测验",
   12: "复盘页",
   15: "后测"
+};
+const adminKnowledgePointIds = new Set();
+const adminSceneTypeLabels = {
+  simulation: "动手调一调",
+  game: "找错并改正",
+  mindMap: "知识怎么连",
+  visualization3d: "换个角度看"
 };
 const adminUnitLabels = {
   "A1-scene-1": "前测",
@@ -1082,8 +1459,13 @@ function chapterName(idOrLabel = "") {
   const value = String(idOrLabel || "");
   const unitMatch = value.match(/^([A-Za-z0-9]+)-(?:scene-\d+|chapter)$/);
   if (unitMatch) return chapterName(unitMatch[1]);
+  const v14Match = value.match(/^(V\d+-[CX]\d+)/i);
+  const v14Id = v14Match
+    ? Object.keys(adminChapterLabels).find((key) => key.toLowerCase() === v14Match[1].toLowerCase())
+    : "";
+  if (v14Id && v14Id !== value) return chapterName(v14Id);
   const id = adminChapterLabels[value] ? value : Object.keys(adminChapterLabels).find((key) => value === adminChapterLabels[key]);
-  if (!id) return value;
+  if (!id) return publicCourseText(value, "未命名章节");
   const index = adminChapterOrder.indexOf(id);
   return index >= 0 ? `第${index + 1}章 ${adminChapterLabels[id]}` : adminChapterLabels[id];
 }
@@ -1095,6 +1477,21 @@ function normalizedChapterName(row = {}) {
 function moduleName(unitId = "", fallback = "") {
   const id = String(unitId || "");
   if (adminUnitLabels[id]) return adminUnitLabels[id];
+  const publicFallback = publicCourseText(fallback, "");
+  const role = /-pre$/i.test(id)
+    ? "前测"
+    : /-formative$/i.test(id)
+      ? "形成性测验"
+      : /-post$/i.test(id)
+        ? "后测"
+        : /-review$/i.test(id)
+          ? "全课整理"
+          : "";
+  if (role) {
+    const v14ChapterId = id.match(/^(V\d+-[CX]\d+)/i)?.[1] || "";
+    const chapterLabel = v14ChapterId ? adminChapterLabels[v14ChapterId] || "" : "";
+    return publicFallback || (chapterLabel ? `${chapterLabel} · ${role}` : role);
+  }
   const match = id.match(/^([A-Za-z0-9]+)-scene-(\d+)$/);
   if (match) {
     const order = Number(match[2]);
@@ -1102,7 +1499,7 @@ function moduleName(unitId = "", fallback = "") {
   }
   if (/^[A-Za-z0-9]+-chapter$/.test(id)) return "整章";
   if (/^[A-Za-z0-9]+-scene-\d+$/.test(String(fallback || ""))) return moduleName(fallback);
-  return fallback || unitName(id);
+  return publicFallback || unitName(id);
 }
 
 function parseJsonMaybe(value) {
@@ -1113,10 +1510,92 @@ function parseJsonMaybe(value) {
 
 function unitName(value) {
   const id = String(value || "");
+  if (adminUnitLabels[id]) return adminUnitLabels[id];
   const m = id.match(/^([A-Za-z0-9]+)-scene-(\d+)$/);
   if (m) return moduleName(id, `${chapterName(m[1])} 第 ${m[2]} 个学习模块`);
   if (id.startsWith("supplement-")) return "推荐补给资源";
-  return id || "未知模块";
+  return publicCourseText(id, "未知模块");
+}
+
+function sceneTypeName(value = "", fallback = "") {
+  const raw = String(value || "").trim();
+  const id = raw === "diagram" ? "mindMap" : raw;
+  if (!id) return publicCourseText(fallback, "");
+  return adminSceneTypeLabels[id]
+    || AdminPresentation.sceneTypeLabel(id)
+    || publicCourseText(fallback, "");
+}
+
+function isKnowledgePointUnit(unitId = "") {
+  const id = String(unitId || "");
+  return adminKnowledgePointIds.has(id) || /^(?:GH|EXT)-\d+-K\d+$/i.test(id);
+}
+
+function knowledgeSceneName(unitId = "", fallback = "", sceneType = "", sceneLabel = "") {
+  const unit = moduleName(unitId, fallback);
+  if (!isKnowledgePointUnit(unitId)) return unit;
+  const scene = publicCourseText(sceneLabel, "") || (sceneType ? sceneTypeName(sceneType) : "");
+  return AdminPresentation.knowledgeSceneLabel(unit, sceneType, scene);
+}
+
+function interactionSceneMeta(payload = {}, data = {}) {
+  return {
+    type: payload.sceneType || data.sceneType || data.selectedSceneType || "",
+    label: payload.sceneLabel || data.sceneLabel || "",
+    resourceTitle: payload.resourceTitle || data.resourceTitle || ""
+  };
+}
+
+function interactionUnitName(payload = {}, data = {}) {
+  return moduleName(
+    payload.unitId || data.unitId || data.unit || "",
+    payload.unitLabel || data.unitLabel || data.title || ""
+  );
+}
+
+function interactionQuestionName(data = {}) {
+  const questionId = String(data.questionId || data.question_id || "").trim();
+  const indexed = adminQuestionMeta[questionId.toLowerCase()] || {};
+  const questionIndex = Number(data.questionIndex ?? data.index);
+  return AdminPresentation.questionInteractionLabel({
+    questionId,
+    phase: data.phase || indexed.phase || "",
+    order: indexed.order || (Number.isFinite(questionIndex) ? questionIndex + 1 : null),
+    moduleTitle: data.moduleTitle || indexed.moduleTitle || moduleName(data.moduleId || indexed.moduleId, ""),
+    questionText: data.questionText || indexed.questionText || ""
+  });
+}
+
+function interactionLearningLocation(row = {}) {
+  const payload = parsePayload(row.payload);
+  const data = row.type === "interaction"
+    ? payload.data || {}
+    : payload.data && typeof payload.data === "object"
+      ? payload.data
+      : payload;
+  const unitId = payload.unitId || data.unitId || data.unit || "";
+  const scene = interactionSceneMeta(payload, data);
+  const unitLabel = knowledgeSceneName(
+    unitId,
+    payload.unitLabel || data.unitLabel || data.title || "",
+    scene.type,
+    scene.label
+  );
+  const chapterLabel = chapterName(
+    payload.chapterId || data.chapterId || payload.chapterLabel || data.chapterLabel || ""
+  );
+  if (unitLabel && unitLabel !== "未知模块") {
+    const plainChapter = publicCourseText(
+      payload.chapterLabel || data.chapterLabel || "",
+      ""
+    );
+    if (plainChapter && unitLabel.includes(plainChapter)) return unitLabel;
+    if (chapterLabel && chapterLabel !== "未命名章节") return `${chapterLabel} · ${unitLabel}`;
+    return unitLabel;
+  }
+  if (chapterLabel && chapterLabel !== "未命名章节") return chapterLabel;
+  if (data.view || payload.view) return viewName(data.view || payload.view);
+  return "平台操作";
 }
 
 function durationText(seconds) {
@@ -1147,7 +1626,12 @@ function interactionEventType(row) {
 function interactionTypeName(type) {
   return ({
     click: "点击",
+    register: "账号注册",
+    login: "登录成功",
     login_success: "登录成功",
+    register_success: "注册成功",
+    session_start: "学习会话开始",
+    session_end: "学习会话结束",
     view_change: "页面切换",
     ui_click: "页面点击",
     ui_input: "页面输入",
@@ -1156,7 +1640,9 @@ function interactionTypeName(type) {
     ui_wheel: "页面滚动",
     switch_view: "切换页面",
     chapter_select: "选择章节",
+    select_chapter: "选择章节",
     jump_unit: "跳转模块",
+    open_unit: "打开模块",
     library_filter: "筛选资源库",
     time_on_unit: "模块停留",
     unit_leave: "离开模块",
@@ -1166,11 +1652,15 @@ function interactionTypeName(type) {
     repeat_unit_enter: "重复进入",
     unit_complete: "完成模块",
     complete_unit: "完成模块",
+    review_unit: "回看模块",
     unit_review_complete: "复习完成",
     visibility: "页面可见性",
     heartbeat: "在线心跳",
     online_period: "在线时段",
     quiz_render: "测验渲染",
+    knowledge_render: "知识点渲染",
+    knowledge_scene_select: "选择互动场景",
+    select_knowledge_scene: "选择互动场景",
     slide_render: "讲解页渲染",
     interactive_render: "实验渲染",
     interactive_ready: "实验打开",
@@ -1203,6 +1693,9 @@ function interactionTypeName(type) {
     quiz_submit_blocked: "测验未完整提交",
     agentic_unlock: "智能教练解锁",
     agentic_decision: "智能教练选择",
+    agentic_decision_executed: "落实智能教练选择",
+    feedback_submit: "提交问题反馈",
+    reflection_save: "保存反思",
     skip_units: "跳过模块",
     skip_chapters: "跳过章节",
     reset_progress: "重置进度",
@@ -1224,7 +1717,7 @@ function interactionTypeName(type) {
     learning_fullscreen_toggle: "学习区全屏切换",
     iframe_event: "互动实验",
     interaction: "交互"
-  })[type] || "未分类事件";
+  })[type] || "其他学习行为";
 }
 
 function actionCategoryName(category) {
@@ -1246,6 +1739,7 @@ function moduleRoleName(role) {
     core: "主线课件",
     adaptive: "MAIC-UI 自适应课件",
     experiment: "互动实验",
+    knowledge_point: "知识点互动",
     pretest: "前测",
     posttest: "后测",
     formative_quiz: "形成性测验",
@@ -1279,8 +1773,8 @@ function compactSummaryText(value = "", limit = 36) {
 }
 
 function summaryTargetName(data = {}, fallback = "控件") {
-  const raw = data.label || data.text || data.id || data.name || data.tag || fallback;
-  return compactSummaryText(raw, 36) || fallback;
+  const raw = data.label || data.text || data.name || data.tag || fallback;
+  return publicCourseText(compactSummaryText(raw, 36), fallback) || fallback;
 }
 
 function summaryValueText(data = {}) {
@@ -1293,10 +1787,28 @@ function summaryValueText(data = {}) {
 
 function humanInteractionSummary(row) {
   const payload = parsePayload(row.payload);
-  const data = payload.data || {};
+  const data = row.type === "interaction"
+    ? payload.data || {}
+    : payload.data && typeof payload.data === "object"
+      ? payload.data
+      : payload;
   const type = payload.eventType || row.type || "unknown";
-  if (type === "login_success") {
+  if (type === "register") {
+    return "学生账号已创建。";
+  }
+  if (type === "login" || type === "login_success") {
     return "学生登录成功，开始记录本次学习行为。";
+  }
+  if (type === "register_success") {
+    return "学生完成注册并进入学习平台。";
+  }
+  if (type === "session_start") {
+    const environment = data.environment || {};
+    const device = environment.deviceType ? `，设备：${environment.deviceType}` : "";
+    return `学习会话开始${device}。`;
+  }
+  if (type === "session_end") {
+    return `学习会话结束，本次页面打开约 ${durationText(data.pageOpenSeconds || 0)}。`;
   }
   if (type === "click") {
     if (data.view) return `点击了「${data.text || viewName(data.view)}」，准备切换到${viewName(data.view)}。`;
@@ -1324,10 +1836,16 @@ function humanInteractionSummary(row) {
     return `在页面「${summaryTargetName(data, viewName(data.view || "learn"))}」${direction}。`;
   }
   if (type === "view_change") {
-    return `页面从${viewName(data.prev)}切换到${viewName(data.view)}。`;
+    return data.prev
+      ? `页面从${viewName(data.prev)}切换到${viewName(data.view)}。`
+      : `进入${viewName(data.view)}。`;
   }
   if (type === "switch_view") {
-    return `从${viewName(data.from)}切换到${viewName(data.to)}。`;
+    if (data.to || data.from) return `从${viewName(data.from)}切换到${viewName(data.to)}。`;
+    return `进入${viewName(data.view)}。`;
+  }
+  if (type === "select_chapter") {
+    return `选择${chapterName(data.chapterId || data.chapterLabel)}。`;
   }
   if (type === "chapter_select") {
     return `从${chapterName(data.fromChapterId)}切换到${chapterName(data.toChapterId)}。`;
@@ -1338,15 +1856,26 @@ function humanInteractionSummary(row) {
   if (type === "library_filter") {
     return `将资源库筛选为「${data.filter || "全部"}」。`;
   }
-  if (type === "unit_enter" || type === "repeat_unit_enter" || type === "unit_open") {
+  if (type === "unit_enter" || type === "repeat_unit_enter" || type === "unit_open" || type === "open_unit") {
     const source = data.source ? `，来源：${sourceName(data.source)}` : "";
-    return `${type === "repeat_unit_enter" ? "再次进入" : "进入"}${unitName(data.unitId)}${source}。`;
+    const scene = interactionSceneMeta(payload, data);
+    const target = knowledgeSceneName(
+      payload.unitId || data.unitId || "",
+      payload.unitLabel || data.unitLabel || "",
+      scene.type,
+      scene.label
+    );
+    return `${type === "repeat_unit_enter" ? "再次进入" : "进入"}${target}${source}。`;
   }
   if (type === "unit_complete" || type === "complete_unit" || type === "unit_review_complete") {
     return `${type === "unit_review_complete" ? "复习完成" : "完成"}${unitName(data.unitId)}。`;
   }
+  if (type === "review_unit") {
+    return `回看${unitName(data.unitId)}。`;
+  }
   if (type === "time_on_unit") {
-    return `在${unitName(data.unitId)}停留学习了 ${durationText(data.seconds)}。`;
+    const scene = interactionSceneMeta(payload, data);
+    return `在${knowledgeSceneName(data.unitId || payload.unitId, data.unitLabel || payload.unitLabel || "", scene.type, scene.label)}停留学习了 ${durationText(data.seconds)}。`;
   }
   if (type === "unit_leave" || type === "leave_unit") {
     return `离开${unitName(data.unitId)}，本次停留 ${durationText(data.seconds)}。`;
@@ -1367,20 +1896,33 @@ function humanInteractionSummary(row) {
     return `在线学习 ${estimated}${durationText(data.seconds)}${range}，页面：${viewName(data.view)}${unit}${merged}。`;
   }
   if (type === "quiz_render") {
-    return `打开测验「${data.unitLabel || unitName(data.unitId)}」。`;
+    return `打开测验「${moduleName(payload.unitId || data.unitId, payload.unitLabel || data.unitLabel || "")}」。`;
   }
   if (type === "slide_render") {
-    return `打开讲解页「${data.unitLabel || unitName(data.unitId)}」。`;
+    return `打开讲解页「${moduleName(payload.unitId || data.unitId, payload.unitLabel || data.unitLabel || "")}」。`;
+  }
+  if (type === "knowledge_render") {
+    return `打开知识点「${moduleName(payload.unitId || data.unitId, payload.unitLabel || data.unitLabel || "")}」。`;
+  }
+  if (type === "knowledge_scene_select" || type === "select_knowledge_scene") {
+    const scene = interactionSceneMeta(payload, data);
+    const target = knowledgeSceneName(
+      payload.unitId || data.unitId || "",
+      data.knowledgePoint || payload.unitLabel || data.unitLabel || "",
+      scene.type,
+      scene.label
+    );
+    return `选择${target}${scene.resourceTitle ? `，课件：${publicCourseText(scene.resourceTitle, "互动课件")}` : ""}。`;
   }
   if (type === "interactive_render" || type === "interactive_ready") {
     const action = type === "interactive_render" ? "准备打开" : "已加载";
-    return `${action}互动实验「${data.unitLabel || unitName(data.unitId)}」。`;
+    return `${action}互动实验「${moduleName(payload.unitId || data.unitId, payload.unitLabel || data.unitLabel || "")}」。`;
   }
   if (type === "interactive_click" || type === "interactive_double_click" || type === "interactive_context_menu") {
     const target = summaryTargetName(data);
     const value = summaryValueText(data);
     const action = type === "interactive_double_click" ? "双击了" : type === "interactive_context_menu" ? "右键打开了" : "点击了";
-    return `在「${data.unitLabel || unitName(data.unitId)}」中${action}「${target}」${value ? `，${value}` : ""}。`;
+    return `在「${interactionUnitName(payload, data)}」中${action}「${target}」${value ? `，${value}` : ""}。`;
   }
   if (/^(interactive_|canvas_).*(pointer|drag)/.test(type)) {
     const target = summaryTargetName(data, type.startsWith("canvas_") ? "画布" : "控件");
@@ -1397,33 +1939,33 @@ function humanInteractionSummary(row) {
             : type.includes("down")
               ? "按下"
               : "松开";
-    return `在「${data.unitLabel || unitName(data.unitId)}」中${action}「${target}」${distance}${duration}。`;
+    return `在「${interactionUnitName(payload, data)}」中${action}「${target}」${distance}${duration}。`;
   }
   if (type === "parameter_change" || type === "parameter_commit") {
     const param = data.param || summaryTargetName(data, "参数");
     const value = summaryValueText(data);
     const action = type === "parameter_commit" ? "确认参数" : "调整参数";
-    return `在「${data.unitLabel || unitName(data.unitId)}」中${action}「${param}」${value ? `，${value}` : ""}。`;
+    return `在「${interactionUnitName(payload, data)}」中${action}「${param}」${value ? `，${value}` : ""}。`;
   }
   if (type === "interactive_input" || type === "interactive_change") {
     const action = type === "interactive_input" ? "输入" : "确认修改";
     const target = summaryTargetName(data);
     const value = summaryValueText(data);
-    return `在「${data.unitLabel || unitName(data.unitId)}」中${action}「${target}」${value ? `，${value}` : ""}。`;
+    return `在「${interactionUnitName(payload, data)}」中${action}「${target}」${value ? `，${value}` : ""}。`;
   }
   if (type === "interactive_keydown") {
     const target = summaryTargetName(data, "课件");
     const key = data.key === "character" ? "字符键" : keyName(data.key || data.code || "");
-    return `在「${data.unitLabel || unitName(data.unitId)}」中对「${target}」使用 ${key} 键。`;
+    return `在「${interactionUnitName(payload, data)}」中对「${target}」使用 ${key} 键。`;
   }
   if (type === "interactive_wheel" || type === "interactive_scroll") {
     const target = summaryTargetName(data, "课件");
     const direction = Number(data.deltaY || 0) < 0 ? "向上滚动或放大" : "向下滚动或缩小";
     const action = type === "interactive_scroll" ? "滚动查看" : direction;
-    return `在「${data.unitLabel || unitName(data.unitId)}」中对「${target}」${action}。`;
+    return `在「${interactionUnitName(payload, data)}」中对「${target}」${action}。`;
   }
   if (type === "interactive_submit") {
-    return `在「${data.unitLabel || unitName(data.unitId)}」中提交表单或答案。`;
+    return `在「${interactionUnitName(payload, data)}」中提交表单或答案。`;
   }
   if (type === "agentic_decision") {
     const action = data.action === "remediate"
@@ -1435,21 +1977,37 @@ function humanInteractionSummary(row) {
           : data.action === "skip"
             ? "选择跳过已掌握内容"
             : "选择下一步";
-    const target = data.targetLabel || unitName(data.targetId || "");
+    const target = moduleName(data.targetId || "", data.targetLabel || "");
     return `在智能教练中${action}${target ? `，目标为「${target}」` : ""}。`;
+  }
+  if (type === "agentic_decision_executed") {
+    const action = publicCourseText(
+      data.selectedActionLabel,
+      AdminPresentation.coachActionLabel(data.action || data.plannerAction || "")
+    );
+    const target = moduleName(
+      data.targetId || data.nextUnitId || "",
+      data.targetLabel || data.nextClusterLabel || ""
+    );
+    return `学生确认「${action || "智能教练建议"}」${target ? `，下一步进入「${target}」` : ""}。`;
   }
   if (type === "agentic_unlock") {
     return `智能教练解锁了${unitName(data.unitId)}。`;
   }
+  if (type === "feedback_submit") {
+    const label = feedbackTypeLabels[data.feedbackType] || "问题反馈";
+    const length = Number(data.contentLength || 0);
+    return `提交${label}${length ? `，正文约 ${length} 个字符` : ""}。`;
+  }
   if (type === "answer_select") {
     const selected = Array.isArray(data.values) ? data.values.join("、") : data.value || data.response || "";
-    return `在${unitName(data.unitId)}的第 ${Number(data.index ?? data.questionIndex ?? 0) + 1} 题选择了${selected ? `「${selected}」` : "一个选项"}。`;
+    return `在「${interactionQuestionName(data)}」选择了${selected ? `「${selected}」` : "一个选项"}。`;
   }
   if (type === "short_answer_input") {
-    return `在${unitName(data.unitId)}的简答题中输入了约 ${data.length || data.noteLength || 0} 个字符。`;
+    return `在「${interactionQuestionName(data)}」输入了约 ${data.length || data.noteLength || 0} 个字符。`;
   }
   if (type === "question_visible") {
-    return `浏览到${unitName(data.unitId)}的第 ${Number(data.index ?? 0) + 1} 题。`;
+    return `浏览到「${interactionQuestionName(data)}」。`;
   }
   if (type === "quiz_submit_success") {
     return `提交${unitName(data.unitId)}，客观题答对 ${data.correct || 0} 题，答错 ${data.incorrect || 0} 题。`;
@@ -1463,7 +2021,7 @@ function humanInteractionSummary(row) {
   }
   if (type === "skip_units") {
     const skipped = Array.isArray(data.skippedUnitIds) ? data.skippedUnitIds.length : 0;
-    const target = data.targetLabel || unitName(data.targetId || "");
+    const target = data.targetLabel || (data.targetId ? unitName(data.targetId) : "");
     return `根据智能教练建议跳过 ${skipped} 个已掌握模块${target ? `，下一步进入「${target}」` : ""}。`;
   }
   if (type === "skip_chapters") {
@@ -1484,10 +2042,10 @@ function humanInteractionSummary(row) {
     return `${data.collapsed ? "收起" : "展开"}推荐面板。`;
   }
   if (type === "supplement_render") {
-    return `渲染补充资源「${data.title || data.unitLabel || unitName(data.unitId)}」。`;
+    return `渲染补充资源「${moduleName(data.unitId || "", data.title || data.unitLabel || "")}」。`;
   }
   if (type === "supplement_open") {
-    return `打开补充资源「${data.title || data.unitLabel || unitName(data.unitId)}」。`;
+    return `打开补充资源「${moduleName(data.unitId || "", data.title || data.unitLabel || "")}」。`;
   }
   if (type.startsWith("narration_")) {
     const label = data.segmentIndex !== undefined ? `第 ${Number(data.segmentIndex) + 1} 段` : "旁白";
@@ -1522,12 +2080,16 @@ function interactionDetail(row) {
   const payload = parsePayload(row.payload);
   const data = payload.data || {};
   const type = payload.eventType || row.type || "unknown";
+  const scene = interactionSceneMeta(payload, data);
+  const unitId = payload.unitId || data.unitId || data.unit || "";
   const detail = [
     ["事件", interactionTypeName(type)],
     ["来源", sourceName(payload.source || data.source || "")],
-    ["章节", data.chapterLabel || payload.chapterLabel || chapterName(data.chapterId || payload.chapterId || "")],
-    ["模块", data.unitLabel || payload.unitLabel || unitName(data.unitId || data.unit || payload.unitId || "")],
-    ["对象", data.label || data.text || data.id || data.name || data.tag || ""],
+    ["章节", publicCourseText(data.chapterLabel || payload.chapterLabel, chapterName(data.chapterId || payload.chapterId || ""))],
+    ["知识点/模块", knowledgeSceneName(unitId, payload.unitLabel || data.unitLabel || data.title || "", scene.type, scene.label)],
+    ["互动场景", scene.type || scene.label ? sceneTypeName(scene.type, scene.label) : ""],
+    ["课件", publicCourseText(scene.resourceTitle, "")],
+    ["对象", publicCourseText(data.label || data.text || data.name || data.tag || "", "")],
     ["数值", data.valueSummary || detailValue(data.value ?? payload.value)],
     ["位置", data.point ? `x=${data.point.x}, y=${data.point.y}` : ""],
     ["滚动", data.scrollTop !== undefined ? `top=${data.scrollTop}, left=${data.scrollLeft || 0}` : ""],
@@ -1593,14 +2155,10 @@ function keyName(key = "") {
 }
 
 function normalizeInteractionData(data) {
-  if (Array.isArray(data)) {
-    return { rows: data, total: data.length, limit: data.length || interactionPageSize, offset: 0 };
-  }
+  const page = normalizePageData(data, interactionPageSize);
   return {
-    rows: data?.rows || [],
-    total: Number(data?.total || 0),
-    limit: Number(data?.limit || interactionPageSize),
-    offset: Number(data?.offset || 0)
+    ...page,
+    detailMode: data?.detailMode === "all" ? "all" : interactionDetailMode
   };
 }
 
@@ -1679,6 +2237,8 @@ function renderInteractionUserOptions(users = allUsers) {
     .join("");
   select.value = current;
   document.getElementById("interaction-page-size").value = String(interactionPageSize);
+  const detailSelect = document.getElementById("interaction-detail-filter");
+  if (detailSelect) detailSelect.value = interactionDetailMode;
 }
 
 function updateInteractionPager(meta) {
@@ -1693,7 +2253,8 @@ function updateInteractionPager(meta) {
   const end = Math.min(offset + limit, total);
   const page = Math.floor(offset / limit) + 1;
   const pageCount = Math.max(1, Math.ceil(total / limit));
-  status.textContent = total ? `第 ${page}/${pageCount} 页 · ${start}-${end} / ${total} 条` : "暂无记录";
+  const scope = interactionDetailMode === "all" ? "原始记录" : "关键行为";
+  status.textContent = total ? `${scope} · 第 ${page}/${pageCount} 页 · ${start}-${end} / ${total} 条` : `暂无${scope}`;
   prev.disabled = offset <= 0;
   next.disabled = offset + limit >= total;
 }
@@ -1726,15 +2287,52 @@ function renderActionCoverage(data) {
 
 function renderInteractionSummary(data) {
   if (!data) return;
-  const topTypes = safeRows(data.byType).slice(0, 5).map(item => `${interactionTypeName(item.event_type)} ${item.count}`).join(" / ");
-  const topRoles = safeRows(data.byRole).slice(0, 5).map(item => `${moduleRoleName(item.module_role)} ${item.count}`).join(" / ");
+  const typeRows = safeRows(data.byType);
+  const topTypes = typeRows.slice(0, 4);
+  const topRoles = safeRows(data.byRole).slice(0, 4);
+  const breakdown = (rows, labelFor, emptyText) => rows.length
+    ? `<div class="metric-breakdown">${rows.map((item) => `
+        <span><b>${esc(labelFor(item))}</b><em>${item.count || 0}</em></span>
+      `).join("")}</div>`
+    : `<div class="metric-empty">${esc(emptyText)}</div>`;
   const node = document.getElementById("interaction-metrics");
   if (!node) return;
   node.innerHTML = `
-    <div class="metric-card highlight"><div class="label">研究样本量</div><div class="value">${data.total || 0}</div><div class="sub">当前范围内可分析行为</div></div>
+    <div class="metric-card highlight"><div class="label">关键行为</div><div class="value">${data.total || 0}</div><div class="sub">当前范围内可解释的学习动作</div></div>
     <div class="metric-card good"><div class="label">涉及学生</div><div class="value">${data.activeUsers || 0}</div><div class="sub">至少产生一条行为记录</div></div>
-    <div class="metric-card warn"><div class="label">主要行为</div><div class="value small">${esc(topTypes || "-")}</div><div class="sub">按事件数排序</div></div>
-    <div class="metric-card"><div class="label">课件角色</div><div class="value small">${esc(topRoles || "-")}</div><div class="sub">学生主要接触的学习材料</div></div>`;
+    <div class="metric-card warn"><div class="label">已折叠低价值记录</div><div class="value">${data.hiddenLowValue || 0}</div><div class="sub">原始记录共 ${data.rawTotal ?? data.total ?? 0} 条</div></div>
+    <div class="metric-card detail"><div class="label">高频行为</div>${breakdown(topTypes, (item) => interactionTypeName(item.event_type), "暂无关键行为")}</div>
+    <div class="metric-card detail"><div class="label">学习环节</div>${breakdown(topRoles, (item) => moduleRoleName(item.module_role), "暂无学习环节数据")}</div>`;
+
+  destroyChart("interactionTypes");
+  const chartRows = typeRows.slice(0, 12);
+  if (!setChartState("chart-interaction-types", chartRows.length > 0, "当前筛选范围内暂无关键交互记录。", {
+    itemCount: chartRows.length,
+    minHeight: 190,
+    maxHeight: 320,
+    perItem: 20
+  })) return;
+  const ctx = document.getElementById("chart-interaction-types")?.getContext("2d");
+  if (!ctx) return;
+  charts.interactionTypes = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: chartRows.map((item) => interactionTypeName(item.event_type)),
+      datasets: [{
+        label: "次数",
+        data: chartRows.map((item) => item.count || 0),
+        backgroundColor: "#0b8f8a",
+        borderRadius: 4
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
 }
 
 function renderUnitEngagement(rows) {
@@ -1806,7 +2404,14 @@ function pathPreviewHtml(row) {
   const list = allSteps.slice(0, compactCount);
   if (!list.length) return '<span class="muted">暂无路径预览</span>';
   const stepChip = (step, index, extraClass = "") => {
-    const label = step.unit_label || step.unit_id || `模块 ${index + 1}`;
+    const label = step.unit_id
+      ? knowledgeSceneName(
+          step.unit_id,
+          step.unit_label || `模块 ${index + 1}`,
+          step.scene_type || "",
+          step.scene_label || ""
+        )
+      : publicCourseText(step.unit_label, `学习步骤 ${index + 1}`);
     const seconds = Number(step.seconds || 0);
     const time = seconds ? `<span>${durationText(seconds)}</span>` : "";
     return `<span class="path-step ${extraClass}"><b>${index + 1}</b>${esc(label)}${time}</span>`;
@@ -1827,7 +2432,7 @@ function renderPathAnalysis(rows, pathRule = { minSeconds: 10 }) {
   const desc = document.getElementById("path-rule-desc");
   const minSeconds = Number(pathRule?.minSeconds || 10);
   if (desc) {
-    desc.textContent = `单次模块停留达到 ${minSeconds} 秒才计入有效学习路径；少于 ${minSeconds} 秒的快速点击只保留在原始交互表，不进入路径统计。`;
+    desc.textContent = `同一知识点或互动场景连续停留达到 ${minSeconds} 秒才计入有效学习路径；少于 ${minSeconds} 秒的快速点击只保留在原始交互表，不进入路径统计。`;
   }
   const tbody = document.querySelector("#table-path-analysis tbody");
   if (!tbody) return;
@@ -1854,13 +2459,14 @@ function agenticCandidateSummaryHtml(actions) {
   if (!Array.isArray(actions) || !actions.length) return "";
   return actions.slice(0, 5).map((action) => {
     const labels = Array.isArray(action.unitLabels) && action.unitLabels.length
-      ? action.unitLabels
+      ? action.unitLabels.map((label) => publicCourseText(label, ""))
       : Array.isArray(action.unitIds)
-        ? action.unitIds
+        ? action.unitIds.map((id) => moduleName(id, ""))
         : [];
-    const target = labels.length ? labels.join(" / ") : action.label || "";
+    const target = labels.length ? labels.join(" / ") : publicCourseText(action.label, "");
     const role = action.primary ? "推荐" : "备选";
-    return `<span class="muted">${esc(role)} ${esc(action.type || "")}: ${esc(action.label || target)}</span>`;
+    const actionLabel = AdminPresentation.coachActionLabel(action.type || action.action || "");
+    return `<span class="muted">${esc(role)} · ${esc(actionLabel)}${target ? `：${esc(target)}` : ""}</span>`;
   }).join("<br>");
 }
 
@@ -1868,68 +2474,100 @@ function agenticCandidateSummaryText(actions) {
   if (!Array.isArray(actions) || !actions.length) return "";
   return actions.map((action) => {
     const labels = Array.isArray(action.unitLabels) && action.unitLabels.length
-      ? action.unitLabels
+      ? action.unitLabels.map((label) => publicCourseText(label, ""))
       : Array.isArray(action.unitIds)
-        ? action.unitIds
+        ? action.unitIds.map((id) => moduleName(id, ""))
         : [];
     const role = action.primary ? "推荐" : "备选";
-    return `${role} ${action.type || ""}: ${action.label || labels.join(" / ") || ""}`;
+    const target = labels.join(" / ") || publicCourseText(action.label, "");
+    return `${role} · ${AdminPresentation.coachActionLabel(action.type || action.action || "")}${target ? `：${target}` : ""}`;
   }).join(" | ");
 }
 
 function renderAgenticTrace(rows) {
-  cachedAgenticTraceRows = safeRows(rows);
+  const page = normalizePageData(rows, 500);
+  cachedAgenticTraceRows = page.rows;
   const tbody = document.querySelector("#table-agentic-trace tbody");
   const summary = document.getElementById("agentic-trace-summary");
   if (summary) {
     const chosen = cachedAgenticTraceRows.filter((row) => row.learner_action).length;
     const highRisk = cachedAgenticTraceRows.filter((row) => row.risk_level === "high").length;
-    summary.textContent = `共 ${cachedAgenticTraceRows.length} 条 Coach 计划 | 已选择 ${chosen} | 高风险证据 ${highRisk}`;
+    const loaded = page.total > cachedAgenticTraceRows.length ? ` · 当前加载 ${cachedAgenticTraceRows.length} 条` : "";
+    const visible = cachedAgenticTraceRows.length > 200 ? " · 表格显示前 200 条" : "";
+    summary.textContent = `共 ${page.total} 条智能教练计划${loaded}${visible} · 已选择 ${chosen} 条 · 高风险 ${highRisk} 条`;
   }
   if (!tbody) return;
   tbody.innerHTML = cachedAgenticTraceRows.length ? cachedAgenticTraceRows.slice(0, 200).map((row) => {
-    const evidence = [
-      row.risk_level ? `风险 ${row.risk_level}` : "",
-      row.suggested_move ? `建议 ${row.suggested_move}` : "",
-      row.friction_score !== "" ? `摩擦 ${row.friction_score}` : "",
-      row.engagement_score !== "" ? `参与 ${row.engagement_score}` : "",
-      row.dwell_ms ? `停留 ${durationText(Math.round(Number(row.dwell_ms || 0) / 1000))}` : "",
-      row.repeat_count ? `重复 ${row.repeat_count}` : "",
-      row.answer_reveal_count ? `看答案 ${row.answer_reveal_count}` : "",
-      row.short_answer_length ? `短答 ${row.short_answer_length}字` : ""
-    ].filter(Boolean).join("；");
+    const evidenceItems = [
+      row.risk_level ? `风险等级：${AdminPresentation.riskLevelLabel(row.risk_level)}` : "",
+      row.suggested_move ? `证据建议：${AdminPresentation.coachActionLabel(row.suggested_move)}` : "",
+      row.friction_score !== "" ? `操作摩擦：${row.friction_score}` : "",
+      row.engagement_score !== "" ? `参与度：${row.engagement_score}` : "",
+      row.dwell_ms ? `停留：${durationText(Math.round(Number(row.dwell_ms || 0) / 1000))}` : "",
+      row.repeat_count ? `重复进入：${row.repeat_count} 次` : "",
+      row.answer_reveal_count ? `查看答案：${row.answer_reveal_count} 次` : "",
+      row.short_answer_length ? `简答长度：${row.short_answer_length} 字` : ""
+    ].filter(Boolean);
+    const evidence = evidenceItems.length
+      ? `<div class="decision-facts">${evidenceItems.map((item) => `<span>${esc(item)}</span>`).join("")}</div>`
+      : '<span class="muted">无交互证据</span>';
     const outcome = row.outcome_quiz_count
       ? `${row.outcome_quiz_count} 次测验，正确率 ${row.outcome_accuracy ?? "-"}%<br><span class="muted">${row.outcome_score || 0}/${row.outcome_max_score || 0} 分</span>`
       : '<span class="muted">暂无后续测验</span>';
+    const learnerActionLabel = AdminPresentation.coachActionLabel(row.learner_action);
+    const learnerTarget = row.target_label || row.target_id
+      ? publicCourseText(row.target_label, moduleName(row.target_id, ""))
+      : "";
+    const selectedActionLabel = publicCourseText(row.selected_action_label, "");
     const learner = row.learner_action
-      ? `${esc(row.learner_action)}<br><span class="muted">${esc(row.selected_action_label || row.target_label || row.target_id || "")}</span>`
+      ? `${esc(learnerActionLabel)}${learnerTarget ? `<br><span class="muted">目标：${esc(learnerTarget)}</span>` : ""}`
       : '<span class="muted">未选择/未记录</span>';
     const latency = agenticChoiceLatencyText(row.choice_latency_ms);
-    const selectedIds = Array.isArray(row.selected_candidate_ids) ? row.selected_candidate_ids.join(", ") : "";
     const choiceMeta = [
+      selectedActionLabel && selectedActionLabel !== learnerActionLabel && selectedActionLabel !== learnerTarget
+        ? `学生确认：${selectedActionLabel}`
+        : "",
       latency ? `选择耗时 ${latency}` : "",
-      row.next_cluster_label ? `下一小节 ${row.next_cluster_label}` : "",
-      selectedIds ? `候选ID ${selectedIds}` : ""
-    ].filter(Boolean).join(" | ");
+      row.next_cluster_label ? `下一小节 ${publicCourseText(row.next_cluster_label, "")}` : ""
+    ].filter(Boolean).join(" · ");
     const candidateLine = agenticCandidateSummaryHtml(row.candidate_actions);
+    const plannerTarget = row.planner_target_label || row.planner_target_id
+      ? publicCourseText(
+          row.planner_target_label,
+          moduleName(row.planner_target_id, "")
+        )
+      : "";
     const plannerLine = [
-      row.planner_action ? `Planner ${row.planner_action}` : "",
-      row.planner_target_label || row.planner_target_id ? `-> ${row.planner_target_label || row.planner_target_id}` : "",
-      row.planner_top_reasons ? `reasons: ${row.planner_top_reasons}` : ""
-    ].filter(Boolean).join(" | ");
+      row.planner_action ? `场景排序建议：${AdminPresentation.coachActionLabel(row.planner_action)}` : "",
+      plannerTarget ? `首选：${plannerTarget}` : "",
+      row.planner_top_reasons ? `排序依据：${AdminPresentation.plannerReasonsText(row.planner_top_reasons)}` : ""
+    ].filter(Boolean).join(" · ");
+    const coachSuggestion = AdminPresentation.coachActionLabel(row.suggested_action || row.suggested_move || "");
+    const qaStatus = AdminPresentation.qaStatusLabel(row.qa_pass);
     return `<tr>
       <td style="white-space:nowrap;font-size:0.78rem;">${esc(shortDateTime(row.created_at))}</td>
       <td style="font-weight:600;">${esc(row.nickname || "")}</td>
-      <td>${esc(row.unit_label || row.unit_id || "")}<br><span class="muted">${esc(row.chapter_label || row.chapter_id || "")}</span></td>
-      <td style="font-size:0.82rem;line-height:1.45;">${esc(evidence || "无交互证据")}</td>
-      <td>${esc(row.suggested_action || "")}<br><span class="muted">QA ${row.qa_pass === null ? "-" : row.qa_pass ? "pass" : "check"}</span>${plannerLine ? `<br><span class="muted">${esc(plannerLine)}</span>` : ""}</td>
+      <td>${esc(moduleName(row.unit_id, row.unit_label || ""))}<br><span class="muted">${esc(publicCourseText(row.chapter_label, chapterName(row.chapter_id)))}</span></td>
+      <td>${evidence}</td>
+      <td>${esc(coachSuggestion)}<br><span class="muted">质量检查：${esc(qaStatus)}</span>${plannerLine ? `<br><span class="muted">${esc(plannerLine)}</span>` : ""}</td>
       <td>${learner}${choiceMeta ? `<br><span class="muted">${esc(choiceMeta)}</span>` : ""}${candidateLine ? `<br>${candidateLine}` : ""}</td>
       <td>${outcome}</td>
     </tr>`;
-  }).join("") : "<tr><td colspan='7'>当前筛选范围内暂无 Agentic Coach 决策证据链。</td></tr>";
+  }).join("") : "<tr><td colspan='7'>当前筛选范围内暂无智能教练决策证据链。</td></tr>";
 }
 
 document.addEventListener("click", (event) => {
+  const genericSortHeader = event.target.closest("th.table-sortable");
+  if (genericSortHeader) {
+    const table = genericSortHeader.closest("table");
+    const columnIndex = Number(genericSortHeader.dataset.tableSortIndex);
+    const currentColumn = Number(table.dataset.sortColumn);
+    const currentDirection = table.dataset.sortDirection || "asc";
+    const direction = currentColumn === columnIndex && currentDirection === "asc" ? "desc" : "asc";
+    applyTableSort(table, columnIndex, direction);
+    return;
+  }
+
   const sortHeader = event.target.closest("#table-unit-engagement th[data-sort]");
   if (sortHeader) {
     const key = sortHeader.dataset.sort;
@@ -1953,47 +2591,23 @@ document.addEventListener("click", (event) => {
   button.textContent = expanded ? button.dataset.expandedLabel : button.dataset.collapsedLabel;
 });
 
+document.addEventListener("keydown", (event) => {
+  const header = event.target.closest?.("th.table-sortable");
+  if (!header || !["Enter", " "].includes(event.key)) return;
+  event.preventDefault();
+  header.click();
+});
+
 // ---- Interaction Tracking ----
 function renderInteractions(data) {
   const meta = normalizeInteractionData(data);
-  const rawRows = meta.rows.map(d => ({ ...d, payload: parsePayload(d.payload) }));
-  const rows = collapseHeartbeatRows(rawRows);
+  const rows = meta.rows.map(d => ({ ...d, payload: parsePayload(d.payload) }));
   visibleInteractionRows = rows;
   updateInteractionPager(meta);
   if (!rows.length) {
-    if (!document.getElementById("interaction-metrics").innerHTML.trim()) {
-      document.getElementById("interaction-metrics").innerHTML = '<div class="metric-card"><div class="value">0</div><div class="label">暂无交互数据</div></div>';
-    }
     const tbody = document.querySelector("#table-interactions tbody");
-    if (tbody) tbody.innerHTML = "<tr><td colspan='4'>当前筛选条件下暂无交互记录。</td></tr>";
+    if (tbody) tbody.innerHTML = "<tr><td colspan='5'>当前筛选条件下暂无交互记录。</td></tr>";
     return;
-  }
-  // Metrics
-  const types = {};
-  rows.forEach(d => {
-    const rawType = interactionEventType(d);
-    const et = interactionTypeName(rawType).slice(0, 30);
-    types[et] = (types[et] || 0) + 1;
-  });
-  const userSet = new Set(rows.map(d => d.user_id));
-  const metricsNode = document.getElementById("interaction-metrics");
-  if (metricsNode && !metricsNode.innerHTML.trim()) {
-    metricsNode.innerHTML = `
-      <div class="metric-card highlight"><div class="label">折叠后显示</div><div class="value">${rows.length}</div><div class="sub">心跳按时段合并</div></div>
-      <div class="metric-card good"><div class="label">活跃用户数</div><div class="value">${userSet.size}</div><div class="sub">有交互行为的用户</div></div>
-      <div class="metric-card warn"><div class="label">事件类型数</div><div class="value">${Object.keys(types).length}</div><div class="sub">不同操作类型</div></div>
-      <div class="metric-card"><div class="label">原始事件总数</div><div class="value">${meta.total}</div><div class="sub">所选时间范围内</div></div>`;
-  }
-  // Type distribution chart
-  destroyChart("interactionTypes");
-  const ctx1 = document.getElementById("chart-interaction-types")?.getContext("2d");
-  if (ctx1) {
-    const sorted = Object.entries(types).sort((a, b) => b[1] - a[1]);
-    charts.interactionTypes = new Chart(ctx1, {
-      type: "bar",
-      data: { labels: sorted.map(e => e[0]), datasets: [{ label: "次数", data: sorted.map(e => e[1]), backgroundColor: "#0b8f8a", borderRadius: 4 }] },
-      options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-    });
   }
   // Recent interactions table
   const tbody = document.querySelector("#table-interactions tbody");
@@ -2005,8 +2619,9 @@ function renderInteractions(data) {
       return `<tr>
         <td style="white-space:nowrap;font-size:0.78rem;">${(d.created_at||"").slice(0,16)}</td>
         <td style="font-weight:600;">${esc(d.nickname || "")}</td>
+        <td>${esc(interactionLearningLocation(d))}</td>
         <td><span class="badge badge-blue">${esc(interactionTypeName(eventType).slice(0,20))}</span></td>
-        <td style="font-size:0.82rem;max-width:520px;white-space:normal;line-height:1.45;" title="${esc(detail)}">${esc(summary)}</td>
+        <td class="interaction-summary-cell" title="${esc(detail)}">${esc(summary)}</td>
       </tr>`;
     }).join("");
   }
@@ -2046,6 +2661,13 @@ document.getElementById("interaction-user-filter").addEventListener("change", (e
 document.getElementById("interaction-page-size").addEventListener("change", (event) => {
   interactionPageSize = Number(event.target.value || 100);
   sessionStorage.setItem("cq_interaction_page_size", String(interactionPageSize));
+  resetInteractionPage();
+  debouncedLoadAll();
+});
+
+document.getElementById("interaction-detail-filter").addEventListener("change", (event) => {
+  interactionDetailMode = event.target.value === "all" ? "all" : "meaningful";
+  sessionStorage.setItem("cq_interaction_detail", interactionDetailMode);
   resetInteractionPage();
   debouncedLoadAll();
 });
@@ -2129,15 +2751,56 @@ function downloadCsv(filename, rows) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = filename;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 0);
 }
 
-document.getElementById("export-users-csv").addEventListener("click", () => {
-  const data = allUsers;
-  if (!data || !data.length) return;
+function exportDateStamp() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function pagedStatsParams(baseParams, limit, offset) {
+  const params = new URLSearchParams(baseParams || "");
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  return params.toString();
+}
+
+async function fetchAllStatsRows(endpoint, baseParams = "") {
+  return AdminCsv.fetchAllRows(
+    ({ limit, offset }) => fetchStats(endpoint, pagedStatsParams(baseParams, limit, offset)),
+    { pageSize: 1000 }
+  );
+}
+
+async function runCsvExport(button, task) {
+  if (!button || button.disabled) return;
+  const originalLabel = button.textContent;
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.textContent = "正在导出…";
+  try {
+    const result = await task();
+    if (!Array.isArray(result?.rows) || result.rows.length <= 1) {
+      window.alert("当前筛选范围内没有可导出的数据。");
+      return;
+    }
+    downloadCsv(result.filename, result.rows);
+  } catch (error) {
+    console.error("CSV export failed:", error);
+    window.alert(`导出失败：${error?.message || "请刷新后重试。"}`);
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+    button.textContent = originalLabel;
+  }
+}
+
+function userCsvRows(data) {
   const rows = [["昵称","用户ID","最后活跃","测验提交","测验覆盖单元","正确率%","总得分","总分"]];
-  data.forEach(u => {
+  safeRows(data).forEach(u => {
     rows.push([
       u.nickname || "", u.user_id || "",
       (u.last_seen_at || "").slice(0,16),
@@ -2146,29 +2809,23 @@ document.getElementById("export-users-csv").addEventListener("click", () => {
       String(u.total_score || 0), String(u.total_max || 0)
     ]);
   });
-  const csv = rows.map(r => r.map(c => `"${c.replace(/"/g,'""')}"`).join(",")).join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;bom" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "user-progress-export.csv";
-  a.click();
-  URL.revokeObjectURL(a.href);
-});
+  return rows;
+}
 
-document.getElementById("export-feedback-csv")?.addEventListener("click", () => {
-  const data = visibleFeedbackRows();
-  if (!data.length) return;
+function feedbackCsvRows(data) {
   const rows = [[
-    "时间", "学生", "用户ID", "类型", "目标范围", "章节ID", "模块ID",
+    "时间", "学生", "用户ID", "类型", "目标范围", "章节", "学习位置", "章节ID", "模块ID",
     "单元ID", "知识点", "场景类型", "课件标题", "课件资源", "反馈正文"
   ]];
-  data.forEach((row) => {
+  safeRows(data).forEach((row) => {
     rows.push([
       row.created_at || "",
       row.nickname || "",
       row.user_id || "",
       feedbackTypeLabels[row.feedback_type] || row.feedback_type || "",
       row.target_scope || "",
+      publicCourseText(row.chapter_label || chapterName(row.chapter_id), ""),
+      moduleName(row.unit_id, row.knowledge_point || row.resource_title || ""),
       row.chapter_id || "",
       row.module_id || "",
       row.unit_id || "",
@@ -2179,102 +2836,159 @@ document.getElementById("export-feedback-csv")?.addEventListener("click", () => 
       row.content || ""
     ]);
   });
-  downloadCsv("learning-feedback-export.csv", rows);
-});
+  return rows;
+}
 
-document.getElementById("export-interactions-csv").addEventListener("click", () => {
-  if (!visibleInteractionRows.length) return;
-  const rows = [["时间", "学生", "用户ID", "事件类型", "动作类别", "数据摘要", "原始详情"]];
-  visibleInteractionRows.forEach((row) => {
+function interactionCsvRows(data) {
+  const rows = [["时间", "学生", "用户ID", "学习位置", "事件类型", "动作类别", "行为摘要", "原始详情"]];
+  safeRows(data).forEach((sourceRow) => {
+    const row = { ...sourceRow, payload: parsePayload(sourceRow.payload) };
     const eventType = interactionEventType(row);
     rows.push([
       row.created_at || "",
       row.nickname || "",
       row.user_id || "",
+      interactionLearningLocation(row),
       interactionTypeName(eventType),
       actionCategoryName(actionCategoryForType(eventType)),
       humanInteractionSummary(row),
       interactionDetail(row)
     ]);
   });
-  downloadCsv("interaction-research-current-page.csv", rows);
-});
+  return rows;
+}
 
-document.getElementById("export-agentic-trace-csv").addEventListener("click", () => {
-  if (!cachedAgenticTraceRows.length) return;
-  const rows = [["时间", "学生", "用户ID", "章节", "触发模块", "风险", "建议动作", "摩擦分", "参与分", "停留ms", "重复", "查看答案", "短答长度", "Coach建议", "QA", "学生选择", "选择按钮", "目标模块", "选择时间", "选择耗时ms", "候选动作", "选中候选ID", "下一模块", "下一概念簇", "后续测验数", "后续正确率", "后续得分", "后续满分"]];
-  cachedAgenticTraceRows.forEach((row) => {
+function agenticTraceCsvRows(data) {
+  const rows = [[
+    "时间", "学生", "用户ID", "章节", "触发模块", "风险等级", "证据建议",
+    "操作摩擦分", "参与度", "停留毫秒", "重复进入", "查看答案", "简答长度",
+    "智能教练建议", "质量检查", "学生选择", "选择标签", "目标模块", "选择时间",
+    "选择耗时毫秒", "候选建议", "选中候选ID", "下一模块", "下一概念簇",
+    "后续测验数", "后续正确率", "后续得分", "后续满分",
+    "场景排序建议", "场景排序目标", "场景排序得分", "场景排序依据"
+  ]];
+  safeRows(data).forEach((row) => {
     rows.push([
       row.created_at || "",
       row.nickname || "",
       row.user_id || "",
-      row.chapter_label || row.chapter_id || "",
-      row.unit_label || row.unit_id || "",
-      row.risk_level || "",
-      row.suggested_move || "",
+      publicCourseText(row.chapter_label, chapterName(row.chapter_id)),
+      moduleName(row.unit_id, row.unit_label || ""),
+      AdminPresentation.riskLevelLabel(row.risk_level),
+      AdminPresentation.coachActionLabel(row.suggested_move),
       row.friction_score ?? "",
       row.engagement_score ?? "",
       row.dwell_ms || 0,
       row.repeat_count || 0,
       row.answer_reveal_count || 0,
       row.short_answer_length || 0,
-      row.suggested_action || "",
-      row.qa_pass === null ? "" : row.qa_pass ? "pass" : "check",
-      row.learner_action || "",
-      row.selected_action_label || "",
-      row.target_label || row.target_id || "",
+      AdminPresentation.coachActionLabel(row.suggested_action || row.suggested_move),
+      AdminPresentation.qaStatusLabel(row.qa_pass),
+      AdminPresentation.coachActionLabel(row.learner_action),
+      publicCourseText(row.selected_action_label, ""),
+      moduleName(row.target_id, row.target_label || ""),
       row.executed_at || "",
       row.choice_latency_ms ?? "",
       agenticCandidateSummaryText(row.candidate_actions),
       Array.isArray(row.selected_candidate_ids) ? row.selected_candidate_ids.join(" | ") : "",
-      row.next_unit_id || "",
-      row.next_cluster_label || row.next_cluster_id || "",
+      moduleName(row.next_unit_id, ""),
+      publicCourseText(row.next_cluster_label, moduleName(row.next_cluster_id, "")),
       row.outcome_quiz_count || 0,
       row.outcome_accuracy ?? "",
       row.outcome_score || 0,
-      row.outcome_max_score || 0
+      row.outcome_max_score || 0,
+      AdminPresentation.coachActionLabel(row.planner_action),
+      moduleName(row.planner_target_id, row.planner_target_label || ""),
+      row.planner_top_score ?? "",
+      AdminPresentation.plannerReasonsText(row.planner_top_reasons)
     ]);
   });
-  rows[0].push("PlannerAction", "PlannerTarget", "PlannerScore", "PlannerReasons");
-  cachedAgenticTraceRows.forEach((row, index) => {
-    const target = rows[index + 1];
-    if (!target) return;
-    target.push(
-      row.planner_action || "",
-      row.planner_target_label || row.planner_target_id || "",
-      row.planner_top_score ?? "",
-      row.planner_top_reasons || ""
-    );
+  return rows;
+}
+
+function shortAnswerCsvRows(data) {
+  const rows = [["学生","章节","单元","题目ID","答案","得分","满分","状态","时间"]];
+  safeRows(data).forEach((row) => {
+    rows.push([
+      row.nickname || "",
+      publicCourseText(row.chapter_label, chapterName(row.chapter_id)),
+      moduleName(row.unit_id, row.unit_label || ""),
+      AdminPresentation.questionDisplayLabel(row.question_id, row.phase),
+      row.response || "",
+      row.score ?? "",
+      row.max_score ?? "",
+      shortAnswerReviewState(row).label,
+      row.created_at || ""
+    ]);
   });
-  downloadCsv("agentic-coach-evidence-trace.csv", rows);
+  return rows;
+}
+
+function interactionExportParams() {
+  const params = new URLSearchParams();
+  if (interactionUserId) params.set("userId", interactionUserId);
+  params.set("detail", interactionDetailMode);
+  return params.toString();
+}
+
+function agenticTraceExportParams() {
+  const params = new URLSearchParams();
+  if (interactionUserId) params.set("userId", interactionUserId);
+  return params.toString();
+}
+
+document.getElementById("export-users-csv").addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => ({
+    filename: `用户学习进度-全部-${exportDateStamp()}.csv`,
+    rows: userCsvRows(allUsers)
+  }));
 });
 
-document.getElementById("export-shortanswers-csv").addEventListener("click", () => {
-  const rows = [["学生","章节","单元","题目ID","答案","得分","满分","状态","时间"]];
-  document.querySelectorAll("#table-shortanswers tbody tr").forEach(tr => {
-    const cells = tr.querySelectorAll("td");
-    if (cells.length >= 8) {
-      const status = cells[6].querySelector(".badge")?.textContent?.trim() || cells[6].textContent.trim();
-      rows.push([
-        cells[0].textContent.trim(),
-        cells[1].textContent.trim(),
-        cells[2].textContent.trim(),
-        cells[3].textContent.trim(),
-        cells[4].textContent.trim(),
-        cells[5].textContent.split("/")[0].trim(),
-        cells[5].textContent.split("/")[1].trim(),
-        status,
-        cells[7].textContent.trim()
-      ]);
-    }
+document.getElementById("export-feedback-csv")?.addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => {
+    const data = await fetchAllStatsRows("feedback", feedbackFilterQueryParams());
+    return {
+      filename: `问题反馈-全部-${exportDateStamp()}.csv`,
+      rows: feedbackCsvRows(data)
+    };
   });
-  const csv = rows.map(r => r.map(c => `"${c.replace(/"/g,'""')}"`).join(",")).join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;bom" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "short-answers-export.csv";
-  a.click();
-  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById("export-interactions-csv").addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => ({
+    filename: `交互记录-${interactionDetailMode === "all" ? "原始" : "关键"}-当前页-${exportDateStamp()}.csv`,
+    rows: interactionCsvRows(visibleInteractionRows)
+  }));
+});
+
+document.getElementById("export-interactions-all-csv").addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => {
+    const data = await fetchAllStatsRows("interactions", interactionExportParams());
+    return {
+      filename: `交互记录-${interactionDetailMode === "all" ? "原始" : "关键"}-全部-${exportDateStamp()}.csv`,
+      rows: interactionCsvRows(data)
+    };
+  });
+});
+
+document.getElementById("export-agentic-trace-csv").addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => {
+    const data = await fetchAllStatsRows("agentic-decision-trace", agenticTraceExportParams());
+    return {
+      filename: `智能教练证据链-全部-${exportDateStamp()}.csv`,
+      rows: agenticTraceCsvRows(data)
+    };
+  });
+});
+
+document.getElementById("export-shortanswers-csv").addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => {
+    const data = await fetchAllStatsRows("short-answer-responses");
+    return {
+      filename: `简答题提交-全部-${exportDateStamp()}.csv`,
+      rows: shortAnswerCsvRows(data)
+    };
+  });
 });
 
 checkAuth();

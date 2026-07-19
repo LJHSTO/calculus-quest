@@ -1,6 +1,18 @@
 // User input, click, change, and fullscreen event wiring.
 document.addEventListener("click", (event) => {
   const brandBackButton = event.target.closest(".brand[data-view]");
+  if (
+    brandBackButton
+    && typeof ReturnContext !== "undefined"
+    && ReturnContext.shouldReturnToLearning(currentView)
+  ) {
+    returnToLearningCourseware().catch((error) => {
+      console.warn("Return to learning failed:", error.message);
+      switchView("learn");
+    });
+    return;
+  }
+
   if (brandBackButton && state.returnToQuiz?.unitId && currentUnitId !== state.returnToQuiz.unitId) {
     const quizUnitId = state.returnToQuiz.unitId;
     const questionId = state.returnToQuiz.questionId || "";
@@ -83,22 +95,6 @@ document.addEventListener("click", (event) => {
     if (setKnowledgeSceneType(uid, sceneType)) {
       renderAll();
     }
-    return;
-  }
-
-  const knowledgeSceneFullscreenButton = event.target.closest("[data-knowledge-scene-fullscreen]");
-  if (knowledgeSceneFullscreenButton) {
-    const uid = knowledgeSceneFullscreenButton.dataset.unit || currentUnitId;
-    const sceneType = knowledgeSceneFullscreenButton.dataset.knowledgeSceneFullscreen;
-    if (setKnowledgeSceneType(uid, sceneType)) renderAll();
-    window.setTimeout(() => {
-      const safeUid = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(uid) : String(uid).replace(/"/g, '\\"');
-      const shell = document.querySelector(`[data-resource-shell][data-resource-unit="${safeUid}"] .v14-selected-resource .iframe-container`)
-        || document.querySelector(`[data-resource-shell][data-resource-unit="${safeUid}"]`);
-      trackLearningEvent("knowledge_scene_fullscreen", { unitId: uid, sceneType }, false);
-      analyticsTrack("knowledge_scene_fullscreen", { data: { unitId: uid, sceneType } });
-      toggleResourceFullscreen(shell);
-    }, 80);
     return;
   }
 
@@ -264,11 +260,21 @@ document.addEventListener("change", (event) => {
   const unitId = choice.dataset.unitId;
   const questionId = choice.dataset.questionId;
   const values = selectedChoiceValues(unitId, questionId);
+  const unit = getUnit(unitId);
+  const questions = unit?.scene?.content?.questions || [];
+  const questionIndex = questions.findIndex((question) => question.id === questionId);
+  const question = questionIndex >= 0 ? questions[questionIndex] : {};
   analyticsTrack("answer_select", {
     source: "quiz",
     data: {
       unitId,
       questionId,
+      questionIndex: questionIndex >= 0 ? questionIndex : null,
+      questionText: question.question || question.prompt || question.title || question.text || "",
+      phase: unit?.assessmentPhase || "",
+      moduleId: question.moduleId || "",
+      moduleTitle: question.moduleTitle || "",
+      knowledgePointIds: question.knowledgePointIds || question.coachHint?.knowledgePointIds || [],
       inputType: choice.type,
       values
     }

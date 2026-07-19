@@ -5,6 +5,7 @@ const analyticsOnlinePeriodFlushMs = 5 * 60 * 1000;
 const analyticsMinOnlinePeriodSeconds = 60;
 const analyticsMinUnitSeconds = 5;
 let analyticsFlushTimer = null;
+let analyticsFlushChain = Promise.resolve();
 let analyticsSequence = Number(sessionStorage.getItem("cq_analytics_sequence") || 0);
 let analyticsTrackingReady = false;
 let analyticsViewTimer = null;
@@ -17,6 +18,26 @@ let analyticsLastActiveAt = Date.now();
 let analyticsLastTrackedView = "";
 let analyticsCoachRefreshTimer = null;
 let analyticsCoachLastRefreshAt = 0;
+const analyticsPageStartedAt = Date.now();
+let analyticsResearchContext = {
+  appVersion: "",
+  courseVersion: "",
+  experimentId: "",
+  condition: "",
+  cohort: ""
+};
+
+fetch("api/research/config")
+  .then((response) => response.ok ? response.json() : null)
+  .then((payload) => {
+    if (payload?.ok && payload.data) {
+      analyticsResearchContext = {
+        ...analyticsResearchContext,
+        ...payload.data
+      };
+    }
+  })
+  .catch(() => {});
 
 const analyticsCoachEvidenceEvents = new Set([
   "quiz_answer_revealed",
@@ -99,8 +120,12 @@ function analyticsRememberInteractionEvidence(event) {
   bucket.events += 1;
   bucket.repeatCount = Math.max(bucket.repeatCount || 0, state.analytics?.visitedUnits?.[unitId] || 0);
   bucket.lastAt = event.timing?.clientAt || new Date().toISOString();
-  if (event.timing?.durationMs) bucket.dwellMs += Number(event.timing.durationMs) || 0;
-  if (type === "time_on_unit" && event.data?.seconds) bucket.dwellMs += Math.max(0, Number(event.data.seconds) || 0) * 1000;
+  if (type === "time_on_unit") {
+    bucket.dwellMs += Math.max(
+      Number(event.timing?.durationMs || 0),
+      Math.max(0, Number(event.data?.seconds || 0)) * 1000
+    );
+  }
   if (type === "quiz_answer_revealed") bucket.answerRevealCount += 1;
   if (type === "question_visible") bucket.questionVisibleCount += 1;
   if (type === "answer_select") bucket.choiceChangeCount += 1;
@@ -109,8 +134,8 @@ function analyticsRememberInteractionEvidence(event) {
   if (["narration_play_click", "narration_resume", "narration_segment_play"].includes(type)) bucket.narrationPlayCount += 1;
   if (["narration_pause_click", "narration_pause", "narration_stop_click", "narration_stop"].includes(type)) bucket.narrationPauseCount += 1;
   if (["narration_seek", "narration_seek_input"].includes(type)) bucket.narrationSeekCount += 1;
-  if (type === "ui_wheel") bucket.uiWheelCount += 1;
-  if (type === "ui_input") bucket.uiInputCount += 1;
+  if (["ui_wheel", "interactive_wheel", "interactive_scroll"].includes(type)) bucket.uiWheelCount += 1;
+  if (["ui_input", "interactive_input", "interactive_change"].includes(type)) bucket.uiInputCount += 1;
   if (["parameter_commit", "parameter_change"].includes(type)) bucket.parameterChangeCount += 1;
 }
 
@@ -159,6 +184,32 @@ function moduleRoleForUnit(unit) {
   return unit.type || "";
 }
 
+function analyticsKnowledgeSceneMeta(unit) {
+  if (!unit || unit.type !== "knowledge") {
+    return { sceneType: "", sceneLabel: "", resourceTitle: "" };
+  }
+  const types = typeof knowledgeInteractionTypes === "function" ? knowledgeInteractionTypes(unit) : [];
+  const selectedType = state.selectedKnowledgeScenes?.[unit.id] || "";
+  const selected = types.find((type) => type.id === selectedType);
+  if (!selected) {
+    return {
+      sceneType: "",
+      sceneLabel: "互动场景未选择",
+      resourceTitle: ""
+    };
+  }
+  const candidate = typeof knowledgeResourceCandidate === "function"
+    ? knowledgeResourceCandidate(unit, selectedType)
+    : null;
+  return {
+    sceneType: selectedType,
+    sceneLabel: typeof knowledgeSceneDisplayLabel === "function"
+      ? knowledgeSceneDisplayLabel(selected)
+      : selected.title || selected.label || selectedType,
+    resourceTitle: candidate?.title || ""
+  };
+}
+
 function analyticsUnitMeta(unit = currentAnalyticsUnit()) {
   if (!unit) {
     return {
@@ -168,7 +219,10 @@ function analyticsUnitMeta(unit = currentAnalyticsUnit()) {
       unitId: currentUnitId || "",
       unitLabel: "",
       unitType: "",
-      moduleRole: ""
+      moduleRole: "",
+      sceneType: "",
+      sceneLabel: "",
+      resourceTitle: ""
     };
   }
   const chapter = getChapter?.(unit.chapterId);
@@ -179,7 +233,8 @@ function analyticsUnitMeta(unit = currentAnalyticsUnit()) {
     unitId: unit.id || "",
     unitLabel: unit.label || "",
     unitType: unit.type || unit.kind || "",
-    moduleRole: moduleRoleForUnit(unit)
+    moduleRole: moduleRoleForUnit(unit),
+    ...analyticsKnowledgeSceneMeta(unit)
   };
 }
 
@@ -285,7 +340,8 @@ function analyticsControlData(element, event) {
 }
 
 function analyticsTrack(eventType, payload = {}) {
-  if (!isSignedIn()) return;
+  if (!isSignedIn() || (typeof authTransitionInProgress !== "undefined" && authTransitionInProgress)) return;
+  const persist = payload.persist !== false;
   const now = Date.now();
   const unit = payload.unitId ? getUnit?.(payload.unitId) : currentAnalyticsUnit();
   const meta = analyticsUnitMeta(unit);
@@ -300,6 +356,7 @@ function analyticsTrack(eventType, payload = {}) {
     sequenceIndex,
     eventType,
     source: payload.source || "main",
+    research: { ...analyticsResearchContext },
     ...meta,
     target: payload.target || null,
     value: payload.value || null,
@@ -320,16 +377,48 @@ function analyticsTrack(eventType, payload = {}) {
     },
     data: payload.data || {}
   };
+  if (eventType === "switch_view" && event.data?.to) {
+    analyticsLastTrackedView = String(event.data.to);
+  }
 
   analyticsRememberInteractionEvidence(event);
   analyticsScheduleCoachEvidenceRefresh(event);
-  analyticsQueue.push(event);
+  if (!persist) return;
+  analyticsQueue.push({
+    token: state.authToken,
+    participantId: state.participant?.participantId || "",
+    event
+  });
   if (analyticsQueue.length >= 50) analyticsFlush();
   else if (!analyticsFlushTimer) analyticsFlushTimer = setTimeout(analyticsFlush, 5000);
 }
 
+function analyticsEnvironment() {
+  const width = window.innerWidth || document.documentElement.clientWidth || 0;
+  const height = window.innerHeight || document.documentElement.clientHeight || 0;
+  const coarsePointer = window.matchMedia?.("(pointer: coarse)")?.matches || false;
+  return {
+    deviceType: width < 700 ? "手机" : width < 1100 ? "平板/小屏电脑" : "桌面电脑",
+    viewport: { width, height },
+    screen: {
+      width: window.screen?.width || 0,
+      height: window.screen?.height || 0
+    },
+    pixelRatio: Number(window.devicePixelRatio || 1),
+    language: navigator.language || "",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+    touch: Number(navigator.maxTouchPoints || 0) > 0 || coarsePointer,
+    reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches || false,
+    connection: navigator.connection?.effectiveType || "",
+    referrerHost: (() => {
+      try { return document.referrer ? new URL(document.referrer).host : ""; } catch { return ""; }
+    })()
+  };
+}
+
 function trackInteraction(eventType, data = {}) {
   analyticsTrack(eventType, {
+    persist: data.persist,
     source: data.source || "main",
     target: data.target || null,
     value: data.value || null,
@@ -339,42 +428,64 @@ function trackInteraction(eventType, data = {}) {
   });
 }
 
-async function analyticsFlush() {
+function analyticsBatchGroups(batch = []) {
+  const groups = new Map();
+  batch.forEach((entry) => {
+    const token = String(entry?.token || "");
+    if (!token || !entry?.event) return;
+    const participantId = String(entry.participantId || "");
+    const key = `${participantId}\n${token}`;
+    if (!groups.has(key)) groups.set(key, { token, participantId, events: [] });
+    groups.get(key).events.push(entry.event);
+  });
+  return Array.from(groups.values());
+}
+
+function analyticsFlush() {
   clearTimeout(analyticsFlushTimer);
   analyticsFlushTimer = null;
-  if (!analyticsQueue.length) return;
+  if (!analyticsQueue.length) return analyticsFlushChain;
   const batch = analyticsQueue.splice(0);
-  try {
-    await apiRequest("api/learning/events", {
-      token: state.authToken,
-      events: batch.map((event) => ({ type: "interaction", payload: event }))
-    });
-  } catch {
-    // Keep the UI responsive; failed analytics should not block learning.
-  }
+  const groups = analyticsBatchGroups(batch);
+  const flushGroups = async () => {
+    for (const group of groups) {
+      try {
+        await apiRequest("api/learning/events", {
+          token: group.token,
+          events: group.events.map((event) => ({ type: "interaction", payload: event }))
+        });
+      } catch {
+        // Keep the UI responsive; failed analytics should not block learning.
+      }
+    }
+  };
+  analyticsFlushChain = analyticsFlushChain.then(flushGroups, flushGroups);
+  return analyticsFlushChain;
 }
 
 function analyticsFlushBeforeUnload() {
   clearTimeout(analyticsFlushTimer);
   analyticsFlushTimer = null;
-  if (!analyticsQueue.length || !isSignedIn()) return;
+  if (!analyticsQueue.length) return;
   const batch = analyticsQueue.splice(0);
-  const body = JSON.stringify({
-    token: state.authToken,
-    events: batch.map((event) => ({ type: "interaction", payload: event }))
+  analyticsBatchGroups(batch).forEach((group) => {
+    const body = JSON.stringify({
+      token: group.token,
+      events: group.events.map((event) => ({ type: "interaction", payload: event }))
+    });
+
+    if (navigator.sendBeacon) {
+      const blob = new Blob([body], { type: "application/json" });
+      if (navigator.sendBeacon("api/learning/events", blob)) return;
+    }
+
+    fetch("api/learning/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true
+    }).catch(() => {});
   });
-
-  if (navigator.sendBeacon) {
-    const blob = new Blob([body], { type: "application/json" });
-    if (navigator.sendBeacon("api/learning/events", blob)) return;
-  }
-
-  fetch("api/learning/events", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body,
-    keepalive: true
-  }).catch(() => {});
 }
 
 function analyticsRecordPath(unit, reason = "open") {
@@ -452,13 +563,22 @@ function analyticsLeaveUnit(reason = "leave") {
       data: { unitId, seconds, reason }
     });
   }
-  analyticsTrack("unit_leave", {
-    unitId,
-    durationMs: seconds * 1000,
-    data: { unitId, seconds, reason }
-  });
   analyticsActiveUnit = null;
   analyticsUnitStart = null;
+}
+
+function analyticsResumeUnitTimer(unit) {
+  if (
+    !unit
+    || !isSignedIn()
+    || document.hidden
+    || currentAnalyticsView() !== "learn"
+    || currentUnitId !== unit.id
+  ) {
+    return;
+  }
+  analyticsActiveUnit = unit.id;
+  analyticsUnitStart = Date.now();
 }
 
 function analyticsTrackTarget(eventType, element, event, extra = {}) {
@@ -493,6 +613,13 @@ function setupInteractionTracking() {
   analyticsOnlinePeriodStart = Date.now();
   if (analyticsTrackingReady) return;
   analyticsTrackingReady = true;
+  analyticsLastTrackedView = currentAnalyticsView();
+  analyticsTrack("session_start", {
+    source: "system",
+    data: {
+      environment: analyticsEnvironment()
+    }
+  });
 
   const uiActionSelector = [
     "button",
@@ -519,13 +646,19 @@ function setupInteractionTracking() {
     "[data-stop-narration]",
     "[data-toggle-narration]"
   ].join(",");
+  const semanticClickSelector = [
+    "[data-view]",
+    "[data-unit]",
+    "[data-chapter]",
+    "[data-jump-unit]",
+    ".chapter-card",
+    ".lesson-card",
+    ".nav-button"
+  ].join(",");
   const uiInputSelector = "input, select, textarea, [contenteditable='true']";
-  const lastUiInputAt = new WeakMap();
-  let lastUiWheelAt = 0;
-  let lastUiKeyAt = 0;
 
   document.addEventListener("click", (event) => {
-    const el = event.target.closest("[data-view], [data-unit], [data-chapter], [data-jump-unit], .chapter-card, .lesson-card, .nav-button");
+    const el = event.target.closest(semanticClickSelector);
     if (!el) return;
     analyticsTrackTarget("click", el, event, {
       data: {
@@ -540,27 +673,10 @@ function setupInteractionTracking() {
   document.addEventListener(
     "click",
     (event) => {
+      if (event.target.closest(semanticClickSelector)) return;
       const el = event.target.closest(uiActionSelector);
       if (!el) return;
       analyticsTrackTarget("ui_click", el, event, {
-        data: analyticsControlData(el, event)
-      });
-    },
-    true
-  );
-
-  document.addEventListener(
-    "input",
-    (event) => {
-      const el = event.target.closest(uiInputSelector);
-      if (!el) return;
-      const now = Date.now();
-      const last = lastUiInputAt.get(el) || 0;
-      if (now - last < 700) return;
-      lastUiInputAt.set(el, now);
-      const valueInfo = analyticsControlValue(el);
-      analyticsTrackTarget("ui_input", el, event, {
-        value: valueInfo,
         data: analyticsControlData(el, event)
       });
     },
@@ -579,51 +695,6 @@ function setupInteractionTracking() {
       });
     },
     true
-  );
-
-  document.addEventListener(
-    "keydown",
-    (event) => {
-      const target = event.target.closest?.(uiActionSelector) || document.activeElement;
-      if (!target) return;
-      const isTextEntry = target.matches?.("input, textarea, [contenteditable='true']");
-      const isPlainCharacter = event.key?.length === 1 && !event.altKey && !event.ctrlKey && !event.metaKey;
-      if (isTextEntry && isPlainCharacter) return;
-      const now = Date.now();
-      if (now - lastUiKeyAt < 350) return;
-      lastUiKeyAt = now;
-      analyticsTrackTarget("ui_keydown", target, event, {
-        data: {
-          ...analyticsControlData(target, event),
-          key: isPlainCharacter ? "character" : event.key || "",
-          code: event.code || "",
-          modifiers: {
-            alt: event.altKey,
-            ctrl: event.ctrlKey,
-            meta: event.metaKey,
-            shift: event.shiftKey
-          }
-        }
-      });
-    },
-    true
-  );
-
-  document.addEventListener(
-    "wheel",
-    (event) => {
-      const now = Date.now();
-      if (now - lastUiWheelAt < 1500) return;
-      lastUiWheelAt = now;
-      const target =
-        event.target.closest?.(".lesson-list, .resource-shell, .library-grid, .chapter-list, .table-wrap, .view.active, main") ||
-        document.scrollingElement ||
-        document.body;
-      analyticsTrackTarget("ui_wheel", target, event, {
-        data: analyticsControlData(target, event)
-      });
-    },
-    { capture: true, passive: true }
   );
 
   clearInterval(analyticsViewTimer);
@@ -666,6 +737,13 @@ function setupInteractionTracking() {
   }, analyticsOnlinePeriodFlushMs);
 
   window.addEventListener("beforeunload", () => {
+    analyticsTrack("session_end", {
+      source: "system",
+      data: {
+        reason: "unload",
+        pageOpenSeconds: Math.max(0, Math.round((Date.now() - analyticsPageStartedAt) / 1000))
+      }
+    });
     analyticsLeaveUnit("unload");
     analyticsTrackOnlinePeriod("unload");
     analyticsFlushBeforeUnload();

@@ -1,9 +1,30 @@
 const fs = require("fs");
 const path = require("path");
 const initSqlJs = require("sql.js");
+const interactionPolicy = require("./lib/interaction-policy");
 
-const DB_PATH = process.env.DB_PATH || path.join(process.cwd(), "data", "calculus-quest.db");
+const WORKSPACE_ROOT = path.resolve(process.cwd());
+const configuredDbPath = String(process.env.DB_PATH || "").trim();
+const DB_PATH = path.resolve(configuredDbPath || path.join(WORKSPACE_ROOT, "data", "calculus-quest.db"));
 const OPENMAIC_V14_ROUTE_PATH = path.join(process.cwd(), "data", "openmaic-v14-route.json");
+const DB_LOCK_PATH = `${DB_PATH}.lock`;
+
+function pathInside(parent, child) {
+  const relative = path.relative(parent, child);
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function assertProductionDatabasePath() {
+  if (process.env.NODE_ENV !== "production") return;
+  if (!configuredDbPath) {
+    throw new Error("Production startup requires DB_PATH to point to the persistent database outside the code repository.");
+  }
+  if (pathInside(WORKSPACE_ROOT, DB_PATH) && process.env.ALLOW_REPO_DB_PATH !== "true") {
+    throw new Error("Production DB_PATH must be outside the code repository. Set ALLOW_REPO_DB_PATH=true only for an intentional exception.");
+  }
+}
+
+assertProductionDatabasePath();
 
 function loadOpenMaicRouteSync() {
   try {
@@ -34,6 +55,66 @@ let courseLabelCache = null;
 
 let db = null;
 let saveTimer = null;
+let dbLockFd = null;
+
+function writeDatabaseAtomically() {
+  if (!db) return;
+  const data = db.export();
+  const dir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(DB_PATH + ".tmp", Buffer.from(data));
+  fs.renameSync(DB_PATH + ".tmp", DB_PATH);
+}
+
+function processIsAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function acquireWriteLock() {
+  if (dbLockFd !== null) return;
+  const dir = path.dirname(DB_LOCK_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  if (fs.existsSync(DB_LOCK_PATH)) {
+    let lock = {};
+    try { lock = JSON.parse(fs.readFileSync(DB_LOCK_PATH, "utf8")); } catch {}
+    if (processIsAlive(Number(lock.pid))) {
+      throw new Error(`Database is already locked by process ${lock.pid}. Stop the existing service before starting another writer.`);
+    }
+    fs.unlinkSync(DB_LOCK_PATH);
+  }
+  dbLockFd = fs.openSync(DB_LOCK_PATH, "wx");
+  fs.writeFileSync(dbLockFd, JSON.stringify({
+    pid: process.pid,
+    startedAt: new Date().toISOString(),
+    cwd: process.cwd()
+  }));
+}
+
+function releaseWriteLock() {
+  if (dbLockFd !== null) {
+    try { fs.closeSync(dbLockFd); } catch {}
+    dbLockFd = null;
+  }
+  try {
+    if (fs.existsSync(DB_LOCK_PATH)) fs.unlinkSync(DB_LOCK_PATH);
+  } catch {}
+}
+
+function databaseSafetyInfo() {
+  return {
+    path: DB_PATH,
+    configured: Boolean(configuredDbPath),
+    externalToWorkspace: !pathInside(WORKSPACE_ROOT, DB_PATH),
+    production: process.env.NODE_ENV === "production",
+    lockPath: DB_LOCK_PATH
+  };
+}
 
 async function getDb() {
   if (db) return db;
@@ -60,12 +141,7 @@ function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
     try {
-      if (!db) return;
-      const data = db.export();
-      const dir = path.dirname(DB_PATH);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(DB_PATH + ".tmp", Buffer.from(data));
-      fs.renameSync(DB_PATH + ".tmp", DB_PATH);
+      writeDatabaseAtomically();
     } catch (e) {
       console.error("Failed to save database:", e.message);
     }
@@ -74,11 +150,7 @@ function scheduleSave() {
 
 function saveNow() {
   clearTimeout(saveTimer);
-  if (!db) return;
-  const data = db.export();
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(DB_PATH, Buffer.from(data));
+  writeDatabaseAtomically();
 }
 
 function chapterDisplayLabel(chapterId, fallback = "") {
@@ -111,26 +183,53 @@ function sceneLabel(scene = {}, index = 0, quizIndex = 0, quizTotal = 0) {
   return `实验：${compactTitle(scene.title || `模块${index + 1}`)}`;
 }
 
-function addV14UnitLabel(labels, chapter, module, unitId, unitLabel) {
+function addV14UnitLabel(labels, chapter, module, unitId, unitLabel, extra = {}) {
   labels.set(unitId, {
     chapter_id: chapter.id,
     chapter_label: chapterDisplayLabel(chapter.id, chapter.title),
     unit_id: unitId,
-    unit_label: unitLabel
+    unit_label: unitLabel,
+    module_id: module?.id || "",
+    module_label: module?.title || "",
+    ...extra
   });
 }
 
 function addV14ModuleLabels(labels, chapter, module) {
   const knowledgePoints = module.knowledgePoints || [];
   const splitIndex = Math.max(1, Math.ceil(knowledgePoints.length / 2));
-  addV14UnitLabel(labels, chapter, module, `${module.id}-pre`, `${module.id} 前测`);
-  knowledgePoints.forEach((kp, index) => {
-    if (index === splitIndex) addV14UnitLabel(labels, chapter, module, `${module.id}-formative`, `${module.id} 形成性测验`);
-    addV14UnitLabel(labels, chapter, module, kp.id, `${module.id} 知识点：${kp.name}`);
+  const moduleTitle = module.title || chapter.title || "本节";
+  addV14UnitLabel(labels, chapter, module, `${module.id}-pre`, `${moduleTitle} · 前测`, {
+    unit_type: "quiz",
+    module_role: "pretest"
   });
-  if (knowledgePoints.length <= splitIndex) addV14UnitLabel(labels, chapter, module, `${module.id}-formative`, `${module.id} 形成性测验`);
-  addV14UnitLabel(labels, chapter, module, `${module.id}-review`, `${module.id} 全课整理`);
-  addV14UnitLabel(labels, chapter, module, `${module.id}-post`, `${module.id} 后测`);
+  knowledgePoints.forEach((kp, index) => {
+    if (index === splitIndex) {
+      addV14UnitLabel(labels, chapter, module, `${module.id}-formative`, `${moduleTitle} · 形成性测验`, {
+        unit_type: "quiz",
+        module_role: "formative_quiz"
+      });
+    }
+    addV14UnitLabel(labels, chapter, module, kp.id, kp.name || `${moduleTitle} · 知识点`, {
+      unit_type: "knowledge",
+      module_role: "knowledge_point",
+      knowledge_point: kp.name || `${moduleTitle} · 知识点`
+    });
+  });
+  if (knowledgePoints.length <= splitIndex) {
+    addV14UnitLabel(labels, chapter, module, `${module.id}-formative`, `${moduleTitle} · 形成性测验`, {
+      unit_type: "quiz",
+      module_role: "formative_quiz"
+    });
+  }
+  addV14UnitLabel(labels, chapter, module, `${module.id}-review`, `${moduleTitle} · 全课整理`, {
+    unit_type: "slide",
+    module_role: "review"
+  });
+  addV14UnitLabel(labels, chapter, module, `${module.id}-post`, `${moduleTitle} · 后测`, {
+    unit_type: "quiz",
+    module_role: "posttest"
+  });
 }
 
 function courseLabels() {
@@ -138,6 +237,18 @@ function courseLabels() {
   const labels = new Map();
   if (openMaicRoute?.chapters?.length) {
     openMaicRoute.chapters.forEach((chapter) => {
+      addV14UnitLabel(labels, chapter, {}, `${chapter.id}-pre`, `${chapter.title} · 知识前测`, {
+        unit_type: "quiz",
+        module_role: "pretest"
+      });
+      addV14UnitLabel(labels, chapter, {}, `${chapter.id}-formative`, `${chapter.title} · 形成测验`, {
+        unit_type: "quiz",
+        module_role: "formative_quiz"
+      });
+      addV14UnitLabel(labels, chapter, {}, `${chapter.id}-post`, `${chapter.title} · 结业后测`, {
+        unit_type: "quiz",
+        module_role: "posttest"
+      });
       (chapter.modules || []).forEach((module) => addV14ModuleLabels(labels, chapter, module));
     });
     courseLabelCache = labels;
@@ -169,6 +280,27 @@ function courseLabels() {
   return labels;
 }
 
+function publicCourseLabel(value = "") {
+  return String(value || "")
+    .replace(/\bV\d+-[CX]\d+(?:-[A-Za-z0-9]+)*\b/gi, " ")
+    .replace(/\bGH-\d+(?:-[A-Za-z0-9]+)*\b/gi, " ")
+    .replace(/\b[A-Z]\d+[a-z]?-(?:scene-\d+|chapter)\b/gi, " ")
+    .replace(/^[\s·|/\\,，;；:：_-]+|[\s·|/\\,，;；:：_-]+$/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function unitFallbackLabel(unitId = "", fallback = {}) {
+  const provided = publicCourseLabel(fallback.unit_label || fallback.unitLabel || "");
+  if (provided) return provided;
+  if (/-pre$/i.test(unitId)) return "前测";
+  if (/-formative$/i.test(unitId)) return "形成性测验";
+  if (/-post$/i.test(unitId)) return "后测";
+  if (/-review$/i.test(unitId)) return "全课整理";
+  if (/-chapter$/i.test(unitId)) return "整章";
+  return "未命名模块";
+}
+
 function unitDisplayMeta(unitId = "", fallback = {}) {
   const fromCourse = courseLabels().get(unitId);
   if (fromCourse) return fromCourse;
@@ -177,8 +309,24 @@ function unitDisplayMeta(unitId = "", fallback = {}) {
     chapter_id: chapterId,
     chapter_label: chapterDisplayLabel(chapterId, fallback.chapter_label || fallback.chapterLabel || ""),
     unit_id: unitId,
-    unit_label: fallback.unit_label || fallback.unitLabel || unitId || ""
+    unit_label: unitFallbackLabel(unitId, fallback),
+    unit_type: fallback.unit_type || fallback.unitType || "",
+    module_role: fallback.module_role || fallback.moduleRole || "",
+    knowledge_point: fallback.knowledge_point || fallback.knowledgePoint || "",
+    module_id: fallback.module_id || fallback.moduleId || "",
+    module_label: fallback.module_label || fallback.moduleLabel || ""
   };
+}
+
+function sceneDisplayLabel(sceneType = "", fallback = "") {
+  const id = String(sceneType || "").trim();
+  return ({
+    simulation: "动手调一调",
+    game: "找错并改正",
+    mindMap: "知识怎么连",
+    diagram: "知识怎么连",
+    visualization3d: "换个角度看"
+  })[id] || publicCourseLabel(fallback) || "";
 }
 
 function initSchema() {
@@ -245,10 +393,21 @@ function initSchema() {
       user_id TEXT NOT NULL REFERENCES users(id),
       reason TEXT DEFAULT '',
       data TEXT NOT NULL DEFAULT '{}',
+      generation INTEGER NOT NULL DEFAULT 0,
+      revision INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL
     )
   `);
   d.run("CREATE INDEX IF NOT EXISTS idx_snap_user ON snapshots(user_id)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS learning_state_versions (
+      user_id TEXT PRIMARY KEY REFERENCES users(id),
+      generation INTEGER NOT NULL DEFAULT 1,
+      revision INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    )
+  `);
 
   d.run(`
     CREATE TABLE IF NOT EXISTS feedback (
@@ -347,6 +506,9 @@ function initSchema() {
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_confidence REAL"); } catch {}
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_feedback TEXT DEFAULT ''"); } catch {}
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_error_type TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE snapshots ADD COLUMN generation INTEGER NOT NULL DEFAULT 0"); } catch {}
+  try { d.run("ALTER TABLE snapshots ADD COLUMN revision INTEGER NOT NULL DEFAULT 0"); } catch {}
+  d.run("CREATE INDEX IF NOT EXISTS idx_snap_user_version ON snapshots(user_id, generation, revision)");
 
   scheduleSave();
 }
@@ -538,11 +700,6 @@ function getQuizResultsByUser(userId, limit = 200) {
   );
 }
 
-function clearLearningDataForUser(userId) {
-  execute("DELETE FROM quiz_results WHERE user_id = ?", [userId]);
-  execute("DELETE FROM snapshots WHERE user_id = ?", [userId]);
-}
-
 // ---- Events ----
 
 function insertEvent(record) {
@@ -638,16 +795,290 @@ function updateQuizResultAiGrading(questionId, userId, { aiScore, aiConfidence, 
 
 function insertSnapshot(record) {
   execute(
-    "INSERT OR REPLACE INTO snapshots (id, user_id, reason, data, created_at) VALUES (?, ?, ?, ?, ?)",
-    [record.id, record.user_id, record.reason || "", JSON.stringify(record.data || {}), record.created_at]
+    `INSERT OR REPLACE INTO snapshots
+      (id, user_id, reason, data, generation, revision, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.user_id,
+      record.reason || "",
+      JSON.stringify(record.data || {}),
+      Number(record.generation || 0),
+      Number(record.revision || 0),
+      record.created_at
+    ]
   );
 }
 
 function getLatestSnapshot(userId) {
   return queryOne(
-    "SELECT * FROM snapshots WHERE user_id = ? ORDER BY created_at DESC LIMIT 1",
+    `SELECT * FROM snapshots
+     WHERE user_id = ?
+     ORDER BY generation DESC, revision DESC, created_at DESC
+     LIMIT 1`,
     [userId]
   );
+}
+
+function parseSnapshotData(row) {
+  if (!row) return {};
+  try {
+    const parsed = JSON.parse(row.data || "{}");
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function uniqueStrings(values = []) {
+  return Array.from(new Set(values.filter((value) => typeof value === "string" && value)));
+}
+
+function mergeRecords(existing = [], incoming = [], keyFor) {
+  const records = new Map();
+  [...existing, ...incoming].forEach((record, index) => {
+    if (!record || typeof record !== "object") return;
+    const key = keyFor(record) || `record-${index}`;
+    records.set(key, record);
+  });
+  return Array.from(records.values());
+}
+
+function mergeAnalytics(existing = {}, incoming = {}) {
+  const left = existing && typeof existing === "object" ? existing : {};
+  const right = incoming && typeof incoming === "object" ? incoming : {};
+  return {
+    ...left,
+    ...right,
+    visitedUnits: { ...(left.visitedUnits || {}), ...(right.visitedUnits || {}) },
+    repeats: { ...(left.repeats || {}), ...(right.repeats || {}) },
+    path: mergeRecords(left.path || [], right.path || [], (item) =>
+      [item.unitId, item.at, item.reason].filter(Boolean).join("|")
+    ),
+    skips: mergeRecords(left.skips || [], right.skips || [], (item) =>
+      [item.fromUnitId || item.fromChapterId, item.toUnitId || item.toChapterId, item.at]
+        .filter(Boolean)
+        .join("|")
+    )
+  };
+}
+
+function mergeAgenticPath(existing, incoming) {
+  if (!existing || typeof existing !== "object") return incoming || null;
+  if (!incoming || typeof incoming !== "object") return existing;
+  const merged = { ...existing, ...incoming };
+  ["unlocked", "visibleUnits", "unlockedExtensionChapters"].forEach((key) => {
+    merged[key] = uniqueStrings([...(existing[key] || []), ...(incoming[key] || [])]);
+  });
+  merged.skipped = { ...(existing.skipped || {}), ...(incoming.skipped || {}) };
+  merged.chapterAdvanceReady = {
+    ...(existing.chapterAdvanceReady || {}),
+    ...(incoming.chapterAdvanceReady || {})
+  };
+  merged.chapterAdvanceReasons = {
+    ...(existing.chapterAdvanceReasons || {}),
+    ...(incoming.chapterAdvanceReasons || {})
+  };
+  merged.decisions = mergeRecords(existing.decisions || [], incoming.decisions || [], (item) =>
+    item.id || [item.fromUnitId, item.action, item.createdAt || item.at].filter(Boolean).join("|")
+  );
+  return merged;
+}
+
+function mergeLearningSnapshot(existing = {}, incoming = {}) {
+  const left = existing && typeof existing === "object" ? existing : {};
+  const right = incoming && typeof incoming === "object" ? incoming : {};
+  const merged = { ...left, ...right };
+  merged.completed = uniqueStrings([...(left.completed || []), ...(right.completed || [])]);
+  merged.submittedQuizzes = uniqueStrings([
+    ...(left.submittedQuizzes || []),
+    ...(right.submittedQuizzes || [])
+  ]);
+  merged.quizResults = mergeRecords(left.quizResults || [], right.quizResults || [], (item) =>
+    item.id || [item.unitId || item.unit_id, item.questionId || item.question_id, item.timestamp || item.created_at]
+      .filter(Boolean)
+      .join("|")
+  );
+  merged.logs = uniqueStrings([...(right.logs || []), ...(left.logs || [])]).slice(0, 100);
+  merged.quizDrafts = { ...(left.quizDrafts || {}), ...(right.quizDrafts || {}) };
+  merged.quizAttempts = { ...(left.quizAttempts || {}), ...(right.quizAttempts || {}) };
+  merged.selectedKnowledgeScenes = {
+    ...(left.selectedKnowledgeScenes || {}),
+    ...(right.selectedKnowledgeScenes || {})
+  };
+  merged.analytics = mergeAnalytics(left.analytics, right.analytics);
+  merged.agenticPath = mergeAgenticPath(left.agenticPath, right.agenticPath);
+  if (!right.note && left.note) merged.note = left.note;
+  if (!right.participant && left.participant) merged.participant = left.participant;
+  return merged;
+}
+
+function ensureLearningStateVersion(userId, timestamp) {
+  let version = queryOne(
+    "SELECT * FROM learning_state_versions WHERE user_id = ?",
+    [userId]
+  );
+  if (version) return version;
+  execute(
+    `INSERT OR IGNORE INTO learning_state_versions
+      (user_id, generation, revision, updated_at)
+     VALUES (?, 1, 0, ?)`,
+    [userId, timestamp]
+  );
+  version = queryOne(
+    "SELECT * FROM learning_state_versions WHERE user_id = ?",
+    [userId]
+  );
+  return version;
+}
+
+function getLearningSnapshotState(userId, timestamp) {
+  const version = ensureLearningStateVersion(userId, timestamp);
+  const current = queryOne(
+    `SELECT * FROM snapshots
+     WHERE user_id = ? AND generation = ?
+     ORDER BY revision DESC, created_at DESC
+     LIMIT 1`,
+    [userId, Number(version.generation)]
+  );
+  const legacy = current || queryOne(
+    `SELECT * FROM snapshots
+     WHERE user_id = ?
+     ORDER BY generation DESC, revision DESC, created_at DESC
+     LIMIT 1`,
+    [userId]
+  );
+  return {
+    generation: Number(version.generation),
+    revision: Number(version.revision),
+    snapshot: legacy
+  };
+}
+
+function saveLearningSnapshot(record) {
+  const version = ensureLearningStateVersion(record.user_id, record.created_at);
+  const currentGeneration = Number(version.generation);
+  const currentRevision = Number(version.revision);
+  if (Number(record.generation) !== currentGeneration) {
+    return {
+      ok: false,
+      conflict: "generation",
+      generation: currentGeneration,
+      revision: currentRevision
+    };
+  }
+
+  const current = queryOne(
+    `SELECT * FROM snapshots
+     WHERE user_id = ? AND generation = ?
+     ORDER BY revision DESC, created_at DESC
+     LIMIT 1`,
+    [record.user_id, currentGeneration]
+  ) || queryOne(
+    `SELECT * FROM snapshots
+     WHERE user_id = ?
+     ORDER BY generation DESC, revision DESC, created_at DESC
+     LIMIT 1`,
+    [record.user_id]
+  );
+  const data = mergeLearningSnapshot(parseSnapshotData(current), record.data);
+  const nextRevision = currentRevision + 1;
+  const d = getDbSync();
+
+  d.run("BEGIN");
+  try {
+    d.run(
+      `INSERT INTO snapshots
+        (id, user_id, reason, data, generation, revision, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        record.id,
+        record.user_id,
+        record.reason || "",
+        JSON.stringify(data),
+        currentGeneration,
+        nextRevision,
+        record.created_at
+      ]
+    );
+    d.run(
+      `UPDATE learning_state_versions
+       SET revision = ?, updated_at = ?
+       WHERE user_id = ?`,
+      [nextRevision, record.created_at, record.user_id]
+    );
+    d.run("COMMIT");
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+  scheduleSave();
+  return {
+    ok: true,
+    generation: currentGeneration,
+    revision: nextRevision,
+    data
+  };
+}
+
+function resetLearningSnapshot(record) {
+  const version = ensureLearningStateVersion(record.user_id, record.created_at);
+  const currentGeneration = Number(version.generation);
+  const currentRevision = Number(version.revision);
+  if (Number(record.generation) !== currentGeneration) {
+    return {
+      ok: false,
+      conflict: "generation",
+      generation: currentGeneration,
+      revision: currentRevision
+    };
+  }
+  if (Number(record.baseRevision) !== currentRevision) {
+    return {
+      ok: false,
+      conflict: "revision",
+      generation: currentGeneration,
+      revision: currentRevision
+    };
+  }
+
+  const nextGeneration = currentGeneration + 1;
+  const nextRevision = 1;
+  const d = getDbSync();
+  d.run("BEGIN");
+  try {
+    d.run("DELETE FROM quiz_results WHERE user_id = ?", [record.user_id]);
+    d.run("DELETE FROM snapshots WHERE user_id = ?", [record.user_id]);
+    d.run(
+      `UPDATE learning_state_versions
+       SET generation = ?, revision = ?, updated_at = ?
+       WHERE user_id = ?`,
+      [nextGeneration, nextRevision, record.created_at, record.user_id]
+    );
+    d.run(
+      `INSERT INTO snapshots
+        (id, user_id, reason, data, generation, revision, created_at)
+       VALUES (?, ?, 'reset', ?, ?, ?, ?)`,
+      [
+        record.id,
+        record.user_id,
+        JSON.stringify(record.data || {}),
+        nextGeneration,
+        nextRevision,
+        record.created_at
+      ]
+    );
+    d.run("COMMIT");
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+  scheduleSave();
+  return {
+    ok: true,
+    generation: nextGeneration,
+    revision: nextRevision
+  };
 }
 
 // ---- Feedback ----
@@ -686,6 +1117,7 @@ function feedbackDashboard(filters = {}) {
   const targetScope = String(filters.targetScope || "").trim();
   const searchQuery = String(filters.query || "").trim();
   const limit = Math.max(1, Math.min(Number(filters.limit || 1000), 1000));
+  const offset = Math.max(0, Number(filters.offset || 0));
 
   if (feedbackType) {
     where.push("f.feedback_type = ?");
@@ -709,7 +1141,15 @@ function feedbackDashboard(filters = {}) {
     `SELECT
        COUNT(*) as total,
        SUM(CASE WHEN f.feedback_type = 'courseware' THEN 1 ELSE 0 END) as courseware,
-       COUNT(DISTINCT f.user_id) as users
+       COUNT(DISTINCT f.user_id) as users,
+       COUNT(DISTINCT CASE
+         WHEN f.target_scope = 'courseware'
+         THEN COALESCE(NULLIF(f.resource_title, ''), NULLIF(f.unit_id, ''))
+       END) as targets,
+       SUM(CASE WHEN f.feedback_type = 'learning_content' THEN 1 ELSE 0 END) as learning_content,
+       SUM(CASE WHEN f.feedback_type = 'platform' THEN 1 ELSE 0 END) as platform,
+       SUM(CASE WHEN f.feedback_type = 'other' THEN 1 ELSE 0 END) as other,
+       MAX(f.created_at) as last_at
      FROM feedback f
      LEFT JOIN users u ON u.id = f.user_id
      WHERE ${whereSql}`,
@@ -720,18 +1160,39 @@ function feedbackDashboard(filters = {}) {
      FROM feedback f
      LEFT JOIN users u ON u.id = f.user_id
      WHERE ${whereSql}
-     ORDER BY f.created_at DESC
-     LIMIT ?`,
-    [...params, limit]
-  );
+     ORDER BY f.created_at DESC, f.id DESC
+     LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  ).map((row) => {
+    const labels = unitDisplayMeta(row.unit_id, {
+      chapter_id: row.chapter_id,
+      unit_label: row.knowledge_point || row.resource_title
+    });
+    return {
+      ...row,
+      chapter_label: labels.chapter_label,
+      unit_label: row.knowledge_point || labels.unit_label
+    };
+  });
 
   return {
     summary: {
       total: Number(summaryRow?.total || 0),
       courseware: Number(summaryRow?.courseware || 0),
-      users: Number(summaryRow?.users || 0)
+      users: Number(summaryRow?.users || 0),
+      targets: Number(summaryRow?.targets || 0),
+      lastAt: summaryRow?.last_at || "",
+      byType: {
+        learning_content: Number(summaryRow?.learning_content || 0),
+        courseware: Number(summaryRow?.courseware || 0),
+        platform: Number(summaryRow?.platform || 0),
+        other: Number(summaryRow?.other || 0)
+      }
     },
-    rows
+    rows,
+    total: Number(summaryRow?.total || 0),
+    limit,
+    offset
   };
 }
 
@@ -750,19 +1211,54 @@ function statsOverview(dates) {
   const today = new Date().toISOString().slice(0, 10);
   const qrFilter = dateFilter("qr.created_at", dates);
   const evFilter = dateFilter("created_at", dates);
+  const interactionFilter = dateFilter("e.created_at", dates);
+  const feedbackFilter = dateFilter("created_at", dates);
+  const decisionFilter = dateFilter("created_at", dates);
+  const meaningfulFilter = interactionPolicy.sqlMeaningfulFilter("e");
   const hasFilter = !!(dates && (dates.startDate || dates.endDate));
   // activeInRange: count distinct users within the date filter (or today if no filter)
   const activeQuery = hasFilter
     ? `SELECT COUNT(DISTINCT user_id) as c FROM events WHERE 1=1${evFilter.clause}`
     : "SELECT COUNT(DISTINCT user_id) as c FROM events WHERE created_at >= ?";
   const activeParams = hasFilter ? evFilter.params : [today];
+  const pairedPrePost = queryOne(
+    `SELECT COUNT(DISTINCT user_id) as c
+     FROM (
+       SELECT qr.user_id, qr.chapter_id
+       FROM quiz_results qr
+       WHERE qr.phase IN ('pre', 'post')${qrFilter.clause}
+       GROUP BY qr.user_id, qr.chapter_id
+       HAVING SUM(CASE WHEN qr.phase = 'pre' THEN 1 ELSE 0 END) > 0
+          AND SUM(CASE WHEN qr.phase = 'post' THEN 1 ELSE 0 END) > 0
+     )`,
+    qrFilter.params
+  ).c || 0;
+  const rawInteractionEvents = queryOne(
+    `SELECT COUNT(*) as c FROM events e WHERE e.type = 'interaction'${interactionFilter.clause}`,
+    interactionFilter.params
+  ).c || 0;
+  const meaningfulInteractions = queryOne(
+    `SELECT COUNT(*) as c
+     FROM events e
+     WHERE e.type = 'interaction'${interactionFilter.clause}${meaningfulFilter.clause}`,
+    [...interactionFilter.params, ...meaningfulFilter.params]
+  ).c || 0;
   return {
     totalUsers: queryOne("SELECT COUNT(*) as c FROM users").c,
     totalQuizResults: queryOne(`SELECT COUNT(*) as c FROM quiz_results qr WHERE 1=1${qrFilter.clause}`, qrFilter.params).c,
     totalEvents: queryOne(`SELECT COUNT(*) as c FROM events WHERE 1=1${evFilter.clause}`, evFilter.params).c,
+    rawInteractionEvents,
+    meaningfulInteractions,
     activeToday: queryOne("SELECT COUNT(DISTINCT user_id) as c FROM events WHERE created_at >= ?", [today]).c,
     activeInRange: queryOne(activeQuery, activeParams).c,
-    avgAccuracy: queryOne(`SELECT ROUND(AVG(CAST(qr.is_correct AS REAL)) * 100, 1) as c FROM quiz_results qr WHERE qr.is_correct >= 0${qrFilter.clause}`, qrFilter.params).c || 0
+    avgAccuracy: queryOne(`SELECT ROUND(AVG(CAST(qr.is_correct AS REAL)) * 100, 1) as c FROM quiz_results qr WHERE qr.is_correct >= 0${qrFilter.clause}`, qrFilter.params).c || 0,
+    usersWithQuiz: queryOne(`SELECT COUNT(DISTINCT qr.user_id) as c FROM quiz_results qr WHERE 1=1${qrFilter.clause}`, qrFilter.params).c || 0,
+    usersWithInteractions: queryOne(`SELECT COUNT(DISTINCT user_id) as c FROM events WHERE type = 'interaction'${evFilter.clause}`, evFilter.params).c || 0,
+    usersWithFeedback: queryOne(`SELECT COUNT(DISTINCT user_id) as c FROM feedback WHERE 1=1${feedbackFilter.clause}`, feedbackFilter.params).c || 0,
+    pairedPrePostUsers: pairedPrePost,
+    feedbackCount: queryOne(`SELECT COUNT(*) as c FROM feedback WHERE 1=1${feedbackFilter.clause}`, feedbackFilter.params).c || 0,
+    agentDecisionCount: queryOne(`SELECT COUNT(*) as c FROM agent_decisions WHERE 1=1${decisionFilter.clause}`, decisionFilter.params).c || 0,
+    activeDays: queryOne(`SELECT COUNT(DISTINCT substr(created_at, 1, 10)) as c FROM events WHERE 1=1${evFilter.clause}`, evFilter.params).c || 0
   };
 }
 
@@ -783,32 +1279,45 @@ function chapterAccuracy(dates) {
 function questionErrors(dates) {
   const df = dateFilter("created_at", dates);
   return queryAll(`
-    SELECT question_id, unit_label, chapter_label, question_type,
+    SELECT question_id, unit_id, unit_label, chapter_id, chapter_label, question_type, phase,
            COUNT(*) as attempts,
            ROUND((1 - AVG(CASE WHEN is_correct >= 0 THEN CAST(is_correct AS REAL) END)) * 100, 1) as error_rate,
            ROUND(AVG(score), 1) as avg_score,
            ROUND(AVG(max_score), 1) as avg_max
     FROM quiz_results
     WHERE 1=1${df.clause}
-    GROUP BY question_id
+    GROUP BY question_id, unit_id, phase
     ORDER BY error_rate DESC
   `, df.params);
 }
 
 function userProgress(dates) {
   const df = dateFilter("qr.created_at", dates);
+  const evDf = dateFilter("e.created_at", dates);
+  const feedbackDf = dateFilter("f.created_at", dates);
+  const decisionDf = dateFilter("ad.created_at", dates);
   return queryAll(`
-    SELECT u.id as user_id, u.nickname, u.last_seen_at,
+    SELECT u.id as user_id, u.nickname, u.created_at, u.last_seen_at,
            COUNT(DISTINCT qr.unit_id) as units_attempted,
            COUNT(qr.id) as quiz_count,
            ROUND(AVG(CASE WHEN qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as avg_accuracy,
            ROUND(SUM(qr.score), 0) as total_score,
-           ROUND(SUM(qr.max_score), 0) as total_max
+           ROUND(SUM(qr.max_score), 0) as total_max,
+           (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id${evDf.clause}) as event_count,
+           (SELECT COUNT(DISTINCT substr(e.created_at, 1, 10)) FROM events e WHERE e.user_id = u.id${evDf.clause}) as active_days,
+           (SELECT COUNT(*) FROM feedback f WHERE f.user_id = u.id${feedbackDf.clause}) as feedback_count,
+           (SELECT COUNT(*) FROM agent_decisions ad WHERE ad.user_id = u.id${decisionDf.clause}) as agent_decision_count
     FROM users u
     LEFT JOIN quiz_results qr ON qr.user_id = u.id${df.clause}
     GROUP BY u.id
     ORDER BY quiz_count DESC
-  `, df.params);
+  `, [
+    ...evDf.params,
+    ...evDf.params,
+    ...feedbackDf.params,
+    ...decisionDf.params,
+    ...df.params
+  ]);
 }
 
 function dailyActivity(days = 30, dates) {
@@ -843,23 +1352,176 @@ function phaseComparison(dates) {
   `, df.params);
 }
 
+function researchSummaryForUser(eventRows, feedbackCount, agentDecisionCount) {
+  const activeDays = new Set();
+  const sessions = new Set();
+  const units = new Set();
+  const completedUnits = new Set();
+  let interactionCount = 0;
+  let estimatedOnlineSeconds = 0;
+  let unitStudySeconds = 0;
+  let repeatVisits = 0;
+  let coursewareActions = 0;
+  let latestEnvironment = null;
+  let latestEnvironmentAt = "";
+
+  eventRows.forEach((row) => {
+    if (row.created_at) activeDays.add(String(row.created_at).slice(0, 10));
+    let payload = {};
+    try { payload = typeof row.payload === "string" ? JSON.parse(row.payload || "{}") : row.payload || {}; } catch { payload = {}; }
+    const data = payload.data || {};
+    const eventType = row.type === "interaction"
+      ? payload.eventType || data.eventType || "interaction"
+      : row.type || "";
+    if (row.type === "interaction") interactionCount += 1;
+    if (payload.sessionId) sessions.add(payload.sessionId);
+    const unitId = payload.unitId || data.unitId || data.unit || "";
+    if (unitId) units.add(unitId);
+    if (["unit_complete", "complete_unit", "unit_review_complete"].includes(eventType) && unitId) {
+      completedUnits.add(unitId);
+    }
+    if (eventType === "repeat_unit_enter") repeatVisits += 1;
+    if (eventType === "online_period") estimatedOnlineSeconds += Math.max(0, Number(data.seconds || 0));
+    if (eventType === "time_on_unit") unitStudySeconds += Math.max(0, Number(data.seconds || 0));
+    if (
+      payload.source === "iframe"
+      || eventType.startsWith("interactive_")
+      || eventType.startsWith("canvas_")
+      || eventType === "parameter_change"
+      || eventType === "parameter_commit"
+    ) {
+      coursewareActions += 1;
+    }
+    if (eventType === "session_start" && data.environment && row.created_at >= latestEnvironmentAt) {
+      latestEnvironment = data.environment;
+      latestEnvironmentAt = row.created_at;
+    }
+  });
+
+  return {
+    activeDays: activeDays.size,
+    sessions: sessions.size,
+    interactionCount,
+    unitsVisited: units.size,
+    completedUnits: completedUnits.size,
+    repeatVisits,
+    coursewareActions,
+    estimatedOnlineSeconds,
+    unitStudySeconds,
+    feedbackCount: Number(feedbackCount || 0),
+    agentDecisionCount: Number(agentDecisionCount || 0),
+    latestEnvironment
+  };
+}
+
+function recentMeaningfulEvents(rows, limit = 80) {
+  const dedupeFamilies = {
+    login: "login",
+    login_success: "login",
+    register: "register",
+    register_success: "register",
+    select_chapter: "chapter_select",
+    chapter_select: "chapter_select",
+    open_unit: "unit_open",
+    unit_open: "unit_open",
+    unit_enter: "unit_open",
+    repeat_unit_enter: "unit_open",
+    complete_unit: "unit_complete",
+    unit_complete: "unit_complete"
+  };
+  const lastFamilyAt = new Map();
+  const result = [];
+
+  for (const row of rows) {
+    let payload = {};
+    try { payload = JSON.parse(row.payload || "{}"); } catch {}
+    const data = payload.data || {};
+    const eventType = row.type === "interaction"
+      ? interactionPolicy.eventType(payload, row.type)
+      : String(row.type || "");
+    if (!interactionPolicy.isMeaningfulEventType(eventType)) continue;
+
+    const family = dedupeFamilies[eventType];
+    if (family) {
+      const target = family === "login" || family === "register"
+        ? ""
+        : family === "chapter_select"
+          ? data.toChapterId || data.chapterId || payload.chapterId || ""
+          : payload.unitId || data.unitId || data.unit || "";
+      const key = `${family}|${target}`;
+      const currentAt = new Date(row.created_at || 0).getTime();
+      const previousAt = lastFamilyAt.get(key);
+      const dedupeWindowMs = family === "login" || family === "register" ? 10000 : 2000;
+      if (
+        Number.isFinite(currentAt)
+        && Number.isFinite(previousAt)
+        && Math.abs(previousAt - currentAt) <= dedupeWindowMs
+      ) {
+        lastFamilyAt.set(key, currentAt);
+        continue;
+      }
+      if (Number.isFinite(currentAt)) lastFamilyAt.set(key, currentAt);
+    }
+
+    result.push(row);
+    if (result.length >= limit) break;
+  }
+  return result;
+}
+
 function userDetail(userId, dates) {
   const user = queryOne("SELECT * FROM users WHERE id = ?", [userId]);
   if (!user) return null;
   const qrDf = dateFilter("created_at", dates);
   const evDf = dateFilter("created_at", dates);
+  const feedbackDf = dateFilter("created_at", dates);
+  const decisionDf = dateFilter("created_at", dates);
   const quizResults = queryAll(
     `SELECT * FROM quiz_results WHERE user_id = ?${qrDf.clause} ORDER BY created_at DESC LIMIT 500`,
     [userId, ...qrDf.params]
   );
-  const events = queryAll(
-    `SELECT * FROM events WHERE user_id = ?${evDf.clause} ORDER BY created_at DESC LIMIT 200`,
+  const events = recentMeaningfulEvents(queryAll(
+    `SELECT * FROM events WHERE user_id = ?${evDf.clause} ORDER BY created_at DESC LIMIT 2000`,
     [userId, ...evDf.params]
-  );
+  ));
   const eventCount = queryOne(
     `SELECT COUNT(*) as count FROM events WHERE user_id = ?${evDf.clause}`,
     [userId, ...evDf.params]
   ).count || 0;
+  const researchEvents = queryAll(
+    `SELECT type, payload, created_at
+     FROM events
+     WHERE user_id = ?${evDf.clause}
+     ORDER BY created_at DESC
+     LIMIT 20000`,
+    [userId, ...evDf.params]
+  );
+  const feedbackCount = queryOne(
+    `SELECT COUNT(*) as count FROM feedback WHERE user_id = ?${feedbackDf.clause}`,
+    [userId, ...feedbackDf.params]
+  ).count || 0;
+  const agentDecisionCount = queryOne(
+    `SELECT COUNT(*) as count FROM agent_decisions WHERE user_id = ?${decisionDf.clause}`,
+    [userId, ...decisionDf.params]
+  ).count || 0;
+  const feedbackRows = queryAll(
+    `SELECT *
+     FROM feedback
+     WHERE user_id = ?${feedbackDf.clause}
+     ORDER BY created_at DESC
+     LIMIT 20`,
+    [userId, ...feedbackDf.params]
+  ).map((row) => {
+    const labels = unitDisplayMeta(row.unit_id, {
+      chapter_id: row.chapter_id,
+      unit_label: row.knowledge_point || row.resource_title
+    });
+    return {
+      ...row,
+      chapter_label: labels.chapter_label,
+      unit_label: row.knowledge_point || labels.unit_label
+    };
+  });
   const chapterSummary = queryAll(`
     SELECT chapter_id, chapter_label,
            COUNT(*) as total, SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
@@ -867,7 +1529,15 @@ function userDetail(userId, dates) {
            ROUND(AVG(score), 1) as avg_score
     FROM quiz_results WHERE user_id = ?${qrDf.clause} GROUP BY chapter_id ORDER BY chapter_id
   `, [userId, ...qrDf.params]);
-  return { user, quizResults, events, eventCount, chapterSummary };
+  return {
+    user,
+    quizResults,
+    events,
+    eventCount,
+    chapterSummary,
+    feedbackRows,
+    researchSummary: researchSummaryForUser(researchEvents, feedbackCount, agentDecisionCount)
+  };
 }
 
 function listUsers() {
@@ -927,19 +1597,28 @@ function hourlyActivity(days = 30, dates) {
   );
 }
 
-function shortAnswerResponses(dates) {
-  const df = dateFilter("qr.created_at", dates);
-  return queryAll(`
-    SELECT qr.id, u.nickname, qr.user_id, qr.chapter_label, qr.unit_label,
+function shortAnswerResponses(options = {}) {
+  const df = dateFilter("qr.created_at", options);
+  const limit = Math.max(1, Math.min(Number(options.limit || 500), 1000));
+  const offset = Math.max(0, Number(options.offset || 0));
+  const total = queryOne(
+    `SELECT COUNT(*) as c
+     FROM quiz_results qr
+     WHERE qr.question_type = 'short_answer'${df.clause}`,
+    df.params
+  ).c;
+  const rows = queryAll(`
+    SELECT qr.id, u.nickname, qr.user_id, qr.chapter_id, qr.chapter_label, qr.unit_id, qr.unit_label,
            qr.question_id, qr.response, qr.score, qr.max_score,
            qr.is_correct, qr.status, qr.phase, qr.created_at,
            qr.ai_score, qr.ai_confidence, qr.ai_feedback, qr.ai_error_type
     FROM quiz_results qr
     JOIN users u ON u.id = qr.user_id
     WHERE qr.question_type = 'short_answer'${df.clause}
-    ORDER BY qr.created_at DESC
-    LIMIT 500
-  `, df.params);
+    ORDER BY qr.created_at DESC, qr.id DESC
+    LIMIT ? OFFSET ?
+  `, [...df.params, limit, offset]);
+  return { rows, total, limit, offset };
 }
 
 function getEventsByType(type, limitOrOptions = 500, dates) {
@@ -949,19 +1628,38 @@ function getEventsByType(type, limitOrOptions = 500, dates) {
   const limit = Math.max(1, Math.min(Number(options.limit || 500), 1000));
   const offset = Math.max(0, Number(options.offset || 0));
   const userId = String(options.userId || "").trim();
+  const detailMode = type === "interaction" && options.detailMode !== "all"
+    ? "meaningful"
+    : "all";
   const range = options.dates || dates;
   const df = dateFilter("e.created_at", range);
   const userClause = userId ? " AND e.user_id = ?" : "";
-  const params = [type, ...df.params, ...(userId ? [userId] : [])];
+  const detailFilter = detailMode === "meaningful"
+    ? interactionPolicy.sqlMeaningfulFilter("e")
+    : { clause: "", params: [] };
+  const params = [
+    type,
+    ...df.params,
+    ...(userId ? [userId] : []),
+    ...detailFilter.params
+  ];
   const total = queryOne(
-    `SELECT COUNT(*) as c FROM events e JOIN users u ON u.id = e.user_id WHERE e.type = ?${df.clause}${userClause}`,
+    `SELECT COUNT(*) as c
+     FROM events e
+     JOIN users u ON u.id = e.user_id
+     WHERE e.type = ?${df.clause}${userClause}${detailFilter.clause}`,
     params
   ).c;
   const rows = queryAll(
-    `SELECT e.*, u.nickname FROM events e JOIN users u ON u.id = e.user_id WHERE e.type = ?${df.clause}${userClause} ORDER BY e.created_at DESC LIMIT ? OFFSET ?`,
+    `SELECT e.*, u.nickname
+     FROM events e
+     JOIN users u ON u.id = e.user_id
+     WHERE e.type = ?${df.clause}${userClause}${detailFilter.clause}
+     ORDER BY e.created_at DESC, e.id DESC
+     LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
-  return { rows, total, limit, offset };
+  return { rows, total, limit, offset, detailMode };
 }
 
 function interactionRows(filter = {}, limit = 20000) {
@@ -973,7 +1671,7 @@ function interactionRows(filter = {}, limit = 20000) {
      FROM events e
      JOIN users u ON u.id = e.user_id
      WHERE e.type = 'interaction'${df.clause}${userClause}
-     ORDER BY e.created_at DESC
+     ORDER BY e.created_at DESC, e.id DESC
      LIMIT ?`,
     [...df.params, ...(userId ? [userId] : []), limit]
   ).map((row) => {
@@ -987,6 +1685,12 @@ function interactionSourceRows(source) {
   return Array.isArray(source) ? source : interactionRows(source);
 }
 
+function meaningfulInteractionRows(source) {
+  return interactionSourceRows(source).filter((row) =>
+    interactionPolicy.isMeaningfulInteraction(row.payload || {}, row.type || "interaction")
+  );
+}
+
 function interactionPayloadType(payload) {
   return payload.eventType || payload.data?.eventType || "interaction";
 }
@@ -998,18 +1702,33 @@ function interactionPayloadData(payload) {
 function interactionMeta(row) {
   const payload = row.payload || {};
   const data = interactionPayloadData(payload);
+  const unitId = payload.unitId || data.unitId || data.unit || "";
+  const labels = unitDisplayMeta(unitId, {
+    chapter_id: payload.chapterId || data.chapterId || "",
+    chapter_label: payload.chapterLabel || data.chapterLabel || "",
+    unit_label: payload.unitLabel || data.unitLabel || "",
+    unit_type: payload.unitType || data.unitType || "",
+    module_role: payload.moduleRole || data.moduleRole || ""
+  });
   return {
     eventType: interactionPayloadType(payload),
     source: payload.source || data.source || "",
     userId: row.user_id,
     nickname: row.nickname || "",
-    chapterId: payload.chapterId || data.chapterId || "",
-    chapterLabel: payload.chapterLabel || data.chapterLabel || "",
-    unitId: payload.unitId || data.unitId || data.unit || "",
-    unitLabel: payload.unitLabel || data.unitLabel || "",
-    unitType: payload.unitType || data.unitType || "",
-    moduleRole: payload.moduleRole || data.moduleRole || (/^实验[:：]/.test(payload.unitLabel || data.unitLabel || "") ? "experiment" : ""),
+    chapterId: labels.chapter_id || payload.chapterId || data.chapterId || "",
+    chapterLabel: labels.chapter_label || payload.chapterLabel || data.chapterLabel || "",
+    unitId,
+    unitLabel: labels.unit_label || payload.unitLabel || data.unitLabel || "",
+    unitType: payload.unitType || data.unitType || labels.unit_type || "",
+    moduleRole: payload.moduleRole || data.moduleRole || labels.module_role || (/^实验[:：]/.test(payload.unitLabel || data.unitLabel || "") ? "experiment" : ""),
+    knowledgePoint: payload.knowledgePoint || data.knowledgePoint || labels.knowledge_point || "",
+    sceneType: payload.sceneType || data.sceneType || data.selectedSceneType || "",
+    sceneLabel: payload.sceneLabel || data.sceneLabel || "",
+    resourceTitle: payload.resourceTitle || data.resourceTitle || "",
     durationMs: payload.timing?.durationMs || data.durationMs || 0,
+    sessionId: payload.sessionId || "",
+    sequenceIndex: Number(payload.sequenceIndex || 0),
+    clientAt: payload.timing?.clientAt || row.created_at,
     createdAt: row.created_at,
     data
   };
@@ -1040,7 +1759,7 @@ function isCoursewareAction(meta) {
 }
 
 function coursewareActionCoverage(dates) {
-  const rows = interactionSourceRows(dates);
+  const rows = meaningfulInteractionRows(dates);
   const byType = new Map();
   const byCategory = new Map();
   let total = 0;
@@ -1098,7 +1817,8 @@ function coursewareActionCoverage(dates) {
 }
 
 function interactionSummary(dates) {
-  const rows = interactionSourceRows(dates);
+  const rawRows = interactionSourceRows(dates);
+  const rows = meaningfulInteractionRows(rawRows);
   const byType = new Map();
   const byRole = new Map();
   const activeUsers = new Set();
@@ -1110,14 +1830,72 @@ function interactionSummary(dates) {
   });
   return {
     total: rows.length,
+    rawTotal: rawRows.length,
+    hiddenLowValue: Math.max(0, rawRows.length - rows.length),
     activeUsers: activeUsers.size,
     byType: Array.from(byType, ([event_type, count]) => ({ event_type, count })).sort((a, b) => b.count - a.count),
     byRole: Array.from(byRole, ([module_role, count]) => ({ module_role, count })).sort((a, b) => b.count - a.count)
   };
 }
 
+function effectiveUnitDurationSamples(source) {
+  const candidates = interactionSourceRows(source)
+    .map((row) => {
+      const meta = interactionMeta(row);
+      const seconds = interactionDurationSeconds(meta);
+      return { row, meta, seconds };
+    })
+    .filter(({ meta, seconds }) =>
+      seconds > 0
+      && meta.unitId
+      && ["time_on_unit", "unit_leave", "leave_unit"].includes(meta.eventType)
+    );
+  const primaryByKey = new Map();
+
+  candidates.forEach((candidate) => {
+    if (candidate.meta.eventType !== "time_on_unit") return;
+    const key = [
+      candidate.meta.userId,
+      candidate.meta.sessionId,
+      candidate.meta.unitId,
+      candidate.seconds
+    ].join("|");
+    const list = primaryByKey.get(key) || [];
+    list.push(candidate);
+    primaryByKey.set(key, list);
+  });
+
+  return candidates.filter((candidate) => {
+    if (candidate.meta.eventType === "time_on_unit") return true;
+    const key = [
+      candidate.meta.userId,
+      candidate.meta.sessionId,
+      candidate.meta.unitId,
+      candidate.seconds
+    ].join("|");
+    return !(primaryByKey.get(key) || []).some((primary) => {
+      if (primary.meta.createdAt === candidate.meta.createdAt) return true;
+      if (
+        primary.meta.sequenceIndex
+        && candidate.meta.sequenceIndex
+        && Math.abs(primary.meta.sequenceIndex - candidate.meta.sequenceIndex) <= 2
+      ) {
+        return true;
+      }
+      const primaryAt = new Date(primary.meta.clientAt || 0).getTime();
+      const candidateAt = new Date(candidate.meta.clientAt || 0).getTime();
+      return primaryAt && candidateAt && Math.abs(primaryAt - candidateAt) <= 1500;
+    });
+  });
+}
+
 function unitEngagement(dates) {
   const rows = interactionSourceRows(dates);
+  const durationByUnit = new Map();
+  effectiveUnitDurationSamples(rows).forEach(({ meta, seconds }) => {
+    const key = `${meta.unitId}|${meta.userId}`;
+    durationByUnit.set(key, (durationByUnit.get(key) || 0) + seconds);
+  });
   const units = new Map();
   const ensureItem = (meta, unitId = meta.unitId, fallback = {}) => {
     if (!unitId) return null;
@@ -1180,7 +1958,6 @@ function unitEngagement(dates) {
     if (isUnitOpen) item.opens += 1;
     if (["unit_complete", "complete_unit"].includes(meta.eventType)) item.completes += 1;
     if (meta.eventType === "repeat_unit_enter") item.repeats += 1;
-    if (["time_on_unit", "unit_leave", "leave_unit"].includes(meta.eventType)) item.seconds += Math.round((meta.durationMs || meta.data.seconds * 1000 || 0) / 1000);
     if (/click|pointer|drag/.test(meta.eventType)) item.clicks += 1;
     if (isParameterOperation(meta)) item.parameter_changes += 1;
     if (isCoursewareAction(meta)) item.courseware_actions += 1;
@@ -1198,7 +1975,8 @@ function unitEngagement(dates) {
     return {
       ...item,
       chapter_label: labels.chapter_label,
-      unit_label: labels.unit_label
+      unit_label: labels.unit_label,
+      seconds: durationByUnit.get(`${item.unit_id}|${item.user_id}`) || 0
     };
   }).sort((a, b) => (b.seconds - a.seconds) || b.opens - a.opens).slice(0, 1000);
 }
@@ -1309,14 +2087,70 @@ function interactionDurationSeconds(meta) {
 
 const EFFECTIVE_PATH_MIN_SECONDS = 10;
 
-function pathAnalysis(dates) {
-  const rows = interactionSourceRows(dates).slice().reverse();
-  const paths = new Map();
-  rows.forEach((row) => {
+function interactionSceneEvidenceIndex(source) {
+  const evidenceByContext = new Map();
+  interactionSourceRows(source).forEach((row) => {
     const meta = interactionMeta(row);
-    const isTimedUnitEvent = ["time_on_unit", "unit_leave", "leave_unit"].includes(meta.eventType);
-    if (!isTimedUnitEvent || !meta.unitId) return;
-    const seconds = interactionDurationSeconds(meta);
+    if (!meta.userId || !meta.sessionId || !meta.unitId || !meta.sceneType) return;
+    const at = new Date(meta.clientAt || meta.createdAt || 0).getTime();
+    const key = `${meta.userId}|${meta.sessionId}|${meta.unitId}`;
+    const list = evidenceByContext.get(key) || [];
+    list.push({
+      scene_type: String(meta.sceneType),
+      scene_label: sceneDisplayLabel(meta.sceneType, meta.sceneLabel),
+      resource_title: meta.resourceTitle || "",
+      at: Number.isFinite(at) ? at : 0,
+      sequence_index: Number(meta.sequenceIndex || 0)
+    });
+    evidenceByContext.set(key, list);
+  });
+  evidenceByContext.forEach((list) => {
+    list.sort((left, right) =>
+      (left.at - right.at) || (left.sequence_index - right.sequence_index)
+    );
+  });
+  return evidenceByContext;
+}
+
+function resolvedInteractionScene(meta, evidenceByContext) {
+  if (meta.sceneType) {
+    return {
+      scene_type: String(meta.sceneType),
+      scene_label: sceneDisplayLabel(meta.sceneType, meta.sceneLabel),
+      resource_title: meta.resourceTitle || ""
+    };
+  }
+  if (!meta.userId || !meta.sessionId || !meta.unitId) return null;
+  const key = `${meta.userId}|${meta.sessionId}|${meta.unitId}`;
+  const candidates = evidenceByContext.get(key) || [];
+  const targetAt = new Date(meta.clientAt || meta.createdAt || 0).getTime();
+  const targetSequence = Number(meta.sequenceIndex || 0);
+  let resolved = null;
+  for (const candidate of candidates) {
+    if (candidate.at > targetAt) break;
+    if (
+      candidate.at === targetAt
+      && candidate.sequence_index
+      && targetSequence
+      && candidate.sequence_index > targetSequence
+    ) {
+      break;
+    }
+    resolved = candidate;
+  }
+  return resolved;
+}
+
+function pathAnalysis(dates) {
+  const rows = interactionSourceRows(dates);
+  const sceneEvidence = interactionSceneEvidenceIndex(rows);
+  const samples = effectiveUnitDurationSamples(rows).sort((left, right) => {
+    const leftAt = new Date(left.meta.clientAt || left.meta.createdAt || 0).getTime();
+    const rightAt = new Date(right.meta.clientAt || right.meta.createdAt || 0).getTime();
+    return leftAt - rightAt;
+  });
+  const paths = new Map();
+  samples.forEach(({ meta, seconds }) => {
     if (seconds < EFFECTIVE_PATH_MIN_SECONDS) return;
     const item = paths.get(meta.userId) || {
       user_id: meta.userId,
@@ -1328,17 +2162,32 @@ function pathAnalysis(dates) {
     };
     item.total_seconds += seconds;
     const lastStep = item.steps[item.steps.length - 1];
-    if (lastStep?.unit_id === meta.unitId) {
+    const labels = unitDisplayMeta(meta.unitId, meta);
+    const isKnowledgePoint = (labels.unit_type || meta.unitType) === "knowledge"
+      || /^(?:GH|EXT)-\d+-K\d+$/i.test(meta.unitId || "");
+    const resolvedScene = isKnowledgePoint
+      ? resolvedInteractionScene(meta, sceneEvidence)
+      : null;
+    const sceneType = resolvedScene?.scene_type || "";
+    const sceneLabel = isKnowledgePoint
+      ? resolvedScene?.scene_label || "历史记录未包含场景"
+      : "";
+    if (lastStep?.unit_id === meta.unitId && lastStep?.scene_type === sceneType) {
       lastStep.seconds += seconds;
       lastStep.events += 1;
       lastStep.last_at = meta.createdAt;
     } else {
-      const labels = unitDisplayMeta(meta.unitId, meta);
       item.steps.push({
         chapter_id: labels.chapter_id,
         unit_id: meta.unitId,
         unit_label: labels.unit_label,
-        module_role: meta.moduleRole,
+        unit_type: labels.unit_type || meta.unitType,
+        module_role: labels.module_role || meta.moduleRole,
+        knowledge_point: labels.knowledge_point || meta.knowledgePoint || "",
+        scene_type: sceneType,
+        scene_label: sceneLabel,
+        resource_title: resolvedScene?.resource_title || meta.resourceTitle || "",
+        display_label: sceneLabel ? `${labels.unit_label} · ${sceneLabel}` : labels.unit_label,
         at: meta.createdAt,
         last_at: meta.createdAt,
         seconds,
@@ -1351,7 +2200,7 @@ function pathAnalysis(dates) {
   return Array.from(paths.values()).filter((item) => item.steps.length > 0).map((item) => ({
     ...item,
     step_count: item.steps.length,
-    path_preview: item.steps.slice(0, 20).map((step) => step.unit_label || step.unit_id).join(" -> ")
+    path_preview: item.steps.slice(0, 20).map((step) => step.display_label || step.unit_label || step.unit_id).join(" -> ")
   })).sort((a, b) => b.total_seconds - a.total_seconds || b.step_count - a.step_count).slice(0, 500);
 }
 
@@ -1378,16 +2227,25 @@ function agenticDecisionTrace(dates = {}) {
   const df = dateFilter("ad.created_at", dates);
   const userId = String(dates?.userId || "").trim();
   const userClause = userId ? " AND ad.user_id = ?" : "";
+  const limit = Math.max(1, Math.min(Number(dates.limit || 500), 1000));
+  const offset = Math.max(0, Number(dates.offset || 0));
+  const params = [...df.params, ...(userId ? [userId] : [])];
+  const total = queryOne(
+    `SELECT COUNT(*) as c
+     FROM agent_decisions ad
+     WHERE ad.agent_type = 'orchestrator'${df.clause}${userClause}`,
+    params
+  ).c;
   const rows = queryAll(
     `SELECT ad.*, u.nickname
      FROM agent_decisions ad
      LEFT JOIN users u ON u.id = ad.user_id
      WHERE ad.agent_type = 'orchestrator'${df.clause}${userClause}
-     ORDER BY ad.created_at DESC
-     LIMIT 500`,
-    [...df.params, ...(userId ? [userId] : [])]
+     ORDER BY ad.created_at DESC, ad.id DESC
+     LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
   );
-  return rows.map((row) => {
+  const tracedRows = rows.map((row) => {
     const input = parseJsonField(row.input_summary);
     const output = parseJsonField(row.output_summary);
     const planner = output.planner || {};
@@ -1482,6 +2340,7 @@ function agenticDecisionTrace(dates = {}) {
       outcome_last_quiz_at: outcome?.last_quiz_at || ""
     };
   });
+  return { rows: tracedRows, total, limit, offset };
 }
 
 function interactionEvidenceSnapshots(dates = {}) {
@@ -1503,6 +2362,9 @@ module.exports = {
   getDb,
   getDbSync,
   saveNow,
+  acquireWriteLock,
+  releaseWriteLock,
+  databaseSafetyInfo,
   upsertUser,
   getUser,
   getUserByNicknameNorm,
@@ -1516,10 +2378,12 @@ module.exports = {
   revokeSession,
   insertQuizResult,
   getQuizResultsByUser,
-  clearLearningDataForUser,
   insertEvent,
   insertSnapshot,
   getLatestSnapshot,
+  getLearningSnapshotState,
+  saveLearningSnapshot,
+  resetLearningSnapshot,
   insertFeedback,
   feedbackDashboard,
   statsOverview,

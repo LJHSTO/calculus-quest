@@ -360,10 +360,10 @@ function renderKnowledgeUnit(unit) {
   const canvas = slide.canvas;
   const types = knowledgeInteractionTypes(unit);
   const selectedTypeId = selectedKnowledgeSceneType(unit);
-  const selectedType = types.find((type) => type.id === selectedTypeId) || types[0] || {};
-  const candidate = knowledgeResourceCandidate(unit, selectedTypeId);
+  const selectedType = types.find((type) => type.id === selectedTypeId) || {};
+  const candidate = selectedTypeId ? knowledgeResourceCandidate(unit, selectedTypeId) : null;
   const slideAudioTitle = "讲解页语音包";
-  const sceneAudioTitle = `${sceneChoiceCategoryLabel(selectedType)}语音包`;
+  const sceneAudioTitle = selectedTypeId ? `${sceneChoiceCategoryLabel(selectedType)}语音包` : "";
   analyticsTrack("knowledge_render", {
     data: {
       unitId: unit.id,
@@ -387,19 +387,25 @@ function renderKnowledgeUnit(unit) {
          <p>当前知识点仍保留目标、误解和核心问题；后续重新导入课件时会自动补齐讲解页画布。</p>
        </div>`;
 
-  const resourceBody = candidate
+  const resourceBody = selectedTypeId && candidate
     ? `<div class="v14-resource-note">
-         <span class="type-pill">${escapeHtml(selectedType.label || selectedTypeId)}</span>
+         <span class="type-pill">${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}</span>
          <strong>${escapeHtml(cleanStudentResourceTitle(candidate.title || candidate.file, unit.label))}</strong>
-         <small>互动资源已就绪，可在下方直接体验。</small>
+         <small>已按你的选择加载，可随时切换其他场景。</small>
         </div>
        <div class="iframe-container">
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
-         <iframe class="embed-frame" data-v14-frame title="${escapeHtml(`${unit.label} ${selectedType.label || selectedTypeId}`)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe>
+         <iframe class="embed-frame" data-v14-frame title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe>
        </div>`
-    : `<div class="empty-state v14-empty-resource">
-         <h2>${escapeHtml(selectedType.label || "互动场景")} 课件暂未生成</h2>
-         <p>可以先换一个互动场景。</p>
+    : selectedTypeId
+      ? `<div class="empty-state v14-empty-resource">
+         <h2>${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}暂不可用</h2>
+         <p>请选择另外一种互动场景继续学习。</p>
+       </div>`
+      : `<div class="v14-scene-awaiting" role="status">
+         <span class="type-pill">等待选择</span>
+         <h2>先选一种互动方式，再开始体验</h2>
+         <p>四个场景讲的是同一个知识点，没有默认答案。你可以先选最想尝试的一种，之后随时切换比较。</p>
        </div>`;
 
   els.lessonPlayer.innerHTML = `
@@ -424,15 +430,16 @@ function renderKnowledgeUnit(unit) {
           <div class="v14-scene-header">
             <div>
               <span class="type-pill">互动选择</span>
-              <h3>当前互动场景</h3>
+              <h3>${selectedTypeId ? `当前：${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}` : "选择你的互动场景"}</h3>
             </div>
           </div>
+          ${renderKnowledgeSceneChoicePanel(unit)}
           <div class="v14-selected-resource">${resourceBody}</div>
-          ${renderKnowledgeAudioPack(unit, {
+          ${selectedTypeId ? renderKnowledgeAudioPack(unit, {
             slotKey: `scene-${selectedTypeId}`,
             sceneOrder: candidate?.sceneOrder,
             title: sceneAudioTitle
-          })}
+          }) : ""}
         </section>
       </div>`,
       "v14-knowledge-resource"
@@ -962,9 +969,7 @@ function setupIframeInteractionTracking(iframeEl, unit) {
   const lastInputAt = new WeakMap();
   const pointerStarts = new Map();
   const rangeStarts = new WeakMap();
-  let lastPointerMoveAt = 0;
   let lastWheelAt = 0;
-  let lastScrollAt = 0;
 
   doc.addEventListener(
     "click",
@@ -1010,6 +1015,7 @@ function setupIframeInteractionTracking(iframeEl, unit) {
         const start = rangeStarts.get(target);
         if (!start) rangeStarts.set(target, { value: target.value, at: now });
         trackInteraction("parameter_change", {
+          persist: false,
           source: "iframe",
           ...info,
           param: target.getAttribute("name") || target.getAttribute("id") || info.label,
@@ -1098,31 +1104,12 @@ function setupIframeInteractionTracking(iframeEl, unit) {
       const target = iframeActionTarget(event, doc, interactiveSelector);
       if (!target) return;
       trackInteraction("interactive_wheel", {
+        persist: false,
         source: "iframe",
         ...iframeElementInfo(target, event, unit),
         deltaX: Math.round(event.deltaX || 0),
         deltaY: Math.round(event.deltaY || 0),
         deltaMode: event.deltaMode || 0
-      });
-    },
-    { capture: true, passive: true }
-  );
-
-  doc.addEventListener(
-    "scroll",
-    (event) => {
-      const now = Date.now();
-      if (now - lastScrollAt < 1200) return;
-      lastScrollAt = now;
-      const rawTarget = normalizeIframeElement(event.target, doc);
-      const scrollNode = rawTarget === doc.body || rawTarget === doc.documentElement
-        ? doc.scrollingElement || doc.documentElement
-        : rawTarget;
-      trackInteraction("interactive_scroll", {
-        source: "iframe",
-        ...iframeElementInfo(scrollNode, event, unit),
-        scrollTop: Math.round(scrollNode?.scrollTop || 0),
-        scrollLeft: Math.round(scrollNode?.scrollLeft || 0)
       });
     },
     { capture: true, passive: true }
@@ -1139,8 +1126,6 @@ function setupIframeInteractionTracking(iframeEl, unit) {
         y: event.clientY,
         target
       });
-      const eventName = target.matches?.("canvas, svg") ? "canvas_pointer_down" : "interactive_pointer_down";
-      trackInteraction(eventName, { source: "iframe", ...iframeElementInfo(target, event, unit) });
     },
     true
   );
@@ -1151,33 +1136,6 @@ function setupIframeInteractionTracking(iframeEl, unit) {
       const start = pointerStarts.get(event.pointerId || 0);
       if (!start) return;
       pointerStarts.delete(event.pointerId || 0);
-      const target = iframeActionTarget(event, doc, interactiveSelector) || start.target;
-      trackInteraction("interactive_pointer_cancel", {
-        source: "iframe",
-        ...iframeElementInfo(target, event, unit),
-        durationMs: Date.now() - start.at
-      });
-    },
-    true
-  );
-
-  doc.addEventListener(
-    "pointermove",
-    (event) => {
-      const now = Date.now();
-      if (now - lastPointerMoveAt < 1000) return;
-      lastPointerMoveAt = now;
-      const start = pointerStarts.get(event.pointerId || 0);
-      if (!start) return;
-      const target = iframeActionTarget(event, doc, interactiveSelector) || start.target;
-      const distance = Math.round(Math.hypot(event.clientX - start.x, event.clientY - start.y));
-      if (distance < 8) return;
-      trackInteraction("interactive_drag_move", {
-        source: "iframe",
-        ...iframeElementInfo(target, event, unit),
-        distance,
-        durationMs: now - start.at
-      });
     },
     true
   );
@@ -1191,35 +1149,13 @@ function setupIframeInteractionTracking(iframeEl, unit) {
       const target = iframeActionTarget(event, doc, interactiveSelector) || start.target;
       const distance = Math.round(Math.hypot(event.clientX - start.x, event.clientY - start.y));
       const durationMs = Date.now() - start.at;
-      const eventName = distance >= 8
-        ? "interactive_drag_end"
-        : target.matches?.("canvas, svg")
-          ? "canvas_pointer_up"
-          : "interactive_pointer_up";
-      trackInteraction(eventName, {
+      if (distance < 8) return;
+      trackInteraction("interactive_drag_end", {
         source: "iframe",
         ...iframeElementInfo(target, event, unit),
         distance,
         durationMs
       });
-    },
-    true
-  );
-
-  doc.addEventListener(
-    "dragstart",
-    (event) => {
-      const target = iframeActionTarget(event, doc, interactiveSelector);
-      trackInteraction("interactive_drag_start", { source: "iframe", ...iframeElementInfo(target, event, unit) });
-    },
-    true
-  );
-
-  doc.addEventListener(
-    "dragend",
-    (event) => {
-      const target = iframeActionTarget(event, doc, interactiveSelector);
-      trackInteraction("interactive_drag_end", { source: "iframe", ...iframeElementInfo(target, event, unit) });
     },
     true
   );
@@ -1451,27 +1387,22 @@ function renderKnowledgeSceneChoicePanel(unit) {
     const meta = sceneChoiceMeta(type);
     const cls = ["v14-scene-option", "coach-choice", active ? "active" : "", hasResource ? "available" : "pending"].filter(Boolean).join(" ");
     return `
-      <div class="v14-scene-option-wrap">
-        <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" aria-pressed="${active ? "true" : "false"}" title="${escapeHtml(meta.title)}：${escapeHtml(meta.subtitle)}">
-          <span aria-hidden="true">${escapeHtml(meta.icon)}</span>
-          <strong>${escapeHtml(meta.title)}</strong>
-          <small>${escapeHtml(hasResource ? sceneChoiceCategoryLabel(type) : "待生成")}</small>
-        </button>
-        <button class="button soft v14-scene-fullscreen" type="button" data-knowledge-scene-fullscreen="${type.id}" data-unit="${unit.id}" ${hasResource ? "" : "disabled"} title="全屏打开${escapeHtml(meta.title)}">
-          全屏
-        </button>
-      </div>
+      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(meta.subtitle)}">
+        <span aria-hidden="true">${escapeHtml(meta.icon)}</span>
+        <strong>${escapeHtml(meta.title)}</strong>
+        <small>${escapeHtml(hasResource ? meta.subtitle : "当前资源暂不可用")}</small>
+      </button>
     `;
   }).join("");
-  const selected = types.find((type) => type.id === selectedTypeId) || types[0] || {};
-  const selectedMeta = sceneChoiceMeta(selected);
+  const selected = types.find((type) => type.id === selectedTypeId) || null;
+  const selectedMeta = selected ? sceneChoiceMeta(selected) : null;
   return `
-    <div class="agentic-knowledge-choice">
+    <div class="agentic-knowledge-choice ${selected ? "has-selection" : "awaiting-selection"}">
       <div>
-        <strong>四个互动场景由你选择</strong>
-        <small>当前选择：${escapeHtml(selectedMeta.title || selected.label || selectedTypeId)}</small>
+        <strong>${selected ? "已选择一种互动方式" : "四个互动场景由你选择"}</strong>
+        <small>${selected ? `当前是“${escapeHtml(selectedMeta.title)}”，点击其他场景可立即切换。` : "没有默认场景，请按自己的兴趣或理解习惯选择。"}</small>
       </div>
-      <div class="v14-scene-selector agentic-knowledge-scene-selector">${choices}</div>
+      <div class="v14-scene-selector agentic-knowledge-scene-selector" role="group" aria-label="${escapeHtml(unit.label)}的互动场景">${choices}</div>
     </div>
   `;
 }
@@ -1574,7 +1505,10 @@ function renderChapters() {
 
 function syncAgenticPlayerCta(unit) {
   if (!els.completeLesson || !unit) return;
-  if (unit.type === "quiz" && unit.placeholderQuiz) {
+  if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
+    els.completeLesson.disabled = true;
+    els.completeLesson.textContent = "先选择一个互动场景";
+  } else if (unit.type === "quiz" && unit.placeholderQuiz) {
     els.completeLesson.textContent = state.completed.includes(unit.id) ? "已记录，继续下一步" : "记录此流程节点";
   } else if (unit.type === "quiz" && !(state.submittedQuizzes || []).includes(unit.id)) {
     els.completeLesson.textContent = "提交测验后解锁下一步";

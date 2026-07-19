@@ -20,14 +20,62 @@ function applyView(view) {
   });
 }
 
+function captureLastLearningContext() {
+  if (currentView !== "learn" || !currentUnitId || typeof ReturnContext === "undefined") return;
+  state.lastLearningContext = ReturnContext.captureLearningContext({
+    chapterId: currentChapterId,
+    unitId: currentUnitId,
+    sceneType: state.selectedKnowledgeScenes?.[currentUnitId] || ""
+  });
+}
+
 function switchView(view) {
-  analyticsTrack("switch_view", { data: { from: currentView, to: view } });
-  currentView = view;
+  const nextView = validViews.has(view) ? view : "home";
+  if (typeof ReturnContext !== "undefined" && ReturnContext.shouldReturnToLearning(nextView)) {
+    captureLastLearningContext();
+  }
+  analyticsTrack("switch_view", { data: { from: currentView, to: nextView } });
+  currentView = nextView;
   applyView(currentView);
   if (currentView === "feedback" && typeof renderFeedbackPage === "function") renderFeedbackPage();
   saveState();
   window.scrollTo({ top: 0, behavior: "smooth" });
   trackLearningEvent("switch_view", { view: currentView });
+}
+
+async function returnToLearningCourseware() {
+  const fallback = typeof ReturnContext === "undefined"
+    ? { chapterId: currentChapterId, unitId: currentUnitId, sceneType: "" }
+    : ReturnContext.captureLearningContext({
+        chapterId: currentChapterId,
+        unitId: currentUnitId,
+        sceneType: state.selectedKnowledgeScenes?.[currentUnitId] || ""
+      });
+  const context = typeof ReturnContext === "undefined"
+    ? fallback
+    : ReturnContext.resolveLearningContext(state.lastLearningContext, fallback);
+
+  currentChapterId = context.chapterId || currentChapterId;
+  currentUnitId = context.unitId || currentUnitId;
+  if (context.sceneType && currentUnitId && typeof setKnowledgeSceneType === "function") {
+    setKnowledgeSceneType(currentUnitId, context.sceneType);
+  }
+  switchView("learn");
+  renderAll();
+
+  if (currentChapterId && (!currentUnitId || !getUnit(currentUnitId)) && typeof ensureChapterLoaded === "function") {
+    try {
+      await ensureChapterLoaded(currentChapterId);
+    } catch {
+      // Keep the current course context even if the chapter reload fails.
+    }
+    renderAll();
+  }
+
+  const playerTop = document.querySelector(".player-top");
+  if (playerTop) {
+    window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+  }
 }
 
 async function selectChapter(chapterId) {

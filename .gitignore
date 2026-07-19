@@ -38,7 +38,16 @@ ops/windows/
 # Browser test/check profiles
 .chrome-check-profile*/
 .edge-check-profile*/
+.playwright-cli/
+test-results/
+tmp/
 output/
+
+# Local agent/tool state and generated language caches
+.superpowers/
+__pycache__/
+*.pyc
+tools/_encoding_test.txt
 
 # OS/editor noise
 .DS_Store

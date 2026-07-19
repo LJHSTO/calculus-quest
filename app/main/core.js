@@ -48,6 +48,8 @@ const els = {
   resourceGrid: document.querySelector("#resource-grid"),
   libraryCount: document.querySelector("#library-count"),
   completedCount: document.querySelector("#completed-count"),
+  progressQuizCount: document.querySelector("#progress-quiz-count"),
+  progressActivityCount: document.querySelector("#progress-activity-count"),
   chapterProgress: document.querySelector("#chapter-progress"),
   quizDashboard: document.querySelector("#quiz-dashboard"),
   activityLog: document.querySelector("#activity-log"),
@@ -58,6 +60,13 @@ const els = {
 };
 
 let lastRenderedProfileParticipantId = "";
+let learningSnapshotGeneration = 0;
+let learningSnapshotRevision = 0;
+let learningSnapshotReady = false;
+let learningSnapshotSyncPaused = false;
+let learningSnapshotSyncChain = Promise.resolve();
+let authTransitionInProgress = false;
+const learningEventRequests = new Set();
 
 function storageKeyFor(participantId) {
   return participantId ? `${STORAGE_KEY}:${participantId}` : STORAGE_KEY;
@@ -83,7 +92,8 @@ function learningDefaults() {
     },
     currentChapterId: chapters[0]?.id || "V14-C1",
     currentUnitId: "",
-    currentView: "home"
+    currentView: "home",
+    lastLearningContext: null
   ,
     agenticPath: null
   };
@@ -107,7 +117,7 @@ currentView = validViews.has(state.currentView) ? state.currentView : "home";
 currentChapterId = state.currentChapterId || chapters[0].id;
 currentUnitId = state.currentUnitId || "";
 
-function saveState() {
+function persistStateLocally() {
   state.currentChapterId = currentChapterId;
   state.currentUnitId = currentUnitId;
   state.currentView = currentView;
@@ -115,6 +125,10 @@ function saveState() {
     ? storageKeyFor(state.participant.participantId)
     : STORAGE_KEY;
   localStorage.setItem(key, JSON.stringify(state));
+}
+
+function saveState() {
+  persistStateLocally();
   queueLearningSnapshot("state_change");
 }
 
@@ -567,11 +581,14 @@ function showLogin(message = "") {
 }
 
 async function apiRequest(path, body = {}) {
+  const requestToken = typeof body?.token === "string" && body.token
+    ? body.token
+    : state.authToken;
   const response = await fetch(path, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(state.authToken ? { Authorization: `Bearer ${state.authToken}` } : {})
+      ...(requestToken ? { Authorization: `Bearer ${requestToken}` } : {})
     },
     body: JSON.stringify(body)
   });
@@ -603,182 +620,294 @@ function learningSnapshot() {
     currentChapterId,
     currentUnitId,
     currentView,
+    lastLearningContext: state.lastLearningContext || null,
     agenticPath: state.agenticPath || null,
     capturedAt: beijingNow()
   };
 }
 
+function snapshotContentJson(snapshot) {
+  const stable = { ...(snapshot || {}) };
+  delete stable.capturedAt;
+  delete stable.clientCapturedAt;
+  return JSON.stringify(stable);
+}
+
+function setLearningSnapshotVersion(payload = {}) {
+  const generation = Number(payload.generation);
+  const revision = Number(payload.revision);
+  if (Number.isInteger(generation) && generation > 0) learningSnapshotGeneration = generation;
+  if (Number.isInteger(revision) && revision >= 0) learningSnapshotRevision = revision;
+}
+
+function mergeClientRecords(existing = [], incoming = [], keyFor) {
+  const records = new Map();
+  [...existing, ...incoming].forEach((record, index) => {
+    if (!record || typeof record !== "object") return;
+    records.set(keyFor(record) || `record-${index}`, record);
+  });
+  return Array.from(records.values());
+}
+
+function quizResultFromServer(row = {}) {
+  let response = row.response || "";
+  if (typeof response === "string" && response.startsWith("[")) {
+    try { response = JSON.parse(response); } catch {}
+  }
+  return {
+    id: row.id,
+    unitId: row.unit_id,
+    questionId: row.question_id,
+    chapterId: row.chapter_id,
+    chapterLabel: row.chapter_label,
+    unitLabel: row.unit_label,
+    questionType: row.question_type,
+    points: row.points,
+    phase: row.phase,
+    timestamp: row.created_at,
+    response,
+    isCorrect: row.is_correct === 1 ? true : row.is_correct === 0 ? false : null,
+    status: row.status,
+    score: row.score,
+    maxScore: row.max_score,
+    aiScore: row.ai_score,
+    aiConfidence: row.ai_confidence,
+    aiFeedback: row.ai_feedback || "",
+    aiErrorType: row.ai_error_type || "",
+    estimateLabel: null
+  };
+}
+
+function applyServerLearningSnapshot(serverSnapshot, options = {}) {
+  const replace = options.replace === true;
+  const identity = {
+    participant: state.participant,
+    authToken: state.authToken
+  };
+  const incoming = serverSnapshot && typeof serverSnapshot === "object" ? serverSnapshot : null;
+
+  if (replace) {
+    Object.assign(state, learningDefaults(), incoming || {}, identity);
+    currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
+    currentUnitId = state.currentUnitId || "";
+    currentView = validViews.has(state.currentView) ? state.currentView : "home";
+    return;
+  }
+  if (!incoming) return;
+
+  state.completed = [...new Set([...(state.completed || []), ...(incoming.completed || [])])];
+  state.submittedQuizzes = [...new Set([
+    ...(state.submittedQuizzes || []),
+    ...(incoming.submittedQuizzes || [])
+  ])];
+  state.quizResults = mergeClientRecords(
+    state.quizResults || [],
+    incoming.quizResults || [],
+    (item) => item.id || [item.unitId, item.questionId, item.timestamp].filter(Boolean).join("|")
+  );
+  state.logs = [...new Set([...(state.logs || []), ...(incoming.logs || [])])].slice(0, 100);
+  state.quizAttempts = { ...(incoming.quizAttempts || {}), ...(state.quizAttempts || {}) };
+  state.quizDrafts = { ...(incoming.quizDrafts || {}), ...(state.quizDrafts || {}) };
+  state.selectedKnowledgeScenes = {
+    ...(incoming.selectedKnowledgeScenes || {}),
+    ...(state.selectedKnowledgeScenes || {})
+  };
+  if (!state.note && incoming.note) state.note = incoming.note;
+  if (!state.agenticPath && incoming.agenticPath) state.agenticPath = incoming.agenticPath;
+  if (!state.lastLearningContext && incoming.lastLearningContext) {
+    state.lastLearningContext = incoming.lastLearningContext;
+  }
+}
+
+async function loadAuthoritativeQuizResults(options = {}) {
+  const response = await fetch("api/learning/quiz-results", {
+    headers: { Authorization: `Bearer ${state.authToken}` }
+  });
+  if (!response.ok) return;
+  const payload = await response.json().catch(() => ({}));
+  if (!payload.ok || !Array.isArray(payload.data)) return;
+  const results = payload.data.map(quizResultFromServer);
+  if (options.replace) {
+    state.quizResults = results;
+  } else {
+    state.quizResults = mergeClientRecords(
+      state.quizResults || [],
+      results,
+      (item) => item.id || [item.unitId, item.questionId, item.timestamp].filter(Boolean).join("|")
+    );
+  }
+  if (results.length) {
+    state.submittedQuizzes = [...new Set([
+      ...(state.submittedQuizzes || []),
+      ...results.map((item) => item.unitId).filter(Boolean)
+    ])];
+  } else if (options.replace) {
+    state.submittedQuizzes = [];
+  }
+}
+
+async function hydrateLearningState(options = {}) {
+  if (!isSignedIn()) return false;
+  learningSnapshotReady = false;
+  const response = await fetch("api/learning/snapshot", {
+    headers: { Authorization: `Bearer ${state.authToken}` }
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.ok === false) {
+    const error = new Error(payload.message || "学习记录恢复失败，请重新登录。");
+    error.status = response.status;
+    error.code = payload.code || "";
+    throw error;
+  }
+
+  setLearningSnapshotVersion(payload);
+  const replaceWithServer = options.replace === true || Boolean(payload.snapshot);
+  applyServerLearningSnapshot(payload.snapshot, { ...options, replace: replaceWithServer });
+  await loadAuthoritativeQuizResults({ ...options, replace: replaceWithServer }).catch(() => {});
+  learningSnapshotReady = true;
+  persistStateLocally();
+  lastSnapshotJson = snapshotContentJson(learningSnapshot());
+  return true;
+}
+
 function queueLearningSnapshot(reason = "state_change") {
-  if (!isSignedIn()) return;
+  if (!isSignedIn() || !learningSnapshotReady || learningSnapshotSyncPaused) return;
   clearTimeout(syncTimer);
   syncTimer = setTimeout(() => {
     syncLearningSnapshot(reason);
   }, 900);
 }
 
-async function syncLearningSnapshot(reason = "manual") {
-  if (!isSignedIn()) return;
+async function performLearningSnapshotSync(reason = "manual") {
+  if (!isSignedIn() || !learningSnapshotReady || learningSnapshotSyncPaused) return;
   const snapshot = learningSnapshot();
-  const snapshotJson = JSON.stringify(snapshot);
+  const snapshotJson = snapshotContentJson(snapshot);
   if (reason === "state_change" && snapshotJson === lastSnapshotJson) return;
-  lastSnapshotJson = snapshotJson;
   try {
-    await apiRequest("/api/learning/snapshot", {
+    const payload = await apiRequest("/api/learning/snapshot", {
       token: state.authToken,
+      generation: learningSnapshotGeneration,
+      baseRevision: learningSnapshotRevision,
       reason,
       snapshot
     });
+    setLearningSnapshotVersion(payload);
+    lastSnapshotJson = snapshotJson;
   } catch (error) {
+    if (error.code === "snapshot_generation_conflict") {
+      await hydrateLearningState({ replace: true }).catch(() => {});
+    }
     console.warn("Learning snapshot sync failed:", error.message);
   }
 }
 
+function syncLearningSnapshot(reason = "manual") {
+  learningSnapshotSyncChain = learningSnapshotSyncChain
+    .catch(() => {})
+    .then(() => performLearningSnapshotSync(reason));
+  return learningSnapshotSyncChain;
+}
+
+async function pauseLearningSnapshotSync() {
+  clearTimeout(syncTimer);
+  await learningSnapshotSyncChain.catch(() => {});
+  if (isSignedIn() && learningSnapshotReady && !learningSnapshotSyncPaused) {
+    await performLearningSnapshotSync("before_pause");
+  }
+  learningSnapshotSyncPaused = true;
+}
+
+function resumeLearningSnapshotSync() {
+  learningSnapshotSyncPaused = false;
+}
+
 async function trackLearningEvent(type, payload = {}, syncSnapshot = true) {
-  if (!isSignedIn()) return;
+  if (!isSignedIn() || authTransitionInProgress) return;
+  const token = state.authToken;
+  const request = apiRequest("/api/learning/event", {
+    token,
+    type,
+    payload
+  });
+  learningEventRequests.add(request);
   try {
-    await apiRequest("/api/learning/event", {
-      token: state.authToken,
-      type,
-      payload
-    });
+    await request;
   } catch (error) {
     console.warn("Learning event sync failed:", error.message);
+  } finally {
+    learningEventRequests.delete(request);
   }
-  if (syncSnapshot) queueLearningSnapshot(type);
+  if (syncSnapshot && state.authToken === token && !authTransitionInProgress) {
+    queueLearningSnapshot(type);
+  }
+}
+
+async function waitForLearningEventSync() {
+  while (learningEventRequests.size) {
+    await Promise.allSettled(Array.from(learningEventRequests));
+  }
 }
 
 async function loginParticipant(credentials = {}) {
-  // Save current state to current user's key before switching
-  saveState();
+  await pauseLearningSnapshotSync();
+  persistStateLocally();
 
-  const mode = credentials.mode === "register" ? "register" : "login";
-  const payload = await apiRequest(mode === "register" ? "/api/auth/register" : "/api/auth/login", mode === "register"
-    ? {
-        nickname: credentials.nickname || "",
-        email: credentials.email || "",
-        password: credentials.password || ""
+  try {
+    const mode = credentials.mode === "register" ? "register" : "login";
+    const payload = await apiRequest(
+      mode === "register" ? "/api/auth/register" : "/api/auth/login",
+      mode === "register"
+        ? {
+            nickname: credentials.nickname || "",
+            email: credentials.email || "",
+            password: credentials.password || ""
+          }
+        : {
+            identifier: credentials.identifier || "",
+            password: credentials.password || ""
+          }
+    );
+    const lastPid = localStorage.getItem(LAST_PARTICIPANT_KEY);
+    const newPid = payload.participant.participantId;
+    const isSameUser = lastPid === newPid;
+    let hasSavedState = isSameUser;
+
+    if (!isSameUser) {
+      const oldGeneric = localStorage.getItem(STORAGE_KEY);
+      if (oldGeneric && !localStorage.getItem(storageKeyFor(newPid))) {
+        localStorage.setItem(storageKeyFor(newPid), oldGeneric);
+        localStorage.removeItem(STORAGE_KEY);
       }
-    : {
-        identifier: credentials.identifier || "",
-        password: credentials.password || ""
-      });
-  const lastPid = localStorage.getItem(LAST_PARTICIPANT_KEY);
-  const newPid = payload.participant.participantId;
-  const isSameUser = lastPid === newPid;
-  const isNewAccount = payload.participant.createdAt === payload.participant.lastSeenAt;
 
-  if (!isSameUser) {
-    // Migrate: if old generic key has data, move it to the new user's key
-    const oldGeneric = localStorage.getItem(STORAGE_KEY);
-    if (oldGeneric && !localStorage.getItem(storageKeyFor(newPid))) {
-      localStorage.setItem(storageKeyFor(newPid), oldGeneric);
-      localStorage.removeItem(STORAGE_KEY);
+      const saved = localStorage.getItem(storageKeyFor(newPid));
+      hasSavedState = Boolean(saved);
+      if (saved) {
+        Object.assign(state, learningDefaults(), JSON.parse(saved));
+      } else {
+        Object.assign(state, learningDefaults());
+      }
+      currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
+      currentUnitId = state.currentUnitId || "";
+      switchView("home");
     }
 
-    // Load new user's saved state, or start fresh
-    const newKey = storageKeyFor(newPid);
-    const saved = localStorage.getItem(newKey);
-    if (saved) {
-      // Restore this user's previous learning data
-      const parsed = JSON.parse(saved);
-      Object.assign(state, learningDefaults(), parsed);
-    } else if (isNewAccount) {
-      // Brand new account — reset all learning progress
-      Object.assign(state, learningDefaults());
-    }
-    // Switch to home view for any user change
-    currentChapterId = state.currentChapterId;
-    currentUnitId = state.currentUnitId;
-    switchView("home");
-  }
+    state.participant = payload.participant;
+    state.authToken = payload.token;
+    localStorage.setItem(AUTH_TOKEN_KEY, payload.token);
+    localStorage.setItem(LAST_PARTICIPANT_KEY, newPid);
+    learningSnapshotGeneration = 0;
+    learningSnapshotRevision = 0;
+    await hydrateLearningState({ replace: !isSameUser && !hasSavedState });
 
-  state.participant = payload.participant;
-  state.authToken = payload.token;
-  localStorage.setItem(AUTH_TOKEN_KEY, payload.token);
- localStorage.setItem(LAST_PARTICIPANT_KEY, newPid);
-  // Returning user on a new browser — merge server snapshot before saving
-  // (otherwise syncLearningSnapshot uploads empty state and destroys progress)
-  if (!isSameUser && !isNewAccount) {
-    try {
-      const snapRes = await fetch("/api/learning/snapshot", {
-        headers: { Authorization: `Bearer ${state.authToken}` }
-      });
-      if (snapRes.ok) {
-        const snap = await snapRes.json();
-        if (snap.ok && snap.snapshot) {
-          const srv = snap.snapshot;
-          state.completed = [...new Set([...(state.completed || []), ...(srv.completed || [])])];
-          if (!(state.quizResults || []).length && Array.isArray(srv.quizResults))
-            state.quizResults = srv.quizResults;
-          if (srv.quizAttempts && typeof srv.quizAttempts === "object")
-            state.quizAttempts = { ...(state.quizAttempts || {}), ...srv.quizAttempts };
-          if (srv.quizDrafts && typeof srv.quizDrafts === "object")
-            state.quizDrafts = { ...(state.quizDrafts || {}), ...srv.quizDrafts };
-          if (srv.selectedKnowledgeScenes && typeof srv.selectedKnowledgeScenes === "object")
-            state.selectedKnowledgeScenes = { ...(state.selectedKnowledgeScenes || {}), ...srv.selectedKnowledgeScenes };
-          if (!(state.logs || []).length && Array.isArray(srv.logs))
-            state.logs = srv.logs;
-          state.submittedQuizzes = [...new Set([...(state.submittedQuizzes || []), ...(srv.submittedQuizzes || [])])];
-          if (!state.note && srv.note) state.note = srv.note;
-          if (!state.currentChapterId && srv.currentChapterId) state.currentChapterId = srv.currentChapterId;
-          if (!state.currentUnitId && srv.currentUnitId) state.currentUnitId = srv.currentUnitId;
-        }
-      }
-  } catch { /* server snapshot unavailable */ }
- }
-  
-  // Also fetch authoritative quiz results from server quiz_results table
-  // (the snapshot's quizResults might be stale if the previous browser
-  //  didn't sync before closing. This endpoint reads the actual DB rows.)
-  if (!isSameUser && !isNewAccount) {
-    try {
-      const qrRes = await fetch("/api/learning/quiz-results", {
-        headers: { Authorization: `Bearer ${state.authToken}` }
-      });
-      if (qrRes.ok) {
-        const qrData = await qrRes.json();
-        if (qrData.ok && Array.isArray(qrData.data) && qrData.data.length) {
-          const results = qrData.data.map(r => {
-            let resp = r.response || "";
-            if (typeof resp === "string" && resp.startsWith("[")) {
-              try { resp = JSON.parse(resp); } catch {}
-            }
-            return {
-              id: r.id,
-              unitId: r.unit_id,
-              questionId: r.question_id,
-              chapterId: r.chapter_id,
-              chapterLabel: r.chapter_label,
-              unitLabel: r.unit_label,
-              questionType: r.question_type,
-              points: r.points,
-              phase: r.phase,
-              timestamp: r.created_at,
-              response: resp,
-              isCorrect: r.is_correct === 1 ? true : r.is_correct === 0 ? false : null,
-              status: r.status,
-              score: r.score,
-              maxScore: r.max_score,
-              aiScore: r.ai_score,
-              aiConfidence: r.ai_confidence,
-              aiFeedback: r.ai_feedback || "",
-              aiErrorType: r.ai_error_type || "",
-              estimateLabel: null
-            };
-          });
-          state.quizResults = results;
-          const unitIds = new Set();
-          qrData.data.forEach(r => { if (r.unit_id) unitIds.add(r.unit_id); });
-          state.submittedQuizzes = [...unitIds];
-        }
-      }
-    } catch { /* quiz results unavailable */ }
+    persistStateLocally();
+    renderAll();
+    setupInteractionTracking();
+    resumeLearningSnapshotSync();
+    await syncLearningSnapshot("login");
+  } catch (error) {
+    resumeLearningSnapshotSync();
+    throw error;
   }
-  
- saveState();
- renderAll();
- setupInteractionTracking();
- await syncLearningSnapshot("login");
 }
 
 async function updateParticipantProfile(profile = {}) {
@@ -795,25 +924,41 @@ async function updateParticipantProfile(profile = {}) {
   return payload.participant;
 }
 
-function logoutParticipant() {
-  saveState(); // Save to current user's key before clearing identity
-  if (state.authToken) {
-    apiRequest("/api/auth/logout", { token: state.authToken }).catch(() => {});
+async function logoutParticipant() {
+  if (authTransitionInProgress) return;
+  authTransitionInProgress = true;
+  try {
+    clearTimeout(syncTimer);
+    if (typeof analyticsFlush === "function") await analyticsFlush();
+    await waitForLearningEventSync();
+    await syncLearningSnapshot("logout");
+    await pauseLearningSnapshotSync();
+    persistStateLocally();
+    const token = state.authToken;
+    if (token) {
+      await apiRequest("/api/auth/logout", { token }).catch(() => {});
+    }
+    stopNarrationQueue();
+    state.participant = null;
+    state.authToken = "";
+    learningSnapshotGeneration = 0;
+    learningSnapshotRevision = 0;
+    learningSnapshotReady = false;
+    onlinePeriodStart = null;
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(LAST_PARTICIPANT_KEY);
+    // Reset runtime learning state to defaults
+    Object.assign(state, learningDefaults(), { participant: null, authToken: "" });
+    currentChapterId = chapters[0]?.id || "V14-C1";
+    currentUnitId = "";
+    switchView("home");
+    renderAuth();
+    showLogin();
+  } finally {
+    resumeLearningSnapshotSync();
+    authTransitionInProgress = false;
   }
-  stopNarrationQueue();
-  state.participant = null;
-  state.authToken = "";
-  onlinePeriodStart = null;
-  localStorage.removeItem(AUTH_TOKEN_KEY);
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(LAST_PARTICIPANT_KEY);
-  // Reset runtime learning state to defaults
-  Object.assign(state, learningDefaults(), { participant: null, authToken: "" });
-  currentChapterId = chapters[0]?.id || "V14-C1";
-  currentUnitId = "";
-  switchView("home");
-  renderAuth();
-  showLogin();
 }
 
 function quizDraftKey(unitId, questionId) {
@@ -1330,55 +1475,71 @@ function knowledgeResourceCandidate(unit, typeId = "") {
   }) || null;
 }
 
-function chooseDefaultKnowledgeScene(unit) {
-  const types = knowledgeInteractionTypes(unit);
-  if (!types.length) return "";
-  const availableTypes = types.filter((type) => knowledgeResourceCandidate(unit, type.id));
-  const pool = availableTypes.length ? availableTypes : types;
-  const preferred = ["simulation", "game", "mindMap", "visualization3d"];
-  return preferred.find((id) => pool.some((type) => type.id === id)) || pool[0]?.id || types[0].id;
+function knowledgeSceneDisplayLabel(typeOrId = "") {
+  const type = typeof typeOrId === "object"
+    ? typeOrId
+    : { id: String(typeOrId || "") };
+  const id = type.id === "diagram" ? "mindMap" : type.id;
+  return {
+    simulation: "动手调一调",
+    game: "找错并改正",
+    mindMap: "知识怎么连",
+    visualization3d: "换个角度看"
+  }[id] || type.title || type.label || id || "互动场景";
 }
 
 function selectedKnowledgeSceneType(unit) {
   if (!unit?.id) return "";
   state.selectedKnowledgeScenes = state.selectedKnowledgeScenes || {};
   const types = knowledgeInteractionTypes(unit);
+  if (typeof KnowledgeSceneSelection !== "undefined") {
+    return KnowledgeSceneSelection.selectedType(unit.id, state.selectedKnowledgeScenes, types);
+  }
   const validIds = new Set(types.map((type) => type.id));
   const existing = state.selectedKnowledgeScenes[unit.id];
-  if (existing && validIds.has(existing)) return existing;
-  const next = chooseDefaultKnowledgeScene(unit);
-  if (next) {
-    state.selectedKnowledgeScenes[unit.id] = next;
-    saveState();
-  }
-  return next;
+  return existing && validIds.has(existing) ? existing : "";
 }
 
 function setKnowledgeSceneType(unitId, typeId) {
   const unit = getUnit(unitId);
   if (!unit || unit.type !== "knowledge") return false;
-  const valid = knowledgeInteractionTypes(unit).some((type) => type.id === typeId);
-  if (!valid) return false;
+  const types = knowledgeInteractionTypes(unit);
   state.selectedKnowledgeScenes = state.selectedKnowledgeScenes || {};
+  const shouldRecord = typeof KnowledgeSceneSelection !== "undefined"
+    ? KnowledgeSceneSelection.shouldRecordSelection(unit.id, state.selectedKnowledgeScenes, typeId, types)
+    : types.some((type) => type.id === typeId) && state.selectedKnowledgeScenes[unit.id] !== typeId;
+  if (!shouldRecord) return false;
+
+  if (currentUnitId === unit.id && typeof analyticsLeaveUnit === "function") {
+    analyticsLeaveUnit("switch_knowledge_scene");
+  }
   state.selectedKnowledgeScenes[unit.id] = typeId;
   saveState();
-  const selected = knowledgeInteractionTypes(unit).find((type) => type.id === typeId);
+  const selected = types.find((type) => type.id === typeId);
+  const candidate = knowledgeResourceCandidate(unit, typeId);
+  if (currentUnitId === unit.id && typeof analyticsResumeUnitTimer === "function") {
+    analyticsResumeUnitTimer(unit);
+  }
   trackLearningEvent("select_knowledge_scene", {
     unitId: unit.id,
     chapterId: unit.chapterId,
     moduleId: unit.moduleId,
     knowledgePoint: unit.label,
     sceneType: typeId,
-    sceneLabel: selected?.label || typeId,
-    hasResource: Boolean(knowledgeResourceCandidate(unit, typeId))
+    sceneLabel: knowledgeSceneDisplayLabel(selected || typeId),
+    resourceTitle: candidate?.title || "",
+    hasResource: Boolean(candidate)
   });
   analyticsTrack("knowledge_scene_select", {
     data: {
       unitId: unit.id,
       chapterId: unit.chapterId,
       moduleId: unit.moduleId,
+      knowledgePoint: unit.label,
       sceneType: typeId,
-      hasResource: Boolean(knowledgeResourceCandidate(unit, typeId))
+      sceneLabel: knowledgeSceneDisplayLabel(selected || typeId),
+      resourceTitle: candidate?.title || "",
+      hasResource: Boolean(candidate)
     }
   });
   return true;

@@ -43,6 +43,8 @@ function renderLibrary() {
 
 function renderProgress() {
   els.completedCount.textContent = `${mainCompletedCount()}/${totalMainUnitCount()}`;
+  if (els.progressQuizCount) els.progressQuizCount.textContent = `${(state.quizResults || []).length}`;
+  if (els.progressActivityCount) els.progressActivityCount.textContent = `${(state.logs || []).length}`;
   els.chapterProgress.innerHTML = curriculum
     .map((chapter) => {
       const done = chapter.units.filter((unit) => typeof unitCountsTowardProgress === "function" ? unitCountsTowardProgress(unit) : state.completed.includes(unit.id)).length;

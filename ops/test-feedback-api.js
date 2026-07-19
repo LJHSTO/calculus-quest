@@ -167,6 +167,26 @@ async function main() {
     }
     assert.ok(legalTarget, "route must contain at least one legal courseware feedback target");
 
+    const lectureFeedback = await jsonRequest(baseUrl, "/api/learning/feedback", {
+      method: "POST",
+      token: learnerToken,
+      body: {
+        feedbackType: "courseware",
+        content: "讲解页中的定义需要更清楚。",
+        targetScope: "courseware",
+        chapterId: "forged-chapter",
+        moduleId: "forged-module",
+        unitId: legalTarget.knowledgePoint.id,
+        knowledgePoint: "伪造知识点名称",
+        sceneType: "slide",
+        resourceFile: "",
+        resourceTitle: "伪造讲解页标题",
+        currentView: "feedback"
+      }
+    });
+    assert.equal(lectureFeedback.response.status, 200);
+    assert.ok(lectureFeedback.payload.feedbackId);
+
     const coursewareFeedback = await jsonRequest(baseUrl, "/api/learning/feedback", {
       method: "POST",
       token: learnerToken,
@@ -196,16 +216,20 @@ async function main() {
       token: adminToken
     });
     assert.equal(dashboard.response.status, 200);
-    assert.equal(dashboard.payload.data.summary.total, 2);
-    assert.equal(dashboard.payload.data.summary.courseware, 1);
+    assert.equal(dashboard.payload.data.summary.total, 3);
+    assert.equal(dashboard.payload.data.summary.courseware, 2);
     assert.equal(dashboard.payload.data.summary.users, 1);
-    assert.equal(dashboard.payload.data.rows.length, 2);
+    assert.equal(dashboard.payload.data.rows.length, 3);
     assert.equal(dashboard.payload.data.rows[0].content, "拖动滑块后图像没有及时变化。");
     assert.equal(dashboard.payload.data.rows[0].chapter_id, legalTarget.chapter.id);
     assert.equal(dashboard.payload.data.rows[0].module_id, legalTarget.module.id);
     assert.equal(dashboard.payload.data.rows[0].knowledge_point, legalTarget.knowledgePoint.name);
     assert.equal(dashboard.payload.data.rows[0].resource_title, legalTarget.candidate.title);
     assert.equal(dashboard.payload.data.rows[0].nickname, nickname);
+    const lectureRow = dashboard.payload.data.rows.find((row) => row.scene_type === "slide");
+    assert.ok(lectureRow);
+    assert.equal(lectureRow.resource_file, "");
+    assert.equal(lectureRow.resource_title, `${legalTarget.knowledgePoint.name} · 讲解页`);
 
     const coursewareOnly = await jsonRequest(baseUrl, "/api/admin/stats/feedback?type=courseware", {
       token: adminToken
@@ -213,7 +237,7 @@ async function main() {
     assert.equal(coursewareOnly.response.status, 200);
     assert.deepEqual(
       coursewareOnly.payload.data.rows.map((row) => row.feedback_type),
-      ["courseware"]
+      ["courseware", "courseware"]
     );
 
     console.log("feedback API tests passed");

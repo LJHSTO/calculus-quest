@@ -5,21 +5,23 @@
 })(typeof globalThis !== "undefined" ? globalThis : this, function createFeedbackTargetsApi() {
   function buildCoursewareFeedbackTargets(options = {}) {
     const unit = options.unit;
-    const globalTarget = {
-      id: "global",
-      targetScope: "global",
-      label: "全局课件反馈",
-      description: "不针对某一个课件",
-      isCurrent: !unit,
-      chapterId: unit?.chapterId || "",
-      moduleId: unit?.moduleId || "",
-      unitId: unit?.id || "",
-      knowledgePoint: unit?.label || "",
-      sceneType: "",
+    if (!unit || unit.type !== "knowledge") return [];
+
+    const lectureTarget = {
+      id: `courseware:slide:${unit.id}`,
+      targetScope: "courseware",
+      label: options.lectureTitle || `${unit.label || "当前知识点"} · 讲解页`,
+      description: options.lectureDescription || "概念讲解、板书与教师旁白",
+      isCurrent: options.currentSceneType === "slide",
+      isLecture: true,
+      chapterId: unit.chapterId || "",
+      moduleId: unit.moduleId || "",
+      unitId: unit.id || "",
+      knowledgePoint: unit.label || "",
+      sceneType: "slide",
       resourceFile: "",
-      resourceTitle: ""
+      resourceTitle: options.lectureTitle || `${unit.label || "当前知识点"} · 讲解页`
     };
-    if (!unit || unit.type !== "knowledge") return [globalTarget];
 
     const types = Array.isArray(options.types) ? options.types : [];
     const selectedTypeId = String(options.selectedTypeId || "");
@@ -54,7 +56,7 @@
       });
     }
 
-    return [globalTarget, ...concrete];
+    return [lectureTarget, ...concrete];
   }
 
   function feedbackTargetIdFromPointer(eventTarget, dragState = null) {

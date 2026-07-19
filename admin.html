@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculus Quest - 研究数据分析面板</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="admin/admin.css?v=20260716-learning-feedback-v2" />
+  <link rel="stylesheet" href="admin/admin.css?v=20260718-admin-quality-v2" />
 </head>
 <body>
 <div id="login-gate" class="hidden">
   <div class="login-card">
     <h2>研究数据分析面板</h2>
     <p>请输入管理员 Token 以查看学习数据</p>
-    <input id="admin-token-input" type="password" placeholder="Admin Token" autofocus />
+    <input id="admin-token-input" type="password" placeholder="管理员 Token" autofocus />
     <button class="btn btn-primary" id="login-btn">进入面板</button>
     <div id="login-error" class="error hidden" style="margin-top:12px;"></div>
   </div>
@@ -59,14 +59,15 @@
     <!-- Tab: Overview -->
     <div id="tab-overview" class="tab-content">
       <div class="metric-row" id="overview-metrics"></div>
-      <div class="chart-grid">
+      <div class="research-coverage" id="research-coverage"></div>
+      <div class="chart-grid overview-grid">
         <div class="chart-card">
-          <h3>每日活跃用户 & Quiz 提交趋势</h3>
+          <h3>每日活跃用户与测验提交趋势</h3>
           <p class="chart-desc">近30天平台活跃度变化</p>
           <div class="chart-wrap"><canvas id="chart-daily"></canvas></div>
         </div>
         <div class="chart-card">
-          <h3>用户 Quiz 完成量排名 (Top 20)</h3>
+          <h3>用户测验完成量排名（前 20）</h3>
           <p class="chart-desc">按提交数量排序，正确率以橙色标记</p>
           <div class="chart-wrap"><canvas id="chart-user-rank"></canvas></div>
         </div>
@@ -98,15 +99,15 @@
 
     <!-- Tab: Questions -->
     <div id="tab-questions" class="tab-content hidden">
-      <div class="chart-grid cols-3">
-        <div class="chart-card">
+      <div class="chart-grid question-grid">
+        <div class="chart-card question-type-card">
           <h3>题型正确率对比</h3>
           <p class="chart-desc">不同题型的学习难度差异</p>
           <div class="chart-wrap"><canvas id="chart-question-type"></canvas></div>
         </div>
-        <div class="chart-card" style="grid-column: span 2;">
-          <h3>各题目错误率排名 (Top 30)</h3>
-          <p class="chart-desc">颜色: 红=高错误率(>60%), 黄=中(30-60%), 绿=低(<30%)</p>
+        <div class="chart-card question-error-card">
+          <h3>各题目错误率排名（前 30）</h3>
+          <p class="chart-desc">红色为高错误率（大于 60%），黄色为中等，绿色为较低</p>
           <div class="chart-wrap tall"><canvas id="chart-question-errors"></canvas></div>
         </div>
         <div class="chart-card full-width">
@@ -118,7 +119,7 @@
 
     <!-- Tab: Learning Effectiveness -->
     <div id="tab-effectiveness" class="tab-content hidden">
-      <div class="chart-grid">
+      <div class="chart-grid effectiveness-grid">
         <div class="chart-card full-width">
           <h3>前测 vs 后测 正确率对比 (按用户/章节)</h3>
           <p class="chart-desc">实心圆=后测, 空心圆=前测, 连线表示同一用户同一章节的学习变化。绿色连线=进步, 红色连线=退步</p>
@@ -126,12 +127,12 @@
         </div>
         <div class="chart-card">
           <h3>得分率分布直方图</h3>
-          <p class="chart-desc">所有 Quiz 提交的得分比例分布</p>
+          <p class="chart-desc">所有测验提交的得分比例分布</p>
           <div class="chart-wrap"><canvas id="chart-score-dist"></canvas></div>
         </div>
         <div class="chart-card">
           <h3>前测 vs 后测 变化明细表</h3>
-          <div class="table-wrap" style="max-height:340px;overflow-y:auto;">
+          <div class="table-wrap adaptive-table-wrap">
             <table id="table-phase-compact">
               <thead><tr><th>用户</th><th>章节</th><th>前测</th><th>后测</th><th>变化</th></tr></thead>
               <tbody></tbody>
@@ -152,17 +153,18 @@
         <span id="user-total-count" style="font-size:0.85rem;color:var(--muted);align-self:center;"></span>
         <input id="user-search-input" type="text" placeholder="搜索用户昵称..." />
         <button class="btn btn-sm btn-primary" id="user-search-btn">搜索</button>
-        <button class="btn btn-sm btn-outline" id="export-users-csv">导出CSV</button>
+        <button class="btn btn-sm btn-outline" id="export-users-csv" type="button">导出全部 CSV</button>
       </div>
       <div class="chart-card full-width">
-        <h3>用户列表 & 学习进度</h3>
+        <h3>用户列表与学习进度</h3>
         <div class="table-wrap"><table id="table-users"></table></div>
       </div>
       <div id="user-detail-section" class="hidden" style="margin-top:22px;">
-        <div class="chart-grid">
-          <div class="chart-card full-width">
+        <div class="metric-row user-research-metrics" id="user-research-metrics"></div>
+        <div class="chart-grid user-detail-grid">
+          <div class="chart-card user-timeline-card">
             <h3 id="user-detail-title">用户答题时间线</h3>
-            <div class="chart-wrap tall"><canvas id="chart-user-timeline"></canvas></div>
+            <div class="chart-wrap"><canvas id="chart-user-timeline"></canvas></div>
           </div>
           <div class="chart-card">
             <h3>各章节表现</h3>
@@ -171,6 +173,24 @@
           <div class="chart-card">
             <h3>学习活动摘要</h3>
             <div id="user-activity-summary" style="font-size:0.9rem;"></div>
+          </div>
+          <div class="chart-card full-width">
+            <h3>最近学习行为</h3>
+            <div class="table-wrap compact-research-table">
+              <table id="table-user-recent-events">
+                <thead><tr><th>时间</th><th>行为</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="chart-card full-width">
+            <h3>该学生提交的问题反馈</h3>
+            <div class="table-wrap compact-research-table">
+              <table id="table-user-feedback">
+                <thead><tr><th>时间</th><th>类型</th><th>学习位置</th><th>正文</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -200,8 +220,9 @@
           <label class="feedback-search-label">搜索
             <input id="feedback-query-filter" name="feedback-query" type="search" autocomplete="off" placeholder="学生、正文、课件或知识点" />
           </label>
-          <button class="btn btn-sm btn-outline" id="export-feedback-csv" type="button">导出 CSV</button>
+          <button class="btn btn-sm btn-outline" id="export-feedback-csv" type="button">导出全部 CSV</button>
         </div>
+        <div class="feedback-breakdown" id="feedback-breakdown"></div>
         <p class="feedback-result-note" id="feedback-result-note" role="status" aria-live="polite"></p>
         <div class="table-wrap feedback-table-wrap">
           <table id="table-feedback">
@@ -214,9 +235,9 @@
 
     <!-- Tab: Activity -->
     <div id="tab-activity" class="tab-content hidden">
-      <div class="chart-grid">
-        <div class="chart-card">
-          <h3>时段活跃分布 (24小时)</h3>
+      <div class="chart-grid activity-grid">
+        <div class="chart-card full-width">
+          <h3>时段活跃分布（24 小时）</h3>
           <p class="chart-desc">近30天各时段事件量分布</p>
           <div class="chart-wrap"><canvas id="chart-hourly"></canvas></div>
         </div>
@@ -231,12 +252,12 @@
     <div id="tab-shortanswers" class="tab-content hidden">
       <div class="chart-card full-width">
        <h3>学生简答题答案审阅</h3>
-       <p class="chart-desc">仅显示 question_type=short_answer 的提交，按时间倒序</p>
+       <p class="chart-desc">仅显示简答题提交，按时间倒序</p>
         <div style="display:flex;gap:8px;margin-bottom:10px;">
-          <button class="btn btn-sm btn-primary" id="export-shortanswers-csv">导出 CSV</button>
+          <button class="btn btn-sm btn-primary" id="export-shortanswers-csv" type="button">导出全部 CSV</button>
           <span id="shortanswer-summary" style="font-size:0.85rem;color:var(--muted);align-self:center;"></span>
         </div>
-        <div class="table-wrap" style="max-height:600px;overflow-y:auto;">
+        <div class="table-wrap adaptive-table-wrap">
           <table id="table-shortanswers">
             <thead><tr><th>学生</th><th>章节</th><th>单元</th><th>题目ID</th><th>答案</th><th>得分</th><th>状态</th><th>时间</th></tr></thead>
             <tbody></tbody>
@@ -251,7 +272,7 @@
       <div class="chart-grid interaction-grid">
         <div class="chart-card">
           <h3>交互类型分布</h3>
-          <p class="chart-desc">按当前筛选范围统计全部学习行为事件。</p>
+          <p class="chart-desc">按当前筛选范围统计保留下来的关键学习行为，低价值滚动和指针噪声不计入。</p>
           <div class="chart-wrap interaction-type-chart"><canvas id="chart-interaction-types"></canvas></div>
         </div>
         <div class="chart-card">
@@ -267,24 +288,24 @@
         </div>
         <div class="chart-card full-width">
           <h3>有效学习路径</h3>
-          <p class="chart-desc" id="path-rule-desc">只统计达到有效停留阈值的模块，过滤快速点击浏览。</p>
+          <p class="chart-desc" id="path-rule-desc">只统计达到有效停留阈值的知识点和真实互动场景，过滤快速点击浏览。</p>
           <div class="table-wrap interaction-side-scroll">
             <table id="table-path-analysis">
-              <thead><tr><th>学生</th><th>模块数</th><th>有效停留</th><th>起止时间</th><th>路径预览</th></tr></thead>
+              <thead><tr><th>学生</th><th>知识点/场景数</th><th>有效停留</th><th>起止时间</th><th>路径预览</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
         <div class="chart-card full-width">
-          <h3>Agentic Coach 决策证据链</h3>
-          <p class="chart-desc">串联交互证据、Coach 推荐、学生选择和后续测验结果，用于研究自适应路径是否真的基于证据。</p>
+          <h3>智能教练决策证据链</h3>
+          <p class="chart-desc">串联交互证据、智能教练建议、学生选择和后续测验结果，用于分析自适应路径是否真正基于证据。</p>
           <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
-            <button class="btn btn-sm btn-outline" id="export-agentic-trace-csv">导出证据链CSV</button>
+            <button class="btn btn-sm btn-outline" id="export-agentic-trace-csv" type="button">导出全部证据链 CSV</button>
             <span id="agentic-trace-summary" style="font-size:0.85rem;color:var(--muted);"></span>
           </div>
           <div class="table-wrap interaction-main-scroll">
             <table id="table-agentic-trace">
-              <thead><tr><th>时间</th><th>学生</th><th>触发模块</th><th>交互证据</th><th>Coach/Planner建议</th><th>学生选择</th><th>后续测验</th></tr></thead>
+              <thead><tr><th>时间</th><th>学生</th><th>触发模块</th><th>交互证据</th><th>智能教练建议</th><th>学生选择</th><th>后续测验</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -314,7 +335,7 @@
         </div>
         <div class="chart-card full-width">
           <h3>交互记录</h3>
-          <p class="chart-desc">按当前时间范围和用户筛选显示完整记录，支持分页浏览。</p>
+          <p class="chart-desc">默认呈现可解释的关键学习行为；原始技术事件仍可切换查看和导出。</p>
           <div class="interaction-toolbar">
             <label>用户
               <select id="interaction-user-filter">
@@ -329,14 +350,21 @@
                 <option value="500">500</option>
               </select>
             </label>
+            <label>记录范围
+              <select id="interaction-detail-filter">
+                <option value="meaningful" selected>关键行为</option>
+                <option value="all">全部原始记录</option>
+              </select>
+            </label>
             <button class="btn btn-sm btn-outline" id="interaction-prev-page">上一页</button>
             <button class="btn btn-sm btn-outline" id="interaction-next-page">下一页</button>
-            <button class="btn btn-sm btn-outline" id="export-interactions-csv">导出当前页CSV</button>
+            <button class="btn btn-sm btn-outline" id="export-interactions-csv" type="button">导出当前页 CSV</button>
+            <button class="btn btn-sm btn-primary" id="export-interactions-all-csv" type="button">导出全部 CSV</button>
             <span class="page-status" id="interaction-page-status">第 1 页</span>
           </div>
-          <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
+          <div class="table-wrap adaptive-table-wrap">
             <table id="table-interactions">
-              <thead><tr><th>时间</th><th>用户</th><th>事件类型</th><th>数据摘要</th></tr></thead>
+              <thead><tr><th>时间</th><th>用户</th><th>学习位置</th><th>关键行为</th><th>行为摘要</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -348,7 +376,9 @@
   </div>
 </div>
 
-<script src="admin/csv.js?v=20260716-feedback-csv-safe"></script>
-<script src="admin/admin.js?v=20260716-learning-feedback-v2"></script>
+<script src="admin/csv.js?v=20260718-export-all-v1"></script>
+<script src="admin/presentation.js?v=20260718-admin-quality-v5"></script>
+<script src="lib/interaction-policy.js?v=20260718-interaction-quality-v3"></script>
+<script src="admin/admin.js?v=20260718-admin-quality-v6"></script>
 </body>
 </html>

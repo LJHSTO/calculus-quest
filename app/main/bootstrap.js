@@ -25,7 +25,17 @@ function renderBottomNextButton() {
   nextBtn.className = "button primary bottom-nav-btn";
   nextBtn.type = "button";
   const needsQuizSubmit = unit.type === "quiz" && !unit.placeholderQuiz && !(state.submittedQuizzes || []).includes(unit.id);
-  nextBtn.textContent = needsQuizSubmit ? "先提交测验" : pending ? "先选择下一步" : next ? `下一步：${next.label}` : "完成本节";
+  const needsSceneChoice = unit.type === "knowledge" && !selectedKnowledgeSceneType(unit);
+  nextBtn.disabled = needsSceneChoice;
+  nextBtn.textContent = needsSceneChoice
+    ? "先选择一个互动场景"
+    : needsQuizSubmit
+      ? "先提交测验"
+      : pending
+        ? "先选择下一步"
+        : next
+          ? `下一步：${next.label}`
+          : "完成本节";
   nextBtn.addEventListener("click", async () => {
     if (pending) {
       addLog("请先在学习建议卡片中选择下一步。");
@@ -35,6 +45,10 @@ function renderBottomNextButton() {
     }
 
     const current = getUnit();
+    if (current.type === "knowledge" && !selectedKnowledgeSceneType(current)) {
+      addLog("请先选择一个互动场景，再完成本节。");
+      return;
+    }
     if (current.type === "quiz" && !current.placeholderQuiz && !(state.submittedQuizzes || []).includes(current.id)) {
       addLog("测验需要先提交，下一步才会出现。");
       return;
@@ -171,9 +185,18 @@ els.authMenuToggle?.addEventListener("click", (event) => {
   setUserMenuOpen(els.authMenuPanel?.hidden ?? true);
 });
 
-els.authLogout?.addEventListener("click", () => {
+els.authLogout?.addEventListener("click", async () => {
+  if (els.authLogout.disabled) return;
   setUserMenuOpen(false);
-  logoutParticipant();
+  els.authLogout.disabled = true;
+  try {
+    await logoutParticipant();
+  } catch (error) {
+    console.warn("Logout failed:", error.message);
+    alert(error.message || "退出失败，请稍后再试。");
+  } finally {
+    els.authLogout.disabled = false;
+  }
 });
 
 els.authMenuPanel?.querySelectorAll("[data-view]").forEach((button) => {
@@ -292,48 +315,72 @@ els.profileForm?.addEventListener("submit", async (event) => {
 document.querySelector("#reset-progress").addEventListener("click", async () => {
   setUserMenuOpen(false);
   if (!confirm("确定要重置所有学习记录吗？此操作不可撤销，所有测验结果和进度将被清除。")) return;
-  trackLearningEvent("reset_progress", {
+  const completedCount = state.completed.length;
+  const quizResultCount = (state.quizResults || []).length;
+  await trackLearningEvent("reset_progress", {
     completed: state.completed.length,
     quizResults: (state.quizResults || []).length
   }, false);
   analyticsTrack("reset_progress", {
     data: {
-      completedCount: state.completed.length,
-      quizResultCount: (state.quizResults || []).length
+      completedCount,
+      quizResultCount
     }
   });
-  state.completed = [];
-  state.quizResults = [];
-  state.quizDrafts = {};
-  state.quizAttempts = {};
-  state.submittedQuizzes = [];
-  state.narrationCollapsed = false;
-  state.logs = ["已重置学习记录。"];
-  state.note = "";
-  state.agenticPath = null;
-  state.selectedKnowledgeScenes = {};
-  currentChapterId = chapters[0].id;
-  currentUnitId = getChapter(currentChapterId)?.units?.[0]?.id || "";
-  if (typeof ensureAgenticPath === "function") {
-    ensureAgenticPath();
-    if (typeof agenticUnlockUnit === "function") agenticUnlockUnit(currentUnitId, "reset_initial_load");
-  }
-  saveState();
-  if (isSignedIn()) {
-    clearTimeout(syncTimer);
-    const snapshot = learningSnapshot();
-    lastSnapshotJson = JSON.stringify(snapshot);
+
+  if (!isSignedIn()) return;
+  if (!learningSnapshotReady) {
     try {
-      await apiRequest("api/learning/reset", {
-        token: state.authToken,
-        snapshot
-      });
+      await hydrateLearningState();
     } catch (error) {
-      console.warn("Learning reset sync failed:", error.message);
-      addLog("本地已重置，但服务器记录清空失败；请稍后再试一次重置。");
+      alert(error.message || "学习记录尚未完成同步，请重新登录后再重置。");
+      return;
     }
   }
-  renderAll();
+
+  await pauseLearningSnapshotSync();
+  const firstChapterId = chapters[0]?.id || "V14-C1";
+  const firstUnitId = getChapter(firstChapterId)?.units?.[0]?.id || "";
+  const resetSnapshot = {
+    ...learningDefaults(),
+    participant: state.participant,
+    currentChapterId: firstChapterId,
+    currentUnitId: firstUnitId,
+    currentView: "home",
+    logs: ["已重置学习记录。"],
+    capturedAt: beijingNow()
+  };
+
+  try {
+    const payload = await apiRequest("api/learning/reset", {
+      token: state.authToken,
+      generation: learningSnapshotGeneration,
+      baseRevision: learningSnapshotRevision,
+      snapshot: resetSnapshot
+    });
+    setLearningSnapshotVersion(payload);
+    Object.assign(state, learningDefaults(), resetSnapshot, {
+      participant: state.participant,
+      authToken: state.authToken
+    });
+    currentChapterId = firstChapterId;
+    currentUnitId = firstUnitId;
+    switchView("home");
+    if (typeof ensureAgenticPath === "function") {
+      ensureAgenticPath();
+      if (typeof agenticUnlockUnit === "function") {
+        agenticUnlockUnit(currentUnitId, "reset_initial_load");
+      }
+    }
+    lastSnapshotJson = snapshotContentJson(learningSnapshot());
+    persistStateLocally();
+    renderAll();
+  } catch (error) {
+    console.warn("Learning reset sync failed:", error.message);
+    alert(error.message || "学习记录重置失败，原记录已保留。");
+  } finally {
+    resumeLearningSnapshotSync();
+  }
 });
 
 function setupChapterRailToggle() {
@@ -364,20 +411,19 @@ async function init() {
 
   try {
     renderAuth();
-    if (isSignedIn() && (!state.completed || !state.completed.length) && !(state.quizResults || []).length) {
+    if (isSignedIn()) {
       try {
-        const response = await fetch("api/learning/snapshot", {
-          headers: { Authorization: `Bearer ${state.authToken}` }
-        });
-        if (response.ok) {
-          const snap = await response.json();
-          if (snap.ok && snap.snapshot) {
-            Object.assign(state, learningDefaults(), snap.snapshot);
-            saveState();
-          }
+        await hydrateLearningState();
+      } catch (error) {
+        if (error.status === 401) {
+          state.authToken = "";
+          learningSnapshotReady = false;
+          localStorage.removeItem(AUTH_TOKEN_KEY);
+          renderAuth();
+          showLogin("登录状态已过期，请重新登录后继续学习。");
+        } else {
+          console.warn("Learning snapshot restore failed:", error.message);
         }
-      } catch {
-        // Server snapshot is optional; local state is enough for the demo.
       }
     }
 
