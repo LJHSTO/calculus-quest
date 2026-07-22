@@ -383,25 +383,47 @@ document.querySelector("#reset-progress").addEventListener("click", async () => 
   }
 });
 
-function setupChapterRailToggle() {
+function setChapterRailCollapsed(collapsed, options = {}) {
   const rail = document.getElementById("chapter-rail");
   const toggle = document.getElementById("chapter-rail-toggle");
   const shell = rail?.closest(".learning-shell");
+  if (!rail || !toggle) return false;
+  const shouldPersist = options.persist !== false;
+  rail.classList.toggle("collapsed", collapsed);
+  rail.setAttribute("aria-hidden", collapsed ? "true" : "false");
+  shell?.classList.toggle("chapter-collapsed", collapsed);
+  toggle.textContent = collapsed ? "章节" : "×";
+  toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  toggle.setAttribute("aria-label", collapsed ? "展开章节列表" : "关闭章节列表");
+  toggle.setAttribute("title", collapsed ? "展开章节列表" : "关闭章节列表");
+  if (shouldPersist) localStorage.setItem("chapterRailCollapsed", collapsed ? "1" : "0");
+  if (!collapsed && options.focusCurrent !== false) {
+    window.requestAnimationFrame(() => {
+      rail.querySelector("[data-chapter].active")?.focus();
+    });
+  }
+  return true;
+}
+
+function setupChapterRailToggle() {
+  const rail = document.getElementById("chapter-rail");
+  const toggle = document.getElementById("chapter-rail-toggle");
   if (!rail || !toggle) return;
 
-  const applyState = (collapsed) => {
-    rail.classList.toggle("collapsed", collapsed);
-    shell?.classList.toggle("chapter-collapsed", collapsed);
-    toggle.textContent = collapsed ? ">" : "<";
-    toggle.setAttribute("aria-label", collapsed ? "展开章节列表" : "折叠章节列表");
-    toggle.setAttribute("title", collapsed ? "展开章节列表" : "折叠章节列表");
-  };
-
-  applyState(localStorage.getItem("chapterRailCollapsed") !== "0");
+  setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
   toggle.addEventListener("click", () => {
     const collapsed = !rail.classList.contains("collapsed");
-    applyState(collapsed);
-    localStorage.setItem("chapterRailCollapsed", collapsed ? "1" : "0");
+    setChapterRailCollapsed(collapsed);
+  });
+  document.addEventListener("click", (event) => {
+    if (rail.classList.contains("collapsed")) return;
+    if (rail.contains(event.target) || toggle.contains(event.target)) return;
+    setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || rail.classList.contains("collapsed")) return;
+    setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
+    toggle.focus();
   });
 }
 async function init() {

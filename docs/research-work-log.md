@@ -786,6 +786,20 @@ tools/_encoding_test.txt
 - Git 提交：与本条同批精确提交，最终提交号见 Git 历史。
 - 剩余风险与下一步：GitHub 推送不会自动部署生产站点。管理员仍需先备份生产数据库、快进拉取、以 `BASE_PATH=/calculus_quest` 重启，并验证新课程接口、旧兼容接口、讲解页和四场景课件。
 
+### 2026-07-22：讲解画布自适应、课件全屏复核与悬浮章节抽屉
+
+- 目标：保证讲解画布和互动课件在桌面普通状态、课件独立全屏状态下完整显示并可交互；把章节栏改为默认收起的悬浮抽屉，不再占用播放器宽度。
+- 基线提交/课件版本：`231cf6a`；课程事实源仍为 `data/multi-scene-learning-route.json`，11 章、105 个运行单元、288 个互动资源，未修改课程结构、持久化 ID 或课件源包。
+- 修改文件：`app/main/render-learning.js` 按课件原始坐标系等比缩放讲解画布，并在文本、KaTeX 和表格元素框内自动适配；课件图片按模块 `resourceRoot` 解析并保留 `BASE_PATH`。`app/main/bootstrap.js`、`app/main/events.js`、`index.html` 和 `styles.css` 将章节栏改为桌面悬浮抽屉，支持点击、点外部、Esc 和选章后收起，并同步 `aria-expanded`、`aria-hidden` 和焦点。两个既有回归测试补充画布、资源路径和抽屉断言。
+- 浏览器验证：隔离服务 `http://127.0.0.1:8878/`，隔离数据库 `tmp/canvas-drawer-smoke-20260722/smoke.db`，桌面视口 `1440×1000`。章节抽屉展开前后播放器宽度均为 `1021px`，页面 `scrollWidth=1440`；普通互动 iframe 为 `919×680`，内部无横向或纵向裁切。课件独立全屏元素严格为 `.multi-scene-courseware-stage`，iframe 为 `1440×1000`，四场景选择区不进入全屏；输入滑块和重置在普通、全屏状态均可操作，退出后尺寸恢复。浏览器 0 个项目错误，只有既有的同源 iframe sandbox 警告。
+- 讲解页全量检查：72 个知识点、780 个文本/公式/表格内容块无元素框越界；11 个原先指向 `/api/classroom-media/` 的图片改写后均返回 200，并通过 `resourceUrl()` 兼容本地根路径与生产 `/calculus_quest/`。
+- 自动验证：18 个 `ops/test-*.js` 全部通过；58 个 `server/app/main/admin/lib/ops` JavaScript 文件通过 `node --check`；78 个 Git 跟踪文本文件通过严格 UTF-8，课程路线与知识图谱 JSON 解析成功；`npm audit --omit=dev` 为 0；`git diff --check` 通过。
+- 数据保护：浏览器验证只写隔离数据库。正式 `data/calculus-quest.db` 与测试前备份 `data/calculus-quest.before-multi-scene-restart-20260722-123327.db` 的 SHA-256 均为 `C681FAB77083FFC189AACAA5882A409EFD7700F8CBFACD7FCE4641961D5AA631`，正式本地历史数据未变化。
+- 是否真实调用 LLM（provider/model）：否；隔离服务使用 `LLM_PROVIDER=mock`。
+- 是否修改源 `.maic.zip`：否。
+- Git 提交：与本轮修复一起精确暂存并提交，最终提交号见 Git 历史。
+- 剩余风险与下一步：GitHub 推送不会自动更新生产服务器。服务器管理员仍需先备份仓库外生产数据库，快进拉取后以 `BASE_PATH=/calculus_quest` 重启，并验证首页、登录、历史账号恢复、章节抽屉、讲解页和四种互动课件。
+
 ## 11. 后续记录模板
 
 每次工作完成后追加：

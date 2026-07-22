@@ -83,7 +83,13 @@ document.addEventListener("click", (event) => {
       addLog(`「${cid}」章节尚未解锁，请先完成当前下一步。`);
       if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
     } else {
-      selectChapter(cid).catch((error) => console.warn("Chapter navigation failed:", error));
+      selectChapter(cid)
+        .then(() => {
+          if (typeof setChapterRailCollapsed === "function" && window.matchMedia("(min-width: 1181px)").matches) {
+            setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
+          }
+        })
+        .catch((error) => console.warn("Chapter navigation failed:", error));
     }
     return;
   }

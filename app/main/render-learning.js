@@ -1,4 +1,6 @@
 // Learning shell, player, lesson, and resource rendering.
+let slideCanvasResizeObserver = null;
+
 function renderMetrics() {
   if (isMultiSceneLearningRoute()) {
     const totals = courseIndex?.totals || {};
@@ -377,11 +379,12 @@ function renderKnowledgeUnit(unit) {
   });
 
   const slideBody = canvas
-    ? `<div class="slide-wrap multi-scene-required-slide">
-         <div class="slide-stage" style="background:${canvas.background?.color || canvas.theme?.backgroundColor || "#fff"}">
-           ${(canvas.elements || []).map((element) => renderSlideElement(element, canvas, unit.chapterId)).join("")}
-         </div>
-       </div>`
+    ? renderSlideCanvas(
+      canvas,
+      unit.chapterId,
+      "multi-scene-required-slide",
+      module.source?.resourceRoot || ""
+    )
     : `<div class="empty-state multi-scene-empty-resource">
          <h2>讲解页暂无可渲染画布</h2>
          <p>当前知识点仍保留目标、误解和核心问题；后续重新导入课件时会自动补齐讲解页画布。</p>
@@ -447,6 +450,7 @@ function renderKnowledgeUnit(unit) {
       "multi-scene-knowledge-resource"
     )}
   `;
+  setupSlideCanvasScaling(els.lessonPlayer);
 
   const iframeEl = els.lessonPlayer.querySelector("iframe[data-courseware-frame]");
   if (iframeEl && candidate) {
@@ -712,6 +716,10 @@ function renderSlide(unit) {
     }
   });
   const canvas = unit.scene.content?.canvas;
+  const resourceRoot = unit.scene.content?.module?.source?.resourceRoot
+    || unit.scene.content?.source?.resourceRoot
+    || unit.resourceRoot
+    || "";
   if (unit.scene.content?.routeReview) {
     renderRouteReview(unit);
     return;
@@ -728,15 +736,12 @@ function renderSlide(unit) {
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="slide-wrap">
-        <div class="slide-stage" style="background:${canvas.background?.color || canvas.theme?.backgroundColor || "#fff"}">
-          ${(canvas.elements || []).map((element) => renderSlideElement(element, canvas, unit.chapterId)).join("")}
-        </div>
-      </div>`,
+      renderSlideCanvas(canvas, unit.chapterId, "", resourceRoot),
       "slide-resource"
     )}
     ${renderCoach(unit.scene, unit.chapterId, unit.id)}
   `;
+  setupSlideCanvasScaling(els.lessonPlayer);
 }
 
 function renderRouteReview(unit) {
@@ -769,21 +774,82 @@ function renderRouteReview(unit) {
   `;
 }
 
-function renderSlideElement(element, canvas, chapterId) {
+function renderSlideCanvas(canvas = {}, chapterId = currentChapterId, className = "", resourceRoot = "") {
+  const base = slideSvgNumber(canvas.viewportSize, 1000);
+  const ratio = slideSvgNumber(canvas.viewportRatio, 0.5625);
+  const hBase = slideSvgNumber(base * ratio, 562.5);
+  const background = canvas.background?.color || canvas.theme?.backgroundColor || "#fff";
+  const classes = ["slide-wrap", className].filter(Boolean).join(" ");
+  return `<div class="${classes}" data-slide-canvas style="aspect-ratio:${base} / ${hBase};">
+    <div class="slide-stage" data-slide-width="${base}" data-slide-height="${hBase}" style="width:${base}px;height:${hBase}px;background:${escapeHtml(background)};">
+      ${(canvas.elements || []).map((element) => renderSlideElement(element, canvas, chapterId, resourceRoot)).join("")}
+    </div>
+  </div>`;
+}
+
+function fitSlideCanvasContents(wrap) {
+  wrap?.querySelectorAll?.("[data-slide-fit]").forEach((content) => {
+    const host = content.parentElement;
+    if (!host?.clientWidth || !host.clientHeight) return;
+    content.style.setProperty("--slide-content-scale", "1");
+    content.style.setProperty("--slide-content-x", "0px");
+    content.style.setProperty("--slide-content-y", "0px");
+    const naturalWidth = Math.max(content.scrollWidth, content.offsetWidth, 1);
+    const naturalHeight = Math.max(content.scrollHeight, content.offsetHeight, 1);
+    const scale = Math.min(1, host.clientWidth / naturalWidth, host.clientHeight / naturalHeight);
+    const centered = host.classList.contains("slide-latex");
+    const offsetX = centered ? Math.max(0, (host.clientWidth - naturalWidth * scale) / 2) : 0;
+    const offsetY = centered ? Math.max(0, (host.clientHeight - naturalHeight * scale) / 2) : 0;
+    content.style.setProperty("--slide-content-scale", String(Number(scale.toFixed(6))));
+    content.style.setProperty("--slide-content-x", `${slideSvgNumber(offsetX)}px`);
+    content.style.setProperty("--slide-content-y", `${slideSvgNumber(offsetY)}px`);
+    content.dataset.slideFitScale = String(Number(scale.toFixed(6)));
+  });
+}
+
+function syncSlideCanvasScale(wrap) {
+  const stage = wrap?.querySelector?.(".slide-stage");
+  if (!stage) return;
+  const base = Number(stage.dataset.slideWidth || 1000);
+  const availableWidth = wrap.clientWidth;
+  if (!Number.isFinite(base) || base <= 0 || !availableWidth) return;
+  stage.style.setProperty("--slide-scale", String(Number((availableWidth / base).toFixed(6))));
+  fitSlideCanvasContents(wrap);
+}
+
+function setupSlideCanvasScaling(root = typeof document !== "undefined" ? document : null) {
+  if (!root?.querySelectorAll) return;
+  const wraps = Array.from(root.querySelectorAll("[data-slide-canvas]"));
+  wraps.forEach(syncSlideCanvasScale);
+  if (typeof ResizeObserver === "undefined") return;
+  if (!slideCanvasResizeObserver) {
+    slideCanvasResizeObserver = new ResizeObserver((entries) => {
+      entries.forEach((entry) => syncSlideCanvasScale(entry.target));
+    });
+  } else {
+    slideCanvasResizeObserver.disconnect();
+  }
+  wraps.forEach((wrap) => slideCanvasResizeObserver.observe(wrap));
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    document.fonts.ready.then(() => wraps.forEach(syncSlideCanvasScale)).catch(() => {});
+  }
+}
+
+function renderSlideElement(element, canvas, chapterId, resourceRoot = "") {
   const base = canvas.viewportSize || 1000;
   const ratio = canvas.viewportRatio || 0.5625;
   const hBase = base * ratio;
-  const left = ((element.left || 0) / base) * 100;
-  const top = ((element.top || 0) / hBase) * 100;
-  const width = ((element.width || 1) / base) * 100;
-  const height = ((element.height || 1) / hBase) * 100;
-  const rotate = element.rotate || 0;
-  const common = `left:${left}%;top:${top}%;width:${width}%;height:${height}%;transform:rotate(${rotate}deg);`;
+  const left = slideSvgNumber(element.left, 0);
+  const top = slideSvgNumber(element.top, 0);
+  const width = slideSvgNumber(element.width, 1);
+  const height = slideSvgNumber(element.height, 1);
+  const rotate = slideSvgNumber(element.rotate, 0);
+  const common = `left:${left}px;top:${top}px;width:${width}px;height:${height}px;transform:rotate(${rotate}deg);`;
 
   if (element.type === "text") {
     const content = element.content || "";
     const rendered = /<[a-zA-Z][^>]*>/.test(content) ? renderMathInHtml(content) : renderInlineMath(content);
-    return `<div class="slide-element slide-text" style="${common}color:${element.defaultColor || "inherit"}">${rendered}</div>`;
+    return `<div class="slide-element slide-text" style="${common}color:${element.defaultColor || "inherit"}"><div class="slide-fit-content slide-text-content" data-slide-fit>${rendered}</div></div>`;
   }
 
   if (element.type === "shape") {
@@ -800,7 +866,7 @@ function renderSlideElement(element, canvas, chapterId) {
   }
 
   if (element.type === "image") {
-    return `<img class="slide-element" alt="" src="${slideImageSrc(element.src, chapterId)}" style="${common};object-fit:contain;" />`;
+    return `<img class="slide-element" alt="" src="${slideImageSrc(element.src, chapterId, resourceRoot)}" style="${common};object-fit:contain;" />`;
   }
 
   if (element.type === "line") {
@@ -829,11 +895,11 @@ function renderSlideElement(element, canvas, chapterId) {
 
   if (element.type === "latex") {
     const html = element.html || escapeHtml(element.latex || "");
-    return `<div class="slide-element slide-latex" style="${common}color:${element.color || "inherit"}">${html}</div>`;
+    return `<div class="slide-element slide-latex" style="${common}color:${element.color || "inherit"}"><div class="slide-fit-content slide-latex-content" data-slide-fit>${html}</div></div>`;
   }
 
   if (element.type === "table") {
-    return `<div class="slide-element slide-table-wrap" style="${common}">${renderSlideTable(element)}</div>`;
+    return `<div class="slide-element slide-table-wrap" style="${common}"><div class="slide-fit-content slide-table-content" data-slide-fit>${renderSlideTable(element)}</div></div>`;
   }
 
   return "";
@@ -849,8 +915,18 @@ function slideSvgId(value = "") {
   return String(value || "line").replace(/[^a-zA-Z0-9_-]/g, "-");
 }
 
-function slideImageSrc(src = "", chapterId = currentChapterId) {
+function slideImageSrc(src = "", chapterId = currentChapterId, resourceRoot = "") {
   if (!src) return "";
+  const classroomMedia = String(src).match(/^\/api\/classroom-media\/[^/]+\/media\/(.+)$/i);
+  if (classroomMedia && resourceRoot) {
+    return resourceUrl(`resources/${resourceRoot}/media/${classroomMedia[1]}`);
+  }
+  if (resourceRoot && /^media\//i.test(src)) {
+    return resourceUrl(`resources/${resourceRoot}/${src}`);
+  }
+  if (resourceRoot && src.startsWith("gen_img_")) {
+    return resourceUrl(`resources/${resourceRoot}/media/${src}.png`);
+  }
   if (/^(data:|https?:|\/)/i.test(src)) return src;
   if (src.startsWith("gen_img_")) return resourceUrl(`resources/open-maic/${chapterId}/media/${src}.png`);
   return resourceUrl(`resources/open-maic/${chapterId}/${src}`);
@@ -859,22 +935,28 @@ function slideImageSrc(src = "", chapterId = currentChapterId) {
 function renderSlideTable(element) {
   const rows = element.data || [];
   const border = element.outline?.color || "#d9d9d9";
+  const cellMinHeight = Math.max(slideSvgNumber(element.cellMinHeight, 0), 0);
+  const colWidths = Array.isArray(element.colWidths) ? element.colWidths : [];
+  const naturalHeight = Math.max(slideSvgNumber(element.height, 0), cellMinHeight * rows.length);
   return `
-    <table class="slide-table" style="border-color:${border}">
+    <table class="slide-table" style="border-color:${escapeHtml(border)};min-height:${naturalHeight}px">
+      ${colWidths.length
+        ? `<colgroup>${colWidths.map((width) => `<col style="width:${slideSvgNumber(Number(width) * 100)}%" />`).join("")}</colgroup>`
+        : ""}
       <tbody>
         ${rows
           .map(
             (row) => `
-              <tr>
+              <tr${cellMinHeight ? ` style="height:${cellMinHeight}px"` : ""}>
                 ${(row || [])
                   .map((cell) => {
                     const style = cell.style || {};
                     const attrs = [
-                      `style="background:${style.backcolor || "transparent"};text-align:${style.align || "left"};font-weight:${style.bold ? 800 : 500};"`
+                      `style="background:${escapeHtml(style.backcolor || "transparent")};color:${escapeHtml(style.color || "inherit")};text-align:${escapeHtml(style.align || "left")};font-weight:${style.bold ? 800 : 500};${style.fontsize ? `font-size:${slideSvgNumber(style.fontsize, 16)}px;` : ""}${cellMinHeight ? `min-height:${cellMinHeight}px;` : ""}"`
                     ];
                     if (cell.colspan > 1) attrs.push(`colspan="${cell.colspan}"`);
                     if (cell.rowspan > 1) attrs.push(`rowspan="${cell.rowspan}"`);
-                    return `<td ${attrs.join(" ")}>${escapeHtml(cell.text || "")}</td>`;
+                    return `<td ${attrs.join(" ")}>${escapeHtml(cell.text ?? "")}</td>`;
                   })
                   .join("")}
               </tr>

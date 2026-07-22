@@ -40,6 +40,7 @@ assert.doesNotMatch(
   "profile menu must not repeat the progress entry"
 );
 assert.match(index, /id="feedback-view"/);
+assert.match(index, /id="chapter-rail-toggle"[^>]*aria-controls="chapter-rail"[^>]*aria-expanded="false"/);
 assert.match(index, /id="feedback-content"[^>]*name="content"[^>]*autocomplete="off"/);
 assert.doesNotMatch(index, /id="reflection-note"/);
 assert.doesNotMatch(index, /id="save-note"/);
@@ -168,6 +169,8 @@ assert.match(knowledgeSceneSelection, /reading the selection|selectedType/);
 assert.match(core, /await analyticsFlush\(\);\s*await waitForLearningEventSync\(\);\s*await syncLearningSnapshot\("logout"\)/);
 assert.match(bootstrap, /els\.authLogout\?\.addEventListener\("click", async \(\) =>/);
 assert.match(bootstrap, /const needsSceneChoice = unit\.type === "knowledge" && !selectedKnowledgeSceneType\(unit\)/);
+assert.match(bootstrap, /function setChapterRailCollapsed/);
+assert.match(bootstrap, /event\.key !== "Escape"/);
 assert.match(renderLearning, /trackInteraction\("parameter_change",\s*\{\s*persist:\s*false/);
 assert.match(renderLearning, /先选一种互动方式，再开始体验/);
 assert.match(renderLearning, /data-knowledge-scene-panel/);
@@ -186,6 +189,8 @@ assert.match(events, /knowledgeSceneFullscreenButton/);
 assert.match(events, /toggleResourceFullscreen\(stage\)/);
 assert.doesNotMatch(events, /renderKnowledgeSceneAfterSelection/);
 assert.match(styles, /\.multi-scene-courseware-stage:fullscreen/);
+assert.match(styles, /\.chapter-rail\.collapsed[\s\S]*visibility:\s*hidden/);
+assert.match(styles, /position:\s*fixed;[\s\S]*left:\s*max\(64px/);
 assert.doesNotMatch(styles, /\.multi-scene-scene-panel:fullscreen/);
 assert.doesNotMatch(renderLearning, /trackInteraction\("interactive_drag_move"/);
 assert.doesNotMatch(renderLearning, /trackInteraction\("interactive_pointer_(?:down|up|cancel)"/);

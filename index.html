@@ -37,7 +37,7 @@
 })();
 </script>
 
-    <link rel="stylesheet" href="styles.css?v=20260722-multi-scene-v1" />
+    <link rel="stylesheet" href="styles.css?v=20260722-canvas-drawer-v4" />
     <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
   </head>
   <body>
@@ -194,7 +194,7 @@
 
       <section id="learn-view" class="view">
         <div class="learning-shell">
-          <aside class="chapter-rail collapsed" aria-label="大章节" id="chapter-rail">
+          <aside class="chapter-rail collapsed" aria-label="大章节" aria-hidden="true" id="chapter-rail">
             <div class="rail-header">
               <div class="rail-header-row">
                 <div>
@@ -205,7 +205,7 @@
             </div>
             <div id="chapter-list" class="chapter-list"></div>
           </aside>
-          <button class="icon-button rail-toggle" id="chapter-rail-toggle" type="button" aria-label="折叠章节列表" title="折叠章节列表">&lt;</button>
+          <button class="icon-button rail-toggle" id="chapter-rail-toggle" type="button" aria-controls="chapter-rail" aria-expanded="false" aria-label="展开章节列表" title="展开章节列表">章节</button>
 
           <aside class="lesson-rail" aria-label="本章路径">
             <div class="rail-header">
@@ -390,16 +390,16 @@
     <script src="app/main/core.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/return-context.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/analytics.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/render-learning.js?v=20260722-multi-scene-v1"></script>
+    <script src="app/main/render-learning.js?v=20260722-canvas-drawer-v4"></script>
     <script src="app/main/recommendations.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/progress.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/navigation.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/events.js?v=20260722-multi-scene-v1"></script>
+    <script src="app/main/events.js?v=20260722-canvas-drawer-v4"></script>
     <script src="app/main/narration.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/quiz.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/agentic-path.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/feedback-targets.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/feedback.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/bootstrap.js?v=20260722-multi-scene-v1"></script>
+    <script src="app/main/bootstrap.js?v=20260722-canvas-drawer-v4"></script>
   </body>
 </html>

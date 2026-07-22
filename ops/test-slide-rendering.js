@@ -45,6 +45,65 @@ const canvas = {
   viewportRatio: 0.5625
 };
 
+assert.equal(typeof sandbox.renderSlideCanvas, "function");
+const canvasHtml = sandbox.renderSlideCanvas(
+  {
+    ...canvas,
+    theme: { backgroundColor: "#ffffff" },
+    elements: [
+      {
+        id: "table",
+        type: "table",
+        left: 100,
+        top: 180,
+        width: 320,
+        height: 160,
+        cellMinHeight: 40,
+        colWidths: [0.4, 0.6],
+        data: [
+          [
+            {
+              text: "条件",
+              style: {
+                color: "#1f4e79",
+                fontsize: "14",
+                backcolor: "#d9e2f3",
+                align: "center"
+              }
+            },
+            { text: "含义", style: { align: "center" } }
+          ]
+        ]
+      },
+      {
+        id: "image",
+        type: "image",
+        left: 580,
+        top: 210,
+        width: 360,
+        height: 202,
+        src: "/api/classroom-media/cqv14-gh-10/media/gen_img_example.png"
+      }
+    ]
+  },
+  "V14-C1",
+  "multi-scene-required-slide",
+  "open-maic/GH-10-多元链式法则与-Jacobian-实战"
+);
+assert.match(canvasHtml, /data-slide-canvas/);
+assert.match(canvasHtml, /data-slide-width="1000"/);
+assert.match(canvasHtml, /data-slide-height="562\.5"/);
+assert.match(canvasHtml, /width:1000px;height:562\.5px/);
+assert.match(canvasHtml, /left:100px;top:180px;width:320px;height:160px/);
+assert.match(canvasHtml, /<col style="width:40%"/);
+assert.match(canvasHtml, /min-height:40px/);
+assert.match(canvasHtml, /font-size:14px/);
+assert.match(canvasHtml, /color:#1f4e79/);
+assert.match(
+  canvasHtml,
+  /src="resources\/open-maic\/GH-10-多元链式法则与-Jacobian-实战\/media\/gen_img_example\.png"/
+);
+
 const axis = sandbox.renderSlideElement({
   id: "axis",
   type: "line",
@@ -108,7 +167,7 @@ for (const chapter of route.chapters || []) {
       const routeCanvas = knowledgePoint.slide?.canvas;
       for (const element of routeCanvas?.elements || []) {
         if (element.type !== "line" && element.type !== "shape") continue;
-        const html = sandbox.renderSlideElement(element, routeCanvas, chapter.id);
+        const html = sandbox.renderSlideElement(element, routeCanvas, chapter.id, module.source?.resourceRoot || "");
         assert.match(html, /<svg/, `${knowledgePoint.id} ${element.id} must use SVG`);
         assert.doesNotMatch(html, /NaN|undefined/, `${knowledgePoint.id} ${element.id} produced invalid geometry`);
         if (element.type === "line") routeLineCount += 1;
