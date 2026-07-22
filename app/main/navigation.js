@@ -79,12 +79,17 @@ async function returnToLearningCourseware() {
 }
 
 async function selectChapter(chapterId) {
+  const targetChapter = getChapter(chapterId);
   if (typeof agenticIsChapterUnlocked === "function" && !agenticIsChapterUnlocked(chapterId)) {
-    addLog(`「${chapterId}」章节尚未解锁，请先完成当前下一步。`);
+    const label = typeof chapterDisplayCopy === "function"
+      ? chapterDisplayCopy(targetChapter || {}).label
+      : targetChapter?.label;
+    addLog(`「${label || "该章节"}」尚未解锁，请先完成当前下一步。`);
     if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
-    return;
+    return false;
   }
   const previousChapterId = currentChapterId;
+  const previousUnitId = currentUnitId;
   analyticsTrack("chapter_select", {
     data: {
       fromChapterId: previousChapterId,
@@ -99,7 +104,14 @@ async function selectChapter(chapterId) {
   const firstUnlocked = chapterPathUnits.find((unit) =>
     typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id)
   );
-  currentUnitId = firstUnlocked?.id || chapterPathUnits[0]?.id || chapter.units[0]?.id || "";
+  if (!firstUnlocked?.id && chapterPathUnits.length) {
+    currentChapterId = previousChapterId;
+    currentUnitId = previousUnitId;
+    addLog(`「${chapter.label}」的入口尚未解锁，请先完成当前路径。`);
+    renderAll();
+    return false;
+  }
+  currentUnitId = firstUnlocked?.id || chapter.units[0]?.id || "";
   trackLearningEvent("select_chapter", { chapterId, chapterLabel: chapter.label });
   if (!chapter.loaded) {
     renderAll();
@@ -112,27 +124,43 @@ async function selectChapter(chapterId) {
       const unlocked = loadedPathUnits.find((unit) =>
         typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id)
       );
-      currentUnitId = unlocked?.id || loadedPathUnits[0]?.id || loadedChapter.units[0]?.id || "";
+      if (!unlocked?.id && loadedPathUnits.length) {
+        currentChapterId = previousChapterId;
+        currentUnitId = previousUnitId;
+        addLog(`「${loadedChapter.label}」的入口尚未解锁，请先完成当前路径。`);
+        renderAll();
+        return false;
+      }
+      currentUnitId = unlocked?.id || loadedChapter.units[0]?.id || "";
       preloadChapterResources(chapterId);
     } catch {
       // Chapter load failed; stay on current chapter view
-      return;
+      currentChapterId = previousChapterId;
+      currentUnitId = previousUnitId;
+      return false;
     }
+  }
+  if (typeof agenticConsumeCompletedExtensionResume === "function") {
+    agenticConsumeCompletedExtensionResume(currentUnitId);
   }
   renderAll();
   const playerTop = document.querySelector(".player-top");
   if (playerTop) {
-    window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+      window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
   }
+  return true;
 }
 
 function selectUnit(unitId) {
   const unit = getUnit(unitId);
-  if (!unit) return;
-  if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unitId, { allowPrevious: true })) return;
+  if (!unit) return false;
+  if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unitId, { allowPrevious: true })) return false;
   const previousUnit = getUnit(currentUnitId);
   currentChapterId = unit.chapterId;
   currentUnitId = unit.id;
+  if (typeof agenticConsumeCompletedExtensionResume === "function") {
+    agenticConsumeCompletedExtensionResume(unit.id);
+  }
   if (previousUnit?.id !== unit.id) analyticsEnterUnit(unit, "select_unit");
   trackLearningEvent("open_unit", {
     unitId: unit.id,
@@ -146,10 +174,12 @@ function selectUnit(unitId) {
   if (playerTop) {
     window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
   }
+  return true;
 }
 
 function completeCurrentUnit() {
   const unit = getUnit();
+  if (!unit) return false;
   if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unit.id, { allowPrevious: true, silent: true })) return false;
   if (!state.completed.includes(unit.id)) {
     state.completed.push(unit.id);
@@ -192,6 +222,84 @@ function completeCurrentUnit() {
     });
   }
   saveState();
+  renderAll();
+  return true;
+}
+
+function focusQuizSubmitPanel(unit) {
+  const submitButton = document.querySelector(`[data-submit-quiz="${unit?.id || ""}"]`);
+  const target = submitButton?.closest(".quiz-submit-panel") || submitButton;
+  if (!target) return false;
+  target.scrollIntoView({ behavior: "smooth", block: "center" });
+  window.setTimeout(() => submitButton?.focus({ preventScroll: true }), 320);
+  return true;
+}
+
+async function completeAndAdvanceCurrentUnit(event) {
+  event?.preventDefault?.();
+  const unit = getUnit();
+  if (!unit) return false;
+
+  if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
+    addLog("请先选择一个互动场景，再完成本节。");
+    if (typeof focusKnowledgeSceneChoicePanel === "function") focusKnowledgeSceneChoicePanel();
+    return false;
+  }
+
+  if (unit.type === "quiz" && !unit.placeholderQuiz && !(state.submittedQuizzes || []).includes(unit.id)) {
+    addLog("测验需要先提交，系统才能根据证据解锁下一步。");
+    focusQuizSubmitPanel(unit);
+    return false;
+  }
+
+  if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
+    addLog("学习建议已给出下一步，请先确认路径。");
+    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+    else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+    return false;
+  }
+
+  if (
+    unit.type === "quiz"
+    && typeof agenticQuizPathReady === "function"
+    && !agenticQuizPathReady(unit)
+  ) {
+    addLog("学习建议正在生成，请稍候片刻。");
+    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+    return false;
+  }
+
+  const completionCta = typeof agenticCompletionCta === "function"
+    ? agenticCompletionCta(unit)
+    : null;
+  if (completionCta?.disabled) return false;
+
+  const nextFromCompletion = typeof agenticOnUnitCompleted === "function"
+    ? agenticOnUnitCompleted(unit)
+    : null;
+  if (completeCurrentUnit() === false) return false;
+
+  if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
+    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+    else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+    return true;
+  }
+
+  const next = nextFromCompletion?.id
+    ? nextFromCompletion
+    : typeof agenticNextUnlockedUnitAfter === "function"
+      ? agenticNextUnlockedUnitAfter(unit.id)
+      : null;
+  if (next?.id && typeof agenticOpenUnit === "function") {
+    await agenticOpenUnit(next.id);
+    return true;
+  }
+
+  const chapter = getChapter(unit.chapterId);
+  const isExtension = typeof agenticIsExtensionChapter === "function" && agenticIsExtensionChapter(chapter);
+  addLog(isExtension
+    ? "当前扩展学习已完成，可从章节栏返回主线。"
+    : "你已到达当前课程路线的最后一步。");
   renderAll();
   return true;
 }

@@ -35,7 +35,9 @@ function agenticExtensionChapterHasEvidence(chapterId = "") {
 function agenticExtensionChapterVisible(chapterId = "", path = state.agenticPath || {}) {
   if (!chapterId) return false;
   const unlocked = new Set(path.unlockedExtensionChapters || []);
-  return unlocked.has(chapterId) || agenticExtensionChapterHasEvidence(chapterId);
+  return unlocked.has(chapterId)
+    || path.activeExtensionChapter?.chapterId === chapterId
+    || agenticExtensionChapterHasEvidence(chapterId);
 }
 
 function agenticExtensionChaptersForChapter(chapterId = "") {
@@ -97,7 +99,13 @@ function agenticShouldRecommendExtensionChapter(chapter = {}, unit = {}, records
 
 function agenticRecommendedExtensionChaptersForPost(unit = {}, records = []) {
   return agenticLockedExtensionChaptersForChapter(unit.chapterId)
-    .filter((chapter) => agenticShouldRecommendExtensionChapter(chapter, unit, records));
+    .sort((a, b) => {
+      const recommendedDiff = Number(agenticShouldRecommendExtensionChapter(b, unit, records))
+        - Number(agenticShouldRecommendExtensionChapter(a, unit, records));
+      return recommendedDiff
+        || (a.order || 0) - (b.order || 0)
+        || String(a.id).localeCompare(String(b.id), "zh-Hans-CN");
+    });
 }
 
 function agenticExtensionChapterCandidate(chapter) {
@@ -201,6 +209,58 @@ function agenticChapterReadyToAdvance(chapter, path = state.agenticPath || {}) {
   return agenticDecisionShowsPostAdvance(chapter, path);
 }
 
+function agenticMainChapterList() {
+  return (typeof curriculum !== "undefined" ? curriculum : [])
+    .filter((chapter) => !agenticIsExtensionChapter(chapter));
+}
+
+function agenticFurthestMainChapterEvidenceIndex() {
+  const main = agenticMainChapterList();
+  const evidenceIds = new Set([
+    ...(state.completed || []),
+    ...(state.submittedQuizzes || []),
+    ...(state.quizResults || []).map((entry) => entry?.unitId || entry?.unit_id || ""),
+    ...Object.keys(state.quizAttempts || {})
+  ]);
+  let furthest = -1;
+  evidenceIds.forEach((unitId) => {
+    const chapterId = agenticChapterIdForUnitId(unitId);
+    const index = main.findIndex((chapter) => chapter.id === chapterId);
+    if (index > furthest) furthest = index;
+  });
+  return furthest;
+}
+
+function agenticBackfillChapterAdvanceFromEvidence(path) {
+  if (!path || !agenticMultiSceneMode()) return;
+  const main = agenticMainChapterList();
+  const furthestEvidenceIndex = agenticFurthestMainChapterEvidenceIndex();
+  for (let index = 0; index < furthestEvidenceIndex; index += 1) {
+    const chapter = main[index];
+    if (!chapter?.id || agenticChapterReadyToAdvance(chapter, path)) continue;
+    agenticMarkChapterReadyOnPath(path, chapter.id, "historical_later_chapter_evidence");
+  }
+  const activeExtension = path.activeExtensionChapter;
+  const resumeChapterId = agenticChapterIdForUnitId(activeExtension?.resumeUnitId || "");
+  const resumeIndex = main.findIndex((chapter) => chapter.id === resumeChapterId);
+  if (activeExtension && resumeIndex >= 0 && furthestEvidenceIndex >= resumeIndex) {
+    path.activeExtensionChapter = null;
+  }
+}
+
+function agenticActiveExtensionBlocksChapter(chapterId, path = state.agenticPath || {}) {
+  const active = path.activeExtensionChapter;
+  if (!active?.chapterId || active.completed) return false;
+  const main = agenticMainChapterList();
+  const sourceChapterId =
+    active.fromChapterId ||
+    getChapter(active.chapterId)?.recommendedAfter ||
+    "";
+  const sourceIndex = main.findIndex((chapter) => chapter.id === sourceChapterId);
+  const targetIndex = main.findIndex((chapter) => chapter.id === chapterId);
+  return sourceIndex >= 0 && targetIndex > sourceIndex;
+}
+
 function agenticChapterUnlockedBySequence(chapterId) {
   if (!agenticMultiSceneMode()) return true;
   const list = typeof curriculum !== "undefined" ? curriculum : [];
@@ -208,6 +268,7 @@ function agenticChapterUnlockedBySequence(chapterId) {
   const target = list[index];
   if (agenticIsExtensionChapter(target)) return agenticExtensionChapterVisible(chapterId, state.agenticPath || {});
   if (index <= 0) return index === 0 || !chapterId;
+  if (agenticActiveExtensionBlocksChapter(chapterId, state.agenticPath || {})) return false;
   for (let i = 0; i < index; i += 1) {
     if (list[i]?.extension || list[i]?.track === "extension") continue;
     if (!agenticChapterReadyToAdvance(list[i], state.agenticPath || {})) return false;
@@ -254,6 +315,8 @@ function agenticDefaults() {
     activeExtensionChapter: null,
     reviewResume: null,
     reviewQueue: null,
+    deferredExtensionPlan: null,
+    deferredReviewPlan: null,
     chapterAdvanceReady: {},
     chapterAdvanceReasons: {},
     lastNarration: "完成当前小节后，我会为你准备合适的下一步。"
@@ -285,11 +348,6 @@ function ensureAgenticPath() {
   Object.keys(defaults).forEach((key) => {
     if (state.agenticPath[key] === undefined) state.agenticPath[key] = defaults[key];
   });
-  if (agenticMultiSceneMode()) agenticNormalizeCurrentPosition();
-  const firstUnitId = agenticInitialUnitId();
-  const safeCurrentUnitId = agenticCurrentUnitIsAllowed(currentUnitId) ? currentUnitId : "";
-  state.agenticPath.unlocked = Array.from(new Set([...(state.agenticPath.unlocked || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
-  state.agenticPath.visibleUnits = Array.from(new Set([...(state.agenticPath.visibleUnits || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
   state.agenticPath.skipped = state.agenticPath.skipped || {};
   state.agenticPath.decisions = state.agenticPath.decisions || [];
   state.agenticPath.chapterExtensionsUsed = state.agenticPath.chapterExtensionsUsed || {};
@@ -302,9 +360,18 @@ function ensureAgenticPath() {
   state.agenticPath.activeExtensionChapter = state.agenticPath.activeExtensionChapter || null;
   state.agenticPath.reviewResume = state.agenticPath.reviewResume || null;
   state.agenticPath.reviewQueue = state.agenticPath.reviewQueue || null;
+  state.agenticPath.deferredExtensionPlan = state.agenticPath.deferredExtensionPlan || null;
+  state.agenticPath.deferredReviewPlan = state.agenticPath.deferredReviewPlan || null;
   state.agenticPath.chapterAdvanceReady = state.agenticPath.chapterAdvanceReady || {};
   state.agenticPath.chapterAdvanceReasons = state.agenticPath.chapterAdvanceReasons || {};
   agenticReconcilePathWithEvidence(state.agenticPath);
+  agenticBackfillChapterAdvanceFromEvidence(state.agenticPath);
+  if (agenticMultiSceneMode()) agenticNormalizeCurrentPosition();
+  const firstUnitId = agenticInitialUnitId();
+  const safeCurrentUnitId = agenticCurrentUnitIsAllowed(currentUnitId) ? currentUnitId : "";
+  state.agenticPath.unlocked = Array.from(new Set([...(state.agenticPath.unlocked || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
+  state.agenticPath.visibleUnits = Array.from(new Set([...(state.agenticPath.visibleUnits || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
+  agenticPruneLockedRoutePath(state.agenticPath);
   return state.agenticPath;
 }
 
@@ -636,6 +703,7 @@ function agenticActionSummary(action, pending = null) {
   const unitIds = agenticActionTargetIds(action, pending);
   return {
     type: action?.type || "",
+    actionKey: action?.actionKey || action?.type || "",
     label: action?.label || "",
     primary: Boolean(action?.primary),
     unitIds,
@@ -669,6 +737,7 @@ function agenticDecisionMeta(pending, action, targetId) {
     recommendationCreatedAt: pending?.createdAt || pending?.decisionCreatedAt || "",
     choiceLatencyMs: agenticDecisionLatencyMs(pending),
     candidateActions: agenticPendingActionSummaries(pending),
+    selectedActionKey: action?.actionKey || action?.type || "",
     selectedActionLabel: action?.label || "",
     selectedCandidateIds,
     selectedSceneId: action?.type === "scene" ? targetId : "",
@@ -721,6 +790,195 @@ function agenticPendingAppliesToUnit(unitId) {
   return agenticPendingAppliesToUnitId(pending, unitId);
 }
 
+function agenticClonePlan(plan) {
+  if (!plan || typeof plan !== "object") return null;
+  return JSON.parse(JSON.stringify(plan));
+}
+
+function agenticPlanWithActionTypes(pending, actionTypes = []) {
+  const relevantTypes = new Set(actionTypes);
+  const sourceActions = pending?.actions || [];
+  if (!sourceActions.some((action) => relevantTypes.has(action.type))) return null;
+  const clone = agenticClonePlan(pending);
+  clone.actions = (clone.actions || []).filter((action) =>
+    relevantTypes.has(action.type) || action.type === "continue"
+  );
+  clone.deferredFromCreatedAt = pending.createdAt || "";
+  clone.createdAt = beijingNow();
+  return clone;
+}
+
+function agenticDeferredExtensionPlanFrom(pending) {
+  return agenticPlanWithActionTypes(pending, ["extension", "extension_chapter"]);
+}
+
+function agenticDeferredReviewPlanFrom(pending) {
+  return agenticPlanWithActionTypes(pending, [
+    "review_knowledge",
+    "unskip_knowledge",
+    "review_and_unskip_knowledge"
+  ]);
+}
+
+function agenticTakeDeferredPlan(path, key, unitId) {
+  const stored = path?.[key];
+  if (!stored) return null;
+  path[key] = null;
+  const plan = agenticClonePlan(stored);
+  plan.unitId = unitId;
+  plan.pendingAt = unitId;
+  plan.resumedDeferredPlan = key;
+  plan.createdAt = beijingNow();
+  return plan;
+}
+
+function agenticRestoreDeferredPlan(path, unitId, keys = ["deferredExtensionPlan", "deferredReviewPlan"]) {
+  for (const key of keys) {
+    const plan = agenticTakeDeferredPlan(path, key, unitId);
+    if (!plan) continue;
+    path.pendingPlan = plan;
+    path.pendingAt = unitId;
+    path.lastNarration = key === "deferredExtensionPlan"
+      ? "回看或补学已经完成。你之前保留的扩展选择仍然有效，也可以继续主线。"
+      : "扩展学习已经完成。你之前勾选的回看或补学计划仍然保留，现在可以继续处理。";
+    return plan;
+  }
+  return null;
+}
+
+function agenticDetourResumeUnitId(pending, anchorUnitId = pending?.anchorUnitId || pending?.unitId || "") {
+  return pending?.resumeUnitId
+    || agenticNextMainUnitAfter(anchorUnitId)?.id
+    || agenticNextUnitIdAfter(anchorUnitId)
+    || (pending?.phase === "post" ? anchorUnitId : "");
+}
+
+function agenticActiveExtensionResumeForPhase(path, chapterId, phase) {
+  if (phase !== "post") return "";
+  const active = path?.activeExtensionChapter;
+  return active?.chapterId === chapterId ? active.resumeUnitId || "" : "";
+}
+
+function agenticFinalizeActiveExtensionChapter(
+  path,
+  chapterId,
+  reason = "extension_chapter_completed",
+  { advanceSource = !path?.deferredReviewPlan, keepResume = false } = {}
+) {
+  const active = path?.activeExtensionChapter;
+  if (!active || active.chapterId !== chapterId) return null;
+  const sourceChapterId =
+    active.fromChapterId ||
+    getChapter(chapterId)?.recommendedAfter ||
+    "";
+  agenticMarkChapterReadyOnPath(path, chapterId, reason);
+  if (advanceSource && sourceChapterId) {
+    agenticMarkChapterReadyOnPath(path, sourceChapterId, reason);
+  }
+  const completedExtension = {
+    ...active,
+    completed: Boolean(advanceSource),
+    completedAt: advanceSource ? beijingNow() : ""
+  };
+  path.activeExtensionChapter = keepResume && advanceSource ? completedExtension : null;
+  return completedExtension;
+}
+
+function agenticConsumeCompletedExtensionResume(targetUnitId) {
+  const path = ensureAgenticPath();
+  const active = path.activeExtensionChapter;
+  if (!active?.completed || active.resumeUnitId !== targetUnitId) return false;
+  path.activeExtensionChapter = null;
+  saveState();
+  return true;
+}
+
+function agenticQuizPathReady(unit) {
+  if (!unit || unit.type !== "quiz" || unit.placeholderQuiz) return true;
+  if (!(state.submittedQuizzes || []).includes(unit.id)) return false;
+  const path = ensureAgenticPath();
+  if (agenticPendingAppliesToUnitId(path.pendingPlan, unit.id)) return true;
+  if (agenticNextUnlockedUnitAfter(unit.id)?.id) return true;
+  if (unit.assessmentPhase === "post") {
+    return agenticChapterReadyToAdvance(getChapter(unit.chapterId), path);
+  }
+  return !["pre", "formative"].includes(unit.assessmentPhase);
+}
+
+function agenticCompletionCta(unit) {
+  if (!unit) return { label: "完成本节", disabled: false };
+  const path = ensureAgenticPath();
+  const completed = (state.completed || []).includes(unit.id);
+  const activeExtensionTarget = agenticActiveExtensionTargetFromSource(path, unit.id);
+  if (activeExtensionTarget?.id) {
+    return { label: "继续扩展学习", disabled: false };
+  }
+  const reviewQueue = agenticNormalizeReviewQueue(path);
+  const reviewIndex = reviewQueue.indexOf(unit.id);
+  if (reviewIndex >= 0) {
+    if (reviewQueue[reviewIndex + 1]) {
+      return { label: completed ? "复习并继续下一个知识点" : "完成回看并继续", disabled: false };
+    }
+    if (path.deferredExtensionPlan) return { label: "完成回看并选择扩展", disabled: false };
+    if (path.deferredReviewPlan) return { label: "完成本节并处理保留的回看", disabled: false };
+    const resumeId = path.reviewQueue?.resumeUnitId || path.reviewResume?.resumeUnitId || "";
+    return {
+      label: agenticIsCrossChapterResume(unit.id, resumeId)
+        ? "完成回看并进入下一章"
+        : "完成回看并返回主线",
+      disabled: false
+    };
+  }
+
+  if (path.oneStepExtension?.unitId === unit.id) {
+    if (path.deferredReviewPlan) return { label: "完成拓展并处理回看", disabled: false };
+    const resumeId = path.oneStepExtension.resumeUnitId || "";
+    return {
+      label: agenticIsCrossChapterResume(path.oneStepExtension.fromUnitId, resumeId)
+        ? "完成拓展并进入下一章"
+        : "完成拓展并返回主线",
+      disabled: false
+    };
+  }
+
+  if (path.activeDetour?.unitId === unit.id) {
+    const resumeId = path.activeDetour.resumeUnitId || "";
+    return {
+      label: agenticIsCrossChapterResume(path.activeDetour.fromUnitId, resumeId)
+        ? "完成重学并进入下一章"
+        : "完成重学并返回主线",
+      disabled: false
+    };
+  }
+
+  const next = agenticNextUnlockedUnitAfter(unit.id) || agenticNextMainUnitAfter(unit.id);
+  if (next?.id) {
+    const crossChapter = agenticIsCrossChapterResume(unit.id, next.id);
+    return {
+      label: completed
+        ? crossChapter ? "复习并进入下一章" : "复习并跳到下一节"
+        : crossChapter
+          ? "完成本节并进入下一章"
+          : "完成本节并进入下一节",
+      disabled: false
+    };
+  }
+
+  const chapter = getChapter(unit.chapterId);
+  if (completed) {
+    return {
+      label: agenticIsExtensionChapter(chapter) ? "扩展学习已完成" : "课程已完成",
+      disabled: true
+    };
+  }
+  return {
+    label: agenticIsExtensionChapter(chapter)
+      ? "完成扩展学习"
+      : "完成课程",
+    disabled: false
+  };
+}
+
 function agenticChapterIdForUnitId(unitId = "") {
   const unit = findMainUnit(unitId);
   return unit?.chapterId || agenticParseUnitId(unitId)?.chapterId || "";
@@ -758,13 +1016,24 @@ function agenticResumeAfterInsertedAdaptive(unit) {
   };
 }
 
+function agenticLinearUnitsForUnit(unitId = "") {
+  if (!agenticMultiSceneMode()) return agenticAllMainUnits();
+  const unit = findMainUnit(unitId);
+  const chapter = unit ? getChapter(unit.chapterId) : null;
+  if (agenticIsExtensionChapter(chapter)) return chapter?.units || [];
+  return (curriculum || [])
+    .filter((candidate) => !agenticIsExtensionChapter(candidate))
+    .flatMap((candidate) => candidate.units || []);
+}
+
 function agenticNextMainUnitAfter(unitId, { includeSkipped = false } = {}) {
-  const units = agenticAllMainUnits();
+  const units = agenticLinearUnitsForUnit(unitId);
   const idx = units.findIndex((unit) => unit.id === unitId);
   if (idx >= 0) {
     for (let i = Math.max(0, idx + 1); i < units.length; i += 1) {
       if (includeSkipped || !agenticIsSkipped(units[i].id)) return units[i];
     }
+    if (agenticMultiSceneMode()) return null;
   }
 
   const parsed = agenticParseUnitId(unitId);
@@ -789,6 +1058,16 @@ function agenticNextMainUnitAfter(unitId, { includeSkipped = false } = {}) {
   for (const candidate of candidateIds) {
     const id = `${candidate.chapterId}-scene-${candidate.order}`;
     if (includeSkipped || !agenticIsSkipped(id)) return agenticStubCoreUnit(candidate.chapterId, candidate.order);
+  }
+  return null;
+}
+
+function agenticPreviousMainUnitBefore(unitId, { includeSkipped = false } = {}) {
+  const units = agenticLinearUnitsForUnit(unitId);
+  const idx = units.findIndex((unit) => unit.id === unitId);
+  if (idx < 0) return null;
+  for (let i = idx - 1; i >= 0; i -= 1) {
+    if (includeSkipped || !agenticIsSkipped(units[i].id)) return units[i];
   }
   return null;
 }
@@ -856,30 +1135,88 @@ function agenticReviewQueueTargetAfter(unitId) {
   return nextId ? (findMainUnit(nextId) || { id: nextId, label: agenticUnitLabel(nextId), chapterId: agenticChapterIdForUnitId(nextId) }) : null;
 }
 
+function agenticReviewQueueTargetBefore(unitId) {
+  const path = ensureAgenticPath();
+  const queue = agenticNormalizeReviewQueue(path);
+  const idx = queue.indexOf(unitId);
+  if (idx < 0) return null;
+  const previousId = queue[idx - 1] || path.reviewQueue?.fromUnitId || path.reviewResume?.fromUnitId || "";
+  return previousId
+    ? findMainUnit(previousId) || { id: previousId, label: agenticUnitLabel(previousId), chapterId: agenticChapterIdForUnitId(previousId) }
+    : null;
+}
+
+function agenticActiveExtensionTargetFromSource(path, unitId) {
+  const active = path?.activeExtensionChapter;
+  if (!active?.chapterId || active.completed || active.fromUnitId !== unitId) return null;
+  const chapter = getChapter(active.chapterId);
+  const unlocked = new Set([...(path.unlocked || []), ...(state.completed || [])]);
+  const units = chapter?.units || [];
+  return units.find((candidate) => unlocked.has(candidate.id) && !state.completed.includes(candidate.id))
+    || units.find((candidate) => unlocked.has(candidate.id))
+    || null;
+}
+
 function agenticNextUnlockedUnitAfter(unitId) {
   if (agenticPendingAppliesToUnit(unitId)) return null;
   const reviewNext = agenticReviewQueueTargetAfter(unitId);
   if (reviewNext?.id) return reviewNext;
+  const path = ensureAgenticPath();
+  const activeExtensionTarget = agenticActiveExtensionTargetFromSource(path, unitId);
+  if (activeExtensionTarget?.id) return activeExtensionTarget;
   const current = findMainUnit(unitId) || getUnit(unitId);
   const adaptiveResume = agenticResumeAfterInsertedAdaptive(current);
   if (adaptiveResume?.id && (agenticIsUnitUnlocked(adaptiveResume.id) || state.completed.includes(adaptiveResume.id))) {
     return findMainUnit(adaptiveResume.id) || adaptiveResume;
   }
-  const units = currentNavigableUnits();
-  const idx = units.findIndex((unit) => unit.id === unitId);
-  for (let i = Math.max(0, idx + 1); i < units.length; i += 1) {
-    if (agenticIsUnitUnlocked(units[i].id) && !agenticIsSkipped(units[i].id)) return units[i];
+  const activeExtension = path.activeExtensionChapter;
+  if (
+    activeExtension?.completed
+    && current?.chapterId === activeExtension.chapterId
+    && activeExtension.resumeUnitId
+    && agenticIsUnitUnlocked(activeExtension.resumeUnitId)
+  ) {
+    return findMainUnit(activeExtension.resumeUnitId) || {
+      id: activeExtension.resumeUnitId,
+      label: agenticUnitLabel(activeExtension.resumeUnitId),
+      chapterId: agenticChapterIdForUnitId(activeExtension.resumeUnitId)
+    };
   }
-  return null;
+  const next = agenticNextMainUnitAfter(unitId);
+  if (!next?.id || agenticIsSkipped(next.id)) return null;
+  return agenticIsUnitUnlocked(next.id) || state.completed.includes(next.id) ? next : null;
 }
 
 function agenticPreviousUnlockedUnitBefore(unitId) {
-  const units = currentNavigableUnits();
-  const idx = units.findIndex((unit) => unit.id === unitId);
-  for (let i = idx - 1; i >= 0; i -= 1) {
-    if (agenticIsUnitUnlocked(units[i].id) && !agenticIsSkipped(units[i].id)) return units[i];
+  const path = ensureAgenticPath();
+  const reviewPrevious = agenticReviewQueueTargetBefore(unitId);
+  if (reviewPrevious?.id) return reviewPrevious;
+  if (path.reviewResume?.unitId === unitId && path.reviewResume.fromUnitId) {
+    return findMainUnit(path.reviewResume.fromUnitId);
   }
-  return null;
+  if (path.oneStepExtension?.unitId === unitId && path.oneStepExtension.fromUnitId) {
+    return findMainUnit(path.oneStepExtension.fromUnitId);
+  }
+  if (path.activeDetour?.unitId === unitId && path.activeDetour.fromUnitId) {
+    return findMainUnit(path.activeDetour.fromUnitId);
+  }
+
+  const unit = findMainUnit(unitId);
+  const chapter = unit ? getChapter(unit.chapterId) : null;
+  if (
+    unit
+    && agenticIsExtensionChapter(chapter)
+    && (chapter.units || [])[0]?.id === unit.id
+  ) {
+    const sourceId = path.activeExtensionChapter?.chapterId === chapter.id
+      ? path.activeExtensionChapter.fromUnitId
+      : agenticChapterPostUnit(getChapter(chapter.recommendedAfter))?.id || "";
+    if (sourceId) return findMainUnit(sourceId);
+  }
+
+  const previous = agenticPreviousMainUnitBefore(unitId);
+  if (!previous?.id || agenticIsSkipped(previous.id)) return null;
+  return agenticIsUnitUnlocked(previous.id) || state.completed.includes(previous.id) ? previous : null;
 }
 
 function agenticShouldShowUnit(unit) {
@@ -1001,13 +1338,21 @@ function agenticGuardNavigation(targetUnitId, { allowPrevious = false, silent = 
     (allowPrevious && state.completed.includes(targetUnitId)) ||
     targetUnitId === path.pendingPlan?.unitId;
 
-  const pendingBlocksTarget = path.pendingPlan && (!target.chapterId || target.chapterId === path.pendingPlan.chapterId);
+  const pendingBlocksTarget = path.pendingPlan && agenticPendingAppliesToCurrent(path.pendingPlan);
   if (pendingBlocksTarget && targetUnitId !== path.pendingPlan.unitId && !isReviewTarget) {
     if (!silent) {
       const pendingLabel = agenticUnitLabel(path.pendingPlan.unitId || path.pendingPlan.anchorUnitId || "");
       addLog(`请先回到「${pendingLabel || "当前测验"}」处理学习建议，再继续通关。`);
       renderAgenticCoachPanel();
     }
+    return false;
+  }
+
+  const chapterAllowed = !agenticMultiSceneMode()
+    || !target.chapterId
+    || agenticChapterUnlockedBySequence(target.chapterId);
+  if (!chapterAllowed && !isReviewTarget && current?.id !== targetUnitId) {
+    if (!silent) agenticLockedMessage(targetUnitId);
     return false;
   }
 
@@ -1592,23 +1937,24 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
     }
     const extension = agenticFirstUnusedCandidate(rankedExtensionCandidates, unit.chapterId);
     if (extension) actions.push({ type: "extension", label: "解锁一步拓展", primary: actions.length === 0, units: [extension] });
-    if (extensionChapters.length) {
-      const candidate = agenticExtensionChapterCandidate(extensionChapters[0]);
-      if (candidate?.id) {
-        const labels = extensionChapters
-          .map((chapter) => (typeof chapterDisplayCopy === "function" ? chapterDisplayCopy(chapter).label : chapter.label))
-          .filter(Boolean)
-          .join(" / ");
-        actions.push({
-          type: "extension_chapter",
-          label: `解锁扩展：${labels || candidate.label}`,
-          primary: actions.length === 0,
-          units: [candidate],
-          extensionChapterId: extensionChapters[0].id,
-          extensionChapterIds: extensionChapters.map((chapter) => chapter.id)
-        });
-      }
-    }
+    extensionChapters.forEach((extensionChapter, extensionIndex) => {
+      const candidate = agenticExtensionChapterCandidate(extensionChapter);
+      if (!candidate?.id) return;
+      const label = typeof chapterDisplayCopy === "function"
+        ? chapterDisplayCopy(extensionChapter).label
+        : extensionChapter.label;
+      const recommended = agenticShouldRecommendExtensionChapter(extensionChapter, unit, records);
+      actions.push({
+        type: "extension_chapter",
+        actionKey: `extension_chapter:${extensionChapter.id}`,
+        label: `${recommended ? "推荐扩展" : "可选扩展"}：${label || candidate.label}`,
+        primary: actions.length === 0 && extensionIndex === 0,
+        units: [candidate],
+        extensionChapterId: extensionChapter.id,
+        extensionChapterIds: [extensionChapter.id],
+        recommended
+      });
+    });
     actions.push({ type: "continue", label: "进入下一章", primary: actions.length === 0, units: [] });
   }
 
@@ -1654,20 +2000,47 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
     }
   }
 
+  const path = ensureAgenticPath();
   if (!actions.length) {
-    if (phase === "post") agenticMarkChapterReadyToAdvance(unit.chapterId, "post_no_special_plan");
+    const activeExtensionResume = agenticActiveExtensionResumeForPhase(path, unit.chapterId, phase);
+    if (activeExtensionResume) {
+      if (path.deferredReviewPlan) {
+        agenticFinalizeActiveExtensionChapter(
+          path,
+          unit.chapterId,
+          "extension_completed_before_deferred_review",
+          { advanceSource: false }
+        );
+        const deferredPlan = agenticRestoreDeferredPlan(path, unit.id, ["deferredReviewPlan"]);
+        if (deferredPlan) {
+          path.lastNarration = "扩展章节已经完成。你之前保留的主线回看或补学仍然有效，请继续确认。";
+          saveState();
+          agenticRenderLearningUpdate();
+          return;
+        }
+      }
+      agenticFinalizeActiveExtensionChapter(
+        path,
+        unit.chapterId,
+        "extension_completed_without_follow_up",
+        { advanceSource: true, keepResume: true }
+      );
+      agenticUnlockUnit(activeExtensionResume, "extension_resume_ready");
+      path.lastNarration = `扩展章节已经完成，下一步回到主线：${agenticUnitLabel(activeExtensionResume)}。`;
+      saveState();
+      agenticRenderLearningUpdate();
+      return;
+    }
+    if (phase === "post") agenticMarkChapterReadyOnPath(path, unit.chapterId, "post_no_special_plan");
     const next = agenticUnlockDefaultNext(unit.id, "quiz_no_special_plan");
-    ensureAgenticPath().lastNarration = agenticNoSpecialPlanNarration(unit, next);
-    if (next) ensureAgenticPath().oneStepExtension = null;
+    path.lastNarration = agenticNoSpecialPlanNarration(unit, next);
+    if (next) path.oneStepExtension = null;
     saveState();
     agenticRenderLearningUpdate();
     return;
   }
 
-  const path = ensureAgenticPath();
-  const activeExtensionResume = path.activeExtensionChapter?.chapterId === unit.chapterId
-    ? path.activeExtensionChapter.resumeUnitId || ""
-    : "";
+  const activeExtensionResume = agenticActiveExtensionResumeForPhase(path, unit.chapterId, phase);
   path.pendingPlan = {
     unitId: unit.id,
     chapterId: unit.chapterId,
@@ -1861,9 +2234,26 @@ function agenticOnUnitCompleted(unit) {
       "";
     const queuePhase = path.reviewQueue?.phase || path.reviewResume?.phase || "";
     const queueChapterId = path.reviewQueue?.chapterId || path.reviewResume?.chapterId || unit.chapterId;
+    const activeExtension = path.activeExtensionChapter?.chapterId === queueChapterId
+      ? path.activeExtensionChapter
+      : null;
     path.reviewQueue = null;
     path.reviewResume = null;
-    if (queuePhase === "post") agenticMarkChapterReadyOnPath(path, queueChapterId, "post_review_queue_completed");
+    if (activeExtension && queuePhase === "post") {
+      agenticFinalizeActiveExtensionChapter(
+        path,
+        queueChapterId,
+        path.deferredReviewPlan
+          ? "extension_review_completed_before_deferred_review"
+          : "extension_review_completed",
+        { advanceSource: !path.deferredReviewPlan }
+      );
+    }
+    const deferredPlan = agenticRestoreDeferredPlan(path, unit.id);
+    if (deferredPlan) return null;
+    if (queuePhase === "post" && !activeExtension) {
+      agenticMarkChapterReadyOnPath(path, queueChapterId, "post_review_queue_completed");
+    }
     if (resumeId) agenticUnlockUnit(resumeId, "return_from_review_queue");
     path.lastNarration = resumeId
       ? `你勾选的回看知识点已完成，回到主线：${agenticUnitLabel(resumeId)}。`
@@ -1871,12 +2261,14 @@ function agenticOnUnitCompleted(unit) {
     return resumeId ? { id: resumeId, label: agenticUnitLabel(resumeId) } : null;
   }
   if (path.oneStepExtension?.unitId === unit.id) {
-    const resumeId = path.oneStepExtension.resumeUnitId || agenticNextUnitIdAfter(path.oneStepExtension.fromUnitId);
-    const fromUnitId = path.oneStepExtension.fromUnitId || unit.id;
+    const extension = path.oneStepExtension;
+    const resumeId = extension.resumeUnitId || agenticNextUnitIdAfter(extension.fromUnitId);
+    const fromUnitId = extension.fromUnitId || unit.id;
     const isCrossChapter = agenticIsCrossChapterResume(fromUnitId, resumeId);
-    const extensionChapterId = path.oneStepExtension.chapterId || agenticChapterIdForUnitId(fromUnitId) || unit.chapterId;
-    if (path.oneStepExtension.phase === "post") agenticMarkChapterReadyOnPath(path, extensionChapterId, "post_extension_completed");
+    const extensionChapterId = extension.chapterId || agenticChapterIdForUnitId(fromUnitId) || unit.chapterId;
     path.oneStepExtension = null;
+    if (agenticRestoreDeferredPlan(path, unit.id, ["deferredReviewPlan"])) return null;
+    if (extension.phase === "post") agenticMarkChapterReadyOnPath(path, extensionChapterId, "post_extension_completed");
     agenticUnlockUnit(resumeId, isCrossChapter ? "advance_from_one_step_extension" : "return_from_one_step_extension");
     path.lastNarration = isCrossChapter
       ? `跨章预告已完成，进入下一章：${agenticUnitLabel(resumeId)}。`
@@ -1886,8 +2278,25 @@ function agenticOnUnitCompleted(unit) {
   if (path.reviewResume?.unitId === unit.id) {
     const reviewResume = path.reviewResume;
     const resumeId = reviewResume.resumeUnitId || agenticNextMainUnitAfter(reviewResume.fromUnitId || unit.id)?.id || "";
+    const activeExtension = path.activeExtensionChapter?.chapterId === (reviewResume.chapterId || unit.chapterId)
+      ? path.activeExtensionChapter
+      : null;
     path.reviewResume = null;
-    if (reviewResume.phase === "post") agenticMarkChapterReadyOnPath(path, reviewResume.chapterId || unit.chapterId, "post_review_completed");
+    if (activeExtension && reviewResume.phase === "post") {
+      agenticFinalizeActiveExtensionChapter(
+        path,
+        reviewResume.chapterId || unit.chapterId,
+        path.deferredReviewPlan
+          ? "extension_review_completed_before_deferred_review"
+          : "extension_review_completed",
+        { advanceSource: !path.deferredReviewPlan }
+      );
+    }
+    const deferredPlan = agenticRestoreDeferredPlan(path, unit.id);
+    if (deferredPlan) return null;
+    if (reviewResume.phase === "post" && !activeExtension) {
+      agenticMarkChapterReadyOnPath(path, reviewResume.chapterId || unit.chapterId, "post_review_completed");
+    }
     if (resumeId) agenticUnlockUnit(resumeId, "return_from_quiz_review");
     path.lastNarration = resumeId
       ? `回看知识点已完成，回到主线：${agenticUnitLabel(resumeId)}。`
@@ -2138,7 +2547,7 @@ function agenticStudentNarrationForPending(pending) {
   if (phase === "post" && hasReview && hasExtension) {
     const reviewLabel = agenticActionUnitLabel(reviewAction);
     const extensionLabel = agenticActionUnitLabel(extensionAction);
-    return `后测已经完成。${reviewLabel ? `建议先回看「${reviewLabel}」；` : "有知识点建议回看；"}也可以选择解锁扩展${extensionLabel ? `「${extensionLabel}」` : ""}，或直接${continueLabel}。`;
+    return `后测已经完成。${reviewLabel ? `建议回看「${reviewLabel}」；` : "有知识点建议回看；"}扩展${extensionLabel ? `「${extensionLabel}」` : ""}也已开放。两项不会互相覆盖，你可以先做任意一项，完成后再处理另一项，或直接${continueLabel}。`;
   }
 
   if (phase === "post" && hasExtension) {
@@ -2236,18 +2645,23 @@ function agenticStudentFacingText(value = "", fallback = "") {
     .trim();
 }
 
-async function agenticApplyDecision(type) {
+async function agenticApplyDecision(type, actionKey = "") {
   const path = ensureAgenticPath();
   const pending = path.pendingPlan;
   if (!pending) return;
-  const action = pending.actions.find((item) => item.type === type);
+  const action = pending.actions.find((item) =>
+    item.type === type && (!actionKey || item.actionKey === actionKey)
+  );
   if (!action) return;
   if (path.decisionInFlight) return;
-  path.decisionInFlight = type;
+  path.decisionInFlight = action.actionKey || type;
   renderAgenticCoachPanel();
   let targetId = "";
   let decisionMeta = null;
   let skippedUnitIds = [];
+  let nextPendingPlan = null;
+  const previousDeferredExtensionPlan = path.deferredExtensionPlan;
+  const previousDeferredReviewPlan = path.deferredReviewPlan;
 
   try {
     if (type === "skip") {
@@ -2285,29 +2699,37 @@ async function agenticApplyDecision(type) {
         : `已按你的选择保留 ${learnCount} 个知识点，暂时跳过 ${skippedChoices.length} 个。`;
       addLog(`前测后自主选择学习 ${learnCount} 个知识点，跳过 ${skippedChoices.length} 个。`);
     } else if (type === "review_knowledge" || type === "unskip_knowledge" || type === "review_and_unskip_knowledge") {
+      const deferredExtensionPlan = agenticDeferredExtensionPlanFrom(pending);
+      if (deferredExtensionPlan) path.deferredExtensionPlan = deferredExtensionPlan;
       const choices = agenticReviewChoicesForAction(action);
       const selectedIds = choices.filter((choice) => choice.checked).map((choice) => choice.id).filter((id) => findMainUnit(id));
       if (!selectedIds.length) {
-        const continueTarget = pending.resumeUnitId || agenticNextMainUnitAfter(pending.anchorUnitId || pending.unitId)?.id || agenticNextUnitIdAfter(pending.anchorUnitId || pending.unitId) || "";
-        targetId = continueTarget;
-        if (pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_review_declined");
-        agenticUnlockUnit(targetId, "student_skip_review_selection");
         path.reviewQueue = null;
         path.reviewResume = null;
-        path.lastNarration = targetId ? `已继续主线：${agenticUnitLabel(targetId)}。` : "已继续主线。";
-        addLog("已按你的选择不回看薄弱知识点，继续主线。");
+        if (path.deferredExtensionPlan) {
+          nextPendingPlan = agenticTakeDeferredPlan(path, "deferredExtensionPlan", pending.unitId);
+          path.lastNarration = "已按你的选择暂不回看。扩展选项仍然保留，请继续选择扩展学习或返回主线。";
+          addLog("已暂不回看薄弱知识点，保留扩展学习选择。");
+        } else {
+          const continueTarget = agenticDetourResumeUnitId(pending);
+          targetId = continueTarget;
+          if (pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_review_declined");
+          agenticUnlockUnit(targetId, "student_skip_review_selection");
+          path.lastNarration = targetId ? `已继续主线：${agenticUnitLabel(targetId)}。` : "已继续主线。";
+          addLog("已按你的选择不回看薄弱知识点，继续主线。");
+        }
       } else {
-      const selectedChoices = choices.filter((choice) => choice.checked && findMainUnit(choice.id));
-      const unskipIds = selectedChoices
-        .filter((choice) => type === "unskip_knowledge" || choice.reviewMode === "unskip")
-        .map((choice) => choice.id);
-      if (unskipIds.length) {
-        unskipIds.forEach((unitId) => {
-          delete path.skipped[unitId];
-        });
-      }
+        const selectedChoices = choices.filter((choice) => choice.checked && findMainUnit(choice.id));
+        const unskipIds = selectedChoices
+          .filter((choice) => type === "unskip_knowledge" || choice.reviewMode === "unskip")
+          .map((choice) => choice.id);
+        if (unskipIds.length) {
+          unskipIds.forEach((unitId) => {
+            delete path.skipped[unitId];
+          });
+        }
         const anchorUnitId = pending.anchorUnitId || pending.unitId;
-        const resumeUnitId = pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId) || "";
+        const resumeUnitId = agenticDetourResumeUnitId(pending, anchorUnitId);
         targetId = selectedIds[0] || resumeUnitId || "";
         selectedIds.forEach((unitId) => agenticUnlockUnit(unitId, unskipIds.includes(unitId) ? "formative_unskip_knowledge" : "quiz_review_knowledge"));
         agenticUnlockUnit(targetId, unskipIds.includes(targetId) ? "formative_unskip_knowledge" : "quiz_review_knowledge");
@@ -2380,7 +2802,7 @@ async function agenticApplyDecision(type) {
             chapterId: pending.chapterId,
             phase: pending.phase,
             stats: pending.stats || null,
-            resumeUnitId: pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId)
+            resumeUnitId: agenticDetourResumeUnitId(pending, anchorUnitId)
           }
         : null;
       if (!targetId && pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_relearn_unavailable");
@@ -2389,6 +2811,8 @@ async function agenticApplyDecision(type) {
         : "已记录换一种方式重学的选择。";
       addLog("接受学习建议，换一种方式重新学习。 ");
     } else if (type === "extension_chapter") {
+      const deferredReviewPlan = agenticDeferredReviewPlanFrom(pending);
+      if (deferredReviewPlan) path.deferredReviewPlan = deferredReviewPlan;
       const extensionChapterId = action.extensionChapterId || action.units[0]?.chapterId || "";
       const extensionChapterIds = (action.extensionChapterIds?.length ? action.extensionChapterIds : [extensionChapterId]).filter(Boolean);
       const extensionChapter = getChapter(extensionChapterId);
@@ -2399,19 +2823,28 @@ async function agenticApplyDecision(type) {
       });
       targetId = firstUnit?.id || action.units[0]?.id || "";
       const anchorUnitId = pending.anchorUnitId || pending.unitId;
-      const resumeUnitId = pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId) || "";
+      const resumeUnitId = agenticDetourResumeUnitId(pending, anchorUnitId);
       path.chapterExtensionsUsed[pending.chapterId] = true;
-      if (pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_extension_chapter_unlocked");
-      if (resumeUnitId) agenticUnlockUnit(resumeUnitId, "post_extension_resume_ready");
       path.activeExtensionChapter = targetId
-        ? { chapterId: extensionChapterId, fromChapterId: pending.chapterId, fromUnitId: anchorUnitId, resumeUnitId }
+        ? {
+            chapterId: extensionChapterId,
+            fromChapterId: pending.chapterId,
+            fromUnitId: anchorUnitId,
+            resumeUnitId,
+            completed: false,
+            completedAt: ""
+          }
         : null;
-      const label = action.label?.replace(/^解锁扩展：/, "") || action.units[0]?.label || (typeof chapterDisplayCopy === "function" ? chapterDisplayCopy(extensionChapter).label : extensionChapter?.label) || agenticUnitLabel(targetId);
+      const label = action.label?.replace(/^(?:解锁扩展|推荐扩展|可选扩展)：/, "") || action.units[0]?.label || (typeof chapterDisplayCopy === "function" ? chapterDisplayCopy(extensionChapter).label : extensionChapter?.label) || agenticUnitLabel(targetId);
       path.lastNarration = targetId
-        ? `已解锁扩展章节：${label}。章节列表会把它插到推荐位置，完成后可回到主线下一章。`
+        ? path.deferredReviewPlan
+          ? `已解锁扩展章节：${label}。完成后，你勾选的主线回看或补学仍会保留。`
+          : `已解锁扩展章节：${label}。完成扩展后再回到主线下一章。`
         : "已记录扩展章节推荐。";
       addLog(`接受学习建议，解锁扩展章节「${label}」。`);
     } else if (type === "extension") {
+      const deferredReviewPlan = agenticDeferredReviewPlanFrom(pending);
+      if (deferredReviewPlan) path.deferredReviewPlan = deferredReviewPlan;
       targetId = action.units[0]?.id || "";
       path.chapterExtensionsUsed[pending.chapterId] = true;
       agenticRememberAdaptiveUse(targetId, pending.anchorUnitId || pending.unitId);
@@ -2420,11 +2853,13 @@ async function agenticApplyDecision(type) {
       path.oneStepExtension = {
         unitId: targetId,
         fromUnitId: pending.anchorUnitId || pending.unitId,
-        resumeUnitId: pending.resumeUnitId || agenticNextMainUnitAfter(pending.anchorUnitId || pending.unitId)?.id || agenticNextUnitIdAfter(pending.anchorUnitId || pending.unitId),
+        resumeUnitId: agenticDetourResumeUnitId(pending),
         chapterId: pending.chapterId,
         phase: pending.phase
       };
-      if (!targetId && pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_extension_unavailable");
+      if (!targetId && pending.phase === "post" && !path.deferredReviewPlan) {
+        agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_extension_unavailable");
+      }
       const afterExtensionText =
         pending.phase === "interaction_scene_choice"
           ? "完成后会回到你刚才的主线下一步。"
@@ -2439,16 +2874,40 @@ async function agenticApplyDecision(type) {
       addLog("接受学习建议，只解锁一步拓展知识点。 ");
     } else {
       const anchorUnitId = pending.anchorUnitId || pending.unitId;
-      targetId = pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId) || "";
-      if (pending.phase === "post") agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_continue_confirmed");
-      if (path.activeExtensionChapter?.chapterId === pending.chapterId) path.activeExtensionChapter = null;
-      agenticUnlockUnit(targetId, "student_continue_linear");
-      path.reviewQueue = null;
-      path.reviewResume = null;
-      path.lastNarration = targetId
-        ? `已保留顺序学习，下一步进入：${agenticUnitLabel(targetId)}。`
-        : "已保留顺序学习。";
-      addLog("选择继续主线通关。 ");
+      const leavingExtensionChapter =
+        pending.phase === "post"
+        && path.activeExtensionChapter?.chapterId === pending.chapterId;
+      if (leavingExtensionChapter && path.deferredReviewPlan) {
+        agenticFinalizeActiveExtensionChapter(
+          path,
+          pending.chapterId,
+          "extension_completed_before_deferred_review",
+          { advanceSource: false }
+        );
+        nextPendingPlan = agenticTakeDeferredPlan(path, "deferredReviewPlan", pending.unitId);
+        path.lastNarration = "扩展章节已完成。你之前勾选的主线回看和补学仍然保留，请继续确认。";
+        addLog("扩展章节完成，继续处理此前保留的主线回看计划。");
+      } else {
+        targetId = pending.resumeUnitId || agenticNextMainUnitAfter(anchorUnitId)?.id || agenticNextUnitIdAfter(anchorUnitId) || "";
+        if (leavingExtensionChapter) {
+          const completedExtension = agenticFinalizeActiveExtensionChapter(
+            path,
+            pending.chapterId,
+            "extension_continue_confirmed",
+            { advanceSource: true }
+          );
+          targetId = completedExtension?.resumeUnitId || targetId;
+        } else if (pending.phase === "post") {
+          agenticMarkChapterReadyOnPath(path, pending.chapterId, "post_continue_confirmed");
+        }
+        agenticUnlockUnit(targetId, "student_continue_linear");
+        path.reviewQueue = null;
+        path.reviewResume = null;
+        path.lastNarration = targetId
+          ? `已保留顺序学习，下一步进入：${agenticUnitLabel(targetId)}。`
+          : "已完成当前学习路线。";
+        addLog(targetId ? "选择继续主线通关。 " : "完成当前学习路线。");
+      }
     }
 
     decisionMeta = agenticDecisionMeta(pending, action, targetId);
@@ -2474,16 +2933,22 @@ async function agenticApplyDecision(type) {
         skippedUnitIds
       }
     });
-    path.pendingPlan = null;
-    path.pendingAt = "";
+    path.pendingPlan = nextPendingPlan;
+    path.pendingAt = nextPendingPlan?.unitId || "";
     path.decisionInFlight = "";
     saveState();
-    if (targetId) {
+    if (nextPendingPlan) {
+      agenticRenderLearningUpdate();
+    } else if (targetId) {
       await agenticOpenUnit(targetId);
     } else {
       agenticRenderLearningUpdate();
     }
   } catch (error) {
+    if (path.pendingPlan === pending) {
+      path.deferredExtensionPlan = previousDeferredExtensionPlan;
+      path.deferredReviewPlan = previousDeferredReviewPlan;
+    }
     path.decisionInFlight = "";
     saveState();
     renderAgenticCoachPanel();
@@ -2529,6 +2994,22 @@ function agenticUpdatePendingKnowledgeChoice(choiceId, checked) {
   return true;
 }
 
+function agenticUpdateKnowledgeChoicesBulk(checked) {
+  const path = ensureAgenticPath();
+  const pending = path.pendingPlan;
+  const action = (pending?.actions || []).find((item) => item.type === "select_knowledge");
+  const choices = action?.knowledgeChoices || [];
+  if (!choices.length) return false;
+  choices.forEach((choice) => {
+    choice.checked = Boolean(checked);
+    choice.studentChanged = true;
+  });
+  path.lastNarration = agenticStudentNarrationForPending(pending);
+  saveState();
+  renderAgenticCoachPanel();
+  return true;
+}
+
 function agenticUpdateReviewChoiceMode(choiceId, mode) {
   const path = ensureAgenticPath();
   const pending = path.pendingPlan;
@@ -2541,6 +3022,31 @@ function agenticUpdateReviewChoiceMode(choiceId, mode) {
   choice.choiceMode = mode === actionMode ? actionMode : "skip";
   choice.checked = choice.choiceMode === actionMode;
   choice.studentChanged = true;
+  path.lastNarration = agenticStudentNarrationForPending(pending);
+  saveState();
+  renderAgenticCoachPanel();
+  return true;
+}
+
+function agenticUpdateReviewChoicesBulk(scope, mode) {
+  const path = ensureAgenticPath();
+  const pending = path.pendingPlan;
+  const action = (pending?.actions || []).find((item) =>
+    item.type === "review_knowledge"
+    || item.type === "unskip_knowledge"
+    || item.type === "review_and_unskip_knowledge"
+  );
+  const choices = action ? agenticReviewChoicesForAction(action) : [];
+  const scopedChoices = choices.filter((choice) =>
+    scope === "unskip" ? choice.reviewMode === "unskip" : choice.reviewMode !== "unskip"
+  );
+  if (!scopedChoices.length) return false;
+  scopedChoices.forEach((choice) => {
+    const actionMode = choice.reviewMode === "unskip" ? "learn" : "review";
+    choice.choiceMode = mode === actionMode ? actionMode : "skip";
+    choice.checked = choice.choiceMode === actionMode;
+    choice.studentChanged = true;
+  });
   path.lastNarration = agenticStudentNarrationForPending(pending);
   saveState();
   renderAgenticCoachPanel();
@@ -2592,11 +3098,26 @@ function agenticRenderReviewSelectionPlan(pending, inFlight = "") {
   const checkedCount = choices.filter((choice) => choice.checked).length;
   const extensionButtons = (pending.actions || [])
     .filter((item) => item.type === "extension_chapter" || item.type === "extension")
-    .map((item) => `
-      <button class="button ${item.primary ? "primary" : "soft"}" type="button" data-agentic-action="${escapeHtml(item.type)}" ${inFlight ? "disabled" : ""}>
-        ${escapeHtml(inFlight === item.type ? "处理中..." : item.label)}
+    .map((item) => {
+      const actionToken = item.actionKey || item.type;
+      return `
+      <button class="button ${item.primary ? "primary" : "soft"}" type="button" data-agentic-action="${escapeHtml(item.type)}" ${item.actionKey ? `data-agentic-action-key="${escapeHtml(item.actionKey)}"` : ""} ${inFlight ? "disabled" : ""}>
+        ${escapeHtml(inFlight === actionToken ? "处理中..." : item.label)}
       </button>
-    `).join("");
+    `;
+    }).join("");
+  const renderBulkToolbar = (scope, isUnskip) => {
+    const primaryMode = isUnskip ? "learn" : "review";
+    const primaryText = isUnskip ? "全部补学" : "全部回看";
+    const skipText = isUnskip ? "全部仍然跳过" : "全部暂不回看";
+    return `
+      <div class="agentic-bulk-toolbar" role="group" aria-label="${isUnskip ? "批量设置补学内容" : "批量设置回看内容"}">
+        <span>一键选择</span>
+        <button class="button soft" type="button" data-agentic-review-bulk="${scope}" data-agentic-review-mode="${primaryMode}" ${inFlight ? "disabled" : ""}>${primaryText}</button>
+        <button class="button soft" type="button" data-agentic-review-bulk="${scope}" data-agentic-review-mode="skip" ${inFlight ? "disabled" : ""}>${skipText}</button>
+      </div>
+    `;
+  };
   const renderGroups = (itemsToRender) => {
     const sectionGrouped = itemsToRender.reduce((map, choice) => {
       const key = choice.moduleTitle || choice.moduleId || "本章知识点";
@@ -2637,10 +3158,10 @@ function agenticRenderReviewSelectionPlan(pending, inFlight = "") {
   const combined = action.type === "review_and_unskip_knowledge";
   const groups = combined
     ? [
-        reviewChoices.length ? `<div class="agentic-knowledge-section"><h4>建议回看已学内容</h4>${renderGroups(reviewChoices)}</div>` : "",
-        unskipChoices.length ? `<div class="agentic-knowledge-section"><h4>建议补学已跳过内容</h4>${renderGroups(unskipChoices)}</div>` : ""
+        reviewChoices.length ? `<div class="agentic-knowledge-section"><h4>建议回看已学内容</h4>${renderBulkToolbar("review", false)}${renderGroups(reviewChoices)}</div>` : "",
+        unskipChoices.length ? `<div class="agentic-knowledge-section"><h4>建议补学已跳过内容</h4>${renderBulkToolbar("unskip", true)}${renderGroups(unskipChoices)}</div>` : ""
       ].filter(Boolean).join("")
-    : renderGroups(choices);
+    : `${renderBulkToolbar(action.type === "unskip_knowledge" ? "unskip" : "review", action.type === "unskip_knowledge")}${renderGroups(choices)}`;
   const title = "根据这次测验，建议调整学习路径";
   const buttonText = "按我的选择开始学习";
   return `
@@ -2692,6 +3213,11 @@ function agenticRenderKnowledgeSelectionPlan(pending, inFlight = "") {
         <strong>选择本章要学的知识点</strong>
       </div>
       <p>${escapeHtml(agenticStudentNarrationForPending(pending))}</p>
+      <div class="agentic-bulk-toolbar" role="group" aria-label="批量设置本章知识点">
+        <span>一键选择</span>
+        <button class="button soft" type="button" data-agentic-knowledge-bulk="learn" ${inFlight ? "disabled" : ""}>全部学习</button>
+        <button class="button soft" type="button" data-agentic-knowledge-bulk="skip" ${inFlight ? "disabled" : ""}>全部暂时跳过</button>
+      </div>
       <div class="agentic-knowledge-selection">${groups}</div>
       <div class="agentic-actions">
         <button class="button primary" type="button" data-agentic-action="select_knowledge" ${inFlight ? "disabled" : ""}>
@@ -2752,11 +3278,14 @@ function renderAgenticCoachPanel() {
     node.innerHTML = agenticRenderReviewSelectionPlan(pending, inFlight);
     return;
   }
-  const actionButtons = pending.actions.map((action) => `
-    <button class="button ${action.primary ? "primary" : "soft"}" type="button" data-agentic-action="${action.type}" ${inFlight ? "disabled" : ""}>
-      ${escapeHtml(inFlight === action.type ? "处理中..." : action.label)}
+  const actionButtons = pending.actions.map((action) => {
+    const actionToken = action.actionKey || action.type;
+    return `
+    <button class="button ${action.primary ? "primary" : "soft"}" type="button" data-agentic-action="${action.type}" ${action.actionKey ? `data-agentic-action-key="${escapeHtml(action.actionKey)}"` : ""} ${inFlight ? "disabled" : ""}>
+      ${escapeHtml(inFlight === actionToken ? "处理中..." : action.label)}
     </button>
-  `).join("");
+  `;
+  }).join("");
   const narration = agenticStudentFacingText(agenticStudentNarrationForPending(pending));
   node.hidden = false;
   node.innerHTML = `

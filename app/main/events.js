@@ -79,18 +79,15 @@ document.addEventListener("click", (event) => {
   const chapterButton = event.target.closest("[data-chapter]");
   if (chapterButton) {
     const cid = chapterButton.dataset.chapter;
-    if (typeof agenticIsChapterUnlocked === "function" && !agenticIsChapterUnlocked(cid)) {
-      addLog(`「${cid}」章节尚未解锁，请先完成当前下一步。`);
-      if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
-    } else {
-      selectChapter(cid)
-        .then(() => {
+    selectChapter(cid)
+      .then((selected) => {
+        if (selected !== false) {
           if (typeof setChapterRailCollapsed === "function" && window.matchMedia("(min-width: 1181px)").matches) {
             setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
           }
-        })
-        .catch((error) => console.warn("Chapter navigation failed:", error));
-    }
+        }
+      })
+      .catch((error) => console.warn("Chapter navigation failed:", error));
     return;
   }
 
@@ -100,6 +97,14 @@ document.addEventListener("click", (event) => {
     const sceneType = knowledgeSceneButton.dataset.knowledgeScene;
     if (setKnowledgeSceneType(uid, sceneType)) {
       renderAll();
+    }
+    return;
+  }
+
+  const quizPathAction = event.target.closest("[data-quiz-path-action]");
+  if (quizPathAction) {
+    if (quizPathAction.dataset.quizPathAction === "coach" && typeof focusAgenticCoachPanel === "function") {
+      focusAgenticCoachPanel();
     }
     return;
   }
@@ -131,10 +136,29 @@ document.addEventListener("click", (event) => {
     const type = agenticActionBtn.dataset.agenticAction;
     if (typeof agenticApplyDecision === "function") {
       agenticActionBtn.disabled = true;
-      agenticApplyDecision(type).catch((error) => {
+      agenticApplyDecision(type, agenticActionBtn.dataset.agenticActionKey || "").catch((error) => {
         console.warn("Agentic decision failed:", error);
         addLog(`学习路径切换失败：${error.message || "请稍后重试"}`);
       });
+    }
+    return;
+  }
+
+  const reviewBulk = event.target.closest("[data-agentic-review-bulk]");
+  if (reviewBulk) {
+    if (typeof agenticUpdateReviewChoicesBulk === "function") {
+      agenticUpdateReviewChoicesBulk(
+        reviewBulk.dataset.agenticReviewBulk,
+        reviewBulk.dataset.agenticReviewMode
+      );
+    }
+    return;
+  }
+
+  const knowledgeBulk = event.target.closest("[data-agentic-knowledge-bulk]");
+  if (knowledgeBulk) {
+    if (typeof agenticUpdateKnowledgeChoicesBulk === "function") {
+      agenticUpdateKnowledgeChoicesBulk(knowledgeBulk.dataset.agenticKnowledgeBulk === "learn");
     }
     return;
   }
@@ -204,11 +228,15 @@ document.addEventListener("click", (event) => {
   const resourceFullscreenButton = event.target.closest("[data-resource-fullscreen]");
   if (resourceFullscreenButton) {
     const shell = resourceFullscreenButton.closest("[data-resource-shell]");
-    trackLearningEvent("resource_fullscreen", { unitId: getUnit().id, entering: document.fullscreenElement !== shell }, false);
+    const target = typeof resourceFullscreenTargetForButton === "function"
+      ? resourceFullscreenTargetForButton(resourceFullscreenButton)
+      : shell;
+    if (!target) return;
+    trackLearningEvent("resource_fullscreen", { unitId: getUnit().id, entering: document.fullscreenElement !== target }, false);
     analyticsTrack("resource_fullscreen", {
-      data: { unitId: getUnit().id, entering: document.fullscreenElement !== shell }
+      data: { unitId: getUnit().id, entering: document.fullscreenElement !== target }
     });
-    toggleResourceFullscreen(shell);
+    toggleResourceFullscreen(target);
     return;
   }
 

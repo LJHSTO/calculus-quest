@@ -265,12 +265,37 @@ function jumpToFeedback(unitId) {
 }
 
 function findNavTargets(unitId) {
-  const all = currentNavigableUnits();
-  const idx = all.findIndex(u => u.id === unitId);
+  const previous = typeof agenticPreviousUnlockedUnitBefore === "function"
+    ? agenticPreviousUnlockedUnitBefore(unitId)
+    : null;
+  const next = typeof agenticNextUnlockedUnitAfter === "function"
+    ? agenticNextUnlockedUnitAfter(unitId)
+    : null;
   return {
-    prevId: idx > 0 ? all[idx - 1].id : null,
-    nextId: idx < all.length - 1 ? all[idx + 1].id : null
+    prevId: previous?.id || null,
+    nextId: next?.id || null
   };
+}
+
+function renderQuizPathNavigation(unit) {
+  const { prevId, nextId } = findNavTargets(unit.id);
+  const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
+  const pathReady = typeof agenticQuizPathReady !== "function" || agenticQuizPathReady(unit);
+  const nextUnit = nextId ? getUnit(nextId) : null;
+  const nextLabel = nextUnit?.chapterId && nextUnit.chapterId !== unit.chapterId ? "进入下一章" : "下一节";
+  const nextButton = pending
+    ? '<button class="button primary quiz-nav-btn" type="button" data-quiz-path-action="coach">选择下一步</button>'
+    : nextId
+      ? `<button class="button primary quiz-nav-btn" type="button" data-unit="${escapeHtml(nextId)}">${nextLabel}</button>`
+      : !pathReady
+        ? '<button class="button primary quiz-nav-btn" type="button" disabled>正在生成学习建议</button>'
+        : '<button class="button primary quiz-nav-btn" type="button" disabled>当前路径已完成</button>';
+  return `
+    <div class="quiz-nav-buttons">
+      <button class="button soft quiz-nav-btn" type="button" data-unit="${escapeHtml(prevId || "")}" ${prevId ? "" : "disabled"}>上一节</button>
+      ${nextButton}
+    </div>
+  `;
 }
 
 function submitQuiz(unitId) {
@@ -399,8 +424,6 @@ function submitQuiz(unitId) {
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "已提交"; }
   }
   const isPre = unit.assessmentPhase === "pre";
-  const { prevId, nextId } = findNavTargets(unitId);
-
   // Banner + scroll hint at top of quiz card
   const quizCard = feedback ? feedback.closest(".quiz-card") : null;
   if (quizCard) {
@@ -426,10 +449,7 @@ function submitQuiz(unitId) {
     const totalLine = quizOutcomeHtml(currentSummary);
     feedback.innerHTML = `
     <div class="quiz-section-total">${totalLine}</div>
-    <div class="quiz-nav-buttons">
-      <button class="button soft quiz-nav-btn" data-unit="${prevId || ''}" ${prevId ? '' : 'disabled'}>上一节</button>
-      <button class="button primary quiz-nav-btn" data-unit="${nextId || ''}" ${nextId ? '' : 'disabled'}>下一节</button>
-    </div>
+    ${renderQuizPathNavigation(unit)}
   `;
   }
 
@@ -496,59 +516,18 @@ function recordQuizResult(unit, question, result, options = {}) {
   return record;
 }
 
-els.completeLesson.addEventListener("click", async () => {
-  const unit = getUnit();
-  if (unit.type === "quiz" && !unit.placeholderQuiz && !(state.submittedQuizzes || []).includes(unit.id)) {
-    addLog("测验需要先提交，系统才能根据证据解锁下一步。");
-    return;
-  }
-  if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
-    addLog("学习建议已给出下一步，请先在建议卡片中选择路径。");
-    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
-    else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
-    return;
-  }
-  const agenticNext = typeof agenticOnUnitCompleted === "function" ? agenticOnUnitCompleted(unit) : null;
-  if (completeCurrentUnit() === false) return;
-  if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
-    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
-    else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
-    return;
-  }
-  const unlockedNext = !agenticNext?.id && typeof agenticNextUnlockedUnitAfter === "function"
-    ? agenticNextUnlockedUnitAfter(unit.id)
-    : null;
-  const nextTarget = agenticNext?.id ? agenticNext : unlockedNext;
-  if (nextTarget?.id && typeof agenticOpenUnit === "function") {
-    await agenticOpenUnit(nextTarget.id);
-    return;
-  }
-  // Navigate forward unless this is the very last unit
-  const chapter = getChapter();
-  const unitIdx = chapter.units.findIndex(u => u.id === currentUnitId);
-  const isLastInChapter = unitIdx >= chapter.units.length - 1;
-  const chapterIdx = curriculum.findIndex(c => c.id === chapter.id);
-  const isLastUnit = isLastInChapter && chapterIdx >= curriculum.length - 1;
-  if (!isLastUnit) await goToNextUnit();
-});
+els.completeLesson.addEventListener("click", completeAndAdvanceCurrentUnit);
 
 async function goToPrevUnit() {
-  const all = currentNavigableUnits();
-  const idx = all.findIndex(u => u.id === currentUnitId);
-  if (idx > 0) {
-    const prev = all[idx - 1];
-    if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(prev.id, { allowPrevious: true })) return;
-    if (prev.chapterId !== currentChapterId) await selectChapter(prev.chapterId);
-    selectUnit(prev.id);
+  const previous = typeof agenticPreviousUnlockedUnitBefore === "function"
+    ? agenticPreviousUnlockedUnitBefore(currentUnitId)
+    : null;
+  if (!previous?.id) {
+    addLog("这里是当前学习路线的第一节。");
     return;
   }
-  const chIdx = curriculum.findIndex(c => c.id === getChapter().id);
-  if (chIdx > 0) {
-    const prevChapter = curriculum[chIdx - 1];
-    await selectChapter(prevChapter.id);
-    const prevUnits = prevChapter.units || [];
-    if (prevUnits.length) selectUnit(prevUnits[prevUnits.length - 1].id);
-  }
+  if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(previous.id, { allowPrevious: true })) return;
+  if (typeof agenticOpenUnit === "function") await agenticOpenUnit(previous.id);
 }
 
 async function goToNextUnit() {
@@ -558,24 +537,19 @@ async function goToNextUnit() {
     else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
     return;
   }
-  const all = currentNavigableUnits();
-  const idx = all.findIndex(u => u.id === currentUnitId);
-  if (idx >= 0 && idx + 1 < all.length) {
-    const next = all[idx + 1];
-    if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(next.id, { allowPrevious: true })) return;
-    if (next.chapterId !== currentChapterId) await selectChapter(next.chapterId);
-    selectUnit(next.id);
-    return;
-  }
-  const chIdx = curriculum.findIndex(c => c.id === getChapter().id);
-  if (chIdx >= 0 && chIdx + 1 < curriculum.length) {
-    const nextChapter = curriculum[chIdx + 1];
-    if (typeof agenticIsChapterUnlocked === "function" && !agenticIsChapterUnlocked(nextChapter.id)) {
-      addLog(`下一章「${nextChapter.label}」尚未解锁，请先完成当前下一步。`);
+  const next = typeof agenticNextUnlockedUnitAfter === "function"
+    ? agenticNextUnlockedUnitAfter(currentUnitId)
+    : null;
+  if (!next?.id) {
+    const unit = getUnit();
+    if (unit?.type === "quiz" && typeof agenticQuizPathReady === "function" && !agenticQuizPathReady(unit)) {
+      addLog("学习建议正在生成，请稍候片刻。");
       if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
-      else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
       return;
     }
-    await selectChapter(nextChapter.id);
+    addLog("当前没有已解锁的下一节，请先完成本节或确认学习建议。");
+    return;
   }
+  if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(next.id, { allowPrevious: true })) return;
+  if (typeof agenticOpenUnit === "function") await agenticOpenUnit(next.id);
 }

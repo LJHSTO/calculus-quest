@@ -18,55 +18,28 @@ function renderBottomNextButton() {
     wrapper.appendChild(prevBtn);
   }
 
-  const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
-  const next = typeof agenticNextUnlockedUnitAfter === "function" ? agenticNextUnlockedUnitAfter(unit.id) : null;
-
   const nextBtn = document.createElement("button");
   nextBtn.className = "button primary bottom-nav-btn";
   nextBtn.type = "button";
   const needsQuizSubmit = unit.type === "quiz" && !unit.placeholderQuiz && !(state.submittedQuizzes || []).includes(unit.id);
   const needsSceneChoice = unit.type === "knowledge" && !selectedKnowledgeSceneType(unit);
-  nextBtn.disabled = needsSceneChoice;
+  const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
+  const cta = typeof agenticCompletionCta === "function"
+    ? agenticCompletionCta(unit)
+    : { label: state.completed.includes(unit.id) ? "复习并跳到下一节" : "完成本节并跳到下一节", disabled: false };
+  nextBtn.disabled = !needsSceneChoice && !needsQuizSubmit && !pending && Boolean(cta.disabled);
   nextBtn.textContent = needsSceneChoice
     ? "先选择一个互动场景"
     : needsQuizSubmit
       ? "先提交测验"
       : pending
         ? "先选择下一步"
-        : next
-          ? `下一步：${next.label}`
-          : "完成本节";
-  nextBtn.addEventListener("click", async () => {
-    if (pending) {
-      addLog("请先在学习建议卡片中选择下一步。");
-      if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
-      else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
-      return;
-    }
-
-    const current = getUnit();
-    if (current.type === "knowledge" && !selectedKnowledgeSceneType(current)) {
-      addLog("请先选择一个互动场景，再完成本节。");
-      return;
-    }
-    if (current.type === "quiz" && !current.placeholderQuiz && !(state.submittedQuizzes || []).includes(current.id)) {
-      addLog("测验需要先提交，下一步才会出现。");
-      return;
-    }
-
-    const agenticNext = typeof agenticOnUnitCompleted === "function" ? agenticOnUnitCompleted(current) : null;
-    if (completeCurrentUnit() === false) return;
-    if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(current.id)) {
-      if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
-      else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
-      return;
-    }
-    if (agenticNext?.id && typeof agenticOpenUnit === "function") {
-      await agenticOpenUnit(agenticNext.id);
-      return;
-    }
-    await goToNextUnit();
-  });
+        : cta.label;
+  if (needsSceneChoice) {
+    nextBtn.dataset.scrollKnowledgeScene = "true";
+    nextBtn.setAttribute("aria-controls", "knowledge-scene-panel");
+  }
+  nextBtn.addEventListener("click", completeAndAdvanceCurrentUnit);
   wrapper.appendChild(nextBtn);
 
   els.lessonPlayer.appendChild(wrapper);

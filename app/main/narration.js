@@ -305,6 +305,14 @@ async function toggleResourceFullscreen(shell) {
   }
 }
 
+function resourceFullscreenTargetForButton(button) {
+  if (!button) return null;
+  const shell = button.closest("[data-resource-shell]");
+  return button.closest("[data-resource-fullscreen-target]")
+    || shell?.querySelector("[data-resource-fullscreen-target]")
+    || shell;
+}
+
 function updateFullscreenButton() {
   if (!els.fullscreenPlayer) return;
   const enabled = Boolean(document.fullscreenEnabled);
@@ -314,11 +322,14 @@ function updateFullscreenButton() {
 }
 
 function updateResourceFullscreenButtons() {
-  document.querySelectorAll("[data-resource-shell]").forEach((shell) => {
-    const button = shell.querySelector("[data-resource-fullscreen]");
-    if (!button) return;
+  document.querySelectorAll("[data-resource-fullscreen]").forEach((button) => {
+    const target = resourceFullscreenTargetForButton(button);
+    const active = Boolean(target && document.fullscreenElement === target);
     button.disabled = !document.fullscreenEnabled;
-    button.textContent = document.fullscreenElement === shell ? "退出全屏" : "全屏";
+    const knowledgeSlide = Boolean(target?.matches?.("[data-resource-fullscreen-target]"));
+    button.textContent = active ? "退出全屏" : knowledgeSlide ? "讲解页全屏" : "全屏";
+    button.setAttribute("aria-label", active ? "退出全屏" : knowledgeSlide ? "全屏查看讲解页" : "进入资源全屏");
+    button.setAttribute("title", active ? "退出全屏" : knowledgeSlide ? "全屏查看讲解页" : "进入资源全屏");
   });
   document.querySelectorAll("[data-knowledge-scene-panel]").forEach((panel) => {
     const stage = panel.querySelector("[data-knowledge-scene-stage]");

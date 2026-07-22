@@ -337,7 +337,22 @@ function refreshKnowledgeAudioPack(unitId = currentUnitId) {
   syncNarrationUi();
 }
 
+function focusKnowledgeSceneChoicePanel() {
+  const panel = document.querySelector("[data-knowledge-scene-panel]");
+  if (!panel) return false;
+  panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  panel.classList.remove("scene-choice-focus");
+  void panel.offsetWidth;
+  panel.classList.add("scene-choice-focus");
+  window.setTimeout(() => {
+    panel.querySelector("[data-knowledge-scene]")?.focus({ preventScroll: true });
+  }, 320);
+  window.setTimeout(() => panel.classList.remove("scene-choice-focus"), 1800);
+  return true;
+}
+
 function renderResourceShell(unit, title, body, className = "") {
+  const isKnowledgeResource = className.split(/\s+/).includes("multi-scene-knowledge-resource");
   return `
     <section class="resource-shell ${className}" data-resource-shell data-resource-unit="${unit.id}">
       <div class="resource-toolbar">
@@ -345,7 +360,7 @@ function renderResourceShell(unit, title, body, className = "") {
           <span class="type-pill">${typeText(unit)}</span>
           <strong>${escapeHtml(title)}</strong>
         </div>
-        <button class="button soft" type="button" data-resource-fullscreen>全屏</button>
+        <button class="button soft" type="button" data-resource-fullscreen>${isKnowledgeResource ? "讲解页全屏" : "全屏"}</button>
       </div>
       <div class="resource-body">
         ${body}
@@ -424,14 +439,17 @@ function renderKnowledgeUnit(unit) {
             <h2>${renderInlineMath(slide.title || kp.name || unit.label)}</h2>
             <p>${renderInlineMath(module.title || unit.moduleTitle || "")}</p>
           </div>
-          ${slideBody}
+          <div class="multi-scene-slide-fullscreen-stage" data-resource-fullscreen-target>
+            ${slideBody}
+            <button class="button soft icon-button multi-scene-slide-exit" type="button" data-resource-fullscreen aria-label="退出讲解页全屏" title="退出讲解页全屏">退出全屏</button>
+          </div>
           ${renderKnowledgeAudioPack(unit, {
             slotKey: "slide",
             sceneOrder: slide.sceneOrder,
             title: slideAudioTitle
           })}
         </section>
-        <section class="multi-scene-scene-panel" data-knowledge-scene-panel>
+        <section class="multi-scene-scene-panel" id="knowledge-scene-panel" data-knowledge-scene-panel tabindex="-1">
           <div class="multi-scene-scene-header">
             <div>
               <span class="type-pill">互动选择</span>
@@ -578,7 +596,10 @@ function renderQuiz(unit) {
   if (submitted) {
     Object.assign(latestByQuestion, quizLatestResultsByQuestion(unitResults));
     const summary = summarizeQuizAttempt(unitResults, questions);
-    submittedTotalHtml = `<div class="quiz-section-total">${quizOutcomeHtml(summary)}</div>`;
+    const pathNavigation = typeof renderQuizPathNavigation === "function"
+      ? renderQuizPathNavigation(unit)
+      : "";
+    submittedTotalHtml = `<div class="quiz-section-total">${quizOutcomeHtml(summary)}</div>${pathNavigation}`;
   }
 
   els.lessonPlayer.innerHTML = `
@@ -1639,18 +1660,24 @@ function renderChapters() {
 
 function syncAgenticPlayerCta(unit) {
   if (!els.completeLesson || !unit) return;
+  els.completeLesson.disabled = false;
+  els.completeLesson.removeAttribute("aria-controls");
+  delete els.completeLesson.dataset.scrollKnowledgeScene;
   if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
-    els.completeLesson.disabled = true;
+    els.completeLesson.disabled = false;
     els.completeLesson.textContent = "先选择一个互动场景";
+    els.completeLesson.dataset.scrollKnowledgeScene = "true";
+    els.completeLesson.setAttribute("aria-controls", "knowledge-scene-panel");
   } else if (unit.type === "quiz" && unit.placeholderQuiz) {
     els.completeLesson.textContent = state.completed.includes(unit.id) ? "已记录，继续下一步" : "记录此流程节点";
   } else if (unit.type === "quiz" && !(state.submittedQuizzes || []).includes(unit.id)) {
     els.completeLesson.textContent = "提交测验后解锁下一步";
   } else if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
-    els.completeLesson.textContent = "先选择下一步";
-  } else if (state.agenticPath?.activeDetour?.unitId === unit.id && state.agenticPath.activeDetour.phase === "post") {
-    els.completeLesson.textContent = state.completed.includes(unit.id) ? "复习完成后选择下一步" : "完成重学后选择下一步";
-  } else if (state.agenticPath?.oneStepExtension?.unitId === unit.id && typeof agenticIsCrossChapterResume === "function" && agenticIsCrossChapterResume(state.agenticPath.oneStepExtension.fromUnitId, state.agenticPath.oneStepExtension.resumeUnitId)) {
-    els.completeLesson.textContent = state.completed.includes(unit.id) ? "复习拓展并进入下一章" : "完成拓展并进入下一章";
+    const pending = state.agenticPath?.pendingPlan;
+    els.completeLesson.textContent = pending?.phase === "grading_pending" ? "等待批改生成建议" : "先选择下一步";
+  } else if (typeof agenticCompletionCta === "function") {
+    const cta = agenticCompletionCta(unit);
+    els.completeLesson.textContent = cta.label;
+    els.completeLesson.disabled = Boolean(cta.disabled);
   }
 }
