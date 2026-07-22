@@ -106,7 +106,15 @@ function loadState() {
     const key = lastPid ? storageKeyFor(lastPid) : STORAGE_KEY;
     const raw = localStorage.getItem(key);
     const saved = raw ? JSON.parse(raw) : {};
-    return { ...fallback, ...saved, authToken: saved.authToken || localStorage.getItem(AUTH_TOKEN_KEY) || "" };
+    const sessionToken = sessionStorage.getItem(AUTH_TOKEN_KEY) || "";
+    const legacyToken = saved.authToken || localStorage.getItem(AUTH_TOKEN_KEY) || "";
+    if (Object.prototype.hasOwnProperty.call(saved, "authToken")) {
+      delete saved.authToken;
+      localStorage.setItem(key, JSON.stringify(saved));
+    }
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    if (!sessionToken && legacyToken) sessionStorage.setItem(AUTH_TOKEN_KEY, legacyToken);
+    return { ...fallback, ...saved, authToken: sessionToken || legacyToken };
   } catch {
     return fallback;
   }
@@ -124,7 +132,9 @@ function persistStateLocally() {
   const key = state.participant?.participantId
     ? storageKeyFor(state.participant.participantId)
     : STORAGE_KEY;
-  localStorage.setItem(key, JSON.stringify(state));
+  const persisted = { ...state };
+  delete persisted.authToken;
+  localStorage.setItem(key, JSON.stringify(persisted));
 }
 
 function saveState() {
@@ -343,7 +353,7 @@ function renderInlineMath(text) {
   while ((m = re.exec(text)) !== null) {
     if (m.index > last) parts.push(escapeHtml(text.slice(last, m.index)));
     try {
-      parts.push(katex.renderToString(m[1], { throwOnError: false, displayMode: false, trust: true }));
+      parts.push(katex.renderToString(m[1], { throwOnError: false, displayMode: false, trust: false, maxExpand: 1000 }));
     } catch {
       parts.push(escapeHtml(m[0]));
     }
@@ -478,12 +488,13 @@ function quizOutcomeHtml(summary) {
 // Render $...$ math inside text that may already contain HTML tags
 function renderMathInHtml(html) {
   if (!html || typeof html !== "string") return escapeHtml(String(html || ""));
-  if (typeof katex === "undefined") return html;
-  return html.replace(/\$([^$]+)\$/g, (_, math) => {
+  const sanitized = CourseContentSecurity.sanitizeRichHtml(html);
+  if (typeof katex === "undefined") return sanitized;
+  return sanitized.replace(/\$([^$]+)\$/g, (_, math) => {
     try {
-      return katex.renderToString(math, { throwOnError: false, displayMode: false, trust: true });
+      return katex.renderToString(math, { throwOnError: false, displayMode: false, trust: false, maxExpand: 1000 });
     } catch {
-      return "$" + math + "$";
+      return escapeHtml("$" + math + "$");
     }
   });
 }
@@ -674,6 +685,9 @@ function quizResultFromServer(row = {}) {
     aiConfidence: row.ai_confidence,
     aiFeedback: row.ai_feedback || "",
     aiErrorType: row.ai_error_type || "",
+    answer: row.answer,
+    analysis: row.analysis || "",
+    commentPrompt: row.commentPrompt || "",
     estimateLabel: null
   };
 }
@@ -882,7 +896,9 @@ async function loginParticipant(credentials = {}) {
       const saved = localStorage.getItem(storageKeyFor(newPid));
       hasSavedState = Boolean(saved);
       if (saved) {
-        Object.assign(state, learningDefaults(), JSON.parse(saved));
+        const restored = JSON.parse(saved);
+        delete restored.authToken;
+        Object.assign(state, learningDefaults(), restored);
       } else {
         Object.assign(state, learningDefaults());
       }
@@ -893,7 +909,8 @@ async function loginParticipant(credentials = {}) {
 
     state.participant = payload.participant;
     state.authToken = payload.token;
-    localStorage.setItem(AUTH_TOKEN_KEY, payload.token);
+    sessionStorage.setItem(AUTH_TOKEN_KEY, payload.token);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.setItem(LAST_PARTICIPANT_KEY, newPid);
     learningSnapshotGeneration = 0;
     learningSnapshotRevision = 0;
@@ -945,6 +962,7 @@ async function logoutParticipant() {
     learningSnapshotRevision = 0;
     learningSnapshotReady = false;
     onlinePeriodStart = null;
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(LAST_PARTICIPANT_KEY);

@@ -119,8 +119,11 @@ function aiReviewStatus(result, question = {}) {
   return { hasAiScore, aiFailed, badgeText, badgeClass, line, feedback };
 }
 
-function shortAnswerReferenceText(question) {
-  return question.referenceAnswer
+function shortAnswerReferenceText(question, result = {}) {
+  return result.referenceAnswer
+    || result.answerText
+    || result.analysis
+    || question.referenceAnswer
     || question.answerText
     || question.analysis
     || "请围绕题目要求说明关键步骤、几何意义或实际含义。";
@@ -129,8 +132,8 @@ function shortAnswerReferenceText(question) {
 function renderQuestionReview({ question, result, index, unit }) {
   if (question.type === "short_answer") {
     const ai = aiReviewStatus(result, question);
-    const referenceText = shortAnswerReferenceText(question);
-    const rubricText = question.commentPrompt || question.rubric || "";
+    const referenceText = shortAnswerReferenceText(question, result);
+    const rubricText = result.commentPrompt || result.rubric || question.commentPrompt || question.rubric || "";
     return `
       <div class="question-review pending" data-question-review>
         <div class="review-heading">
@@ -157,6 +160,8 @@ function renderQuestionReview({ question, result, index, unit }) {
 
   const correct = result.isCorrect === true;
   const coach = buildQuestionCoachHint(question, result, unit);
+  const correctAnswer = result.answer ?? question.answer ?? [];
+  const analysis = result.analysis || question.analysis || "";
   return `
     <div class="question-review ${correct ? "correct" : "incorrect"}" data-question-review>
       <div class="review-heading">
@@ -166,8 +171,8 @@ function renderQuestionReview({ question, result, index, unit }) {
       </div>
       ${renderReviewBlock("你的选择", formatAnswerValuesHtml(question, result.response))}
       ${correct
-        ? `${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, question.answer || []), "correct-answer")}
-          ${renderAnalysisBlock(question.analysis)}`
+        ? `${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, correctAnswer), "correct-answer")}
+          ${renderAnalysisBlock(analysis)}`
         : `<div class="coach-hint-box" data-coach-hint>
             <div class="coach-hint-content">
               <strong>学习建议</strong>
@@ -179,8 +184,8 @@ function renderQuestionReview({ question, result, index, unit }) {
           </div>
           <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示正确答案和解析</button>
           <div class="question-answer-hidden" data-answer-hidden style="display:none">
-            ${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, question.answer || []), "correct-answer")}
-            ${renderAnalysisBlock(question.analysis)}
+            ${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, correctAnswer), "correct-answer")}
+            ${renderAnalysisBlock(analysis)}
           </div>`
       }
     </div>
@@ -298,17 +303,19 @@ function renderQuizPathNavigation(unit) {
   `;
 }
 
-function submitQuiz(unitId) {
+async function submitQuiz(unitId) {
   if ((state.submittedQuizzes || []).includes(unitId)) return;
   if (submitInProgress === unitId) return;
   submitInProgress = unitId;
+  let feedback = null;
+  let submitButton = null;
   try {
   const unit = getUnit(unitId);
   if (!unit?.scene?.content?.questions) return;
   const questions = unit.scene.content.questions;
-  const feedback = document.querySelector(`#feedback-${unit.id}`);
+  feedback = document.querySelector(`#feedback-${unit.id}`);
   const missing = [];
-  const records = [];
+  const submissions = [];
 
   questions.forEach((question, index) => {
     if (question.type === "short_answer") {
@@ -320,21 +327,11 @@ function submitQuiz(unitId) {
         return;
       }
 
-      const estimate = estimateShortAnswer(response, question);
-      const maxScore = question.points || 0;
       rememberQuizDraft(unit.id, question.id, response);
-      records.push({
+      submissions.push({
         index,
         question,
-        result: {
-          mode: "short_answer",
-          response,
-          isCorrect: null,
-          status: "pending_review",
-          score: estimate.score,
-          maxScore,
-          estimateLabel: estimate.label
-        }
+        response
       });
       return;
     }
@@ -347,19 +344,10 @@ function submitQuiz(unitId) {
 
     const response = question.type === "multiple" ? selected : selected[0];
     rememberQuizDraft(unit.id, question.id, question.type === "multiple" ? selected : selected[0]);
-    const answer = [...(question.answer || [])].sort();
-    const isCorrect = JSON.stringify([...selected].sort()) === JSON.stringify(answer);
-    records.push({
+    submissions.push({
       index,
       question,
-      result: {
-        mode: question.type,
-        response,
-        isCorrect,
-        status: isCorrect ? "correct" : "incorrect",
-        score: isCorrect ? question.points || 0 : 0,
-        maxScore: question.points || 0
-      }
+      response
     });
   });
 
@@ -377,10 +365,54 @@ function submitQuiz(unitId) {
     return;
   }
 
+  submitButton = feedback?.closest(".quiz-submit-panel")?.querySelector("[data-submit-quiz]") || null;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = "正在提交";
+  }
+  if (feedback) feedback.textContent = "正在由服务器核对答案...";
+  const submitted = await apiRequest("/api/learning/quiz/submit", {
+    unitId: unit.id,
+    chapterId: unit.chapterId,
+    phase: unit.assessmentPhase || "",
+    answers: submissions.map(({ question, response }) => ({
+      questionId: question.id,
+      response
+    }))
+  });
+  const authoritative = new Map(
+    (submitted.results || []).map((result) => [result.questionId, result])
+  );
+  const records = submissions.map(({ index, question, response }) => {
+    const result = authoritative.get(question.id);
+    if (!result) throw new Error(`题目 ${question.id} 缺少服务端评分结果。`);
+    const review = {
+      answer: result.answer,
+      analysis: result.analysis || "",
+      commentPrompt: result.commentPrompt || ""
+    };
+    Object.assign(question, review);
+    return {
+      index,
+      question,
+      result: {
+        id: result.id,
+        mode: result.questionType || question.type,
+        response: result.response ?? response,
+        isCorrect: result.isCorrect,
+        status: result.status,
+        score: result.score,
+        maxScore: result.maxScore,
+        timestamp: result.timestamp,
+        ...review
+      }
+    };
+  });
+
   // Clear old results for this quiz to avoid duplicate counting
   state.quizResults = (state.quizResults || []).filter(r => r.unitId !== unit.id);
   const storedRecords = records.map(({ question, result, index }) =>
-    recordQuizResult(unit, question, result, { sync: false, index })
+    recordQuizResult(unit, question, result, { sync: false, track: false, index })
   );
   rememberQuizAttempt(unit, storedRecords);
   trackLearningEvent("quiz_submission", {
@@ -420,8 +452,7 @@ function submitQuiz(unitId) {
   showQuizReview(unit, records);
   if (feedback) {
     feedback.closest(".quiz-submit-panel")?.classList.add("submitted");
-    const submitBtn = feedback.closest(".quiz-submit-panel")?.querySelector("[data-submit-quiz]");
-    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "已提交"; }
+    if (submitButton) { submitButton.disabled = true; submitButton.textContent = "已提交"; }
   }
   const isPre = unit.assessmentPhase === "pre";
   // Banner + scroll hint at top of quiz card
@@ -463,27 +494,16 @@ function submitQuiz(unitId) {
   } else if (typeof agenticOnUnitCompleted === "function") {
     agenticOnUnitCompleted(unit);
   }
+  } catch (error) {
+    console.warn("Quiz submission failed:", error);
+    if (feedback) feedback.textContent = error.message || "测验提交失败，请稍后重试。";
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = "提交本次测验";
+    }
   } finally {
     submitInProgress = null;
   }
-}
-
-function estimateShortAnswer(response, question) {
-  const text = response.replace(/\s+/g, "");
-  const expected = `${question.analysis || ""} ${question.commentPrompt || ""}`;
-  const keywords = Array.from(
-    new Set((expected.match(/[\u4e00-\u9fa5]{2,}|[A-Za-z]{3,}|\d+(?:\.\d+)?/g) || []).filter((word) => word.length <= 8))
-  ).slice(0, 18);
-  const hits = keywords.filter((word) => response.includes(word)).length;
-  const lengthScore = Math.min(1, text.length / 80);
-  const keywordScore = keywords.length ? hits / keywords.length : 0.4;
-  const ratio = Math.max(0.1, Math.min(0.95, lengthScore * 0.45 + keywordScore * 0.55));
-  const score = Math.round((question.points || 0) * ratio);
-
-  return {
-    score,
-    label: ratio >= 0.75 ? "较完整" : ratio >= 0.45 ? "基本可评" : "偏简略"
-  };
 }
 
 function recordQuizResult(unit, question, result, options = {}) {

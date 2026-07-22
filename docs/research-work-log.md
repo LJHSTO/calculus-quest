@@ -833,6 +833,25 @@ tools/_encoding_test.txt
 - Git 提交：与本轮修复一起精确提交，最终提交号见 Git 历史。
 - 剩余风险与下一步：GitHub 推送不会自动更新生产服务器。管理员仍需备份生产数据库、快进拉取并以 `BASE_PATH=/calculus_quest` 重启；生产 smoke 应检查 GH-03 平均变化率讲解页、GH-04 和差积商讲解页及四个三维场景。
 
+### 2026-07-22：静态文件、课件隔离、权威评分与富文本安全加固
+
+- 目标：保留旧昵称账号现状，不处理账号接管兼容逻辑；修复仓库根目录私有文件可下载、同源课件 iframe 可读取登录 Token、公开答案与客户端伪造成绩、课件富文本未经清洗四项漏洞。不得部署、推送或连接生产站数据库。
+- 基线提交/课件版本：GitHub `origin/main` 为 `4756977ff8475e65458bfd84242c5478545411e3`；课程 route 为 `multi-scene-learning-route-20260722`，11 章、330 个章级测验题、288 个互动资源。
+- 静态文件与 Token：静态服务器改为根文件、前端 JS/CSS、KaTeX 字体和实际课件媒体白名单；`.env`、源码、锁文件、文档、提示词、历史版本、源包清单和完整 `manifest.json` 不再可下载，非 `GET/HEAD` 静态请求返回 405。登录 Token 从 `localStorage` 迁移到 `sessionStorage`，旧 Token 一次性迁移后立即从旧状态和本地持久化 JSON 删除。
+- 课件隔离与富文本：互动 iframe 移除 `allow-same-origin`，加载状态不再读取 `contentDocument`；课件消息必须来自当前 `.embed-frame.contentWindow`。新增结构化富文本清洗器，只允许必要标签、属性和样式；删除脚本、事件属性、iframe/object、危险样式和 URL。LaTeX 优先从源公式重新用 `KaTeX trust=false` 渲染，不再信任预生成 HTML。
+- 权威测验：启动时从权威 route 建立题目索引并缓存无答案公开 route。新增 `/api/learning/quiz/submit`，客户端只能提交完整的 `questionId + response` 集合；服务端校验章节、阶段、题目集合，完成客观题评分并写入原 `quiz_results` 表。同一用户同一测验不得重复覆盖。`quiz_result` 事件、KG Planner 和简答题评分不再接受客户端传入的分数、正误、题干、答案或 rubric。
+- 历史数据兼容：未修改数据库表结构、用户主键、章节/单元/题目 ID 或重置逻辑。历史 `quiz_results` 和快照继续按原接口读取；提交后的答案与解析由认证接口按权威题库补充。所有 API 和浏览器测试使用 `%TEMP%` 隔离数据库。
+- 浏览器验证：临时服务 `http://127.0.0.1:8877/calculus_quest/`。完成注册、10 题前测、服务端计分、解析展示、Agent 知识点选择、讲解页和互动课件；刷新后总分 30/115 与 10 条结果正常恢复。`localStorage` 不含 Token，Token 只在会话存储；iframe sandbox 为 `allow-scripts allow-forms allow-pointer-lock allow-popups`，从 iframe 读取父页面会话存储返回 `SecurityError`。恶意富文本样本最终只保留安全 `<p>` 与允许的字号样式；控制台 0 error/warning。
+- 百人短压测：隔离服务端，100 个不同客户端并发拉取公开 route 全部 200，1.854 秒完成，P95 1.603 秒，共传输 148,361,500 字节；100 个不同客户端同时注册全部成功，耗时 6.628 秒，P95 6.320 秒，说明同步 `scrypt` 会在集中注册时明显阻塞事件循环。若代理未传递真实客户端 IP，200 个同源健康请求只有 118 个 200、82 个 429；生产 Nginx 必须保留 `X-Forwarded-For`。
+- 数据库容量：只读检查时本地库为 128,708,608 字节、8 用户、329 条测验、13,457 条事件、1,155 个快照；快照 JSON 合计 92,961,087 字节，平均 80,486 字节、最大 336,420 字节。按当前用户平均线性外推，100 人约产生 1.08 GiB 快照正文和约 1.50 GiB 数据库。128.82 MB 库在 `sql.js` 打开后 RSS 约 179 MB，整库 `export()` 时约 307 MB。既有本地 8765 服务 PID 11920 在验证期间继续写正式本地库，因此只读命令内哈希保持不变，但不能把整个工作窗口宣称为静止数据库；本次测试未连接该服务。
+- 六套课件影响：当前活动课件约 821 MiB，六套同规模课件约需 4.8 GiB 磁盘；静态文件按请求流式发送，不会六套全部驻留 Node 内存。真正的内存和磁盘风险来自 `sql.js` 整库驻内存、整库导出保存和完整快照持续追加，而不是课件套数。
+- 自动验证：23 个 `ops/test-*.js` 全部通过；`server.js`、`db.js`、`app/main/` 和 `lib/` JavaScript 全部通过 `node --check`；14 个修改文本通过严格 UTF-8；`npm run kg:test/flow:test/path:test/slide:test/katex:test/auth:test`、`git diff --check` 和 `npm audit --omit=dev` 通过，依赖漏洞为 0。Git 跟踪内容未发现真实 OpenAI/GitHub Token，`.env`、管理员 Token 文件和数据库均由 `.gitignore` 排除。
+- 失败/警告：静态白名单首次收紧时误拦截 `app/flow-test/flow-test.css`，子路径测试稳定复现 403；改为 `app/` 仅允许 `.js/.css` 后通过。一次包含启动、压测和递归清理的组合命令被本地安全策略拒绝，随后拆分执行；临时目录未递归删除且不会进入 Git。
+- 是否真实调用 LLM（provider/model）：否；浏览器与压测服务均使用 `LLM_PROVIDER=mock`。
+- 是否修改源 `.maic.zip`：否。
+- Git 提交：本条与四项安全修复一起精确暂存并提交，最终提交号见 Git 历史；不推送、不部署。
+- 剩余风险与下一步：当前版本可以完成 100 个不同 IP 的短时静态/注册压测，但不应宣称已具备稳定百人课堂容量。正式百人使用前至少需要把快照改为“最新状态 upsert + 有界审计历史/增量事件”，压测真实学习写入与停机保存，并评估把 `sql.js` 替换为原生 SQLite/PostgreSQL；同时确认生产 Nginx 的真实客户端 IP 传递。六套课件应只在用户首次分配时保存一个稳定 `courseVariantId`，不要复制整套课件内容或 route 到每个用户快照。
+
 ## 11. 后续记录模板
 
 每次工作完成后追加：

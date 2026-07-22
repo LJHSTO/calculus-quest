@@ -1582,11 +1582,6 @@ function agenticQuizQuestionsForPlan(records = [], unit = null) {
     chapterId: unit?.chapterId || "",
     questionId: question.id,
     questionType: question.type,
-    questionText: question.prompt || question.question || question.title || question.text || "",
-    referenceAnswer: question.referenceAnswer || question.answerText || question.analysis || "",
-    rubric: question.commentPrompt || question.rubric || "",
-    concepts: question.concepts || question.tags || [],
-    points: question.points || result.maxScore || 0,
     response: result.response
   }));
 }

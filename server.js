@@ -27,6 +27,7 @@ const zlib = require("zlib");
 })();
 
 const db = require("./db");
+const courseAssessment = require("./lib/course-assessment");
 const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
@@ -39,8 +40,12 @@ const learningRouteApiPaths = new Set([
   "/api/course/openmaic-v14-route"
 ]);
 let learningRoute = null;
+let publicLearningRouteJson = "";
+let assessmentIndex = new Map();
 try {
   learningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
+  publicLearningRouteJson = JSON.stringify(courseAssessment.buildPublicLearningRoute(learningRoute));
+  assessmentIndex = courseAssessment.buildAssessmentIndex(learningRoute);
 } catch (error) {
   console.warn("Multi-scene learning route load skipped:", error.message);
 }
@@ -84,8 +89,47 @@ const types = {
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav",
   ".m4a": "audio/mp4",
-  ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+  ".mp4": "video/mp4",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf"
 };
+const publicRootFiles = new Set([
+  "index.html",
+  "admin.html",
+  "flow-test.html",
+  "styles.css",
+  "favicon.ico"
+]);
+const publicLibFiles = new Set([
+  "lib/katex.min.css",
+  "lib/katex.min.js",
+  "lib/interaction-policy.js"
+]);
+const publicResourceExtensions = new Set([
+  ".html",
+  ".htm",
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".svg",
+  ".webp",
+  ".mp3",
+  ".wav",
+  ".m4a",
+  ".mp4"
+]);
+const publicAssetExtensions = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".svg",
+  ".webp",
+  ".ico"
+]);
+const publicFontExtensions = new Set([".woff", ".woff2", ".ttf"]);
 
 function send(res, status, body, type = "text/plain; charset=utf-8", extraHeaders = {}) {
   res.writeHead(status, {
@@ -168,7 +212,7 @@ function rememberGzip(key, value) {
 
 function isBlockedStaticResource(filePath) {
   const relative = path.relative(root, filePath).replaceAll(path.sep, "/");
-  return /^resources\/open-maic\/[^/]+\/manifest\.json$/.test(relative);
+  return /^resources\/open-maic\/.+\/manifest\.json$/.test(relative);
 }
 
 
@@ -571,33 +615,6 @@ function issueSession(participantId, timestamp) {
   return token;
 }
 
-function persistClientQuizResults(participant, rows = []) {
-  if (!participant || !Array.isArray(rows)) return;
-  rows.forEach((row) => {
-    if (!row || !row.questionId && !row.question_id) return;
-    const questionId = row.questionId || row.question_id || "";
-    const unitId = row.unitId || row.unit_id || "";
-    db.insertQuizResult({
-      id: row.id || `${participant.id}-${unitId}-${questionId}`,
-      user_id: participant.id,
-      chapter_id: row.chapterId || row.chapter_id || "",
-      chapter_label: row.chapterLabel || row.chapter_label || "",
-      unit_id: unitId,
-      unit_label: row.unitLabel || row.unit_label || "",
-      question_id: questionId,
-      question_type: row.questionType || row.question_type || row.mode || "",
-      phase: row.phase || "",
-      points: row.points || 0,
-      response: row.response ?? "",
-      is_correct: row.isCorrect === true ? 1 : row.isCorrect === false ? 0 : -1,
-      status: row.status || "",
-      score: row.score || 0,
-      max_score: row.maxScore || row.max_score || 0,
-      created_at: row.timestamp || row.created_at || nowIso()
-    });
-  });
-}
-
 function persistGradingResults(participant, results = []) {
   if (!participant || !Array.isArray(results)) return;
   results.forEach((gr) => {
@@ -653,9 +670,26 @@ function safeStaticPath(urlPath) {
   const publicPath =
     decoded === "/" ? "index.html"
     : decoded === "/admin" ? "admin.html"
+    : decoded === "/flow-test" ? "flow-test.html"
     : decoded.replace(/^\/+/, "");
-  // Block access to sensitive directories
-  if (/^(data|ops|config|node_modules|\.claude|\.git)(\/|$)/.test(publicPath)) return null;
+  const normalized = publicPath.replaceAll("\\", "/");
+  const extension = path.extname(normalized).toLowerCase();
+  const isManifest = /^resources\/open-maic\/.+\/manifest\.json$/.test(normalized);
+  const isPublicResource = normalized.startsWith("resources/open-maic/")
+    && !/^resources\/open-maic\/(?:prompts|versions)(?:\/|$)/.test(normalized)
+    && (
+      normalized === "resources/open-maic/course-index.json"
+      || publicResourceExtensions.has(extension)
+    );
+  const allowed = publicRootFiles.has(normalized)
+    || normalized.startsWith("app/") && (extension === ".js" || extension === ".css")
+    || normalized.startsWith("admin/") && (extension === ".js" || extension === ".css")
+    || normalized.startsWith("assets/") && publicAssetExtensions.has(extension)
+    || publicLibFiles.has(normalized)
+    || normalized.startsWith("lib/fonts/") && publicFontExtensions.has(extension)
+    || isManifest
+    || isPublicResource;
+  if (!allowed || normalized.split("/").some((part) => !part || part === "." || part === "..")) return null;
   const filePath = path.resolve(root, publicPath);
   return filePath === root || filePath.startsWith(root + path.sep) ? filePath : null;
 }
@@ -702,22 +736,17 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === "/api/research/config") {
-      let courseVersion = "";
-      try {
-        const route = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
-        courseVersion = String(route.versionId || "").slice(0, 120);
-      } catch {}
+      const courseVersion = String(learningRoute?.versionId || "").slice(0, 120);
       sendJson(res, 200, { ok: true, data: { ...researchConfig, courseVersion } });
       return;
     }
 
     if (req.method === "GET" && learningRouteApiPaths.has(url.pathname)) {
-      try {
-        const route = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
-        sendJson(res, 200, route);
-      } catch (error) {
+      if (!publicLearningRouteJson) {
         sendJson(res, 404, { ok: false, message: "未找到多场景自适应学习路线。" });
+        return;
       }
+      send(res, 200, publicLearningRouteJson, "application/json; charset=utf-8");
       return;
     }
 
@@ -1031,29 +1060,6 @@ async function handleApi(req, res, url) {
         created_at: timestamp
       });
 
-      // If it's a quiz_result, also insert into quiz_results table
-      if (eventType === "quiz_result") {
-        const q = body.payload || {};
-        db.insertQuizResult({
-          id: q.id || eventId,
-          user_id: auth.participant.id,
-          chapter_id: q.chapterId || "",
-          chapter_label: q.chapterLabel || "",
-          unit_id: q.unitId || "",
-          unit_label: q.unitLabel || "",
-          question_id: q.questionId || "",
-          question_type: q.questionType || "",
-          phase: q.phase || "",
-          points: q.points || 0,
-          response: typeof q.response === "string" ? q.response : JSON.stringify(q.response || ""),
-          is_correct: q.isCorrect === true ? 1 : q.isCorrect === false ? 0 : -1,
-          status: q.status || "",
-          score: q.score || 0,
-          max_score: q.maxScore || 0,
-          created_at: q.timestamp || timestamp
-        });
-      }
-
       sendJson(res, 200, { ok: true, eventId });
       return;
     }
@@ -1200,11 +1206,134 @@ async function handleApi(req, res, url) {
       return;
     }
 
-    // ---- Learning Quiz Results (for cross-browser sync - authoritative source) ----
+    // ---- Learning Quiz Results (server-scored authoritative source) ----
+    if (req.method === "POST" && url.pathname === "/api/learning/quiz/submit") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const unitId = String(body.unitId || "").trim();
+      const chapterId = String(body.chapterId || "").trim();
+      const phase = String(body.phase || "").trim();
+      const answers = Array.isArray(body.answers) ? body.answers.slice(0, 50) : [];
+      if (!unitId || !chapterId || !phase || !answers.length) {
+        sendJson(res, 400, { ok: false, message: "测验提交信息不完整。" });
+        return;
+      }
+      const expectedEntries = courseAssessment.assessmentEntriesForUnit(assessmentIndex, {
+        chapterId,
+        unitId,
+        phase
+      });
+      const submittedQuestionIds = new Set(
+        answers.map((answer) => String(answer?.questionId || "").trim()).filter(Boolean)
+      );
+      if (
+        !expectedEntries.length
+        || submittedQuestionIds.size !== answers.length
+        || submittedQuestionIds.size !== expectedEntries.length
+        || expectedEntries.some((entry) => !submittedQuestionIds.has(entry.question.id))
+      ) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "quiz_question_set_mismatch",
+          message: "提交题目与当前测验不完整或不匹配。"
+        });
+        return;
+      }
+      if (db.getQuizResultsByUserUnit(auth.participant.id, unitId).length) {
+        sendJson(res, 409, { ok: false, code: "quiz_already_submitted", message: "这份测验已经提交，不能重复覆盖成绩。" });
+        return;
+      }
+
+      const seen = new Set();
+      const timestamp = nowIso();
+      const prepared = [];
+      for (const submitted of answers) {
+        const questionId = String(submitted?.questionId || "").trim();
+        if (!questionId || seen.has(questionId)) {
+          sendJson(res, 400, { ok: false, message: "测验题目无效或重复。" });
+          return;
+        }
+        seen.add(questionId);
+        const entry = courseAssessment.assessmentEntry(assessmentIndex, {
+          questionId,
+          chapterId,
+          unitId,
+          phase
+        });
+        if (!entry) {
+          sendJson(res, 400, { ok: false, message: "测验题目与当前章节不匹配。" });
+          return;
+        }
+        const question = entry.question;
+        let response = submitted.response;
+        if (question.type === "multiple") {
+          response = Array.isArray(response)
+            ? Array.from(new Set(response.map((value) => String(value).trim()).filter(Boolean))).slice(0, 30)
+            : [];
+        } else {
+          response = String(response ?? "").trim().slice(0, 12000);
+        }
+        if (question.type === "multiple" ? !response.length : !response) {
+          sendJson(res, 400, { ok: false, message: "请完成全部题目后再提交。" });
+          return;
+        }
+
+        const maxScore = Math.max(0, Number(question.points || 0));
+        const scored = question.type === "short_answer"
+          ? { isCorrect: null, score: 0, maxScore, status: "pending_review" }
+          : courseAssessment.scoreObjectiveQuestion(question, response);
+        prepared.push({
+          id: `${auth.participant.id}-${unitId}-${question.id}`,
+          unitId,
+          chapterId,
+          questionId: question.id,
+          questionType: question.type,
+          points: maxScore,
+          phase,
+          timestamp,
+          response,
+          ...scored,
+          ...courseAssessment.publicReviewFields(question),
+          entry
+        });
+      }
+
+      prepared.forEach((result) => {
+        db.insertQuizResult({
+          id: result.id,
+          user_id: auth.participant.id,
+          chapter_id: result.chapterId,
+          chapter_label: result.entry.chapterLabel || "",
+          unit_id: result.unitId,
+          unit_label: result.entry.unitLabel || "",
+          question_id: result.questionId,
+          question_type: result.questionType,
+          phase: result.phase,
+          points: result.points,
+          response: result.response,
+          is_correct: result.isCorrect === true ? 1 : result.isCorrect === false ? 0 : -1,
+          status: result.status,
+          score: result.score,
+          max_score: result.maxScore,
+          created_at: result.timestamp
+        });
+      });
+
+      sendJson(res, 200, {
+        ok: true,
+        results: prepared.map(({ entry, ...result }) => result)
+      });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/learning/quiz-results") {
       const auth = authenticate(req);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      const results = db.getQuizResultsByUser(auth.participant.id, 500);
+      const results = db.getQuizResultsByUser(auth.participant.id, 500).map((row) => {
+        const entry = courseAssessment.assessmentEntry(assessmentIndex, row);
+        return entry ? { ...row, ...courseAssessment.publicReviewFields(entry.question) } : row;
+      });
       sendJson(res, 200, { ok: true, data: results });
       return;
     }
@@ -1384,7 +1513,21 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      const questions = Array.isArray(body.questions) ? body.questions.slice(0, 50) : [];
+      const requestedIds = new Set(
+        (Array.isArray(body.questions) ? body.questions : [])
+          .map((question) => String(question?.questionId || "").trim())
+          .filter(Boolean)
+      );
+      const storedRows = db.getQuizResultsByUser(auth.participant.id, 500);
+      const latest = new Map();
+      storedRows.forEach((row) => {
+        const key = `${row.unit_id || ""}:${row.question_id || ""}`;
+        if (!latest.has(key) && (!requestedIds.size || requestedIds.has(row.question_id))) latest.set(key, row);
+      });
+      const questions = courseAssessment.authoritativeGradingQuestions(
+        assessmentIndex,
+        Array.from(latest.values())
+      ).slice(0, 50);
       try {
         const results = await orchestrator.gradeOnly(questions);
         persistGradingResults(auth.participant, results);
@@ -1402,10 +1545,7 @@ async function handleApi(req, res, url) {
       const chapterId = String(body.chapterId || "").trim();
       const currentUnitId = String(body.currentUnitId || "").trim();
       if (!chapterId) { sendJson(res, 400, { ok: false, message: "chapterId required." }); return; }
-      const sourceResults = Array.isArray(body.quizResults)
-        ? body.quizResults.slice(0, 500)
-        : db.getQuizResultsByUser(auth.participant.id, 200);
-      persistClientQuizResults(auth.participant, sourceResults);
+      const sourceResults = db.getQuizResultsByUser(auth.participant.id, 500);
       const filtered = sourceResults.filter((row) => {
         const unitId = row.unit_id || row.unitId || "";
         const cid = row.chapter_id || row.chapterId || unitId.split("-scene-")[0];
@@ -1418,7 +1558,7 @@ async function handleApi(req, res, url) {
           .slice(-80);
         const result = await orchestrator.orchestrate({
           chapterId, currentUnitId, quizResults: filtered,
-          quizQuestions: Array.isArray(body.quizQuestions) ? body.quizQuestions : [],
+          quizQuestions: courseAssessment.authoritativeGradingQuestions(assessmentIndex, filtered),
           interactionEvidence: body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null,
           interactionEvents: recentEvents,
           completedUnitIds: Array.isArray(body.completedUnitIds) ? body.completedUnitIds.slice(0, 500) : [],
@@ -1568,6 +1708,11 @@ const server = http.createServer((req, res) => {
 
   if (url.pathname.startsWith("/api/")) {
     handleApi(req, res, url);
+    return;
+  }
+
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    send(res, 405, "Method not allowed", "text/plain; charset=utf-8", { Allow: "GET, HEAD" });
     return;
   }
 

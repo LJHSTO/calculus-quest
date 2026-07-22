@@ -708,6 +708,9 @@ function setupInteractionTracking() {
 
   window.addEventListener("message", (event) => {
     if (event.data?.type !== "interaction_track") return;
+    const trustedFrame = Array.from(document.querySelectorAll("iframe.embed-frame"))
+      .some((frame) => frame.contentWindow === event.source);
+    if (!trustedFrame) return;
     analyticsTrack(event.data.eventType || "iframe_event", {
       source: "iframe",
       data: event.data.payload || {}

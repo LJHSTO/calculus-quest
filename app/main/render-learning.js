@@ -414,7 +414,7 @@ function renderKnowledgeUnit(unit) {
         </div>
        <div class="iframe-container multi-scene-courseware-stage" data-knowledge-scene-stage>
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
-         <iframe class="embed-frame" data-courseware-frame title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
+         <iframe class="embed-frame" data-courseware-frame title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
          <button class="button soft icon-button multi-scene-courseware-exit" type="button" data-knowledge-scene-fullscreen aria-label="退出课件全屏" title="退出课件全屏">退出全屏</button>
         </div>`
     : selectedTypeId
@@ -915,7 +915,18 @@ function renderSlideElement(element, canvas, chapterId, resourceRoot = "") {
   }
 
   if (element.type === "latex") {
-    const html = element.html || escapeHtml(element.latex || "");
+    const latex = String(element.latex || "");
+    let html = escapeHtml(latex);
+    if (latex && typeof katex !== "undefined") {
+      try {
+        html = katex.renderToString(latex, {
+          throwOnError: false,
+          displayMode: true,
+          trust: false,
+          maxExpand: 1000
+        });
+      } catch {}
+    }
     return `<div class="slide-element slide-latex" style="${common}color:${element.color || "inherit"}"><div class="slide-fit-content slide-latex-content" data-slide-fit>${html}</div></div>`;
   }
 
@@ -1360,7 +1371,7 @@ function renderInteractive(unit) {
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe></div>`,
+      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe></div>`,
       "html-resource interactive-resource"
     )}
     ${renderCoach(unit.scene, unit.chapterId, unit.id)}
@@ -1369,20 +1380,6 @@ function renderInteractive(unit) {
   if (iframeEl) {
     let loaded = false;
     const loader = () => iframeEl.parentElement?.querySelector(".iframe-loader");
-    const expectedFrameUrl = frameSrc ? new URL(frameSrc, window.location.href).href : "";
-    const isDocumentReady = () => {
-      try {
-        const doc = iframeEl.contentDocument || iframeEl.contentWindow?.document;
-        if (!doc?.body || doc.readyState !== "complete") return false;
-        if (expectedFrameUrl) {
-          const frameUrl = iframeEl.contentWindow?.location?.href || "";
-          if (!frameUrl || frameUrl === "about:blank" || frameUrl !== expectedFrameUrl) return false;
-        }
-        return true;
-      } catch {
-        return false;
-      }
-    };
     const markLoaded = () => {
       if (!loaded) {
         loaded = true;
@@ -1399,7 +1396,7 @@ function renderInteractive(unit) {
       }
     };
     iframeEl.addEventListener("load", () => {
-      if (isDocumentReady()) markLoaded();
+      markLoaded();
     });
     iframeEl.addEventListener("error", () => {
       const node = loader();
@@ -1407,17 +1404,8 @@ function renderInteractive(unit) {
     });
     if (html) iframeEl.srcdoc = html;
     else if (frameSrc) iframeEl.src = frameSrc;
-    if (html) {
-      requestAnimationFrame(() => {
-        if (!loaded && isDocumentReady()) markLoaded();
-      });
-    }
     setTimeout(() => {
       if (!loaded) {
-        if (isDocumentReady()) {
-          markLoaded();
-          return;
-        }
         const node = loader();
         if (node) { node.classList.add("hidden"); node.innerHTML = "<p>互动实验加载超时，请检查网络连接后刷新。</p>"; }
       }

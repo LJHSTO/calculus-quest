@@ -700,6 +700,13 @@ function getQuizResultsByUser(userId, limit = 200) {
   );
 }
 
+function getQuizResultsByUserUnit(userId, unitId) {
+  return queryAll(
+    "SELECT * FROM quiz_results WHERE user_id = ? AND unit_id = ? ORDER BY created_at DESC",
+    [userId, unitId]
+  );
+}
+
 // ---- Events ----
 
 function insertEvent(record) {
@@ -2378,6 +2385,7 @@ module.exports = {
   revokeSession,
   insertQuizResult,
   getQuizResultsByUser,
+  getQuizResultsByUserUnit,
   insertEvent,
   insertSnapshot,
   getLatestSnapshot,
