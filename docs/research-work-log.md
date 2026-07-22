@@ -755,6 +755,23 @@ tools/_encoding_test.txt
 - Git 提交：本条与前缀修复一起精确提交，最终提交号见 Git 历史。
 - 剩余风险与下一步：GitHub 推送不会自动更新公网服务；服务器管理员仍需备份外置数据库、快进拉取、运行发布门控并以 `BASE_PATH=/calculus_quest` 重启。生产 smoke 应访问无尾斜杠和带尾斜杠两个入口，但不得用真实学生账号点击重置。
 
+### 2026-07-21：课件舞台独立全屏、V14 推荐链与最新审计课件发布
+
+- 目标：只让当前课件 iframe 舞台全屏，不把四个互动选择项一起放入全屏；四张选择卡的小字显示当前知识点的真实场景名称；无损发布 V14 route/KG、Coach/Planner 和最新审计课件。
+- 基线与兼容证据：工作树基于 `ddb5853`。当前 route 与 `origin/main` 的 11 个章节、19 个模块、72 个知识点、301 个模块题目 ID、330 个章级题目 ID 和 288 个资源路径均零增删，历史完成记录、测验结果和快照继续使用原稳定键。
+- 课件导入：GH-01 至 GH-14 使用各章最终审计包，EXT-01、EXT-02 分别更新到 `2026-07-19T08:21:48.270Z` 和 `2026-07-19T08:47:40.618Z`，EXT-03 至 EXT-05 保持原版。更新 16 个 manifest、EXT-01/02 的 8 个知识点讲解画布和 route，再重建 `data/knowledge-graph.json`。选定包中的运行文件逐项哈希无不一致；未导入的只有 `classroom.json`、审计报告和审计截图。GH-04 四个 route 依赖的派生 3D 文件继续保留。
+- 发布门控：16 个选定包的结构 guard、视觉审计和可用的互动审计均为 `publishable=true`，critical/warning 均为 0。route 中所有客观题答案均能匹配 `options[].value`。
+- 交互与全屏：四张卡片保留“动手调一调、找错并改正、知识怎么连、换个角度看”的类别标题，小字直接读取候选资源标题并只清理路径、扩展名和 `GH-xx-` 前缀。`data-knowledge-scene-stage` 是独立全屏目标，选择区、讲解页和语音包不进入全屏；清理重复的旧式 `allowfullscreen` 属性。
+- 自动验证：全部 17 个 `ops/test-*.js`、运行时 JavaScript `node --check`、`npm run kg:build`、`npm run kg:test`、`npm run flow:test` 和 `npm audit --omit=dev` 通过。KG 仍为 11 章、105 个运行单元、430 条边和 288 个资源；根路径与 `/calculus_quest/` 保留/剥离前缀两种代理模式均通过。
+- 浏览器结果：隔离临时数据库和桌面端 `1440×1000` 视口中，四张卡片显示“输入、输出和函数规则：拖动实验/误解修复挑战/关系图/空间视角”。全屏元素严格为 `.iframe-container.v14-courseware-stage`，不包含选择面板且包含当前 iframe；控制台 0 error，重复 fullscreen 警告已消失。最终截图为 `.playwright-cli/page-2026-07-21T16-46-05-574Z.png`。
+- 数据保护：旧备份中的所有主键行在当前正式数据库中零缺失、未被篡改。当前库是在旧数据上正常新增 393 条事件、30 个快照、10 条测验、2 条 Agent 决策和 9 条交互证据；没有回滚。安全停机后正式库与 `data/calculus-quest.before-local-v14-release-v6-20260721.db` 的 SHA-256 均为 `3B6535B6DF72B3D1EEC7C0C2B5F62B8DA7CDDB854B32126B8AB91AC37F29D9BC`。
+- 本地运行：正式服务保持 `http://127.0.0.1:8765/`、`basePath=""`，最终缓存清理重启使用 `appVersion="ddb5853-local-v14-release-v7"`。
+- 失败/警告：浏览器仍提示课件 iframe 同时使用 `allow-scripts` 与 `allow-same-origin`。这是当前同源交互追踪的既有设计；课件均来自已通过门控的只读包。本轮未修改或迁移真实生产数据库，隔离测试账号只存在于被忽略的临时数据库。
+- 是否真实调用 LLM（provider/model）：否。
+- 是否修改源 `.maic.zip`：否；只导入 OpenMAIC 已审计导出的只读派生内容。
+- Git 提交：与本条同批精确提交，最终提交号见 Git 历史。
+- 剩余风险与下一步：推送 GitHub 不会自动更新生产服务器。服务器管理员仍需先备份仓库外生产数据库，执行 `git pull --ff-only origin main`，再以 `BASE_PATH=/calculus_quest` 重启并检查首页、登录、管理端、quiz 和课件 iframe。
+
 ## 11. 后续记录模板
 
 每次工作完成后追加：

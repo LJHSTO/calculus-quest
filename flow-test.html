@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>课程流程检视 | Calculus Quest</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="app/flow-test/flow-test.css?v=20260712-3" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="product-mark">
+        <span class="product-name">Calculus Quest</span>
+        <span class="product-mode">流程检视</span>
+      </div>
+      <div class="header-actions">
+        <button id="check-resources" class="command-button" type="button">检查全部资源</button>
+        <a class="icon-link" href="./" target="_blank" rel="noreferrer" aria-label="在新窗口打开学生端" title="打开学生端">↗</a>
+      </div>
+    </header>
+
+    <section class="validation-rail" aria-label="一致性状态">
+      <div class="rail-item" data-gate="route"><span class="rail-dot"></span><strong>课程路线</strong><span>加载中</span></div>
+      <div class="rail-connector"></div>
+      <div class="rail-item" data-gate="kg"><span class="rail-dot"></span><strong>知识图谱</strong><span>等待</span></div>
+      <div class="rail-connector"></div>
+      <div class="rail-item" data-gate="resources"><span class="rail-dot"></span><strong>资源</strong><span>待检查</span></div>
+    </section>
+
+    <main class="workspace">
+      <aside class="chapter-pane" aria-label="章节">
+        <div class="pane-heading">
+          <span>章节</span>
+          <output id="chapter-count">--</output>
+        </div>
+        <nav id="chapter-list" class="chapter-list"></nav>
+      </aside>
+
+      <section class="flow-pane" aria-labelledby="chapter-title">
+        <div class="chapter-heading">
+          <div>
+            <span id="chapter-id" class="utility-label">--</span>
+            <h1 id="chapter-title">正在加载课程路线</h1>
+          </div>
+          <div id="chapter-metrics" class="chapter-metrics"></div>
+        </div>
+        <div id="phase-strip" class="phase-strip" aria-label="章节流程"></div>
+        <div id="knowledge-list" class="knowledge-list" aria-live="polite"></div>
+      </section>
+
+      <section class="viewer-pane" aria-labelledby="resource-title">
+        <div class="viewer-heading">
+          <div>
+            <span id="resource-kind" class="utility-label">资源预览</span>
+            <h2 id="resource-title">选择一个知识点</h2>
+          </div>
+          <a id="open-resource" class="icon-link is-disabled" href="#" target="_blank" rel="noreferrer" aria-label="在新窗口打开课件" title="打开课件">↗</a>
+        </div>
+        <div id="modality-tabs" class="modality-tabs" role="tablist" aria-label="课件表征"></div>
+        <div id="resource-meta" class="resource-meta"></div>
+        <div class="frame-shell">
+          <div id="frame-empty" class="frame-empty">未选择课件资源</div>
+          <iframe id="resource-frame" title="课件资源预览" loading="eager" hidden></iframe>
+        </div>
+      </section>
+    </main>
+
+    <div id="live-status" class="sr-only" aria-live="polite"></div>
+    <script src="app/flow-test/flow-test.js?v=20260712"></script>
+  </body>
+</html>

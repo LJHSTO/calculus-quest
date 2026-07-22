@@ -408,6 +408,7 @@ function agenticCandidateFromUnit(unit, reason = "") {
 }
 
 function agenticLocalCandidates(chapterId, sceneOrders, reason) {
+  if (agenticV14Mode()) return [];
   const orderSet = new Set(sceneOrders);
   return agenticAllChapterUnits(chapterId)
     .filter((unit) => orderSet.has(unit.sceneOrder))

@@ -238,6 +238,10 @@
   color: #14231f;
 }
 
+.v14-resource-note .v14-scene-fullscreen {
+  margin-left: auto;
+}
+
 .v14-empty-resource {
   min-height: 220px;
   display: grid;
@@ -568,23 +572,45 @@
 }
 
 .v14-scene-fullscreen {
-  width: 100%;
-  min-height: 36px;
+  width: auto;
+  min-height: 40px;
+  flex: 0 0 auto;
   justify-content: center;
-  padding-inline: 10px;
+  padding-inline: 12px;
 }
 
-.iframe-container:fullscreen {
+.v14-courseware-stage > .v14-courseware-exit {
+  display: none;
+}
+
+.v14-courseware-stage:fullscreen {
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
   background: #0b1412;
-  padding: 12px;
+  padding: 0;
 }
 
-.iframe-container:fullscreen .embed-frame {
+.v14-courseware-stage:fullscreen .embed-frame {
   width: 100%;
-  min-height: calc(100vh - 24px);
-  border-radius: 8px;
+  height: 100vh;
+  min-height: 100vh;
+  border: 0;
+  border-radius: 0;
+}
+
+.v14-courseware-stage:fullscreen > .v14-courseware-exit {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  display: inline-flex;
+  min-height: 40px;
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(11, 20, 18, 0.82);
+  color: #ffffff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(10px);
 }
 
 @media (max-width: 1180px) {

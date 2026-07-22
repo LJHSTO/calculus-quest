@@ -170,7 +170,20 @@ assert.match(bootstrap, /els\.authLogout\?\.addEventListener\("click", async \(\
 assert.match(bootstrap, /const needsSceneChoice = unit\.type === "knowledge" && !selectedKnowledgeSceneType\(unit\)/);
 assert.match(renderLearning, /trackInteraction\("parameter_change",\s*\{\s*persist:\s*false/);
 assert.match(renderLearning, /先选一种互动方式，再开始体验/);
-assert.doesNotMatch(renderLearning, /data-knowledge-scene-fullscreen/);
+assert.match(renderLearning, /data-knowledge-scene-panel/);
+assert.match(renderLearning, /data-knowledge-scene-stage/);
+assert.match(renderLearning, /data-knowledge-scene-fullscreen/);
+assert.doesNotMatch(renderLearning, /\sallowfullscreen/);
+assert.match(renderLearning, /cleanStudentSceneTitle\(candidate\.title \|\| candidate\.file, unit\.label\)/);
+assert.doesNotMatch(renderLearning, /调一调，看变化/);
+assert.doesNotMatch(renderLearning, /找出问题并修正/);
+assert.doesNotMatch(renderLearning, /看清概念关系/);
+assert.doesNotMatch(renderLearning, /从不同视角观察/);
+assert.match(events, /knowledgeSceneFullscreenButton/);
+assert.match(events, /toggleResourceFullscreen\(stage\)/);
+assert.doesNotMatch(events, /renderKnowledgeSceneAfterSelection/);
+assert.match(styles, /\.v14-courseware-stage:fullscreen/);
+assert.doesNotMatch(styles, /\.v14-scene-panel:fullscreen/);
 assert.doesNotMatch(renderLearning, /trackInteraction\("interactive_drag_move"/);
 assert.doesNotMatch(renderLearning, /trackInteraction\("interactive_pointer_(?:down|up|cancel)"/);
 

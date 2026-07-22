@@ -1442,15 +1442,9 @@ function createOpenMaicReviewUnit(chapter, module, sceneOrder, moduleIndex) {
 }
 
 function normalizeResourceCandidates(candidates = []) {
-  const priority = ["qwen3.6-35b-a3b", "glm-5", "gemini-3.1-pro"];
   return [...candidates]
     .filter((candidate) => candidate?.root && candidate?.file)
-    .sort((a, b) => {
-      const pa = priority.indexOf(a.root);
-      const pb = priority.indexOf(b.root);
-      const rootScore = (pa < 0 ? 99 : pa) - (pb < 0 ? 99 : pb);
-      return rootScore || Number(b.score || 0) - Number(a.score || 0);
-    });
+    .sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
 }
 
 function knowledgeInteractionTypes(unit) {
@@ -1545,61 +1539,6 @@ function setKnowledgeSceneType(unitId, typeId) {
   return true;
 }
 
-function maicAdaptiveConfig(chapterId, sceneOrder) {
-  return AGENTIC_MAIC_UI_ADAPTIVE_MAP?.[chapterId]?.[sceneOrder] || null;
-}
-
-function stripHtmlExtension(file = "") {
-  return String(file).replace(/\.html$/i, "");
-}
-
-function buildMaicAdaptiveUnit(chapter, sceneOrder) {
-  const config = maicAdaptiveConfig(chapter.id, sceneOrder);
-  if (!config?.file) return null;
-  const flowLabel = AGENTIC_ADAPTIVE_SCENE_LABELS[sceneOrder] || "互动课件";
-  const title = config.label || stripHtmlExtension(config.file);
-  const metadata = typeof inferredSceneMetadata === "function"
-    ? inferredSceneMetadata(chapter.id, { type: "interactive", title }, sceneOrder, "")
-    : {};
-  const scene = {
-    type: "interactive",
-    title,
-    order: sceneOrder,
-    ...metadata,
-    content: {
-      type: "interactive",
-      htmlPath: config.file,
-      resourceRoot: MAIC_UI_MODEL.id,
-      modelLabel: MAIC_UI_MODEL.label
-    },
-    actions: [],
-    whiteboards: null
-  };
-
-  return {
-    id: `${chapter.id}-scene-${sceneOrder}`,
-    kind: "scene",
-    chapterId: chapter.id,
-    scene,
-    sceneOrder,
-    flowKind: "adaptive",
-    flowLabel,
-    label: `${flowLabel}：${title}`,
-    summary: `${MAIC_UI_MODEL.label} 生成的互动课件：${stripHtmlExtension(config.file)}`,
-    type: "interactive",
-    assessmentPhase: "",
-    conceptClusterId: metadata.conceptClusterId || "",
-    conceptClusterLabel: metadata.conceptClusterLabel || "",
-    conceptClusterFocus: metadata.conceptClusterFocus || "",
-    representation: metadata.representation || "",
-    scenarioType: metadata.scenarioType || "",
-    difficultyBand: metadata.difficultyBand || "",
-    modelId: MAIC_UI_MODEL.id,
-    modelLabel: MAIC_UI_MODEL.label,
-    resourceFile: config.file
-  };
-}
-
 function buildChapter(chapter) {
     const manifest = manifests.get(chapter.id);
   if (!manifest) {
@@ -1641,10 +1580,7 @@ function buildChapter(chapter) {
       };
     });
     const coreUnits = scenes.filter((unit) => unit.flowKind === "core");
-    const adaptiveUnits = [...AGENTIC_RELEARN_SCENE_ORDERS, ...AGENTIC_EXTENSION_SCENE_ORDERS]
-      .map((sceneOrder) => buildMaicAdaptiveUnit(chapter, sceneOrder))
-      .filter(Boolean);
-    const orderedScenes = orderMainScenes([...coreUnits, ...adaptiveUnits]);
+    const orderedScenes = orderMainScenes(coreUnits);
 
     return {
       ...chapter,

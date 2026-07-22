@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
-  "exportedAt": "2026-07-06T03:41:40.886Z",
-  "appVersion": "0.0.0",
+  "exportedAt": "2026-07-19T08:21:48.270Z",
+  "appVersion": "0.3.0",
   "stage": {
     "name": "微分方程直觉入门：从变化率到函数",
     "description": "",
@@ -465,16 +465,16 @@
             {
               "id": "line_JqchYrCi",
               "end": [
-                40,
-                -40
+                70,
+                -30
               ],
-              "top": 240,
-              "left": 680,
+              "top": 246,
+              "left": 760,
               "type": "line",
               "color": "#E53E3E",
               "start": [
-                -40,
-                40
+                -70,
+                30
               ],
               "style": "dashed",
               "width": 2,
@@ -486,9 +486,9 @@
             },
             {
               "id": "shape_AB9CuXbj",
-              "top": 236,
+              "top": 242,
               "fill": "#E53E3E",
-              "left": 716,
+              "left": 756,
               "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
               "type": "shape",
               "width": 8,
@@ -502,8 +502,8 @@
             },
             {
               "id": "text_azbKaoTA",
-              "top": 240,
-              "left": 730,
+              "top": 250,
+              "left": 700,
               "type": "text",
               "width": 60,
               "height": 43,
@@ -515,7 +515,7 @@
             {
               "id": "text_A2meUBVM",
               "top": 210,
-              "left": 860,
+              "left": 900,
               "type": "text",
               "width": 40,
               "height": 43,
@@ -526,7 +526,7 @@
             },
             {
               "id": "text_JtmvbOkG",
-              "top": 160,
+              "top": 176,
               "left": 580,
               "type": "text",
               "width": 40,
@@ -594,7 +594,7 @@
               "left": 80,
               "type": "text",
               "width": 840,
-              "height": 46,
+              "height": 63,
               "rotate": 0,
               "content": "<p style=\"font-size: 16px; color: #2D3748; text-align: center;\">⚠ 常见误解：认为微分方程就是移项解代数方程。实际上，解微分方程需要积分或数值方法，其核心是理解变化率如何驱动轨迹。</p>",
               "defaultColor": "#2D3748",
@@ -1390,6 +1390,7 @@
       "order": 7,
       "content": {
         "type": "slide",
+        "schemaVersion": 1,
         "canvas": {
           "id": "oNBfBo68bH065KkTTZtXC",
           "theme": {
@@ -1422,7 +1423,7 @@
               "left": 100,
               "type": "text",
               "width": 800,
-              "height": 68,
+              "height": 70,
               "rotate": 0,
               "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #003366;\">可分离变量与一阶线性方程</p>",
               "defaultColor": "#003366",
@@ -1434,7 +1435,7 @@
               "left": 100,
               "type": "text",
               "width": 800,
-              "height": 50,
+              "height": 52,
               "rotate": 0,
               "content": "<p style=\"font-size: 20px; text-align: center; color: #666666;\">两类基础微分方程的求解直觉</p>",
               "defaultColor": "#666666",
@@ -1501,8 +1502,11 @@
                   },
                   {
                     "id": "r1c2",
-                    "text": "",
+                    "text": "dy/dx=f(x)g(y)",
                     "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
                       "backcolor": "#F5F5F5"
                     },
                     "colspan": 1,
@@ -1510,8 +1514,11 @@
                   },
                   {
                     "id": "r1c3",
-                    "text": "",
+                    "text": "dy/dx+P(x)y=Q(x)",
                     "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
                       "backcolor": "#F5F5F5"
                     },
                     "colspan": 1,
@@ -1585,7 +1592,7 @@
                   },
                   {
                     "id": "r3c3",
-                    "text": "构造积分因子 μ=e^(∫P dx) 使左边为 (μy)'",
+                    "text": "积分因子法：化为整体导数",
                     "style": {
                       "align": "center",
                       "color": "#333333",
@@ -1612,8 +1619,11 @@
                   },
                   {
                     "id": "r4c2",
-                    "text": "",
+                    "text": "得到隐式解或显式解",
                     "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
                       "backcolor": "#ffffff"
                     },
                     "colspan": 1,
@@ -1621,8 +1631,11 @@
                   },
                   {
                     "id": "r4c3",
-                    "text": "",
+                    "text": "先求 μ(x)，再积分求 y",
                     "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
                       "backcolor": "#ffffff"
                     },
                     "colspan": 1,
@@ -1633,7 +1646,7 @@
               "left": 100,
               "type": "table",
               "width": 800,
-              "height": 220,
+              "height": 180,
               "rotate": 0,
               "outline": {
                 "color": "#CCCCCC",
@@ -1645,73 +1658,73 @@
                 0.4,
                 0.4
               ],
-              "cellMinHeight": 44
+              "cellMinHeight": 36
             },
             {
               "id": "latex_tl37hy6e",
-              "top": 224,
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span></span></span>",
-              "left": 280,
+              "top": 374,
+              "left": 150,
               "type": "latex",
               "align": "center",
               "color": "#333333",
               "latex": "\\frac{dy}{dx}=f(x)g(y)",
-              "width": 260,
-              "height": 40,
+              "width": 220,
+              "height": 60,
               "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span></span></span>",
               "fixedRatio": true
             },
             {
               "id": "latex_PvSiDcPH",
-              "top": 224,
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">P</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\">Q</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span></span></span></span></span>",
+              "top": 374,
               "left": 620,
               "type": "latex",
               "align": "center",
               "color": "#333333",
               "latex": "\\frac{dy}{dx}+P(x)y=Q(x)",
-              "width": 260,
-              "height": 40,
+              "width": 280,
+              "height": 60,
               "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">P</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\">Q</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span></span></span></span></span>",
               "fixedRatio": true
             },
             {
               "id": "latex_lFEkD5Wf",
-              "top": 352,
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.3074em;vertical-align:-0.936em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.936em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.07153em;\">C</span></span></span></span></span>",
-              "left": 280,
+              "top": 438,
+              "left": 130,
               "type": "latex",
               "align": "center",
               "color": "#333333",
-              "latex": "\\int\\frac{dy}{g(y)}=\\int f(x)dx+C",
-              "width": 260,
-              "height": 40,
+              "latex": "\\int \\frac{dy}{g(y)}=\\int f(x)\\,dx+C",
+              "width": 300,
+              "height": 60,
               "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.3074em;vertical-align:-0.936em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.936em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.07153em;\">C</span></span></span></span></span>",
               "fixedRatio": true
             },
             {
               "id": "latex_WERNhgQ9",
-              "top": 352,
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">μ</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">μ</span><span class=\"mord mathnormal\">Q</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.07153em;\">C</span></span></span></span></span>",
+              "top": 438,
               "left": 620,
               "type": "latex",
               "align": "center",
               "color": "#333333",
-              "latex": "\\mu y = \\int \\mu Q dx + C",
-              "width": 260,
-              "height": 40,
+              "latex": "\\mu=e^{\\int P(x)\\,dx},\\quad (\\mu y)'=\\mu Q",
+              "width": 280,
+              "height": 60,
               "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">μ</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.2265em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">e</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9765em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mop op-symbol small-op mtight\" style=\"margin-right:0.19445em;position:relative;top:-0.0006em;\">∫</span><span class=\"mspace mtight\" style=\"margin-right:0.1952em;\"></span><span class=\"mord mathnormal mtight\" style=\"margin-right:0.13889em;\">P</span><span class=\"mopen mtight\">(</span><span class=\"mord mathnormal mtight\">x</span><span class=\"mclose mtight\">)</span><span class=\"mspace mtight\" style=\"margin-right:0.1952em;\"></span><span class=\"mord mathnormal mtight\">d</span><span class=\"mord mathnormal mtight\">x</span></span></span></span></span></span></span></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:1em;\"></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">μ</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\"><span class=\"mclose\">)</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8019em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">′</span></span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8778em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">μ</span><span class=\"mord mathnormal\">Q</span></span></span></span></span>",
               "fixedRatio": true
             },
             {
               "id": "shape_MTeHgAgJ",
-              "top": 420,
+              "top": 502,
               "fill": "#E6F0FA",
               "left": 100,
               "path": "M 0.02 0 L 0.98 0 Q 1 0 1 0.1 L 1 0.9 Q 1 1 0.98 1 L 0.02 1 Q 0 1 0 0.9 L 0 0.1 Q 0 0 0.02 0 Z",
               "type": "shape",
               "width": 800,
-              "height": 90,
+              "height": 48,
               "rotate": 0,
               "viewBox": [
                 1,
@@ -1721,37 +1734,37 @@
             },
             {
               "id": "text_zRs_n4WS",
-              "top": 427,
+              "top": 503,
               "left": 120,
               "type": "text",
-              "width": 760,
-              "height": 44,
+              "width": 220,
+              "height": 46,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #003366;\"><b>• 目标：</b>识别变量能否分开或能否构造整体导数</p>",
+              "content": "<p style=\"font-size: 16px; color: #003366; text-align: center;\"><b>误解</b>：避免机械套用</p>",
               "defaultColor": "#003366",
               "defaultFontName": "Microsoft YaHei"
             },
             {
               "id": "text_e-xKHU1L",
-              "top": 460,
-              "left": 120,
+              "top": 503,
+              "left": 390,
               "type": "text",
-              "width": 760,
-              "height": 44,
+              "width": 220,
+              "height": 46,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #003366;\"><b>• 误解：</b>避免机械套用公式，需关注每一步是否保持了变化率的对应关系</p>",
+              "content": "<p style=\"font-size: 16px; color: #003366; text-align: center;\"><b>核心</b>：化为可积分形式</p>",
               "defaultColor": "#003366",
               "defaultFontName": "Microsoft YaHei"
             },
             {
               "id": "text_LQKoZETe",
-              "top": 493,
-              "left": 120,
+              "top": 503,
+              "left": 660,
               "type": "text",
-              "width": 760,
-              "height": 44,
+              "width": 220,
+              "height": 46,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #003366;\"><b>• 核心：</b>将复杂的方程转化为可直接积分的形式</p>",
+              "content": "<p style=\"font-size: 16px; color: #003366; text-align: center;\"><b>目标</b>：识别方程类型</p>",
               "defaultColor": "#003366",
               "defaultFontName": "Microsoft YaHei"
             }
@@ -1761,9 +1774,9 @@
             "color": "#ffffff"
           },
           "viewportSize": 1000,
-          "viewportRatio": 0.5625
-        },
-        "schemaVersion": 1
+          "viewportRatio": 0.5625,
+          "animations": []
+        }
       },
       "actions": [
         {
@@ -2555,6 +2568,7 @@
       "order": 13,
       "content": {
         "type": "slide",
+        "schemaVersion": 1,
         "canvas": {
           "id": "uJGOLRQyaUK4G_1UC2b8_",
           "theme": {
@@ -2595,7 +2609,7 @@
             },
             {
               "id": "text_IXuLVWLZ",
-              "top": 110,
+              "top": 128,
               "left": 60,
               "type": "text",
               "width": 880,
@@ -2624,7 +2638,6 @@
             {
               "id": "latex_pidiwq9v",
               "top": 185,
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">t</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03148em;\">k</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span></span>",
               "left": 170,
               "type": "latex",
               "align": "center",
@@ -2633,6 +2646,7 @@
               "width": 200,
               "height": 50,
               "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">t</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03148em;\">k</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span></span>",
               "fixedRatio": true
             },
             {
@@ -2837,7 +2851,7 @@
               "id": "line_p7cXLvmh",
               "end": [
                 400,
-                -100
+                -105
               ],
               "top": 460,
               "left": 200,
@@ -2845,17 +2859,17 @@
               "color": "#E65100",
               "cubic": [
                 [
-                  150,
-                  -10
+                  120,
+                  -18
                 ],
                 [
-                  250,
-                  -100
+                  280,
+                  -50
                 ]
               ],
               "start": [
                 0,
-                0
+                -15
               ],
               "style": "solid",
               "width": 3,
@@ -2867,10 +2881,10 @@
             },
             {
               "id": "text_kUqKRDPK",
-              "top": 340,
-              "left": 610,
+              "top": 384,
+              "left": 524,
               "type": "text",
-              "width": 100,
+              "width": 120,
               "height": 43,
               "rotate": 0,
               "content": "<p style=\"font-size: 14px; color: #E65100; font-weight: bold;\">k &gt; 0，增长</p>",
@@ -2881,7 +2895,7 @@
               "id": "line__vaxd6Yu",
               "end": [
                 400,
-                -100
+                -15
               ],
               "top": 460,
               "left": 200,
@@ -2889,17 +2903,17 @@
               "color": "#1565C0",
               "cubic": [
                 [
-                  50,
-                  -100
+                  80,
+                  -55
                 ],
                 [
-                  150,
-                  -100
+                  220,
+                  -18
                 ]
               ],
               "start": [
                 0,
-                0
+                -105
               ],
               "style": "solid",
               "width": 3,
@@ -2911,10 +2925,10 @@
             },
             {
               "id": "text_sDmCVoHj",
-              "top": 340,
-              "left": 610,
+              "top": 425,
+              "left": 650,
               "type": "text",
-              "width": 100,
+              "width": 120,
               "height": 43,
               "rotate": 0,
               "content": "<p style=\"font-size: 14px; color: #1565C0; font-weight: bold;\">k &lt; 0，衰减</p>",
@@ -2927,9 +2941,9 @@
             "color": "#ffffff"
           },
           "viewportSize": 1000,
-          "viewportRatio": 0.5625
-        },
-        "schemaVersion": 1
+          "viewportRatio": 0.5625,
+          "animations": []
+        }
       },
       "actions": [
         {
@@ -3865,7 +3879,7 @@
               "width": 200,
               "height": 85,
               "rotate": 0,
-              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">场景5与场景10中，对代数操作直觉的修正（如变量意义、等式变形）</p>",
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">“变化率等式：误解修复挑战”与“可分离变量与一阶线性方程：误解修复挑战”共同修正变量意义和等式变形直觉</p>",
               "defaultColor": "#333333",
               "defaultFontName": "Microsoft YaHei"
             },
@@ -3927,7 +3941,7 @@
               "width": 200,
               "height": 85,
               "rotate": 0,
-              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">场景3的预测模型 → 场景14的比例增长（指数 vs 线性）</p>",
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">“变化率等式：拖动实验”的轨迹预测 → “指数增长与衰减模型：拖动实验”的比例增长</p>",
               "defaultColor": "#333333",
               "defaultFontName": "Microsoft YaHei"
             },
@@ -4278,539 +4292,450 @@
     }
   ],
   "mediaIndex": {
-    "audio/tts_action_2KmFiWJg.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
     "audio/tts_action_-blWzRT1.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 180048
+    },
+    "audio/tts_action_2KmFiWJg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135312
     },
     "audio/tts_action_hn2JY70j.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s2_action_8t_DuSf5.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s2_action_HFAoevYT.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s2_action_MLY3g9lx.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s2_action_Xx5Z-W6u.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s2_action_2qrT-F8t.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s2_action_VscjAje4.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s2_action_2mE4pq1A.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s3_action_KxTTYENr.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s3_action_ixaOx1Ez.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s3_action_n5kU6CuY.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s3_action_8y-ODqiI.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s4_action_j4-1zccb.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s4_action_G_--8ZPo.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s4_action_ulnIE8ab.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s4_action_6FvMpx-A.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s4_action_QY1DtD49.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s4_action_CdJtp_xM.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s4_action_62lqCEtt.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s5_action_YN66ayEt.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s5_action_uMYFjFW4.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s5_action_mSJSiXju.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s5_action_Jwk-ccAN.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s6_action_-CSEFknl.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s6_action_t_gHlPc4.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s6_action_7SP41fgf.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s6_action_4kGSYn4o.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s7_action_ZwwtVH0W.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s7_action_2OGjrCo3.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s7_action_kiKlgejJ.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s7_action_7WkXkGqG.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s7_action_DiOKw70V.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s7_action_6zPCz7cS.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s8_action_b2aWzGDp.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s8_action_MIaKw8ms.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s8_action_lCII1U18.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s8_action_JluTB176.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s9_action_7DHWOZWY.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s9_action__SbSbbmr.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s9_action_cbFCXwnv.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s9_action_sFuAOQIQ.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s10_action_VKRTRwla.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s10_action_kDnZa-d8.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s10_action_mC7jWlN0.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 141936
     },
     "audio/tts_s10_action_6p04IGnP.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 118776
     },
-    "audio/tts_s11_action_LXNQQyk-.mp3": {
+    "audio/tts_s10_action_kDnZa-d8.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 141696
     },
-    "audio/tts_s11_action_GCDCY_ZT.mp3": {
+    "audio/tts_s10_action_mC7jWlN0.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 101784
+    },
+    "audio/tts_s10_action_VKRTRwla.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127128
     },
     "audio/tts_s11_action_-O0X3z-m.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 143904
+    },
+    "audio/tts_s11_action_GCDCY_ZT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129696
+    },
+    "audio/tts_s11_action_LXNQQyk-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 166080
     },
     "audio/tts_s11_action_NSjCtFVU.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s12_action_sPvvrdhp.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 233784
     },
     "audio/tts_s12_action_4W1-fFgP.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 164856
     },
     "audio/tts_s12_action_l85SrMky.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 229440
+    },
+    "audio/tts_s12_action_sPvvrdhp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 310344
     },
     "audio/tts_s12_action_UA4XLfew.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 233424
     },
     "audio/tts_s13_action_1r8C6Lqk.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s13_action_mjbbXXQN.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s13_action_ZXBZbvO-.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s13_action_RH8AH7U4.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s13_action_m_AAZKUC.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 106584
     },
     "audio/tts_s13_action_HmkzYzuP.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 178200
     },
-    "audio/tts_s14_action_V8poNZzT.mp3": {
+    "audio/tts_s13_action_mjbbXXQN.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 109008
     },
-    "audio/tts_s14_action_eZ0zuSJU.mp3": {
+    "audio/tts_s13_action_m_AAZKUC.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 142008
+    },
+    "audio/tts_s13_action_RH8AH7U4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94224
+    },
+    "audio/tts_s13_action_ZXBZbvO-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 136920
     },
     "audio/tts_s14_action_DbpfuqIm.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 127272
+    },
+    "audio/tts_s14_action_eZ0zuSJU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133680
+    },
+    "audio/tts_s14_action_V8poNZzT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 90240
     },
     "audio/tts_s14_action__RDvO7sp.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s15_action_v-XQvfnQ.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s15_action_R6XWxW_b.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s15_action_pWE0dV5J.wav": {
-      "type": "audio",
-      "format": "wav",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s15_action_cng_Lg7g.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 168096
     },
     "audio/tts_s15_action_1OaKEVsg.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 127392
+    },
+    "audio/tts_s15_action_cng_Lg7g.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 124560
     },
     "audio/tts_s15_action_OfWzm4Jg.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 111504
+    },
+    "audio/tts_s15_action_pWE0dV5J.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 867884
+    },
+    "audio/tts_s15_action_R6XWxW_b.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104760
+    },
+    "audio/tts_s15_action_v-XQvfnQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 158112
     },
     "audio/tts_s15_action__4R2fcZT.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 150624
     },
     "audio/tts_s16_action_DivNSYRL.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s16_action__ZqTGA5H.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s16_action_zmIZRUus.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 95952
     },
     "audio/tts_s16_action_FHPtol5j.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 163848
+    },
+    "audio/tts_s16_action_zmIZRUus.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125304
+    },
+    "audio/tts_s16_action__ZqTGA5H.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108120
     },
     "audio/tts_s17_action_8zEJi1RJ.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 99288
     },
     "audio/tts_s17_action_OZQ0H6PJ.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 100248
     },
     "audio/tts_s17_action_Zuouwewh.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s18_action_DSMgCv6b.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s18_action_MpNKD-m4.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s18_action_GvnxqQLL.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
-    },
-    "audio/tts_s18_action_BOH-HwOH.mp3": {
-      "type": "audio",
-      "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 126600
     },
     "audio/tts_s18_action_5PIUmbW9.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 141120
     },
-    "audio/tts_s19_action_guzLJ3oz.mp3": {
+    "audio/tts_s18_action_BOH-HwOH.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 191544
     },
-    "audio/tts_s19_action_nOPg7Pjd.mp3": {
+    "audio/tts_s18_action_DSMgCv6b.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 142872
     },
-    "audio/tts_s19_action_K9O0RD1b.mp3": {
+    "audio/tts_s18_action_GvnxqQLL.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 203856
     },
-    "audio/tts_s19_action_FqpEkYxL.mp3": {
+    "audio/tts_s18_action_MpNKD-m4.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 185160
     },
     "audio/tts_s19_action_dszX5lnU.mp3": {
       "type": "audio",
       "format": "mp3",
-      "duration": null,
-      "voice": null
+      "size": 165288
+    },
+    "audio/tts_s19_action_FqpEkYxL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138816
+    },
+    "audio/tts_s19_action_guzLJ3oz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104544
+    },
+    "audio/tts_s19_action_K9O0RD1b.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104040
+    },
+    "audio/tts_s19_action_nOPg7Pjd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138024
+    },
+    "audio/tts_s2_action_2mE4pq1A.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 217344
+    },
+    "audio/tts_s2_action_2qrT-F8t.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 273912
+    },
+    "audio/tts_s2_action_8t_DuSf5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146472
+    },
+    "audio/tts_s2_action_HFAoevYT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144888
+    },
+    "audio/tts_s2_action_MLY3g9lx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 215952
+    },
+    "audio/tts_s2_action_VscjAje4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 202128
+    },
+    "audio/tts_s2_action_Xx5Z-W6u.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 174120
+    },
+    "audio/tts_s3_action_8y-ODqiI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 186264
+    },
+    "audio/tts_s3_action_ixaOx1Ez.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 177144
+    },
+    "audio/tts_s3_action_KxTTYENr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138408
+    },
+    "audio/tts_s3_action_n5kU6CuY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 170448
+    },
+    "audio/tts_s4_action_62lqCEtt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 187752
+    },
+    "audio/tts_s4_action_6FvMpx-A.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159384
+    },
+    "audio/tts_s4_action_CdJtp_xM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 223752
+    },
+    "audio/tts_s4_action_G_--8ZPo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97056
+    },
+    "audio/tts_s4_action_j4-1zccb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119856
+    },
+    "audio/tts_s4_action_QY1DtD49.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112344
+    },
+    "audio/tts_s4_action_ulnIE8ab.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146064
+    },
+    "audio/tts_s5_action_Jwk-ccAN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 63960
+    },
+    "audio/tts_s5_action_mSJSiXju.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92880
+    },
+    "audio/tts_s5_action_uMYFjFW4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119352
+    },
+    "audio/tts_s5_action_YN66ayEt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 74352
+    },
+    "audio/tts_s6_action_-CSEFknl.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118440
+    },
+    "audio/tts_s6_action_4kGSYn4o.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 211728
+    },
+    "audio/tts_s6_action_7SP41fgf.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128952
+    },
+    "audio/tts_s6_action_t_gHlPc4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128856
+    },
+    "audio/tts_s7_action_2OGjrCo3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 179112
+    },
+    "audio/tts_s7_action_6zPCz7cS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 189408
+    },
+    "audio/tts_s7_action_7WkXkGqG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159720
+    },
+    "audio/tts_s7_action_DiOKw70V.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 154200
+    },
+    "audio/tts_s7_action_kiKlgejJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 214560
+    },
+    "audio/tts_s7_action_ZwwtVH0W.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 158280
+    },
+    "audio/tts_s8_action_b2aWzGDp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 132552
+    },
+    "audio/tts_s8_action_JluTB176.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 178368
+    },
+    "audio/tts_s8_action_lCII1U18.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 199488
+    },
+    "audio/tts_s8_action_MIaKw8ms.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160080
+    },
+    "audio/tts_s9_action_7DHWOZWY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 76920
+    },
+    "audio/tts_s9_action_cbFCXwnv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111912
+    },
+    "audio/tts_s9_action_sFuAOQIQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 200544
+    },
+    "audio/tts_s9_action__SbSbbmr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119256
     }
   }
 }

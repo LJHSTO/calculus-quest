@@ -320,4 +320,14 @@ function updateResourceFullscreenButtons() {
     button.disabled = !document.fullscreenEnabled;
     button.textContent = document.fullscreenElement === shell ? "退出全屏" : "全屏";
   });
+  document.querySelectorAll("[data-knowledge-scene-panel]").forEach((panel) => {
+    const stage = panel.querySelector("[data-knowledge-scene-stage]");
+    const active = Boolean(stage && document.fullscreenElement === stage);
+    panel.querySelectorAll("[data-knowledge-scene-fullscreen]").forEach((button) => {
+      button.disabled = !document.fullscreenEnabled || !stage;
+      button.textContent = active ? "退出全屏" : "课件全屏";
+      button.setAttribute("aria-label", active ? "退出课件全屏" : "全屏查看当前课件");
+      button.setAttribute("title", active ? "退出课件全屏" : "全屏查看当前课件");
+    });
+  });
 }

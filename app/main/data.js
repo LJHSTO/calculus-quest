@@ -160,12 +160,6 @@ const chapterGuides = {
   }
 };
 
-const MAIC_UI_MODEL = {
-  id: "qwen3.6-35b-a3b",
-  label: "Qwen 3.6 35B A3B",
-  role: "互动课件生成源"
-};
-
 const COURSE_INDEX_PATH = "resources/open-maic/course-index.json";
 const OPENMAIC_V14_INTERACTION_TYPES = [
   { id: "simulation", label: "动手调一调", title: "动手调一调", icon: "调" },
@@ -191,64 +185,6 @@ Object.assign(AGENTIC_ADAPTIVE_SCENE_LABELS, {
   13: "一步拓展",
   14: "跨章预告"
 });
-const AGENTIC_MAIC_UI_ADAPTIVE_MAP = {
-  A1: {
-    5: { file: "函数是描述变化的机器.html", label: "函数机器重学" },
-    11: { file: "斜率是变化快慢的第一种语言.html", label: "斜率语言重学" },
-    12: { file: "坐标系把函数画成图像.html", label: "坐标图像复盘" },
-    13: { file: "放大后曲线像直线.html", label: "局部线性拓展" },
-    14: { file: "用导数寻找最高点和最低点.html", label: "导数极值预告" }
-  },
-  A2a: {
-    5: { file: "向量是带方向的变化量.html", label: "向量方向重学" },
-    11: { file: "向量可以相加, 也可以伸缩反向.html", label: "向量运算重学" },
-    12: { file: "距离与范数_ 变化有多大.html", label: "距离范数复盘" },
-    13: { file: "内积判断两个方向是否一致.html", label: "内积预备拓展" },
-    14: { file: "投影看见某个方向上的分量.html", label: "投影预告" }
-  },
-  A2b: {
-    5: { file: "内积判断两个方向是否一致.html", label: "内积方向重学" },
-    11: { file: "投影看见某个方向上的分量.html", label: "投影分量重学" },
-    12: { file: "沿指定方向的变化率.html", label: "方向变化率复盘" },
-    13: { file: "亲手算出一个梯度.html", label: "梯度计算拓展" },
-    14: { file: "梯度是函数上升最快的方向.html", label: "梯度方向预告" }
-  },
-  A3: {
-    5: { file: "矩阵可以改变空间.html", label: "矩阵变换重学" },
-    11: { file: "放大后曲线像直线.html", label: "局部线性重学" },
-    12: { file: "从曲线走向曲面和等高线.html", label: "曲面等高线复盘" },
-    13: { file: "从抛物线到碗形曲面.html", label: "二次曲面拓展" },
-    14: { file: "正定意味着从中心往哪走都变大.html", label: "正定直觉预告" }
-  },
-  A4: {
-    5: { file: "从曲线走向曲面和等高线.html", label: "曲面等高线重学" },
-    11: { file: "从抛物线到碗形曲面.html", label: "碗形曲面重学" },
-    12: { file: "正定意味着从中心往哪走都变大.html", label: "正定方向复盘" },
-    13: { file: "梯度是函数上升最快的方向.html", label: "梯度方向拓展" },
-    14: { file: "沿指定方向的变化率.html", label: "方向导数预告" }
-  },
-  C1: {
-    5: { file: "亲手算出一个梯度.html", label: "梯度计算重学" },
-    11: { file: "梯度是函数上升最快的方向.html", label: "梯度方向重学" },
-    12: { file: "沿指定方向的变化率.html", label: "方向导数复盘" },
-    13: { file: "把目标函数看成地形.html", label: "目标地形拓展" },
-    14: { file: "沿最陡下降方向走.html", label: "最陡下降预告" }
-  },
-  D1: {
-    5: { file: "把目标函数看成地形.html", label: "目标地形重学" },
-    11: { file: "梯度下降每一步做什么.html", label: "梯度下降重学" },
-    12: { file: "步长决定走得稳不稳.html", label: "步长稳定复盘" },
-    13: { file: "沿最陡下降方向走.html", label: "最陡下降拓展" },
-    14: { file: "有很多山谷时可能走到局部最低.html", label: "局部最低预告" }
-  },
-  D2: {
-    5: { file: "优化就是在可能范围内找最好.html", label: "优化目标重学" },
-    11: { file: "凸函数为什么好优化.html", label: "凸函数重学" },
-    12: { file: "有很多山谷时可能走到局部最低.html", label: "局部最低复盘" },
-    13: { file: "一条曲线上怎样找最低点.html", label: "曲线最低点拓展" },
-    14: { file: "梯度为 0 不一定是最低点.html", label: "驻点判断预告" }
-  }
-};
 const LEARNING_SCENE_CLUSTERS = [
   { id: "diagnose-map", label: "\u8bca\u65ad\u4e0e\u8def\u7ebf", orders: [1, 2], focus: "\u5148\u5b9a\u4f4d\u5df2\u6709\u76f4\u89c9\uff0c\u518d\u770b\u672c\u8282\u77e5\u8bc6\u5730\u56fe\u3002" },
   { id: "function-coordinate", label: "\u51fd\u6570\u673a\u5668\u4e0e\u5750\u6807", orders: [3, 4, 5, 6], focus: "\u628a\u8f93\u5165\u8f93\u51fa\u5173\u7cfb\u3001\u5750\u6807\u8868\u793a\u548c\u56fe\u50cf\u573a\u666f\u653e\u5728\u540c\u4e00\u5c0f\u8282\u6bd4\u8f83\u3002" },

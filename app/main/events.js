@@ -170,6 +170,31 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const knowledgeSceneFullscreenButton = event.target.closest("[data-knowledge-scene-fullscreen]");
+  if (knowledgeSceneFullscreenButton) {
+    const panel = knowledgeSceneFullscreenButton.closest("[data-knowledge-scene-panel]");
+    const stage = knowledgeSceneFullscreenButton.closest("[data-knowledge-scene-stage]")
+      || panel?.querySelector("[data-knowledge-scene-stage]");
+    if (!stage) return;
+    const unit = getUnit();
+    const entering = document.fullscreenElement !== stage;
+    trackLearningEvent("resource_fullscreen", {
+      unitId: unit?.id || currentUnitId,
+      entering,
+      target: "knowledge_scene",
+      sceneType: unit?.type === "knowledge" ? selectedKnowledgeSceneType(unit) : ""
+    }, false);
+    analyticsTrack("resource_fullscreen", {
+      data: {
+        unitId: unit?.id || currentUnitId,
+        entering,
+        target: "knowledge_scene"
+      }
+    });
+    toggleResourceFullscreen(stage);
+    return;
+  }
+
   const resourceFullscreenButton = event.target.closest("[data-resource-fullscreen]");
   if (resourceFullscreenButton) {
     const shell = resourceFullscreenButton.closest("[data-resource-shell]");

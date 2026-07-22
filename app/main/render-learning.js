@@ -392,11 +392,13 @@ function renderKnowledgeUnit(unit) {
          <span class="type-pill">${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}</span>
          <strong>${escapeHtml(cleanStudentResourceTitle(candidate.title || candidate.file, unit.label))}</strong>
          <small>已按你的选择加载，可随时切换其他场景。</small>
+         <button class="button soft icon-button v14-scene-fullscreen" type="button" data-knowledge-scene-fullscreen aria-label="全屏查看当前课件" title="全屏查看当前课件">课件全屏</button>
         </div>
-       <div class="iframe-container">
+       <div class="iframe-container v14-courseware-stage" data-knowledge-scene-stage>
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
-         <iframe class="embed-frame" data-v14-frame title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe>
-       </div>`
+         <iframe class="embed-frame" data-v14-frame title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
+         <button class="button soft icon-button v14-courseware-exit" type="button" data-knowledge-scene-fullscreen aria-label="退出课件全屏" title="退出课件全屏">退出全屏</button>
+        </div>`
     : selectedTypeId
       ? `<div class="empty-state v14-empty-resource">
          <h2>${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}暂不可用</h2>
@@ -426,7 +428,7 @@ function renderKnowledgeUnit(unit) {
             title: slideAudioTitle
           })}
         </section>
-        <section class="v14-scene-panel">
+        <section class="v14-scene-panel" data-knowledge-scene-panel>
           <div class="v14-scene-header">
             <div>
               <span class="type-pill">互动选择</span>
@@ -434,7 +436,7 @@ function renderKnowledgeUnit(unit) {
             </div>
           </div>
           ${renderKnowledgeSceneChoicePanel(unit)}
-          <div class="v14-selected-resource">${resourceBody}</div>
+          <div class="v14-selected-resource ${selectedTypeId && candidate ? "has-resource" : "no-resource"}">${resourceBody}</div>
           ${selectedTypeId ? renderKnowledgeAudioPack(unit, {
             slotKey: `scene-${selectedTypeId}`,
             sceneOrder: candidate?.sceneOrder,
@@ -488,6 +490,17 @@ function cleanStudentResourceTitle(title = "", fallback = "互动资源") {
     .replace(/误解挑战/g, "找错并改正")
     .replace(/关系图/g, "知识怎么连")
     .replace(/空间视角/g, "换个角度看")
+    .trim();
+  return cleaned || fallback;
+}
+
+function cleanStudentSceneTitle(title = "", fallback = "互动场景") {
+  const cleaned = String(title)
+    .replace(/\\/g, "/")
+    .split("/")
+    .pop()
+    .replace(/\.html?$/i, "")
+    .replace(/^GH-\d{1,2}-/i, "")
     .trim();
   return cleaned || fallback;
 }
@@ -1203,7 +1216,7 @@ function renderInteractive(unit) {
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe></div>`,
+      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe></div>`,
       "html-resource interactive-resource"
     )}
     ${renderCoach(unit.scene, unit.chapterId, unit.id)}
@@ -1290,20 +1303,19 @@ function renderAgent() {
 function renderAgenticBlueprint() {
   const chapterRows = curriculum
     .map((chapter) => {
-      const adaptiveLabel = (order) => AGENTIC_MAIC_UI_ADAPTIVE_MAP?.[chapter.id]?.[order]?.label || AGENTIC_ADAPTIVE_SCENE_LABELS[order];
-      const relearn = AGENTIC_RELEARN_SCENE_ORDERS.map((order) => `${AGENTIC_ADAPTIVE_SCENE_LABELS[order]}：${adaptiveLabel(order)}`).join(" / ");
-      return `<tr><td>${chapter.label}</td><td>${relearn}</td></tr>`;
+      const knowledgeUnits = (chapter.allUnits || chapter.units || []).filter((unit) => unit.type === "knowledge");
+      const resourceCount = knowledgeUnits.reduce((sum, unit) => sum + (unit.resourceCandidates || []).length, 0);
+      return `<tr><td>${chapter.label}</td><td>${knowledgeUnits.length} 个知识点 / ${resourceCount} 个 OpenMAIC 互动资源</td></tr>`;
     })
     .join("");
   return `
     <article class="agent-card agent-wide">
       <span class="type-pill">主动学习路径</span>
       <h2>互动课件路径编排</h2>
-      <p>主线保留前测、讲解、互动、形成性测验和后测；重学课件只在学生需要时出现，拓展课件等新资源加入后再开放。</p>
-      <div class="model-row"><span class="type-pill">当前课件源 · ${escapeHtml(MAIC_UI_MODEL.role)}</span></div>
+      <p>主线保留前测、知识点互动、形成性测验和后测；重学与拓展建议由当前路线和知识图谱生成，并由学生确认。</p>
       <div class="blueprint-table-wrap">
         <table class="blueprint-table">
-          <thead><tr><th>章节</th><th>换一种方式重学</th></tr></thead>
+          <thead><tr><th>章节</th><th>当前课件资源</th></tr></thead>
           <tbody>${chapterRows}</tbody>
         </table>
       </div>
@@ -1353,16 +1365,15 @@ function syncPathRailsToCurrent() {
 function sceneChoiceMeta(type = {}) {
   const id = type.id === "diagram" ? "mindMap" : type.id;
   const fallback = {
-    simulation: { icon: "~", title: "动手调一调", subtitle: "调一调，看变化" },
-    game: { icon: "◇", title: "找错并改正", subtitle: "找出问题并修正" },
-    mindMap: { icon: "※", title: "知识怎么连", subtitle: "看清概念关系" },
-    visualization3d: { icon: "⬡", title: "换个角度看", subtitle: "从不同视角观察" }
-  }[id] || { icon: type.icon || "•", title: type.label || id, subtitle: type.title || "选择一种学习方式" };
+    simulation: { icon: "~", title: "动手调一调" },
+    game: { icon: "◇", title: "找错并改正" },
+    mindMap: { icon: "※", title: "知识怎么连" },
+    visualization3d: { icon: "⬡", title: "换个角度看" }
+  }[id] || { icon: type.icon || "•", title: type.label || id };
   return {
     id,
     icon: fallback.icon,
-    title: fallback.title,
-    subtitle: fallback.subtitle
+    title: fallback.title
   };
 }
 
@@ -1382,15 +1393,19 @@ function renderKnowledgeSceneChoicePanel(unit) {
   if (!types.length) return "";
   const selectedTypeId = selectedKnowledgeSceneType(unit);
   const choices = types.map((type) => {
-    const hasResource = Boolean(knowledgeResourceCandidate(unit, type.id));
+    const candidate = knowledgeResourceCandidate(unit, type.id);
+    const hasResource = Boolean(candidate);
     const active = type.id === selectedTypeId;
     const meta = sceneChoiceMeta(type);
+    const sceneTitle = hasResource
+      ? cleanStudentSceneTitle(candidate.title || candidate.file, unit.label)
+      : "当前资源暂不可用";
     const cls = ["v14-scene-option", "coach-choice", active ? "active" : "", hasResource ? "available" : "pending"].filter(Boolean).join(" ");
     return `
-      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(meta.subtitle)}">
+      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(sceneTitle)}">
         <span aria-hidden="true">${escapeHtml(meta.icon)}</span>
         <strong>${escapeHtml(meta.title)}</strong>
-        <small>${escapeHtml(hasResource ? meta.subtitle : "当前资源暂不可用")}</small>
+        <small>${escapeHtml(sceneTitle)}</small>
       </button>
     `;
   }).join("");
