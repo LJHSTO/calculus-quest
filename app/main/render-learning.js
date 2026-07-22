@@ -869,7 +869,7 @@ function renderSlideElement(element, canvas, chapterId, resourceRoot = "") {
 
   if (element.type === "text") {
     const content = element.content || "";
-    const rendered = /<[a-zA-Z][^>]*>/.test(content) ? renderMathInHtml(content) : renderInlineMath(content);
+    const rendered = renderSlideTextContent(content);
     return `<div class="slide-element slide-text" style="${common}color:${element.defaultColor || "inherit"}"><div class="slide-fit-content slide-text-content" data-slide-fit>${rendered}</div></div>`;
   }
 
@@ -953,6 +953,11 @@ function slideImageSrc(src = "", chapterId = currentChapterId, resourceRoot = ""
   return resourceUrl(`resources/open-maic/${chapterId}/${src}`);
 }
 
+function renderSlideTextContent(value = "") {
+  const content = String(value ?? "");
+  return /<[a-zA-Z][^>]*>/.test(content) ? renderMathInHtml(content) : renderInlineMath(content);
+}
+
 function renderSlideTable(element) {
   const rows = element.data || [];
   const border = element.outline?.color || "#d9d9d9";
@@ -977,7 +982,7 @@ function renderSlideTable(element) {
                     ];
                     if (cell.colspan > 1) attrs.push(`colspan="${cell.colspan}"`);
                     if (cell.rowspan > 1) attrs.push(`rowspan="${cell.rowspan}"`);
-                    return `<td ${attrs.join(" ")}>${escapeHtml(cell.text ?? "")}</td>`;
+                    return `<td ${attrs.join(" ")}>${renderSlideTextContent(cell.text)}</td>`;
                   })
                   .join("")}
               </tr>

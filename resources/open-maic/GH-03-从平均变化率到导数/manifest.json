@@ -393,6 +393,17 @@
               "fixedRatio": true
             },
             {
+              "type": "image",
+              "id": "image_gh03_average_rate_secant",
+              "left": 540,
+              "top": 145,
+              "width": 400,
+              "height": 235,
+              "rotate": 0,
+              "fixedRatio": true,
+              "src": "media/gh03-average-rate-secant.svg"
+            },
+            {
               "type": "text",
               "id": "text_EVimsB-_",
               "left": 540,

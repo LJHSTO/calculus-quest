@@ -72,6 +72,18 @@ const canvasHtml = sandbox.renderSlideCanvas(
               }
             },
             { text: "含义", style: { align: "center" } }
+          ],
+          [
+            {
+              text: "乘法法则：(fg)' = <span style=\"color: #E74C3C; font-weight: bold;\">f'g + fg'</span>",
+              style: {
+                color: "#333333",
+                backcolor: "#E8F0FE",
+                align: "center",
+                bold: true
+              }
+            },
+            { text: "前导后不导 + 前不导后导", style: { align: "center" } }
           ]
         ]
       },
@@ -99,6 +111,11 @@ assert.match(canvasHtml, /<col style="width:40%"/);
 assert.match(canvasHtml, /min-height:40px/);
 assert.match(canvasHtml, /font-size:14px/);
 assert.match(canvasHtml, /color:#1f4e79/);
+assert.match(
+  canvasHtml,
+  /乘法法则：\(fg\)' = <span style="color: #E74C3C; font-weight: bold;">f'g \+ fg'<\/span>/
+);
+assert.doesNotMatch(canvasHtml, /&lt;span style=/);
 assert.match(
   canvasHtml,
   /src="resources\/open-maic\/GH-10-多元链式法则与-Jacobian-实战\/media\/gen_img_example\.png"/
@@ -161,11 +178,33 @@ const route = JSON.parse(
 );
 let routeLineCount = 0;
 let routeShapeCount = 0;
+let routeImageCount = 0;
 for (const chapter of route.chapters || []) {
   for (const module of chapter.modules || []) {
     for (const knowledgePoint of module.knowledgePoints || []) {
       const routeCanvas = knowledgePoint.slide?.canvas;
-      for (const element of routeCanvas?.elements || []) {
+      const elements = routeCanvas?.elements || [];
+      const images = elements.filter((element) => element.type === "image");
+      const hasFigureCaption = elements
+        .filter((element) => element.type === "text")
+        .some((element) => /(?:图\s*\d|如图|下图|上图|图中|右图|左图)/.test(
+          String(element.content || "").replace(/<[^>]+>/g, " ")
+        ));
+      if (hasFigureCaption) {
+        assert.ok(images.length > 0, `${knowledgePoint.id} has a figure caption but no image element`);
+      }
+      for (const image of images) {
+        const src = String(image.src || "");
+        const classroomMedia = src.match(/^\/api\/classroom-media\/[^/]+\/media\/(.+)$/i);
+        const relative = classroomMedia
+          ? path.join("resources", module.source?.resourceRoot || "", "media", classroomMedia[1])
+          : /^media\//i.test(src)
+            ? path.join("resources", module.source?.resourceRoot || "", ...src.split("/"))
+            : "";
+        assert.ok(relative && fs.existsSync(path.join(root, relative)), `${knowledgePoint.id} image is missing: ${src}`);
+        routeImageCount += 1;
+      }
+      for (const element of elements) {
         if (element.type !== "line" && element.type !== "shape") continue;
         const html = sandbox.renderSlideElement(element, routeCanvas, chapter.id, module.source?.resourceRoot || "");
         assert.match(html, /<svg/, `${knowledgePoint.id} ${element.id} must use SVG`);
@@ -178,6 +217,7 @@ for (const chapter of route.chapters || []) {
 }
 assert.ok(routeLineCount > 200, `expected route line coverage, got ${routeLineCount}`);
 assert.ok(routeShapeCount > 300, `expected route shape coverage, got ${routeShapeCount}`);
+assert.ok(routeImageCount > 0, `expected route image coverage, got ${routeImageCount}`);
 
 const choices = sandbox.renderKnowledgeSceneChoicePanel({
   id: "GH-02-K02",
