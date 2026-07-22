@@ -1,6 +1,6 @@
 // Learning shell, player, lesson, and resource rendering.
 function renderMetrics() {
-  if (isOpenMaicV14Route()) {
+  if (isMultiSceneLearningRoute()) {
     const totals = courseIndex?.totals || {};
     const unitCount = allUnits().length || curriculum.reduce((sum, chapter) => sum + (chapter.units || []).length, 0);
     els.metricChapters.textContent = totals.chapters || curriculum.length || chapters.length;
@@ -377,34 +377,34 @@ function renderKnowledgeUnit(unit) {
   });
 
   const slideBody = canvas
-    ? `<div class="slide-wrap v14-required-slide">
+    ? `<div class="slide-wrap multi-scene-required-slide">
          <div class="slide-stage" style="background:${canvas.background?.color || canvas.theme?.backgroundColor || "#fff"}">
            ${(canvas.elements || []).map((element) => renderSlideElement(element, canvas, unit.chapterId)).join("")}
          </div>
        </div>`
-    : `<div class="empty-state v14-empty-resource">
+    : `<div class="empty-state multi-scene-empty-resource">
          <h2>讲解页暂无可渲染画布</h2>
          <p>当前知识点仍保留目标、误解和核心问题；后续重新导入课件时会自动补齐讲解页画布。</p>
        </div>`;
 
   const resourceBody = selectedTypeId && candidate
-    ? `<div class="v14-resource-note">
+    ? `<div class="multi-scene-resource-note">
          <span class="type-pill">${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}</span>
          <strong>${escapeHtml(cleanStudentResourceTitle(candidate.title || candidate.file, unit.label))}</strong>
          <small>已按你的选择加载，可随时切换其他场景。</small>
-         <button class="button soft icon-button v14-scene-fullscreen" type="button" data-knowledge-scene-fullscreen aria-label="全屏查看当前课件" title="全屏查看当前课件">课件全屏</button>
+         <button class="button soft icon-button multi-scene-scene-fullscreen" type="button" data-knowledge-scene-fullscreen aria-label="全屏查看当前课件" title="全屏查看当前课件">课件全屏</button>
         </div>
-       <div class="iframe-container v14-courseware-stage" data-knowledge-scene-stage>
+       <div class="iframe-container multi-scene-courseware-stage" data-knowledge-scene-stage>
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
-         <iframe class="embed-frame" data-v14-frame title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
-         <button class="button soft icon-button v14-courseware-exit" type="button" data-knowledge-scene-fullscreen aria-label="退出课件全屏" title="退出课件全屏">退出全屏</button>
+         <iframe class="embed-frame" data-courseware-frame title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
+         <button class="button soft icon-button multi-scene-courseware-exit" type="button" data-knowledge-scene-fullscreen aria-label="退出课件全屏" title="退出课件全屏">退出全屏</button>
         </div>`
     : selectedTypeId
-      ? `<div class="empty-state v14-empty-resource">
+      ? `<div class="empty-state multi-scene-empty-resource">
          <h2>${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}暂不可用</h2>
          <p>请选择另外一种互动场景继续学习。</p>
        </div>`
-      : `<div class="v14-scene-awaiting" role="status">
+      : `<div class="multi-scene-scene-awaiting" role="status">
          <span class="type-pill">等待选择</span>
          <h2>先选一种互动方式，再开始体验</h2>
          <p>四个场景讲的是同一个知识点，没有默认答案。你可以先选最想尝试的一种，之后随时切换比较。</p>
@@ -414,9 +414,9 @@ function renderKnowledgeUnit(unit) {
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="v14-knowledge-player">
-        <section class="v14-slide-panel required">
-          <div class="v14-slide-heading">
+      `<div class="multi-scene-knowledge-player">
+        <section class="multi-scene-slide-panel required">
+          <div class="multi-scene-slide-heading">
             <span class="type-pill">讲解页</span>
             <h2>${renderInlineMath(slide.title || kp.name || unit.label)}</h2>
             <p>${renderInlineMath(module.title || unit.moduleTitle || "")}</p>
@@ -428,15 +428,15 @@ function renderKnowledgeUnit(unit) {
             title: slideAudioTitle
           })}
         </section>
-        <section class="v14-scene-panel" data-knowledge-scene-panel>
-          <div class="v14-scene-header">
+        <section class="multi-scene-scene-panel" data-knowledge-scene-panel>
+          <div class="multi-scene-scene-header">
             <div>
               <span class="type-pill">互动选择</span>
               <h3>${selectedTypeId ? `当前：${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}` : "选择你的互动场景"}</h3>
             </div>
           </div>
           ${renderKnowledgeSceneChoicePanel(unit)}
-          <div class="v14-selected-resource ${selectedTypeId && candidate ? "has-resource" : "no-resource"}">${resourceBody}</div>
+          <div class="multi-scene-selected-resource ${selectedTypeId && candidate ? "has-resource" : "no-resource"}">${resourceBody}</div>
           ${selectedTypeId ? renderKnowledgeAudioPack(unit, {
             slotKey: `scene-${selectedTypeId}`,
             sceneOrder: candidate?.sceneOrder,
@@ -444,11 +444,11 @@ function renderKnowledgeUnit(unit) {
           }) : ""}
         </section>
       </div>`,
-      "v14-knowledge-resource"
+      "multi-scene-knowledge-resource"
     )}
   `;
 
-  const iframeEl = els.lessonPlayer.querySelector("iframe[data-v14-frame]");
+  const iframeEl = els.lessonPlayer.querySelector("iframe[data-courseware-frame]");
   if (iframeEl && candidate) {
     const loader = () => iframeEl.parentElement?.querySelector(".iframe-loader");
     iframeEl.addEventListener("load", () => {
@@ -624,13 +624,13 @@ function renderPlaceholderQuiz(unit) {
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="v14-quiz-placeholder">
+      `<div class="multi-scene-quiz-placeholder">
         ${renderAssessmentBanner(unit)}
-        <div class="v14-placeholder-grid">
+        <div class="multi-scene-placeholder-grid">
           <div>
             <span class="type-pill">${phaseText(unit.assessmentPhase) || "测验流程"}</span>
             <h2>${escapeHtml(unit.scene.title || unit.label)}</h2>
-            <p>这一步来自 Open MAIC v14 提示词流程。真实题目尚未生成，因此这里仅展示测验位置与配置，不提交成绩。</p>
+            <p>这一步来自多场景自适应学习路线。真实题目尚未生成，因此这里只展示测验位置与配置，不提交成绩。</p>
           </div>
           <dl>
             <div><dt>${config.questionCount || 0}</dt><dd>建议题量</dd></div>
@@ -639,7 +639,7 @@ function renderPlaceholderQuiz(unit) {
           </dl>
         </div>
       </div>`,
-      "quiz-resource v14-placeholder-resource"
+      "quiz-resource multi-scene-placeholder-resource"
     )}
   `;
 }
@@ -712,8 +712,8 @@ function renderSlide(unit) {
     }
   });
   const canvas = unit.scene.content?.canvas;
-  if (unit.scene.content?.v14Review) {
-    renderV14Review(unit);
+  if (unit.scene.content?.routeReview) {
+    renderRouteReview(unit);
     return;
   }
   if (!canvas) {
@@ -739,18 +739,18 @@ function renderSlide(unit) {
   `;
 }
 
-function renderV14Review(unit) {
+function renderRouteReview(unit) {
   const module = unit.scene.content?.module || {};
   const knowledgePoints = module.knowledgePoints || [];
   els.lessonPlayer.innerHTML = `
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="v14-review-panel">
+      `<div class="multi-scene-review-panel">
         <span class="type-pill">全课整理</span>
         <h2>${escapeHtml(readableRouteText(module.flow?.review?.title, "全课整理：证据链回看"))}</h2>
         <p>${renderInlineMath(module.coreIntuition || "把本节知识点、互动证据和测验反馈连起来。")}</p>
-        <div class="v14-review-grid">
+        <div class="multi-scene-review-grid">
           ${knowledgePoints.map((kp, index) => `
             <article>
               <span>${index + 1}</span>
@@ -759,12 +759,12 @@ function renderV14Review(unit) {
             </article>
           `).join("")}
         </div>
-        <div class="v14-review-footer">
+        <div class="multi-scene-review-footer">
           <strong>后测前自检</strong>
           <p>能否用自己的话说出每个知识点修复了什么误解，以及你选择的互动场景给了什么证据。</p>
         </div>
       </div>`,
-      "slide-resource v14-review-resource"
+      "slide-resource multi-scene-review-resource"
     )}
   `;
 }
@@ -787,7 +787,16 @@ function renderSlideElement(element, canvas, chapterId) {
   }
 
   if (element.type === "shape") {
-    return `<div class="slide-element" style="${common}background:${element.fill || "#e9edf5"};border-radius:4px;"></div>`;
+    const viewBox = Array.isArray(element.viewBox) ? element.viewBox : [1, 1];
+    const viewWidth = slideSvgNumber(viewBox[0], 1);
+    const viewHeight = slideSvgNumber(viewBox[1], 1);
+    const outline = element.outline || {};
+    const stroke = outline.color || "none";
+    const strokeWidth = slideSvgNumber(outline.width, 0);
+    const dash = outline.style === "dashed" ? ' stroke-dasharray="6 4"' : "";
+    return `<svg class="slide-element slide-shape" style="${common}" viewBox="0 0 ${viewWidth} ${viewHeight}" preserveAspectRatio="none" aria-hidden="true">
+      <path d="${escapeHtml(element.path || "")}" fill="${escapeHtml(element.fill || "#e9edf5")}" stroke="${escapeHtml(stroke)}" stroke-width="${strokeWidth}"${dash} vector-effect="non-scaling-stroke"></path>
+    </svg>`;
   }
 
   if (element.type === "image") {
@@ -795,10 +804,27 @@ function renderSlideElement(element, canvas, chapterId) {
   }
 
   if (element.type === "line") {
-    const end = element.end || [element.width || 1, element.height || 1];
-    const length = Math.max(1, Math.hypot(end[0] || 0, end[1] || 0));
-    const angle = Math.atan2(end[1] || 0, end[0] || 0) * (180 / Math.PI);
-    return `<div class="slide-element slide-line" style="left:${left}%;top:${top}%;width:${(length / base) * 100}%;height:${Math.max(element.width || 2, 2)}px;background:${element.color || "#94a3b8"};transform:rotate(${angle}deg);"></div>`;
+    const start = Array.isArray(element.start) ? element.start : [0, 0];
+    const end = Array.isArray(element.end) ? element.end : [element.width || 1, element.height || 1];
+    const x1 = slideSvgNumber((element.left || 0) + (start[0] || 0));
+    const y1 = slideSvgNumber((element.top || 0) + (start[1] || 0));
+    const x2 = slideSvgNumber((element.left || 0) + (end[0] || 0));
+    const y2 = slideSvgNumber((element.top || 0) + (end[1] || 0));
+    const strokeWidth = Math.max(slideSvgNumber(element.width, 2), 1);
+    const markerId = `slide-arrow-${slideSvgId(element.id || `${x1}-${y1}-${x2}-${y2}`)}`;
+    const points = Array.isArray(element.points) ? element.points : ["", ""];
+    const markerStart = points[0] === "arrow" ? ` marker-start="url(#${markerId})"` : "";
+    const markerEnd = points[1] === "arrow" ? ` marker-end="url(#${markerId})"` : "";
+    const dash = element.style === "dashed" ? ' stroke-dasharray="8 6"' : "";
+    const rotate = slideSvgNumber(element.rotate, 0);
+    const transform = rotate ? ` transform="rotate(${rotate} ${x1} ${y1})"` : "";
+    const marker = markerStart || markerEnd
+      ? `<defs><marker id="${markerId}" markerWidth="4" markerHeight="4" refX="8.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 Z" fill="${escapeHtml(element.color || "#94a3b8")}"></path></marker></defs>`
+      : "";
+    return `<svg class="slide-element slide-vector slide-line" style="left:0;top:0;width:100%;height:100%;" viewBox="0 0 ${slideSvgNumber(base)} ${slideSvgNumber(hBase)}" preserveAspectRatio="none" aria-hidden="true">
+      ${marker}
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${escapeHtml(element.color || "#94a3b8")}" stroke-width="${strokeWidth}" stroke-linecap="round"${dash}${markerStart}${markerEnd}${transform}></line>
+    </svg>`;
   }
 
   if (element.type === "latex") {
@@ -811,6 +837,16 @@ function renderSlideElement(element, canvas, chapterId) {
   }
 
   return "";
+}
+
+function slideSvgNumber(value, fallback = 0) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Number(number.toFixed(4));
+}
+
+function slideSvgId(value = "") {
+  return String(value || "line").replace(/[^a-zA-Z0-9_-]/g, "-");
 }
 
 function slideImageSrc(src = "", chapterId = currentChapterId) {
@@ -1397,12 +1433,13 @@ function renderKnowledgeSceneChoicePanel(unit) {
     const hasResource = Boolean(candidate);
     const active = type.id === selectedTypeId;
     const meta = sceneChoiceMeta(type);
-    const sceneTitle = hasResource
+    const resourceTitle = hasResource
       ? cleanStudentSceneTitle(candidate.title || candidate.file, unit.label)
       : "当前资源暂不可用";
-    const cls = ["v14-scene-option", "coach-choice", active ? "active" : "", hasResource ? "available" : "pending"].filter(Boolean).join(" ");
+    const sceneTitle = hasResource ? sceneChoiceCategoryLabel(type) : resourceTitle;
+    const cls = ["multi-scene-scene-option", "coach-choice", active ? "active" : "", hasResource ? "available" : "pending"].filter(Boolean).join(" ");
     return `
-      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(sceneTitle)}">
+      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(resourceTitle)}">
         <span aria-hidden="true">${escapeHtml(meta.icon)}</span>
         <strong>${escapeHtml(meta.title)}</strong>
         <small>${escapeHtml(sceneTitle)}</small>
@@ -1417,7 +1454,7 @@ function renderKnowledgeSceneChoicePanel(unit) {
         <strong>${selected ? "已选择一种互动方式" : "四个互动场景由你选择"}</strong>
         <small>${selected ? `当前是“${escapeHtml(selectedMeta.title)}”，点击其他场景可立即切换。` : "没有默认场景，请按自己的兴趣或理解习惯选择。"}</small>
       </div>
-      <div class="v14-scene-selector agentic-knowledge-scene-selector" role="group" aria-label="${escapeHtml(unit.label)}的互动场景">${choices}</div>
+      <div class="multi-scene-scene-selector agentic-knowledge-scene-selector" role="group" aria-label="${escapeHtml(unit.label)}的互动场景">${choices}</div>
     </div>
   `;
 }
@@ -1440,7 +1477,7 @@ function renderLessonSceneButton(unit) {
 function renderLessons() {
   const chapter = getChapter();
   els.chapterTitle.textContent = chapter.label;
-  els.lessonList.classList.toggle("v14-step-list", isOpenMaicV14Route());
+  els.lessonList.classList.toggle("multi-scene-step-list", isMultiSceneLearningRoute());
   if (!chapter.loaded) {
     els.lessonList.innerHTML = '<div class="empty-state">\u70b9\u51fb\u5de6\u4fa7\u7ae0\u8282\u5361\u7247\u52a0\u8f7d\u672c\u7ae0\u5b66\u4e60\u6a21\u5757\u3002</div>';
     syncPathRailsToCurrent();

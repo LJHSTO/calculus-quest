@@ -2,7 +2,7 @@
 function renderLibrary() {
   const units = allResourceUnits().filter((unit) => {
     if (libraryFilter === "all") return true;
-    if (libraryFilter === "scene") return isOpenMaicV14Route() ? unit.flowKind === "core" : unit.kind === "scene" && unit.flowKind !== "adaptive";
+    if (libraryFilter === "scene") return isMultiSceneLearningRoute() ? unit.flowKind === "core" : unit.kind === "scene" && unit.flowKind !== "adaptive";
     if (libraryFilter === "adaptive") return unit.flowKind === "adaptive";
     return unit.type === libraryFilter;
   });

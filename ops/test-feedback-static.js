@@ -103,7 +103,7 @@ assert.ok(
 );
 assert.match(adminHtml, /admin\/presentation\.js\?v=20260718-admin-quality-v5/);
 assert.match(adminHtml, /lib\/interaction-policy\.js\?v=20260718-interaction-quality-v3/);
-assert.match(adminHtml, /admin\/admin\.js\?v=20260718-admin-quality-v6/);
+assert.match(adminHtml, /admin\/admin\.js\?v=20260722-multi-scene-v1/);
 assert.ok(
   adminHtml.indexOf('id="overview-metrics"') > adminHtml.indexOf('id="tab-overview"'),
   "overview metrics must live inside the overview tab"
@@ -124,8 +124,8 @@ assert.match(adminJs, /function interactionLearningLocation/);
 assert.match(adminJs, /function knowledgeSceneName/);
 assert.match(adminJs, /class="metric-card detail"/);
 assert.match(adminJs, /interactionDetailMode/);
-assert.match(adminJs, /if \(v14Id && v14Id !== value\) return chapterName\(v14Id\)/);
-assert.doesNotMatch(adminJs, /return chapterName\(v14Match\[1\]\)/);
+assert.match(adminJs, /if \(routeId && routeId !== value\) return chapterName\(routeId\)/);
+assert.doesNotMatch(adminJs, /return chapterName\(routeMatch\[1\]\)/);
 assert.match(adminJs, /fetchAllStatsRows\("feedback"/);
 assert.match(adminJs, /fetchAllStatsRows\("short-answer-responses"/);
 assert.match(adminJs, /fetchAllStatsRows\("agentic-decision-trace"/);
@@ -173,8 +173,11 @@ assert.match(renderLearning, /先选一种互动方式，再开始体验/);
 assert.match(renderLearning, /data-knowledge-scene-panel/);
 assert.match(renderLearning, /data-knowledge-scene-stage/);
 assert.match(renderLearning, /data-knowledge-scene-fullscreen/);
+assert.match(renderLearning, /data-courseware-frame/);
+assert.doesNotMatch(renderLearning, /data-multi-scene-frame/);
 assert.doesNotMatch(renderLearning, /\sallowfullscreen/);
 assert.match(renderLearning, /cleanStudentSceneTitle\(candidate\.title \|\| candidate\.file, unit\.label\)/);
+assert.match(renderLearning, /const sceneTitle = hasResource \? sceneChoiceCategoryLabel\(type\) : resourceTitle/);
 assert.doesNotMatch(renderLearning, /调一调，看变化/);
 assert.doesNotMatch(renderLearning, /找出问题并修正/);
 assert.doesNotMatch(renderLearning, /看清概念关系/);
@@ -182,8 +185,8 @@ assert.doesNotMatch(renderLearning, /从不同视角观察/);
 assert.match(events, /knowledgeSceneFullscreenButton/);
 assert.match(events, /toggleResourceFullscreen\(stage\)/);
 assert.doesNotMatch(events, /renderKnowledgeSceneAfterSelection/);
-assert.match(styles, /\.v14-courseware-stage:fullscreen/);
-assert.doesNotMatch(styles, /\.v14-scene-panel:fullscreen/);
+assert.match(styles, /\.multi-scene-courseware-stage:fullscreen/);
+assert.doesNotMatch(styles, /\.multi-scene-scene-panel:fullscreen/);
 assert.doesNotMatch(renderLearning, /trackInteraction\("interactive_drag_move"/);
 assert.doesNotMatch(renderLearning, /trackInteraction\("interactive_pointer_(?:down|up|cancel)"/);
 

@@ -32,15 +32,20 @@ const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
 const feedback = require("./lib/feedback");
 const root = process.cwd();
-const openMaicRoutePath = path.join(root, "data", "openmaic-v14-route.json");
-let openMaicRoute = null;
+const learningRoutePath = path.join(root, "data", "multi-scene-learning-route.json");
+const learningRouteApiPaths = new Set([
+  "/api/course/multi-scene-learning-route",
+  // Cached clients from the previous release may still request this alias.
+  "/api/course/openmaic-v14-route"
+]);
+let learningRoute = null;
 try {
-  openMaicRoute = JSON.parse(fs.readFileSync(openMaicRoutePath, "utf8"));
+  learningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
 } catch (error) {
-  console.warn("Open MAIC v14 route load skipped:", error.message);
+  console.warn("Multi-scene learning route load skipped:", error.message);
 }
 const coursewareFeedbackTargetLookup = feedback.buildCoursewareFeedbackTargetLookup(
-  openMaicRoute,
+  learningRoute,
   kg.nodeById
 );
 const packageInfo = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
@@ -699,20 +704,19 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/research/config") {
       let courseVersion = "";
       try {
-        const route = JSON.parse(fs.readFileSync(path.join(root, "data", "openmaic-v14-route.json"), "utf8"));
+        const route = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
         courseVersion = String(route.versionId || "").slice(0, 120);
       } catch {}
       sendJson(res, 200, { ok: true, data: { ...researchConfig, courseVersion } });
       return;
     }
 
-    if (req.method === "GET" && url.pathname === "/api/course/openmaic-v14-route") {
-      const routePath = path.join(root, "data", "openmaic-v14-route.json");
+    if (req.method === "GET" && learningRouteApiPaths.has(url.pathname)) {
       try {
-        const route = JSON.parse(fs.readFileSync(routePath, "utf8"));
+        const route = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
         sendJson(res, 200, route);
       } catch (error) {
-        sendJson(res, 404, { ok: false, message: "未找到 Open MAIC v14 学习路线。" });
+        sendJson(res, 404, { ok: false, message: "未找到多场景自适应学习路线。" });
       }
       return;
     }

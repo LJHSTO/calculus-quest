@@ -475,12 +475,12 @@ tools/_encoding_test.txt
 
 - 目标：恢复可用但不污染学生状态的课件测试入口；同步修复 KaTeX 安全告警；厘清 KG/Planner 与课件推荐的实际职责；为课件自检迁入 OpenMAIC 确定接入位置。
 - 基线：`codex/recover-worktree-20260712`，HEAD `00b8c0f`；本轮仍未暂存或提交。
-- Flow Test：新增 `flow-test.html`、`app/flow-test/flow-test.js`、`app/flow-test/flow-test.css` 和 `ops/test-flow-test.js`。页面直接读取 `/api/course/openmaic-v14-route` 与 `/api/learning/kg`，支持 11 章、知识点、四种课件表征、iframe 预览和全量 HEAD 资源检查；不登录、不写数据库、不使用已废弃的 `admin_flow`。
+- Flow Test：新增 `flow-test.html`、`app/flow-test/flow-test.js`、`app/flow-test/flow-test.css` 和 `ops/test-flow-test.js`。页面直接读取 `/api/course/multi-scene-learning-route` 与 `/api/learning/kg`，支持 11 章、知识点、四种课件表征、iframe 预览和全量 HEAD 资源检查；不登录、不写数据库、不使用已废弃的 `admin_flow`。
 - Flow Test 根因：旧页面从未被 Git 跟踪，只是 `index.html?admin_flow=1` 跳转器；相应运行时代码只存在于已归档损坏补丁，所以恢复单个旧 HTML 不能恢复功能。
 - Flow Test 浏览器结果：桌面 1440x900 与移动 390x844 均通过；章节和表征切换正常；route/KG 一致；288/288 课件可用；console 0 error/0 warning。移动验收先发现 iframe 将隐式 Grid 列撑到 1432px，修正为 `minmax(0, 1fr)` 后 `scrollWidth=390`；随后发现 `[hidden]` 被 `.frame-empty { display:grid }` 覆盖，增加 `.frame-empty[hidden] { display:none }` 后占位层不再叠加。
 - KaTeX：npm 包、`lib/katex.min.js`、`lib/katex.min.css` 和 `lib/fonts/` 同步升级为 `0.17.0`；`index.html` 缓存版本同步更新；新增 `ops/test-katex.js`。Node 回归验证分式、MathML 与不可信 link/image 输入；浏览器验证 `window.katex.version === "0.17.0"`，分式渲染成功，`KaTeX_Math-Italic.woff2`、`KaTeX_Main-Regular.woff2` 均返回 200，console 0 warning。
 - 执行命令：`npm run flow:test`、`npm run katex:test`、`npm run kg:test`、`git diff --check`、HTTP 200 检查，以及 Playwright CLI 的 desktop/mobile/console/network 回归。
-- KG/推荐结论：`data/openmaic-v14-route.json` 是唯一课程事实源，KG 是自动生成的查询与校验索引。跳过沿 `follows`，重学按错题概念和多表征知识点，扩展章沿 route `recommendedAfter` 生成的 `extension` 边；Planner 只在同知识簇有多个合法候选时融合掌握度、摩擦、参与度、表征差异和完成状态排序。保留 KG 与 Planner，但不得让它们维护第二份课件清单或覆盖学生选择。
+- KG/推荐结论：`data/multi-scene-learning-route.json` 是唯一课程事实源，KG 是自动生成的查询与校验索引。跳过沿 `follows`，重学按错题概念和多表征知识点，扩展章沿 route `recommendedAfter` 生成的 `extension` 边；Planner 只在同知识簇有多个合法候选时融合掌握度、摩擦、参与度、表征差异和完成状态排序。保留 KG 与 Planner，但不得让它们维护第二份课件清单或覆盖学生选择。
 - OpenMAIC 只读架构核验：异步入口为 `app/api/generate-classroom/route.ts`，生成主链为 `lib/server/classroom-generation.ts`，持久化为 `lib/server/classroom-storage.ts`，成功状态由 `lib/server/classroom-job-runner.ts` 在 `markClassroomGenerationJobSucceeded` 写入；客户端 `.maic.zip` 在 `lib/export/use-export-classroom.ts` 组装 manifest。
 - 推荐迁移接口：`guardCourseware(bundle, { mode: "inspect" | "safe-fix", releasePolicy })`，内部执行 deterministic inspect -> 幂等 safe fix -> re-inspect，返回 bundle/report/changed/publishable，并保存 before/after hash。服务端接在 `persistClassroom` 前；导出接在 manifest 组装后、zip 生成前。
 - 自动修复边界：允许稳定 ID/order、类型/标签归一、可确定资源引用和低风险兼容修复；禁止自动改 quiz 正确答案语义、数学内容、教学讲稿和复杂互动逻辑；源 `.maic.zip` 永远只读。`/api/agent/edit` 依赖编辑器 scene context，不作为无状态批量修复后端。
@@ -517,7 +517,7 @@ tools/_encoding_test.txt
 - 运行命令：严格 UTF-8 解码、`node --check tmp/full-flow-prototype/app.js`、Playwright CLI 桌面 1440x900 与移动 390x844 真实浏览器回归、iframe 滑块操作、控制台与网络检查。
 - 结果：完成 A「修复者星图」、B「动态实验手册」、C「专注脉冲」三套结构不同的首页与学习流；B 版从首页依次通过前测、学生路径确认、3 个真实 Slide、3 次学生场景选择、3 个真实 OpenMAIC 课件、形成测验、后测、Coach 建议、学生确认和区域恢复。12 个 V14-X1 课件路径均由 route 提供且文件存在。桌面和移动页面无横向溢出；移动 Slide 按原始 1000x562.5 画布等比缩放；真实斜率场滑块从 `1.0` 调至 `0.5` 后数值和图形状态同步更新。
 - 竞品证据：核查 Brilliant、Mathigon、PhET、Desmos、Nearpod、H5P、Ximera/MOOCulus、Numbas、Khan Academy、ExploreLearning Gizmos、Seneca，并综合先前 Codédex、CodeCombat、Duolingo 观察；推荐以 B 为学习主框架，A 承担首页地图，C 承担测验和手机专注流。
-- 失败/警告：浏览器直接读取 `data/openmaic-v14-route.json` 会被服务端拒绝，已改用正式只读接口 `/api/course/openmaic-v14-route`。同源课件 iframe 沿用正式播放器的 `allow-scripts allow-same-origin` sandbox 组合，Chromium 会给出安全提示；这是现有只读课件交互与跟踪所需边界，生产接线时需继续评估隔离策略。GSAP CDN 不可用时仅失去转场，不影响流程。
+- 失败/警告：浏览器直接读取 `data/multi-scene-learning-route.json` 会被服务端拒绝，已改用正式只读接口 `/api/course/multi-scene-learning-route`。同源课件 iframe 沿用正式播放器的 `allow-scripts allow-same-origin` sandbox 组合，Chromium 会给出安全提示；这是现有只读课件交互与跟踪所需边界，生产接线时需继续评估隔离策略。GSAP CDN 不可用时仅失去转场，不影响流程。
 - 是否真实调用 LLM（provider/model）：否；Coach 为规则建议文案。
 - 是否修改源 `.maic.zip`：否；只读加载现有派生课件。
 - Git 提交：未提交；当前阶段等待用户选择设计方向。
@@ -755,9 +755,9 @@ tools/_encoding_test.txt
 - Git 提交：本条与前缀修复一起精确提交，最终提交号见 Git 历史。
 - 剩余风险与下一步：GitHub 推送不会自动更新公网服务；服务器管理员仍需备份外置数据库、快进拉取、运行发布门控并以 `BASE_PATH=/calculus_quest` 重启。生产 smoke 应访问无尾斜杠和带尾斜杠两个入口，但不得用真实学生账号点击重置。
 
-### 2026-07-21：课件舞台独立全屏、V14 推荐链与最新审计课件发布
+### 2026-07-21：课件舞台独立全屏、多场景推荐链与最新审计课件发布
 
-- 目标：只让当前课件 iframe 舞台全屏，不把四个互动选择项一起放入全屏；四张选择卡的小字显示当前知识点的真实场景名称；无损发布 V14 route/KG、Coach/Planner 和最新审计课件。
+- 目标：只让当前课件 iframe 舞台全屏，不把四个互动选择项一起放入全屏；四张选择卡的小字显示当前知识点的真实场景名称；无损发布课程路线/KG、Coach/Planner 和最新审计课件。
 - 基线与兼容证据：工作树基于 `ddb5853`。当前 route 与 `origin/main` 的 11 个章节、19 个模块、72 个知识点、301 个模块题目 ID、330 个章级题目 ID 和 288 个资源路径均零增删，历史完成记录、测验结果和快照继续使用原稳定键。
 - 课件导入：GH-01 至 GH-14 使用各章最终审计包，EXT-01、EXT-02 分别更新到 `2026-07-19T08:21:48.270Z` 和 `2026-07-19T08:47:40.618Z`，EXT-03 至 EXT-05 保持原版。更新 16 个 manifest、EXT-01/02 的 8 个知识点讲解画布和 route，再重建 `data/knowledge-graph.json`。选定包中的运行文件逐项哈希无不一致；未导入的只有 `classroom.json`、审计报告和审计截图。GH-04 四个 route 依赖的派生 3D 文件继续保留。
 - 发布门控：16 个选定包的结构 guard、视觉审计和可用的互动审计均为 `publishable=true`，critical/warning 均为 0。route 中所有客观题答案均能匹配 `options[].value`。
@@ -771,6 +771,20 @@ tools/_encoding_test.txt
 - 是否修改源 `.maic.zip`：否；只导入 OpenMAIC 已审计导出的只读派生内容。
 - Git 提交：与本条同批精确提交，最终提交号见 Git 历史。
 - 剩余风险与下一步：推送 GitHub 不会自动更新生产服务器。服务器管理员仍需先备份仓库外生产数据库，执行 `git pull --ff-only origin main`，再以 `BASE_PATH=/calculus_quest` 重启并检查首页、登录、管理端、quiz 和课件 iframe。
+
+### 2026-07-22：讲解页矢量渲染修复与多场景路线正式命名
+
+- 目标：修复最终审计包截图与学生端讲解页不一致的问题；把互动卡片小字改为直观场景类别；将版本号式路线名称替换为“多场景自适应学习路线”，同时保护历史记录和缓存客户端。
+- 根因与修复：路线中的讲解画布与最终包 `manifest.json` 完全一致，差异来自平台播放器忽略 `line.start`，把线段错误地从元素左上角画到 `end`，且把所有 `shape` 当作圆角矩形。播放器改为按课件坐标系使用 SVG 绘制形状、线段、虚线和箭头，并增加 `ops/test-slide-rendering.js` 回归测试。
+- 课件核验：GH-01 至 GH-14、EXT-01 和 EXT-02 共 16 个指定最终包，其 `manifest.json`、`interactive/` 和 `audio/` 与运行目录逐文件 SHA-256 零缺失、零不一致；GH-02 共 105 个运行文件完全一致。最终包截图作为视觉对照，不作为运行资源重复提交。
+- 交互文案：四张选择卡主标题继续使用“动手调一调、找错并改正、知识怎么连、换个角度看”，小字固定为“交互模拟、闯关练习、图解梳理、三维观察”，不再重复知识点名和课件文件标题。
+- 正式命名：课程事实源改为 `data/multi-scene-learning-route.json`，主接口改为 `/api/course/multi-scene-learning-route`，课程模式改为 `multi-scene-adaptive`，知识图谱来源和前端函数/样式命名同步更新。旧接口、旧浏览器存储键及 `V14-C1` 等持久化 ID 只作为兼容层保留，不向学生或管理员展示。
+- 数据保护：正式 `8765` 服务通过 `/api/admin/shutdown` 先原子落盘，再备份并使用同一数据库重启。重启前后数据库 SHA-256 均为 `C681FAB77083FFC189AACAA5882A409EFD7700F8CBFACD7FCE4641961D5AA631`；7 个用户、28 个会话、119 条测验、10002 条事件、765 个快照、5 条反馈、22 条 Agent 决策和 74 条交互证据均未减少。备份为 `data/calculus-quest.before-multi-scene-restart-20260722-123327.db`。
+- 验证：18 个 `ops/test-*.js` 全部通过；48 个 JavaScript 文件通过 `node --check`；路线/KG 保持 11 章、105 个运行单元、430 条边和 288 个资源；26 个修改文本通过严格 UTF-8/JSON 解析；`npm audit --omit=dev` 为 0。桌面端 `1440×1000` 验证讲解页坐标轴、箭头和趋近折线正确，四个场景小字正确，学生端与 Flow Test 控制台均为 0 error。
+- 是否真实调用 LLM（provider/model）：否；验证使用现有课件和本地浏览器。
+- 是否修改源 `.maic.zip`：否。
+- Git 提交：与本条同批精确提交，最终提交号见 Git 历史。
+- 剩余风险与下一步：GitHub 推送不会自动部署生产站点。管理员仍需先备份生产数据库、快进拉取、以 `BASE_PATH=/calculus_quest` 重启，并验证新课程接口、旧兼容接口、讲解页和四场景课件。
 
 ## 11. 后续记录模板
 

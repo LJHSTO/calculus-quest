@@ -6,7 +6,7 @@ const interactionPolicy = require("./lib/interaction-policy");
 const WORKSPACE_ROOT = path.resolve(process.cwd());
 const configuredDbPath = String(process.env.DB_PATH || "").trim();
 const DB_PATH = path.resolve(configuredDbPath || path.join(WORKSPACE_ROOT, "data", "calculus-quest.db"));
-const OPENMAIC_V14_ROUTE_PATH = path.join(process.cwd(), "data", "openmaic-v14-route.json");
+const LEARNING_ROUTE_PATH = path.join(process.cwd(), "data", "multi-scene-learning-route.json");
 const DB_LOCK_PATH = `${DB_PATH}.lock`;
 
 function pathInside(parent, child) {
@@ -28,8 +28,8 @@ assertProductionDatabasePath();
 
 function loadOpenMaicRouteSync() {
   try {
-    if (!fs.existsSync(OPENMAIC_V14_ROUTE_PATH)) return null;
-    return JSON.parse(fs.readFileSync(OPENMAIC_V14_ROUTE_PATH, "utf8"));
+    if (!fs.existsSync(LEARNING_ROUTE_PATH)) return null;
+    return JSON.parse(fs.readFileSync(LEARNING_ROUTE_PATH, "utf8"));
   } catch {
     return null;
   }

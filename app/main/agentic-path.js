@@ -6,8 +6,8 @@ const AGENTIC_REMOTE_PLAN_TIMEOUT_MS = 2500;
 const AGENTIC_ALWAYS_RECOMMEND_EXTENSION_CHAPTERS = new Set(["V14-X2", "V14-X5"]);
 const AGENTIC_FINAL_MASTERY_EXTENSION_CHAPTERS = new Set(["V14-X3", "V14-X4"]);
 
-function agenticV14Mode() {
-  return typeof isOpenMaicV14Route === "function" && isOpenMaicV14Route();
+function agenticMultiSceneMode() {
+  return typeof isMultiSceneLearningRoute === "function" && isMultiSceneLearningRoute();
 }
 function agenticInitialUnitId() {
   const firstChapter = (typeof curriculum !== "undefined" && curriculum[0]) || getChapter?.();
@@ -201,8 +201,8 @@ function agenticChapterReadyToAdvance(chapter, path = state.agenticPath || {}) {
   return agenticDecisionShowsPostAdvance(chapter, path);
 }
 
-function agenticV14ChapterUnlockedBySequence(chapterId) {
-  if (!agenticV14Mode()) return true;
+function agenticChapterUnlockedBySequence(chapterId) {
+  if (!agenticMultiSceneMode()) return true;
   const list = typeof curriculum !== "undefined" ? curriculum : [];
   const index = list.findIndex((chapter) => chapter.id === chapterId);
   const target = list[index];
@@ -216,16 +216,16 @@ function agenticV14ChapterUnlockedBySequence(chapterId) {
 }
 
 function agenticCurrentUnitIsAllowed(unitId = "") {
-  if (!unitId || !agenticV14Mode()) return true;
+  if (!unitId || !agenticMultiSceneMode()) return true;
   const chapterId = agenticChapterIdForUnitId(unitId) || currentChapterId;
-  return agenticV14ChapterUnlockedBySequence(chapterId);
+  return agenticChapterUnlockedBySequence(chapterId);
 }
 
 function agenticNormalizeCurrentPosition() {
-  if (!agenticV14Mode()) return;
+  if (!agenticMultiSceneMode()) return;
   const firstChapter = curriculum?.[0];
   if (!firstChapter) return;
-  if (!agenticV14ChapterUnlockedBySequence(currentChapterId)) {
+  if (!agenticChapterUnlockedBySequence(currentChapterId)) {
     currentChapterId = firstChapter.id;
     currentUnitId = firstChapter.units?.[0]?.id || "";
     return;
@@ -260,10 +260,10 @@ function agenticDefaults() {
   };
 }
 
-function agenticPruneLockedV14Path(path) {
-  if (!agenticV14Mode() || !path) return;
+function agenticPruneLockedRoutePath(path) {
+  if (!agenticMultiSceneMode() || !path) return;
   const allowedChapters = new Set((curriculum || [])
-    .filter((chapter) => agenticV14ChapterUnlockedBySequence(chapter.id))
+    .filter((chapter) => agenticChapterUnlockedBySequence(chapter.id))
     .map((chapter) => chapter.id));
   const keepUnit = (unitId) => {
     const chapterId = agenticChapterIdForUnitId(unitId);
@@ -285,7 +285,7 @@ function ensureAgenticPath() {
   Object.keys(defaults).forEach((key) => {
     if (state.agenticPath[key] === undefined) state.agenticPath[key] = defaults[key];
   });
-  if (agenticV14Mode()) agenticNormalizeCurrentPosition();
+  if (agenticMultiSceneMode()) agenticNormalizeCurrentPosition();
   const firstUnitId = agenticInitialUnitId();
   const safeCurrentUnitId = agenticCurrentUnitIsAllowed(currentUnitId) ? currentUnitId : "";
   state.agenticPath.unlocked = Array.from(new Set([...(state.agenticPath.unlocked || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
@@ -371,7 +371,7 @@ function agenticRevealUnit(unitId) {
 
 function agenticAllMainUnits() {
   return (curriculum || [])
-    .filter((chapter) => !agenticV14Mode() || !agenticIsExtensionChapter(chapter) || agenticExtensionChapterVisible(chapter.id))
+    .filter((chapter) => !agenticMultiSceneMode() || !agenticIsExtensionChapter(chapter) || agenticExtensionChapterVisible(chapter.id))
     .flatMap((chapter) => chapter.units || []);
 }
 
@@ -408,7 +408,7 @@ function agenticCandidateFromUnit(unit, reason = "") {
 }
 
 function agenticLocalCandidates(chapterId, sceneOrders, reason) {
-  if (agenticV14Mode()) return [];
+  if (agenticMultiSceneMode()) return [];
   const orderSet = new Set(sceneOrders);
   return agenticAllChapterUnits(chapterId)
     .filter((unit) => orderSet.has(unit.sceneOrder))
@@ -580,7 +580,7 @@ function agenticIsUnitUnlocked(unitId) {
 }
 
 function agenticIsChapterUnlocked(chapterId) {
-  if (agenticV14Mode()) return agenticV14ChapterUnlockedBySequence(chapterId);
+  if (agenticMultiSceneMode()) return agenticChapterUnlockedBySequence(chapterId);
   const chapter = getChapter(chapterId);
   const path = ensureAgenticPath();
   if (path.unlocked.some((id) => id.startsWith(`${chapterId}-scene-`))) return true;
@@ -590,7 +590,7 @@ function agenticIsChapterUnlocked(chapterId) {
 }
 
 function agenticVisibleChaptersForNav() {
-  if (!agenticV14Mode()) return curriculum.map((chapter, index) => ({ chapter, index }));
+  if (!agenticMultiSceneMode()) return curriculum.map((chapter, index) => ({ chapter, index }));
   return agenticVisibleChapterEntries().map((entry) => ({
     ...entry,
     unlocked: agenticIsChapterUnlocked(entry.chapter.id)
@@ -895,9 +895,9 @@ function agenticShouldShowUnit(unit) {
 }
 
 function agenticDisplayUnitsForChapter(chapter = getChapter()) {
-  const units = agenticV14Mode() ? chapter?.units || [] : chapter?.allUnits || chapter?.units || [];
-  if (agenticV14Mode() && agenticIsExtensionChapter(chapter) && !agenticExtensionChapterVisible(chapter.id)) return [];
-  if (agenticV14Mode()) return agenticOrderDisplayedUnits(units);
+  const units = agenticMultiSceneMode() ? chapter?.units || [] : chapter?.allUnits || chapter?.units || [];
+  if (agenticMultiSceneMode() && agenticIsExtensionChapter(chapter) && !agenticExtensionChapterVisible(chapter.id)) return [];
+  if (agenticMultiSceneMode()) return agenticOrderDisplayedUnits(units);
   return agenticOrderDisplayedUnits(units.filter(agenticShouldShowUnit));
 }
 
@@ -1920,7 +1920,7 @@ function agenticOnUnitCompleted(unit) {
     return adaptiveResume;
   }
   const sceneChoicePlan = agenticBuildSceneChoicePlan(unit);
-  if (!agenticV14Mode() && sceneChoicePlan) {
+  if (!agenticMultiSceneMode() && sceneChoicePlan) {
     path.pendingPlan = sceneChoicePlan;
     path.pendingAt = unit.id;
     path.lastNarration = agenticStudentNarrationForPending(sceneChoicePlan);

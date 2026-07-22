@@ -1,8 +1,10 @@
 {
   "schemaVersion": 2,
-  "source": "D:\\Desktop\\Open MAIC class",
+  "routeKind": "multi-scene-adaptive",
+  "displayName": "多场景自适应学习路线",
+  "source": "OpenMAIC audited courseware packages",
   "generatedAt": "2026-07-07T10:10:15.667Z",
-  "versionId": "openmaic-class-20260707T100855",
+  "versionId": "multi-scene-learning-route-20260722",
   "displayMode": "chapters",
   "groupModulesAsChapters": false,
   "interactionTypes": [

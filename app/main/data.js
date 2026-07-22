@@ -1,9 +1,10 @@
 // Course data, global state, and runtime flags.
+// Keep this legacy key so existing browsers continue loading their local fallback state.
 const STORAGE_KEY = "calculus-quest-openmaic-v14-player-v1";
 const AUTH_TOKEN_KEY = "calculus-quest-auth-token-v1";
 const LAST_PARTICIPANT_KEY = "calculus-quest-last-participant-v1";
-const COURSE_MODE = "openmaic-v14";
-const OPENMAIC_V14_ROUTE_PATH = "/api/course/openmaic-v14-route";
+const COURSE_MODE = "multi-scene-adaptive";
+const MULTI_SCENE_ROUTE_PATH = "/api/course/multi-scene-learning-route";
 let activeNarration = null;
 let syncTimer = null;
 let lastSnapshotJson = "";
@@ -161,7 +162,7 @@ const chapterGuides = {
 };
 
 const COURSE_INDEX_PATH = "resources/open-maic/course-index.json";
-const OPENMAIC_V14_INTERACTION_TYPES = [
+const MULTI_SCENE_INTERACTION_TYPES = [
   { id: "simulation", label: "动手调一调", title: "动手调一调", icon: "调" },
   { id: "game", label: "找错并改正", title: "找错并改正", icon: "改" },
   { id: "mindMap", label: "知识怎么连", title: "知识怎么连", widgetType: "diagram", icon: "图" },
@@ -234,7 +235,7 @@ let currentChapterId = chapters[0].id;
 let currentUnitId = "";
 let libraryFilter = "all";
 let courseIndex = null;
-let openMaicV14Route = null;
+let multiSceneLearningRoute = null;
 let prefetchStarted = false;
 let manifests = new Map();
 let manifestPromises = new Map();

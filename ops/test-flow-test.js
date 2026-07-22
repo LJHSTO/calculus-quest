@@ -21,11 +21,11 @@ assert.doesNotMatch(html, /href="\/"/);
 assert.match(css, /grid-template-columns:\s*minmax\(0,\s*1fr\)/);
 assert.match(css, /\.frame-empty\[hidden\]\s*\{\s*display:\s*none;/);
 assert.match(js, /const BASE_PATH =/);
-assert.match(js, /appUrl\("api\/course\/openmaic-v14-route"\)/);
+assert.match(js, /appUrl\("api\/course\/multi-scene-learning-route"\)/);
 assert.match(js, /appUrl\("api\/learning\/kg"\)/);
 assert.doesNotMatch(js, /fetchJson\("\/api\//);
 
-const route = JSON.parse(fs.readFileSync(path.join(root, "data", "openmaic-v14-route.json"), "utf8"));
+const route = JSON.parse(fs.readFileSync(path.join(root, "data", "multi-scene-learning-route.json"), "utf8"));
 const resources = [];
 (route.chapters || []).forEach((chapter) => {
   (chapter.modules || []).forEach((module) => {

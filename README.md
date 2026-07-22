@@ -50,7 +50,7 @@ npm start
 
 ## 课程数据
 
-核心课程路线文件：data/openmaic-v14-route.json。包含章节、知识点、讲解页、互动资源引用和每章三段 quiz。
+核心课程路线文件：data/multi-scene-learning-route.json。它是“多场景自适应学习路线”的课程事实源，包含章节、知识点、讲解页、互动资源引用和每章三段 quiz。
 
 互动课件资源（HTML 交互、音频、图片）位于 resources/open-maic/ 目录。
 

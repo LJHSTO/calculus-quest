@@ -149,7 +149,7 @@ async function main() {
     assert.ok(globalFeedback.payload.feedbackId);
 
     const route = JSON.parse(fs.readFileSync(
-      path.resolve(__dirname, "..", "data", "openmaic-v14-route.json"),
+      path.resolve(__dirname, "..", "data", "multi-scene-learning-route.json"),
       "utf8"
     ));
     let legalTarget = null;

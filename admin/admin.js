@@ -206,7 +206,7 @@ function registerCourseDisplayIndex(route = {}) {
 
 async function loadCourseDisplayIndex(signal) {
   if (!courseDisplayIndexPromise) {
-    courseDisplayIndexPromise = fetch(`${API_BASE}/api/course/openmaic-v14-route`, { signal })
+    courseDisplayIndexPromise = fetch(`${API_BASE}/api/course/multi-scene-learning-route`, { signal })
       .then((response) => response.ok ? response.json() : null)
       .then((route) => registerCourseDisplayIndex(route || {}))
       .catch((error) => {
@@ -1459,11 +1459,11 @@ function chapterName(idOrLabel = "") {
   const value = String(idOrLabel || "");
   const unitMatch = value.match(/^([A-Za-z0-9]+)-(?:scene-\d+|chapter)$/);
   if (unitMatch) return chapterName(unitMatch[1]);
-  const v14Match = value.match(/^(V\d+-[CX]\d+)/i);
-  const v14Id = v14Match
-    ? Object.keys(adminChapterLabels).find((key) => key.toLowerCase() === v14Match[1].toLowerCase())
+  const routeMatch = value.match(/^(V\d+-[CX]\d+)/i);
+  const routeId = routeMatch
+    ? Object.keys(adminChapterLabels).find((key) => key.toLowerCase() === routeMatch[1].toLowerCase())
     : "";
-  if (v14Id && v14Id !== value) return chapterName(v14Id);
+  if (routeId && routeId !== value) return chapterName(routeId);
   const id = adminChapterLabels[value] ? value : Object.keys(adminChapterLabels).find((key) => value === adminChapterLabels[key]);
   if (!id) return publicCourseText(value, "未命名章节");
   const index = adminChapterOrder.indexOf(id);
@@ -1488,8 +1488,8 @@ function moduleName(unitId = "", fallback = "") {
           ? "全课整理"
           : "";
   if (role) {
-    const v14ChapterId = id.match(/^(V\d+-[CX]\d+)/i)?.[1] || "";
-    const chapterLabel = v14ChapterId ? adminChapterLabels[v14ChapterId] || "" : "";
+    const routeChapterId = id.match(/^(V\d+-[CX]\d+)/i)?.[1] || "";
+    const chapterLabel = routeChapterId ? adminChapterLabels[routeChapterId] || "" : "";
     return publicFallback || (chapterLabel ? `${chapterLabel} · ${role}` : role);
   }
   const match = id.match(/^([A-Za-z0-9]+)-scene-(\d+)$/);

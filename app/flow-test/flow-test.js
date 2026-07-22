@@ -277,7 +277,7 @@
     setGate("route", "busy", "加载中");
     try {
       const [route, kgResponse] = await Promise.all([
-        fetchJson(appUrl("api/course/openmaic-v14-route")),
+        fetchJson(appUrl("api/course/multi-scene-learning-route")),
         fetchJson(appUrl("api/learning/kg"))
       ]);
       state.route = route;

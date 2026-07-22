@@ -167,6 +167,7 @@ async function main() {
       "/calculus_quest/app/flow-test/flow-test.js",
       "/calculus_quest/app/flow-test/flow-test.css",
       "/calculus_quest/lib/interaction-policy.js",
+      "/calculus_quest/api/course/multi-scene-learning-route",
       "/calculus_quest/api/course/openmaic-v14-route"
     ]) {
       const response = await fetch(baseUrl + pathname);
@@ -182,6 +183,7 @@ async function main() {
       "/admin/admin.js",
       "/app/flow-test/flow-test.js",
       "/app/flow-test/flow-test.css",
+      "/api/course/multi-scene-learning-route",
       "/api/course/openmaic-v14-route"
     ]) {
       const response = await fetch(baseUrl + pathname);

@@ -1,9 +1,9 @@
 {
   "schemaVersion": "2.0.0",
   "generatedAt": "2026-07-07T10:10:15.667Z",
-  "source": "data/openmaic-v14-route.json",
-  "sourceVersion": "openmaic-class-20260707T100855",
-  "description": "由当前 OpenMAIC V14 route 自动生成的 Agentic Coach 知识图谱。",
+  "source": "data/multi-scene-learning-route.json",
+  "sourceVersion": "multi-scene-learning-route-20260722",
+  "description": "由多场景自适应学习路线自动生成的学习规划知识图谱。",
   "nodeKinds": [
     "chapter",
     "unit"

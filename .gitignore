@@ -4,6 +4,7 @@ node_modules/
 data/*
 !data/.gitignore
 !data/knowledge-graph.json
+!data/multi-scene-learning-route.json
 *.db
 *.db-shm
 *.db-wal

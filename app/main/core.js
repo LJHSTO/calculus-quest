@@ -142,13 +142,13 @@ async function fetchJson(path, errorMessage) {
   return response.json();
 }
 
-function isOpenMaicV14Route() {
-  return COURSE_MODE === "openmaic-v14";
+function isMultiSceneLearningRoute() {
+  return COURSE_MODE === "multi-scene-adaptive";
 }
 
 function routeInteractionTypes() {
-  const types = openMaicV14Route?.interactionTypes || OPENMAIC_V14_INTERACTION_TYPES;
-  const defaults = new Map(OPENMAIC_V14_INTERACTION_TYPES.map((item) => [item.id, item]));
+  const types = multiSceneLearningRoute?.interactionTypes || MULTI_SCENE_INTERACTION_TYPES;
+  const defaults = new Map(MULTI_SCENE_INTERACTION_TYPES.map((item) => [item.id, item]));
   return types.map((item) => ({
     ...item,
     id: item.id === "diagram" ? "mindMap" : item.id,
@@ -162,7 +162,7 @@ function routeUnitIds() {
   return curriculum.flatMap((chapter) => chapter.units || []).map((unit) => unit.id);
 }
 
-function openMaicV14ModuleChapters(route = openMaicV14Route) {
+function multiSceneRouteModuleChapters(route = multiSceneLearningRoute) {
   if (route?.displayMode === "chapters" || route?.groupModulesAsChapters === false) return [];
   const moduleChapters = [];
   (route?.chapters || []).forEach((parentChapter, parentIndex) => {
@@ -206,9 +206,9 @@ function normalizeOpenMaicChapter(routeChapter = {}, index = 0) {
   };
 }
 
-function applyOpenMaicV14Route(route) {
+function applyMultiSceneLearningRoute(route) {
   if (!route?.chapters?.length) return;
-  const moduleChapters = openMaicV14ModuleChapters(route);
+  const moduleChapters = multiSceneRouteModuleChapters(route);
   const displayChapters = moduleChapters.length ? moduleChapters : route.chapters;
   chapters.splice(0, chapters.length, ...displayChapters.map(normalizeOpenMaicChapter));
   Object.keys(chapterGuides).forEach((key) => delete chapterGuides[key]);
@@ -238,7 +238,7 @@ function applyOpenMaicV14Route(route) {
       parentChapterId: chapter.parentChapterId || "",
       parentChapterLabel: chapter.parentChapterLabel || "",
       modules: (chapter.modules || []).length,
-      scenes: (chapter.modules || []).reduce((sum, module) => sum + openMaicV14ModuleUnits(module).length, 0)
+      scenes: (chapter.modules || []).reduce((sum, module) => sum + multiSceneRouteModuleUnits(module).length, 0)
     })),
     totals: {
       chapters: displayChapters.length,
@@ -250,11 +250,11 @@ function applyOpenMaicV14Route(route) {
   };
 }
 
-async function loadOpenMaicV14Route() {
-  if (openMaicV14Route) return openMaicV14Route;
-  openMaicV14Route = await fetchJson(OPENMAIC_V14_ROUTE_PATH, "Open MAIC v14 路线加载失败");
-  applyOpenMaicV14Route(openMaicV14Route);
-  return openMaicV14Route;
+async function loadMultiSceneLearningRoute() {
+  if (multiSceneLearningRoute) return multiSceneLearningRoute;
+  multiSceneLearningRoute = await fetchJson(MULTI_SCENE_ROUTE_PATH, "多场景自适应学习路线加载失败");
+  applyMultiSceneLearningRoute(multiSceneLearningRoute);
+  return multiSceneLearningRoute;
 }
 
 function beijingNow() {
@@ -1036,8 +1036,8 @@ function restoredQuizResultFromDraft(unit, question, index = 0) {
 }
 
 async function loadChapterManifest(chapterId) {
-  if (isOpenMaicV14Route()) {
-    await loadOpenMaicV14Route();
+  if (isMultiSceneLearningRoute()) {
+    await loadMultiSceneLearningRoute();
     return null;
   }
   if (manifests.has(chapterId)) return manifests.get(chapterId);
@@ -1066,8 +1066,8 @@ async function ensureChapterLoaded(chapterId, options = {}) {
     const chapter = chapters.find((item) => item.id === chapterId) || chapters[0];
     renderLoadingStatus(chapter.label);
   }
-  if (isOpenMaicV14Route()) {
-    await loadOpenMaicV14Route();
+  if (isMultiSceneLearningRoute()) {
+    await loadMultiSceneLearningRoute();
     buildCurriculum();
     return;
   }
@@ -1077,8 +1077,8 @@ async function ensureChapterLoaded(chapterId, options = {}) {
 
 async function loadCourseIndex() {
   if (courseIndex) return courseIndex;
-  if (isOpenMaicV14Route()) {
-    await loadOpenMaicV14Route();
+  if (isMultiSceneLearningRoute()) {
+    await loadMultiSceneLearningRoute();
     return courseIndex;
   }
   try {
@@ -1095,7 +1095,7 @@ function chapterStats(chapterId) {
 }
 
 function totalMainUnitCount() {
-  if (isOpenMaicV14Route()) return allUnits().length || courseIndex?.totals?.knowledgePoints || 0;
+  if (isMultiSceneLearningRoute()) return allUnits().length || courseIndex?.totals?.knowledgePoints || 0;
   const chapterCount = courseIndex?.chapters?.length || curriculum.length || chapters.length;
   const coreCount = AGENTIC_CORE_SCENE_ORDERS.length;
   return chapterCount && coreCount ? chapterCount * coreCount : allUnits().length || 0;
@@ -1109,12 +1109,12 @@ function unitCountsTowardProgress(unit) {
 }
 
 function isMainUnitId(id = "") {
-  if (isOpenMaicV14Route()) return Boolean(findMainUnit(id));
+  if (isMultiSceneLearningRoute()) return Boolean(findMainUnit(id));
   return chapters.some((chapter) => id.startsWith(`${chapter.id}-scene-`));
 }
 
 function scheduleChapterPrefetch() {
-  if (isOpenMaicV14Route()) return;
+  if (isMultiSceneLearningRoute()) return;
   if (prefetchStarted) return;
   prefetchStarted = true;
   const queue = chapters.map((chapter) => chapter.id).filter((id) => !manifests.has(id));
@@ -1155,8 +1155,8 @@ function renderLoadingStatus(chapterLabel = "课程") {
 }
 
 function buildCurriculum() {
-  if (isOpenMaicV14Route()) {
-    curriculum = buildOpenMaicV14Curriculum();
+  if (isMultiSceneLearningRoute()) {
+    curriculum = buildMultiSceneLearningCurriculum();
   } else {
     curriculum = chapters.map(buildChapter);
   }
@@ -1167,13 +1167,13 @@ function buildCurriculum() {
   }
 }
 
-function buildOpenMaicV14Curriculum() {
-  const moduleChapters = openMaicV14ModuleChapters(openMaicV14Route);
-  const routeChapters = moduleChapters.length ? moduleChapters : (openMaicV14Route?.chapters || []);
+function buildMultiSceneLearningCurriculum() {
+  const moduleChapters = multiSceneRouteModuleChapters(multiSceneLearningRoute);
+  const routeChapters = moduleChapters.length ? moduleChapters : (multiSceneLearningRoute?.chapters || []);
   if (!routeChapters.length) {
     return chapters.map((chapter) => ({ ...chapter, units: [], allUnits: [], loaded: false }));
   }
-  return routeChapters.map((routeChapter, chapterIndex) => buildOpenMaicV14Chapter(routeChapter, chapterIndex));
+  return routeChapters.map((routeChapter, chapterIndex) => buildMultiSceneLearningChapter(routeChapter, chapterIndex));
 }
 
 function openMaicQuestionKnowledgePointIds(question = {}) {
@@ -1277,12 +1277,12 @@ function openMaicFormativeQuizFlow(routeChapter = {}, allKnowledgePoints = [], f
   };
 }
 
-function openMaicV14ModuleUnits(module = {}) {
+function multiSceneRouteModuleUnits(module = {}) {
   const knowledgeCount = (module.knowledgePoints || []).length;
   return new Array(knowledgeCount + 4).fill(null);
 }
 
-function buildOpenMaicV14Chapter(routeChapter, chapterIndex = 0) {
+function buildMultiSceneLearningChapter(routeChapter, chapterIndex = 0) {
   const chapter = normalizeOpenMaicChapter(routeChapter, chapterIndex);
   const units = [];
   let sceneOrder = 1;
@@ -1315,7 +1315,7 @@ function createOpenMaicQuizUnit(chapter, module, phase, sceneOrder, moduleIndex,
   const flow = openMaicQuizFlowForPhase(rawFlow, phase);
   const label = phaseText(phase);
   const readableTitle = readableRouteText(flow.title, `${module.id} ${label}`);
-  const stepLabel = openMaicV14QuizStepLabel(phase);
+  const stepLabel = multiSceneQuizStepLabel(phase);
   return {
     id: `${module.id}-${phase}`,
     kind: "quiz",
@@ -1351,7 +1351,7 @@ function createOpenMaicQuizUnit(chapter, module, phase, sceneOrder, moduleIndex,
   };
 }
 
-function openMaicV14QuizStepLabel(phase = "") {
+function multiSceneQuizStepLabel(phase = "") {
   return {
     pre: "知识前测",
     formative: "形成测验",
@@ -1433,7 +1433,7 @@ function createOpenMaicReviewUnit(chapter, module, sceneOrder, moduleIndex) {
       title: readableRouteText(module.flow?.review?.title, "全课整理：证据链回看"),
       order: sceneOrder,
       content: {
-        v14Review: true,
+        routeReview: true,
         module
       },
       actions: []
