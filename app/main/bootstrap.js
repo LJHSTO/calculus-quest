@@ -441,6 +441,9 @@ async function init() {
         currentChapterId = chapters[0]?.id || "";
         currentUnitId = getChapter(currentChapterId)?.units?.[0]?.id || "";
       }
+      if (typeof agenticRecoverInterruptedGrading === "function") {
+        await agenticRecoverInterruptedGrading();
+      }
     }
 
     if (isSignedIn()) analyticsEnterUnit(getUnit(currentUnitId), "initial_load");

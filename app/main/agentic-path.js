@@ -1361,7 +1361,7 @@ function focusAgenticCoachPanel() {
 }
 
 function agenticQuizStats(records) {
-  const objective = records.filter(({ result }) => result.isCorrect !== null && result.status !== "pending_review");
+  const objective = records.filter(({ result }) => !quizReviewIsPending(result));
   const correct = objective.filter(({ result }) => result.isCorrect === true).length;
   return {
     objective: objective.length,
@@ -1389,7 +1389,7 @@ function agenticQuizRecordsForUnit(unitId) {
 function agenticQuizHasPendingShortAnswer(records = []) {
   return records.some(({ question, result }) =>
     question?.type === "short_answer" &&
-    (result?.status === "pending_review" || result?.isCorrect === null)
+    quizReviewIsPending(result)
   );
 }
 function agenticKnowledgePointsForChapter(chapterId) {
@@ -1439,7 +1439,7 @@ function agenticQuizKnowledgeMastery(records = [], chapterId = "") {
         item.earned += earned;
       }
       if (result.isCorrect === true) item.correct += 1;
-      else if (result.isCorrect === false) item.wrong += 1;
+      else if (result.isCorrect === false || quizAiReviewFailed(result)) item.wrong += 1;
       else item.pending += 1;
     });
   });
@@ -1635,8 +1635,8 @@ function interactionEvidenceForUnit(unitId) {
   const bucket = state.analytics?.interactionEvidence?.[unitId] || {};
   const quizRows = (state.quizResults || []).filter((row) => (row.unitId || row.unit_id) === unitId);
   const questionCount = new Set(quizRows.map((row) => row.questionId || row.question_id).filter(Boolean)).size;
-  const pendingReview = quizRows.filter((row) => row.status === "pending_review" || row.isCorrect === null).length;
-  const scoredRows = quizRows.filter((row) => row.isCorrect === true || row.isCorrect === false);
+  const pendingReview = quizRows.filter((row) => quizReviewIsPending(row)).length;
+  const scoredRows = quizRows.filter((row) => !quizReviewIsPending(row));
   const correctRows = scoredRows.filter((row) => row.isCorrect === true);
   const accuracy = scoredRows.length ? correctRows.length / scoredRows.length : null;
   const repeatCount = Math.max(bucket.repeatCount || 0, state.analytics?.visitedUnits?.[unitId] || 0);
@@ -1804,7 +1804,10 @@ function agenticScorePendingShortAnswersAsZero(unit, reason = "智能批改暂�
   let changed = false;
   state.quizResults = (state.quizResults || []).map((entry) => {
     if (entry.unitId !== unit.id || entry.questionType !== "short_answer") return entry;
-    if (entry.status !== "pending_review" && entry.isCorrect !== null) return entry;
+    const rawPending = typeof QuizReviewState !== "undefined"
+      ? QuizReviewState.rawPending(entry)
+      : entry.status === "pending_review" || entry.isCorrect === null;
+    if (!rawPending) return entry;
     changed = true;
     return {
       ...entry,
@@ -1823,6 +1826,102 @@ function agenticScorePendingShortAnswersAsZero(unit, reason = "智能批改暂�
   });
   if (changed) saveState();
   return changed;
+}
+
+async function agenticRecoverInterruptedGrading() {
+  const path = ensureAgenticPath();
+  const pending = path.pendingPlan;
+  if (pending?.phase !== "grading_pending" || path.decisionInFlight) return false;
+  const unit = getUnit(pending.unitId || pending.anchorUnitId);
+  if (!unit) return false;
+
+  const recoveredCount = typeof normalizeFailedQuizReviews === "function"
+    ? normalizeFailedQuizReviews()
+    : 0;
+  const records = agenticQuizRecordsForUnit(unit.id);
+  if (!records.length || agenticQuizHasPendingShortAnswer(records)) {
+    if (recoveredCount) saveState();
+    return false;
+  }
+
+  path.decisionInFlight = "grading_recovery";
+  try {
+    await agenticBuildRecommendationAfterGrading(unit, records, null);
+    if (unit.id === currentUnitId && typeof renderQuiz === "function") renderQuiz(unit);
+    if (recoveredCount) addLog(`已恢复「${unit.label}」的简答题评分状态，学习路径可以继续。`);
+    return true;
+  } catch (error) {
+    pending.narration = `评分状态已恢复，但学习建议生成失败：${error.message || "请稍后重试"}。`;
+    return false;
+  } finally {
+    path.decisionInFlight = "";
+    saveState();
+    agenticRenderLearningUpdate();
+  }
+}
+
+async function agenticResolvePendingGrading(action = "retry") {
+  const path = ensureAgenticPath();
+  const pending = path.pendingPlan;
+  if (pending?.phase !== "grading_pending" || path.decisionInFlight) return false;
+  const unit = getUnit(pending.unitId || pending.anchorUnitId);
+  if (!unit) return false;
+
+  let records = agenticQuizRecordsForUnit(unit.id);
+  path.decisionInFlight = action === "continue" ? "grading_continue" : "grading_retry";
+  pending.narration = action === "continue"
+    ? "正在保存 0 分兜底结果，并据此生成后续学习建议。"
+    : "正在重新批改简答题，请稍候。";
+  saveState();
+  renderAgenticCoachPanel();
+
+  try {
+    let payload = null;
+    try {
+      payload = await apiRequest("api/learning/grade", {
+        unitId: unit.id,
+        fallbackToZero: action === "continue",
+        questions: agenticQuizQuestionsForPlan(records, unit)
+      });
+    } catch (error) {
+      if (action !== "continue") throw error;
+      console.warn("Persisting short answer fallback failed:", error);
+    }
+
+    if (payload?.results) {
+      agenticApplyGradingResults(payload.results, unit);
+    }
+    records = agenticQuizRecordsForUnit(unit.id);
+
+    if (action === "continue" && agenticQuizHasPendingShortAnswer(records)) {
+      agenticScorePendingShortAnswersAsZero(
+        unit,
+        "智能批改暂时未完成；你选择先按 0 分继续学习，后续仍可人工复核。"
+      );
+      records = agenticQuizRecordsForUnit(unit.id);
+    }
+
+    if (agenticQuizHasPendingShortAnswer(records)) {
+      pending.narration = "重新批改仍未完成。你可以稍后再试，或先按 0 分继续学习；后续仍可人工复核。";
+      addLog(`「${unit.label}」简答题重新批改未完成。`);
+      return false;
+    }
+
+    await agenticBuildRecommendationAfterGrading(unit, records, null);
+    if (unit.id === currentUnitId && typeof renderQuiz === "function") renderQuiz(unit);
+    addLog(action === "continue"
+      ? `「${unit.label}」已按 0 分兜底生成学习建议。`
+      : `「${unit.label}」简答题已重新批改并生成学习建议。`);
+    return true;
+  } catch (error) {
+    pending.narration = `重新批改失败：${error.message || "服务暂时不可用"}。你可以再次重试，或先按 0 分继续学习。`;
+    addLog(`「${unit.label}」简答题重新批改失败：${error.message || "服务暂时不可用"}。`);
+    return false;
+  } finally {
+    path.decisionInFlight = "";
+    saveState();
+    agenticRenderLearningUpdate();
+  }
 }
 
 function agenticBuildPendingGradingPlan(unit, records = [], options = {}) {
@@ -3229,13 +3328,24 @@ function renderAgenticCoachPanel() {
 
   const inFlight = path.decisionInFlight || "";
   if (pending.phase === "grading_pending") {
+    const retrying = inFlight === "grading_retry";
+    const continuing = inFlight === "grading_continue";
     node.hidden = false;
     node.innerHTML = `
       <section class="agentic-coach-card decision grading-pending">
         <div class="agentic-coach-header">
-          <strong>正在批改简答题</strong>
+          <strong>${retrying ? "正在重新批改简答题" : continuing ? "正在生成学习建议" : "简答题等待处理"}</strong>
         </div>
         <p>${escapeHtml(agenticStudentFacingText(pending.narration, "简答题批改完成后，我会再给出学习路径建议。"))}</p>
+        <div class="agentic-actions">
+          <button class="button soft" type="button" data-agentic-grading-action="retry" ${inFlight ? "disabled" : ""}>
+            ${retrying ? "重新批改中..." : "重新批改"}
+          </button>
+          <button class="button primary" type="button" data-agentic-grading-action="continue" ${inFlight ? "disabled" : ""}>
+            ${continuing ? "处理中..." : "按 0 分继续"}
+          </button>
+        </div>
+        <small>0 分兜底只用于避免学习中断，该题仍保留人工复核和后续重新评分的空间。</small>
       </section>
     `;
     return;

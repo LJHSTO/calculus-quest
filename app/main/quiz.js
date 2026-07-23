@@ -94,13 +94,13 @@ function aiReviewStatus(result, question = {}) {
   const feedback = result.aiFeedback || result.ai_feedback || "";
   const hasAiScore = aiScore !== undefined && aiScore !== null;
   const maxScore = quizMaxScoreFor(question, result || {});
-  const displayScore = hasAiScore ? quizScoreFromAiScore(aiScore, maxScore) : null;
-  const aiFailed = ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(aiErrorType)
-    || /解析失败|评分超时|人工评阅|人工复核/.test(feedback)
-    || (result.status === "pending_review" && result.isCorrect === null && Number(aiScore) === 0 && Boolean(aiErrorType));
-  const fallbackScored = result.status === "ai_reviewed" && aiFailed && (result.fallbackScored || Number(aiScore) === 0 || Number(result.score) === 0);
-  const badgeText = hasAiScore && (!aiFailed || fallbackScored) ? (Number(displayScore) === 0 ? "需复盘" : "已批改") : "待批改";
-  const badgeClass = hasAiScore && (!aiFailed || fallbackScored) && Number(displayScore) > 0 ? "done" : "todo";
+  const aiFailed = quizAiReviewFailed(result);
+  const pendingReview = quizReviewIsPending(result);
+  const fallbackScored = aiFailed && !pendingReview;
+  const displayScore = hasAiScore ? quizScoreFromAiScore(aiScore, maxScore) : fallbackScored ? 0 : null;
+  const reviewCompleted = !pendingReview && (hasAiScore || fallbackScored);
+  const badgeText = reviewCompleted ? (Number(displayScore) === 0 ? "需复盘" : "已批改") : "待批改";
+  const badgeClass = reviewCompleted && Number(displayScore) > 0 ? "done" : "todo";
   let line = "智能批改正在等待返回；结果回来后会保留在这里。";
   if (fallbackScored) {
     const denominator = maxScore ? ` / ${quizFormatScore(maxScore)}` : "";
@@ -421,7 +421,7 @@ async function submitQuiz(unitId) {
     unitLabel: unit.label,
     phase: unit.assessmentPhase || "",
     questionCount: records.length,
-    pendingReview: records.filter(({ result }) => result.status === "pending_review").length,
+    pendingReview: records.filter(({ result }) => quizReviewIsPending(result)).length,
     correct: records.filter(({ result }) => result.isCorrect === true).length,
     incorrect: records.filter(({ result }) => result.isCorrect === false).length
   });
@@ -433,7 +433,7 @@ async function submitQuiz(unitId) {
       unitLabel: unit.label,
       phase: unit.assessmentPhase || "",
       questionCount: records.length,
-      pendingReview: records.filter(({ result }) => result.status === "pending_review").length,
+      pendingReview: records.filter(({ result }) => quizReviewIsPending(result)).length,
       correct: records.filter(({ result }) => result.isCorrect === true).length,
       incorrect: records.filter(({ result }) => result.isCorrect === false).length
     }

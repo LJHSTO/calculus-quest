@@ -8,6 +8,15 @@ const configuredDbPath = String(process.env.DB_PATH || "").trim();
 const DB_PATH = path.resolve(configuredDbPath || path.join(WORKSPACE_ROOT, "data", "calculus-quest.db"));
 const LEARNING_ROUTE_PATH = path.join(process.cwd(), "data", "multi-scene-learning-route.json");
 const DB_LOCK_PATH = `${DB_PATH}.lock`;
+const FAILED_AI_REVIEW_TYPES = [
+  "api_error",
+  "api_timeout",
+  "parse_error",
+  "mock_provider",
+  "manual_fallback",
+  "unknown"
+];
+const FAILED_AI_REVIEW_SUFFIX = "。已先按 0 分计入，不影响继续学习。";
 
 function pathInside(parent, child) {
   const relative = path.relative(parent, child);
@@ -828,12 +837,25 @@ function insertInteractionEvidenceBatch(userId, decisionId, chapterId, interacti
 function updateQuizResultAiGrading(questionId, userId, { aiScore, aiConfidence, aiFeedback, aiErrorType, unitId = "" }) {
   const unitScope = unitId ? " AND unit_id = ?" : "";
   const unitParams = unitId ? [unitId] : [];
+  const normalizedErrorType = String(aiErrorType || "").trim().toLowerCase();
+  let resolvedScore = aiScore;
+  let resolvedFeedback = aiFeedback || "";
 
-  // Skip score overwrite when API failed (aiScore is null) - preserve any existing valid score
-  if (aiScore == null) {
+  if (resolvedScore == null && FAILED_AI_REVIEW_TYPES.includes(normalizedErrorType)) {
+    resolvedScore = 0;
+    if (!/已先按 0 分计入|可以继续学习/.test(resolvedFeedback)) {
+      const feedbackPrefix = String(resolvedFeedback || "").replace(/[。.!！？?\s]+$/u, "");
+      resolvedFeedback = feedbackPrefix
+        ? `${feedbackPrefix}${FAILED_AI_REVIEW_SUFFIX}`
+        : FAILED_AI_REVIEW_SUFFIX.slice(1);
+    }
+  }
+
+  // Keep genuinely unresolved reviews pending when no explicit failure was reported.
+  if (resolvedScore == null) {
     execute(
       `UPDATE quiz_results SET ai_confidence = ?, ai_feedback = ?, ai_error_type = ? WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1`,
-      [aiConfidence || 0, aiFeedback || "", aiErrorType || "", questionId, userId, ...unitParams]
+      [aiConfidence || 0, resolvedFeedback, normalizedErrorType, questionId, userId, ...unitParams]
     );
     return;
   }
@@ -842,15 +864,69 @@ function updateQuizResultAiGrading(questionId, userId, { aiScore, aiConfidence, 
     [questionId, userId, ...unitParams]
   );
   const maxScore = Number(existing?.max_score || 0);
-  const rawScore = Number(aiScore);
+  const rawScore = Number(resolvedScore);
   const earnedScore = maxScore
     ? Math.round(Math.max(0, Math.min(maxScore, rawScore)) * 10) / 10
     : rawScore;
   const passScore = maxScore ? maxScore * 0.6 : 60;
   execute(
     `UPDATE quiz_results SET ai_score = ?, ai_confidence = ?, ai_feedback = ?, ai_error_type = ?, is_correct = CASE WHEN ? >= ? THEN 1 ELSE 0 END, status = 'ai_reviewed', score = ? WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1`,
-    [aiScore, aiConfidence || 0, aiFeedback || "", aiErrorType || "", earnedScore, passScore, earnedScore, questionId, userId, ...unitParams]
+    [resolvedScore, aiConfidence || 0, resolvedFeedback, normalizedErrorType, earnedScore, passScore, earnedScore, questionId, userId, ...unitParams]
   );
+}
+
+function normalizeFailedPendingQuizReviews() {
+  const placeholders = FAILED_AI_REVIEW_TYPES.map(() => "?").join(", ");
+  execute(
+    `UPDATE quiz_results
+     SET ai_score = 0,
+         ai_confidence = COALESCE(ai_confidence, 0),
+         ai_feedback = CASE
+           WHEN trim(COALESCE(ai_feedback, '')) = '' THEN ?
+           WHEN instr(ai_feedback, '已先按 0 分计入') > 0 OR instr(ai_feedback, '可以继续学习') > 0 THEN ai_feedback
+           ELSE rtrim(ai_feedback, '。.!！？? ') || ?
+         END,
+         is_correct = 0,
+         status = 'ai_reviewed',
+         score = 0
+     WHERE question_type = 'short_answer'
+       AND (status = 'pending_review' OR is_correct = -1)
+       AND lower(trim(COALESCE(ai_error_type, ''))) IN (${placeholders})`,
+    [
+      FAILED_AI_REVIEW_SUFFIX.slice(1),
+      FAILED_AI_REVIEW_SUFFIX,
+      ...FAILED_AI_REVIEW_TYPES
+    ]
+  );
+  return getDbSync().getRowsModified();
+}
+
+function normalizeLegacyPendingShortAnswerFlags() {
+  execute(
+    `UPDATE quiz_results
+     SET is_correct = -1
+     WHERE question_type = 'short_answer'
+       AND status = 'pending_review'
+       AND is_correct = 1
+       AND ai_score IS NULL`
+  );
+  return getDbSync().getRowsModified();
+}
+
+function normalizeReviewedShortAnswerFlags() {
+  execute(
+    `UPDATE quiz_results
+     SET is_correct = CASE
+       WHEN max_score > 0 AND ai_score >= max_score * 0.6 THEN 1
+       WHEN max_score <= 0 AND ai_score >= 60 THEN 1
+       ELSE 0
+     END
+     WHERE question_type = 'short_answer'
+       AND status = 'ai_reviewed'
+       AND is_correct = -1
+       AND ai_score IS NOT NULL`
+  );
+  return getDbSync().getRowsModified();
 }
 
 // ---- Snapshots ----
@@ -2479,5 +2555,8 @@ module.exports = {
   insertInteractionEvidenceBatch,
   insertInteractionEvidenceSnapshot,
   updateQuizResultAiGrading,
+  normalizeFailedPendingQuizReviews,
+  normalizeLegacyPendingShortAnswerFlags,
+  normalizeReviewedShortAnswerFlags,
   interactionRows
 };

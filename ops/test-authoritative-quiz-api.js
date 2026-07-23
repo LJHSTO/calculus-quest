@@ -74,7 +74,10 @@ async function main() {
   const root = path.resolve(__dirname, "..");
   const sourceRoute = JSON.parse(fs.readFileSync(path.join(root, "data", "multi-scene-learning-route.json"), "utf8"));
   const sourceQuestion = sourceRoute.chapters[0].flow.preQuiz.questions.find((question) => question.type === "single");
+  const sourceFormativeQuestions = sourceRoute.chapters[0].flow.formativeQuiz.questions;
+  const sourceShortQuestion = sourceFormativeQuestions.find((question) => question.type === "short_answer");
   assert.ok(sourceQuestion?.answer?.length);
+  assert.ok(sourceShortQuestion);
 
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cq-authoritative-quiz-"));
   const dbPath = path.join(tmpDir, "authoritative-quiz.db");
@@ -189,6 +192,52 @@ async function main() {
     assert.equal(stored.data.length, submittedAnswers.length);
     const storedSource = stored.data.find((result) => result.question_id === sourceQuestion.id);
     assert.equal(storedSource.score, sourceQuestion.points);
+
+    const formativeSubmitted = await postJson(
+      baseUrl,
+      "/api/learning/quiz/submit",
+      {
+        unitId: "V14-C1-formative",
+        chapterId: "V14-C1",
+        phase: "formative",
+        answers: sourceFormativeQuestions.map((question) => ({
+          questionId: question.id,
+          response: question.type === "short_answer"
+            ? "我会先说明关键量之间的关系，再给出判断依据。"
+            : question.type === "multiple"
+              ? question.answer
+              : question.answer[0]
+        }))
+      },
+      token
+    );
+    assert.equal(formativeSubmitted.response.status, 200);
+
+    const fallback = await postJson(
+      baseUrl,
+      "/api/learning/grade",
+      {
+        unitId: "V14-C1-formative",
+        fallbackToZero: true,
+        questions: [{ questionId: sourceShortQuestion.id }]
+      },
+      token
+    );
+    assert.equal(fallback.response.status, 200);
+    assert.equal(fallback.payload.results.length, 1);
+    assert.equal(fallback.payload.results[0].score, 0);
+    assert.equal(fallback.payload.results[0].errorType, "manual_fallback");
+
+    const fallbackStoredResponse = await fetch(baseUrl + "/api/learning/quiz-results", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const fallbackStored = await fallbackStoredResponse.json();
+    const storedShort = fallbackStored.data.find((result) => result.question_id === sourceShortQuestion.id);
+    assert.equal(storedShort.status, "ai_reviewed");
+    assert.equal(storedShort.is_correct, 0);
+    assert.equal(storedShort.score, 0);
+    assert.equal(storedShort.ai_score, 0);
+    assert.equal(storedShort.ai_error_type, "manual_fallback");
 
     console.log("authoritative quiz API tests passed");
   } finally {

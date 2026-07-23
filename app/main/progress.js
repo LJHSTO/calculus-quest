@@ -67,9 +67,9 @@ function renderProgress() {
 
 function renderQuizDashboard() {
   const results = state.quizResults || [];
-  const objective = results.filter((item) => item.isCorrect !== null);
+  const objective = results.filter((item) => !quizReviewIsPending(item));
   const correct = objective.filter((item) => item.isCorrect).length;
-  const pending = results.filter((item) => item.status === "pending_review").length;
+  const pending = results.filter((item) => quizReviewIsPending(item)).length;
   const accuracy = objective.length ? Math.round((correct / objective.length) * 100) : 0;
   const scored = results.filter((item) => item.maxScore);
   const earned = scored.reduce((sum, item) => sum + (item.score || 0), 0);
@@ -156,14 +156,14 @@ function renderChapterQuizRow(results, chapter) {
 
 function phaseStats(results, phase = "") {
   const phaseResults = phase ? results.filter((item) => resultPhase(item) === phase) : results;
-  const objective = phaseResults.filter((item) => item.isCorrect !== null);
+  const objective = phaseResults.filter((item) => !quizReviewIsPending(item));
   const correct = objective.filter((item) => item.isCorrect).length;
   const scored = phaseResults.filter((item) => item.maxScore);
   const earned = scored.reduce((sum, item) => sum + (item.score || 0), 0);
   const possible = scored.reduce((sum, item) => sum + (item.maxScore || 0), 0);
   return {
     attempts: phaseResults.length,
-    pending: phaseResults.filter((item) => item.status === "pending_review").length,
+    pending: phaseResults.filter((item) => quizReviewIsPending(item)).length,
     accuracy: objective.length ? Math.round((correct / objective.length) * 100) : 0,
     scoreRate: possible ? Math.round((earned / possible) * 100) : 0
   };
@@ -179,7 +179,7 @@ function resultPhase(item) {
 }
 
 function statusText(item) {
-  if (item.status === "pending_review") return "待复核";
+  if (quizReviewIsPending(item)) return "待复核";
   if (item.isCorrect === true) return "正确";
   if (item.isCorrect === false) return "需复盘";
   return "已记录";

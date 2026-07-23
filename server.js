@@ -1845,6 +1845,8 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const requestedUnitId = String(body.unitId || "").trim();
+      const fallbackToZero = body.fallbackToZero === true;
       const requestedIds = new Set(
         (Array.isArray(body.questions) ? body.questions : [])
           .map((question) => String(question?.questionId || "").trim())
@@ -1854,12 +1856,52 @@ async function handleApi(req, res, url) {
       const latest = new Map();
       storedRows.forEach((row) => {
         const key = `${row.unit_id || ""}:${row.question_id || ""}`;
-        if (!latest.has(key) && (!requestedIds.size || requestedIds.has(row.question_id))) latest.set(key, row);
+        if (
+          !latest.has(key)
+          && (!requestedUnitId || row.unit_id === requestedUnitId)
+          && (!requestedIds.size || requestedIds.has(row.question_id))
+        ) {
+          latest.set(key, row);
+        }
       });
       const questions = courseAssessment.authoritativeGradingQuestions(
         assessmentIndex,
         Array.from(latest.values())
       ).slice(0, 50);
+      if (fallbackToZero) {
+        const fallbackQuestions = questions.filter((question) => {
+          const row = latest.get(`${question.unitId || ""}:${question.questionId || ""}`) || {};
+          return row.status === "pending_review" || row.is_correct === -1;
+        });
+        if (!requestedIds.size || !fallbackQuestions.length) {
+          sendJson(res, 400, { ok: false, message: "没有可处理的简答题。" });
+          return;
+        }
+        const results = fallbackQuestions.map((question) => {
+          const row = latest.get(`${question.unitId || ""}:${question.questionId || ""}`) || {};
+          const existingFeedback = String(row.ai_feedback || "").trim();
+          const feedback = /已先按 0 分计入|可以继续学习/.test(existingFeedback)
+            ? existingFeedback
+            : `${existingFeedback ? `${existingFeedback.replace(/[。.!！？?\s]+$/u, "")}。` : ""}你选择先按 0 分继续学习，后续仍可重新评分或人工复核。`;
+          return {
+            questionId: question.questionId,
+            unitId: question.unitId,
+            chapterId: question.chapterId,
+            score: 0,
+            isCorrect: false,
+            confidence: 0,
+            errorType: "manual_fallback",
+            weakConcepts: [],
+            feedback,
+            reasoning: "学生选择先按 0 分继续学习。",
+            needsReview: true,
+            provider: "manual-fallback"
+          };
+        });
+        persistGradingResults(auth.participant, results);
+        sendJson(res, 200, { ok: true, results, provider: "manual-fallback" });
+        return;
+      }
       try {
         const results = await orchestrator.gradeOnly(questions);
         persistGradingResults(auth.participant, results);
@@ -2149,17 +2191,32 @@ db.getDb().then(() => {
  console.log("Database initialized.");
   // Migration: fix existing is_correct bug where pending short answers (-1) were stored as 1
  try {
-    db.getDbSync().run(
-     "UPDATE quiz_results SET is_correct = -1 WHERE question_type = 'short_answer' AND is_correct = 1"
-   );
-    const fixedCount = db.getDbSync().getRowsModified();
+    const fixedCount = db.normalizeLegacyPendingShortAnswerFlags();
     if (fixedCount > 0) {
      db.saveNow();
       console.log(`Data migration: fixed ${fixedCount} short answer is_correct values.`);
    }
- } catch (e) {
+  } catch (e) {
    console.warn("Migration skipped:", e.message);
- }
+  }
+  try {
+    const restoredCount = db.normalizeReviewedShortAnswerFlags();
+    if (restoredCount > 0) {
+      db.saveNow();
+      console.log(`Data migration: restored ${restoredCount} reviewed short answer flags.`);
+    }
+  } catch (e) {
+    console.warn("Reviewed short answer flag migration skipped:", e.message);
+  }
+  try {
+    const recoveredCount = db.normalizeFailedPendingQuizReviews();
+    if (recoveredCount > 0) {
+      db.saveNow();
+      console.log(`Data migration: recovered ${recoveredCount} failed short answer reviews.`);
+    }
+  } catch (e) {
+    console.warn("Failed short answer recovery migration skipped:", e.message);
+  }
  server.listen(port, host, () => {
     console.log(`Calculus Quest running at http://${host}:${port}/`);
     console.log(`Admin dashboard: http://${host}:${port}/admin.html`);

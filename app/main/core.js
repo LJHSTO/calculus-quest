@@ -403,21 +403,35 @@ function quizScoreFromPercent(percent, maxScore = 0) {
 }
 
 function quizAiReviewFailed(result = {}) {
-  const errorType = result.aiErrorType || result.ai_error_type || "";
-  const feedback = result.aiFeedback || result.ai_feedback || "";
-  const rawAiScore = result.aiScore ?? result.ai_score;
-  if (result.status === "ai_reviewed" && (result.fallbackScored || Number(rawAiScore) === 0 || Number(result.score) === 0)) return false;
-  return ["api_error", "api_timeout", "parse_error", "mock_provider", "unknown"].includes(errorType)
-    || /解析失败|评分超时|人工评阅|人工复核/.test(feedback)
-    || (result.status === "pending_review" && result.isCorrect === null && Number(rawAiScore) === 0 && Boolean(errorType));
+  return typeof QuizReviewState !== "undefined" && QuizReviewState.aiReviewFailed(result);
+}
+
+function quizReviewIsPending(result = {}) {
+  if (typeof QuizReviewState !== "undefined") return QuizReviewState.isPending(result);
+  return result.status === "pending_review" || result.isCorrect === null;
+}
+
+function normalizeFailedQuizReviews() {
+  if (typeof QuizReviewState === "undefined") return 0;
+  let changed = 0;
+  const normalizeRecords = (records = []) => records.map((result) => {
+      const normalized = QuizReviewState.normalizeFailed(result);
+      if (normalized !== result) changed += 1;
+      return normalized;
+    });
+  state.quizResults = normalizeRecords(state.quizResults || []);
+  Object.values(state.quizAttempts || {}).forEach((attempt) => {
+    if (Array.isArray(attempt?.records)) attempt.records = normalizeRecords(attempt.records);
+  });
+  return changed;
 }
 
 function quizEarnedScore(result = {}, question = {}) {
   const max = quizMaxScoreFor(question, result);
   if (!max) return 0;
-  if (quizAiReviewFailed(result)) return null;
+  if (quizAiReviewFailed(result)) return 0;
   if (result.aiScore !== undefined && result.aiScore !== null) return quizScoreFromAiScore(result.aiScore, max);
-  if (result.status === "pending_review" || result.isCorrect === null) return null;
+  if (quizReviewIsPending(result)) return null;
   if (result.score !== undefined && result.score !== null) return Math.max(0, Math.min(max, quizNumber(result.score, 0)));
   if (result.isCorrect === true) return max;
   if (result.isCorrect === false) return 0;
@@ -437,7 +451,7 @@ function summarizeQuizAttempt(records = [], questions = []) {
   const latest = quizLatestResultsByQuestion(records);
   const results = Object.values(latest);
   const objective = results.filter((result) => result?.isCorrect === true || result?.isCorrect === false);
-  const pendingReview = results.filter((result) => result?.status === "pending_review" || result?.isCorrect === null).length;
+  const pendingReview = results.filter((result) => quizReviewIsPending(result)).length;
   const questionById = new Map((questions || []).map((question) => [question.id, question]));
   const totalPossible = (questions || []).reduce((sum, question) => sum + quizMaxScoreFor(question, {}), 0) || results.reduce((sum, result) => sum + quizMaxScoreFor({}, result), 0);
   let earnedScore = 0;
@@ -778,6 +792,7 @@ async function hydrateLearningState(options = {}) {
   const replaceWithServer = options.replace === true || Boolean(payload.snapshot);
   applyServerLearningSnapshot(payload.snapshot, { ...options, replace: replaceWithServer });
   await loadAuthoritativeQuizResults({ ...options, replace: replaceWithServer }).catch(() => {});
+  normalizeFailedQuizReviews();
   learningSnapshotReady = true;
   persistStateLocally();
   lastSnapshotJson = snapshotContentJson(learningSnapshot());
@@ -915,6 +930,9 @@ async function loginParticipant(credentials = {}) {
     learningSnapshotGeneration = 0;
     learningSnapshotRevision = 0;
     await hydrateLearningState({ replace: !isSameUser && !hasSavedState });
+    if (typeof agenticRecoverInterruptedGrading === "function") {
+      await agenticRecoverInterruptedGrading();
+    }
 
     persistStateLocally();
     renderAll();

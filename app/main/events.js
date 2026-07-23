@@ -144,6 +144,18 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const gradingActionBtn = event.target.closest("[data-agentic-grading-action]");
+  if (gradingActionBtn) {
+    if (typeof agenticResolvePendingGrading === "function") {
+      gradingActionBtn.disabled = true;
+      agenticResolvePendingGrading(gradingActionBtn.dataset.agenticGradingAction).catch((error) => {
+        console.warn("Short answer grading recovery failed:", error);
+        addLog(`简答题处理失败：${error.message || "请稍后重试"}`);
+      });
+    }
+    return;
+  }
+
   const reviewBulk = event.target.closest("[data-agentic-review-bulk]");
   if (reviewBulk) {
     if (typeof agenticUpdateReviewChoicesBulk === "function") {

@@ -883,6 +883,23 @@ tools/_encoding_test.txt
 - 是否修改源 `.maic.zip`：否。只读取当前 route/KG 与只读课件交互事件。
 - 剩余风险与下一步：本轮证明了功能链路、解释一致性、学生控制权和响应式可用性，没有证明该排序能提高学习增益。正式研究仍需实验条件/cohort、保留率窗口、效应量和人工复核一致性；生产服务器还需拉取提交、重启并对 `/calculus_quest/` 子路径做登录、课件、测验、推荐和管理端 smoke。
 
+### 2026-07-23：简答题评分失败不中断学习与历史状态恢复
+
+- 目标：修复简答题在真实模型请求出现 `fetch failed` 后长期停留在“正在批改简答题”、无法生成 Coach 建议和进入后续课件的问题；保留重新评分与人工复核能力，不让 LLM 可用性成为学习路径的硬阻塞。
+- 复现证据：QA 数据库 `tmp/ui-review-8765.db` 中，用户 `test` 的 `V14-C3-pre / GH-07-pre-q5` 为 `status=pending_review`、`is_correct=-1`、`ai_score=null`、`ai_error_type=api_error`、`ai_feedback=评分出错：fetch failed`。客户端原逻辑只检查 `pending_review` 或 `isCorrect=null`，因此把已经明确失败的请求永久当作“仍在批改”。
+- 状态模型：新增 `app/main/quiz-review-state.js`，统一区分“真正等待返回”和“已有明确失败”。`api_error`、`api_timeout`、`parse_error`、`mock_provider`、`manual_fallback`、`unknown` 及对应失败反馈不再计入 pending；失败题统一归一化为 `ai_reviewed / 0 分 / needsReview`，并保留原错误反馈。
+- 数据库与接口：`db.normalizeFailedPendingQuizReviews()` 在启动时只迁移明确失败的历史简答题；`updateQuizResultAiGrading()` 对未来返回空分但带明确错误类型的结果直接持久化 0 分，避免再次留下永久 pending。旧 `is_correct` 兼容迁移收紧为仅处理 `status=pending_review AND ai_score IS NULL`，并按已有 `ai_score` 恢复过去被误标为 `-1` 的已批改题，不会破坏已经正常评分为正确的简答题。`POST /api/learning/grade` 新增受认证的 `fallbackToZero` 分支，只能处理当前用户数据库中已有且仍未决的权威简答题。
+- 学生自救：Coach 等待卡片增加“重新批改”和“按 0 分继续”。重新批改再次调用权威评分接口；0 分继续会写回服务端并生成后续建议。若服务端暂时不可达，客户端仍可本地解除阻塞。界面明确说明 0 分只是防中断兜底，仍保留后续重新评分和人工复核空间。
+- 自动恢复：页面恢复学习记录后，如果历史 `grading_pending` 对应题目已评分或已按失败兜底，`agenticRecoverInterruptedGrading()` 会自动重建前测、形成测验或后测建议，不要求学生重新提交整页测验。
+- 真实数据保护与重启：首次重启前备份 `tmp/ui-review-8765.before-short-answer-recovery-20260723-111950.db`，长度 `68067328` 字节，SHA-256 为 `DA7A9FC6B194441FFA5698F1834D062CF27CA5C995A3D5866C10381D779DB60A`。旧 PID `22544` 经进程、命令行和数据库锁三重确认后停止，首次启动日志显示迁移 1 条失败记录。真实回归完成后又备份 `tmp/ui-review-8765.before-final-short-answer-restart-20260723-115151.db`，长度 `68440064` 字节，SHA-256 为 `46FFFD881F7939E5F17915279C64C561ED630A039E3BA16D4434FF5D9E719A7B`；最终代码以同一数据库在 PID `11144` 隐藏窗口运行，健康检查 `appVersion=short-answer-recovery-v1`。
+- `test` 用户真实回归：刷新 `http://127.0.0.1:8765/` 后，失败题显示 `0 / 20`，反馈为“评分出错：fetch failed。已先按 0 分计入，不影响继续学习。”；页面不再显示永久等待卡片，而是恢复为 7 个知识点的前测选择。确认保留全部薄弱知识点后，系统进入“小矩形逼近面积”课件，四场景模块继续只标记 Coach 参考建议，没有自动替学生选择。浏览器控制台 0 error、0 warning；截图为 `output/playwright/test-short-answer-recovery-20260723.png`。
+- 数据结果：备份与当前库相比，用户、会话、测验、反馈、Agent 决策和交互证据均零减行；真实回归新增 20 条学习事件和 2 个快照。全部明确失败的 pending 简答题清零，`test` 的目标记录为 `ai_reviewed / is_correct=0 / score=0 / ai_score=0 / api_error`。
+- 自动验证：29/29 个 `ops/test-*.js` 通过；`server.js`、`db.js`、`app/main/*.js`、`lib/**/*.js` 共 40 个文件通过 `node --check`；`npm run kg:test`、`flow:test`、`scene:test`、`grading:test`、`path:test` 通过；13 个相关文件严格 UTF-8 解码通过；`npm audit --omit=dev` 为 0。
+- 是否真实调用 LLM（provider/model）：恢复和最终浏览器验证没有触发重新评分；8765 当前从 `.env` 读取真实 OpenAI-compatible 配置，但本次历史恢复采用确定性 0 分兜底。HTTP 自动化使用隔离数据库和 `LLM_PROVIDER=mock`。
+- 是否修改源 `.maic.zip`：否。
+- Git 提交：本条与简答题恢复代码精确暂存并提交，最终提交号见 Git 历史；不包含并行工作树中的“知点”界面改动和未跟踪研究资料。
+- 剩余风险与下一步：0 分兜底保证学习不中断，但不能替代人工评分质量。生产部署仍需备份生产数据库、拉取提交并重启，随后用真实子路径 `/calculus_quest/` 验证登录、历史失败迁移、重新批改、0 分继续、前测选择和课件进入。
+
 ## 11. 后续记录模板
 
 每次工作完成后追加：
