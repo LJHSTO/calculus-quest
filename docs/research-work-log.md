@@ -869,6 +869,20 @@ tools/_encoding_test.txt
 - Git 提交：本条与“知点”实现一起精确暂存并提交，最终提交号见 Git 历史；不推送、不部署。
 - 剩余风险与下一步：接入真实 OpenAI-compatible 服务前需在隔离环境验证模型质量、延迟、费用和 Quiz 防泄漏召回率。未来若前端整体重写，应保持 `ContextRef` schema、知识点 thread key、服务端可信解析和 API 合同不变，只替换侧栏视图、DOM/iframe adapter 与布局层。
 
+### 2026-07-23：当前知识点四资源场景推荐与学生自主选择
+
+- 目标：把 Planner 从跨知识点“场景替换器”收口为当前知识点四个合法资源的可解释排序器；在资源选择模块标注最高分场景，但不预选、不替学生点击，并让真实互动证据能够更新后续建议。
+- 基线与提交：基线为 `ad79694`；功能提交为 `ca48930`。课程事实源仍为 `data/multi-scene-learning-route.json`，知识图谱仍为 11 章、105 个运行单元、430 条边和 288 个课件资源引用。
+- 规则：共享 `scene-recommender.js` 只对当前知识点实际存在的 `simulation`、`game`、`mindMap`、`visualization3d` 候选评分。基础分来自概念类型（定义/方法/建模/一般概念）；未体验表征加分、已体验表征降分；掌握度低于 0.6 时提高误解挑战、关系梳理和空间补偿优先级；掌握度不低于 0.8 时提高 3D 迁移优先级，并取消初学直觉加分；补学模式优先尚未体验表征。评分只改变排序和“Coach 建议”标记，不写入学生选择。
+- Planner 边界：服务端 Planner 只返回 `rankedResourceChoices` 和 `recommendedResource`，`recommendedPath.action` 固定为 `reference_only`；旧 `rankedSceneChoices` 保持空数组。Agentic 路径不再把 Planner 输出混入跨知识点重学、拓展或下一单元替换，知识点去留继续由测验门槛、KG/route 候选和学生确认决定。
+- 行为证据：父页面 `analytics.js` 直接接收可信课件 iframe 的 `cq:interaction/parameter_commit` 桥消息，按当前 `sceneType` 记录 `experiencedSceneTypes`，不依赖“知点”侧栏是否打开。管理端决策追踪和理由标签同步支持新的资源建议结构。
+- 真实浏览器流程：在 QA 数据库 `tmp/ui-review-8765.db` 新建隔离账号，完成第一章前测 115/115。系统建议 9 个知识点可跳过，但未自动改路径；手动只保留“输入、输出和函数规则”后，100% 掌握度使“三维观察”成为最高分建议，资源区仍为等待选择。随后故意选择非推荐的“交互模拟”，界面保持模拟为当前选择、3D 仅显示建议；模拟和 3D 的真实滑块操作分别进入行为证据后，排序更新为图解梳理 2.6、闯关练习 2.2、三维观察 1.5、交互模拟 0.9，当前仍保持学生已选的 3D。完成知识点后正常解锁并进入形成测验。
+- 视觉与响应式：桌面 `1440×900` 下四个卡片等宽、无文本溢出；手机 `390×844` 下卡片单列，页面和推荐面板均无横向滚动，所有按钮 `scrollWidth <= clientWidth`。3D iframe 容器和 Canvas 实际铺满 903px 宽度且可操作；课件场景构图右侧较稀疏属于导入课件内容表现，本项目未越权修改源课件。
+- 自动验证：`npm run kg:test`、`path:test`、`flow:test`、`scene:test`，`node ops/test-courseware-context.js`、`node ops/test-learning-assistant.js`、`node ops/database-release-check.js --db tmp/ui-review-8765.db` 全部通过；`server.js`、`app/main/*.js`、`lib/**/*.js` 全部通过 `node --check`；16 个相关文件通过严格 UTF-8 解码；提交前 `git diff --cached --check` 通过。
+- 数据与模型边界：浏览器使用本地 QA 数据库，不连接生产站数据库；数据库发布检查为 8 用户、31 会话、119 条测验、10286 条事件、802 个快照、21 条 Agent 决策和 67 条交互证据快照。未真实调用 LLM，默认 `LLM_PROVIDER=mock`；推荐评分为确定性规则，不应表述为训练模型或学习效果结论。
+- 是否修改源 `.maic.zip`：否。只读取当前 route/KG 与只读课件交互事件。
+- 剩余风险与下一步：本轮证明了功能链路、解释一致性、学生控制权和响应式可用性，没有证明该排序能提高学习增益。正式研究仍需实验条件/cohort、保留率窗口、效应量和人工复核一致性；生产服务器还需拉取提交、重启并对 `/calculus_quest/` 子路径做登录、课件、测验、推荐和管理端 smoke。
+
 ## 11. 后续记录模板
 
 每次工作完成后追加：
