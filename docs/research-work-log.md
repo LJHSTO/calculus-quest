@@ -852,6 +852,23 @@ tools/_encoding_test.txt
 - Git 提交：本条与四项安全修复一起精确暂存并提交，最终提交号见 Git 历史；不推送、不部署。
 - 剩余风险与下一步：当前版本可以完成 100 个不同 IP 的短时静态/注册压测，但不应宣称已具备稳定百人课堂容量。正式百人使用前至少需要把快照改为“最新状态 upsert + 有界审计历史/增量事件”，压测真实学习写入与停机保存，并评估把 `sql.js` 替换为原生 SQLite/PostgreSQL；同时确认生产 Nginx 的真实客户端 IP 传递。六套课件应只在用户首次分配时保存一个稳定 `courseVariantId`，不要复制整套课件内容或 route 到每个用户快照。
 
+### 2026-07-23：“知点”课件上下文学习侧栏
+
+- 目标：在 Quiz、Slide、动手实验、关系图、误解挑战和空间视角中增加“知点——指着课件问明白”，让学生可围绕当前知识点直接提问，也可用文字/公式选区、一次性“指着问”和最近操作回声补充上下文；首版不处理语音包、课件修改、RAG 或完整 Canvas/3D 语义识别。
+- 基线提交/课件版本：`c40df2f`；课程事实源为 `data/multi-scene-learning-route.json`，版本 `multi-scene-learning-route-20260722`。未修改章节、知识点、测验或课件资源 ID。
+- 架构与修改文件：新增 `app/main/courseware-context.js` 统一生成安全 `ContextRef`，新增 `app/main/courseware-bridge.js` 作为无 `allow-same-origin` iframe 内的选择与操作桥，新增 `app/main/knowledge-assistant.js` 和 `knowledge-assistant.css` 提供侧栏视图；`lib/learning-assistant.js` 负责服务端上下文解析、提示构造、mock 引导与 Quiz 输出防泄漏；`server.js` 增加状态、历史和 NDJSON 提问接口，并在只读互动 HTML 响应中注入桥脚本；`db.js` 增加按用户和知识点隔离的消息表。侧栏挂载在 `#lesson-player` 外部，未来前端重写只需替换视图与选择 adapter，`ContextRef`、历史、Quiz 策略和服务端 API 可继续保留。
+- 选择交互：文字和公式保持浏览器原生选择，选区旁显示“问这里”；图形、Quiz 选项和互动对象使用单次“指着问”，只拦截下一次有效点击，选中后自动退出；`Esc`、关闭侧栏、切换单元和 iframe 内取消都会立即恢复正常操作。滑块、数字输入和下拉框只在有意义的 `change` 提交后记录最近一次操作，不记录每次指针移动。Canvas/3D 无语义桥时只引用当前画面，并明确标记“定位较粗”。
+- 上下文与安全：客户端不发送 CSS selector、`outerHTML` 或 style；服务端只接受白名单字段，并用课程 route 重建知识点、题目、选项、Slide 对象、场景和资源指纹。Slide 富文本表格在客户端属性和服务端索引两侧都只保留纯文本。互动 iframe 继续使用无同源权限的 sandbox，父页面只接受当前课件 iframe `contentWindow` 发出的消息。
+- Quiz 策略：未提交时只允许解释题意、一级提示和第一步检查；提示词不包含正确答案或私有解析，服务端在模型输出后再次拦截答案字母、等价选项结论、排除结论和直接复述正确选项的结论。提交后才允许完整解析。若学习记录被重置，已提交阶段的回答不会泄漏回未提交历史；重置学习记录会同步删除该用户的“知点”历史。
+- 浏览器验收：桌面 `1280px` 和手机 `390×844` 下，非停靠侧栏进入选择时完全移出课件操作区域，退出后恢复；`>=1720px` 停靠布局保持侧栏可见。Quiz 指选选项不作答，随后正常点击可以作答；iframe 预设按钮指选时不执行原操作，选择结束后恢复；父页面和 iframe 已有键盘焦点两种情况下按 `Esc` 均退出。3D 整体画面生成 `confidence:"low"`、`coarse:true`；语音包选区返回空，Slide 正文可生成文字上下文；刷新后可恢复同知识点历史。四种场景桥 `simulation`、`game`、`mindMap`、`visualization3d` 均为 `ready`。
+- 资源与浏览器结果：route 引用的 288/288 个互动 HTML 均返回 200，桥脚本均恰好注入一次；关键 API 和课件请求均为 200。项目控制台 0 error、0 warning，仅保留一个 Chromium 表单结构 `VERBOSE` 提示。
+- 自动验证：本提交索引中的 26 个 `ops/test-*.js` 均在完整工作树测试中通过；并发工作树另有 2 个未跟踪的场景推荐测试也通过，但未纳入本提交，因此本轮实际运行结果为 28/28。`server.js`、`app/main/*.js` 和 `lib/**/*.js` 通过 `node --check`；`npm run kg:test`、`flow:test`、`path:test`、`slide:test`、`katex:test`、`auth:test` 通过；相关文件严格 UTF-8 解码和 `git diff --check` 通过。新增回归覆盖安全 `ContextRef`、单次选择状态机、Quiz 前后提交策略、表格富文本清理、消息历史、NDJSON API 和课件桥注入。
+- 失败/警告：真实模型目前仍是一次完整生成后按 NDJSON 分块发送，不是模型原生 token stream；Canvas/3D 首版只提供诚实的粗粒度画面定位。互动课件内部按 `Esc` 只退出 iframe 状态、父页面仍停留选择状态的问题已通过桥状态同步修复。
+- 是否真实调用 LLM（provider/model）：否；最终验证使用 `LLM_PROVIDER=mock`，界面明确显示“本地引导”，未冒充真实模型。
+- 是否修改源 `.maic.zip`：否；只对平台只读返回的互动 HTML 动态注入上下文桥，磁盘中的源包和派生课件文件均未改写。
+- Git 提交：本条与“知点”实现一起精确暂存并提交，最终提交号见 Git 历史；不推送、不部署。
+- 剩余风险与下一步：接入真实 OpenAI-compatible 服务前需在隔离环境验证模型质量、延迟、费用和 Quiz 防泄漏召回率。未来若前端整体重写，应保持 `ContextRef` schema、知识点 thread key、服务端可信解析和 API 合同不变，只替换侧栏视图、DOM/iframe adapter 与布局层。
+
 ## 11. 后续记录模板
 
 每次工作完成后追加：

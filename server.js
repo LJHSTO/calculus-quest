@@ -28,11 +28,22 @@ const zlib = require("zlib");
 
 const db = require("./db");
 const courseAssessment = require("./lib/course-assessment");
+const learningAssistant = require("./lib/learning-assistant");
+const llm = require("./lib/llm");
 const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
 const feedback = require("./lib/feedback");
 const root = process.cwd();
+let coursewareBridgeScript = "";
+try {
+  coursewareBridgeScript = fs.readFileSync(
+    path.join(root, "app", "main", "courseware-bridge.js"),
+    "utf8"
+  );
+} catch (error) {
+  console.warn("Courseware context bridge load skipped:", error.message);
+}
 const learningRoutePath = path.join(root, "data", "multi-scene-learning-route.json");
 const learningRouteApiPaths = new Set([
   "/api/course/multi-scene-learning-route",
@@ -42,10 +53,12 @@ const learningRouteApiPaths = new Set([
 let learningRoute = null;
 let publicLearningRouteJson = "";
 let assessmentIndex = new Map();
+let assistantContextIndex = { routeVersion: "", units: new Map(), questions: new Map() };
 try {
   learningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
   publicLearningRouteJson = JSON.stringify(courseAssessment.buildPublicLearningRoute(learningRoute));
   assessmentIndex = courseAssessment.buildAssessmentIndex(learningRoute);
+  assistantContextIndex = learningAssistant.buildCourseContextIndex(learningRoute);
 } catch (error) {
   console.warn("Multi-scene learning route load skipped:", error.message);
 }
@@ -74,6 +87,9 @@ const sessionTtlMs = 30 * 24 * 60 * 60 * 1000;
 const authAttemptWindowMs = 15 * 60 * 1000;
 const maxFailedAuthAttempts = 8;
 const authAttemptMap = new Map();
+const assistantRateLimitMap = new Map();
+const assistantRateLimitWindowMs = 60 * 1000;
+const assistantRateLimitMax = 20;
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -213,6 +229,25 @@ function rememberGzip(key, value) {
 function isBlockedStaticResource(filePath) {
   const relative = path.relative(root, filePath).replaceAll(path.sep, "/");
   return /^resources\/open-maic\/.+\/manifest\.json$/.test(relative);
+}
+
+function isCoursewareHtml(filePath) {
+  if (!coursewareBridgeScript || path.extname(filePath).toLowerCase() !== ".html") return false;
+  const relative = path.relative(root, filePath).replaceAll(path.sep, "/");
+  return /^resources\/open-maic\/.+\.html$/i.test(relative);
+}
+
+function injectCoursewareBridge(data) {
+  if (!coursewareBridgeScript) return data;
+  const source = Buffer.isBuffer(data) ? data.toString("utf8") : String(data || "");
+  if (/data-cq-context-bridge/i.test(source)) return Buffer.from(source, "utf8");
+  const safeScript = coursewareBridgeScript.replace(/<\/script/gi, "<\\/script");
+  const injection = `\n<script data-cq-context-bridge="1">\n${safeScript}\n</script>\n`;
+  const closeBodyAt = source.toLowerCase().lastIndexOf("</body>");
+  const html = closeBodyAt >= 0
+    ? `${source.slice(0, closeBodyAt)}${injection}${source.slice(closeBodyAt)}`
+    : `${source}${injection}`;
+  return Buffer.from(html, "utf8");
 }
 
 
@@ -433,6 +468,26 @@ function checkRateLimit(req) {
    }
  }
   return true;
+}
+
+function checkAssistantRateLimit(userId = "") {
+  const key = String(userId || "unknown");
+  const now = Date.now();
+  let entry = assistantRateLimitMap.get(key);
+  if (!entry || now > entry.resetAt) {
+    entry = { count: 0, resetAt: now + assistantRateLimitWindowMs };
+    assistantRateLimitMap.set(key, entry);
+  }
+  entry.count += 1;
+  if (assistantRateLimitMap.size > 5000) {
+    for (const [itemKey, item] of assistantRateLimitMap) {
+      if (now > item.resetAt) assistantRateLimitMap.delete(itemKey);
+    }
+  }
+  return {
+    ok: entry.count <= assistantRateLimitMax,
+    retryAfterSeconds: Math.max(1, Math.ceil((entry.resetAt - now) / 1000))
+  };
 }
 
 function authAttemptKey(req, identifier = "") {
@@ -716,6 +771,93 @@ function sendSnapshotConflict(res, result) {
     generation: result.generation,
     revision: result.revision
   });
+}
+
+function assistantProviderInfo() {
+  const id = llm.provider();
+  const live = ["openai-compatible", "innospark", "openai"].includes(id);
+  return {
+    id,
+    live,
+    label: live ? "AI 助教" : "本地引导"
+  };
+}
+
+function parseAssistantContextJson(value = "") {
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value || "{}") : value;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function publicAssistantMessage(row = {}) {
+  return {
+    id: row.id || "",
+    role: row.role === "assistant" ? "assistant" : "user",
+    content: String(row.content || ""),
+    contextRef: parseAssistantContextJson(row.context_json || row.context),
+    provider: row.provider || "",
+    quizSubmitted: Number(row.quiz_submitted || 0) === 1,
+    createdAt: row.created_at || ""
+  };
+}
+
+function writeNdjson(res, payload) {
+  if (!res.writableEnded && !res.destroyed) {
+    res.write(`${JSON.stringify(payload)}\n`);
+  }
+}
+
+async function generateAssistantTurn({ resolved, question, history, quizSubmitted }) {
+  const prompt = learningAssistant.buildAssistantPrompt({
+    resolved,
+    question,
+    history,
+    quizSubmitted
+  });
+  const providerInfo = assistantProviderInfo();
+  if (!providerInfo.live) {
+    return {
+      provider: providerInfo.id,
+      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      policy: prompt.policy,
+      fallback: false
+    };
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
+    const result = await llm.completeChat({
+      system: prompt.system,
+      user: prompt.user,
+      maxTokens: 700,
+      signal: controller.signal
+    });
+    const text = learningAssistant.enforceQuizSafety(result.text, {
+      isQuiz: resolved.isQuiz,
+      quizSubmitted,
+      resolved
+    });
+    return {
+      provider: result.provider || providerInfo.id,
+      text: text || learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      policy: prompt.policy,
+      fallback: !text
+    };
+  } catch (error) {
+    console.warn("Learning assistant provider fallback:", error.message);
+    return {
+      provider: "fallback",
+      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      policy: prompt.policy,
+      fallback: true
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 async function handleApi(req, res, url) {
@@ -1203,6 +1345,196 @@ async function handleApi(req, res, url) {
         generation: result.generation,
         revision: result.revision
       });
+      return;
+    }
+
+    // ---- 知点：上下文学习侧栏 ----
+    if (req.method === "GET" && url.pathname === "/api/learning/assistant/status") {
+      const auth = authenticate(req);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      sendJson(res, 200, {
+        ok: true,
+        provider: assistantProviderInfo(),
+        courseVersion: assistantContextIndex.routeVersion || ""
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/learning/assistant/history") {
+      const auth = authenticate(req);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const unitId = String(url.searchParams.get("unitId") || "").trim();
+      const chapterId = String(url.searchParams.get("chapterId") || "").trim();
+      const sceneType = String(url.searchParams.get("sceneType") || "").trim();
+      const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      let resolved;
+      try {
+        resolved = learningAssistant.resolveAssistantContext({
+          index: assistantContextIndex,
+          chapterId,
+          unitId,
+          sceneType,
+          contextRef: {
+            kind: "unit",
+            scope: unitId.endsWith("-pre") || unitId.endsWith("-formative") || unitId.endsWith("-post")
+              ? "quiz"
+              : "lesson"
+          },
+          quizSubmitted
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_context_error",
+          message: error.message
+        });
+        return;
+      }
+      const messages = db.getLearningAssistantMessages(
+        auth.participant.id,
+        resolved.threadKey,
+        100
+      ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1);
+      sendJson(res, 200, {
+        ok: true,
+        threadKey: resolved.threadKey,
+        contextRef: resolved.contextRef,
+        quizSubmitted,
+        provider: assistantProviderInfo(),
+        messages: messages.map(publicAssistantMessage)
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/learning/assistant/ask") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const rate = checkAssistantRateLimit(auth.participant.id);
+      if (!rate.ok) {
+        sendJson(res, 429, {
+          ok: false,
+          code: "assistant_rate_limited",
+          message: "提问有点密集，先观察一下课件，稍后再继续。",
+          retryAfterSeconds: rate.retryAfterSeconds
+        });
+        return;
+      }
+      const question = String(body.question || "").replace(/\u0000/g, "").trim().slice(0, 1200);
+      const unitId = String(body.unitId || "").trim();
+      const chapterId = String(body.chapterId || "").trim();
+      const sceneType = String(body.sceneType || "").trim();
+      if (!question || !unitId) {
+        sendJson(res, 400, { ok: false, message: "请输入问题，并保持当前学习单元有效。" });
+        return;
+      }
+      const quizSubmitted = Boolean(db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      let resolved;
+      try {
+        resolved = learningAssistant.resolveAssistantContext({
+          index: assistantContextIndex,
+          chapterId,
+          unitId,
+          sceneType,
+          contextRef: body.contextRef,
+          quizSubmitted
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_context_error",
+          message: error.message
+        });
+        return;
+      }
+
+      const historyRows = db.getLearningAssistantMessages(
+        auth.participant.id,
+        resolved.threadKey,
+        16
+      ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1);
+      const history = historyRows.map((row) => ({
+        role: row.role,
+        content: row.content
+      }));
+      const askedAt = nowIso();
+      const userMessageId = crypto.randomUUID();
+      db.insertLearningAssistantMessage({
+        id: userMessageId,
+        user_id: auth.participant.id,
+        thread_key: resolved.threadKey,
+        chapter_id: resolved.unit.chapterId,
+        unit_id: resolved.unit.id,
+        knowledge_point_id: resolved.unit.knowledgePointId || "",
+        role: "user",
+        content: question,
+        context: resolved.contextRef,
+        provider: "",
+        quiz_submitted: quizSubmitted,
+        created_at: askedAt
+      });
+
+      res.writeHead(200, {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Accel-Buffering": "no"
+      });
+      res.flushHeaders?.();
+      writeNdjson(res, {
+        type: "meta",
+        threadKey: resolved.threadKey,
+        userMessageId,
+        contextRef: resolved.contextRef,
+        quizSubmitted,
+        provider: assistantProviderInfo()
+      });
+
+      const generated = await generateAssistantTurn({
+        resolved,
+        question,
+        history,
+        quizSubmitted
+      });
+      const answer = learningAssistant.enforceQuizSafety(generated.text, {
+        isQuiz: resolved.isQuiz,
+        quizSubmitted,
+        resolved
+      });
+      const assistantMessageId = crypto.randomUUID();
+      const answeredAt = nowIso();
+      for (const delta of learningAssistant.responseChunks(answer)) {
+        writeNdjson(res, { type: "delta", delta });
+      }
+      db.insertLearningAssistantMessage({
+        id: assistantMessageId,
+        user_id: auth.participant.id,
+        thread_key: resolved.threadKey,
+        chapter_id: resolved.unit.chapterId,
+        unit_id: resolved.unit.id,
+        knowledge_point_id: resolved.unit.knowledgePointId || "",
+        role: "assistant",
+        content: answer,
+        context: resolved.contextRef,
+        provider: generated.provider,
+        quiz_submitted: quizSubmitted,
+        created_at: answeredAt
+      });
+      writeNdjson(res, {
+        type: "done",
+        message: {
+          id: assistantMessageId,
+          role: "assistant",
+          content: answer,
+          contextRef: resolved.contextRef,
+          provider: generated.provider,
+          quizSubmitted,
+          createdAt: answeredAt
+        },
+        policy: generated.policy,
+        fallback: generated.fallback
+      });
+      res.end();
       return;
     }
 
@@ -1733,7 +2065,8 @@ const server = http.createServer((req, res) => {
     }
 
     const type = types[path.extname(filePath).toLowerCase()] || "application/octet-stream";
-    if (stat.size > maxBufferedStaticBytes || req.method === "HEAD") {
+    const bridgeCourseware = isCoursewareHtml(filePath);
+    if (!bridgeCourseware && (stat.size > maxBufferedStaticBytes || req.method === "HEAD")) {
       streamStaticFile(req, res, filePath, type, url, stat);
       return;
     }
@@ -1744,8 +2077,20 @@ const server = http.createServer((req, res) => {
         return;
       }
 
-      if (shouldCompress(req, type, stat.size)) {
-        const cacheKey = gzipCacheKey(filePath, data);
+      const responseData = bridgeCourseware ? injectCoursewareBridge(data) : data;
+      if (req.method === "HEAD") {
+        res.writeHead(200, {
+          "Content-Type": type,
+          ...staticHeaders(filePath, url, {
+            "Content-Length": String(responseData.length)
+          })
+        });
+        res.end();
+        return;
+      }
+
+      if (shouldCompress(req, type, responseData.length)) {
+        const cacheKey = gzipCacheKey(filePath, responseData);
         const cached = gzipCache.get(cacheKey);
         if (cached) {
           send(res, 200, cached, type, staticHeaders(filePath, url, {
@@ -1754,9 +2099,9 @@ const server = http.createServer((req, res) => {
           }));
           return;
         }
-        zlib.gzip(data, (gzipError, compressed) => {
+        zlib.gzip(responseData, (gzipError, compressed) => {
           if (gzipError) {
-            send(res, 200, data, type, staticHeaders(filePath, url));
+            send(res, 200, responseData, type, staticHeaders(filePath, url));
             return;
           }
           rememberGzip(cacheKey, compressed);
@@ -1767,7 +2112,7 @@ const server = http.createServer((req, res) => {
         });
         return;
       }
-      send(res, 200, data, type, staticHeaders(filePath, url));
+      send(res, 200, responseData, type, staticHeaders(filePath, url));
     });
   });
 });

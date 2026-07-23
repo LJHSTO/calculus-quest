@@ -9,6 +9,13 @@ function renderAll() {
   renderLibrary();
   renderProgress();
   if (typeof renderFeedbackPage === "function") renderFeedbackPage();
+  window.dispatchEvent(new CustomEvent("cq:lesson-rendered", {
+    detail: {
+      view: currentView,
+      chapterId: currentChapterId,
+      unitId: currentUnitId
+    }
+  }));
 }
 
 function applyView(view) {

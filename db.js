@@ -375,6 +375,25 @@ function initSchema() {
   d.run("CREATE INDEX IF NOT EXISTS idx_qr_correct ON quiz_results(is_correct)");
 
   d.run(`
+    CREATE TABLE IF NOT EXISTS learning_assistant_messages (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      thread_key TEXT NOT NULL,
+      chapter_id TEXT DEFAULT '',
+      unit_id TEXT NOT NULL,
+      knowledge_point_id TEXT DEFAULT '',
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      context_json TEXT DEFAULT '{}',
+      provider TEXT DEFAULT '',
+      quiz_submitted INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_lam_user_thread ON learning_assistant_messages(user_id, thread_key, created_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_lam_user_unit ON learning_assistant_messages(user_id, unit_id, created_at)");
+
+  d.run(`
     CREATE TABLE IF NOT EXISTS events (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id),
@@ -705,6 +724,42 @@ function getQuizResultsByUserUnit(userId, unitId) {
     "SELECT * FROM quiz_results WHERE user_id = ? AND unit_id = ? ORDER BY created_at DESC",
     [userId, unitId]
   );
+}
+
+// ---- Learning Assistant ----
+
+function insertLearningAssistantMessage(record) {
+  execute(
+    `INSERT INTO learning_assistant_messages
+      (id, user_id, thread_key, chapter_id, unit_id, knowledge_point_id,
+       role, content, context_json, provider, quiz_submitted, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.user_id,
+      record.thread_key,
+      record.chapter_id || "",
+      record.unit_id,
+      record.knowledge_point_id || "",
+      record.role,
+      record.content,
+      JSON.stringify(record.context || {}),
+      record.provider || "",
+      record.quiz_submitted ? 1 : 0,
+      record.created_at
+    ]
+  );
+}
+
+function getLearningAssistantMessages(userId, threadKey, limit = 80) {
+  const rows = queryAll(
+    `SELECT * FROM learning_assistant_messages
+     WHERE user_id = ? AND thread_key = ?
+     ORDER BY created_at DESC, id DESC
+     LIMIT ?`,
+    [userId, threadKey, Math.max(1, Math.min(Number(limit || 80), 200))]
+  );
+  return rows.reverse();
 }
 
 // ---- Events ----
@@ -1055,6 +1110,7 @@ function resetLearningSnapshot(record) {
   d.run("BEGIN");
   try {
     d.run("DELETE FROM quiz_results WHERE user_id = ?", [record.user_id]);
+    d.run("DELETE FROM learning_assistant_messages WHERE user_id = ?", [record.user_id]);
     d.run("DELETE FROM snapshots WHERE user_id = ?", [record.user_id]);
     d.run(
       `UPDATE learning_state_versions
@@ -2386,6 +2442,8 @@ module.exports = {
   insertQuizResult,
   getQuizResultsByUser,
   getQuizResultsByUserUnit,
+  insertLearningAssistantMessage,
+  getLearningAssistantMessages,
   insertEvent,
   insertSnapshot,
   getLatestSnapshot,

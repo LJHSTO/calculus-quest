@@ -414,7 +414,7 @@ function renderKnowledgeUnit(unit) {
         </div>
        <div class="iframe-container multi-scene-courseware-stage" data-knowledge-scene-stage>
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
-         <iframe class="embed-frame" data-courseware-frame title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
+         <iframe class="embed-frame" data-courseware-frame data-context-id="interactive-frame:${escapeHtml(unit.id)}:${escapeHtml(selectedTypeId)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(selectedTypeId)}" data-context-label="${escapeHtml(`${unit.label} · ${knowledgeSceneDisplayLabel(selectedType)}`)}" title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
          <button class="button soft icon-button multi-scene-courseware-exit" type="button" data-knowledge-scene-fullscreen aria-label="退出课件全屏" title="退出课件全屏">退出全屏</button>
         </div>`
     : selectedTypeId
@@ -608,7 +608,7 @@ function renderQuiz(unit) {
       unit.label,
       `
         ${renderAssessmentBanner(unit)}
-        <div class="quiz-card">
+        <div class="quiz-card" data-context-id="quiz:${escapeHtml(unit.id)}:page" data-context-kind="quiz" data-context-scope="quiz" data-context-confidence="medium" data-context-label="${escapeHtml(unit.label)}">
           ${quizTopBanner}
           ${questions
             .map((question, index) => {
@@ -618,7 +618,7 @@ function renderQuiz(unit) {
               const review = reviewResult ? renderQuestionReview({ question, result: reviewResult, index, unit }) : "";
               const scoreLabel = quizQuestionScoreLabel(question, reviewResult || null);
               return `
-              <article class="question-card" data-question="${question.id}">
+              <article class="question-card" data-question="${question.id}" data-context-id="quiz:${escapeHtml(question.id)}" data-context-kind="quiz" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-confidence="high" data-context-label="${escapeHtml(displayQuestionText(question))}">
                 <div class="question-title-row">
                   <h3>${index + 1}. ${renderQuestionTextWithLinks(question)}</h3>
                   ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
@@ -708,7 +708,7 @@ function renderQuestionInput(unit, question, submitted, result = null) {
           const draft = submitted && result?.response != null ? result.response : readQuizDraft(unit.id, question.id, question.type === "multiple" ? [] : "");
           const selected = Array.isArray(draft) ? draft.includes(option.value) : draft === option.value;
           return `
-          <label>
+          <label data-context-id="quiz:${escapeHtml(question.id)}:option:${escapeHtml(option.value)}" data-context-kind="quiz-option" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-option="${escapeHtml(option.value)}" data-context-confidence="high" data-context-label="${escapeHtml(`${option.value}. ${displayOptionLabel(option)}`)}">
             <input
               type="${question.type === "multiple" ? "checkbox" : "radio"}"
               name="${unit.id}-${question.id}"
@@ -801,9 +801,10 @@ function renderSlideCanvas(canvas = {}, chapterId = currentChapterId, className 
   const hBase = slideSvgNumber(base * ratio, 562.5);
   const background = canvas.background?.color || canvas.theme?.backgroundColor || "#fff";
   const classes = ["slide-wrap", className].filter(Boolean).join(" ");
-  return `<div class="${classes}" data-slide-canvas style="aspect-ratio:${base} / ${hBase};">
+  const canvasId = slideSvgId(canvas.id || "canvas");
+  return `<div class="${classes}" data-slide-canvas data-context-id="slide:${canvasId}:canvas" data-context-kind="viewport" data-context-scope="slide" data-context-confidence="low" data-context-label="当前讲解页" style="aspect-ratio:${base} / ${hBase};">
     <div class="slide-stage" data-slide-width="${base}" data-slide-height="${hBase}" style="width:${base}px;height:${hBase}px;background:${escapeHtml(background)};">
-      ${(canvas.elements || []).map((element) => renderSlideElement(element, canvas, chapterId, resourceRoot)).join("")}
+      ${(canvas.elements || []).map((element, index) => renderSlideElement(element, canvas, chapterId, resourceRoot, index)).join("")}
     </div>
   </div>`;
 }
@@ -856,7 +857,57 @@ function setupSlideCanvasScaling(root = typeof document !== "undefined" ? docume
   }
 }
 
-function renderSlideElement(element, canvas, chapterId, resourceRoot = "") {
+function slideContextPlainText(value = "") {
+  return String(value || "")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&amp;/gi, "&")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
+}
+
+function slideElementContextLabel(element = {}) {
+  if (element.type === "text") {
+    return compactText(slideContextPlainText(element.content), 260) || "课件文字";
+  }
+  if (element.type === "latex") return compactText(element.latex || "数学公式", 260);
+  if (element.type === "image") return compactText(element.alt || element.title || "课件图片", 260);
+  if (element.type === "table") {
+    return compactText(
+      (element.data || [])
+        .flatMap((row) => (row || []).map((cell) => slideContextPlainText(cell?.text || "")))
+        .join(" "),
+      260
+    ) || "课件表格";
+  }
+  if (element.type === "line") return "课件中的连线或箭头";
+  if (element.type === "shape") return "课件中的图形对象";
+  return "课件对象";
+}
+
+function slideElementContextAttributes(element = {}, canvas = {}, index = 0) {
+  const canvasId = slideSvgId(canvas.id || "canvas");
+  const elementId = slideSvgId(element.id || `${element.type || "element"}-${index + 1}`);
+  const kind = element.type === "latex" ? "formula" : element.type === "text" ? "text" : "object";
+  const label = slideElementContextLabel(element);
+  const text = element.type === "text" || element.type === "table" ? label : "";
+  return [
+    `data-context-id="slide:${canvasId}:${elementId}"`,
+    `data-context-kind="${kind}"`,
+    'data-context-scope="slide"',
+    `data-context-confidence="${element.id ? "high" : "medium"}"`,
+    `data-context-label="${escapeHtml(label)}"`,
+    text ? `data-context-text="${escapeHtml(text)}"` : "",
+    element.type === "latex" ? `data-context-latex="${escapeHtml(String(element.latex || ""))}"` : ""
+  ].filter(Boolean).join(" ");
+}
+
+function renderSlideElement(element, canvas, chapterId, resourceRoot = "", index = 0) {
   const base = canvas.viewportSize || 1000;
   const ratio = canvas.viewportRatio || 0.5625;
   const hBase = base * ratio;
@@ -866,11 +917,12 @@ function renderSlideElement(element, canvas, chapterId, resourceRoot = "") {
   const height = slideSvgNumber(element.height, 1);
   const rotate = slideSvgNumber(element.rotate, 0);
   const common = `left:${left}px;top:${top}px;width:${width}px;height:${height}px;transform:rotate(${rotate}deg);`;
+  const contextAttributes = slideElementContextAttributes(element, canvas, index);
 
   if (element.type === "text") {
     const content = element.content || "";
     const rendered = renderSlideTextContent(content);
-    return `<div class="slide-element slide-text" style="${common}color:${element.defaultColor || "inherit"}"><div class="slide-fit-content slide-text-content" data-slide-fit>${rendered}</div></div>`;
+    return `<div class="slide-element slide-text" ${contextAttributes} style="${common}color:${element.defaultColor || "inherit"}"><div class="slide-fit-content slide-text-content" data-slide-fit>${rendered}</div></div>`;
   }
 
   if (element.type === "shape") {
@@ -881,13 +933,13 @@ function renderSlideElement(element, canvas, chapterId, resourceRoot = "") {
     const stroke = outline.color || "none";
     const strokeWidth = slideSvgNumber(outline.width, 0);
     const dash = outline.style === "dashed" ? ' stroke-dasharray="6 4"' : "";
-    return `<svg class="slide-element slide-shape" style="${common}" viewBox="0 0 ${viewWidth} ${viewHeight}" preserveAspectRatio="none" aria-hidden="true">
+    return `<svg class="slide-element slide-shape" ${contextAttributes} style="${common}" viewBox="0 0 ${viewWidth} ${viewHeight}" preserveAspectRatio="none" aria-hidden="true">
       <path d="${escapeHtml(element.path || "")}" fill="${escapeHtml(element.fill || "#e9edf5")}" stroke="${escapeHtml(stroke)}" stroke-width="${strokeWidth}"${dash} vector-effect="non-scaling-stroke"></path>
     </svg>`;
   }
 
   if (element.type === "image") {
-    return `<img class="slide-element" alt="" src="${slideImageSrc(element.src, chapterId, resourceRoot)}" style="${common};object-fit:contain;" />`;
+    return `<img class="slide-element" ${contextAttributes} alt="" src="${slideImageSrc(element.src, chapterId, resourceRoot)}" style="${common};object-fit:contain;" />`;
   }
 
   if (element.type === "line") {
@@ -908,7 +960,7 @@ function renderSlideElement(element, canvas, chapterId, resourceRoot = "") {
     const marker = markerStart || markerEnd
       ? `<defs><marker id="${markerId}" markerWidth="4" markerHeight="4" refX="8.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 Z" fill="${escapeHtml(element.color || "#94a3b8")}"></path></marker></defs>`
       : "";
-    return `<svg class="slide-element slide-vector slide-line" style="left:0;top:0;width:100%;height:100%;" viewBox="0 0 ${slideSvgNumber(base)} ${slideSvgNumber(hBase)}" preserveAspectRatio="none" aria-hidden="true">
+    return `<svg class="slide-element slide-vector slide-line" ${contextAttributes} style="left:0;top:0;width:100%;height:100%;" viewBox="0 0 ${slideSvgNumber(base)} ${slideSvgNumber(hBase)}" preserveAspectRatio="none" aria-hidden="true">
       ${marker}
       <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${escapeHtml(element.color || "#94a3b8")}" stroke-width="${strokeWidth}" stroke-linecap="round"${dash}${markerStart}${markerEnd}${transform}></line>
     </svg>`;
@@ -927,11 +979,11 @@ function renderSlideElement(element, canvas, chapterId, resourceRoot = "") {
         });
       } catch {}
     }
-    return `<div class="slide-element slide-latex" style="${common}color:${element.color || "inherit"}"><div class="slide-fit-content slide-latex-content" data-slide-fit>${html}</div></div>`;
+    return `<div class="slide-element slide-latex" ${contextAttributes} style="${common}color:${element.color || "inherit"}"><div class="slide-fit-content slide-latex-content" data-slide-fit>${html}</div></div>`;
   }
 
   if (element.type === "table") {
-    return `<div class="slide-element slide-table-wrap" style="${common}"><div class="slide-fit-content slide-table-content" data-slide-fit>${renderSlideTable(element)}</div></div>`;
+    return `<div class="slide-element slide-table-wrap" ${contextAttributes} style="${common}"><div class="slide-fit-content slide-table-content" data-slide-fit>${renderSlideTable(element)}</div></div>`;
   }
 
   return "";
@@ -1371,7 +1423,7 @@ function renderInteractive(unit) {
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe></div>`,
+      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" data-context-id="interactive-frame:${escapeHtml(unit.id)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(unit.scenarioType || unit.kind || "interactive")}" data-context-label="${escapeHtml(unit.label)}" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe></div>`,
       "html-resource interactive-resource"
     )}
     ${renderCoach(unit.scene, unit.chapterId, unit.id)}
