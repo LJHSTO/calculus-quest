@@ -4,7 +4,7 @@
   if (global && global.document) global.CoursewareContextCore = Object.freeze(api);
 })(typeof globalThis !== "undefined" ? globalThis : this, function coursewareContextFactory() {
   const SCHEMA_VERSION = 1;
-  const BRIDGE_VERSION = "20260723-v1";
+  const BRIDGE_VERSION = "20260723-v4";
   const CONTEXT_KINDS = new Set([
     "unit",
     "text",

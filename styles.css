@@ -1197,6 +1197,7 @@ h3 {
 }
 
 .learning-shell {
+  --learning-slide-max-width: 1000px;
   display: grid;
   grid-template-columns: 250px 330px minmax(0, 1fr);
   gap: 14px;
@@ -2092,7 +2093,7 @@ h3 {
 
 .slide-wrap {
   position: relative;
-  width: min(100%, 1000px);
+  width: min(100%, var(--learning-slide-max-width));
   aspect-ratio: 16 / 9;
   overflow: hidden;
   border: 1px solid var(--line);
@@ -4095,7 +4096,7 @@ textarea,
   .learning-shell.chapter-collapsed,
   .learning-shell:has(.chapter-rail.collapsed),
   .learning-shell:fullscreen {
-    grid-template-columns: 48px minmax(285px, 315px) minmax(0, 1fr);
+    grid-template-columns: 62px minmax(285px, 315px) minmax(0, 1fr);
   }
 
   .chapter-rail,
@@ -4135,20 +4136,18 @@ textarea,
     position: sticky;
     top: 84px;
     z-index: 81;
-    width: 48px;
-    min-width: 48px;
-    height: 44px;
-    min-height: 44px;
-    padding: 0 8px;
+    width: 60px;
+    min-width: 60px;
+    height: 52px;
+    min-height: 52px;
+    padding: 0 7px;
     writing-mode: horizontal-tb;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
   }
 
   .rail-toggle[aria-expanded="true"] {
-    border-color: var(--teal);
-    background: var(--teal-light);
     color: var(--teal-dark);
-    font-size: 1.25rem;
+    font-size: 0.74rem;
   }
 
   .rail-toggle::after,
@@ -4209,44 +4208,123 @@ textarea,
   }
 }
 
-/* ---- Learning focus layout: collapsible in-chapter path ---- */
+/* ---- Learning focus layout: polished chapter/path controls ---- */
 .rail-toggle::after,
 .learning-shell.chapter-collapsed .rail-toggle::after,
 .learning-shell:has(.chapter-rail.collapsed) .rail-toggle::after {
   content: none !important;
 }
 
+.rail-toggle,
 .lesson-rail-toggle {
-  min-width: 44px;
-  min-height: 40px;
-  padding: 0 6px;
+  display: inline-grid;
+  grid-template-columns: 18px minmax(0, 1fr) 8px;
+  gap: 5px;
+  align-items: center;
+  justify-items: center;
+  min-width: 60px;
+  min-height: 48px;
+  overflow: hidden;
+  padding: 0 7px;
   border: 0;
-  border-radius: 10px;
-  background: rgba(255, 254, 250, 0.94);
-  color: var(--muted);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(246, 250, 248, 0.94)),
+    #ffffff;
+  color: #4f6661;
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 8px 22px rgba(24, 44, 39, 0.1);
-  font-size: 0.76rem;
+    0 1px 0 rgba(255, 255, 255, 0.96) inset,
+    0 0 0 1px rgba(16, 52, 46, 0.06),
+    0 8px 20px rgba(24, 44, 39, 0.09);
+  font-size: 0.74rem;
   font-weight: 900;
   white-space: nowrap;
   cursor: pointer;
   transition-property: color, background-color, box-shadow, transform;
-  transition-duration: 150ms;
+  transition-duration: 160ms;
   transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }
 
+.rail-toggle:hover,
+.rail-toggle:focus-visible,
 .lesson-rail-toggle:hover,
 .lesson-rail-toggle:focus-visible {
-  background: var(--teal-light);
+  background:
+    linear-gradient(145deg, #f4fcfa, #e6f7f2),
+    var(--teal-light);
   color: var(--teal-dark);
   box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.94) inset,
-    0 10px 26px rgba(15, 143, 131, 0.16);
+    0 1px 0 rgba(255, 255, 255, 0.98) inset,
+    0 0 0 1px rgba(15, 143, 131, 0.14),
+    0 12px 28px rgba(15, 143, 131, 0.16);
+  transform: translateY(-2px);
 }
 
+.rail-toggle:focus-visible,
+.lesson-rail-toggle:focus-visible {
+  outline: 3px solid rgba(15, 143, 131, 0.22);
+  outline-offset: 2px;
+}
+
+.rail-toggle.is-expanded,
+.lesson-rail-toggle.is-expanded {
+  background:
+    linear-gradient(145deg, #e7f8f3, #d8f2eb),
+    var(--teal-light);
+  color: var(--teal-dark);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.96) inset,
+    0 0 0 1px rgba(15, 143, 131, 0.18),
+    0 10px 24px rgba(15, 143, 131, 0.14);
+}
+
+.rail-toggle:active,
 .lesson-rail-toggle:active {
   transform: scale(0.96);
+}
+
+.learning-rail-control-icon {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+}
+
+.learning-rail-control-icon svg {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.learning-rail-control-icon circle {
+  fill: currentColor;
+  stroke: none;
+}
+
+.learning-rail-control-label {
+  min-width: 0;
+  letter-spacing: 0.04em;
+}
+
+.learning-rail-control-caret {
+  color: currentColor;
+  font-size: 0.94rem;
+  line-height: 1;
+  opacity: 0.48;
+  transform: translateX(-1px);
+  transition-property: opacity, transform;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.learning-rail-control.is-expanded .learning-rail-control-caret {
+  opacity: 0.9;
+  transform: translateX(1px) rotate(180deg);
 }
 
 @media (min-width: 1181px) {
@@ -4286,16 +4364,34 @@ textarea,
     z-index: 23;
     align-self: start;
     justify-self: end;
-    width: 50px;
-    height: 36px;
+    width: 60px;
+    height: 44px;
     margin: 9px 9px 0 0;
+    border-radius: 14px;
   }
 
   .learning-shell.lesson-collapsed,
   .learning-shell.chapter-collapsed.lesson-collapsed,
   .learning-shell:has(.chapter-rail.collapsed).lesson-collapsed,
   .learning-shell:has(.lesson-rail.collapsed) {
-    grid-template-columns: 48px 48px minmax(0, 1fr);
+    --learning-slide-max-width: 1440px;
+    grid-template-columns: 62px 62px minmax(0, 1fr);
+  }
+
+  .learning-shell.lesson-collapsed .slide-wrap,
+  .learning-shell:has(.lesson-rail.collapsed) .slide-wrap {
+    margin-inline: auto;
+  }
+
+  .learning-shell.lesson-collapsed :is(.quiz-card, .resource-shell, .resource-body),
+  .learning-shell:has(.lesson-rail.collapsed) :is(.quiz-card, .resource-shell, .resource-body) {
+    width: 100%;
+    max-width: none;
+  }
+
+  .learning-shell.lesson-collapsed :is(.iframe-container, .embed-frame),
+  .learning-shell:has(.lesson-rail.collapsed) :is(.iframe-container, .embed-frame) {
+    min-height: clamp(680px, 78vh, 900px);
   }
 
   .learning-shell.lesson-collapsed .lesson-rail,
@@ -4309,10 +4405,10 @@ textarea,
   .learning-shell.lesson-collapsed .lesson-rail-toggle,
   .learning-shell:has(.lesson-rail.collapsed) .lesson-rail-toggle {
     justify-self: stretch;
-    width: 48px;
-    height: 44px;
+    width: 60px;
+    height: 52px;
     margin: 0;
-    border-radius: 12px;
+    border-radius: 16px;
   }
 }
 

@@ -356,6 +356,28 @@ document.querySelector("#reset-progress").addEventListener("click", async () => 
   }
 });
 
+const CHAPTER_HOVER_OPEN_DELAY_MS = 120;
+const CHAPTER_HOVER_CLOSE_DELAY_MS = 240;
+
+function updateLearningRailToggle(toggle, { expanded, label }) {
+  if (!toggle) return;
+  const labelNode = toggle.querySelector("[data-learning-toggle-label]");
+  if (labelNode && label) labelNode.textContent = label;
+  toggle.classList.toggle("is-expanded", Boolean(expanded));
+  toggle.dataset.state = expanded ? "expanded" : "collapsed";
+}
+
+function announceLearningLayoutChange(reason = "rail-change") {
+  const shell = document.querySelector(".learning-shell");
+  window.dispatchEvent(new CustomEvent("cq:learning-layout-change", {
+    detail: {
+      reason,
+      lessonCollapsed: Boolean(shell?.classList.contains("lesson-collapsed")),
+      chapterCollapsed: Boolean(shell?.classList.contains("chapter-collapsed"))
+    }
+  }));
+}
+
 function setChapterRailCollapsed(collapsed, options = {}) {
   const rail = document.getElementById("chapter-rail");
   const toggle = document.getElementById("chapter-rail-toggle");
@@ -365,10 +387,14 @@ function setChapterRailCollapsed(collapsed, options = {}) {
   rail.classList.toggle("collapsed", collapsed);
   rail.setAttribute("aria-hidden", collapsed ? "true" : "false");
   shell?.classList.toggle("chapter-collapsed", collapsed);
-  toggle.textContent = collapsed ? "章节" : "×";
+  updateLearningRailToggle(toggle, { expanded: !collapsed, label: "章节" });
   toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   toggle.setAttribute("aria-label", collapsed ? "展开章节列表" : "关闭章节列表");
-  toggle.setAttribute("title", collapsed ? "展开章节列表" : "关闭章节列表");
+  toggle.setAttribute(
+    "title",
+    collapsed ? "悬浮查看章节，点击可保持展开" : "点击收起章节列表"
+  );
+  announceLearningLayoutChange(collapsed ? "chapter-rail-collapsed" : "chapter-rail-expanded");
   if (shouldPersist) localStorage.setItem("chapterRailCollapsed", collapsed ? "1" : "0");
   if (!collapsed && options.focusCurrent !== false) {
     window.requestAnimationFrame(() => {
@@ -383,20 +409,72 @@ function setupChapterRailToggle() {
   const toggle = document.getElementById("chapter-rail-toggle");
   if (!rail || !toggle) return;
 
+  let hoverOpenTimer = null;
+  let hoverCloseTimer = null;
+  let pinnedOpen = false;
+  const supportsHover = () => (
+    window.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches
+    && window.innerWidth > 1180
+  );
+  const clearHoverTimers = () => {
+    clearTimeout(hoverOpenTimer);
+    clearTimeout(hoverCloseTimer);
+    hoverOpenTimer = null;
+    hoverCloseTimer = null;
+  };
+  const scheduleHoverOpen = (event) => {
+    if (!supportsHover() || event?.pointerType === "touch") return;
+    clearTimeout(hoverCloseTimer);
+    clearTimeout(hoverOpenTimer);
+    hoverOpenTimer = window.setTimeout(() => {
+      if (document.querySelector("#knowledge-assistant-root.is-open")) return;
+      setChapterRailCollapsed(false, { persist: false, focusCurrent: false });
+    }, CHAPTER_HOVER_OPEN_DELAY_MS);
+  };
+  const scheduleHoverClose = (event) => {
+    if (!supportsHover() || event?.pointerType === "touch" || pinnedOpen) return;
+    clearTimeout(hoverOpenTimer);
+    clearTimeout(hoverCloseTimer);
+    hoverCloseTimer = window.setTimeout(() => {
+      setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
+    }, CHAPTER_HOVER_CLOSE_DELAY_MS);
+  };
+
   setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
+  toggle.addEventListener("pointerenter", scheduleHoverOpen);
+  rail.addEventListener("pointerenter", scheduleHoverOpen);
+  toggle.addEventListener("pointerleave", scheduleHoverClose);
+  rail.addEventListener("pointerleave", scheduleHoverClose);
   toggle.addEventListener("click", () => {
-    const collapsed = !rail.classList.contains("collapsed");
-    setChapterRailCollapsed(collapsed);
+    clearHoverTimers();
+    const expanded = !rail.classList.contains("collapsed");
+    if (expanded && !pinnedOpen) {
+      pinnedOpen = true;
+      setChapterRailCollapsed(false);
+      return;
+    }
+    pinnedOpen = !expanded;
+    setChapterRailCollapsed(expanded);
   });
   document.addEventListener("click", (event) => {
     if (rail.classList.contains("collapsed")) return;
     if (rail.contains(event.target) || toggle.contains(event.target)) return;
+    pinnedOpen = false;
+    clearHoverTimers();
     setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || rail.classList.contains("collapsed")) return;
+    pinnedOpen = false;
+    clearHoverTimers();
     setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
     toggle.focus();
+  });
+  window.addEventListener("cq:knowledge-assistant-visibility", (event) => {
+    if (!event.detail?.open) return;
+    pinnedOpen = false;
+    clearHoverTimers();
+    setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
   });
 }
 
@@ -409,10 +487,11 @@ function setLessonRailCollapsed(collapsed, options = {}) {
   rail.classList.toggle("collapsed", collapsed);
   rail.setAttribute("aria-hidden", collapsed ? "true" : "false");
   shell?.classList.toggle("lesson-collapsed", collapsed);
-  toggle.textContent = collapsed ? "路径" : "收起";
+  updateLearningRailToggle(toggle, { expanded: !collapsed, label: "路径" });
   toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   toggle.setAttribute("aria-label", collapsed ? "展开本章路径" : "收起本章路径");
   toggle.setAttribute("title", collapsed ? "展开本章路径" : "收起本章路径");
+  announceLearningLayoutChange(collapsed ? "lesson-rail-collapsed" : "lesson-rail-expanded");
   if (shouldPersist) {
     try {
       localStorage.setItem("lessonRailCollapsed", collapsed ? "1" : "0");
@@ -474,6 +553,9 @@ async function init() {
     await loadCourseIndex();
     buildCurriculum();
     renderAll();
+    if (typeof setupLearningCanvasLayoutSync === "function") {
+      setupLearningCanvasLayoutSync();
+    }
     setupChapterRailToggle();
     setupLessonRailToggle();
     clearTimeout(safetyTimer);

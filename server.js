@@ -834,6 +834,11 @@ async function generateAssistantTurn({ resolved, question, history, quizSubmitte
       system: prompt.system,
       user: prompt.user,
       maxTokens: 700,
+      model: String(
+        process.env.LEARNING_ASSISTANT_MODEL
+        || process.env.OPENAI_COMPATIBLE_MODEL
+        || ""
+      ).trim() || undefined,
       signal: controller.signal
     });
     const text = learningAssistant.enforceQuizSafety(result.text, {

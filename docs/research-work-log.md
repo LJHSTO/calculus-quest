@@ -919,6 +919,25 @@ tools/_encoding_test.txt
 - Git 提交：本条与本轮知点界面优化一起精确暂存并提交，最终提交号见 Git 历史；不推送、不部署。
 - 剩余风险与下一步：真实触屏设备仍建议补一次 iOS Safari 与 Android Chrome 验收；Canvas/3D 若要精确指认需由课件主动提供稳定语义 ID 和状态桥。未来前端整体重写时应保留 `ContextRef`、知识点 thread key、Quiz 策略和服务端校验，只替换视图与选择 adapter。
 
+### 2026-07-23：“知点”桌面悬浮入口、可拖动问答窗与真实模型配置
+
+- 目标：仅优化 Web 桌面端学习体验。把章节/路径按钮改成稳定保留图标与文字的导航控件；章节支持延时悬浮展开与点击固定；把知点入口改成始终完整露出的悬浮球，悬浮或键盘聚焦时展开说明，点击后打开完整窗口；修复 Quiz 选中上下文后输入区被裁掉的问题，并增加窗口拖动、位置持久化和 Slide 焦点辨识。
+- 基线提交/课件版本：`67ee783`；当前分支 `codex/recover-worktree-20260712`。课程 route、章节/知识点/测验 ID、288 个互动资源和源 `.maic.zip` 均未修改。
+- 面板结构：`knowledge-assistant-panel` 从九行固定网格重构为“拖动条 / 标题 / 单一滚动内容 / 固定输入区”四层。知识位置、Quiz 边界、学习焦点、最近操作、快捷问题和对话统一在中间滚动区，输入框始终位于滚动区外；上下文再长也不会把输入框裁出窗口。桌面窗口默认靠右，可通过 Pointer Events 拖动，坐标限制在视口内并写入独立本地存储；双击拖动条可恢复默认位置，方向键也可微调。
+- 入口与导航：知点最小状态为 54px 悬浮球，不再使用贴出屏幕的负偏移或额外收起箭头；悬浮/聚焦扩展为 196px 胶囊，显示“知点 / 陪你理清眼前这一处”，仍可拖动并左右停靠。章节按钮在精确指针桌面端悬浮 120ms 后展开，离开按钮与抽屉 240ms 后收起；点击可固定展开，`Esc`、外部点击或打开知点会关闭。章节和路径按钮使用独立 SVG 图标、状态箭头、40px 以上命中区、明确焦点环和 `scale(0.96)` 按压反馈，不再用 `textContent` 覆盖内部结构。
+- 路径收起后的学习画布：`#lesson-player` 新增统一 `ResizeObserver` 布局同步器。路径或章节宽度变化时，Quiz/资源容器占满新的主列，Slide 重新计算 `--slide-scale`，收起路径时讲解画布上限由 1000px 提升到 1440px；互动 iframe 同步扩展到桌面可用高度，并通过注入的 `cq:host-layout` v4 桥在课件内部触发标准 `resize` 与同名自定义事件。桥就绪后父页面会补发一次当前尺寸，避免慢加载、刷新恢复和切换互动场景时漏掉首次适配。该机制监听的是播放器容器而不是某个按钮，因此未来前端改变列宽或抽屉实现时仍可复用。
+- 学习文案与课件焦点：学生动作改为“选取课件焦点”“学习焦点”“作为焦点”“设为焦点”，最近操作显示成“在「具体课件场景」中调整了中文组件”，不再用点号拼接技术标签。Slide 选择态给所有可选对象低强度青色虚线边界，文字增加薄荷底色和下划线；悬停约 120ms 后升级为实线高亮，并显示“文字/公式/对象 + 内容摘要”的标签。选择仍是单次消费，完成后立即恢复课件正常操作。
+- 真实模型配置：`server.js` 新增 `LEARNING_ASSISTANT_MODEL` 专用覆盖项，未设置时回退到 `OPENAI_COMPATIBLE_MODEL`；`.env.example` 已记录该配置。本机忽略的 `.env` 保留现有 Base URL 和 API Key，并配置 `LLM_PROVIDER=openai-compatible`、`OPENAI_COMPATIBLE_MODEL=gemini-2.5-flash`、`LEARNING_ASSISTANT_MODEL=gemini-2.5-flash`。选择该模型是为了知点短对话的低延迟和中文数学解释；密钥未显示、未写入补丁上下文、未纳入 Git。
+- 真实 API 结果：使用当前 Base URL/Key 请求 `/models` 和最小 `chat/completions` 均返回 HTTP 401，服务明确表示当前令牌额度已用尽。因此真实接口代码路径和专用模型配置已完成，但这把现有凭证在补充额度或更换前不能产生真实模型回答。浏览器提问会安全降级为本地引导，Quiz 未提交防泄漏仍生效；界面在收到 fallback 后不继续冒充已连接模型。
+- 浏览器验证：隔离服务 `http://127.0.0.1:8799/`，数据库位于系统临时目录；正式 `8765` 服务 PID `11144` 未停止。`1920×900` 验证悬浮球展开、章节 hover、打开知点自动收起两级导航、Quiz 题干单次选择、输入框聚焦与发送；`1440×900` 验证拖动位置持久化、窗口底部保持 12px 边界、输入区始终在视口内，以及 Slide 全体候选、悬停预览和选择后回弹。路径适配的同宽对比结果：Quiz 宽度 `929 → 1182px`，Slide 宽度 `891 → 1144px`、缩放 `0.889 → 1.142`，互动 iframe `891×680 → 1144×702px`；iframe 内 v4 桥记录的宿主视口为 `1144×702`，实际 `innerWidth/innerHeight` 为 `1142×702`。项目控制台 0 error、0 warning；Chromium 仅报告页面原有的多表单 verbose 提示。
+- 浏览器证据：`output/playwright/knowledge-assistant-launcher-hover-1920.png`、`knowledge-assistant-quiz-context-1920.png`、`knowledge-assistant-context-1440.png`、`slide-focus-candidates-1440.png`、`slide-focus-hover-1440.png`、`quiz-path-collapsed-1440.png`、`slide-path-collapsed-1440.png` 和 `interactive-frame-path-collapsed-1440.png`；仅作本地 QA 证据，不纳入 Git。
+- 自动验证：30/30 个 `ops/test-*.js` 全部通过；`server.js`、`app/main/*.js` 和 `lib/**/*.js` 全部通过 `node --check`；12 个本轮相关文本通过严格 UTF-8 解码；`npm run assistant:test` 与 `git diff --check` 通过。新增回归覆盖固定输入区、独立滚动层、拖动条与视口约束、悬浮球完整露出与 hover 展开、章节 pointer hover、按钮内部结构保留、中文最近操作、知点专用模型配置，以及 Quiz/Slide/互动 iframe 在路径变化后的统一画布同步。
+- 失败/警告：首次桌面打开时发现默认位置被初始浏览器尺寸提前固化，窗口在放大后仍停留页面中部；修复为只有用户实际拖动后才持久化坐标，未拖动状态每次按当前视口重新靠右。递归删除隔离测试目录的命令被本地安全策略拒绝；服务已按确认 PID 停止，剩余 `tmp/` 与 `output/playwright/` 均为 Git 忽略的本地 QA 文件。
+- 是否真实调用 LLM（provider/model）：尝试调用 `openai-compatible / gemini-2.5-flash`，请求到达服务但因当前 API 令牌额度耗尽返回 401，未取得真实模型内容；最终学生回答来自显式标记的本地安全降级。
+- 是否修改源 `.maic.zip`：否。
+- Git 提交：本条与本轮桌面知点优化一起精确暂存并提交，最终提交号见 Git 历史；`.env`、临时数据库、日志和浏览器截图不提交。
+- 剩余风险与下一步：补充当前令牌额度或替换有效 API Key 后，需要再执行一次最小真实问答，确认响应延迟、中文数学质量和 Quiz 防泄漏；若后续重写前端，应保留 `ContextRef`、知识点 thread key、服务端可信解析、Quiz 策略和 `/api/learning/assistant/*` 合同，只替换视图与选择 adapter。
+
 ## 11. 后续记录模板
 
 每次工作完成后追加：

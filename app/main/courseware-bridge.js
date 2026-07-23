@@ -67,6 +67,29 @@
     PARENT.postMessage({ type, ...payload }, "*");
   }
 
+  function applyHostLayout(payload = {}) {
+    const viewport = payload.viewport && typeof payload.viewport === "object"
+      ? {
+          width: Number(payload.viewport.width) || window.innerWidth,
+          height: Number(payload.viewport.height) || window.innerHeight
+        }
+      : {
+          width: window.innerWidth,
+          height: window.innerHeight
+        };
+    const detail = {
+      reason: compactText(payload.reason || "host-layout", 80),
+      viewport,
+      lessonCollapsed: Boolean(payload.lessonCollapsed),
+      chapterCollapsed: Boolean(payload.chapterCollapsed)
+    };
+    window.__calculusQuestHostLayout = detail;
+    window.requestAnimationFrame(() => {
+      window.dispatchEvent(new Event("resize"));
+      window.dispatchEvent(new CustomEvent("cq:host-layout", { detail }));
+    });
+  }
+
   function elementFromNode(node) {
     if (!node) return null;
     if (node.nodeType === 1) return node;
@@ -483,6 +506,8 @@
     } else if (type === "cq:context-restore") {
       const target = findBySemanticId(event.data.semanticId);
       if (target) pinSelected(target);
+    } else if (type === "cq:host-layout") {
+      applyHostLayout(event.data);
     }
   });
 
@@ -492,8 +517,9 @@
   document.addEventListener("change", reportParameterCommit, true);
 
   injectStyle();
+  window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
   post("cq:bridge-ready", {
-    version: 1,
+    version: 4,
     title: compactText(document.title || "", 180)
   });
 })();

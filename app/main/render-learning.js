@@ -1,5 +1,10 @@
 // Learning shell, player, lesson, and resource rendering.
 let slideCanvasResizeObserver = null;
+let learningCanvasResizeObserver = null;
+let learningCanvasLayoutFrame = null;
+let learningCanvasLayoutSettleTimer = null;
+let learningCanvasLayoutSyncReady = false;
+let learningCanvasLastSize = "";
 
 function coursewareFrameUrl(path) {
   const url = resourceUrl(path);
@@ -9,6 +14,107 @@ function coursewareFrameUrl(path) {
   if (!version) return url;
   const separator = url.includes("?") ? "&" : "?";
   return `${url}${separator}cqContextBridge=${encodeURIComponent(version)}`;
+}
+
+function learningCanvasLayoutDetail(reason = "layout-change") {
+  const player = els?.lessonPlayer || document.querySelector("#lesson-player");
+  const shell = player?.closest?.(".learning-shell");
+  const rect = player?.getBoundingClientRect?.();
+  return {
+    reason,
+    width: Math.max(0, Math.round(rect?.width || player?.clientWidth || 0)),
+    height: Math.max(0, Math.round(rect?.height || player?.clientHeight || 0)),
+    lessonCollapsed: Boolean(shell?.classList?.contains("lesson-collapsed")),
+    chapterCollapsed: Boolean(shell?.classList?.contains("chapter-collapsed")),
+    timestamp: Date.now()
+  };
+}
+
+function syncLearningCanvasLayout(reason = "layout-change") {
+  const player = els?.lessonPlayer || document.querySelector("#lesson-player");
+  if (!player?.isConnected) return null;
+
+  player.querySelectorAll("[data-slide-canvas]").forEach(syncSlideCanvasScale);
+  const detail = learningCanvasLayoutDetail(reason);
+
+  player.querySelectorAll("iframe.embed-frame, iframe[data-courseware-frame]").forEach((frame) => {
+    const rect = frame.getBoundingClientRect();
+    const viewport = {
+      width: Math.max(0, Math.round(rect.width || frame.clientWidth || 0)),
+      height: Math.max(0, Math.round(rect.height || frame.clientHeight || 0))
+    };
+    frame.dataset.hostLayoutWidth = String(viewport.width);
+    frame.dataset.hostLayoutHeight = String(viewport.height);
+    frame.dataset.hostLayoutReason = reason;
+    try {
+      frame.contentWindow?.postMessage({
+        type: "cq:host-layout",
+        ...detail,
+        viewport
+      }, "*");
+    } catch {}
+  });
+
+  window.dispatchEvent(new CustomEvent("cq:learning-canvas-layout", { detail }));
+  return detail;
+}
+
+function scheduleLearningCanvasLayoutSync(reason = "layout-change") {
+  if (typeof window === "undefined") return;
+  if (learningCanvasLayoutFrame !== null) {
+    window.cancelAnimationFrame(learningCanvasLayoutFrame);
+  }
+  learningCanvasLayoutFrame = window.requestAnimationFrame(() => {
+    learningCanvasLayoutFrame = null;
+    syncLearningCanvasLayout(reason);
+  });
+
+  window.clearTimeout(learningCanvasLayoutSettleTimer);
+  learningCanvasLayoutSettleTimer = window.setTimeout(() => {
+    syncLearningCanvasLayout(`${reason}:settled`);
+  }, 220);
+}
+
+function setupLearningCanvasLayoutSync() {
+  const player = els?.lessonPlayer || document.querySelector("#lesson-player");
+  if (!player) return false;
+  if (learningCanvasLayoutSyncReady) {
+    scheduleLearningCanvasLayoutSync("layout-sync-refresh");
+    return true;
+  }
+
+  learningCanvasLayoutSyncReady = true;
+  if (typeof ResizeObserver !== "undefined") {
+    learningCanvasResizeObserver = new ResizeObserver((entries) => {
+      const entry = entries.find((item) => item.target === player);
+      if (!entry) return;
+      const nextSize = `${Math.round(entry.contentRect.width)}x${Math.round(entry.contentRect.height)}`;
+      if (nextSize === learningCanvasLastSize) return;
+      learningCanvasLastSize = nextSize;
+      scheduleLearningCanvasLayoutSync("learning-player-resize");
+    });
+    learningCanvasResizeObserver.observe(player);
+  }
+
+  window.addEventListener("resize", () => {
+    scheduleLearningCanvasLayoutSync("window-resize");
+  });
+  window.addEventListener("cq:learning-layout-change", (event) => {
+    scheduleLearningCanvasLayoutSync(event.detail?.reason || "learning-layout-change");
+  });
+  window.addEventListener("cq:lesson-rendered", () => {
+    scheduleLearningCanvasLayoutSync("lesson-rendered");
+  });
+  window.addEventListener("message", (event) => {
+    if (event.data?.type !== "cq:bridge-ready") return;
+    const frame = Array.from(
+      player.querySelectorAll("iframe.embed-frame, iframe[data-courseware-frame]")
+    ).find((candidate) => candidate.contentWindow === event.source);
+    if (!frame) return;
+    scheduleLearningCanvasLayoutSync("courseware-bridge-ready");
+  });
+  scheduleLearningCanvasLayoutSync("layout-sync-ready");
+  return true;
 }
 
 function renderMetrics() {
