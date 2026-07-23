@@ -4,6 +4,7 @@
   if (global && global.document) global.CoursewareContextCore = Object.freeze(api);
 })(typeof globalThis !== "undefined" ? globalThis : this, function coursewareContextFactory() {
   const SCHEMA_VERSION = 1;
+  const BRIDGE_VERSION = "20260723-v1";
   const CONTEXT_KINDS = new Set([
     "unit",
     "text",
@@ -29,6 +30,16 @@
     "[data-knowledge-scene-fullscreen]",
     "[data-submit-quiz]"
   ].join(", ");
+  const QUESTION_TARGET_SELECTOR = [
+    "[data-context-id]",
+    "[data-question]",
+    ".slide-element",
+    ".question-card fieldset label",
+    "iframe.embed-frame",
+    "[data-courseware-frame]",
+    "[data-slide-canvas]",
+    ".quiz-card"
+  ].join(", ");
 
   function compactText(value = "", limit = 240) {
     return String(value ?? "")
@@ -44,6 +55,95 @@
       .replace(/\r\n?/g, "\n")
       .trim()
       .slice(0, limit);
+  }
+
+  const INTERACTION_LABELS = new Map([
+    ["h", "步长 h"],
+    ["hslider", "步长 h"],
+    ["stepsize", "步长"],
+    ["step", "步长"],
+    ["deltax", "横向间隔 Δx"],
+    ["dx", "横向间隔 Δx"],
+    ["delta", "变化量 Δ"],
+    ["epsilon", "误差范围 ε"],
+    ["eps", "误差范围 ε"],
+    ["angle", "观察角度"],
+    ["angleslider", "观察角度"],
+    ["theta", "旋转角度 θ"],
+    ["rotation", "旋转角度"],
+    ["rotate", "旋转角度"],
+    ["zoom", "缩放比例"],
+    ["scale", "缩放比例"],
+    ["speed", "变化速度"],
+    ["time", "时间"],
+    ["x", "横坐标 x"],
+    ["y", "纵坐标 y"]
+  ]);
+  const SCENE_LABELS = new Map([
+    ["simulation", "动手实验"],
+    ["game", "误解挑战"],
+    ["mindmap", "关系图"],
+    ["visualization3d", "空间视角"]
+  ]);
+
+  function friendlyInteractionLabel(value = "") {
+    const raw = compactText(value, 160)
+      .replace(/^interactive:(?:id|name|data|role):/i, "")
+      .replace(/^(?:刚才)?(?:调整了|改变了|设置了)\s*/u, "")
+      .replace(/^[^\p{L}\p{N}Δδεθλμ]+/gu, "")
+      .trim();
+    if (!raw) return "交互参数";
+    if (/[\p{Script=Han}]/u.test(raw)) return raw;
+    const key = raw
+      .normalize("NFKC")
+      .toLowerCase()
+      .replace(/(?:slider|range|input|control|selector)$/i, (suffix) => suffix.toLowerCase())
+      .replace(/[^a-z0-9Δδεθλμ]+/gu, "");
+    const alias = INTERACTION_LABELS.get(key);
+    if (alias) return alias;
+    const readable = raw
+      .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+      .replace(/[_:./-]+/g, " ")
+      .replace(/\b(?:slider|range|input|control|selector)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    return readable ? `参数 ${readable}` : "交互参数";
+  }
+
+  function formatInteractionChange(state = {}) {
+    const oldValue = compactText(state.oldValue ?? state.old, 120);
+    const newValue = compactText(state.newValue ?? state.new, 120);
+    if (oldValue && newValue && oldValue !== newValue) {
+      return `从 ${oldValue} 调整为 ${newValue}`;
+    }
+    if (newValue) return `当前值为 ${newValue}`;
+    return compactText(state.action, 180) || "已记录本次操作";
+  }
+
+  function friendlySceneLabel(value = {}) {
+    const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const unitLabel = compactText(source.unitLabel, 180);
+    let title = compactText(source.resourceTitle || source.title, 180)
+      .replace(/^GH-\d+-/i, "")
+      .replace(/^(?:(?:\p{Extended_Pictographic}|\uFE0F)|[~◇※⬡•])+\s*/gu, "");
+    if (unitLabel && title.startsWith(unitLabel)) {
+      title = title.slice(unitLabel.length).replace(/^[：:·\s—–-]+/u, "");
+    }
+    if (title) return title;
+    const sceneType = compactText(source.sceneType || source.type, 80)
+      .normalize("NFKC")
+      .toLowerCase();
+    return SCENE_LABELS.get(sceneType) || "当前课件";
+  }
+
+  function normalizeLauncherPlacement(value = {}) {
+    const source = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+    const ratio = Number(source.topRatio);
+    return {
+      side: source.side === "left" ? "left" : "right",
+      topRatio: Number(Math.min(0.88, Math.max(0.12, Number.isFinite(ratio) ? ratio : 0.5)).toFixed(4)),
+      compact: Boolean(source.compact)
+    };
   }
 
   function cleanId(value = "", limit = 180) {
@@ -297,8 +397,11 @@
     let selectedContext = null;
     let selectedElement = null;
     let hoveredElement = null;
+    let pendingHoverElement = null;
     let hoverTimer = null;
     let listenersActive = false;
+    let pickPreview = null;
+    const candidateElements = new Set();
 
     function notify(name, payload) {
       const handler = options[name];
@@ -340,6 +443,145 @@
       hoverTimer = null;
       if (hoveredElement) hoveredElement.classList.remove("cq-context-hover");
       hoveredElement = null;
+      pendingHoverElement = null;
+      if (pickPreview) pickPreview.hidden = true;
+    }
+
+    function contextKindLabel(contextRef = {}, element = null) {
+      if (contextRef.kind === "formula") return "公式";
+      if (contextRef.kind === "text") return "文字";
+      if (contextRef.kind === "quiz-option") return "选项";
+      if (contextRef.kind === "quiz") return "题目";
+      if (contextRef.kind === "viewport") return "当前画面";
+      if (element?.classList?.contains("slide-table-wrap")) return "表格";
+      if (element?.tagName?.toLowerCase() === "img") return "图片";
+      if (element?.classList?.contains("slide-line")) return "连线";
+      if (element?.classList?.contains("slide-shape")) return "图形";
+      return "课件内容";
+    }
+
+    function ensurePickPreview() {
+      if (pickPreview?.isConnected) return pickPreview;
+      pickPreview = doc.createElement("div");
+      pickPreview.className = "cq-context-preview";
+      pickPreview.hidden = true;
+      pickPreview.setAttribute("aria-hidden", "true");
+      doc.body.appendChild(pickPreview);
+      return pickPreview;
+    }
+
+    function rectContainsPoint(rect, point, padding = 0) {
+      if (!rect || !point) return false;
+      const x = Number(point.clientX);
+      const y = Number(point.clientY);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+      return x >= Number(rect.left || 0) - padding
+        && x <= Number(rect.right || rect.left || 0) + padding
+        && y >= Number(rect.top || 0) - padding
+        && y <= Number(rect.bottom || rect.top || 0) + padding;
+    }
+
+    function usableClientRect(rect) {
+      return Boolean(
+        rect
+        && Number.isFinite(Number(rect.left))
+        && Number.isFinite(Number(rect.top))
+        && (Number(rect.width) > 0 || Number(rect.height) > 0)
+      );
+    }
+
+    function textClientRects(element) {
+      const content = element?.querySelector?.(".slide-text-content");
+      if (!content || typeof doc.createRange !== "function") return [];
+      const range = doc.createRange();
+      range.selectNodeContents(content);
+      const rects = Array.from(range.getClientRects?.() || []).filter(usableClientRect);
+      range.detach?.();
+      return rects;
+    }
+
+    function slideCandidateProfile(element) {
+      if (!element?.classList?.contains("slide-element")) return null;
+      if (element.classList.contains("slide-line")) {
+        const rect = element.querySelector?.("line")?.getBoundingClientRect?.();
+        return usableClientRect(rect) ? { rects: [rect], padding: 7, priority: 2 } : null;
+      }
+      if (element.classList.contains("slide-shape")) {
+        const rect = element.querySelector?.("path")?.getBoundingClientRect?.();
+        return usableClientRect(rect) ? { rects: [rect], padding: 4, priority: 1 } : null;
+      }
+      if (element.classList.contains("slide-text")) {
+        const rects = textClientRects(element);
+        return rects.length ? { rects, padding: 5, priority: 0 } : null;
+      }
+      if (element.classList.contains("slide-latex")) {
+        const rect = element.querySelector?.(".katex")?.getBoundingClientRect?.()
+          || element.getBoundingClientRect?.();
+        return usableClientRect(rect) ? { rects: [rect], padding: 5, priority: 0 } : null;
+      }
+      const rect = element.getBoundingClientRect?.();
+      return usableClientRect(rect) ? { rects: [rect], padding: 2, priority: 1 } : null;
+    }
+
+    function slideCandidateAtPoint(point) {
+      const matches = [];
+      candidateElements.forEach((element) => {
+        const profile = slideCandidateProfile(element);
+        if (!profile) return;
+        profile.rects.forEach((rect) => {
+          if (!rectContainsPoint(rect, point, profile.padding)) return;
+          const width = Math.max(1, Number(rect.width || 0) + profile.padding * 2);
+          const height = Math.max(1, Number(rect.height || 0) + profile.padding * 2);
+          matches.push({
+            element,
+            rect,
+            score: profile.priority * 1_000_000_000 + width * height
+          });
+        });
+      });
+      matches.sort((left, right) => left.score - right.score);
+      return matches[0] || null;
+    }
+
+    function showPickPreview(element, point = null) {
+      const contextRef = contextFromElement(element);
+      if (!contextRef) return;
+      const preview = ensurePickPreview();
+      const kind = contextKindLabel(contextRef, element);
+      const label = compactText(contextRef.label || contextRef.excerpt, 92);
+      preview.textContent = label ? `${kind} · ${label}` : kind;
+      preview.hidden = false;
+      const precise = slideCandidateAtPoint(point);
+      const rect = precise?.element === element
+        ? precise.rect
+        : element.getBoundingClientRect();
+      const width = Math.min(300, Math.max(120, preview.offsetWidth || 180));
+      const left = Math.min(
+        Math.max(10, rect.left + Math.min(rect.width / 2, 80) - 20),
+        Math.max(10, win.innerWidth - width - 10)
+      );
+      const preferAbove = rect.top > 76;
+      const top = preferAbove
+        ? Math.max(10, rect.top - (preview.offsetHeight || 34) - 9)
+        : Math.min(win.innerHeight - 48, rect.bottom + 9);
+      preview.style.left = `${Math.round(left)}px`;
+      preview.style.top = `${Math.round(top)}px`;
+    }
+
+    function markQuestionCandidates() {
+      candidateElements.forEach((element) => element.classList.remove("cq-context-candidate"));
+      candidateElements.clear();
+      const root = resolveRoot();
+      Array.from(root?.querySelectorAll?.(QUESTION_TARGET_SELECTOR) || []).forEach((element) => {
+        if (isQuestionExcluded(element)) return;
+        element.classList.add("cq-context-candidate");
+        candidateElements.add(element);
+      });
+    }
+
+    function clearQuestionCandidates() {
+      candidateElements.forEach((element) => element.classList.remove("cq-context-candidate"));
+      candidateElements.clear();
     }
 
     function clearSelectedElement() {
@@ -351,18 +593,19 @@
       });
     }
 
-    function elementContextTarget(target) {
+    function elementContextTarget(target, point = null) {
       const root = resolveRoot();
       const sidebar = resolveSidebarRoot();
       const element = elementFromNode(target);
       if (!root || !element || !root.contains(element)) return null;
       if (sidebar?.contains?.(element)) return null;
       if (isQuestionExcluded(element)) return null;
-      return element.closest?.(
-        "[data-context-id], [data-question], .slide-element, "
-        + ".question-card fieldset label, iframe.embed-frame, [data-courseware-frame], "
-        + "[data-slide-canvas], .quiz-card, .resource-body"
-      ) || null;
+      const slideCanvas = element.closest?.("[data-slide-canvas]");
+      if (slideCanvas && point) {
+        const precise = slideCandidateAtPoint(point);
+        return precise?.element || slideCanvas;
+      }
+      return element.closest?.(QUESTION_TARGET_SELECTOR) || null;
     }
 
     function contextFromElement(element) {
@@ -445,12 +688,12 @@
     function deactivatePickListeners() {
       if (!listenersActive) return;
       listenersActive = false;
-      doc.removeEventListener("pointerover", onPickPointerOver, true);
-      doc.removeEventListener("pointerout", onPickPointerOut, true);
+      doc.removeEventListener("pointermove", onPickPointerMove, true);
       doc.removeEventListener("click", onPickClick, true);
       doc.removeEventListener("keydown", onPickKeyDown, true);
       resolveRoot()?.classList.remove("cq-context-picking");
       clearHover();
+      clearQuestionCandidates();
       sendPickStateToFrames(false);
       notify("onPickingChange", { active: false, state: picker.getState() });
     }
@@ -458,11 +701,11 @@
     function activatePickListeners() {
       if (listenersActive) return;
       listenersActive = true;
-      doc.addEventListener("pointerover", onPickPointerOver, true);
-      doc.addEventListener("pointerout", onPickPointerOut, true);
+      doc.addEventListener("pointermove", onPickPointerMove, true);
       doc.addEventListener("click", onPickClick, true);
       doc.addEventListener("keydown", onPickKeyDown, true);
       resolveRoot()?.classList.add("cq-context-picking");
+      markQuestionCandidates();
       sendPickStateToFrames(true);
       notify("onPickingChange", { active: true, state: picker.getState() });
     }
@@ -477,30 +720,24 @@
       return consumed;
     }
 
-    function onPickPointerOver(event) {
-      const target = elementContextTarget(event.target);
-      if (!target || target === hoveredElement) return;
+    function onPickPointerMove(event) {
+      const target = elementContextTarget(event.target, event);
+      if (target === hoveredElement || target === pendingHoverElement) return;
       clearHover();
+      if (!target) return;
+      pendingHoverElement = target;
+      const point = { clientX: event.clientX, clientY: event.clientY };
       hoverTimer = win.setTimeout(() => {
+        pendingHoverElement = null;
         hoveredElement = target;
         hoveredElement.classList.add("cq-context-hover");
+        showPickPreview(hoveredElement, point);
       }, 120);
-    }
-
-    function onPickPointerOut(event) {
-      const target = elementContextTarget(event.target);
-      if (!target || target !== hoveredElement) {
-        if (!hoveredElement) clearTimeout(hoverTimer);
-        return;
-      }
-      const related = elementFromNode(event.relatedTarget);
-      if (related && target.contains(related)) return;
-      clearHover();
     }
 
     function onPickClick(event) {
       if (picker.getState().phase !== "picking") return;
-      const target = elementContextTarget(event.target);
+      const target = elementContextTarget(event.target, event);
       if (!target) return;
       event.preventDefault();
       event.stopPropagation();
@@ -584,13 +821,15 @@
 
     function updateRecentInteraction(value = {}) {
       const rawState = value.state || value.value || {};
-      const parameter = rawState.parameter || rawState.param || value.parameter || value.param || value.label || "参数";
+      const parameter = friendlyInteractionLabel(
+        rawState.parameter || rawState.param || value.parameter || value.param || value.label || "参数"
+      );
       recentInteraction = normalizeContextRef({
         ...contextDefaults(),
         kind: "interaction",
         scope: "interactive",
         semanticId: value.semanticId || "",
-        label: value.label || `刚才调整了 ${parameter}`,
+        label: parameter,
         excerpt: value.excerpt || "",
         confidence: value.confidence || (value.semanticId ? "medium" : "low"),
         state: {
@@ -729,6 +968,9 @@
         cancelObjectPick("destroy");
         clearSelectedElement();
         removeFallbackOverlays();
+        clearQuestionCandidates();
+        pickPreview?.remove();
+        pickPreview = null;
         win.removeEventListener("message", handleBridgeMessage);
         doc.removeEventListener("pointerup", handleDocumentPointerUp, true);
         doc.removeEventListener("keyup", handleDocumentKeyUp, true);
@@ -737,12 +979,17 @@
   }
 
   return {
+    BRIDGE_VERSION,
     SCHEMA_VERSION,
     compactText,
     contextThreadKey,
     createBrowserController,
     createObjectPickStateMachine,
+    formatInteractionChange,
+    friendlyInteractionLabel,
+    friendlySceneLabel,
     isQuestionExcluded,
+    normalizeLauncherPlacement,
     normalizeContextRef,
     suggestionsForContext
   };

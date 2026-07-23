@@ -29,6 +29,7 @@ const sandbox = {
   renderMathInHtml: (value) => value,
   renderInlineMath: (value) => value,
   resourceUrl: (value) => value,
+  CoursewareContextCore: { BRIDGE_VERSION: "test-bridge-v1" },
   knowledgeInteractionTypes: () => interactionTypes,
   selectedKnowledgeSceneType: () => "",
   knowledgeResourceCandidate: (_unit, typeId) => ({
@@ -46,6 +47,12 @@ const canvas = {
 };
 
 assert.equal(typeof sandbox.renderSlideCanvas, "function");
+assert.equal(typeof sandbox.coursewareFrameUrl, "function");
+assert.equal(
+  sandbox.coursewareFrameUrl("resources/open-maic/example.html"),
+  "resources/open-maic/example.html?cqContextBridge=test-bridge-v1",
+  "interactive courseware URLs should invalidate cached bridge code when the bridge version changes"
+);
 const canvasHtml = sandbox.renderSlideCanvas(
   {
     ...canvas,

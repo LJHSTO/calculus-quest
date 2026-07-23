@@ -1,6 +1,16 @@
 // Learning shell, player, lesson, and resource rendering.
 let slideCanvasResizeObserver = null;
 
+function coursewareFrameUrl(path) {
+  const url = resourceUrl(path);
+  const version = typeof CoursewareContextCore !== "undefined"
+    ? CoursewareContextCore.BRIDGE_VERSION
+    : "";
+  if (!version) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}cqContextBridge=${encodeURIComponent(version)}`;
+}
+
 function renderMetrics() {
   if (isMultiSceneLearningRoute()) {
     const totals = courseIndex?.totals || {};
@@ -489,7 +499,7 @@ function renderKnowledgeUnit(unit) {
       const node = loader();
       if (node) node.innerHTML = "<p>课件加载失败，请稍后再试。</p>";
     });
-    iframeEl.src = resourceUrl(`resources/${candidate.root}/${candidate.file}`);
+    iframeEl.src = coursewareFrameUrl(`resources/${candidate.root}/${candidate.file}`);
   }
 
   loadKnowledgeAudioMap(unit)

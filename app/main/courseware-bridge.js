@@ -11,6 +11,35 @@
   let hoverTarget = null;
   let selectedTarget = null;
   let listenersActive = false;
+  let pickPreview = null;
+  const candidateElements = new Set();
+  const INTERACTIVE_ROLE_SELECTOR = [
+    "[role='button']",
+    "[role='slider']",
+    "[role='checkbox']",
+    "[role='radio']",
+    "[role='switch']",
+    "[role='tab']",
+    "[role='option']",
+    "[role='img']"
+  ].join(",");
+  const CANDIDATE_SELECTOR = [
+    "[data-cq-context-id]",
+    "[data-context-id]",
+    "[aria-label]",
+    INTERACTIVE_ROLE_SELECTOR,
+    "button",
+    "a",
+    "input",
+    "select",
+    "textarea",
+    "label",
+    "canvas",
+    "svg",
+    "img",
+    "figure",
+    "table"
+  ].join(",");
 
   function compactText(value = "", limit = 280) {
     return String(value ?? "")
@@ -26,6 +55,12 @@
       .replace(/\r\n?/g, "\n")
       .trim()
       .slice(0, limit);
+  }
+
+  function cleanVisibleLabel(value = "", limit = 280) {
+    return compactText(value, limit)
+      .replace(/^(?:(?:\p{Extended_Pictographic}|\uFE0F)|[~◇※⬡•])+\s*/gu, "")
+      .trim();
   }
 
   function post(type, payload = {}) {
@@ -73,7 +108,7 @@
       : null;
     const wrappingLabel = element.closest?.("label");
     const tag = element.tagName?.toLowerCase();
-    return compactText(
+    return cleanVisibleLabel(
       element.getAttribute?.("data-cq-context-label")
       || element.getAttribute?.("aria-label")
       || element.getAttribute?.("title")
@@ -124,7 +159,7 @@
       "[data-cq-context-id]",
       "[data-context-id]",
       "[aria-label]",
-      "[role]",
+      INTERACTIVE_ROLE_SELECTOR,
       "button",
       "a",
       "input",
@@ -135,11 +170,10 @@
       "svg",
       "img",
       "figure",
-      "table",
-      "[id]"
+      "table"
     ].join(","));
     if (candidate && !excluded(candidate)) return candidate;
-    return element !== document.documentElement && element !== document.body ? element : null;
+    return null;
   }
 
   function describe(element, kind = "") {
@@ -175,8 +209,12 @@
     style.id = "cq-context-bridge-style";
     style.textContent = [
       ".cq-context-bridge-picking, .cq-context-bridge-picking * { cursor: crosshair !important; }",
-      ".cq-context-bridge-hover { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; }",
+      ".cq-context-bridge-picking .cq-context-bridge-candidate { outline: 1px dashed rgba(11,143,138,.58) !important; outline-offset: 2px !important; box-shadow:0 0 0 4px rgba(221,245,239,.12) !important; }",
+      ".cq-context-bridge-picking canvas.cq-context-bridge-candidate, .cq-context-bridge-picking svg.cq-context-bridge-candidate, .cq-context-bridge-picking figure.cq-context-bridge-candidate, .cq-context-bridge-picking table.cq-context-bridge-candidate { outline:0 !important; box-shadow:inset 0 0 0 2px rgba(11,143,138,.36) !important; }",
+      ".cq-context-bridge-hover { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.12) !important; }",
       ".cq-context-bridge-selected { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.16) !important; }"
+      + "\n.cq-context-bridge-preview { position:fixed; z-index:2147483647; max-width:min(300px,calc(100vw - 20px)); border-radius:8px; background:#16324F; box-shadow:0 10px 28px rgba(8,32,47,.24); padding:7px 10px; color:#fff; font:700 12px/1.45 'Microsoft YaHei UI','Microsoft YaHei',sans-serif; pointer-events:none; }"
+      + "\n.cq-context-bridge-preview[hidden] { display:none; }"
     ].join("\n");
     (document.head || document.documentElement).appendChild(style);
   }
@@ -186,6 +224,67 @@
     hoverTimer = null;
     hoverTarget?.classList?.remove("cq-context-bridge-hover");
     hoverTarget = null;
+    if (pickPreview) pickPreview.hidden = true;
+  }
+
+  function ensurePickPreview() {
+    if (pickPreview?.isConnected) return pickPreview;
+    pickPreview = document.createElement("div");
+    pickPreview.className = "cq-context-bridge-preview";
+    pickPreview.hidden = true;
+    pickPreview.setAttribute("aria-hidden", "true");
+    document.body.appendChild(pickPreview);
+    return pickPreview;
+  }
+
+  function kindLabel(element) {
+    const tag = element?.tagName?.toLowerCase() || "";
+    const type = String(element?.getAttribute?.("type") || "").toLowerCase();
+    if (rawLatex(element)) return "公式";
+    if (tag === "label") return "控件说明";
+    if (tag === "input" && type === "range") return "滑块";
+    if (tag === "select") return "选项菜单";
+    if (tag === "textarea") return "输入区域";
+    if (tag === "input") return "互动控件";
+    if (tag === "button" || element?.getAttribute?.("role") === "button") return "操作按钮";
+    if (tag === "canvas") return "当前画面";
+    if (tag === "svg") return "图形";
+    if (tag === "img") return "图片";
+    return "课件内容";
+  }
+
+  function showPickPreview(element) {
+    const preview = ensurePickPreview();
+    const label = compactText(labelFor(element), 92);
+    preview.textContent = label ? `${kindLabel(element)} · ${label}` : kindLabel(element);
+    preview.hidden = false;
+    const rect = element.getBoundingClientRect();
+    const width = Math.min(300, Math.max(120, preview.offsetWidth || 180));
+    const left = Math.min(
+      Math.max(8, rect.left + Math.min(rect.width / 2, 80) - 18),
+      Math.max(8, window.innerWidth - width - 8)
+    );
+    const top = rect.top > 68
+      ? Math.max(8, rect.top - (preview.offsetHeight || 32) - 8)
+      : Math.min(window.innerHeight - 44, rect.bottom + 8);
+    preview.style.left = `${Math.round(left)}px`;
+    preview.style.top = `${Math.round(top)}px`;
+  }
+
+  function markCandidates() {
+    candidateElements.forEach((element) => element.classList.remove("cq-context-bridge-candidate"));
+    candidateElements.clear();
+    Array.from(document.querySelectorAll(CANDIDATE_SELECTOR)).forEach((element) => {
+      if (excluded(element)) return;
+      if (!element.getClientRects?.().length) return;
+      element.classList.add("cq-context-bridge-candidate");
+      candidateElements.add(element);
+    });
+  }
+
+  function clearCandidates() {
+    candidateElements.forEach((element) => element.classList.remove("cq-context-bridge-candidate"));
+    candidateElements.clear();
   }
 
   function clearSelected() {
@@ -206,6 +305,7 @@
     hoverTimer = window.setTimeout(() => {
       hoverTarget = target;
       hoverTarget.classList.add("cq-context-bridge-hover");
+      showPickPreview(hoverTarget);
     }, HOVER_DELAY_MS);
   }
 
@@ -225,6 +325,7 @@
     picking = false;
     document.documentElement.classList.remove("cq-context-bridge-picking");
     clearHover();
+    clearCandidates();
     if (listenersActive) {
       listenersActive = false;
       document.removeEventListener("pointerover", onPointerOver, true);
@@ -260,6 +361,7 @@
     picking = true;
     injectStyle();
     document.documentElement.classList.add("cq-context-bridge-picking");
+    markCandidates();
     if (!listenersActive) {
       listenersActive = true;
       document.addEventListener("pointerover", onPointerOver, true);
@@ -326,13 +428,13 @@
   }
 
   function parameterName(element) {
-    return compactText(
+    return cleanVisibleLabel(
       element.getAttribute?.("data-cq-parameter")
       || element.getAttribute?.("aria-label")
       || element.getAttribute?.("title")
+      || labelFor(element)
       || element.getAttribute?.("name")
       || element.id
-      || labelFor(element)
       || "参数",
       120
     );
@@ -356,7 +458,7 @@
       eventType: "parameter_commit",
       contextRef: {
         ...describe(target, "interaction"),
-        label: `刚才调整了 ${parameter}`,
+        label: parameter,
         state: {
           parameter,
           oldValue,

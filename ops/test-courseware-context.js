@@ -2,7 +2,11 @@ const assert = require("node:assert/strict");
 const {
   contextThreadKey,
   createObjectPickStateMachine,
+  formatInteractionChange,
+  friendlyInteractionLabel,
+  friendlySceneLabel,
   isQuestionExcluded,
+  normalizeLauncherPlacement,
   normalizeContextRef,
   suggestionsForContext
 } = require("../app/main/courseware-context");
@@ -96,6 +100,45 @@ assert.equal(
   isQuestionExcluded({ closest: () => null }),
   false,
   "ordinary lesson content should remain selectable"
+);
+
+assert.equal(
+  friendlyInteractionLabel("interactive:id:hSlider"),
+  "步长 h",
+  "technical slider ids should become student-facing Chinese component names"
+);
+assert.equal(friendlyInteractionLabel("angle-slider"), "观察角度");
+assert.equal(friendlyInteractionLabel("🎚️ 步长 h"), "步长 h");
+assert.equal(
+  friendlyInteractionLabel("输入值 x"),
+  "输入值 x",
+  "visible Chinese component labels should take precedence over generic symbol aliases"
+);
+assert.equal(
+  formatInteractionChange({ oldValue: "0.5", newValue: "0.1" }),
+  "从 0.5 调整为 0.1"
+);
+assert.equal(
+  formatInteractionChange({ newValue: "3" }),
+  "当前值为 3"
+);
+assert.equal(
+  friendlySceneLabel({
+    resourceTitle: "输入、输出和函数规则：拖动实验",
+    unitLabel: "输入、输出和函数规则",
+    sceneType: "simulation"
+  }),
+  "拖动实验",
+  "recent interactions should name the concrete courseware scene rather than a generic scene type"
+);
+assert.equal(
+  friendlySceneLabel({ sceneType: "visualization3d" }),
+  "空间视角",
+  "scene labels should keep a Chinese fallback when a resource title is unavailable"
+);
+assert.deepEqual(
+  normalizeLauncherPlacement({ side: "left", topRatio: 0.02, compact: true }),
+  { side: "left", topRatio: 0.12, compact: true }
 );
 
 console.log("courseware context tests passed");

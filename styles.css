@@ -4208,6 +4208,134 @@ textarea,
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Learning focus layout: collapsible in-chapter path ---- */
+.rail-toggle::after,
+.learning-shell.chapter-collapsed .rail-toggle::after,
+.learning-shell:has(.chapter-rail.collapsed) .rail-toggle::after {
+  content: none !important;
+}
+
+.lesson-rail-toggle {
+  min-width: 44px;
+  min-height: 40px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 254, 250, 0.94);
+  color: var(--muted);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 8px 22px rgba(24, 44, 39, 0.1);
+  font-size: 0.76rem;
+  font-weight: 900;
+  white-space: nowrap;
+  cursor: pointer;
+  transition-property: color, background-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.lesson-rail-toggle:hover,
+.lesson-rail-toggle:focus-visible {
+  background: var(--teal-light);
+  color: var(--teal-dark);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.94) inset,
+    0 10px 26px rgba(15, 143, 131, 0.16);
+}
+
+.lesson-rail-toggle:active {
+  transform: scale(0.96);
+}
+
+@media (min-width: 1181px) {
+  .rail-toggle {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .lesson-rail,
+  .lesson-rail-toggle {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .player {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .lesson-rail {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition-property: opacity, transform, visibility;
+    transition-duration: 180ms;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .lesson-rail .rail-header {
+    min-height: 44px;
+    padding-right: 58px;
+  }
+
+  .lesson-rail-toggle {
+    position: sticky;
+    top: 88px;
+    z-index: 23;
+    align-self: start;
+    justify-self: end;
+    width: 50px;
+    height: 36px;
+    margin: 9px 9px 0 0;
+  }
+
+  .learning-shell.lesson-collapsed,
+  .learning-shell.chapter-collapsed.lesson-collapsed,
+  .learning-shell:has(.chapter-rail.collapsed).lesson-collapsed,
+  .learning-shell:has(.lesson-rail.collapsed) {
+    grid-template-columns: 48px 48px minmax(0, 1fr);
+  }
+
+  .learning-shell.lesson-collapsed .lesson-rail,
+  .learning-shell:has(.lesson-rail.collapsed) .lesson-rail {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-10px);
+  }
+
+  .learning-shell.lesson-collapsed .lesson-rail-toggle,
+  .learning-shell:has(.lesson-rail.collapsed) .lesson-rail-toggle {
+    justify-self: stretch;
+    width: 48px;
+    height: 44px;
+    margin: 0;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .lesson-rail-toggle,
+  .lesson-rail,
+  .player {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .lesson-rail-toggle {
+    position: static;
+    justify-self: start;
+    width: auto;
+    min-width: 76px;
+    padding-inline: 14px;
+  }
+
+  .lesson-rail.collapsed {
+    display: none;
+  }
+}
 .agentic-coach-card.knowledge-selection {
   border-color: rgba(20, 120, 111, 0.28);
 }

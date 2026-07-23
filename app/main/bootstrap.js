@@ -399,6 +399,55 @@ function setupChapterRailToggle() {
     toggle.focus();
   });
 }
+
+function setLessonRailCollapsed(collapsed, options = {}) {
+  const rail = document.getElementById("lesson-rail");
+  const toggle = document.getElementById("lesson-rail-toggle");
+  const shell = rail?.closest(".learning-shell");
+  if (!rail || !toggle) return false;
+  const shouldPersist = options.persist !== false;
+  rail.classList.toggle("collapsed", collapsed);
+  rail.setAttribute("aria-hidden", collapsed ? "true" : "false");
+  shell?.classList.toggle("lesson-collapsed", collapsed);
+  toggle.textContent = collapsed ? "路径" : "收起";
+  toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  toggle.setAttribute("aria-label", collapsed ? "展开本章路径" : "收起本章路径");
+  toggle.setAttribute("title", collapsed ? "展开本章路径" : "收起本章路径");
+  if (shouldPersist) {
+    try {
+      localStorage.setItem("lessonRailCollapsed", collapsed ? "1" : "0");
+    } catch {}
+  }
+  if (!collapsed && options.focusCurrent) {
+    window.requestAnimationFrame(() => {
+      rail.querySelector("[data-unit].active, .lesson-card.active, .lesson-cluster-card.active")?.focus?.();
+    });
+  }
+  return true;
+}
+
+function setupLessonRailToggle() {
+  const rail = document.getElementById("lesson-rail");
+  const toggle = document.getElementById("lesson-rail-toggle");
+  if (!rail || !toggle) return;
+
+  let collapsed = false;
+  try {
+    collapsed = localStorage.getItem("lessonRailCollapsed") === "1";
+  } catch {}
+  if (document.querySelector("#knowledge-assistant-root.is-open")) collapsed = true;
+  setLessonRailCollapsed(collapsed, { persist: false, focusCurrent: false });
+
+  toggle.addEventListener("click", () => {
+    setLessonRailCollapsed(!rail.classList.contains("collapsed"));
+  });
+  window.addEventListener("cq:knowledge-assistant-visibility", (event) => {
+    if (!event.detail?.open) return;
+    setLessonRailCollapsed(true, { persist: false, focusCurrent: false });
+    setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
+  });
+}
+
 async function init() {
   const safetyTimer = setTimeout(() => {
     document.getElementById("app-loader")?.classList.add("hidden");
@@ -426,6 +475,7 @@ async function init() {
     buildCurriculum();
     renderAll();
     setupChapterRailToggle();
+    setupLessonRailToggle();
     clearTimeout(safetyTimer);
     document.getElementById("app-loader")?.classList.add("hidden");
 

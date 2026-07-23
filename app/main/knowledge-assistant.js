@@ -4,6 +4,7 @@
   if (!Core || !root) return;
 
   const OPEN_STORAGE_KEY = "calculus-quest-knowledge-assistant-open-v1";
+  const LAUNCHER_STORAGE_KEY = "calculus-quest-knowledge-launcher-v1";
   let isOpen = false;
   let isAsking = false;
   let loadingHistory = false;
@@ -19,28 +20,38 @@
   let syncTimer = null;
   let messages = [];
   let provider = { id: "mock", live: false, label: "本地引导" };
+  let launcherPlacement = Core.normalizeLauncherPlacement();
+  let suppressLauncherClickUntil = 0;
 
   try {
     isOpen = localStorage.getItem(OPEN_STORAGE_KEY) === "1";
+    launcherPlacement = Core.normalizeLauncherPlacement(
+      JSON.parse(localStorage.getItem(LAUNCHER_STORAGE_KEY) || "{}")
+    );
   } catch {}
 
   root.innerHTML = `
-    <button class="knowledge-assistant-launcher" type="button" data-knowledge-open aria-controls="knowledge-assistant-panel" aria-expanded="false">
-      <span class="knowledge-pin" aria-hidden="true"><i></i></span>
-      <span><strong>知点</strong><small>指着课件问明白</small></span>
-    </button>
+    <div class="knowledge-launcher-shell" data-knowledge-launcher-shell>
+      <button class="knowledge-assistant-launcher" type="button" data-knowledge-open aria-controls="knowledge-assistant-panel" aria-expanded="false" aria-label="打开知点" title="打开知点">
+        <span class="knowledge-launcher-grip" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="knowledge-pin" aria-hidden="true"><i></i></span>
+        <span class="knowledge-launcher-copy"><strong>知点</strong><small>从当前内容继续</small></span>
+      </button>
+      <button class="knowledge-launcher-minimize" type="button" data-knowledge-launcher-minimize aria-label="收起知点入口" title="收起知点入口">‹</button>
+    </div>
 
-    <section class="knowledge-assistant-panel" id="knowledge-assistant-panel" aria-label="知点上下文学习侧栏" aria-hidden="true">
+    <section class="knowledge-assistant-panel" id="knowledge-assistant-panel" aria-label="知点上下文学习侧栏" aria-hidden="true" tabindex="-1">
       <header class="knowledge-assistant-header">
         <div class="knowledge-assistant-brand">
           <span class="knowledge-pin large" aria-hidden="true"><i></i></span>
           <div>
             <strong>知点</strong>
-            <small>指着课件问明白</small>
+            <small>顺着疑问往下学</small>
           </div>
         </div>
         <div class="knowledge-assistant-header-actions">
           <span class="knowledge-provider-badge" data-knowledge-provider>本地引导</span>
+          <button type="button" class="knowledge-icon-button knowledge-launcher-mode" data-knowledge-launcher-mode aria-label="下次只显示知点针" title="下次只显示知点针">—</button>
           <button type="button" class="knowledge-icon-button" data-knowledge-close aria-label="关闭知点侧栏">×</button>
         </div>
       </header>
@@ -58,9 +69,9 @@
 
       <section class="knowledge-context-card" data-knowledge-context hidden>
         <div class="knowledge-context-heading">
-          <span><i class="knowledge-pin mini" aria-hidden="true"></i> 正在问</span>
+          <span><i class="knowledge-pin mini" aria-hidden="true"></i> 已聚焦</span>
           <div>
-            <button type="button" data-knowledge-restore>定位</button>
+            <button type="button" data-knowledge-restore>回到原处</button>
             <button type="button" data-knowledge-clear-context aria-label="清除当前选区">×</button>
           </div>
         </div>
@@ -71,19 +82,19 @@
 
       <section class="knowledge-operation-echo" data-knowledge-echo hidden>
         <div>
-          <span>操作回声</span>
+          <span>最近操作</span>
           <strong data-knowledge-echo-title></strong>
           <small data-knowledge-echo-copy></small>
         </div>
-        <button type="button" data-knowledge-use-echo>就这个变化问</button>
+        <button type="button" data-knowledge-use-echo>带入问题</button>
       </section>
 
       <div class="knowledge-assistant-tools">
         <button type="button" class="knowledge-pick-button" data-knowledge-pick>
           <span class="knowledge-crosshair" aria-hidden="true"></span>
-          <span data-knowledge-pick-label>指着问</span>
+          <span data-knowledge-pick-label>聚焦课件内容</span>
         </button>
-        <p>文字和公式可直接选择；图形、选项和互动对象用一次性“指着问”。</p>
+          <p>划选文字或公式即可提问；图形、选项和互动控件可先选中，再围绕它追问。</p>
       </div>
 
       <div class="knowledge-quick-questions" data-knowledge-quick aria-label="快捷问题"></div>
@@ -91,35 +102,38 @@
       <div class="knowledge-message-list" data-knowledge-messages role="log" aria-live="polite" aria-relevant="additions text">
         <div class="knowledge-empty-state" data-knowledge-empty>
           <span class="knowledge-pin empty" aria-hidden="true"><i></i></span>
-          <strong>卡在哪里，就从哪里问</strong>
-          <p>你可以不选任何内容，直接围绕当前知识点提问。</p>
+          <strong>从眼前这一步继续</strong>
+          <p>可以直接提问，也可以带上一段文字、一个公式或一个互动控件。</p>
         </div>
       </div>
 
       <form class="knowledge-composer" data-knowledge-form>
         <label for="knowledge-question-input">输入你的问题</label>
         <div>
-          <textarea id="knowledge-question-input" data-knowledge-input rows="1" maxlength="1200" placeholder="例如：为什么 h 变小会更接近切线？"></textarea>
+          <textarea id="knowledge-question-input" data-knowledge-input rows="1" maxlength="1200" placeholder="例如：为什么 h 变小时，割线更接近切线？"></textarea>
           <button type="submit" data-knowledge-send aria-label="发送问题">↑</button>
         </div>
-        <small data-knowledge-status>回答会结合当前知识点和你选中的课件位置。</small>
+        <small data-knowledge-status>回答会参考当前知识点与已聚焦的课件内容。</small>
       </form>
     </section>
 
     <div class="knowledge-pick-notice" data-knowledge-pick-notice hidden role="status">
       <span class="knowledge-crosshair" aria-hidden="true"></span>
-      <p><strong>选择你想问的地方</strong><small>这次点击只选择，不会操作课件 · Esc 退出</small></p>
+      <p><strong>选择想深入的一处</strong><small data-knowledge-pick-instructions>移动鼠标可预览可选范围；本次点击只作标记，不会触发课件操作。按 Esc 退出。</small></p>
       <button type="button" data-knowledge-cancel-pick>取消</button>
     </div>
 
     <button class="knowledge-selection-action" type="button" data-knowledge-selection-action hidden>
       <span class="knowledge-pin mini" aria-hidden="true"></span>
-      问这里
+      围绕这里提问
     </button>
   `;
 
   const els = {
+    launcherShell: root.querySelector("[data-knowledge-launcher-shell]"),
     launcher: root.querySelector("[data-knowledge-open]"),
+    launcherMinimize: root.querySelector("[data-knowledge-launcher-minimize]"),
+    launcherMode: root.querySelector("[data-knowledge-launcher-mode]"),
     panel: root.querySelector("[data-knowledge-assistant-panel], #knowledge-assistant-panel"),
     close: root.querySelector("[data-knowledge-close]"),
     provider: root.querySelector("[data-knowledge-provider]"),
@@ -146,6 +160,7 @@
     send: root.querySelector("[data-knowledge-send]"),
     status: root.querySelector("[data-knowledge-status]"),
     pickNotice: root.querySelector("[data-knowledge-pick-notice]"),
+    pickInstructions: root.querySelector("[data-knowledge-pick-instructions]"),
     cancelPick: root.querySelector("[data-knowledge-cancel-pick]"),
     selectionAction: root.querySelector("[data-knowledge-selection-action]")
   };
@@ -206,9 +221,116 @@
     }
   }
 
+  function persistLauncherPlacement() {
+    try {
+      localStorage.setItem(LAUNCHER_STORAGE_KEY, JSON.stringify(launcherPlacement));
+    } catch {}
+  }
+
+  function applyLauncherPlacement() {
+    launcherPlacement = Core.normalizeLauncherPlacement(launcherPlacement);
+    const viewportHeight = Math.max(window.innerHeight || 0, 320);
+    const minTop = 70;
+    const maxTop = Math.max(minTop, viewportHeight - 70);
+    const top = Math.min(maxTop, Math.max(minTop, launcherPlacement.topRatio * viewportHeight));
+    root.style.setProperty("--knowledge-launcher-top", `${Math.round(top)}px`);
+    root.classList.toggle("is-launcher-left", launcherPlacement.side === "left");
+    root.classList.toggle("is-launcher-compact", launcherPlacement.compact);
+    els.launcher.setAttribute("aria-label", "打开知点");
+    els.launcher.setAttribute("title", launcherPlacement.compact ? "打开知点" : "打开知点学习侧栏");
+    els.launcherMinimize.textContent = launcherPlacement.side === "left" ? "‹" : "›";
+    els.launcherMinimize.setAttribute("aria-label", "收起知点入口");
+    els.launcherMinimize.setAttribute("title", "收起知点入口");
+    els.launcherMode.setAttribute(
+      "aria-label",
+      launcherPlacement.compact ? "下次显示完整知点入口" : "下次只显示知点针"
+    );
+    els.launcherMode.setAttribute(
+      "title",
+      launcherPlacement.compact ? "下次显示完整知点入口" : "下次只显示知点针"
+    );
+    els.launcherMode.textContent = launcherPlacement.compact ? "＋" : "—";
+  }
+
+  function setLauncherCompact(compact, source = "button") {
+    launcherPlacement = Core.normalizeLauncherPlacement({
+      ...launcherPlacement,
+      compact
+    });
+    applyLauncherPlacement();
+    persistLauncherPlacement();
+    track("knowledge_launcher_mode", {
+      compact: launcherPlacement.compact,
+      source
+    });
+  }
+
+  function setupLauncherDrag() {
+    let pointerId = null;
+    let startX = 0;
+    let startY = 0;
+    let dragged = false;
+
+    els.launcher.addEventListener("pointerdown", (event) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      pointerId = event.pointerId;
+      startX = event.clientX;
+      startY = event.clientY;
+      dragged = false;
+      els.launcher.setPointerCapture?.(pointerId);
+    });
+    els.launcher.addEventListener("pointermove", (event) => {
+      if (pointerId !== event.pointerId) return;
+      const distance = Math.hypot(event.clientX - startX, event.clientY - startY);
+      if (!dragged && distance < 6) return;
+      dragged = true;
+      event.preventDefault();
+      root.classList.add("is-launcher-dragging");
+      launcherPlacement = Core.normalizeLauncherPlacement({
+        ...launcherPlacement,
+        side: event.clientX < window.innerWidth / 2 ? "left" : "right",
+        topRatio: event.clientY / Math.max(window.innerHeight, 1)
+      });
+      applyLauncherPlacement();
+    });
+    const finish = (event) => {
+      if (pointerId !== event.pointerId) return;
+      if (dragged) {
+        suppressLauncherClickUntil = performance.now() + 360;
+        persistLauncherPlacement();
+        track("knowledge_launcher_moved", {
+          side: launcherPlacement.side,
+          topRatio: launcherPlacement.topRatio
+        });
+      }
+      root.classList.remove("is-launcher-dragging");
+      try {
+        els.launcher.releasePointerCapture?.(pointerId);
+      } catch {}
+      pointerId = null;
+      dragged = false;
+    };
+    els.launcher.addEventListener("pointerup", finish);
+    els.launcher.addEventListener("pointercancel", finish);
+  }
+
+  function currentSceneLabel(meta = courseMeta()) {
+    return Core.friendlySceneLabel({
+      resourceTitle: meta.resourceTitle,
+      unitLabel: meta.unitLabel,
+      sceneType: meta.sceneType
+    });
+  }
+
   function setStatus(message = "", tone = "") {
-    els.status.textContent = message || "回答会结合当前知识点和你选中的课件位置。";
+    els.status.textContent = message || "回答会参考当前知识点与已聚焦的课件内容。";
     els.status.dataset.tone = tone;
+  }
+
+  function composerFocusTarget() {
+    const hasPrecisePointer = global.innerWidth > 760
+      && global.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches;
+    return hasPrecisePointer ? els.input : els.panel;
   }
 
   function setOpen(next, options = {}) {
@@ -223,8 +345,11 @@
     try {
       localStorage.setItem(OPEN_STORAGE_KEY, isOpen ? "1" : "0");
     } catch {}
+    global.dispatchEvent(new CustomEvent("cq:knowledge-assistant-visibility", {
+      detail: { open: isOpen }
+    }));
     if (isOpen && options.focus !== false) {
-      window.setTimeout(() => els.input.focus({ preventScroll: true }), 180);
+      window.setTimeout(() => composerFocusTarget()?.focus({ preventScroll: true }), 180);
     }
     track(isOpen ? "knowledge_assistant_open" : "knowledge_assistant_close");
   }
@@ -232,13 +357,13 @@
   function contextCopy(ref) {
     if (!ref) return "";
     if (ref.kind === "interaction" && ref.state) {
-      const values = [ref.state.oldValue, ref.state.newValue].filter((value) => value !== "");
-      return values.length
-        ? `${ref.state.parameter || "参数"}：${values.join(" → ")}`
-        : ref.state.action || ref.label;
+      return `${Core.friendlyInteractionLabel(ref.state.parameter || ref.label)}：${Core.formatInteractionChange(ref.state)}`;
     }
     if (ref.latex) return ref.latex;
-    return ref.excerpt || ref.label || "";
+    const copy = ref.excerpt || ref.label || "";
+    return (ref.confidence === "low" || ref.coarse) && copy.length > 320
+      ? `${copy.slice(0, 320).trim()}…`
+      : copy;
   }
 
   function contextTitle(ref) {
@@ -263,18 +388,20 @@
   }
 
   function echoSummary(ref) {
-    const stateValue = ref?.state || {};
-    const values = [stateValue.oldValue, stateValue.newValue].filter((value) => value !== "");
-    return values.length ? values.join(" → ") : stateValue.action || "已记录最近一次参数变化";
+    return Core.formatInteractionChange(ref?.state || {});
   }
 
   function renderEcho() {
-    const ref = recentInteraction && recentInteraction.unitId === courseMeta().unitId
-      ? recentInteraction
-      : null;
+    const meta = courseMeta();
+    const captured = typeof CoursewareContext?.captureRecentInteraction === "function"
+      ? CoursewareContext.captureRecentInteraction()
+      : recentInteraction;
+    const ref = captured && captured.unitId === meta.unitId ? captured : null;
+    if (!ref && recentInteraction) recentInteraction = null;
     els.echo.hidden = !ref || activeContext?.createdAt === ref.createdAt;
     if (!ref) return;
-    els.echoTitle.textContent = `刚才调整了：${ref.state?.parameter || ref.label || "参数"}`;
+    const component = Core.friendlyInteractionLabel(ref.state?.parameter || ref.label);
+    els.echoTitle.textContent = `${currentSceneLabel(meta)} · ${component}`;
     els.echoCopy.textContent = echoSummary(ref);
   }
 
@@ -352,7 +479,7 @@
     const meta = courseMeta();
     els.unit.textContent = meta.knowledgePointLabel || meta.unitLabel || "等待课件加载";
     els.unitDetail.textContent = meta.sceneType
-      ? `${meta.resourceTitle || "当前互动场景"} · 对话按知识点保留`
+      ? `${currentSceneLabel(meta)} · 对话按知识点保留`
       : meta.isQuiz
         ? `${meta.quizSubmitted ? "已提交，可进行完整复盘" : "未提交，只提供思路与提示"} · 对话按本测验保留`
         : "可直接提问，也可以先选择课件中的文字、公式或对象";
@@ -365,6 +492,8 @@
 
   function render() {
     root.classList.toggle("is-open", isOpen);
+    els.panel.setAttribute("aria-hidden", isOpen ? "false" : "true");
+    els.launcher.setAttribute("aria-expanded", isOpen ? "true" : "false");
     renderProvider();
     renderUnit();
     renderContext();
@@ -409,7 +538,14 @@
     root.classList.toggle("is-picking", active);
     els.pickNotice.hidden = !active;
     els.pick.classList.toggle("active", active);
-    els.pickLabel.textContent = active ? "取消指着问" : "指着问";
+    els.pickLabel.textContent = active ? "结束选择" : "聚焦课件内容";
+    if (active && els.pickInstructions) {
+      const hasPrecisePointer = global.innerWidth > 760
+        && global.matchMedia?.("(hover: hover) and (pointer: fine)")?.matches;
+      els.pickInstructions.textContent = hasPrecisePointer
+        ? "移动鼠标可预览可选范围；本次点击只作标记，不会触发课件操作。按 Esc 退出。"
+        : "轻点已标示的内容完成选择；本次点击只作标记，不会触发课件操作。";
+    }
     track(active ? "knowledge_object_pick_begin" : "knowledge_object_pick_end", {
       reason: payload?.state?.reason || ""
     });
@@ -670,8 +806,21 @@
     syncTimer = window.setTimeout(sync, 80);
   }
 
-  els.launcher.addEventListener("click", () => setOpen(true));
-  els.close.addEventListener("click", () => setOpen(false));
+  els.launcher.addEventListener("click", (event) => {
+    if (performance.now() < suppressLauncherClickUntil) {
+      event.preventDefault();
+      return;
+    }
+    setOpen(true);
+  });
+  els.launcherMinimize.addEventListener("click", () => setLauncherCompact(true, "launcher"));
+  els.launcherMode.addEventListener("click", () => {
+    setLauncherCompact(!launcherPlacement.compact, "panel");
+  });
+  els.close.addEventListener("click", () => {
+    setOpen(false);
+    els.launcher.focus({ preventScroll: true });
+  });
   els.pick.addEventListener("click", () => {
     if (CoursewareContext.getPickState().phase === "picking") {
       CoursewareContext.cancelObjectPick("button");
@@ -715,7 +864,10 @@
     if (!els.selectionAction.hidden && !els.selectionAction.contains(event.target)) hideSelectionAction();
   }, true);
   window.addEventListener("scroll", hideSelectionAction, true);
-  window.addEventListener("resize", hideSelectionAction);
+  window.addEventListener("resize", () => {
+    hideSelectionAction();
+    applyLauncherPlacement();
+  });
   window.addEventListener("cq:lesson-rendered", scheduleSync);
 
   const lessonPlayer = document.querySelector("#lesson-player");
@@ -741,6 +893,8 @@
     useContext
   });
 
+  applyLauncherPlacement();
+  setupLauncherDrag();
   render();
   scheduleSync();
   global.dispatchEvent(new CustomEvent("cq:knowledge-assistant-ready"));
