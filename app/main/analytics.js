@@ -102,6 +102,7 @@ function analyticsEvidenceBucket(unitId, event = {}) {
     uiWheelCount: 0,
     uiInputCount: 0,
     parameterChangeCount: 0,
+    experiencedSceneTypes: [],
     firstAt: event.timing?.clientAt || new Date().toISOString(),
     lastAt: ""
   };
@@ -137,6 +138,27 @@ function analyticsRememberInteractionEvidence(event) {
   if (["ui_wheel", "interactive_wheel", "interactive_scroll"].includes(type)) bucket.uiWheelCount += 1;
   if (["ui_input", "interactive_input", "interactive_change"].includes(type)) bucket.uiInputCount += 1;
   if (["parameter_commit", "parameter_change"].includes(type)) bucket.parameterChangeCount += 1;
+  const sceneType = event.sceneType || event.data?.sceneType || event.data?.selectedSceneType || "";
+  if (
+    sceneType
+    && [
+      "time_on_unit",
+      "resource_fullscreen",
+      "ui_wheel",
+      "interactive_wheel",
+      "interactive_scroll",
+      "ui_input",
+      "interactive_input",
+      "interactive_change",
+      "parameter_commit",
+      "parameter_change"
+    ].includes(type)
+  ) {
+    bucket.experiencedSceneTypes = Array.from(new Set([
+      ...(bucket.experiencedSceneTypes || []),
+      sceneType
+    ]));
+  }
 }
 
 function analyticsScheduleCoachEvidenceRefresh(event) {
@@ -707,14 +729,30 @@ function setupInteractionTracking() {
   }, 500);
 
   window.addEventListener("message", (event) => {
-    if (event.data?.type !== "interaction_track") return;
+    const messageType = String(event.data?.type || "");
     const trustedFrame = Array.from(document.querySelectorAll("iframe.embed-frame"))
-      .some((frame) => frame.contentWindow === event.source);
+      .find((frame) => frame.contentWindow === event.source);
     if (!trustedFrame) return;
-    analyticsTrack(event.data.eventType || "iframe_event", {
-      source: "iframe",
-      data: event.data.payload || {}
-    });
+    if (messageType === "cq:interaction" && event.data.eventType === "parameter_commit") {
+      const contextRef = event.data.contextRef || event.data.payload || {};
+      analyticsTrack("parameter_commit", {
+        source: "courseware-bridge",
+        unitId: contextRef.unitId || currentUnitId,
+        value: contextRef.state || null,
+        data: {
+          sceneType: trustedFrame.dataset.contextSceneType || contextRef.sceneType || "",
+          contextKind: contextRef.kind || "interaction",
+          contextConfidence: contextRef.confidence || "low"
+        }
+      });
+      return;
+    }
+    if (messageType === "interaction_track") {
+      analyticsTrack(event.data.eventType || "iframe_event", {
+        source: "iframe",
+        data: event.data.payload || {}
+      });
+    }
   });
 
   ["pointerdown", "keydown", "input", "change", "scroll", "wheel"].forEach((type) => {

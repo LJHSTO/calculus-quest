@@ -114,6 +114,8 @@
       continue: "继续主线",
       continue_mainline: "继续主线",
       same_concept_scene_choice: "同一知识簇内换场景",
+      reference_only: "资源建议（仅供参考）",
+      current_knowledge_resource_reference: "当前知识点资源建议",
       keep: "保留当前学习项",
       learn: "继续学习",
       proceed: "继续下一步"
@@ -134,7 +136,18 @@
       high_friction_support: "针对高操作摩擦提供支持",
       weak_concept_match: "匹配薄弱概念",
       current_scene: "当前学习场景",
-      planner_ranked: "由 Planner 综合排序"
+      planner_ranked: "由 Planner 综合排序",
+      definition_match: "适合建立概念直觉",
+      method_match: "适合梳理方法步骤",
+      modeling_match: "适合迁移到应用情境",
+      first_learning_intuition: "首次学习优先建立直觉",
+      unseen_representation: "尚未体验的新表征",
+      experienced_representation: "已体验过，降低重复优先级",
+      low_mastery_game: "低掌握度优先挑战误解",
+      low_mastery_structure: "低掌握度优先梳理关系",
+      low_mastery_spatial: "低掌握度补充空间视角",
+      high_mastery_transfer: "高掌握度适合迁移观察",
+      review_unseen: "补学时优先未体验表征"
     })[key] || publicCourseText(key, "其他排序依据");
   }
 

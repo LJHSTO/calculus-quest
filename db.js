@@ -2312,7 +2312,9 @@ function agenticDecisionTrace(dates = {}) {
     const input = parseJsonField(row.input_summary);
     const output = parseJsonField(row.output_summary);
     const planner = output.planner || {};
-    const plannerTop = Array.isArray(planner.rankedSceneChoices) ? planner.rankedSceneChoices[0] || {} : {};
+    const plannerTop = planner.recommendedResource
+      || (Array.isArray(planner.rankedResourceChoices) ? planner.rankedResourceChoices[0] || {} : {})
+      || (Array.isArray(planner.rankedSceneChoices) ? planner.rankedSceneChoices[0] || {} : {});
     const snapshot = queryOne(
       `SELECT * FROM interaction_evidence_snapshots
        WHERE agent_decision_id = ? AND evidence_scope = 'current'
@@ -2369,8 +2371,8 @@ function agenticDecisionTrace(dates = {}) {
       evidence_snapshot_id: snapshot?.id || "",
       planner_strategy: planner.strategy || "",
       planner_action: planner.recommendedPath?.action || "",
-      planner_target_id: planner.recommendedPath?.targetId || plannerTop.id || "",
-      planner_target_label: planner.recommendedPath?.targetLabel || plannerTop.label || plannerTop.title || "",
+      planner_target_id: plannerTop.id || planner.recommendedPath?.targetId || "",
+      planner_target_label: plannerTop.title || plannerTop.typeId || planner.recommendedPath?.targetLabel || "",
       planner_top_score: plannerTop.score ?? "",
       planner_top_reasons: Array.isArray(plannerTop.reasons) ? plannerTop.reasons.join(";") : "",
       risk_level: evidence.riskLevel || "",

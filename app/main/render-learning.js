@@ -1576,31 +1576,58 @@ function renderKnowledgeSceneChoicePanel(unit) {
   const types = knowledgeInteractionTypes(unit);
   if (!types.length) return "";
   const selectedTypeId = selectedKnowledgeSceneType(unit);
-  const choices = types.map((type) => {
+  const recommendation = typeof knowledgeSceneRecommendation === "function"
+    ? knowledgeSceneRecommendation(unit)
+    : { ranked: [], recommended: null };
+  const rankingByType = new Map((recommendation.ranked || []).map((item) => [item.typeId, item]));
+  const orderedTypes = [...types].sort((a, b) => {
+    const aRank = rankingByType.get(a.id);
+    const bRank = rankingByType.get(b.id);
+    return Number(bRank?.score ?? -Infinity) - Number(aRank?.score ?? -Infinity)
+      || types.indexOf(a) - types.indexOf(b);
+  });
+  const choices = orderedTypes.map((type) => {
     const candidate = knowledgeResourceCandidate(unit, type.id);
     const hasResource = Boolean(candidate);
     const active = type.id === selectedTypeId;
     const meta = sceneChoiceMeta(type);
+    const ranking = rankingByType.get(type.id) || null;
+    const recommended = Boolean(ranking?.recommended);
     const resourceTitle = hasResource
       ? cleanStudentSceneTitle(candidate.title || candidate.file, unit.label)
       : "当前资源暂不可用";
     const sceneTitle = hasResource ? sceneChoiceCategoryLabel(type) : resourceTitle;
-    const cls = ["multi-scene-scene-option", "coach-choice", active ? "active" : "", hasResource ? "available" : "pending"].filter(Boolean).join(" ");
+    const reason = ranking?.reasonLabels?.slice(0, 2).join(" · ") || "";
+    const cls = [
+      "multi-scene-scene-option",
+      "coach-choice",
+      recommended ? "coach-recommended" : "",
+      active ? "active" : "",
+      hasResource ? "available" : "pending"
+    ].filter(Boolean).join(" ");
     return `
-      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(resourceTitle)}">
-        <span aria-hidden="true">${escapeHtml(meta.icon)}</span>
-        <strong>${escapeHtml(meta.title)}</strong>
-        <small>${escapeHtml(sceneTitle)}</small>
+      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" data-coach-score="${escapeHtml(ranking?.score ?? "")}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(resourceTitle)}${reason ? `；${escapeHtml(reason)}` : ""}">
+        <span class="scene-option-icon" aria-hidden="true">${escapeHtml(meta.icon)}</span>
+        <span class="scene-option-copy">
+          <strong>${escapeHtml(meta.title)}</strong>
+          <small>${escapeHtml(sceneTitle)}</small>
+          ${recommended && reason ? `<small class="coach-recommendation-reason">${escapeHtml(reason)}</small>` : ""}
+        </span>
+        ${recommended ? '<em class="coach-recommendation-badge">Coach 建议</em>' : ""}
       </button>
     `;
   }).join("");
   const selected = types.find((type) => type.id === selectedTypeId) || null;
   const selectedMeta = selected ? sceneChoiceMeta(selected) : null;
+  const recommendedType = types.find((type) => type.id === recommendation.recommended?.typeId) || null;
+  const recommendedMeta = recommendedType ? sceneChoiceMeta(recommendedType) : null;
   return `
     <div class="agentic-knowledge-choice ${selected ? "has-selection" : "awaiting-selection"}">
       <div>
-        <strong>${selected ? "已选择一种互动方式" : "四个互动场景由你选择"}</strong>
-        <small>${selected ? `当前是“${escapeHtml(selectedMeta.title)}”，点击其他场景可立即切换。` : "没有默认场景，请按自己的兴趣或理解习惯选择。"}</small>
+        <strong>${selected ? "已选择一种互动方式" : recommendedMeta ? `Coach 建议先试“${escapeHtml(recommendedMeta.title)}”` : "四个互动场景由你选择"}</strong>
+        <small>${selected
+          ? `当前是“${escapeHtml(selectedMeta.title)}”，Coach 建议仍只是参考，点击其他场景可立即切换。`
+          : "建议根据当前知识点、掌握度和已体验场景计算，仅供参考；系统不会替你选择。"}</small>
       </div>
       <div class="multi-scene-scene-selector agentic-knowledge-scene-selector" role="group" aria-label="${escapeHtml(unit.label)}的互动场景">${choices}</div>
     </div>

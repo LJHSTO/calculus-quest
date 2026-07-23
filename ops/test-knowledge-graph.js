@@ -40,13 +40,32 @@ const plannerResult = planner.plan({
   chapterId,
   currentUnitId,
   assessment: { masteryLevel: 0.4, suggestedAction: "remediate", weakConcepts: [{ concept: "输入、输出" }] },
-  analyticsResult: { riskLevel: "high", frictionScore: 0.8, engagementScore: 0.3 },
-  interactionEvidence: { current: { suggestedMove: "alternate_scene", riskLevel: "high", frictionScore: 0.8 } },
+  interactionEvidence: {
+    current: {
+      suggestedMove: "alternate_scene",
+      riskLevel: "high",
+      frictionScore: 0.8,
+      experiencedSceneTypes: ["simulation"],
+      reviewMode: true
+    }
+  },
   quizSummary,
   completedUnitIds: []
 });
 assert.equal(plannerResult.ok, true, JSON.stringify(plannerResult, null, 2));
-assert.ok(plannerResult.rankedSceneChoices.length > 0, "Planner should rank route-compatible candidates");
+assert.equal(plannerResult.mode, "resource_scene_ranking");
+assert.equal(plannerResult.knowledgePointId, currentUnitId);
+assert.equal(plannerResult.rankedResourceChoices.length, 4, "Planner should rank all four resources for the current knowledge point");
+assert.equal(plannerResult.recommendedResource.typeId, "game");
+assert.ok(
+  plannerResult.rankedResourceChoices.every((choice) => choice.knowledgePointId === currentUnitId),
+  "Planner must not substitute another knowledge point for a resource scene"
+);
+assert.equal(
+  plannerResult.rankedSceneChoices.length,
+  0,
+  "legacy cross-knowledge-point scene choices must stay disabled"
+);
 
 console.log(JSON.stringify({
   ok: true,
@@ -57,5 +76,5 @@ console.log(JSON.stringify({
     remediate: coachResult.remediationCandidates.length,
     extension: extensionResult.extensionCandidates.length
   },
-  plannerChoices: plannerResult.rankedSceneChoices.length
+  plannerChoices: plannerResult.rankedResourceChoices.length
 }, null, 2));

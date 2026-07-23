@@ -516,31 +516,6 @@ function agenticMergeCandidates(...groups) {
   });
 }
 
-function agenticPlannerRankedCandidates(plan, { action = "", chapterId = "" } = {}) {
-  const choices = Array.isArray(plan?.rankedSceneChoices) ? plan.rankedSceneChoices : [];
-  const recommended = plan?.plannerInsight?.recommendedPath || {};
-  const preferredAction = action || recommended.action || "";
-  return choices
-    .filter((candidate) => !chapterId || candidate.chapterId === chapterId)
-    .filter((candidate) => {
-      if (!preferredAction || preferredAction === "continue") return true;
-      if (preferredAction === "extend") return candidate.difficultyBand === "extension" || ["extend", "preview", "transfer"].includes(candidate.scenarioType);
-      if (preferredAction === "remediate") return candidate.difficultyBand === "remedial" || ["remediate", "manipulate", "compare", "explain"].includes(candidate.scenarioType);
-      return true;
-    })
-    .map((candidate) => ({
-      id: candidate.id,
-      title: candidate.label || candidate.title || agenticUnitLabel(candidate.id),
-      label: candidate.label || candidate.title || agenticUnitLabel(candidate.id),
-      role: candidate.role || candidate.scenarioType || "planner",
-      modality: candidate.modality || candidate.representation || "",
-      chapterId: candidate.chapterId || chapterId,
-      reason: candidate.reason || `planner_${preferredAction || "ranked"}`,
-      plannerScore: candidate.score,
-      plannerReasons: candidate.reasons || []
-    }));
-}
-
 function agenticPreferredRelearnOrders(phase = "") {
   if (phase === "formative") return [5, 11, 12];
   if (phase === "post") return [11, 12, 5];
@@ -1491,6 +1466,27 @@ function agenticQuizKnowledgeMastery(records = [], chapterId = "") {
   });
 }
 
+function agenticKnowledgeMasteryForUnit(unitId = "") {
+  const unit = findMainUnit(unitId);
+  if (!unit || unit.type !== "knowledge") return null;
+  const chapter = getChapter(unit.chapterId);
+  const records = (chapter?.units || [])
+    .filter((candidate) => candidate.type === "quiz")
+    .flatMap((candidate) => agenticQuizRecordsForUnit(candidate.id));
+  const mastery = agenticQuizKnowledgeMastery(records, unit.chapterId)
+    .find((item) => item.id === unit.id);
+  return mastery?.mastery ?? null;
+}
+
+function agenticKnowledgeReviewMode(unitId = "") {
+  if (!unitId) return false;
+  const path = ensureAgenticPath();
+  return agenticLessonStatusKind(unitId) === "review"
+    || path.reviewResume?.unitId === unitId
+    || (path.reviewQueue?.unitIds || []).includes(unitId)
+    || path.activeDetour?.unitId === unitId;
+}
+
 function agenticKnowledgeUnitsFromMastery(records = [], chapterId = "", statuses = ["weak", "partial"]) {
   const statusSet = new Set(statuses);
   const chapter = getChapter(chapterId);
@@ -1649,6 +1645,8 @@ function interactionEvidenceForUnit(unitId) {
   const shortAnswerLength = bucket.shortAnswerLength || 0;
   const choiceChangeCount = bucket.choiceChangeCount || 0;
   const narrationTouches = (bucket.narrationPlayCount || 0) + (bucket.narrationPauseCount || 0) + (bucket.narrationSeekCount || 0);
+  const masteryLevel = agenticKnowledgeMasteryForUnit(unitId);
+  const reviewMode = agenticKnowledgeReviewMode(unitId);
   const frictionScore = Math.min(1, (
     Math.min(1, answerRevealCount / 2) * 0.25 +
     Math.min(1, repeatCount / 3) * 0.2 +
@@ -1688,6 +1686,9 @@ function interactionEvidenceForUnit(unitId) {
     uiWheelCount: bucket.uiWheelCount || 0,
     uiInputCount: bucket.uiInputCount || 0,
     parameterChangeCount: bucket.parameterChangeCount || 0,
+    experiencedSceneTypes: Array.from(new Set(bucket.experiencedSceneTypes || [])),
+    masteryLevel,
+    reviewMode,
     questionCount,
     pendingReview,
     accuracy,
@@ -1870,7 +1871,6 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
 
   const plan = remote?.plan || null;
   const narration = agenticStudentFacingText(remote?.narration, "学习建议已根据你的答题情况更新下一步。");
-  const plannerAction = plan?.plannerInsight?.recommendedPath?.action || plan?.recommendedPath?.action || "";
   const actions = [];
   const localSkipOrders = AGENTIC_CORE_SCENE_ORDERS.filter((order) => order > unit.sceneOrder && order < 8);
   const skipCandidates = agenticMergeCandidates(
@@ -1882,9 +1882,6 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
   );
   const relearnCandidates = agenticMergeCandidates(
     agenticKnowledgeCandidatesFromQuiz(unit, records, "quiz_weak_knowledge"),
-    agenticResolvePlanUnits(agenticPlannerRankedCandidates(plan, { action: "remediate", chapterId: unit.chapterId }), {
-      chapterId: unit.chapterId
-    }),
     agenticResolvePlanUnits(plan?.remediationCandidates, {
       chapterId: unit.chapterId,
       flowKind: "adaptive",
@@ -1893,9 +1890,6 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
     agenticLocalCandidates(unit.chapterId, AGENTIC_RELEARN_SCENE_ORDERS, "post_test_relearn")
   );
   const extensionCandidates = AGENTIC_ENABLE_EXTENSION ? agenticMergeCandidates(
-    agenticResolvePlanUnits(agenticPlannerRankedCandidates(plan, { action: "extend", chapterId: unit.chapterId }), {
-      chapterId: unit.chapterId
-    }),
     agenticLocalCandidates(unit.chapterId, AGENTIC_EXTENSION_SCENE_ORDERS, "same_chapter_extension"),
     agenticResolvePlanUnits(plan?.extensionCandidates, {
       chapterId: unit.chapterId,
@@ -2113,24 +2107,8 @@ function agenticBuildSceneChoicePlan(unit, remote = null) {
   const nextUnit = findMainUnit(next.id) || next;
   if (!nextUnit || nextUnit.type === "quiz") return null;
   const evidence = interactionEvidenceForUnit(unit.id);
-  const remotePlan = remote?.plan || remote;
-  const plannerAction = remotePlan?.plannerInsight?.recommendedPath?.action || remotePlan?.recommendedPath?.action || "";
   const nextCluster = typeof learningClusterForUnit === "function" ? learningClusterForUnit(nextUnit) : null;
   const nextClusterOrders = new Set(nextCluster?.orders || [nextUnit.sceneOrder]);
-  const plannerChoices = agenticResolvePlanUnits(agenticPlannerRankedCandidates(remotePlan, { chapterId: unit.chapterId }), {
-    chapterId: unit.chapterId
-  }).filter((candidate) => candidate.id !== unit.id && candidate.id !== nextUnit.id)
-    .filter((candidate) => nextClusterOrders.has((findMainUnit(candidate.id) || {}).sceneOrder))
-    .filter((scene) => (findMainUnit(scene.id) || scene).type !== "quiz")
-    .slice(0, 2)
-    .map((scene) => {
-      const resolved = findMainUnit(scene.id) || scene;
-      return {
-        ...agenticCandidateFromUnit(resolved, scene.reason || `next_scene_${evidence?.suggestedMove || "continue"}`),
-        plannerScore: scene.plannerScore,
-        plannerReasons: scene.plannerReasons || []
-      };
-    });
   const localAlternatives = rankSiblingLearningScenes(nextUnit)
     .filter((scene) => scene.id !== nextUnit.id && scene.id !== unit.id)
     .filter((scene) => nextClusterOrders.has(scene.sceneOrder))
@@ -2138,15 +2116,14 @@ function agenticBuildSceneChoicePlan(unit, remote = null) {
     .filter((scene) => !state.completed.includes(scene.id) && !agenticIsSkipped(scene.id))
     .slice(0, 2)
     .map((scene) => agenticCandidateFromUnit(scene, `next_scene_${evidence?.suggestedMove || "continue"}`));
-  const alternatives = agenticMergeCandidates(plannerChoices, localAlternatives)
+  const alternatives = agenticMergeCandidates(localAlternatives)
     .filter((candidate) => candidate.id !== nextUnit.id)
     .slice(0, 1);
   const actions = [];
   const alternate = alternatives[0];
   const alternateUnit = alternate ? findMainUnit(alternate.id) : null;
-  const explicitPlannerMove = Boolean(plannerAction && plannerAction !== "continue");
   const explicitEvidenceMove = Boolean(evidence?.suggestedMove && evidence.suggestedMove !== "continue");
-  const shouldPreferAlternate = Boolean(alternate && (explicitPlannerMove || explicitEvidenceMove));
+  const shouldPreferAlternate = Boolean(alternate && explicitEvidenceMove);
   if (alternate) {
     actions.push({
       type: "scene",
@@ -2166,10 +2143,10 @@ function agenticBuildSceneChoicePlan(unit, remote = null) {
     stats: null,
     evidence,
     narration: remote?.narration || "",
-    provider: remote?.provider || (plannerChoices.length ? "planner-interaction-evidence" : "local-interaction-evidence"),
+    provider: remote?.provider || "local-interaction-evidence",
     agentDecisionId: remote?.decisionId || "",
     decisionCreatedAt: remote?.decisionCreatedAt || "",
-    plan: remotePlan || null,
+    plan: remote?.plan || remote || null,
     resumeUnitId: next.id,
     nextUnitId: next.id,
     nextClusterId: nextCluster?.id || "",

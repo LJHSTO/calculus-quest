@@ -1487,6 +1487,36 @@ function knowledgeResourceCandidate(unit, typeId = "") {
   }) || null;
 }
 
+function knowledgeSceneRecommendation(unit) {
+  if (!unit || unit.type !== "knowledge" || typeof SceneRecommender === "undefined") {
+    return { ranked: [], recommended: null };
+  }
+  const content = unit.scene?.content || {};
+  const knowledgePoint = content.knowledgePoint || {};
+  const module = content.module || {};
+  const evidence = state.analytics?.interactionEvidence?.[unit.id] || {};
+  const masteryLevel = typeof agenticKnowledgeMasteryForUnit === "function"
+    ? agenticKnowledgeMasteryForUnit(unit.id)
+    : null;
+  const reviewMode = typeof agenticKnowledgeReviewMode === "function"
+    ? agenticKnowledgeReviewMode(unit.id)
+    : false;
+  return SceneRecommender.rank({
+    knowledgePoint: {
+      id: unit.id,
+      name: knowledgePoint.name || unit.label,
+      goal: knowledgePoint.goal || unit.conceptClusterFocus || "",
+      misconception: knowledgePoint.misconception || "",
+      coreQuestion: module.coreQuestion || "",
+      moduleTitle: module.title || unit.moduleTitle || ""
+    },
+    candidates: unit.resourceCandidates || knowledgePoint.resourceCandidates || [],
+    masteryLevel,
+    experiencedTypes: evidence.experiencedSceneTypes || [],
+    reviewMode
+  });
+}
+
 function knowledgeSceneDisplayLabel(typeOrId = "") {
   const type = typeof typeOrId === "object"
     ? typeOrId

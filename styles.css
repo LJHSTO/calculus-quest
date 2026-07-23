@@ -4555,6 +4555,90 @@ textarea,
   opacity: 0.55;
 }
 
+.multi-scene-scene-option.coach-choice {
+  position: relative;
+  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-rows: auto;
+  align-content: center;
+  min-height: 118px;
+  overflow: hidden;
+}
+
+.multi-scene-scene-option.coach-choice > .scene-option-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: inline-grid;
+  grid-row: auto;
+  place-items: center;
+  background: #edf7f4;
+  color: var(--teal-dark);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.multi-scene-scene-option.coach-choice > .scene-option-copy {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  border-radius: 0;
+  display: grid;
+  grid-row: auto;
+  gap: 4px;
+  place-items: initial;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.multi-scene-scene-option.coach-choice.active > .scene-option-copy {
+  background: transparent;
+  color: inherit;
+}
+
+.multi-scene-scene-option.coach-recommended {
+  border-color: #c58a27;
+  background: #fffaf0;
+  box-shadow: inset 0 0 0 1px rgba(197, 138, 39, 0.24);
+}
+
+.multi-scene-scene-option.coach-recommended:hover {
+  border-color: #9a6515;
+  box-shadow: 0 10px 22px rgba(122, 78, 14, 0.14);
+}
+
+.coach-recommendation-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 1px solid rgba(154, 101, 21, 0.28);
+  border-radius: 4px;
+  background: #fff0c7;
+  padding: 3px 6px;
+  color: #754b0b;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.multi-scene-scene-option.coach-recommended .scene-option-copy {
+  padding-top: 14px;
+}
+
+.multi-scene-scene-option .coach-recommendation-reason {
+  color: #754b0b;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.multi-scene-scene-option.coach-choice.active > .scene-option-icon {
+  background: var(--teal-dark);
+  color: #ffffff;
+}
+
 .multi-scene-scene-awaiting {
   min-height: 180px;
   display: grid;

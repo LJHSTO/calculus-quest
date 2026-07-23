@@ -10,6 +10,7 @@
     "kg:test": "node ops/test-knowledge-graph.js",
     "flow:test": "node ops/test-flow-test.js",
     "path:test": "node ops/test-agentic-navigation.js",
+    "scene:test": "node ops/test-scene-recommender.js && node ops/test-knowledge-scene-selection.js && node ops/test-scene-recommendation-ui.js",
     "slide:test": "node ops/test-slide-rendering.js",
     "katex:test": "node ops/test-katex.js",
     "db:check": "node ops/database-release-check.js",
