@@ -60,12 +60,7 @@ const quizSuggestions = suggestionsForContext({
   scope: "quiz",
   quizSubmitted: false
 });
-assert.deepEqual(quizSuggestions, [
-  "解释题意",
-  "给我一级提示",
-  "检查我的第一步",
-  "这个选项表达了什么？"
-]);
+assert.deepEqual(quizSuggestions, [], "an unsubmitted quiz must not expose assistant shortcuts");
 assert.ok(
   suggestionsForContext({ kind: "interaction" }).includes("我应该观察哪里？"),
   "recent interactions should suggest an observation-oriented question"
@@ -128,8 +123,8 @@ assert.equal(
     unitLabel: "输入、输出和函数规则",
     sceneType: "simulation"
   }),
-  "拖动实验",
-  "recent interactions should name the concrete courseware scene rather than a generic scene type"
+  "动手调一调",
+  "recent interactions should use the concrete student-facing scene name"
 );
 assert.equal(
   friendlySceneLabel({ sceneType: "visualization3d" }),

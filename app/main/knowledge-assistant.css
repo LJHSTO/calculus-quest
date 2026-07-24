@@ -698,7 +698,7 @@
   clip: rect(0 0 0 0);
 }
 
-.knowledge-composer > div {
+.knowledge-composer > div:not(.knowledge-composer-meta) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 40px;
   gap: 8px;
@@ -709,7 +709,7 @@
   padding: 6px;
 }
 
-.knowledge-composer > div:focus-within {
+.knowledge-composer > div:not(.knowledge-composer-meta):focus-within {
   border-color: var(--knowledge-teal);
   box-shadow: 0 0 0 3px rgba(11, 143, 138, 0.12);
 }
@@ -955,6 +955,753 @@
   }
 }
 
+/* ---- 对话工作区、历史管理与独立划线笔记 ---- */
+.knowledge-assistant-workspace {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.knowledge-assistant-workspace > [hidden] {
+  display: none;
+}
+
+.knowledge-assistant-workspace .knowledge-assistant-scroll,
+.knowledge-history-view {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #b9cac3 transparent;
+}
+
+.knowledge-history-view {
+  padding: 14px 12px 18px;
+  background:
+    linear-gradient(180deg, rgba(221, 245, 239, 0.5), transparent 132px),
+    #fbfcfc;
+}
+
+.knowledge-history-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.knowledge-history-heading > div {
+  display: grid;
+  gap: 2px;
+}
+
+.knowledge-history-heading span {
+  color: var(--knowledge-teal-dark);
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.knowledge-history-heading strong {
+  color: var(--knowledge-deep);
+  font: 1rem/1.3 Bahnschrift, "Microsoft YaHei UI", sans-serif;
+  text-wrap: balance;
+}
+
+.knowledge-history-heading button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--knowledge-mint);
+  box-shadow:
+    0 0 0 1px rgba(11, 143, 138, 0.1),
+    0 6px 16px rgba(11, 143, 138, 0.1);
+  padding: 8px 11px;
+  color: var(--knowledge-teal-dark);
+  font: 800 0.72rem/1 "Microsoft YaHei UI", sans-serif;
+  cursor: pointer;
+  transition-property: background-color, box-shadow, transform;
+  transition-duration: 150ms;
+}
+
+.knowledge-history-heading button:active,
+.knowledge-conversation-card:active {
+  transform: scale(0.96);
+}
+
+.knowledge-conversation-list {
+  display: grid;
+  gap: 8px;
+}
+
+.knowledge-conversation-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20px;
+  gap: 4px 10px;
+  min-height: 68px;
+  align-content: center;
+  border: 0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    0 0 0 1px rgba(22, 50, 79, 0.06),
+    0 5px 16px rgba(22, 50, 79, 0.06);
+  padding: 11px 12px;
+  color: var(--knowledge-deep);
+  text-align: left;
+  cursor: pointer;
+  transition-property: background-color, box-shadow, transform;
+  transition-duration: 150ms;
+}
+
+.knowledge-conversation-card:hover,
+.knowledge-conversation-card:focus-visible,
+.knowledge-conversation-card.is-active {
+  background: #f2faf8;
+  box-shadow:
+    0 0 0 1px rgba(11, 143, 138, 0.2),
+    0 8px 22px rgba(11, 143, 138, 0.09);
+}
+
+.knowledge-conversation-card:focus-visible {
+  outline: 2px solid rgba(11, 143, 138, 0.34);
+  outline-offset: 2px;
+}
+
+.knowledge-conversation-card strong,
+.knowledge-conversation-card span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knowledge-conversation-card strong {
+  grid-column: 1;
+  font-size: 0.79rem;
+}
+
+.knowledge-conversation-card span {
+  grid-column: 1;
+  color: #73848c;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.knowledge-conversation-card i {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  color: #7e9697;
+  font: normal 1.2rem/1 Bahnschrift, sans-serif;
+  text-align: center;
+}
+
+.knowledge-conversation-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 72px 24px;
+  color: #73848c;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  text-align: center;
+  text-wrap: pretty;
+}
+
+.knowledge-conversation-empty strong {
+  color: var(--knowledge-deep);
+  font-size: 0.84rem;
+}
+
+.knowledge-history-toggle[aria-pressed="true"] {
+  background: var(--knowledge-mint);
+  color: var(--knowledge-teal-dark);
+}
+
+.knowledge-composer-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.knowledge-composer-meta small {
+  min-width: 0;
+  color: #71828c;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.knowledge-composer-meta small[data-tone="error"] {
+  color: #a14232;
+}
+
+.knowledge-composer-meta small[data-tone="warning"] {
+  color: #8b620d;
+}
+
+.knowledge-composer-meta span {
+  flex: 0 0 auto;
+  color: #56707b;
+  font-size: 0.64rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.knowledge-composer-meta span[data-exhausted="true"] {
+  color: #a14232;
+  font-weight: 800;
+}
+
+::highlight(cq-learning-notes-amber) {
+  background-color: rgba(246, 183, 60, 0.22);
+  text-decoration: underline 2px #d28d13;
+  text-underline-offset: 3px;
+}
+
+::highlight(cq-learning-notes-mint) {
+  background-color: rgba(94, 210, 173, 0.2);
+  text-decoration: underline 2px #2a9d78;
+  text-underline-offset: 3px;
+}
+
+::highlight(cq-learning-notes-blue) {
+  background-color: rgba(112, 176, 255, 0.2);
+  text-decoration: underline 2px #4e8ed9;
+  text-underline-offset: 3px;
+}
+
+::highlight(cq-learning-notes-pink) {
+  background-color: rgba(241, 137, 185, 0.2);
+  text-decoration: underline 2px #d35f98;
+  text-underline-offset: 3px;
+}
+
+.knowledge-note-editor {
+  width: min(420px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  gap: 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow:
+    0 0 0 1px rgba(22, 50, 79, 0.08),
+    0 18px 44px rgba(15, 54, 71, 0.2);
+  padding: 16px;
+}
+
+.knowledge-note-editor blockquote {
+  max-height: 68px;
+  border-left-color: #d28d13;
+  padding: 5px 0 5px 11px;
+  font-size: 0.76rem;
+}
+
+.knowledge-note-input-label {
+  color: #4b616c;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.knowledge-note-editor textarea {
+  min-height: 146px;
+  border-radius: 12px;
+  background: #fafbfb;
+  padding: 12px 13px;
+  font-size: 0.8rem;
+  line-height: 1.65;
+}
+
+.knowledge-note-colors {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.knowledge-note-colors legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.knowledge-note-colors button {
+  position: relative;
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition-property: box-shadow, transform;
+  transition-duration: 150ms;
+}
+
+.knowledge-note-colors button[data-note-color="amber"] { background: #f6b73c; }
+.knowledge-note-colors button[data-note-color="mint"] { background: #82dfbd; }
+.knowledge-note-colors button[data-note-color="blue"] { background: #9cc8ff; }
+.knowledge-note-colors button[data-note-color="pink"] { background: #f2a4cc; }
+
+.knowledge-note-colors button[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 5px currentColor;
+}
+
+.knowledge-note-colors button[data-note-color="amber"][aria-pressed="true"] { color: #d28d13; }
+.knowledge-note-colors button[data-note-color="mint"][aria-pressed="true"] { color: #2a9d78; }
+.knowledge-note-colors button[data-note-color="blue"][aria-pressed="true"] { color: #4e8ed9; }
+.knowledge-note-colors button[data-note-color="pink"][aria-pressed="true"] { color: #d35f98; }
+
+.knowledge-note-editor footer {
+  align-items: center;
+}
+
+.knowledge-note-editor footer > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.knowledge-note-editor footer button {
+  min-width: 62px;
+  min-height: 40px;
+  box-shadow: none;
+}
+
+.knowledge-note-editor footer .knowledge-note-secondary {
+  background: #f2f5f6;
+  color: #536b76;
+}
+
+.knowledge-note-editor footer .knowledge-note-delete {
+  background: #fff1ee;
+  color: #b24937;
+}
+
+.knowledge-note-editor[data-note-color="mint"] .knowledge-note-mark { background: rgba(94, 210, 173, 0.42); box-shadow: inset 0 -2px #2a9d78; }
+.knowledge-note-editor[data-note-color="blue"] .knowledge-note-mark { background: rgba(112, 176, 255, 0.42); box-shadow: inset 0 -2px #4e8ed9; }
+.knowledge-note-editor[data-note-color="pink"] .knowledge-note-mark { background: rgba(241, 137, 185, 0.42); box-shadow: inset 0 -2px #d35f98; }
+
+@media (prefers-reduced-motion: reduce) {
+  .knowledge-history-heading button,
+  .knowledge-conversation-card,
+  .knowledge-note-colors button {
+    transition: none;
+  }
+}
+
+/* ---- 划线提问与学习笔记 ---- */
+::highlight(cq-learning-notes) {
+  background-color: rgba(246, 183, 60, 0.2);
+  text-decoration-line: underline;
+  text-decoration-color: #d28d13;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+#lesson-player .cq-learning-note-fallback {
+  box-shadow: inset 0 -3px rgba(246, 183, 60, 0.4) !important;
+}
+
+.knowledge-selection-toolbar {
+  position: fixed;
+  z-index: 122;
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  align-items: center;
+  width: 214px;
+  height: 44px;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.98) inset,
+    0 0 0 1px rgba(22, 50, 79, 0.08),
+    0 12px 30px rgba(15, 54, 71, 0.2);
+  padding: 3px;
+  backdrop-filter: blur(14px);
+}
+
+.knowledge-selection-toolbar[hidden],
+.knowledge-note-editor[hidden] {
+  display: none;
+}
+
+.knowledge-selection-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 38px;
+  gap: 7px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--knowledge-deep);
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  font-size: 0.76rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition-property: color, background-color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.knowledge-selection-toolbar button:first-child:is(:hover, :focus-visible) {
+  background: var(--knowledge-mint);
+  color: var(--knowledge-teal-dark);
+}
+
+.knowledge-selection-toolbar button:last-child:is(:hover, :focus-visible) {
+  background: #fff5d9;
+  color: #875a08;
+}
+
+.knowledge-selection-toolbar button:focus-visible {
+  outline: 2px solid rgba(11, 143, 138, 0.3);
+  outline-offset: -2px;
+}
+
+.knowledge-selection-toolbar button:active,
+.knowledge-note-editor button:active,
+.knowledge-note-card button:active {
+  transform: scale(0.96);
+}
+
+.knowledge-selection-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(22, 50, 79, 0.1);
+}
+
+.knowledge-selection-icon {
+  position: relative;
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+.knowledge-selection-icon.ask {
+  border: 1.8px solid currentColor;
+  border-radius: 6px;
+}
+
+.knowledge-selection-icon.ask::after {
+  content: "";
+  position: absolute;
+  right: 1px;
+  bottom: -3px;
+  width: 5px;
+  height: 5px;
+  border-right: 1.8px solid currentColor;
+  transform: skewY(34deg);
+}
+
+.knowledge-selection-icon.note::before,
+.knowledge-selection-icon.note::after {
+  content: "";
+  position: absolute;
+  left: 1px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: rotate(-9deg);
+}
+
+.knowledge-selection-icon.note::before {
+  top: 4px;
+  width: 14px;
+  height: 2px;
+  box-shadow: 0 5px 0 currentColor;
+}
+
+.knowledge-selection-icon.note::after {
+  right: 0;
+  bottom: 0;
+  height: 2px;
+}
+
+.knowledge-note-editor {
+  position: fixed;
+  z-index: 123;
+  display: grid;
+  width: min(336px, calc(100vw - 16px));
+  gap: 9px;
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 247, 220, 0.66), rgba(255, 255, 255, 0) 94px),
+    #fff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.98) inset,
+    0 0 0 1px rgba(114, 78, 10, 0.08),
+    0 18px 44px rgba(15, 54, 71, 0.2);
+  padding: 13px;
+}
+
+.knowledge-note-editor header,
+.knowledge-note-editor header > div,
+.knowledge-note-editor footer {
+  display: flex;
+  align-items: center;
+}
+
+.knowledge-note-editor header,
+.knowledge-note-editor footer {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.knowledge-note-editor header > div {
+  gap: 8px;
+}
+
+.knowledge-note-mark,
+.knowledge-note-shelf summary i {
+  width: 18px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(246, 183, 60, 0.42);
+  box-shadow: inset 0 -2px #d28d13;
+  transform: rotate(-3deg);
+}
+
+.knowledge-note-editor header strong {
+  color: var(--knowledge-deep);
+  font-size: 0.84rem;
+}
+
+.knowledge-note-editor header button,
+.knowledge-note-remove {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #687984;
+  font-size: 1rem;
+  cursor: pointer;
+  transition-property: color, background-color, transform;
+  transition-duration: 150ms;
+}
+
+.knowledge-note-editor blockquote {
+  max-height: 54px;
+  overflow: hidden;
+  margin: 0;
+  border-left: 2px solid #d28d13;
+  padding: 4px 0 4px 9px;
+  color: #526a75;
+  font-size: 0.73rem;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.knowledge-note-editor label {
+  color: #415c68;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.knowledge-note-editor textarea {
+  width: 100%;
+  min-height: 76px;
+  resize: vertical;
+  border: 0;
+  border-radius: 12px;
+  background: #f7f8f6;
+  box-shadow: 0 0 0 1px rgba(22, 50, 79, 0.11) inset;
+  padding: 10px 11px;
+  color: var(--knowledge-deep);
+  font: 0.78rem/1.6 "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  outline: none;
+}
+
+.knowledge-note-editor textarea:focus {
+  box-shadow:
+    0 0 0 2px rgba(210, 141, 19, 0.28) inset,
+    0 7px 18px rgba(210, 141, 19, 0.08);
+}
+
+.knowledge-note-editor footer small {
+  max-width: 210px;
+  color: #73838a;
+  font-size: 0.63rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.knowledge-note-editor footer button {
+  min-width: 66px;
+  min-height: 38px;
+  border: 0;
+  border-radius: 11px;
+  background: #d28d13;
+  box-shadow: 0 6px 16px rgba(210, 141, 19, 0.2);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+  transition-property: background-color, transform, box-shadow;
+  transition-duration: 150ms;
+}
+
+.knowledge-note-editor footer button:hover {
+  background: #b9770d;
+  box-shadow: 0 8px 20px rgba(185, 119, 13, 0.24);
+}
+
+.knowledge-note-shelf {
+  margin: 9px 12px 0;
+  border-radius: 14px;
+  background: rgba(255, 249, 230, 0.78);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.92) inset,
+    0 6px 18px rgba(114, 78, 10, 0.07);
+}
+
+.knowledge-note-shelf[hidden] {
+  display: none;
+}
+
+.knowledge-note-shelf summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  min-height: 42px;
+  gap: 7px;
+  border-radius: 14px;
+  padding: 7px 10px;
+  color: #65470e;
+  cursor: pointer;
+  list-style: none;
+}
+
+.knowledge-note-shelf summary::-webkit-details-marker {
+  display: none;
+}
+
+.knowledge-note-shelf summary > span {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.knowledge-note-shelf summary small {
+  color: #8c6a25;
+  font-size: 0.64rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.knowledge-note-shelf summary b {
+  font-size: 0.82rem;
+  opacity: 0.56;
+  transition-property: transform, opacity;
+  transition-duration: 150ms;
+}
+
+.knowledge-note-shelf[open] summary b {
+  opacity: 0.9;
+  transform: rotate(180deg);
+}
+
+.knowledge-note-list {
+  display: grid;
+  gap: 7px;
+  padding: 0 8px 8px;
+}
+
+.knowledge-note-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 32px;
+  align-items: start;
+  gap: 4px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 0 0 1px rgba(114, 78, 10, 0.06);
+  padding: 4px;
+}
+
+.knowledge-note-open {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 6px 7px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition-property: background-color, transform;
+  transition-duration: 150ms;
+}
+
+.knowledge-note-open:hover,
+.knowledge-note-open:focus-visible {
+  background: #fff7dd;
+}
+
+.knowledge-note-open:focus-visible,
+.knowledge-note-remove:focus-visible {
+  outline: 2px solid rgba(210, 141, 19, 0.32);
+  outline-offset: -2px;
+}
+
+.knowledge-note-open blockquote,
+.knowledge-note-open p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knowledge-note-open blockquote {
+  color: #4d626c;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.knowledge-note-open p {
+  color: #79571a;
+  font-size: 0.66rem;
+}
+
+.knowledge-note-open p.is-empty {
+  color: #9a895f;
+  font-style: italic;
+}
+
+.knowledge-note-remove {
+  font-size: 0.88rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .knowledge-selection-toolbar button,
+  .knowledge-note-editor button,
+  .knowledge-note-shelf summary b,
+  .knowledge-note-open,
+  .knowledge-note-remove {
+    transition: none;
+  }
+}
+
 /* ---- 知点：知识焦镜交互优化（2026-07-23） ---- */
 .knowledge-assistant-root {
   -webkit-font-smoothing: antialiased;
@@ -1113,6 +1860,31 @@
 
 .knowledge-assistant-root.is-unavailable .knowledge-launcher-shell {
   display: none;
+}
+
+.knowledge-assistant-root.is-quiz-locked .knowledge-assistant-launcher {
+  background:
+    radial-gradient(circle at 34% 28%, #fff, #fff8e7 64%, #ffefc3),
+    #fff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.98) inset,
+    0 0 0 1px rgba(246, 183, 60, 0.34),
+    0 12px 28px rgba(91, 70, 25, 0.14);
+  cursor: not-allowed;
+}
+
+.knowledge-assistant-root.is-quiz-locked .knowledge-pin {
+  border-color: #c6860b;
+  background: #fff3cf;
+}
+
+.knowledge-assistant-root.is-quiz-locked .knowledge-pin i {
+  background: #c6860b;
+}
+
+.knowledge-assistant-root.is-quiz-locked .knowledge-launcher-copy small {
+  color: #8a5a08;
+  font-weight: 800;
 }
 
 .knowledge-assistant-root.is-launcher-dragging .knowledge-assistant-launcher {

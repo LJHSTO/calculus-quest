@@ -4,7 +4,7 @@
   if (global && global.document) global.CoursewareContextCore = Object.freeze(api);
 })(typeof globalThis !== "undefined" ? globalThis : this, function coursewareContextFactory() {
   const SCHEMA_VERSION = 1;
-  const BRIDGE_VERSION = "20260723-v4";
+  const BRIDGE_VERSION = "20260723-v5";
   const CONTEXT_KINDS = new Set([
     "unit",
     "text",
@@ -17,6 +17,12 @@
   ]);
   const CONTEXT_SCOPES = new Set(["lesson", "slide", "quiz", "interactive"]);
   const CONFIDENCE_LEVELS = new Set(["high", "medium", "low"]);
+  const NOTE_HIGHLIGHT_NAMES = new Map([
+    ["amber", "cq-learning-notes-amber"],
+    ["mint", "cq-learning-notes-mint"],
+    ["blue", "cq-learning-notes-blue"],
+    ["pink", "cq-learning-notes-pink"]
+  ]);
   const QUESTION_EXCLUSION_SELECTOR = [
     ".resource-toolbar",
     ".player-top",
@@ -125,7 +131,11 @@
     const unitLabel = compactText(source.unitLabel, 180);
     let title = compactText(source.resourceTitle || source.title, 180)
       .replace(/^GH-\d+-/i, "")
-      .replace(/^(?:(?:\p{Extended_Pictographic}|\uFE0F)|[~◇※⬡•])+\s*/gu, "");
+      .replace(/^(?:(?:\p{Extended_Pictographic}|\uFE0F)|[~◇※⬡•])+\s*/gu, "")
+      .replace(/拖动实验/g, "动手调一调")
+      .replace(/误解修复挑战|误解挑战/g, "找错并改正")
+      .replace(/关系图/g, "知识怎么连")
+      .replace(/空间视角/g, "换个角度看");
     if (unitLabel && title.startsWith(unitLabel)) {
       title = title.slice(unitLabel.length).replace(/^[：:·\s—–-]+/u, "");
     }
@@ -222,12 +232,7 @@
   function suggestionsForContext(input = {}) {
     const source = input && typeof input === "object" ? input : {};
     if (source.scope === "quiz" && !source.quizSubmitted) {
-      return [
-        "解释题意",
-        "给我一级提示",
-        "检查我的第一步",
-        "这个选项表达了什么？"
-      ];
+      return [];
     }
     if (source.scope === "quiz" && source.quizSubmitted) {
       return [
@@ -402,6 +407,9 @@
     let listenersActive = false;
     let pickPreview = null;
     const candidateElements = new Set();
+    const noteFallbackElements = new Set();
+    let renderedNotes = [];
+    let renderedNoteRanges = [];
 
     function notify(name, payload) {
       const handler = options[name];
@@ -765,6 +773,220 @@
       };
     }
 
+    function selectionLocator(range, host, source = "document") {
+      if (!range || !host || !host.contains?.(elementFromNode(range.startContainer))) return null;
+      if (!host.contains?.(elementFromNode(range.endContainer))) return null;
+      try {
+        const before = doc.createRange();
+        before.selectNodeContents(host);
+        before.setEnd(range.startContainer, range.startOffset);
+        const startOffset = before.toString().length;
+        const exact = String(range.toString() || "").slice(0, 900);
+        const hostText = String(host.textContent || "");
+        before.detach?.();
+        return {
+          source: source === "iframe" ? "iframe" : "document",
+          semanticId: compactText(
+            host.dataset?.contextId
+            || (host.dataset?.question ? `quiz:${host.dataset.question}` : ""),
+            180
+          ),
+          exact,
+          prefix: hostText.slice(Math.max(0, startOffset - 64), startOffset),
+          suffix: hostText.slice(startOffset + exact.length, startOffset + exact.length + 64),
+          startOffset,
+          endOffset: startOffset + exact.length
+        };
+      } catch {
+        return null;
+      }
+    }
+
+    function noteHost(locator = {}, scopeRoot = resolveRoot()) {
+      if (!scopeRoot) return null;
+      const semanticId = compactText(locator.semanticId, 180);
+      if (!semanticId) return scopeRoot;
+      const escape = win.CSS?.escape
+        ? win.CSS.escape(semanticId)
+        : semanticId.replace(/["\\]/g, "\\$&");
+      return scopeRoot.querySelector?.(`[data-context-id="${escape}"]`) || scopeRoot;
+    }
+
+    function textNodes(host) {
+      if (!host) return [];
+      const walker = doc.createTreeWalker(host, win.NodeFilter?.SHOW_TEXT || 4, {
+        acceptNode(node) {
+          const parent = node.parentElement;
+          if (!node.nodeValue || !parent || parent.closest("script, style, template, noscript")) {
+            return win.NodeFilter?.FILTER_REJECT || 2;
+          }
+          return win.NodeFilter?.FILTER_ACCEPT || 1;
+        }
+      });
+      const nodes = [];
+      let current = walker.nextNode();
+      while (current) {
+        nodes.push(current);
+        current = walker.nextNode();
+      }
+      return nodes;
+    }
+
+    function rangeFromOffsets(host, startOffset, endOffset) {
+      const start = Number(startOffset);
+      const end = Number(endOffset);
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start) return null;
+      const nodes = textNodes(host);
+      let cursor = 0;
+      let startNode = null;
+      let endNode = null;
+      let startInNode = 0;
+      let endInNode = 0;
+      for (const node of nodes) {
+        const length = node.nodeValue.length;
+        if (!startNode && start >= cursor && start <= cursor + length) {
+          startNode = node;
+          startInNode = start - cursor;
+        }
+        if (end >= cursor && end <= cursor + length) {
+          endNode = node;
+          endInNode = end - cursor;
+          break;
+        }
+        cursor += length;
+      }
+      if (!startNode || !endNode) return null;
+      try {
+        const range = doc.createRange();
+        range.setStart(startNode, startInNode);
+        range.setEnd(endNode, endInNode);
+        return range;
+      } catch {
+        return null;
+      }
+    }
+
+    function rangeForLocator(locator = {}, scopeRoot = resolveRoot()) {
+      const host = noteHost(locator, scopeRoot);
+      if (!host) return null;
+      const exact = String(locator.exact || "");
+      let startOffset = Number(locator.startOffset);
+      let endOffset = Number(locator.endOffset);
+      const hostText = String(host.textContent || "");
+      if (
+        Number.isInteger(startOffset)
+        && Number.isInteger(endOffset)
+        && startOffset >= 0
+        && endOffset > startOffset
+        && (!exact || hostText.slice(startOffset, endOffset) === exact)
+      ) {
+        const ranged = rangeFromOffsets(host, startOffset, endOffset);
+        if (ranged) return ranged;
+      }
+      if (!exact) return null;
+      const prefix = String(locator.prefix || "");
+      const suffix = String(locator.suffix || "");
+      const candidates = [];
+      let cursor = 0;
+      while (cursor <= hostText.length - exact.length) {
+        const index = hostText.indexOf(exact, cursor);
+        if (index < 0) break;
+        let score = 0;
+        if (prefix && hostText.slice(Math.max(0, index - prefix.length), index).endsWith(prefix)) score += 2;
+        if (suffix && hostText.slice(index + exact.length, index + exact.length + suffix.length).startsWith(suffix)) score += 2;
+        candidates.push({ index, score });
+        cursor = index + Math.max(1, exact.length);
+      }
+      candidates.sort((left, right) => right.score - left.score || left.index - right.index);
+      if (!candidates.length) return null;
+      startOffset = candidates[0].index;
+      endOffset = startOffset + exact.length;
+      return rangeFromOffsets(host, startOffset, endOffset);
+    }
+
+    function clearNoteHighlights() {
+      NOTE_HIGHLIGHT_NAMES.forEach((name) => {
+        try { win.CSS?.highlights?.delete?.(name); } catch {}
+      });
+      noteFallbackElements.forEach((element) => element.classList.remove("cq-learning-note-fallback"));
+      noteFallbackElements.clear();
+      renderedNoteRanges = [];
+    }
+
+    function renderNotes(notes = []) {
+      renderedNotes = Array.isArray(notes) ? notes.filter(Boolean) : [];
+      clearNoteHighlights();
+      const rangesByColor = new Map([
+        ["amber", []],
+        ["mint", []],
+        ["blue", []],
+        ["pink", []]
+      ]);
+      renderedNotes.forEach((note) => {
+        if (note.locator?.source === "iframe") return;
+        const range = rangeForLocator(note.locator || {});
+        if (range) {
+          const color = rangesByColor.has(note.color) ? note.color : "amber";
+          rangesByColor.get(color).push(range);
+          renderedNoteRanges.push({ note, range });
+          return;
+        }
+        const host = noteHost(note.locator || {});
+        if (host && host !== resolveRoot()) {
+          host.classList.add("cq-learning-note-fallback");
+          noteFallbackElements.add(host);
+        }
+      });
+      if (win.CSS?.highlights && typeof win.Highlight === "function") {
+        rangesByColor.forEach((ranges, color) => {
+          if (!ranges.length) return;
+          try {
+            win.CSS.highlights.set(NOTE_HIGHLIGHT_NAMES.get(color), new win.Highlight(...ranges));
+          } catch {}
+        });
+      }
+      const frameNotes = renderedNotes
+        .filter((note) => note.locator?.source === "iframe")
+        .map((note) => ({
+          id: compactText(note.id, 180),
+          color: ["amber", "mint", "blue", "pink"].includes(note.color) ? note.color : "amber",
+          locator: note.locator
+        }));
+      currentFrames().forEach((frame) => {
+        if (bridgeFrames.has(frame)) {
+          postFrame(frame, { type: "cq:notes-sync", notes: frameNotes });
+        }
+      });
+      return renderedNoteRanges.length;
+    }
+
+    function noteAtPoint(clientX, clientY) {
+      return renderedNoteRanges.find(({ range }) => Array.from(range.getClientRects?.() || []).some((rect) => (
+        clientX >= rect.left - 3
+        && clientX <= rect.right + 3
+        && clientY >= rect.top - 3
+        && clientY <= rect.bottom + 3
+      ))) || null;
+    }
+
+    function restoreNote(note = {}) {
+      const locator = note.locator || {};
+      if (locator.source === "iframe") {
+        currentFrames().forEach((frame) => {
+          if (bridgeFrames.has(frame)) {
+            frame.scrollIntoView?.({ behavior: "smooth", block: "center" });
+            postFrame(frame, { type: "cq:note-restore", note: { id: note.id || "", locator } });
+          }
+        });
+      } else {
+        const range = rangeForLocator(locator);
+        const element = elementFromNode(range?.startContainer) || noteHost(locator);
+        element?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      }
+      if (note.contextRef) restoreContext(note.contextRef);
+      return Boolean(note.contextRef || locator.exact);
+    }
+
     function captureTextSelection(selection = win.getSelection?.()) {
       if (!selection || selection.rangeCount < 1 || selection.isCollapsed) return null;
       const excerpt = compactMultiline(selection.toString(), 900);
@@ -793,7 +1015,12 @@
         latex,
         confidence: host.dataset?.contextId || host.dataset?.question ? "high" : "medium"
       });
-      const payload = { contextRef: ref, rect: selectionRect(range), source: "document" };
+      const payload = {
+        contextRef: ref,
+        rect: selectionRect(range),
+        source: "document",
+        locator: selectionLocator(range, host, "document")
+      };
       notify("onTextSelection", payload);
       return payload;
     }
@@ -888,6 +1115,16 @@
         if (picker.getState().phase === "picking") {
           postFrame(frame, { type: "cq:context-pick-begin", singleShot: true });
         }
+        postFrame(frame, {
+          type: "cq:notes-sync",
+          notes: renderedNotes
+            .filter((note) => note.locator?.source === "iframe")
+            .map((note) => ({
+              id: compactText(note.id, 180),
+              color: ["amber", "mint", "blue", "pink"].includes(note.color) ? note.color : "amber",
+              locator: note.locator
+            }))
+        });
         return;
       }
 
@@ -899,8 +1136,23 @@
         notify("onTextSelection", {
           contextRef: ref,
           rect: selectionRect(null, frame, event.data.rect || null),
-          source: "iframe"
+          source: "iframe",
+          locator: event.data.locator && typeof event.data.locator === "object"
+            ? { ...event.data.locator, source: "iframe" }
+            : null
         });
+        return;
+      }
+
+      if (type === "cq:note-open") {
+        const note = renderedNotes.find((item) => item.id === String(event.data.noteId || ""));
+        if (note) {
+          notify("onNoteSelect", {
+            note,
+            rect: selectionRect(null, frame, event.data.rect || null),
+            source: "iframe"
+          });
+        }
         return;
       }
 
@@ -923,6 +1175,15 @@
     function handleDocumentPointerUp(event) {
       if (picker.getState().phase === "picking") return;
       if (resolveSidebarRoot()?.contains?.(event.target)) return;
+      const selection = win.getSelection?.();
+      if (!selection || selection.isCollapsed) {
+        const hit = noteAtPoint(event.clientX, event.clientY);
+        if (hit) {
+          const rect = hit.range.getBoundingClientRect();
+          notify("onNoteSelect", { note: hit.note, rect, source: "document" });
+          return;
+        }
+      }
       win.setTimeout(() => captureTextSelection(), 0);
     }
 
@@ -941,6 +1202,8 @@
       captureRecentInteraction,
       cancelObjectPick,
       restoreContext,
+      restoreNote,
+      renderNotes,
       updateRecentInteraction,
       getCurrentContext() {
         return selectedContext;
@@ -967,6 +1230,7 @@
       destroy() {
         cancelObjectPick("destroy");
         clearSelectedElement();
+        clearNoteHighlights();
         removeFallbackOverlays();
         clearQuestionCandidates();
         pickPreview?.remove();

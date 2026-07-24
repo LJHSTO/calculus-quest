@@ -37,8 +37,8 @@
 })();
 </script>
 
-    <link rel="stylesheet" href="styles.css?v=20260723-knowledge-focus-v9" />
-    <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260723-knowledge-focus-v9" />
+    <link rel="stylesheet" href="styles.css?v=20260724-knowledge-workspace-v6" />
+    <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260724-knowledge-workspace-v6" />
     <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
   </head>
   <body>
@@ -206,30 +206,32 @@
             </div>
             <div id="chapter-list" class="chapter-list"></div>
           </aside>
-          <button class="icon-button rail-toggle learning-rail-control" id="chapter-rail-toggle" type="button" aria-controls="chapter-rail" aria-expanded="false" aria-label="展开章节列表" title="悬浮查看章节，点击可保持展开">
-            <span class="learning-rail-control-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M6.5 5.5h11M6.5 12h11M6.5 18.5h11"></path>
-                <circle cx="4" cy="5.5" r="1"></circle>
-                <circle cx="4" cy="12" r="1"></circle>
-                <circle cx="4" cy="18.5" r="1"></circle>
-              </svg>
-            </span>
-            <span class="learning-rail-control-label" data-learning-toggle-label>章节</span>
-            <span class="learning-rail-control-caret" aria-hidden="true">›</span>
-          </button>
-
-          <button class="icon-button lesson-rail-toggle learning-rail-control" id="lesson-rail-toggle" type="button" aria-controls="lesson-rail" aria-expanded="true" aria-label="收起本章路径" title="收起本章路径">
-            <span class="learning-rail-control-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="M6 5.5h8.5a3.5 3.5 0 0 1 0 7H9.5a3.5 3.5 0 0 0 0 7H18"></path>
-                <circle cx="5" cy="5.5" r="1.8"></circle>
-                <circle cx="19" cy="19.5" r="1.8"></circle>
-              </svg>
-            </span>
-            <span class="learning-rail-control-label" data-learning-toggle-label>路径</span>
-            <span class="learning-rail-control-caret" aria-hidden="true">›</span>
-          </button>
+          <div class="learning-nav-cluster" aria-label="学习导航">
+            <button class="icon-button rail-toggle learning-rail-control" id="chapter-rail-toggle" type="button" aria-controls="chapter-rail" aria-expanded="false" aria-label="展开章节列表" title="悬浮查看章节，点击可保持展开">
+              <span class="learning-rail-control-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M6.5 5.5h11M6.5 12h11M6.5 18.5h11"></path>
+                  <circle cx="4" cy="5.5" r="1"></circle>
+                  <circle cx="4" cy="12" r="1"></circle>
+                  <circle cx="4" cy="18.5" r="1"></circle>
+                </svg>
+              </span>
+              <span class="learning-rail-control-label" data-learning-toggle-label>章节</span>
+              <span class="learning-rail-control-caret" aria-hidden="true">›</span>
+            </button>
+            <span class="learning-nav-cluster-divider" aria-hidden="true"></span>
+            <button class="icon-button lesson-rail-toggle learning-rail-control" id="lesson-rail-toggle" type="button" aria-controls="lesson-rail" aria-expanded="true" aria-label="收起本章路径" title="收起本章路径">
+              <span class="learning-rail-control-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M6 5.5h8.5a3.5 3.5 0 0 1 0 7H9.5a3.5 3.5 0 0 0 0 7H18"></path>
+                  <circle cx="5" cy="5.5" r="1.8"></circle>
+                  <circle cx="19" cy="19.5" r="1.8"></circle>
+                </svg>
+              </span>
+              <span class="learning-rail-control-label" data-learning-toggle-label>路径</span>
+              <span class="learning-rail-control-caret" aria-hidden="true">›</span>
+            </button>
+          </div>
           <aside class="lesson-rail" id="lesson-rail" aria-label="本章路径" aria-hidden="false">
             <div class="rail-header">
               <p class="eyebrow">本章路径</p>
@@ -413,7 +415,8 @@
     <script src="app/main/knowledge-scene-selection.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/scene-recommender.js?v=20260723-scene-recommendation-v2"></script>
     <script src="app/main/content-security.js?v=20260722-security-v1"></script>
-    <script src="app/main/courseware-context.js?v=20260723-knowledge-focus-v12"></script>
+    <script src="app/main/courseware-context.js?v=20260724-knowledge-workspace-v6"></script>
+    <script src="app/main/learning-notes.js?v=20260724-knowledge-workspace-v6"></script>
     <script src="app/main/quiz-review-state.js?v=20260723-short-answer-recovery-v1"></script>
     <script src="app/main/core.js?v=20260723-short-answer-recovery-v1"></script>
     <script src="app/main/return-context.js?v=20260722-multi-scene-v1"></script>
@@ -428,7 +431,7 @@
     <script src="app/main/agentic-path.js?v=20260723-short-answer-recovery-v1"></script>
     <script src="app/main/feedback-targets.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/feedback.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/knowledge-assistant.js?v=20260723-knowledge-focus-v10"></script>
-    <script src="app/main/bootstrap.js?v=20260723-knowledge-focus-v10"></script>
+    <script src="app/main/knowledge-assistant.js?v=20260724-knowledge-workspace-v6"></script>
+    <script src="app/main/bootstrap.js?v=20260724-knowledge-workspace-v6"></script>
   </body>
 </html>

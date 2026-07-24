@@ -11,8 +11,12 @@
   let hoverTarget = null;
   let selectedTarget = null;
   let listenersActive = false;
+  let selectionReportTimer = null;
   let pickPreview = null;
   const candidateElements = new Set();
+  const noteFallbackElements = new Set();
+  let renderedNotes = [];
+  let renderedNoteRanges = [];
   const INTERACTIVE_ROLE_SELECTOR = [
     "[role='button']",
     "[role='slider']",
@@ -236,6 +240,11 @@
       ".cq-context-bridge-picking canvas.cq-context-bridge-candidate, .cq-context-bridge-picking svg.cq-context-bridge-candidate, .cq-context-bridge-picking figure.cq-context-bridge-candidate, .cq-context-bridge-picking table.cq-context-bridge-candidate { outline:0 !important; box-shadow:inset 0 0 0 2px rgba(11,143,138,.36) !important; }",
       ".cq-context-bridge-hover { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.12) !important; }",
       ".cq-context-bridge-selected { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.16) !important; }"
+      + "\n::highlight(cq-learning-notes-amber) { background-color:rgba(246,183,60,.22); text-decoration:underline 2px #D28D13; text-underline-offset:3px; }"
+      + "\n::highlight(cq-learning-notes-mint) { background-color:rgba(94,210,173,.2); text-decoration:underline 2px #2A9D78; text-underline-offset:3px; }"
+      + "\n::highlight(cq-learning-notes-blue) { background-color:rgba(112,176,255,.2); text-decoration:underline 2px #4E8ED9; text-underline-offset:3px; }"
+      + "\n::highlight(cq-learning-notes-pink) { background-color:rgba(241,137,185,.2); text-decoration:underline 2px #D35F98; text-underline-offset:3px; }"
+      + "\n.cq-learning-note-fallback { box-shadow:inset 0 -3px rgba(246,183,60,.38) !important; }"
       + "\n.cq-context-bridge-preview { position:fixed; z-index:2147483647; max-width:min(300px,calc(100vw - 20px)); border-radius:8px; background:#16324F; box-shadow:0 10px 28px rgba(8,32,47,.24); padding:7px 10px; color:#fff; font:700 12px/1.45 'Microsoft YaHei UI','Microsoft YaHei',sans-serif; pointer-events:none; }"
       + "\n.cq-context-bridge-preview[hidden] { display:none; }"
     ].join("\n");
@@ -422,6 +431,190 @@
     return startLatex && startLatex === endLatex ? startLatex : "";
   }
 
+  function selectionLocator(range, host) {
+    if (!range || !host || !host.contains?.(elementFromNode(range.startContainer))) return null;
+    if (!host.contains?.(elementFromNode(range.endContainer))) return null;
+    try {
+      const before = document.createRange();
+      before.selectNodeContents(host);
+      before.setEnd(range.startContainer, range.startOffset);
+      const startOffset = before.toString().length;
+      const exact = String(range.toString() || "").slice(0, 900);
+      const hostText = String(host.textContent || "");
+      before.detach?.();
+      return {
+        source: "iframe",
+        semanticId: semanticId(host),
+        exact,
+        prefix: hostText.slice(Math.max(0, startOffset - 64), startOffset),
+        suffix: hostText.slice(startOffset + exact.length, startOffset + exact.length + 64),
+        startOffset,
+        endOffset: startOffset + exact.length
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function noteHost(locator = {}) {
+    return findBySemanticId(locator.semanticId) || document.body;
+  }
+
+  function noteTextNodes(host) {
+    if (!host) return [];
+    const walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const parent = node.parentElement;
+        if (!node.nodeValue || !parent || parent.closest("script, style, template, noscript")) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    const nodes = [];
+    let current = walker.nextNode();
+    while (current) {
+      nodes.push(current);
+      current = walker.nextNode();
+    }
+    return nodes;
+  }
+
+  function noteRangeFromOffsets(host, startOffset, endOffset) {
+    const start = Number(startOffset);
+    const end = Number(endOffset);
+    if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end <= start) return null;
+    const nodes = noteTextNodes(host);
+    let cursor = 0;
+    let startNode = null;
+    let endNode = null;
+    let startInNode = 0;
+    let endInNode = 0;
+    for (const node of nodes) {
+      const length = node.nodeValue.length;
+      if (!startNode && start >= cursor && start <= cursor + length) {
+        startNode = node;
+        startInNode = start - cursor;
+      }
+      if (end >= cursor && end <= cursor + length) {
+        endNode = node;
+        endInNode = end - cursor;
+        break;
+      }
+      cursor += length;
+    }
+    if (!startNode || !endNode) return null;
+    try {
+      const range = document.createRange();
+      range.setStart(startNode, startInNode);
+      range.setEnd(endNode, endInNode);
+      return range;
+    } catch {
+      return null;
+    }
+  }
+
+  function noteRange(locator = {}) {
+    const host = noteHost(locator);
+    const exact = String(locator.exact || "");
+    const hostText = String(host?.textContent || "");
+    const startOffset = Number(locator.startOffset);
+    const endOffset = Number(locator.endOffset);
+    if (
+      Number.isInteger(startOffset)
+      && Number.isInteger(endOffset)
+      && startOffset >= 0
+      && endOffset > startOffset
+      && (!exact || hostText.slice(startOffset, endOffset) === exact)
+    ) {
+      const ranged = noteRangeFromOffsets(host, startOffset, endOffset);
+      if (ranged) return ranged;
+    }
+    if (!exact) return null;
+    const prefix = String(locator.prefix || "");
+    const suffix = String(locator.suffix || "");
+    const candidates = [];
+    let cursor = 0;
+    while (cursor <= hostText.length - exact.length) {
+      const index = hostText.indexOf(exact, cursor);
+      if (index < 0) break;
+      let score = 0;
+      if (prefix && hostText.slice(Math.max(0, index - prefix.length), index).endsWith(prefix)) score += 2;
+      if (suffix && hostText.slice(index + exact.length, index + exact.length + suffix.length).startsWith(suffix)) score += 2;
+      candidates.push({ index, score });
+      cursor = index + Math.max(1, exact.length);
+    }
+    candidates.sort((left, right) => right.score - left.score || left.index - right.index);
+    return candidates.length
+      ? noteRangeFromOffsets(host, candidates[0].index, candidates[0].index + exact.length)
+      : null;
+  }
+
+  function renderNoteHighlights(notes = []) {
+    renderedNotes = Array.isArray(notes) ? notes.filter(Boolean) : [];
+    ["amber", "mint", "blue", "pink"].forEach((color) => {
+      try { CSS.highlights?.delete?.(`cq-learning-notes-${color}`); } catch {}
+    });
+    noteFallbackElements.forEach((element) => element.classList.remove("cq-learning-note-fallback"));
+    noteFallbackElements.clear();
+    renderedNoteRanges = [];
+    const rangesByColor = new Map([
+      ["amber", []],
+      ["mint", []],
+      ["blue", []],
+      ["pink", []]
+    ]);
+    renderedNotes.forEach((note) => {
+      const range = noteRange(note?.locator || {});
+      if (range) {
+        const color = rangesByColor.has(note.color) ? note.color : "amber";
+        rangesByColor.get(color).push(range);
+        renderedNoteRanges.push({ note, range });
+        return;
+      }
+      const host = noteHost(note?.locator || {});
+      if (host && host !== document.body) {
+        host.classList.add("cq-learning-note-fallback");
+        noteFallbackElements.add(host);
+      }
+    });
+    if (CSS.highlights && typeof Highlight === "function") {
+      rangesByColor.forEach((ranges, color) => {
+        if (!ranges.length) return;
+        try { CSS.highlights.set(`cq-learning-notes-${color}`, new Highlight(...ranges)); } catch {}
+      });
+    }
+  }
+
+  function reportNoteAtPoint(event) {
+    const hit = renderedNoteRanges.find(({ range }) => Array.from(range.getClientRects?.() || []).some((rect) => (
+      event.clientX >= rect.left - 3
+      && event.clientX <= rect.right + 3
+      && event.clientY >= rect.top - 3
+      && event.clientY <= rect.bottom + 3
+    )));
+    if (!hit) return false;
+    const rect = hit.range.getBoundingClientRect();
+    post("cq:note-open", {
+      noteId: hit.note.id,
+      rect: {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height
+      }
+    });
+    return true;
+  }
+
+  function restoreNote(note = {}) {
+    const range = noteRange(note.locator || {});
+    const target = elementFromNode(range?.startContainer) || noteHost(note.locator || {});
+    target?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+  }
+
   function reportSelection() {
     if (picking) return;
     const selection = window.getSelection?.();
@@ -446,8 +639,29 @@
         bottom: rect.bottom,
         width: rect.width,
         height: rect.height
-      }
+      },
+      locator: selectionLocator(range, host)
     });
+  }
+
+  function scheduleSelectionReport(event) {
+    const point = Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY)
+      ? { clientX: event.clientX, clientY: event.clientY }
+      : null;
+    window.clearTimeout(selectionReportTimer);
+    selectionReportTimer = window.setTimeout(() => {
+      selectionReportTimer = null;
+      const selection = window.getSelection?.();
+      if ((!selection || selection.isCollapsed) && point && reportNoteAtPoint(point)) return;
+      reportSelection();
+    }, 0);
+  }
+
+  function handleSelectionKeyUp(event) {
+    if (!event.shiftKey && event.key !== "Shift") return;
+    const selection = window.getSelection?.();
+    if (!selection || selection.isCollapsed) return;
+    scheduleSelectionReport();
   }
 
   function parameterName(element) {
@@ -506,12 +720,18 @@
     } else if (type === "cq:context-restore") {
       const target = findBySemanticId(event.data.semanticId);
       if (target) pinSelected(target);
+    } else if (type === "cq:notes-sync") {
+      renderNoteHighlights(event.data.notes);
+    } else if (type === "cq:note-restore") {
+      restoreNote(event.data.note || {});
     } else if (type === "cq:host-layout") {
       applyHostLayout(event.data);
     }
   });
 
-  document.addEventListener("pointerup", () => window.setTimeout(reportSelection, 0), true);
+  document.addEventListener("pointerup", scheduleSelectionReport, true);
+  document.addEventListener("mouseup", scheduleSelectionReport, true);
+  document.addEventListener("keyup", handleSelectionKeyUp, true);
   document.addEventListener("pointerdown", rememberParameterStart, true);
   document.addEventListener("keydown", rememberParameterStart, true);
   document.addEventListener("change", reportParameterCommit, true);
@@ -519,7 +739,7 @@
   injectStyle();
   window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
   post("cq:bridge-ready", {
-    version: 4,
+    version: 5,
     title: compactText(document.title || "", 180)
   });
 })();

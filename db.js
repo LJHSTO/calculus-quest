@@ -338,6 +338,65 @@ function sceneDisplayLabel(sceneType = "", fallback = "") {
   })[id] || publicCourseLabel(fallback) || "";
 }
 
+function migrateLegacyLearningAssistantMessages(d) {
+  const groups = [];
+  const stmt = d.prepare(`
+    SELECT
+      m.user_id,
+      m.thread_key,
+      MIN(m.id) AS first_message_id,
+      MIN(m.chapter_id) AS chapter_id,
+      MIN(m.unit_id) AS unit_id,
+      MIN(m.knowledge_point_id) AS knowledge_point_id,
+      MIN(m.created_at) AS created_at,
+      MAX(m.created_at) AS updated_at,
+      COALESCE((
+        SELECT first_user.content
+        FROM learning_assistant_messages first_user
+        WHERE first_user.user_id = m.user_id
+          AND first_user.thread_key = m.thread_key
+          AND COALESCE(first_user.conversation_id, '') = ''
+          AND first_user.role = 'user'
+        ORDER BY first_user.created_at ASC, first_user.id ASC
+        LIMIT 1
+      ), '历史对话') AS title
+    FROM learning_assistant_messages m
+    WHERE COALESCE(m.conversation_id, '') = ''
+    GROUP BY m.user_id, m.thread_key
+  `);
+  while (stmt.step()) groups.push(stmt.getAsObject());
+  stmt.free();
+
+  for (const group of groups) {
+    const conversationId = `legacy:${group.first_message_id}`;
+    const title = String(group.title || "历史对话").replace(/\s+/g, " ").trim().slice(0, 80) || "历史对话";
+    d.run(
+      `INSERT OR IGNORE INTO learning_assistant_conversations
+        (id, user_id, thread_key, chapter_id, unit_id, knowledge_point_id,
+         title, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        conversationId,
+        group.user_id,
+        group.thread_key,
+        group.chapter_id || "",
+        group.unit_id || "",
+        group.knowledge_point_id || "",
+        title,
+        group.created_at || new Date().toISOString(),
+        group.updated_at || group.created_at || new Date().toISOString()
+      ]
+    );
+    d.run(
+      `UPDATE learning_assistant_messages
+       SET conversation_id = ?
+       WHERE user_id = ? AND thread_key = ?
+         AND COALESCE(conversation_id, '') = ''`,
+      [conversationId, group.user_id, group.thread_key]
+    );
+  }
+}
+
 function initSchema() {
   const d = getDbSync();
   d.run("PRAGMA foreign_keys = ON");
@@ -388,6 +447,7 @@ function initSchema() {
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id),
       thread_key TEXT NOT NULL,
+      conversation_id TEXT DEFAULT '',
       chapter_id TEXT DEFAULT '',
       unit_id TEXT NOT NULL,
       knowledge_point_id TEXT DEFAULT '',
@@ -399,8 +459,36 @@ function initSchema() {
       created_at TEXT NOT NULL
     )
   `);
+  try { d.run("ALTER TABLE learning_assistant_messages ADD COLUMN conversation_id TEXT DEFAULT ''"); } catch {}
   d.run("CREATE INDEX IF NOT EXISTS idx_lam_user_thread ON learning_assistant_messages(user_id, thread_key, created_at)");
   d.run("CREATE INDEX IF NOT EXISTS idx_lam_user_unit ON learning_assistant_messages(user_id, unit_id, created_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_lam_conversation ON learning_assistant_messages(user_id, conversation_id, created_at)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS learning_assistant_conversations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      thread_key TEXT NOT NULL,
+      chapter_id TEXT DEFAULT '',
+      unit_id TEXT NOT NULL,
+      knowledge_point_id TEXT DEFAULT '',
+      title TEXT NOT NULL DEFAULT '新对话',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_lac_user_thread ON learning_assistant_conversations(user_id, thread_key, updated_at)");
+  migrateLegacyLearningAssistantMessages(d);
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS learning_assistant_daily_usage (
+      user_id TEXT NOT NULL REFERENCES users(id),
+      usage_date TEXT NOT NULL,
+      request_count INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, usage_date)
+    )
+  `);
 
   d.run(`
     CREATE TABLE IF NOT EXISTS events (
@@ -737,38 +825,179 @@ function getQuizResultsByUserUnit(userId, unitId) {
 
 // ---- Learning Assistant ----
 
-function insertLearningAssistantMessage(record) {
-  execute(
-    `INSERT INTO learning_assistant_messages
-      (id, user_id, thread_key, chapter_id, unit_id, knowledge_point_id,
-       role, content, context_json, provider, quiz_submitted, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      record.id,
-      record.user_id,
-      record.thread_key,
-      record.chapter_id || "",
-      record.unit_id,
-      record.knowledge_point_id || "",
-      record.role,
-      record.content,
-      JSON.stringify(record.context || {}),
-      record.provider || "",
-      record.quiz_submitted ? 1 : 0,
-      record.created_at
-    ]
-  );
+const LEARNING_ASSISTANT_MESSAGE_INSERT = `INSERT INTO learning_assistant_messages
+  (id, user_id, thread_key, conversation_id, chapter_id, unit_id,
+   knowledge_point_id, role, content, context_json, provider,
+   quiz_submitted, created_at)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+const LEARNING_ASSISTANT_CONVERSATION_INSERT = `INSERT INTO learning_assistant_conversations
+  (id, user_id, thread_key, chapter_id, unit_id, knowledge_point_id,
+   title, created_at, updated_at)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+function learningAssistantMessageValues(record) {
+  return [
+    record.id,
+    record.user_id,
+    record.thread_key,
+    record.conversation_id || "",
+    record.chapter_id || "",
+    record.unit_id,
+    record.knowledge_point_id || "",
+    record.role,
+    record.content,
+    JSON.stringify(record.context || {}),
+    record.provider || "",
+    record.quiz_submitted ? 1 : 0,
+    record.created_at
+  ];
 }
 
-function getLearningAssistantMessages(userId, threadKey, limit = 80) {
+function learningAssistantConversationValues(record) {
+  return [
+    record.id,
+    record.user_id,
+    record.thread_key,
+    record.chapter_id || "",
+    record.unit_id,
+    record.knowledge_point_id || "",
+    String(record.title || "新对话").slice(0, 80),
+    record.created_at,
+    record.updated_at || record.created_at
+  ];
+}
+
+function getLearningAssistantMessages(userId, threadKey, limit = 80, conversationId = "") {
+  const conversation = String(conversationId || "").trim();
   const rows = queryAll(
     `SELECT * FROM learning_assistant_messages
      WHERE user_id = ? AND thread_key = ?
+       ${conversation ? "AND conversation_id = ?" : ""}
      ORDER BY created_at DESC, id DESC
      LIMIT ?`,
-    [userId, threadKey, Math.max(1, Math.min(Number(limit || 80), 200))]
+    [
+      userId,
+      threadKey,
+      ...(conversation ? [conversation] : []),
+      Math.max(1, Math.min(Number(limit || 80), 200))
+    ]
   );
   return rows.reverse();
+}
+
+function saveLearningAssistantTurn({
+  conversation,
+  createConversation = false,
+  userMessage,
+  assistantMessage,
+  title = "",
+  updatedAt = new Date().toISOString()
+}) {
+  if (!conversation?.id || !userMessage?.content || !assistantMessage?.content) {
+    throw new Error("A complete learning assistant turn is required before persistence.");
+  }
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    if (createConversation) {
+      d.run(
+        LEARNING_ASSISTANT_CONVERSATION_INSERT,
+        learningAssistantConversationValues(conversation)
+      );
+    }
+    d.run(LEARNING_ASSISTANT_MESSAGE_INSERT, learningAssistantMessageValues(userMessage));
+    d.run(LEARNING_ASSISTANT_MESSAGE_INSERT, learningAssistantMessageValues(assistantMessage));
+    const safeTitle = String(title || "").replace(/\s+/g, " ").trim().slice(0, 80);
+    d.run(
+      `UPDATE learning_assistant_conversations
+       SET title = CASE WHEN ? <> '' THEN ? ELSE title END,
+           updated_at = ?
+       WHERE user_id = ? AND id = ?`,
+      [safeTitle, safeTitle, updatedAt, conversation.user_id, conversation.id]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function getLearningAssistantConversation(userId, conversationId) {
+  return queryOne(
+    `SELECT c.*,
+      (SELECT COUNT(*) FROM learning_assistant_messages m
+       WHERE m.user_id = c.user_id AND m.conversation_id = c.id) AS message_count
+     FROM learning_assistant_conversations c
+     WHERE c.user_id = ? AND c.id = ?`,
+    [userId, conversationId]
+  );
+}
+
+function listLearningAssistantConversations(userId, threadKey, limit = 60) {
+  return queryAll(
+    `SELECT c.*,
+      (SELECT COUNT(*) FROM learning_assistant_messages m
+       WHERE m.user_id = c.user_id AND m.conversation_id = c.id) AS message_count
+     FROM learning_assistant_conversations c
+     WHERE c.user_id = ? AND c.thread_key = ?
+     ORDER BY c.updated_at DESC, c.created_at DESC
+     LIMIT ?`,
+    [userId, threadKey, Math.max(1, Math.min(Number(limit || 60), 100))]
+  );
+}
+
+function getLearningAssistantDailyUsage(userId, usageDate) {
+  const row = queryOne(
+    `SELECT request_count, updated_at
+     FROM learning_assistant_daily_usage
+     WHERE user_id = ? AND usage_date = ?`,
+    [userId, usageDate]
+  );
+  return {
+    requestCount: Number(row?.request_count || 0),
+    updatedAt: row?.updated_at || ""
+  };
+}
+
+function consumeLearningAssistantDailyQuota(userId, usageDate, limit, updatedAt) {
+  const safeLimit = Math.max(0, Number(limit || 0));
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const current = getLearningAssistantDailyUsage(userId, usageDate);
+    if (current.requestCount >= safeLimit) {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        used: current.requestCount,
+        remaining: 0,
+        limit: safeLimit
+      };
+    }
+    const nextCount = current.requestCount + 1;
+    d.run(
+      `INSERT INTO learning_assistant_daily_usage
+        (user_id, usage_date, request_count, updated_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(user_id, usage_date) DO UPDATE SET
+         request_count = excluded.request_count,
+         updated_at = excluded.updated_at`,
+      [userId, usageDate, nextCount, updatedAt]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      used: nextCount,
+      remaining: Math.max(0, safeLimit - nextCount),
+      limit: safeLimit
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
 }
 
 // ---- Events ----
@@ -1187,6 +1416,7 @@ function resetLearningSnapshot(record) {
   try {
     d.run("DELETE FROM quiz_results WHERE user_id = ?", [record.user_id]);
     d.run("DELETE FROM learning_assistant_messages WHERE user_id = ?", [record.user_id]);
+    d.run("DELETE FROM learning_assistant_conversations WHERE user_id = ?", [record.user_id]);
     d.run("DELETE FROM snapshots WHERE user_id = ?", [record.user_id]);
     d.run(
       `UPDATE learning_state_versions
@@ -2520,8 +2750,12 @@ module.exports = {
   insertQuizResult,
   getQuizResultsByUser,
   getQuizResultsByUserUnit,
-  insertLearningAssistantMessage,
   getLearningAssistantMessages,
+  saveLearningAssistantTurn,
+  getLearningAssistantConversation,
+  listLearningAssistantConversations,
+  getLearningAssistantDailyUsage,
+  consumeLearningAssistantDailyQuota,
   insertEvent,
   insertSnapshot,
   getLatestSnapshot,

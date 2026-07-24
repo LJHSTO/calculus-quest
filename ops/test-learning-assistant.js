@@ -159,6 +159,10 @@ const preSubmitPrompt = buildAssistantPrompt({
   quizSubmitted: false
 });
 assert.equal(preSubmitPrompt.policy.mode, "quiz_guidance");
+assert.match(preSubmitPrompt.system, /每个输入恰好对应一个输出/);
+assert.match(preSubmitPrompt.system, /不要误称为“一一对应”/);
+assert.match(preSubmitPrompt.system, /不要把“回答依据”或“理解自检”作为每轮固定模板/);
+assert.match(preSubmitPrompt.system, /学生明确追问出处、依据或课件位置/);
 assert.doesNotMatch(preSubmitPrompt.user, /私有解析/);
 assert.doesNotMatch(preSubmitPrompt.user, /"answer"/);
 
@@ -208,5 +212,12 @@ const mock = mockAssistantAnswer({
 });
 assert.match(mock, /现在试一下/);
 assert.match(mock, /Δx 趋近于 0/);
+
+const conciseMock = mockAssistantAnswer({
+  resolved,
+  question: "这个符号怎么读？",
+  quizSubmitted: false
+});
+assert.doesNotMatch(conciseMock, /现在试一下/);
 
 console.log("learning assistant tests passed");

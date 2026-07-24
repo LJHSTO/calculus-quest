@@ -90,6 +90,10 @@ const authAttemptMap = new Map();
 const assistantRateLimitMap = new Map();
 const assistantRateLimitWindowMs = 60 * 1000;
 const assistantRateLimitMax = 20;
+const assistantDailyQuotaLimit = Math.max(
+  1,
+  Math.min(10000, Number(process.env.LEARNING_ASSISTANT_DAILY_QUOTA || 30) || 30)
+);
 
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -783,6 +787,103 @@ function assistantProviderInfo() {
   };
 }
 
+function beijingDateKey(date = new Date()) {
+  return new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function assistantQuotaInfo(userId, date = new Date()) {
+  const usageDate = beijingDateKey(date);
+  const used = db.getLearningAssistantDailyUsage(userId, usageDate).requestCount;
+  return {
+    usageDate,
+    limit: assistantDailyQuotaLimit,
+    used,
+    remaining: Math.max(0, assistantDailyQuotaLimit - used)
+  };
+}
+
+function sendAssistantQuizLocked(res, userId) {
+  sendJson(res, 403, {
+    ok: false,
+    code: "assistant_quiz_locked_until_submit",
+    message: "提交本次测验后即可使用知点复盘。",
+    quizSubmitted: false,
+    quota: assistantQuotaInfo(userId)
+  });
+}
+
+function assistantRequestConsumesQuota(providerInfo = assistantProviderInfo()) {
+  return Boolean(
+    providerInfo.live
+    || process.env.LEARNING_ASSISTANT_COUNT_MOCK_USAGE === "true"
+  );
+}
+
+function consumeAssistantQuota(userId, date = new Date()) {
+  const usageDate = beijingDateKey(date);
+  return {
+    usageDate,
+    ...db.consumeLearningAssistantDailyQuota(
+      userId,
+      usageDate,
+      assistantDailyQuotaLimit,
+      date.toISOString()
+    )
+  };
+}
+
+function publicAssistantConversation(row = {}) {
+  return {
+    id: row.id || "",
+    threadKey: row.thread_key || "",
+    chapterId: row.chapter_id || "",
+    unitId: row.unit_id || "",
+    knowledgePointId: row.knowledge_point_id || "",
+    title: String(row.title || "新对话"),
+    messageCount: Number(row.message_count || 0),
+    createdAt: row.created_at || "",
+    updatedAt: row.updated_at || row.created_at || ""
+  };
+}
+
+function buildAssistantConversation(userId, resolved, timestamp, title = "新对话") {
+  return {
+    id: crypto.randomUUID(),
+    user_id: userId,
+    thread_key: resolved.threadKey,
+    chapter_id: resolved.unit.chapterId,
+    unit_id: resolved.unit.id,
+    knowledge_point_id: resolved.unit.knowledgePointId || "",
+    title: String(title || "新对话").replace(/\s+/g, " ").trim().slice(0, 42) || "新对话",
+    created_at: timestamp,
+    updated_at: timestamp
+  };
+}
+
+function assistantConversationForRequest(userId, resolved, conversationId = "", timestamp = nowIso()) {
+  const requestedId = String(conversationId || "").trim();
+  if (requestedId) {
+    const existing = db.getLearningAssistantConversation(userId, requestedId);
+    if (!existing || existing.thread_key !== resolved.threadKey) {
+      const error = new Error("当前对话不存在，或不属于这个学习位置。");
+      error.code = "assistant_conversation_not_found";
+      error.status = 404;
+      throw error;
+    }
+    return {
+      conversation: publicAssistantConversation(existing),
+      record: existing,
+      createConversation: false
+    };
+  }
+  const record = buildAssistantConversation(userId, resolved, timestamp);
+  return {
+    conversation: publicAssistantConversation({ ...record, message_count: 0 }),
+    record,
+    createConversation: true
+  };
+}
+
 function parseAssistantContextJson(value = "") {
   try {
     const parsed = typeof value === "string" ? JSON.parse(value || "{}") : value;
@@ -1360,17 +1461,28 @@ async function handleApi(req, res, url) {
       sendJson(res, 200, {
         ok: true,
         provider: assistantProviderInfo(),
-        courseVersion: assistantContextIndex.routeVersion || ""
+        courseVersion: assistantContextIndex.routeVersion || "",
+        quota: assistantQuotaInfo(auth.participant.id)
       });
       return;
     }
 
-    if (req.method === "GET" && url.pathname === "/api/learning/assistant/history") {
-      const auth = authenticate(req);
+    if (
+      ["GET", "POST"].includes(req.method)
+      && url.pathname === "/api/learning/assistant/conversations"
+    ) {
+      const body = req.method === "POST" ? await readJsonBody(req) : {};
+      const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      const unitId = String(url.searchParams.get("unitId") || "").trim();
-      const chapterId = String(url.searchParams.get("chapterId") || "").trim();
-      const sceneType = String(url.searchParams.get("sceneType") || "").trim();
+      const unitId = String(
+        req.method === "GET" ? url.searchParams.get("unitId") || "" : body.unitId || ""
+      ).trim();
+      const chapterId = String(
+        req.method === "GET" ? url.searchParams.get("chapterId") || "" : body.chapterId || ""
+      ).trim();
+      const sceneType = String(
+        req.method === "GET" ? url.searchParams.get("sceneType") || "" : body.sceneType || ""
+      ).trim();
       const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
       let resolved;
       try {
@@ -1395,17 +1507,106 @@ async function handleApi(req, res, url) {
         });
         return;
       }
-      const messages = db.getLearningAssistantMessages(
+      if (resolved.isQuiz && !quizSubmitted) {
+        sendAssistantQuizLocked(res, auth.participant.id);
+        return;
+      }
+      if (req.method === "POST") {
+        sendJson(res, 200, {
+          ok: true,
+          threadKey: resolved.threadKey,
+          draft: true,
+          conversation: null,
+          quota: assistantQuotaInfo(auth.participant.id)
+        });
+        return;
+      }
+      const conversations = db.listLearningAssistantConversations(
         auth.participant.id,
         resolved.threadKey,
-        100
-      ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1);
+        80
+      ).map(publicAssistantConversation);
       sendJson(res, 200, {
         ok: true,
         threadKey: resolved.threadKey,
+        provider: assistantProviderInfo(),
+        quota: assistantQuotaInfo(auth.participant.id),
+        conversations
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/learning/assistant/history") {
+      const auth = authenticate(req);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const unitId = String(url.searchParams.get("unitId") || "").trim();
+      const chapterId = String(url.searchParams.get("chapterId") || "").trim();
+      const sceneType = String(url.searchParams.get("sceneType") || "").trim();
+      const conversationId = String(url.searchParams.get("conversationId") || "").trim();
+      const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      let resolved;
+      try {
+        resolved = learningAssistant.resolveAssistantContext({
+          index: assistantContextIndex,
+          chapterId,
+          unitId,
+          sceneType,
+          contextRef: {
+            kind: "unit",
+            scope: unitId.endsWith("-pre") || unitId.endsWith("-formative") || unitId.endsWith("-post")
+              ? "quiz"
+              : "lesson"
+          },
+          quizSubmitted
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_context_error",
+          message: error.message
+        });
+        return;
+      }
+      if (resolved.isQuiz && !quizSubmitted) {
+        sendAssistantQuizLocked(res, auth.participant.id);
+        return;
+      }
+      let conversation = null;
+      if (conversationId) {
+        const found = db.getLearningAssistantConversation(auth.participant.id, conversationId);
+        if (!found || found.thread_key !== resolved.threadKey) {
+          sendJson(res, 404, {
+            ok: false,
+            code: "assistant_conversation_not_found",
+            message: "这段历史对话不存在，或不属于当前学习位置。"
+          });
+          return;
+        }
+        conversation = publicAssistantConversation(found);
+      } else {
+        const latest = db.listLearningAssistantConversations(
+          auth.participant.id,
+          resolved.threadKey,
+          1
+        )[0];
+        conversation = latest ? publicAssistantConversation(latest) : null;
+      }
+      const messages = conversation
+        ? db.getLearningAssistantMessages(
+            auth.participant.id,
+            resolved.threadKey,
+            100,
+            conversation.id
+          ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1)
+        : [];
+      sendJson(res, 200, {
+        ok: true,
+        threadKey: resolved.threadKey,
+        conversation,
         contextRef: resolved.contextRef,
         quizSubmitted,
         provider: assistantProviderInfo(),
+        quota: assistantQuotaInfo(auth.participant.id),
         messages: messages.map(publicAssistantMessage)
       });
       return;
@@ -1415,16 +1616,6 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      const rate = checkAssistantRateLimit(auth.participant.id);
-      if (!rate.ok) {
-        sendJson(res, 429, {
-          ok: false,
-          code: "assistant_rate_limited",
-          message: "提问有点密集，先观察一下课件，稍后再继续。",
-          retryAfterSeconds: rate.retryAfterSeconds
-        });
-        return;
-      }
       const question = String(body.question || "").replace(/\u0000/g, "").trim().slice(0, 1200);
       const unitId = String(body.unitId || "").trim();
       const chapterId = String(body.chapterId || "").trim();
@@ -1452,48 +1643,68 @@ async function handleApi(req, res, url) {
         });
         return;
       }
+      if (resolved.isQuiz && !quizSubmitted) {
+        sendAssistantQuizLocked(res, auth.participant.id);
+        return;
+      }
+      const rate = checkAssistantRateLimit(auth.participant.id);
+      if (!rate.ok) {
+        sendJson(res, 429, {
+          ok: false,
+          code: "assistant_rate_limited",
+          message: "提问有点密集，先观察一下课件，稍后再继续。",
+          retryAfterSeconds: rate.retryAfterSeconds
+        });
+        return;
+      }
 
-      const historyRows = db.getLearningAssistantMessages(
-        auth.participant.id,
-        resolved.threadKey,
-        16
-      ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1);
+      const requestedAt = new Date();
+      const providerInfo = assistantProviderInfo();
+      let quota = assistantQuotaInfo(auth.participant.id, requestedAt);
+      let conversationState;
+      try {
+        conversationState = assistantConversationForRequest(
+          auth.participant.id,
+          resolved,
+          body.conversationId,
+          requestedAt.toISOString()
+        );
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_conversation_error",
+          message: error.message,
+          quota
+        });
+        return;
+      }
+      const { conversation } = conversationState;
+      if (assistantRequestConsumesQuota(providerInfo)) {
+        quota = consumeAssistantQuota(auth.participant.id, requestedAt);
+        if (!quota.ok) {
+          sendJson(res, 429, {
+            ok: false,
+            code: "assistant_daily_quota_exhausted",
+            message: "今天的知点额度已用完，明天可以继续提问。",
+            quota
+          });
+          return;
+        }
+      }
+      const historyRows = conversationState.createConversation
+        ? []
+        : db.getLearningAssistantMessages(
+            auth.participant.id,
+            resolved.threadKey,
+            16,
+            conversation.id
+          ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1);
       const history = historyRows.map((row) => ({
         role: row.role,
         content: row.content
       }));
-      const askedAt = nowIso();
+      const askedAt = requestedAt.toISOString();
       const userMessageId = crypto.randomUUID();
-      db.insertLearningAssistantMessage({
-        id: userMessageId,
-        user_id: auth.participant.id,
-        thread_key: resolved.threadKey,
-        chapter_id: resolved.unit.chapterId,
-        unit_id: resolved.unit.id,
-        knowledge_point_id: resolved.unit.knowledgePointId || "",
-        role: "user",
-        content: question,
-        context: resolved.contextRef,
-        provider: "",
-        quiz_submitted: quizSubmitted,
-        created_at: askedAt
-      });
-
-      res.writeHead(200, {
-        "Content-Type": "application/x-ndjson; charset=utf-8",
-        "Cache-Control": "no-store",
-        "X-Content-Type-Options": "nosniff",
-        "X-Accel-Buffering": "no"
-      });
-      res.flushHeaders?.();
-      writeNdjson(res, {
-        type: "meta",
-        threadKey: resolved.threadKey,
-        userMessageId,
-        contextRef: resolved.contextRef,
-        quizSubmitted,
-        provider: assistantProviderInfo()
-      });
 
       const generated = await generateAssistantTurn({
         resolved,
@@ -1508,23 +1719,59 @@ async function handleApi(req, res, url) {
       });
       const assistantMessageId = crypto.randomUUID();
       const answeredAt = nowIso();
-      for (const delta of learningAssistant.responseChunks(answer)) {
-        writeNdjson(res, { type: "delta", delta });
-      }
-      db.insertLearningAssistantMessage({
-        id: assistantMessageId,
+      const messageBase = {
         user_id: auth.participant.id,
         thread_key: resolved.threadKey,
+        conversation_id: conversation.id,
         chapter_id: resolved.unit.chapterId,
         unit_id: resolved.unit.id,
         knowledge_point_id: resolved.unit.knowledgePointId || "",
-        role: "assistant",
-        content: answer,
         context: resolved.contextRef,
-        provider: generated.provider,
-        quiz_submitted: quizSubmitted,
-        created_at: answeredAt
+        quiz_submitted: quizSubmitted
+      };
+      db.saveLearningAssistantTurn({
+        conversation: conversationState.record,
+        createConversation: conversationState.createConversation,
+        userMessage: {
+          ...messageBase,
+          id: userMessageId,
+          role: "user",
+          content: question,
+          provider: "",
+          created_at: askedAt
+        },
+        assistantMessage: {
+          ...messageBase,
+          id: assistantMessageId,
+          role: "assistant",
+          content: answer,
+          provider: generated.provider,
+          created_at: answeredAt
+        },
+        title: conversation.messageCount === 0 ? question : "",
+        updatedAt: answeredAt
       });
+
+      res.writeHead(200, {
+        "Content-Type": "application/x-ndjson; charset=utf-8",
+        "Cache-Control": "no-store",
+        "X-Content-Type-Options": "nosniff",
+        "X-Accel-Buffering": "no"
+      });
+      res.flushHeaders?.();
+      writeNdjson(res, {
+        type: "meta",
+        threadKey: resolved.threadKey,
+        conversationId: conversation.id,
+        userMessageId,
+        contextRef: resolved.contextRef,
+        quizSubmitted,
+        provider: providerInfo,
+        quota
+      });
+      for (const delta of learningAssistant.responseChunks(answer)) {
+        writeNdjson(res, { type: "delta", delta });
+      }
       writeNdjson(res, {
         type: "done",
         message: {
@@ -1537,7 +1784,14 @@ async function handleApi(req, res, url) {
           createdAt: answeredAt
         },
         policy: generated.policy,
-        fallback: generated.fallback
+        fallback: generated.fallback,
+        conversation: {
+          ...conversation,
+          title: conversation.messageCount === 0 ? question.slice(0, 42) : conversation.title,
+          messageCount: conversation.messageCount + 2,
+          updatedAt: answeredAt
+        },
+        quota
       });
       res.end();
       return;
