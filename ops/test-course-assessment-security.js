@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const {
+  authoritativeGradingQuestions,
   buildAssessmentIndex,
   buildPublicLearningRoute,
   scoreObjectiveQuestion
@@ -44,7 +45,29 @@ const route = {
           ]
         }
       },
-      modules: []
+      modules: [
+        {
+          id: "M1",
+          knowledgePoints: [
+            { id: "GH-01-K01", name: "输入、输出和函数规则" }
+          ],
+          flow: {
+            preQuiz: {
+              questions: [
+                {
+                  id: "q-short",
+                  type: "short_answer",
+                  question: "解释函数的输入和输出。",
+                  knowledgePointIds: ["GH-01-K01"],
+                  analysis: "说明同一输入对应唯一输出。",
+                  commentPrompt: "关注输入、规则和输出的关系。",
+                  points: 10
+                }
+              ]
+            }
+          }
+        }
+      ]
     }
   ]
 };
@@ -76,5 +99,13 @@ assert.deepEqual(scoreObjectiveQuestion(index.get("q-single").question, "A"), {
 });
 assert.equal(scoreObjectiveQuestion(index.get("q-multiple").question, ["C", "A"]).isCorrect, true);
 assert.equal(scoreObjectiveQuestion(index.get("q-multiple").question, ["A"]).isCorrect, false);
+
+const gradingQuestions = authoritativeGradingQuestions(index, [{
+  question_id: "q-short",
+  unit_id: "M1-pre",
+  chapter_id: "C1",
+  response: "函数把输入按规则变成输出。"
+}]);
+assert.deepEqual(gradingQuestions[0].concepts, ["输入、输出和函数规则"]);
 
 console.log("course assessment security tests passed");

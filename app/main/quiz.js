@@ -134,6 +134,9 @@ function renderQuestionReview({ question, result, index, unit }) {
     const ai = aiReviewStatus(result, question);
     const referenceText = shortAnswerReferenceText(question, result);
     const rubricText = result.commentPrompt || result.rubric || question.commentPrompt || question.rubric || "";
+    const weakConceptLabels = typeof KnowledgePointLabels !== "undefined"
+      ? KnowledgePointLabels.labelsFor(result.aiWeakConcepts, typeof curriculum !== "undefined" ? curriculum : [], unit?.chapterId)
+      : (Array.isArray(result.aiWeakConcepts) ? result.aiWeakConcepts : []);
     return `
       <div class="question-review pending" data-question-review>
         <div class="review-heading">
@@ -146,7 +149,7 @@ function renderQuestionReview({ question, result, index, unit }) {
           <strong>智能批改建议</strong>
           <p>${escapeHtml(ai.line)}</p>
           ${ai.feedback ? `<p><b>反馈：</b>${escapeHtml(ai.feedback)}</p>` : ""}
-          ${Array.isArray(result.aiWeakConcepts) && result.aiWeakConcepts.length ? `<p><b>薄弱概念：</b>${escapeHtml(result.aiWeakConcepts.join("、"))}</p>` : ""}
+          ${weakConceptLabels.length ? `<p><b>薄弱概念：</b>${escapeHtml(weakConceptLabels.join("、"))}</p>` : ""}
           ${result.aiReasoning ? `<p><b>评分依据：</b>${escapeHtml(result.aiReasoning)}</p>` : ""}
         </div>
         <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示参考答案和解析</button>
