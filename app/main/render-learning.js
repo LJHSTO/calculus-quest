@@ -530,8 +530,7 @@ function renderKnowledgeUnit(unit) {
         </div>
        <div class="iframe-container multi-scene-courseware-stage" data-knowledge-scene-stage>
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
-         <iframe class="embed-frame" data-courseware-frame data-context-id="interactive-frame:${escapeHtml(unit.id)}:${escapeHtml(selectedTypeId)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(selectedTypeId)}" data-context-label="${escapeHtml(`${unit.label} · ${knowledgeSceneDisplayLabel(selectedType)}`)}" title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
-         <button class="button soft icon-button multi-scene-courseware-exit" type="button" data-knowledge-scene-fullscreen aria-label="退出课件全屏" title="退出课件全屏">退出全屏</button>
+          <iframe class="embed-frame" data-courseware-frame data-context-id="interactive-frame:${escapeHtml(unit.id)}:${escapeHtml(selectedTypeId)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(selectedTypeId)}" data-context-label="${escapeHtml(`${unit.label} · ${knowledgeSceneDisplayLabel(selectedType)}`)}" title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe>
         </div>`
     : selectedTypeId
       ? `<div class="empty-state multi-scene-empty-resource">
@@ -557,7 +556,6 @@ function renderKnowledgeUnit(unit) {
           </div>
           <div class="multi-scene-slide-fullscreen-stage" data-resource-fullscreen-target>
             ${slideBody}
-            <button class="button soft icon-button multi-scene-slide-exit" type="button" data-resource-fullscreen aria-label="退出讲解页全屏" title="退出讲解页全屏">退出全屏</button>
           </div>
           ${renderKnowledgeAudioPack(unit, {
             slotKey: "slide",

@@ -209,21 +209,13 @@
   background: #0f1715;
 }
 
-.multi-scene-slide-fullscreen-stage:fullscreen .multi-scene-required-slide {
+.multi-scene-slide-fullscreen-stage:fullscreen .multi-scene-required-slide,
+.multi-scene-slide-fullscreen-stage.is-local-fullscreen-target .multi-scene-required-slide {
   width: min(100vw, calc(100vh * 16 / 9));
   max-width: none;
   margin: 0;
   border: 0;
   border-radius: 0;
-}
-
-.multi-scene-slide-fullscreen-stage:fullscreen .multi-scene-slide-exit {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 8;
-  display: inline-flex;
-  background: rgba(255, 255, 255, 0.92);
 }
 
 .multi-scene-scene-panel.scene-choice-focus {
@@ -650,6 +642,23 @@
   padding: 0;
 }
 
+.multi-scene-slide-fullscreen-stage.is-local-fullscreen-target,
+.multi-scene-courseware-stage.is-local-fullscreen-target {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #0b1412;
+  padding: 0;
+}
+
+.multi-scene-slide-fullscreen-stage.is-local-fullscreen-target {
+  display: grid;
+  place-items: center;
+}
+
 .multi-scene-courseware-stage:fullscreen .embed-frame {
   width: 100%;
   height: 100vh;
@@ -658,20 +667,16 @@
   border-radius: 0;
 }
 
-.multi-scene-courseware-stage:fullscreen > .multi-scene-courseware-exit {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 4;
-  display: inline-flex;
-  min-height: 40px;
-  border-color: rgba(255, 255, 255, 0.42);
-  background: rgba(11, 20, 18, 0.82);
-  color: #ffffff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(10px);
+.multi-scene-courseware-stage.is-local-fullscreen-target .embed-frame {
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  border: 0;
+  border-radius: 0;
 }
 
+body.is-learning-local-fullscreen,
+body.is-resource-local-fullscreen { overflow: hidden; }
 @media (max-width: 1180px) {
   .multi-scene-scene-selector {
     grid-template-columns: repeat(2, minmax(0, 1fr));

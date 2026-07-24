@@ -1344,7 +1344,7 @@
           "title": "幂函数求导：空间视角",
           "type": "visualization3d",
           "widgetType": "visualization3d",
-          "score": 60
+          "score": 100
         }
       ],
       "isCheckpoint": false,
@@ -1412,7 +1412,7 @@
           "title": "和差积商规则：空间视角",
           "type": "visualization3d",
           "widgetType": "visualization3d",
-          "score": 60
+          "score": 100
         }
       ],
       "isCheckpoint": false,
@@ -1480,7 +1480,7 @@
           "title": "链式法则：空间视角",
           "type": "visualization3d",
           "widgetType": "visualization3d",
-          "score": 60
+          "score": 100
         }
       ],
       "isCheckpoint": false,
@@ -1548,7 +1548,7 @@
           "title": "常见函数变化速度：空间视角",
           "type": "visualization3d",
           "widgetType": "visualization3d",
-          "score": 60
+          "score": 100
         }
       ],
       "isCheckpoint": false,

@@ -142,8 +142,12 @@ function saveState() {
   queueLearningSnapshot("state_change");
 }
 
+const COURSEWARE_RESOURCE_VERSION = "20260724-cw-v4";
+
 function resourceUrl(path) {
-  return encodeURI(path);
+  const encoded = encodeURI(path);
+  if (!/^resources\/open-maic\/.*\.(?:html|htm)(?:[?#]|$)/i.test(path)) return encoded;
+  return `${encoded}${encoded.includes("?") ? "&" : "?"}v=${COURSEWARE_RESOURCE_VERSION}`;
 }
 
 async function fetchJson(path, errorMessage) {

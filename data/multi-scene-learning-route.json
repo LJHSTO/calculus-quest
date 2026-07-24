@@ -7996,9 +7996,8 @@
                   "type": "visualization3d",
                   "widgetType": "visualization3d",
                   "sceneOrder": 6,
-                  "score": 60,
-                  "generatedFallback": true,
-                  "description": "本地生成的空间视角兜底场景，用于补齐每个知识点的 3D Visualization 入口。"
+                  "score": 100,
+                  "description": "参数曲面展示系数 c、幂次 n 与斜率的联动，并提供函数/导函数双图 fallback。"
                 }
               ]
             },
@@ -8344,9 +8343,8 @@
                   "type": "visualization3d",
                   "widgetType": "visualization3d",
                   "sceneOrder": 10,
-                  "score": 60,
-                  "generatedFallback": true,
-                  "description": "本地生成的空间视角兜底场景，用于补齐每个知识点的 3D Visualization 入口。"
+                  "score": 100,
+                  "description": "乘积曲面展示 f、g 两个输入和 f′g、fg′ 两个交叉贡献，并提供面积矩形 fallback。"
                 }
               ]
             },
@@ -8676,9 +8674,8 @@
                   "type": "visualization3d",
                   "widgetType": "visualization3d",
                   "sceneOrder": 15,
-                  "score": 60,
-                  "generatedFallback": true,
-                  "description": "本地生成的空间视角兜底场景，用于补齐每个知识点的 3D Visualization 入口。"
+                  "score": 100,
+                  "description": "空间路径展示 x→u→y 的内外层变化传递，并提供三栏链式计算图 fallback。"
                 }
               ]
             },
@@ -9096,9 +9093,8 @@
                   "type": "visualization3d",
                   "widgetType": "visualization3d",
                   "sceneOrder": 19,
-                  "score": 60,
-                  "generatedFallback": true,
-                  "description": "本地生成的空间视角兜底场景，用于补齐每个知识点的 3D Visualization 入口。"
+                  "score": 100,
+                  "description": "函数族-输入-导数值曲面支持切换 eˣ、ln x、sin x 与 xⁿ，并提供函数/导函数双图 fallback。"
                 }
               ]
             }

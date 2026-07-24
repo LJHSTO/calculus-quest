@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex,nofollow" />
     <title>课程流程检视 | Calculus Quest</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="app/flow-test/flow-test.css?v=20260712-3" />
+    <link rel="stylesheet" href="app/flow-test/flow-test.css?v=20260724-flow-fullscreen-v5" />
   </head>
   <body>
     <header class="app-header">
@@ -16,7 +16,6 @@
       </div>
       <div class="header-actions">
         <button id="check-resources" class="command-button" type="button">检查全部资源</button>
-        <a class="icon-link" href="./" target="_blank" rel="noreferrer" aria-label="在新窗口打开学生端" title="打开学生端">↗</a>
       </div>
     </header>
 
@@ -47,6 +46,16 @@
         </div>
         <div id="phase-strip" class="phase-strip" aria-label="章节流程"></div>
         <div id="knowledge-list" class="knowledge-list" aria-live="polite"></div>
+        <section class="quiz-review" aria-labelledby="quiz-review-title">
+          <div class="section-heading">
+            <div>
+              <span class="utility-label">Quiz 检查</span>
+              <h2 id="quiz-review-title">章节测验题目</h2>
+            </div>
+            <span id="quiz-count" class="section-count">--</span>
+          </div>
+          <div id="quiz-list" class="quiz-list"></div>
+        </section>
       </section>
 
       <section class="viewer-pane" aria-labelledby="resource-title">
@@ -55,18 +64,26 @@
             <span id="resource-kind" class="utility-label">资源预览</span>
             <h2 id="resource-title">选择一个知识点</h2>
           </div>
-          <a id="open-resource" class="icon-link is-disabled" href="#" target="_blank" rel="noreferrer" aria-label="在新窗口打开课件" title="打开课件">↗</a>
+          <div class="viewer-tools" aria-label="课件查看工具">
+            <button id="slide-zoom-out" class="icon-button" type="button" aria-label="缩小课件" title="缩小">−</button>
+            <output id="slide-zoom-value" class="zoom-readout" aria-live="polite">100%</output>
+            <button id="slide-zoom-in" class="icon-button" type="button" aria-label="放大课件" title="放大">+</button>
+            <button id="slide-zoom-fit" class="icon-button" type="button" aria-label="恢复适应窗口" title="恢复适应窗口">↺</button>
+            <button id="slide-fullscreen" class="icon-button" type="button" aria-label="全屏查看课件" title="全屏查看">⛶</button>
+          </div>
         </div>
         <div id="modality-tabs" class="modality-tabs" role="tablist" aria-label="课件表征"></div>
         <div id="resource-meta" class="resource-meta"></div>
         <div class="frame-shell">
           <div id="frame-empty" class="frame-empty">未选择课件资源</div>
-          <iframe id="resource-frame" title="课件资源预览" loading="eager" hidden></iframe>
+          <div id="slide-frame" class="slide-preview" hidden></div>
+          <div id="quiz-preview" class="quiz-preview" hidden></div>
+          <iframe id="resource-frame" title="课件资源预览" loading="eager" allow="fullscreen; autoplay" allowfullscreen hidden></iframe>
         </div>
       </section>
     </main>
 
     <div id="live-status" class="sr-only" aria-live="polite"></div>
-    <script src="app/flow-test/flow-test.js?v=20260722-multi-scene-v1"></script>
+    <script src="app/flow-test/flow-test.js?v=20260724-flow-fullscreen-v5"></script>
   </body>
 </html>

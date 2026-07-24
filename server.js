@@ -50,13 +50,16 @@ const learningRouteApiPaths = new Set([
   // Cached clients from the previous release may still request this alias.
   "/api/course/openmaic-v14-route"
 ]);
+const flowTestRouteApiPath = "/api/course/flow-test-route";
 let learningRoute = null;
 let publicLearningRouteJson = "";
+let flowTestRouteJson = "";
 let assessmentIndex = new Map();
 let assistantContextIndex = { routeVersion: "", units: new Map(), questions: new Map() };
 try {
   learningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
   publicLearningRouteJson = JSON.stringify(courseAssessment.buildPublicLearningRoute(learningRoute));
+  flowTestRouteJson = JSON.stringify(learningRoute);
   assessmentIndex = courseAssessment.buildAssessmentIndex(learningRoute);
   assistantContextIndex = learningAssistant.buildCourseContextIndex(learningRoute);
 } catch (error) {
@@ -120,6 +123,10 @@ const publicRootFiles = new Set([
   "flow-test.html",
   "styles.css",
   "favicon.ico"
+]);
+const publicFlowTestFiles = new Set([
+  "data/multi-scene-learning-route.json",
+  "data/knowledge-graph.json"
 ]);
 const publicLibFiles = new Set([
   "lib/katex.min.css",
@@ -741,6 +748,7 @@ function safeStaticPath(urlPath) {
       || publicResourceExtensions.has(extension)
     );
   const allowed = publicRootFiles.has(normalized)
+    || publicFlowTestFiles.has(normalized)
     || normalized.startsWith("app/") && (extension === ".js" || extension === ".css")
     || normalized.startsWith("admin/") && (extension === ".js" || extension === ".css")
     || normalized.startsWith("assets/") && publicAssetExtensions.has(extension)
@@ -995,6 +1003,15 @@ async function handleApi(req, res, url) {
         return;
       }
       send(res, 200, publicLearningRouteJson, "application/json; charset=utf-8");
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === flowTestRouteApiPath) {
+      if (!flowTestRouteJson) {
+        sendJson(res, 404, { ok: false, message: "未找到课件检视路线。" });
+        return;
+      }
+      send(res, 200, flowTestRouteJson, "application/json; charset=utf-8");
       return;
     }
 

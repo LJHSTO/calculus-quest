@@ -15,14 +15,34 @@ const css = fs.readFileSync(path.join(root, "app", "flow-test", "flow-test.css")
 const js = fs.readFileSync(path.join(root, "app", "flow-test", "flow-test.js"), "utf8");
 assert.match(html, /app\/flow-test\/flow-test\.css/);
 assert.match(html, /app\/flow-test\/flow-test\.js/);
+assert.match(html, /id="quiz-list"/);
+assert.match(html, /id="slide-frame"/);
+assert.match(html, /id="quiz-preview"/);
 assert.doesNotMatch(html, /admin_flow/);
-assert.match(html, /href="\.\/"/);
-assert.doesNotMatch(html, /href="\/"/);
+assert.doesNotMatch(html, /target="_blank"/);
+assert.doesNotMatch(html, /open-resource/);
+assert.match(html, /id="slide-zoom-in"/);
+assert.match(html, /id="slide-fullscreen"/);
+assert.match(html, /allow="fullscreen; autoplay"/);
+assert.match(html, /allowfullscreen/);
 assert.match(css, /grid-template-columns:\s*minmax\(0,\s*1fr\)/);
 assert.match(css, /\.frame-empty\[hidden\]\s*\{\s*display:\s*none;/);
+assert.match(css, /\.viewer-pane\.is-local-fullscreen/);
+assert.match(css, /\.frame-shell[^}]*display:\s*flex/);
 assert.match(js, /const BASE_PATH =/);
-assert.match(js, /appUrl\("api\/course\/multi-scene-learning-route"\)/);
-assert.match(js, /appUrl\("api\/learning\/kg"\)/);
+assert.match(js, /flow-test(?:\\\\\.html)?/);
+assert.match(js, /COURSEWARE_RESOURCE_VERSION/);
+assert.match(js, /appUrl\("data\/multi-scene-learning-route\.json"\)/);
+assert.match(js, /appUrl\("data\/knowledge-graph\.json"\)/);
+assert.match(js, /kgResponse\.kg \|\| kgResponse/);
+assert.match(js, /function renderQuizPreview/);
+assert.match(js, /function renderSlidePreview/);
+assert.match(js, /requestFullscreen/);
+assert.match(js, /is-local-fullscreen/);
+assert.match(js, /allowFullscreen/);
+assert.match(js, /resourcesForKnowledgePoint/);
+assert.match(js, /function slideStructureState/);
+assert.match(js, /candidate.type === "slide"/);
 assert.doesNotMatch(js, /fetchJson\("\/api\//);
 
 const route = JSON.parse(fs.readFileSync(path.join(root, "data", "multi-scene-learning-route.json"), "utf8"));
@@ -42,4 +62,41 @@ const resources = [];
 
 assert.equal(route.chapters.length, 11);
 assert.equal(resources.length, 288);
-console.log(JSON.stringify({ ok: true, chapters: route.chapters.length, resources: resources.length }, null, 2));
+const slides = route.chapters.flatMap((chapter) => (chapter.modules || []).flatMap((module) => (
+  (module.knowledgePoints || []).filter((knowledgePoint) => knowledgePoint.slide?.canvas)
+)));
+const quizzes = route.chapters.reduce((sum, chapter) => sum + ["preQuiz", "formativeQuiz", "postQuiz"].reduce(
+  (phaseSum, key) => phaseSum + (chapter.flow?.[key]?.questions || []).length,
+  0
+), 0);
+assert.equal(slides.length, 72);
+assert.equal(quizzes, 330);
+assert.ok(slides.every((knowledgePoint) => Array.isArray(knowledgePoint.slide.canvas.elements)));
+
+const gh04SpaceFiles = [
+  "06_幂函数求导：空间视角.html",
+  "10_和差积商规则：空间视角.html",
+  "15_链式法则：空间视角.html",
+  "19_常见函数变化速度：空间视角.html"
+];
+gh04SpaceFiles.forEach((file) => {
+  const html = fs.readFileSync(path.join(root, "resources", "open-maic", "GH-04-常用求导规则与函数组合", "interactive", file), "utf8");
+  assert.match(html, /id="space-canvas"/);
+  assert.match(html, /id="view-fallback"/);
+  assert.match(html, /postMessage/);
+  assert.doesNotMatch(html, /本地生成的空间视角兜底场景/);
+});
+
+const overlayRegression = fs.readFileSync(path.join(
+  root,
+  "resources",
+  "open-maic",
+  "GH-02-极限与连续：直觉探索",
+  "interactive",
+  "10_图像上的左右极限：误解修复挑战.html"
+), "utf8");
+assert.match(overlayRegression, /#overlay[\s\S]*background:\s*#0a0a2e;/);
+assert.match(overlayRegression, /#overlay[\s\S]*isolation:\s*isolate;/);
+assert.match(overlayRegression, /#overlay[\s\S]*z-index:\s*2147483647\s*!important;/);
+assert.doesNotMatch(overlayRegression, /<div id="overlay" id="startScreen">/);
+console.log(JSON.stringify({ ok: true, chapters: route.chapters.length, resources: resources.length, slides: slides.length, quizzes, checkableResources: resources.length + slides.length }, null, 2));

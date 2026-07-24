@@ -73,6 +73,8 @@ async function main() {
       "/admin/admin.js",
       "/lib/katex.min.js",
       "/lib/interaction-policy.js",
+      "/data/multi-scene-learning-route.json",
+      "/data/knowledge-graph.json",
       "/api/course/multi-scene-learning-route"
     ]) {
       const response = await fetch(baseUrl + pathname);

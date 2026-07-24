@@ -119,8 +119,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: rgba(10,10,46,0.95);
-    z-index: 100;
+    background: #0a0a2e;
+    isolation: isolate;
+    z-index: 2147483647 !important;
     padding: 20px;
     text-align: center;
   }
@@ -684,7 +685,7 @@ body:has(#main-svg):has(#sidebar) .sidebar-close{position:relative!important;z-i
   <div id="achievement"></div>
 
   <!-- Start Screen -->
-  <div id="overlay" id="startScreen">
+  <div id="overlay">
     <h1>🌉 极限迷宫</h1>
     <h2>左右极限挑战</h2>
     <p>欢迎来到极限迷宫！在这里，你需要帮助小宇航员通过正确的路径到达目标平台。</p>
