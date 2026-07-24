@@ -41,7 +41,7 @@ npx wrangler pages project create calculus-quest-flow-test
 npx wrangler pages deploy dist/flow-test --project-name calculus-quest-flow-test
 ```
 
-命令结束后会输出一个 `pages.dev` 地址。打开该地址的 `/flow-test.html`，检查章节、Slide、互动 iframe 和 Quiz 是否完整。
+命令结束后会输出一个 `pages.dev` 地址。打开该地址的 `/flow-test`（或 `/flow-test.html`），检查章节、Slide、互动 iframe 和 Quiz 是否完整。
 
 ### 4. 绑定正式域名
 
@@ -65,7 +65,7 @@ npx wrangler pages deploy dist/flow-test --project-name calculus-quest-flow-test
 4. 用允许账户和拒绝账户各测试一次：
 
 ```text
-https://review.example.com/flow-test.html
+https://review.example.com/flow-test
 https://review.example.com/data/multi-scene-learning-route.json
 ```
 

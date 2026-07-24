@@ -39,6 +39,8 @@ fs.mkdirSync(output, { recursive: true });
   "data/knowledge-graph.json"
 ].forEach(copyFile);
 
+fs.writeFileSync(path.join(output, "_redirects"), "/flow-test /flow-test.html 200\n", "utf8");
+
 copyCourseware(path.join(root, "resources", "open-maic"), path.join(output, "resources", "open-maic"));
 
 const countFiles = (directory) => fs.readdirSync(directory, { withFileTypes: true }).reduce(
