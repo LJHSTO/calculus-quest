@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
-  "exportedAt": "2026-07-19T05:37:06.399Z",
-  "appVersion": "0.3.0",
+  "exportedAt": "2026-07-25T13:02:56.232Z",
+  "appVersion": "0.0.0",
   "stage": {
     "name": "约束优化、拉格朗日与凸性",
     "description": "",
@@ -192,8 +192,7 @@
         {
           "id": "action_fqshxSuS",
           "type": "speech",
-          "text": "同学们好，欢迎来到今天的课程。我是陆教授，旁边这位是我的助教小颜。在接下来的时间里，我们将一起探索优化理论中几个核心概念的美妙之处，特别是约束优化、拉格朗日乘子以及凸性。",
-          "audioRef": "audio/tts_action_fqshxSuS.mp3"
+          "text": "这是一组关于“前测：约束优化、拉格朗日与凸性学习准备诊断”的独立测验。欢迎来到今天的课程。旁边这位是我的助教大家。在接下来的时间里，我们将一起探索优化理论中几个核心概念的美妙之处，特别是约束优化、拉格朗日乘子以及凸性。"
         },
         {
           "id": "action_fEkZvGo8",
@@ -395,15 +394,150 @@
               "rotate": 0
             },
             {
-              "type": "image",
+              "type": "shape",
               "id": "image_xwQvgWZr",
               "left": 520,
               "top": 190,
               "width": 420,
               "height": 236,
               "rotate": 0,
-              "fixedRatio": true,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F8FAFC",
               "src": "/api/classroom-media/cqv14-gh-13/media/gen_img_17NoS8DR.png"
+            },
+            {
+              "type": "text",
+              "id": "text_feasible_diagram_title",
+              "left": 550,
+              "top": 200,
+              "width": 350,
+              "height": 36,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1A3C6A; font-weight: bold;\">约束把最优解推到可行域边界</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6A"
+            },
+            {
+              "type": "shape",
+              "id": "shape_feasible_region",
+              "left": 710,
+              "top": 245,
+              "width": 180,
+              "height": 135,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#DCFCE7",
+              "opacity": 0.8
+            },
+            {
+              "type": "line",
+              "id": "line_feasible_boundary",
+              "left": 710,
+              "top": 245,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                135
+              ],
+              "style": "solid",
+              "color": "#15803D",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_unconstrained_minimum",
+              "left": 635,
+              "top": 302,
+              "width": 18,
+              "height": 18,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#DC2626"
+            },
+            {
+              "type": "shape",
+              "id": "shape_constrained_minimum",
+              "left": 701,
+              "top": 302,
+              "width": 18,
+              "height": 18,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#2563EB"
+            },
+            {
+              "type": "line",
+              "id": "line_minimum_projection",
+              "left": 653,
+              "top": 311,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                48,
+                0
+              ],
+              "style": "dashed",
+              "color": "#64748B",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_unconstrained_minimum",
+              "left": 570,
+              "top": 265,
+              "width": 125,
+              "height": 42,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 13px; color: #B91C1C;\">无约束最小值<br>（不可行）</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#B91C1C"
+            },
+            {
+              "type": "text",
+              "id": "text_constrained_minimum",
+              "left": 730,
+              "top": 325,
+              "width": 150,
+              "height": 42,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 13px; color: #1D4ED8;\">约束最小值（边界）</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1D4ED8"
             },
             {
               "type": "shape",
@@ -438,8 +572,7 @@
         {
           "id": "action_FWeRWoxT",
           "type": "speech",
-          "text": "刚才的诊断测验让大家热身了一下，现在我们就进入核心问题。约束优化的灵魂，就在于弄清楚在限定的范围内，我们的目标能达到怎样的极限。",
-          "audioRef": "audio/tts_s2_action_FWeRWoxT.mp3"
+          "text": "本场景聚焦“可行区域”。现在我们就进入核心问题。约束优化的灵魂，就在于弄清楚在限定的范围内，我们的目标能达到怎样的极限。"
         },
         {
           "id": "action_l0Kcxdn6",
@@ -618,8 +751,7 @@
         {
           "id": "action_by4QItz4",
           "type": "speech",
-          "text": "好了，刚才我们提到最优解位置和约束的关系，现在让我们把这个概念‘动’起来。请同学们看这个交互页面，它展示了一个目标函数的等高线，中间蓝色的圆点就是函数极小值的位置。",
-          "audioRef": "audio/tts_s3_action_by4QItz4.mp3"
+          "text": "本场景通过交互探索“可行区域：拖动实验”。好了，刚才我们提到最优解位置和约束的关系，现在让我们把这个概念‘动’起来。请同学们看这个交互页面，它展示了一个目标函数的等高线，中间蓝色的圆点就是函数极小值的位置。"
         },
         {
           "id": "action_Wz-PWWMc",
@@ -816,8 +948,7 @@
         {
           "id": "action_O5-SvTn_",
           "type": "speech",
-          "text": "刚才我们通过拖动，直观看到了可行区域如何“截断”搜索空间。现在，让我们把这些元素之间的关系，画成一张地图来看。",
-          "audioRef": "audio/tts_s4_action_O5-SvTn_.mp3"
+          "text": "本场景通过交互探索“可行区域：关系图”。直观看到了可行区域如何“截断”搜索空间。现在，让我们把这些元素之间的关系，画成一张地图来看。"
         },
         {
           "id": "action_Bgi0V2rD",
@@ -894,8 +1025,7 @@
         {
           "id": "action_U8t8NcP5",
           "type": "speech",
-          "text": "刚才我们看过了可行域的形状——它确实给我们划定了不能越过的边界。现在，让我们做一个小挑战，来真正感觉一下这些边界到底有多’硬’。",
-          "audioRef": "audio/tts_s5_action_U8t8NcP5.mp3"
+          "text": "本场景通过交互探索“可行区域：误解修复挑战”。让我们做一个小挑战，来真正感觉一下这些边界到底有多’硬’。"
         },
         {
           "id": "action_js4uLvR9",
@@ -1018,8 +1148,7 @@
         {
           "id": "action_vNu4ARUJ",
           "type": "speech",
-          "text": "刚才我们在2D平面上看到了可行区域是怎么被约束“切”出来的。现在，让我们把视野拉高，从3D空间来观察整个过程，这能帮助我们建立更强的几何直觉。",
-          "audioRef": "audio/tts_s6_action_vNu4ARUJ.mp3"
+          "text": "本场景通过交互探索“可行区域：空间视角”。让我们把视野拉高，从3D空间来观察整个过程，这能帮助我们建立更强的几何直觉。"
         },
         {
           "id": "action_0YiVuWzY",
@@ -1140,7 +1269,7 @@
               "width": 480,
               "height": 76,
               "rotate": 0,
-              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">· 拉格朗日乘子 λ 描述了这两种“力”的缩放关系：∇f = λ ∇g</p>",
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">· 拉格朗日乘子 λ 描述两种“力”的缩放关系；λ 可正可负，反向时 λ&lt;0</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#333333"
             },
@@ -1152,7 +1281,7 @@
               "width": 480,
               "height": 76,
               "rotate": 0,
-              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">· 误解纠正：λ 不只是数学符号，它代表了约束的“代价”——约束越强，λ越大</p>",
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">· 误解纠正：|λ| 表示目标值对约束变化的敏感程度，符号由方向约定决定</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#333333"
             },
@@ -1246,8 +1375,7 @@
         {
           "id": "action_8ll2jzzy",
           "type": "speech",
-          "text": "在上一页，我们看到小球被“截断”在约束边界的最低点。这个现象背后，隐藏着一个深刻的物理直觉，也是我们理解拉格朗日乘子的关键——力的平衡。",
-          "audioRef": "audio/tts_s7_action_8ll2jzzy.mp3"
+          "text": "本场景聚焦“拉格朗日乘子直觉”。在此前，我们看到小球被“截断”在约束边界的最低点。这个现象背后，隐藏着一个深刻的物理直觉，也是我们理解拉格朗日乘子的关键——力的平衡。"
         },
         {
           "id": "action__gTnE1Nw",
@@ -1301,8 +1429,7 @@
         {
           "id": "action_UJdHYFxk",
           "type": "speech",
-          "text": "大家注意，这里有一个常见的误区。小颜助教常提醒我们，λ绝不是一个抽象的数学符号。它是有实际物理含义的，它代表的是约束的“代价”或是“影子价格”。约束越紧，要维持这个平衡所需的“力”就越大，λ也就越大。",
-          "audioRef": "audio/tts_s7_action_UJdHYFxk.mp3"
+          "text": "大家注意，这里有一个常见的误区。大家常提醒我们，λ绝不是一个抽象的数学符号。它是有实际物理含义的，它代表的是约束的“代价”或是“影子价格”。约束越紧，要维持这个平衡所需的“力”就越大，λ也就越大。"
         }
       ]
     },
@@ -1377,8 +1504,7 @@
         {
           "id": "action_NjgbRDDK",
           "type": "speech",
-          "text": "刚才我们聊到 λ 不是抽象的符号，而是约束的“代价”。现在，咱们把这个直觉放到一个可以亲手拖动的实验里来感受。请试着拖动约束线上的那个点，随意移动就好。",
-          "audioRef": "audio/tts_s8_action_NjgbRDDK.mp3"
+          "text": "本场景通过交互探索“拉格朗日乘子直觉：拖动实验”。而是约束的“代价”。现在，咱们把这个直觉放到一个可以亲手拖动的实验里来感受。请试着拖动约束线上的那个点，随意移动就好。"
         },
         {
           "id": "action_6qx9Ji8z",
@@ -1404,8 +1530,7 @@
         {
           "id": "action_NQfwShJl",
           "type": "speech",
-          "text": "阿哲，你看到了什么？没错，梯度方向完全不一致。这时候不管你怎么调 λ 的大小，都没法让 ∇f 和 λ∇g 对齐。这说明 λ 的读数是没意义的。",
-          "audioRef": "audio/tts_s8_action_NQfwShJl.mp3"
+          "text": "你看到了什么？没错，梯度方向完全不一致。这时候不管你怎么调 λ 的大小，都没法让 ∇f 和 λ∇g 对齐。这说明 λ 的读数是没意义的。"
         },
         {
           "id": "action_1JZYrdFd",
@@ -1444,8 +1569,7 @@
         {
           "id": "action_406hiq4b",
           "type": "speech",
-          "text": "刚才我们在拖动实验中找到了梯度平行的切点，光靠手拖还不足以看清全貌。现在我们切换到关系图，把原函数、约束和拉格朗日函数之间的逻辑链条一次性梳理出来。",
-          "audioRef": "audio/tts_s9_action_406hiq4b.mp3"
+          "text": "本场景通过交互探索“拉格朗日乘子直觉：关系图”。光靠手拖还不足以看清全貌。现在我们切换到关系图，把原函数、约束和拉格朗日函数之间的逻辑链条一次性梳理出来。"
         },
         {
           "id": "action_i1_P81By",
@@ -1511,8 +1635,7 @@
         {
           "id": "action_jlwRLbGA",
           "type": "speech",
-          "text": "我们刚刚通过关系图看到了 L(x,λ) 如何把梯度平行和边界条件汇聚在一起。现在，是时候来修复一个最常见的误解了——以为只要在纸面上解方程就能找到极值点。",
-          "audioRef": "audio/tts_s10_action_jlwRLbGA.mp3"
+          "text": "本场景通过交互探索“拉格朗日乘子直觉：误解修复挑战”。λ) 如何把梯度平行和边界条件汇聚在一起。现在，是时候来修复一个最常见的误解了——以为只要在纸面上解方程就能找到极值点。"
         },
         {
           "id": "action_qSAiUrDL",
@@ -1721,8 +1844,7 @@
         {
           "id": "action_k-xBgYTF",
           "type": "speech",
-          "text": "刚才大家在拖动实验中感受到那种“停驻”的平衡，现在我们把这个直觉升维到 3D 空间里，看一看目标函数曲面 f 和约束平面 g 究竟是怎么“相遇”的。",
-          "audioRef": "audio/tts_s11_action_k-xBgYTF.mp3"
+          "text": "本场景通过交互探索“拉格朗日乘子直觉：空间视角”。现在我们把这个直觉升维到 3D 空间里，看一看目标函数曲面 f 和约束平面 g 究竟是怎么“相遇”的。"
         },
         {
           "id": "action_jc2OQyPJ",
@@ -1962,8 +2084,7 @@
         {
           "id": "action_ATpvx5hW",
           "type": "speech",
-          "text": "好，刚才我们分别在场景3和场景8里，通过拖动和观察，把可行区域和拉格朗日乘子的几何直觉建立起来了。现在，我们来做一个小测验，检验一下这些直觉是不是真的成了你自己的东西，同时也为接下来要探讨的“凸性”概念做个热身。",
-          "audioRef": "audio/tts_s12_action_ATpvx5hW.mp3"
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。通过拖动和观察，把可行区域和拉格朗日乘子的几何直觉建立起来了。现在，我们来做一个小测验，检验一下这些直觉是不是真的成了你自己的东西，同时也为需要探讨的“凸性”概念做个热身。"
         },
         {
           "id": "action_Km-7EJ50",
@@ -2219,8 +2340,7 @@
         {
           "id": "action_1lD8hr7I",
           "type": "speech",
-          "text": "刚才的测验和讨论，帮我们打通了从直觉到概念的路径。现在，我们终于要面对优化理论中真正的‘圣杯’了——为什么凸性是如此关键？它凭什么能给我们全局最优解的保证？",
-          "audioRef": "audio/tts_s13_action_1lD8hr7I.mp3"
+          "text": "本场景聚焦“凸函数和凸集合”。帮我们打通了从直觉到概念的路径。现在，我们终于要面对优化理论中真正的‘圣杯’了——为什么凸性是如此关键？它凭什么能给我们全局最优解的保证？"
         },
         {
           "id": "action_37LdLYj0",
@@ -2360,8 +2480,7 @@
         {
           "id": "action_PQ6nOM3v",
           "type": "speech",
-          "text": "刚才我们提到，凸性最核心的优势是局部最优即全局最优。那么，怎么判断一个函数是不是凸的呢？我们来通过这个割线实验，亲手验证一下。",
-          "audioRef": "audio/tts_s14_action_PQ6nOM3v.mp3"
+          "text": "本场景通过交互探索“凸函数和凸集合：拖动实验”。凸性最核心的优势是局部最优即全局最优。那么，怎么判断一个函数是不是凸的呢？我们来通过这个割线实验，亲手验证一下。"
         },
         {
           "id": "action_20ht3lxt",
@@ -2441,8 +2560,7 @@
         {
           "id": "action_H0RYSsjs",
           "type": "speech",
-          "text": "刚才我们在拖动实验中看到了函数的“弦”与图形的关系，也体会到了非凸函数哪里会“凹陷”下去。现在我们把视角拉高一点，用一张关系图来把这些概念串起来。",
-          "audioRef": "audio/tts_s15_action_H0RYSsjs.mp3"
+          "text": "本场景通过交互探索“凸函数和凸集合：关系图”。也体会到了非凸函数哪里会“凹陷”下去。现在我们把视角拉高一点，用一张关系图来把这些概念串起来。"
         },
         {
           "id": "action_bmjcZJdd",
@@ -2483,8 +2601,7 @@
         {
           "id": "action_DBvrdr1N",
           "type": "speech",
-          "text": "所以思静刚才在琢磨的“凸性如何把函数性质转化为集合性质”，答案就在这条连线上。当你看到一个凸函数的 Epigraph，它就是一个实心的、没有凹陷的凸集合，这为我们后面用几何方法求解优化问题打下了基础。",
-          "audioRef": "audio/tts_s15_action_DBvrdr1N.mp3"
+          "text": "所以大家刚才在琢磨的“凸性如何把函数性质转化为集合性质”，答案就在这条连线上。当你看到一个凸函数的 Epigraph，它就是一个实心的、没有凹陷的凸集合，这为我们后面用几何方法求解优化问题打下了基础。"
         }
       ]
     },
@@ -2570,8 +2687,7 @@
         {
           "id": "action_OklsWFJI",
           "type": "speech",
-          "text": "刚才的关系图告诉我们，一个函数的上镜图若是凸集合，那函数本身必然是凸函数。但反过来呢？看起来像碗的形状，就一定代表凸性吗？我们来做一个有趣的挑战，专门修复这个常见的误解。",
-          "audioRef": "audio/tts_s16_action_OklsWFJI.mp3"
+          "text": "本场景通过交互探索“凸函数和凸集合：误解修复挑战”。一个函数的上镜图若是凸集合，那函数本身必然是凸函数。但反过来呢？看起来像碗的形状，就一定代表凸性吗？我们来做一个有趣的挑战，专门修复这个常见的误解。"
         },
         {
           "id": "action_UJRvyHNo",
@@ -2804,8 +2920,7 @@
         {
           "id": "action_DeApgE8z",
           "type": "speech",
-          "text": "我们刚刚通过关系图把凸函数和凸集合的‘骨头’搭好了，现在我们要给它们赋予‘血肉’。请看向前方的3D场景，这里有一个优美的抛物面。",
-          "audioRef": "audio/tts_s17_action_DeApgE8z.mp3"
+          "text": "本场景通过交互探索“凸函数和凸集合：空间视角”。现在我们要给它们赋予‘血肉’。请看向前方的3D场景，这里有一个优美的抛物面。"
         },
         {
           "id": "action_jQll0toB",
@@ -3042,15 +3157,157 @@
               "defaultColor": "#333333"
             },
             {
-              "type": "image",
+              "type": "shape",
               "id": "image_9rPziASG",
               "left": 580,
               "top": 180,
               "width": 370,
               "height": 208,
               "rotate": 0,
-              "fixedRatio": true,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F8FAFC",
               "src": "/api/classroom-media/cqv14-gh-13/media/gen_img_I6Cmn3ha.png"
+            },
+            {
+              "type": "line",
+              "id": "line_lp_qp_divider",
+              "left": 765,
+              "top": 195,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                175
+              ],
+              "style": "solid",
+              "color": "#CBD5E1",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_lp_diagram_title",
+              "left": 595,
+              "top": 195,
+              "width": 150,
+              "height": 48,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 15px; line-height: 1.2; text-align: center; color: #1D4ED8; font-weight: bold;\">LP：线性目标<br>线性约束</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1D4ED8"
+            },
+            {
+              "type": "shape",
+              "id": "shape_lp_feasible_polygon",
+              "left": 610,
+              "top": 245,
+              "width": 125,
+              "height": 105,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 1 L 0 0.25 L 0.65 0 L 1 1 Z",
+              "fixedRatio": false,
+              "fill": "#BFDBFE",
+              "opacity": 0.85
+            },
+            {
+              "type": "line",
+              "id": "line_lp_objective",
+              "left": 610,
+              "top": 330,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                125,
+                -65
+              ],
+              "style": "solid",
+              "color": "#2563EB",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_qp_diagram_title",
+              "left": 780,
+              "top": 195,
+              "width": 155,
+              "height": 48,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 15px; line-height: 1.2; text-align: center; color: #15803D; font-weight: bold;\">QP：二次目标<br>线性约束</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#15803D"
+            },
+            {
+              "type": "shape",
+              "id": "shape_qp_feasible_polygon",
+              "left": 795,
+              "top": 245,
+              "width": 125,
+              "height": 105,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 1 L 0 0.25 L 0.65 0 L 1 1 Z",
+              "fixedRatio": false,
+              "fill": "#BBF7D0",
+              "opacity": 0.65
+            },
+            {
+              "type": "shape",
+              "id": "shape_qp_contour_outer",
+              "left": 820,
+              "top": 260,
+              "width": 75,
+              "height": 75,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#86EFAC",
+              "opacity": 0.35
+            },
+            {
+              "type": "shape",
+              "id": "shape_qp_contour_inner",
+              "left": 842,
+              "top": 282,
+              "width": 31,
+              "height": 31,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#16A34A",
+              "opacity": 0.7
             }
           ],
           "background": {
@@ -3069,8 +3326,7 @@
         {
           "id": "action_hrZTkhKt",
           "type": "speech",
-          "text": "既然大家已经明白了什么是凸函数和凸集合，接下来我们就要进入优化理论中，最简单但也最强大的板块——线性规划与二次规划。",
-          "audioRef": "audio/tts_s18_action_hrZTkhKt.mp3"
+          "text": "本场景聚焦“线性/二次规划入口”。既然大家已经明白了什么是凸函数和凸集合，本场景中，我们就要进入优化理论中，最简单但也最强大的板块——线性规划与二次规划。"
         },
         {
           "id": "action_vWOI2Ish",
@@ -3243,8 +3499,7 @@
         {
           "id": "action_jRXSBq0G",
           "type": "speech",
-          "text": "在刚才的线性规划讨论中，我们看到了最优解总是出现在可行域的顶点上。现在让我们通过实验来对比一个更一般的情形：当目标函数从线性的 ( c^T x ) 变成二次函数时，最优点会躲到哪里去呢？",
-          "audioRef": "audio/tts_s19_action_jRXSBq0G.mp3"
+          "text": "本场景通过交互探索“线性/二次规划入口：拖动实验”。在刚才的线性规划讨论中，我们看到了最优解总是出现在可行域的顶点上。现在让我们通过实验来对比一个更一般的情形：当目标函数从线性的 ( c^T x ) 变成二次函数时，最优点会躲到哪里去呢？"
         },
         {
           "id": "action_FYhjdFav",
@@ -3316,8 +3571,7 @@
         {
           "id": "action_nx7BESev",
           "type": "speech",
-          "text": "好，刚才我们在拖动实验中直观地比较了 LP 与 QP 最优解位置的差异。现在，让我们用这张关系图来梳理一下它们之间的深层逻辑联系。",
-          "audioRef": "audio/tts_s20_action_nx7BESev.mp3"
+          "text": "本场景通过交互探索“线性/二次规划入口：关系图”。让我们用这张关系图来梳理一下它们之间的深层逻辑联系。"
         },
         {
           "id": "action_bzc-Js01",
@@ -3392,8 +3646,7 @@
         {
           "id": "action_JDJPFwKJ",
           "type": "speech",
-          "text": "刚才我们看到了 LP 是 QP 的特例。但说实话，很多人在第一次区分它们的时候，还是会掉进同一个陷阱——看到平方项就想当然。现在我们来一个快速挑战，把零碎的数学式子对号入座，看看哪些是 LP，哪些是 QP。",
-          "audioRef": "audio/tts_s21_action_JDJPFwKJ.mp3"
+          "text": "本场景通过交互探索“线性/二次规划入口：误解修复挑战”。但说实话，很多人在第一次区分它们的时候，还是会掉进同一个陷阱——看到平方项就想当然。现在我们来一个快速挑战，把零碎的数学式子对号入座，看看哪些是 LP，哪些是 QP。"
         },
         {
           "id": "action_4hY4o9bE",
@@ -3404,8 +3657,7 @@
         {
           "id": "action_rs2sDEr3",
           "type": "speech",
-          "text": "进去之后，你会看到一堆写着式子的卡片。把每张卡拖到它该去的框架里。尤其注意那些带平方的约束条件——它才是最容易让你翻车的地方。阿哲，你上次就差一点被它骗了。",
-          "audioRef": "audio/tts_s21_action_rs2sDEr3.mp3"
+          "text": "进去之后，你会看到一堆写着式子的卡片。把每张卡拖到它该去的框架里。尤其注意那些带平方的约束条件——它才是最容易让你翻车的地方。你上次就差一点被它骗了。"
         },
         {
           "id": "action_IgAXkVQq",
@@ -3436,8 +3688,7 @@
         {
           "id": "action_jjAEzeUd",
           "type": "speech",
-          "text": "等你把整组卡片都归对位置，页面上会自动弹出这个规划的 2D 几何形状。看到形状的那一刻，你才算真正懂了分类背后的直觉。思静，拿不准就多试几轮，速度不重要，想清楚原理才是关键。",
-          "audioRef": "audio/tts_s21_action_jjAEzeUd.mp3"
+          "text": "等你把整组卡片都归对位置，页面上会自动弹出这个规划的 2D 几何形状。看到形状的那一刻，你才算真正懂了分类背后的直觉。大家，拿不准就多试几轮，速度不重要，想清楚原理才是关键。"
         },
         {
           "id": "action_Dz0WhxGU",
@@ -3590,8 +3841,7 @@
         {
           "id": "action_m_UJruGx",
           "type": "speech",
-          "text": "我们刚刚在平面图里区分了 LP 和 QP 的形式，现在把这个区别放回三维空间，感受一下目标函数的“形状”到底是什么样的。",
-          "audioRef": "audio/tts_s22_action_m_UJruGx.mp3"
+          "text": "本场景通过交互探索“线性/二次规划入口：空间视角”。现在把这个区别放回三维空间，感受一下目标函数的“形状”到底是什么样的。"
         },
         {
           "id": "action_0mrTPRk-",
@@ -3752,7 +4002,7 @@
               "width": 480,
               "height": 49,
               "rotate": 0,
-              "content": "<p style=\"font-size: 18px; color: #2C2C2C;\">从可行区域实验（场景3）理解了边界的强制性</p>",
+              "content": "<p style=\"font-size: 18px; color: #2C2C2C;\">从“可行区域：拖动实验”理解边界的强制性</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#2C2C2C"
             },
@@ -3780,7 +4030,7 @@
               "width": 480,
               "height": 49,
               "rotate": 0,
-              "content": "<p style=\"font-size: 18px; color: #2C2C2C;\">从梯度对齐实验（场景8）直观理解了拉格朗日乘子</p>",
+              "content": "<p style=\"font-size: 18px; color: #2C2C2C;\">从“拉格朗日乘子直觉：拖动实验”理解梯度对齐</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#2C2C2C"
             },
@@ -3808,7 +4058,7 @@
               "width": 480,
               "height": 49,
               "rotate": 0,
-              "content": "<p style=\"font-size: 18px; color: #2C2C2C;\">通过凸性割线实验（场景14）确认了全局最优的保证</p>",
+              "content": "<p style=\"font-size: 18px; color: #2C2C2C;\">通过“凸函数和凸集合：拖动实验”确认全局最优保证</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#2C2C2C"
             },
@@ -3836,7 +4086,7 @@
               "width": 480,
               "height": 49,
               "rotate": 0,
-              "content": "<p style=\"font-size: 18px; color: #2C2C2C;\">通过LP/QP分类（场景21）掌握了实际工具的入口</p>",
+              "content": "<p style=\"font-size: 16px; line-height: 1.3; color: #2C2C2C;\">通过“线性/二次规划入口：误解修复挑战”掌握工具选择。</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#2C2C2C"
             },
@@ -3886,8 +4136,7 @@
         {
           "id": "action_6PM2afeh",
           "type": "speech",
-          "text": "好，经过刚才的旋转观察，我们现在来到这节课最关键的一个环节——全课整理。我们一起来回看一条完整的证据链，看看我们是如何从直觉一步步走到严谨理论的。",
-          "audioRef": "audio/tts_s23_action_6PM2afeh.mp3"
+          "text": "本场景聚焦“全课整理：证据链回看”。经过刚才的旋转观察，我们现在来到这节课最关键的一个环节——全课整理。我们一起来回看一条完整的证据链，看看我们是如何从直觉一步步走到严谨理论的。"
         },
         {
           "id": "action_0oLRocGQ",
@@ -4107,8 +4356,7 @@
         {
           "id": "action_yZIe2rzI",
           "type": "speech",
-          "text": "好，刚才我们在短短几十秒内，像放电影一样把整条证据链跑了一遍。现在到了最后一个环节——后测。这份综合测评不只是考你记住了多少，更重要的是看你能不能把拉格朗日乘子的直觉、凸性的保证、还有 LP 与 QP 在边界上的行为，像拼积木一样灵活地迁移和解释。",
-          "audioRef": "audio/tts_s24_action_yZIe2rzI.mp3"
+          "text": "这是一组关于“后测：约束优化、拉格朗日与凸性综合测评”的独立测验。像放电影一样把整条证据链跑了一遍。现在到了最后一个环节——后测。这份综合测评不只是考你记住了多少，更重要的是看你能不能把拉格朗日乘子的直觉、凸性的保证、还有 LP 与 QP 在边界上的行为，像拼积木一样灵活地迁移和解释。"
         },
         {
           "id": "action_eTpnGSBb",

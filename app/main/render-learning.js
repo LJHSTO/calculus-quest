@@ -660,10 +660,12 @@ function renderQuestionTextWithLinks(question = {}) {
 }
 
 function quizKnowledgePointLabels(question = {}, unit = {}) {
+  const names = question.knowledgePointNames || question.knowledge_point_names || [];
   const ids = question.knowledgePointIds || question.knowledge_point_ids || [];
-  if (!ids.length || typeof KnowledgePointLabels === "undefined") return [];
+  const values = names.length ? names : ids;
+  if (!values.length || typeof KnowledgePointLabels === "undefined") return [];
   const chapters = typeof curriculum !== "undefined" ? curriculum : [];
-  return KnowledgePointLabels.labelsFor(ids, chapters, unit.chapterId);
+  return KnowledgePointLabels.labelsFor(values, chapters, unit.chapterId);
 }
 
 function renderQuizCoverage(question = {}, unit = {}) {

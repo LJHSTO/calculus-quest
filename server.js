@@ -182,7 +182,12 @@ function cacheControlFor(filePath, url) {
   const ext = path.extname(filePath).toLowerCase();
   // Versioned assets (cache-busted with ?v= param) can be cached aggressively
   if (url && url.searchParams.has("v") && (ext === ".js" || ext === ".css")) return "public, max-age=604800, immutable";
-  if (relative === "index.html" || relative === "admin.html") return "no-store, max-age=0, no-transform";
+  if (
+    relative === "index.html"
+    || relative === "admin.html"
+    || relative === "flow-test.html"
+    || publicFlowTestFiles.has(relative)
+  ) return "no-store, max-age=0, no-transform";
   if (ext === ".js" || ext === ".css") return "no-store, max-age=0";
   if (relative.startsWith("resources/") && ext === ".json") return "public, max-age=3600";
   if (relative.startsWith("resources/")) return "public, max-age=86400";

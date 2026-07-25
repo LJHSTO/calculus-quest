@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
-  "exportedAt": "2026-07-19T04:15:57.623Z",
-  "appVersion": "0.3.0",
+  "exportedAt": "2026-07-25T07:08:44.921Z",
+  "appVersion": "0.0.0",
   "stage": {
     "name": "导数应用：单调、极值与弯曲",
     "description": "",
@@ -192,8 +192,7 @@
         {
           "id": "action_g4BmRtXJ",
           "type": "speech",
-          "text": "同学们好！欢迎来到李老师的数学课堂。今天我们即将开启一段新的学习旅程，探索导数世界的精彩应用。但在正式出发前，老师想先摸摸底，了解大家对于函数单调性、极值这些概念的直觉和已有认识，这样才能更好地帮助大家。这里有一个简短的小测，题目不多，放轻松，凭你的感觉和思考去做就好。",
-          "audioRef": "audio/tts_action_g4BmRtXJ.mp3"
+          "text": "这是一组关于“前测：导数应用：单调、极值与弯曲学习准备诊断”的独立测验。今天我们即将开启一段新的学习旅程，探索导数世界的精彩应用。但在正式出发前，老师想先摸摸底，了解大家对于函数单调性、极值这些概念的直觉和已有认识，这样才能更好地帮助大家。这里有一个简短的小测，题目不多，放轻松，凭你的感觉和思考去做就好。"
         },
         {
           "id": "action_XPhNyM7R",
@@ -221,6 +220,7 @@
       "order": 2,
       "content": {
         "type": "slide",
+        "schemaVersion": 1,
         "canvas": {
           "id": "-0skoqPBgILmqb72ll6fD",
           "viewportSize": 1000,
@@ -461,7 +461,7 @@
                     "id": "r3c2",
                     "colspan": 1,
                     "rowspan": 1,
-                    "text": "极值点（驻点）",
+                    "text": "驻点（不一定是极值点）",
                     "style": {
                       "color": "#444444",
                       "align": "center"
@@ -516,9 +516,9 @@
           "background": {
             "type": "solid",
             "color": "#ffffff"
-          }
-        },
-        "schemaVersion": 1
+          },
+          "animations": []
+        }
       },
       "actions": [
         {
@@ -529,8 +529,7 @@
         {
           "id": "action_eqiUsoAB",
           "type": "speech",
-          "text": "好，前测结束了。接下来我们正式开始探索导数的一个关键应用：通过导函数的图像来‘读懂’原函数的走势。这是我们今天的第一个核心目标。",
-          "audioRef": "audio/tts_s2_action_eqiUsoAB.mp3"
+          "text": "本场景聚焦“导函数图像读法”。前测结束了。本场景中，我们正式开始探索导数的一个关键应用：通过导函数的图像来‘读懂’原函数的走势。这是我们今天的第一个核心目标。"
         },
         {
           "id": "action_RW1iQvX9",
@@ -653,8 +652,7 @@
         {
           "id": "action_I7saJ3Qi",
           "type": "speech",
-          "text": "刚才我们看了 x² 的例子，导函数 f'(x)=2x 的正负直接告诉我们原函数是在上升还是下降。现在，让我们亲自动手拖动，把这个规律摸得更熟。",
-          "audioRef": "audio/tts_s3_action_I7saJ3Qi.mp3"
+          "text": "本场景通过交互探索“导函数图像读法：拖动实验”。导函数 f'(x)=2x 的正负直接告诉我们原函数是在上升还是下降。现在，让我们亲自动手拖动，把这个规律摸得更熟。"
         },
         {
           "id": "action_W65Wr5zZ",
@@ -770,8 +768,7 @@
         {
           "id": "action_1ZOVqOs9",
           "type": "speech",
-          "text": "刚才我们通过拖动实验，直观感受到了 f'(x) 的符号和切线斜率的关系。现在，让我们把这种感觉提炼成清晰的逻辑链条。请看屏幕上的关系图。",
-          "audioRef": "audio/tts_s4_action_1ZOVqOs9.mp3"
+          "text": "本场景通过交互探索“导函数图像读法：关系图”。直观感受到了 f'(x) 的符号和切线斜率的关系。现在，让我们把这种感觉提炼成清晰的逻辑链条。请看屏幕上的关系图。"
         },
         {
           "id": "action_V3TbKkiH",
@@ -806,8 +803,7 @@
         {
           "id": "action_OCsrAxAt",
           "type": "speech",
-          "text": "是不是很清晰？导数为负，就是一直在下坡，函数值就不断减小。请同学们自己在图表上点一点，观察符号和单调性之间这条‘含义是’的箭头，把这条逻辑链印在脑子里。接下来，我们就用这个逻辑去解决一些容易混淆的问题。",
-          "audioRef": "audio/tts_s4_action_OCsrAxAt.mp3"
+          "text": "是不是很清晰？导数为负，就是一直在下坡，函数值就不断减小。请同学们自己在图表上点一点，观察符号和单调性之间这条‘含义是’的箭头，把这条逻辑链印在脑子里。本场景中，我们就用这个逻辑去解决一些容易混淆的问题。"
         }
       ]
     },
@@ -835,8 +831,7 @@
         {
           "id": "action_FmYKbrRX",
           "type": "speech",
-          "text": "从刚才的关系图我们看到，导数的符号直接决定了原函数的增减。但有时候，我们会被导函数图像本身的样子‘骗’到，把它当成了原函数。现在我们就来玩一个小游戏，专门修复这个常见的误解。",
-          "audioRef": "audio/tts_s5_action_FmYKbrRX.mp3"
+          "text": "本场景通过交互探索“导函数图像读法：误解修复挑战”。从刚才的关系图我们看到，导数的符号直接决定了原函数的增减。但有时候，我们会被导函数图像本身的样子‘骗’到，把它当成了原函数。现在我们就来玩一个小游戏，专门修复这个常见的误解。"
         },
         {
           "id": "action_urZT-7Ja",
@@ -1025,8 +1020,7 @@
         {
           "id": "action_U5cRrrCk",
           "type": "speech",
-          "text": "刚才的挑战很精彩，大家通过判断导数的正负，一步步修正了对单调性的理解。现在，我们要换一个更直观的视角——把函数曲线放到三维空间里去看。",
-          "audioRef": "audio/tts_s6_action_U5cRrrCk.mp3"
+          "text": "本场景通过交互探索“导函数图像读法：空间视角”。大家通过判断导数的正负，一步步修正了对单调性的理解。现在，我们要换一个更直观的视角——把函数曲线放到三维空间里去看。"
         },
         {
           "id": "action_n7ENld-i",
@@ -1084,6 +1078,7 @@
       "order": 7,
       "content": {
         "type": "slide",
+        "schemaVersion": 1,
         "canvas": {
           "id": "MyzKx5SQ510YxOoz-4Lsu",
           "viewportSize": 1000,
@@ -1399,15 +1394,15 @@
             {
               "type": "line",
               "id": "line_kTqLX3dC",
-              "left": 600,
-              "top": 300,
+              "left": 700,
+              "top": 250,
               "width": 4,
               "start": [
                 0,
-                0
+                100
               ],
               "end": [
-                300,
+                100,
                 0
               ],
               "style": "solid",
@@ -1418,11 +1413,11 @@
               ],
               "cubic": [
                 [
-                  100,
-                  -100
+                  33.33,
+                  0
                 ],
                 [
-                  200,
+                  66.67,
                   100
                 ]
               ],
@@ -1488,9 +1483,9 @@
           "background": {
             "type": "solid",
             "color": "#ffffff"
-          }
-        },
-        "schemaVersion": 1
+          },
+          "animations": []
+        }
       },
       "actions": [
         {
@@ -1501,8 +1496,7 @@
         {
           "id": "action_dekZN71l",
           "type": "speech",
-          "text": "好，我们刚才已经在空间视角下看到了导数为零时的几何意义。现在，我们把目光聚焦到这一页的核心概念上：临界点与极值。",
-          "audioRef": "audio/tts_s7_action_dekZN71l.mp3"
+          "text": "本场景聚焦“临界点与极值”。我们把目光聚焦到这一页的核心概念上：临界点与极值。"
         },
         {
           "id": "action_Ooc1UtLK",
@@ -1637,8 +1631,7 @@
         {
           "id": "action_9ccWD07t",
           "type": "speech",
-          "text": "刚才我们谈到了极值是局部概念，那么如何找到这些局部的山峰和山谷呢？关键就在于导数为零的点，也就是临界点。现在，请大家看这个互动实验，我们来亲自找一找。",
-          "audioRef": "audio/tts_s8_action_9ccWD07t.mp3"
+          "text": "本场景通过交互探索“临界点与极值：拖动实验”。那么如何找到这些局部的山峰和山谷呢？关键就在于导数为零的点，也就是临界点。现在，请大家看这个互动实验，我们来亲自找一找。"
         },
         {
           "id": "action_Gl_IbPlp",
@@ -1783,8 +1776,7 @@
         {
           "id": "action_kQ9wQ6xb",
           "type": "speech",
-          "text": "刚才我们通过拖动实验，直观地看到了临界点和极值的关系。现在，让我们把这个逻辑链条梳理清楚，形成一个完整的关系图。",
-          "audioRef": "audio/tts_s9_action_kQ9wQ6xb.mp3"
+          "text": "本场景通过交互探索“临界点与极值：关系图”。直观地看到了临界点和极值的关系。现在，让我们把这个逻辑链条梳理清楚，形成一个完整的关系图。"
         },
         {
           "id": "action_T52Z3Q-T",
@@ -1843,8 +1835,7 @@
         {
           "id": "action_9xHoLUHN",
           "type": "speech",
-          "text": "好了，这张图把‘临界点 → 符号变化判定 → 极值结论’的完整逻辑路径清晰地呈现了出来。我们把它记下来，这就是判断极值的第一充分条件的核心逻辑。接下来，我们用几个误解修复挑战来检验一下，看大家是不是真的把这个关系理清了。",
-          "audioRef": "audio/tts_s9_action_9xHoLUHN.mp3"
+          "text": "好了，这张图把‘临界点 → 符号变化判定 → 极值结论’的完整逻辑路径清晰地呈现了出来。我们把它记下来，这就是判断极值的第一充分条件的核心逻辑。本场景中，我们用几个误解修复挑战来检验一下，看大家是不是真的把这个关系理清了。"
         }
       ]
     },
@@ -1871,8 +1862,7 @@
         {
           "id": "action_vWVeES_7",
           "type": "speech",
-          "text": "好了，刚才的关系图把‘临界点不等于极值’这个核心逻辑理清了。现在小乐给大家准备了一个特别挑战，专治‘看到 $f'(x)=0$ 就以为是极值’的误解。同学们，你们面前会出现一堆导数等于零的点，你们的任务就是——只点击那些真正的极值点，别被拐点给骗了。准备好了吗？",
-          "audioRef": "audio/tts_s10_action_vWVeES_7.mp3"
+          "text": "本场景通过交互探索“临界点与极值：误解修复挑战”。好了，刚才的关系图把‘临界点不等于极值’这个核心逻辑理清了。现在大家给大家准备了一个特别挑战，专治‘看到 $f'(x)=0$ 就以为是极值’的误解。同学们，你们面前会出现一堆导数等于零的点，你们的任务就是——只点击那些真正的极值点，别被拐点给骗了。准备好了吗？"
         },
         {
           "id": "action_vzmGp5ib",
@@ -1897,8 +1887,7 @@
         {
           "id": "action_jrC0TUNe",
           "type": "speech",
-          "text": "大胆去点，点错了小乐会帮你标记出来。出错不要紧，这正是我们修复误解的好机会。想想 $y=x^3$ 在 $x=0$ 的样子，它就是个经典的‘伪装者’。",
-          "audioRef": "audio/tts_s10_action_jrC0TUNe.mp3"
+          "text": "大胆去点，点错了大家会帮你标记出来。出错不要紧，这正是我们修复误解的好机会。想想 $y=x^3$ 在 $x=0$ 的样子，它就是个经典的‘伪装者’。"
         },
         {
           "id": "action_gW10a-yI",
@@ -1909,8 +1898,7 @@
         {
           "id": "action_ed8fag4I",
           "type": "speech",
-          "text": "完成挑战后，可以看看你的成绩单，和同桌比一比，也反思一下自己掉进了哪个坑里。李老师相信，经过这一轮，大家对极值的理解会像刻在心里一样牢固。",
-          "audioRef": "audio/tts_s10_action_ed8fag4I.mp3"
+          "text": "完成挑战后，可以看看你的成绩单，和同桌比一比，也反思一下自己掉进了哪个坑里。大家相信，经过这一轮，大家对极值的理解会像刻在心里一样牢固。"
         }
       ]
     },
@@ -2096,8 +2084,7 @@
         {
           "id": "action_0E1xNwB4",
           "type": "speech",
-          "text": "刚才我们用平面关系图梳理了极值点的判断逻辑。现在，我们把视角拉升到三维空间，用一个碗状的曲面，来直观地感受为什么在极值点处，切平面一定是水平的。",
-          "audioRef": "audio/tts_s11_action_0E1xNwB4.mp3"
+          "text": "本场景通过交互探索“临界点与极值：空间视角”。我们把视角拉升到三维空间，用一个碗状的曲面，来直观地感受为什么在极值点处，切平面一定是水平的。"
         },
         {
           "id": "action_8TLBAzkF",
@@ -2325,14 +2312,12 @@
         {
           "id": "action_Zi1oOnAB",
           "type": "speech",
-          "text": "刚才我们通过空间视角，看到了等高线图中心那个代表极值点的红色小球，那种从切平面下方接触到曲面的感觉，大家是不是已经有了初步的印象？",
-          "audioRef": "audio/tts_s12_action_Zi1oOnAB.mp3"
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。可以观察到等高线图中心那个代表极值点的红色小球，那种从切平面下方接触到曲面的感觉，大家是不是已经有了初步的印象？"
         },
         {
           "id": "action_m-UqcSW6",
           "type": "speech",
-          "text": "好，为了检验我们对单调性、驻点和极值这些核心概念的理解是否扎实，也为了给接下来要学习的“凹凸性”做个热身，这里有一个小测验。",
-          "audioRef": "audio/tts_s12_action_m-UqcSW6.mp3"
+          "text": "好，为了检验我们对单调性、驻点和极值这些核心概念的理解是否扎实，也为了给需要学习的“凹凸性”做个热身，这里有一个小测验。"
         },
         {
           "id": "action_b2C6odBD",
@@ -2596,8 +2581,7 @@
         {
           "id": "action_hmU44ZO1",
           "type": "speech",
-          "text": "好，刚才我们做最后一道题时，大家凭直觉感受了曲线是“向上弯”还是“向下弯”。其实，这种“弯曲的感觉”，在数学里，我们把它叫做凹凸性。而决定这个凹凸性的，就是咱们今天的主角——二阶导数。",
-          "audioRef": "audio/tts_s13_action_hmU44ZO1.mp3"
+          "text": "本场景聚焦“二阶变化和凹凸”。大家凭直觉感受了曲线是“向上弯”还是“向下弯”。其实，这种“弯曲的感觉”，在数学里，我们把它叫做凹凸性。而决定这个凹凸性的，就是咱们今天的主角——二阶导数。"
         },
         {
           "id": "action_1eQf2Zon",
@@ -2734,8 +2718,7 @@
         {
           "id": "action_HLhQFRtP",
           "type": "speech",
-          "text": "刚才我们通过代数式子观察了二阶导数的符号变化。现在，让我们亲手来调节 f'' 的数值，直接从视觉上感受曲线的弯曲程度是如何变化的。",
-          "audioRef": "audio/tts_s14_action_HLhQFRtP.mp3"
+          "text": "本场景通过交互探索“二阶变化和凹凸：拖动实验”。让我们亲手来调节 f'' 的数值，直接从视觉上感受曲线的弯曲程度是如何变化的。"
         },
         {
           "id": "action_d79-91t0",
@@ -2933,8 +2916,7 @@
         {
           "id": "action_SghugIwT",
           "type": "speech",
-          "text": "刚才我们通过拖动，直观感受了 f'' 的大小如何影响曲线的弯曲程度。现在，让我们把这个逻辑链条完整地梳理一遍，看看 f''、f' 和 f 之间到底是如何一步步关联的。",
-          "audioRef": "audio/tts_s15_action_SghugIwT.mp3"
+          "text": "本场景通过交互探索“二阶变化和凹凸：关系图”。直观感受了 f'' 的大小如何影响曲线的弯曲程度。现在，让我们把这个逻辑链条完整地梳理一遍，看看 f''、f' 和 f 之间到底是如何一步步关联的。"
         },
         {
           "id": "action_gQzDJEqc",
@@ -3039,8 +3021,7 @@
         {
           "id": "action_RJg3kAX-",
           "type": "speech",
-          "text": "刚才我们理清了凹性和二阶导数的关系链条，现在是时候检验一下你的眼力了。请点击开始按钮，迎接“误解修复挑战”——将不同形状的曲线卡片，拖到正确的分类区域里。",
-          "audioRef": "audio/tts_s16_action_RJg3kAX-.mp3"
+          "text": "本场景通过交互探索“二阶变化和凹凸：误解修复挑战”。现在是时候检验一下你的眼力了。请点击开始按钮，迎接“误解修复挑战”——将不同形状的曲线卡片，拖到正确的分类区域里。"
         },
         {
           "id": "action_HtAYQ9sI",
@@ -3190,8 +3171,7 @@
         {
           "id": "action_rPcIevrs",
           "type": "speech",
-          "text": "刚才我们通过分类和判断练习，对凹凸性有了更直观的感觉。现在，我们把这个概念放到三维空间里，从几何的角度看看‘弯曲’到底意味着什么。",
-          "audioRef": "audio/tts_s17_action_rPcIevrs.mp3"
+          "text": "本场景通过交互探索“二阶变化和凹凸：空间视角”。对凹凸性有了更直观的感觉。现在，我们把这个概念放到三维空间里，从几何的角度看看‘弯曲’到底意味着什么。"
         },
         {
           "id": "action_bu80v_zh",
@@ -3253,6 +3233,7 @@
       "order": 18,
       "content": {
         "type": "slide",
+        "schemaVersion": 1,
         "canvas": {
           "id": "2A4jJ_Du8Gf0ncCj_ylqU",
           "viewportSize": 1000,
@@ -3351,7 +3332,7 @@
               "width": 480,
               "height": 118,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #333333;\">① 求导数 f'(x)，解方程 f'(x)=0 得临界点</p><p style=\"font-size: 16px; color: #333333;\">② 计算所有临界点处的函数值</p><p style=\"font-size: 16px; color: #333333;\">③ 计算定义域端点处的函数值（当定义域为闭区间时）</p><p style=\"font-size: 16px; color: #333333;\">④ 比较所有值，取最大（最小）者</p>",
+              "content": "<p style=\"font-size: 16px; color: #333333;\">① 求 f'(x)=0 及导数不存在的点，均为临界点</p><p style=\"font-size: 16px; color: #333333;\">② 计算所有临界点处的函数值</p><p style=\"font-size: 16px; color: #333333;\">③ 计算定义域端点处的函数值（当定义域为闭区间时）</p><p style=\"font-size: 16px; color: #333333;\">④ 比较所有值，取最大（最小）者</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#333333"
             },
@@ -3534,9 +3515,9 @@
           "background": {
             "type": "solid",
             "color": "#ffffff"
-          }
-        },
-        "schemaVersion": 1
+          },
+          "animations": []
+        }
       },
       "actions": [
         {
@@ -3547,8 +3528,7 @@
         {
           "id": "action_aSyUiypT",
           "type": "speech",
-          "text": "我们刚刚深入探讨了二阶导数和凹凸性，现在让我们把这些强大的工具应用到实际生活中。这一节的主题是“实际最值建模”，也就是用数学去解决现实世界里“最好”或“最省”的决策问题。",
-          "audioRef": "audio/tts_s18_action_aSyUiypT.mp3"
+          "text": "本场景聚焦“实际最值建模”。现在让我们把这些强大的工具应用到实际生活中。这一节的主题是“实际最值建模”，也就是用数学去解决现实世界里“最好”或“最省”的决策问题。"
         },
         {
           "id": "action_ajgmpjJe",
@@ -3712,8 +3692,7 @@
         {
           "id": "action_zKKIZY_1",
           "type": "speech",
-          "text": "刚才我们总结了求最值的口诀。现在，我们来动手实践一下。这个实验里，我们可以在给定的区间里拖动，寻找函数的最大值和最小值，并且要特别注意和端点值进行比较。",
-          "audioRef": "audio/tts_s19_action_zKKIZY_1.mp3"
+          "text": "本场景通过交互探索“实际最值建模：拖动实验”。我们来动手实践一下。这个实验里，我们可以在给定的区间里拖动，寻找函数的最大值和最小值，并且要特别注意和端点值进行比较。"
         },
         {
           "id": "action_2xLWUZCW",
@@ -3870,8 +3849,7 @@
         {
           "id": "action_Ar5OroRN",
           "type": "speech",
-          "text": "没错，刚才我们看到端点检查在实际问题中多么关键。现在，我们把整个实际最值建模的思路整理成一张完整的关系图，这样每一步的逻辑就一目了然了。",
-          "audioRef": "audio/tts_s20_action_Ar5OroRN.mp3"
+          "text": "本场景通过交互探索“实际最值建模：关系图”。没错，刚才我们看到端点检查在实际问题中多么关键。现在，我们把整个实际最值建模的思路整理成一张完整的关系图，这样每一步的逻辑就一目了然了。"
         },
         {
           "id": "action_3nlODsFc",
@@ -3997,8 +3975,7 @@
         {
           "id": "action_Pz8UM6gi",
           "type": "speech",
-          "text": "刚才我们学习了实际最值建模的五步法，现在就来实战检验一下，看看大家是不是真的掌握了，特别是那些容易掉进去的'坑'。",
-          "audioRef": "audio/tts_s21_action_Pz8UM6gi.mp3"
+          "text": "本场景通过交互探索“实际最值建模：误解修复挑战”。现在就来实战检验一下，看看大家是不是真的掌握了，特别是那些容易掉进去的'坑'。"
         },
         {
           "id": "action_PvzvhWLy",
@@ -4162,8 +4139,7 @@
         {
           "id": "action_7H_o94te",
           "type": "speech",
-          "text": "刚才我们在误解修复挑战里讨论了很多边界临界值的情况。现在，让我们把视角从二维平面拉升到三维空间，亲眼看看约束条件是如何‘截断’最值点的。",
-          "audioRef": "audio/tts_s22_action_7H_o94te.mp3"
+          "text": "本场景通过交互探索“实际最值建模：空间视角”。让我们把视角从二维平面拉升到三维空间，亲眼看看约束条件是如何‘截断’最值点的。"
         },
         {
           "id": "action_1FUskTRW",
@@ -4188,8 +4164,7 @@
         {
           "id": "action_MpYB-JKr",
           "type": "speech",
-          "text": "注意看，曲面的全局最高峰其实在框的外面。当我们只能在这个框内寻找时，最大值就被硬生生地‘切’到了边界线上。这正是刚才小丽和大刚争论的，端点值成为最优解的关键。",
-          "audioRef": "audio/tts_s22_action_MpYB-JKr.mp3"
+          "text": "注意看，曲面的全局最高峰其实在框的外面。当我们只能在这个框内寻找时，最大值就被硬生生地‘切’到了边界线上。这正是刚才大家和大家争论的，端点值成为最优解的关键。"
         },
         {
           "id": "action_LMGq7H87",
@@ -4221,6 +4196,7 @@
       "order": 23,
       "content": {
         "type": "slide",
+        "schemaVersion": 1,
         "canvas": {
           "id": "qCPwPek-bPJ5DjmtuKedC",
           "viewportSize": 1000,
@@ -4428,18 +4404,16 @@
               "defaultColor": "#333333"
             },
             {
-              "type": "latex",
-              "id": "latex_0N3IALI4",
-              "left": 440,
+              "type": "text",
+              "id": "text_cJC0MPz9",
+              "left": 390,
               "top": 330,
-              "width": 120,
-              "height": 40,
+              "width": 220,
+              "height": 70,
               "rotate": 0,
-              "latex": "f''(x) \\mapsto \\text{曲率}",
-              "color": "#1A3C6E",
-              "fixedRatio": true,
-              "align": "center",
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.0519em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8019em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">′′</span></span></span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">↦</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">曲率</span></span></span></span></span></span>"
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1A3C6E;\">f''(x) 的符号</p><p style=\"font-size: 16px; text-align: center; color: #1A3C6E;\">决定凹凸性</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
             },
             {
               "type": "text",
@@ -4503,9 +4477,9 @@
           "background": {
             "type": "solid",
             "color": "#ffffff"
-          }
-        },
-        "schemaVersion": 1
+          },
+          "animations": []
+        }
       },
       "actions": [
         {
@@ -4516,8 +4490,7 @@
         {
           "id": "action_U-Rc1oWV",
           "type": "speech",
-          "text": "刚才我们穿越了山峰和山谷，亲身体验了如何寻找最值。现在，让我们沉淀一下，把目光拉回到全局。这节课我们其实一直在干一件事：建立一条完整的证据链，用它来读懂函数的生命信号。",
-          "audioRef": "audio/tts_s23_action_U-Rc1oWV.mp3"
+          "text": "本场景聚焦“全课整理：证据链回看”。亲身体验了如何寻找最值。现在，让我们沉淀一下，把目光拉回到全局。这节课我们其实一直在干一件事：建立一条完整的证据链，用它来读懂函数的生命信号。"
         },
         {
           "id": "action_qCQSkBGj",
@@ -4713,14 +4686,12 @@
         {
           "id": "action_1p5vC15R",
           "type": "speech",
-          "text": "好了，同学们，刚才我们一起回顾了整个课程的'证据链'。现在，是时候来检验一下我们这趟'导数之旅'的收获了。这份后测会从导函数图像读法、凹凸性判断，一直到自己动手设计函数，全面挑战一下大家对导数应用的深度理解。别紧张，把它当成一次思维的'闯关游戏'，认真读题，回想我们做过的拖动实验和关系图，相信你们都能做得很好。",
-          "audioRef": "audio/tts_s24_action_1p5vC15R.mp3"
+          "text": "这是一组关于“后测：导数应用：单调、极值与弯曲综合测评”的独立测验。好了，同学们，刚才我们一起回顾了整个课程的'证据链'。现在，是时候来检验一下我们这趟'导数之旅'的收获了。这份后测会从导函数图像读法、凹凸性判断，一直到自己动手设计函数，全面挑战一下大家对导数应用的深度理解。别紧张，把它当成一次思维的'闯关游戏'，认真读题，回想我们做过的拖动实验和关系图，相信你们都能做得很好。"
         },
         {
           "id": "action_NduE70fc",
           "type": "speech",
-          "text": "请特别注意第一题和第六题，它们一个是从导函数图像反推原函数的极值点，另一个是直接给出了一、二阶导数的信息。这就是我们常说的'证据'，要从这些'证据'中推理出函数最真实的样貌。遇到像第四题那样让你自己设计函数的题目，可以想想小明经常在课上用的二次函数，它简单但功能强大，说不定能帮上大忙。",
-          "audioRef": "audio/tts_s24_action_NduE70fc.mp3"
+          "text": "请特别注意第一题和第六题，它们一个是从导函数图像反推原函数的极值点，另一个是直接给出了一、二阶导数的信息。这就是我们常说的'证据'，要从这些'证据'中推理出函数最真实的样貌。遇到像第四题那样让你自己设计函数的题目，可以想想大家经常在课上用的二次函数，它简单但功能强大，说不定能帮上大忙。"
         },
         {
           "id": "action_x_guJt8i",

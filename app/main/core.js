@@ -142,7 +142,7 @@ function saveState() {
   queueLearningSnapshot("state_change");
 }
 
-const COURSEWARE_RESOURCE_VERSION = "20260724-cw-v4";
+const COURSEWARE_RESOURCE_VERSION = "20260726-audited-cw-v5";
 
 function resourceUrl(path) {
   const encoded = encodeURI(path);

@@ -157,6 +157,7 @@ function renderQuestionReview({ question, result, index, unit }) {
           <p><b>参考答案：</b>${renderInlineMath(referenceText)}</p>
           ${rubricText ? `<p><b>解析/评分参考：</b>${renderInlineMath(rubricText)}</p>` : ""}
         </div>
+        ${renderQuizCoverage(question, unit)}
       </div>
     `;
   }
@@ -189,7 +190,8 @@ function renderQuestionReview({ question, result, index, unit }) {
           <div class="question-answer-hidden" data-answer-hidden style="display:none">
             ${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, correctAnswer), "correct-answer")}
             ${renderAnalysisBlock(analysis)}
-          </div>`
+          </div>
+          ${renderQuizCoverage(question, unit)}`
       }
     </div>
   `;

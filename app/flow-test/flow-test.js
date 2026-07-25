@@ -21,7 +21,7 @@
     slideZoom: 1
   };
 
-  const COURSEWARE_RESOURCE_VERSION = "20260724-cw-v4";
+  const COURSEWARE_RESOURCE_VERSION = "20260726-audited-cw-v5";
 
   const BASE_PATH = (() => {
     const pathname = window.location.pathname.replace(/\/+/g, "/");
@@ -211,7 +211,15 @@
     return ({ single: "单选", multiple: "多选", text: "简答", short_answer: "简答" })[type] || type || "未知题型";
   }
 
+  function quizPhaseLabel(key) {
+    return ({ preQuiz: "前测", formativeQuiz: "形成测验", postQuiz: "后测" })[key] || "测验";
+  }
+
   function quizKnowledgePointLabels(question, chapter) {
+    const names = question?.knowledgePointNames || question?.knowledge_point_names || [];
+    if (Array.isArray(names) && names.length) {
+      return [...new Set(names.map((name) => String(name || "").trim()).filter(Boolean))];
+    }
     const ids = question?.knowledgePointIds || question?.knowledge_point_ids || [];
     const lookup = new Map(
       chapterKnowledgePoints(chapter).map(({ knowledgePoint }) => [knowledgePoint.id, knowledgePoint.name])
@@ -590,7 +598,7 @@
     if (state.quizQuestion) {
       els.modalityTabs.innerHTML = "";
       els.resourceKind.textContent = "Quiz 题目检查";
-      els.resourceTitle.textContent = `${state.quizQuestion.key} · 第 ${state.quizQuestion.index + 1} 题`;
+      els.resourceTitle.textContent = `${quizPhaseLabel(state.quizQuestion.key)} · 第 ${state.quizQuestion.index + 1} 题`;
       els.resourceMeta.innerHTML = "<span class=\"resource-path\">来自当前章节 route 的权威题目</span><span class=\"resource-state is-ok\">已载入</span>";
       els.frameEmpty.hidden = true;
       els.resourceFrame.hidden = true;

@@ -1,17 +1,184 @@
 {
-  "generatedAt": "example",
-  "versionId": "openmaic-import-example",
-  "chapters": [],
+  "generatedAt": "2026-07-25T16:26:50.173Z",
+  "chapters": [
+    {
+      "id": "EXT-01-微分方程直觉入门：从变化率到函数",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 50,
+      "indexBytes": 187610
+    },
+    {
+      "id": "EXT-02-线性代数基础",
+      "scenes": 29,
+      "slides": 6,
+      "quizzes": 3,
+      "interactive": 20,
+      "audio": 90,
+      "indexBytes": 312313
+    },
+    {
+      "id": "EXT-03-概率统计直觉之旅",
+      "scenes": 29,
+      "slides": 6,
+      "quizzes": 3,
+      "interactive": 20,
+      "audio": 113,
+      "indexBytes": 329138
+    },
+    {
+      "id": "EXT-04-深度学习数学直觉：从矩阵到优化",
+      "scenes": 29,
+      "slides": 6,
+      "quizzes": 3,
+      "interactive": 20,
+      "audio": 108,
+      "indexBytes": 358994
+    },
+    {
+      "id": "EXT-05-数值优化进阶：从梯度到二阶与约束",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 92,
+      "indexBytes": 239749
+    },
+    {
+      "id": "GH-01-函数、坐标与图像读法入门",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 60,
+      "indexBytes": 169133
+    },
+    {
+      "id": "GH-02-极限与连续：直觉探索",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 68,
+      "indexBytes": 185579
+    },
+    {
+      "id": "GH-03-从平均变化率到导数",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 58,
+      "indexBytes": 185776
+    },
+    {
+      "id": "GH-04-常用求导规则与函数组合",
+      "scenes": 20,
+      "slides": 5,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 71,
+      "indexBytes": 208807
+    },
+    {
+      "id": "GH-05-导数应用：单调、极值与弯曲",
+      "scenes": 24,
+      "slides": 5,
+      "quizzes": 3,
+      "interactive": 16,
+      "audio": 84,
+      "indexBytes": 212232
+    },
+    {
+      "id": "GH-06-积分直觉：面积、累积与原函数",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 67,
+      "indexBytes": 204403
+    },
+    {
+      "id": "GH-07-微积分基本定理与积分方法",
+      "scenes": 24,
+      "slides": 5,
+      "quizzes": 3,
+      "interactive": 16,
+      "audio": 86,
+      "indexBytes": 222321
+    },
+    {
+      "id": "GH-08-多元函数、曲面与偏导数",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 55,
+      "indexBytes": 197948
+    },
+    {
+      "id": "GH-09-梯度与方向导数实战：寻找最快路径",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 66,
+      "indexBytes": 168552
+    },
+    {
+      "id": "GH-10-多元链式法则与-Jacobian-实战",
+      "scenes": 24,
+      "slides": 5,
+      "quizzes": 3,
+      "interactive": 16,
+      "audio": 71,
+      "indexBytes": 246189
+    },
+    {
+      "id": "GH-11-Taylor-近似与驻点判断",
+      "scenes": 24,
+      "slides": 5,
+      "quizzes": 3,
+      "interactive": 16,
+      "audio": 85,
+      "indexBytes": 268875
+    },
+    {
+      "id": "GH-12-无约束优化与梯度下降基础",
+      "scenes": 24,
+      "slides": 5,
+      "quizzes": 3,
+      "interactive": 16,
+      "audio": 79,
+      "indexBytes": 224942
+    },
+    {
+      "id": "GH-13-约束优化、拉格朗日与凸性",
+      "scenes": 24,
+      "slides": 5,
+      "quizzes": 3,
+      "interactive": 16,
+      "audio": 85,
+      "indexBytes": 195058
+    },
+    {
+      "id": "GH-14-机器学习高数闭环：从导数到训练",
+      "scenes": 29,
+      "slides": 6,
+      "quizzes": 3,
+      "interactive": 20,
+      "audio": 93,
+      "indexBytes": 320544
+    }
+  ],
   "totals": {
-    "chapters": 0,
-    "mainChapters": 0,
-    "extensionChapters": 0,
-    "modules": 0,
-    "knowledgePoints": 0,
-    "quizzes": 0,
-    "sourceQuizzes": 0,
-    "interactionChoices": 0,
-    "importedPackages": 0
-  },
-  "note": "This tracked file is a placeholder. Real imported OpenMAIC courseware indexes are generated locally and ignored by git."
+    "scenes": 432,
+    "slides": 91,
+    "quizzes": 57,
+    "interactive": 284,
+    "audio": 1481,
+    "indexBytes": 4438163
+  }
 }
