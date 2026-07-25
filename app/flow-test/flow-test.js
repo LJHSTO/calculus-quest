@@ -211,6 +211,17 @@
     return ({ single: "单选", multiple: "多选", text: "简答", short_answer: "简答" })[type] || type || "未知题型";
   }
 
+  function quizKnowledgePointLabels(question, chapter) {
+    const ids = question?.knowledgePointIds || question?.knowledge_point_ids || [];
+    const lookup = new Map(
+      chapterKnowledgePoints(chapter).map(({ knowledgePoint }) => [knowledgePoint.id, knowledgePoint.name])
+    );
+    const labels = (Array.isArray(ids) ? ids : [ids])
+      .map((id) => lookup.get(String(id || "").trim()))
+      .filter(Boolean);
+    return [...new Set(labels)];
+  }
+
   function renderQuizList(chapter) {
     const phases = [
       ["preQuiz", "前测"],
@@ -560,6 +571,7 @@
   }
 
   function renderQuizPreview(question) {
+    const coverage = quizKnowledgePointLabels(question, state.chapter);
     const options = (question.options || []).map((option) => `<li><b>${escapeHtml(option.value || "")}</b><span>${escapeHtml(option.label || "")}</span></li>`).join("");
     const answer = quizAnswerText(question);
     return `
@@ -569,7 +581,7 @@
         ${options ? `<ol class="quiz-options">${options}</ol>` : ""}
         <div class="quiz-answer"><strong>标准答案</strong><p>${escapeHtml(answer)}</p></div>
         <div class="quiz-analysis"><strong>解析</strong><p>${escapeHtml(question.analysis || "暂无解析")}</p></div>
-        ${question.knowledgePointIds?.length ? `<div class="quiz-coverage"><strong>覆盖知识点</strong><p>${escapeHtml(question.knowledgePointIds.join("、"))}</p></div>` : ""}
+        ${coverage.length ? `<div class="quiz-coverage"><strong>覆盖知识点</strong><p>${escapeHtml(coverage.join("、"))}</p></div>` : ""}
       </article>
     `;
   }

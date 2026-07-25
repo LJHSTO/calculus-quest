@@ -1828,6 +1828,25 @@ h3 {
   white-space: nowrap;
 }
 
+.quiz-coverage {
+  display: grid;
+  gap: 3px;
+  border-left: 3px solid #5b84b1;
+  background: #f1f6fb;
+  padding: 8px 10px;
+  color: #2f4c69;
+}
+
+.quiz-coverage strong {
+  font-size: 0.76rem;
+  font-weight: 900;
+}
+
+.quiz-coverage span {
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
 .quiz-section-total {
   border: 1px solid #c7d8ea;
   border-radius: 8px;

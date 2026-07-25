@@ -659,6 +659,24 @@ function renderQuestionTextWithLinks(question = {}) {
   return html;
 }
 
+function quizKnowledgePointLabels(question = {}, unit = {}) {
+  const ids = question.knowledgePointIds || question.knowledge_point_ids || [];
+  if (!ids.length || typeof KnowledgePointLabels === "undefined") return [];
+  const chapters = typeof curriculum !== "undefined" ? curriculum : [];
+  return KnowledgePointLabels.labelsFor(ids, chapters, unit.chapterId);
+}
+
+function renderQuizCoverage(question = {}, unit = {}) {
+  const labels = quizKnowledgePointLabels(question, unit);
+  if (!labels.length) return "";
+  return `
+    <div class="quiz-coverage" data-quiz-coverage>
+      <strong>覆盖知识点</strong>
+      <span>${escapeHtml(labels.join("、"))}</span>
+    </div>
+  `;
+}
+
 function renderQuiz(unit) {
   analyticsTrack("quiz_render", {
     source: "quiz",
@@ -737,6 +755,7 @@ function renderQuiz(unit) {
                   <h3>${index + 1}. ${renderQuestionTextWithLinks(question)}</h3>
                   ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
                 </div>
+                ${renderQuizCoverage(question, unit)}
                 ${renderQuestionInput(unit, question, submitted, reviewResult)}
                 ${review}
               </article>
