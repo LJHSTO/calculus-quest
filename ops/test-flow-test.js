@@ -37,6 +37,7 @@ assert.match(js, /appUrl\("data\/knowledge-graph\.json"\)/);
 assert.match(js, /kgResponse\.kg \|\| kgResponse/);
 assert.match(js, /function renderQuizPreview/);
 assert.match(js, /function renderSlidePreview/);
+assert.match(js, /viewerPane:\s*document\.querySelector\("\.viewer-pane"\)/);
 assert.match(js, /requestFullscreen/);
 assert.match(js, /is-local-fullscreen/);
 assert.match(js, /allowFullscreen/);

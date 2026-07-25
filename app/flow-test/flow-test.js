@@ -52,6 +52,7 @@
     slideZoomIn: document.getElementById("slide-zoom-in"),
     slideZoomFit: document.getElementById("slide-zoom-fit"),
     slideFullscreen: document.getElementById("slide-fullscreen"),
+    viewerPane: document.querySelector(".viewer-pane"),
     checkResources: document.getElementById("check-resources"),
     liveStatus: document.getElementById("live-status")
   };
