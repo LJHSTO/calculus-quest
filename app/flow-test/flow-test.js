@@ -84,6 +84,18 @@
     return `slide:${candidate.sceneOrder || 0}:${candidate.slide?.canvas?.id || candidate.title || "unknown"}`;
   }
 
+  function resourceRootForKnowledgePoint(knowledgePoint) {
+    if (knowledgePoint?.resourceRoot) return knowledgePoint.resourceRoot;
+    const candidateRoot = knowledgePoint?.resourceCandidates?.find((candidate) => candidate?.root)?.root;
+    if (candidateRoot) return candidateRoot;
+    const entry = state.chapter
+      ? chapterKnowledgePoints(state.chapter).find((item) => item.knowledgePoint.id === knowledgePoint?.id)
+      : state.route?.chapters
+        ?.flatMap((chapter) => chapterKnowledgePoints(chapter))
+        .find((item) => item.knowledgePoint.id === knowledgePoint?.id);
+    return entry?.module?.source?.resourceRoot || "";
+  }
+
   function slideResource(knowledgePoint) {
     const slide = knowledgePoint?.slide;
     if (!slide?.canvas) return null;
@@ -91,6 +103,7 @@
       type: "slide",
       title: slide.title || `${knowledgePoint.name} · Slide 讲解页`,
       sceneOrder: slide.sceneOrder || 0,
+      resourceRoot: resourceRootForKnowledgePoint(knowledgePoint),
       slide
     };
   }
@@ -277,9 +290,12 @@
   function selectKnowledgePoint(knowledgePointId) {
     const entry = chapterKnowledgePoints(state.chapter).find((item) => item.knowledgePoint.id === knowledgePointId);
     if (!entry) return;
-    state.knowledgePoint = entry.knowledgePoint;
+    state.knowledgePoint = {
+      ...entry.knowledgePoint,
+      resourceRoot: entry.module?.source?.resourceRoot || ""
+    };
     state.quizQuestion = null;
-    const resources = resourcesForKnowledgePoint(entry.knowledgePoint);
+    const resources = resourcesForKnowledgePoint(state.knowledgePoint);
     state.resource = resources.find((candidate) => candidate.type === state.resource?.type) || resources[0] || null;
     renderKnowledgeList(state.chapter);
     renderQuizList(state.chapter);
@@ -308,12 +324,95 @@
     return String(value).replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "").replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "");
   }
 
+  function renderInlineMath(value = "") {
+    const text = String(value ?? "");
+    if (typeof window.katex === "undefined") return escapeHtml(text);
+    const parts = [];
+    let last = 0;
+    const re = /\$([^$]+)\$/g;
+    let match;
+    while ((match = re.exec(text)) !== null) {
+      if (match.index > last) parts.push(escapeHtml(text.slice(last, match.index)));
+      try {
+        parts.push(window.katex.renderToString(match[1], {
+          throwOnError: false,
+          displayMode: false,
+          trust: false,
+          maxExpand: 1000
+        }));
+      } catch {
+        parts.push(escapeHtml(match[0]));
+      }
+      last = match.index + match[0].length;
+    }
+    if (last < text.length) parts.push(escapeHtml(text.slice(last)));
+    return parts.join("");
+  }
+
+  function renderMathInHtml(value = "") {
+    const sanitized = safeSlideMarkup(value);
+    if (typeof window.katex === "undefined") return sanitized;
+    return sanitized.replace(/\$([^$]+)\$/g, (_, math) => {
+      try {
+        return window.katex.renderToString(math, {
+          throwOnError: false,
+          displayMode: false,
+          trust: false,
+          maxExpand: 1000
+        });
+      } catch {
+        return escapeHtml(`$${math}$`);
+      }
+    });
+  }
+
+  function renderSlideTextContent(value = "") {
+    const content = String(value ?? "");
+    return /<[a-zA-Z][^>]*>/.test(content)
+      ? renderMathInHtml(content)
+      : renderInlineMath(content);
+  }
+
+  function slideImageSrc(src = "", resourceRoot = "") {
+    if (!src) return "";
+    const raw = String(src);
+    const classroomMedia = raw.match(/^\/api\/classroom-media\/[^/]+\/media\/(.+)$/i);
+    if (classroomMedia && resourceRoot) return appUrl(`resources/${resourceRoot}/media/${classroomMedia[1]}`);
+    if (/^(data:|https?:|\/)/i.test(raw)) return raw;
+    if (resourceRoot && /^media\//i.test(raw)) return appUrl(`resources/${resourceRoot}/${raw}`);
+    if (resourceRoot && raw.startsWith("gen_img_")) return appUrl(`resources/${resourceRoot}/media/${raw}.png`);
+    if (raw.startsWith("gen_img_")) return appUrl(`resources/open-maic/${raw}.png`);
+    return appUrl(`resources/${resourceRoot || "open-maic"}/${raw}`);
+  }
+
+  function slideSvgId(value = "line") {
+    return String(value || "line").replace(/[^a-zA-Z0-9_-]/g, "-");
+  }
+
+  function renderSlideTable(element) {
+    const rows = element.data || [];
+    const border = element.outline?.color || "#d9d9d9";
+    const cellMinHeight = Math.max(slideNumber(element.cellMinHeight, 0), 0);
+    const colWidths = Array.isArray(element.colWidths) ? element.colWidths : [];
+    const naturalHeight = Math.max(slideNumber(element.height, 0), cellMinHeight * rows.length);
+    return `<table class="slide-table" style="border-color:${escapeHtml(border)};min-height:${naturalHeight}px">${colWidths.length
+      ? `<colgroup>${colWidths.map((width) => `<col style="width:${slideNumber(Number(width) * 100)}%" />`).join("")}</colgroup>`
+      : ""}<tbody>${rows.map((row) => `<tr${cellMinHeight ? ` style="height:${cellMinHeight}px"` : ""}>${(row || []).map((cell) => {
+        const style = cell?.style || {};
+        const cellStyle = `background:${escapeHtml(style.backcolor || "transparent")};color:${escapeHtml(style.color || "inherit")};text-align:${escapeHtml(style.align || "left")};font-weight:${style.bold ? 800 : 500};${style.fontsize ? `font-size:${slideNumber(style.fontsize, 16)}px;` : ""}${cellMinHeight ? `min-height:${cellMinHeight}px;` : ""}`;
+        const attrs = [`style="${cellStyle}"`];
+        if (cell?.colspan > 1) attrs.push(`colspan="${cell.colspan}"`);
+        if (cell?.rowspan > 1) attrs.push(`rowspan="${cell.rowspan}"`);
+        return `<td ${attrs.join(" ")}>${renderSlideTextContent(cell?.text || "")}</td>`;
+      }).join("")}</tr>`).join("")}</tbody></table>`;
+  }
+
   function slideNumber(value, fallback = 0) {
     const number = Number(value);
     return Number.isFinite(number) ? Number(number.toFixed(3)) : fallback;
   }
 
-  function renderSlidePreview(slide = {}) {
+  function renderSlidePreview(slide = {}, resourceRoot = "") {
     const canvas = slide.canvas || {};
     const width = slideNumber(canvas.viewportSize, 1000);
     const height = slideNumber(width * slideNumber(canvas.viewportRatio, 0.5625), 562.5);
@@ -326,28 +425,66 @@
       const rotate = slideNumber(element.rotate);
       const style = `left:${left}px;top:${top}px;width:${w}px;height:${h}px;transform:rotate(${rotate}deg);color:${escapeHtml(element.defaultColor || "inherit")};`;
       if (element.type === "text") {
-        return `<div class="flow-slide-element flow-slide-text" style="${style}">${safeSlideMarkup(element.content || "")}</div>`;
+        return `<div class="flow-slide-element slide-element flow-slide-text slide-text" style="${style}"><div class="slide-fit-content slide-text-content" data-slide-fit>${renderSlideTextContent(element.content || "")}</div></div>`;
       }
       if (element.type === "shape") {
         const viewBox = Array.isArray(element.viewBox) ? element.viewBox : [1, 1];
-        return `<svg class="flow-slide-element" style="${style}" viewBox="0 0 ${slideNumber(viewBox[0], 1)} ${slideNumber(viewBox[1], 1)}" preserveAspectRatio="none" aria-hidden="true"><path d="${escapeHtml(element.path || "")}" fill="${escapeHtml(element.fill || "#e9edf5")}" stroke="${escapeHtml(element.outline?.color || "none")}" stroke-width="${slideNumber(element.outline?.width, 0)}"></path></svg>`;
+        const outline = element.outline || {};
+        const dash = outline.style === "dashed" ? ' stroke-dasharray="6 4"' : "";
+        return `<svg class="flow-slide-element slide-element slide-shape" style="${style}" viewBox="0 0 ${slideNumber(viewBox[0], 1)} ${slideNumber(viewBox[1], 1)}" preserveAspectRatio="none" aria-hidden="true"><path d="${escapeHtml(element.path || "")}" fill="${escapeHtml(element.fill || "#e9edf5")}" stroke="${escapeHtml(outline.color || "none")}" stroke-width="${slideNumber(outline.width, 0)}"${dash}></path></svg>`;
+      }
+      if (element.type === "image") {
+        return `<img class="flow-slide-element slide-element" alt="" src="${escapeHtml(slideImageSrc(element.src, resourceRoot))}" style="${style};object-fit:contain;" />`;
       }
       if (element.type === "line") {
         const start = Array.isArray(element.start) ? element.start : [0, 0];
         const end = Array.isArray(element.end) ? element.end : [w, h];
-        const arrow = Array.isArray(element.points) && element.points.includes("arrow") ? " marker-end=\"url(#arrow)\"" : "";
-        return `<svg class="flow-slide-line" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="${escapeHtml(element.color || "#94a3b8")}"></path></marker></defs><line x1="${slideNumber((element.left || 0) + (start[0] || 0))}" y1="${slideNumber((element.top || 0) + (start[1] || 0))}" x2="${slideNumber((element.left || 0) + (end[0] || 0))}" y2="${slideNumber((element.top || 0) + (end[1] || 0))}" stroke="${escapeHtml(element.color || "#94a3b8")}" stroke-width="${Math.max(1, slideNumber(element.width, 2))}"${arrow}></line></svg>`;
+        const markerId = `flow-slide-arrow-${slideSvgId(element.id || `${left}-${top}-${index}`)}`;
+        const points = Array.isArray(element.points) ? element.points : ["", ""];
+        const markerStart = points[0] === "arrow" ? ` marker-start="url(#${markerId})"` : "";
+        const markerEnd = points[1] === "arrow" ? ` marker-end="url(#${markerId})"` : "";
+        const dash = element.style === "dashed" ? ' stroke-dasharray="8 6"' : "";
+        const marker = markerStart || markerEnd ? `<defs><marker id="${markerId}" markerWidth="4" markerHeight="4" refX="8.5" refY="5" viewBox="0 0 10 10" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 Z" fill="${escapeHtml(element.color || "#94a3b8")}"></path></marker></defs>` : "";
+        return `<svg class="flow-slide-line slide-element slide-vector slide-line" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">${marker}<line x1="${slideNumber((element.left || 0) + (start[0] || 0))}" y1="${slideNumber((element.top || 0) + (start[1] || 0))}" x2="${slideNumber((element.left || 0) + (end[0] || 0))}" y2="${slideNumber((element.top || 0) + (end[1] || 0))}" stroke="${escapeHtml(element.color || "#94a3b8")}" stroke-width="${Math.max(1, slideNumber(element.width, 2))}" stroke-linecap="round"${dash}${markerStart}${markerEnd}></line></svg>`;
       }
       if (element.type === "latex") {
-        return `<div class="flow-slide-element flow-slide-latex" style="${style}">${safeSlideMarkup(element.html || escapeHtml(element.latex || ""))}</div>`;
+        let html = escapeHtml(element.latex || "");
+        if (element.latex && typeof window.katex !== "undefined") {
+          try {
+            html = window.katex.renderToString(element.latex, { throwOnError: false, displayMode: true, trust: false, maxExpand: 1000 });
+          } catch {
+            html = safeSlideMarkup(element.html || html);
+          }
+        } else {
+          html = safeSlideMarkup(element.html || html);
+        }
+        return `<div class="flow-slide-element slide-element flow-slide-latex slide-latex" style="${style}color:${escapeHtml(element.color || "inherit")};"><div class="slide-fit-content slide-latex-content" data-slide-fit>${html}</div></div>`;
       }
       if (element.type === "table") {
-        const rows = (element.data || []).map((row) => `<tr>${(row || []).map((cell) => `<td>${safeSlideMarkup(cell?.text || "")}</td>`).join("")}</tr>`).join("");
-        return `<div class="flow-slide-element flow-slide-table" style="${style}"><table><tbody>${rows}</tbody></table></div>`;
+        return `<div class="flow-slide-element slide-element flow-slide-table slide-table-wrap" style="${style}"><div class="slide-fit-content slide-table-content" data-slide-fit>${renderSlideTable(element)}</div></div>`;
       }
       return `<span class="flow-slide-unknown" data-order="${index}"></span>`;
     }).join("");
     return `<div class="flow-slide-wrap" data-slide-width="${width}" data-slide-height="${height}" style="--slide-render-width:${width}px;--slide-render-height:${height}px"><div class="flow-slide-stage" style="width:${width}px;height:${height}px;background:${escapeHtml(background)}">${elements}</div></div>`;
+  }
+
+  function fitSlidePreviewContents(wrap) {
+    wrap?.querySelectorAll?.("[data-slide-fit]").forEach((content) => {
+      const host = content.parentElement;
+      if (!host?.clientWidth || !host.clientHeight) return;
+      content.style.setProperty("--slide-content-scale", "1");
+      content.style.setProperty("--slide-content-x", "0px");
+      content.style.setProperty("--slide-content-y", "0px");
+      const naturalWidth = Math.max(content.scrollWidth, content.offsetWidth, 1);
+      const naturalHeight = Math.max(content.scrollHeight, content.offsetHeight, 1);
+      const scale = Math.min(1, host.clientWidth / naturalWidth, host.clientHeight / naturalHeight);
+      const centered = host.classList.contains("flow-slide-latex") || host.classList.contains("slide-latex");
+      const offsetX = centered ? Math.max(0, (host.clientWidth - naturalWidth * scale) / 2) : 0;
+      const offsetY = centered ? Math.max(0, (host.clientHeight - naturalHeight * scale) / 2) : 0;
+      content.style.setProperty("--slide-content-scale", String(Number(scale.toFixed(6))));
+      content.style.setProperty("--slide-content-x", `${slideNumber(offsetX)}px`);
+      content.style.setProperty("--slide-content-y", `${slideNumber(offsetY)}px`);
+    });
   }
 
   function syncSlidePreviewScale() {
@@ -367,6 +504,7 @@
     wrap.style.setProperty("--slide-render-width", `${renderWidth}px`);
     wrap.style.setProperty("--slide-render-height", `${renderHeight}px`);
     stage.style.setProperty("--flow-slide-scale", String(Number(scale.toFixed(6))));
+    fitSlidePreviewContents(wrap);
     els.slideZoomValue.textContent = `${Math.round(state.slideZoom * 100)}%`;
   }
 
@@ -489,7 +627,7 @@
       els.resourceFrame.hidden = true;
       els.resourceFrame.removeAttribute("src");
       els.slideFrame.hidden = false;
-      els.slideFrame.innerHTML = renderSlidePreview(state.resource.slide);
+      els.slideFrame.innerHTML = renderSlidePreview(state.resource.slide, state.resource.resourceRoot);
       setViewerControls({ slide: true, fullscreen: true });
       requestAnimationFrame(syncSlidePreviewScale);
       return;
@@ -561,7 +699,6 @@
   els.checkResources.addEventListener("click", checkAllResources);
   window.addEventListener("resize", syncSlidePreviewScale);
   els.resourceFrame.setAttribute("allow", "fullscreen; autoplay");
-  els.resourceFrame.allowFullscreen = true;
   document.addEventListener("fullscreenchange", () => {
     if (document.fullscreenElement !== els.viewerPane) clearLocalFullscreen();
     const active = document.fullscreenElement === els.viewerPane;

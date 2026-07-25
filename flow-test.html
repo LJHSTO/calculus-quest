@@ -6,7 +6,8 @@
     <meta name="robots" content="noindex,nofollow" />
     <title>课程流程检视 | Calculus Quest</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="app/flow-test/flow-test.css?v=20260725-flow-fullscreen-v6" />
+    <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
+    <link rel="stylesheet" href="app/flow-test/flow-test.css?v=20260725-flow-fullscreen-v8" />
   </head>
   <body>
     <header class="app-header">
@@ -78,12 +79,13 @@
           <div id="frame-empty" class="frame-empty">未选择课件资源</div>
           <div id="slide-frame" class="slide-preview" hidden></div>
           <div id="quiz-preview" class="quiz-preview" hidden></div>
-          <iframe id="resource-frame" title="课件资源预览" loading="eager" allow="fullscreen; autoplay" allowfullscreen hidden></iframe>
+          <iframe id="resource-frame" title="课件资源预览" loading="eager" allow="fullscreen; autoplay" hidden></iframe>
         </div>
       </section>
     </main>
 
     <div id="live-status" class="sr-only" aria-live="polite"></div>
-    <script src="app/flow-test/flow-test.js?v=20260725-flow-fullscreen-v6"></script>
+    <script src="lib/katex.min.js?v=0.17.0"></script>
+    <script src="app/flow-test/flow-test.js?v=20260725-flow-fullscreen-v8"></script>
   </body>
 </html>

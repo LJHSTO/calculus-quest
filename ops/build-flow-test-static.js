@@ -35,9 +35,18 @@ fs.mkdirSync(output, { recursive: true });
   "flow-test.html",
   "app/flow-test/flow-test.css",
   "app/flow-test/flow-test.js",
+  "lib/katex.min.css",
+  "lib/katex.min.js",
   "data/multi-scene-learning-route.json",
   "data/knowledge-graph.json"
 ].forEach(copyFile);
+
+const katexFontDir = path.join(root, "lib", "fonts");
+if (fs.existsSync(katexFontDir)) {
+  for (const entry of fs.readdirSync(katexFontDir)) {
+    if (/^KaTeX_.*\.(woff2?|ttf)$/i.test(entry)) copyFile(path.join("lib", "fonts", entry));
+  }
+}
 
 fs.writeFileSync(path.join(output, "_redirects"), "/flow-test /flow-test.html 200\n", "utf8");
 
