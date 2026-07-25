@@ -162,6 +162,7 @@ async function main() {
       "/calculus_quest/index.html",
       "/calculus_quest/admin.html",
       "/calculus_quest/flow-test.html",
+      "/calculus_quest/flow-test",
       "/calculus_quest/styles.css",
       "/calculus_quest/admin/admin.js",
       "/calculus_quest/app/flow-test/flow-test.js",
