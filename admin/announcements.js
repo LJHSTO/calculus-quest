@@ -23,6 +23,9 @@
 
   if (!elements.form || !elements.list) return;
 
+  const contentLimit = Number(elements.content.maxLength) > 0
+    ? Number(elements.content.maxLength)
+    : 5000;
   let announcements = [];
   let currentAnnouncement = null;
   let loading = false;
@@ -138,7 +141,7 @@
     elements.publish.classList.remove("hidden");
     elements.publish.textContent = "发布公告";
     elements.withdraw.classList.add("hidden");
-    elements.charCount.textContent = "0 / 2000";
+    elements.charCount.textContent = `0 / ${contentLimit}`;
     setStatus("");
     renderList();
     elements.title.focus();
@@ -153,7 +156,7 @@
     elements.pinned.checked = announcement.pinned;
     elements.startsAt.value = toLocalInput(announcement.startsAt);
     elements.expiresAt.value = toLocalInput(announcement.expiresAt);
-    elements.charCount.textContent = `${announcement.content.length} / 2000`;
+    elements.charCount.textContent = `${announcement.content.length} / ${contentLimit}`;
     const status = displayStatus(announcement);
     elements.editorTitle.textContent = `编辑：${announcement.title}`;
     elements.editorNote.textContent = announcement.status === "published"
@@ -295,7 +298,7 @@
   }
 
   elements.content.addEventListener("input", () => {
-    elements.charCount.textContent = `${elements.content.value.length} / 2000`;
+    elements.charCount.textContent = `${elements.content.value.length} / ${contentLimit}`;
   });
 
   elements.form.addEventListener("submit", async (event) => {

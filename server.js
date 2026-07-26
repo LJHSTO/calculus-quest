@@ -1168,6 +1168,7 @@ async function handleApi(req, res, url) {
       res,
       url,
       db,
+      authenticate,
       checkAdmin,
       readJsonBody,
       sendJson
@@ -2890,6 +2891,7 @@ try {
 db.getDb().then(() => {
  console.log("Database initialized.");
   systemAnnouncementApi.ensureSchema(db.getDbSync());
+  db.saveNow();
   // Migration: fix existing is_correct bug where pending short answers (-1) were stored as 1
  try {
     const fixedCount = db.normalizeLegacyPendingShortAnswerFlags();

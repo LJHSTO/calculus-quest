@@ -164,6 +164,14 @@ function renderQuestionReview({ question, result, index, unit }) {
 
   const correct = result.isCorrect === true;
   const coach = buildQuestionCoachHint(question, result, unit);
+  const resourceAccess = typeof quizQuestionResourceAccess === "function"
+    ? quizQuestionResourceAccess(question)
+    : { hasMarkers: false, hasAccessible: true };
+  const actionAdvice = unit?.assessmentPhase === "pre"
+    ? `先记下这个薄弱点；完成前测后的学习路径选择后，再从「${escapeHtml(coach.reviewTarget)}」开始学习。`
+    : resourceAccess.hasMarkers && !resourceAccess.hasAccessible
+      ? `对应课件尚未解锁。请先完成当前学习建议，解锁后再学习「${escapeHtml(coach.reviewTarget)}」。`
+      : `${escapeHtml(coach.guidance)} 可以先回看「${escapeHtml(coach.reviewTarget)}」，再用一句话解释为什么自己的选择符合或不符合题干。`;
   const correctAnswer = result.answer ?? question.answer ?? [];
   const analysis = result.analysis || question.analysis || "";
   return `
@@ -183,7 +191,7 @@ function renderQuestionReview({ question, result, index, unit }) {
               <p><b>题目焦点：</b>${renderQuestionTextWithLinks(question)}</p>
               <p><b>你的选择：</b>${renderInlineMath(coach.selectedText)}</p>
               <p><b>先复盘：</b>这题主要卡在 <em>${escapeHtml(coach.conceptText)}</em>。${escapeHtml(coach.misconception)}</p>
-              <p><b>行动建议：</b>${escapeHtml(coach.guidance)} 可以先回看「${escapeHtml(coach.reviewTarget)}」，再用一句话解释为什么自己的选择符合或不符合题干。</p>
+              <p><b>行动建议：</b>${actionAdvice}</p>
             </div>
           </div>
           <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示正确答案和解析</button>

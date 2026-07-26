@@ -6,7 +6,7 @@
   <title>Calculus Quest - 研究数据分析面板</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="admin/admin.css?v=20260718-admin-quality-v2" />
-  <link rel="stylesheet" href="admin/announcements.css?v=20260726-announcements-v1" />
+  <link rel="stylesheet" href="admin/announcements.css?v=20260726-announcements-v2" />
 </head>
 <body>
 <div id="login-gate" class="hidden">
@@ -392,9 +392,9 @@
               <input id="announcement-title" name="title" type="text" maxlength="80" autocomplete="off" required placeholder="例如：学习助手更新说明" />
             </label>
             <label class="announcement-field">
-              <span>正文</span>
-              <textarea id="announcement-content" name="content" maxlength="2000" rows="8" required placeholder="写清楚更新内容、影响范围和需要学生注意的事项。"></textarea>
-              <small id="announcement-char-count">0 / 2000</small>
+              <span>正文 <em>支持 **加粗**、## 小标题、- 列表项</em></span>
+              <textarea id="announcement-content" name="content" maxlength="5000" rows="10" required placeholder="写清楚更新内容、影响范围和注意事项。可使用 **重点**、## 小标题、- 列表项。"></textarea>
+              <small id="announcement-char-count">0 / 5000</small>
             </label>
             <div class="announcement-field-grid">
               <label class="announcement-field">
@@ -451,6 +451,6 @@
 <script src="admin/presentation.js?v=20260718-admin-quality-v5"></script>
 <script src="lib/interaction-policy.js?v=20260718-interaction-quality-v3"></script>
 <script src="admin/admin.js?v=20260722-multi-scene-v1"></script>
-<script src="admin/announcements.js?v=20260726-announcements-v2"></script>
+<script src="admin/announcements.js?v=20260726-announcements-v3"></script>
 </body>
 </html>

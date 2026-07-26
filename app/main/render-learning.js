@@ -657,9 +657,48 @@ function cleanStudentSceneTitle(title = "", fallback = "互动场景") {
   return cleaned || fallback;
 }
 
-function renderQuestionTextWithLinks(question = {}) {
+function quizResourceTargetAccessible(targetUnitId = "") {
+  const targetUnit = getUnit(targetUnitId);
+  if (!targetUnit || targetUnit.type === "quiz") return false;
+  if (typeof agenticGuardNavigation === "function") {
+    return agenticGuardNavigation(targetUnitId, { allowPrevious: true, silent: true });
+  }
+  if (typeof agenticIsUnitUnlocked === "function") {
+    return agenticIsUnitUnlocked(targetUnitId)
+      || (state.completed || []).includes(targetUnitId)
+      || (typeof agenticIsSkipped === "function" && agenticIsSkipped(targetUnitId));
+  }
+  return true;
+}
+
+function quizQuestionResourceAccess(question = {}) {
   const text = displayQuestionText(question);
+  const targets = Array.from(text.matchAll(/\[\[cq-unit:([^|\]]+)\|[^|\]]*\|[^\]]+\]\]/g))
+    .map((match) => match[1])
+    .filter(Boolean);
+  return {
+    hasMarkers: targets.length > 0,
+    hasAccessible: targets.some((targetUnitId) => quizResourceTargetAccessible(targetUnitId))
+  };
+}
+
+function lockedQuizResourceLabel(label = "") {
+  const cleaned = String(label || "")
+    .replace(/^回看课件\s*[:：]?\s*/, "")
+    .trim();
+  return cleaned ? `对应知识点「${cleaned}」` : "对应知识点";
+}
+
+function renderQuestionTextWithLinks(question = {}) {
+  const sourceText = displayQuestionText(question);
   const markerRe = /\[\[cq-unit:([^|\]]+)\|([^|\]]*)\|([^\]]+)\]\]/g;
+  const text = sourceText
+    .replace(markerRe, (marker, unitId, _sceneType, label) => (
+      quizResourceTargetAccessible(unitId)
+        ? marker
+        : lockedQuizResourceLabel(label)
+    ))
+    .replace(/请先回看(?=对应知识点)/g, "请根据");
   let last = 0;
   let html = "";
   let match;

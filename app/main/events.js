@@ -48,6 +48,17 @@ document.addEventListener("click", (event) => {
     const sourceUnit = getUnit();
     const targetUnit = getUnit(targetUnitId);
     const questionCard = quizResourceLink.closest("[data-question]");
+    const accessible = targetUnit && (
+      typeof quizResourceTargetAccessible !== "function"
+      || quizResourceTargetAccessible(targetUnitId)
+    );
+    if (!accessible) {
+      addLog(sourceUnit?.assessmentPhase === "pre"
+        ? "前测只用于定位基础；请先完成前测后的学习路径选择，再进入对应课件。"
+        : "对应课件尚未解锁，请先完成当前学习建议。");
+      if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+      return;
+    }
     if (sourceUnit?.type === "quiz") {
       state.returnToQuiz = {
         unitId: sourceUnit.id,

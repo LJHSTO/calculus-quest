@@ -122,13 +122,21 @@ async function main() {
     assert.equal(invalid.response.status, 400);
     assert.equal(invalid.payload.code, "announcement_title_required");
 
+    const oversizedContent = (
+      "**重点更新**\n\n"
+      + "## 使用说明\n"
+      + "- 支持加粗\n"
+      + "- 支持小标题\n"
+      + "- 支持列表\n\n"
+      + "长正文内容。".repeat(900)
+    );
     const created = await requestJson(
       baseUrl,
       "POST",
       "/api/admin/announcements",
       {
         title: "平台更新",
-        content: "新增系统公告功能。",
+        content: oversizedContent,
         level: "update",
         pinned: true
       },
@@ -136,6 +144,8 @@ async function main() {
     );
     assert.equal(created.response.status, 201);
     assert.equal(created.payload.announcement.status, "draft");
+    assert.equal(created.payload.announcement.content.length, 5000);
+    assert.match(created.payload.announcement.content, /^\*\*重点更新\*\*/);
     const announcementId = created.payload.announcement.id;
     assert.ok(announcementId);
 
@@ -165,6 +175,80 @@ async function main() {
     const publicList = await requestJson(baseUrl, "GET", "/api/announcements");
     assert.equal(publicList.payload.announcements.length, 1);
     assert.equal(publicList.payload.announcements[0].pinned, true);
+    assert.equal(publicList.payload.readState, undefined);
+
+    const readerA = await requestJson(
+      baseUrl,
+      "POST",
+      "/api/auth/register",
+      {
+        nickname: "公告阅读者甲",
+        email: "",
+        password: "announcement-reader-a"
+      }
+    );
+    const readerB = await requestJson(
+      baseUrl,
+      "POST",
+      "/api/auth/register",
+      {
+        nickname: "公告阅读者乙",
+        email: "",
+        password: "announcement-reader-b"
+      }
+    );
+    assert.equal(readerA.response.status, 200);
+    assert.equal(readerB.response.status, 200);
+
+    const unauthenticatedRead = await requestJson(
+      baseUrl,
+      "POST",
+      `/api/announcements/${encodeURIComponent(announcementId)}/read`,
+      {}
+    );
+    assert.equal(unauthenticatedRead.response.status, 401);
+
+    const readerAInitial = await requestJson(
+      baseUrl,
+      "GET",
+      "/api/announcements",
+      undefined,
+      readerA.payload.token
+    );
+    assert.deepEqual(readerAInitial.payload.readState.versions, {});
+
+    const readerARead = await requestJson(
+      baseUrl,
+      "POST",
+      `/api/announcements/${encodeURIComponent(announcementId)}/read`,
+      {},
+      readerA.payload.token
+    );
+    assert.equal(readerARead.response.status, 200);
+    assert.equal(
+      readerARead.payload.readState.versions[announcementId],
+      publicList.payload.announcements[0].updatedAt
+    );
+
+    const readerAAfterRead = await requestJson(
+      baseUrl,
+      "GET",
+      "/api/announcements",
+      undefined,
+      readerA.payload.token
+    );
+    const readerBAfterARead = await requestJson(
+      baseUrl,
+      "GET",
+      "/api/announcements",
+      undefined,
+      readerB.payload.token
+    );
+    assert.equal(
+      readerAAfterRead.payload.readState.versions[announcementId],
+      publicList.payload.announcements[0].updatedAt
+    );
+    assert.deepEqual(readerBAfterARead.payload.readState.versions, {});
 
     const updated = await requestJson(
       baseUrl,
@@ -181,6 +265,28 @@ async function main() {
     assert.equal(updated.response.status, 200);
     assert.equal(updated.payload.announcement.content, "公告内容已经实时更新。");
     await readStreamUntil(reader, /"content":"公告内容已经实时更新。"/);
+
+    const readerAAfterUpdate = await requestJson(
+      baseUrl,
+      "GET",
+      "/api/announcements",
+      undefined,
+      readerA.payload.token
+    );
+    assert.deepEqual(readerAAfterUpdate.payload.readState.versions, {});
+
+    const readerBReadAll = await requestJson(
+      baseUrl,
+      "POST",
+      "/api/announcements/read-all",
+      {},
+      readerB.payload.token
+    );
+    assert.equal(readerBReadAll.response.status, 200);
+    assert.equal(
+      readerBReadAll.payload.readState.versions[announcementId],
+      updated.payload.announcement.updatedAt
+    );
 
     const rejectedExpiry = await requestJson(
       baseUrl,

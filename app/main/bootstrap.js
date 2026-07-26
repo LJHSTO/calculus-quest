@@ -164,6 +164,9 @@ els.authLogout?.addEventListener("click", async () => {
   els.authLogout.disabled = true;
   try {
     await logoutParticipant();
+    window.dispatchEvent(new CustomEvent("cq:participant-change", {
+      detail: { participantId: "" }
+    }));
   } catch (error) {
     console.warn("Logout failed:", error.message);
     alert(error.message || "退出失败，请稍后再试。");
@@ -231,6 +234,9 @@ els.loginForm?.addEventListener("submit", async (event) => {
   els.loginForm.querySelector("button[type='submit']").disabled = true;
   try {
     await loginParticipant(credentials);
+    window.dispatchEvent(new CustomEvent("cq:participant-change", {
+      detail: { participantId: state.participant?.participantId || "" }
+    }));
     analyticsTrack(currentMode === "register" ? "register_success" : "login_success", { source: "auth" });
     setupInteractionTracking();
     if (currentUnitId) analyticsEnterUnit(getUnit(currentUnitId), "login");
@@ -543,6 +549,9 @@ async function init() {
           learningSnapshotReady = false;
           localStorage.removeItem(AUTH_TOKEN_KEY);
           renderAuth();
+          window.dispatchEvent(new CustomEvent("cq:participant-change", {
+            detail: { participantId: "" }
+          }));
           showLogin("登录状态已过期，请重新登录后继续学习。");
         } else {
           console.warn("Learning snapshot restore failed:", error.message);

@@ -40,6 +40,7 @@ assert.doesNotMatch(flowSource, /question\.knowledgePointIds\.join\(/);
 const renderSource = read("app/main/render-learning.js");
 const quizSource = read("app/main/quiz.js");
 const eventsSource = read("app/main/events.js");
+const accessibleQuizResources = new Set();
 const sandbox = {
   console,
   curriculum: route.chapters,
@@ -73,6 +74,8 @@ const sandbox = {
   quizRecordsForUnit: () => [],
   displayOptionLabel: (option) => option.label || option.text || option.value || "",
   getChapter: () => ({ allUnits: [], units: [] }),
+  getUnit: (unitId) => unitId ? { id: unitId, type: "knowledge", chapterId: route.chapters[0].id } : null,
+  agenticGuardNavigation: (unitId) => accessibleQuizResources.has(unitId),
   quizMaxScoreFor: (question) => Number(question.points || 1),
   quizAiReviewFailed: () => false,
   quizReviewIsPending: () => false,
@@ -163,6 +166,42 @@ reviewCases.forEach(({ label, question, result }) => {
   );
 });
 
+const linkedQuestion = {
+  ...choiceQuestion,
+  question: "请先回看[[cq-unit:knowledge-target|simulation|回看课件：目标课件]]，再回答：测试题目。"
+};
+const linkedResult = { response: ["B"], answer: ["A"], isCorrect: false };
+const lockedPreHtml = sandbox.renderQuestionReview({
+  question: linkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: { ...reviewUnit, assessmentPhase: "pre" }
+});
+assert.doesNotMatch(lockedPreHtml, /data-quiz-resource-link/);
+assert.match(lockedPreHtml, /请根据对应知识点/);
+assert.match(lockedPreHtml, /完成前测后的学习路径选择/);
+assert.doesNotMatch(lockedPreHtml, /可以先回看/);
+
+const lockedFormativeHtml = sandbox.renderQuestionReview({
+  question: linkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: { ...reviewUnit, assessmentPhase: "formative" }
+});
+assert.doesNotMatch(lockedFormativeHtml, /data-quiz-resource-link/);
+assert.match(lockedFormativeHtml, /对应课件尚未解锁/);
+assert.doesNotMatch(lockedFormativeHtml, /可以先回看/);
+
+accessibleQuizResources.add("knowledge-target");
+const unlockedFormativeHtml = sandbox.renderQuestionReview({
+  question: linkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: { ...reviewUnit, assessmentPhase: "formative" }
+});
+assert.match(unlockedFormativeHtml, /data-quiz-resource-link="knowledge-target"/);
+assert.match(unlockedFormativeHtml, /可以先回看/);
+
 sandbox.state.returnToQuiz = {
   unitId: "quiz-submitted",
   questionId: firstQuizQuestion.id,
@@ -174,6 +213,7 @@ assert.match(
 );
 assert.equal(sandbox.renderQuizReturnNotice({ id: "knowledge-other" }), "");
 assert.match(eventsSource, /targetUnitId:\s*targetUnit\?\.id\s*\|\|\s*targetUnitId/);
+assert.match(eventsSource, /quizResourceTargetAccessible\(targetUnitId\)/);
 
 let questionCount = 0;
 const observedCoverageGaps = [];

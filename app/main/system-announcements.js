@@ -33,19 +33,41 @@
   let reconnectTimer = null;
   let detailAnnouncementId = "";
   let detailReturnTarget = null;
-  let activeFilter = sessionStorage.getItem(filterStorageKey) || "all";
-  if (!filterDefinitions.some((filter) => filter.key === activeFilter)) activeFilter = "all";
+  let serverSeen = {};
+  let serverSeenOwner = "";
+  let activeStorageScope = currentStorageScope();
+  let activeFilter = readStoredFilter();
 
-  function readMap(storage, key) {
+  function currentParticipantId() {
+    if (typeof state === "undefined") return "";
+    if (typeof isSignedIn === "function" && !isSignedIn()) return "";
+    return String(state?.participant?.participantId || "").trim();
+  }
+
+  function currentStorageScope() {
+    const participantId = currentParticipantId();
+    return participantId ? `participant:${encodeURIComponent(participantId)}` : "guest";
+  }
+
+  function scopedStorageKey(baseKey, scope = activeStorageScope) {
+    return `${baseKey}:${scope}`;
+  }
+
+  function readStoredFilter() {
+    const stored = sessionStorage.getItem(scopedStorageKey(filterStorageKey)) || "all";
+    return filterDefinitions.some((filter) => filter.key === stored) ? stored : "all";
+  }
+
+  function readMap(storage, baseKey) {
     try {
-      const value = JSON.parse(storage.getItem(key) || "{}");
+      const value = JSON.parse(storage.getItem(scopedStorageKey(baseKey)) || "{}");
       return value && typeof value === "object" && !Array.isArray(value) ? value : {};
     } catch {
       return {};
     }
   }
 
-  function writeMap(storage, key, value) {
+  function writeMap(storage, baseKey, value) {
     try {
       const activeIds = new Set(announcements.map((announcement) => announcement.id));
       const compact = Object.fromEntries(
@@ -53,15 +75,28 @@
           .filter(([id]) => activeIds.has(id))
           .slice(-100)
       );
-      storage.setItem(key, JSON.stringify(compact));
+      storage.setItem(scopedStorageKey(baseKey), JSON.stringify(compact));
+    } catch {}
+  }
+
+  function removeLegacySharedStorage() {
+    try {
+      localStorage.removeItem(seenStorageKey);
+      sessionStorage.removeItem(dismissedStorageKey);
+      sessionStorage.removeItem(filterStorageKey);
     } catch {}
   }
 
   function readSeen() {
+    const participantId = currentParticipantId();
+    if (participantId) {
+      return serverSeenOwner === participantId ? serverSeen : {};
+    }
     return readMap(localStorage, seenStorageKey);
   }
 
   function writeSeen(seen) {
+    if (currentParticipantId()) return;
     writeMap(localStorage, seenStorageKey, seen);
   }
 
@@ -242,7 +277,7 @@
       button.innerHTML = `<span>${filter.label}</span><strong>0</strong>`;
       button.addEventListener("click", () => {
         activeFilter = filter.key;
-        sessionStorage.setItem(filterStorageKey, activeFilter);
+        sessionStorage.setItem(scopedStorageKey(filterStorageKey), activeFilter);
         render();
       });
       bar.appendChild(button);
@@ -301,22 +336,100 @@
     }
   }
 
+  function announcementAuthHeaders() {
+    const token = typeof state !== "undefined" ? String(state?.authToken || "").trim() : "";
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  function applyServerReadState(readState, options = {}) {
+    const participantId = currentParticipantId();
+    if (!participantId || readState?.participantId !== participantId) return false;
+    const versions = readState.versions && typeof readState.versions === "object"
+      ? readState.versions
+      : {};
+    serverSeenOwner = participantId;
+    serverSeen = options.replace === false
+      ? { ...serverSeen, ...versions }
+      : { ...versions };
+    try {
+      localStorage.removeItem(scopedStorageKey(seenStorageKey));
+    } catch {}
+    return true;
+  }
+
+  async function postReadState(path) {
+    const response = await fetch(new URL(path, document.baseURI), {
+      method: "POST",
+      headers: {
+        ...announcementAuthHeaders(),
+        "Content-Type": "application/json"
+      },
+      body: "{}"
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) {
+      throw new Error(payload.message || `公告阅读状态保存失败（${response.status}）`);
+    }
+    return payload;
+  }
+
+  async function persistAnnouncementRead(announcement, previousVersion) {
+    try {
+      const payload = await postReadState(
+        `api/announcements/${encodeURIComponent(announcement.id)}/read`
+      );
+      applyServerReadState(payload.readState, { replace: false });
+    } catch (error) {
+      if (serverSeen[announcement.id] === announcement.updatedAt) {
+        if (previousVersion) serverSeen[announcement.id] = previousVersion;
+        else delete serverSeen[announcement.id];
+        render();
+      }
+      console.warn("Announcement read receipt save failed:", error.message);
+    }
+  }
+
   function markAnnouncementRead(announcement, options = {}) {
     if (!announcement?.id) return false;
     const seen = readSeen();
     const changed = seen[announcement.id] !== announcement.updatedAt;
+    const previousVersion = seen[announcement.id] || "";
     seen[announcement.id] = announcement.updatedAt;
-    writeSeen(seen);
+    const participantId = currentParticipantId();
+    if (participantId) {
+      serverSeenOwner = participantId;
+      serverSeen = seen;
+      if (changed) persistAnnouncementRead(announcement, previousVersion);
+    } else {
+      writeSeen(seen);
+    }
     if (changed && options.render !== false) render();
     return changed;
   }
 
   function markAllRead() {
     const seen = readSeen();
+    const previousSeen = { ...seen };
     announcements.forEach((announcement) => {
       seen[announcement.id] = announcement.updatedAt;
     });
-    writeSeen(seen);
+    const participantId = currentParticipantId();
+    if (participantId) {
+      serverSeenOwner = participantId;
+      serverSeen = seen;
+      postReadState("api/announcements/read-all")
+        .then((payload) => {
+          applyServerReadState(payload.readState);
+          render();
+        })
+        .catch((error) => {
+          serverSeen = previousSeen;
+          render();
+          console.warn("Announcement read-all save failed:", error.message);
+        });
+    } else {
+      writeSeen(seen);
+    }
     render();
   }
 
@@ -559,6 +672,9 @@
     announcements = Array.isArray(payload.announcements)
       ? payload.announcements.filter((announcement) => announcement?.id)
       : [];
+    if (payload.readState) {
+      applyServerReadState(payload.readState);
+    }
 
     if (detailAnnouncementId) {
       const detailAnnouncement = announcements.find(
@@ -577,7 +693,8 @@
   async function fetchAnnouncements() {
     try {
       const response = await fetch(new URL("api/announcements", document.baseURI), {
-        cache: "no-store"
+        cache: "no-store",
+        headers: announcementAuthHeaders()
       });
       if (!response.ok) throw new Error(`公告接口返回 ${response.status}`);
       applyPayload(await response.json());
@@ -612,6 +729,25 @@
     }, 60000);
   }
 
+  function handleParticipantChange() {
+    const nextScope = currentStorageScope();
+    if (nextScope === activeStorageScope) return;
+    activeStorageScope = nextScope;
+    serverSeen = {};
+    serverSeenOwner = currentParticipantId();
+    activeFilter = readStoredFilter();
+    setPanelOpen(false, { focus: false });
+    if (elements.detailBackdrop && !elements.detailBackdrop.hidden) {
+      elements.detailBackdrop.hidden = true;
+      document.body.classList.remove("announcement-detail-is-open");
+      detailAnnouncementId = "";
+      detailReturnTarget = null;
+    }
+    render();
+    fetchAnnouncements();
+  }
+
+  removeLegacySharedStorage();
   createFilterBar();
   createDetailDialog();
 
@@ -657,6 +793,8 @@
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") fetchAnnouncements();
   });
+
+  window.addEventListener("cq:participant-change", handleParticipantChange);
 
   window.addEventListener("beforeunload", () => {
     eventSource?.close();
