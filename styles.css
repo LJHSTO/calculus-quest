@@ -4628,6 +4628,40 @@ textarea,
   .learning-shell:fullscreen .learning-nav-cluster {
     top: 18px;
   }
+
+  .learning-shell:fullscreen,
+  .learning-shell.is-local-fullscreen-target {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .learning-shell:fullscreen .learning-nav-cluster,
+  .learning-shell:fullscreen .chapter-rail,
+  .learning-shell:fullscreen .lesson-rail,
+  .learning-shell.is-local-fullscreen-target .learning-nav-cluster,
+  .learning-shell.is-local-fullscreen-target .chapter-rail,
+  .learning-shell.is-local-fullscreen-target .lesson-rail {
+    display: none;
+  }
+
+  .learning-shell:fullscreen .player,
+  .learning-shell.is-local-fullscreen-target .player {
+    grid-column: 1;
+    width: 100%;
+    max-width: none;
+  }
+}
+
+.learning-shell.is-local-fullscreen-target {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: 100vw;
+  height: 100vh;
+  max-width: none;
+  margin: 0;
+  overflow: auto;
+  background: var(--paper);
+  padding: 12px;
 }
 
 @media (max-width: 1180px) {
@@ -6770,4 +6804,26 @@ body[data-cq-theme="E"] .theme-menu { background: #102022; color: var(--ink); }
   .theme-option,
   .theme-launcher,
   .button { transition: none; }
+}
+
+/* 全屏学习最终约束：导航不占位，播放器独占画布。 */
+.learning-shell:fullscreen,
+.learning-shell.is-local-fullscreen-target {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.learning-shell:fullscreen .learning-nav-cluster,
+.learning-shell:fullscreen .chapter-rail,
+.learning-shell:fullscreen .lesson-rail,
+.learning-shell.is-local-fullscreen-target .learning-nav-cluster,
+.learning-shell.is-local-fullscreen-target .chapter-rail,
+.learning-shell.is-local-fullscreen-target .lesson-rail {
+  display: none !important;
+}
+
+.learning-shell:fullscreen .player,
+.learning-shell.is-local-fullscreen-target .player {
+  grid-column: 1 !important;
+  width: 100% !important;
+  max-width: none !important;
 }

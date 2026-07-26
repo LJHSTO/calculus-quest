@@ -54,6 +54,7 @@
     slideZoomFit: document.getElementById("slide-zoom-fit"),
     slideFullscreen: document.getElementById("slide-fullscreen"),
     viewerPane: document.querySelector(".viewer-pane"),
+    frameShell: document.querySelector(".frame-shell"),
     checkResources: document.getElementById("check-resources"),
     liveStatus: document.getElementById("live-status")
   };
@@ -200,6 +201,53 @@
     return question?.question || question?.prompt || question?.title || question?.text || "未命名题目";
   }
 
+  function formativeMidpointIndex(chapter) {
+    const knowledgePoints = chapterKnowledgePoints(chapter);
+    if (!knowledgePoints.length) return 0;
+    const fallback = Math.max(1, Math.ceil(knowledgePoints.length / 2));
+    const boundaries = [];
+    let seen = 0;
+    (chapter?.modules || []).forEach((module) => {
+      seen += (module.knowledgePoints || []).length;
+      if (seen > 0 && seen < knowledgePoints.length) boundaries.push(seen);
+    });
+    if (!boundaries.length) return fallback;
+    return boundaries.reduce((best, next) => (
+      Math.abs(next - fallback) < Math.abs(best - fallback) ? next : best
+    ), boundaries[0]);
+  }
+
+  function quizResourceAllowedForPhase(key, targetUnitId, chapter) {
+    if (key === "preQuiz") return false;
+    if (key === "postQuiz") return true;
+    if (key !== "formativeQuiz") return false;
+    const position = chapterKnowledgePoints(chapter)
+      .findIndex(({ knowledgePoint }) => knowledgePoint.id === targetUnitId);
+    return position >= 0 && position < formativeMidpointIndex(chapter);
+  }
+
+  function quizMarkerLabel(label, targetUnitId, chapter, allowed) {
+    const cleanLabel = String(label || "")
+      .replace(/^回看课件\s*[:：]?\s*/, "")
+      .replace(/\s*[:：]\s*(?:拖动实验|关系图|误解修复挑战|空间视角)\s*$/, "")
+      .trim();
+    const pointName = chapterKnowledgePoints(chapter)
+      .find(({ knowledgePoint }) => knowledgePoint.id === targetUnitId)
+      ?.knowledgePoint?.name;
+    const concept = pointName || cleanLabel || "对应内容";
+    return allowed ? `「${concept}」课件` : `对应知识点「${concept}」`;
+  }
+
+  function quizQuestionDisplayText(question, key, chapter) {
+    const markerRe = /\[\[cq-unit:([^|\]]+)\|([^|\]]*)\|([^\]]+)\]\]/g;
+    return quizQuestionText(question)
+      .replace(markerRe, (_marker, targetUnitId, _sceneType, label) => {
+        const allowed = quizResourceAllowedForPhase(key, targetUnitId, chapter);
+        return quizMarkerLabel(label, targetUnitId, chapter, allowed);
+      })
+      .replace(/请先回看(?=对应知识点)/g, "请根据");
+  }
+
   function quizAnswerText(question) {
     const values = Array.isArray(question?.answer) ? question.answer : question?.answer ? [question.answer] : [];
     return values.map((value) => {
@@ -249,7 +297,7 @@
             ${questions.map((question, index) => `
               <button class="quiz-question-row${state.quizQuestion?.key === key && state.quizQuestion?.index === index ? " is-active" : ""}" type="button" data-quiz-key="${key}" data-quiz-index="${index}">
                 <span class="quiz-number">${index + 1}</span>
-                <span class="quiz-question-text">${escapeHtml(quizQuestionText(question))}</span>
+                <span class="quiz-question-text">${escapeHtml(quizQuestionDisplayText(question, key, chapter))}</span>
                 <span class="quiz-type">${escapeHtml(quizTypeLabel(question.type))}</span>
               </button>
             `).join("")}
@@ -509,8 +557,8 @@
 
   function viewerFullscreenActive() {
     return (
-      document.fullscreenElement === els.viewerPane
-      || els.viewerPane.classList.contains("is-local-fullscreen")
+      document.fullscreenElement === els.frameShell
+      || els.frameShell.classList.contains("is-local-fullscreen")
     );
   }
 
@@ -562,7 +610,7 @@
   }
 
   function clearLocalFullscreen() {
-    els.viewerPane.classList.remove("is-local-fullscreen");
+    els.frameShell.classList.remove("is-local-fullscreen");
     document.body.classList.remove("is-viewer-local-fullscreen");
     els.slideFullscreen.textContent = "⛶";
     els.slideFullscreen.setAttribute("aria-label", "全屏查看课件");
@@ -570,7 +618,7 @@
   }
 
   function setLocalFullscreen() {
-    els.viewerPane.classList.add("is-local-fullscreen");
+    els.frameShell.classList.add("is-local-fullscreen");
     document.body.classList.add("is-viewer-local-fullscreen");
     els.slideFullscreen.textContent = "×";
     els.slideFullscreen.setAttribute("aria-label", "退出全屏");
@@ -580,17 +628,17 @@
 
   async function toggleViewerFullscreen() {
     if (!state.resource && !state.quizQuestion) return;
-    if (els.viewerPane.classList.contains("is-local-fullscreen")) {
+    if (els.frameShell.classList.contains("is-local-fullscreen")) {
       clearLocalFullscreen();
       return;
     }
-    if (document.fullscreenElement === els.viewerPane) {
+    if (document.fullscreenElement === els.frameShell) {
       await document.exitFullscreen?.();
       return;
     }
     try {
-      if (typeof els.viewerPane.requestFullscreen !== "function") throw new Error("当前浏览器不支持全屏 API");
-      await els.viewerPane.requestFullscreen();
+      if (typeof els.frameShell.requestFullscreen !== "function") throw new Error("当前浏览器不支持全屏 API");
+      await els.frameShell.requestFullscreen();
     } catch (error) {
       setLocalFullscreen();
       announce(`浏览器全屏不可用，已切换为页面全屏：${error.message}`);
@@ -598,14 +646,14 @@
     scheduleSlidePreviewScale();
   }
 
-  function renderQuizPreview(question) {
+  function renderQuizPreview(question, key) {
     const coverage = quizKnowledgePointLabels(question, state.chapter);
     const options = (question.options || []).map((option) => `<li><b>${escapeHtml(option.value || "")}</b><span>${escapeHtml(option.label || "")}</span></li>`).join("");
     const answer = quizAnswerText(question);
     return `
       <article class="quiz-detail">
         <div class="quiz-detail-meta"><span>${escapeHtml(quizTypeLabel(question.type))}</span><span>${escapeHtml(String(question.points ?? ""))} 分</span><span>${escapeHtml(question.id || "")}</span></div>
-        <h3>${escapeHtml(quizQuestionText(question))}</h3>
+        <h3>${escapeHtml(quizQuestionDisplayText(question, key, state.chapter))}</h3>
         ${options ? `<ol class="quiz-options">${options}</ol>` : ""}
         <div class="quiz-answer"><strong>标准答案</strong><p>${escapeHtml(answer)}</p></div>
         <div class="quiz-analysis"><strong>解析</strong><p>${escapeHtml(question.analysis || "暂无解析")}</p></div>
@@ -625,7 +673,7 @@
       els.resourceFrame.removeAttribute("src");
       els.slideFrame.hidden = true;
       els.quizPreview.hidden = false;
-      els.quizPreview.innerHTML = renderQuizPreview(state.quizQuestion.question);
+      els.quizPreview.innerHTML = renderQuizPreview(state.quizQuestion.question, state.quizQuestion.key);
       setViewerControls({ fullscreen: true });
       return;
     }
@@ -743,15 +791,15 @@
   }
   els.resourceFrame.setAttribute("allow", "fullscreen; autoplay");
   document.addEventListener("fullscreenchange", () => {
-    if (document.fullscreenElement !== els.viewerPane) clearLocalFullscreen();
-    const active = document.fullscreenElement === els.viewerPane;
+    if (document.fullscreenElement !== els.frameShell) clearLocalFullscreen();
+    const active = document.fullscreenElement === els.frameShell;
     els.slideFullscreen.textContent = active ? "×" : "⛶";
     els.slideFullscreen.setAttribute("aria-label", active ? "退出全屏" : "全屏查看课件");
     els.slideFullscreen.setAttribute("title", active ? "退出全屏" : "全屏查看");
     scheduleSlidePreviewScale();
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && els.viewerPane.classList.contains("is-local-fullscreen")) clearLocalFullscreen();
+    if (event.key === "Escape" && els.frameShell.classList.contains("is-local-fullscreen")) clearLocalFullscreen();
   });
   els.slideZoomOut.addEventListener("click", () => changeSlideZoom(-0.25));
   els.slideZoomIn.addEventListener("click", () => changeSlideZoom(0.25));

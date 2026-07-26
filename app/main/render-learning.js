@@ -544,7 +544,7 @@ function renderKnowledgeUnit(unit) {
         </div>
        <div class="iframe-container multi-scene-courseware-stage" data-knowledge-scene-stage>
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
-          <iframe class="embed-frame" data-courseware-frame data-context-id="interactive-frame:${escapeHtml(unit.id)}:${escapeHtml(selectedTypeId)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(selectedTypeId)}" data-context-label="${escapeHtml(`${unit.label} · ${knowledgeSceneDisplayLabel(selectedType)}`)}" title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe>
+          <iframe class="embed-frame" data-courseware-frame data-context-id="interactive-frame:${escapeHtml(unit.id)}:${escapeHtml(selectedTypeId)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(selectedTypeId)}" data-context-label="${escapeHtml(`${unit.label} · ${knowledgeSceneDisplayLabel(selectedType)}`)}" title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
         </div>`
     : selectedTypeId
       ? `<div class="empty-state multi-scene-empty-resource">
@@ -657,7 +657,28 @@ function cleanStudentSceneTitle(title = "", fallback = "互动场景") {
   return cleaned || fallback;
 }
 
-function quizResourceTargetAccessible(targetUnitId = "") {
+function quizUnitSequenceIndex(unit = {}) {
+  if (!unit?.id || !unit?.chapterId) return -1;
+  const chapter = getChapter(unit.chapterId);
+  const units = chapter?.allUnits || chapter?.units || [];
+  const sequenceIndex = units.findIndex((candidate) => candidate?.id === unit.id);
+  if (sequenceIndex >= 0) return sequenceIndex;
+  const order = Number(unit.order);
+  return Number.isFinite(order) ? order : -1;
+}
+
+function quizResourceAllowedForPhase(targetUnitId = "", unit = {}) {
+  if (unit?.assessmentPhase === "pre") return false;
+  if (unit?.assessmentPhase !== "formative") return true;
+  const targetUnit = getUnit(targetUnitId);
+  if (!targetUnit || targetUnit.chapterId !== unit.chapterId) return false;
+  const targetIndex = quizUnitSequenceIndex(targetUnit);
+  const quizIndex = quizUnitSequenceIndex(unit);
+  return targetIndex >= 0 && quizIndex >= 0 && targetIndex < quizIndex;
+}
+
+function quizResourceTargetAccessible(targetUnitId = "", unit = {}) {
+  if (!quizResourceAllowedForPhase(targetUnitId, unit)) return false;
   const targetUnit = getUnit(targetUnitId);
   if (!targetUnit || targetUnit.type === "quiz") return false;
   if (typeof agenticGuardNavigation === "function") {
@@ -671,14 +692,17 @@ function quizResourceTargetAccessible(targetUnitId = "") {
   return true;
 }
 
-function quizQuestionResourceAccess(question = {}) {
+function quizQuestionResourceAccess(question = {}, unit = {}) {
   const text = displayQuestionText(question);
   const targets = Array.from(text.matchAll(/\[\[cq-unit:([^|\]]+)\|[^|\]]*\|[^\]]+\]\]/g))
     .map((match) => match[1])
     .filter(Boolean);
+  const allowedTargets = targets.filter((targetUnitId) => quizResourceAllowedForPhase(targetUnitId, unit));
   return {
     hasMarkers: targets.length > 0,
-    hasAccessible: targets.some((targetUnitId) => quizResourceTargetAccessible(targetUnitId))
+    hasAllowed: allowedTargets.length > 0,
+    hasTimingBlocked: allowedTargets.length < targets.length,
+    hasAccessible: allowedTargets.some((targetUnitId) => quizResourceTargetAccessible(targetUnitId, unit))
   };
 }
 
@@ -689,15 +713,36 @@ function lockedQuizResourceLabel(label = "") {
   return cleaned ? `对应知识点「${cleaned}」` : "对应知识点";
 }
 
-function renderQuestionTextWithLinks(question = {}) {
+function timingBlockedQuizResourceLabel(unitId = "", label = "") {
+  const targetUnit = getUnit(unitId);
+  const fallback = String(label || "")
+    .replace(/^回看课件\s*[:：]?\s*/, "")
+    .replace(/\s*[:：]\s*(?:拖动实验|关系图|误解修复挑战|空间视角)\s*$/, "")
+    .trim();
+  return `对应知识点「${targetUnit?.label || fallback || "后续内容"}」`;
+}
+
+function allowedQuizResourceLabel(unitId = "", label = "") {
+  const targetUnit = getUnit(unitId);
+  const fallback = String(label || "")
+    .replace(/^回看课件\s*[:：]?\s*/, "")
+    .replace(/\s*[:：]\s*(?:拖动实验|关系图|误解修复挑战|空间视角)\s*$/, "")
+    .trim();
+  return `回看「${targetUnit?.label || fallback || "对应内容"}」课件`;
+}
+
+function renderQuestionTextWithLinks(question = {}, unit = {}) {
   const sourceText = displayQuestionText(question);
   const markerRe = /\[\[cq-unit:([^|\]]+)\|([^|\]]*)\|([^\]]+)\]\]/g;
   const text = sourceText
-    .replace(markerRe, (marker, unitId, _sceneType, label) => (
-      quizResourceTargetAccessible(unitId)
-        ? marker
+    .replace(markerRe, (marker, unitId, sceneType, label) => (
+      !quizResourceAllowedForPhase(unitId, unit)
+        ? timingBlockedQuizResourceLabel(unitId, label)
+        : quizResourceTargetAccessible(unitId, unit)
+        ? `[[cq-unit:${unitId}|${sceneType}|${allowedQuizResourceLabel(unitId, label)}]]`
         : lockedQuizResourceLabel(label)
     ))
+    .replace(/请先回看(?=\[\[cq-unit:)/g, "请先")
     .replace(/请先回看(?=对应知识点)/g, "请根据");
   let last = 0;
   let html = "";
@@ -809,7 +854,7 @@ function renderQuiz(unit) {
               return `
               <article class="question-card" data-question="${question.id}" data-context-id="quiz:${escapeHtml(question.id)}" data-context-kind="quiz" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-confidence="high" data-context-label="${escapeHtml(displayQuestionText(question))}">
                 <div class="question-title-row">
-                  <h3>${index + 1}. ${renderQuestionTextWithLinks(question)}</h3>
+                <h3>${index + 1}. ${renderQuestionTextWithLinks(question, unit)}</h3>
                   ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
                 </div>
                 ${renderQuestionInput(unit, question, submitted, reviewResult)}
@@ -1612,7 +1657,7 @@ function renderInteractive(unit) {
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" data-context-id="interactive-frame:${escapeHtml(unit.id)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(unit.scenarioType || unit.kind || "interactive")}" data-context-label="${escapeHtml(unit.label)}" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe></div>`,
+      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" data-context-id="interactive-frame:${escapeHtml(unit.id)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(unit.scenarioType || unit.kind || "interactive")}" data-context-label="${escapeHtml(unit.label)}" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe></div>`,
       "html-resource interactive-resource"
     )}
     ${renderCoach(unit.scene, unit.chapterId, unit.id)}

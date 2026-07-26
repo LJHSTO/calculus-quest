@@ -7,7 +7,27 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 const route = JSON.parse(read("data/multi-scene-learning-route.json"));
+const { routeUnits } = require("../lib/kg-build");
 const labelsApi = require("../app/main/knowledge-point-labels");
+const unitById = new Map(
+  route.chapters.flatMap((chapter) => routeUnits(chapter)).map((unit) => [unit.id, unit])
+);
+const syntheticUnits = new Map([
+  ["knowledge-target", {
+    id: "knowledge-target",
+    type: "knowledge",
+    chapterId: route.chapters[0].id,
+    order: 2,
+    label: "目标课件"
+  }],
+  ["knowledge-future", {
+    id: "knowledge-future",
+    type: "knowledge",
+    chapterId: route.chapters[0].id,
+    order: 99,
+    label: "后续课件"
+  }]
+]);
 assert.equal(route.quizKnowledgePointCuration?.questionSetPreserved, true);
 assert.deepEqual(route.quizKnowledgePointCuration?.selectionReplacements, []);
 const quizIdentity = (route.chapters || []).flatMap((chapter) =>
@@ -73,8 +93,11 @@ const sandbox = {
   moduleRoleForUnit: () => "",
   quizRecordsForUnit: () => [],
   displayOptionLabel: (option) => option.label || option.text || option.value || "",
-  getChapter: () => ({ allUnits: [], units: [] }),
-  getUnit: (unitId) => unitId ? { id: unitId, type: "knowledge", chapterId: route.chapters[0].id } : null,
+  getChapter: (chapterId) => ({
+    allUnits: routeUnits(route.chapters.find((chapter) => chapter.id === chapterId) || {}),
+    units: routeUnits(route.chapters.find((chapter) => chapter.id === chapterId) || {})
+  }),
+  getUnit: (unitId) => syntheticUnits.get(unitId) || unitById.get(unitId) || null,
   agenticGuardNavigation: (unitId) => accessibleQuizResources.has(unitId),
   quizMaxScoreFor: (question) => Number(question.points || 1),
   quizAiReviewFailed: () => false,
@@ -92,6 +115,7 @@ vm.runInContext(renderSource, sandbox, { filename: "render-learning.js" });
 vm.runInContext(quizSource, sandbox, { filename: "quiz.js" });
 assert.equal(typeof sandbox.renderQuizCoverage, "function");
 assert.equal(typeof sandbox.renderQuizReturnNotice, "function");
+assert.equal(typeof sandbox.quizUnitSequenceIndex, "function");
 
 const firstQuizQuestion = route.chapters
   .flatMap((chapter) => ["preQuiz", "formativeQuiz", "postQuiz"]
@@ -120,7 +144,12 @@ assert.equal(
   "unsubmitted quiz cards must not expose knowledge-point coverage"
 );
 
-const reviewUnit = { id: "quiz-submitted", chapterId: route.chapters[0].id };
+const reviewUnit = {
+  ...unitById.get("V14-C1-formative"),
+  id: "quiz-submitted",
+  chapterId: route.chapters[0].id,
+  assessmentPhase: "formative"
+};
 const choiceQuestion = {
   ...firstQuizQuestion,
   type: "single",
@@ -201,6 +230,73 @@ const unlockedFormativeHtml = sandbox.renderQuestionReview({
 });
 assert.match(unlockedFormativeHtml, /data-quiz-resource-link="knowledge-target"/);
 assert.match(unlockedFormativeHtml, /可以先回看/);
+assert.match(unlockedFormativeHtml, /回看「目标课件」课件/);
+assert.doesNotMatch(unlockedFormativeHtml, /请先回看回看课件/);
+
+const unlockedPreHtml = sandbox.renderQuestionReview({
+  question: linkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: { ...reviewUnit, assessmentPhase: "pre" }
+});
+assert.doesNotMatch(unlockedPreHtml, /data-quiz-resource-link/);
+assert.doesNotMatch(unlockedPreHtml, /回看课件/);
+assert.doesNotMatch(unlockedPreHtml, /请先回看/);
+
+accessibleQuizResources.add("knowledge-future");
+const futureLinkedQuestion = {
+  ...choiceQuestion,
+  question: "请先回看[[cq-unit:knowledge-future|simulation|回看课件：后续课件]]，再回答：测试题目。"
+};
+const blockedFutureFormativeHtml = sandbox.renderQuestionReview({
+  question: futureLinkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: reviewUnit
+});
+assert.doesNotMatch(blockedFutureFormativeHtml, /data-quiz-resource-link/);
+assert.doesNotMatch(blockedFutureFormativeHtml, /回看课件/);
+assert.doesNotMatch(blockedFutureFormativeHtml, /请先回看/);
+assert.match(blockedFutureFormativeHtml, /本次形成性测验不提供后续课件入口/);
+
+for (const chapter of route.chapters || []) {
+  const units = routeUnits(chapter);
+  const preUnit = {
+    ...units.find((unit) => unit.id === `${chapter.id}-pre`),
+    assessmentPhase: "pre"
+  };
+  const formativeUnit = {
+    ...units.find((unit) => unit.id === `${chapter.id}-formative`),
+    assessmentPhase: "formative"
+  };
+  const preQuestions = chapter.flow?.preQuiz?.questions || [];
+  const formativeQuestions = chapter.flow?.formativeQuiz?.questions || [];
+
+  preQuestions.forEach((question) => {
+    const html = sandbox.renderQuestionTextWithLinks(question, preUnit);
+    assert.doesNotMatch(html, /data-quiz-resource-link/);
+    assert.doesNotMatch(html, /\[\[cq-unit:/);
+    assert.doesNotMatch(html, /请先回看|回看课件/);
+  });
+
+  const markerRe = /\[\[cq-unit:([^|\]]+)\|[^|\]]*\|[^\]]+\]\]/g;
+  formativeQuestions.forEach((question) => {
+    const source = question.question || question.prompt || "";
+    const targetIds = Array.from(source.matchAll(markerRe)).map((match) => match[1]);
+    if (!targetIds.length) return;
+    targetIds.forEach((targetId) => accessibleQuizResources.add(targetId));
+    const html = sandbox.renderQuestionTextWithLinks(question, formativeUnit);
+    targetIds.forEach((targetId) => {
+      const allowed = sandbox.quizResourceAllowedForPhase(targetId, formativeUnit);
+      if (allowed) {
+        assert.match(html, new RegExp(`data-quiz-resource-link="${targetId}"`));
+      } else {
+        assert.doesNotMatch(html, new RegExp(`data-quiz-resource-link="${targetId}"`));
+        assert.doesNotMatch(html, /请先回看(?=对应知识点)|回看课件/);
+      }
+    });
+  });
+}
 
 sandbox.state.returnToQuiz = {
   unitId: "quiz-submitted",

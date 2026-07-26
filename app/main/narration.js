@@ -298,6 +298,9 @@ async function toggleFullscreenLearning() {
   } finally {
     updateFullscreenButton();
     syncNarrationUi();
+    if (typeof scheduleLearningCanvasLayoutSync === "function") {
+      scheduleLearningCanvasLayoutSync("learning-fullscreen-toggle");
+    }
   }
 }
 
@@ -323,6 +326,9 @@ async function toggleResourceFullscreen(shell) {
     updateFullscreenButton();
     updateResourceFullscreenButtons();
     syncNarrationUi();
+    if (typeof scheduleLearningCanvasLayoutSync === "function") {
+      scheduleLearningCanvasLayoutSync("resource-fullscreen-toggle");
+    }
   }
 }
 
@@ -372,4 +378,7 @@ document.addEventListener("keydown", (event) => {
   document.body.classList.remove("is-learning-local-fullscreen", "is-resource-local-fullscreen");
   updateFullscreenButton();
   updateResourceFullscreenButtons();
+  if (typeof scheduleLearningCanvasLayoutSync === "function") {
+    scheduleLearningCanvasLayoutSync("local-fullscreen-escape");
+  }
 });

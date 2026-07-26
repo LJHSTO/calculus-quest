@@ -358,4 +358,7 @@ document.addEventListener("fullscreenchange", () => {
   updateFullscreenButton();
   updateResourceFullscreenButtons();
   syncNarrationUi();
+  if (typeof scheduleLearningCanvasLayoutSync === "function") {
+    scheduleLearningCanvasLayoutSync("fullscreen-change");
+  }
 });
