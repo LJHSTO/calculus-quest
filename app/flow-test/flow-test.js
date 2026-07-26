@@ -21,7 +21,7 @@
     slideZoom: 1
   };
 
-  const COURSEWARE_RESOURCE_VERSION = "20260726-courseware-layout-v3";
+  const COURSEWARE_RESOURCE_VERSION = "20260726-courseware-layout-v4";
   const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260723-v5";
 
   const BASE_PATH = (() => {

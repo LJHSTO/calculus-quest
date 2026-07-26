@@ -49,16 +49,16 @@ const flowBridgeVersion = js.match(/COURSEWARE_CONTEXT_BRIDGE_VERSION\s*=\s*"([^
 const formalBridgeVersion = coursewareContext.match(/BRIDGE_VERSION\s*=\s*"([^"]+)"/)?.[1];
 assert.ok(flowVersion);
 assert.equal(flowVersion, formalVersion);
+assert.equal(flowVersion, "20260726-courseware-layout-v4");
 assert.ok(flowBridgeVersion);
 assert.equal(flowBridgeVersion, formalBridgeVersion);
 assert.match(js, /v=\$\{COURSEWARE_RESOURCE_VERSION\}&cqContextBridge=\$\{encodeURIComponent\(COURSEWARE_CONTEXT_BRIDGE_VERSION\)\}/);
 assert.match(learningRenderer, /cqContextBridge=\$\{encodeURIComponent\(version\)\}/);
-const escapedVersion = flowVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const flowCssVersion = html.match(/flow-test\.css\?v=([^"]+)/)?.[1];
 const flowJsVersion = html.match(/flow-test\.js\?v=([^"]+)/)?.[1];
 assert.ok(flowCssVersion);
 assert.equal(flowCssVersion, flowJsVersion);
-assert.equal(flowJsVersion, "20260726-flow-test-cache-v4");
+assert.equal(flowJsVersion, "20260726-flow-test-cache-v5");
 assert.match(server, /relative === "flow-test\.html"/);
 assert.match(server, /publicFlowTestFiles\.has\(relative\)/);
 assert.match(server, /"app\/flow-test\/flow-test\.css"/);
@@ -67,6 +67,8 @@ assert.ok(
   server.indexOf("publicFlowTestFiles.has(relative)") < server.indexOf('url.searchParams.has("v")'),
   "Flow Test no-store policy must run before generic immutable caching"
 );
+assert.match(server, /relative\.startsWith\("resources\/open-maic\/"\)/);
+assert.match(server, /url\?\.searchParams\.has\("cqContextBridge"\)/);
 assert.match(js, /appUrl\("data\/multi-scene-learning-route\.json"\)/);
 assert.match(js, /appUrl\("data\/knowledge-graph\.json"\)/);
 assert.match(js, /kgResponse\.kg \|\| kgResponse/);
@@ -89,10 +91,12 @@ assert.match(learningRenderer, /const resourceToolbar = isKnowledgeResource\s*\?
 assert.match(learningRenderer, /class="type-pill multi-scene-slide-kind">讲解页<\/span>/);
 assert.match(learningRenderer, /data-resource-fullscreen>讲解页全屏<\/button>/);
 assert.match(mainCss, /\.multi-scene-slide-heading\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto;/s);
-assert.match(mainHtml, new RegExp(`styles\\.css\\?v=${escapedVersion}`));
+const formalStyleVersion = mainHtml.match(/styles\.css\?v=([^"]+)/)?.[1];
+assert.ok(formalStyleVersion);
+assert.notEqual(formalStyleVersion, "20260726-courseware-layout-v2");
 const formalCoreScriptVersion = mainHtml.match(/app\/main\/core\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalCoreScriptVersion);
-assert.notEqual(formalCoreScriptVersion, "20260726-courseware-layout-v2");
+assert.equal(formalCoreScriptVersion, "20260726-courseware-loader-v5");
 const formalRenderScriptVersion = mainHtml.match(/app\/main\/render-learning\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalRenderScriptVersion);
 assert.notEqual(formalRenderScriptVersion, "20260726-courseware-layout-v2");

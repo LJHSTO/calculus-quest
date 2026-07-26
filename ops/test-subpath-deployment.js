@@ -176,11 +176,21 @@ async function main() {
     }
 
     const flowScriptResponse = await fetch(
-      baseUrl + "/calculus_quest/app/flow-test/flow-test.js?v=20260726-flow-test-cache-v4"
+      baseUrl + "/calculus_quest/app/flow-test/flow-test.js?v=20260726-flow-test-cache-v5"
     );
     assert.equal(flowScriptResponse.status, 200);
     assert.match(flowScriptResponse.headers.get("cache-control") || "", /no-store/);
     assert.doesNotMatch(flowScriptResponse.headers.get("cache-control") || "", /immutable/);
+
+    const coursewarePath = encodeURI(
+      "/calculus_quest/resources/open-maic/GH-01-函数、坐标与图像读法入门/"
+      + "interactive/03_输入、输出和函数规则：拖动实验.html"
+    );
+    const coursewareResponse = await fetch(
+      baseUrl + coursewarePath + "?v=20260726-courseware-layout-v4&cqContextBridge=20260723-v5"
+    );
+    assert.equal(coursewareResponse.status, 200);
+    assert.match(coursewareResponse.headers.get("cache-control") || "", /no-store/);
 
     for (const pathname of [
       "/",

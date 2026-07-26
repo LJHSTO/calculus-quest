@@ -194,6 +194,11 @@ function cacheControlFor(filePath, url) {
     || relative === "flow-test.html"
     || publicFlowTestFiles.has(relative)
   ) return "no-store, max-age=0, no-transform";
+  if (
+    relative.startsWith("resources/open-maic/")
+    && (ext === ".html" || ext === ".htm")
+    && url?.searchParams.has("cqContextBridge")
+  ) return "no-store, max-age=0, no-transform";
   // Versioned assets (cache-busted with ?v= param) can be cached aggressively.
   if (url && url.searchParams.has("v") && (ext === ".js" || ext === ".css")) return "public, max-age=604800, immutable";
   if (ext === ".js" || ext === ".css") return "no-store, max-age=0";
