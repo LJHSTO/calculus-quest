@@ -54,10 +54,19 @@ assert.equal(flowBridgeVersion, formalBridgeVersion);
 assert.match(js, /v=\$\{COURSEWARE_RESOURCE_VERSION\}&cqContextBridge=\$\{encodeURIComponent\(COURSEWARE_CONTEXT_BRIDGE_VERSION\)\}/);
 assert.match(learningRenderer, /cqContextBridge=\$\{encodeURIComponent\(version\)\}/);
 const escapedVersion = flowVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-assert.match(html, new RegExp(`flow-test\\.css\\?v=${escapedVersion}`));
-assert.match(html, new RegExp(`flow-test\\.js\\?v=${escapedVersion}`));
+const flowCssVersion = html.match(/flow-test\.css\?v=([^"]+)/)?.[1];
+const flowJsVersion = html.match(/flow-test\.js\?v=([^"]+)/)?.[1];
+assert.ok(flowCssVersion);
+assert.equal(flowCssVersion, flowJsVersion);
+assert.equal(flowJsVersion, "20260726-flow-test-cache-v4");
 assert.match(server, /relative === "flow-test\.html"/);
 assert.match(server, /publicFlowTestFiles\.has\(relative\)/);
+assert.match(server, /"app\/flow-test\/flow-test\.css"/);
+assert.match(server, /"app\/flow-test\/flow-test\.js"/);
+assert.ok(
+  server.indexOf("publicFlowTestFiles.has(relative)") < server.indexOf('url.searchParams.has("v")'),
+  "Flow Test no-store policy must run before generic immutable caching"
+);
 assert.match(js, /appUrl\("data\/multi-scene-learning-route\.json"\)/);
 assert.match(js, /appUrl\("data\/knowledge-graph\.json"\)/);
 assert.match(js, /kgResponse\.kg \|\| kgResponse/);
@@ -84,7 +93,9 @@ assert.match(mainHtml, new RegExp(`styles\\.css\\?v=${escapedVersion}`));
 const formalCoreScriptVersion = mainHtml.match(/app\/main\/core\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalCoreScriptVersion);
 assert.notEqual(formalCoreScriptVersion, "20260726-courseware-layout-v2");
-assert.match(mainHtml, new RegExp(`render-learning\\.js\\?v=${escapedVersion}`));
+const formalRenderScriptVersion = mainHtml.match(/app\/main\/render-learning\.js\?v=([^"]+)/)?.[1];
+assert.ok(formalRenderScriptVersion);
+assert.notEqual(formalRenderScriptVersion, "20260726-courseware-layout-v2");
 assert.doesNotMatch(js, /fetchJson\("\/api\//);
 
 const route = JSON.parse(fs.readFileSync(path.join(root, "data", "multi-scene-learning-route.json"), "utf8"));

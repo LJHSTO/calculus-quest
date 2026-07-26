@@ -175,6 +175,13 @@ async function main() {
       assert.equal(response.status, 200, pathname);
     }
 
+    const flowScriptResponse = await fetch(
+      baseUrl + "/calculus_quest/app/flow-test/flow-test.js?v=20260726-flow-test-cache-v4"
+    );
+    assert.equal(flowScriptResponse.status, 200);
+    assert.match(flowScriptResponse.headers.get("cache-control") || "", /no-store/);
+    assert.doesNotMatch(flowScriptResponse.headers.get("cache-control") || "", /immutable/);
+
     for (const pathname of [
       "/",
       "/index.html",

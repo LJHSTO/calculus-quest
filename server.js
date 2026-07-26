@@ -131,6 +131,8 @@ const publicRootFiles = new Set([
   "favicon.ico"
 ]);
 const publicFlowTestFiles = new Set([
+  "app/flow-test/flow-test.css",
+  "app/flow-test/flow-test.js",
   "data/multi-scene-learning-route.json",
   "data/knowledge-graph.json"
 ]);
@@ -186,14 +188,14 @@ function shouldCompress(req, type, size) {
 function cacheControlFor(filePath, url) {
   const relative = path.relative(root, filePath).replaceAll(path.sep, "/");
   const ext = path.extname(filePath).toLowerCase();
-  // Versioned assets (cache-busted with ?v= param) can be cached aggressively
-  if (url && url.searchParams.has("v") && (ext === ".js" || ext === ".css")) return "public, max-age=604800, immutable";
   if (
     relative === "index.html"
     || relative === "admin.html"
     || relative === "flow-test.html"
     || publicFlowTestFiles.has(relative)
   ) return "no-store, max-age=0, no-transform";
+  // Versioned assets (cache-busted with ?v= param) can be cached aggressively.
+  if (url && url.searchParams.has("v") && (ext === ".js" || ext === ".css")) return "public, max-age=604800, immutable";
   if (ext === ".js" || ext === ".css") return "no-store, max-age=0";
   if (relative.startsWith("resources/") && ext === ".json") return "public, max-age=3600";
   if (relative.startsWith("resources/")) return "public, max-age=86400";
