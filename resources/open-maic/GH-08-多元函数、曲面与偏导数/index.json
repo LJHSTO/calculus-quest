@@ -1,0 +1,4633 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T10:13:25.896Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "多元函数、曲面与偏导数",
+    "description": "",
+    "language": "使用中文进行教学。专业术语如 'Partial Derivative' 采用中文 '偏导数'，但在首次出现或关键定义处标注英文。针对弱基础学生，多使用直观类比（如山峰、切片）解释抽象数学概念。",
+    "style": "professional",
+    "createdAt": 1783011264661,
+    "updatedAt": 1783011264661
+  },
+  "agents": [
+    {
+      "name": "林教授",
+      "role": "teacher",
+      "persona": "林教授是一位经验丰富的数学教育家，擅长用生活化的比喻（如山峰、切片）将抽象概念具象化。他特别关注弱基础学生的理解困难，习惯在关键定义处同步给出中英文术语对照，并及时纠正学生'只顾其一'的典型错误。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "思涵",
+      "role": "student",
+      "persona": "思涵是一个细致冷静的学习者，习惯先观察再行动，尤其在空间视角和关系图环节表现出色。她对数学术语比较敏感，虽然基础一般，但善于通过类比和图形化表示建立直觉理解，常常在讨论中提出有深度的问题。",
+      "avatar": "/avatars/thinker.png",
+      "color": "#06b6d4",
+      "priority": 5
+    },
+    {
+      "name": "小薇",
+      "role": "assistant",
+      "persona": "小薇是课堂的助教，性格开朗亲和，善于用追问和提示的方式引导学生自己发现规律，而不是直接给出答案。她会在学生操作交互实验时给予实时反馈，帮助他们从操作证据中提炼数学概念。",
+      "avatar": "/avatars/assist.png",
+      "color": "#ec4899",
+      "priority": 7
+    },
+    {
+      "name": "阿哲",
+      "role": "student",
+      "persona": "阿哲是一个思维活跃但稍显急躁的学生，经常凭直觉只关注一个变量而忽略另一个，典型表现出'只顾其一'的误解。他喜欢动手操作，在拖动实验和挑战关卡中表现积极，但需要老师或助教引导他注意到自己的思维盲点。",
+      "avatar": "/avatars/curious-2.png",
+      "color": "#f59e0b",
+      "priority": 5
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：多元函数、曲面与偏导数学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "对于一元函数 y = f(x)，导数 f'(x₀) 的几何意义是？",
+            "options": [
+              {
+                "value": "A",
+                "label": "函数在点 x₀ 处的函数值"
+              },
+              {
+                "value": "B",
+                "label": "函数图像在点 (x₀, f(x₀)) 处切线的斜率"
+              },
+              {
+                "value": "C",
+                "label": "函数图像与坐标轴围成的面积"
+              },
+              {
+                "value": "D",
+                "label": "函数在区间上的平均变化率"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "导数 f'(x₀) 的几何意义是函数图像在点 (x₀, f(x₀)) 处切线的斜率。选项A是函数值，选项C与积分有关，选项D是割线的斜率。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "想象一座山峰，如果用水平面去切割这座山峰，得到的交线（等高线）越密集，说明该处的地形？",
+            "options": [
+              {
+                "value": "A",
+                "label": "越平缓"
+              },
+              {
+                "value": "B",
+                "label": "越陡峭"
+              },
+              {
+                "value": "C",
+                "label": "是山顶"
+              },
+              {
+                "value": "D",
+                "label": "是山谷"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "等高线越密集，代表在水平位移变化很小时，高度变化很大，即山坡越陡峭。这体现了一种变化率的思想，与导数/偏导数概念相通。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "question": "在三维坐标系中，以下哪些描述是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "三条坐标轴互相垂直"
+              },
+              {
+                "value": "B",
+                "label": "空间中的一个点由两个数值唯一确定"
+              },
+              {
+                "value": "C",
+                "label": "平面 z = 0 就是 xoy 平面"
+              },
+              {
+                "value": "D",
+                "label": "点 (1,2,3) 在 x 轴上的坐标分量是 1"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "三维空间中，点由 (x, y, z) 三个坐标数值确定，所以B是错误的。A、C、D均为三维坐标系的基本性质。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "multiple",
+            "question": "体重可以看作身高和年龄的'函数'。以下哪些说法体现了这种'多对一'的映射关系？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "身高170cm且年龄20岁的人，可能对应一个具体的标准体重值"
+              },
+              {
+                "value": "B",
+                "label": "不同身高和年龄的组合，可能计算得出相同的体重值"
+              },
+              {
+                "value": "C",
+                "label": "一个人的体重完全由他的身高决定，与年龄无关"
+              },
+              {
+                "value": "D",
+                "label": "给定身高和年龄，通常只能算出一个唯一的体重预测值"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "analysis": "多元函数就是从多个输入到单个输出的映射。A体现了输入（身高、年龄）对应一个输出；B体现了不同的输入组合可能对应相同的输出；D体现映射对应关系的确定性。C是错误观点。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "请想象并描述：在一座起伏不平的山体表面取一个固定点，如果你只允许朝正东方向水平移动，这时高度怎么变化？这种变化与你学过的什么数学概念最相似？请简单写出你的想法。",
+            "commentPrompt": "评估标准：(1) 明确指出高度变化取决于所在点的地势走向 - 40% (2) 联想到限制方向后研究变化率，与一元导数的切线或变化率概念建立联系 - 40% (3) 语言表达清晰，逻辑通顺 - 20%",
+            "analysis": "参考答案：在固定点向正东移动时，高度变化可能上升、下降或不变，取决于该点朝东方向的坡度。这类似于在一元函数中，固定一点沿特定方向观察函数变化率，是一元导数思想的延伸，也为偏导数（Partial Derivative）中固定一个变量、观察另一个变量变化的概念埋下伏笔。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_-CyM8UCd",
+          "type": "speech",
+          "text": "这是一组关于“前测：多元函数、曲面与偏导数学习准备诊断”的独立测验。我是你们的大家。在开始我们的新内容之前，我们先来做一个小小的‘热身’，就像打球前要活动一下筋骨一样。这个诊断小测，不是为了评判谁对谁错，而是想了解一下大家对过去的知识和一些新的直觉理解到了什么程度。"
+        },
+        {
+          "id": "action_wz8lHU98",
+          "type": "speech",
+          "text": "大家看，这里一共有五道题。有关于一元函数导数的，有关于看地图的，还有让你自由想象描述的。请大家放轻松，按照自己的理解来回答，不用紧张。如果碰到不太确定的问题，可以凭感觉先选一个，或者把你的直觉写下来。",
+          "audioRef": "audio/tts_action_wz8lHU98.mp3"
+        },
+        {
+          "id": "action_jrKoAQCT",
+          "type": "speech",
+          "text": "我会给大家一些时间。完成之后，我们就会正式进入今天‘多元函数、曲面与偏导数’的奇妙世界。准备好了吗？我们开始答题吧！",
+          "audioRef": "audio/tts_action_jrKoAQCT.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "多输入函数",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "OIpmnXP2Vjbrt6XHByCTY",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_6cno3m0w",
+              "left": 60,
+              "top": 50,
+              "width": 400,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 36px; font-weight: bold; color: #1A5276;\">多输入函数</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A5276"
+            },
+            {
+              "type": "text",
+              "id": "text__p7bBaXx",
+              "left": 540,
+              "top": 62,
+              "width": 400,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #5D6D7E;\">从一元到多元的直觉跨越</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#5D6D7E"
+            },
+            {
+              "type": "line",
+              "id": "line_GryRWcZn",
+              "left": 500,
+              "top": 140,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                360
+              ],
+              "style": "dashed",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "latex",
+              "id": "latex_1B0BngfJ",
+              "left": 60,
+              "top": 140,
+              "width": 200,
+              "height": 60,
+              "rotate": 0,
+              "latex": "z = f(x, y)",
+              "color": "#000000",
+              "fixedRatio": true,
+              "align": "left",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.04398em;\">z</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_3U53QYJR",
+              "left": 60,
+              "top": 220,
+              "width": 400,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #2C3E50;\">x、y 为自变量，z 为因变量；</p><p style=\"font-size: 18px; color: #2C3E50;\">每个有序对 (x,y) 唯一确定一个 z。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "text",
+              "id": "text_XIpkHkKL",
+              "left": 60,
+              "top": 310,
+              "width": 400,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #E74C3C; font-weight: bold;\">双输入共同决定单一输出</p><p style=\"font-size: 18px; color: #E74C3C; font-weight: bold;\">——二者不可分割。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#E74C3C"
+            },
+            {
+              "type": "line",
+              "id": "line_ceMRlfMp",
+              "left": 100,
+              "top": 440,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                30
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_gk2huQ96",
+              "left": 100,
+              "top": 470,
+              "width": 3,
+              "start": [
+                0,
+                30
+              ],
+              "end": [
+                40,
+                0
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_9YeAPvhl",
+              "left": 140,
+              "top": 455,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#E74C3C"
+            },
+            {
+              "type": "line",
+              "id": "line_TMIDY5pp",
+              "left": 150,
+              "top": 460,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                0
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_O7iMIMTh",
+              "left": 540,
+              "top": 160,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#3498DB"
+            },
+            {
+              "type": "text",
+              "id": "text_qvtjqBQ0",
+              "left": 565,
+              "top": 140,
+              "width": 380,
+              "height": 82,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #333333;\"><b>掌握多元函数映射关系：</b></p><p style=\"font-size: 20px; color: #333333;\">(x,y) → z，输入空间二维，输出一维。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_UKK8SPZC",
+              "left": 540,
+              "top": 280,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#E74C3C"
+            },
+            {
+              "type": "text",
+              "id": "text_ZFfWvSUL",
+              "left": 565,
+              "top": 260,
+              "width": 380,
+              "height": 82,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #333333;\"><b>修复“变量不相关”的误解：</b></p><p style=\"font-size: 20px; color: #333333;\">x 和 y 协同作用，并非独立影响 z。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_0RAKJnWa",
+              "left": 540,
+              "top": 400,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#3498DB"
+            },
+            {
+              "type": "text",
+              "id": "text_g7KdYsxC",
+              "left": 565,
+              "top": 380,
+              "width": 380,
+              "height": 111,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #333333;\"><b>从一元到多元的直觉跨越：</b></p><p style=\"font-size: 20px; color: #333333;\">由曲线到曲面，理解“面→体”的映射本质。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_3DzXF_W7",
+          "type": "spotlight",
+          "elementId": "text_6cno3m0w"
+        },
+        {
+          "id": "action_Y4NlZm44",
+          "type": "speech",
+          "text": "本场景聚焦“多输入函数”。前测结束了。不管刚才的题目做得怎么样，都别太放在心上——那只是一个起点，帮我们看清需要一起爬的这座山到底有多高。现在，我们正式迈入今天的第一扇大门：多输入函数，英文里叫作 Multivariable Function。"
+        },
+        {
+          "id": "action_WKbqNA6K",
+          "type": "spotlight",
+          "elementId": "latex_1B0BngfJ"
+        },
+        {
+          "id": "action__ppqk_Ep",
+          "type": "speech",
+          "text": "看这里，一个最经典的表达式：z = f(x, y)。注意了，这和我们以前学的 y = f(x) 有个本质的不同——现在右边站着两个变量，x 和 y。",
+          "audioRef": "audio/tts_s2_action__ppqk_Ep.mp3"
+        },
+        {
+          "id": "action_ETQqae0j",
+          "type": "spotlight",
+          "elementId": "text_3U53QYJR"
+        },
+        {
+          "id": "action_nTurzTIB",
+          "type": "speech",
+          "text": "在这个定义里，x 和 y 是自变量，它们俩是独立变化的；而 z 是因变量，它的值取决于前面那两个伙伴。只要给定了有序对 (x, y)，就能唯一确定一个 z。这就像是在地图上定位，经度和纬度一起，才能确定一个确切的位置。",
+          "audioRef": "audio/tts_s2_action_nTurzTIB.mp3"
+        },
+        {
+          "id": "action_hmaHDEr0",
+          "type": "spotlight",
+          "elementId": "text_XIpkHkKL"
+        },
+        {
+          "id": "action_Ain59r6Y",
+          "type": "speech",
+          "text": "这里有一个极其重要的观念，我希望大家从一开始就刻在脑子里：双输入共同决定单一输出，x 和 y 是一对协同作战的战友，二者不可分割。我们待会儿会看到，有很多同学会不自觉地‘只顾其一’，忽略了另一个变量也在同时发挥作用。",
+          "audioRef": "audio/tts_s2_action_Ain59r6Y.mp3"
+        },
+        {
+          "id": "action_16vO4IfM",
+          "type": "spotlight",
+          "elementId": "text__p7bBaXx"
+        },
+        {
+          "id": "action_xKq8nx4t",
+          "type": "speech",
+          "text": "这就是所谓的从一元到多元的直觉跨越。我们的几何图形，将会从一条曲线，变成一张曲面。理解这个跨越，本质上就是要理解从“面”到“体”的映射关系。我们这就开始吧。",
+          "audioRef": "audio/tts_s2_action_xKq8nx4t.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "多输入函数：拖动实验",
+      "order": 3,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "multi_input_function",
+          "description": "学生通过拖动坐标平面上的点并实时观察 z 值变化，理解双变量共同决定输出的概念。",
+          "variables": [
+            {
+              "name": "x_input",
+              "label": "x 输入",
+              "min": -5,
+              "max": 5,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "y_input",
+              "label": "y 输入",
+              "min": -5,
+              "max": 5,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "history_log",
+              "label": "历史路径",
+              "min": 0,
+              "max": 100,
+              "default": 0,
+              "unit": "条记录"
+            }
+          ],
+          "presets": [
+            {
+              "name": "碗形函数",
+              "variables": {
+                "x_input": 0,
+                "y_input": 0
+              },
+              "func": "bowl"
+            },
+            {
+              "name": "马鞍函数",
+              "variables": {
+                "x_input": 2,
+                "y_input": 2
+              },
+              "func": "saddle"
+            },
+            {
+              "name": "波纹函数",
+              "variables": {
+                "x_input": 1.5,
+                "y_input": 1
+              },
+              "func": "wave"
+            },
+            {
+              "name": "斜面函数",
+              "variables": {
+                "x_input": -3,
+                "y_input": 1
+              },
+              "func": "tilt"
+            }
+          ]
+        },
+        "htmlPath": "interactive/03_多输入函数：拖动实验.html",
+        "htmlBytes": 475428
+      },
+      "actions": [
+        {
+          "id": "action_nVJUP-Rk",
+          "type": "speech",
+          "text": "本场景通过交互探索“多输入函数：拖动实验”。从一元到多元，函数的输入变成了一个点在平面上的位置。现在，请把目光投向这个坐标平面。看到那个可以拖动的点了吗？它由 x 和 y 两个坐标共同决定，这和我们之前只沿一条数轴移动完全不同。"
+        },
+        {
+          "id": "action_yaErGksN",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "这是交互画布，上面的点代表当前输入 (x, y)。"
+        },
+        {
+          "id": "action_QaeKre5p",
+          "type": "speech",
+          "text": "我们来试试看。先切换到‘碗形函数’的预设模式。大家会发现，当你拖动这个点，右边输出的 z 值会立刻跟着变化。这里的 z，就是我们常说的因变量，或者叫函数值。当你只移动 x，不动 y 的时候，z 值变化的路径，就像是在这个曲面上切了一刀，得到一个截面。",
+          "audioRef": "audio/tts_s3_action_QaeKre5p.mp3"
+        },
+        {
+          "id": "action_nvS4xMsi",
+          "type": "widget_setState",
+          "state": {
+            "preset": "bowl"
+          },
+          "content": "加载‘碗形函数’预设，便于观察对称性。"
+        },
+        {
+          "id": "action_m_3I5UEa",
+          "type": "speech",
+          "text": "接下来，请你尝试一个更有趣的挑战。看到下面的‘马鞍函数’了吗？我们都来选这个预设。然后，像大家和大家那样，一起动手拖动这个点。你的任务是：找到一组能让 z 值等于零的 (x, y) 坐标。看看谁能找到更多不同的路径。"
+        },
+        {
+          "id": "action_GSUN3CA3",
+          "type": "widget_setState",
+          "state": {
+            "preset": "saddle"
+          },
+          "content": "切换到‘马鞍函数’，准备寻找 z=0 的坐标对。"
+        },
+        {
+          "id": "action_L6ljBfBz",
+          "type": "speech",
+          "text": "好，大家注意观察面板上留下的‘历史路径’记录。你可能会发现，到达同一个 z 值，不同的拖动路线留下的 x、y 组合各不相同。这恰恰证明了：单一的输出结果，是由两个输入变量共同协作决定的，而不是只由其中一个说了算。这也是接下来课程里，我们要理解的第一个关键证据。",
+          "audioRef": "audio/tts_s3_action_L6ljBfBz.mp3"
+        },
+        {
+          "id": "action_EMqqf5HD",
+          "type": "widget_highlight",
+          "target": "#history-log",
+          "content": "请关注历史路径记录，它展示了不同 (x,y) 组合如何导致相同的输出。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "多输入函数：关系图",
+      "order": 4,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "输入变量 x",
+              "icon": "📥",
+              "details": "<strong>自变量 x</strong>：多元函数的一个输入维度。<br><br>类比：想象你在攀登一座三维的山峰，x 坐标决定了你东西方向的起始位置。<br><br>在偏导数中，当我们对 x 求导时，将 x 视为唯一变化量，其余变量保持「冻结」。",
+              "type": "input"
+            },
+            {
+              "id": "n2",
+              "label": "输入变量 y",
+              "icon": "📥",
+              "details": "<strong>自变量 y</strong>：多元函数的另一个输入维度，与 x 相互独立。<br><br>类比：y 决定了你南北方向的起始位置。x 和 y 共同定位了山峰上的一个点。<br><br>关键：x 和 y 的独立性意味着它们可以各自独立变化——这是偏导数概念的核心前提。",
+              "type": "input"
+            },
+            {
+              "id": "n3",
+              "label": "函数引擎 f(x, y)",
+              "icon": "⚙️",
+              "details": "<strong>函数引擎 f(x, y)</strong>：多输入合成核心。<br><br>它接收 x 和 y 两个自变量，通过内部规则合成唯一的输出 z。<br><br>🔑 <strong>关键洞察</strong>：函数引擎对每个输入都有一条「加工管道」——这就是偏导数 ∂f/∂x 和 ∂f/∂y 的来源。每个管道独立工作，互不干扰。",
+              "type": "engine"
+            },
+            {
+              "id": "n4",
+              "label": "输出 z = f(x, y)",
+              "icon": "📤",
+              "details": "<strong>输出 z</strong>：函数计算后的结果，是一个标量值。<br><br>类比：山峰上某点的高度。给定 (x, y)，就能唯一确定 z。<br><br>证据：学生能成功地将多个输入端连接到唯一的输出容器，这说明他们理解「多对一」的映射关系。",
+              "type": "output"
+            },
+            {
+              "id": "n5",
+              "label": "⚠️ 误解：「x 和 y 必须同时变」",
+              "icon": "🚫",
+              "details": "<strong>常见误解</strong>：认为求偏导数时，所有自变量必须同时变化。<br><br>💡 <strong>逻辑陷阱</strong>：如果认为 x 和 y 必须同时变化，就无法理解偏导数的几何意义——偏导数本质上是在「冻结」其他变量的前提下，只观察单一方向的变化率。<br><br>这个误解会导致学生无法理解「切片」的概念，进而影响对梯度、方向导数的理解。",
+              "type": "misconception"
+            },
+            {
+              "id": "n6",
+              "label": "✅ 正确：偏导数 = 切片",
+              "icon": "🔍",
+              "details": "<strong>偏导数 (Partial Derivative)</strong>：固定其他变量，只观察一个变量的变化率。<br><br>类比：想象用一把刀沿 y = 常数水平切开山峰，得到的截面曲线对 x 的导数就是 ∂f/∂x。<br><br>🔑 <strong>核心要点</strong>：偏导数的「偏」字，就是指「只偏听一个变量的变化」。其他变量保持不动，就像给它们按下了暂停键。",
+              "type": "correction"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n3",
+              "label": "自变量输入",
+              "color": "#60a5fa"
+            },
+            {
+              "from": "n2",
+              "to": "n3",
+              "label": "自变量输入",
+              "color": "#60a5fa"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "合成输出 z",
+              "color": "#a78bfa"
+            },
+            {
+              "from": "n3",
+              "to": "n5",
+              "label": "逻辑断点",
+              "color": "#fbbf24"
+            },
+            {
+              "from": "n5",
+              "to": "n6",
+              "label": "纠正理解",
+              "color": "#34d399"
+            },
+            {
+              "from": "n1",
+              "to": "n6",
+              "label": "固定 y，变 x",
+              "color": "#34d399"
+            },
+            {
+              "from": "n2",
+              "to": "n6",
+              "label": "固定 x，变 y",
+              "color": "#34d399"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6"
+          ],
+          "nodePositions": {
+            "n1": {
+              "x": 110,
+              "y": 135
+            },
+            "n2": {
+              "x": 110,
+              "y": 305
+            },
+            "n3": {
+              "x": 370,
+              "y": 220
+            },
+            "n4": {
+              "x": 640,
+              "y": 220
+            },
+            "n5": {
+              "x": 620,
+              "y": 60
+            },
+            "n6": {
+              "x": 620,
+              "y": 370
+            }
+          }
+        },
+        "htmlPath": "interactive/04_多输入函数：关系图.html",
+        "htmlBytes": 764000
+      },
+      "actions": [
+        {
+          "id": "action_aAFRplAz",
+          "type": "speech",
+          "text": "本场景通过交互探索“多输入函数：关系图”。而不是某一个说了算。那这个「一起决定」的过程，在数学上到底是怎么发生的呢？我们来看这张关系图，它会把多输入函数的内在工作方式，像工厂的生产线一样拆解出来。"
+        },
+        {
+          "id": "action_LAM_Z0dJ",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "输入变量 x"
+        },
+        {
+          "id": "action_amm452on",
+          "type": "widget_highlight",
+          "target": "#n2",
+          "content": "输入变量 y"
+        },
+        {
+          "id": "action_wdAxUpDi",
+          "type": "speech",
+          "text": "首先注意这两个输入节点，x 和 y。它们是两个相互独立的变量，各自可以自由变化。就像在山峰上，你东西方向的位置和南北方向的位置，本来就没有谁依赖谁。",
+          "audioRef": "audio/tts_s4_action_wdAxUpDi.mp3"
+        },
+        {
+          "id": "action_NXhLyw1T",
+          "type": "widget_highlight",
+          "target": "#n3",
+          "content": "函数引擎"
+        },
+        {
+          "id": "action_yfNvzxZI",
+          "type": "speech",
+          "text": "中间这个⚙️，是函数引擎 f(x,y)。它接收两个独立的输入，在内部通过某种规则合成，最终输出到唯一的容器——z。这里的关键洞察是：函数引擎对每个输入，都有一条独立的工作管道。",
+          "audioRef": "audio/tts_s4_action_yfNvzxZI.mp3"
+        },
+        {
+          "id": "action_LFuzsymA",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "常见误解节点"
+        },
+        {
+          "id": "action_gLTUlf7i",
+          "type": "speech",
+          "text": "但在学习偏导数之前，很多同学会掉进一个常见的逻辑陷阱。点击这个⚠️标记，你会看到最具代表性的误解：「x 和 y 必须同时变」。这种想法，正是很多人在偏导数上卡住的根本原因。",
+          "audioRef": "audio/tts_s4_action_gLTUlf7i.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "多输入函数：误解修复挑战",
+      "order": 5,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "strategy",
+          "description": "多输入函数：误解修复挑战 - 策略型益智练习，要求学生在必须同时平衡两个变量的情况下达到目标",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "achievements": [
+            {
+              "id": "first_hit",
+              "name": "初见成效",
+              "description": "第一次命中目标",
+              "icon": "🎯"
+            },
+            {
+              "id": "combo_3",
+              "name": "三连命中",
+              "description": "连续命中3次",
+              "icon": "🔥"
+            },
+            {
+              "id": "combo_5",
+              "name": "精准大师",
+              "description": "连续命中5次",
+              "icon": "⚡"
+            },
+            {
+              "id": "all_levels",
+              "name": "函数征服者",
+              "description": "完成所有关卡",
+              "icon": "👑"
+            },
+            {
+              "id": "speed_demon",
+              "name": "闪电手",
+              "description": "3秒内命中目标",
+              "icon": "💨"
+            },
+            {
+              "id": "explorer",
+              "name": "探索者",
+              "description": "发现5个不同的(x,y)组合得到相同z",
+              "icon": "🗺️"
+            }
+          ]
+        },
+        "htmlPath": "interactive/05_多输入函数：误解修复挑战.html",
+        "htmlBytes": 786920
+      },
+      "actions": [
+        {
+          "id": "action_HmiIiLMq",
+          "type": "speech",
+          "text": "本场景通过交互探索“多输入函数：误解修复挑战”。很多人会下意识地认为 x 和 y 必须同步变化。现在我们来玩一个'误解修复'挑战，亲手试试在必须同时照顾两个变量的情况下，让函数值达到目标。"
+        },
+        {
+          "id": "action_wZTIy99O",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "从这里开始你的第一次尝试。"
+        },
+        {
+          "id": "action_72tDzxok",
+          "type": "speech",
+          "text": "点击开始，你会看到一个目标值。你的任务是在坐标系里移动一个点，同时调整 x 和 y，让函数输出恰好等于目标。小心，只盯着一个变量往往行不通。",
+          "audioRef": "audio/tts_s5_action_72tDzxok.mp3"
+        },
+        {
+          "id": "action_UgiHYmy2",
+          "type": "widget_annotation",
+          "target": "#achievements",
+          "content": "这里记录你发现的成就，试试看能不能找到多个不同的 (x, y) 组合得到相同的 z。"
+        },
+        {
+          "id": "action_nCjsBahs",
+          "type": "speech",
+          "text": "试试看吧！如果你卡住了，回想一下我们在关系图里看到的现象：不同的输入组合，完全可能产生相同的输出。找到这种平衡，你就突破了'只顾其一'的思维定式。",
+          "audioRef": "audio/tts_s5_action_nCjsBahs.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "多输入函数：空间视角",
+      "order": 6,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "多输入函数的空间视角：3D空间中离散点(x,y,z)的分布观察，展示z=f(x,y)的空间映射关系",
+          "objects": [
+            {
+              "id": "scatter_points",
+              "type": "spheres",
+              "description": "散列点，每个点代表一个(x,y,z)坐标，颜色编码z值",
+              "material": {
+                "type": "phong",
+                "colorMapping": "zValue"
+              }
+            },
+            {
+              "id": "xy_plane",
+              "type": "plane",
+              "description": "XY参考平面，显示点的底面投影",
+              "material": {
+                "type": "transparent",
+                "color": "#1a2a4a",
+                "opacity": 0.25
+              }
+            },
+            {
+              "id": "vertical_markers",
+              "type": "lines",
+              "description": "垂直投影线，连接每个散列点到XY平面",
+              "material": {
+                "type": "line",
+                "color": "#ffdd44",
+                "opacity": 0.5
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "click",
+              "target": "scatter_points",
+              "action": "select_point"
+            },
+            {
+              "type": "slider",
+              "param": "gridDensity",
+              "label": "网格密度",
+              "min": 3,
+              "max": 12,
+              "default": 7
+            },
+            {
+              "type": "slider",
+              "param": "lineOpacity",
+              "label": "垂直线透明度",
+              "min": 0.1,
+              "max": 1,
+              "default": 0.5
+            },
+            {
+              "type": "button",
+              "action": "toggleLines",
+              "label": "投影线"
+            },
+            {
+              "type": "button",
+              "action": "togglePlane",
+              "label": "XY平面"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "俯视视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  14,
+                  0
+                ],
+                "lookAt": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧视视角",
+              "state": {
+                "cameraPosition": [
+                  14,
+                  2,
+                  0
+                ],
+                "lookAt": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "对角视角",
+              "state": {
+                "cameraPosition": [
+                  8,
+                  6,
+                  10
+                ],
+                "lookAt": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "高密度网格",
+              "state": {
+                "gridDensity": 12
+              }
+            }
+          ],
+          "teaching": {
+            "concept": "多输入函数",
+            "english": "Multi-variable Function",
+            "keyInsight": "三维空间中点的高度z由底面位置(x,y)唯一确定",
+            "analogy": "想象一座山峰，每个底面位置(x,y)对应唯一的高度z",
+            "function": "z = sin(x) · cos(y)",
+            "language": "zh-CN"
+          }
+        },
+        "htmlPath": "interactive/06_多输入函数：空间视角.html",
+        "htmlBytes": 2509493
+      },
+      "actions": [
+        {
+          "id": "action_ClZnDTpE",
+          "type": "speech",
+          "text": "本场景通过交互探索“多输入函数：空间视角”。y) 组合，可能导致相同的输出——盲目‘只顾其一’会看错函数的全貌。现在我们把视角拉到三维空间，亲眼看看点的高度 z 是如何由底面位置 (x,y) 唯一确定的。"
+        },
+        {
+          "id": "action_aeF7Z5F6",
+          "type": "widget_reveal",
+          "target": "#scatter_points",
+          "content": "显示散列点，每个点代表一个 (x,y,z) 坐标，颜色对应 z 值高低。"
+        },
+        {
+          "id": "action_0hd-SCOd",
+          "type": "speech",
+          "text": "眼前这片彩色散点就是函数 z = f(x,y) 的空间肖像。先用鼠标拖拽旋转一下，从不同角度观察这些点是如何排列的——你很快会发现，在底面的每一个位置，高度只有一个确定的点。",
+          "audioRef": "audio/tts_s6_action_0hd-SCOd.mp3"
+        },
+        {
+          "id": "action_o3IT5AIx",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "拖拽旋转视角，观察散点在空间中的分布规律。"
+        },
+        {
+          "id": "action_cUQsRsdv",
+          "type": "speech",
+          "text": "为了更清楚地看到底面和高度之间的对应关系，我们打开 XY 参考平面和垂直投影线。注意看：每一条黄色虚线，都把唯一的 (x,y) 位置和它对应的 z 值紧紧连在一起——这就是‘多输入函数’的空间约束。",
+          "audioRef": "audio/tts_s6_action_cUQsRsdv.mp3"
+        },
+        {
+          "id": "action_2S0ZEAQA",
+          "type": "widget_setState",
+          "state": {
+            "togglePlane": true,
+            "toggleLines": true,
+            "lineOpacity": 0.6
+          },
+          "content": "开启 XY 平面和投影线，让底面坐标与高度的映射一目了然。"
+        },
+        {
+          "id": "action_a3MFvP0g",
+          "type": "speech",
+          "text": "试着点击任意一个散列点，它会高亮并显示精确的 (x,y,z) 坐标。再切换到俯视视角，你会发现这其实是一张我们熟悉的‘底面点阵’，而高度就是这些点上的山峰海拔——只不过现在你能直接从空间里‘摸’到它。",
+          "audioRef": "audio/tts_s6_action_a3MFvP0g.mp3"
+        },
+        {
+          "id": "action_AjzLTEji",
+          "type": "widget_annotation",
+          "target": "#scatter_points",
+          "content": "点击散列点即可读取坐标。建议试试‘俯视视角’预设，对比二维点阵与三维高度的关系。"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "曲面与等高线",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "TLUCeeJ7Z1JZGH5iJ3LPG",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_4MqGt8Oc",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">三维曲面与二维等高线</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_9-RKA8Mg",
+              "left": 60,
+              "top": 125,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#e2e8f0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_6XwMB4tQ",
+              "left": 60,
+              "top": 150,
+              "width": 420,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "text",
+              "id": "text_EQ9W1XFO",
+              "left": 80,
+              "top": 165,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #334155;\">1. 几何直觉：什么是等高线？</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_niu--AFI",
+              "left": 80,
+              "top": 215,
+              "width": 380,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #475569;\">将三维曲面 f(x,y) 投影到二维平面，</p><p style=\"font-size: 16px; color: #475569;\">所有高度相同的点连成的曲线即为等高线。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_u96S7hb2",
+              "left": 520,
+              "top": 150,
+              "width": 420,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "text",
+              "id": "text_zPEq4oVA",
+              "left": 540,
+              "top": 165,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #334155;\">2. 常见误区：不是切线，而是集合</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text__MajCsKo",
+              "left": 540,
+              "top": 215,
+              "width": 380,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #475569;\">等高线并非曲面在某一点的切线，</p><p style=\"font-size: 16px; color: #475569;\">而是满足 f(x,y)=c 的点的集合。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_V8wk0Z1B",
+              "left": 60,
+              "top": 340,
+              "width": 420,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "text",
+              "id": "text_HYcSYR1t",
+              "left": 80,
+              "top": 355,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #334155;\">3. 陡峭度与疏密关系</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_ZLAl9RCA",
+              "left": 80,
+              "top": 405,
+              "width": 380,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #475569;\">曲面越陡峭，高度变化越快，</p><p style=\"font-size: 16px; color: #475569;\">对应的等高线分布越密集；反之则稀疏。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_X95Sc8yp",
+              "left": 520,
+              "top": 340,
+              "width": 420,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "text",
+              "id": "text_Ei3Ma4j0",
+              "left": 540,
+              "top": 355,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #334155;\">4. 梯度与法向量</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_AQNJoOEZ",
+              "left": 540,
+              "top": 405,
+              "width": 380,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #475569;\">梯度方向与等高线垂直，</p><p style=\"font-size: 16px; color: #475569;\">梯度模长直接反映了曲面的局部陡峭程度。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_b7r-fNih",
+          "type": "spotlight",
+          "elementId": "text_EQ9W1XFO"
+        },
+        {
+          "id": "action_5vusLa9o",
+          "type": "speech",
+          "text": "本场景聚焦“曲面与等高线”。我们换个角度看：如何用一张二维的平面地图，来描述三维的山峰呢？这就要引入今天的关键概念——等高线，英文叫 Contour Line。"
+        },
+        {
+          "id": "action_Mx5xal-h",
+          "type": "spotlight",
+          "elementId": "text_niu--AFI"
+        },
+        {
+          "id": "action_0XLEGpPW",
+          "type": "speech",
+          "text": "从几何直觉上讲，想象我们用一个水平的平面，比如在高度 c 的地方，去切我们的三维曲面 f(x,y)。所有被切到的点，投影到二维的 xy 平面上，连接起来形成的曲线，就是我们的等高线。这正是文字描述的‘高度相同的点的集合’。",
+          "audioRef": "audio/tts_s7_action_0XLEGpPW.mp3"
+        },
+        {
+          "id": "action_Su0xqKOC",
+          "type": "spotlight",
+          "elementId": "text__MajCsKo"
+        },
+        {
+          "id": "action_zgdaUl_v",
+          "type": "speech",
+          "text": "这里要特别注意一个常见的误区。有些同学会下意识地觉得，在平面图上的一条曲线，看起来就像我的一元函数图像。不对，一定把这个思维扭转过来。等高线不是曲面的切线！它是满足 f(x,y)=c 的所有 (x,y) 点的集合。",
+          "audioRef": "audio/tts_s7_action_zgdaUl_v.mp3"
+        },
+        {
+          "id": "action_N4bQZWk_",
+          "type": "laser",
+          "elementId": "text_ZLAl9RCA"
+        },
+        {
+          "id": "action_Q1bPE2q6",
+          "type": "speech",
+          "text": "你们看，等高线的疏密程度，可以直接告诉我们曲面的陡峭度。曲面的坡度越陡，意味着高度变化得越快，那在二维地图上，单位距离内穿过的等高线数量就越多，分布自然就更密集。",
+          "audioRef": "audio/tts_s7_action_Q1bPE2q6.mp3"
+        },
+        {
+          "id": "action_xvhy2My3",
+          "type": "spotlight",
+          "elementId": "text_AQNJoOEZ"
+        },
+        {
+          "id": "action_wIDIyiV9",
+          "type": "speech",
+          "text": "最后，我们把梯度和等高线联系起来。梯度 Gradient 向量代表了上升最快的方向。那么，等高线上的法向量恰好垂直于这一方向。换句话说，梯度的模长，就直观地反映了曲面在这个局部的陡峭程度。好了，关于等高线的基本概念我们先讲到这。",
+          "audioRef": "audio/tts_s7_action_wIDIyiV9.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "曲面与等高线：拖动实验",
+      "order": 8,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "曲面与等高线",
+          "description": "学生调节水平面高度切割三维曲面，实时生成等高线投影，理解三维到二维的维度压缩过程。等高线是曲面上高度相同的点的集合在水平面的投影。",
+          "variables": [
+            {
+              "name": "plane_height",
+              "label": "平面高度",
+              "min": -1,
+              "max": 2.5,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "opacity_control",
+              "label": "曲面透明度",
+              "min": 0.1,
+              "max": 1,
+              "default": 0.55,
+              "unit": ""
+            },
+            {
+              "name": "projection_toggle",
+              "label": "视图模式",
+              "min": 0,
+              "max": 2,
+              "default": 0,
+              "unit": "",
+              "options": [
+                "3D+俯视",
+                "仅3D曲面",
+                "仅等高线"
+              ]
+            }
+          ],
+          "presets": [
+            {
+              "name": "单峰等高",
+              "variables": {
+                "plane_height": 1.5,
+                "opacity_control": 0.4,
+                "projection_toggle": 0
+              }
+            },
+            {
+              "name": "多环嵌套",
+              "variables": {
+                "plane_height": 0.8,
+                "opacity_control": 0.5,
+                "projection_toggle": 0
+              }
+            },
+            {
+              "name": "复杂形态",
+              "variables": {
+                "plane_height": 0.3,
+                "opacity_control": 0.6,
+                "projection_toggle": 0
+              }
+            },
+            {
+              "name": "接近零点",
+              "variables": {
+                "plane_height": 0.05,
+                "opacity_control": 0.3,
+                "projection_toggle": 0
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/08_曲面与等高线：拖动实验.html",
+        "htmlBytes": 474734
+      },
+      "actions": [
+        {
+          "id": "action_X9T9sTYs",
+          "type": "speech",
+          "text": "本场景通过交互探索“曲面与等高线：拖动实验”。我们通过一个交互实验，来更直观地感受一下，等高线究竟是如何从三维曲面上“生长”出来的。"
+        },
+        {
+          "id": "action_vM_kuO85",
+          "type": "widget_highlight",
+          "target": "#plane_height-slider",
+          "content": "这个滑块控制一个水平切割平面的高度。"
+        },
+        {
+          "id": "action_S27e5AKw",
+          "type": "speech",
+          "text": "请观察左侧的3D视图。想象这个曲面是一座山。现在，我们用一个确定高度的水平面去切割它。看到的交线，就是在这个高度上的“等高线”。",
+          "audioRef": "audio/tts_s8_action_S27e5AKw.mp3"
+        },
+        {
+          "id": "action_dNKtLf32",
+          "type": "widget_setState",
+          "state": {
+            "plane_height": 1,
+            "opacity_control": 0.55,
+            "projection_toggle": 0
+          },
+          "content": "设置平面高度为1.0，展示一个清晰的切割效果。"
+        },
+        {
+          "id": "action_ZAKr4smH",
+          "type": "speech",
+          "text": "好，现在我们把切割平面高度调整到1.0。可以看到，山顶被切掉了一小块，切口的边缘就是一条闭合的曲线。右侧的俯视图则直接展示了这条曲线在底平面上的投影，这就是我们通常看到的等高线图。",
+          "audioRef": "audio/tts_s8_action_ZAKr4smH.mp3"
+        },
+        {
+          "id": "action__8TjSKNO",
+          "type": "widget_highlight",
+          "target": "#projection_toggle-slider",
+          "content": "这个视图切换开关可以让你只关注3D切割或2D等高线图。"
+        },
+        {
+          "id": "action_Fs53JYqU",
+          "type": "speech",
+          "text": "你可以试着切换一下视图模式，只看俯视图，是不是更熟悉？现在，请你亲自拖动滑块，把平面高度降低到0.3，试试这个“复杂形态”的预设。在动手之前，先在心里预测一下，新的等高线会比现在大还是小？它的形状又会发生什么变化？开始操作吧。",
+          "audioRef": "audio/tts_s8_action_Fs53JYqU.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "曲面与等高线：关系图",
+      "order": 9,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "surface",
+              "label": "曲面",
+              "icon": "🏔️",
+              "x": 0,
+              "y": 0,
+              "details": "曲面（Surface）是空间中由无数个点构成的二维几何对象，可以用函数 z = f(x, y) 来描述。比如一座山的地表就是一个曲面。<br><div class='analogy'>想象你站在一座山的山坡上，脚下的地面就是'曲面'的一部分。整个山体表面构成了一个完整的曲面。</div><p>在微积分中，曲面上每一点的<span class='term'>切平面</span>（Tangent Plane）描述了该点附近的局部平面近似，而<span class='term'>梯度</span>（Gradient）则告诉我们曲面在哪个方向上升最快。</p>"
+            },
+            {
+              "id": "peak",
+              "label": "峰顶",
+              "icon": "⛰️",
+              "x": 0,
+              "y": 0,
+              "details": "峰顶（Peak / Local Maximum）是曲面上的局部最高点，周围所有点的高度都比它低。<br><div class='analogy'>就像珠穆朗玛峰的峰顶——你站在峰顶，往任何方向走都是在下坡。</div><p>数学上，峰顶处<span class='term'>偏导数</span>（Partial Derivative）∂f/∂x 和 ∂f/∂y 都等于零，这是<span class='term'>驻点</span>（Critical Point）的必要条件。</p>"
+            },
+            {
+              "id": "valley",
+              "label": "山谷",
+              "icon": "🏜️",
+              "x": 0,
+              "y": 0,
+              "details": "山谷（Valley / Local Minimum）是曲面上的局部最低点，周围所有点的高度都比它高。<br><div class='analogy'>想象一个碗的内部，碗底就是山谷——你往任何方向移动都是在上坡。</div><p>与峰顶类似，山谷处偏导数也为零，但它是局部<span class='term'>极小值</span>（Local Minimum）。峰顶和山谷都属于曲面的<span class='term'>临界点</span>（Critical Points）。</p>"
+            },
+            {
+              "id": "contour",
+              "label": "等高线",
+              "icon": "🗺️",
+              "x": 0,
+              "y": 0,
+              "details": "等高线（Contour Lines / Level Curves）是将曲面上高度相同的点投影到水平面（xy平面）上得到的曲线。<br><div class='analogy'>想象用一把水平的刀片从不同高度去'切'一座山，每一刀切出的截面轮廓画在地图上，就是一圈等高线。</div><p>等高线的数学定义：对于曲面 z = f(x,y)，高度为 c 的等高线是方程 f(x,y) = c 在 xy 平面上的解曲线。它把三维信息'压缩'成了二维图形。</p>"
+            },
+            {
+              "id": "mincircles",
+              "label": "极小圈",
+              "icon": "⭕",
+              "x": 0,
+              "y": 0,
+              "details": "极小圈（Small Closed Contours）是围绕峰顶或山谷的闭合等高线环。<br><div class='analogy'>当你从山脚往上走，等高线一圈圈地缩小，越接近峰顶，圈就越小——就像树的年轮一样。峰顶在最高那个'极小圈'的中心。</div><p>峰顶对应一组<span class='term'>嵌套的闭合曲线</span>（Nested Closed Curves），最内圈的等高线包围了峰顶。山谷同理，但高度值是递减的。这些闭合圈的<span class='term'>拓扑</span>（Topology）特征直接反映了曲面的凹凸性。</p>"
+            },
+            {
+              "id": "spacing",
+              "label": "线距",
+              "icon": "📏",
+              "x": 0,
+              "y": 0,
+              "details": "线距（Contour Spacing）是相邻两条等高线之间的水平距离。<br><div class='analogy'>想象在山上铺一层层台阶：如果台阶间距很小（密集），说明坡度很陡；如果台阶间距很大（稀疏），说明坡度平缓。</div><p>线距是理解曲面陡峭程度的关键。在等高线图中，<span class='term'>等间距</span>意味着均匀坡度，而不等间距则反映了曲面坡度的变化。</p>"
+            },
+            {
+              "id": "slope",
+              "label": "坡度",
+              "icon": "📐",
+              "x": 0,
+              "y": 0,
+              "details": "坡度（Slope / Gradient）描述曲面在某一方向的倾斜程度。<br><div class='analogy'>在滑雪道上，坡度越大表示滑下来越快、越刺激。等高线越密集的地方，就是坡度越大的地方——就像陡峭的悬崖。</div><p>数学上，坡度由<span class='term'>梯度的模</span>（Gradient Magnitude） ‖∇f‖ 给出。等高线间距 d 与坡度 g 呈<span class='term'>反比关系</span>：g ≈ Δh / d（Δh 为等高线高度差）。这就是'线距越小，坡度越陡'的数学本质！</p>"
+            },
+            {
+              "id": "labels",
+              "label": "数值标签",
+              "icon": "🔢",
+              "x": 0,
+              "y": 0,
+              "details": "数值标签（Contour Value Labels）标注在等高线上的数字，表示该条等高线对应的高度值。<br><div class='analogy'>就像楼层编号——100m 的等高线就是'100米层'，200m 的就是'200米层'。从低到高读标签，就像从一楼走到十楼。</div><p>数值标签让你能精确读出曲面上任意位置的<span class='term'>函数值</span>（Function Value）。相邻等高线之间的数值差称为<span class='term'>等高距</span>（Contour Interval），通常是固定的（如每10米或每50米一条线）。</p>"
+            }
+          ],
+          "edges": [
+            {
+              "from": "surface",
+              "to": "peak",
+              "label": "包含"
+            },
+            {
+              "from": "surface",
+              "to": "valley",
+              "label": "包含"
+            },
+            {
+              "from": "surface",
+              "to": "contour",
+              "label": "投影为"
+            },
+            {
+              "from": "peak",
+              "to": "mincircles",
+              "label": "映射为"
+            },
+            {
+              "from": "contour",
+              "to": "spacing",
+              "label": "具有"
+            },
+            {
+              "from": "contour",
+              "to": "labels",
+              "label": "标注"
+            },
+            {
+              "from": "spacing",
+              "to": "slope",
+              "label": "反比于"
+            }
+          ],
+          "revealOrder": [
+            "surface",
+            "peak",
+            "valley",
+            "contour",
+            "mincircles",
+            "spacing",
+            "slope",
+            "labels"
+          ]
+        },
+        "htmlPath": "interactive/09_曲面与等高线：关系图.html",
+        "htmlBytes": 762856
+      },
+      "actions": [
+        {
+          "id": "action_HPDGJrjA",
+          "type": "speech",
+          "text": "本场景通过交互探索“曲面与等高线：关系图”。可以观察到等高线的变化。现在，让我们用这张关系图来梳理一下，从立体的曲面到平面的等高线，中间到底经历了哪些关键的‘翻译’步骤。"
+        },
+        {
+          "id": "action_QJinZRIR",
+          "type": "widget_reveal",
+          "target": "#surface",
+          "content": "这个核心概念就是‘曲面’。"
+        },
+        {
+          "id": "action_wYGq9b5T",
+          "type": "widget_reveal",
+          "target": "#peak",
+          "content": "曲面上有高点，即‘峰顶’。"
+        },
+        {
+          "id": "action_i1B6085j",
+          "type": "widget_reveal",
+          "target": "#contour",
+          "content": "曲面在XY平面的投影，就得到了‘等高线’。"
+        },
+        {
+          "id": "action_ybz99_Nd",
+          "type": "speech",
+          "text": "请注意看，关系图中从‘峰顶’节点延伸出了一条连接线。请大家想一想，山体的峰顶，在一张平面的等高线地形图上，会变成一个什么样的图形？",
+          "audioRef": "audio/tts_s9_action_ybz99_Nd.mp3"
+        },
+        {
+          "id": "action_qiShzk2P",
+          "type": "widget_reveal",
+          "target": "#mincircles",
+          "content": "峰顶映射为一组极小的闭合圈。"
+        },
+        {
+          "id": "action_GyXDX1H-",
+          "type": "speech",
+          "text": "没错，就像树的年轮一样，最里面的那个小圈就标定了峰顶的位置。这个从‘峰顶’到‘极小圈’的映射，就是把三维的拓扑特征‘翻译’成二维符号的关键一步。",
+          "audioRef": "audio/tts_s9_action_GyXDX1H-.mp3"
+        },
+        {
+          "id": "action_PWUah42Q",
+          "type": "widget_reveal",
+          "target": "#spacing",
+          "content": "等高线具有‘线距’属性。"
+        },
+        {
+          "id": "action_rcs82Zd5",
+          "type": "widget_reveal",
+          "target": "#slope",
+          "content": "线距反比于‘坡度’。"
+        },
+        {
+          "id": "action_Gd2urcc2",
+          "type": "speech",
+          "text": "现在最重要的关系来了：‘线距’和‘坡度’是反比关系。线距越小，意味着等高线越密集，对应的坡度就越陡。这个规律也是后面挑战关卡里，帮大家避免‘只顾其一’错误的关键。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "曲面与等高线：误解修复挑战",
+      "order": 10,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "等高线探险家 - 曲面与等高线误解修复挑战",
+          "gameConfig": {
+            "controls": [
+              "click_waypoints",
+              "clear_path",
+              "undo",
+              "submit"
+            ],
+            "levels": [
+              {
+                "id": 1,
+                "name": "小山坡",
+                "desc": "熟悉基本操作",
+                "difficulty": "easy"
+              },
+              {
+                "id": 2,
+                "name": "V形谷",
+                "desc": "避开陡峭山谷两侧",
+                "difficulty": "medium"
+              },
+              {
+                "id": 3,
+                "name": "马鞍地形",
+                "desc": "寻找鞍部通道",
+                "difficulty": "medium"
+              },
+              {
+                "id": 4,
+                "name": "断崖挑战",
+                "desc": "避开等高线重叠的断崖",
+                "difficulty": "hard"
+              },
+              {
+                "id": 5,
+                "name": "复杂山脉",
+                "desc": "综合运用所有技巧",
+                "difficulty": "hard"
+              }
+            ]
+          },
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/10_曲面与等高线：误解修复挑战.html",
+        "htmlBytes": 792367
+      },
+      "actions": [
+        {
+          "id": "action_3ODexKgQ",
+          "type": "speech",
+          "text": "本场景通过交互探索“曲面与等高线：误解修复挑战”。好了，刚才我们通过关系图，牢牢抓住了‘线距越小，坡度越陡’这个核心规律。现在，是时候用这个规律来挑战一个更真实的场景了。"
+        },
+        {
+          "id": "action_bifCPbgS",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里，开启‘等高线探险家’挑战。"
+        },
+        {
+          "id": "action_8HDpv8_y",
+          "type": "speech",
+          "text": "这也是帮助大家彻底告别‘只顾其一’的关键时刻。在第一关‘小山坡’里，试着用你的鼠标规划一条平缓的路径，避开等高线密集的陡坡区域。记住，线越挤，路越陡！"
+        },
+        {
+          "id": "action_Qj6BknXh",
+          "type": "widget_setState",
+          "state": {
+            "level": 2
+          },
+          "content": "我们直接看第二关‘V形谷’，这个地形更典型。"
+        },
+        {
+          "id": "action_CFbP5G5h",
+          "type": "speech",
+          "text": "看这个V形谷，如果你是大家，可能会被山谷里那条最短的直线吸引。但仔细看，那条直线上的等高线是不是特别密集？这就是‘线即路径’的直觉陷阱。你觉得真正的安全通道应该选在哪里？是不是在等高线相对稀疏的山脊上？"
+        },
+        {
+          "id": "action_lp2E2wd-",
+          "type": "widget_highlight",
+          "target": "#submit",
+          "content": "规划好路径后，点击提交，看看地形是否和你想的一样。"
+        },
+        {
+          "id": "action_4HW-wPgx",
+          "type": "speech",
+          "text": "太棒了。当你成功根据等高线的疏密，规划出一条绕开陡峭区域的曲线时，你就已经修复了最常见的误解。接下来，试试挑战马鞍地形，在那里，你不仅要用‘线距’，更要结合高度的数值变化来寻找真正的‘鞍部通道’。",
+          "audioRef": "audio/tts_s10_action_4HW-wPgx.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "曲面与等高线：空间视角",
+      "order": 11,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "三维曲面的动态切片与投影演示 — 曲面与等高线的空间关系",
+          "objects": [
+            {
+              "id": "3d_surface",
+              "type": "surface_mesh",
+              "description": "三维曲面 z = 2.5·cos(x/2.5)·cos(y/2.5) + 0.5·sin(1.5x) + 0.5·cos(1.5y)",
+              "material": {
+                "type": "vertex_colored",
+                "colorMap": "height_gradient"
+              }
+            },
+            {
+              "id": "xy_grid",
+              "type": "grid_helper",
+              "description": "XY 平面参考网格",
+              "material": {
+                "type": "lines",
+                "color": "#222244"
+              }
+            },
+            {
+              "id": "dynamic_contours",
+              "type": "contour_lines",
+              "description": "动态等高线，可在曲面与底面投影间切换",
+              "material": {
+                "type": "lines",
+                "colorMap": "height_gradient"
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "view_switch",
+              "options": [
+                {
+                  "id": "3d",
+                  "label": "3D 曲面视图"
+                },
+                {
+                  "id": "contour",
+                  "label": "等高线俯视图"
+                },
+                {
+                  "id": "top",
+                  "label": "复合俯视图"
+                }
+              ]
+            },
+            {
+              "type": "slider",
+              "param": "slicePosition",
+              "label": "X 切片位置",
+              "min": -6,
+              "max": 6,
+              "step": 0.1,
+              "default": 0
+            },
+            {
+              "type": "slider",
+              "param": "contourLevels",
+              "label": "等高线层级数",
+              "min": 3,
+              "max": 11,
+              "step": 1,
+              "default": 7
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "观察曲面",
+              "state": {
+                "view": "3d",
+                "cameraPosition": [
+                  8,
+                  8,
+                  10
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "等高线投影",
+              "state": {
+                "view": "contour",
+                "cameraPosition": [
+                  0,
+                  16,
+                  0.01
+                ],
+                "cameraTarget": [
+                  0,
+                  -3.5,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "俯视图",
+              "state": {
+                "view": "top",
+                "cameraPosition": [
+                  0,
+                  20,
+                  0.01
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/11_曲面与等高线：空间视角.html",
+        "htmlBytes": 2520732
+      },
+      "actions": [
+        {
+          "id": "action__ICDvX7I",
+          "type": "speech",
+          "text": "本场景通过交互探索“曲面与等高线：空间视角”。让我们跳出平面，直接站到三维的山峰面前，看看那些优美的等高线究竟是如何从曲面上被'切'出来的。"
+        },
+        {
+          "id": "action_f8W0o3cF",
+          "type": "widget_setState",
+          "state": {
+            "view": "3d",
+            "cameraPosition": [
+              8,
+              8,
+              10
+            ],
+            "cameraTarget": [
+              0,
+              0,
+              0
+            ]
+          },
+          "content": "加载 3D 曲面视图，观察完整的立体地形"
+        },
+        {
+          "id": "action_E7d53-eD",
+          "type": "speech",
+          "text": "看，这是一个连续起伏的曲面，就像真实的山地。请大家留意，曲面上的颜色从蓝色渐变到红色，直观地标出了海拔高度。",
+          "audioRef": "audio/tts_s11_action_E7d53-eD.mp3"
+        },
+        {
+          "id": "action_lYrAvsOT",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "这是 3D 曲面的主视图"
+        },
+        {
+          "id": "action_Jrl6qH60",
+          "type": "speech",
+          "text": "现在，我们来执行一个关键的空间操作——切换到'等高线俯视图'。注意看，动态等高线是如何瞬间从弯弯曲曲的空间曲线，塌陷到下方平面，变成我们熟悉的二维等高线图的。",
+          "audioRef": "audio/tts_s11_action_Jrl6qH60.mp3"
+        },
+        {
+          "id": "action_gmVn0XGh",
+          "type": "widget_setState",
+          "state": {
+            "view": "contour",
+            "cameraPosition": [
+              0,
+              16,
+              0.01
+            ],
+            "cameraTarget": [
+              0,
+              -3.5,
+              0
+            ]
+          },
+          "content": "切换到等高线俯视图，展示曲面与投影的关系"
+        },
+        {
+          "id": "action_92DjWJug",
+          "type": "speech",
+          "text": "在手指旋转这个视角之前，请先思考一个问题：平面上最密的那一圈等高线，在它头顶上的曲面那里，究竟是陡峭的悬崖，还是平缓的山坡？带着你的猜想，动手拖动视角去找找看吧。",
+          "audioRef": "audio/tts_s11_action_92DjWJug.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在多输入函数的拖动实验中，当你固定 y 的值不变，仅左右拖动 x 的滑块时，函数值 z 的变化反应了什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "z 同时受到 x 和 y 变化的影响"
+              },
+              {
+                "value": "B",
+                "label": "z 沿 x 方向单独变化的趋势"
+              },
+              {
+                "value": "C",
+                "label": "z 在整个曲面上的最高点"
+              },
+              {
+                "value": "D",
+                "label": "z 随 y 变化的反向趋势"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "固定 y 不变，只拖动 x 的滑块，是为了观察在 y 保持不变的情况下，x 单独变化对 z 的影响。这反映了函数沿 x 方向的局部变化趋势，是理解偏导数（Partial Derivative）中“固定其他变量”这一核心操作的基础。选项 A 错误，因为此时 y 是固定的；选项 C 描述的是整体极值问题；选项 D 描述的是 y 方向，与本操作无关。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "在曲面与等高线的拖动实验中，高度滑块控制着一个水平切割平面。关于这个平面与曲面的交线（轮廓线）以及对应的等高线，以下哪些说法是正确的？",
+            "options": [
+              {
+                "value": "A",
+                "label": "交线上的所有点都具有相同的 z 值"
+              },
+              {
+                "value": "B",
+                "label": "交线投影到 x-y 平面上就形成了等高线"
+              },
+              {
+                "value": "C",
+                "label": "移动高度滑块时，交线的形状可能会改变"
+              },
+              {
+                "value": "D",
+                "label": "交线上的 x 值保持不变"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "C"
+            ],
+            "analysis": "A 正确，因为交线是通过一个水平平面（z 为常数）切割曲面得到的，所以线上点的 z 值都相同。B 正确，这正是等高线的生成原理：空间曲线投影到 x-y 平面。C 正确，因为移动滑块改变了切割高度，会切出曲面不同部位的轮廓，形状自然会变化，就像山峰在不同海拔高度的轮廓圈不一样。D 错误，交线是在 x-y 平面上自由的曲线，x 值是变化的。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "想象你站在一座山上，想要知道仅仅朝正东方向走时，海拔高度的变化快慢。这个想法最接近数学中的哪个操作？",
+            "options": [
+              {
+                "value": "A",
+                "label": "计算山的总体积"
+              },
+              {
+                "value": "B",
+                "label": "寻找山的最高点"
+              },
+              {
+                "value": "C",
+                "label": "在正北方向固定不变的情况下，观察高度沿正东方向的变化"
+              },
+              {
+                "value": "D",
+                "label": "同时计算所有方向的变化平均值"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "这个比喻正是偏导数概念的直观来源。朝正东方向走，意味着你的“北-南”坐标（y）保持不变。在这样的限制下观察高度（z）随“东-西”坐标（x）的变化率，就是“固定一个维度，观察沿另一个维度的变化”，即偏导数的核心思想。其他选项分别涉及体积、全局最值、全导数或方向导数的概念，与本场景不符。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "short_answer",
+            "question": "在曲面实验中，我们得到了不同高度的等高线。请用山峰的比喻解释：‘密集的等高线’和‘稀疏的等高线’分别代表真实山峰的什么特征？这种特征与我们即将学习的偏导数之间可能有什么直觉联系？",
+            "commentPrompt": "评分标准：(1) 准确解释密集等高线代表陡峭山坡，稀疏代表平缓山坡 - 50%；(2) 将陡峭/平缓与函数值变化的快慢建立联系 - 30%；(3) 尝试将其与“沿某个方向的变化率”建立直觉联系 - 20%。",
+            "analysis": "在山峰比喻中，密集的等高线意味着在很短的水平距离内，高度（海拔）就发生了剧烈的变化，这代表山坡非常陡峭。稀疏的等高线则代表山坡很平缓。这与偏导数有直接的直觉联系：偏导数本质上是衡量函数值沿某个坐标轴方向的变化速率。等高线越密集的方向，函数值变化越快，因此沿该方向的偏导数的绝对值很可能会更大。这为后续学习偏导数的几何意义（作为切线的斜率）提供了直观基础。",
+            "points": 20,
+            "hasAnswer": false
+          },
+          {
+            "id": "q5",
+            "type": "single",
+            "question": "在之前的曲面实验里，你尝试固定 x 轴滑块在某个位置，仅拖动 y 轴滑块。如果此时观察到 z 值变化非常小，这直观上说明了什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "函数沿 y 方向的变化趋势很平缓"
+              },
+              {
+                "value": "B",
+                "label": "函数沿 x 方向的变化趋势很平缓"
+              },
+              {
+                "value": "C",
+                "label": "函数在这一点达到了最小值"
+              },
+              {
+                "value": "D",
+                "label": "x 和 y 之间没有函数关系"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "当 x 固定，只拖动 y 滑块，我们观察的是函数值 z 随 y 的变化情况。变化非常小，意味着在当前固定的 x 位置，沿 y 方向移动时，曲面很平坦，即函数沿 y 方向的变化趋势平缓。这诊断了学生是否能区分“固定哪个维度”和“观察哪个维度的变化”。选项 B 错误，因为 x 现在是固定的；选项 C 是关于极值的判断，仅凭一小段变化平缓无法断定；选项 D 表述错误。",
+            "points": 10,
+            "hasAnswer": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_P9jNSlV8",
+          "type": "speech",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。相信大家已经对变量之间的联动关系和曲面的起伏有了一些直观的感受。现在，我们来做一个形成性小测验，这不仅能帮我们检验刚才的实验发现，也能为需要学习的偏导数（Partial Derivative）埋下直觉的种子。请大家保持放松，像回忆刚才拖动滑块的手感一样来做题。"
+        },
+        {
+          "id": "action_yCTjGavt",
+          "type": "speech",
+          "text": "做前面几个选择题的时候，重点关注题目里‘固定’和‘仅拖动’这两个词。比如第一题，想想我们在多输入函数实验里，固定 y 只滑 x 时，z 值是不是只反应了某个单一方向上的变化趋势？这就是我们理解变化率的一个关键起点。",
+          "audioRef": "audio/tts_s12_action_yCTjGavt.mp3"
+        },
+        {
+          "id": "action_dMWMQoZk",
+          "type": "speech",
+          "text": "再看第二题，回到我们刚刚旋转观察的曲面和切割平面。水平平面切出来的轮廓线，它上面的每一个点，z 值都是一样的吗？而这个三维空间的轮廓，投回到 x-y 平面，是不是就是我们看到的等高线？这些概念之间的几何对应关系，是理解偏导数图像意义的基础，大家一定要仔细辨别。",
+          "audioRef": "audio/tts_s12_action_dMWMQoZk.mp3"
+        },
+        {
+          "id": "action_U9FMRrgz",
+          "type": "speech",
+          "text": "最后注意一下简答题。用山峰来比喻等高线的疏密，其实就是把我们刚才在‘空间视角’里的思考，用自己的话表达出来。密集的等高线对应着大山里陡峭的悬崖，稀疏的则对应平缓的山坡。那么，这种‘陡’和‘缓’，如果用数学语言，也就是我们即将学习的偏导数来衡量，又意味着什么呢？这是一个很好的直觉连接。好了，请大家开始作答。",
+          "audioRef": "audio/tts_s12_action_U9FMRrgz.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "偏导数",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "IeILwEnARswQw4iXWDtNk",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_2jbf9NKX",
+              "left": 60,
+              "top": 50,
+              "width": 400,
+              "height": 129,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1F4E79;\">偏导数 (Partial Derivative)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "latex",
+              "id": "latex_XqvSCLBc",
+              "left": 500,
+              "top": 55,
+              "width": 440,
+              "height": 60,
+              "rotate": 0,
+              "latex": "f_x(x_0,y_0) = \\lim_{\\Delta x \\to 0} \\frac{f(x_0+\\Delta x, y_0)-f(x_0,y_0)}{\\Delta x}",
+              "color": "#2E75B6",
+              "fixedRatio": true,
+              "align": "right",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.1076em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">x</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.1713em;vertical-align:-0.7443em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.3557em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">Δ</span><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7443em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>"
+            },
+            {
+              "type": "shape",
+              "id": "shape_SmbVqs_r",
+              "left": 60,
+              "top": 210,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#00B050"
+            },
+            {
+              "type": "text",
+              "id": "text_F95VsuwJ",
+              "left": 85,
+              "top": 190,
+              "width": 275,
+              "height": 82,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #333333;\">理解“固定其余变量”</p><p style=\"font-size: 16px; color: #555555;\">将y视为常数，只对x求导。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_1GwK3Ke2",
+              "left": 60,
+              "top": 310,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#00B050"
+            },
+            {
+              "type": "text",
+              "id": "text__jmYnBLS",
+              "left": 85,
+              "top": 290,
+              "width": 275,
+              "height": 82,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #333333;\">纠正误解</p><p style=\"font-size: 16px; color: #555555;\">并非所有变量都要动，只动一个方向。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_i8r4W9ZG",
+              "left": 380,
+              "top": 140,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                280
+              ],
+              "style": "dashed",
+              "color": "#E0E0E0",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "latex",
+              "id": "latex_rkJq-3lq",
+              "left": 410,
+              "top": 140,
+              "width": 260,
+              "height": 80,
+              "rotate": 0,
+              "latex": "\\frac{\\partial f}{\\partial x}(x_0,y_0) = \\lim_{h\\to 0} \\frac{f(x_0+h, y_0)-f(x_0,y_0)}{h}",
+              "color": "#2E75B6",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.1791em;vertical-align:-0.7521em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.3479em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">h</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7521em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">h</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\">h</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>"
+            },
+            {
+              "type": "line",
+              "id": "line_NupNOiBl",
+              "left": 410,
+              "top": 240,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                260,
+                0
+              ],
+              "style": "solid",
+              "color": "#E0E0E0",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_RSnOlTPd",
+              "left": 410,
+              "top": 260,
+              "width": 260,
+              "height": 82,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #333333;\">直观解释：</p><p style=\"font-size: 16px; color: #555555;\">f在(x₀,y₀)处沿x方向的变化率。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_GYY3ENRf",
+              "left": 680,
+              "top": 320,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                220,
+                0
+              ],
+              "style": "solid",
+              "color": "#666666",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_ZPtC0840",
+              "left": 700,
+              "top": 160,
+              "width": 2,
+              "start": [
+                0,
+                160
+              ],
+              "end": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "color": "#666666",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_HGPIn_05",
+              "left": 700,
+              "top": 180,
+              "width": 3,
+              "start": [
+                0,
+                120
+              ],
+              "end": [
+                180,
+                20
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "curve": [
+                90,
+                120
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_Khg9CaLv",
+              "left": 790,
+              "top": 260,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                60
+              ],
+              "style": "dashed",
+              "color": "#999999",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_hwaOLaJX",
+              "left": 740,
+              "top": 210,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                100,
+                100
+              ],
+              "style": "dashed",
+              "color": "#FF0000",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_z53rLTwQ",
+              "left": 786,
+              "top": 256,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_elGbTtZ0",
+              "left": 900,
+              "top": 310,
+              "width": 30,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #666666;\">x</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "text",
+              "id": "text_YuL6VoAZ",
+              "left": 680,
+              "top": 140,
+              "width": 30,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #666666;\">z</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "text",
+              "id": "text_TdjcYbRX",
+              "left": 770,
+              "top": 325,
+              "width": 40,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #666666;\">x₀</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "text",
+              "id": "text_LH7gdHXW",
+              "left": 845,
+              "top": 210,
+              "width": 100,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #FF0000; font-weight: bold;\">切线斜率</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#FF0000"
+            },
+            {
+              "type": "shape",
+              "id": "shape_-MFhPcnn",
+              "left": 60,
+              "top": 450,
+              "width": 880,
+              "height": 60,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#D6E4F0"
+            },
+            {
+              "type": "text",
+              "id": "text_74RNSHJt",
+              "left": 80,
+              "top": 455,
+              "width": 840,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #1F4E79; text-align: center;\"><b>拓展：</b>偏导数 f_y 类似，固定 x，考虑 y 方向的变化。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_08DQEglG",
+          "type": "spotlight",
+          "elementId": "text_2jbf9NKX"
+        },
+        {
+          "id": "action_kEbwYJLk",
+          "type": "speech",
+          "text": "本场景聚焦“偏导数”。经过刚才的形成性测验，我们正式进入新的知识模块——偏导数，也就是 Partial Derivative。这是我们精确刻画‘陡’和‘缓’的数学语言。"
+        },
+        {
+          "id": "action_4xJOwrgm",
+          "type": "spotlight",
+          "elementId": "latex_XqvSCLBc"
+        },
+        {
+          "id": "action_rvZIJ3rs",
+          "type": "speech",
+          "text": "大家一起看这个极限形式的定义。它和我们在一元函数里学过的导数定义非常像，对不对？但这里有一个最关键的区别，请大家注意函数符号 f 的下标，多了一个 x。",
+          "audioRef": "audio/tts_s13_action_rvZIJ3rs.mp3"
+        },
+        {
+          "id": "action_wOJ4nlEo",
+          "type": "spotlight",
+          "elementId": "text_F95VsuwJ"
+        },
+        {
+          "id": "action_PiaZwq71",
+          "type": "speech",
+          "text": "这个下标的数学含义，就是本节课的核心——固定其余变量。也就是，我们暂时把 y 看作一个不变的常数，只考察 x 变化时，函数 f 会发生什么改变。这就像用一把平行于 x 轴的刀去切这个曲面。",
+          "audioRef": "audio/tts_s13_action_PiaZwq71.mp3"
+        },
+        {
+          "id": "action_mXy6vl8A",
+          "type": "spotlight",
+          "elementId": "text__jmYnBLS"
+        },
+        {
+          "id": "action_XshJoman",
+          "type": "speech",
+          "text": "我知道，很多同学，比如大家，可能一开始会直觉地想：‘既然是求导，那所有变量都应该跟着动啊。’这是一个非常典型的误解。请大家一定纠正过来：偏导数，一次只动一个方向。"
+        },
+        {
+          "id": "action_kQo24yvG",
+          "type": "spotlight",
+          "elementId": "text_RSnOlTPd"
+        },
+        {
+          "id": "action_tX9yzzZj",
+          "type": "speech",
+          "text": "所以，从直观上看，偏导数 f_x 到底是什么呢？它就是在点 (x₀, y₀) 处，函数沿 x 方向的变化率。",
+          "audioRef": "audio/tts_s13_action_tX9yzzZj.mp3"
+        },
+        {
+          "id": "action_OlhTk0DO",
+          "type": "spotlight",
+          "elementId": "text_LH7gdHXW"
+        },
+        {
+          "id": "action_INLpA2LR",
+          "type": "speech",
+          "text": "大家看图上这条线，这就是我们用平行于 x 轴的刀切出来的截面曲线。而这条切线，它的斜率，就是我们算出来的偏导数 f_x 的具体几何意义。",
+          "audioRef": "audio/tts_s13_action_INLpA2LR.mp3"
+        },
+        {
+          "id": "action_XT2JQJ0n",
+          "type": "spotlight",
+          "elementId": "text_74RNSHJt"
+        },
+        {
+          "id": "action_2a24ODU6",
+          "type": "speech",
+          "text": "当然，我们有了对 x 的偏导数，自然就会有对 y 的偏导数。它的逻辑完全一样，只不过换成了固定 x 轴，去考察 y 方向的变化率。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "偏导数：拖动实验",
+      "order": 14,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "partial_derivative",
+          "description": "偏导数可视化：通过锁定一个变量，观察三维曲面退化为二维曲线，理解偏导数即降维求导的本质。",
+          "variables": [
+            {
+              "name": "x_pos",
+              "label": "x 坐标",
+              "min": 0,
+              "max": 4,
+              "default": 2,
+              "unit": ""
+            },
+            {
+              "name": "y_pos",
+              "label": "y 坐标",
+              "min": 0,
+              "max": 4,
+              "default": 2,
+              "unit": ""
+            },
+            {
+              "name": "lock_x",
+              "label": "锁定X",
+              "min": 0,
+              "max": 1,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "lock_y",
+              "label": "锁定Y",
+              "min": 0,
+              "max": 1,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "delta_increment",
+              "label": "差分步长",
+              "min": 0.01,
+              "max": 0.5,
+              "default": 0.1,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "锁定X观察y",
+              "variables": {
+                "x_pos": 2,
+                "y_pos": 1.5,
+                "lock_x": true,
+                "lock_y": false
+              }
+            },
+            {
+              "name": "锁定Y观察x",
+              "variables": {
+                "x_pos": 1.5,
+                "y_pos": 2,
+                "lock_x": false,
+                "lock_y": true
+              }
+            },
+            {
+              "name": "山顶驻点",
+              "variables": {
+                "x_pos": 1.57,
+                "y_pos": 0,
+                "lock_x": false,
+                "lock_y": false
+              }
+            },
+            {
+              "name": "马鞍点",
+              "variables": {
+                "x_pos": 1.57,
+                "y_pos": 1.57,
+                "lock_x": false,
+                "lock_y": false
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/14_偏导数：拖动实验.html",
+        "htmlBytes": 780166
+      },
+      "actions": [
+        {
+          "id": "action_rNu4Q556",
+          "type": "speech",
+          "text": "本场景通过交互探索“偏导数：拖动实验”。对 x 求偏导就是固定 y 看 x 方向的变化率。现在，大家可以动手试一试这个过程。"
+        },
+        {
+          "id": "action_Cp9U69DG",
+          "type": "widget_highlight",
+          "target": "#lock_y",
+          "content": "先试着锁定 Y 轴。"
+        },
+        {
+          "id": "action__XaSc1yl",
+          "type": "speech",
+          "text": "看到这两个锁定开关了吗？我们先激活'锁定 Y'。这样一来，y 的值就被固定住了，曲面会退化成一条只随 x 变化的二维曲线，这就是我们要做的'降维'。",
+          "audioRef": "audio/tts_s14_action__XaSc1yl.mp3"
+        },
+        {
+          "id": "action_5Mu3Ubr6",
+          "type": "widget_setState",
+          "state": {
+            "x_pos": 1.5,
+            "y_pos": 2,
+            "lock_x": false,
+            "lock_y": true
+          },
+          "content": "锁定 Y 轴，准备观察 X 方向的变化。"
+        },
+        {
+          "id": "action_7_RAPoms",
+          "type": "speech",
+          "text": "好，现在 y 已经锁定了。请大家试着慢慢拖动 x 轴的滑块，观察右侧切面里的那条曲线，它是怎么变化的？特别是注意看面板上的切线斜率。",
+          "audioRef": "audio/tts_s14_action_7_RAPoms.mp3"
+        },
+        {
+          "id": "action_FQhPhL9I",
+          "type": "widget_annotation",
+          "target": "#delta_increment",
+          "content": "微调差分步长，可以更清晰地观察斜率变化。"
+        },
+        {
+          "id": "action_vbv6jaWw",
+          "type": "speech",
+          "text": "看到那个'差分步长'滑块了吗？调整它可以帮助我们更精细地观察 x 发生微小变化时，斜率的即时反馈。这就为我们理解'偏导即降维求导'提供了实实在在的操作证据。",
+          "audioRef": "audio/tts_s14_action_vbv6jaWw.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "偏导数：关系图",
+      "order": 15,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "偏导数",
+              "subtitle": "Partial Derivative",
+              "icon": "🎯",
+              "color": "#58a6ff",
+              "details": {
+                "title": "偏导数 (Partial Derivative)",
+                "subtitle": "多元函数的导数",
+                "body": "<h4>📖 什么是偏导数？</h4>\n<div class='analogy'>想象一座三维的山峰——站在山腰上，你可以朝不同方向走。偏导数就是：你只朝 <b>某一个方向</b>（比如正东或正南）迈步时，高度变化有多快。</div>\n<h4>🔑 核心思想</h4>\n<div class='highlight'>多元函数中，每次只对<b>一个变量</b>求导，<b>其余变量全部视为常数</b>。这就是「偏」的含义——不是全部，只是某一部分。</div>\n<h4>📝 数学定义</h4>\n<div class='formula'>∂f/∂x = lim<sub>h→0</sub> [f(x+h, y) − f(x, y)] / h</div>\n<p>这个公式告诉我们：固定 y 不变，只让 x 产生一个无穷小的变化 h，观察函数值的变化率。</p>"
+              }
+            },
+            {
+              "id": "n2",
+              "label": "固定变量",
+              "subtitle": "Fix Variables",
+              "icon": "🔒",
+              "color": "#f0883e",
+              "details": {
+                "title": "固定变量 (Fix Variables)",
+                "subtitle": "偏导运算的第一步",
+                "body": "<h4>🔒 为什么要固定变量？</h4>\n<div class='analogy'>就像拍摄山脉的横截面照片：你选定一个切面方向，把其他方向「冻结」住，只观察这一个方向上的地形变化。</div>\n<h4>📌 操作规则</h4>\n<div class='highlight'>当你计算 <b>∂f/∂x</b> 时：<br>• x 是<b>活跃变量</b>（会变化）<br>• 其他所有变量都变成<b>常数</b>（不动）</div>\n<h4>🧠 学生正确理解</h4>\n<p>计算 ∂f/∂x 时，y 必须被视为常数。这意味着：</p>\n<ul style='margin:8px 0 8px 20px;color:#8b949e'>\n<li>y 本身当作一个数字（如 5）</li>\n<li>y² 当作一个固定的数字</li>\n<li>sin(y) 当作一个固定的数字</li>\n</ul>\n<div class='warn'>这就像你只允许一辆车在一条路上移动，其他路口的车全部停住！</div>"
+              }
+            },
+            {
+              "id": "n3",
+              "label": "选择方向",
+              "subtitle": "Choose Direction",
+              "icon": "🧭",
+              "color": "#bc8cff",
+              "details": {
+                "title": "选择求导方向",
+                "subtitle": "决定对哪个变量求偏导",
+                "body": "<h4>🧭 方向决定一切</h4>\n<div class='analogy'>站在山坡上，你可以选择：</div>\n<ul style='margin:8px 0 8px 20px;color:#8b949e'>\n<li>向东走 → 计算 <b>∂f/∂x</b></li>\n<li>向南走 → 计算 <b>∂f/∂y</b></li>\n</ul>\n<h4>📌 关键区别</h4>\n<div class='formula'>∂f/∂x ≠ ∂f/∂y（通常不等！）</div>\n<div class='highlight'>不同方向的偏导数描述了函数在不同坐标轴方向上的变化率，它们一般是<b>完全不同的值</b>。</div>\n<p>这就是为什么偏导数是一个「方向性」的概念——你必须先选定方向，然后才能计算。</p>"
+              }
+            },
+            {
+              "id": "n4",
+              "label": "沿 x 方向",
+              "subtitle": "固定 y",
+              "icon": "➡️",
+              "color": "#58a6ff",
+              "details": {
+                "title": "沿 x 方向求偏导",
+                "subtitle": "∂f/∂x —— 固定 y，变化 x",
+                "body": "<h4>➡️ 沿 x 方向的操作</h4>\n<div class='highlight'><b>∂f/∂x</b>：固定 y 为常数，只让 x 变化。</div>\n<h4>📝 实例</h4>\n<p>设 <b>f(x, y) = x² + 3xy + y³</b></p>\n<div class='formula'>∂f/∂x = 2x + 3y</div>\n<p>注意：y³ 的偏导为 0（因为 y 被视为常数），3xy 对 x 求导得到 3y。</p>\n<div class='analogy'>想象你站在山峰上，朝正东方向（x 方向）迈步。此时 y 坐标不变，你只关心高度随 x 的变化。</div>"
+              }
+            },
+            {
+              "id": "n5",
+              "label": "沿 y 方向",
+              "subtitle": "固定 x",
+              "icon": "⬇️",
+              "color": "#3fb950",
+              "details": {
+                "title": "沿 y 方向求偏导",
+                "subtitle": "∂f/∂y —— 固定 x，变化 y",
+                "body": "<h4>⬇️ 沿 y 方向的操作</h4>\n<div class='highlight'><b>∂f/∂y</b>：固定 x 为常数，只让 y 变化。</div>\n<h4>📝 实例</h4>\n<p>设 <b>f(x, y) = x² + 3xy + y³</b></p>\n<div class='formula'>∂f/∂y = 3x + 3y²</div>\n<p>注意：x² 的偏导为 0（因为 x 被视为常数），3xy 对 y 求导得到 3x。</p>\n<div class='analogy'>这次你朝正南方向（y 方向）迈步。x 坐标不变，你只关心高度随 y 的变化。同一座山，不同方向坡度不同！</div>"
+              }
+            },
+            {
+              "id": "n6",
+              "label": "施加扰动",
+              "subtitle": "Apply Perturbation",
+              "icon": "📏",
+              "color": "#d2a8ff",
+              "details": {
+                "title": "施加微小扰动",
+                "subtitle": "让目标变量产生无穷小变化",
+                "body": "<h4>📏 扰动的含义</h4>\n<div class='analogy'>扰动就像往池塘里轻轻扔一颗小石子——我们希望观察水面如何微微波动，而不是引发惊涛骇浪。</div>\n<h4>🔬 数学表达</h4>\n<div class='formula'>x → x + h （h 是无穷小量）</div>\n<p>让目标变量产生一个无穷小的位移 h，然后观察函数值的变化。</p>\n<h4>📌 步骤</h4>\n<ol style='margin:8px 0 8px 20px;color:#8b949e'>\n<li>选定求导变量（如 x）</li>\n<li>将该变量替换为 x + h</li>\n<li>计算 f(x+h, y) − f(x, y)</li>\n<li>将结果除以 h</li>\n<li>取极限 h → 0</li>\n</ol>"
+              }
+            },
+            {
+              "id": "n7",
+              "label": "观测响应",
+              "subtitle": "Observe Response",
+              "icon": "👁️",
+              "color": "#79c0ff",
+              "details": {
+                "title": "观测函数响应",
+                "subtitle": "函数值如何随扰动变化",
+                "body": "<h4>👁️ 函数如何响应？</h4>\n<div class='analogy'>就像用测速仪测量车速：你不需要车走很远，只需要在极短的时间内观察速度变化。偏导数测量的就是函数在某一点「沿某个方向的瞬时变化率」。</div>\n<h4>📊 响应分析</h4>\n<div class='formula'>Δf ≈ (∂f/∂x) · Δx + (∂f/∂y) · Δy</div>\n<p>这个近似公式（全微分）告诉我们：函数的总变化 ≈ 各个方向偏导数贡献的总和。</p>\n<div class='highlight'>如果 ∂f/∂x = 3，意味着 x 每增加 1 单位，f 大约增加 3 单位（y 固定时）。</div>"
+              }
+            },
+            {
+              "id": "n8",
+              "label": "取极限",
+              "subtitle": "h → 0",
+              "icon": "🎯",
+              "color": "#f0883e",
+              "details": {
+                "title": "取极限得到偏导数",
+                "subtitle": "lim[h→0] Δf/h 的精确值",
+                "body": "<h4>🎯 从近似到精确</h4>\n<div class='analogy'>先用大步子估计坡度，然后步子越来越小……直到步长趋近于 0，你就得到了<b>精确的瞬时变化率</b>。这就是极限的力量！</div>\n<h4>📐 极限定义</h4>\n<div class='formula'>∂f/∂x = lim<sub>h→0</sub> [f(x+h, y) − f(x, y)] / h</div>\n<h4>📌 几何意义</h4>\n<p>偏导数 ∂f/∂x 就是函数曲面与平面 y = 常数相交的<b>切线斜率</b>。</p>\n<div class='highlight'>这就是偏导数的精确定义——它不是近似值，而是当扰动无限缩小时的<b>精确变化率</b>。</div>"
+              }
+            },
+            {
+              "id": "n9",
+              "label": "常见误区",
+              "subtitle": "Common Mistake",
+              "icon": "❌",
+              "color": "#f85149",
+              "details": {
+                "title": "常见误区 ⚠️",
+                "subtitle": "错误地将所有变量都求导",
+                "body": "<h4>❌ 典型错误</h4>\n<div class='warn'>学生经常犯的错误：在计算偏导数时，把所有变量都当成变量来求导！这实际上是在做全导数，而不是偏导数。</div>\n<h4>📝 错误示例</h4>\n<p>设 <b>f(x, y) = x² + 3xy + y³</b></p>\n<p style='color:#f85149'>❌ 错误：∂f/∂x = 2x + 3y + 3y²（y³ 也被求导了！）</p>\n<p style='color:#3fb950'>✅ 正确：∂f/∂x = 2x + 3y（y 视为常数，y³ 的导数为 0）</p>\n<h4>💡 如何避免？</h4>\n<div class='highlight'>求 ∂f/∂<b>x</b> 时，在草稿纸上把所有 <b>y</b> 替换成一个数字（比如 7）。这样你绝对不会对 y 求导了！</div>\n<div class='analogy'>就像你拍照时只对准一个模特，背景里的人全部虚化成模糊——他们存在，但不参与焦点。</div>"
+              }
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "第一步"
+            },
+            {
+              "from": "n2",
+              "to": "n3",
+              "label": "确定"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "∂/∂x"
+            },
+            {
+              "from": "n3",
+              "to": "n5",
+              "label": "∂/∂y"
+            },
+            {
+              "from": "n4",
+              "to": "n6",
+              "label": "继续"
+            },
+            {
+              "from": "n5",
+              "to": "n6",
+              "label": "继续"
+            },
+            {
+              "from": "n6",
+              "to": "n7",
+              "label": "观察"
+            },
+            {
+              "from": "n7",
+              "to": "n8",
+              "label": "精确化"
+            },
+            {
+              "from": "n1",
+              "to": "n9",
+              "label": "⚠️注意",
+              "style": "dashed"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7",
+            "n8",
+            "n9"
+          ]
+        },
+        "htmlPath": "interactive/15_偏导数：关系图.html",
+        "htmlBytes": 771453
+      },
+      "actions": [
+        {
+          "id": "action_RzRM8Z3z",
+          "type": "speech",
+          "text": "本场景通过交互探索“偏导数：关系图”。直观感受了偏导数就是固定一个变量、只看另一个方向的变化率。现在，让我们用这张关系图，把'偏导数—Partial Derivative'的完整逻辑流程梳理清楚。"
+        },
+        {
+          "id": "action_BhFeFqYX",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "揭示偏导数的核心定义节点。"
+        },
+        {
+          "id": "action_1MFPjDeW",
+          "type": "speech",
+          "text": "请看这张流程图，它从核心概念'偏导数'开始。注意，第一步马上就指向了'固定变量'——这正是我们刚才实验中反复体会的：求偏导时，必须先把其他变量'冻结'住。",
+          "audioRef": "audio/tts_s15_action_1MFPjDeW.mp3"
+        },
+        {
+          "id": "action_X7GF_Stb",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "揭示固定变量节点。"
+        },
+        {
+          "id": "action_RF_eofPg",
+          "type": "speech",
+          "text": "固定变量之后，才轮到'选择方向'——你是要沿x方向走，还是沿y方向走？这里出现了分叉，分别对应∂f/∂x和∂f/∂y。",
+          "audioRef": "audio/tts_s15_action_RF_eofPg.mp3"
+        },
+        {
+          "id": "action_cHvlXfUn",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "揭示选择方向节点。"
+        },
+        {
+          "id": "action_YF8EjvpS",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "揭示沿x方向的分支。"
+        },
+        {
+          "id": "action__ejQ_atK",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "揭示沿y方向的分支。"
+        },
+        {
+          "id": "action_mUCnK3N9",
+          "type": "speech",
+          "text": "两条路径最终都汇合到'施加扰动'和'观测响应'，最后通过取极限，得到精确的变化率。大家特别注意右下角那条虚线，直接指向了'常见误区'——这是很多同学，比如大家，容易掉的坑：忘记固定变量，把所有输入都当成变量来求导。"
+        },
+        {
+          "id": "action_lGeoefBW",
+          "type": "widget_reveal",
+          "target": "#n9",
+          "content": "揭示常见误区节点，强调其重要性。"
+        },
+        {
+          "id": "action_hAfknU9Z",
+          "type": "speech",
+          "text": "请在你的脑海里牢牢固化这条路径：固定变量、选择方向、施加扰动、观测响应。这就是偏导数运算的完整心法。",
+          "audioRef": "audio/tts_s15_action_hAfknU9Z.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "偏导数：误解修复挑战",
+      "order": 16,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "action",
+          "description": "偏导数平衡挑战：通过独立的x方向和y方向控制，在波动的曲面上稳定小球",
+          "gameConfig": {
+            "controls": [
+              "x_slider",
+              "y_slider"
+            ],
+            "learningObjective": "理解偏导数的独立性：∂f/∂x 和 ∂f/∂y 可以分别控制",
+            "levels": 8
+          },
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "achievements": [
+            {
+              "id": "first_stable",
+              "name": "初窥门径",
+              "description": "首次在目标区稳定10秒",
+              "icon": "🌟"
+            },
+            {
+              "id": "stable_30",
+              "name": "稳如泰山",
+              "description": "在目标区稳定30秒",
+              "icon": "🏔️"
+            },
+            {
+              "id": "all_independent",
+              "name": "偏导大师",
+              "description": "完全通过独立x/y控制通关",
+              "icon": "🎓"
+            },
+            {
+              "id": "level5",
+              "name": "曲面征服者",
+              "description": "到达第5关",
+              "icon": "👑"
+            },
+            {
+              "id": "perfect",
+              "name": "完美平衡",
+              "description": "一局中获得500分以上",
+              "icon": "💎"
+            }
+          ]
+        },
+        "htmlPath": "interactive/16_偏导数：误解修复挑战.html",
+        "htmlBytes": 776904
+      },
+      "actions": [
+        {
+          "id": "action_BiyTKEy-",
+          "type": "speech",
+          "text": "本场景通过交互探索“偏导数：误解修复挑战”。让我们进入一个真实的误解修复挑战。"
+        },
+        {
+          "id": "action_N2tWv95y",
+          "type": "widget_highlight",
+          "target": "#x_slider",
+          "content": "先看看这个控制x方向的滑块。"
+        },
+        {
+          "id": "action_qlqv6FeA",
+          "type": "speech",
+          "text": "你之前总喜欢两个方向一起调，这次我们强制分步走。你先只用x方向滑块，试着把小球稳定住。"
+        },
+        {
+          "id": "action_uGzpfpip",
+          "type": "widget_setState",
+          "state": {
+            "x_slider": 0.7
+          },
+          "content": "只移动x滑块，观察小球如何变化。"
+        },
+        {
+          "id": "action_mEiv6hVB",
+          "type": "speech",
+          "text": "看到了吗？任何复杂的曲面稳定问题，都可以分解成x方向的独立修正和y方向的独立修正。这就是偏导数∂f/∂x（partial f partial x）和∂f/∂y的独立性原理。它不是只能斜着走，而是你可以交替使用两个单向控制来达到同样的稳定效果。",
+          "audioRef": "audio/tts_s16_action_mEiv6hVB.mp3"
+        },
+        {
+          "id": "action_rCSy2V6p",
+          "type": "widget_highlight",
+          "target": "#y_slider",
+          "content": "现在再试试y方向的滑块，同样单独操作。"
+        },
+        {
+          "id": "action_OpIOPD-O",
+          "type": "speech",
+          "text": "试试看，一步一步地，你就能在波动的曲面上找到平衡点。完成后，我们会回到空间视角，看看这个平衡在三维曲面上的真实位置。",
+          "audioRef": "audio/tts_s16_action_OpIOPD-O.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "偏导数：空间视角",
+      "order": 17,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "偏导数空间视角：3D 曲面上的切线可视化，展示偏导数作为特定切片上曲线的导数",
+          "objects": [
+            {
+              "id": "surface",
+              "type": "mesh",
+              "label": "曲面 f(x,y)=sin(x)·cos(y)",
+              "material": {
+                "type": "phong",
+                "vertexColors": true
+              }
+            },
+            {
+              "id": "tangentX",
+              "type": "line",
+              "label": "X方向切线 (∂f/∂x)",
+              "material": {
+                "type": "basic",
+                "color": "#ff4444"
+              }
+            },
+            {
+              "id": "tangentY",
+              "type": "line",
+              "label": "Y方向切线 (∂f/∂y)",
+              "material": {
+                "type": "basic",
+                "color": "#4488ff"
+              }
+            },
+            {
+              "id": "sliceX",
+              "type": "line",
+              "label": "X方向切片曲线",
+              "material": {
+                "type": "basic",
+                "color": "#ff8844"
+              }
+            },
+            {
+              "id": "sliceY",
+              "type": "line",
+              "label": "Y方向切片曲线",
+              "material": {
+                "type": "basic",
+                "color": "#44cc88"
+              }
+            },
+            {
+              "id": "probe",
+              "type": "sphere",
+              "label": "探针点",
+              "material": {
+                "type": "emissive",
+                "color": "#ffdd44"
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "slider",
+              "param": "probeX",
+              "label": "探针 X",
+              "min": -3.14,
+              "max": 3.14,
+              "default": 1
+            },
+            {
+              "type": "slider",
+              "param": "probeY",
+              "label": "探针 Y",
+              "min": -3.14,
+              "max": 3.14,
+              "default": 1
+            },
+            {
+              "type": "toggle",
+              "param": "tangentX",
+              "label": "∂f/∂x 切线",
+              "default": true
+            },
+            {
+              "type": "toggle",
+              "param": "tangentY",
+              "label": "∂f/∂y 切线",
+              "default": true
+            },
+            {
+              "type": "toggle",
+              "param": "sliceX",
+              "label": "X切片",
+              "default": true
+            },
+            {
+              "type": "toggle",
+              "param": "sliceY",
+              "label": "Y切片",
+              "default": true
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "鞍点观察",
+              "state": {
+                "probeX": 0,
+                "probeY": 0,
+                "cameraPosition": [
+                  6,
+                  4,
+                  6
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "山脊线",
+              "state": {
+                "probeX": 1.57,
+                "probeY": 0,
+                "cameraPosition": [
+                  8,
+                  8,
+                  10
+                ],
+                "cameraTarget": [
+                  1.57,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "谷底观察",
+              "state": {
+                "probeX": -1.57,
+                "probeY": 0,
+                "cameraPosition": [
+                  -8,
+                  8,
+                  10
+                ],
+                "cameraTarget": [
+                  -1.57,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "整体视角",
+              "state": {
+                "cameraPosition": [
+                  12,
+                  14,
+                  16
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/17_偏导数：空间视角.html",
+        "htmlBytes": 2518660
+      },
+      "actions": [
+        {
+          "id": "action_XtCtPHky",
+          "type": "speech",
+          "text": "本场景通过交互探索“偏导数：空间视角”。可以观察到平衡点在等高线上的位置。现在，我们终于要回到三维空间，看看那个平衡点——也就是我们关心的偏导数，在曲面上到底长什么样。"
+        },
+        {
+          "id": "action_TDKXhlzp",
+          "type": "widget_setState",
+          "state": {
+            "probeX": 0,
+            "probeY": 0,
+            "cameraPosition": [
+              6,
+              4,
+              6
+            ],
+            "cameraTarget": [
+              0,
+              0,
+              0
+            ],
+            "tangentX": true,
+            "tangentY": true,
+            "sliceX": true,
+            "sliceY": true
+          },
+          "content": "加载鞍点观察预设，展示原点处两条切线"
+        },
+        {
+          "id": "action_31IdTitS",
+          "type": "speech",
+          "text": "你们看，这个曲面就是 f(x,y)=sin(x)·cos(y)。我们把探针放在了原点——也就是 x=0, y=0 的位置。现在我同时打开了 X 方向和 Y 方向的切片曲线，以及它们对应的切线。注意，这两条切线都是水平的！这意味着什么呢，大家？"
+        },
+        {
+          "id": "action_wJ_KDX4p",
+          "type": "speech",
+          "text": "没错，切线的斜率都为零，说明在这个点上，∂f/∂x 和 ∂f/∂y 同时等于零。但你们看整体曲面，原点周围既有上升趋势，也有下降趋势。这就是为什么我们叫它鞍点——它只是在一个方向上‘停住’了，并不是真正的山峰或谷底。",
+          "audioRef": "audio/tts_s17_action_wJ_KDX4p.mp3"
+        },
+        {
+          "id": "action_bVIXuIeH",
+          "type": "widget_setState",
+          "state": {
+            "probeX": 1.57,
+            "probeY": 0,
+            "cameraPosition": [
+              8,
+              8,
+              10
+            ],
+            "cameraTarget": [
+              1.57,
+              0,
+              0
+            ],
+            "tangentX": true,
+            "tangentY": true,
+            "sliceX": true,
+            "sliceY": false
+          },
+          "content": "加载山脊线预设，观察 X 方向切线的水平特征"
+        },
+        {
+          "id": "action_lR6WeSVg",
+          "type": "speech",
+          "text": "现在我把探针移到了 x≈1.57 的位置，也就是曲面的‘山脊线’附近。你留意到红色的 X 方向切线有什么特点？对，它又变平了！沿着山脊的走向，曲面在 X 方向暂时不再升降，所以 ∂f/∂x 为零。这就是‘在曲面脊线处偏导数为零的方向特征’——这个证据现在在三维空间里一目了然。"
+        },
+        {
+          "id": "action_V3L2W5cU",
+          "type": "widget_annotation",
+          "target": "#probe",
+          "content": "沿山脊移动探针，观察 ∂f/∂x 何时为零"
+        },
+        {
+          "id": "action_kn7o3Uig",
+          "type": "speech",
+          "text": "接下来，大家可以试着只打开 X 切片，然后慢慢拖动探针的 X 滑块，去感受红色的切线是如何旋转、倾斜，然后再度变平。这种动态旋转，就是偏导数 ∂f/∂x 在几何上的直观体现——它不是固定的，而是随位置变化的。完成这个观察后，我们就可以在全课整理中，把偏导数的所有证据串联起来了。",
+          "audioRef": "audio/tts_s17_action_kn7o3Uig.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "MFpaoNpPHcGHnReYU3lE3",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_julWaSGd",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1B3A5C;\">全课整理：证据链回看</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_2UuXIZaf",
+              "left": 100,
+              "top": 126,
+              "width": 800,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #2C5F8A;\">从多变量映射到单向变化率的完整知识体系</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C5F8A"
+            },
+            {
+              "type": "shape",
+              "id": "shape_T0PKL4Qj",
+              "left": 50,
+              "top": 175,
+              "width": 260,
+              "height": 240,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#EAF0F7"
+            },
+            {
+              "type": "shape",
+              "id": "shape_V2L4atqX",
+              "left": 370,
+              "top": 175,
+              "width": 260,
+              "height": 240,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#EAF0F7"
+            },
+            {
+              "type": "shape",
+              "id": "shape_uBx8RInf",
+              "left": 690,
+              "top": 175,
+              "width": 260,
+              "height": 260,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#EAF0F7"
+            },
+            {
+              "type": "text",
+              "id": "text_YP7AtkWP",
+              "left": 60,
+              "top": 185,
+              "width": 240,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1B3A5C;\">1. 联合决定性实验</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_mDxQddX2",
+              "left": 60,
+              "top": 240,
+              "width": 240,
+              "height": 160,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333; line-height: 1.5;\">在拖动实验中，同时改变 x、y 时 z 的变化并非简单叠加，而是呈现出联合决定性——即 z 的增量由两个变量的共同作用决定。这一直观观察引出了偏导数的必要性。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_hepJFuVi",
+              "left": 380,
+              "top": 185,
+              "width": 240,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1B3A5C;\">2. 等高线与曲面对话</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_oPuVvC7Z",
+              "left": 380,
+              "top": 240,
+              "width": 240,
+              "height": 160,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333; line-height: 1.5;\">等高线将三维曲面降维为二维投影，每条线代表相同 z 值。沿等高线移动时偏导数为零，垂直等高线方向梯度最大。曲面视角则显示偏导数对应某一坐标方向上的切线斜率。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_NVLcqsMK",
+              "left": 700,
+              "top": 185,
+              "width": 240,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1B3A5C;\">3. 通往一元求导的桥梁</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_hf0VMss1",
+              "left": 700,
+              "top": 240,
+              "width": 240,
+              "height": 127,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333; line-height: 1.5;\">偏导数的核心思想是“固定其他变量，只对一个变量求导”。正是这一操作，将多元函数的多重影响拆解为若干独立的一元导数问题。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_fnfaSnpp",
+              "left": 700,
+              "top": 372,
+              "width": 240,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\frac{\\partial f}{\\partial x} = \\lim_{h \\to 0} \\frac{f(x+h,y)-f(x,y)}{h}",
+              "color": "#1B3A5C",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.1791em;vertical-align:-0.7521em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.3479em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">h</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7521em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">h</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\">h</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>"
+            },
+            {
+              "type": "line",
+              "id": "line__9ieIEUu",
+              "left": 315,
+              "top": 295,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                50,
+                0
+              ],
+              "style": "solid",
+              "color": "#2C5F8A",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_O7kZz0k7",
+              "left": 635,
+              "top": 295,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                50,
+                0
+              ],
+              "style": "solid",
+              "color": "#2C5F8A",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_Mjsi7hPF",
+              "left": 50,
+              "top": 435,
+              "width": 900,
+              "height": 75,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F4F7FA"
+            },
+            {
+              "type": "text",
+              "id": "text_8HAXGnoy",
+              "left": 60,
+              "top": 448,
+              "width": 110,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #1B3A5C; font-weight: bold;\">多变量映射</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "line",
+              "id": "line_K_l7shaU",
+              "left": 175,
+              "top": 472,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                20,
+                0
+              ],
+              "style": "solid",
+              "color": "#2C5F8A",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_Z6HyLLdT",
+              "left": 200,
+              "top": 448,
+              "width": 140,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #1B3A5C; font-weight: bold;\">联合决定性实验</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "line",
+              "id": "line_SX4SNiT3",
+              "left": 345,
+              "top": 472,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                20,
+                0
+              ],
+              "style": "solid",
+              "color": "#2C5F8A",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_HOMqEIDt",
+              "left": 370,
+              "top": 448,
+              "width": 120,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #1B3A5C; font-weight: bold;\">等值线/曲面</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "line",
+              "id": "line_OkSfjbh6",
+              "left": 495,
+              "top": 472,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                20,
+                0
+              ],
+              "style": "solid",
+              "color": "#2C5F8A",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_aLv8jjQ8",
+              "left": 520,
+              "top": 448,
+              "width": 100,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #1B3A5C; font-weight: bold;\">偏导数</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "line",
+              "id": "line_9ysc5PkS",
+              "left": 625,
+              "top": 472,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                20,
+                0
+              ],
+              "style": "solid",
+              "color": "#2C5F8A",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_jQ4hQLYn",
+              "left": 650,
+              "top": 448,
+              "width": 100,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #1B3A5C; font-weight: bold;\">一元求导</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "latex",
+              "id": "latex_julqjbaq",
+              "left": 770,
+              "top": 445,
+              "width": 160,
+              "height": 55,
+              "rotate": 0,
+              "latex": "\\frac{\\partial f}{\\partial x} = \\lim_{h \\to 0} \\frac{f(x+h,y)-f(x,y)}{h}",
+              "color": "#1B3A5C",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.1791em;vertical-align:-0.7521em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.3479em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">h</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7521em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">h</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\">h</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_6uGFr64p",
+          "type": "spotlight",
+          "elementId": "text_julWaSGd"
+        },
+        {
+          "id": "action_yKVt8sji",
+          "type": "speech",
+          "text": "本场景聚焦“全课整理：证据链回看”。好了，我们刚刚在空间视角里，亲手操作了切片，看到了偏导数的几何意义。现在，是时候把这节课所有的线索都串联起来，做一次全课的‘证据链回看’。"
+        },
+        {
+          "id": "action_dVqG8AkB",
+          "type": "spotlight",
+          "elementId": "text_8HAXGnoy"
+        },
+        {
+          "id": "action_aQL5kMVq",
+          "type": "speech",
+          "text": "我们的起点，是关于多个输入变量如何共同影响结果的‘多变量映射’。比如，山峰的高度z，是由经度x和纬度y一起决定的。",
+          "audioRef": "audio/tts_s18_action_aQL5kMVq.mp3"
+        },
+        {
+          "id": "action_MF7SSxDE",
+          "type": "spotlight",
+          "elementId": "text_YP7AtkWP"
+        },
+        {
+          "id": "action_TaSU-b7v",
+          "type": "speech",
+          "text": "证据链的第一个环节，就是我们做的‘联合决定性实验’。通过拖动，我们发现，同时改变x和y时，z的变化不是简单的1+1=2，而是一种复杂的联合作用。",
+          "audioRef": "audio/tts_s18_action_TaSU-b7v.mp3"
+        },
+        {
+          "id": "action_cE4BeNti",
+          "type": "spotlight",
+          "elementId": "text_hepJFuVi"
+        },
+        {
+          "id": "action_24EAt-aA",
+          "type": "speech",
+          "text": "为了看清这种复杂关系，我们引入了‘等高线与曲面’的对话。等高线就像一个降维工具，把三维问题投影到二维平面上，让我们能看清哪里变化快，哪里变化慢，哪里是山顶。",
+          "audioRef": "audio/tts_s18_action_24EAt-aA.mp3"
+        },
+        {
+          "id": "action_mDfWDlPH",
+          "type": "spotlight",
+          "elementId": "text_NVLcqsMK"
+        },
+        {
+          "id": "action_Buy-SwWK",
+          "type": "speech",
+          "text": "最后，所有这些探索，都把我们引向了核心工具——‘偏导数’，也就是我们这节课的关键桥梁。",
+          "audioRef": "audio/tts_s18_action_Buy-SwWK.mp3"
+        },
+        {
+          "id": "action_dd8nERIt",
+          "type": "spotlight",
+          "elementId": "text_hf0VMss1"
+        },
+        {
+          "id": "action_GRnCPYQA",
+          "type": "speech",
+          "text": "偏导数的核心思想，就是‘固定其他变量，只对一个变量求导’。正是这个操作，让我们把一个复杂的多元函数问题，巧妙地拆解成了我们熟悉的一元求导问题。从多变量映射到单向变化率的整个知识体系，就是这样一步步构建起来的。",
+          "audioRef": "audio/tts_s18_action_GRnCPYQA.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "后测：多元函数、曲面与偏导数综合测评",
+      "order": 19,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "考虑一个函数 f(x, y) = x^2 + y^2，表示一个圆形抛物面。如果我们用平面 y = 1 去截这个曲面，得到的截线方程是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "f(x, y) = x^2 + 1"
+              },
+              {
+                "value": "B",
+                "label": "f(x, y) = x^2 + y^2 + 1"
+              },
+              {
+                "value": "C",
+                "label": "f(x, y) = 1 + y^2"
+              },
+              {
+                "value": "D",
+                "label": "f(x, y) = (x + 1)^2 + y^2"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "正确。当用平面 y = 1 截曲面时，相当于将函数中的 y 固定为常数 1。因此，截面上的点都满足 f(x, 1) = x^2 + 1^2 = x^2 + 1。这是一条开口向上的抛物线。选项B错误，它没有进行变量替换。选项C错误，它固定了x而非y。选项D错误，它错误地修改了x变量。此题验证了将多变量函数降维为单变量函数（切片）的基本操作。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "某二元函数 z=f(x,y) 的等高线是以原点为中心的同心圆，函数值由内向外递减。点 P 位于第一象限且不在圆心。根据这些信息，关于 f_x(P) 和 f_y(P) 的符号，哪些说法正确？",
+            "options": [
+              {
+                "value": "A",
+                "label": "因为从 P 点向右（x 增加方向）移动，会进入数值更小的等高线，所以 f_x(P) < 0。"
+              },
+              {
+                "value": "B",
+                "label": "当 y 增加时，P 会远离圆心并进入更小的函数值区域，所以 f_y(P) < 0。"
+              },
+              {
+                "value": "C",
+                "label": "因为从 P 点向左（x 减小方向）移动，会进入数值更大的等高线，所以 f_x(P) > 0。"
+              },
+              {
+                "value": "D",
+                "label": "因为从 P 点向上（y 增加方向）移动，会进入数值更大的等高线，所以 f_y(P) < 0。"
+              }
+            ],
+            "answer": [
+              "A",
+              "B"
+            ],
+            "analysis": "函数值由内向外递减，且 P 位于第一象限，因此沿 +x 或 +y 方向移动都会远离原点并使函数值减小，所以 f_x(P)<0、f_y(P)<0。A 正确；B 按 y 增加方向判断，也正确。C 把“向左移动时函数增加”误读为 f_x>0，而 f_x 描述的是 x 增加方向的变化率。D 错误，因为向上会远离圆心，函数值应减小。正确答案为 A、B。",
+            "points": 20,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "对于函数 f(x, y) = x^3 * y + y^2，在点 (1, 2) 处，偏导数 f_x(1, 2) 的值为多少？",
+            "options": [
+              {
+                "value": "A",
+                "label": "6"
+              },
+              {
+                "value": "B",
+                "label": "12"
+              },
+              {
+                "value": "C",
+                "label": "15"
+              },
+              {
+                "value": "D",
+                "label": "10"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "正确。求偏导数 f_x 时，把 y 当作常数。对 x^3*y 求导得 3x^2*y，对 y^2 求导得 0。代入 x=1, y=2，f_x(1,2) = 3*(1)^2*2 = 6。所以答案是6。选项B可能是把 x 的指数3误乘到 y 上。C和D是常见计算错误。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "short_answer",
+            "question": "请用自己的话，结合“山峰”或“切片”的类比，解释为什么我们在计算多元函数对某个变量的偏导数时，必须将其他所有变量暂时“锁定”（视为常数）。这种“锁定”背后的数学思想和几何意义是什么？",
+            "commentPrompt": "评分标准:\n(1) 解释“锁定”变量是为了研究单变量方向上的瞬时变化率 (40%)\n(2) 给出清晰的几何类比：如固定y相当于用垂直平面截取曲面得到一条曲线，再求该曲线在对应点处的切线斜率 (40%)\n(3) 语言表达清晰，逻辑连贯 (20%)",
+            "analysis": "参考解答：想象你正站在一座形状为 z = f(x, y) 的山峰上。如果你想精确知道，仅仅朝正东方向（x轴方向）走，脚下的坡度有多陡，那么你计划行走的路径必须严格限制在南北方向（y轴）坐标不变的一条线上。这就相当于用一个 y = c 的垂直平板去切这座山，切出来的轮廓线就是一条二维曲线。此时，山的高度只随着你的东西位置x变化，问题就变成了一个简单的单变量函数求导问题，即求这条切片曲线在特定点处的斜率。所以，“锁定”其他变量是为了隔离出我们关心的那个方向，单独分析它带来的影响，这是多元微积分从复杂到简单的关键思想。",
+            "points": 25,
+            "hasAnswer": false
+          },
+          {
+            "id": "q5",
+            "type": "single",
+            "question": "已知函数 f(x, y) = ln(x^2 + y)。那么二阶混合偏导数 f_xy (先对x求导，再对y求导) 的结果是哪个？",
+            "options": [
+              {
+                "value": "A",
+                "label": "2x / (x^2 + y)^2"
+              },
+              {
+                "value": "B",
+                "label": "-2x / (x^2 + y)^2"
+              },
+              {
+                "value": "C",
+                "label": "(2(x^2 + y) - 4x^2) / (x^2 + y)^2"
+              },
+              {
+                "value": "D",
+                "label": "1 / (x^2 + y)"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "正确。首先求一阶偏导 f_x：将 y 视为常数，f_x = (1/(x^2 + y)) * 2x = 2x * (x^2 + y)^(-1)。然后对 f_x 求关于 y 的偏导数 f_xy：将 x 视为常数，使用链式法则或乘积法则，f_xy = 2x * (-1) * (x^2 + y)^(-2) * (1) = -2x / (x^2 + y)^2。选项A符号错误。选项C是二阶偏导 f_xx 的结果。选项D是一阶偏导 f_y 的结果。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "multiple",
+            "question": "下列哪些陈述准确描述了单变量函数导数与二元函数偏导数之间的关系或区别？",
+            "options": [
+              {
+                "value": "A",
+                "label": "对于一个二元函数 z = f(x, y)，偏导数 f_x(x0, y0) 实际上是单变量函数 g(x) = f(x, y0) 在 x = x0 处的普通导数。"
+              },
+              {
+                "value": "B",
+                "label": "函数在一点可微，只需在该点所有偏导数存在即可，这与一元函数可导必可微的性质一致。"
+              },
+              {
+                "value": "C",
+                "label": "偏导数反映的是函数沿坐标轴方向的变化率，而单变量导数反映的是沿自变量整个定义域的变化率，这是因变量个数增加导致的本质区别。"
+              },
+              {
+                "value": "D",
+                "label": "如果 f_x 和 f_y 在某区域内连续，那么对于该区域内任意点，混合偏导数 f_xy 和 f_yx 相等。"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "正确。A 描述了偏导数定义的降维思想，是正确的。C 准确指出了偏导数的方向性，是理解多元函数的核心。D 是克莱罗定理（混合偏导数定理）的内容，表明在偏导数连续的条件下求导顺序可交换。B 错误，这是多元函数与一元函数的重要区别之一：对于多元函数，各偏导数存在并不能保证函数在该点可微（甚至不能保证连续），需要更强的条件。因此 A, C, D 正确。",
+            "points": 20,
+            "hasAnswer": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_5OpZcwLb",
+          "type": "speech",
+          "text": "这是一组关于“后测：多元函数、曲面与偏导数综合测评”的独立测验。好了，现在让我们用这份综合测评，来为今天这趟从多变量函数到偏导数的探索之旅画上一个句号。这份练习里有计算，也有需要你深入思考的简答题，请大家沉下心来，把前面几页我们一步步构建起来的‘锁定’与‘切片’思维真正用出来。"
+        },
+        {
+          "id": "action_jEYt-C7c",
+          "type": "speech",
+          "text": "比如第一道关于平面 y=1 去截抛物面的题，它就是在考察我们之前反复练习的‘视角转换’。你不需要真的去画图，只要在脑海中执行那个‘锁定’操作——令 y=1，函数会瞬间变成什么样子？这个动作，就是理解偏导数几何意义的关键一步。",
+          "audioRef": "audio/tts_s19_action_jEYt-C7c.mp3"
+        },
+        {
+          "id": "action_z5NtRg1_",
+          "type": "speech",
+          "text": "再看第二道关于等高线图的题，它把我们从代数带回了图形世界。还记得我们是怎么看等高线的吗？沿着水平方向移动，就是控制 y 不变只看 x 的变化。答案就藏在等高线的疏密和数值走向里，用‘上山下山’的直觉去判断变化率是正还是负。",
+          "audioRef": "audio/tts_s19_action_z5NtRg1_.mp3"
+        },
+        {
+          "id": "action_SpbjVdL6",
+          "type": "speech",
+          "text": "还有那道简答题，我特别希望你们都能用自己的话把‘为什么偏导数要锁定其他变量’讲清楚。这不仅仅是背一个定义，而是要把那个‘用刀切蛋糕只观察一个截面’或者‘在山峰上只沿着经线走’的几何画面描绘出来。想清楚了这一点，就抓住了整个偏导数思想的精髓。",
+          "audioRef": "audio/tts_s19_action_SpbjVdL6.mp3"
+        },
+        {
+          "id": "action_hoUKaEiW",
+          "type": "speech",
+          "text": "最后，在提交前也别忘了检查一下那些有陷阱的细节，比如二阶混合偏导数的运算顺序。我相信，经过前面‘误解修复挑战’和‘空间视角’的磨练，大家已经有足够的能力去避开这些‘只顾其一’的思维盲区了。现在，深呼吸，开始吧。",
+          "audioRef": "audio/tts_s19_action_hoUKaEiW.mp3"
+        },
+        {
+          "id": "action_ZsEgp1KU",
+          "type": "discussion",
+          "topic": "完成这份综合测评后，你觉得最能检验你对偏导数深层理解的是哪一道题？为什么？",
+          "prompt": "请大家在小组里分享你作答时最纠结的一道题，并说说它让你纠结的点是什么，是概念混淆，还是图形想象不够清晰？",
+          "agentIndex": 1
+        }
+      ]
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_-CyM8UCd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159240
+    },
+    "audio/tts_action_jrKoAQCT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 80808
+    },
+    "audio/tts_action_wz8lHU98.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 149568
+    },
+    "audio/tts_s10_action_3ODexKgQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92760
+    },
+    "audio/tts_s10_action_4HW-wPgx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141456
+    },
+    "audio/tts_s10_action_8HDpv8_y.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 103848
+    },
+    "audio/tts_s10_action_CFbP5G5h.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 148680
+    },
+    "audio/tts_s11_action_92DjWJug.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133224
+    },
+    "audio/tts_s11_action_E7d53-eD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88200
+    },
+    "audio/tts_s11_action_Jrl6qH60.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 136248
+    },
+    "audio/tts_s11_action__ICDvX7I.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109128
+    },
+    "audio/tts_s12_action_dMWMQoZk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 191616
+    },
+    "audio/tts_s12_action_P9jNSlV8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 226968
+    },
+    "audio/tts_s12_action_U9FMRrgz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 223080
+    },
+    "audio/tts_s12_action_yCTjGavt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 156360
+    },
+    "audio/tts_s13_action_2a24ODU6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 166704
+    },
+    "audio/tts_s13_action_INLpA2LR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102168
+    },
+    "audio/tts_s13_action_kEbwYJLk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84456
+    },
+    "audio/tts_s13_action_PiaZwq71.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138360
+    },
+    "audio/tts_s13_action_rvZIJ3rs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108072
+    },
+    "audio/tts_s13_action_tX9yzzZj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93240
+    },
+    "audio/tts_s13_action_XshJoman.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 123096
+    },
+    "audio/tts_s14_action_7_RAPoms.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 115584
+    },
+    "audio/tts_s14_action_rNu4Q556.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 82704
+    },
+    "audio/tts_s14_action_vbv6jaWw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114984
+    },
+    "audio/tts_s14_action__XaSc1yl.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 91872
+    },
+    "audio/tts_s15_action_1MFPjDeW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106632
+    },
+    "audio/tts_s15_action_hAfknU9Z.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 74592
+    },
+    "audio/tts_s15_action_mUCnK3N9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 155424
+    },
+    "audio/tts_s15_action_RF_eofPg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146736
+    },
+    "audio/tts_s15_action_RzRM8Z3z.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109152
+    },
+    "audio/tts_s16_action_BiyTKEy-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84720
+    },
+    "audio/tts_s16_action_mEiv6hVB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 168912
+    },
+    "audio/tts_s16_action_OpIOPD-O.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93144
+    },
+    "audio/tts_s16_action_qlqv6FeA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 66984
+    },
+    "audio/tts_s17_action_31IdTitS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 182712
+    },
+    "audio/tts_s17_action_kn7o3Uig.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 217632
+    },
+    "audio/tts_s17_action_lR6WeSVg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 227184
+    },
+    "audio/tts_s17_action_wJ_KDX4p.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 153072
+    },
+    "audio/tts_s17_action_XtCtPHky.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114336
+    },
+    "audio/tts_s18_action_24EAt-aA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109632
+    },
+    "audio/tts_s18_action_aQL5kMVq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88416
+    },
+    "audio/tts_s18_action_Buy-SwWK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 71688
+    },
+    "audio/tts_s18_action_GRnCPYQA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 175104
+    },
+    "audio/tts_s18_action_TaSU-b7v.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110976
+    },
+    "audio/tts_s18_action_yKVt8sji.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 103944
+    },
+    "audio/tts_s19_action_5OpZcwLb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 196800
+    },
+    "audio/tts_s19_action_hoUKaEiW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 139824
+    },
+    "audio/tts_s19_action_jEYt-C7c.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 155016
+    },
+    "audio/tts_s19_action_SpbjVdL6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 165912
+    },
+    "audio/tts_s19_action_z5NtRg1_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 158184
+    },
+    "audio/tts_s2_action_Ain59r6Y.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 148416
+    },
+    "audio/tts_s2_action_nTurzTIB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 150504
+    },
+    "audio/tts_s2_action_xKq8nx4t.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114960
+    },
+    "audio/tts_s2_action_Y4NlZm44.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 152328
+    },
+    "audio/tts_s2_action__ppqk_Ep.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109728
+    },
+    "audio/tts_s3_action_L6ljBfBz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 163464
+    },
+    "audio/tts_s3_action_m_3I5UEa.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 156264
+    },
+    "audio/tts_s3_action_nVJUP-Rk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144456
+    },
+    "audio/tts_s3_action_QaeKre5p.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 196392
+    },
+    "audio/tts_s4_action_aAFRplAz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 176568
+    },
+    "audio/tts_s4_action_gLTUlf7i.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116616
+    },
+    "audio/tts_s4_action_wdAxUpDi.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114576
+    },
+    "audio/tts_s4_action_yfNvzxZI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122952
+    },
+    "audio/tts_s5_action_72tDzxok.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102984
+    },
+    "audio/tts_s5_action_HmiIiLMq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 130008
+    },
+    "audio/tts_s5_action_nCjsBahs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102888
+    },
+    "audio/tts_s6_action_0hd-SCOd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128736
+    },
+    "audio/tts_s6_action_a3MFvP0g.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141936
+    },
+    "audio/tts_s6_action_ClZnDTpE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160296
+    },
+    "audio/tts_s6_action_cUQsRsdv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140712
+    },
+    "audio/tts_s7_action_0XLEGpPW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157416
+    },
+    "audio/tts_s7_action_5vusLa9o.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127944
+    },
+    "audio/tts_s7_action_Q1bPE2q6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110400
+    },
+    "audio/tts_s7_action_wIDIyiV9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 172104
+    },
+    "audio/tts_s7_action_zgdaUl_v.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146472
+    },
+    "audio/tts_s8_action_Fs53JYqU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146928
+    },
+    "audio/tts_s8_action_S27e5AKw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93768
+    },
+    "audio/tts_s8_action_X9T9sTYs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104976
+    },
+    "audio/tts_s8_action_ZAKr4smH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 175296
+    },
+    "audio/tts_s9_action_Gd2urcc2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117048
+    },
+    "audio/tts_s9_action_GyXDX1H-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 107520
+    },
+    "audio/tts_s9_action_HPDGJrjA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105408
+    },
+    "audio/tts_s9_action_ybz99_Nd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95112
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

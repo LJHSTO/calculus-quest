@@ -1,0 +1,4404 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T10:43:12.849Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "梯度与方向导数实战：寻找最快路径",
+    "description": "",
+    "language": "使用中文教学，保持学术严谨性且表达通俗易懂。对于微积分术语（如梯度、方向导数、等高线）使用中文标准译名，公式保持标准数学符号书写，确保零基础学生能理解抽象概念。",
+    "style": "professional",
+    "createdAt": 1783011628566,
+    "updatedAt": 1783011628566
+  },
+  "agents": [
+    {
+      "name": "小慧",
+      "role": "assistant",
+      "persona": "微积分助教，数学系研究生，性格温和耐心，擅长用画图和类比帮助学生攻克抽象难点。喜欢用苏格拉底式追问引导学生自己发现答案，对操作型实验环节尤为熟练。",
+      "avatar": "/avatars/assist.png",
+      "color": "#10b981",
+      "priority": 7
+    },
+    {
+      "name": "林教授",
+      "role": "teacher",
+      "persona": "资深微积分教授，拥有20年教学经验，善于用生活化的比喻将抽象概念讲得通俗易懂。教学中注重逻辑推导和几何直觉的结合，对学生的常见误区有敏锐的预判，总能在关键节点抛出启发式问题。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "大毛",
+      "role": "student",
+      "persona": "跨专业选修生，编程背景但对数学概念有些畏难，喜欢用游戏化方式学习。对误解修复挑战和迷宫策略游戏格外投入，常从直觉出发做选择，犯错后在高互动反馈中快速修正理解。",
+      "avatar": "/avatars/clown.png",
+      "color": "#ec4899",
+      "priority": 4
+    },
+    {
+      "name": "思思",
+      "role": "student",
+      "persona": "数学系大一新生，对微积分有较强理论功底但常陷入符号化思维，忽视几何直觉。喜欢反思性学习，遇到误解修复挑战时会认真记录错误原因，偶尔陷入过度思考而犹豫不决。",
+      "avatar": "/avatars/thinker.png",
+      "color": "#8b5cf6",
+      "priority": 5
+    },
+    {
+      "name": "阿杰",
+      "role": "student",
+      "persona": "大二工科生，数学基础中等，擅长空间思维和动手操作，但容易混淆梯度与方向导数的概念。学习风格偏向实验先行、理论后补，喜欢通过拖动滑块和3D视角获得直观理解，常冒出意料之外的疑问。",
+      "avatar": "/avatars/curious-2.png",
+      "color": "#f59e0b",
+      "priority": 5
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：梯度、方向导数与等高线学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "函数 f(x, y) 在点 (x0, y0) 处关于 x 的偏导数 f_x(x0, y0) 表示什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "曲面在任意方向上的变化率"
+              },
+              {
+                "value": "B",
+                "label": "沿 x 轴方向固定 y=y0 时，函数在 x0 处的瞬时变化率"
+              },
+              {
+                "value": "C",
+                "label": "函数在整个定义域上的平均值"
+              },
+              {
+                "value": "D",
+                "label": "函数在点 (x0, y0) 处沿最陡方向的变化率"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "偏导数 f_x(x0, y0) 的定义是固定 y=y0，仅让 x 变化时函数的变化率，即沿着平行于 x 轴方向的斜率。选项 A 描述的是方向导数的概念，选项 C 是平均值，选项 D 是梯度方向的变化率（方向导数的最大值）。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "在地形图的等高线图中，若等高线在某处非常密集，这说明了什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "该处海拔很低"
+              },
+              {
+                "value": "B",
+                "label": "该处地形非常平缓"
+              },
+              {
+                "value": "C",
+                "label": "该处地形非常陡峭"
+              },
+              {
+                "value": "D",
+                "label": "该处是山峰的最高点"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "等高线密集表示在较短的水平距离内，海拔高度变化很大，因此地形陡峭。稀疏的等高线才代表平缓的地形。海拔高低由等高线上的数值决定，与疏密无关；山峰最高点通常被最内圈的闭合等高线包围。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "question": "以下关于方向变化率的说法，哪些是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "从点 A 到点 B 的平均变化率等于 (B点高度 - A点高度) / A到B的直线距离"
+              },
+              {
+                "value": "B",
+                "label": "在同一点，沿任何方向的变化率大小都相同"
+              },
+              {
+                "value": "C",
+                "label": "方向导数描述的是函数在一点沿特定方向的变化快慢"
+              },
+              {
+                "value": "D",
+                "label": "沿等高线切线方向的方向导数，其值一定为0"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "A 正确，这是平均变化率的定义。B 错误，在一点沿不同方向变化率通常不同，例如在山坡上，上山方向变化快，沿切线方向变化慢。C 正确，这正是方向导数的定义。D 正确，沿等高线切线方向高度不变，因此方向导数为0。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "站在山坡上的一点，你朝某个方向迈出一步后，发现自己的海拔完全没有变化。你迈步的方向最有可能是什么方向？",
+            "options": [
+              {
+                "value": "A",
+                "label": "指向山顶的方向"
+              },
+              {
+                "value": "B",
+                "label": "垂直指向天空的方向"
+              },
+              {
+                "value": "C",
+                "label": "沿着等高线的切线方向"
+              },
+              {
+                "value": "D",
+                "label": "指向山脚的方向"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "海拔不变意味着函数值不变，在山坡上这对应于沿着与等高线相切的方向移动。因为等高线上的所有点都有相同的海拔。指向山顶海拔升高，指向山脚海拔降低，指向天空则跳出了二元函数的定义域（地面）。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "想象你正站在一个光滑的山坡上，准备倒一桶水。请从直觉上解释：水会朝哪个方向流走？并说明这个方向和我们之前讨论的“偏导数”、“方向导数”、“等高线”等概念可能有什么联系。",
+            "commentPrompt": "评分标准: \n(1) 准确指出水会流向最陡峭的下山方向（即变化率最大的下降方向）- 40%\n(2) 能够正确建立与“方向导数”最大值的联系（水寻找方向导数取负最大值的方向）- 30%\n(3) 能说明水流方向与等高线的关系（水流方向垂直于等高线）- 30%",
+            "analysis": "参考要点：水总是沿着最陡峭的路径向下流，即负梯度方向。这个方向是所有可能方向中方向导数最小（负得最多）的方向。从等高线图上看，水流方向垂直于等高线，因为这是高度下降最快的路径。这与我们之前只讨论的沿x轴或y轴的偏导数不同，水流方向综合考虑了各个方向的变化率。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_bh2-5epb",
+          "type": "speech",
+          "text": "这是一组关于“前测：梯度、方向导数与等高线学习准备诊断”的独立测验。在正式进入‘梯度’和‘方向导数’这些核心概念之前，我们先做一个小小的前测。"
+        },
+        {
+          "id": "action_MZMNQp5j",
+          "type": "speech",
+          "text": "这份测试不是为了打分，而是想了解一下大家对‘偏导数’的基本感觉，以及对地形图上‘等高线’的认识。这样我就能更有针对性地调整接下来的讲解和实验。",
+          "audioRef": "audio/tts_action_MZMNQp5j.mp3"
+        },
+        {
+          "id": "action_19vsgyS2",
+          "type": "speech",
+          "text": "题目里有一些是概念回顾，也有一些是结合直觉的思考题。大家答题的时候不用紧张，如果遇到不太确定的选项，凭你的第一感觉和常识去选就好。",
+          "audioRef": "audio/tts_action_19vsgyS2.mp3"
+        },
+        {
+          "id": "action_u4Ri_Mch",
+          "type": "speech",
+          "text": "准备好了吗？深呼吸一下，我们这就开始。",
+          "audioRef": "audio/tts_action_u4Ri_Mch.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "梯度向量",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "sb5N8jF6EMrQfgUP-EwVj",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_8tZgIshx",
+              "left": 300,
+              "top": 50,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1E3A5F;\">梯度向量</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1E3A5F"
+            },
+            {
+              "type": "text",
+              "id": "text_FUeHvMyt",
+              "left": 200,
+              "top": 110,
+              "width": 600,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #666666;\">从偏导数到最速上升方向</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "shape",
+              "id": "shape_1VttM05w",
+              "left": 60,
+              "top": 170,
+              "width": 400,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFFFFF"
+            },
+            {
+              "type": "shape",
+              "id": "shape_jCCjc7Ra",
+              "left": 80,
+              "top": 190,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z M 0.5 0.5 L 0.8 0.2 L 0.8 0.5 L 1 0.5 L 0.8 0.8 L 0.8 0.5 L 0.5 0.8 Z",
+              "fixedRatio": true,
+              "fill": "#F28705"
+            },
+            {
+              "type": "text",
+              "id": "text_C2V-2v3Q",
+              "left": 130,
+              "top": 172,
+              "width": 310,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><strong style=\"color: #1E3A5F;\">目标：</strong>能将偏导数组合成指向最陡上升方向的向量</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_HyygBSIG",
+              "left": 60,
+              "top": 270,
+              "width": 400,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFFFFF"
+            },
+            {
+              "type": "shape",
+              "id": "shape_DHLbCeH6",
+              "left": 80,
+              "top": 290,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z M 0.5 0.5 L 0.8 0.2 L 0.8 0.5 L 1 0.5 L 0.8 0.8 L 0.8 0.5 L 0.5 0.8 Z",
+              "fixedRatio": true,
+              "fill": "#F28705"
+            },
+            {
+              "type": "text",
+              "id": "text_s87QxAKe",
+              "left": 130,
+              "top": 272,
+              "width": 310,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><strong style=\"color: #1E3A5F;\">修正误解：</strong>梯度是一个向量，包含方向和大小，而非普通数值</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_YuJTiIQ4",
+              "left": 60,
+              "top": 370,
+              "width": 400,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFFFFF"
+            },
+            {
+              "type": "shape",
+              "id": "shape_tzP3qd8i",
+              "left": 80,
+              "top": 390,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z M 0.5 0.5 L 0.8 0.2 L 0.8 0.5 L 1 0.5 L 0.8 0.8 L 0.8 0.5 L 0.5 0.8 Z",
+              "fixedRatio": true,
+              "fill": "#F28705"
+            },
+            {
+              "type": "text",
+              "id": "text_tH74CcaP",
+              "left": 130,
+              "top": 372,
+              "width": 310,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><strong style=\"color: #1E3A5F;\">梯度定义式：</strong>各分量分别为函数对各变量的偏导数</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_XMrRpB0F",
+              "left": 520,
+              "top": 170,
+              "width": 420,
+              "height": 80,
+              "rotate": 0,
+              "latex": "\\nabla f = \\left( \\frac{\\partial f}{\\partial x}, \\frac{\\partial f}{\\partial y} \\right)",
+              "color": "#1E3A5F",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.4em;vertical-align:-0.95em;\"></span><span class=\"minner\"><span class=\"mopen delimcenter\" style=\"top:0em;\"><span class=\"delimsizing size3\">(</span></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8804em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mclose delimcenter\" style=\"top:0em;\"><span class=\"delimsizing size3\">)</span></span></span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_hN3XNvt6",
+              "left": 520,
+              "top": 270,
+              "width": 420,
+              "height": 130,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">梯度方向是函数值增加最快的方向，其大小等于方向导数的最大值。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_q8kH81yv",
+              "left": 100,
+              "top": 465,
+              "width": 800,
+              "height": 1,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#EEF2F7"
+            },
+            {
+              "type": "line",
+              "id": "line_ksr8-Zvf",
+              "left": 450,
+              "top": 480,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                100,
+                -30
+              ],
+              "style": "solid",
+              "color": "#F28705",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_VhL03845",
+              "left": 560,
+              "top": 460,
+              "width": 150,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #F28705;\">最速上升方向</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#F28705"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#EEF2F7"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_CeVI7LYn",
+          "type": "spotlight",
+          "elementId": "text_8tZgIshx"
+        },
+        {
+          "id": "action_LHRR5EdZ",
+          "type": "speech",
+          "text": "本场景聚焦“梯度向量”。准备好了。现在，咱们就正式进入今天第一个核心概念：梯度向量。看到这三个字，你脑子里蹦出的第一个念头是什么？是不是觉得又是哪个数学家发明出来折磨人的新名词？"
+        },
+        {
+          "id": "action_tljI_j5t",
+          "type": "spotlight",
+          "elementId": "text_C2V-2v3Q"
+        },
+        {
+          "id": "action_WilNvFYO",
+          "type": "speech",
+          "text": "我们先明确一下这页的目标。很简单，也很关键：我们要把之前学的偏导数，像拼乐高一样，组合成一个指向最陡上升方向的向量。记住这个感觉，我们要找的是一条‘最速上升通道’。",
+          "audioRef": "audio/tts_s2_action_WilNvFYO.mp3"
+        },
+        {
+          "id": "action_up9WAioF",
+          "type": "spotlight",
+          "elementId": "text_s87QxAKe"
+        },
+        {
+          "id": "action_Y0a6rykh",
+          "type": "speech",
+          "text": "在正式看公式前，我必须先帮你修正一个最常见的误解。很多人，包括我自己当年学的时候，总觉得梯度就是一个数，因为它是由偏导数算出来的嘛。大错特错！梯度是一个向量，它有方向，也有大小。这个大小，就是坡度最陡的那个值。",
+          "audioRef": "audio/tts_s2_action_Y0a6rykh.mp3"
+        },
+        {
+          "id": "action_OTXl-Qsr",
+          "type": "spotlight",
+          "elementId": "latex_XMrRpB0F"
+        },
+        {
+          "id": "action_VafwF-O6",
+          "type": "speech",
+          "text": "好，眼见为实。看这个定义式。倒三角符号读作nabla，我们就把这个向量叫做函数f的梯度。你看它的各个分量，恰好就是函数对x、对y，如果有更多变量，就对每一个变量的偏导数。这就是我说的‘组合’的含义，它不是简单相加，而是构成了一个有方向的量。",
+          "audioRef": "audio/tts_s2_action_VafwF-O6.mp3"
+        },
+        {
+          "id": "action_z-vfOOKF",
+          "type": "spotlight",
+          "elementId": "text_hN3XNvt6"
+        },
+        {
+          "id": "action_YynAnhzO",
+          "type": "speech",
+          "text": "所以，这句话请你一定要在心里默念一遍：梯度方向，就是函数值增加最快的方向；它的大小，就等于那个最快的方向导数。想象你站在山坡上，梯度向量指向的就是你往上爬、感觉最费力、坡度最陡的那个方向。",
+          "audioRef": "audio/tts_s2_action_YynAnhzO.mp3"
+        },
+        {
+          "id": "action_cGv174p-",
+          "type": "spotlight",
+          "elementId": "text_VhL03845"
+        },
+        {
+          "id": "action_t7-ix2nU",
+          "type": "speech",
+          "text": "总结一下，我们和‘最速上升方向’这个朋友打了个照面。它不是一个模糊的感觉，而是一个可以被偏导数精确计算出来的向量。这个概念的威力，我们会在下一张图里，通过实验亲手感受一下。",
+          "audioRef": "audio/tts_s2_action_t7-ix2nU.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "梯度向量：拖动实验",
+      "order": 3,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "gradient_vector",
+          "description": "通过调节x和y方向的偏导数，观察梯度向量如何始终指向曲面最陡的上升方向。仿真中粒子沿梯度方向运动，直观展示梯度上升法。",
+          "variables": [
+            {
+              "name": "partial_x",
+              "label": "x方向斜率 ∂f/∂x",
+              "min": -5,
+              "max": 5,
+              "default": 2,
+              "unit": ""
+            },
+            {
+              "name": "partial_y",
+              "label": "y方向斜率 ∂f/∂y",
+              "min": -5,
+              "max": 5,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "gradient_magnitude",
+              "label": "梯度模长 |∇f|",
+              "min": 0,
+              "max": 10,
+              "default": 2.24,
+              "unit": ""
+            },
+            {
+              "name": "steepness_indicator",
+              "label": "陡峭程度",
+              "min": 0,
+              "max": 1,
+              "default": 0.5,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "x方向最陡",
+              "variables": {
+                "partial_x": 5,
+                "partial_y": 0.5
+              }
+            },
+            {
+              "name": "y方向最陡",
+              "variables": {
+                "partial_x": 0.3,
+                "partial_y": 5
+              }
+            },
+            {
+              "name": "均衡梯度",
+              "variables": {
+                "partial_x": 2,
+                "partial_y": 2
+              }
+            },
+            {
+              "name": "反向梯度",
+              "variables": {
+                "partial_x": -3,
+                "partial_y": 2
+              }
+            },
+            {
+              "name": "临界点",
+              "variables": {
+                "partial_x": 0,
+                "partial_y": 0
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/03_梯度向量：拖动实验.html",
+        "htmlBytes": 771920
+      },
+      "actions": [
+        {
+          "id": "action_bN6lXmOj",
+          "type": "speech",
+          "text": "本场景通过交互探索“梯度向量：拖动实验”。我们来亲手『造』一个梯度出来。这个实验里，你可以分别拖动代表 x 方向斜率 ∂f/∂x 和 y 方向斜率 ∂f/∂y 的滑块，它们组成了梯度的两个分量。"
+        },
+        {
+          "id": "action_zV4S-DVf",
+          "type": "widget_highlight",
+          "target": "#partial_x-slider",
+          "content": "控制梯度在 x 方向的分量，试试拖动它"
+        },
+        {
+          "id": "action_7QtOW5SL",
+          "type": "widget_highlight",
+          "target": "#partial_y-slider",
+          "content": "控制梯度在 y 方向的分量，试试拖动它"
+        },
+        {
+          "id": "action_2-NguSLv",
+          "type": "speech",
+          "text": "注意看中间的蓝色箭头，它就是由这两个分量合成的梯度向量。当你改变任何一个分量时，箭头会自动调整方向和长度。",
+          "audioRef": "audio/tts_s3_action_2-NguSLv.mp3"
+        },
+        {
+          "id": "action_rPTLsQ43",
+          "type": "widget_setState",
+          "state": {
+            "partial_x": 5,
+            "partial_y": 0.5
+          },
+          "content": "加载预设『x方向最陡』：主要斜率集中在 x 方向"
+        },
+        {
+          "id": "action_HNFox58o",
+          "type": "speech",
+          "text": "看，现在 x 方向的斜率设得很大，y 方向几乎平坦。梯度箭头几乎完全指向了 x 轴方向，也就是这个地形最陡上升的方位。我们可以再换一个预设感受一下。",
+          "audioRef": "audio/tts_s3_action_HNFox58o.mp3"
+        },
+        {
+          "id": "action_dIHsLwbA",
+          "type": "widget_setState",
+          "state": {
+            "partial_x": -3,
+            "partial_y": 2
+          },
+          "content": "加载预设『反向梯度』，让 x 方向斜率为负"
+        },
+        {
+          "id": "action_KySyeZBH",
+          "type": "speech",
+          "text": "这次 x 方向变负了，意味着沿 x 轴正向是下坡，所以箭头转向了 x 的反方向，同时叠加 y 方向的上坡分量。它总是指向局部最陡的上升方位。接下来，请你自己动手拖动滑块，验证一下：无论你怎么调，这个蓝色箭头会不会背叛『最陡上升』这个使命？",
+          "audioRef": "audio/tts_s3_action_KySyeZBH.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "梯度向量：关系图",
+      "order": 4,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "函数 f(x, y)",
+              "icon": "📐",
+              "x": 400,
+              "y": 80,
+              "details": "一切始于此——二元函数 f(x, y) 描述了一个曲面。例如温度场、海拔高度等。\n\n在任意一点 (x₀, y₀)，函数都有一个确定的值 f(x₀, y₀)，代表该点的\"高度\"。",
+              "formula": "z = f(x, y)"
+            },
+            {
+              "id": "n2",
+              "label": "∂f/∂x（x方向偏导）",
+              "icon": "📏",
+              "x": 200,
+              "y": 220,
+              "details": "固定 y，只看 x 的变化。偏导数 ∂f/∂x 表示沿 x 轴正方向的变化率。\n\n想象你在山丘上，只沿东西方向走一步，高度上升多少？这就是 x 方向的偏导。",
+              "formula": "∂f/∂x = lim(Δx→0) [f(x+Δx, y) - f(x, y)] / Δx"
+            },
+            {
+              "id": "n3",
+              "label": "∂f/∂y（y方向偏导）",
+              "icon": "📐",
+              "x": 600,
+              "y": 220,
+              "details": "固定 x，只看 y 的变化。偏导数 ∂f/∂y 表示沿 y 轴正方向的变化率。\n\n同样在山丘上，只沿南北方向走一步，高度上升多少？这就是 y 方向的偏导。",
+              "formula": "∂f/∂y = lim(Δy→0) [f(x, y+Δy) - f(x, y)] / Δy"
+            },
+            {
+              "id": "n4",
+              "label": "梯度向量 ∇f",
+              "icon": "🧭",
+              "x": 400,
+              "y": 380,
+              "details": "梯度不是标量！它是由两个偏导数组成的<strong>向量</strong>：\n\n∇f = (∂f/∂x, ∂f/∂y)\n\n这个向量同时包含了大小和方向信息。它的大小表示最陡上升的速率，方向表示最陡上升的方向。",
+              "formula": "∇f = (∂f/∂x)𝐢 + (∂f/∂y)𝐣",
+              "misconception": "⚠️ 常见误解：梯度是一个标量值。\n\n纠正：梯度是一个<strong>向量</strong>！它由偏导数作为分量构成，具有方向和大小。∇f 的模 |∇f| 才是标量（最陡上升速率）。"
+            },
+            {
+              "id": "n5",
+              "label": "最陡上升方向",
+              "icon": "⛰️",
+              "x": 400,
+              "y": 530,
+              "details": "梯度向量 ∇f 指向函数值增长最快的方向——即最陡上升方向。\n\n就像在山丘上，梯度告诉你在当前点往哪个方向走能最快爬到山顶。与等高线垂直，从低值指向高值。",
+              "formula": "方向导数 D_𝐮f = ∇f · 𝐮 ≤ |∇f|"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "对 x 求偏导"
+            },
+            {
+              "from": "n1",
+              "to": "n3",
+              "label": "对 y 求偏导"
+            },
+            {
+              "from": "n2",
+              "to": "n4",
+              "label": "x 分量 →"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "y 分量 →"
+            },
+            {
+              "from": "n4",
+              "to": "n5",
+              "label": "向量指向",
+              "misconception": true
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5"
+          ]
+        },
+        "htmlPath": "interactive/04_梯度向量：关系图.html",
+        "htmlBytes": 767165
+      },
+      "actions": [
+        {
+          "id": "action_sS8uvrUC",
+          "type": "speech",
+          "text": "本场景通过交互探索“梯度向量：关系图”。感受了梯度向量在平面上如何动态「指路」。现在让我们后退半步，把这个概念的结构重新梳理一遍——梯度为什么是向量？它的「分量」到底从哪里来的？"
+        },
+        {
+          "id": "action_XWHveHj9",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "点击这个节点，看看我们的出发点。"
+        },
+        {
+          "id": "action_B5ELQpEV",
+          "type": "speech",
+          "text": "请先点击最上面的「函数 f(x,y)」节点。记住，一切变化都源自这个二元函数。想象它是一片连绵起伏的山地，有高有低，而我们正站在其中某一个点上。",
+          "audioRef": "audio/tts_s4_action_B5ELQpEV.mp3"
+        },
+        {
+          "id": "action_Bc8dpss3",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "展示x方向的偏导节点。"
+        },
+        {
+          "id": "action_hhEqhNsY",
+          "type": "speech",
+          "text": "当我们只考虑东西走向的变化时，就得到了 x 方向的偏导数——这是梯度的第一个分量。单独看，它只是一个标量：告诉你往东走一步，山势上升多快。",
+          "audioRef": "audio/tts_s4_action_hhEqhNsY.mp3"
+        },
+        {
+          "id": "action_4PH7jPNR",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "展示y方向的偏导节点。"
+        },
+        {
+          "id": "action_-_jdHzX8",
+          "type": "speech",
+          "text": "同样，锁定东西方向、只看南北变化，就得到 y 方向的偏导数。这也是一个标量，只能告诉你往北走的陡峭程度。两者各管各的，不能单独告诉你「哪个方向综合起来最陡」。",
+          "audioRef": "audio/tts_s4_action_-_jdHzX8.mp3"
+        },
+        {
+          "id": "action_LATZgZa5",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "现在揭示核心节点：梯度向量。注意它的向量性质。"
+        },
+        {
+          "id": "action_KcVBIuKd",
+          "type": "speech",
+          "text": "关键的一步来了——把这两个分量组合到一起，我们就得到了梯度。注意，它不再是标量，而是一个向量！两个偏导数是它的坐标，它的「合力」同时决定了方向与大小。这正是最容易被忽略的地方：很多人以为梯度只是一个数值，但它其实有「箭头」，能把两个独立的变化率拧成一股指向最陡上坡的力量。",
+          "audioRef": "audio/tts_s4_action_KcVBIuKd.mp3"
+        },
+        {
+          "id": "action_FTTkFaoG",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "展示最陡上升方向节点，观察它与梯度向量的连接。"
+        },
+        {
+          "id": "action_caq3w8uV",
+          "type": "speech",
+          "text": "最后，这个梯度向量把它箭头的方向「传递」给了最陡上升方向。所以当我们说「沿梯度方向爬山最快」，本质上就是因为刚才那两个分量合成的向量，天然地指向了局部变化最剧烈、上升最迅猛的方位。大家可以点击最后这两个节点连线上的标注，它特意提醒了常见的误解——梯度是向量，不是单一数字。",
+          "audioRef": "audio/tts_s4_action_caq3w8uV.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "梯度向量：误解修复挑战",
+      "order": 5,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "通过拖拽拼图游戏修复'梯度只是一个数'的误解",
+          "gameConfig": {
+            "controls": [
+              "drag_and_drop"
+            ],
+            "levels": 5,
+            "scoring": {
+              "correctPoints": 10,
+              "speedBonus": 5
+            }
+          }
+        },
+        "htmlPath": "interactive/05_梯度向量：误解修复挑战.html",
+        "htmlBytes": 789766
+      },
+      "actions": [
+        {
+          "id": "action_vJ6zeYJt",
+          "type": "speech",
+          "text": "本场景通过交互探索“梯度向量：误解修复挑战”。现在来玩个拼图游戏，看大家是不是也容易掉进'梯度只是一个数'的陷阱里。"
+        },
+        {
+          "id": "action_9q3XCyig",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始，进入第一个关卡。"
+        },
+        {
+          "id": "action_GPVlmHTM",
+          "type": "speech",
+          "text": "屏幕上会给你一组偏导数值，旁边摆着好几个候选项——有标量，也有方向各异的向量。你要做的，就是把那个由分量正确合成的梯度向量，拖到曲面对应的采样点上。",
+          "audioRef": "audio/tts_s5_action_GPVlmHTM.mp3"
+        },
+        {
+          "id": "action_w7j-gcjx",
+          "type": "widget_setState",
+          "state": {
+            "currentLevel": {
+              "partialX": -2,
+              "partialY": 1.5,
+              "options": [
+                {
+                  "type": "vector",
+                  "dx": -2,
+                  "dy": 1.5
+                },
+                {
+                  "type": "scalar",
+                  "value": 2.5
+                },
+                {
+                  "type": "vector",
+                  "dx": 2,
+                  "dy": -1.5
+                },
+                {
+                  "type": "scalar",
+                  "value": 3.5
+                }
+              ]
+            }
+          },
+          "content": "模拟第一关布局：给定 f_x=-2.0, f_y=1.5，选项中有正确向量也有标量干扰项。"
+        },
+        {
+          "id": "action_wihqQ2-s",
+          "type": "speech",
+          "text": "仔细看，有个选项就只是一个数字 2.5。大家、大家，别偷懒把它拖过去了——数字本身是没有方向的，它根本代表不了梯度。"
+        },
+        {
+          "id": "action_Z004WZkL",
+          "type": "widget_annotation",
+          "target": "[data-option-type='scalar']",
+          "content": "警告：标量选项，无法表示方向。"
+        },
+        {
+          "id": "action_bq9PZhNB",
+          "type": "speech",
+          "text": "选对向量，它会稳稳指向局部上升最快的方位；手滑拖了个标量上去，系统就会提醒你：标量无法代表方向。这就是今天挑战的核心——把'梯度是向量'刻进直觉里。",
+          "audioRef": "audio/tts_s5_action_bq9PZhNB.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "梯度向量：空间视角",
+      "order": 6,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "htmlPath": "interactive/06_梯度向量：空间视角.html",
+        "htmlBytes": 2513185
+      },
+      "actions": [
+        {
+          "id": "action_SRapPB4L",
+          "type": "speech",
+          "text": "本场景通过交互探索“梯度向量：空间视角”。不是标量。现在我们把视角从平面抬到空间，看看在真实的三维地形上，这个向量到底长什么样。"
+        },
+        {
+          "id": "action_vmDDo6gp",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "这是一个三维地形曲面，你可以拖拽旋转视角。"
+        },
+        {
+          "id": "action_gnCSFieJ",
+          "type": "speech",
+          "text": "画面上有一个采样点和一条红色箭头，那就是该点的梯度向量。大家刚才说喜欢从3D视角获得直观理解——来，先试试用鼠标旋转地形，从侧面观察一下这个箭头和地面的关系。"
+        },
+        {
+          "id": "action_cKzXZhH5",
+          "type": "widget_annotation",
+          "target": "#canvas-container",
+          "content": "旋转观察：梯度向量始终垂直于通过该点的等高线，且指向上坡方向。"
+        },
+        {
+          "id": "action_hzkwmkOt",
+          "type": "speech",
+          "text": "好，现在让我们把采样点拖到不同位置。先把它放在山腰一个缓坡上，看梯度箭头——比较短，对吧？然后慢慢往陡坡移。",
+          "audioRef": "audio/tts_s6_action_hzkwmkOt.mp3"
+        },
+        {
+          "id": "action_FRx9S2ba",
+          "type": "widget_setState",
+          "state": {
+            "samplePoint": [
+              1.2,
+              0.8
+            ],
+            "rotation": [
+              45,
+              30
+            ]
+          },
+          "content": "将采样点移至坡度较大的区域，便于对比梯度向量的大小变化。"
+        },
+        {
+          "id": "action_P9sEaADf",
+          "type": "speech",
+          "text": "看到没有？越陡的地方，红色箭头越长。这个长度正是梯度的大小——它告诉我们沿着这个方向走，每一步会上升多快。大家，这和之前方向导数的概念一脉相承：梯度指向的那个方向，方向导数恰好达到最大值。"
+        },
+        {
+          "id": "action_hZj-yPdQ",
+          "type": "widget_highlight",
+          "target": "#controls",
+          "content": "你还可以用这里的控件微调采样点的坐标，精确观察梯度方向始终对准局部最陡的上坡线。"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "方向导数",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "LAto4G9Hvo4s5G4_LXTzf",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_WmgaqBcQ",
+              "left": 300,
+              "top": 50,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1F4E79;\">方向导数</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_bqbDbaa0",
+              "left": 460,
+              "top": 126,
+              "width": 400,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #555555;\">沿任意方向的变化率</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#555555"
+            },
+            {
+              "type": "text",
+              "id": "text_qqBTSRtU",
+              "left": 60,
+              "top": 170,
+              "width": 400,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>目标：</b>能比较沿不同方向移动时函数值的变化快慢。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_xRY-Qk_p",
+              "left": 60,
+              "top": 250,
+              "width": 400,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>核心思想：</b>方向导数 = 梯度在给定方向上的投影分量。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_h_ivt56X",
+              "left": 60,
+              "top": 330,
+              "width": 400,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>公式：</b></p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_WE-cFACI",
+              "left": 100,
+              "top": 375,
+              "width": 300,
+              "height": 50,
+              "rotate": 0,
+              "latex": "D_{\\mathbf{u}} f = \\nabla f \\cdot \\mathbf{u}",
+              "color": "#B22222",
+              "fixedRatio": true,
+              "align": "left",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.02778em;\">D</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1611em;\"><span style=\"top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathbf mtight\">u</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">⋅</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.4444em;\"></span><span class=\"mord mathbf\">u</span></span></span></span></span>"
+            },
+            {
+              "type": "shape",
+              "id": "shape_B8i5fgIG",
+              "left": 600,
+              "top": 170,
+              "width": 200,
+              "height": 200,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#F8F9FA"
+            },
+            {
+              "type": "line",
+              "id": "line_NcfvnZRH",
+              "left": 600,
+              "top": 170,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                200,
+                0
+              ],
+              "style": "dashed",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "curve": [
+                100,
+                -50
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_OEkZhGw0",
+              "left": 650,
+              "top": 270,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                100,
+                -70
+              ],
+              "style": "solid",
+              "color": "#E74C3C",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_Z21wBtrx",
+              "left": 650,
+              "top": 270,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                120,
+                60
+              ],
+              "style": "solid",
+              "color": "#2980B9",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_vVfikNpR",
+              "left": 770,
+              "top": 330,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                -40
+              ],
+              "style": "dashed",
+              "color": "#7F8C8D",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "latex",
+              "id": "latex__mzWsH8K",
+              "left": 760,
+              "top": 180,
+              "width": 40,
+              "height": 30,
+              "rotate": 0,
+              "latex": "\\nabla f",
+              "color": "#E74C3C",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span></span>"
+            },
+            {
+              "type": "latex",
+              "id": "latex_8hmN4lLn",
+              "left": 780,
+              "top": 340,
+              "width": 30,
+              "height": 30,
+              "rotate": 0,
+              "latex": "\\mathbf{u}",
+              "color": "#2980B9",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4444em;\"></span><span class=\"mord mathbf\">u</span></span></span></span></span>"
+            },
+            {
+              "type": "latex",
+              "id": "latex_hjBCtswr",
+              "left": 780,
+              "top": 290,
+              "width": 60,
+              "height": 30,
+              "rotate": 0,
+              "latex": "D_{\\mathbf{u}} f",
+              "color": "#7F8C8D",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.02778em;\">D</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1611em;\"><span style=\"top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathbf mtight\">u</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span></span>"
+            },
+            {
+              "type": "line",
+              "id": "line_bliY9MM7",
+              "left": 100,
+              "top": 440,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                800,
+                0
+              ],
+              "style": "solid",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_nk78OOPr",
+              "left": 100,
+              "top": 475,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                800,
+                0
+              ],
+              "style": "solid",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_JhEDyE0_",
+              "left": 100,
+              "top": 510,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                800,
+                0
+              ],
+              "style": "solid",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_Cs0zSROl",
+              "left": 350,
+              "top": 440,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                70
+              ],
+              "style": "solid",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_rcBqySx_",
+              "left": 100,
+              "top": 442,
+              "width": 250,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; text-align: center; color: #1F4E79;\">常见误解</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79",
+              "fill": "#D6EAF8"
+            },
+            {
+              "type": "text",
+              "id": "text_Pp4ALqsf",
+              "left": 350,
+              "top": 442,
+              "width": 550,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; text-align: center; color: #1F4E79;\">正确理解</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79",
+              "fill": "#D6EAF8"
+            },
+            {
+              "type": "text",
+              "id": "text_c-f58Ajq",
+              "left": 100,
+              "top": 477,
+              "width": 250,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">只要沿某个方向走，函数值一定上升</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_d1O0arK5",
+              "left": 350,
+              "top": 477,
+              "width": 550,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: left; color: #333333;\">方向导数可正、可负、可为零，取决于方向与梯度的夹角</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_tLvRqXAg",
+              "left": 100,
+              "top": 512,
+              "width": 250,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">方向导数就是梯度的大小</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_f7aFkdM1",
+              "left": 350,
+              "top": 512,
+              "width": 550,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: left; color: #333333;\">方向导数 ≤ 梯度大小，当方向与梯度同向时取等</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_BhIXnfMK",
+          "type": "spotlight",
+          "elementId": "text_WmgaqBcQ"
+        },
+        {
+          "id": "action_Rax5hMAm",
+          "type": "speech",
+          "text": "本场景聚焦“方向导数”。现在将它延伸一步。今天要聚焦的核心概念是：方向导数。它要回答的问题是——如果我们不沿梯度方向走，而是朝一个任意方向移动，函数值的变化率是多少？"
+        },
+        {
+          "id": "action_oIQMXifq",
+          "type": "spotlight",
+          "elementId": "text_qqBTSRtU"
+        },
+        {
+          "id": "action_ICyKb4Kn",
+          "type": "speech",
+          "text": "我们先明确一下学习目标。学完这一部分后，你应该能比较沿不同方向移动时，函数值变化的快慢。比如爬山时，往东北方向走和往西南方向走，上升速度有什么不同？",
+          "audioRef": "audio/tts_s7_action_ICyKb4Kn.mp3"
+        },
+        {
+          "id": "action_qlAnLhTs",
+          "type": "spotlight",
+          "elementId": "text_xRY-Qk_p"
+        },
+        {
+          "id": "action_demGwMCW",
+          "type": "speech",
+          "text": "核心思想其实可以用一句话概括：方向导数就是梯度在给定方向上的投影分量。记住这个几何直觉，它能帮你避免很多常见错误。",
+          "audioRef": "audio/tts_s7_action_demGwMCW.mp3"
+        },
+        {
+          "id": "action_RVG-kibO",
+          "type": "spotlight",
+          "elementId": "latex_WE-cFACI"
+        },
+        {
+          "id": "action_b7O1_LSE",
+          "type": "speech",
+          "text": "用公式表达就是：沿单位向量u的方向导数，等于梯度向量与u的点积。这正好是梯度在u方向上的投影长度。",
+          "audioRef": "audio/tts_s7_action_b7O1_LSE.mp3"
+        },
+        {
+          "id": "action_-qcwQlLb",
+          "type": "spotlight",
+          "elementId": "text_rcBqySx_"
+        },
+        {
+          "id": "action_EXlx-cFb",
+          "type": "speech",
+          "text": "但很多同学在这里会产生两个典型误解。我们提前把它们揪出来，免得它们干扰你对后续拖动实验的理解。",
+          "audioRef": "audio/tts_s7_action_EXlx-cFb.mp3"
+        },
+        {
+          "id": "action_RvRUAB6w",
+          "type": "spotlight",
+          "elementId": "text_c-f58Ajq"
+        },
+        {
+          "id": "action_1NbiUrOF",
+          "type": "speech",
+          "text": "第一个误解是：只要沿某个方向走，函数值一定上升。这不对——如果方向与梯度夹角大于90度，点积为负，方向导数就是负的，意味着函数值反而在下降。",
+          "audioRef": "audio/tts_s7_action_1NbiUrOF.mp3"
+        },
+        {
+          "id": "action_5dT3nBqy",
+          "type": "spotlight",
+          "elementId": "text_tLvRqXAg"
+        },
+        {
+          "id": "action_F_30-BBR",
+          "type": "speech",
+          "text": "第二个误解是：方向导数就是梯度的大小。正确的关系是：方向导数小于等于梯度的大小，只有当方向恰好与梯度同向时，才取等号。这一点在后面的实验中会非常直观地展现出来。",
+          "audioRef": "audio/tts_s7_action_F_30-BBR.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "方向导数：拖动实验",
+      "order": 8,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "directional_derivative",
+          "description": "旋转方向拨盘，观察当方向偏离梯度方向时，高度增长率（方向导数）是如何减小的。",
+          "variables": [
+            {
+              "name": "direction_angle",
+              "label": "方向角度",
+              "min": 0,
+              "max": 360,
+              "default": 45,
+              "unit": "°"
+            },
+            {
+              "name": "directional_derivative_value",
+              "label": "方向导数值",
+              "min": -3,
+              "max": 3,
+              "default": 2.83,
+              "unit": ""
+            },
+            {
+              "name": "dot_product_visualizer",
+              "label": "点积可视化",
+              "min": 0,
+              "max": 1,
+              "default": 1,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "沿梯度方向（最大）",
+              "variables": {
+                "direction_angle": 45
+              }
+            },
+            {
+              "name": "垂直梯度方向（为零）",
+              "variables": {
+                "direction_angle": 135
+              }
+            },
+            {
+              "name": "逆梯度方向（最小）",
+              "variables": {
+                "direction_angle": 225
+              }
+            },
+            {
+              "name": "任意方向 60°",
+              "variables": {
+                "direction_angle": 60
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/08_方向导数：拖动实验.html",
+        "htmlBytes": 780683
+      },
+      "actions": [
+        {
+          "id": "action_xENAZmcp",
+          "type": "speech",
+          "text": "本场景通过交互探索“方向导数：拖动实验”。只有方向与梯度一致时才取等号。现在就用这个拨盘实验来直观验证一下。"
+        },
+        {
+          "id": "action_RfEEl2KC",
+          "type": "widget_setState",
+          "state": {
+            "direction_angle": 45
+          },
+          "content": "将拨盘旋转到45度，即梯度方向。"
+        },
+        {
+          "id": "action_efymk1M9",
+          "type": "speech",
+          "text": "看，当前方向与梯度完全一致，读数是2.83，这就是这个点上最大的上升率。旁边的梯度箭头应该也在闪烁。现在慢慢旋转拨盘，让角度偏离45度。",
+          "audioRef": "audio/tts_s8_action_efymk1M9.mp3"
+        },
+        {
+          "id": "action_FscO13UF",
+          "type": "widget_setState",
+          "state": {
+            "direction_angle": 135
+          },
+          "content": "旋转到135度，与梯度垂直。"
+        },
+        {
+          "id": "action_N3FXkmBX",
+          "type": "speech",
+          "text": "当方向与梯度垂直时，方向导数归零了。这意味着在这个方向上走，高度暂时不变，就像走在等高线上一样。",
+          "audioRef": "audio/tts_s8_action_N3FXkmBX.mp3"
+        },
+        {
+          "id": "action_1tVrS3DS",
+          "type": "widget_setState",
+          "state": {
+            "direction_angle": 225
+          },
+          "content": "继续旋转到225度，完全逆着梯度方向。"
+        },
+        {
+          "id": "action_dKkDx24L",
+          "type": "speech",
+          "text": "现在读数是负2.83，最大的下降率。逆着梯度走，下降得最快。所以方向导数从正最大值到零，再到负最大值，完美地反映了我们走的方向和梯度之间的余弦关系。",
+          "audioRef": "audio/tts_s8_action_dKkDx24L.mp3"
+        },
+        {
+          "id": "action_T8Ho8szL",
+          "type": "widget_annotation",
+          "target": "#directional-derivative-value-display",
+          "content": "这个实时读数面板显式展示了方向导数的变化规律。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "方向导数：关系图",
+      "order": 9,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "单位方向向量",
+              "sub": "u⃗ = (u₁, u₂, u₃)",
+              "icon": "🧭",
+              "x": 220,
+              "y": 200,
+              "details": "方向导数所考察的「方向」，必须是一个长度为 1 的向量（即 |u⃗| = 1）。这保证了我们是在比较单位长度内的变化率，而非受向量长度影响。",
+              "formula": "|u⃗| = √(u₁² + u₂² + u₃²) = 1",
+              "evidence": "你可以把 u⃗ 想象成一个指南针的指针——它只指明方向，长短被固定为 1。"
+            },
+            {
+              "id": "n2",
+              "label": "梯度向量",
+              "sub": "∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z)",
+              "icon": "📐",
+              "x": 220,
+              "y": 370,
+              "details": "梯度向量 ∇f 指向函数 f 在某点处增长最快的方向，其模 |∇f| 表示该方向上的最大变化率。梯度是多元函数偏导数组成的向量。",
+              "formula": "∇f(x₀,y₀,z₀) = (∂f/∂x, ∂f/∂y, ∂f/∂z)|₍ₓ₀,ᵧ₀,₂₀₎",
+              "evidence": "梯度始终垂直于过该点的等高线（等值面），沿着梯度方向走，函数值上升最快。"
+            },
+            {
+              "id": "n3",
+              "label": "内积运算",
+              "sub": "∇f · u⃗",
+              "icon": "🔢",
+              "x": 480,
+              "y": 285,
+              "details": "方向导数的核心计算：将梯度向量与单位方向向量进行内积（点乘）。内积运算综合了两个向量的大小和它们之间的夹角。",
+              "formula": "f_u(x₀) = ∇f · u⃗ = |∇f|·|u⃗|·cosθ = |∇f|·cosθ",
+              "evidence": "由于 |u⃗| = 1，内积简化为 |∇f|·cosθ，其中 θ 是梯度与 u⃗ 的夹角。这说明方向导数完全由梯度和夹角决定！"
+            },
+            {
+              "id": "n4",
+              "label": "方向导数值",
+              "sub": "f_u(x₀) = ∇f · u⃗",
+              "icon": "📊",
+              "x": 720,
+              "y": 285,
+              "details": "方向导数的值 = 梯度在该方向上的投影。它表示函数沿指定单位方向 u⃗ 的变化率。正数表示上升，负数表示下降，零表示不变。",
+              "formula": "f_u(x₀) = |∇f|·cosθ",
+              "evidence": "这个值可正可负可零——关键在于 cosθ 的符号，即梯度与考察方向之间的夹角关系。"
+            },
+            {
+              "id": "n5",
+              "label": "判定：上升/下降/不变",
+              "sub": "由 cosθ 的符号决定",
+              "icon": "⚖️",
+              "x": 960,
+              "y": 285,
+              "details": "根据方向导数值的正负号，判断函数沿该方向是上升、下降还是不变。这是理解方向导数物理意义的核心步骤。",
+              "misconception": "⚠️ 常见误解：「方向导数总是正的——函数总在某个方向上升」。事实：当方向与梯度夹角 > 90° 时，方向导数为负，函数值下降！并非所有方向都上升。",
+              "evidence": "展开此节点即可验证：当 θ ∈ (90°, 180°] 时 cosθ < 0，方向导数为负——函数值沿该方向下降。这是理解多元函数变化行为的关键。"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n3",
+              "label": "提供方向"
+            },
+            {
+              "from": "n2",
+              "to": "n3",
+              "label": "提供变化率"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "计算结果"
+            },
+            {
+              "from": "n4",
+              "to": "n5",
+              "label": "正负判定"
+            },
+            {
+              "from": "n5",
+              "to": "n5",
+              "label": "",
+              "special": "branch"
+            }
+          ],
+          "branchNodes": [
+            {
+              "id": "n6",
+              "label": "函数值上升",
+              "sub": "θ < 90°, cosθ > 0",
+              "icon": "📈",
+              "x": 1180,
+              "y": 150,
+              "parent": "n5",
+              "edgeLabel": "cosθ > 0"
+            },
+            {
+              "id": "n7",
+              "label": "函数值下降",
+              "sub": "θ > 90°, cosθ < 0",
+              "icon": "📉",
+              "x": 1180,
+              "y": 285,
+              "parent": "n5",
+              "edgeLabel": "cosθ < 0"
+            },
+            {
+              "id": "n8",
+              "label": "函数值不变",
+              "sub": "θ = 90°, cosθ = 0",
+              "icon": "➖",
+              "x": 1180,
+              "y": 420,
+              "parent": "n5",
+              "edgeLabel": "cosθ = 0"
+            }
+          ],
+          "branchEdges": [
+            {
+              "from": "n5",
+              "to": "n6",
+              "label": "cosθ > 0"
+            },
+            {
+              "from": "n5",
+              "to": "n7",
+              "label": "cosθ < 0"
+            },
+            {
+              "from": "n5",
+              "to": "n8",
+              "label": "cosθ = 0"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7",
+            "n8"
+          ],
+          "edgeRevealOrder": [
+            {
+              "from": "n1",
+              "to": "n3"
+            },
+            {
+              "from": "n2",
+              "to": "n3"
+            },
+            {
+              "from": "n3",
+              "to": "n4"
+            },
+            {
+              "from": "n4",
+              "to": "n5"
+            },
+            {
+              "from": "n5",
+              "to": "n6"
+            },
+            {
+              "from": "n5",
+              "to": "n7"
+            },
+            {
+              "from": "n5",
+              "to": "n8"
+            }
+          ],
+          "misconceptionPos": {
+            "x": 1120,
+            "y": 240
+          }
+        },
+        "htmlPath": "interactive/09_方向导数：关系图.html",
+        "htmlBytes": 764444
+      },
+      "actions": [
+        {
+          "id": "action_bWehnOer",
+          "type": "speech",
+          "text": "本场景通过交互探索“方向导数：关系图”。刚刚我们通过拖动实验，直观感受了方向导数随夹角的变化。现在，我们用一个关系图，把方向导数的逻辑结构彻底理清。"
+        },
+        {
+          "id": "action_X2qXc9bk",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "首先出现的是单位方向向量。"
+        },
+        {
+          "id": "action_J7p0y8c-",
+          "type": "speech",
+          "text": "首先，我们考察一个方向，就需要一个单位方向向量，记作u向量。它只指明方向，长度被固定为1。",
+          "audioRef": "audio/tts_s9_action_J7p0y8c-.mp3"
+        },
+        {
+          "id": "action_IP2AFGbk",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "接着出现梯度向量。"
+        },
+        {
+          "id": "action_IHR6kn9d",
+          "type": "speech",
+          "text": "同时，在某一点上，函数自身有一个梯度向量，代表该点变化率最大的方向和大小。",
+          "audioRef": "audio/tts_s9_action_IHR6kn9d.mp3"
+        },
+        {
+          "id": "action_K8FhGN_V",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "然后出现核心的内积运算节点。"
+        },
+        {
+          "id": "action_VQgDkQEh",
+          "type": "speech",
+          "text": "这两个向量，通过内积运算结合在一起，就得到了沿该方向的变化率。这正是我们刚做的拖动实验的数学表达。",
+          "audioRef": "audio/tts_s9_action_VQgDkQEh.mp3"
+        },
+        {
+          "id": "action_9pwkjnhy",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "接着出现方向导数值。"
+        },
+        {
+          "id": "action_Xkg4n-Bj",
+          "type": "speech",
+          "text": "内积的结果，就是方向导数的值。关键在于，因为u向量是单位向量，它的值就等于梯度的大小乘以它们夹角的余弦。",
+          "audioRef": "audio/tts_s9_action_Xkg4n-Bj.mp3"
+        },
+        {
+          "id": "action_sfgmY7dG",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "最后，我们看判定节点，并展开它。"
+        },
+        {
+          "id": "action_zihD13_V",
+          "type": "speech",
+          "text": "所以，方向导数的正负完全由cosθ决定。现在，让我们展开这个判定节点，来看看一个特别容易出错的地方。",
+          "audioRef": "audio/tts_s9_action_zihD13_V.mp3"
+        },
+        {
+          "id": "action_ldwhrpYu",
+          "type": "widget_reveal",
+          "target": "#n7",
+          "content": "注意！这里就是我们刚才实验证实的：当夹角大于90度时，方向导数为负，函数值下降。"
+        },
+        {
+          "id": "action_kQh0tJVD",
+          "type": "speech",
+          "text": "你看，当我们的方向与梯度夹角超过90度，cosθ为负，方向导数就是负数，函数值下降。并非所有方向都上升！这是理解多元函数变化的关键。",
+          "audioRef": "audio/tts_s9_action_kQh0tJVD.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "方向导数：误解修复挑战",
+      "order": 10,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "action",
+          "title": "方向导数：误解修复挑战",
+          "description": "在梯度山丘上，根据任务要求选择正确的行进方向，纠正'有方向即上升'的错觉。",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "achievements": [
+            {
+              "id": "first_descend",
+              "name": "初次下降",
+              "desc": "第一次成功下降",
+              "icon": "⬇️"
+            },
+            {
+              "id": "perfect_angle",
+              "name": "完美角度",
+              "desc": "以170°+角度成功下降",
+              "icon": "🎯"
+            },
+            {
+              "id": "contour_master",
+              "name": "等高线大师",
+              "desc": "成功沿等高线行走",
+              "icon": "🌀"
+            },
+            {
+              "id": "all_levels",
+              "name": "征服山丘",
+              "desc": "完成全部关卡",
+              "icon": "🏔️"
+            },
+            {
+              "id": "no_fail",
+              "name": "一步到位",
+              "desc": "不失败通关一局",
+              "icon": "⭐"
+            },
+            {
+              "id": "speed_demon",
+              "name": "速度之星",
+              "desc": "10秒内完成关卡",
+              "icon": "⚡"
+            }
+          ]
+        },
+        "htmlPath": "interactive/10_方向导数：误解修复挑战.html",
+        "htmlBytes": 482154
+      },
+      "actions": [
+        {
+          "id": "action_ctc27L5Y",
+          "type": "speech",
+          "text": "本场景通过交互探索“方向导数：误解修复挑战”。当方向与梯度夹角大于90度时，方向导数就变负数了。光看还不够，现在我们来玩个游戏，亲自检验一下你是不是真的理解了。"
+        },
+        {
+          "id": "action__jA8APRv",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "从这里开始你的挑战。"
+        },
+        {
+          "id": "action_afGUxFXR",
+          "type": "speech",
+          "text": "在这个梯度山丘上，每一关都会有一个任务要求，比如'必须下降'或者'保持高度'。你需要用方向键，实时调整自己的行进角度。记住，不是有方向就能上升，关键要看你和梯度的夹角。",
+          "audioRef": "audio/tts_s10_action_afGUxFXR.mp3"
+        },
+        {
+          "id": "action_X4lZDNpq",
+          "type": "widget_setState",
+          "state": {
+            "currentLevel": "descend"
+          },
+          "content": "进入第一关：必须下降，抵达指定高度。"
+        },
+        {
+          "id": "action_GHV7DTfN",
+          "type": "speech",
+          "text": "看，第一关的目标是下降到山丘脚下的指定高度。如果还抱着'往前走就能上山'的直觉，你就会顺着梯度走，结果越走越高，任务直接失败。试着调整方向键，找到一个能让高度下降的角度。",
+          "audioRef": "audio/tts_s10_action_GHV7DTfN.mp3"
+        },
+        {
+          "id": "action_EfRRfZ0m",
+          "type": "widget_annotation",
+          "target": "#hint-area",
+          "content": "提示：让行进方向与上升最快的梯度方向形成钝角。"
+        },
+        {
+          "id": "action_WCvPwDzn",
+          "type": "speech",
+          "text": "当你成功通关后，别忘了试试挑战隐藏成就，比如'完美角度'，看看自己能不能在与梯度接近180度的方向上，直直地滑下山。",
+          "audioRef": "audio/tts_s10_action_WCvPwDzn.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "方向导数：空间视角",
+      "order": 11,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "方向导数的空间可视化：通过旋转垂直切面观察曲面沿不同方向的切线斜率变化。当切面朝向梯度方向时，斜率达到最大值；垂直于梯度方向时，斜率为零。",
+          "objects": [
+            {
+              "id": "surface",
+              "type": "parametric_surface",
+              "function": "z = x² − y²",
+              "description": "马鞍形曲面"
+            },
+            {
+              "id": "plane",
+              "type": "vertical_plane_slice",
+              "description": "可旋转的垂直切面，金色半透明"
+            },
+            {
+              "id": "tangent",
+              "type": "tangent_line",
+              "description": "切面与曲面交线处的切线，红色"
+            },
+            {
+              "id": "gradient",
+              "type": "gradient_arrow",
+              "description": "梯度方向箭头，绿色"
+            },
+            {
+              "id": "point",
+              "type": "observation_point",
+              "position": [
+                1.2,
+                1.08,
+                0.6
+              ],
+              "description": "观察点"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "slider",
+              "param": "angle",
+              "min": 0,
+              "max": 360,
+              "default": 0,
+              "label": "切面角度 θ",
+              "unit": "°"
+            },
+            {
+              "type": "button",
+              "action": "toggleGradient",
+              "label": "显示/隐藏梯度"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置视角"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            }
+          ],
+          "presets": [
+            {
+              "name": "梯度方向",
+              "state": {
+                "angle": 29,
+                "cameraPosition": [
+                  4,
+                  5,
+                  6
+                ],
+                "cameraTarget": [
+                  1.2,
+                  1.08,
+                  0.6
+                ]
+              },
+              "description": "切面朝向梯度方向，斜率最大"
+            },
+            {
+              "name": "零方向导数",
+              "state": {
+                "angle": 119,
+                "cameraPosition": [
+                  4,
+                  5,
+                  6
+                ],
+                "cameraTarget": [
+                  1.2,
+                  1.08,
+                  0.6
+                ]
+              },
+              "description": "切面垂直于梯度方向，方向导数为零"
+            },
+            {
+              "name": "负梯度方向",
+              "state": {
+                "angle": 209,
+                "cameraPosition": [
+                  4,
+                  5,
+                  6
+                ],
+                "cameraTarget": [
+                  1.2,
+                  1.08,
+                  0.6
+                ]
+              },
+              "description": "切面朝向负梯度方向，斜率最负"
+            },
+            {
+              "name": "鸟瞰视角",
+              "state": {
+                "angle": 0,
+                "cameraPosition": [
+                  0,
+                  10,
+                  0
+                ],
+                "cameraTarget": [
+                  1.2,
+                  1.08,
+                  0.6
+                ]
+              },
+              "description": "从上方俯视曲面和切面"
+            }
+          ],
+          "formulas": {
+            "surface": "z = x² − y²",
+            "gradient": "∇f(x,y) = (2x, −2y)",
+            "directional_derivative": "D_u f = ∇f · u = 2x·cos(θ) − 2y·sin(θ)",
+            "point_gradient": "∇f(1.2, 0.6) = (2.4, −1.2)",
+            "max_derivative": "|∇f| = √(2.4² + 1.2²) ≈ 2.68"
+          }
+        },
+        "htmlPath": "interactive/11_方向导数：空间视角.html",
+        "htmlBytes": 2209908
+      },
+      "actions": [
+        {
+          "id": "action_C9E3o176",
+          "type": "speech",
+          "text": "本场景通过交互探索“方向导数：空间视角”。现在我们把视野拉高一个维度，在三维空间里看看方向导数的几何意义。这个马鞍形曲面就是 z = x² − y²，我标出的这个点是 (1.2, 0.6)，我们先从上方俯瞰一下。"
+        },
+        {
+          "id": "action_VDElZD8y",
+          "type": "widget_setState",
+          "state": {
+            "angle": 0,
+            "cameraPosition": [
+              0,
+              10,
+              0
+            ],
+            "cameraTarget": [
+              1.2,
+              1.08,
+              0.6
+            ]
+          },
+          "content": "鸟瞰视角：从正上方俯视曲面和观察点"
+        },
+        {
+          "id": "action_jRFhwJzu",
+          "type": "speech",
+          "text": "看到这个金色的半透明切面了吗？它会沿着观察点垂直切下去，和曲面相交出一条曲线。交线在观察点处的切线斜率，就是这个方向上的方向导数。现在我们把切面转到梯度方向，也就是 29 度左右。",
+          "audioRef": "audio/tts_s11_action_jRFhwJzu.mp3"
+        },
+        {
+          "id": "action_FMOBGoQ3",
+          "type": "widget_setState",
+          "state": {
+            "angle": 29,
+            "cameraPosition": [
+              4,
+              5,
+              6
+            ],
+            "cameraTarget": [
+              1.2,
+              1.08,
+              0.6
+            ]
+          },
+          "content": "预设：梯度方向，斜率最大"
+        },
+        {
+          "id": "action_UPVxYraK",
+          "type": "speech",
+          "text": "看这条红色的切线，它是不是最陡的？这就是方向导数最大的情形，斜率大约是 2.68。现在慢慢拖动下方的切面角度滑块，从 29 度往 119 度转，盯着红色切线，看看它怎么变化。",
+          "audioRef": "audio/tts_s11_action_UPVxYraK.mp3"
+        },
+        {
+          "id": "action_YLzkknrH",
+          "type": "widget_highlight",
+          "target": "#angle-slider",
+          "content": "拖动这个滑块，旋转切面观察切线斜率变化"
+        },
+        {
+          "id": "action_Ys96OlBJ",
+          "type": "speech",
+          "text": "当切面转到约 119 度，垂直于梯度方向时，切线变成水平的了——方向导数等于零。继续转到约 209 度，负梯度方向，切线会指向最陡的下降，斜率约负 2.68。你可以试试点击“显示/隐藏梯度”按钮，同时看绿色箭头和切线的关系，找找规律。",
+          "audioRef": "audio/tts_s11_action_Ys96OlBJ.mp3"
+        },
+        {
+          "id": "action_qRH4IL5h",
+          "type": "widget_highlight",
+          "target": "#toggleGradient-btn",
+          "content": "点击显示梯度箭头，对比它和切线的关系"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在“梯度向量：拖动实验”中，如果函数 f(x,y) 在某点的偏导数 f_x = 3，f_y = -4，则该点的梯度向量为？",
+            "options": [
+              {
+                "value": "A",
+                "label": "(-3, 4)"
+              },
+              {
+                "value": "B",
+                "label": "(3, -4)"
+              },
+              {
+                "value": "C",
+                "label": "(3, 4)"
+              },
+              {
+                "value": "D",
+                "label": "(-3, -4)"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "梯度向量定义为 (f_x, f_y)。直接将给定的偏导数分量组合即可得到 (3, -4)。选项A颠倒了符号，选项C忽略了负号，选项D两个分量符号都颠倒了。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "下列关于梯度向量的说法，哪些是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "梯度向量的方向指向函数增长最快的方向"
+              },
+              {
+                "value": "B",
+                "label": "梯度向量的大小代表最大方向导数的值"
+              },
+              {
+                "value": "C",
+                "label": "梯度向量的方向就是函数下降最快的方向"
+              },
+              {
+                "value": "D",
+                "label": "在一点处，沿不同方向走，函数的变化率可能不同"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "analysis": "选项A和B是梯度向量的基本性质。选项D描述了方向导数的含义，也是正确的。选项C错误，因为梯度指向上升最快方向，其反方向才是下降最快。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "在“方向导数：拖动实验”中，当你拖动的方向与梯度方向的夹角从0度逐渐增大到90度时，方向导数的数值会如何变化？",
+            "options": [
+              {
+                "value": "A",
+                "label": "从最大值逐渐减小到0"
+              },
+              {
+                "value": "B",
+                "label": "从0逐渐增大到最大值"
+              },
+              {
+                "value": "C",
+                "label": "保持不变"
+              },
+              {
+                "value": "D",
+                "label": "从最大值逐渐减小到一个负数"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "方向导数 = 梯度的大小 乘以 二者夹角的余弦值。当夹角从0度到90度变化时，余弦值从1减小到0。所以方向导数从正向最大值（等于梯度模）逐渐减小到0。此时变化率为0，意味着沿该方向走，函数值高度暂时不变。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "如果你站在山腰的某个位置，若要保持你的海拔高度不变行走，你应该选择哪个方向？（提示：即方向导数为0的方向）",
+            "options": [
+              {
+                "value": "A",
+                "label": "沿梯度方向直线上山"
+              },
+              {
+                "value": "B",
+                "label": "沿梯度反方向直线下山"
+              },
+              {
+                "value": "C",
+                "label": "沿与梯度方向垂直的方向绕山走"
+              },
+              {
+                "value": "D",
+                "label": "以任意方向走都可以"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "要使得高度变化率为0，即方向导数为0，需满足方向向量与梯度向量垂直（夹角90度），因为余弦90度=0。沿着该垂直方向移动，就走在了一条高度不变的路径上。这条路径在数学上对应着函数的等高线或等值线。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "结合上面的思考，请用自己的话解释：给定一个点，如何找到能让函数值增加和减少的路径？并说明这些路径与等高线之间有什么关系？",
+            "commentPrompt": "评分标准：（1）明确指出增加路径是沿梯度方向或偏向梯度的方向，减少路径是沿负梯度方向或偏向负梯度的方向 - 40%。（2）明确指出保持不变的路径（等高线）是与梯度垂直的方向 - 30%。（3）能将路径、梯度方向和等高线三者联系起来，语言清晰，体现空间想象 - 30%。",
+            "analysis": "从一点出发，沿梯度方向走，函数值增加最快，这是上山路径；沿负梯度方向走，函数值减少最快，这是下山路径。而保持不变的路径，即等高线，其切线方向处处与梯度方向垂直。这就像走在山坡上，梯度指向上坡最陡的方向，与之垂直的方向就是绕着山坡的平路。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_zGwSDg4h",
+          "type": "speech",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。可以观察到梯度向量的合成，也感受了方向改变时方向导数的变化，还碰到了一个很有意思的现象：把切面转到某个角度，切线变水平了。现在，让我们用几道小题来检验一下这些概念是否真的内化成了你自己的理解。"
+        },
+        {
+          "id": "action_RWGEJMSQ",
+          "type": "speech",
+          "text": "请根据刚才两个核心实验的体验，完成这个形成性测验。特别是前四道客观题，都直接源于你刚刚的操作观察；最后一道简答题则是一块跳板，会帮我们自然过渡到下一组关于等高线的奇妙探索。",
+          "audioRef": "audio/tts_s12_action_RWGEJMSQ.mp3"
+        },
+        {
+          "id": "action_Vm0ejVUC",
+          "type": "discussion",
+          "topic": "在拖动实验中，当你沿与梯度方向垂直的方向移动时，方向导数变为零；这在真实的山坡上，对应着怎样一种行走路径？它和等高线有什么关系？",
+          "prompt": "回想你在实验中的操作，当方向导数归零时，你是在直线上山，还是绕山走？想想这个路径上的海拔变化特点。",
+          "agentIndex": 3
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "梯度与等高线垂直",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "FyJYRHIEUhtEjLKJy9qWr",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_99lCk35E",
+              "left": 60,
+              "top": 50,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1A3A5C;\">梯度与等高线垂直</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_HS0Kw1Dk",
+              "left": 480,
+              "top": 59,
+              "width": 460,
+              "height": 71,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #1A3A5C;\">揭示梯度的几何核心属性：它总是与函数值相等的等高线垂直</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Fd0AusmX",
+              "left": 60,
+              "top": 150,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_pptMPgzL",
+              "left": 80,
+              "top": 130,
+              "width": 420,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>目标：</b>能用地形图解释梯度与等高线的垂直关系</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_IxG9CwRG",
+              "left": 60,
+              "top": 190,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                440,
+                0
+              ],
+              "style": "solid",
+              "color": "#B0B0B0",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_xfncsQrG",
+              "left": 60,
+              "top": 210,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_44X0kdvv",
+              "left": 80,
+              "top": 190,
+              "width": 420,
+              "height": 67,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>修正误解：</b>以为沿等高线走高度变化最大（实际上高度不变）</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_z7TgqAfF",
+              "left": 60,
+              "top": 250,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                440,
+                0
+              ],
+              "style": "solid",
+              "color": "#B0B0B0",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_m6vZu3cy",
+              "left": 60,
+              "top": 270,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_oMpCrf15",
+              "left": 80,
+              "top": 250,
+              "width": 420,
+              "height": 67,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>结论：</b>梯度指向最快上升方向，等高线代表零增长方向</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "table",
+              "id": "table_A_dKyhpW",
+              "left": 60,
+              "top": 320,
+              "width": 440,
+              "height": 108,
+              "rotate": 0,
+              "outline": {
+                "style": "solid",
+                "width": 1,
+                "color": "#B0B0B0"
+              },
+              "colWidths": [
+                0.35,
+                0.65
+              ],
+              "cellMinHeight": 36,
+              "data": [
+                [
+                  {
+                    "id": "c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "方向",
+                    "style": {
+                      "bold": true,
+                      "color": "#1A3A5C",
+                      "backcolor": "#E0EAF5",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "变化率与等高线关系",
+                    "style": {
+                      "bold": true,
+                      "color": "#1A3A5C",
+                      "backcolor": "#E0EAF5",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "梯度方向",
+                    "style": {
+                      "bold": true,
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "c4",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "函数值增加最快，垂直于等高线",
+                    "style": {
+                      "color": "#333333",
+                      "align": "left"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "c5",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "等高线切线",
+                    "style": {
+                      "bold": true,
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "c6",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "函数值不变，与梯度垂直",
+                    "style": {
+                      "color": "#333333",
+                      "align": "left"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "shape",
+              "id": "shape_qfuruBNE",
+              "left": 600,
+              "top": 150,
+              "width": 280,
+              "height": 200,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": false,
+              "fill": "#E0EAF5"
+            },
+            {
+              "type": "line",
+              "id": "line_UOMh2Ax7",
+              "left": 740,
+              "top": 250,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                -60
+              ],
+              "style": "solid",
+              "color": "#1A3A5C",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_E7horCdj",
+              "left": 755,
+              "top": 170,
+              "width": 100,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #1A3A5C; font-weight: bold;\">梯度方向</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "line",
+              "id": "line_n9j_IJM3",
+              "left": 740,
+              "top": 250,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                60,
+                0
+              ],
+              "style": "dashed",
+              "color": "#1A3A5C",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_Q4JlWkFC",
+              "left": 810,
+              "top": 235,
+              "width": 100,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #1A3A5C; font-weight: bold;\">等高线方向</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "line",
+              "id": "line_fRzYAG5B",
+              "left": 100,
+              "top": 460,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                800,
+                0
+              ],
+              "style": "solid",
+              "color": "#1A3A5C",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "latex",
+              "id": "latex_saqjCe-Z",
+              "left": 400,
+              "top": 475,
+              "width": 200,
+              "height": 50,
+              "rotate": 0,
+              "latex": "\\nabla f \\cdot \\mathbf{T} = 0",
+              "color": "#1A3A5C",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">⋅</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6861em;\"></span><span class=\"mord mathbf\">T</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6444em;\"></span><span class=\"mord\">0</span></span></span></span></span>"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_K3oyyPCg",
+          "type": "spotlight",
+          "elementId": "text_99lCk35E"
+        },
+        {
+          "id": "action_9RhEhmCf",
+          "type": "speech",
+          "text": "本场景聚焦“梯度与等高线垂直”。祝贺大家完成了形成性测验！现在，我们正式踏入本课非常核心且美妙的一个部分：梯度与等高线垂直。这短短几个字，揭示了多元微积分中一个极其重要的几何秘密。我们先明确一下这一页的学习目标。"
+        },
+        {
+          "id": "action_QtvjOY8N",
+          "type": "spotlight",
+          "elementId": "text_pptMPgzL"
+        },
+        {
+          "id": "action_XsMEZT3x",
+          "type": "speech",
+          "text": "目标很明确：大家要能用地形图的视角，去解释为什么梯度这个向量，总是和穿过该点的等高线保持垂直关系。这是一个需要将代数公式与几何直觉结合起来的时刻。",
+          "audioRef": "audio/tts_s13_action_XsMEZT3x.mp3"
+        },
+        {
+          "id": "action_HWC8V2dq",
+          "type": "spotlight",
+          "elementId": "text_HS0Kw1Dk"
+        },
+        {
+          "id": "action_peegnA-6",
+          "type": "speech",
+          "text": "这个属性的核心在于：梯度指向的是函数值增长最快的方向。想象你站在一座山上，最快登顶的路径绝不是绕着山腰的水平方向走，而是直接往最陡的上坡方向走。而等高线，恰恰标记了所有高度不变、增长为零的方向。",
+          "audioRef": "audio/tts_s13_action_peegnA-6.mp3"
+        },
+        {
+          "id": "action_kDWK20m_",
+          "type": "spotlight",
+          "elementId": "latex_saqjCe-Z"
+        },
+        {
+          "id": "action_kLyPRx3N",
+          "type": "speech",
+          "text": "从数学上看，这个关系被优雅地总结为这个公式：梯度向量与等高线的切向量点积为零。这意味着它们是正交的。我们马上会通过一个拖动实验，直观地验证这一点。",
+          "audioRef": "audio/tts_s13_action_kLyPRx3N.mp3"
+        },
+        {
+          "id": "action_pqV5YDwv",
+          "type": "spotlight",
+          "elementId": "text_oMpCrf15"
+        },
+        {
+          "id": "action_p6jH9IMV",
+          "type": "speech",
+          "text": "所以我们的结论可以概括为：梯度指向最快上升方向，而等高线恰恰代表了所有零增长方向。一个向上，一个水平，自然垂直。这个图景清晰了吗？"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "梯度与等高线垂直：拖动实验",
+      "order": 14,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "gradient_contour_perpendicular",
+          "description": "在二维等高线图上拖动采样点，观察梯度向量始终与等高线切线保持垂直（90°）",
+          "variables": [
+            {
+              "name": "funcType",
+              "label": "函数类型",
+              "min": 0,
+              "max": 3,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "density",
+              "label": "等高线密度",
+              "min": 4,
+              "max": 24,
+              "default": 12,
+              "unit": "条"
+            },
+            {
+              "name": "arrowScale",
+              "label": "箭头长度",
+              "min": 0.3,
+              "max": 3,
+              "default": 1,
+              "unit": "×"
+            },
+            {
+              "name": "colorDepth",
+              "label": "颜色深度",
+              "min": 3,
+              "max": 20,
+              "default": 10,
+              "unit": "级"
+            }
+          ],
+          "presets": [
+            {
+              "name": "鞍点附近",
+              "variables": {
+                "funcType": 0,
+                "pointX": 0.3,
+                "pointY": 0.3
+              }
+            },
+            {
+              "name": "峰值附近",
+              "variables": {
+                "funcType": 0,
+                "pointX": 1,
+                "pointY": 1
+              }
+            },
+            {
+              "name": "谷底附近",
+              "variables": {
+                "funcType": 0,
+                "pointX": -1,
+                "pointY": -1
+              }
+            },
+            {
+              "name": "任意点",
+              "variables": {
+                "funcType": 0,
+                "pointX": 0.5,
+                "pointY": -0.5
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/14_梯度与等高线垂直：拖动实验.html",
+        "htmlBytes": 473474
+      },
+      "actions": [
+        {
+          "id": "action_G6JBxsuX",
+          "type": "speech",
+          "text": "本场景通过交互探索“梯度与等高线垂直：拖动实验”。就像我们刚才推导的那样，梯度方向是上升最快的，等高线方向是高度不变的——它们理应处处垂直。现在让我们亲手拖一拖，亲眼看看这个90度是否在每一点都成立。"
+        },
+        {
+          "id": "action_Uoi3LYf_",
+          "type": "widget_setState",
+          "state": {
+            "funcType": 0,
+            "pointX": 0.5,
+            "pointY": 0.5
+          },
+          "content": "初始化一个便于观察的中间位置。"
+        },
+        {
+          "id": "action_ilg6rMAB",
+          "type": "speech",
+          "text": "页面上显示了一个标量场的等高线图，中间有一个可以拖动的采样点。先不要急着动，请先找到从该点出发的红色箭头——这就是该点的梯度向量。同时，注意穿过该点的蓝色曲线，那就是过该点的等高线。",
+          "audioRef": "audio/tts_s14_action_ilg6rMAB.mp3"
+        },
+        {
+          "id": "action_Yu9TKlfY",
+          "type": "widget_highlight",
+          "target": "#angle-display",
+          "content": "看清楚读数面板显示的实时夹角数值。"
+        },
+        {
+          "id": "action_4suHVZBE",
+          "type": "speech",
+          "text": "现在，请用鼠标按住这个采样点，慢慢地在平面上拖动。请一直盯着读数面板上的“夹角”数值，观察它是否始终稳定在90度。试着把点拖到等高线弯曲很厉害的地方，或者拖到峰顶、谷底附近，看看规律会不会被打破。",
+          "audioRef": "audio/tts_s14_action_4suHVZBE.mp3"
+        },
+        {
+          "id": "action_wkyz3kCy",
+          "type": "widget_setState",
+          "state": {
+            "pointX": -0.8,
+            "pointY": -0.8
+          },
+          "content": "将采样点移动到谷底附近进行对比。"
+        },
+        {
+          "id": "action_kaY5x297",
+          "type": "speech",
+          "text": "有意思吧？哪怕在谷底，所有的等高线似乎都收拢消失了，但只要有一条等高线经过，梯度依然与它垂直。这说明梯度垂直于等高线是多元函数的一个内禀几何性质，与位置无关。如果你还想挑战一下，可以切换右侧的函数类型，看看对于不同的曲面，这种垂直关系是否依然坚挺。",
+          "audioRef": "audio/tts_s14_action_kaY5x297.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "梯度与等高线垂直：关系图",
+      "order": 15,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "梯度与等高线垂直：关系图",
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "函数定义",
+              "icon": "📝",
+              "details": "考虑二元函数 z = f(x, y)，其图像是一个三维曲面。曲面上每一点的高度由 f(x, y) 给出。等高线是曲面上高度相同的点的投影集合。",
+              "formula": "z = f(x, y)"
+            },
+            {
+              "id": "n2",
+              "label": "等高线",
+              "icon": "🗺️",
+              "details": "等高线：曲面上所有满足 f(x, y) = c（常数）的点在 xy 平面上的投影。沿等高线移动时，函数值保持不变，即高度不变。",
+              "formula": "f(x, y) = c（常数）"
+            },
+            {
+              "id": "n3",
+              "label": "切线方向",
+              "icon": "➡️",
+              "details": "在等高线上任取一点 P，该点的切向量 t⃗ 指向沿等高线的方向。由于沿等高线移动高度不变，沿切线方向的「方向导数」必然为零。",
+              "formula": "t⃗ = 等高线在 P 点的切向量"
+            },
+            {
+              "id": "n4",
+              "label": "方向导数 = 0",
+              "icon": "🔢",
+              "details": "方向导数描述函数沿某方向的变化率。沿等高线切线方向，高度不变，因此方向导数为零。这是等高线的核心性质。",
+              "formula": "D<sub>t⃗</sub>f = ∇f · t⃗ = 0"
+            },
+            {
+              "id": "n5",
+              "label": "梯度方向",
+              "icon": "⛰️",
+              "details": "梯度 ∇f 是函数的变化率向量，指向函数增长最快的方向。在等高线图中，梯度总是指向「上坡」方向。",
+              "formula": "∇f = (∂f/∂x, ∂f/∂y)"
+            },
+            {
+              "id": "n6",
+              "label": "内积 = 0",
+              "icon": "✖️",
+              "details": "由方向导数公式 D<sub>t⃗</sub>f = ∇f · t⃗ = 0 可知，梯度 ∇f 与切向量 t⃗ 的点积（内积）为零。这正是两个向量垂直的数学定义！",
+              "formula": "∇f · t⃗ = |∇f||t⃗|cos θ = 0"
+            },
+            {
+              "id": "n7",
+              "label": "垂直结论",
+              "icon": "📐",
+              "details": "两个非零向量的内积为零 ⇔ 它们互相垂直。因此，梯度 ∇f 必定垂直于等高线的切向量 t⃗，即梯度垂直于等高线！这是微积分中一个优美的几何结论。",
+              "formula": "∇f ⊥ t⃗ ⟹ ∇f ⊥ 等高线"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "定义等高线"
+            },
+            {
+              "from": "n2",
+              "to": "n3",
+              "label": "取切向量"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "高度不变 → 变化率为0"
+            },
+            {
+              "from": "n4",
+              "to": "n6",
+              "label": "代入公式"
+            },
+            {
+              "from": "n1",
+              "to": "n5",
+              "label": "求梯度"
+            },
+            {
+              "from": "n5",
+              "to": "n6",
+              "label": "点积计算"
+            },
+            {
+              "from": "n6",
+              "to": "n7",
+              "label": "⇒ 垂直"
+            }
+          ],
+          "misconception": {
+            "id": "m1",
+            "attachedTo": "n2",
+            "label": "⚠️ 常见误解",
+            "text": "「沿等高线走，高度变化率为 0，而非最大！」\n梯度方向才是变化最快的方向，等高线方向的变化率为零。"
+          },
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7"
+          ]
+        },
+        "htmlPath": "interactive/15_梯度与等高线垂直：关系图.html",
+        "htmlBytes": 767049
+      },
+      "actions": [
+        {
+          "id": "action_RtV0Xmm2",
+          "type": "speech",
+          "text": "本场景通过交互探索“梯度与等高线垂直：关系图”。经过刚才的拖动实验，我们已经直观地感受到梯度与等高线之间的垂直关系。那么，为什么这个几何事实在数学上必然成立？本场景中，我们用这张关系图，把背后的推导链条梳理清晰。"
+        },
+        {
+          "id": "action_wuOTF0Ve",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "首先展示函数定义，回顾二元函数的本质。"
+        },
+        {
+          "id": "action_A8CZDWMz",
+          "type": "speech",
+          "text": "一切从最基本的函数定义开始。我们考虑二元函数 z = f(x, y)，它的图像是一个三维曲面。曲面上高度相同的点，投影到 xy 平面就形成了等高线。",
+          "audioRef": "audio/tts_s15_action_A8CZDWMz.mp3"
+        },
+        {
+          "id": "action_jT1YvY-v",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "接着展示等高线节点，建立基本概念。"
+        },
+        {
+          "id": "action_0x4cI-Qb",
+          "type": "speech",
+          "text": "在等高线上任选一点，我们可以画出它的切线方向。请留意，沿这个切线方向移动时，函数的高度完全不变，所以此时的方向导数必定为零。这正是连接等高线与梯度的关键。",
+          "audioRef": "audio/tts_s15_action_0x4cI-Qb.mp3"
+        },
+        {
+          "id": "action_OxXEQxWi",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "展示切线方向，引出方向导数为零的性质。"
+        },
+        {
+          "id": "action_OMg_dA2a",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "展示方向导数为零的公式。"
+        },
+        {
+          "id": "action_QFsB1DSH",
+          "type": "speech",
+          "text": "同时，我们求出的梯度 ∇f，是函数变化最快的方向。将梯度与切线向量代入方向导数的公式：Df = ∇f · t⃗ = 0。两个向量的内积为零，这正是垂直的数学定义！",
+          "audioRef": "audio/tts_s15_action_QFsB1DSH.mp3"
+        },
+        {
+          "id": "action_elVl87iY",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "展示梯度方向及其公式。"
+        },
+        {
+          "id": "action_mWAcv7wy",
+          "type": "widget_reveal",
+          "target": "#n6",
+          "content": "展示内积为零，连接梯度与切线。"
+        },
+        {
+          "id": "action_FPZ1RR8y",
+          "type": "speech",
+          "text": "于是，我们自然而然地走到了逻辑链条的终点：梯度必定垂直于等高线的切线，也就垂直于等高线本身。这是微分学中一个非常优美的几何结论。",
+          "audioRef": "audio/tts_s15_action_FPZ1RR8y.mp3"
+        },
+        {
+          "id": "action_V50NBCX5",
+          "type": "widget_reveal",
+          "target": "#n7",
+          "content": "最终展示垂直结论，完成整个推理链条。"
+        },
+        {
+          "id": "action_3NAs-CGh",
+          "type": "widget_highlight",
+          "target": "#m1",
+          "content": "特别注意这个常见误解：沿等高线走，变化率是零而不是最大。梯度方向才是变化最快的方向。"
+        },
+        {
+          "id": "action_y8pnUkrS",
+          "type": "speech",
+          "text": "另外，请务必留心这个常见误解。有时我们会下意识地认为，沿着等高线走也是在‘爬坡’，但实际上它根本不变，变化率为零。梯度所指的，才是真正上坡最快的方向。现在，你可以点击图中各个节点，顺着箭头的逻辑再梳理一遍。当你想清楚为什么内积为零就意味着垂直时，这个概念就再也不会混淆了。",
+          "audioRef": "audio/tts_s15_action_y8pnUkrS.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "梯度与等高线垂直：误解修复挑战",
+      "order": 16,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "strategy",
+          "description": "迷宫策略游戏：梯度与等高线垂直关系理解",
+          "gameConfig": {
+            "controls": [
+              "direction_pad"
+            ],
+            "successCondition": "reachPeak",
+            "levels": 4
+          },
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/16_梯度与等高线垂直：误解修复挑战.html",
+        "htmlBytes": 477941
+      },
+      "actions": [
+        {
+          "id": "action_eI0utbap",
+          "type": "speech",
+          "text": "本场景通过交互探索“梯度与等高线垂直：误解修复挑战”。让我们把这个理解放到一个游戏中去检验——限时冲顶挑战。"
+        },
+        {
+          "id": "action_hLjBv34y",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始挑战"
+        },
+        {
+          "id": "action_JPGI34zd",
+          "type": "speech",
+          "text": "你的目标是以最快速度冲向山顶。屏幕上会显示等高线交织的地形，你需要用方向键选择前进角度。请思考：什么角度的路线，才能让你在最短时间内爬升最多？",
+          "audioRef": "audio/tts_s16_action_JPGI34zd.mp3"
+        },
+        {
+          "id": "action_4N2BmmJi",
+          "type": "widget_highlight",
+          "target": "#level-1-terrain",
+          "content": "观察第一关的等高线分布，找到梯度方向"
+        },
+        {
+          "id": "action_xQaf0AGO",
+          "type": "speech",
+          "text": "在你做出选择前，我先不提示答案。但请记住此前的结论——梯度指向变化最快的方向。现在，动手试试看。"
+        },
+        {
+          "id": "action_X5lnObsy",
+          "type": "widget_setState",
+          "state": {
+            "level": 1,
+            "timeRemaining": 30
+          },
+          "content": "第一关开始，尝试不同角度"
+        },
+        {
+          "id": "action_jDBOYr0G",
+          "type": "speech",
+          "text": "注意观察反馈：当你选择的方向垂直于等高线时，角色的移动距离最大；而如果你沿着等高线走，会发现角色几乎原地踏步——因为沿等高线方向的变化率为零。",
+          "audioRef": "audio/tts_s16_action_jDBOYr0G.mp3"
+        },
+        {
+          "id": "action_wI4u5AaK",
+          "type": "widget_annotation",
+          "target": "#score-display",
+          "content": "垂直方向得分最高，沿等高线得分为零"
+        },
+        {
+          "id": "action_2jNmMhAv",
+          "type": "speech",
+          "text": "继续挑战后续关卡，每一关的地形都在变化，但原理不变。找出等高线最密集的地方，那里坡度最陡，垂直方向就是你的最优路线。",
+          "audioRef": "audio/tts_s16_action_2jNmMhAv.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "梯度与等高线垂直：空间视角",
+      "order": 17,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "3D terrain gradient and contour orthogonality visualization",
+          "objects": [
+            {
+              "id": "terrain",
+              "type": "mesh",
+              "label": "地形曲面"
+            },
+            {
+              "id": "contour",
+              "type": "plane",
+              "label": "底面等高线投影"
+            },
+            {
+              "id": "arrows",
+              "type": "group",
+              "label": "梯度矢量场"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "slider",
+              "param": "amplitude",
+              "label": "调节地形起伏",
+              "min": 0.1,
+              "max": 4
+            },
+            {
+              "type": "button",
+              "action": "topView",
+              "label": "切换至顶视图"
+            }
+          ],
+          "presets": [
+            {
+              "name": "标准透视",
+              "state": {
+                "cameraPosition": [
+                  25,
+                  25,
+                  25
+                ]
+              }
+            },
+            {
+              "name": "正交顶视",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  45,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/17_梯度与等高线垂直：空间视角.html",
+        "htmlBytes": 2497494
+      },
+      "actions": [
+        {
+          "id": "action_etNW1Edi",
+          "type": "speech",
+          "text": "本场景通过交互探索“梯度与等高线垂直：空间视角”。在刚才的迷宫策略中，大家已经体会到：等高线越密集，地形越陡峭。现在，我们切换到一个更直观的3D空间视角，来看看梯度矢量与等高线之间那精确的几何关系。"
+        },
+        {
+          "id": "action_OWx4wdvH",
+          "type": "widget_setState",
+          "state": {
+            "preset": "标准透视",
+            "amplitude": 2
+          },
+          "content": "初始状态：标准透视视角，中等起伏地形"
+        },
+        {
+          "id": "action_Q2_CttBV",
+          "type": "speech",
+          "text": "请观察这个三维地形曲面。注意曲面上那些向上延伸的箭头——它们就是梯度矢量。同时，看向地面，那里有对应的二维等高线投影。",
+          "audioRef": "audio/tts_s17_action_Q2_CttBV.mp3"
+        },
+        {
+          "id": "action_oV-qJyIQ",
+          "type": "widget_highlight",
+          "target": "#terrain",
+          "content": "三维地形曲面"
+        },
+        {
+          "id": "action_QN02NY1W",
+          "type": "widget_highlight",
+          "target": "#contour",
+          "content": "底面上的等高线投影"
+        },
+        {
+          "id": "action_o9eVinG5",
+          "type": "speech",
+          "text": "现在，试着拖动'调节地形起伏'的滑块，看看等高线的疏密如何变化，同时留意那些梯度矢量——它们在水平面上的投影方向，是否始终垂直于脚下的等高线？",
+          "audioRef": "audio/tts_s17_action_o9eVinG5.mp3"
+        },
+        {
+          "id": "action_QkRqimjl",
+          "type": "widget_setState",
+          "state": {
+            "amplitude": 3.5,
+            "preset": "标准透视"
+          },
+          "content": "增加地形起伏，使等高线疏密对比更明显"
+        },
+        {
+          "id": "action_BNJRTH0L",
+          "type": "speech",
+          "text": "你看到了吗？无论地形如何起伏，这种垂直关系始终不变。这正是梯度的几何本质：梯度方向，就是函数值增加最快、也是等高线分布最密集处的垂直方向。",
+          "audioRef": "audio/tts_s17_action_BNJRTH0L.mp3"
+        },
+        {
+          "id": "action_L7057xje",
+          "type": "widget_annotation",
+          "target": "#arrows",
+          "content": "梯度矢量投影始终垂直于等高线"
+        },
+        {
+          "id": "action_w8c5SGxu",
+          "type": "speech",
+          "text": "现在点击'切换至顶视图'按钮，从正上方俯瞰，去掉三维的干扰，只看二维的矢量场和等高线。你会发现一个令人惊叹的模式：每一条等高线，都被梯度箭头完美地垂直穿透。",
+          "audioRef": "audio/tts_s17_action_w8c5SGxu.mp3"
+        },
+        {
+          "id": "action_UnThUQNY",
+          "type": "widget_setState",
+          "state": {
+            "preset": "正交顶视"
+          },
+          "content": "切换至顶视图验证垂直关系"
+        },
+        {
+          "id": "action_17CD9LTr",
+          "type": "speech",
+          "text": "这个空间视角印证了我们之前的逻辑：寻找等高线最密集的路径，其垂直方向正是你的梯度方向，也就是最陡的下降路线。下一环节，我们将把这些观察整合成完整的证据链。",
+          "audioRef": "audio/tts_s17_action_17CD9LTr.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "N4MSXT6bX1LD1XbFXet2W",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_fc3LGaGd",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1F4E79;\">全课整理：证据链回看</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_0Cq7OH2q",
+              "left": 100,
+              "top": 120,
+              "width": 800,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #555555;\">从梯度合成分量到垂直等高线</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#555555"
+            },
+            {
+              "type": "shape",
+              "id": "shape_FNQQOhyn",
+              "left": 100,
+              "top": 180,
+              "width": 800,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "shape",
+              "id": "shape_np8ZPk5v",
+              "left": 60,
+              "top": 200,
+              "width": 260,
+              "height": 210,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F0F0F0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_M6za_z5e",
+              "left": 370,
+              "top": 200,
+              "width": 260,
+              "height": 210,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F0F0F0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_TEudIwn5",
+              "left": 680,
+              "top": 200,
+              "width": 260,
+              "height": 210,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F0F0F0"
+            },
+            {
+              "type": "text",
+              "id": "text_hh-T9uNg",
+              "left": 80,
+              "top": 191,
+              "width": 220,
+              "height": 67,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1F4E79;\">证据1：梯度方向指向上升最快</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_XohEVVZ-",
+              "left": 80,
+              "top": 265,
+              "width": 220,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\">拖动实验确认梯度向量指向上升最快方向</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_IAS4CmKb",
+              "left": 170,
+              "top": 345,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0.3 0.7 L 0.7 0.3 L 0.7 0.7 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_IvVq6NHj",
+              "left": 390,
+              "top": 191,
+              "width": 220,
+              "height": 67,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1F4E79;\">证据2：方向导数是投影分量</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_lisryFrq",
+              "left": 390,
+              "top": 265,
+              "width": 220,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\">旋转拨盘验证方向导数为梯度在方向上的投影，可能为负</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_oau7BupC",
+              "left": 480,
+              "top": 345,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0.3 0.7 L 0.7 0.3 L 0.7 0.7 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_PzgV1fBF",
+              "left": 700,
+              "top": 191,
+              "width": 220,
+              "height": 67,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1F4E79;\">证据3：垂直等高线是登顶路径</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_ZiCV8wk-",
+              "left": 700,
+              "top": 265,
+              "width": 220,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\">迷宫挑战证实垂直等高线才是登顶的最佳路径</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Ug9foCa7",
+              "left": 790,
+              "top": 345,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0.3 0.7 L 0.7 0.3 L 0.7 0.7 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "shape",
+              "id": "shape_N9sBBYbE",
+              "left": 60,
+              "top": 440,
+              "width": 880,
+              "height": 60,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FF8C00"
+            },
+            {
+              "type": "text",
+              "id": "text_s1HoqV2p",
+              "left": 80,
+              "top": 444,
+              "width": 840,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #FFFFFF;\">总结：梯度是各方向变化的综合，它以垂直姿态指引最高增长</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#FFFFFF"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_tK6Fsv5H",
+          "type": "spotlight",
+          "elementId": "text_fc3LGaGd"
+        },
+        {
+          "id": "action_BIXG6U6f",
+          "type": "speech",
+          "text": "本场景聚焦“全课整理：证据链回看”。同学们，我们刚刚从空间视角感受了梯度与等高线的垂直关系。现在，让我们把前面所有的探索串联起来，进行一次全课的证据链回看。"
+        },
+        {
+          "id": "action_Sq9j_Rn4",
+          "type": "spotlight",
+          "elementId": "text_hh-T9uNg"
+        },
+        {
+          "id": "action_C6utBDHz",
+          "type": "speech",
+          "text": "首先，回顾我们的第一项证据。通过拖动实验，我们亲手移动那个点，观察向量指针的变化，最终确认了梯度向量的原始定义：它总是指向函数值上升最快的方向。这是我们的逻辑起点。",
+          "audioRef": "audio/tts_s18_action_C6utBDHz.mp3"
+        },
+        {
+          "id": "action_d5RN9OrV",
+          "type": "spotlight",
+          "elementId": "text_IvVq6NHj"
+        },
+        {
+          "id": "action_msds63j_",
+          "type": "speech",
+          "text": "接着，第二项证据揭示了梯度与方向导数的内在联系。我们旋转拨盘时发现，任意方向上的变化率，也就是方向导数，恰好是梯度向量在那个方向上的投影分量。这也解释了为何方向导数有时会是负数。",
+          "audioRef": "audio/tts_s18_action_msds63j_.mp3"
+        },
+        {
+          "id": "action_XzcIAks5",
+          "type": "spotlight",
+          "elementId": "text_PzgV1fBF"
+        },
+        {
+          "id": "action_JbKFPNT9",
+          "type": "speech",
+          "text": "有了前两个证据，最关键的一步来了。在迷宫挑战里，我们亲自尝试了各种路线，最终证实：梯度向量不仅是上升最快的方向，而且它始终与等高线保持垂直。这条垂直路径，才是登顶的真正捷径。",
+          "audioRef": "audio/tts_s18_action_JbKFPNT9.mp3"
+        },
+        {
+          "id": "action_xHndDwDE",
+          "type": "spotlight",
+          "elementId": "text_s1HoqV2p"
+        },
+        {
+          "id": "action_Cx0OEiOL",
+          "type": "speech",
+          "text": "所以，我们的最终结论是：梯度并非只反映某单一方向的变化，它是各方向变化的综合体现。它以一个垂直的姿态，清晰地为我们指引出函数增长的最高效路径。这条从分量到方向，最终汇聚于垂直关系的证据链，请大家牢牢记住。",
+          "audioRef": "audio/tts_s18_action_Cx0OEiOL.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "后测：梯度、方向导数与等高线综合测评",
+      "order": 19,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "回看交互课件《梯度向量：拖动实验》并在等高线地形上移动观察点。已知等高线数值从山脚到山顶逐渐增大，关于该点的梯度向量，以下哪个说法正确？",
+            "options": [
+              {
+                "value": "A",
+                "label": "梯度指向海拔更低的方向，且与等高线平行"
+              },
+              {
+                "value": "B",
+                "label": "梯度指向海拔更高的方向，且垂直于该点的等高线"
+              },
+              {
+                "value": "C",
+                "label": "梯度指向海拔更低的方向，且垂直于该点的等高线"
+              },
+              {
+                "value": "D",
+                "label": "梯度指向海拔更高的方向，且与该点的等高线相切"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "在交互课件中移动观察点时，梯度向量始终指向函数值增加最快的方向；在等高线地形上，这意味着指向更高海拔。梯度还与通过该点的等高线垂直，因为沿等高线方向函数值不变、方向导数为零。因此 B 正确。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "回忆场景8中关于方向导数和梯度的关系，以下哪些结论是基于交互证据可以得出的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "某一点的方向导数，在沿着梯度方向时取得最大值"
+              },
+              {
+                "value": "B",
+                "label": "方向导数的值永远不会是负数"
+              },
+              {
+                "value": "C",
+                "label": "在与梯度方向垂直的方向上，方向导数的值为0"
+              },
+              {
+                "value": "D",
+                "label": "任意方向的方向导数，等于梯度向量的模乘以该方向与梯度方向夹角的余弦值"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "场景8的交互允许我们旋转方向向量并观察方向导数值的实时变化。证据表明：（A）当方向向量与梯度向量重合时，数值达到最大，即梯度的模。（C）当方向向量与梯度向量垂直（即与等高线相切）时，数值变为0。（D）这是方向导数的计算公式，在交互中得到的数值变化完美符合这个余弦规律。（B）是错误的，当方向与梯度方向夹角大于90度（小于270度）时，余弦值为负，方向导数也为负，表示函数值在此方向上是下降的。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "short_answer",
+            "question": "场景14展示了一个复杂的函数曲面及其等高线图，其中包含山峰、山脊、凹陷和平原等多种特征。请用文字描述：如果你想从山脚画一条到达山顶的“最陡峭路径”，你应该如何利用等高线图画出这条路径？并说明在每一个点上，你画的路径与等高线之间应保持什么几何关系？",
+            "commentPrompt": "评分标准 (满分10分): (1) 准确指出路径在每一点都与等高线垂直 (4分); (2) 描述连续画出该路径的方法：从起点开始，不断画出垂直于等高线的微小线段，连接起来形成路径 (4分); (3) 提及这条路径与梯度向量场的流线一致 (2分)。",
+            "analysis": "参考回答：要画出最陡峭的上山路径，应从起点开始，作一条始终与所遇到的每一条等高线都垂直相交的曲线。具体方法是：从起点出发，向邻近的、海拔更高的等高线画一条垂直线段；在这条线段的新终点，再向更高的等高线作垂直线段，如此反复连接，最终形成的平滑曲线就是梯度线（或流线），它代表了局部最陡峭的上升方向。需要注意的是，这条路径上每一点的切向量都平行于该点的梯度向量，均指向函数值增加最快的方向。",
+            "points": 20,
+            "hasAnswer": false
+          },
+          {
+            "id": "q4",
+            "type": "short_answer",
+            "question": "在场景3中，当我们移动一个点时，如果该点沿着某条等高线移动，它的方向导数值是多少？请用自己的话，从‘高度变化率’的直观角度出发，解释为什么值是这个数。",
+            "commentPrompt": "评分标准 (满分10分): (1) 明确指出方向导数为0 (3分); (2) 直观解释：因为沿着等高线移动时，所处的高度（海拔）没有发生任何变化 (4分); (3) 能将直观解释与方向导数的定义（高度变化量除以移动距离的极限）联系起来 (3分)。",
+            "analysis": "参考回答：值为0。因为等高线本身就是由高度完全相等的点连接而成的曲线。当我们的移动路线完全位于一条等高线上时，无论走了多远，我们始终位于同一海拔高度。既然高度没有任何变化（高度变化量为0），那么平均高度变化率（高度变化量除以走过的距离）也始终为0，其极限值——也就是方向导数——自然也是0。这说明在该方向上，函数值是“平坦”的，没有上升或下降。",
+            "points": 20,
+            "hasAnswer": false
+          },
+          {
+            "id": "q5",
+            "type": "multiple",
+            "question": "假设你被困在一个浓雾弥漫的山谷底部（一个局部极小值点），目标是走到山脊，以便被发现。你的能见度只有几米，无法看到远方，只能使用一个能显示当前所在点梯度向量的设备。以下基于梯度信息的策略，哪些是可能帮助你摆脱山谷困境的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "始终沿着梯度的反方向（最陡下降方向）走，因为这能最快离开当前位置"
+              },
+              {
+                "value": "B",
+                "label": "沿着与梯度垂直的等高线方向走，因为这在数学上最高效"
+              },
+              {
+                "value": "C",
+                "label": "始终沿着梯度方向（最陡上升方向）走，因为山谷的最低点任何方向都是上坡，这能带你去往海拔更高的地方"
+              },
+              {
+                "value": "D",
+                "label": "采用随机方向走几步，再重新评估梯度，结合多次尝试，因为纯梯度下降会让你困在谷底，需要额外的探索策略来跳出局部极小值"
+              }
+            ],
+            "answer": [
+              "C",
+              "D"
+            ],
+            "analysis": "在局部极小值（山谷底部）的邻域内，所有方向都是上升的。（A）选择梯度反方向即最陡下降方向，在谷底只会让你在原地打转或走向更低点（若还在谷壁）、此方向无法让你离开山谷。（B）沿着等高线（与梯度垂直）是在等高度上绕圈，无法提升海拔，也不能离开山谷。（C）沿着梯度方向上升，至少能保证你离开谷底，迅速增加海拔，是离开山谷的确定性方法，但由于“浓雾”你可能走向另一个次优区域。（D）在机器学习和爬山算法中，这是应对局部极小值的关键策略：梯度下降算法可能会被“困在”局部极小值，此时加入随机扰动（如随机重启、模拟退火）可以帮助逃离并探索其他区域以找到通往山脊的路。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "short_answer",
+            "question": "请设计一个简易的‘反馈式爬山算法’，让一个盲人（只知道当前点的梯度和步长）从山脚某随机起点开始，尝试抵达最高峰。请在你的设计中明确回答以下三点：(1) 每一步移动的方向和步长如何确定？ (2) 算法何时停止（即判断登顶的条件是什么）？ (3) 这个算法有什么致命的局限性？",
+            "commentPrompt": "评分标准 (满分20分): (1) 方向：每一步沿当前点的梯度方向移动；步长：设定一个固定的步长（如1米）或者动态调整的步长，并提及步长过大或过小的影响(6分); (2) 停止条件：当梯度的模（长度）非常接近于0时（例如小于一个预设的极小阈值），认为到达了一个峰顶，算法停止(6分); (3) 致命局限性：明确指出算法极易陷入局部极大值而非全局极大值，即可能在某个小山坡的顶部就停止了，而无法到达真正的最高峰 (8分)。",
+            "analysis": "参考回答：(1) 每一步的移动方向由该点梯度向量的方向决定，这是局部上升最快的方向。步长可以设为一个固定值。步长太小会导致行进缓慢，步长太大可能会导致‘跨过’顶峰或越过山脊进入另一侧山谷。(2) 算法停止的条件是梯度向量的模（即最大方向导数的值）小于一个非常小的阈值，比如0.001。因为在一个峰顶处，地面是平坦的，各个方向的变化率都趋近于0，梯度也几乎为零。(3) 该算法最致命的缺陷是无法区分局部极大值和全局极大值。盲人爬山算法只会‘感觉’到周围不再有上坡就停止，这非常可能只是一个小山丘的顶部。对于存在多个山峰的复杂地形，从不同的起点出发，很可能最终到达不同的局部顶点，而不一定是最高峰。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_608Azk7v",
+          "type": "speech",
+          "text": "这是一组关于“后测：梯度、方向导数与等高线综合测评”的独立测验。是时候检验大家对这些概念的综合运用能力了。这份后测将从基础判定、几何直观、原理解释到策略设计，层层递进地考察你们。别紧张，把它当成一次‘概念探险’，仔细读题，遇到不确定的地方，回想一下我们在场景3、场景8和场景14中拖动探索的过程。"
+        },
+        {
+          "id": "action_2hp70MwD",
+          "type": "speech",
+          "text": "请注意，前几道题直接关联我们刚刚验证过的交互证据，比如关于梯度指向和方向导数最大值的结论。后面的题目则需要大家把学到的知识迁移到新情境中，比如设计一个爬山算法。特别是那道关于浓雾山谷的题，想想看，在局部最低点，只靠梯度信息是否足够？这和我们刚才讲的‘梯度指引最高效方向’的适用条件有什么关系？",
+          "audioRef": "audio/tts_s19_action_2hp70MwD.mp3"
+        },
+        {
+          "id": "action_w-fjrXHD",
+          "type": "speech",
+          "text": "最后还有两道简答题，请大家用文字清晰地表达你的想法。一道要求你描述如何基于等高线图画出最陡峭路径，这考察的是你对‘梯度垂直于等高线’这一空间关系的理解。另一道则需要你解释为什么沿等高线移动时方向导数为零，试着从‘高度变化率’的直观角度出发，而不是只记结论。现在，请大家静下心，开始你的探索之旅。",
+          "audioRef": "audio/tts_s19_action_w-fjrXHD.mp3"
+        },
+        {
+          "id": "action_VwQsiL4s",
+          "type": "discussion",
+          "topic": "完成这份综合测评后，你觉得自己掌握得最牢固的知识点是哪个？哪个概念或应用让你花了最多时间去思考和推理？",
+          "prompt": "请回顾刚才的答题过程，分享一个让你印象深刻的解题瞬间，无论是豁然开朗还是艰难攻克。",
+          "agentIndex": 3
+        }
+      ]
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_19vsgyS2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92328
+    },
+    "audio/tts_action_bh2-5epb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 80424
+    },
+    "audio/tts_action_MZMNQp5j.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88248
+    },
+    "audio/tts_action_u4Ri_Mch.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 25896
+    },
+    "audio/tts_s10_action_afGUxFXR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116616
+    },
+    "audio/tts_s10_action_ctc27L5Y.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114984
+    },
+    "audio/tts_s10_action_GHV7DTfN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 123480
+    },
+    "audio/tts_s10_action_WCvPwDzn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84984
+    },
+    "audio/tts_s11_action_C9E3o176.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 156744
+    },
+    "audio/tts_s11_action_jRFhwJzu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146736
+    },
+    "audio/tts_s11_action_UPVxYraK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128016
+    },
+    "audio/tts_s11_action_Ys96OlBJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 209616
+    },
+    "audio/tts_s12_action_RWGEJMSQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125472
+    },
+    "audio/tts_s12_action_zGwSDg4h.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 195144
+    },
+    "audio/tts_s13_action_9RhEhmCf.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 130752
+    },
+    "audio/tts_s13_action_kLyPRx3N.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104424
+    },
+    "audio/tts_s13_action_p6jH9IMV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 177072
+    },
+    "audio/tts_s13_action_peegnA-6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 147432
+    },
+    "audio/tts_s13_action_XsMEZT3x.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127224
+    },
+    "audio/tts_s14_action_4suHVZBE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157464
+    },
+    "audio/tts_s14_action_G6JBxsuX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 231528
+    },
+    "audio/tts_s14_action_ilg6rMAB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138408
+    },
+    "audio/tts_s14_action_kaY5x297.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 197352
+    },
+    "audio/tts_s15_action_0x4cI-Qb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117240
+    },
+    "audio/tts_s15_action_A8CZDWMz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114024
+    },
+    "audio/tts_s15_action_FPZ1RR8y.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94632
+    },
+    "audio/tts_s15_action_QFsB1DSH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135312
+    },
+    "audio/tts_s15_action_RtV0Xmm2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 115512
+    },
+    "audio/tts_s15_action_y8pnUkrS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 201672
+    },
+    "audio/tts_s16_action_2jNmMhAv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 78384
+    },
+    "audio/tts_s16_action_eI0utbap.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 80184
+    },
+    "audio/tts_s16_action_jDBOYr0G.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100896
+    },
+    "audio/tts_s16_action_JPGI34zd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110232
+    },
+    "audio/tts_s16_action_xQaf0AGO.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 69768
+    },
+    "audio/tts_s17_action_17CD9LTr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119712
+    },
+    "audio/tts_s17_action_BNJRTH0L.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111192
+    },
+    "audio/tts_s17_action_etNW1Edi.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116184
+    },
+    "audio/tts_s17_action_o9eVinG5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122712
+    },
+    "audio/tts_s17_action_Q2_CttBV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 81552
+    },
+    "audio/tts_s17_action_w8c5SGxu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114624
+    },
+    "audio/tts_s18_action_BIXG6U6f.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 103152
+    },
+    "audio/tts_s18_action_C6utBDHz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 137904
+    },
+    "audio/tts_s18_action_Cx0OEiOL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159288
+    },
+    "audio/tts_s18_action_JbKFPNT9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 130224
+    },
+    "audio/tts_s18_action_msds63j_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144216
+    },
+    "audio/tts_s19_action_2hp70MwD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 220560
+    },
+    "audio/tts_s19_action_608Azk7v.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 219648
+    },
+    "audio/tts_s19_action_w-fjrXHD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 238608
+    },
+    "audio/tts_s2_action_LHRR5EdZ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127032
+    },
+    "audio/tts_s2_action_t7-ix2nU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 123624
+    },
+    "audio/tts_s2_action_VafwF-O6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160416
+    },
+    "audio/tts_s2_action_WilNvFYO.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111456
+    },
+    "audio/tts_s2_action_Y0a6rykh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 151056
+    },
+    "audio/tts_s2_action_YynAnhzO.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 151224
+    },
+    "audio/tts_s3_action_2-NguSLv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 77472
+    },
+    "audio/tts_s3_action_bN6lXmOj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 152592
+    },
+    "audio/tts_s3_action_HNFox58o.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110592
+    },
+    "audio/tts_s3_action_KySyeZBH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 167544
+    },
+    "audio/tts_s4_action_-_jdHzX8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 134304
+    },
+    "audio/tts_s4_action_B5ELQpEV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99096
+    },
+    "audio/tts_s4_action_caq3w8uV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 207288
+    },
+    "audio/tts_s4_action_hhEqhNsY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93696
+    },
+    "audio/tts_s4_action_KcVBIuKd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 183888
+    },
+    "audio/tts_s4_action_sS8uvrUC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 113544
+    },
+    "audio/tts_s5_action_bq9PZhNB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 136032
+    },
+    "audio/tts_s5_action_GPVlmHTM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109416
+    },
+    "audio/tts_s5_action_vJ6zeYJt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 76536
+    },
+    "audio/tts_s5_action_wihqQ2-s.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88944
+    },
+    "audio/tts_s6_action_gnCSFieJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 145464
+    },
+    "audio/tts_s6_action_hzkwmkOt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 76680
+    },
+    "audio/tts_s6_action_P9sEaADf.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159696
+    },
+    "audio/tts_s6_action_SRapPB4L.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 90024
+    },
+    "audio/tts_s7_action_1NbiUrOF.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104544
+    },
+    "audio/tts_s7_action_b7O1_LSE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88632
+    },
+    "audio/tts_s7_action_demGwMCW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 87816
+    },
+    "audio/tts_s7_action_EXlx-cFb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 60024
+    },
+    "audio/tts_s7_action_F_30-BBR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135696
+    },
+    "audio/tts_s7_action_ICyKb4Kn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106392
+    },
+    "audio/tts_s7_action_Rax5hMAm.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122424
+    },
+    "audio/tts_s8_action_dKkDx24L.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105648
+    },
+    "audio/tts_s8_action_efymk1M9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105432
+    },
+    "audio/tts_s8_action_N3FXkmBX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 79464
+    },
+    "audio/tts_s8_action_xENAZmcp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95808
+    },
+    "audio/tts_s9_action_bWehnOer.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89712
+    },
+    "audio/tts_s9_action_IHR6kn9d.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 53112
+    },
+    "audio/tts_s9_action_J7p0y8c-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 73248
+    },
+    "audio/tts_s9_action_kQh0tJVD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 90024
+    },
+    "audio/tts_s9_action_VQgDkQEh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 71976
+    },
+    "audio/tts_s9_action_Xkg4n-Bj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97368
+    },
+    "audio/tts_s9_action_zihD13_V.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 81192
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

@@ -1,0 +1,4820 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T06:29:02.883Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "函数、坐标与图像读法入门",
+    "description": "",
+    "language": "使用中文（简体）进行授课。术语如 x, f(x) 保持原样。解释应通俗易懂，针对零基础学生，强调直觉理解而非公式推导。在涉及坐标系时，确保清晰描述横轴和纵轴的关系。",
+    "style": "professional",
+    "createdAt": 1782985624420,
+    "updatedAt": 1782987019445
+  },
+  "agents": [
+    {
+      "name": "小雅",
+      "role": "student",
+      "persona": "小雅是一个沉稳细心的女生，善于观察和总结规律。她喜欢记笔记，并能将学到的点连成线，比如她会尝试将\"规则\"、\"点\"和\"趋势\"串联起来理解函数的全貌。在小组中，她常常是那个冷静分析并指出关键逻辑的人。",
+      "avatar": "/avatars/thinker.png",
+      "color": "#8b5cf6",
+      "priority": 5
+    },
+    {
+      "name": "王老师",
+      "role": "teacher",
+      "persona": "王老师是一位耐心细致的数学启蒙老师，拥有多年的中学教学经验。他善于用生活中的例子将抽象的数学概念变得通俗易懂，并且特别关注零基础学生的直觉理解。他喜欢通过提问和引导来激发学生的好奇心，而不是直接给出答案。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "小轩",
+      "role": "student",
+      "persona": "小轩是一个对数字不太敏感但充满好奇心的男生。他常常会提出一些看似简单但直击概念核心的问题，例如\"为什么一次只能输出一个值？\"。他喜欢动手操作和通过游戏挑战来理解知识，是课堂上活跃的探索者。",
+      "avatar": "/avatars/curious-2.png",
+      "color": "#f59e0b",
+      "priority": 5
+    },
+    {
+      "name": "小慧",
+      "role": "assistant",
+      "persona": "小慧是课堂上的智能助教，对函数和坐标的知识点掌握得非常扎实。她擅长用清晰的逻辑图帮助梳理复杂关系，并能准确地捕捉学生在学习过程中容易混淆的概念。她性格开朗，总是能给出及时的提示和鼓励，帮助学生建立信心。",
+      "avatar": "/avatars/assist.png",
+      "color": "#ec4899",
+      "priority": 7
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：函数、坐标与图像读法学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "y = 1",
+                "value": "A"
+              },
+              {
+                "label": "y = 5",
+                "value": "B"
+              },
+              {
+                "label": "y = 23",
+                "value": "C"
+              },
+              {
+                "label": "y = 2",
+                "value": "D"
+              }
+            ],
+            "analysis": "本题考查对变量 x 和结果 y 的直观理解。题目描述的规则是 'y = x + 3'。当输入 x=2 时，计算结果 y = 2 + 3 = 5。选项 A 错误地进行了减法；选项 C 错误地将数字进行了拼接；选项 D 忽略了规则直接输出了输入值。",
+            "question": "在一个简单的机器中，你放入一个数字 x，机器就会吐出这个数字加上 3 的结果。如果放入数字 2，机器吐出的结果 y 是多少？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "answer": [
+              "A",
+              "C"
+            ],
+            "points": 15,
+            "options": [
+              {
+                "label": "每个学号必须对应一个同学",
+                "value": "A"
+              },
+              {
+                "label": "一个同学可以拥有多个学号",
+                "value": "B"
+              },
+              {
+                "label": "每个同学至少对应一个学号",
+                "value": "C"
+              },
+              {
+                "label": "不同的同学可以共用同一个学号",
+                "value": "D"
+              }
+            ],
+            "analysis": "映射关系要求集合 A（学号）中的每一个元素，都必须唯一对应集合 B（同学）中的一个元素。选项 A 描述了这种对应关系的存在性，是正确的。选项 C 从同学的角度出发，说明每个同学都有一个学号，关系成立。选项 B 错误，因为学号对应同学通常是单向唯一的，一个同学虽有学号，但题目是将学号作为出发点的映射；选项 D 错误，因为不同的同学不能共用学号，否则从学号出发就无法确定唯一对应的人，这违背了映射的基本定义。",
+            "question": "关于‘映射’的概念，我们可以把它想象成一个‘名字对应人’的关系。班级里每个同学都有一个唯一的学号。以下关于这个‘映射’关系的描述，哪些是正确的？（多选）",
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "x 和 y 的值都等于 1 的点",
+                "value": "A"
+              },
+              {
+                "label": "整个坐标系正中心的点，且 x=0, y=0",
+                "value": "B"
+              },
+              {
+                "label": "x 和 y 的值不确定的点",
+                "value": "C"
+              },
+              {
+                "label": "横轴和纵轴永远不会相交的位置",
+                "value": "D"
+              }
+            ],
+            "analysis": "原点 (0,0) 是横轴和纵轴相交的点，位于坐标系中心，表示 x 的值为 0 且 y 的值为 0。选项 A 混淆了坐标值；选项 C 错误，原点的值是确定的；选项 D 与事实完全相反。",
+            "question": "平面直角坐标系由两条相互垂直的数轴构成。横轴通常代表 x，纵轴通常代表 y。坐标原点 (0,0) 的意义是什么？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "answer": [
+              "A"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "7",
+                "value": "A"
+              },
+              {
+                "label": "8",
+                "value": "B"
+              },
+              {
+                "label": "0",
+                "value": "C"
+              },
+              {
+                "label": "10",
+                "value": "D"
+              }
+            ],
+            "analysis": "通过观察输入与输出的对应关系 (1->4, 2->5, 3->6)，可以发现规律是 y = x + 3。因此当 x=4 时，y 应为 4 + 3 = 7。选项 B、C、D 都不符合这一加法规律。",
+            "question": "已知输入与输出的对应关系为：1→4、2→5、3→6。如果输入 x=4，根据同一规律，输出 y 最可能是多少？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "points": 20,
+            "analysis": "横轴（x轴）是一条水平线，用来定位左右位置或代表输入值；纵轴（y轴）是一条竖直线，用来定位上下位置或代表输出值。点 (3, 4) 意味着：以原点 (0,0) 为起点，沿水平方向向右移动 3 格（对应 x=3），然后从该位置沿垂直方向向上移动 4 格（对应 y=4），最终到达的位置。",
+            "question": "请用自己的话描述一下，什么是坐标系中的‘横轴’和‘纵轴’？并解释位置 (3, 4) 在这个平面内意味着什么？",
+            "hasAnswer": false,
+            "commentPrompt": "评分标准：(1) 正确指出横轴是水平方向的参考线，通常代表自变量或输入 x；纵轴是垂直方向的参考线，通常代表结果或因变量 y - 40%  (2) 清楚解释 (3,4) 表示从原点出发，沿横轴方向移动 3 个单位，再沿纵轴方向移动 4 个单位所到达的位置，即 x=3, y=4 - 40% (3) 语言表达清晰，逻辑通顺 - 20%"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_2K55B7JJ",
+          "text": "这是一组关于“前测：函数、坐标与图像读法学习准备诊断”的独立测验。在开始我们正式的旅程之前，我们先来做一个小小的热身，也就是大家现在看到的这个‘前测’。",
+          "type": "speech"
+        },
+        {
+          "id": "action_vFLtmzDC",
+          "text": "别紧张，这个测试不是为了打分，而是像一次‘学习体检’。我想通过这几道题，了解一下大家对‘函数’和‘坐标’这些概念的初步感觉，这样我们后面的学习就能更有针对性。",
+          "type": "speech",
+          "audioRef": "audio/tts_action_vFLtmzDC.mp3"
+        },
+        {
+          "id": "action_-SOhCb4G",
+          "text": "请大家放松心态，像玩游戏解谜一样，跟随自己的第一直觉去回答就好。遇到不太确定的题目，大胆猜测也是一种很好的探索方式。让我们开始吧！",
+          "type": "speech",
+          "audioRef": "audio/tts_action_-SOhCb4G.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "slide",
+      "title": "输入、输出和函数规则",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "nkBvAbE_4kJlVjdXnIgv7",
+          "theme": {
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "backgroundColor": "#ffffff"
+          },
+          "elements": [
+            {
+              "id": "shape_QUJAOIT9",
+              "top": 50,
+              "fill": "#2C3E50",
+              "left": 50,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 900,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_MSbK80z_",
+              "top": 55,
+              "left": 70,
+              "type": "text",
+              "width": 860,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #ffffff;\">函数的输入输出与对应规则</p>",
+              "defaultColor": "#ffffff",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_MwoPt9wh",
+              "top": 129,
+              "left": 70,
+              "type": "text",
+              "width": 860,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #F3F6F8;\">核心定义：函数不是你算出的数，而是你加工的方式</p>",
+              "defaultColor": "#F3F6F8",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_je_zoB-9",
+              "top": 180,
+              "fill": "#E8F4FD",
+              "left": 120,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 120,
+              "height": 120,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_O_wXocJO",
+              "top": 202,
+              "left": 130,
+              "type": "text",
+              "width": 100,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #2C3E50;\">x</p><p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">(输入)</p>",
+              "defaultColor": "#2C3E50",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_WkuRdt7h",
+              "top": 315,
+              "left": 50,
+              "type": "text",
+              "width": 260,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">可以是任何值，</p><p style=\"font-size: 14px; text-align: center; color: #555555;\">如 2、-5、a</p>",
+              "defaultColor": "#555555",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_NsZpXzqr",
+              "end": [
+                100,
+                0
+              ],
+              "top": 240,
+              "left": 250,
+              "type": "line",
+              "color": "#2C3E50",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 3,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "text_3p0zuU-_",
+              "top": 200,
+              "left": 250,
+              "type": "text",
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">输入</p>",
+              "defaultColor": "#2C3E50",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_6sNboiZc",
+              "top": 180,
+              "fill": "#E67E22",
+              "left": 360,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 280,
+              "height": 120,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_kKU1_RtJ",
+              "top": 199,
+              "left": 380,
+              "type": "text",
+              "width": 240,
+              "height": 82,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #ffffff;\">加工过程</p><p style=\"font-size: 16px; text-align: center; color: #ffffff;\">规则示例：乘以2，再加1</p>",
+              "defaultColor": "#ffffff",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_ojx-P8HP",
+              "end": [
+                100,
+                0
+              ],
+              "top": 240,
+              "left": 650,
+              "type": "line",
+              "color": "#2C3E50",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 3,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "text_4sUgxQ1G",
+              "top": 200,
+              "left": 650,
+              "type": "text",
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">输出</p>",
+              "defaultColor": "#2C3E50",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_pJKAM_dq",
+              "top": 180,
+              "fill": "#E8F4FD",
+              "left": 760,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 120,
+              "height": 120,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_hTitnnr3",
+              "top": 202,
+              "left": 770,
+              "type": "text",
+              "width": 100,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #2C3E50;\">结果</p><p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">(输出值)</p>",
+              "defaultColor": "#2C3E50",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_n_aPvKyy",
+              "top": 315,
+              "left": 690,
+              "type": "text",
+              "width": 260,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">输入2时，f(2)=5；</p><p style=\"font-size: 14px; text-align: center; color: #555555;\">输入-5时，f(-5)=-9</p>",
+              "defaultColor": "#555555",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_wP3jarMP",
+              "top": 395,
+              "fill": "#BDC3C7",
+              "left": 50,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 900,
+              "height": 1,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "shape_-E_DdiSV",
+              "top": 410,
+              "fill": "#ECF0F1",
+              "left": 50,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 900,
+              "height": 100,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_Zg2SVkrJ",
+              "top": 413,
+              "left": 70,
+              "type": "text",
+              "width": 860,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #2C3E50;\">⚠️ 常见误解</p><p style=\"font-size: 14px; color: #333333;\">• 误解1：认为函数是一个固定的数值（如“y=2”）。→ 正解：函数是变量间的对应规则，输出随输入变化。</p><p style=\"font-size: 14px; color: #333333;\">• 误解2：认为函数只是一个名字。→ 正解：f(x)表示按规则得到的结果，函数本身是那套规则。</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_fYT1nsrU",
+          "type": "spotlight",
+          "elementId": "text_MwoPt9wh"
+        },
+        {
+          "id": "action_vLpAmtYH",
+          "text": "本场景聚焦“输入、输出和函数规则”。我们正式进入第一个知识点。请看屏幕上这句核心定义：函数不是你算出的数，而是你加工的方式。这句话非常关键，它和我们平时对数学的印象可能不太一样。",
+          "type": "speech"
+        },
+        {
+          "id": "action_B-IokuIH",
+          "type": "spotlight",
+          "elementId": "text_O_wXocJO"
+        },
+        {
+          "id": "action_pmWRp3rD",
+          "text": "为了帮助大家理解，我们把这个过程分成三步来看。第一步，我们先看左边这个‘x’，它是我们的‘输入’。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_pmWRp3rD.mp3"
+        },
+        {
+          "id": "action_XZCeXrTr",
+          "type": "laser",
+          "elementId": "text_WkuRdt7h"
+        },
+        {
+          "id": "action_CB98sf9I",
+          "text": "注意，它可以是任何值，比如一个具体的数字2、-5，也可以是一个代表未知数的字母a。它就像我们放进加工厂的原材料。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_CB98sf9I.mp3"
+        },
+        {
+          "id": "action_auGSTZjU",
+          "type": "spotlight",
+          "elementId": "shape_6sNboiZc"
+        },
+        {
+          "id": "action_1p80qMb8",
+          "text": "第二步，是中间这个最核心的‘加工过程’，也就是函数的‘规则’。比如，我们今天举的例子，规则是‘乘以2，再加1’。你看，这个规则本身才是真正的函数，它是一个动态的指令。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_1p80qMb8.mp3"
+        },
+        {
+          "id": "action_nCRnFmPn",
+          "type": "spotlight",
+          "elementId": "text_hTitnnr3"
+        },
+        {
+          "id": "action_zWQpQMiQ",
+          "text": "第三步，原材料根据规则加工后，就变成了最后的‘输出’，也就是这里的f(x)。比如，当输入x等于2时，代入规则算出结果是5；当x等于-5时，最后得到-9。所以，f(x)代表的是经过规则加工后得到的产物。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_zWQpQMiQ.mp3"
+        },
+        {
+          "id": "action_onsJti7M",
+          "type": "spotlight",
+          "elementId": "text_Zg2SVkrJ"
+        },
+        {
+          "id": "action_jtXUvF_L",
+          "text": "这个比喻能帮我们避开一个常见的坑：千万不要再把函数当成一个固定的数值了。它不是‘y等于2’这种答案，而是一套灵活多变的、把输入变成输出的对应规则。我们来消化一下这个想法。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_jtXUvF_L.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "输入、输出和函数规则：拖动实验",
+      "order": 3,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "function_machine",
+          "presets": [
+            {
+              "name": "f(x)=2x",
+              "rule": "linear",
+              "variables": {
+                "input_x": 0
+              }
+            },
+            {
+              "name": "f(x)=x²",
+              "rule": "square",
+              "variables": {
+                "input_x": 0
+              }
+            },
+            {
+              "name": "f(x)=x+3",
+              "rule": "shift",
+              "variables": {
+                "input_x": 0
+              }
+            },
+            {
+              "name": "f(x)=3x-1",
+              "rule": "affine",
+              "variables": {
+                "input_x": 0
+              }
+            },
+            {
+              "name": "f(x)=x³",
+              "rule": "cubic",
+              "variables": {
+                "input_x": 0
+              }
+            }
+          ],
+          "variables": [
+            {
+              "max": 8,
+              "min": -8,
+              "name": "input_x",
+              "unit": "",
+              "label": "输入值 x",
+              "default": 0
+            },
+            {
+              "max": 3,
+              "min": 0.1,
+              "name": "speed",
+              "unit": "×",
+              "label": "演示速度",
+              "default": 1
+            }
+          ],
+          "description": "通过拖动滑块观察输入如何经过函数规则变为输出。学生可以手动改变x值，观察到f(x)的唯一对应变化，理解函数的概念。"
+        },
+        "htmlPath": "interactive/03_输入、输出和函数规则：拖动实验.html",
+        "htmlBytes": 774793
+      },
+      "actions": [
+        {
+          "id": "action_8D5KclWC",
+          "text": "本场景通过交互探索“输入、输出和函数规则：拖动实验”。函数不是一个固定的数，而是一套把输入变成输出的规则。现在，让我们亲手来试试这个神奇的规则机器。请同学们看屏幕上的这个交互装置，它就像一台数字加工厂，你把x送进去，它经过中间的规则，就会吐出一个独一无二的f(x)。",
+          "type": "speech"
+        },
+        {
+          "id": "action_L6o0lTwk",
+          "type": "widget_highlight",
+          "target": "#input_x",
+          "content": "拖动这个滑块来改变输入值 x"
+        },
+        {
+          "id": "action_Jjr3e6Jj",
+          "type": "widget_setState",
+          "state": {
+            "rule": "linear",
+            "input_x": 2
+          }
+        },
+        {
+          "id": "action_Mcw1QEh5",
+          "text": "我先把它调到f(x)=2x这个规则。现在请大家注意看，我慢慢拖动 x 的滑块。当我把 x 拖到 2 的时候，机器里正在计算 2 乘以 2，输出口就立刻弹出了结果 4。",
+          "type": "speech",
+          "audioRef": "audio/tts_s3_action_Mcw1QEh5.mp3"
+        },
+        {
+          "id": "action_G_t95qOE",
+          "type": "widget_setState",
+          "state": {
+            "rule": "linear",
+            "input_x": -3
+          }
+        },
+        {
+          "id": "action_zYg0UsV3",
+          "text": "现在我把 x 拖到 -3，你看到了什么？机器毫不犹豫地算出了 -6。你再怎么变 x，这个规则都稳稳地只给你一个答案。这就是函数最重要的特征：一个输入，只对应唯一的一个输出。现在，请大家自己也动手拖一拖滑块，换个规则比如 f(x)=x² 试试，观察一下是不是每个 x 也都有唯一的归宿？动手试试看吧。",
+          "type": "speech",
+          "audioRef": "audio/tts_s3_action_zYg0UsV3.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "输入、输出和函数规则：关系图",
+      "order": 4,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "edges": [
+            {
+              "to": "n2",
+              "from": "n1",
+              "label": "代入"
+            },
+            {
+              "to": "n3",
+              "from": "n2",
+              "label": "计算结果"
+            },
+            {
+              "to": "n4",
+              "from": "n2",
+              "label": "举例"
+            }
+          ],
+          "nodes": [
+            {
+              "x": 220,
+              "y": 260,
+              "id": "n1",
+              "icon": "📥",
+              "label": "输入 x",
+              "details": "输入是我们交给函数的原材料，用 x 表示",
+              "sublabel": "原材料"
+            },
+            {
+              "x": 460,
+              "y": 260,
+              "id": "n2",
+              "icon": "⚙️",
+              "label": "处理机 f",
+              "details": "函数 f 是加工机器，有明确规则如 +3, ×2",
+              "sublabel": "加工规则"
+            },
+            {
+              "x": 700,
+              "y": 260,
+              "id": "n3",
+              "icon": "📤",
+              "label": "输出 f(x)",
+              "details": "输出是加工后的结果，记作 f(x)",
+              "sublabel": "成品"
+            },
+            {
+              "x": 460,
+              "y": 430,
+              "id": "n4",
+              "icon": "🎯",
+              "label": "动手试试 🧪",
+              "details": "f(x)=x+3: f(1)=4, f(2)=5, f(4)=7, f(10)=13",
+              "sublabel": "实践练习"
+            }
+          ],
+          "title": "输入、输出和函数规则：关系图",
+          "description": "展示输入集合、映射规则和输出集合的逻辑链条",
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4"
+          ]
+        },
+        "htmlPath": "interactive/04_输入、输出和函数规则：关系图.html",
+        "htmlBytes": 767214
+      },
+      "actions": [
+        {
+          "id": "action_HeWb2rZX",
+          "text": "本场景通过交互探索“输入、输出和函数规则：关系图”。现在让我们换一个更清晰的视角，把它画成一张关系图。请大家看屏幕上出现的这个图表。",
+          "type": "speech"
+        },
+        {
+          "id": "action_85yvzqek",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "揭示输入节点"
+        },
+        {
+          "id": "action_6MkJaRyp",
+          "text": "最左边这个盒子就是我们熟悉的“输入”，也就是原材料 x。就像做饭时准备的面粉和鸡蛋。",
+          "type": "speech",
+          "audioRef": "audio/tts_s4_action_6MkJaRyp.mp3"
+        },
+        {
+          "id": "action_IPzr8oPf",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "揭示处理规则节点"
+        },
+        {
+          "id": "action_sl15ui_0",
+          "text": "中间这个像齿轮一样的，正是核心的“加工机器” f。它代表了我们之前练习的那些规则，比如加3或者乘以2。大家注意看从输入指向它的箭头，它意味着我们将 x 代入了机器。",
+          "type": "speech",
+          "audioRef": "audio/tts_s4_action_sl15ui_0.mp3"
+        },
+        {
+          "id": "action_6VqxZibw",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "揭示输出节点"
+        },
+        {
+          "id": "action_1zWqNhCs",
+          "text": "原材料经过机器加工，从右边的箭头输出，就变成了我们的“成品” f(x)。一个输入进去，经过规则处理，一个唯一的输出就出来了。你能在这张图上清晰地找到这个唯一性的逻辑链条吗？",
+          "type": "speech",
+          "audioRef": "audio/tts_s4_action_1zWqNhCs.mp3"
+        },
+        {
+          "id": "action_xitsXpjL",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "揭示动手试试节点"
+        },
+        {
+          "id": "action_9yx2CPWv",
+          "text": "最后，看到下面这个“动手试试”的节点了吗？它从机器的规则直接举例。比如机器 f 的规则是“加3”，那么输入1，输出就是4。现在请你点击中间的机器节点，看看它内部的转换逻辑，再对照下面的例子验证一下。",
+          "type": "speech",
+          "audioRef": "audio/tts_s4_action_9yx2CPWv.mp3"
+        },
+        {
+          "id": "action_A80bEH3x",
+          "type": "widget_annotation",
+          "target": "#n2",
+          "content": "点击此节点，查看规则的内部转换逻辑"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "输入、输出和函数规则：误解修复挑战",
+      "order": 5,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "scoring": {
+            "speedBonus": 5,
+            "correctPoints": 10
+          },
+          "gameType": "puzzle",
+          "gameConfig": {
+            "levels": [
+              {
+                "id": 1,
+                "name": "加法机器",
+                "rule": "x+3",
+                "display": "x + 3"
+              },
+              {
+                "id": 2,
+                "name": "翻倍机器",
+                "rule": "x*2",
+                "display": "x × 2"
+              },
+              {
+                "id": 3,
+                "name": "减法机器",
+                "rule": "x-4",
+                "display": "x - 4"
+              },
+              {
+                "id": 4,
+                "name": "加法大师",
+                "rule": "x+5",
+                "display": "x + 5"
+              },
+              {
+                "id": 5,
+                "name": "三倍机器",
+                "rule": "x*3",
+                "display": "x × 3"
+              }
+            ],
+            "controls": [
+              "number_selection",
+              "rule_builder"
+            ]
+          },
+          "description": "通过输入不同的x来推测黑箱里的函数规则"
+        },
+        "htmlPath": "interactive/05_输入、输出和函数规则：误解修复挑战.html",
+        "htmlBytes": 792017
+      },
+      "actions": [
+        {
+          "id": "action_SUSxVwaI",
+          "text": "本场景通过交互探索“输入、输出和函数规则：误解修复挑战”。我们来玩一个挑战游戏，看看大家能不能通过输入不同的数字，把黑箱里的秘密规则给找出来。",
+          "type": "speech"
+        },
+        {
+          "id": "action_jXQmHWWr",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "从这里开始第一个挑战。"
+        },
+        {
+          "id": "action_D1548zPU",
+          "text": "在这个游戏里，你会看到一个神秘的黑箱。你需要做的就是选择一个数字作为输入，扔进箱子里，然后观察它输出了什么。",
+          "type": "speech",
+          "audioRef": "audio/tts_s5_action_D1548zPU.mp3"
+        },
+        {
+          "id": "action_7r_GxM94",
+          "type": "widget_setState",
+          "state": {
+            "tries": 0,
+            "gameState": "input_prompt",
+            "currentLevel": 1
+          }
+        },
+        {
+          "id": "action_7zKq0o2X",
+          "text": "别被单一的数字迷惑了。大家刚才问，为什么一次只能输出一个值？这个黑箱就是最好的例子。你给它一个输入，它经过内部统一的处理逻辑，只给你一个确定的输出。我们要找的，就是这个统一的处理规则。",
+          "type": "speech"
+        },
+        {
+          "id": "action_3wHWbppa",
+          "type": "widget_annotation",
+          "target": "#rule-builder",
+          "content": "你猜的规则在这里拼写出来。"
+        },
+        {
+          "id": "action_Ex3pQebq",
+          "text": "比如，你现在可以试试输入数字 5。看看箱子输出什么？然后，再换一个小一点的数字，比如 2。多试几组，不要害怕犯错，你试的每一组数字，都是找到真相的关键证据。准备好了吗？现在就开始你的第一次尝试吧！",
+          "type": "speech",
+          "audioRef": "audio/tts_s5_action_Ex3pQebq.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "输入、输出和函数规则：空间视角",
+      "order": 6,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "objects": [
+            {
+              "id": "input_axis",
+              "type": "axis",
+              "color": "#3b82f6",
+              "label": "x（输入轴）"
+            },
+            {
+              "id": "output_axis",
+              "type": "axis",
+              "color": "#ef4444",
+              "label": "f(x)（输出轴）"
+            },
+            {
+              "id": "z_axis",
+              "type": "axis",
+              "color": "#22c55e",
+              "label": "深度轴"
+            },
+            {
+              "id": "mapping_lines",
+              "type": "lines",
+              "label": "映射连线",
+              "description": "从输入到输出的映射线"
+            },
+            {
+              "id": "curve",
+              "type": "line",
+              "label": "函数曲线",
+              "description": "所有映射点的轨迹"
+            }
+          ],
+          "presets": [
+            {
+              "name": "俯视图",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ],
+                "cameraPosition": [
+                  0,
+                  18,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧视图",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  2,
+                  0
+                ],
+                "cameraPosition": [
+                  0,
+                  3,
+                  16
+                ]
+              }
+            },
+            {
+              "name": "透视角度",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  2,
+                  0
+                ],
+                "cameraPosition": [
+                  8,
+                  8,
+                  12
+                ]
+              }
+            },
+            {
+              "name": "抛物线",
+              "state": {
+                "density": 40,
+                "functionType": "quadratic"
+              }
+            },
+            {
+              "name": "正弦波",
+              "state": {
+                "density": 50,
+                "functionType": "sine"
+              }
+            }
+          ],
+          "description": "在3D空间中展示输入轴和输出轴，学生通过旋转视角观察到规则如何将一维输入映射到另一维空间。多条映射线形成几何规律，帮助理解函数本质。",
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "max": 60,
+              "min": 5,
+              "type": "slider",
+              "label": "映射线密度",
+              "param": "density",
+              "default": 30
+            },
+            {
+              "max": 3,
+              "min": 0,
+              "type": "slider",
+              "label": "动画速度",
+              "param": "speed",
+              "default": 1
+            },
+            {
+              "type": "select",
+              "param": "functionType",
+              "default": "linear",
+              "options": [
+                "linear",
+                "quadratic",
+                "cubic",
+                "sine",
+                "sqrt",
+                "absolute"
+              ]
+            },
+            {
+              "type": "button",
+              "label": "放大",
+              "action": "zoomIn"
+            },
+            {
+              "type": "button",
+              "label": "缩小",
+              "action": "zoomOut"
+            },
+            {
+              "type": "button",
+              "label": "重置",
+              "action": "reset"
+            },
+            {
+              "type": "button",
+              "label": "暂停/播放",
+              "action": "toggleAnimation"
+            }
+          ],
+          "visualizationType": "geometry"
+        },
+        "htmlPath": "interactive/06_输入、输出和函数规则：空间视角.html",
+        "htmlBytes": 2515698
+      },
+      "actions": [
+        {
+          "id": "action_LV8JR9wO",
+          "text": "本场景通过交互探索“输入、输出和函数规则：空间视角”。让我们换个角度看世界，把这种关系放到三维空间里，看得更立体！",
+          "type": "speech"
+        },
+        {
+          "id": "action_CRz9_sHP",
+          "type": "widget_setState",
+          "state": {
+            "density": 20,
+            "functionType": "linear"
+          },
+          "content": "先从一个简单的线性函数开始，观察输入轴和输出轴。"
+        },
+        {
+          "id": "action_ysgaYs20",
+          "type": "widget_highlight",
+          "target": "#input_axis",
+          "content": "这是x轴，也就是输入轴。"
+        },
+        {
+          "id": "action_P6Hgp4ww",
+          "text": "看，这根蓝色的轴是我们的输入，也就是x。每一根从这里连出去的线，都带着一个输入值。",
+          "type": "speech",
+          "audioRef": "audio/tts_s6_action_P6Hgp4ww.mp3"
+        },
+        {
+          "id": "action_kO-y6J6w",
+          "type": "widget_highlight",
+          "target": "#output_axis",
+          "content": "这是f(x)轴，也就是输出轴。"
+        },
+        {
+          "id": "action_L6tHSgkM",
+          "text": "现在，请试着拖拽旋转一下视角。你看到了什么？是不是所有的线好像都连接到了某个平面上？这就是我们要寻找的几何规律。",
+          "type": "speech",
+          "audioRef": "audio/tts_s6_action_L6tHSgkM.mp3"
+        },
+        {
+          "id": "action_otg4943G",
+          "type": "widget_annotation",
+          "target": "#mapping_lines",
+          "content": "每一条连线都展示了一个输入如何映射到它的输出。"
+        },
+        {
+          "id": "action_gX_m8_qN",
+          "text": "本场景中，我们提高密度，让更多的输入值参与映射。你会发现，当这些线足够多时，它们就拼出了一个完整的函数图像！",
+          "type": "speech"
+        },
+        {
+          "id": "action_cSLoe5pe",
+          "type": "widget_setState",
+          "state": {
+            "density": 50,
+            "functionType": "quadratic"
+          },
+          "content": "将函数类型切换为二次函数，并增加映射线密度。"
+        },
+        {
+          "id": "action_Y12MS-Mw",
+          "text": "看，当我们把规则变成“平方”时，所有映射线的终点就连成了一条优美的曲线。这就是二次函数在空间中的图像。试着再旋转一下，从不同角度欣赏它吧。现在，你可以自由探索其他函数类型了。",
+          "type": "speech",
+          "audioRef": "audio/tts_s6_action_Y12MS-Mw.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "slide",
+      "title": "坐标点与函数图像",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "0GXrPBIsU5vKhFX66mrYC",
+          "theme": {
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "backgroundColor": "#ffffff"
+          },
+          "elements": [
+            {
+              "id": "text_UtVk82Fj",
+              "top": 50,
+              "left": 60,
+              "type": "text",
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1B3A5C;\">坐标点与函数图像</p>",
+              "defaultColor": "#1B3A5C",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_xdQX-Ouz",
+              "top": 128,
+              "left": 60,
+              "type": "text",
+              "width": 800,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #666666;\">从抽象关系到几何点</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_AbbwhKAN",
+              "end": [
+                400,
+                0
+              ],
+              "top": 200,
+              "left": 100,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_eyCPVgaX",
+              "end": [
+                400,
+                0
+              ],
+              "top": 250,
+              "left": 100,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_npwN6tGj",
+              "end": [
+                400,
+                0
+              ],
+              "top": 300,
+              "left": 100,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_8ySTbKgJ",
+              "end": [
+                400,
+                0
+              ],
+              "top": 350,
+              "left": 100,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_EpuJcJok",
+              "end": [
+                400,
+                0
+              ],
+              "top": 400,
+              "left": 100,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_d91Ie3jh",
+              "end": [
+                0,
+                300
+              ],
+              "top": 150,
+              "left": 150,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_asqYctoQ",
+              "end": [
+                0,
+                300
+              ],
+              "top": 150,
+              "left": 200,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_EUKnbiJg",
+              "end": [
+                0,
+                300
+              ],
+              "top": 150,
+              "left": 250,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_TtyYqcyw",
+              "end": [
+                0,
+                300
+              ],
+              "top": 150,
+              "left": 300,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_ClCM_aiR",
+              "end": [
+                0,
+                300
+              ],
+              "top": 150,
+              "left": 350,
+              "type": "line",
+              "color": "#D3D3D3",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_kfVx7vaP",
+              "end": [
+                400,
+                0
+              ],
+              "top": 400,
+              "left": 100,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 2,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_u5vdk6gA",
+              "end": [
+                0,
+                0
+              ],
+              "top": 150,
+              "left": 300,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                300
+              ],
+              "style": "solid",
+              "width": 2,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "text_7H54vXId",
+              "top": 390,
+              "left": 500,
+              "type": "text",
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold;\">x</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_klCrI8LM",
+              "top": 180,
+              "left": 286,
+              "type": "text",
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold;\">y</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_k89K3uMs",
+              "end": [
+                0,
+                10
+              ],
+              "top": 395,
+              "left": 150,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_FlNjHHR1",
+              "end": [
+                0,
+                10
+              ],
+              "top": 395,
+              "left": 200,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_6RmVWI3d",
+              "end": [
+                0,
+                10
+              ],
+              "top": 395,
+              "left": 250,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_f6Xb3vJ4",
+              "end": [
+                0,
+                10
+              ],
+              "top": 395,
+              "left": 300,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_HTw5LxJP",
+              "end": [
+                0,
+                10
+              ],
+              "top": 395,
+              "left": 350,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_7vJWtiPy",
+              "end": [
+                10,
+                0
+              ],
+              "top": 200,
+              "left": 295,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_4ODLXOQr",
+              "end": [
+                10,
+                0
+              ],
+              "top": 250,
+              "left": 295,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_mojc7MhF",
+              "end": [
+                10,
+                0
+              ],
+              "top": 300,
+              "left": 295,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_Kr8FEDrl",
+              "end": [
+                10,
+                0
+              ],
+              "top": 350,
+              "left": 295,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_7KwQMc-f",
+              "end": [
+                10,
+                0
+              ],
+              "top": 400,
+              "left": 295,
+              "type": "line",
+              "color": "#333333",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_Sq4hqUfP",
+              "end": [
+                0,
+                50
+              ],
+              "top": 350,
+              "left": 350,
+              "type": "line",
+              "color": "#E74C3C",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_Tey9jjWz",
+              "end": [
+                50,
+                0
+              ],
+              "top": 350,
+              "left": 300,
+              "type": "line",
+              "color": "#E74C3C",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_TFD8gPzi",
+              "end": [
+                0,
+                200
+              ],
+              "top": 200,
+              "left": 400,
+              "type": "line",
+              "color": "#27AE60",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_GpP1kX6x",
+              "end": [
+                100,
+                0
+              ],
+              "top": 200,
+              "left": 300,
+              "type": "line",
+              "color": "#27AE60",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_71aGw0KU",
+              "end": [
+                0,
+                150
+              ],
+              "top": 250,
+              "left": 250,
+              "type": "line",
+              "color": "#3498DB",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_kVCbrK6J",
+              "end": [
+                50,
+                0
+              ],
+              "top": 250,
+              "left": 250,
+              "type": "line",
+              "color": "#3498DB",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_rMzQL4PZ",
+              "end": [
+                0,
+                100
+              ],
+              "top": 300,
+              "left": 450,
+              "type": "line",
+              "color": "#F39C12",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_RKMQHghi",
+              "end": [
+                150,
+                0
+              ],
+              "top": 300,
+              "left": 300,
+              "type": "line",
+              "color": "#F39C12",
+              "start": [
+                0,
+                0
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "shape_hS1yD4Co",
+              "top": 346,
+              "fill": "#E74C3C",
+              "left": 346,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "shape_bMOZeYh0",
+              "top": 196,
+              "fill": "#27AE60",
+              "left": 396,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "shape_LHD_Shhp",
+              "top": 246,
+              "fill": "#3498DB",
+              "left": 246,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "shape_oyELuwtO",
+              "top": 296,
+              "fill": "#F39C12",
+              "left": 446,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_v9WlI24D",
+              "top": 356,
+              "left": 310,
+              "type": "text",
+              "width": 80,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #E74C3C; text-align: center;\">A(1, 1)</p>",
+              "defaultColor": "#E74C3C",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_V0EBKbC2",
+              "top": 226,
+              "left": 406,
+              "type": "text",
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #27AE60;\">B(2, 4)</p>",
+              "defaultColor": "#27AE60",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_JEU4ny7W",
+              "top": 210,
+              "left": 140,
+              "type": "text",
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #3498DB; text-align: right;\">C(-1, 3)</p>",
+              "defaultColor": "#3498DB",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_XycCQaW4",
+              "top": 276,
+              "left": 455,
+              "type": "text",
+              "width": 80,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #F39C12; text-align: left;\">D(3, 2)</p>",
+              "defaultColor": "#F39C12",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_4cF0wy_B",
+              "top": 170,
+              "left": 540,
+              "type": "text",
+              "width": 400,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; font-weight: bold; color: #1B3A5C;\">关键理解</p>",
+              "defaultColor": "#1B3A5C",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_4mmsa_UA",
+              "top": 230,
+              "left": 540,
+              "type": "text",
+              "width": 400,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><span style=\"color: #1B3A5C; font-weight: bold;\">• 读点：</span>先看横轴 x，再看纵轴 y</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_Gjg4q6Xy",
+              "top": 310,
+              "left": 540,
+              "type": "text",
+              "width": 400,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><span style=\"color: #1B3A5C; font-weight: bold;\">• 修复误解：</span>图像不是装饰画，而是所有 (输入, 输出) 对的集合</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_-KHShgfo",
+              "top": 390,
+              "left": 540,
+              "type": "text",
+              "width": 400,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><span style=\"color: #1B3A5C; font-weight: bold;\">• 唯一性：</span>每个点 (a, b) 对应唯一的输入 a 与输出 b</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_6CzUB9nK",
+              "top": 460,
+              "fill": "#5DADE2",
+              "left": 50,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 900,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text__TMvCwhC",
+              "top": 461,
+              "left": 70,
+              "type": "text",
+              "width": 860,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #ffffff;\">图像是函数关系在平面上的真实映射，而非随意的图形。</p>",
+              "defaultColor": "#ffffff",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_eTExBn5w",
+              "top": 408,
+              "left": 88,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">-4</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_P0RO6FyL",
+              "top": 408,
+              "left": 138,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">-3</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_qp_s4oYp",
+              "top": 408,
+              "left": 188,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">-2</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_TB-yezPS",
+              "top": 408,
+              "left": 238,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">-1</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_A6vkNlbN",
+              "top": 408,
+              "left": 338,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">1</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_efwQQO8q",
+              "top": 408,
+              "left": 388,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">2</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_mnd-viKp",
+              "top": 408,
+              "left": 438,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">3</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_TBsAr5Qu",
+              "top": 408,
+              "left": 472,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">4</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_jrAqcLHG",
+              "top": 186,
+              "left": 240,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: right; color: #666666;\">4</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_gAhjtQkP",
+              "top": 228,
+              "left": 264,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: right; color: #666666;\">3</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_kCQ9PiQj",
+              "top": 278,
+              "left": 264,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: right; color: #666666;\">2</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_s72Uy1PZ",
+              "top": 328,
+              "left": 264,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: right; color: #666666;\">1</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_ERA5f6U1",
+              "top": 408,
+              "left": 288,
+              "type": "text",
+              "width": 24,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">0</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_I2-Iuk5o",
+              "top": 254,
+              "left": 84,
+              "type": "text",
+              "width": 180,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #666666;\">每格表示 1 个单位</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_TIagiaP6",
+          "type": "spotlight",
+          "elementId": "text_UtVk82Fj"
+        },
+        {
+          "id": "action_H87u8H86",
+          "text": "本场景聚焦“坐标点与函数图像”。可以观察到函数规则如何将输入编织成一条美丽的曲线。现在，让我们回到平面上，具体看看这条曲线上的每一个点，到底意味着什么。我们今天要探讨的核心就是：坐标点与函数图像。",
+          "type": "speech"
+        },
+        {
+          "id": "action_g2ZKCNLu",
+          "type": "spotlight",
+          "elementId": "text_4cF0wy_B"
+        },
+        {
+          "id": "action_i30V6NZA",
+          "text": "首先，我们来建立一个关键理解。函数图像不是一幅随意画出的装饰画，它上面的每一个点，都代表着一种精确的对应关系。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_i30V6NZA.mp3"
+        },
+        {
+          "id": "action_q9gMwO6s",
+          "type": "spotlight",
+          "elementId": "text_4mmsa_UA"
+        },
+        {
+          "id": "action_jxQK-Eqn",
+          "text": "我们的目标是，精准定位横轴上的输入 x 和纵轴上的输出 f(x) 的交叉点。想象一下，从 x 轴上的一个点出发，向上寻找它对应的输出值，这个交汇处，就形成了一个坐标点。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_jxQK-Eqn.mp3"
+        },
+        {
+          "id": "action_tyfTLUSe",
+          "type": "laser",
+          "elementId": "text_v9WlI24D"
+        },
+        {
+          "id": "action_OZTi_ICj",
+          "text": "比如这里的点 A，它的坐标是 (1, 1)。这就清晰地告诉我们，当输入是 1 时，函数规则给出的输出也是 1。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_OZTi_ICj.mp3"
+        },
+        {
+          "id": "action_xk_zNl85",
+          "type": "laser",
+          "elementId": "text_V0EBKbC2"
+        },
+        {
+          "id": "action_uV-x0GE8",
+          "text": "再看点 B，坐标是 (2, 4)。它表示输入 2，对应输出 4。所有这些点，都是 (输入, 输出) 的真实映射，而不是随意的图形。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_uV-x0GE8.mp3"
+        },
+        {
+          "id": "action_VZsMR3pl",
+          "type": "spotlight",
+          "elementId": "text__TMvCwhC"
+        },
+        {
+          "id": "action_Kq1e_xej",
+          "text": "请大家牢牢记住这句话：图像是函数关系在平面上的真实映射。每一个点(a, b)都唯一对应着一个输入 a 和它的输出 b，这就像函数的指纹，独一无二。理解了这一点，函数图像就不再神秘，而是一本我们可以读懂的坐标故事书。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_Kq1e_xej.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "坐标点与函数图像：拖动实验",
+      "order": 8,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "simulation",
+        "htmlPath": "interactive/08_坐标点与函数图像：拖动实验.html",
+        "htmlBytes": 103808
+      },
+      "actions": [
+        {
+          "id": "action_ls_sQ4R0",
+          "text": "本场景通过交互探索“坐标点与函数图像：拖动实验”。函数图像就像一本坐标故事书，每个点都在讲述一个输入x和输出f(x)的故事。现在，我们亲手来描摹这个故事。",
+          "type": "speech"
+        },
+        {
+          "id": "action_zrkq7lk5",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "在这个坐标系中，你将通过拖动来放置函数的坐标点。"
+        },
+        {
+          "id": "action_VFLlabEB",
+          "text": "你看，右侧会提示一个具体的x值。你的任务就是思考这个x对应的f(x)是多少，然后把那个闪闪发光的点拖到准确的(x, f(x))位置。",
+          "type": "speech",
+          "audioRef": "audio/tts_s8_action_VFLlabEB.mp3"
+        },
+        {
+          "id": "action_oIRoNjIv",
+          "type": "widget_setState",
+          "state": {
+            "targetX": 2,
+            "functionRule": "f(x)=2x+1"
+          },
+          "content": "展示一个具体的任务示例：放置f(2)的坐标点。"
+        },
+        {
+          "id": "action_hF33x2WD",
+          "text": "比如，现在提示的x值是2，而我们的函数规则是f(x)=2x+1。那我们应该把这个点拖到哪里呢？大胆去试一试。",
+          "type": "speech",
+          "audioRef": "audio/tts_s8_action_hF33x2WD.mp3"
+        },
+        {
+          "id": "action_Mq3AmPIj",
+          "type": "widget_annotation",
+          "target": "#feedback-area",
+          "content": "当你把点放到正确位置时，它会像这样亮起来并固定住，这就是给你“答对了”的反馈。"
+        },
+        {
+          "id": "action_-ge4LICH",
+          "text": "每完成一个点，你就亲手描绘了图像的一小部分。当你完成几个点后，抬起头看看，是不是开始感受到“点动成线”是怎样发生的了？",
+          "type": "speech",
+          "audioRef": "audio/tts_s8_action_-ge4LICH.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "坐标点与函数图像：关系图",
+      "order": 9,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "edges": [
+            {
+              "to": "nmerge",
+              "from": "nx",
+              "label": "提供横坐标"
+            },
+            {
+              "to": "nmerge",
+              "from": "nf",
+              "label": "提供纵坐标"
+            },
+            {
+              "to": "npoint",
+              "from": "nmerge",
+              "label": "生成平面点"
+            }
+          ],
+          "nodes": [
+            {
+              "x": 160,
+              "y": 110,
+              "id": "nx",
+              "axis": "x",
+              "icon": "📍",
+              "label": "x 数值",
+              "details": "x 就是横坐标，它告诉我们点在**横轴**上的位置。<br><br>想象你在一条东西走向的路上，x 就是告诉你从起点向东走了多远。",
+              "detailTitle": "📍 x 数值 — 横坐标"
+            },
+            {
+              "x": 440,
+              "y": 110,
+              "id": "nf",
+              "axis": "y",
+              "icon": "📈",
+              "label": "f(x) 数值",
+              "details": "f(x) 就是纵坐标，它告诉我们点在**纵轴**上的高度。<br><br>想象你在一栋楼里，f(x) 就是告诉你你在第几层。",
+              "detailTitle": "📈 f(x) 数值 — 纵坐标"
+            },
+            {
+              "x": 300,
+              "y": 260,
+              "id": "nmerge",
+              "icon": "⚙️",
+              "label": "合并算子 (x, f(x))",
+              "details": "把 x 和 f(x) 两个数字**配对**，组成一个坐标点。<br><br>就像把「东西方向的位置」和「楼层」组合起来，就能精确定位到房间。",
+              "detailTitle": "⚙️ 合并算子 — 坐标配对"
+            },
+            {
+              "x": 300,
+              "y": 410,
+              "id": "npoint",
+              "icon": "🎯",
+              "label": "平面点 (x, f(x))",
+              "details": "最终在坐标平面上得到一个**具体的点**！<br><br>这个点就是函数图像上的一个点。把很多个点连起来，就看到了函数的图像 🎉",
+              "detailTitle": "🎯 平面点 — 图像上的点"
+            }
+          ],
+          "title": "坐标点与函数图像：关系图",
+          "revealOrder": [
+            "nx",
+            "nf",
+            "nmerge",
+            "npoint"
+          ]
+        },
+        "htmlPath": "interactive/09_坐标点与函数图像：关系图.html",
+        "htmlBytes": 767438
+      },
+      "actions": [
+        {
+          "id": "action_KjfsGboU",
+          "text": "本场景通过交互探索“坐标点与函数图像：关系图”。可以观察到它们是如何出现在图像上的。现在，大家给我们带来了一张关系图，帮我们把这些步骤背后的逻辑看得更清楚。",
+          "type": "speech"
+        },
+        {
+          "id": "action_IdXPU4Vu",
+          "type": "widget_highlight",
+          "target": "#nx",
+          "content": "这是x数值节点，代表横坐标。"
+        },
+        {
+          "id": "action_3PhEcqs-",
+          "text": "我们先看最左边这个节点，它代表输入值 x。x 就是横坐标，它决定了点在水平方向上的位置。你可以想象成，x 告诉我们在一条东西向的路上，从起点出发走了多远。",
+          "type": "speech",
+          "audioRef": "audio/tts_s9_action_3PhEcqs-.mp3"
+        },
+        {
+          "id": "action_APy8a16v",
+          "type": "widget_reveal",
+          "target": "#nf",
+          "content": "揭示 f(x) 数值节点。"
+        },
+        {
+          "id": "action_1autJRJU",
+          "text": "再看右边，这是 f(x) 数值节点，也就是纵坐标。它告诉我们点在竖直方向上的高度，就像一栋楼里的楼层数。x 和 f(x) 都有了，怎么变成一个点呢？",
+          "type": "speech",
+          "audioRef": "audio/tts_s9_action_1autJRJU.mp3"
+        },
+        {
+          "id": "action_IyTMxtiJ",
+          "type": "widget_reveal",
+          "target": "#nmerge",
+          "content": "揭示合并算子节点。"
+        },
+        {
+          "id": "action_LZsnpt6w",
+          "text": "中间这个“合并算子”就是关键。它把代表横向位置的 x 和代表纵向高度的 f(x) 配成一对，变成一个坐标 (x, f(x))。这就像我们把街道和楼层组合起来，就能找到大楼里的一个房间。",
+          "type": "speech",
+          "audioRef": "audio/tts_s9_action_LZsnpt6w.mp3"
+        },
+        {
+          "id": "action_KcoMAY-V",
+          "type": "widget_reveal",
+          "target": "#npoint",
+          "content": "揭示平面点节点。"
+        },
+        {
+          "id": "action_5hbAhtXQ",
+          "text": "最后，我们就在坐标系里得到了一个确定的点！如果你想象我们刚刚在拖动实验里创建的那些点，每一个都是这样，由它的 x 值和 f(x) 值配对生成的。无数个这样的点连起来，就构成了我们看到的函数图像。你可以试着点击图上任意一个节点，看看它对应的部分是怎么被点亮的。",
+          "type": "speech",
+          "audioRef": "audio/tts_s9_action_5hbAhtXQ.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "坐标点与函数图像：误解修复挑战",
+      "order": 10,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "scoring": {
+            "speedBonus": 5,
+            "correctPoints": 10
+          },
+          "gameType": "action",
+          "description": "在坐标平面上收集符合函数f(x)=2x的点，避开不符合的点"
+        },
+        "htmlPath": "interactive/10_坐标点与函数图像：误解修复挑战.html",
+        "htmlBytes": 772572
+      },
+      "actions": [
+        {
+          "id": "action_XFQH4qn1",
+          "text": "本场景通过交互探索“坐标点与函数图像：误解修复挑战”。每一个点都是由它的 x 值和对应的 f(x) 值共同决定的。那如果我给你一个规则，你能不能在众多点里，一眼就认出哪些是符合这个规则的？",
+          "type": "speech"
+        },
+        {
+          "id": "action_etrRLsIe",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始，进入挑战模式"
+        },
+        {
+          "id": "action_v33OHaEH",
+          "text": "现在，你的画面上散布着很多个坐标点。你的任务是：根据我们刚学的规则 f(x)=2x，只去收集那些真正属于这条直线上的点。避开那些‘伪装者’！",
+          "type": "speech",
+          "audioRef": "audio/tts_s10_action_v33OHaEH.mp3"
+        },
+        {
+          "id": "action_6PpRKIAv",
+          "type": "widget_setState",
+          "state": {
+            "currentStep": 1,
+            "completedSteps": 0
+          },
+          "content": "初始状态：未收集任何点，准备开始"
+        },
+        {
+          "id": "action_grfVXl0f",
+          "text": "先仔细想一想，如果 x 是 1，对应的 f(x) 应该是 2。那个在 x=1 上，但 y 是 3 的点，就是一个错误答案。动手试试看，收集正确的点得分，碰到错误的点它会消失，同时你会损失机会。",
+          "type": "speech",
+          "audioRef": "audio/tts_s10_action_grfVXl0f.mp3"
+        },
+        {
+          "id": "action_6beHhkRu",
+          "type": "widget_setState",
+          "state": {
+            "currentStep": 3,
+            "completedSteps": 2
+          },
+          "content": "收集到两个正确点后的状态"
+        },
+        {
+          "id": "action_OKWkfWjQ",
+          "text": "做得好。你发现没有，这个过程逼着我们去思考：这个坐标平面上的每一个位置，都不是随便画的，它背后必须满足函数规则才行。这就是我们需要深入理解的关键。",
+          "type": "speech"
+        },
+        {
+          "id": "action_swdfEx40",
+          "type": "widget_annotation",
+          "target": "#scoring-display",
+          "content": "你的得分情况"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "坐标点与函数图像：空间视角",
+      "order": 11,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "objects": [
+            {
+              "id": "grid_plane",
+              "type": "plane",
+              "material": {
+                "type": "standard",
+                "color": "#1a1a2e"
+              },
+              "description": "地面网格平面（x-z平面）"
+            },
+            {
+              "id": "value_pillars",
+              "type": "group",
+              "description": "函数值立柱组 — 每根立柱代表一个x点的f(x)值"
+            },
+            {
+              "id": "x_axis",
+              "type": "line",
+              "description": "x轴（横轴，红色）"
+            },
+            {
+              "id": "y_axis",
+              "type": "line",
+              "description": "f(x)轴（纵轴/高度，蓝色）"
+            },
+            {
+              "id": "z_axis",
+              "type": "line",
+              "description": "z轴（地面深度，绿色）"
+            }
+          ],
+          "presets": [
+            {
+              "name": "正弦波演示",
+              "state": {
+                "function": "sin",
+                "clearPillars": true,
+                "cameraPosition": [
+                  8,
+                  10,
+                  12
+                ]
+              }
+            },
+            {
+              "name": "抛物线视角",
+              "state": {
+                "function": "square",
+                "clearPillars": true,
+                "cameraPosition": [
+                  6,
+                  8,
+                  10
+                ]
+              }
+            },
+            {
+              "name": "鸟瞰视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  20,
+                  0.1
+                ]
+              }
+            },
+            {
+              "name": "侧视图",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  5,
+                  15
+                ]
+              }
+            }
+          ],
+          "description": "坐标点与函数图像：空间视角 — 在3D视角下展示从平面到立体的坐标投影。学生通过点击地面生成立柱，直观理解函数值f(x)即立柱高度的概念。",
+          "interactions": [
+            {
+              "type": "click_to_spawn",
+              "target": "grid_plane",
+              "description": "点击地面生成函数立柱"
+            },
+            {
+              "type": "orbit",
+              "target": "camera",
+              "description": "拖拽旋转视角"
+            },
+            {
+              "max": 0.8,
+              "min": 0.1,
+              "type": "slider",
+              "param": "pillarWidth",
+              "default": 0.3,
+              "description": "调节立柱宽度"
+            },
+            {
+              "max": 5,
+              "min": 0.5,
+              "type": "slider",
+              "param": "growSpeed",
+              "default": 2,
+              "description": "立柱生长速度"
+            },
+            {
+              "type": "select",
+              "param": "function",
+              "default": "sin",
+              "options": [
+                "sin",
+                "cos",
+                "square",
+                "linear",
+                "abs",
+                "saw"
+              ],
+              "description": "选择函数类型"
+            },
+            {
+              "type": "button",
+              "label": "放大",
+              "action": "zoomIn"
+            },
+            {
+              "type": "button",
+              "label": "缩小",
+              "action": "zoomOut"
+            },
+            {
+              "type": "button",
+              "label": "清除全部",
+              "action": "reset"
+            },
+            {
+              "type": "button",
+              "label": "演示",
+              "action": "preset"
+            }
+          ],
+          "visualizationType": "geometry"
+        },
+        "htmlPath": "interactive/11_坐标点与函数图像：空间视角.html",
+        "htmlBytes": 2514855
+      },
+      "actions": [
+        {
+          "id": "action_wCn5TLH6",
+          "text": "本场景通过交互探索“坐标点与函数图像：空间视角”。大家还特别强调了每个点都必须遵守函数规则。现在我们把视角拉起来，从空中看看这个规则到底长什么样。",
+          "type": "speech"
+        },
+        {
+          "id": "action_S0ZfSuhR",
+          "type": "widget_setState",
+          "state": {
+            "preset": "正弦波演示"
+          },
+          "content": "加载正弦波演示预设，将相机调整到合适的观察角度。"
+        },
+        {
+          "id": "action_c7Bh2ann",
+          "text": "看，地面上这条红色的线是 x 轴，而垂直向上的蓝色方向，就是 f(x) 的值，也就是函数的输出。",
+          "type": "speech",
+          "audioRef": "audio/tts_s11_action_c7Bh2ann.mp3"
+        },
+        {
+          "id": "action_hWETh3yO",
+          "type": "widget_annotation",
+          "target": "#y_axis",
+          "content": "蓝色的高度轴代表 f(x) 的输出值"
+        },
+        {
+          "id": "action_VoQfkymK",
+          "text": "就像我们刚才在纸上画的点，每一个 x 的位置，都有一根柱子立起来。柱子的高度，就是那个 x 对应的输出。你之前问为什么一个 x 只能有一个输出，你看——如果立起两根不一样高的柱子，它们就会打架，在空间里根本没法同时存在。",
+          "type": "speech"
+        },
+        {
+          "id": "action_HjXDKPxc",
+          "type": "widget_highlight",
+          "target": "#value_pillars",
+          "content": "观察这些立柱：每个 x 位置只能有一根，高度由函数规则决定"
+        },
+        {
+          "id": "action_RLsAPItZ",
+          "text": "现在，轮到你来当建筑师了。试着用鼠标旋转一下视角，从侧面看一看，这些立柱的顶端是不是连成了一条我们熟悉的曲线？然后，试着点击地面上的不同位置，亲手立几根柱子，感受一下输出值是怎么被\"拔高\"的。",
+          "type": "speech",
+          "audioRef": "audio/tts_s11_action_RLsAPItZ.mp3"
+        },
+        {
+          "id": "action_y6PK_O1a",
+          "type": "widget_setState",
+          "state": {
+            "preset": "侧视图"
+          },
+          "content": "切换到侧视图，方便学生观察立柱顶端形成的曲线轮廓"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "机器把输入的数字加了 6",
+                "value": "A"
+              },
+              {
+                "label": "机器把输入的数字乘以了 3",
+                "value": "B"
+              },
+              {
+                "label": "机器把输入的数字平方了（3乘3）",
+                "value": "C"
+              },
+              {
+                "label": "机器把输入的数字减了 3",
+                "value": "D"
+              }
+            ],
+            "analysis": "从实验证据来看，当输入为3时输出为9。我们必须检查哪种规则能将3变成9。3+6=9，但机器通常有固定规则，不能只看一组数据就下结论（不过此题仅基于给定证据）。然而，3×3=9，这确实是直接的解释。规则C中3的平方也是9。但通常我们寻找最简单直观的线性关系。在输入输出机器初步体验中，“乘以3”是比“平方”更基础常见的直觉。因此最符合的规则是乘以3。如果有其他数据点我们就能更确定。",
+            "question": "在之前的输入输出规则拖动实验中，如果输入框中的数字是 3，输出框中蹦出了数字 9。根据这个实验证据，以下哪个规则最符合这个机器的工作方式？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "这个点在水平方向（x轴）上离原点 2 个单位，在竖直方向（y轴）上离原点 4 个单位",
+                "value": "A"
+              },
+              {
+                "label": "这个点在水平方向（x轴）上离原点 4 个单位，在竖直方向（y轴）上离原点 2 个单位",
+                "value": "B"
+              },
+              {
+                "label": "这个点一定在第一象限的右上角",
+                "value": "C"
+              },
+              {
+                "label": "无法判断这个点的具体位置，因为坐标 (4,2) 和 (2,4) 代表的是同一个地方",
+                "value": "D"
+              }
+            ],
+            "analysis": "根据坐标读取规则，括号里第一个数字是x坐标，对应横轴（水平方向）的数值；第二个数字是y坐标，对应纵轴（竖直方向）的数值。因此(4,2)表示在x轴上走4个单位，y轴上走2个单位。选项A将数值颠倒了。选项C虽然事实正确（正数坐标确实在第一象限），但不能通过一个点的坐标就概括说“一定”在右上角，但核心错误是B才是完全正确的坐标读取描述。D选项错误，因为坐标顺序不同代表完全不同的点。所以B是严格正确的。",
+            "question": "在使用落点模拟器时，你点击了一个位置，屏幕上显示了坐标 (4, 2)。关于这个点，以下哪个说法是完全正确的？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "answer": [
+              "C",
+              "D"
+            ],
+            "points": 15,
+            "options": [
+              {
+                "label": "机器的内部规则可能是：输出 = 输入 × 3 + 1（f(x) = 3x + 1）",
+                "value": "A"
+              },
+              {
+                "label": "机器的内部规则可能是：输出 = 输入 + 3（f(x) = x + 3）",
+                "value": "B"
+              },
+              {
+                "label": "机器的内部规则可能是：输出 = 输入 × 2 + 2（f(x) = 2x + 2）",
+                "value": "C"
+              },
+              {
+                "label": "如果按照数据的趋势，下一个输入是4时，输出很可能会继续增加",
+                "value": "D"
+              }
+            ],
+            "analysis": "检查每个选项：1) 对于1，3x+1=4，符合；对于2，3x+1=7，不符。所以A错误。2) 对于1，x+3=4，符合；对于2，x+3=5，不符。所以B错误。3) 对于1，2x+2=4，符合；对于2，2x+2=6，符合；对于3，2x+2=8，符合。所以规则C可能正确。4) 观察数据：输入每次增加1，输出从4到6再到8，每次增加2，因此趋势是持续增加，所以D在描述图像增长趋势的意义上是正确的。因此正确选项是C和D。",
+            "question": "已知输入输出机器的实验数据为：f(1)=4、f(2)=6、f(3)=8。基于这些证据，下列哪些说法可能正确？（多选）",
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "一个从左往右一直向下掉的滑梯",
+                "value": "A"
+              },
+              {
+                "label": "一个从左往右一直向上爬的楼梯",
+                "value": "B"
+              },
+              {
+                "label": "一条像山坡一样，左右一样高的平路",
+                "value": "C"
+              },
+              {
+                "label": "一个先往上冲，然后又掉下来的过山车（像倒V字）",
+                "value": "D"
+              }
+            ],
+            "analysis": "分析数据点：当x（横轴值）从1增加到2再到3时，y（纵轴值）从4增加到6再到8。这意味着随着我们向右移动，点的高度一直在增加。因此将这些点光滑连接后，整体趋势是从左往右不断上升的。选项A描述的是下降趋势。选项C是水平无变化。选项D是先上升后下降。只有选项B“一直向上爬的楼梯”准确地描述了这种持续增长的趋势。",
+            "question": "想象一下，你把输入输出机器的数据点 (1,4), (2,6), (3,8) 画在了坐标图上，并且按照从左到右的顺序连成了一条线。你觉得这条线看起来最像下面哪种变化趋势？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "points": 20,
+            "analysis": "参考答案要点：(1) 当输入是0，输出也是0时，这个点在坐标图上的位置就是原点(0,0)，它是横轴和竖轴交叉的中心点。(2) 机器并没有偷懒，它依然在执行运算。可能的规则有：不管输入什么数字都乘以2（2×0=0）；或者是输入乘以它自己（0的平方=0）等等。这些规则只有在输入为0时才会输出0，一旦换另一个数字，机器就会吐出别的结果，所以它是有在认真工作的。",
+            "question": "小明在输入输出机器实验中输入了数字0，结果输出竟然也是0。他觉得机器可能在偷懒，什么也没做。但小红说：机器内部可能有个非常确定的规则，只是恰好过了一个特殊的点。请结合坐标图的知识，解释一下“输入0，输出0”这个点，在坐标图上有什么特殊的地方？并推测一种有别于“偷懒”的可能规则。",
+            "hasAnswer": false,
+            "commentPrompt": "评分标准：(1) 能正确描述 (0,0) 点在坐标系中的特殊位置（即原点）—— 40%；(2) 能推测出一种合理的非零操作规则（如“乘以任何数”、“平方”、“乘以2”等），证明机器不是‘偷懒’—— 40%；(3) 语言表达清晰，逻辑通顺—— 20%。"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_Wojvb76t",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。看到那些立柱的顶端好像连成了一条线。现在，是时候检验一下，我们对于输入输出规则和坐标点的理解，是不是像那些立柱一样扎实了。",
+          "type": "speech"
+        },
+        {
+          "id": "action_l-BqaJ1J",
+          "text": "来，请大家集中精神，完成这个小测验。题目不多，但它们会帮我们回顾从‘拖动实验’到‘空间视角’学到的核心本领，看看哪些概念已经成了我们自己的‘肌肉记忆’。",
+          "type": "speech",
+          "audioRef": "audio/tts_s12_action_l-BqaJ1J.mp3"
+        },
+        {
+          "id": "action_rlHXa9po",
+          "text": "尤其是第一题，回想一下那个我们反复拖动过的输入输出机器，当输入是3，输出是9的时候，它到底在遵循什么规则？这可不是死记硬背，而是要根据实验证据来推理。",
+          "type": "speech",
+          "audioRef": "audio/tts_s12_action_rlHXa9po.mp3"
+        },
+        {
+          "id": "action_ewCNfVfl",
+          "text": "还有第三道多选题，它给了我们一组数据，就像侦探破案一样，我们要根据线索，也就是 (1,4), (2,6), (3,8) 这些点，去反推机器内部可能的计算方式，看看哪几条规则能和这些‘罪证’完全吻合。",
+          "type": "speech",
+          "audioRef": "audio/tts_s12_action_ewCNfVfl.mp3"
+        },
+        {
+          "id": "action_x2Z5IHIV",
+          "text": "别忘了最后那道简答题哦。小明说输入0得到0，是机器在‘偷懒’，小红则觉得这是一个特殊的点。你们在思考时，不妨拿起笔在脑海里画个坐标图，想想原点 (0,0) 到底意味着什么，这能帮你找到关键线索。好了，现在开始吧，相信你们都能完成得很出色。",
+          "type": "speech",
+          "audioRef": "audio/tts_s12_action_x2Z5IHIV.mp3"
+        },
+        {
+          "id": "action_Hn8wRTtl",
+          "type": "discussion",
+          "topic": "为什么说点 (0,0) 在坐标图上很特殊？除了‘机器偷懒’，还能有什么规则能让输入0时输出也是0？",
+          "prompt": "结合你对坐标轴和函数规则的理解，大胆提出你的猜想，并尝试用类似 f(x) = 2x 这样的形式来表达你发现的规则。",
+          "agentIndex": 2
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "slide",
+      "title": "图像的上升、下降与变化方向",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "ZiniinCnHiBHc0lfI9EHW",
+          "theme": {
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "backgroundColor": "#ffffff"
+          },
+          "elements": [
+            {
+              "id": "text_dJERVS2Y",
+              "top": 50,
+              "left": 60,
+              "type": "text",
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">图像的上升、下降与变化方向</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_ckB0SXeO",
+              "top": 125,
+              "fill": "#e2e8f0",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "shape_MbqVq5jo",
+              "top": 150,
+              "fill": "#f0f9ff",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 420,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_DL9_Xc6y",
+              "top": 164,
+              "left": 80,
+              "type": "text",
+              "width": 380,
+              "height": 112,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #0284c7;\">🎯 核心目标</p><p style=\"font-size: 18px; color: #334155;\">用语言准确描述函数的变化趋势：</p><p style=\"font-size: 18px; color: #334155;\">上升、下降或保持水平。</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_X2a6iHZF",
+              "top": 150,
+              "fill": "#fff7ed",
+              "left": 520,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 420,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_89w9NbeN",
+              "top": 164,
+              "left": 540,
+              "type": "text",
+              "width": 380,
+              "height": 112,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #ea580c;\">🔄 修复误解</p><p style=\"font-size: 18px; color: #334155;\">不再只盯着单个数字计算，</p><p style=\"font-size: 18px; color: #334155;\">而是学会看整体趋势。</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_Fv8wkGG6",
+              "top": 310,
+              "left": 60,
+              "type": "text",
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #1e293b;\">📌 问题：当 x 向右走，f(x) 往哪走？</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_FthyFd6F",
+              "top": 370,
+              "fill": "#f0fdf4",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 280,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_TWIKMQwI",
+              "top": 381,
+              "left": 80,
+              "type": "text",
+              "width": 240,
+              "height": 118,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #16a34a; text-align: center;\">📈 上升</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">x 增大时，</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">f(x) 也随之增大。</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">(如：y = x)</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_L6PG42NP",
+              "top": 370,
+              "fill": "#fef2f2",
+              "left": 360,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 280,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_tvhaa8ou",
+              "top": 381,
+              "left": 380,
+              "type": "text",
+              "width": 240,
+              "height": 118,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #dc2626; text-align: center;\">📉 下降</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">x 增大时，</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">f(x) 反而减小。</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">(如：y = -x)</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_jTku2iu_",
+              "top": 370,
+              "fill": "#f8fafc",
+              "left": 660,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 280,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_rRj_TJUO",
+              "top": 381,
+              "left": 680,
+              "type": "text",
+              "width": 240,
+              "height": 118,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #475569; text-align: center;\">⟷ 水平</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">x 增大时，</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">f(x) 保持不变。</p><p style=\"font-size: 16px; color: #334155; text-align: center;\">(如：y = 5)</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_52WoO4YN",
+          "type": "spotlight",
+          "elementId": "text_dJERVS2Y"
+        },
+        {
+          "id": "action_iEjmZqXu",
+          "text": "本场景聚焦“图像的上升、下降与变化方向”。也了解了原点的特殊意义。现在，让我们从一个全新的角度来观察函数图像。我们不再只看一个个静止的点了，而是要看整条线的‘动态’。大家看看屏幕，今天我们的核心话题就是：图像的上升、下降与变化方向。",
+          "type": "speech"
+        },
+        {
+          "id": "action_JzHHO0zh",
+          "type": "spotlight",
+          "elementId": "text_Fv8wkGG6"
+        },
+        {
+          "id": "action_7Z2lujWB",
+          "text": "我们要问自己一个关键问题：当 x 沿着横轴向右走，也就是不断增大时，对应的 f(x) 这个点，在纵轴上，是往上走、往下走，还是保持不动呢？我们把这想象成观察一座山或一条路的走向。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_7Z2lujWB.mp3"
+        },
+        {
+          "id": "action_oU_jVySA",
+          "type": "spotlight",
+          "elementId": "text_DL9_Xc6y"
+        },
+        {
+          "id": "action_te3bI23a",
+          "text": "所以，这节课的核心目标，就是用我们自己的语言，比如‘上升’、‘下降’或‘保持水平’，来准确地描述一个函数图像的整体趋势。这就像在给函数‘讲故事’。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_te3bI23a.mp3"
+        },
+        {
+          "id": "action_IytaDxi1",
+          "type": "spotlight",
+          "elementId": "text_89w9NbeN"
+        },
+        {
+          "id": "action_qqIyPfzq",
+          "text": "同时，我们还需要修复一个小误解。很多同学可能会习惯性地只盯着一两个数字去计算。现在，让我们尝试‘抬起头’，去看整条线从左到右的宏观走势，锻炼一种‘读图’的能力。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_qqIyPfzq.mp3"
+        },
+        {
+          "id": "action_jfC3d_17",
+          "type": "spotlight",
+          "elementId": "text_TWIKMQwI"
+        },
+        {
+          "id": "action_6h6l79zc",
+          "text": "比如，如果我们看到，随着 x 增大，f(x) 的值也跟着增大，图像看起来像是在‘爬坡’，我们就说它是‘上升’的。像我们之前见过的 y 等于 x 平方的图像，在 x 大于 0 这边，就是一条漂亮的上坡路。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_6h6l79zc.mp3"
+        },
+        {
+          "id": "action_viiBvfSH",
+          "type": "spotlight",
+          "elementId": "text_tvhaa8ou"
+        },
+        {
+          "id": "action__3KT8miB",
+          "text": "反过来，如果 x 在变大，但 f(x) 反而在变小，图像看起来像在下坡，我们自然就叫它‘下降’。比如 y 等于负 x 的图像，就是一条直直的下坡。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action__3KT8miB.mp3"
+        },
+        {
+          "id": "action_2r4jbSb5",
+          "type": "spotlight",
+          "elementId": "text_rRj_TJUO"
+        },
+        {
+          "id": "action_tRJGwCXY",
+          "text": "最后，还有一种特别稳定的情况，无论 x 怎么走，f(x) 永远是一个固定的数，图像就是一条水平的直线，比如 y 等于 5。像不像在平坦的大道上散步呢？这就是我们所说的‘水平’。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_tRJGwCXY.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "图像的上升、下降与变化方向：拖动实验",
+      "order": 14,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "function_increasing_decreasing",
+          "presets": [
+            {
+              "name": "慢速观察",
+              "variables": {
+                "drag_speed": 2,
+                "trace_height": 1,
+                "trend_indicator": 1
+              },
+              "description": "适合初学者，缓慢移动仔细观看"
+            },
+            {
+              "name": "快速扫描",
+              "variables": {
+                "drag_speed": 9,
+                "trace_height": 1,
+                "trend_indicator": 1
+              },
+              "description": "快速浏览整个图像的变化趋势"
+            },
+            {
+              "name": "高轨迹 + 指示器",
+              "variables": {
+                "drag_speed": 5,
+                "trace_height": 1.8,
+                "trend_indicator": 1
+              },
+              "description": "增大轨迹高度并显示箭头指示"
+            },
+            {
+              "name": "无指示器",
+              "variables": {
+                "drag_speed": 5,
+                "trace_height": 1,
+                "trend_indicator": 0
+              },
+              "description": "隐藏箭头指示，尝试自己判断方向"
+            }
+          ],
+          "variables": [
+            {
+              "max": 10,
+              "min": 1,
+              "name": "drag_speed",
+              "unit": "级",
+              "label": "拖动速度",
+              "default": 5
+            },
+            {
+              "max": 2,
+              "min": 0.3,
+              "name": "trace_height",
+              "unit": "倍",
+              "label": "轨迹高度",
+              "default": 1
+            },
+            {
+              "max": 1,
+              "min": 0,
+              "name": "trend_indicator",
+              "unit": "",
+              "label": "趋势指示器",
+              "default": 1
+            }
+          ],
+          "description": "拖动x轴滑块，观察函数图像f(x)的上升与下降。绿色表示上升区间（x增大时y也增大），红色表示下降区间（x增大时y反而减小）。"
+        },
+        "htmlPath": "interactive/14_图像的上升、下降与变化方向：拖动实验.html",
+        "htmlBytes": 774816
+      },
+      "actions": [
+        {
+          "id": "action_iqgZHHDo",
+          "text": "本场景通过交互探索“图像的上升、下降与变化方向：拖动实验”。函数图像有时是平坦的水平线，有时却像过山车。今天我们就用小实验来亲眼看看，图像到底在什么时候上升，什么时候下降。",
+          "type": "speech"
+        },
+        {
+          "id": "action_1KZvRgY9",
+          "type": "widget_highlight",
+          "target": "#drag_speed-slider",
+          "content": "先认识一下我们的控制器，我们通过拖动这个滑块来让x轴动起来。"
+        },
+        {
+          "id": "action_vP5UUgMN",
+          "text": "来，我们先从简单的开始。请试着用慢速，从最左边慢慢向右拖动这个x滑块，仔细看看移动过程中，右边的轨迹高度发生了什么变化？",
+          "type": "speech",
+          "audioRef": "audio/tts_s14_action_vP5UUgMN.mp3"
+        },
+        {
+          "id": "action_YC_p7lVD",
+          "type": "widget_setState",
+          "state": {
+            "drag_speed": 2,
+            "trace_height": 1,
+            "trend_indicator": 1
+          },
+          "content": "切换到“慢速观察”模式，让我们能看得更清楚。"
+        },
+        {
+          "id": "action_R_oG1X85",
+          "text": "注意看，当x在不断增大的时候，如果y也跟着变大了，图像就会向高处走，这就是‘上升’。如果y反而变小了，图像向低处走，这就是‘下降’。",
+          "type": "speech",
+          "audioRef": "audio/tts_s14_action_R_oG1X85.mp3"
+        },
+        {
+          "id": "action_QW4yTMdb",
+          "type": "widget_annotation",
+          "target": "#trace-display",
+          "content": "绿色的部分是上升区间，红色是下降区间。记住，我们只需要观察x增大的方向。"
+        },
+        {
+          "id": "action_zXGgD2eF",
+          "text": "好，我们换个状态看看。现在请你自己试着从右向左倒着拖动，看看绿色和红色会不会反过来出现？这能帮我们更深刻地理解‘变化方向’是和x的移动牢牢绑在一起的。",
+          "type": "speech",
+          "audioRef": "audio/tts_s14_action_zXGgD2eF.mp3"
+        },
+        {
+          "id": "action_ltrPnJVL",
+          "type": "widget_setState",
+          "state": {
+            "drag_speed": 5,
+            "trace_height": 1.8,
+            "trend_indicator": 1
+          },
+          "content": "增大轨迹高度并开启箭头指示，方便观察整体趋势。"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "图像的上升、下降与变化方向：关系图",
+      "order": 15,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "edges": [
+            {
+              "to": "n2",
+              "from": "n1",
+              "label": "若 x↑, y↑"
+            },
+            {
+              "to": "n3",
+              "from": "n1",
+              "label": "若 x↑, y↓"
+            },
+            {
+              "to": "n4",
+              "from": "n1",
+              "label": "若 x↑, y不变"
+            },
+            {
+              "to": "n5",
+              "from": "n1",
+              "label": "若方向改变"
+            },
+            {
+              "to": "n6",
+              "from": "n5",
+              "label": "先增后减"
+            },
+            {
+              "to": "n7",
+              "from": "n5",
+              "label": "先减后增"
+            }
+          ],
+          "nodes": [
+            {
+              "id": "n1",
+              "sub": "函数图像的核心概念",
+              "icon": "🔀",
+              "note": "想象你在爬山：x 是你的步伐（一直向前走），y 是你的高度。变化方向就是描述你的高度是上升、下降还是不变。",
+              "label": "变化方向",
+              "details": "函数图像的变化方向告诉我们：当横坐标 x 变大（向右移动）时，纵坐标 y（也就是 f(x) 的值）是怎么变化的。"
+            },
+            {
+              "id": "n2",
+              "sub": "当 x ↑ 时，y 也 ↑",
+              "icon": "📈",
+              "note": "例子：f(x) = 2x，当 x 从 1 变到 3，f(x) 从 2 变到 6。这就是「上升」！也叫「递增」。",
+              "label": "图像上升",
+              "details": "当 x 变大时，f(x) 的值也跟着变大。图像看起来像一条<strong>从左下往右上</strong>走的线或曲线。"
+            },
+            {
+              "id": "n3",
+              "sub": "当 x ↑ 时，y ↓",
+              "icon": "📉",
+              "note": "例子：f(x) = -x + 5，当 x 从 1 变到 3，f(x) 从 4 变到 2。这就是「下降」！也叫「递减」。",
+              "label": "图像下降",
+              "details": "当 x 变大时，f(x) 的值反而变小。图像看起来像一条<strong>从左上往右下</strong>走的线或曲线。"
+            },
+            {
+              "id": "n4",
+              "sub": "当 x ↑ 时，y 不变",
+              "icon": "➖",
+              "note": "例子：f(x) = 3，无论 x 是多少，f(x) 始终是 3。这就像你在平地上走路，高度不变。",
+              "label": "图像不变",
+              "details": "当 x 变大时，f(x) 的值始终保持不变。图像是一条<strong>水平的直线</strong>。"
+            },
+            {
+              "id": "n5",
+              "sub": "变化方向会改变",
+              "icon": "🔄",
+              "note": "要分析这类图像，需要把它分成不同的区间，每个区间里变化方向是确定的。",
+              "label": "复杂变化",
+              "details": "有些图像的上升和下降方向不是一成不变的，而是在某些区间上升，在另一些区间下降。"
+            },
+            {
+              "id": "n6",
+              "sub": "先增后减",
+              "icon": "⛰️",
+              "note": "例子：f(x) = -x² + 4x，图像像一个山峰 ⛰️，先爬坡再下山。最高点叫「极大值」。",
+              "label": "先升后降",
+              "details": "图像先向上升（y 随 x 增大而增大），到达最高点后开始下降（y 随 x 增大而减小）。"
+            },
+            {
+              "id": "n7",
+              "sub": "先减后增",
+              "icon": "🏔️",
+              "note": "例子：f(x) = x² - 4x，图像像一个山谷 🏔️，先下坡再爬坡。最低点叫「极小值」。",
+              "label": "先降后升",
+              "details": "图像先向下降（y 随 x 增大而减小），到达最低点后开始上升（y 随 x 增大而增大）。"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7"
+          ],
+          "nodePositions": {
+            "n1": {
+              "x": 450,
+              "y": 55
+            },
+            "n2": {
+              "x": 130,
+              "y": 200
+            },
+            "n3": {
+              "x": 340,
+              "y": 200
+            },
+            "n4": {
+              "x": 560,
+              "y": 200
+            },
+            "n5": {
+              "x": 760,
+              "y": 200
+            },
+            "n6": {
+              "x": 640,
+              "y": 350
+            },
+            "n7": {
+              "x": 860,
+              "y": 350
+            }
+          }
+        },
+        "htmlPath": "interactive/15_图像的上升、下降与变化方向：关系图.html",
+        "htmlBytes": 760651
+      },
+      "actions": [
+        {
+          "id": "action_4GGBkPbR",
+          "text": "本场景通过交互探索“图像的上升、下降与变化方向：关系图”。感受到了图像变化的方向。现在我们把关于“变化方向”的知识，整理成一张清晰的关系图。点击节点，看看它们是如何分类的。",
+          "type": "speech"
+        },
+        {
+          "id": "action_lSs334Zh",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "这是整个概念的核心：变化方向。"
+        },
+        {
+          "id": "action__bR2sBAw",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "点击展开核心节点。"
+        },
+        {
+          "id": "action_PvJdyYP9",
+          "text": "变化方向回答了一个核心问题：当x变大时，y是怎么变的？我们看到，从这个核心，分出了三种基本的变化类型。",
+          "type": "speech",
+          "audioRef": "audio/tts_s15_action_PvJdyYP9.mp3"
+        },
+        {
+          "id": "action_Zp9qUQUP",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "第一种，图像上升。"
+        },
+        {
+          "id": "action_hQo7zocP",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "第二种，图像下降。"
+        },
+        {
+          "id": "action_WKWRvDIH",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "第三种，图像不变。"
+        },
+        {
+          "id": "action_qWkSsrvw",
+          "text": "很好，这三种是最基础的。但有些图像没那么简单，它的变化方向是会改变的，这就属于第四种“复杂变化”。比如先升后降的“山峰”形，和先降后升的“山谷”形。",
+          "type": "speech",
+          "audioRef": "audio/tts_s15_action_qWkSsrvw.mp3"
+        },
+        {
+          "id": "action_Vkb7_k6S",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "点击展开复杂变化。"
+        },
+        {
+          "id": "action_4YZva-sn",
+          "type": "widget_reveal",
+          "target": "#n6",
+          "content": "点击展开先升后降。"
+        },
+        {
+          "id": "action_Yov_mMHj",
+          "type": "widget_reveal",
+          "target": "#n7",
+          "content": "点击展开先降后升。"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "图像的上升、下降与变化方向：误解修复挑战",
+      "order": 16,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "scoring": {
+            "speedBonus": 5,
+            "correctPoints": 10
+          },
+          "gameType": "action",
+          "description": "函数赛车手 - 通过驾驶小球在函数图像上行驶，学习识别函数的上升和下降区间"
+        },
+        "htmlPath": "interactive/16_图像的上升、下降与变化方向：误解修复挑战.html",
+        "htmlBytes": 474628
+      },
+      "actions": [
+        {
+          "id": "action_lO0I34C5",
+          "text": "本场景通过交互探索“图像的上升、下降与变化方向：误解修复挑战”。比如先升后降的“山峰”形。现在，我们来玩一个紧张刺激的游戏，考验一下你判断图像趋势的眼力。",
+          "type": "speech"
+        },
+        {
+          "id": "action_qKUB6RLc",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "这个按钮是开启挑战的关键，请随时准备出发。"
+        },
+        {
+          "id": "action_2u1nctmG",
+          "text": "在这个游戏里，你将驾驶一辆小球赛车，在一条起伏的函数图像上行驶。你的任务是根据前方的“天气”预报，判断图像是在上升还是下降，从而决定“加速”还是“刹车”。",
+          "type": "speech",
+          "audioRef": "audio/tts_s16_action_2u1nctmG.mp3"
+        },
+        {
+          "id": "action_PzwIP01t",
+          "type": "widget_highlight",
+          "target": "#accelerate-btn",
+          "content": "当预报提示前方是上升区间时，果断按下加速键冲过去。"
+        },
+        {
+          "id": "action_w3m-9nm2",
+          "type": "widget_highlight",
+          "target": "#brake-btn",
+          "content": "如果预报是危险的下降区间，必须立刻刹车减速，否则速度会剧减。"
+        },
+        {
+          "id": "action_wDQ3CLvS",
+          "text": "注意了，这个挑战不是为了让你计算斜率，而是要你像一个有经验的赛车手一样，用眼睛去“感受”趋势，瞬间做出决策。准备好了吗？点击开始按钮，挑战你的第一段赛道吧！",
+          "type": "speech",
+          "audioRef": "audio/tts_s16_action_wDQ3CLvS.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "图像的上升、下降与变化方向：空间视角",
+      "order": 17,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "objects": [
+            {
+              "id": "terrain_surface",
+              "type": "terrain",
+              "material": {
+                "type": "vertexColors",
+                "colorRange": [
+                  "#1a5276",
+                  "#27ae60",
+                  "#f1c40f",
+                  "#e74c3c"
+                ]
+              },
+              "description": "3D地形表面，高度代表函数值f(x)，颜色从深蓝（山谷）到红色（山顶）"
+            },
+            {
+              "id": "sliding_ball",
+              "type": "sphere",
+              "material": {
+                "type": "phong",
+                "color": "#ff6b35"
+              },
+              "description": "红色小球，沿地形滑动，速度随坡度变化",
+              "initialPosition": [
+                5,
+                0,
+                0
+              ]
+            },
+            {
+              "id": "trail",
+              "type": "line",
+              "material": {
+                "type": "line",
+                "color": "#ff6b35"
+              },
+              "description": "小球运动轨迹线"
+            },
+            {
+              "id": "slope_arrow",
+              "type": "arrow",
+              "material": {
+                "type": "dynamic",
+                "colors": [
+                  "#00ff88",
+                  "#ffaa00",
+                  "#ff3333"
+                ]
+              },
+              "description": "坡度方向箭头，颜色表示坡度大小"
+            },
+            {
+              "id": "cross_section",
+              "type": "line",
+              "material": {
+                "type": "line",
+                "color": "#fbbf24"
+              },
+              "description": "地形截面曲线，显示f(x)函数形状"
+            }
+          ],
+          "presets": [
+            {
+              "name": "俯视地形",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ],
+                "cameraPosition": [
+                  0,
+                  15,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧面观察",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  1,
+                  0
+                ],
+                "cameraPosition": [
+                  15,
+                  5,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "近距离观察小球",
+              "state": {
+                "cameraTarget": [
+                  5,
+                  1,
+                  0
+                ],
+                "cameraPosition": [
+                  7,
+                  3,
+                  3
+                ]
+              }
+            }
+          ],
+          "description": "3D地形图展示，将函数变化比作登山。学生可以观察坡度与函数变化剧烈程度的关系。放置一个自动滑行的物体观察速度变化，直观理解变化率概念。",
+          "interactions": [
+            {
+              "type": "button",
+              "label": "开始滑动",
+              "action": "start_slide",
+              "description": "开始/暂停小球沿地形滑动"
+            },
+            {
+              "type": "button",
+              "label": "重置",
+              "action": "reset",
+              "description": "重置小球位置和运动状态"
+            },
+            {
+              "max": 2,
+              "min": 0.1,
+              "step": 0.1,
+              "type": "slider",
+              "label": "重力大小",
+              "param": "gravity",
+              "default": 0.8,
+              "description": "调整重力大小，影响小球加速程度"
+            },
+            {
+              "max": 3,
+              "min": 0.5,
+              "step": 0.1,
+              "type": "slider",
+              "label": "地形高度",
+              "param": "terrainHeight",
+              "default": 1.5,
+              "description": "调整地形起伏程度"
+            },
+            {
+              "type": "button",
+              "label": "放大",
+              "action": "zoomIn",
+              "description": "放大视图"
+            },
+            {
+              "type": "button",
+              "label": "缩小",
+              "action": "zoomOut",
+              "description": "缩小视图"
+            }
+          ],
+          "teachingPoints": [
+            "山越高 → 函数值 f(x) 越大",
+            "坡越陡 → 函数变化越快（变化率越大）",
+            "向上走 → 函数在'上升'（f(x) 增大）",
+            "向下走 → 函数在'下降'（f(x) 减小）",
+            "小球速度反映变化率的绝对值"
+          ],
+          "visualizationType": "physics"
+        },
+        "htmlPath": "interactive/17_图像的上升、下降与变化方向：空间视角.html",
+        "htmlBytes": 2516489
+      },
+      "actions": [
+        {
+          "id": "action_ZrIgoIYQ",
+          "text": "本场景通过交互探索“图像的上升、下降与变化方向：空间视角”。现在让我们换一个视角，真正“走进”函数的世界。看，眼前这片起伏的地面，就像一座小山。那座山的“高度”，就是函数值 f(x)。",
+          "type": "speech"
+        },
+        {
+          "id": "action_4r632yUI",
+          "type": "widget_setState",
+          "state": {
+            "cameraTarget": [
+              0,
+              0,
+              0
+            ],
+            "cameraPosition": [
+              0,
+              15,
+              0
+            ]
+          },
+          "content": "切换到俯视地形，先观察整体"
+        },
+        {
+          "id": "action_zsmMYK72",
+          "text": "我们从山顶正上方往下看，颜色越红的地方，代表山越高，也就是 f(x) 的值越大。现在，让我们在山上放一个小红球。点击“开始滑动”，看看它是怎么走的。",
+          "type": "speech",
+          "audioRef": "audio/tts_s17_action_zsmMYK72.mp3"
+        },
+        {
+          "id": "action_ndj-GJUL",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "请点击这里让小球动起来"
+        },
+        {
+          "id": "action_zxFPbtdH",
+          "type": "widget_setState",
+          "state": {
+            "cameraTarget": [
+              0,
+              1,
+              0
+            ],
+            "cameraPosition": [
+              15,
+              5,
+              0
+            ]
+          },
+          "content": "切换侧面观察，看小球沿地形滑动"
+        },
+        {
+          "id": "action_uDpPFerv",
+          "text": "切换到侧面，仔细盯住小球。你发现了吗？在平缓的山坡上，它慢悠悠地走；而在陡峭的崖壁上，它会突然加速，飞一样地冲下去。这个速度的快慢，就是我们后面要说的“变化率”的直观感受。坡越陡，变化得就越快。",
+          "type": "speech",
+          "audioRef": "audio/tts_s17_action_uDpPFerv.mp3"
+        },
+        {
+          "id": "action_j9J1DiFB",
+          "type": "widget_highlight",
+          "target": "#gravity-slider",
+          "content": "调整重力，感受小球加速的变化"
+        },
+        {
+          "id": "action_1EcNfQ8Q",
+          "text": "现在，你可以拖动下面的“重力大小”或“地形高度”滑块，自己当一次地形设计师。试试看，把山变得更陡一点，小球的反应会发生什么戏剧性的变化？",
+          "type": "speech",
+          "audioRef": "audio/tts_s17_action_1EcNfQ8Q.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "HC7LYVHIXMVSEby2qZB_T",
+          "theme": {
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "backgroundColor": "#ffffff"
+          },
+          "elements": [
+            {
+              "id": "text_e2qYNkDf",
+              "top": 50,
+              "left": 60,
+              "type": "text",
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">全课整理：证据链回看</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_jagNMP_Z",
+              "top": 125,
+              "fill": "#e2e8f0",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "shape_ixMgMe8Y",
+              "top": 160,
+              "fill": "#f8fafc",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 880,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "shape_uqPJ0DBR",
+              "top": 160,
+              "fill": "#3b82f6",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 6,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_tSmK17SC",
+              "top": 175,
+              "left": 80,
+              "type": "text",
+              "width": 840,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #1e40af;\">1. 核心连接：从规则到趋势</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_mwwbcjua",
+              "top": 225,
+              "left": 80,
+              "type": "text",
+              "width": 840,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #334155;\">规则决定点的位置，点连成图像，图像展示趋势。</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_vsQOs7yZ",
+              "top": 330,
+              "fill": "#f8fafc",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 880,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "shape_Wum2VDdW",
+              "top": 330,
+              "fill": "#3b82f6",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 6,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_7dPHX6gI",
+              "top": 345,
+              "left": 80,
+              "type": "text",
+              "width": 840,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #1e40af;\">2. 认知总结：读图即反推</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_Mm_MHJoi",
+              "top": 395,
+              "left": 80,
+              "type": "text",
+              "width": 840,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #334155;\">学会读图意味着能从视觉轨迹中反推规则的行为模式。</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_4jCLwaY7",
+          "type": "spotlight",
+          "elementId": "text_e2qYNkDf"
+        },
+        {
+          "id": "action_4aZx2hXQ",
+          "text": "本场景聚焦“全课整理：证据链回看”。同学们，我们刚刚体验了如何通过改变规则来影响图像的趋势。现在，让我们暂停一下，做一件非常重要的事情：回看我们这堂课走过的‘证据链’。",
+          "type": "speech"
+        },
+        {
+          "id": "action_7RAAoE1r",
+          "type": "spotlight",
+          "elementId": "text_tSmK17SC"
+        },
+        {
+          "id": "action_doKF4brN",
+          "text": "首先，我们来梳理第一个核心连接：从规则到趋势。回想一下我们整节课的探索，它们之间到底有什么关系？",
+          "type": "speech",
+          "audioRef": "audio/tts_s18_action_doKF4brN.mp3"
+        },
+        {
+          "id": "action_Bmp5Er7x",
+          "type": "spotlight",
+          "elementId": "text_mwwbcjua"
+        },
+        {
+          "id": "action_ZJ1AEfsQ",
+          "text": "没错，就像大家在笔记里总结的那样：一个函数规则，决定了每一个输入所对应的输出，也就是坐标点的位置。成千上万个这样的点连起来，就构成了我们看到的图像，而图像的走向，就直观地展示了变化的趋势。这就是一个完整的逻辑链条。",
+          "type": "speech"
+        },
+        {
+          "id": "action_Ih-SxQpb",
+          "type": "spotlight",
+          "elementId": "text_7dPHX6gI"
+        },
+        {
+          "id": "action_KSISLaHH",
+          "text": "基于这个连接，我们就能得出第二个重要的认知总结：读图，其实就是一种反推。",
+          "type": "speech",
+          "audioRef": "audio/tts_s18_action_KSISLaHH.mp3"
+        },
+        {
+          "id": "action_-5p4KVJ5",
+          "type": "spotlight",
+          "elementId": "text_Mm_MHJoi"
+        },
+        {
+          "id": "action_SQjqWWuy",
+          "text": "没错，当我们学会读图时，我们就不再只是被动地看一条线。我们是在从这条视觉轨迹中，反向推断出背后那个看不见的函数规则，以及它的行为模式。比如，看到一条笔直向上的线，我们就能反推出它的规则里有‘匀速增加’的特点。大家现在是不是觉得，自己看到的每一张函数图像，都开始变得会‘说话’了？好，带着这份整体认知，我们准备进入最后的综合测评。",
+          "type": "speech",
+          "audioRef": "audio/tts_s18_action_SQjqWWuy.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "quiz",
+      "title": "后测：函数、坐标与图像读法综合测评",
+      "order": 19,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "每个人的姓名和他们的所有爱好列表",
+                "value": "A"
+              },
+              {
+                "label": "工号系统中的员工编号和对应的唯一员工姓名",
+                "value": "B"
+              },
+              {
+                "label": "一个手机号码同时绑定了多个社交媒体账号",
+                "value": "C"
+              },
+              {
+                "label": "一把钥匙可以打开很多不同的锁",
+                "value": "D"
+              }
+            ],
+            "analysis": "函数（映射）的核心规则是：一个输入（自变量x），必须有且只能有一个输出（因变量f(x)）。在选项B中，一个员工编号（输入）只能找到一个对应的姓名（输出），完全符合映射规则。选项A、C、D都是一个输入对应多个输出，这违反了函数的基本定义。",
+            "question": "关于映射的概念，以下哪个例子最准确地描述了‘一个输入对应唯一一个输出’的关系？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "answer": [
+              "C"
+            ],
+            "points": 15,
+            "options": [
+              {
+                "label": "向一个没盖子的水桶里匀速注满水，然后在水桶底部扎个洞让水流光",
+                "value": "A"
+              },
+              {
+                "label": "把一杯热水放在桌上，从滚烫慢慢冷却到室温",
+                "value": "B"
+              },
+              {
+                "label": "某人爬山，过程是先爬上一个土坡，然后快速跑到坡底",
+                "value": "C"
+              },
+              {
+                "label": "手机充电，从0电量一直充到100%",
+                "value": "D"
+              }
+            ],
+            "analysis": "这道题是在考察根据图像趋势推断实际场景的能力。‘先上升后下降，且下降速度更快’是关键特征。选项C中，人的海拔高度先逐渐增加到达坡顶，再快速跑下坡底，完全符合图像描述。选项A是水平上升到满后再下降，通常下降过程并不是描述为快速，且水桶扎洞水流光通常速度变化不一定是骤降。B是持续下降，D是持续上升。",
+            "question": "某人的海拔高度随时间先缓慢上升，到达最高点后又快速下降到最低点。以下哪个实际场景最符合这种“先缓升、后快降”的变化过程？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "answer": [
+              "A",
+              "C"
+            ],
+            "points": 20,
+            "options": [
+              {
+                "label": "点(4, 0) 表示当x等于4时，f(x)的值为0",
+                "value": "A"
+              },
+              {
+                "label": "点(0, 8) 位于横轴（x轴）上",
+                "value": "B"
+              },
+              {
+                "label": "如果一个点位于纵轴（y轴）的最下方，可能表示总成本里的固定开销部分",
+                "value": "C"
+              },
+              {
+                "label": "两个不同的点，如果它们连接起来的线是笔直垂直的，这依然是一个函数的图像",
+                "value": "D"
+              }
+            ],
+            "analysis": "选项A正确，坐标(4,0)的读法就是x=4, y=f(x)=0。选项C正确，纵轴最下方的点通常表示在其他变量为0时的基础值，比如成本里的固定开销，这是一种常见的直觉解读。选项B错误，(0,8)是指x=0, y=8，这个点在纵轴上。选项D错误，两点连线垂直意味着在同一个x值上出现了两个不同的y值，这违反了函数（映射）规则，这种线形不属于函数图像。",
+            "question": "在直角坐标系中，我们通常用横轴表示自变量x，纵轴表示因变量f(x)。关于坐标系中的点，以下哪些说法是正确的？（多选）",
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "f(x)始终等于x",
+                "value": "A"
+              },
+              {
+                "label": "无论x是多少，f(x)的结果始终是5",
+                "value": "B"
+              },
+              {
+                "label": "x的值一直保持为5",
+                "value": "C"
+              },
+              {
+                "label": "图像是一条从(0,0)出发的斜线",
+                "value": "D"
+              }
+            ],
+            "analysis": "图像显示f(x)始终在高度5的位置不变，意味着输出值恒为5，也就是一个常量函数f(x)=5。选项A描述的是45度斜线的关系。选项C混淆了x和f(x)的角色。选项D是从原点出发的斜线，与平坦不动完全不符。",
+            "question": "在区间 0≤x≤10 内，函数值始终满足 f(x)=5。以下哪项描述最准确？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "points": 25,
+            "analysis": "参考要点：一个规则要被称为函数，最重要的就是确定性。如果我去奶茶店指着菜单说‘要这杯夏日特饮’，店主一会儿说10块，一会儿又说15块，那我就没法确定到底要付多少钱。这个映射关系（夏日特饮到价格）就是混乱的、不可用的。在图像上，如果同一个x对应了两个点（一个在上，一个在下），那个图像肯定就不是一个好规则了，因为它给了你两个自相矛盾的结果。",
+            "question": "请用自己的逻辑解释：为什么在一个正常的“规则”下（函数关系），一个x只能匹配一个f(x)，而不能匹配两个f(x)？请举一个你和朋友去奶茶店点单的例子来说明，为什么一个选项得出两个价格是糟糕的规则。",
+            "hasAnswer": false,
+            "commentPrompt": "评分标准：(1) 清晰阐述“一个输入对应唯一输出”是函数规则的核心定义（40%），(2) 使用奶茶店点单的例子恰当地解释“一对多”造成的逻辑混乱和无法确定结果的后果（40%），(3) 语言表达流畅清晰，无逻辑漏洞（20%）。"
+          },
+          {
+            "id": "q6",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 20,
+            "options": [
+              {
+                "label": "一条从点(0,2)开始，先下降后上升的深谷形状",
+                "value": "A"
+              },
+              {
+                "label": "一条从点(0,2)出发，稳定向右上方爬升，并且越往后坡越陡的曲线",
+                "value": "B"
+              },
+              {
+                "label": "一条笔直从点(0,2)向右上方倾斜的直线",
+                "value": "C"
+              },
+              {
+                "label": "一个从点(0,100)开始急速向下坠落的斜坡",
+                "value": "D"
+              }
+            ],
+            "analysis": "通过公式套入几个简单数字来感受形状：当x=0时，(1/10)*(0)+2 = 2，所以起点是(0,2)。当x=1时，值是2.1；x=2时，值是2.4；x=10时，值是12。可见随着x增加，输出的值也在增加，并且增加的量越来越猛（非线性加速），这符合‘坡越来越陡’的曲线描述。A描述的是谷底形状，先下降是错误的。C是直线增长。D是在剧烈下降。",
+            "question": "（迁移题）对于 x>0，函数 f(x)=(1/10)x²+2 从 f(0)=2 开始随 x 增大而上升，且增长速度越来越快。以下哪项描述符合这一变化特征？",
+            "hasAnswer": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_dCsy2bG6",
+          "text": "这是一组关于“后测：函数、坐标与图像读法综合测评”的独立测验。好了，梳理完整节课的脉络，现在到了检验我们学习成果的最后环节。这份综合测评包含了六道题目，它们会从不同角度考察我们对函数、坐标和图像的理解。别紧张，就像我们平时在课堂上做练习一样，认真读题，回想我们讨论过的那些生活例子，你一定可以轻松应对。",
+          "type": "speech"
+        },
+        {
+          "id": "action_hOjb78Lh",
+          "text": "比如，想一想我们反复强调的映射关系，一个输入必须对应唯一一个输出，这就像你的工号只对应你自己一样。再比如，看到图像的趋势，我们要能反推出它可能描述的场景，是注水的桶还是爬山的坡。这些就是我们解决前几道题的关键。",
+          "type": "speech",
+          "audioRef": "audio/tts_s19_action_hOjb78Lh.mp3"
+        },
+        {
+          "id": "action_zdC5MbcT",
+          "text": "特别提醒大家注意第三题和第五题。多选和问答题，需要你把脑子里的知识完整地串联起来，清晰地表达出来。尤其是第五题，别忘了用我们课上举过的奶茶店点单的例子，来解释为什么一个定价选项不能得出两个不同的价格。",
+          "type": "speech",
+          "audioRef": "audio/tts_s19_action_zdC5MbcT.mp3"
+        },
+        {
+          "id": "action_zT9_ga_z",
+          "text": "最后一道迁移题也是个有趣的挑战，它会让你根据函数规则去想象图像的特征。不要求你画出精确的图，而是让你像侦探一样，根据线索排除不合理的选项。好，话不多说，请大家开始你们的综合测评吧。",
+          "type": "speech",
+          "audioRef": "audio/tts_s19_action_zT9_ga_z.mp3"
+        },
+        {
+          "id": "action_0FVcjHby",
+          "type": "discussion",
+          "topic": "完成了所有挑战，你觉得哪道题目让你对“函数”的理解又加深了一层？分享一下你解题时的思考过程。",
+          "prompt": "回顾全课的知识点，谈谈哪个概念的掌握，让你觉得解决这些题目特别得心应手。",
+          "agentIndex": 0
+        }
+      ],
+      "whiteboards": null
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_-SOhCb4G.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104256
+    },
+    "audio/tts_action_2K55B7JJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98448
+    },
+    "audio/tts_action_vFLtmzDC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96696
+    },
+    "audio/tts_s10_action_grfVXl0f.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 142560
+    },
+    "audio/tts_s10_action_OKWkfWjQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100728
+    },
+    "audio/tts_s10_action_v33OHaEH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109776
+    },
+    "audio/tts_s10_action_XFQH4qn1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 120408
+    },
+    "audio/tts_s11_action_c7Bh2ann.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 79968
+    },
+    "audio/tts_s11_action_RLsAPItZ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 145944
+    },
+    "audio/tts_s11_action_VoQfkymK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 163104
+    },
+    "audio/tts_s11_action_wCn5TLH6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 91872
+    },
+    "audio/tts_s12_action_ewCNfVfl.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144168
+    },
+    "audio/tts_s12_action_l-BqaJ1J.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98088
+    },
+    "audio/tts_s12_action_rlHXa9po.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101976
+    },
+    "audio/tts_s12_action_Wojvb76t.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106872
+    },
+    "audio/tts_s12_action_x2Z5IHIV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 178080
+    },
+    "audio/tts_s13_action_6h6l79zc.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 142368
+    },
+    "audio/tts_s13_action_7Z2lujWB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 151248
+    },
+    "audio/tts_s13_action_iEjmZqXu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159336
+    },
+    "audio/tts_s13_action_qqIyPfzq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 123936
+    },
+    "audio/tts_s13_action_te3bI23a.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 103248
+    },
+    "audio/tts_s13_action_tRJGwCXY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138504
+    },
+    "audio/tts_s13_action__3KT8miB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95328
+    },
+    "audio/tts_s14_action_iqgZHHDo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100080
+    },
+    "audio/tts_s14_action_R_oG1X85.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92448
+    },
+    "audio/tts_s14_action_vP5UUgMN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92568
+    },
+    "audio/tts_s14_action_zXGgD2eF.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112776
+    },
+    "audio/tts_s15_action_4GGBkPbR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98208
+    },
+    "audio/tts_s15_action_PvJdyYP9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 82872
+    },
+    "audio/tts_s15_action_qWkSsrvw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100512
+    },
+    "audio/tts_s16_action_2u1nctmG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100032
+    },
+    "audio/tts_s16_action_lO0I34C5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94560
+    },
+    "audio/tts_s16_action_wDQ3CLvS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114000
+    },
+    "audio/tts_s17_action_1EcNfQ8Q.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97296
+    },
+    "audio/tts_s17_action_uDpPFerv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 137472
+    },
+    "audio/tts_s17_action_ZrIgoIYQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 131328
+    },
+    "audio/tts_s17_action_zsmMYK72.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102456
+    },
+    "audio/tts_s18_action_4aZx2hXQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96024
+    },
+    "audio/tts_s18_action_doKF4brN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 79008
+    },
+    "audio/tts_s18_action_KSISLaHH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 51456
+    },
+    "audio/tts_s18_action_SQjqWWuy.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 255648
+    },
+    "audio/tts_s18_action_ZJ1AEfsQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157152
+    },
+    "audio/tts_s19_action_dCsy2bG6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 246456
+    },
+    "audio/tts_s19_action_hOjb78Lh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159768
+    },
+    "audio/tts_s19_action_zdC5MbcT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144144
+    },
+    "audio/tts_s19_action_zT9_ga_z.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 130824
+    },
+    "audio/tts_s2_action_1p80qMb8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114504
+    },
+    "audio/tts_s2_action_CB98sf9I.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 79152
+    },
+    "audio/tts_s2_action_jtXUvF_L.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119256
+    },
+    "audio/tts_s2_action_pmWRp3rD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 60360
+    },
+    "audio/tts_s2_action_vLpAmtYH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119832
+    },
+    "audio/tts_s2_action_zWQpQMiQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157560
+    },
+    "audio/tts_s3_action_8D5KclWC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 165528
+    },
+    "audio/tts_s3_action_Mcw1QEh5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110640
+    },
+    "audio/tts_s3_action_zYg0UsV3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 200280
+    },
+    "audio/tts_s4_action_1zWqNhCs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122160
+    },
+    "audio/tts_s4_action_6MkJaRyp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 52032
+    },
+    "audio/tts_s4_action_9yx2CPWv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 150696
+    },
+    "audio/tts_s4_action_HeWb2rZX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96792
+    },
+    "audio/tts_s4_action_sl15ui_0.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119832
+    },
+    "audio/tts_s5_action_7zKq0o2X.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119520
+    },
+    "audio/tts_s5_action_D1548zPU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 76152
+    },
+    "audio/tts_s5_action_Ex3pQebq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 142968
+    },
+    "audio/tts_s5_action_SUSxVwaI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98424
+    },
+    "audio/tts_s6_action_gX_m8_qN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 73200
+    },
+    "audio/tts_s6_action_L6tHSgkM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 78576
+    },
+    "audio/tts_s6_action_LV8JR9wO.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84504
+    },
+    "audio/tts_s6_action_P6Hgp4ww.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 59952
+    },
+    "audio/tts_s6_action_Y12MS-Mw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159480
+    },
+    "audio/tts_s7_action_H87u8H86.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 137568
+    },
+    "audio/tts_s7_action_i30V6NZA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88896
+    },
+    "audio/tts_s7_action_jxQK-Eqn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122040
+    },
+    "audio/tts_s7_action_Kq1e_xej.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 156312
+    },
+    "audio/tts_s7_action_OZTi_ICj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 68040
+    },
+    "audio/tts_s7_action_uV-x0GE8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93552
+    },
+    "audio/tts_s8_action_-ge4LICH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 86544
+    },
+    "audio/tts_s8_action_hF33x2WD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96696
+    },
+    "audio/tts_s8_action_ls_sQ4R0.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 83256
+    },
+    "audio/tts_s8_action_VFLlabEB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 90456
+    },
+    "audio/tts_s9_action_1autJRJU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95976
+    },
+    "audio/tts_s9_action_3PhEcqs-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125208
+    },
+    "audio/tts_s9_action_5hbAhtXQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 189504
+    },
+    "audio/tts_s9_action_KjfsGboU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100368
+    },
+    "audio/tts_s9_action_LZsnpt6w.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122208
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

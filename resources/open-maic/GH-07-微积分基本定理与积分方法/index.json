@@ -1,0 +1,5762 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T09:59:31.945Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "微积分基本定理与积分方法",
+    "description": "",
+    "language": "本课程采用中文教学，旨在为零基础学生建立微积分的核心直觉。数学术语应使用标准中文表达（如“定积分”、“原函数”、“换元法”），并在必要时标注其数学符号。教学过程应强调物理意义与几何直觉，而非纯粹的公式推导。",
+    "style": "professional",
+    "createdAt": 1783011098866,
+    "updatedAt": 1783011098866
+  },
+  "agents": [
+    {
+      "name": "小荷",
+      "role": "assistant",
+      "persona": "小荷是课堂的活力助教，热爱用动手实验的方式学习数学。她擅长把抽象的公式翻译成具体的操作，经常带领同学们进行拖动实验和游戏挑战。她总说“做一遍就懂了”，并用鼓励的方式帮助遇到困难的学生。",
+      "avatar": "/avatars/assist-2.png",
+      "color": "#10b981",
+      "priority": 7
+    },
+    {
+      "name": "小宇",
+      "role": "student",
+      "persona": "小宇是一位好奇心极强的学生，总是从“为什么”开始思考问题。他喜欢把数学概念和现实世界联系起来，经常提出一些让人意想不到的问题，比如“面积怎么能‘生长’出来呢？”。他偏好空间视角和3D展示，需要看到概念的几何意义才能彻底信服。",
+      "avatar": "/avatars/curious-2.png",
+      "color": "#f59e0b",
+      "priority": 5
+    },
+    {
+      "name": "方老师",
+      "role": "teacher",
+      "persona": "方老师是一位经验丰富的微积分教师，擅长用几何直观和物理类比来揭示数学概念的本质。他上课时常说“我们先看看图像怎么说”，习惯用交互实验和可视化工具引导学生，而非直接推导公式。他重视学生对概念的深层理解，鼓励学生先猜想再验证。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "小静",
+      "role": "student",
+      "persona": "小静是一位认真仔细的学生，笔记做得整整齐齐，喜欢梳理概念之间的逻辑关系。她对“关系图”和“证据链”特别敏感，擅长发现不同知识点之间的内在联系。她有时会陷入对符号的机械记忆，需要通过误解修复挑战来打破这种习惯。",
+      "avatar": "/avatars/thinker-2.png",
+      "color": "#ec4899",
+      "priority": 4
+    },
+    {
+      "name": "阿哲",
+      "role": "student",
+      "persona": "阿哲是一位直觉敏锐的学生，常常能快速抓住问题的核心，但有跳跃性思维和“只记公式”的倾向。他喜欢挑战和游戏化的学习方式，在拼图、天平平衡和卡牌策略中表现出色。他需要在可视化实验中验证自己的直觉，从而建立稳固的理解。",
+      "avatar": "/avatars/clown.png",
+      "color": "#8b5cf6",
+      "priority": 6
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：微积分基本定理与积分方法学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "已知函数f(x)的导数是f'(x) = 2x，那么f(x)可能是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "f(x) = x² + 3"
+              },
+              {
+                "value": "B",
+                "label": "f(x) = 2"
+              },
+              {
+                "value": "C",
+                "label": "f(x) = x³"
+              },
+              {
+                "value": "D",
+                "label": "f(x) = 2x²"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "根据导数与原函数的关系，对f(x)=x²求导得2x。选项B的导数为0，选项C的导数为3x²，选项D的导数为4x。只有选项A求导后得到2x，常数项3在求导后消失，所以f(x)可以是x²+3（实际上x²加任意常数都满足）。这道题考查对‘原函数’概念的直觉：导数是变化率，原函数就是这个变化率积累起来的函数。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "关于定积分∫ₐᵇ f(x)dx的几何意义，以下哪些说法是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "它表示曲线f(x)与x轴在区间[a,b]所围成的有向面积"
+              },
+              {
+                "value": "B",
+                "label": "它表示f(x)在b点的值减去在a点的值"
+              },
+              {
+                "value": "C",
+                "label": "如果f(x)恒为正，它就是曲线下方与x轴上方的实际面积"
+              },
+              {
+                "value": "D",
+                "label": "它表示函数在区间[a,b]上的平均变化率"
+              }
+            ],
+            "answer": [
+              "A",
+              "C"
+            ],
+            "analysis": "定积分的几何意义是有向面积：当函数在x轴上方时面积为正，下方时为负。选项A准确描述了这一概念。选项C是正确的特殊情形。选项B描述的是原函数的差值（牛顿-莱布尼茨公式的内容），不是积分本身的几何意义。选项D描述的是平均变化率，那是导数相关概念。本题考查对'面积累积'这一核心直觉的理解，为后续学习微积分基本定理奠定基础。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "函数h(x) = sin(x²)可以看作是由两个函数复合而成的。它的求导公式反映了什么结构？",
+            "options": [
+              {
+                "value": "A",
+                "label": "两个函数导数的乘积"
+              },
+              {
+                "value": "B",
+                "label": "外层函数导数乘以内层函数导数，像链条一样传递变化率"
+              },
+              {
+                "value": "C",
+                "label": "两个函数导数的和"
+              },
+              {
+                "value": "D",
+                "label": "先对内层求导，再对外层求导，然后取平均值"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "复合函数求导遵循链式法则：h'(x) = cos(x²) · 2x。这就像一条链条，x的变化先引起内层u=x²的变化（变化率2x），再由内层变化引起外层sin(u)的变化（变化率cos(u)），总变化率是两个变化率的乘积。选项A缺乏链条传递的层次感，选项C是求和法则，选项D是错误描述。这道题为后续学习换元积分法（链式法则的逆向）做准备。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "如果已知两个函数u(x)和v(x)的导数分别是u'和v'，那么它们的乘积的导数(u·v)'是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "u' · v'"
+              },
+              {
+                "value": "B",
+                "label": "u' + v'"
+              },
+              {
+                "value": "C",
+                "label": "u'·v + u·v'，即每个函数轮流求导再相加"
+              },
+              {
+                "value": "D",
+                "label": "u·v'"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "乘积求导法则（莱布尼茨法则）是(u·v)' = u'·v + u·v'。直观理解：乘积的变化来自两部分——u变化时v保持不变（u'·v），加上v变化时u保持不变（u·v'）。选项A是错误地将求导分配到乘积中，选项B是和的求导法则，选项D只考虑了一部分变化。这道题考查对乘积求导结构的直觉，为后续学习分部积分法（乘积求导的逆向）做铺垫。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "一个物体做变速直线运动，速度v(t)随时间变化。请用你自己的话解释：为什么速度曲线下方与时间轴围成的面积等于物体在这段时间内移动的总距离？尝试把这个面积想象成由无数个极短时间内的微小位移累积而成。",
+            "commentPrompt": "评分标准：(1) 能将总距离分解为无数个微小时间段的位移——40%；(2) 认识到每个微小时间段的位移近似等于速度×时间（即矩形面积）——30%；(3) 表达清晰，体现出'累积'或'极限求和'的思想——30%。",
+            "analysis": "参考答案要点：把一段时间分割成很多极短的时间小段，在每一小段内速度几乎不变，所以这一段移动的距离近似等于速度乘以这一小段时间（就是一个小矩形的面积）。把所有小矩形的面积加起来，就近似等于总距离。时间分割得越细，近似就越精确。当分割无限细时，这些矩形面积的总和（定积分）就精确等于速度曲线下的面积，也就是总距离。这就是'面积累积'的物理直觉，也是微积分基本定理的直观基础。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_cAHm4gIw",
+          "type": "speech",
+          "text": "这是一组关于“前测：微积分基本定理与积分方法学习准备诊断”的独立测验。在接下来的课程中，我们会一起借助图像、实验和空间想象，来揭开微积分的神秘面纱。"
+        },
+        {
+          "id": "action_7e-673-o",
+          "type": "speech",
+          "text": "今天我们的第一站，是一个小小的“前测”。大家别紧张，这不算成绩，只是帮我们互相了解一下，看看大家对导数、变化率和面积累积这些概念，已经有了怎样的直觉。",
+          "audioRef": "audio/tts_action_7e-673-o.mp3"
+        },
+        {
+          "id": "action_YT-mO-V_",
+          "type": "speech",
+          "text": "这里有五道题，涵盖了从原函数、定积分的几何意义，到复合函数和乘积的求导逻辑。有些你也许已经会算了，有些可能只是凭感觉猜。没关系，凭你的第一直觉来选就好，尤其是最后一道简答题，用你自己的话，把想法大胆地写出来。",
+          "audioRef": "audio/tts_action_YT-mO-V_.mp3"
+        },
+        {
+          "id": "action_1Rmb-lh1",
+          "type": "speech",
+          "text": "准备好了吗？让我们开始吧！看看我们对未来的知识，已经超前地预感到了多少。",
+          "audioRef": "audio/tts_action_1Rmb-lh1.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "变上限积分",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "hAuqUuBrKqXhGlwmWmvqU",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_p0iPO6Ks",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #003366;\">变上限积分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#003366"
+            },
+            {
+              "type": "text",
+              "id": "text_njRsU51v",
+              "left": 60,
+              "top": 126,
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #666666;\">从面积累积到导数还原</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "shape",
+              "id": "shape_YMwmfDSW",
+              "left": 60,
+              "top": 165,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#003366"
+            },
+            {
+              "type": "text",
+              "id": "text_vjK7Pzq3",
+              "left": 60,
+              "top": 180,
+              "width": 480,
+              "height": 62,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>定义：</b>设 f(t) 在 [a,b] 上连续，称 F(x)=∫_a^x f(t)dt 为变上限积分函数。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text__nOqqHUQ",
+              "left": 60,
+              "top": 242,
+              "width": 480,
+              "height": 42,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>几何意义：</b>F(x) 表示从 a 到 x 的有向面积。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_IUIjrFJM",
+              "left": 60,
+              "top": 284,
+              "width": 480,
+              "height": 42,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>核心结论：</b>F'(x) = f(x)（微积分基本定理第一部分）。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_JUckBzZa",
+              "left": 60,
+              "top": 326,
+              "width": 480,
+              "height": 56,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>直觉理解：</b>当 x 增加 Δx，面积增量 ≈ f(x)Δx，故面积变化率 = f(x)。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_w2XzsT5W",
+              "left": 60,
+              "top": 382,
+              "width": 480,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>常见误解：</b>只记公式 F'(x)=f(x)，却不知为何——不理解上限变动导致新增“细条”面积的直觉。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_VtNy1JFc",
+              "left": 580,
+              "top": 180,
+              "width": 360,
+              "height": 302,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8f9fa"
+            },
+            {
+              "type": "text",
+              "id": "text_s-2M30i1",
+              "left": 600,
+              "top": 195,
+              "width": 320,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #003366;\">推导过程：</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#003366"
+            },
+            {
+              "type": "latex",
+              "id": "latex_5xpXNgzz",
+              "left": 600,
+              "top": 245,
+              "width": 320,
+              "height": 60,
+              "rotate": 0,
+              "latex": "F(x+\\Delta x)-F(x)=\\int_x^{x+\\Delta x} f(t)dt \\approx f(x)\\cdot\\Delta x",
+              "color": "#333333",
+              "align": "left",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.5032em;vertical-align:-0.9119em;\"></span><span class=\"mop\"><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.5912em;\"><span style=\"top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">x</span></span></span><span style=\"top:-3.8129em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mbin mtight\">+</span><span class=\"mord mtight\">Δ</span><span class=\"mord mathnormal mtight\">x</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9119em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">t</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">t</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">≈</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">⋅</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "text",
+              "id": "text_T61mL6D9",
+              "left": 600,
+              "top": 310,
+              "width": 320,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #666666;\">（由积分中值定理）</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "latex",
+              "id": "latex_nwAFSy4M",
+              "left": 600,
+              "top": 355,
+              "width": 320,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\lim_{\\Delta x \\to 0} \\frac{F(x+\\Delta x)-F(x)}{\\Delta x} = f(x)",
+              "color": "#333333",
+              "align": "left",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.1713em;vertical-align:-0.7443em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.3557em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">Δ</span><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7443em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "text",
+              "id": "text_sJ3T9C5E",
+              "left": 600,
+              "top": 420,
+              "width": 320,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #666666;\">两端除以 Δx 取极限</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "line",
+              "id": "line_WU5obe7t",
+              "left": 100,
+              "top": 535,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                420,
+                0
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_MVDtC_r2",
+              "left": 100,
+              "top": 448,
+              "width": 2,
+              "start": [
+                0,
+                87
+              ],
+              "end": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_LQ1QtNSb",
+              "left": 100,
+              "top": 458,
+              "width": 3,
+              "start": [
+                0,
+                77
+              ],
+              "end": [
+                380,
+                0
+              ],
+              "style": "solid",
+              "color": "#003366",
+              "points": [
+                "",
+                ""
+              ],
+              "cubic": [
+                [
+                  150,
+                  130
+                ],
+                [
+                  250,
+                  10
+                ]
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_8CaYwBOA",
+              "left": 140,
+              "top": 495,
+              "width": 260,
+              "height": 65,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4A90D9",
+              "opacity": 0.3
+            },
+            {
+              "type": "shape",
+              "id": "shape_gpcue3hq",
+              "left": 400,
+              "top": 495,
+              "width": 30,
+              "height": 65,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFC000",
+              "opacity": 0.5
+            },
+            {
+              "type": "line",
+              "id": "line_TiIy6y71",
+              "left": 140,
+              "top": 530,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                10
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_vvWrSIc1",
+              "left": 400,
+              "top": 530,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                10
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_KyYNJ23T",
+              "left": 430,
+              "top": 530,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                10
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_H2ofC7On",
+              "left": 380,
+              "top": 470,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                65
+              ],
+              "style": "dashed",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_RyniN4ud",
+              "left": 125,
+              "top": 530,
+              "width": 30,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">a</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_ccBkVmz5",
+              "left": 385,
+              "top": 530,
+              "width": 30,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">x</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_BErqMd7V",
+              "left": 415,
+              "top": 530,
+              "width": 30,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">x+Δx</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_cS7v0RVF",
+              "left": 340,
+              "top": 507,
+              "width": 40,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #003366;\">f(x)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#003366"
+            },
+            {
+              "type": "text",
+              "id": "text_Uozm8Km0",
+              "left": 449,
+              "top": 507,
+              "width": 40,
+              "height": 30,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #003366;\">Δx</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#003366"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_ZVHW96_l",
+          "type": "spotlight",
+          "elementId": "text_p0iPO6Ks"
+        },
+        {
+          "id": "action_xQwW57EA",
+          "type": "speech",
+          "text": "本场景聚焦“变上限积分”。我们深入一个非常核心的概念——变上限积分。它就像是从面积累积到导数还原的一座桥梁。"
+        },
+        {
+          "id": "action_OkMMyC9J",
+          "type": "spotlight",
+          "elementId": "text_vjK7Pzq3"
+        },
+        {
+          "id": "action_sL4-pj0U",
+          "type": "speech",
+          "text": "我们来看它的定义：假设f(t)在区间[a, b]上连续，我们称函数F(x)等于从a到x的积分。注意，这个x既是积分上限，又是函数自变量。",
+          "audioRef": "audio/tts_s2_action_sL4-pj0U.mp3"
+        },
+        {
+          "id": "action_Ir5nIh8c",
+          "type": "spotlight",
+          "elementId": "text__nOqqHUQ"
+        },
+        {
+          "id": "action_ESahPnnS",
+          "type": "speech",
+          "text": "从几何上看，F(x)表示的就是从a到x这段曲线下的曲边梯形面积。所以，F(x)本质上是一个不断变化的累积面积。",
+          "audioRef": "audio/tts_s2_action_ESahPnnS.mp3"
+        },
+        {
+          "id": "action_pOcV00FR",
+          "type": "spotlight",
+          "elementId": "text_IUIjrFJM"
+        },
+        {
+          "id": "action_UqH2FjnD",
+          "type": "speech",
+          "text": "这就引出了我们今天的核心结论：F(x)的导数就等于被积函数f(x)本身。这就是微积分基本定理的第一部分，它揭示了微分和积分之间的互逆关系。",
+          "audioRef": "audio/tts_s2_action_UqH2FjnD.mp3"
+        },
+        {
+          "id": "action_dNYG5GZT",
+          "type": "spotlight",
+          "elementId": "text_JUckBzZa"
+        },
+        {
+          "id": "action_1G9bXdpp",
+          "type": "speech",
+          "text": "直觉上怎么理解呢？当x增加一个微小的Δx时，面积的增量就近似于一条宽度为Δx、高度为f(x)的细长条。所以面积的变化率自然就是f(x)。",
+          "audioRef": "audio/tts_s2_action_1G9bXdpp.mp3"
+        },
+        {
+          "id": "action_zytnhAYg",
+          "type": "spotlight",
+          "elementId": "text_w2XzsT5W"
+        },
+        {
+          "id": "action_Nqa-rVcR",
+          "type": "speech",
+          "text": "很多同学容易在这里陷入一个误解：只记住了F'(x)=f(x)这个公式，却不知道它为什么成立。不理解上限变化是如何产生新增‘细条’面积的直觉，公式就只是一个空洞的符号。",
+          "audioRef": "audio/tts_s2_action_Nqa-rVcR.mp3"
+        },
+        {
+          "id": "action_SjgORkM7",
+          "type": "spotlight",
+          "elementId": "latex_5xpXNgzz"
+        },
+        {
+          "id": "action_RsfTUpCt",
+          "type": "speech",
+          "text": "我们来简单看一下推导过程，看看这个直觉是如何用数学语言精确表达的。",
+          "audioRef": "audio/tts_s2_action_RsfTUpCt.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "变上限积分：拖动实验",
+      "order": 3,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "variable_upper_limit_integral",
+          "description": "拖动积分上限x，观察面积增量ΔS与被积函数值f(x)的关系。当Δx趋近于0时，ΔS/Δx的比值趋近于f(x)，验证微积分基本定理。",
+          "variables": [
+            {
+              "name": "upper_limit_x",
+              "label": "积分上限 x",
+              "min": 1,
+              "max": 5,
+              "default": 2,
+              "unit": ""
+            },
+            {
+              "name": "delta_x_width",
+              "label": "增量 Δx",
+              "min": 0.02,
+              "max": 1.5,
+              "default": 0.5,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "小增量",
+              "variables": {
+                "upper_limit_x": 2.5,
+                "delta_x_width": 0.05
+              }
+            },
+            {
+              "name": "中等增量",
+              "variables": {
+                "upper_limit_x": 2.5,
+                "delta_x_width": 0.3
+              }
+            },
+            {
+              "name": "大增量",
+              "variables": {
+                "upper_limit_x": 2.5,
+                "delta_x_width": 1
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/03_变上限积分：拖动实验.html",
+        "htmlBytes": 776242
+      },
+      "actions": [
+        {
+          "id": "action_TRlSl0TS",
+          "type": "speech",
+          "text": "本场景通过交互探索“变上限积分：拖动实验”。现在让我们亲手来拖动一下，看看面积增量是怎么跟着上限变化的。"
+        },
+        {
+          "id": "action_Cmcpb5wj",
+          "type": "widget_highlight",
+          "target": "#upper_limit_x-slider",
+          "content": "拖动这个滑块改变积分上限 x"
+        },
+        {
+          "id": "action_yZKwJXcD",
+          "type": "speech",
+          "text": "请先拖动上面的滑块，把积分上限 x 调到 2.5 左右。观察一下阴影面积是怎么变化的。",
+          "audioRef": "audio/tts_s3_action_yZKwJXcD.mp3"
+        },
+        {
+          "id": "action_PKNaTwKQ",
+          "type": "widget_setState",
+          "state": {
+            "upper_limit_x": 2.5,
+            "delta_x_width": 0.5
+          },
+          "content": "设置上限为 2.5，增量宽度为 0.5"
+        },
+        {
+          "id": "action_WcpJXtjR",
+          "type": "speech",
+          "text": "现在注意看，右侧绿色的增量区域。它的高大约是被积函数 f(x) 在当前 x 点的值，宽是 Δx。面积增量 ΔS 是不是大约等于 f(x) 乘 Δx？",
+          "audioRef": "audio/tts_s3_action_WcpJXtjR.mp3"
+        },
+        {
+          "id": "action_9csA1Zre",
+          "type": "widget_reveal",
+          "target": "#ratio-display",
+          "content": "显示 ΔS/Δx 的比值读数"
+        },
+        {
+          "id": "action_JsHzO-II",
+          "type": "speech",
+          "text": "看这里的比值读数。现在请慢慢把 Δx 滑块往左边拖，让它越来越小，观察到比值在怎样变化？",
+          "audioRef": "audio/tts_s3_action_JsHzO-II.mp3"
+        },
+        {
+          "id": "action_vy_C6ZJ-",
+          "type": "widget_setState",
+          "state": {
+            "upper_limit_x": 2.5,
+            "delta_x_width": 0.05
+          },
+          "content": "切换到小增量预设，Δx 趋近于 0"
+        },
+        {
+          "id": "action_JlD14Wnu",
+          "type": "speech",
+          "text": "当 Δx 接近 0 的时候，ΔS/Δx 的比值几乎和 f(x) 的值重合了——这正是微积分基本定理在告诉我们的事情。",
+          "audioRef": "audio/tts_s3_action_JlD14Wnu.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "变上限积分：关系图",
+      "order": 4,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "变上限积分：关系图",
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "f(x)",
+              "sublabel": "被积函数",
+              "icon": "📈",
+              "x": 430,
+              "y": 70,
+              "details": "给定一个连续函数 f(x)，作为积分运算的起点。在几何上，f(x) 的图像与 x 轴围成的面积是我们关注的对象。",
+              "formula": "f ∈ C[a,b]（连续函数）"
+            },
+            {
+              "id": "n2",
+              "label": "F(x)",
+              "sublabel": "原函数",
+              "icon": "🔗",
+              "x": 160,
+              "y": 210,
+              "details": "F(x) 是 f(x) 的**原函数**（不定积分），满足 F'(x) = f(x)。注意原函数不唯一，相差一个常数 C。求原函数就是**求积**运算。",
+              "formula": "F(x) = ∫ f(x)dx + C"
+            },
+            {
+              "id": "n3",
+              "label": "Φ(x)",
+              "sublabel": "变上限积分函数",
+              "icon": "∫",
+              "x": 700,
+              "y": 210,
+              "details": "Φ(x) = ∫ₐˣ f(t)dt 是以 x 为上积分限的**变上限积分函数**。它将积分区间的上限视为变量，构造出一个新的函数。这是连接积分与导数的关键桥梁。",
+              "formula": "Φ(x) = ∫ₐˣ f(t)dt"
+            },
+            {
+              "id": "n4",
+              "label": "Φ'(x) = f(x)",
+              "sublabel": "微积分基本定理",
+              "icon": "🌟",
+              "x": 700,
+              "y": 370,
+              "details": "**微积分基本定理**（牛顿-莱布尼茨公式的核心）：变上限积分函数 Φ(x) 对 x 求导，结果恰好等于被积函数在上限处的值 f(x)。这揭示了**积分与求导互为逆运算**的深刻关系。",
+              "formula": "d/dx ∫ₐˣ f(t)dt = f(x)"
+            },
+            {
+              "id": "n5",
+              "label": "牛顿-莱布尼茨公式",
+              "sublabel": "定积分求值",
+              "icon": "📐",
+              "x": 430,
+              "y": 500,
+              "details": "利用原函数计算定积分的**牛顿-莱布尼茨公式**。将变上限 x 固定为 b，下限为 a，即可得到：∫ₐᵇ f(x)dx = F(b) − F(a)。这是微积分中最重要的计算公式。",
+              "formula": "∫ₐᵇ f(x)dx = F(b) − F(a)"
+            },
+            {
+              "id": "n6",
+              "label": "公式陷阱 ⚠️",
+              "sublabel": "上限变化的影响",
+              "icon": "⚡",
+              "x": 430,
+              "y": 620,
+              "details": "当积分上限不是简单的 x，而是 x 的复合函数时（如 x²、sin x），**不能直接代入**！需要使用**链式法则**。这是考试中最容易出错的地方，务必注意区分。",
+              "formula": "d/dx ∫ₐ^{g(x)} f(t)dt = f(g(x))·g'(x)",
+              "warn": "d/dx ∫ₐ^{x²} f(t)dt ≠ f(x²)，而是 f(x²)·2x"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "求原函数（求积）",
+              "color": "blue"
+            },
+            {
+              "from": "n2",
+              "to": "n1",
+              "label": "求导",
+              "color": "green"
+            },
+            {
+              "from": "n1",
+              "to": "n3",
+              "label": "积分累积（求积）",
+              "color": "blue"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "求导",
+              "color": "green"
+            },
+            {
+              "from": "n4",
+              "to": "n1",
+              "label": "等价于 f(x)",
+              "color": "orange"
+            },
+            {
+              "from": "n2",
+              "to": "n5",
+              "label": "代入端点 a,b",
+              "color": "purple"
+            },
+            {
+              "from": "n5",
+              "to": "n6",
+              "label": "注意上限变化！",
+              "color": "red"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6"
+          ]
+        },
+        "htmlPath": "interactive/04_变上限积分：关系图.html",
+        "htmlBytes": 765551
+      },
+      "actions": [
+        {
+          "id": "action_T7c8qs-g",
+          "type": "speech",
+          "text": "本场景通过交互探索“变上限积分：关系图”。我们看到面积变化的比率逐渐逼近 f(x) 的值。这个漂亮的结论，其实就藏在今天这张关系图里。我们先从最熟悉的 f(x) 开始，看看它是怎么“生长”出其他概念的。"
+        },
+        {
+          "id": "action_YW-uUhOZ",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "这是我们的出发点——被积函数 f(x)。"
+        },
+        {
+          "id": "action_-OXH0Exo",
+          "type": "speech",
+          "text": "f(x) 是起点。现在，试着点击一下这个节点，看看它如何向下连接到 Φ(x)——那个我们刚刚操作过的变上限积分函数。",
+          "audioRef": "audio/tts_s4_action_-OXH0Exo.mp3"
+        },
+        {
+          "id": "action_tyvESq7i",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "请点击节点查看 Φ(x) 的完整定义和公式。"
+        },
+        {
+          "id": "action_t6UFWR-g",
+          "type": "speech",
+          "text": "很好，Φ(x) 出现了。注意看这条蓝色的连线，它代表“求积”的过程，把 f(t) 在从 a 到 x 的区间上累加起来。那反过来呢？你刚刚不是好奇面积怎么能“生长”吗？秘密就在这条绿色的线上——我们对 Φ(x) 求导，会得到什么？"
+        },
+        {
+          "id": "action_M9wRo92V",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "点击这里揭示微积分基本定理的核心结论。"
+        },
+        {
+          "id": "action_mnMHUWZe",
+          "type": "speech",
+          "text": "看，Φ'(x) = f(x)！这条橙色的线直接连回了 f(x)，完美地展示了积分和求导如何互逆。不过，在图的底部，还有一个闪着红光的“公式陷阱”。我们点开它，看看为什么上限一旦变得复杂，这个完美的互逆关系就需要加上一把“链式法则”的锁。",
+          "audioRef": "audio/tts_s4_action_mnMHUWZe.mp3"
+        },
+        {
+          "id": "action_sPzbbbkU",
+          "type": "widget_highlight",
+          "target": "#n6",
+          "content": "重点查看这个公式陷阱，注意上限变化时求导的链式法则。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "变上限积分：误解修复挑战",
+      "order": 5,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "通过拼图游戏修复'只背公式'的误解。拖拽面积微元到正确位置，理解变上限积分的几何意义。",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/05_变上限积分：误解修复挑战.html",
+        "htmlBytes": 789965
+      },
+      "actions": [
+        {
+          "id": "action_YjB2THaa",
+          "type": "speech",
+          "text": "本场景通过交互探索“变上限积分：误解修复挑战”。简单的互逆关系就不够用了。很多同学在这里会掉进“只背公式”的坑里。"
+        },
+        {
+          "id": "action_7LhLv4na",
+          "type": "speech",
+          "text": "现在我们来玩一个拼图挑战，亲手把那些容易误解的地方“修复”好。规则很简单：把左边的面积微元拖到右边积分曲线对应的阴影区里。只有形状和位置都对了，才算通关。",
+          "audioRef": "audio/tts_s5_action_7LhLv4na.mp3"
+        },
+        {
+          "id": "action_cdz52YaW",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始，进入第一关。"
+        },
+        {
+          "id": "action_PM8sqeQG",
+          "type": "speech",
+          "text": "好，看到画面中出现的第一个不规则面积微元了吗？注意它的形状——它精确地对应了函数在某个小区间上增加的面积。试着把它拖到变上限积分曲线下，看它应该卡在哪个位置。",
+          "audioRef": "audio/tts_s5_action_PM8sqeQG.mp3"
+        },
+        {
+          "id": "action_IOB3RJ_I",
+          "type": "widget_highlight",
+          "target": "#puzzle-area",
+          "content": "将微元拖入这个阴影区。"
+        },
+        {
+          "id": "action_9qgqJXi5",
+          "type": "speech",
+          "text": "接下来的关卡会更难：你需要预测——当我移动积分上限时，新增的面积会是什么形状？这考查的是你对“积分上限函数”增量几何意义的真正理解，而不是套用公式。",
+          "audioRef": "audio/tts_s5_action_9qgqJXi5.mp3"
+        },
+        {
+          "id": "action_a30U5878",
+          "type": "speech",
+          "text": "大家说得好，“做一遍就懂了”。不用怕出错，每次对齐失败都会有提示，帮你看到面积和函数值之间的真实联系。通关的同学会获得积分奖励，挑战一下吧！"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "变上限积分：空间视角",
+      "order": 6,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "变上限积分的空间视角：展示函数f(t)从0到x的积分面积如何随上限x的变化而累积生长。黄色曲线为被积函数f(t)=sin(t)+0.3·sin(3t)，蓝色半透明区域为正面积，红色为负面积，右侧Y轴方向的柱体表示累积积分值F(x)。拖动滑块或点击播放可观察面积的生长过程。",
+          "objects": [
+            {
+              "id": "curve_mesh",
+              "type": "line",
+              "description": "被积函数 f(t) = sin(t) + 0.3·sin(3t) 的图像曲线（金色）",
+              "material": {
+                "type": "line",
+                "color": "#ffaa00"
+              }
+            },
+            {
+              "id": "area_volume",
+              "type": "mesh",
+              "description": "从0到x的函数下方面积（蓝色=正，红色=负，半透明）",
+              "material": {
+                "type": "translucent",
+                "colors": [
+                  "#4488ff",
+                  "#ff4444"
+                ]
+              }
+            },
+            {
+              "id": "limit_plane",
+              "type": "plane",
+              "description": "当前积分上限x处的垂直标记面（白色半透明）",
+              "material": {
+                "type": "translucent",
+                "color": "#ffffff"
+              }
+            },
+            {
+              "id": "integral_bar",
+              "type": "mesh",
+              "description": "累积积分值 F(x) 的柱体表示（沿Y轴）",
+              "material": {
+                "type": "phong",
+                "color": "#44cc88"
+              }
+            },
+            {
+              "id": "current_point",
+              "type": "sphere",
+              "description": "当前x点处曲线上的标记点（红色脉冲）",
+              "material": {
+                "type": "emissive",
+                "color": "#ff4444"
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "x",
+              "min": 0,
+              "max": 6.283,
+              "step": 0.02,
+              "default": 0,
+              "label": "积分上限 x"
+            },
+            {
+              "type": "button",
+              "action": "play",
+              "label": "▶ 播放"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "↺ 重置"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "+"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "−"
+            }
+          ],
+          "presets": [
+            {
+              "name": "初始状态",
+              "state": {
+                "x": 0,
+                "cameraPosition": [
+                  5,
+                  8,
+                  14
+                ],
+                "cameraTarget": [
+                  3,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "半个周期",
+              "state": {
+                "x": 3.142,
+                "cameraPosition": [
+                  5,
+                  8,
+                  14
+                ],
+                "cameraTarget": [
+                  3,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "完整周期",
+              "state": {
+                "x": 6.283,
+                "cameraPosition": [
+                  5,
+                  8,
+                  14
+                ],
+                "cameraTarget": [
+                  3,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "俯视视角",
+              "state": {
+                "x": 4.5,
+                "cameraPosition": [
+                  3,
+                  15,
+                  1
+                ],
+                "cameraTarget": [
+                  3,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧面视角",
+              "state": {
+                "x": 4.5,
+                "cameraPosition": [
+                  10,
+                  2,
+                  0
+                ],
+                "cameraTarget": [
+                  3,
+                  0,
+                  0
+                ]
+              }
+            }
+          ],
+          "axes": {
+            "x": {
+              "label": "积分变量 t",
+              "color": "#4488ff",
+              "range": [
+                0,
+                6.283
+              ]
+            },
+            "y": {
+              "label": "累积积分值 F(x)",
+              "color": "#ff6644"
+            },
+            "z": {
+              "label": "函数值 f(t)",
+              "color": "#44cc44",
+              "range": [
+                -2.5,
+                2.5
+              ]
+            }
+          }
+        },
+        "htmlPath": "interactive/06_变上限积分：空间视角.html",
+        "htmlBytes": 2511805
+      },
+      "actions": [
+        {
+          "id": "action_TFeKz2J0",
+          "type": "speech",
+          "text": "本场景通过交互探索“变上限积分：空间视角”。把变上限积分里面积和函数值的关联练熟了。现在，大家想请你们从另一个维度来看它——我们直接走进3D空间，看面积是如何随着上限“长”出来的。"
+        },
+        {
+          "id": "action_R15wneiL",
+          "type": "widget_setState",
+          "state": {
+            "x": 0,
+            "cameraPosition": [
+              5,
+              8,
+              14
+            ],
+            "cameraTarget": [
+              3,
+              0,
+              0
+            ]
+          },
+          "content": "恢复初始视角，积分上限x为0。"
+        },
+        {
+          "id": "action_dXHSCeq4",
+          "type": "speech",
+          "text": "这个金色的曲线就是被积函数，目前积分上限在0的位置，所以还没有面积，对应的累积积分柱体高度也是0。",
+          "audioRef": "audio/tts_s6_action_dXHSCeq4.mp3"
+        },
+        {
+          "id": "action_0Mh9JsPj",
+          "type": "widget_highlight",
+          "target": "#integral_bar",
+          "content": "右侧Y轴方向绿色的柱体，表示当前的累积积分值F(x)。"
+        },
+        {
+          "id": "action_fS4GCx0N",
+          "type": "speech",
+          "text": "大家注意看这条绿色柱体，它会随着面积的生长而升降。现在，请试着慢慢拖动“积分上限x”的滑块，观察蓝红色的面积切片，和这条绿色柱体是如何同步变化的。",
+          "audioRef": "audio/tts_s6_action_fS4GCx0N.mp3"
+        },
+        {
+          "id": "action_bsyF1pEn",
+          "type": "widget_highlight",
+          "target": "#controls",
+          "content": "拖动这里的x滑块来“生长”面积。"
+        },
+        {
+          "id": "action_vtiJ-lKg",
+          "type": "speech",
+          "text": "如果你想让视角看得更清楚，可以随时旋转模型。试试上方的“俯视视角”，你能看到二维平面上的标准面积图；再切到“侧面视角”，就能清晰地看到绿色柱体随着x上限的移动而起伏——这其实就是积分函数F(x)的3D图像。",
+          "audioRef": "audio/tts_s6_action_vtiJ-lKg.mp3"
+        },
+        {
+          "id": "action_CrIYn-Uv",
+          "type": "widget_annotation",
+          "target": "#limit_plane",
+          "content": "白色半透明平面标记着当前积分上限的位置。"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "牛顿-莱布尼茨公式",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "KIHCYiICQLzwH2R3OJUhY",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_AEi445LX",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1A237E;\">牛顿-莱布尼茨公式</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A237E"
+            },
+            {
+              "type": "text",
+              "id": "text_l21X1jj1",
+              "left": 100,
+              "top": 126,
+              "width": 800,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; text-align: center; color: #424242;\">利用原函数计算定积分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#424242"
+            },
+            {
+              "type": "line",
+              "id": "line_v5xy-Aal",
+              "left": 100,
+              "top": 175,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                800,
+                0
+              ],
+              "style": "solid",
+              "color": "#BDBDBD",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_r2MML4GZ",
+              "left": 50,
+              "top": 190,
+              "width": 360,
+              "height": 100,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E3F2FD"
+            },
+            {
+              "type": "latex",
+              "id": "latex_fhjouUdj",
+              "left": 70,
+              "top": 210,
+              "width": 320,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\int_a^b f(x)\\,dx = F(b) - F(a)",
+              "color": "#212121",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.511em;vertical-align:-0.9119em;\"></span><span class=\"mop\"><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.599em;\"><span style=\"top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">a</span></span></span><span style=\"top:-3.8129em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">b</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9119em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">b</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">a</span><span class=\"mclose\">)</span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_csLcNkaf",
+              "left": 50,
+              "top": 305,
+              "width": 360,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #333333;\">定积分的值等于原函数在积分区间端点函数值的差。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "table",
+              "id": "table_N331gFtf",
+              "left": 450,
+              "top": 190,
+              "width": 500,
+              "height": 140,
+              "rotate": 0,
+              "outline": {
+                "style": "solid",
+                "width": 1,
+                "color": "#BDBDBD"
+              },
+              "colWidths": [
+                0.25,
+                0.4,
+                0.35
+              ],
+              "cellMinHeight": 40,
+              "data": [
+                [
+                  {
+                    "id": "h1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "概念",
+                    "style": {
+                      "bold": true,
+                      "color": "#FFFFFF",
+                      "backcolor": "#1565C0",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "符号",
+                    "style": {
+                      "bold": true,
+                      "color": "#FFFFFF",
+                      "backcolor": "#1565C0",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "本质",
+                    "style": {
+                      "bold": true,
+                      "color": "#FFFFFF",
+                      "backcolor": "#1565C0",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r1c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "定积分",
+                    "style": {
+                      "color": "#333333",
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r1c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "∫ₐᵇ f(x)dx",
+                    "style": {
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r1c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "数值（面积）",
+                    "style": {
+                      "color": "#333333",
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r2c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "不定积分",
+                    "style": {
+                      "color": "#333333",
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r2c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "∫ f(x)dx",
+                    "style": {
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r2c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "函数族",
+                    "style": {
+                      "color": "#333333",
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "shape",
+              "id": "shape_ySogOZhx",
+              "left": 100,
+              "top": 390,
+              "width": 160,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#BBDEFB"
+            },
+            {
+              "type": "text",
+              "id": "text_L-zPvo5J",
+              "left": 120,
+              "top": 392,
+              "width": 120,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1565C0; font-weight: bold;\">不定积分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1565C0"
+            },
+            {
+              "type": "line",
+              "id": "line_vTMR85iy",
+              "left": 260,
+              "top": 415,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                80,
+                0
+              ],
+              "style": "solid",
+              "color": "#1565C0",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_0ykGCztD",
+              "left": 340,
+              "top": 390,
+              "width": 160,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#BBDEFB"
+            },
+            {
+              "type": "text",
+              "id": "text_HBgNazAd",
+              "left": 360,
+              "top": 392,
+              "width": 120,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1565C0; font-weight: bold;\">原函数(F)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1565C0"
+            },
+            {
+              "type": "line",
+              "id": "line_RVP3gr5m",
+              "left": 500,
+              "top": 415,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                80,
+                0
+              ],
+              "style": "solid",
+              "color": "#1565C0",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_C6uIa9MT",
+              "left": 580,
+              "top": 390,
+              "width": 160,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#BBDEFB"
+            },
+            {
+              "type": "text",
+              "id": "text_vyBXfmGm",
+              "left": 600,
+              "top": 392,
+              "width": 120,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1565C0; font-weight: bold;\">定积分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1565C0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_m_lGisOD",
+              "left": 50,
+              "top": 460,
+              "width": 900,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFEBEE"
+            },
+            {
+              "type": "text",
+              "id": "text_fl6cf3lj",
+              "left": 70,
+              "top": 462,
+              "width": 860,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #C62828; font-weight: bold;\">注意：定积分结果是数值，不定积分结果是函数族，两个符号 <span style=\"font-family: monospace;\">∫</span> 与 <span style=\"font-family: monospace;\">∫</span> 意义不同，切勿混淆。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#C62828"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_6KL3-H_r",
+          "type": "spotlight",
+          "elementId": "text_AEi445LX"
+        },
+        {
+          "id": "action_H58Uz9t9",
+          "type": "speech",
+          "text": "本场景聚焦“牛顿-莱布尼茨公式”。各位同学，刚才我们看了变上限积分那个会‘生长’的面积。那怎么把这个面积精确地算出来呢？这就是我们今天的主角——牛顿-莱布尼茨公式。"
+        },
+        {
+          "id": "action_zc-F5DC9",
+          "type": "spotlight",
+          "elementId": "latex_fhjouUdj"
+        },
+        {
+          "id": "action_UfDXw0SE",
+          "type": "speech",
+          "text": "来看这个公式。它说，定积分 ∫_a^b f(x) dx 的值，就等于被积函数 f(x) 的任意一个原函数 F(x)，在上限 b 和下限 a 处的函数值之差，也就是 F(b) 减去 F(a)。",
+          "audioRef": "audio/tts_s7_action_UfDXw0SE.mp3"
+        },
+        {
+          "id": "action_uhI1VA3i",
+          "type": "spotlight",
+          "elementId": "text_csLcNkaf"
+        },
+        {
+          "id": "action_fml6c-FV",
+          "type": "speech",
+          "text": "简单说，它把求面积这个复杂的极限问题，转化成了一个简单的代入计算。你只要能找到 F，然后做个减法，结果就出来了，非常漂亮。",
+          "audioRef": "audio/tts_s7_action_fml6c-FV.mp3"
+        },
+        {
+          "id": "action_-NWpV9Zl",
+          "type": "spotlight",
+          "elementId": "text_HBgNazAd"
+        },
+        {
+          "id": "action_YCtkg3T-",
+          "type": "speech",
+          "text": "这里的关键角色就是‘原函数’。注意看左边，定积分的符号里，上下限 a 和 b 是标出来的。",
+          "audioRef": "audio/tts_s7_action_YCtkg3T-.mp3"
+        },
+        {
+          "id": "action_YOA3MLEI",
+          "type": "spotlight",
+          "elementId": "text_fl6cf3lj"
+        },
+        {
+          "id": "action_krhWmBKA",
+          "type": "speech",
+          "text": "这里有一个非常容易混淆的地方，大家一定要竖起耳朵听好了！定积分和不定积分虽然都用了这个长长的‘∫’号，但意义完全不同。定积分，有上下限，结果是一个具体的数值，比如面积；不定积分，没有上下限，结果是一族函数，比如 F(x) 加常数 C。千万别搞混了。",
+          "audioRef": "audio/tts_s7_action_krhWmBKA.mp3"
+        },
+        {
+          "id": "action_Iy5wiRqN",
+          "type": "spotlight",
+          "elementId": "text_l21X1jj1"
+        },
+        {
+          "id": "action_OgxTWCUk",
+          "type": "speech",
+          "text": "所以，我们这一讲的核心任务，就是学会利用原函数来计算定积分。这个概念建立起了一座连接‘切线斜率’和‘曲线下面积’的坚实桥梁。下面我们通过一个拖动实验来亲身体验一下。",
+          "audioRef": "audio/tts_s7_action_OgxTWCUk.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "牛顿-莱布尼茨公式：拖动实验",
+      "order": 8,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "newton_leibniz_formula",
+          "description": "验证牛顿-莱布尼茨公式：定积分 ∫[a,b]f(x)dx = F(b) - F(a)，其中 F 是 f 的原函数。拖动区间端点观察原函数差值与积分面积的匹配关系。",
+          "variables": [
+            {
+              "name": "start_point_a",
+              "label": "区间起点 a",
+              "min": 0,
+              "max": 4.5,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "end_point_b",
+              "label": "区间终点 b",
+              "min": 1,
+              "max": 5,
+              "default": 4,
+              "unit": ""
+            },
+            {
+              "name": "antiderivative_difference",
+              "label": "原函数差值 F(b)-F(a)",
+              "min": 0,
+              "max": 20,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "integral_value",
+              "label": "定积分值 ∫f(x)dx",
+              "min": 0,
+              "max": 20,
+              "default": 0,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "小区间 [1,2]",
+              "variables": {
+                "start_point_a": 1,
+                "end_point_b": 2
+              }
+            },
+            {
+              "name": "中等区间 [0,3]",
+              "variables": {
+                "start_point_a": 0,
+                "end_point_b": 3
+              }
+            },
+            {
+              "name": "大区间 [0,5]",
+              "variables": {
+                "start_point_a": 0,
+                "end_point_b": 5
+              }
+            },
+            {
+              "name": "对称区间 [1,4]",
+              "variables": {
+                "start_point_a": 1,
+                "end_point_b": 4
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/08_牛顿-莱布尼茨公式：拖动实验.html",
+        "htmlBytes": 775844
+      },
+      "actions": [
+        {
+          "id": "action_W7sVNLAL",
+          "type": "speech",
+          "text": "本场景通过交互探索“牛顿-莱布尼茨公式：拖动实验”。现在就用这个交互实验来亲手验证一下：定积分的值，真的就等于原函数在端点的差值吗？大家先看屏幕上的图像，我把区间起点 a 和终点 b 都拖到一个中间位置。"
+        },
+        {
+          "id": "action_KPDBs2iD",
+          "type": "widget_setState",
+          "state": {
+            "start_point_a": 1,
+            "end_point_b": 4
+          },
+          "content": "将区间设置为对称区间 [1,4]，以便观察。"
+        },
+        {
+          "id": "action_IDcnogPR",
+          "type": "speech",
+          "text": "现在，图像上出现了阴影区域，那是 a 到 b 之间的定积分对应的面积。同时，右侧的数据面板上，有一个‘原函数差值 F(b)-F(a)’的数值，还有一个‘定积分值’的数值。请大家仔细观察这两个数字。告诉我，它们是什么关系？",
+          "audioRef": "audio/tts_s8_action_IDcnogPR.mp3"
+        },
+        {
+          "id": "action_Iw2mwjXc",
+          "type": "widget_highlight",
+          "target": "#antiderivative_difference",
+          "content": "关注这块显示原函数差值的面板。"
+        },
+        {
+          "id": "action_D_wu6F5q",
+          "type": "widget_highlight",
+          "target": "#integral_value",
+          "content": "再关注这块显示定积分值的面板。"
+        },
+        {
+          "id": "action_IIKP7BKs",
+          "type": "speech",
+          "text": "对，它们应该是相等的。但光看一个区间不够有说服力。现在，请大家自己动手，尝试拖动 a 和 b 这两个端点，任意改变区间的大小和位置。注意看，无论你怎么拖，只要一个端点变了，两个数值就会同时更新，并且始终保持一致。当你发现它们完全匹配的时候，注意观察，那块面板可能会有一个高亮提示。",
+          "audioRef": "audio/tts_s8_action_IIKP7BKs.mp3"
+        },
+        {
+          "id": "action_EBLE-q9T",
+          "type": "widget_reveal",
+          "target": "#match-highlight",
+          "content": "当差值面板与积分面板数值匹配时，此处会有高亮动画，提示验证成功。"
+        },
+        {
+          "id": "action_crf0hYO5",
+          "type": "speech",
+          "text": "这个完美的同步变化，就是牛顿-莱布尼茨公式最直观的体现。它告诉我们，计算曲线下面这个复杂的面积，竟然可以简化成仅仅去找原函数在边界上的两个点。这个思想非常关键，大家多拖动几次，好好体会一下。",
+          "audioRef": "audio/tts_s8_action_crf0hYO5.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "牛顿-莱布尼茨公式：关系图",
+      "order": 9,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "牛顿-莱布尼茨公式：关系图",
+          "description": "展示计算步骤的层级结构。可观察到的证据：图中连接了'求原函数'与'代入端点'两个核心分支，并标注了常数C在减法中消去的位置。",
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "牛顿-莱布尼茨公式",
+              "sublabel": "Newton–Leibniz Formula",
+              "icon": "🏛️",
+              "x": 450,
+              "y": 55,
+              "details": "微积分基本定理：连接了微分（求导）与积分（求面积）两大核心概念。",
+              "formula": "∫[a,b] f(x)dx = F(b) − F(a)",
+              "tags": [
+                "核心定理",
+                "微积分基本定理"
+              ]
+            },
+            {
+              "id": "n2",
+              "label": "求原函数",
+              "sublabel": "求 F(x) + C",
+              "icon": "🔍",
+              "x": 260,
+              "y": 185,
+              "details": "找到被积函数 f(x) 的原函数 F(x)，即满足 F'(x) = f(x) 的函数。注意不定积分会多出一个任意常数 C。",
+              "formula": "若 F'(x) = f(x)，则 ∫f(x)dx = F(x) + C",
+              "tags": [
+                "第一步",
+                "不定积分"
+              ]
+            },
+            {
+              "id": "n3",
+              "label": "代入端点",
+              "sublabel": "将 a, b 代入 F(x)",
+              "icon": "📍",
+              "x": 640,
+              "y": 185,
+              "details": "将积分区间的上界 b 和下界 a 分别代入已求出的原函数 F(x) 中。",
+              "formula": "F(b) 和 F(a)",
+              "tags": [
+                "第二步",
+                "上下界"
+              ]
+            },
+            {
+              "id": "n4",
+              "label": "反运算关系",
+              "sublabel": "F'(x) = f(x)",
+              "icon": "🔄",
+              "x": 260,
+              "y": 330,
+              "details": "原函数与被积函数互为反运算：求导是积分的逆运算。F(x) 是 f(x) 的原函数，意味着 F'(x) 恰好等于 f(x)。这是整个公式的理论基础。",
+              "formula": "F'(x) = f(x) ⟺ ∫f(x)dx = F(x) + C",
+              "tags": [
+                "理论基础",
+                "反运算"
+              ]
+            },
+            {
+              "id": "n5",
+              "label": "F(b) 上界",
+              "sublabel": "代入上界 b",
+              "icon": "⬆️",
+              "x": 510,
+              "y": 340,
+              "details": "将积分上界 b 代入原函数 F(x)，得到 F(b)。这代表了从起点到终点 b 的累积量。",
+              "formula": "F(b)",
+              "tags": [
+                "上界代入"
+              ]
+            },
+            {
+              "id": "n6",
+              "label": "F(a) 下界",
+              "sublabel": "代入下界 a",
+              "icon": "⬇️",
+              "x": 770,
+              "y": 340,
+              "details": "将积分下界 a 代入原函数 F(x)，得到 F(a)。这代表了从起点到 a 的累积量。",
+              "formula": "F(a)",
+              "tags": [
+                "下界代入"
+              ]
+            },
+            {
+              "id": "n7",
+              "label": "计算 F(b) − F(a)",
+              "sublabel": "两端点值相减",
+              "icon": "➖",
+              "x": 640,
+              "y": 500,
+              "details": "将上界值 F(b) 减去下界值 F(a)，得到定积分的精确值。这就是曲线下从 a 到 b 的有向面积。",
+              "formula": "∫[a,b] f(x)dx = F(b) − F(a)",
+              "tags": [
+                "第三步",
+                "核心计算"
+              ]
+            },
+            {
+              "id": "n8",
+              "label": "常数 C 消去",
+              "sublabel": "C 在减法中抵消",
+              "icon": "✂️",
+              "x": 640,
+              "y": 640,
+              "details": "关键观察：(F(b)+C) − (F(a)+C) = F(b) − F(a)。常数 C 在相减时完全消去，这就是为什么定积分不需要写 +C！",
+              "formula": "(F(b)+C) − (F(a)+C) = F(b) − F(a)",
+              "tags": [
+                "关键洞察",
+                "常数消去"
+              ]
+            },
+            {
+              "id": "n9",
+              "label": "定积分无 +C",
+              "sublabel": "符号混用辨析",
+              "icon": "🚫",
+              "x": 640,
+              "y": 760,
+              "details": "重要结论：定积分 ∫[a,b] f(x)dx 是一个具体的数值，不是函数族，所以不加 +C。只有不定积分 ∫f(x)dx 才需要 +C。初学者常在此混淆符号。",
+              "formula": "∫[a,b] f(x)dx = F(b)−F(a)  ❌ 不加 +C",
+              "tags": [
+                "常见误区",
+                "符号辨析"
+              ]
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "第一步"
+            },
+            {
+              "from": "n1",
+              "to": "n3",
+              "label": "第二步"
+            },
+            {
+              "from": "n2",
+              "to": "n4",
+              "label": "即"
+            },
+            {
+              "from": "n3",
+              "to": "n5",
+              "label": "上界"
+            },
+            {
+              "from": "n3",
+              "to": "n6",
+              "label": "下界"
+            },
+            {
+              "from": "n5",
+              "to": "n7",
+              "label": "代入"
+            },
+            {
+              "from": "n6",
+              "to": "n7",
+              "label": "代入"
+            },
+            {
+              "from": "n7",
+              "to": "n8",
+              "label": "注意"
+            },
+            {
+              "from": "n8",
+              "to": "n9",
+              "label": "结论"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n4",
+            "n3",
+            "n5",
+            "n6",
+            "n7",
+            "n8",
+            "n9"
+          ]
+        },
+        "htmlPath": "interactive/09_牛顿-莱布尼茨公式：关系图.html",
+        "htmlBytes": 766664
+      },
+      "actions": [
+        {
+          "id": "action_ZCPcvhtU",
+          "type": "speech",
+          "text": "本场景通过交互探索“牛顿-莱布尼茨公式：关系图”。现在我们把逻辑梳理一下，看看这张关系图是如何把牛顿-莱布尼茨公式的步骤串起来的。"
+        },
+        {
+          "id": "action_iFw4Spmo",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "整个公式的核心：定积分等于原函数在上、下界值的差。"
+        },
+        {
+          "id": "action_uXbZJ8Bp",
+          "type": "speech",
+          "text": "万丈高楼平地起。首先，公式的核心就是它——连接了微分与积分的桥梁。我们从核心出发，第一步需要做什么？对，找到被积函数的原函数。",
+          "audioRef": "audio/tts_s9_action_uXbZJ8Bp.mp3"
+        },
+        {
+          "id": "action_GD86MTt2",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "第一步：求原函数"
+        },
+        {
+          "id": "action_6s5V3Ryh",
+          "type": "speech",
+          "text": "这里要特别留意，原函数跟被积函数是反运算的关系，所以我们对它求导，就一定会回到最初的样子。",
+          "audioRef": "audio/tts_s9_action_6s5V3Ryh.mp3"
+        },
+        {
+          "id": "action_Cezn-hL6",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "理论基础：反运算关系"
+        },
+        {
+          "id": "action_IsvETqnh",
+          "type": "speech",
+          "text": "接着我们看第二步。把上下界分别代入原函数，得到F(b)和F(a)。",
+          "audioRef": "audio/tts_s9_action_IsvETqnh.mp3"
+        },
+        {
+          "id": "action_nHoRk80Q",
+          "type": "widget_highlight",
+          "target": "#n3",
+          "content": "第二步：代入端点"
+        },
+        {
+          "id": "action_AmBZwTJc",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "代入上界 b"
+        },
+        {
+          "id": "action_eIjESP50",
+          "type": "widget_reveal",
+          "target": "#n6",
+          "content": "代入下界 a"
+        },
+        {
+          "id": "action_FC5Qd_cy",
+          "type": "speech",
+          "text": "上下界的值都有了，最后一步就是把它们相减。这个相减非常关键，我们来看看这里藏着一个什么秘密。",
+          "audioRef": "audio/tts_s9_action_FC5Qd_cy.mp3"
+        },
+        {
+          "id": "action_5LNBwJgq",
+          "type": "widget_reveal",
+          "target": "#n7",
+          "content": "第三步：计算差值"
+        },
+        {
+          "id": "action_ts1fQ6ew",
+          "type": "widget_reveal",
+          "target": "#n8",
+          "content": "常数 C 在相减时抵消"
+        },
+        {
+          "id": "action_e4l9fBru",
+          "type": "speech",
+          "text": "看到了吗？在算不定积分时那个让人头疼的常数C，在这里因为F(b)+C减去F(a)+C，直接被抵消了。这才是定积分结果后面不用写+C的根本原因。",
+          "audioRef": "audio/tts_s9_action_e4l9fBru.mp3"
+        },
+        {
+          "id": "action_VEnBEr7J",
+          "type": "widget_reveal",
+          "target": "#n9",
+          "content": "定积分结果不加 +C"
+        },
+        {
+          "id": "action_i8yBmNyS",
+          "type": "speech",
+          "text": "所以，你记笔记时要特别圈出这个“常数消去”节点，它把“不定积分”和“定积分”的符号体系彻底分开了。定积分是一个具体的数，不是一个函数族，一定要牢记。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "牛顿-莱布尼茨公式：误解修复挑战",
+      "order": 10,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "action",
+          "description": "符号分类挑战赛：将定积分与原函数正确分类",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5,
+            "comboMultiplier": 1.5
+          },
+          "levels": [
+            {
+              "name": "初识积分",
+              "speed": 0.4,
+              "spawnRate": 2500,
+              "duration": 30
+            },
+            {
+              "name": "加速挑战",
+              "speed": 0.7,
+              "spawnRate": 2000,
+              "duration": 30
+            },
+            {
+              "name": "大师之路",
+              "speed": 1,
+              "spawnRate": 1600,
+              "duration": 40
+            }
+          ]
+        },
+        "htmlPath": "interactive/10_牛顿-莱布尼茨公式：误解修复挑战.html",
+        "htmlBytes": 785787
+      },
+      "actions": [
+        {
+          "id": "action_SYPO7Nxi",
+          "type": "speech",
+          "text": "本场景通过交互探索“牛顿-莱布尼茨公式：误解修复挑战”。大家要带大家来一场“符号分类挑战赛”，看谁能在混乱的公式海洋里，一眼认出谁是“定积分”（具体的数），谁是“原函数家族”（带+C的那个）。"
+        },
+        {
+          "id": "action_ZgMjNsqa",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始挑战。"
+        },
+        {
+          "id": "action_Teq9P7Sh",
+          "type": "speech",
+          "text": "规则很简单：带有上下限的表达式，拖到“定积分”区域；只有积分号没有上下限的，属于“函数族”。",
+          "audioRef": "audio/tts_s10_action_Teq9P7Sh.mp3"
+        },
+        {
+          "id": "action_R9mHjOYn",
+          "type": "speech",
+          "text": "特别注意，待会儿会有一些“陷阱公式”飞过来——它们没有上下限，但后面却跟着一个具体的数值。一定要拦住它们！这不符合牛顿-莱布尼茨公式的符号规则。",
+          "audioRef": "audio/tts_s10_action_R9mHjOYn.mp3"
+        },
+        {
+          "id": "action_ZYY2d8T5",
+          "type": "widget_reveal",
+          "target": "#scoring-info",
+          "content": "显示得分规则：正确分类得10分，快速拦截有额外速度加分，连续正确还能触发连击加成。"
+        },
+        {
+          "id": "action_m5J2e85a",
+          "type": "speech",
+          "text": "准备好了吗？我们看看谁最先发现那个伪装的错误公式。开始！"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "牛顿-莱布尼茨公式：空间视角",
+      "order": 11,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "牛顿-莱布尼茨公式空间视角：展示原函数高度差与积分面积的等价性",
+          "objects": [
+            {
+              "id": "primitive_function_graph",
+              "type": "curve",
+              "material": {
+                "type": "phong",
+                "color": "#34d399"
+              },
+              "label": "原函数 F(x)"
+            },
+            {
+              "id": "height_difference_marker",
+              "type": "cylinder",
+              "material": {
+                "type": "phong",
+                "color": "#fbbf24"
+              },
+              "label": "高度差 F(b)-F(a)"
+            },
+            {
+              "id": "area_plate",
+              "type": "plane_group",
+              "material": {
+                "type": "phong",
+                "color": "#3b82f6",
+                "transparent": true
+              },
+              "label": "积分面积片"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "b_limit",
+              "min": -2,
+              "max": 3,
+              "default": 2,
+              "label": "上限 b"
+            },
+            {
+              "type": "slider",
+              "param": "a_limit",
+              "min": -2,
+              "max": 2.5,
+              "default": 0,
+              "label": "下限 a"
+            },
+            {
+              "type": "button",
+              "action": "toggleArea",
+              "label": "面积片"
+            },
+            {
+              "type": "button",
+              "action": "togglePrimitive",
+              "label": "原函数"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "默认视角",
+              "state": {
+                "cameraPosition": [
+                  6,
+                  8,
+                  12
+                ],
+                "cameraTarget": [
+                  0.5,
+                  1,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "俯视面积",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  15,
+                  0.1
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧面观察",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  3,
+                  12
+                ],
+                "cameraTarget": [
+                  0,
+                  1,
+                  -1
+                ]
+              }
+            },
+            {
+              "name": "聚焦原函数",
+              "state": {
+                "cameraPosition": [
+                  4,
+                  5,
+                  -6
+                ],
+                "cameraTarget": [
+                  0,
+                  2,
+                  -2
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/11_牛顿-莱布尼茨公式：空间视角.html",
+        "htmlBytes": 2511489
+      },
+      "actions": [
+        {
+          "id": "action_s3ru9xWt",
+          "type": "speech",
+          "text": "本场景通过交互探索“牛顿-莱布尼茨公式：空间视角”。大家带大家换个角度，从三维空间里重新审视牛顿-莱布尼茨公式，看看有什么新发现。"
+        },
+        {
+          "id": "action_pNcjFv2b",
+          "type": "widget_setState",
+          "state": {
+            "preset": "默认视角"
+          }
+        },
+        {
+          "id": "action_nZ4aTQbe",
+          "type": "speech",
+          "text": "画面上有原函数曲线、蓝色的积分面积片，还有代表高度差的黄色圆柱。你一直喜欢空间视角，你觉得高度差和面积片之间，可能存在什么关系？"
+        },
+        {
+          "id": "action_vBf0luEA",
+          "type": "widget_highlight",
+          "target": "#height_difference_marker",
+          "content": "黄色圆柱代表原函数在b点的值与在a点的值之差"
+        },
+        {
+          "id": "action_sBGYg5_Q",
+          "type": "widget_highlight",
+          "target": "#area_plate",
+          "content": "蓝色半透明平面代表从a到b的曲线下方面积"
+        },
+        {
+          "id": "action_3qUBJTxL",
+          "type": "speech",
+          "text": "现在，我来拖动上限b。大家盯住黄色的高度柱和蓝色的面积片，看看它们的变化是不是完全同步？",
+          "audioRef": "audio/tts_s11_action_3qUBJTxL.mp3"
+        },
+        {
+          "id": "action_Y0G5r8xM",
+          "type": "widget_setState",
+          "state": {
+            "preset": "俯视面积"
+          }
+        },
+        {
+          "id": "action_vM9S-OrO",
+          "type": "speech",
+          "text": "切换到俯视角度，这种同步感是不是更明显了？黄色的圆斑在伸缩，底下的蓝色面积也在同比例变化。这就是变上限积分在空间里的直观表达。",
+          "audioRef": "audio/tts_s11_action_vM9S-OrO.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "设 A(x) = 从 a 到 x 的 f(t) dt 是 f 的变上限积分函数。如果 f(t) 在区间 [a, b] 上是正的且单调递增，那么 A(x) 的增长速度（即 A'(x)）在区间内如何变化？",
+            "options": [
+              {
+                "value": "A",
+                "label": "A'(x) 保持不变，等于一个常数"
+              },
+              {
+                "value": "B",
+                "label": "A'(x) 越来越快，因为 f(t) 在变大"
+              },
+              {
+                "value": "C",
+                "label": "A'(x) 越来越慢，因为累积的量变多了"
+              },
+              {
+                "value": "D",
+                "label": "A'(x) 先快后慢，存在一个拐点"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "根据变上限积分的求导公式，A'(x) = f(x)。既然 f(x) 是递增的，意味着它的值在变大，所以 A'(x) 即增长速度也在变大。这正是场景3中讨论的：函数值增加直接导致变上限积分的斜率（增长速度）增加。选项 A 错误，如果 f 是常数才会保持不变；选项 C 误解了累积量和变化率的关系；选项 D 描述错误。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "根据牛顿-莱布尼茨公式（NL公式），定积分从 a 到 b 的 f(x) dx 等于 F(b) - F(a)，其中 F 是 f 的一个原函数。这个差值 F(b) - F(a) 在几何上最直接的含义是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "曲线 y = f(x) 在 x=a 和 x=b 处的切线斜率之差"
+              },
+              {
+                "value": "B",
+                "label": "原函数 F(x) 的函数值从 a 到 b 的净变化量（净高差）"
+              },
+              {
+                "value": "C",
+                "label": "曲线 y = f(x) 下方从 a 到 b 的曲线弧长"
+              },
+              {
+                "value": "D",
+                "label": "函数 f(x) 在区间端点 a 和 b 的函数值之差"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "NL公式建立了微分与积分的联系。F(b)-F(a) 是原函数 F 在区间两端的函数值之差，即 F 的净变化量。而 f(x) 是 F(x) 的变化率，所以对变化率 f(x) 的累积（积分）就等于总的净变化量。这正是场景8中强调的几何直觉：累积变化率得到总量变化。选项 A 描述的是导数相关的斜率；选项 C 描述的是弧长积分；选项 D 混淆了 f 和 F。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "在计算定积分时，有时需要对变量进行替换（换元法），比如令 u = g(x)。当我们将 dx 替换为 du 时，需要乘以一个因子。这本质上是利用了哪一个微积分基本概念的‘反向’操作？",
+            "options": [
+              {
+                "value": "A",
+                "label": "乘积求导法则的反向操作"
+              },
+              {
+                "value": "B",
+                "label": "链式求导法则的反向操作"
+              },
+              {
+                "value": "C",
+                "label": "商数求导法则的反向操作"
+              },
+              {
+                "value": "D",
+                "label": "常数求导法则的反向操作"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "换元法的逻辑是：如果 u = g(x)，那么 du = g'(x) dx，从而 dx = du / g'(x)。这正是将复合函数求导的链式法则反过来使用。链式法则指出 dy/dx = (dy/du) * (du/dx)，积分时将内层函数的微分调整过来，恰好是其逆过程。选项 A 是分部积分的本质；选项 C 和 D 明显不对。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "我们可以将分部积分法看作是乘积求导法则的“倒放”。已知 d(uv) = u dv + v du，那么对等式两边同时求不定积分，并移项后会得到分部积分公式。请问该公式是下列哪一个？",
+            "options": [
+              {
+                "value": "A",
+                "label": "∫ u dv = uv - ∫ v du"
+              },
+              {
+                "value": "B",
+                "label": "∫ u dv = uv + ∫ v du"
+              },
+              {
+                "value": "C",
+                "label": "∫ u dv = u'v - ∫ uv' dx"
+              },
+              {
+                "value": "D",
+                "label": "∫ u dv = (uv)' - ∫ v du"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "对该等式∫ d(uv) = ∫ u dv + ∫ v du 进行移项，左边 ∫ d(uv) = uv，所以 uv = ∫ u dv + ∫ v du。移项后得到 ∫ u dv = uv - ∫ v du。这正是标准的分部积分公式，将求乘积导数的过程反向用于积分。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "multiple",
+            "question": "下列关于积分方法的预诊断描述中，哪些是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "换元积分法主要用来处理被积函数看起来像某个复合函数导数的一部分的情况"
+              },
+              {
+                "value": "B",
+                "label": "分部积分法特别适合处理两种不同类型函数相乘的积分，如 x*sin(x)"
+              },
+              {
+                "value": "C",
+                "label": "使用定积分换元法时，如果替换了变量，积分的上下限不需要做任何改变"
+              },
+              {
+                "value": "D",
+                "label": "如果将乘积求导法则反过来写，就能直观地推导出分部积分公式"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "analysis": "A 正确：换元法的本质就是识别出被积函数中链式法则的痕迹。B 正确：当积分是两种不同基本函数类型（如幂函数与三角函数）相乘时，分部积分是首选。C 错误：定积分换元时，“换元必换限”，积分上下限必须根据新变量 u = g(x) 的关系进行同步替换。D 正确：这正是从 (uv)' = u'v + uv' 推出 ∫ u dv = uv - ∫ v du 的过程。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "short_answer",
+            "question": "请结合生活或物理中的例子，解释牛顿-莱布尼茨公式为什么被称为“微积分基本定理”？它具体连接了哪两个看似无关的核心运算？",
+            "commentPrompt": "请从以下维度作答：\n(1) 明确指出它连接了哪两个运算（30%）\n(2) 用你自己的话解释为什么这个连接是“惊人”或“根本性”的，可以借鉴速度-路程的物理模型（40%）\n(3) 简要说明公式中 F(b)-F(a) 的实际意义（30%）",
+            "analysis": "NL公式之所以是基本定理，是因为它在‘求切线斜率’（微分）和‘求曲线下面积’（积分）这两个看似不相关的运算之间架起了桥梁。一个常见的物理类比是：速度函数 v(t) 是路程函数 s(t) 的导数（微分），而对速度 v(t) 在一段时间内进行积分，却能精确得到这段时间内的总位移 s(b)-s(a)（积分）。F(b)-F(a) 代表的是原函数 F 在区间上的净变化量，即通过对变化率的无限累积反推出了总量的变化。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_12Gs2bYE",
+          "type": "speech",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。让我们通过几个问题来检验一下我们的直觉是否真的建立起来了。"
+        },
+        {
+          "id": "action_OSIAeeos",
+          "type": "speech",
+          "text": "这套小测验不仅是检查我们刚刚学过的第一组核心概念，同时也会探测一下大家对需要学的积分技巧，比如换元法和分部积分法，有什么样的初步感觉。"
+        },
+        {
+          "id": "action_ZvNWlk3L",
+          "type": "speech",
+          "text": "放轻松，像做思维体操一样去思考。特别是遇到预诊断的题目，大胆地运用你的直觉去猜测，看看我们能不能不依赖公式，就触碰到方法背后的思想。",
+          "audioRef": "audio/tts_s12_action_ZvNWlk3L.mp3"
+        },
+        {
+          "id": "action_5VAluD9w",
+          "type": "speech",
+          "text": "比如，想想看：如果内部结构在变，微分部分会怎么跟着变？一个运算的‘倒放’，又会呈现出什么样的形式？这些问题都很值得玩味。",
+          "audioRef": "audio/tts_s12_action_5VAluD9w.mp3"
+        },
+        {
+          "id": "action_7H-TmEhn",
+          "type": "speech",
+          "text": "好了，题目已经在你面前了。请大家集中精神，独立完成。做完之后，我们可以针对一些有趣的想法展开讨论。",
+          "audioRef": "audio/tts_s12_action_7H-TmEhn.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "换元法直觉",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "mNEcD3nU1yABYRv6iw5WS",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_KEWMe4c_",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1A3C6E;\">换元法直觉</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_j3ozPzJm",
+              "left": 60,
+              "top": 126,
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #4A6FA5;\">整体代换 · 简化结构</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4A6FA5"
+            },
+            {
+              "type": "shape",
+              "id": "shape_2l3mQVzP",
+              "left": 60,
+              "top": 165,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E0E0E0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_vDRPv2wW",
+              "left": 60,
+              "top": 180,
+              "width": 420,
+              "height": 240,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F0F4F8"
+            },
+            {
+              "type": "text",
+              "id": "text_12FtWf8P",
+              "left": 80,
+              "top": 195,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1A3C6E;\">核心思想</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "latex",
+              "id": "latex_y3ns2NLZ",
+              "left": 80,
+              "top": 240,
+              "width": 380,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\text{令 } u = g(x) \\implies \\int f(g(x)) \\cdot g'(x) dx = \\int f(u) du",
+              "color": "#2C3E50",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">令</span><span class=\"mord\"> </span></span><span class=\"mord mathnormal\">u</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">⟹</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">))</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">⋅</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.0519em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8019em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">′</span></span></span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">u</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">u</span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_lJoMwSy3",
+              "left": 80,
+              "top": 310,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1A3C6E;\">示例</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "latex",
+              "id": "latex_myr_ZzsR",
+              "left": 80,
+              "top": 355,
+              "width": 380,
+              "height": 50,
+              "rotate": 0,
+              "latex": "\\int 2x \\cdot e^{x^2} dx = \\int e^u du \\quad (u = x^2)",
+              "color": "#2C3E50",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\">2</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">⋅</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.0369em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">e</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0369em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8913em;\"><span style=\"top:-2.931em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span></span></span></span></span></span></span></span></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">e</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7144em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">u</span></span></span></span></span></span></span></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">u</span><span class=\"mspace\" style=\"margin-right:1em;\"></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">u</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.1141em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8641em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mclose\">)</span></span></span></span></span>"
+            },
+            {
+              "type": "shape",
+              "id": "shape_uPGmqfpR",
+              "left": 520,
+              "top": 180,
+              "width": 420,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFFFFF"
+            },
+            {
+              "type": "text",
+              "id": "text_2bh4cA9W",
+              "left": 540,
+              "top": 188,
+              "width": 380,
+              "height": 127,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #1A3C6E;\">要点1：目标</p><p style=\"font-size: 16px; color: #2C3E50;\">识别内部变量替换让结构变简单。观察被积函数中是否存在某个函数及其导数，将复杂部分整体替换为新变量。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Oq-hGc3b",
+              "left": 520,
+              "top": 310,
+              "width": 420,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFFFFF"
+            },
+            {
+              "type": "text",
+              "id": "text_c-HievRt",
+              "left": 540,
+              "top": 318,
+              "width": 380,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #1A3C6E;\">要点2：关键</p><p style=\"font-size: 16px; color: #2C3E50;\">换元后微分项dx必须同步转换为du。若 u = g(x)，则 du = g'(x) dx，必须同时替换微分，否则结果错误。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "shape",
+              "id": "shape_xrZT3MaQ",
+              "left": 60,
+              "top": 440,
+              "width": 880,
+              "height": 60,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text__2E5uVEI",
+              "left": 80,
+              "top": 444,
+              "width": 840,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #FFFFFF;\">换元法核心：替换变量 + 同步换微分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#FFFFFF"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_T8PPqEYy",
+          "type": "spotlight",
+          "elementId": "text_KEWMe4c_"
+        },
+        {
+          "id": "action_YszlWOM9",
+          "type": "speech",
+          "text": "本场景聚焦“换元法直觉”。好了，刚才的测验大家完成得不错。现在，我们要解锁一个新的积分方法——换元法。看到这个名字，你可能觉得有点陌生，但它的核心思想，其实我们早就用过了：整体代换，让复杂的结构变简单。"
+        },
+        {
+          "id": "action_mwK3ejJ4",
+          "type": "spotlight",
+          "elementId": "shape_2l3mQVzP"
+        },
+        {
+          "id": "action_yfI7yLXR",
+          "type": "speech",
+          "text": "我们先看一个典型的例子。比如要求积分 ∫ 2x·e^{x²} dx，这个函数里既有 2x，又有 x² 指数，直接积分很困难。",
+          "audioRef": "audio/tts_s13_action_yfI7yLXR.mp3"
+        },
+        {
+          "id": "action_H941fyO6",
+          "type": "spotlight",
+          "elementId": "latex_myr_ZzsR"
+        },
+        {
+          "id": "action_WUkRvFjK",
+          "type": "speech",
+          "text": "换元法的思路是：我们令 u = x²，那么复杂的 e^{x²} 就变成了 e^u，一下子就简洁了。这个过程，就是找到那个“内部变量”并把它替换成 u。",
+          "audioRef": "audio/tts_s13_action_WUkRvFjK.mp3"
+        },
+        {
+          "id": "action_77WIUFC8",
+          "type": "spotlight",
+          "elementId": "text_c-HievRt"
+        },
+        {
+          "id": "action_ofM3VMXb",
+          "type": "speech",
+          "text": "但这里有一个极其容易犯错的地方，大家一定要听清楚：当我们换元时，不仅变量 x 要变，微分 dx 也必须同步转换！既然 u = x²，那么 du = 2x dx。你看，原被积函数里的 2x dx 正好被 du 完美取代。",
+          "audioRef": "audio/tts_s13_action_ofM3VMXb.mp3"
+        },
+        {
+          "id": "action_y8Nbd5KO",
+          "type": "spotlight",
+          "elementId": "latex_y3ns2NLZ"
+        },
+        {
+          "id": "action_GBDdDMOD",
+          "type": "speech",
+          "text": "所以整个积分 ∫ 2x·e^{x²} dx 就变成了 ∫ e^u du，它的原函数就是 e^u，再把 u = x² 代回去，结果就出来了。这就是换元法的核心：替换变量，并且同步替换微分。",
+          "audioRef": "audio/tts_s13_action_GBDdDMOD.mp3"
+        },
+        {
+          "id": "action_OH5rpPoj",
+          "type": "spotlight",
+          "elementId": "text__2E5uVEI"
+        },
+        {
+          "id": "action_N5veD1BU",
+          "type": "speech",
+          "text": "记住这句话：换元法，一换变量，二换微分。两者缺一不可。带着这个直觉，我们马上进入一个互动实验，亲手拖一拖，感受一下这个过程。",
+          "audioRef": "audio/tts_s13_action_N5veD1BU.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "换元法直觉：拖动实验",
+      "order": 14,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "substitution_intuition",
+          "description": "换元法直觉：观察坐标轴变换时dx与du的宽度关系，理解为什么换元积分需要乘以g'(x)。",
+          "variables": [
+            {
+              "name": "substitution_function_u",
+              "label": "替换函数斜率 a",
+              "min": 0.1,
+              "max": 4,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "dx_position",
+              "label": "dx位置 x₀",
+              "min": -3,
+              "max": 3,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "dx_width",
+              "label": "dx宽度",
+              "min": 0.1,
+              "max": 1,
+              "default": 0.3,
+              "unit": ""
+            },
+            {
+              "name": "coordinate_scale",
+              "label": "坐标轴缩放",
+              "min": 0.5,
+              "max": 2,
+              "default": 1,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "无拉伸",
+              "variables": {
+                "substitution_function_u": 1,
+                "dx_position": 0,
+                "dx_width": 0.3,
+                "coordinate_scale": 1
+              }
+            },
+            {
+              "name": "2倍拉伸",
+              "variables": {
+                "substitution_function_u": 2,
+                "dx_position": 0,
+                "dx_width": 0.3,
+                "coordinate_scale": 1
+              }
+            },
+            {
+              "name": "压缩",
+              "variables": {
+                "substitution_function_u": 0.5,
+                "dx_position": 0,
+                "dx_width": 0.3,
+                "coordinate_scale": 1
+              }
+            },
+            {
+              "name": "忽略导数后果",
+              "variables": {
+                "substitution_function_u": 3,
+                "dx_position": 1,
+                "dx_width": 0.5,
+                "coordinate_scale": 1
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/14_换元法直觉：拖动实验.html",
+        "htmlBytes": 770972
+      },
+      "actions": [
+        {
+          "id": "action_fJKo8A02",
+          "type": "speech",
+          "text": "本场景通过交互探索“换元法直觉：拖动实验”。我们就来亲手操作这个实验，看看如果忘了换微分，会发生什么。"
+        },
+        {
+          "id": "action_JhU6WQEN",
+          "type": "widget_setState",
+          "state": {
+            "substitution_function_u": 1,
+            "dx_position": 0,
+            "dx_width": 0.3,
+            "coordinate_scale": 1
+          },
+          "content": "加载预设：无拉伸"
+        },
+        {
+          "id": "action_kwzGSKU5",
+          "type": "speech",
+          "text": "页面加载好了。我们先从最简单的状态开始：替换函数的斜率为1，也就是说，新变量u和原变量x的变化速度完全一样。",
+          "audioRef": "audio/tts_s14_action_kwzGSKU5.mp3"
+        },
+        {
+          "id": "action_oYKRjsL9",
+          "type": "widget_highlight",
+          "target": "#substitution_function_u-slider",
+          "content": "这个滑块控制着新变量 u 替换 x 的斜率，也就是 g'(x)。"
+        },
+        {
+          "id": "action_RjtR6slx",
+          "type": "speech",
+          "text": "看屏幕下方，红色的dx和蓝色的du宽度现在是一样的。接下来，请你试着拖动那个“替换函数斜率”的滑块，把它慢慢增加到2。仔细观察dx宽度变化时，du的宽度是怎样跟着变的。",
+          "audioRef": "audio/tts_s14_action_RjtR6slx.mp3"
+        },
+        {
+          "id": "action_ocsrF_Vd",
+          "type": "widget_setState",
+          "state": {
+            "substitution_function_u": 2,
+            "dx_position": 0,
+            "dx_width": 0.3,
+            "coordinate_scale": 1
+          },
+          "content": "加载预设：2倍拉伸"
+        },
+        {
+          "id": "action_nByaEUIq",
+          "type": "speech",
+          "text": "看到了吗？当斜率是2的时候，同样一小段dx，到了u轴上就被拉伸成了两倍宽的du。这个拉伸的倍数，就是g'(x)。所以，我们必须在积分前面乘上这个g'(x)，才能弥补坐标轴的拉伸。",
+          "audioRef": "audio/tts_s14_action_nByaEUIq.mp3"
+        },
+        {
+          "id": "action_OJG-_tGt",
+          "type": "widget_setState",
+          "state": {
+            "substitution_function_u": 3,
+            "dx_position": 1,
+            "dx_width": 0.5,
+            "coordinate_scale": 1
+          },
+          "content": "加载预设：忽略导数后果"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "换元法直觉：关系图",
+      "order": 15,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "htmlPath": "interactive/15_换元法直觉：关系图.html",
+        "htmlBytes": 457378
+      },
+      "actions": [
+        {
+          "id": "action_InqrrOzu",
+          "type": "speech",
+          "text": "本场景通过交互探索“换元法直觉：关系图”。可以观察到内层函数的伸缩效应。现在让我们把这个过程放在关系图上，看看‘凑微分’到底在凑什么。"
+        },
+        {
+          "id": "action_h2IcXeb4",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "从外层函数开始，看清整个复合结构。"
+        },
+        {
+          "id": "action_lJt8Y8ye",
+          "type": "speech",
+          "text": "这是积分号下的复合函数 f(g(x))，外层和内层缠在一起。我们从内层 g(x) 出发，穿过导数 g'(x) 这条通道。",
+          "audioRef": "audio/tts_s15_action_lJt8Y8ye.mp3"
+        },
+        {
+          "id": "action_VRNf54Tw",
+          "type": "widget_setState",
+          "state": {
+            "revealOrder": [
+              "n1",
+              "n2",
+              "n3",
+              "n4",
+              "n5"
+            ]
+          }
+        },
+        {
+          "id": "action_RekBgXoU",
+          "type": "speech",
+          "text": "注意看这个‘变量合并’节点——内层的导数 g'(x) 与 dx 在此处合二为一，变成了 du。这就是换元法的核心直觉：不是凭空变出 du，而是把内层的伸缩率 g'(x) 和 dx 揉在一起。",
+          "audioRef": "audio/tts_s15_action_RekBgXoU.mp3"
+        },
+        {
+          "id": "action_7FCdrs1v",
+          "type": "widget_annotation",
+          "target": "#n7",
+          "content": "这个‘易错点’是换元后残留的独立dx，必须被彻底吸收干净。"
+        },
+        {
+          "id": "action_9BdAk1zf",
+          "type": "speech",
+          "text": "大家常常在这里发现陷阱——如果图上还剩一个孤零零的 dx，没有跟 g'(x) 匹配上，那就说明你凑微分时漏掉了某个因子。"
+        },
+        {
+          "id": "action_hN0MLgcP",
+          "type": "widget_reveal",
+          "target": "#n9"
+        },
+        {
+          "id": "action_Aw8VLnVa",
+          "type": "speech",
+          "text": "换元完成后，所有与 x 有关的部分都消失了：积分式从 ∫f(g(x))·g'(x)dx 变成了简洁的 ∫f(u)du。从复杂的嵌套回到一个标准的积分模板——这就是关系图想告诉我们的整体路径。",
+          "audioRef": "audio/tts_s15_action_Aw8VLnVa.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "换元法直觉：误解修复挑战",
+      "order": 16,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "天平平衡挑战 - 换元法直觉误解修复",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "achievements": [
+            {
+              "id": "first_balance",
+              "name": "初露锋芒",
+              "description": "完成第一关",
+              "icon": "🌟"
+            },
+            {
+              "id": "perfect_score",
+              "name": "一次成功",
+              "description": "不犯错完成一关",
+              "icon": "💎"
+            },
+            {
+              "id": "speed_demon",
+              "name": "闪电换元",
+              "description": "15秒内完成一关",
+              "icon": "⚡"
+            },
+            {
+              "id": "master",
+              "name": "换元大师",
+              "description": "完成全部关卡",
+              "icon": "👑"
+            }
+          ]
+        },
+        "htmlPath": "interactive/16_换元法直觉：误解修复挑战.html",
+        "htmlBytes": 788160
+      },
+      "actions": [
+        {
+          "id": "action_s4-yolDp",
+          "type": "speech",
+          "text": "本场景通过交互探索“换元法直觉：误解修复挑战”。我们来玩一个天平平衡挑战，看看在真实的换元过程中，哪些地方最容易出错。"
+        },
+        {
+          "id": "action_JGAvQ0vI",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始第一关"
+        },
+        {
+          "id": "action_fW-VwyA_",
+          "type": "speech",
+          "text": "天平的左边是一个换元后的积分式，它可能缺了点什么。你的任务是在右边加上丢失的微分补偿项，让天平恢复平衡。",
+          "audioRef": "audio/tts_s16_action_fW-VwyA_.mp3"
+        },
+        {
+          "id": "action_paDshM--",
+          "type": "widget_annotation",
+          "target": "#balance-scale",
+          "content": "天平平衡时，公式会变绿，说明换元正确"
+        },
+        {
+          "id": "action_q2ZSU7XB",
+          "type": "speech",
+          "text": "大家刚才在关系图里注意到，换元后所有带 x 的部分都要消失。但别忘了，dx 本身也需要被替换成 du——这个过程里藏着最容易丢掉的 g'(x) 因子。"
+        },
+        {
+          "id": "action_1Lj7maxp",
+          "type": "speech",
+          "text": "试试看吧。每一关都有时间限制，找到缺失的项并把它放上去。如果你一次都不犯错，还能拿到大家最喜欢的“一次成功”成就。"
+        },
+        {
+          "id": "action_r1w3BxHw",
+          "type": "speech",
+          "text": "完成后我们一起来看，哪些常见的误解会让天平倾斜，以及怎样用一套固定的检查步骤来避免它们。",
+          "audioRef": "audio/tts_s16_action_r1w3BxHw.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "换元法直觉：空间视角",
+      "order": 17,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "换元法直觉：空间视角 — 3D展示坐标变换下的面积/体积等效。观察几何体在原坐标系与变换后坐标系的体积保持一致，但形状发生形变。形变程度由|g'(x)|的模长决定。",
+          "objects": [
+            {
+              "id": "transformation_grid",
+              "type": "grid",
+              "material": {
+                "type": "colored_lines",
+                "vertexColors": true
+              },
+              "description": "变换网格：展示从x坐标到u=g(x)坐标的映射，颜色编码表示|g'(x)|"
+            },
+            {
+              "id": "mapped_volume",
+              "type": "deformed_mesh",
+              "material": {
+                "type": "phong",
+                "transparent": true,
+                "opacity": 0.4
+              },
+              "description": "映射体积：展示变换前后的体积对比，体积保持但形状改变"
+            },
+            {
+              "id": "axis_labels",
+              "type": "labels",
+              "description": "坐标轴标签：标注x(原坐标)、u=g(x)(变换后)和|g'(x)|"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera",
+              "description": "旋转视角：拖动旋转，滚轮缩放"
+            },
+            {
+              "type": "slider",
+              "param": "t",
+              "min": 0,
+              "max": 2,
+              "default": 0.8,
+              "description": "变换参数t：控制非线性变换 u = x + t·sin(πx) 的程度"
+            },
+            {
+              "type": "slider",
+              "param": "density",
+              "min": 5,
+              "max": 30,
+              "default": 15,
+              "description": "网格密度：控制变换网格的精细程度"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "+"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "−"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "无变换",
+              "state": {
+                "t": 0
+              }
+            },
+            {
+              "name": "中等变换",
+              "state": {
+                "t": 0.8
+              }
+            },
+            {
+              "name": "强变换",
+              "state": {
+                "t": 2
+              }
+            },
+            {
+              "name": "俯视视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  15,
+                  0.1
+                ]
+              }
+            },
+            {
+              "name": "侧面视角",
+              "state": {
+                "cameraPosition": [
+                  12,
+                  2,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/17_换元法直觉：空间视角.html",
+        "htmlBytes": 2519682
+      },
+      "actions": [
+        {
+          "id": "action_CsshlVve",
+          "type": "speech",
+          "text": "本场景通过交互探索“换元法直觉：空间视角”。现在换一个视角——来看看坐标变换在空间中到底意味着什么。"
+        },
+        {
+          "id": "action_T_bhpGgX",
+          "type": "widget_highlight",
+          "target": "#controls",
+          "content": "这是变换的核心控制区。"
+        },
+        {
+          "id": "action_y8hcFyCI",
+          "type": "speech",
+          "text": "请注意网格。现在 x 轴和 u 轴是重合的，因为变换强度 t 为零。当我们慢慢增加 t，网格就会开始变形，但注意看彩色块的体积——它保持不变。这就是换元法的几何证据。",
+          "audioRef": "audio/tts_s17_action_y8hcFyCI.mp3"
+        },
+        {
+          "id": "action_RWMmaQnv",
+          "type": "widget_setState",
+          "state": {
+            "t": 0.8
+          },
+          "content": "中等变换：u = x + 0.8·sin(πx)"
+        },
+        {
+          "id": "action_PNeS96u2",
+          "type": "speech",
+          "text": "在 t=0.8 时，网格明显弯曲了。试着从侧面看：网格线在某些地方变得稀疏，在另一些地方变得密集。稀疏意味着什么？对，局部放大率小，那是 g'(x) 接近 0 的区域；密集的地方表示 |g'(x)| 很大。",
+          "audioRef": "audio/tts_s17_action_PNeS96u2.mp3"
+        },
+        {
+          "id": "action_YmZo86yq",
+          "type": "widget_annotation",
+          "target": "#mapped_volume",
+          "content": "体积保持不变，但形状因 |g'(x)| 的局部拉伸而变化。"
+        },
+        {
+          "id": "action_r2QyBWZv",
+          "type": "speech",
+          "text": "现在我们把 t 拉到最大，看看强变换下的效果。拖动鼠标旋转视角，从俯视角度观察体积是如何被“揉捏”但仍然等价的。",
+          "audioRef": "audio/tts_s17_action_r2QyBWZv.mp3"
+        },
+        {
+          "id": "action_cq31zh8Z",
+          "type": "widget_setState",
+          "state": {
+            "t": 2
+          },
+          "content": "强变换：u = x + 2·sin(πx)"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "分部积分直觉",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "aBxi3snfGrX31FTdh3ke4",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "shape",
+              "id": "shape_DFadqQpp",
+              "left": 50,
+              "top": 50,
+              "width": 900,
+              "height": 70,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#EBF5FB"
+            },
+            {
+              "type": "text",
+              "id": "text_w265Rz6S",
+              "left": 50,
+              "top": 50,
+              "width": 900,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #2C3E50;\">分部积分直觉</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "text",
+              "id": "text_efAQFhTU",
+              "left": 50,
+              "top": 120,
+              "width": 900,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #555555;\">将乘积形式的积分拆分为可处理的两部分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#555555"
+            },
+            {
+              "type": "line",
+              "id": "line_nFVRdDCn",
+              "left": 500,
+              "top": 180,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                330
+              ],
+              "style": "dashed",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_3yXu7kGL",
+              "left": 50,
+              "top": 180,
+              "width": 40,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; text-align: center;\">🎯</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#E67E22"
+            },
+            {
+              "type": "text",
+              "id": "text_AjB8B1se",
+              "left": 100,
+              "top": 180,
+              "width": 380,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><strong>目标：</strong>掌握将乘积型累积拆分的公式逻辑</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_Oc1m31tv",
+              "left": 50,
+              "top": 260,
+              "width": 40,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; text-align: center;\">💡</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#E67E22"
+            },
+            {
+              "type": "text",
+              "id": "text_25_n1HVX",
+              "left": 100,
+              "top": 260,
+              "width": 380,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><strong>修复误解：</strong>公式不是机械搬运，而是乘积求导的逆运算</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Ywa_BvCI",
+              "left": 50,
+              "top": 360,
+              "width": 430,
+              "height": 150,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F8F9FA"
+            },
+            {
+              "type": "text",
+              "id": "text_AR1zPKyq",
+              "left": 70,
+              "top": 370,
+              "width": 390,
+              "height": 130,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #2C3E50;\"><strong>分部积分本质：</strong></p><p style=\"font-size: 18px; color: #333333;\">∫ u dv = uv - ∫ v du 是从 (uv)' = u'v + uv' 两边积分并移项得到，它将一个复杂乘积积分转化为一个更易处理的积分。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_DJsxG5GW",
+              "left": 530,
+              "top": 180,
+              "width": 420,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\int u\\,dv = uv - \\int v\\,du",
+              "color": "#2C3E50",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">u</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">v</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6667em;vertical-align:-0.0833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">uv</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">v</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">u</span></span></span></span></span>"
+            },
+            {
+              "type": "line",
+              "id": "line_lH_Ttegs",
+              "left": 580,
+              "top": 240,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                20
+              ],
+              "style": "solid",
+              "color": "#2C3E50",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_p2OIZa9q",
+              "left": 530,
+              "top": 260,
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">u: 可微分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "line",
+              "id": "line_4SjYaHwK",
+              "left": 780,
+              "top": 240,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                20
+              ],
+              "style": "solid",
+              "color": "#2C3E50",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_vGrK_mQJ",
+              "left": 730,
+              "top": 260,
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">dv: 可积分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "shape",
+              "id": "shape_6C6HbLoW",
+              "left": 530,
+              "top": 330,
+              "width": 110,
+              "height": 100,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#EBF5FB"
+            },
+            {
+              "type": "text",
+              "id": "text_4wlqcFRs",
+              "left": 530,
+              "top": 348,
+              "width": 110,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">(uv)' =</p><p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">u'v + uv'</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "line",
+              "id": "line_8XleCrCo",
+              "left": 640,
+              "top": 380,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                30,
+                0
+              ],
+              "style": "solid",
+              "color": "#2C3E50",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_1PlwqHZb",
+              "left": 670,
+              "top": 330,
+              "width": 130,
+              "height": 100,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#EBF5FB"
+            },
+            {
+              "type": "text",
+              "id": "text_8gMK6S16",
+              "left": 670,
+              "top": 338,
+              "width": 130,
+              "height": 85,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">两边积分得</p><p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">uv = ∫ u'v</p><p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">+ ∫ uv'</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "line",
+              "id": "line_TYajy19u",
+              "left": 800,
+              "top": 380,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                30,
+                0
+              ],
+              "style": "solid",
+              "color": "#2C3E50",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_dB9R21l2",
+              "left": 830,
+              "top": 330,
+              "width": 120,
+              "height": 100,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#EBF5FB"
+            },
+            {
+              "type": "text",
+              "id": "text_jxitxY5u",
+              "left": 830,
+              "top": 338,
+              "width": 120,
+              "height": 85,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">移项得</p><p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">∫ uv' = uv</p><p style=\"font-size: 14px; text-align: center; color: #2C3E50;\">- ∫ u'v</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_PLVRcI3z",
+          "type": "spotlight",
+          "elementId": "text_w265Rz6S"
+        },
+        {
+          "id": "action__t6SmtNQ",
+          "type": "speech",
+          "text": "本场景聚焦“分部积分直觉”。就像给积分表达式“换个衣服”，让它变得容易处理。本场景中，我们要面对另一类更棘手的情况——当被积函数是两个不同类型函数的乘积时，比如 x 乘以 e^x，或者 x 乘以 sin x，该怎么办？这就是我们今天要探索的“分部积分法”。"
+        },
+        {
+          "id": "action_Lkj_pXyq",
+          "type": "spotlight",
+          "elementId": "text_efAQFhTU"
+        },
+        {
+          "id": "action_qqb0SB4-",
+          "type": "speech",
+          "text": "它的核心思想非常朴素：把一个复杂的乘积形式的积分，拆成两个我们可以处理的部分。就像把一团纠缠的毛线，找到线头，一分为二，分别理顺。",
+          "audioRef": "audio/tts_s18_action_qqb0SB4-.mp3"
+        },
+        {
+          "id": "action_vtN6goZS",
+          "type": "spotlight",
+          "elementId": "text_AjB8B1se"
+        },
+        {
+          "id": "action_K5YsYwcP",
+          "type": "speech",
+          "text": "我们的目标非常明确，就是要掌握这种将乘积型累积拆分的公式逻辑，理解它背后的运作机制，而不仅仅是死记硬背公式。",
+          "audioRef": "audio/tts_s18_action_K5YsYwcP.mp3"
+        },
+        {
+          "id": "action_2qs5JJY3",
+          "type": "spotlight",
+          "elementId": "text_25_n1HVX"
+        },
+        {
+          "id": "action_dCVn0nx1",
+          "type": "speech",
+          "text": "很多同学可能之前见过分部积分公式，觉得它不过是一套机械的搬运工。但这其实是一个很大的误解。它远非无意义的符号游戏，事实上，它只是我们早已熟知的乘积求导法则的“逆运算”，就像减法是加法的逆运算一样自然。",
+          "audioRef": "audio/tts_s18_action_dCVn0nx1.mp3"
+        },
+        {
+          "id": "action_dWo1dmYX",
+          "type": "spotlight",
+          "elementId": "text_AR1zPKyq"
+        },
+        {
+          "id": "action_d9w3yhZp",
+          "type": "speech",
+          "text": "看这里，一切秘密都源于这个简单的乘积求导法则：u 乘以 v 的导数，等于 u 的导数乘以 v，加上 u 乘以 v 的导数。",
+          "audioRef": "audio/tts_s18_action_d9w3yhZp.mp3"
+        },
+        {
+          "id": "action_RW7aWrRl",
+          "type": "spotlight",
+          "elementId": "text_4wlqcFRs"
+        },
+        {
+          "id": "action_swT25f0A",
+          "type": "speech",
+          "text": "就是这个我们最熟悉的公式，对两边同时求不定积分，再通过简单的移项，就立刻得到了分部积分法的核心公式。你看，这样它就从一个需要记忆的“规定动作”，变成了一个逻辑链条的自然结果。",
+          "audioRef": "audio/tts_s18_action_swT25f0A.mp3"
+        },
+        {
+          "id": "action_kaMtIPIl",
+          "type": "spotlight",
+          "elementId": "latex_DJsxG5GW"
+        },
+        {
+          "id": "action_KDWxILE-",
+          "type": "speech",
+          "text": "这就是大名鼎鼎的分部积分公式：∫ u dv 等于 uv 减去 ∫ v du。它的精妙之处在于，原本我们想求的是 ∫ u dv，结果它把问题转化成了去求 ∫ v du。如果新的积分 ∫ v du 比原来的 ∫ u dv 更容易，那我们就成功了。",
+          "audioRef": "audio/tts_s18_action_KDWxILE-.mp3"
+        },
+        {
+          "id": "action_MV7AB88u",
+          "type": "spotlight",
+          "elementId": "text_p2OIZa9q"
+        },
+        {
+          "id": "action_tkt2gzoZ",
+          "type": "speech",
+          "text": "这里的关键是选择策略。u 负责被求导变得更简单，通常我们会选那些求导后能降级的函数，比如 x、ln x 这些。",
+          "audioRef": "audio/tts_s18_action_tkt2gzoZ.mp3"
+        },
+        {
+          "id": "action_L0xmOl3V",
+          "type": "laser",
+          "elementId": "text_vGrK_mQJ"
+        },
+        {
+          "id": "action_6-oM7CT2",
+          "type": "speech",
+          "text": "而 dv 则负责被积分，它必须是可以被积分的，比如 e^x dx、sin x dx。选对了 u 和 dv，这个公式就活了，否则只是从一个复杂掉进另一个复杂。本场景中，我们就通过一个生动的拖动实验，来亲手试试怎么做出这关键的选择。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "分部积分直觉：拖动实验",
+      "order": 19,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "integration_by_parts_intuition",
+          "description": "分部积分直觉 - 矩形面积拆分实验。拖动滑块改变u和v，观察大矩形面积uv如何被拆解为两个积分项之和：uv = ∫u dv + ∫v du。",
+          "variables": [
+            {
+              "name": "function_u",
+              "label": "函数 u(x)",
+              "min": 1,
+              "max": 10,
+              "default": 4,
+              "unit": ""
+            },
+            {
+              "name": "function_v",
+              "label": "函数 v(x)",
+              "min": 1,
+              "max": 10,
+              "default": 4,
+              "unit": ""
+            },
+            {
+              "name": "area_uv",
+              "label": "面积 uv",
+              "min": 0,
+              "max": 100,
+              "default": 16,
+              "unit": "单位²"
+            },
+            {
+              "name": "integral_term_1",
+              "label": "∫u·dv (水平条)",
+              "min": 0,
+              "max": 100,
+              "default": 8,
+              "unit": "单位²"
+            },
+            {
+              "name": "integral_term_2",
+              "label": "∫v·du (垂直条)",
+              "min": 0,
+              "max": 100,
+              "default": 8,
+              "unit": "单位²"
+            }
+          ],
+          "presets": [
+            {
+              "name": "u增大v不变",
+              "variables": {
+                "function_u": 7,
+                "function_v": 4
+              }
+            },
+            {
+              "name": "v增大u不变",
+              "variables": {
+                "function_u": 4,
+                "function_v": 7
+              }
+            },
+            {
+              "name": "u和v都增大",
+              "variables": {
+                "function_u": 8,
+                "function_v": 8
+              }
+            },
+            {
+              "name": "u减小v增大",
+              "variables": {
+                "function_u": 2,
+                "function_v": 8
+              }
+            },
+            {
+              "name": "初始状态",
+              "variables": {
+                "function_u": 4,
+                "function_v": 4
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/19_分部积分直觉：拖动实验.html",
+        "htmlBytes": 775565
+      },
+      "actions": [
+        {
+          "id": "action_RS10biQV",
+          "type": "speech",
+          "text": "本场景通过交互探索“分部积分直觉：拖动实验”。分部积分的关键在于如何恰当地选取 u 和 dv。现在，就让我们通过这个拖动实验，来直观地感受一下这个选择带来的几何意义。"
+        },
+        {
+          "id": "action_SCnU4XQp",
+          "type": "widget_highlight",
+          "target": "#u-slider",
+          "content": "这是控制函数 u(x) 值的滑块。"
+        },
+        {
+          "id": "action_zzGcDFBU",
+          "type": "widget_setState",
+          "state": {
+            "function_u": 7,
+            "function_v": 4
+          },
+          "content": "先试试只增大u，让矩形变宽。"
+        },
+        {
+          "id": "action_EE_OrSUJ",
+          "type": "speech",
+          "text": "看，当我们只拖动改变 u 的值，让矩形的宽度增加时，新增的面积主要是由水平方向上的长条累积而成的。这恰好对应了公式里的 ∫v du 这一项。",
+          "audioRef": "audio/tts_s19_action_EE_OrSUJ.mp3"
+        },
+        {
+          "id": "action_jeuDxK4o",
+          "type": "widget_setState",
+          "state": {
+            "function_u": 4,
+            "function_v": 7
+          },
+          "content": "再试试只增大v，让矩形变高。"
+        },
+        {
+          "id": "action_Pt57Bkp_",
+          "type": "speech",
+          "text": "相反，如果只改变 v 的值，让矩形变高，新增的面积就主要来自垂直方向的累积条，这对应着 ∫u dv 这一项。",
+          "audioRef": "audio/tts_s19_action_Pt57Bkp_.mp3"
+        },
+        {
+          "id": "action_kclhsYRb",
+          "type": "widget_setState",
+          "state": {
+            "function_u": 8,
+            "function_v": 8
+          },
+          "content": "最后，让u和v都增大，看看完整的变化。"
+        },
+        {
+          "id": "action_DqaGje51",
+          "type": "speech",
+          "text": "当 u 和 v 同时增大时，我们看到总面积的增加量，被完美地拆分成了垂直和水平两个方向的贡献。这个几何拆分，就是分部积分公式 uv = ∫u dv + ∫v du 最直观的证明。请大家自己也动手拖一拖滑块，体会一下这个动态平衡的过程。",
+          "audioRef": "audio/tts_s19_action_DqaGje51.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "分部积分直觉：关系图",
+      "order": 20,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "htmlPath": "interactive/20_分部积分直觉：关系图.html",
+        "htmlBytes": 456975
+      },
+      "actions": [
+        {
+          "id": "action_lnZS8XL3",
+          "type": "speech",
+          "text": "本场景通过交互探索“分部积分直觉：关系图”。让我们把这个动态平衡嵌入到一个完整的知识图谱里，看看乘积的求导与积分，是怎样互为镜像的。"
+        },
+        {
+          "id": "action_xwwn184k",
+          "type": "widget_highlight",
+          "target": "#n-product-rule",
+          "content": "中心节点：乘积求导法则 (uv)' = u'v + uv'"
+        },
+        {
+          "id": "action_VL8YLFiw",
+          "type": "speech",
+          "text": "请大家目光聚焦在这张图的中心，这里是乘积的求导法则。就像我们在此前拖动滑块看到的，变化被拆成了两部分。现在，我们从微分公式出发，看看对两边同时积分会发生什么。"
+        },
+        {
+          "id": "action_pufMXJOA",
+          "type": "widget_reveal",
+          "target": "#n-integration-by-parts",
+          "content": "展开对应的分部积分公式节点"
+        },
+        {
+          "id": "action_ytLJd6-d",
+          "type": "speech",
+          "text": "当我们把积分号同时作用在两边，原本的导数记号被“消去”，但 uv' 这一项的积分却需要被移项——这就是公式中出现负号的原因。注意图中这个符号反转的连接点，它是理解分部积分的关键。",
+          "audioRef": "audio/tts_s20_action_ytLJd6-d.mp3"
+        },
+        {
+          "id": "action_luG2-yDP",
+          "type": "widget_highlight",
+          "target": "#edge-negative-sign",
+          "content": "标出符号反转的边：∫ u dv = uv - ∫ v du"
+        },
+        {
+          "id": "action_xqNqwVHF",
+          "type": "speech",
+          "text": "很好，图上的双向箭头也在提示我们，求导和积分是一对逆操作。当我们选择一个 u 来微分、一个 v 来积分时，本质上就是在乘积的图上，把这个复杂的区域拆解成容易计算的两块。",
+          "audioRef": "audio/tts_s20_action_xqNqwVHF.mp3"
+        },
+        {
+          "id": "action_kj8Dv-yc",
+          "type": "widget_annotation",
+          "target": "#edge-bidirectional",
+          "content": "双向边：微分 ⟷ 积分转换"
+        },
+        {
+          "id": "action_jnMEVt4R",
+          "type": "speech",
+          "text": "本场景中，我们请大家带大家做一个快速挑战，来检验你是否真的看懂了这张图里隐藏的转换逻辑。准备好了吗？"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "分部积分直觉：误解修复挑战",
+      "order": 21,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "strategy",
+          "description": "分部积分直觉：误解修复挑战 - 策略卡牌游戏",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/21_分部积分直觉：误解修复挑战.html",
+        "htmlBytes": 793760
+      },
+      "actions": [
+        {
+          "id": "action_ES_Lin1h",
+          "type": "speech",
+          "text": "本场景通过交互探索“分部积分直觉：误解修复挑战”。刚看完大家的挑战，谁真正掌握了分部积分里选 u 和 dv 的直觉？现在轮到大家带你们玩一局卡牌游戏。"
+        },
+        {
+          "id": "action_iIX5nsgx",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始，进入挑战。"
+        },
+        {
+          "id": "action_LUAVuYT3",
+          "type": "speech",
+          "text": "屏幕上会出现一个积分，比如 x 乘 ln x。你要从手牌里选一张“u 卡”和一张“dv 卡”组合起来。仔细想，谁该当 u，谁该入 dv？",
+          "audioRef": "audio/tts_s21_action_LUAVuYT3.mp3"
+        },
+        {
+          "id": "action_2t7w7-tK",
+          "type": "speech",
+          "text": "接下来是最刺激的环节：预测这一步做完，公式是会变简单，还是会陷入无限分裂的死循环？如果选错组合，你会发现新冒出来的公式越来越乱。选对了，它就会优雅地收缩下去。",
+          "audioRef": "audio/tts_s21_action_2t7w7-tK.mp3"
+        },
+        {
+          "id": "action_g5VgRjym",
+          "type": "widget_setState",
+          "state": {
+            "currentIntegral": "∫ x ln x dx"
+          }
+        },
+        {
+          "id": "action_VWDdzSUX",
+          "type": "speech",
+          "text": "来，试着对 x ln x 出牌。选 u 为 ln x，dv 为 x dx，看看会得到什么？记住我们刚才在图里看到的规律：对数函数一求导就理性了，多项式一积分还是多项式。",
+          "audioRef": "audio/tts_s21_action_VWDdzSUX.mp3"
+        },
+        {
+          "id": "action_g_FHbU2j",
+          "type": "widget_highlight",
+          "target": ".card-hand"
+        },
+        {
+          "id": "action_0CNSnXnx",
+          "type": "speech",
+          "text": "别急着一次就过，这个游戏就是要你故意试试“错误”的选法，亲眼看看那个公式节点是如何疯狂分裂的。只有犯过错，你的直觉才会真正长出来。",
+          "audioRef": "audio/tts_s21_action_0CNSnXnx.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "分部积分直觉：空间视角",
+      "order": 22,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "分部积分直觉：空间视角 — 3D立方体切割演示，展示体积uv的增长如何被分解为两个侧面 ∫u·dv 和 ∫v·du",
+          "objects": [
+            {
+              "id": "base_block",
+              "type": "box",
+              "material": {
+                "type": "phong",
+                "color": "#4ade80",
+                "opacity": 0.7
+              },
+              "label": "uv 基底体积"
+            },
+            {
+              "id": "side_surface_u",
+              "type": "box",
+              "material": {
+                "type": "phong",
+                "color": "#3b82f6",
+                "opacity": 0.85
+              },
+              "label": "∫u·dv 蓝色侧面"
+            },
+            {
+              "id": "side_surface_v",
+              "type": "box",
+              "material": {
+                "type": "phong",
+                "color": "#ef4444",
+                "opacity": 0.85
+              },
+              "label": "∫v·du 红色侧面"
+            },
+            {
+              "id": "high_order",
+              "type": "box",
+              "material": {
+                "type": "phong",
+                "color": "#9ca3af",
+                "opacity": 0.15
+              },
+              "label": "du·dv 高阶小量 ≈ 0"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "t_growth",
+              "label": "参数 t",
+              "min": 0,
+              "max": 1,
+              "step": 0.01,
+              "default": 0.5
+            },
+            {
+              "type": "slider",
+              "param": "rate",
+              "label": "变化率",
+              "min": 0.02,
+              "max": 0.5,
+              "step": 0.01,
+              "default": 0.15
+            },
+            {
+              "type": "button",
+              "action": "highlightUdv",
+              "label": "∫u dv"
+            },
+            {
+              "type": "button",
+              "action": "highlightVdu",
+              "label": "∫v du"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "resetView",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "查看 ∫u·dv",
+              "state": {
+                "cameraPosition": [
+                  6,
+                  3,
+                  6
+                ],
+                "cameraTarget": [
+                  0,
+                  0.5,
+                  2
+                ]
+              }
+            },
+            {
+              "name": "查看 ∫v·du",
+              "state": {
+                "cameraPosition": [
+                  8,
+                  3,
+                  0
+                ],
+                "cameraTarget": [
+                  1,
+                  0.5,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "全局视角",
+              "state": {
+                "cameraPosition": [
+                  8,
+                  6,
+                  10
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "俯视图",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  12,
+                  0
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/22_分部积分直觉：空间视角.html",
+        "htmlBytes": 2513546
+      },
+      "actions": [
+        {
+          "id": "action_lQqx0opX",
+          "type": "speech",
+          "text": "本场景通过交互探索“分部积分直觉：空间视角”。我们被迫去做出选择：到底哪一块是 u dv，哪一块是 v du？现在我们来亲眼看看，它们到底长什么样子。"
+        },
+        {
+          "id": "action_5Qe2kDeV",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "这是一个 3D 立方体，代表乘积 uv 的体积。"
+        },
+        {
+          "id": "action_bTwnPcoi",
+          "type": "speech",
+          "text": "看到这个绿色半透明的基座了吗？这就是我们现在的 uv 体积。当我拖动底部的“参数 t”滑块时，体积会增长——就像函数值随着变量变化而变大。",
+          "audioRef": "audio/tts_s22_action_bTwnPcoi.mp3"
+        },
+        {
+          "id": "action_Z-39_gDA",
+          "type": "widget_setState",
+          "state": {
+            "t_growth": 0.8
+          },
+          "content": "把滑块向右移到 0.8，让体积明显增长一些。"
+        },
+        {
+          "id": "action_R41pnXx2",
+          "type": "speech",
+          "text": "注意看，增长出来的部分被切分成了两个侧面：一片蓝色的，一片红色的。蓝色的代表 ∫u·dv ——也就是“u 不动，v 往外长”；红色的代表 ∫v·du ——“v 不动，u 往外长”。你先试试，点一下“∫u dv”按钮，蓝色那片就会高亮显示。",
+          "audioRef": "audio/tts_s22_action_R41pnXx2.mp3"
+        },
+        {
+          "id": "action_IeDSD2Gp",
+          "type": "widget_highlight",
+          "target": "#controls",
+          "content": "点击这里的高亮按钮，分别查看蓝色和红色侧面。"
+        },
+        {
+          "id": "action_ty-3aMAR",
+          "type": "speech",
+          "text": "剩下一个灰色透明的小角，是 du 和 dv 共同作用的高阶小量，在极限意义下它趋于零，这就是我们推导时忽略掉的部分。你可以用鼠标旋转视角，从不同角度观察这三块切割面。",
+          "audioRef": "audio/tts_s22_action_ty-3aMAR.mp3"
+        },
+        {
+          "id": "action_O4T_idxs",
+          "type": "widget_annotation",
+          "target": "#base_block",
+          "content": "原来的 uv 体积，作为增长的起点。"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 23,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "bdtT2F3Gnb7VfDlyxvYmV",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_j9pX0GS3",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #2B5B84;\">全课整理：证据链回看</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2B5B84"
+            },
+            {
+              "type": "text",
+              "id": "text_2k7OlGYE",
+              "left": 60,
+              "top": 120,
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #4A7CAB;\">梳理本课所有交互实验证据与核心定理的联系</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4A7CAB"
+            },
+            {
+              "type": "shape",
+              "id": "shape_-M9DQ_LJ",
+              "left": 170,
+              "top": 190,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#D9E6F2"
+            },
+            {
+              "type": "shape",
+              "id": "shape_tSnmlbqW",
+              "left": 480,
+              "top": 190,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#D9E6F2"
+            },
+            {
+              "type": "shape",
+              "id": "shape_rye_8wSm",
+              "left": 790,
+              "top": 190,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#D9E6F2"
+            },
+            {
+              "type": "text",
+              "id": "text_WWDm6Fyr",
+              "left": 60,
+              "top": 240,
+              "width": 260,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #2B5B84;\">连接</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2B5B84"
+            },
+            {
+              "type": "text",
+              "id": "text_JTYzOLYt",
+              "left": 370,
+              "top": 240,
+              "width": 260,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #2B5B84;\">反馈</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2B5B84"
+            },
+            {
+              "type": "text",
+              "id": "text_1GyIa8_I",
+              "left": 680,
+              "top": 240,
+              "width": 260,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #2B5B84;\">任务预告</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2B5B84"
+            },
+            {
+              "type": "text",
+              "id": "text_XT0QOQvr",
+              "left": 60,
+              "top": 290,
+              "width": 260,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">从“变上限积分：拖动实验”到</p><p style=\"font-size: 16px; text-align: center; color: #333333;\">变上限积分定理</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_MgjQTYPm",
+              "left": 370,
+              "top": 290,
+              "width": 260,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">回顾形成性测验中关于</p><p style=\"font-size: 16px; text-align: center; color: #333333;\">NL公式端点差的正确直觉</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_xLOiTdOH",
+              "left": 680,
+              "top": 290,
+              "width": 260,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">将使用换元法与分部积分法</p><p style=\"font-size: 16px; text-align: center; color: #333333;\">解决后测中的综合迁移挑战</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_vJGOO5WP",
+              "left": 345,
+              "top": 190,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                170
+              ],
+              "style": "solid",
+              "color": "#E0E0E0",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_VqbzJEiR",
+              "left": 655,
+              "top": 190,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                170
+              ],
+              "style": "solid",
+              "color": "#E0E0E0",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_GDKvJZuc",
+              "left": 60,
+              "top": 380,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                880,
+                0
+              ],
+              "style": "solid",
+              "color": "#2B5B84",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "latex",
+              "id": "latex_jZvHucRX",
+              "left": 150,
+              "top": 410,
+              "width": 300,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\int_a^x f(t)\\,dt = F(x)-F(a)",
+              "color": "#2B5B84",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.3262em;vertical-align:-0.9119em;\"></span><span class=\"mop\"><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.4143em;\"><span style=\"top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">a</span></span></span><span style=\"top:-3.8129em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">x</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9119em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">t</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">t</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">a</span><span class=\"mclose\">)</span></span></span></span></span>"
+            },
+            {
+              "type": "latex",
+              "id": "latex_Jt79iqLw",
+              "left": 550,
+              "top": 410,
+              "width": 300,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\text{其中 } F'(x)=f(x)",
+              "color": "#2B5B84",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.0519em;vertical-align:-0.25em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">其中</span><span class=\"mord\"> </span></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8019em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">′</span></span></span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span></span></span></span></span>"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_si7jmgAM",
+          "type": "spotlight",
+          "elementId": "text_j9pX0GS3"
+        },
+        {
+          "id": "action_PX7UMY4I",
+          "type": "speech",
+          "text": "本场景聚焦“全课整理：证据链回看”。同学们，我们这门课已经走过了大半。今天我们不是在学新东西，而是把之前探索过的所有线索串联起来，形成一条完整的证据链。"
+        },
+        {
+          "id": "action_JmuUvSX0",
+          "type": "spotlight",
+          "elementId": "text_2k7OlGYE"
+        },
+        {
+          "id": "action_TVbWAaLk",
+          "type": "speech",
+          "text": "我们通过交互实验和可视化工具，看到了变上限积分如何像一个“面积生长机”，也验证了牛顿-莱布尼茨公式连接起导数和积分的那个端点差。现在，是时候把这些直觉和定理牢牢地绑定在一起了。",
+          "audioRef": "audio/tts_s23_action_TVbWAaLk.mp3"
+        },
+        {
+          "id": "action_UDa5BQG_",
+          "type": "spotlight",
+          "elementId": "text_WWDm6Fyr"
+        },
+        {
+          "id": "action_rwV3ln6d",
+          "type": "speech",
+          "text": "先看“连接”。还记得在场景3里我们拖动滑块，看着面积ΔS一点点长出来吗？",
+          "audioRef": "audio/tts_s23_action_rwV3ln6d.mp3"
+        },
+        {
+          "id": "action_-M_BYbNr",
+          "type": "spotlight",
+          "elementId": "text_XT0QOQvr"
+        },
+        {
+          "id": "action_S9ghoOA2",
+          "type": "spotlight",
+          "elementId": "latex_jZvHucRX"
+        },
+        {
+          "id": "action_mpTVmqPI",
+          "type": "speech",
+          "text": "那个实验的终点就是这里：从a到x的定积分，等于原函数F在x和a处的差值。这就是变上限积分定理，它告诉我们面积和原函数是一回事。",
+          "audioRef": "audio/tts_s23_action_mpTVmqPI.mp3"
+        },
+        {
+          "id": "action_m5u7Kxyp",
+          "type": "spotlight",
+          "elementId": "text_JTYzOLYt"
+        },
+        {
+          "id": "action_Gfc98tiC",
+          "type": "speech",
+          "text": "再来看看“反馈”。我们在形成性测验里检查了大家对牛顿-莱布尼茨公式的理解。",
+          "audioRef": "audio/tts_s23_action_Gfc98tiC.mp3"
+        },
+        {
+          "id": "action_iiYaspz7",
+          "type": "spotlight",
+          "elementId": "text_MgjQTYPm"
+        },
+        {
+          "id": "action_URtHJGKv",
+          "type": "speech",
+          "text": "很多同学凭直觉就选对了用端点差来计算定积分。这说明，即使不依赖死记公式，通过前面的可视化实验，你们的几何直觉已经非常准确了。这就是我们希望达到的学习效果。",
+          "audioRef": "audio/tts_s23_action_URtHJGKv.mp3"
+        },
+        {
+          "id": "action_xwh5gaPa",
+          "type": "spotlight",
+          "elementId": "text_1GyIa8_I"
+        },
+        {
+          "id": "action_yGD-IkRZ",
+          "type": "speech",
+          "text": "最后，我们看向前方。掌握了几何直觉和核心定理，接下来就是大展身手的时候了。",
+          "audioRef": "audio/tts_s23_action_yGD-IkRZ.mp3"
+        },
+        {
+          "id": "action_HQzGOhAF",
+          "type": "spotlight",
+          "elementId": "text_xLOiTdOH"
+        },
+        {
+          "id": "action_1YF0HcrD",
+          "type": "speech",
+          "text": "在接下来的后测中，我们将迎接综合性的挑战，需要灵活运用换元法和分部积分法去解决更复杂的迁移问题。准备好了吗？让我们带着这条清晰完整的证据链，自信地去迎接挑战。",
+          "audioRef": "audio/tts_s23_action_1YF0HcrD.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "后测：微积分基本定理与积分方法综合测评",
+      "order": 24,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "变上限积分函数 F(x) 等于从 a 到 x 的 f(t) 的定积分。根据微积分基本定理，F'(x) 等于什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "f(x)"
+              },
+              {
+                "value": "B",
+                "label": "f(t)"
+              },
+              {
+                "value": "C",
+                "label": "f(x) - f(a)"
+              },
+              {
+                "value": "D",
+                "label": "f(a)"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "根据微积分基本定理（Part 1），变上限积分函数对上限求导，结果是被积函数在上限处的取值，即 F'(x) = f(x)。这是微分与积分互为逆运算的核心体现。选项B的自变量错误；选项C是定积分计算的结果；选项D混淆了积分下限。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "已知函数 f(x) 存在原函数 F(x)，且定积分从a到b的 f(x) dx = 8。以下哪些利用牛顿-莱布尼茨公式的计算结果或推论是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "F(b) - F(a) = 8"
+              },
+              {
+                "value": "B",
+                "label": "f(b) - f(a) 一定等于 8"
+              },
+              {
+                "value": "C",
+                "label": "若已知 F(a) = 2，则可以推算出 F(b) = 10"
+              },
+              {
+                "value": "D",
+                "label": "f(x) 在区间 [a, b] 上的平均变化率是 8/(b-a)"
+              }
+            ],
+            "answer": [
+              "A",
+              "C"
+            ],
+            "analysis": "选项A直接应用牛顿-莱布尼茨公式（微积分基本定理 Part 2），是正确的。选项C由A推导，代入 F(a)=2 可得 F(b)=8+2=10，正确。选项B错误，混淆了原函数与被积函数。选项D错误，定积分8是函数值积累的长度，不是平均变化率；平均变化率是 (f(b)-f(a))/(b-a)，没有直接数值关系。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "计算定积分：从 0 到 1 的 2x 乘以 (x^2 + 1) 的 3 次方 的 dx。使用哪种策略最高效？",
+            "options": [
+              {
+                "value": "A",
+                "label": "展开多项式后求原函数，再代入上下限"
+              },
+              {
+                "value": "B",
+                "label": "令 u = x^2 + 1，进行换元积分"
+              },
+              {
+                "value": "C",
+                "label": "使用分部积分法"
+              },
+              {
+                "value": "D",
+                "label": "利用数值积分近似计算"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "被积函数中，2x 恰好是 x^2+1 的导数，这是典型的适合换元法的结构。令 u = x^2+1，则 du = 2x dx，积分化为 u^3 du 的形式，可以极快地求出结果15/4。选项A展开多项式计算量大且易错；选项C分部积分不适用于此结构；选项D作为验证方法可以，但非最高效。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "short_answer",
+            "question": "在使用定积分换元法时，令 u = g(x)，原来的积分微元 dx 变为 dx = (1/g'(x)) du。请用微分的比例直觉（如“如果 u 跑得快，x 应该怎样跑”）来解释，为什么换元后要乘以 1/g'(x) 这个“缩放因子”？",
+            "commentPrompt": "评分要点：\n(1) 将 du 和 dx 比作“走过的路程”，g'(x) 比作 u 相对于 x 的“速度” - 30%\n(2) 解释当 u 变化快（g'(x)大）时，x 需要的变化就小，所以乘以一个小于1的因子，即 1/g'(x) - 40%\n(3) 语言清晰，逻辑完整，能体现微元补偿的直觉 - 30%",
+            "analysis": "参考答案：微分可以看作非常小的变化量。如果 u = g(x)，那么 u 的微小变化 du 大约等于 g'(x) 乘以 x 的微小变化 dx。这就像两个跑步者，u 的速度是 x 的 g'(x) 倍。当我们用 du 来表达 dx 时，du 代表 u 跑过的距离，要换算出 x 跑过的距离 dx，就需要除以速度 g'(x)。g'(x) 越大，u 增长越快，同样的 du 对应的 x 变化就越小，所以 dx = du / g'(x)。这就是积分中“空间压缩与补偿”的直觉。",
+            "points": 25,
+            "hasAnswer": false
+          },
+          {
+            "id": "q5",
+            "type": "single",
+            "question": "设 G(x) 等于从 0 到 x^2 的 sin(t) 除以 t 的 dt。求 G'(x)。（提示：需结合微积分基本定理与链式法则）",
+            "options": [
+              {
+                "value": "A",
+                "label": "sin(x^2) / x^2"
+              },
+              {
+                "value": "B",
+                "label": "(sin(x^2) / x^2) 乘以 2x"
+              },
+              {
+                "value": "C",
+                "label": "sin(x) / x"
+              },
+              {
+                "value": "D",
+                "label": "cos(x^2) 乘以 2x"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "这是变上限积分的复合函数求导。令 u = x^2，则 G'(x) = dG/du * du/dx。由微积分基本定理，dG/du = sin(u)/u = sin(x^2)/x^2。而 du/dx = 2x。因此 G'(x) = [sin(x^2)/x^2] * 2x。选项A遗漏了内层函数的导数（链式法则）；选项C将上限视为x；选项D求导错误。",
+            "points": 20,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "short_answer",
+            "question": "请用自己的语言描述：为什么计算曲线下面积（定积分）的问题，本质上可以转化为寻找原函数（不定积分）的问题？这背后的“直觉”是什么？",
+            "commentPrompt": "评分要点：\n(1) 描述面积函数 A(x) 的瞬时变化率就是曲线高度 f(x) 这一核心直觉（基于微小增量） - 40%\n(2) 指出原函数族中的任何一个都可以用来计算面积的净变化量（F(b)-F(a)），常数C被抵消 - 30%\n(3) 表达流畅，体现微分与积分的内在互逆关系，而非仅重复公式 - 30%",
+            "analysis": "参考答案：想象一个从固定点 a 开始，向右移动 x 的面积函数 A(x)，代表从 a 到 x 的曲线下面积。当 x 增加一个微小量 dx，A(x) 的增加量 dA 近似为一个宽为 dx、高为 f(x) 的狭长矩形面积，即 f(x)dx。因此，dA/dx 的极限就是 f(x)。这揭示了面积函数 A(x) 的变化率正好是该点的函数值 f(x)，意味着 A(x) 是 f(x) 的一个原函数。所以，求定积分（总面积）的问题，归结为寻找任意一个原函数 F(x)，然后计算 F(b)-F(a)。常数 C 在这过程中被抵消，这正是微积分基本定理揭示的“整体变化量等于微小变化率积累”的深刻直觉。",
+            "points": 25,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_5skuq_TK",
+          "type": "speech",
+          "text": "这是一组关于“后测：微积分基本定理与积分方法综合测评”的独立测验。带着我们刚刚梳理出的这条‘从面积到原函数’的逻辑链条，现在是时候来一次综合检验了。这套后测里，既有对牛顿-莱布尼茨公式的扎实计算，也藏着一些需要你调动‘比例直觉’来应对的迁移挑战。"
+        },
+        {
+          "id": "action_aDb5PaQz",
+          "type": "speech",
+          "text": "请大家注意，题目会检验你两个层面的能力。第一个层面，是看到的换元法操作，比如遇到像是求导或者积分，你能不能立刻识别出，最优的策略是换元，而不是死算。第二层，是更深的理解，比如为什么换元后，那个微分的部分要乘上一个‘缩放因子’。",
+          "audioRef": "audio/tts_s24_action_aDb5PaQz.mp3"
+        },
+        {
+          "id": "action_dJYKXGR7",
+          "type": "speech",
+          "text": "特别是简答题部分，我需要你暂时放下数学符号，试着用‘跑得快慢’这样的画面感，去解释1/g'(x)究竟在表达什么。这不是为难大家，而是希望我们一起确认，你建立起来的不是一堆操作规则，而是真正能为你所用的物理直觉。",
+          "audioRef": "audio/tts_s24_action_dJYKXGR7.mp3"
+        },
+        {
+          "id": "action_eVWl_Um3",
+          "type": "speech",
+          "text": "好了，带着大家常说的一句‘先看看图像怎么说’，去和这些题目对话吧。遇到需要综合运用多个知识点的题目，别着急，回想一下我们一步步搭建起来的证据链，看看能不能找到解题的线索。"
+        },
+        {
+          "id": "action_8wJ_jU-U",
+          "type": "speech",
+          "text": "好了，题目已经都在你们面前了，给大家一些时间，沉下心来独立完成。把这当作是一次对自己直觉的‘压力测试’，我们一起来看看，当符号变得复杂，你的理解力能不能穿透它，依然看见那个最核心的简单道理。",
+          "audioRef": "audio/tts_s24_action_8wJ_jU-U.mp3"
+        },
+        {
+          "id": "action_Zy42OqED",
+          "type": "discussion",
+          "topic": "在完成这套后测的过程中，哪一个瞬间让你感觉到‘我懂了，这不是在算题，而是在运用一种直觉’？",
+          "prompt": "试着用‘比例’或‘缩放’这样的画面感来描述你在解题时的思考过程。",
+          "agentIndex": 1
+        }
+      ]
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_1Rmb-lh1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 45552
+    },
+    "audio/tts_action_7e-673-o.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110568
+    },
+    "audio/tts_action_cAHm4gIw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92040
+    },
+    "audio/tts_action_YT-mO-V_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 155928
+    },
+    "audio/tts_s10_action_m5J2e85a.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 42144
+    },
+    "audio/tts_s10_action_R9mHjOYn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 91896
+    },
+    "audio/tts_s10_action_SYPO7Nxi.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 145128
+    },
+    "audio/tts_s10_action_Teq9P7Sh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 73752
+    },
+    "audio/tts_s11_action_3qUBJTxL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 66120
+    },
+    "audio/tts_s11_action_nZ4aTQbe.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97800
+    },
+    "audio/tts_s11_action_s3ru9xWt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114960
+    },
+    "audio/tts_s11_action_vM9S-OrO.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 90576
+    },
+    "audio/tts_s12_action_12Gs2bYE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100464
+    },
+    "audio/tts_s12_action_5VAluD9w.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 86520
+    },
+    "audio/tts_s12_action_7H-TmEhn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 91944
+    },
+    "audio/tts_s12_action_OSIAeeos.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98232
+    },
+    "audio/tts_s12_action_ZvNWlk3L.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106200
+    },
+    "audio/tts_s13_action_GBDdDMOD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133608
+    },
+    "audio/tts_s13_action_N5veD1BU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 83280
+    },
+    "audio/tts_s13_action_ofM3VMXb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 155328
+    },
+    "audio/tts_s13_action_WUkRvFjK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112464
+    },
+    "audio/tts_s13_action_yfI7yLXR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100296
+    },
+    "audio/tts_s13_action_YszlWOM9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 147456
+    },
+    "audio/tts_s14_action_fJKo8A02.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 82896
+    },
+    "audio/tts_s14_action_kwzGSKU5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 86016
+    },
+    "audio/tts_s14_action_nByaEUIq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128712
+    },
+    "audio/tts_s14_action_RjtR6slx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 123672
+    },
+    "audio/tts_s15_action_9BdAk1zf.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 80808
+    },
+    "audio/tts_s15_action_Aw8VLnVa.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 166392
+    },
+    "audio/tts_s15_action_InqrrOzu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 73608
+    },
+    "audio/tts_s15_action_lJt8Y8ye.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 71136
+    },
+    "audio/tts_s15_action_RekBgXoU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122592
+    },
+    "audio/tts_s16_action_1Lj7maxp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 85224
+    },
+    "audio/tts_s16_action_fW-VwyA_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 67464
+    },
+    "audio/tts_s16_action_q2ZSU7XB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92688
+    },
+    "audio/tts_s16_action_r1w3BxHw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 69792
+    },
+    "audio/tts_s16_action_s4-yolDp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 418296
+    },
+    "audio/tts_s17_action_CsshlVve.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 72288
+    },
+    "audio/tts_s17_action_PNeS96u2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146112
+    },
+    "audio/tts_s17_action_r2QyBWZv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 80880
+    },
+    "audio/tts_s17_action_y8hcFyCI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112584
+    },
+    "audio/tts_s18_action_6-oM7CT2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 163680
+    },
+    "audio/tts_s18_action_d9w3yhZp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88944
+    },
+    "audio/tts_s18_action_dCVn0nx1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138528
+    },
+    "audio/tts_s18_action_K5YsYwcP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 75912
+    },
+    "audio/tts_s18_action_KDWxILE-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129096
+    },
+    "audio/tts_s18_action_qqb0SB4-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93480
+    },
+    "audio/tts_s18_action_swT25f0A.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114624
+    },
+    "audio/tts_s18_action_tkt2gzoZ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 74496
+    },
+    "audio/tts_s18_action__t6SmtNQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 168024
+    },
+    "audio/tts_s19_action_DqaGje51.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 177384
+    },
+    "audio/tts_s19_action_EE_OrSUJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118368
+    },
+    "audio/tts_s19_action_Pt57Bkp_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 73248
+    },
+    "audio/tts_s19_action_RS10biQV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88848
+    },
+    "audio/tts_s20_action_jnMEVt4R.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 69672
+    },
+    "audio/tts_s20_action_lnZS8XL3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 113160
+    },
+    "audio/tts_s20_action_VL8YLFiw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 115992
+    },
+    "audio/tts_s20_action_xqNqwVHF.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 115104
+    },
+    "audio/tts_s20_action_ytLJd6-d.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118416
+    },
+    "audio/tts_s21_action_0CNSnXnx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 83736
+    },
+    "audio/tts_s21_action_2t7w7-tK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110880
+    },
+    "audio/tts_s21_action_ES_Lin1h.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 77664
+    },
+    "audio/tts_s21_action_LUAVuYT3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88728
+    },
+    "audio/tts_s21_action_VWDdzSUX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 120480
+    },
+    "audio/tts_s22_action_bTwnPcoi.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88968
+    },
+    "audio/tts_s22_action_lQqx0opX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 79344
+    },
+    "audio/tts_s22_action_R41pnXx2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 172272
+    },
+    "audio/tts_s22_action_ty-3aMAR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119280
+    },
+    "audio/tts_s23_action_1YF0HcrD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116112
+    },
+    "audio/tts_s23_action_Gfc98tiC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 45624
+    },
+    "audio/tts_s23_action_mpTVmqPI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 113808
+    },
+    "audio/tts_s23_action_PX7UMY4I.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84024
+    },
+    "audio/tts_s23_action_rwV3ln6d.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 54624
+    },
+    "audio/tts_s23_action_TVbWAaLk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133224
+    },
+    "audio/tts_s23_action_URtHJGKv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 103752
+    },
+    "audio/tts_s23_action_yGD-IkRZ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 49464
+    },
+    "audio/tts_s24_action_5skuq_TK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 147744
+    },
+    "audio/tts_s24_action_8wJ_jU-U.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 155928
+    },
+    "audio/tts_s24_action_aDb5PaQz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 165144
+    },
+    "audio/tts_s24_action_dJYKXGR7.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 151200
+    },
+    "audio/tts_s24_action_eVWl_Um3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141720
+    },
+    "audio/tts_s2_action_1G9bXdpp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114600
+    },
+    "audio/tts_s2_action_ESahPnnS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84768
+    },
+    "audio/tts_s2_action_Nqa-rVcR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 132000
+    },
+    "audio/tts_s2_action_RsfTUpCt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 48384
+    },
+    "audio/tts_s2_action_sL4-pj0U.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97536
+    },
+    "audio/tts_s2_action_UqH2FjnD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100320
+    },
+    "audio/tts_s2_action_xQwW57EA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 68784
+    },
+    "audio/tts_s3_action_JlD14Wnu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89064
+    },
+    "audio/tts_s3_action_JsHzO-II.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 59976
+    },
+    "audio/tts_s3_action_TRlSl0TS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 64824
+    },
+    "audio/tts_s3_action_WcpJXtjR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100968
+    },
+    "audio/tts_s3_action_yZKwJXcD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 50592
+    },
+    "audio/tts_s4_action_-OXH0Exo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94368
+    },
+    "audio/tts_s4_action_mnMHUWZe.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 165336
+    },
+    "audio/tts_s4_action_t6UFWR-g.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 180240
+    },
+    "audio/tts_s4_action_T7c8qs-g.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118704
+    },
+    "audio/tts_s5_action_7LhLv4na.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102408
+    },
+    "audio/tts_s5_action_9qgqJXi5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112632
+    },
+    "audio/tts_s5_action_a30U5878.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102408
+    },
+    "audio/tts_s5_action_PM8sqeQG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 115272
+    },
+    "audio/tts_s5_action_YjB2THaa.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89568
+    },
+    "audio/tts_s6_action_dXHSCeq4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 71856
+    },
+    "audio/tts_s6_action_fS4GCx0N.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101424
+    },
+    "audio/tts_s6_action_TFeKz2J0.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116856
+    },
+    "audio/tts_s6_action_vtiJ-lKg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 151152
+    },
+    "audio/tts_s7_action_fml6c-FV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88488
+    },
+    "audio/tts_s7_action_H58Uz9t9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88680
+    },
+    "audio/tts_s7_action_krhWmBKA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159600
+    },
+    "audio/tts_s7_action_OgxTWCUk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 124056
+    },
+    "audio/tts_s7_action_UfDXw0SE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 164088
+    },
+    "audio/tts_s7_action_YCtkg3T-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 54168
+    },
+    "audio/tts_s8_action_crf0hYO5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140424
+    },
+    "audio/tts_s8_action_IDcnogPR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 174624
+    },
+    "audio/tts_s8_action_IIKP7BKs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 198288
+    },
+    "audio/tts_s8_action_W7sVNLAL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 131496
+    },
+    "audio/tts_s9_action_6s5V3Ryh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 69432
+    },
+    "audio/tts_s9_action_e4l9fBru.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104064
+    },
+    "audio/tts_s9_action_FC5Qd_cy.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 61896
+    },
+    "audio/tts_s9_action_i8yBmNyS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 107208
+    },
+    "audio/tts_s9_action_IsvETqnh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 41832
+    },
+    "audio/tts_s9_action_uXbZJ8Bp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101496
+    },
+    "audio/tts_s9_action_ZCPcvhtU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 83160
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

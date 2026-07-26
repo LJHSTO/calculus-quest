@@ -1,0 +1,5822 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T11:40:12.063Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "无约束优化与梯度下降基础",
+    "description": "",
+    "language": "本课程采用中文授课。专业术语如梯度（Gradient）、黑塞矩阵（Hessian）、步长（Step-size/Learning Rate）在初次出现时使用中英双语标注，后续以中文为主。教学风格应通俗易懂，将数学优化过程类比为地形探索，重点强调直观理解而非复杂的公式推导。",
+    "style": "professional",
+    "createdAt": 1783045566707,
+    "updatedAt": 1783045566707
+  },
+  "agents": [
+    {
+      "name": "晓棠",
+      "role": "assistant",
+      "persona": "晓棠是陆老师的研究生助教，思维敏捷且观察力强，善于在学生操作交互实验时从旁提示关键细节。她总能用一两句恰到好处的点拨帮学生打通'地形感'与'数学推导'之间的隔阂，尤其在误解修复挑战环节扮演着重要引导角色。",
+      "avatar": "/avatars/assist.png",
+      "color": "#10b981",
+      "priority": 7
+    },
+    {
+      "name": "思远",
+      "role": "student",
+      "persona": "思远是个爱钻研的学霸型学生，习惯把每个操作背后的数学逻辑彻底想透，经常在关系图环节提出深度追问。他偏爱从公式和流程图的严谨角度审视问题，偶尔需要被提醒回归空间直觉，是课堂讨论中的理性支柱。",
+      "avatar": "/avatars/thinker-2.png",
+      "color": "#8b5cf6",
+      "priority": 6
+    },
+    {
+      "name": "小然",
+      "role": "student",
+      "persona": "小然是个充满好奇心但有点急性子的学生，头脑灵活，喜欢动手拖动实验控件，经常凭直觉快速给出答案。她有时会陷入'步子越大收敛越快'之类的典型误区，但一经指正便恍然大悟，是课堂上活跃气氛的开心果。",
+      "avatar": "/avatars/clown.png",
+      "color": "#f59e0b",
+      "priority": 5
+    },
+    {
+      "name": "陆老师",
+      "role": "teacher",
+      "persona": "陆老师是一位经验丰富的数学优化教师，擅长用生动的地理类比将抽象概念转化为直观理解。他教学节奏稳健，善于通过提问引导思考，对学生的常见误解有精准预判，总能在关键时刻点出地形探索与数学原理的对应关系。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：无约束优化与梯度下降学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "你站在一座山坡上，想要走到山脚下最低的谷底。从你当前的位置看，哪个方向最可能让你最快地下降高度？",
+            "options": [
+              {
+                "value": "A",
+                "label": "沿着等高线水平走"
+              },
+              {
+                "value": "B",
+                "label": "朝着最陡峭的下山方向走"
+              },
+              {
+                "value": "C",
+                "label": "朝着山顶方向走"
+              },
+              {
+                "value": "D",
+                "label": "绕着山坡转圈走"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "想要最快地下降高度，应该选择当前位置最陡峭的下山方向，这正是梯度下降法中负梯度方向的核心思想。选项A沿着等高线走高度不变；选项C是上山方向，高度会增加；选项D绕圈走的下降效率很低，不是最快的方式。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "在数学中，梯度（Gradient）是一个向量，它指示了什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "函数值下降最快的方向"
+              },
+              {
+                "value": "B",
+                "label": "函数值上升最快的方向"
+              },
+              {
+                "value": "C",
+                "label": "函数值保持不变的方向"
+              },
+              {
+                "value": "D",
+                "label": "函数值最慢变化的任意方向"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "梯度向量的定义是函数在某点处方向导数取得最大值的方向，即函数值上升最快的方向。因此负梯度方向才是下降最快的方向。选项A容易与负梯度混淆，是常见误区；选项C和D都不符合梯度的数学定义。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "question": "以下关于“迭代（Iteration）”过程的描述，哪些是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "每次迭代都会根据当前信息更新位置或状态"
+              },
+              {
+                "value": "B",
+                "label": "迭代通常需要重复多次才能逐渐接近目标"
+              },
+              {
+                "value": "C",
+                "label": "在任何问题中，迭代一次就能立刻得到精确解"
+              },
+              {
+                "value": "D",
+                "label": "迭代是一种逐步逼近目标的方法"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "analysis": "迭代是一个逐步逼近目标的过程，每次迭代根据当前信息进行更新（A对），需要重复多次才能逐渐接近目标（B对），是一种逐步逼近的方法（D对）。选项C错误，因为迭代通常不能一次就得到精确解，而是不断改进近似解。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "假设你要在浓雾中徒步下山，每次只能看清周围很小范围的地形。你决定每走一步都重新观察地形，然后选择当前最陡的下山方向迈出一步，如此反复。这类似于哪种优化方法？",
+            "options": [
+              {
+                "value": "A",
+                "label": "随机跳跃法"
+              },
+              {
+                "value": "B",
+                "label": "全局搜索法"
+              },
+              {
+                "value": "C",
+                "label": "梯度下降法（Gradient Descent）"
+              },
+              {
+                "value": "D",
+                "label": "等高线追踪法"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "梯度下降法的核心思想就是在每一步计算当前位置的梯度（即最陡上升方向），然后沿着负梯度方向（最陡下降方向）迈出一步，反复迭代直到到达谷底。题目描述的场景正好对应了这一过程。其他选项都不符合这种逐步利用局部信息做决策的特性。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "请用你自己的语言描述：如果你想把一个复杂的优化问题想象成“在一片山区寻找最低点”，你会如何理解“步长（Step-size）”这个概念的物理含义？步长太大或太小分别会带来什么问题？",
+            "commentPrompt": "评分标准：(1) 清晰解释步长在“下山”场景中的物理含义（如每步跨多远）——40%；(2) 说明步长太大可能导致的后果（如跨过谷底、震荡甚至滚下山）——30%；(3) 说明步长太小可能导致的后果（如下山太慢、长时间走不到谷底）——30%。",
+            "analysis": "参考答案：在“山区找最低点”的场景中，步长可以理解为每次下山的步伐大小。步长太大相当于大步流星下山，虽然可能下降很快，但容易跨过谷底的真正最低点，导致在山谷两侧来回震荡，甚至从另一侧爬上去；步长太小相当于小碎步下山，每步下降幅度有限，虽然比较安全不容易错过最低点，但会把时间浪费在不必要的小步移动上，效率很低，可能需要非常多步才能到达谷底。理想的步长应该适中，既能保证较快的下降速度，又不会因为步子太大而错过最优解。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_Bw-V7MGn",
+          "type": "speech",
+          "text": "这是一组关于“前测：无约束优化与梯度下降学习准备诊断”的独立测验。欢迎来到今天的课程，我们要一起探索一个非常有趣的话题——无约束优化与梯度下降。在正式进入核心内容之前，我想先通过一个小测验来了解一下大家对于相关概念的直觉和预备知识。这就像是我们在开始一场登山探险前，先看看地图，了解一下地形和方向感。"
+        },
+        {
+          "id": "action_nC17gHCY",
+          "type": "speech",
+          "text": "大家请看屏幕上的这几道题。它们会涉及到对山坡地形、最陡下降方向以及一步步迭代寻找最低点的理解。不用紧张，这只是一个诊断性前测，目的是帮助我们了解大家目前的想法。请你凭直觉和自己的知识储备认真作答。",
+          "audioRef": "audio/tts_action_nC17gHCY.mp3"
+        },
+        {
+          "id": "action_6f6E4j08",
+          "type": "speech",
+          "text": "给大家一点时间，仔细读题，尤其是最后那道简答题，请尝试用自己的语言来描述你对“步长”这个概念的初步理解。完成之后，我们将一起简单分析这些题目背后的核心思想，看看它们如何与我们之后要学习的梯度下降法紧密相连。好的，现在可以开始了。",
+          "audioRef": "audio/tts_action_6f6E4j08.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "目标函数地形",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "YUjIB6WU4qwm6MaG2J5MH",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_oxJKfNBo",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #2B3A67;\">目标函数地形</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2B3A67"
+            },
+            {
+              "type": "text",
+              "id": "text_-qCtMi0G",
+              "left": 60,
+              "top": 120,
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #555555;\">将最小化问题转化为寻找地理地形中的低谷</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#555555"
+            },
+            {
+              "type": "text",
+              "id": "text_mM6zAX8E",
+              "left": 60,
+              "top": 180,
+              "width": 420,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\">• 目标函数 J(θ) 定义了参数空间中的“海拔”高度</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_rpz9QJv-",
+              "left": 60,
+              "top": 260,
+              "width": 420,
+              "height": 103,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\">• 优化目标：从任意初始位置出发，沿着梯度下降方向走到海拔最低点（全局/局部最小值）</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_l6A4jMJ1",
+              "left": 60,
+              "top": 365,
+              "width": 420,
+              "height": 103,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\">• 误解修复：数学公式并非冰冷的符号，而是具有起伏特征的连续表面——每一组参数对应一个海拔值</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_yyeaYNR_",
+              "left": 60,
+              "top": 475,
+              "width": 220,
+              "height": 50,
+              "rotate": 0,
+              "latex": "J(\\theta) = (\\theta - 2)^2 + 1",
+              "color": "#2B3A67",
+              "align": "left",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.09618em;\">J</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.02778em;\">θ</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.02778em;\">θ</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.1141em;vertical-align:-0.25em;\"></span><span class=\"mord\">2</span><span class=\"mclose\"><span class=\"mclose\">)</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8641em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6444em;\"></span><span class=\"mord\">1</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "text",
+              "id": "text_SotOA0He",
+              "left": 290,
+              "top": 477,
+              "width": 190,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #555555;\">在 θ=2 处取最小值 1</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#555555"
+            },
+            {
+              "type": "line",
+              "id": "line_OsRirOLc",
+              "left": 520,
+              "top": 450,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                420,
+                0
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_w-yNyVpr",
+              "left": 520,
+              "top": 200,
+              "width": 3,
+              "start": [
+                0,
+                250
+              ],
+              "end": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_BGfZTgs_",
+              "left": 900,
+              "top": 460,
+              "width": 100,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\">θ (参数)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_9gBz-Bkt",
+              "left": 530,
+              "top": 180,
+              "width": 140,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\">J(θ) (目标函数值)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_WyEuJbdX",
+              "left": 520,
+              "top": 250,
+              "width": 4,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                380,
+                0
+              ],
+              "style": "solid",
+              "color": "#5b9bd5",
+              "points": [
+                "",
+                ""
+              ],
+              "curve": [
+                190,
+                300
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_iPzAfP6O",
+              "left": 555,
+              "top": 302,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#70ad47"
+            },
+            {
+              "type": "text",
+              "id": "text_dE9OQ1VW",
+              "left": 575,
+              "top": 282,
+              "width": 140,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #70ad47;\">起始点 (θ₀, J(θ₀))</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#70ad47"
+            },
+            {
+              "type": "shape",
+              "id": "shape_ww--MCYD",
+              "left": 705,
+              "top": 395,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#ed7d31"
+            },
+            {
+              "type": "text",
+              "id": "text_zjNZ_0Yi",
+              "left": 725,
+              "top": 375,
+              "width": 140,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #ed7d31;\">最低点 (θ*, J(θ*))</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ed7d31"
+            },
+            {
+              "type": "line",
+              "id": "line_LzqJ8bRv",
+              "left": 560,
+              "top": 307,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                135,
+                85
+              ],
+              "style": "dashed",
+              "color": "#ed7d31",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "curve": [
+                70,
+                50
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_eQkwnqaT",
+              "left": 610,
+              "top": 332,
+              "width": 120,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #ed7d31;\">梯度下降方向</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ed7d31"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_Lt6ei9XR",
+          "type": "spotlight",
+          "elementId": "text_oxJKfNBo"
+        },
+        {
+          "id": "action_I1rjNWi9",
+          "type": "speech",
+          "text": "本场景聚焦“目标函数地形”。很好，刚才的摸底练习大家已经完成了。本场景中，我们不急着看公式，先把数学问题换个角度来理解。请看这张图，我们把优化问题想象成在一个地理地形中寻找最低点。"
+        },
+        {
+          "id": "action_JBdipSF6",
+          "type": "spotlight",
+          "elementId": "text_rpz9QJv-"
+        },
+        {
+          "id": "action_HMSbIns3",
+          "type": "speech",
+          "text": "这个想法很简单：我们的目标函数 J(θ) 就像是定义在参数空间里的“海拔”高度。优化的过程，就是从任意一个初始位置出发，一步一步走到海拔最低的那个山谷里去。",
+          "audioRef": "audio/tts_s2_action_HMSbIns3.mp3"
+        },
+        {
+          "id": "action_m_jY-sF4",
+          "type": "spotlight",
+          "elementId": "text_l6A4jMJ1"
+        },
+        {
+          "id": "action_J2Q5nIDx",
+          "type": "speech",
+          "text": "这背后的核心是修复一个常见的误解：数学公式不是一串冰冷的符号。你看，它其实是一个连续的、有起伏的表面。每一组参数 θ 都对应着一个海拔值，这能帮我们在脑海里建立起空间直觉。",
+          "audioRef": "audio/tts_s2_action_J2Q5nIDx.mp3"
+        },
+        {
+          "id": "action_3RRTphte",
+          "type": "spotlight",
+          "elementId": "latex_yyeaYNR_"
+        },
+        {
+          "id": "action_U0TOcWb2",
+          "type": "speech",
+          "text": "就以这个简单的二次函数 J(θ) = (θ - 2)² + 1 为例。从公式看，它只是一个符号组合，但现在我们把它看成一座山的地形图。",
+          "audioRef": "audio/tts_s2_action_U0TOcWb2.mp3"
+        },
+        {
+          "id": "action_-rnzyfZb",
+          "type": "spotlight",
+          "elementId": "shape_iPzAfP6O"
+        },
+        {
+          "id": "action_QHw_IyLa",
+          "type": "speech",
+          "text": "比如，我们从这边较高的起始点出发，",
+          "audioRef": "audio/tts_s2_action_QHw_IyLa.mp3"
+        },
+        {
+          "id": "action_aov2C3fE",
+          "type": "spotlight",
+          "elementId": "shape_ww--MCYD"
+        },
+        {
+          "id": "action_vK3M8scj",
+          "type": "speech",
+          "text": "最终的目标就是走到这里，也就是在 θ=2 时取到最小值 1 的最低点。大家看，把公式看成地形，优化的路径是不是一下子就直观多了？",
+          "audioRef": "audio/tts_s2_action_vK3M8scj.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "目标函数地形：拖动实验",
+      "order": 3,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "objective_function_terrain",
+          "description": "目标函数地形探测器 — 在2D热力图上拖动探测点，观察函数值变化，寻找局部极小值（地形低谷）。",
+          "variables": [
+            {
+              "name": "current_x",
+              "label": "X 坐标",
+              "min": -3,
+              "max": 3,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "current_y",
+              "label": "Y 坐标",
+              "min": -3,
+              "max": 3,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "z_value_display",
+              "label": "函数值 Z",
+              "min": -5,
+              "max": 20,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "terrain_toggle",
+              "label": "地形类型",
+              "min": 0,
+              "max": 4,
+              "default": 0,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "🔍 从高峰探索",
+              "variables": {
+                "current_x": 2,
+                "current_y": 2,
+                "terrain_toggle": 0
+              }
+            },
+            {
+              "name": "🎯 寻找全局最小值",
+              "variables": {
+                "current_x": -2.5,
+                "current_y": 1.5,
+                "terrain_toggle": 2
+              }
+            },
+            {
+              "name": "🌊 震荡地形",
+              "variables": {
+                "current_x": 0,
+                "current_y": 0,
+                "terrain_toggle": 3
+              }
+            },
+            {
+              "name": "⛰️ 多峰对比",
+              "variables": {
+                "current_x": 1,
+                "current_y": -1,
+                "terrain_toggle": 1
+              }
+            },
+            {
+              "name": "🏔️ 崎岖地带",
+              "variables": {
+                "current_x": 2,
+                "current_y": -2,
+                "terrain_toggle": 4
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/03_目标函数地形：拖动实验.html",
+        "htmlBytes": 784317
+      },
+      "actions": [
+        {
+          "id": "action_oUcrilKS",
+          "type": "speech",
+          "text": "本场景通过交互探索“目标函数地形：拖动实验”。现在我们自己动手来探测一下。这里有一张热力图，颜色越深的地方函数值越低，也就是地形中的‘洼地’。"
+        },
+        {
+          "id": "action_cSn08Z4A",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "拖动这个探测点，观察热力图上的颜色和读数面板的变化。"
+        },
+        {
+          "id": "action__zkJR945",
+          "type": "speech",
+          "text": "试着把探测点从边缘往中心颜色最深的地方拖动。注意看旁边的 Z 值读数，它是怎么变化的？",
+          "audioRef": "audio/tts_s3_action__zkJR945.mp3"
+        },
+        {
+          "id": "action_xCJTnQ9B",
+          "type": "widget_setState",
+          "state": {
+            "current_x": 2,
+            "current_y": 2,
+            "terrain_toggle": 0
+          },
+          "content": "从热力图的边缘高峰开始，为向低谷移动做准备。"
+        },
+        {
+          "id": "action_WF5EPKT0",
+          "type": "speech",
+          "text": "好，现在慢慢地向中心移动，你会发现读数一直在下降。这个下降的过程，其实就是我们在数学上寻找极小值的过程 —— 目标是找到那个‘海拔’最低的点。",
+          "audioRef": "audio/tts_s3_action_WF5EPKT0.mp3"
+        },
+        {
+          "id": "action_r7ecTXKQ",
+          "type": "widget_annotation",
+          "target": "#z_value_display",
+          "content": "这个 Z 值就是我们目标函数 f(x, y) 的实时输出，相当于探测点的‘海拔’高度。"
+        },
+        {
+          "id": "action_5uMxXUZm",
+          "type": "speech",
+          "text": "你可别小看这个拖动，它正对应着我们后面马上要学到的梯度下降算法：每一步都朝着更低的方向走。你可以点击下方的预设按钮，换几个不同的地形试一试，看看是不是总能找到那个颜色最深的地方。",
+          "audioRef": "audio/tts_s3_action_5uMxXUZm.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "目标函数地形：关系图",
+      "order": 4,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "目标函数地形：关系图",
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "函数式",
+              "sublabel": "Function Expression",
+              "icon": "📐",
+              "x": 450,
+              "y": 60,
+              "details": "目标函数的数学表达式，如 f(x,y) = x² + y²。它定义了整个「地形」的规则。",
+              "formula": "f(x, y) = ax² + by² + cxy + d",
+              "tags": [
+                "核心",
+                "起点"
+              ],
+              "note": "函数式是整座地形的「蓝图」。每一项系数都会改变地形的形状——就像改变地壳构造一样。"
+            },
+            {
+              "id": "n2",
+              "label": "输入参数",
+              "sublabel": "Input Parameters",
+              "icon": "🎛️",
+              "x": 180,
+              "y": 180,
+              "details": "函数的自变量（如 x, y），代表我们在参数空间中的「位置坐标」。",
+              "formula": "θ = [x₁, x₂, ..., xₙ]",
+              "tags": [
+                "输入",
+                "坐标系"
+              ],
+              "note": "想象你在地图上选择一点 (x, y)——这就是输入参数，决定了你在地形上的当前位置。"
+            },
+            {
+              "id": "n3",
+              "label": "公式系数",
+              "sublabel": "Formula Coefficients",
+              "icon": "⚙️",
+              "x": 720,
+              "y": 180,
+              "details": "函数中的系数（a, b, c 等），决定了地形的「形状特征」——是平坦、陡峭还是碗状。",
+              "formula": "a, b, c → 控制曲率与方向",
+              "tags": [
+                "形状",
+                "权重"
+              ],
+              "note": "系数 a 和 b 越大，地形越陡峭。c 项（交叉项）会让地形「倾斜」，让两个方向产生关联。"
+            },
+            {
+              "id": "n4",
+              "label": "地形高度",
+              "sublabel": "Terrain Height (z)",
+              "icon": "🏔️",
+              "x": 450,
+              "y": 310,
+              "details": "函数的输出值 z = f(x,y)，即地形在该点的「海拔高度」。高度越低，函数值越小（越优）。",
+              "formula": "z = f(x, y) → 海拔",
+              "tags": [
+                "输出",
+                "海拔"
+              ],
+              "note": "在优化问题中，我们希望找到最低点（全局最小值）。地形高度直接反映了当前的「代价」或「误差」。"
+            },
+            {
+              "id": "n5",
+              "label": "参数变化",
+              "sublabel": "Parameter Change",
+              "icon": "🔀",
+              "x": 200,
+              "y": 430,
+              "details": "调整输入参数的过程。每次调整都相当于在地形上「走一步」。步长（Step-size / Learning Rate）决定了走多远。",
+              "formula": "Δθ → 步长 α (Learning Rate)",
+              "tags": [
+                "更新",
+                "步长"
+              ],
+              "note": "步长太大会「跨过」山谷，太小则进展缓慢。选择合适的步长是优化的关键艺术。"
+            },
+            {
+              "id": "n6",
+              "label": "地形陡峭程度",
+              "sublabel": "Steepness / Gradient",
+              "icon": "📊",
+              "x": 700,
+              "y": 430,
+              "details": "由<strong>梯度（Gradient）</strong> ∇f 表示地形的陡峭方向和程度。梯度越大，地形越陡。",
+              "formula": "∇f = [∂f/∂x, ∂f/∂y]",
+              "tags": [
+                "梯度",
+                "方向"
+              ],
+              "note": "梯度就像山坡上的「最陡下降方向」。顺着梯度反方向走，就能最快下山——这就是梯度下降法的直觉。"
+            },
+            {
+              "id": "n7",
+              "label": "地形位移",
+              "sublabel": "Terrain Displacement",
+              "icon": "🔄",
+              "x": 450,
+              "y": 540,
+              "details": "参数变化导致我们在地形上的位置移动。位移的方向和大小由梯度和步长共同决定。",
+              "formula": "θ_{t+1} = θ_t - α·∇f(θ_t)",
+              "tags": [
+                "迭代",
+                "移动"
+              ],
+              "note": "这就是梯度下降的更新公式！每一步都朝着更「低」的方向移动，就像在山中摸索着往下走。"
+            },
+            {
+              "id": "n8",
+              "label": "碗状结构",
+              "sublabel": "Bowl-shaped Structure",
+              "icon": "🥣",
+              "x": 230,
+              "y": 660,
+              "details": "当函数包含<strong>平方项</strong>（如 x² + y²）时，地形呈现碗状。碗底就是全局最小值点。",
+              "formula": "f(x,y) = x² + y² → 圆碗",
+              "tags": [
+                "平方项",
+                "全局最小"
+              ],
+              "note": "学生可以观察到：平方项 = 碗状结构。系数不等时碗被「拉长」（如 2x² + y²），梯度下降的路径也会改变。"
+            },
+            {
+              "id": "n9",
+              "label": "黑塞矩阵",
+              "sublabel": "Hessian Matrix",
+              "icon": "🔬",
+              "x": 450,
+              "y": 660,
+              "details": "<strong>黑塞矩阵（Hessian）</strong> H 包含二阶导数信息，揭示了地形的「曲率」。正定矩阵对应碗状地形。",
+              "formula": "H = [[∂²f/∂x², ∂²f/∂x∂y], [∂²f/∂y∂x, ∂²f/∂y²]]",
+              "tags": [
+                "二阶",
+                "曲率"
+              ],
+              "note": "如果 Hessian 的所有特征值都为正，说明这里是碗底（局部最小值）。如果有负特征值，说明有方向是「上坡」的（鞍点）。"
+            },
+            {
+              "id": "n10",
+              "label": "公式盲区",
+              "sublabel": "Formula Blind Spot",
+              "icon": "⚠️",
+              "x": 660,
+              "y": 550,
+              "details": "只关注公式本身而<strong>不观察地形</strong>，可能导致忽略重要的结构信息——如局部最小值、鞍点、平坦区域等。",
+              "formula": "⚠️ 不看地形 = 闭着眼睛下山",
+              "tags": [
+                "陷阱",
+                "警示"
+              ],
+              "note": "不看地形的后果：你可能以为自己在往最低点走，其实刚走进一个「局部低谷」，周围都是上坡路！"
+            },
+            {
+              "id": "n11",
+              "label": "局部陷阱",
+              "sublabel": "Local Minima Trap",
+              "icon": "🕳️",
+              "x": 780,
+              "y": 680,
+              "details": "地形中的局部最小值点——周围都比它高，但不是真正的最低点。优化算法可能在此「卡住」。",
+              "formula": "局部最小 ≠ 全局最小",
+              "tags": [
+                "陷阱",
+                "鞍点"
+              ],
+              "note": "深度学习中的 Loss Landscape 极其复杂，可能有无数的局部陷阱。理解地形结构才能设计更好的优化策略。"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "给定参数"
+            },
+            {
+              "from": "n1",
+              "to": "n3",
+              "label": "系数决定"
+            },
+            {
+              "from": "n2",
+              "to": "n4",
+              "label": "映射为高度"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "影响形状"
+            },
+            {
+              "from": "n4",
+              "to": "n5",
+              "label": "变化参数"
+            },
+            {
+              "from": "n4",
+              "to": "n6",
+              "label": "梯度大小"
+            },
+            {
+              "from": "n5",
+              "to": "n7",
+              "label": "导致位移"
+            },
+            {
+              "from": "n6",
+              "to": "n7",
+              "label": "指引方向"
+            },
+            {
+              "from": "n7",
+              "to": "n8",
+              "label": "平方项→碗状"
+            },
+            {
+              "from": "n7",
+              "to": "n9",
+              "label": "曲率分析"
+            },
+            {
+              "from": "n7",
+              "to": "n10",
+              "label": "忽略地形"
+            },
+            {
+              "from": "n10",
+              "to": "n11",
+              "label": "陷入陷阱"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7",
+            "n8",
+            "n9",
+            "n10",
+            "n11"
+          ]
+        },
+        "htmlPath": "interactive/04_目标函数地形：关系图.html",
+        "htmlBytes": 765878
+      },
+      "actions": [
+        {
+          "id": "action_SEYVZy9z",
+          "type": "speech",
+          "text": "本场景通过交互探索“目标函数地形：关系图”。现在让我们把这些观察提升一步，看看它们背后的数学关系图谱。"
+        },
+        {
+          "id": "action_1OzaQMJe",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "先揭示蓝图——函数式"
+        },
+        {
+          "id": "action_5vxyJxlU",
+          "type": "speech",
+          "text": "一切从函数式开始。它就是整座地形的‘蓝图’，你看，每一项系数都控制着地形的某一种形状特征。",
+          "audioRef": "audio/tts_s4_action_5vxyJxlU.mp3"
+        },
+        {
+          "id": "action_XIBHuftu",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "接着揭示输入参数节点"
+        },
+        {
+          "id": "action_1Eclq0p7",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "以及公式系数节点"
+        },
+        {
+          "id": "action_KIgv5JP3",
+          "type": "speech",
+          "text": "函数式把输入参数映射为地形高度，同时系数的大小会直接影响地形有多陡。这和你们刚才拖动时感受到的是一样的。",
+          "audioRef": "audio/tts_s4_action_KIgv5JP3.mp3"
+        },
+        {
+          "id": "action_rnUAAsx9",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "现在出现核心节点——地形高度"
+        },
+        {
+          "id": "action_r0WIRhW0",
+          "type": "widget_reveal",
+          "target": "#n8",
+          "content": "最后揭示碗状结构节点"
+        },
+        {
+          "id": "action_Y9GpyFcq",
+          "type": "speech",
+          "text": "注意看这个碗状结构节点，它直接标注了平方项带来的典型地形。刚才我们拖动的那个碗状地形，在关系图中就是这样被连接起来的。",
+          "audioRef": "audio/tts_s4_action_Y9GpyFcq.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "目标函数地形：误解修复挑战",
+      "order": 5,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "目标函数地形拼图挑战：通过拖拽数学特征碎片构建地形，理解局部最小值与全局最小值的区别",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/05_目标函数地形：误解修复挑战.html",
+        "htmlBytes": 788209
+      },
+      "actions": [
+        {
+          "id": "action_6MRf7JSW",
+          "type": "speech",
+          "text": "本场景通过交互探索“目标函数地形：误解修复挑战”。现在我们来玩一个拼图游戏，测试一下你是不是真的理解了——那些数学特征到底对应着什么地形。"
+        },
+        {
+          "id": "action_G4s92Uk5",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始拼图挑战"
+        },
+        {
+          "id": "action_HFYpFyFF",
+          "type": "speech",
+          "text": "桌面上散落着一些数学特征的碎片，比如'导数为零'，'二阶导为正'，还有'局部最小值'等等。你的任务是把它们拼成一个完整的地形解释。记住，我们要拼出的是一个碗状的下凹地形，不是一个孤立的数值点。",
+          "audioRef": "audio/tts_s5_action_HFYpFyFF.mp3"
+        },
+        {
+          "id": "action_so8-YTYj",
+          "type": "widget_annotation",
+          "target": "[data-step-id='step-1']",
+          "content": "先找到导数为零的碎片，它只告诉我们在谷底或山顶，但不能区分两者"
+        },
+        {
+          "id": "action_0A0K4Ji4",
+          "type": "speech",
+          "text": "你来判断一下——如果只有'导数为零'这一条线索，你能确定是谷底还是山顶吗？对，不能。这正是很多同学把'局部最优'和'全局最优'搞混的根源。你需要再找一块碎片来排除山顶的可能性。"
+        },
+        {
+          "id": "action_y2ntuH1F",
+          "type": "widget_highlight",
+          "target": "[data-step-id='step-2']",
+          "content": "二阶导为正的碎片是关键，把它拖过来连接"
+        },
+        {
+          "id": "action_fkzl38Xz",
+          "type": "speech",
+          "text": "你直觉很好，说说看——'二阶导为正'这块碎片加上去之后，地形朝上弯还是朝下弯？没错，朝上弯，这就是碗的形状。拼对了会触发最后的展示，大家注意看。"
+        },
+        {
+          "id": "action_Sasb6DRk",
+          "type": "widget_reveal",
+          "target": "#complete-model",
+          "content": "拼图正确，展示完整的碗状三维模型"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "目标函数地形：空间视角",
+      "order": 6,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "htmlPath": "interactive/06_目标函数地形：空间视角.html",
+        "htmlBytes": 2514704
+      },
+      "actions": [
+        {
+          "id": "action__ihLMbFG",
+          "type": "speech",
+          "text": "本场景通过交互探索“目标函数地形：空间视角”。大家把极值点的判定条件拼了出来。现在，我们把视野从二维平面拉升到三维空间，看看这些坑坑洼洼的非凸地形到底是什么样的。"
+        },
+        {
+          "id": "action_sKmZIO-E",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "3D地形的主视图区域"
+        },
+        {
+          "id": "action_1tgGn6eJ",
+          "type": "speech",
+          "text": "现在出现在大家眼前的是一个典型的非凸地形。注意看，它不像一个光滑的大碗，而是布满了各种局部的小坑和隆起的山脊。请试着用鼠标拖拽旋转视角，360度观察一下它的全貌。",
+          "audioRef": "audio/tts_s6_action_1tgGn6eJ.mp3"
+        },
+        {
+          "id": "action_u7iYTwR5",
+          "type": "widget_annotation",
+          "target": "#controls",
+          "content": "使用这里的控件或直接拖动画面来旋转、缩放视角"
+        },
+        {
+          "id": "action_4s5CjFit",
+          "type": "speech",
+          "text": "转到一个你能看到明显坑洼的角度。接下来，请点击地形表面的不同位置。你试试点击一个局部坑底，再点击坑旁边的斜坡，观察系统给出的反馈有什么不同。"
+        },
+        {
+          "id": "action_sETgmcND",
+          "type": "widget_annotation",
+          "target": "#info",
+          "content": "点击地形任意位置，查看局部切平面与全局最低点的落差"
+        },
+        {
+          "id": "action_n6F-__SJ",
+          "type": "speech",
+          "text": "大家已经发现了，当你点击在局部坑底时，局部切平面是水平的，导数确实为零——这说明它是一个局部极小点。但观察右上方显示的信息，它与当前找到的全局最低点之间还存在明显的垂直落差。这就是非凸地形给梯度下降算法设置的陷阱。"
+        },
+        {
+          "id": "action_Q1wHPuPo",
+          "type": "widget_reveal",
+          "target": "#info",
+          "content": "显示点击点与全局最低点的海拔落差数值"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "负梯度方向",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "kua4QB5qzTin2pur1DW0B",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_LT6_tFFe",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">负梯度方向：下山最快的路径</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_P9KdYLCe",
+              "left": 60,
+              "top": 125,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#e2e8f0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_PjmDqRrc",
+              "left": 60,
+              "top": 150,
+              "width": 270,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f0fdf4"
+            },
+            {
+              "type": "text",
+              "id": "text_ViWiYegB",
+              "left": 80,
+              "top": 165,
+              "width": 230,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #166534;\">梯度 (Gradient)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_7A16xGxi",
+              "left": 80,
+              "top": 217,
+              "width": 230,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">函数增长最快的方向</p><p style=\"font-size: 16px; text-align: center; color: #333333;\">指向局部最陡的上升路径</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_klMxKKse",
+              "left": 365,
+              "top": 150,
+              "width": 270,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#fff7ed"
+            },
+            {
+              "type": "text",
+              "id": "text_jwVszIMQ",
+              "left": 385,
+              "top": 165,
+              "width": 230,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #9a3412;\">负梯度 (Negative)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_-m9fDksf",
+              "left": 385,
+              "top": 217,
+              "width": 230,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">局部下降最快的方向</p><p style=\"font-size: 16px; text-align: center; color: #333333;\">指向最陡的下降路径</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Llh1FcIp",
+              "left": 670,
+              "top": 150,
+              "width": 270,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#fef2f2"
+            },
+            {
+              "type": "text",
+              "id": "text_nsv8Cm5g",
+              "left": 690,
+              "top": 165,
+              "width": 230,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #991b1b;\">常见误区</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_EEnCT_LY",
+              "left": 690,
+              "top": 217,
+              "width": 230,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">梯度方向不等于移动方向</p><p style=\"font-size: 16px; text-align: center; color: #333333;\">必须取负值才能下山</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_FxQjAihI",
+              "left": 60,
+              "top": 519.5,
+              "width": 320,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #64748b;\">图示：梯度与负梯度方向对比</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_gradient_compare_bg",
+              "left": 60,
+              "top": 340,
+              "width": 320,
+              "height": 170,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F8FAFC"
+            },
+            {
+              "type": "shape",
+              "id": "shape_gradient_compare_origin",
+              "left": 212,
+              "top": 417,
+              "width": 16,
+              "height": 16,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#334155"
+            },
+            {
+              "type": "line",
+              "id": "line_gradient_direction",
+              "left": 220,
+              "top": 425,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                105,
+                -60
+              ],
+              "style": "solid",
+              "color": "#16A34A",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_negative_gradient_direction",
+              "left": 220,
+              "top": 425,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                -105,
+                60
+              ],
+              "style": "solid",
+              "color": "#EA580C",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_gradient_direction_label",
+              "left": 270,
+              "top": 355,
+              "width": 100,
+              "height": 32,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #166534; font-weight: bold;\">梯度 ∇f</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#166534"
+            },
+            {
+              "type": "text",
+              "id": "text_negative_gradient_direction_label",
+              "left": 70,
+              "top": 400,
+              "width": 130,
+              "height": 32,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #9A3412; font-weight: bold;\">负梯度 -∇f</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#9A3412"
+            },
+            {
+              "type": "shape",
+              "id": "shape_-Fk0P3uQ",
+              "left": 420,
+              "top": 340,
+              "width": 520,
+              "height": 180,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "text",
+              "id": "text_Mh2X40dM",
+              "left": 440,
+              "top": 355,
+              "width": 480,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1e293b;\">数学表达：为什么负梯度是下山最快的？</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_YMe73Kyy",
+              "left": 440,
+              "top": 410,
+              "width": 480,
+              "height": 80,
+              "rotate": 0,
+              "latex": "\\nabla f = \\left( \\frac{\\partial f}{\\partial x}, \\frac{\\partial f}{\\partial y} \\right) \\\\ \\text{负梯度: } -\\nabla f = \\left( -\\frac{\\partial f}{\\partial x}, -\\frac{\\partial f}{\\partial y} \\right)",
+              "color": "#0f172a",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.4em;vertical-align:-0.95em;\"></span><span class=\"minner\"><span class=\"mopen delimcenter\" style=\"top:0em;\"><span class=\"delimsizing size3\">(</span></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8804em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mclose delimcenter\" style=\"top:0em;\"><span class=\"delimsizing size3\">)</span></span></span></span><span class=\"mspace newline\"></span><span class=\"base\"><span class=\"strut\" style=\"height:0.7667em;vertical-align:-0.0833em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">负梯度</span><span class=\"mord\">: </span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.4em;vertical-align:-0.95em;\"></span><span class=\"minner\"><span class=\"mopen delimcenter\" style=\"top:0em;\"><span class=\"delimsizing size3\">(</span></span><span class=\"mord\">−</span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\">−</span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\" style=\"margin-right:0.05556em;\">∂</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8804em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mclose delimcenter\" style=\"top:0em;\"><span class=\"delimsizing size3\">)</span></span></span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_Chq49HAS",
+              "left": 440,
+              "top": 495,
+              "width": 480,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #475569;\">注：负梯度方向与梯度方向相反，指向函数值下降最快的路径。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_c7t1vIQA",
+          "type": "spotlight",
+          "elementId": "text_ViWiYegB"
+        },
+        {
+          "id": "action_0oT2W5Rz",
+          "type": "speech",
+          "text": "本场景聚焦“负梯度方向”。现在我们要聚焦一个更关键的问题：在这样一个复杂地形里，如果你想用最快的速度下山，到底应该往哪个方向走？这就需要理解一个核心概念——梯度。"
+        },
+        {
+          "id": "action_UEKb9XDo",
+          "type": "spotlight",
+          "elementId": "text_7A16xGxi"
+        },
+        {
+          "id": "action_lSOH9E3Z",
+          "type": "speech",
+          "text": "梯度的本质，简单来说，就是函数值增长最快的方向。想象你站着山腰某处，梯度会指向局部地形中最陡峭的上升路径，就像直接用手指给你看哪条路爬得最快。",
+          "audioRef": "audio/tts_s7_action_lSOH9E3Z.mp3"
+        },
+        {
+          "id": "action_TDLI9iqJ",
+          "type": "spotlight",
+          "elementId": "text_jwVszIMQ"
+        },
+        {
+          "id": "action_-IYfD9w2",
+          "type": "speech",
+          "text": "但我们的目标不是上山，而是下山。所以现在请把思路翻转一下：梯度告诉你上山最快的路，那下山最快的路呢？答案就是它的反方向——负梯度。",
+          "audioRef": "audio/tts_s7_action_-IYfD9w2.mp3"
+        },
+        {
+          "id": "action_A8UvebtW",
+          "type": "spotlight",
+          "elementId": "text_-m9fDksf"
+        },
+        {
+          "id": "action_5g2ZcXjM",
+          "type": "speech",
+          "text": "负梯度指向局部中函数值下降最快的矢量方向。也就是说，沿着负梯度的方向走，每一步你都能获得当前所在位置附近最快的下降速度，这就像在地形摸索中找到了一条陡降的捷径。",
+          "audioRef": "audio/tts_s7_action_5g2ZcXjM.mp3"
+        },
+        {
+          "id": "action_BNgB0s2B",
+          "type": "spotlight",
+          "elementId": "text_nsv8Cm5g"
+        },
+        {
+          "id": "action_7P-XPE9v",
+          "type": "speech",
+          "text": "说到这儿，我必须指出一个初学者很容易陷入的误区。很多人第一次听到梯度下降，会直觉地认为“梯度方向就是移动方向”，这是完全错误的。",
+          "audioRef": "audio/tts_s7_action_7P-XPE9v.mp3"
+        },
+        {
+          "id": "action_yGnLTDr2",
+          "type": "spotlight",
+          "elementId": "text_EEnCT_LY"
+        },
+        {
+          "id": "action_U_pOK586",
+          "type": "speech",
+          "text": "记住这个关键判断：梯度本身指向的是上山最快的路径，而我们要下山，就必须取它的负值。梯度方向不等于移动方向，只有负梯度才是真正带我们下降到山谷底部的正确方向。",
+          "audioRef": "audio/tts_s7_action_U_pOK586.mp3"
+        },
+        {
+          "id": "action_CXsgHhL6",
+          "type": "spotlight",
+          "elementId": "text_FxQjAihI"
+        },
+        {
+          "id": "action_BTx-phyQ",
+          "type": "speech",
+          "text": "让我们观察一下图上的对比：红色的箭头是梯度，指向上面的山峰；蓝色箭头是负梯度，指向低处。两者方向正好相反，一个代表上升，一个代表下降。这种直观对比应该能帮我们把概念彻底纠正。",
+          "audioRef": "audio/tts_s7_action_BTx-phyQ.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "负梯度方向：拖动实验",
+      "order": 8,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "negative_gradient_direction",
+          "description": "在三维曲面上探索梯度与负梯度的方向。拖动点观察红色箭头（梯度Gradient）始终指向上升方向，蓝色箭头（负梯度Negative Gradient）始终指向下降方向。",
+          "variables": [
+            {
+              "name": "point_x",
+              "label": "X 位置",
+              "min": -2.5,
+              "max": 2.5,
+              "default": 0.5,
+              "unit": ""
+            },
+            {
+              "name": "point_y",
+              "label": "Y 位置",
+              "min": -2.5,
+              "max": 2.5,
+              "default": 0.5,
+              "unit": ""
+            },
+            {
+              "name": "gradient_toggle",
+              "label": "显示梯度 (Gradient)",
+              "min": 0,
+              "max": 1,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "neg_gradient_toggle",
+              "label": "显示负梯度 (Negative Gradient)",
+              "min": 0,
+              "max": 1,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "step_size",
+              "label": "步长 (Step-size)",
+              "min": 0.01,
+              "max": 0.5,
+              "default": 0.1,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "🏔️ 山峰附近",
+              "variables": {
+                "point_x": 0.3,
+                "point_y": 0.3
+              }
+            },
+            {
+              "name": "🌊 低谷附近",
+              "variables": {
+                "point_x": -0.8,
+                "point_y": 0.6
+              }
+            },
+            {
+              "name": "📐 第二象限",
+              "variables": {
+                "point_x": -1.5,
+                "point_y": 1.5
+              }
+            },
+            {
+              "name": "🎯 鞍点区域",
+              "variables": {
+                "point_x": 1.2,
+                "point_y": -0.3
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/08_负梯度方向：拖动实验.html",
+        "htmlBytes": 1321121
+      },
+      "actions": [
+        {
+          "id": "action_D37CW_JX",
+          "type": "speech",
+          "text": "本场景通过交互探索“负梯度方向：拖动实验”。现在我们来亲手拖动这个三维曲面上的点，更直观地感受一下。"
+        },
+        {
+          "id": "action_m2-DnGKB",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "这是我们的三维目标函数曲面，可以自由拖拽旋转视角。"
+        },
+        {
+          "id": "action_wPu225My",
+          "type": "speech",
+          "text": "页面上有一个可以拖动的点，红色的箭头是梯度，指向函数值上升最快的方向；蓝色的箭头是负梯度，指向下降最快的方向。请先试着随意拖动这个点，观察两个箭头的指向有什么规律。",
+          "audioRef": "audio/tts_s8_action_wPu225My.mp3"
+        },
+        {
+          "id": "action_zKShzeTJ",
+          "type": "widget_setState",
+          "state": {
+            "point_x": 0.3,
+            "point_y": 0.3,
+            "gradient_toggle": 1,
+            "neg_gradient_toggle": 1
+          },
+          "content": "加载'山峰附近'预设，观察箭头指向。"
+        },
+        {
+          "id": "action_psZQLz1N",
+          "type": "speech",
+          "text": "我们现在位于一个山峰附近。注意看，无论怎么拖动，蓝色箭头永远指向低处，也就是函数值减小的方向。这就是为什么我们在梯度下降法中要用负梯度——因为我们想要下山，找到最小值。",
+          "audioRef": "audio/tts_s8_action_psZQLz1N.mp3"
+        },
+        {
+          "id": "action_g3uX61ab",
+          "type": "widget_setState",
+          "state": {
+            "point_x": -1.5,
+            "point_y": 1.5,
+            "gradient_toggle": 1,
+            "neg_gradient_toggle": 1
+          },
+          "content": "切换到第二象限预设，验证不同区域的箭头方向。"
+        },
+        {
+          "id": "action_t_4sHJw9",
+          "type": "speech",
+          "text": "我们换到第二象限看看。在这个完全不同的地形区域，箭头的关系依然不变：红箭头指向上坡，蓝箭头指向下坡。你可以尝试同时关闭或只显示其中一个箭头，来分别感受梯度和负梯度各自的作用。",
+          "audioRef": "audio/tts_s8_action_t_4sHJw9.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "负梯度方向：关系图",
+      "order": 9,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "负梯度方向：关系图",
+          "description": "描述计算下降方向的逻辑流程。学生在流程图中将'计算梯度'步骤指向'取反'动作，而非直接指向'更新位置'动作。",
+          "nodes": [
+            {
+              "id": "locate",
+              "label": "📍 定位",
+              "bilingual": "Locate Current Position",
+              "details": "在优化过程的每一步，我们首先需要明确自己当前所在的位置 <span class='math'>x</span>。这个位置通常是一个多维向量，代表所有待优化的参数。\n\n<div class='analogy'>想象你站在一座山丘上，首先你需要知道自己目前在地图上的哪个坐标点。这就是我们优化旅程的起点。</div>\n\n在数学上，这就是当前迭代步的参数向量 <span class='math'>x<sup>(k)</sup></span>，所有后续计算都围绕这个点展开。"
+            },
+            {
+              "id": "gradient",
+              "label": "📐 求导 ∇f",
+              "bilingual": "Calculate Gradient (梯度 Gradient)",
+              "details": "在当前位置 <span class='math'>x</span> 计算目标函数 <span class='math'>f</span> 的梯度 <span class='math'>∇f(x)</span>。梯度是一个向量，指向函数值增长最快的方向。\n\n<div class='analogy'>想象你在山丘上放置了一个指南针——梯度就是那个指向'最陡峭上坡方向'的箭头。它的长度告诉你坡度有多陡，方向告诉你哪个方向上升最快。</div>\n\n对于多元函数 <span class='math'>f(x₁, x₂, …, xₙ)</span>，梯度由所有偏导数组成：<br><span class='math'>∇f = (∂f/∂x₁, ∂f/∂x₂, …, ∂f/∂xₙ)</span>"
+            },
+            {
+              "id": "negate",
+              "label": "🔄 取反",
+              "bilingual": "Negate → -∇f",
+              "details": "将梯度方向取反，得到 <span class='math'>-∇f(x)</span>。因为梯度指向上坡（函数增大最快）方向，取反后就指向下坡（函数减小最快）方向。\n\n<div class='analogy'>指南针指向'最陡的上坡路'，那我们转身 180°——面朝相反方向，就是'最陡的下坡路'。这就是负梯度方向的直观含义。</div>\n\n这是整个优化算法中最关键的一步：**为什么要取反？** 因为我们的目标是最小化函数值，所以需要沿着下降最快的方向移动。"
+            },
+            {
+              "id": "direction",
+              "label": "🧭 确定步进方向",
+              "bilingual": "Determine Step Direction",
+              "details": "沿负梯度方向确定移动的方向。此时我们知道了该往哪个方向走（<span class='math'>-∇f</span>），但还需要确定走多远——即步长（学习率 Step-size / Learning Rate <span class='math'>α</span>）。\n\n最终更新方向为：<span class='math'>d = -α · ∇f(x)</span>\n\n<div class='analogy'>你已经知道该朝哪个方向下山了，但每次迈多大步子呢？步子太大可能跳过谷底，步子太小则下山太慢。这个'步长'就是学习率 <span class='math'>α</span>。</div>\n\n在实际算法中，学习率的选择直接影响收敛速度和稳定性。"
+            },
+            {
+              "id": "correction",
+              "label": "⚠️ 方向纠偏",
+              "bilingual": "Direction Correction",
+              "details": "在某些情况下，纯粹的负梯度方向可能不是最优选择。方向纠偏分支处理以下情况：\n\n• **步长过大**：可能越过极小值点，需要在下一迭代中调整<br>\n• **震荡**：在狭窄的谷地中，梯度方向可能左右摇摆<br>\n• **非凸地形**：可能陷入局部极小值\n\n<div class='analogy'>想象在山谷中行走，有时候直接往下冲反而会撞到对面的山坡上。这时需要调整方向，比如结合之前的运动趋势（动量法），或者考虑地形的弯曲程度（牛顿法使用黑塞矩阵 Hessian Matrix）。</div>\n\n高级优化算法如共轭梯度法、L-BFGS 都会引入方向修正策略。"
+            },
+            {
+              "id": "update",
+              "label": "▶️ 更新位置",
+              "bilingual": "Update Position",
+              "details": "沿确定的方向更新当前位置：<span class='math'>x<sup>(k+1)</sup> = x<sup>(k)</sup> - α · ∇f(x<sup>(k)</sup>)</span>\n\n这就是梯度下降法的核心更新公式。更新后，回到第一步，在新的位置重复整个过程，直到满足收敛条件。\n\n<div class='analogy'>你沿着下坡路走出了一步，现在你站在了新的位置上。再次拿起指南针，重复整个过程——直到你到达山谷底部（极小值点），指南针不再有明显的方向指示。</div>\n\n收敛条件通常包括：梯度足够小 <span class='math'>‖∇f‖ < ε</span>，或函数值变化足够小。"
+            }
+          ],
+          "edges": [
+            {
+              "from": "locate",
+              "to": "gradient",
+              "label": "确定起点 x"
+            },
+            {
+              "from": "gradient",
+              "to": "negate",
+              "label": "计算 ∇f(x)"
+            },
+            {
+              "from": "negate",
+              "to": "direction",
+              "label": "取反得 -∇f"
+            },
+            {
+              "from": "direction",
+              "to": "update",
+              "label": "沿 -∇f 步进"
+            },
+            {
+              "from": "direction",
+              "to": "correction",
+              "label": "需要修正？"
+            },
+            {
+              "from": "correction",
+              "to": "update",
+              "label": "修正方向后"
+            }
+          ],
+          "revealOrder": [
+            "locate",
+            "gradient",
+            "negate",
+            "direction",
+            "correction",
+            "update"
+          ]
+        },
+        "htmlPath": "interactive/09_负梯度方向：关系图.html",
+        "htmlBytes": 771339
+      },
+      "actions": [
+        {
+          "id": "action_rGQPtMIk",
+          "type": "speech",
+          "text": "本场景通过交互探索“负梯度方向：关系图”。从视觉上感受了梯度和负梯度的关系。现在，让我们把这个逻辑流程梳理一遍。"
+        },
+        {
+          "id": "action_WvgxLPK5",
+          "type": "widget_reveal",
+          "target": "#locate"
+        },
+        {
+          "id": "action_zTCNkvQm",
+          "type": "speech",
+          "text": "优化的第一步，永远是先明确自己在哪里。这就是流程图中的“定位”节点，它代表着我们当前正在优化的参数向量 x。",
+          "audioRef": "audio/tts_s9_action_zTCNkvQm.mp3"
+        },
+        {
+          "id": "action_caBwR65q",
+          "type": "widget_reveal",
+          "target": "#gradient"
+        },
+        {
+          "id": "action_MbhCfVhs",
+          "type": "widget_highlight",
+          "target": "#gradient",
+          "content": "注意，这指向了上坡。"
+        },
+        {
+          "id": "action_ly1IoXQA",
+          "type": "speech",
+          "text": "定位之后，我们要计算当前位置的梯度。请记住，梯度 ∇f 是一个指南针，它永远指向函数值增长最快的“上坡”方向。",
+          "audioRef": "audio/tts_s9_action_ly1IoXQA.mp3"
+        },
+        {
+          "id": "action_16T4n5pL",
+          "type": "widget_reveal",
+          "target": "#negate"
+        },
+        {
+          "id": "action_U-1IKGme",
+          "type": "widget_annotation",
+          "target": "#negate",
+          "content": "关键转折点：取反。"
+        },
+        {
+          "id": "action_tr5wXFPR",
+          "type": "speech",
+          "text": "那么，为了找到下坡（即函数值减小）最快的方向，最核心的一步来了：将梯度取反。这个“↔️ 取反”的步骤，是很多同学容易忽略的关键转折点。我们不是在“求导”后直接去更新位置，而是要先完成“取反”这个动作。",
+          "audioRef": "audio/tts_s9_action_tr5wXFPR.mp3"
+        },
+        {
+          "id": "action_eAiuOUMR",
+          "type": "widget_reveal",
+          "target": "#direction"
+        },
+        {
+          "id": "action_KWVCXM0R",
+          "type": "speech",
+          "text": "取反之后，我们就得到了负梯度方向 -∇f，这就是我们确定步进方向的基础。到这里，我们才知道下一步该往哪里迈。",
+          "audioRef": "audio/tts_s9_action_KWVCXM0R.mp3"
+        },
+        {
+          "id": "action_wyInz8ud",
+          "type": "widget_reveal",
+          "target": "#correction"
+        },
+        {
+          "id": "action_TVW9chm-",
+          "type": "widget_reveal",
+          "target": "#update"
+        },
+        {
+          "id": "action_PdFufcxd",
+          "type": "speech",
+          "text": "当然，图中也保留了一个“方向纠偏”的分支。它提醒我们，在复杂的地形中导航时，偶尔也需要结合之前我们走过的路或地形的弯曲程度来调整方向，但所有修正的终点，都指向最终的“更新位置”。大家可以点击每个节点，看看详细的说明，再次感受从地形直觉到数学逻辑的完整映射。",
+          "audioRef": "audio/tts_s9_action_PdFufcxd.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "负梯度方向：误解修复挑战",
+      "order": 10,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "action",
+          "description": "矢量推进游戏。可观察证据：学生能熟练切换到负值模式以应对上坡段，修复'顺着梯度走'的误解。",
+          "keyPoints": [
+            "实时响应的推力控制",
+            "避开导致'登顶'的错误反馈",
+            "挑战：在限时内通过连续的负梯度修正到达谷底"
+          ],
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "language": "zh-CN"
+        },
+        "htmlPath": "interactive/10_负梯度方向：误解修复挑战.html",
+        "htmlBytes": 783943
+      },
+      "actions": [
+        {
+          "id": "action_Aaog_CpN",
+          "type": "speech",
+          "text": "本场景通过交互探索“负梯度方向：误解修复挑战”。让我们把这些知识放进一个实时的挑战里来检验一下。"
+        },
+        {
+          "id": "action_B0Cryvxm",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始挑战"
+        },
+        {
+          "id": "action_fBzsjUYS",
+          "type": "speech",
+          "text": "在这个矢量推进游戏里，你的任务是操控一个点，让它尽快到达谷底。但要注意，地形中有一些上坡的“陷阱”，如果你习惯性地“顺着梯度走”，就会被引导向山顶，离目标越来越远。",
+          "audioRef": "audio/tts_s10_action_fBzsjUYS.mp3"
+        },
+        {
+          "id": "action_4JkGUSTd",
+          "type": "widget_setState",
+          "state": {
+            "mode": "negative-gradient",
+            "obstacle": "uphill-segment"
+          },
+          "content": "展示一个包含上坡段的地形场景"
+        },
+        {
+          "id": "action_iVyrpstM",
+          "type": "speech",
+          "text": "看，就像现在这样。当遇到上坡时，你必须像我们之前推导的那样，果断地切换到负梯度模式，施加反向的推力，才能修正路径。这正好可以修复我们常有的一个误解：梯度下降不是总朝着当前最陡的下坡方向走吗？对的，但前提是你得先确认自己的目标是“下山”而不是“上山”。",
+          "audioRef": "audio/tts_s10_action_iVyrpstM.mp3"
+        },
+        {
+          "id": "action_7HuNe_fN",
+          "type": "widget_annotation",
+          "target": "#gradient-mode-indicator",
+          "content": "注意观察当前的模式是正向还是负向"
+        },
+        {
+          "id": "action_s66evP9D",
+          "type": "speech",
+          "text": "现在，请你亲自上手试试。在限时内，通过连续的负梯度修正，让点安全地越过这些上坡障碍，最终到达谷底。放心尝试，大家会在旁边给你一些关键提示。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "负梯度方向：空间视角",
+      "order": 11,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "负梯度方向：空间视角 — 3D矢量场展示。观察梯度矢量与等高线的正交关系，理解负梯度指向函数值下降最快的方向。",
+          "objects": [
+            {
+              "id": "sloped_plane",
+              "type": "surface",
+              "description": "曲面地形 z = -0.35x² - 0.25y² + 1.5x + y + 0.5",
+              "material": {
+                "type": "vertexColors",
+                "opacity": 0.88
+              }
+            },
+            {
+              "id": "gradient_arrow",
+              "type": "arrow",
+              "color": "#ff4444",
+              "description": "梯度矢量 ∇f，指向函数值上升最快的方向"
+            },
+            {
+              "id": "negative_gradient_arrow",
+              "type": "arrow",
+              "color": "#44ff88",
+              "description": "负梯度矢量 -∇f，指向函数值下降最快的方向"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "slider",
+              "param": "pointX",
+              "label": "点位置 X",
+              "min": -4,
+              "max": 4,
+              "default": 1.5
+            },
+            {
+              "type": "slider",
+              "param": "pointY",
+              "label": "点位置 Y",
+              "min": -4,
+              "max": 4,
+              "default": 1
+            },
+            {
+              "type": "slider",
+              "param": "arrowLength",
+              "label": "箭头长度",
+              "min": 0.5,
+              "max": 4,
+              "default": 2
+            },
+            {
+              "type": "button",
+              "action": "toggleContour",
+              "label": "等高线"
+            },
+            {
+              "type": "button",
+              "action": "togglePlane",
+              "label": "切平面"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            }
+          ],
+          "presets": [
+            {
+              "name": "山顶附近",
+              "state": {
+                "pointX": 2.1,
+                "pointY": 2
+              }
+            },
+            {
+              "name": "山腰位置",
+              "state": {
+                "pointX": 1.5,
+                "pointY": 1
+              }
+            },
+            {
+              "name": "山谷位置",
+              "state": {
+                "pointX": -2,
+                "pointY": -1
+              }
+            },
+            {
+              "name": "极值点",
+              "state": {
+                "pointX": 2.14,
+                "pointY": 2
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/11_负梯度方向：空间视角.html",
+        "htmlBytes": 2508241
+      },
+      "actions": [
+        {
+          "id": "action_s8Hw_MHQ",
+          "type": "speech",
+          "text": "本场景通过交互探索“负梯度方向：空间视角”。在前面的拖动实验和关系图中，我们一直在平面上感受负梯度的方向。现在，让我们站起来，从空间视角重新审视它——看看梯度矢量在三维地形中究竟扮演什么角色。"
+        },
+        {
+          "id": "action_cs1saqcN",
+          "type": "widget_setState",
+          "state": {
+            "pointX": 1.5,
+            "pointY": 1
+          },
+          "content": "加载“山腰位置”预设，准备观察矢量与地形的关系"
+        },
+        {
+          "id": "action_-9y_sdDV",
+          "type": "speech",
+          "text": "屏幕中央展示了一片起伏的彩色曲面。请注意红色和绿色两支箭头：红色代表梯度∇f，绿色代表负梯度-∇f。点一下“等高线”按钮，你会发现它们与等高线之间的一个优美几何性质。",
+          "audioRef": "audio/tts_s11_action_-9y_sdDV.mp3"
+        },
+        {
+          "id": "action_SH0VCMD8",
+          "type": "widget_highlight",
+          "target": "#controls",
+          "content": "使用等高线、切平面按钮观察几何关系"
+        },
+        {
+          "id": "action_AUMrchR1",
+          "type": "speech",
+          "text": "现在试着拖动X、Y滑块，把点移动到不同位置。无论你移到哪里，负梯度矢量是不是始终垂直于穿过该点的等高线，并坚定地指向海拔更低的一侧？这就是它作为“最陡下降方向”的空间直觉。",
+          "audioRef": "audio/tts_s11_action_AUMrchR1.mp3"
+        },
+        {
+          "id": "action_1hznlot2",
+          "type": "widget_setState",
+          "state": {
+            "pointX": 2.1,
+            "pointY": 2
+          },
+          "content": "切换到“山顶附近”预设，感受梯度从高地流向低谷的指向"
+        },
+        {
+          "id": "action_kJm1KeA2",
+          "type": "speech",
+          "text": "我们还可以打开“切平面”，观察负梯度矢量恰好是下降方向在切平面上的垂直投影——这也解释了为什么它无法指向极值点而只能“斜着”下坡。请随意放大缩小画面，从不同角度印证这个正交关系。",
+          "audioRef": "audio/tts_s11_action_kJm1KeA2.mp3"
+        },
+        {
+          "id": "action_rDNnGVDw",
+          "type": "widget_annotation",
+          "target": "#negative-gradient-arrow",
+          "content": "负梯度方向：与等高线正交，指向下降一侧"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在一个多山地形中，如果你站在某一点，观察到无论向哪个水平方向走都会导致高度下降，那么你很有可能位于哪种地形特征上？",
+            "options": [
+              {
+                "value": "A",
+                "label": "山脊 (Ridge)"
+              },
+              {
+                "value": "B",
+                "label": "山谷 (Valley)"
+              },
+              {
+                "value": "C",
+                "label": "山顶 (Peak)"
+              },
+              {
+                "value": "D",
+                "label": "地势平坦的鞍部 (Saddle)"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "本题考察地形感知能力的判断。当你无论从哪个方向离开当前点高度都会下降时，说明该点是局部最高点，即山顶。山脊的特征是两侧下坡但沿脊线相对平坦，山谷特征是两侧上坡，鞍部是一对方向上坡另一对方向下坡。这对应最优化中的局部最大值概念。",
+            "points": 8,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "在场景中，如果你观察到当前位置东侧地形迅速升高，西侧迅速降低，而南北方向高度几乎不变，以下哪些描述是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "南北方向是当前位置的等高线切线方向"
+              },
+              {
+                "value": "B",
+                "label": "东西方向存在高度变化，说明梯度不可能为零"
+              },
+              {
+                "value": "C",
+                "label": "最陡峭的上升方向是正东方向"
+              },
+              {
+                "value": "D",
+                "label": "向西走一小段距离，高度变化率最大"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "C"
+            ],
+            "analysis": "本题考察地形感知与梯度方向的理解。A正确，因为南北高度几乎不变，说明这两个方向是等值线走向；B正确，高度存在变化意味着地形函数在该点梯度非零；C正确，东侧升高最快说明最陡上升方向在东；而D错误，向西走一小段时高度下降最快，但变化率的绝对值最大，通常我们用梯度定义为上升最快方向，因此最陡下降方向是负梯度方向。注意梯度方向指向最陡上升，负梯度方向指向最陡下降。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "场景中有两个点A和B，从A到B有两条路径：路径1先沿一个狭窄山脊缓坡上行再下行，路径2直接从侧面陡坡下到山谷再爬升。仅从地形高低起伏的次数与幅度来看，哪条路径可能经历更多次方向变化？",
+            "options": [
+              {
+                "value": "A",
+                "label": "路径1，因为山脊地势较复杂"
+              },
+              {
+                "value": "B",
+                "label": "路径2，因为需要先下后上且坡度陡峭"
+              },
+              {
+                "value": "C",
+                "label": "两者经历的起伏次数必然相同"
+              },
+              {
+                "value": "D",
+                "label": "无法根据地形描述判断"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "本题考察对地形路径的整体判断能力。无论路径如何选择，只要A和B的高度固定，总的高度变化幅度（净高度变化）是固定的。但题目问的是“起伏的次数与幅度”，路径2先下到山谷再爬升，显然经历了先下降后上升两次大幅度的方向变化；路径1沿山脊缓坡可能只经历一次缓升和一次缓降。因此路径2可能经历更多次方向变化和更大的起伏幅度。选项C错误认为两者相同，忽略了路径差异。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "在场景10的陡峭地形中，如果你试图找到下山的最快路径，你应该如何选择每一步的移动方向？",
+            "options": [
+              {
+                "value": "A",
+                "label": "始终沿当前点下降最快的方向移动"
+              },
+              {
+                "value": "B",
+                "label": "始终朝正北方向移动"
+              },
+              {
+                "value": "C",
+                "label": "随机选择一个下降方向移动"
+              },
+              {
+                "value": "D",
+                "label": "沿等值线方向缓慢绕行下山"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "本题引入梯度下降策略的直观理解。在陡峭地形中找下山最快路径，应当每一步都沿局部最陡峭的下降方向（负梯度方向）移动。这正是梯度下降法的核心思想。B固定方向无法适应地形变化，C随机方向效率低，D沿等值线绕行不下降。这为学生理解梯度下降法（Gradient Descent）提供了地形直觉基础。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "multiple",
+            "question": "关于从当前位置迈出一步的“步长”（Step-size，也称学习率 Learning Rate），你的直觉应该是？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "步长太小，下山会很慢"
+              },
+              {
+                "value": "B",
+                "label": "步长越大，下山一定越快"
+              },
+              {
+                "value": "C",
+                "label": "步长太大可能会跨过山谷，导致来回震荡"
+              },
+              {
+                "value": "D",
+                "label": "选择合适的步长需要考虑地形的陡峭程度"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "本题是步长选择的直觉预诊断题。A正确，步长太小意味着每次只前进微小距离，收敛速度极慢；C正确，步长太大可能在最小值附近反复跨越山谷，产生震荡甚至发散；D正确，陡峭处可稍大步，平坦处需要谨慎，自适应的步长选择非常重要；B错误，步长并非越大越好，过大可能导致跳过最优解。这预诊断将帮助学生理解下一组知识点中学习率的选择问题。",
+            "points": 12,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "short_answer",
+            "question": "假设在一个抛物线形状的山谷中（越往谷底越平缓），从山顶开始向下走，你希望在开始时步子大一些，接近谷底时步子逐渐变小。请简要说明这样调整步长有什么好处？",
+            "commentPrompt": "评分标准：(1) 指出地形陡峭处可用大步、平缓处需小步的原因 - 40% (2) 指出固定步长可能导致的震荡或收敛慢问题 - 30% (3) 表述清晰、逻辑连贯 - 30%",
+            "analysis": "参考要点：在抛物线山谷中，山顶附近坡度陡峭，使用较大步长能快速下降；接近谷底时坡度变缓，如果仍用大步长容易跨过最低点造成来回震荡，而小步长能更精细地逼近谷底。这种动态调整步长的策略能在保证收敛速度的同时提高精度，避免在最小值附近震荡。这对应最优化中自适应学习率的核心思想。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_DUMjvc5p",
+          "type": "speech",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。好了，我们刚刚从各个角度把负梯度方向琢磨了一遍。现在，是时候检验一下大家的地形感和方向判断能力了。我们来做个形成性小测验，看看你对山脊、山谷、梯度这些概念，是不是真的形成了直觉。"
+        },
+        {
+          "id": "action_bvrRn4jI",
+          "type": "speech",
+          "text": "请认真阅读每一道题，回忆一下我们在场景3、场景8和场景10里动手操作时的感觉。前四道题主要看你能否把你拖动探索的经验，提炼成对地形的精准判断。",
+          "audioRef": "audio/tts_s12_action_bvrRn4jI.mp3"
+        },
+        {
+          "id": "action_mJfI-Iyl",
+          "type": "speech",
+          "text": "大家注意，有两道题是多选题，一定要把所有你认为正确的选项都选上。还有一道简答题，是想听听你关于下山时步子该迈多大的直观想法，不用计算，大胆说出你的直觉就好。",
+          "audioRef": "audio/tts_s12_action_mJfI-Iyl.mp3"
+        },
+        {
+          "id": "action_CiJtVkKl",
+          "type": "speech",
+          "text": "这些题目，特别是最后两道关于‘步长’的预判，是在为接下来的环节做准备。你凭直觉给出的答案，能帮你更清楚地看到自己接下来的学习重点。好了，请大家开始作答。",
+          "audioRef": "audio/tts_s12_action_CiJtVkKl.mp3"
+        },
+        {
+          "id": "action_ccOXg_Ra",
+          "type": "discussion",
+          "topic": "请结合Q5和Q6的思考，分享你对下山时选择‘步长’的直觉：步子迈多大才是最合适的？你当时选择答案的理由是什么？",
+          "prompt": "请大家结合自己刚才的答案，讨论一下在崎岖的地形中，如何决定每一步迈多大。",
+          "agentIndex": 2
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "步长和收敛",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "LXY2y1n4HbSboqtw63AEc",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_or-L1lJx",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1A3C6E;\">步长和收敛</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_Sd4ppuLM",
+              "left": 100,
+              "top": 126,
+              "width": 800,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #666666;\">学习率对搜索效率的影响</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "shape",
+              "id": "shape_U16ysF03",
+              "left": 100,
+              "top": 165,
+              "width": 800,
+              "height": 1,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E0E0E0"
+            },
+            {
+              "type": "text",
+              "id": "text_J2UtkYVa",
+              "left": 60,
+              "top": 190,
+              "width": 400,
+              "height": 118,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; line-height: 1.5; color: #333333;\">• 步长决定了沿负梯度方向移动的距离</p><p style=\"font-size: 16px; line-height: 1.5; color: #333333;\">• 过大步长：跳过谷底甚至导致发散</p><p style=\"font-size: 16px; line-height: 1.5; color: #333333;\">• 过小步长：进度缓慢，无法在规定迭代次数内到达最优</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_9qgM6hX6",
+              "left": 60,
+              "top": 340,
+              "width": 400,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\theta_{new} = \\theta_{old} - \\alpha \\cdot \\nabla J(\\theta)",
+              "color": "#1A3C6E",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.02778em;\">θ</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.1514em;\"><span style=\"top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">n</span><span class=\"mord mathnormal mtight\">e</span><span class=\"mord mathnormal mtight\" style=\"margin-right:0.02691em;\">w</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.02778em;\">θ</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:-0.0278em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">o</span><span class=\"mord mathnormal mtight\" style=\"margin-right:0.01968em;\">l</span><span class=\"mord mathnormal mtight\">d</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.4445em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.0037em;\">α</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">⋅</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.09618em;\">J</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.02778em;\">θ</span><span class=\"mclose\">)</span></span></span></span></span>"
+            },
+            {
+              "type": "line",
+              "id": "line_uXTyWk07",
+              "left": 520,
+              "top": 200,
+              "width": 3,
+              "start": [
+                0,
+                150
+              ],
+              "end": [
+                360,
+                150
+              ],
+              "style": "solid",
+              "color": "#1A3C6E",
+              "points": [
+                "",
+                ""
+              ],
+              "curve": [
+                180,
+                300
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_PQCi3WOe",
+              "left": 515,
+              "top": 215,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#1A3C6E"
+            },
+            {
+              "type": "shape",
+              "id": "shape_ApqU_BX2",
+              "left": 695,
+              "top": 365,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#388E3C"
+            },
+            {
+              "type": "shape",
+              "id": "shape_step_small_endpoint",
+              "left": 595,
+              "top": 285,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#1976D2"
+            },
+            {
+              "type": "shape",
+              "id": "shape_step_large_endpoint",
+              "left": 815,
+              "top": 235,
+              "width": 10,
+              "height": 10,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#D32F2F"
+            },
+            {
+              "type": "line",
+              "id": "line_y84ZjrrC",
+              "left": 520,
+              "top": 220,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                300,
+                20
+              ],
+              "style": "solid",
+              "color": "#D32F2F",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "curve": [
+                180,
+                180
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_ioKVjdGu",
+              "left": 520,
+              "top": 220,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                80,
+                70
+              ],
+              "style": "solid",
+              "color": "#1976D2",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "curve": [
+                40,
+                50
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_-qwPl945",
+              "left": 520,
+              "top": 220,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                180,
+                150
+              ],
+              "style": "solid",
+              "color": "#388E3C",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "curve": [
+                90,
+                140
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_AaMoUmK7",
+              "left": 785,
+              "top": 245,
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #D32F2F; font-weight: bold;\">过大步长</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#D32F2F"
+            },
+            {
+              "type": "text",
+              "id": "text_jUSE3ORU",
+              "left": 555,
+              "top": 295,
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #1976D2; font-weight: bold;\">过小步长</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1976D2"
+            },
+            {
+              "type": "text",
+              "id": "text_cVXm-1xe",
+              "left": 665,
+              "top": 382,
+              "width": 100,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #388E3C; font-weight: bold;\">合适步长</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#388E3C"
+            },
+            {
+              "type": "text",
+              "id": "text_vaj5S0nH",
+              "left": 520,
+              "top": 460,
+              "width": 360,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">步长需适中，通常通过学习率衰减或自适应方法调节。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_aS55sfRS",
+          "type": "spotlight",
+          "elementId": "text_or-L1lJx"
+        },
+        {
+          "id": "action_94aAhWAg",
+          "type": "speech",
+          "text": "本场景聚焦“步长和收敛”。好了，刚才的测验大家已经提交了。我看到不少同学在步长预判题上很纠结——这正是我们马上要攻克的核心：步长和收敛的关系。请把注意力集中到新页面上来。"
+        },
+        {
+          "id": "action_1W5OVLNd",
+          "type": "spotlight",
+          "elementId": "latex_9qgM6hX6"
+        },
+        {
+          "id": "action_ibOKJuzS",
+          "type": "speech",
+          "text": "先来复习一下我们的核心更新公式。θ_new 等于 θ_old 减去学习率 α 乘以梯度。这个 α 就是步长，它直接决定了我们每一步沿下坡方向走多远。",
+          "audioRef": "audio/tts_s13_action_ibOKJuzS.mp3"
+        },
+        {
+          "id": "action_Db93Gt0B",
+          "type": "spotlight",
+          "elementId": "text_J2UtkYVa"
+        },
+        {
+          "id": "action_mMTBIymS",
+          "type": "speech",
+          "text": "步长的选择非常关键。如果步长过大，就像在山谷里大步跳跃，很容易直接跳过谷底，甚至完全迷失方向；但步长过小呢，每一步只移动一点点，搜索进度会极其缓慢。我们来看看这三种情况的直观对比。",
+          "audioRef": "audio/tts_s13_action_mMTBIymS.mp3"
+        },
+        {
+          "id": "action_nR_07-BX",
+          "type": "spotlight",
+          "elementId": "text_AaMoUmK7"
+        },
+        {
+          "id": "action_LR2b4Nr2",
+          "type": "speech",
+          "text": "看这个‘过大步长’的路径，它在谷底两边剧烈震荡，幅度越来越大——这就是发散的前兆。很多同学直觉上觉得步子迈得大，收敛就快，其实恰恰相反。",
+          "audioRef": "audio/tts_s13_action_LR2b4Nr2.mp3"
+        },
+        {
+          "id": "action_gBs_tsRv",
+          "type": "spotlight",
+          "elementId": "text_jUSE3ORU"
+        },
+        {
+          "id": "action_d7g3ERLR",
+          "type": "speech",
+          "text": "再看‘过小步长’，虽然方向没错，但每步只挪动一点点，好像蚂蚁在巨大的碗里爬，可能永远到不了最底部。",
+          "audioRef": "audio/tts_s13_action_d7g3ERLR.mp3"
+        },
+        {
+          "id": "action_4O0clKdZ",
+          "type": "spotlight",
+          "elementId": "text_cVXm-1xe"
+        },
+        {
+          "id": "action_LitG1SWM",
+          "type": "speech",
+          "text": "而‘合适步长’则能沿着一条高效、平稳的路径，既不震荡也不磨蹭，快速逼近谷底。所以，步长并非越大越好，而是需要适中的。",
+          "audioRef": "audio/tts_s13_action_LitG1SWM.mp3"
+        },
+        {
+          "id": "action_FyZtiFJG",
+          "type": "spotlight",
+          "elementId": "text_vaj5S0nH"
+        },
+        {
+          "id": "action_3bY6SkoP",
+          "type": "speech",
+          "text": "在实际优化中，我们通常通过设置学习率衰减，或者采用自适应调节方法，来动态调整步长，确保搜索过程既稳健又高效。接下来，大家将在拖动实验中亲自体验不同步长带来的巨大差异。",
+          "audioRef": "audio/tts_s13_action_3bY6SkoP.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "步长和收敛：拖动实验",
+      "order": 14,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "step_size_and_convergence",
+          "description": "调节步长（Learning Rate），观察梯度下降（Gradient Descent）算法在损失函数曲面上的行为。步长过小时收敛缓慢，步长适中时快速收敛，步长过大时会在谷底两侧震荡甚至发散。",
+          "variables": [
+            {
+              "name": "learning_rate",
+              "label": "步长 (Learning Rate)",
+              "min": 0.01,
+              "max": 2.5,
+              "default": 0.1,
+              "unit": ""
+            },
+            {
+              "name": "speed",
+              "label": "动画速度",
+              "min": 1,
+              "max": 20,
+              "default": 5,
+              "unit": "x"
+            },
+            {
+              "name": "iteration_count",
+              "label": "迭代次数",
+              "min": 0,
+              "max": 500,
+              "default": 0,
+              "unit": "次"
+            },
+            {
+              "name": "convergence_status",
+              "label": "收敛状态",
+              "min": 0,
+              "max": 1,
+              "default": 0,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "小步长",
+              "variables": {
+                "learning_rate": 0.1,
+                "speed": 8
+              }
+            },
+            {
+              "name": "最优步长",
+              "variables": {
+                "learning_rate": 0.4,
+                "speed": 5
+              }
+            },
+            {
+              "name": "震荡步长",
+              "variables": {
+                "learning_rate": 1.2,
+                "speed": 3
+              }
+            },
+            {
+              "name": "发散步长",
+              "variables": {
+                "learning_rate": 2.2,
+                "speed": 3
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/14_步长和收敛：拖动实验.html",
+        "htmlBytes": 774950
+      },
+      "actions": [
+        {
+          "id": "action_jLmVGgTC",
+          "type": "speech",
+          "text": "本场景通过交互探索“步长和收敛：拖动实验”。在刚才的页面中，我们讨论了步长如何影响梯度下降的效率。现在，请大家打开这个交互实验，我们通过拖动滑块，直观地感受不同步长（Learning Rate）在‘地形’上寻找最低点的表现。"
+        },
+        {
+          "id": "action_xw3u6TFn",
+          "type": "widget_highlight",
+          "target": "#learning_rate",
+          "content": "这是控制步长的核心滑块，数值越大，每一步迈得越远。"
+        },
+        {
+          "id": "action_IUoWHRn8",
+          "type": "speech",
+          "text": "我们先从一个较小的步长开始，比如0.1，然后点击开始迭代。可以看到，山谷中的小点正非常谨慎、缓慢地向最低处移动。这就像在浓雾中下山，你只敢小步试探，虽然安全，但速度很慢。",
+          "audioRef": "audio/tts_s14_action_IUoWHRn8.mp3"
+        },
+        {
+          "id": "action_F-8jVqZk",
+          "type": "widget_setState",
+          "state": {
+            "learning_rate": 0.1,
+            "speed": 8
+          },
+          "content": "请将步长设置为0.1，动画速度调快一些，观察小步长下的收敛过程。"
+        },
+        {
+          "id": "action_0ujW3DWf",
+          "type": "speech",
+          "text": "本场景中，我们试试把步长调到0.4左右。这是一个比较合适的大小，你能观察到一条平滑、快速的路径，点很快就稳定在了谷底。"
+        },
+        {
+          "id": "action_g-hdP3pe",
+          "type": "widget_setState",
+          "state": {
+            "learning_rate": 0.4,
+            "speed": 5
+          },
+          "content": "现在切换到最优步长0.4，注意观察路径的形态和效率。"
+        },
+        {
+          "id": "action_2CZMqhMS",
+          "type": "speech",
+          "text": "思维灵活的同学可能在想：步长是不是越大越好？那我们来调到一个较大的值，比如1.2。请大家仔细看，现在发生了什么？点是不是在谷底两侧剧烈地‘横跳’，画出了锯齿形的震荡路径，根本无法精确到达最低点。这就是步子太大导致的典型问题。",
+          "audioRef": "audio/tts_s14_action_2CZMqhMS.mp3"
+        },
+        {
+          "id": "action_OhgDsvb3",
+          "type": "widget_setState",
+          "state": {
+            "learning_rate": 1.2,
+            "speed": 3
+          },
+          "content": "设置为震荡步长1.2，放慢动画速度，便于清晰观察‘锯齿形’震荡路径。"
+        },
+        {
+          "id": "action_TV4q96jj",
+          "type": "speech",
+          "text": "最后，我们可以尝试一个极端的步长，比如2.2。你会看到，点完全失控，直接飞出了谷底，这就是‘发散’，意味着算法彻底失败了。所以，选择一个合适的步长，是梯度下降成功的关键。请大家自己再动手拖动、比较一下不同预设的效果。",
+          "audioRef": "audio/tts_s14_action_TV4q96jj.mp3"
+        },
+        {
+          "id": "action_wJIXb3NO",
+          "type": "widget_setState",
+          "state": {
+            "learning_rate": 2.2,
+            "speed": 3
+          },
+          "content": "切换到发散步长2.2，演示发散现象。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "步长和收敛：关系图",
+      "order": 15,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "步长和收敛：关系图",
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "步长（Step-size）选择",
+              "sublabel": "核心超参数",
+              "icon": "🎯",
+              "x": 500,
+              "y": 50,
+              "details": "<p><strong>步长（Step-size / Learning Rate）</strong>是梯度下降等优化算法中最关键的超参数。</p><p>想象你在山坡上摸索下山的路——步长决定了你每一步迈多大。步长选对了，快速到达山谷（最优解）；选错了，可能永远到不了。</p><p>点击下方的「下一步」按钮，逐步探索不同步长带来的四种后果。</p>"
+            },
+            {
+              "id": "n2",
+              "label": "极大步长",
+              "sublabel": "Step-size 过大",
+              "icon": "⚠️",
+              "x": 160,
+              "y": 160,
+              "details": "<p><strong>极大步长</strong>：每一步都迈得太大。</p><p>类比：在山坡上闭着眼瞎跳，每一步都可能直接跳过山谷，跳到对面更高的山坡上。</p><p>数学上，梯度更新量 <strong>θ = θ - α·∇f(θ)</strong> 中的 α 过大，导致更新后的参数反而远离最优值。</p>"
+            },
+            {
+              "id": "n3",
+              "label": "数值发散",
+              "sublabel": "Divergence",
+              "icon": "💥",
+              "x": 160,
+              "y": 270,
+              "details": "<p><strong>数值发散（Divergence）</strong>：损失值不仅不下降，反而越来越大，最终可能溢出（NaN）。</p><p>类比：你在跳远时越跳越偏，完全背离目标方向。</p><p>这是梯度下降中最灾难性的失败模式——算法彻底失效，需要重新调小步长。</p>"
+            },
+            {
+              "id": "n4",
+              "label": "较大步长",
+              "sublabel": "偏大的步长",
+              "icon": "📈",
+              "x": 370,
+              "y": 160,
+              "details": "<p><strong>较大步长</strong>：步长比最优值大，但不至于立即发散。</p><p>类比：下山时步子偏大，有时会在山谷两侧来回荡秋千。</p><p>虽然最终可能收敛，但过程不稳定，且需要更多时间来「震荡」到最优解附近。</p>"
+            },
+            {
+              "id": "n5",
+              "label": "震荡",
+              "sublabel": "Oscillation",
+              "icon": "🔄",
+              "x": 370,
+              "y": 270,
+              "details": "<p><strong>震荡（Oscillation）</strong>：参数在最优解附近来回摆动，难以稳定。</p><p>类比：像钟摆一样在最低点附近来回晃动，虽然每次摆幅越来越小，但到达最低点需要很久。</p><p>使用 <strong>动量（Momentum）</strong> 或 <strong>自适应步长</strong>（如 Adam）可以缓解此问题。</p>"
+            },
+            {
+              "id": "n6",
+              "label": "最优步长区间",
+              "sublabel": "Optimal Range ⭐",
+              "icon": "✅",
+              "x": 630,
+              "y": 160,
+              "details": "<p><strong>最优步长区间（Optimal Step-size Range）</strong>：经过调优后找到的最佳步长范围。</p><p>类比：下山时每一步的大小刚刚好——既不过快跳过山谷，也不过慢拖后腿。</p><p>实践中常用 <strong>学习率预热（Warm-up）</strong> 和 <strong>衰减策略（Decay）</strong> 来动态调整步长，以找到并保持在这个黄金区间内。</p>"
+            },
+            {
+              "id": "n7",
+              "label": "稳健收敛",
+              "sublabel": "Robust Convergence",
+              "icon": "🏔️",
+              "x": 630,
+              "y": 270,
+              "details": "<p><strong>稳健收敛（Robust Convergence）</strong>：参数快速而稳定地接近最优解。</p><p>类比：沿着山坡的最陡下降方向，以合适的步伐稳健前行，很快到达谷底。</p><p>这是梯度下降的理想状态——损失函数单调下降，最终在 <strong>黑塞矩阵（Hessian Matrix）</strong> 正定的区域稳定下来。</p>"
+            },
+            {
+              "id": "n8",
+              "label": "极小步长",
+              "sublabel": "步长过小",
+              "icon": "🐢",
+              "x": 840,
+              "y": 160,
+              "details": "<p><strong>极小步长</strong>：每一步都迈得非常小。</p><p>类比：下山时每次只移动一毫米——方向是对的，但永远走不到谷底。</p><p>虽然理论上最终会收敛，但实际需要的迭代次数可能远超计算资源的承受能力。</p>"
+            },
+            {
+              "id": "n9",
+              "label": "缓慢停滞",
+              "sublabel": "Stagnation",
+              "icon": "😴",
+              "x": 840,
+              "y": 270,
+              "details": "<p><strong>缓慢停滞（Stagnation）</strong>：损失几乎不再下降，但距离最优解还很远。</p><p>类比：走了很久发现几乎还在原地——不是方向错了，而是步子太小。</p><p>实际训练中，你可能等了几百个 epoch 发现损失曲线几乎是一条水平线。此时应尝试增大步长或使用自适应优化器。</p>"
+            },
+            {
+              "id": "n10",
+              "label": "步长↑ 迭代次数↓",
+              "sublabel": "负相关关系 📉",
+              "icon": "⚖️",
+              "x": 500,
+              "y": 420,
+              "details": "<p><strong>步长与迭代次数的负相关关系</strong>：在最优区间内，步长越大，收敛所需的迭代次数越少。</p><p>类比：在安全范围内，步子迈得大一些，到达目的地更快。</p><p>⚠️ 但超过临界点后，关系反转——步长过大会导致发散或震荡，反而需要更多迭代（甚至永远不收敛）。这就是为什么找到 <strong>最优步长区间</strong> 如此重要。</p>"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "过大 →",
+              "type": "warning"
+            },
+            {
+              "from": "n2",
+              "to": "n3",
+              "label": "导致",
+              "type": "warning"
+            },
+            {
+              "from": "n1",
+              "to": "n4",
+              "label": "偏大 →",
+              "type": "info"
+            },
+            {
+              "from": "n4",
+              "to": "n5",
+              "label": "导致",
+              "type": "info"
+            },
+            {
+              "from": "n1",
+              "to": "n6",
+              "label": "适中 →",
+              "type": "optimal"
+            },
+            {
+              "from": "n6",
+              "to": "n7",
+              "label": "导致",
+              "type": "optimal"
+            },
+            {
+              "from": "n1",
+              "to": "n8",
+              "label": "过小 →",
+              "type": "slow"
+            },
+            {
+              "from": "n8",
+              "to": "n9",
+              "label": "导致",
+              "type": "slow"
+            },
+            {
+              "from": "n7",
+              "to": "n10",
+              "label": "高效平衡 →",
+              "type": "optimal"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7",
+            "n8",
+            "n9",
+            "n10"
+          ]
+        },
+        "htmlPath": "interactive/15_步长和收敛：关系图.html",
+        "htmlBytes": 766167
+      },
+      "actions": [
+        {
+          "id": "action_GQ7Q_Ddx",
+          "type": "speech",
+          "text": "本场景通过交互探索“步长和收敛：关系图”。我们亲身体验了不同步长带来的截然不同的后果。现在，让我们通过这张关系图，把这些零散的感受系统化地梳理一下。"
+        },
+        {
+          "id": "action_S5QUQP-k",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "这是核心的起点：步长选择节点。"
+        },
+        {
+          "id": "action_uZ8ASQjd",
+          "type": "speech",
+          "text": "图中央的‘步长选择’节点是所有路径的起点。大家看，从它出发，引出了四条不同的路，分别对应我们刚才试过的极大、较大、适中和极小步长。",
+          "audioRef": "audio/tts_s15_action_uZ8ASQjd.mp3"
+        },
+        {
+          "id": "action_5EE7oIx0",
+          "type": "widget_setState",
+          "state": {
+            "revealedNodes": [
+              "n1",
+              "n2",
+              "n3"
+            ]
+          },
+          "content": "我们先观察‘极大步长’这条路。"
+        },
+        {
+          "id": "action_VDtZDKjq",
+          "type": "speech",
+          "text": "首先看最左边的路径，选择‘极大步长’，也就是刚才我们把滑块拖到 2.2 以上的情况，它直接导致了‘数值发散’。就像图中警示的，这是梯度下降最灾难性的失败——参数完全失控，损失值不降反升。大家可以在脑海里回想一下，那个小球直接飞出山谷的画面。",
+          "audioRef": "audio/tts_s15_action_VDtZDKjq.mp3"
+        },
+        {
+          "id": "action_kD2bL6V-",
+          "type": "widget_setState",
+          "state": {
+            "revealedNodes": [
+              "n1",
+              "n2",
+              "n3",
+              "n4",
+              "n5"
+            ]
+          },
+          "content": "接着，我们探索‘较大步长’的路径。"
+        },
+        {
+          "id": "action_Ycl9IJIH",
+          "type": "speech",
+          "text": "相比之下，如果步长稍微小一些，但还是偏大，就会走第二条路：‘较大步长’导致‘震荡’。参数会在山谷两侧来回摆动，像钟摆一样，虽然最终可能收敛，但过程曲折，白白浪费了很多时间。",
+          "audioRef": "audio/tts_s15_action_Ycl9IJIH.mp3"
+        },
+        {
+          "id": "action_3TiDJgqM",
+          "type": "widget_setState",
+          "state": {
+            "revealedNodes": [
+              "n1",
+              "n2",
+              "n3",
+              "n4",
+              "n5",
+              "n6",
+              "n7"
+            ]
+          },
+          "content": "现在，看向第三个区域，‘最优步长区间’。"
+        },
+        {
+          "id": "action_83Vq0dhR",
+          "type": "speech",
+          "text": "现在请看中间偏右的部分，这里标记了一个⭐‘最优步长区间’。步长选在这个范围内，就能实现理想的‘稳健收敛’。这是我们调参的目标——让算法高效、稳定地走向山谷底部。",
+          "audioRef": "audio/tts_s15_action_83Vq0dhR.mp3"
+        },
+        {
+          "id": "action_7ziOCSgk",
+          "type": "widget_setState",
+          "state": {
+            "revealedNodes": [
+              "n1",
+              "n2",
+              "n3",
+              "n4",
+              "n5",
+              "n6",
+              "n7",
+              "n8",
+              "n9"
+            ]
+          },
+          "content": "最后，揭示右侧‘极小步长’导致的后果。"
+        },
+        {
+          "id": "action_cX_iow7_",
+          "type": "speech",
+          "text": "最后，最右侧的路径步长太保守了。‘极小步长’看似安全，方向也对，但最终只会导致‘缓慢停滞’。就像课件里说的，等了几百个epoch，损失曲线几乎不动，这在实践中同样是不可接受的。",
+          "audioRef": "audio/tts_s15_action_cX_iow7_.mp3"
+        },
+        {
+          "id": "action_1fkDTt5H",
+          "type": "widget_reveal",
+          "target": "#n10",
+          "content": "最后，揭示底部的核心关系节点。"
+        },
+        {
+          "id": "action_2JPubSR4",
+          "type": "speech",
+          "text": "最后，我们看连接着最优路径的最下方节点。它揭示了一个重要的负相关关系：在最优区间内，步长越大，收敛所需的迭代次数越少。但这有个前提——绝对不能超过临界点，否则就会跌入左边震荡或发散的陷阱。这就是为什么找到并保持在‘最优步长区间’是调参的核心任务。",
+          "audioRef": "audio/tts_s15_action_2JPubSR4.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "步长和收敛：误解修复挑战",
+      "order": 16,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "htmlPath": "interactive/16_步长和收敛：误解修复挑战.html",
+        "htmlBytes": 763995
+      },
+      "actions": [
+        {
+          "id": "action_QXcmDs0n",
+          "type": "speech",
+          "text": "本场景通过交互探索“步长和收敛：误解修复挑战”。最优步长区间是平衡速度与精度的关键。但很多同学一开始会认为，找个合适的固定步长一路走到底不就行了？今天我们通过一个挑战来修复这个误解。"
+        },
+        {
+          "id": "action_K3OElgbS",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始挑战，你需要在游戏中实时调整步长，安全到达谷底。"
+        },
+        {
+          "id": "action_xXpDopmO",
+          "type": "speech",
+          "text": "请大家点击开始。你的目标很明确：从山坡上出发，尽快且平稳地停在最低点。注意看右边的余差值——它告诉你离终点还有多远。",
+          "audioRef": "audio/tts_s16_action_xXpDopmO.mp3"
+        },
+        {
+          "id": "action_LN5kNTow",
+          "type": "widget_setState",
+          "state": {
+            "currentStep": 0,
+            "completedSteps": [],
+            "feedback": "ready"
+          },
+          "content": "初始化挑战状态，玩家即将开始调整步长。"
+        },
+        {
+          "id": "action_YRV8jvrh",
+          "type": "speech",
+          "text": "回想一下地形探索的经验，一开始离谷底远，你可以大胆一点，用较大的步长快速下降；但当你感觉到地形变平缓、余差值减得很慢时，就得减小步长，小心靠近。",
+          "audioRef": "audio/tts_s16_action_YRV8jvrh.mp3"
+        },
+        {
+          "id": "action_484ubq7L",
+          "type": "widget_annotation",
+          "target": "#progress-display",
+          "content": "观察余差值的变化速度，它能告诉你现在是该冲还是该稳。"
+        },
+        {
+          "id": "action_JE92wtPV",
+          "type": "speech",
+          "text": "试试看，先大后小地调，别一次用蛮力。如果你能精准踩在谷底附近再停下来，就能获得‘高效优化者’勋章。这就证明了：步长不是一成不变的，动态调度才是真功夫。",
+          "audioRef": "audio/tts_s16_action_JE92wtPV.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "步长和收敛：空间视角",
+      "order": 17,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "步长与收敛：空间视角 — 3D路径动画展示不同学习率(Step-size/Learning Rate)下梯度下降(Gradient Descent)的收敛行为。大步长导致在山谷两侧振荡跳跃，小步长则平缓沿谷底下降。",
+          "objects": [
+            {
+              "id": "valley",
+              "type": "surface",
+              "description": "U形山谷地形，高度函数 f(x) = x²/6"
+            },
+            {
+              "id": "large-path",
+              "type": "path",
+              "color": "#ff4444",
+              "description": "大步长(lr=0.95)路径，呈现振荡收敛"
+            },
+            {
+              "id": "small-path",
+              "type": "path",
+              "color": "#44dd88",
+              "description": "小步长(lr=0.15)路径，平缓收敛"
+            },
+            {
+              "id": "start-marker",
+              "type": "marker",
+              "description": "起点标记"
+            },
+            {
+              "id": "gradient-arrows",
+              "type": "vectors",
+              "description": "梯度方向箭头"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "slider",
+              "param": "speed",
+              "min": 0.1,
+              "max": 5,
+              "default": 1.5,
+              "label": "动画速度"
+            },
+            {
+              "type": "button",
+              "action": "play",
+              "label": "播放"
+            },
+            {
+              "type": "button",
+              "action": "pause",
+              "label": "暂停"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "select",
+              "param": "mode",
+              "options": [
+                "both",
+                "large",
+                "small"
+              ],
+              "label": "显示模式"
+            }
+          ],
+          "presets": [
+            {
+              "name": "俯视图",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  25,
+                  0.1
+                ],
+                "lookAt": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧视图",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  5,
+                  20
+                ],
+                "lookAt": [
+                  0,
+                  3,
+                  -5
+                ]
+              }
+            },
+            {
+              "name": "斜视图",
+              "state": {
+                "cameraPosition": [
+                  18,
+                  14,
+                  22
+                ],
+                "lookAt": [
+                  0,
+                  2,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/17_步长和收敛：空间视角.html",
+        "htmlBytes": 2517101
+      },
+      "actions": [
+        {
+          "id": "action_mBzdQr2v",
+          "type": "speech",
+          "text": "本场景通过交互探索“步长和收敛：空间视角”。体会到精确踩点的难度。现在我们把视角拉高，从一个真正的三维地形来观察：步长到底怎样改变了算法下山的路径。"
+        },
+        {
+          "id": "action_NbJxOjJk",
+          "type": "widget_setState",
+          "state": {
+            "mode": "both"
+          },
+          "content": "同时显示两条路径。红色是大步长，绿色是小步长。"
+        },
+        {
+          "id": "action_FiVgKoFY",
+          "type": "speech",
+          "text": "注意看，红色的大步长小球（lr=0.95）在谷壁上疯狂左右横跳，就像冲得太快，根本刹不住车。而绿色的小步长小球（lr=0.15）呢，它贴着谷腰，小碎步往下钻。",
+          "audioRef": "audio/tts_s17_action_FiVgKoFY.mp3"
+        },
+        {
+          "id": "action_V62AnULQ",
+          "type": "widget_annotation",
+          "target": "#large-path",
+          "content": "振荡发散：步长过大导致来回跳跃。"
+        },
+        {
+          "id": "action_v8dEyOKF",
+          "type": "speech",
+          "text": "大家可能会想，步大不是更快吗？我们来看看，红色虽然单步跨度大，但它在山脊上来回振荡，做了多少无用功。这一点，大家可以从位移总量的角度想想，为什么大步长反而效率低？"
+        },
+        {
+          "id": "action_-xe6GgSI",
+          "type": "widget_setState",
+          "state": {
+            "cameraPosition": [
+              0,
+              25,
+              0.1
+            ],
+            "lookAt": [
+              0,
+              0,
+              0
+            ]
+          },
+          "content": "切换到俯视图，更清晰地观察坐标变化。"
+        },
+        {
+          "id": "action_oXrOaUkx",
+          "type": "speech",
+          "text": "切换到俯视图，这条来回震荡的锯齿线就是大步长导致的‘之’字形下山。算法明明想往下走，但一步跨太远，直接跨到了对面山腰上，结果就在山谷两侧反复横跨，收敛极慢。这就是空间中最直观的‘步长过大导致不收敛’证据。",
+          "audioRef": "audio/tts_s17_action_oXrOaUkx.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "迭代路径与停止信号",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "r7mUwagSll4jIY0i-sUEl",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_brak_leZ",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1A3A5C;\">迭代路径与停止信号</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_DNq0JQRV",
+              "left": 100,
+              "top": 120,
+              "width": 800,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #4A90D9;\">何时“功德圆满”——修复盲目迭代心态</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4A90D9"
+            },
+            {
+              "type": "line",
+              "id": "line_Pv_wIlAk",
+              "left": 100,
+              "top": 175,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                800,
+                0
+              ],
+              "style": "solid",
+              "color": "#4A90D9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_IqLLxiUy",
+              "left": 60,
+              "top": 200,
+              "width": 24,
+              "height": 24,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_4kWjgKKd",
+              "left": 52,
+              "top": 190,
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold; text-align: center; color: #ffffff;\">1</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_-mgp2ppN",
+              "left": 100,
+              "top": 190,
+              "width": 440,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1A3A5C;\">记录轨迹</p><p style=\"font-size: 16px; color: #555555;\">保存每一步的坐标与高度值，跟踪优化进程。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_UroNUqaP",
+              "left": 60,
+              "top": 300,
+              "width": 24,
+              "height": 24,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_3xSZdnVI",
+              "left": 52,
+              "top": 290,
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold; text-align: center; color: #ffffff;\">2</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_BoZbQJHh",
+              "left": 100,
+              "top": 290,
+              "width": 440,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1A3A5C;\">停止规则</p><p style=\"font-size: 16px; color: #555555;\">当梯度接近零或高度变化量小于阈值（Epsilon）时，主动终止。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_26xo6TBr",
+              "left": 60,
+              "top": 400,
+              "width": 24,
+              "height": 24,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_WDjhgDmH",
+              "left": 52,
+              "top": 390,
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold; text-align: center; color: #ffffff;\">3</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_-nL76cN2",
+              "left": 100,
+              "top": 390,
+              "width": 440,
+              "height": 103,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1A3A5C;\">修复误解</p><p style=\"font-size: 16px; color: #555555;\">计算资源有限，当收益递减到极小时应主动停止；继续投入可能边际成本 &gt; 边际收益。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_yjCteogz",
+              "left": 600,
+              "top": 190,
+              "width": 2,
+              "start": [
+                0,
+                120
+              ],
+              "end": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "color": "#888888",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_fP6MebQ0",
+              "left": 600,
+              "top": 310,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                280,
+                0
+              ],
+              "style": "solid",
+              "color": "#888888",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_s2CKPSad",
+              "left": 560,
+              "top": 170,
+              "width": 80,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">目标值</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "text",
+              "id": "text_o0aPlba8",
+              "left": 880,
+              "top": 315,
+              "width": 80,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">迭代数</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "line",
+              "id": "line_Eo6XVS-d",
+              "left": 620,
+              "top": 210,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                40
+              ],
+              "style": "solid",
+              "color": "#4A90D9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_Vy13LAzv",
+              "left": 660,
+              "top": 250,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                20
+              ],
+              "style": "solid",
+              "color": "#4A90D9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_Fd6KiG4M",
+              "left": 700,
+              "top": 270,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                10
+              ],
+              "style": "solid",
+              "color": "#4A90D9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_Bi6aE0Rf",
+              "left": 740,
+              "top": 280,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                5
+              ],
+              "style": "solid",
+              "color": "#4A90D9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_coLStO7C",
+              "left": 780,
+              "top": 285,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                2
+              ],
+              "style": "solid",
+              "color": "#4A90D9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_2NQCrQoq",
+              "left": 820,
+              "top": 287,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                1
+              ],
+              "style": "solid",
+              "color": "#4A90D9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_67ierf0p",
+              "left": 860,
+              "top": 288,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                0
+              ],
+              "style": "solid",
+              "color": "#4A90D9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_y-pdZdhv",
+              "left": 780,
+              "top": 280,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                120,
+                0
+              ],
+              "style": "dashed",
+              "color": "#E67E22",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_wZcQfodx",
+              "left": 780,
+              "top": 296,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                120,
+                0
+              ],
+              "style": "dashed",
+              "color": "#E67E22",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_joRslpBb",
+              "left": 780,
+              "top": 245,
+              "width": 120,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #E67E22;\">Epsilon 阈值带</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#E67E22"
+            },
+            {
+              "type": "line",
+              "id": "line_ZfwL5tPe",
+              "left": 880,
+              "top": 280,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                15
+              ],
+              "style": "solid",
+              "color": "#E67E22",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_G4yD072J",
+              "left": 890,
+              "top": 270,
+              "width": 80,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold; color: #E67E22;\">停止信号</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#E67E22"
+            },
+            {
+              "type": "table",
+              "id": "table_5ITulRhb",
+              "left": 580,
+              "top": 360,
+              "width": 360,
+              "height": 140,
+              "rotate": 0,
+              "outline": {
+                "style": "solid",
+                "width": 1,
+                "color": "#4A90D9"
+              },
+              "colWidths": [
+                0.35,
+                0.4,
+                0.25
+              ],
+              "cellMinHeight": 40,
+              "data": [
+                [
+                  {
+                    "id": "h1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "条件",
+                    "style": {
+                      "bold": true,
+                      "color": "#ffffff",
+                      "backcolor": "#4A90D9",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "含义",
+                    "style": {
+                      "bold": true,
+                      "color": "#ffffff",
+                      "backcolor": "#4A90D9",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "典型值",
+                    "style": {
+                      "bold": true,
+                      "color": "#ffffff",
+                      "backcolor": "#4A90D9",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r1c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "梯度接近零",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r1c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "一阶导数趋于0",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r1c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "≤ 1e-6",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r2c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "高度变化量 < Epsilon",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r2c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "目标函数值不再显著下降",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r2c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "≤ 1e-4",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ]
+              ]
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#F5F5F5"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_7Nmfeqnw",
+          "type": "spotlight",
+          "elementId": "text_brak_leZ"
+        },
+        {
+          "id": "action_xtGIRQVy",
+          "type": "speech",
+          "text": "本场景聚焦“迭代路径与停止信号”。从空间视角回到概念层面，我们还需要解决最后一个核心问题：迭代路径与停止信号。算法不能无限跑下去，什么时候算“功德圆满”呢？"
+        },
+        {
+          "id": "action_lYNI0HwD",
+          "type": "spotlight",
+          "elementId": "text_-mgp2ppN"
+        },
+        {
+          "id": "action_G3wMfPpX",
+          "type": "speech",
+          "text": "首先，我们必须记录轨迹。就像登山者会保存GPS航点，算法也会记录下每一步的坐标与对应的高度值。这是跟踪优化全程、复盘分析的基础。",
+          "audioRef": "audio/tts_s18_action_G3wMfPpX.mp3"
+        },
+        {
+          "id": "action_wDnNuJzU",
+          "type": "spotlight",
+          "elementId": "text_BoZbQJHh"
+        },
+        {
+          "id": "action_pFSLEK7U",
+          "type": "speech",
+          "text": "有了轨迹，就需要一套停止规则。常见策略是：当梯度向量的模长接近于零，或者连续两步的高度下降量减小到某个预设阈值，也就是 Epsilon 时，就主动终止迭代。",
+          "audioRef": "audio/tts_s18_action_pFSLEK7U.mp3"
+        },
+        {
+          "id": "action_OJBChQn6",
+          "type": "spotlight",
+          "elementId": "text_joRslpBb"
+        },
+        {
+          "id": "action__Qh9IDH7",
+          "type": "speech",
+          "text": "大家留意图表中这个 Epsilon 阈值带。一旦优化路径落入这个平坦区间，继续迭代带来的收益微乎其微，边际成本却远超边际收益，此时就该果断刹车。",
+          "audioRef": "audio/tts_s18_action__Qh9IDH7.mp3"
+        },
+        {
+          "id": "action_0898JZzy",
+          "type": "spotlight",
+          "elementId": "text_-nL76cN2"
+        },
+        {
+          "id": "action__-x0L7Dg",
+          "type": "speech",
+          "text": "这里有一个常见的误解需要修复：很多同学觉得“只要迭代不停，结果就一直变好”。但真实计算资源是有限的。当改进量递减到极小，就应该承认模型已经收敛。固执地继续投入，是对算力和时间的双重浪费。",
+          "audioRef": "audio/tts_s18_action__-x0L7Dg.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "迭代路径与停止信号：拖动实验",
+      "order": 19,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "iteration_path_stopping_signal",
+          "description": "自动迭代模拟器：观察梯度下降过程中程序如何在高度几乎不再改变时自动弹出'已收敛'信号，对比有效步与冗余步的数量。",
+          "variables": [
+            {
+              "name": "tolerance_threshold",
+              "label": "容差阈值 (Tolerance)",
+              "min": 0.01,
+              "max": 1,
+              "default": 0.2,
+              "unit": ""
+            },
+            {
+              "name": "learning_rate",
+              "label": "学习率 (Learning Rate)",
+              "min": 0.01,
+              "max": 0.5,
+              "default": 0.15,
+              "unit": ""
+            },
+            {
+              "name": "auto_step_toggle",
+              "label": "自动步长 (Auto Step)",
+              "min": 0,
+              "max": 1,
+              "default": 1,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "严格收敛 (严格)",
+              "description": "小阈值，更多迭代步",
+              "variables": {
+                "tolerance_threshold": 0.05,
+                "learning_rate": 0.1
+              }
+            },
+            {
+              "name": "宽松停止 (宽松)",
+              "description": "大阈值，提前停止",
+              "variables": {
+                "tolerance_threshold": 0.5,
+                "learning_rate": 0.15
+              }
+            },
+            {
+              "name": "大学习率",
+              "description": "大步长，可能震荡",
+              "variables": {
+                "tolerance_threshold": 0.2,
+                "learning_rate": 0.35
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/19_迭代路径与停止信号：拖动实验.html",
+        "htmlBytes": 1321053
+      },
+      "actions": [
+        {
+          "id": "action_Q0bhehfA",
+          "type": "speech",
+          "text": "本场景通过交互探索“迭代路径与停止信号：拖动实验”。我们刚提到迭代资源是有限的，固执地投入是浪费。那么，在实际的梯度下降算法里，程序是怎么“聪明”地知道自己该停下来的呢？我们来试试这个自动迭代模拟器。"
+        },
+        {
+          "id": "action_9JN1pKQQ",
+          "type": "widget_highlight",
+          "target": "#tolerance_threshold-slider",
+          "content": "容差阈值：告诉程序什么程度的变化可以忽略不计。"
+        },
+        {
+          "id": "action_2tZpEcCk",
+          "type": "speech",
+          "text": "注意了，这里的核心就是这个“容差阈值”（Tolerance）。当每一步下降的幅度，也就是梯度的模长，小于这个阈值时，程序就认为“已经快到谷底了，再走就是冗余步”，于是发出“已收敛”的信号并自动停止。",
+          "audioRef": "audio/tts_s19_action_2tZpEcCk.mp3"
+        },
+        {
+          "id": "action_FDXEvxcr",
+          "type": "widget_setState",
+          "state": {
+            "tolerance_threshold": 0.05,
+            "learning_rate": 0.1,
+            "auto_step_toggle": 1
+          },
+          "content": "加载“严格收敛”的预设参数，观察它需要走多少步。"
+        },
+        {
+          "id": "action_xQs71UCC",
+          "type": "speech",
+          "text": "看，在严格的容差下，它走了很多步，直到坡度极缓才停下。虽然精细，但后期的不少迭代步其实改进微乎其微。",
+          "audioRef": "audio/tts_s19_action_xQs71UCC.mp3"
+        },
+        {
+          "id": "action_X0gV2dXq",
+          "type": "widget_setState",
+          "state": {
+            "tolerance_threshold": 0.5,
+            "learning_rate": 0.15,
+            "auto_step_toggle": 1
+          },
+          "content": "切换到“宽松停止”预设，对比观察步数变化。"
+        },
+        {
+          "id": "action_Q22ze1Rj",
+          "type": "speech",
+          "text": "阈值放大后，程序“宽容”了许多，在离谷底还有一小段距离的地方就宣告收敛了。我们来数一下日志里，有效步和冗余步的比例变化了多少。",
+          "audioRef": "audio/tts_s19_action_Q22ze1Rj.mp3"
+        },
+        {
+          "id": "action_pEAEa16T",
+          "type": "widget_highlight",
+          "target": "#data-log",
+          "content": "查看日志表里统计的有效步和冗余步数量，对比两种设置的差异。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "迭代路径与停止信号：关系图",
+      "order": 20,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "htmlPath": "interactive/20_迭代路径与停止信号：关系图.html",
+        "htmlBytes": 463647
+      },
+      "actions": [
+        {
+          "id": "action_pteiCgSv",
+          "type": "speech",
+          "text": "本场景通过交互探索“迭代路径与停止信号：关系图”。我们调整了阈值的大小，看到了它对迭代停止时机的影响。现在，让我们用一张关系图，把整个迭代路径和停止逻辑完整地梳理出来。"
+        },
+        {
+          "id": "action_NKkLsFKu",
+          "type": "widget_setState",
+          "state": {
+            "mode": "full-flow"
+          },
+          "content": "展示完整的优化算法流程图。"
+        },
+        {
+          "id": "action_E8epaBjq",
+          "type": "speech",
+          "text": "请看这张完整的流程图。它抽象地描述了所有基于梯度的优化算法的核心骨架。我们刚刚在实验中反复遇到的那些决定——是继续走还是停下来——在这里被提炼为了一个明确的判定框。",
+          "audioRef": "audio/tts_s20_action_E8epaBjq.mp3"
+        },
+        {
+          "id": "action_0noomupZ",
+          "type": "widget_highlight",
+          "target": "#decision-node",
+          "content": "这个菱形框是整个流程的决策核心。"
+        },
+        {
+          "id": "action_WKwkekXg",
+          "type": "speech",
+          "text": "注意这个菱形判定框。它问的正是一个我们很熟悉的问题：停止信号被触发了吗？具体到数学上，这包含了两个我们刚讨论过的核心条件。",
+          "audioRef": "audio/tts_s20_action_WKwkekXg.mp3"
+        },
+        {
+          "id": "action_Njm_0n6p",
+          "type": "widget_reveal",
+          "target": "#condition-details",
+          "content": "展开判定框内的详细逻辑条件。"
+        },
+        {
+          "id": "action_UaX2opWm",
+          "type": "speech",
+          "text": "第一个条件，函数值的变化量 |f(new) - f(old)| 是否已经小于我们设定的阈值 ε，这意味着继续走带来的收益已经微乎其微了。第二个条件请一定注意，就是作为安全阀的“最大迭代次数”。",
+          "audioRef": "audio/tts_s20_action_UaX2opWm.mp3"
+        },
+        {
+          "id": "action_kNf_oWPW",
+          "type": "widget_annotation",
+          "target": "#max-iter-box",
+          "content": "防止死循环的安全阀，无论收敛与否，到达上限都必须停止。"
+        },
+        {
+          "id": "action_927_BQ1K",
+          "type": "speech",
+          "text": "这个兜底条件确保了即使在糟糕的地形上，算法也不会无休止地运行下去。你之前担心“步子太小永远走不到”，其实就是因为函数值变化可能一直大于阈值，但最大迭代次数这个安全阀最终会让它停下来。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "迭代路径与停止信号：误解修复挑战",
+      "order": 21,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "迭代路径与停止信号：误解修复挑战 - 在梯度下降过程中精准识别计算停滞期",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5,
+            "resourceBonus": 2,
+            "earlyStopPenalty": 3,
+            "lateStopPenalty": 1
+          },
+          "achievements": [
+            {
+              "id": "first_stop",
+              "name": "初次刹车",
+              "description": "完成第一次精准停止",
+              "icon": "🛑"
+            },
+            {
+              "id": "perfect_stop",
+              "name": "完美刹车",
+              "description": "在最优区间内停止",
+              "icon": "🏆"
+            },
+            {
+              "id": "resource_saver",
+              "name": "资源节约者",
+              "description": "节省超过5步计算资源",
+              "icon": "💰"
+            },
+            {
+              "id": "all_stars",
+              "name": "三星达人",
+              "description": "单关获得三星评价",
+              "icon": "⭐"
+            },
+            {
+              "id": "level_master",
+              "name": "关卡大师",
+              "description": "完成所有关卡",
+              "icon": "👑"
+            },
+            {
+              "id": "no_auto",
+              "name": "手动达人",
+              "description": "不使用自动检测完成关卡",
+              "icon": "🎯"
+            }
+          ]
+        },
+        "htmlPath": "interactive/21_迭代路径与停止信号：误解修复挑战.html",
+        "htmlBytes": 780164
+      },
+      "actions": [
+        {
+          "id": "action_o3ZbeuHQ",
+          "type": "speech",
+          "text": "本场景通过交互探索“迭代路径与停止信号：误解修复挑战”。好了，我们刚才讨论了步长和收敛的关系，以及最大迭代次数这个安全阀。现在，让我们来挑战一下你的判断力——在一个真实的梯度下降过程中，你能精准地找到应该让它停下来的那一刻吗？"
+        },
+        {
+          "id": "action_pJHsPlwI",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "从这里开始一个计算任务，观察损失函数值的下降曲线。"
+        },
+        {
+          "id": "action_iBrJ8RiY",
+          "type": "speech",
+          "text": "看到这个损失函数的下降曲线了吗？你的任务是在函数值下降斜率变得足够平缓——也就是进入了我们所说的“计算停滞期”——时，立刻让它停下来。这不仅考你对图形的直觉，更考验你对“收敛”这个概念的时刻把握。",
+          "audioRef": "audio/tts_s21_action_iBrJ8RiY.mp3"
+        },
+        {
+          "id": "action_zUI3QoG4",
+          "type": "widget_annotation",
+          "target": "#curve-area",
+          "content": "注意观察曲线斜率的变化，当它长时间接近水平时，就是我们寻找的停止信号。"
+        },
+        {
+          "id": "action_EO5Afjzr",
+          "type": "speech",
+          "text": "记住，停下来太早，你可能错过了继续下降的机会，会被扣分；但如果停下来太晚，浪费了计算资源，同样会损失分数。你能做到既精准又节省资源吗？来试试看吧。",
+          "audioRef": "audio/tts_s21_action_EO5Afjzr.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "迭代路径与停止信号：空间视角",
+      "order": 22,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "迭代路径与停止信号：空间视角 — 3D收敛路径展示。观察梯度下降过程中梯度箭头如何逐渐缩短，理解停止信号的物理意义。",
+          "objects": [
+            {
+              "id": "surface",
+              "type": "mesh",
+              "material": {
+                "type": "phong",
+                "vertexColors": true,
+                "opacity": 0.85
+              },
+              "label": "代价函数曲面"
+            },
+            {
+              "id": "minimum",
+              "type": "sphere",
+              "material": {
+                "type": "emissive",
+                "color": "#00ff88"
+              },
+              "label": "极小值点"
+            },
+            {
+              "id": "path",
+              "type": "tube",
+              "material": {
+                "type": "phong",
+                "color": "#6366f1"
+              },
+              "label": "迭代路径"
+            },
+            {
+              "id": "arrows",
+              "type": "group",
+              "material": {
+                "type": "phong"
+              },
+              "label": "梯度箭头"
+            },
+            {
+              "id": "convergence_cone",
+              "type": "group",
+              "material": {
+                "type": "phong",
+                "opacity": 0.2
+              },
+              "label": "收敛锥"
+            },
+            {
+              "id": "dense_path_points",
+              "type": "group",
+              "material": {
+                "type": "phong"
+              },
+              "label": "路径节点"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "learningRate",
+              "label": "学习率",
+              "min": 0.01,
+              "max": 0.2,
+              "default": 0.08
+            },
+            {
+              "type": "slider",
+              "param": "threshold",
+              "label": "停止阈值",
+              "min": 0.001,
+              "max": 0.1,
+              "default": 0.02
+            },
+            {
+              "type": "slider",
+              "param": "speed",
+              "label": "动画速度",
+              "min": 0,
+              "max": 5,
+              "default": 1.5
+            },
+            {
+              "type": "button",
+              "action": "playPause",
+              "label": "▶ 播放"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "🔄 重置"
+            },
+            {
+              "type": "button",
+              "action": "zoomClose",
+              "label": "🔍 近观"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "+"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "−"
+            }
+          ],
+          "presets": [
+            {
+              "name": "默认视角",
+              "state": {
+                "cameraPosition": [
+                  5,
+                  6,
+                  7
+                ],
+                "cameraTarget": [
+                  0,
+                  0.5,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "俯视图",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  12,
+                  0.01
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧面视角",
+              "state": {
+                "cameraPosition": [
+                  8,
+                  2,
+                  0
+                ],
+                "cameraTarget": [
+                  0,
+                  0.5,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "近观极小值",
+              "state": {
+                "cameraPosition": [
+                  0.2,
+                  1,
+                  1
+                ],
+                "cameraTarget": [
+                  -0.3,
+                  0,
+                  0.5
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/22_迭代路径与停止信号：空间视角.html",
+        "htmlBytes": 2213392
+      },
+      "actions": [
+        {
+          "id": "action_oQKpY-nF",
+          "type": "speech",
+          "text": "本场景通过交互探索“迭代路径与停止信号：空间视角”。我们体验了停止阈值对优化性能的影响。现在，让我们从空间视角，直观地看一看迭代路径在接近极小值点时究竟发生了什么。"
+        },
+        {
+          "id": "action_2ZQiR4Sb",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "请观察代价函数曲面上的路径和梯度箭头。"
+        },
+        {
+          "id": "action_EWfLz9mj",
+          "type": "speech",
+          "text": "先看默认的收敛过程。请注意路径上的梯度箭头——随着点靠近谷底的绿色小球，这些箭头在如何变化？",
+          "audioRef": "audio/tts_s22_action_EWfLz9mj.mp3"
+        },
+        {
+          "id": "action_dWms1hxh",
+          "type": "widget_setState",
+          "state": {
+            "speed": 1.5
+          },
+          "content": "以默认速度播放动画，观察箭头长度的整体趋势。"
+        },
+        {
+          "id": "action_iu4AZeox",
+          "type": "speech",
+          "text": "我们看到，箭头越来越短，移动越来越慢，就像一个滚下山坡的球慢慢停在了谷底。这正是停止信号的物理意义——当梯度模长小到你设定的阈值时，算法就认为已经足够接近极小值点，可以停下了。",
+          "audioRef": "audio/tts_s22_action_iu4AZeox.mp3"
+        },
+        {
+          "id": "action_yFS0LUMD",
+          "type": "widget_highlight",
+          "target": "#controls",
+          "content": "尝试拖动停止阈值滑块，并点击“近观”按钮。"
+        },
+        {
+          "id": "action_JTYdnvYF",
+          "type": "speech",
+          "text": "现在，请你自己动手，把停止阈值调大一些，比如滑到0.08，再点击播放。观察最终停止的位置离绿色的极小值点有多远。然后，把阈值调小到0.005，再次观察。思考一下，阈值的大小如何影响最终的坐标精度？",
+          "audioRef": "audio/tts_s22_action_JTYdnvYF.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 23,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "zK8ZjRLq_GJyZa2TJbQgl",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_1BH28hEh",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1A3C6E;\">全课整理：证据链回看</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "shape",
+              "id": "shape_f0FZjXdy",
+              "left": 100,
+              "top": 125,
+              "width": 800,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#2B5B84"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Rn-IMNrp",
+              "left": 50,
+              "top": 150,
+              "width": 210,
+              "height": 280,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8EFF5"
+            },
+            {
+              "type": "shape",
+              "id": "shape_dwOcSRbs",
+              "left": 280,
+              "top": 150,
+              "width": 210,
+              "height": 280,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8EFF5"
+            },
+            {
+              "type": "shape",
+              "id": "shape_PBxRCZPV",
+              "left": 510,
+              "top": 150,
+              "width": 210,
+              "height": 280,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8EFF5"
+            },
+            {
+              "type": "shape",
+              "id": "shape_WVL8hBlk",
+              "left": 740,
+              "top": 150,
+              "width": 210,
+              "height": 280,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8EFF5"
+            },
+            {
+              "type": "text",
+              "id": "text_k0rw15p9",
+              "left": 70,
+              "top": 170,
+              "width": 170,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #1A3C6E;\">地形直觉</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_L9u0FJfK",
+              "left": 70,
+              "top": 230,
+              "width": 170,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">将函数看作表面</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_Z1ROtB_v",
+              "left": 70,
+              "top": 390,
+              "width": 170,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: right; color: #4B6A8A;\">实验3/6证据</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4B6A8A"
+            },
+            {
+              "type": "text",
+              "id": "text_MmKjlpl5",
+              "left": 300,
+              "top": 170,
+              "width": 170,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #1A3C6E;\">方向策略</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_6eluqNbW",
+              "left": 300,
+              "top": 230,
+              "width": 170,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">坚定执行负梯度</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_zh4bMkS0",
+              "left": 300,
+              "top": 390,
+              "width": 170,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: right; color: #4B6A8A;\">实验8/10证据</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4B6A8A"
+            },
+            {
+              "type": "text",
+              "id": "text_tXzFLBx6",
+              "left": 530,
+              "top": 170,
+              "width": 170,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #1A3C6E;\">步长调控</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text__q-ncal3",
+              "left": 530,
+              "top": 230,
+              "width": 170,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">寻找速度与精度的平衡</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_rEcm2TAc",
+              "left": 530,
+              "top": 390,
+              "width": 170,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: right; color: #4B6A8A;\">实验14/16证据</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4B6A8A"
+            },
+            {
+              "type": "text",
+              "id": "text_dg-ppPN0",
+              "left": 760,
+              "top": 170,
+              "width": 170,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #1A3C6E;\">收敛判定</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_3xdzTTxe",
+              "left": 760,
+              "top": 230,
+              "width": 170,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">基于变化的停止逻辑</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_JVasTsrx",
+              "left": 760,
+              "top": 390,
+              "width": 170,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: right; color: #4B6A8A;\">实验19/21证据</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4B6A8A"
+            },
+            {
+              "type": "line",
+              "id": "line_sgA97_2r",
+              "left": 50,
+              "top": 450,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                900,
+                0
+              ],
+              "style": "solid",
+              "color": "#2B5B84",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_1BLDkMyc",
+              "left": 400,
+              "top": 465,
+              "width": 200,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #2B5B84; font-weight: bold;\">从感知 → 决策</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2B5B84"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#F8F9FA"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_1TezhkDI",
+          "type": "spotlight",
+          "elementId": "text_1BH28hEh"
+        },
+        {
+          "id": "action_kxkyYMYt",
+          "type": "speech",
+          "text": "本场景聚焦“全课整理：证据链回看”。好了，同学们，刚才我们在空间视角里亲手调整了停止阈值，感受了精度与效率的权衡。现在，让我们把整节课的探险拼图拼起来，回看一遍我们的证据链。"
+        },
+        {
+          "id": "action_h_FUjTj5",
+          "type": "spotlight",
+          "elementId": "text_k0rw15p9"
+        },
+        {
+          "id": "action_oIo-GnI9",
+          "type": "laser",
+          "elementId": "text_Z1ROtB_v"
+        },
+        {
+          "id": "action_YpNmJn9L",
+          "type": "speech",
+          "text": "旅程的第一步，是我们建立了最根本的'地形直觉'。我们学会了把复杂的函数想象成可以触摸的表面，这在实验3和实验6的拖动中感受得最真切。",
+          "audioRef": "audio/tts_s23_action_YpNmJn9L.mp3"
+        },
+        {
+          "id": "action_t94TeXBT",
+          "type": "spotlight",
+          "elementId": "text_MmKjlpl5"
+        },
+        {
+          "id": "action_L4hN8HnG",
+          "type": "laser",
+          "elementId": "text_zh4bMkS0"
+        },
+        {
+          "id": "action_njM3-_hC",
+          "type": "speech",
+          "text": "有了地形，我们就需要'方向策略'。通过实验8和实验10，我们验证了负梯度方向就是我们下山最陡峭的路径。记住，不是随意走，而是坚定地执行这个数学的指南针。",
+          "audioRef": "audio/tts_s23_action_njM3-_hC.mp3"
+        },
+        {
+          "id": "action_dUUvTagq",
+          "type": "spotlight",
+          "elementId": "text_tXzFLBx6"
+        },
+        {
+          "id": "action_v0PaipwR",
+          "type": "laser",
+          "elementId": "text_rEcm2TAc"
+        },
+        {
+          "id": "action_HyzI9IEY",
+          "type": "speech",
+          "text": "方向确定了，接着就是'步长调控'这个艺术活了。实验14和实验16的证据告诉我们，步长太大，我们会在山谷间震荡；步长太小，又像蜗牛爬山。关键就在于寻找速度与精度的微妙平衡。",
+          "audioRef": "audio/tts_s23_action_HyzI9IEY.mp3"
+        },
+        {
+          "id": "action_KsRnc2FA",
+          "type": "spotlight",
+          "elementId": "text_dg-ppPN0"
+        },
+        {
+          "id": "action_DEmT24T_",
+          "type": "laser",
+          "elementId": "text_JVasTsrx"
+        },
+        {
+          "id": "action_WtgURf0L",
+          "type": "speech",
+          "text": "最后，我们有了'收敛判定'这种智慧，如实验19和实验21所示。我们不再盲目地走，而是基于变化情况设立停止逻辑，告诉自己：变化足够小了，我们已经抵达了山谷的底部。",
+          "audioRef": "audio/tts_s23_action_WtgURf0L.mp3"
+        },
+        {
+          "id": "action_KF4Cxb3P",
+          "type": "spotlight",
+          "elementId": "text_1BLDkMyc"
+        },
+        {
+          "id": "action_aNlIxheI",
+          "type": "speech",
+          "text": "你看，从感知地形的直觉，到制定负梯度方向的决策；从精细调控步长，到依据变化果断停止。这一整套完整的决策链，就是我们今天梯度下降探险的全部智慧结晶。",
+          "audioRef": "audio/tts_s23_action_aNlIxheI.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "后测：无约束优化与梯度下降综合测评",
+      "order": 24,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在之前的“地形实验”中，你手动调整参数寻找最低点。这本质上是在进行无约束优化。以下哪个描述最准确地定义了无约束优化问题的目标？",
+            "options": [
+              {
+                "value": "A",
+                "label": "在整个搜索空间中找到函数值为0的点"
+              },
+              {
+                "value": "B",
+                "label": "在没有限制条件的整个定义域内，找到一个让目标函数值最小的点"
+              },
+              {
+                "value": "C",
+                "label": "沿着一条直线寻找函数值下降最多的方向"
+              },
+              {
+                "value": "D",
+                "label": "找到一个局部区域内的最高点"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "无约束优化意味着对自变量没有额外的限制条件（如 x>0 等），其核心目标是在整个定义域内找到目标函数的全局最小值。选项A描述的是求根问题，不是最优化；选项C描述的是线搜索，只是优化中的一个步骤；选项D描述的是求最大值，且混淆了‘局部’和‘最高’的概念。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "回想“地形实验”，当你身处某个山坡（非谷底）时，梯度（Gradient）向量可以指引你下山。关于梯度，以下哪些说法是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "梯度方向是函数在该点处上升最快的方向"
+              },
+              {
+                "value": "B",
+                "label": "负梯度方向是函数在该点处下降最快的方向"
+              },
+              {
+                "value": "C",
+                "label": "在多元函数中，梯度是一个标量（一个单纯的数值）"
+              },
+              {
+                "value": "D",
+                "label": "如果某点梯度为零向量，那么该点可能是一个极小值点、极大值点或鞍点"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "analysis": "梯度是一个向量，其方向指向函数值增长最快的方向，因此其反方向（负梯度）是下降最快的方向。在谷底、山顶或马鞍形状的中心，地形是水平的，梯度各个分量都为0，所以这些点统称为驻点。选项C错误，梯度在多元函数中由各个方向的偏导数组成，因此是一个向量。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "short_answer",
+            "question": "你在“地形实验”中调整“学习率”（步长）时，可能会观察到损失值反复跳跃、无法稳定下降的现象。请结合负梯度方向和步长过大的关系，详细解释为什么会发生这种“震荡”（Oscillation）现象？",
+            "commentPrompt": "评分标准：(1) 明确指出沿着负梯度方向更新，但步长过大导致“冲过头” - 40%；(2) 能够用越过谷底的例子或地形类比进行生动说明 - 30%；(3) 语言组织清晰，逻辑连贯，能体现对迭代过程的理解 - 30%。",
+            "analysis": "参考解答：在梯度下降中，我们沿着负梯度方向更新参数，负梯度方向只在当前点的一个极小邻域内是下降最快的。如果步长过大，相当于一步迈得太远。比如在一个V形山谷的一侧，我们本应走一小步到达谷底附近，但因为步长太大，直接跨过谷底冲到了山谷的另一侧山坡上。这时梯度方向可能反转，如果步长仍然很大，下一步又会冲回来，如此反复，就在谷底两侧来回跳跃，无法收敛到最低点，形成震荡。",
+            "points": 25,
+            "hasAnswer": false
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "现在有一个新的二次函数地形：f(x, y) = x^2 + 4y^2。在点(2, 1)处，计算出的负梯度方向指向了(-4, -8)。如果步长设置得非常大，比如直接令步长为1，按照公式更新，新点会是什么？这体现了什么现象？",
+            "options": [
+              {
+                "value": "A",
+                "label": "新点为(-2, -7)，成功一步到达最小值点"
+              },
+              {
+                "value": "B",
+                "label": "新点为(-2, -7)，但由于步长过大，我们越过了最小值点"
+              },
+              {
+                "value": "C",
+                "label": "新点为(6, 9)，我们朝着远离最小值点的方向移动了"
+              },
+              {
+                "value": "D",
+                "label": "新点与原点的距离减小了，证明任何步长都能使函数值下降"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "计算新点：(2, 1) - 1 * (4, 8) = (-2, -7)。该函数的全局最小值在(0,0)点。从(2,1)出发，我们确实指向了最小值所在象限，但步长太大，导致直接冲到了第三象限的(-2,-7)。将(-2,-7)代入函数值得 4 + 196 = 200，远大于初始点的函数值 4 + 4 = 8。这说明步长过大使得函数值不降反升，并越过了最小值点，这正是‘步长过度’导致发散或震荡的雏形。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "multiple",
+            "question": "在梯度下降算法中，迭代信号（通常指连续两次迭代的函数值之差或梯度大小）是判断是否收敛的关键。对于一个仅使用固定步长的标准梯度下降法，以下哪些状态可以从迭代信号中推断出来？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "算法已经接近一个平坦的极小值区域，因为函数值变化和梯度模长都变得非常小"
+              },
+              {
+                "value": "B",
+                "label": "步长设置得太小，因为每次迭代函数值都在下降，但下降速度极其缓慢，迭代信号始终微弱"
+              },
+              {
+                "value": "C",
+                "label": "算法陷入了局部震荡，因为函数值在相邻两次迭代中一升一降地交替变化"
+              },
+              {
+                "value": "D",
+                "label": "算法精确找到了全局最小值，不再需要任何判断"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "C"
+            ],
+            "analysis": "在优化过程中，我们通过观察迭代信号来感知算法状态。(A) 接近极值点时，地形平缓，梯度和函数值变化自然很小；(B) 步长过小时，就像在山坡上迈小碎步，虽然方向对，但下降极为缓慢，信号微弱；(C) 步长过大导致震荡时，函数值会跳跃，可能在一次下降后紧跟着一次上升，形成一个不稳定的震荡信号。选项D错误，因为迭代信号只能告诉我们算法趋于稳定，但无法确认是全局最小值还是某个局部最小值，更不存在‘不再需要判断’的绝对状态。",
+            "points": 20,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "short_answer",
+            "question": "在“地形实验”中我们探索的是一个已知的简单山谷。现在假设你被传送到一个完全陌生、且充满锯齿状沟壑的复杂地形中，你只能看到身边几米的情况（即只知道当前点的梯度）。你决定沿着负梯度方向前进。请问：为什么仅仅选择“负梯度方向”经常不足以使你高效地走到谷底？在这种复杂地形下，固定使用一个大步长或一个小步长会分别带来什么灾难性后果？请从原理层面进行描述。",
+            "commentPrompt": "评分标准：(1) 清晰说明负梯度方向是局部最陡方向，在全局上可能指向非最优路径（如锯齿形前进） - 35%；(2) 分别阐述大步长在沟壑地形中极易导致震荡甚至发散，小步长则导致收敛极其缓慢，尤其在平坦区域停滞不前 - 35%；(3) 能够将原理与地形特征相结合，逻辑严密，表达流畅 - 30%。",
+            "analysis": "参考解答：第一，负梯度方向仅在当前点的微观局部是最陡峭的下山方向。在宏观复杂地形（如狭长的峡谷或锯齿状沟壑）中，局部最陡方向往往不能直接指向远处的谷底，而是会反复横跨沟壑两侧，导致路径呈锯齿状，效率极低。第二，如果步长过大，在沟壑中一步会从一侧山坡直接冲上另一侧，导致无法收敛甚至离谷底越来越远（震荡或发散）；如果步长太小，在沟壑中锯齿前进时会走无数步，更致命的是，当遇到大片平坦区域时，梯度接近零，小步长会导致算法几乎停滞，让人误以为已经到达最低点。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_fPBVH4_l",
+          "type": "speech",
+          "text": "这是一组关于“后测：无约束优化与梯度下降综合测评”的独立测验。好了各位探险家，我们刚刚已经把梯度下降的整个决策链梳理了一遍。现在，是时候检验一下我们手中的‘地图’和‘指南针’是否真的管用了。这套后测题会带着我们重新审视这次探险的每一个关键决策点。"
+        },
+        {
+          "id": "action_7XDZUz56",
+          "type": "speech",
+          "text": "前几题会核对一下我们之前动手实验的证据，中间会聊到从迭代信号里发现的新线索，后面还有些题需要你把‘负梯度方向’和‘步长’搭配起来，去想象一个全新的险峻地形。",
+          "audioRef": "audio/tts_s24_action_7XDZUz56.mp3"
+        },
+        {
+          "id": "action_uhHAXX6w",
+          "type": "speech",
+          "text": "特别是最后有一道描述题，请你用原理把‘步子太大为何会震荡’这件事讲透。不用紧张公式，就像我们课上一样，用‘下山’的直觉把它说明白就好。",
+          "audioRef": "audio/tts_s24_action_uhHAXX6w.mp3"
+        },
+        {
+          "id": "action_dN87_i8m",
+          "type": "discussion",
+          "topic": "回顾整个‘地形探险’课程，从理解目标函数的地形，到选择负梯度方向，再到调控步长和判断停止信号，你认为哪一环的决策失误最容易导致整个优化过程彻底失败？为什么？",
+          "prompt": "请结合你自己的实验经历，用一个具体的‘翻车’场景来说明你的观点。",
+          "agentIndex": 1
+        }
+      ]
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_6f6E4j08.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 169488
+    },
+    "audio/tts_action_Bw-V7MGn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 194448
+    },
+    "audio/tts_action_nC17gHCY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157944
+    },
+    "audio/tts_s10_action_Aaog_CpN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 78576
+    },
+    "audio/tts_s10_action_fBzsjUYS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 113016
+    },
+    "audio/tts_s10_action_iVyrpstM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 216888
+    },
+    "audio/tts_s10_action_s66evP9D.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112920
+    },
+    "audio/tts_s11_action_-9y_sdDV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 145560
+    },
+    "audio/tts_s11_action_AUMrchR1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129312
+    },
+    "audio/tts_s11_action_kJm1KeA2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125832
+    },
+    "audio/tts_s11_action_s8Hw_MHQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109992
+    },
+    "audio/tts_s12_action_bvrRn4jI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109368
+    },
+    "audio/tts_s12_action_CiJtVkKl.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108864
+    },
+    "audio/tts_s12_action_DUMjvc5p.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 134232
+    },
+    "audio/tts_s12_action_mJfI-Iyl.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104976
+    },
+    "audio/tts_s13_action_3bY6SkoP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135984
+    },
+    "audio/tts_s13_action_94aAhWAg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119256
+    },
+    "audio/tts_s13_action_d7g3ERLR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 75552
+    },
+    "audio/tts_s13_action_ibOKJuzS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93816
+    },
+    "audio/tts_s13_action_LitG1SWM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 86544
+    },
+    "audio/tts_s13_action_LR2b4Nr2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99336
+    },
+    "audio/tts_s13_action_mMTBIymS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 130608
+    },
+    "audio/tts_s14_action_0ujW3DWf.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 82656
+    },
+    "audio/tts_s14_action_2CZMqhMS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 149712
+    },
+    "audio/tts_s14_action_IUoWHRn8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128760
+    },
+    "audio/tts_s14_action_jLmVGgTC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116064
+    },
+    "audio/tts_s14_action_TV4q96jj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 155784
+    },
+    "audio/tts_s15_action_2JPubSR4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 191592
+    },
+    "audio/tts_s15_action_83Vq0dhR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110976
+    },
+    "audio/tts_s15_action_cX_iow7_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 142392
+    },
+    "audio/tts_s15_action_GQ7Q_Ddx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92688
+    },
+    "audio/tts_s15_action_uZ8ASQjd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96552
+    },
+    "audio/tts_s15_action_VDtZDKjq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 172392
+    },
+    "audio/tts_s15_action_Ycl9IJIH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121176
+    },
+    "audio/tts_s16_action_JE92wtPV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 113712
+    },
+    "audio/tts_s16_action_QXcmDs0n.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117024
+    },
+    "audio/tts_s16_action_xXpDopmO.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93024
+    },
+    "audio/tts_s16_action_YRV8jvrh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104736
+    },
+    "audio/tts_s17_action_FiVgKoFY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122712
+    },
+    "audio/tts_s17_action_mBzdQr2v.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99696
+    },
+    "audio/tts_s17_action_oXrOaUkx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157776
+    },
+    "audio/tts_s17_action_v8dEyOKF.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119856
+    },
+    "audio/tts_s18_action_G3wMfPpX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102648
+    },
+    "audio/tts_s18_action_pFSLEK7U.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 124296
+    },
+    "audio/tts_s18_action_xtGIRQVy.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 85776
+    },
+    "audio/tts_s18_action__-x0L7Dg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 131232
+    },
+    "audio/tts_s18_action__Qh9IDH7.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105936
+    },
+    "audio/tts_s19_action_2tZpEcCk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125424
+    },
+    "audio/tts_s19_action_Q0bhehfA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105552
+    },
+    "audio/tts_s19_action_Q22ze1Rj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89856
+    },
+    "audio/tts_s19_action_xQs71UCC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84192
+    },
+    "audio/tts_s20_action_927_BQ1K.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128640
+    },
+    "audio/tts_s20_action_E8epaBjq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118920
+    },
+    "audio/tts_s20_action_pteiCgSv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101160
+    },
+    "audio/tts_s20_action_UaX2opWm.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146352
+    },
+    "audio/tts_s20_action_WKwkekXg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 80328
+    },
+    "audio/tts_s21_action_EO5Afjzr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 103080
+    },
+    "audio/tts_s21_action_iBrJ8RiY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135864
+    },
+    "audio/tts_s21_action_o3ZbeuHQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146280
+    },
+    "audio/tts_s22_action_EWfLz9mj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 70752
+    },
+    "audio/tts_s22_action_iu4AZeox.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 154440
+    },
+    "audio/tts_s22_action_JTYdnvYF.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 148200
+    },
+    "audio/tts_s22_action_oQKpY-nF.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97368
+    },
+    "audio/tts_s23_action_aNlIxheI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112200
+    },
+    "audio/tts_s23_action_HyzI9IEY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125088
+    },
+    "audio/tts_s23_action_kxkyYMYt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121968
+    },
+    "audio/tts_s23_action_njM3-_hC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102264
+    },
+    "audio/tts_s23_action_WtgURf0L.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116832
+    },
+    "audio/tts_s23_action_YpNmJn9L.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88464
+    },
+    "audio/tts_s24_action_7XDZUz56.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102504
+    },
+    "audio/tts_s24_action_fPBVH4_l.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126264
+    },
+    "audio/tts_s24_action_uhHAXX6w.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95928
+    },
+    "audio/tts_s2_action_HMSbIns3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 107904
+    },
+    "audio/tts_s2_action_I1rjNWi9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 120408
+    },
+    "audio/tts_s2_action_J2Q5nIDx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119544
+    },
+    "audio/tts_s2_action_QHw_IyLa.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 25296
+    },
+    "audio/tts_s2_action_U0TOcWb2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95208
+    },
+    "audio/tts_s2_action_vK3M8scj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89376
+    },
+    "audio/tts_s3_action_5uMxXUZm.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125760
+    },
+    "audio/tts_s3_action_oUcrilKS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98592
+    },
+    "audio/tts_s3_action_WF5EPKT0.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 232440
+    },
+    "audio/tts_s3_action__zkJR945.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 60264
+    },
+    "audio/tts_s4_action_5vxyJxlU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 67728
+    },
+    "audio/tts_s4_action_KIgv5JP3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 78840
+    },
+    "audio/tts_s4_action_SEYVZy9z.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 71592
+    },
+    "audio/tts_s4_action_Y9GpyFcq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 81936
+    },
+    "audio/tts_s5_action_0A0K4Ji4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110304
+    },
+    "audio/tts_s5_action_6MRf7JSW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109296
+    },
+    "audio/tts_s5_action_fkzl38Xz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109560
+    },
+    "audio/tts_s5_action_HFYpFyFF.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129504
+    },
+    "audio/tts_s6_action_1tgGn6eJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 142656
+    },
+    "audio/tts_s6_action_4s5CjFit.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111816
+    },
+    "audio/tts_s6_action_n6F-__SJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 147432
+    },
+    "audio/tts_s6_action__ihLMbFG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102912
+    },
+    "audio/tts_s7_action_-IYfD9w2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96000
+    },
+    "audio/tts_s7_action_0oT2W5Rz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133752
+    },
+    "audio/tts_s7_action_5g2ZcXjM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112416
+    },
+    "audio/tts_s7_action_7P-XPE9v.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97608
+    },
+    "audio/tts_s7_action_BTx-phyQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140904
+    },
+    "audio/tts_s7_action_lSOH9E3Z.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114816
+    },
+    "audio/tts_s7_action_U_pOK586.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126720
+    },
+    "audio/tts_s8_action_D37CW_JX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 80976
+    },
+    "audio/tts_s8_action_psZQLz1N.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119112
+    },
+    "audio/tts_s8_action_t_4sHJw9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144408
+    },
+    "audio/tts_s8_action_wPu225My.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 132624
+    },
+    "audio/tts_s9_action_KWVCXM0R.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 67464
+    },
+    "audio/tts_s9_action_ly1IoXQA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 76512
+    },
+    "audio/tts_s9_action_PdFufcxd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 190584
+    },
+    "audio/tts_s9_action_rGQPtMIk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 69120
+    },
+    "audio/tts_s9_action_tr5wXFPR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 162576
+    },
+    "audio/tts_s9_action_zTCNkvQm.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 83232
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}
