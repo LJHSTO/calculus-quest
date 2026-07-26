@@ -338,6 +338,20 @@ button:focus-visible, a:focus-visible, iframe:focus-visible {
 .viewer-pane.is-local-fullscreen > :not(.frame-shell) {
   display: none;
 }
+.viewer-pane:fullscreen .slide-preview:not([hidden]),
+.viewer-pane.is-local-fullscreen .slide-preview:not([hidden]) {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  overflow: hidden;
+}
+.viewer-pane:fullscreen .flow-slide-wrap,
+.viewer-pane.is-local-fullscreen .flow-slide-wrap {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
 .viewer-pane.is-local-fullscreen {
   position: fixed;
   inset: 0;

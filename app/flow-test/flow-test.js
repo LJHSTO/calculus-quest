@@ -507,15 +507,26 @@
     });
   }
 
+  function viewerFullscreenActive() {
+    return (
+      document.fullscreenElement === els.viewerPane
+      || els.viewerPane.classList.contains("is-local-fullscreen")
+    );
+  }
+
   function syncSlidePreviewScale() {
     const wrap = els.slideFrame.querySelector(".flow-slide-wrap");
     const stage = wrap?.querySelector(".flow-slide-stage");
     if (!wrap || !stage || els.slideFrame.hidden) return;
     const baseWidth = Number(wrap.dataset.slideWidth) || 1000;
     const baseHeight = Number(wrap.dataset.slideHeight) || 562.5;
-    const availableWidth = Math.max(120, els.slideFrame.clientWidth - 36);
-    const availableHeight = Math.max(120, els.slideFrame.clientHeight - 36);
-    const fitScale = Math.min(1, availableWidth / baseWidth, availableHeight / baseHeight);
+    const frameStyle = getComputedStyle(els.slideFrame);
+    const horizontalPadding = (parseFloat(frameStyle.paddingLeft) || 0) + (parseFloat(frameStyle.paddingRight) || 0);
+    const verticalPadding = (parseFloat(frameStyle.paddingTop) || 0) + (parseFloat(frameStyle.paddingBottom) || 0);
+    const availableWidth = Math.max(120, els.slideFrame.clientWidth - horizontalPadding);
+    const availableHeight = Math.max(120, els.slideFrame.clientHeight - verticalPadding);
+    const maxFitScale = viewerFullscreenActive() ? 3 : 1;
+    const fitScale = Math.min(maxFitScale, availableWidth / baseWidth, availableHeight / baseHeight);
     const scale = Math.max(0.25, Math.min(3, fitScale * state.slideZoom));
     const renderWidth = Number((baseWidth * scale).toFixed(3));
     const renderHeight = Number((baseHeight * scale).toFixed(3));
@@ -526,6 +537,14 @@
     stage.style.setProperty("--flow-slide-scale", String(Number(scale.toFixed(6))));
     fitSlidePreviewContents(wrap);
     els.slideZoomValue.textContent = `${Math.round(state.slideZoom * 100)}%`;
+  }
+
+  function scheduleSlidePreviewScale() {
+    requestAnimationFrame(() => {
+      syncSlidePreviewScale();
+      requestAnimationFrame(syncSlidePreviewScale);
+    });
+    setTimeout(syncSlidePreviewScale, 120);
   }
 
   function setViewerControls({ slide = false, fullscreen = false } = {}) {
@@ -556,7 +575,7 @@
     els.slideFullscreen.textContent = "×";
     els.slideFullscreen.setAttribute("aria-label", "退出全屏");
     els.slideFullscreen.setAttribute("title", "退出全屏");
-    requestAnimationFrame(syncSlidePreviewScale);
+    scheduleSlidePreviewScale();
   }
 
   async function toggleViewerFullscreen() {
@@ -576,7 +595,7 @@
       setLocalFullscreen();
       announce(`浏览器全屏不可用，已切换为页面全屏：${error.message}`);
     }
-    requestAnimationFrame(syncSlidePreviewScale);
+    scheduleSlidePreviewScale();
   }
 
   function renderQuizPreview(question) {
@@ -650,7 +669,7 @@
       els.slideFrame.hidden = false;
       els.slideFrame.innerHTML = renderSlidePreview(state.resource.slide, state.resource.resourceRoot);
       setViewerControls({ slide: true, fullscreen: true });
-      requestAnimationFrame(syncSlidePreviewScale);
+      scheduleSlidePreviewScale();
       return;
     }
     setViewerControls({ fullscreen: true });
@@ -718,7 +737,10 @@
   }
 
   els.checkResources.addEventListener("click", checkAllResources);
-  window.addEventListener("resize", syncSlidePreviewScale);
+  window.addEventListener("resize", scheduleSlidePreviewScale);
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(scheduleSlidePreviewScale).observe(els.slideFrame);
+  }
   els.resourceFrame.setAttribute("allow", "fullscreen; autoplay");
   document.addEventListener("fullscreenchange", () => {
     if (document.fullscreenElement !== els.viewerPane) clearLocalFullscreen();
@@ -726,7 +748,7 @@
     els.slideFullscreen.textContent = active ? "×" : "⛶";
     els.slideFullscreen.setAttribute("aria-label", active ? "退出全屏" : "全屏查看课件");
     els.slideFullscreen.setAttribute("title", active ? "退出全屏" : "全屏查看");
-    requestAnimationFrame(syncSlidePreviewScale);
+    scheduleSlidePreviewScale();
   });
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && els.viewerPane.classList.contains("is-local-fullscreen")) clearLocalFullscreen();

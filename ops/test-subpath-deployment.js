@@ -176,7 +176,7 @@ async function main() {
     }
 
     const flowScriptResponse = await fetch(
-      baseUrl + "/calculus_quest/app/flow-test/flow-test.js?v=20260726-flow-test-cache-v5"
+      baseUrl + "/calculus_quest/app/flow-test/flow-test.js?v=20260726-flow-test-cache-v6"
     );
     assert.equal(flowScriptResponse.status, 200);
     assert.match(flowScriptResponse.headers.get("cache-control") || "", /no-store/);
