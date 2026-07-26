@@ -110,13 +110,22 @@ async function main() {
     assert.equal(blank.response.status, 400);
     assert.equal(blank.payload.code, "feedback_content_required");
 
+    const maximumLength = await jsonRequest(baseUrl, "/api/learning/feedback", {
+      method: "POST",
+      token: learnerToken,
+      body: { feedbackType: "other", content: "建".repeat(5000) }
+    });
+    assert.equal(maximumLength.response.status, 200);
+    assert.ok(maximumLength.payload.feedbackId);
+
     const tooLong = await jsonRequest(baseUrl, "/api/learning/feedback", {
       method: "POST",
       token: learnerToken,
-      body: { feedbackType: "other", content: "建".repeat(2001) }
+      body: { feedbackType: "other", content: "建".repeat(5001) }
     });
     assert.equal(tooLong.response.status, 400);
     assert.equal(tooLong.payload.code, "feedback_content_too_long");
+    assert.equal(tooLong.payload.message, "反馈内容不能超过 5000 个字符。");
 
     const forgedCourseware = await jsonRequest(baseUrl, "/api/learning/feedback", {
       method: "POST",
@@ -216,10 +225,10 @@ async function main() {
       token: adminToken
     });
     assert.equal(dashboard.response.status, 200);
-    assert.equal(dashboard.payload.data.summary.total, 3);
+    assert.equal(dashboard.payload.data.summary.total, 4);
     assert.equal(dashboard.payload.data.summary.courseware, 2);
     assert.equal(dashboard.payload.data.summary.users, 1);
-    assert.equal(dashboard.payload.data.rows.length, 3);
+    assert.equal(dashboard.payload.data.rows.length, 4);
     assert.equal(dashboard.payload.data.rows[0].content, "拖动滑块后图像没有及时变化。");
     assert.equal(dashboard.payload.data.rows[0].chapter_id, legalTarget.chapter.id);
     assert.equal(dashboard.payload.data.rows[0].module_id, legalTarget.module.id);
@@ -230,6 +239,7 @@ async function main() {
     assert.ok(lectureRow);
     assert.equal(lectureRow.resource_file, "");
     assert.equal(lectureRow.resource_title, `${legalTarget.knowledgePoint.name} · 讲解页`);
+    assert.ok(dashboard.payload.data.rows.some((row) => row.content.length === 5000));
 
     const coursewareOnly = await jsonRequest(baseUrl, "/api/admin/stats/feedback?type=courseware", {
       token: adminToken

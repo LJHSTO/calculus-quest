@@ -39,12 +39,20 @@ async function main() {
   assert.equal(invalidType.ok, false);
   assert.equal(invalidType.code, "feedback_type_invalid");
 
+  const maximumLength = normalizeFeedbackInput({
+    feedbackType: "other",
+    content: "建".repeat(5000)
+  });
+  assert.equal(maximumLength.ok, true);
+  assert.equal(maximumLength.value.content.length, 5000);
+
   const tooLong = normalizeFeedbackInput({
     feedbackType: "other",
-    content: "建".repeat(2001)
+    content: "建".repeat(5001)
   });
   assert.equal(tooLong.ok, false);
   assert.equal(tooLong.code, "feedback_content_too_long");
+  assert.equal(tooLong.message, "反馈内容不能超过 5000 个字符。");
 
   const normalized = normalizeFeedbackInput({
     feedbackType: "courseware",

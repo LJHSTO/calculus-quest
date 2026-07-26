@@ -190,6 +190,20 @@
       .sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt));
   }
 
+  function replaceOwnerUnitNotes(storage, ownerKey, unitId, incoming = []) {
+    const owner = compactText(ownerKey, 180);
+    const unit = compactText(unitId, 180);
+    if (!owner || !unit) return loadNotes(storage);
+    const preserved = loadNotes(storage).filter((item) => (
+      item.ownerKey !== owner || item.unitId !== unit
+    ));
+    const replacements = (Array.isArray(incoming) ? incoming : [])
+      .map((item) => createNote({ ...item, ownerKey: owner, unitId: unit }))
+      .filter((item) => item.id);
+    saveNotes(storage, [...preserved, ...replacements]);
+    return notesFor(storage, { ownerKey: owner, unitId: unit });
+  }
+
   function sameLocator(left = {}, right = {}) {
     const a = normalizeLocator(left);
     const b = normalizeLocator(right);
@@ -218,6 +232,7 @@
     notesFor,
     normalizeLocator,
     removeNote,
+    replaceOwnerUnitNotes,
     sameLocator,
     saveNotes,
     upsertNote

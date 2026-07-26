@@ -473,10 +473,12 @@ function initSchema() {
       unit_id TEXT NOT NULL,
       knowledge_point_id TEXT DEFAULT '',
       title TEXT NOT NULL DEFAULT '新对话',
+      archived_at TEXT DEFAULT '',
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
   `);
+  try { d.run("ALTER TABLE learning_assistant_conversations ADD COLUMN archived_at TEXT DEFAULT ''"); } catch {}
   d.run("CREATE INDEX IF NOT EXISTS idx_lac_user_thread ON learning_assistant_conversations(user_id, thread_key, updated_at)");
   migrateLegacyLearningAssistantMessages(d);
 
@@ -485,10 +487,31 @@ function initSchema() {
       user_id TEXT NOT NULL REFERENCES users(id),
       usage_date TEXT NOT NULL,
       request_count INTEGER NOT NULL DEFAULT 0,
+      intervention_count INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL,
       PRIMARY KEY (user_id, usage_date)
     )
   `);
+  try { d.run("ALTER TABLE learning_assistant_daily_usage ADD COLUMN intervention_count INTEGER NOT NULL DEFAULT 0"); } catch {}
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS learning_notes (
+      id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      thread_key TEXT NOT NULL,
+      chapter_id TEXT DEFAULT '',
+      unit_id TEXT NOT NULL,
+      excerpt TEXT DEFAULT '',
+      note TEXT DEFAULT '',
+      color TEXT NOT NULL DEFAULT 'amber',
+      context_json TEXT DEFAULT '{}',
+      locator_json TEXT DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, id)
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_learning_notes_user_unit ON learning_notes(user_id, unit_id, updated_at)");
 
   d.run(`
     CREATE TABLE IF NOT EXISTS events (
@@ -935,28 +958,97 @@ function getLearningAssistantConversation(userId, conversationId) {
   );
 }
 
-function listLearningAssistantConversations(userId, threadKey, limit = 60) {
+function listLearningAssistantConversations(userId, threadKey, limit = 60, options = {}) {
+  const archived = options.archived === true;
+  const searchQuery = String(options.query || "").replace(/\s+/g, " ").trim().slice(0, 120);
+  const escapedSearch = searchQuery.replace(/[\\%_]/g, "\\$&");
+  const searchClause = escapedSearch
+    ? `AND (
+        c.title LIKE ? ESCAPE '\\'
+        OR EXISTS (
+          SELECT 1 FROM learning_assistant_messages search_message
+          WHERE search_message.user_id = c.user_id
+            AND search_message.conversation_id = c.id
+            AND search_message.content LIKE ? ESCAPE '\\'
+        )
+      )`
+    : "";
   return queryAll(
     `SELECT c.*,
       (SELECT COUNT(*) FROM learning_assistant_messages m
        WHERE m.user_id = c.user_id AND m.conversation_id = c.id) AS message_count
      FROM learning_assistant_conversations c
      WHERE c.user_id = ? AND c.thread_key = ?
+       AND ${archived ? "COALESCE(c.archived_at, '') <> ''" : "COALESCE(c.archived_at, '') = ''"}
+       ${searchClause}
      ORDER BY c.updated_at DESC, c.created_at DESC
      LIMIT ?`,
-    [userId, threadKey, Math.max(1, Math.min(Number(limit || 60), 100))]
+    [
+      userId,
+      threadKey,
+      ...(escapedSearch ? [`%${escapedSearch}%`, `%${escapedSearch}%`] : []),
+      Math.max(1, Math.min(Number(limit || 60), 100))
+    ]
   );
+}
+
+function renameLearningAssistantConversation(userId, conversationId, title, updatedAt) {
+  const existing = getLearningAssistantConversation(userId, conversationId);
+  if (!existing) return null;
+  execute(
+    `UPDATE learning_assistant_conversations
+     SET title = ?, updated_at = ?
+     WHERE user_id = ? AND id = ?`,
+    [String(title || "").slice(0, 80), updatedAt, userId, conversationId]
+  );
+  return getLearningAssistantConversation(userId, conversationId);
+}
+
+function setLearningAssistantConversationArchived(userId, conversationId, archivedAt, updatedAt) {
+  const existing = getLearningAssistantConversation(userId, conversationId);
+  if (!existing) return null;
+  execute(
+    `UPDATE learning_assistant_conversations
+     SET archived_at = ?, updated_at = ?
+     WHERE user_id = ? AND id = ?`,
+    [archivedAt || "", updatedAt, userId, conversationId]
+  );
+  return getLearningAssistantConversation(userId, conversationId);
+}
+
+function deleteLearningAssistantConversation(userId, conversationId) {
+  const existing = getLearningAssistantConversation(userId, conversationId);
+  if (!existing) return false;
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    d.run(
+      "DELETE FROM learning_assistant_messages WHERE user_id = ? AND conversation_id = ?",
+      [userId, conversationId]
+    );
+    d.run(
+      "DELETE FROM learning_assistant_conversations WHERE user_id = ? AND id = ?",
+      [userId, conversationId]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return true;
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
 }
 
 function getLearningAssistantDailyUsage(userId, usageDate) {
   const row = queryOne(
-    `SELECT request_count, updated_at
+    `SELECT request_count, intervention_count, updated_at
      FROM learning_assistant_daily_usage
      WHERE user_id = ? AND usage_date = ?`,
     [userId, usageDate]
   );
   return {
     requestCount: Number(row?.request_count || 0),
+    interventionCount: Number(row?.intervention_count || 0),
     updatedAt: row?.updated_at || ""
   };
 }
@@ -998,6 +1090,160 @@ function consumeLearningAssistantDailyQuota(userId, usageDate, limit, updatedAt)
     try { d.run("ROLLBACK"); } catch {}
     throw error;
   }
+}
+
+function consumeLearningAssistantInterventionBudget(userId, usageDate, limit, updatedAt) {
+  const safeLimit = Math.max(0, Number(limit || 0));
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const current = getLearningAssistantDailyUsage(userId, usageDate);
+    if (current.interventionCount >= safeLimit) {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        used: current.interventionCount,
+        remaining: 0,
+        limit: safeLimit
+      };
+    }
+    const nextCount = current.interventionCount + 1;
+    d.run(
+      `INSERT INTO learning_assistant_daily_usage
+        (user_id, usage_date, request_count, intervention_count, updated_at)
+       VALUES (?, ?, 0, ?, ?)
+       ON CONFLICT(user_id, usage_date) DO UPDATE SET
+         intervention_count = excluded.intervention_count,
+         updated_at = excluded.updated_at`,
+      [userId, usageDate, nextCount, updatedAt]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      used: nextCount,
+      remaining: Math.max(0, safeLimit - nextCount),
+      limit: safeLimit
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function releaseLearningAssistantDailyQuota(userId, usageDate, limit, updatedAt) {
+  const safeLimit = Math.max(0, Number(limit || 0));
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const current = getLearningAssistantDailyUsage(userId, usageDate);
+    const nextCount = Math.max(0, current.requestCount - 1);
+    if (current.requestCount > 0) {
+      d.run(
+        `UPDATE learning_assistant_daily_usage
+         SET request_count = ?, updated_at = ?
+         WHERE user_id = ? AND usage_date = ?`,
+        [nextCount, updatedAt, userId, usageDate]
+      );
+    }
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      used: nextCount,
+      remaining: Math.max(0, safeLimit - nextCount),
+      limit: safeLimit
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+const LEARNING_NOTE_UPSERT = `INSERT INTO learning_notes
+  (id, user_id, thread_key, chapter_id, unit_id, excerpt, note, color,
+   context_json, locator_json, created_at, updated_at)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ ON CONFLICT(user_id, id) DO UPDATE SET
+   thread_key = excluded.thread_key,
+   chapter_id = excluded.chapter_id,
+   unit_id = excluded.unit_id,
+   excerpt = excluded.excerpt,
+   note = excluded.note,
+   color = excluded.color,
+   context_json = excluded.context_json,
+   locator_json = excluded.locator_json,
+   updated_at = excluded.updated_at
+ WHERE excluded.updated_at >= learning_notes.updated_at`;
+
+function learningNoteValues(record) {
+  return [
+    record.id,
+    record.user_id,
+    record.thread_key,
+    record.chapter_id || "",
+    record.unit_id,
+    record.excerpt || "",
+    record.note || "",
+    record.color || "amber",
+    JSON.stringify(record.context || {}),
+    JSON.stringify(record.locator || {}),
+    record.created_at,
+    record.updated_at
+  ];
+}
+
+function getLearningNote(userId, noteId) {
+  return queryOne(
+    "SELECT * FROM learning_notes WHERE user_id = ? AND id = ?",
+    [userId, noteId]
+  );
+}
+
+function listLearningNotes(userId, unitId = "", limit = 500) {
+  const normalizedUnitId = String(unitId || "").trim();
+  return queryAll(
+    `SELECT * FROM learning_notes
+     WHERE user_id = ? ${normalizedUnitId ? "AND unit_id = ?" : ""}
+     ORDER BY updated_at DESC, created_at DESC
+     LIMIT ?`,
+    [
+      userId,
+      ...(normalizedUnitId ? [normalizedUnitId] : []),
+      Math.max(1, Math.min(Number(limit || 500), 500))
+    ]
+  );
+}
+
+function upsertLearningNote(record) {
+  execute(LEARNING_NOTE_UPSERT, learningNoteValues(record));
+  return getLearningNote(record.user_id, record.id);
+}
+
+function syncLearningNotes(userId, records = [], deletedIds = []) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    records.forEach((record) => {
+      if (record.user_id !== userId) throw new Error("Learning note owner mismatch.");
+      d.run(LEARNING_NOTE_UPSERT, learningNoteValues(record));
+    });
+    deletedIds.forEach((noteId) => {
+      d.run("DELETE FROM learning_notes WHERE user_id = ? AND id = ?", [userId, noteId]);
+    });
+    d.run("COMMIT");
+    scheduleSave();
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function deleteLearningNote(userId, noteId) {
+  const existing = getLearningNote(userId, noteId);
+  if (!existing) return false;
+  execute("DELETE FROM learning_notes WHERE user_id = ? AND id = ?", [userId, noteId]);
+  return true;
 }
 
 // ---- Events ----
@@ -1417,6 +1663,7 @@ function resetLearningSnapshot(record) {
     d.run("DELETE FROM quiz_results WHERE user_id = ?", [record.user_id]);
     d.run("DELETE FROM learning_assistant_messages WHERE user_id = ?", [record.user_id]);
     d.run("DELETE FROM learning_assistant_conversations WHERE user_id = ?", [record.user_id]);
+    d.run("DELETE FROM learning_notes WHERE user_id = ?", [record.user_id]);
     d.run("DELETE FROM snapshots WHERE user_id = ?", [record.user_id]);
     d.run(
       `UPDATE learning_state_versions
@@ -2754,8 +3001,18 @@ module.exports = {
   saveLearningAssistantTurn,
   getLearningAssistantConversation,
   listLearningAssistantConversations,
+  renameLearningAssistantConversation,
+  setLearningAssistantConversationArchived,
+  deleteLearningAssistantConversation,
   getLearningAssistantDailyUsage,
+  consumeLearningAssistantInterventionBudget,
   consumeLearningAssistantDailyQuota,
+  releaseLearningAssistantDailyQuota,
+  getLearningNote,
+  listLearningNotes,
+  upsertLearningNote,
+  syncLearningNotes,
+  deleteLearningNote,
   insertEvent,
   insertSnapshot,
   getLatestSnapshot,

@@ -1,5 +1,6 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
+const http = require("node:http");
 const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
@@ -40,6 +41,22 @@ async function stopChild(child) {
   if (child.exitCode === null) child.kill("SIGKILL");
 }
 
+async function startFailingLlmStub() {
+  const port = await freePort();
+  const server = http.createServer((req, res) => {
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ error: { message: "provider unavailable" } }));
+  });
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, "127.0.0.1", resolve);
+  });
+  return {
+    baseUrl: `http://127.0.0.1:${port}/v1`,
+    close: () => new Promise((resolve) => server.close(resolve))
+  };
+}
+
 async function postJson(baseUrl, pathname, body, token = "") {
   const response = await fetch(baseUrl + pathname, {
     method: "POST",
@@ -48,6 +65,18 @@ async function postJson(baseUrl, pathname, body, token = "") {
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     body: JSON.stringify(body)
+  });
+  return { response, payload: await response.json().catch(() => ({})) };
+}
+
+async function requestJson(baseUrl, method, pathname, body, token = "") {
+  const response = await fetch(baseUrl + pathname, {
+    method,
+    headers: {
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) })
   });
   return { response, payload: await response.json().catch(() => ({})) };
 }
@@ -84,6 +113,8 @@ async function main() {
   const baseUrl = `http://127.0.0.1:${port}`;
   const logs = [];
   let child;
+  let fallbackChild;
+  let failingLlm;
 
   try {
     child = spawn(process.execPath, ["server.js", String(port)], {
@@ -94,6 +125,7 @@ async function main() {
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
+        LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
         LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
         NODE_ENV: "development"
       },
@@ -124,6 +156,57 @@ async function main() {
       { limit: status.quota.limit, used: status.quota.used, remaining: status.quota.remaining },
       { limit: 3, used: 0, remaining: 3 }
     );
+
+    const proactiveDecision = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: candidate.type,
+      signal: {
+        kind: "repeated_parameter",
+        parameter: "步长 h",
+        oldValue: "0.5",
+        newValue: "0.1",
+        dismissStreak: 0
+      },
+      contextRef: { kind: "interaction", scope: "interactive" }
+    }, token);
+    assert.equal(proactiveDecision.response.status, 200);
+    assert.equal(proactiveDecision.payload.decision.action, "observe_change");
+    assert.equal(proactiveDecision.payload.decision.intervene, true);
+    assert.equal(proactiveDecision.payload.interventionBudget.remaining, 1);
+    assert.equal(proactiveDecision.payload.quota.remaining, 3, "proactive judgments must not consume question quota");
+
+    const lockedQuizIntervention = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: `${chapter.id}-pre`,
+      signal: { kind: "quiz_review", incorrect: 2 },
+      contextRef: { kind: "quiz", scope: "quiz" }
+    }, token);
+    assert.equal(lockedQuizIntervention.response.status, 403);
+    assert.equal(lockedQuizIntervention.payload.code, "assistant_quiz_locked_until_submit");
+
+    const silentDecision = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: candidate.type,
+      signal: { kind: "quiet_dwell", dwellSeconds: 90, dismissStreak: 2 },
+      contextRef: { kind: "unit", scope: "lesson" }
+    }, token);
+    assert.equal(silentDecision.response.status, 200);
+    assert.equal(silentDecision.payload.decision.action, "stay_silent");
+    assert.equal(silentDecision.payload.interventionBudget.remaining, 0);
+    assert.equal(silentDecision.payload.quota.remaining, 3);
+
+    const interventionBudgetExhausted = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: candidate.type,
+      signal: { kind: "quiet_dwell", dwellSeconds: 90, dismissStreak: 0 },
+      contextRef: { kind: "unit", scope: "lesson" }
+    }, token);
+    assert.equal(interventionBudgetExhausted.response.status, 429);
+    assert.equal(interventionBudgetExhausted.payload.code, "assistant_intervention_budget_exhausted");
+    assert.equal(interventionBudgetExhausted.payload.quota.remaining, 3);
 
     const createConversation = await postJson(baseUrl, "/api/learning/assistant/conversations", {
       chapterId: chapter.id,
@@ -163,6 +246,9 @@ async function main() {
     assert.equal(knowledgeAnswer.rows[0].quota.remaining, 2);
     assert.match(knowledgeAnswer.answer, /现在试一下/);
     assert.equal(knowledgeAnswer.rows[0].contextRef.resourceFingerprint.length, 20);
+    assert.equal(knowledgeAnswer.rows.at(-1).guidance.showUnderstandingCheck, true);
+    assert.equal(knowledgeAnswer.rows.at(-1).guidance.provenance.show, true);
+    assert.deepEqual(knowledgeAnswer.rows.at(-1).guidance.actions, ["self_check", "rephrase", "practice"]);
 
     const historyResponse = await fetch(
       `${baseUrl}/api/learning/assistant/history?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(knowledgePoint.id)}&sceneType=${encodeURIComponent(candidate.type)}&conversationId=${encodeURIComponent(firstConversationId)}`,
@@ -174,6 +260,8 @@ async function main() {
     assert.deepEqual(history.messages.map((message) => message.role), ["user", "assistant"]);
     assert.match(history.threadKey, /^knowledge:/);
     assert.equal(history.conversation.id, firstConversationId);
+    assert.equal(history.messages[1].guidance.showUnderstandingCheck, true);
+    assert.equal(history.messages[1].guidance.provenance.show, true);
 
     const invalidConversation = await postJson(baseUrl, "/api/learning/assistant/ask", {
       chapterId: chapter.id,
@@ -219,6 +307,95 @@ async function main() {
       new Set(conversationsPayload.conversations.map((item) => item.messageCount)),
       new Set([2])
     );
+
+    const renamedConversation = await requestJson(
+      baseUrl,
+      "PATCH",
+      `/api/learning/assistant/conversations/${encodeURIComponent(firstConversationId)}`,
+      { action: "rename", title: "割线极限复盘" },
+      token
+    );
+    assert.equal(renamedConversation.response.status, 200);
+    assert.equal(renamedConversation.payload.conversation.title, "割线极限复盘");
+
+    const titleSearchResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/conversations?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(knowledgePoint.id)}&sceneType=${encodeURIComponent(candidate.type)}&q=${encodeURIComponent("极限")}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const titleSearch = await titleSearchResponse.json();
+    assert.deepEqual(titleSearch.conversations.map((item) => item.id), [firstConversationId]);
+
+    const messageSearchResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/conversations?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(knowledgePoint.id)}&sceneType=${encodeURIComponent(candidate.type)}&q=${encodeURIComponent("图像方式")}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const messageSearch = await messageSearchResponse.json();
+    assert.deepEqual(messageSearch.conversations.map((item) => item.id), [secondConversationId]);
+
+    const archivedConversation = await requestJson(
+      baseUrl,
+      "PATCH",
+      `/api/learning/assistant/conversations/${encodeURIComponent(secondConversationId)}`,
+      { action: "archive" },
+      token
+    );
+    assert.equal(archivedConversation.response.status, 200);
+    assert.ok(archivedConversation.payload.conversation.archivedAt);
+
+    const currentAfterArchiveResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/conversations?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(knowledgePoint.id)}&sceneType=${encodeURIComponent(candidate.type)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const currentAfterArchive = await currentAfterArchiveResponse.json();
+    assert.deepEqual(currentAfterArchive.conversations.map((item) => item.id), [firstConversationId]);
+
+    const archiveResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/conversations?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(knowledgePoint.id)}&sceneType=${encodeURIComponent(candidate.type)}&archived=1`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const archive = await archiveResponse.json();
+    assert.deepEqual(archive.conversations.map((item) => item.id), [secondConversationId]);
+
+    const restoredConversation = await requestJson(
+      baseUrl,
+      "PATCH",
+      `/api/learning/assistant/conversations/${encodeURIComponent(secondConversationId)}`,
+      { action: "restore" },
+      token
+    );
+    assert.equal(restoredConversation.response.status, 200);
+    assert.equal(restoredConversation.payload.conversation.archivedAt, "");
+
+    const historyOtherRegistration = await postJson(baseUrl, "/api/auth/register", {
+      nickname: `会话隔离${Date.now().toString().slice(-6)}`,
+      email: "",
+      password: "assistant-history-password-123"
+    });
+    const forbiddenRename = await requestJson(
+      baseUrl,
+      "PATCH",
+      `/api/learning/assistant/conversations/${encodeURIComponent(firstConversationId)}`,
+      { action: "rename", title: "不应成功" },
+      historyOtherRegistration.payload.token
+    );
+    assert.equal(forbiddenRename.response.status, 404);
+
+    const deletedConversation = await requestJson(
+      baseUrl,
+      "DELETE",
+      `/api/learning/assistant/conversations/${encodeURIComponent(secondConversationId)}`,
+      undefined,
+      token
+    );
+    assert.equal(deletedConversation.response.status, 200);
+    assert.equal(deletedConversation.payload.deleted, true);
+
+    const conversationsAfterDeleteResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/conversations?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(knowledgePoint.id)}&sceneType=${encodeURIComponent(candidate.type)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const conversationsAfterDelete = await conversationsAfterDeleteResponse.json();
+    assert.deepEqual(conversationsAfterDelete.conversations.map((item) => item.id), [firstConversationId]);
 
     const quizUnitId = `${chapter.id}-pre`;
     const lockedQuizAnswer = await postJson(baseUrl, "/api/learning/assistant/ask", {
@@ -303,6 +480,59 @@ async function main() {
     const anotherStatus = await anotherStatusResponse.json();
     assert.equal(anotherStatus.quota.remaining, 3, "daily quota must be isolated per user");
 
+    failingLlm = await startFailingLlmStub();
+    const fallbackPort = await freePort();
+    const fallbackBaseUrl = `http://127.0.0.1:${fallbackPort}`;
+    const fallbackDbPath = path.join(tmpDir, "assistant-fallback.db");
+    fallbackChild = spawn(process.execPath, ["server.js", String(fallbackPort)], {
+      cwd: root,
+      env: {
+        ...process.env,
+        DB_PATH: fallbackDbPath,
+        HOST: "127.0.0.1",
+        LLM_PROVIDER: "openai-compatible",
+        OPENAI_COMPATIBLE_BASE_URL: failingLlm.baseUrl,
+        OPENAI_COMPATIBLE_API_KEY: "test-only-key",
+        OPENAI_COMPATIBLE_MODEL: "test-model",
+        LEARNING_ASSISTANT_DAILY_QUOTA: "3",
+        NODE_ENV: "development"
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true
+    });
+    fallbackChild.stdout.on("data", (chunk) => logs.push(chunk.toString()));
+    fallbackChild.stderr.on("data", (chunk) => logs.push(chunk.toString()));
+    await waitForHealth(fallbackBaseUrl, fallbackChild, logs);
+
+    const fallbackRegistration = await postJson(fallbackBaseUrl, "/api/auth/register", {
+      nickname: `失败回退${Date.now().toString().slice(-6)}`,
+      email: "",
+      password: "assistant-fallback-password-123"
+    });
+    const fallbackAnswer = await ask(fallbackBaseUrl, {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: candidate.type,
+      question: "模型暂时不可用时请给我本地引导",
+      contextRef: { kind: "unit", scope: "lesson" }
+    }, fallbackRegistration.payload.token);
+    assert.equal(fallbackAnswer.response.status, 200);
+    assert.equal(fallbackAnswer.rows.at(-1).fallback, true);
+    assert.equal(
+      fallbackAnswer.rows.at(-1).quota.remaining,
+      3,
+      "a provider failure that falls back locally must release the reserved daily quota"
+    );
+
+    const fallbackStatusResponse = await fetch(fallbackBaseUrl + "/api/learning/assistant/status", {
+      headers: { Authorization: `Bearer ${fallbackRegistration.payload.token}` }
+    });
+    const fallbackStatus = await fallbackStatusResponse.json();
+    assert.deepEqual(
+      { used: fallbackStatus.quota.used, remaining: fallbackStatus.quota.remaining },
+      { used: 0, remaining: 3 }
+    );
+
     const resourceUrl = `${baseUrl}/resources/${candidate.root}/${candidate.file}`;
     const coursewareResponse = await fetch(resourceUrl);
     const coursewareHtml = await coursewareResponse.text();
@@ -313,6 +543,8 @@ async function main() {
 
     console.log("learning assistant API tests passed");
   } finally {
+    await stopChild(fallbackChild);
+    await failingLlm?.close();
     await stopChild(child);
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }

@@ -45,6 +45,8 @@ assert.doesNotMatch(
 assert.match(index, /id="feedback-view"/);
 assert.match(index, /id="chapter-rail-toggle"[^>]*aria-controls="chapter-rail"[^>]*aria-expanded="false"/);
 assert.match(index, /id="feedback-content"[^>]*name="content"[^>]*autocomplete="off"/);
+assert.match(index, /id="feedback-content"[^>]*maxlength="5000"/);
+assert.match(index, /id="feedback-char-count">0 \/ 5000<\/span>/);
 assert.doesNotMatch(index, /id="reflection-note"/);
 assert.doesNotMatch(index, /id="save-note"/);
 assert.ok(
@@ -73,6 +75,8 @@ assert.match(
 );
 assert.match(feedbackJs, /pointerdown/);
 assert.match(feedbackJs, /aria-pressed/);
+assert.match(feedbackJs, /contentNode\?\.maxLength/);
+assert.doesNotMatch(feedbackJs, /\/ 2000/);
 assert.match(feedbackJs, /currentFeedbackType\(\)[\s\S]*courseware/);
 assert.doesNotMatch(feedbackJs, /target\.targetScope === "global" \? "全部课件"/);
 assert.doesNotMatch(feedbackTargetsJs, /全局课件反馈/);

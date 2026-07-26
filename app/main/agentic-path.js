@@ -1896,13 +1896,13 @@ async function agenticResolvePendingGrading(action = "retry") {
     if (action === "continue" && agenticQuizHasPendingShortAnswer(records)) {
       agenticScorePendingShortAnswersAsZero(
         unit,
-        "智能批改暂时未完成；你选择先按 0 分继续学习，后续仍可人工复核。"
+        "智能批改暂时未完成；系统已先按 0 分记录，后续仍可人工复核。"
       );
       records = agenticQuizRecordsForUnit(unit.id);
     }
 
     if (agenticQuizHasPendingShortAnswer(records)) {
-      pending.narration = "重新批改仍未完成。你可以稍后再试，或先按 0 分继续学习；后续仍可人工复核。";
+      pending.narration = "批改仍未完成，系统会保留待复核状态，并在后续恢复时继续处理。";
       addLog(`「${unit.label}」简答题重新批改未完成。`);
       return false;
     }
@@ -1914,7 +1914,7 @@ async function agenticResolvePendingGrading(action = "retry") {
       : `「${unit.label}」简答题已重新批改并生成学习建议。`);
     return true;
   } catch (error) {
-    pending.narration = `重新批改失败：${error.message || "服务暂时不可用"}。你可以再次重试，或先按 0 分继续学习。`;
+    pending.narration = `批改暂时未完成：${error.message || "服务暂时不可用"}。系统会在后续恢复时继续处理。`;
     addLog(`「${unit.label}」简答题重新批改失败：${error.message || "服务暂时不可用"}。`);
     return false;
   } finally {
@@ -3332,20 +3332,12 @@ function renderAgenticCoachPanel() {
     const continuing = inFlight === "grading_continue";
     node.hidden = false;
     node.innerHTML = `
-      <section class="agentic-coach-card decision grading-pending">
+      <section class="agentic-coach-card grading-pending">
         <div class="agentic-coach-header">
-          <strong>${retrying ? "正在重新批改简答题" : continuing ? "正在生成学习建议" : "简答题等待处理"}</strong>
+          <strong>${retrying ? "正在重新批改简答题" : continuing ? "正在生成学习建议" : "简答题正在批改"}</strong>
         </div>
         <p>${escapeHtml(agenticStudentFacingText(pending.narration, "简答题批改完成后，我会再给出学习路径建议。"))}</p>
-        <div class="agentic-actions">
-          <button class="button soft" type="button" data-agentic-grading-action="retry" ${inFlight ? "disabled" : ""}>
-            ${retrying ? "重新批改中..." : "重新批改"}
-          </button>
-          <button class="button primary" type="button" data-agentic-grading-action="continue" ${inFlight ? "disabled" : ""}>
-            ${continuing ? "处理中..." : "按 0 分继续"}
-          </button>
-        </div>
-        <small>0 分兜底只用于避免学习中断，该题仍保留人工复核和后续重新评分的空间。</small>
+        <small>系统会自动完成批改并更新学习建议，你无需进行选择。</small>
       </section>
     `;
     return;

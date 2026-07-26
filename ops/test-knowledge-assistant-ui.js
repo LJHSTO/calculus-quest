@@ -7,6 +7,8 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 
 const assistantSource = read("app/main/knowledge-assistant.js");
 const assistantCss = read("app/main/knowledge-assistant.css");
+const proactiveSource = read("app/main/proactive-learning.js");
+const analyticsSource = read("app/main/analytics.js");
 const notesSource = read("app/main/learning-notes.js");
 const contextSource = read("app/main/courseware-context.js");
 const bridgeSource = read("app/main/courseware-bridge.js");
@@ -44,7 +46,7 @@ assert.match(assistantSource, /data-note-color="amber"/);
 assert.match(assistantSource, /data-note-color="mint"/);
 assert.match(assistantSource, /data-note-color="blue"/);
 assert.match(assistantSource, /data-note-color="pink"/);
-assert.match(assistantSource, /Ctrl \+ Enter/);
+assert.doesNotMatch(assistantSource, /Ctrl \+ Enter/, "the note editor should not spend visible space explaining shortcuts");
 assert.match(assistantSource, /data-knowledge-note-delete/);
 assert.match(
   assistantSource,
@@ -57,6 +59,47 @@ assert.match(assistantSource, /data-knowledge-history-view/);
 assert.match(assistantSource, /data-knowledge-conversation-list/);
 assert.match(assistantSource, /data-knowledge-new-conversation/);
 assert.match(assistantSource, /data-knowledge-quota/);
+assert.match(assistantSource, /data-knowledge-proactive/);
+assert.match(assistantSource, /data-knowledge-proactive-accept/);
+assert.match(assistantSource, /data-knowledge-proactive-dismiss/);
+assert.match(assistantSource, /function executeProactiveAction/);
+assert.match(
+  assistantSource,
+  /function executeProactiveAction[\s\S]*?pendingAssistantIntent = suggestion\.action === "self_explain" \? "self_check" : ""/,
+  "proactive drafts must preserve only an explicit self-explanation intent"
+);
+assert.match(
+  assistantSource,
+  /function executeProactiveAction[\s\S]*?els\.input\.value\s*=[\s\S]*?setOpen\(true/,
+  "accepting a proactive suggestion should open a student-editable draft"
+);
+assert.match(
+  assistantSource,
+  /function acceptProactiveSuggestion[\s\S]*?executeProactiveAction\([\s\S]*?proactiveCoach\.resolve\("accept"/,
+  "accepting should resolve the active suggestion after prefilling it"
+);
+const proactivePrefillBody = assistantSource.match(
+  /function executeProactiveAction\([^)]*\)[\s\S]*?\n  \}/
+)?.[0] || "";
+assert.doesNotMatch(
+  proactivePrefillBody,
+  /submitQuestion\(/,
+  "a proactive suggestion must never call the model or consume quota before the student sends it"
+);
+assert.match(assistantSource, /cq:learning-signal/);
+assert.match(assistantSource, /proactiveCoach\.tick/);
+assert.match(assistantSource, /function learningViewActive/);
+assert.match(
+  assistantSource,
+  /if \(participantChanged\)[\s\S]*?proactiveCoach\?\.reset\?\.\(\{ clearCooldowns: true \}\)/,
+  "participant changes must clear proactive cooldowns owned by the previous student"
+);
+assert.match(
+  assistantSource,
+  /function runProactiveTick[\s\S]*?!learningViewActive\(\)/,
+  "proactive dwell decisions must pause outside the learning view"
+);
+assert.match(assistantSource, /quizAssistantLocked\(meta\)/);
 assert.match(assistantSource, /api\/learning\/assistant\/conversations/);
 assert.doesNotMatch(
   assistantSource,
@@ -65,8 +108,18 @@ assert.doesNotMatch(
 );
 assert.match(
   assistantSource,
-  /function createNewConversation[\s\S]*?activeConversationId = "";[\s\S]*?messages = \[\];/,
+  /function createNewConversation[\s\S]*?activeConversationId = "";[\s\S]*?messages = \[\];[\s\S]*?pendingAssistantIntent = "";/,
   "new conversation should reset the workspace to an unsaved draft"
+);
+assert.match(
+  assistantSource,
+  /function questionMatchesAssistantIntent/,
+  "edited follow-up drafts need an explicit intent compatibility check"
+);
+assert.match(
+  assistantSource,
+  /els\.input\.addEventListener\("input", \(\) => \{[\s\S]*?if \(pendingAssistantIntent && !questionMatchesAssistantIntent\(pendingAssistantIntent, els\.input\.value\)\)[\s\S]*?pendingAssistantIntent = "";[\s\S]*?resizeComposer\(\)/,
+  "manual edits should clear an intent only after the draft no longer matches it"
 );
 assert.doesNotMatch(
   assistantSource,
@@ -85,6 +138,42 @@ assert.match(assistantSource, /PANEL_STORAGE_KEY/);
 assert.match(assistantSource, /function clampPanelPosition/);
 assert.match(assistantSource, /function setupPanelDrag/);
 assert.match(assistantSource, /function interactionSceneCopy\(meta = courseMeta\(\)\)/);
+assert.match(assistantSource, /data-knowledge-message-source/);
+assert.match(assistantSource, /let openMessageSourceId = ""/);
+assert.match(assistantSource, /source\.classList\.toggle\("is-open", openMessageSourceId === message\.id\)/);
+assert.doesNotMatch(
+  assistantSource,
+  /useContext\(message\.contextRef, "message-source"\);\s*source\.classList\.toggle/,
+  "message source state must survive the render triggered by restoring context"
+);
+assert.match(assistantSource, /data-knowledge-message-actions/);
+assert.match(assistantSource, /data-knowledge-self-check/);
+assert.match(assistantSource, /assistantIntent/);
+const assistantIntentBody = assistantSource.match(
+  /function beginAssistantIntent\(intent\)[\s\S]*?(?=\s*function renderQuickQuestions)/
+)?.[0] || "";
+assert.doesNotMatch(
+  assistantIntentBody,
+  /submitQuestion\(/,
+  "follow-up actions must fill an editable draft instead of sending immediately"
+);
+assert.match(assistantIntentBody, /els\.input\.focus/);
+const quickQuestionBody = assistantSource.match(
+  /function renderQuickQuestions\(\)[\s\S]*?(?=\s*function messageNode)/
+)?.[0] || "";
+assert.match(
+  quickQuestionBody,
+  /messages\.length[\s\S]*?els\.quick\.hidden = true/,
+  "opening prompts should disappear after the conversation starts"
+);
+assert.doesNotMatch(
+  quickQuestionBody,
+  /submitQuestion\(/,
+  "opening prompts must fill the composer without sending"
+);
+assert.match(quickQuestionBody, /els\.input\.focus/);
+assert.match(assistantSource, /message\.contextRef/);
+assert.match(assistantSource, /event\.guidance/);
 assert.match(assistantSource, /els\.echoTitle\.textContent = interactionSceneCopy\(meta\)/);
 assert.match(assistantSource, /els\.echoCopy\.textContent = `\$\{component\}：\$\{echoSummary\(ref\)\}`/);
 assert.doesNotMatch(
@@ -117,11 +206,26 @@ assert.match(
 );
 assert.match(
   assistantSource,
-  /function renderQuickQuestions\(\) \{[\s\S]*?if \(quizAssistantLocked\(meta\)\) \{[\s\S]*?els\.quick\.hidden = true;[\s\S]*?return;/,
+  /function renderQuickQuestions\(\) \{[\s\S]*?if \([\s\S]*?quizAssistantLocked\(meta\)[\s\S]*?\) \{[\s\S]*?els\.quick\.hidden = true;[\s\S]*?return;/,
   "quiz lock state must not expose question shortcuts"
 );
 assert.match(assistantSource, /提交本次测验后即可使用知点复盘/);
 assert.match(serverSource, /assistant_quiz_locked_until_submit/);
+assert.match(serverSource, /assistantHistoryMessageLimit = 60/);
+assert.match(serverSource, /assistantConversationTurnLimit = 30/);
+assert.match(serverSource, /assistant_conversation_turn_limit/);
+assert.match(assistantSource, /const CONVERSATION_TURN_LIMIT = 30/);
+assert.match(assistantSource, /function conversationAtLimit\(\) \{[\s\S]*?CONVERSATION_TURN_LIMIT/);
+assert.match(
+  assistantSource,
+  /const conversationLimited = conversationAtLimit\(\);[\s\S]*?els\.input\.disabled = [^;]*conversationLimited/,
+  "a conversation at 30 turns must disable the composer"
+);
+assert.match(
+  assistantSource,
+  /if \(conversationAtLimit\(\)\) \{[\s\S]*?请新建对话继续/,
+  "the assistant must stop sending after the conversation turn limit"
+);
 assert.match(
   assistantSource,
   /if \(unitChanged \|\| participantChanged \|\| supportChanged\) \{[\s\S]*?loadConversations\(meta\)/,
@@ -161,11 +265,63 @@ assert.match(assistantCss, /\.knowledge-selection-toolbar\s*\{/);
 assert.match(assistantCss, /\.knowledge-note-editor\s*\{/);
 assert.match(assistantCss, /\.knowledge-history-view\s*\{/);
 assert.match(assistantCss, /\.knowledge-conversation-card\s*\{/);
+assert.match(assistantCss, /\.knowledge-proactive-nudge\s*\{/);
+assert.match(assistantCss, /\.knowledge-assistant-root\.is-open \.knowledge-proactive-nudge/);
 assert.match(assistantCss, /font-variant-numeric:\s*tabular-nums/);
+assert.match(assistantSource, /data-knowledge-history-search/);
+assert.match(assistantSource, /data-knowledge-history-filter="current"/);
+assert.match(assistantSource, /data-knowledge-history-filter="archived"/);
+assert.match(assistantSource, /data-conversation-action="rename"/);
+assert.match(assistantSource, /data-conversation-action="archive"/);
+assert.match(assistantSource, /data-conversation-action="delete"/);
+assert.match(assistantSource, /function updateConversation/);
+assert.match(assistantSource, /function deleteConversation/);
+assert.doesNotMatch(assistantSource, /\bconfirm\s*\(/, "conversation deletion must use an inline confirmation");
+assert.match(assistantCss, /\.knowledge-history-search\s*\{/);
+assert.match(assistantCss, /\.knowledge-history-filters\s*\{/);
+assert.match(assistantCss, /\.knowledge-conversation-menu\s*\{/);
+assert.match(assistantCss, /\.knowledge-conversation-confirm\s*\{/);
+assert.match(
+  assistantSource,
+  /document\.addEventListener\("pointerdown"[\s\S]*?data-conversation-menu-shell/,
+  "clicking outside a conversation menu should close it"
+);
+assert.match(assistantSource, /data-knowledge-note-sync-status/);
+assert.match(
+  assistantSource,
+  /function renderNoteSyncStatus\(\)[\s\S]*?!els\.noteEditor\.hidden[\s\S]*?!editingNoteId[\s\S]*?保存后同步到账号/,
+  "a new unsaved note must not claim that it has already synced"
+);
+assert.match(assistantSource, /function syncLearningNotes/);
+assert.match(assistantSource, /api\/learning\/notes\/sync/);
+assert.match(assistantSource, /method:\s*"PUT"/);
+assert.match(assistantSource, /method:\s*"DELETE"/);
+assert.doesNotMatch(assistantSource, /仅当前浏览器可见/);
+assert.match(assistantCss, /\.knowledge-note-sync-status\s*\{/);
+assert.match(assistantSource, /NOTE_PENDING_STORAGE_PREFIX/);
+assert.match(assistantSource, /deletedIds/);
+assert.match(assistantSource, /function notePendingOperations/);
+assert.match(assistantSource, /function requestProactiveDecision/);
+assert.match(assistantSource, /api\/learning\/assistant\/intervention/);
+assert.match(assistantSource, /proactiveDecisionRequest\?\.abort/);
+assert.match(assistantSource, /decision\.intervene/);
+assert.match(assistantSource, /function executeProactiveAction/);
+assert.match(assistantSource, /observe_change/);
+assert.match(assistantSource, /review_mistake/);
+assert.match(assistantSource, /self_explain/);
+const proactiveExecutorBody = assistantSource.match(
+  /function executeProactiveAction\([^)]*\)\s*\{([\s\S]*?)\n\s*\}/
+)?.[1] || "";
+assert.doesNotMatch(proactiveExecutorBody, /submitQuestion\s*\(/, "agent actions must never send a question automatically");
 assert.match(
   assistantCss,
   /\.knowledge-composer\s*>\s*div:not\(\.knowledge-composer-meta\)\s*\{/,
   "composer input styling must not force the status and quota row into a 40px grid column"
+);
+assert.match(
+  assistantCss,
+  /\.knowledge-composer\[hidden\]\s*\{[\s\S]*?display:\s*none\s*!important;/,
+  "history mode must hide the composer even when later cascade layers define its layout"
 );
 assert.match(assistantCss, /::highlight\(cq-learning-notes\)/);
 
@@ -180,6 +336,13 @@ assert.doesNotMatch(
 );
 
 assert.match(indexHtml, /id="lesson-rail-toggle"/);
+assert.match(
+  indexHtml,
+  /app\/main\/proactive-learning\.js[\s\S]*?app\/main\/analytics\.js/,
+  "the proactive policy must load before analytics starts emitting learning signals"
+);
+assert.match(proactiveSource, /function createProactiveCoach/);
+assert.match(analyticsSource, /cq:learning-signal/);
 assert.match(indexHtml, /id="lesson-rail"/);
 assert.match(
   indexHtml,

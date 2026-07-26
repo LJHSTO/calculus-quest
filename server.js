@@ -94,11 +94,16 @@ const authAttemptMap = new Map();
 const assistantRateLimitMap = new Map();
 const assistantRateLimitWindowMs = 60 * 1000;
 const assistantRateLimitMax = 20;
+const assistantHistoryMessageLimit = 60;
+const assistantConversationTurnLimit = 30;
 const assistantDailyQuotaLimit = Math.max(
   1,
   Math.min(10000, Number(process.env.LEARNING_ASSISTANT_DAILY_QUOTA || 30) || 30)
 );
-
+const assistantDailyInterventionLimit = Math.max(
+  0,
+  Math.min(100, Number(process.env.LEARNING_ASSISTANT_DAILY_INTERVENTIONS || 6) || 6)
+);
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -846,6 +851,32 @@ function consumeAssistantQuota(userId, date = new Date()) {
   };
 }
 
+function releaseAssistantQuota(userId, date = new Date()) {
+  const usageDate = beijingDateKey(date);
+  return {
+    usageDate,
+    ...db.releaseLearningAssistantDailyQuota(
+      userId,
+      usageDate,
+      assistantDailyQuotaLimit,
+      new Date().toISOString()
+    )
+  };
+}
+
+function consumeAssistantInterventionBudget(userId, date = new Date()) {
+  const usageDate = beijingDateKey(date);
+  return {
+    usageDate,
+    ...db.consumeLearningAssistantInterventionBudget(
+      userId,
+      usageDate,
+      assistantDailyInterventionLimit,
+      date.toISOString()
+    )
+  };
+}
+
 function publicAssistantConversation(row = {}) {
   return {
     id: row.id || "",
@@ -854,6 +885,7 @@ function publicAssistantConversation(row = {}) {
     unitId: row.unit_id || "",
     knowledgePointId: row.knowledge_point_id || "",
     title: String(row.title || "新对话"),
+    archivedAt: row.archived_at || "",
     messageCount: Number(row.message_count || 0),
     createdAt: row.created_at || "",
     updatedAt: row.updated_at || row.created_at || ""
@@ -908,14 +940,101 @@ function parseAssistantContextJson(value = "") {
 }
 
 function publicAssistantMessage(row = {}) {
+  const storedContext = parseAssistantContextJson(row.context_json || row.context);
+  const { assistantGuidance, assistantIntent, ...contextRef } = storedContext;
   return {
     id: row.id || "",
     role: row.role === "assistant" ? "assistant" : "user",
     content: String(row.content || ""),
-    contextRef: parseAssistantContextJson(row.context_json || row.context),
+    contextRef,
+    guidance: assistantGuidance || null,
+    assistantIntent: assistantIntent || "",
     provider: row.provider || "",
     quizSubmitted: Number(row.quiz_submitted || 0) === 1,
     createdAt: row.created_at || ""
+  };
+}
+
+function boundedLearningText(value = "", limit = 1200, multiline = false) {
+  const source = String(value ?? "").replace(/\u0000/g, "");
+  return (multiline ? source.replace(/\r\n?/g, "\n") : source.replace(/\s+/g, " "))
+    .trim()
+    .slice(0, limit);
+}
+
+function learningNoteError(code, message, status = 400) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  return error;
+}
+
+function sanitizeLearningNoteInput(userId, input = {}, noteIdOverride = "") {
+  const noteId = boundedLearningText(noteIdOverride || input.id, 180);
+  if (!/^[A-Za-z0-9:_-]{1,180}$/.test(noteId)) {
+    throw learningNoteError("learning_note_id_invalid", "笔记标识无效。");
+  }
+  const unitId = boundedLearningText(input.unitId || input.contextRef?.unitId, 180);
+  const unit = assistantContextIndex.units.get(unitId);
+  if (!unit) throw learningNoteError("learning_note_unit_invalid", "这条笔记对应的学习位置不存在。");
+  const sanitizedContext = learningAssistant.sanitizeClientContext(input.contextRef);
+  const locatorSource = input.locator && typeof input.locator === "object" ? input.locator : {};
+  const createdAt = Number.isFinite(Date.parse(input.createdAt || ""))
+    ? new Date(input.createdAt).toISOString()
+    : nowIso();
+  const updatedAt = Number.isFinite(Date.parse(input.updatedAt || ""))
+    ? new Date(input.updatedAt).toISOString()
+    : nowIso();
+  return {
+    id: noteId,
+    user_id: userId,
+    thread_key: unit.knowledgePointId ? `knowledge:${unit.knowledgePointId}` : `unit:${unit.id}`,
+    chapter_id: unit.chapterId || "",
+    unit_id: unit.id,
+    excerpt: boundedLearningText(input.excerpt || sanitizedContext.excerpt, 900, true),
+    note: boundedLearningText(input.note, 1200, true),
+    color: ["amber", "mint", "blue", "pink"].includes(input.color) ? input.color : "amber",
+    context: {
+      ...sanitizedContext,
+      chapterId: unit.chapterId || "",
+      unitId: unit.id,
+      unitLabel: unit.unitLabel || "",
+      knowledgePointId: unit.knowledgePointId || "",
+      knowledgePointLabel: unit.knowledgePointLabel || "",
+      resourceFingerprint: boundedLearningText(input.contextRef?.resourceFingerprint, 120)
+    },
+    locator: {
+      source: locatorSource.source === "iframe" ? "iframe" : "document",
+      semanticId: boundedLearningText(locatorSource.semanticId, 180),
+      exact: boundedLearningText(locatorSource.exact, 900, true),
+      prefix: boundedLearningText(locatorSource.prefix, 80, true),
+      suffix: boundedLearningText(locatorSource.suffix, 80, true),
+      startOffset: Number.isInteger(locatorSource.startOffset) && locatorSource.startOffset >= 0
+        ? locatorSource.startOffset
+        : -1,
+      endOffset: Number.isInteger(locatorSource.endOffset) && locatorSource.endOffset >= 0
+        ? locatorSource.endOffset
+        : -1
+    },
+    created_at: createdAt,
+    updated_at: updatedAt
+  };
+}
+
+function publicLearningNote(row = {}) {
+  return {
+    id: row.id || "",
+    ownerKey: row.user_id || "",
+    threadKey: row.thread_key || "",
+    chapterId: row.chapter_id || "",
+    unitId: row.unit_id || "",
+    excerpt: row.excerpt || "",
+    note: row.note || "",
+    color: row.color || "amber",
+    contextRef: parseAssistantContextJson(row.context_json),
+    locator: parseAssistantContextJson(row.locator_json),
+    createdAt: row.created_at || "",
+    updatedAt: row.updated_at || row.created_at || ""
   };
 }
 
@@ -925,19 +1044,21 @@ function writeNdjson(res, payload) {
   }
 }
 
-async function generateAssistantTurn({ resolved, question, history, quizSubmitted }) {
+async function generateAssistantTurn({ resolved, question, history, quizSubmitted, assistantIntent = "" }) {
   const prompt = learningAssistant.buildAssistantPrompt({
     resolved,
     question,
     history,
-    quizSubmitted
+    quizSubmitted,
+    assistantIntent
   });
   const providerInfo = assistantProviderInfo();
   if (!providerInfo.live) {
     return {
       provider: providerInfo.id,
-      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted, assistantIntent }),
       policy: prompt.policy,
+      guidance: prompt.guidance,
       fallback: false
     };
   }
@@ -963,18 +1084,55 @@ async function generateAssistantTurn({ resolved, question, history, quizSubmitte
     });
     return {
       provider: result.provider || providerInfo.id,
-      text: text || learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      text: text || learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted, assistantIntent }),
       policy: prompt.policy,
+      guidance: prompt.guidance,
       fallback: !text
     };
   } catch (error) {
     console.warn("Learning assistant provider fallback:", error.message);
     return {
       provider: "fallback",
-      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted, assistantIntent }),
       policy: prompt.policy,
+      guidance: prompt.guidance,
       fallback: true
     };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function generateInterventionDecision({ resolved, signal }) {
+  const providerInfo = assistantProviderInfo();
+  const fallback = () => learningAssistant.deterministicInterventionDecision({ resolved, signal });
+  if (!providerInfo.live) {
+    return { provider: providerInfo.id, decision: fallback(), fallback: false };
+  }
+  const prompt = learningAssistant.buildInterventionPrompt({ resolved, signal });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const result = await llm.completeChat({
+      system: prompt.system,
+      user: prompt.user,
+      jsonHint: true,
+      maxTokens: 260,
+      model: String(
+        process.env.LEARNING_ASSISTANT_MODEL
+        || process.env.OPENAI_COMPATIBLE_MODEL
+        || ""
+      ).trim() || undefined,
+      signal: controller.signal
+    });
+    return {
+      provider: result.provider || providerInfo.id,
+      decision: learningAssistant.parseInterventionDecision(result.text, { resolved, signal }),
+      fallback: false
+    };
+  } catch (error) {
+    console.warn("Learning assistant intervention fallback:", error.message);
+    return { provider: "fallback", decision: fallback(), fallback: true };
   } finally {
     clearTimeout(timeout);
   }
@@ -1495,6 +1653,7 @@ async function handleApi(req, res, url) {
         ok: true,
         provider: assistantProviderInfo(),
         courseVersion: assistantContextIndex.routeVersion || "",
+        conversationTurnLimit: assistantConversationTurnLimit,
         quota: assistantQuotaInfo(auth.participant.id)
       });
       return;
@@ -1557,7 +1716,11 @@ async function handleApi(req, res, url) {
       const conversations = db.listLearningAssistantConversations(
         auth.participant.id,
         resolved.threadKey,
-        80
+        80,
+        {
+          query: url.searchParams.get("q") || "",
+          archived: url.searchParams.get("archived") === "1"
+        }
       ).map(publicAssistantConversation);
       sendJson(res, 200, {
         ok: true,
@@ -1565,6 +1728,208 @@ async function handleApi(req, res, url) {
         provider: assistantProviderInfo(),
         quota: assistantQuotaInfo(auth.participant.id),
         conversations
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/learning/assistant/intervention") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const unitId = boundedLearningText(body.unitId, 180);
+      const chapterId = boundedLearningText(body.chapterId, 180);
+      const sceneType = boundedLearningText(body.sceneType, 80);
+      const signal = body.signal && typeof body.signal === "object" && !Array.isArray(body.signal)
+        ? body.signal
+        : {};
+      if (!["repeated_parameter", "quiz_review", "quiet_dwell"].includes(String(signal.kind || ""))) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "assistant_intervention_signal_invalid",
+          message: "这次学习信号不足以进行判断。"
+        });
+        return;
+      }
+      const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      let resolved;
+      try {
+        resolved = learningAssistant.resolveAssistantContext({
+          index: assistantContextIndex,
+          chapterId,
+          unitId,
+          sceneType,
+          contextRef: body.contextRef || {
+            kind: signal.kind === "repeated_parameter" ? "interaction" : "unit",
+            scope: signal.kind === "quiz_review" ? "quiz" : "lesson"
+          },
+          quizSubmitted
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_context_error",
+          message: error.message
+        });
+        return;
+      }
+      if (resolved.isQuiz && !quizSubmitted) {
+        sendAssistantQuizLocked(res, auth.participant.id);
+        return;
+      }
+      const interventionBudget = consumeAssistantInterventionBudget(auth.participant.id, new Date());
+      if (!interventionBudget.ok) {
+        sendJson(res, 429, {
+          ok: false,
+          code: "assistant_intervention_budget_exhausted",
+          message: "知点今天已经减少主动打扰，仍可由你主动提问。",
+          interventionBudget,
+          quota: assistantQuotaInfo(auth.participant.id)
+        });
+        return;
+      }
+      const generated = await generateInterventionDecision({ resolved, signal });
+      sendJson(res, 200, {
+        ok: true,
+        provider: generated.provider,
+        fallback: generated.fallback,
+        decision: generated.decision,
+        interventionBudget,
+        quota: assistantQuotaInfo(auth.participant.id)
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/learning/notes") {
+      const auth = authenticate(req);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const unitId = boundedLearningText(url.searchParams.get("unitId") || "", 180);
+      if (unitId && !assistantContextIndex.units.has(unitId)) {
+        sendJson(res, 400, { ok: false, code: "learning_note_unit_invalid", message: "学习位置不存在。" });
+        return;
+      }
+      sendJson(res, 200, {
+        ok: true,
+        notes: db.listLearningNotes(auth.participant.id, unitId, 500).map(publicLearningNote)
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/learning/notes/sync") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const incoming = Array.isArray(body.notes) ? body.notes.slice(0, 500) : [];
+      try {
+        const records = incoming.map((note) => sanitizeLearningNoteInput(auth.participant.id, note));
+        const deletedIds = (Array.isArray(body.deletedIds) ? body.deletedIds : [])
+          .slice(0, 500)
+          .map((noteId) => boundedLearningText(noteId, 180))
+          .filter((noteId) => /^[A-Za-z0-9:_-]{1,180}$/.test(noteId));
+        db.syncLearningNotes(auth.participant.id, records, deletedIds);
+        const unitId = boundedLearningText(body.unitId || "", 180);
+        sendJson(res, 200, {
+          ok: true,
+          notes: db.listLearningNotes(auth.participant.id, unitId, 500).map(publicLearningNote)
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "learning_note_sync_failed",
+          message: error.message || "笔记同步失败。"
+        });
+      }
+      return;
+    }
+
+    const learningNoteMatch = url.pathname.match(/^\/api\/learning\/notes\/([^/]+)$/);
+    if (learningNoteMatch && ["PUT", "DELETE"].includes(req.method)) {
+      const body = req.method === "PUT" ? await readJsonBody(req) : {};
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const noteId = decodeURIComponent(learningNoteMatch[1]);
+      if (req.method === "DELETE") {
+        const deleted = db.deleteLearningNote(auth.participant.id, noteId);
+        if (!deleted) {
+          sendJson(res, 404, { ok: false, code: "learning_note_not_found", message: "这条笔记不存在或已删除。" });
+          return;
+        }
+        sendJson(res, 200, { ok: true, deleted: true, noteId });
+        return;
+      }
+      try {
+        const record = sanitizeLearningNoteInput(auth.participant.id, body, noteId);
+        const saved = db.upsertLearningNote(record);
+        sendJson(res, 200, { ok: true, note: publicLearningNote(saved) });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "learning_note_save_failed",
+          message: error.message || "笔记保存失败。"
+        });
+      }
+      return;
+    }
+
+    const assistantConversationMatch = url.pathname.match(
+      /^\/api\/learning\/assistant\/conversations\/([^/]+)$/
+    );
+    if (assistantConversationMatch && ["PATCH", "DELETE"].includes(req.method)) {
+      const body = req.method === "PATCH" ? await readJsonBody(req) : {};
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const conversationId = decodeURIComponent(assistantConversationMatch[1]);
+      const existing = db.getLearningAssistantConversation(auth.participant.id, conversationId);
+      if (!existing) {
+        sendJson(res, 404, {
+          ok: false,
+          code: "assistant_conversation_not_found",
+          message: "这段对话不存在或已被删除。"
+        });
+        return;
+      }
+      if (req.method === "DELETE") {
+        db.deleteLearningAssistantConversation(auth.participant.id, conversationId);
+        sendJson(res, 200, { ok: true, deleted: true, conversationId });
+        return;
+      }
+
+      const action = String(body.action || "").trim();
+      const updatedAt = nowIso();
+      let updated = null;
+      if (action === "rename") {
+        const title = String(body.title || "").replace(/\s+/g, " ").trim().slice(0, 80);
+        if (!title) {
+          sendJson(res, 400, {
+            ok: false,
+            code: "assistant_conversation_title_required",
+            message: "请输入对话名称。"
+          });
+          return;
+        }
+        updated = db.renameLearningAssistantConversation(
+          auth.participant.id,
+          conversationId,
+          title,
+          updatedAt
+        );
+      } else if (["archive", "restore"].includes(action)) {
+        updated = db.setLearningAssistantConversationArchived(
+          auth.participant.id,
+          conversationId,
+          action === "archive" ? updatedAt : "",
+          updatedAt
+        );
+      } else {
+        sendJson(res, 400, {
+          ok: false,
+          code: "assistant_conversation_action_invalid",
+          message: "无法识别这项会话操作。"
+        });
+        return;
+      }
+      sendJson(res, 200, {
+        ok: true,
+        conversation: publicAssistantConversation(updated)
       });
       return;
     }
@@ -1628,7 +1993,7 @@ async function handleApi(req, res, url) {
         ? db.getLearningAssistantMessages(
             auth.participant.id,
             resolved.threadKey,
-            100,
+            assistantHistoryMessageLimit,
             conversation.id
           ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1)
         : [];
@@ -1636,6 +2001,8 @@ async function handleApi(req, res, url) {
         ok: true,
         threadKey: resolved.threadKey,
         conversation,
+        conversationTurnLimit: assistantConversationTurnLimit,
+        conversationTurns: Math.floor(Number(conversation?.messageCount || 0) / 2),
         contextRef: resolved.contextRef,
         quizSubmitted,
         provider: assistantProviderInfo(),
@@ -1650,6 +2017,9 @@ async function handleApi(req, res, url) {
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const question = String(body.question || "").replace(/\u0000/g, "").trim().slice(0, 1200);
+      const assistantIntent = ["self_check", "rephrase", "practice"].includes(String(body.assistantIntent || "").trim())
+        ? String(body.assistantIntent).trim()
+        : "";
       const unitId = String(body.unitId || "").trim();
       const chapterId = String(body.chapterId || "").trim();
       const sceneType = String(body.sceneType || "").trim();
@@ -1694,6 +2064,7 @@ async function handleApi(req, res, url) {
       const requestedAt = new Date();
       const providerInfo = assistantProviderInfo();
       let quota = assistantQuotaInfo(auth.participant.id, requestedAt);
+      let quotaReserved = false;
       let conversationState;
       try {
         conversationState = assistantConversationForRequest(
@@ -1712,6 +2083,18 @@ async function handleApi(req, res, url) {
         return;
       }
       const { conversation } = conversationState;
+      const conversationTurns = Math.floor(Number(conversation.messageCount || 0) / 2);
+      if (conversationTurns >= assistantConversationTurnLimit) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_conversation_turn_limit",
+          message: `这段对话已达到 ${assistantConversationTurnLimit} 轮，请新建对话继续。`,
+          conversationTurnLimit: assistantConversationTurnLimit,
+          conversationTurns,
+          quota
+        });
+        return;
+      }
       if (assistantRequestConsumesQuota(providerInfo)) {
         quota = consumeAssistantQuota(auth.participant.id, requestedAt);
         if (!quota.ok) {
@@ -1723,13 +2106,14 @@ async function handleApi(req, res, url) {
           });
           return;
         }
+        quotaReserved = true;
       }
       const historyRows = conversationState.createConversation
         ? []
         : db.getLearningAssistantMessages(
             auth.participant.id,
             resolved.threadKey,
-            16,
+            assistantHistoryMessageLimit,
             conversation.id
           ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1);
       const history = historyRows.map((row) => ({
@@ -1743,8 +2127,13 @@ async function handleApi(req, res, url) {
         resolved,
         question,
         history,
-        quizSubmitted
+        quizSubmitted,
+        assistantIntent
       });
+      if (generated.fallback && quotaReserved) {
+        quota = releaseAssistantQuota(auth.participant.id, requestedAt);
+        quotaReserved = false;
+      }
       const answer = learningAssistant.enforceQuizSafety(generated.text, {
         isQuiz: resolved.isQuiz,
         quizSubmitted,
@@ -1759,7 +2148,11 @@ async function handleApi(req, res, url) {
         chapter_id: resolved.unit.chapterId,
         unit_id: resolved.unit.id,
         knowledge_point_id: resolved.unit.knowledgePointId || "",
-        context: resolved.contextRef,
+        context: {
+          ...resolved.contextRef,
+          assistantGuidance: generated.guidance,
+          assistantIntent
+        },
         quiz_submitted: quizSubmitted
       };
       db.saveLearningAssistantTurn({
@@ -1796,6 +2189,8 @@ async function handleApi(req, res, url) {
         type: "meta",
         threadKey: resolved.threadKey,
         conversationId: conversation.id,
+        conversationTurnLimit: assistantConversationTurnLimit,
+        conversationTurns: conversationTurns + 1,
         userMessageId,
         contextRef: resolved.contextRef,
         quizSubmitted,
@@ -1812,16 +2207,20 @@ async function handleApi(req, res, url) {
           role: "assistant",
           content: answer,
           contextRef: resolved.contextRef,
+          guidance: generated.guidance,
+          assistantIntent,
           provider: generated.provider,
           quizSubmitted,
           createdAt: answeredAt
         },
         policy: generated.policy,
+        guidance: generated.guidance,
         fallback: generated.fallback,
         conversation: {
           ...conversation,
           title: conversation.messageCount === 0 ? question.slice(0, 42) : conversation.title,
           messageCount: conversation.messageCount + 2,
+          turnCount: conversationTurns + 1,
           updatedAt: answeredAt
         },
         quota

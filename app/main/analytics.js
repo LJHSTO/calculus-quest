@@ -405,6 +405,9 @@ function analyticsTrack(eventType, payload = {}) {
 
   analyticsRememberInteractionEvidence(event);
   analyticsScheduleCoachEvidenceRefresh(event);
+  window.dispatchEvent(new CustomEvent("cq:learning-signal", {
+    detail: { event }
+  }));
   if (!persist) return;
   analyticsQueue.push({
     token: state.authToken,
