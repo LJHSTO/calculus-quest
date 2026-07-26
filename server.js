@@ -952,7 +952,13 @@ function parseAssistantContextJson(value = "") {
 
 function publicAssistantMessage(row = {}) {
   const storedContext = parseAssistantContextJson(row.context_json || row.context);
-  const { assistantGuidance, assistantIntent, proactivePrompt, ...contextRef } = storedContext;
+  const {
+    assistantGuidance,
+    assistantIntent,
+    proactivePrompt,
+    proactivePromptVisible,
+    ...contextRef
+  } = storedContext;
   return {
     id: row.id || "",
     role: row.role === "assistant" ? "assistant" : "user",
@@ -961,6 +967,7 @@ function publicAssistantMessage(row = {}) {
     guidance: assistantGuidance || null,
     assistantIntent: assistantIntent || "",
     proactivePrompt: row.role === "user" ? boundedLearningText(proactivePrompt, 500, true) : "",
+    proactivePromptVisible: proactivePromptVisible !== false,
     provider: row.provider || "",
     quizSubmitted: Number(row.quiz_submitted || 0) === 1,
     createdAt: row.created_at || ""
@@ -1000,6 +1007,11 @@ function issueAssistantIntervention(userId, resolved, decision = {}, now = Date.
     reviewIndex: Math.max(0, Math.trunc(Number(decision.reviewIndex || 0))),
     reviewTotal: Math.max(0, Math.trunc(Number(decision.reviewTotal || 0))),
     questionId: boundedLearningText(decision.questionId, 180),
+    promptVisible: decision.promptVisible !== false,
+    sourceMessageId: boundedLearningText(decision.sourceMessageId, 180),
+    reviewAction: ["continue", "next"].includes(String(decision.reviewAction || ""))
+      ? String(decision.reviewAction)
+      : "",
     createdAt: now,
     expiresAt: now + assistantInterventionTtlMs
   });
@@ -1024,6 +1036,117 @@ function getAssistantIntervention(
   ) return null;
   if (consume) assistantInterventionRegistry.delete(id);
   return record;
+}
+
+function normalizeAssistantQuizReviewProgress(progress = {}) {
+  const source = progress && typeof progress === "object" && !Array.isArray(progress)
+    ? progress
+    : {};
+  const status = [
+    "awaiting_choice",
+    "awaiting_reply",
+    "answered",
+    "stopped",
+    "completed"
+  ].includes(String(source.status || ""))
+    ? String(source.status)
+    : "";
+  const reviewTotal = Math.max(0, Math.min(30, Math.trunc(Number(source.reviewTotal || 0))));
+  const reviewIndex = Math.max(
+    0,
+    Math.min(Math.max(0, reviewTotal - 1), Math.trunc(Number(source.reviewIndex || 0)))
+  );
+  const targetReviewIndex = Math.max(
+    0,
+    Math.min(Math.max(0, reviewTotal - 1), Math.trunc(Number(source.targetReviewIndex ?? reviewIndex)))
+  );
+  return {
+    status,
+    done: status === "completed" || source.done === true,
+    reviewIndex,
+    reviewTotal,
+    questionId: boundedLearningText(source.questionId, 180),
+    action: ["continue", "next"].includes(String(source.action || "")) ? String(source.action) : "",
+    targetReviewIndex,
+    targetQuestionId: boundedLearningText(source.targetQuestionId, 180),
+    completionMessage: boundedLearningText(source.completionMessage, 220, true)
+  };
+}
+
+function assistantQuizReviewProgress(row = {}) {
+  const storedContext = parseAssistantContextJson(row.context_json || row.context);
+  return normalizeAssistantQuizReviewProgress(
+    storedContext?.assistantGuidance?.quizReviewProgress
+  );
+}
+
+function updateAssistantQuizReviewProgress(row = {}, progress = {}) {
+  if (!row?.user_id || !row?.id) return null;
+  const storedContext = parseAssistantContextJson(row.context_json || row.context);
+  const assistantGuidance = storedContext.assistantGuidance
+    && typeof storedContext.assistantGuidance === "object"
+    && !Array.isArray(storedContext.assistantGuidance)
+    ? storedContext.assistantGuidance
+    : {};
+  return db.updateLearningAssistantMessageContext(row.user_id, row.id, {
+    ...storedContext,
+    assistantGuidance: {
+      ...assistantGuidance,
+      quizReviewProgress: normalizeAssistantQuizReviewProgress(progress)
+    }
+  });
+}
+
+function quizReviewIndexFromProgress(resolved, progress = {}, { target = false } = {}) {
+  const incorrectItems = Array.isArray(resolved?.quizAttempt?.incorrectItems)
+    ? resolved.quizAttempt.incorrectItems
+    : [];
+  if (!incorrectItems.length) return -1;
+  const questionId = boundedLearningText(
+    target ? progress.targetQuestionId : progress.questionId,
+    180
+  );
+  if (questionId) {
+    const matchedIndex = incorrectItems.findIndex((item) => item.questionId === questionId);
+    if (matchedIndex >= 0) return matchedIndex;
+  }
+  const numericIndex = Math.trunc(Number(
+    target ? progress.targetReviewIndex : progress.reviewIndex
+  ));
+  return numericIndex >= 0 && numericIndex < incorrectItems.length ? numericIndex : -1;
+}
+
+function quizReviewDecisionForIndex(resolved, reviewIndex) {
+  const continuation = learningAssistant.quizReviewContinuation({
+    resolved,
+    completedIndex: Math.trunc(Number(reviewIndex || 0)) - 1
+  });
+  return continuation.done ? null : continuation.decision;
+}
+
+function publicQuizReviewPrompt({
+  resolved,
+  sceneType = "",
+  decision,
+  interventionId,
+  sourceMessageId = "",
+  reviewAction = "",
+  visible = true
+} = {}) {
+  if (!decision?.assistantPrompt || !interventionId) return null;
+  return {
+    id: `quiz-review-${interventionId}`,
+    content: decision.assistantPrompt,
+    action: decision.action,
+    unitId: resolved.unit.id,
+    sceneType: boundedLearningText(sceneType, 80),
+    interventionId,
+    sourceMessageId: boundedLearningText(sourceMessageId, 180),
+    reviewAction: ["continue", "next"].includes(reviewAction) ? reviewAction : "",
+    visible: visible !== false,
+    contextSummary: decision.contextSummary || "",
+    replyOptions: decision.replyOptions || []
+  };
 }
 
 function assistantRecentConversation(userId, resolved, limit = 4) {
@@ -1806,7 +1929,9 @@ async function handleApi(req, res, url) {
       const sceneType = String(
         req.method === "GET" ? url.searchParams.get("sceneType") || "" : body.sceneType || ""
       ).trim();
-      const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      const quizSubmitted = Boolean(
+        unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length
+      );
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
@@ -2123,6 +2248,200 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/assistant/quiz-review/action"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const action = String(body.action || "").trim();
+      if (!["continue", "next", "stop"].includes(action)) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "assistant_quiz_review_action_invalid",
+          message: "无法识别这项错题复盘操作。"
+        });
+        return;
+      }
+      const conversationId = boundedLearningText(body.conversationId, 180);
+      const assistantMessageId = boundedLearningText(body.assistantMessageId, 180);
+      const unitId = boundedLearningText(body.unitId, 180);
+      const chapterId = boundedLearningText(body.chapterId, 180);
+      const sceneType = boundedLearningText(body.sceneType, 80);
+      const conversation = db.getLearningAssistantConversation(
+        auth.participant.id,
+        conversationId
+      );
+      const sourceMessage = db.getLearningAssistantMessage(
+        auth.participant.id,
+        assistantMessageId
+      );
+      if (
+        !conversation
+        || !sourceMessage
+        || sourceMessage.role !== "assistant"
+        || sourceMessage.conversation_id !== conversation.id
+        || sourceMessage.unit_id !== unitId
+      ) {
+        sendJson(res, 404, {
+          ok: false,
+          code: "assistant_quiz_review_state_not_found",
+          message: "这段错题复盘已不在当前对话中，请重新开始。"
+        });
+        return;
+      }
+      const latestMessage = db.getLearningAssistantMessages(
+        auth.participant.id,
+        conversation.thread_key,
+        1,
+        conversation.id
+      )[0];
+      if (!latestMessage || latestMessage.id !== sourceMessage.id) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_state_stale",
+          message: "这不是当前对话最新的复盘步骤，请从最新回答继续。"
+        });
+        return;
+      }
+      const quizResults = db.getQuizResultsByUserUnit(auth.participant.id, unitId);
+      const quizSubmitted = Boolean(quizResults.length);
+      let resolved;
+      try {
+        resolved = learningAssistant.resolveAssistantContext({
+          index: assistantContextIndex,
+          chapterId,
+          unitId,
+          sceneType,
+          contextRef: { kind: "unit", scope: "quiz" },
+          quizSubmitted
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_context_error",
+          message: error.message
+        });
+        return;
+      }
+      if (!resolved.isQuiz || !quizSubmitted) {
+        sendAssistantQuizLocked(res, auth.participant.id);
+        return;
+      }
+      const quizAttempt = attachAssistantQuizAttempt(resolved, quizResults);
+      const progress = assistantQuizReviewProgress(sourceMessage);
+      if (
+        !quizAttempt
+        || quizAttempt.pendingReview > 0
+        || quizAttempt.incorrect <= 0
+        || !["awaiting_choice", "awaiting_reply"].includes(progress.status)
+      ) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_state_unavailable",
+          message: "当前没有可继续的错题复盘步骤，请重新开始复盘。"
+        });
+        return;
+      }
+      if (action === "stop") {
+        const stopped = {
+          ...progress,
+          status: "stopped",
+          done: false,
+          action: "",
+          completionMessage: "已结束本轮错题复盘。"
+        };
+        updateAssistantQuizReviewProgress(sourceMessage, stopped);
+        sendJson(res, 200, {
+          ok: true,
+          done: false,
+          progress: normalizeAssistantQuizReviewProgress(stopped)
+        });
+        return;
+      }
+      if (progress.status !== "awaiting_choice") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_reply_pending",
+          message: "上一步复盘问题正在等待你的回答。"
+        });
+        return;
+      }
+      const currentIndex = quizReviewIndexFromProgress(resolved, progress);
+      if (currentIndex < 0) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_attempt_changed",
+          message: "测验结果已经更新，请重新开始本轮复盘。"
+        });
+        return;
+      }
+      const targetReviewIndex = action === "continue" ? currentIndex : currentIndex + 1;
+      if (targetReviewIndex >= quizAttempt.incorrectItems.length) {
+        const completionMessage = `本轮 ${quizAttempt.incorrectItems.length} 道错题已复盘完成。`;
+        const completed = {
+          ...progress,
+          status: "completed",
+          done: true,
+          action: "",
+          completionMessage
+        };
+        updateAssistantQuizReviewProgress(sourceMessage, completed);
+        sendJson(res, 200, {
+          ok: true,
+          done: true,
+          progress: normalizeAssistantQuizReviewProgress(completed),
+          completionMessage
+        });
+        return;
+      }
+      const decision = quizReviewDecisionForIndex(resolved, targetReviewIndex);
+      if (!decision || decision.action !== "review_mistake") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_target_unavailable",
+          message: "下一步错题复盘暂时不可用，请稍后再试。"
+        });
+        return;
+      }
+      const visible = action === "next";
+      const pendingProgress = {
+        ...progress,
+        status: "awaiting_reply",
+        done: false,
+        action,
+        targetReviewIndex,
+        targetQuestionId: decision.questionId || ""
+      };
+      updateAssistantQuizReviewProgress(sourceMessage, pendingProgress);
+      const interventionId = issueAssistantIntervention(
+        auth.participant.id,
+        resolved,
+        {
+          ...decision,
+          promptVisible: visible,
+          sourceMessageId: sourceMessage.id,
+          reviewAction: action
+        }
+      );
+      sendJson(res, 200, {
+        ok: true,
+        done: false,
+        progress: normalizeAssistantQuizReviewProgress(pendingProgress),
+        prompt: publicQuizReviewPrompt({
+          resolved,
+          sceneType,
+          decision,
+          interventionId,
+          sourceMessageId: sourceMessage.id,
+          reviewAction: action,
+          visible
+        })
+      });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/learning/assistant/history") {
       const auth = authenticate(req);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
@@ -2130,7 +2449,10 @@ async function handleApi(req, res, url) {
       const chapterId = String(url.searchParams.get("chapterId") || "").trim();
       const sceneType = String(url.searchParams.get("sceneType") || "").trim();
       const conversationId = String(url.searchParams.get("conversationId") || "").trim();
-      const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      const quizResults = unitId
+        ? db.getQuizResultsByUserUnit(auth.participant.id, unitId)
+        : [];
+      const quizSubmitted = Boolean(quizResults.length);
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
@@ -2158,6 +2480,7 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
+      if (resolved.isQuiz) attachAssistantQuizAttempt(resolved, quizResults);
       let conversation = null;
       if (conversationId) {
         const found = db.getLearningAssistantConversation(auth.participant.id, conversationId);
@@ -2186,6 +2509,46 @@ async function handleApi(req, res, url) {
             conversation.id
           ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1)
         : [];
+      let pendingQuizReviewPrompt = null;
+      const latestAssistantMessage = [...messages].reverse().find((row) => row.role === "assistant");
+      if (resolved.isQuiz && latestAssistantMessage) {
+        const progress = assistantQuizReviewProgress(latestAssistantMessage);
+        if (progress.status === "awaiting_reply") {
+          const targetReviewIndex = quizReviewIndexFromProgress(
+            resolved,
+            progress,
+            { target: true }
+          );
+          const decision = targetReviewIndex >= 0
+            ? quizReviewDecisionForIndex(resolved, targetReviewIndex)
+            : null;
+          if (
+            decision?.action === "review_mistake"
+            && (!progress.targetQuestionId || decision.questionId === progress.targetQuestionId)
+          ) {
+            const visible = progress.action === "next";
+            const interventionId = issueAssistantIntervention(
+              auth.participant.id,
+              resolved,
+              {
+                ...decision,
+                promptVisible: visible,
+                sourceMessageId: latestAssistantMessage.id,
+                reviewAction: progress.action
+              }
+            );
+            pendingQuizReviewPrompt = publicQuizReviewPrompt({
+              resolved,
+              sceneType,
+              decision,
+              interventionId,
+              sourceMessageId: latestAssistantMessage.id,
+              reviewAction: progress.action,
+              visible
+            });
+          }
+        }
+      }
       sendJson(res, 200, {
         ok: true,
         threadKey: resolved.threadKey,
@@ -2196,6 +2559,7 @@ async function handleApi(req, res, url) {
         quizSubmitted,
         provider: assistantProviderInfo(),
         quota: assistantQuotaInfo(auth.participant.id),
+        pendingQuizReviewPrompt,
         messages: messages.map(publicAssistantMessage)
       });
       return;
@@ -2254,6 +2618,7 @@ async function handleApi(req, res, url) {
         });
         return;
       }
+      let proactiveReviewSourceMessage = null;
       const proactivePrompt = proactiveIntervention?.assistantPrompt || "";
       if (proactiveIntervention?.action === "review_mistake") {
         resolved.quizReviewIndex = Math.max(
@@ -2294,6 +2659,40 @@ async function handleApi(req, res, url) {
         return;
       }
       const { conversation } = conversationState;
+      if (proactiveIntervention?.sourceMessageId) {
+        const sourceMessage = db.getLearningAssistantMessage(
+          auth.participant.id,
+          proactiveIntervention.sourceMessageId
+        );
+        const sourceProgress = assistantQuizReviewProgress(sourceMessage);
+        const targetReviewIndex = quizReviewIndexFromProgress(
+          resolved,
+          sourceProgress,
+          { target: true }
+        );
+        if (
+          !sourceMessage
+          || sourceMessage.role !== "assistant"
+          || sourceMessage.conversation_id !== conversation.id
+          || sourceMessage.unit_id !== unitId
+          || sourceProgress.status !== "awaiting_reply"
+          || targetReviewIndex !== proactiveIntervention.reviewIndex
+          || (
+            proactiveIntervention.questionId
+            && sourceProgress.targetQuestionId
+            && proactiveIntervention.questionId !== sourceProgress.targetQuestionId
+          )
+        ) {
+          sendJson(res, 409, {
+            ok: false,
+            code: "assistant_intervention_expired",
+            message: "这次复盘步骤已被更新，请从最新回答继续。",
+            quota
+          });
+          return;
+        }
+        proactiveReviewSourceMessage = sourceMessage;
+      }
       const conversationTurns = Math.floor(Number(conversation.messageCount || 0) / 2);
       if (conversationTurns >= assistantConversationTurnLimit) {
         sendJson(res, 409, {
@@ -2363,50 +2762,36 @@ async function handleApi(req, res, url) {
       const answeredAt = nowIso();
       let quizReviewFollowUp = null;
       if (proactiveIntervention?.action === "review_mistake") {
-        const continuation = learningAssistant.quizReviewContinuation({
-          resolved,
-          completedIndex: proactiveIntervention.reviewIndex
-        });
-        if (continuation.done) {
-          quizReviewFollowUp = {
-            done: true,
-            reviewIndex: continuation.reviewIndex,
-            reviewTotal: continuation.reviewTotal,
-            completionMessage: continuation.completionMessage
-          };
-        } else if (continuation.decision?.action === "review_mistake") {
-          const nextInterventionId = issueAssistantIntervention(
-            auth.participant.id,
-            resolved,
-            continuation.decision
-          );
-          quizReviewFollowUp = {
-            done: false,
-            reviewIndex: continuation.reviewIndex,
-            reviewTotal: continuation.reviewTotal,
-            completionMessage: "",
-            prompt: {
-              id: `quiz-review-${nextInterventionId}`,
-              content: continuation.decision.assistantPrompt,
-              action: continuation.decision.action,
-              unitId: resolved.unit.id,
-              sceneType,
-              interventionId: nextInterventionId,
-              contextSummary: continuation.decision.contextSummary || "",
-              replyOptions: continuation.decision.replyOptions || []
-            }
-          };
-        }
+        const incorrectItems = Array.isArray(resolved?.quizAttempt?.incorrectItems)
+          ? resolved.quizAttempt.incorrectItems
+          : [];
+        const matchedIndex = proactiveIntervention.questionId
+          ? incorrectItems.findIndex((item) => item.questionId === proactiveIntervention.questionId)
+          : -1;
+        const reviewIndex = matchedIndex >= 0
+          ? matchedIndex
+          : Math.max(
+              0,
+              Math.min(
+                Math.max(0, incorrectItems.length - 1),
+                Math.trunc(Number(proactiveIntervention.reviewIndex || 0))
+              )
+            );
+        quizReviewFollowUp = {
+          status: "awaiting_choice",
+          done: false,
+          reviewIndex,
+          reviewTotal: incorrectItems.length,
+          questionId: incorrectItems[reviewIndex]?.questionId || proactiveIntervention.questionId || "",
+          completionMessage: "",
+          actions: ["continue", "next", "stop"],
+          sourceMessageId: assistantMessageId
+        };
       }
       const assistantGuidance = quizReviewFollowUp
         ? {
             ...generated.guidance,
-            quizReviewProgress: {
-              done: quizReviewFollowUp.done,
-              reviewIndex: quizReviewFollowUp.reviewIndex,
-              reviewTotal: quizReviewFollowUp.reviewTotal,
-              completionMessage: quizReviewFollowUp.completionMessage || ""
-            }
+            quizReviewProgress: normalizeAssistantQuizReviewProgress(quizReviewFollowUp)
           }
         : generated.guidance;
       const messageBase = {
@@ -2420,7 +2805,8 @@ async function handleApi(req, res, url) {
           ...resolved.contextRef,
           assistantGuidance,
           assistantIntent,
-          proactivePrompt
+          proactivePrompt,
+          proactivePromptVisible: proactiveIntervention?.promptVisible !== false
         },
         quiz_submitted: quizSubmitted
       };
@@ -2446,6 +2832,15 @@ async function handleApi(req, res, url) {
         title: conversation.messageCount === 0 ? question : "",
         updatedAt: answeredAt
       });
+      if (proactiveReviewSourceMessage) {
+        const sourceProgress = assistantQuizReviewProgress(proactiveReviewSourceMessage);
+        updateAssistantQuizReviewProgress(proactiveReviewSourceMessage, {
+          ...sourceProgress,
+          status: "answered",
+          done: false,
+          action: ""
+        });
+      }
 
       res.writeHead(200, {
         "Content-Type": "application/x-ndjson; charset=utf-8",

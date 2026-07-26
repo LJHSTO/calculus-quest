@@ -590,11 +590,156 @@ async function main() {
     assert.equal(quizReviewDone.type, "done");
     assert.ok(quizReviewDone.quizReviewFollowUp);
     assert.equal(quizReviewDone.quizReviewFollowUp.done, false);
-    assert.ok(quizReviewDone.quizReviewFollowUp.prompt?.interventionId);
-    assert.match(
-      quizReviewDone.quizReviewFollowUp.prompt.content,
-      /第 2 \/ \d+ 道错题/
+    assert.equal(quizReviewDone.quizReviewFollowUp.status, "awaiting_choice");
+    assert.deepEqual(
+      quizReviewDone.quizReviewFollowUp.actions,
+      ["continue", "next", "stop"],
+      "每次解释后都应由学生决定继续追问、进入下一题或结束"
     );
+    assert.equal(quizReviewDone.quizReviewFollowUp.reviewIndex, 0);
+    assert.ok(quizReviewDone.message?.guidance?.quizReviewProgress);
+    const quizReviewConversationId = quizReviewDone.conversation.id;
+    const quizReviewAssistantMessageId = quizReviewDone.message.id;
+
+    await new Promise((resolve) => setTimeout(resolve, 2200));
+    await stopChild(child);
+    child = spawn(process.execPath, ["server.js", String(port)], {
+      cwd: root,
+      env: {
+        ...process.env,
+        DB_PATH: dbPath,
+        HOST: "127.0.0.1",
+        LLM_PROVIDER: "mock",
+        LEARNING_ASSISTANT_DAILY_QUOTA: "3",
+        LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
+        LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
+        NODE_ENV: "development"
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true
+    });
+    child.stdout.on("data", (chunk) => logs.push(chunk.toString()));
+    child.stderr.on("data", (chunk) => logs.push(chunk.toString()));
+    await waitForHealth(baseUrl, child, logs);
+
+    const restoredHistoryResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/history?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(quizUnitId)}&conversationId=${encodeURIComponent(quizReviewConversationId)}`,
+      { headers: { Authorization: `Bearer ${quizReviewToken}` } }
+    );
+    const restoredHistory = await restoredHistoryResponse.json();
+    assert.equal(restoredHistoryResponse.status, 200);
+    const restoredAssistant = restoredHistory.messages.at(-1);
+    assert.equal(restoredAssistant.id, quizReviewAssistantMessageId);
+    assert.equal(
+      restoredAssistant.guidance?.quizReviewProgress?.status,
+      "awaiting_choice",
+      "刷新或服务重启后必须恢复本题的三个复盘选择"
+    );
+
+    const nextReviewAction = await postJson(baseUrl, "/api/learning/assistant/quiz-review/action", {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      conversationId: quizReviewConversationId,
+      assistantMessageId: quizReviewAssistantMessageId,
+      action: "next"
+    }, quizReviewToken);
+    assert.equal(nextReviewAction.response.status, 200);
+    assert.equal(nextReviewAction.payload.done, false);
+    assert.equal(nextReviewAction.payload.prompt.visible, true);
+    assert.match(nextReviewAction.payload.prompt.content, /第 2 \/ \d+ 道错题/);
+    assert.ok(nextReviewAction.payload.prompt.interventionId);
+
+    await new Promise((resolve) => setTimeout(resolve, 2200));
+    await stopChild(child);
+    child = spawn(process.execPath, ["server.js", String(port)], {
+      cwd: root,
+      env: {
+        ...process.env,
+        DB_PATH: dbPath,
+        HOST: "127.0.0.1",
+        LLM_PROVIDER: "mock",
+        LEARNING_ASSISTANT_DAILY_QUOTA: "3",
+        LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
+        LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
+        NODE_ENV: "development"
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+      windowsHide: true
+    });
+    child.stdout.on("data", (chunk) => logs.push(chunk.toString()));
+    child.stderr.on("data", (chunk) => logs.push(chunk.toString()));
+    await waitForHealth(baseUrl, child, logs);
+
+    const pendingHistoryResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/history?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(quizUnitId)}&conversationId=${encodeURIComponent(quizReviewConversationId)}`,
+      { headers: { Authorization: `Bearer ${quizReviewToken}` } }
+    );
+    const pendingHistory = await pendingHistoryResponse.json();
+    assert.equal(pendingHistoryResponse.status, 200);
+    assert.equal(pendingHistory.pendingQuizReviewPrompt?.visible, true);
+    assert.match(pendingHistory.pendingQuizReviewPrompt?.content || "", /第 2 \/ \d+ 道错题/);
+    assert.ok(
+      pendingHistory.pendingQuizReviewPrompt?.interventionId,
+      "服务重启后应重新签发下一题的安全复盘上下文"
+    );
+
+    const secondQuizReviewReply = await ask(baseUrl, {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      conversationId: quizReviewConversationId,
+      question: "这道题我还是把概念记混了。",
+      proactiveInterventionId: pendingHistory.pendingQuizReviewPrompt.interventionId,
+      contextRef: { kind: "quiz", scope: "quiz" }
+    }, quizReviewToken);
+    assert.equal(secondQuizReviewReply.response.status, 200);
+    const secondReviewDone = secondQuizReviewReply.rows.at(-1);
+    assert.equal(secondReviewDone.quizReviewFollowUp?.status, "awaiting_choice");
+    assert.equal(secondReviewDone.quizReviewFollowUp?.reviewIndex, 1);
+
+    const continueReviewAction = await postJson(baseUrl, "/api/learning/assistant/quiz-review/action", {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      conversationId: quizReviewConversationId,
+      assistantMessageId: secondReviewDone.message.id,
+      action: "continue"
+    }, quizReviewToken);
+    assert.equal(continueReviewAction.response.status, 200);
+    assert.equal(continueReviewAction.payload.prompt.visible, false);
+    assert.match(continueReviewAction.payload.prompt.content, /第 2 \/ \d+ 道错题/);
+
+    const continuedQuizReviewReply = await ask(baseUrl, {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      conversationId: quizReviewConversationId,
+      question: "为什么这里不能直接套用刚才的公式？",
+      proactiveInterventionId: continueReviewAction.payload.prompt.interventionId,
+      contextRef: { kind: "quiz", scope: "quiz" }
+    }, quizReviewToken);
+    assert.equal(continuedQuizReviewReply.response.status, 200);
+    const continuedReviewDone = continuedQuizReviewReply.rows.at(-1);
+    assert.equal(
+      continuedReviewDone.quizReviewFollowUp?.reviewIndex,
+      1,
+      "同一道错题可以连续追问多次，不应自动推进"
+    );
+
+    const stopReviewAction = await postJson(baseUrl, "/api/learning/assistant/quiz-review/action", {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      conversationId: quizReviewConversationId,
+      assistantMessageId: continuedReviewDone.message.id,
+      action: "stop"
+    }, quizReviewToken);
+    assert.equal(stopReviewAction.response.status, 200);
+    assert.equal(stopReviewAction.payload.progress.status, "stopped");
+    const stoppedHistoryResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/history?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(quizUnitId)}&conversationId=${encodeURIComponent(quizReviewConversationId)}`,
+      { headers: { Authorization: `Bearer ${quizReviewToken}` } }
+    );
+    const stoppedHistory = await stoppedHistoryResponse.json();
+    assert.equal(stoppedHistoryResponse.status, 200);
+    assert.equal(stoppedHistory.messages.at(-1).guidance?.quizReviewProgress?.status, "stopped");
+    assert.equal(stoppedHistory.pendingQuizReviewPrompt, null);
 
     const replayedProactiveReply = await postJson(baseUrl, "/api/learning/assistant/ask", {
       chapterId: chapter.id,
@@ -607,7 +752,7 @@ async function main() {
     assert.equal(replayedProactiveReply.payload.code, "assistant_intervention_expired");
     assert.equal(
       replayedProactiveReply.payload.quota.remaining,
-      2,
+      0,
       "a consumed proactive prompt must not be reusable or consume another question"
     );
 

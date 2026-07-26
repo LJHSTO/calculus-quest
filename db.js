@@ -909,6 +909,26 @@ function getLearningAssistantMessages(userId, threadKey, limit = 80, conversatio
   return rows.reverse();
 }
 
+function getLearningAssistantMessage(userId, messageId) {
+  return queryOne(
+    `SELECT * FROM learning_assistant_messages
+     WHERE user_id = ? AND id = ?`,
+    [userId, String(messageId || "").trim()]
+  );
+}
+
+function updateLearningAssistantMessageContext(userId, messageId, context = {}) {
+  const existing = getLearningAssistantMessage(userId, messageId);
+  if (!existing) return null;
+  execute(
+    `UPDATE learning_assistant_messages
+     SET context_json = ?
+     WHERE user_id = ? AND id = ?`,
+    [JSON.stringify(context && typeof context === "object" ? context : {}), userId, messageId]
+  );
+  return getLearningAssistantMessage(userId, messageId);
+}
+
 function saveLearningAssistantTurn({
   conversation,
   createConversation = false,
@@ -2998,6 +3018,8 @@ module.exports = {
   getQuizResultsByUser,
   getQuizResultsByUserUnit,
   getLearningAssistantMessages,
+  getLearningAssistantMessage,
+  updateLearningAssistantMessageContext,
   saveLearningAssistantTurn,
   getLearningAssistantConversation,
   listLearningAssistantConversations,

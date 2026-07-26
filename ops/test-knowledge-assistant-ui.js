@@ -123,7 +123,7 @@ assert.match(
 );
 assert.match(
   assistantSource,
-  /async function submitQuestion\(\)[\s\S]*?const proactivePrompt = pendingProactivePrompt[\s\S]*?proactiveInterventionId:/,
+  /async function submitQuestion\(\)[\s\S]*?const proactivePrompt = usableProactivePrompt\(pendingProactivePrompt, meta\)[\s\S]*?proactiveInterventionId:/,
   "the student's reply must carry the server-issued intervention id"
 );
 assert.match(
@@ -170,12 +170,28 @@ assert.match(
   "a rejected request must remove optimistic chat bubbles and restore the student's draft"
 );
 assert.match(assistantSource, /function quizReviewFollowUpNode/);
-assert.match(assistantSource, /继续第 \$\{Number\(followUp\.reviewIndex/);
-assert.match(assistantSource, /先到这里/);
+assert.match(assistantSource, /continueButton\.textContent = "继续问"/);
+assert.match(assistantSource, /nextButton\.textContent = "下一题"/);
+assert.match(assistantSource, /stopButton\.textContent = "就到这"/);
 assert.match(
   assistantSource,
-  /pendingProactivePrompt = \{ \.\.\.followUp\.prompt \}[\s\S]*?els\.input\.value = ""[\s\S]*?render\(\)/,
-  "continuing a quiz review must show the next assistant question without auto-sending it"
+  /api\/learning\/assistant\/quiz-review\/action/,
+  "quiz-review choices must be validated and restored by the server"
+);
+assert.match(
+  assistantSource,
+  /pendingQuizReviewPrompt/,
+  "history loading must restore an unfinished quiz-review prompt"
+);
+assert.match(
+  assistantSource,
+  /function usableProactivePrompt[\s\S]*?prompt\.content[\s\S]*?prompt\.interventionId/,
+  "empty or unsigned assistant prompts must never render as blank reply cards"
+);
+assert.match(
+  assistantSource,
+  /visible !== false/,
+  "continuing the same mistake may carry hidden review context without duplicating the assistant prompt"
 );
 assert.match(assistantCss, /\.knowledge-quiz-review-follow-up\s*\{/);
 assert.match(assistantSource, /cq:learning-signal/);

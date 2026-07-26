@@ -1413,6 +1413,15 @@
     return false;
   }
 
+  function usableProactivePrompt(prompt, meta = courseMeta()) {
+    return Boolean(
+      prompt
+      && String(prompt.content || "").trim()
+      && String(prompt.interventionId || "").trim()
+      && (!prompt.unitId || prompt.unitId === meta.unitId)
+    );
+  }
+
   function beginAssistantIntent(intent) {
     const copy = intent === "self_check" ? "我理解为：" : assistantIntentCopy(intent);
     if (!copy) return;
@@ -1529,6 +1538,13 @@
       dismiss.type = "button";
       dismiss.textContent = "改为自由提问";
       dismiss.addEventListener("click", () => {
+        if (prompt?.sourceMessageId) {
+          const sourceMessage = messages.find((message) => message.id === prompt.sourceMessageId);
+          if (sourceMessage) {
+            requestQuizReviewAction(sourceMessage, "stop");
+            return;
+          }
+        }
         if (pendingGeneratedDraft && els.input.value === pendingGeneratedDraft) {
           els.input.value = "";
           resizeComposer();
@@ -1549,13 +1565,118 @@
     return article;
   }
 
-  function quizReviewFollowUpNode(message) {
+  function setMessageQuizReviewProgress(message, progress) {
+    if (!message || !progress) return;
+    message.guidance = {
+      ...(message.guidance || {}),
+      quizReviewProgress: { ...progress }
+    };
+    message.quizReviewFollowUp = { ...progress };
+  }
+
+  async function requestQuizReviewAction(message, action, panel = null) {
+    const meta = courseMeta();
+    if (!activeConversationId || !message?.id || !meta.unitId) {
+      setStatus("这段复盘状态暂时不可用，请重新打开当前对话。", "warning");
+      return false;
+    }
+    if (action === "next") {
+      const existingDraft = els.input.value.trim();
+      if (existingDraft && existingDraft !== pendingGeneratedDraft) {
+        setStatus("输入框里还有未发送的内容；先发送或清空后再进入下一题。", "warning");
+        els.input.focus({ preventScroll: true });
+        return false;
+      }
+    }
+    panel?.classList.add("is-loading");
+    panel?.querySelectorAll("button").forEach((button) => {
+      button.disabled = true;
+    });
+    try {
+      const response = await fetch("api/learning/assistant/quiz-review/action", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          unitId: meta.unitId,
+          sceneType: meta.sceneType,
+          conversationId: activeConversationId,
+          assistantMessageId: message.id,
+          action
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.message || "这一步复盘暂时无法继续。");
+      }
+      if (payload.progress) setMessageQuizReviewProgress(message, payload.progress);
+      if (action === "stop") {
+        if (pendingProactivePrompt?.sourceMessageId === message.id) {
+          pendingProactivePrompt = null;
+        }
+        setStatus("本轮复盘已结束；你仍可围绕当前测验自由提问。", "");
+        render();
+        els.input.focus({ preventScroll: true });
+        track("knowledge_quiz_review_stopped", {
+          reviewIndex: payload.progress?.reviewIndex,
+          reviewTotal: payload.progress?.reviewTotal
+        });
+        return true;
+      }
+      if (payload.done) {
+        pendingProactivePrompt = null;
+        setStatus(payload.completionMessage || "本轮错题已复盘完成。", "");
+        render();
+        els.input.focus({ preventScroll: true });
+        track("knowledge_quiz_review_completed", {
+          reviewTotal: payload.progress?.reviewTotal
+        });
+        return true;
+      }
+      if (!payload.prompt?.interventionId) {
+        throw new Error("复盘上下文没有完整恢复，请稍后再试。");
+      }
+      pendingAssistantIntent = "";
+      pendingGeneratedDraft = "";
+      pendingProactivePrompt = {
+        ...payload.prompt,
+        visible: payload.prompt.visible !== false
+      };
+      if (action === "next") {
+        els.input.value = "";
+        resizeComposer();
+        setStatus("下一道错题已就位。先回答上面的诊断问题，再决定是否发送。", "");
+      } else {
+        setStatus("可以继续追问这一题；写好后由你决定是否发送。", "");
+      }
+      render();
+      window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
+      track(`knowledge_quiz_review_${action}`, {
+        reviewIndex: payload.progress?.targetReviewIndex,
+        reviewTotal: payload.progress?.reviewTotal
+      });
+      return true;
+    } catch (error) {
+      setStatus(error.message || "这一步复盘暂时无法继续。", "error");
+      return false;
+    } finally {
+      panel?.classList.remove("is-loading");
+      panel?.querySelectorAll("button").forEach((button) => {
+        button.disabled = false;
+      });
+    }
+  }
+
+  function quizReviewFollowUpNode(message, { actionable = true } = {}) {
     const followUp = message?.quizReviewFollowUp;
     const progress = followUp || message?.guidance?.quizReviewProgress || null;
-    if (!progress) return null;
+    if (!progress || !actionable) return null;
     const panel = document.createElement("div");
     panel.className = "knowledge-quiz-review-follow-up";
-    if (progress.done) {
+    if (progress.done || progress.status === "completed") {
       panel.classList.add("is-complete");
       const complete = document.createElement("strong");
       complete.textContent = progress.completionMessage
@@ -1563,58 +1684,47 @@
       panel.appendChild(complete);
       return panel;
     }
-    if (!followUp?.prompt?.interventionId) return null;
+    if ((progress.status || "awaiting_choice") !== "awaiting_choice") return null;
+    const reviewIndex = Math.max(0, Number(progress.reviewIndex || 0));
+    const reviewTotal = Math.max(1, Number(progress.reviewTotal || 1));
     const copy = document.createElement("div");
     const label = document.createElement("span");
-    label.textContent = `已解释 ${Number(followUp.reviewIndex || 0)} / ${Number(followUp.reviewTotal || 0)} 道`;
+    label.textContent = `正在复盘第 ${reviewIndex + 1} / ${reviewTotal} 道错题`;
     const hint = document.createElement("small");
-    hint.textContent = "继续时只显示下一道诊断问题，不会自动发送。";
+    hint.textContent = "这题可以继续追问；理解后再进入下一题。";
     copy.append(label, hint);
     const actions = document.createElement("div");
-    const next = document.createElement("button");
-    next.type = "button";
-    next.className = "primary";
-    next.textContent = `继续第 ${Number(followUp.reviewIndex || 0) + 1} 道错题`;
-    next.addEventListener("click", () => {
-      const existingDraft = els.input.value.trim();
-      if (existingDraft && existingDraft !== pendingGeneratedDraft) {
-        setStatus("输入框里还有未发送的内容；先发送或清空后再继续复盘。", "warning");
-        els.input.focus({ preventScroll: true });
-        return;
-      }
-      pendingAssistantIntent = "";
-      pendingGeneratedDraft = "";
-      pendingProactivePrompt = { ...followUp.prompt };
-      message.quizReviewFollowUp = null;
-      els.input.value = "";
-      resizeComposer();
-      setStatus("下一道错题已就位。先回答上面的诊断问题，再决定是否发送。", "");
-      render();
-      window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
-      track("knowledge_quiz_review_next", {
-        reviewIndex: followUp.reviewIndex,
-        reviewTotal: followUp.reviewTotal
-      });
+
+    const continueButton = document.createElement("button");
+    continueButton.type = "button";
+    continueButton.className = "continue";
+    continueButton.textContent = "继续问";
+    continueButton.addEventListener("click", () => {
+      requestQuizReviewAction(message, "continue", panel);
     });
-    const stop = document.createElement("button");
-    stop.type = "button";
-    stop.textContent = "先到这里";
-    stop.addEventListener("click", () => {
-      message.quizReviewFollowUp = null;
-      setStatus("已暂停本轮错题复盘，你仍可围绕当前测验自由提问。", "");
-      renderMessages();
-      els.input.focus({ preventScroll: true });
-      track("knowledge_quiz_review_paused", {
-        reviewIndex: followUp.reviewIndex,
-        reviewTotal: followUp.reviewTotal
-      });
+
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.className = "primary";
+    nextButton.textContent = "下一题";
+    nextButton.addEventListener("click", () => {
+      requestQuizReviewAction(message, "next", panel);
     });
-    actions.append(next, stop);
+
+    const stopButton = document.createElement("button");
+    stopButton.type = "button";
+    stopButton.className = "quiet";
+    stopButton.textContent = "就到这";
+    stopButton.addEventListener("click", () => {
+      requestQuizReviewAction(message, "stop", panel);
+    });
+
+    actions.append(continueButton, nextButton, stopButton);
     panel.append(copy, actions);
     return panel;
   }
 
-  function messageNode(message) {
+  function messageNode(message, options = {}) {
     const article = document.createElement("article");
     article.className = `knowledge-message ${message.role === "user" ? "user" : "assistant"}`;
     if (message.error) article.classList.add("error");
@@ -1677,7 +1787,9 @@
         });
         article.appendChild(actions);
       }
-      const quizReviewFollowUp = quizReviewFollowUpNode(message);
+      const quizReviewFollowUp = quizReviewFollowUpNode(message, {
+        actionable: options.quizReviewActionable !== false
+      });
       if (quizReviewFollowUp) article.appendChild(quizReviewFollowUp);
     }
     return article;
@@ -1696,16 +1808,28 @@
       loading.innerHTML = "<span></span><span></span><span></span><p>正在恢复这个知识点的提问记录</p>";
       els.messages.appendChild(loading);
     } else {
+      const latestAssistantMessage = [...messages].reverse().find((message) => (
+        message.role === "assistant" && !message.streaming && !message.error
+      ));
       messages.forEach((message) => {
-        if (message.role === "user" && message.proactivePrompt) {
+        if (
+          message.role === "user"
+          && message.proactivePrompt
+          && message.proactivePromptVisible !== false
+        ) {
           els.messages.appendChild(proactivePromptNode({
             id: `history-${message.id || ""}`,
             content: message.proactivePrompt
           }));
         }
-        els.messages.appendChild(messageNode(message));
+        els.messages.appendChild(messageNode(message, {
+          quizReviewActionable: message.id === latestAssistantMessage?.id
+        }));
       });
-      if (pendingProactivePrompt) {
+      if (
+        usableProactivePrompt(pendingProactivePrompt)
+        && pendingProactivePrompt.visible !== false
+      ) {
         els.messages.appendChild(proactivePromptNode(pendingProactivePrompt, { dismissible: true }));
       }
     }
@@ -1738,8 +1862,10 @@
       ? "提交测验后可继续提问"
       : conversationLimited
         ? "本段对话已满，请新建对话"
-        : pendingProactivePrompt
-          ? "写下你的回答……"
+        : pendingProactivePrompt?.reviewAction === "continue"
+          ? "继续问这一题……"
+          : pendingProactivePrompt
+            ? "写下你的回答……"
           : "例如：为什么 h 变小时，割线更接近切线？";
     els.send.disabled = els.input.disabled || isAsking || (provider.live && quota.remaining <= 0);
     els.pick.disabled = !meta.supported || !isSignedInNow() || quizLocked;
@@ -2116,6 +2242,9 @@
       applyQuota(payload.quota);
       activeConversationId = payload.conversation?.id || conversationId || "";
       currentQuizSubmitted = Boolean(payload.quizSubmitted);
+      pendingProactivePrompt = usableProactivePrompt(payload.pendingQuizReviewPrompt, meta)
+        ? payload.pendingQuizReviewPrompt
+        : null;
       messages = (payload.messages || []).map((message) => ({
         id: message.id,
         role: message.role,
@@ -2124,11 +2253,20 @@
         guidance: message.guidance || null,
         assistantIntent: message.assistantIntent || "",
         proactivePrompt: message.proactivePrompt || "",
+        proactivePromptVisible: message.proactivePromptVisible !== false,
         provider: message.provider || "",
         createdAt: message.createdAt || ""
       }));
       activeWorkspace = "chat";
-      setStatus(messages.length ? "已打开这段对话，可以继续追问。" : "");
+      setStatus(
+        pendingProactivePrompt
+          ? pendingProactivePrompt.visible === false
+            ? "已恢复本题的继续追问状态。"
+            : "已恢复尚未回答的错题复盘问题。"
+          : messages.length
+            ? "已打开这段对话，可以继续追问。"
+            : ""
+      );
     } catch (error) {
       if (requestId !== historyRequestId) return;
       messages = [];
@@ -2219,7 +2357,7 @@
     const meta = courseMeta();
     const question = els.input.value.trim();
     const assistantIntent = pendingAssistantIntent;
-    const proactivePrompt = pendingProactivePrompt?.unitId === meta.unitId
+    const proactivePrompt = usableProactivePrompt(pendingProactivePrompt, meta)
       ? pendingProactivePrompt
       : null;
     if (!question || isAsking) return;
@@ -2273,6 +2411,7 @@
       role: "user",
       content: question,
       proactivePrompt: proactivePrompt?.content || "",
+      proactivePromptVisible: proactivePrompt?.visible !== false,
       provider: ""
     };
     const assistantMessage = {
