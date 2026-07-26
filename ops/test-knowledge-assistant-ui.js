@@ -14,6 +14,8 @@ const contextSource = read("app/main/courseware-context.js");
 const bridgeSource = read("app/main/courseware-bridge.js");
 const renderLearningSource = read("app/main/render-learning.js");
 const bootstrapSource = read("app/main/bootstrap.js");
+const narrationSource = read("app/main/narration.js");
+const eventsSource = read("app/main/events.js");
 const indexHtml = read("index.html");
 const stylesCss = read("styles.css");
 const serverSource = read("server.js");
@@ -65,27 +67,117 @@ assert.match(assistantSource, /data-knowledge-proactive-dismiss/);
 assert.match(assistantSource, /function executeProactiveAction/);
 assert.match(
   assistantSource,
-  /function executeProactiveAction[\s\S]*?pendingAssistantIntent = suggestion\.action === "self_explain" \? "self_check" : ""/,
-  "proactive drafts must preserve only an explicit self-explanation intent"
+  /let pendingProactivePrompt = null/,
+  "an accepted assistant question needs explicit pending reply state"
 );
+const proactiveActionBody = assistantSource.match(
+  /function executeProactiveAction\([^)]*\)[\s\S]*?(?=\s*function acceptProactiveSuggestion)/
+)?.[0] || "";
 assert.match(
-  assistantSource,
-  /function executeProactiveAction[\s\S]*?els\.input\.value\s*=[\s\S]*?setOpen\(true/,
-  "accepting a proactive suggestion should open a student-editable draft"
+  proactiveActionBody,
+  /studentReplyActions\.has\(suggestion\?\.action\)[\s\S]*?pendingProactivePrompt\s*=[\s\S]*?els\.input\.value = ""/,
+  "assistant clarification and quiz-review questions must be shown above an empty student composer"
+);
+assert.match(proactiveActionBody, /new Set\(\["ask_clarification", "review_mistake"\]\)/);
+assert.match(
+  proactiveActionBody,
+  /pendingAssistantIntent = suggestion\.action === "self_explain" \? "self_check" : ""[\s\S]*?els\.input\.value = String\(suggestion\.draftQuestion\)/,
+  "student-draft proactive actions must remain editable and preserve only self-explanation intent"
 );
 assert.match(
   assistantSource,
   /function acceptProactiveSuggestion[\s\S]*?executeProactiveAction\([\s\S]*?proactiveCoach\.resolve\("accept"/,
-  "accepting should resolve the active suggestion after prefilling it"
+  "accepting should resolve the active suggestion after preparing the correct interaction"
 );
-const proactivePrefillBody = assistantSource.match(
-  /function executeProactiveAction\([^)]*\)[\s\S]*?\n  \}/
-)?.[0] || "";
 assert.doesNotMatch(
-  proactivePrefillBody,
+  proactiveActionBody,
   /submitQuestion\(/,
   "a proactive suggestion must never call the model or consume quota before the student sends it"
 );
+assert.match(assistantSource, /function proactivePromptNode/);
+assert.match(assistantSource, /knowledge-proactive-reply-options/);
+assert.match(
+  assistantSource,
+  /选一个最接近的情况，仅放入输入框/,
+  "diagnostic options must visibly explain that selection does not auto-send"
+);
+assert.match(
+  assistantSource,
+  /prompt\?\.replyOptions[\s\S]*?els\.input\.value = option[\s\S]*?els\.input\.focus/,
+  "diagnostic reply options should only enter text into the composer"
+);
+assert.doesNotMatch(
+  assistantSource.match(/function proactivePromptNode[\s\S]*?(?=\s*function messageNode)/)?.[0] || "",
+  /submitQuestion\(/,
+  "diagnostic reply options must never auto-send"
+);
+assert.match(
+  assistantSource,
+  /改为自由提问[\s\S]*?pendingGeneratedDraft && els\.input\.value === pendingGeneratedDraft[\s\S]*?els\.input\.value = ""/,
+  "leaving a proactive reply must clear an untouched machine-provided option"
+);
+assert.match(
+  assistantSource,
+  /function renderMessages\(\)[\s\S]*?pendingProactivePrompt[\s\S]*?proactivePromptNode/,
+  "the pending assistant question must render in the conversation above the composer"
+);
+assert.match(
+  assistantSource,
+  /async function submitQuestion\(\)[\s\S]*?const proactivePrompt = pendingProactivePrompt[\s\S]*?proactiveInterventionId:/,
+  "the student's reply must carry the server-issued intervention id"
+);
+assert.match(
+  assistantSource,
+  /async function submitQuestion\(\)[\s\S]*?proactivePrompt:[\s\S]*?pendingProactivePrompt = null/,
+  "the pending assistant question should clear only after the student sends a reply"
+);
+const proactiveDecisionBody = assistantSource.match(
+  /async function requestProactiveDecision\([^)]*\)[\s\S]*?(?=\s*function considerProactiveSuggestion)/
+)?.[0] || "";
+assert.match(
+  proactiveDecisionBody,
+  /catch \(error\)[\s\S]*?candidate\.kind !== "repeated_parameter"[\s\S]*?proactiveCoach\.resolve\("agent-silent"/,
+  "quiz review and clarification must fail quietly when no server-issued context can be obtained"
+);
+assert.match(
+  proactiveDecisionBody,
+  /action: "observe_change"[\s\S]*?draftQuestion: candidate\.question[\s\S]*?assistantPrompt: ""/,
+  "only repeated-parameter guidance may safely degrade to an editable local student draft"
+);
+assert.doesNotMatch(
+  proactiveDecisionBody,
+  /fallbackNeedsReply|fallbackAssistantPrompt/,
+  "the browser must not forge assistant-role questions without a server-issued intervention id"
+);
+assert.match(
+  assistantSource,
+  /if \(sceneChanged\)[\s\S]*?proactiveDecisionRequest\?\.abort\(\)[\s\S]*?pendingProactivePrompt = null/,
+  "switching scenes must invalidate pending proactive decisions and assistant questions"
+);
+assert.match(
+  assistantSource,
+  /const streamState = await readNdjson[\s\S]*?!streamState\.sawDone[\s\S]*?assistant_stream_incomplete/,
+  "an incomplete NDJSON stream must not be reported as a successful answer"
+);
+assert.match(
+  assistantSource,
+  /requestError\.code = payload\.code[\s\S]*?promptStillValid[\s\S]*?pendingProactivePrompt = promptStillValid \? proactivePrompt : null/,
+  "a rejected request must preserve a still-valid proactive question for student retry"
+);
+assert.match(
+  assistantSource,
+  /messages\.splice\(localUserIndex,[\s\S]*?els\.input\.value = question[\s\S]*?render\(\)/,
+  "a rejected request must remove optimistic chat bubbles and restore the student's draft"
+);
+assert.match(assistantSource, /function quizReviewFollowUpNode/);
+assert.match(assistantSource, /继续第 \$\{Number\(followUp\.reviewIndex/);
+assert.match(assistantSource, /先到这里/);
+assert.match(
+  assistantSource,
+  /pendingProactivePrompt = \{ \.\.\.followUp\.prompt \}[\s\S]*?els\.input\.value = ""[\s\S]*?render\(\)/,
+  "continuing a quiz review must show the next assistant question without auto-sending it"
+);
+assert.match(assistantCss, /\.knowledge-quiz-review-follow-up\s*\{/);
 assert.match(assistantSource, /cq:learning-signal/);
 assert.match(assistantSource, /proactiveCoach\.tick/);
 assert.match(assistantSource, /function learningViewActive/);
@@ -375,6 +467,14 @@ assert.match(stylesCss, /\.learning-rail-control-icon/);
 assert.match(stylesCss, /\.learning-rail-control-caret/);
 assert.match(stylesCss, /--learning-slide-max-width:\s*1440px/);
 assert.match(stylesCss, /min-height:\s*clamp\(680px,\s*78vh,\s*900px\)/);
+assert.match(
+  stylesCss,
+  /\.learning-shell:fullscreen \.learning-nav-cluster,[\s\S]*?\.learning-shell:fullscreen \.chapter-rail,[\s\S]*?\.learning-shell:fullscreen \.lesson-rail[\s\S]*?display:\s*none;/,
+  "fullscreen learning must hide chapter and path controls instead of leaving incorrect labels over the canvas"
+);
+assert.match(stylesCss, /\.learning-shell\.is-local-fullscreen-target\s*\{/);
+assert.match(narrationSource, /scheduleLearningCanvasLayoutSync\("learning-fullscreen-toggle"\)/);
+assert.match(eventsSource, /scheduleLearningCanvasLayoutSync\("fullscreen-change"\)/);
 assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20260723-v5"/);
 assert.match(contextSource, /function selectionLocator/);
 assert.match(contextSource, /function renderNotes/);
@@ -389,6 +489,11 @@ assert.match(renderLearningSource, /new ResizeObserver/);
 assert.match(renderLearningSource, /player\.querySelectorAll\("\[data-slide-canvas\]"\)\.forEach\(syncSlideCanvasScale\)/);
 assert.match(renderLearningSource, /type:\s*"cq:host-layout"/);
 assert.match(renderLearningSource, /frame\.dataset\.hostLayoutWidth/);
+assert.doesNotMatch(
+  renderLearningSource,
+  /allow="[^"]*\bfullscreen\b[^"]*"[^>]*\ballowfullscreen\b/i,
+  "courseware iframes should not declare both fullscreen permission forms"
+);
 assert.match(renderLearningSource, /event\.data\?\.type !== "cq:bridge-ready"/);
 assert.match(renderLearningSource, /scheduleLearningCanvasLayoutSync\("courseware-bridge-ready"\)/);
 assert.match(bridgeSource, /type === "cq:host-layout"/);

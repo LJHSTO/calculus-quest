@@ -1,12 +1,14 @@
 // Unified analytics collection for navigation, learning paths, quizzes, and iframe interactions.
 const ANALYTICS_SESSION_KEY = "calculus-quest-analytics-session-v1";
+const ANALYTICS_SESSION_OWNER_KEY = "calculus-quest-analytics-session-owner-v1";
+const ANALYTICS_SEQUENCE_KEY = "cq_analytics_sequence";
 const analyticsQueue = [];
 const analyticsOnlinePeriodFlushMs = 5 * 60 * 1000;
 const analyticsMinOnlinePeriodSeconds = 60;
 const analyticsMinUnitSeconds = 5;
 let analyticsFlushTimer = null;
 let analyticsFlushChain = Promise.resolve();
-let analyticsSequence = Number(sessionStorage.getItem("cq_analytics_sequence") || 0);
+let analyticsSequence = 0;
 let analyticsTrackingReady = false;
 let analyticsViewTimer = null;
 let analyticsHeartbeat = null;
@@ -61,6 +63,26 @@ const analyticsCoachEvidenceEvents = new Set([
   "narration_seek"
 ]);
 
+function analyticsParticipantScope() {
+  if (typeof isSignedIn === "function" && isSignedIn()) {
+    return `participant:${state.participant.participantId}`;
+  }
+  return "guest";
+}
+
+function syncAnalyticsSessionScope() {
+  const nextScope = analyticsParticipantScope();
+  const storedScope = sessionStorage.getItem(ANALYTICS_SESSION_OWNER_KEY) || "";
+  if (storedScope !== nextScope) {
+    sessionStorage.removeItem(ANALYTICS_SESSION_KEY);
+    sessionStorage.setItem(ANALYTICS_SESSION_OWNER_KEY, nextScope);
+    sessionStorage.setItem(ANALYTICS_SEQUENCE_KEY, "0");
+    analyticsSequence = 0;
+    return;
+  }
+  analyticsSequence = Number(sessionStorage.getItem(ANALYTICS_SEQUENCE_KEY) || 0);
+}
+
 function analyticsSessionId() {
   let id = sessionStorage.getItem(ANALYTICS_SESSION_KEY);
   if (!id) {
@@ -69,6 +91,9 @@ function analyticsSessionId() {
   }
   return id;
 }
+
+syncAnalyticsSessionScope();
+window.addEventListener("cq:participant-change", syncAnalyticsSessionScope);
 
 function ensureAnalyticsState() {
   state.analytics = state.analytics || {};
@@ -368,7 +393,7 @@ function analyticsTrack(eventType, payload = {}) {
   const unit = payload.unitId ? getUnit?.(payload.unitId) : currentAnalyticsUnit();
   const meta = analyticsUnitMeta(unit);
   const sequenceIndex = ++analyticsSequence;
-  sessionStorage.setItem("cq_analytics_sequence", String(analyticsSequence));
+  sessionStorage.setItem(ANALYTICS_SEQUENCE_KEY, String(analyticsSequence));
   const sinceLastEventMs = now - analyticsLastEventAt;
   analyticsLastEventAt = now;
 

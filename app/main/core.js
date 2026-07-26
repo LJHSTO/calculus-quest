@@ -1222,34 +1222,19 @@ function openMaicQuestionKnowledgePointIds(question = {}) {
 }
 
 function openMaicQuestionSource(question = {}) {
-  return String(question.sourceFile || question.source_file || question.source || "");
+  return QuizQuestionOrder.questionSource(question);
 }
 
 function openMaicShouldHideQuestion(question = {}, phase = "") {
-  const source = openMaicQuestionSource(question);
-  return phase === "post" && /mml/i.test(source);
+  return QuizQuestionOrder.shouldHideQuestion(question, phase);
 }
 
 function openMaicQuestionDifficultyRank(question = {}) {
-  const typeRank = {
-    single: 0,
-    true_false: 0,
-    multiple: 1,
-    text: 2,
-    short_answer: 3
-  };
-  const type = typeRank[question.type] ?? 2;
-  const points = Number(question.points || 0);
-  return points * 10 + type;
+  return QuizQuestionOrder.difficultyRank(question);
 }
 
 function openMaicSortedQuestions(questions = [], phase = "") {
-  return [...(questions || [])]
-    .filter((question) => !openMaicShouldHideQuestion(question, phase))
-    .sort((a, b) =>
-      openMaicQuestionDifficultyRank(a) - openMaicQuestionDifficultyRank(b) ||
-      String(a.id || "").localeCompare(String(b.id || ""), "zh-Hans-CN")
-    );
+  return QuizQuestionOrder.orderQuestions(questions, phase);
 }
 
 function openMaicQuizFlowForPhase(flow = {}, phase = "") {

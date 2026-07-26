@@ -92,8 +92,11 @@ const authAttemptWindowMs = 15 * 60 * 1000;
 const maxFailedAuthAttempts = 8;
 const authAttemptMap = new Map();
 const assistantRateLimitMap = new Map();
+const assistantInterventionRegistry = new Map();
 const assistantRateLimitWindowMs = 60 * 1000;
 const assistantRateLimitMax = 20;
+const assistantInterventionTtlMs = 15 * 60 * 1000;
+const assistantInterventionRegistryLimit = 5000;
 const assistantHistoryMessageLimit = 60;
 const assistantConversationTurnLimit = 30;
 const assistantDailyQuotaLimit = Math.max(
@@ -102,7 +105,7 @@ const assistantDailyQuotaLimit = Math.max(
 );
 const assistantDailyInterventionLimit = Math.max(
   0,
-  Math.min(100, Number(process.env.LEARNING_ASSISTANT_DAILY_INTERVENTIONS || 6) || 6)
+  Math.min(100, Number(process.env.LEARNING_ASSISTANT_DAILY_INTERVENTIONS || 10) || 10)
 );
 const types = {
   ".html": "text/html; charset=utf-8",
@@ -139,7 +142,8 @@ const publicFlowTestFiles = new Set([
 const publicLibFiles = new Set([
   "lib/katex.min.css",
   "lib/katex.min.js",
-  "lib/interaction-policy.js"
+  "lib/interaction-policy.js",
+  "lib/quiz-question-order.js"
 ]);
 const publicResourceExtensions = new Set([
   ".html",
@@ -948,7 +952,7 @@ function parseAssistantContextJson(value = "") {
 
 function publicAssistantMessage(row = {}) {
   const storedContext = parseAssistantContextJson(row.context_json || row.context);
-  const { assistantGuidance, assistantIntent, ...contextRef } = storedContext;
+  const { assistantGuidance, assistantIntent, proactivePrompt, ...contextRef } = storedContext;
   return {
     id: row.id || "",
     role: row.role === "assistant" ? "assistant" : "user",
@@ -956,6 +960,7 @@ function publicAssistantMessage(row = {}) {
     contextRef,
     guidance: assistantGuidance || null,
     assistantIntent: assistantIntent || "",
+    proactivePrompt: row.role === "user" ? boundedLearningText(proactivePrompt, 500, true) : "",
     provider: row.provider || "",
     quizSubmitted: Number(row.quiz_submitted || 0) === 1,
     createdAt: row.created_at || ""
@@ -967,6 +972,98 @@ function boundedLearningText(value = "", limit = 1200, multiline = false) {
   return (multiline ? source.replace(/\r\n?/g, "\n") : source.replace(/\s+/g, " "))
     .trim()
     .slice(0, limit);
+}
+
+function pruneAssistantInterventions(now = Date.now()) {
+  for (const [id, record] of assistantInterventionRegistry) {
+    if (Number(record?.expiresAt || 0) <= now) assistantInterventionRegistry.delete(id);
+  }
+  while (assistantInterventionRegistry.size > assistantInterventionRegistryLimit) {
+    const oldest = assistantInterventionRegistry.keys().next().value;
+    if (!oldest) break;
+    assistantInterventionRegistry.delete(oldest);
+  }
+}
+
+function issueAssistantIntervention(userId, resolved, decision = {}, now = Date.now()) {
+  const assistantPrompt = boundedLearningText(decision.assistantPrompt, 500, true);
+  if (!assistantPrompt || decision.interactionMode !== "student_reply") return "";
+  pruneAssistantInterventions(now);
+  const id = crypto.randomUUID();
+  assistantInterventionRegistry.set(id, {
+    id,
+    userId,
+    unitId: resolved.unit.id,
+    threadKey: resolved.threadKey,
+    action: boundedLearningText(decision.action, 40),
+    assistantPrompt,
+    reviewIndex: Math.max(0, Math.trunc(Number(decision.reviewIndex || 0))),
+    reviewTotal: Math.max(0, Math.trunc(Number(decision.reviewTotal || 0))),
+    questionId: boundedLearningText(decision.questionId, 180),
+    createdAt: now,
+    expiresAt: now + assistantInterventionTtlMs
+  });
+  return id;
+}
+
+function getAssistantIntervention(
+  userId,
+  unitId,
+  interventionId = "",
+  { consume = false, now = Date.now() } = {}
+) {
+  const id = boundedLearningText(interventionId, 180);
+  if (!id) return null;
+  pruneAssistantInterventions(now);
+  const record = assistantInterventionRegistry.get(id);
+  if (
+    !record
+    || record.userId !== userId
+    || record.unitId !== unitId
+    || record.expiresAt <= now
+  ) return null;
+  if (consume) assistantInterventionRegistry.delete(id);
+  return record;
+}
+
+function assistantRecentConversation(userId, resolved, limit = 4) {
+  const latest = db.listLearningAssistantConversations(userId, resolved.threadKey, 1)[0];
+  if (!latest) return [];
+  return db.getLearningAssistantMessages(
+    userId,
+    resolved.threadKey,
+    Math.max(1, Math.min(Number(limit || 4), 8)),
+    latest.id
+  ).map((row) => ({
+    role: row.role,
+    content: row.content
+  }));
+}
+
+function attachAssistantQuizAttempt(resolved, quizResults = []) {
+  if (!resolved?.isQuiz) return null;
+  resolved.quizAttempt = learningAssistant.buildQuizAttemptSummary({
+    resolved,
+    results: quizResults
+  });
+  return resolved.quizAttempt;
+}
+
+function sendAssistantSignalMismatch(res, message) {
+  sendJson(res, 400, {
+    ok: false,
+    code: "assistant_intervention_signal_mismatch",
+    message
+  });
+}
+
+function assistantMinimumDwellSeconds(resolved, sceneType = "") {
+  const normalizedSceneType = boundedLearningText(
+    sceneType || resolved?.scene?.type || resolved?.contextRef?.sceneType,
+    80
+  );
+  const readingScene = resolved?.unit?.type === "slide" || normalizedSceneType === "slide";
+  return readingScene ? 150 : 90;
 }
 
 function learningNoteError(code, message, status = 400) {
@@ -1051,19 +1148,33 @@ function writeNdjson(res, payload) {
   }
 }
 
-async function generateAssistantTurn({ resolved, question, history, quizSubmitted, assistantIntent = "" }) {
+async function generateAssistantTurn({
+  resolved,
+  question,
+  history,
+  quizSubmitted,
+  assistantIntent = "",
+  proactivePrompt = ""
+}) {
   const prompt = learningAssistant.buildAssistantPrompt({
     resolved,
     question,
     history,
     quizSubmitted,
-    assistantIntent
+    assistantIntent,
+    proactivePrompt
   });
   const providerInfo = assistantProviderInfo();
   if (!providerInfo.live) {
     return {
       provider: providerInfo.id,
-      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted, assistantIntent }),
+      text: learningAssistant.mockAssistantAnswer({
+        resolved,
+        question,
+        quizSubmitted,
+        assistantIntent,
+        proactivePrompt
+      }),
       policy: prompt.policy,
       guidance: prompt.guidance,
       fallback: false
@@ -1091,7 +1202,13 @@ async function generateAssistantTurn({ resolved, question, history, quizSubmitte
     });
     return {
       provider: result.provider || providerInfo.id,
-      text: text || learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted, assistantIntent }),
+      text: text || learningAssistant.mockAssistantAnswer({
+        resolved,
+        question,
+        quizSubmitted,
+        assistantIntent,
+        proactivePrompt
+      }),
       policy: prompt.policy,
       guidance: prompt.guidance,
       fallback: !text
@@ -1100,7 +1217,13 @@ async function generateAssistantTurn({ resolved, question, history, quizSubmitte
     console.warn("Learning assistant provider fallback:", error.message);
     return {
       provider: "fallback",
-      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted, assistantIntent }),
+      text: learningAssistant.mockAssistantAnswer({
+        resolved,
+        question,
+        quizSubmitted,
+        assistantIntent,
+        proactivePrompt
+      }),
       policy: prompt.policy,
       guidance: prompt.guidance,
       fallback: true
@@ -1110,13 +1233,13 @@ async function generateAssistantTurn({ resolved, question, history, quizSubmitte
   }
 }
 
-async function generateInterventionDecision({ resolved, signal }) {
+async function generateInterventionDecision({ resolved, signal, history = [] }) {
   const providerInfo = assistantProviderInfo();
   const fallback = () => learningAssistant.deterministicInterventionDecision({ resolved, signal });
   if (!providerInfo.live) {
     return { provider: providerInfo.id, decision: fallback(), fallback: false };
   }
-  const prompt = learningAssistant.buildInterventionPrompt({ resolved, signal });
+  const prompt = learningAssistant.buildInterventionPrompt({ resolved, signal, history });
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
   try {
@@ -1124,7 +1247,7 @@ async function generateInterventionDecision({ resolved, signal }) {
       system: prompt.system,
       user: prompt.user,
       jsonHint: true,
-      maxTokens: 260,
+      maxTokens: 340,
       model: String(
         process.env.LEARNING_ASSISTANT_MODEL
         || process.env.OPENAI_COMPATIBLE_MODEL
@@ -1758,7 +1881,10 @@ async function handleApi(req, res, url) {
         });
         return;
       }
-      const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      const quizResults = unitId
+        ? db.getQuizResultsByUserUnit(auth.participant.id, unitId)
+        : [];
+      const quizSubmitted = Boolean(quizResults.length);
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
@@ -1784,6 +1910,50 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
+      const quizAttempt = attachAssistantQuizAttempt(resolved, quizResults);
+      let verifiedSignal = signal;
+      if (signal.kind === "quiz_review") {
+        if (!resolved.isQuiz || !quizAttempt || quizAttempt.incorrect <= 0) {
+          sendAssistantSignalMismatch(res, "当前没有已确认的错题可供主动复盘。");
+          return;
+        }
+        if (quizAttempt.pendingReview > 0) {
+          sendAssistantSignalMismatch(res, "简答题仍在批改，完成后再开始完整错题复盘。");
+          return;
+        }
+        verifiedSignal = {
+          ...signal,
+          incorrect: quizAttempt.incorrect,
+          pendingReview: quizAttempt.pendingReview,
+          questionCount: quizAttempt.total,
+          reviewIndex: 0
+        };
+      } else if (signal.kind === "repeated_parameter") {
+        if (
+          resolved.isQuiz
+          || !resolved.scene
+          || (
+            resolved.contextRef.kind !== "interaction"
+            && resolved.contextRef.scope !== "interactive"
+          )
+          || !boundedLearningText(signal.parameter, 120)
+          || signal.newValue === undefined
+          || signal.newValue === null
+          || boundedLearningText(signal.newValue, 80) === ""
+        ) {
+          sendAssistantSignalMismatch(res, "当前学习位置没有可信的连续调参证据。");
+          return;
+        }
+      } else if (
+        signal.kind === "quiet_dwell"
+        && (
+          resolved.isQuiz
+          || Number(signal.dwellSeconds || 0) < assistantMinimumDwellSeconds(resolved, sceneType)
+        )
+      ) {
+        sendAssistantSignalMismatch(res, "当前学习状态不足以判断为有效停留。");
+        return;
+      }
       const interventionBudget = consumeAssistantInterventionBudget(auth.participant.id, new Date());
       if (!interventionBudget.ok) {
         sendJson(res, 429, {
@@ -1795,12 +1965,23 @@ async function handleApi(req, res, url) {
         });
         return;
       }
-      const generated = await generateInterventionDecision({ resolved, signal });
+      const history = assistantRecentConversation(auth.participant.id, resolved, 4);
+      const generated = await generateInterventionDecision({
+        resolved,
+        signal: verifiedSignal,
+        history
+      });
+      const interventionId = issueAssistantIntervention(
+        auth.participant.id,
+        resolved,
+        generated.decision
+      );
       sendJson(res, 200, {
         ok: true,
         provider: generated.provider,
         fallback: generated.fallback,
         decision: generated.decision,
+        interventionId,
         interventionBudget,
         quota: assistantQuotaInfo(auth.participant.id)
       });
@@ -2028,6 +2209,7 @@ async function handleApi(req, res, url) {
       const assistantIntent = ["self_check", "rephrase", "practice"].includes(String(body.assistantIntent || "").trim())
         ? String(body.assistantIntent).trim()
         : "";
+      const proactiveInterventionId = boundedLearningText(body.proactiveInterventionId, 180);
       const unitId = String(body.unitId || "").trim();
       const chapterId = String(body.chapterId || "").trim();
       const sceneType = String(body.sceneType || "").trim();
@@ -2035,7 +2217,8 @@ async function handleApi(req, res, url) {
         sendJson(res, 400, { ok: false, message: "请输入问题，并保持当前学习单元有效。" });
         return;
       }
-      const quizSubmitted = Boolean(db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      const quizResults = db.getQuizResultsByUserUnit(auth.participant.id, unitId);
+      const quizSubmitted = Boolean(quizResults.length);
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
@@ -2057,6 +2240,26 @@ async function handleApi(req, res, url) {
       if (resolved.isQuiz && !quizSubmitted) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
+      }
+      attachAssistantQuizAttempt(resolved, quizResults);
+      const proactiveIntervention = proactiveInterventionId
+        ? getAssistantIntervention(auth.participant.id, unitId, proactiveInterventionId)
+        : null;
+      if (proactiveInterventionId && !proactiveIntervention) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_intervention_expired",
+          message: "这次复盘提示已失效，请重新开始复盘。",
+          quota: assistantQuotaInfo(auth.participant.id)
+        });
+        return;
+      }
+      const proactivePrompt = proactiveIntervention?.assistantPrompt || "";
+      if (proactiveIntervention?.action === "review_mistake") {
+        resolved.quizReviewIndex = Math.max(
+          0,
+          Math.trunc(Number(proactiveIntervention.reviewIndex || 0))
+        );
       }
       const rate = checkAssistantRateLimit(auth.participant.id);
       if (!rate.ok) {
@@ -2131,12 +2334,21 @@ async function handleApi(req, res, url) {
       const askedAt = requestedAt.toISOString();
       const userMessageId = crypto.randomUUID();
 
+      if (proactiveIntervention) {
+        getAssistantIntervention(
+          auth.participant.id,
+          unitId,
+          proactiveInterventionId,
+          { consume: true }
+        );
+      }
       const generated = await generateAssistantTurn({
         resolved,
         question,
         history,
         quizSubmitted,
-        assistantIntent
+        assistantIntent,
+        proactivePrompt
       });
       if (generated.fallback && quotaReserved) {
         quota = releaseAssistantQuota(auth.participant.id, requestedAt);
@@ -2149,6 +2361,54 @@ async function handleApi(req, res, url) {
       });
       const assistantMessageId = crypto.randomUUID();
       const answeredAt = nowIso();
+      let quizReviewFollowUp = null;
+      if (proactiveIntervention?.action === "review_mistake") {
+        const continuation = learningAssistant.quizReviewContinuation({
+          resolved,
+          completedIndex: proactiveIntervention.reviewIndex
+        });
+        if (continuation.done) {
+          quizReviewFollowUp = {
+            done: true,
+            reviewIndex: continuation.reviewIndex,
+            reviewTotal: continuation.reviewTotal,
+            completionMessage: continuation.completionMessage
+          };
+        } else if (continuation.decision?.action === "review_mistake") {
+          const nextInterventionId = issueAssistantIntervention(
+            auth.participant.id,
+            resolved,
+            continuation.decision
+          );
+          quizReviewFollowUp = {
+            done: false,
+            reviewIndex: continuation.reviewIndex,
+            reviewTotal: continuation.reviewTotal,
+            completionMessage: "",
+            prompt: {
+              id: `quiz-review-${nextInterventionId}`,
+              content: continuation.decision.assistantPrompt,
+              action: continuation.decision.action,
+              unitId: resolved.unit.id,
+              sceneType,
+              interventionId: nextInterventionId,
+              contextSummary: continuation.decision.contextSummary || "",
+              replyOptions: continuation.decision.replyOptions || []
+            }
+          };
+        }
+      }
+      const assistantGuidance = quizReviewFollowUp
+        ? {
+            ...generated.guidance,
+            quizReviewProgress: {
+              done: quizReviewFollowUp.done,
+              reviewIndex: quizReviewFollowUp.reviewIndex,
+              reviewTotal: quizReviewFollowUp.reviewTotal,
+              completionMessage: quizReviewFollowUp.completionMessage || ""
+            }
+          }
+        : generated.guidance;
       const messageBase = {
         user_id: auth.participant.id,
         thread_key: resolved.threadKey,
@@ -2158,8 +2418,9 @@ async function handleApi(req, res, url) {
         knowledge_point_id: resolved.unit.knowledgePointId || "",
         context: {
           ...resolved.contextRef,
-          assistantGuidance: generated.guidance,
-          assistantIntent
+          assistantGuidance,
+          assistantIntent,
+          proactivePrompt
         },
         quiz_submitted: quizSubmitted
       };
@@ -2215,14 +2476,16 @@ async function handleApi(req, res, url) {
           role: "assistant",
           content: answer,
           contextRef: resolved.contextRef,
-          guidance: generated.guidance,
+          guidance: assistantGuidance,
           assistantIntent,
+          proactivePrompt: "",
           provider: generated.provider,
           quizSubmitted,
           createdAt: answeredAt
         },
         policy: generated.policy,
-        guidance: generated.guidance,
+        guidance: assistantGuidance,
+        quizReviewFollowUp,
         fallback: generated.fallback,
         conversation: {
           ...conversation,

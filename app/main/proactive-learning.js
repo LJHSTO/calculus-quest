@@ -9,6 +9,7 @@
     repeatCount: 3,
     repeatWindowMs: 45 * 1000,
     dwellThresholdMs: 90 * 1000,
+    readingDwellThresholdMs: 150 * 1000,
     cooldownMs: 10 * 60 * 1000,
     duplicateCommitMs: 800
   });
@@ -19,10 +20,18 @@
     "interactive_click",
     "interactive_drag_end",
     "interactive_input",
+    "interactive_scroll",
+    "interactive_wheel",
+    "ui_wheel",
     "parameter_change",
     "parameter_commit",
     "resource_fullscreen",
-    "short_answer_input"
+    "short_answer_input",
+    "knowledge_context_selected",
+    "knowledge_question_asked",
+    "knowledge_answer_received",
+    "assistant_open",
+    "assistant_close"
   ]);
 
   function compactText(value = "", limit = 160) {
@@ -143,13 +152,17 @@
     function quizSuggestion(event, at) {
       const incorrect = Math.max(0, Number(event.data?.incorrect || 0));
       if (!incorrect) return null;
+      const pendingReview = Math.max(0, Number(event.data?.pendingReview || 0));
+      if (pendingReview > 0) return null;
       return createSuggestion("quiz_review", at, {
         incorrect,
+        pendingReview,
+        questionCount: Math.max(0, Number(event.data?.questionCount || 0)),
         eyebrow: "适合现在复盘",
-        title: `${incorrect} 道题值得回看`,
-        body: "先找到共同错因，再决定看解析还是回到课件，不必把所有答案重看一遍。",
-        actionLabel: "梳理错因",
-        question: `我刚提交测验，有 ${incorrect} 道题需要复盘。请教我如何判断先看哪一题，并给我一个不直接透露答案的检查步骤。`,
+        title: `${incorrect} 道错题可以逐题复盘`,
+        body: "从第一道错题开始判断卡点，解释后可以继续下一题。",
+        actionLabel: "开始复盘",
+        question: "",
         contextMode: "unit"
       });
     }
@@ -199,8 +212,16 @@
         return resetActivityBoundary(at);
       }
 
-      if (MEANINGFUL_EVENTS.has(eventType)) lastMeaningfulAt = at;
-      if (eventType === "quiz_submit_success") return quizSuggestion(event, at);
+      if (MEANINGFUL_EVENTS.has(eventType)) {
+        lastMeaningfulAt = at;
+        if (activeSuggestion && activeSuggestion.kind !== "quiz_review") {
+          activeSuggestion = null;
+          commits.clear();
+        }
+      }
+      if (["quiz_submit_success", "quiz_review_ready"].includes(eventType)) {
+        return quizSuggestion(event, at);
+      }
       if (eventType === "parameter_commit" && currentUnit.unitType !== "quiz") {
         return recordParameterCommit(event, at);
       }
@@ -211,7 +232,16 @@
       const at = timestamp(atValue);
       if (activeSuggestion) return activeSuggestion;
       if (!currentUnit?.supported || currentUnit.unitType === "quiz") return null;
-      if (at - lastMeaningfulAt < config.dwellThresholdMs) return null;
+      const readingScene = currentUnit.unitType === "slide" || currentUnit.sceneType === "slide";
+      const baseDwellThresholdMs = Math.max(0, Number(config.dwellThresholdMs) || 0);
+      const readingDwellThresholdMs = Math.max(
+        baseDwellThresholdMs,
+        Number(config.readingDwellThresholdMs) || baseDwellThresholdMs
+      );
+      const dwellThresholdMs = readingScene
+        ? readingDwellThresholdMs
+        : baseDwellThresholdMs;
+      if (at - lastMeaningfulAt < dwellThresholdMs) return null;
       return quietDwellSuggestion(at);
     }
 

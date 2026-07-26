@@ -86,6 +86,25 @@ function parameterEvent(at, {
 }
 
 {
+  const coach = createProactiveCoach({
+    dwellThresholdMs: 90_000,
+    readingDwellThresholdMs: 150_000
+  });
+  coach.consume(unitEvent("SLIDE1", {
+    unitLabel: "导数图像讲解",
+    unitType: "knowledge",
+    sceneType: "slide"
+  }), 0);
+  assert.equal(
+    coach.tick(90_000),
+    null,
+    "学生阅读 Slide 时不应按互动课件的 90 秒阈值过早打断"
+  );
+  assert.equal(coach.tick(149_999), null);
+  assert.equal(coach.tick(150_000).kind, "quiet_dwell");
+}
+
+{
   const coach = createProactiveCoach({ dwellThresholdMs: 90_000 });
   coach.consume(unitEvent(), 0);
   coach.consume({ eventType: "interactive_click", unitId: "KP1" }, 30_000);
@@ -116,17 +135,49 @@ function parameterEvent(at, {
     null,
     "全对时不应制造额外复盘负担"
   );
-  const suggestion = coach.consume({
+  const pendingSuggestion = coach.consume({
     eventType: "quiz_submit_success",
     unitId: "Q1",
     unitLabel: "函数小测",
     unitType: "quiz",
-    data: { incorrect: 2, correct: 2, questionCount: 4 }
+    data: { incorrect: 2, correct: 2, pendingReview: 1, questionCount: 5 }
   }, 30_000);
+  assert.equal(
+    pendingSuggestion,
+    null,
+    "存在待批改简答题时，不应提前弹出只包含客观题的错题复盘"
+  );
+  const suggestion = coach.consume({
+    eventType: "quiz_review_ready",
+    unitId: "Q1",
+    unitLabel: "函数小测",
+    unitType: "quiz",
+    data: { incorrect: 3, correct: 2, pendingReview: 0, questionCount: 5 }
+  }, 31_000);
   assert.equal(suggestion.kind, "quiz_review");
-  assert.match(suggestion.title, /2 道题/);
-  assert.match(suggestion.question, /如何判断先看哪一题/);
-  assert.doesNotMatch(suggestion.question, /最值得检查的思路环节/);
+  assert.match(suggestion.title, /3 道错题/);
+  assert.doesNotMatch(suggestion.body, /仍在批改|待批改/);
+  assert.equal(suggestion.pendingReview, 0);
+  assert.equal(suggestion.question, "");
+}
+
+{
+  const coach = createProactiveCoach({ dwellThresholdMs: 90_000 });
+  coach.consume(unitEvent(), 0);
+  assert.equal(coach.tick(90_000).kind, "quiet_dwell");
+  coach.consume({ eventType: "interactive_click", unitId: "KP1" }, 91_000);
+  assert.equal(coach.getSuggestion(), null, "学生恢复课件操作后，旧的停留建议必须立即失效");
+  assert.equal(coach.tick(180_999), null);
+  assert.equal(coach.tick(181_000).kind, "quiet_dwell");
+}
+
+{
+  const coach = createProactiveCoach({ dwellThresholdMs: 90_000 });
+  coach.consume(unitEvent(), 0);
+  coach.consume({ eventType: "knowledge_context_selected", unitId: "KP1" }, 50_000);
+  coach.consume({ eventType: "assistant_open", unitId: "KP1" }, 100_000);
+  assert.equal(coach.tick(189_999), null, "选区提问和打开知点都应重置停留计时");
+  assert.equal(coach.tick(190_000).kind, "quiet_dwell");
 }
 
 {

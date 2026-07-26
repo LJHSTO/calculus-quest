@@ -39,6 +39,8 @@
   let renamingConversationId = "";
   let deletingConversationId = "";
   let pendingAssistantIntent = "";
+  let pendingProactivePrompt = null;
+  let pendingGeneratedDraft = "";
   let openMessageSourceId = "";
   let editingNoteId = "";
   let selectedNoteColor = "amber";
@@ -707,8 +709,13 @@
   function executeProactiveAction(suggestion) {
     const meta = courseMeta();
     const allowedActions = ["observe_change", "review_mistake", "self_explain", "ask_clarification"];
+    const studentReplyActions = new Set(["ask_clarification", "review_mistake"]);
+    const expectsStudentReply = studentReplyActions.has(suggestion?.action);
+    const preparedCopy = expectsStudentReply
+      ? String(suggestion?.assistantPrompt || "").trim()
+      : String(suggestion?.draftQuestion || "").trim();
     if (
-      !suggestion?.draftQuestion
+      !preparedCopy
       || !allowedActions.includes(suggestion.action)
       || !meta.supported
       || quizAssistantLocked(meta)
@@ -721,11 +728,37 @@
       }
     }
     activeWorkspace = "chat";
-    pendingAssistantIntent = suggestion.action === "self_explain" ? "self_check" : "";
-    els.input.value = String(suggestion.draftQuestion);
+    if (expectsStudentReply) {
+      pendingAssistantIntent = "";
+      pendingGeneratedDraft = "";
+      pendingProactivePrompt = {
+        id: suggestion.id || `proactive-${Date.now()}`,
+        content: preparedCopy,
+        action: suggestion.action,
+        unitId: meta.unitId,
+        sceneType: meta.sceneType,
+        interventionId: suggestion.interventionId || "",
+        contextSummary: suggestion.contextSummary || "",
+        replyOptions: Array.isArray(suggestion.replyOptions)
+          ? suggestion.replyOptions.slice(0, 4)
+          : []
+      };
+      els.input.value = "";
+      setStatus(
+        suggestion.action === "review_mistake"
+          ? "先回答上面的诊断问题；可点选一个起点，也可以自己写。"
+          : "先回答上面的问题即可；是否发送仍由你决定。",
+        ""
+      );
+    } else {
+      pendingProactivePrompt = null;
+      pendingAssistantIntent = suggestion.action === "self_explain" ? "self_check" : "";
+      els.input.value = String(suggestion.draftQuestion);
+      pendingGeneratedDraft = els.input.value;
+      setStatus(`${suggestion.why || "知点根据刚才的学习状态准备了一个起点"} 草稿可以修改，是否发送由你决定。`, "");
+    }
     resizeComposer();
-    setStatus(`${suggestion.why || "知点根据刚才的学习状态准备了一个起点"} 草稿可以修改，是否发送由你决定。`, "");
-    setOpen(true, { focus: false });
+    setOpen(true, { focus: false, preserveProactiveSuggestion: true });
     render();
     window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
     return true;
@@ -807,6 +840,8 @@
             oldValue: candidate.oldValue,
             newValue: candidate.newValue,
             incorrect: candidate.incorrect,
+            pendingReview: candidate.pendingReview,
+            questionCount: candidate.questionCount,
             dwellSeconds: candidate.dwellSeconds,
             dismissStreak: candidate.dismissStreak
           },
@@ -837,7 +872,8 @@
         ...decision,
         id: candidate.id,
         kind: candidate.kind,
-        unitId: candidate.unitId
+        unitId: candidate.unitId,
+        interventionId: payload.interventionId || ""
       };
       renderProactiveSuggestion();
       track("knowledge_proactive_agent_decided", {
@@ -850,13 +886,26 @@
     } catch (error) {
       if (error.name === "AbortError") return false;
       if (proactiveCoach.getSuggestion()?.id !== candidate.id) return false;
+      if (candidate.kind !== "repeated_parameter") {
+        proactiveCoach.resolve("agent-silent", Date.now());
+        proactiveCandidateId = "";
+        proactiveDecision = null;
+        renderProactiveSuggestion();
+        track("knowledge_proactive_fallback_silent", {
+          suggestionKind: candidate.kind,
+          reason: "server_context_unavailable"
+        });
+        return false;
+      }
       proactiveDecision = {
         ...candidate,
-        action: candidate.kind === "repeated_parameter"
-          ? "observe_change"
-          : candidate.kind === "quiz_review" ? "review_mistake" : "ask_clarification",
+        action: "observe_change",
         intervene: true,
         draftQuestion: candidate.question,
+        assistantPrompt: "",
+        replyOptions: [],
+        contextSummary: "",
+        interactionMode: "student_draft",
         why: "网络暂时不可用，已采用本地学习策略。",
         confidence: 0.5
       };
@@ -870,6 +919,8 @@
   function considerProactiveSuggestion() {
     const candidate = proactiveCoach?.getSuggestion?.() || null;
     if (!candidate) {
+      proactiveDecisionRequest?.abort();
+      proactiveDecisionRequest = null;
       proactiveDecision = null;
       proactiveCandidateId = "";
       renderProactiveSuggestion();
@@ -910,10 +961,31 @@
 
   function setOpen(next, options = {}) {
     const nextOpen = Boolean(next);
+    const wasOpen = isOpen;
     if (nextOpen && quizAssistantLocked()) {
       setStatus(QUIZ_LOCKED_MESSAGE, "warning");
       renderLauncherAvailability();
       return false;
+    }
+    if (nextOpen && !wasOpen && options.preserveProactiveSuggestion !== true) {
+      if (!dismissProactiveSuggestion("assistant-open")) {
+        const meta = courseMeta();
+        proactiveCoach?.consume?.({
+          eventType: "assistant_open",
+          unitId: meta.unitId,
+          unitType: meta.unitType,
+          sceneType: meta.sceneType
+        }, Date.now());
+      }
+    }
+    if (!nextOpen && wasOpen) {
+      const meta = courseMeta();
+      proactiveCoach?.consume?.({
+        eventType: "assistant_close",
+        unitId: meta.unitId,
+        unitType: meta.unitType,
+        sceneType: meta.sceneType
+      }, Date.now());
     }
     isOpen = nextOpen;
     root.classList.toggle("is-open", isOpen);
@@ -1344,8 +1416,10 @@
   function beginAssistantIntent(intent) {
     const copy = intent === "self_check" ? "我理解为：" : assistantIntentCopy(intent);
     if (!copy) return;
+    pendingProactivePrompt = null;
     pendingAssistantIntent = intent;
     els.input.value = copy;
+    pendingGeneratedDraft = copy;
     resizeComposer();
     setStatus(intent === "self_check"
       ? "用一句话写出你的理解，知点会帮你检查关键关系。"
@@ -1365,7 +1439,13 @@
   function renderQuickQuestions() {
     const meta = courseMeta();
     els.quick.replaceChildren();
-    if (quizAssistantLocked(meta) || conversationAtLimit() || messages.length > 0 || loadingHistory) {
+    if (
+      quizAssistantLocked(meta)
+      || conversationAtLimit()
+      || messages.length > 0
+      || pendingProactivePrompt
+      || loadingHistory
+    ) {
       els.quick.hidden = true;
       return;
     }
@@ -1380,8 +1460,10 @@
       button.type = "button";
       button.textContent = question;
       button.addEventListener("click", () => {
+        pendingProactivePrompt = null;
         pendingAssistantIntent = "";
         els.input.value = question;
+        pendingGeneratedDraft = question;
         resizeComposer();
         setStatus("问题已放入输入框，你可以修改后再决定是否发送。", "");
         els.input.focus({ preventScroll: true });
@@ -1389,6 +1471,147 @@
       });
       els.quick.appendChild(button);
     });
+  }
+
+  function proactivePromptNode(prompt, options = {}) {
+    const article = document.createElement("article");
+    article.className = "knowledge-message assistant knowledge-proactive-question";
+    article.dataset.proactivePromptId = prompt?.id || "";
+    const heading = document.createElement("div");
+    const label = document.createElement("strong");
+    label.textContent = "知点想先了解";
+    const badge = document.createElement("small");
+    badge.textContent = "等你回答";
+    heading.append(label, badge);
+    const body = document.createElement("p");
+    body.textContent = prompt?.content || "";
+    article.append(heading, body);
+    if (prompt?.contextSummary) {
+      const evidence = document.createElement("div");
+      evidence.className = "knowledge-proactive-evidence";
+      evidence.setAttribute("aria-label", "本次复盘依据");
+      evidence.textContent = prompt.contextSummary;
+      article.appendChild(evidence);
+    }
+    if (Array.isArray(prompt?.replyOptions) && prompt.replyOptions.length) {
+      const replyOptions = document.createElement("div");
+      replyOptions.className = "knowledge-proactive-reply-options";
+      replyOptions.setAttribute("aria-label", "选择一个回答起点");
+      const optionsHint = document.createElement("span");
+      optionsHint.textContent = "选一个最接近的情况，仅放入输入框";
+      replyOptions.appendChild(optionsHint);
+      prompt.replyOptions.slice(0, 4).forEach((item) => {
+        const option = String(item || "").trim();
+        if (!option) return;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = option;
+        button.addEventListener("click", () => {
+          els.input.value = option;
+          pendingGeneratedDraft = option;
+          resizeComposer();
+          setStatus("已放入输入框，你可以补充后再决定是否发送。", "");
+          els.input.focus({ preventScroll: true });
+          track("knowledge_proactive_reply_option_selected", {
+            action: prompt?.action || "",
+            option
+          });
+        });
+        replyOptions.appendChild(button);
+      });
+      article.appendChild(replyOptions);
+    }
+    if (options.dismissible) {
+      const footer = document.createElement("footer");
+      const hint = document.createElement("span");
+      hint.textContent = "直接在下方写下你的想法";
+      const dismiss = document.createElement("button");
+      dismiss.type = "button";
+      dismiss.textContent = "改为自由提问";
+      dismiss.addEventListener("click", () => {
+        if (pendingGeneratedDraft && els.input.value === pendingGeneratedDraft) {
+          els.input.value = "";
+          resizeComposer();
+        }
+        pendingProactivePrompt = null;
+        pendingGeneratedDraft = "";
+        setStatus("可以直接提出你想问的问题。", "");
+        render();
+        window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
+        track("knowledge_proactive_reply_skipped", {
+          action: prompt?.action || "ask_clarification",
+          unitId: prompt?.unitId || courseMeta().unitId
+        });
+      });
+      footer.append(hint, dismiss);
+      article.appendChild(footer);
+    }
+    return article;
+  }
+
+  function quizReviewFollowUpNode(message) {
+    const followUp = message?.quizReviewFollowUp;
+    const progress = followUp || message?.guidance?.quizReviewProgress || null;
+    if (!progress) return null;
+    const panel = document.createElement("div");
+    panel.className = "knowledge-quiz-review-follow-up";
+    if (progress.done) {
+      panel.classList.add("is-complete");
+      const complete = document.createElement("strong");
+      complete.textContent = progress.completionMessage
+        || `本轮 ${progress.reviewTotal || 0} 道错题已复盘完成。`;
+      panel.appendChild(complete);
+      return panel;
+    }
+    if (!followUp?.prompt?.interventionId) return null;
+    const copy = document.createElement("div");
+    const label = document.createElement("span");
+    label.textContent = `已解释 ${Number(followUp.reviewIndex || 0)} / ${Number(followUp.reviewTotal || 0)} 道`;
+    const hint = document.createElement("small");
+    hint.textContent = "继续时只显示下一道诊断问题，不会自动发送。";
+    copy.append(label, hint);
+    const actions = document.createElement("div");
+    const next = document.createElement("button");
+    next.type = "button";
+    next.className = "primary";
+    next.textContent = `继续第 ${Number(followUp.reviewIndex || 0) + 1} 道错题`;
+    next.addEventListener("click", () => {
+      const existingDraft = els.input.value.trim();
+      if (existingDraft && existingDraft !== pendingGeneratedDraft) {
+        setStatus("输入框里还有未发送的内容；先发送或清空后再继续复盘。", "warning");
+        els.input.focus({ preventScroll: true });
+        return;
+      }
+      pendingAssistantIntent = "";
+      pendingGeneratedDraft = "";
+      pendingProactivePrompt = { ...followUp.prompt };
+      message.quizReviewFollowUp = null;
+      els.input.value = "";
+      resizeComposer();
+      setStatus("下一道错题已就位。先回答上面的诊断问题，再决定是否发送。", "");
+      render();
+      window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
+      track("knowledge_quiz_review_next", {
+        reviewIndex: followUp.reviewIndex,
+        reviewTotal: followUp.reviewTotal
+      });
+    });
+    const stop = document.createElement("button");
+    stop.type = "button";
+    stop.textContent = "先到这里";
+    stop.addEventListener("click", () => {
+      message.quizReviewFollowUp = null;
+      setStatus("已暂停本轮错题复盘，你仍可围绕当前测验自由提问。", "");
+      renderMessages();
+      els.input.focus({ preventScroll: true });
+      track("knowledge_quiz_review_paused", {
+        reviewIndex: followUp.reviewIndex,
+        reviewTotal: followUp.reviewTotal
+      });
+    });
+    actions.append(next, stop);
+    panel.append(copy, actions);
+    return panel;
   }
 
   function messageNode(message) {
@@ -1454,6 +1677,8 @@
         });
         article.appendChild(actions);
       }
+      const quizReviewFollowUp = quizReviewFollowUpNode(message);
+      if (quizReviewFollowUp) article.appendChild(quizReviewFollowUp);
     }
     return article;
   }
@@ -1462,7 +1687,7 @@
     const scrollViewport = els.scroll || els.messages;
     const nearBottom = scrollViewport.scrollHeight - scrollViewport.scrollTop - scrollViewport.clientHeight < 120;
     els.messages.replaceChildren();
-    if (!messages.length && !loadingHistory) {
+    if (!messages.length && !pendingProactivePrompt && !loadingHistory) {
       els.messages.appendChild(els.empty);
       els.empty.hidden = false;
     } else if (loadingHistory && !messages.length) {
@@ -1471,9 +1696,20 @@
       loading.innerHTML = "<span></span><span></span><span></span><p>正在恢复这个知识点的提问记录</p>";
       els.messages.appendChild(loading);
     } else {
-      messages.forEach((message) => els.messages.appendChild(messageNode(message)));
+      messages.forEach((message) => {
+        if (message.role === "user" && message.proactivePrompt) {
+          els.messages.appendChild(proactivePromptNode({
+            id: `history-${message.id || ""}`,
+            content: message.proactivePrompt
+          }));
+        }
+        els.messages.appendChild(messageNode(message));
+      });
+      if (pendingProactivePrompt) {
+        els.messages.appendChild(proactivePromptNode(pendingProactivePrompt, { dismissible: true }));
+      }
     }
-    if (nearBottom || isAsking) {
+    if (nearBottom || isAsking || pendingProactivePrompt) {
       window.requestAnimationFrame(() => {
         scrollViewport.scrollTop = scrollViewport.scrollHeight;
       });
@@ -1502,7 +1738,9 @@
       ? "提交测验后可继续提问"
       : conversationLimited
         ? "本段对话已满，请新建对话"
-      : "例如：为什么 h 变小时，割线更接近切线？";
+        : pendingProactivePrompt
+          ? "写下你的回答……"
+          : "例如：为什么 h 变小时，割线更接近切线？";
     els.send.disabled = els.input.disabled || isAsking || (provider.live && quota.remaining <= 0);
     els.pick.disabled = !meta.supported || !isSignedInNow() || quizLocked;
     els.selectionAsk.disabled = quizLocked || conversationLimited;
@@ -1838,6 +2076,7 @@
     activeWorkspace = "chat";
     messages = [];
     pendingAssistantIntent = "";
+    pendingProactivePrompt = null;
     openMessageSourceId = "";
     els.input.value = "";
     resizeComposer();
@@ -1853,6 +2092,7 @@
   async function loadHistory(meta = courseMeta(), conversationId = activeConversationId) {
     const requestId = ++historyRequestId;
     pendingAssistantIntent = "";
+    pendingProactivePrompt = null;
     openMessageSourceId = "";
     if (!meta.unitId || !meta.supported || !isSignedInNow() || quizAssistantLocked(meta)) {
       messages = [];
@@ -1883,6 +2123,7 @@
         contextRef: message.contextRef || null,
         guidance: message.guidance || null,
         assistantIntent: message.assistantIntent || "",
+        proactivePrompt: message.proactivePrompt || "",
         provider: message.provider || "",
         createdAt: message.createdAt || ""
       }));
@@ -1901,7 +2142,7 @@
   }
 
   function parseStreamLine(line, assistantMessage) {
-    if (!line.trim()) return;
+    if (!line.trim()) return "";
     const event = JSON.parse(line);
     if (event.type === "meta") {
       provider = event.provider || provider;
@@ -1911,18 +2152,19 @@
       assistantMessage.contextRef = event.contextRef || assistantMessage.contextRef || null;
       renderProvider();
       renderQuota();
-      return;
+      return "meta";
     }
     if (event.type === "delta") {
       assistantMessage.content += event.delta || "";
       renderMessages();
-      return;
+      return "delta";
     }
     if (event.type === "done") {
       assistantMessage.id = event.message?.id || assistantMessage.id;
       assistantMessage.provider = event.message?.provider || "";
       assistantMessage.contextRef = event.message?.contextRef || assistantMessage.contextRef || null;
       assistantMessage.guidance = event.guidance || event.message?.guidance || null;
+      assistantMessage.quizReviewFollowUp = event.quizReviewFollowUp || null;
       assistantMessage.assistantIntent = event.message?.assistantIntent || "";
       assistantMessage.streaming = false;
       if (!assistantMessage.content) assistantMessage.content = event.message?.content || "";
@@ -1941,14 +2183,22 @@
       renderMessages();
       renderConversations();
       renderQuota();
+      return "done";
     }
+    return "";
   }
 
   async function readNdjson(response, assistantMessage) {
+    const state = { sawDone: false, sawDelta: false };
+    const consumeLine = (line) => {
+      const type = parseStreamLine(line, assistantMessage);
+      if (type === "done") state.sawDone = true;
+      if (type === "delta") state.sawDelta = true;
+    };
     if (!response.body?.getReader) {
       const text = await response.text();
-      text.split(/\r?\n/).forEach((line) => parseStreamLine(line, assistantMessage));
-      return;
+      text.split(/\r?\n/).forEach(consumeLine);
+      return state;
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -1958,16 +2208,20 @@
       buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() || "";
-      lines.forEach((line) => parseStreamLine(line, assistantMessage));
+      lines.forEach(consumeLine);
       if (done) break;
     }
-    if (buffer.trim()) parseStreamLine(buffer, assistantMessage);
+    if (buffer.trim()) consumeLine(buffer);
+    return state;
   }
 
   async function submitQuestion() {
     const meta = courseMeta();
     const question = els.input.value.trim();
     const assistantIntent = pendingAssistantIntent;
+    const proactivePrompt = pendingProactivePrompt?.unitId === meta.unitId
+      ? pendingProactivePrompt
+      : null;
     if (!question || isAsking) return;
     if (!isSignedInNow()) {
       setStatus("请先登录后使用知点。", "error");
@@ -1992,12 +2246,33 @@
     }
     activeRequest?.abort();
     pendingAssistantIntent = "";
+    pendingGeneratedDraft = "";
     activeRequest = new AbortController();
     isAsking = true;
+    const requestPayload = {
+      chapterId: meta.chapterId,
+      unitId: meta.unitId,
+      sceneType: meta.sceneType,
+      conversationId: activeConversationId,
+      question,
+      assistantIntent,
+      proactiveInterventionId: proactivePrompt?.interventionId || "",
+      contextRef: activeContext || {
+        kind: "unit",
+        scope: meta.isQuiz ? "quiz" : "lesson",
+        chapterId: meta.chapterId,
+        unitId: meta.unitId,
+        unitLabel: meta.unitLabel,
+        knowledgePointId: meta.knowledgePointId,
+        knowledgePointLabel: meta.knowledgePointLabel
+      }
+    };
+    pendingProactivePrompt = null;
     const userMessage = {
       id: `local-user-${Date.now()}`,
       role: "user",
       content: question,
+      proactivePrompt: proactivePrompt?.content || "",
       provider: ""
     };
     const assistantMessage = {
@@ -2025,32 +2300,24 @@
           "Content-Type": "application/json",
           Authorization: `Bearer ${state.authToken}`
         },
-    body: JSON.stringify({
-          chapterId: meta.chapterId,
-          unitId: meta.unitId,
-          sceneType: meta.sceneType,
-      conversationId: activeConversationId,
-      question,
-      assistantIntent,
-          contextRef: activeContext || {
-            kind: "unit",
-            scope: meta.isQuiz ? "quiz" : "lesson",
-            chapterId: meta.chapterId,
-            unitId: meta.unitId,
-            unitLabel: meta.unitLabel,
-            knowledgePointId: meta.knowledgePointId,
-            knowledgePointLabel: meta.knowledgePointLabel
-          }
-        }),
+        body: JSON.stringify(requestPayload),
         signal: activeRequest.signal
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         applyQuota(payload.quota);
-        throw new Error(payload.message || "知点暂时没有接通，请稍后再试。");
+        const requestError = new Error(payload.message || "知点暂时没有接通，请稍后再试。");
+        requestError.code = payload.code || "";
+        throw requestError;
       }
-      await readNdjson(response, assistantMessage);
+      const streamState = await readNdjson(response, assistantMessage);
+      if (!streamState.sawDone || !assistantMessage.content.trim()) {
+        const error = new Error("回答传输没有完整结束，正在恢复这段对话。");
+        error.code = "assistant_stream_incomplete";
+        throw error;
+      }
       assistantMessage.streaming = false;
+      renderMessages();
       setStatus("可以继续追问；对话会保存在这个知识点下。");
       track("knowledge_answer_received", {
         provider: assistantMessage.provider || provider.id,
@@ -2058,11 +2325,33 @@
       });
     } catch (error) {
       if (error.name === "AbortError") return;
-      assistantMessage.streaming = false;
-      assistantMessage.error = true;
-      assistantMessage.content = error.message || "知点暂时没有接通，请稍后再试。";
-      setStatus(assistantMessage.content, "error");
-      renderMessages();
+      if (error.code === "assistant_stream_incomplete" && activeConversationId) {
+        assistantMessage.streaming = false;
+        assistantMessage.error = true;
+        assistantMessage.content = "回答传输中断，正在从已保存的对话恢复完整内容。";
+        setStatus(assistantMessage.content, "warning");
+        renderMessages();
+        await loadHistory(meta, activeConversationId);
+        return;
+      }
+      const localUserIndex = messages.indexOf(userMessage);
+      if (localUserIndex >= 0) {
+        messages.splice(localUserIndex, messages[localUserIndex + 1] === assistantMessage ? 2 : 1);
+      } else {
+        const localAssistantIndex = messages.indexOf(assistantMessage);
+        if (localAssistantIndex >= 0) messages.splice(localAssistantIndex, 1);
+      }
+      const promptStillValid = proactivePrompt
+        && error.code !== "assistant_intervention_expired"
+        && courseMeta().unitId === meta.unitId;
+      pendingProactivePrompt = promptStillValid ? proactivePrompt : null;
+      if (!els.input.value.trim() && courseMeta().unitId === meta.unitId) {
+        els.input.value = question;
+        pendingGeneratedDraft = question;
+        resizeComposer();
+      }
+      setStatus(error.message || "知点暂时没有接通，请稍后再试。", "error");
+      render();
     } finally {
       isAsking = false;
       activeRequest = null;
@@ -2117,6 +2406,8 @@
       activeContext = null;
       recentInteraction = null;
       pendingAssistantIntent = "";
+      pendingProactivePrompt = null;
+      pendingGeneratedDraft = "";
       openMessageSourceId = "";
       els.input.value = "";
       resizeComposer();
@@ -2133,6 +2424,17 @@
     }
 
     if (sceneChanged) {
+      proactiveDecisionRequest?.abort();
+      proactiveDecisionRequest = null;
+      proactiveDecision = null;
+      proactiveCandidateId = "";
+      pendingProactivePrompt = null;
+      if (pendingGeneratedDraft && els.input.value === pendingGeneratedDraft) {
+        els.input.value = "";
+        pendingAssistantIntent = "";
+        pendingGeneratedDraft = "";
+        resizeComposer();
+      }
       currentSceneType = meta.sceneType;
       if (activeContext?.scope === "interactive") {
         activeContext = null;
@@ -2162,7 +2464,6 @@
       event.preventDefault();
       return;
     }
-    dismissProactiveSuggestion("assistant-open");
     setOpen(true);
   });
   els.close.addEventListener("click", () => {
@@ -2257,6 +2558,9 @@
     submitQuestion();
   });
   els.input.addEventListener("input", () => {
+    if (pendingGeneratedDraft && els.input.value !== pendingGeneratedDraft) {
+      pendingGeneratedDraft = "";
+    }
     if (pendingAssistantIntent && !questionMatchesAssistantIntent(pendingAssistantIntent, els.input.value)) {
       pendingAssistantIntent = "";
     }

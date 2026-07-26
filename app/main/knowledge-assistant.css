@@ -644,6 +644,225 @@
   color: #8a392c;
 }
 
+.knowledge-proactive-question {
+  margin-bottom: 14px;
+}
+
+.knowledge-proactive-question > div strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--knowledge-teal-dark);
+}
+
+.knowledge-proactive-question > div strong::before {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--knowledge-teal);
+  box-shadow: 0 0 0 4px rgba(11, 143, 138, 0.12);
+  content: "";
+}
+
+.knowledge-proactive-question p {
+  border-color: rgba(11, 143, 138, 0.2);
+  background:
+    linear-gradient(135deg, rgba(221, 245, 239, 0.72), rgba(255, 255, 255, 0.96) 72%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.92) inset,
+    0 8px 20px rgba(22, 50, 79, 0.07);
+  color: #173f4b;
+  font-weight: 650;
+}
+
+.knowledge-proactive-evidence {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  margin: -2px 0 8px 14px;
+  border: 1px solid rgba(11, 143, 138, 0.18);
+  border-radius: 10px;
+  background: rgba(221, 245, 239, 0.68);
+  padding: 7px 9px;
+  color: #37646b;
+  font-size: 0.68rem;
+  font-weight: 650;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+
+.knowledge-proactive-reply-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 2px 0 10px 14px;
+}
+
+.knowledge-proactive-reply-options > span {
+  flex: 1 0 100%;
+  color: #6e818a;
+  font-size: 0.66rem;
+  font-weight: 650;
+  line-height: 1.45;
+}
+
+.knowledge-proactive-reply-options button {
+  min-height: 40px;
+  border: 1px solid rgba(22, 50, 79, 0.12);
+  border-radius: 11px;
+  background: #fff;
+  padding: 7px 10px;
+  color: #315362;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, background-color 140ms ease;
+}
+
+.knowledge-proactive-reply-options button:hover,
+.knowledge-proactive-reply-options button:focus-visible {
+  border-color: rgba(11, 143, 138, 0.48);
+  background: var(--knowledge-mint);
+  color: var(--knowledge-teal-dark);
+  outline: 2px solid rgba(11, 143, 138, 0.12);
+  outline-offset: 2px;
+  transform: translateY(-1px);
+}
+
+.knowledge-proactive-reply-options button:active {
+  transform: scale(0.96);
+}
+
+.knowledge-proactive-question footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 1px 2px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .knowledge-proactive-reply-options button {
+    transition: none;
+  }
+}
+
+.knowledge-proactive-question footer span {
+  min-width: 0;
+  color: #71838c;
+  font-size: 0.65rem;
+  line-height: 1.4;
+}
+
+.knowledge-proactive-question footer button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 5px 7px;
+  color: #51717a;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.knowledge-proactive-question footer button:hover,
+.knowledge-proactive-question footer button:focus-visible {
+  background: var(--knowledge-mint);
+  color: var(--knowledge-teal-dark);
+  outline: 2px solid rgba(11, 143, 138, 0.14);
+  outline-offset: 1px;
+}
+
+.knowledge-quiz-review-follow-up {
+  display: grid;
+  gap: 10px;
+  margin: 2px 0 4px 14px;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(242, 250, 248, 0.98), rgba(255, 255, 255, 0.98));
+  box-shadow:
+    0 0 0 1px rgba(11, 143, 138, 0.12),
+    0 1px 2px -1px rgba(22, 50, 79, 0.08),
+    0 8px 20px rgba(22, 50, 79, 0.06);
+  padding: 12px;
+}
+
+.knowledge-quiz-review-follow-up > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.knowledge-quiz-review-follow-up span,
+.knowledge-quiz-review-follow-up strong {
+  color: #235f5b;
+  font-size: 0.73rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.knowledge-quiz-review-follow-up small {
+  color: #657d84;
+  font-size: 0.66rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.knowledge-quiz-review-follow-up > div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.knowledge-quiz-review-follow-up button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(22, 50, 79, 0.1);
+  padding: 7px 11px;
+  color: #48636d;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition-property: transform, box-shadow, background-color, color;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.knowledge-quiz-review-follow-up button.primary {
+  background: var(--knowledge-teal);
+  box-shadow:
+    0 0 0 1px rgba(5, 103, 99, 0.18),
+    0 6px 14px rgba(11, 143, 138, 0.18);
+  color: #fff;
+}
+
+.knowledge-quiz-review-follow-up button:hover,
+.knowledge-quiz-review-follow-up button:focus-visible {
+  background: var(--knowledge-mint);
+  box-shadow: 0 0 0 2px rgba(11, 143, 138, 0.16);
+  color: var(--knowledge-teal-dark);
+  outline: 0;
+}
+
+.knowledge-quiz-review-follow-up button:active {
+  transform: scale(0.96);
+}
+
+.knowledge-quiz-review-follow-up.is-complete {
+  background: rgba(221, 245, 239, 0.72);
+  padding: 10px 12px;
+}
+
 .knowledge-history-loading {
   display: flex;
   flex-wrap: wrap;

@@ -4,10 +4,12 @@ const {
   buildAssistantPrompt,
   buildInterventionPrompt,
   classifyAssistantTurn,
+  buildQuizAttemptSummary,
   deterministicInterventionDecision,
   enforceQuizSafety,
   mockAssistantAnswer,
   parseInterventionDecision,
+  quizReviewContinuation,
   resolveAssistantContext
 } = require("../lib/learning-assistant");
 
@@ -32,6 +34,14 @@ const route = {
               ],
               answer: ["B"],
               analysis: "私有解析：平均速度在时间间隔趋近于零时逼近瞬时速度。",
+              points: 10
+            },
+            {
+              id: "q2",
+              type: "short_answer",
+              question: "用一句话说明割线斜率怎样趋近切线斜率。",
+              referenceAnswer: "当横向间隔趋近于零时，割线斜率趋近该点的切线斜率。",
+              analysis: "需要同时说明横向间隔趋近于零和斜率的稳定趋势。",
               points: 10
             }
           ]
@@ -99,6 +109,75 @@ const route = {
 const index = buildCourseContextIndex(route);
 assert.equal(index.units.get("KP1").knowledgePointLabel, "从割线到切线");
 assert.equal(index.units.get("C1-pre").type, "quiz");
+
+const reorderedQuizIndex = buildCourseContextIndex({
+  versionId: "assistant-question-order-v1",
+  chapters: [
+    {
+      id: "ORDER-C1",
+      title: "题序一致性",
+      flow: {
+        postQuiz: {
+          title: "题序一致性后测",
+          questions: [
+            {
+              id: "raw-first",
+              type: "single",
+              question: "原始数据中的第一题",
+              options: [
+                { value: "A", label: "原始选项 A" },
+                { value: "B", label: "原始选项 B" }
+              ],
+              answer: ["A"],
+              points: 20
+            },
+            {
+              id: "visible-first",
+              type: "single",
+              question: "页面排序后的第一题",
+              options: [
+                { value: "C", label: "页面选项 C" },
+                { value: "D", label: "页面选项 D" }
+              ],
+              answer: ["D"],
+              points: 10
+            }
+          ]
+        }
+      },
+      modules: []
+    }
+  ]
+});
+const reorderedQuizUnit = reorderedQuizIndex.units.get("ORDER-C1-post");
+assert.deepEqual(
+  reorderedQuizUnit.quizQuestions.map((question) => question.id),
+  ["visible-first", "raw-first"],
+  "知点必须复用 Quiz 页面的由易到难题序"
+);
+const reorderedQuizAttempt = buildQuizAttemptSummary({
+  resolved: { isQuiz: true, unit: reorderedQuizUnit },
+  results: [
+    {
+      question_id: "raw-first",
+      response: "B",
+      is_correct: 0,
+      status: "incorrect",
+      score: 0,
+      max_score: 20
+    },
+    {
+      question_id: "visible-first",
+      response: "C",
+      is_correct: 0,
+      status: "incorrect",
+      score: 0,
+      max_score: 10
+    }
+  ]
+});
+assert.equal(reorderedQuizAttempt.incorrectItems[0].questionId, "visible-first");
+assert.equal(reorderedQuizAttempt.incorrectItems[0].studentResponse, "C. 页面选项 C");
 
 const resolved = resolveAssistantContext({
   index,
@@ -198,6 +277,40 @@ const selfCheckPrompt = buildAssistantPrompt({
   quizSubmitted: false,
   assistantIntent: "self_check"
 });
+
+quizContext.quizAttempt = buildQuizAttemptSummary({
+  resolved: quizContext,
+  results: [
+    {
+      question_id: "q1",
+      response: "A",
+      is_correct: 0,
+      status: "incorrect",
+      score: 0,
+      max_score: 10,
+      created_at: "2026-07-26T12:00:00.000Z"
+    },
+    {
+      question_id: "q2",
+      response: "割线就是切线。",
+      is_correct: -1,
+      status: "pending_review",
+      score: 0,
+      max_score: 10,
+      created_at: "2026-07-26T12:00:00.000Z"
+    }
+  ]
+});
+quizContext.quizSubmitted = true;
+assert.equal(quizContext.quizAttempt.incorrect, 1);
+assert.equal(quizContext.quizAttempt.pendingReview, 1);
+assert.match(quizContext.quizAttempt.incorrectItems[0].studentResponse, /A\./);
+assert.match(quizContext.quizAttempt.incorrectItems[0].correctAnswer, /B\./);
+assert.doesNotMatch(
+  JSON.stringify(quizContext.quizAttempt.pendingItems),
+  /correctAnswer/,
+  "待批改简答题不能被伪装成已有标准结论"
+);
 assert.equal(selfCheckPrompt.policy.assistantIntent, "self_check");
 assert.match(selfCheckPrompt.system, /只评价这句话是否抓住了关键关系/);
 
@@ -291,6 +404,17 @@ assert.equal(
   }),
   safeGuidance
 );
+
+const repairedFunctionDefinition = enforceQuizSafety(
+  "函数是输入输出的一对一关系，输入 2 会得到唯一结果。",
+  {
+    isQuiz: true,
+    quizSubmitted: true,
+    resolved: quizContext
+  }
+);
+assert.match(repairedFunctionDefinition, /函数要求每个输入恰好对应一个输出/);
+assert.doesNotMatch(repairedFunctionDefinition, /一对一关系/);
 
 const submittedPrompt = buildAssistantPrompt({
   resolved: quizContext,
@@ -387,6 +511,186 @@ assert.ok(parsedIntervention.body.length <= 120);
 assert.ok(parsedIntervention.draftQuestion.length <= 360);
 assert.equal(parsedIntervention.contextMode, "recent_interaction");
 
+const clarificationIntervention = parseInterventionDecision(JSON.stringify({
+  action: "ask_clarification",
+  title: "先说说你的卡点",
+  body: "知点先听你描述，再决定从哪里开始解释。",
+  actionLabel: "和知点说说",
+  assistantPrompt: "这次测验里，哪一道题或哪一步最让你困惑？",
+  draftQuestion: "这句话不应进入学生输入框。",
+  why: "先确认学生的真实卡点。"
+}), { resolved, signal: { kind: "quiet_dwell", dismissStreak: 0 } });
+assert.equal(clarificationIntervention.action, "ask_clarification");
+assert.equal(clarificationIntervention.interactionMode, "student_reply");
+assert.equal(clarificationIntervention.draftQuestion, "");
+assert.match(clarificationIntervention.assistantPrompt, /哪一道题或哪一步/);
+
+const quizReviewFallback = deterministicInterventionDecision({
+  resolved: quizContext,
+  signal: {
+    kind: "quiz_review",
+    incorrect: 99,
+    pendingReview: 99,
+    dismissStreak: 0
+  }
+});
+assert.equal(
+  quizReviewFallback.action,
+  "stay_silent",
+  "简答题尚未批改完成时，服务端策略也不能提前开始错题复盘"
+);
+
+const readyQuizContext = {
+  ...quizContext,
+  unit: {
+    ...quizContext.unit,
+    quizQuestions: quizContext.unit.quizQuestions.map((question) => (
+      question.id === "q1"
+        ? {
+            ...question,
+            question: "在[cq-unit:EXT-01-K01|simulation]回看课件：当时间间隔缩小时，平均速度会怎样帮助我们理解瞬时速度？"
+          }
+        : question
+    ))
+  }
+};
+readyQuizContext.quizAttempt = buildQuizAttemptSummary({
+  resolved: readyQuizContext,
+  results: [
+    {
+      question_id: "q1",
+      response: "A",
+      is_correct: 0,
+      status: "incorrect",
+      score: 0,
+      max_score: 10
+    },
+    {
+      question_id: "q2",
+      response: "割线就是切线。",
+      is_correct: 0,
+      status: "ai_reviewed",
+      score: 0,
+      max_score: 10,
+      ai_feedback: "没有说明横向间隔趋近于零。"
+    }
+  ]
+});
+readyQuizContext.quizSubmitted = true;
+assert.equal(readyQuizContext.quizAttempt.pendingReview, 0);
+assert.equal(readyQuizContext.quizAttempt.incorrect, 2);
+assert.doesNotMatch(readyQuizContext.quizAttempt.incorrectItems[0].question, /\[cq-unit:|回看课件/);
+
+const longQuizQuestions = Array.from({ length: 32 }, (_, index) => ({
+  ...quizContext.unit.quizQuestions[0],
+  id: `long-q${index + 1}`,
+  question: `综合测验第 ${index + 1} 题`
+}));
+const longQuizContext = {
+  ...quizContext,
+  unit: {
+    ...quizContext.unit,
+    quizQuestions: longQuizQuestions
+  }
+};
+longQuizContext.quizAttempt = buildQuizAttemptSummary({
+  resolved: longQuizContext,
+  results: longQuizQuestions.map((question) => ({
+    question_id: question.id,
+    response: "A",
+    is_correct: 0,
+    status: "incorrect",
+    score: 0,
+    max_score: 10
+  }))
+});
+assert.equal(longQuizContext.quizAttempt.incorrect, 32);
+assert.equal(
+  longQuizContext.quizAttempt.incorrectItems.length,
+  30,
+  "逐题复盘最多保留 30 道错题，与单会话 30 轮上限一致"
+);
+
+const readyQuizReview = deterministicInterventionDecision({
+  resolved: readyQuizContext,
+  signal: {
+    kind: "quiz_review",
+    incorrect: 99,
+    pendingReview: 0,
+    dismissStreak: 0
+  }
+});
+assert.equal(readyQuizReview.action, "review_mistake");
+assert.equal(readyQuizReview.interactionMode, "student_reply");
+assert.equal(readyQuizReview.draftQuestion, "");
+assert.match(readyQuizReview.assistantPrompt, /第 1 \/ 2 道错题/);
+assert.match(readyQuizReview.assistantPrompt, /题目要点/);
+assert.match(readyQuizReview.assistantPrompt, /时间间隔缩小时/);
+assert.doesNotMatch(readyQuizReview.assistantPrompt, /仍在批改|完整题目/);
+assert.doesNotMatch(readyQuizReview.assistantPrompt, /正确答案/);
+assert.doesNotMatch(readyQuizReview.assistantPrompt, /原测验第|\[cq-unit:|\[\]/);
+assert.deepEqual(
+  readyQuizReview.replyOptions,
+  ["题意没读懂", "概念或公式记混", "推到一半卡住", "当时主要靠猜"]
+);
+assert.match(readyQuizReview.contextSummary, /第 1 \/ 2 道错题/);
+assert.match(readyQuizReview.contextSummary, /你的作答/);
+assert.doesNotMatch(readyQuizReview.contextSummary, /正确答案|时间间隔缩小时|\[cq-unit:/);
+
+const nextQuizReview = quizReviewContinuation({
+  resolved: readyQuizContext,
+  completedIndex: 0
+});
+assert.equal(nextQuizReview.done, false);
+assert.equal(nextQuizReview.reviewIndex, 1);
+assert.equal(nextQuizReview.reviewTotal, 2);
+assert.match(nextQuizReview.decision.assistantPrompt, /第 2 \/ 2 道错题/);
+assert.doesNotMatch(nextQuizReview.decision.contextSummary, /割线斜率怎样趋近切线斜率/);
+
+const completedQuizReview = quizReviewContinuation({
+  resolved: readyQuizContext,
+  completedIndex: 1
+});
+assert.equal(completedQuizReview.done, true);
+assert.equal(completedQuizReview.reviewTotal, 2);
+assert.match(completedQuizReview.completionMessage, /2 道错题已复盘完成/);
+
+const parsedQuizReview = parseInterventionDecision(JSON.stringify({
+  action: "review_mistake",
+  title: "错题回顾",
+  body: "让学生重新选择一次答案。",
+  actionLabel: "查看错题",
+  draftQuestion: "这句话不应进入学生输入框。",
+  assistantPrompt: "请重新选择这道题的正确答案。",
+  replyOptions: ["A. 完全没有关系", "B. 逐步逼近瞬时速度", "C. 以上都不对"],
+  contextSummary: "学生答错了，正确答案是 B。",
+  confidence: 0.9
+}), {
+  resolved: readyQuizContext,
+  signal: { kind: "quiz_review", incorrect: 2, pendingReview: 0 }
+});
+assert.equal(parsedQuizReview.interactionMode, "student_reply");
+assert.equal(parsedQuizReview.draftQuestion, "");
+assert.match(parsedQuizReview.assistantPrompt, /第 1 \/ 2 道错题/);
+assert.doesNotMatch(parsedQuizReview.assistantPrompt, /正确答案|重新选择/);
+assert.equal(parsedQuizReview.title, readyQuizReview.title);
+assert.equal(parsedQuizReview.body, readyQuizReview.body);
+assert.equal(parsedQuizReview.actionLabel, "开始复盘");
+assert.deepEqual(parsedQuizReview.replyOptions, readyQuizReview.replyOptions);
+assert.equal(parsedQuizReview.contextSummary, readyQuizReview.contextSummary);
+assert.doesNotMatch(parsedQuizReview.contextSummary, /正确答案/);
+
+const mismatchedObservation = parseInterventionDecision(JSON.stringify({
+  action: "observe_change",
+  title: "看看变化",
+  confidence: 0.8
+}), {
+  resolved,
+  signal: { kind: "quiet_dwell", dwellSeconds: 90 }
+});
+assert.equal(mismatchedObservation.action, "stay_silent");
+assert.equal(mismatchedObservation.intervene, false);
+
 const unknownIntervention = parseInterventionDecision(JSON.stringify({
   action: "submit_quiz",
   title: "替学生提交"
@@ -404,10 +708,55 @@ const repeatedFallback = deterministicInterventionDecision({ resolved, signal: i
 assert.equal(repeatedFallback.action, "observe_change");
 assert.match(repeatedFallback.draftQuestion, /步长 h/);
 
+const dwellFallback = deterministicInterventionDecision({
+  resolved,
+  signal: { kind: "quiet_dwell", dwellSeconds: 90, dismissStreak: 0 }
+});
+assert.equal(dwellFallback.action, "ask_clarification");
+assert.equal(dwellFallback.interactionMode, "student_reply");
+assert.equal(dwellFallback.draftQuestion, "");
+assert.match(dwellFallback.assistantPrompt, /最想先弄清/);
+
 const dismissedDwellFallback = deterministicInterventionDecision({
   resolved,
   signal: { kind: "quiet_dwell", dismissStreak: 2 }
 });
 assert.equal(dismissedDwellFallback.action, "stay_silent");
+
+const proactiveReplyPrompt = buildAssistantPrompt({
+  resolved: quizContext,
+  question: "公式或概念记混了。",
+  proactivePrompt: "我先从第 1 题开始。你当时更像是题意没读懂，还是概念记混了？",
+  history: [],
+  quizSubmitted: true
+});
+assert.match(proactiveReplyPrompt.system, /正在回答知点刚才提出的问题/);
+assert.match(proactiveReplyPrompt.user, /proactiveAssistantPrompt/);
+assert.match(proactiveReplyPrompt.user, /公式或概念记混/);
+assert.match(proactiveReplyPrompt.user, /incorrectItems/);
+assert.match(proactiveReplyPrompt.user, /逐步逼近瞬时速度/);
+
+const interventionWithContext = buildInterventionPrompt({
+  resolved: quizContext,
+  signal: { kind: "quiz_review", incorrect: 1, pendingReview: 1 },
+  history: [
+    { role: "user", content: "我总把平均速度和瞬时速度混在一起。" },
+    { role: "assistant", content: "先区分区间上的平均量和一点处的瞬时量。" }
+  ]
+});
+assert.match(interventionWithContext.user, /quizReview/);
+assert.match(interventionWithContext.user, /recentConversation/);
+assert.match(interventionWithContext.user, /平均速度和瞬时速度/);
+
+const quizReviewMock = mockAssistantAnswer({
+  resolved: readyQuizContext,
+  question: "公式或概念记混了。",
+  quizSubmitted: true,
+  proactivePrompt: readyQuizReview.assistantPrompt
+});
+assert.match(quizReviewMock, /第 1 题/);
+assert.match(quizReviewMock, /完全没有关系/);
+assert.doesNotMatch(quizReviewMock, /当时间间隔缩小时，平均速度会怎样/);
+assert.doesNotMatch(quizReviewMock, /请提供你做错的题目/);
 
 console.log("learning assistant tests passed");

@@ -176,6 +176,31 @@ async function main() {
     assert.equal(proactiveDecision.payload.interventionBudget.remaining, 1);
     assert.equal(proactiveDecision.payload.quota.remaining, 3, "proactive judgments must not consume question quota");
 
+    const forgedQuizReview = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: candidate.type,
+      signal: { kind: "quiz_review", incorrect: 9 },
+      contextRef: { kind: "unit", scope: "lesson" }
+    }, token);
+    assert.equal(forgedQuizReview.response.status, 400);
+    assert.equal(forgedQuizReview.payload.code, "assistant_intervention_signal_mismatch");
+
+    const forgedParameterChange = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: "slide",
+      signal: {
+        kind: "repeated_parameter",
+        parameter: "步长 h",
+        oldValue: "0.5",
+        newValue: "0.1"
+      },
+      contextRef: { kind: "unit", scope: "slide" }
+    }, token);
+    assert.equal(forgedParameterChange.response.status, 400);
+    assert.equal(forgedParameterChange.payload.code, "assistant_intervention_signal_mismatch");
+
     const lockedQuizIntervention = await postJson(baseUrl, "/api/learning/assistant/intervention", {
       chapterId: chapter.id,
       unitId: `${chapter.id}-pre`,
@@ -184,6 +209,26 @@ async function main() {
     }, token);
     assert.equal(lockedQuizIntervention.response.status, 403);
     assert.equal(lockedQuizIntervention.payload.code, "assistant_quiz_locked_until_submit");
+
+    const earlyInteractiveDwell = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: candidate.type,
+      signal: { kind: "quiet_dwell", dwellSeconds: 89, dismissStreak: 0 },
+      contextRef: { kind: "unit", scope: "lesson" }
+    }, token);
+    assert.equal(earlyInteractiveDwell.response.status, 400);
+    assert.equal(earlyInteractiveDwell.payload.code, "assistant_intervention_signal_mismatch");
+
+    const earlySlideDwell = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: "slide",
+      signal: { kind: "quiet_dwell", dwellSeconds: 149, dismissStreak: 0 },
+      contextRef: { kind: "unit", scope: "lesson" }
+    }, token);
+    assert.equal(earlySlideDwell.response.status, 400);
+    assert.equal(earlySlideDwell.payload.code, "assistant_intervention_signal_mismatch");
 
     const silentDecision = await postJson(baseUrl, "/api/learning/assistant/intervention", {
       chapterId: chapter.id,
@@ -230,6 +275,7 @@ async function main() {
       unitId: knowledgePoint.id,
       sceneType: candidate.type,
       question: "为什么这里要这样理解？",
+      proactivePrompt: "这处内容里，你现在最想先弄清哪一点？",
       contextRef: {
         kind: "text",
         scope: "slide",
@@ -258,6 +304,12 @@ async function main() {
     assert.equal(historyResponse.status, 200);
     assert.equal(history.messages.length, 2);
     assert.deepEqual(history.messages.map((message) => message.role), ["user", "assistant"]);
+    assert.equal(
+      history.messages[0].proactivePrompt,
+      "",
+      "client-provided proactivePrompt text must be ignored without a server-issued intervention id"
+    );
+    assert.equal(history.messages[1].proactivePrompt, "");
     assert.match(history.threadKey, /^knowledge:/);
     assert.equal(history.conversation.id, firstConversationId);
     assert.equal(history.messages[1].guidance.showUnderstandingCheck, true);
@@ -453,6 +505,111 @@ async function main() {
     assert.equal(quizAnswer.rows[0].quota.remaining, 0);
     assert.equal(quizAnswer.rows.at(-1).policy.mode, "quiz_review");
     assert.doesNotMatch(quizAnswer.answer, /一级提示/);
+
+    const quizReviewRegistration = await postJson(baseUrl, "/api/auth/register", {
+      nickname: `错题复盘${Date.now().toString().slice(-6)}`,
+      email: "",
+      password: "assistant-quiz-review-123"
+    });
+    const quizReviewToken = quizReviewRegistration.payload.token;
+    const wrongQuizSubmission = await postJson(baseUrl, "/api/learning/quiz/submit", {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      phase: "pre",
+      answers: quiz.questions.map((question) => {
+        if (question.type === "short_answer") {
+          return { questionId: question.id, response: "我还不确定。" };
+        }
+        const correctValues = new Set(
+          (Array.isArray(question.answer) ? question.answer : [question.answer]).map(String)
+        );
+        const wrongOption = (question.options || []).find(
+          (option) => !correctValues.has(String(option.value))
+        );
+        const fallbackValue = question.options?.[0]?.value || "";
+        return {
+          questionId: question.id,
+          response: question.type === "multiple"
+            ? [wrongOption?.value || fallbackValue]
+            : wrongOption?.value || fallbackValue
+        };
+      })
+    }, quizReviewToken);
+    assert.equal(wrongQuizSubmission.response.status, 200);
+    const pendingShortQuestions = quiz.questions.filter((question) => question.type === "short_answer");
+    if (pendingShortQuestions.length) {
+      const completedShortAnswerReview = await postJson(baseUrl, "/api/learning/grade", {
+        unitId: quizUnitId,
+        fallbackToZero: true,
+        questions: pendingShortQuestions.map((question) => ({ questionId: question.id }))
+      }, quizReviewToken);
+      assert.equal(completedShortAnswerReview.response.status, 200);
+      assert.equal(completedShortAnswerReview.payload.results.length, pendingShortQuestions.length);
+    }
+
+    const quizReviewDecision = await postJson(baseUrl, "/api/learning/assistant/intervention", {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      signal: { kind: "quiz_review", incorrect: 99, pendingReview: 99 },
+      contextRef: { kind: "quiz", scope: "quiz" }
+    }, quizReviewToken);
+    assert.equal(quizReviewDecision.response.status, 200);
+    assert.equal(quizReviewDecision.payload.decision.action, "review_mistake");
+    assert.equal(quizReviewDecision.payload.decision.interactionMode, "student_reply");
+    assert.equal(quizReviewDecision.payload.decision.draftQuestion, "");
+    assert.match(quizReviewDecision.payload.decision.assistantPrompt, /第 1 \/ \d+ 道错题/);
+    assert.ok(quizReviewDecision.payload.interventionId);
+    assert.ok(Array.isArray(quizReviewDecision.payload.decision.replyOptions));
+
+    const forgedProactiveReply = await postJson(baseUrl, "/api/learning/assistant/ask", {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      question: "公式或概念记混了。",
+      proactiveInterventionId: "not-a-server-issued-intervention",
+      contextRef: { kind: "quiz", scope: "quiz" }
+    }, quizReviewToken);
+    assert.equal(forgedProactiveReply.response.status, 409);
+    assert.equal(forgedProactiveReply.payload.code, "assistant_intervention_expired");
+    assert.equal(
+      forgedProactiveReply.payload.quota.remaining,
+      3,
+      "an invalid proactive prompt identity must not consume question quota"
+    );
+
+    const quizReviewReply = await ask(baseUrl, {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      question: "公式或概念记混了。",
+      proactiveInterventionId: quizReviewDecision.payload.interventionId,
+      contextRef: { kind: "quiz", scope: "quiz" }
+    }, quizReviewToken);
+    assert.equal(quizReviewReply.response.status, 200);
+    assert.match(quizReviewReply.answer, /第 \d+ 题/);
+    assert.doesNotMatch(quizReviewReply.answer, /请提供你做错的题目|请描述题目/);
+    const quizReviewDone = quizReviewReply.rows.at(-1);
+    assert.equal(quizReviewDone.type, "done");
+    assert.ok(quizReviewDone.quizReviewFollowUp);
+    assert.equal(quizReviewDone.quizReviewFollowUp.done, false);
+    assert.ok(quizReviewDone.quizReviewFollowUp.prompt?.interventionId);
+    assert.match(
+      quizReviewDone.quizReviewFollowUp.prompt.content,
+      /第 2 \/ \d+ 道错题/
+    );
+
+    const replayedProactiveReply = await postJson(baseUrl, "/api/learning/assistant/ask", {
+      chapterId: chapter.id,
+      unitId: quizUnitId,
+      question: "重复使用旧的复盘提示",
+      proactiveInterventionId: quizReviewDecision.payload.interventionId,
+      contextRef: { kind: "quiz", scope: "quiz" }
+    }, quizReviewToken);
+    assert.equal(replayedProactiveReply.response.status, 409);
+    assert.equal(replayedProactiveReply.payload.code, "assistant_intervention_expired");
+    assert.equal(
+      replayedProactiveReply.payload.quota.remaining,
+      2,
+      "a consumed proactive prompt must not be reusable or consume another question"
+    );
 
     const exhausted = await postJson(baseUrl, "/api/learning/assistant/ask", {
       chapterId: chapter.id,
