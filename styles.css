@@ -56,8 +56,25 @@
 
 .multi-scene-slide-heading {
   display: grid;
-  gap: 6px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: start;
   margin-bottom: 14px;
+}
+
+.multi-scene-slide-kind {
+  justify-self: start;
+}
+
+.multi-scene-slide-heading > [data-resource-fullscreen] {
+  grid-column: 2;
+  grid-row: 1;
+  white-space: nowrap;
+}
+
+.multi-scene-slide-heading > h2,
+.multi-scene-slide-heading > p {
+  grid-column: 1 / -1;
 }
 
 .multi-scene-slide-heading h2,

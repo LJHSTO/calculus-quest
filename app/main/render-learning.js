@@ -469,15 +469,18 @@ function focusKnowledgeSceneChoicePanel() {
 
 function renderResourceShell(unit, title, body, className = "") {
   const isKnowledgeResource = className.split(/\s+/).includes("multi-scene-knowledge-resource");
-  return `
-    <section class="resource-shell ${className}" data-resource-shell data-resource-unit="${unit.id}">
-      <div class="resource-toolbar">
+  const resourceToolbar = isKnowledgeResource
+    ? ""
+    : `<div class="resource-toolbar">
         <div>
           <span class="type-pill">${typeText(unit)}</span>
           <strong>${escapeHtml(title)}</strong>
         </div>
-        <button class="button soft" type="button" data-resource-fullscreen>${isKnowledgeResource ? "讲解页全屏" : "全屏"}</button>
-      </div>
+        <button class="button soft" type="button" data-resource-fullscreen>全屏</button>
+      </div>`;
+  return `
+    <section class="resource-shell ${className}" data-resource-shell data-resource-unit="${unit.id}">
+      ${resourceToolbar}
       <div class="resource-body">
         ${body}
       </div>
@@ -562,7 +565,8 @@ function renderKnowledgeUnit(unit) {
         ${renderQuizReturnNotice(unit)}
         <section class="multi-scene-slide-panel required">
           <div class="multi-scene-slide-heading">
-            <span class="type-pill">讲解页</span>
+            <span class="type-pill multi-scene-slide-kind">讲解页</span>
+            <button class="button soft" type="button" data-resource-fullscreen>讲解页全屏</button>
             <h2>${renderInlineMath(slide.title || kp.name || unit.label)}</h2>
             <p>${renderInlineMath(module.title || unit.moduleTitle || "")}</p>
           </div>
