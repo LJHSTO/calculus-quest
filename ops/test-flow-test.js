@@ -14,6 +14,7 @@ const html = fs.readFileSync(path.join(root, "flow-test.html"), "utf8");
 const css = fs.readFileSync(path.join(root, "app", "flow-test", "flow-test.css"), "utf8");
 const js = fs.readFileSync(path.join(root, "app", "flow-test", "flow-test.js"), "utf8");
 const core = fs.readFileSync(path.join(root, "app", "main", "core.js"), "utf8");
+const learningRenderer = fs.readFileSync(path.join(root, "app", "main", "render-learning.js"), "utf8");
 const server = fs.readFileSync(path.join(root, "server.js"), "utf8");
 assert.match(html, /app\/flow-test\/flow-test\.css/);
 assert.match(html, /app\/flow-test\/flow-test\.js/);
@@ -58,6 +59,9 @@ assert.match(js, /is-local-fullscreen/);
 assert.match(js, /resourcesForKnowledgePoint/);
 assert.match(js, /function slideStructureState/);
 assert.match(js, /candidate.type === "slide"/);
+assert.match(js, /appUrl\(`resources\/\$\{candidate\.root\}\/\$\{candidate\.file\}`\)/);
+assert.match(learningRenderer, /coursewareFrameUrl\(`resources\/\$\{candidate\.root\}\/\$\{candidate\.file\}`\)/);
+assert.match(learningRenderer, /knowledgeResourceCandidate\(unit, selectedTypeId\)/);
 assert.doesNotMatch(js, /fetchJson\("\/api\//);
 
 const route = JSON.parse(fs.readFileSync(path.join(root, "data", "multi-scene-learning-route.json"), "utf8"));
@@ -77,6 +81,15 @@ const resources = [];
 
 assert.equal(route.chapters.length, 11);
 assert.equal(resources.length, 288);
+const resourceKeys = route.chapters.flatMap((chapter) => (chapter.modules || []).flatMap((module) => (
+  (module.knowledgePoints || []).flatMap((knowledgePoint) => (
+    (knowledgePoint.resourceCandidates || []).map((candidate) => `${candidate.root}/${candidate.file}`)
+  ))
+)));
+assert.equal(new Set(resourceKeys).size, resourceKeys.length, "resource candidates must be unique");
+const encodedByFlow = resourceKeys.map((key) => key.split("/").map(encodeURIComponent).join("/"));
+const encodedByFormalSite = resourceKeys.map((key) => encodeURI(key));
+assert.deepEqual(encodedByFlow, encodedByFormalSite, "Flow Test and formal site must encode resource paths identically");
 const slides = route.chapters.flatMap((chapter) => (chapter.modules || []).flatMap((module) => (
   (module.knowledgePoints || []).filter((knowledgePoint) => knowledgePoint.slide?.canvas)
 )));

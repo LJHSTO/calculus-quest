@@ -485,6 +485,17 @@ function renderResourceShell(unit, title, body, className = "") {
   `;
 }
 
+function renderQuizReturnNotice(unit = {}) {
+  const context = state.returnToQuiz || {};
+  if (!context.unitId || !context.targetUnitId || context.targetUnitId !== unit.id) return "";
+  return `
+    <div class="quiz-return-notice" role="status" aria-live="polite">
+      <strong>正在回看课件</strong>
+      <span>可按左上角“返回”键返回测验。</span>
+    </div>
+  `;
+}
+
 function renderKnowledgeUnit(unit) {
   const content = unit.scene.content || {};
   const module = content.module || {};
@@ -548,6 +559,7 @@ function renderKnowledgeUnit(unit) {
       unit,
       unit.label,
       `<div class="multi-scene-knowledge-player">
+        ${renderQuizReturnNotice(unit)}
         <section class="multi-scene-slide-panel required">
           <div class="multi-scene-slide-heading">
             <span class="type-pill">讲解页</span>
@@ -757,7 +769,6 @@ function renderQuiz(unit) {
                   <h3>${index + 1}. ${renderQuestionTextWithLinks(question)}</h3>
                   ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
                 </div>
-                ${renderQuizCoverage(question, unit)}
                 ${renderQuestionInput(unit, question, submitted, reviewResult)}
                 ${review}
               </article>

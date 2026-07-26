@@ -38,10 +38,24 @@ assert.match(flowSource, /function quizKnowledgePointLabels\(/);
 assert.doesNotMatch(flowSource, /question\.knowledgePointIds\.join\(/);
 
 const renderSource = read("app/main/render-learning.js");
-assert.match(renderSource, /\$\{renderQuizCoverage\(question, unit\)\}/);
+const quizSource = read("app/main/quiz.js");
+const eventsSource = read("app/main/events.js");
 const sandbox = {
   console,
   curriculum: route.chapters,
+  state: { submittedQuizzes: [], returnToQuiz: null },
+  els: {
+    lessonPlayer: {
+      innerHTML: "",
+      querySelector: () => null
+    },
+    completeLesson: {
+      addEventListener: () => {}
+    }
+  },
+  document: {
+    querySelectorAll: () => []
+  },
   KnowledgePointLabels: labelsApi,
   escapeHtml(value) {
     return String(value ?? "")
@@ -54,13 +68,112 @@ const sandbox = {
   renderMathInHtml: (value) => String(value ?? ""),
   resourceUrl: (value) => value,
   CoursewareContextCore: { BRIDGE_VERSION: "test-bridge-v1" },
+  analyticsTrack: () => {},
+  moduleRoleForUnit: () => "",
+  quizRecordsForUnit: () => [],
+  displayOptionLabel: (option) => option.label || option.text || option.value || "",
+  getChapter: () => ({ allUnits: [], units: [] }),
+  quizMaxScoreFor: (question) => Number(question.points || 1),
+  quizAiReviewFailed: () => false,
+  quizReviewIsPending: () => false,
+  quizScoreFromAiScore: (score) => Number(score || 0),
+  quizFormatScore: (score) => String(score),
+  quizQuestionScoreLabel: () => "1 / 1 分",
+  completeAndAdvanceCurrentUnit: () => {},
   knowledgeInteractionTypes: () => [],
   selectedKnowledgeSceneType: () => "",
   knowledgeResourceCandidate: () => null
 };
 vm.createContext(sandbox);
 vm.runInContext(renderSource, sandbox, { filename: "render-learning.js" });
+vm.runInContext(quizSource, sandbox, { filename: "quiz.js" });
 assert.equal(typeof sandbox.renderQuizCoverage, "function");
+assert.equal(typeof sandbox.renderQuizReturnNotice, "function");
+
+const firstQuizQuestion = route.chapters
+  .flatMap((chapter) => ["preQuiz", "formativeQuiz", "postQuiz"]
+    .flatMap((phase) => chapter.flow?.[phase]?.questions || []))
+  .find((question) => (question.knowledgePointIds || []).length);
+assert.ok(firstQuizQuestion, "expected at least one quiz question with knowledge-point coverage");
+
+sandbox.renderResourceShell = (_unit, _title, body) => body;
+sandbox.renderAssessmentBanner = () => "";
+sandbox.renderCoach = () => "";
+sandbox.renderQuestionInput = () => "<input>";
+sandbox.setupQuizVisibilityTracking = () => {};
+sandbox.renderQuiz({
+  id: "quiz-unsubmitted",
+  label: "未提交测验",
+  chapterId: route.chapters[0].id,
+  assessmentPhase: "pre",
+  scene: {
+    type: "quiz",
+    content: { questions: [firstQuizQuestion] }
+  }
+});
+assert.equal(
+  (sandbox.els.lessonPlayer.innerHTML.match(/data-quiz-coverage/g) || []).length,
+  0,
+  "unsubmitted quiz cards must not expose knowledge-point coverage"
+);
+
+const reviewUnit = { id: "quiz-submitted", chapterId: route.chapters[0].id };
+const choiceQuestion = {
+  ...firstQuizQuestion,
+  type: "single",
+  options: [
+    { value: "A", label: "选项 A" },
+    { value: "B", label: "选项 B" }
+  ],
+  answer: ["A"],
+  analysis: "解析"
+};
+const reviewCases = [
+  {
+    label: "correct choice",
+    question: choiceQuestion,
+    result: { response: ["A"], answer: ["A"], isCorrect: true }
+  },
+  {
+    label: "incorrect choice",
+    question: choiceQuestion,
+    result: { response: ["B"], answer: ["A"], isCorrect: false }
+  },
+  {
+    label: "short answer",
+    question: {
+      ...firstQuizQuestion,
+      type: "short_answer",
+      referenceAnswer: "参考答案",
+      commentPrompt: "评分参考"
+    },
+    result: {
+      response: "作答",
+      aiScore: 1,
+      aiWeakConcepts: []
+    }
+  }
+];
+reviewCases.forEach(({ label, question, result }) => {
+  const html = sandbox.renderQuestionReview({ question, result, index: 0, unit: reviewUnit });
+  assert.equal(
+    (html.match(/data-quiz-coverage/g) || []).length,
+    1,
+    `${label} review must show knowledge-point coverage exactly once`
+  );
+});
+
+sandbox.state.returnToQuiz = {
+  unitId: "quiz-submitted",
+  questionId: firstQuizQuestion.id,
+  targetUnitId: "knowledge-target"
+};
+assert.match(
+  sandbox.renderQuizReturnNotice({ id: "knowledge-target" }),
+  /可按左上角“返回”键返回测验/
+);
+assert.equal(sandbox.renderQuizReturnNotice({ id: "knowledge-other" }), "");
+assert.match(eventsSource, /targetUnitId:\s*targetUnit\?\.id\s*\|\|\s*targetUnitId/);
 
 let questionCount = 0;
 const observedCoverageGaps = [];

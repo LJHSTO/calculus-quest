@@ -23,6 +23,26 @@
   gap: 16px;
 }
 
+.quiz-return-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e4c66a;
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: #fff8df;
+  color: #574315;
+  padding: 10px 12px;
+}
+
+.quiz-return-notice strong {
+  flex: 0 0 auto;
+}
+
+.quiz-return-notice span {
+  line-height: 1.5;
+}
+
 .multi-scene-slide-panel,
 .multi-scene-scene-panel,
 .multi-scene-review-panel,

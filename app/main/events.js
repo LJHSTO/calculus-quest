@@ -52,6 +52,7 @@ document.addEventListener("click", (event) => {
       state.returnToQuiz = {
         unitId: sourceUnit.id,
         questionId: questionCard?.dataset.question || "",
+        targetUnitId: targetUnit?.id || targetUnitId,
         createdAt: beijingNow()
       };
       saveState();

@@ -190,9 +190,9 @@ function renderQuestionReview({ question, result, index, unit }) {
           <div class="question-answer-hidden" data-answer-hidden style="display:none">
             ${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, correctAnswer), "correct-answer")}
             ${renderAnalysisBlock(analysis)}
-          </div>
-          ${renderQuizCoverage(question, unit)}`
+          </div>`
       }
+      ${renderQuizCoverage(question, unit)}
     </div>
   `;
 }
