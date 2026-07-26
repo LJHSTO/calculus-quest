@@ -43,7 +43,9 @@ const flowVersion = js.match(/COURSEWARE_RESOURCE_VERSION\s*=\s*"([^"]+)"/)?.[1]
 const formalVersion = core.match(/COURSEWARE_RESOURCE_VERSION\s*=\s*"([^"]+)"/)?.[1];
 assert.ok(flowVersion);
 assert.equal(flowVersion, formalVersion);
-assert.match(html, new RegExp(`flow-test\\.js\\?v=${flowVersion.replace("audited-cw-v5", "platform-qa-v2")}`));
+const escapedVersion = flowVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+assert.match(html, new RegExp(`flow-test\\.css\\?v=${escapedVersion}`));
+assert.match(html, new RegExp(`flow-test\\.js\\?v=${escapedVersion}`));
 assert.match(server, /relative === "flow-test\.html"/);
 assert.match(server, /publicFlowTestFiles\.has\(relative\)/);
 assert.match(js, /appUrl\("data\/multi-scene-learning-route\.json"\)/);
@@ -68,8 +70,9 @@ assert.match(learningRenderer, /const resourceToolbar = isKnowledgeResource\s*\?
 assert.match(learningRenderer, /class="type-pill multi-scene-slide-kind">讲解页<\/span>/);
 assert.match(learningRenderer, /data-resource-fullscreen>讲解页全屏<\/button>/);
 assert.match(mainCss, /\.multi-scene-slide-heading\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+auto;/s);
-assert.match(mainHtml, /styles\.css\?v=20260726-slide-heading-v3/);
-assert.match(mainHtml, /render-learning\.js\?v=20260726-slide-heading-v3/);
+assert.match(mainHtml, new RegExp(`styles\\.css\\?v=${escapedVersion}`));
+assert.match(mainHtml, new RegExp(`app/main/core\\.js\\?v=${escapedVersion}`));
+assert.match(mainHtml, new RegExp(`render-learning\\.js\\?v=${escapedVersion}`));
 assert.doesNotMatch(js, /fetchJson\("\/api\//);
 
 const route = JSON.parse(fs.readFileSync(path.join(root, "data", "multi-scene-learning-route.json"), "utf8"));

@@ -2245,6 +2245,7 @@ h3 {
 }
 
 .embed-frame {
+  display: block;
   width: 100%;
   min-height: 680px;
   border: 1px solid var(--line);

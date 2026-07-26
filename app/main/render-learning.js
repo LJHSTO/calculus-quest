@@ -1573,7 +1573,7 @@ function renderInteractive(unit) {
     ${renderResourceShell(
       unit,
       unit.label,
-      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" data-context-id="interactive-frame:${escapeHtml(unit.id)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(unit.scenarioType || unit.kind || "interactive")}" data-context-label="${escapeHtml(unit.label)}" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe></div>`,
+      `<div class="iframe-container">${loadingHtml}<iframe class="embed-frame" data-context-id="interactive-frame:${escapeHtml(unit.id)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(unit.scenarioType || unit.kind || "interactive")}" data-context-label="${escapeHtml(unit.label)}" title="${escapeHtml(unit.label)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay" allowfullscreen></iframe></div>`,
       "html-resource interactive-resource"
     )}
     ${renderCoach(unit.scene, unit.chapterId, unit.id)}
