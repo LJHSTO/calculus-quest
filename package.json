@@ -18,7 +18,8 @@
     "slide:test": "node ops/test-slide-rendering.js",
     "katex:test": "node ops/test-katex.js",
     "db:check": "node ops/database-release-check.js",
-    "auth:test": "node ops/test-auth-login.js"
+    "auth:test": "node ops/test-auth-login.js",
+    "announcement:test": "node ops/test-announcements-api.js"
   },
   "dependencies": {
     "katex": "^0.17.0",

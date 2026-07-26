@@ -34,6 +34,7 @@ const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
 const feedback = require("./lib/feedback");
+const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
 let coursewareBridgeScript = "";
 try {
@@ -1001,6 +1002,16 @@ async function handleApi(req, res, url) {
       sendJson(res, 200, { ok: true, data: { ...researchConfig, courseVersion } });
       return;
     }
+
+    if (await systemAnnouncementApi.handle({
+      req,
+      res,
+      url,
+      db,
+      checkAdmin,
+      readJsonBody,
+      sendJson
+    })) return;
 
     if (req.method === "GET" && learningRouteApiPaths.has(url.pathname)) {
       if (!publicLearningRouteJson) {
@@ -2323,15 +2334,21 @@ async function handleApi(req, res, url) {
 
     sendJson(res, 404, { ok: false, message: "接口不存在。" });
   } catch (error) {
-    console.error("API error:", error);
-    const status = error.message === "Request body is too large" ? 413
-      : error.message === "Invalid JSON body" ? 400
-      : 500;
+    const explicitStatus = Number(error.status || 0);
+    const status = explicitStatus >= 400 && explicitStatus <= 599 ? explicitStatus
+      : error.message === "Request body is too large" ? 413
+        : error.message === "Invalid JSON body" ? 400
+          : 500;
+    if (status >= 500) console.error("API error:", error);
     const message = status === 500 ? "服务器内部错误。"
       : error.message === "Request body is too large" ? "请求内容过大。"
         : error.message === "Invalid JSON body" ? "请求格式不正确。"
           : error.message;
-    sendJson(res, status, { ok: false, message });
+    sendJson(res, status, {
+      ok: false,
+      ...(error.code ? { code: error.code } : {}),
+      message
+    });
   }
 }
 
@@ -2442,6 +2459,7 @@ const server = http.createServer((req, res) => {
 
 function shutdown(signal) {
   console.log(`${signal} received. Saving database before shutdown...`);
+  systemAnnouncementApi.closeStreams();
   try {
     db.saveNow();
   } catch (error) {
@@ -2470,6 +2488,7 @@ try {
 
 db.getDb().then(() => {
  console.log("Database initialized.");
+  systemAnnouncementApi.ensureSchema(db.getDbSync());
   // Migration: fix existing is_correct bug where pending short answers (-1) were stored as 1
  try {
     const fixedCount = db.normalizeLegacyPendingShortAnswerFlags();

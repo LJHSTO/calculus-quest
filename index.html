@@ -49,6 +49,7 @@
 
     <link rel="stylesheet" href="styles.css?v=20260724-knowledge-workspace-v6" />
     <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260724-knowledge-workspace-v6" />
+    <link rel="stylesheet" href="app/main/system-announcements.css?v=20260726-announcements-v2" />
     <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
   </head>
   <body>
@@ -69,6 +70,34 @@
         <button class="nav-button" type="button" data-view="feedback">反馈</button>
         <button class="nav-button" type="button" data-view="progress">记录</button>
       </nav>
+      <div class="system-announcement-center" id="system-announcement-center">
+        <button
+          class="announcement-toggle"
+          id="announcement-toggle"
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="announcement-panel"
+          aria-label="打开系统公告"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10.27 21a2 2 0 0 0 3.46 0"></path>
+            <path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"></path>
+          </svg>
+          <span class="announcement-toggle-label">公告</span>
+          <span class="announcement-unread-count" id="announcement-unread-count" hidden>0</span>
+        </button>
+        <section class="announcement-panel" id="announcement-panel" role="dialog" aria-label="系统公告" hidden>
+          <header>
+            <div>
+              <strong>系统公告</strong>
+              <span id="announcement-panel-summary">暂无未读公告</span>
+            </div>
+            <button class="announcement-mark-read" id="announcement-mark-read" type="button">全部已读</button>
+          </header>
+          <div class="announcement-list" id="announcement-list"></div>
+        </section>
+      </div>
       <div class="theme-control" id="theme-control">
         <button
           class="theme-launcher"
@@ -150,6 +179,18 @@
         </div>
       </div>
     </header>
+
+    <section class="announcement-banner" id="announcement-banner" aria-live="polite" hidden>
+      <div class="announcement-banner-inner">
+        <span class="announcement-banner-type" id="announcement-banner-type">重要通知</span>
+        <div>
+          <strong id="announcement-banner-title"></strong>
+          <p id="announcement-banner-content"></p>
+        </div>
+        <button class="announcement-banner-open" id="announcement-banner-open" type="button">查看公告</button>
+        <button class="announcement-banner-close" id="announcement-banner-close" type="button" aria-label="关闭这条公告">×</button>
+      </div>
+    </section>
 
     <section id="auth-gate" class="auth-gate" hidden>
       <form id="login-form" class="login-panel is-login" data-auth-form-mode="login">
@@ -468,6 +509,7 @@
     <script src="app/main/learning-notes.js?v=20260724-knowledge-workspace-v6"></script>
     <script src="app/main/quiz-review-state.js?v=20260723-short-answer-recovery-v1"></script>
     <script src="app/main/core.js?v=20260726-audited-cw-v5"></script>
+    <script src="app/main/system-announcements.js?v=20260726-announcements-v2"></script>
     <script src="app/main/knowledge-point-labels.js?v=20260724-knowledge-labels-v1"></script>
     <script src="app/main/return-context.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/analytics.js?v=20260723-scene-recommendation-v2"></script>

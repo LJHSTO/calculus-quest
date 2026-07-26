@@ -64,6 +64,7 @@ function showApp() {
   if (loadController) loadController.abort();
   loadController = new AbortController();
   loadAll(loadController.signal);
+  window.CQAnnouncementAdmin?.load();
 }
 
 async function testToken() {
