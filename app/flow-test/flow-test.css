@@ -366,10 +366,46 @@ body.is-viewer-local-fullscreen { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .rail-item.is-busy .rail-dot { animation: none; } }
 
 @media (max-width: 1600px) {
-  .workspace { height: auto; min-height: calc(100vh - 103px); grid-template-columns: 170px minmax(0, 1fr); grid-template-rows: minmax(520px, auto) 70vh; overflow: visible; }
-  .chapter-pane { grid-row: 1; }
-  .flow-pane { grid-row: 1; border-right: 0; }
-  .viewer-pane { grid-column: 1 / -1; grid-row: 2; border-top: 1px solid var(--line-strong); }
+  .workspace {
+    height: calc(100vh - var(--header-height) - 45px);
+    min-height: 0;
+    grid-template-columns: 150px 340px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    overflow: hidden;
+  }
+  .chapter-pane { grid-column: 1; grid-row: 1; }
+  .flow-pane { grid-column: 2; grid-row: 1; }
+  .viewer-pane { grid-column: 3; grid-row: 1; }
+}
+
+@media (max-width: 1400px) {
+  .workspace {
+    grid-template-columns: 320px minmax(0, 1fr);
+    grid-template-rows: 72px minmax(0, 1fr);
+  }
+  .chapter-pane {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .chapter-pane .pane-heading { display: none; }
+  .chapter-list {
+    height: 100%;
+    padding: 7px 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    overflow-x: auto;
+  }
+  .chapter-button {
+    flex: 0 0 150px;
+    min-height: 54px;
+  }
+  .flow-pane { grid-column: 1; grid-row: 2; }
+  .viewer-pane { grid-column: 2; grid-row: 2; }
 }
 
 @media (max-width: 640px) {
@@ -381,6 +417,7 @@ body.is-viewer-local-fullscreen { overflow: hidden; }
   .rail-connector { display: none; }
   .workspace { min-height: calc(100vh - 135px); grid-template-columns: 1fr; grid-template-rows: auto auto 68vh; }
   .chapter-pane { grid-column: 1; grid-row: 1; border-right: 0; border-bottom: 1px solid var(--line); overflow: visible; }
+  .chapter-pane .pane-heading { display: flex; }
   .chapter-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .chapter-button { min-height: 42px; grid-template-columns: 1fr; gap: 1px; }
   .chapter-label { font-size: 11px; }
