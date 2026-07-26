@@ -21,7 +21,8 @@
     slideZoom: 1
   };
 
-  const COURSEWARE_RESOURCE_VERSION = "20260726-courseware-layout-v2";
+  const COURSEWARE_RESOURCE_VERSION = "20260726-courseware-layout-v3";
+  const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260723-v5";
 
   const BASE_PATH = (() => {
     const pathname = window.location.pathname.replace(/\/+/g, "/");
@@ -75,7 +76,7 @@
   function resourceUrl(candidate) {
     if (!candidate || candidate.type === "slide") return "";
     const url = appUrl(`resources/${candidate.root}/${candidate.file}`);
-    return `${url}${url.includes("?") ? "&" : "?"}v=${COURSEWARE_RESOURCE_VERSION}`;
+    return `${url}${url.includes("?") ? "&" : "?"}v=${COURSEWARE_RESOURCE_VERSION}&cqContextBridge=${encodeURIComponent(COURSEWARE_CONTEXT_BRIDGE_VERSION)}`;
   }
 
   function resourceKey(candidate) {

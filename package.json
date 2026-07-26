@@ -9,7 +9,6 @@
     "kg:build": "node ops/build-knowledge-graph.js",
     "kg:test": "node ops/test-knowledge-graph.js",
     "flow:test": "node ops/test-flow-test.js",
-    "flow:static": "node ops/build-flow-test-static.js",
     "quiz:test": "node ops/test-quiz-coverage.js",
     "path:test": "node ops/test-agentic-navigation.js",
     "grading:test": "node ops/test-short-answer-recovery.js",
