@@ -136,12 +136,13 @@ const publicRootFiles = new Set([
 const publicFlowTestFiles = new Set([
   "app/flow-test/flow-test.css",
   "app/flow-test/flow-test.js",
-  "data/multi-scene-learning-route.json",
   "data/knowledge-graph.json"
 ]);
+const publicLearningRouteStaticPath = "/data/multi-scene-learning-route.json";
 const publicLibFiles = new Set([
   "lib/katex.min.css",
   "lib/katex.min.js",
+  "lib/chart.umd.min.js",
   "lib/interaction-policy.js",
   "lib/quiz-question-order.js"
 ]);
@@ -171,6 +172,10 @@ const publicAssetExtensions = new Set([
 const publicFontExtensions = new Set([".woff", ".woff2", ".ttf"]);
 
 function send(res, status, body, type = "text/plain; charset=utf-8", extraHeaders = {}) {
+  if (res.headersSent) {
+    res.destroy();
+    return;
+  }
   res.writeHead(status, {
     "Content-Type": type,
     "Cache-Control": "no-store",
@@ -478,16 +483,22 @@ function summaryFromData(data) {
   };
 }
 
-// Simple in-memory rate limiter: 120 req/min per IP for API routes
+// Simple in-memory rate limiter for API routes.
 const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60000;
-const RATE_LIMIT_MAX = 120;
+const RATE_LIMIT_WINDOW = Math.max(
+  100,
+  Number(process.env.RATE_LIMIT_WINDOW_MS || 60000) || 60000
+);
+const RATE_LIMIT_MAX = Math.max(
+  1,
+  Number(process.env.RATE_LIMIT_MAX || 120) || 120
+);
 
 function checkRateLimit(req) {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
   const now = Date.now();
   let entry = rateLimitMap.get(ip);
-  if (!entry || now - entry.resetAt > RATE_LIMIT_WINDOW) {
+  if (!entry || now >= entry.resetAt) {
     entry = { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
     rateLimitMap.set(ip, entry);
   }
@@ -497,7 +508,7 @@ function checkRateLimit(req) {
  // Cleanup stale entries periodically
  if (rateLimitMap.size > 5000) {
    for (const [key, val] of rateLimitMap) {
-     if (now - val.resetAt > RATE_LIMIT_WINDOW) rateLimitMap.delete(key);
+     if (now >= val.resetAt) rateLimitMap.delete(key);
    }
  }
   return true;
@@ -597,6 +608,8 @@ function bearerToken(req, body = {}) {
   return String(body.token || "").trim();
 }
 
+const sessionTouchIntervalMs = 60 * 1000;
+
 function authenticate(req, body = {}) {
   const token = bearerToken(req, body);
   if (!token) return null;
@@ -607,15 +620,18 @@ function authenticate(req, body = {}) {
   if (session.expires_at && session.expires_at < ts) return null;
   const participant = db.getUser(session.user_id);
   if (!participant) return null;
-  db.touchSession(token, ts);
-  db.upsertUser(participant.id, participant.nickname || "", participant.created_at, ts, {
-    nicknameNorm: participant.nickname_norm || normalizeIdentity(participant.nickname || ""),
-    email: participant.email || "",
-    emailNorm: participant.email_norm || normalizeEmail(participant.email || ""),
-    passwordHash: participant.password_hash || "",
-    passwordUpdatedAt: participant.password_updated_at || "",
-    profileUpdatedAt: participant.profile_updated_at || ""
-  });
+  const lastSeenMs = Date.parse(session.last_seen_at || "");
+  if (!Number.isFinite(lastSeenMs) || Date.now() - lastSeenMs >= sessionTouchIntervalMs) {
+    db.touchSession(token, ts);
+    db.upsertUser(participant.id, participant.nickname || "", participant.created_at, ts, {
+      nicknameNorm: participant.nickname_norm || normalizeIdentity(participant.nickname || ""),
+      email: participant.email || "",
+      emailNorm: participant.email_norm || normalizeEmail(participant.email || ""),
+      passwordHash: participant.password_hash || "",
+      passwordUpdatedAt: participant.password_updated_at || "",
+      profileUpdatedAt: participant.profile_updated_at || ""
+    });
+  }
   return { participant, token };
 }
 
@@ -1435,6 +1451,10 @@ async function handleApi(req, res, url) {
     }
 
     if (req.method === "GET" && url.pathname === flowTestRouteApiPath) {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
       if (!flowTestRouteJson) {
         sendJson(res, 404, { ok: false, message: "未找到课件检视路线。" });
         return;
@@ -1528,6 +1548,7 @@ async function handleApi(req, res, url) {
         created_at: timestamp
       });
       const user = db.getUser(participantId);
+      db.saveNow();
       sendJson(res, 200, { ok: true, participant: safePublicParticipant(user), token });
       return;
     }
@@ -1798,6 +1819,7 @@ async function handleApi(req, res, url) {
       }
       let data = {};
       try { data = JSON.parse(snap.data); } catch { /* use empty */ }
+      data = db.normalizeLearningSnapshot(data);
       sendJson(res, 200, {
         ok: true,
         snapshot: {
@@ -3008,6 +3030,7 @@ async function handleApi(req, res, url) {
           created_at: result.timestamp
         });
       });
+      db.saveNow();
 
       sendJson(res, 200, {
         ok: true,
@@ -3444,12 +3467,42 @@ const server = http.createServer((req, res) => {
   const url = new URL(rawUrl, `http://${req.headers.host || "localhost"}`);
 
   if (url.pathname.startsWith("/api/")) {
-    handleApi(req, res, url);
+    handleApi(req, res, url).catch((error) => {
+      console.error("Unhandled API failure:", error);
+      if (!res.headersSent) {
+        try {
+          sendJson(res, 500, { ok: false, message: "服务器内部错误。" });
+          return;
+        } catch {}
+      }
+      try { res.destroy(); } catch {}
+    });
     return;
   }
 
   if (req.method !== "GET" && req.method !== "HEAD") {
     send(res, 405, "Method not allowed", "text/plain; charset=utf-8", { Allow: "GET, HEAD" });
+    return;
+  }
+
+  if (url.pathname === publicLearningRouteStaticPath) {
+    if (!publicLearningRouteJson) {
+      send(res, 404, "Not found");
+      return;
+    }
+    const headers = {
+      "Cache-Control": "no-store, max-age=0, no-transform",
+      "Content-Length": String(Buffer.byteLength(publicLearningRouteJson))
+    };
+    if (req.method === "HEAD") {
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        ...headers
+      });
+      res.end();
+      return;
+    }
+    send(res, 200, publicLearningRouteJson, "application/json; charset=utf-8", headers);
     return;
   }
 
@@ -3542,6 +3595,24 @@ function shutdown(signal) {
 
 process.once("SIGINT", () => shutdown("SIGINT"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));
+
+let emergencyExitStarted = false;
+
+function emergencyExit(kind, error) {
+  if (emergencyExitStarted) return;
+  emergencyExitStarted = true;
+  console.error(`${kind}:`, error);
+  try {
+    db.saveNow();
+  } catch (saveError) {
+    console.error("Emergency database save failed:", saveError.message);
+  }
+  try { db.releaseWriteLock(); } catch {}
+  process.exit(1);
+}
+
+process.on("uncaughtException", (error) => emergencyExit("Uncaught exception", error));
+process.on("unhandledRejection", (reason) => emergencyExit("Unhandled rejection", reason));
 
 // Initialize database on startup, then start server
 try {

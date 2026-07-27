@@ -65,6 +65,7 @@ let learningSnapshotRevision = 0;
 let learningSnapshotReady = false;
 let learningSnapshotSyncPaused = false;
 let learningSnapshotSyncChain = Promise.resolve();
+let learningSnapshotRetryTimer = null;
 let authTransitionInProgress = false;
 const learningEventRequests = new Set();
 
@@ -99,6 +100,40 @@ function learningDefaults() {
   };
 }
 
+function learningQuizUnitId(record = {}) {
+  return String(record?.unitId || record?.unit_id || "").trim();
+}
+
+function learningSubmittedQuizIds(learningState = state) {
+  const quizResults = Array.isArray(learningState?.quizResults)
+    ? learningState.quizResults
+    : [];
+  const quizAttempts = learningState?.quizAttempts
+    && typeof learningState.quizAttempts === "object"
+    && !Array.isArray(learningState.quizAttempts)
+    ? learningState.quizAttempts
+    : {};
+  return [...new Set([
+    ...(Array.isArray(learningState?.submittedQuizzes) ? learningState.submittedQuizzes : []),
+    ...quizResults.map(learningQuizUnitId),
+    ...Object.keys(quizAttempts)
+  ].filter(Boolean))];
+}
+
+function normalizeLearningStateCompatibility(learningState) {
+  if (!learningState || typeof learningState !== "object") return learningState;
+  learningState.quizResults = Array.isArray(learningState.quizResults)
+    ? learningState.quizResults
+    : [];
+  learningState.quizAttempts = learningState.quizAttempts
+    && typeof learningState.quizAttempts === "object"
+    && !Array.isArray(learningState.quizAttempts)
+    ? learningState.quizAttempts
+    : {};
+  learningState.submittedQuizzes = learningSubmittedQuizIds(learningState);
+  return learningState;
+}
+
 function loadState() {
   const fallback = { ...learningDefaults(), participant: null, authToken: "" };
   try {
@@ -114,7 +149,11 @@ function loadState() {
     }
     localStorage.removeItem(AUTH_TOKEN_KEY);
     if (!sessionToken && legacyToken) sessionStorage.setItem(AUTH_TOKEN_KEY, legacyToken);
-    return { ...fallback, ...saved, authToken: sessionToken || legacyToken };
+    return normalizeLearningStateCompatibility({
+      ...fallback,
+      ...saved,
+      authToken: sessionToken || legacyToken
+    });
   } catch {
     return fallback;
   }
@@ -144,6 +183,12 @@ function saveState() {
 
 const COURSEWARE_RESOURCE_VERSION = "20260726-courseware-layout-v4";
 
+function appRelativeUrl(path = "") {
+  const value = String(path || "");
+  if (/^[a-z][a-z\d+.-]*:/i.test(value) || value.startsWith("//")) return value;
+  return new URL(value.replace(/^\/+/, ""), document.baseURI).toString();
+}
+
 function resourceUrl(path) {
   const encoded = encodeURI(path);
   if (!/^resources\/open-maic\/.*\.(?:html|htm)(?:[?#]|$)/i.test(path)) return encoded;
@@ -151,7 +196,7 @@ function resourceUrl(path) {
 }
 
 async function fetchJson(path, errorMessage) {
-  const response = await fetch(resourceUrl(path));
+  const response = await fetch(appRelativeUrl(resourceUrl(path)));
   if (!response.ok) throw new Error(errorMessage || `${path} 加载失败`);
   return response.json();
 }
@@ -613,7 +658,7 @@ async function apiRequest(path, body = {}) {
   const requestToken = typeof body?.token === "string" && body.token
     ? body.token
     : state.authToken;
-  const response = await fetch(path, {
+  const response = await fetch(appRelativeUrl(path), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -720,6 +765,7 @@ function applyServerLearningSnapshot(serverSnapshot, options = {}) {
 
   if (replace) {
     Object.assign(state, learningDefaults(), incoming || {}, identity);
+    normalizeLearningStateCompatibility(state);
     currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
     currentUnitId = state.currentUnitId || "";
     currentView = validViews.has(state.currentView) ? state.currentView : "home";
@@ -749,6 +795,7 @@ function applyServerLearningSnapshot(serverSnapshot, options = {}) {
   if (!state.lastLearningContext && incoming.lastLearningContext) {
     state.lastLearningContext = incoming.lastLearningContext;
   }
+  normalizeLearningStateCompatibility(state);
 }
 
 async function loadAuthoritativeQuizResults(options = {}) {
@@ -759,9 +806,9 @@ async function loadAuthoritativeQuizResults(options = {}) {
   const payload = await response.json().catch(() => ({}));
   if (!payload.ok || !Array.isArray(payload.data)) return;
   const results = payload.data.map(quizResultFromServer);
-  if (options.replace) {
+  if (options.replace && results.length) {
     state.quizResults = results;
-  } else {
+  } else if (!options.replace) {
     state.quizResults = mergeClientRecords(
       state.quizResults || [],
       results,
@@ -773,9 +820,8 @@ async function loadAuthoritativeQuizResults(options = {}) {
       ...(state.submittedQuizzes || []),
       ...results.map((item) => item.unitId).filter(Boolean)
     ])];
-  } else if (options.replace) {
-    state.submittedQuizzes = [];
   }
+  normalizeLearningStateCompatibility(state);
 }
 
 async function hydrateLearningState(options = {}) {
@@ -826,12 +872,50 @@ async function performLearningSnapshotSync(reason = "manual") {
     });
     setLearningSnapshotVersion(payload);
     lastSnapshotJson = snapshotJson;
+    clearLearningSnapshotRetry();
   } catch (error) {
     if (error.code === "snapshot_generation_conflict") {
+      clearLearningSnapshotRetry();
       await hydrateLearningState({ replace: true }).catch(() => {});
+    } else if (
+      reason !== "retry_after_failure"
+      && learningSnapshotSyncErrorIsRetryable(error)
+    ) {
+      scheduleLearningSnapshotRetry();
     }
     console.warn("Learning snapshot sync failed:", error.message);
   }
+}
+
+function learningSnapshotSyncErrorIsRetryable(error = {}) {
+  const status = Number(error.status || 0);
+  return !status
+    || status === 408
+    || status === 425
+    || status === 429
+    || status >= 500;
+}
+
+function clearLearningSnapshotRetry() {
+  clearTimeout(learningSnapshotRetryTimer);
+  learningSnapshotRetryTimer = null;
+}
+
+function scheduleLearningSnapshotRetry() {
+  if (learningSnapshotRetryTimer) return;
+  const token = state.authToken;
+  learningSnapshotRetryTimer = setTimeout(() => {
+    learningSnapshotRetryTimer = null;
+    if (
+      token
+      && token === state.authToken
+      && isSignedIn()
+      && learningSnapshotReady
+      && !learningSnapshotSyncPaused
+    ) {
+      syncLearningSnapshot("retry_after_failure");
+    }
+  }, 30000);
 }
 
 function syncLearningSnapshot(reason = "manual") {
@@ -842,12 +926,14 @@ function syncLearningSnapshot(reason = "manual") {
 }
 
 async function pauseLearningSnapshotSync() {
+  clearLearningSnapshotRetry();
   clearTimeout(syncTimer);
   await learningSnapshotSyncChain.catch(() => {});
   if (isSignedIn() && learningSnapshotReady && !learningSnapshotSyncPaused) {
     await performLearningSnapshotSync("before_pause");
   }
   learningSnapshotSyncPaused = true;
+  clearLearningSnapshotRetry();
 }
 
 function resumeLearningSnapshotSync() {
@@ -921,6 +1007,7 @@ async function loginParticipant(credentials = {}) {
       } else {
         Object.assign(state, learningDefaults());
       }
+      normalizeLearningStateCompatibility(state);
       currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
       currentUnitId = state.currentUnitId || "";
       switchView("home");

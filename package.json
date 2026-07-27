@@ -17,6 +17,8 @@
     "slide:test": "node ops/test-slide-rendering.js",
     "katex:test": "node ops/test-katex.js",
     "db:check": "node ops/database-release-check.js",
+    "durability:test": "node ops/test-db-flush-durability.js",
+    "security:test": "node ops/test-static-security.js && node ops/test-course-assessment-security.js && node ops/test-rate-limit-window.js",
     "auth:test": "node ops/test-auth-login.js",
     "announcement:test": "node ops/test-announcements-api.js"
   },

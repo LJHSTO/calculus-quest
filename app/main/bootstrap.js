@@ -79,7 +79,9 @@ function profileFieldFromError(error) {
 }
 
 function setAuthMode(mode) {
+  const previousAuthMode = authMode;
   authMode = mode === "register" ? "register" : "login";
+  const modeChanged = previousAuthMode !== authMode;
   if (els.loginForm) {
     els.loginForm.dataset.authFormMode = authMode;
     els.loginForm.classList.toggle("is-register", authMode === "register");
@@ -120,28 +122,16 @@ function setAuthMode(mode) {
   if (els.email) els.email.required = false;
   if (els.registerPassword) {
     els.registerPassword.required = authMode === "register";
-    els.registerPassword.value = "";
+    if (modeChanged && authMode !== "register") els.registerPassword.value = "";
   }
   if (els.registerPasswordConfirm) {
     els.registerPasswordConfirm.required = authMode === "register";
-    els.registerPasswordConfirm.value = "";
+    if (modeChanged && authMode !== "register") els.registerPasswordConfirm.value = "";
   }
   if (els.loginFeedback) els.loginFeedback.textContent = "";
   setTimeout(() => {
-    if (authMode === "register") {
-      if (els.registerPassword) els.registerPassword.value = "";
-      if (els.registerPasswordConfirm) els.registerPasswordConfirm.value = "";
-    }
     (authMode === "register" ? els.nickname || els.email : els.loginIdentifier)?.focus();
   }, 0);
-  setTimeout(() => {
-    if (authMode === "register" && document.activeElement !== els.registerPassword) {
-      if (els.registerPassword) els.registerPassword.value = "";
-      if (els.registerPasswordConfirm && document.activeElement !== els.registerPasswordConfirm) {
-        els.registerPasswordConfirm.value = "";
-      }
-    }
-  }, 250);
 }
 
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
@@ -240,6 +230,12 @@ els.loginForm?.addEventListener("submit", async (event) => {
     analyticsTrack(currentMode === "register" ? "register_success" : "login_success", { source: "auth" });
     setupInteractionTracking();
     if (currentUnitId) analyticsEnterUnit(getUnit(currentUnitId), "login");
+    if (currentMode === "register") {
+      if (els.registerPassword) els.registerPassword.value = "";
+      if (els.registerPasswordConfirm) els.registerPasswordConfirm.value = "";
+    } else if (els.loginPassword) {
+      els.loginPassword.value = "";
+    }
     els.loginFeedback.textContent = "";
   } catch (error) {
     els.loginFeedback.textContent = error.message || "登录失败，请稍后再试。";

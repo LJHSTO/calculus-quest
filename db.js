@@ -65,6 +65,9 @@ let courseLabelCache = null;
 let db = null;
 let saveTimer = null;
 let dbLockFd = null;
+let firstPendingSaveAt = 0;
+const SAVE_DEBOUNCE_MS = 2000;
+const SAVE_MAX_WAIT_MS = 10000;
 
 function writeDatabaseAtomically() {
   if (!db) return;
@@ -147,18 +150,29 @@ function getDbSync() {
 }
 
 function scheduleSave() {
+  const now = Date.now();
+  if (!firstPendingSaveAt) firstPendingSaveAt = now;
+  const delay = Math.max(
+    0,
+    Math.min(SAVE_DEBOUNCE_MS, firstPendingSaveAt + SAVE_MAX_WAIT_MS - now)
+  );
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => {
+    saveTimer = null;
+    firstPendingSaveAt = 0;
     try {
       writeDatabaseAtomically();
     } catch (e) {
       console.error("Failed to save database:", e.message);
+      scheduleSave();
     }
-  }, 2000);
+  }, delay);
 }
 
 function saveNow() {
   clearTimeout(saveTimer);
+  saveTimer = null;
+  firstPendingSaveAt = 0;
   writeDatabaseAtomically();
 }
 
@@ -1435,7 +1449,7 @@ function insertSnapshot(record) {
       record.id,
       record.user_id,
       record.reason || "",
-      JSON.stringify(record.data || {}),
+      JSON.stringify(normalizeLearningSnapshot(record.data || {})),
       Number(record.generation || 0),
       Number(record.revision || 0),
       record.created_at
@@ -1457,7 +1471,7 @@ function parseSnapshotData(row) {
   if (!row) return {};
   try {
     const parsed = JSON.parse(row.data || "{}");
-    return parsed && typeof parsed === "object" ? parsed : {};
+    return normalizeLearningSnapshot(parsed);
   } catch {
     return {};
   }
@@ -1465,6 +1479,28 @@ function parseSnapshotData(row) {
 
 function uniqueStrings(values = []) {
   return Array.from(new Set(values.filter((value) => typeof value === "string" && value)));
+}
+
+function normalizeLearningSnapshot(snapshot = {}) {
+  const source = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot)
+    ? snapshot
+    : {};
+  const quizResultIds = Array.isArray(source.quizResults)
+    ? source.quizResults.map((item) => item?.unitId || item?.unit_id || "")
+    : [];
+  const quizAttemptIds = source.quizAttempts
+    && typeof source.quizAttempts === "object"
+    && !Array.isArray(source.quizAttempts)
+    ? Object.keys(source.quizAttempts)
+    : [];
+  return {
+    ...source,
+    submittedQuizzes: uniqueStrings([
+      ...(Array.isArray(source.submittedQuizzes) ? source.submittedQuizzes : []),
+      ...quizResultIds,
+      ...quizAttemptIds
+    ])
+  };
 }
 
 function mergeRecords(existing = [], incoming = [], keyFor) {
@@ -1519,14 +1555,10 @@ function mergeAgenticPath(existing, incoming) {
 }
 
 function mergeLearningSnapshot(existing = {}, incoming = {}) {
-  const left = existing && typeof existing === "object" ? existing : {};
-  const right = incoming && typeof incoming === "object" ? incoming : {};
+  const left = normalizeLearningSnapshot(existing);
+  const right = normalizeLearningSnapshot(incoming);
   const merged = { ...left, ...right };
   merged.completed = uniqueStrings([...(left.completed || []), ...(right.completed || [])]);
-  merged.submittedQuizzes = uniqueStrings([
-    ...(left.submittedQuizzes || []),
-    ...(right.submittedQuizzes || [])
-  ]);
   merged.quizResults = mergeRecords(left.quizResults || [], right.quizResults || [], (item) =>
     item.id || [item.unitId || item.unit_id, item.questionId || item.question_id, item.timestamp || item.created_at]
       .filter(Boolean)
@@ -1539,6 +1571,7 @@ function mergeLearningSnapshot(existing = {}, incoming = {}) {
     ...(left.selectedKnowledgeScenes || {}),
     ...(right.selectedKnowledgeScenes || {})
   };
+  merged.submittedQuizzes = normalizeLearningSnapshot(merged).submittedQuizzes;
   merged.analytics = mergeAnalytics(left.analytics, right.analytics);
   merged.agenticPath = mergeAgenticPath(left.agenticPath, right.agenticPath);
   if (!right.note && left.note) merged.note = left.note;
@@ -1628,7 +1661,7 @@ function saveLearningSnapshot(record) {
         record.id,
         record.user_id,
         record.reason || "",
-        JSON.stringify(data),
+        JSON.stringify(normalizeLearningSnapshot(data)),
         currentGeneration,
         nextRevision,
         record.created_at
@@ -1698,7 +1731,7 @@ function resetLearningSnapshot(record) {
       [
         record.id,
         record.user_id,
-        JSON.stringify(record.data || {}),
+        JSON.stringify(normalizeLearningSnapshot(record.data || {})),
         nextGeneration,
         nextRevision,
         record.created_at
@@ -3000,6 +3033,7 @@ module.exports = {
   getDb,
   getDbSync,
   saveNow,
+  normalizeLearningSnapshot,
   acquireWriteLock,
   releaseWriteLock,
   databaseSafetyInfo,

@@ -18,11 +18,13 @@
     resource: null,
     quizQuestion: null,
     resourceResults: new Map(),
-    slideZoom: 1
+    slideZoom: 1,
+    answersVisible: false
   };
 
   const COURSEWARE_RESOURCE_VERSION = "20260726-courseware-layout-v4";
   const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260723-v5";
+  const FLOW_TEST_ADMIN_TOKEN_KEY = "cq-flow-test-admin-token";
 
   const BASE_PATH = (() => {
     const pathname = window.location.pathname.replace(/\/+/g, "/");
@@ -130,6 +132,51 @@
     const response = await fetch(url, { headers: { Accept: "application/json" } });
     if (!response.ok) throw new Error(`${url} 返回 HTTP ${response.status}`);
     return response.json();
+  }
+
+  function flowTestAdminToken() {
+    try {
+      const pageUrl = new URL(window.location.href);
+      const fromQuery = pageUrl.searchParams.get("adminToken") || "";
+      if (fromQuery) {
+        sessionStorage.setItem(FLOW_TEST_ADMIN_TOKEN_KEY, fromQuery);
+        pageUrl.searchParams.delete("adminToken");
+        history.replaceState(
+          null,
+          "",
+          `${pageUrl.pathname}${pageUrl.search}${pageUrl.hash}`
+        );
+      }
+      return sessionStorage.getItem(FLOW_TEST_ADMIN_TOKEN_KEY)
+        || sessionStorage.getItem("cq_admin_token")
+        || "";
+    } catch {
+      return "";
+    }
+  }
+
+  async function fetchRoute() {
+    const token = flowTestAdminToken();
+    if (token) {
+      try {
+        const response = await fetch(appUrl("api/course/flow-test-route"), {
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (response.ok) {
+          state.answersVisible = true;
+          return response.json();
+        }
+        sessionStorage.removeItem(FLOW_TEST_ADMIN_TOKEN_KEY);
+        announce("管理员口令无效，已回退到隐藏答案的公开路线。");
+      } catch {
+        announce("完整路线暂时不可用，已回退到隐藏答案的公开路线。");
+      }
+    }
+    state.answersVisible = false;
+    return fetchJson(appUrl("data/multi-scene-learning-route.json"));
   }
 
   function graphMatchesRoute(route, graph) {
@@ -650,13 +697,17 @@
     const coverage = quizKnowledgePointLabels(question, state.chapter);
     const options = (question.options || []).map((option) => `<li><b>${escapeHtml(option.value || "")}</b><span>${escapeHtml(option.label || "")}</span></li>`).join("");
     const answer = quizAnswerText(question);
+    const hiddenNotice = "已隐藏：使用管理员口令打开流程检视后可见";
+    const answersVisible = state.answersVisible
+      || question.answer !== undefined
+      || question.analysis !== undefined;
     return `
       <article class="quiz-detail">
         <div class="quiz-detail-meta"><span>${escapeHtml(quizTypeLabel(question.type))}</span><span>${escapeHtml(String(question.points ?? ""))} 分</span><span>${escapeHtml(question.id || "")}</span></div>
         <h3>${escapeHtml(quizQuestionDisplayText(question, key, state.chapter))}</h3>
         ${options ? `<ol class="quiz-options">${options}</ol>` : ""}
-        <div class="quiz-answer"><strong>标准答案</strong><p>${escapeHtml(answer)}</p></div>
-        <div class="quiz-analysis"><strong>解析</strong><p>${escapeHtml(question.analysis || "暂无解析")}</p></div>
+        <div class="quiz-answer"><strong>标准答案</strong><p>${escapeHtml(answersVisible ? answer || "（空）" : hiddenNotice)}</p></div>
+        <div class="quiz-analysis"><strong>解析</strong><p>${escapeHtml(answersVisible ? question.analysis || "暂无解析" : hiddenNotice)}</p></div>
         ${coverage.length ? `<div class="quiz-coverage"><strong>覆盖知识点</strong><p>${escapeHtml(coverage.join("、"))}</p></div>` : ""}
       </article>
     `;
@@ -813,7 +864,7 @@
     setGate("route", "busy", "加载中");
     try {
       const [route, kgResponse] = await Promise.all([
-        fetchJson(appUrl("data/multi-scene-learning-route.json")),
+        fetchRoute(),
         fetchJson(appUrl("data/knowledge-graph.json"))
       ]);
       state.route = route;
