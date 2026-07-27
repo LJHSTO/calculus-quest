@@ -181,7 +181,7 @@ function saveState() {
   queueLearningSnapshot("state_change");
 }
 
-const COURSEWARE_RESOURCE_VERSION = "20260727-drag-audit-v2";
+const COURSEWARE_RESOURCE_VERSION = "20260727-courseware-interaction-v4";
 
 function appRelativeUrl(path = "") {
   const value = String(path || "");

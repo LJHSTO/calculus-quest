@@ -491,7 +491,7 @@ assert.match(
 assert.match(stylesCss, /\.learning-shell\.is-local-fullscreen-target\s*\{/);
 assert.match(narrationSource, /scheduleLearningCanvasLayoutSync\("learning-fullscreen-toggle"\)/);
 assert.match(eventsSource, /scheduleLearningCanvasLayoutSync\("fullscreen-change"\)/);
-assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20260723-v5"/);
+assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20260727-v7"/);
 assert.match(contextSource, /function selectionLocator/);
 assert.match(contextSource, /function renderNotes/);
 assert.match(contextSource, /type:\s*"cq:notes-sync"/);
@@ -510,8 +510,11 @@ assert.doesNotMatch(
   /allow="[^"]*\bfullscreen\b[^"]*"[^>]*\ballowfullscreen\b/i,
   "courseware iframes should not declare both fullscreen permission forms"
 );
-assert.match(renderLearningSource, /event\.data\?\.type !== "cq:bridge-ready"/);
+assert.match(renderLearningSource, /candidate\.contentWindow === event\.source/);
+assert.match(renderLearningSource, /event\.data\?\.type === "cq:bridge-ready"/);
 assert.match(renderLearningSource, /scheduleLearningCanvasLayoutSync\("courseware-bridge-ready"\)/);
+assert.match(renderLearningSource, /event\.data\?\.type === "cq:interaction"/);
+assert.match(renderLearningSource, /trackCoursewareBridgeInteraction\(frame, event\.data\)/);
 assert.match(bridgeSource, /type === "cq:host-layout"/);
 assert.match(bridgeSource, /type === "cq:notes-sync"/);
 assert.match(bridgeSource, /cq-learning-notes/);

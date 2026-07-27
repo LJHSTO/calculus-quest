@@ -1011,6 +1011,22 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="openmaic-gh13-overlay-stack-fix-v1">
+#overlay {
+  z-index: 2147483600 !important;
+  pointer-events: auto !important;
+  isolation: isolate !important;
+}
+#overlay .overlay-content {
+  position: relative !important;
+  z-index: 2147483601 !important;
+}
+#overlay .start-btn {
+  position: relative !important;
+  z-index: 2147483602 !important;
+  pointer-events: auto !important;
+}
+</style>
 </head>
 <body>
 

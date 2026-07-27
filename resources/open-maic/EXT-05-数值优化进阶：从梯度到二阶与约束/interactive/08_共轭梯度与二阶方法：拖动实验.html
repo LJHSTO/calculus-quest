@@ -1593,7 +1593,7 @@ function draw() {
 
 // ===== Algorithm: Compute Full GD Path =====
 function computeGDPath(x0, y0, stepSize, maxSteps, condNum) {
-  const path = [{ x: x0, y: y0 }];
+  const path = [[x0, y0]];
   const residuals = [];
   const g0 = gradF(x0, y0, condNum);
   const r0 = Math.sqrt(g0[0] * g0[0] + g0[1] * g0[1]);
@@ -1628,7 +1628,7 @@ function computeGDPath(x0, y0, stepSize, maxSteps, condNum) {
       cx = nx; cy = ny;
     }
 
-    path.push({ x: cx, y: cy });
+    path.push([cx, cy]);
     const ng = gradF(cx, cy, condNum);
     const nr = Math.sqrt(ng[0] * ng[0] + ng[1] * ng[1]);
     residuals.push(nr);
@@ -1641,7 +1641,7 @@ function computeGDPath(x0, y0, stepSize, maxSteps, condNum) {
 
 // ===== Algorithm: Compute Full CG Path =====
 function computeCGPath(x0, y0, maxSteps, condNum) {
-  const path = [{ x: x0, y: y0 }];
+  const path = [[x0, y0]];
   const residuals = [];
   const H = hessian(condNum);
 
@@ -1673,7 +1673,7 @@ function computeCGPath(x0, y0, maxSteps, condNum) {
     x = x + alpha * d[0];
     y = y + alpha * d[1];
 
-    path.push({ x, y });
+    path.push([x, y]);
 
     g = gradF(x, y, condNum);
     const r = Math.sqrt(g[0] * g[0] + g[1] * g[1]);

@@ -374,6 +374,9 @@ function updateResourceFullscreenButtons() {
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
+  if (document.fullscreenElement) {
+    document.exitFullscreen?.().catch(() => {});
+  }
   document.querySelectorAll(".is-local-fullscreen-target").forEach((target) => target.classList.remove("is-local-fullscreen-target"));
   document.body.classList.remove("is-learning-local-fullscreen", "is-resource-local-fullscreen");
   updateFullscreenButton();

@@ -2588,5 +2588,90 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 })();
 </script>
 
+<style id="cq-gh05-concavity-desktop-layout-v1">
+@media (min-width: 768px) {
+  body #app {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) clamp(300px, 34vw, 380px) !important;
+    grid-template-rows: auto minmax(0, 1fr) !important;
+    flex-direction: column !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  body #header {
+    grid-column: 1 / -1 !important;
+    grid-row: 1 !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 8px 14px !important;
+  }
+  body #main {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+  body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #canvas-container,
+  body:has(#canvas):has(#canvas-container):not(:has(#gameCanvas)):not(:has(#canvasWrapper)) #canvas-container {
+    width: 100% !important;
+    height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: hidden !important;
+  }
+  body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    position: static !important;
+    inset: auto !important;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    border-top: 0 !important;
+    border-left: 1px solid #334155 !important;
+    border-right: 0 !important;
+    padding: 12px 14px !important;
+  }
+}
+
+@media (min-width: 768px) and (max-height: 520px) {
+  body #header {
+    padding: 5px 12px !important;
+  }
+  body #header h1 {
+    font-size: 14px !important;
+    line-height: 1.15 !important;
+  }
+  body #header .subtitle {
+    margin-top: 0 !important;
+    font-size: 10px !important;
+  }
+  body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls {
+    padding: 8px 10px !important;
+  }
+  body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls .control-row {
+    margin-bottom: 7px !important;
+  }
+  body:has(#canvas-container):has(#controls):not(:has(.controls-panel)):not(:has(#mainCanvas)) #controls input[type="range"] {
+    height: 30px !important;
+  }
+}
+</style>
+
 </body>
 </html>

@@ -5,6 +5,14 @@ let learningCanvasLayoutFrame = null;
 let learningCanvasLayoutSettleTimer = null;
 let learningCanvasLayoutSyncReady = false;
 let learningCanvasLastSize = "";
+const COURSEWARE_BRIDGE_INTERACTION_EVENTS = new Set([
+  "interactive_click",
+  "interactive_change",
+  "interactive_submit",
+  "interactive_drag_end",
+  "parameter_change",
+  "parameter_commit"
+]);
 
 function coursewareFrameUrl(path) {
   const url = resourceUrl(path);
@@ -75,6 +83,35 @@ function scheduleLearningCanvasLayoutSync(reason = "layout-change") {
   }, 220);
 }
 
+function trackCoursewareBridgeInteraction(frame, message = {}) {
+  const eventType = String(message.eventType || "");
+  if (!COURSEWARE_BRIDGE_INTERACTION_EVENTS.has(eventType)) return false;
+  const unitId = frame.closest?.("[data-resource-unit]")?.dataset?.resourceUnit || currentUnitId || "";
+  const unit = getUnit(unitId);
+  const contextRef = message.contextRef && typeof message.contextRef === "object"
+    ? message.contextRef
+    : {};
+  const payload = message.payload && typeof message.payload === "object"
+    ? message.payload
+    : {};
+  const stateValue = contextRef.state && typeof contextRef.state === "object"
+    ? contextRef.state
+    : null;
+  trackInteraction(eventType, {
+    ...payload,
+    persist: message.persist !== false,
+    source: "iframe",
+    unitId: unit?.id || unitId,
+    unitLabel: unit?.label || "",
+    chapterId: unit?.chapterId || currentChapterId || "",
+    semanticId: contextRef.semanticId || "",
+    label: contextRef.label || payload.label || "",
+    value: stateValue,
+    durationMs: Number(payload.durationMs || 0)
+  });
+  return true;
+}
+
 function setupLearningCanvasLayoutSync() {
   const player = els?.lessonPlayer || document.querySelector("#lesson-player");
   if (!player) return false;
@@ -106,12 +143,17 @@ function setupLearningCanvasLayoutSync() {
     scheduleLearningCanvasLayoutSync("lesson-rendered");
   });
   window.addEventListener("message", (event) => {
-    if (event.data?.type !== "cq:bridge-ready") return;
     const frame = Array.from(
       player.querySelectorAll("iframe.embed-frame, iframe[data-courseware-frame]")
     ).find((candidate) => candidate.contentWindow === event.source);
     if (!frame) return;
-    scheduleLearningCanvasLayoutSync("courseware-bridge-ready");
+    if (event.data?.type === "cq:bridge-ready") {
+      scheduleLearningCanvasLayoutSync("courseware-bridge-ready");
+      return;
+    }
+    if (event.data?.type === "cq:interaction") {
+      trackCoursewareBridgeInteraction(frame, event.data);
+    }
   });
   scheduleLearningCanvasLayoutSync("layout-sync-ready");
   return true;

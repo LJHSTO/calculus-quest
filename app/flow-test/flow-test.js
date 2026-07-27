@@ -22,8 +22,8 @@
     answersVisible: false
   };
 
-  const COURSEWARE_RESOURCE_VERSION = "20260727-drag-audit-v2";
-  const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260723-v5";
+  const COURSEWARE_RESOURCE_VERSION = "20260727-courseware-interaction-v4";
+  const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260727-v7";
   const FLOW_TEST_ADMIN_TOKEN_KEY = "cq-flow-test-admin-token";
 
   const BASE_PATH = (() => {

@@ -1896,16 +1896,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     updateParticles();
 
-    if (!paused) {
-      // Animate pieces slightly
-      const pieces = document.querySelectorAll('.piece:not(.dragging):not(.placed)');
-      pieces.forEach((p, i) => {
-        const time = Date.now() / 1000;
-        const offset = Math.sin(time * 2 + i * 1.5) * 3;
-        p.style.transform = `translateY(${offset}px)`;
-      });
-    }
-
     requestAnimationFrame(gameLoop);
   }
 

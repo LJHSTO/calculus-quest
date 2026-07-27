@@ -9,6 +9,7 @@
     "kg:build": "node ops/build-knowledge-graph.js",
     "kg:test": "node ops/test-knowledge-graph.js",
     "flow:test": "node ops/test-flow-test.js",
+    "courseware:browser:test": "node ops/test-courseware-browser.js",
     "quiz:test": "node ops/test-quiz-coverage.js",
     "path:test": "node ops/test-agentic-navigation.js",
     "grading:test": "node ops/test-short-answer-recovery.js",
@@ -25,5 +26,8 @@
   "dependencies": {
     "katex": "^0.17.0",
     "sql.js": "^1.12.0"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.62.0"
   }
 }
