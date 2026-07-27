@@ -1553,6 +1553,7 @@ document.addEventListener('DOMContentLoaded', function() {
       piece.style.transition = 'opacity 0.3s, transform 0.3s';
 
       piecesArea.appendChild(piece);
+      setupPieceEvents(piece);
       piecesRemaining++;
 
       // Animate in
@@ -1573,9 +1574,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dragLoopId) return;
     dragLoopId = setInterval(() => {
       if (draggingPiece) {
-        draggingPiece.style.left = dragOffsetX + 'px';
-        draggingPiece.style.top = dragOffsetY + 'px';
-
         // Check if over answer zone
         const rect = answerZone.getBoundingClientRect();
         const pieceRect = draggingPiece.getBoundingClientRect();
@@ -1631,18 +1629,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-    dragOffsetX = clientX - dragOffsetX;
-    dragOffsetY = clientY - dragOffsetY;
-
-    // Recalculate with original offset
-    const origOffsetX = (e.touches ? e.touches[0].clientX : e.clientX) - (dragOffsetX + dragOffsetX - (e.touches ? e.touches[0].clientX : e.clientX));
-
-    // Simpler approach
-    const rect = draggingPiece.getBoundingClientRect();
-    const offsetX = (e.touches ? e.touches[0].clientX : e.clientX) - (rect.width / 2);
-    const offsetY = (e.touches ? e.touches[0].clientY : e.clientY) - (rect.height / 2);
-    draggingPiece.style.left = offsetX + 'px';
-    draggingPiece.style.top = offsetY + 'px';
+    draggingPiece.style.left = (clientX - dragOffsetX) + 'px';
+    draggingPiece.style.top = (clientY - dragOffsetY) + 'px';
   }
 
   function onDragEnd(e) {

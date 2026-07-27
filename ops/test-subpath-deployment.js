@@ -181,7 +181,7 @@ async function main() {
     }
 
     const flowScriptResponse = await fetch(
-      baseUrl + "/calculus_quest/app/flow-test/flow-test.js?v=20260727-secure-route-v1"
+      baseUrl + "/calculus_quest/app/flow-test/flow-test.js?v=20260727-drag-audit-v2"
     );
     assert.equal(flowScriptResponse.status, 200);
     assert.match(flowScriptResponse.headers.get("cache-control") || "", /no-store/);
@@ -192,7 +192,7 @@ async function main() {
       + "interactive/03_输入、输出和函数规则：拖动实验.html"
     );
     const coursewareResponse = await fetch(
-      baseUrl + coursewarePath + "?v=20260726-courseware-layout-v4&cqContextBridge=20260723-v5"
+      baseUrl + coursewarePath + "?v=20260727-drag-audit-v2&cqContextBridge=20260723-v5"
     );
     assert.equal(coursewareResponse.status, 200);
     assert.match(coursewareResponse.headers.get("cache-control") || "", /no-store/);
