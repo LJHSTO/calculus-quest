@@ -14,6 +14,10 @@ importers:
       sql.js:
         specifier: ^1.12.0
         version: 1.14.1
+    devDependencies:
+      playwright-core:
+        specifier: ^1.62.0
+        version: 1.62.0
 
 packages:
 
@@ -23,6 +27,11 @@ packages:
 
   katex@0.17.0:
     resolution: {integrity: sha512-Vdw0ATsQ9V+LuegM/BTwQqV/6cTl5lbGcIrU+BCgLxyf6bo38ybOr372tuSIxir3CN720flu1meYR6XzNMwQnw==}
+    hasBin: true
+
+  playwright-core@1.62.0:
+    resolution: {integrity: sha512-nsNRyq0r2zsG8AcRHWknc9QRA5XCueC7gWMrs+Gx2tlZn9hcl8zudfh00lhJPY1DE7NmZ6bDsT9g2yey8mXljA==}
+    engines: {node: '>=20'}
     hasBin: true
 
   sql.js@1.14.1:
@@ -35,5 +44,7 @@ snapshots:
   katex@0.17.0:
     dependencies:
       commander: 8.3.0
+
+  playwright-core@1.62.0: {}
 
   sql.js@1.14.1: {}
