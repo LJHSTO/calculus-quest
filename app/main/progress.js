@@ -43,7 +43,12 @@ function renderLibrary() {
 
 function renderProgress() {
   els.completedCount.textContent = `${mainCompletedCount()}/${totalMainUnitCount()}`;
-  if (els.progressQuizCount) els.progressQuizCount.textContent = `${(state.quizResults || []).length}`;
+  if (els.progressQuizCount) {
+    const submittedQuizIds = typeof learningSubmittedQuizIds === "function"
+      ? learningSubmittedQuizIds(state)
+      : [...new Set((state.quizResults || []).map((result) => result.unitId).filter(Boolean))];
+    els.progressQuizCount.textContent = `${submittedQuizIds.length}`;
+  }
   if (els.progressActivityCount) els.progressActivityCount.textContent = `${(state.logs || []).length}`;
   els.chapterProgress.innerHTML = curriculum
     .map((chapter) => {

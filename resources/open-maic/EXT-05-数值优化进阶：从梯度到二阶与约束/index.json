@@ -1,0 +1,5123 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T06:27:39.197Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "数值优化进阶：从梯度到二阶与约束",
+    "description": "",
+    "language": "本课程使用中文教学。专业学术术语如 Hessian, Newton step, Conjugate Gradient, Interior Point Method, Lagrangian Duality 等在首次出现时提供中英双语对照，后续主要沿用标准中文译名或公认的英文缩写。教学语言应通俗易懂，侧重几何直觉而非繁琐的代数证明。",
+    "style": "professional",
+    "createdAt": 1783312304781,
+    "updatedAt": 1783312304781
+  },
+  "agents": [
+    {
+      "name": "小林",
+      "role": "assistant",
+      "persona": "小林是陆教授指导的博士生，熟悉课程中的数学推导和实践问题，但更愿意从学生视角用通俗语言解释难点。她热情细腻，擅长捕捉学生在学习过程中的困惑点，并适时提供操作引导和鼓励。",
+      "avatar": "/avatars/assist.png",
+      "color": "#10b981",
+      "priority": 7
+    },
+    {
+      "name": "陆教授",
+      "role": "teacher",
+      "persona": "陆教授是数值优化领域的资深学者，拥有二十余年教学经验。他擅长用几何直觉解释抽象数学概念，喜欢通过生动的比喻和可视化实验帮助学生建立深刻理解，在课堂上鼓励提问和思辨，但同时保持适度的学术严谨。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "大川",
+      "role": "student",
+      "persona": "大川是来自工程背景的硕士生，对数值优化的实际应用场景充满热情，喜欢动手拖动实验参数看效果变化。他思维活跃，经常提出实现层面的工程问题，但初始数学直觉偏弱，需要通过可视化和类比来建立概念理解。",
+      "avatar": "/avatars/note-taker-2.png",
+      "color": "#06b6d4",
+      "priority": 5
+    },
+    {
+      "name": "阿哲",
+      "role": "student",
+      "persona": "阿哲是研究生一年级学生，对优化理论有较强好奇心，喜欢追问本质和连接不同概念之间的关系，偶尔会钻牛角尖。他直觉敏锐，擅长在3D空间中想象几何结构，但在严谨的代数推导上有时缺乏耐心。",
+      "avatar": "/avatars/curious.png",
+      "color": "#f59e0b",
+      "priority": 5
+    },
+    {
+      "name": "思瑶",
+      "role": "student",
+      "persona": "思瑶是同年级的硕士生，学习风格踏实理性，擅长系统化总结和算法逻辑梳理。她偏爱通过关系图和流程图理解知识架构，会将新学内容与已有知识仔细对比，偶尔担心在实际非理想情况下方法会不会失效。",
+      "avatar": "/avatars/thinker.png",
+      "color": "#ec4899",
+      "priority": 4
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：数值优化进阶学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在光滑函数的极小值点附近，泰勒展开中的梯度项（一阶导数）和 Hessian 项（二阶导数）通常扮演什么角色？",
+            "options": [
+              {
+                "value": "A",
+                "label": "梯度项主导函数的曲率变化"
+              },
+              {
+                "value": "B",
+                "label": "Hessian 项决定函数值是否上升或下降"
+              },
+              {
+                "value": "C",
+                "label": "梯度项为零，Hessian 项决定局部凹凸性"
+              },
+              {
+                "value": "D",
+                "label": "梯度项和 Hessian 项都为零"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "在极小值点，函数是平的，所以一阶导数（梯度）为零。此时二阶导数（Hessian）决定了该点是极小值（正定）、极大值（负定）还是鞍点。梯度告诉我们移动的方向，曲率告诉我们移动后坡度如何变化。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "如果某优化算法在每一步不仅利用当前点的梯度信息，还计算了 Hessian 矩阵来调整搜索方向，这主要是为了引入什么信息？",
+            "options": [
+              {
+                "value": "A",
+                "label": "更大的一阶步长"
+              },
+              {
+                "value": "B",
+                "label": "损失函数地形的曲率信息"
+              },
+              {
+                "value": "C",
+                "label": "随机噪声以跳出局部最优"
+              },
+              {
+                "value": "D",
+                "label": "目标函数的三阶导数"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "梯度下降只看“坡度”，而牛顿法（Newton's Method）通过 Hessian 矩阵了解“坡度的变化率”（曲率）。这就像下山时不仅看脚下的坡度，还预判前方是变陡还是变缓，从而做出更优的路径规划。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "在二维平面上，什么是“正交方向”？什么是“共轭方向”？",
+            "options": [
+              {
+                "value": "A",
+                "label": "正交方向是夹角为90度的方向；共轭方向在椭球等高线下看起来也是90度"
+              },
+              {
+                "value": "B",
+                "label": "正交方向夹角为90度；共轭方向是夹角为0度的方向"
+              },
+              {
+                "value": "C",
+                "label": "两者完全是同一个概念"
+              },
+              {
+                "value": "D",
+                "label": "正交方向是平行的，共轭方向是垂直的"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "正交意味着两个向量点积为零（标准的90度）。共轭意味着两个向量相对于某个矩阵（如 Hessian）加权点积为零。在标准的圆球形等高线下，共轭就是正交；但在拉伸的椭球形等高线下，共轭方向实际上在原始的 x-y 坐标系里是斜交的，但在经过变换的拉伸空间里恢复成了看起来像正交的关系。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "multiple",
+            "question": "关于梯度下降法和牛顿法（Newton's Method）的比较，以下哪些说法是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "梯度下降法是一阶算法，牛顿法是二阶算法"
+              },
+              {
+                "value": "B",
+                "label": "牛顿法需要计算或近似 Hessian 矩阵"
+              },
+              {
+                "value": "C",
+                "label": "在严格凸函数上，牛顿法通常比梯度下降法需要更少的迭代次数收敛"
+              },
+              {
+                "value": "D",
+                "label": "牛顿法的每一步计算成本总是低于梯度下降法"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "C"
+            ],
+            "analysis": "牛顿法利用了二阶导数（曲率），所以收敛极快（二次收敛），但每步要算 Hessian 并求逆，计算量大。梯度下降只需算一阶导数，每步便宜但走得慢。所以 D 选项正好说反了，在大部分实际问题中，牛顿法的单步成本远高于梯度下降。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "single",
+            "question": "线性共轭梯度法（Conjugate Gradient）最初是为解决哪类数学问题而设计的？",
+            "options": [
+              {
+                "value": "A",
+                "label": "求解大规模线性方程组 Ax = b"
+              },
+              {
+                "value": "B",
+                "label": "求解非线性方程组的根"
+              },
+              {
+                "value": "C",
+                "label": "计算矩阵的奇异值分解"
+              },
+              {
+                "value": "D",
+                "label": "对数据进行简单的线性回归"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "共轭梯度法发明的初衷是高效求解大型稀疏的正定对称线性方程组。后来它的思想被推广到非线性优化中，变成了无约束优化的利器。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "multiple",
+            "question": "在约束优化问题中，以下哪些情况可能代表找到了一个“边界上的最优解”？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "无约束极小值点恰好落在不等式约束的可行域内部"
+              },
+              {
+                "value": "B",
+                "label": "沿着可行域边界移动时，目标函数值无法进一步下降"
+              },
+              {
+                "value": "C",
+                "label": "梯度方向被约束法向量抵消，无法指向可行域内部"
+              },
+              {
+                "value": "D",
+                "label": "目标函数在可行域内单调递减且无下界"
+              }
+            ],
+            "answer": [
+              "B",
+              "C"
+            ],
+            "analysis": "当约束起作用时（Active Constraint），最优点被“卡”在边界上。此时有两种直觉：B 表示沿着墙走无法再下山了；C 表示你试图直接穿墙下山，但梯度被墙推回来的力（拉格朗日乘子）平衡了。A 是内点解，约束未激活；D 表示无解。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q7",
+            "type": "text",
+            "question": "请用你自己的话描述一下，为什么在优化的上下文中，单纯使用“正交方向”进行搜索效率低，而“共轭方向”可以避免锯齿状（Zig-zagging）的搜索路径？提示：可以从等高线是正圆还是拉伸的椭圆这个角度思考。",
+            "commentPrompt": "评分要点：(1) 指出在拉伸的椭球等高线下，正交搜索会导致后一步破坏前一步的成果，产生锯齿现象 - 40% (2) 解释共轭方向是如何通过“矩阵加权的正交”来适配空间的拉伸，使得搜索互不干扰 - 40% (3) 语言表达清晰，逻辑连贯 - 20%",
+            "analysis": "如果函数的等高线是极扁的椭圆，沿着坐标轴方向（正交）搜索时，第一步沿x轴走到谷底，第二步沿y轴走时，可能会因为地势扭曲而偏离x轴找到的谷底线，导致x轴方向的成果被破坏，形成来回震荡的锯齿状。共轭方向可以看作是把空间进行拉伸变换（通过Hessian矩阵），将椭圆拔成圆形。在拉伸后的空间里，共轭方向变得互相正交，因此搜索时不会互相干扰，可以直接高效地到达中心。",
+            "points": 20,
+            "hasAnswer": true
+          },
+          {
+            "id": "q8",
+            "type": "single",
+            "question": "在凸优化中，如果我们有一个约束条件 x^2 + y^2 <= 4，点 (1, 1) 和点 (2, 2) 分别代表什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "两者都是可行域的内点（Interior Point）"
+              },
+              {
+                "value": "B",
+                "label": "(1,1) 是内点，(2,2) 是外点（Infeasible Point）"
+              },
+              {
+                "value": "C",
+                "label": "(1,1) 是边界点，(2,2) 是内点"
+              },
+              {
+                "value": "D",
+                "label": "两者都在可行域边界上"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "约束定义了一个半径为 2 的圆。点 (1,1) 的模长是 sqrt(2) ≈ 1.414，小于 2，所以在圆的内部，即内点。点 (2,2) 的模长是 sqrt(8) ≈ 2.828，大于 2，所以落在圆外，属于不可行点。内点法（Interior Point Method）正是从类似 (1,1) 这样的点出发，通过“壁垒”防止触碰边界。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q9",
+            "type": "single",
+            "question": "对于严格凸的二次函数，使用共轭梯度法求解无约束极小值，理论上来讲，至多需要多少步就能精确收敛（假设没有舍入误差）？",
+            "options": [
+              {
+                "value": "A",
+                "label": "一步"
+              },
+              {
+                "value": "B",
+                "label": "等于问题的变量维数 n"
+              },
+              {
+                "value": "C",
+                "label": "无限步，因为它是迭代算法"
+              },
+              {
+                "value": "D",
+                "label": "无法确定"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "这是共轭梯度法最重要的数学性质之一。因为 n 维空间最多只有 n 个相互共轭的非零向量，每个方向找一次最优步长后，剩下的共轭方向也就走完了，所以至多 n 步就能抵达二次函数的极小点。这也是它在处理大型问题时很有吸引力的原因。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q10",
+            "type": "text",
+            "question": "在约束优化问题中，Lagrangian Duality（拉格朗日对偶性）提供了一种看待“梯度被约束边界顶住”的平衡视角。请尝试不用数学公式，用跷跷板或者拔河的直觉，描述一下为什么在最优点处，目标函数的梯度必须与约束梯度的某种组合保持平衡？",
+            "commentPrompt": "评分要点：(1) 形象地描述梯度向量的作用（如下山的最陡方向） - 30% (2) 解释当走到边界无法前进时，梯度被垂直于边界的“推力”抵消的情形 - 40% (3) 提到“平衡”的概念，并可引申出拉格朗日乘子用来度量这种约束的“松紧程度” - 30%",
+            "analysis": "想象你在一面倾斜的墙上爬山，想找到最高点。在空地上，你只需朝最陡的方向（梯度）走。当你遇到一堵笔直的栏杆（约束边界）时，如果你想往上走，却被栏杆挡住。你只能在沿着栏杆的方向上移动。这时候，你停下来的点一定是：你觉得再往上走（梯度方向有向上的分力）的这股力，刚好被栏杆垂直推向你的力给抵消了。因为如果有任何沿着栏杆移动还能向上的力，你就不会停下来。这种“你推我挡”的平衡状态就是拉格朗日乘子不为零的情况，而那个栏杆推你的力量大小，就是所谓的乘子（拉格朗日乘子）的值。",
+            "points": 20,
+            "hasAnswer": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_R8qgY539",
+          "type": "speech",
+          "text": "这是一组关于“前测：数值优化进阶学习准备诊断”的独立测验。今天这门《数值优化进阶》课程，我们换个方式开始——先做一次小小的前测。大家别紧张，这不是考试，而是一次‘诊断’，目的是让我们看看，大家对于牛顿法、共轭梯度这些进阶概念目前的直觉和基础在哪里。",
+          "audioRef": "audio/tts_s1_action_R8qgY539.wav"
+        },
+        {
+          "id": "action_2jAf86pu",
+          "type": "speech",
+          "text": "这份前测题目既有选择题，也有需要你用自己的话描述的简答题。关键在于展现你真实的思考过程，特别是对几何图形的直觉，所以，当成一次思维热身就好。准备好了吗？我们现在开始。",
+          "audioRef": "audio/tts_action_2jAf86pu.mp3"
+        },
+        {
+          "id": "action_18E3yVuO",
+          "type": "speech",
+          "text": "前几道题会聚焦在函数的曲率、二阶信息，以及不同搜索方向的区别上。比如，为什么二阶方法能看得更‘远’？正交和共轭到底有什么不同？别急着计算，多用几何想象去感受。",
+          "audioRef": "audio/tts_action_18E3yVuO.mp3"
+        },
+        {
+          "id": "action_JIY17XFK",
+          "type": "speech",
+          "text": "做完了前面的选择题，后面有几道简答题，比如请你从等高线的视角，解释为什么共轭方向能避免锯齿状搜索。还有最后关于拉格朗日对偶性的直觉题，尝试用拔河或者跷跷板的模型去理解，不用任何数学公式。让我们看看你的直觉有多强。",
+          "audioRef": "audio/tts_action_JIY17XFK.mp3"
+        },
+        {
+          "id": "action_50d4uHs6",
+          "type": "speech",
+          "text": "好了，题目就这么多。请大家放松心态，独立完成。完成之后，我们将会带着这些问题和思考，正式进入数值优化精彩的几何世界。",
+          "audioRef": "audio/tts_action_50d4uHs6.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "牛顿法与拟牛顿法",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "AMf6tMdFMhPiw1hPg4L_b",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_MXGNPx7Y",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">二阶收敛：Hessian 矩阵与拟牛顿法</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_d3Dg42VS",
+              "left": 60,
+              "top": 125,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#e2e8f0"
+            },
+            {
+              "type": "shape",
+              "id": "shape___R4H2-2",
+              "left": 60,
+              "top": 150,
+              "width": 420,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "text",
+              "id": "text_PH7BF36m",
+              "left": 80,
+              "top": 165,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #0f172a;\">1. 泰勒展开与二阶导数</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_VELB_xq9",
+              "left": 80,
+              "top": 215,
+              "width": 380,
+              "height": 70,
+              "rotate": 0,
+              "latex": "f(x) \\approx f(x_k) + f'(x_k)(x - x_k) + \\frac{f''(x_k)}{2!}(x - x_k)^2",
+              "color": "#334155",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">≈</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.0519em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8019em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">′</span></span></span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.1149em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.4289em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">2</span><span class=\"mclose\">!</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7519em;\"><span style=\"top:-3.063em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">′′</span></span></span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.1141em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\"><span class=\"mclose\">)</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8641em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span></span></span></span></span>"
+            },
+            {
+              "type": "shape",
+              "id": "shape_qohgcbbz",
+              "left": 520,
+              "top": 150,
+              "width": 420,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "text",
+              "id": "text__hYqn1dP",
+              "left": 540,
+              "top": 165,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #0f172a;\">2. 引入 Hessian 矩阵</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_8Grn9Wqr",
+              "left": 540,
+              "top": 215,
+              "width": 380,
+              "height": 70,
+              "rotate": 0,
+              "latex": "f(x) \\approx f(x_k) + \\nabla f(x_k)^T (x - x_k) + \\frac{1}{2}(x - x_k)^T H(x_k)(x - x_k)",
+              "color": "#334155",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">≈</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.1413em;vertical-align:-0.25em;\"></span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\"><span class=\"mclose\">)</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8913em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.13889em;\">T</span></span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.0074em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3214em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">2</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">1</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.1413em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\"><span class=\"mclose\">)</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8913em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.13889em;\">T</span></span></span></span></span></span></span></span><span class=\"mord mathnormal\" style=\"margin-right:0.08125em;\">H</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3361em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.03148em;\">k</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span></span></span></span></span>"
+            },
+            {
+              "type": "shape",
+              "id": "shape_LNDJ6wdo",
+              "left": 60,
+              "top": 340,
+              "width": 420,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f0fdf4"
+            },
+            {
+              "type": "text",
+              "id": "text_59bUrWP7",
+              "left": 80,
+              "top": 355,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #166534;\">3. 拟牛顿法核心思想</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_QsUNWOuJ",
+              "left": 80,
+              "top": 405,
+              "width": 380,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #15803d;\">利用 Hessian 矩阵逆的近似，</p><p style=\"font-size: 16px; color: #15803d;\">校正搜索方向与步长。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_En8rqyi1",
+              "left": 520,
+              "top": 340,
+              "width": 420,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#fff7ed"
+            },
+            {
+              "type": "text",
+              "id": "text_b50HTThC",
+              "left": 540,
+              "top": 355,
+              "width": 380,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #9a3412;\">4. 二阶收敛优势</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_OR0NlhnK",
+              "left": 540,
+              "top": 405,
+              "width": 380,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #c2410c;\">拟牛顿法通常达到超线性收敛，</p><p style=\"font-size: 16px; color: #c2410c;\">二阶收敛是牛顿法的典型性质。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_14Pw_JWd",
+          "type": "spotlight",
+          "elementId": "text_MXGNPx7Y"
+        },
+        {
+          "id": "action_SqEyCeNT",
+          "type": "speech",
+          "text": "本场景聚焦“牛顿法与拟牛顿法”。我们正式进入今天的第一组核心方法：牛顿法与拟牛顿法。这一页的核心，就是探讨如何利用二阶信息，也就是曲率，来实现更快的‘二阶收敛’。",
+          "audioRef": "audio/tts_s2_action_SqEyCeNT.wav"
+        },
+        {
+          "id": "action_F95vz_Qn",
+          "type": "spotlight",
+          "elementId": "text_PH7BF36m"
+        },
+        {
+          "id": "action_bNqV-G2Y",
+          "type": "speech",
+          "text": "首先，我们从大家熟悉的一维情况说起。用泰勒展开来对函数做局部二次近似，就能看到步长不仅仅是取决于一阶的斜率，还会被二阶导数，也就是函数的弯曲程度所校正。",
+          "audioRef": "audio/tts_s2_action_bNqV-G2Y.mp3"
+        },
+        {
+          "id": "action_KtQ1tsIm",
+          "type": "spotlight",
+          "elementId": "text__hYqn1dP"
+        },
+        {
+          "id": "action_0JQKPWO8",
+          "type": "speech",
+          "text": "把这个想法推广到高维空间，一阶的梯度向量就升级成了二阶的Hessian矩阵，全称是Hessian Matrix。Hessian矩阵完整描述了一个高维曲面在某个点附近所有方向上的弯曲状况，就像是一个‘曲率张量’。",
+          "audioRef": "audio/tts_s2_action_0JQKPWO8.mp3"
+        },
+        {
+          "id": "action_ukn6UD_6",
+          "type": "spotlight",
+          "elementId": "text_59bUrWP7"
+        },
+        {
+          "id": "action_ZKA9bbwP",
+          "type": "speech",
+          "text": "那拟牛顿法的核心思想是什么呢？简单说，就是利用Hessian矩阵的逆矩阵，来校正我们搜索的方向和步长。它不是简单地往最陡的方向下山，而是考虑了下山路径的‘曲率’，直接瞄准了二次近似的谷底。",
+          "audioRef": "audio/tts_s2_action_ZKA9bbwP.mp3"
+        },
+        {
+          "id": "action_YGKzpdSR",
+          "type": "spotlight",
+          "elementId": "text_b50HTThC"
+        },
+        {
+          "id": "action_r72T-Kee",
+          "type": "speech",
+          "text": "这就带来了二阶收敛的优势。相比于一阶方法，拟牛顿法在极小值的邻域内，能够更快地收敛，因为它更准确地预测了极小值的位置。当然，我们稍后会讨论，计算完整的Hessian矩阵和它的逆矩阵代价非常高，而这正是拟牛顿法要巧妙解决的工程问题。",
+          "audioRef": "audio/tts_s2_action_r72T-Kee.mp3"
+        },
+        {
+          "id": "action_VFnLRY-X",
+          "type": "spotlight",
+          "elementId": "text_OR0NlhnK"
+        },
+        {
+          "id": "action_l60VDCpo",
+          "type": "speech",
+          "text": "所以，请记住这个关键直觉：牛顿法不是走更远的梯度下降，而是在局部做了一个二次函数拟合，然后一步跳到那个拟合出的二次函数的极小值点。有了这个核心概念，我们接下来就用一个拖动实验，来直观感受一下二次拟合的威力。",
+          "audioRef": "audio/tts_s2_action_l60VDCpo.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "牛顿法与拟牛顿法：拖动实验",
+      "order": 3,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "newton_vs_quasinewton",
+          "description": "牛顿法与拟牛顿法优化模拟：通过实时调整 Hessian 矩阵参数，观察 Newton Step 如何直接指向二次曲面极值点，对比梯度下降的曲折路径。",
+          "variables": [
+            {
+              "name": "h11",
+              "label": "H₁₁ (x方向曲率)",
+              "min": 0.1,
+              "max": 10,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "h22",
+              "label": "H₂₂ (y方向曲率)",
+              "min": 0.1,
+              "max": 10,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "h12",
+              "label": "H₁₂ (交叉项)",
+              "min": -4,
+              "max": 4,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "x0",
+              "label": "初始x坐标",
+              "min": -5,
+              "max": 5,
+              "default": 3,
+              "unit": ""
+            },
+            {
+              "name": "y0",
+              "label": "初始y坐标",
+              "min": -5,
+              "max": 5,
+              "default": 2,
+              "unit": ""
+            },
+            {
+              "name": "damping",
+              "label": "阻尼因子 α",
+              "min": 0.01,
+              "max": 1,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "speed",
+              "label": "动画速度",
+              "min": 1,
+              "max": 20,
+              "default": 5,
+              "unit": "帧/步"
+            }
+          ],
+          "presets": [
+            {
+              "name": "圆形碗状",
+              "description": "Hessian为单位矩阵，牛顿方向与梯度方向一致",
+              "variables": {
+                "h11": 1,
+                "h22": 1,
+                "h12": 0,
+                "x0": 3,
+                "y0": 2
+              }
+            },
+            {
+              "name": "窄长山谷",
+              "description": "H₁₁远大于H₂₂，牛顿法一步到位而梯度下降 zigzag",
+              "variables": {
+                "h11": 8,
+                "h22": 0.5,
+                "h12": 0,
+                "x0": 3,
+                "y0": 2
+              }
+            },
+            {
+              "name": "旋转曲面",
+              "description": "交叉项H₁₂非零，坐标轴旋转，展示牛顿法的旋转不变性",
+              "variables": {
+                "h11": 5,
+                "h22": 1,
+                "h12": 3,
+                "x0": 3,
+                "y0": 2
+              }
+            },
+            {
+              "name": "病态条件",
+              "description": "极大条件数，梯度下降极度低效",
+              "variables": {
+                "h11": 10,
+                "h22": 0.1,
+                "h12": 0,
+                "x0": 3,
+                "y0": 2
+              }
+            },
+            {
+              "name": "鞍点附近",
+              "description": "一个方向曲率为负，展示非正定Hessian的情况",
+              "variables": {
+                "h11": 3,
+                "h22": -2,
+                "h12": 1,
+                "x0": 2,
+                "y0": 1
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/03_牛顿法与拟牛顿法：拖动实验.html",
+        "htmlBytes": 790338
+      },
+      "actions": [
+        {
+          "id": "action_u4RnpwYB",
+          "type": "speech",
+          "text": "本场景通过交互探索“牛顿法与拟牛顿法：拖动实验”。然后一步跳向帽子的最低点。现在大家看这个模拟面板——一个彩色的二维二次曲面，光标初始位置就在曲面上，我们用这个拖动实验来亲眼看看这个过程是怎么发生的。",
+          "audioRef": "audio/tts_s3_action_u4RnpwYB.wav"
+        },
+        {
+          "id": "action_RHjl2UsE",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "观察光标在二次曲面上的初始位置"
+        },
+        {
+          "id": "action_nq0zzkbw",
+          "type": "speech",
+          "text": "首先，注意左下角的控制面板上有几个关键参数：H₁₁ 和 H₂₂ 分别控制 x 和 y 方向的曲率，也就是山路在两侧的陡峭程度；H₁₂ 交叉项则让整座山发生旋转。我们先从预设中选择‘窄长山谷’这个场景。",
+          "audioRef": "audio/tts_s3_action_nq0zzkbw.mp3"
+        },
+        {
+          "id": "action_LBWQJkF_",
+          "type": "widget_setState",
+          "state": {
+            "h11": 8,
+            "h22": 0.5,
+            "h12": 0,
+            "x0": 3,
+            "y0": 2
+          },
+          "content": "点击‘窄长山谷’预设，模拟窄长峡谷地形"
+        },
+        {
+          "id": "action_X-VVnKsj",
+          "type": "speech",
+          "text": "看，这张曲面在 x 方向弯曲剧烈，沿着 y 方向却很平坦，正是我们刚才讨论的 zigzag 地形。现在屏幕上同时出现了两个箭头：红色的长箭头是牛顿步，指向峡谷深处的极值中心；蓝色的短箭头是当前点的梯度方向，几乎是横着指向山壁。大家对比一下这两个方向，牛顿法是怎样‘看穿’窄长的形状，直接斜插向深谷的？",
+          "audioRef": "audio/tts_s3_action_X-VVnKsj.mp3"
+        },
+        {
+          "id": "action_WDrOtUPS",
+          "type": "widget_annotation",
+          "target": "#newton-step-arrow",
+          "content": "这是牛顿步：利用局部 Hessian 反求出的直指极值点的方向"
+        },
+        {
+          "id": "action_nl3BJ8JD",
+          "type": "widget_setState",
+          "state": {
+            "h11": 1,
+            "h22": 1,
+            "h12": 0,
+            "x0": 3,
+            "y0": 2
+          },
+          "content": "切换回圆碗状地形做对比观察"
+        },
+        {
+          "id": "action_8C-Frqnu",
+          "type": "speech",
+          "text": "现在我们切回‘圆形碗状’预设——当 Hessian 是单位矩阵时，牛顿方向几乎与梯度方向重合，这是因为局部曲率在各个方向都一样，二次拟合告诉我们：顺着梯度走本身就已经是朝向极值中心了。后面，请大家自行试试‘旋转曲面’和‘病态条件’预设，感受 Hessian 如何扭转牛顿步的方向。现在先暂停在这里，有问题的话可以随时提出。",
+          "audioRef": "audio/tts_s3_action_8C-Frqnu.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "牛顿法与拟牛顿法：关系图",
+      "order": 4,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "目标函数 f(x)",
+              "icon": "🎯",
+              "details": "<strong>目标函数 (Objective Function)</strong> f(x): ℝⁿ → ℝ<br><br>优化的起点。我们希望通过迭代找到使 f(x) 最小的点 x*。<br><br>📌 <em>几何直觉：</em>想象一座三维山谷，f(x) 就是山谷的地形表面，我们要找到最低点。",
+              "x": 400,
+              "y": 50
+            },
+            {
+              "id": "n2",
+              "label": "梯度 ∇f(x)",
+              "icon": "📐",
+              "details": "<strong>梯度 (Gradient)</strong> ∇f(x) ∈ ℝⁿ<br><br>梯度指向函数增长最快的方向，负梯度 (最速下降方向) 是下降最快的方向。<br><div class=\"formula\">∇f(x) = [∂f/∂x₁, ∂f/∂x₂, ..., ∂f/∂xₙ]ᵀ</div>📌 <em>几何直觉：</em>站在山坡上，梯度指向最陡的上坡方向，我们往反方向走就能最快下山。",
+              "x": 240,
+              "y": 175
+            },
+            {
+              "id": "n3",
+              "label": "Hessian 矩阵 ∇²f(x)",
+              "icon": "📊",
+              "details": "<strong>Hessian 矩阵 (Hessian Matrix)</strong> ∇²f(x) ∈ ℝⁿˣⁿ<br><br>二阶导数组成的对称矩阵，刻画了函数的曲率信息。<br><div class=\"formula\">∇²f(x) = [∂²f/∂xᵢ∂xⱼ]</div>📌 <em>几何直觉：</em>如果说梯度告诉我们「往哪走」，Hessian 就告诉我们「脚下的地面是平坦的还是弯曲的」——这决定了我们应该走多远。",
+              "x": 560,
+              "y": 175
+            },
+            {
+              "id": "n4",
+              "label": "局部二次近似 🔬",
+              "icon": "🔬",
+              "details": "<strong>局部二次近似 (Local Quadratic Approximation)</strong><br><br>在当前点 xₖ 附近，用二次泰勒展开近似 f(x)：<br><div class=\"formula\">qₖ(d) = f(xₖ) + ∇f(xₖ)ᵀd + ½dᵀ∇²f(xₖ)d</div>📌 <em>核心思想：</em>虽然原函数可能很复杂，但在小邻域内可以用抛物面来近似。求抛物面的最低点，就是求解一个线性方程组！<br><br>✅ <strong>学习目标：</strong>理解为什么局部二次近似自然导出 Hessian 逆矩阵的计算。",
+              "x": 400,
+              "y": 310
+            },
+            {
+              "id": "n5",
+              "label": "牛顿方向 d = −H⁻¹∇f",
+              "icon": "⬅️",
+              "details": "<strong>牛顿方向 (Newton Direction)</strong><br><br>对 qₖ(d) 求导并令为零，得到牛顿步：<br><div class=\"formula\">dₖ = −[∇²f(xₖ)]⁻¹ ∇f(xₖ)</div>📌 <em>几何直觉：</em>牛顿法同时考虑了「坡度」(梯度) 和「地面曲率」(Hessian)。在曲率大的地方走小步，曲率小的地方走大步——这比单纯沿梯度下降聪明得多。<br><br>⚡ 收敛速度：<strong>二次收敛</strong>（在极值点附近）",
+              "x": 300,
+              "y": 445
+            },
+            {
+              "id": "n9",
+              "label": "BFGS / DFP 拟牛顿近似 ⚡",
+              "icon": "⚡",
+              "details": "<strong>拟牛顿法 (Quasi-Newton Methods)</strong><br><br>当 n 很大时，计算和存储 Hessian 矩阵代价高昂。拟牛顿法通过一阶梯度信息<strong>近似</strong> Hessian 的逆：<br><div class=\"formula\">Hₖ₊₁ = BFGS 更新(Hₖ, sₖ, yₖ)</div><br>其中 sₖ = xₖ₊₁ − xₖ, yₖ = ∇f(xₖ₊₁) − ∇f(xₖ)<br><br>📌 <em>核心技巧：</em>不直接计算 H⁻¹，而是每次用秩-2 更新逐步改进近似。DFP 更新 H⁻¹，BFGS 先更新 H 再求逆（数值更稳定）。<br><br>✅ <strong>优势：</strong>无需计算二阶导数，仍保持超线性收敛。",
+              "x": 500,
+              "y": 445
+            },
+            {
+              "id": "n6",
+              "label": "线搜索 Line Search 🔍",
+              "icon": "🔍",
+              "details": "<strong>线搜索 (Line Search)</strong><br><br>牛顿方向 dₖ 给出了「往哪走」，但走多远由线搜索确定步长 αₖ。<br><br>经典条件：<div class=\"formula\">f(xₖ + αdₖ) ≤ f(xₖ) + c₁α∇f(xₖ)ᵀdₖ</div>（Armijo 条件：确保充分下降）<br><br>📌 <em>为什么需要线搜索？</em>局部二次近似只在 xₖ 附近成立，走太远近似就不准了。线搜索保证每一步都让目标函数下降。<br><br>🔧 常用策略：Wolfe 条件、强 Wolfe 条件、回溯法。",
+              "x": 400,
+              "y": 570
+            },
+            {
+              "id": "n7",
+              "label": "步长 αₖ",
+              "icon": "📏",
+              "details": "<strong>步长 (Step Size)</strong> αₖ > 0<br><br>线搜索输出的标量步长。纯牛顿法中 αₖ = 1（二次函数精确成立），但一般函数需要 αₖ < 1。<br><br>📌 <em>几何直觉：</em>αₖ 就是「信任半径」——我们有多信任当前的二次近似。近似越不准，步长越小。<br><br>💡 在实际实现中，αₖ 的选取直接影响收敛速度和鲁棒性。",
+              "x": 560,
+              "y": 670
+            },
+            {
+              "id": "n8",
+              "label": "更新 xₖ₊₁ = xₖ + αₖdₖ",
+              "icon": "🔄",
+              "details": "<strong>参数更新 (Parameter Update)</strong><br><div class=\"formula\">xₖ₊₁ = xₖ + αₖ dₖ</div><br>将新点代入，重新计算梯度和 Hessian（或拟牛顿更新），进入下一轮迭代。<br><br>📌 <em>完整算法流程：</em><br>1️⃣ 计算 ∇f(xₖ) 和 ∇²f(xₖ)<br>2️⃣ 求解 Hₖdₖ = −∇f(xₖ) 得到方向<br>3️⃣ 线搜索确定 αₖ<br>4️⃣ 更新 xₖ₊₁ = xₖ + αₖdₖ<br>5️⃣ 检查收敛条件，否则返回步骤 1<br><br>🎯 <strong>收敛准则：</strong>‖∇f(xₖ)‖ < ε",
+              "x": 400,
+              "y": 760
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "求一阶导数"
+            },
+            {
+              "from": "n1",
+              "to": "n3",
+              "label": "求二阶导数"
+            },
+            {
+              "from": "n2",
+              "to": "n4",
+              "label": "结合梯度"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "结合曲率"
+            },
+            {
+              "from": "n4",
+              "to": "n5",
+              "label": "精确牛顿法"
+            },
+            {
+              "from": "n3",
+              "to": "n9",
+              "label": "拟牛顿近似"
+            },
+            {
+              "from": "n5",
+              "to": "n6",
+              "label": "搜索方向"
+            },
+            {
+              "from": "n9",
+              "to": "n6",
+              "label": "近似方向"
+            },
+            {
+              "from": "n6",
+              "to": "n7",
+              "label": "确定步长"
+            },
+            {
+              "from": "n7",
+              "to": "n8",
+              "label": "执行更新"
+            },
+            {
+              "from": "n8",
+              "to": "n2",
+              "label": "迭代循环 ↺",
+              "feedback": true
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n9",
+            "n6",
+            "n7",
+            "n8"
+          ]
+        },
+        "htmlPath": "interactive/04_牛顿法与拟牛顿法：关系图.html",
+        "htmlBytes": 763969
+      },
+      "actions": [
+        {
+          "id": "action_kqtE5TDL",
+          "type": "speech",
+          "text": "本场景通过交互探索“牛顿法与拟牛顿法：关系图”。现在我们来梳理一下这背后的完整逻辑链，把从目标函数到最终迭代更新的每一环都串联起来。",
+          "audioRef": "audio/tts_s4_action_kqtE5TDL.wav"
+        },
+        {
+          "id": "action_OKqhQqhE",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "一切从我们的优化目标开始：目标函数 f(x)。"
+        },
+        {
+          "id": "action_tB2yv5Ww",
+          "type": "speech",
+          "text": "优化的起点就是这个目标函数。我们对它分别求一阶和二阶导数，得到梯度和 Hessian 矩阵。梯度告诉我们哪儿上山最陡，Hessian 则描述脚下地面的弯曲程度。",
+          "audioRef": "audio/tts_s4_action_tB2yv5Ww.mp3"
+        },
+        {
+          "id": "action_w3Jl2ln_",
+          "type": "widget_reveal",
+          "target": "#n2"
+        },
+        {
+          "id": "action_y1h-qbq5",
+          "type": "widget_reveal",
+          "target": "#n3"
+        },
+        {
+          "id": "action_NTbUOVwy",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "核心来了：将梯度和曲率结合，我们就得到了局部二次近似。"
+        },
+        {
+          "id": "action_mp_r4brz",
+          "type": "speech",
+          "text": "关键的一步是在当前点附近做一个抛物面近似。这个近似虽然简单，但直接让我们把复杂的非线性优化问题，转化成了局部求解线性方程组。大家注意，这就是为什么 Hessian 矩阵的逆会自然出现。",
+          "audioRef": "audio/tts_s4_action_mp_r4brz.mp3"
+        },
+        {
+          "id": "action_L7bj0SZe",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "对近似模型求导，立刻导出牛顿方向。"
+        },
+        {
+          "id": "action_SLbZnltU",
+          "type": "speech",
+          "text": "如果 Hessian 太庞大或计算代价过高，我们还可以走右边的分支。点击看看拟牛顿法是如何巧妙地绕开直接求逆的。",
+          "audioRef": "audio/tts_s4_action_SLbZnltU.mp3"
+        },
+        {
+          "id": "action_PHbmVEur",
+          "type": "widget_reveal",
+          "target": "#n9",
+          "content": "BFGS 或 DFP 方法通过梯度信息逐步构建 Hessian 的近似逆矩阵。"
+        },
+        {
+          "id": "action_ZPU3H7AY",
+          "type": "speech",
+          "text": "无论精确牛顿还是拟牛顿，得到的都只是一个搜索方向。它指明方向，但没说走多远。这就需要线搜索来确定步长，确保每一步都能让函数值充分下降。",
+          "audioRef": "audio/tts_s4_action_ZPU3H7AY.mp3"
+        },
+        {
+          "id": "action_1FsvaFth",
+          "type": "widget_reveal",
+          "target": "#n6"
+        },
+        {
+          "id": "action_Adx87bZw",
+          "type": "widget_reveal",
+          "target": "#n7"
+        },
+        {
+          "id": "action_X2UD1fn8",
+          "type": "widget_reveal",
+          "target": "#n8",
+          "content": "最后执行更新，并回到计算梯度的步骤，开启下一轮循环。"
+        },
+        {
+          "id": "action_wXBHZH2o",
+          "type": "speech",
+          "text": "所以整个流程就像是一个精密的闭环：二次近似给我们方向感，线搜索给我们安全感，而每一次迭代都让我们的参数离最优解更近一步。大家可以在界面上自由点击各个节点，查看每一步背后的详细公式和几何直觉。",
+          "audioRef": "audio/tts_s4_action_wXBHZH2o.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "牛顿法与拟牛顿法：误解修复挑战",
+      "order": 5,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "strategy",
+          "description": "牛顿法与拟牛顿法：误解修复挑战",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "achievements": [
+            {
+              "id": "first_landing",
+              "name": "初次着陆",
+              "description": "首次成功到达极小值点",
+              "icon": "🎯"
+            },
+            {
+              "id": "saddle_escape",
+              "name": "鞍点逃脱",
+              "description": "在鞍点附近使用阻尼牛顿法成功",
+              "icon": "🛡️"
+            },
+            {
+              "id": "newton_trap",
+              "name": "牛顿陷阱",
+              "description": "发现牛顿法在Hessian不正定时失败",
+              "icon": "⚠️"
+            },
+            {
+              "id": "speed_demon",
+              "name": "速度之王",
+              "description": "在10步以内完成关卡",
+              "icon": "⚡"
+            },
+            {
+              "id": "bfgs_master",
+              "name": "拟牛顿大师",
+              "description": "使用BFGS法通关",
+              "icon": "👑"
+            },
+            {
+              "id": "all_levels",
+              "name": "全部通关",
+              "description": "完成所有关卡",
+              "icon": "🏆"
+            }
+          ]
+        },
+        "htmlPath": "interactive/05_牛顿法与拟牛顿法：误解修复挑战.html",
+        "htmlBytes": 794720
+      },
+      "actions": [
+        {
+          "id": "action_kYJ6CTl_",
+          "type": "speech",
+          "text": "本场景通过交互探索“牛顿法与拟牛顿法：误解修复挑战”。现在是检验理解的时候了——这个挑战关卡里藏着一个经典的误解：牛顿法是不是永远又快又准？",
+          "audioRef": "audio/tts_s5_action_kYJ6CTl_.wav"
+        },
+        {
+          "id": "action_1QvbMon-",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "从这里开始你的第一次尝试"
+        },
+        {
+          "id": "action_cXyxBF9P",
+          "type": "speech",
+          "text": "注意看，你现在面对的是一个非凸曲面。直接套用原始牛顿法，看看会发生什么。大家之前提醒过，Hessian矩阵如果不够“正派”，牛顿方向可能指向山顶而不是山谷。",
+          "audioRef": "audio/tts_s5_action_cXyxBF9P.wav"
+        },
+        {
+          "id": "action_fhYGXYbD",
+          "type": "widget_setState",
+          "state": {
+            "level": 1,
+            "method": "newton",
+            "damping": 0
+          },
+          "content": "初始设置：原始牛顿法，无阻尼"
+        },
+        {
+          "id": "action_TnbgX8y-",
+          "type": "speech",
+          "text": "如果你的迭代点跑向了极大值，恭喜你——你亲手触发了“牛顿陷阱”成就。这不是失败，而是一个关键的误解修复点。接下来，试着给牛顿法加点阻尼，就像我们刚才讨论的那样，看看效果有什么不同。",
+          "audioRef": "audio/tts_s5_action_TnbgX8y-.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "牛顿法与拟牛顿法：空间视角",
+      "order": 6,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "牛顿法与拟牛顿法空间可视化：展示目标函数曲面、局部二次近似面、梯度方向与Newton步的空间关系",
+          "objects": [
+            {
+              "id": "objective_surface",
+              "type": "surface",
+              "description": "目标函数 f(x,y) = 0.5(x² + 10y²) + xy − 2x 的三维曲面",
+              "material": {
+                "type": "vertexColor",
+                "transparent": true
+              }
+            },
+            {
+              "id": "quadratic_approximation_mesh",
+              "type": "surface",
+              "description": "当前点的局部二次近似（Hessian 近似）曲面",
+              "material": {
+                "type": "transparent",
+                "color": "#f59e0b",
+                "opacity": 0.25
+              }
+            },
+            {
+              "id": "update_vector",
+              "type": "arrow",
+              "description": "实际执行的更新步方向与长度",
+              "material": {
+                "type": "basic",
+                "color": "#4488ff"
+              }
+            },
+            {
+              "id": "current_point",
+              "type": "sphere",
+              "description": "当前迭代点位置",
+              "material": {
+                "type": "emissive",
+                "color": "#ff4444"
+              }
+            },
+            {
+              "id": "optimal_point",
+              "type": "sphere",
+              "description": "全局最优解位置",
+              "material": {
+                "type": "emissive",
+                "color": "#00ff88"
+              }
+            },
+            {
+              "id": "gradient_arrow",
+              "type": "arrow",
+              "description": "梯度方向（函数上升最快的方向）",
+              "material": {
+                "type": "basic",
+                "color": "#ff3333"
+              }
+            },
+            {
+              "id": "newton_arrow",
+              "type": "arrow",
+              "description": "Newton 步方向（-H⁻¹∇f）",
+              "material": {
+                "type": "basic",
+                "color": "#22cc55"
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "alpha",
+              "label": "步长 α",
+              "min": 0.1,
+              "max": 2,
+              "default": 1
+            },
+            {
+              "type": "slider",
+              "param": "speed",
+              "label": "动画速度",
+              "min": 0,
+              "max": 5,
+              "default": 1
+            },
+            {
+              "type": "button",
+              "action": "step",
+              "label": "下一步 ▶"
+            },
+            {
+              "type": "button",
+              "action": "play",
+              "label": "自动播放"
+            },
+            {
+              "type": "button",
+              "action": "toggle_approximation",
+              "label": "显示/隐藏近似面"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            }
+          ],
+          "presets": [
+            {
+              "name": "俯视视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  15,
+                  0.1
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧面视角",
+              "state": {
+                "cameraPosition": [
+                  12,
+                  2,
+                  0
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "对角视角",
+              "state": {
+                "cameraPosition": [
+                  8,
+                  10,
+                  12
+                ],
+                "cameraTarget": [
+                  -2.22,
+                  1,
+                  0.22
+                ]
+              }
+            },
+            {
+              "name": "聚焦最优解",
+              "state": {
+                "cameraPosition": [
+                  -1,
+                  5,
+                  -1
+                ],
+                "cameraTarget": [
+                  -2.22,
+                  -1.11,
+                  0.22
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/06_牛顿法与拟牛顿法：空间视角.html",
+        "htmlBytes": 2515269
+      },
+      "actions": [
+        {
+          "id": "action_bLwIMoBi",
+          "type": "speech",
+          "text": "本场景通过交互探索“牛顿法与拟牛顿法：空间视角”。我们把这个过程搬到三维空间里，用更完整的几何视角来观察它。",
+          "audioRef": "audio/tts_s6_action_bLwIMoBi.wav"
+        },
+        {
+          "id": "action_olXhhBPj",
+          "type": "widget_setState",
+          "state": {
+            "preset": "对角视角"
+          },
+          "content": "切换到对角视角，全景展示目标函数曲面与二次近似面"
+        },
+        {
+          "id": "action_2-ghMPz1",
+          "type": "speech",
+          "text": "请看，橙黄色半透明的那片曲面，就是当前点上的局部二次近似模型。下方彩色的实体曲面是我们真正的目标函数。你能看出两者在局部是如何贴合的吗？",
+          "audioRef": "audio/tts_s6_action_2-ghMPz1.mp3"
+        },
+        {
+          "id": "action_b_GC2PET",
+          "type": "widget_highlight",
+          "target": "#quadratic_approximation_mesh",
+          "content": "这个半透明橙色曲面就是局部二次近似"
+        },
+        {
+          "id": "action_ttJIoCno",
+          "type": "widget_annotation",
+          "target": "#update_vector",
+          "content": "Newton 步径直指向近似曲面底部的极小点"
+        },
+        {
+          "id": "action_p3UhRLi6",
+          "type": "speech",
+          "text": "注意蓝色的 Newton 步向量。它并不沿最陡下降方向走，而是直接瞄准二次近似模型的极小点。在曲率各向异性的碗里，这是一种自动缩放的方向修正——它会压缩强曲率方向上的步伐，拉长弱曲率方向上的步子。",
+          "audioRef": "audio/tts_s6_action_p3UhRLi6.mp3"
+        },
+        {
+          "id": "action_tGL5SiVY",
+          "type": "widget_highlight",
+          "target": "#gradient_arrow",
+          "content": "最陡下降方向（红箭头）与 Newton 方向（蓝箭头）之间的几何差异"
+        },
+        {
+          "id": "action_mg4YnJWM",
+          "type": "speech",
+          "text": "你可以拖拽旋转这个三维场景，从不同角度观察梯度方向（红色箭头）和 Newton 方向（蓝色箭头）的空间关系。然后点击“下一步”，看看迭代点如何在碗底蜿蜒前进。",
+          "audioRef": "audio/tts_s6_action_mg4YnJWM.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "共轭梯度与二阶方法",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "yCi-S5KPoCXGMdx_x88bv",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_mlpD6WKR",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1F4E79;\">共轭梯度与二阶方法</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_f_4v5qe1",
+              "left": 60,
+              "top": 130,
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #666666;\">避免梯度下降的重复搜索问题</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Jfzw27hR",
+              "left": 60,
+              "top": 170,
+              "width": 380,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F8F9FA"
+            },
+            {
+              "type": "shape",
+              "id": "shape_iSQXQxXr",
+              "left": 75,
+              "top": 185,
+              "width": 50,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#D6E4F0"
+            },
+            {
+              "type": "text",
+              "id": "text_1pkf_9G0",
+              "left": 75,
+              "top": 184,
+              "width": 50,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #1F4E79;\">1</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_-qAHpCW-",
+              "left": 135,
+              "top": 175,
+              "width": 290,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>目标：</b>共轭方向“一次性”解决一个维度的分量，后续搜索不再影响。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_ISdzMKMI",
+              "left": 60,
+              "top": 265,
+              "width": 380,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F8F9FA"
+            },
+            {
+              "type": "shape",
+              "id": "shape_mafBLrmS",
+              "left": 75,
+              "top": 280,
+              "width": 50,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#D6E4F0"
+            },
+            {
+              "type": "text",
+              "id": "text_7T_uFh5x",
+              "left": 75,
+              "top": 279,
+              "width": 50,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #1F4E79;\">2</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_zkGdQi4k",
+              "left": 135,
+              "top": 270,
+              "width": 290,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>直觉：</b>构造 A-共轭方向，在 n 维二次函数上最多 n 步精确收敛。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Wd-fSLo7",
+              "left": 60,
+              "top": 360,
+              "width": 380,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F8F9FA"
+            },
+            {
+              "type": "shape",
+              "id": "shape_VTxiAJGH",
+              "left": 75,
+              "top": 375,
+              "width": 50,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#D6E4F0"
+            },
+            {
+              "type": "text",
+              "id": "text_j1DeQHeo",
+              "left": 75,
+              "top": 374,
+              "width": 50,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #1F4E79;\">3</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_b2ZAREkt",
+              "left": 135,
+              "top": 365,
+              "width": 290,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>误解修复：</b>基于严格的代数正交性条件，并非随机梯度下降的变体。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_zN2hDe87",
+              "left": 460,
+              "top": 170,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                270
+              ],
+              "style": "solid",
+              "color": "#E0E0E0",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_LybknkgY",
+              "left": 480,
+              "top": 170,
+              "width": 460,
+              "height": 120,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F2F2F2"
+            },
+            {
+              "type": "text",
+              "id": "text_-qwKOddH",
+              "left": 500,
+              "top": 180,
+              "width": 420,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #1F4E79;\">共轭方向定义：</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "latex",
+              "id": "latex_hSW-IXYO",
+              "left": 500,
+              "top": 220,
+              "width": 420,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\text{对于对称正定矩阵 } A \\text{，方向 } d_i \\text{ 与 } d_j \\text{ 满足 } d_i^T A d_j = 0 \\ (i \\neq j) \\\\ \\text{在二次函数 } f(x) = \\frac{1}{2}x^T A x - b^T x \\text{ 中，沿每个共轭方向做精确线搜索，最多 } n \\text{ 步即可收敛到精确解。}",
+              "color": "#333333",
+              "fixedRatio": true,
+              "align": "left",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.1774em;vertical-align:-0.2861em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">对于对称正定矩阵</span><span class=\"mord\"> </span></span><span class=\"mord mathnormal\">A</span><span class=\"mord text\"><span class=\"mord cjk_fallback\">，方向</span><span class=\"mord\"> </span></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3117em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">i</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mord text\"><span class=\"mord\"> </span><span class=\"mord cjk_fallback\">与</span><span class=\"mord\"> </span></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3117em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.05724em;\">j</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span><span class=\"mord text\"><span class=\"mord\"> </span><span class=\"mord cjk_fallback\">满足</span><span class=\"mord\"> </span></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8913em;\"><span style=\"top:-2.453em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">i</span></span></span><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.13889em;\">T</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.247em;\"><span></span></span></span></span></span></span><span class=\"mord mathnormal\">A</span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3117em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.05724em;\">j</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2861em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\">0</span><span class=\"mspace\"> </span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">i</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\"><span class=\"mrel\"><span class=\"mord vbox\"><span class=\"thinbox\"><span class=\"rlap\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"inner\"><span class=\"mord\"><span class=\"mrel\"></span></span></span><span class=\"fix\"></span></span></span></span></span><span class=\"mspace nobreak\"></span><span class=\"mrel\">=</span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.05724em;\">j</span><span class=\"mclose\">)</span></span><span class=\"mspace newline\"></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">在二次函数</span><span class=\"mord\"> </span></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.0074em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3214em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">2</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">1</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8913em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.13889em;\">T</span></span></span></span></span></span></span></span><span class=\"mord mathnormal\">A</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8913em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">b</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8913em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\" style=\"margin-right:0.13889em;\">T</span></span></span></span></span></span></span></span><span class=\"mord mathnormal\">x</span><span class=\"mord text\"><span class=\"mord\"> </span><span class=\"mord cjk_fallback\">中，沿每个共轭方向做精确线搜索，最多</span><span class=\"mord\"> </span></span><span class=\"mord mathnormal\">n</span><span class=\"mord text\"><span class=\"mord\"> </span><span class=\"mord cjk_fallback\">步即可收敛到精确解。</span></span></span></span></span></span>"
+            },
+            {
+              "type": "shape",
+              "id": "shape_LGn_73VC",
+              "left": 480,
+              "top": 310,
+              "width": 200,
+              "height": 130,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F4FD"
+            },
+            {
+              "type": "text",
+              "id": "text_Tx09Z7kq",
+              "left": 490,
+              "top": 320,
+              "width": 180,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1F4E79;\">选择初始方向</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "latex",
+              "id": "latex_bMdzmRC2",
+              "left": 490,
+              "top": 366,
+              "width": 180,
+              "height": 40,
+              "rotate": 0,
+              "latex": "d_1 = -\\nabla f(x_0)",
+              "color": "#1F4E79",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8444em;vertical-align:-0.15em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">1</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\">−</span><span class=\"mord\">∇</span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span></span></span></span></span>"
+            },
+            {
+              "type": "shape",
+              "id": "shape_ekMk_Xik",
+              "left": 740,
+              "top": 310,
+              "width": 200,
+              "height": 130,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F4FD"
+            },
+            {
+              "type": "text",
+              "id": "text_pp8nUwgl",
+              "left": 750,
+              "top": 320,
+              "width": 180,
+              "height": 112,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1F4E79;\">沿 d_k 线搜索 → 新点 x_{k+1}，构造新方向 d_{k+1} 与已有方向 A-共轭</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1F4E79"
+            },
+            {
+              "type": "line",
+              "id": "line_-Dh0057v",
+              "left": 680,
+              "top": 375,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                60,
+                0
+              ],
+              "style": "solid",
+              "color": "#5B9BD5",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_b5gj4JGE",
+              "left": 700,
+              "top": 405,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                200,
+                0
+              ],
+              "style": "solid",
+              "color": "#5B9BD5",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "curve": [
+                100,
+                18
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_QE2-SpgP",
+              "left": 710,
+              "top": 437,
+              "width": 100,
+              "height": 23,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #5B9BD5;\">重复至收敛</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#5B9BD5"
+            },
+            {
+              "type": "shape",
+              "id": "shape_r__fQ-sf",
+              "left": 60,
+              "top": 460,
+              "width": 880,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1F4E79"
+            },
+            {
+              "type": "text",
+              "id": "text_q46YadiK",
+              "left": 80,
+              "top": 470,
+              "width": 840,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #FFFFFF;\">核心：用方向的正交性（A-内积）替代存储 Hessian，达到 n 步精确收敛。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#FFFFFF"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_CbsQWIfq",
+          "type": "spotlight",
+          "elementId": "text_mlpD6WKR"
+        },
+        {
+          "id": "action_5-HaaU_h",
+          "type": "speech",
+          "text": "本场景聚焦“共轭梯度与二阶方法”。把牛顿法和拟牛顿法的体系梳理清楚了。现在，让我们转向另一类同样能实现超线性收敛，但思路完全不同的方法——共轭梯度法。它最吸引人的地方在于，我们不需要存储和求逆庞大的 Hessian 矩阵，却能获得接近二阶方法的效果。",
+          "audioRef": "audio/tts_s7_action_5-HaaU_h.wav"
+        },
+        {
+          "id": "action_ahjE04Lk",
+          "type": "spotlight",
+          "elementId": "text_f_4v5qe1"
+        },
+        {
+          "id": "action_xljOjuiw",
+          "type": "speech",
+          "text": "它解决的核心痛点，正是我们之前反复看到的：最速下降法会走“之”字形，在一个方向上刚优化好，下一步又把它破坏了。共轭梯度法的目标，就是构造一组特殊的搜索方向，每个方向只负责“终结”一个维度的误差，后续搜索互不干扰。",
+          "audioRef": "audio/tts_s7_action_xljOjuiw.mp3"
+        },
+        {
+          "id": "action_aNnll4DZ",
+          "type": "spotlight",
+          "elementId": "text_-qAHpCW-"
+        },
+        {
+          "id": "action_LB1oA_N2",
+          "type": "speech",
+          "text": "这个目标很宏伟，对吧？就是一次精准的线搜索，永久性地解决掉一个方向上的分量。这样在 n 维空间里，理论上最多只需要 n 步就能精确抵达二次函数的极小点。",
+          "audioRef": "audio/tts_s7_action_LB1oA_N2.mp3"
+        },
+        {
+          "id": "action_TGZY7HAj",
+          "type": "spotlight",
+          "elementId": "text_zkGdQi4k"
+        },
+        {
+          "id": "action_dxXCwYtY",
+          "type": "speech",
+          "text": "直觉上理解，我们是在构造一组相互“A-共轭”的方向。这里的 A 就是目标二次型的系数矩阵。可以想象，如果我们把这组方向作为新的坐标系，优化问题就被彻底解耦了，每一步线搜索都是独立的，从而在二次函数上实现最多 n 步精确收敛。",
+          "audioRef": "audio/tts_s7_action_dxXCwYtY.mp3"
+        },
+        {
+          "id": "action_Nf_a2G_f",
+          "type": "spotlight",
+          "elementId": "text_b2ZAREkt"
+        },
+        {
+          "id": "action_bdvUTEV5",
+          "type": "speech",
+          "text": "这里有个常见的误解需要修复：请不要把共轭梯度法和随机梯度下降划等号。它们是两个世界的东西。共轭梯度法基于严格的代数正交性条件，是一种确定性方法，整个过程没有任何随机性。它的数学根基，是我们下面要看到的 A-内积正交。",
+          "audioRef": "audio/tts_s7_action_bdvUTEV5.mp3"
+        },
+        {
+          "id": "action_Cpm14UT0",
+          "type": "spotlight",
+          "elementId": "text_q46YadiK"
+        },
+        {
+          "id": "action_5d_Fj8OX",
+          "type": "speech",
+          "text": "所以，整个方法的核心思想就很明确了：用方向之间的正交性，也就是 A-内积为零这个优雅的代数条件，来替代对完整 Hessian 矩阵的需求，最终实现 n 步精确收敛。本场景中，我们具体看看如何构造这些梦幻般的共轭方向。",
+          "audioRef": "audio/tts_s7_action_5d_Fj8OX.wav"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "共轭梯度与二阶方法：拖动实验",
+      "order": 8,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "conjugate_gradient_vs_gradient_descent",
+          "description": "在二次碗形地形中对比共轭梯度法(CG)与梯度下降法(GD)。观察CG如何在n步内收敛，而GD在窄谷中产生大量之字形往返。",
+          "variables": [
+            {
+              "name": "quadratic_bowl_shape",
+              "label": "条件数 (Condition Number)",
+              "min": 2,
+              "max": 50,
+              "default": 15,
+              "unit": "×",
+              "step": 1
+            },
+            {
+              "name": "step_size",
+              "label": "GD步长 (Step Size)",
+              "min": 0.01,
+              "max": 1,
+              "default": 0.15,
+              "unit": "",
+              "step": 0.01
+            },
+            {
+              "name": "negative_gradient",
+              "label": "显示负梯度方向",
+              "min": 0,
+              "max": 1,
+              "default": 1,
+              "unit": "",
+              "step": 1
+            },
+            {
+              "name": "conjugate_direction",
+              "label": "显示共轭方向",
+              "min": 0,
+              "max": 1,
+              "default": 1,
+              "unit": "",
+              "step": 1
+            },
+            {
+              "name": "max_steps",
+              "label": "最大迭代步数",
+              "min": 10,
+              "max": 200,
+              "default": 100,
+              "unit": "步",
+              "step": 5
+            }
+          ],
+          "presets": [
+            {
+              "name": "温和碗形",
+              "description": "条件数=5，GD也能较快收敛",
+              "variables": {
+                "quadratic_bowl_shape": 5,
+                "step_size": 0.2,
+                "max_steps": 50
+              }
+            },
+            {
+              "name": "窄谷地形",
+              "description": "条件数=30，GD之字形明显",
+              "variables": {
+                "quadratic_bowl_shape": 30,
+                "step_size": 0.1,
+                "max_steps": 100
+              }
+            },
+            {
+              "name": "极端窄谷",
+              "description": "条件数=50，GD极度低效",
+              "variables": {
+                "quadratic_bowl_shape": 50,
+                "step_size": 0.05,
+                "max_steps": 200
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/08_共轭梯度与二阶方法：拖动实验.html",
+        "htmlBytes": 787486
+      },
+      "actions": [
+        {
+          "id": "action_q0u_47IG",
+          "type": "speech",
+          "text": "本场景通过交互探索“共轭梯度与二阶方法：拖动实验”。共轭方向可以让每一步都开拓一个全新的搜索维度，绝不走回头路。现在，我们就通过这个模拟实验，亲眼验证一下共轭梯度法（CG）和普通梯度下降法（GD）在二次曲面上的表现到底有多大的差别。",
+          "audioRef": "audio/tts_s8_action_q0u_47IG.wav"
+        },
+        {
+          "id": "action_Ai65kVEN",
+          "type": "widget_setState",
+          "state": {
+            "quadratic_bowl_shape": 30,
+            "step_size": 0.1,
+            "max_steps": 100
+          },
+          "content": "加载预设的“窄谷地形”，为对比实验做好准备。"
+        },
+        {
+          "id": "action_PhBiYEFu",
+          "type": "widget_highlight",
+          "target": "#quadratic_bowl_shape-slider",
+          "content": "这个滑块控制条件数，决定了曲面的“窄谷”有多狭窄。"
+        },
+        {
+          "id": "action_5LwDsBan",
+          "type": "speech",
+          "text": "目前我们处在一个条件数为30的窄谷地形里。大家可以想象，这是一个被拉得很长很扁的碗。我先打开“显示负梯度方向”和“显示共轭方向”这两个开关，然后分别点击地图，启动CG和GD。请仔细观察两种方法产生的路径形状。",
+          "audioRef": "audio/tts_s8_action_5LwDsBan.mp3"
+        },
+        {
+          "id": "action_3OOU9psb",
+          "type": "widget_setState",
+          "state": {
+            "negative_gradient": 1,
+            "conjugate_direction": 1
+          },
+          "content": "同时显示负梯度方向和共轭方向，便于视觉对比。"
+        },
+        {
+          "id": "action_Nb8lt9Eb",
+          "type": "speech",
+          "text": "看，GD的路径在谷底两侧来回震荡，画出了明显的“之”字形，迟迟到不了中心。而CG的每一步都沿着一个全新的、与之前方向共轭的路径前进，几乎是直接切入谷底，路径简洁得多。这就是“不回头走老路”在几何上的直接体现。",
+          "audioRef": "audio/tts_s8_action_Nb8lt9Eb.mp3"
+        },
+        {
+          "id": "action_N8T0m_LZ",
+          "type": "widget_reveal",
+          "target": "#result-card",
+          "content": "显示残差随步数下降的对比图，数值上印证刚才的几何观察。"
+        },
+        {
+          "id": "action_mWd-6VVQ",
+          "type": "speech",
+          "text": "大家可以留意右下角的残差下降曲线。GD的残差下降非常缓慢，而CG沿着共轭方向减少残差；对于 n 维严格凸二次函数，在理想的精确算术下最多 n 步可达极小点。这体现了利用 A-内积正交性、而不必显式存储完整 Hessian 的优势。现在，你可以试着把条件数调到50，看看极端窄谷下这种优势是不是更加明显。",
+          "audioRef": "audio/tts_s8_action_mWd-6VVQ.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "共轭梯度与二阶方法：关系图",
+      "order": 9,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "htmlPath": "interactive/09_共轭梯度与二阶方法：关系图.html",
+        "htmlBytes": 769476
+      },
+      "actions": [
+        {
+          "id": "action_vT5GQeOQ",
+          "type": "speech",
+          "text": "本场景通过交互探索“共轭梯度与二阶方法：关系图”。现在让我们把镜头拉远一些，从关系图的视角重新审视共轭梯度法背后的结构——看看梯度、残差和搜索方向是如何通过 A 矩阵连接在一起的。",
+          "audioRef": "audio/tts_s9_action_vT5GQeOQ.wav"
+        },
+        {
+          "id": "action_mdsxeDnG",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "起始节点：梯度/残差"
+        },
+        {
+          "id": "action_1upD38bU",
+          "type": "speech",
+          "text": "图的最上端是当前的梯度，也就是负残差方向。CG 不会直接沿着梯度走，而是用它来计算一个标量 Beta，用来混合前一步的搜索方向。",
+          "audioRef": "audio/tts_s9_action_1upD38bU.mp3"
+        },
+        {
+          "id": "action_RcnDdU1d",
+          "type": "widget_highlight",
+          "target": "#n2",
+          "content": "Beta 参数节点"
+        },
+        {
+          "id": "action_SIOgBe6G",
+          "type": "widget_highlight",
+          "target": "#n3",
+          "content": "新搜索方向 = 当前残差 + Beta × 旧方向"
+        },
+        {
+          "id": "action_11UB-CnM",
+          "type": "speech",
+          "text": "大家可以注意这里的关键：新的搜索方向是残差与旧方向的一个线性组合。Beta 的选取确保了新方向与旧方向关于 A 矩阵内积正交——这就是我们一直说的'共轭'关系的来源。",
+          "audioRef": "audio/tts_s9_action_11UB-CnM.mp3"
+        },
+        {
+          "id": "action_J7hFmohY",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "A-内积正交性图示"
+        },
+        {
+          "id": "action_96ORBCx-",
+          "type": "speech",
+          "text": "现在图上展示的虚线夹角，就是在 A 度量下的几何关系。在普通欧氏空间里它们不一定是直角，但在 A 矩阵定义的弯曲空间里，这些方向是彼此'不干扰'的——这就解释了为什么 CG 在窄谷里比最速下降快得多，因为每一步都在有效地削去之前没有触及的维度分量。",
+          "audioRef": "audio/tts_s9_action_96ORBCx-.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "共轭梯度与二阶方法：误解修复挑战",
+      "order": 10,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "共轭梯度与二阶方法：误解修复挑战",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/10_共轭梯度与二阶方法：误解修复挑战.html",
+        "htmlBytes": 782633
+      },
+      "actions": [
+        {
+          "id": "action_lnU2fH9m",
+          "type": "speech",
+          "text": "本场景通过交互探索“共轭梯度与二阶方法：误解修复挑战”。在 A 度量下共轭方向互相不干扰。现在我们来亲手体验一下：如果方向选得不对，会有什么后果？打开的这个解谜挑战，目标是用最少步数清除所有残差——本质上就是在构建一组关于 A 共轭的搜索方向。",
+          "audioRef": "audio/tts_s10_action_lnU2fH9m.wav"
+        },
+        {
+          "id": "action_39nMn0IS",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始进入挑战"
+        },
+        {
+          "id": "action_ydwFzULe",
+          "type": "speech",
+          "text": "屏幕上会给你几个候选的 Beta 系数，每个对应不同的新方向。你的任务是选出那个让新方向与之前所有方向都 A-共轭的系数。选对了，步数计数器会跳得很少；选错了，你会看到路径开始震荡——那就是普通梯度下降反复走的'之'字路。",
+          "audioRef": "audio/tts_s10_action_ydwFzULe.mp3"
+        },
+        {
+          "id": "action_b9SJRrkP",
+          "type": "widget_setState",
+          "state": {
+            "currentStep": 1,
+            "feedback": "请选择第一个 Beta 系数"
+          },
+          "content": "初始化到第一步选择场景"
+        },
+        {
+          "id": "action_b7A-QIrh",
+          "type": "speech",
+          "text": "注意观察步数计数器。当你选到正确的共轭方向时，每一步都在消除之前没触及的维度分量，所以步数明显更少。这正是 CG 在窄谷里远超最速下降的原因——它不是反复在同一个方向上修修补补。",
+          "audioRef": "audio/tts_s10_action_b7A-QIrh.mp3"
+        },
+        {
+          "id": "action_PNJBEZTd",
+          "type": "widget_annotation",
+          "target": "#progress-display",
+          "content": "步数计数器：正确共轭方向下步数显著减少"
+        },
+        {
+          "id": "action_SsxnqHMP",
+          "type": "speech",
+          "text": "试试看，先选一个你觉得合理的系数，观察路径是笔直前进还是开始画锯齿。大家在旁边可以给你一些提示，但最好自己先感受一下'选错方向'带来的震荡——这种直觉对理解为什么需要共轭基底非常关键。",
+          "audioRef": "audio/tts_s10_action_SsxnqHMP.wav"
+        },
+        {
+          "id": "action_8K7Vazsb",
+          "type": "widget_reveal",
+          "target": "#hint-area",
+          "content": "提示：A-共轭意味着新方向在 A 内积下与旧方向正交"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "共轭梯度与二阶方法：空间视角",
+      "order": 11,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "共轭梯度法 CG 与 Krylov 子空间扩张的 3D 可视化。展示搜索方向如何在空间中形成共轭基底，Krylov 子空间逐步覆盖整个空间。",
+          "objects": [
+            {
+              "id": "ellipsoid_contour",
+              "type": "wireframe",
+              "material": {
+                "type": "wireframe",
+                "color": "#f59e0b"
+              },
+              "label": "等值线椭球面"
+            },
+            {
+              "id": "conjugate_vectors",
+              "type": "arrows",
+              "material": {
+                "type": "arrow",
+                "color": "#ef4444"
+              },
+              "label": "A-共轭搜索方向"
+            },
+            {
+              "id": "krylov_plane",
+              "type": "plane",
+              "material": {
+                "type": "transparent",
+                "color": "#3b82f6"
+              },
+              "label": "Krylov 子空间 K_k"
+            },
+            {
+              "id": "residual",
+              "type": "arrow",
+              "material": {
+                "type": "arrow",
+                "color": "#f472b6"
+              },
+              "label": "残差向量 r_k"
+            },
+            {
+              "id": "currentIterate",
+              "type": "sphere",
+              "material": {
+                "type": "emissive",
+                "color": "#06b6d4"
+              },
+              "label": "当前迭代点 x_k"
+            },
+            {
+              "id": "xStar",
+              "type": "sphere",
+              "material": {
+                "type": "emissive",
+                "color": "#fbbf24"
+              },
+              "label": "最优解 x*"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "button",
+              "action": "stepNext",
+              "label": "下一步"
+            },
+            {
+              "type": "button",
+              "action": "autoPlay",
+              "label": "自动播放"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            },
+            {
+              "type": "slider",
+              "param": "speed",
+              "min": 0.1,
+              "max": 3,
+              "default": 1
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "+"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "−"
+            }
+          ],
+          "presets": [
+            {
+              "name": "初始状态",
+              "state": {
+                "step": 0,
+                "cameraPosition": [
+                  6,
+                  5,
+                  8
+                ],
+                "target": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "第一步后",
+              "state": {
+                "step": 1,
+                "cameraPosition": [
+                  5,
+                  4,
+                  7
+                ]
+              }
+            },
+            {
+              "name": "收敛完成",
+              "state": {
+                "step": 3,
+                "cameraPosition": [
+                  4,
+                  3,
+                  6
+                ]
+              }
+            },
+            {
+              "name": "俯视视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  10,
+                  0
+                ],
+                "target": [
+                  0.5,
+                  -0.3,
+                  0.8
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/11_共轭梯度与二阶方法：空间视角.html",
+        "htmlBytes": 2510366
+      },
+      "actions": [
+        {
+          "id": "action_jm58CWvp",
+          "type": "speech",
+          "text": "本场景通过交互探索“共轭梯度与二阶方法：空间视角”。现在我们把视角拉高，在三维空间里看一看共轭梯度法到底在干什么。请先观察这个场景——橙色的椭球面代表了二次目标函数的等值线，最优解在椭球中心，也就是那个金色的球体。",
+          "audioRef": "audio/tts_s11_action_jm58CWvp.wav"
+        },
+        {
+          "id": "action_mQH9tCS-",
+          "type": "widget_highlight",
+          "target": "#ellipsoid_contour",
+          "content": "观察二次型等值线形成的椭球面，理解目标函数的几何形状。"
+        },
+        {
+          "id": "action_b3u0Yy2R",
+          "type": "widget_highlight",
+          "target": "#xStar",
+          "content": "金色球体标记了最优解 x* 的位置。"
+        },
+        {
+          "id": "action_wHKCyhtg",
+          "type": "speech",
+          "text": "现在我们让算法开始第一步。请注意看，青色的当前迭代点会沿着红色的搜索方向移动，而粉色的残差向量告诉我们当前位置离最优解还有多远。大家可以试着想象一下，这个搜索方向所在的蓝色半透明平面，就是所谓的Krylov子空间。",
+          "audioRef": "audio/tts_s11_action_wHKCyhtg.wav"
+        },
+        {
+          "id": "action_I6a3-7xm",
+          "type": "widget_highlight",
+          "target": "#conjugate_vectors",
+          "content": "红色箭头族展示相互A-共轭的搜索方向，注意它们与椭球轴的关系。"
+        },
+        {
+          "id": "action_b_P0_GN_",
+          "type": "widget_highlight",
+          "target": "#krylov_plane",
+          "content": "蓝色平面标记当前的Krylov子空间，步数增加时这个子空间会扩张。"
+        },
+        {
+          "id": "action_14e2Gj3V",
+          "type": "speech",
+          "text": "现在点击'下一步'，看迭代点如何一步步逼近最优解。每推进一步，蓝色的Krylov子空间就会扩张一个维度，增加一个新的共轭方向。大家你之前担心的那个问题——搜索方向会不会相互干扰——在这里可以亲眼确认：在共轭基底下，每个新方向都与之前的方向关于矩阵A正交，互不污染。",
+          "audioRef": "audio/tts_s11_action_14e2Gj3V.wav"
+        },
+        {
+          "id": "action_OMzzthK6",
+          "type": "widget_setState",
+          "state": {
+            "step": 1
+          },
+          "content": "执行第一步迭代，观察残差向量与Krylov子空间的关系。"
+        },
+        {
+          "id": "action_Gp3vpp7D",
+          "type": "speech",
+          "text": "注意看粉色残差向量此刻的方向——它与当前的蓝色Krylov子空间是垂直的（在A-内积意义下）。这正是共轭梯度法的核心性质：每一步都沿着与已有子空间共轭的方向，消除当前子空间内所有的误差分量。大家可以把它想象成弹簧振子——每个方向都独立地收敛，互不拉扯。",
+          "audioRef": "audio/tts_s11_action_Gp3vpp7D.wav"
+        },
+        {
+          "id": "action_unF1lcwR",
+          "type": "widget_setState",
+          "state": {
+            "step": 3
+          },
+          "content": "跳到收敛完成状态，观察完整的共轭基底覆盖整个三维空间。"
+        },
+        {
+          "id": "action_NQK9ddH9",
+          "type": "speech",
+          "text": "当搜索步数等于空间维度时，Krylov子空间填满整个三维空间，算法精确收敛。但这还不是最有趣的部分——在N维空间里，共轭梯度法理论上最多N步收敛，而实际中往往远少于N步就能得到满意的近似解。这也解释了为什么它在大型稀疏问题上远优于直接求逆：我们不需要存储完整的Hessian矩阵，只需维护几个关键向量。",
+          "audioRef": "audio/tts_s11_action_NQK9ddH9.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在“拖动实验”中，当目标函数呈现狭长窄谷形状时，牛顿法（Newton's Method）与梯度下降法（Gradient Descent, GD）的路径差异主要源于：",
+            "options": [
+              {
+                "value": "A",
+                "label": "牛顿法使用一阶导数信息，能够直接指向极小值"
+              },
+              {
+                "value": "B",
+                "label": "梯度下降法利用海森矩阵（Hessian）的逆来缩放梯度，避免震荡"
+              },
+              {
+                "value": "C",
+                "label": "牛顿法通过二阶导数信息对梯度进行旋转和缩放，能直接指向谷底"
+              },
+              {
+                "value": "D",
+                "label": "梯度下降法在窄谷中会自动增大学习率，因此更容易震荡"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "牛顿法利用海森矩阵的逆对梯度进行仿射变换（旋转和缩放），能够感知函数的曲率。在窄谷中，梯度下降法由于仅依赖一阶信息，会沿着与谷壁垂直的方向来回震荡（即“之”字型路径），而牛顿步可以直接指向谷底附近，大大减少了震荡。选项A错误，牛顿法使用二阶信息；选项B错误，GD不使用海森矩阵；选项D错误，GD本身不自动调整学习率，且窄谷中通常需要极小学习率，否则震荡更严重。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "关于共轭梯度法（Conjugate Gradient, CG）与梯度下降法在二次型函数最小化中的行为，结合“误解修复挑战”，以下哪项说法是正确的？",
+            "options": [
+              {
+                "value": "A",
+                "label": "CG法的核心思想是保持每次迭代的搜索方向相互正交，以消除震荡"
+              },
+              {
+                "value": "B",
+                "label": "GD法在窄谷中震荡是因为它产生的梯度方向相互共轭，无法快速收敛"
+              },
+              {
+                "value": "C",
+                "label": "CG法通过在每一轮迭代中采用与之前所有方向都共轭的新方向，理论上可在n步内收敛到n维二次型函数的极小值"
+              },
+              {
+                "value": "D",
+                "label": "CG法本质上等价于带有动量项（Momentum）的标准梯度下降法"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "共轭梯度法的关键优势在于生成一组关于目标函数海森矩阵相互共轭（Conjugate，或称共轭正交）的搜索方向，而非简单的正交。这种性质使得每次迭代都在一个新的、与之前不冲突的子空间中进行消元，从而避免GD法在等高线呈狭长椭圆时产生的“之”字震荡。对于n维正定二次型，CG理论上最多n步收敛。A错误，是共轭而非正交；B错误，GD震荡是因为梯度方向相互正交，而非共轭；D错误，虽然都有历史信息利用，但CG基于共轭理论推导，比普通动量法有更强的收敛保证。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "question": "在CG法的实际实现中，标准CG算法与非线性CG变种（如FR, PR, HS等）共同遵循的核心操作包括：",
+            "options": [
+              {
+                "value": "A",
+                "label": "计算当前点的梯度向量"
+              },
+              {
+                "value": "B",
+                "label": "利用公式更新共轭方向参数（如beta），确保新搜索方向与旧方向共轭"
+              },
+              {
+                "value": "C",
+                "label": "显式计算并存储完整的海森矩阵以确保搜索方向的精确性"
+              },
+              {
+                "value": "D",
+                "label": "沿确定的搜索方向进行一维线搜索或近似线搜索"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "analysis": "无论是解线性方程组的线性CG，还是用于一般无约束优化的非线性CG，其基本框架都包括：计算当前梯度（A），通过beta参数混合梯度与上一步方向以生成新方向（B），并沿该方向进行线搜索（D）。CG法的一大优势就是无需显式构造和存储完整的海森矩阵（C错误），只需计算矩阵-向量乘积，内存消耗小，适合大规模问题。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "一个算法研究员尝试使用梯度下降法在一个病态（Ill-conditioned）的二次型函数 f(x) = 0.5 * x^T Q x 上寻找极小值，发现收敛极慢。若他切换为牛顿法，收敛变得极快（一步到位），但若他错误地将牛顿法应用在一个非凸函数上，且起始点附近的海森矩阵非正定，最可能遇到的问题是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "牛顿法会退化为梯度下降法"
+              },
+              {
+                "value": "B",
+                "label": "牛顿法会收敛到一个极大值点或鞍点，而非极小值点"
+              },
+              {
+                "value": "C",
+                "label": "牛顿法会因为计算不出海森矩阵而中断"
+              },
+              {
+                "value": "D",
+                "label": "牛顿法会自动切换为共轭梯度法以自救"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "纯牛顿法的搜索方向为 d = -H^{-1} g。当海森矩阵H非正定（即存在负特征值）时，d可能是一个上升方向（与梯度点积为正），导致迭代走向极大值或鞍点，而非极小值。这也是为什么实际优化中常对牛顿法进行修正（如增加正则化项变成Levenberg-Marquardt算法，或将H的特征值进行截断）。选项A错，它不会自动退化为GD；C错，海森矩阵可计算但不正定；D错，CG法也假设问题在局部近似正定。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "multiple",
+            "question": "在 “拖动实验” 中，我们观察到梯度下降法在收敛到窄谷底部极小值的过程中表现出严重的震荡。以下哪些关于这种震荡现象的说法是正确的？",
+            "options": [
+              {
+                "value": "A",
+                "label": "震荡是因为局部梯度最大的下降方向与指向极小值的最优方向差异很大"
+              },
+              {
+                "value": "B",
+                "label": "只要使用精确线搜索（Exact Line Search）的梯度下降，就能完全避免这种震荡"
+              },
+              {
+                "value": "C",
+                "label": "这种震荡在函数等高线由正圆形变为狭长椭圆形时开始加剧"
+              },
+              {
+                "value": "D",
+                "label": "牛顿法通过将梯度乘以海森矩阵的逆，实际上在每一步对空间进行了“仿射变换”，将椭圆等高线拉伸为近似圆形，从而避免震荡"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "GD震荡的根本原因是局部最陡下降方向（负梯度）并不直接指向极小值（A正确）。函数的病态程度（即海森矩阵条件数大，等高线为狭长椭圆）越严重，震荡越剧烈（C正确）。牛顿法正是通过H^{-1}的仿射变换作用，将问题转化为在更均匀各向同性的新空间中沿负梯度走一步，从而消除震荡（D正确）。选项B错误，精确线搜索虽然能保证每一步都是该方向的最优点，但连续两个最优点之间的梯度方向依然会正交，无法避免“之”字型路径，震荡依然存在。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "single",
+            "question": "我们使用无约束优化算法（如CG或准牛顿法）求解 min f(x) 时，假设最优解为 x*。但当引入一个约束 x >= 0 且真正的全局极小值 f(x') 位于 x' < 0 的区域内时，直接使用在可行域初始化的无约束方法，最可能计算出的结果是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "算法会无视约束，直接收敛到 x' "
+              },
+              {
+                "value": "B",
+                "label": "算法会在 x=0 的边界附近震荡"
+              },
+              {
+                "value": "C",
+                "label": "算法将主动寻找满足约束的极小值点，即在 x>=0 内寻找极小值"
+              },
+              {
+                "value": "D",
+                "label": "算法只会计算得到 x=0 处的一个驻点，但无法识别边界或进一步移动"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "此题的核心是识别“无约束”优化的局限性。标准的无约束方法（如梯度下降、牛顿法、CG）在设计时完全不考虑约束条件。如果目标函数f(x)的全局极小值位于不可行域（x<0），并且初始化点在可行域（x>=0）内，算法会遵循负梯度方向（或牛顿方向）穿越边界，尝试移动到不可行域以到达x'（A描述）。如果步长足够大，它会跨过边界并最终收敛到x'。因此，无约束方法不能处理约束，会给出不可行的解。这正是约束优化（Constrained Optimization）需要介入的场景。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q7",
+            "type": "short_answer",
+            "question": "在“误解修复挑战”中，有学生认为：“共轭梯度法通过保存上一个梯度方向并与当前梯度结合，避免了在窄谷中震荡，这跟带动量的梯度下降法（Gradient Descent with Momentum）原理是一样的。” 请指出并修正这种说法中的误解，重点从“共轭性”与“惯性平滑”的本质区别角度进行辨析。",
+            "commentPrompt": "评分标准：(1) 指出CG法的核心是生成共轭方向，旨在解决二次型在n步内收敛，而动量法是对指数衰减滑动平均的利用 40%；(2) 辨析：CG的beta参数由严格数学推导保证共轭性（如PR, FR公式），动量法的gamma参数是一个由经验设定的标量 30%；(3) 结合窄谷震荡问题，指出CG利用共轭来解耦子空间，动量虽能平滑但不能消除方向正交性带来的震荡根因 30%。",
+            "analysis": "参考答案要点：1) CG基于共轭性质理论，动量法基于物理惯性启发。2) CG严谨选择组合系数beta（如Fletcher-Reeves公式）以保证新方向关于海森矩阵与所有旧方向共轭，动量法仅简单加权历史梯度。3) 在窄谷中，纯动量法仍可能因缺乏子空间解耦而导致长期震荡，而CG可以做到每个方向一次性消除该维度的误差，不会重复。",
+            "points": 20,
+            "hasAnswer": false
+          },
+          {
+            "id": "q8",
+            "type": "single",
+            "question": "一个二次型目标函数的等高线呈现极狭窄的拉伸状，其海森矩阵的特征值为 (100, 0.001)。若你想让算法沿狭窄山谷快速下降，以下哪种优化策略最不适用？",
+            "options": [
+              {
+                "value": "A",
+                "label": "带有精确线搜索的标准梯度下降法"
+              },
+              {
+                "value": "B",
+                "label": "带有Wolfe条件线搜索的非线性共轭梯度法"
+              },
+              {
+                "value": "C",
+                "label": "带有动量项（momentum=0.9）的随机梯度下降法"
+              },
+              {
+                "value": "D",
+                "label": "拟牛顿法（如BFGS），它通过迭代逼近海森矩阵的逆"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "特征值跨度极大（条件数=100/0.001=100,000）意味着问题极度病态。标准梯度下降法，即使带有精确线搜索，也会在最陡下降方向上反复震荡（连续的搜索方向相互正交），且收敛速度受限于条件数（收敛极慢），因此最不适用（A）。BFGS（D）能构建近似的二阶信息，非线性CG（B）通过共轭方向解耦，动量法（C）能通过惯性在一定程度上抵消窄谷震荡，它们在这个问题上通常都比标准GD表现好得多。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q9",
+            "type": "multiple",
+            "question": "在从“无约束优化”过渡到“约束优化”的预诊断中，考虑这样一个场景：我们试图最小化一个凸二次函数，但强行要求解在一条直线上。以下哪些方法或理论揭示了无约束优化器在此类约束下的局限性？",
+            "options": [
+              {
+                "value": "A",
+                "label": "无约束优化器可能会收敛到约束流形（Constraint Manifold）的外部"
+              },
+              {
+                "value": "B",
+                "label": "在约束极小值点上，目标函数的梯度必然为零向量，满足无约束最优条件"
+              },
+              {
+                "value": "C",
+                "label": "我们需要引入拉格朗日乘子（Lagrange Multiplier）的概念来平衡梯度与约束法向"
+              },
+              {
+                "value": "D",
+                "label": "无约束方法无法区分可行域的内部极小值和边界极小值"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "当极小值位于约束边界上时，无约束方法由于只查看目标函数梯度信息，无法得知“边界”的存在。它可能会越过边界（A），或者即使停留在边界，也无法正确识别该点为极值点，因为边界上的梯度通常不为零（与约束面垂直）。这正是D和C描述的：我们需要拉格朗日乘子来构造KKT条件，用乘子表示约束的法向力，以抵消梯度的部分分量。选项B错误：有约束极值点处的梯度一般不为零，而是负梯度落在约束法向量所在的空间。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q10",
+            "type": "short_answer",
+            "question": "假设你在解一个无约束二次规划问题 min f(x) = 0.5 x^T Q x，且Q是正定的。请从“子空间消元”的角度，通俗解释为什么共轭梯度法可以在至多n步内收敛（不考虑舍入误差），而最速下降法（Steepest Descent）却可能在许多步后依然震荡？结合实际提到的“拖动实验”窄谷场景进行说明。",
+            "commentPrompt": "评分标准：(1) 解释CG在每一步找到一个Q-共轭方向，使得新误差与之前所有方向上的误差解耦（40%）；(2) 说明GD在进行精确搜索后，连续方向正交，导致子空间重用而产生震荡（30%）；(3) 结合拖动实验中“GD沿谷壁反复横跳而CG斜穿谷底”的视觉比喻来阐释子空间消元与正交的区别（30%）。",
+            "analysis": "参考答案：CG法第一步取最速下降方向，之后每次构造一个方向p_k，它与之前所有方向关于Q共轭（p_i^T Q p_j = 0）。由于搜索空间的维度为n，最多构造出n个相互解耦的方向；每步消去一个维度上的误差，且不会在后续迭代中重新引入，因此n步必达极小值。而GD每一步在与上一步正交的方向搜索，导致在“窄谷”这一低维子空间中来来回回，重复进入同一个低维子空间，无法高效消元，从而导致反复震荡。在拖动实验中可以看到GD的路径是锯齿状的，而CG直接切入谷底。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_ZV-RK4v-",
+          "type": "speech",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。CG）的核心原理，看到了它在Krylov子空间里的优雅行为。现在，是时候将我们这几页学到的知识——从牛顿法（Newton's Method）的仿射变换，到CG法的共轭搜索——进行一次综合性的检验了。",
+          "audioRef": "audio/tts_s12_action_ZV-RK4v-.wav"
+        },
+        {
+          "id": "action_dH_Um1cS",
+          "type": "speech",
+          "text": "这份测验不仅会回顾我们通过“拖动实验”和“误解修复挑战”所建立的核心直觉，比如为什么牛顿法在窄谷中能一步到位而梯度下降（Gradient Descent）会剧烈震荡，还会开始帮我们将视角从无约束的世界，慢慢转向下一组知识点的门口：当极小值藏在可行域之外时，我们手里的工具该怎么办？",
+          "audioRef": "audio/tts_s12_action_dH_Um1cS.mp3"
+        },
+        {
+          "id": "action_8M04vKxc",
+          "type": "speech",
+          "text": "请大家认真审题，尤其是多选题和简答题，它们会要求你调取看到函数图像时的直观感受，并用清晰的语言描述出来。别急着追求速度，让我们一起在练习中把概念打磨得更锋利。",
+          "audioRef": "audio/tts_s12_action_8M04vKxc.mp3"
+        },
+        {
+          "id": "action_Z5RQHQmH",
+          "type": "discussion",
+          "topic": "大家觉得，为什么一个在无约束问题中表现完美的算法（比如牛顿法），遇到一个像 x≥0 这样简单的边界时，就可能完全失效？这背后反映了我们目前所学工具的一个什么根本性局限？",
+          "prompt": "回想一下，我们用来寻找最小值的梯度或牛顿方向，是从函数本身的局部信息推导出来的，这个信息里包含了可行域的边界吗？",
+          "agentIndex": 4
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "内点法与对偶方法",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "r2kpJ5RxyTkeLqEFyNvXb",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_0y2L9DxL",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1A3C6E;\">内点法与对偶方法</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_0Id2uhVe",
+              "left": 60,
+              "top": 130,
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #4A6B8C;\">用屏障函数与对偶性智慧求解约束优化</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4A6B8C"
+            },
+            {
+              "type": "shape",
+              "id": "shape_mn1QBPTn",
+              "left": 60,
+              "top": 165,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4A7CBF"
+            },
+            {
+              "type": "shape",
+              "id": "shape_55eUNulp",
+              "left": 60,
+              "top": 180,
+              "width": 260,
+              "height": 260,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F0FE"
+            },
+            {
+              "type": "shape",
+              "id": "shape_RG1ETngk",
+              "left": 370,
+              "top": 180,
+              "width": 260,
+              "height": 260,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F0FE"
+            },
+            {
+              "type": "shape",
+              "id": "shape_k8s5Lafy",
+              "left": 680,
+              "top": 180,
+              "width": 260,
+              "height": 260,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F0FE"
+            },
+            {
+              "type": "text",
+              "id": "text_dQR1GGDI",
+              "left": 70,
+              "top": 190,
+              "width": 240,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1A3C6E;\">核心目标</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_NeQ1YHXI",
+              "left": 70,
+              "top": 235,
+              "width": 240,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\">将约束条件转化为目标函数中的惩罚项，使迭代点始终保持在可行域内部。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_PLJX3-kC",
+              "left": 70,
+              "top": 305,
+              "width": 240,
+              "height": 50,
+              "rotate": 0,
+              "latex": "\\phi(x) = -\\mu \\sum \\ln(-g_i(x))",
+              "color": "#1A3C6E",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\">ϕ</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.6em;vertical-align:-0.55em;\"></span><span class=\"mord\">−</span><span class=\"mord mathnormal\">μ</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop op-symbol large-op\" style=\"position:relative;top:0em;\">∑</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop\">ln</span><span class=\"mopen\">(</span><span class=\"mord\">−</span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3117em;\"><span style=\"top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">i</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">))</span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_jW-xcPmc",
+              "left": 70,
+              "top": 360,
+              "width": 240,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\">随着μ → 0，屏障逐渐减弱，逼近原问题最优解。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_RbLV7lIJ",
+              "left": 380,
+              "top": 190,
+              "width": 240,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1A3C6E;\">核心直觉</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_lA3nONSx",
+              "left": 380,
+              "top": 235,
+              "width": 240,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\">由不同μ值对应的无约束极小点构成一条“中心路径”，该路径安全地穿行于可行域内部。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_SeA0iiGH",
+              "left": 380,
+              "top": 305,
+              "width": 240,
+              "height": 50,
+              "rotate": 0,
+              "latex": "x^*(\\mu) = \\arg\\min_x f(x) - \\mu\\sum\\ln(-g_i(x))",
+              "color": "#1A3C6E",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7387em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mbin mtight\">∗</span></span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">μ</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.45em;vertical-align:-0.7em;\"></span><span class=\"mop\">ar<span style=\"margin-right:0.01389em;\">g</span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6679em;\"><span style=\"top:-2.4em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">x</span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">min</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.6em;vertical-align:-0.55em;\"></span><span class=\"mord mathnormal\">μ</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop op-symbol large-op\" style=\"position:relative;top:0em;\">∑</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop\">ln</span><span class=\"mopen\">(</span><span class=\"mord\">−</span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3117em;\"><span style=\"top:-2.55em;margin-left:-0.0359em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">i</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">))</span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_pMmPgeB9",
+              "left": 380,
+              "top": 360,
+              "width": 240,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\">路径受屏障参数调控，始终从可行域内部逼近最优解。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_vIRrnuTn",
+              "left": 690,
+              "top": 190,
+              "width": 240,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1A3C6E;\">常见误解</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            },
+            {
+              "type": "text",
+              "id": "text_hvWY5V4g",
+              "left": 690,
+              "top": 235,
+              "width": 240,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\">约束优化并非“越界后拉回”，而是重新构造搜索路径。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_lww9oDnJ",
+              "left": 690,
+              "top": 305,
+              "width": 240,
+              "height": 85,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\"><b>对比：</b>外点惩罚法（惩罚违反约束的点） vs 内点屏障法（始终保持在内部，逐步收紧边界）。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_y6Hi4qIZ",
+              "left": 690,
+              "top": 395,
+              "width": 240,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\">对偶间隙可作为收敛判据，衔接对偶方法。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_9j6Op3gO",
+              "left": 325,
+              "top": 310,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                0
+              ],
+              "style": "solid",
+              "color": "#4A7CBF",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_S_3S4f-V",
+              "left": 635,
+              "top": 310,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                0
+              ],
+              "style": "solid",
+              "color": "#4A7CBF",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_5_m5Uu3i",
+              "left": 60,
+              "top": 460,
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #1A3C6E;\">内点法 → 原始-对偶内点法 → 高效大规模约束优化求解器</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3C6E"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_yspYMnGM",
+          "type": "spotlight",
+          "elementId": "text_0y2L9DxL"
+        },
+        {
+          "id": "action_WSVP6vtu",
+          "type": "speech",
+          "text": "本场景聚焦“内点法与对偶方法”。从刚才的测验回到新课。前面我们用牛顿法和共轭梯度，主要处理的是无约束问题。但是现实中的优化几乎都有约束条件，比如资源限制、物理边界。今天我们就来探讨：当可行域被‘墙’围起来时，如何聪明地找到最优解。这就是内点法（Interior Point Method）和对偶方法（Duality Method）。",
+          "audioRef": "audio/tts_s13_action_WSVP6vtu.wav"
+        },
+        {
+          "id": "action_alePaToT",
+          "type": "spotlight",
+          "elementId": "text_0Id2uhVe"
+        },
+        {
+          "id": "action_Q-Z-eB7k",
+          "type": "speech",
+          "text": "这张幻灯片的核心思想，就是用屏障函数与对偶性的智慧，在约束的‘包围圈’里，从内部一路畅通地逼近答案。",
+          "audioRef": "audio/tts_s13_action_Q-Z-eB7k.mp3"
+        },
+        {
+          "id": "action_TrUlknlA",
+          "type": "spotlight",
+          "elementId": "text_dQR1GGDI"
+        },
+        {
+          "id": "action_rGzpJ_51",
+          "type": "speech",
+          "text": "我们的核心目标是：将硬性的约束条件，巧妙地转化为目标函数里软性的‘惩罚项’，人为建造一堵‘势垒’，确保我们的迭代搜索点永远不会犯规，始终乖乖待在可行域内部。",
+          "audioRef": "audio/tts_s13_action_rGzpJ_51.mp3"
+        },
+        {
+          "id": "action_6q5dAhNE",
+          "type": "spotlight",
+          "elementId": "latex_PLJX3-kC"
+        },
+        {
+          "id": "action_D24de52O",
+          "type": "speech",
+          "text": "看这个对数屏障函数。注意，当搜索点一旦想靠近可行域的边界，也就是不等式约束 g_i(x) 趋近于 0 时，这个项就会趋向于正无穷，像一堵无限高的墙把它弹回去。",
+          "audioRef": "audio/tts_s13_action_D24de52O.mp3"
+        },
+        {
+          "id": "action_Tm8nyTN9",
+          "type": "spotlight",
+          "elementId": "text_lA3nONSx"
+        },
+        {
+          "id": "action_BvG-Zw57",
+          "type": "speech",
+          "text": "由此就引出了我们的核心直觉——‘中心路径’。我们引入一个屏障参数 μ，对它取不同的值，就会得到一系列无约束问题的极小点。连接这些点，就形成了一条安全穿行于可行域内部的平滑曲线，也就是中心路径。",
+          "audioRef": "audio/tts_s13_action_BvG-Zw57.mp3"
+        },
+        {
+          "id": "action_t3yXRm19",
+          "type": "spotlight",
+          "elementId": "text_hvWY5V4g"
+        },
+        {
+          "id": "action_BfkD5Rca",
+          "type": "speech",
+          "text": "这里要修复一个常见误解。约束优化并不是我们想象中那样，先瞎走，一旦‘越界’就用惩罚把它硬拉回来。不，内点法的哲学完全不同，它是重新构造了一条全新的、从内部逼近边界的搜索路径。",
+          "audioRef": "audio/tts_s13_action_BfkD5Rca.mp3"
+        },
+        {
+          "id": "action_dsbKZLPJ",
+          "type": "spotlight",
+          "elementId": "text_lww9oDnJ"
+        },
+        {
+          "id": "action_mMgsJvn7",
+          "type": "speech",
+          "text": "对比一下：外点惩罚法是对犯规者施加惩罚，从可行域外部向内部逼近；而内点屏障法，始终在内部活动，它通过逐步减小 μ 值，让屏障慢慢减弱，最终紧贴边界，找到原问题的解。",
+          "audioRef": "audio/tts_s13_action_mMgsJvn7.mp3"
+        },
+        {
+          "id": "action_RsbUCZhV",
+          "type": "spotlight",
+          "elementId": "text_y6Hi4qIZ"
+        },
+        {
+          "id": "action_Q7fBhh3L",
+          "type": "speech",
+          "text": "最后提一个很妙的连接点：对偶间隙，它既可以作为我们停止迭代的收敛判据，也自然地衔接到了需要看的对偶方法。这个思想最终演变成了‘原始-对偶内点法’，成为我们今天求解大规模问题的基石。",
+          "audioRef": "audio/tts_s13_action_Q7fBhh3L.wav"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "内点法与对偶方法：拖动实验",
+      "order": 14,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "interior_point_method",
+          "description": "内点法与对偶方法：观察屏障函数强度参数t增大时，中心路径如何逐渐逼近约束边界。对偶间隙随t增大而减小。",
+          "variables": [
+            {
+              "name": "barrier_parameter_t",
+              "label": "屏障参数 t",
+              "min": 0.1,
+              "max": 100,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "speed",
+              "label": "动画速度",
+              "min": 0.1,
+              "max": 5,
+              "default": 1,
+              "unit": "x"
+            }
+          ],
+          "presets": [
+            {
+              "name": "小t值",
+              "variables": {
+                "barrier_parameter_t": 0.5,
+                "speed": 1
+              }
+            },
+            {
+              "name": "中等t值",
+              "variables": {
+                "barrier_parameter_t": 10,
+                "speed": 1
+              }
+            },
+            {
+              "name": "大t值(逼近边界)",
+              "variables": {
+                "barrier_parameter_t": 50,
+                "speed": 1
+              }
+            },
+            {
+              "name": "自动演示",
+              "variables": {
+                "barrier_parameter_t": 1,
+                "speed": 2
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/14_内点法与对偶方法：拖动实验.html",
+        "htmlBytes": 778914
+      },
+      "actions": [
+        {
+          "id": "action_ar_J-tSr",
+          "type": "speech",
+          "text": "本场景通过交互探索“内点法与对偶方法：拖动实验”。现在我们通过一个交互实验，亲眼看看内点法里那个关键的屏障参数 t 是怎么影响优化路径的。",
+          "audioRef": "audio/tts_s14_action_ar_J-tSr.wav"
+        },
+        {
+          "id": "action_mjPs715d",
+          "type": "widget_highlight",
+          "target": "#barrier_parameter_t-slider",
+          "content": "拖动这个滑块来改变屏障参数的强度"
+        },
+        {
+          "id": "action_TnTwQ6QQ",
+          "type": "speech",
+          "text": "大家可以先试着把 t 从默认值调小到 0.5 左右——看，目标函数的等高线在边界附近变得非常平缓，中心路径离约束边界还很远。",
+          "audioRef": "audio/tts_s14_action_TnTwQ6QQ.wav"
+        },
+        {
+          "id": "action_kvoYokE9",
+          "type": "widget_setState",
+          "state": {
+            "barrier_parameter_t": 0.5,
+            "speed": 1
+          },
+          "content": "设置屏障参数为小值来观察中心路径的起始位置"
+        },
+        {
+          "id": "action_0-mr1h51",
+          "type": "speech",
+          "text": "接下来大家把 t 慢慢往大里拖，注意看屏幕上的对偶间隙读数，它在持续减小。",
+          "audioRef": "audio/tts_s14_action_0-mr1h51.mp3"
+        },
+        {
+          "id": "action_Q3KbzfpD",
+          "type": "widget_setState",
+          "state": {
+            "barrier_parameter_t": 50,
+            "speed": 1
+          },
+          "content": "设置屏障参数为大值以逼近边界"
+        },
+        {
+          "id": "action_tYyHkv1W",
+          "type": "widget_annotation",
+          "target": "#duality-gap-display",
+          "content": "对偶间隙随 t 增大而单调递减"
+        },
+        {
+          "id": "action_FPa5C-9g",
+          "type": "speech",
+          "text": "当 t 很大时，中心路径紧紧贴着约束边界，对偶间隙趋近于零——这正好对应我们刚才说的‘原始-对偶内点法’收敛到最优解的过程。大家可以再切换到自动演示模式感受一下整体的移动轨迹。",
+          "audioRef": "audio/tts_s14_action_FPa5C-9g.wav"
+        },
+        {
+          "id": "action_EQjaAcGO",
+          "type": "widget_setState",
+          "state": {
+            "barrier_parameter_t": 1,
+            "speed": 2
+          },
+          "content": "切换到自动演示，展示中心路径的连续演变"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "内点法与对偶方法：关系图",
+      "order": 15,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "内点法与对偶方法：关系图",
+          "subtitle": "Interior Point Method & Duality: Relationship Diagram",
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "带约束原问题",
+              "sublabel": "Primal Problem",
+              "icon": "🎯",
+              "color": "#3498db",
+              "space": "primal",
+              "details": "优化问题的起点。标准形式：\n\nmin f₀(x)\ns.t. fᵢ(x) ≤ 0, i=1..m\n     hⱼ(x) = 0, j=1..p\n\n这是我们要解决的最原始问题，包含不等式和等式约束。在几何上，可行域由所有约束共同定义。"
+            },
+            {
+              "id": "n2",
+              "label": "拉格朗日函数",
+              "sublabel": "Lagrangian",
+              "icon": "📐",
+              "color": "#3498db",
+              "space": "primal",
+              "details": "通过引入拉格朗日乘子（Lagrange multipliers）λ 和 ν，将约束并入目标函数：\n\nL(x, λ, ν) = f₀(x) + Σλᵢfᵢ(x) + Σνⱼhⱼ(x)\n\n🔑 关键直觉：将约束'惩罚'加权后加到目标中，把有约束问题转化为无约束参数化问题。λᵢ ≥ 0 保证不等式约束的方向正确。"
+            },
+            {
+              "id": "n3",
+              "label": "对偶函数",
+              "sublabel": "Dual Function",
+              "icon": "🔄",
+              "color": "#e67e22",
+              "space": "dual",
+              "details": "对偶函数通过对原变量 x 求拉格朗日的最小值得到：\n\ng(λ, ν) = infₓ L(x, λ, ν)\n\n🔑 关键直觉：这是拉格朗日函数对 x 的'下包络'。对于任意 λ≥0，g(λ,ν) 给出原问题最优值 p* 的一个下界，即 g(λ,ν) ≤ p*。\n\n对偶函数始终是凹函数（一族仿射函数的逐点下确界）。"
+            },
+            {
+              "id": "n4",
+              "label": "对偶问题",
+              "sublabel": "Dual Problem",
+              "icon": "🏗️",
+              "color": "#e67e22",
+              "space": "dual",
+              "details": "在对偶空间中最大化对偶函数：\n\nmax g(λ, ν)\ns.t. λ ≥ 0\n\n🔑 核心结论：对偶问题的最优值 d* ≤ p*（弱对偶）。\n\n这意味着：对偶问题的任何可行解都提供原问题最优值的下界。这是优化理论中最深刻的结果之一，也是分支定界等算法的理论基础。"
+            },
+            {
+              "id": "n5",
+              "label": "KKT条件",
+              "sublabel": "KKT Conditions",
+              "icon": "⚖️",
+              "color": "#9b59b6",
+              "space": "bridge",
+              "details": "Karush-Kuhn-Tucker 条件——连接原问题与对偶问题最优解的桥梁：\n\n1. 原始可行性：fᵢ(x)≤0, hⱼ(x)=0\n2. 对偶可行性：λ ≥ 0\n3. 互补松弛：λᵢfᵢ(x) = 0\n4. 梯度为零：∇f₀(x) + Σλᵢ∇fᵢ(x) + Σνⱼ∇hⱼ(x) = 0\n\n🔑 对于凸优化问题，KKT条件不仅是必要的，而且充分的——满足KKT的点必是最优解。"
+            },
+            {
+              "id": "n6",
+              "label": "强对偶定理",
+              "sublabel": "Strong Duality",
+              "icon": "🔗",
+              "color": "#2ecc71",
+              "space": "bridge",
+              "details": "当满足一定正则性条件时（如 Slater 条件），有 p* = d*，即零对偶间隙（zero duality gap）。\n\nSlater 条件：存在严格可行点 x 使得 fᵢ(x) < 0 且 hⱼ(x) = 0。\n\n🔑 强对偶成立意味着：\n• 求解对偶问题等价于求解原问题\n• 最优解必满足 KKT 条件\n• 对偶变量（影子价格）有经济解释"
+            },
+            {
+              "id": "n7",
+              "label": "内点法",
+              "sublabel": "Interior Point Method",
+              "icon": "🚀",
+              "color": "#1abc9c",
+              "space": "primal-dual",
+              "details": "内点法（Interior Point Method）是求解大规模凸优化问题的核心算法：\n\n核心思想：不沿边界行走（如单纯形法），而是从可行域内部趋近最优解。\n\n• 通过障碍函数（如对数障碍）将不等式约束融入目标\n• 形成参数化的 KKT 系统\n• 每一步求解修正的 Newton 方向（Newton step）\n• 渐进减少参数 μ → 0\n\n🔑 内点法利用 KKT 条件构造牛顿系统，在多项式时间内达到高精度解。"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "引入拉格朗日乘子",
+              "color": "blue"
+            },
+            {
+              "from": "n2",
+              "to": "n3",
+              "label": "对 x 取 inf",
+              "color": "orange"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "最大化",
+              "color": "orange"
+            },
+            {
+              "from": "n4",
+              "to": "n5",
+              "label": "最优性条件",
+              "color": "orange"
+            },
+            {
+              "from": "n5",
+              "to": "n6",
+              "label": "零对偶间隙",
+              "color": "green"
+            },
+            {
+              "from": "n6",
+              "to": "n7",
+              "label": "求解策略",
+              "color": "teal"
+            },
+            {
+              "from": "n5",
+              "to": "n1",
+              "label": "原问题解",
+              "color": "blue"
+            },
+            {
+              "from": "n4",
+              "to": "n6",
+              "label": "弱对偶 d*≤p*",
+              "color": "orange"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7"
+          ]
+        },
+        "htmlPath": "interactive/15_内点法与对偶方法：关系图.html",
+        "htmlBytes": 768593
+      },
+      "actions": [
+        {
+          "id": "action_jm3W-OQg",
+          "type": "speech",
+          "text": "本场景通过交互探索“内点法与对偶方法：关系图”。在刚才的拖动实验中我们看到了内点法的中心路径如何逼近最优解，现在我们把视角拉高，通过这张关系图把‘原问题—对偶问题—内点法’这一整条逻辑链串起来。",
+          "audioRef": "audio/tts_s15_action_jm3W-OQg.wav"
+        },
+        {
+          "id": "action_9XgttxXp",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "注意看这里，带约束的原问题是如何变成拉格朗日函数的。"
+        },
+        {
+          "id": "action_HIvMA3KR",
+          "type": "speech",
+          "text": "首先映入眼帘的是蓝色的部分，代表原空间。我们从左上角的带约束原问题出发。还记得我们刚才说的吗？想解决这个约束，诀窍就是把它们‘打包’到目标函数里——这就是拉格朗日函数。",
+          "audioRef": "audio/tts_s15_action_HIvMA3KR.wav"
+        },
+        {
+          "id": "action_nJIAyhWq",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "点击或自动展示拉格朗日函数节点。"
+        },
+        {
+          "id": "action_kppMMiWN",
+          "type": "speech",
+          "text": "注意这一步的转化：我们引入了拉格朗日乘子，把不等式约束加进目标函数。而大家你关心的几何直觉在这里——蓝色箭头指向右边，意味着我们从单纯的最小化，转向了构建一个参数化的下界。",
+          "audioRef": "audio/tts_s15_action_kppMMiWN.wav"
+        },
+        {
+          "id": "action_Uq-k0XHu",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "继续展示橙色部分：对偶函数节点。"
+        },
+        {
+          "id": "action_4Lqw2ZLj",
+          "type": "speech",
+          "text": "接下来进入橙色的对偶空间。当我们把拉格朗日函数对原始变量 x 取最小值，就得到了对偶函数。大家注意，这个函数天生是凹的，而且对任意非负的乘子，它的值一定小于等于原问题的最优值——这就是著名的下界性质。",
+          "audioRef": "audio/tts_s15_action_4Lqw2ZLj.wav"
+        },
+        {
+          "id": "action_JqIkGETj",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "展示桥接位置的 KKT 条件节点。"
+        },
+        {
+          "id": "action_oQ4R8e6k",
+          "type": "speech",
+          "text": "那什么情况下这个下界能真正‘碰’到原问题的最优值？答案就在这个紫色节点——KKT条件。它像一座桥梁，当互补松弛、梯度为零这些条件同时成立时，对偶间隙归零，原问题和对偶问题的解就完全吻合了。这正是强对偶定理告诉我们的保障。",
+          "audioRef": "audio/tts_s15_action_oQ4R8e6k.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "内点法与对偶方法：误解修复挑战",
+      "order": 16,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "strategy",
+          "description": "策略挑战：引导中心路径。学生发现如果初始点在可行域外，内点法无法直接启动，必须先寻找初始可行点。",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/16_内点法与对偶方法：误解修复挑战.html",
+        "htmlBytes": 786248
+      },
+      "actions": [
+        {
+          "id": "action_CyTyVfyR",
+          "type": "speech",
+          "text": "本场景通过交互探索“内点法与对偶方法：误解修复挑战”。以及中心路径如何保证我们始终留在可行域内部。但真正动手实现时，有几个常见的‘坑’会让人卡住。大家今天专门准备了一个策略挑战，让我们通过亲身体验来修复这些误解。",
+          "audioRef": "audio/tts_s16_action_CyTyVfyR.wav"
+        },
+        {
+          "id": "action_b97VBBAy",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始策略挑战"
+        },
+        {
+          "id": "action_nimrYPAY",
+          "type": "speech",
+          "text": "这个挑战的核心规则是：你需要在红色约束边界的包围中，通过调整步长引导迭代点沿中心路径走向极值。一旦你的点触碰红色边界，惩罚分数就会大幅降低——这模拟了内点法中越界的真实代价。现在请大家尝试让点开始移动。",
+          "audioRef": "audio/tts_s16_action_nimrYPAY.mp3"
+        },
+        {
+          "id": "action_enzU4TzG",
+          "type": "widget_setState",
+          "state": {
+            "currentStep": 1,
+            "score": 0,
+            "feedback": "观察初始点是否落在可行域内——如果它在边界外，你需要先找到进入可行域的路径。"
+          },
+          "content": "设置初始状态，让学生观察初始点的位置"
+        },
+        {
+          "id": "action_qVm14Os8",
+          "type": "speech",
+          "text": "注意到没有？如果你的初始点一开始就落在可行域外部，内点法就根本无法直接启动。这正是很多初学者遇到的第一个误区：他们以为内点法像投影梯度法那样，可以从任意点出发再‘拉回’可行域。实际上，内点法的第一要务是必须找到一个严格内点。",
+          "audioRef": "audio/tts_s16_action_qVm14Os8.mp3"
+        },
+        {
+          "id": "action_ceAUHjNz",
+          "type": "widget_annotation",
+          "target": "#progress-display",
+          "content": "这里的间隙缩小幅度反映了你是否维持了互补松弛性"
+        },
+        {
+          "id": "action_v9f8lLhW",
+          "type": "speech",
+          "text": "在调整步长策略时，请同时留意对偶变量的更新。理想的中心路径移动要求每一步都保持互补松弛性的近似成立——也就是说，原变量和对偶变量的乘积间隙应当平滑缩小，而不是剧烈震荡。当你看到间隙稳定下降时，说明你的步长选择既不过于激进，也不过保守。",
+          "audioRef": "audio/tts_s16_action_v9f8lLhW.mp3"
+        },
+        {
+          "id": "action_Q9K_By5m",
+          "type": "widget_annotation",
+          "target": "[data-step-id=\"step-boundary-risk\"]",
+          "content": "在这个高风险区域，过大的步长很容易触碰红色约束边界"
+        },
+        {
+          "id": "action_F9_gUQj3",
+          "type": "speech",
+          "text": "现在做一个对比思考：如果换成投影梯度法，你越界后被‘硬拉’回来，效率会怎样？内点法虽然要求你永远留在里面，但一旦找到了好步长，它沿中心路径直奔极值的效率通常是更高的——代价就是你必须从内点出发，并且谨慎控制每一步。请继续尝试，看看能否同时兼顾‘不碰边界’和‘快速缩小间隙’这两个目标，拿到更高的挑战分数。",
+          "audioRef": "audio/tts_s16_action_F9_gUQj3.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "内点法与对偶方法：空间视角",
+      "order": 17,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "内点法与对偶方法空间视角：3D可视化对数屏障函数在可行域上的投影，观察边界处的无限高墙与中心路径轨迹",
+          "objects": [
+            {
+              "id": "feasible_polytope",
+              "type": "polyhedron",
+              "description": "可行域多面体 (Feasible Polytope)：由约束 x≥0, y≥0, x+y≤1 定义的二维三角形区域",
+              "material": {
+                "type": "transparent",
+                "color": "#1a5276",
+                "opacity": 0.25
+              }
+            },
+            {
+              "id": "barrier_log_surface",
+              "type": "surface",
+              "description": "对数屏障曲面 (Logarithmic Barrier Surface)：φ(x,y) = -log(x) - log(y) - log(1-x-y)，在边界处趋向无穷大",
+              "material": {
+                "type": "vertexColors",
+                "color": "gradient"
+              }
+            },
+            {
+              "id": "central_path_line",
+              "type": "line",
+              "description": "中心路径 (Central Path)：随着参数 t 增大，最优解从分析中心 (1/3,1/3) 向最优解移动的轨迹",
+              "material": {
+                "type": "emissive",
+                "color": "#ff4444"
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "t",
+              "min": 0.1,
+              "max": 30,
+              "default": 1,
+              "label": "参数 t"
+            },
+            {
+              "type": "slider",
+              "param": "heightScale",
+              "min": 0.2,
+              "max": 3,
+              "default": 1,
+              "label": "高度缩放"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "autoAnimate",
+              "label": "自动演示"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "分析中心视图",
+              "state": {
+                "t": 0.1,
+                "cameraPosition": [
+                  0.5,
+                  0.5,
+                  3
+                ],
+                "cameraTarget": [
+                  0.33,
+                  0.33,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "最优解附近",
+              "state": {
+                "t": 20,
+                "cameraPosition": [
+                  0.8,
+                  0.3,
+                  2.5
+                ],
+                "cameraTarget": [
+                  0.85,
+                  0.15,
+                  0.5
+                ]
+              }
+            },
+            {
+              "name": "全景俯瞰",
+              "state": {
+                "t": 5,
+                "cameraPosition": [
+                  0.5,
+                  0.5,
+                  6
+                ],
+                "cameraTarget": [
+                  0.5,
+                  0.5,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/17_内点法与对偶方法：空间视角.html",
+        "htmlBytes": 2509182
+      },
+      "actions": [
+        {
+          "id": "action_HmgdXU7a",
+          "type": "speech",
+          "text": "本场景通过交互探索“内点法与对偶方法：空间视角”。在刚才的拖动实验里，我们看到了内点法必须在可行域内部谨慎推进。实际上，这背后的几何直觉可以更直观——想象在可行域上方，有一个被对数屏障‘抬升’起来的光滑曲面，边缘竖起一道无限高的墙。",
+          "audioRef": "audio/tts_s17_action_HmgdXU7a.wav"
+        },
+        {
+          "id": "action_xsvlAfOX",
+          "type": "widget_setState",
+          "state": {
+            "t": 1,
+            "cameraPosition": [
+              0.5,
+              0.5,
+              3
+            ],
+            "cameraTarget": [
+              0.33,
+              0.33,
+              0
+            ]
+          },
+          "content": "加载分析中心附近的初始状态，从典型视角开始观察。"
+        },
+        {
+          "id": "action_V_WeYEWr",
+          "type": "widget_highlight",
+          "target": "#barrier_log_surface",
+          "content": "这就是对数屏障曲面，请注意它在边界区域是如何急剧向上‘翘起’的。"
+        },
+        {
+          "id": "action_o1Y__yFU",
+          "type": "speech",
+          "text": "请用鼠标或手指旋转这个三维视角，仔细看边界处——曲面是不是像垂直的悬崖陡壁？这就是 -log 函数带来的渐近效应：任何点一旦靠近坐标轴或 x+y=1 这条斜边，函数值就冲向无穷大，形成一个天然‘牢笼’。",
+          "audioRef": "audio/tts_s17_action_o1Y__yFU.mp3"
+        },
+        {
+          "id": "action_kNJpj0jx",
+          "type": "widget_reveal",
+          "target": "#central_path_line",
+          "content": "现在显示中心路径，观察它在曲面谷底的走向。"
+        },
+        {
+          "id": "action_B61w8b9n",
+          "type": "speech",
+          "text": "看，这条红色曲线就是中心路径。在当前参数 t=1 时，最优解处在分析中心附近，离三个边界几乎等距。你可以试着慢慢把参数 t 调大——注意观察谷底的‘红线’是如何一点一点滑向可行域那个最终顶点方向的。",
+          "audioRef": "audio/tts_s17_action_B61w8b9n.mp3"
+        },
+        {
+          "id": "action_RP7mc5Iq",
+          "type": "widget_annotation",
+          "target": "#central_path_line",
+          "content": "中心路径：随着参数 t 增大，谷底从分析中心连续移动至约束最优解。"
+        },
+        {
+          "id": "action_NVD4PKzx",
+          "type": "speech",
+          "text": "这个动态过程正是内点法每一轮要追踪的轨迹：屏障函数把原来‘硬邦邦’的约束变成一道柔软的、逐渐收紧的力场。比起投影梯度法直接在边界上‘硬切’一刀，内点法在这种光滑曲面上做牛顿步，方向既准确又安全。调一调 t 值，再用手旋转一下视图，感受整个谷底移动的连续变化吧。",
+          "audioRef": "audio/tts_s17_action_NVD4PKzx.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "Lefd3x1t8GWxmhkQFYLdW",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_muJkTCeF",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 36px; text-align: center; font-weight: bold; color: #1A3A5C;\">全课整理：证据链回看</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "shape",
+              "id": "shape_LWpi8m7h",
+              "left": 100,
+              "top": 135,
+              "width": 800,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1A3A5C"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Jt3X4O_V",
+              "left": 60,
+              "top": 170,
+              "width": 240,
+              "height": 200,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E6F0FA"
+            },
+            {
+              "type": "shape",
+              "id": "shape_TsG16SL6",
+              "left": 380,
+              "top": 170,
+              "width": 240,
+              "height": 200,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E6FAF0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_oZ-mBKir",
+              "left": 700,
+              "top": 170,
+              "width": 240,
+              "height": 200,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F0E6FA"
+            },
+            {
+              "type": "shape",
+              "id": "shape_nPvkpBBI",
+              "left": 80,
+              "top": 200,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A7C9E"
+            },
+            {
+              "type": "text",
+              "id": "text__yvJ3rvv",
+              "left": 95,
+              "top": 180,
+              "width": 185,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; font-weight: bold; color: #1A3A5C;\">牛顿法</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_hB081YsY",
+              "left": 80,
+              "top": 245,
+              "width": 200,
+              "height": 103,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">回看：牛顿法修复了“只看坡度”的盲目，利用曲率加速</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_JdnLdvBO",
+              "left": 400,
+              "top": 200,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A7C9E"
+            },
+            {
+              "type": "text",
+              "id": "text_JRzavqW_",
+              "left": 415,
+              "top": 180,
+              "width": 185,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; font-weight: bold; color: #1A3A5C;\">共轭梯度法</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_-meTx-G-",
+              "left": 400,
+              "top": 245,
+              "width": 200,
+              "height": 103,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">回看：共轭梯度修复了“重复搜索”的低效，利用代数正交</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_xdQ5BkdC",
+              "left": 720,
+              "top": 200,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A7C9E"
+            },
+            {
+              "type": "text",
+              "id": "text_fQbcad-9",
+              "left": 735,
+              "top": 180,
+              "width": 185,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; font-weight: bold; color: #1A3A5C;\">内点法</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_e50n46rk",
+              "left": 720,
+              "top": 245,
+              "width": 200,
+              "height": 103,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">回看：内点法修复了“边界死锁”的困难，利用屏障平滑</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_EVFeEcE6",
+              "left": 310,
+              "top": 270,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                60,
+                0
+              ],
+              "style": "solid",
+              "color": "#4A7C9E",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_QzowCe8e",
+              "left": 630,
+              "top": 270,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                60,
+                0
+              ],
+              "style": "solid",
+              "color": "#4A7C9E",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_eCYe0qVy",
+              "left": 60,
+              "top": 410,
+              "width": 880,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1A3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_BxAqCU6G",
+              "left": 80,
+              "top": 424,
+              "width": 840,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #FFFFFF;\">提示：掌握这些直觉是理解机器学习求解器（如SVM, Deep Learning优化器）的基础</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#FFFFFF"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#FFFFFF"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_9BOErXO4",
+          "type": "spotlight",
+          "elementId": "text_muJkTCeF"
+        },
+        {
+          "id": "action_S4NdI159",
+          "type": "speech",
+          "text": "本场景聚焦“全课整理：证据链回看”。同学们，刚才我们走完了从无约束到有约束优化的整条路径。现在，让我们回到最初的困惑，回看这条“证据链”，看看我们是如何一步步用新方法修复旧方法的核心缺陷的。",
+          "audioRef": "audio/tts_s18_action_S4NdI159.wav"
+        },
+        {
+          "id": "action_qQbTl23E",
+          "type": "spotlight",
+          "elementId": "text_hB081YsY"
+        },
+        {
+          "id": "action_d54XRDbf",
+          "type": "speech",
+          "text": "首先是牛顿法。还记得最开始梯度下降的盲目之处吗？它只看当前点的坡度，就像闭着眼睛下山，方向是正确的，但步长很难选，容易在峡谷里来回震荡。",
+          "audioRef": "audio/tts_s18_action_d54XRDbf.mp3"
+        },
+        {
+          "id": "action_kYapbg2K",
+          "type": "spotlight",
+          "elementId": "text__yvJ3rvv"
+        },
+        {
+          "id": "action_8OCws20t",
+          "type": "speech",
+          "text": "而牛顿法通过引入Hessian矩阵所蕴含的曲率信息，不仅看清了坡度，还预判了坡度的变化趋势。这就修复了“只看坡度”的盲目，找到了一条一步到位的加速下山路径。",
+          "audioRef": "audio/tts_s18_action_8OCws20t.mp3"
+        },
+        {
+          "id": "action_Chb_eB01",
+          "type": "spotlight",
+          "elementId": "text_-meTx-G-"
+        },
+        {
+          "id": "action_2EuP3Yqs",
+          "type": "speech",
+          "text": "接着，我们遇到了梯度下降的另一个问题：重复搜索。它每一步都像是全新的开始，之前走过的方向很快就被遗忘。共轭梯度法的出现，正是为了修复这种低效。",
+          "audioRef": "audio/tts_s18_action_2EuP3Yqs.mp3"
+        },
+        {
+          "id": "action_G0KOOkxV",
+          "type": "spotlight",
+          "elementId": "text_JRzavqW_"
+        },
+        {
+          "id": "action_u7zHi4J6",
+          "type": "speech",
+          "text": "它利用代数正交的思想，保证每一次搜索都在一个全新的、与之前所有方向都“无关”的维度上进行。这就好比我们在多维空间中逐步探索，每一步都不走回头路。",
+          "audioRef": "audio/tts_s18_action_u7zHi4J6.mp3"
+        },
+        {
+          "id": "action_EHg5WOY7",
+          "type": "spotlight",
+          "elementId": "text_e50n46rk"
+        },
+        {
+          "id": "action_BOxiTfaV",
+          "type": "speech",
+          "text": "最后，当我们进入了有约束的领域，传统的梯度下降和牛顿法都会直接撞上边界而“死锁”。这时，内点法引入了屏障函数这一精妙工具。",
+          "audioRef": "audio/tts_s18_action_BOxiTfaV.mp3"
+        },
+        {
+          "id": "action_D3eFlCdW",
+          "type": "spotlight",
+          "elementId": "text_fQbcad-9"
+        },
+        {
+          "id": "action_Ri-2atoJ",
+          "type": "speech",
+          "text": "它在可行域边界上筑起一道光滑的、无限高的“墙”，把“硬邦邦”的约束变成了一个平滑的惩罚项。这就漂亮地修复了“边界死锁”的困难，让算法可以在区域内部安全地寻找最优点。",
+          "audioRef": "audio/tts_s18_action_Ri-2atoJ.mp3"
+        },
+        {
+          "id": "action_jY2aKYM9",
+          "type": "spotlight",
+          "elementId": "text_BxAqCU6G"
+        },
+        {
+          "id": "action_qRktM0sJ",
+          "type": "speech",
+          "text": "请务必记住这个证据链的直觉。这不仅是数值优化历史上的三次关键飞跃，更是你们之后理解支持向量机、深度学习优化器等现代求解器内部工作原理的基石。",
+          "audioRef": "audio/tts_s18_action_qRktM0sJ.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "后测：数值优化进阶综合测评",
+      "order": 19,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在处理具有窄长约束（如峡谷地形）的二次优化问题时，采用牛顿法与共轭梯度法（Conjugate Gradient, CG）的组合策略。以下哪种描述最准确地体现了这种组合的核心优势？",
+            "options": [
+              {
+                "value": "A",
+                "label": "牛顿法负责提供全局收敛性保证，CG 负责在每次迭代中精确求解大型线性方程组以得到牛顿方向。"
+              },
+              {
+                "value": "B",
+                "label": "CG 用于快速定位峡谷底部区域，然后切换至牛顿法，利用其局部二阶收敛性从该区域精确跳向最优点。"
+              },
+              {
+                "value": "C",
+                "label": "利用牛顿法的仿射不变性来重新调节（rescale）问题，将峡谷地形变为近似圆形，使 CG 能在变换后的空间中高效地逐步逼近解。"
+              },
+              {
+                "value": "D",
+                "label": "将 CG 用作截断牛顿法（Truncated Newton Method）的内部迭代求解器，在不精确但足够好的牛顿方向指引下，于峡谷地形中避免锯齿现象。"
+              }
+            ],
+            "answer": [
+              "D"
+            ],
+            "analysis": "截断牛顿法（Truncated Newton Method）正是这种组合策略的标准形式。外层牛顿法定义了高质量的下降方向（通过二阶曲率信息预处理地形），而内层 CG 高效地近似求解牛顿方程 H*p = -g，无需精确求解，从而结合了牛顿法处理病态问题（如窄长峡谷，其 Hessian 矩阵条件数大）的鲁棒性和 CG 求解大型稀疏系统的效率。选项D精确描述了这种分工：CG 作为内部迭代器，寻找一个‘不精确但足够好’的牛顿方向，有效避免了纯梯度下降在峡谷中的锯齿现象。选项A错误，牛顿法本身不保证全局收敛，需要配合线搜索或信赖域。选项B顺序颠倒了。选项C描述的是拟牛顿法（如BFGS）或完全牛顿法本身的几何效果，而非牛顿-CG组合策略的核心。",
+            "points": 20,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "在使用内点法（Interior Point Method）求解一个约束优化问题的过程中，你记录了原始目标函数值 f(x) 和对偶目标函数值 g(lambda, nu) 随迭代次数的变化。如果算法正确收敛，关于对偶间隙（Duality Gap），以下哪些陈述是准确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "对偶间隙恒为零，这是强对偶性（Strong Duality）在任意迭代点都成立的性质。"
+              },
+              {
+                "value": "B",
+                "label": "只要当前迭代点都是严格可行点，对偶间隙就严格单调递减，不可能出现任何波动。"
+              },
+              {
+                "value": "C",
+                "label": "当原始问题非凸时，对偶间隙可能始终大于零，这为判断算法是否找到了全局最优解提供了定量证据。"
+              },
+              {
+                "value": "D",
+                "label": "通过观察对偶间隙的缩小速度，可以评估内点法沿中心路径（Central Path）的推进效率，并可作为收敛判据。"
+              }
+            ],
+            "answer": [
+              "C",
+              "D"
+            ],
+            "analysis": "对偶间隙提供了算法进度的定量衡量。选项C正确：对于非凸问题，强对偶性通常不成立，会产生恒定非零的对偶间隙；观测到非零且稳定的间隙是问题非凸性或算法陷入局部最优的强有力证据。选项D正确：内点法在跟踪中心路径时，对偶间隙与路径参数 mu 成正比；其稳步下降直接反映了求解进度，且常被用作出色的收敛准则。选项A错误：强对偶性是对最优解的性质，而非任意迭代点；内点法的迭代点通常是原始和对偶非可行的，间隙不等于零。选项B错误：在采用预测-校正等实际方法时，为保证长期收敛效率，对偶间隙在迭代中可能出现波动或暂时性上升，并非严格单调递减。",
+            "points": 20,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "short_answer",
+            "question": "请用自己的话，结合二次型的几何形状，定性解释为什么牛顿法中的 Hessian 逆矩阵右乘梯度能够实现“一步到位”的优化效果，即二次函数一轮迭代即收敛到最优点？",
+            "commentPrompt": "评分要点：（1）明确指出原始空间中的非圆形等高线问题（30%）；（2）阐释 Hessian 逆矩阵作为线性变换所起到的空间翘曲（warping）或重塑作用，并将山谷/椭圆变为圆形（40%）；（3）阐明在此变换后空间中，梯度直接指向全局最优点，从而实现一步到位（30%）。",
+            "analysis": "要从几何变换角度解释。关键思路：1.考虑一个正定二次函数，其等值面是高维椭球。梯度方向垂直于椭球面，所以通常不指向中心极小值点，导致梯度下降走锯齿路径。2.牛顿步长公式为 p = -H^{-1} * g。从几何上看，Hessian 矩阵 H 描述了曲面上各方向的局部二次曲率，而它的逆 H^{-1} 定义了一个线性变换。3.这个变换将原始参数空间‘拉伸’或‘翘曲’成一个新的空间，使得原来的椭球形等值面在新的坐标系下变为完美的球形。4.在球形等值面的新空间中，任意点的负梯度方向恰好径向指向球心（极小值点），因此沿此方向走单位步长（步长为1）就能直接到达最优点。5.将这一步再映射回原始椭球空间，就得到了牛顿步，它径直从当前位置指向二次函数的极小值点，实现了一步收敛。",
+            "points": 30,
+            "hasAnswer": false
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "在使用共轭梯度法（CG）求解一个稀疏的大型正定二次优化问题时，关于其产生的搜索方向，以下哪一项描述是正确的？",
+            "options": [
+              {
+                "value": "A",
+                "label": "算法产生的一系列搜索方向相互正交，这保证了对子空间的彻底搜索。"
+              },
+              {
+                "value": "B",
+                "label": "搜索方向关于问题的 Hessian 矩阵共轭，这意味着在精确算术下，至多 n 步即可收敛。"
+              },
+              {
+                "value": "C",
+                "label": "每个新的搜索方向都与当前梯度方向正交，这是生成 Krylov 子空间基的标准方式。"
+              },
+              {
+                "value": "D",
+                "label": "搜索方向根据目标函数的梯度向量共轭，其长度由精确线搜索步长唯一确定。"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "共轭梯度法的核心在于生成一组关于 Hessian 矩阵 Q 共轭的方向，即 d_i^T Q d_j = 0 (i ≠ j)。在精确算术且无舍入误差的情况下，这保证了每个方向上的最优化不会破坏先前方向上的最优性，因此算法能在至多 n 步（问题维度）内精确收敛到二次函数的极小值点。选项 A 混淆了共轭性与正交性（梯度下降法产生锯齿状搜索方向，这些方向其实是彼此正交的）。选项 C 不准确，新搜索方向是负梯度方向与上一步方向的共轭组合。选项 D 错误，共轭是相对于目标函数的 Hessian 矩阵定义的，而非梯度。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "multiple",
+            "question": "考虑一个具有非线性等式约束的约束优化问题。你在实验中应用了增广拉格朗日法（Augmented Lagrangian Method）。以下哪些陈述准确描述了该方法相比二次罚函数法的优势？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "它通过引入拉格朗日乘子的显式更新，避免了当罚参数趋于无穷大时子问题 Hessian 矩阵病态化的问题。"
+              },
+              {
+                "value": "B",
+                "label": "它保证了每次子问题求解生成的新迭代点严格满足约束，而二次罚函数法只能近似满足。"
+              },
+              {
+                "value": "C",
+                "label": "它能通过有限大小的罚参数找到原问题的精确最优解，前提是乘子估计已收敛到最优对偶变量。"
+              },
+              {
+                "value": "D",
+                "label": "通过引入对偶信息，它可以将原始问题分解为更小的子问题（如交替方向乘子法 ADMM），从而实现分布式或并行求解。"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "选项A正确：增广拉格朗日法通过维护和更新拉格朗日乘子估计，不断修正目标函数，从而将约束吸引到最优值附近。这样，即使罚参数不趋向无穷大（从而避免病态化），也能获得高精度解。对比之下，纯二次罚函数法必须让罚参数趋向无穷才能使解趋于可行。选项C正确：当乘子估计收敛到最优对偶变量时，有限大小的罚参数就能使增广拉格朗日函数的无约束极小值点即为原约束问题的精确最优解。选项D正确：增广拉格朗日框架在结合可分离结构时，巧妙发展为ADMM算法，能够将一个大问题分解为多个并行的小规模子问题。选项B错误：无论是增广拉格朗日法还是二次罚函数法，生成迭代点的子问题解在收敛前通常都不严格满足约束，只是近似满足。",
+            "points": 20,
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "single",
+            "question": "在凸优化中，KKT 条件（Karush-Kuhn-Tucker conditions）是判别全局最优性的充要条件。对于一个仅含等式和不等式约束的凸优化问题，以下哪项陈述准确地描述了 KKT 条件中的互补松弛性（Complementary Slackness）？",
+            "options": [
+              {
+                "value": "A",
+                "label": "它要求所有不等式约束的拉格朗日乘子与对应的约束函数值之乘积为零，且乘子都必须为正。"
+              },
+              {
+                "value": "B",
+                "label": "它断言，在最优点处，每一个等式约束都必须与它相应的对偶变量严格互补，即至少有一个为零。"
+              },
+              {
+                "value": "C",
+                "label": "它强制要求在最优点处的所有有效不等式约束的乘子与约束函数值代数乘积为零。由于有效约束的函数值为零，该条件自然成立，因此无信息量。"
+              },
+              {
+                "value": "D",
+                "label": "它意味着对于任一不等式约束，要么其拉格朗日乘子为零（约束失效），要么约束处于活动边界（约束函数值为零），或者两者同时成立。"
+              }
+            ],
+            "answer": [
+              "D"
+            ],
+            "analysis": "互补松弛性（Complementary Slackness）的精确数学表述是：lambda_i * f_i(x*) = 0，对所有 i。几何与物理意义上，它表明一个不等式约束和它的拉格朗日乘子（可视为约束的“价格”或“影子价格”）不能同时为非零。即，如果一个约束是活动的（f_i(x*)=0，即紧贴边界），它可能拥有非零乘子；如果一个约束是严格非活动的（f_i(x*)<0，即在可行域内部），它的乘子必须为零以“忽略”该约束。选项D准确概括了这一或的逻辑。选项A错误，乘子必须非负，无需为正。选项B将混淆了等式约束，等式约束无此要求。选项C错误，正是因为这个强制性条件，才提供了关于哪些约束在起作用的关键结构性信息，非常有价值。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q7",
+            "type": "single",
+            "question": "在研究优化算法的几何直观时，我们将牛顿法在二次函数上的操作解读为一步到位跳向极小值点。从矩阵投影的角度，这个“跳跃”方向（Newton direction）可以被看作是梯度向量 g 在梯度和 Hessian 矩阵所定义的空间中的一种什么操作？",
+            "options": [
+              {
+                "value": "A",
+                "label": "将梯度 g 投影到 Hessian 矩阵 H 的最大特征值对应的特征向量上，得到指向椭圆长轴的修正方向。"
+              },
+              {
+                "value": "B",
+                "label": "在以 H 为度规的黎曼空间（Riemannian space）中，将梯度 g 进行一个升指标操作，使其转化为一个真正的向量，其性质类似于该空间中的最速下降方向。"
+              },
+              {
+                "value": "C",
+                "label": "这是对梯度进行一个 Householder 反射变换，使得变换后的方向能穿过椭球的中心。"
+              },
+              {
+                "value": "D",
+                "label": "牛顿方向本质上是求解原始坐标系中梯度与坐标轴夹角平分线方向的过程，该方向总能穿越极小值点。"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "从微分几何角度看，梯度下降法的方向是在欧几里得度规下的最速下降方向，但这预设了坐标基是单位正交且等权重的。牛顿法则可视为在由局部 Hessian 矩阵 H 定义的黎曼度规（Riemannian Metric）下的最速下降方向。在这个非欧空间中，通过逆矩阵 H^{-1} 与对偶向量 g 相乘，将梯度（一个余向量，covector）“升指标”转化为一个真正的搜索向量（contravariant vector），其定义为 argmin_{||p||_{H} <= 1} p^T g. 该操作等价于在新度规下重新定义了‘距离’，使得原先畸形的椭球等值面在局部黎曼空间中变成‘单位球’，此时最速下降方向自然径直指向球心（极小值点）。这正是“一步到位”的深层几何原理。选项A、C、D都是按字面意思臆断的，无此数学结构。",
+            "points": 25,
+            "hasAnswer": true
+          },
+          {
+            "id": "q8",
+            "type": "short_answer",
+            "question": "假设你在实验中应用了共轭梯度法求解一个条件数很大的凸二次规划问题。请解释什么是“预条件”（Preconditioning），并定性说明它如何在共轭梯度法中加速收敛，重点结合 Hessian 矩阵特征值的聚集效应进行阐述。",
+            "commentPrompt": "评分要点：（1）准确解释预条件技术是引入一个矩阵变换，将原问题转化为更容易求解的等价方程组（30%）。（2）定性说明病态问题（特征值分散）为何导致 CG 收敛慢（10%）。核心阐述（3）：预条件矩阵如何使变换后系统的矩阵特征值聚集（Clustering），尤其是接近 1，从而显著减少 CG 迭代步数（40%）。（4）给出一个实例，如不完全 Cholesky 分解或对角预条件（20%）。",
+            "analysis": "1. 预条件（Preconditioning）是在求解线性方程组 Ax = b 时，寻找一个近似于矩阵 A 且易于求逆的矩阵 M，通过解 M^{-1} Ax=M^{-1} b 或等价形式的对称正定方程，来加速迭代法。2. CG 的收敛速度上界由矩阵条件数（最大与最小特征值之比）决定。当条件数很大（特征值分布很散）时，收敛很慢。3. 一个好的预条件矩阵 M 使得 M^{-1}A 的特征值聚集在 1 附近。这使得 M^{-1}A 的条件数大幅度减小。4. 在 CG 迭代的多项式逼近理论中，特征值越是聚集于一点，Krylov 子空间就越容易用低阶多项式在该点附近精确逼近逆矩阵的作用，从而以远少于 n 步的迭代快速收敛。5. 实例：如果 A 是一个离散拉普拉斯算子，其谱分散在 [λ_min, λ_max]；采用不完全Cholesky分解 M = L*L^T 后， L^{-1}AL^{-T} 的绝大部分特征值会集中在1附近，仅有少量离群值，CG 往往在几十步内收敛。",
+            "points": 30,
+            "hasAnswer": false
+          },
+          {
+            "id": "q9",
+            "type": "single",
+            "question": "在利用牛顿法求解无约束优化问题的实践中，单纯使用解析 Hessian 矩阵并计算完整牛顿步可能存在风险。以下哪种情况最可能直接导致纯粹的“原始牛顿法”（未加修正）失效？",
+            "options": [
+              {
+                "value": "A",
+                "label": "目标函数的 Hessian 矩阵在当前迭代点高度稠密，导致矩阵分解计算开销过大。"
+              },
+              {
+                "value": "B",
+                "label": "当前迭代点的 Hessian 矩阵不正定，导致计算出的牛顿方向可能是不下降方向。"
+              },
+              {
+                "value": "C",
+                "label": "目标函数的 Hessian 矩阵在极小值点附近接近奇异，使得最终收敛速率降为线性。"
+              },
+              {
+                "value": "D",
+                "label": "函数在极小点附近非常接近一个二次函数，使得标准牛顿法陷入缓慢的渐近收敛阶段。"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "标准牛顿法的搜索方向定义为 p = -H^{-1}*g。这隐式地假定了 p 是一个可以使函数值下降的方向，即 p^T * g < 0。当 Hessian 矩阵 H 正定（所有特征值>0），这一定成立。但如果 H 在某些区域是不定的或有负特征值，牛顿方向可能指向鞍点或定义成上坡方向（p^T * g > 0），此时基本牛顿步将完全失效，甚至导致算法发散。实践中，必须通过修正（如加上一个足够大的正定矩阵（阻尼牛顿法）或在其子空间求方向）来强制正定性。选项A仅是效率问题，不会使算法失效。选项C对应的情况中，若 Hessian 奇异，虽然收敛可能变慢，但可以通过伪逆或试探步处理，不一定‘直接失效’。选项D错误，越接近二次函数，牛顿法反而收敛越快（二次终止性）。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q10",
+            "type": "multiple",
+            "question": "关于拉格朗日对偶问题（Lagrangian Dual Problem），下列哪些陈述是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "对偶问题一定是凸优化问题，无论原始问题是否为凸。"
+              },
+              {
+                "value": "B",
+                "label": "任何原始问题的最优值（如果存在）都必然严格等于其对偶问题的最优值。"
+              },
+              {
+                "value": "C",
+                "label": "通过求解对偶问题，总能一并得到原始问题的最优解，因为对偶变量梯度直接映射到原始变量。"
+              },
+              {
+                "value": "D",
+                "label": "对偶函数（Dual Function）作为关于拉格朗日乘子的函数，为原始问题的最优值提供了一个下界。"
+              }
+            ],
+            "answer": [
+              "A",
+              "D"
+            ],
+            "analysis": "选项A是拉格朗日对偶性的一个核心优美性质：因为对偶函数是拉格朗日函数关于原始变量的逐点下确界，而一族（关于乘子）仿射函数的逐点下确界总是凹函数，取负后即为凸函数，所以对偶问题总是一个最大化凹函数的问题，即凸优化问题。选项D是对偶性最基础的定义：对任何可行的乘子，对偶函数的值都小于等于原始问题的最优值，因此构成了下界。选项B错误，强对偶性（相等）仅在满足约束规范（如 Slater 条件）的凸问题中成立，一般问题存在对偶间隙。选项C错误，除非问题具有严格鞍点结构且可以重构，通常无法直接从对偶解恢复原始解，尤其在非凸情况下。",
+            "points": 20,
+            "hasAnswer": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_QYcDNPBM",
+          "type": "speech",
+          "text": "这是一组关于“后测：数值优化进阶综合测评”的独立测验。各位同学，课程的最后，我们用这份综合测评来检验一下整个数值优化进阶课程的学习效果。这套题目覆盖了牛顿法、共轭梯度、内点法以及对偶理论，既有基础原理，也有像第一题那样的跨方法组合迁移。请大家静下心来，把它当成一次全面的知识梳理。",
+          "audioRef": "audio/tts_s19_action_QYcDNPBM.wav"
+        },
+        {
+          "id": "action_ImAAwQhk",
+          "type": "speech",
+          "text": "在答题时，请特别留意那些要求你串联不同模块知识的题目。比如，回忆一下我们在“空间视角”那几页做的几何实验，牛顿法的仿射不变性如何重塑了优化地形的“形状”，而共轭梯度法又是如何在新的“圆形”山谷里高效寻路的。这些直觉是解题的关键。",
+          "audioRef": "audio/tts_s19_action_ImAAwQhk.mp3"
+        },
+        {
+          "id": "action_181K1yAP",
+          "type": "speech",
+          "text": "同样地，对于简答题，我希望看到的不只是记忆，而是你们自己消化后的理解。为什么Hessian矩阵的逆乘上梯度就能“一步到位”？试着从二次型的椭圆等高线几何出发去解释，把矩阵运算翻译成空间中的拉伸和旋转，答案的核心就在那里。",
+          "audioRef": "audio/tts_s19_action_181K1yAP.mp3"
+        },
+        {
+          "id": "action_0ZdHgEAL",
+          "type": "speech",
+          "text": "这套题也是对大家日后研究的一次预演。当你在实验中看到对偶间隙的变化曲线，或是遇到Hessian矩阵不正定的麻烦时，你能立刻联想到今天我们讨论过的这些概念和应对策略。好了，给大家充足的时间，开始你们的最终测评。",
+          "audioRef": "audio/tts_s19_action_0ZdHgEAL.mp3"
+        }
+      ]
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_18E3yVuO.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118944
+    },
+    "audio/tts_action_2jAf86pu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121920
+    },
+    "audio/tts_action_50d4uHs6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 214872
+    },
+    "audio/tts_action_JIY17XFK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 167880
+    },
+    "audio/tts_action_R8qgY539.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 164616
+    },
+    "audio/tts_s10_action_b7A-QIrh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118680
+    },
+    "audio/tts_s10_action_lnU2fH9m.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146832
+    },
+    "audio/tts_s10_action_lnU2fH9m.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1277340
+    },
+    "audio/tts_s10_action_SsxnqHMP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141000
+    },
+    "audio/tts_s10_action_SsxnqHMP.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 962134
+    },
+    "audio/tts_s10_action_ydwFzULe.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159624
+    },
+    "audio/tts_s11_action_14e2Gj3V.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 190008
+    },
+    "audio/tts_s11_action_14e2Gj3V.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1351160
+    },
+    "audio/tts_s11_action_Gp3vpp7D.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 177360
+    },
+    "audio/tts_s11_action_Gp3vpp7D.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1286816
+    },
+    "audio/tts_s11_action_jm58CWvp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157152
+    },
+    "audio/tts_s11_action_jm58CWvp.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1160956
+    },
+    "audio/tts_s11_action_NQK9ddH9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 214008
+    },
+    "audio/tts_s11_action_wHKCyhtg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 158832
+    },
+    "audio/tts_s11_action_wHKCyhtg.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1119932
+    },
+    "audio/tts_s12_action_8M04vKxc.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119688
+    },
+    "audio/tts_s12_action_dH_Um1cS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 202128
+    },
+    "audio/tts_s12_action_ZV-RK4v-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 200448
+    },
+    "audio/tts_s12_action_ZV-RK4v-.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1314600
+    },
+    "audio/tts_s13_action_BfkD5Rca.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122568
+    },
+    "audio/tts_s13_action_BvG-Zw57.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144672
+    },
+    "audio/tts_s13_action_D24de52O.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117912
+    },
+    "audio/tts_s13_action_mMgsJvn7.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129408
+    },
+    "audio/tts_s13_action_Q-Z-eB7k.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 74592
+    },
+    "audio/tts_s13_action_Q7fBhh3L.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 137040
+    },
+    "audio/tts_s13_action_Q7fBhh3L.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 944712
+    },
+    "audio/tts_s13_action_rGzpJ_51.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141096
+    },
+    "audio/tts_s13_action_WSVP6vtu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 208224
+    },
+    "audio/tts_s13_action_WSVP6vtu.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1583984
+    },
+    "audio/tts_s14_action_0-mr1h51.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 49968
+    },
+    "audio/tts_s14_action_ar_J-tSr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101184
+    },
+    "audio/tts_s14_action_ar_J-tSr.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 712162
+    },
+    "audio/tts_s14_action_FPa5C-9g.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140040
+    },
+    "audio/tts_s14_action_FPa5C-9g.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 897316
+    },
+    "audio/tts_s14_action_TnTwQ6QQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 82200
+    },
+    "audio/tts_s14_action_TnTwQ6QQ.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 631074
+    },
+    "audio/tts_s15_action_4Lqw2ZLj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 151704
+    },
+    "audio/tts_s15_action_4Lqw2ZLj.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1056906
+    },
+    "audio/tts_s15_action_HIvMA3KR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 130344
+    },
+    "audio/tts_s15_action_HIvMA3KR.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 914114
+    },
+    "audio/tts_s15_action_jm3W-OQg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126576
+    },
+    "audio/tts_s15_action_jm3W-OQg.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 989444
+    },
+    "audio/tts_s15_action_kppMMiWN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126312
+    },
+    "audio/tts_s15_action_kppMMiWN.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 896890
+    },
+    "audio/tts_s15_action_oQ4R8e6k.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 145560
+    },
+    "audio/tts_s16_action_CyTyVfyR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 175944
+    },
+    "audio/tts_s16_action_CyTyVfyR.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1133838
+    },
+    "audio/tts_s16_action_F9_gUQj3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 226848
+    },
+    "audio/tts_s16_action_nimrYPAY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 164880
+    },
+    "audio/tts_s16_action_qVm14Os8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 168744
+    },
+    "audio/tts_s16_action_v9f8lLhW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 185424
+    },
+    "audio/tts_s17_action_B61w8b9n.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144624
+    },
+    "audio/tts_s17_action_HmgdXU7a.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135192
+    },
+    "audio/tts_s17_action_HmgdXU7a.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1233692
+    },
+    "audio/tts_s17_action_NVD4PKzx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 194256
+    },
+    "audio/tts_s17_action_o1Y__yFU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 148584
+    },
+    "audio/tts_s18_action_2EuP3Yqs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106776
+    },
+    "audio/tts_s18_action_8OCws20t.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112416
+    },
+    "audio/tts_s18_action_BOxiTfaV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98856
+    },
+    "audio/tts_s18_action_d54XRDbf.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99144
+    },
+    "audio/tts_s18_action_qRktM0sJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111384
+    },
+    "audio/tts_s18_action_Ri-2atoJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111528
+    },
+    "audio/tts_s18_action_S4NdI159.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109584
+    },
+    "audio/tts_s18_action_S4NdI159.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1014386
+    },
+    "audio/tts_s18_action_u7zHi4J6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101280
+    },
+    "audio/tts_s19_action_0ZdHgEAL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140640
+    },
+    "audio/tts_s19_action_181K1yAP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 168600
+    },
+    "audio/tts_s19_action_ImAAwQhk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 170688
+    },
+    "audio/tts_s19_action_QYcDNPBM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 185352
+    },
+    "audio/tts_s19_action_QYcDNPBM.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1525316
+    },
+    "audio/tts_s1_action_R8qgY539.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1298728
+    },
+    "audio/tts_s2_action_0JQKPWO8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128448
+    },
+    "audio/tts_s2_action_bNqV-G2Y.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126144
+    },
+    "audio/tts_s2_action_l60VDCpo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 153912
+    },
+    "audio/tts_s2_action_r72T-Kee.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159000
+    },
+    "audio/tts_s2_action_SqEyCeNT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112488
+    },
+    "audio/tts_s2_action_SqEyCeNT.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 856118
+    },
+    "audio/tts_s2_action_ZKA9bbwP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 131640
+    },
+    "audio/tts_s3_action_8C-Frqnu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 243720
+    },
+    "audio/tts_s3_action_nq0zzkbw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 166128
+    },
+    "audio/tts_s3_action_u4RnpwYB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 156360
+    },
+    "audio/tts_s3_action_u4RnpwYB.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1056040
+    },
+    "audio/tts_s3_action_X-VVnKsj.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 239592
+    },
+    "audio/tts_s4_action_kqtE5TDL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97632
+    },
+    "audio/tts_s4_action_kqtE5TDL.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 711070
+    },
+    "audio/tts_s4_action_mp_r4brz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 145128
+    },
+    "audio/tts_s4_action_SLbZnltU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 71664
+    },
+    "audio/tts_s4_action_tB2yv5Ww.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96672
+    },
+    "audio/tts_s4_action_wXBHZH2o.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 145368
+    },
+    "audio/tts_s4_action_ZPU3H7AY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112344
+    },
+    "audio/tts_s5_action_cXyxBF9P.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101256
+    },
+    "audio/tts_s5_action_cXyxBF9P.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 817580
+    },
+    "audio/tts_s5_action_kYJ6CTl_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 85800
+    },
+    "audio/tts_s5_action_kYJ6CTl_.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 742360
+    },
+    "audio/tts_s5_action_TnbgX8y-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125520
+    },
+    "audio/tts_s6_action_2-ghMPz1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112896
+    },
+    "audio/tts_s6_action_bLwIMoBi.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89832
+    },
+    "audio/tts_s6_action_bLwIMoBi.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 585450
+    },
+    "audio/tts_s6_action_mg4YnJWM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102384
+    },
+    "audio/tts_s6_action_p3UhRLi6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 143712
+    },
+    "audio/tts_s7_action_5-HaaU_h.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 168936
+    },
+    "audio/tts_s7_action_5-HaaU_h.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1288132
+    },
+    "audio/tts_s7_action_5d_Fj8OX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 167136
+    },
+    "audio/tts_s7_action_5d_Fj8OX.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1065734
+    },
+    "audio/tts_s7_action_bdvUTEV5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 145560
+    },
+    "audio/tts_s7_action_dxXCwYtY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 149088
+    },
+    "audio/tts_s7_action_LB1oA_N2.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108480
+    },
+    "audio/tts_s7_action_xljOjuiw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 153024
+    },
+    "audio/tts_s8_action_5LwDsBan.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159816
+    },
+    "audio/tts_s8_action_mWd-6VVQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 197400
+    },
+    "audio/tts_s8_action_Nb8lt9Eb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 151800
+    },
+    "audio/tts_s8_action_q0u_47IG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 149256
+    },
+    "audio/tts_s8_action_q0u_47IG.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 1259484
+    },
+    "audio/tts_s9_action_11UB-CnM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 113712
+    },
+    "audio/tts_s9_action_1upD38bU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 90312
+    },
+    "audio/tts_s9_action_96ORBCx-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 182280
+    },
+    "audio/tts_s9_action_vT5GQeOQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140280
+    },
+    "audio/tts_s9_action_vT5GQeOQ.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 923990
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

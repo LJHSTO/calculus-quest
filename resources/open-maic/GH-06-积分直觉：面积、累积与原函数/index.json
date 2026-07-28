@@ -1,0 +1,5085 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T07:18:40.786Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "积分直觉：面积、累积与原函数",
+    "description": "",
+    "language": "使用中文（简体）进行授课。专业术语如 Riemann sum, Integral, Antiderivative 在首次出现时提供中英对照，后续以中文为主。针对零基础学生，使用形象的类比（如流水、乐高积木）来解释抽象数学概念。",
+    "style": "professional",
+    "createdAt": 1783010934431,
+    "updatedAt": 1783010934431
+  },
+  "agents": [
+    {
+      "name": "林老师",
+      "role": "teacher",
+      "persona": "经验丰富的数学教师，擅长用生活化比喻（如乐高积木、流水）拆解微积分概念。教学节奏稳健，善于发现学生的思维卡点，对零基础学生极有耐心，鼓励探索式学习。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "小宇",
+      "role": "student",
+      "persona": "充满好奇心的学生，思维活跃但容易跳跃，常把积分想象成游戏或物理现象。偶尔会提出偏离常规的问题（如倒车位移抵消），恰好引出误解修复的契机。",
+      "avatar": "/avatars/curious-2.png",
+      "color": "#f59e0b",
+      "priority": 6
+    },
+    {
+      "name": "小慧",
+      "role": "assistant",
+      "persona": "细致认真的年轻助教，逻辑清晰，善于用图解和关系图帮助梳理知识结构。在同学陷入困惑时，会主动提供形象的类比（如切片堆叠）来辅助理解。",
+      "avatar": "/avatars/assist.png",
+      "color": "#10b981",
+      "priority": 7
+    },
+    {
+      "name": "阿静",
+      "role": "student",
+      "persona": "沉稳踏实的学生，擅长归纳总结，喜欢通过反复实验（如拖动滑块）来验证直觉。在面对函数族和不定积分时，会追问常数的意义，帮助课堂深化抽象概念。",
+      "avatar": "/avatars/thinker.png",
+      "color": "#8b5cf6",
+      "priority": 5
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：积分直觉：面积、累积与原函数学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "某水池的注水流量 r(t) 随时间变化。把每一小段时间内的“流量×时间”连续累加，从开始到某时刻所得的累计量表示什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "最终时刻的水位高度"
+              },
+              {
+                "value": "B",
+                "label": "这段时间内注入的总水量"
+              },
+              {
+                "value": "C",
+                "label": "注水的平均速度"
+              },
+              {
+                "value": "D",
+                "label": "水池的总容量"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "横轴是时间，纵轴是注水流量。每个小时间段内，“流量×时间”近似等于该段注入的水量；把这些小水量连续累加，也就是计算流量曲线下的面积，得到这段时间内注入的总水量。因此 B 正确。A 是某一时刻的状态，C 是平均量，D 是水池的固定容量，都不是该累计量。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "一辆汽车从静止开始加速，它的速度变化图如下。如果我们想估算它在行驶 10 秒后总共走了多远，最直观的初等想法是？",
+            "options": [
+              {
+                "value": "A",
+                "label": "查看第 10 秒时曲线的最高点"
+              },
+              {
+                "value": "B",
+                "label": "计算 0 到 10 秒内曲线下的格子数（面积）"
+              },
+              {
+                "value": "C",
+                "label": "用最终速度乘以 10 秒"
+              },
+              {
+                "value": "D",
+                "label": "测量速度曲线的陡峭程度"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "位移就是速度在时间上的累积。就像稳定的水流一样，当速度不断变化时，我们可以把时间切成小段，每一小段里近似认为速度不变，那么这一小段走的距离就是‘速度乘以时间’，在图上就是一个小竖条的面积。把所有小竖条面积加起来，就是图像下的总面积，代表了总位移。A选项只提供了最终速度，C选项假设了速度一直是最大值，D选项的陡峭度代表的是加速度，而不是总路程。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "question": "小美在学积分前，先复习了导数。已知 F(x) 的导数是 f(x)，也就是 F'(x) = f(x)。那么，如果给你一个函数 f(x)，让你去找它的‘原函数’ F(x)，这就像是做什么？（多选，提示：想想互逆的运算）",
+            "options": [
+              {
+                "value": "A",
+                "label": "做除法的逆运算——乘法"
+              },
+              {
+                "value": "B",
+                "label": "做加法的逆运算——减法"
+              },
+              {
+                "value": "C",
+                "label": "给出一堆积木块（变化率），让你拼出原来的高塔形状（累积量）"
+              },
+              {
+                "value": "D",
+                "label": "已知每一脚踩油门的深度（加速度），推断出汽车总共跑了多远（位移）"
+              }
+            ],
+            "answer": [
+              "C",
+              "D"
+            ],
+            "analysis": "求导是分析变化率，而积分（求原函数）是通过变化率反推累积量。C选项‘积木拼塔’是非常好的类比，每一块积木代表微小的变化（导数），累积起来就是总高度（原函数）。D选项在物理上，速度是位移的导数，通过速度反推位移正是求原函数的过程，这直接体现了速度（变化率）与位移（累积量）的关系。A和B是基本的算术逆运算，虽然体现了‘互逆’但无法体现‘累积与变化率’的核心思想。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "为了准确求出地图上某个不规则湖泊的面积，我们可以把它描在方格纸上。下面哪种方法的思想，最接近积分（Riemann sum，黎曼和）的核心观点？",
+            "options": [
+              {
+                "value": "A",
+                "label": "用一个大长方形直接框住整个湖泊计算"
+              },
+              {
+                "value": "B",
+                "label": "把湖泊剪下来，放在天平上称重，再换算成面积"
+              },
+              {
+                "value": "C",
+                "label": "把湖泊画分成很多极细的竖长条，分别算每个长条面积再加起来"
+              },
+              {
+                "value": "D",
+                "label": "用一根线绕湖泊一圈测量周长，然后凭感觉估算面积"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "积分学中最基础的‘黎曼和’思想，就是‘无限分割，化曲为直’。面对一个不规则图形，我们将它切成无数个极细的矩形（竖长条），每个小矩形的面积很容易算，然后把这些小面积全部加起来。当分割无限细时，这个总和就精确等于湖泊的真实面积。A选项误差极大，B选项是物理方法不是数学积分思想，D选项无法保证准确性。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "想象你面前有一个水龙头，水流速度时快时慢（流量变化）。你手里只有一些不同大小的乐高积木，你需要尽可能精确地测出 1 分钟内流出的总水量。请结合‘无限分割’或‘化整为零’的想法，简单描述你的测量计算思路。（零基础同学提示：重点在于怎么应对‘时快时慢’的变化）",
+            "commentPrompt": "评分标准：(1) 能想到把时间分割成极小段解决‘时快时慢’的问题 - 50% (2) 表述中体现出‘用速度乘以极短时间得出小份水量，再进行累积’的逻辑 - 30% (3) 回答清晰，具有物理直观感 - 20%",
+            "analysis": "参考思路：水流一直在变，直接算很难。我可以把 1 分钟（60 秒）切成很多很多段，比如切成 3600 个 0.1 秒。在极其短暂的 0.1 秒里，水流速度几乎没变，我就用这个瞬间的速度乘以 0.1 秒，得出这小段时间里流出的‘一乐高块’的水量。最后把 3600 个这样的小水量累加起来，就是 1 分钟的总水量了。切的份数越多，计算就越精确。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_zdGoyyLo",
+          "type": "speech",
+          "text": "这是一组关于“前测：积分直觉：面积、累积与原函数学习准备诊断”的独立测验。咱们需要一起推开一扇新的数学大门，探索一个非常有趣的概念——积分。"
+        },
+        {
+          "id": "action_zicpJcBJ",
+          "type": "speech",
+          "text": "在正式出发之前，我们先来做一个小小的热身诊断。别紧张，这不是考试，分数不重要。我只是想通过这几道题，了解一下大家对于'面积'、'累积'和'变化'这些东西最直观的想法是什么，以便我们后面能讲得更顺畅。",
+          "audioRef": "audio/tts_action_zicpJcBJ.mp3"
+        },
+        {
+          "id": "action__HFvRA5z",
+          "type": "speech",
+          "text": "题目里有水池注水、汽车加速，还有拼乐高积木的比喻，都是些生活中的情景。特别是对于觉得自己数学基础还不太牢固的同学，这些题目里都给了很友好的提示。请完全凭你的直觉和已有的知识去思考和回答，大胆地猜一猜，没关系的。",
+          "audioRef": "audio/tts_action__HFvRA5z.mp3"
+        },
+        {
+          "id": "action_l7jyCvEq",
+          "type": "speech",
+          "text": "好了，拿出你的探索精神，让我们开始吧！",
+          "audioRef": "audio/tts_action_l7jyCvEq.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "小矩形逼近面积",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "LJqd9CUVzE0-PFXVHZRp4",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "shape",
+              "id": "shape_bE6mIXmS",
+              "left": 50,
+              "top": 50,
+              "width": 900,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F0F4F8"
+            },
+            {
+              "type": "text",
+              "id": "text_fA5vxPlB",
+              "left": 70,
+              "top": 55,
+              "width": 300,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1B3A5C;\">小矩形逼近面积</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_3kB6RLzA",
+              "left": 390,
+              "top": 64,
+              "width": 400,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #4A90D9;\">从有限分割到无限逼近</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4A90D9"
+            },
+            {
+              "type": "line",
+              "id": "line_lqa9Ns8H",
+              "left": 60,
+              "top": 420,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                360,
+                0
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_R__Z23Pw",
+              "left": 60,
+              "top": 180,
+              "width": 2,
+              "start": [
+                0,
+                240
+              ],
+              "end": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_ai5FsR2c",
+              "left": 420,
+              "top": 410,
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\">x</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_8j4LniZN",
+              "left": 30,
+              "top": 160,
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #333333;\">y</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_vH5EelWt",
+              "left": 60,
+              "top": 420,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                4
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_wG7DW0So",
+              "left": 120,
+              "top": 420,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                4
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_KBAtKaCa",
+              "left": 180,
+              "top": 420,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                4
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_PR2DVkTJ",
+              "left": 240,
+              "top": 420,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                4
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_aJxTMMz0",
+              "left": 300,
+              "top": 420,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                4
+              ],
+              "style": "solid",
+              "color": "#333333",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_MYe8szhI",
+              "left": 29,
+              "top": 425,
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">0</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_SvqQb-oq",
+              "left": 105,
+              "top": 401,
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">1</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_RsLDJGd_",
+              "left": 165,
+              "top": 401,
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">2</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_iuCir92h",
+              "left": 225,
+              "top": 425,
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">3</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_QMHW2Kmx",
+              "left": 285,
+              "top": 425,
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">4</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "line",
+              "id": "line_2IByj9rf",
+              "left": 60,
+              "top": 420,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                120,
+                -120
+              ],
+              "style": "solid",
+              "color": "#888888",
+              "points": [
+                "",
+                ""
+              ],
+              "curve": [
+                60,
+                -10
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_YdUtFkTm",
+              "left": 180,
+              "top": 300,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                120,
+                -60
+              ],
+              "style": "solid",
+              "color": "#888888",
+              "points": [
+                "",
+                ""
+              ],
+              "curve": [
+                60,
+                -50
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_AH8H-0kV",
+              "left": 60,
+              "top": 300,
+              "width": 60,
+              "height": 120,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4A90D9",
+              "opacity": 0.3
+            },
+            {
+              "type": "shape",
+              "id": "shape_quvzh6q_",
+              "left": 120,
+              "top": 240,
+              "width": 60,
+              "height": 180,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4A90D9",
+              "opacity": 0.3
+            },
+            {
+              "type": "shape",
+              "id": "shape_hamqnBQ7",
+              "left": 180,
+              "top": 210,
+              "width": 60,
+              "height": 210,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4A90D9",
+              "opacity": 0.3
+            },
+            {
+              "type": "shape",
+              "id": "shape_C5ID8NRe",
+              "left": 240,
+              "top": 180,
+              "width": 60,
+              "height": 240,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4A90D9",
+              "opacity": 0.3
+            },
+            {
+              "type": "shape",
+              "id": "shape_TV8bprT1",
+              "left": 300,
+              "top": 160,
+              "width": 60,
+              "height": 260,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4A90D9",
+              "opacity": 0.3
+            },
+            {
+              "type": "text",
+              "id": "text_F5qnnSfa",
+              "left": 60,
+              "top": 450,
+              "width": 150,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #1B3A5C; font-weight: bold;\">分割数 n = 5</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "shape",
+              "id": "shape_qH0GAeNp",
+              "left": 450,
+              "top": 160,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_iOjRhavP",
+              "left": 470,
+              "top": 140,
+              "width": 480,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\">分割越细，面积估算值趋于稳定——这就是极限的雏形。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_YVI3tPRQ",
+              "left": 450,
+              "top": 210,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_aetF3kSr",
+              "left": 470,
+              "top": 190,
+              "width": 480,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\">积分不是死板的几何公式，而是动态的逼近过程。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Xvet3hkp",
+              "left": 450,
+              "top": 260,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_-RIpvmZu",
+              "left": 470,
+              "top": 240,
+              "width": 480,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\">黎曼和：将曲边梯形分成 n 个窄条，每个窄条用矩形近似，</p><p style=\"font-size: 18px; color: #333333;\">总面积 ≈ Σ f(xᵢ*)·Δx，当 n→∞ 时取极限得精确面积。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "table",
+              "id": "table_KGnaiSOP",
+              "left": 450,
+              "top": 320,
+              "width": 500,
+              "height": 160,
+              "rotate": 0,
+              "outline": {
+                "style": "solid",
+                "width": 1,
+                "color": "#E0E0E0"
+              },
+              "colWidths": [
+                0.33,
+                0.33,
+                0.34
+              ],
+              "cellMinHeight": 32,
+              "data": [
+                [
+                  {
+                    "id": "h1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "分割数 n",
+                    "style": {
+                      "bold": true,
+                      "color": "#FFFFFF",
+                      "backcolor": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "矩形宽度 Δx",
+                    "style": {
+                      "bold": true,
+                      "color": "#FFFFFF",
+                      "backcolor": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "近似面积 Sₙ",
+                    "style": {
+                      "bold": true,
+                      "color": "#FFFFFF",
+                      "backcolor": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r1c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "4",
+                    "style": {
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r1c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "1.000",
+                    "style": {
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r1c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "2.738",
+                    "style": {
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r2c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "10",
+                    "style": {
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r2c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "0.400",
+                    "style": {
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r2c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "2.963",
+                    "style": {
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r3c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "100",
+                    "style": {
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r3c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "0.040",
+                    "style": {
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r3c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "3.000",
+                    "style": {
+                      "backcolor": "#F5F5F5",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r4c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "1000",
+                    "style": {
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r4c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "0.004",
+                    "style": {
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r4c3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "3.000",
+                    "style": {
+                      "backcolor": "#FFFFFF",
+                      "align": "center"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "shape",
+              "id": "shape_4tRfy2XF",
+              "left": 450,
+              "top": 490,
+              "width": 500,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FAFAFA"
+            },
+            {
+              "type": "latex",
+              "id": "latex_JK1jAkMB",
+              "left": 460,
+              "top": 495,
+              "width": 180,
+              "height": 40,
+              "rotate": 0,
+              "latex": "\\text{Riemann Sum: } \\sum_{i=1}^{n} f(x_i^*) \\Delta x",
+              "color": "#1B3A5C",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.9291em;vertical-align:-1.2777em;\"></span><span class=\"mord text\"><span class=\"mord\">Riemann Sum: </span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.6514em;\"><span style=\"top:-1.8723em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3.05em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">i</span><span class=\"mrel mtight\">=</span><span class=\"mord mtight\">1</span></span></span></span><span style=\"top:-3.05em;\"><span class=\"pstrut\" style=\"height:3.05em;\"></span><span><span class=\"mop op-symbol large-op\">∑</span></span></span><span style=\"top:-4.3em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3.05em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">n</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.2777em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7387em;\"><span style=\"top:-2.453em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">i</span></span></span><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mbin mtight\">∗</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.247em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span></span></span></span></span>"
+            },
+            {
+              "type": "latex",
+              "id": "latex_rjyg9CQT",
+              "left": 650,
+              "top": 495,
+              "width": 290,
+              "height": 40,
+              "rotate": 0,
+              "latex": "\\text{极限形式: } \\int_{a}^{b} f(x) dx = \\lim_{n\\to\\infty} \\sum_{i=1}^{n} f(x_i^*) \\Delta x",
+              "color": "#1B3A5C",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.511em;vertical-align:-0.9119em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">极限形式</span><span class=\"mord\">: </span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop\"><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.599em;\"><span style=\"top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span></span></span></span><span style=\"top:-3.8129em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">b</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9119em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.9291em;vertical-align:-1.2777em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.4em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">n</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">∞</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.6514em;\"><span style=\"top:-1.8723em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3.05em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">i</span><span class=\"mrel mtight\">=</span><span class=\"mord mtight\">1</span></span></span></span><span style=\"top:-3.05em;\"><span class=\"pstrut\" style=\"height:3.05em;\"></span><span><span class=\"mop op-symbol large-op\">∑</span></span></span><span style=\"top:-4.3em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3.05em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">n</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.2777em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7387em;\"><span style=\"top:-2.453em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">i</span></span></span><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mbin mtight\">∗</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.247em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span></span></span></span></span>"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_K_b_fHEM",
+          "type": "spotlight",
+          "elementId": "text_fA5vxPlB"
+        },
+        {
+          "id": "action_ijgEnY8e",
+          "type": "speech",
+          "text": "本场景聚焦“小矩形逼近面积”。好了，刚才我们完成了前测，现在正式开始今天的第一个核心问题：如何计算一个曲边图形的面积。大家看这个标题，\"小矩形逼近面积\"，这个\"逼近\"就是我们今天要掌握的关键思想。"
+        },
+        {
+          "id": "action_AMRHviuX",
+          "type": "spotlight",
+          "elementId": "text_3kB6RLzA"
+        },
+        {
+          "id": "action_C9BFG-JG",
+          "type": "speech",
+          "text": "这个过程，本质上就是从\"有限分割\"到\"无限逼近\"。就像用乐高积木去拼一个圆弧，用的积木越小，拼出来的形状就越接近真正的圆。",
+          "audioRef": "audio/tts_s2_action_C9BFG-JG.mp3"
+        },
+        {
+          "id": "action_TbyJ9zFf",
+          "type": "spotlight",
+          "elementId": "shape_hamqnBQ7"
+        },
+        {
+          "id": "action_Xi7IpFNQ",
+          "type": "speech",
+          "text": "现在，我们把一条曲线下的区域，也就是这个曲边梯形，划分成几个窄条。看，这里我们用5个小矩形来近似它。每个矩形的面积都很容易算，就是底乘高。",
+          "audioRef": "audio/tts_s2_action_Xi7IpFNQ.mp3"
+        },
+        {
+          "id": "action_zcMQYWAD",
+          "type": "spotlight",
+          "elementId": "text_F5qnnSfa"
+        },
+        {
+          "id": "action_Ob8Zkqcn",
+          "type": "speech",
+          "text": "注意看这里，当前的分割数是 n=5。可以看到，这些矩形加起来，和真实的曲边梯形面积之间，还有很明显的空隙，这就是误差。",
+          "audioRef": "audio/tts_s2_action_Ob8Zkqcn.mp3"
+        },
+        {
+          "id": "action_vlGTgjS4",
+          "type": "spotlight",
+          "elementId": "text_iOjRhavP"
+        },
+        {
+          "id": "action_-rYh0F4h",
+          "type": "speech",
+          "text": "那么，想象一下，如果我们把分割数增加，让 n 变成 10、100、甚至1000，每个矩形都变得越来越细。这时你会发现，面积估算值会趋于一个稳定的数。这就是极限的雏形。",
+          "audioRef": "audio/tts_s2_action_-rYh0F4h.mp3"
+        },
+        {
+          "id": "action_EkCDJrJa",
+          "type": "spotlight",
+          "elementId": "latex_JK1jAkMB"
+        },
+        {
+          "id": "action_cpV63kWX",
+          "type": "speech",
+          "text": "把刚刚的想法用数学语言表达出来，就是黎曼和，英文叫 Riemann Sum。它把整个面积写成所有小矩形面积的和。这里 f(xᵢ*) 是矩形的高，Δx 是它的宽。",
+          "audioRef": "audio/tts_s2_action_cpV63kWX.mp3"
+        },
+        {
+          "id": "action_oKx61Nv9",
+          "type": "spotlight",
+          "elementId": "text_aetF3kSr"
+        },
+        {
+          "id": "action_Tjpk91L5",
+          "type": "speech",
+          "text": "所以，我们希望修复一个常见的误解：积分并不只是一个死板的几何公式。它是一个动态的、无限逼近的过程。理解了这一点，后面我们学习定积分计算的时候，才会真正明白符号背后的含义。",
+          "audioRef": "audio/tts_s2_action_Tjpk91L5.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "小矩形逼近面积：拖动实验",
+      "order": 3,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "riemann_sum_approximation",
+          "description": "通过增加矩形数量，观察计算面积与真实曲面积的差值缩小。使用黎曼和（Riemann Sum）逼近定积分（Definite Integral），直观展示当分割数 N 趋向无穷时，矩形总面积收敛于曲线下方的真实面积。",
+          "variables": [
+            {
+              "name": "partition_count",
+              "label": "分割数量 N",
+              "min": 1,
+              "max": 100,
+              "default": 10,
+              "unit": "个"
+            },
+            {
+              "name": "function_type",
+              "label": "函数类型",
+              "options": [
+                "x2",
+                "sin",
+                "exp",
+                "sqrt"
+              ],
+              "default": "x2"
+            }
+          ],
+          "presets": [
+            {
+              "name": "入门观察",
+              "variables": {
+                "partition_count": 5,
+                "function_type": "x2"
+              }
+            },
+            {
+              "name": "逐步改进",
+              "variables": {
+                "partition_count": 20,
+                "function_type": "x2"
+              }
+            },
+            {
+              "name": "精确逼近",
+              "variables": {
+                "partition_count": 50,
+                "function_type": "x2"
+              }
+            },
+            {
+              "name": "极限逼近",
+              "variables": {
+                "partition_count": 100,
+                "function_type": "x2"
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/03_小矩形逼近面积：拖动实验.html",
+        "htmlBytes": 780900
+      },
+      "actions": [
+        {
+          "id": "action_W8RR70cP",
+          "type": "speech",
+          "text": "本场景通过交互探索“小矩形逼近面积：拖动实验”。现在就来亲手感受这个‘逼近’。请大家看这个模拟器，我们先用‘入门观察’的预设。"
+        },
+        {
+          "id": "action_dVnEpIRM",
+          "type": "widget_setState",
+          "state": {
+            "partition_count": 5,
+            "function_type": "x2"
+          },
+          "content": "将分割数量设置为‘入门观察’的5个矩形，函数为x²。"
+        },
+        {
+          "id": "action_ROv1QvCf",
+          "type": "speech",
+          "text": "现在只有5个矩形，你看矩形顶部的空缺部分还很大，就像用大块乐高铺地板，边缘很不齐。这个近似和真实面积相比，误差肯定不小。",
+          "audioRef": "audio/tts_s3_action_ROv1QvCf.mp3"
+        },
+        {
+          "id": "action_M6ZMx_hC",
+          "type": "widget_highlight",
+          "target": "#result-display",
+          "content": "注意观察误差百分比显示。"
+        },
+        {
+          "id": "action_520T4NzA",
+          "type": "speech",
+          "text": "好，现在请你动动手指，拖动滑块慢慢增加分割数到20。",
+          "audioRef": "audio/tts_s3_action_520T4NzA.mp3"
+        },
+        {
+          "id": "action_EPPzEW30",
+          "type": "widget_setState",
+          "state": {
+            "partition_count": 20,
+            "function_type": "x2"
+          },
+          "content": "将分割数量增加至20，匹配‘逐步改进’预设。"
+        },
+        {
+          "id": "action_GKGsJFU6",
+          "type": "speech",
+          "text": "你看，虽然还有微小的锯齿，但误差已经显著缩小了。这就像是把乐高切得更碎，填得也就更密实。继续大胆尝试，把N拖到50，感受一下误差下降的趋势。",
+          "audioRef": "audio/tts_s3_action_GKGsJFU6.mp3"
+        },
+        {
+          "id": "action_oNYWxFMT",
+          "type": "widget_setState",
+          "state": {
+            "partition_count": 50,
+            "function_type": "x2"
+          },
+          "content": "增至50个矩形，让学生切身观察误差1%以下的逼近状态。"
+        },
+        {
+          "id": "action_7nYoAEP7",
+          "type": "speech",
+          "text": "太好了，你有没有注意到误差已经悄悄降到了1%以下？当N趋向无穷时，这些小矩形就将彻底填满曲线下方。这就是黎曼和（Riemann Sum）逼近定积分（Definite Integral）的核心思想。",
+          "audioRef": "audio/tts_s3_action_7nYoAEP7.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "小矩形逼近面积：关系图",
+      "order": 4,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "htmlPath": "interactive/04_小矩形逼近面积：关系图.html",
+        "htmlBytes": 457449
+      },
+      "actions": [
+        {
+          "id": "action_awrXhTGm",
+          "type": "speech",
+          "text": "本场景通过交互探索“小矩形逼近面积：关系图”。通过增加 N 亲眼看到误差在变小。现在我们把背后的逻辑用一张关系图梳理清楚，这样就能看到从“分割”到“精确面积”的完整路径。"
+        },
+        {
+          "id": "action_XYhtQ8jx",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "先看第一步：将区间切成很多小段。"
+        },
+        {
+          "id": "action_Vn7_qLfp",
+          "type": "speech",
+          "text": "起点是这个“区间分割”节点。把 [a, b] 切成 n 等份，每一份的宽度都记作 Δx。这就像把一条长面包切成薄片，是黎曼和的第一步。",
+          "audioRef": "audio/tts_s4_action_Vn7_qLfp.mp3"
+        },
+        {
+          "id": "action_8wQk4hTY",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "再看第二步：在每个小段上选一个高度。"
+        },
+        {
+          "id": "action_YkZMNVhe",
+          "type": "speech",
+          "text": "接着是“高度取值”节点。在每个小切片里，我们要决定矩形的高度——可以取左端点、右端点或者中点。不同的取法就是不同风格的黎曼和，逼近效果会略有差别。",
+          "audioRef": "audio/tts_s4_action_YkZMNVhe.mp3"
+        },
+        {
+          "id": "action_TnFbRbTW",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "第三步：把所有小矩形的面积加起来。"
+        },
+        {
+          "id": "action_f0bOMXbs",
+          "type": "speech",
+          "text": "然后是“面积累加”节点。把每个小矩形的面积 f(xᵢ)·Δx 全部加起来，就得到了一个近似的总面积。N 越大，切片越薄，这个总和就越接近真实的曲线下面积。",
+          "audioRef": "audio/tts_s4_action_f0bOMXbs.mp3"
+        },
+        {
+          "id": "action_o6dXU7rH",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "最后一步：让 N 趋向无穷大。"
+        },
+        {
+          "id": "action_-7wgKo0U",
+          "type": "speech",
+          "text": "最后，大家你来点击一下这个“取极限”节点，观察它和“精确面积”之间出现的新连接——当 N 趋向无穷时，误差节点会收缩消失，黎曼和的极限就是定积分（Definite Integral）的精确值。这正是我们刚才在拖动实验里看到的趋势。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "小矩形逼近面积：误解修复挑战",
+      "order": 5,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "通过拼图挑战，证明矩形逼近适用于任何不规则曲线",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "achievements": [
+            {
+              "id": "first_rect",
+              "name": "初试牛刀",
+              "desc": "放置第一个矩形",
+              "icon": "🧱"
+            },
+            {
+              "id": "half_way",
+              "name": "半途而废？不！",
+              "desc": "覆盖率达到50%",
+              "icon": "📊"
+            },
+            {
+              "id": "close_enough",
+              "name": "很接近了",
+              "desc": "覆盖率达到90%",
+              "icon": "🎯"
+            },
+            {
+              "id": "master",
+              "name": "逼近大师",
+              "desc": "覆盖率达到95%",
+              "icon": "🏆"
+            },
+            {
+              "id": "speed_demon",
+              "name": "闪电手",
+              "desc": "30秒内完成一关",
+              "icon": "⚡"
+            },
+            {
+              "id": "all_levels",
+              "name": "全能冠军",
+              "desc": "通关所有关卡",
+              "icon": "👑"
+            }
+          ]
+        },
+        "htmlPath": "interactive/05_小矩形逼近面积：误解修复挑战.html",
+        "htmlBytes": 782296
+      },
+      "actions": [
+        {
+          "id": "action_m7au9Reb",
+          "type": "speech",
+          "text": "本场景通过交互探索“小矩形逼近面积：误解修复挑战”。我们看到了矩形越来越多时，误差会越来越小。但可能有人心里在想：这只是对规则曲线有用吧？如果碰到歪歪扭扭、起伏很大的波浪线，矩形还能逼近吗？现在，我们来玩一个拼图挑战，亲手试试看。"
+        },
+        {
+          "id": "action_-pUCSGjN",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始按钮，进入第一关。"
+        },
+        {
+          "id": "action_45ZWknv6",
+          "type": "speech",
+          "text": "你的任务是用不同宽度的小矩形，填满屏幕上的这条不规则波浪线，目标是在限定时间内让覆盖率达到95%以上。注意看，有些地方曲线特别陡，你可能需要更窄的矩形才能贴紧它。试着拖拽矩形并调整它们的宽度吧。",
+          "audioRef": "audio/tts_s5_action_45ZWknv6.mp3"
+        },
+        {
+          "id": "action_0ue4wbSZ",
+          "type": "widget_setState",
+          "state": {
+            "currentLevel": 1,
+            "coverage": 0.3
+          },
+          "content": "初始状态：需要调整矩形来贴合陡峭的曲线段。"
+        },
+        {
+          "id": "action_HB4xNQD7",
+          "type": "speech",
+          "text": "感觉怎么样？是不是在面对那段像悬崖一样突然下降的曲线时，宽一点儿的矩形就容易‘悬空’？这时候把矩形变窄，就能严丝合缝地贴上去。这就是关键：无论曲线多么扭曲，只要我们把矩形切得足够细，就能无限逼近它的真实形状。",
+          "audioRef": "audio/tts_s5_action_HB4xNQD7.mp3"
+        },
+        {
+          "id": "action_jEBLns82",
+          "type": "widget_annotation",
+          "target": "#coverage-display",
+          "content": "观察覆盖率的变化——当你针对难点局部调整时，全局的逼近效果就在提升。"
+        },
+        {
+          "id": "action_O4fK2-FA",
+          "type": "speech",
+          "text": "所以，矩形逼近（Rectangle Approximation）的方法，本质上是微积分里‘以直代曲’的思想，它不挑食，任何形状的曲线面积都可以用这种方法来估算。挑战成功的同学，别忘了看看自己点亮了哪些成就哦。",
+          "audioRef": "audio/tts_s5_action_O4fK2-FA.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "小矩形逼近面积：空间视角",
+      "order": 6,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "小矩形逼近面积：空间视角 — 用黎曼和 (Riemann Sum) 的 3D 矩形堆叠来直观理解积分 (Integral) 的几何本质。通过旋转视角观察矩形厚度，理解 dx 在空间中的几何表达。",
+          "objects": [
+            {
+              "id": "curve_mesh",
+              "type": "tube",
+              "description": "函数曲线 y=x² 的 3D 管状表示",
+              "material": {
+                "type": "emissive",
+                "color": "#fbbf24"
+              }
+            },
+            {
+              "id": "bar_stacks",
+              "type": "boxes",
+              "description": "黎曼和近似矩形，具有可见厚度",
+              "count": "dynamic",
+              "material": {
+                "type": "phong",
+                "color": "gradient"
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "slice_count",
+              "label": "矩形个数 n",
+              "min": 2,
+              "max": 32,
+              "default": 8
+            },
+            {
+              "type": "button",
+              "action": "method_left",
+              "label": "左端点法"
+            },
+            {
+              "type": "button",
+              "action": "method_right",
+              "label": "右端点法"
+            },
+            {
+              "type": "button",
+              "action": "method_mid",
+              "label": "中点法"
+            },
+            {
+              "type": "button",
+              "action": "view_3d",
+              "label": "3D 视角"
+            },
+            {
+              "type": "button",
+              "action": "view_top",
+              "label": "俯视图"
+            },
+            {
+              "type": "button",
+              "action": "view_side",
+              "label": "侧视图"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            }
+          ],
+          "presets": [
+            {
+              "name": "3D 视角",
+              "state": {
+                "cameraPosition": [
+                  6,
+                  8,
+                  10
+                ],
+                "view": "3d"
+              }
+            },
+            {
+              "name": "俯视图 (Top)",
+              "state": {
+                "cameraPosition": [
+                  2,
+                  14,
+                  0.01
+                ],
+                "view": "top"
+              }
+            },
+            {
+              "name": "侧视图 (Side)",
+              "state": {
+                "cameraPosition": [
+                  6,
+                  2,
+                  0.01
+                ],
+                "view": "side"
+              }
+            },
+            {
+              "name": "精细逼近 (n=32)",
+              "state": {
+                "sliceCount": 32
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/06_小矩形逼近面积：空间视角.html",
+        "htmlBytes": 2513042
+      },
+      "actions": [
+        {
+          "id": "action_Lvq6HiM5",
+          "type": "speech",
+          "text": "本场景通过交互探索“小矩形逼近面积：空间视角”。从平面上感受了矩形逼近面积的过程。现在，我们把视野拉开，到三维空间里去看一看——这些切片到底是怎么‘站’起来的？"
+        },
+        {
+          "id": "action_k2jjS4uw",
+          "type": "widget_setState",
+          "state": {
+            "sliceCount": 8
+          },
+          "content": "显示默认的8个矩形，建立初始空间印象。"
+        },
+        {
+          "id": "action_4GLdGynl",
+          "type": "widget_highlight",
+          "target": "#controls",
+          "content": "这是我们的主控台，可以切换视角、改变矩形个数。"
+        },
+        {
+          "id": "action_L14XmiAo",
+          "type": "speech",
+          "text": "请大家看，这条金色的曲线 y=x² 下面，立着一个个有厚度的长方体。每一个长方体的厚度，在数学上就记作 dx。它不是无穷小，而是我们在黎曼和（Riemann Sum）里切出来的有限小块。",
+          "audioRef": "audio/tts_s6_action_L14XmiAo.mp3"
+        },
+        {
+          "id": "action_RVb2HAQ7",
+          "type": "widget_setState",
+          "state": {
+            "view": "side"
+          },
+          "content": "切换到侧视图，观察矩形顶部阶梯与曲线的拟合程度。"
+        },
+        {
+          "id": "action_3DvmyWTk",
+          "type": "speech",
+          "text": "现在切换到‘侧视图’，你看到了什么？是不是像一级一级的台阶，在努力地贴近那条平滑的曲线？台阶与曲线之间的空隙，就是我们还没有算进去的误差。",
+          "audioRef": "audio/tts_s6_action_3DvmyWTk.mp3"
+        },
+        {
+          "id": "action_xd-QzQqf",
+          "type": "widget_setState",
+          "state": {
+            "sliceCount": 32
+          },
+          "content": "将矩形个数增加到32，体验‘台阶’变得更密、更贴合曲线。"
+        },
+        {
+          "id": "action_Yh8WziJp",
+          "type": "speech",
+          "text": "我把切片数增加到32，你看，台阶变密了，每一片的厚度 dx 变小了，‘楼梯’的边缘也几乎和曲线融为一体。这正是微积分里最核心的思想：通过无限切分，让近似变成精确。同学们也可以自己尝试旋转一下视角，从不同方向去感悟这个‘乐高积木’的堆叠过程。",
+          "audioRef": "audio/tts_s6_action_Yh8WziJp.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "定积分作为累积",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "eIC9UVfCA_65Byv9R2PNT",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text__PPJvDRy",
+              "left": 60,
+              "top": 60,
+              "width": 480,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1a3a6b;\">定积分作为累积</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1a3a6b"
+            },
+            {
+              "type": "shape",
+              "id": "shape_mSIPGX-5",
+              "left": 60,
+              "top": 140,
+              "width": 480,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#4a6fa5"
+            },
+            {
+              "type": "text",
+              "id": "text_4gt4Vk0K",
+              "left": 60,
+              "top": 155,
+              "width": 480,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; color: #4a6fa5;\">从几何到物理：变化率的累积总量</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4a6fa5"
+            },
+            {
+              "type": "shape",
+              "id": "shape_5uZzE8Kz",
+              "left": 60,
+              "top": 260,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#2b6cb0"
+            },
+            {
+              "type": "text",
+              "id": "text_HGW9h2hq",
+              "left": 85,
+              "top": 240,
+              "width": 455,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #333333;\"><b>目标</b>：将速度-时间图像下的面积解释为位移的累积</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_etYYEBFe",
+              "left": 60,
+              "top": 330,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#e07b39"
+            },
+            {
+              "type": "text",
+              "id": "text_N8ATATIK",
+              "left": 85,
+              "top": 310,
+              "width": 455,
+              "height": 82,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #333333;\"><b>修复误解</b>：明确区分“面积”（恒正）与“定积分”（可正可负，取决于方向）</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_YwcL6zYe",
+              "left": 60,
+              "top": 430,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#38a169"
+            },
+            {
+              "type": "text",
+              "id": "text_8bHUjssR",
+              "left": 85,
+              "top": 410,
+              "width": 455,
+              "height": 82,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #333333;\"><b>引入净变化量概念</b>：积分结果反映净变化，而非绝对路径总和</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "table",
+              "id": "table_nJX3AwAr",
+              "left": 580,
+              "top": 60,
+              "width": 360,
+              "height": 140,
+              "rotate": 0,
+              "outline": {
+                "style": "solid",
+                "width": 1,
+                "color": "#cccccc"
+              },
+              "colWidths": [
+                0.35,
+                0.65
+              ],
+              "cellMinHeight": 40,
+              "data": [
+                [
+                  {
+                    "id": "h1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "概念",
+                    "style": {
+                      "bold": true,
+                      "color": "#ffffff",
+                      "backcolor": "#1a3a6b",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "含义",
+                    "style": {
+                      "bold": true,
+                      "color": "#ffffff",
+                      "backcolor": "#1a3a6b",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r1c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "面积",
+                    "style": {
+                      "bold": true,
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r1c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "恒正，仅大小",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r2c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "定积分",
+                    "style": {
+                      "bold": true,
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r2c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "可正可负，包含方向",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "text",
+              "id": "text_eNmg9ng0",
+              "left": 580,
+              "top": 240,
+              "width": 360,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #1a3a6b;\">净变化量 =</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1a3a6b"
+            },
+            {
+              "type": "latex",
+              "id": "latex_ApPSPbPo",
+              "left": 580,
+              "top": 290,
+              "width": 360,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\int_{a}^{b} f(t) \\, dt",
+              "color": "#222222",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.511em;vertical-align:-0.9119em;\"></span><span class=\"mop\"><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.599em;\"><span style=\"top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span></span></span></span><span style=\"top:-3.8129em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">b</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9119em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">t</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">t</span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_T4fx6fJY",
+              "left": 580,
+              "top": 360,
+              "width": 360,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #4a6fa5;\">（f(t)为变化率）</p><p style=\"font-size: 18px; color: #333333;\">净变化量等于变化率曲线下的有符号面积。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#f0f4f8"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_tM6y77Ns",
+          "type": "spotlight",
+          "elementId": "text_4gt4Vk0K"
+        },
+        {
+          "id": "action_SFYcm_vz",
+          "type": "speech",
+          "text": "本场景聚焦“定积分作为累积”。同学们，刚才我们通过无限切分的‘乐高积木’实验，直观感受了小矩形面积逼近曲线下面积的过程。那么，这个面积在现实世界里到底意味着什么？今天这节课，我们就从纯几何的视角，转向物理意义：积分，实质上是变化率随时间的累积总量。"
+        },
+        {
+          "id": "action_XjGnznuj",
+          "type": "spotlight",
+          "elementId": "text_HGW9h2hq"
+        },
+        {
+          "id": "action_wYAJMBbe",
+          "type": "speech",
+          "text": "我们这一页的核心目标，就是将大家熟悉的‘速度-时间图像’下的面积，重新解读为‘位移的累积’。如果这张图代表一辆车的速度随时间的变化，那么曲线下方覆盖的区域，就和车辆的位移有着直接的关系。",
+          "audioRef": "audio/tts_s7_action_wYAJMBbe.mp3"
+        },
+        {
+          "id": "action_Idwb5J0r",
+          "type": "spotlight",
+          "elementId": "text_N8ATATIK"
+        },
+        {
+          "id": "action_Xh_xMFjO",
+          "type": "speech",
+          "text": "这里有一个非常重要的误解需要修复。我们平时谈论的‘面积’，通常是一个恒为正值的地理概念。但在微积分中，定积分的值是可以为正、为负或为零的，这完全取决于被积函数的方向。比如在速度曲线中，时间轴下方的面积，实际上就代表了反向运动带来的位移抵消。",
+          "audioRef": "audio/tts_s7_action_Xh_xMFjO.mp3"
+        },
+        {
+          "id": "action_uUBsZ1rL",
+          "type": "spotlight",
+          "elementId": "text_eNmg9ng0"
+        },
+        {
+          "id": "action_Oc0m7S4l",
+          "type": "speech",
+          "text": "为了准确描述这种抵消后的最终结果，我们引入‘净变化量’的概念。净变化量不关心你总共走了多少路程，只关心你最终相对于起点的位置变化。用数学语言表达，它就是这样一个定积分。",
+          "audioRef": "audio/tts_s7_action_Oc0m7S4l.mp3"
+        },
+        {
+          "id": "action_3zJcgnq8",
+          "type": "spotlight",
+          "elementId": "latex_ApPSPbPo"
+        },
+        {
+          "id": "action_jdOKrPq4",
+          "type": "speech",
+          "text": "看这个公式，从a到b对变化率函数f(t)积分，其结果就等于这段时间内的净变化量。大家可以把它想象成一个蓄水池，f(t)如果是水流进流出的瞬时速率，那么积分结果就是一段时间后，池子里水的净增加量。",
+          "audioRef": "audio/tts_s7_action_jdOKrPq4.mp3"
+        },
+        {
+          "id": "action_9gOVc74V",
+          "type": "spotlight",
+          "elementId": "table_nJX3AwAr"
+        },
+        {
+          "id": "action_yk45bO3P",
+          "type": "speech",
+          "text": "我们看一下这个表格里的实际数据，它清晰地对比了正向面积、反向面积以及最终的净面积，也就是位移。无论正向还是反向，每一小段的微元累积最终都会被考虑进来。请务必记住，定积分反映的是‘净变化’，而非绝对路径的总和。",
+          "audioRef": "audio/tts_s7_action_yk45bO3P.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "定积分作为累积：拖动实验",
+      "order": 8,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "definite_integral_as_accumulation",
+          "description": "通过水箱注水与放水过程，直观理解定积分作为累积量。流量函数为正时水位上升（x轴上方积分），为负时水位下降（x轴下方积分）。",
+          "variables": [
+            {
+              "name": "amplitude",
+              "label": "振幅 A",
+              "min": 0.1,
+              "max": 5,
+              "default": 2,
+              "unit": "",
+              "step": 0.1
+            },
+            {
+              "name": "frequency",
+              "label": "频率 ω",
+              "min": 0.2,
+              "max": 4,
+              "default": 1,
+              "unit": "rad/s",
+              "step": 0.1
+            },
+            {
+              "name": "offset",
+              "label": "偏移 B",
+              "min": -3,
+              "max": 3,
+              "default": 0.5,
+              "unit": "L/s",
+              "step": 0.1
+            },
+            {
+              "name": "sim_speed",
+              "label": "模拟速度",
+              "min": 0.2,
+              "max": 3,
+              "default": 1,
+              "unit": "x",
+              "step": 0.1
+            }
+          ],
+          "presets": [
+            {
+              "name": "正弦波动",
+              "description": "流量正负交替，水位上下波动",
+              "variables": {
+                "amplitude": 2,
+                "frequency": 1,
+                "offset": 0,
+                "sim_speed": 1
+              }
+            },
+            {
+              "name": "净流入",
+              "description": "偏移为正，总体水位持续上升",
+              "variables": {
+                "amplitude": 1.5,
+                "frequency": 1.5,
+                "offset": 2,
+                "sim_speed": 1
+              }
+            },
+            {
+              "name": "净流出",
+              "description": "偏移为负，总体水位持续下降",
+              "variables": {
+                "amplitude": 1.5,
+                "frequency": 1.5,
+                "offset": -2,
+                "sim_speed": 1
+              }
+            },
+            {
+              "name": "缓慢高频",
+              "description": "小幅高频变化，观察累积效应",
+              "variables": {
+                "amplitude": 0.5,
+                "frequency": 3,
+                "offset": 0,
+                "sim_speed": 0.5
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/08_定积分作为累积：拖动实验.html",
+        "htmlBytes": 1011874
+      },
+      "actions": [
+        {
+          "id": "action_-tpUnIEP",
+          "type": "speech",
+          "text": "本场景通过交互探索“定积分作为累积：拖动实验”。从刚才的数据对比中，我们确认了‘净变化’的核心地位。现在，我们把这个概念放进一个更直观的水箱模型里，来感受定积分作为‘累积’的实时过程。"
+        },
+        {
+          "id": "action_zHXeDvtr",
+          "type": "widget_highlight",
+          "target": "#amplitude-slider",
+          "content": "调节流量函数的振幅"
+        },
+        {
+          "id": "action_Dhi072o3",
+          "type": "speech",
+          "text": "请看这个水箱，它的水位高低就代表了累积的‘总量’。右边的流量曲线代表了注水和放水的实时速率。我们先保持默认的正弦波动，请点击‘开始模拟’。",
+          "audioRef": "audio/tts_s8_action_Dhi072o3.mp3"
+        },
+        {
+          "id": "action_Q0XpgBC_",
+          "type": "widget_setState",
+          "state": {
+            "amplitude": 2,
+            "frequency": 1,
+            "offset": 0.5,
+            "sim_speed": 1
+          },
+          "content": "使用‘正弦波动’预设并启用偏移，让水位有净增长"
+        },
+        {
+          "id": "action_kGU_FjiM",
+          "type": "speech",
+          "text": "你发现了吗？当流量曲线在x轴上方时，水在流入，水位计上升，代表正在进行‘正向’的面积累积。一旦曲线下穿到x轴下方，水开始流出，累积总量就开始减少。",
+          "audioRef": "audio/tts_s8_action_kGU_FjiM.mp3"
+        },
+        {
+          "id": "action_QoQH9f-z",
+          "type": "widget_annotation",
+          "target": "#accumulation-display",
+          "content": "注意，这个累积计数器在曲线为负时会减少"
+        },
+        {
+          "id": "action_3B2mrj9d",
+          "type": "speech",
+          "text": "现在，请你亲自拖动‘偏移 B’滑块，把它调成负数，让流量曲线中心下移。仔细观察，当长时间的负向流量超过正向流量时，水位是不是会开始持续下降？这正是定积分可以为负的直接体现。",
+          "audioRef": "audio/tts_s8_action_3B2mrj9d.mp3"
+        },
+        {
+          "id": "action_gw6RiCZL",
+          "type": "widget_setState",
+          "state": {
+            "amplitude": 1.5,
+            "frequency": 1.5,
+            "offset": -2,
+            "sim_speed": 1
+          },
+          "content": "切换到‘净流出’预设，展示水位持续下降"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "定积分作为累积：关系图",
+      "order": 9,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "n_core",
+              "label": "定积分核心\n(Definite Integral)",
+              "icon": "🧱",
+              "x": 400,
+              "y": 250,
+              "details": "核心运算：将无限小的量累加。类比：像拼乐高积木（黎曼和 Riemann Sum），把函数曲线下的区域切成无数个微小矩形，求和即得总面积。它是连接变化率与总量的桥梁。"
+            },
+            {
+              "id": "n_vel",
+              "label": "速度\n(Velocity)",
+              "icon": "🚗",
+              "x": 160,
+              "y": 120,
+              "details": "瞬时变化率。描述物体在某一时刻的运动快慢与方向。"
+            },
+            {
+              "id": "n_dis",
+              "label": "位移\n(Displacement)",
+              "icon": "📏",
+              "x": 310,
+              "y": 120,
+              "details": "速度的积分累积结果。速度-时间曲线下的面积，即为这段时间内的总位移。"
+            },
+            {
+              "id": "n_pwr",
+              "label": "功率\n(Power)",
+              "icon": "⚡",
+              "x": 520,
+              "y": 120,
+              "details": "单位时间内做功的速率。描述能量转换的快慢。"
+            },
+            {
+              "id": "n_ene",
+              "label": "能量\n(Energy)",
+              "icon": "🔋",
+              "x": 670,
+              "y": 120,
+              "details": "功率的积分累积结果。功率-时间曲线下的面积，即为这段时间内消耗或产生的总能量。"
+            },
+            {
+              "id": "n_flw",
+              "label": "流量\n(Flow Rate)",
+              "icon": "💧",
+              "x": 160,
+              "y": 420,
+              "details": "单位时间流过的体积。类比：水管中水的流速。学生选择此场景时，系统自动关联体积。"
+            },
+            {
+              "id": "n_vol",
+              "label": "体积\n(Volume)",
+              "icon": "📦",
+              "x": 310,
+              "y": 420,
+              "details": "流量的积分累积结果。流量-时间曲线下的面积，即为这段时间内流过的总体积。"
+            },
+            {
+              "id": "n_neg",
+              "label": "负向削减\n(Negative Reduction)",
+              "icon": "📉",
+              "x": 400,
+              "y": 480,
+              "details": "当函数值位于x轴下方时，微元面积为负。定积分会执行‘代数和’运算，自动减去这部分累积量，体现原函数(Antiderivative)的净变化特性。"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n_core",
+              "to": "n_vel",
+              "label": "映射"
+            },
+            {
+              "from": "n_vel",
+              "to": "n_dis",
+              "label": "累积→"
+            },
+            {
+              "from": "n_core",
+              "to": "n_pwr",
+              "label": "映射"
+            },
+            {
+              "from": "n_pwr",
+              "to": "n_ene",
+              "label": "累积→"
+            },
+            {
+              "from": "n_core",
+              "to": "n_flw",
+              "label": "映射"
+            },
+            {
+              "from": "n_flw",
+              "to": "n_vol",
+              "label": "累积→"
+            },
+            {
+              "from": "n_core",
+              "to": "n_neg",
+              "label": "反向/负值"
+            }
+          ],
+          "revealOrder": [
+            "n_core",
+            "n_vel",
+            "n_dis",
+            "n_pwr",
+            "n_ene",
+            "n_flw",
+            "n_vol",
+            "n_neg"
+          ]
+        },
+        "htmlPath": "interactive/09_定积分作为累积：关系图.html",
+        "htmlBytes": 757808
+      },
+      "actions": [
+        {
+          "id": "action_AetubwyN",
+          "type": "speech",
+          "text": "本场景通过交互探索“定积分作为累积：关系图”。直观地感受了正值和负值区域的累积效果。现在，让我们切换到一张关系图，把这些物理情境和积分运算系统地对应起来。"
+        },
+        {
+          "id": "action_XtfKwWAt",
+          "type": "widget_reveal",
+          "target": "#n_core",
+          "content": "首先看清楚核心运算的位置。"
+        },
+        {
+          "id": "action_XOiasFYg",
+          "type": "speech",
+          "text": "请看这张图的中心，这里是我们的核心——定积分。你可以把它想象成拼乐高积木，也就是黎曼和，把曲线下无限多的小矩形面积加起来。",
+          "audioRef": "audio/tts_s9_action_XOiasFYg.mp3"
+        },
+        {
+          "id": "action_m-brm_Et",
+          "type": "widget_reveal",
+          "target": "#n_vel",
+          "content": "现在，展示第一组映射：速度。"
+        },
+        {
+          "id": "action_bzxUvhJe",
+          "type": "widget_reveal",
+          "target": "#n_dis",
+          "content": "速度的累积结果是位移。"
+        },
+        {
+          "id": "action_BpAfmAjY",
+          "type": "speech",
+          "text": "比如速度，我们对它做积分，累积的结果就是位移。这正是我们刚刚一直在讨论的。",
+          "audioRef": "audio/tts_s9_action_BpAfmAjY.mp3"
+        },
+        {
+          "id": "action_-Dq9ujED",
+          "type": "widget_reveal",
+          "target": "#n_flw",
+          "content": "再看下一组映射：流量。请注意它会自动关联到什么。"
+        },
+        {
+          "id": "action_bQPt7EeK",
+          "type": "widget_reveal",
+          "target": "#n_vol",
+          "content": "流量的累积结果是体积。"
+        },
+        {
+          "id": "action_DUwNqeTW",
+          "type": "speech",
+          "text": "再看另一个生活化的例子——流量，就像水管里的流速。系统自动帮我们关联到了它的积分累积结果，也就是体积。",
+          "audioRef": "audio/tts_s9_action_DUwNqeTW.mp3"
+        },
+        {
+          "id": "action_1tnvqOWx",
+          "type": "widget_reveal",
+          "target": "#n_neg",
+          "content": "最后，请特别留意这张图里最与众不同的节点。"
+        },
+        {
+          "id": "action_Z3ghk-Ue",
+          "type": "speech",
+          "text": "最后，请留意图下方的这个特殊节点——'负向削减'。它明确地告诉我们，当函数值在x轴下方时，定积分会自动执行'减法'，这正是原函数产生净变化的根本原因。",
+          "audioRef": "audio/tts_s9_action_Z3ghk-Ue.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "定积分作为累积：误解修复挑战",
+      "order": 10,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "action",
+          "title": "定积分赛车 - 累积的奥秘",
+          "description": "控制小车根据速度变化到达目标位置，理解定积分作为累积的含义，特别是负面积代表反向位移",
+          "gameConfig": {
+            "controls": [
+              "forward_button",
+              "brake_button",
+              "reverse_button"
+            ],
+            "levels": [
+              {
+                "id": 1,
+                "target": 8,
+                "timeLimit": 10,
+                "difficulty": "easy",
+                "hint": "只需要一直前进就能到达目标"
+              },
+              {
+                "id": 2,
+                "target": -5,
+                "timeLimit": 10,
+                "difficulty": "medium",
+                "hint": "目标是负数！需要倒车（负速度）才能到达"
+              },
+              {
+                "id": 3,
+                "target": 3,
+                "timeLimit": 12,
+                "difficulty": "medium",
+                "hint": "先前进过头再退回来？试试不同的策略"
+              },
+              {
+                "id": 4,
+                "target": -2,
+                "timeLimit": 15,
+                "difficulty": "hard",
+                "hint": "负数目标 + 更多时间 = 需要精细控制"
+              },
+              {
+                "id": 5,
+                "target": 0,
+                "timeLimit": 10,
+                "difficulty": "hard",
+                "hint": "最终回到原点！前进和后退的位移要抵消"
+              }
+            ]
+          },
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5,
+            "errorTolerance": 1
+          }
+        },
+        "htmlPath": "interactive/10_定积分作为累积：误解修复挑战.html",
+        "htmlBytes": 783043
+      },
+      "actions": [
+        {
+          "id": "action_Mw4oPkRL",
+          "type": "speech",
+          "text": "本场景通过交互探索“定积分作为累积：误解修复挑战”。当函数值掉到x轴下方时，累积会'负向削减'。现在让我们把这个概念变成一个真实的挑战——驾驶这辆定积分赛车。"
+        },
+        {
+          "id": "action_Y0HTLjzy",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始，进入第一关"
+        },
+        {
+          "id": "action_JiOR16PH",
+          "type": "speech",
+          "text": "注意看每一关的v-t图。如果速度线一直在t轴上方，只要前进就好；但如果速度变成了负数——这意味着你需要挂倒挡。倒车产生的位移是负的，会抵消之前前进的位移。",
+          "audioRef": "audio/tts_s10_action_JiOR16PH.mp3"
+        },
+        {
+          "id": "action_otnaRgfb",
+          "type": "widget_highlight",
+          "target": "#level-2",
+          "content": "第二关的目标是-5，这要求你必须倒车"
+        },
+        {
+          "id": "action_dRFjRg4p",
+          "type": "speech",
+          "text": "大家在之前的拖动实验中就问过：速度变负的时候，累积是不是该减少？这个挑战正好回答他的问题。别只盯着路程，要时刻想着你的'净位移'——也就是定积分的值。"
+        },
+        {
+          "id": "action_Ks5PgWsc",
+          "type": "widget_highlight",
+          "target": "#level-5",
+          "content": "最后一关要回到原点，前进和后退的位移必须完全抵消"
+        },
+        {
+          "id": "action_KbEdzB8P",
+          "type": "speech",
+          "text": "特别挑战第五关——目标位置是0。想象一下，你先踩油门再踩刹车，最后倒回来，速度图上的正面积和负面积恰好相等，定积分才等于零。这就是累积的奥秘。现在，试试看你能不能修复'负面积也当正累加'的直觉吧。",
+          "audioRef": "audio/tts_s10_action_KbEdzB8P.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "定积分作为累积：空间视角",
+      "order": 11,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "定积分作为累积的空间视角演示。通过沿x轴扫描平面，观察截面面积A(x)如何累积形成立体体积，直观理解定积分的几何意义。",
+          "objects": [
+            {
+              "id": "scanning_plane",
+              "type": "scanning_plane",
+              "material": {
+                "type": "phong",
+                "color": "#FBBF24",
+                "emissive": "#FBBF24",
+                "opacity": 0.4
+              },
+              "description": "沿x轴移动的扫描平面，截面为圆形"
+            },
+            {
+              "id": "accumulated_solid",
+              "type": "solid",
+              "material": {
+                "type": "phong",
+                "color": "#6366F1"
+              },
+              "description": "由扫描累积形成的实体"
+            },
+            {
+              "id": "full_solid",
+              "type": "solid_outline",
+              "material": {
+                "type": "phong",
+                "color": "#6366F1",
+                "opacity": 0.25
+              },
+              "description": "完整实体轮廓"
+            },
+            {
+              "id": "area_curve",
+              "type": "line",
+              "material": {
+                "type": "basic",
+                "color": "#22D3EE"
+              },
+              "description": "截面面积函数 A(x) 的二维曲线图"
+            },
+            {
+              "id": "riemann_slices",
+              "type": "slices",
+              "material": {
+                "type": "phong",
+                "color": "#818CF8",
+                "opacity": 0.6
+              },
+              "description": "黎曼和切片，展示体积的近似累积"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "slider",
+              "param": "sweepPosition",
+              "min": 0,
+              "max": 4,
+              "default": 0,
+              "label": "扫描位置 (x轴)"
+            },
+            {
+              "type": "slider",
+              "param": "speed",
+              "min": 0,
+              "max": 3,
+              "default": 1,
+              "label": "动画速度"
+            },
+            {
+              "type": "button",
+              "action": "playPause",
+              "label": "播放/暂停"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            },
+            {
+              "type": "button",
+              "action": "transparencyToggle",
+              "label": "透视切换"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            }
+          ],
+          "presets": [
+            {
+              "name": "开始扫描",
+              "state": {
+                "sweepPosition": 0,
+                "cameraPosition": [
+                  6,
+                  5,
+                  8
+                ],
+                "cameraTarget": [
+                  1.5,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "扫描至中点",
+              "state": {
+                "sweepPosition": 2,
+                "cameraPosition": [
+                  6,
+                  5,
+                  8
+                ],
+                "cameraTarget": [
+                  1.5,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "完成扫描",
+              "state": {
+                "sweepPosition": 4,
+                "cameraPosition": [
+                  6,
+                  5,
+                  8
+                ],
+                "cameraTarget": [
+                  2,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "俯视视角",
+              "state": {
+                "sweepPosition": 4,
+                "cameraPosition": [
+                  0,
+                  12,
+                  2
+                ],
+                "cameraTarget": [
+                  2,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧视视角",
+              "state": {
+                "sweepPosition": 2,
+                "cameraPosition": [
+                  0,
+                  2,
+                  10
+                ],
+                "cameraTarget": [
+                  2,
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/11_定积分作为累积：空间视角.html",
+        "htmlBytes": 2514871
+      },
+      "actions": [
+        {
+          "id": "action_LTbgFXKS",
+          "type": "speech",
+          "text": "本场景通过交互探索“定积分作为累积：空间视角”。速度图上的正负面积会相互抵消，定积分最终表示的是净累积。现在，让我们从二维的面积走向三维的立体，看一看累积在空间中是如何发生的。"
+        },
+        {
+          "id": "action_HIa5nqiK",
+          "type": "widget_setState",
+          "state": {
+            "sweepPosition": 0,
+            "cameraPosition": [
+              6,
+              5,
+              8
+            ],
+            "cameraTarget": [
+              1.5,
+              0,
+              0
+            ]
+          },
+          "content": "重置到扫描起点，展示初始状态。"
+        },
+        {
+          "id": "action_IKJN8kFq",
+          "type": "speech",
+          "text": "在这个演示里，淡紫色的轮廓是一个实体的完整形状。它是由无数个像这样的淡黄色圆形截面，沿着 x 轴方向一层层累积起来的。",
+          "audioRef": "audio/tts_s11_action_IKJN8kFq.mp3"
+        },
+        {
+          "id": "action_U1--br98",
+          "type": "widget_highlight",
+          "target": "#sweep-slider",
+          "content": "拖动这个滑块，平移扫描平面。"
+        },
+        {
+          "id": "action_iXFHOGBw",
+          "type": "speech",
+          "text": "请试着慢慢拖动“扫描位置”的滑块。你会发现，蓝色的扫描平面每经过一个位置，那里的淡黄色截面就被“收集”进紫色的累积实体内。这就是定积分在三维空间中的直观含义：截面面积沿着某个方向做连续累加，最终形成一个立体的体积。",
+          "audioRef": "audio/tts_s11_action_iXFHOGBw.mp3"
+        },
+        {
+          "id": "action_KemoJtMC",
+          "type": "widget_setState",
+          "state": {
+            "sweepPosition": 2,
+            "cameraPosition": [
+              0,
+              2,
+              10
+            ],
+            "cameraTarget": [
+              2,
+              0,
+              0
+            ]
+          },
+          "content": "切换到侧视视角，展示扫描进行到一半时截面与累积实体的关系。"
+        },
+        {
+          "id": "action_o51NWLkk",
+          "type": "speech",
+          "text": "我们切换到侧视角度。请注意右边这条青色的线条，它就是截面面积随 x 变化的函数 A(x) 的图像。而紫色实体不断增长的部分，恰好对应着 A(x) 图像下从左到右累积起来的面积。这正是“以面积为底，累积成高”的空间诠释，把积分从平面面积的计算，抽象为高维度的累积工具。",
+          "audioRef": "audio/tts_s11_action_o51NWLkk.mp3"
+        },
+        {
+          "id": "action_NMR5HHWN",
+          "type": "widget_annotation",
+          "target": "#area_curve",
+          "content": "这是截面面积函数 A(x) 的图像，其下的面积恰好等于立体的体积。"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在使用“拖动实验”计算曲线下面积时，我们将区间分成了N个矩形。如果我们将N从4增加到100，以下哪项最准确地描述了带来的影响？",
+            "options": [
+              {
+                "value": "A",
+                "label": "计算出的面积会变大，因为矩形数量变多了"
+              },
+              {
+                "value": "B",
+                "label": "计算出的面积会变小，因为每个矩形都变窄了"
+              },
+              {
+                "value": "C",
+                "label": "计算出的面积通常会更接近真实的面积，因为误差减小了"
+              },
+              {
+                "value": "D",
+                "label": "计算出的面积没有变化，因为曲线下的总面积是固定的"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "用矩形逼近曲线下的面积时，误差来源于矩形顶部与曲线之间的空隙。当N增大，矩形宽度变小，这些空隙的总面积减小，因此近似值会更精确。N的增大会让近似值变大或变小，取决于曲线是递增还是递减以及我们取矩形的高度（左端点、右端点或中点），所以A和B不一定正确。D是错误的，因为近似值的精度确实会改变。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "一辆小车沿着直线行驶。它的速度v随时间t变化的函数为 v(t) = 2t - 4 （米/秒）。我们想计算小车从 t=0 到 t=2 秒的位移。这个位移可以用定积分来表示。关于这个积分，以下哪些说法是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "计算结果将会是一个负数"
+              },
+              {
+                "value": "B",
+                "label": "位移的绝对值等于小车在这段时间内行驶的总路程"
+              },
+              {
+                "value": "C",
+                "label": "负数结果表示小车在这段时间内的最终位置比起始位置更靠后"
+              },
+              {
+                "value": "D",
+                "label": "我们无法计算，因为速度不能是负数"
+              }
+            ],
+            "answer": [
+              "A",
+              "C"
+            ],
+            "analysis": "在 t=0 到 2 秒内，v(t)的值从-4变化到0，速度始终为负或零，表示小车在向负方向运动。因此，积分（位移）结果为负，表示最终位置在起始位置的负方向。位移是矢量，有正负；总路程是标量，是速度绝对值的积分，在此例中与位移的绝对值相等（因为速度方向未变），但B选项表述为普遍情况，严格来说不正确。D错误，负速度在物理中很常见，表示反方向运动。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "一个水箱在漏水。我们记录下了水的流出率（升/分钟）随时间的变化。通过计算流出率曲线在某个时间段下的面积，我们得到了水箱在这段时间内流失的总水量。这个计算过程最符合以下哪个概念？",
+            "options": [
+              {
+                "value": "A",
+                "label": "微分求导"
+              },
+              {
+                "value": "B",
+                "label": "定积分（Riemann Sum/黎曼和）"
+              },
+              {
+                "value": "C",
+                "label": "函数求极限"
+              },
+              {
+                "value": "D",
+                "label": "求解方程"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "变化率曲线下的面积表示在该时间段内积累的总变化量。将时间轴切分成无数小段，每一小段的流失水量约等于“流出率乘以时间宽度”，这与“矩形面积”对应，然后将所有小段的水量累加起来，这个过程就是定积分（黎曼和）的思想。微分求导是相反的操作，从总量求变化率。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "想象你正在用乐高积木搭建一个形状。如果“搭建速度”表示每小时堆叠的积木层数，那么我们如何求出从开始搭建到第5个小时结束时，总共堆叠了多少层积木？",
+            "options": [
+              {
+                "value": "A",
+                "label": "求出第5个小时那一刻的“搭建速度”值"
+              },
+              {
+                "value": "B",
+                "label": "将每个小时的“搭建速度”相加"
+              },
+              {
+                "value": "C",
+                "label": "计算“搭建速度”与时间的函数图像在0到5小时之间的面积"
+              },
+              {
+                "value": "D",
+                "label": "用5乘以第5个小时的“搭建速度”"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "这是一个从变化率求总量的典型问题。“搭建速度”是变化率，总量（总层数）是该变化率在时间上的积累。积分正是处理这种积累的工具，它将每个瞬间的微小积累量（速度乘以时间微元）累加起来，在图像上就表现为曲线下的面积。选项B是离散的近似，不准确。A和D都与总量无关。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "（开放题）你已知一个函数 f(x) 的导数（变化率）是 f'(x) = 2x。也就是说，在任何点x，f(x) 的变化速度都是 2x。如果不看任何公式，凭直觉猜想一下，函数 f(x) 可能是什么样子？请描述你的推理过程或想到的类比。",
+            "commentPrompt": "评分标准：（1）能清楚地表达“反推”或“逆过程”的思想，例如：已知速度变化规律求路程（40%）；（2）能给出一个合理的猜想，比如想到x²，并解释为什么（比如因为x每增加一点，x²的增加量大约是2x）（40%）；（3）能提到猜想可能不唯一，比如后面可以加一个常数，因为常数的变化率为零（20%）。",
+            "analysis": "这道题是为了探测学生对原函数（Antiderivative/反导数）概念的直觉。典型的正解思路是：联想物理中的匀速或匀加速运动。如果v = 2t，则位移s = t² + C。因为对t²求导得2t，所以反推原函数可能是 f(x) = x²。更进一步的想法是认识到任何常数C的导数为0，所以原函数应是一族函数 f(x) = x² + C。这为下一组知识点“原函数与不定积分”提供了绝佳的认知桥梁。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_EK6RUiLY",
+          "type": "speech",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。好了，刚才我们从空间视角理解了积分的累积意义。本场景中，我们做一个快速的小测验，看看大家对这些核心概念掌握得怎么样。这不仅仅是一个测试，也是为我们下一组知识——原函数和不定积分——做个准备，请大家认真思考每一道题。"
+        },
+        {
+          "id": "action_ksi6D_UE",
+          "type": "speech",
+          "text": "我们先来看第一题。它回到了我们之前反复操作的‘拖动实验’。如果把用来逼近面积的矩形数量N从4一下子增加到100，会带来什么影响呢？大家回想一下我们拖动滑块时的感觉。",
+          "audioRef": "audio/tts_s12_action_ksi6D_UE.mp3"
+        },
+        {
+          "id": "action_2J18yss1",
+          "type": "speech",
+          "text": "这道题的关键在于理解‘逼近’和‘误差’。我们曾经提到，用有限个矩形求和，也就是“黎曼和”（Riemann Sum），算出来的面积是一个近似值。当N变大时，那些矩形留下的锯齿状空缺会越来越小，计算值自然会越来越接近曲线下的真实面积。所以，答案是选项C。",
+          "audioRef": "audio/tts_s12_action_2J18yss1.mp3"
+        },
+        {
+          "id": "action_Pk6fEM4W",
+          "type": "speech",
+          "text": "再看第二道多选题，这道题非常巧妙，它把积分引向了速度与位移的情境。一辆小车的速度 v(t) = 2t - 4。在 t=0 到 t=2 秒这段时间，速度可是会变成负数的。那么，积分算出来的位移是负数，这到底意味着什么呢？大家仔细回想我们学过的‘累积’概念，不要只简单地套公式。",
+          "audioRef": "audio/tts_s12_action_Pk6fEM4W.mp3"
+        },
+        {
+          "id": "action_QEzc_6aH",
+          "type": "speech",
+          "text": "这道题的正确答案是A和C。因为在这段时间内，速度为负，累积起来的结果自然是负数，这代表最终位置相比起点向后退了。这里尤其要注意选项B，它是一个非常经典的误解。位移的绝对值是始末位置的直线距离，但总路程需要把速度为负的那段距离取绝对值后再累加。在速度有正有负时，两者是不相等的。",
+          "audioRef": "audio/tts_s12_action_QEzc_6aH.mp3"
+        },
+        {
+          "id": "action_6BuJVC-E",
+          "type": "discussion",
+          "topic": "你发现导数 f'(x)=2x 后，会凭直觉如何猜想它原来的函数 f(x) 的样子？这个‘猜’的过程，跟你之前学过的哪种运算感觉正好相反？",
+          "prompt": "请小宇和阿静先分享一下你们的直觉。想一想，如果已知变化率，我们是不是在给之前 ‘速度→位移’ 的过程找反义词呢？",
+          "agentIndex": 1
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "原函数和不定积分",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "JP0PBnTf-JaDTY8kTnQDW",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_30k2PyjG",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1B3A5C;\">原函数和不定积分</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "text",
+              "id": "text_-FxsEzcA",
+              "left": 60,
+              "top": 126,
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #555555;\">积分——导数的逆运算</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#555555"
+            },
+            {
+              "type": "shape",
+              "id": "shape_YYHFIWcV",
+              "left": 60,
+              "top": 165,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1B3A5C"
+            },
+            {
+              "type": "shape",
+              "id": "shape_lC-pqNLn",
+              "left": 60,
+              "top": 180,
+              "width": 120,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F0FE"
+            },
+            {
+              "type": "text",
+              "id": "text_PDzuvKXj",
+              "left": 60,
+              "top": 185,
+              "width": 120,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1B3A5C;\">已知导数</p><p style=\"font-size: 16px; text-align: center; color: #1B3A5C;\">f(x) = 2x</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "line",
+              "id": "line_RZK-TlJy",
+              "left": 180,
+              "top": 220,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                30,
+                0
+              ],
+              "style": "solid",
+              "color": "#1B3A5C",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_1MYvawOA",
+              "left": 210,
+              "top": 180,
+              "width": 140,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F0FE"
+            },
+            {
+              "type": "text",
+              "id": "text_VK6RaTn9",
+              "left": 210,
+              "top": 185,
+              "width": 140,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1B3A5C;\">寻找原函数 F(x)</p><p style=\"font-size: 16px; text-align: center; color: #1B3A5C;\">使得 F'(x) = f(x)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "line",
+              "id": "line_qMGTL6RV",
+              "left": 350,
+              "top": 220,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                30,
+                0
+              ],
+              "style": "solid",
+              "color": "#1B3A5C",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_4z59bIHA",
+              "left": 380,
+              "top": 180,
+              "width": 120,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F0FE"
+            },
+            {
+              "type": "text",
+              "id": "text_bDYMqE5n",
+              "left": 380,
+              "top": 185,
+              "width": 120,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1B3A5C;\">得到</p><p style=\"font-size: 16px; text-align: center; color: #1B3A5C;\">F(x) = x² + C</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1B3A5C"
+            },
+            {
+              "type": "shape",
+              "id": "shape_rbc2WtpH",
+              "left": 60,
+              "top": 290,
+              "width": 440,
+              "height": 220,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F8F9FA"
+            },
+            {
+              "type": "text",
+              "id": "text_F51qL1B2",
+              "left": 80,
+              "top": 300,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>• 原函数（Antiderivative）：</b>如果 F'(x)=f(x)，则称 F 是 f 的一个原函数。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_tri_j0_J",
+              "left": 80,
+              "top": 370,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>• 原函数不唯一：</b>若 F 是原函数，则 F(x)+C 也是原函数。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_eHR6xo6M",
+              "left": 80,
+              "top": 440,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>• 常数 C 代表初始状态的未知偏移。</b></p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_N4ygrfFW",
+              "left": 540,
+              "top": 180,
+              "width": 400,
+              "height": 130,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFFFFF"
+            },
+            {
+              "type": "latex",
+              "id": "latex_h2jx0-2P",
+              "left": 560,
+              "top": 195,
+              "width": 360,
+              "height": 50,
+              "rotate": 0,
+              "latex": "\\int f(x)\\,dx = F(x) + C",
+              "color": "#1B3A5C",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.07153em;\">C</span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_sKL5eGoz",
+              "left": 560,
+              "top": 250,
+              "width": 360,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #555555;\">不定积分符号∫表示所有原函数的集合。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#555555"
+            },
+            {
+              "type": "shape",
+              "id": "shape_-NOQ3Y9I",
+              "left": 540,
+              "top": 330,
+              "width": 400,
+              "height": 180,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFF3E0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_7-ul-lhc",
+              "left": 560,
+              "top": 350,
+              "width": 20,
+              "height": 20,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0.5 0 L 1 1 L 0 1 Z",
+              "fixedRatio": true,
+              "fill": "#FF9800"
+            },
+            {
+              "type": "text",
+              "id": "text_AfC6kAgs",
+              "left": 590,
+              "top": 335,
+              "width": 330,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #D84315;\">常见误解：为什么必须加上 C？</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#D84315"
+            },
+            {
+              "type": "text",
+              "id": "text_GRWJ1WhT",
+              "left": 560,
+              "top": 390,
+              "width": 360,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\">导数丢失了常数信息（如 x²+1 和 x² 导数相同），所以求原函数时必须补偿回不确定的常数 C。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_jeJt71JA",
+          "type": "spotlight",
+          "elementId": "shape_YYHFIWcV"
+        },
+        {
+          "id": "action_xlBj3uwD",
+          "type": "speech",
+          "text": "本场景聚焦“原函数和不定积分”。我们对位移和路程的辨析，本质上都是在处理变化累积的结果。那如果我们不仅想知道累积了多少，更想反向追溯：这个变化过程，最初是从哪个函数开始的呢？这就是我们马上要探讨的——原函数与不定积分。"
+        },
+        {
+          "id": "action_Fu8LxFs9",
+          "type": "spotlight",
+          "elementId": "text_-FxsEzcA"
+        },
+        {
+          "id": "action_VAFIhAuS",
+          "type": "speech",
+          "text": "简单来说，积分就是导数的逆运算。就像乐高模型拆开，我们看到了零件之间的关系；现在我们要把这堆零件还原回去，找到它原本的样子。",
+          "audioRef": "audio/tts_s13_action_VAFIhAuS.mp3"
+        },
+        {
+          "id": "action_cavyzKQC",
+          "type": "spotlight",
+          "elementId": "text_PDzuvKXj"
+        },
+        {
+          "id": "action_v3icW-s_",
+          "type": "speech",
+          "text": "假设我们知道某条曲线的导数 f(x) 是 2x，那在求导之前，这个函数 F(x) 应该长什么样呢？",
+          "audioRef": "audio/tts_s13_action_v3icW-s_.mp3"
+        },
+        {
+          "id": "action_ElTK_fi5",
+          "type": "spotlight",
+          "elementId": "text_VK6RaTn9"
+        },
+        {
+          "id": "action_0KU806b9",
+          "type": "speech",
+          "text": "我们的任务，就是寻找一个函数 F(x)，使得它的导数 F'(x) 刚好等于已知的 f(x)。这就像知道了水流的速度，去反推水流的源头。",
+          "audioRef": "audio/tts_s13_action_0KU806b9.mp3"
+        },
+        {
+          "id": "action_fkHrfudl",
+          "type": "spotlight",
+          "elementId": "text_bDYMqE5n"
+        },
+        {
+          "id": "action_SHxZxAqG",
+          "type": "speech",
+          "text": "很明显，x平方的导数是2x，所以 x² 就是一个符合条件的原函数。但注意，仅仅 x² 这一个就够了吗？大家想一想，任何常数求导都是零，所以如果我们给 x² 加上一个任意常数 C，它的导数依然是 2x。于是，我们得到了一整个函数族：F(x) = x² + C。",
+          "audioRef": "audio/tts_s13_action_SHxZxAqG.mp3"
+        },
+        {
+          "id": "action_mrgKVQ_t",
+          "type": "spotlight",
+          "elementId": "text_F51qL1B2"
+        },
+        {
+          "id": "action_UI9AJRGm",
+          "type": "speech",
+          "text": "所以，原函数的严格定义是：如果 F'(x) 等于 f(x)，我们就称 F 是 f 的一个原函数。关键在这个“一个”上，因为原函数从来都不是唯一的。",
+          "audioRef": "audio/tts_s13_action_UI9AJRGm.mp3"
+        },
+        {
+          "id": "action_gYi-ycKl",
+          "type": "spotlight",
+          "elementId": "text_GRWJ1WhT"
+        },
+        {
+          "id": "action_13yXlSGh",
+          "type": "speech",
+          "text": "这正是很多同学容易困惑的地方：为什么求导之后，必须要把这个常数 C 找补回来呢？原因是，求导运算会“丢失”常数的信息。比如，x² 加 1 和 x² 加 100，它们的导数都是 2x。因为变化率只看曲线的“陡峭程度”，并不关心它整体在纵轴上是高还是低。这个常数 C，就代表了那个在求导过程中丢失的、无法确定的初始状态。我们补上它，才算是找回了变化的全貌。",
+          "audioRef": "audio/tts_s13_action_13yXlSGh.mp3"
+        },
+        {
+          "id": "action_grQOQFTX",
+          "type": "spotlight",
+          "elementId": "latex_h2jx0-2P"
+        },
+        {
+          "id": "action_WxFnFj-8",
+          "type": "speech",
+          "text": "为了简洁地表达这“一整套”原函数，我们引入了一个专门的符号：∫ f(x) dx。它读作 f 的不定积分，计算结果就是 F(x) + C。这个拉长的 S 号，就是积分符号，代表着所有原函数的集合。不定积分，不定，指的就是那个待定的常数 C。",
+          "audioRef": "audio/tts_s13_action_WxFnFj-8.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "原函数和不定积分：拖动实验",
+      "order": 14,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "antiderivative_indefinite_integral",
+          "description": "通过斜率场探索原函数与不定积分的关系，理解积分常数C的意义。拖动C滑块观察曲线平移，发现导数值不变。",
+          "variables": [
+            {
+              "name": "constant_C",
+              "label": "积分常数 C",
+              "min": -3,
+              "max": 3,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "slope_field_density",
+              "label": "斜率场密度",
+              "min": 4,
+              "max": 20,
+              "default": 10,
+              "unit": ""
+            },
+            {
+              "name": "derivative_at_point",
+              "label": "切线观察点 x",
+              "min": -2.5,
+              "max": 2.5,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "speed",
+              "label": "动画速度",
+              "min": 0.3,
+              "max": 3,
+              "default": 1,
+              "unit": "x"
+            }
+          ],
+          "presets": [
+            {
+              "name": "基础探索",
+              "variables": {
+                "constant_C": 0,
+                "slope_field_density": 10,
+                "derivative_at_point": 1,
+                "speed": 1
+              }
+            },
+            {
+              "name": "三角函数",
+              "variables": {
+                "constant_C": 0,
+                "slope_field_density": 12,
+                "derivative_at_point": 0.5,
+                "speed": 1
+              }
+            },
+            {
+              "name": "高密度场",
+              "variables": {
+                "constant_C": 0,
+                "slope_field_density": 18,
+                "derivative_at_point": 1,
+                "speed": 1.5
+              }
+            },
+            {
+              "name": "对比不同C",
+              "variables": {
+                "constant_C": 2,
+                "slope_field_density": 10,
+                "derivative_at_point": 1,
+                "speed": 1
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/14_原函数和不定积分：拖动实验.html",
+        "htmlBytes": 774117
+      },
+      "actions": [
+        {
+          "id": "action_4Cua31QU",
+          "type": "speech",
+          "text": "本场景通过交互探索“原函数和不定积分：拖动实验”。不定积分给出的是一族函数，关键就在于那个常数C。现在，我们就通过这个斜率场来直观地感受一下，C的变化到底意味着什么。"
+        },
+        {
+          "id": "action_7sX6E2IK",
+          "type": "widget_highlight",
+          "target": "#constant_C-slider",
+          "content": "拖动这个滑块，就能改变常数C的值。"
+        },
+        {
+          "id": "action_LXNtThLn",
+          "type": "speech",
+          "text": "请注意看，这个斜率场里，每一条小线段都代表函数在对应点的导数。现在，屏幕上这条红色的曲线，就是当C=0时，其中一个具体的原函数。",
+          "audioRef": "audio/tts_s14_action_LXNtThLn.mp3"
+        },
+        {
+          "id": "action_rPNCJWcX",
+          "type": "widget_setState",
+          "state": {
+            "constant_C": 2.5
+          },
+          "content": "我们把C的值调大，比如到2.5。"
+        },
+        {
+          "id": "action_MgY6DOUY",
+          "type": "speech",
+          "text": "很好，曲线向上平移了。它现在代表的是C=2.5时的原函数。那么，一个关键的问题来了：虽然曲线的位置变了，但它在同一点上的切线，方向变了吗？",
+          "audioRef": "audio/tts_s14_action_MgY6DOUY.mp3"
+        },
+        {
+          "id": "action_Gdsw0f0h",
+          "type": "widget_annotation",
+          "target": "#derivative_at_point-display",
+          "content": "盯住这个代表导数的数值，它有没有因为C的改变而发生变化？"
+        },
+        {
+          "id": "action_2hhQhXEd",
+          "type": "speech",
+          "text": "正如我们所想的，导数值是恒定不变的。C只是决定了这条函数曲线在坐标系中的垂直位置。正因如此，我们才需要在不定积分的结果里，严格地写上“+C”，用来代表所有位置不同、但变化趋势完全一致的函数家族。",
+          "audioRef": "audio/tts_s14_action_2hhQhXEd.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "原函数和不定积分：关系图",
+      "order": 15,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "原函数和不定积分：关系图",
+          "nodes": [
+            {
+              "id": "n_FxC",
+              "label": "F(x) + C",
+              "sublabel": "原函数（Antiderivative）",
+              "icon": "📦",
+              "x": 400,
+              "y": 110,
+              "w": 200,
+              "h": 72,
+              "details": "F(x) + C 是 f(x) 的<strong>原函数</strong>（Antiderivative）<br><br>• F(x) 是一个具体的函数（如 x²/2）<br>• <strong>C</strong> 是<strong>积分常数</strong>，代表无穷多个可能的原函数<br>• 所有的 F(x)+C 构成一个<strong>函数族</strong>",
+              "terms": "Antiderivative = 原函数 | Constant of Integration = 积分常数",
+              "analogy": "🧱 <strong>乐高积木类比：</strong>想象 F(x) 是一个乐高底座，C 是可以任意叠加的积木块。你可以往上叠任意高度的 C，所以有无穷多种组合！",
+              "formula": "∫ f(x) dx = F(x) + C",
+              "color": "#58a6ff"
+            },
+            {
+              "id": "n_C",
+              "label": "C",
+              "sublabel": "积分常数",
+              "icon": "🔑",
+              "x": 630,
+              "y": 110,
+              "w": 100,
+              "h": 56,
+              "details": "<strong>C 是积分常数</strong>（Constant of Integration）<br><br>• 可以取<strong>任意实数</strong>（…-2, -1, 0, 1, 2…）<br>• 求导时会<strong>消失</strong>（因为常数的导数为0）<br>• 因此<strong>信息会丢失</strong>！<br>• 这就是为什么不定积分必须写 +C",
+              "terms": "Constant = 常数 | Information Loss = 信息丢失",
+              "analogy": "🗑️ <strong>消失术类比：</strong>C 就像一个会隐身的朋友。求导时，所有常数都 '隐身' 变成 0 了。你再也无法确定原来的 C 是多少！",
+              "formula": "d/dx [C] = 0",
+              "color": "#bc8cff"
+            },
+            {
+              "id": "n_fx",
+              "label": "f(x)",
+              "sublabel": "函数（Function）",
+              "icon": "📈",
+              "x": 400,
+              "y": 280,
+              "w": 200,
+              "h": 72,
+              "details": "f(x) 是我们研究的<strong>核心函数</strong><br><br>• 它是 F(x) 的<strong>导数</strong>：f(x) = F'(x)<br>• 它也是 f'(x) 的<strong>原函数</strong><br>• 求导和积分以它为<strong>中心枢纽</strong>",
+              "terms": "Function = 函数 | Derivative = 导数",
+              "analogy": "🌊 <strong>流水类比：</strong>f(x) 就像河流的流速。F(x) 是流过的总水量（积分），f'(x) 是流速的变化率（加速度）。三者描述同一现象的不同角度！",
+              "formula": "f(x) = F'(x)",
+              "color": "#3fb950"
+            },
+            {
+              "id": "n_fxprime",
+              "label": "f'(x)",
+              "sublabel": "导数（Derivative）",
+              "icon": "🔍",
+              "x": 400,
+              "y": 450,
+              "w": 200,
+              "h": 72,
+              "details": "f'(x) 是 f(x) 的<strong>导数</strong>（Derivative）<br><br>• 描述了 f(x) 的<strong>变化率</strong><br>• 再次对 f'(x) 积分，只能得到 f(x)+C<br>• 每求导一次，就会<strong>丢失一层常数</strong>",
+              "terms": "Derivative = 导数 | Rate of Change = 变化率",
+              "analogy": "📷 <strong>相机类比：</strong>求导就像按快门拍照——你只拍下这一刻的瞬时状态，丢失了之前所有的历史（常数C）！",
+              "formula": "f'(x) = d/dx [f(x)]",
+              "color": "#d29922"
+            },
+            {
+              "id": "n_zero",
+              "label": "0",
+              "sublabel": "C 消失后",
+              "icon": "💨",
+              "x": 630,
+              "y": 280,
+              "w": 100,
+              "h": 56,
+              "details": "当对 F(x)+C 求导时，<strong>C 变成了 0</strong><br><br>• d/dx [F(x) + C] = F'(x) + 0 = f(x)<br>• 这就是<strong>信息丢失</strong>的具体位置！<br>• 一旦 C 变成 0，就无法恢复原来的值<br>• 因此反过来积分时，必须用 +C 表示<strong>不确定性</strong>",
+              "terms": "Information Loss = 信息丢失 | Irreversible = 不可逆的",
+              "analogy": "🔥 <strong>燃烧类比：</strong>把一张写有数字的纸烧掉（求导），纸变成了灰（0）。你无法从灰中恢复原来的数字——这就是为什么积分要加上 +C 来承认这种不确定性！",
+              "formula": "d/dx [F(x) + C] = f(x) + 0",
+              "color": "#f85149"
+            }
+          ],
+          "edges": [
+            {
+              "id": "e1",
+              "from": "n_FxC",
+              "to": "n_fx",
+              "label": "求导 ↓\nDifferentiation",
+              "color": "#f85149",
+              "details": "求导（Differentiation）：F(x)+C → f(x)\n\n⚠️ 注意：C 在求导时变为 0！\n这就是<strong>信息丢失</strong>的关键步骤。\n\n点击此路径观察 C 的变化 👆",
+              "marker": "arrow-orange"
+            },
+            {
+              "id": "e2",
+              "to": "n_FxC",
+              "from": "n_fx",
+              "label": "积分 ↑\nIntegration",
+              "color": "#58a6ff",
+              "details": "积分（Integration）：f(x) → F(x)+C\n\n✅ 积分时我们<strong>恢复</strong>了 F(x)，\n但必须加上<strong>+C</strong>来承认不确定性。\n\n因为不知道原始的 C 是多少！",
+              "marker": "arrow-accent"
+            },
+            {
+              "id": "e3",
+              "from": "n_fx",
+              "to": "n_fxprime",
+              "label": "求导 ↓\nDifferentiation",
+              "color": "#f85149",
+              "details": "再次求导：f(x) → f'(x)\n\n又一次信息丢失！\nf(x) 的常数项（如果有）也会消失。",
+              "marker": "arrow-orange"
+            },
+            {
+              "id": "e4",
+              "to": "n_fx",
+              "from": "n_fxprime",
+              "label": "积分 ↑\nIntegration",
+              "color": "#58a6ff",
+              "details": "再次积分：f'(x) → f(x)+C\n\n恢复 f(x)，但再次加上 +C。",
+              "marker": "arrow-accent"
+            },
+            {
+              "id": "e5",
+              "from": "n_C",
+              "to": "n_FxC",
+              "label": "+ 合并",
+              "color": "#bc8cff",
+              "details": "C 与 F(x) 合并，构成完整的原函数族 F(x)+C。\n\nC 代表无穷多个平移版本。",
+              "marker": "arrow-default"
+            },
+            {
+              "id": "e6",
+              "from": "n_C",
+              "to": "n_zero",
+              "label": "求导 →\nC → 0",
+              "color": "#f85149",
+              "details": "关键一步！\n\nC（常数）→ 求导 → 0\n\n常数的导数永远是 0。\n这就是<strong>为什么求导丢失信息</strong>！\n\n点击「求导」路径来观察这个变化。",
+              "marker": "arrow-orange"
+            },
+            {
+              "id": "e7",
+              "from": "n_zero",
+              "to": "n_fx",
+              "label": "→ f(x)",
+              "color": "#484f58",
+              "details": "F(x) + C 求导后：\nF(x) → f(x)\nC → 0\n\n结果只有 f(x)，\nC 的信息永久丢失！",
+              "marker": "arrow-default"
+            }
+          ],
+          "steps": [
+            {
+              "show": [
+                "n_FxC",
+                "n_C"
+              ],
+              "title": "第一步：认识原函数",
+              "hint": "观察 F(x)+C 和积分常数 C",
+              "panel": {
+                "icon": "📦",
+                "title": "原函数 F(x) + C",
+                "terms": "Antiderivative = 原函数 | Constant = 常数",
+                "desc": "最上方的节点是<strong>原函数</strong> F(x) + C。它是 f(x) 的 '反导数'。右侧的 C 是<strong>积分常数</strong>，它可以是任意实数。",
+                "analogy": "🧱 <strong>乐高积木类比：</strong>想象 F(x) 是一个乐高底座，C 是可以任意叠加的积木块。你可以往上叠任意高度的 C，所以有无穷多种组合！",
+                "formula": "∫ f(x) dx = F(x) + C"
+              }
+            },
+            {
+              "show": [
+                "n_FxC",
+                "n_C",
+                "n_fx"
+              ],
+              "title": "第二步：认识函数 f(x)",
+              "hint": "f(x) 位于中间，是核心枢纽",
+              "panel": {
+                "icon": "📈",
+                "title": "核心函数 f(x)",
+                "terms": "Function = 函数",
+                "desc": "中间的 f(x) 是我们的<strong>核心函数</strong>。它既是 F(x)+C 的导数，也是 f'(x) 的原函数。所有求导和积分操作都围绕它展开。",
+                "analogy": "🌊 <strong>流水类比：</strong>f(x) 就像河流的流速。F(x) 是流过的总水量（积分），f'(x) 是流速的变化率。三者描述同一现象的不同角度！",
+                "formula": "f(x) = F'(x)"
+              }
+            },
+            {
+              "show": [
+                "n_FxC",
+                "n_C",
+                "n_fx",
+                "e1",
+                "e6",
+                "e7"
+              ],
+              "highlight": [
+                "e1",
+                "e6"
+              ],
+              "title": "第三步：求导——信息丢失",
+              "hint": "观察求导路径：C 变为 0",
+              "panel": {
+                "icon": "🔥",
+                "title": "求导 = 信息丢失",
+                "terms": "Differentiation = 求导 | Information Loss = 信息丢失",
+                "desc": "当对 F(x)+C 求导时，<strong>C 变成了 0</strong>（见右侧）！这就是<strong>信息丢失</strong>的关键步骤。F(x) 的导数是 f(x)，但 C 的信息永远消失了。",
+                "analogy": "🔥 <strong>燃烧类比：</strong>把一张写有数字的纸烧掉（求导），纸变成了灰（0）。你无法从灰中恢复原来的数字！这就是为什么积分要加上 +C！",
+                "formula": "d/dx [F(x) + C] = f(x) + 0 = f(x)"
+              }
+            },
+            {
+              "show": [
+                "n_FxC",
+                "n_C",
+                "n_fx",
+                "e1",
+                "e2",
+                "e6",
+                "e7"
+              ],
+              "highlight": [
+                "e2"
+              ],
+              "title": "第四步：积分——恢复+C",
+              "hint": "观察积分路径：f(x) 恢复为 F(x)+C",
+              "panel": {
+                "icon": "♻️",
+                "title": "积分——恢复与不确定性",
+                "terms": "Integration = 积分 | Indefinite Integral = 不定积分",
+                "desc": "对 f(x) 积分，我们<strong>恢复</strong>了 F(x)，但必须加上<strong>+C</strong>！因为我们不知道原始的 C 是多少。这就是为什么叫<strong>不定积分</strong>（Indefinite Integral）——结果不唯一。",
+                "analogy": "🔍 <strong>侦探类比：</strong>就像侦探找到了嫌疑人的大致模样（F(x)），但不确定具体是谁（+C）。可能有多个嫌疑人符合条件！",
+                "formula": "∫ f(x) dx = F(x) + C"
+              }
+            },
+            {
+              "show": [
+                "n_FxC",
+                "n_C",
+                "n_fx",
+                "n_fxprime",
+                "e1",
+                "e2",
+                "e3",
+                "e6",
+                "e7"
+              ],
+              "highlight": [
+                "e3"
+              ],
+              "title": "第五步：继续求导到 f'(x)",
+              "hint": "f(x) 的导数是 f'(x)",
+              "panel": {
+                "icon": "🔍",
+                "title": "再次求导：f(x) → f'(x)",
+                "terms": "Derivative = 导数 | Second Derivative = 二阶导数",
+                "desc": "对 f(x) 再次求导，得到<strong>f'(x)</strong>（二阶导数）。f'(x) 描述了 f(x) 的变化率。同样，如果 f(x) 有常数项，这里也会丢失。",
+                "analogy": "📷 <strong>相机类比：</strong>求导就像按快门拍照——只拍下瞬时状态，丢失历史。连续按两次快门，丢失的信息更多！",
+                "formula": "f'(x) = d/dx [f(x)]"
+              }
+            },
+            {
+              "show": [
+                "n_FxC",
+                "n_C",
+                "n_fx",
+                "n_fxprime",
+                "e1",
+                "e2",
+                "e3",
+                "e4",
+                "e5",
+                "e6",
+                "e7"
+              ],
+              "highlight": [
+                "e4",
+                "e5"
+              ],
+              "title": "第六步：完整循环",
+              "hint": "所有路径已显示，完整的互逆关系",
+              "panel": {
+                "icon": "🔄",
+                "title": "求导与积分的互逆关系",
+                "terms": "Inverse Operations = 互逆运算 | Fundamental Theorem = 基本定理",
+                "desc": "现在你能看到<strong>完整的循环</strong>：求导（↓）和积分（↑）是<strong>互逆操作</strong>，但求导是不可逆的（信息丢失），所以积分时必须用 +C 来补偿。这就是微积分基本定理的核心思想！",
+                "analogy": "🔄 <strong>压缩解压类比：</strong>求导像压缩文件（丢失元数据），积分像解压文件（恢复但需要额外信息 C 来填补空缺）。解压永远不如原文件 '完整'！",
+                "formula": "∫ d/dx [F(x)] dx = F(x) + C"
+              }
+            },
+            {
+              "show": [
+                "n_FxC",
+                "n_C",
+                "n_fx",
+                "n_fxprime",
+                "e1",
+                "e2",
+                "e3",
+                "e4",
+                "e5",
+                "e6",
+                "e7"
+              ],
+              "highlight": [
+                "e1",
+                "e6"
+              ],
+              "title": "第七步：互动实验",
+              "hint": "点击红色「求导」路径观察 C 消失",
+              "panel": {
+                "icon": "🧪",
+                "title": "互动实验：观察 C 的消失",
+                "terms": "",
+                "desc": "现在试试<strong>点击红色的「求导」路径</strong>！你会看到 C 节点变为 0，直观展示信息丢失的过程。再点一次恢复。这就是微积分中最微妙也最重要的概念！",
+                "analogy": "",
+                "formula": "d/dx [F(x) + C] = f(x)"
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/15_原函数和不定积分：关系图.html",
+        "htmlBytes": 779341
+      },
+      "actions": [
+        {
+          "id": "action_W749Kku3",
+          "type": "speech",
+          "text": "本场景通过交互探索“原函数和不定积分：关系图”。感受了 C 只是决定函数高低的位置参数。现在让我们把视野拉高，用一张关系图，来彻底看清求导和积分之间那层微妙的「互逆却不完全可逆」的关系。"
+        },
+        {
+          "id": "action_5qpOBsOE",
+          "type": "widget_highlight",
+          "target": "#n_FxC",
+          "content": "先看最上层：原函数 F(x)+C，它是这个循环的起点，也是积分的终点。"
+        },
+        {
+          "id": "action_cGVO6AHp",
+          "type": "speech",
+          "text": "请看最上面的节点——F(x) 加 C。这就是我们刚刚一直强调的原函数「家族」。注意右侧那个紫色的 C 节点，它是一个独立的常数，可以取任意实数。",
+          "audioRef": "audio/tts_s15_action_cGVO6AHp.mp3"
+        },
+        {
+          "id": "action_B1OZMeOR",
+          "type": "widget_annotation",
+          "target": "#n_C",
+          "content": "这个积木块一样的 C，就是信息丢失与不确定性的根源。"
+        },
+        {
+          "id": "action_qLsJKQRu",
+          "type": "speech",
+          "text": "请大家注意看，这个 C 就像一个会隐身的朋友。当我们沿着红色箭头「求导」往下走的时候，它会发生什么？我们来试一试。",
+          "audioRef": "audio/tts_s15_action_qLsJKQRu.mp3"
+        },
+        {
+          "id": "action_foz2S_Kg",
+          "type": "widget_highlight",
+          "target": "#e6",
+          "content": "请点击这条连接 C 与 0 的关键路径：C 在求导时会瞬间变为 0。"
+        },
+        {
+          "id": "action_Ny7HrEXu",
+          "type": "speech",
+          "text": "看到了吗？常数 C 被求导变成了 0，信息在这一步彻底丢失了。这就是为什么当我们掉头，沿着蓝色箭头的「积分」路径往回走时，虽然能恢复 F(x)，但却无法知道原来的 C 是多少，只能写上一个无奈的 +C。这张图把函数、原函数和常数的宿命关系，清楚地展示了出来。请大家现在自己点击这些路径，直观地感受信息的丢失与补偿。",
+          "audioRef": "audio/tts_s15_action_Ny7HrEXu.mp3"
+        },
+        {
+          "id": "action_m1llaXPH",
+          "type": "widget_reveal",
+          "target": "#n_zero",
+          "content": "这个「0」节点直观展示了求导时消失的常数去往了何处。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "原函数和不定积分：误解修复挑战",
+      "order": 16,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "drag-drop-rescue",
+          "description": "根据导数特征在多个干扰项中找回正确的原函数家族",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/16_原函数和不定积分：误解修复挑战.html",
+        "htmlBytes": 782915
+      },
+      "actions": [
+        {
+          "id": "action_hkqbvu6E",
+          "type": "speech",
+          "text": "本场景通过交互探索“原函数和不定积分：误解修复挑战”。让我们看到了从导函数往回走时，常数 C 是如何丢失，又为何必须补回来。现在，我们要用一个更加紧张刺激的挑战，来测试大家是不是真的抓住了这个核心。"
+        },
+        {
+          "id": "action_m9ZKwc2V",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始键，准备进入挑战"
+        },
+        {
+          "id": "action_ScRVSzP7",
+          "type": "speech",
+          "text": "在接下来的挑战里，你会看到一个导函数的曲线，和一大堆形态相似、但位置不同的函数曲线。你的任务，就是根据导函数给出的‘斜率线索’，从这堆干扰项里，把正确的‘祖先’函数家族，完完整整地拖拽出来。准备好了吗？点击开始吧。",
+          "audioRef": "audio/tts_s16_action_ScRVSzP7.mp3"
+        },
+        {
+          "id": "action_rddvuoJK",
+          "type": "widget_setState",
+          "state": {
+            "gamePhase": "round1"
+          },
+          "content": "展示第一轮挑战，导函数与多个原函数曲线出现"
+        },
+        {
+          "id": "action_YM69Qlhh",
+          "type": "speech",
+          "text": "注意看！这一组曲线，是不是长得特别像？它们有完全相同的导数趋势，唯一的区别，就是在 y 轴上的高低位置。这正是我们所说的‘函数家族’。如果你只拖动了一条曲线，那你可就中计了！",
+          "audioRef": "audio/tts_s16_action_YM69Qlhh.mp3"
+        },
+        {
+          "id": "action_TP53K4rh",
+          "type": "speech",
+          "text": "仔细回顾一下我们刚刚在关系图里学到的知识：因为常数 C 在求导后会消失，所以逆推回去时，必须把带着不同 C 的所有曲线，也就是整族曲线，都当成正确答案。现在，请把你认定的那一族曲线，全部救回来吧。",
+          "audioRef": "audio/tts_s16_action_TP53K4rh.mp3"
+        },
+        {
+          "id": "action_wmql7K3e",
+          "type": "speech",
+          "text": "非常好！如果你刚才勾选了整组不同高度的曲线，就说明你真正理解了‘不定积分’中的‘不定’二字——它不是缺少了什么，而是代表着一整个可能性集合。接下来可以多挑战几轮，直到你能像条件反射一样，把整个函数族都完整无误地找出来。",
+          "audioRef": "audio/tts_s16_action_wmql7K3e.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "原函数和不定积分：空间视角",
+      "order": 17,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "3D演示函数族形成的曲面，展示常数C如何改变原函数的空间位置。被积函数f(x)=x²的原函数族F(x)=x³/3+C像书页一样平行排列，所有曲线在任意点的斜率完全相同。",
+          "objects": [
+            {
+              "id": "function_family_surfaces",
+              "type": "surface_family",
+              "description": "原函数族曲面 F(x)=x³/3+C，每条曲线对应一个C值",
+              "material": {
+                "type": "phong",
+                "transparent": true,
+                "opacity": 0.55
+              }
+            },
+            {
+              "id": "tangent_vectors",
+              "type": "arrow_vectors",
+              "description": "切线向量，展示所有曲面在x=1.5处的斜率完全相同",
+              "material": {
+                "type": "emissive",
+                "color": "#fbbf24"
+              }
+            },
+            {
+              "id": "inspection_line",
+              "type": "dashed_line",
+              "description": "垂直检验线，展示同一x处所有原函数值的差异仅为C",
+              "material": {
+                "type": "dashed",
+                "color": "#fbbf24"
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "slider",
+              "param": "numLayers",
+              "label": "曲面数量",
+              "min": 2,
+              "max": 10,
+              "default": 6,
+              "description": "控制原函数族中曲面的层数"
+            },
+            {
+              "type": "slider",
+              "param": "cRange",
+              "label": "C值范围",
+              "min": 2,
+              "max": 8,
+              "default": 4,
+              "description": "控制C值的分布范围"
+            },
+            {
+              "type": "slider",
+              "param": "opacity",
+              "label": "透明度",
+              "min": 0.1,
+              "max": 1,
+              "default": 0.55,
+              "description": "控制曲面的透明程度"
+            },
+            {
+              "type": "button",
+              "action": "toggleSlopeVectors",
+              "label": "显示/隐藏斜率向量",
+              "description": "切换切线向量的可见性"
+            },
+            {
+              "type": "button",
+              "action": "toggleSurfaces",
+              "label": "显示/隐藏曲面",
+              "description": "切换所有曲面的可见性"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            }
+          ],
+          "presets": [
+            {
+              "name": "标准视角",
+              "state": {
+                "cameraPosition": [
+                  8,
+                  6,
+                  10
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧面视图",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  0,
+                  15
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "俯视视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  15,
+                  0
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "显示斜率对比",
+              "state": {
+                "showSlopeVectors": true,
+                "cameraPosition": [
+                  5,
+                  4,
+                  8
+                ],
+                "cameraTarget": [
+                  1.5,
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/17_原函数和不定积分：空间视角.html",
+        "htmlBytes": 2513435
+      },
+      "actions": [
+        {
+          "id": "action_I2MtHb1D",
+          "type": "speech",
+          "text": "本场景通过交互探索“原函数和不定积分：空间视角”。不断寻找那一整族平行曲线。现在，我们把视角从二维平面拉升到三维空间，看看这个函数族究竟长什么样。"
+        },
+        {
+          "id": "action_grzhWD4J",
+          "type": "widget_setState",
+          "state": {
+            "preset": "标准视角"
+          },
+          "content": "切换到预设的标准视角，展示三维函数族曲面。"
+        },
+        {
+          "id": "action_cnlcRl4c",
+          "type": "speech",
+          "text": "看，这就是 f(x)=x² 的原函数族 F(x)=x³/3+C 在三维空间中的模样。每一条不同颜色的曲面，就对应一个不同的常数 C。它们像不像一叠整整齐齐、平行排列的书页？",
+          "audioRef": "audio/tts_s17_action_cnlcRl4c.mp3"
+        },
+        {
+          "id": "action_2qQdp1Oa",
+          "type": "widget_highlight",
+          "target": "#inspection_line",
+          "content": "垂直检验线，展示沿垂直方向曲面之间的差异仅为常数C。"
+        },
+        {
+          "id": "action_ZIDLIrRN",
+          "type": "speech",
+          "text": "注意看这条垂直的黄线。在同一个 x 位置上，不同曲面的高度差始终是固定的，这个差值就是常数 C 的差距。这就是‘不定’二字的几何意义——它不是一条曲线，而是一整个由 C 决定的平行曲面族。",
+          "audioRef": "audio/tts_s17_action_ZIDLIrRN.mp3"
+        },
+        {
+          "id": "action_DcNaCpGf",
+          "type": "widget_setState",
+          "state": {
+            "preset": "显示斜率对比"
+          },
+          "content": "切换到斜率对比视角，展示所有曲面在x=1.5处切线斜率相同。"
+        },
+        {
+          "id": "action_2g1BASgU",
+          "type": "speech",
+          "text": "现在视角拉近到 x=1.5 的位置，看到这些金色的切线箭头了吗？虽然不同曲面在这个点的高度各不相同，但它们的切线方向、倾斜程度完全一样。这就从几何上直观印证了：原函数族里的每一个成员，求导后都会变回同一个 f(x)。",
+          "audioRef": "audio/tts_s17_action_2g1BASgU.mp3"
+        },
+        {
+          "id": "action_Vs9XI_l0",
+          "type": "widget_annotation",
+          "target": "#tangent_vectors",
+          "content": "切线向量，证实所有曲面在此处导数相同。"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "NAjYJCkTFFVshBWdwdwq0",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_kk0Ka6jy",
+              "left": 60,
+              "top": 50,
+              "width": 450,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1A237E;\">全课整理：证据链回看</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A237E"
+            },
+            {
+              "type": "text",
+              "id": "text_lM42yu9M",
+              "left": 520,
+              "top": 60,
+              "width": 420,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #616161; text-align: right;\">串联三个核心直觉，为微积分基本定理做铺垫</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#616161"
+            },
+            {
+              "type": "shape",
+              "id": "shape_F9qAxRxY",
+              "left": 60,
+              "top": 140,
+              "width": 260,
+              "height": 310,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E3F2FD"
+            },
+            {
+              "type": "shape",
+              "id": "shape_l3G8MzoD",
+              "left": 370,
+              "top": 140,
+              "width": 260,
+              "height": 310,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E8F5E9"
+            },
+            {
+              "type": "shape",
+              "id": "shape_dd5w3NrL",
+              "left": 680,
+              "top": 140,
+              "width": 260,
+              "height": 310,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFF3E0"
+            },
+            {
+              "type": "line",
+              "id": "line_wiNUMJw7",
+              "left": 330,
+              "top": 295,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                30,
+                0
+              ],
+              "style": "solid",
+              "color": "#9E9E9E",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_iL-5Hknx",
+              "left": 640,
+              "top": 295,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                30,
+                0
+              ],
+              "style": "solid",
+              "color": "#9E9E9E",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_V1zhdFPd",
+              "left": 150,
+              "top": 180,
+              "width": 80,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1565C0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_w0rzIm-P",
+              "left": 150,
+              "top": 220,
+              "width": 80,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1565C0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_YkI_RIQK",
+              "left": 150,
+              "top": 260,
+              "width": 80,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1565C0"
+            },
+            {
+              "type": "text",
+              "id": "text_bsrs6mb5",
+              "left": 80,
+              "top": 320,
+              "width": 220,
+              "height": 140,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; line-height: 1.5; color: #1565C0;\">从矩形逼近得到的面积，到物理意义上的总量累积——微观逼近与宏观总量的第一次握手。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1565C0"
+            },
+            {
+              "type": "line",
+              "id": "line_kSTURM-5",
+              "left": 410,
+              "top": 260,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                180,
+                0
+              ],
+              "style": "solid",
+              "color": "#2E7D32",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_SGF0ob6F",
+              "left": 410,
+              "top": 260,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                180,
+                -80
+              ],
+              "style": "solid",
+              "color": "#2E7D32",
+              "points": [
+                "",
+                ""
+              ],
+              "curve": [
+                90,
+                -10
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_a0MR8ZUd",
+              "left": 410,
+              "top": 260,
+              "width": 180,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#2E7D32",
+              "opacity": 0.3
+            },
+            {
+              "type": "text",
+              "id": "text_JpPoo6fE",
+              "left": 390,
+              "top": 320,
+              "width": 220,
+              "height": 103,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; line-height: 1.5; color: #2E7D32;\">原函数正是描述这种累积状态的函数——它记录了总量随自变量的变化。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2E7D32"
+            },
+            {
+              "type": "latex",
+              "id": "latex__PtQcdA5",
+              "left": 700,
+              "top": 210,
+              "width": 220,
+              "height": 60,
+              "rotate": 0,
+              "latex": "F(b)-F(a) = \\int_{a}^{b} f(x) dx",
+              "color": "#E65100",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">b</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">F</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">a</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.511em;vertical-align:-0.9119em;\"></span><span class=\"mop\"><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.599em;\"><span style=\"top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span></span></span></span><span style=\"top:-3.8129em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">b</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9119em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_Yl_d9M3S",
+              "left": 700,
+              "top": 320,
+              "width": 220,
+              "height": 103,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; line-height: 1.5; color: #E65100;\">如何只用两端值 F(b)−F(a) 快速计算面积，无需再画矩形？——下一节揭晓。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#E65100"
+            },
+            {
+              "type": "shape",
+              "id": "shape_al7j5TxG",
+              "left": 60,
+              "top": 465,
+              "width": 880,
+              "height": 4,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#B0BEC5"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#F8F9FA"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_ijkLJyVy",
+          "type": "spotlight",
+          "elementId": "text_kk0Ka6jy"
+        },
+        {
+          "id": "action_SOwrEmfK",
+          "type": "speech",
+          "text": "本场景聚焦“全课整理：证据链回看”。好了，同学们，我们刚刚在原函数的世界里转了一圈，发现了那个美妙的性质：同一族的原函数，虽然长得不一样，但它们的瞬时变化率是相同的。现在，是时候抬起头，回看我们一路走来的足迹了。这一页，就是我们的全课证据链整理。"
+        },
+        {
+          "id": "action_SkGkeT1z",
+          "type": "spotlight",
+          "elementId": "text_bsrs6mb5"
+        },
+        {
+          "id": "action_PNeed4Er",
+          "type": "speech",
+          "text": "还记得我们最初的探索吗？从画很多很多个小矩形，用它们的面积之和去逼近曲线下的面积。我们把这种微观的逼近，和物理上像流水一样持续累积的总量联系了起来。你看，这就是微观分割和宏观累积的第一次握手，一个非常了不起的直觉。",
+          "audioRef": "audio/tts_s18_action_PNeed4Er.mp3"
+        },
+        {
+          "id": "action_xdxeePmK",
+          "type": "spotlight",
+          "elementId": "text_JpPoo6fE"
+        },
+        {
+          "id": "action_-LTWVquv",
+          "type": "speech",
+          "text": "紧接着，我们引入了原函数。原函数并不是一个全新的东西，它恰恰是用来描述这种累积状态的函数。它就像一位忠实的记录员，时刻记录着总量随自变量变化的瞬时速率。换句话说，总量的累积过程，其背后的速率函数，正是我们要找的线索。",
+          "audioRef": "audio/tts_s18_action_-LTWVquv.mp3"
+        },
+        {
+          "id": "action_vusGXgB2",
+          "type": "spotlight",
+          "elementId": "latex__PtQcdA5"
+        },
+        {
+          "id": "action_-1GgNUyJ",
+          "type": "speech",
+          "text": "这两个看似不同路径的直觉——小矩形面积逼近和原函数的瞬时变化，最终在这里交汇。这个式子，F(b)减F(a)等于从a到b的积分，就是它们之间关系的核心表达。它暗示着一座桥梁的存在。",
+          "audioRef": "audio/tts_s18_action_-1GgNUyJ.mp3"
+        },
+        {
+          "id": "action_9epLuoog",
+          "type": "spotlight",
+          "elementId": "text_Yl_d9M3S"
+        },
+        {
+          "id": "action_UqJX5D6d",
+          "type": "speech",
+          "text": "那么，一个激动人心的问题就来了。我们怎么才能只用原函数在起点和终点的函数值之差，就快速算出面积，而不用再辛苦地画一个个矩形呢？这个问题，将是我们下一节课要揭晓的秘密，也是微积分基本定理的灵魂所在。请大家带着这份期待，我们稍作休息，迎接最后的综合挑战。",
+          "audioRef": "audio/tts_s18_action_UqJX5D6d.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "后测：积分直觉：面积、累积与原函数综合测评",
+      "order": 19,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在利用矩形分割（Riemann sum）实验计算曲边图形面积时，我们发现：当分割的矩形数量趋向于无穷大（即每个矩形的宽度趋近于0）时，所有矩形的总面积会趋近于一个稳定值。以下哪个比喻最能解释这种“极限稳定性”？",
+            "options": [
+              {
+                "value": "A",
+                "label": "就像用乐高积木搭建弧形拱门，颗粒越细密，拱门的边缘就越平滑，所需积木的总质量也越趋近于一个固定值。"
+              },
+              {
+                "value": "B",
+                "label": "就像拍照时增加像素，像素越多画面越清晰，但照片占用的内存大小可以无限增加。"
+              },
+              {
+                "value": "C",
+                "label": "就像在容器中加水，只要加水的水龙头不关，容器里水的总量就会无限增大。"
+              },
+              {
+                "value": "D",
+                "label": "就像用放大镜观察物体，放大倍数越高，看到的物体就越大，物体实际体积也在变大。"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "正确答案是A。莱布尼茨的积分思想正是在微观层面将不规则形状的物体分解为无数个规则的微小单元。乐高积木的比喻精准地描述了这一点：积木（矩形）本身的总体积就是面积的近似值。随着积木颗粒变细（即矩形宽度趋近于0），搭建的形状无限逼近真实曲线，且积木的用料总量（极限面积）不会再剧烈波动，而是稳定在一个精确的数值上。其他比喻的错误在于：像素数量增加通常带来内存的持续线性增加，并非极限稳定；水龙头不关意味着无限的线性增长，违背逼近有限面积的前提；放大镜只是视觉放大，并未改变物体本身的客观尺度。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "小明计算出了一个函数 f(x) 的不定积分（Antiderivative）为 F(x) = x 的平方 + 3。小红则计算出结果是 F(x) = x 的平方 - 5。老师判定两人的答案都是正确的。你认为以下哪些解释是合理的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "导数运算会消除常数项，一个函数的原函数（Antiderivative）实际上是一族形状相同、仅高度不同的曲线。"
+              },
+              {
+                "value": "B",
+                "label": "小红是在小明的结果上错减了8，但在某些特定数学规则下，错误答案也能被判对。"
+              },
+              {
+                "value": "C",
+                "label": "如果函数代表的是水流速度，那么常数项仅仅是水位的起始高度，不同的起始高度在描述蓄水量变化趋势时都是合法的。"
+              },
+              {
+                "value": "D",
+                "label": "微分与积分是双射（一一对应）的映射关系，每个函数必有且只有一个原函数。"
+              }
+            ],
+            "answer": [
+              "A",
+              "C"
+            ],
+            "analysis": "正确答案是A和C。此题考查对“不定积分结果不唯一”的本质理解。A是正确的数学推导：常数的导数为零，因此原函数可相差任意常数，即积分结果是一个函数族。C是正确的物理解释：在流量-时间或速度-时间模型中，积分代表累积变化量，而常数代表初始状态。不同的初始状态（如池塘原本存水高度不同）在计算流量的变化量时，并不影响其正确性。B错误，小红的结果不是“错减蒙对的”，而是严格的数学表达（相差常数 -8）。D严重错误，导数的逆运算是一对多映射，正因为如此才需要在计算结果后加上积分常数C。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "short_answer",
+            "question": "请看下面的场景：有一个蓄水池，一个进水管的瞬时水流量（升/分钟）用函数 r(t) = 10 - 0.5t 来模拟。请结合“面积”和“累积”的直觉，详细回答：从第4分钟末到第10分钟末，这段时间内蓄水池里的总储水量增加了多少升？并简要解释你的计算思路。",
+            "commentPrompt": "评分标准：\n(1) 正确建立定积分（积分）模型或利用梯形/三角形面积计算改变量 - 50%\n(2) 计算结果准确（考察单位与算术） - 20%\n(3) 清晰说明图形面积与累积量的映射关系（例如：指出曲线下的面积表示这段时间流入的总体积） - 30%",
+            "analysis": "参考解答：\n储水量的增加等于流量曲线下方从第4分钟到第10分钟的面积。由于流量线性下降，该区域是一个梯形（或者看作矩形加三角形）。\n在 t=4 时，流量 r(4) = 10 - 0.5*4 = 8 升/分钟。\n在 t=10 时，流量 r(10) = 10 - 0.5*10 = 5 升/分钟。\n时间跨度为 10 - 4 = 6 分钟。\n梯形面积 = (上底 + 下底) * 高 / 2 = (8 + 5) * 6 / 2 = 13 * 3 = 39 升。\n定积分解法：积分从4到10的 (10 - 0.5t) dt 同样得出 39。\n结论：总储水量增加了 39 升。\n核心思路：瞬时流量在时间区间内的累积，几何上等价于速度-时间图下的面积，可以用几何图形的面积公式来近似或精确计算。",
+            "points": 25,
+            "hasAnswer": false
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "在微积分的直觉理解中，我们常把积分（Integral）看作是导数的逆过程。以下哪一项最准确地描述了这种“逆过程”在实际变化场景中的含义？",
+            "options": [
+              {
+                "value": "A",
+                "label": "如果你知道一部赛车在终点撞线时的时速，你就能精准倒推出比赛总共花费的时间。"
+              },
+              {
+                "value": "B",
+                "label": "如果你有一盘磁带的转速变化曲线（导数），通过积分可以将速度信息还原成记录了完整音乐的音频波形（原函数）。"
+              },
+              {
+                "value": "C",
+                "label": "将一块蛋糕切碎后（微分），再用胶水把碎屑粘起来（积分），蛋糕就会恢复原状且重量翻倍。"
+              },
+              {
+                "value": "D",
+                "label": "如果你忘记了一个密码，只需要把这个密码分解成单个字符（微分），再随机组合起来（积分）就能恢复密码。"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "正确答案是B。磁带或黑胶唱片的例子非常形象：磁性层上记录的磁通量变化率（导数）经由磁头读取并进行积分（累积磁通量的变化），就能重建出原先记录的声音信号（原函数）。这完美切合了“积分是导数逆过程”的物理直觉。A错误：仅知道终点的时速这一个瞬间导数，而不知道行驶过程中的历史变化，无法通过积分（累加）复原总时间，必须补充初始条件（起跑时刻）。C错误：积分恢复的是宏观形状的“数量特征”，但一旦切碎，信息（排列结构）丢失，积分无法还原结构，且重量不会翻倍。D错误：随机组合并不是定积分的有序累积过程，积分是对变化率的有序累加。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "微积分基本定理（Fundamental Theorem of Calculus）将“切线斜率问题”与“曲线下方面积问题”联系在了一起。请抛开数学公式，完全使用你自己的语言，结合“汽车行驶”或“往水池注水”等生活类比，向一个完全不懂微积分的同学解释：为什么求面积（积分）的操作，可以恰好是求斜率（微分）的逆过程？",
+            "commentPrompt": "评分标准：\n(1) 准确引入“累积量”与“瞬时变化率”这两个对立统一的动态概念 - 40%\n(2) 类比生动准确，能用生活中的“还原”逻辑解释数学上的互逆（例如：里程表 vs 速度表） - 35%\n(3) 逻辑连贯，表达清晰，无科学性错误 - 25%",
+            "analysis": "这是一个解释性题目，旨在考察对微积分核心的直觉理解。\n参考答案要点：\n可以把汽车行驶的里程表（记录总路程，相当于原函数/面积累积的结果）和速度表（记录瞬时速度，相当于切线斜率/导数）作为例子。\n1. 微分（求斜率）过程：看着里程表随时间变化的曲线，关注每一刻上升的陡峭程度，拿到的是速度表。\n2. 积分（求面积）过程：看着速度表在时间区间里圈出来的面积，把它一点点拼凑并累积起来，就能重新构建出里程表走过的总路程。\n互逆逻辑：速度告诉你变化有多快，积分速度则还原出了因为速度快慢而产生的总位移量。同样，往水池注水，水龙头流出的瞬时水流速度就是导数，把这段时间里所有滴下的水滴（速度曲线下的微小矩形）汇聚在一起，就能倒推出水位上涨的总高度（原函数的变化）。这个还原高度变化的过程，本质上就是在计算面积。",
+            "points": 20,
+            "hasAnswer": false
+          },
+          {
+            "id": "q6",
+            "type": "multiple",
+            "question": "在通往定积分（定积分）定义的道路上，黎曼和（Riemann sum）实验给了我们很多直觉。下列说法中，哪些是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "黎曼和计算的面积一定是略大于真实面积的，因为矩形会冒出来。"
+              },
+              {
+                "value": "B",
+                "label": "如果函数在某个区间内是负的（比如深度位于海平面以下），那么这一段的“面积”在累积求总时应当被当作负数扣除。"
+              },
+              {
+                "value": "C",
+                "label": "只要函数在区间上连续，不管我们取每个小区间里的最高点还是最低点作为矩形的高，当分割无限细密时，两者极限趋于一致。"
+              },
+              {
+                "value": "D",
+                "label": "黎曼和的思想只是用来计算面积的，它无法处理像“累积流量”这样的非几何物理问题。"
+              }
+            ],
+            "answer": [
+              "B",
+              "C"
+            ],
+            "analysis": "正确答案是B和C。\nB是正确的：定积分具有方向性，拥有正负值。位于x轴下方的面积代表负向累积。例如，蓄水池的净变化量需要流入减去流出，曲线在负半轴的面积就代表流出量。\nC是正确的：达布和（Darboux sum）定理指出，对于连续函数，取极大值（上和）与极小值（下和）的黎曼和在极限状态下会夹逼出同一个定积分值。\nA错误：黎曼和可以选择左端点、右端点、中点或极小值点，只有在函数单调递增且选取右端点（或单调递减选取左端点）时才会偏大，如果选取极小值点则会偏小，并非“一定是略大于”。\nD错误：黎曼和的本质是将量化的变化率切割为无穷多个瞬间并累加，这是一个“通用”的累积模型。无论是求面积、计算液体的体积变化、物体移动的距离，甚至是经济学中的总收益，都适用。",
+            "points": 15,
+            "hasAnswer": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_K9t8fPQq",
+          "type": "speech",
+          "text": "这是一组关于“后测：积分直觉：面积、累积与原函数综合测评”的独立测验。好了，同学们，经过前面一整节课的探索、实验和修复，我们已经把面积逼近、累积过程和原函数这些关键的积分直觉都建立起来了。现在，就是我们检验这些直觉是否真正‘长’在脑子里的时刻了。请大家平复一下心情，我们一起来完成这份最后的综合测评。仔细读题，唤醒你身体里关于小矩形、水流和函数族的记忆吧。"
+        },
+        {
+          "id": "action_DIZKnuH-",
+          "type": "speech",
+          "text": "就像我们之前反复用到的乐高积木和不断变化的像素点，极限的稳定性告诉我们，看似无限逼近的过程，最终会指向一个确定的宿命。请大家特别留意那些关于‘逆过程’的思考题，别忘了我们大家经常画的那些关系图，它们能帮你直观地看到，为什么求面积和求斜率恰好是一对完美的逆运算。"
+        },
+        {
+          "id": "action_-1gRbQQo",
+          "type": "speech",
+          "text": "在你们作答的过程中，如果遇到了关于不定积分结果不唯一的题目，不妨回想一下大家追问过的那个常数。它就像一个蓄水池的初始水位，虽然不影响水流变化的速率，却决定了整个函数图像在坐标系中的高低位置。把这几道题当作是你们在微积分世界的初次‘自驾游’，放心大胆地去推理吧。"
+        },
+        {
+          "id": "action_agotgs77",
+          "type": "discussion",
+          "topic": "在完成所有题目后，回顾你的思考过程，微积分基本定理所展现的‘面积’与‘斜率’的互逆关系，是否颠覆或重塑了你对‘运算’的原有认知？",
+          "prompt": "试着用‘汽车行驶’或‘往水池注水’的类比，分享一下你现在如何理解这种互逆的关联。",
+          "agentIndex": 3
+        }
+      ]
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_l7jyCvEq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 34224
+    },
+    "audio/tts_action_zdGoyyLo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 79416
+    },
+    "audio/tts_action_zicpJcBJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127776
+    },
+    "audio/tts_action__HFvRA5z.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144864
+    },
+    "audio/tts_s10_action_dRFjRg4p.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99216
+    },
+    "audio/tts_s10_action_JiOR16PH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98592
+    },
+    "audio/tts_s10_action_KbEdzB8P.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126984
+    },
+    "audio/tts_s10_action_Mw4oPkRL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105504
+    },
+    "audio/tts_s11_action_IKJN8kFq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92832
+    },
+    "audio/tts_s11_action_iXFHOGBw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 164136
+    },
+    "audio/tts_s11_action_LTbgFXKS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104760
+    },
+    "audio/tts_s11_action_o51NWLkk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 201840
+    },
+    "audio/tts_s12_action_2J18yss1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 176088
+    },
+    "audio/tts_s12_action_EK6RUiLY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 218160
+    },
+    "audio/tts_s12_action_ksi6D_UE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 115992
+    },
+    "audio/tts_s12_action_Pk6fEM4W.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 180048
+    },
+    "audio/tts_s12_action_QEzc_6aH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 197400
+    },
+    "audio/tts_s13_action_0KU806b9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 91680
+    },
+    "audio/tts_s13_action_13yXlSGh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 291408
+    },
+    "audio/tts_s13_action_SHxZxAqG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160368
+    },
+    "audio/tts_s13_action_UI9AJRGm.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 91920
+    },
+    "audio/tts_s13_action_v3icW-s_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 67704
+    },
+    "audio/tts_s13_action_VAFIhAuS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 85608
+    },
+    "audio/tts_s13_action_WxFnFj-8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 161640
+    },
+    "audio/tts_s13_action_xlBj3uwD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 161064
+    },
+    "audio/tts_s14_action_2hhQhXEd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 148368
+    },
+    "audio/tts_s14_action_4Cua31QU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95112
+    },
+    "audio/tts_s14_action_LXNtThLn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95496
+    },
+    "audio/tts_s14_action_MgY6DOUY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108552
+    },
+    "audio/tts_s15_action_cGVO6AHp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88632
+    },
+    "audio/tts_s15_action_Ny7HrEXu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 219000
+    },
+    "audio/tts_s15_action_qLsJKQRu.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 72168
+    },
+    "audio/tts_s15_action_W749Kku3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 120744
+    },
+    "audio/tts_s16_action_hkqbvu6E.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114144
+    },
+    "audio/tts_s16_action_ScRVSzP7.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 147648
+    },
+    "audio/tts_s16_action_TP53K4rh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141264
+    },
+    "audio/tts_s16_action_wmql7K3e.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 163776
+    },
+    "audio/tts_s16_action_YM69Qlhh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110136
+    },
+    "audio/tts_s17_action_2g1BASgU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157704
+    },
+    "audio/tts_s17_action_cnlcRl4c.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133656
+    },
+    "audio/tts_s17_action_I2MtHb1D.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 81864
+    },
+    "audio/tts_s17_action_ZIDLIrRN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121656
+    },
+    "audio/tts_s18_action_-1GgNUyJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129312
+    },
+    "audio/tts_s18_action_-LTWVquv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 156456
+    },
+    "audio/tts_s18_action_PNeed4Er.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 156480
+    },
+    "audio/tts_s18_action_SOwrEmfK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 152592
+    },
+    "audio/tts_s18_action_UqJX5D6d.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 222864
+    },
+    "audio/tts_s19_action_-1gRbQQo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 190632
+    },
+    "audio/tts_s19_action_DIZKnuH-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 212904
+    },
+    "audio/tts_s19_action_K9t8fPQq.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 256104
+    },
+    "audio/tts_s2_action_-rYh0F4h.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111672
+    },
+    "audio/tts_s2_action_C9BFG-JG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 85008
+    },
+    "audio/tts_s2_action_cpV63kWX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 123840
+    },
+    "audio/tts_s2_action_ijgEnY8e.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 120576
+    },
+    "audio/tts_s2_action_Ob8Zkqcn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88320
+    },
+    "audio/tts_s2_action_Tjpk91L5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 120000
+    },
+    "audio/tts_s2_action_Xi7IpFNQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 103896
+    },
+    "audio/tts_s3_action_520T4NzA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 51840
+    },
+    "audio/tts_s3_action_7nYoAEP7.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114672
+    },
+    "audio/tts_s3_action_GKGsJFU6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108600
+    },
+    "audio/tts_s3_action_ROv1QvCf.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 83472
+    },
+    "audio/tts_s3_action_W8RR70cP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 74784
+    },
+    "audio/tts_s4_action_-7wgKo0U.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 168624
+    },
+    "audio/tts_s4_action_awrXhTGm.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 110904
+    },
+    "audio/tts_s4_action_f0bOMXbs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129432
+    },
+    "audio/tts_s4_action_Vn7_qLfp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 87384
+    },
+    "audio/tts_s4_action_YkZMNVhe.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 107712
+    },
+    "audio/tts_s5_action_45ZWknv6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146784
+    },
+    "audio/tts_s5_action_HB4xNQD7.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160200
+    },
+    "audio/tts_s5_action_m7au9Reb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 148440
+    },
+    "audio/tts_s5_action_O4fK2-FA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140664
+    },
+    "audio/tts_s6_action_3DvmyWTk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98280
+    },
+    "audio/tts_s6_action_L14XmiAo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 143136
+    },
+    "audio/tts_s6_action_Lvq6HiM5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98376
+    },
+    "audio/tts_s6_action_Yh8WziJp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 165720
+    },
+    "audio/tts_s7_action_jdOKrPq4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146424
+    },
+    "audio/tts_s7_action_Oc0m7S4l.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121632
+    },
+    "audio/tts_s7_action_SFYcm_vz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160656
+    },
+    "audio/tts_s7_action_wYAJMBbe.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 142512
+    },
+    "audio/tts_s7_action_Xh_xMFjO.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160992
+    },
+    "audio/tts_s7_action_yk45bO3P.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 154176
+    },
+    "audio/tts_s8_action_-tpUnIEP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96264
+    },
+    "audio/tts_s8_action_3B2mrj9d.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128952
+    },
+    "audio/tts_s8_action_Dhi072o3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94608
+    },
+    "audio/tts_s8_action_kGU_FjiM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117744
+    },
+    "audio/tts_s9_action_AetubwyN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89496
+    },
+    "audio/tts_s9_action_BpAfmAjY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 53016
+    },
+    "audio/tts_s9_action_DUwNqeTW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 78912
+    },
+    "audio/tts_s9_action_XOiasFYg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 91080
+    },
+    "audio/tts_s9_action_Z3ghk-Ue.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108864
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

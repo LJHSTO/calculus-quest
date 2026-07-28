@@ -48,10 +48,22 @@ document.addEventListener("click", (event) => {
     const sourceUnit = getUnit();
     const targetUnit = getUnit(targetUnitId);
     const questionCard = quizResourceLink.closest("[data-question]");
+    const accessible = targetUnit && (
+      typeof quizResourceTargetAccessible !== "function"
+      || quizResourceTargetAccessible(targetUnitId)
+    );
+    if (!accessible) {
+      addLog(sourceUnit?.assessmentPhase === "pre"
+        ? "前测只用于定位基础；请先完成前测后的学习路径选择，再进入对应课件。"
+        : "对应课件尚未解锁，请先完成当前学习建议。");
+      if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+      return;
+    }
     if (sourceUnit?.type === "quiz") {
       state.returnToQuiz = {
         unitId: sourceUnit.id,
         questionId: questionCard?.dataset.question || "",
+        targetUnitId: targetUnit?.id || targetUnitId,
         createdAt: beijingNow()
       };
       saveState();
@@ -139,18 +151,6 @@ document.addEventListener("click", (event) => {
       agenticApplyDecision(type, agenticActionBtn.dataset.agenticActionKey || "").catch((error) => {
         console.warn("Agentic decision failed:", error);
         addLog(`学习路径切换失败：${error.message || "请稍后重试"}`);
-      });
-    }
-    return;
-  }
-
-  const gradingActionBtn = event.target.closest("[data-agentic-grading-action]");
-  if (gradingActionBtn) {
-    if (typeof agenticResolvePendingGrading === "function") {
-      gradingActionBtn.disabled = true;
-      agenticResolvePendingGrading(gradingActionBtn.dataset.agenticGradingAction).catch((error) => {
-        console.warn("Short answer grading recovery failed:", error);
-        addLog(`简答题处理失败：${error.message || "请稍后重试"}`);
       });
     }
     return;
@@ -358,4 +358,7 @@ document.addEventListener("fullscreenchange", () => {
   updateFullscreenButton();
   updateResourceFullscreenButtons();
   syncNarrationUi();
+  if (typeof scheduleLearningCanvasLayoutSync === "function") {
+    scheduleLearningCanvasLayoutSync("fullscreen-change");
+  }
 });

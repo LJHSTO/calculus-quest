@@ -124,6 +124,7 @@ async function main() {
   const dbPath = path.join(tmpDir, "subpath.db");
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
+  const adminToken = "subpath-admin-token";
   const logs = [];
   let child;
 
@@ -136,7 +137,8 @@ async function main() {
         HOST: "127.0.0.1",
         BASE_PATH: "/calculus_quest/",
         LLM_PROVIDER: "mock",
-        NODE_ENV: "development"
+        NODE_ENV: "development",
+        ADMIN_TOKEN: adminToken
       },
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true
@@ -160,13 +162,17 @@ async function main() {
     for (const pathname of [
       "/calculus_quest/",
       "/calculus_quest/index.html",
+      "/calculus_quest/admin",
       "/calculus_quest/admin.html",
       "/calculus_quest/flow-test.html",
+      "/calculus_quest/flow-test",
       "/calculus_quest/styles.css",
       "/calculus_quest/admin/admin.js",
       "/calculus_quest/app/flow-test/flow-test.js",
       "/calculus_quest/app/flow-test/flow-test.css",
+      "/calculus_quest/lib/chart.umd.min.js",
       "/calculus_quest/lib/interaction-policy.js",
+      "/calculus_quest/data/multi-scene-learning-route.json",
       "/calculus_quest/api/course/multi-scene-learning-route",
       "/calculus_quest/api/course/openmaic-v14-route"
     ]) {
@@ -174,21 +180,64 @@ async function main() {
       assert.equal(response.status, 200, pathname);
     }
 
+    const flowScriptResponse = await fetch(
+      baseUrl + "/calculus_quest/app/flow-test/flow-test.js?v=20260727-courseware-interaction-v4"
+    );
+    assert.equal(flowScriptResponse.status, 200);
+    assert.match(flowScriptResponse.headers.get("cache-control") || "", /no-store/);
+    assert.doesNotMatch(flowScriptResponse.headers.get("cache-control") || "", /immutable/);
+
+    const coursewarePath = encodeURI(
+      "/calculus_quest/resources/open-maic/GH-01-函数、坐标与图像读法入门/"
+      + "interactive/03_输入、输出和函数规则：拖动实验.html"
+    );
+    const coursewareResponse = await fetch(
+      baseUrl + coursewarePath + "?v=20260727-courseware-interaction-v4&cqContextBridge=20260727-v7"
+    );
+    assert.equal(coursewareResponse.status, 200);
+    assert.match(coursewareResponse.headers.get("cache-control") || "", /no-store/);
+
     for (const pathname of [
       "/",
       "/index.html",
+      "/admin",
       "/admin.html",
+      "/flow-test",
       "/flow-test.html",
       "/styles.css",
       "/admin/admin.js",
       "/app/flow-test/flow-test.js",
       "/app/flow-test/flow-test.css",
+      "/lib/chart.umd.min.js",
+      "/data/multi-scene-learning-route.json",
       "/api/course/multi-scene-learning-route",
       "/api/course/openmaic-v14-route"
     ]) {
       const response = await fetch(baseUrl + pathname);
       assert.equal(response.status, 200, `stripped proxy path ${pathname}`);
     }
+
+    for (const pathname of [
+      "/calculus_quest/data/multi-scene-learning-route.json",
+      "/data/multi-scene-learning-route.json"
+    ]) {
+      const response = await fetch(baseUrl + pathname);
+      const text = await response.text();
+      assert.equal(response.status, 200, pathname);
+      assert.ok(!text.includes('"answer":'), `${pathname} must hide quiz answers`);
+      assert.ok(!text.includes('"analysis":'), `${pathname} must hide quiz analysis`);
+    }
+
+    const flowRouteAnonymous = await fetch(
+      baseUrl + "/calculus_quest/api/course/flow-test-route"
+    );
+    assert.equal(flowRouteAnonymous.status, 403);
+    const flowRouteAdmin = await fetch(
+      baseUrl + "/calculus_quest/api/course/flow-test-route",
+      { headers: { Authorization: `Bearer ${adminToken}` } }
+    );
+    assert.equal(flowRouteAdmin.status, 200);
+    assert.match(await flowRouteAdmin.text(), /"answer":/);
 
     const wrongPrefix = await fetch(baseUrl + "/calculus_quest_extra/api/health");
     assert.notEqual(wrongPrefix.status, 200);

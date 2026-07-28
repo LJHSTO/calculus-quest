@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
-  "exportedAt": "2026-07-18T14:48:57.492Z",
-  "appVersion": "0.3.0",
+  "exportedAt": "2026-07-25T06:45:35.865Z",
+  "appVersion": "0.0.0",
   "stage": {
     "name": "从平均变化率到导数",
     "description": "",
@@ -185,8 +185,7 @@
         {
           "id": "action_vSvTveBz",
           "type": "speech",
-          "text": "同学们好！欢迎来到今天的数学课堂。在开始新课之前，我们来做一个小小的“前测”，看看大家对“变化率”已经有了哪些直观的理解，还有哪些概念需要我们重点关注。",
-          "audioRef": "audio/tts_action_vSvTveBz.mp3"
+          "text": "这是一组关于“前测：从平均变化率到导数学习准备诊断”的独立测验。在开始新课之前，我们来做一个小小的“前测”，看看大家对“变化率”已经有了哪些直观的理解，还有哪些概念需要我们重点关注。"
         },
         {
           "id": "action_LNU9rlRI",
@@ -203,8 +202,7 @@
         {
           "id": "action_FqmemeiP",
           "type": "speech",
-          "text": "小宁在第四题上思考得非常深入。这道题考的是极限的直观描述——“趋近于零”不是“等于零”，而是一个无限接近的动态过程。就像我们看着一根针的针尖慢慢靠近一个点，虽然看起来快要碰到，但永远可以更近一步。这正是我们接下来要从“平均”走向“瞬时”最关键的桥梁。",
-          "audioRef": "audio/tts_action_FqmemeiP.mp3"
+          "text": "这道题考的是极限的直观描述——“趋近于零”不是“等于零”，而是一个无限接近的动态过程。就像我们看着一根针的针尖慢慢靠近一个点，虽然看起来快要碰到，但永远可以更近一步。这正是我们需要从“平均”走向“瞬时”最关键的桥梁。"
         },
         {
           "id": "action_u22q1eB5",
@@ -393,17 +391,6 @@
               "fixedRatio": true
             },
             {
-              "type": "image",
-              "id": "image_gh03_average_rate_secant",
-              "left": 540,
-              "top": 145,
-              "width": 400,
-              "height": 235,
-              "rotate": 0,
-              "fixedRatio": true,
-              "src": "media/gh03-average-rate-secant.svg"
-            },
-            {
               "type": "text",
               "id": "text_EVimsB-_",
               "left": 540,
@@ -414,6 +401,251 @@
               "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">图 5.3：函数 f 在 x₁ 到 x₂ 之间的平均斜率，即通过 (x₁, f(x₁)) 和 (x₂, f(x₂)) 的割线斜率。</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#666666"
+            },
+            {
+              "type": "shape",
+              "id": "shape_avg_rate_graph_bg",
+              "left": 540,
+              "top": 145,
+              "width": 400,
+              "height": 235,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F7FAFC"
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_x_axis",
+              "left": 575,
+              "top": 340,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                320,
+                0
+              ],
+              "style": "solid",
+              "color": "#667085",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_y_axis",
+              "left": 575,
+              "top": 340,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                -155
+              ],
+              "style": "solid",
+              "color": "#667085",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_curve_1",
+              "left": 600,
+              "top": 320,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                45,
+                -12
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_curve_2",
+              "left": 645,
+              "top": 308,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                45,
+                -28
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_curve_3",
+              "left": 690,
+              "top": 280,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                45,
+                -48
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_curve_4",
+              "left": 735,
+              "top": 232,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                45,
+                -62
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_secant",
+              "left": 625,
+              "top": 310,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                155,
+                -110
+              ],
+              "style": "solid",
+              "color": "#ED7D31",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_avg_rate_point_1",
+              "left": 617,
+              "top": 302,
+              "width": 16,
+              "height": 16,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#ED7D31"
+            },
+            {
+              "type": "shape",
+              "id": "shape_avg_rate_point_2",
+              "left": 772,
+              "top": 192,
+              "width": 16,
+              "height": 16,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#ED7D31"
+            },
+            {
+              "type": "text",
+              "id": "text_avg_rate_x1",
+              "left": 610,
+              "top": 345,
+              "width": 40,
+              "height": 28,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #667085;\">x₁</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#667085"
+            },
+            {
+              "type": "text",
+              "id": "text_avg_rate_x2",
+              "left": 765,
+              "top": 345,
+              "width": 40,
+              "height": 28,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #667085;\">x₂</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#667085"
+            },
+            {
+              "type": "text",
+              "id": "text_avg_rate_secant_label",
+              "left": 790,
+              "top": 215,
+              "width": 120,
+              "height": 32,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #ED7D31;\">割线斜率</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ED7D31"
             }
           ],
           "background": {
@@ -432,8 +664,7 @@
         {
           "id": "action_dOTl10MJ",
           "type": "speech",
-          "text": "好，承接小宁刚才那个精彩的思考，我们来看看如何把“趋近”这个动态过程用数学语言量化。首先映入眼帘的就是这个标题——平均变化率与割线。大家先在自己的讲义上找到这个部分。",
-          "audioRef": "audio/tts_s2_action_dOTl10MJ.mp3"
+          "text": "本场景聚焦“平均变化率和割线”。我们来看看如何把“趋近”这个动态过程用数学语言量化。首先映入眼帘的就是这个标题——平均变化率与割线。大家先在当前页面中定位这个部分。"
         },
         {
           "id": "action_a3pngtHo",
@@ -487,14 +718,12 @@
         {
           "id": "action_Nb8sHThc",
           "type": "speech",
-          "text": "在这里，我要帮阿磊和其他同学预防一个非常经典的误解。看到这个公式，可别只把它看作两个孤立的数字做除法。记住，分子Δy是输出量的整体改变量，而分母Δx是输入量的整体改变量。它们是一个整体变化的配对，每一个数值都承载着变化的动态意义，而不是冷冰冰的加减结果。",
-          "audioRef": "audio/tts_s2_action_Nb8sHThc.mp3"
+          "text": "在这里，我要帮大家预防一个非常经典的误解。看到这个公式，可别只把它看作两个孤立的数字做除法。记住，分子Δy是输出量的整体改变量，而分母Δx是输入量的整体改变量。它们是一个整体变化的配对，每一个数值都承载着变化的动态意义，而不是冷冰冰的加减结果。"
         },
         {
           "id": "action_PANx5AXy",
           "type": "speech",
-          "text": "好了，概念和定义我们理清了。接下来，我们通过一个动手拖动的小实验，来直观感受一下，当我们把这两个点靠近时，割线会发生什么美妙的变化。",
-          "audioRef": "audio/tts_s2_action_PANx5AXy.mp3"
+          "text": "好了，概念和定义我们理清了。"
         }
       ]
     },
@@ -577,8 +806,7 @@
         {
           "id": "action_z2cPauyn",
           "type": "speech",
-          "text": "好，现在我们的屏幕上出现了一条曲线，上面有两个可以拖动的控制点，分别是 x₁ 和 x₂。它们之间连成的这条直线，就是我们刚学的割线。",
-          "audioRef": "audio/tts_s3_action_z2cPauyn.mp3"
+          "text": "本场景通过交互探索“平均变化率和割线：拖动实验”。现在我们的屏幕上出现了一条曲线，上面有两个可以拖动的控制点，分别是 x₁ 和 x₂。它们之间连成的这条直线，就是当前场景中的割线。"
         },
         {
           "id": "action_5mAtkV8q",
@@ -589,8 +817,7 @@
         {
           "id": "action_BVmFt3mo",
           "type": "speech",
-          "text": "来，阿磊和小宁，你们可以先试试拖动左边的 x₁，看看右边的读数面板发生了什么变化。",
-          "audioRef": "audio/tts_s3_action_BVmFt3mo.mp3"
+          "text": "来，你们可以先试试拖动左边的 x₁，看看右边的读数面板发生了什么变化。"
         },
         {
           "id": "action_yYa8KPOO",
@@ -625,8 +852,7 @@
         {
           "id": "action__xxt7H57",
           "type": "speech",
-          "text": "现在，小宁，请你把 x₁ 和 x₂ 慢慢靠近——对，像这样让区间变得非常非常窄。看到了吗？割线的斜率读数变化得越来越精细，它开始代表一个更局部的变化趋势了。这为我们在下一部分理解\"瞬时变化率\"，埋下了关键的几何直觉。",
-          "audioRef": "audio/tts_s3_action__xxt7H57.mp3"
+          "text": "现在，请你把 x₁ 和 x₂ 慢慢靠近——对，像这样让区间变得非常非常窄。看到了吗？割线的斜率读数变化得越来越精细，它开始代表一个更局部的变化趋势了。这为我们进一步理解\"瞬时变化率\"，埋下了关键的几何直觉。"
         }
       ]
     },
@@ -738,8 +964,7 @@
         {
           "id": "action_Au0RErEW",
           "type": "speech",
-          "text": "刚才我们在拖动实验里，亲眼看到了区间变窄时，割线斜率如何变得越来越精细。现在，让我们把这个动态过程的逻辑脉络梳理清楚——从输入端的微小变化，到最终产出一个斜率值，中间到底经历了哪些关键步骤？",
-          "audioRef": "audio/tts_s4_action_Au0RErEW.mp3"
+          "text": "本场景通过交互探索“平均变化率和割线：关系图”。可以观察到区间变窄时，割线斜率如何变得越来越精细。现在，让我们把这个动态过程的逻辑脉络梳理清楚——从输入端的微小变化，到最终产出一个斜率值，中间到底经历了哪些关键步骤？"
         },
         {
           "id": "action__4EutM2V",
@@ -762,8 +987,7 @@
         {
           "id": "action_dJg1QbFy",
           "type": "speech",
-          "text": "阿磊，你最容易在这里忽略：Δx 可不能直接拿着就去减什么，它必须先送进函数 f 里“加工”一下。f(x₀+Δx) 才是输出端变化的源头。这个映射步骤是整条逻辑链上最大的一个陷阱。",
-          "audioRef": "audio/tts_s4_action_dJg1QbFy.mp3"
+          "text": "你最容易在这里忽略：Δx 可不能直接拿着就去减什么，它必须先送进函数 f 里“加工”一下。f(x₀+Δx) 才是输出端变化的源头。这个映射步骤是整条逻辑链上最大的一个陷阱。"
         },
         {
           "id": "action_mhm2p6Ra",
@@ -792,8 +1016,7 @@
         {
           "id": "action_ZqyXUj1I",
           "type": "speech",
-          "text": "把输出增量 Δy 和输入增量 Δx 相除，就得到了差分商——它就是平均变化率。小宁，你想想，这个比值在几何上对应的是什么？",
-          "audioRef": "audio/tts_s4_action_ZqyXUj1I.mp3"
+          "text": "把输出增量 Δy 和输入增量 Δx 相除，就得到了差分商——它就是平均变化率。你想想，这个比值在几何上对应的是什么？"
         },
         {
           "id": "action_CNz07P-X",
@@ -876,8 +1099,7 @@
         {
           "id": "action_balSnKDA",
           "type": "speech",
-          "text": "我们刚才专门强调了公式背后的物理意义，现在就来一场挑战，把那些容易混淆的符号和几何位置对上号。",
-          "audioRef": "audio/tts_s5_action_balSnKDA.mp3"
+          "text": "本场景通过交互探索“平均变化率和割线：误解修复挑战”。现在就来一场挑战，把那些容易混淆的符号和几何位置对上号。"
         },
         {
           "id": "action_XlFOFb1K",
@@ -920,8 +1142,7 @@
         {
           "id": "action_YD5MPSbU",
           "type": "speech",
-          "text": "阿磊、小宁，咱们今天不是比谁算得快，而是看谁能把五组不同函数图像一一修复正确。准备好了就动手吧，每完成一组，你会更直观地感受到那条割线是怎么搭建起来的。",
-          "audioRef": "audio/tts_s5_action_YD5MPSbU.mp3"
+          "text": "大家、大家，咱们今天不是比谁算得快，而是看谁能把五组不同函数图像一一修复正确。准备好了就动手吧，每完成一组，你会更直观地感受到那条割线是怎么搭建起来的。"
         }
       ]
     },
@@ -1075,8 +1296,7 @@
         {
           "id": "action_L5OYSq31",
           "type": "speech",
-          "text": "刚才我们用‘误解修复挑战’验证了多种函数图像中割线的搭建逻辑。现在，让我们跳到一个更高的维度，在三维空间中重新审视那条割线。",
-          "audioRef": "audio/tts_s6_action_L5OYSq31.mp3"
+          "text": "本场景通过交互探索“平均变化率和割线：空间视角”。让我们跳到一个更高的维度，在三维空间中重新审视那条割线。"
         },
         {
           "id": "action_lMnVwZWh",
@@ -1545,8 +1765,7 @@
         {
           "id": "action_4drr471f",
           "type": "speech",
-          "text": "上一页我们讲到了平均变化率和割线。如果两个点分开，就能画出一条割线。但如果我们让其中一个点无限逼近另一个点，会发生什么呢？这就是我们这一页的核心问题：瞬时变化率和切线。",
-          "audioRef": "audio/tts_s7_action_4drr471f.mp3"
+          "text": "本场景聚焦“瞬时变化率和切线”。如果两个点分开，就能画出一条割线。但如果我们让其中一个点无限逼近另一个点，会发生什么呢？这就是我们这一页的核心问题：瞬时变化率和切线。"
         },
         {
           "id": "action_8T_Wr9H2",
@@ -1684,8 +1903,7 @@
         {
           "id": "action_0TXDGSLk",
           "type": "speech",
-          "text": "好的，刚才我们通过动画看到了割线逼近切线的过程。现在让我们亲手操作，感受这个极限的逼近。请把注意力集中在页面左侧这个滑块上。",
-          "audioRef": "audio/tts_s8_action_0TXDGSLk.mp3"
+          "text": "本场景通过交互探索“瞬时变化率和切线：拖动实验”。现在让我们亲手操作，感受这个极限的逼近。请把注意力集中在页面左侧这个滑块上。"
         },
         {
           "id": "action_490PPPp_",
@@ -1751,8 +1969,7 @@
         {
           "id": "action_kUOoChNz",
           "type": "speech",
-          "text": "刚才我们通过拖动实验感受了割线逐渐变成切线的过程。现在，让我们用这张关系图把'平均'到'瞬时'的质变节点梳理清楚。",
-          "audioRef": "audio/tts_s9_action_kUOoChNz.mp3"
+          "text": "本场景通过交互探索“瞬时变化率和切线：关系图”。让我们用这张关系图把'平均'到'瞬时'的质变节点梳理清楚。"
         },
         {
           "id": "action_YnjK1cvO",
@@ -1780,8 +1997,7 @@
         {
           "id": "action_ih4cxUEr",
           "type": "speech",
-          "text": "从平均变化率到我们想要的导数，中间必须经过一个神奇的节点。阿磊、小宁，你们可以点击这个写着'取极限 h 趋近于 0'的节点看看。",
-          "audioRef": "audio/tts_s9_action_ih4cxUEr.mp3"
+          "text": "从平均变化率到我们想要的导数，中间必须经过一个神奇的节点。你们可以点击这个写着'取极限 h 趋近于 0'的节点看看。"
         },
         {
           "id": "action_yhbc4o_P",
@@ -1839,8 +2055,7 @@
         {
           "id": "action_vZYCKhUZ",
           "type": "speech",
-          "text": "刚才我们清楚地看到，导数的几何意义就是切线的斜率。但在实际计算时，很多同学会习惯性地把导数当成一个简单的除法——用函数值的变化量直接去除以自变量的变化量。这个直觉很自然，但它有时候会带来一些微妙的误解。",
-          "audioRef": "audio/tts_s10_action_vZYCKhUZ.mp3"
+          "text": "本场景通过交互探索“瞬时变化率和切线：误解修复挑战”。导数的几何意义就是切线的斜率。但在实际计算时，很多同学会习惯性地把导数当成一个简单的除法——用函数值的变化量直接去除以自变量的变化量。这个直觉很自然，但它有时候会带来一些微妙的误解。"
         },
         {
           "id": "action_4sMJHX-f",
@@ -2061,8 +2276,7 @@
         {
           "id": "action_Y-mPl4YH",
           "type": "speech",
-          "text": "刚才我们在二维平面上体验了割线逼近切线的动态过程。现在，让我们把视角升维，从空间中重新审视这个极限，看看它为什么如此神奇。",
-          "audioRef": "audio/tts_s11_action_Y-mPl4YH.mp3"
+          "text": "本场景通过交互探索“瞬时变化率和切线：空间视角”。让我们把视角升维，从空间中重新审视这个极限，看看它为什么如此神奇。"
         },
         {
           "id": "action_UrbpfWGy",
@@ -2094,8 +2308,7 @@
         {
           "id": "action_MW7_9ZBg",
           "type": "speech",
-          "text": "屏幕上这个起伏的曲面，在金色切点处，我们放置了一个紫色的半透明平面，它就是该点处的切平面。阿磊、小宁，你们觉得这个平面和曲面之间，现在是什么关系？",
-          "audioRef": "audio/tts_s11_action_MW7_9ZBg.mp3"
+          "text": "屏幕上这个起伏的曲面，在金色切点处，我们放置了一个紫色的半透明平面，它就是该点处的切平面。你们觉得这个平面和曲面之间，现在是什么关系？"
         },
         {
           "id": "action_G6bW6zUz",
@@ -2275,8 +2488,7 @@
         {
           "id": "action_mADLe4Cg",
           "type": "speech",
-          "text": "刚才我们详细剖析了平均变化率与割线、瞬时变化率与切线的内在联系，也感受了极限思想那种‘化曲为直’的威力。现在，我们来做个小测验，看看大家对这些核心概念掌握得怎么样，也为接下来学习导数符号做个准备。",
-          "audioRef": "audio/tts_s12_action_mADLe4Cg.mp3"
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。也感受了极限思想那种‘化曲为直’的威力。现在，我们来做个小测验，看看大家对这些核心概念掌握得怎么样，也为接下来学习导数符号做个准备。"
         },
         {
           "id": "action_wek-XVWp",
@@ -2530,8 +2742,7 @@
         {
           "id": "action_hmPGvlBP",
           "type": "speech",
-          "text": "好，大家刚刚完成了形成性小测验，相信对自己在‘平均变化率’和‘瞬时变化率’上的理解有了更清晰的认识。从这一页开始，我们暂时放下具体的计算，来做一件更有意思的事——聊聊导数的‘语言’。每个数学概念都有它独特的符号，而符号背后，往往就藏着这个概念的灵魂。",
-          "audioRef": "audio/tts_s13_action_hmPGvlBP.mp3"
+          "text": "本场景聚焦“导数符号和意义”。相信对自己在‘平均变化率’和‘瞬时变化率’上的理解有了更清晰的认识。从这一页开始，我们暂时放下具体的计算，来做一件更有意思的事——聊聊导数的‘语言’。每个数学概念都有它独特的符号，而符号背后，往往就藏着这个概念的灵魂。"
         },
         {
           "id": "action_fFaN2Vhe",
@@ -2666,8 +2877,7 @@
         {
           "id": "action_B3nRil1J",
           "type": "speech",
-          "text": "刚才我们理解了导数作为‘灵敏度指标’的本质。现在，让我们把这种灵敏度的数学语言——也就是导数的符号——直观地‘画’出来。林教授这里准备了一个曲线，大家注意，同一个概念，数学家们发明了不同的符号来表达，这些符号强调的侧重点可不一样。",
-          "audioRef": "audio/tts_s14_action_B3nRil1J.mp3"
+          "text": "本场景通过交互探索“导数符号和意义：拖动实验”。让我们把这种灵敏度的数学语言——也就是导数的符号——直观地‘画’出来。大家这里准备了一个曲线，大家注意，同一个概念，数学家们发明了不同的符号来表达，这些符号强调的侧重点可不一样。"
         },
         {
           "id": "action_t1j5k3Qj",
@@ -2678,8 +2888,7 @@
         {
           "id": "action_7APWZKVM",
           "type": "speech",
-          "text": "阿磊，你动手能力最强，请你先点击预设里的‘🔍 观察切线’，咱们先看到一条漂亮的切线和它的斜率值。这是导数最核心的几何图像。",
-          "audioRef": "audio/tts_s14_action_7APWZKVM.mp3"
+          "text": "你动手能力最强，请你先点击预设里的‘🔍 观察切线’，咱们先看到一条漂亮的切线和它的斜率值。这是导数最核心的几何图像。"
         },
         {
           "id": "action_Nqm0cXUh",
@@ -2706,8 +2915,7 @@
         {
           "id": "action_LLc05H1n",
           "type": "speech",
-          "text": "现在，请小宁再帮忙切换到‘✏️ Lagrange 记法’。大家对比一下，f'(x) 这种记法更简洁，但它把自变量和函数值的变化过程‘打包’成了一个撇号。不同的符号，讲述着同一个故事的不同侧面。",
-          "audioRef": "audio/tts_s14_action_LLc05H1n.mp3"
+          "text": "现在，请大家再帮忙切换到‘✏️ Lagrange 记法’。大家对比一下，f'(x) 这种记法更简洁，但它把自变量和函数值的变化过程‘打包’成了一个撇号。不同的符号，讲述着同一个故事的不同侧面。"
         },
         {
           "id": "action_YLDXTRVV",
@@ -2869,8 +3077,7 @@
         {
           "id": "action_OzIm_LrG",
           "type": "speech",
-          "text": "刚才我们在页面14拖动滑块，亲手感受了三种符号下的瞬时变化。现在，我们把它们放回这张‘关系图’，完整地看清符号背后的思想脉络。",
-          "audioRef": "audio/tts_s15_action_OzIm_LrG.mp3"
+          "text": "本场景通过交互探索“导数符号和意义：关系图”。亲手感受了三种符号下的瞬时变化。现在，我们把它们放回这张‘关系图’，完整地看清符号背后的思想脉络。"
         },
         {
           "id": "action_cCjomvB8",
@@ -2881,8 +3088,7 @@
         {
           "id": "action_mJnd_QPd",
           "type": "speech",
-          "text": "一切符号都源于中间这个‘导数核心’。林教授想请大家先关注左上方的分支——从Leibniz，到他的微商形式 df/dx。",
-          "audioRef": "audio/tts_s15_action_mJnd_QPd.mp3"
+          "text": "一切符号都源于中间这个‘导数核心’。大家想请大家先关注左上方的分支——从Leibniz，到他的微商形式 df/dx。"
         },
         {
           "id": "action_YkN9O3mr",
@@ -2911,8 +3117,7 @@
         {
           "id": "action_5ojXkCa5",
           "type": "speech",
-          "text": "阿磊刚才发现 f'(x) 写起来最方便，它的确是为纯代数推导而生。不过小宁也提醒了我们，最下面这个醒目的节点‘只看符号不顾内涵’，是所有数学家都试图避免的误解——符号只是载体，背后的变化思想才是真正的导数。",
-          "audioRef": "audio/tts_s15_action_5ojXkCa5.mp3"
+          "text": "大家刚才发现 f'(x) 写起来最方便，它的确是为纯代数推导而生。不过大家也提醒了我们，最下面这个醒目的节点‘只看符号不顾内涵’，是所有数学家都试图避免的误解——符号只是载体，背后的变化思想才是真正的导数。"
         }
       ]
     },
@@ -2968,8 +3173,7 @@
         {
           "id": "action_uJLh20vP",
           "type": "speech",
-          "text": "刚才我们区分了符号的形式，但符号真正的威力在于它捕捉了自然界的运动。现在，让我们通过一个卡片分类挑战，来检验一下你对导数意义的理解到底有多深。",
-          "audioRef": "audio/tts_s16_action_uJLh20vP.mp3"
+          "text": "本场景通过交互探索“导数符号和意义：误解修复挑战”。但符号真正的威力在于它捕捉了自然界的运动。现在，让我们通过一个卡片分类挑战，来检验一下你对导数意义的理解到底有多深。"
         },
         {
           "id": "action__VAGHu9g",
@@ -3011,8 +3215,7 @@
         {
           "id": "action_eJJ9IwND",
           "type": "speech",
-          "text": "就像小宁提醒的，符号只是载体。试着把‘物体运动的瞬时速度’这张卡放进‘实际应用意义’里。如果你把它当成一个死记硬背的公式放错了地方，系统会提醒你，别忘了它的几何与物理灵魂。",
-          "audioRef": "audio/tts_s16_action_eJJ9IwND.mp3"
+          "text": "就像大家提醒的，符号只是载体。试着把‘物体运动的瞬时速度’这张卡放进‘实际应用意义’里。如果你把它当成一个死记硬背的公式放错了地方，系统会提醒你，别忘了它的几何与物理灵魂。"
         },
         {
           "id": "action_SSObmD69",
@@ -3222,8 +3425,7 @@
         {
           "id": "action_6J3KvBnQ",
           "type": "speech",
-          "text": "刚才我们梳理了导数符号背后的意义脉络——现在，让我们把这些符号放到三维空间里，看看它们真正的几何模样。",
-          "audioRef": "audio/tts_s17_action_6J3KvBnQ.mp3"
+          "text": "本场景通过交互探索“导数符号和意义：空间视角”。让我们把这些符号放到三维空间里，看看它们真正的几何模样。"
         },
         {
           "id": "action_TQdOQfGy",
@@ -3638,8 +3840,7 @@
         {
           "id": "action_Mtn4JMV6",
           "type": "speech",
-          "text": "同学们，这节课我们一路走来，从最直观的平均变化率走到了抽象的导数符号。现在是时候停下来，把这条证据链从头到尾好好梳理一遍了。",
-          "audioRef": "audio/tts_s18_action_Mtn4JMV6.mp3"
+          "text": "本场景聚焦“全课整理：证据链回看”。同学们，这节课我们一路走来，从最直观的平均变化率走到了抽象的导数符号。现在是时候停下来，把这条证据链从头到尾好好梳理一遍了。"
         },
         {
           "id": "action_iZ8fvcMe",
@@ -3839,8 +4040,7 @@
         {
           "id": "action_IeIiHPKs",
           "type": "speech",
-          "text": "好，同学们，刚才我们完整梳理了全课的思路，把从平均变化率到导数的这条逻辑链条都打通了。现在，让我们用最后这组综合测评，来检验一下大家真正的迁移能力和深层理解。别紧张，这更像是我们用新学到的眼光，去重新审视一些关键问题。",
-          "audioRef": "audio/tts_s19_action_IeIiHPKs.mp3"
+          "text": "这是一组关于“后测：从平均变化率到导数综合测评”的独立测验。同学们，刚才我们完整梳理了全课的思路，把从平均变化率到导数的这条逻辑链条都打通了。现在，让我们用最后这组综合测评，来检验一下大家真正的迁移能力和深层理解。别紧张，这更像是我们用新学到的眼光，去重新审视一些关键问题。"
         },
         {
           "id": "action_iLEUYr8b",

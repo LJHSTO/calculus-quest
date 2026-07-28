@@ -22,6 +22,10 @@ courseware-inbox/*
 !courseware-inbox/.gitkeep
 resources/open-maic/*
 !resources/open-maic/.gitkeep
+# EXT-05 has 31 repaired narration files synthesized from its Guard-rewritten text.
+!resources/open-maic/EXT-05-数值优化进阶：从梯度到二阶与约束/
+!resources/open-maic/EXT-05-数值优化进阶：从梯度到二阶与约束/audio/
+!resources/open-maic/EXT-05-数值优化进阶：从梯度到二阶与约束/audio/*.wav
 resources/open-maic-backups/*
 !resources/open-maic-backups/.gitkeep
 
@@ -43,12 +47,16 @@ ops/windows/
 test-results/
 tmp/
 output/
+dist/
 
 # Local agent/tool state and generated language caches
 .superpowers/
 __pycache__/
 *.pyc
 tools/_encoding_test.txt
+
+# Private local research and deployment notes; never publish to GitHub.
+docs/
 
 # OS/editor noise
 .DS_Store

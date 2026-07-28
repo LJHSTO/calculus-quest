@@ -4,8 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculus Quest - 研究数据分析面板</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="lib/chart.umd.min.js?v=4.4.7"></script>
   <link rel="stylesheet" href="admin/admin.css?v=20260718-admin-quality-v2" />
+  <link rel="stylesheet" href="admin/announcements.css?v=20260726-announcements-v2" />
 </head>
 <body>
 <div id="login-gate" class="hidden">
@@ -54,6 +55,7 @@
       <button class="tab" data-tab="activity">活跃趋势</button>
       <button class="tab" data-tab="shortanswers">简答题</button>
       <button class="tab" data-tab="interactions">交互追踪</button>
+      <button class="tab" data-tab="announcements">系统公告</button>
     </div>
 
     <!-- Tab: Overview -->
@@ -372,6 +374,75 @@
       </div>
     </div>
 
+    <!-- Tab: System Announcements -->
+    <div id="tab-announcements" class="tab-content hidden">
+      <div class="announcement-admin-layout">
+        <section class="chart-card announcement-editor">
+          <div class="announcement-section-heading">
+            <div>
+              <h3 id="announcement-editor-title">新建公告</h3>
+              <p class="chart-desc" id="announcement-editor-note">先保存草稿，确认内容后再发布。</p>
+            </div>
+            <button class="btn btn-sm btn-outline" id="announcement-new-btn" type="button">新建</button>
+          </div>
+          <form id="announcement-form">
+            <input id="announcement-id" type="hidden" />
+            <label class="announcement-field">
+              <span>标题</span>
+              <input id="announcement-title" name="title" type="text" maxlength="80" autocomplete="off" required placeholder="例如：学习助手更新说明" />
+            </label>
+            <label class="announcement-field">
+              <span>正文 <em>支持 **加粗**、## 小标题、- 列表项</em></span>
+              <textarea id="announcement-content" name="content" maxlength="5000" rows="10" required placeholder="写清楚更新内容、影响范围和注意事项。可使用 **重点**、## 小标题、- 列表项。"></textarea>
+              <small id="announcement-char-count">0 / 5000</small>
+            </label>
+            <div class="announcement-field-grid">
+              <label class="announcement-field">
+                <span>类型</span>
+                <select id="announcement-level" name="level">
+                  <option value="update">功能更新</option>
+                  <option value="maintenance">维护通知</option>
+                  <option value="important">重要通知</option>
+                </select>
+              </label>
+              <label class="announcement-pin-field">
+                <input id="announcement-pinned" name="pinned" type="checkbox" />
+                <span>在公告中心置顶</span>
+              </label>
+            </div>
+            <div class="announcement-field-grid">
+              <label class="announcement-field">
+                <span>生效时间 <em>选填</em></span>
+                <input id="announcement-starts-at" name="startsAt" type="datetime-local" />
+              </label>
+              <label class="announcement-field">
+                <span>失效时间 <em>选填</em></span>
+                <input id="announcement-expires-at" name="expiresAt" type="datetime-local" />
+              </label>
+            </div>
+            <p class="announcement-form-status" id="announcement-form-status" role="status" aria-live="polite"></p>
+            <div class="announcement-form-actions">
+              <button class="btn btn-outline" id="announcement-save-btn" type="submit">保存草稿</button>
+              <button class="btn btn-primary" id="announcement-publish-btn" type="button">发布公告</button>
+              <button class="btn btn-outline announcement-withdraw-btn hidden" id="announcement-withdraw-btn" type="button">撤回公告</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="chart-card announcement-list-panel">
+          <div class="announcement-section-heading">
+            <div>
+              <h3>公告记录</h3>
+              <p class="chart-desc">发布和撤回会实时同步；定时公告到点后由学生端自动显示。</p>
+            </div>
+            <button class="btn btn-sm btn-outline" id="announcement-refresh-btn" type="button">刷新</button>
+          </div>
+          <div class="announcement-list-summary" id="announcement-list-summary"></div>
+          <div class="announcement-admin-list" id="announcement-admin-list"></div>
+        </section>
+      </div>
+    </div>
+
     <div id="load-error" class="error hidden"></div>
   </div>
 </div>
@@ -380,5 +451,6 @@
 <script src="admin/presentation.js?v=20260718-admin-quality-v5"></script>
 <script src="lib/interaction-policy.js?v=20260718-interaction-quality-v3"></script>
 <script src="admin/admin.js?v=20260722-multi-scene-v1"></script>
+<script src="admin/announcements.js?v=20260726-announcements-v3"></script>
 </body>
 </html>

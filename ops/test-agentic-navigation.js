@@ -57,6 +57,7 @@ const x1 = {
   ]
 };
 const curriculum = [c1, c2, x1];
+const analyticsEvents = [];
 
 function learningState(overrides = {}) {
   return {
@@ -92,8 +93,9 @@ const context = vm.createContext({
   },
   chapterStats: () => ({ scenes: 3 }),
   addLog: () => {},
-  analyticsTrack: () => {},
+  analyticsTrack: (eventType, payload) => analyticsEvents.push({ eventType, payload }),
   trackLearningEvent: () => {},
+  quizReviewIsPending: (result = {}) => result.status === "pending_review" || result.isCorrect === null,
   saveState: () => {},
   renderAll: () => {},
   renderAgenticCoachPanel: () => {},
@@ -118,6 +120,7 @@ context.renderAgenticCoachPanel = () => {};
 context.agenticRenderLearningUpdate = () => {};
 
 function reset({ state, chapterId, unitId }) {
+  analyticsEvents.length = 0;
   context.state = learningState(state);
   context.currentChapterId = chapterId;
   context.currentUnitId = unitId;
@@ -412,7 +415,79 @@ async function testDeferredReviewAndExtensionFlows() {
   assert.equal(context.state.agenticPath.chapterAdvanceReady.C1, true);
 }
 
-testDeferredReviewAndExtensionFlows()
+async function testDirectExtensionPostReturnsToMainRoute() {
+  reset({
+    chapterId: "X1",
+    unitId: "X1-post",
+    state: {
+      completed: ["C1-post", "X1-post"],
+      submittedQuizzes: ["C1-post", "X1-post"],
+      agenticPath: {
+        unlocked: ["C1-pre", "C1-post", "X1-pre", "X1-k1", "X1-post"],
+        visibleUnits: ["C1-pre", "C1-post", "X1-pre", "X1-k1", "X1-post"],
+        unlockedExtensionChapters: ["X1"],
+        pendingPlan: {
+          unitId: "X1-post",
+          anchorUnitId: "X1-post",
+          chapterId: "X1",
+          phase: "post",
+          resumeUnitId: "",
+          actions: [{ type: "continue", label: "进入下一章", units: [] }],
+          createdAt: "2026-07-22T12:04:00.000+08:00"
+        },
+        pendingAt: "X1-post",
+        chapterAdvanceReady: { C1: true, "C1-post": true },
+        chapterAdvanceReasons: {}
+      }
+    }
+  });
+  context.ensureAgenticPath();
+  await context.agenticApplyDecision("continue");
+  assert.equal(
+    context.currentUnitId,
+    "C2-pre",
+    "直接进入扩展章的学生完成后测后，也必须回到 recommendedAfter 对应的下一主线章"
+  );
+  assert.equal(context.state.agenticPath.chapterAdvanceReady.C1, true);
+  assert.equal(context.agenticChapterUnlockedBySequence("C2"), true);
+}
+
+function testQuizReviewReadySignalWaitsForAllScoring() {
+  reset({
+    chapterId: "C1",
+    unitId: "C1-pre",
+    state: {
+      agenticPath: {
+        unlocked: ["C1-pre"],
+        visibleUnits: ["C1-pre"],
+        chapterAdvanceReady: {},
+        chapterAdvanceReasons: {}
+      }
+    }
+  });
+  const quizUnit = context.getUnit("C1-pre");
+  const pendingRecords = [
+    { question: { id: "q1", type: "single" }, result: { isCorrect: false, status: "incorrect" } },
+    { question: { id: "q2", type: "short_answer" }, result: { isCorrect: null, status: "pending_review" } }
+  ];
+  assert.equal(context.agenticNotifyQuizReviewReady(quizUnit, pendingRecords), false);
+  assert.equal(analyticsEvents.some((event) => event.eventType === "quiz_review_ready"), false);
+
+  const scoredRecords = [
+    pendingRecords[0],
+    { question: { id: "q2", type: "short_answer" }, result: { isCorrect: false, status: "ai_reviewed" } }
+  ];
+  assert.equal(context.agenticNotifyQuizReviewReady(quizUnit, scoredRecords), true);
+  const readyEvent = analyticsEvents.find((event) => event.eventType === "quiz_review_ready");
+  assert.equal(readyEvent.payload.data.pendingReview, 0);
+  assert.equal(readyEvent.payload.data.incorrect, 2);
+  assert.equal(context.agenticNotifyQuizReviewReady(quizUnit, scoredRecords), false, "相同评分结果不能重复弹复盘");
+}
+
+Promise.resolve()
+  .then(testDeferredReviewAndExtensionFlows)
+  .then(testDirectExtensionPostReturnsToMainRoute)
+  .then(testQuizReviewReadySignalWaitsForAllScoring)
   .then(() => console.log("agentic navigation tests passed"))
   .catch((error) => {
     console.error(error);

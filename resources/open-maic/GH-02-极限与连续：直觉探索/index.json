@@ -1,0 +1,4844 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T06:30:14.595Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "极限与连续：直觉探索",
+    "description": "",
+    "language": "本课程全程使用中文教学。数学术语（如极限、连续、趋近）应使用标准中文表达，并在必要时提供直观的物理隐喻。解释应由浅入深，重点修复学生将“极限值”等同于“函数值”的常见误解。",
+    "style": "professional",
+    "createdAt": 1782987651241,
+    "updatedAt": 1782987651241
+  },
+  "agents": [
+    {
+      "name": "小雅",
+      "role": "assistant",
+      "persona": "细心聪慧的助教，善于通过数值表和图表引导学生发现规律。她喜欢用提问启发学生思考，在学生遇到误解陷阱时及时给予提示，语气亲切且有耐心。",
+      "avatar": "/avatars/assist.png",
+      "color": "#10b981",
+      "priority": 7
+    },
+    {
+      "name": "阿航",
+      "role": "student",
+      "persona": "好奇心旺盛的男生，喜欢动手拖动实验控件，对视觉化呈现特别敏感。他有时会固执地认为函数在哪点取值极限就是多少，但通过实验证据能恍然大悟，学习时充满热情和惊奇感。",
+      "avatar": "/avatars/curious-2.png",
+      "color": "#f59e0b",
+      "priority": 5
+    },
+    {
+      "name": "林教授",
+      "role": "teacher",
+      "persona": "资深数学教育者，擅长用物理隐喻和生活化语言解释抽象概念。对学生常见的'函数值等于极限值'误解有深刻洞察，引导时耐心且充满鼓励，善于在关键时刻点破迷思。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "思思",
+      "role": "student",
+      "persona": "深思熟虑的女生，习惯从逻辑关系图出发理解数学概念。她善于提出问题质疑假设，尤其在左右极限判定时展现出严谨的思维，但偶尔需要推动才能动手验证自己的猜想。",
+      "avatar": "/avatars/thinker.png",
+      "color": "#8b5cf6",
+      "priority": 5
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：极限与连续直觉学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "当 x 从左右两侧逐渐接近 2 时，f(x) 都逐渐接近 5；但 f(2) 没有定义。请问当 x 趋近于 2 时，f(x) 的极限值是多少？",
+            "options": [
+              {
+                "value": "A",
+                "label": "极限值为 5，表示函数值无限接近的高度"
+              },
+              {
+                "value": "B",
+                "label": "极限值为 f(2)，也就是空心圆圈本来的高度"
+              },
+              {
+                "value": "C",
+                "label": "极限不存在，因为 f(2) 没有定义"
+              },
+              {
+                "value": "D",
+                "label": "极限值为 0，因为空心圆圈代表此处没有高度"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "极限描述的是函数值趋近的趋势，而不是该点实际的函数值。虽然 x=2 处是空心圆圈（函数无定义），但从两侧趋近时，图像上的点都无限接近高度 5，因此极限为 5。选项 B 错误地将极限等同于函数值，且此处 f(2) 根本不存在。选项 C 混淆了极限存在性与函数值存在性。选项 D 完全没有理解图像高度变化的趋势。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "在数轴上有一个点 P 从位置 3 的左侧和右侧分别向 3 移动。如果描述点 P '无限靠近 3'，以下哪种说法最准确？",
+            "options": [
+              {
+                "value": "A",
+                "label": "点 P 与 3 的距离可以小于任意给定的正数，并且始终保持移动趋势"
+              },
+              {
+                "value": "B",
+                "label": "点 P 最终一定会精确到达 3 的位置"
+              },
+              {
+                "value": "C",
+                "label": "点 P 停在了离 3 还有一点点距离的地方"
+              },
+              {
+                "value": "D",
+                "label": "点 P 只能从 3 的左边靠近，不能从右边靠近"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "极限中'无限靠近'的核心意思是距离可以任意小，且这个过程是持续的。它是一种动态趋势，并不要求最终'精准到达'。选项 B 将趋近过程误认为是到达过程，这正是将极限值与函数值混淆的根源。选项 C 中'停住'意味着过程终止且留有距离，不符合无限靠近。选项 D 人为限制了趋近方向，但通常极限要求考虑双侧。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "question": "考虑一个弹簧在拉力下的伸长量变化。当我们不断增加拉力，拉伸长度逐渐接近某个最大值，但弹簧在到达那个最大长度之前可能就先断裂了。下列哪些理解是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "拉伸长度的极限值就是那个理论上能无限接近的最大值"
+              },
+              {
+                "value": "B",
+                "label": "因为弹簧拉断了，所以拉伸长度的极限不存在"
+              },
+              {
+                "value": "C",
+                "label": "弹簧断裂时的实际拉伸长度就是极限值"
+              },
+              {
+                "value": "D",
+                "label": "极限值表示一种变化趋势，不要求弹簧真有那个时刻到达那个长度"
+              }
+            ],
+            "answer": [
+              "A",
+              "D"
+            ],
+            "analysis": "这个物理比喻帮助理解趋势。弹簧的拉伸长度理论上可以无限接近某个最大值，这个最大值就是极限。即使弹簧提前断裂，这个趋势依然存在。因此 A 和 D 正确。选项 B 误以为实际发生的中断会影响理想趋势。选项 C 将最终发生的实际事实（断裂长度）当成了理论趋势的极限值，混淆了现象与趋势。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "小明说：‘函数 f(x) 在 x=a 处的极限值，就是当 x=a 时 f(x) 的函数值。’ 小华的看法中，最核心的误解是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "极限值描述的是 x 趋近于 a 时 f(x) 的变化趋势，与 f(a) 本身的值可以毫无关系"
+              },
+              {
+                "value": "B",
+                "label": "极限值必须是一个整数，而函数值可以是小数"
+              },
+              {
+                "value": "C",
+                "label": "只有在 x=a 处图像连续不间断，极限值才有可能存在"
+              },
+              {
+                "value": "D",
+                "label": "只要 f(a) 能被计算出来，它就一定等于极限值"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "本题直击核心误解。极限是描述动态趋近过程的量，它关注的是'附近'的趋势，而不是'那一点'的值。函数在 a 点的值可能不存在、或是别的数值，都与极限值无关。选项 B 的说法毫无根据。选项 C 将极限存在的条件（并非连续）与连续性混淆。选项 D 是错误观念的延伸。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "请用你自己的话，或者举一个生活中的例子，解释'当 x 趋近于 a 时，f(x) 的极限是 L'和'f(a)=L'两者之间的区别。为什么我们在学习极限时，要特别强调关注 x 趋近于 a 但 x 不等于 a 的情况？",
+            "commentPrompt": "评分标准：(1) 准确描述极限描述的是‘趋势’而非‘点上的值’，两者含义不同 - 50%。(2) 用恰当的生活实例或比喻清晰阐述了这种区别 - 30%。(3) 解释出关注 x≠a 的情况是为了研究函数在缺陷点（如无定义或突变）的行为 - 20%。",
+            "analysis": "参考要点：极限描述的是‘目的地’，函数值描述的是‘是否真的到达’。例如，一个机器人被编程走向墙边 5 米处，它无限接近但永远不碰到墙。此时，它的极限位置是墙边 5 米处，但它的实际函数值（位置）永远不会等于这个数。我们关注 x≠a 的情况，是因为极限正是用来研究函数在‘缺口、跳跃、无定义’点附近的行为，如果只看那一点，就无法发现函数整体的趋势。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_TELTQ-ob",
+          "type": "speech",
+          "text": "这是一组关于“前测：极限与连续直觉学习准备诊断”的独立测验。今天这节课，我们不急着翻课本，先来做一个小小的热身前测，看看大家对‘变化趋势’和‘无限靠近’这些词，脑海里已经有了什么样的直觉画面。"
+        },
+        {
+          "id": "action_hQhE7ZXG",
+          "type": "speech",
+          "text": "这里有几道有趣的题目，可能涉及弹簧拉伸的极限、或者在数轴上追逐一个点。做这些题的时候，不用紧张，没有对错的压力。我需要你们最真实的第一反应，这能帮我看清咱们思维里可能藏着的一些‘想当然’的小误区。",
+          "audioRef": "audio/tts_action_hQhE7ZXG.mp3"
+        },
+        {
+          "id": "action_6UNpj7s9",
+          "type": "speech",
+          "text": "比如，你可能会觉得一个函数在一个点的极限，就是这个函数在这点的数值。这个想法非常普遍，但它到底对不对呢？我们今天的题目就是专门来诊断这个‘直觉偏见’的。认真审题，凭感觉作答就好，完成后我们再来一起拆解这些思维陷阱。",
+          "audioRef": "audio/tts_action_6UNpj7s9.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "从数表观察趋近",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "Q1GfexW1Ft6gY9fBB0tHy",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_asr76VAc",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1a3a5c;\">从数表观察趋近</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1a3a5c"
+            },
+            {
+              "type": "latex",
+              "id": "latex_ounrK2Jn",
+              "left": 300,
+              "top": 120,
+              "width": 400,
+              "height": 50,
+              "rotate": 0,
+              "latex": "f(x) = \\frac{x^2 - 1}{x - 1} \\quad (x=1 \\text{ 无定义})",
+              "color": "#333333",
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2604em;vertical-align:-0.7693em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.4911em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord\">1</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8141em;\"><span style=\"top:-3.063em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord\">1</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7693em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:1em;\"></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord\">1</span><span class=\"mord text\"><span class=\"mord\"> </span><span class=\"mord cjk_fallback\">无定义</span></span><span class=\"mclose\">)</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "table",
+              "id": "table_hYoNOMnW",
+              "left": 100,
+              "top": 180,
+              "width": 320,
+              "height": 160,
+              "rotate": 0,
+              "outline": {
+                "style": "solid",
+                "width": 1,
+                "color": "#cccccc"
+              },
+              "colWidths": [
+                0.5,
+                0.5
+              ],
+              "cellMinHeight": 40,
+              "data": [
+                [
+                  {
+                    "id": "h1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "x",
+                    "style": {
+                      "bold": true,
+                      "color": "#1a3a5c",
+                      "backcolor": "#e8f4fd",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "f(x)",
+                    "style": {
+                      "bold": true,
+                      "color": "#1a3a5c",
+                      "backcolor": "#e8f4fd",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r1c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "0.9",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r1c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "1.9",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r2c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "0.99",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r2c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "1.99",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r3c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "0.999",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r3c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "1.999",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "table",
+              "id": "table_011VX2D_",
+              "left": 580,
+              "top": 180,
+              "width": 320,
+              "height": 160,
+              "rotate": 0,
+              "outline": {
+                "style": "solid",
+                "width": 1,
+                "color": "#cccccc"
+              },
+              "colWidths": [
+                0.5,
+                0.5
+              ],
+              "cellMinHeight": 40,
+              "data": [
+                [
+                  {
+                    "id": "h3",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "x",
+                    "style": {
+                      "bold": true,
+                      "color": "#1a3a5c",
+                      "backcolor": "#e8f4fd",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "h4",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "f(x)",
+                    "style": {
+                      "bold": true,
+                      "color": "#1a3a5c",
+                      "backcolor": "#e8f4fd",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r4c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "1.1",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r4c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "2.1",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r5c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "1.01",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r5c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "2.01",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r6c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "1.001",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  },
+                  {
+                    "id": "r6c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "2.001",
+                    "style": {
+                      "color": "#333333",
+                      "align": "center"
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "latex",
+              "id": "latex_A4JPEBNr",
+              "left": 100,
+              "top": 350,
+              "width": 320,
+              "height": 40,
+              "rotate": 0,
+              "latex": "x \\to 1^{-}",
+              "color": "#1a3a5c",
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">→</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8213em;\"></span><span class=\"mord\"><span class=\"mord\">1</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8213em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">−</span></span></span></span></span></span></span></span></span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "latex",
+              "id": "latex_3jGF5BFX",
+              "left": 580,
+              "top": 350,
+              "width": 320,
+              "height": 40,
+              "rotate": 0,
+              "latex": "x \\to 1^{+}",
+              "color": "#1a3a5c",
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">→</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8213em;\"></span><span class=\"mord\"><span class=\"mord\">1</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8213em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">+</span></span></span></span></span></span></span></span></span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "line",
+              "id": "line_AblaEqKj",
+              "left": 430,
+              "top": 260,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                0
+              ],
+              "style": "solid",
+              "color": "#ed7d31",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_PVDThvh4",
+              "left": 530,
+              "top": 260,
+              "width": 3,
+              "start": [
+                40,
+                0
+              ],
+              "end": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "color": "#ed7d31",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_T9IrDkK_",
+              "left": 430,
+              "top": 215,
+              "width": 100,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #ed7d31;\">趋近于 2</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ed7d31"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Ob0yPbfv",
+              "left": 100,
+              "top": 410,
+              "width": 800,
+              "height": 1,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#cccccc"
+            },
+            {
+              "type": "shape",
+              "id": "shape_ICmz8zzu",
+              "left": 100,
+              "top": 440,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#1a3a5c"
+            },
+            {
+              "type": "text",
+              "id": "text_bKd15DtA",
+              "left": 120,
+              "top": 420,
+              "width": 360,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\">左右两侧都趋近同一个数 → 极限存在</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_RVexj5-X",
+              "left": 520,
+              "top": 440,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#1a3a5c"
+            },
+            {
+              "type": "text",
+              "id": "text_1xojiG0j",
+              "left": 540,
+              "top": 420,
+              "width": 360,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\">f(1) 无定义，但极限为 2 → 极限不依赖点值</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_vI8BmrdS",
+          "type": "spotlight",
+          "elementId": "latex_ounrK2Jn"
+        },
+        {
+          "id": "action_Ibi6pO8J",
+          "type": "speech",
+          "text": "本场景聚焦“从数表观察趋近”。完成了热身练习，我们来看看那些让你觉得‘不对劲’的直觉陷阱究竟从何而来。先从一个看起来很简单的函数开始。比如这个，f(x)等于x平方减1，除以x减1。大家一眼就能看出来，这里的x不能取哪个值？对，就是1，因为分母不能为零。"
+        },
+        {
+          "id": "action_Cpe8lg0U",
+          "type": "spotlight",
+          "elementId": "table_hYoNOMnW"
+        },
+        {
+          "id": "action_DgCbWejc",
+          "type": "speech",
+          "text": "现在，我们不直接看x等于1这个点，而是看它周围邻居们的表现。请大家观察这张数值表。它记录了x从左边，也就是比1小的数，慢慢向1靠近时，函数值在发生什么变化。",
+          "audioRef": "audio/tts_s2_action_DgCbWejc.mp3"
+        },
+        {
+          "id": "action_6tdrTtUw",
+          "type": "laser",
+          "elementId": "latex_A4JPEBNr"
+        },
+        {
+          "id": "action_jvNQjqe8",
+          "type": "speech",
+          "text": "看到规律了吗？x越靠近1，函数值就越靠近一个神奇的数字——2。哪怕x永远也到不了1，但这股‘趋势’是真实存在的。",
+          "audioRef": "audio/tts_s2_action_jvNQjqe8.mp3"
+        },
+        {
+          "id": "action_6yDs1f3k",
+          "type": "spotlight",
+          "elementId": "table_011VX2D_"
+        },
+        {
+          "id": "action_RZDmTY2g",
+          "type": "laser",
+          "elementId": "latex_3jGF5BFX"
+        },
+        {
+          "id": "action_kDVsMiy9",
+          "type": "speech",
+          "text": "为了确保不是巧合，我们再派一组侦察兵从右边出发，找比1大的数，一点点后退着接近1。大家仔细看看，函数值是不是也精准地跑向了同一个目标——2？",
+          "audioRef": "audio/tts_s2_action_kDVsMiy9.mp3"
+        },
+        {
+          "id": "action__rhCSC3X",
+          "type": "spotlight",
+          "elementId": "text_T9IrDkK_"
+        },
+        {
+          "id": "action_Y1qa88ka",
+          "type": "speech",
+          "text": "所以，左右两边的侦察兵虽然行军路线不同，但他们都报告了同一个目的地：2。这就像四周的溪流最终都汇集到了同一个湖泊。",
+          "audioRef": "audio/tts_s2_action_Y1qa88ka.mp3"
+        },
+        {
+          "id": "action_j3faTKZb",
+          "type": "spotlight",
+          "elementId": "text_bKd15DtA"
+        },
+        {
+          "id": "action_e8Hs5yYK",
+          "type": "speech",
+          "text": "这带出我们今天最核心的一个观念：极限，描述的是一种‘趋势’和‘目标’，它并不在乎目标点上发生了什么。你看，函数在x=1时无定义，是个空洞，但任何一边的趋近结果都毫不含糊地指向2。极限不依赖点值而独立存在，这正是突破直觉的关键。",
+          "audioRef": "audio/tts_s2_action_e8Hs5yYK.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "从数表观察趋近：拖动实验",
+      "order": 3,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "limit_observation",
+          "description": "从数表观察趋近：通过拖动x值靠近目标点a，观察f(x)值的稳定趋势，理解极限的概念。",
+          "variables": [
+            {
+              "name": "x_position",
+              "label": "x 位置",
+              "min": -1,
+              "max": 5,
+              "default": 3.5,
+              "unit": ""
+            },
+            {
+              "name": "step_size",
+              "label": "步长",
+              "min": 0.001,
+              "max": 0.1,
+              "default": 0.1,
+              "unit": ""
+            },
+            {
+              "name": "value_display_toggle",
+              "label": "数值表显示",
+              "min": 0,
+              "max": 1,
+              "default": 1,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "从左侧趋近",
+              "variables": {
+                "x_position": 0.5,
+                "step_size": 0.1
+              }
+            },
+            {
+              "name": "从右侧趋近",
+              "variables": {
+                "x_position": 3.5,
+                "step_size": 0.1
+              }
+            },
+            {
+              "name": "精细步长",
+              "variables": {
+                "x_position": 3.5,
+                "step_size": 0.001
+              }
+            },
+            {
+              "name": "切换函数",
+              "variables": {
+                "x_position": 0.5,
+                "step_size": 0.1
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/03_从数表观察趋近：拖动实验.html",
+        "htmlBytes": 782664
+      },
+      "actions": [
+        {
+          "id": "action_NLR1Pl-F",
+          "type": "speech",
+          "text": "本场景通过交互探索“从数表观察趋近：拖动实验”。无论从左边还是右边逼近 x=1，f(x) 都毫不含糊地指向 2，哪怕那个点本身是个空洞。现在，我们把数表变成活的——你亲手拖动 x 去靠近 a，看看数值面板里究竟在发生什么。"
+        },
+        {
+          "id": "action_0-aK9jUp",
+          "type": "widget_highlight",
+          "target": "#x-slider",
+          "content": "拖动这个滑块，让 x 慢慢靠近目标点 a。"
+        },
+        {
+          "id": "action_Lt0clmAC",
+          "type": "speech",
+          "text": "先试试从右边开始吧。把 x 从 3 附近慢慢拖向 1，一边拖一边盯着 f(x) 的数值。你会发现，它并不是一下子跳到某个数，而是一点点地靠拢，好像在瞄准一个目标。",
+          "audioRef": "audio/tts_s3_action_Lt0clmAC.mp3"
+        },
+        {
+          "id": "action_FAhGPybS",
+          "type": "widget_setState",
+          "state": {
+            "x_position": 3.5,
+            "step_size": 0.1
+          },
+          "content": "设置初始位置，准备从右侧趋近。"
+        },
+        {
+          "id": "action_8LG72Ekh",
+          "type": "speech",
+          "text": "好，现在把步长调成 0.1，点击按钮让 x 一步一步靠近 1。每一步停下来，都读一读 f(x) 的值。你看到了什么趋势？",
+          "audioRef": "audio/tts_s3_action_8LG72Ekh.mp3"
+        },
+        {
+          "id": "action_09feGwEe",
+          "type": "widget_highlight",
+          "target": "#step-size-control",
+          "content": "使用步长按钮来精细控制 x 的移动。"
+        },
+        {
+          "id": "action_GyxGuogN",
+          "type": "widget_setState",
+          "state": {
+            "x_position": 1.1,
+            "step_size": 0.01
+          },
+          "content": "展示步长变小后，数值表的细节变化。"
+        },
+        {
+          "id": "action_vWUWlG2-",
+          "type": "speech",
+          "text": "接下来把步长改得更小，0.01，再试。你会清晰地看到，x 每靠近 1 一小步，f(x) 的变化量都更小，好像离 2 越来越近、却总差一点点——这就叫“趋向于 2”。等到步长小到 0.001，你几乎看不出 f(x) 和 2 的差别了。记住这种感觉：极限不是到达，是一直在靠近。",
+          "audioRef": "audio/tts_s3_action_vWUWlG2-.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "从数表观察趋近：关系图",
+      "order": 4,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "htmlPath": "interactive/04_从数表观察趋近：关系图.html",
+        "htmlBytes": 462497
+      },
+      "actions": [
+        {
+          "id": "action_HqpPhKGr",
+          "type": "speech",
+          "text": "本场景通过交互探索“从数表观察趋近：关系图”。我们在刚才的拖动实验里亲眼看到了，x 从左右两边一步一步靠近1的时候，f(x) 都拼命往2跑，却不一定能刚好“抵达”2。现在我们把这种“靠近”的感觉，用一张逻辑关系图拆开来看清楚。"
+        },
+        {
+          "id": "action_sLOHoJQ3",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "从左、右两侧的数值序列开始，它们是观察极限的起点。"
+        },
+        {
+          "id": "action_I6ikxb0r",
+          "type": "speech",
+          "text": "图上有两股力量——左侧的序列和右侧的序列——它们像两列队伍，从不同方向朝同一个目标前进。先点开“左侧序列”看看，里面记录了什么？",
+          "audioRef": "audio/tts_s4_action_I6ikxb0r.mp3"
+        },
+        {
+          "id": "action_8i1P-uuQ",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "展开左侧序列的数值示例：0.9, 0.99, 0.999..."
+        },
+        {
+          "id": "action_moIXoRE5",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "展开右侧序列的数值示例：1.1, 1.01, 1.001..."
+        },
+        {
+          "id": "action_x0Nomm68",
+          "type": "speech",
+          "text": "现在请你点一下“目标趋势”节点，看看这两股力量汇合时，f(x) 的变化规律是不是和我们刚才拖动实验里看到的一模一样。",
+          "audioRef": "audio/tts_s4_action_x0Nomm68.mp3"
+        },
+        {
+          "id": "action_khGtXDer",
+          "type": "widget_highlight",
+          "target": "#n4",
+          "content": "目标趋势节点展示了f(x)如何从两侧趋近于极限值2。"
+        },
+        {
+          "id": "action_iO1XebsV",
+          "type": "speech",
+          "text": "最后，特别注意那个标着“常见误解”的陷阱位置——很多人在这儿犯错，以为极限值必须等于这一点的函数值。点开它，看看为什么这条路走不通。",
+          "audioRef": "audio/tts_s4_action_iO1XebsV.mp3"
+        },
+        {
+          "id": "action_3fcSkY0F",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "误区提示：极限描述的是‘趋势’，不是某一点的硬性到达。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "从数表观察趋近：误解修复挑战",
+      "order": 5,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "在存在干扰项（错误函数值）的情况下预测极限，修复将极限等同于函数值的常见误解。",
+          "gameConfig": {
+            "controls": [
+              "basket_drag"
+            ],
+            "levels": 5,
+            "cardsPerLevel": 8,
+            "trendCardsNeeded": 4
+          },
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "achievements": [
+            {
+              "id": "first_limit",
+              "name": "初次发现",
+              "description": "完成第一关",
+              "icon": "🔍"
+            },
+            {
+              "id": "perfect",
+              "name": "完美猎手",
+              "description": "一关不错失误",
+              "icon": "💎"
+            },
+            {
+              "id": "streak5",
+              "name": "趋势大师",
+              "description": "连续5关完成",
+              "icon": "👑"
+            },
+            {
+              "id": "speed_demo",
+              "name": "闪电猎手",
+              "description": "15秒内完成一关",
+              "icon": "⚡"
+            }
+          ]
+        },
+        "htmlPath": "interactive/05_从数表观察趋近：误解修复挑战.html",
+        "htmlBytes": 784836
+      },
+      "actions": [
+        {
+          "id": "action_ulKX5JfW",
+          "type": "speech",
+          "text": "本场景通过交互探索“从数表观察趋近：误解修复挑战”。它让我们以为极限值必须等于函数在这一点的取值。现在，我们进入一个更紧张的任务——我们要在一片跳动的数字中，亲手把“误解怪兽”抓出来！"
+        },
+        {
+          "id": "action_z1Tf3c2b",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里，开启你的第一关挑战。"
+        },
+        {
+          "id": "action_bAcAyHZ4",
+          "type": "speech",
+          "text": "点击开始按钮，你会看到一堆数值卡片在闪烁。其中大多数都是干扰你判断的“噪音”，它们可能就是函数在某个特定点的值，但我们的目标是——寻找那个稳定不变的“趋势值”。",
+          "audioRef": "audio/tts_s5_action_bAcAyHZ4.mp3"
+        },
+        {
+          "id": "action_uXul_akB",
+          "type": "widget_setState",
+          "state": {
+            "currentLevel": 1
+          },
+          "content": "进入第一关，显示数值卡片和趋势槽。"
+        },
+        {
+          "id": "action_qF07Nghi",
+          "type": "speech",
+          "text": "看到了吗？有些数字亮得特别刺眼，似乎在喊“选我！选我！”。但请记住，极限不是某一点的孤零零的值，而是当自变量无限逼近时，函数值所奔赴的那个固定目的地。仔细看，哪个数字是大多数卡片都在慢慢靠近的？把它拖到下面的“趋势槽”里。",
+          "audioRef": "audio/tts_s5_action_qF07Nghi.mp3"
+        },
+        {
+          "id": "action_toIz5xnt",
+          "type": "widget_annotation",
+          "target": "#trend-slot",
+          "content": "拖动你认为代表趋势的卡片到这里，消灭误解怪兽。"
+        },
+        {
+          "id": "action_OjpCXsk8",
+          "type": "speech",
+          "text": "别怕选错，每一次失误都会让“误解怪兽”长大一点，但也让我们更清晰地看到它惯用的伎俩。当你准确地抓出那张趋势卡片时，怪兽就会被消灭，你会获得“逻辑能量”。开始你的第一次猎捕吧！",
+          "audioRef": "audio/tts_s5_action_OjpCXsk8.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "从数表观察趋近：空间视角",
+      "order": 6,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "从数表观察趋近：空间视角 — 3D轨迹图展示点在曲线上滑行并投影到纵轴的过程，帮助学生直观理解极限概念。函数 z = 3 + 1/x，当 x → ∞ 时，z → 3。",
+          "objects": [
+            {
+              "id": "curve_path",
+              "type": "tube",
+              "material": {
+                "type": "phong",
+                "color": "#818cf8",
+                "emissive": "#312e81"
+              },
+              "description": "函数曲线 z = 3 + 1/x"
+            },
+            {
+              "id": "sliding_point",
+              "type": "sphere",
+              "material": {
+                "type": "phong",
+                "color": "#ff6b6b",
+                "emissive": "#ff2222"
+              },
+              "description": "沿曲线滑动的点"
+            },
+            {
+              "id": "projection_shadow",
+              "type": "sphere",
+              "material": {
+                "type": "phong",
+                "color": "#fbbf24",
+                "emissive": "#f59e0b"
+              },
+              "description": "点在 Z 轴上的投影（趋近极限）"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera",
+              "description": "旋转、缩放 3D 视图"
+            },
+            {
+              "type": "slider",
+              "param": "xValue",
+              "min": 1,
+              "max": 50,
+              "default": 1,
+              "description": "控制滑动点在曲线上的位置（x 值）"
+            },
+            {
+              "type": "slider",
+              "param": "speed",
+              "min": 0,
+              "max": 5,
+              "default": 1,
+              "description": "动画速度"
+            },
+            {
+              "type": "button",
+              "action": "play",
+              "label": "播放/暂停"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "viewSide",
+              "label": "侧面视角"
+            },
+            {
+              "type": "button",
+              "action": "viewTop",
+              "label": "俯视图"
+            }
+          ],
+          "presets": [
+            {
+              "name": "初始视角",
+              "state": {
+                "cameraPosition": [
+                  12,
+                  10,
+                  14
+                ],
+                "cameraTarget": [
+                  5,
+                  3,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧面观察（看投影）",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  5,
+                  18
+                ],
+                "cameraTarget": [
+                  5,
+                  3,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "俯视（看轨迹）",
+              "state": {
+                "cameraPosition": [
+                  5,
+                  25,
+                  0.01
+                ],
+                "cameraTarget": [
+                  5,
+                  0,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/06_从数表观察趋近：空间视角.html",
+        "htmlBytes": 2512169
+      },
+      "actions": [
+        {
+          "id": "action_bRArVMW_",
+          "type": "speech",
+          "text": "本场景通过交互探索“从数表观察趋近：空间视角”。让我们换一个视角，把这个趋近过程放到三维空间里，看得更立体一些。"
+        },
+        {
+          "id": "action_8RBVlZvw",
+          "type": "widget_setState",
+          "state": {
+            "xValue": 1,
+            "cameraPosition": [
+              12,
+              10,
+              14
+            ]
+          },
+          "content": "初始化场景，展示标准的3D视角。"
+        },
+        {
+          "id": "action_S9GOrj0s",
+          "type": "speech",
+          "text": "看，这条紫色的曲线就是函数 z = 3 + 1/x 的轨迹。那个红色的小点，就是随着 x 变化，函数值所在的位置。",
+          "audioRef": "audio/tts_s6_action_S9GOrj0s.mp3"
+        },
+        {
+          "id": "action_OeEiw48H",
+          "type": "widget_highlight",
+          "target": "#sliding_point",
+          "content": "高亮显示沿曲线滑动的红点。"
+        },
+        {
+          "id": "action_DFFzvMUg",
+          "type": "speech",
+          "text": "还记得我们之前从数表里得出的结论吗？当 x 越来越大时，函数值会越来越接近 3。现在，我们用一个侧面视角来亲眼看看这个过程。",
+          "audioRef": "audio/tts_s6_action_DFFzvMUg.mp3"
+        },
+        {
+          "id": "action_U4jWnlKy",
+          "type": "widget_setState",
+          "state": {
+            "xValue": 10,
+            "cameraPosition": [
+              0,
+              5,
+              18
+            ]
+          },
+          "content": "切换到侧面视角，并将点移动到x=10的位置，准备观察投影。"
+        },
+        {
+          "id": "action_SLJynfwM",
+          "type": "speech",
+          "text": "从这个侧面看，注意那个金色的投影点。它就是红点在纵轴上的脚印。请拖动 x 的滑块，让点往前滑行，仔细观察这个金色脚印的运动方向。",
+          "audioRef": "audio/tts_s6_action_SLJynfwM.mp3"
+        },
+        {
+          "id": "action_7-e0TxOX",
+          "type": "widget_annotation",
+          "target": "#projection_shadow",
+          "content": "投影值趋近于 3"
+        },
+        {
+          "id": "action_DDzp72hz",
+          "type": "speech",
+          "text": "看到了吗？随着红点越滑越远，它的金色投影并不是越来越低，而是在慢慢地向高度“3”这个位置靠拢。无论 x 跑多远，这个脚印永远不会真正踩在 3 上，而是在无限接近它。这就是极限的空间意义。",
+          "audioRef": "audio/tts_s6_action_DDzp72hz.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "图像上的左右极限",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "VFu0Rc-OTw9paeUhuXWIR",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_vjQ0V7fW",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">极限的直观理解：函数图像与左右极限</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_89iPg5hO",
+              "left": 60,
+              "top": 125,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#e2e8f0"
+            },
+            {
+              "type": "text",
+              "id": "text_s8KZs9GU",
+              "left": 60,
+              "top": 140,
+              "width": 420,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #334155;\">1. 函数图像与极限趋势</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_sbHvsEXa",
+              "left": 520,
+              "top": 140,
+              "width": 420,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; color: #334155;\">2. 极限存在的充要条件</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_S9L6q4Yh",
+              "left": 60,
+              "top": 195,
+              "width": 420,
+              "height": 310,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "shape",
+              "id": "shape_enYMiaot",
+              "left": 520,
+              "top": 195,
+              "width": 420,
+              "height": 310,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "line",
+              "id": "line_b1Wtiv2O",
+              "left": 90,
+              "top": 235,
+              "width": 3,
+              "start": [
+                0,
+                110
+              ],
+              "end": [
+                300,
+                110
+              ],
+              "style": "solid",
+              "color": "#64748b",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_XZ0kbtyF",
+              "left": 90,
+              "top": 235,
+              "width": 3,
+              "start": [
+                150,
+                210
+              ],
+              "end": [
+                150,
+                0
+              ],
+              "style": "solid",
+              "color": "#64748b",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_PUSa8UTA",
+              "left": 208,
+              "top": 346,
+              "width": 64,
+              "height": 46,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #334155;\">x₀</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333",
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line__rICS2gf",
+              "left": 90,
+              "top": 235,
+              "width": 2,
+              "start": [
+                150,
+                110
+              ],
+              "end": [
+                150,
+                55
+              ],
+              "style": "dashed",
+              "color": "#94a3b8",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_iE1tnzIs",
+              "left": 120,
+              "top": 265,
+              "width": 3,
+              "start": [
+                0,
+                80
+              ],
+              "end": [
+                120,
+                20
+              ],
+              "curve": [
+                60,
+                40
+              ],
+              "style": "solid",
+              "color": "#2563eb",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_XY3JPcaO",
+              "left": 240,
+              "top": 285,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                120,
+                60
+              ],
+              "curve": [
+                60,
+                20
+              ],
+              "style": "solid",
+              "color": "#2563eb",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_aJGa03Nn",
+              "left": 234,
+              "top": 279,
+              "width": 12,
+              "height": 12,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "viewBox": [
+                1,
+                1
+              ],
+              "fill": "#ffffff",
+              "fixedRatio": true,
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_lJfmj0ti",
+              "left": 234,
+              "top": 279,
+              "width": 12,
+              "height": 12,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "viewBox": [
+                1,
+                1
+              ],
+              "fill": "#ffffff",
+              "fixedRatio": true,
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_nbHzpvDG",
+              "left": 234,
+              "top": 279,
+              "width": 12,
+              "height": 12,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "viewBox": [
+                1,
+                1
+              ],
+              "fill": "#ef4444",
+              "fixedRatio": true,
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_4xseEgiv",
+              "left": 105,
+              "top": 208,
+              "width": 110,
+              "height": 46,
+              "content": "<p style=\"font-size: 16px; color: #2563eb;\">左侧趋近</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333",
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_y2uzq4Ph",
+              "left": 275,
+              "top": 208,
+              "width": 110,
+              "height": 46,
+              "content": "<p style=\"font-size: 16px; text-align: right; color: #2563eb;\">右侧趋近</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333",
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_8-oVfi_k",
+              "left": 270,
+              "top": 258,
+              "width": 120,
+              "height": 46,
+              "content": "<p style=\"font-size: 16px; color: #ef4444;\">L</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333",
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_5DKbaEQc",
+              "left": 100,
+              "top": 258,
+              "width": 140,
+              "height": 70,
+              "content": "<p style=\"font-size: 16px; color: #2563eb;\">两侧靠近</p><p style=\"font-size: 16px; color: #2563eb;\">同一高度 L</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333",
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_3HQSKZBw",
+              "left": 80,
+              "top": 405,
+              "width": 380,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #475569;\">• <b>左极限</b>：从左侧趋近时的函数值趋势</p><p style=\"font-size: 16px; color: #475569;\">• <b>右极限</b>：从右侧趋近时的函数值趋势</p><p style=\"font-size: 16px; color: #475569;\">• 注意：单一方向趋势不代表整体极限</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "latex_3iS3c7ws",
+              "left": 540,
+              "top": 210,
+              "width": 380,
+              "height": 120,
+              "rotate": 0,
+              "latex": "\\lim_{x \\to x_0} f(x) = L \\\\ \\Longleftrightarrow \\\\ \\lim_{x \\to x_0^-} f(x) = L \\text{ 且 } \\lim_{x \\to x_0^+} f(x) = L",
+              "color": "#1e3a8a",
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.5501em;vertical-align:-0.8001em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.4em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3173em;\"><span style=\"top:-2.357em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.143em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8001em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">L</span></span><span class=\"mspace newline\"></span><span class=\"base\"><span class=\"strut\" style=\"height:0.549em;vertical-align:-0.024em;\"></span><span class=\"mrel\">⟺</span></span><span class=\"mspace newline\"></span><span class=\"base\"><span class=\"strut\" style=\"height:1.8087em;vertical-align:-1.0587em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.2593em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.821em;\"><span style=\"top:-2.1885em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span><span style=\"top:-2.9043em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mbin mtight\">−</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3115em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0587em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.8087em;vertical-align:-1.0587em;\"></span><span class=\"mord mathnormal\">L</span><span class=\"mord text\"><span class=\"mord\"> </span><span class=\"mord cjk_fallback\">且</span><span class=\"mord\"> </span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.2593em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.821em;\"><span style=\"top:-2.1885em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span><span style=\"top:-2.9043em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mbin mtight\">+</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3115em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0587em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">L</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "text",
+              "id": "text_9di3lpEA",
+              "left": 540,
+              "top": 350,
+              "width": 380,
+              "height": 118,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #475569;\">• <b>充要条件</b>：左右极限必须相等</p><p style=\"font-size: 16px; color: #475569;\">• <b>常见误区</b>：仅看单一方向趋势</p><p style=\"font-size: 16px; color: #475569;\">• <b>几何意义</b>：函数在趋近点处“无缝对接”</p><p style=\"font-size: 16px; color: #475569;\">• <b>结论</b>：若左右极限不等，则极限不存在</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_RNC-wnUW",
+          "type": "spotlight",
+          "elementId": "text_vjQ0V7fW"
+        },
+        {
+          "id": "action_SftVFsUU",
+          "type": "speech",
+          "text": "本场景聚焦“图像上的左右极限”。感受了函数值一点点向某个目标靠近的趋势。现在我们把这种直觉搬到图像上，就像看地图一样，来直观理解“左右极限”。"
+        },
+        {
+          "id": "action_7sPK0xxy",
+          "type": "spotlight",
+          "elementId": "text_s8KZs9GU"
+        },
+        {
+          "id": "action_aVXJIK4M",
+          "type": "speech",
+          "text": "看，屏幕上有一条函数曲线。想象一下，有两只小蚂蚁，一只从左边沿着曲线爬，另一只从右边沿着曲线爬，它们的目标都是去往 x₀ 这个位置。",
+          "audioRef": "audio/tts_s7_action_aVXJIK4M.mp3"
+        },
+        {
+          "id": "action_BlLatb0E",
+          "type": "laser",
+          "elementId": "shape_enYMiaot"
+        },
+        {
+          "id": "action_47mQeTwF",
+          "type": "speech",
+          "text": "左边这只蚂蚁，不管是从山的这边还是那边出发，它所看向的最终高度，就叫做左极限。",
+          "audioRef": "audio/tts_s7_action_47mQeTwF.mp3"
+        },
+        {
+          "id": "action_LNGNp5oB",
+          "type": "laser",
+          "elementId": "shape_S9L6q4Yh"
+        },
+        {
+          "id": "action_WQw_Rydn",
+          "type": "speech",
+          "text": "同样地，右边这只蚂蚁爬向 x₀ 时，看向的那个终点高度，就是右极限。现在最关键的问题来了——",
+          "audioRef": "audio/tts_s7_action_WQw_Rydn.mp3"
+        },
+        {
+          "id": "action_qbsVVR3J",
+          "type": "spotlight",
+          "elementId": "text_sbHvsEXa"
+        },
+        {
+          "id": "action_MrfkRgKS",
+          "type": "speech",
+          "text": "极限存在的充要条件。很多同学会犯一个经典错误，看到左边蚂蚁爬到一个高度，就觉得极限就是那个值了。这是不对的。极限要想存在，必须满足：左右两只蚂蚁，最终必须在同一个高度上“会师”。",
+          "audioRef": "audio/tts_s7_action_MrfkRgKS.mp3"
+        },
+        {
+          "id": "action_Dm7f8jyx",
+          "type": "spotlight",
+          "elementId": "text_3HQSKZBw"
+        },
+        {
+          "id": "action_s1TWF1wX",
+          "type": "speech",
+          "text": "注意看这条说明，单一方向的趋势不代表整体极限。只有当我们确认左极限和右极限相等时，我们才能说这个函数的极限存在，并且就是这个共同的值。",
+          "audioRef": "audio/tts_s7_action_s1TWF1wX.mp3"
+        },
+        {
+          "id": "action_FIkCfwEp",
+          "type": "spotlight",
+          "elementId": "text_9di3lpEA"
+        },
+        {
+          "id": "action_1q1bWJYb",
+          "type": "speech",
+          "text": "它的几何意义非常形象：函数在趋近点处必须“无缝对接”。如果左右趋势在目标点断开了，跳到了不同高度，那就说明极限不存在。记住，我们看的是趋势，是两只蚂蚁最终的约定地点，而不是函数在 x₀ 那一点到底等于什么。本场景中，我们就在图像上拖动验证一下这个感觉。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "图像上的左右极限：拖动实验",
+      "order": 8,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "left_right_limits",
+          "description": "学生操作两只小蚂蚁从左右两侧向断点 x=a 趋近，观察左极限与右极限是否相等，理解极限值与函数值的区别。",
+          "variables": [
+            {
+              "name": "approach_speed",
+              "label": "趋近速度",
+              "min": 0.1,
+              "max": 3,
+              "default": 1,
+              "unit": "倍速"
+            },
+            {
+              "name": "direction_lock",
+              "label": "锁定方向",
+              "min": 0,
+              "max": 1,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "reading_panel_sync",
+              "label": "读数同步",
+              "min": 0,
+              "max": 1,
+              "default": 1,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "可去间断点",
+              "description": "左极限=右极限，但函数在该点无定义",
+              "variables": {
+                "approach_speed": 1,
+                "direction_lock": 0,
+                "reading_panel_sync": 1,
+                "function_type": 0,
+                "breakpoint": 0
+              }
+            },
+            {
+              "name": "跳跃间断点",
+              "description": "左极限≠右极限，经典不连续",
+              "variables": {
+                "approach_speed": 1,
+                "direction_lock": 0,
+                "reading_panel_sync": 1,
+                "function_type": 1,
+                "breakpoint": 0
+              }
+            },
+            {
+              "name": "无穷间断点",
+              "description": "一侧或两侧极限为无穷",
+              "variables": {
+                "approach_speed": 1,
+                "direction_lock": 0,
+                "reading_panel_sync": 1,
+                "function_type": 2,
+                "breakpoint": 0
+              }
+            },
+            {
+              "name": "连续点",
+              "description": "左极限=右极限=函数值",
+              "variables": {
+                "approach_speed": 1,
+                "direction_lock": 0,
+                "reading_panel_sync": 1,
+                "function_type": 3,
+                "breakpoint": 0
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/08_图像上的左右极限：拖动实验.html",
+        "htmlBytes": 780666
+      },
+      "actions": [
+        {
+          "id": "action_k6VU89Wo",
+          "type": "speech",
+          "text": "本场景通过交互探索“图像上的左右极限：拖动实验”。上页我们说到，两只蚂蚁是否能‘会师’，决定了极限是否存在。现在，我们就亲手来拖动这两只小蚂蚁，看看它们究竟会在断点相遇，还是无奈错过。"
+        },
+        {
+          "id": "action_ZDrnqO6c",
+          "type": "widget_setState",
+          "state": {
+            "approach_speed": 1,
+            "direction_lock": 0,
+            "reading_panel_sync": 1,
+            "function_type": 1,
+            "breakpoint": 0
+          },
+          "content": "切换到‘跳跃间断点’预设，这是最经典的左右极限不相等的情况。"
+        },
+        {
+          "id": "action_q54YiIkr",
+          "type": "speech",
+          "text": "观察图像，这里有一个明显的跳跃。现在，请先不要被函数本身的值干扰。注意左侧这只蚂蚁——当它从左边越来越靠近断点时，它最终‘约定’的高度是多少？",
+          "audioRef": "audio/tts_s8_action_q54YiIkr.mp3"
+        },
+        {
+          "id": "action_FdekQtTC",
+          "type": "widget_highlight",
+          "target": "#reading-panel-left",
+          "content": "拖动左侧滑块时，左极限的数值会清晰地显示在这里。"
+        },
+        {
+          "id": "action_U_DkwzQg",
+          "type": "speech",
+          "text": "接下来，切换方向，让蚂蚁从右边靠近。你会发现，它锁定的高度完全不同。左右两边的读数无法重合，这就是函数在这一点产生‘分歧’的图像证据。",
+          "audioRef": "audio/tts_s8_action_U_DkwzQg.mp3"
+        },
+        {
+          "id": "action_zhIbqo2x",
+          "type": "widget_highlight",
+          "target": "#reading-panel-right",
+          "content": "切换到右侧趋近，观察读数与左侧的差异。"
+        },
+        {
+          "id": "action_ngMcABRB",
+          "type": "speech",
+          "text": "非常好。你现在可以把预设切换到‘可去间断点’看一次完美的‘会师失败’——蚂蚁们不约而同地来到了同一个高度，但那个点本身却被挖掉了。极限存在，但函数值缺席，这完美印证了我们之前强调的一点：极限值和函数值，是两回事。",
+          "audioRef": "audio/tts_s8_action_ngMcABRB.mp3"
+        },
+        {
+          "id": "action_DSsdqjH2",
+          "type": "widget_setState",
+          "state": {
+            "approach_speed": 1,
+            "direction_lock": 0,
+            "reading_panel_sync": 1,
+            "function_type": 0,
+            "breakpoint": 0
+          },
+          "content": "切换到‘可去间断点’，验证左极限=右极限，但函数在该点无定义的情况。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "图像上的左右极限：关系图",
+      "order": 9,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "n1",
+              "x": 400,
+              "y": 70,
+              "label": "开始",
+              "sublabel": "输入 f(x) 与趋近点 x₀",
+              "icon": "🏁",
+              "details": "<p>选择目标函数 <span class='math'>f(x)</span> 和趋近点 <span class='math'>x₀</span>。</p><p>物理隐喻：想象你正站在点 x₀ 附近，准备从两侧「趋近」这个位置。</p><p>⚠️ 注意：我们关心的是 x <strong>趋近</strong> x₀ 时的趋势，而非 x = x₀ 时的函数值。</p>"
+            },
+            {
+              "id": "n2",
+              "x": 180,
+              "y": 210,
+              "label": "计算左极限",
+              "sublabel": "lim x→x₀⁻ f(x)",
+              "icon": "⬅️",
+              "details": "<p>从 x₀ 的<strong>左侧</strong>趋近：取 x &lt; x₀ 且 x → x₀。</p><p>记作 <span class='math'>lim<sub>x→x₀⁻</sub> f(x) = L⁻</span></p><p>物理隐喻：想象你从左边的小径慢慢走向桥口 x₀，你看到的「趋势值」就是左极限。</p><p>方法：代入略小于 x₀ 的值观察趋势，或用左极限定义式计算。</p>"
+            },
+            {
+              "id": "n3",
+              "x": 620,
+              "y": 210,
+              "label": "计算右极限",
+              "sublabel": "lim x→x₀⁺ f(x)",
+              "icon": "➡️",
+              "details": "<p>从 x₀ 的<strong>右侧</strong>趋近：取 x &gt; x₀ 且 x → x₀。</p><p>记作 <span class='math'>lim<sub>x→x₀⁺</sub> f(x) = L⁺</span></p><p>物理隐喻：想象你从右边的小径慢慢走向桥口 x₀，你看到的「趋势值」就是右极限。</p><p>方法：代入略大于 x₀ 的值观察趋势，或用右极限定义式计算。</p>"
+            },
+            {
+              "id": "n4",
+              "x": 400,
+              "y": 370,
+              "label": "比较左右极限",
+              "sublabel": "L⁻ = L⁺ ？",
+              "icon": "⚖️",
+              "details": "<p>核心判定：比较左极限 L⁻ 与右极限 L⁺ 是否<strong>相等</strong>。</p><p><span class='math'>L⁻ = L⁺ ⟹ 极限存在</span></p><p><span class='math'>L⁻ ≠ L⁺ ⟹ 极限不存在</span></p><p>物理隐喻：如果从两侧走来看到的目标高度相同，说明「桥是平的」——极限存在；如果两侧高度不同，说明有「断崖」——极限不存在。</p>"
+            },
+            {
+              "id": "n5",
+              "x": 200,
+              "y": 530,
+              "label": "极限存在 ✓",
+              "sublabel": "lim f(x) = L⁻ = L⁺",
+              "icon": "✅",
+              "details": "<p>结论：<span class='math'>lim<sub>x→x₀</sub> f(x) = L</span></p><p class='success'>✅ 当左极限 = 右极限时，双侧极限存在且等于该共同值。</p><p>例如：<span class='math'>f(x) = x²</span> 在 x₀=2 处，L⁻=4, L⁺=4，故 lim<sub>x→2</sub> x² = 4。</p><p>⚠️ 即使 f(x₀) 无定义（如可去间断点），极限仍可能存在！</p>"
+            },
+            {
+              "id": "n6",
+              "x": 600,
+              "y": 530,
+              "label": "极限不存在 ✗",
+              "sublabel": "L⁻ ≠ L⁺",
+              "icon": "❌",
+              "details": "<p>结论：<span class='math'>lim<sub>x→x₀</sub> f(x) 不存在</span></p><p>当左极限 ≠ 右极限时，双侧极限<strong>不存在</strong>。</p><p>例如：符号函数 <span class='math'>sgn(x)</span> 在 x₀=0 处，L⁻=−1, L⁺=1，故极限不存在。</p><div class='warning'>🔑 这就是「判定失效」逻辑分支——左右不等直接导致极限不存在，无需进一步讨论。</div>"
+            },
+            {
+              "id": "n7",
+              "x": 400,
+              "y": 650,
+              "label": "常见误解 ⚠️",
+              "sublabel": "单侧结论陷阱",
+              "icon": "🚨",
+              "details": "<div class='warning'><p><strong>陷阱1：</strong>「左极限存在 → 极限存在」</p><p>❌ 错误！必须双侧相等才成立。</p><p><strong>陷阱2：</strong>「极限值 = f(x₀)」</p><p>❌ 错误！极限是<strong>趋近趋势</strong>，不是函数值。即使 f(x₀) 无定义或等于其他值，极限仍可能独立存在。</p><p><strong>陷阱3：</strong>「L⁻≠L⁺ 时要再算一遍」</p><p>❌ 错误！一旦确认 L⁻≠L⁺，直接判定极限不存在。</p></div><p>正确做法：严格按流程走，不要跳过「比较」步骤直接下结论。</p>"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "左侧趋近"
+            },
+            {
+              "from": "n1",
+              "to": "n3",
+              "label": "右侧趋近"
+            },
+            {
+              "from": "n2",
+              "to": "n4",
+              "label": "得到 L⁻"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "得到 L⁺"
+            },
+            {
+              "from": "n4",
+              "to": "n5",
+              "label": "是 (相等)"
+            },
+            {
+              "from": "n4",
+              "to": "n6",
+              "label": "否 (不等)"
+            },
+            {
+              "from": "n5",
+              "to": "n7",
+              "label": "注意陷阱"
+            },
+            {
+              "from": "n6",
+              "to": "n7",
+              "label": "注意陷阱"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7"
+          ]
+        },
+        "htmlPath": "interactive/09_图像上的左右极限：关系图.html",
+        "htmlBytes": 771782
+      },
+      "actions": [
+        {
+          "id": "action_wqyePQOk",
+          "type": "speech",
+          "text": "本场景通过交互探索“图像上的左右极限：关系图”。直观感受了左右极限。现在我想请大家用她最擅长的方式，帮我梳理一下——判定一个极限到底存不存在，我们脑子里需要跑完一整套怎样的流程图？"
+        },
+        {
+          "id": "action_XXCeC7MU",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "从起点开始：选择函数和趋近点"
+        },
+        {
+          "id": "action_6KQ7MO3K",
+          "type": "speech",
+          "text": "我们一起看这张图。一切判断的出发点，是我们选定了一个函数和它趋近的点。就像我们刚拖动的那个‘断崖’图像。选中之后，我们的思维会自动兵分两路。",
+          "audioRef": "audio/tts_s9_action_6KQ7MO3K.mp3"
+        },
+        {
+          "id": "action_WK4JUGqr",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "左极限分支"
+        },
+        {
+          "id": "action_Yicbt-ig",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "右极限分支"
+        },
+        {
+          "id": "action_Z_pA5f9n",
+          "type": "widget_annotation",
+          "target": "#n2",
+          "content": "计算 L⁻"
+        },
+        {
+          "id": "action_UzeqAcje",
+          "type": "widget_annotation",
+          "target": "#n3",
+          "content": "计算 L⁺"
+        },
+        {
+          "id": "action_rhZCNbgw",
+          "type": "speech",
+          "text": "一路去左边算左极限L⁻，一路去右边算右极限L⁺。注意，这里最容易掉进的陷阱，就是只算了一边就急着下结论。我们必须让这两路结果在中间会师。",
+          "audioRef": "audio/tts_s9_action_rhZCNbgw.mp3"
+        },
+        {
+          "id": "action_wJNMDvvv",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "比较左右极限是否相等"
+        },
+        {
+          "id": "action__6oOcRme",
+          "type": "widget_annotation",
+          "target": "#n4",
+          "content": "L⁻ = L⁺ ？"
+        },
+        {
+          "id": "action_Ny-1tEkA",
+          "type": "speech",
+          "text": "看，汇聚到这一步——比较。如果相等，我们往左走，结论就是极限存在。如果不等，比如刚才那个高度不一样的断崖，就立刻走向右边：判定失效，极限不存在。",
+          "audioRef": "audio/tts_s9_action_Ny-1tEkA.mp3"
+        },
+        {
+          "id": "action_lDjE8Ifk",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "极限存在分支"
+        },
+        {
+          "id": "action_1TLljpEI",
+          "type": "widget_reveal",
+          "target": "#n6",
+          "content": "极限不存在分支"
+        },
+        {
+          "id": "action_xIi0VFq5",
+          "type": "speech",
+          "text": "最后，不管结论是哪一种，都会汇入一个‘常见误解’的警示灯。尤其是大家上次提到的——函数值等于极限值吗？在这个流程图里你会发现，我们从头到尾根本没看函数值本身，全是看趋近的趋势。"
+        },
+        {
+          "id": "action_5tP0boVB",
+          "type": "widget_reveal",
+          "target": "#n7",
+          "content": "单侧结论陷阱和函数值误解"
+        },
+        {
+          "id": "action_8I6CiI_G",
+          "type": "speech",
+          "text": "所以这张流程图，就是你大脑里的判定程序。下次遇到图像，心里默默跑一遍这张图，你就能精准锁定极限是否存在。现在，请你自己在心里选一个上页出现的函数，默默跑一遍，看你会走到‘存在’还是‘不存在’。",
+          "audioRef": "audio/tts_s9_action_8I6CiI_G.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "图像上的左右极限：误解修复挑战",
+      "order": 10,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "action",
+          "description": "在分段函数迷宫中寻找出口，通过正确的趋近方向到达目标平台。",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/10_图像上的左右极限：误解修复挑战.html",
+        "htmlBytes": 777326
+      },
+      "actions": [
+        {
+          "id": "action_EuaNG3oK",
+          "type": "speech",
+          "text": "本场景通过交互探索“图像上的左右极限：误解修复挑战”。现在要动真格的了。大家给大家准备了一个分段函数迷宫，规则很简单：左右极限必须分别验证。"
+        },
+        {
+          "id": "action_Fxh-Xhe3",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始挑战"
+        },
+        {
+          "id": "action_cV-6LG8D",
+          "type": "speech",
+          "text": "第一关的目标是让角色到达“左极限为2”的平台。注意看地图，有些路看着能通，但那是只有右极限符合的陷阱——如果你只看一边就下结论，角色会直接掉下去。",
+          "audioRef": "audio/tts_s10_action_cV-6LG8D.mp3"
+        },
+        {
+          "id": "action_7RlL3emB",
+          "type": "widget_setState",
+          "state": {
+            "currentLevel": "level1-leftLimit2"
+          }
+        },
+        {
+          "id": "action_hvyqB7XL",
+          "type": "speech",
+          "text": "你可以用键盘方向键或者点击屏幕上的箭头来移动。每到一个岔路口，暂停一下，想想：左边这条路，对应的是左极限还是右极限？要求是左极限为2，这个方向符不符合？",
+          "audioRef": "audio/tts_s10_action_hvyqB7XL.mp3"
+        },
+        {
+          "id": "action_qGJ0m-RN",
+          "type": "widget_annotation",
+          "target": "#level-indicator",
+          "content": "当前关卡要求：左极限 = 2"
+        },
+        {
+          "id": "action_WuAJ74Dk",
+          "type": "speech",
+          "text": "记住，这可不是碰运气。只有每一步都经过双向验证——既确认你选的方向正确，也确认你没选的那个方向不符合要求——才能安全到达出口，开启下一关。试试看吧。",
+          "audioRef": "audio/tts_s10_action_WuAJ74Dk.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "图像上的左右极限：空间视角",
+      "order": 11,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "3D视角观察分段函数在跳跃点处的左右极限。学生可旋转视角至俯视图，直观看到左极限与右极限在同一水平位置（x=a）但高度分离的空间错位。",
+          "objects": [
+            {
+              "id": "stepped_curve",
+              "type": "line",
+              "description": "分段函数图像：f(x) = x+1 (x<0), f(x) = x-1 (x>0)",
+              "color": "#6699ff",
+              "material": {
+                "type": "phong",
+                "emissive": "#2244aa"
+              }
+            },
+            {
+              "id": "left_marker",
+              "type": "sphere",
+              "description": "左极限标记点：lim(x→0⁻) f(x) = 1",
+              "color": "#4488ff",
+              "material": {
+                "type": "phong",
+                "emissive": "#4488ff",
+                "emissiveIntensity": 0.5
+              }
+            },
+            {
+              "id": "right_marker",
+              "type": "sphere",
+              "description": "右极限标记点：lim(x→0⁺) f(x) = -1",
+              "color": "#ff8844",
+              "material": {
+                "type": "phong",
+                "emissive": "#ff8844",
+                "emissiveIntensity": 0.5
+              }
+            },
+            {
+              "id": "gap_indicator",
+              "type": "line",
+              "description": "左右极限的高度差指示线",
+              "color": "#f87171"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "zoom",
+              "direction": "in"
+            },
+            {
+              "type": "zoom",
+              "direction": "out"
+            },
+            {
+              "type": "slider",
+              "param": "speed",
+              "min": 0,
+              "max": 3,
+              "default": 1,
+              "label": "动画速度"
+            },
+            {
+              "type": "slider",
+              "param": "approach",
+              "min": 0,
+              "max": 2,
+              "default": 0.5,
+              "label": "趋近距离"
+            },
+            {
+              "type": "toggle",
+              "param": "showLeft",
+              "label": "左极限",
+              "default": true
+            },
+            {
+              "type": "toggle",
+              "param": "showRight",
+              "label": "右极限",
+              "default": true
+            },
+            {
+              "type": "toggle",
+              "param": "showGap",
+              "label": "高度差",
+              "default": true
+            },
+            {
+              "type": "button",
+              "action": "viewTop",
+              "label": "俯视"
+            },
+            {
+              "type": "button",
+              "action": "viewSide",
+              "label": "侧视"
+            },
+            {
+              "type": "button",
+              "action": "viewAngle",
+              "label": "斜视"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "俯视图 - 观察水平重合",
+              "cameraPosition": [
+                0,
+                15,
+                0.01
+              ],
+              "cameraTarget": [
+                0,
+                0,
+                0
+              ],
+              "description": "从正上方俯视，看到左右极限在x=0处水平位置重合但高度不同"
+            },
+            {
+              "name": "侧视图 - 观察高度差",
+              "cameraPosition": [
+                0,
+                1,
+                12
+              ],
+              "cameraTarget": [
+                0,
+                0,
+                0
+              ],
+              "description": "从侧面平视，清晰看到左极限=1与右极限=-1的高度差"
+            },
+            {
+              "name": "斜视角 - 综合观察",
+              "cameraPosition": [
+                6,
+                8,
+                10
+              ],
+              "cameraTarget": [
+                0,
+                0,
+                0
+              ],
+              "description": "默认斜视角，同时观察函数曲线与极限标记"
+            }
+          ],
+          "metadata": {
+            "leftLimit": 1,
+            "rightLimit": -1,
+            "jumpPoint": 0,
+            "heightDifference": 2,
+            "functionDefinition": "f(x) = x+1 (x<0); f(x) = x-1 (x>0)"
+          }
+        },
+        "htmlPath": "interactive/11_图像上的左右极限：空间视角.html",
+        "htmlBytes": 2211418
+      },
+      "actions": [
+        {
+          "id": "action_C3ZQaAtQ",
+          "type": "speech",
+          "text": "本场景通过交互探索“图像上的左右极限：空间视角”。让我们换一个更立体的视角——就像从纸面跳入空间，亲眼看看那个‘跳断’到底意味着什么。"
+        },
+        {
+          "id": "action_2tdc8uKi",
+          "type": "widget_reveal",
+          "target": "#stepped_curve",
+          "content": "三维空间中的分段函数图像"
+        },
+        {
+          "id": "action_YlnK2tND",
+          "type": "speech",
+          "text": "注意看，这两个彩色光点。蓝色的代表x从左边靠近0时的极限，橘色的代表x从右边靠近0时的极限。它们现在看起来好像在一个平面上，对吗？",
+          "audioRef": "audio/tts_s11_action_YlnK2tND.mp3"
+        },
+        {
+          "id": "action_kDoHnu-F",
+          "type": "widget_highlight",
+          "target": "#left_marker",
+          "content": "左极限标记：趋近于1"
+        },
+        {
+          "id": "action_XlvltpEg",
+          "type": "widget_highlight",
+          "target": "#right_marker",
+          "content": "右极限标记：趋近于-1"
+        },
+        {
+          "id": "action_cB_TxwmI",
+          "type": "speech",
+          "text": "试着旋转一下这个模型，点击‘俯视’按钮，从正上方往下看。你会发现这两个彩点，在水平位置x=0处完美重合了，这说明它们确实是在同一个点附近考察的。",
+          "audioRef": "audio/tts_s11_action_cB_TxwmI.mp3"
+        },
+        {
+          "id": "action_xVsAZIzZ",
+          "type": "widget_setState",
+          "state": {
+            "activePreset": "俯视图 - 观察水平重合"
+          },
+          "content": "切换到俯视图，展示水平位置重合"
+        },
+        {
+          "id": "action_akZh250y",
+          "type": "speech",
+          "text": "现在，再切到‘侧视’图。看到了吗？那根红色的指示线，清清楚楚地展示了两个极限点的高度差。这就是左右极限不相等时，空间中‘错层’的证据。",
+          "audioRef": "audio/tts_s11_action_akZh250y.mp3"
+        },
+        {
+          "id": "action_UbL4486c",
+          "type": "widget_setState",
+          "state": {
+            "activePreset": "侧视图 - 观察高度差"
+          },
+          "content": "切换到侧视图，展示高度分离"
+        },
+        {
+          "id": "action_XfUC_970",
+          "type": "widget_annotation",
+          "target": "#gap_indicator",
+          "content": "高度差为2，代表左右极限不相等"
+        },
+        {
+          "id": "action_S6r_fvBs",
+          "type": "speech",
+          "text": "所以，极限存在的前提，就是不论我们从哪个方向靠近，最终都必须落在同一个高度上。在这个三维视角里，一点偏差都藏不住。你可以再自由拖动视角，感受一下这个‘空间错位’，然后我们再来总结。",
+          "audioRef": "audio/tts_s11_action_S6r_fvBs.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在'数表拖动实验'中，当你从左向右逐渐拖动滑块，让x值越来越接近2时（比如1.9, 1.99, 1.999），你预测函数值会呈现什么趋势？",
+            "options": [
+              {
+                "value": "A",
+                "label": "函数值会越来越接近某个确定的数，这个数就是左极限"
+              },
+              {
+                "value": "B",
+                "label": "函数值会随机跳动，没有明显规律"
+              },
+              {
+                "value": "C",
+                "label": "函数值会变得越来越大，趋向无穷"
+              },
+              {
+                "value": "D",
+                "label": "函数值一定等于函数在x=2处的实际取值"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "从左侧趋近时，函数值会稳定地趋向某个常数，这就是左极限的定义。选项B错误，因为极限研究的就是有规律的趋势；选项C是特殊情况而非普遍规律；选项D是最常见的误解，极限值和函数值是两个不同的概念，函数在x=2处甚至可能没有定义。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "在数表实验中观察左右两侧分别趋近于某点，以下哪些说法是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "左极限是从小于该点的方向趋近得到的极限值"
+              },
+              {
+                "value": "B",
+                "label": "右极限是从大于该点的方向趋近得到的极限值"
+              },
+              {
+                "value": "C",
+                "label": "只要左极限存在，函数在该点的极限就一定存在"
+              },
+              {
+                "value": "D",
+                "label": "极限存在要求左极限和右极限都存在并且相等"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "analysis": "左右极限分别从两个方向趋近，极限存在的充要条件是左右极限都存在且相等。选项C错误，因为单侧极限存在不能保证极限存在，必须双侧极限相等才行，这就是为什么我们需要分别检查左右两侧。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "在'图像左右极限误解挑战'实验中，你发现函数在某点左侧的函数值趋近于3，右侧的函数值也趋近于3，但该点本身函数值却是5。以下哪个结论是正确的？",
+            "options": [
+              {
+                "value": "A",
+                "label": "函数在该点的极限是3，极限值与函数值可以不同"
+              },
+              {
+                "value": "B",
+                "label": "因为该点实际值是5，所以极限也必须是5"
+              },
+              {
+                "value": "C",
+                "label": "这种情况不可能发生，一定是实验出错了"
+              },
+              {
+                "value": "D",
+                "label": "左右都趋近于3，说明该点的函数值应该修正为3"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "这是极限概念最核心的理解：极限描述的是趋近过程中的趋势，与该点本身的取值无关。函数在该点可以取任何值，甚至无定义，都不影响极限的存在和大小。选项B是典型的'极限值等于函数值'的误解；选项C否认了极限的独立性；选项D混淆了'应该是什么'和'实际是什么'。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "multiple",
+            "question": "在图像误解挑战中，当你分别从左右两侧验证极限时，以下哪些观察是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "即使图像在这一点有个'洞'，极限仍然可能存在"
+              },
+              {
+                "value": "B",
+                "label": "只要左右两侧的函数值都趋近于同一个数，极限就存在"
+              },
+              {
+                "value": "C",
+                "label": "如果左极限和右极限不相等，只能说单侧极限存在，不能说该点极限存在"
+              },
+              {
+                "value": "D",
+                "label": "极限值就是函数在该点的实际取值"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "C"
+            ],
+            "analysis": "极限存在只需要左右趋近趋势一致，不要求函数在该点有定义（可以有'洞'）。选项D是前测中暴露最多的误解，极限值与函数值是两个独立的概念，这正是本次实验要纠正的核心错误认知。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "想象两只蚂蚁在一根树枝上相向爬行。左边的蚂蚁从左侧爬到某点附近，右边的蚂蚁从右侧也爬到同一点附近，它们几乎要相遇了。但如果这一点恰好有个缺口，蚂蚁没法真正站在那个点上。你认为这两只蚂蚁'连接'上了吗？结合你之前学到的极限知识，猜测一下'连续'这个概念可能是什么意思？",
+            "commentPrompt": "评分标准：(1) 正确理解'连接'的含义，指出虽然趋势一致但缺少实际落脚点——40% (2) 将极限存在与函数值存在联系起来，初步猜测连续需要三个条件：极限存在、函数值存在、两者相等——40% (3) 语言表达清晰，逻辑连贯——20%",
+            "analysis": "这是一个为'连续'概念做预诊断的桥接问题。两只蚂蚁趋近同一点说明极限存在（左右极限相等），但缺口意味着函数在该点可能无定义或函数值不等于极限值。连续性的直觉是'能一笔画下来没有断开'，数学上需要满足三个条件：函数在该点有定义、极限存在、极限值等于函数值。学生只要能表达出'趋势到了但实际没接上'的核心意思即可。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_IelKswL1",
+          "type": "speech",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。好了，刚才我们从不同角度，甚至是三维空间里，仔细感受了极限存在的条件。现在，是时候检验一下，这些关键的观察点你是不是真的掌握了。我们来做一个小测验，看看你的直觉和证据能不能对上号。"
+        },
+        {
+          "id": "action_5NP0OC6_",
+          "type": "speech",
+          "text": "别紧张，这个测验的目的不是打分，而是帮我们检查一下，从‘数表拖动’到‘图像误解挑战’，我们一路建立的这些核心概念，哪里清晰了，哪里可能还需要我们再一起加固一下。",
+          "audioRef": "audio/tts_s12_action_5NP0OC6_.mp3"
+        },
+        {
+          "id": "action_2GV2uxDv",
+          "type": "speech",
+          "text": "前面几道题，会带你回顾如何从数据预测趋势，以及左右极限同时验证的逻辑。记住，你不是在猜答案，而是在用我们刚才实验中观察到的规律做判断。",
+          "audioRef": "audio/tts_s12_action_2GV2uxDv.mp3"
+        },
+        {
+          "id": "action__7XAVShm",
+          "type": "speech",
+          "text": "最后，还有一道开放题，会邀请你想象两只小蚂蚁爬向一个可能有缺口的点。这个问题没有标准答案，它是为我们需要探索的新概念——‘连续’——播下一颗好奇的种子。大胆地写下你的想法就好。"
+        },
+        {
+          "id": "action_xYSxvbmI",
+          "type": "speech",
+          "text": "好了，放轻松，从第一道题开始吧。回忆一下你在数表拖动实验里的发现。",
+          "audioRef": "audio/tts_s12_action_xYSxvbmI.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "连续就是不跳断",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "V7QeBhdqgvDyt4BWACk2y",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_RDRLv5Rz",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1A5276;\">连续就是不跳断</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1A5276"
+            },
+            {
+              "type": "text",
+              "id": "text_FvtwlvcG",
+              "left": 100,
+              "top": 120,
+              "width": 800,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #2471A3;\">将极限与点值统一，定义完美的“平滑连接”</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2471A3"
+            },
+            {
+              "type": "line",
+              "id": "line_DcYMu2Oq",
+              "left": 365,
+              "top": 225,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                140
+              ],
+              "style": "solid",
+              "color": "#AAB7B8",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_posz2bSU",
+              "left": 470,
+              "top": 180,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                260
+              ],
+              "style": "dashed",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_3Lurj2eO",
+              "left": 80,
+              "top": 260,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                170,
+                0
+              ],
+              "style": "solid",
+              "color": "#2980B9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_GKdL6ZQ6",
+              "left": 161,
+              "top": 256,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#27AE60"
+            },
+            {
+              "type": "text",
+              "id": "text_Q57G2UJC",
+              "left": 80,
+              "top": 242,
+              "width": 75,
+              "height": 28,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 15px; color: #2980B9; text-align: center;\">极限值 L</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2980B9"
+            },
+            {
+              "type": "line",
+              "id": "line_BVyF5CtA",
+              "left": 378,
+              "top": 260,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                72,
+                0
+              ],
+              "style": "solid",
+              "color": "#2980B9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_3zoKsbob",
+              "left": 90,
+              "top": 278,
+              "width": 150,
+              "height": 38,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #1E8449; text-align: center;\">函数值 f(a)=L</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1E8449"
+            },
+            {
+              "type": "text",
+              "id": "text_XPL0amKy",
+              "left": 80,
+              "top": 178,
+              "width": 175,
+              "height": 63,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1E8449; text-align: center;\">连续</p><p style=\"font-size: 14px; color: #1E8449; text-align: center;\">趋势与点值对齐</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1E8449"
+            },
+            {
+              "type": "line",
+              "id": "line_zs0whevW",
+              "left": 280,
+              "top": 260,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                72,
+                0
+              ],
+              "style": "solid",
+              "color": "#2980B9",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_Kt75jMzi",
+              "left": 361,
+              "top": 306,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#E74C3C"
+            },
+            {
+              "type": "text",
+              "id": "text_ZaCPR9BP",
+              "left": 290,
+              "top": 322,
+              "width": 150,
+              "height": 38,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #E74C3C; text-align: center;\">函数值 f(a)≠L</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#E74C3C"
+            },
+            {
+              "type": "line",
+              "id": "line_poRbN7n6",
+              "left": 165,
+              "top": 225,
+              "width": 1,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                95
+              ],
+              "style": "solid",
+              "color": "#AAB7B8",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "text",
+              "id": "text_AVO3EXtf",
+              "left": 300,
+              "top": 220,
+              "width": 130,
+              "height": 34,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 15px; color: #2980B9; text-align: center;\">极限仍为 L</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2980B9"
+            },
+            {
+              "type": "text",
+              "id": "text_vHiMrwTc",
+              "left": 270,
+              "top": 180,
+              "width": 185,
+              "height": 36,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; color: #C0392B; text-align: center;\">间断：趋势与点值分离</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#C0392B"
+            },
+            {
+              "type": "shape",
+              "id": "shape_hPPSVMq1",
+              "left": 500,
+              "top": 180,
+              "width": 440,
+              "height": 46,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#2471A3"
+            },
+            {
+              "type": "text",
+              "id": "text_8PrYABZp",
+              "left": 500,
+              "top": 180,
+              "width": 440,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; font-weight: bold; color: #ffffff;\">连续条件</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "table",
+              "id": "table_O2_IUaJo",
+              "left": 500,
+              "top": 230,
+              "width": 440,
+              "height": 200,
+              "rotate": 0,
+              "outline": {
+                "style": "solid",
+                "width": 1,
+                "color": "#BDC3C7"
+              },
+              "colWidths": [
+                0.32,
+                0.68
+              ],
+              "cellMinHeight": 50,
+              "data": [
+                [
+                  {
+                    "id": "h1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "条件",
+                    "style": {
+                      "bold": true,
+                      "color": "#1A5276",
+                      "backcolor": "#E8F4FD",
+                      "align": "center",
+                      "fontsize": 16
+                    }
+                  },
+                  {
+                    "id": "h2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "含义",
+                    "style": {
+                      "bold": true,
+                      "color": "#1A5276",
+                      "backcolor": "#E8F4FD",
+                      "align": "center",
+                      "fontsize": 16
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r1c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "极限存在",
+                    "style": {
+                      "bold": true,
+                      "color": "#2C3E50",
+                      "align": "center",
+                      "fontsize": 15
+                    }
+                  },
+                  {
+                    "id": "r1c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "当 x→a 时，f(x) 趋近于确定实数 L",
+                    "style": {
+                      "color": "#2C3E50",
+                      "fontsize": 15
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r2c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "函数值存在",
+                    "style": {
+                      "bold": true,
+                      "color": "#2C3E50",
+                      "align": "center",
+                      "fontsize": 15
+                    }
+                  },
+                  {
+                    "id": "r2c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "f(a) 有定义，且为某个实数",
+                    "style": {
+                      "color": "#2C3E50",
+                      "fontsize": 15
+                    }
+                  }
+                ],
+                [
+                  {
+                    "id": "r3c1",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "两者相等",
+                    "style": {
+                      "bold": true,
+                      "color": "#2C3E50",
+                      "align": "center",
+                      "fontsize": 15
+                    }
+                  },
+                  {
+                    "id": "r3c2",
+                    "colspan": 1,
+                    "rowspan": 1,
+                    "text": "极限值 L = 函数值 f(a)",
+                    "style": {
+                      "color": "#2C3E50",
+                      "fontsize": 15
+                    }
+                  }
+                ]
+              ]
+            },
+            {
+              "type": "shape",
+              "id": "shape_pvy3DOha",
+              "left": 100,
+              "top": 450,
+              "width": 800,
+              "height": 60,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F2F3F4"
+            },
+            {
+              "type": "text",
+              "id": "text_IvdrgbNd",
+              "left": 100,
+              "top": 454,
+              "width": 800,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; font-style: italic; color: #2C3E50;\">趋势与点值对齐，连接即连续。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "shape",
+              "id": "shape_gh02_limit_open",
+              "left": 359,
+              "top": 254,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#FFFFFF",
+              "outline": {
+                "color": "#2980B9",
+                "style": "solid",
+                "width": 2
+              }
+            },
+            {
+              "type": "text",
+              "id": "text_gh02_xa_continuous",
+              "left": 145,
+              "top": 315,
+              "width": 40,
+              "height": 28,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 13px; color: #566573; text-align: center;\">x=a</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#566573"
+            },
+            {
+              "type": "text",
+              "id": "text_gh02_xa_discontinuous",
+              "left": 345,
+              "top": 365,
+              "width": 40,
+              "height": 28,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 13px; color: #566573; text-align: center;\">x=a</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#566573"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action__ygWOnYq",
+          "type": "spotlight",
+          "elementId": "text_RDRLv5Rz"
+        },
+        {
+          "id": "action_3e9KeUN-",
+          "type": "speech",
+          "text": "本场景聚焦“连续就是不跳断”。今天这座桥有个非常形象的名字，叫“连续”。用我们最直观的话来说，连续就是不跳断。"
+        },
+        {
+          "id": "action_leZNrrVg",
+          "type": "spotlight",
+          "elementId": "shape_GKdL6ZQ6"
+        },
+        {
+          "id": "action_boaLsQg_",
+          "type": "speech",
+          "text": "来，我们先一起看左边这个完美的例子。当x趋近于a的时候，极限值是L。",
+          "audioRef": "audio/tts_s13_action_boaLsQg_.mp3"
+        },
+        {
+          "id": "action_JATWJjT1",
+          "type": "spotlight",
+          "elementId": "text_3zoKsbob"
+        },
+        {
+          "id": "action_GP2GpfHv",
+          "type": "speech",
+          "text": "而函数在a这一点的值，f(a)，正好就等于L。趋势和点值完美对齐，接上了。这种状况，我们就说它在a点连续。",
+          "audioRef": "audio/tts_s13_action_GP2GpfHv.mp3"
+        },
+        {
+          "id": "action_kvL9qeFZ",
+          "type": "spotlight",
+          "elementId": "shape_Kt75jMzi"
+        },
+        {
+          "id": "action_GcyaikI0",
+          "type": "speech",
+          "text": "再看右边。趋势是一样的，极限依然是L。但是你看，点却跑到别的地方去了，f(a)不等于L。这就断了，我们叫它间断。",
+          "audioRef": "audio/tts_s13_action_GcyaikI0.mp3"
+        },
+        {
+          "id": "action_kE01T2uV",
+          "type": "spotlight",
+          "elementId": "table_O2_IUaJo"
+        },
+        {
+          "id": "action_QccVjny3",
+          "type": "speech",
+          "text": "从这两个例子里，我们可以总结出连续必须满足的三个条件。函数值要存在，极限要存在，而且它俩必须完全相等，缺一不可。这就是今天最核心的一条铁律。",
+          "audioRef": "audio/tts_s13_action_QccVjny3.mp3"
+        },
+        {
+          "id": "action_3Zj5MNIr",
+          "type": "spotlight",
+          "elementId": "text_IvdrgbNd"
+        },
+        {
+          "id": "action_tblTfRo_",
+          "type": "speech",
+          "text": "所以，连续的精髓就是趋势与点值对齐。把这个逻辑理清了，本场景中，我们要看看，当这些条件被破坏时，函数会怎么跳开。准备好了就进入下一个实验吧。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "连续就是不跳断：拖动实验",
+      "order": 14,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "continuity_limit",
+          "description": "通过调节孤立点的高度使其与函数极限值重合，直观理解函数连续性的本质：lim f(x) = f(a)。学生拖动紫色点嵌入曲线的空心缺口，当点与空洞完美匹配时触发'连续'视觉反馈。",
+          "variables": [
+            {
+              "name": "point_y_coordinate",
+              "label": "孤立点纵坐标 f(a)",
+              "min": 0,
+              "max": 10,
+              "default": 2,
+              "unit": ""
+            },
+            {
+              "name": "gap_width",
+              "label": "缺口宽度",
+              "min": 0.1,
+              "max": 2,
+              "default": 0.4,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "基础练习",
+              "variables": {
+                "point_y_coordinate": 2,
+                "gap_width": 0.4
+              }
+            },
+            {
+              "name": "挑战模式",
+              "variables": {
+                "point_y_coordinate": 1.5,
+                "gap_width": 0.6
+              }
+            },
+            {
+              "name": "宽缺口",
+              "variables": {
+                "point_y_coordinate": 3,
+                "gap_width": 1.5
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/14_连续就是不跳断：拖动实验.html",
+        "htmlBytes": 781510
+      },
+      "actions": [
+        {
+          "id": "action_M7UHSyqV",
+          "type": "speech",
+          "text": "本场景通过交互探索“连续就是不跳断：拖动实验”。极限值必须等于函数值。现在屏幕上这条曲线有个小缺口，旁边还飘着一个紫色圆点——它就是那个函数值 f(a)，我们要做的，就是把它拖到正确的位置，让它和曲线的趋势完美对接。"
+        },
+        {
+          "id": "action_9UkGaofE",
+          "type": "widget_highlight",
+          "target": "#point-y-coordinate-slider",
+          "content": "拖动这个滑块来上下移动紫色点的位置。"
+        },
+        {
+          "id": "action_2j3PNgrl",
+          "type": "speech",
+          "text": "先试一下拖动滑块，看看紫色点怎么移动。注意看曲线空缺的位置，那个空心圆就是极限值所在的高度，也是你要瞄准的目标。",
+          "audioRef": "audio/tts_s14_action_2j3PNgrl.mp3"
+        },
+        {
+          "id": "action_s-xqjE6U",
+          "type": "widget_setState",
+          "state": {
+            "point_y_coordinate": 5,
+            "gap_width": 0.4
+          },
+          "content": "把点移到中间位置，让学生感受空缺和点的关系。"
+        },
+        {
+          "id": "action_e6GVvg8Z",
+          "type": "speech",
+          "text": "现在点还悬在半空，函数断开了。慢慢向上调，当紫色点刚好填进那个空心位置时，看看会发生什么。",
+          "audioRef": "audio/tts_s14_action_e6GVvg8Z.mp3"
+        },
+        {
+          "id": "action_9LcIQWqf",
+          "type": "widget_setState",
+          "state": {
+            "point_y_coordinate": 6.8,
+            "gap_width": 0.4
+          },
+          "content": "将点调到接近极限值的位置，为重合做准备。"
+        },
+        {
+          "id": "action_M_UJsC4k",
+          "type": "speech",
+          "text": "就差一点点——继续微调，直到背景变绿，面板上显示'Limit = f(a)'。那一刻，你就亲手修复了一个函数的断裂，让它重新连续起来。",
+          "audioRef": "audio/tts_s14_action_M_UJsC4k.mp3"
+        },
+        {
+          "id": "action_REqiIO5V",
+          "type": "widget_annotation",
+          "target": "#continuity-indicator",
+          "content": "重合瞬间，这里会显示连续状态信号。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "连续就是不跳断：关系图",
+      "order": 15,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "n1",
+              "label": "连续判定",
+              "sublabel": "函数在某点是否连续？",
+              "icon": "🔗",
+              "x": 400,
+              "y": 60,
+              "details": "判断函数 f(x) 在 x=a 处是否连续，需要逐层通过三个必要的检验条件。就像一个三层漏斗，每一层都必须通过，才能判定为「连续」。"
+            },
+            {
+              "id": "n2",
+              "label": "第一层：有定义",
+              "sublabel": "f(a) 是否存在？",
+              "icon": "📍",
+              "x": 400,
+              "y": 180,
+              "details": "函数在 x=a 处必须有定义。也就是说，当你把 x=a 代入 f(x) 时，能算出一个确定的数值 f(a)。物理意义：该点在铁轨上确实有铺设。"
+            },
+            {
+              "id": "n3",
+              "label": "第二层：极限存在",
+              "sublabel": "lim f(x) 是否存在？",
+              "icon": "🎯",
+              "x": 540,
+              "y": 300,
+              "details": "当 x 从左右两侧趋近 a 时，f(x) 的极限必须存在且相等。即 lim(x→a⁺) f(x) = lim(x→a⁻) f(x)。物理意义：无论从左边还是右边靠近，铁轨都趋向同一个高度。"
+            },
+            {
+              "id": "n4",
+              "label": "第三层：极限 = 函数值",
+              "sublabel": "lim = f(a) 是否成立？",
+              "icon": "⚖️",
+              "x": 540,
+              "y": 420,
+              "details": "这是最关键的检验！极限值必须等于函数在该点的实际值。常见误解：学生常把「极限值」等同于「函数值」，但两者可能不同。物理意义：铁轨趋向的高度必须等于该点实际的高度。"
+            },
+            {
+              "id": "n5",
+              "label": "✅ 连续",
+              "sublabel": "三层全部通过！",
+              "icon": "✨",
+              "x": 540,
+              "y": 540,
+              "details": "恭喜！函数在 x=a 处连续。图像上表现为：在该点没有断裂、没有空洞、没有跳跃，可以一笔画过。这就是「连续就是不跳断」的直观含义。"
+            },
+            {
+              "id": "n6",
+              "label": "🚫 跳跃间断",
+              "sublabel": "左极限 ≠ 右极限",
+              "icon": "🦘",
+              "x": 260,
+              "y": 300,
+              "details": "当 x 趋近 a 时，左侧趋近一个值，右侧趋近另一个值，两者不相等。图像上表现为：铁轨在该点突然「跳」到一个不同的高度。这是最直观的间断类型。例子：分段函数在不同段的连接点。"
+            },
+            {
+              "id": "n7",
+              "label": "🚫 可去间断",
+              "sublabel": "极限存在 ≠ f(a)",
+              "icon": "🕳️",
+              "x": 340,
+              "y": 420,
+              "details": "极限存在，但不等于函数值（或函数在该点无定义）。图像上表现为：铁轨在某个点有一个「小洞」，但洞的两侧高度一致。之所以叫「可去」，是因为只要补上这个点（重新定义 f(a)），函数就连续了。这是学生最容易混淆的类型！"
+            },
+            {
+              "id": "n8",
+              "label": "🚫 无穷间断",
+              "sublabel": "f(a) 无定义且极限→∞",
+              "icon": "∞",
+              "x": 200,
+              "y": 180,
+              "details": "函数在 x=a 处无定义，且当 x 趋近 a 时，f(x) 趋向无穷大。图像上表现为：铁轨在该点有一个「悬崖」，高度无限上升或下降。例子：f(x) = 1/x 在 x=0 处。"
+            }
+          ],
+          "edges": [
+            {
+              "from": "n1",
+              "to": "n2",
+              "label": "开始检验",
+              "type": "neutral"
+            },
+            {
+              "from": "n2",
+              "to": "n3",
+              "label": "✅ 通过",
+              "type": "success"
+            },
+            {
+              "from": "n2",
+              "to": "n8",
+              "label": "❌ 无定义",
+              "type": "fail"
+            },
+            {
+              "from": "n3",
+              "to": "n4",
+              "label": "✅ 通过",
+              "type": "success"
+            },
+            {
+              "from": "n3",
+              "to": "n6",
+              "label": "❌ 左≠右",
+              "type": "fail"
+            },
+            {
+              "from": "n4",
+              "to": "n5",
+              "label": "✅ 相等",
+              "type": "success"
+            },
+            {
+              "from": "n4",
+              "to": "n7",
+              "label": "❌ 不等",
+              "type": "fail"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n8",
+            "n4",
+            "n6",
+            "n5",
+            "n7"
+          ],
+          "edgeRevealOrder": [
+            {
+              "from": "n1",
+              "to": "n2"
+            },
+            {
+              "from": "n2",
+              "to": "n3"
+            },
+            {
+              "from": "n2",
+              "to": "n8"
+            },
+            {
+              "from": "n3",
+              "to": "n4"
+            },
+            {
+              "from": "n3",
+              "to": "n6"
+            },
+            {
+              "from": "n4",
+              "to": "n5"
+            },
+            {
+              "from": "n4",
+              "to": "n7"
+            }
+          ]
+        },
+        "htmlPath": "interactive/15_连续就是不跳断：关系图.html",
+        "htmlBytes": 771693
+      },
+      "actions": [
+        {
+          "id": "action_O5yQ6XL_",
+          "type": "speech",
+          "text": "本场景通过交互探索“连续就是不跳断：关系图”。我们在拖动实验里亲手修好了断裂点，现在用这张关系图把连续性的逻辑彻底理清。这就像一个三层漏斗——只有每一层都通过，函数在这一点才是连续的。"
+        },
+        {
+          "id": "action_kvX2e8GT",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "连续判定的起点，从这里展开三层检验。"
+        },
+        {
+          "id": "action_RAv8VbLC",
+          "type": "speech",
+          "text": "点击顶部的‘连续判定’节点，我们开始逐层往下走。第一层先问：f(a) 有没有定义？也就是铁轨在这个位置是不是真的铺了一截。",
+          "audioRef": "audio/tts_s15_action_RAv8VbLC.mp3"
+        },
+        {
+          "id": "action_nKcIO1kO",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "展开第一层：有定义。"
+        },
+        {
+          "id": "action_eaLnMcsc",
+          "type": "speech",
+          "text": "如果连定义都没有，比如1/x在x=0处，铁轨直接断开，就成了无穷间断。注意看，左边这条路标红了——检验第一关就失败了。",
+          "audioRef": "audio/tts_s15_action_eaLnMcsc.mp3"
+        },
+        {
+          "id": "action_uiCywwcG",
+          "type": "widget_reveal",
+          "target": "#n8",
+          "content": "第一层未通过时，直接通往无穷间断。"
+        },
+        {
+          "id": "action_xjWGfmAb",
+          "type": "speech",
+          "text": "但只要f(a)存在，我们就进到第二层：极限存在吗？回想一下刚才拖动实验的感觉——左右两边的值是不是趋于同一个高度？",
+          "audioRef": "audio/tts_s15_action_xjWGfmAb.mp3"
+        },
+        {
+          "id": "action_ehHRuwaq",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "展开第二层：极限存在。"
+        },
+        {
+          "id": "action_TKIRoQYL",
+          "type": "speech",
+          "text": "如果左极限和右极限不相等，铁轨在这点就‘跳’开了。这便是跳跃间断，就像我们之前看到的分段函数在连接点突然换了一个高度。",
+          "audioRef": "audio/tts_s15_action_TKIRoQYL.mp3"
+        },
+        {
+          "id": "action_gSkM8JTn",
+          "type": "widget_reveal",
+          "target": "#n6",
+          "content": "左右极限不等时通向跳跃间断。"
+        },
+        {
+          "id": "action_S6eaLAWi",
+          "type": "speech",
+          "text": "极限存在之后，才是最关键的一步：这个极限值，跟f(a)一不一样？很多同学在这里会卡住——觉得极限就是函数值。但图上很清楚，两者可能差一个‘小洞’。",
+          "audioRef": "audio/tts_s15_action_S6eaLAWi.mp3"
+        },
+        {
+          "id": "action_NgbtelwA",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "展开第三层：极限等于函数值。"
+        },
+        {
+          "id": "action_1l8DGHdS",
+          "type": "widget_reveal",
+          "target": "#n7",
+          "content": "极限存在但不等函数值，这就是可去间断。"
+        },
+        {
+          "id": "action_CGEFaPHU",
+          "type": "speech",
+          "text": "看，这个‘可去间断’的铁轨两侧明明对齐，就中间空了一个点——只要重新填上它，函数就连续了。这就是为什么我们在拖动实验里，调整滑块到‘Limit = f(a)’就能变绿。",
+          "audioRef": "audio/tts_s15_action_CGEFaPHU.mp3"
+        },
+        {
+          "id": "action_96SchaSB",
+          "type": "speech",
+          "text": "三层全通过，铁轨一笔画下没有跳跃、没有空洞。这张图就是连续性的完整证据链。下一关我们来做误解修复挑战，看你能不能一眼认出各种断裂类型。",
+          "audioRef": "audio/tts_s15_action_96SchaSB.mp3"
+        },
+        {
+          "id": "action_8vIC-0fF",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "三层全通过，判定为连续。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "连续就是不跳断：误解修复挑战",
+      "order": 16,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "strategy",
+          "description": "桥梁修复挑战 - 连续性误解修复",
+          "gameConfig": {
+            "controls": [
+              "drag_and_drop_patches"
+            ],
+            "scoring": {
+              "correctPoints": 10,
+              "speedBonus": 5
+            },
+            "levels": 6
+          }
+        },
+        "htmlPath": "interactive/16_连续就是不跳断：误解修复挑战.html",
+        "htmlBytes": 481537
+      },
+      "actions": [
+        {
+          "id": "action_R2bYXslQ",
+          "type": "speech",
+          "text": "本场景通过交互探索“连续就是不跳断：误解修复挑战”。从铁轨图到现在的桥梁修复，我们要面对一个最常见的误解：以为图像能一笔画下来就是连续。其实，视觉上连接着，但逻辑上可能藏着陷阱。"
+        },
+        {
+          "id": "action_Ofdu0KPC",
+          "type": "widget_highlight",
+          "target": "#bridge-gap-1",
+          "content": "第一处断口——看起来衔接上了，但中间是否缺了关键点？"
+        },
+        {
+          "id": "action_HYBU2W0X",
+          "type": "speech",
+          "text": "请仔细检查第一个断口。表面平滑，但这里可能藏着一个空心点，也就是函数值不等于极限值的情况。",
+          "audioRef": "audio/tts_s16_action_HYBU2W0X.mp3"
+        },
+        {
+          "id": "action_QpU4sGDr",
+          "type": "widget_setState",
+          "state": {
+            "currentLevel": 1,
+            "showHint": true
+          },
+          "content": "提示：注意空心与实心点的区别。"
+        },
+        {
+          "id": "action_rz4nUkPz",
+          "type": "speech",
+          "text": "别急着拖放补块。先问自己：左右极限相等吗？和这点实际函数值相等吗？如果三个量不全等，这里就是断裂处。",
+          "audioRef": "audio/tts_s16_action_rz4nUkPz.mp3"
+        },
+        {
+          "id": "action_OPYcR7xJ",
+          "type": "widget_annotation",
+          "target": "#logic-panel",
+          "content": "极限值 L，函数值 f(a)，二者相等才是连续。"
+        },
+        {
+          "id": "action_2Oe8zkXE",
+          "type": "speech",
+          "text": "等你选对补块，车辆就能平稳驶过——那就是连续的证据。选错了会掉下去，说明看似连上的路其实是断的。去修复它吧。",
+          "audioRef": "audio/tts_s16_action_2Oe8zkXE.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "连续就是不跳断：空间视角",
+      "order": 17,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "3D 视角观察曲线在点处的连续性与断点：质点沿曲线平滑滑行，体验无瞬移的连续感；插入断点时出现红色警告与视觉震荡。",
+          "objects": [
+            {
+              "id": "continuous_ribbon",
+              "type": "tube",
+              "material": {
+                "type": "phong",
+                "color": "#22c55e"
+              }
+            },
+            {
+              "id": "moving_probe",
+              "type": "sphere",
+              "material": {
+                "type": "emissive",
+                "color": "#fbbf24"
+              }
+            },
+            {
+              "id": "status_light",
+              "type": "indicator",
+              "material": {
+                "type": "emissive",
+                "color": "#22c55e"
+              }
+            },
+            {
+              "id": "keypoints",
+              "type": "markers",
+              "count": 6
+            }
+          ],
+          "interactions": [
+            {
+              "type": "button",
+              "action": "start_tour",
+              "label": "巡航模式"
+            },
+            {
+              "type": "button",
+              "action": "toggle_gap",
+              "label": "插入断点"
+            },
+            {
+              "type": "button",
+              "action": "show_2d",
+              "label": "2D 视图"
+            },
+            {
+              "type": "slider",
+              "param": "speed",
+              "min": 0,
+              "max": 5,
+              "default": 1,
+              "label": "速度"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            },
+            {
+              "type": "orbit",
+              "target": "camera"
+            }
+          ],
+          "presets": [
+            {
+              "name": "概览视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  8,
+                  20
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "近距离观察",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  3,
+                  8
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "巡航模式",
+              "state": {
+                "tourMode": true,
+                "speed": 1.5
+              }
+            },
+            {
+              "name": "展示断点",
+              "state": {
+                "showGap": true,
+                "cameraPosition": [
+                  0,
+                  5,
+                  12
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/17_连续就是不跳断：空间视角.html",
+        "htmlBytes": 2517120
+      },
+      "actions": [
+        {
+          "id": "action_Uhx0m7-C",
+          "type": "speech",
+          "text": "本场景通过交互探索“连续就是不跳断：空间视角”。现在换个角度，我们直接从三维空间里感受一下“连续就是不跳断”。"
+        },
+        {
+          "id": "action_pe4eK2_Z",
+          "type": "widget_setState",
+          "state": {
+            "preset": "概览视角"
+          },
+          "content": "采用概览视角观察完整的曲线路径。"
+        },
+        {
+          "id": "action_swKcqgqU",
+          "type": "speech",
+          "text": "看这个光滑的曲线隧道。想象有一个质点正在上面滑行，如果路径是连续的，它就能一路顺滑到底，不会突然消失又出现在另一个地方。",
+          "audioRef": "audio/tts_s17_action_swKcqgqU.mp3"
+        },
+        {
+          "id": "action_GULO6FoN",
+          "type": "widget_highlight",
+          "target": "#start_tour-btn",
+          "content": "准备启动巡航模式。"
+        },
+        {
+          "id": "action_0YQl_UGN",
+          "type": "speech",
+          "text": "让我们点下“巡航模式”，跟着质点跑一圈，亲身体验一下什么叫无缝衔接。",
+          "audioRef": "audio/tts_s17_action_0YQl_UGN.mp3"
+        },
+        {
+          "id": "action_C-emvu-r",
+          "type": "widget_setState",
+          "state": {
+            "tourMode": true,
+            "speed": 1.5
+          }
+        },
+        {
+          "id": "action_8-5FRue-",
+          "type": "speech",
+          "text": "注意看，质点始终保持在这个轨道上，没有抖动，也没有瞬移。这就是我们刚才说的连续——在曲线上任意一点，都有确定的位置，并且前后是平滑过渡的。",
+          "audioRef": "audio/tts_s17_action_8-5FRue-.mp3"
+        },
+        {
+          "id": "action_1oyQoH8s",
+          "type": "widget_annotation",
+          "target": "#status_light",
+          "content": "绿灯常亮代表当前路径连续无断点。"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "QcD60pVyJZpV_-oNMChu-",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_N8SWh68T",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #333333;\">全课整理：证据链回看</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_rdIjI70i",
+              "left": 100,
+              "top": 120,
+              "width": 800,
+              "height": 58,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; text-align: center; color: #666666;\">从趋近到连续的直觉闭环</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "shape",
+              "id": "shape_hRgPfSsr",
+              "left": 50,
+              "top": 190,
+              "width": 260,
+              "height": 240,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F0F7FF"
+            },
+            {
+              "type": "shape",
+              "id": "shape_EXjQEnN7",
+              "left": 370,
+              "top": 190,
+              "width": 260,
+              "height": 240,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F2FDF2"
+            },
+            {
+              "type": "shape",
+              "id": "shape_91hYbBDy",
+              "left": 690,
+              "top": 190,
+              "width": 260,
+              "height": 240,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFFAF0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_07KYFisE",
+              "left": 160,
+              "top": 210,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#4A90D9"
+            },
+            {
+              "type": "text",
+              "id": "text_ZJwy_cTI",
+              "left": 160,
+              "top": 207,
+              "width": 40,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; text-align: center; color: #ffffff;\">1</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_KBPVcFEn",
+              "left": 60,
+              "top": 265,
+              "width": 240,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #333333;\">数表告诉我们：</p><p style=\"font-size: 18px; text-align: center; color: #333333;\">趋势可以独立于点值</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_d6SNWFqE",
+              "left": 60,
+              "top": 355,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #4F6478;\">观察“拖动实验”证据</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4F6478"
+            },
+            {
+              "type": "shape",
+              "id": "shape_WmlSHAWj",
+              "left": 480,
+              "top": 210,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#7ED321"
+            },
+            {
+              "type": "text",
+              "id": "text_2DsnDEae",
+              "left": 480,
+              "top": 207,
+              "width": 40,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; text-align: center; color: #ffffff;\">2</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_08y_mZOQ",
+              "left": 380,
+              "top": 265,
+              "width": 240,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #333333;\">图像告诉我们：</p><p style=\"font-size: 18px; text-align: center; color: #333333;\">双侧必须达成共识</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_kTYEn--O",
+              "left": 380,
+              "top": 355,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #3F6B45;\">观察“误解挑战”反馈</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#3F6B45"
+            },
+            {
+              "type": "shape",
+              "id": "shape_PChioSMj",
+              "left": 800,
+              "top": 210,
+              "width": 40,
+              "height": 40,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#F5A623"
+            },
+            {
+              "type": "text",
+              "id": "text_CVZAjPA8",
+              "left": 800,
+              "top": 207,
+              "width": 40,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; text-align: center; color: #ffffff;\">3</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_mTJuryIi",
+              "left": 700,
+              "top": 265,
+              "width": 240,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #333333;\">连续告诉我们：</p><p style=\"font-size: 18px; text-align: center; color: #333333;\">趋势与点值必须合二为一</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "text",
+              "id": "text_W42_Vwsu",
+              "left": 700,
+              "top": 355,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #8A5A12;\">观察“桥梁修复”成功案例</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#8A5A12"
+            },
+            {
+              "type": "line",
+              "id": "line_KcZZU652",
+              "left": 315,
+              "top": 310,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                50,
+                0
+              ],
+              "style": "solid",
+              "color": "#999999",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_QNpctNs1",
+              "left": 635,
+              "top": 310,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                50,
+                0
+              ],
+              "style": "solid",
+              "color": "#999999",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape__tkWSIST",
+              "left": 50,
+              "top": 450,
+              "width": 900,
+              "height": 60,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#E0E8F0"
+            },
+            {
+              "type": "text",
+              "id": "text_ObQILn5n",
+              "left": 70,
+              "top": 454,
+              "width": 860,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-weight: bold; text-align: center; color: #2C3E50;\">准备后测：将这些直觉应用到更复杂的图形判断中</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_34LmXGvC",
+          "type": "spotlight",
+          "elementId": "text_N8SWh68T"
+        },
+        {
+          "id": "action_RwmyrR9G",
+          "type": "speech",
+          "text": "本场景聚焦“全课整理：证据链回看”。我们从物理质点的平滑移动中真切地感受到了“连续”。现在，让我们稍作停顿，回看一路走来我们共同建立起来的证据链，看看我们的直觉是如何一步一步走向严谨的。"
+        },
+        {
+          "id": "action_ypmRvpRB",
+          "type": "spotlight",
+          "elementId": "text_KBPVcFEn"
+        },
+        {
+          "id": "action_DonfZQQg",
+          "type": "speech",
+          "text": "第一步，我们从数表开始。通过拖动实验，我们发现，趋势可以独立于那一点的具体数值而存在。就像观察一个运动物体，它的趋势告诉我们它要去哪里，而不是它现在恰好在哪里划过。",
+          "audioRef": "audio/tts_s18_action_DonfZQQg.mp3"
+        },
+        {
+          "id": "action_fDakGt34",
+          "type": "spotlight",
+          "elementId": "text_08y_mZOQ"
+        },
+        {
+          "id": "action_qx589g3F",
+          "type": "speech",
+          "text": "第二步，图像上的左右极限教会我们一个至关重要的道理：双侧必须达成共识。左邻右舍，从两边趋近的结果必须一致，趋势才有确定的意义。我们用误解挑战中的反馈，牢牢确认了这一点。",
+          "audioRef": "audio/tts_s18_action_qx589g3F.mp3"
+        },
+        {
+          "id": "action_tXSi_MjI",
+          "type": "spotlight",
+          "elementId": "text_mTJuryIi"
+        },
+        {
+          "id": "action_--lV9Bku",
+          "type": "speech",
+          "text": "最终，第三步，“连续”的概念将趋势与点值完美地合二为一。它要求函数在那一点不仅要有趋势、左右趋势一致，还要和那一点的实际值严丝合缝地对上。这就是我们刚刚见证的“桥梁修复”成功案例的意义。",
+          "audioRef": "audio/tts_s18_action_--lV9Bku.mp3"
+        },
+        {
+          "id": "action_rmpfeVWN",
+          "type": "spotlight",
+          "elementId": "text_ObQILn5n"
+        },
+        {
+          "id": "action__buRAVR_",
+          "type": "speech",
+          "text": "好了，从数值表的趋近，到图像上的双侧共识，再到连续性的完整定义，这个直觉的闭环我们已经走完了。接下来，就是检验我们学习成果的时刻。准备好，我们要将这些强大的直觉应用到更复杂的图形判断中去，迎接后测挑战！",
+          "audioRef": "audio/tts_s18_action__buRAVR_.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "后测：极限与连续直觉综合测评",
+      "order": 19,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在“左右极限拖动实验”中，你将左侧动点和右侧动点慢慢向同一个中心点靠近。当你观察到两侧动点的轨迹在靠近中心时完美相遇，但中心点本身被挖掉（显示为空心圆）。根据这个实验场景，以下关于该点极限与函数值的描述，哪个是正确的？",
+            "options": [
+              {
+                "value": "A",
+                "label": "极限存在且等于函数值"
+              },
+              {
+                "value": "B",
+                "label": "极限存在，但函数值不存在或不等于极限值"
+              },
+              {
+                "value": "C",
+                "label": "因为中心点是空心的，所以左右极限不存在"
+              },
+              {
+                "value": "D",
+                "label": "只有当动点颜色相同时，极限才存在"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "在拖动实验中，左右动点相遇代表左极限和右极限存在且相等，即该点的极限存在。但中心点为空心圆表示函数在该点没有定义或定义了但值不相同。极限描述的是趋近过程中的趋向值，与函数在该点是否有定义无关，因此选项B正确。选项A错误地认为有极限就一定等于函数值；选项C误解了空心圆的含义；选项D中的动点颜色是干扰项，与数学极限无关。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "在“连续路桥修复挑战”中，如果一段路面上有一个断崖（跳跃间断点），必须放下桥面才能通行。这对应着函数连续性的哪一层含义被破坏了？",
+            "options": [
+              {
+                "value": "A",
+                "label": "极限不存在"
+              },
+              {
+                "value": "B",
+                "label": "左右极限存在但不相等"
+              },
+              {
+                "value": "C",
+                "label": "左右极限相等，但与断点处的路面高度（函数值）不一致"
+              },
+              {
+                "value": "D",
+                "label": "函数图像在任何地方都连续"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "断崖场景对应跳跃间断点。在跳跃间断点处，左极限和右极限分别存在，但它们的数值不相同，就像路面的左边和右边高度错开了，修路时需要用桥连接。选项A不准确，因为左右各自趋近的极限是存在的；选项C描述的是可去间断点（有洞的情况）；D显然错误。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "question": "结合“连续路桥修复挑战”的游戏规则，以下哪些函数图像特征会被系统判定为‘伪连续’，即需要工程师（你）进行修复？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "图像在某点处只有左边的趋势，右边没有任何图像"
+              },
+              {
+                "value": "B",
+                "label": "图像在某点处有一个孤立的空心圆，且趋势线在此处完美连接"
+              },
+              {
+                "value": "C",
+                "label": "图像在某点处突然垂直跳跃到另一个高度"
+              },
+              {
+                "value": "D",
+                "label": "图像在某点处虽有定义，但趋势线与函数值所在的高度不一致"
+              }
+            ],
+            "answer": [
+              "B",
+              "C",
+              "D"
+            ],
+            "analysis": "伪连续指虽然函数有趋势，但不满足连续的三要素。选项B：极限存在但该点无定义（或定义为空），不连续；选项C：跳跃间断点，左右极限不相等，不连续；选项D：极限存在且函数有定义，但两者不相等，属于可去间断点，不连续。选项A：如果只有单侧极限，且另一边无定义，通常不讨论该点的极限，且根据游戏设定，修复挑战通常针对双侧趋势存在的点。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "multiple",
+            "question": "在学习极限的概念时，我们常说‘极限存在与否只与某个邻域内的趋势有关’。以下哪些观点正确地体现了这一思想？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "即使函数在该点没有定义，只需要左右两侧的趋势相同，极限就可以存在"
+              },
+              {
+                "value": "B",
+                "label": "要极限存在，函数必须在趋近中心点处有定义"
+              },
+              {
+                "value": "C",
+                "label": "函数在该点的极限值，必须严格等于该点的函数值"
+              },
+              {
+                "value": "D",
+                "label": "如果左右两侧的轨迹趋向于不同的高度，不管中心点定义如何，极限都不存在"
+              }
+            ],
+            "answer": [
+              "A",
+              "D"
+            ],
+            "analysis": "极限描述的是‘趋近’过程，与中心点本身的状态无关。A正确，这是可去间断点的情况；D正确，这是跳跃间断点或振荡间断点的情况（左右极限不等）。B错误，极限不依赖于该点是否有定义；C错误，这是连续的定义，而不是极限存在的定义。这是学生常见的误解点。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "已知当 x 从左侧趋近于 2 时，f(x) 依次为 3.9、3.99、3.999、3.9999；从右侧趋近于 2 时，f(x) 依次为 4.1、4.01、4.001、4.0001，而 f(2)=10。请分析 x=2 处的极限值、连续性，以及不满足“连续三要素”中的哪一条，并写出推理过程。",
+            "commentPrompt": "评分标准：(1) 准确识别出极限值为4（无论从左侧3.9999还是右侧4.0001趋近，都无限靠近4），占比30%。(2) 明确指出该点不连续，并正确列出连续三要素（该点有定义、极限存在、极限值等于函数值），占比40%。(3) 逻辑清晰地指出破坏的是第三要素：极限值4不等于函数值10，占比30%。",
+            "analysis": "参考答案：从左侧数列看，数值趋近于4；从右侧数列看，数值也趋近于4。因此该点的极限值为4。在x=2处，函数有定义且f(2)=10。连续三要素为：1. f(2)有定义（满足，值为10）；2. 极限存在（满足，为4）；3. 极限值等于函数值（不满足，4不等于10）。因此该点不连续，属于可去间断点。",
+            "points": 20,
+            "hasAnswer": false
+          },
+          {
+            "id": "q6",
+            "type": "short_answer",
+            "question": "请用自己的话，结合一个生活中的桥梁或断崖的隐喻，向你的同伴解释：为什么一个函数在某个点可以有极限，但该点却可以是不连续的？请重点区分‘趋近的目标值’和‘真正到达的高度’之间的区别。",
+            "commentPrompt": "评分标准：(1) 正确区分‘极限值’（趋势目标）与‘函数值’（实际到达点），清楚地说明两者互不干扰，占比40%。(2) 给出的隐喻恰当且能够直观展示“有极限但不连续”的逻辑（如：路面的趋势连接，但该点处有一个深坑或额外凸起的石头），占比40%。(3) 语言表达清晰，逻辑无矛盾，占比20%。",
+            "analysis": "关键点解析：极限描述的是‘如果你无限靠近那个点，你的预期终点（Y值）是什么’，而连续描述的是‘那个点本身的高度是否恰好就是你的预期终点’。如果路的两端都平滑地通向同一个高度（极限存在），但在那个点所在的位置，实际上被炸弹炸出了一个坑（无定义）或者人为堆起了一座土包（函数值不等于极限），那么这条路就是不连续的。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_uPF-OCVX",
+          "type": "speech",
+          "text": "这是一组关于“后测：极限与连续直觉综合测评”的独立测验。欢迎来到我们今天旅程的最后一站——后测：极限与连续直觉综合测评。这不仅仅是一次小测验，更是对我们整个探索过程的回顾与升华。请大家深呼吸，调动起我们在数值表、拖动实验和关系图中积累的所有直觉，像一位真正的数学侦探一样，去分析每一个问题背后的逻辑。准备好了吗？我们开始。"
+        },
+        {
+          "id": "action_kyJU3fQQ",
+          "type": "speech",
+          "text": "前面几道题，会重新把我们带回那个经典的“左右极限拖动实验”和“连续路桥修复挑战”。回想一下，当两个动点完美相遇，但中心点却是个空心圆时，这恰恰揭示了极限存在与函数值无关的核心思想。而那座需要你们去修复的断崖，每一处断裂都精准地对应着连续性定义被破坏的某一环。请用你们实验中的发现，来验证这些选项。",
+          "audioRef": "audio/tts_s19_action_kyJU3fQQ.mp3"
+        },
+        {
+          "id": "action_vcbcadCX",
+          "type": "speech",
+          "text": "后面的迁移题和解释题，是真正展现我们思考深度的时刻。那道数表题，数据完美地趋近于4，函数值却突然跳到了10，这正是检验我们是否真懂‘趋近的目标值’与‘真正到达的高度’之间区别的试金石。最后一题，我期待你们能像大家一样，用一座生活中的桥梁或断崖，向同伴深刻地解释为什么极限存在和连续是两件不同的事。"
+        },
+        {
+          "id": "action_HXVy4aZk",
+          "type": "speech",
+          "text": "好了，现在轮到你们大显身手了。请沉着冷静地分析每一道题，把你脑海中清晰的直觉和严谨的逻辑，化作完美的解答。开始你们的后测吧！",
+          "audioRef": "audio/tts_s19_action_HXVy4aZk.mp3"
+        }
+      ]
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_6UNpj7s9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 152640
+    },
+    "audio/tts_action_hQhE7ZXG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 131832
+    },
+    "audio/tts_action_TELTQ-ob.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129384
+    },
+    "audio/tts_s10_action_cV-6LG8D.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101136
+    },
+    "audio/tts_s10_action_EuaNG3oK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 87504
+    },
+    "audio/tts_s10_action_hvyqB7XL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109272
+    },
+    "audio/tts_s10_action_WuAJ74Dk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114816
+    },
+    "audio/tts_s11_action_akZh250y.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 113472
+    },
+    "audio/tts_s11_action_C3ZQaAtQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99480
+    },
+    "audio/tts_s11_action_cB_TxwmI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106104
+    },
+    "audio/tts_s11_action_S6r_fvBs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135168
+    },
+    "audio/tts_s11_action_YlnK2tND.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95520
+    },
+    "audio/tts_s12_action_2GV2uxDv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100752
+    },
+    "audio/tts_s12_action_5NP0OC6_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114024
+    },
+    "audio/tts_s12_action_IelKswL1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 184848
+    },
+    "audio/tts_s12_action_xYSxvbmI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 68976
+    },
+    "audio/tts_s12_action__7XAVShm.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 139728
+    },
+    "audio/tts_s13_action_3e9KeUN-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95496
+    },
+    "audio/tts_s13_action_boaLsQg_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 51936
+    },
+    "audio/tts_s13_action_GcyaikI0.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 68448
+    },
+    "audio/tts_s13_action_GP2GpfHv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 77328
+    },
+    "audio/tts_s13_action_QccVjny3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97440
+    },
+    "audio/tts_s13_action_tblTfRo_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128160
+    },
+    "audio/tts_s14_action_2j3PNgrl.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88992
+    },
+    "audio/tts_s14_action_e6GVvg8Z.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 63648
+    },
+    "audio/tts_s14_action_M7UHSyqV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129768
+    },
+    "audio/tts_s14_action_M_UJsC4k.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93456
+    },
+    "audio/tts_s15_action_96SchaSB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94200
+    },
+    "audio/tts_s15_action_CGEFaPHU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118848
+    },
+    "audio/tts_s15_action_eaLnMcsc.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94608
+    },
+    "audio/tts_s15_action_O5yQ6XL_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105288
+    },
+    "audio/tts_s15_action_RAv8VbLC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 75024
+    },
+    "audio/tts_s15_action_S6eaLAWi.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 98640
+    },
+    "audio/tts_s15_action_TKIRoQYL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 79440
+    },
+    "audio/tts_s15_action_xjWGfmAb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 81504
+    },
+    "audio/tts_s16_action_2Oe8zkXE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84264
+    },
+    "audio/tts_s16_action_HYBU2W0X.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 71136
+    },
+    "audio/tts_s16_action_R2bYXslQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94992
+    },
+    "audio/tts_s16_action_rz4nUkPz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 82416
+    },
+    "audio/tts_s17_action_0YQl_UGN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 47400
+    },
+    "audio/tts_s17_action_8-5FRue-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99840
+    },
+    "audio/tts_s17_action_swKcqgqU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89952
+    },
+    "audio/tts_s17_action_Uhx0m7-C.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 62496
+    },
+    "audio/tts_s18_action_--lV9Bku.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 200592
+    },
+    "audio/tts_s18_action_DonfZQQg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 154104
+    },
+    "audio/tts_s18_action_qx589g3F.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 143136
+    },
+    "audio/tts_s18_action_RwmyrR9G.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118920
+    },
+    "audio/tts_s18_action__buRAVR_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 277968
+    },
+    "audio/tts_s19_action_HXVy4aZk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119760
+    },
+    "audio/tts_s19_action_kyJU3fQQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 208968
+    },
+    "audio/tts_s19_action_uPF-OCVX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 213600
+    },
+    "audio/tts_s19_action_vcbcadCX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 240144
+    },
+    "audio/tts_s2_action_DgCbWejc.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117648
+    },
+    "audio/tts_s2_action_e8Hs5yYK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 168048
+    },
+    "audio/tts_s2_action_Ibi6pO8J.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 307896
+    },
+    "audio/tts_s2_action_jvNQjqe8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84168
+    },
+    "audio/tts_s2_action_kDVsMiy9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92184
+    },
+    "audio/tts_s2_action_Y1qa88ka.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 88824
+    },
+    "audio/tts_s3_action_8LG72Ekh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104448
+    },
+    "audio/tts_s3_action_Lt0clmAC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117120
+    },
+    "audio/tts_s3_action_NLR1Pl-F.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144096
+    },
+    "audio/tts_s3_action_vWUWlG2-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 202560
+    },
+    "audio/tts_s4_action_HqpPhKGr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126144
+    },
+    "audio/tts_s4_action_I6ikxb0r.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 89184
+    },
+    "audio/tts_s4_action_iO1XebsV.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97176
+    },
+    "audio/tts_s4_action_x0Nomm68.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 85656
+    },
+    "audio/tts_s5_action_bAcAyHZ4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101712
+    },
+    "audio/tts_s5_action_OjpCXsk8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121872
+    },
+    "audio/tts_s5_action_qF07Nghi.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 166896
+    },
+    "audio/tts_s5_action_ulKX5JfW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117528
+    },
+    "audio/tts_s6_action_bRArVMW_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 76704
+    },
+    "audio/tts_s6_action_DDzp72hz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 134856
+    },
+    "audio/tts_s6_action_DFFzvMUg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 84192
+    },
+    "audio/tts_s6_action_S9GOrj0s.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 102192
+    },
+    "audio/tts_s6_action_SLJynfwM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104496
+    },
+    "audio/tts_s7_action_1q1bWJYb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 176448
+    },
+    "audio/tts_s7_action_47mQeTwF.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 64224
+    },
+    "audio/tts_s7_action_aVXJIK4M.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 107496
+    },
+    "audio/tts_s7_action_MrfkRgKS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127896
+    },
+    "audio/tts_s7_action_s1TWF1wX.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97536
+    },
+    "audio/tts_s7_action_SftVFsUU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99600
+    },
+    "audio/tts_s7_action_WQw_Rydn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 61968
+    },
+    "audio/tts_s8_action_k6VU89Wo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100440
+    },
+    "audio/tts_s8_action_ngMcABRB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 444840
+    },
+    "audio/tts_s8_action_q54YiIkr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94656
+    },
+    "audio/tts_s8_action_U_DkwzQg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116976
+    },
+    "audio/tts_s9_action_6KQ7MO3K.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97224
+    },
+    "audio/tts_s9_action_8I6CiI_G.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140640
+    },
+    "audio/tts_s9_action_Ny-1tEkA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 124752
+    },
+    "audio/tts_s9_action_rhZCNbgw.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104640
+    },
+    "audio/tts_s9_action_wqyePQOk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121800
+    },
+    "audio/tts_s9_action_xIi0VFq5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133968
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

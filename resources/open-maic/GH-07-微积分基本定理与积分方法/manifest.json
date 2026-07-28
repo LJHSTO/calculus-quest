@@ -1,7 +1,7 @@
 {
   "formatVersion": 1,
-  "exportedAt": "2026-07-19T04:49:01.987Z",
-  "appVersion": "0.3.0",
+  "exportedAt": "2026-07-25T09:59:31.945Z",
+  "appVersion": "0.0.0",
   "stage": {
     "name": "微积分基本定理与积分方法",
     "description": "",
@@ -192,8 +192,7 @@
         {
           "id": "action_cAHm4gIw",
           "type": "speech",
-          "text": "同学们好！欢迎来到微积分的世界。我是方老师，在接下来的课程中，我们会一起借助图像、实验和空间想象，来揭开微积分的神秘面纱。",
-          "audioRef": "audio/tts_action_cAHm4gIw.mp3"
+          "text": "这是一组关于“前测：微积分基本定理与积分方法学习准备诊断”的独立测验。在接下来的课程中，我们会一起借助图像、实验和空间想象，来揭开微积分的神秘面纱。"
         },
         {
           "id": "action_7e-673-o",
@@ -310,7 +309,7 @@
               "width": 480,
               "height": 42,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>几何意义：</b>F(x) 表示从 a 到 x 的曲边梯形面积。</p>",
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>几何意义：</b>F(x) 表示从 a 到 x 的有向面积。</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#333333"
             },
@@ -705,8 +704,7 @@
         {
           "id": "action_xQwW57EA",
           "type": "speech",
-          "text": "接下来，我们深入一个非常核心的概念——变上限积分。它就像是从面积累积到导数还原的一座桥梁。",
-          "audioRef": "audio/tts_s2_action_xQwW57EA.mp3"
+          "text": "本场景聚焦“变上限积分”。我们深入一个非常核心的概念——变上限积分。它就像是从面积累积到导数还原的一座桥梁。"
         },
         {
           "id": "action_OkMMyC9J",
@@ -836,8 +834,7 @@
         {
           "id": "action_TRlSl0TS",
           "type": "speech",
-          "text": "刚才我们看了变上限积分的推导，现在让我们亲手来拖动一下，看看面积增量是怎么跟着上限变化的。",
-          "audioRef": "audio/tts_s3_action_TRlSl0TS.mp3"
+          "text": "本场景通过交互探索“变上限积分：拖动实验”。现在让我们亲手来拖动一下，看看面积增量是怎么跟着上限变化的。"
         },
         {
           "id": "action_Cmcpb5wj",
@@ -1027,8 +1024,7 @@
         {
           "id": "action_T7c8qs-g",
           "type": "speech",
-          "text": "刚才在拖动实验中，我们看到面积变化的比率逐渐逼近 f(x) 的值。这个漂亮的结论，其实就藏在今天这张关系图里。我们先从最熟悉的 f(x) 开始，看看它是怎么“生长”出其他概念的。",
-          "audioRef": "audio/tts_s4_action_T7c8qs-g.mp3"
+          "text": "本场景通过交互探索“变上限积分：关系图”。我们看到面积变化的比率逐渐逼近 f(x) 的值。这个漂亮的结论，其实就藏在今天这张关系图里。我们先从最熟悉的 f(x) 开始，看看它是怎么“生长”出其他概念的。"
         },
         {
           "id": "action_YW-uUhOZ",
@@ -1051,8 +1047,7 @@
         {
           "id": "action_t6UFWR-g",
           "type": "speech",
-          "text": "很好，Φ(x) 出现了。注意看这条蓝色的连线，它代表“求积”的过程，把 f(t) 在从 a 到 x 的区间上累加起来。那反过来呢？小宇，你刚刚不是好奇面积怎么能“生长”吗？秘密就在这条绿色的线上——我们对 Φ(x) 求导，会得到什么？",
-          "audioRef": "audio/tts_s4_action_t6UFWR-g.mp3"
+          "text": "很好，Φ(x) 出现了。注意看这条蓝色的连线，它代表“求积”的过程，把 f(t) 在从 a 到 x 的区间上累加起来。那反过来呢？你刚刚不是好奇面积怎么能“生长”吗？秘密就在这条绿色的线上——我们对 Φ(x) 求导，会得到什么？"
         },
         {
           "id": "action_M9wRo92V",
@@ -1097,8 +1092,7 @@
         {
           "id": "action_YjB2THaa",
           "type": "speech",
-          "text": "刚才我们在关系图里看到了那个危险的“公式陷阱”——一旦上限变得复杂，简单的互逆关系就不够用了。很多同学在这里会掉进“只背公式”的坑里。",
-          "audioRef": "audio/tts_s5_action_YjB2THaa.mp3"
+          "text": "本场景通过交互探索“变上限积分：误解修复挑战”。简单的互逆关系就不够用了。很多同学在这里会掉进“只背公式”的坑里。"
         },
         {
           "id": "action_7LhLv4na",
@@ -1133,8 +1127,7 @@
         {
           "id": "action_a30U5878",
           "type": "speech",
-          "text": "小荷说得好，“做一遍就懂了”。不用怕出错，每次对齐失败都会有提示，帮你看到面积和函数值之间的真实联系。通关的同学会获得积分奖励，挑战一下吧！",
-          "audioRef": "audio/tts_s5_action_a30U5878.mp3"
+          "text": "大家说得好，“做一遍就懂了”。不用怕出错，每次对齐失败都会有提示，帮你看到面积和函数值之间的真实联系。通关的同学会获得积分奖励，挑战一下吧！"
         }
       ]
     },
@@ -1346,8 +1339,7 @@
         {
           "id": "action_TFeKz2J0",
           "type": "speech",
-          "text": "刚才我们通过关系图和纠错挑战，把变上限积分里面积和函数值的关联练熟了。现在，方老师想请你们从另一个维度来看它——我们直接走进3D空间，看面积是如何随着上限“长”出来的。",
-          "audioRef": "audio/tts_s6_action_TFeKz2J0.mp3"
+          "text": "本场景通过交互探索“变上限积分：空间视角”。把变上限积分里面积和函数值的关联练熟了。现在，大家想请你们从另一个维度来看它——我们直接走进3D空间，看面积是如何随着上限“长”出来的。"
         },
         {
           "id": "action_R15wneiL",
@@ -1411,6 +1403,7 @@
       "order": 7,
       "content": {
         "type": "slide",
+        "schemaVersion": 1,
         "canvas": {
           "id": "KIHCYiICQLzwH2R3OJUhY",
           "viewportSize": 1000,
@@ -1601,7 +1594,7 @@
                     "id": "r1c2",
                     "colspan": 1,
                     "rowspan": 1,
-                    "text": "",
+                    "text": "∫ₐᵇ f(x)dx",
                     "style": {
                       "backcolor": "#F5F5F5",
                       "align": "center"
@@ -1635,7 +1628,7 @@
                     "id": "r2c2",
                     "colspan": 1,
                     "rowspan": 1,
-                    "text": "",
+                    "text": "∫ f(x)dx",
                     "style": {
                       "backcolor": "#FFFFFF",
                       "align": "center"
@@ -1654,34 +1647,6 @@
                   }
                 ]
               ]
-            },
-            {
-              "type": "latex",
-              "id": "latex_YDTeVM-j",
-              "left": 595,
-              "top": 331,
-              "width": 120,
-              "height": 30,
-              "rotate": 0,
-              "latex": "\\int_a^b f(x)dx",
-              "color": "#333333",
-              "fixedRatio": true,
-              "align": "center",
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.511em;vertical-align:-0.9119em;\"></span><span class=\"mop\"><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.599em;\"><span style=\"top:-1.7881em;margin-left:-0.4445em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">a</span></span></span><span style=\"top:-3.8129em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mathnormal mtight\">b</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9119em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span></span></span>"
-            },
-            {
-              "type": "latex",
-              "id": "latex_LJERD40C",
-              "left": 493,
-              "top": 331,
-              "width": 100,
-              "height": 30,
-              "rotate": 0,
-              "latex": "\\int f(x)dx",
-              "color": "#333333",
-              "fixedRatio": true,
-              "align": "center",
-              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span></span></span>"
             },
             {
               "type": "shape",
@@ -1707,7 +1672,7 @@
               "width": 120,
               "height": 46,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; text-align: center; color: #1565C0; font-weight: bold;\">定积分</p>",
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1565C0; font-weight: bold;\">不定积分</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#1565C0"
             },
@@ -1807,7 +1772,7 @@
               "width": 120,
               "height": 46,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; text-align: center; color: #1565C0; font-weight: bold;\">不定积分</p>",
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1565C0; font-weight: bold;\">定积分</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#1565C0"
             },
@@ -1843,9 +1808,9 @@
           "background": {
             "type": "solid",
             "color": "#ffffff"
-          }
-        },
-        "schemaVersion": 1
+          },
+          "animations": []
+        }
       },
       "actions": [
         {
@@ -1856,8 +1821,7 @@
         {
           "id": "action_H58Uz9t9",
           "type": "speech",
-          "text": "各位同学，刚才我们看了变上限积分那个会‘生长’的面积。那怎么把这个面积精确地算出来呢？这就是我们今天的主角——牛顿-莱布尼茨公式。",
-          "audioRef": "audio/tts_s7_action_H58Uz9t9.mp3"
+          "text": "本场景聚焦“牛顿-莱布尼茨公式”。各位同学，刚才我们看了变上限积分那个会‘生长’的面积。那怎么把这个面积精确地算出来呢？这就是我们今天的主角——牛顿-莱布尼茨公式。"
         },
         {
           "id": "action_zc-F5DC9",
@@ -1999,8 +1963,7 @@
         {
           "id": "action_W7sVNLAL",
           "type": "speech",
-          "text": "好，我们刚刚在上一页认识了牛顿-莱布尼茨公式。现在就用这个交互实验来亲手验证一下：定积分的值，真的就等于原函数在端点的差值吗？大家先看屏幕上的图像，我把区间起点 a 和终点 b 都拖到一个中间位置。",
-          "audioRef": "audio/tts_s8_action_W7sVNLAL.mp3"
+          "text": "本场景通过交互探索“牛顿-莱布尼茨公式：拖动实验”。现在就用这个交互实验来亲手验证一下：定积分的值，真的就等于原函数在端点的差值吗？大家先看屏幕上的图像，我把区间起点 a 和终点 b 都拖到一个中间位置。"
         },
         {
           "id": "action_KPDBs2iD",
@@ -2251,8 +2214,7 @@
         {
           "id": "action_ZCPcvhtU",
           "type": "speech",
-          "text": "刚才我们用拖动实验感受了那根蓝线和红线的同步变化。现在我们把逻辑梳理一下，看看这张关系图是如何把牛顿-莱布尼茨公式的步骤串起来的。",
-          "audioRef": "audio/tts_s9_action_ZCPcvhtU.mp3"
+          "text": "本场景通过交互探索“牛顿-莱布尼茨公式：关系图”。现在我们把逻辑梳理一下，看看这张关系图是如何把牛顿-莱布尼茨公式的步骤串起来的。"
         },
         {
           "id": "action_iFw4Spmo",
@@ -2341,8 +2303,7 @@
         {
           "id": "action_i8yBmNyS",
           "type": "speech",
-          "text": "所以，小静，你记笔记时要特别圈出这个“常数消去”节点，它把“不定积分”和“定积分”的符号体系彻底分开了。定积分是一个具体的数，不是一个函数族，一定要牢记。",
-          "audioRef": "audio/tts_s9_action_i8yBmNyS.mp3"
+          "text": "所以，你记笔记时要特别圈出这个“常数消去”节点，它把“不定积分”和“定积分”的符号体系彻底分开了。定积分是一个具体的数，不是一个函数族，一定要牢记。"
         }
       ]
     },
@@ -2390,8 +2351,7 @@
         {
           "id": "action_SYPO7Nxi",
           "type": "speech",
-          "text": "好，刚才我们通过关系图理清了定积分和不定积分的符号区别。现在，方老师要带大家来一场“符号分类挑战赛”，看谁能在混乱的公式海洋里，一眼认出谁是“定积分”（具体的数），谁是“原函数家族”（带+C的那个）。",
-          "audioRef": "audio/tts_s10_action_SYPO7Nxi.mp3"
+          "text": "本场景通过交互探索“牛顿-莱布尼茨公式：误解修复挑战”。大家要带大家来一场“符号分类挑战赛”，看谁能在混乱的公式海洋里，一眼认出谁是“定积分”（具体的数），谁是“原函数家族”（带+C的那个）。"
         },
         {
           "id": "action_ZgMjNsqa",
@@ -2420,8 +2380,7 @@
         {
           "id": "action_m5J2e85a",
           "type": "speech",
-          "text": "小宇、阿哲，准备好了吗？我们看看谁最先发现那个伪装的错误公式。开始！",
-          "audioRef": "audio/tts_s10_action_m5J2e85a.mp3"
+          "text": "准备好了吗？我们看看谁最先发现那个伪装的错误公式。开始！"
         }
       ]
     },
@@ -2583,8 +2542,7 @@
         {
           "id": "action_s3ru9xWt",
           "type": "speech",
-          "text": "好，刚才我们在二维平面上看到了原函数的差值就等于积分面积。现在，方老师带大家换个角度，从三维空间里重新审视牛顿-莱布尼茨公式，看看有什么新发现。",
-          "audioRef": "audio/tts_s11_action_s3ru9xWt.mp3"
+          "text": "本场景通过交互探索“牛顿-莱布尼茨公式：空间视角”。大家带大家换个角度，从三维空间里重新审视牛顿-莱布尼茨公式，看看有什么新发现。"
         },
         {
           "id": "action_pNcjFv2b",
@@ -2596,8 +2554,7 @@
         {
           "id": "action_nZ4aTQbe",
           "type": "speech",
-          "text": "画面上有原函数曲线、蓝色的积分面积片，还有代表高度差的黄色圆柱。小宇，你一直喜欢空间视角，你觉得高度差和面积片之间，可能存在什么关系？",
-          "audioRef": "audio/tts_s11_action_nZ4aTQbe.mp3"
+          "text": "画面上有原函数曲线、蓝色的积分面积片，还有代表高度差的黄色圆柱。你一直喜欢空间视角，你觉得高度差和面积片之间，可能存在什么关系？"
         },
         {
           "id": "action_vBf0luEA",
@@ -2801,14 +2758,12 @@
         {
           "id": "action_12Gs2bYE",
           "type": "speech",
-          "text": "好，刚才我们从空间视角感受了变上限积分和牛顿-莱布尼茨公式的几何意义。现在，让我们通过几个问题来检验一下我们的直觉是否真的建立起来了。",
-          "audioRef": "audio/tts_s12_action_12Gs2bYE.mp3"
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。让我们通过几个问题来检验一下我们的直觉是否真的建立起来了。"
         },
         {
           "id": "action_OSIAeeos",
           "type": "speech",
-          "text": "这套小测验不仅是检查我们刚刚学过的第一组核心概念，同时也会探测一下大家对接下来要学的积分技巧，比如换元法和分部积分法，有什么样的初步感觉。",
-          "audioRef": "audio/tts_s12_action_OSIAeeos.mp3"
+          "text": "这套小测验不仅是检查我们刚刚学过的第一组核心概念，同时也会探测一下大家对需要学的积分技巧，比如换元法和分部积分法，有什么样的初步感觉。"
         },
         {
           "id": "action_ZvNWlk3L",
@@ -3073,8 +3028,7 @@
         {
           "id": "action_YszlWOM9",
           "type": "speech",
-          "text": "好了，刚才的测验大家完成得不错。现在，我们要解锁一个新的积分方法——换元法。看到这个名字，你可能觉得有点陌生，但它的核心思想，其实我们早就用过了：整体代换，让复杂的结构变简单。",
-          "audioRef": "audio/tts_s13_action_YszlWOM9.mp3"
+          "text": "本场景聚焦“换元法直觉”。好了，刚才的测验大家完成得不错。现在，我们要解锁一个新的积分方法——换元法。看到这个名字，你可能觉得有点陌生，但它的核心思想，其实我们早就用过了：整体代换，让复杂的结构变简单。"
         },
         {
           "id": "action_mwK3ejJ4",
@@ -3224,8 +3178,7 @@
         {
           "id": "action_fJKo8A02",
           "type": "speech",
-          "text": "好，我们刚才说到换元法要同时换变量和微分。现在，我们就来亲手操作这个实验，看看如果忘了换微分，会发生什么。",
-          "audioRef": "audio/tts_s14_action_fJKo8A02.mp3"
+          "text": "本场景通过交互探索“换元法直觉：拖动实验”。我们就来亲手操作这个实验，看看如果忘了换微分，会发生什么。"
         },
         {
           "id": "action_JhU6WQEN",
@@ -3300,8 +3253,7 @@
         {
           "id": "action_InqrrOzu",
           "type": "speech",
-          "text": "刚才我们拖动坐标轴，看到了内层函数的伸缩效应。现在让我们把这个过程放在关系图上，看看‘凑微分’到底在凑什么。",
-          "audioRef": "audio/tts_s15_action_InqrrOzu.mp3"
+          "text": "本场景通过交互探索“换元法直觉：关系图”。可以观察到内层函数的伸缩效应。现在让我们把这个过程放在关系图上，看看‘凑微分’到底在凑什么。"
         },
         {
           "id": "action_h2IcXeb4",
@@ -3343,8 +3295,7 @@
         {
           "id": "action_9BdAk1zf",
           "type": "speech",
-          "text": "小静常常在这里发现陷阱——如果图上还剩一个孤零零的 dx，没有跟 g'(x) 匹配上，那就说明你凑微分时漏掉了某个因子。",
-          "audioRef": "audio/tts_s15_action_9BdAk1zf.mp3"
+          "text": "大家常常在这里发现陷阱——如果图上还剩一个孤零零的 dx，没有跟 g'(x) 匹配上，那就说明你凑微分时漏掉了某个因子。"
         },
         {
           "id": "action_hN0MLgcP",
@@ -3408,8 +3359,7 @@
         {
           "id": "action_s4-yolDp",
           "type": "speech",
-          "text": "刚才我们梳理了从 ∫f(g(x))g'(x)dx 到 ∫f(u)du 的整体路径。现在，我们来玩一个天平平衡挑战，看看在真实的换元过程中，哪些地方最容易出错。",
-          "audioRef": "audio/tts_s16_action_s4-yolDp.mp3"
+          "text": "本场景通过交互探索“换元法直觉：误解修复挑战”。我们来玩一个天平平衡挑战，看看在真实的换元过程中，哪些地方最容易出错。"
         },
         {
           "id": "action_JGAvQ0vI",
@@ -3432,14 +3382,12 @@
         {
           "id": "action_q2ZSU7XB",
           "type": "speech",
-          "text": "小静刚才在关系图里注意到，换元后所有带 x 的部分都要消失。但别忘了，dx 本身也需要被替换成 du——这个过程里藏着最容易丢掉的 g'(x) 因子。",
-          "audioRef": "audio/tts_s16_action_q2ZSU7XB.mp3"
+          "text": "大家刚才在关系图里注意到，换元后所有带 x 的部分都要消失。但别忘了，dx 本身也需要被替换成 du——这个过程里藏着最容易丢掉的 g'(x) 因子。"
         },
         {
           "id": "action_1Lj7maxp",
           "type": "speech",
-          "text": "试试看吧。每一关都有时间限制，找到缺失的项并把它放上去。如果你一次都不犯错，还能拿到阿哲最喜欢的“一次成功”成就。",
-          "audioRef": "audio/tts_s16_action_1Lj7maxp.mp3"
+          "text": "试试看吧。每一关都有时间限制，找到缺失的项并把它放上去。如果你一次都不犯错，还能拿到大家最喜欢的“一次成功”成就。"
         },
         {
           "id": "action_r1w3BxHw",
@@ -3572,8 +3520,7 @@
         {
           "id": "action_CsshlVve",
           "type": "speech",
-          "text": "我们刚刚在关系图里梳理了换元前后被积函数的变化，现在换一个视角——来看看坐标变换在空间中到底意味着什么。",
-          "audioRef": "audio/tts_s17_action_CsshlVve.mp3"
+          "text": "本场景通过交互探索“换元法直觉：空间视角”。现在换一个视角——来看看坐标变换在空间中到底意味着什么。"
         },
         {
           "id": "action_T_bhpGgX",
@@ -4022,8 +3969,7 @@
         {
           "id": "action__t6SmtNQ",
           "type": "speech",
-          "text": "刚才我们体验了换元法，就像给积分表达式“换个衣服”，让它变得容易处理。接下来，我们要面对另一类更棘手的情况——当被积函数是两个不同类型函数的乘积时，比如 x 乘以 e^x，或者 x 乘以 sin x，该怎么办？这就是我们今天要探索的“分部积分法”。",
-          "audioRef": "audio/tts_s18_action__t6SmtNQ.mp3"
+          "text": "本场景聚焦“分部积分直觉”。就像给积分表达式“换个衣服”，让它变得容易处理。本场景中，我们要面对另一类更棘手的情况——当被积函数是两个不同类型函数的乘积时，比如 x 乘以 e^x，或者 x 乘以 sin x，该怎么办？这就是我们今天要探索的“分部积分法”。"
         },
         {
           "id": "action_Lkj_pXyq",
@@ -4110,8 +4056,7 @@
         {
           "id": "action_6-oM7CT2",
           "type": "speech",
-          "text": "而 dv 则负责被积分，它必须是可以被积分的，比如 e^x dx、sin x dx。选对了 u 和 dv，这个公式就活了，否则只是从一个复杂掉进另一个复杂。接下来，我们就通过一个生动的拖动实验，来亲手试试怎么做出这关键的选择。",
-          "audioRef": "audio/tts_s18_action_6-oM7CT2.mp3"
+          "text": "而 dv 则负责被积分，它必须是可以被积分的，比如 e^x dx、sin x dx。选对了 u 和 dv，这个公式就活了，否则只是从一个复杂掉进另一个复杂。本场景中，我们就通过一个生动的拖动实验，来亲手试试怎么做出这关键的选择。"
         }
       ]
     },
@@ -4213,8 +4158,7 @@
         {
           "id": "action_RS10biQV",
           "type": "speech",
-          "text": "刚才我们说到，分部积分的关键在于如何恰当地选取 u 和 dv。现在，就让我们通过这个拖动实验，来直观地感受一下这个选择带来的几何意义。",
-          "audioRef": "audio/tts_s19_action_RS10biQV.mp3"
+          "text": "本场景通过交互探索“分部积分直觉：拖动实验”。分部积分的关键在于如何恰当地选取 u 和 dv。现在，就让我们通过这个拖动实验，来直观地感受一下这个选择带来的几何意义。"
         },
         {
           "id": "action_SCnU4XQp",
@@ -4283,8 +4227,7 @@
         {
           "id": "action_lnZS8XL3",
           "type": "speech",
-          "text": "刚才我们从 uv 平面上看到了面积拆分的几何直觉。现在，让我们把这个动态平衡嵌入到一个完整的知识图谱里，看看乘积的求导与积分，是怎样互为镜像的。",
-          "audioRef": "audio/tts_s20_action_lnZS8XL3.mp3"
+          "text": "本场景通过交互探索“分部积分直觉：关系图”。让我们把这个动态平衡嵌入到一个完整的知识图谱里，看看乘积的求导与积分，是怎样互为镜像的。"
         },
         {
           "id": "action_xwwn184k",
@@ -4295,8 +4238,7 @@
         {
           "id": "action_VL8YLFiw",
           "type": "speech",
-          "text": "请大家目光聚焦在这张图的中心，这里是乘积的求导法则。就像我们在上一页拖动滑块看到的，变化被拆成了两部分。现在，我们从微分公式出发，看看对两边同时积分会发生什么。",
-          "audioRef": "audio/tts_s20_action_VL8YLFiw.mp3"
+          "text": "请大家目光聚焦在这张图的中心，这里是乘积的求导法则。就像我们在此前拖动滑块看到的，变化被拆成了两部分。现在，我们从微分公式出发，看看对两边同时积分会发生什么。"
         },
         {
           "id": "action_pufMXJOA",
@@ -4331,8 +4273,7 @@
         {
           "id": "action_jnMEVt4R",
           "type": "speech",
-          "text": "接下来，我们请小荷带大家做一个快速挑战，来检验你是否真的看懂了这张图里隐藏的转换逻辑。准备好了吗？",
-          "audioRef": "audio/tts_s20_action_jnMEVt4R.mp3"
+          "text": "本场景中，我们请大家带大家做一个快速挑战，来检验你是否真的看懂了这张图里隐藏的转换逻辑。准备好了吗？"
         }
       ]
     },
@@ -4359,8 +4300,7 @@
         {
           "id": "action_ES_Lin1h",
           "type": "speech",
-          "text": "好，刚看完小荷的挑战，谁真正掌握了分部积分里选 u 和 dv 的直觉？现在轮到方老师带你们玩一局卡牌游戏。",
-          "audioRef": "audio/tts_s21_action_ES_Lin1h.mp3"
+          "text": "本场景通过交互探索“分部积分直觉：误解修复挑战”。刚看完大家的挑战，谁真正掌握了分部积分里选 u 和 dv 的直觉？现在轮到大家带你们玩一局卡牌游戏。"
         },
         {
           "id": "action_iIX5nsgx",
@@ -4578,8 +4518,7 @@
         {
           "id": "action_lQqx0opX",
           "type": "speech",
-          "text": "刚才在游戏里，我们被迫去做出选择：到底哪一块是 u dv，哪一块是 v du？现在我们来亲眼看看，它们到底长什么样子。",
-          "audioRef": "audio/tts_s22_action_lQqx0opX.mp3"
+          "text": "本场景通过交互探索“分部积分直觉：空间视角”。我们被迫去做出选择：到底哪一块是 u dv，哪一块是 v du？现在我们来亲眼看看，它们到底长什么样子。"
         },
         {
           "id": "action_5Qe2kDeV",
@@ -4777,7 +4716,7 @@
               "width": 260,
               "height": 70,
               "rotate": 0,
-              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">从场景3的ΔS实验到</p><p style=\"font-size: 16px; text-align: center; color: #333333;\">变上限积分定理</p>",
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #333333;\">从“变上限积分：拖动实验”到</p><p style=\"font-size: 16px; text-align: center; color: #333333;\">变上限积分定理</p>",
               "defaultFontName": "Microsoft YaHei",
               "defaultColor": "#333333"
             },
@@ -4916,8 +4855,7 @@
         {
           "id": "action_PX7UMY4I",
           "type": "speech",
-          "text": "同学们，我们这门课已经走过了大半。今天我们不是在学新东西，而是把之前探索过的所有线索串联起来，形成一条完整的证据链。",
-          "audioRef": "audio/tts_s23_action_PX7UMY4I.mp3"
+          "text": "本场景聚焦“全课整理：证据链回看”。同学们，我们这门课已经走过了大半。今天我们不是在学新东西，而是把之前探索过的所有线索串联起来，形成一条完整的证据链。"
         },
         {
           "id": "action_JmuUvSX0",
@@ -5151,8 +5089,7 @@
         {
           "id": "action_5skuq_TK",
           "type": "speech",
-          "text": "好，带着我们刚刚梳理出的这条‘从面积到原函数’的逻辑链条，现在是时候来一次综合检验了。这套后测里，既有对牛顿-莱布尼茨公式的扎实计算，也藏着一些需要你调动‘比例直觉’来应对的迁移挑战。",
-          "audioRef": "audio/tts_s24_action_5skuq_TK.mp3"
+          "text": "这是一组关于“后测：微积分基本定理与积分方法综合测评”的独立测验。带着我们刚刚梳理出的这条‘从面积到原函数’的逻辑链条，现在是时候来一次综合检验了。这套后测里，既有对牛顿-莱布尼茨公式的扎实计算，也藏着一些需要你调动‘比例直觉’来应对的迁移挑战。"
         },
         {
           "id": "action_aDb5PaQz",
@@ -5169,8 +5106,7 @@
         {
           "id": "action_eVWl_Um3",
           "type": "speech",
-          "text": "好了，带着方老师常说的一句‘先看看图像怎么说’，去和这些题目对话吧。遇到需要综合运用多个知识点的题目，别着急，回想一下我们一步步搭建起来的证据链，看看能不能找到解题的线索。",
-          "audioRef": "audio/tts_s24_action_eVWl_Um3.mp3"
+          "text": "好了，带着大家常说的一句‘先看看图像怎么说’，去和这些题目对话吧。遇到需要综合运用多个知识点的题目，别着急，回想一下我们一步步搭建起来的证据链，看看能不能找到解题的线索。"
         },
         {
           "id": "action_8wJ_jU-U",

@@ -34,6 +34,7 @@ const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
 const feedback = require("./lib/feedback");
+const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
 let coursewareBridgeScript = "";
 try {
@@ -50,13 +51,16 @@ const learningRouteApiPaths = new Set([
   // Cached clients from the previous release may still request this alias.
   "/api/course/openmaic-v14-route"
 ]);
+const flowTestRouteApiPath = "/api/course/flow-test-route";
 let learningRoute = null;
 let publicLearningRouteJson = "";
+let flowTestRouteJson = "";
 let assessmentIndex = new Map();
 let assistantContextIndex = { routeVersion: "", units: new Map(), questions: new Map() };
 try {
   learningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
   publicLearningRouteJson = JSON.stringify(courseAssessment.buildPublicLearningRoute(learningRoute));
+  flowTestRouteJson = JSON.stringify(learningRoute);
   assessmentIndex = courseAssessment.buildAssessmentIndex(learningRoute);
   assistantContextIndex = learningAssistant.buildCourseContextIndex(learningRoute);
 } catch (error) {
@@ -88,13 +92,21 @@ const authAttemptWindowMs = 15 * 60 * 1000;
 const maxFailedAuthAttempts = 8;
 const authAttemptMap = new Map();
 const assistantRateLimitMap = new Map();
+const assistantInterventionRegistry = new Map();
 const assistantRateLimitWindowMs = 60 * 1000;
 const assistantRateLimitMax = 20;
+const assistantInterventionTtlMs = 15 * 60 * 1000;
+const assistantInterventionRegistryLimit = 5000;
+const assistantHistoryMessageLimit = 60;
+const assistantConversationTurnLimit = 30;
 const assistantDailyQuotaLimit = Math.max(
   1,
   Math.min(10000, Number(process.env.LEARNING_ASSISTANT_DAILY_QUOTA || 30) || 30)
 );
-
+const assistantDailyInterventionLimit = Math.max(
+  0,
+  Math.min(100, Number(process.env.LEARNING_ASSISTANT_DAILY_INTERVENTIONS || 10) || 10)
+);
 const types = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -121,10 +133,18 @@ const publicRootFiles = new Set([
   "styles.css",
   "favicon.ico"
 ]);
+const publicFlowTestFiles = new Set([
+  "app/flow-test/flow-test.css",
+  "app/flow-test/flow-test.js",
+  "data/knowledge-graph.json"
+]);
+const publicLearningRouteStaticPath = "/data/multi-scene-learning-route.json";
 const publicLibFiles = new Set([
   "lib/katex.min.css",
   "lib/katex.min.js",
-  "lib/interaction-policy.js"
+  "lib/chart.umd.min.js",
+  "lib/interaction-policy.js",
+  "lib/quiz-question-order.js"
 ]);
 const publicResourceExtensions = new Set([
   ".html",
@@ -152,6 +172,10 @@ const publicAssetExtensions = new Set([
 const publicFontExtensions = new Set([".woff", ".woff2", ".ttf"]);
 
 function send(res, status, body, type = "text/plain; charset=utf-8", extraHeaders = {}) {
+  if (res.headersSent) {
+    res.destroy();
+    return;
+  }
   res.writeHead(status, {
     "Content-Type": type,
     "Cache-Control": "no-store",
@@ -173,9 +197,19 @@ function shouldCompress(req, type, size) {
 function cacheControlFor(filePath, url) {
   const relative = path.relative(root, filePath).replaceAll(path.sep, "/");
   const ext = path.extname(filePath).toLowerCase();
-  // Versioned assets (cache-busted with ?v= param) can be cached aggressively
+  if (
+    relative === "index.html"
+    || relative === "admin.html"
+    || relative === "flow-test.html"
+    || publicFlowTestFiles.has(relative)
+  ) return "no-store, max-age=0, no-transform";
+  if (
+    relative.startsWith("resources/open-maic/")
+    && (ext === ".html" || ext === ".htm")
+    && url?.searchParams.has("cqContextBridge")
+  ) return "no-store, max-age=0, no-transform";
+  // Versioned assets (cache-busted with ?v= param) can be cached aggressively.
   if (url && url.searchParams.has("v") && (ext === ".js" || ext === ".css")) return "public, max-age=604800, immutable";
-  if (relative === "index.html" || relative === "admin.html") return "no-store, max-age=0, no-transform";
   if (ext === ".js" || ext === ".css") return "no-store, max-age=0";
   if (relative.startsWith("resources/") && ext === ".json") return "public, max-age=3600";
   if (relative.startsWith("resources/")) return "public, max-age=86400";
@@ -449,16 +483,22 @@ function summaryFromData(data) {
   };
 }
 
-// Simple in-memory rate limiter: 120 req/min per IP for API routes
+// Simple in-memory rate limiter for API routes.
 const rateLimitMap = new Map();
-const RATE_LIMIT_WINDOW = 60000;
-const RATE_LIMIT_MAX = 120;
+const RATE_LIMIT_WINDOW = Math.max(
+  100,
+  Number(process.env.RATE_LIMIT_WINDOW_MS || 60000) || 60000
+);
+const RATE_LIMIT_MAX = Math.max(
+  1,
+  Number(process.env.RATE_LIMIT_MAX || 120) || 120
+);
 
 function checkRateLimit(req) {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
   const now = Date.now();
   let entry = rateLimitMap.get(ip);
-  if (!entry || now - entry.resetAt > RATE_LIMIT_WINDOW) {
+  if (!entry || now >= entry.resetAt) {
     entry = { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
     rateLimitMap.set(ip, entry);
   }
@@ -468,7 +508,7 @@ function checkRateLimit(req) {
  // Cleanup stale entries periodically
  if (rateLimitMap.size > 5000) {
    for (const [key, val] of rateLimitMap) {
-     if (now - val.resetAt > RATE_LIMIT_WINDOW) rateLimitMap.delete(key);
+     if (now >= val.resetAt) rateLimitMap.delete(key);
    }
  }
   return true;
@@ -568,6 +608,8 @@ function bearerToken(req, body = {}) {
   return String(body.token || "").trim();
 }
 
+const sessionTouchIntervalMs = 60 * 1000;
+
 function authenticate(req, body = {}) {
   const token = bearerToken(req, body);
   if (!token) return null;
@@ -578,15 +620,18 @@ function authenticate(req, body = {}) {
   if (session.expires_at && session.expires_at < ts) return null;
   const participant = db.getUser(session.user_id);
   if (!participant) return null;
-  db.touchSession(token, ts);
-  db.upsertUser(participant.id, participant.nickname || "", participant.created_at, ts, {
-    nicknameNorm: participant.nickname_norm || normalizeIdentity(participant.nickname || ""),
-    email: participant.email || "",
-    emailNorm: participant.email_norm || normalizeEmail(participant.email || ""),
-    passwordHash: participant.password_hash || "",
-    passwordUpdatedAt: participant.password_updated_at || "",
-    profileUpdatedAt: participant.profile_updated_at || ""
-  });
+  const lastSeenMs = Date.parse(session.last_seen_at || "");
+  if (!Number.isFinite(lastSeenMs) || Date.now() - lastSeenMs >= sessionTouchIntervalMs) {
+    db.touchSession(token, ts);
+    db.upsertUser(participant.id, participant.nickname || "", participant.created_at, ts, {
+      nicknameNorm: participant.nickname_norm || normalizeIdentity(participant.nickname || ""),
+      email: participant.email || "",
+      emailNorm: participant.email_norm || normalizeEmail(participant.email || ""),
+      passwordHash: participant.password_hash || "",
+      passwordUpdatedAt: participant.password_updated_at || "",
+      profileUpdatedAt: participant.profile_updated_at || ""
+    });
+  }
   return { participant, token };
 }
 
@@ -741,6 +786,7 @@ function safeStaticPath(urlPath) {
       || publicResourceExtensions.has(extension)
     );
   const allowed = publicRootFiles.has(normalized)
+    || publicFlowTestFiles.has(normalized)
     || normalized.startsWith("app/") && (extension === ".js" || extension === ".css")
     || normalized.startsWith("admin/") && (extension === ".js" || extension === ".css")
     || normalized.startsWith("assets/") && publicAssetExtensions.has(extension)
@@ -832,6 +878,32 @@ function consumeAssistantQuota(userId, date = new Date()) {
   };
 }
 
+function releaseAssistantQuota(userId, date = new Date()) {
+  const usageDate = beijingDateKey(date);
+  return {
+    usageDate,
+    ...db.releaseLearningAssistantDailyQuota(
+      userId,
+      usageDate,
+      assistantDailyQuotaLimit,
+      new Date().toISOString()
+    )
+  };
+}
+
+function consumeAssistantInterventionBudget(userId, date = new Date()) {
+  const usageDate = beijingDateKey(date);
+  return {
+    usageDate,
+    ...db.consumeLearningAssistantInterventionBudget(
+      userId,
+      usageDate,
+      assistantDailyInterventionLimit,
+      date.toISOString()
+    )
+  };
+}
+
 function publicAssistantConversation(row = {}) {
   return {
     id: row.id || "",
@@ -840,6 +912,7 @@ function publicAssistantConversation(row = {}) {
     unitId: row.unit_id || "",
     knowledgePointId: row.knowledge_point_id || "",
     title: String(row.title || "新对话"),
+    archivedAt: row.archived_at || "",
     messageCount: Number(row.message_count || 0),
     createdAt: row.created_at || "",
     updatedAt: row.updated_at || row.created_at || ""
@@ -894,14 +967,317 @@ function parseAssistantContextJson(value = "") {
 }
 
 function publicAssistantMessage(row = {}) {
+  const storedContext = parseAssistantContextJson(row.context_json || row.context);
+  const {
+    assistantGuidance,
+    assistantIntent,
+    proactivePrompt,
+    proactivePromptVisible,
+    ...contextRef
+  } = storedContext;
   return {
     id: row.id || "",
     role: row.role === "assistant" ? "assistant" : "user",
     content: String(row.content || ""),
-    contextRef: parseAssistantContextJson(row.context_json || row.context),
+    contextRef,
+    guidance: assistantGuidance || null,
+    assistantIntent: assistantIntent || "",
+    proactivePrompt: row.role === "user" ? boundedLearningText(proactivePrompt, 500, true) : "",
+    proactivePromptVisible: proactivePromptVisible !== false,
     provider: row.provider || "",
     quizSubmitted: Number(row.quiz_submitted || 0) === 1,
     createdAt: row.created_at || ""
+  };
+}
+
+function boundedLearningText(value = "", limit = 1200, multiline = false) {
+  const source = String(value ?? "").replace(/\u0000/g, "");
+  return (multiline ? source.replace(/\r\n?/g, "\n") : source.replace(/\s+/g, " "))
+    .trim()
+    .slice(0, limit);
+}
+
+function pruneAssistantInterventions(now = Date.now()) {
+  for (const [id, record] of assistantInterventionRegistry) {
+    if (Number(record?.expiresAt || 0) <= now) assistantInterventionRegistry.delete(id);
+  }
+  while (assistantInterventionRegistry.size > assistantInterventionRegistryLimit) {
+    const oldest = assistantInterventionRegistry.keys().next().value;
+    if (!oldest) break;
+    assistantInterventionRegistry.delete(oldest);
+  }
+}
+
+function issueAssistantIntervention(userId, resolved, decision = {}, now = Date.now()) {
+  const assistantPrompt = boundedLearningText(decision.assistantPrompt, 500, true);
+  if (!assistantPrompt || decision.interactionMode !== "student_reply") return "";
+  pruneAssistantInterventions(now);
+  const id = crypto.randomUUID();
+  assistantInterventionRegistry.set(id, {
+    id,
+    userId,
+    unitId: resolved.unit.id,
+    threadKey: resolved.threadKey,
+    action: boundedLearningText(decision.action, 40),
+    assistantPrompt,
+    reviewIndex: Math.max(0, Math.trunc(Number(decision.reviewIndex || 0))),
+    reviewTotal: Math.max(0, Math.trunc(Number(decision.reviewTotal || 0))),
+    questionId: boundedLearningText(decision.questionId, 180),
+    promptVisible: decision.promptVisible !== false,
+    sourceMessageId: boundedLearningText(decision.sourceMessageId, 180),
+    reviewAction: ["continue", "next"].includes(String(decision.reviewAction || ""))
+      ? String(decision.reviewAction)
+      : "",
+    createdAt: now,
+    expiresAt: now + assistantInterventionTtlMs
+  });
+  return id;
+}
+
+function getAssistantIntervention(
+  userId,
+  unitId,
+  interventionId = "",
+  { consume = false, now = Date.now() } = {}
+) {
+  const id = boundedLearningText(interventionId, 180);
+  if (!id) return null;
+  pruneAssistantInterventions(now);
+  const record = assistantInterventionRegistry.get(id);
+  if (
+    !record
+    || record.userId !== userId
+    || record.unitId !== unitId
+    || record.expiresAt <= now
+  ) return null;
+  if (consume) assistantInterventionRegistry.delete(id);
+  return record;
+}
+
+function normalizeAssistantQuizReviewProgress(progress = {}) {
+  const source = progress && typeof progress === "object" && !Array.isArray(progress)
+    ? progress
+    : {};
+  const status = [
+    "awaiting_choice",
+    "awaiting_reply",
+    "answered",
+    "stopped",
+    "completed"
+  ].includes(String(source.status || ""))
+    ? String(source.status)
+    : "";
+  const reviewTotal = Math.max(0, Math.min(30, Math.trunc(Number(source.reviewTotal || 0))));
+  const reviewIndex = Math.max(
+    0,
+    Math.min(Math.max(0, reviewTotal - 1), Math.trunc(Number(source.reviewIndex || 0)))
+  );
+  const targetReviewIndex = Math.max(
+    0,
+    Math.min(Math.max(0, reviewTotal - 1), Math.trunc(Number(source.targetReviewIndex ?? reviewIndex)))
+  );
+  return {
+    status,
+    done: status === "completed" || source.done === true,
+    reviewIndex,
+    reviewTotal,
+    questionId: boundedLearningText(source.questionId, 180),
+    action: ["continue", "next"].includes(String(source.action || "")) ? String(source.action) : "",
+    targetReviewIndex,
+    targetQuestionId: boundedLearningText(source.targetQuestionId, 180),
+    completionMessage: boundedLearningText(source.completionMessage, 220, true)
+  };
+}
+
+function assistantQuizReviewProgress(row = {}) {
+  const storedContext = parseAssistantContextJson(row.context_json || row.context);
+  return normalizeAssistantQuizReviewProgress(
+    storedContext?.assistantGuidance?.quizReviewProgress
+  );
+}
+
+function updateAssistantQuizReviewProgress(row = {}, progress = {}) {
+  if (!row?.user_id || !row?.id) return null;
+  const storedContext = parseAssistantContextJson(row.context_json || row.context);
+  const assistantGuidance = storedContext.assistantGuidance
+    && typeof storedContext.assistantGuidance === "object"
+    && !Array.isArray(storedContext.assistantGuidance)
+    ? storedContext.assistantGuidance
+    : {};
+  return db.updateLearningAssistantMessageContext(row.user_id, row.id, {
+    ...storedContext,
+    assistantGuidance: {
+      ...assistantGuidance,
+      quizReviewProgress: normalizeAssistantQuizReviewProgress(progress)
+    }
+  });
+}
+
+function quizReviewIndexFromProgress(resolved, progress = {}, { target = false } = {}) {
+  const incorrectItems = Array.isArray(resolved?.quizAttempt?.incorrectItems)
+    ? resolved.quizAttempt.incorrectItems
+    : [];
+  if (!incorrectItems.length) return -1;
+  const questionId = boundedLearningText(
+    target ? progress.targetQuestionId : progress.questionId,
+    180
+  );
+  if (questionId) {
+    const matchedIndex = incorrectItems.findIndex((item) => item.questionId === questionId);
+    if (matchedIndex >= 0) return matchedIndex;
+  }
+  const numericIndex = Math.trunc(Number(
+    target ? progress.targetReviewIndex : progress.reviewIndex
+  ));
+  return numericIndex >= 0 && numericIndex < incorrectItems.length ? numericIndex : -1;
+}
+
+function quizReviewDecisionForIndex(resolved, reviewIndex) {
+  const continuation = learningAssistant.quizReviewContinuation({
+    resolved,
+    completedIndex: Math.trunc(Number(reviewIndex || 0)) - 1
+  });
+  return continuation.done ? null : continuation.decision;
+}
+
+function publicQuizReviewPrompt({
+  resolved,
+  sceneType = "",
+  decision,
+  interventionId,
+  sourceMessageId = "",
+  reviewAction = "",
+  visible = true
+} = {}) {
+  if (!decision?.assistantPrompt || !interventionId) return null;
+  return {
+    id: `quiz-review-${interventionId}`,
+    content: decision.assistantPrompt,
+    action: decision.action,
+    unitId: resolved.unit.id,
+    sceneType: boundedLearningText(sceneType, 80),
+    interventionId,
+    sourceMessageId: boundedLearningText(sourceMessageId, 180),
+    reviewAction: ["continue", "next"].includes(reviewAction) ? reviewAction : "",
+    visible: visible !== false,
+    contextSummary: decision.contextSummary || "",
+    replyOptions: decision.replyOptions || []
+  };
+}
+
+function assistantRecentConversation(userId, resolved, limit = 4) {
+  const latest = db.listLearningAssistantConversations(userId, resolved.threadKey, 1)[0];
+  if (!latest) return [];
+  return db.getLearningAssistantMessages(
+    userId,
+    resolved.threadKey,
+    Math.max(1, Math.min(Number(limit || 4), 8)),
+    latest.id
+  ).map((row) => ({
+    role: row.role,
+    content: row.content
+  }));
+}
+
+function attachAssistantQuizAttempt(resolved, quizResults = []) {
+  if (!resolved?.isQuiz) return null;
+  resolved.quizAttempt = learningAssistant.buildQuizAttemptSummary({
+    resolved,
+    results: quizResults
+  });
+  return resolved.quizAttempt;
+}
+
+function sendAssistantSignalMismatch(res, message) {
+  sendJson(res, 400, {
+    ok: false,
+    code: "assistant_intervention_signal_mismatch",
+    message
+  });
+}
+
+function assistantMinimumDwellSeconds(resolved, sceneType = "") {
+  const normalizedSceneType = boundedLearningText(
+    sceneType || resolved?.scene?.type || resolved?.contextRef?.sceneType,
+    80
+  );
+  const readingScene = resolved?.unit?.type === "slide" || normalizedSceneType === "slide";
+  return readingScene ? 150 : 90;
+}
+
+function learningNoteError(code, message, status = 400) {
+  const error = new Error(message);
+  error.code = code;
+  error.status = status;
+  return error;
+}
+
+function sanitizeLearningNoteInput(userId, input = {}, noteIdOverride = "") {
+  const noteId = boundedLearningText(noteIdOverride || input.id, 180);
+  if (!/^[A-Za-z0-9:_-]{1,180}$/.test(noteId)) {
+    throw learningNoteError("learning_note_id_invalid", "笔记标识无效。");
+  }
+  const unitId = boundedLearningText(input.unitId || input.contextRef?.unitId, 180);
+  const unit = assistantContextIndex.units.get(unitId);
+  if (!unit) throw learningNoteError("learning_note_unit_invalid", "这条笔记对应的学习位置不存在。");
+  const sanitizedContext = learningAssistant.sanitizeClientContext(input.contextRef);
+  const locatorSource = input.locator && typeof input.locator === "object" ? input.locator : {};
+  const createdAt = Number.isFinite(Date.parse(input.createdAt || ""))
+    ? new Date(input.createdAt).toISOString()
+    : nowIso();
+  const updatedAt = Number.isFinite(Date.parse(input.updatedAt || ""))
+    ? new Date(input.updatedAt).toISOString()
+    : nowIso();
+  return {
+    id: noteId,
+    user_id: userId,
+    thread_key: unit.knowledgePointId ? `knowledge:${unit.knowledgePointId}` : `unit:${unit.id}`,
+    chapter_id: unit.chapterId || "",
+    unit_id: unit.id,
+    excerpt: boundedLearningText(input.excerpt || sanitizedContext.excerpt, 900, true),
+    note: boundedLearningText(input.note, 1200, true),
+    color: ["amber", "mint", "blue", "pink"].includes(input.color) ? input.color : "amber",
+    context: {
+      ...sanitizedContext,
+      chapterId: unit.chapterId || "",
+      unitId: unit.id,
+      unitLabel: unit.unitLabel || "",
+      knowledgePointId: unit.knowledgePointId || "",
+      knowledgePointLabel: unit.knowledgePointLabel || "",
+      resourceFingerprint: boundedLearningText(input.contextRef?.resourceFingerprint, 120)
+    },
+    locator: {
+      source: locatorSource.source === "iframe" ? "iframe" : "document",
+      semanticId: boundedLearningText(locatorSource.semanticId, 180),
+      exact: boundedLearningText(locatorSource.exact, 900, true),
+      prefix: boundedLearningText(locatorSource.prefix, 80, true),
+      suffix: boundedLearningText(locatorSource.suffix, 80, true),
+      startOffset: Number.isInteger(locatorSource.startOffset) && locatorSource.startOffset >= 0
+        ? locatorSource.startOffset
+        : -1,
+      endOffset: Number.isInteger(locatorSource.endOffset) && locatorSource.endOffset >= 0
+        ? locatorSource.endOffset
+        : -1
+    },
+    created_at: createdAt,
+    updated_at: updatedAt
+  };
+}
+
+function publicLearningNote(row = {}) {
+  return {
+    id: row.id || "",
+    ownerKey: row.user_id || "",
+    threadKey: row.thread_key || "",
+    chapterId: row.chapter_id || "",
+    unitId: row.unit_id || "",
+    excerpt: row.excerpt || "",
+    note: row.note || "",
+    color: row.color || "amber",
+    contextRef: parseAssistantContextJson(row.context_json),
+    locator: parseAssistantContextJson(row.locator_json),
+    createdAt: row.created_at || "",
+    updatedAt: row.updated_at || row.created_at || ""
   };
 }
 
@@ -911,19 +1287,35 @@ function writeNdjson(res, payload) {
   }
 }
 
-async function generateAssistantTurn({ resolved, question, history, quizSubmitted }) {
+async function generateAssistantTurn({
+  resolved,
+  question,
+  history,
+  quizSubmitted,
+  assistantIntent = "",
+  proactivePrompt = ""
+}) {
   const prompt = learningAssistant.buildAssistantPrompt({
     resolved,
     question,
     history,
-    quizSubmitted
+    quizSubmitted,
+    assistantIntent,
+    proactivePrompt
   });
   const providerInfo = assistantProviderInfo();
   if (!providerInfo.live) {
     return {
       provider: providerInfo.id,
-      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      text: learningAssistant.mockAssistantAnswer({
+        resolved,
+        question,
+        quizSubmitted,
+        assistantIntent,
+        proactivePrompt
+      }),
       policy: prompt.policy,
+      guidance: prompt.guidance,
       fallback: false
     };
   }
@@ -949,18 +1341,67 @@ async function generateAssistantTurn({ resolved, question, history, quizSubmitte
     });
     return {
       provider: result.provider || providerInfo.id,
-      text: text || learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      text: text || learningAssistant.mockAssistantAnswer({
+        resolved,
+        question,
+        quizSubmitted,
+        assistantIntent,
+        proactivePrompt
+      }),
       policy: prompt.policy,
+      guidance: prompt.guidance,
       fallback: !text
     };
   } catch (error) {
     console.warn("Learning assistant provider fallback:", error.message);
     return {
       provider: "fallback",
-      text: learningAssistant.mockAssistantAnswer({ resolved, question, quizSubmitted }),
+      text: learningAssistant.mockAssistantAnswer({
+        resolved,
+        question,
+        quizSubmitted,
+        assistantIntent,
+        proactivePrompt
+      }),
       policy: prompt.policy,
+      guidance: prompt.guidance,
       fallback: true
     };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function generateInterventionDecision({ resolved, signal, history = [] }) {
+  const providerInfo = assistantProviderInfo();
+  const fallback = () => learningAssistant.deterministicInterventionDecision({ resolved, signal });
+  if (!providerInfo.live) {
+    return { provider: providerInfo.id, decision: fallback(), fallback: false };
+  }
+  const prompt = learningAssistant.buildInterventionPrompt({ resolved, signal, history });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+    const result = await llm.completeChat({
+      system: prompt.system,
+      user: prompt.user,
+      jsonHint: true,
+      maxTokens: 340,
+      model: String(
+        process.env.LEARNING_ASSISTANT_MODEL
+        || process.env.OPENAI_COMPATIBLE_MODEL
+        || ""
+      ).trim() || undefined,
+      signal: controller.signal
+    });
+    return {
+      provider: result.provider || providerInfo.id,
+      decision: learningAssistant.parseInterventionDecision(result.text, { resolved, signal }),
+      fallback: false
+    };
+  } catch (error) {
+    console.warn("Learning assistant intervention fallback:", error.message);
+    return { provider: "fallback", decision: fallback(), fallback: true };
   } finally {
     clearTimeout(timeout);
   }
@@ -989,12 +1430,36 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (await systemAnnouncementApi.handle({
+      req,
+      res,
+      url,
+      db,
+      authenticate,
+      checkAdmin,
+      readJsonBody,
+      sendJson
+    })) return;
+
     if (req.method === "GET" && learningRouteApiPaths.has(url.pathname)) {
       if (!publicLearningRouteJson) {
         sendJson(res, 404, { ok: false, message: "未找到多场景自适应学习路线。" });
         return;
       }
       send(res, 200, publicLearningRouteJson, "application/json; charset=utf-8");
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === flowTestRouteApiPath) {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
+      if (!flowTestRouteJson) {
+        sendJson(res, 404, { ok: false, message: "未找到课件检视路线。" });
+        return;
+      }
+      send(res, 200, flowTestRouteJson, "application/json; charset=utf-8");
       return;
     }
 
@@ -1083,6 +1548,7 @@ async function handleApi(req, res, url) {
         created_at: timestamp
       });
       const user = db.getUser(participantId);
+      db.saveNow();
       sendJson(res, 200, { ok: true, participant: safePublicParticipant(user), token });
       return;
     }
@@ -1353,6 +1819,7 @@ async function handleApi(req, res, url) {
       }
       let data = {};
       try { data = JSON.parse(snap.data); } catch { /* use empty */ }
+      data = db.normalizeLearningSnapshot(data);
       sendJson(res, 200, {
         ok: true,
         snapshot: {
@@ -1462,6 +1929,7 @@ async function handleApi(req, res, url) {
         ok: true,
         provider: assistantProviderInfo(),
         courseVersion: assistantContextIndex.routeVersion || "",
+        conversationTurnLimit: assistantConversationTurnLimit,
         quota: assistantQuotaInfo(auth.participant.id)
       });
       return;
@@ -1483,7 +1951,9 @@ async function handleApi(req, res, url) {
       const sceneType = String(
         req.method === "GET" ? url.searchParams.get("sceneType") || "" : body.sceneType || ""
       ).trim();
-      const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      const quizSubmitted = Boolean(
+        unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length
+      );
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
@@ -1524,7 +1994,11 @@ async function handleApi(req, res, url) {
       const conversations = db.listLearningAssistantConversations(
         auth.participant.id,
         resolved.threadKey,
-        80
+        80,
+        {
+          query: url.searchParams.get("q") || "",
+          archived: url.searchParams.get("archived") === "1"
+        }
       ).map(publicAssistantConversation);
       sendJson(res, 200, {
         ok: true,
@@ -1536,6 +2010,460 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/learning/assistant/intervention") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const unitId = boundedLearningText(body.unitId, 180);
+      const chapterId = boundedLearningText(body.chapterId, 180);
+      const sceneType = boundedLearningText(body.sceneType, 80);
+      const signal = body.signal && typeof body.signal === "object" && !Array.isArray(body.signal)
+        ? body.signal
+        : {};
+      if (!["repeated_parameter", "quiz_review", "quiet_dwell"].includes(String(signal.kind || ""))) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "assistant_intervention_signal_invalid",
+          message: "这次学习信号不足以进行判断。"
+        });
+        return;
+      }
+      const quizResults = unitId
+        ? db.getQuizResultsByUserUnit(auth.participant.id, unitId)
+        : [];
+      const quizSubmitted = Boolean(quizResults.length);
+      let resolved;
+      try {
+        resolved = learningAssistant.resolveAssistantContext({
+          index: assistantContextIndex,
+          chapterId,
+          unitId,
+          sceneType,
+          contextRef: body.contextRef || {
+            kind: signal.kind === "repeated_parameter" ? "interaction" : "unit",
+            scope: signal.kind === "quiz_review" ? "quiz" : "lesson"
+          },
+          quizSubmitted
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_context_error",
+          message: error.message
+        });
+        return;
+      }
+      if (resolved.isQuiz && !quizSubmitted) {
+        sendAssistantQuizLocked(res, auth.participant.id);
+        return;
+      }
+      const quizAttempt = attachAssistantQuizAttempt(resolved, quizResults);
+      let verifiedSignal = signal;
+      if (signal.kind === "quiz_review") {
+        if (!resolved.isQuiz || !quizAttempt || quizAttempt.incorrect <= 0) {
+          sendAssistantSignalMismatch(res, "当前没有已确认的错题可供主动复盘。");
+          return;
+        }
+        if (quizAttempt.pendingReview > 0) {
+          sendAssistantSignalMismatch(res, "简答题仍在批改，完成后再开始完整错题复盘。");
+          return;
+        }
+        verifiedSignal = {
+          ...signal,
+          incorrect: quizAttempt.incorrect,
+          pendingReview: quizAttempt.pendingReview,
+          questionCount: quizAttempt.total,
+          reviewIndex: 0
+        };
+      } else if (signal.kind === "repeated_parameter") {
+        if (
+          resolved.isQuiz
+          || !resolved.scene
+          || (
+            resolved.contextRef.kind !== "interaction"
+            && resolved.contextRef.scope !== "interactive"
+          )
+          || !boundedLearningText(signal.parameter, 120)
+          || signal.newValue === undefined
+          || signal.newValue === null
+          || boundedLearningText(signal.newValue, 80) === ""
+        ) {
+          sendAssistantSignalMismatch(res, "当前学习位置没有可信的连续调参证据。");
+          return;
+        }
+      } else if (
+        signal.kind === "quiet_dwell"
+        && (
+          resolved.isQuiz
+          || Number(signal.dwellSeconds || 0) < assistantMinimumDwellSeconds(resolved, sceneType)
+        )
+      ) {
+        sendAssistantSignalMismatch(res, "当前学习状态不足以判断为有效停留。");
+        return;
+      }
+      const interventionBudget = consumeAssistantInterventionBudget(auth.participant.id, new Date());
+      if (!interventionBudget.ok) {
+        sendJson(res, 429, {
+          ok: false,
+          code: "assistant_intervention_budget_exhausted",
+          message: "知点今天已经减少主动打扰，仍可由你主动提问。",
+          interventionBudget,
+          quota: assistantQuotaInfo(auth.participant.id)
+        });
+        return;
+      }
+      const history = assistantRecentConversation(auth.participant.id, resolved, 4);
+      const generated = await generateInterventionDecision({
+        resolved,
+        signal: verifiedSignal,
+        history
+      });
+      const interventionId = issueAssistantIntervention(
+        auth.participant.id,
+        resolved,
+        generated.decision
+      );
+      sendJson(res, 200, {
+        ok: true,
+        provider: generated.provider,
+        fallback: generated.fallback,
+        decision: generated.decision,
+        interventionId,
+        interventionBudget,
+        quota: assistantQuotaInfo(auth.participant.id)
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/learning/notes") {
+      const auth = authenticate(req);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const unitId = boundedLearningText(url.searchParams.get("unitId") || "", 180);
+      if (unitId && !assistantContextIndex.units.has(unitId)) {
+        sendJson(res, 400, { ok: false, code: "learning_note_unit_invalid", message: "学习位置不存在。" });
+        return;
+      }
+      sendJson(res, 200, {
+        ok: true,
+        notes: db.listLearningNotes(auth.participant.id, unitId, 500).map(publicLearningNote)
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/learning/notes/sync") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const incoming = Array.isArray(body.notes) ? body.notes.slice(0, 500) : [];
+      try {
+        const records = incoming.map((note) => sanitizeLearningNoteInput(auth.participant.id, note));
+        const deletedIds = (Array.isArray(body.deletedIds) ? body.deletedIds : [])
+          .slice(0, 500)
+          .map((noteId) => boundedLearningText(noteId, 180))
+          .filter((noteId) => /^[A-Za-z0-9:_-]{1,180}$/.test(noteId));
+        db.syncLearningNotes(auth.participant.id, records, deletedIds);
+        const unitId = boundedLearningText(body.unitId || "", 180);
+        sendJson(res, 200, {
+          ok: true,
+          notes: db.listLearningNotes(auth.participant.id, unitId, 500).map(publicLearningNote)
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "learning_note_sync_failed",
+          message: error.message || "笔记同步失败。"
+        });
+      }
+      return;
+    }
+
+    const learningNoteMatch = url.pathname.match(/^\/api\/learning\/notes\/([^/]+)$/);
+    if (learningNoteMatch && ["PUT", "DELETE"].includes(req.method)) {
+      const body = req.method === "PUT" ? await readJsonBody(req) : {};
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const noteId = decodeURIComponent(learningNoteMatch[1]);
+      if (req.method === "DELETE") {
+        const deleted = db.deleteLearningNote(auth.participant.id, noteId);
+        if (!deleted) {
+          sendJson(res, 404, { ok: false, code: "learning_note_not_found", message: "这条笔记不存在或已删除。" });
+          return;
+        }
+        sendJson(res, 200, { ok: true, deleted: true, noteId });
+        return;
+      }
+      try {
+        const record = sanitizeLearningNoteInput(auth.participant.id, body, noteId);
+        const saved = db.upsertLearningNote(record);
+        sendJson(res, 200, { ok: true, note: publicLearningNote(saved) });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "learning_note_save_failed",
+          message: error.message || "笔记保存失败。"
+        });
+      }
+      return;
+    }
+
+    const assistantConversationMatch = url.pathname.match(
+      /^\/api\/learning\/assistant\/conversations\/([^/]+)$/
+    );
+    if (assistantConversationMatch && ["PATCH", "DELETE"].includes(req.method)) {
+      const body = req.method === "PATCH" ? await readJsonBody(req) : {};
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const conversationId = decodeURIComponent(assistantConversationMatch[1]);
+      const existing = db.getLearningAssistantConversation(auth.participant.id, conversationId);
+      if (!existing) {
+        sendJson(res, 404, {
+          ok: false,
+          code: "assistant_conversation_not_found",
+          message: "这段对话不存在或已被删除。"
+        });
+        return;
+      }
+      if (req.method === "DELETE") {
+        db.deleteLearningAssistantConversation(auth.participant.id, conversationId);
+        sendJson(res, 200, { ok: true, deleted: true, conversationId });
+        return;
+      }
+
+      const action = String(body.action || "").trim();
+      const updatedAt = nowIso();
+      let updated = null;
+      if (action === "rename") {
+        const title = String(body.title || "").replace(/\s+/g, " ").trim().slice(0, 80);
+        if (!title) {
+          sendJson(res, 400, {
+            ok: false,
+            code: "assistant_conversation_title_required",
+            message: "请输入对话名称。"
+          });
+          return;
+        }
+        updated = db.renameLearningAssistantConversation(
+          auth.participant.id,
+          conversationId,
+          title,
+          updatedAt
+        );
+      } else if (["archive", "restore"].includes(action)) {
+        updated = db.setLearningAssistantConversationArchived(
+          auth.participant.id,
+          conversationId,
+          action === "archive" ? updatedAt : "",
+          updatedAt
+        );
+      } else {
+        sendJson(res, 400, {
+          ok: false,
+          code: "assistant_conversation_action_invalid",
+          message: "无法识别这项会话操作。"
+        });
+        return;
+      }
+      sendJson(res, 200, {
+        ok: true,
+        conversation: publicAssistantConversation(updated)
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/assistant/quiz-review/action"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const action = String(body.action || "").trim();
+      if (!["continue", "next", "stop"].includes(action)) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "assistant_quiz_review_action_invalid",
+          message: "无法识别这项错题复盘操作。"
+        });
+        return;
+      }
+      const conversationId = boundedLearningText(body.conversationId, 180);
+      const assistantMessageId = boundedLearningText(body.assistantMessageId, 180);
+      const unitId = boundedLearningText(body.unitId, 180);
+      const chapterId = boundedLearningText(body.chapterId, 180);
+      const sceneType = boundedLearningText(body.sceneType, 80);
+      const conversation = db.getLearningAssistantConversation(
+        auth.participant.id,
+        conversationId
+      );
+      const sourceMessage = db.getLearningAssistantMessage(
+        auth.participant.id,
+        assistantMessageId
+      );
+      if (
+        !conversation
+        || !sourceMessage
+        || sourceMessage.role !== "assistant"
+        || sourceMessage.conversation_id !== conversation.id
+        || sourceMessage.unit_id !== unitId
+      ) {
+        sendJson(res, 404, {
+          ok: false,
+          code: "assistant_quiz_review_state_not_found",
+          message: "这段错题复盘已不在当前对话中，请重新开始。"
+        });
+        return;
+      }
+      const latestMessage = db.getLearningAssistantMessages(
+        auth.participant.id,
+        conversation.thread_key,
+        1,
+        conversation.id
+      )[0];
+      if (!latestMessage || latestMessage.id !== sourceMessage.id) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_state_stale",
+          message: "这不是当前对话最新的复盘步骤，请从最新回答继续。"
+        });
+        return;
+      }
+      const quizResults = db.getQuizResultsByUserUnit(auth.participant.id, unitId);
+      const quizSubmitted = Boolean(quizResults.length);
+      let resolved;
+      try {
+        resolved = learningAssistant.resolveAssistantContext({
+          index: assistantContextIndex,
+          chapterId,
+          unitId,
+          sceneType,
+          contextRef: { kind: "unit", scope: "quiz" },
+          quizSubmitted
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_context_error",
+          message: error.message
+        });
+        return;
+      }
+      if (!resolved.isQuiz || !quizSubmitted) {
+        sendAssistantQuizLocked(res, auth.participant.id);
+        return;
+      }
+      const quizAttempt = attachAssistantQuizAttempt(resolved, quizResults);
+      const progress = assistantQuizReviewProgress(sourceMessage);
+      if (
+        !quizAttempt
+        || quizAttempt.pendingReview > 0
+        || quizAttempt.incorrect <= 0
+        || !["awaiting_choice", "awaiting_reply"].includes(progress.status)
+      ) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_state_unavailable",
+          message: "当前没有可继续的错题复盘步骤，请重新开始复盘。"
+        });
+        return;
+      }
+      if (action === "stop") {
+        const stopped = {
+          ...progress,
+          status: "stopped",
+          done: false,
+          action: "",
+          completionMessage: "已结束本轮错题复盘。"
+        };
+        updateAssistantQuizReviewProgress(sourceMessage, stopped);
+        sendJson(res, 200, {
+          ok: true,
+          done: false,
+          progress: normalizeAssistantQuizReviewProgress(stopped)
+        });
+        return;
+      }
+      if (progress.status !== "awaiting_choice") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_reply_pending",
+          message: "上一步复盘问题正在等待你的回答。"
+        });
+        return;
+      }
+      const currentIndex = quizReviewIndexFromProgress(resolved, progress);
+      if (currentIndex < 0) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_attempt_changed",
+          message: "测验结果已经更新，请重新开始本轮复盘。"
+        });
+        return;
+      }
+      const targetReviewIndex = action === "continue" ? currentIndex : currentIndex + 1;
+      if (targetReviewIndex >= quizAttempt.incorrectItems.length) {
+        const completionMessage = `本轮 ${quizAttempt.incorrectItems.length} 道错题已复盘完成。`;
+        const completed = {
+          ...progress,
+          status: "completed",
+          done: true,
+          action: "",
+          completionMessage
+        };
+        updateAssistantQuizReviewProgress(sourceMessage, completed);
+        sendJson(res, 200, {
+          ok: true,
+          done: true,
+          progress: normalizeAssistantQuizReviewProgress(completed),
+          completionMessage
+        });
+        return;
+      }
+      const decision = quizReviewDecisionForIndex(resolved, targetReviewIndex);
+      if (!decision || decision.action !== "review_mistake") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_quiz_review_target_unavailable",
+          message: "下一步错题复盘暂时不可用，请稍后再试。"
+        });
+        return;
+      }
+      const visible = action === "next";
+      const pendingProgress = {
+        ...progress,
+        status: "awaiting_reply",
+        done: false,
+        action,
+        targetReviewIndex,
+        targetQuestionId: decision.questionId || ""
+      };
+      updateAssistantQuizReviewProgress(sourceMessage, pendingProgress);
+      const interventionId = issueAssistantIntervention(
+        auth.participant.id,
+        resolved,
+        {
+          ...decision,
+          promptVisible: visible,
+          sourceMessageId: sourceMessage.id,
+          reviewAction: action
+        }
+      );
+      sendJson(res, 200, {
+        ok: true,
+        done: false,
+        progress: normalizeAssistantQuizReviewProgress(pendingProgress),
+        prompt: publicQuizReviewPrompt({
+          resolved,
+          sceneType,
+          decision,
+          interventionId,
+          sourceMessageId: sourceMessage.id,
+          reviewAction: action,
+          visible
+        })
+      });
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/learning/assistant/history") {
       const auth = authenticate(req);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
@@ -1543,7 +2471,10 @@ async function handleApi(req, res, url) {
       const chapterId = String(url.searchParams.get("chapterId") || "").trim();
       const sceneType = String(url.searchParams.get("sceneType") || "").trim();
       const conversationId = String(url.searchParams.get("conversationId") || "").trim();
-      const quizSubmitted = Boolean(unitId && db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      const quizResults = unitId
+        ? db.getQuizResultsByUserUnit(auth.participant.id, unitId)
+        : [];
+      const quizSubmitted = Boolean(quizResults.length);
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
@@ -1571,6 +2502,7 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
+      if (resolved.isQuiz) attachAssistantQuizAttempt(resolved, quizResults);
       let conversation = null;
       if (conversationId) {
         const found = db.getLearningAssistantConversation(auth.participant.id, conversationId);
@@ -1595,18 +2527,61 @@ async function handleApi(req, res, url) {
         ? db.getLearningAssistantMessages(
             auth.participant.id,
             resolved.threadKey,
-            100,
+            assistantHistoryMessageLimit,
             conversation.id
           ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1)
         : [];
+      let pendingQuizReviewPrompt = null;
+      const latestAssistantMessage = [...messages].reverse().find((row) => row.role === "assistant");
+      if (resolved.isQuiz && latestAssistantMessage) {
+        const progress = assistantQuizReviewProgress(latestAssistantMessage);
+        if (progress.status === "awaiting_reply") {
+          const targetReviewIndex = quizReviewIndexFromProgress(
+            resolved,
+            progress,
+            { target: true }
+          );
+          const decision = targetReviewIndex >= 0
+            ? quizReviewDecisionForIndex(resolved, targetReviewIndex)
+            : null;
+          if (
+            decision?.action === "review_mistake"
+            && (!progress.targetQuestionId || decision.questionId === progress.targetQuestionId)
+          ) {
+            const visible = progress.action === "next";
+            const interventionId = issueAssistantIntervention(
+              auth.participant.id,
+              resolved,
+              {
+                ...decision,
+                promptVisible: visible,
+                sourceMessageId: latestAssistantMessage.id,
+                reviewAction: progress.action
+              }
+            );
+            pendingQuizReviewPrompt = publicQuizReviewPrompt({
+              resolved,
+              sceneType,
+              decision,
+              interventionId,
+              sourceMessageId: latestAssistantMessage.id,
+              reviewAction: progress.action,
+              visible
+            });
+          }
+        }
+      }
       sendJson(res, 200, {
         ok: true,
         threadKey: resolved.threadKey,
         conversation,
+        conversationTurnLimit: assistantConversationTurnLimit,
+        conversationTurns: Math.floor(Number(conversation?.messageCount || 0) / 2),
         contextRef: resolved.contextRef,
         quizSubmitted,
         provider: assistantProviderInfo(),
         quota: assistantQuotaInfo(auth.participant.id),
+        pendingQuizReviewPrompt,
         messages: messages.map(publicAssistantMessage)
       });
       return;
@@ -1617,6 +2592,10 @@ async function handleApi(req, res, url) {
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const question = String(body.question || "").replace(/\u0000/g, "").trim().slice(0, 1200);
+      const assistantIntent = ["self_check", "rephrase", "practice"].includes(String(body.assistantIntent || "").trim())
+        ? String(body.assistantIntent).trim()
+        : "";
+      const proactiveInterventionId = boundedLearningText(body.proactiveInterventionId, 180);
       const unitId = String(body.unitId || "").trim();
       const chapterId = String(body.chapterId || "").trim();
       const sceneType = String(body.sceneType || "").trim();
@@ -1624,7 +2603,8 @@ async function handleApi(req, res, url) {
         sendJson(res, 400, { ok: false, message: "请输入问题，并保持当前学习单元有效。" });
         return;
       }
-      const quizSubmitted = Boolean(db.getQuizResultsByUserUnit(auth.participant.id, unitId).length);
+      const quizResults = db.getQuizResultsByUserUnit(auth.participant.id, unitId);
+      const quizSubmitted = Boolean(quizResults.length);
       let resolved;
       try {
         resolved = learningAssistant.resolveAssistantContext({
@@ -1647,6 +2627,27 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
+      attachAssistantQuizAttempt(resolved, quizResults);
+      const proactiveIntervention = proactiveInterventionId
+        ? getAssistantIntervention(auth.participant.id, unitId, proactiveInterventionId)
+        : null;
+      if (proactiveInterventionId && !proactiveIntervention) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_intervention_expired",
+          message: "这次复盘提示已失效，请重新开始复盘。",
+          quota: assistantQuotaInfo(auth.participant.id)
+        });
+        return;
+      }
+      let proactiveReviewSourceMessage = null;
+      const proactivePrompt = proactiveIntervention?.assistantPrompt || "";
+      if (proactiveIntervention?.action === "review_mistake") {
+        resolved.quizReviewIndex = Math.max(
+          0,
+          Math.trunc(Number(proactiveIntervention.reviewIndex || 0))
+        );
+      }
       const rate = checkAssistantRateLimit(auth.participant.id);
       if (!rate.ok) {
         sendJson(res, 429, {
@@ -1661,6 +2662,7 @@ async function handleApi(req, res, url) {
       const requestedAt = new Date();
       const providerInfo = assistantProviderInfo();
       let quota = assistantQuotaInfo(auth.participant.id, requestedAt);
+      let quotaReserved = false;
       let conversationState;
       try {
         conversationState = assistantConversationForRequest(
@@ -1679,6 +2681,52 @@ async function handleApi(req, res, url) {
         return;
       }
       const { conversation } = conversationState;
+      if (proactiveIntervention?.sourceMessageId) {
+        const sourceMessage = db.getLearningAssistantMessage(
+          auth.participant.id,
+          proactiveIntervention.sourceMessageId
+        );
+        const sourceProgress = assistantQuizReviewProgress(sourceMessage);
+        const targetReviewIndex = quizReviewIndexFromProgress(
+          resolved,
+          sourceProgress,
+          { target: true }
+        );
+        if (
+          !sourceMessage
+          || sourceMessage.role !== "assistant"
+          || sourceMessage.conversation_id !== conversation.id
+          || sourceMessage.unit_id !== unitId
+          || sourceProgress.status !== "awaiting_reply"
+          || targetReviewIndex !== proactiveIntervention.reviewIndex
+          || (
+            proactiveIntervention.questionId
+            && sourceProgress.targetQuestionId
+            && proactiveIntervention.questionId !== sourceProgress.targetQuestionId
+          )
+        ) {
+          sendJson(res, 409, {
+            ok: false,
+            code: "assistant_intervention_expired",
+            message: "这次复盘步骤已被更新，请从最新回答继续。",
+            quota
+          });
+          return;
+        }
+        proactiveReviewSourceMessage = sourceMessage;
+      }
+      const conversationTurns = Math.floor(Number(conversation.messageCount || 0) / 2);
+      if (conversationTurns >= assistantConversationTurnLimit) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "assistant_conversation_turn_limit",
+          message: `这段对话已达到 ${assistantConversationTurnLimit} 轮，请新建对话继续。`,
+          conversationTurnLimit: assistantConversationTurnLimit,
+          conversationTurns,
+          quota
+        });
+        return;
+      }
       if (assistantRequestConsumesQuota(providerInfo)) {
         quota = consumeAssistantQuota(auth.participant.id, requestedAt);
         if (!quota.ok) {
@@ -1690,13 +2738,14 @@ async function handleApi(req, res, url) {
           });
           return;
         }
+        quotaReserved = true;
       }
       const historyRows = conversationState.createConversation
         ? []
         : db.getLearningAssistantMessages(
             auth.participant.id,
             resolved.threadKey,
-            16,
+            assistantHistoryMessageLimit,
             conversation.id
           ).filter((row) => quizSubmitted || Number(row.quiz_submitted || 0) !== 1);
       const history = historyRows.map((row) => ({
@@ -1706,12 +2755,26 @@ async function handleApi(req, res, url) {
       const askedAt = requestedAt.toISOString();
       const userMessageId = crypto.randomUUID();
 
+      if (proactiveIntervention) {
+        getAssistantIntervention(
+          auth.participant.id,
+          unitId,
+          proactiveInterventionId,
+          { consume: true }
+        );
+      }
       const generated = await generateAssistantTurn({
         resolved,
         question,
         history,
-        quizSubmitted
+        quizSubmitted,
+        assistantIntent,
+        proactivePrompt
       });
+      if (generated.fallback && quotaReserved) {
+        quota = releaseAssistantQuota(auth.participant.id, requestedAt);
+        quotaReserved = false;
+      }
       const answer = learningAssistant.enforceQuizSafety(generated.text, {
         isQuiz: resolved.isQuiz,
         quizSubmitted,
@@ -1719,6 +2782,40 @@ async function handleApi(req, res, url) {
       });
       const assistantMessageId = crypto.randomUUID();
       const answeredAt = nowIso();
+      let quizReviewFollowUp = null;
+      if (proactiveIntervention?.action === "review_mistake") {
+        const incorrectItems = Array.isArray(resolved?.quizAttempt?.incorrectItems)
+          ? resolved.quizAttempt.incorrectItems
+          : [];
+        const matchedIndex = proactiveIntervention.questionId
+          ? incorrectItems.findIndex((item) => item.questionId === proactiveIntervention.questionId)
+          : -1;
+        const reviewIndex = matchedIndex >= 0
+          ? matchedIndex
+          : Math.max(
+              0,
+              Math.min(
+                Math.max(0, incorrectItems.length - 1),
+                Math.trunc(Number(proactiveIntervention.reviewIndex || 0))
+              )
+            );
+        quizReviewFollowUp = {
+          status: "awaiting_choice",
+          done: false,
+          reviewIndex,
+          reviewTotal: incorrectItems.length,
+          questionId: incorrectItems[reviewIndex]?.questionId || proactiveIntervention.questionId || "",
+          completionMessage: "",
+          actions: ["continue", "next", "stop"],
+          sourceMessageId: assistantMessageId
+        };
+      }
+      const assistantGuidance = quizReviewFollowUp
+        ? {
+            ...generated.guidance,
+            quizReviewProgress: normalizeAssistantQuizReviewProgress(quizReviewFollowUp)
+          }
+        : generated.guidance;
       const messageBase = {
         user_id: auth.participant.id,
         thread_key: resolved.threadKey,
@@ -1726,7 +2823,13 @@ async function handleApi(req, res, url) {
         chapter_id: resolved.unit.chapterId,
         unit_id: resolved.unit.id,
         knowledge_point_id: resolved.unit.knowledgePointId || "",
-        context: resolved.contextRef,
+        context: {
+          ...resolved.contextRef,
+          assistantGuidance,
+          assistantIntent,
+          proactivePrompt,
+          proactivePromptVisible: proactiveIntervention?.promptVisible !== false
+        },
         quiz_submitted: quizSubmitted
       };
       db.saveLearningAssistantTurn({
@@ -1751,6 +2854,15 @@ async function handleApi(req, res, url) {
         title: conversation.messageCount === 0 ? question : "",
         updatedAt: answeredAt
       });
+      if (proactiveReviewSourceMessage) {
+        const sourceProgress = assistantQuizReviewProgress(proactiveReviewSourceMessage);
+        updateAssistantQuizReviewProgress(proactiveReviewSourceMessage, {
+          ...sourceProgress,
+          status: "answered",
+          done: false,
+          action: ""
+        });
+      }
 
       res.writeHead(200, {
         "Content-Type": "application/x-ndjson; charset=utf-8",
@@ -1763,6 +2875,8 @@ async function handleApi(req, res, url) {
         type: "meta",
         threadKey: resolved.threadKey,
         conversationId: conversation.id,
+        conversationTurnLimit: assistantConversationTurnLimit,
+        conversationTurns: conversationTurns + 1,
         userMessageId,
         contextRef: resolved.contextRef,
         quizSubmitted,
@@ -1779,16 +2893,22 @@ async function handleApi(req, res, url) {
           role: "assistant",
           content: answer,
           contextRef: resolved.contextRef,
+          guidance: assistantGuidance,
+          assistantIntent,
+          proactivePrompt: "",
           provider: generated.provider,
           quizSubmitted,
           createdAt: answeredAt
         },
         policy: generated.policy,
+        guidance: assistantGuidance,
+        quizReviewFollowUp,
         fallback: generated.fallback,
         conversation: {
           ...conversation,
           title: conversation.messageCount === 0 ? question.slice(0, 42) : conversation.title,
           messageCount: conversation.messageCount + 2,
+          turnCount: conversationTurns + 1,
           updatedAt: answeredAt
         },
         quota
@@ -1910,6 +3030,7 @@ async function handleApi(req, res, url) {
           created_at: result.timestamp
         });
       });
+      db.saveNow();
 
       sendJson(res, 200, {
         ok: true,
@@ -2301,15 +3422,21 @@ async function handleApi(req, res, url) {
 
     sendJson(res, 404, { ok: false, message: "接口不存在。" });
   } catch (error) {
-    console.error("API error:", error);
-    const status = error.message === "Request body is too large" ? 413
-      : error.message === "Invalid JSON body" ? 400
-      : 500;
+    const explicitStatus = Number(error.status || 0);
+    const status = explicitStatus >= 400 && explicitStatus <= 599 ? explicitStatus
+      : error.message === "Request body is too large" ? 413
+        : error.message === "Invalid JSON body" ? 400
+          : 500;
+    if (status >= 500) console.error("API error:", error);
     const message = status === 500 ? "服务器内部错误。"
       : error.message === "Request body is too large" ? "请求内容过大。"
         : error.message === "Invalid JSON body" ? "请求格式不正确。"
           : error.message;
-    sendJson(res, status, { ok: false, message });
+    sendJson(res, status, {
+      ok: false,
+      ...(error.code ? { code: error.code } : {}),
+      message
+    });
   }
 }
 
@@ -2340,12 +3467,42 @@ const server = http.createServer((req, res) => {
   const url = new URL(rawUrl, `http://${req.headers.host || "localhost"}`);
 
   if (url.pathname.startsWith("/api/")) {
-    handleApi(req, res, url);
+    handleApi(req, res, url).catch((error) => {
+      console.error("Unhandled API failure:", error);
+      if (!res.headersSent) {
+        try {
+          sendJson(res, 500, { ok: false, message: "服务器内部错误。" });
+          return;
+        } catch {}
+      }
+      try { res.destroy(); } catch {}
+    });
     return;
   }
 
   if (req.method !== "GET" && req.method !== "HEAD") {
     send(res, 405, "Method not allowed", "text/plain; charset=utf-8", { Allow: "GET, HEAD" });
+    return;
+  }
+
+  if (url.pathname === publicLearningRouteStaticPath) {
+    if (!publicLearningRouteJson) {
+      send(res, 404, "Not found");
+      return;
+    }
+    const headers = {
+      "Cache-Control": "no-store, max-age=0, no-transform",
+      "Content-Length": String(Buffer.byteLength(publicLearningRouteJson))
+    };
+    if (req.method === "HEAD") {
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        ...headers
+      });
+      res.end();
+      return;
+    }
+    send(res, 200, publicLearningRouteJson, "application/json; charset=utf-8", headers);
     return;
   }
 
@@ -2420,6 +3577,7 @@ const server = http.createServer((req, res) => {
 
 function shutdown(signal) {
   console.log(`${signal} received. Saving database before shutdown...`);
+  systemAnnouncementApi.closeStreams();
   try {
     db.saveNow();
   } catch (error) {
@@ -2438,6 +3596,24 @@ function shutdown(signal) {
 process.once("SIGINT", () => shutdown("SIGINT"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 
+let emergencyExitStarted = false;
+
+function emergencyExit(kind, error) {
+  if (emergencyExitStarted) return;
+  emergencyExitStarted = true;
+  console.error(`${kind}:`, error);
+  try {
+    db.saveNow();
+  } catch (saveError) {
+    console.error("Emergency database save failed:", saveError.message);
+  }
+  try { db.releaseWriteLock(); } catch {}
+  process.exit(1);
+}
+
+process.on("uncaughtException", (error) => emergencyExit("Uncaught exception", error));
+process.on("unhandledRejection", (reason) => emergencyExit("Unhandled rejection", reason));
+
 // Initialize database on startup, then start server
 try {
   db.acquireWriteLock();
@@ -2448,6 +3624,8 @@ try {
 
 db.getDb().then(() => {
  console.log("Database initialized.");
+  systemAnnouncementApi.ensureSchema(db.getDbSync());
+  db.saveNow();
   // Migration: fix existing is_correct bug where pending short answers (-1) were stored as 1
  try {
     const fixedCount = db.normalizeLegacyPendingShortAnswerFlags();

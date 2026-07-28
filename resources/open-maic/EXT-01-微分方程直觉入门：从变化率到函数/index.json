@@ -1,0 +1,4716 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T05:44:26.638Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "微分方程直觉入门：从变化率到函数",
+    "description": "",
+    "language": "本课程使用中文教学。考虑到学生为准大学生，专业术语如微分方程（Differential Equation）、导数（Derivative）需保留中英对照。侧重微积分直觉描述，避免过度使用抽象的代数符号，确保学生能将数学表达式与动态的变化过程联系起来。",
+    "style": "professional",
+    "createdAt": 1783304047128,
+    "updatedAt": 1783309103845
+  },
+  "agents": [
+    {
+      "name": "小宇",
+      "role": "student",
+      "persona": "刚高中毕业的准大学生，数学基础扎实但习惯用代数思维处理一切问题。他在课程初期总想直接把y移项解出来，是典型的‘代数误解’携带者。但他好奇心旺盛，喜欢动手拖动实验，一旦通过视觉反馈理解了斜率与解曲线的动态关系，就会迅速成长。",
+      "avatar": "/avatars/curious.png",
+      "color": "#f59e0b",
+      "priority": 5
+    },
+    {
+      "name": "浩然",
+      "role": "student",
+      "persona": "应用导向的学习者，痴迷于物理和生物建模。他对指数增长和衰减模型特别兴奋，不停在拖动实验中调节参数验证自己的想法。偶尔会跳过基础直觉直接追求结论，这时需要林教授和小晴把他拉回‘变化率’的核心。他的热情常常带动课堂讨论的节奏。",
+      "avatar": "/avatars/note-taker-2.png",
+      "color": "#06b6d4",
+      "priority": 6
+    },
+    {
+      "name": "林教授",
+      "role": "teacher",
+      "persona": "资深数学教育者，善于用生活中水流、温度变化等例子将抽象的微分概念具象化。他相信直觉先于公式，总是引导学生先感受‘变化’再触碰符号。上课节奏从容，鼓励学生犯错并从中建立深层理解。",
+      "avatar": "/avatars/teacher.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "若兰",
+      "role": "student",
+      "persona": "善于观察和反思的女生，喜欢从整体框架把握知识。她在空间视角场景中如鱼得水，能迅速发现斜率场的排列规律。对小宇的代数执念常报以理解的微笑，并用自己发现的几何直观帮助他。偶尔会在复杂符号前短暂卡住，但总能通过关系图理清思路。",
+      "avatar": "/avatars/thinker.png",
+      "color": "#10b981",
+      "priority": 5
+    },
+    {
+      "name": "小晴",
+      "role": "assistant",
+      "persona": "数学系在读研究生，林教授的助教，热情且细腻。她擅长用图形和动画辅助讲解，每当学生困惑时，总能及时递上一个恰到好处的直观类比。她密切关注每位学生的操作痕迹，对‘代数误解’类错误特别敏感。",
+      "avatar": "/avatars/assist.png",
+      "color": "#ec4899",
+      "priority": 7
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：微分方程入门学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 5,
+            "options": [
+              {
+                "label": "汽车在 t 时刻的位置",
+                "value": "A"
+              },
+              {
+                "label": "汽车在 t 时刻的瞬时速度",
+                "value": "B"
+              },
+              {
+                "label": "汽车从出发到 t 时刻行驶的总路程",
+                "value": "C"
+              },
+              {
+                "label": "汽车在 t 时刻的加速度",
+                "value": "D"
+              }
+            ],
+            "analysis": "在函数图像上，导数表示的是切线斜率。在运动学语境下，位置函数的导数就是瞬时变化率，即速度。选项A是原函数s(t)本身；选项C是路程的累积，与积分概念相关；选项D是速度的变化率，即二阶导数s''(t)。",
+            "question": "一辆汽车在笔直的公路上行驶。我们用函数 s(t) 表示汽车在 t 时刻的位置。请问，导数 s'(t) （读作 s prime of t 或 ds/dt）在几何上表示什么？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 5,
+            "options": [
+              {
+                "label": "y = x^2",
+                "value": "A"
+              },
+              {
+                "label": "dy/dx = y",
+                "value": "B"
+              },
+              {
+                "label": "dy/dx = x",
+                "value": "C"
+              },
+              {
+                "label": "y = 2x + 1",
+                "value": "D"
+              }
+            ],
+            "analysis": "题目考察学生对微分方程（Differential Equation）基本形式的识别。'变化率'对应导数 dy/dx，'等于 y 本身'表示为 = y。A和D是普通的代数方程，描述的是量与量之间的静态关系，包含了导数。C描述的是变化率等于自变量 x。",
+            "question": "以下哪个等式描述的是 'y 的变化率（dy/dx）等于 y 本身' 这一关系？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "answer": [
+              "A",
+              "C"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "导数可以在几何上解释为函数曲线在某一点的切线斜率",
+                "value": "A"
+              },
+              {
+                "label": "只要知道一个函数的导数公式，我就能完全确定这个函数是什么",
+                "value": "B"
+              },
+              {
+                "label": "微分方程是包含未知函数及其导数的方程",
+                "value": "C"
+              },
+              {
+                "label": "dy/dx = 2x 和 y = x^2 描述的是完全相同的数学对象，没有任何区别",
+                "value": "D"
+              }
+            ],
+            "analysis": "A正确，這是導數最核心的幾何直覺。C正确，這是微分方程的定义。B错误，导数是函数的特征，但确定原函数还需要一个初始条件（如函数经过哪个点），因为加常数求导后导函数一样。D错误，dy/dx=2x定义了一族曲线（y=x^2+C），而y=x^2只是其中的一条特定曲线。",
+            "question": "关于导数（Derivative）和微分方程（Differential Equation），以下哪些理解是正确的？（多选）",
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 5,
+            "options": [
+              {
+                "label": "y = 2x",
+                "value": "A"
+              },
+              {
+                "label": "y = 2x + 3",
+                "value": "B"
+              },
+              {
+                "label": "y = x^2 + 3",
+                "value": "C"
+              },
+              {
+                "label": "y = 2",
+                "value": "D"
+              }
+            ],
+            "analysis": "斜率为2的直线形式为 y = 2x + C。代入初始条件 (0,3)，3 = 2*0 + C，求得 C = 3，所以函数为 y = 2x + 3。条件中的 '经过点' 体现了初值问题（Initial Value Problem）中用来确定唯一解的关键信息。",
+            "question": "已知 dy/dx = 2。这意味着对于函数 y，无论 x 取何值，它的斜率始终为 2。如果这条曲线经过点 (0, 3)，那么该函数最可能是以下哪一个？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "points": 20,
+            "analysis": "参考要点：由于 dy/dt 恒等于当前数量 y 的 0.1 倍（0.1y），初始时 y=100，变化速度为 10 只/月（正数），所以数量会增加。随着 y 变大，因为它是正比例关系，变化速度 0.1y 也会随之变大。因此，兔子数量不仅会增加，而且会越增越快，呈现指数增长的趋势。",
+            "question": "假设 dy/dt 代表某种兔子种群数量的变化速度（单位：只/月）。如果已知 dy/dt = 0.1y，且初始时有 100 只兔子。请你用直觉描述未来这个种群数量会大致怎样变化（增加还是减少？变化速度是越来越快还是越来越慢？），并尝试解释为什么这个变化趋势符合你对 dy/dt = 0.1y 的理解。",
+            "hasAnswer": false,
+            "commentPrompt": "评分标准：(1) 能正确判断数量在增加（20分）; (2) 能正确指出增长速度越来越快，并关联到变化率与当前数量 y 成正比的直觉（变化速度随 y 增加而增加）（50分）; (3) 语言表达清晰，逻辑通顺，能够将数学符号与动态变化过程联系起来（30分）。"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_2KmFiWJg",
+          "text": "这是一组关于“前测：微分方程入门学习准备诊断”的独立测验。这是我的助教大家。在正式起航之前，我想先通过一个小测验，了解一下大家对于‘变化’这件事的直觉。这可不是为了打分，而是帮我们看清自己思维的起点在哪里。",
+          "type": "speech"
+        },
+        {
+          "id": "action_-blWzRT1",
+          "text": "这组题目会涉及到导数，也就是瞬时变化率，以及微分方程最核心的想法。别担心记不住公式，重点是感受一下，当我说一个量的变化速度取决于它自身时，比如 dy/dt = 0.1y，你脑海里会浮现出怎样的画面？是平稳的河流，还是滚雪球般越滚越大的增长？",
+          "type": "speech",
+          "audioRef": "audio/tts_action_-blWzRT1.mp3"
+        },
+        {
+          "id": "action_hn2JY70j",
+          "text": "有几道题需要你们写一点直觉性的描述，没有标准答案，大胆说出你的第一感觉就好。尤其是最后那道关于兔子种群数量的题，我非常期待看到你们不同的思考视角。现在，深呼吸，让我们开始吧，看看你对‘变化’的理解有多敏锐。",
+          "type": "speech",
+          "audioRef": "audio/tts_action_hn2JY70j.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "slide",
+      "title": "什么是微分方程：变化率等式",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "i2U2sP_0lZ7EIG8HYy4Sa",
+          "theme": {
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "backgroundColor": "#ffffff"
+          },
+          "elements": [
+            {
+              "id": "text_X39cUukf",
+              "top": 50,
+              "left": 60,
+              "type": "text",
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1E3A5F;\">什么是微分方程：变化率等式</p>",
+              "defaultColor": "#1E3A5F",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_dQf3ruC0",
+              "top": 120,
+              "left": 60,
+              "type": "text",
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-style: italic; color: #4A6A8A;\">将“变化规则”用等式写下来，而非直接求结果</p>",
+              "defaultColor": "#4A6A8A",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_AmPbESYI",
+              "top": 195,
+              "fill": "#2B6CB0",
+              "left": 60,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 24,
+              "height": 24,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_c0vXwrUJ",
+              "top": 185,
+              "left": 52,
+              "type": "text",
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #ffffff; font-weight: bold;\">1</p>",
+              "defaultColor": "#ffffff",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_8URDuzCZ",
+              "top": 185,
+              "left": 95,
+              "type": "text",
+              "width": 420,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">目标：将 dy/dt 读作“量随时间变化的快慢”——变化率本身就是方程的灵魂。</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_l74kuHu0",
+              "top": 285,
+              "fill": "#3182CE",
+              "left": 60,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 24,
+              "height": 24,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_PXd5j-2d",
+              "top": 275,
+              "left": 52,
+              "type": "text",
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #ffffff; font-weight: bold;\">2</p>",
+              "defaultColor": "#ffffff",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_HWwzBYIO",
+              "top": 275,
+              "left": 95,
+              "type": "text",
+              "width": 420,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">区分方程（规则）与解曲线（轨迹）：方程是规则，解是路径，两个层面要分开。</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_J6srjkEU",
+              "top": 375,
+              "fill": "#2B6CB0",
+              "left": 60,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 24,
+              "height": 24,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_hT2ir0F-",
+              "top": 365,
+              "left": 52,
+              "type": "text",
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #ffffff; font-weight: bold;\">3</p>",
+              "defaultColor": "#ffffff",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_8g66IsHx",
+              "top": 365,
+              "left": 95,
+              "type": "text",
+              "width": 420,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333; line-height: 1.5;\">纠正误解：微分方程不是简单的移项代数运算；它描述的是瞬时变化关系，不是静态等式。</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_TY-2dzjC",
+              "end": [
+                320,
+                0
+              ],
+              "top": 320,
+              "left": 580,
+              "type": "line",
+              "color": "#2B6CB0",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 2,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_2Dw6b2C5",
+              "end": [
+                0,
+                0
+              ],
+              "top": 180,
+              "left": 600,
+              "type": "line",
+              "color": "#2B6CB0",
+              "start": [
+                0,
+                140
+              ],
+              "style": "solid",
+              "width": 2,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_808SWksI",
+              "end": [
+                260,
+                20
+              ],
+              "top": 200,
+              "left": 600,
+              "type": "line",
+              "color": "#2B6CB0",
+              "cubic": [
+                [
+                  80,
+                  100
+                ],
+                [
+                  180,
+                  20
+                ]
+              ],
+              "start": [
+                0,
+                100
+              ],
+              "style": "solid",
+              "width": 3,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_JqchYrCi",
+              "end": [
+                70,
+                -30
+              ],
+              "top": 246,
+              "left": 760,
+              "type": "line",
+              "color": "#E53E3E",
+              "start": [
+                -70,
+                30
+              ],
+              "style": "dashed",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "shape_AB9CuXbj",
+              "top": 242,
+              "fill": "#E53E3E",
+              "left": 756,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_azbKaoTA",
+              "top": 250,
+              "left": 700,
+              "type": "text",
+              "width": 60,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #E53E3E; font-weight: bold;\">t₀</p>",
+              "defaultColor": "#E53E3E",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_A2meUBVM",
+              "top": 210,
+              "left": 900,
+              "type": "text",
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #2B6CB0;\">t</p>",
+              "defaultColor": "#2B6CB0",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_JtmvbOkG",
+              "top": 176,
+              "left": 580,
+              "type": "text",
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #2B6CB0;\">y</p>",
+              "defaultColor": "#2B6CB0",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_ZdLotgSU",
+              "top": 325,
+              "left": 580,
+              "type": "text",
+              "width": 40,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #2B6CB0;\">O</p>",
+              "defaultColor": "#2B6CB0",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_9UM4fvyN",
+              "top": 190,
+              "left": 760,
+              "type": "text",
+              "width": 140,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #E53E3E; font-weight: bold;\">dy/dt = 斜率</p>",
+              "defaultColor": "#E53E3E",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_9g-u6qI2",
+              "top": 260,
+              "left": 760,
+              "type": "text",
+              "width": 160,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #2B6CB0;\">某时刻 t 的变化率 = 切线斜率</p>",
+              "defaultColor": "#2B6CB0",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_gYSQpbTn",
+              "top": 455,
+              "fill": "#EDF2F7",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 880,
+              "height": 55,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_qJCAfaQS",
+              "top": 460,
+              "left": 80,
+              "type": "text",
+              "width": 840,
+              "height": 63,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #2D3748; text-align: center;\">⚠ 常见误解：认为微分方程就是移项解代数方程。实际上，解微分方程需要积分或数值方法，其核心是理解变化率如何驱动轨迹。</p>",
+              "defaultColor": "#2D3748",
+              "defaultFontName": "Microsoft YaHei"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#FAFAFA"
+          },
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_cMMHzEuM",
+          "type": "spotlight",
+          "elementId": "text_X39cUukf"
+        },
+        {
+          "id": "action_8t_DuSf5",
+          "text": "本场景聚焦“什么是微分方程：变化率等式”。本质上都是在试探大家对“变化”的直觉。很多同学在描述兔子数量时，都说“增长得越来越快”，这个“越来越快”，其实就是变化率在变化。今天，我们要把这个直觉，用数学语言固定下来，这就是微分方程。",
+          "type": "speech"
+        },
+        {
+          "id": "action_ObgABpFo",
+          "type": "spotlight",
+          "elementId": "text_dQf3ruC0"
+        },
+        {
+          "id": "action_HFAoevYT",
+          "text": "看这句话：将“变化规则”用等式写下来，而非直接求结果。这是理解微分方程最关键的一步。我们平时解代数方程，比如 x+2=5，目标就是算出 x。但微分方程，它不是一道求解题，而是一种“描述”。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_HFAoevYT.mp3"
+        },
+        {
+          "id": "action_L1U59wbj",
+          "type": "spotlight",
+          "elementId": "text_c0vXwrUJ"
+        },
+        {
+          "id": "action_cRmpLYDr",
+          "type": "spotlight",
+          "elementId": "text_8URDuzCZ"
+        },
+        {
+          "id": "action_MLY3g9lx",
+          "text": "第一个核心目标：请你学会把 “dy/dt” 这个符号，不只看作一个算式，而是直接读成“某个量随时间变化的快慢”。这个变化率，就是微分方程的灵魂。比如，我们读到 dy/dt = 2，脑子里的第一反应应该是：y 正以每秒2个单位的速度稳定增长，而不是想着怎么把 t 移过去。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_MLY3g9lx.mp3"
+        },
+        {
+          "id": "action_fHLmnHfq",
+          "type": "spotlight",
+          "elementId": "text_PXd5j-2d"
+        },
+        {
+          "id": "action_JUdn7VzN",
+          "type": "spotlight",
+          "elementId": "text_HWwzBYIO"
+        },
+        {
+          "id": "action_Xx5Z-W6u",
+          "text": "第二点，这涉及到两个层面。方程，像是一种“游戏规则”，它告诉你在这个世界里，变化每时每刻是怎么发生的。而解曲线，是基于这个规则，你走出来的一条具体“轨迹”。规则是固定的，但根据起点不同，轨迹可以有很多条。这个区别，我们后面会反复验证。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_Xx5Z-W6u.mp3"
+        },
+        {
+          "id": "action_7OwQ3kJu",
+          "type": "spotlight",
+          "elementId": "text_hT2ir0F-"
+        },
+        {
+          "id": "action_Z7iA02Kl",
+          "type": "spotlight",
+          "elementId": "text_8g66IsHx"
+        },
+        {
+          "id": "action_2qrT-F8t",
+          "text": "第三点是一个常见误区，这可能和我们在座部分同学，比如大家，一开始的想法一样。看到 dy/dt = ky，很容易想用代数思维去移项，把 y 除过去，再两边乘以 dt。物理上这暂时能凑效，但数学上，微分方程描述的是瞬时变化关系，它不是两个数值的静态等式，dy 和 dt 本身不能像普通变量那样随意乘除，背后需要积分这个更强大的工具。",
+          "type": "speech"
+        },
+        {
+          "id": "action_pmSrg2Vi",
+          "type": "spotlight",
+          "elementId": "text_9UM4fvyN"
+        },
+        {
+          "id": "action_VscjAje4",
+          "text": "大家可以看看右边这个示意图。在某一个具体时刻 t₀，函数曲线在这儿。而这个时刻的变化率 dy/dt，几何上，就是这条切线的斜率。方程 dy/dt = 某个东西，本质上，就是在整张坐标纸上给每一个点赋予一组斜率方向。这就是为什么我们叫它“变化规则”，因为它给每个点都规定了“此时此刻应该往哪个方向走”。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_VscjAje4.mp3"
+        },
+        {
+          "id": "action_2dAEvkwN",
+          "type": "spotlight",
+          "elementId": "text_qJCAfaQS"
+        },
+        {
+          "id": "action_2mE4pq1A",
+          "text": "所以，请一定在心里钉死这个直觉：微分方程的核心，是理解变化，它的解法需要我们运用积分或数值模拟去寻找原函数。代数移项只是偶尔的技巧，不是本质。好，抱着这个对“变化规则”的新认识，下一张幻灯片，我们会通过一个有趣的拖动实验，亲手感受一下，规则是怎么规定出无数条轨迹的。",
+          "type": "speech",
+          "audioRef": "audio/tts_s2_action_2mE4pq1A.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "什么是微分方程：变化率等式：拖动实验",
+      "order": 3,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "title": "微分方程（Differential Equation）：变化率等式",
+          "concept": "differential_equations_slope_field",
+          "presets": [
+            {
+              "name": "指数增长 dy/dt = y",
+              "slopeRule": "dydt_eq_y",
+              "variables": {
+                "initial_y": 0.5,
+                "slope_coefficient": 1
+              }
+            },
+            {
+              "name": "指数衰减 dy/dt = -y",
+              "slopeRule": "dydt_eq_minus_y",
+              "variables": {
+                "initial_y": 2,
+                "slope_coefficient": -1
+              }
+            },
+            {
+              "name": "正弦振荡 dy/dt = -y",
+              "slopeRule": "dydt_eq_minus_y",
+              "variables": {
+                "initial_y": 1,
+                "slope_coefficient": -1
+              }
+            },
+            {
+              "name": "dy/dt = t (抛物线)",
+              "slopeRule": "dydt_eq_t",
+              "variables": {
+                "initial_y": 0,
+                "slope_coefficient": 1
+              }
+            },
+            {
+              "name": "dy/dt = y×t",
+              "slopeRule": "dydt_eq_yt",
+              "variables": {
+                "initial_y": 0.5,
+                "slope_coefficient": 1
+              }
+            },
+            {
+              "name": "dy/dt = y²",
+              "slopeRule": "dydt_eq_y2",
+              "variables": {
+                "initial_y": 0.3,
+                "slope_coefficient": 1
+              }
+            }
+          ],
+          "variables": [
+            {
+              "max": 3,
+              "min": -3,
+              "name": "initial_y",
+              "unit": "",
+              "label": "初始值 y(0)",
+              "default": 1
+            },
+            {
+              "max": 3,
+              "min": -3,
+              "name": "slope_coefficient",
+              "step": 0.1,
+              "unit": "",
+              "label": "斜率系数 k",
+              "default": 1
+            },
+            {
+              "max": 5,
+              "min": 0.5,
+              "name": "animation_speed",
+              "unit": "×",
+              "label": "动画速度",
+              "default": 2
+            },
+            {
+              "max": 12,
+              "min": 4,
+              "name": "grid_density",
+              "unit": "格",
+              "label": "网格密度",
+              "default": 8
+            }
+          ],
+          "description": "通过实时调整斜率场参数，观察 y 的变化如何受 dy/dt 规则支配。拖动滑块改变斜率系数，观察斜率场箭头的实时转向，理解微分方程如何描述变化率。"
+        },
+        "htmlPath": "interactive/03_什么是微分方程：变化率等式：拖动实验.html",
+        "htmlBytes": 781155
+      },
+      "actions": [
+        {
+          "id": "action_KxTTYENr",
+          "text": "本场景通过交互探索“什么是微分方程：变化率等式：拖动实验”。现在就来亲手拖动实验，感受一下规则是如何规定出无数条轨迹的。比如这个斜率场，每个小箭头都代表在那一刻、那个位置，y的变化速率——也就是微分方程规定的 dy/dt。",
+          "type": "speech"
+        },
+        {
+          "id": "action_xHFzEiOd",
+          "type": "widget_highlight",
+          "target": "#slope_coefficient-slider",
+          "content": "拖动这个滑块，改变“变化规则”的强度"
+        },
+        {
+          "id": "action_ixaOx1Ez",
+          "text": "现在整个斜率场显示的是 dy/dt = y 的规则——k 为 1。你们注意看，当 y 大于零时，箭头都向上，而且越往上斜率越大；当 y 小于零时，箭头向下，越往下斜率越负。这就是“变化率与当前量成正比”的样子。大家，如果我现在把 k 改成 -1，你觉得箭头方向会怎么变？",
+          "type": "speech"
+        },
+        {
+          "id": "action_xop9sVpg",
+          "type": "widget_setState",
+          "state": {
+            "slope_coefficient": -1
+          },
+          "content": "切换到指数衰减的斜率场规则"
+        },
+        {
+          "id": "action_n5kU6CuY",
+          "text": "看，箭头集体反转了。y 为正时，斜率全变成负的，把曲线往下推；y 为负时，斜率变正，把曲线往上拉。无论初始值在哪儿，所有轨迹都会被“拽”向零——这就是指数衰减。你觉得这个向零的趋势和前面指数增长的不稳定感，本质区别在哪？",
+          "type": "speech"
+        },
+        {
+          "id": "action_5dOYZSG0",
+          "type": "widget_annotation",
+          "target": "#preset-buttons",
+          "content": "点击预设按钮快速切换不同微分方程"
+        },
+        {
+          "id": "action_8y-ODqiI",
+          "text": "你们现在可以自己拖动 y0 滑块来改变初始值，观察解曲线是怎么“顺着箭头的方向”画出来的。它绝不会横穿箭头，必须遵守规则。大家，如果你想模拟一个“变化率随时间增大”的系统，试试 dy/dt = t 这个预设，看看抛物线轨迹是怎么从平缓变陡的。动手试试吧。",
+          "type": "speech"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "什么是微分方程：变化率等式：关系图",
+      "order": 4,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "edges": [
+            {
+              "to": "n2",
+              "from": "n1",
+              "label": "核心是"
+            },
+            {
+              "to": "n3",
+              "from": "n2",
+              "label": "需要"
+            },
+            {
+              "to": "n4",
+              "from": "n2",
+              "label": "描述"
+            },
+            {
+              "to": "n4",
+              "from": "n3",
+              "label": "确定唯一解"
+            },
+            {
+              "to": "n5",
+              "from": "n1",
+              "label": "常见错误"
+            },
+            {
+              "to": "n3",
+              "from": "n5",
+              "label": "需要初值"
+            },
+            {
+              "to": "n6",
+              "from": "n4",
+              "label": "形成"
+            },
+            {
+              "to": "n2",
+              "from": "n6",
+              "label": "闭环验证"
+            }
+          ],
+          "nodes": [
+            {
+              "x": 400,
+              "y": 50,
+              "id": "n1",
+              "icon": "🎯",
+              "label": "什么是微分方程？",
+              "details": "微分方程（Differential Equation）是包含未知函数及其导数（Derivative）的等式。它不直接告诉你 y 等于多少，而是描述 y 的<strong>变化率</strong>如何与 x 或 y 本身相关。核心直觉：用变化规律代替静态数值。",
+              "labelEn": "What is a Diff. Eq.",
+              "evidence": "识别变化率等式"
+            },
+            {
+              "x": 400,
+              "y": 190,
+              "id": "n2",
+              "icon": "📐",
+              "label": "变化率规则",
+              "details": "变化率规则是微分方程的核心，如 y' = 2y。它意味着：函数在某点的斜率 = 该点函数值的 2 倍。这不是一个可以「移项求解」的代数方程——<strong>导数 y' 描述的是趋势</strong>，不是具体数值。关键直觉：每一步的走向由当前位置决定。",
+              "labelEn": "Rate of Change Rule",
+              "evidence": "理解变化率≠数值"
+            },
+            {
+              "x": 200,
+              "y": 330,
+              "id": "n3",
+              "icon": "🔑",
+              "label": "初值",
+              "details": "初值（Initial Value）如 y(0)=1，是确定<strong>唯一解曲线</strong>的关键。微分方程 y'=2y 有无穷多解 y=Ce^{2x}，但给定 y(0)=1 后，唯一确定 C=1，得到 y=e^{2x}。<br><br>🎯 <strong>观察点</strong>：学生应能认识到——没有初值，我们只能知道「形状」，不能确定「具体那条曲线」。",
+              "labelEn": "Initial Value",
+              "evidence": "🌟 关键节点：初值决定唯一性"
+            },
+            {
+              "x": 600,
+              "y": 330,
+              "id": "n4",
+              "icon": "📈",
+              "label": "解曲线",
+              "details": "解曲线（Solution Curve）是满足微分方程的函数图像。它不是一条普通的直线或抛物线——它的每一点斜率都严格遵循变化率规则。例如 y=e^{2x} 上每一点的切线斜率都是该点纵坐标的 2 倍。<br><br>🔄 动态直觉：从初值出发，沿着变化率规则「走」出来的轨迹。",
+              "labelEn": "Solution Curve",
+              "evidence": "将方程与动态轨迹联系"
+            },
+            {
+              "x": 100,
+              "y": 480,
+              "id": "n5",
+              "icon": "💥",
+              "label": "误区：代数移项思维",
+              "details": "<strong>常见误解</strong>：看到 y'=2y，就想「两边除以 y'」或「移项求 y」，像解普通代数方程一样操作。<br><br>❌ 这是错误的！导数 y' 不是普通的「y 乘以某个数」，它描述的是<strong>无穷小变化率</strong>。<br><br>✅ 正确思路：变化率规则 + 初值 → 通过积分/方向场等方法求解决策。普通代数方程思维在此失效！",
+              "labelEn": "⚠ Algebraic Trap",
+              "evidence": "⚠️ 定位错误思维节点"
+            },
+            {
+              "x": 500,
+              "y": 480,
+              "id": "n6",
+              "icon": "🔄",
+              "label": "完整求解逻辑",
+              "details": "完整的微分方程求解逻辑链条：<br><br>1️⃣ 识别变化率规则（微分方程本体）<br>2️⃣ 确认初值条件（确定唯一性）<br>3️⃣ 选择合适的求解方法（分离变量、方向场等）<br>4️⃣ 得到解曲线并验证<br><br>🎯 这是一个从「变化规律」到「具体函数」的推理过程，与普通代数方程的「移项求解」有本质不同。",
+              "labelEn": "Complete Logic",
+              "evidence": "构建完整逻辑闭环"
+            }
+          ],
+          "title": "什么是微分方程：变化率等式关系图",
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6"
+          ]
+        },
+        "htmlPath": "interactive/04_什么是微分方程：变化率等式：关系图.html",
+        "htmlBytes": 768296
+      },
+      "actions": [
+        {
+          "id": "action_j4-1zccb",
+          "text": "本场景通过交互探索“什么是微分方程：变化率等式：关系图”。现在我们把这种直觉梳理成一个清晰的逻辑图谱，看看微分方程求解到底是怎么一步步推进的。",
+          "type": "speech"
+        },
+        {
+          "id": "action_3H_QjMKo",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "核心问题：什么是微分方程？"
+        },
+        {
+          "id": "action_G_--8ZPo",
+          "text": "首先，我们一切讨论的起点就是这个核心问题：什么是微分方程？它本质上是一个关于“变化率”的等式，而不是直接告诉你 y 等于几的代数方程。",
+          "type": "speech",
+          "audioRef": "audio/tts_s4_action_G_--8ZPo.mp3"
+        },
+        {
+          "id": "action_-0tHD7Cp",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "变化率规则：微分方程的心脏"
+        },
+        {
+          "id": "action_ulnIE8ab",
+          "text": "微分方程的心脏就是这个变化率规则。比如 y' = 2y，它说的是：函数在每一个点的斜率，都等于那一点函数值的两倍。请记住，这里的 y' 描述的是趋势，不是一个可以像普通代数那样直接移项求出来的数值。",
+          "type": "speech",
+          "audioRef": "audio/tts_s4_action_ulnIE8ab.mp3"
+        },
+        {
+          "id": "action_2GClB-ro",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "关键节点：初值决定唯一解"
+        },
+        {
+          "id": "action_6FvMpx-A",
+          "text": "注意看这个关键的节点——初值。没有初值，变化率规则只能告诉我们一族解曲线的形状；只有引入了像 y(0)=1 这样的初值条件，我们才能从那无穷多条曲线中，确定出唯一的一条。你在拖动实验里是不是就有这种感觉，改变起点，整条轨迹就跟着变了？",
+          "type": "speech"
+        },
+        {
+          "id": "action_gjrcwxkO",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "解曲线：顺着规则走出的轨迹"
+        },
+        {
+          "id": "action_QY1DtD49",
+          "text": "从初值出发，严格遵循变化率规则走出来的那条轨迹，就是解曲线。就像我们在拖动实验里看到的箭头，解曲线绝对不能横穿方向场，它必须处处遵守规则。",
+          "type": "speech",
+          "audioRef": "audio/tts_s4_action_QY1DtD49.mp3"
+        },
+        {
+          "id": "action_Ne-s7F3P",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "误区警示：代数移项思维"
+        },
+        {
+          "id": "action_CdJtp_xM",
+          "text": "好，我现在特别想把这个错误思维的节点点出来给大家看。还有不少同学，一开始看到 y' = 2y，很容易冒出“两边除以 y，移项把 y 解出来”的念头。这就是用普通代数方程的老套路来对付微分方程，是完全行不通的。大家在这里停留一下，体会一下为什么 y' 不是一个普通的乘积，而是一个瞬间的变化率。",
+          "type": "speech"
+        },
+        {
+          "id": "action_OI5xjUlR",
+          "type": "widget_reveal",
+          "target": "#n6",
+          "content": "完整逻辑闭环"
+        },
+        {
+          "id": "action_62lqCEtt",
+          "text": "最后，我们把所有节点串起来，形成一个完整的逻辑闭环：从识别变化率规则，到用初值锁定唯一解，再得出具体的解曲线，最后还能回到规则中去验证。这整个闭环，就是微分方程求解与普通代数方程求解最本质的区别。请大家花点时间，自己把这个逻辑链条再梳理一遍。",
+          "type": "speech",
+          "audioRef": "audio/tts_s4_action_62lqCEtt.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "什么是微分方程：变化率等式：误解修复挑战",
+      "order": 5,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "title": "微分方程卡片分类挑战",
+          "scoring": {
+            "speedBonus": 5,
+            "streakBonus": 3,
+            "correctPoints": 10
+          },
+          "gameType": "card-sort",
+          "description": "将数学表达式分类为'变化率描述'或'代数误解'，理解dy/dt的真正含义",
+          "achievements": [
+            {
+              "id": "first_sort",
+              "icon": "🎯",
+              "name": "初次分类",
+              "description": "第一次正确分类"
+            },
+            {
+              "id": "perfect_5",
+              "icon": "🔥",
+              "name": "五连对",
+              "description": "连续5次正确"
+            },
+            {
+              "id": "perfect_10",
+              "icon": "💥",
+              "name": "十连对",
+              "description": "连续10次正确"
+            },
+            {
+              "id": "master",
+              "icon": "🏆",
+              "name": "微分大师",
+              "description": "总分达到100"
+            },
+            {
+              "id": "speed_demon",
+              "icon": "⚡",
+              "name": "闪电侠",
+              "description": "3秒内正确分类10张"
+            }
+          ]
+        },
+        "htmlPath": "interactive/05_什么是微分方程：变化率等式：误解修复挑战.html",
+        "htmlBytes": 782814
+      },
+      "actions": [
+        {
+          "id": "action_YN66ayEt",
+          "text": "本场景通过交互探索“什么是微分方程：变化率等式：误解修复挑战”。我们来做一个快速挑战，看看这个新理解是不是真的扎下了根。",
+          "type": "speech"
+        },
+        {
+          "id": "action_d_k8SXc3",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "准备好了就从这里开始。"
+        },
+        {
+          "id": "action_uMYFjFW4",
+          "text": "屏幕上会出现一些数学表达式，比如 dy/dt = y + t。你的任务不是去解它，而是判断：这个式子是在描述变化率，还是一种想把它当成代数方程解的误解。",
+          "type": "speech",
+          "audioRef": "audio/tts_s5_action_uMYFjFW4.mp3"
+        },
+        {
+          "id": "action_nATQMUap",
+          "type": "widget_setState",
+          "state": {
+            "timerMode": "speed",
+            "difficulty": "intermediate"
+          },
+          "content": "进入限时挑战，拦截代数误解卡片。"
+        },
+        {
+          "id": "action_mSJSiXju",
+          "text": "注意，当你看到一个选项想把 y 单独移到一边时，它很可能就代表了典型的代数误解。试试看，你能否又快又准地把它们都拦截下来。",
+          "type": "speech",
+          "audioRef": "audio/tts_s5_action_mSJSiXju.mp3"
+        },
+        {
+          "id": "action_rZj30pBC",
+          "type": "widget_annotation",
+          "target": "#progress-display",
+          "content": "这里会显示你的连续正确次数，争取点亮五连对的奖杯。"
+        },
+        {
+          "id": "action_Jwk-ccAN",
+          "text": "如果选错了也别担心，卡片会震动提示，这正好能帮你强化对 dy/dt 真正含义的辨别。开始吧！",
+          "type": "speech",
+          "audioRef": "audio/tts_s5_action_Jwk-ccAN.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "什么是微分方程：变化率等式：空间视角",
+      "order": 6,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "objects": [
+            {
+              "id": "coordinate_axes",
+              "type": "axes",
+              "description": "三维坐标系，包含 t 轴（时间）、y 轴（数值）、z 轴（深度）"
+            },
+            {
+              "id": "slope_field",
+              "type": "arrow_field",
+              "description": "方向场箭头阵列，颜色表示斜率正负和大小"
+            },
+            {
+              "id": "equilibrium_line",
+              "type": "line",
+              "description": "黄色平衡线，斜率为零的解"
+            },
+            {
+              "id": "integral_curves",
+              "type": "curve",
+              "description": "解曲线，RK4 方法数值求解"
+            }
+          ],
+          "presets": [
+            {
+              "name": "俯视视角",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ],
+                "cameraPosition": [
+                  0,
+                  14,
+                  0.1
+                ]
+              }
+            },
+            {
+              "name": "侧视视角",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  1,
+                  0
+                ],
+                "cameraPosition": [
+                  14,
+                  2,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "平衡线特写",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  1,
+                  0
+                ],
+                "cameraPosition": [
+                  5,
+                  3,
+                  6
+                ]
+              }
+            }
+          ],
+          "description": "从几何角度观察微分方程的方向场（Slope Field / Direction Field）。学生可以通过旋转 3D 视图观察斜率箭头在不同 y 值下的排列规律，点击平面任意位置生成经过该点的解曲线（Integral Curve），并定位斜率为零的平衡线（Equilibrium Line）位置。",
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera",
+              "description": "旋转 3D 视角"
+            },
+            {
+              "type": "click",
+              "action": "add_integral_curve",
+              "target": "plane",
+              "description": "点击平面生成解曲线"
+            },
+            {
+              "max": 2,
+              "min": 0.3,
+              "type": "slider",
+              "param": "arrowScale",
+              "default": 1,
+              "description": "箭头大小"
+            },
+            {
+              "max": 14,
+              "min": 4,
+              "type": "slider",
+              "param": "gridDensity",
+              "default": 8,
+              "description": "网格密度"
+            },
+            {
+              "type": "select",
+              "param": "equation",
+              "options": [
+                "y_minus_1",
+                "y",
+                "t_y",
+                "neg_y"
+              ],
+              "description": "选择微分方程类型"
+            },
+            {
+              "type": "button",
+              "label": "放大",
+              "action": "zoomIn"
+            },
+            {
+              "type": "button",
+              "label": "缩小",
+              "action": "zoomOut"
+            },
+            {
+              "type": "button",
+              "label": "重置视角",
+              "action": "resetView"
+            },
+            {
+              "type": "button",
+              "label": "清除曲线",
+              "action": "clearCurves"
+            }
+          ],
+          "visualizationType": "geometry"
+        },
+        "htmlPath": "interactive/06_什么是微分方程：变化率等式：空间视角.html",
+        "htmlBytes": 2519896
+      },
+      "actions": [
+        {
+          "id": "action_-CSEFknl",
+          "text": "本场景通过交互探索“什么是微分方程：变化率等式：空间视角”。反复辨析了dy/dt = f(t,y) 中，y 的值如何影响变化率。现在，让我们把这个关系放到三维空间里，看得更清楚些。",
+          "type": "speech"
+        },
+        {
+          "id": "action_jHohlUq7",
+          "type": "widget_setState",
+          "state": {
+            "equation": "y_minus_1",
+            "cameraTarget": [
+              0,
+              0,
+              0
+            ],
+            "cameraPosition": [
+              0,
+              14,
+              0.1
+            ]
+          },
+          "content": "从俯视视角开始，观察箭头在时间-数值平面上的分布。"
+        },
+        {
+          "id": "action_t_gHlPc4",
+          "text": "我们现在是俯视整个 (t, y) 平面。每一个小箭头，都代表在那个点上的变化率方向和大小。注意看，这些箭头的排列有什么规律？在同一水平高度，也就是 y 值相同的地方，箭头的方向是不是完全一致？",
+          "type": "speech",
+          "audioRef": "audio/tts_s6_action_t_gHlPc4.mp3"
+        },
+        {
+          "id": "action_O9ubAzn1",
+          "type": "widget_highlight",
+          "target": "#slope_field",
+          "content": "观察同一水平线上的箭头：它们都指向同一方向，说明变化率只依赖于y的值。"
+        },
+        {
+          "id": "action_7SP41fgf",
+          "text": "没错，这正是我们刚刚学到的关键点。对于 y' = y - 1 这个方程，变化率只取决于 y。现在，你能帮大家用你的空间直觉，找到箭头完全消失、斜率为零的那条线在哪里吗？",
+          "type": "speech"
+        },
+        {
+          "id": "action_rq-W3x3u",
+          "type": "widget_setState",
+          "state": {
+            "equation": "y_minus_1",
+            "cameraTarget": [
+              0,
+              1,
+              0
+            ],
+            "cameraPosition": [
+              5,
+              3,
+              6
+            ]
+          },
+          "content": "切换到平衡线特写视角，聚焦于 y = 1 的区域。"
+        },
+        {
+          "id": "action_4kGSYn4o",
+          "text": "让我们拉近看看。当你把视角旋转到贴近这个平面时，你会发现有一条水平线非常特别。对，就是 y = 1 这条线。看，线上的箭头都塌缩成了点，意味着这里没有任何变化。这就是我们所说的平衡线（Equilibrium Line）。现在，试着点击这条平衡线上下不同的区域，看看解曲线（Integral Curve）会有什么不同的表现。",
+          "type": "speech",
+          "audioRef": "audio/tts_s6_action_4kGSYn4o.mp3"
+        },
+        {
+          "id": "action_O5eneeDs",
+          "type": "widget_annotation",
+          "target": "#equilibrium_line",
+          "content": "平衡线 y=1：变化率为零，解曲线在这里保持恒定。"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "slide",
+      "title": "可分离变量与一阶线性方程",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "oNBfBo68bH065KkTTZtXC",
+          "theme": {
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "backgroundColor": "#ffffff"
+          },
+          "elements": [
+            {
+              "id": "text_4AeYpd0O",
+              "top": 50,
+              "left": 100,
+              "type": "text",
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #003366;\">可分离变量与一阶线性方程</p>",
+              "defaultColor": "#003366",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_bmpFMqFN",
+              "top": 120,
+              "left": 100,
+              "type": "text",
+              "width": 800,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; text-align: center; color: #666666;\">两类基础微分方程的求解直觉</p>",
+              "defaultColor": "#666666",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "table_zHyRQbue",
+              "top": 180,
+              "data": [
+                [
+                  {
+                    "id": "h1",
+                    "text": "特征",
+                    "style": {
+                      "bold": true,
+                      "align": "center",
+                      "color": "#ffffff",
+                      "fontsize": "18",
+                      "backcolor": "#003366"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "h2",
+                    "text": "可分离方程",
+                    "style": {
+                      "bold": true,
+                      "align": "center",
+                      "color": "#ffffff",
+                      "fontsize": "18",
+                      "backcolor": "#003366"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "h3",
+                    "text": "一阶线性方程",
+                    "style": {
+                      "bold": true,
+                      "align": "center",
+                      "color": "#ffffff",
+                      "fontsize": "18",
+                      "backcolor": "#003366"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  }
+                ],
+                [
+                  {
+                    "id": "r1c1",
+                    "text": "标准形式",
+                    "style": {
+                      "bold": true,
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#F5F5F5"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "r1c2",
+                    "text": "dy/dx=f(x)g(y)",
+                    "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#F5F5F5"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "r1c3",
+                    "text": "dy/dx+P(x)y=Q(x)",
+                    "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#F5F5F5"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  }
+                ],
+                [
+                  {
+                    "id": "r2c1",
+                    "text": "关键识别",
+                    "style": {
+                      "bold": true,
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#ffffff"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "r2c2",
+                    "text": "变量可完全分开",
+                    "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#ffffff"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "r2c3",
+                    "text": "形式上为 y'+P(x)y=Q(x)",
+                    "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#ffffff"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  }
+                ],
+                [
+                  {
+                    "id": "r3c1",
+                    "text": "求解思路",
+                    "style": {
+                      "bold": true,
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#F5F5F5"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "r3c2",
+                    "text": "分离变量后两边积分",
+                    "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#F5F5F5"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "r3c3",
+                    "text": "积分因子法：化为整体导数",
+                    "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#F5F5F5"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  }
+                ],
+                [
+                  {
+                    "id": "r4c1",
+                    "text": "积分结果",
+                    "style": {
+                      "bold": true,
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#ffffff"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "r4c2",
+                    "text": "得到隐式解或显式解",
+                    "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#ffffff"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  },
+                  {
+                    "id": "r4c3",
+                    "text": "先求 μ(x)，再积分求 y",
+                    "style": {
+                      "align": "center",
+                      "color": "#333333",
+                      "fontsize": "16",
+                      "backcolor": "#ffffff"
+                    },
+                    "colspan": 1,
+                    "rowspan": 1
+                  }
+                ]
+              ],
+              "left": 100,
+              "type": "table",
+              "width": 800,
+              "height": 180,
+              "rotate": 0,
+              "outline": {
+                "color": "#CCCCCC",
+                "style": "solid",
+                "width": 1
+              },
+              "colWidths": [
+                0.2,
+                0.4,
+                0.4
+              ],
+              "cellMinHeight": 36
+            },
+            {
+              "id": "latex_tl37hy6e",
+              "top": 374,
+              "left": 150,
+              "type": "latex",
+              "align": "center",
+              "color": "#333333",
+              "latex": "\\frac{dy}{dx}=f(x)g(y)",
+              "width": 220,
+              "height": 60,
+              "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "id": "latex_PvSiDcPH",
+              "top": 374,
+              "left": 620,
+              "type": "latex",
+              "align": "center",
+              "color": "#333333",
+              "latex": "\\frac{dy}{dx}+P(x)y=Q(x)",
+              "width": 280,
+              "height": 60,
+              "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.13889em;\">P</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord mathnormal\">Q</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "id": "latex_lFEkD5Wf",
+              "top": 438,
+              "left": 130,
+              "type": "latex",
+              "align": "center",
+              "color": "#333333",
+              "latex": "\\int \\frac{dy}{g(y)}=\\int f(x)\\,dx+C",
+              "width": 300,
+              "height": 60,
+              "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.3074em;vertical-align:-0.936em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">g</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\">)</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.936em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.2222em;vertical-align:-0.8622em;\"></span><span class=\"mop op-symbol large-op\" style=\"margin-right:0.44445em;position:relative;top:-0.0011em;\">∫</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.07153em;\">C</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "id": "latex_WERNhgQ9",
+              "top": 438,
+              "left": 620,
+              "type": "latex",
+              "align": "center",
+              "color": "#333333",
+              "latex": "\\mu=e^{\\int P(x)\\,dx},\\quad (\\mu y)'=\\mu Q",
+              "width": 280,
+              "height": 60,
+              "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">μ</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.2265em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">e</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9765em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mop op-symbol small-op mtight\" style=\"margin-right:0.19445em;position:relative;top:-0.0006em;\">∫</span><span class=\"mspace mtight\" style=\"margin-right:0.1952em;\"></span><span class=\"mord mathnormal mtight\" style=\"margin-right:0.13889em;\">P</span><span class=\"mopen mtight\">(</span><span class=\"mord mathnormal mtight\">x</span><span class=\"mclose mtight\">)</span><span class=\"mspace mtight\" style=\"margin-right:0.1952em;\"></span><span class=\"mord mathnormal mtight\">d</span><span class=\"mord mathnormal mtight\">x</span></span></span></span></span></span></span></span></span><span class=\"mpunct\">,</span><span class=\"mspace\" style=\"margin-right:1em;\"></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">μ</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span><span class=\"mclose\"><span class=\"mclose\">)</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8019em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">′</span></span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8778em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">μ</span><span class=\"mord mathnormal\">Q</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "id": "shape_MTeHgAgJ",
+              "top": 502,
+              "fill": "#E6F0FA",
+              "left": 100,
+              "path": "M 0.02 0 L 0.98 0 Q 1 0 1 0.1 L 1 0.9 Q 1 1 0.98 1 L 0.02 1 Q 0 1 0 0.9 L 0 0.1 Q 0 0 0.02 0 Z",
+              "type": "shape",
+              "width": 800,
+              "height": 48,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_zRs_n4WS",
+              "top": 503,
+              "left": 120,
+              "type": "text",
+              "width": 220,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #003366; text-align: center;\"><b>误解</b>：避免机械套用</p>",
+              "defaultColor": "#003366",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_e-xKHU1L",
+              "top": 503,
+              "left": 390,
+              "type": "text",
+              "width": 220,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #003366; text-align: center;\"><b>核心</b>：化为可积分形式</p>",
+              "defaultColor": "#003366",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_LQKoZETe",
+              "top": 503,
+              "left": 660,
+              "type": "text",
+              "width": 220,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #003366; text-align: center;\"><b>目标</b>：识别方程类型</p>",
+              "defaultColor": "#003366",
+              "defaultFontName": "Microsoft YaHei"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_lQk7BUXq",
+          "type": "spotlight",
+          "elementId": "text_4AeYpd0O"
+        },
+        {
+          "id": "action_ZwwtVH0W",
+          "text": "本场景聚焦“可分离变量与一阶线性方程”。亲身体验了平衡线和变化率的方向。现在，我们把这种直观感受收回来，聚焦到两类非常基础、但威力强大的微分方程上——可分离变量方程与一阶线性方程。",
+          "type": "speech"
+        },
+        {
+          "id": "action_DVeXL33L",
+          "type": "spotlight",
+          "elementId": "latex_tl37hy6e"
+        },
+        {
+          "id": "action_2OGjrCo3",
+          "text": "我们先看左边这个，形如 dy/dx 等于 f(x) 乘以 g(y) 的方程。它的核心直觉是什么？看，x 和 y 是'拧'在一起的，但它们是乘在一起，而不是加在一起。这就给了我们一个机会，可以把含 x 的项和含 y 的项，像整理行李一样，分别放在等号两边。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_2OGjrCo3.mp3"
+        },
+        {
+          "id": "action_3NMCOUf4",
+          "type": "spotlight",
+          "elementId": "latex_lFEkD5Wf"
+        },
+        {
+          "id": "action_kiKlgejJ",
+          "text": "于是我们得到了这个形式：把 g(y) 除到 dy 一边，f(x) 留在 dx 一边。这个过程叫'分离变量'。它的目标非常明确，就是把一个关于变化率的等式，转化为一个可以直接两边积分的等式。这就是我们页面上强调的核心：将复杂的方程转化为可直接积分的形式。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_kiKlgejJ.mp3"
+        },
+        {
+          "id": "action_FnPsPxNE",
+          "type": "spotlight",
+          "elementId": "latex_PvSiDcPH"
+        },
+        {
+          "id": "action_7WkXkGqG",
+          "text": "好，再看右边这个，形如 dy/dx 加上 P(x)y 等于 Q(x) 的一阶线性方程。它的结构不同了，y 和 y 的导数被'加'在了一起。这时候，分离变量的方法行不通了，因为它们是和的关系，不是积的关系。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_7WkXkGqG.mp3"
+        },
+        {
+          "id": "action_GwBOT-hp",
+          "type": "spotlight",
+          "elementId": "latex_WERNhgQ9"
+        },
+        {
+          "id": "action_DiOKw70V",
+          "text": "我们怎么办？我们需要一个'放大镜'，来把左边这两项'合并'成一个整体的导数。这个放大镜就是积分因子 μ。看，乘以 μ 之后，左边神奇地变成了 μy 这个整体的导数。我们的目标，从分离变量，变成了'构造整体导数'，然后再积分。",
+          "type": "speech",
+          "audioRef": "audio/tts_s7_action_DiOKw70V.mp3"
+        },
+        {
+          "id": "action_CPzkE69K",
+          "type": "spotlight",
+          "elementId": "text_e-xKHU1L"
+        },
+        {
+          "id": "action_6zPCz7cS",
+          "text": "要特别注意，大家。我们不是在机械地背公式。无论是分离变量还是找积分因子，每一步都必须问自己：我是在保持变化率的对应关系吗？我们不是在随意地移项，而是在寻找整体变化率。一旦你理解了这一点，这两类方程就从两个割裂的技巧，变成了同一个核心思想的不同体现。",
+          "type": "speech"
+        },
+        {
+          "id": "action_n0Y_19pk",
+          "type": "discussion",
+          "topic": "对比两种转化直觉",
+          "prompt": "请大家试着用自己的话，说说看'分离变量'和'构造整体导数'这两种转化直觉，有什么本质上的不同？你觉得哪一种更难把握？为什么？",
+          "agentIndex": 3
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "可分离变量与一阶线性方程：拖动实验",
+      "order": 8,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "separable_and_linear_ode",
+          "presets": [
+            {
+              "name": "经典可分离: y'=y",
+              "variables": {
+                "coefficient_k": 1,
+                "equation_type": 0,
+                "initial_condition": 1,
+                "integration_step_hint": 1
+              }
+            },
+            {
+              "name": "冷却定律: y'=-0.5y",
+              "variables": {
+                "coefficient_k": -0.5,
+                "equation_type": 0,
+                "initial_condition": 5,
+                "integration_step_hint": 1
+              }
+            },
+            {
+              "name": "线性方程: y'+2y=1",
+              "variables": {
+                "coefficient_k": 2,
+                "equation_type": 1,
+                "initial_condition": 0,
+                "integration_step_hint": 1
+              }
+            },
+            {
+              "name": "增长模型: y'=3y",
+              "variables": {
+                "coefficient_k": 3,
+                "equation_type": 0,
+                "initial_condition": 1,
+                "integration_step_hint": 0
+              }
+            }
+          ],
+          "variables": [
+            {
+              "max": 1,
+              "min": 0,
+              "name": "equation_type",
+              "unit": "",
+              "label": "方程类型",
+              "default": 0
+            },
+            {
+              "max": 3,
+              "min": -3,
+              "name": "coefficient_k",
+              "unit": "",
+              "label": "系数 k",
+              "default": 1
+            },
+            {
+              "max": 5,
+              "min": -5,
+              "name": "initial_condition",
+              "unit": "",
+              "label": "初始条件 y(0)",
+              "default": 1
+            },
+            {
+              "max": 1,
+              "min": 0,
+              "name": "integration_step_hint",
+              "unit": "",
+              "label": "积分步骤提示",
+              "default": 1
+            }
+          ],
+          "description": "交互式求解可分离变量方程与一阶线性微分方程。学生通过选择方程类型、调整参数，逐步完成变量分离或积分因子法，观察解曲线的实时变化。"
+        },
+        "htmlPath": "interactive/08_可分离变量与一阶线性方程：拖动实验.html",
+        "htmlBytes": 778924
+      },
+      "actions": [
+        {
+          "id": "action_b2aWzGDp",
+          "text": "本场景通过交互探索“可分离变量与一阶线性方程：拖动实验”。不错，刚才我们提到，解微分方程的关键不是机械移项，而是寻找一种“整体变化率”的对应关系。现在，我们就用面前这个交互工具，亲自拖动试试，看这个思想如何在可分离变量和一阶线性方程中体现。",
+          "type": "speech"
+        },
+        {
+          "id": "action_wHd5PPxi",
+          "type": "widget_setState",
+          "state": {
+            "coefficient_k": 1,
+            "equation_type": 0,
+            "initial_condition": 1,
+            "integration_step_hint": 1
+          },
+          "content": "加载经典可分离变量方程 y' = y"
+        },
+        {
+          "id": "action_s69nPjsf",
+          "type": "widget_highlight",
+          "target": "#equation-type-control",
+          "content": "这是切换方程类型的关键控件"
+        },
+        {
+          "id": "action_MIaKw8ms",
+          "text": "我们先从最简单的 y' = y 开始。大家，别急着用代数方法去解。请你先拖动“方程类型”旁边的滑块，试试能不能切换到“一阶线性方程”模式，再切回来。感受一下，不同的方程结构，在这个工具里是如何被区分的。",
+          "type": "speech"
+        },
+        {
+          "id": "action_Mm16hKJm",
+          "type": "widget_annotation",
+          "target": "#separate-step-btn",
+          "content": "选择“分离变量”模式后，点击这里开始移项"
+        },
+        {
+          "id": "action_lCII1U18",
+          "text": "好。你来观察：当我们面对 y' = y 这种形式时，进度条提示我们，应该点击“移项”按钮，把y放到左边，x留在右边。这一步，其实就是在为寻找像导数一样的“整体变化率”做准备。你想想，如果现在是冷却定律 y' = -0.5y，第一步移动的项，本质上还是一样的吗？",
+          "type": "speech"
+        },
+        {
+          "id": "action_OsMv8oUl",
+          "type": "widget_setState",
+          "state": {
+            "coefficient_k": -0.5,
+            "equation_type": 0,
+            "initial_condition": 5,
+            "integration_step_hint": 1
+          },
+          "content": "切换到 冷却定律: y'=-0.5y"
+        },
+        {
+          "id": "action_JluTB176",
+          "text": "切换到冷却定律看看。系数变了，但分离的模式没有变。从这里，我们就能体会到，为什么有的方程被归为“可分离变量”，而有的必须用“积分因子”。接下来，大家多试试不同的预设选项，特别是那个 y' + 2y = 1，看看它在工具里的处理路径，和之前的有什么根本不同。",
+          "type": "speech",
+          "audioRef": "audio/tts_s8_action_JluTB176.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "可分离变量与一阶线性方程：关系图",
+      "order": 9,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "diagram",
+        "htmlPath": "interactive/09_可分离变量与一阶线性方程：关系图.html",
+        "htmlBytes": 767275
+      },
+      "actions": [
+        {
+          "id": "action_7DHWOZWY",
+          "text": "本场景通过交互探索“可分离变量与一阶线性方程：关系图”。我们亲手感受了不同方程的处理路径。现在，我们把这两种解题策略的逻辑，整理成一张一目了然的决策树。",
+          "type": "speech"
+        },
+        {
+          "id": "action_w9um83k_",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "这是决策的起点，一个一阶微分方程。"
+        },
+        {
+          "id": "action__SbSbbmr",
+          "text": "请大家注意看第一个分叉点。判断它到底属于可分离变量，还是一阶线性方程，关键就看它能不能被整理成 dy/dx 等于一个 x 的函数乘以一个 y 的函数这种形式。",
+          "type": "speech",
+          "audioRef": "audio/tts_s9_action__SbSbbmr.mp3"
+        },
+        {
+          "id": "action_r_x2X-MG",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "展开可分离变量的处理分支。"
+        },
+        {
+          "id": "action_cbFCXwnv",
+          "text": "如果等号右边可以分解成 x 部分和 y 部分相乘，那我们就走这边。它的核心操作很直观，就是先把带 y 的项全部搬到一边，把带 x 的项全部搬到另一边，然后两边同时积分。",
+          "type": "speech",
+          "audioRef": "audio/tts_s9_action_cbFCXwnv.mp3"
+        },
+        {
+          "id": "action_ySiR9hjO",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "展开一阶线性方程的处理分支。"
+        },
+        {
+          "id": "action_sFuAOQIQ",
+          "text": "那如果右边不能这样干净地分离，而且方程里出现了单纯的 y 项，就是像 y' + P(x)y = Q(x) 的样子，我们就要启用另一个工具——积分因子。还记得刚才在工具里处理 y'+2y=1 时，自动乘上去的那个 e 的 2x 次方吗？它背后的数学依据，就是乘积导数的逆运算。大家点击一下这个节点，看看旁边的说明。",
+          "type": "speech",
+          "audioRef": "audio/tts_s9_action_sFuAOQIQ.mp3"
+        },
+        {
+          "id": "action_DZDTqxkn",
+          "type": "widget_annotation",
+          "target": "#n3-connection",
+          "content": "这里的逻辑依据就是乘积导数法则的反向应用。"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "可分离变量与一阶线性方程：误解修复挑战",
+      "order": 10,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "scoring": {
+            "speedBonus": 5,
+            "correctPoints": 10
+          },
+          "gameType": "puzzle",
+          "description": "拖拽算式碎片，修复分离变量法求解步骤的逻辑链",
+          "achievements": [
+            {
+              "id": "first_solve",
+              "desc": "完成第一个关卡",
+              "icon": "🌟",
+              "name": "初次成功"
+            },
+            {
+              "id": "speed_demon",
+              "desc": "在15秒内完成关卡",
+              "icon": "⚡",
+              "name": "闪电求解"
+            },
+            {
+              "id": "perfect_run",
+              "desc": "零失误完成关卡",
+              "icon": "💎",
+              "name": "完美通关"
+            },
+            {
+              "id": "all_clear",
+              "desc": "完成所有关卡",
+              "icon": "🏆",
+              "name": "全部通关"
+            },
+            {
+              "id": "no_errors",
+              "desc": "所有关卡零失误完成",
+              "icon": "👑",
+              "name": "零失误大师"
+            }
+          ]
+        },
+        "htmlPath": "interactive/10_可分离变量与一阶线性方程：误解修复挑战.html",
+        "htmlBytes": 790469
+      },
+      "actions": [
+        {
+          "id": "action_VKRTRwla",
+          "text": "本场景通过交互探索“可分离变量与一阶线性方程：误解修复挑战”。把 dy/dx 拆开，让 y 的‘家当’和 x 的‘家当’各归各位。现在，让我们通过一个拼图游戏，来检验一下这个‘分家’的逻辑，看看有没有同学会不小心把积分符号放错位置。",
+          "type": "speech"
+        },
+        {
+          "id": "action_CATHO7ur",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击这里开始第一个挑战。"
+        },
+        {
+          "id": "action_kDnZa-d8",
+          "text": "大家为大家准备了一些碎裂的求解步骤，还混进了一些错误的干扰项，比如把积分常数 C 写在左边，或者把 dy 和 dx 的微分符号搞反。你的任务就是把这些正确碎片拼接起来，组成完整的分离变量法求解路径。",
+          "type": "speech"
+        },
+        {
+          "id": "action_mC7jWlN0",
+          "text": "大家在拖拽的时候，要时时刻刻在心里问自己：这个积分号，是打在 x 这边的墙壁上，还是打在 y 这边的墙壁上？如果你放错了地方，碎片可是会弹回来的哦。",
+          "type": "speech",
+          "audioRef": "audio/tts_s10_action_mC7jWlN0.mp3"
+        },
+        {
+          "id": "action_LHM0v7uu",
+          "type": "widget_annotation",
+          "target": "#start-btn",
+          "content": "集中注意力，准备拖拽修复逻辑链。"
+        },
+        {
+          "id": "action_6p04IGnP",
+          "text": "记住，积分常数 C 代表了那一类函数的所有可能性，它通常是在两边积分完成后，在等式的一侧产生的。让我们开始动手，把断掉的逻辑线修复好，看谁能够零失误通关！",
+          "type": "speech",
+          "audioRef": "audio/tts_s10_action_6p04IGnP.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "可分离变量与一阶线性方程：空间视角",
+      "order": 11,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "objects": [
+            {
+              "id": "slopeSurface",
+              "type": "surface",
+              "description": "斜率曲面 z = f(x,y)，颜色表示斜率大小"
+            },
+            {
+              "id": "solutionCurves",
+              "type": "curves",
+              "description": "解曲线族，高亮曲线为当前C值对应的解"
+            },
+            {
+              "id": "directionField",
+              "type": "arrows",
+              "description": "方向场箭头，表示每点的切线方向"
+            },
+            {
+              "id": "initialPoint",
+              "type": "sphere",
+              "material": {
+                "type": "emissive",
+                "color": "#fbbf24"
+              },
+              "description": "可拖动的黄色初始点，改变积分常数C"
+            },
+            {
+              "id": "verificationMarkers",
+              "type": "markers",
+              "description": "验证标记点，显示曲线上各点的切线"
+            },
+            {
+              "id": "xAxis",
+              "type": "axis",
+              "label": "x"
+            },
+            {
+              "id": "yAxis",
+              "type": "axis",
+              "label": "y"
+            },
+            {
+              "id": "zAxis",
+              "type": "axis",
+              "label": "dy/dx"
+            }
+          ],
+          "presets": [
+            {
+              "name": "查看斜率曲面",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  2,
+                  0
+                ],
+                "cameraPosition": [
+                  0,
+                  12,
+                  14
+                ]
+              }
+            },
+            {
+              "name": "俯视视角",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ],
+                "cameraPosition": [
+                  0,
+                  18,
+                  0.1
+                ]
+              }
+            },
+            {
+              "name": "侧视视角",
+              "state": {
+                "cameraTarget": [
+                  0,
+                  2,
+                  0
+                ],
+                "cameraPosition": [
+                  14,
+                  5,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "方程 dy/dx = x·y",
+              "state": {
+                "equationType": 1
+              }
+            },
+            {
+              "name": "方程 dy/dx = y + x",
+              "state": {
+                "equationType": 2
+              }
+            }
+          ],
+          "evidence": {
+            "taskEvidence": "学生能够通过拖动初始点找到使解曲线在区间内保持连续的C值范围",
+            "observableEvidence": "学生点击验证标记点后，面板实时显示该点的坐标(x,y)、方程计算的dy/dx值、曲线切线的dy/dx值，以及两者的匹配结果"
+          },
+          "description": "可分离变量与一阶线性方程：空间视角 — 交互式3D微分方程解曲线验证。拖动初始点改变积分常数C，观察解曲线族形状变化；切换方程类型（可分离变量 dy/dx=y、可分离变量 dy/dx=x·y、一阶线性 dy/dx=y+x）；点击验证面板查看曲线上各点的斜率值与原方程的数值匹配。",
+          "interactions": [
+            {
+              "type": "drag",
+              "target": "initialPoint",
+              "description": "拖动初始点改变C值"
+            },
+            {
+              "max": 3,
+              "min": -3,
+              "type": "slider",
+              "label": "积分常数 C",
+              "param": "cValue",
+              "default": 1
+            },
+            {
+              "max": 3,
+              "min": 0,
+              "type": "slider",
+              "label": "动画速度",
+              "param": "speed",
+              "default": 1
+            },
+            {
+              "type": "button",
+              "label": "切换方程类型",
+              "action": "toggleEquation"
+            },
+            {
+              "type": "button",
+              "label": "切换验证模式",
+              "action": "toggleValidation"
+            },
+            {
+              "type": "button",
+              "label": "放大",
+              "action": "zoomIn"
+            },
+            {
+              "type": "button",
+              "label": "缩小",
+              "action": "zoomOut"
+            },
+            {
+              "type": "button",
+              "label": "重置",
+              "action": "reset"
+            },
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "click",
+              "target": "verificationMarkers",
+              "description": "点击验证标记查看斜率匹配"
+            }
+          ],
+          "visualizationType": "geometry"
+        },
+        "htmlPath": "interactive/11_可分离变量与一阶线性方程：空间视角.html",
+        "htmlBytes": 2521493
+      },
+      "actions": [
+        {
+          "id": "action_LXNQQyk-",
+          "text": "本场景通过交互探索“可分离变量与一阶线性方程：空间视角”。现在让我们站到更高的维度，用空间视角来观察可分离变量和一阶线性方程。请看向这个三维坐标系，x轴和y轴构成了我们熟悉的平面，而竖起来的z轴则代表每一点上dy/dx的值，也就是切线的斜率。",
+          "type": "speech"
+        },
+        {
+          "id": "action_drGJN6nC",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "三维坐标系：X、Y轴构成平面，Z轴表示斜率dy/dx"
+        },
+        {
+          "id": "action_GCDCY_ZT",
+          "text": "你会看到整个空间布满了彩色的小箭头，这就是方向场(Direction Field)。每种颜色代表不同的斜率大小。同时，这个半透明的曲面，就是斜率曲面——它把每一点的斜率值连成了直观的形状。",
+          "type": "speech",
+          "audioRef": "audio/tts_s11_action_GCDCY_ZT.mp3"
+        },
+        {
+          "id": "action_-yRiB7oQ",
+          "type": "widget_highlight",
+          "target": "[data-object-id='directionField']",
+          "content": "方向场箭头，颜色表示斜率大小"
+        },
+        {
+          "id": "action_-O0X3z-m",
+          "text": "现在，注意这个黄色的发光小球。它代表了一个初始条件。请你用鼠标拖动它，在平面上移动。你会发现，穿过这个点的那条白色曲线会随之改变形状——这就是解曲线。拖动小球，本质上就是在改变积分常数C。",
+          "type": "speech",
+          "audioRef": "audio/tts_s11_action_-O0X3z-m.mp3"
+        },
+        {
+          "id": "action_W3nxBV5i",
+          "type": "widget_highlight",
+          "target": "[data-object-id='initialPoint']",
+          "content": "可拖动的黄色初始点，改变积分常数C"
+        },
+        {
+          "id": "action_CxGMZI7N",
+          "type": "widget_setState",
+          "state": {
+            "cValue": -1.5
+          },
+          "content": "先尝试将C值设为一个负数，比如负1.5，看看曲线如何弯曲到另一侧"
+        },
+        {
+          "id": "action_NSjCtFVU",
+          "text": "接下来是验证环节，这也是我们之前小测里很多人好奇的部分。请你点击面板上的‘切换验证模式’，然后任意点击曲线上的一点。系统会弹出一个小面板，精确地告诉你：该点的坐标、方程计算出的dy/dx值，以及曲线在该点真实的切线斜率——如果两者匹配，就完美验证了解的有效性。去试试看，找到一个你最喜欢的C值，并验证它。",
+          "type": "speech",
+          "audioRef": "audio/tts_s11_action_NSjCtFVU.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "函数 y 的准确值",
+                "value": "A"
+              },
+              {
+                "label": "导数 dy/dx 的近似值",
+                "value": "B"
+              },
+              {
+                "label": "曲线与 x 轴的交点",
+                "value": "C"
+              },
+              {
+                "label": "该点附近函数的最大值",
+                "value": "D"
+              }
+            ],
+            "analysis": "斜率场（Slope Field）通过在每个点 (x, y) 上绘制一条短线段来可视化微分方程。线段的方向由该点的导数 dy/dx 决定。因此，某点的线段斜率直接且唯一地代表了微分方程在该点的导数大小和方向，而不是函数值或极值。",
+            "question": "在场景 3 的斜率场中，你观察到一个特定点上的小线段斜率。这个斜率最直接地代表了微分方程在该点的什么信息？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "answer": [
+              "B",
+              "D"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "方程中一定包含等号",
+                "value": "A"
+              },
+              {
+                "label": "方程中必然包含未知函数的导数",
+                "value": "B"
+              },
+              {
+                "label": "方程的解是一个或一组数值",
+                "value": "C"
+              },
+              {
+                "label": "方程描述了变量间的变化率关系",
+                "value": "D"
+              }
+            ],
+            "analysis": "微分方程的核心特征在于其包含未知函数的导数（如 dy/dx），这使得它描述的是变量间的瞬时变化率关系。而选项 A（包含等号）在代数方程中也存在，并非微分方程独有。选项 C 错误，因为微分方程的解通常是一个函数族，而非孤立的数值。",
+            "question": "回顾场景 8 的方程分类操作。以下哪些选项是微分方程（Differential Equation）区别于普通代数方程的关键特征？（多选）",
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 10,
+            "options": [
+              {
+                "label": "一个数值解",
+                "value": "A"
+              },
+              {
+                "label": "一条积分曲线（解曲线）",
+                "value": "B"
+              },
+              {
+                "label": "一个奇点",
+                "value": "C"
+              },
+              {
+                "label": "一个渐近线",
+                "value": "D"
+              }
+            ],
+            "analysis": "在斜率场中，从一点出发，沿着线段“箭头”的指引自然形成的平滑曲线，代表了满足该微分方程的一个特解。这条曲线被称为积分曲线（Integral Curve）或解曲线。",
+            "question": "结合之前的探索，如果你顺着斜率场中一条特定的“流动线”追踪下去，你实际上是在寻找微分方程的什么？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 5,
+            "options": [
+              {
+                "label": "一条先上升后趋于水平的 S 形曲线",
+                "value": "A"
+              },
+              {
+                "label": "一条持续加速上升的指数型曲线",
+                "value": "B"
+              },
+              {
+                "label": "一条上升速度恒定的直线",
+                "value": "C"
+              },
+              {
+                "label": "一条上下波动的周期性曲线",
+                "value": "D"
+              }
+            ],
+            "analysis": "这是指数增长（Exponential Growth）的核心直觉：当前数量越多，增加得就越快；数量少时，增加得也慢。这种正反馈机制导致数量随时间呈现越来越陡的、持续加速上升的 J 形曲线，即指数型曲线，而不是增长受限的 S 形或速度恒定的直线。",
+            "question": "预诊断：如果一个种群数量的增长速度（dP/dt）总是与其当前数量（P）成正比，即变化率与存量直接挂钩，你预测种群数量随时间变化的曲线会是下列哪种形状？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "points": 15,
+            "analysis": "参考解释：想象一个雪球从山上滚下。雪球当前粘的雪越多（存量 P 大），它在滚动一圈时能粘上的新雪（增量 dP/dt）也越多。所以，每过一段相同的时间，新粘上的雪并不是一个常数，而是随着雪球变大而变得越来越多。这就导致雪球不是匀速变大，而是滚得越远，变大得越快，最终呈现出爆炸式的高速增长。",
+            "question": "承接上一题。请用微积分直觉简要描述：为什么“增长与存量成正比”的关系，最终会让数量呈现出“越来越多、越增越快”的爆炸式或指数式曲线，而不是一条简单的匀速直线？不要进行公式推导，请用直观的“雪球效应”或类似比喻来解释。",
+            "hasAnswer": false,
+            "commentPrompt": "评分标准：(1) 清晰提到“正反馈”或“雪球效应”逻辑（存量大 → 增加量也大）(40%)；(2) 明确指出为何不是直线匀速增长，即增加量本身随存量变大而变大 (40%)；(3) 表达清晰，逻辑连贯 (20%)。"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_sPvvrdhp",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。好了，刚才我们花了些时间在空间视角里感受了斜率场，也动手验证了曲线上的解。现在是时候检验一下我们前两部分探索的成果了。大家放轻松，这个测验的目的是帮我们回顾关键证据，并为接下来的新模型做铺垫。",
+          "type": "speech"
+        },
+        {
+          "id": "action_4W1-fFgP",
+          "text": "请先独立完成这五道题。前三道选择题直接回顾了我们在场景 3 的斜率场预测和场景 8 的方程分类，想一想你当时拖动的图形和找到的规律。最后两道是衔接下一组场景的‘预诊断’题，没有对错之分，就看你对‘变化率与存量’的直觉能走多远。",
+          "type": "speech",
+          "audioRef": "audio/tts_s12_action_4W1-fFgP.mp3"
+        },
+        {
+          "id": "action_l85SrMky",
+          "text": "做完了吗？那我们一起来看看。第一题，斜率场里特定点上的小线段，它给出的斜率就是微分方程在该点的导数 dy/dx 的近似值，这是整个变化的核心信息。第二题，区分微分方程的关键，就在于它必须包含未知函数的导数，并且描述的是变量间的变化率关系，这一点大家在分类时整理得很清晰。",
+          "type": "speech"
+        },
+        {
+          "id": "action_UA4XLfew",
+          "text": "第三题，顺着斜率场里的一条‘流动线’追踪下去，你找到的就是微分方程的一条积分曲线，也叫解曲线。至于第四和第五题，‘增长速度与存量成正比’的背后逻辑，就像小雪球从山顶滚下，它越滚大、表面积越大，粘的雪就越多，长得也就越快，这就是一种指数式的自我强化效应，而不是匀速的简单累加。本场景中，我们就会重点探索这类指数模型。",
+          "type": "speech"
+        },
+        {
+          "id": "action_G1WwbWnj",
+          "type": "discussion",
+          "topic": "在刚才的预诊断题里，除了‘雪球效应’，生活中还有哪些现象让你觉得它符合‘变化率与存量成正比’的指数增长或衰减模型？",
+          "prompt": "请分享你想到的例子，并简单说说是什么在‘变化’、这个‘变化’和哪个‘存量’挂钩？",
+          "agentIndex": 1
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "slide",
+      "title": "指数增长与衰减模型",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "uJGOLRQyaUK4G_1UC2b8_",
+          "theme": {
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "backgroundColor": "#ffffff"
+          },
+          "elements": [
+            {
+              "id": "text_kYyjFfnO",
+              "top": 50,
+              "left": 60,
+              "type": "text",
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1A237E;\">指数增长与衰减模型</p>",
+              "defaultColor": "#1A237E",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_IXuLVWLZ",
+              "top": 128,
+              "left": 60,
+              "type": "text",
+              "width": 880,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; color: #283593;\">增长率与当前状态成正比（自然界最常见的模型）</p>",
+              "defaultColor": "#283593",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_LPd4AUPj",
+              "top": 170,
+              "fill": "#E8F0FE",
+              "left": 60,
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "type": "shape",
+              "width": 420,
+              "height": 140,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "latex_pidiwq9v",
+              "top": 185,
+              "left": 170,
+              "type": "latex",
+              "align": "center",
+              "color": "#1A237E",
+              "latex": "\\frac{dy}{dt} = k y",
+              "width": 200,
+              "height": 50,
+              "rotate": 0,
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">t</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.8889em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.03148em;\">k</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "id": "text_EgF-1hIf",
+              "top": 245,
+              "left": 80,
+              "type": "text",
+              "width": 380,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; color: #1A237E; font-weight: bold;\">k &gt; 0 → 指数增长；k &lt; 0 → 指数衰减</p>",
+              "defaultColor": "#1A237E",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_qFBLmRP-",
+              "end": [
+                0,
+                140
+              ],
+              "top": 170,
+              "left": 500,
+              "type": "line",
+              "color": "#E0E0E0",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 2,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "shape_JYkedOSM",
+              "top": 185,
+              "fill": "#1565C0",
+              "left": 520,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_laPF_6Ti",
+              "top": 170,
+              "left": 540,
+              "type": "text",
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>目标：</b>理解 k 的比例意义——变化率与当前值成固定比例</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_kIhudfTT",
+              "top": 255,
+              "fill": "#1565C0",
+              "left": 520,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_fKiUhvrw",
+              "top": 240,
+              "left": 540,
+              "type": "text",
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>核心：</b>这种规则导致状态随时间呈指数级变化（而非线性）</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_d-05GEff",
+              "top": 325,
+              "fill": "#1565C0",
+              "left": 520,
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "type": "shape",
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": true
+            },
+            {
+              "id": "text_iCZCsMJe",
+              "top": 310,
+              "left": 540,
+              "type": "text",
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #333333;\"><b>纠正：</b>指数模型并非仅等于 e^x，它源于“比例增长”的底层规则</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_-Tml2ohY",
+              "end": [
+                800,
+                0
+              ],
+              "top": 460,
+              "left": 100,
+              "type": "line",
+              "color": "#555555",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 3,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "line_4pRxvT4H",
+              "end": [
+                0,
+                0
+              ],
+              "top": 350,
+              "left": 200,
+              "type": "line",
+              "color": "#555555",
+              "start": [
+                0,
+                110
+              ],
+              "style": "solid",
+              "width": 3,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "text_m_189qCh",
+              "top": 465,
+              "left": 170,
+              "type": "text",
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">O</p>",
+              "defaultColor": "#555555",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_8BK7riWG",
+              "top": 465,
+              "left": 880,
+              "type": "text",
+              "width": 30,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">t</p>",
+              "defaultColor": "#555555",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_xFLCPFO9",
+              "top": 330,
+              "left": 160,
+              "type": "text",
+              "width": 60,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">y(t)</p>",
+              "defaultColor": "#555555",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_p7cXLvmh",
+              "end": [
+                400,
+                -105
+              ],
+              "top": 460,
+              "left": 200,
+              "type": "line",
+              "color": "#E65100",
+              "cubic": [
+                [
+                  120,
+                  -18
+                ],
+                [
+                  280,
+                  -50
+                ]
+              ],
+              "start": [
+                0,
+                -15
+              ],
+              "style": "solid",
+              "width": 3,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "text_kUqKRDPK",
+              "top": 384,
+              "left": 524,
+              "type": "text",
+              "width": 120,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #E65100; font-weight: bold;\">k &gt; 0，增长</p>",
+              "defaultColor": "#E65100",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line__vaxd6Yu",
+              "end": [
+                400,
+                -15
+              ],
+              "top": 460,
+              "left": 200,
+              "type": "line",
+              "color": "#1565C0",
+              "cubic": [
+                [
+                  80,
+                  -55
+                ],
+                [
+                  220,
+                  -18
+                ]
+              ],
+              "start": [
+                0,
+                -105
+              ],
+              "style": "solid",
+              "width": 3,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "text_sDmCVoHj",
+              "top": 425,
+              "left": 650,
+              "type": "text",
+              "width": 120,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #1565C0; font-weight: bold;\">k &lt; 0，衰减</p>",
+              "defaultColor": "#1565C0",
+              "defaultFontName": "Microsoft YaHei"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_zxQVXNBZ",
+          "type": "spotlight",
+          "elementId": "text_kYyjFfnO"
+        },
+        {
+          "id": "action_1r8C6Lqk",
+          "text": "本场景聚焦“指数增长与衰减模型”。现在我们就正式进入指数增长与衰减模型。这张图展示的，就是自然界里最常见的一类变化规律。",
+          "type": "speech"
+        },
+        {
+          "id": "action_rWxxBMOm",
+          "type": "spotlight",
+          "elementId": "text_IXuLVWLZ"
+        },
+        {
+          "id": "action_mjbbXXQN",
+          "text": "它的核心只有一句话：增长率与当前状态成正比。什么意思呢？就是存量越大，长得越快；存量越小，衰减得也越慢。不是均匀地增加，而是像滚雪球一样，自我放大。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_mjbbXXQN.mp3"
+        },
+        {
+          "id": "action_Fdhnfn0R",
+          "type": "spotlight",
+          "elementId": "latex_pidiwq9v"
+        },
+        {
+          "id": "action_ZXBZbvO-",
+          "text": "用数学语言写出来，就是这个简单的微分方程 dy/dt = k y。左边是变化率，右边是当前值 y 乘上一个常数比例 k。注意，这里最关键的是 y 出现在等式右边，意味着变化率和状态本身直接挂钩。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_ZXBZbvO-.mp3"
+        },
+        {
+          "id": "action_zePjNtAw",
+          "type": "laser",
+          "elementId": "text_EgF-1hIf"
+        },
+        {
+          "id": "action_RH8AH7U4",
+          "text": "k 大于 0 时，就是指数增长；k 小于 0 时，就是指数衰减。这个 k 就是比例系数，决定了变化是正向放大还是反向收缩。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_RH8AH7U4.mp3"
+        },
+        {
+          "id": "action_s6-zuo35",
+          "type": "spotlight",
+          "elementId": "text_iCZCsMJe"
+        },
+        {
+          "id": "action_m_AAZKUC",
+          "text": "这里有一个常见的误解需要提前纠正。很多人一看到“指数”两个字，脑子里就只有 e 的 x 次方。但指数模型本质上不是死记一个函数形式，而是源于“比例增长”这条底层规则。只要变化率和存量成正比，结果自然就是指数形式。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_m_AAZKUC.mp3"
+        },
+        {
+          "id": "action_97IOdGVo",
+          "type": "spotlight",
+          "elementId": "text_fKiUhvrw"
+        },
+        {
+          "id": "action_HmkzYzuP",
+          "text": "所以，这条规则的核心后果就是：状态随时间呈指数级变化，而不是线性变化。这也是为什么它在人口增长、放射性衰变、复利计算里会反复出现。先抓住这个“比例变化”的感觉，后面的方程求解就会轻松很多。",
+          "type": "speech",
+          "audioRef": "audio/tts_s13_action_HmkzYzuP.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "指数增长与衰减模型：拖动实验",
+      "order": 14,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "exponential_growth_decay",
+          "presets": [
+            {
+              "name": "人口增长 Population Growth",
+              "variables": {
+                "k": 0.7,
+                "y0": 10,
+                "tmax": 10,
+                "speed": 1
+              }
+            },
+            {
+              "name": "药物衰减 Drug Decay",
+              "variables": {
+                "k": -0.3,
+                "y0": 100,
+                "tmax": 15,
+                "speed": 1
+              }
+            },
+            {
+              "name": "放射性衰变 Radioactive Decay",
+              "variables": {
+                "k": -0.693,
+                "y0": 100,
+                "tmax": 10,
+                "speed": 1
+              }
+            },
+            {
+              "name": "复利增长 Compound Interest",
+              "variables": {
+                "k": 0.08,
+                "y0": 1000,
+                "tmax": 30,
+                "speed": 1
+              }
+            }
+          ],
+          "variables": [
+            {
+              "max": 3,
+              "min": -3,
+              "name": "k",
+              "unit": "",
+              "label": "比例系数 k (Growth Rate)",
+              "default": 0.5
+            },
+            {
+              "max": 100,
+              "min": 1,
+              "name": "y0",
+              "unit": "",
+              "label": "初始值 y₀ (Initial Value)",
+              "default": 10
+            },
+            {
+              "max": 50,
+              "min": 5,
+              "name": "tmax",
+              "unit": "",
+              "label": "时间范围 (Time Range)",
+              "default": 10
+            },
+            {
+              "max": 5,
+              "min": 0.2,
+              "name": "speed",
+              "unit": "×",
+              "label": "动画速度 (Speed)",
+              "default": 1
+            }
+          ],
+          "description": "指数增长与衰减模型：调节比例系数 k 观察人口增长或药物衰减。通过设置 k<0 模拟药物浓度减半过程，读取半衰期。"
+        },
+        "htmlPath": "interactive/14_指数增长与衰减模型：拖动实验.html",
+        "htmlBytes": 782282
+      },
+      "actions": [
+        {
+          "id": "action_V8poNZzT",
+          "text": "本场景通过交互探索“指数增长与衰减模型：拖动实验”。我们就把这个感觉放进一个可以动手拖动的模型里，亲手调一调。",
+          "type": "speech"
+        },
+        {
+          "id": "action_nvc1W4dk",
+          "type": "widget_setState",
+          "state": {
+            "k": 0.7,
+            "y0": 10,
+            "tmax": 10,
+            "speed": 1
+          },
+          "content": "应用人口增长预设，展示曲线快速上升的趋势。"
+        },
+        {
+          "id": "action_eZ0zuSJU",
+          "text": "大家看这个界面。k 是比例系数，也就是增长率占当前人口的比例。我现在把它设成 0.7，相当于每过一个时间单位，增长率是当前人数的 70%。这条曲线一开始还挺平缓，但很快就‘飞’起来了。",
+          "type": "speech",
+          "audioRef": "audio/tts_s14_action_eZ0zuSJU.mp3"
+        },
+        {
+          "id": "action_6U32aUdv",
+          "type": "widget_highlight",
+          "target": "#k-slider",
+          "content": "这是主控制滑动条，可以实时改变曲线的走势。"
+        },
+        {
+          "id": "action_DbpfuqIm",
+          "text": "最关键的就是这个滑动条。你试着一手慢慢拖动 k，盯着曲线的形状看。当 k 从很小的正数慢慢变大，它就跟我们刚刚说的线性增长彻底拉开了距离，变成了爆炸式增长。",
+          "type": "speech",
+          "audioRef": "audio/tts_s14_action_DbpfuqIm.mp3"
+        },
+        {
+          "id": "action_rQqWEdQ3",
+          "type": "widget_setState",
+          "state": {
+            "k": -0.3,
+            "y0": 100,
+            "tmax": 15,
+            "speed": 1
+          },
+          "content": "切换到药物衰减预设，展示k<0时的递减曲线。"
+        },
+        {
+          "id": "action__RDvO7sp",
+          "text": "反过来，如果你把 k 拉到负数，比如 -0.3，它就变成了衰减模型，就像药物在体内慢慢被代谢掉。这时候屏幕上还会自动标出半衰期 —— 浓度减少一半所需要的时间。接下来，请你试着拖动 k，看看能不能在不看公式的情况下，让半衰期正好等于 2 个时间单位。",
+          "type": "speech",
+          "audioRef": "audio/tts_s14_action__RDvO7sp.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "指数增长与衰减模型：关系图",
+      "order": 15,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "edges": [
+            {
+              "to": "n2",
+              "from": "n1",
+              "label": "y(t)"
+            },
+            {
+              "to": "n3",
+              "from": "n2",
+              "label": "k·y"
+            },
+            {
+              "to": "n4",
+              "from": "n3",
+              "label": "若 k>0"
+            },
+            {
+              "to": "n5",
+              "from": "n3",
+              "label": "若 k<0"
+            },
+            {
+              "to": "n6",
+              "from": "n4",
+              "label": "加速增长 ↑"
+            },
+            {
+              "to": "n6",
+              "from": "n5",
+              "label": "减速衰减 ↓"
+            },
+            {
+              "to": "n1",
+              "from": "n6",
+              "label": "更新 y(t+Δt)"
+            },
+            {
+              "to": "n7",
+              "from": "n6",
+              "label": "解析解"
+            }
+          ],
+          "nodes": [
+            {
+              "id": "n1",
+              "icon": "📊",
+              "tags": [
+                "状态量",
+                "State Variable"
+              ],
+              "label": "当前量 y(t)",
+              "details": "系统中某一时刻的观测量。它是时间的函数 y(t)，例如细菌数量、放射性物质质量、账户余额等。<br><br>在微积分直觉中，y(t) 描述的是「此刻有多少」这一状态。",
+              "sublabel": "Current Quantity"
+            },
+            {
+              "id": "n2",
+              "icon": "⚡",
+              "tags": [
+                "关键参数",
+                "Parameter"
+              ],
+              "label": "乘以比例系数 k",
+              "details": "比例系数 k 是系统的核心参数，决定了变化速度的大小和方向。<br><br>🔹 k > 0：变化与当前量同向 → 增长<br>🔹 k < 0：变化与当前量反向 → 衰减<br><br>k 的物理意义：单位时间内每个单位产生的「新增」或「损失」量。",
+              "sublabel": "Proportionality Constant"
+            },
+            {
+              "id": "n3",
+              "icon": "📈",
+              "tags": [
+                "微分方程",
+                "Differential Equation"
+              ],
+              "label": "dy/dt 导数",
+              "details": "导数 dy/dt 表示 y 在时刻 t 的瞬时变化率。<br><br>核心方程：<span class='math'>dy/dt = k·y</span><br><br>直觉理解：y 越大，变化越快——这就是指数行为的本质。变化率与当前量成正比。",
+              "sublabel": "Derivative / Rate of Change"
+            },
+            {
+              "id": "n4",
+              "icon": "🔴",
+              "tags": [
+                "增强反馈",
+                "Amplifying"
+              ],
+              "label": "正反馈 (k > 0)",
+              "details": "当 k > 0 时，y 越大 → dy/dt 越正 → y 增长越快。<br><br>这是「富者愈富」的正反馈机制：<br>• 复利增长（银行存款）<br>• 人口无限制增长<br>• 病毒传播初期<br><br>曲线：y(t) = y₀e^(kt)，向上弯曲加速增长。",
+              "sublabel": "Positive Feedback"
+            },
+            {
+              "id": "n5",
+              "icon": "🔵",
+              "tags": [
+                "抑制反馈",
+                "Damping"
+              ],
+              "label": "负反馈 (k < 0)",
+              "details": "当 k < 0 时，y 越大 → dy/dt 越负 → y 减少越快。<br><br>这是「自我抑制」的负反馈机制：<br>• 放射性衰变<br>• 药物代谢消除<br>• 冷却过程（牛顿冷却定律）<br><br>曲线：y(t) = y₀e^(-|k|t)，逐渐趋近于零。",
+              "sublabel": "Negative Feedback"
+            },
+            {
+              "id": "n6",
+              "icon": "📐",
+              "tags": [
+                "逆运算",
+                "Inverse Operation"
+              ],
+              "label": "∫ 积分 (累积)",
+              "details": "积分是将瞬时变化率 dy/dt 累积回总量 y 的过程。<br><br>dy/dt = k·y ⟹ y(t) = ∫ k·y dt<br><br>积分是微分的逆运算：导数看「瞬间变化」，积分看「整体积累」。两者共同构成闭环。",
+              "sublabel": "Integration / Accumulation"
+            },
+            {
+              "id": "n7",
+              "icon": "📉",
+              "tags": [
+                "解析解",
+                "Analytical Solution"
+              ],
+              "label": "y = y₀e^(kt)",
+              "details": "指数函数是 dy/dt = k·y 的解析解：<span class='math'>y(t) = y₀ · e^(kt)</span><br><br>其中 y₀ = y(0) 是初始值，e ≈ 2.718 是自然常数。<br><br>关键性质：在任意时刻，曲线在该点的切线斜率与纵坐标之比为常数 k。",
+              "sublabel": "Exponential Function"
+            }
+          ],
+          "revealOrder": [
+            "n1",
+            "n2",
+            "n3",
+            "n4",
+            "n5",
+            "n6",
+            "n7"
+          ]
+        },
+        "htmlPath": "interactive/15_指数增长与衰减模型：关系图.html",
+        "htmlBytes": 772725
+      },
+      "actions": [
+        {
+          "id": "action_v-XQvfnQ",
+          "text": "本场景通过交互探索“指数增长与衰减模型：关系图”。让我们把这个直觉串起来，看看指数增长和衰减背后那个自我驱动的反馈循环。屏幕上出现的，就是我们刚经历过的所有环节连接成的闭环系统图。",
+          "type": "speech"
+        },
+        {
+          "id": "action_E52j5psY",
+          "type": "widget_reveal",
+          "target": "#n1",
+          "content": "展示起点：当前量 y(t)"
+        },
+        {
+          "id": "action_R6XWxW_b",
+          "text": "我们从「当前量 y(t)」开始。它就是你在拖动实验中看到的那一时刻的数量——细菌个数、放射性物质质量，或者账户里的钱。它不是一个死数字，而是这个循环的起点。",
+          "type": "speech",
+          "audioRef": "audio/tts_s15_action_R6XWxW_b.mp3"
+        },
+        {
+          "id": "action_r-fRCb7o",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "指向节点 n1"
+        },
+        {
+          "id": "action_ytyyH6Kb",
+          "type": "widget_reveal",
+          "target": "#n2",
+          "content": "展示：乘以比例系数 k"
+        },
+        {
+          "id": "action_pWE0dV5J",
+          "text": "y(t) 会流向下一个关键节点——「乘以比例系数 k」。这就是你刚才拖动的那个滑块。如果 k 是正的，变化就和当前量同向，越变越多；如果 k 是负的，就像药物代谢，越变越少。",
+          "type": "speech",
+          "audioRef": "audio/tts_s15_action_pWE0dV5J.wav"
+        },
+        {
+          "id": "action_fFMrrVfN",
+          "type": "widget_highlight",
+          "target": "#n2",
+          "content": "指向节点 n2"
+        },
+        {
+          "id": "action_GrTMrIqW",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "展示：导数 dy/dt"
+        },
+        {
+          "id": "action_cng_Lg7g",
+          "text": "乘以 k 之后，我们就得到了导数 dy/dt——瞬时变化率。核心方程 dy/dt = k·y 就在这儿。它告诉我们一个深刻的直觉：变化的速度，永远和当前拥有量成正比。这就是指数行为的根本原因。",
+          "type": "speech",
+          "audioRef": "audio/tts_s15_action_cng_Lg7g.mp3"
+        },
+        {
+          "id": "action_FsACBi3S",
+          "type": "widget_reveal",
+          "target": "#n4",
+          "content": "展示正反馈分支"
+        },
+        {
+          "id": "action_-9HGNF6t",
+          "type": "widget_reveal",
+          "target": "#n5",
+          "content": "展示负反馈分支"
+        },
+        {
+          "id": "action_1OaKEVsg",
+          "text": "现在看，导数这条路会分岔。如果 k 大于零，系统走上红色的正反馈分支——富者愈富，增长曲线向上加速。如果 k 小于零，系统走上蓝色的负反馈分支——自我抑制，逐渐衰减趋向于零。",
+          "type": "speech",
+          "audioRef": "audio/tts_s15_action_1OaKEVsg.mp3"
+        },
+        {
+          "id": "action_iLpOF6B0",
+          "type": "widget_highlight",
+          "target": "#n4",
+          "content": "指向正反馈分支"
+        },
+        {
+          "id": "action__tqEPXlG",
+          "type": "widget_reveal",
+          "target": "#n6",
+          "content": "展示积分累积环节"
+        },
+        {
+          "id": "action_OfWzm4Jg",
+          "text": "无论哪条路，最终都会汇聚到积分这个环节。积分把瞬时变化率一点一点累积起来，更新出下一个时刻的 y，然后这个新的 y 又被送回起点，重新开始下一轮乘 k 的循环。",
+          "type": "speech",
+          "audioRef": "audio/tts_s15_action_OfWzm4Jg.mp3"
+        },
+        {
+          "id": "action_3mN7c0rh",
+          "type": "widget_highlight",
+          "target": "#n6",
+          "content": "指向积分节点"
+        },
+        {
+          "id": "action_43LgP9EX",
+          "type": "widget_reveal",
+          "target": "#n7",
+          "content": "展示解析解 y=y₀e^(kt)"
+        },
+        {
+          "id": "action__4R2fcZT",
+          "text": "最后，积分还会通向解析解——y = y₀ e^(kt)。它就是我们在拖动实验中看到的那条优美曲线。现在，来看看你们能不能跟着连线，把这个自我强化的因果链自己走一遍。",
+          "type": "speech"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "指数增长与衰减模型：误解修复挑战",
+      "order": 16,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "scoring": {
+            "speedBonus": 5,
+            "correctPoints": 10
+          },
+          "gameType": "strategy",
+          "gameConfig": {
+            "levels": [
+              {
+                "id": 1,
+                "duration": 45,
+                "targetMax": 120,
+                "targetMin": 80,
+                "capacityChange": false,
+                "disasterChance": 0.002
+              },
+              {
+                "id": 2,
+                "duration": 50,
+                "targetMax": 140,
+                "targetMin": 60,
+                "capacityChange": true,
+                "disasterChance": 0.004
+              },
+              {
+                "id": 3,
+                "duration": 55,
+                "targetMax": 150,
+                "targetMin": 50,
+                "capacityChange": true,
+                "disasterChance": 0.006,
+                "frequencyIncrease": true
+              }
+            ],
+            "targets": [
+              {
+                "id": "t1",
+                "type": "population_zone"
+              }
+            ],
+            "controls": [
+              "k_slider"
+            ],
+            "initialConditions": {
+              "k": 0.3,
+              "capacity": 200,
+              "population": 100
+            }
+          },
+          "description": "策略博弈游戏：管理生物种群，动态调整增长率k以维持种群稳定",
+          "achievements": [
+            {
+              "id": "first_stable",
+              "icon": "🌱",
+              "name": "初入行",
+              "description": "首次保持种群稳定5秒"
+            },
+            {
+              "id": "survive_disaster",
+              "icon": "🔥",
+              "name": "灾后重建",
+              "description": "成功应对一次灾害"
+            },
+            {
+              "id": "level2_clear",
+              "icon": "⭐",
+              "name": "经验老道",
+              "description": "完成第2关"
+            },
+            {
+              "id": "level3_clear",
+              "icon": "🏆",
+              "name": "种群大师",
+              "description": "完成第3关"
+            },
+            {
+              "id": "perfect_k",
+              "icon": "🎯",
+              "name": "精准调控",
+              "description": "在灾害后1秒内调整k值"
+            }
+          ]
+        },
+        "htmlPath": "interactive/16_指数增长与衰减模型：误解修复挑战.html",
+        "htmlBytes": 778912
+      },
+      "actions": [
+        {
+          "id": "action_DivNSYRL",
+          "text": "本场景通过交互探索“指数增长与衰减模型：误解修复挑战”。让我们把这个规律放进一个变化的生态系统里试试。请看屏幕上的种群管理挑战。",
+          "type": "speech"
+        },
+        {
+          "id": "action_GoaVD_mb",
+          "type": "widget_highlight",
+          "target": "#k_slider",
+          "content": "用这个滑块实时调整种群增长率 k 值"
+        },
+        {
+          "id": "action__ZqTGA5H",
+          "text": "这里，k 不再是固定的常数。环境在变，资源有限。你的目标很明确：观察种群数量曲线，通过拖动这个 k 值滑块，让种群数量始终维持在绿色的目标区间内。",
+          "type": "speech",
+          "audioRef": "audio/tts_s16_action__ZqTGA5H.mp3"
+        },
+        {
+          "id": "action_pzzZaMNz",
+          "type": "widget_setState",
+          "state": {
+            "k": 0.5,
+            "population": 60
+          },
+          "content": "模拟一次灾害后的种群骤降状态"
+        },
+        {
+          "id": "action_zmIZRUus",
+          "text": "看，一场突发灾害让种群数量瞬间掉到了目标线以下。大家，如果这时还死守着灾害前的 k 值公式，能迅速复原吗？来，动手拖一拖 k 值滑块，感受一下你需要多快做出反应。",
+          "type": "speech"
+        },
+        {
+          "id": "action_i2750qzL",
+          "type": "widget_annotation",
+          "target": "#t1",
+          "content": "这条曲线的斜率，此刻正等于 k 乘以当前的种群数"
+        },
+        {
+          "id": "action_FHPtol5j",
+          "text": "请注意曲线的倾斜程度——它就是 dy/dt 的视觉化身。灾害之后，你需要一个更大的 k 来加速恢复；但当种群逼近环境容量时，又必须及时调低，避免超调。这正是在动态中体会 dy/dt = ky 的含义。",
+          "type": "speech",
+          "audioRef": "audio/tts_s16_action_FHPtol5j.mp3"
+        },
+        {
+          "id": "action_AoMHFLfG",
+          "type": "widget_reveal",
+          "target": "#achievement-panel",
+          "content": "完成挑战可获得成就徽章，试试看"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "interactive",
+      "title": "指数增长与衰减模型：空间视角",
+      "order": 17,
+      "content": {
+        "url": "",
+        "type": "interactive",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "objects": [
+            {
+              "id": "exponential_curves_family",
+              "type": "curves",
+              "description": "不同 k 值的指数曲线族 y(t) = e^(kt)"
+            },
+            {
+              "id": "k_plane_divider",
+              "type": "plane",
+              "description": "k=0 临界分割面"
+            },
+            {
+              "id": "slope_indicators",
+              "type": "arrows",
+              "description": "斜率场指示器，显示 dy/dt 方向与大小"
+            },
+            {
+              "id": "surface",
+              "type": "surface",
+              "description": "解曲面 y = e^(kt) 的三维可视化"
+            },
+            {
+              "id": "highlightCurve",
+              "type": "curve",
+              "description": "当前 k 值对应的高亮曲线"
+            }
+          ],
+          "presets": [
+            {
+              "name": "观察增长区域",
+              "state": {
+                "k": 1.5,
+                "cameraTarget": [
+                  0,
+                  2,
+                  1.5
+                ],
+                "cameraPosition": [
+                  6,
+                  6,
+                  6
+                ]
+              }
+            },
+            {
+              "name": "观察衰减区域",
+              "state": {
+                "k": -1.5,
+                "cameraTarget": [
+                  0,
+                  2,
+                  -1.5
+                ],
+                "cameraPosition": [
+                  6,
+                  6,
+                  6
+                ]
+              }
+            },
+            {
+              "name": "临界状态 k=0",
+              "state": {
+                "k": 0,
+                "cameraTarget": [
+                  0,
+                  1.5,
+                  0
+                ],
+                "cameraPosition": [
+                  8,
+                  8,
+                  12
+                ]
+              }
+            },
+            {
+              "name": "斜率场视图",
+              "state": {
+                "k": 1,
+                "showSurface": false,
+                "cameraTarget": [
+                  1,
+                  3,
+                  0
+                ],
+                "cameraPosition": [
+                  4,
+                  10,
+                  8
+                ]
+              }
+            }
+          ],
+          "description": "指数增长与衰减模型：空间视角 — 观察 dy/dt = ky 在不同 k 值下的解曲面与曲线族",
+          "interactions": [
+            {
+              "max": 3,
+              "min": -3,
+              "type": "slider",
+              "label": "k 值 (增长率 growth rate)",
+              "param": "k",
+              "default": 0
+            },
+            {
+              "max": 8,
+              "min": 2,
+              "type": "slider",
+              "label": "时间范围 time range",
+              "param": "timeScale",
+              "default": 5
+            },
+            {
+              "max": 15,
+              "min": 3,
+              "type": "slider",
+              "label": "曲线数量",
+              "param": "numCurves",
+              "default": 9
+            },
+            {
+              "type": "button",
+              "label": "显示/隐藏曲面",
+              "action": "toggleSurface"
+            },
+            {
+              "type": "button",
+              "label": "显示/隐藏斜率场",
+              "action": "toggleSlopes"
+            },
+            {
+              "type": "button",
+              "label": "放大",
+              "action": "zoomIn"
+            },
+            {
+              "type": "button",
+              "label": "缩小",
+              "action": "zoomOut"
+            },
+            {
+              "type": "button",
+              "label": "重置",
+              "action": "reset"
+            }
+          ],
+          "visualizationType": "geometry"
+        },
+        "htmlPath": "interactive/17_指数增长与衰减模型：空间视角.html",
+        "htmlBytes": 2458793
+      },
+      "actions": [
+        {
+          "id": "action_8zEJi1RJ",
+          "text": "本场景通过交互探索“指数增长与衰减模型：空间视角”。让我们站高一点，从空间视角观察不同 k 值下的整个曲线家族。",
+          "type": "speech"
+        },
+        {
+          "id": "action_V0eEUdR9",
+          "type": "widget_setState",
+          "state": {
+            "k": 0,
+            "numCurves": 9,
+            "timeScale": 5
+          },
+          "content": "先让 k 回到 0，这是我们刚才提到的临界状态。"
+        },
+        {
+          "id": "action_OZQ0H6PJ",
+          "text": "大家看中间的平面——这就是 k=0 时的情况，所有 y 值都保持不变，是一条水平的面。大家，如果 k 从 0 往正方向增加，曲面会怎么变化？",
+          "type": "speech"
+        },
+        {
+          "id": "action_vq75NMty",
+          "type": "widget_highlight",
+          "target": "#k_plane_divider",
+          "content": "这个分割面将增长区域和衰减区域分开。"
+        },
+        {
+          "id": "action_hcbZ9tjQ",
+          "type": "widget_setState",
+          "state": {
+            "k": 1.5,
+            "cameraTarget": [
+              0,
+              2,
+              1.5
+            ],
+            "cameraPosition": [
+              6,
+              6,
+              6
+            ]
+          },
+          "content": "切换到增长区域，看看 k=1.5 时曲面迅速上扬。"
+        },
+        {
+          "id": "action_Zuouwewh",
+          "text": "现在，请把视线沿 t 轴方向平移——注意曲面的斜率是如何与 y 值等比例放大的？这就是自治方程在空间视角下的核心结构：y 越大，变化幅度也越大。",
+          "type": "speech",
+          "audioRef": "audio/tts_s17_action_Zuouwewh.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "ISTDV-STNKZkLwMpsknLH",
+          "theme": {
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            },
+            "outline": {
+              "color": "#d14424",
+              "style": "solid",
+              "width": 2
+            },
+            "fontName": "Microsoft YaHei",
+            "fontColor": "#333333",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "backgroundColor": "#ffffff"
+          },
+          "elements": [
+            {
+              "id": "text_Wz5N-Egr",
+              "top": 50,
+              "left": 60,
+              "type": "text",
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1E3A5F;\">全课整理：证据链回看</p>",
+              "defaultColor": "#1E3A5F",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_Ux_vgHI6",
+              "end": [
+                880,
+                0
+              ],
+              "top": 125,
+              "left": 60,
+              "type": "line",
+              "color": "#CCCCCC",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 1,
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "shape_MZvXTta_",
+              "top": 160,
+              "fill": "#EAF2F8",
+              "left": 60,
+              "path": "M 0.05 0 L 0.95 0 Q 1 0 1 0.05 L 1 0.95 Q 1 1 0.95 1 L 0.05 1 Q 0 1 0 0.95 L 0 0.05 Q 0 0 0.05 0 Z",
+              "type": "shape",
+              "width": 240,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_9mPvoMmT",
+              "top": 175,
+              "left": 80,
+              "type": "text",
+              "width": 200,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1E3A5F;\">代数误解修复</p>",
+              "defaultColor": "#1E3A5F",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_EYQDYgjG",
+              "top": 224,
+              "left": 80,
+              "type": "text",
+              "width": 200,
+              "height": 85,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">“变化率等式：误解修复挑战”与“可分离变量与一阶线性方程：误解修复挑战”共同修正变量意义和等式变形直觉</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_YlK2bqca",
+              "end": [
+                60,
+                0
+              ],
+              "top": 240,
+              "left": 310,
+              "type": "line",
+              "color": "#2E75B6",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 2,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "shape_zJESGAn7",
+              "top": 160,
+              "fill": "#EAF2F8",
+              "left": 380,
+              "path": "M 0.05 0 L 0.95 0 Q 1 0 1 0.05 L 1 0.95 Q 1 1 0.95 1 L 0.05 1 Q 0 1 0 0.95 L 0 0.05 Q 0 0 0.05 0 Z",
+              "type": "shape",
+              "width": 240,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text__fWgyv3u",
+              "top": 175,
+              "left": 400,
+              "type": "text",
+              "width": 200,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1E3A5F;\">预测与增长</p>",
+              "defaultColor": "#1E3A5F",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_vPfE8y5U",
+              "top": 224,
+              "left": 400,
+              "type": "text",
+              "width": 200,
+              "height": 85,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">“变化率等式：拖动实验”的轨迹预测 → “指数增长与衰减模型：拖动实验”的比例增长</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "line_jmDpJezp",
+              "end": [
+                60,
+                0
+              ],
+              "top": 240,
+              "left": 630,
+              "type": "line",
+              "color": "#2E75B6",
+              "start": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "width": 2,
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "id": "shape_1SX1tljW",
+              "top": 160,
+              "fill": "#EAF2F8",
+              "left": 700,
+              "path": "M 0.05 0 L 0.95 0 Q 1 0 1 0.05 L 1 0.95 Q 1 1 0.95 1 L 0.05 1 Q 0 1 0 0.95 L 0 0.05 Q 0 0 0.05 0 Z",
+              "type": "shape",
+              "width": 240,
+              "height": 160,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_XsqZjSe6",
+              "top": 175,
+              "left": 720,
+              "type": "text",
+              "width": 200,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; font-weight: bold; text-align: center; color: #1E3A5F;\">直觉奠基</p>",
+              "defaultColor": "#1E3A5F",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "text_wFXYPjUv",
+              "top": 224,
+              "left": 720,
+              "type": "text",
+              "width": 200,
+              "height": 85,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #333333;\">核心直觉为后续物理建模（运动、力学）提供起点</p>",
+              "defaultColor": "#333333",
+              "defaultFontName": "Microsoft YaHei"
+            },
+            {
+              "id": "shape_O5ZqvwuT",
+              "top": 390,
+              "fill": "#F0F0F0",
+              "left": 200,
+              "path": "M 0.02 0 L 0.98 0 Q 1 0 1 0.1 L 1 0.9 Q 1 1 0.98 1 L 0.02 1 Q 0 1 0 0.9 L 0 0.1 Q 0 0 0.02 0 Z",
+              "type": "shape",
+              "width": 600,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "fixedRatio": false
+            },
+            {
+              "id": "text_GpuFeo-y",
+              "top": 404,
+              "left": 220,
+              "type": "text",
+              "width": 560,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 20px; font-style: italic; text-align: center; color: #555555;\">这只是入门，更复杂的物理建模依赖于这些基础直觉</p>",
+              "defaultColor": "#555555",
+              "defaultFontName": "Microsoft YaHei"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_Giojdpg7",
+          "type": "spotlight",
+          "elementId": "text_Wz5N-Egr"
+        },
+        {
+          "id": "action_DSMgCv6b",
+          "text": "本场景聚焦“全课整理：证据链回看”。好了，各位同学，我们现在来到了一个非常重要的时刻——'全课整理：证据链回看'。从最开始的诊断，到刚才的空间视角，我们积累了很多交互的直觉。现在，让我们把这些散落的珍珠串成一条完整的证据链。",
+          "type": "speech"
+        },
+        {
+          "id": "action_hAFtAXAw",
+          "type": "spotlight",
+          "elementId": "text_9mPvoMmT"
+        },
+        {
+          "id": "action_MpNKD-m4",
+          "text": "首先，请看向这里：'代数误解修复'。还记得在场景5和场景10吗？当大家（Differential Equation）试图用死板的代数思维去移动变量时，我们的拖动实验是如何修正那种'公式搬运'的冲动的。正是通过那两次关键的视觉反馈，我们把'微分'真正理解为了一个动态的整体，而不是可以随意拆解的符号。",
+          "type": "speech"
+        },
+        {
+          "id": "action_EmQ2b54S",
+          "type": "spotlight",
+          "elementId": "text_vPfE8y5U"
+        },
+        {
+          "id": "action_GvnxqQLL",
+          "text": "接着，我们把目光投向'预测与增长'。这就连接到了大家最兴奋的部分。回想场景3里，我们通过拖动点来预测曲线的走向；到了场景14，也就是指数增长与衰减模型（Exponential Growth and Decay），我们发现比例增长本质上是线性驱动指数。这就是从离散的直觉推测，跨越到了连续的比例变化率模型。",
+          "type": "speech"
+        },
+        {
+          "id": "action_8PLVT7so",
+          "type": "spotlight",
+          "elementId": "text_wFXYPjUv"
+        },
+        {
+          "id": "action_BOH-HwOH",
+          "text": "最后，让我们夯实最核心的'直觉奠基'。大家刚才在空间视角里看到的那些曲面和斜率场，是不是觉得很有结构感？这就对了。我们这一节课，不管是修复误解还是玩转模型，都是在为一个更宏大的目标铺路：为后续的物理建模，比如运动力学里的牛顿冷却定律，提供一个坚实、可视的直觉起点。",
+          "type": "speech",
+          "audioRef": "audio/tts_s18_action_BOH-HwOH.mp3"
+        },
+        {
+          "id": "action_DC2aVQVF",
+          "type": "spotlight",
+          "elementId": "text_GpuFeo-y"
+        },
+        {
+          "id": "action_5PIUmbW9",
+          "text": "所以大家要记住，这只是入门。微分方程的世界远比这广阔，更复杂的物理建模（Physical Modeling）完全依赖于我们此时此地建立起来的这些基础直觉。不要小看今天在拖动和观察中获得的微小感知，它们才是未来破解高深公式的真正钥匙。",
+          "type": "speech",
+          "audioRef": "audio/tts_s18_action_5PIUmbW9.mp3"
+        }
+      ],
+      "whiteboards": null
+    },
+    {
+      "type": "quiz",
+      "title": "后测：微分方程入门综合测评",
+      "order": 19,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "answer": [
+              "D"
+            ],
+            "points": 15,
+            "options": [
+              {
+                "label": "5年",
+                "value": "A"
+              },
+              {
+                "label": "10年",
+                "value": "B"
+              },
+              {
+                "label": "15年",
+                "value": "C"
+              },
+              {
+                "label": "20年",
+                "value": "D"
+              }
+            ],
+            "analysis": "衰变遵循 dy/dt = -ky 的规律。半衰期为10年意味着每10年衰减一半。从初始N0到N0/2需要10年，再从N0/2到N0/4又需要10年。总共需要20年。这等同于两个半衰期。",
+            "question": "假设我们有一个新元素“幻数素”，其衰变速率与当前剩余量成正比。已知其半衰期为10年。如果初始有N0克，大约多少年后剩余量变为初始的1/4？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "points": 20,
+            "options": [
+              {
+                "label": "该方程描述的是变化率（导数 Derivative）等于当前值的动态过程",
+                "value": "A"
+              },
+              {
+                "label": "它的一个特解是 y = e^t，代表了指数增长",
+                "value": "B"
+              },
+              {
+                "label": "如果初始条件是负数，随着时间的推移，y会趋近于0",
+                "value": "C"
+              },
+              {
+                "label": "这个方程可以描述银行账户中，利息不断复投产生的“复利”增长现象",
+                "value": "D"
+              }
+            ],
+            "analysis": "A正确：dy/dt是变化率，y是当前值，方程直接定义了变化率等于当前值。B正确：y=e^t的导数是它本身，是一个基础解。C错误：如果初始值为负，随着时间增加，y=e^t会趋近于负无穷，而非0。D正确：复利计算中，本息和增加的速度（利息）正比于当前本息和，这是一个经典的复利模型。",
+            "question": "关于微分方程（Differential Equation） dy/dt = y，下列哪些描述是正确的？（多选）",
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "short_answer",
+            "points": 20,
+            "analysis": "参考回答要点：方程 dy/dt = ky 描述的是一个过程的瞬时增长速率（dy/dt）与它当前的积累量（y）成正比。k是比例常数，代表增长率。这就产生了一个正反馈环：当y增加一点点，它的变化率也增加，这就使得y在下一个瞬间增加得更多。如此循环，增长会呈爆炸式。就像滚雪球，雪球越大，表面积越大，能粘上的雪就越多，使得雪球更大。在复利中，本金越大，产生的利息越多，加入本金后，下一次计息的本金就更大，从而产生更多利息。这与‘马太效应’中拥有的越多，获得的也越多的逻辑完全一致。",
+            "question": "请用你自己的话，结合“马太效应”（即富者愈富、贫者愈贫的现象），解释为什么微分方程 dy/dt = ky （其中k>0）能够代表一种“复利”或“滚雪球”式的增长。你需要描述出“变化率”和“当前量”之间的关系是如何导致这种结果的。",
+            "hasAnswer": false,
+            "commentPrompt": "评分标准（总分20分）：(1) 准确描述方程含义：解释了dy/dt是瞬时变化率，y是当前积累量，两者成正比关系（方程的直观含义）—— 40%。(2) 逻辑演绎：清晰说明“当前量越大，变化越快，这导致当前量更快地变得更大”，从而形成正反馈循环（滚雪球效应）—— 40%。(3) 类比恰当：成功地将数学逻辑与马太效应或复利现象联系起来，比喻生动准确—— 20%。"
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "answer": [
+              "B"
+            ],
+            "points": 15,
+            "options": [
+              {
+                "label": "增长会更快，因为开根号会让数值变大",
+                "value": "A"
+              },
+              {
+                "label": "增长会更慢，曲线会变得更平缓，甚至可能趋于一条直线",
+                "value": "B"
+              },
+              {
+                "label": "增长趋势完全一样，因为都是 y 的函数",
+                "value": "C"
+              },
+              {
+                "label": "在 y>1 时会增长更慢，在 0<y<1 时会增长更快，但最终都会爆炸式增长",
+                "value": "D"
+              }
+            ],
+            "analysis": "核心是比较两者的变化率大小。当 y>1 时，sqrt(y) 比 y 小（例如 y=4，sqrt(4)=2 < 4）；当 0<y<1 时，sqrt(y) 比 y 大（例如 y=0.25，sqrt(0.25)=0.5 > 0.25）。但考虑到解曲线是从一个小的正数开始增长，一旦 y 稍微变大（比如超过1），其变化率就迅速小于 dy/dt=y 的情况。整体而言，它的增长驱动力更弱，曲线会比指数函数平缓得多，实际上它是一种二次方级的增长，看起来更像抛物线，而不是陡峭的指数曲线。所以B选项最准确。A错误，没有区分不同区间的数值大小关系。C错误，函数形式不同导致增长率截然不同。D指出了区间差异，但‘最终都会爆炸式增长’不准确，dy/dt=sqrt(y) 的确会在有限时间内爆炸（有限时间奇点），但其增长趋势与指数爆炸有本质不同，且描述‘增长更慢，更平缓’是其主要特征。",
+            "question": "在第一组虚拟实验中，你观察到 dy/dt = y 的解曲线在 y>0 时向上弯曲地增长。在第二组虚拟实验中，对于方程 dy/dt = y^2，解曲线也有类似趋势。现在面对一个新方程 dy/dt = sqrt(y)，仅靠直觉判断，当 y>0 时，其解曲线的增长趋势相比于 dy/dt = y 会有何不同？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "single",
+            "answer": [
+              "D"
+            ],
+            "points": 15,
+            "options": [
+              {
+                "label": "污染物浓度会像指数衰减一样，迅速归零",
+                "value": "A"
+              },
+              {
+                "label": "污染物浓度会先快速下降，但永远无法完全归零，会残留极少量",
+                "value": "B"
+              },
+              {
+                "label": "污染物浓度会下降得越来越慢，需要无限长时间才能完全消失",
+                "value": "C"
+              },
+              {
+                "label": "污染物浓度的倒数与时间成线性关系，浓度最终会趋近于零，但比指数衰减慢",
+                "value": "D"
+              }
+            ],
+            "analysis": "对于 dy/dt = -k y^2，可通过分离变量法求解：-dy/y^2 = k dt -> 1/y = kt + C。因此 y = 1/(kt+C)。当 t=0 时，C = 1/C0。可见，浓度的倒数随时间线性增长，浓度本身按双曲线规律衰减。它在开始时如果C0很大，下降很快，但随着浓度变小，其变化率的绝对值也变得更小，所以后期衰减会变得非常缓慢。但理论上，当t趋于无穷时，y趋于0。与指数衰减（dy/dt=-ky, y=C0*e^{-kt}）相比，指数衰减前期慢，后期快（对半衰期恒定），而这里的衰减是前期快后期慢。A错误，不是指数衰减。B错误，它在数学上是可以无限趋近于0的。C错误，它确实需要无限长时间，但这与指数衰减一样，关键区别在于衰减的模式是前期快后期慢，且倒数线性。D是最准确的数学描述。",
+            "question": "考虑一个湖泊的污染模型，污染物一旦进入湖泊就不再排出，但会以某种速率自然降解。如果污染物的降解速率（dy/dt）与污染物当前浓度的平方成正比，即 dy/dt = -k y^2。假设初始浓度为C0，下列哪个关于“未来污染物浓度”的推论是正确的？",
+            "hasAnswer": true
+          },
+          {
+            "id": "q6",
+            "type": "short_answer",
+            "points": 15,
+            "analysis": "参考回答要点：最根本的区别在于变化率对当前量y的依赖程度不同。对于dy/dt = y，依赖是线性的；对于dy/dt = y^2，依赖是二次方的。这意味着当y变大时，dy/dt = y^2的增长加速度要猛烈得多。在实验结果中，dy/dt = y的解是一条指数曲线，它持续增长，但需要无限长的时间才能达到无穷。而dy/dt = y^2的解在超过某个临界点后，会以惊人的速度向上飙升，甚至在有限的时间内就穿透了坐标系的顶部，趋向无穷大，这被称为‘有限时间奇点’或爆炸现象。也就是说，反馈的强度决定了系统是在无限未来爆炸，还是在有限时间爆炸。",
+            "question": "结合你在虚拟实验中对 dy/dt = y 和 dy/dt = y^2 这两个方程解曲线的观察，请解释它们的最根本区别是什么？提示：可以从“变化率对当前值的依赖程度”和“解在有限时间内的行为”这两个角度来分析。",
+            "hasAnswer": false,
+            "commentPrompt": "评分标准（总分15分）：(1) 明确指出两者的关键区别：对于 dy/dt=y，变化率与y线性相关；对于 dy/dt=y^2，变化率与y二次方相关。这导致在y较大时，后者的增长率远大于前者—— 50%。(2) 描述所观察到的现象，并能联系‘有限时间奇点’的概念：如指出 dy/dt=y^2 的解可能在有限时间内趋向于无穷大（爆炸），而 dy/dt=y 的解是指数增长，仅在时间无穷时趋于无穷，不会在有限时间内爆炸—— 50%。"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_guzLJ3oz",
+          "text": "这是一组关于“后测：微分方程入门综合测评”的独立测验。让我们用一场综合测评来为今天的课程画上句号。就像大家在之前的模型里不断调整参数一样，这份测验也需要你调动我们一路建立起来的全部直觉。",
+          "type": "speech"
+        },
+        {
+          "id": "action_nOPg7Pjd",
+          "text": "从幻数素的衰变，到复利的本质，再到污染物降解的模型，这些题目都在考察同一个内核：变化率（Derivative）与当前状态之间的关系。别忘了我们在虚拟实验中拖拽曲线时获得的那种感觉。",
+          "type": "speech",
+          "audioRef": "audio/tts_s19_action_nOPg7Pjd.mp3"
+        },
+        {
+          "id": "action_K9O0RD1b",
+          "text": "特别是面对 dy/dt = sqrt(y) 这种新面孔时，不要急着用代数去算，先回想一下大家和大家在斜率场里发现的规律，靠直觉去判断增长趋势。",
+          "type": "speech"
+        },
+        {
+          "id": "action_FqpEkYxL",
+          "text": "最后两道简答题，我希望看到你们用自己的语言，把‘马太效应’和‘变化率的依赖程度’说清楚。这不再是复述定义，而是展示你如何像大家一样，用一个生动的类比来理解一个微分方程（Differential Equation）的灵魂。",
+          "type": "speech"
+        },
+        {
+          "id": "action_dszX5lnU",
+          "text": "大家完成得非常好。今天我们从什么是变化率开始，一路走到指数增长、分离变量，最后用这些‘侦探工具’去分析全新模型。记住，你们在拖动实验和空间视角里获得的直觉，比任何公式都更宝贵。课程到此结束，但我们探索变化的旅程才刚刚开始。",
+          "type": "speech",
+          "audioRef": "audio/tts_s19_action_dszX5lnU.mp3"
+        },
+        {
+          "id": "action_igmhfzfs",
+          "type": "discussion",
+          "topic": "在这节课的所有概念中，哪个‘变化率与当前量关系’的模型最让你惊讶？是复利式的指数增长，还是二次方的爆炸式增长？",
+          "prompt": "分享一个你印象最深的模型，并说说它如何改变了你对‘变化’这件事的看法。",
+          "agentIndex": 1
+        }
+      ],
+      "whiteboards": null
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_-blWzRT1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 180048
+    },
+    "audio/tts_action_2KmFiWJg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135312
+    },
+    "audio/tts_action_hn2JY70j.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141936
+    },
+    "audio/tts_s10_action_6p04IGnP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118776
+    },
+    "audio/tts_s10_action_kDnZa-d8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141696
+    },
+    "audio/tts_s10_action_mC7jWlN0.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 101784
+    },
+    "audio/tts_s10_action_VKRTRwla.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127128
+    },
+    "audio/tts_s11_action_-O0X3z-m.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 143904
+    },
+    "audio/tts_s11_action_GCDCY_ZT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 129696
+    },
+    "audio/tts_s11_action_LXNQQyk-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 166080
+    },
+    "audio/tts_s11_action_NSjCtFVU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 233784
+    },
+    "audio/tts_s12_action_4W1-fFgP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 164856
+    },
+    "audio/tts_s12_action_l85SrMky.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 229440
+    },
+    "audio/tts_s12_action_sPvvrdhp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 310344
+    },
+    "audio/tts_s12_action_UA4XLfew.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 233424
+    },
+    "audio/tts_s13_action_1r8C6Lqk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106584
+    },
+    "audio/tts_s13_action_HmkzYzuP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 178200
+    },
+    "audio/tts_s13_action_mjbbXXQN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109008
+    },
+    "audio/tts_s13_action_m_AAZKUC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 142008
+    },
+    "audio/tts_s13_action_RH8AH7U4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 94224
+    },
+    "audio/tts_s13_action_ZXBZbvO-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 136920
+    },
+    "audio/tts_s14_action_DbpfuqIm.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127272
+    },
+    "audio/tts_s14_action_eZ0zuSJU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133680
+    },
+    "audio/tts_s14_action_V8poNZzT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 90240
+    },
+    "audio/tts_s14_action__RDvO7sp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 168096
+    },
+    "audio/tts_s15_action_1OaKEVsg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127392
+    },
+    "audio/tts_s15_action_cng_Lg7g.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 124560
+    },
+    "audio/tts_s15_action_OfWzm4Jg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111504
+    },
+    "audio/tts_s15_action_pWE0dV5J.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 867884
+    },
+    "audio/tts_s15_action_R6XWxW_b.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104760
+    },
+    "audio/tts_s15_action_v-XQvfnQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 158112
+    },
+    "audio/tts_s15_action__4R2fcZT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 150624
+    },
+    "audio/tts_s16_action_DivNSYRL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 95952
+    },
+    "audio/tts_s16_action_FHPtol5j.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 163848
+    },
+    "audio/tts_s16_action_zmIZRUus.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125304
+    },
+    "audio/tts_s16_action__ZqTGA5H.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108120
+    },
+    "audio/tts_s17_action_8zEJi1RJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 99288
+    },
+    "audio/tts_s17_action_OZQ0H6PJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 100248
+    },
+    "audio/tts_s17_action_Zuouwewh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126600
+    },
+    "audio/tts_s18_action_5PIUmbW9.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 141120
+    },
+    "audio/tts_s18_action_BOH-HwOH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 191544
+    },
+    "audio/tts_s18_action_DSMgCv6b.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 142872
+    },
+    "audio/tts_s18_action_GvnxqQLL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 203856
+    },
+    "audio/tts_s18_action_MpNKD-m4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 185160
+    },
+    "audio/tts_s19_action_dszX5lnU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 165288
+    },
+    "audio/tts_s19_action_FqpEkYxL.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138816
+    },
+    "audio/tts_s19_action_guzLJ3oz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104544
+    },
+    "audio/tts_s19_action_K9O0RD1b.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 104040
+    },
+    "audio/tts_s19_action_nOPg7Pjd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138024
+    },
+    "audio/tts_s2_action_2mE4pq1A.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 217344
+    },
+    "audio/tts_s2_action_2qrT-F8t.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 273912
+    },
+    "audio/tts_s2_action_8t_DuSf5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146472
+    },
+    "audio/tts_s2_action_HFAoevYT.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144888
+    },
+    "audio/tts_s2_action_MLY3g9lx.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 215952
+    },
+    "audio/tts_s2_action_VscjAje4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 202128
+    },
+    "audio/tts_s2_action_Xx5Z-W6u.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 174120
+    },
+    "audio/tts_s3_action_8y-ODqiI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 186264
+    },
+    "audio/tts_s3_action_ixaOx1Ez.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 177144
+    },
+    "audio/tts_s3_action_KxTTYENr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 138408
+    },
+    "audio/tts_s3_action_n5kU6CuY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 170448
+    },
+    "audio/tts_s4_action_62lqCEtt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 187752
+    },
+    "audio/tts_s4_action_6FvMpx-A.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159384
+    },
+    "audio/tts_s4_action_CdJtp_xM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 223752
+    },
+    "audio/tts_s4_action_G_--8ZPo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97056
+    },
+    "audio/tts_s4_action_j4-1zccb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119856
+    },
+    "audio/tts_s4_action_QY1DtD49.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 112344
+    },
+    "audio/tts_s4_action_ulnIE8ab.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 146064
+    },
+    "audio/tts_s5_action_Jwk-ccAN.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 63960
+    },
+    "audio/tts_s5_action_mSJSiXju.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 92880
+    },
+    "audio/tts_s5_action_uMYFjFW4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119352
+    },
+    "audio/tts_s5_action_YN66ayEt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 74352
+    },
+    "audio/tts_s6_action_-CSEFknl.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 118440
+    },
+    "audio/tts_s6_action_4kGSYn4o.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 211728
+    },
+    "audio/tts_s6_action_7SP41fgf.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128952
+    },
+    "audio/tts_s6_action_t_gHlPc4.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 128856
+    },
+    "audio/tts_s7_action_2OGjrCo3.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 179112
+    },
+    "audio/tts_s7_action_6zPCz7cS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 189408
+    },
+    "audio/tts_s7_action_7WkXkGqG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 159720
+    },
+    "audio/tts_s7_action_DiOKw70V.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 154200
+    },
+    "audio/tts_s7_action_kiKlgejJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 214560
+    },
+    "audio/tts_s7_action_ZwwtVH0W.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 158280
+    },
+    "audio/tts_s8_action_b2aWzGDp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 132552
+    },
+    "audio/tts_s8_action_JluTB176.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 178368
+    },
+    "audio/tts_s8_action_lCII1U18.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 199488
+    },
+    "audio/tts_s8_action_MIaKw8ms.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160080
+    },
+    "audio/tts_s9_action_7DHWOZWY.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 76920
+    },
+    "audio/tts_s9_action_cbFCXwnv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111912
+    },
+    "audio/tts_s9_action_sFuAOQIQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 200544
+    },
+    "audio/tts_s9_action__SbSbbmr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119256
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

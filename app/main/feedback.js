@@ -66,9 +66,11 @@ function renderFeedbackPage() {
 }
 
 function updateFeedbackCharacterCount() {
-  const content = document.querySelector("#feedback-content")?.value || "";
+  const contentNode = document.querySelector("#feedback-content");
+  const content = contentNode?.value || "";
+  const maxLength = contentNode?.maxLength > 0 ? contentNode.maxLength : 5000;
   const counter = document.querySelector("#feedback-char-count");
-  if (counter) counter.textContent = `${content.length} / 2000`;
+  if (counter) counter.textContent = `${content.length} / ${maxLength}`;
 }
 
 function setFeedbackStatus(message = "", tone = "") {

@@ -86,7 +86,21 @@ async function createLegacySnapshotDatabase(dbPath) {
       "legacy-snapshot",
       "legacy-user",
       "legacy_progress",
-      JSON.stringify({ completed: ["legacy-unit"], note: "旧快照必须保留" }),
+      JSON.stringify({
+        completed: ["legacy-unit"],
+        quizResults: [{
+          id: "legacy-result",
+          unit_id: "legacy-quiz",
+          question_id: "legacy-question"
+        }],
+        quizAttempts: {
+          "legacy-attempt-quiz": {
+            unitId: "legacy-attempt-quiz",
+            records: []
+          }
+        },
+        note: "旧快照必须保留"
+      }),
       "2026-07-01T00:01:00.000Z"
     ]
   );
@@ -145,6 +159,27 @@ async function main() {
     child.stdout.on("data", (chunk) => logs.push(chunk.toString()));
     child.stderr.on("data", (chunk) => logs.push(chunk.toString()));
     await waitForHealth(baseUrl, child, logs);
+
+    const legacyUpgrade = await requestJson(baseUrl, "/api/auth/register", {
+      method: "POST",
+      body: {
+        nickname: "旧版学习者",
+        email: "",
+        password: "legacy-upgrade-123"
+      }
+    });
+    assert.equal(legacyUpgrade.response.status, 200);
+    assert.equal(legacyUpgrade.payload.participant.participantId, "legacy-user");
+    const legacyState = await requestJson(baseUrl, "/api/learning/snapshot", {
+      token: legacyUpgrade.payload.token
+    });
+    assert.equal(legacyState.response.status, 200);
+    assert.deepEqual(
+      legacyState.payload.snapshot.submittedQuizzes.sort(),
+      ["legacy-attempt-quiz", "legacy-quiz"],
+      "旧快照缺少 submittedQuizzes 时必须从历史题目和测验尝试恢复"
+    );
+    assert.equal(legacyState.payload.snapshot.note, "旧快照必须保留");
 
     const registered = await requestJson(baseUrl, "/api/auth/register", {
       method: "POST",

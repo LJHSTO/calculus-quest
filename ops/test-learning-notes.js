@@ -7,6 +7,7 @@ const {
   loadNotes,
   notesFor,
   removeNote,
+  replaceOwnerUnitNotes,
   upsertNote
 } = require("../app/main/learning-notes");
 
@@ -136,5 +137,27 @@ assert.equal(
 assert.equal(removeNote(storage, "note-a", "student-2"), false);
 assert.equal(removeNote(storage, "note-a", "student-1"), true);
 assert.equal(loadNotes(storage).length, 2);
+
+const serverNote = createNote({
+  id: "note-b",
+  ownerKey: "student-1",
+  threadKey: "knowledge:GH-03-K02",
+  chapterId: "V14-C1",
+  unitId: "GH-03-K02",
+  excerpt: "瞬时变化率",
+  note: "从另一台设备同步回来的内容",
+  color: "blue",
+  updatedAt: "2026-07-25T09:00:00.000Z"
+});
+replaceOwnerUnitNotes(storage, "student-1", "GH-03-K02", [serverNote]);
+assert.equal(
+  notesFor(storage, { ownerKey: "student-1", unitId: "GH-03-K02" })[0].note,
+  "从另一台设备同步回来的内容"
+);
+assert.equal(
+  notesFor(storage, { ownerKey: "student-2", unitId: "GH-03-K01" }).length,
+  1,
+  "replacing a synced unit must preserve notes belonging to another participant"
+);
 
 console.log("learning notes tests passed");

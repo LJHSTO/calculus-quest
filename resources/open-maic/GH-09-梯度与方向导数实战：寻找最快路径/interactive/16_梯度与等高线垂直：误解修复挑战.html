@@ -1,6 +1,34 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<script data-openmaic-storage-shim-v2>
+(function () {
+  function createMemoryStorage() {
+    var data = Object.create(null);
+    return {
+      getItem: function (key) { key = String(key); return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : null; },
+      setItem: function (key, value) { data[String(key)] = String(value); },
+      removeItem: function (key) { delete data[String(key)]; },
+      clear: function () { data = Object.create(null); },
+      key: function (index) { var keys = Object.keys(data); return index < keys.length ? keys[index] : null; },
+      get length() { return Object.keys(data).length; }
+    };
+  }
+  function available(name) {
+    try {
+      window[name].getItem("__openmaic_probe__");
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+  window.__openMaicLocalStorage = available("localStorage") ? window.localStorage : createMemoryStorage();
+  window.__openMaicSessionStorage = available("sessionStorage") ? window.sessionStorage : createMemoryStorage();
+})();
+let localStorage = window.__openMaicLocalStorage;
+let sessionStorage = window.__openMaicSessionStorage;
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>梯度与等高线：冲顶挑战</title>
@@ -688,6 +716,213 @@ body:has(#main-svg):has(#sidebar) .sidebar-close{position:relative!important;z-i
   body:has(.diagram-wrap):has(#diagramSvg) #diagramSvg{width:100vw!important;max-width:100vw!important}
 }
 </style>
+
+<style id="openmaic-courseware-layout-v52">
+[data-openmaic-responsive-panel="true"] {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+}
+[data-openmaic-responsive-panel="true"] button,
+[data-openmaic-responsive-panel="true"] select,
+[data-openmaic-responsive-panel="true"] input:not([type="range"]),
+[data-openmaic-responsive-panel="true"] [role="button"] {
+  min-height: 40px;
+}
+[data-openmaic-responsive-panel="true"] input[type="range"] {
+  width: 100%;
+  min-height: 32px;
+}
+body:has(#diagram-container):has(#sidebar):has(#nav-controls) #nav-controls {
+  bottom: 12px !important;
+  min-height: 44px !important;
+  padding-bottom: 0 !important;
+  z-index: 2147483004 !important;
+}
+body:has(#diagram-container):has(#sidebar):has(#nav-controls) #nav-controls button {
+  min-height: 40px !important;
+}
+body:has(#diagram-container):has(#sidebar) #controls:has(#btn-next),
+body:has(#diagram-container):has(#sidebar) #controls:has(#btnNext),
+body:has(#diagram-container):has(#sidebar) #controls:has(#next-btn) {
+  bottom: 14px !important;
+  min-height: 44px !important;
+  padding-bottom: 0 !important;
+  z-index: 2147483004 !important;
+}
+body:has(#diagram-container):has(#sidebar) #controls:has(#btn-next) button,
+body:has(#diagram-container):has(#sidebar) #controls:has(#btnNext) button,
+body:has(#diagram-container):has(#sidebar) #controls:has(#next-btn) button {
+  min-height: 40px !important;
+}
+body:has(#diagram-wrap):has(#sidebar) #controls:has(#btn-next),
+body:has(#diagram-wrap):has(#sidebar) #controls:has(#btnNext),
+body:has(#diagram-wrap):has(#sidebar) #controls:has(#next-btn) {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 16px !important;
+  min-height: 40px !important;
+  transform: translateX(-50%) !important;
+  z-index: 2147483004 !important;
+}
+body:has(#diagram-wrap):has(#sidebar) #controls:has(#btn-next) button,
+body:has(#diagram-wrap):has(#sidebar) #controls:has(#btnNext) button,
+body:has(#diagram-wrap):has(#sidebar) #controls:has(#next-btn) button {
+  min-height: 40px !important;
+}
+body:has(#canvasWrapper):has(#directionPad) #gameContainer {
+  display: grid !important;
+  grid-template-rows: auto minmax(240px, 1fr) auto !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+body:has(#canvasWrapper):has(#directionPad) #canvasWrapper {
+  width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+body:has(#canvasWrapper):has(#directionPad) #gameCanvas {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  object-fit: contain !important;
+}
+body:has(#canvasWrapper):has(#directionPad) #controls {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 184px !important;
+  max-height: 210px !important;
+  padding: 7px 10px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 5px !important;
+}
+body:has(#canvasWrapper):has(#directionPad) #directionPad {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, 48px) !important;
+  grid-template-rows: repeat(3, 48px) !important;
+  gap: 4px !important;
+  width: 152px !important;
+  height: 152px !important;
+  flex: 0 0 152px !important;
+}
+body:has(#canvasWrapper):has(#directionPad) .dir-btn {
+  position: static !important;
+  inset: auto !important;
+  width: 48px !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 0 !important;
+}
+body:has(#effect-canvas):has(#rule-builder-area),
+body:has(#particle-canvas):has(#action-area) {
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+body:has(#effect-canvas):has(#rule-builder-area) #game-container,
+body:has(#particle-canvas):has(#action-area) #game-container {
+  position: fixed !important;
+  inset: 0 !important;
+  box-sizing: border-box !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  padding-bottom: 68px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+body:has(#effect-canvas):has(#rule-builder-area) .action-bar,
+body:has(#particle-canvas):has(#action-area) #action-area {
+  position: fixed !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: 8px !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  max-width: calc(100vw - 20px) !important;
+  margin: 0 !important;
+  padding: 6px 10px !important;
+  background: rgba(36, 36, 62, 0.96) !important;
+  z-index: 2147483400 !important;
+}
+body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #game-container {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+}
+body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #main-area {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  margin-top: 6px !important;
+  overflow: hidden !important;
+}
+body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #loss-chart-wrapper {
+  flex: 0 0 96px !important;
+  min-height: 96px !important;
+  height: 96px !important;
+  max-height: 96px !important;
+  margin-top: 6px !important;
+  padding: 4px 8px !important;
+  overflow: hidden !important;
+}
+body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
+  width: 100% !important;
+  height: 68px !important;
+  max-height: 68px !important;
+}
+@media (max-width: 899px) {
+  [data-openmaic-responsive-panel="true"] {
+    scrollbar-gutter: auto;
+  }
+  body:has(#canvasWrapper):has(#directionPad) #gameContainer {
+    grid-template-rows: auto minmax(210px, 1fr) auto !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+  body:has(#canvasWrapper):has(#directionPad) #controls {
+    min-height: 166px !important;
+    max-height: 184px !important;
+  }
+  body:has(#canvasWrapper):has(#directionPad) #directionPad {
+    grid-template-columns: repeat(3, 44px) !important;
+    grid-template-rows: repeat(3, 44px) !important;
+    width: 140px !important;
+    height: 140px !important;
+    flex-basis: 140px !important;
+  }
+  body:has(#canvasWrapper):has(#directionPad) .dir-btn {
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+  body:has(#effect-canvas):has(#rule-builder-area),
+  body:has(#effect-canvas):has(#rule-builder-area) #game-container,
+  body:has(#particle-canvas):has(#action-area),
+  body:has(#particle-canvas):has(#action-area) #game-container {
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+  }
+}
+</style>
+
 </head>
 <body>
 
@@ -1831,5 +2066,530 @@ function movePlayer(dx, dy) {
   };
 })();
 </script>
+<script id="openmaic-courseware-layout-runtime-v52">
+(function () {
+  var desktopMinWidth = 900;
+  var panelSelector = [
+    ".controls-panel",
+    "#controls-panel",
+    ".control-panel",
+    "#control-panel",
+    ".controls",
+    ".sidebar",
+    "#sidebar",
+    "#sidePanel"
+  ].join(",");
+  var controlSelector = "button,input:not([type=hidden]),select,textarea,[role=button]";
+  var saved = new Map();
+  var active = null;
+  var scheduled = false;
+  var internalResize = false;
+  var forceRefresh = false;
+  var transientElements = new Set();
+  var dockedGroups = new Set();
+
+  function directChild(parent, node) {
+    var current = node;
+    while (current && current.parentElement !== parent) current = current.parentElement;
+    return current && current.parentElement === parent ? current : null;
+  }
+
+  function visible(element) {
+    if (!element) return false;
+    var style = getComputedStyle(element);
+    return style.display !== "none" && style.visibility !== "hidden";
+  }
+
+  function saveProperty(element, property) {
+    if (!saved.has(element)) saved.set(element, new Map());
+    var values = saved.get(element);
+    if (!values.has(property)) {
+      values.set(property, {
+        value: element.style.getPropertyValue(property),
+        priority: element.style.getPropertyPriority(property)
+      });
+    }
+  }
+
+  function setImportant(element, property, value) {
+    if (!element) return;
+    saveProperty(element, property);
+    element.style.setProperty(property, value, "important");
+  }
+
+  function restoreElement(element) {
+    var values = saved.get(element);
+    if (!values) return;
+    values.forEach(function (entry, property) {
+      if (entry.value) element.style.setProperty(property, entry.value, entry.priority);
+      else element.style.removeProperty(property);
+    });
+    saved.delete(element);
+  }
+
+  function setTransient(element, property, value) {
+    if (!element) return;
+    transientElements.add(element);
+    setImportant(element, property, value);
+  }
+
+  function restoreTransient() {
+    transientElements.forEach(restoreElement);
+    transientElements.clear();
+  }
+
+  function restoreActive() {
+    if (!active) return;
+    active.elements.forEach(restoreElement);
+    active.panel.removeAttribute("data-openmaic-responsive-panel");
+    active.parent.removeAttribute("data-openmaic-responsive-layout");
+    active.pane.removeAttribute("data-openmaic-responsive-canvas");
+    active.panel.removeAttribute("data-openmaic-overlay-panel");
+    active = null;
+  }
+
+  function findLayout() {
+    var canvases = Array.from(document.querySelectorAll("canvas")).filter(visible);
+    if (!canvases.length) return null;
+    var candidates = [];
+    document.querySelectorAll(panelSelector).forEach(function (panel) {
+      if (!visible(panel) || panel.querySelector("canvas")) return;
+      var controls = panel.querySelectorAll(controlSelector).length;
+      if (controls < 2) return;
+      var position = getComputedStyle(panel).position;
+      if (position === "absolute" || position === "fixed") return;
+      var parent = panel.parentElement;
+      if (!parent || parent.clientWidth < 320) return;
+      var panelRect = panel.getBoundingClientRect();
+      var parentRect = parent.getBoundingClientRect();
+      var structuralChildren = Array.from(parent.children).filter(function (child) {
+        if (!visible(child)) return false;
+        var childStyle = getComputedStyle(child);
+        if (childStyle.position === "absolute" || childStyle.position === "fixed") return false;
+        var childRect = child.getBoundingClientRect();
+        return childRect.width > 1 && childRect.height > 1;
+      });
+      if (structuralChildren.length > 3) return;
+      if (
+        panelRect.right <= 0 ||
+        panelRect.left >= window.innerWidth ||
+        panelRect.bottom <= 0 ||
+        panelRect.top >= window.innerHeight
+      ) return;
+      if (
+        parentRect.width > window.innerWidth + 4 ||
+        parentRect.left < -2 ||
+        parentRect.right > window.innerWidth + 2
+      ) return;
+      canvases.forEach(function (canvas) {
+        var pane = directChild(parent, canvas);
+        if (!pane || pane === panel || panel.contains(pane)) return;
+        var paneRect = pane.getBoundingClientRect();
+        if (
+          paneRect.width < Math.min(180, parentRect.width * 0.25) ||
+          paneRect.height < 180 ||
+          paneRect.right <= 0 ||
+          paneRect.left >= window.innerWidth
+        ) return;
+        var rect = canvas.getBoundingClientRect();
+        var score = controls * 1000 + Math.max(1, rect.width * rect.height);
+        candidates.push({ panel: panel, parent: parent, pane: pane, canvas: canvas, score: score });
+      });
+    });
+    candidates.sort(function (a, b) { return b.score - a.score; });
+    return candidates[0] || null;
+  }
+
+  function findOverlayLayout() {
+    if (document.querySelector("#gameContainer,#game-container,#gameCanvas")) return null;
+    var canvases = Array.from(document.querySelectorAll("canvas")).filter(visible);
+    if (!canvases.length) return null;
+    var candidates = [];
+    document.querySelectorAll(panelSelector).forEach(function (panel) {
+      if (!visible(panel) || panel.querySelector("canvas")) return;
+      var position = getComputedStyle(panel).position;
+      if (position !== "absolute" && position !== "fixed") return;
+      var controls = panel.querySelectorAll(controlSelector).length;
+      if (controls < 3) return;
+      var panelRect = panel.getBoundingClientRect();
+      if (
+        panelRect.right <= 0 ||
+        panelRect.left >= window.innerWidth ||
+        panelRect.bottom <= 0 ||
+        panelRect.top >= window.innerHeight
+      ) return;
+      canvases.forEach(function (canvas) {
+        var rect = canvas.getBoundingClientRect();
+        if (
+          rect.width < window.innerWidth * 0.48 ||
+          rect.height < window.innerHeight * 0.42
+        ) return;
+        var parent = document.body;
+        var pane = directChild(parent, canvas) || canvas;
+        if (!pane || pane === panel || panel.contains(pane) || pane.contains(panel)) return;
+        var score = controls * 1000 + rect.width * rect.height;
+        candidates.push({
+          panel: panel,
+          parent: parent,
+          pane: pane,
+          canvas: canvas,
+          score: score,
+          overlay: true
+        });
+      });
+    });
+    candidates.sort(function (a, b) { return b.score - a.score; });
+    return candidates[0] || null;
+  }
+
+  function canvasChain(layout) {
+    var chain = [];
+    var node = layout.canvas.parentElement;
+    while (node && node !== layout.parent && node !== layout.panel) {
+      chain.push(node);
+      if (node === layout.pane) break;
+      node = node.parentElement;
+    }
+    return chain;
+  }
+
+  function panelDimensions() {
+    if (window.innerWidth >= 1600) {
+      return {
+        width: "clamp(480px, 28vw, 560px)",
+        minWidth: "480px",
+        maxWidth: "560px"
+      };
+    }
+    return {
+      width: "clamp(420px, 34vw, 480px)",
+      minWidth: "420px",
+      maxWidth: "480px"
+    };
+  }
+
+  function applyLayout(layout) {
+    restoreActive();
+    var top = Math.max(0, Math.round(layout.parent.getBoundingClientRect().top));
+    var availableHeight = Math.max(420, window.innerHeight - top);
+    var mobile = window.innerWidth < desktopMinWidth;
+    var dimensions = panelDimensions();
+    var elements = [layout.parent, layout.panel, layout.pane, layout.canvas];
+
+    setImportant(layout.parent, "display", "flex");
+    setImportant(layout.parent, "flex-direction", mobile ? "column" : "row");
+    setImportant(layout.parent, "flex-wrap", "nowrap");
+    setImportant(layout.parent, "align-items", "stretch");
+    setImportant(layout.parent, "width", "100%");
+    setImportant(layout.parent, "max-width", "none");
+    setImportant(layout.parent, "min-width", "0");
+    setImportant(layout.parent, "min-height", "0");
+    setImportant(layout.parent, "height", availableHeight + "px");
+    setImportant(layout.parent, "max-height", availableHeight + "px");
+    setImportant(layout.parent, "overflow", "hidden");
+
+    setImportant(layout.panel, "flex", mobile ? "0 1 auto" : "0 0 " + dimensions.width);
+    setImportant(layout.panel, "width", mobile ? "100%" : dimensions.width);
+    setImportant(layout.panel, "min-width", mobile ? "0" : dimensions.minWidth);
+    setImportant(layout.panel, "max-width", mobile ? "none" : dimensions.maxWidth);
+    setImportant(layout.panel, "height", "auto");
+    setImportant(layout.panel, "min-height", "0");
+    setImportant(layout.panel, "max-height", mobile ? "44dvh" : "none");
+    setImportant(layout.panel, "align-self", "stretch");
+    setImportant(layout.panel, "order", "1");
+    setImportant(layout.panel, "margin", "0");
+    setImportant(layout.panel, "overflow-x", "hidden");
+    setImportant(layout.panel, "overflow-y", "auto");
+
+    setImportant(layout.pane, "flex", "1 1 auto");
+    setImportant(layout.pane, "width", mobile ? "100%" : "auto");
+    setImportant(layout.pane, "min-width", "0");
+    setImportant(layout.pane, "min-height", mobile ? "240px" : "0");
+    setImportant(layout.pane, "height", "auto");
+    setImportant(layout.pane, "max-height", "100%");
+    setImportant(layout.pane, "align-self", "stretch");
+    setImportant(layout.pane, "order", "0");
+    setImportant(layout.pane, "margin", "0");
+    setImportant(layout.pane, "overflow", "hidden");
+
+    canvasChain(layout).forEach(function (node) {
+      if (!elements.includes(node)) elements.push(node);
+      setImportant(node, "min-width", "0");
+      setImportant(node, "min-height", "0");
+      setImportant(node, "height", "auto");
+      setImportant(node, "max-height", "100%");
+      setImportant(node, "align-self", "stretch");
+    });
+    setImportant(layout.canvas, "display", "block");
+    setImportant(layout.canvas, "width", "100%");
+    setImportant(layout.canvas, "height", "100%");
+    setImportant(layout.canvas, "max-width", "100%");
+    setImportant(layout.canvas, "max-height", "none");
+
+    layout.parent.setAttribute("data-openmaic-responsive-layout", "true");
+    layout.panel.setAttribute("data-openmaic-responsive-panel", "true");
+    layout.pane.setAttribute("data-openmaic-responsive-canvas", "true");
+    active = {
+      parent: layout.parent,
+      panel: layout.panel,
+      pane: layout.pane,
+      canvas: layout.canvas,
+      elements: elements,
+      overlay: false
+    };
+  }
+
+  function applyOverlayLayout(layout) {
+    restoreActive();
+    var mobile = window.innerWidth < desktopMinWidth;
+    var dimensions = panelDimensions();
+    var elements = [layout.parent, layout.panel, layout.pane, layout.canvas];
+
+    setImportant(layout.parent, "width", "100vw");
+    setImportant(layout.parent, "height", "100vh");
+    setImportant(layout.parent, "max-width", "100vw");
+    setImportant(layout.parent, "max-height", "100vh");
+    setImportant(layout.parent, "overflow", "hidden");
+
+    setImportant(layout.panel, "position", "fixed");
+    setImportant(layout.panel, "z-index", "2147483200");
+    setImportant(layout.panel, "box-sizing", "border-box");
+    setImportant(layout.panel, "overflow-x", "hidden");
+    setImportant(layout.panel, "overflow-y", "auto");
+    if (mobile) {
+      setImportant(layout.panel, "left", "0");
+      setImportant(layout.panel, "right", "0");
+      setImportant(layout.panel, "top", "auto");
+      setImportant(layout.panel, "bottom", "0");
+      setImportant(layout.panel, "width", "100%");
+      setImportant(layout.panel, "min-width", "0");
+      setImportant(layout.panel, "max-width", "none");
+      setImportant(layout.panel, "height", "auto");
+      setImportant(layout.panel, "max-height", "44dvh");
+    } else {
+      setImportant(layout.panel, "left", "auto");
+      setImportant(layout.panel, "right", "0");
+      setImportant(layout.panel, "top", "0");
+      setImportant(layout.panel, "bottom", "0");
+      setImportant(layout.panel, "width", dimensions.width);
+      setImportant(layout.panel, "min-width", dimensions.minWidth);
+      setImportant(layout.panel, "max-width", dimensions.maxWidth);
+      setImportant(layout.panel, "height", "auto");
+      setImportant(layout.panel, "max-height", "none");
+    }
+
+    setImportant(layout.pane, "position", "relative");
+    setImportant(layout.pane, "left", "0");
+    setImportant(layout.pane, "top", "0");
+    setImportant(layout.pane, "margin", "0");
+    setImportant(layout.pane, "min-width", "0");
+    setImportant(layout.pane, "min-height", "0");
+    setImportant(layout.pane, "overflow", "hidden");
+    if (mobile) {
+      setImportant(layout.pane, "width", "100vw");
+      setImportant(layout.pane, "max-width", "100vw");
+      setImportant(layout.pane, "height", "56dvh");
+      setImportant(layout.pane, "max-height", "56dvh");
+    } else {
+      setImportant(layout.pane, "width", "calc(100vw - " + dimensions.width + ")");
+      setImportant(layout.pane, "max-width", "calc(100vw - " + dimensions.width + ")");
+      setImportant(layout.pane, "height", "100vh");
+      setImportant(layout.pane, "max-height", "100vh");
+    }
+    canvasChain(layout).forEach(function (node) {
+      if (!elements.includes(node)) elements.push(node);
+      setImportant(node, "width", "100%");
+      setImportant(node, "height", "100%");
+      setImportant(node, "min-width", "0");
+      setImportant(node, "min-height", "0");
+      setImportant(node, "max-width", "100%");
+      setImportant(node, "max-height", "100%");
+      setImportant(node, "overflow", "hidden");
+    });
+    setImportant(layout.canvas, "display", "block");
+    setImportant(layout.canvas, "width", "100%");
+    setImportant(layout.canvas, "height", "100%");
+    setImportant(layout.canvas, "max-width", "100%");
+    setImportant(layout.canvas, "max-height", "100%");
+    setImportant(layout.canvas, "object-fit", "contain");
+
+    layout.parent.setAttribute("data-openmaic-responsive-layout", "true");
+    layout.panel.setAttribute("data-openmaic-responsive-panel", "true");
+    layout.panel.setAttribute("data-openmaic-overlay-panel", "true");
+    layout.pane.setAttribute("data-openmaic-responsive-canvas", "true");
+    active = {
+      parent: layout.parent,
+      panel: layout.panel,
+      pane: layout.pane,
+      canvas: layout.canvas,
+      elements: elements,
+      overlay: true
+    };
+  }
+
+  function outsideViewport(element) {
+    var rect = element.getBoundingClientRect();
+    return rect.left < -2 || rect.right > innerWidth + 2 || rect.top < -2 || rect.bottom > innerHeight + 2;
+  }
+
+  function fullyOffscreen(element) {
+    var rect = element.getBoundingClientRect();
+    return rect.right <= 0 || rect.left >= innerWidth || rect.bottom <= 0 || rect.top >= innerHeight;
+  }
+
+  function repairFloatingControls() {
+    restoreTransient();
+
+    var navSelector = "#btn-prev,#btn-next,#prev-btn,#next-btn,#btnPrev,#btnNext";
+    var navButtons = Array.from(document.querySelectorAll(navSelector)).filter(visible);
+    var groups = new Map();
+    navButtons.forEach(function (button) {
+      var group = button.closest("#nav-controls,#step-nav,.nav-controls,.step-nav,#controls,.controls") || button.parentElement;
+      if (!group || group === document.body || group === document.documentElement) return;
+      if (!groups.has(group)) groups.set(group, []);
+      groups.get(group).push(button);
+    });
+    groups.forEach(function (buttons, group) {
+      if (!buttons.some(outsideViewport) && !dockedGroups.has(group)) return;
+      if (!dockedGroups.has(group)) {
+        document.body.appendChild(group);
+        dockedGroups.add(group);
+      }
+      setTransient(group, "position", "fixed");
+      setTransient(group, "left", "50%");
+      setTransient(group, "right", "auto");
+      setTransient(group, "top", "auto");
+      setTransient(group, "bottom", "12px");
+      setTransient(group, "transform", "translateX(-50%)");
+      setTransient(group, "display", "flex");
+      setTransient(group, "flex-wrap", "wrap");
+      setTransient(group, "justify-content", "center");
+      setTransient(group, "gap", "8px");
+      setTransient(group, "width", "auto");
+      setTransient(group, "max-width", "calc(100vw - 24px)");
+      setTransient(group, "min-height", "44px");
+      setTransient(group, "overflow", "visible");
+      setTransient(group, "z-index", "2147483500");
+      buttons.forEach(function (button) {
+        setTransient(button, "position", "relative");
+        setTransient(button, "inset", "auto");
+        setTransient(button, "transform", "none");
+        setTransient(button, "min-height", "40px");
+        setTransient(button, "pointer-events", "auto");
+      });
+    });
+
+    document.querySelectorAll("#close-sidebar,#closeSidebar,#sidebar-close,.sidebar-close").forEach(function (button) {
+      var sidebar = button.closest("#sidebar,.sidebar,#sidePanel");
+      var open = sidebar && (
+        sidebar.classList.contains("open") ||
+        sidebar.classList.contains("show") ||
+        sidebar.classList.contains("active") ||
+        sidebar.classList.contains("expanded")
+      );
+      if (!open && fullyOffscreen(button)) {
+        setTransient(button, "visibility", "hidden");
+        setTransient(button, "pointer-events", "none");
+      }
+    });
+
+    var sidebarToggle = document.querySelector("#sidebarToggle");
+    if (sidebarToggle && visible(sidebarToggle) && fullyOffscreen(sidebarToggle)) {
+      setTransient(sidebarToggle, "position", "fixed");
+      setTransient(sidebarToggle, "left", "12px");
+      setTransient(sidebarToggle, "right", "auto");
+      setTransient(sidebarToggle, "top", "12px");
+      setTransient(sidebarToggle, "bottom", "auto");
+      setTransient(sidebarToggle, "transform", "none");
+      setTransient(sidebarToggle, "z-index", "2147483500");
+    }
+
+    document.querySelectorAll("#pause-btn,.btn-pause").forEach(function (button) {
+      if (!visible(button) || !outsideViewport(button)) return;
+      setTransient(button, "position", "fixed");
+      setTransient(button, "left", "12px");
+      setTransient(button, "right", "auto");
+      setTransient(button, "top", "12px");
+      setTransient(button, "bottom", "auto");
+      setTransient(button, "transform", "none");
+      setTransient(button, "z-index", "2147483500");
+    });
+  }
+
+  function notifyCanvasResize() {
+    requestAnimationFrame(function () {
+      internalResize = true;
+      window.dispatchEvent(new Event("resize"));
+      internalResize = false;
+      requestAnimationFrame(function () {
+        if (
+          active &&
+          active.parent.isConnected &&
+          active.panel.isConnected &&
+          active.pane.isConnected &&
+          active.canvas.isConnected
+        ) {
+          var layout = {
+            parent: active.parent,
+            panel: active.panel,
+            pane: active.pane,
+            canvas: active.canvas,
+            overlay: active.overlay
+          };
+          if (layout.overlay) applyOverlayLayout(layout);
+          else applyLayout(layout);
+        }
+        window.dispatchEvent(new CustomEvent("openmaic:courseware-layout"));
+      });
+    });
+  }
+
+  function refresh() {
+    scheduled = false;
+    var forced = forceRefresh;
+    forceRefresh = false;
+    var layout = findLayout() || findOverlayLayout();
+    if (!layout) {
+      if (active) {
+        restoreActive();
+        notifyCanvasResize();
+      }
+      repairFloatingControls();
+      return;
+    }
+    if (
+      active &&
+      !forced &&
+      active.parent === layout.parent &&
+      active.panel === layout.panel &&
+      active.pane === layout.pane
+    ) return;
+    if (layout.overlay) applyOverlayLayout(layout);
+    else applyLayout(layout);
+    repairFloatingControls();
+    notifyCanvasResize();
+  }
+
+  function schedule(force) {
+    if (internalResize || scheduled) return;
+    if (force === true) forceRefresh = true;
+    scheduled = true;
+    requestAnimationFrame(refresh);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function () { schedule(true); }, { once: true });
+  } else {
+    schedule(true);
+  }
+  window.addEventListener("resize", function () { schedule(true); });
+  document.addEventListener("fullscreenchange", function () { schedule(true); });
+  document.addEventListener("click", function () {
+    setTimeout(function () { schedule(true); }, 0);
+    setTimeout(function () { schedule(true); }, 320);
+  }, true);
+})();
+</script>
+
 </body>
 </html>

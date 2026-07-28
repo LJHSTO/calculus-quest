@@ -46,6 +46,7 @@ async function main() {
   const dbPath = path.join(tmpDir, "static-security.db");
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
+  const adminToken = "static-security-admin-token";
   const logs = [];
   let child;
 
@@ -57,7 +58,8 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
-        NODE_ENV: "development"
+        NODE_ENV: "development",
+        ADMIN_TOKEN: adminToken
       },
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true
@@ -72,7 +74,10 @@ async function main() {
       "/app/main/core.js",
       "/admin/admin.js",
       "/lib/katex.min.js",
+      "/lib/chart.umd.min.js",
       "/lib/interaction-policy.js",
+      "/data/multi-scene-learning-route.json",
+      "/data/knowledge-graph.json",
       "/api/course/multi-scene-learning-route"
     ]) {
       const response = await fetch(baseUrl + pathname);
@@ -103,6 +108,33 @@ async function main() {
 
     const wrongMethod = await fetch(baseUrl + "/styles.css", { method: "POST" });
     assert.equal(wrongMethod.status, 405);
+
+    for (const pathname of [
+      "/data/multi-scene-learning-route.json",
+      "/api/course/multi-scene-learning-route"
+    ]) {
+      const response = await fetch(baseUrl + pathname);
+      assert.equal(response.status, 200, `${pathname} must remain public`);
+      const text = await response.text();
+      assert.ok(!text.includes('"answer":'), `${pathname} must not leak quiz answers`);
+      assert.ok(!text.includes('"analysis":'), `${pathname} must not leak quiz analysis`);
+    }
+
+    const publicRouteHead = await fetch(
+      baseUrl + "/data/multi-scene-learning-route.json",
+      { method: "HEAD" }
+    );
+    assert.equal(publicRouteHead.status, 200);
+    assert.match(publicRouteHead.headers.get("content-type") || "", /application\/json/);
+
+    const flowRouteAnonymous = await fetch(baseUrl + "/api/course/flow-test-route");
+    assert.equal(flowRouteAnonymous.status, 403, "flow-test route must require the admin token");
+    const flowRouteAdmin = await fetch(baseUrl + "/api/course/flow-test-route", {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert.equal(flowRouteAdmin.status, 200, "flow-test route must accept the admin token");
+    const flowRouteText = await flowRouteAdmin.text();
+    assert.ok(flowRouteText.includes('"answer":'), "admin flow-test route keeps the answer key");
 
     console.log("static security tests passed");
   } finally {

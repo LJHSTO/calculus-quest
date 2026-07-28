@@ -5,6 +5,8 @@
   const PARENT = window.parent;
   const HOVER_DELAY_MS = 120;
   const rangeStarts = new WeakMap();
+  const pointerStarts = new Map();
+  const lastParameterInputAt = new WeakMap();
   let picking = false;
   let singleShot = true;
   let hoverTimer = null;
@@ -239,7 +241,10 @@
       ".cq-context-bridge-picking .cq-context-bridge-candidate { outline: 1px dashed rgba(11,143,138,.58) !important; outline-offset: 2px !important; box-shadow:0 0 0 4px rgba(221,245,239,.12) !important; }",
       ".cq-context-bridge-picking canvas.cq-context-bridge-candidate, .cq-context-bridge-picking svg.cq-context-bridge-candidate, .cq-context-bridge-picking figure.cq-context-bridge-candidate, .cq-context-bridge-picking table.cq-context-bridge-candidate { outline:0 !important; box-shadow:inset 0 0 0 2px rgba(11,143,138,.36) !important; }",
       ".cq-context-bridge-hover { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.12) !important; }",
-      ".cq-context-bridge-selected { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.16) !important; }"
+      ".cq-context-bridge-selected { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.16) !important; }",
+      "#overlay:has(.start-btn), .overlay:has(.start-btn), #start-screen:has(.start-btn), #startScreen:has(.start-btn), .start-screen:has(.start-btn), .startScreen:has(.start-btn) { z-index:2147483600 !important; isolation:isolate !important; }",
+      "#overlay:has(.start-btn) .overlay-content, .overlay:has(.start-btn) .overlay-content, #start-screen:has(.start-btn) > *, #startScreen:has(.start-btn) > *, .start-screen:has(.start-btn) > *, .startScreen:has(.start-btn) > * { position:relative !important; z-index:2147483601 !important; }",
+      "#overlay:has(.start-btn) .start-btn, .overlay:has(.start-btn) .start-btn, #start-screen:has(.start-btn) .start-btn, #startScreen:has(.start-btn) .start-btn, .start-screen:has(.start-btn) .start-btn, .startScreen:has(.start-btn) .start-btn { position:relative !important; z-index:2147483602 !important; pointer-events:auto !important; }"
       + "\n::highlight(cq-learning-notes-amber) { background-color:rgba(246,183,60,.22); text-decoration:underline 2px #D28D13; text-underline-offset:3px; }"
       + "\n::highlight(cq-learning-notes-mint) { background-color:rgba(94,210,173,.2); text-decoration:underline 2px #2A9D78; text-underline-offset:3px; }"
       + "\n::highlight(cq-learning-notes-blue) { background-color:rgba(112,176,255,.2); text-decoration:underline 2px #4E8ED9; text-underline-offset:3px; }"
@@ -708,6 +713,110 @@
     });
   }
 
+  function interactionTarget(target) {
+    const element = elementFromNode(target);
+    if (!element || excluded(element)) return null;
+    return contextTarget(element)
+      || element.closest?.("[draggable='true'], .piece, .tile, .card, .draggable, .drag-item, .drag-card")
+      || element;
+  }
+
+  function interactionPayload(element, extra = {}) {
+    return {
+      tag: element?.tagName?.toLowerCase() || "",
+      id: compactText(element?.id || "", 120),
+      className: compactText(className(element), 160),
+      role: compactText(element?.getAttribute?.("role") || "", 80),
+      label: labelFor(element),
+      ...extra
+    };
+  }
+
+  function reportInteraction(eventType, element, extra = {}, persist = true) {
+    if (!element || picking) return;
+    post("cq:interaction", {
+      eventType,
+      persist,
+      contextRef: describe(element, "interaction"),
+      payload: interactionPayload(element, extra)
+    });
+  }
+
+  function reportClick(event) {
+    const target = interactionTarget(event.target);
+    if (!target) return;
+    reportInteraction("interactive_click", target, {
+      detail: Number(event.detail || 0)
+    });
+  }
+
+  function rememberPointerStart(event) {
+    rememberParameterStart(event);
+    const target = interactionTarget(event.target);
+    if (!target) return;
+    pointerStarts.set(event.pointerId || 0, {
+      at: Date.now(),
+      x: event.clientX,
+      y: event.clientY,
+      target
+    });
+  }
+
+  function reportPointerEnd(event) {
+    const key = event.pointerId || 0;
+    const start = pointerStarts.get(key);
+    pointerStarts.delete(key);
+    if (!start) return;
+    const distance = Math.round(Math.hypot(event.clientX - start.x, event.clientY - start.y));
+    if (distance < 8) return;
+    reportInteraction("interactive_drag_end", start.target, {
+      distance,
+      durationMs: Math.max(0, Date.now() - start.at)
+    });
+  }
+
+  function clearPointerStart(event) {
+    pointerStarts.delete(event.pointerId || 0);
+  }
+
+  function reportParameterInput(event) {
+    const target = event.target?.closest?.("input[type='range'], input[type='number'], select");
+    if (!target) return;
+    const now = Date.now();
+    const last = lastParameterInputAt.get(target) || 0;
+    if (now - last < 500) return;
+    lastParameterInputAt.set(target, now);
+    const parameter = parameterName(target);
+    post("cq:interaction", {
+      eventType: "parameter_change",
+      persist: false,
+      contextRef: {
+        ...describe(target, "interaction"),
+        label: parameter,
+        state: {
+          parameter,
+          oldValue: rangeStarts.get(target) || "",
+          newValue: compactText(target.value, 120),
+          min: compactText(target.min, 80),
+          max: compactText(target.max, 80),
+          action: ""
+        }
+      },
+      payload: interactionPayload(target)
+    });
+  }
+
+  function reportGenericChange(event) {
+    const target = interactionTarget(event.target);
+    if (!target || target.matches?.("input[type='range'], input[type='number'], select")) return;
+    reportInteraction("interactive_change", target);
+  }
+
+  function reportSubmit(event) {
+    const target = event.target?.closest?.("form") || interactionTarget(event.target);
+    if (target) reportInteraction("interactive_submit", target);
+  }
+
   window.addEventListener("message", (event) => {
     if (event.source !== PARENT || !event.data || typeof event.data !== "object") return;
     const type = String(event.data.type || "");
@@ -732,9 +841,15 @@
   document.addEventListener("pointerup", scheduleSelectionReport, true);
   document.addEventListener("mouseup", scheduleSelectionReport, true);
   document.addEventListener("keyup", handleSelectionKeyUp, true);
-  document.addEventListener("pointerdown", rememberParameterStart, true);
+  document.addEventListener("click", reportClick, true);
+  document.addEventListener("pointerdown", rememberPointerStart, true);
+  document.addEventListener("pointerup", reportPointerEnd, true);
+  document.addEventListener("pointercancel", clearPointerStart, true);
   document.addEventListener("keydown", rememberParameterStart, true);
+  document.addEventListener("input", reportParameterInput, true);
   document.addEventListener("change", reportParameterCommit, true);
+  document.addEventListener("change", reportGenericChange, true);
+  document.addEventListener("submit", reportSubmit, true);
 
   injectStyle();
   window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));

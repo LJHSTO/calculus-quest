@@ -1,13 +1,17 @@
 (function initKnowledgeAssistant(global) {
   const Core = global.CoursewareContextCore;
   const Notes = global.LearningNotesCore;
+  const Proactive = global.ProactiveLearningCore;
   const root = document.querySelector("#knowledge-assistant-root");
   if (!Core || !Notes || !root) return;
 
   const OPEN_STORAGE_KEY = "calculus-quest-knowledge-assistant-open-v1";
   const LAUNCHER_STORAGE_KEY = "calculus-quest-knowledge-launcher-v1";
   const PANEL_STORAGE_KEY = "calculus-quest-knowledge-panel-position-v1";
+  const NOTE_MIGRATION_STORAGE_PREFIX = "calculus-quest-learning-notes-synced-v2:";
+  const NOTE_PENDING_STORAGE_PREFIX = "calculus-quest-learning-notes-pending-v2:";
   const QUIZ_LOCKED_MESSAGE = "提交本次测验后即可使用知点复盘。";
+  const CONVERSATION_TURN_LIMIT = 30;
   let isOpen = false;
   let isAsking = false;
   let loadingHistory = false;
@@ -28,13 +32,31 @@
   let activeConversationId = "";
   let activeWorkspace = "chat";
   let loadingConversations = false;
+  let historySearch = "";
+  let historyFilter = "current";
+  let historySearchTimer = null;
+  let openConversationMenuId = "";
+  let renamingConversationId = "";
+  let deletingConversationId = "";
+  let pendingAssistantIntent = "";
+  let pendingProactivePrompt = null;
+  let pendingGeneratedDraft = "";
+  let openMessageSourceId = "";
   let editingNoteId = "";
   let selectedNoteColor = "amber";
+  let noteSyncState = "local";
+  let noteSyncRequestId = 0;
   let provider = { id: "mock", live: false, label: "本地引导" };
   let quota = { limit: 30, used: 0, remaining: 30, usageDate: "" };
   let launcherPlacement = Core.normalizeLauncherPlacement();
   let panelPosition = null;
   let suppressLauncherClickUntil = 0;
+  const proactiveCoach = Proactive?.createProactiveCoach?.() || null;
+  let lastPresentedSuggestionId = "";
+  let proactiveTickTimer = null;
+  let proactiveDecision = null;
+  let proactiveDecisionRequest = null;
+  let proactiveCandidateId = "";
 
   try {
     isOpen = localStorage.getItem(OPEN_STORAGE_KEY) === "1";
@@ -49,6 +71,18 @@
 
   root.innerHTML = `
     <div class="knowledge-launcher-shell" data-knowledge-launcher-shell>
+      <aside class="knowledge-proactive-nudge" data-knowledge-proactive hidden role="status" aria-live="polite">
+        <span class="knowledge-proactive-mark" aria-hidden="true"><i></i></span>
+        <div class="knowledge-proactive-copy">
+          <small data-knowledge-proactive-eyebrow>知点留意到</small>
+          <strong data-knowledge-proactive-title></strong>
+          <p data-knowledge-proactive-body></p>
+          <div class="knowledge-proactive-actions">
+            <button type="button" data-knowledge-proactive-accept>带我看看</button>
+            <button type="button" data-knowledge-proactive-dismiss>先不用</button>
+          </div>
+        </div>
+      </aside>
       <button class="knowledge-assistant-launcher" type="button" data-knowledge-open aria-controls="knowledge-assistant-panel" aria-expanded="false" aria-label="打开知点" title="打开知点：围绕当前课件提问">
         <span class="knowledge-launcher-grip" aria-hidden="true"><i></i><i></i><i></i></span>
         <span class="knowledge-pin" aria-hidden="true"><i></i></span>
@@ -139,7 +173,15 @@
             <span>本学习位置</span>
             <strong>历史对话</strong>
           </div>
-          <button type="button" data-knowledge-history-new>创建新对话</button>
+          <button type="button" data-knowledge-history-new>新建</button>
+        </div>
+        <label class="knowledge-history-search">
+          <span aria-hidden="true"></span>
+          <input type="search" data-knowledge-history-search maxlength="120" autocomplete="off" placeholder="搜索这处的对话" aria-label="搜索历史对话">
+        </label>
+        <div class="knowledge-history-filters" role="group" aria-label="对话范围">
+          <button type="button" data-knowledge-history-filter="current" aria-pressed="true">当前</button>
+          <button type="button" data-knowledge-history-filter="archived" aria-pressed="false">已归档</button>
         </div>
         <div class="knowledge-conversation-list" data-knowledge-conversation-list></div>
       </section>
@@ -195,7 +237,7 @@
         <button type="button" data-note-color="pink" aria-label="樱粉色划线" aria-pressed="false"></button>
       </fieldset>
       <footer>
-        <small>Ctrl + Enter 保存 · 仅当前浏览器可见</small>
+        <small class="knowledge-note-sync-status" data-knowledge-note-sync-status>登录后可跨设备保存</small>
         <div>
           <button type="button" class="knowledge-note-delete" data-knowledge-note-delete hidden>删除</button>
           <button type="button" class="knowledge-note-secondary" data-knowledge-note-cancel-footer>取消</button>
@@ -209,6 +251,12 @@
     launcherShell: root.querySelector("[data-knowledge-launcher-shell]"),
     launcher: root.querySelector("[data-knowledge-open]"),
     launcherSubtitle: root.querySelector("[data-knowledge-launcher-subtitle]"),
+    proactive: root.querySelector("[data-knowledge-proactive]"),
+    proactiveEyebrow: root.querySelector("[data-knowledge-proactive-eyebrow]"),
+    proactiveTitle: root.querySelector("[data-knowledge-proactive-title]"),
+    proactiveBody: root.querySelector("[data-knowledge-proactive-body]"),
+    proactiveAccept: root.querySelector("[data-knowledge-proactive-accept]"),
+    proactiveDismiss: root.querySelector("[data-knowledge-proactive-dismiss]"),
     panel: root.querySelector("[data-knowledge-assistant-panel], #knowledge-assistant-panel"),
     panelDragbar: root.querySelector("[data-knowledge-panel-dragbar]"),
     scroll: root.querySelector("[data-knowledge-scroll]"),
@@ -237,6 +285,8 @@
     chatView: root.querySelector("[data-knowledge-chat-view]"),
     historyView: root.querySelector("[data-knowledge-history-view]"),
     historyNew: root.querySelector("[data-knowledge-history-new]"),
+    historySearch: root.querySelector("[data-knowledge-history-search]"),
+    historyFilters: Array.from(root.querySelectorAll("[data-knowledge-history-filter]")),
     conversationList: root.querySelector("[data-knowledge-conversation-list]"),
     form: root.querySelector("[data-knowledge-form]"),
     input: root.querySelector("[data-knowledge-input]"),
@@ -256,7 +306,8 @@
     noteCancel: root.querySelector("[data-knowledge-note-cancel]"),
     noteCancelFooter: root.querySelector("[data-knowledge-note-cancel-footer]"),
     noteDelete: root.querySelector("[data-knowledge-note-delete]"),
-    noteSave: root.querySelector("[data-knowledge-note-save]")
+    noteSave: root.querySelector("[data-knowledge-note-save]"),
+    noteSyncStatus: root.querySelector("[data-knowledge-note-sync-status]")
   };
 
   function isSignedInNow() {
@@ -562,12 +613,379 @@
     return hasPrecisePointer ? els.input : els.panel;
   }
 
+  function notePendingOperations(ownerKey = noteOwnerKey()) {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(`${NOTE_PENDING_STORAGE_PREFIX}${ownerKey}`) || "{}");
+      return {
+        upsertIds: Array.from(new Set(Array.isArray(parsed.upsertIds) ? parsed.upsertIds : []))
+          .map((id) => String(id || "").slice(0, 180))
+          .filter(Boolean),
+        deletedIds: Array.from(new Set(Array.isArray(parsed.deletedIds) ? parsed.deletedIds : []))
+          .map((id) => String(id || "").slice(0, 180))
+          .filter(Boolean)
+      };
+    } catch {
+      return { upsertIds: [], deletedIds: [] };
+    }
+  }
+
+  function saveNotePendingOperations(operations, ownerKey = noteOwnerKey()) {
+    const key = `${NOTE_PENDING_STORAGE_PREFIX}${ownerKey}`;
+    if (!operations.upsertIds.length && !operations.deletedIds.length) {
+      localStorage.removeItem(key);
+      return;
+    }
+    localStorage.setItem(key, JSON.stringify(operations));
+  }
+
+  function markNotePending(noteId, action, ownerKey = noteOwnerKey()) {
+    const operations = notePendingOperations(ownerKey);
+    const id = String(noteId || "");
+    operations.upsertIds = operations.upsertIds.filter((item) => item !== id);
+    operations.deletedIds = operations.deletedIds.filter((item) => item !== id);
+    if (action === "delete") operations.deletedIds.push(id);
+    else operations.upsertIds.push(id);
+    saveNotePendingOperations(operations, ownerKey);
+  }
+
+  function clearNotePending(noteId, ownerKey = noteOwnerKey()) {
+    const operations = notePendingOperations(ownerKey);
+    operations.upsertIds = operations.upsertIds.filter((item) => item !== noteId);
+    operations.deletedIds = operations.deletedIds.filter((item) => item !== noteId);
+    saveNotePendingOperations(operations, ownerKey);
+  }
+
+  function syncProactiveUnit(meta = courseMeta(), options = {}) {
+    if (!proactiveCoach || !meta.unitId) return;
+    const current = proactiveCoach.getCurrentUnit();
+    if (current?.unitId === meta.unitId && options.force !== true) return;
+    proactiveCoach.consume({
+      eventType: "unit_enter",
+      unitId: meta.unitId,
+      unitLabel: meta.knowledgePointLabel || meta.unitLabel,
+      unitType: meta.unitType,
+      sceneType: meta.sceneType,
+      data: {}
+    }, Date.now());
+  }
+
+  function learningViewActive() {
+    const activeView = document.querySelector(".view.active");
+    return !activeView || activeView.id === "learn-view";
+  }
+
+  function proactiveSuggestionVisible(suggestion, meta = courseMeta()) {
+    return Boolean(
+      suggestion
+      && suggestion.unitId === meta.unitId
+      && meta.supported
+      && isSignedInNow()
+      && !quizAssistantLocked(meta)
+      && !isOpen
+      && !document.hidden
+      && learningViewActive()
+    );
+  }
+
+  function renderProactiveSuggestion() {
+    const suggestion = proactiveDecision;
+    const visible = proactiveSuggestionVisible(suggestion);
+    els.proactive.hidden = !visible;
+    root.classList.toggle("has-proactive-nudge", visible);
+    if (!visible) return;
+    els.proactiveEyebrow.textContent = suggestion.eyebrow || "知点留意到";
+    els.proactiveTitle.textContent = suggestion.title || "这里可能值得停一下";
+    els.proactiveBody.textContent = suggestion.body || "先找一个观察点，再决定是否展开解释。";
+    els.proactiveAccept.textContent = suggestion.actionLabel || "带我看看";
+    if (lastPresentedSuggestionId !== suggestion.id) {
+      lastPresentedSuggestionId = suggestion.id;
+      track("knowledge_proactive_suggestion_shown", {
+        suggestionKind: suggestion.kind,
+        unitId: suggestion.unitId
+      });
+    }
+  }
+
+  function executeProactiveAction(suggestion) {
+    const meta = courseMeta();
+    const allowedActions = ["observe_change", "review_mistake", "self_explain", "ask_clarification"];
+    const studentReplyActions = new Set(["ask_clarification", "review_mistake"]);
+    const expectsStudentReply = studentReplyActions.has(suggestion?.action);
+    const preparedCopy = expectsStudentReply
+      ? String(suggestion?.assistantPrompt || "").trim()
+      : String(suggestion?.draftQuestion || "").trim();
+    if (
+      !preparedCopy
+      || !allowedActions.includes(suggestion.action)
+      || !meta.supported
+      || quizAssistantLocked(meta)
+    ) return false;
+    if (suggestion.action === "observe_change" && suggestion.contextMode === "recent_interaction") {
+      const ref = CoursewareContext.captureRecentInteraction?.();
+      if (ref?.unitId === meta.unitId) {
+        activeContext = Core.normalizeContextRef(ref, meta);
+        CoursewareContext.restoreContext(activeContext);
+      }
+    }
+    activeWorkspace = "chat";
+    if (expectsStudentReply) {
+      pendingAssistantIntent = "";
+      pendingGeneratedDraft = "";
+      pendingProactivePrompt = {
+        id: suggestion.id || `proactive-${Date.now()}`,
+        content: preparedCopy,
+        action: suggestion.action,
+        unitId: meta.unitId,
+        sceneType: meta.sceneType,
+        interventionId: suggestion.interventionId || "",
+        contextSummary: suggestion.contextSummary || "",
+        replyOptions: Array.isArray(suggestion.replyOptions)
+          ? suggestion.replyOptions.slice(0, 4)
+          : []
+      };
+      els.input.value = "";
+      setStatus(
+        suggestion.action === "review_mistake"
+          ? "先回答上面的诊断问题；可点选一个起点，也可以自己写。"
+          : "先回答上面的问题即可；是否发送仍由你决定。",
+        ""
+      );
+    } else {
+      pendingProactivePrompt = null;
+      pendingAssistantIntent = suggestion.action === "self_explain" ? "self_check" : "";
+      els.input.value = String(suggestion.draftQuestion);
+      pendingGeneratedDraft = els.input.value;
+      setStatus(`${suggestion.why || "知点根据刚才的学习状态准备了一个起点"} 草稿可以修改，是否发送由你决定。`, "");
+    }
+    resizeComposer();
+    setOpen(true, { focus: false, preserveProactiveSuggestion: true });
+    render();
+    window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
+    return true;
+  }
+
+  function acceptProactiveSuggestion() {
+    const suggestion = proactiveDecision;
+    if (!suggestion || !executeProactiveAction(suggestion)) return false;
+    proactiveCoach.resolve("accept", Date.now());
+    proactiveDecision = null;
+    proactiveCandidateId = "";
+    renderProactiveSuggestion();
+    track("knowledge_proactive_suggestion_accepted", {
+      suggestionKind: suggestion.kind,
+      action: suggestion.action,
+      confidence: suggestion.confidence,
+      unitId: suggestion.unitId
+    });
+    return true;
+  }
+
+  function dismissProactiveSuggestion(reason = "dismiss") {
+    const suggestion = proactiveCoach?.resolve?.(reason, Date.now());
+    if (!suggestion) return false;
+    proactiveDecisionRequest?.abort();
+    proactiveDecisionRequest = null;
+    proactiveDecision = null;
+    proactiveCandidateId = "";
+    renderProactiveSuggestion();
+    track("knowledge_proactive_suggestion_dismissed", {
+      suggestionKind: suggestion.kind,
+      unitId: suggestion.unitId,
+      reason
+    });
+    return true;
+  }
+
+  function proactiveContextRef(candidate, meta) {
+    if (candidate?.kind === "repeated_parameter") {
+      const recent = CoursewareContext.captureRecentInteraction?.();
+      if (recent?.unitId === meta.unitId) return recent;
+    }
+    return {
+      kind: meta.isQuiz ? "quiz" : "unit",
+      scope: meta.isQuiz ? "quiz" : "lesson",
+      chapterId: meta.chapterId,
+      unitId: meta.unitId,
+      unitLabel: meta.unitLabel,
+      knowledgePointId: meta.knowledgePointId,
+      knowledgePointLabel: meta.knowledgePointLabel,
+      confidence: "high"
+    };
+  }
+
+  async function requestProactiveDecision(candidate) {
+    const meta = courseMeta();
+    if (!candidate || !proactiveSuggestionVisible({ ...candidate, intervene: true }, meta)) return false;
+    if (proactiveCandidateId === candidate.id && (proactiveDecision || proactiveDecisionRequest)) return true;
+    proactiveDecisionRequest?.abort();
+    const controller = new AbortController();
+    proactiveDecisionRequest = controller;
+    proactiveCandidateId = candidate.id;
+    proactiveDecision = null;
+    renderProactiveSuggestion();
+    try {
+      const response = await fetch("api/learning/assistant/intervention", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          unitId: meta.unitId,
+          sceneType: meta.sceneType,
+          signal: {
+            kind: candidate.kind,
+            parameter: candidate.parameter,
+            oldValue: candidate.oldValue,
+            newValue: candidate.newValue,
+            incorrect: candidate.incorrect,
+            pendingReview: candidate.pendingReview,
+            questionCount: candidate.questionCount,
+            dwellSeconds: candidate.dwellSeconds,
+            dismissStreak: candidate.dismissStreak
+          },
+          contextRef: proactiveContextRef(candidate, meta)
+        }),
+        signal: controller.signal
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        if (payload.code === "assistant_intervention_budget_exhausted") {
+          proactiveCoach.resolve("agent-silent", Date.now());
+          proactiveCandidateId = "";
+          return false;
+        }
+        throw new Error(payload.message || "主动判断暂时不可用。");
+      }
+      if (proactiveCoach.getSuggestion()?.id !== candidate.id) return false;
+      const decision = payload.decision || {};
+      if (!decision.intervene || decision.action === "stay_silent") {
+        proactiveCoach.resolve("agent-silent", Date.now());
+        proactiveCandidateId = "";
+        proactiveDecision = null;
+        renderProactiveSuggestion();
+        track("knowledge_proactive_agent_silent", { suggestionKind: candidate.kind });
+        return true;
+      }
+      proactiveDecision = {
+        ...decision,
+        id: candidate.id,
+        kind: candidate.kind,
+        unitId: candidate.unitId,
+        interventionId: payload.interventionId || ""
+      };
+      renderProactiveSuggestion();
+      track("knowledge_proactive_agent_decided", {
+        suggestionKind: candidate.kind,
+        action: decision.action,
+        confidence: decision.confidence,
+        fallback: Boolean(payload.fallback)
+      });
+      return true;
+    } catch (error) {
+      if (error.name === "AbortError") return false;
+      if (proactiveCoach.getSuggestion()?.id !== candidate.id) return false;
+      if (candidate.kind !== "repeated_parameter") {
+        proactiveCoach.resolve("agent-silent", Date.now());
+        proactiveCandidateId = "";
+        proactiveDecision = null;
+        renderProactiveSuggestion();
+        track("knowledge_proactive_fallback_silent", {
+          suggestionKind: candidate.kind,
+          reason: "server_context_unavailable"
+        });
+        return false;
+      }
+      proactiveDecision = {
+        ...candidate,
+        action: "observe_change",
+        intervene: true,
+        draftQuestion: candidate.question,
+        assistantPrompt: "",
+        replyOptions: [],
+        contextSummary: "",
+        interactionMode: "student_draft",
+        why: "网络暂时不可用，已采用本地学习策略。",
+        confidence: 0.5
+      };
+      renderProactiveSuggestion();
+      return false;
+    } finally {
+      if (proactiveDecisionRequest === controller) proactiveDecisionRequest = null;
+    }
+  }
+
+  function considerProactiveSuggestion() {
+    const candidate = proactiveCoach?.getSuggestion?.() || null;
+    if (!candidate) {
+      proactiveDecisionRequest?.abort();
+      proactiveDecisionRequest = null;
+      proactiveDecision = null;
+      proactiveCandidateId = "";
+      renderProactiveSuggestion();
+      return;
+    }
+    requestProactiveDecision(candidate);
+  }
+
+  function consumeProactiveSignal(event) {
+    const signal = event?.detail?.event;
+    if (!proactiveCoach || !signal) return;
+    proactiveCoach.consume(signal);
+    if (signal.eventType === "quiz_submit_success") {
+      window.setTimeout(() => {
+        scheduleSync();
+        considerProactiveSuggestion();
+      }, 0);
+      return;
+    }
+    considerProactiveSuggestion();
+  }
+
+  function runProactiveTick() {
+    const meta = courseMeta();
+    if (
+      !proactiveCoach
+      || isOpen
+      || document.hidden
+      || !learningViewActive()
+      || !isSignedInNow()
+      || !meta.supported
+      || quizAssistantLocked(meta)
+    ) return;
+    syncProactiveUnit(meta);
+    proactiveCoach.tick(Date.now());
+    considerProactiveSuggestion();
+  }
+
   function setOpen(next, options = {}) {
     const nextOpen = Boolean(next);
+    const wasOpen = isOpen;
     if (nextOpen && quizAssistantLocked()) {
       setStatus(QUIZ_LOCKED_MESSAGE, "warning");
       renderLauncherAvailability();
       return false;
+    }
+    if (nextOpen && !wasOpen && options.preserveProactiveSuggestion !== true) {
+      if (!dismissProactiveSuggestion("assistant-open")) {
+        const meta = courseMeta();
+        proactiveCoach?.consume?.({
+          eventType: "assistant_open",
+          unitId: meta.unitId,
+          unitType: meta.unitType,
+          sceneType: meta.sceneType
+        }, Date.now());
+      }
+    }
+    if (!nextOpen && wasOpen) {
+      const meta = courseMeta();
+      proactiveCoach?.consume?.({
+        eventType: "assistant_close",
+        unitId: meta.unitId,
+        unitType: meta.unitType,
+        sceneType: meta.sceneType
+      }, Date.now());
     }
     isOpen = nextOpen;
     root.classList.toggle("is-open", isOpen);
@@ -654,6 +1072,138 @@
     return notes;
   }
 
+  function renderNoteSyncStatus() {
+    const isUnsavedDraft = !els.noteEditor.hidden && !editingNoteId;
+    const copy = isUnsavedDraft
+      ? isSignedInNow() ? "保存后同步到账号" : "保存后保存在本机"
+      : {
+          local: isSignedInNow() ? "已保存在本机" : "登录后可跨设备保存",
+          syncing: "正在同步…",
+          synced: "已同步到账号",
+          pending: "已保存在本机，等待重试"
+        }[noteSyncState] || "已保存在本机";
+    els.noteSyncStatus.textContent = copy;
+    els.noteSyncStatus.dataset.state = isUnsavedDraft ? "draft" : noteSyncState;
+  }
+
+  function setNoteSyncState(next) {
+    noteSyncState = next;
+    renderNoteSyncStatus();
+  }
+
+  async function syncLearningNotes(meta = courseMeta()) {
+    const ownerKey = noteOwnerKey();
+    const requestId = ++noteSyncRequestId;
+    if (!isSignedInNow() || !meta.unitId || !meta.supported) {
+      setNoteSyncState("local");
+      syncNoteHighlights();
+      return false;
+    }
+    setNoteSyncState("syncing");
+    const migrationKey = `${NOTE_MIGRATION_STORAGE_PREFIX}${ownerKey}`;
+    const needsMigration = localStorage.getItem(migrationKey) !== "1";
+    const pendingOperations = notePendingOperations(ownerKey);
+    const needsPush = needsMigration
+      || pendingOperations.upsertIds.length > 0
+      || pendingOperations.deletedIds.length > 0;
+    try {
+      const response = await fetch(needsPush
+        ? "api/learning/notes/sync"
+        : `api/learning/notes?unitId=${encodeURIComponent(meta.unitId)}`, {
+        method: needsPush ? "POST" : "GET",
+        headers: {
+          ...(needsPush ? { "Content-Type": "application/json" } : {}),
+          Authorization: `Bearer ${state.authToken}`
+        },
+        ...(needsPush ? {
+          body: JSON.stringify({
+            unitId: meta.unitId,
+            notes: Notes.notesFor(localStorage, { ownerKey }),
+            deletedIds: pendingOperations.deletedIds
+          })
+        } : {})
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) throw new Error(payload.message || "笔记同步失败。");
+      if (requestId !== noteSyncRequestId) return false;
+      Notes.replaceOwnerUnitNotes(localStorage, ownerKey, meta.unitId, payload.notes || []);
+      if (needsPush) {
+        localStorage.setItem(migrationKey, "1");
+        saveNotePendingOperations({ upsertIds: [], deletedIds: [] }, ownerKey);
+      }
+      setNoteSyncState("synced");
+      syncNoteHighlights();
+      return true;
+    } catch (error) {
+      if (requestId !== noteSyncRequestId) return false;
+      setNoteSyncState("pending");
+      console.warn("Learning note sync deferred:", error.message);
+      syncNoteHighlights();
+      return false;
+    }
+  }
+
+  async function persistLearningNote(note) {
+    if (!note || !isSignedInNow()) {
+      setNoteSyncState("local");
+      return false;
+    }
+    const requestId = ++noteSyncRequestId;
+    markNotePending(note.id, "upsert");
+    setNoteSyncState("syncing");
+    try {
+      const response = await fetch(`api/learning/notes/${encodeURIComponent(note.id)}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify(note)
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) throw new Error(payload.message || "笔记同步失败。");
+      if (requestId !== noteSyncRequestId) return false;
+      Notes.upsertNote(localStorage, { ...payload.note, ownerKey: noteOwnerKey() });
+      clearNotePending(note.id);
+      setNoteSyncState("synced");
+      syncNoteHighlights();
+      return true;
+    } catch (error) {
+      if (requestId !== noteSyncRequestId) return false;
+      setNoteSyncState("pending");
+      console.warn("Learning note save deferred:", error.message);
+      return false;
+    }
+  }
+
+  async function deleteLearningNote(note) {
+    if (!note || !isSignedInNow()) {
+      setNoteSyncState("local");
+      return false;
+    }
+    const requestId = ++noteSyncRequestId;
+    markNotePending(note.id, "delete");
+    setNoteSyncState("syncing");
+    try {
+      const response = await fetch(`api/learning/notes/${encodeURIComponent(note.id)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${state.authToken}` }
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) throw new Error(payload.message || "笔记删除失败。");
+      if (requestId !== noteSyncRequestId) return false;
+      clearNotePending(note.id);
+      setNoteSyncState("synced");
+      return true;
+    } catch (error) {
+      if (requestId !== noteSyncRequestId) return false;
+      setNoteSyncState("pending");
+      syncNoteHighlights();
+      console.warn("Learning note deletion deferred:", error.message);
+      return false;
+    }
+  }
+
   function renderProvider() {
     els.provider.textContent = provider.label || (provider.live ? "AI 助教" : "本地引导");
     els.provider.dataset.live = provider.live ? "true" : "false";
@@ -692,11 +1242,14 @@
   }
 
   function conversationNode(conversation) {
+    const card = document.createElement("article");
+    card.className = "knowledge-conversation-card";
+    card.dataset.conversationId = conversation.id;
+    card.classList.toggle("is-active", conversation.id === activeConversationId);
+    card.classList.toggle("has-open-menu", openConversationMenuId === conversation.id);
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "knowledge-conversation-card";
-    button.dataset.conversationId = conversation.id;
-    button.classList.toggle("is-active", conversation.id === activeConversationId);
+    button.className = "knowledge-conversation-open";
     const title = document.createElement("strong");
     title.textContent = conversation.title || "新对话";
     const meta = document.createElement("span");
@@ -710,7 +1263,97 @@
       activeWorkspace = "chat";
       loadHistory(courseMeta(), conversation.id);
     });
-    return button;
+
+    const menuShell = document.createElement("div");
+    menuShell.className = "knowledge-conversation-menu-shell";
+    menuShell.setAttribute("data-conversation-menu-shell", "true");
+    const menuToggle = document.createElement("button");
+    menuToggle.type = "button";
+    menuToggle.className = "knowledge-conversation-menu-toggle";
+    menuToggle.setAttribute("aria-label", `管理对话：${conversation.title || "新对话"}`);
+    menuToggle.setAttribute("aria-expanded", openConversationMenuId === conversation.id ? "true" : "false");
+    menuToggle.textContent = "⋯";
+    menuToggle.addEventListener("click", () => {
+      openConversationMenuId = openConversationMenuId === conversation.id ? "" : conversation.id;
+      deletingConversationId = "";
+      renderConversations();
+    });
+    menuShell.appendChild(menuToggle);
+    if (openConversationMenuId === conversation.id) {
+      const menu = document.createElement("div");
+      menu.className = "knowledge-conversation-menu";
+      menu.setAttribute("role", "menu");
+      const archiveAction = historyFilter === "archived"
+        ? '<button type="button" role="menuitem" data-conversation-action="restore">恢复</button>'
+        : '<button type="button" role="menuitem" data-conversation-action="archive">归档</button>';
+      menu.innerHTML = `
+        <button type="button" role="menuitem" data-conversation-action="rename">重命名</button>
+        ${archiveAction}
+        <button type="button" role="menuitem" data-conversation-action="delete">删除</button>
+      `;
+      menu.addEventListener("click", (event) => {
+        const action = event.target.closest?.("[data-conversation-action]")?.dataset.conversationAction;
+        if (!action) return;
+        if (action === "rename") {
+          renamingConversationId = conversation.id;
+          openConversationMenuId = "";
+          renderConversations();
+          window.setTimeout(() => {
+            els.conversationList.querySelector("[data-conversation-rename-input]")?.focus();
+          }, 0);
+          return;
+        }
+        if (action === "delete") {
+          deletingConversationId = conversation.id;
+          openConversationMenuId = "";
+          renderConversations();
+          return;
+        }
+        updateConversation(conversation.id, { action });
+      });
+      menuShell.appendChild(menu);
+    }
+    card.append(button, menuShell);
+
+    if (renamingConversationId === conversation.id) {
+      const form = document.createElement("form");
+      form.className = "knowledge-conversation-rename";
+      form.innerHTML = `
+        <label>对话名称<input data-conversation-rename-input maxlength="80"></label>
+        <button type="button" data-conversation-rename-cancel>取消</button>
+        <button type="submit">保存</button>
+      `;
+      form.querySelector("input").value = conversation.title || "新对话";
+      form.querySelector("[data-conversation-rename-cancel]").addEventListener("click", () => {
+        renamingConversationId = "";
+        renderConversations();
+      });
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const nextTitle = form.querySelector("input").value.trim();
+        if (nextTitle) updateConversation(conversation.id, { action: "rename", title: nextTitle });
+      });
+      card.appendChild(form);
+    }
+
+    if (deletingConversationId === conversation.id) {
+      const confirmation = document.createElement("div");
+      confirmation.className = "knowledge-conversation-confirm";
+      confirmation.innerHTML = `
+        <p><strong>删除这段对话？</strong><span>删除后无法恢复。</span></p>
+        <button type="button" data-conversation-delete-cancel>保留</button>
+        <button type="button" data-conversation-delete-confirm>删除</button>
+      `;
+      confirmation.querySelector("[data-conversation-delete-cancel]").addEventListener("click", () => {
+        deletingConversationId = "";
+        renderConversations();
+      });
+      confirmation.querySelector("[data-conversation-delete-confirm]").addEventListener("click", () => {
+        deleteConversation(conversation.id);
+      });
+      card.appendChild(confirmation);
+    }
+    return card;
   }
 
   function renderConversations() {
@@ -725,7 +1368,13 @@
     if (!conversations.length) {
       const empty = document.createElement("div");
       empty.className = "knowledge-conversation-empty";
-      empty.innerHTML = "<strong>这里还没有历史对话</strong><span>提出第一个问题后，会按对话整理在这里。</span>";
+      const emptyTitle = historySearch
+        ? "没有找到相关对话"
+        : historyFilter === "archived" ? "还没有归档对话" : "这里还没有历史对话";
+      const emptyCopy = historySearch
+        ? "换一个关键词，或清空搜索后再看。"
+        : historyFilter === "archived" ? "暂时不用的对话可以从“当前”中归档到这里。" : "提出第一个问题后，会按对话整理在这里。";
+      empty.innerHTML = `<strong>${emptyTitle}</strong><span>${emptyCopy}</span>`;
       els.conversationList.appendChild(empty);
       return;
     }
@@ -738,16 +1387,74 @@
     const historyActive = activeWorkspace === "history";
     els.chatView.hidden = historyActive;
     els.historyView.hidden = !historyActive;
+    els.form.hidden = historyActive;
     els.historyToggle.setAttribute("aria-pressed", historyActive ? "true" : "false");
     els.historyToggle.setAttribute("aria-label", historyActive ? "返回当前对话" : "查看历史对话");
     els.historyToggle.title = historyActive ? "返回当前对话" : "查看历史对话";
+    els.historyFilters.forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.knowledgeHistoryFilter === historyFilter ? "true" : "false");
+    });
     renderConversations();
+  }
+
+  function assistantIntentCopy(intent) {
+    return {
+      rephrase: "请换一种方式解释刚才这部分，尽量更直观一些。",
+      practice: "请围绕刚才的内容出一道小题，先不要给答案。"
+    }[intent] || "";
+  }
+
+  function questionMatchesAssistantIntent(intent, question = "") {
+    const source = String(question || "").trim();
+    if (!source) return false;
+    if (intent === "self_check") return /我理解|我的理解|我认为|是不是|对不对|这样理解/.test(source);
+    if (intent === "rephrase") return /换|另一种|解释|讲|例子|类比|直观|角度/.test(source);
+    if (intent === "practice") return /题|练习|考考|测试|作答/.test(source);
+    return false;
+  }
+
+  function usableProactivePrompt(prompt, meta = courseMeta()) {
+    return Boolean(
+      prompt
+      && String(prompt.content || "").trim()
+      && String(prompt.interventionId || "").trim()
+      && (!prompt.unitId || prompt.unitId === meta.unitId)
+    );
+  }
+
+  function beginAssistantIntent(intent) {
+    const copy = intent === "self_check" ? "我理解为：" : assistantIntentCopy(intent);
+    if (!copy) return;
+    pendingProactivePrompt = null;
+    pendingAssistantIntent = intent;
+    els.input.value = copy;
+    pendingGeneratedDraft = copy;
+    resizeComposer();
+    setStatus(intent === "self_check"
+      ? "用一句话写出你的理解，知点会帮你检查关键关系。"
+      : "已放入输入框，你可以修改后再决定是否发送。", "");
+    els.input.focus({ preventScroll: true });
+    track("knowledge_followup_draft_selected", { assistantIntent: intent });
+  }
+
+  function conversationTurnCount() {
+    return messages.reduce((count, message) => count + (message.role === "user" ? 1 : 0), 0);
+  }
+
+  function conversationAtLimit() {
+    return conversationTurnCount() >= CONVERSATION_TURN_LIMIT;
   }
 
   function renderQuickQuestions() {
     const meta = courseMeta();
     els.quick.replaceChildren();
-    if (quizAssistantLocked(meta)) {
+    if (
+      quizAssistantLocked(meta)
+      || conversationAtLimit()
+      || messages.length > 0
+      || pendingProactivePrompt
+      || loadingHistory
+    ) {
       els.quick.hidden = true;
       return;
     }
@@ -762,15 +1469,262 @@
       button.type = "button";
       button.textContent = question;
       button.addEventListener("click", () => {
+        pendingProactivePrompt = null;
+        pendingAssistantIntent = "";
         els.input.value = question;
+        pendingGeneratedDraft = question;
         resizeComposer();
-        submitQuestion();
+        setStatus("问题已放入输入框，你可以修改后再决定是否发送。", "");
+        els.input.focus({ preventScroll: true });
+        track("knowledge_opening_draft_selected", { questionLength: question.length });
       });
       els.quick.appendChild(button);
     });
   }
 
-  function messageNode(message) {
+  function proactivePromptNode(prompt, options = {}) {
+    const article = document.createElement("article");
+    article.className = "knowledge-message assistant knowledge-proactive-question";
+    article.dataset.proactivePromptId = prompt?.id || "";
+    const heading = document.createElement("div");
+    const label = document.createElement("strong");
+    label.textContent = "知点想先了解";
+    const badge = document.createElement("small");
+    badge.textContent = "等你回答";
+    heading.append(label, badge);
+    const body = document.createElement("p");
+    body.textContent = prompt?.content || "";
+    article.append(heading, body);
+    if (prompt?.contextSummary) {
+      const evidence = document.createElement("div");
+      evidence.className = "knowledge-proactive-evidence";
+      evidence.setAttribute("aria-label", "本次复盘依据");
+      evidence.textContent = prompt.contextSummary;
+      article.appendChild(evidence);
+    }
+    if (Array.isArray(prompt?.replyOptions) && prompt.replyOptions.length) {
+      const replyOptions = document.createElement("div");
+      replyOptions.className = "knowledge-proactive-reply-options";
+      replyOptions.setAttribute("aria-label", "选择一个回答起点");
+      const optionsHint = document.createElement("span");
+      optionsHint.textContent = "选一个最接近的情况，仅放入输入框";
+      replyOptions.appendChild(optionsHint);
+      prompt.replyOptions.slice(0, 4).forEach((item) => {
+        const option = String(item || "").trim();
+        if (!option) return;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = option;
+        button.addEventListener("click", () => {
+          els.input.value = option;
+          pendingGeneratedDraft = option;
+          resizeComposer();
+          setStatus("已放入输入框，你可以补充后再决定是否发送。", "");
+          els.input.focus({ preventScroll: true });
+          track("knowledge_proactive_reply_option_selected", {
+            action: prompt?.action || "",
+            option
+          });
+        });
+        replyOptions.appendChild(button);
+      });
+      article.appendChild(replyOptions);
+    }
+    if (options.dismissible) {
+      const footer = document.createElement("footer");
+      const hint = document.createElement("span");
+      hint.textContent = "直接在下方写下你的想法";
+      const dismiss = document.createElement("button");
+      dismiss.type = "button";
+      dismiss.textContent = "改为自由提问";
+      dismiss.addEventListener("click", () => {
+        if (prompt?.sourceMessageId) {
+          const sourceMessage = messages.find((message) => message.id === prompt.sourceMessageId);
+          if (sourceMessage) {
+            requestQuizReviewAction(sourceMessage, "stop");
+            return;
+          }
+        }
+        if (pendingGeneratedDraft && els.input.value === pendingGeneratedDraft) {
+          els.input.value = "";
+          resizeComposer();
+        }
+        pendingProactivePrompt = null;
+        pendingGeneratedDraft = "";
+        setStatus("可以直接提出你想问的问题。", "");
+        render();
+        window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
+        track("knowledge_proactive_reply_skipped", {
+          action: prompt?.action || "ask_clarification",
+          unitId: prompt?.unitId || courseMeta().unitId
+        });
+      });
+      footer.append(hint, dismiss);
+      article.appendChild(footer);
+    }
+    return article;
+  }
+
+  function setMessageQuizReviewProgress(message, progress) {
+    if (!message || !progress) return;
+    message.guidance = {
+      ...(message.guidance || {}),
+      quizReviewProgress: { ...progress }
+    };
+    message.quizReviewFollowUp = { ...progress };
+  }
+
+  async function requestQuizReviewAction(message, action, panel = null) {
+    const meta = courseMeta();
+    if (!activeConversationId || !message?.id || !meta.unitId) {
+      setStatus("这段复盘状态暂时不可用，请重新打开当前对话。", "warning");
+      return false;
+    }
+    if (action === "next") {
+      const existingDraft = els.input.value.trim();
+      if (existingDraft && existingDraft !== pendingGeneratedDraft) {
+        setStatus("输入框里还有未发送的内容；先发送或清空后再进入下一题。", "warning");
+        els.input.focus({ preventScroll: true });
+        return false;
+      }
+    }
+    panel?.classList.add("is-loading");
+    panel?.querySelectorAll("button").forEach((button) => {
+      button.disabled = true;
+    });
+    try {
+      const response = await fetch("api/learning/assistant/quiz-review/action", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          unitId: meta.unitId,
+          sceneType: meta.sceneType,
+          conversationId: activeConversationId,
+          assistantMessageId: message.id,
+          action
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.message || "这一步复盘暂时无法继续。");
+      }
+      if (payload.progress) setMessageQuizReviewProgress(message, payload.progress);
+      if (action === "stop") {
+        if (pendingProactivePrompt?.sourceMessageId === message.id) {
+          pendingProactivePrompt = null;
+        }
+        setStatus("本轮复盘已结束；你仍可围绕当前测验自由提问。", "");
+        render();
+        els.input.focus({ preventScroll: true });
+        track("knowledge_quiz_review_stopped", {
+          reviewIndex: payload.progress?.reviewIndex,
+          reviewTotal: payload.progress?.reviewTotal
+        });
+        return true;
+      }
+      if (payload.done) {
+        pendingProactivePrompt = null;
+        setStatus(payload.completionMessage || "本轮错题已复盘完成。", "");
+        render();
+        els.input.focus({ preventScroll: true });
+        track("knowledge_quiz_review_completed", {
+          reviewTotal: payload.progress?.reviewTotal
+        });
+        return true;
+      }
+      if (!payload.prompt?.interventionId) {
+        throw new Error("复盘上下文没有完整恢复，请稍后再试。");
+      }
+      pendingAssistantIntent = "";
+      pendingGeneratedDraft = "";
+      pendingProactivePrompt = {
+        ...payload.prompt,
+        visible: payload.prompt.visible !== false
+      };
+      if (action === "next") {
+        els.input.value = "";
+        resizeComposer();
+        setStatus("下一道错题已就位。先回答上面的诊断问题，再决定是否发送。", "");
+      } else {
+        setStatus("可以继续追问这一题；写好后由你决定是否发送。", "");
+      }
+      render();
+      window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
+      track(`knowledge_quiz_review_${action}`, {
+        reviewIndex: payload.progress?.targetReviewIndex,
+        reviewTotal: payload.progress?.reviewTotal
+      });
+      return true;
+    } catch (error) {
+      setStatus(error.message || "这一步复盘暂时无法继续。", "error");
+      return false;
+    } finally {
+      panel?.classList.remove("is-loading");
+      panel?.querySelectorAll("button").forEach((button) => {
+        button.disabled = false;
+      });
+    }
+  }
+
+  function quizReviewFollowUpNode(message, { actionable = true } = {}) {
+    const followUp = message?.quizReviewFollowUp;
+    const progress = followUp || message?.guidance?.quizReviewProgress || null;
+    if (!progress || !actionable) return null;
+    const panel = document.createElement("div");
+    panel.className = "knowledge-quiz-review-follow-up";
+    if (progress.done || progress.status === "completed") {
+      panel.classList.add("is-complete");
+      const complete = document.createElement("strong");
+      complete.textContent = progress.completionMessage
+        || `本轮 ${progress.reviewTotal || 0} 道错题已复盘完成。`;
+      panel.appendChild(complete);
+      return panel;
+    }
+    if ((progress.status || "awaiting_choice") !== "awaiting_choice") return null;
+    const reviewIndex = Math.max(0, Number(progress.reviewIndex || 0));
+    const reviewTotal = Math.max(1, Number(progress.reviewTotal || 1));
+    const copy = document.createElement("div");
+    const label = document.createElement("span");
+    label.textContent = `正在复盘第 ${reviewIndex + 1} / ${reviewTotal} 道错题`;
+    const hint = document.createElement("small");
+    hint.textContent = "这题可以继续追问；理解后再进入下一题。";
+    copy.append(label, hint);
+    const actions = document.createElement("div");
+
+    const continueButton = document.createElement("button");
+    continueButton.type = "button";
+    continueButton.className = "continue";
+    continueButton.textContent = "继续问";
+    continueButton.addEventListener("click", () => {
+      requestQuizReviewAction(message, "continue", panel);
+    });
+
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.className = "primary";
+    nextButton.textContent = "下一题";
+    nextButton.addEventListener("click", () => {
+      requestQuizReviewAction(message, "next", panel);
+    });
+
+    const stopButton = document.createElement("button");
+    stopButton.type = "button";
+    stopButton.className = "quiet";
+    stopButton.textContent = "就到这";
+    stopButton.addEventListener("click", () => {
+      requestQuizReviewAction(message, "stop", panel);
+    });
+
+    actions.append(continueButton, nextButton, stopButton);
+    panel.append(copy, actions);
+    return panel;
+  }
+
+  function messageNode(message, options = {}) {
     const article = document.createElement("article");
     article.className = `knowledge-message ${message.role === "user" ? "user" : "assistant"}`;
     if (message.error) article.classList.add("error");
@@ -787,6 +1741,57 @@
     const body = document.createElement("p");
     body.textContent = message.content || (message.streaming ? "正在组织解释…" : "");
     article.append(heading, body);
+    if (message.role === "assistant" && !message.streaming && !message.error) {
+      const guidance = message.guidance || {};
+      const provenance = guidance.provenance || {};
+      if (provenance.show && message.contextRef) {
+        const source = document.createElement("div");
+        source.className = "knowledge-message-source";
+        source.setAttribute("data-knowledge-message-source", "true");
+        source.classList.toggle("is-open", openMessageSourceId === message.id);
+        const sourceButton = document.createElement("button");
+        sourceButton.type = "button";
+        sourceButton.textContent = provenance.label || "依据当前课件";
+        sourceButton.title = "查看回答依据，并回到对应课件位置";
+        sourceButton.setAttribute("aria-expanded", openMessageSourceId === message.id ? "true" : "false");
+        sourceButton.addEventListener("click", () => {
+          const nextOpen = openMessageSourceId !== message.id;
+          openMessageSourceId = nextOpen ? message.id : "";
+          if (nextOpen) useContext(message.contextRef, "message-source");
+          else renderMessages();
+        });
+        const sourceDetail = document.createElement("span");
+        sourceDetail.textContent = provenance.detail || provenance.sourceLabel || "当前学习位置";
+        source.append(sourceButton, sourceDetail);
+        article.appendChild(source);
+      }
+      if (guidance.showUnderstandingCheck && Array.isArray(guidance.actions) && guidance.actions.length) {
+        const actions = document.createElement("div");
+        actions.className = "knowledge-message-actions";
+        actions.setAttribute("data-knowledge-message-actions", "true");
+        const label = document.createElement("span");
+        label.textContent = "继续巩固";
+        actions.appendChild(label);
+        guidance.actions.forEach((intent) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.setAttribute("data-knowledge-self-check", intent === "self_check" ? "true" : "false");
+          button.setAttribute("data-assistant-intent", intent);
+          button.textContent = {
+            self_check: "用一句话复述",
+            rephrase: "换一种解释",
+            practice: "出一道小题"
+          }[intent] || intent;
+          button.addEventListener("click", () => beginAssistantIntent(intent));
+          actions.appendChild(button);
+        });
+        article.appendChild(actions);
+      }
+      const quizReviewFollowUp = quizReviewFollowUpNode(message, {
+        actionable: options.quizReviewActionable !== false
+      });
+      if (quizReviewFollowUp) article.appendChild(quizReviewFollowUp);
+    }
     return article;
   }
 
@@ -794,7 +1799,7 @@
     const scrollViewport = els.scroll || els.messages;
     const nearBottom = scrollViewport.scrollHeight - scrollViewport.scrollTop - scrollViewport.clientHeight < 120;
     els.messages.replaceChildren();
-    if (!messages.length && !loadingHistory) {
+    if (!messages.length && !pendingProactivePrompt && !loadingHistory) {
       els.messages.appendChild(els.empty);
       els.empty.hidden = false;
     } else if (loadingHistory && !messages.length) {
@@ -803,9 +1808,32 @@
       loading.innerHTML = "<span></span><span></span><span></span><p>正在恢复这个知识点的提问记录</p>";
       els.messages.appendChild(loading);
     } else {
-      messages.forEach((message) => els.messages.appendChild(messageNode(message)));
+      const latestAssistantMessage = [...messages].reverse().find((message) => (
+        message.role === "assistant" && !message.streaming && !message.error
+      ));
+      messages.forEach((message) => {
+        if (
+          message.role === "user"
+          && message.proactivePrompt
+          && message.proactivePromptVisible !== false
+        ) {
+          els.messages.appendChild(proactivePromptNode({
+            id: `history-${message.id || ""}`,
+            content: message.proactivePrompt
+          }));
+        }
+        els.messages.appendChild(messageNode(message, {
+          quizReviewActionable: message.id === latestAssistantMessage?.id
+        }));
+      });
+      if (
+        usableProactivePrompt(pendingProactivePrompt)
+        && pendingProactivePrompt.visible !== false
+      ) {
+        els.messages.appendChild(proactivePromptNode(pendingProactivePrompt, { dismissible: true }));
+      }
     }
-    if (nearBottom || isAsking) {
+    if (nearBottom || isAsking || pendingProactivePrompt) {
       window.requestAnimationFrame(() => {
         scrollViewport.scrollTop = scrollViewport.scrollHeight;
       });
@@ -815,9 +1843,12 @@
   function renderUnit() {
     const meta = courseMeta();
     const quizLocked = quizAssistantLocked(meta);
+    const conversationLimited = conversationAtLimit();
     renderLauncherAvailability(meta);
     els.unit.textContent = meta.knowledgePointLabel || meta.unitLabel || "等待课件加载";
-    els.unitDetail.textContent = meta.sceneType
+    els.unitDetail.textContent = conversationLimited
+      ? `这段对话已完成 ${CONVERSATION_TURN_LIMIT} 轮，请新建对话继续。`
+      : meta.sceneType
       ? `${currentSceneLabel(meta)}，对话会保存在这个知识点下`
       : meta.isQuiz
         ? meta.quizSubmitted
@@ -826,14 +1857,24 @@
         : "可直接提问，也可以先选择课件中的文字、公式或对象";
     els.quizPolicy.hidden = !quizLocked;
     root.classList.toggle("is-unavailable", !meta.supported || !isSignedInNow());
-    els.input.disabled = !meta.supported || !isSignedInNow() || quizLocked;
+    els.input.disabled = !meta.supported || !isSignedInNow() || quizLocked || conversationLimited;
     els.input.placeholder = quizLocked
       ? "提交测验后可继续提问"
-      : "例如：为什么 h 变小时，割线更接近切线？";
+      : conversationLimited
+        ? "本段对话已满，请新建对话"
+        : pendingProactivePrompt?.reviewAction === "continue"
+          ? "继续问这一题……"
+          : pendingProactivePrompt
+            ? "写下你的回答……"
+          : "例如：为什么 h 变小时，割线更接近切线？";
     els.send.disabled = els.input.disabled || isAsking || (provider.live && quota.remaining <= 0);
     els.pick.disabled = !meta.supported || !isSignedInNow() || quizLocked;
-    els.selectionAsk.disabled = quizLocked;
-    els.selectionAsk.title = quizLocked ? QUIZ_LOCKED_MESSAGE : "围绕选中内容询问知点";
+    els.selectionAsk.disabled = quizLocked || conversationLimited;
+    els.selectionAsk.title = quizLocked
+      ? QUIZ_LOCKED_MESSAGE
+      : conversationLimited
+        ? "本段对话已满，请新建对话继续"
+        : "围绕选中内容询问知点";
   }
 
   function render() {
@@ -848,6 +1889,8 @@
     renderMessages();
     renderWorkspace();
     renderQuota();
+    renderProactiveSuggestion();
+    renderNoteSyncStatus();
   }
 
   function hideNoteEditor(options = {}) {
@@ -936,6 +1979,7 @@
     els.noteDelete.hidden = !editingNoteId;
     renderNoteColorChoice();
     els.noteEditor.hidden = false;
+    renderNoteSyncStatus();
     placeFloatingElement(els.noteEditor, selection.rect, 420, 390, 11);
     window.setTimeout(() => els.noteInput.focus({ preventScroll: true }), 0);
   }
@@ -966,6 +2010,7 @@
     hideSelectionAction();
     window.getSelection?.()?.removeAllRanges?.();
     syncNoteHighlights();
+    persistLearningNote(note);
     track("knowledge_note_saved", {
       noteId: note.id,
       hasComment: Boolean(note.note),
@@ -978,10 +2023,15 @@
   function removeEditingNote() {
     if (!editingNoteId) return;
     const removedId = editingNoteId;
+    const removedNote = Notes.notesFor(localStorage, {
+      ownerKey: noteOwnerKey(),
+      unitId: courseMeta().unitId
+    }).find((note) => note.id === removedId);
     if (!Notes.removeNote(localStorage, removedId, noteOwnerKey())) return;
     hideSelectionAction();
     syncNoteHighlights();
     track("knowledge_note_removed", { noteId: removedId });
+    deleteLearningNote(removedNote);
   }
 
   function useContext(ref, source = "selection") {
@@ -1051,6 +2101,13 @@
     });
   }
 
+  function historyParams(meta = courseMeta()) {
+    const params = assistantParams(meta);
+    if (historySearch) params.set("q", historySearch);
+    if (historyFilter === "archived") params.set("archived", "1");
+    return params;
+  }
+
   async function loadConversations(meta = courseMeta(), options = {}) {
     if (!meta.unitId || !meta.supported || !isSignedInNow() || quizAssistantLocked(meta)) {
       conversations = [];
@@ -1062,7 +2119,7 @@
     loadingConversations = true;
     renderConversations();
     try {
-      const response = await fetch(`api/learning/assistant/conversations?${assistantParams(meta)}`, {
+      const response = await fetch(`api/learning/assistant/conversations?${historyParams(meta)}`, {
         headers: { Authorization: `Bearer ${state.authToken}` }
       });
       const payload = await response.json().catch(() => ({}));
@@ -1070,22 +2127,69 @@
       provider = payload.provider || provider;
       applyQuota(payload.quota);
       conversations = Array.isArray(payload.conversations) ? payload.conversations : [];
-      if (!conversations.some((item) => item.id === activeConversationId)) {
-        activeConversationId = conversations[0]?.id || "";
-      }
-      if (options.loadActive !== false && activeConversationId) {
-        await loadHistory(meta, activeConversationId);
-      } else if (!activeConversationId) {
-        messages = [];
+      if (options.loadActive !== false) {
+        if (!conversations.some((item) => item.id === activeConversationId)) {
+          activeConversationId = conversations[0]?.id || "";
+        }
+        if (activeConversationId) {
+          await loadHistory(meta, activeConversationId);
+        } else {
+          messages = [];
+        }
       }
     } catch (error) {
       conversations = [];
-      activeConversationId = "";
-      messages = [];
+      if (options.loadActive !== false) {
+        activeConversationId = "";
+        messages = [];
+      }
       setStatus(error.message || "历史对话暂时不可用。", "error");
     } finally {
       loadingConversations = false;
       render();
+    }
+  }
+
+  async function updateConversation(conversationId, change) {
+    try {
+      const response = await fetch(`api/learning/assistant/conversations/${encodeURIComponent(conversationId)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify(change)
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) throw new Error(payload.message || "对话操作失败。");
+      renamingConversationId = "";
+      deletingConversationId = "";
+      openConversationMenuId = "";
+      await loadConversations(courseMeta(), { loadActive: false });
+      setStatus(change.action === "rename" ? "对话名称已更新。" : change.action === "archive" ? "对话已归档。" : "对话已恢复。", "");
+    } catch (error) {
+      setStatus(error.message || "对话操作失败。", "error");
+    }
+  }
+
+  async function deleteConversation(conversationId) {
+    try {
+      const response = await fetch(`api/learning/assistant/conversations/${encodeURIComponent(conversationId)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${state.authToken}` }
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) throw new Error(payload.message || "对话删除失败。");
+      deletingConversationId = "";
+      openConversationMenuId = "";
+      if (activeConversationId === conversationId) {
+        activeConversationId = "";
+        messages = [];
+      }
+      await loadConversations(courseMeta(), { loadActive: false });
+      setStatus("对话已删除。", "");
+    } catch (error) {
+      setStatus(error.message || "对话删除失败。", "error");
     }
   }
 
@@ -1097,6 +2201,11 @@
     activeConversationId = "";
     activeWorkspace = "chat";
     messages = [];
+    pendingAssistantIntent = "";
+    pendingProactivePrompt = null;
+    openMessageSourceId = "";
+    els.input.value = "";
+    resizeComposer();
     setStatus("新对话已准备好，收到助教回复后才会保存。", "");
     render();
     if (options.focus !== false) {
@@ -1108,6 +2217,9 @@
 
   async function loadHistory(meta = courseMeta(), conversationId = activeConversationId) {
     const requestId = ++historyRequestId;
+    pendingAssistantIntent = "";
+    pendingProactivePrompt = null;
+    openMessageSourceId = "";
     if (!meta.unitId || !meta.supported || !isSignedInNow() || quizAssistantLocked(meta)) {
       messages = [];
       loadingHistory = false;
@@ -1130,15 +2242,31 @@
       applyQuota(payload.quota);
       activeConversationId = payload.conversation?.id || conversationId || "";
       currentQuizSubmitted = Boolean(payload.quizSubmitted);
+      pendingProactivePrompt = usableProactivePrompt(payload.pendingQuizReviewPrompt, meta)
+        ? payload.pendingQuizReviewPrompt
+        : null;
       messages = (payload.messages || []).map((message) => ({
         id: message.id,
         role: message.role,
         content: message.content,
+        contextRef: message.contextRef || null,
+        guidance: message.guidance || null,
+        assistantIntent: message.assistantIntent || "",
+        proactivePrompt: message.proactivePrompt || "",
+        proactivePromptVisible: message.proactivePromptVisible !== false,
         provider: message.provider || "",
         createdAt: message.createdAt || ""
       }));
       activeWorkspace = "chat";
-      setStatus(messages.length ? "已打开这段对话，可以继续追问。" : "");
+      setStatus(
+        pendingProactivePrompt
+          ? pendingProactivePrompt.visible === false
+            ? "已恢复本题的继续追问状态。"
+            : "已恢复尚未回答的错题复盘问题。"
+          : messages.length
+            ? "已打开这段对话，可以继续追问。"
+            : ""
+      );
     } catch (error) {
       if (requestId !== historyRequestId) return;
       messages = [];
@@ -1152,25 +2280,30 @@
   }
 
   function parseStreamLine(line, assistantMessage) {
-    if (!line.trim()) return;
+    if (!line.trim()) return "";
     const event = JSON.parse(line);
     if (event.type === "meta") {
       provider = event.provider || provider;
       activeConversationId = event.conversationId || activeConversationId;
       applyQuota(event.quota);
       currentQuizSubmitted = Boolean(event.quizSubmitted);
+      assistantMessage.contextRef = event.contextRef || assistantMessage.contextRef || null;
       renderProvider();
       renderQuota();
-      return;
+      return "meta";
     }
     if (event.type === "delta") {
       assistantMessage.content += event.delta || "";
       renderMessages();
-      return;
+      return "delta";
     }
     if (event.type === "done") {
       assistantMessage.id = event.message?.id || assistantMessage.id;
       assistantMessage.provider = event.message?.provider || "";
+      assistantMessage.contextRef = event.message?.contextRef || assistantMessage.contextRef || null;
+      assistantMessage.guidance = event.guidance || event.message?.guidance || null;
+      assistantMessage.quizReviewFollowUp = event.quizReviewFollowUp || null;
+      assistantMessage.assistantIntent = event.message?.assistantIntent || "";
       assistantMessage.streaming = false;
       if (!assistantMessage.content) assistantMessage.content = event.message?.content || "";
       if (event.fallback) {
@@ -1188,14 +2321,22 @@
       renderMessages();
       renderConversations();
       renderQuota();
+      return "done";
     }
+    return "";
   }
 
   async function readNdjson(response, assistantMessage) {
+    const state = { sawDone: false, sawDelta: false };
+    const consumeLine = (line) => {
+      const type = parseStreamLine(line, assistantMessage);
+      if (type === "done") state.sawDone = true;
+      if (type === "delta") state.sawDelta = true;
+    };
     if (!response.body?.getReader) {
       const text = await response.text();
-      text.split(/\r?\n/).forEach((line) => parseStreamLine(line, assistantMessage));
-      return;
+      text.split(/\r?\n/).forEach(consumeLine);
+      return state;
     }
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -1205,15 +2346,20 @@
       buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() || "";
-      lines.forEach((line) => parseStreamLine(line, assistantMessage));
+      lines.forEach(consumeLine);
       if (done) break;
     }
-    if (buffer.trim()) parseStreamLine(buffer, assistantMessage);
+    if (buffer.trim()) consumeLine(buffer);
+    return state;
   }
 
   async function submitQuestion() {
     const meta = courseMeta();
     const question = els.input.value.trim();
+    const assistantIntent = pendingAssistantIntent;
+    const proactivePrompt = usableProactivePrompt(pendingProactivePrompt, meta)
+      ? pendingProactivePrompt
+      : null;
     if (!question || isAsking) return;
     if (!isSignedInNow()) {
       setStatus("请先登录后使用知点。", "error");
@@ -1227,17 +2373,45 @@
       setStatus(QUIZ_LOCKED_MESSAGE, "warning");
       return;
     }
+    if (conversationAtLimit()) {
+      setStatus(`这段对话已完成 ${CONVERSATION_TURN_LIMIT} 轮，请新建对话继续。`, "warning");
+      renderUnit();
+      return;
+    }
     if (provider.live && quota.remaining <= 0) {
       setStatus("今天的知点额度已用完，明天可以继续提问。", "warning");
       return;
     }
     activeRequest?.abort();
+    pendingAssistantIntent = "";
+    pendingGeneratedDraft = "";
     activeRequest = new AbortController();
     isAsking = true;
+    const requestPayload = {
+      chapterId: meta.chapterId,
+      unitId: meta.unitId,
+      sceneType: meta.sceneType,
+      conversationId: activeConversationId,
+      question,
+      assistantIntent,
+      proactiveInterventionId: proactivePrompt?.interventionId || "",
+      contextRef: activeContext || {
+        kind: "unit",
+        scope: meta.isQuiz ? "quiz" : "lesson",
+        chapterId: meta.chapterId,
+        unitId: meta.unitId,
+        unitLabel: meta.unitLabel,
+        knowledgePointId: meta.knowledgePointId,
+        knowledgePointLabel: meta.knowledgePointLabel
+      }
+    };
+    pendingProactivePrompt = null;
     const userMessage = {
       id: `local-user-${Date.now()}`,
       role: "user",
       content: question,
+      proactivePrompt: proactivePrompt?.content || "",
+      proactivePromptVisible: proactivePrompt?.visible !== false,
       provider: ""
     };
     const assistantMessage = {
@@ -1265,31 +2439,24 @@
           "Content-Type": "application/json",
           Authorization: `Bearer ${state.authToken}`
         },
-        body: JSON.stringify({
-          chapterId: meta.chapterId,
-          unitId: meta.unitId,
-          sceneType: meta.sceneType,
-          conversationId: activeConversationId,
-          question,
-          contextRef: activeContext || {
-            kind: "unit",
-            scope: meta.isQuiz ? "quiz" : "lesson",
-            chapterId: meta.chapterId,
-            unitId: meta.unitId,
-            unitLabel: meta.unitLabel,
-            knowledgePointId: meta.knowledgePointId,
-            knowledgePointLabel: meta.knowledgePointLabel
-          }
-        }),
+        body: JSON.stringify(requestPayload),
         signal: activeRequest.signal
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}));
         applyQuota(payload.quota);
-        throw new Error(payload.message || "知点暂时没有接通，请稍后再试。");
+        const requestError = new Error(payload.message || "知点暂时没有接通，请稍后再试。");
+        requestError.code = payload.code || "";
+        throw requestError;
       }
-      await readNdjson(response, assistantMessage);
+      const streamState = await readNdjson(response, assistantMessage);
+      if (!streamState.sawDone || !assistantMessage.content.trim()) {
+        const error = new Error("回答传输没有完整结束，正在恢复这段对话。");
+        error.code = "assistant_stream_incomplete";
+        throw error;
+      }
       assistantMessage.streaming = false;
+      renderMessages();
       setStatus("可以继续追问；对话会保存在这个知识点下。");
       track("knowledge_answer_received", {
         provider: assistantMessage.provider || provider.id,
@@ -1297,11 +2464,33 @@
       });
     } catch (error) {
       if (error.name === "AbortError") return;
-      assistantMessage.streaming = false;
-      assistantMessage.error = true;
-      assistantMessage.content = error.message || "知点暂时没有接通，请稍后再试。";
-      setStatus(assistantMessage.content, "error");
-      renderMessages();
+      if (error.code === "assistant_stream_incomplete" && activeConversationId) {
+        assistantMessage.streaming = false;
+        assistantMessage.error = true;
+        assistantMessage.content = "回答传输中断，正在从已保存的对话恢复完整内容。";
+        setStatus(assistantMessage.content, "warning");
+        renderMessages();
+        await loadHistory(meta, activeConversationId);
+        return;
+      }
+      const localUserIndex = messages.indexOf(userMessage);
+      if (localUserIndex >= 0) {
+        messages.splice(localUserIndex, messages[localUserIndex + 1] === assistantMessage ? 2 : 1);
+      } else {
+        const localAssistantIndex = messages.indexOf(assistantMessage);
+        if (localAssistantIndex >= 0) messages.splice(localAssistantIndex, 1);
+      }
+      const promptStillValid = proactivePrompt
+        && error.code !== "assistant_intervention_expired"
+        && courseMeta().unitId === meta.unitId;
+      pendingProactivePrompt = promptStillValid ? proactivePrompt : null;
+      if (!els.input.value.trim() && courseMeta().unitId === meta.unitId) {
+        els.input.value = question;
+        pendingGeneratedDraft = question;
+        resizeComposer();
+      }
+      setStatus(error.message || "知点暂时没有接通，请稍后再试。", "error");
+      render();
     } finally {
       isAsking = false;
       activeRequest = null;
@@ -1328,6 +2517,8 @@
     const sceneChanged = meta.sceneType !== currentSceneType;
     const quizStateChanged = meta.quizSubmitted !== currentQuizSubmitted;
     const supportChanged = meta.supported !== currentSupported;
+    if (participantChanged) proactiveCoach?.reset?.({ clearCooldowns: true });
+    syncProactiveUnit(meta, { force: unitChanged || participantChanged || supportChanged });
 
     if (quizAssistantLocked(meta)) {
       if (isOpen) setOpen(false, { focus: false });
@@ -1339,6 +2530,10 @@
     if (unitChanged || participantChanged || supportChanged) {
       activeRequest?.abort();
       activeRequest = null;
+      proactiveDecisionRequest?.abort();
+      proactiveDecisionRequest = null;
+      proactiveDecision = null;
+      proactiveCandidateId = "";
       currentParticipantId = nextParticipantId;
       currentUnitKey = nextUnitKey;
       currentSceneType = meta.sceneType;
@@ -1349,6 +2544,12 @@
       activeWorkspace = "chat";
       activeContext = null;
       recentInteraction = null;
+      pendingAssistantIntent = "";
+      pendingProactivePrompt = null;
+      pendingGeneratedDraft = "";
+      openMessageSourceId = "";
+      els.input.value = "";
+      resizeComposer();
       hideSelectionAction();
       if (participantChanged) {
         CoursewareContext.clearContext();
@@ -1356,12 +2557,23 @@
       } else {
         CoursewareContext.syncUnit();
       }
-      window.requestAnimationFrame(syncNoteHighlights);
+      window.requestAnimationFrame(() => syncLearningNotes(meta));
       loadConversations(meta);
       return;
     }
 
     if (sceneChanged) {
+      proactiveDecisionRequest?.abort();
+      proactiveDecisionRequest = null;
+      proactiveDecision = null;
+      proactiveCandidateId = "";
+      pendingProactivePrompt = null;
+      if (pendingGeneratedDraft && els.input.value === pendingGeneratedDraft) {
+        els.input.value = "";
+        pendingAssistantIntent = "";
+        pendingGeneratedDraft = "";
+        resizeComposer();
+      }
       currentSceneType = meta.sceneType;
       if (activeContext?.scope === "interactive") {
         activeContext = null;
@@ -1430,6 +2642,32 @@
   els.useEcho.addEventListener("click", () => {
     if (recentInteraction) useContext(recentInteraction, "operation-echo");
   });
+  els.historySearch.addEventListener("input", () => {
+    clearTimeout(historySearchTimer);
+    historySearchTimer = window.setTimeout(() => {
+      historySearch = els.historySearch.value.replace(/\s+/g, " ").trim();
+      loadConversations(courseMeta(), { loadActive: false });
+    }, 250);
+  });
+  els.historyFilters.forEach((button) => {
+    button.addEventListener("click", () => {
+      const nextFilter = button.dataset.knowledgeHistoryFilter;
+      if (!['current', 'archived'].includes(nextFilter) || nextFilter === historyFilter) return;
+      historyFilter = nextFilter;
+      openConversationMenuId = "";
+      renamingConversationId = "";
+      deletingConversationId = "";
+      renderWorkspace();
+      loadConversations(courseMeta(), { loadActive: false });
+    });
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!openConversationMenuId || event.target.closest?.("[data-conversation-menu-shell]")) return;
+    openConversationMenuId = "";
+    renderConversations();
+  });
+  els.proactiveAccept.addEventListener("click", acceptProactiveSuggestion);
+  els.proactiveDismiss.addEventListener("click", () => dismissProactiveSuggestion("dismiss"));
   els.selectionToolbar.addEventListener("pointerdown", (event) => event.preventDefault());
   els.selectionAsk.addEventListener("click", () => {
     if (pendingSelection?.contextRef) useContext(pendingSelection.contextRef, "text-selection");
@@ -1458,7 +2696,15 @@
     event.preventDefault();
     submitQuestion();
   });
-  els.input.addEventListener("input", resizeComposer);
+  els.input.addEventListener("input", () => {
+    if (pendingGeneratedDraft && els.input.value !== pendingGeneratedDraft) {
+      pendingGeneratedDraft = "";
+    }
+    if (pendingAssistantIntent && !questionMatchesAssistantIntent(pendingAssistantIntent, els.input.value)) {
+      pendingAssistantIntent = "";
+    }
+    resizeComposer();
+  });
   els.input.addEventListener("keydown", (event) => {
     if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
     event.preventDefault();
@@ -1489,6 +2735,9 @@
     applyPanelPosition();
   });
   window.addEventListener("cq:lesson-rendered", scheduleSync);
+  window.addEventListener("cq:learning-signal", consumeProactiveSignal);
+  proactiveTickTimer = window.setInterval(runProactiveTick, 10 * 1000);
+  window.addEventListener("beforeunload", () => window.clearInterval(proactiveTickTimer), { once: true });
 
   const lessonPlayer = document.querySelector("#lesson-player");
   const observer = lessonPlayer && typeof MutationObserver !== "undefined"

@@ -5,6 +5,14 @@ let learningCanvasLayoutFrame = null;
 let learningCanvasLayoutSettleTimer = null;
 let learningCanvasLayoutSyncReady = false;
 let learningCanvasLastSize = "";
+const COURSEWARE_BRIDGE_INTERACTION_EVENTS = new Set([
+  "interactive_click",
+  "interactive_change",
+  "interactive_submit",
+  "interactive_drag_end",
+  "parameter_change",
+  "parameter_commit"
+]);
 
 function coursewareFrameUrl(path) {
   const url = resourceUrl(path);
@@ -75,6 +83,35 @@ function scheduleLearningCanvasLayoutSync(reason = "layout-change") {
   }, 220);
 }
 
+function trackCoursewareBridgeInteraction(frame, message = {}) {
+  const eventType = String(message.eventType || "");
+  if (!COURSEWARE_BRIDGE_INTERACTION_EVENTS.has(eventType)) return false;
+  const unitId = frame.closest?.("[data-resource-unit]")?.dataset?.resourceUnit || currentUnitId || "";
+  const unit = getUnit(unitId);
+  const contextRef = message.contextRef && typeof message.contextRef === "object"
+    ? message.contextRef
+    : {};
+  const payload = message.payload && typeof message.payload === "object"
+    ? message.payload
+    : {};
+  const stateValue = contextRef.state && typeof contextRef.state === "object"
+    ? contextRef.state
+    : null;
+  trackInteraction(eventType, {
+    ...payload,
+    persist: message.persist !== false,
+    source: "iframe",
+    unitId: unit?.id || unitId,
+    unitLabel: unit?.label || "",
+    chapterId: unit?.chapterId || currentChapterId || "",
+    semanticId: contextRef.semanticId || "",
+    label: contextRef.label || payload.label || "",
+    value: stateValue,
+    durationMs: Number(payload.durationMs || 0)
+  });
+  return true;
+}
+
 function setupLearningCanvasLayoutSync() {
   const player = els?.lessonPlayer || document.querySelector("#lesson-player");
   if (!player) return false;
@@ -106,12 +143,17 @@ function setupLearningCanvasLayoutSync() {
     scheduleLearningCanvasLayoutSync("lesson-rendered");
   });
   window.addEventListener("message", (event) => {
-    if (event.data?.type !== "cq:bridge-ready") return;
     const frame = Array.from(
       player.querySelectorAll("iframe.embed-frame, iframe[data-courseware-frame]")
     ).find((candidate) => candidate.contentWindow === event.source);
     if (!frame) return;
-    scheduleLearningCanvasLayoutSync("courseware-bridge-ready");
+    if (event.data?.type === "cq:bridge-ready") {
+      scheduleLearningCanvasLayoutSync("courseware-bridge-ready");
+      return;
+    }
+    if (event.data?.type === "cq:interaction") {
+      trackCoursewareBridgeInteraction(frame, event.data);
+    }
   });
   scheduleLearningCanvasLayoutSync("layout-sync-ready");
   return true;
@@ -469,19 +511,33 @@ function focusKnowledgeSceneChoicePanel() {
 
 function renderResourceShell(unit, title, body, className = "") {
   const isKnowledgeResource = className.split(/\s+/).includes("multi-scene-knowledge-resource");
-  return `
-    <section class="resource-shell ${className}" data-resource-shell data-resource-unit="${unit.id}">
-      <div class="resource-toolbar">
+  const resourceToolbar = isKnowledgeResource
+    ? ""
+    : `<div class="resource-toolbar">
         <div>
           <span class="type-pill">${typeText(unit)}</span>
           <strong>${escapeHtml(title)}</strong>
         </div>
-        <button class="button soft" type="button" data-resource-fullscreen>${isKnowledgeResource ? "讲解页全屏" : "全屏"}</button>
-      </div>
+        <button class="button soft" type="button" data-resource-fullscreen>全屏</button>
+      </div>`;
+  return `
+    <section class="resource-shell ${className}" data-resource-shell data-resource-unit="${unit.id}">
+      ${resourceToolbar}
       <div class="resource-body">
         ${body}
       </div>
     </section>
+  `;
+}
+
+function renderQuizReturnNotice(unit = {}) {
+  const context = state.returnToQuiz || {};
+  if (!context.unitId || !context.targetUnitId || context.targetUnitId !== unit.id) return "";
+  return `
+    <div class="quiz-return-notice" role="status" aria-live="polite">
+      <strong>正在回看课件</strong>
+      <span>可按左上角“返回”键返回测验。</span>
+    </div>
   `;
 }
 
@@ -530,8 +586,7 @@ function renderKnowledgeUnit(unit) {
         </div>
        <div class="iframe-container multi-scene-courseware-stage" data-knowledge-scene-stage>
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
-         <iframe class="embed-frame" data-courseware-frame data-context-id="interactive-frame:${escapeHtml(unit.id)}:${escapeHtml(selectedTypeId)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(selectedTypeId)}" data-context-label="${escapeHtml(`${unit.label} · ${knowledgeSceneDisplayLabel(selectedType)}`)}" title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
-         <button class="button soft icon-button multi-scene-courseware-exit" type="button" data-knowledge-scene-fullscreen aria-label="退出课件全屏" title="退出课件全屏">退出全屏</button>
+          <iframe class="embed-frame" data-courseware-frame data-context-id="interactive-frame:${escapeHtml(unit.id)}:${escapeHtml(selectedTypeId)}" data-context-kind="viewport" data-context-scope="interactive" data-context-confidence="low" data-context-scene-type="${escapeHtml(selectedTypeId)}" data-context-label="${escapeHtml(`${unit.label} · ${knowledgeSceneDisplayLabel(selectedType)}`)}" title="${escapeHtml(`${unit.label} ${knowledgeSceneDisplayLabel(selectedType)}`)}" sandbox="allow-scripts allow-forms allow-pointer-lock allow-popups" allow="fullscreen; autoplay"></iframe>
         </div>`
     : selectedTypeId
       ? `<div class="empty-state multi-scene-empty-resource">
@@ -549,15 +604,16 @@ function renderKnowledgeUnit(unit) {
       unit,
       unit.label,
       `<div class="multi-scene-knowledge-player">
+        ${renderQuizReturnNotice(unit)}
         <section class="multi-scene-slide-panel required">
           <div class="multi-scene-slide-heading">
-            <span class="type-pill">讲解页</span>
+            <span class="type-pill multi-scene-slide-kind">讲解页</span>
+            <button class="button soft" type="button" data-resource-fullscreen>讲解页全屏</button>
             <h2>${renderInlineMath(slide.title || kp.name || unit.label)}</h2>
             <p>${renderInlineMath(module.title || unit.moduleTitle || "")}</p>
           </div>
           <div class="multi-scene-slide-fullscreen-stage" data-resource-fullscreen-target>
             ${slideBody}
-            <button class="button soft icon-button multi-scene-slide-exit" type="button" data-resource-fullscreen aria-label="退出讲解页全屏" title="退出讲解页全屏">退出全屏</button>
           </div>
           ${renderKnowledgeAudioPack(unit, {
             slotKey: "slide",
@@ -643,9 +699,93 @@ function cleanStudentSceneTitle(title = "", fallback = "互动场景") {
   return cleaned || fallback;
 }
 
-function renderQuestionTextWithLinks(question = {}) {
+function quizUnitSequenceIndex(unit = {}) {
+  if (!unit?.id || !unit?.chapterId) return -1;
+  const chapter = getChapter(unit.chapterId);
+  const units = chapter?.allUnits || chapter?.units || [];
+  const sequenceIndex = units.findIndex((candidate) => candidate?.id === unit.id);
+  if (sequenceIndex >= 0) return sequenceIndex;
+  const order = Number(unit.order);
+  return Number.isFinite(order) ? order : -1;
+}
+
+function quizResourceAllowedForPhase(targetUnitId = "", unit = {}) {
+  if (unit?.assessmentPhase === "pre") return false;
+  if (unit?.assessmentPhase !== "formative") return true;
+  const targetUnit = getUnit(targetUnitId);
+  if (!targetUnit || targetUnit.chapterId !== unit.chapterId) return false;
+  const targetIndex = quizUnitSequenceIndex(targetUnit);
+  const quizIndex = quizUnitSequenceIndex(unit);
+  return targetIndex >= 0 && quizIndex >= 0 && targetIndex < quizIndex;
+}
+
+function quizResourceTargetAccessible(targetUnitId = "", unit = {}) {
+  if (!quizResourceAllowedForPhase(targetUnitId, unit)) return false;
+  const targetUnit = getUnit(targetUnitId);
+  if (!targetUnit || targetUnit.type === "quiz") return false;
+  if (typeof agenticGuardNavigation === "function") {
+    return agenticGuardNavigation(targetUnitId, { allowPrevious: true, silent: true });
+  }
+  if (typeof agenticIsUnitUnlocked === "function") {
+    return agenticIsUnitUnlocked(targetUnitId)
+      || (state.completed || []).includes(targetUnitId)
+      || (typeof agenticIsSkipped === "function" && agenticIsSkipped(targetUnitId));
+  }
+  return true;
+}
+
+function quizQuestionResourceAccess(question = {}, unit = {}) {
   const text = displayQuestionText(question);
+  const targets = Array.from(text.matchAll(/\[\[cq-unit:([^|\]]+)\|[^|\]]*\|[^\]]+\]\]/g))
+    .map((match) => match[1])
+    .filter(Boolean);
+  const allowedTargets = targets.filter((targetUnitId) => quizResourceAllowedForPhase(targetUnitId, unit));
+  return {
+    hasMarkers: targets.length > 0,
+    hasAllowed: allowedTargets.length > 0,
+    hasTimingBlocked: allowedTargets.length < targets.length,
+    hasAccessible: allowedTargets.some((targetUnitId) => quizResourceTargetAccessible(targetUnitId, unit))
+  };
+}
+
+function lockedQuizResourceLabel(label = "") {
+  const cleaned = String(label || "")
+    .replace(/^回看课件\s*[:：]?\s*/, "")
+    .trim();
+  return cleaned ? `对应知识点「${cleaned}」` : "对应知识点";
+}
+
+function timingBlockedQuizResourceLabel(unitId = "", label = "") {
+  const targetUnit = getUnit(unitId);
+  const fallback = String(label || "")
+    .replace(/^回看课件\s*[:：]?\s*/, "")
+    .replace(/\s*[:：]\s*(?:拖动实验|关系图|误解修复挑战|空间视角)\s*$/, "")
+    .trim();
+  return `对应知识点「${targetUnit?.label || fallback || "后续内容"}」`;
+}
+
+function allowedQuizResourceLabel(unitId = "", label = "") {
+  const targetUnit = getUnit(unitId);
+  const fallback = String(label || "")
+    .replace(/^回看课件\s*[:：]?\s*/, "")
+    .replace(/\s*[:：]\s*(?:拖动实验|关系图|误解修复挑战|空间视角)\s*$/, "")
+    .trim();
+  return `回看「${targetUnit?.label || fallback || "对应内容"}」课件`;
+}
+
+function renderQuestionTextWithLinks(question = {}, unit = {}) {
+  const sourceText = displayQuestionText(question);
   const markerRe = /\[\[cq-unit:([^|\]]+)\|([^|\]]*)\|([^\]]+)\]\]/g;
+  const text = sourceText
+    .replace(markerRe, (marker, unitId, sceneType, label) => (
+      !quizResourceAllowedForPhase(unitId, unit)
+        ? timingBlockedQuizResourceLabel(unitId, label)
+        : quizResourceTargetAccessible(unitId, unit)
+        ? `[[cq-unit:${unitId}|${sceneType}|${allowedQuizResourceLabel(unitId, label)}]]`
+        : lockedQuizResourceLabel(label)
+    ))
+    .replace(/请先回看(?=\[\[cq-unit:)/g, "请先")
+    .replace(/请先回看(?=对应知识点)/g, "请根据");
   let last = 0;
   let html = "";
   let match;
@@ -659,6 +799,26 @@ function renderQuestionTextWithLinks(question = {}) {
   }
   if (last < text.length) html += renderInlineMath(text.slice(last));
   return html;
+}
+
+function quizKnowledgePointLabels(question = {}, unit = {}) {
+  const names = question.knowledgePointNames || question.knowledge_point_names || [];
+  const ids = question.knowledgePointIds || question.knowledge_point_ids || [];
+  const values = names.length ? names : ids;
+  if (!values.length || typeof KnowledgePointLabels === "undefined") return [];
+  const chapters = typeof curriculum !== "undefined" ? curriculum : [];
+  return KnowledgePointLabels.labelsFor(values, chapters, unit.chapterId);
+}
+
+function renderQuizCoverage(question = {}, unit = {}) {
+  const labels = quizKnowledgePointLabels(question, unit);
+  if (!labels.length) return "";
+  return `
+    <div class="quiz-coverage" data-quiz-coverage>
+      <strong>覆盖知识点</strong>
+      <span>${escapeHtml(labels.join("、"))}</span>
+    </div>
+  `;
 }
 
 function renderQuiz(unit) {
@@ -736,7 +896,7 @@ function renderQuiz(unit) {
               return `
               <article class="question-card" data-question="${question.id}" data-context-id="quiz:${escapeHtml(question.id)}" data-context-kind="quiz" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-confidence="high" data-context-label="${escapeHtml(displayQuestionText(question))}">
                 <div class="question-title-row">
-                  <h3>${index + 1}. ${renderQuestionTextWithLinks(question)}</h3>
+                <h3>${index + 1}. ${renderQuestionTextWithLinks(question, unit)}</h3>
                   ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
                 </div>
                 ${renderQuestionInput(unit, question, submitted, reviewResult)}

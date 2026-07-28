@@ -10,6 +10,16 @@
     />
     <link rel="icon" href="data:," />
     <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem("calculus-quest-home-theme");
+          if (savedTheme === "default") {
+            document.documentElement.dataset.cqTheme = savedTheme;
+          }
+        } catch (_) {}
+      })();
+    </script>
+    <script>
 // Auto-detect sub-path deployment for API calls
 (function() {
   var p = location.pathname;
@@ -37,8 +47,9 @@
 })();
 </script>
 
-    <link rel="stylesheet" href="styles.css?v=20260724-knowledge-workspace-v6" />
-    <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260724-knowledge-workspace-v6" />
+    <link rel="stylesheet" href="styles.css?v=20260726-fullscreen-path-v4" />
+    <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260726-quiz-review-v4" />
+    <link rel="stylesheet" href="app/main/system-announcements.css?v=20260726-announcements-v5" />
     <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
   </head>
   <body>
@@ -59,6 +70,77 @@
         <button class="nav-button" type="button" data-view="feedback">反馈</button>
         <button class="nav-button" type="button" data-view="progress">记录</button>
       </nav>
+      <div class="system-announcement-center" id="system-announcement-center">
+        <button
+          class="announcement-toggle"
+          id="announcement-toggle"
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="announcement-panel"
+          aria-label="打开系统公告"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10.27 21a2 2 0 0 0 3.46 0"></path>
+            <path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"></path>
+          </svg>
+          <span class="announcement-toggle-label">公告</span>
+          <span class="announcement-unread-count" id="announcement-unread-count" hidden>0</span>
+        </button>
+        <section class="announcement-panel" id="announcement-panel" role="dialog" aria-label="系统公告" hidden>
+          <header>
+            <div>
+              <strong>系统公告</strong>
+              <span id="announcement-panel-summary">暂无未读公告</span>
+            </div>
+            <button class="announcement-mark-read" id="announcement-mark-read" type="button">全部已读</button>
+          </header>
+          <div class="announcement-list" id="announcement-list"></div>
+        </section>
+      </div>
+      <div class="theme-control" id="theme-control">
+        <button
+          class="theme-launcher"
+          id="theme-launcher"
+          type="button"
+          disabled
+          aria-disabled="true"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="theme-menu"
+          aria-label="外观设置暂未开放"
+          title="外观设置暂未开放"
+        >
+          <span class="theme-launcher-mark" aria-hidden="true">◒</span>
+          <span>外观</span>
+        </button>
+        <div class="theme-menu" id="theme-menu" role="menu" hidden>
+          <div class="theme-menu-heading">
+            <span class="eyebrow">首页主题</span>
+            <strong>选择你的探索气质</strong>
+          </div>
+          <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme-choice="default">
+            <span class="theme-swatch theme-swatch-default" aria-hidden="true"></span>
+            <span class="theme-option-copy"><strong>探索地图</strong><small>灯塔、山路与轨迹线</small></span>
+            <span class="theme-option-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme-choice="A">
+            <span class="theme-swatch theme-swatch-a" aria-hidden="true"></span>
+            <span class="theme-option-copy"><strong>星轨任务台</strong><small>深色星图与轨道节点</small></span>
+            <span class="theme-option-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme-choice="C">
+            <span class="theme-swatch theme-swatch-c" aria-hidden="true"></span>
+            <span class="theme-option-copy"><strong>导数地牢</strong><small>紫黑关卡与高能脉冲</small></span>
+            <span class="theme-option-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme-choice="E">
+            <span class="theme-swatch theme-swatch-e" aria-hidden="true"></span>
+            <span class="theme-option-copy"><strong>知识荒原</strong><small>夜间城市与开放探索</small></span>
+            <span class="theme-option-check" aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </div>
       <div class="auth-widget" id="auth-widget" aria-live="polite">
         <button class="utility-button" id="auth-action" type="button">登录</button>
         <div class="user-menu" id="user-menu" hidden>
@@ -97,6 +179,22 @@
         </div>
       </div>
     </header>
+
+    <aside class="mobile-browser-notice" role="note" aria-label="电脑端体验提醒">
+      为了您更好的学习体验，请用电脑浏览器打开本网页
+    </aside>
+
+    <section class="announcement-banner" id="announcement-banner" aria-live="polite" hidden>
+      <div class="announcement-banner-inner">
+        <span class="announcement-banner-type" id="announcement-banner-type">重要通知</span>
+        <div>
+          <strong id="announcement-banner-title"></strong>
+          <p id="announcement-banner-content"></p>
+        </div>
+        <button class="announcement-banner-open" id="announcement-banner-open" type="button">查看公告</button>
+        <button class="announcement-banner-close" id="announcement-banner-close" type="button" aria-label="关闭这条公告">×</button>
+      </div>
+    </section>
 
     <section id="auth-gate" class="auth-gate" hidden>
       <form id="login-form" class="login-panel is-login" data-auth-form-mode="login">
@@ -179,17 +277,13 @@
               </div>
             </div>
           </div>
-          <aside class="hero-panel">
-            <h2>学习档案</h2>
-            <p class="hero-panel-note">从函数、导数到积分和优化，用互动场景把抽象概念一步步看清楚。</p>
-            <dl class="metric-grid">
-              <div><dt id="metric-chapters">0</dt><dd>章节</dd></div>
-              <div><dt id="metric-scenes">0</dt><dd>学习环节</dd></div>
-              <div><dt id="metric-glm">0</dt><dd>知识模块</dd></div>
-              <div><dt id="metric-html">0</dt><dd>互动场景</dd></div>
-              <div><dt id="metric-audio">0</dt><dd>知识点</dd></div>
-            </dl>
-          </aside>
+          <div class="home-metrics-proxy" aria-hidden="true" hidden>
+            <span id="metric-chapters">0</span>
+            <span id="metric-scenes">0</span>
+            <span id="metric-glm">0</span>
+            <span id="metric-html">0</span>
+            <span id="metric-audio">0</span>
+          </div>
         </div>
       </section>
 
@@ -379,9 +473,9 @@
                 <div id="feedback-target-strip" class="feedback-target-strip" role="group" aria-label="课件反馈对象" tabindex="-1"></div>
               </section>
               <label class="feedback-content-label" for="feedback-content">反馈正文</label>
-              <textarea id="feedback-content" name="content" autocomplete="off" maxlength="2000" rows="7" required placeholder="请描述遇到的问题、建议，以及你原本希望看到的结果。"></textarea>
+              <textarea id="feedback-content" name="content" autocomplete="off" maxlength="5000" rows="7" required placeholder="请描述遇到的问题、建议，以及你原本希望看到的结果。"></textarea>
               <div class="feedback-form-meta">
-                <span id="feedback-char-count">0 / 2000</span>
+                <span id="feedback-char-count">0 / 5000</span>
                 <span id="feedback-form-status" role="status" aria-live="polite"></span>
               </div>
               <button class="button primary" id="submit-feedback" type="submit">提交反馈</button>
@@ -410,29 +504,33 @@
     </footer>
 
     <script src="lib/katex.min.js?v=0.17.0"></script>
+    <script src="lib/quiz-question-order.js?v=20260726-quiz-order-v1"></script>
     <script src="app/main/data.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/feedback-config.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/knowledge-scene-selection.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/scene-recommender.js?v=20260723-scene-recommendation-v2"></script>
     <script src="app/main/content-security.js?v=20260722-security-v1"></script>
-    <script src="app/main/courseware-context.js?v=20260724-knowledge-workspace-v6"></script>
-    <script src="app/main/learning-notes.js?v=20260724-knowledge-workspace-v6"></script>
+    <script src="app/main/courseware-context.js?v=20260727-courseware-interaction-v4"></script>
+    <script src="app/main/learning-notes.js?v=20260726-sync-v1"></script>
     <script src="app/main/quiz-review-state.js?v=20260723-short-answer-recovery-v1"></script>
-    <script src="app/main/core.js?v=20260723-short-answer-recovery-v1"></script>
+    <script src="app/main/core.js?v=20260727-courseware-interaction-v4"></script>
+    <script src="app/main/system-announcements.js?v=20260726-announcements-v7"></script>
     <script src="app/main/knowledge-point-labels.js?v=20260724-knowledge-labels-v1"></script>
     <script src="app/main/return-context.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/analytics.js?v=20260723-scene-recommendation-v2"></script>
-    <script src="app/main/render-learning.js?v=20260723-learning-canvas-v2"></script>
+    <script src="app/main/proactive-learning.js?v=20260726-active-learning-v3"></script>
+    <script src="app/main/analytics.js?v=20260726-participant-session-v1"></script>
+    <script src="app/main/render-learning.js?v=20260727-courseware-interaction-v4"></script>
     <script src="app/main/recommendations.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/progress.js?v=20260723-short-answer-recovery-v1"></script>
+    <script src="app/main/progress.js?v=20260727-record-compat-v1"></script>
     <script src="app/main/navigation.js?v=20260723-knowledge-point-v3"></script>
-    <script src="app/main/events.js?v=20260723-short-answer-recovery-v1"></script>
-    <script src="app/main/narration.js?v=20260722-path-flow-v3"></script>
-    <script src="app/main/quiz.js?v=20260724-knowledge-labels-v1"></script>
-    <script src="app/main/agentic-path.js?v=20260723-short-answer-recovery-v1"></script>
+    <script src="app/main/events.js?v=20260726-fullscreen-path-v4"></script>
+    <script src="app/main/narration.js?v=20260727-courseware-interaction-v4"></script>
+    <script src="app/main/quiz.js?v=20260726-quiz-resource-lock-v1"></script>
+    <script src="app/main/agentic-path.js?v=20260726-fullscreen-path-v4"></script>
     <script src="app/main/feedback-targets.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/feedback.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/knowledge-assistant.js?v=20260724-knowledge-workspace-v6"></script>
-    <script src="app/main/bootstrap.js?v=20260724-knowledge-workspace-v6"></script>
+    <script src="app/main/feedback.js?v=20260726-content-limit-v1"></script>
+    <script src="app/main/knowledge-assistant.js?v=20260726-quiz-review-v4"></script>
+    <script src="app/main/theme.js?v=20260724-home-themes-v1"></script>
+    <script src="app/main/bootstrap.js?v=20260727-auth-autofill-v1"></script>
   </body>
 </html>

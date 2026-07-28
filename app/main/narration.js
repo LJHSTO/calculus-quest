@@ -282,26 +282,53 @@ async function toggleFullscreenLearning() {
   const shell = document.querySelector(".learning-shell");
   if (!shell) return;
   try {
-    document.fullscreenElement === shell ? await document.exitFullscreen() : await shell.requestFullscreen();
+    if (shell.classList.contains("is-local-fullscreen-target")) {
+      shell.classList.remove("is-local-fullscreen-target");
+      document.body.classList.remove("is-learning-local-fullscreen");
+    } else if (document.fullscreenElement === shell) {
+      await document.exitFullscreen?.();
+    } else if (typeof shell.requestFullscreen === "function") {
+      await shell.requestFullscreen();
+    } else {
+      throw new Error("当前浏览器不支持全屏 API");
+    }
+  } catch {
+    shell.classList.add("is-local-fullscreen-target");
+    document.body.classList.add("is-learning-local-fullscreen");
   } finally {
     updateFullscreenButton();
     syncNarrationUi();
+    if (typeof scheduleLearningCanvasLayoutSync === "function") {
+      scheduleLearningCanvasLayoutSync("learning-fullscreen-toggle");
+    }
   }
 }
 
 async function toggleResourceFullscreen(shell) {
-  if (!shell || !document.fullscreenEnabled) return;
+  if (!shell) return;
   try {
-    if (document.fullscreenElement === shell) {
-      await document.exitFullscreen();
+    if (shell.classList.contains("is-local-fullscreen-target")) {
+      shell.classList.remove("is-local-fullscreen-target");
+      document.body.classList.remove("is-resource-local-fullscreen");
       return;
     }
-    if (document.fullscreenElement) await document.exitFullscreen();
+    if (document.fullscreenElement === shell) {
+      await document.exitFullscreen?.();
+      return;
+    }
+    if (document.fullscreenElement) await document.exitFullscreen?.();
+    if (typeof shell.requestFullscreen !== "function") throw new Error("当前浏览器不支持全屏 API");
     await shell.requestFullscreen();
+  } catch {
+    shell.classList.add("is-local-fullscreen-target");
+    document.body.classList.add("is-resource-local-fullscreen");
   } finally {
     updateFullscreenButton();
     updateResourceFullscreenButtons();
     syncNarrationUi();
+    if (typeof scheduleLearningCanvasLayoutSync === "function") {
+      scheduleLearningCanvasLayoutSync("resource-fullscreen-toggle");
+    }
   }
 }
 
@@ -315,30 +342,46 @@ function resourceFullscreenTargetForButton(button) {
 
 function updateFullscreenButton() {
   if (!els.fullscreenPlayer) return;
-  const enabled = Boolean(document.fullscreenEnabled);
-  els.fullscreenPlayer.disabled = !enabled;
-  els.fullscreenPlayer.textContent = document.fullscreenElement ? "退出全屏" : "全屏";
-  els.fullscreenPlayer.setAttribute("aria-label", document.fullscreenElement ? "退出全屏学习" : "进入全屏学习");
+  const shell = document.querySelector(".learning-shell");
+  const active = Boolean(document.fullscreenElement || shell?.classList.contains("is-local-fullscreen-target"));
+  els.fullscreenPlayer.disabled = !shell;
+  els.fullscreenPlayer.textContent = active ? "退出全屏" : "全屏";
+  els.fullscreenPlayer.setAttribute("aria-label", active ? "退出全屏学习" : "进入全屏学习");
 }
 
 function updateResourceFullscreenButtons() {
   document.querySelectorAll("[data-resource-fullscreen]").forEach((button) => {
     const target = resourceFullscreenTargetForButton(button);
     const active = Boolean(target && document.fullscreenElement === target);
-    button.disabled = !document.fullscreenEnabled;
+    button.disabled = !target;
     const knowledgeSlide = Boolean(target?.matches?.("[data-resource-fullscreen-target]"));
-    button.textContent = active ? "退出全屏" : knowledgeSlide ? "讲解页全屏" : "全屏";
-    button.setAttribute("aria-label", active ? "退出全屏" : knowledgeSlide ? "全屏查看讲解页" : "进入资源全屏");
-    button.setAttribute("title", active ? "退出全屏" : knowledgeSlide ? "全屏查看讲解页" : "进入资源全屏");
+    const localActive = Boolean(target?.classList.contains("is-local-fullscreen-target"));
+    button.textContent = active || localActive ? "退出全屏" : knowledgeSlide ? "讲解页全屏" : "全屏";
+    button.setAttribute("aria-label", active || localActive ? "退出全屏" : knowledgeSlide ? "全屏查看讲解页" : "进入资源全屏");
+    button.setAttribute("title", active || localActive ? "退出全屏" : knowledgeSlide ? "全屏查看讲解页" : "进入资源全屏");
   });
   document.querySelectorAll("[data-knowledge-scene-panel]").forEach((panel) => {
     const stage = panel.querySelector("[data-knowledge-scene-stage]");
-    const active = Boolean(stage && document.fullscreenElement === stage);
-    panel.querySelectorAll("[data-knowledge-scene-fullscreen]").forEach((button) => {
-      button.disabled = !document.fullscreenEnabled || !stage;
+      const active = Boolean(stage && (document.fullscreenElement === stage || stage.classList.contains("is-local-fullscreen-target")));
+      panel.querySelectorAll("[data-knowledge-scene-fullscreen]").forEach((button) => {
+      button.disabled = !stage;
       button.textContent = active ? "退出全屏" : "课件全屏";
       button.setAttribute("aria-label", active ? "退出课件全屏" : "全屏查看当前课件");
       button.setAttribute("title", active ? "退出课件全屏" : "全屏查看当前课件");
     });
   });
 }
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (document.fullscreenElement) {
+    document.exitFullscreen?.().catch(() => {});
+  }
+  document.querySelectorAll(".is-local-fullscreen-target").forEach((target) => target.classList.remove("is-local-fullscreen-target"));
+  document.body.classList.remove("is-learning-local-fullscreen", "is-resource-local-fullscreen");
+  updateFullscreenButton();
+  updateResourceFullscreenButtons();
+  if (typeof scheduleLearningCanvasLayoutSync === "function") {
+    scheduleLearningCanvasLayoutSync("local-fullscreen-escape");
+  }
+});

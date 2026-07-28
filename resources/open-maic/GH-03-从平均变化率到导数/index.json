@@ -1,0 +1,4549 @@
+{
+  "formatVersion": 1,
+  "exportedAt": "2026-07-25T06:45:35.865Z",
+  "appVersion": "0.0.0",
+  "stage": {
+    "name": "从平均变化率到导数",
+    "description": "",
+    "language": "使用中文教学，保持学术严谨性且平易近人。数学术语（如导数、割线、切线、Leibniz符号）使用标准中文表达。对零基础学生提供直观的物理和几何解释，弱化纯公式推导。",
+    "style": "professional",
+    "createdAt": 1782994098806,
+    "updatedAt": 1782994098806
+  },
+  "agents": [
+    {
+      "name": "阿磊",
+      "role": "student",
+      "persona": "阿磊是个直爽活泼的男生，喜欢动手操作和视觉化学习，对拖动滑动条、观察图形变化这类探索兴趣浓厚。他反应快但有时略马虎，容易把斜率公式当成单纯的数字计算而忽略其几何含义。",
+      "avatar": "/avatars/curious.png",
+      "color": "#f59e0b",
+      "priority": 5
+    },
+    {
+      "name": "林教授",
+      "role": "teacher",
+      "persona": "林教授是一位循循善诱的数学老师，擅长用生动的几何直观和物理实例解释抽象的微积分概念。她极其耐心，习惯先肯定学生的思考再引导纠错，认为每一个数学符号背后都藏着一个动态的演变故事。",
+      "avatar": "/avatars/teacher-2.png",
+      "color": "#3b82f6",
+      "priority": 10
+    },
+    {
+      "name": "小宁",
+      "role": "student",
+      "persona": "小宁是个文静细致的女生，善于思考概念之间的逻辑联系，喜欢在关系图中整理知识脉络。她习惯于追问物理意义，常常能率先发现实验现象背后的本质，但有时在面对极限的动态定义时会显得犹豫不决。",
+      "avatar": "/avatars/thinker.png",
+      "color": "#8b5cf6",
+      "priority": 5
+    },
+    {
+      "name": "小柯",
+      "role": "assistant",
+      "persona": "小柯是课堂里的智能学习助手，知识渊博但说话深入浅出，总是在概念容易混淆处用精准的类比点拨学生。她特别关注思维纠偏，乐于把学生的常见误解转化成有趣的挑战而非简单的判断对错。",
+      "avatar": "/avatars/assist.png",
+      "color": "#10b981",
+      "priority": 7
+    }
+  ],
+  "scenes": [
+    {
+      "type": "quiz",
+      "title": "前测：从平均变化率到导数学习准备诊断",
+      "order": 1,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "一辆汽车在笔直的公路上行驶，其在一段时间内走过的总路程与所用时间的比值，在数学上最贴切的名称是？",
+            "options": [
+              {
+                "value": "A",
+                "label": "瞬时速度"
+              },
+              {
+                "value": "B",
+                "label": "平均速度"
+              },
+              {
+                "value": "C",
+                "label": "路程增量"
+              },
+              {
+                "value": "D",
+                "label": "最终速度"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "总路程除以总时间得到的是这段时间内的平均快慢程度，也就是平均速度。瞬时速度对应的是某个时刻的快慢，路程增量只是路程的变化量，最终速度是最后时刻的速度。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "观察某山峰的轮廓曲线，从山脚到山顶，描述这段曲线平均陡峭程度最合适的工具是？",
+            "options": [
+              {
+                "value": "A",
+                "label": "某一点的切线斜率"
+              },
+              {
+                "value": "B",
+                "label": "山顶的高度"
+              },
+              {
+                "value": "C",
+                "label": "连接山脚与山顶的割线斜率"
+              },
+              {
+                "value": "D",
+                "label": "山路的弯曲程度"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "要描述从起点到终点整体的平均陡峭程度，应该用连接起点和终点的直线（割线）的斜率。某一点的切线斜率只能反映该点的陡峭程度，不能代表整体平均情况。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "multiple",
+            "question": "下列关于两个点之间“增量”的说法，哪些是正确的？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "横向增量等于终点的横坐标减去起点的横坐标"
+              },
+              {
+                "value": "B",
+                "label": "纵向增量的大小可能为零"
+              },
+              {
+                "value": "C",
+                "label": "纵向增量永远为正数"
+              },
+              {
+                "value": "D",
+                "label": "纵向增量与横向增量的比值反映两点间的平均变化率"
+              }
+            ],
+            "answer": [
+              "A",
+              "B",
+              "D"
+            ],
+            "analysis": "横向增量定义为Δx = x2 - x1，A正确。如果起点与终点高度相同，纵向增量为零，B正确。如果终点比起点低，纵向增量为负数，C错误。平均变化率就是纵向增量除以横向增量，D正确。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "single",
+            "question": "“当时间间隔趋近于零时，平均速度所无限接近的那个值”被称作瞬时速度。这里“趋近于零”的数学本质是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "时间间隔正好等于零"
+              },
+              {
+                "value": "B",
+                "label": "时间间隔越来越短，可以小于你给出的任何正数"
+              },
+              {
+                "value": "C",
+                "label": "时间间隔变成一个很小的负数"
+              },
+              {
+                "value": "D",
+                "label": "时间间隔比光速还快"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "极限思想的核心是“无限趋近但不一定等于”。趋近于零意味着时间间隔可以任意小，比任何预先给定的正数都要小，反映的是一个动态的趋近过程，而不是一个静止的零状态。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "请用你自己的话（或者借助生活例子）说明：为什么用“平均变化率”不能精确描述一个正在加速运动的物体在某一瞬间的快慢？我们需要借助什么思想来从“平均”过渡到“瞬时”？",
+            "commentPrompt": "评分要点：(1) 明确指出平均变化率是“一段区间”的整体描述，忽略了过程中的细节变化——40%；(2) 用加速运动的例子说明区间内速度不均——30%；(3) 提出“将时间间隔无限缩小”或“取极限”的思想——30%。",
+            "analysis": "参考要点：平均变化率描述的是整段路程的整体快慢，但在加速运动中，每一瞬间的快慢都在变化，用整体平均掩盖了细节。比如汽车加速，第一秒可能走了1米，第二秒走了3米，这两秒的平均速度都是2m/s,却无法体现第一秒末和第二秒末的真实速度差异。要得到瞬时快慢，需运用极限思想，将时间间隔不断缩短，用无限短时间内的平均变化率去逼近该瞬间的精确变化率。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_vSvTveBz",
+          "type": "speech",
+          "text": "这是一组关于“前测：从平均变化率到导数学习准备诊断”的独立测验。在开始新课之前，我们来做一个小小的“前测”，看看大家对“变化率”已经有了哪些直观的理解，还有哪些概念需要我们重点关注。"
+        },
+        {
+          "id": "action_LNU9rlRI",
+          "type": "speech",
+          "text": "这套题目有5道小题，涉及增量、斜率、平均速度和极限的初步概念。大家不用紧张，不会的题目在选项旁做个标记就好，这能帮助我更好地把握大家的起点。准备好了吗？请大家开始作答吧。",
+          "audioRef": "audio/tts_action_LNU9rlRI.mp3"
+        },
+        {
+          "id": "action_eWGwk2qS",
+          "type": "speech",
+          "text": "时间到，大家完成得都很快。我们来简单回顾一下。前三道题从路程与时间的比值、山峰的陡峭程度，再到函数的局部与整体变化趋势，核心都围绕着“平均变化率”的定义。有同学对第一题选了“瞬时速度”，注意瞬时速度是时间点趋近于零时的极限状态，而题目给的是“一段时间”，所以应该是平均速度。",
+          "audioRef": "audio/tts_action_eWGwk2qS.mp3"
+        },
+        {
+          "id": "action_FqmemeiP",
+          "type": "speech",
+          "text": "这道题考的是极限的直观描述——“趋近于零”不是“等于零”，而是一个无限接近的动态过程。就像我们看着一根针的针尖慢慢靠近一个点，虽然看起来快要碰到，但永远可以更近一步。这正是我们需要从“平均”走向“瞬时”最关键的桥梁。"
+        },
+        {
+          "id": "action_u22q1eB5",
+          "type": "discussion",
+          "topic": "为什么“平均变化率”无法精确描述一个时刻的快慢？请结合加速运动的例子谈谈你的理解。",
+          "prompt": "回想一下开车起步时，仪表盘上的速度时刻在变，而你导航上显示的平均速度却只是一个固定值。一个不断变化的瞬间，如何才能被准确捕捉？",
+          "agentIndex": 2
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "平均变化率和割线",
+      "order": 2,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "tkMaLiOyYfgtuI2JwQ1hv",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_oBapnH2R",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #2C3E50;\">平均变化率与割线斜率</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "shape",
+              "id": "shape_wQGvF_wz",
+              "left": 60,
+              "top": 125,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#3498DB"
+            },
+            {
+              "type": "shape",
+              "id": "shape_EfZ5u0ee",
+              "left": 60,
+              "top": 160,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#3498DB"
+            },
+            {
+              "type": "text",
+              "id": "text_SAsQaU48",
+              "left": 80,
+              "top": 140,
+              "width": 420,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>定义：</b>输出量变化除以输入量变化 (Δy/Δx)</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_0dXJXqpn",
+              "left": 60,
+              "top": 220,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#3498DB"
+            },
+            {
+              "type": "text",
+              "id": "text_LPfrL-jq",
+              "left": 80,
+              "top": 200,
+              "width": 420,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>几何意义：</b>割线斜率——连接曲线上两点 (x₁, f(x₁)) 和 (x₂, f(x₂)) 的直线斜率。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_T-J_mkmC",
+              "left": 60,
+              "top": 310,
+              "width": 8,
+              "height": 8,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#3498DB"
+            },
+            {
+              "type": "text",
+              "id": "text_C2-SVnm3",
+              "left": 80,
+              "top": 290,
+              "width": 420,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; color: #333333;\"><b>常见误解：</b>分子 Δy 代表输出变量变化，分母 Δx 代表输入变量变化，两者均为整体改变量。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_p4eJQJ-c",
+              "left": 60,
+              "top": 390,
+              "width": 440,
+              "height": 80,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F0F4F8"
+            },
+            {
+              "type": "latex",
+              "id": "latex_yrJ6N9WE",
+              "left": 80,
+              "top": 400,
+              "width": 400,
+              "height": 60,
+              "rotate": 0,
+              "latex": "\\text{平均变化率} = \\frac{f(x_2)-f(x_1)}{x_2-x_1}",
+              "color": "#2C3E50",
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">平均变化率</span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.263em;vertical-align:-0.836em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">1</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3011em;\"><span style=\"top:-2.55em;margin-left:0em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">1</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.15em;\"><span></span></span></span></span></span></span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.836em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "text",
+              "id": "text_EVimsB-_",
+              "left": 540,
+              "top": 400,
+              "width": 400,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; text-align: center; color: #666666;\">图 5.3：函数 f 在 x₁ 到 x₂ 之间的平均斜率，即通过 (x₁, f(x₁)) 和 (x₂, f(x₂)) 的割线斜率。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#666666"
+            },
+            {
+              "type": "shape",
+              "id": "shape_avg_rate_graph_bg",
+              "left": 540,
+              "top": 145,
+              "width": 400,
+              "height": 235,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#F7FAFC"
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_x_axis",
+              "left": 575,
+              "top": 340,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                320,
+                0
+              ],
+              "style": "solid",
+              "color": "#667085",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_y_axis",
+              "left": 575,
+              "top": 340,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                -155
+              ],
+              "style": "solid",
+              "color": "#667085",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_curve_1",
+              "left": 600,
+              "top": 320,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                45,
+                -12
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_curve_2",
+              "left": 645,
+              "top": 308,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                45,
+                -28
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_curve_3",
+              "left": 690,
+              "top": 280,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                45,
+                -48
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_curve_4",
+              "left": 735,
+              "top": 232,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                45,
+                -62
+              ],
+              "style": "solid",
+              "color": "#3498DB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_avg_rate_secant",
+              "left": 625,
+              "top": 310,
+              "width": 2,
+              "height": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                155,
+                -110
+              ],
+              "style": "solid",
+              "color": "#ED7D31",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_avg_rate_point_1",
+              "left": 617,
+              "top": 302,
+              "width": 16,
+              "height": 16,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#ED7D31"
+            },
+            {
+              "type": "shape",
+              "id": "shape_avg_rate_point_2",
+              "left": 772,
+              "top": 192,
+              "width": 16,
+              "height": 16,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#ED7D31"
+            },
+            {
+              "type": "text",
+              "id": "text_avg_rate_x1",
+              "left": 610,
+              "top": 345,
+              "width": 40,
+              "height": 28,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #667085;\">x₁</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#667085"
+            },
+            {
+              "type": "text",
+              "id": "text_avg_rate_x2",
+              "left": 765,
+              "top": 345,
+              "width": 40,
+              "height": 28,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #667085;\">x₂</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#667085"
+            },
+            {
+              "type": "text",
+              "id": "text_avg_rate_secant_label",
+              "left": 790,
+              "top": 215,
+              "width": 120,
+              "height": 32,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; color: #ED7D31;\">割线斜率</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ED7D31"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_lg4o9SOo",
+          "type": "spotlight",
+          "elementId": "text_oBapnH2R"
+        },
+        {
+          "id": "action_dOTl10MJ",
+          "type": "speech",
+          "text": "本场景聚焦“平均变化率和割线”。我们来看看如何把“趋近”这个动态过程用数学语言量化。首先映入眼帘的就是这个标题——平均变化率与割线。大家先在当前页面中定位这个部分。"
+        },
+        {
+          "id": "action_a3pngtHo",
+          "type": "spotlight",
+          "elementId": "text_SAsQaU48"
+        },
+        {
+          "id": "action_7yExsBto",
+          "type": "speech",
+          "text": "我们先给它下一个明确的定义。所谓平均变化率，顾名思义，就是看一个量平均下来是怎么变的。它的数学表达式非常简单，就是输出量的变化值Δy，除以输入量的变化值Δx。你可以把它想象成，在过去的一段时间里，事物平均快慢的一个度量。",
+          "audioRef": "audio/tts_s2_action_7yExsBto.mp3"
+        },
+        {
+          "id": "action_p6A_MLPx",
+          "type": "spotlight",
+          "elementId": "latex_yrJ6N9WE"
+        },
+        {
+          "id": "action_lCrFyDdT",
+          "type": "speech",
+          "text": "看这个公式，就是f(x₂) - f(x₁)除以x₂ - x₁。这其实就是在问：在这个区间里，输入量每改变一个单位，平均而言，输出量会跟着改变多少？这就是公式背后的直观故事。",
+          "audioRef": "audio/tts_s2_action_lCrFyDdT.wav"
+        },
+        {
+          "id": "action_edAIfRZ0",
+          "type": "spotlight",
+          "elementId": "text_LPfrL-jq"
+        },
+        {
+          "id": "action_A9Gbebon",
+          "type": "speech",
+          "text": "这个公式还有一个生动的几何形象，我们管它叫割线。大家看这个图5.3，如果我们在曲线上取两个点，然后用一条直线把它们连起来，这条直线的斜率，就等于我们刚刚算出的平均变化率。它就像是这两个点之间变化趋势的一种宏观概括。",
+          "audioRef": "audio/tts_s2_action_A9Gbebon.mp3"
+        },
+        {
+          "id": "action_BkUrm4gd",
+          "type": "spotlight",
+          "elementId": "text_EVimsB-_"
+        },
+        {
+          "id": "action_xQ3qsjWR",
+          "type": "speech",
+          "text": "所以，请牢牢记住这个画面：从x₀到x₀+Δx这段区间上的平均斜率，就是穿过这两个曲线点的割线斜率。这是我们之后理解“瞬时”变化一个非常重要的跳板。",
+          "audioRef": "audio/tts_s2_action_xQ3qsjWR.mp3"
+        },
+        {
+          "id": "action_vz_jYwzJ",
+          "type": "spotlight",
+          "elementId": "text_C2-SVnm3"
+        },
+        {
+          "id": "action_Nb8sHThc",
+          "type": "speech",
+          "text": "在这里，我要帮大家预防一个非常经典的误解。看到这个公式，可别只把它看作两个孤立的数字做除法。记住，分子Δy是输出量的整体改变量，而分母Δx是输入量的整体改变量。它们是一个整体变化的配对，每一个数值都承载着变化的动态意义，而不是冷冰冰的加减结果。"
+        },
+        {
+          "id": "action_PANx5AXy",
+          "type": "speech",
+          "text": "好了，概念和定义我们理清了。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "平均变化率和割线：拖动实验",
+      "order": 3,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "average_rate_of_change_secant",
+          "description": "通过拖动区间端点 x₁ 和 x₂，观察割线斜率与函数平均变化率的关系。割线斜率 = Δy/Δx = (f(x₂)−f(x₁))/(x₂−x₁)，描述了函数在区间 [x₁,x₂] 上的平均变化趋势。",
+          "variables": [
+            {
+              "name": "x1_position",
+              "label": "x₁ 位置",
+              "min": -3,
+              "max": 3,
+              "default": -1,
+              "unit": ""
+            },
+            {
+              "name": "x2_position",
+              "label": "x₂ 位置",
+              "min": -3,
+              "max": 3,
+              "default": 2,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "宽区间",
+              "variables": {
+                "x1_position": -2.5,
+                "x2_position": 2.5
+              },
+              "desc": "观察大范围平均变化"
+            },
+            {
+              "name": "窄区间",
+              "variables": {
+                "x1_position": -0.5,
+                "x2_position": 0.5
+              },
+              "desc": "区间缩小时斜率趋近切线"
+            },
+            {
+              "name": "正区间",
+              "variables": {
+                "x1_position": 0,
+                "x2_position": 3
+              },
+              "desc": "函数递增区间的变化率"
+            },
+            {
+              "name": "对称区间",
+              "variables": {
+                "x1_position": -2,
+                "x2_position": 2
+              },
+              "desc": "关于y轴对称区间的斜率"
+            },
+            {
+              "name": "极窄区间",
+              "variables": {
+                "x1_position": 0.4,
+                "x2_position": 0.6
+              },
+              "desc": "趋近瞬时变化率"
+            }
+          ]
+        },
+        "htmlPath": "interactive/03_平均变化率和割线：拖动实验.html",
+        "htmlBytes": 765605
+      },
+      "actions": [
+        {
+          "id": "action_z2cPauyn",
+          "type": "speech",
+          "text": "本场景通过交互探索“平均变化率和割线：拖动实验”。现在我们的屏幕上出现了一条曲线，上面有两个可以拖动的控制点，分别是 x₁ 和 x₂。它们之间连成的这条直线，就是当前场景中的割线。"
+        },
+        {
+          "id": "action_5mAtkV8q",
+          "type": "widget_highlight",
+          "target": "#x1_position",
+          "content": "这是 x₁ 的控制点，试着左右拖动它。"
+        },
+        {
+          "id": "action_BVmFt3mo",
+          "type": "speech",
+          "text": "来，你们可以先试试拖动左边的 x₁，看看右边的读数面板发生了什么变化。"
+        },
+        {
+          "id": "action_yYa8KPOO",
+          "type": "widget_setState",
+          "state": {
+            "x1_position": -2.5,
+            "x2_position": 2.5
+          },
+          "content": "应用\"宽区间\"预设，展示大范围的平均变化。"
+        },
+        {
+          "id": "action_DH5JGD7s",
+          "type": "speech",
+          "text": "现在我们把两个点拉得很开，形成了一个跨度很大的宽区间。观察一下，Δy 除以 Δx 算出来的斜率值，是不是恰好描述了这条割线在整个区间上的平均倾斜程度？这就是我们所说的平均变化率。",
+          "audioRef": "audio/tts_s3_action_DH5JGD7s.mp3"
+        },
+        {
+          "id": "action_hW6Uj3O-",
+          "type": "widget_setState",
+          "state": {
+            "x1_position": -0.5,
+            "x2_position": 0.5
+          },
+          "content": "应用\"窄区间\"预设，观察割线趋近切线的过程。"
+        },
+        {
+          "id": "action_EZiL8bgS",
+          "type": "widget_highlight",
+          "target": "#result-display",
+          "content": "注意观察平均变化率数值的变化。"
+        },
+        {
+          "id": "action__xxt7H57",
+          "type": "speech",
+          "text": "现在，请你把 x₁ 和 x₂ 慢慢靠近——对，像这样让区间变得非常非常窄。看到了吗？割线的斜率读数变化得越来越精细，它开始代表一个更局部的变化趋势了。这为我们进一步理解\"瞬时变化率\"，埋下了关键的几何直觉。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "平均变化率和割线：关系图",
+      "order": 4,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "title": "平均变化率和割线：关系图",
+          "nodes": [
+            {
+              "id": "delta_x",
+              "label": "自变量增量",
+              "sublabel": "Δx",
+              "icon": "🔵",
+              "details": "函数输入的<b>改变量</b>，即自变量从 x₀ 变化到 x₀+Δx 时产生的差值。物理上可理解为时间的推移或距离的移动。",
+              "formula": "Δx = x₁ - x₀"
+            },
+            {
+              "id": "func_map",
+              "label": "函数映射",
+              "sublabel": "f(x₀+Δx)",
+              "icon": "🔄",
+              "details": "将自变量 x₀+Δx <b>代入函数</b>，计算对应的函数值。这是容易被忽略的关键步骤——Δx 不能直接使用，必须<b>先通过函数映射</b>得到输出端的变化。",
+              "formula": "f(x₀ + Δx) - f(x₀)"
+            },
+            {
+              "id": "delta_y",
+              "label": "因变量增量",
+              "sublabel": "Δy",
+              "icon": "📊",
+              "details": "函数输出的<b>改变量</b>，由函数映射产生。Δy 不是独立存在的，它<b>依赖于</b> Δx 和函数规则。几何上表示割线两端点的纵坐标差。",
+              "formula": "Δy = f(x₁) - f(x₀)"
+            },
+            {
+              "id": "diff_quot",
+              "label": "差分商公式",
+              "sublabel": "Δy / Δx",
+              "icon": "📐",
+              "details": "将输出增量与输入增量<b>相除</b>，得到平均变化率。这就是 Leibniz 符号 dy/dx 的<b>离散近似</b>。关键理解：它是一个<b>比值</b>，而非简单的减法。",
+              "formula": "平均变化率 = Δy/Δx = [f(x₀+Δx)-f(x₀)]/Δx"
+            },
+            {
+              "id": "secant_slope",
+              "label": "割线斜率",
+              "sublabel": "几何意义",
+              "icon": "📏",
+              "details": "差分商在几何上等于函数图像上<b>两点间割线的斜率</b>。当 Δx → 0 时，割线逼近切线，这就是<b>导数</b>的几何起源。",
+              "formula": "斜率 = tan θ = 纵差/横差 = Δy/Δx"
+            },
+            {
+              "id": "misconception",
+              "label": "⚠️ 常见误解",
+              "sublabel": "逻辑断点",
+              "icon": "🚨",
+              "details": "<b>只代公式不看物理意义</b>：学生常把 Δy/Δx 当作纯符号运算，忽略了 Δx 必须<b>先经函数映射</b>产生 Δy。正确链路：Δx → 代入函数 → 得 Δy → 相比率。跳过映射步骤是最大陷阱！",
+              "formula": "❌ Δy ≠ 直接代 Δx\n✅ Δy = f(x₀+Δx) - f(x₀)"
+            }
+          ],
+          "edges": [
+            {
+              "from": "delta_x",
+              "to": "func_map",
+              "label": "代入函数"
+            },
+            {
+              "from": "func_map",
+              "to": "delta_y",
+              "label": "计算差值"
+            },
+            {
+              "from": "delta_y",
+              "to": "diff_quot",
+              "label": "组成比例"
+            },
+            {
+              "from": "delta_x",
+              "to": "diff_quot",
+              "label": "分母"
+            },
+            {
+              "from": "diff_quot",
+              "to": "secant_slope",
+              "label": "几何解释"
+            },
+            {
+              "from": "diff_quot",
+              "to": "misconception",
+              "label": "⚠ 误区",
+              "type": "misconception"
+            }
+          ],
+          "revealOrder": [
+            "delta_x",
+            "func_map",
+            "delta_y",
+            "diff_quot",
+            "secant_slope",
+            "misconception"
+          ]
+        },
+        "htmlPath": "interactive/04_平均变化率和割线：关系图.html",
+        "htmlBytes": 763700
+      },
+      "actions": [
+        {
+          "id": "action_Au0RErEW",
+          "type": "speech",
+          "text": "本场景通过交互探索“平均变化率和割线：关系图”。可以观察到区间变窄时，割线斜率如何变得越来越精细。现在，让我们把这个动态过程的逻辑脉络梳理清楚——从输入端的微小变化，到最终产出一个斜率值，中间到底经历了哪些关键步骤？"
+        },
+        {
+          "id": "action__4EutM2V",
+          "type": "widget_reveal",
+          "target": "#delta_x",
+          "content": "首先亮相的是自变量增量 Δx"
+        },
+        {
+          "id": "action_wm0MvnBE",
+          "type": "speech",
+          "text": "我们的故事从 Δx 开始。这是自变量 x₀ 处的一个微小改变量，也就是你刚才拖动滑块时，x₁ 和 x₀ 之间的那段距离。它是整个计算链路的起点。",
+          "audioRef": "audio/tts_s4_action_wm0MvnBE.mp3"
+        },
+        {
+          "id": "action_bLEnxYx3",
+          "type": "widget_reveal",
+          "target": "#func_map",
+          "content": "接下来是函数映射——容易被跳过的一步"
+        },
+        {
+          "id": "action_dJg1QbFy",
+          "type": "speech",
+          "text": "你最容易在这里忽略：Δx 可不能直接拿着就去减什么，它必须先送进函数 f 里“加工”一下。f(x₀+Δx) 才是输出端变化的源头。这个映射步骤是整条逻辑链上最大的一个陷阱。"
+        },
+        {
+          "id": "action_mhm2p6Ra",
+          "type": "widget_setState",
+          "state": {
+            "revealedNodes": [
+              "delta_x",
+              "func_map",
+              "delta_y"
+            ]
+          },
+          "content": "揭示输入到输出的完整前半段链路"
+        },
+        {
+          "id": "action_WU9i9TTd",
+          "type": "speech",
+          "text": "加工之后，我们得到了因变量的增量 Δy，也就是输出端的改变量。注意，Δy 不是凭空产生的，它依赖于 Δx 和函数规则。到这里，变化量的“原料”就准备齐了。",
+          "audioRef": "audio/tts_s4_action_WU9i9TTd.mp3"
+        },
+        {
+          "id": "action_3djDM5Jq",
+          "type": "widget_reveal",
+          "target": "#diff_quot",
+          "content": "差分商公式：比值的诞生"
+        },
+        {
+          "id": "action_ZqyXUj1I",
+          "type": "speech",
+          "text": "把输出增量 Δy 和输入增量 Δx 相除，就得到了差分商——它就是平均变化率。你想想，这个比值在几何上对应的是什么？"
+        },
+        {
+          "id": "action_CNz07P-X",
+          "type": "widget_reveal",
+          "target": "#secant_slope",
+          "content": "几何解释：割线斜率"
+        },
+        {
+          "id": "action_Et8oUFNU",
+          "type": "speech",
+          "text": "就是这个！割线斜率。差分商在函数图像上的几何意义，就是连接两点的割线的倾斜程度。当 Δx 趋近于零，割线会逼近切线——这就为后面我们要讨论的导数，埋下了最直观的伏笔。",
+          "audioRef": "audio/tts_s4_action_Et8oUFNU.mp3"
+        },
+        {
+          "id": "action_Jf3EB79j",
+          "type": "widget_reveal",
+          "target": "#misconception",
+          "content": "聚焦常见误解：跳过函数映射的逻辑断点"
+        },
+        {
+          "id": "action_959VYoA8",
+          "type": "speech",
+          "text": "最后，我们把那个最容易掉进去的误区高亮出来：只代公式不看物理意义。如果把 Δy/Δx 当成纯符号运算，直接拿 Δx 去套公式，就切断了函数映射这一关键环节。正确的逻辑链路永远是：Δx 先代入函数，产生 Δy，然后相比率。把这张关系图刻在脑子里，接下来的误解修复挑战，我们就知道自己要避开什么了。",
+          "audioRef": "audio/tts_s4_action_959VYoA8.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "平均变化率和割线：误解修复挑战",
+      "order": 5,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "puzzle",
+          "description": "割线建造师 — 平均变化率误解修复挑战",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          },
+          "achievements": [
+            {
+              "id": "first_place",
+              "name": "初次放置",
+              "description": "正确放置第一个公式块",
+              "icon": "🎯"
+            },
+            {
+              "id": "combo3",
+              "name": "三连击",
+              "description": "连续3次正确放置",
+              "icon": "🔥"
+            },
+            {
+              "id": "perfect_level",
+              "name": "完美过关",
+              "description": "一个不错地完成关卡",
+              "icon": "💎"
+            },
+            {
+              "id": "speed_demon",
+              "name": "闪电侠",
+              "description": "30秒内完成关卡",
+              "icon": "⚡"
+            },
+            {
+              "id": "all_clear",
+              "name": "割线大师",
+              "description": "完成全部5个关卡",
+              "icon": "🏆"
+            }
+          ]
+        },
+        "htmlPath": "interactive/05_平均变化率和割线：误解修复挑战.html",
+        "htmlBytes": 791373
+      },
+      "actions": [
+        {
+          "id": "action_balSnKDA",
+          "type": "speech",
+          "text": "本场景通过交互探索“平均变化率和割线：误解修复挑战”。现在就来一场挑战，把那些容易混淆的符号和几何位置对上号。"
+        },
+        {
+          "id": "action_XlFOFb1K",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始进入挑战"
+        },
+        {
+          "id": "action_YhF0vhgv",
+          "type": "speech",
+          "text": "大家会看到一些散落的公式项，比如 f(x+h)、Δx 之类的卡片，请你把它们拖到正确的位置——到底该放在三角形的高那边，还是底边那边？",
+          "audioRef": "audio/tts_s5_action_YhF0vhgv.mp3"
+        },
+        {
+          "id": "action_DmDm55Nx",
+          "type": "widget_setState",
+          "state": {
+            "gameStarted": true
+          },
+          "content": "启动第一组匹配任务"
+        },
+        {
+          "id": "action_Vuuo3gy0",
+          "type": "speech",
+          "text": "请特别注意：如果把表示高度变化的项错放到底边上，画面会立刻给出几何冲突提示，帮你意识到自己习惯性地只套了公式。",
+          "audioRef": "audio/tts_s5_action_Vuuo3gy0.mp3"
+        },
+        {
+          "id": "action_0pTPGFQ6",
+          "type": "widget_annotation",
+          "target": "#drop-zone-height",
+          "content": "Δy 或高度变化区"
+        },
+        {
+          "id": "action_kgsp1_dF",
+          "type": "widget_annotation",
+          "target": "#drop-zone-base",
+          "content": "Δx 或底边跨度区"
+        },
+        {
+          "id": "action_YD5MPSbU",
+          "type": "speech",
+          "text": "大家、大家，咱们今天不是比谁算得快，而是看谁能把五组不同函数图像一一修复正确。准备好了就动手吧，每完成一组，你会更直观地感受到那条割线是怎么搭建起来的。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "平均变化率和割线：空间视角",
+      "order": 6,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "平均变化率和割线的空间视角：在3D空间中展示割线斜率作为一种'倾斜度'的感知。学生可通过旋转视角确认，无论从哪个方向观察，斜率的本质依然是高度与水平距离的比值。",
+          "objects": [
+            {
+              "id": "curve_segment",
+              "type": "curve",
+              "description": "空间参数曲线 y=x²/6+1, z=sin(0.8x)·1.5",
+              "material": {
+                "type": "phong",
+                "color": "#4fc3f7"
+              }
+            },
+            {
+              "id": "secant_line",
+              "type": "line",
+              "description": "连接曲线上两点的割线",
+              "material": {
+                "type": "phong",
+                "color": "#ff5252"
+              }
+            },
+            {
+              "id": "projection_triangle",
+              "type": "group",
+              "description": "投影直角三角形，展示Δx、Δy和斜边",
+              "children": [
+                {
+                  "id": "delta_x",
+                  "type": "line",
+                  "color": "#4caf50"
+                },
+                {
+                  "id": "delta_y",
+                  "type": "line",
+                  "color": "#ff9800"
+                },
+                {
+                  "id": "hypotenuse",
+                  "type": "line",
+                  "color": "#ffeb3b"
+                }
+              ]
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "x1",
+              "label": "点A (x₁)",
+              "min": -3,
+              "max": 1,
+              "default": -1.5
+            },
+            {
+              "type": "slider",
+              "param": "x2",
+              "label": "点B (x₂)",
+              "min": -1,
+              "max": 3,
+              "default": 1.5
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "toggleProjection",
+              "label": "投影开关"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            }
+          ],
+          "presets": [
+            {
+              "name": "俯视视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  12,
+                  0.1
+                ],
+                "lookAt": [
+                  0,
+                  2,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧视视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  3,
+                  10
+                ],
+                "lookAt": [
+                  0,
+                  2,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "正视视角",
+              "state": {
+                "cameraPosition": [
+                  6,
+                  5,
+                  8
+                ],
+                "lookAt": [
+                  0,
+                  2,
+                  0
+                ]
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/06_平均变化率和割线：空间视角.html",
+        "htmlBytes": 2516571
+      },
+      "actions": [
+        {
+          "id": "action_L5OYSq31",
+          "type": "speech",
+          "text": "本场景通过交互探索“平均变化率和割线：空间视角”。让我们跳到一个更高的维度，在三维空间中重新审视那条割线。"
+        },
+        {
+          "id": "action_lMnVwZWh",
+          "type": "widget_setState",
+          "preset": "正视视角",
+          "content": "从默认的正视视角开始，观察空间曲线和红色割线。",
+          "state": {}
+        },
+        {
+          "id": "action_neCKYqC-",
+          "type": "speech",
+          "text": "在3D场景里，我们看到的这条红色线段，就是连接曲线上A、B两点的空间割线。它看起来就像一座微斜的小桥。",
+          "audioRef": "audio/tts_s6_action_neCKYqC-.mp3"
+        },
+        {
+          "id": "action_sVld3nx_",
+          "type": "widget_highlight",
+          "target": "#secant_line",
+          "content": "高亮显示当前的空间割线。"
+        },
+        {
+          "id": "action_qp5Nt7RW",
+          "type": "speech",
+          "text": "如果你尝试用鼠标拖拽旋转观察，会发现一个有意思的事情。",
+          "audioRef": "audio/tts_s6_action_qp5Nt7RW.mp3"
+        },
+        {
+          "id": "action_32Tp-U-b",
+          "type": "widget_annotation",
+          "target": "#projection_triangle",
+          "content": "切换投影开关，观察底部的直角三角形——绿色是水平跨度，橙色是上升高度。"
+        },
+        {
+          "id": "action_vhyHQPxZ",
+          "type": "speech",
+          "text": "点击‘投影开关’，我们从不同的角度都能看到，无论视角怎么变，平均变化率的本质，依然是那条绿色边和橙色边的比值，也就是‘上升’与‘前进’的比例。这和我们在平面上的认识完全一致。",
+          "audioRef": "audio/tts_s6_action_vhyHQPxZ.mp3"
+        },
+        {
+          "id": "action_duubqYVU",
+          "type": "widget_setState",
+          "preset": "侧视视角",
+          "content": "切换到侧视视角，观察投影三角形如何退化。",
+          "state": {}
+        },
+        {
+          "id": "action_xL8DaW_O",
+          "type": "speech",
+          "text": "最后，拖动x₁和x₂的滑块，改变两点的位置，空间三角形的形状会随之动态变化。但那条红色割线的‘倾斜感’，始终由Δy与Δx的比值所掌控。",
+          "audioRef": "audio/tts_s6_action_xL8DaW_O.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "瞬时变化率和切线",
+      "order": 7,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "4LfNO7Bl6AWXHpWi3PS6b",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_NfwGubgj",
+              "left": 100,
+              "top": 50,
+              "width": 800,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1E3A5F;\">瞬时变化率和切线</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1E3A5F"
+            },
+            {
+              "type": "text",
+              "id": "text_-HOzdSLQ",
+              "left": 100,
+              "top": 120,
+              "width": 800,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #7F8C8D;\">当区间缩为一点，割线演变为切线</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#7F8C8D"
+            },
+            {
+              "type": "latex",
+              "id": "latex_VpxDbGMr",
+              "left": 100,
+              "top": 180,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "latex": "f'(a) = \\lim_{h \\to 0} \\frac{f(a+h) - f(a)}{h}",
+              "color": "#C0392B",
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.0519em;vertical-align:-0.25em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8019em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">′</span></span></span></span></span></span></span></span></span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">a</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.1791em;vertical-align:-0.7521em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.3479em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">h</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7521em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">h</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">a</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\">h</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">a</span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>",
+              "fixedRatio": true
+            },
+            {
+              "type": "text",
+              "id": "text_Bk5jn6qW",
+              "left": 100,
+              "top": 270,
+              "width": 400,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; line-height: 1.5; color: #2C3E50;\"><b>• 极限过程：</b>考虑函数 f(x) 在 x=a 处，割线斜率定义为 (f(a+h)-f(a))/h，令 h 趋近于 0，观察斜率的变化。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "text",
+              "id": "text_6D9i0Oow",
+              "left": 100,
+              "top": 370,
+              "width": 400,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; line-height: 1.5; color: #2C3E50;\"><b>• 切线定义：</b>若上述极限存在，则切线是割线的极限位置，其斜率等于该极限值。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "text",
+              "id": "text_nxdYnsDm",
+              "left": 100,
+              "top": 450,
+              "width": 400,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; line-height: 1.5; color: #2C3E50;\"><b>• 纠正误解：</b>导数不是将 h=0 直接代入得到的 0/0，而是 h 无限逼近 0 时比值趋近的确定值。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2C3E50"
+            },
+            {
+              "type": "line",
+              "id": "line_brcoaw9W",
+              "left": 520,
+              "top": 180,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                0,
+                320
+              ],
+              "style": "solid",
+              "color": "#BDC3C7",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_gh03_s7_plot_bg",
+              "left": 545,
+              "top": 180,
+              "width": 365,
+              "height": 245,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#FFFFFF",
+              "outline": {
+                "color": "#D7E1EA",
+                "width": 1,
+                "style": "solid"
+              }
+            },
+            {
+              "type": "line",
+              "id": "line_gh03_s7_x_axis",
+              "left": 575,
+              "top": 390,
+              "width": 2,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                310,
+                0
+              ],
+              "style": "solid",
+              "color": "#94A3B8",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_gh03_s7_y_axis",
+              "left": 595,
+              "top": 205,
+              "width": 2,
+              "start": [
+                0,
+                185
+              ],
+              "end": [
+                0,
+                0
+              ],
+              "style": "solid",
+              "color": "#94A3B8",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_gh03_s7_curve",
+              "left": 600,
+              "top": 210,
+              "width": 4,
+              "start": [
+                0,
+                165
+              ],
+              "end": [
+                270,
+                0
+              ],
+              "cubic": [
+                [
+                  80,
+                  155
+                ],
+                [
+                  185,
+                  82
+                ]
+              ],
+              "style": "solid",
+              "color": "#2563EB",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_gh03_s7_secant",
+              "left": 690,
+              "top": 252,
+              "width": 3,
+              "start": [
+                0,
+                92
+              ],
+              "end": [
+                126,
+                4
+              ],
+              "style": "solid",
+              "color": "#EA580C",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_gh03_s7_tangent",
+              "left": 630,
+              "top": 252,
+              "width": 3,
+              "start": [
+                0,
+                89
+              ],
+              "end": [
+                240,
+                -32
+              ],
+              "style": "solid",
+              "color": "#16A34A",
+              "points": [
+                "",
+                ""
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "line",
+              "id": "line_gh03_s7_move",
+              "left": 700,
+              "top": 250,
+              "width": 2,
+              "start": [
+                115,
+                0
+              ],
+              "end": [
+                0,
+                88
+              ],
+              "style": "dashed",
+              "color": "#F59E0B",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_gh03_s7_point_a",
+              "left": 684,
+              "top": 338,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#0F172A"
+            },
+            {
+              "type": "shape",
+              "id": "shape_gh03_s7_point_b",
+              "left": 810,
+              "top": 250,
+              "width": 12,
+              "height": 12,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
+              "fixedRatio": true,
+              "fill": "#EA580C"
+            },
+            {
+              "type": "text",
+              "id": "text_gh03_s7_point_a",
+              "left": 668,
+              "top": 348,
+              "width": 42,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold; color: #0F172A;\">A</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#0F172A"
+            },
+            {
+              "type": "text",
+              "id": "text_gh03_s7_point_b",
+              "left": 800,
+              "top": 238,
+              "width": 42,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold; color: #EA580C;\">B</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#EA580C"
+            },
+            {
+              "type": "text",
+              "id": "text_gh03_s7_limit",
+              "left": 733,
+              "top": 286,
+              "width": 74,
+              "height": 52,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; font-weight: bold; text-align: center; color: #B45309;\">B→A，h→0</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#B45309"
+            },
+            {
+              "type": "text",
+              "id": "text_gh03_s7_secant",
+              "left": 842,
+              "top": 214,
+              "width": 58,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 13px; font-weight: bold; text-align: center; color: #EA580C;\">割线</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#EA580C"
+            },
+            {
+              "type": "text",
+              "id": "text_gh03_s7_tangent",
+              "left": 842,
+              "top": 270,
+              "width": 58,
+              "height": 43,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 13px; font-weight: bold; text-align: center; color: #16A34A;\">切线</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#16A34A"
+            },
+            {
+              "type": "text",
+              "id": "text_UAf_Pdp5",
+              "left": 550,
+              "top": 432,
+              "width": 350,
+              "height": 64,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 14px; line-height: 1.45; text-align: center; color: #475569;\">B 沿曲线向 A 靠近时，<span style=\"color: #EA580C; font-weight: bold;\">割线</span>逐步逼近 A 点的<span style=\"color: #16A34A; font-weight: bold;\">切线</span>（h→0）</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#7F8C8D"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#F5F7FA"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_qYxthyhT",
+          "type": "spotlight",
+          "elementId": "text_NfwGubgj"
+        },
+        {
+          "id": "action_4drr471f",
+          "type": "speech",
+          "text": "本场景聚焦“瞬时变化率和切线”。如果两个点分开，就能画出一条割线。但如果我们让其中一个点无限逼近另一个点，会发生什么呢？这就是我们这一页的核心问题：瞬时变化率和切线。"
+        },
+        {
+          "id": "action_8T_Wr9H2",
+          "type": "spotlight",
+          "elementId": "text_-HOzdSLQ"
+        },
+        {
+          "id": "action_9Uf7eS46",
+          "type": "speech",
+          "text": "大家看这句话：当区间缩为一点，割线演变为切线。想象一下，就像你不断缩短两个观察点之间的距离，那条蓝色的线，在动态中最终会定格在一个特殊的位置。这个位置，就是我们所说的切线。",
+          "audioRef": "audio/tts_s7_action_9Uf7eS46.mp3"
+        },
+        {
+          "id": "action_zeVERgZw",
+          "type": "spotlight",
+          "elementId": "text_Bk5jn6qW"
+        },
+        {
+          "id": "action_XAdP8MoG",
+          "type": "speech",
+          "text": "我们来回想一下刚才的割线斜率公式。现在，我们让h无限趋近于0。h就是两点在x轴上的距离。当h趋近0时，这个比值会逼近一个什么样的数？这个趋近的过程，就是极限的思想，也是导数概念最关键的一步。",
+          "audioRef": "audio/tts_s7_action_XAdP8MoG.mp3"
+        },
+        {
+          "id": "action_lAqz-dOz",
+          "type": "spotlight",
+          "elementId": "latex_VpxDbGMr"
+        },
+        {
+          "id": "action_yahG4JxC",
+          "type": "speech",
+          "text": "看这个式子，f'(a)等于当h趋近于0时，f(a+h)减去f(a)，再除以h的极限。注意，这里的箭头上写的h趋近于0，意味着h在无限地靠近0，但它永远不是0。",
+          "audioRef": "audio/tts_s7_action_yahG4JxC.mp3"
+        },
+        {
+          "id": "action_Hmlvafy1",
+          "type": "spotlight",
+          "elementId": "text_6D9i0Oow"
+        },
+        {
+          "id": "action_63RpyQIi",
+          "type": "speech",
+          "text": "所以，我们给切线下一个更精确的定义：切线就是割线的极限位置。它的斜率，就等于这个比值的极限。这就不再是两个点间的平均变化率了，而是这一个点上的瞬时变化率。",
+          "audioRef": "audio/tts_s7_action_63RpyQIi.mp3"
+        },
+        {
+          "id": "action_Dg1t_xUC",
+          "type": "spotlight",
+          "elementId": "text_nxdYnsDm"
+        },
+        {
+          "id": "action_BiOO0Sh0",
+          "type": "speech",
+          "text": "这一点特别重要，也是一个非常常见的误解。如果你直接把h=0代进去，你会发现分子分母都变成了0，也就是0除以0，这在数学上叫‘不定式’，是没有意义的。导数不是为了求一个毫无意义的算式，而是为了捕捉这个比值在0和0逼近的过程中，到底趋向了哪个确定的值。它是一个动态的过程，而不是一个静态的除法。",
+          "audioRef": "audio/tts_s7_action_BiOO0Sh0.mp3"
+        },
+        {
+          "id": "action_qG-CpdIX",
+          "type": "spotlight",
+          "elementId": "text_UAf_Pdp5"
+        },
+        {
+          "id": "action_asbP1vj_",
+          "type": "speech",
+          "text": "请关注这里的图示，它动态地展示了割线如何旋转，最终逼近切线位置的过程。这个图能帮助我们在大脑中建立清晰的几何直觉。好，关于瞬时变化率的概念，我们先聊到这。接下来，让我们亲手拖动滑块，来体验这个极限的逼近过程。",
+          "audioRef": "audio/tts_s7_action_asbP1vj_.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "瞬时变化率和切线：拖动实验",
+      "order": 8,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "instantaneous_rate_of_change_and_tangent",
+          "description": "通过调整h值观察割线如何逼近切线，理解导数的几何意义：导数是割线斜率在h趋于0时的极限值。",
+          "variables": [
+            {
+              "name": "h_value",
+              "label": "h 值（两点间距）",
+              "min": 1e-7,
+              "max": 1,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "x0",
+              "label": "切点横坐标",
+              "min": 0.2,
+              "max": 2.5,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "speed",
+              "label": "动画速度",
+              "min": 0.2,
+              "max": 3,
+              "default": 1,
+              "unit": "×"
+            }
+          ],
+          "presets": [
+            {
+              "name": "逐步观察",
+              "variables": {
+                "h_value": 0.5,
+                "x0": 1
+              }
+            },
+            {
+              "name": "自动逼近",
+              "variables": {
+                "h_value": 0.1,
+                "speed": 1.5
+              }
+            },
+            {
+              "name": "对比视图",
+              "variables": {
+                "h_value": 0.25,
+                "x0": 1.5
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/08_瞬时变化率和切线：拖动实验.html",
+        "htmlBytes": 472139
+      },
+      "actions": [
+        {
+          "id": "action_0TXDGSLk",
+          "type": "speech",
+          "text": "本场景通过交互探索“瞬时变化率和切线：拖动实验”。现在让我们亲手操作，感受这个极限的逼近。请把注意力集中在页面左侧这个滑块上。"
+        },
+        {
+          "id": "action_490PPPp_",
+          "type": "widget_highlight",
+          "target": "#h_value-slider",
+          "content": "这是控制两点间距 h 的滑块，当前 h=1，两点分得很开。"
+        },
+        {
+          "id": "action_oxibfyml",
+          "type": "speech",
+          "text": "我们先从较大的间距开始观察。你可以看到图上有一条穿过两点的蓝色割线，以及一条固定的红色切线。现在，试试把滑块慢慢向左拖，把 h 减小到 0.5 左右。",
+          "audioRef": "audio/tts_s8_action_oxibfyml.mp3"
+        },
+        {
+          "id": "action_c944bhKC",
+          "type": "widget_setState",
+          "state": {
+            "h_value": 0.5,
+            "x0": 1
+          },
+          "content": "h 减小到 0.5，两点靠拢，割线开始向切线转动。"
+        },
+        {
+          "id": "action_k8XPTWA5",
+          "type": "speech",
+          "text": "注意到变化了吗？随着 h 减小，两条线之间的距离在缩小，割线正在逐渐向切线靠拢。旁边的斜率读数也在变化。继续拖动，把 h 再减小一个数量级，比如到 0.1。",
+          "audioRef": "audio/tts_s8_action_k8XPTWA5.mp3"
+        },
+        {
+          "id": "action_EYt72DKg",
+          "type": "widget_setState",
+          "state": {
+            "h_value": 0.1,
+            "x0": 1
+          },
+          "content": "h 进一步减小，割线与切线几乎重合。"
+        },
+        {
+          "id": "action_J2apBGNK",
+          "type": "speech",
+          "text": "现在两条线已经非常接近了。这就是极限思想的几何体现：当 h 无限趋近于 0 时，割线斜率的极限就是切线的斜率，也就是函数在这一点的导数。你可以继续向右拖动，观察 h 增大时两条线如何再次分开，体会这种动态关系。",
+          "audioRef": "audio/tts_s8_action_J2apBGNK.mp3"
+        },
+        {
+          "id": "action_e6JnlyCh",
+          "type": "widget_reveal",
+          "target": "#preset-dropdown",
+          "content": "你还可以切换预设方案，尝试自动逼近模式，观察连续变化的动画。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "瞬时变化率和切线：关系图",
+      "order": 9,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "htmlPath": "interactive/09_瞬时变化率和切线：关系图.html",
+        "htmlBytes": 456542
+      },
+      "actions": [
+        {
+          "id": "action_kUOoChNz",
+          "type": "speech",
+          "text": "本场景通过交互探索“瞬时变化率和切线：关系图”。让我们用这张关系图把'平均'到'瞬时'的质变节点梳理清楚。"
+        },
+        {
+          "id": "action_YnjK1cvO",
+          "type": "widget_highlight",
+          "target": "#n1",
+          "content": "这是起点：差分商，也就是割线的斜率。"
+        },
+        {
+          "id": "action_gslOGsy7",
+          "type": "speech",
+          "text": "请同学们仔细看这张图的最上方，这里是我们的出发点——'平均变化率'，或者叫差分商。它代表的就是割线的斜率。",
+          "audioRef": "audio/tts_s9_action_gslOGsy7.mp3"
+        },
+        {
+          "id": "action_KS2dAQXM",
+          "type": "widget_setState",
+          "state": {
+            "revealedNodes": [
+              "n1",
+              "n2"
+            ]
+          },
+          "content": "先展示前两个基础节点。"
+        },
+        {
+          "id": "action_ih4cxUEr",
+          "type": "speech",
+          "text": "从平均变化率到我们想要的导数，中间必须经过一个神奇的节点。你们可以点击这个写着'取极限 h 趋近于 0'的节点看看。"
+        },
+        {
+          "id": "action_yhbc4o_P",
+          "type": "widget_reveal",
+          "target": "#n3",
+          "content": "显示关键的'极限过程'节点，这是从割线到切线的质变开关。"
+        },
+        {
+          "id": "action_XC7qFpdC",
+          "type": "widget_annotation",
+          "target": "#n3",
+          "content": "请注意：h 不能等于 0，但它可以无限地接近 0。"
+        },
+        {
+          "id": "action_Lh1wJW6Z",
+          "type": "speech",
+          "text": "大家有没有发现一个很重要的逻辑约束？这个节点特别标注了：h 永远不能等于零，因为分母为零没有意义，但它可以无限地接近零。正是这种'无限接近但不等于'的过程，才让割线完成了到切线的蜕变。",
+          "audioRef": "audio/tts_s9_action_Lh1wJW6Z.mp3"
+        },
+        {
+          "id": "action_t3MP1HJE",
+          "type": "widget_highlight",
+          "target": "#n4",
+          "content": "经过极限节点后，箭头最终指向了'导数'这个结果。"
+        },
+        {
+          "id": "action_vMCiuYKQ",
+          "type": "speech",
+          "text": "现在，当我们跨过这个极限过程的节点后，箭头就明确指向了最终的结果——'导数'。这条路径清晰地展示了：导数的几何意义，就是函数在该点处切线的斜率。",
+          "audioRef": "audio/tts_s9_action_vMCiuYKQ.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "瞬时变化率和切线：误解修复挑战",
+      "order": 10,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "action",
+          "title": "切线猎手",
+          "description": "通过精确操作h值，让割线锁定切线，理解导数的极限本质",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5
+          }
+        },
+        "htmlPath": "interactive/10_瞬时变化率和切线：误解修复挑战.html",
+        "htmlBytes": 781910
+      },
+      "actions": [
+        {
+          "id": "action_vZYCKhUZ",
+          "type": "speech",
+          "text": "本场景通过交互探索“瞬时变化率和切线：误解修复挑战”。导数的几何意义就是切线的斜率。但在实际计算时，很多同学会习惯性地把导数当成一个简单的除法——用函数值的变化量直接去除以自变量的变化量。这个直觉很自然，但它有时候会带来一些微妙的误解。"
+        },
+        {
+          "id": "action_4sMJHX-f",
+          "type": "speech",
+          "text": "为了帮大家更深入地体会极限过程的精妙，我们今天来玩一个叫“切线猎手”的挑战。在这个游戏里，你就是一名狙击手，你的武器是割线，而你的目标是那条隐藏的切线。",
+          "audioRef": "audio/tts_s10_action_4sMJHX-f.mp3"
+        },
+        {
+          "id": "action_2DviU9w2",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "点击开始按钮，进入第一个挑战关卡。"
+        },
+        {
+          "id": "action_OYRcj-at",
+          "type": "speech",
+          "text": "请点击开始按钮。你的任务是通过精确调整一个关键的参数，让割线尽可能贴近切线的方向。你唯一的限制是计算误差必须降到1%以下，才能解锁下一关。",
+          "audioRef": "audio/tts_s10_action_OYRcj-at.mp3"
+        },
+        {
+          "id": "action_At8p9OqA",
+          "type": "speech",
+          "text": "在开始操作之前，请想一想：回忆一下割线斜率的公式，你要调整的是哪个量？当这个量非常大时，瞄准镜会很晃，很难击中目标；但如果你把它直接调成零，系统会立刻报错——为什么会出现'分母为零'的警告？",
+          "audioRef": "audio/tts_s10_action_At8p9OqA.mp3"
+        },
+        {
+          "id": "action_nfy2Z6yN",
+          "type": "widget_highlight",
+          "target": "#h-value-control",
+          "content": "在这里微调h值，观察割线的摆动。"
+        },
+        {
+          "id": "action_BpxzAL3b",
+          "type": "speech",
+          "text": "现在，试着像一个狙击手那样，非常细微地移动你的控制器，在避开零点的前提下，让割线牢牢地“锁死”在切线的位置上。当你成功的那一刻，你就能真切地感受到——导数并非一个生硬的除法结果，而是一个动态逼近的极限。开始你的第一次瞄准吧！",
+          "audioRef": "audio/tts_s10_action_BpxzAL3b.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "瞬时变化率和切线：空间视角",
+      "order": 11,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "三维视角展示切平面与切线的关系。学生通过缩放观察'以直代曲'现象：在极微观尺度下，光滑曲面局部看起来像平面。",
+          "objects": [
+            {
+              "id": "curve_surface",
+              "type": "surface",
+              "function": "z = A·sin(x)·cos(y)",
+              "material": {
+                "type": "vertexColors",
+                "side": "double"
+              }
+            },
+            {
+              "id": "tangent_vector",
+              "type": "arrows",
+              "description": "切点处的切线方向箭头与切线",
+              "color": "#ff6644"
+            },
+            {
+              "id": "tangent_plane",
+              "type": "plane",
+              "description": "切平面（紫色半透明）",
+              "material": {
+                "type": "transparent",
+                "color": "#6366f1",
+                "opacity": 0.35
+              }
+            },
+            {
+              "id": "zoom_sphere",
+              "type": "sphere",
+              "description": "缩放范围指示器（线框球）",
+              "material": {
+                "type": "wireframe",
+                "color": "#6366f1"
+              }
+            },
+            {
+              "id": "focus_point",
+              "type": "sphere",
+              "description": "切点标记（金色发光球）",
+              "material": {
+                "type": "emissive",
+                "color": "#fbbf24"
+              }
+            }
+          ],
+          "interactions": [
+            {
+              "type": "zoom",
+              "target": "camera"
+            },
+            {
+              "type": "orbit",
+              "target": "camera"
+            },
+            {
+              "type": "slider",
+              "param": "tangentPointX",
+              "min": -2,
+              "max": 2,
+              "default": 0.8,
+              "label": "切点 X"
+            },
+            {
+              "type": "slider",
+              "param": "tangentPointY",
+              "min": -2,
+              "max": 2,
+              "default": 0.5,
+              "label": "切点 Y"
+            },
+            {
+              "type": "slider",
+              "param": "amplitude",
+              "min": 0.3,
+              "max": 3,
+              "default": 1.5,
+              "label": "曲面振幅"
+            },
+            {
+              "type": "button",
+              "action": "toggleTangentPlane",
+              "label": "切平面开关"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            }
+          ],
+          "presets": [
+            {
+              "name": "初始视角",
+              "state": {
+                "cameraPosition": [
+                  6,
+                  5,
+                  8
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ],
+                "tangentPointX": 0.8,
+                "tangentPointY": 0.5,
+                "amplitude": 1.5
+              }
+            },
+            {
+              "name": "俯视角",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  10,
+                  0.1
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "微观视角",
+              "state": {
+                "cameraPosition": [
+                  0.8,
+                  0.3,
+                  0.52
+                ],
+                "cameraTarget": [
+                  0.8,
+                  0,
+                  0.5
+                ],
+                "zoomLevel": 30
+              }
+            },
+            {
+              "name": "原点切线",
+              "state": {
+                "cameraPosition": [
+                  4,
+                  3,
+                  5
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ],
+                "tangentPointX": 0,
+                "tangentPointY": 0
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/11_瞬时变化率和切线：空间视角.html",
+        "htmlBytes": 2515192
+      },
+      "actions": [
+        {
+          "id": "action_Y-mPl4YH",
+          "type": "speech",
+          "text": "本场景通过交互探索“瞬时变化率和切线：空间视角”。让我们把视角升维，从空间中重新审视这个极限，看看它为什么如此神奇。"
+        },
+        {
+          "id": "action_UrbpfWGy",
+          "type": "widget_highlight",
+          "target": "#canvas-container",
+          "content": "这是一个三维曲面模型，我们关注上面的金色切点和半透明的切平面。"
+        },
+        {
+          "id": "action_y3YXHwHW",
+          "type": "widget_setState",
+          "state": {
+            "preset": "初始视角",
+            "cameraPosition": [
+              6,
+              5,
+              8
+            ],
+            "cameraTarget": [
+              0,
+              0,
+              0
+            ],
+            "tangentPointX": 0.8,
+            "tangentPointY": 0.5,
+            "amplitude": 1.5
+          },
+          "content": "从初始视角观察，曲面有明显的起伏，金色切点处紧贴着一个紫色半透明平面，这就是该点的切平面。"
+        },
+        {
+          "id": "action_MW7_9ZBg",
+          "type": "speech",
+          "text": "屏幕上这个起伏的曲面，在金色切点处，我们放置了一个紫色的半透明平面，它就是该点处的切平面。你们觉得这个平面和曲面之间，现在是什么关系？"
+        },
+        {
+          "id": "action_G6bW6zUz",
+          "type": "widget_setState",
+          "state": {
+            "preset": "微观视角",
+            "cameraPosition": [
+              0.8,
+              0.3,
+              0.52
+            ],
+            "cameraTarget": [
+              0.8,
+              0,
+              0.5
+            ],
+            "zoomLevel": 30
+          },
+          "content": "将镜头极力推近，放大至切点周围的极微小邻域，观察曲面的局部形态。"
+        },
+        {
+          "id": "action_8rPzgs9p",
+          "type": "speech",
+          "text": "现在，请大家点击“放大”按钮，或者直接滚动滚轮，把镜头极力推近，聚焦到这个金色切点周围。再近一点……直到你看不清那个线框球的全貌。告诉我，你发现了什么？",
+          "audioRef": "audio/tts_s11_action_8rPzgs9p.mp3"
+        },
+        {
+          "id": "action_WCOvocId",
+          "type": "widget_annotation",
+          "target": "#zoom_sphere",
+          "content": "在极高倍率下，起伏的曲面片段几乎和紫色的平面融为一体，这就是“以直代曲”的微观真相。"
+        },
+        {
+          "id": "action_J3XTGwWB",
+          "type": "speech",
+          "text": "看到了吗？在极微观的尺度下，原本弯曲的曲面几乎和它的切平面融为一体，难分彼此。这就是微积分的核心思想——在无限小的局部，用线性去逼近非线性。就像我们刚才拖动割线一样，极限的威力，就藏在化曲为直的瞬间里。",
+          "audioRef": "audio/tts_s11_action_J3XTGwWB.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "形成性测验：检查第一组场景并承接下一组知识点",
+      "order": 12,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "在场景3的拖动实验中，当拖动点逐渐靠近固定点，即 delta x 变得越来越小时，你观察到的割线斜率变化趋势是什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "斜率在不断随机跳动，无法预测"
+              },
+              {
+                "value": "B",
+                "label": "斜率越来越接近一个特定的数值"
+              },
+              {
+                "value": "C",
+                "label": "斜率始终在变大"
+              },
+              {
+                "value": "D",
+                "label": "斜率始终在变小"
+              }
+            ],
+            "answer": [
+              "B"
+            ],
+            "analysis": "正确答案是B。在场景3的实验中，通过拖动点让delta x变小，就是在模拟割线逼近切线的过程。你会观察到，割线的斜率会逐渐稳定下来，趋近于一个确定的数值，这个数值就是该点切线的斜率。其他选项的错误在于：A否定了这种稳定的趋势；C和D表述了单一方向的变化，而实际情况可能是递增或递减地趋近，但核心是‘趋近于定值’而非‘单调变化’。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "single",
+            "question": "在场景5的割线模型中，割线斜率的计算公式为 (f(x+h) - f(x)) / h。请问，这个公式中的分子部分，也就是 f(x+h) - f(x)，在几何图形上对应的是哪一段长度？",
+            "options": [
+              {
+                "value": "A",
+                "label": "曲线上两点之间的弧长"
+              },
+              {
+                "value": "B",
+                "label": "两点之间水平方向的距离，即h"
+              },
+              {
+                "value": "C",
+                "label": "两点之间垂直方向的距离，即函数值的变化量"
+              },
+              {
+                "value": "D",
+                "label": "割线本身的长度"
+              }
+            ],
+            "answer": [
+              "C"
+            ],
+            "analysis": "正确答案是C。在斜率的定义中，分子是纵坐标的差值，也就是函数值从f(x)变化到f(x+h)的改变量，对应几何图形中两个点垂直方向上的高度差。A选项描述的是曲线的长度，B选项是分母h的含义，D选项是斜边（割线段）的长度。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "single",
+            "question": "在场景8中，我们让h这个水平距离无限趋近于0。在这个过程中，连接两点的割线在几何形态上最终会变成什么？",
+            "options": [
+              {
+                "value": "A",
+                "label": "变成一条与曲线只有一个交点的切线"
+              },
+              {
+                "value": "B",
+                "label": "变成一段非常微小的曲线"
+              },
+              {
+                "value": "C",
+                "label": "变成一个孤立的点"
+              },
+              {
+                "value": "D",
+                "label": "变成与曲线垂直的法线"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "正确答案是A。当两点无限接近时，割线绕着其中一个点旋转，其极限位置就是该点处的切线。切线可以看作是割线的终极形态。B选项混淆了线和曲线的概念；C选项忽略了两点趋近时连线的方向仍然存在；D选项描述的是与切线垂直的另一条线。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q4",
+            "type": "multiple",
+            "question": "在场景10中，我们捕捉切线的斜率时，必须通过让h趋近于0的极限过程来求值，而不能直接在公式 (f(x+h) - f(x)) / h 中令 h = 0。以下哪些是导致我们不能直接代入h=0的原因？（多选）",
+            "options": [
+              {
+                "value": "A",
+                "label": "因为直接令h=0，两点会重合，过一点无法唯一确定一条直线"
+              },
+              {
+                "value": "B",
+                "label": "因为公式会变成 0/0，这个结果在数学上没有确定意义"
+              },
+              {
+                "value": "C",
+                "label": "因为这样做会违反数学运算的基本规则"
+              },
+              {
+                "value": "D",
+                "label": "因为切线必须在两个不同的点之间才能画出"
+              }
+            ],
+            "answer": [
+              "A",
+              "B"
+            ],
+            "analysis": "正确答案是A和B。不能直接令h=0有两个核心原因：第一，从几何上看，需要两个不同的点才能定义一条割线，当两点重合（h=0），割线的方向就丢失了，我们无法确定切线。第二，从代数上看，代入h=0会得到无意义的0/0形式，它不代表任何确定的斜率值。C选项表述不准确，我们正是在合理的数学规则内使用极限工具来跨越这个障碍。D选项错误，切线正是由这个极限过程定义的，并不需要通过两个实际不同的点来直接画出。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "我们刚刚通过极限过程求出了某一点的切线斜率。在数学中，这个值被称为‘导数’，并且有个简写符号 f'(x)。请你根据自己的理解，大胆猜测一下，f'(x) 这个符号可能代表什么意思？它和我们之前求出的某一个点的切线斜率数值有什么关系？",
+            "commentPrompt": "本题旨在考察直觉理解，不追求标准定义。评分要点：（1）能指出 f'(x) 与切线斜率有关 - 40%；（2）能说明这是一个‘新的函数’或‘规则’，用于计算x在不同点时的斜率 - 30%；（3）表达清晰，能用自己的语言将x、f(x)和斜率联系起来 - 30%。",
+            "analysis": "这道题是一个桥梁问题，用于预判学生对导数符号的直觉。一个理想的回答方向可以是：f'(x) 很可能代表一个‘斜率函数’或者‘变化率函数’。对于函数 f 上的任何一个点 x，我们把它代入 f'(x) 里，算出来的结果就是曲线在点 x 处的切线斜率。它不是某一个点的单一数值，而是一个可以用来计算任意点斜率的通用法则。",
+            "points": 20,
+            "hasAnswer": false
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_mADLe4Cg",
+          "type": "speech",
+          "text": "这是一组关于“形成性测验：检查第一组场景并承接下一组知识点”的独立测验。也感受了极限思想那种‘化曲为直’的威力。现在，我们来做个小测验，看看大家对这些核心概念掌握得怎么样，也为接下来学习导数符号做个准备。"
+        },
+        {
+          "id": "action_wek-XVWp",
+          "type": "speech",
+          "text": "题目类型很丰富，有单选题、多选题，还有一道开放简答题，不考评对错，只是想听听你们对某个新符号的直觉猜测。请大家带着刚才实验探索的感觉去思考，尤其是回想一下拖动滑动条时，图形是如何一步步变化的。",
+          "audioRef": "audio/tts_s12_action_wek-XVWp.mp3"
+        },
+        {
+          "id": "action_MqOOGMeD",
+          "type": "speech",
+          "text": "遇到不确定的题目别着急，特别是关于割线公式分子几何含义和极限形态那几道题，很考验对动态过程的想象。先给出你经过认真思考后的答案就好，我们讲解完一组场景后还会再复习这些要点。",
+          "audioRef": "audio/tts_s12_action_MqOOGMeD.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "导数符号和意义",
+      "order": 13,
+      "content": {
+        "type": "slide",
+        "schemaVersion": 1,
+        "canvas": {
+          "id": "yQf1KV_RtGqo8IX4bWkz9",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_p49QHPx1",
+              "left": 60,
+              "top": 50,
+              "width": 880,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">导数符号和意义</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_sfIHfrId",
+              "left": 60,
+              "top": 125,
+              "width": 880,
+              "height": 2,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#e2e8f0"
+            },
+            {
+              "type": "shape",
+              "id": "shape_torBiR15",
+              "left": 60,
+              "top": 150,
+              "width": 420,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "shape",
+              "id": "shape_zIfdGaFJ",
+              "left": 60,
+              "top": 150,
+              "width": 6,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#3b82f6"
+            },
+            {
+              "type": "text",
+              "id": "text_BNSBYmI0",
+              "left": 80,
+              "top": 158,
+              "width": 380,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #1e3a8a;\">Leibniz 符号 (df/dx)</p><p style=\"font-size: 16px; color: #475569;\">直观体现微分与积分的互逆关系，代表微分之商的极限意蕴。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_t36AIAxZ",
+              "left": 60,
+              "top": 280,
+              "width": 420,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "shape",
+              "id": "shape_ov0fUtm1",
+              "left": 60,
+              "top": 280,
+              "width": 6,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#10b981"
+            },
+            {
+              "type": "text",
+              "id": "text_cYw3Ay8Y",
+              "left": 80,
+              "top": 288,
+              "width": 380,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #1e3a8a;\">Lagrange 符号 (f'(x))</p><p style=\"font-size: 16px; color: #475569;\">将导数视为算子，以极简形式描述函数的局部变化特征。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "shape",
+              "id": "shape_yzcnLDWw",
+              "left": 60,
+              "top": 410,
+              "width": 420,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#fff7ed"
+            },
+            {
+              "type": "shape",
+              "id": "shape_0je-zPiS",
+              "left": 60,
+              "top": 410,
+              "width": 6,
+              "height": 110,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f97316"
+            },
+            {
+              "type": "text",
+              "id": "text_izJoxS-s",
+              "left": 80,
+              "top": 418,
+              "width": 380,
+              "height": 94,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; font-weight: bold; color: #9a3412;\">核心认知：不仅是求公式的步骤</p><p style=\"font-size: 16px; color: #475569;\">更是描述系统变化灵敏度的指标，反映函数对微小扰动的响应。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            },
+            {
+              "type": "latex",
+              "id": "image_FIu3Ecuf",
+              "left": 520,
+              "top": 170,
+              "width": 420,
+              "height": 190,
+              "rotate": 0,
+              "latex": "\\frac{dy}{dx}=\\lim_{\\Delta x\\to0}\\frac{f(x+\\Delta x)-f(x)}{\\Delta x}",
+              "color": "#1E3A8A",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.1713em;vertical-align:-0.7443em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.3557em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mtight\">Δ</span><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7443em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>"
+            },
+            {
+              "type": "text",
+              "id": "text_zFecD2MV",
+              "left": 520,
+              "top": 380,
+              "width": 420,
+              "height": 76,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; line-height: 1.55; text-align: center; color: #475569;\">几何上表示曲线在该点的切线斜率；物理上可表示位置函数在该时刻的瞬时速度。</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#333333"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          },
+          "animations": []
+        }
+      },
+      "actions": [
+        {
+          "id": "action_H6TAHZ4V",
+          "type": "spotlight",
+          "elementId": "text_p49QHPx1"
+        },
+        {
+          "id": "action_hmPGvlBP",
+          "type": "speech",
+          "text": "本场景聚焦“导数符号和意义”。相信对自己在‘平均变化率’和‘瞬时变化率’上的理解有了更清晰的认识。从这一页开始，我们暂时放下具体的计算，来做一件更有意思的事——聊聊导数的‘语言’。每个数学概念都有它独特的符号，而符号背后，往往就藏着这个概念的灵魂。"
+        },
+        {
+          "id": "action_fFaN2Vhe",
+          "type": "spotlight",
+          "elementId": "text_BNSBYmI0"
+        },
+        {
+          "id": "action_oE9ENUlA",
+          "type": "speech",
+          "text": "首先，我们来看Leibniz符号，记作dy/dx。你看这个‘d’，就像是一个‘差’的英文单词‘difference’的首字母。所以dy/dx，你可以把它直观地理解为，一个微小到极限的y方向上的差，除以一个微小到极限的x方向上的差。它不是一个分数，但它处处体现着‘微分之商’的极限意蕴。这个符号在物理中特别好用，因为它时刻提醒我们，导数描述的是一个变化率。",
+          "audioRef": "audio/tts_s13_action_oE9ENUlA.mp3"
+        },
+        {
+          "id": "action_ws6_3eD_",
+          "type": "spotlight",
+          "elementId": "text_cYw3Ay8Y"
+        },
+        {
+          "id": "action_mxJ086wk",
+          "type": "speech",
+          "text": "另一种我们更常用的，是Lagrange符号，记作f'(x)，读作‘f prime of x’。如果说dy/dx像一个故事，详细描述了从x变到y的过程，那f'(x)就更像一个指令。它把求导这个动作看成一个‘算子’，作用在函数f上，就能得到一个新函数f'。这个符号极其简洁，用它来表达导数作为函数的变化特征，进行更抽象的分析和运算时会非常方便。",
+          "audioRef": "audio/tts_s13_action_mxJ086wk.mp3"
+        },
+        {
+          "id": "action_hPuBIPdn",
+          "type": "spotlight",
+          "elementId": "image_FIu3Ecuf"
+        },
+        {
+          "id": "action_KajtYGwQ",
+          "type": "speech",
+          "text": "大家看右边这个图，它很好地结合了几何和物理意义。在几何上，f’(x)是函数图像上某一点切线的斜率。在物理上，如果s(t)代表位置随时间变化的函数，那么s’(t)就是那一瞬间的速度。用不同的符号，就像是从不同角度去看待这同一种变化。",
+          "audioRef": "audio/tts_s13_action_KajtYGwQ.mp3"
+        },
+        {
+          "id": "action_VYslwUwy",
+          "type": "spotlight",
+          "elementId": "text_izJoxS-s"
+        },
+        {
+          "id": "action_iA9s66SA",
+          "type": "speech",
+          "text": "所以，大家要建立一个核心认知，这也是很多同学容易产生误解的地方：导数绝不仅仅是一套‘拿来一个函数，算出另一个函数’的步骤。它本质上是一个指标，一个描述系统对微小扰动有多‘敏感’的灵敏度指标。比如，你轻轻踩一下油门，车速就迅速提升，说明此刻车速对油门动作的‘导数’就很大。理解了这一点，导数就真正活起来了。",
+          "audioRef": "audio/tts_s13_action_iA9s66SA.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "导数符号和意义：拖动实验",
+      "order": 14,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "simulation",
+        "widgetConfig": {
+          "type": "simulation",
+          "concept": "derivative_notation",
+          "description": "通过切换导数符号表示法（Leibniz 记法 vs Lagrange 记法），观察同一导数概念的不同表达方式，理解导数的几何意义——曲线在某点的切线斜率。",
+          "variables": [
+            {
+              "name": "notation_type",
+              "label": "符号类型",
+              "min": 0,
+              "max": 1,
+              "default": 0,
+              "unit": ""
+            },
+            {
+              "name": "slope_point",
+              "label": "切点位置",
+              "min": -2.5,
+              "max": 2.5,
+              "default": 1,
+              "unit": ""
+            },
+            {
+              "name": "explanation_layer",
+              "label": "解释层",
+              "min": 0,
+              "max": 3,
+              "default": 0,
+              "unit": ""
+            }
+          ],
+          "presets": [
+            {
+              "name": "🔍 观察切线",
+              "variables": {
+                "notation_type": 0,
+                "slope_point": 1,
+                "explanation_layer": 0
+              }
+            },
+            {
+              "name": "📐 Leibniz 记法",
+              "variables": {
+                "notation_type": 0,
+                "slope_point": 1.5,
+                "explanation_layer": 1
+              }
+            },
+            {
+              "name": "✏️ Lagrange 记法",
+              "variables": {
+                "notation_type": 1,
+                "slope_point": -1,
+                "explanation_layer": 1
+              }
+            },
+            {
+              "name": "🔬 割线逼近",
+              "variables": {
+                "notation_type": 0,
+                "slope_point": 1,
+                "explanation_layer": 2
+              }
+            },
+            {
+              "name": "💡 斜率最高点",
+              "variables": {
+                "notation_type": 0,
+                "slope_point": 1.7,
+                "explanation_layer": 3
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/14_导数符号和意义：拖动实验.html",
+        "htmlBytes": 777559
+      },
+      "actions": [
+        {
+          "id": "action_B3nRil1J",
+          "type": "speech",
+          "text": "本场景通过交互探索“导数符号和意义：拖动实验”。让我们把这种灵敏度的数学语言——也就是导数的符号——直观地‘画’出来。大家这里准备了一个曲线，大家注意，同一个概念，数学家们发明了不同的符号来表达，这些符号强调的侧重点可不一样。"
+        },
+        {
+          "id": "action_t1j5k3Qj",
+          "type": "widget_highlight",
+          "target": "#preset-selector",
+          "content": "请先点击‘🔍 观察切线’预设，建立直观图像。"
+        },
+        {
+          "id": "action_7APWZKVM",
+          "type": "speech",
+          "text": "你动手能力最强，请你先点击预设里的‘🔍 观察切线’，咱们先看到一条漂亮的切线和它的斜率值。这是导数最核心的几何图像。"
+        },
+        {
+          "id": "action_Nqm0cXUh",
+          "type": "widget_setState",
+          "state": {
+            "notation_type": 0,
+            "slope_point": 1,
+            "explanation_layer": 0
+          },
+          "content": "显示曲线在 x=1 处的切线。"
+        },
+        {
+          "id": "action_i8Ltrneb",
+          "type": "speech",
+          "text": "看到这条切线和它的斜率数字了吗？接下来，点击‘📐 Leibniz 记法’。请大家注意观察，画面上的标注发生了什么奇妙的变化，尤其是那个‘d’是如何把微小变化的过程呈现出来的。",
+          "audioRef": "audio/tts_s14_action_i8Ltrneb.mp3"
+        },
+        {
+          "id": "action_coRQCZwQ",
+          "type": "widget_highlight",
+          "target": "[data-notation-switch]",
+          "content": "这是 Leibniz 和 Lagrange 记法的切换控件，请尝试切换观察。"
+        },
+        {
+          "id": "action_LLc05H1n",
+          "type": "speech",
+          "text": "现在，请大家再帮忙切换到‘✏️ Lagrange 记法’。大家对比一下，f'(x) 这种记法更简洁，但它把自变量和函数值的变化过程‘打包’成了一个撇号。不同的符号，讲述着同一个故事的不同侧面。"
+        },
+        {
+          "id": "action_YLDXTRVV",
+          "type": "widget_setState",
+          "state": {
+            "notation_type": 1,
+            "slope_point": -1,
+            "explanation_layer": 1
+          },
+          "content": "切换到 Lagrange 记法视图。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "导数符号和意义：关系图",
+      "order": 15,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "diagram",
+        "widgetConfig": {
+          "nodes": [
+            {
+              "id": "core",
+              "x": 450,
+              "y": 80,
+              "label": "导数核心",
+              "icon": "🔍",
+              "details": "描述函数在某一点的局部变化趋势。本质是极限过程：当自变量变化量趋于零时，平均变化率的极限值。"
+            },
+            {
+              "id": "leibniz",
+              "x": 250,
+              "y": 200,
+              "label": "Leibniz",
+              "icon": "📜",
+              "details": "微积分符号的奠基者。强调无穷小量之间的比值关系，其符号系统直观展现了数学结构的优雅。"
+            },
+            {
+              "id": "dfdx",
+              "x": 200,
+              "y": 350,
+              "label": "df/dx",
+              "icon": "📐",
+              "details": "微商形式。直观展现函数增量(dF)与自变量增量(dx)的比。在物理和几何中极具解释力，是初学者理解导数本质的最佳桥梁。"
+            },
+            {
+              "id": "lagrange",
+              "x": 650,
+              "y": 200,
+              "label": "Lagrange",
+              "icon": "📈",
+              "details": "将导数视为函数本身的运算结果。弱化无穷小量的哲学争议，使微积分运算更加严谨和代数化。"
+            },
+            {
+              "id": "fx",
+              "x": 700,
+              "y": 350,
+              "label": "f'(x)",
+              "icon": "✨",
+              "details": "函数导数记法。形式最简洁，广泛用于纯数学推导、求极值与运算法则（如乘法/除法法则），侧重代数结构美感。"
+            },
+            {
+              "id": "newton",
+              "x": 450,
+              "y": 280,
+              "label": "Newton",
+              "icon": "🍎",
+              "details": "源于经典力学研究。关注物理量随时间变化的瞬时速率，强调微积分解决实际运动问题的能力。"
+            },
+            {
+              "id": "geom",
+              "x": 150,
+              "y": 500,
+              "label": "几何斜率",
+              "icon": "📏",
+              "details": "曲线上某点切线的倾斜程度。导数是割线斜率取极限的结果，将抽象的代数运算转化为直观的几何图像。"
+            },
+            {
+              "id": "phys",
+              "x": 750,
+              "y": 500,
+              "label": "物理速率",
+              "icon": "🚀",
+              "details": "如瞬时速度 v=ds/dt。导数在现实世界中描述状态变化的快慢与方向，是连接数学模型与物理世界的纽带。"
+            },
+            {
+              "id": "miscon",
+              "x": 450,
+              "y": 580,
+              "label": "⚠️ 只看符号不顾内涵",
+              "icon": "🚫",
+              "details": "常见误区：死记硬背记号，忽略背后的极限过程与多维意义。导数不是孤立的公式，而是描述变化的通用语言。"
+            }
+          ],
+          "edges": [
+            {
+              "from": "core",
+              "to": "leibniz",
+              "label": "符号起源"
+            },
+            {
+              "from": "core",
+              "to": "lagrange",
+              "label": "符号起源"
+            },
+            {
+              "from": "core",
+              "to": "newton",
+              "label": "符号起源"
+            },
+            {
+              "from": "leibniz",
+              "to": "dfdx",
+              "label": "微商形式"
+            },
+            {
+              "from": "lagrange",
+              "to": "fx",
+              "label": "函数导数"
+            },
+            {
+              "from": "newton",
+              "to": "phys",
+              "label": "侧重应用"
+            },
+            {
+              "from": "dfdx",
+              "to": "geom",
+              "label": "几何本质"
+            },
+            {
+              "from": "fx",
+              "to": "phys",
+              "label": "速率表达"
+            },
+            {
+              "from": "core",
+              "to": "miscon",
+              "label": "需避免"
+            }
+          ],
+          "revealOrder": [
+            "core",
+            "leibniz",
+            "dfdx",
+            "lagrange",
+            "fx",
+            "newton",
+            "geom",
+            "phys",
+            "miscon"
+          ]
+        },
+        "htmlPath": "interactive/15_导数符号和意义：关系图.html",
+        "htmlBytes": 756547
+      },
+      "actions": [
+        {
+          "id": "action_OzIm_LrG",
+          "type": "speech",
+          "text": "本场景通过交互探索“导数符号和意义：关系图”。亲手感受了三种符号下的瞬时变化。现在，我们把它们放回这张‘关系图’，完整地看清符号背后的思想脉络。"
+        },
+        {
+          "id": "action_cCjomvB8",
+          "type": "widget_highlight",
+          "target": "#core",
+          "content": "所有符号的共同起源：导数核心的极限思想"
+        },
+        {
+          "id": "action_mJnd_QPd",
+          "type": "speech",
+          "text": "一切符号都源于中间这个‘导数核心’。大家想请大家先关注左上方的分支——从Leibniz，到他的微商形式 df/dx。"
+        },
+        {
+          "id": "action_YkN9O3mr",
+          "type": "widget_highlight",
+          "target": "#leibniz",
+          "content": "Leibniz 强调无穷小量的比值"
+        },
+        {
+          "id": "action_u-bDIeLl",
+          "type": "widget_annotation",
+          "target": "#dfdx",
+          "content": "微商形式直观展现增量之比，最贴近物理图景"
+        },
+        {
+          "id": "action_u-quP1AE",
+          "type": "speech",
+          "text": "看，df/dx 直接连向了右侧的‘物理速率’，这正是Leibniz符号的最大魅力：它天生就是变化量的比，像 v=ds/dt 那样自然。我们继续看看 Lagrange 和 Newton 的分支。",
+          "audioRef": "audio/tts_s15_action_u-quP1AE.mp3"
+        },
+        {
+          "id": "action_uo57mzDY",
+          "type": "widget_highlight",
+          "target": "#lagrange",
+          "content": "Lagrange 符号强调函数作为整体的运算"
+        },
+        {
+          "id": "action_5ojXkCa5",
+          "type": "speech",
+          "text": "大家刚才发现 f'(x) 写起来最方便，它的确是为纯代数推导而生。不过大家也提醒了我们，最下面这个醒目的节点‘只看符号不顾内涵’，是所有数学家都试图避免的误解——符号只是载体，背后的变化思想才是真正的导数。"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "导数符号和意义：误解修复挑战",
+      "order": 16,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "game",
+        "widgetConfig": {
+          "type": "game",
+          "gameType": "card-sorting-action",
+          "description": "导数符号和意义：误解修复挑战 - 通过拖拽分类卡片，区分导数的计算步骤、几何本质与实际应用意义",
+          "scoring": {
+            "correctPoints": 10,
+            "speedBonus": 5,
+            "comboMultiplier": 1.5,
+            "wrongPenalty": 3,
+            "missPenalty": 5
+          },
+          "levels": [
+            {
+              "id": 1,
+              "name": "新手入门",
+              "cardCount": 6,
+              "fallSpeed": 0.4,
+              "spawnInterval": 3000,
+              "timeLimit": 40
+            },
+            {
+              "id": 2,
+              "name": "进阶挑战",
+              "cardCount": 8,
+              "fallSpeed": 0.6,
+              "spawnInterval": 2500,
+              "timeLimit": 35
+            },
+            {
+              "id": 3,
+              "name": "大师考验",
+              "cardCount": 10,
+              "fallSpeed": 0.8,
+              "spawnInterval": 2000,
+              "timeLimit": 30
+            }
+          ]
+        },
+        "htmlPath": "interactive/16_导数符号和意义：误解修复挑战.html",
+        "htmlBytes": 793322
+      },
+      "actions": [
+        {
+          "id": "action_uJLh20vP",
+          "type": "speech",
+          "text": "本场景通过交互探索“导数符号和意义：误解修复挑战”。但符号真正的威力在于它捕捉了自然界的运动。现在，让我们通过一个卡片分类挑战，来检验一下你对导数意义的理解到底有多深。"
+        },
+        {
+          "id": "action__VAGHu9g",
+          "type": "widget_highlight",
+          "target": "#start-btn",
+          "content": "开始游戏，将卡片拖拽到正确的分类篮中。"
+        },
+        {
+          "id": "action_RtcoC86_",
+          "type": "speech",
+          "text": "屏幕上方会掉落一些描述卡，请把它们分别拖入代表‘纯计算步骤’、‘几何图形意义’和‘实际应用意义’的篮子里。注意，一个单纯的公式，和它背后的思想是完全不同的两回事。",
+          "audioRef": "audio/tts_s16_action_RtcoC86_.mp3"
+        },
+        {
+          "id": "action_qeLawd4E",
+          "type": "widget_setState",
+          "state": {
+            "level": 1,
+            "cardsInPlay": [
+              {
+                "id": "card1",
+                "content": "f'(x) = 2x",
+                "correctCategory": "calculation"
+              },
+              {
+                "id": "card2",
+                "content": "切线斜率",
+                "correctCategory": "geometry"
+              },
+              {
+                "id": "card3",
+                "content": "物体运动的瞬时速度",
+                "correctCategory": "application"
+              }
+            ]
+          },
+          "content": "示范几个典型的卡片。一张是纯代数式，一张是几何直观，还有一张是物理意义。"
+        },
+        {
+          "id": "action_eJJ9IwND",
+          "type": "speech",
+          "text": "就像大家提醒的，符号只是载体。试着把‘物体运动的瞬时速度’这张卡放进‘实际应用意义’里。如果你把它当成一个死记硬背的公式放错了地方，系统会提醒你，别忘了它的几何与物理灵魂。"
+        },
+        {
+          "id": "action_SSObmD69",
+          "type": "widget_annotation",
+          "target": "#result-card",
+          "content": "注意这里的反馈：它不会只告诉你对错，而是会提示你思考这张卡片背后的动态演变。"
+        },
+        {
+          "id": "action_YlkNWGqh",
+          "type": "speech",
+          "text": "很好，现在开始你的挑战吧。希望你在30秒内，能把所有8张意义卡片送到它们真正的思想归宿里去。",
+          "audioRef": "audio/tts_s16_action_YlkNWGqh.mp3"
+        }
+      ]
+    },
+    {
+      "type": "interactive",
+      "title": "导数符号和意义：空间视角",
+      "order": 17,
+      "content": {
+        "type": "interactive",
+        "url": "",
+        "widgetType": "visualization3d",
+        "widgetConfig": {
+          "type": "visualization3d",
+          "visualizationType": "geometry",
+          "description": "导数符号和意义：空间视角 — 展示导数作为切向量在空间曲面上的指向，帮助学生从三维空间理解偏导数的几何含义",
+          "objects": [
+            {
+              "id": "tangent_arrow_x",
+              "type": "arrow",
+              "label": "∂f/∂x 切向量",
+              "color": "#ff7043",
+              "description": "x方向偏导数，表示y固定时f关于x的变化率"
+            },
+            {
+              "id": "tangent_arrow_y",
+              "type": "arrow",
+              "label": "∂f/∂y 切向量",
+              "color": "#66bb6a",
+              "description": "y方向偏导数，表示x固定时f关于y的变化率"
+            },
+            {
+              "id": "tangent-plane",
+              "type": "plane",
+              "label": "切平面",
+              "color": "#ab47bc",
+              "description": "在点P处最贴近曲面的平面，由两个偏导数共同决定"
+            },
+            {
+              "id": "point",
+              "type": "sphere",
+              "label": "动点P",
+              "color": "#ffeb3b",
+              "description": "曲面上的动点，坐标为(x₀, y₀, f(x₀,y₀))"
+            },
+            {
+              "id": "axis_projections",
+              "type": "line",
+              "label": "投影线",
+              "color": "#ffd54f",
+              "description": "将曲面点投影到xy平面的辅助线"
+            },
+            {
+              "id": "slope-indicator",
+              "type": "polygon",
+              "label": "坡度指示器",
+              "color": "#ff7043",
+              "description": "用直角三角形直观展示导数的坡度含义"
+            },
+            {
+              "id": "math_symbol_labels",
+              "type": "label",
+              "label": "数学符号标注",
+              "description": "Leibniz符号及其在曲面上的对应标注"
+            }
+          ],
+          "interactions": [
+            {
+              "type": "orbit",
+              "target": "camera",
+              "description": "旋转视角观察曲面和切向量"
+            },
+            {
+              "type": "slider",
+              "param": "xPosition",
+              "min": -2,
+              "max": 2,
+              "default": 1,
+              "label": "点位置 x"
+            },
+            {
+              "type": "slider",
+              "param": "arrowLength",
+              "min": 0.5,
+              "max": 3,
+              "default": 1.5,
+              "label": "切线长度"
+            },
+            {
+              "type": "slider",
+              "param": "speed",
+              "min": 0,
+              "max": 3,
+              "default": 1,
+              "label": "动画速度"
+            },
+            {
+              "type": "button",
+              "action": "toggle_labels",
+              "label": "切换标注"
+            },
+            {
+              "type": "button",
+              "action": "toggle_plane",
+              "label": "切换切平面"
+            },
+            {
+              "type": "button",
+              "action": "zoomIn",
+              "label": "放大"
+            },
+            {
+              "type": "button",
+              "action": "zoomOut",
+              "label": "缩小"
+            },
+            {
+              "type": "button",
+              "action": "reset",
+              "label": "重置"
+            },
+            {
+              "type": "click",
+              "target": "objects",
+              "description": "点击三维对象查看导数符号含义解释"
+            }
+          ],
+          "presets": [
+            {
+              "name": "默认视角",
+              "state": {
+                "cameraPosition": [
+                  6,
+                  5,
+                  8
+                ],
+                "cameraTarget": [
+                  0,
+                  0.5,
+                  0
+                ],
+                "xPosition": 1
+              }
+            },
+            {
+              "name": "俯视曲面",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  12,
+                  0
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "侧面观察",
+              "state": {
+                "cameraPosition": [
+                  0,
+                  2,
+                  10
+                ],
+                "cameraTarget": [
+                  0,
+                  1,
+                  0
+                ]
+              }
+            },
+            {
+              "name": "极值点观察",
+              "state": {
+                "cameraPosition": [
+                  3,
+                  3,
+                  5
+                ],
+                "cameraTarget": [
+                  0,
+                  0,
+                  0.5
+                ],
+                "xPosition": 0
+              }
+            }
+          ]
+        },
+        "htmlPath": "interactive/17_导数符号和意义：空间视角.html",
+        "htmlBytes": 2218396
+      },
+      "actions": [
+        {
+          "id": "action_6J3KvBnQ",
+          "type": "speech",
+          "text": "本场景通过交互探索“导数符号和意义：空间视角”。让我们把这些符号放到三维空间里，看看它们真正的几何模样。"
+        },
+        {
+          "id": "action_TQdOQfGy",
+          "type": "widget_setState",
+          "state": {
+            "preset": "默认视角",
+            "xPosition": 1
+          },
+          "content": "重置到默认视角，点P位于x=1的位置"
+        },
+        {
+          "id": "action_zNJNHj9t",
+          "type": "speech",
+          "text": "屏幕上出现的是一个曲面，上面有一个黄色的动点P。你看到那根橙色的箭头了吗？它标注的就是 ∂f/∂x——x方向的偏导数切向量。请试着旋转一下视角，从不同角度观察这根箭头指向哪里。",
+          "audioRef": "audio/tts_s17_action_zNJNHj9t.mp3"
+        },
+        {
+          "id": "action_woA3jQOe",
+          "type": "widget_highlight",
+          "target": "#tangent_arrow_x",
+          "content": "注意这根橙色箭头：它的斜率就是∂f/∂x的值"
+        },
+        {
+          "id": "action_h2QYpR36",
+          "type": "speech",
+          "text": "如果沿着橙色箭头的方向，把眼睛贴到曲面上看——它其实就是在告诉我们：固定y不变，只改变x时，曲面在这里有多陡。",
+          "audioRef": "audio/tts_s17_action_h2QYpR36.mp3"
+        },
+        {
+          "id": "action_hxYjqwc1",
+          "type": "widget_annotation",
+          "target": "#slope-indicator",
+          "content": "坡度指示器：用一个直角三角形展示切向量的'坡'有多大"
+        },
+        {
+          "id": "action_BTGCzego",
+          "type": "speech",
+          "text": "现在试试点击动点P，或者拖动底部的'点位置x'滑块，让P沿曲面移动。观察橙色箭头长度和方向的变化——你会直观地看到，∂f/∂x 在不同位置是不同的。",
+          "audioRef": "audio/tts_s17_action_BTGCzego.mp3"
+        },
+        {
+          "id": "action_R3SwlMqA",
+          "type": "widget_setState",
+          "state": {
+            "preset": "极值点观察",
+            "xPosition": 0
+          },
+          "content": "切换到极值点视角，点P位于x=0处"
+        },
+        {
+          "id": "action_aS2rpCD1",
+          "type": "speech",
+          "text": "当点P走到x=0这个位置时，橙色的箭头几乎躺平了——这意味着∂f/∂x接近零，曲面在这个方向上是'持平'的。这就是导数符号在空间里最直接的物理意义：坡度。",
+          "audioRef": "audio/tts_s17_action_aS2rpCD1.mp3"
+        }
+      ]
+    },
+    {
+      "type": "slide",
+      "title": "全课整理：证据链回看",
+      "order": 18,
+      "content": {
+        "type": "slide",
+        "canvas": {
+          "id": "-JDtF515Am86CkLoeS_4R",
+          "viewportSize": 1000,
+          "viewportRatio": 0.5625,
+          "theme": {
+            "backgroundColor": "#ffffff",
+            "themeColors": [
+              "#5b9bd5",
+              "#ed7d31",
+              "#a5a5a5",
+              "#ffc000",
+              "#4472c4"
+            ],
+            "fontColor": "#333333",
+            "fontName": "Microsoft YaHei",
+            "outline": {
+              "color": "#d14424",
+              "width": 2,
+              "style": "solid"
+            },
+            "shadow": {
+              "h": 0,
+              "v": 0,
+              "blur": 10,
+              "color": "#000000"
+            }
+          },
+          "elements": [
+            {
+              "type": "text",
+              "id": "text_37jsA7Nq",
+              "left": 100,
+              "top": 45,
+              "width": 800,
+              "height": 50,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 32px; text-align: center; font-weight: bold; color: #1a365d;\">全课整理：证据链回看</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#1a365d"
+            },
+            {
+              "type": "text",
+              "id": "text_ZAGdXPuC",
+              "left": 100,
+              "top": 105,
+              "width": 800,
+              "height": 42,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 24px; text-align: center; color: #4a5568;\">从平均到瞬时的跨越</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#4a5568"
+            },
+            {
+              "type": "shape",
+              "id": "shape_ZbHU9SXh",
+              "left": 50,
+              "top": 180,
+              "width": 260,
+              "height": 260,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "shape",
+              "id": "shape_mZtZgrMF",
+              "left": 60,
+              "top": 190,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1a365d"
+            },
+            {
+              "type": "text",
+              "id": "text_EKx7KTDD",
+              "left": 60,
+              "top": 190,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; font-weight: bold; color: #ffffff;\">① 割线 → 切线</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_fqiMCt2l",
+              "left": 60,
+              "top": 245,
+              "width": 240,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #2d3748;\">回顾：当 h→0 时，割线斜率蜕变为切线斜率</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2d3748"
+            },
+            {
+              "type": "latex",
+              "id": "latex_a6l4msqP",
+              "left": 60,
+              "top": 325,
+              "width": 240,
+              "height": 80,
+              "rotate": 0,
+              "latex": "\\lim_{h \\to 0} \\frac{f(x+h)-f(x)}{h}",
+              "color": "#1a365d",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.1791em;vertical-align:-0.7521em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.3479em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">h</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.7521em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.427em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">h</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\">h</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">−</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>"
+            },
+            {
+              "type": "line",
+              "id": "line_vLrDSpj8",
+              "left": 320,
+              "top": 310,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                0
+              ],
+              "style": "solid",
+              "color": "#ed8936",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_EvF2oCMo",
+              "left": 370,
+              "top": 180,
+              "width": 260,
+              "height": 260,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "shape",
+              "id": "shape_nN_KWhT2",
+              "left": 380,
+              "top": 190,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1a365d"
+            },
+            {
+              "type": "text",
+              "id": "text_vYbsZlBz",
+              "left": 380,
+              "top": 190,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; font-weight: bold; color: #ffffff;\">② Δ → d</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_jOVxsMPu",
+              "left": 380,
+              "top": 245,
+              "width": 240,
+              "height": 70,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #2d3748;\">从平均变化率到瞬时变化率，体现精度飞跃</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2d3748"
+            },
+            {
+              "type": "latex",
+              "id": "latex_scGqZF1q",
+              "left": 380,
+              "top": 325,
+              "width": 240,
+              "height": 80,
+              "rotate": 0,
+              "latex": "\\frac{\\Delta y}{\\Delta x} \\xrightarrow{h \\to 0} \\frac{dy}{dx}",
+              "color": "#1a365d",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.0463em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3603em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">Δ</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord\">Δ</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel x-arrow\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.1081em;\"><span style=\"top:-3.322em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight x-arrow-pad\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">h</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\">0</span></span></span></span><span class=\"svg-align\" style=\"top:-2.689em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"hide-tail\" style=\"height:0.522em;min-width:1.469em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400em\" height=\"0.522em\" viewBox=\"0 0 400000 522\" preserveAspectRatio=\"xMaxYMin slice\"><path d=\"M0 241v40h399891c-47.3 35.3-84 78-110 128\n-16.7 32-27.7 63.7-33 95 0 1.3-.2 2.7-.5 4-.3 1.3-.5 2.3-.5 3 0 7.3 6.7 11 20\n 11 8 0 13.2-.8 15.5-2.5 2.3-1.7 4.2-5.5 5.5-11.5 2-13.3 5.7-27 11-41 14.7-44.7\n 39-84.5 73-119.5s73.7-60.2 119-75.5c6-2 9-5.7 9-11s-3-9-9-11c-45.3-15.3-85\n-40.5-119-75.5s-58.3-74.8-73-119.5c-4.7-14-8.3-27.3-11-40-1.3-6.7-3.2-10.8-5.5\n-12.5-2.3-1.7-7.5-2.5-15.5-2.5-14 0-21 3.7-21 11 0 2 2 10.3 6 25 20.7 83.3 67\n 151.7 139 205zm0 0v40h399900v-40z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.011em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:2.0574em;vertical-align:-0.686em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.3714em;\"><span style=\"top:-2.314em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.677em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span><span class=\"mord mathnormal\" style=\"margin-right:0.03588em;\">y</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.686em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></span>"
+            },
+            {
+              "type": "line",
+              "id": "line_c5Zn5QTT",
+              "left": 640,
+              "top": 310,
+              "width": 3,
+              "start": [
+                0,
+                0
+              ],
+              "end": [
+                40,
+                0
+              ],
+              "style": "solid",
+              "color": "#ed8936",
+              "points": [
+                "",
+                "arrow"
+              ],
+              "rotate": 0
+            },
+            {
+              "type": "shape",
+              "id": "shape_HdMtLl3F",
+              "left": 690,
+              "top": 180,
+              "width": 260,
+              "height": 260,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#f8fafc"
+            },
+            {
+              "type": "shape",
+              "id": "shape_Bm2sTHw0",
+              "left": 700,
+              "top": 190,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1a365d"
+            },
+            {
+              "type": "text",
+              "id": "text_uT3DkH81",
+              "left": 700,
+              "top": 190,
+              "width": 240,
+              "height": 46,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; text-align: center; font-weight: bold; color: #ffffff;\">③ 证据连接</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            },
+            {
+              "type": "text",
+              "id": "text_Z7WbxMba",
+              "left": 700,
+              "top": 245,
+              "width": 240,
+              "height": 95,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 16px; color: #2d3748;\">拖动与观察（操作证据）→ 极限分析（原理解释）→ 后测作答（迁移检验）</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#2d3748"
+            },
+            {
+              "type": "latex",
+              "id": "latex_h8Sk04j2",
+              "left": 700,
+              "top": 341,
+              "width": 240,
+              "height": 80,
+              "rotate": 0,
+              "latex": "\\text{操作证据}\\to\\text{原理分析}\\to\\text{后测迁移}",
+              "color": "#1a365d",
+              "fixedRatio": true,
+              "align": "center",
+              "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">操作证据</span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">→</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">原理分析</span></span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">→</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord text\"><span class=\"mord cjk_fallback\">后测迁移</span></span></span></span></span></span>"
+            },
+            {
+              "type": "shape",
+              "id": "shape_RaHmj76P",
+              "left": 50,
+              "top": 460,
+              "width": 900,
+              "height": 50,
+              "rotate": 0,
+              "viewBox": [
+                1,
+                1
+              ],
+              "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+              "fixedRatio": false,
+              "fill": "#1a365d"
+            },
+            {
+              "type": "text",
+              "id": "text_LCSPOUsX",
+              "left": 50,
+              "top": 460,
+              "width": 900,
+              "height": 49,
+              "rotate": 0,
+              "content": "<p style=\"font-size: 18px; text-align: center; color: #ffffff; letter-spacing: 1px;\">极限思想贯穿全课，符号背后是直觉的结晶</p>",
+              "defaultFontName": "Microsoft YaHei",
+              "defaultColor": "#ffffff"
+            }
+          ],
+          "background": {
+            "type": "solid",
+            "color": "#ffffff"
+          }
+        },
+        "schemaVersion": 1
+      },
+      "actions": [
+        {
+          "id": "action_Sh4ZfY0f",
+          "type": "spotlight",
+          "elementId": "text_37jsA7Nq"
+        },
+        {
+          "id": "action_Mtn4JMV6",
+          "type": "speech",
+          "text": "本场景聚焦“全课整理：证据链回看”。同学们，这节课我们一路走来，从最直观的平均变化率走到了抽象的导数符号。现在是时候停下来，把这条证据链从头到尾好好梳理一遍了。"
+        },
+        {
+          "id": "action_iZ8fvcMe",
+          "type": "spotlight",
+          "elementId": "text_EKx7KTDD"
+        },
+        {
+          "id": "action_Yp4MxGkl",
+          "type": "speech",
+          "text": "首先，我们经历了从'割线'到'切线'的跨越。大家还记得那个关键的拖动实验吗？当我们让那个点无限逼近另一个点时，那条穿过曲线的割线，就慢慢地变成了只接触曲线一点的切线。",
+          "audioRef": "audio/tts_s18_action_Yp4MxGkl.mp3"
+        },
+        {
+          "id": "action_G4ZW2Xzu",
+          "type": "spotlight",
+          "elementId": "latex_a6l4msqP"
+        },
+        {
+          "id": "action_0OyE6ZZ6",
+          "type": "speech",
+          "text": "这个过程，用数学语言来精确描述，就是这个极限式子。当 ( h ) 趋近于 0 时，函数的平均变化率就蜕变成了瞬时变化率。极限，就是我们从近似走向精确的那把钥匙。",
+          "audioRef": "audio/tts_s18_action_0OyE6ZZ6.mp3"
+        },
+        {
+          "id": "action__cbaZJEx",
+          "type": "spotlight",
+          "elementId": "text_vYbsZlBz"
+        },
+        {
+          "id": "action_NSSQXMVZ",
+          "type": "speech",
+          "text": "接着，在符号上我们也实现了一次飞跃。我们用大写的希腊字母 Δ 代表一个具体的、可测量的变化量。而用小写的 d，代表一个经过极限运算后，趋于零的、瞬间的趋势。",
+          "audioRef": "audio/tts_s18_action_NSSQXMVZ.mp3"
+        },
+        {
+          "id": "action_TBFPDMSr",
+          "type": "spotlight",
+          "elementId": "latex_scGqZF1q"
+        },
+        {
+          "id": "action_580G_ByC",
+          "type": "speech",
+          "text": "你看这个式子，从 ( Δy / Δx ) 到 ( dy / dx )，这不仅仅是符号的替换，它标志着我们的思维从研究一段区间，飞跃到了研究一个瞬间。这是一个精度上的质的飞跃。",
+          "audioRef": "audio/tts_s18_action_580G_ByC.mp3"
+        },
+        {
+          "id": "action_b3J8NYnd",
+          "type": "spotlight",
+          "elementId": "text_uT3DkH81"
+        },
+        {
+          "id": "action_-ZcXBb-H",
+          "type": "speech",
+          "text": "最后，我们用一条线索把所有的学习环节串了起来。我们在电脑上拖动滑块、观察图形的变化，这是'动手实验'；然后我们停下来，分析极限式子的演变，这是'动脑推理'。从直观操作到原理分析，这正是我们理解数学的完整路径。",
+          "audioRef": "audio/tts_s18_action_-ZcXBb-H.mp3"
+        },
+        {
+          "id": "action_7XmcOECH",
+          "type": "spotlight",
+          "elementId": "text_LCSPOUsX"
+        },
+        {
+          "id": "action_ljf5n5Gt",
+          "type": "speech",
+          "text": "所以，极限思想是我们整节课的灵魂。它不只是一种计算方法，更是一种看待世界的哲学视角——在运动和变化中，寻找那个恒定不变的瞬间规律。现在的你，再看到导数的符号，是不是能感受到它背后那个鲜活的变化故事了？这正是我们学习微积分的魅力所在。",
+          "audioRef": "audio/tts_s18_action_ljf5n5Gt.mp3"
+        }
+      ]
+    },
+    {
+      "type": "quiz",
+      "title": "后测：从平均变化率到导数综合测评",
+      "order": 19,
+      "content": {
+        "type": "quiz",
+        "questions": [
+          {
+            "id": "q1",
+            "type": "single",
+            "question": "根据场景3与场景8的实验，如果一辆汽车在前3秒内行驶了15米，其平均速度为5 m/s。但在第3秒那一瞬间的速度却可能是2 m/s或8 m/s。这说明平均变化率的哪个根本局限？",
+            "options": [
+              {
+                "value": "A",
+                "label": "A. 平均变化率只能描述一段时间内的整体趋势，无法捕捉某一时刻的准确状态。"
+              },
+              {
+                "value": "B",
+                "label": "B. 平均变化率计算时必须使用更精确的测量仪器。"
+              },
+              {
+                "value": "C",
+                "label": "C. 平均变化率的数值总是大于瞬时快慢。"
+              },
+              {
+                "value": "D",
+                "label": "D. 平均变化率只适用于直线运动，不适用于曲线运动。"
+              }
+            ],
+            "answer": [
+              "A"
+            ],
+            "analysis": "这个例子中，有足够的数据（总共走了多远，用了多长时间）可以算出平均速度，但这一平均值无法区分中间过程中的快慢变化。车子可能一开始快后来慢，也可能相反。所以，平均变化率像一次旅行的平均车速，它掩盖了红绿灯前的停顿和高速路上的狂飙，不能直接用来代替某一瞬间的具体快慢。这正是平均变化率作为‘概览数据’的根本局限，因此需要引入瞬时变化率的概念。",
+            "points": 10,
+            "hasAnswer": true
+          },
+          {
+            "id": "q2",
+            "type": "multiple",
+            "question": "在学习莱布尼兹符号 df/dx 时，对比场景4中用 Δx 表示的一段区间长度，d 与 Δ 的逻辑和量级区别包括以下哪些？ (请选出所有正确的选项)",
+            "options": [
+              {
+                "value": "A",
+                "label": "A. Δx 代表一个具体的、可测量的小区间长度，而 d 代表经过极限过程后无限趋近于零的状态。"
+              },
+              {
+                "value": "B",
+                "label": "B. Δ 是一个希腊字母，用于描述实际变化；而 d 是一个拉丁字母，代表‘差值’。"
+              },
+              {
+                "value": "C",
+                "label": "C. 在物理意义上，Δ 像是用尺子量出来的微小间距，而 d 是这种间距想象中被压缩成一个点的瞬间趋势。"
+              },
+              {
+                "value": "D",
+                "label": "D. 使用 d 是为了避免与 Δ 混淆，在计算精度上二者完全等价。"
+              }
+            ],
+            "answer": [
+              "A",
+              "C"
+            ],
+            "analysis": "选项A正确：Δx 是一个有限的、实际的区间（例如‘0.001秒’），而 d 不再是一个具体的长度，它是经过‘h趋近于0’这个过程后，在逻辑上达到的一种临界状态，表示函数在该点的‘基因级’变化趋势。选项B错误：Δ 是希腊字母，常用于表示‘变化量’；但 d 在这里源自拉丁语 differential 的开头，表示‘微分’，而不单纯是‘差值’。选项C正确：这正是从粗糙到光滑的逻辑飞跃，Δ 对应割线的斜率（两个点的连线），而 d 对应切线的斜率（一个点的趋势），物理上是从‘平均效果’到‘瞬间趋势’的升华。选项D错误：两者在逻辑上有本质区别，精度上也不等价，d 代表了极限过程的结果，Δ 只是一个有限增量。",
+            "points": 15,
+            "hasAnswer": true
+          },
+          {
+            "id": "q3",
+            "type": "short_answer",
+            "question": "如果有一个函数，其图像在某处突然‘断开’（不连续）。我们可以利用割线逼近切线的方法，结合极限，来定义该断点处的导数吗？请结合割线需要连接的两个点的关系，给出你的理由。",
+            "commentPrompt": "评分标准：(1) 明确指出‘不连续点无法定义导数’这一核心结论 - 30% (2) 解释原因：导数定义需要函数值在该点有确定的值，且割线两端的纵坐标差 Δy 需随 Δx 变小而稳定趋近某一极限 - 一定提及‘跳跃’或‘间隙’带来的矛盾 - 40% (3) 语言清晰，逻辑连贯 - 30%",
+            "analysis": "关键点是：不能。在断点处，无法定义导数。割线需要连接两个点：(x, f(x)) 和 (x+h, f(x+h))。当不连续时，随着 h 趋近于0，f(x+h) 并不会稳定地趋近于 f(x)，两者之间始终存在一个无法弥合的‘跳跃高度’。因此，Δy/Δx 的极限要么不存在，要么无穷大（形成垂直的‘峭壁’）。没有光滑的连接，就画不出一条确定的切线，自然也就求不出导数。导数天生就要求该点处函数是‘密接’且光滑的。",
+            "points": 25,
+            "hasAnswer": false
+          },
+          {
+            "id": "q4",
+            "type": "short_answer",
+            "question": "为什么说‘让 h 趋近于 0’这个思想，是打开微积分大门的第一把钥匙？请用你自己的话，结合平均速度和瞬时速度的区别来描述。",
+            "commentPrompt": "评分标准：(1) 准确指出 h 代表旧观念（固定区间）到新观念（极限状态）的跳板 - 30% (2) 描述 h 趋于0时，计算方法从代数（固定的差商）进化为对‘趋势’的分析（极限），即从‘两个点的静态减法’变为‘一个点的动态趋势’ - 40% (3) 用自己的话，说明理解了这是一个‘从有限到无限逼近’的思维革命 - 30%",
+            "analysis": "这像是一次哲学上的跨越。以前我们的代数工具只能处理确定的、静止的间隔，比如‘第1秒到第3秒’，得到的是一个平均值。但‘让 h 趋近于 0’意味着我们不再需要一个可以握在手里的具体长度，而是观察一个无限逼近的过程。在这个过程里，平均速度的比值不断变化，最终趋近为一个确定的值——那便是‘瞬间’的速度。这扇门将我们从‘描述一段过程’的算术，引入了‘冻结一个瞬间’的分析学，使得我们可以研究每时每刻的变化细节。这是一种用有限思维捕捉无限运动的伟大杠杆。",
+            "points": 20,
+            "hasAnswer": false
+          },
+          {
+            "id": "q5",
+            "type": "short_answer",
+            "question": "请你尝试从几何、代数和物理三个不同的观察窗口，来概括导数所代表的统一意义。",
+            "commentPrompt": "评分标准：(1) 几何维度需准确提到切线斜率或曲线局部线性化 - 30% (2) 代数维度需准确表达为差商的极限，即 Δy/Δx 当 Δx→0 时的值 - 30% (3) 物理维度需准确描述为某物理量相对于另一个物理量的瞬时变化率，如瞬时速度 - 30% (4) 整体能体现这三者是对同一核心思想的不同‘语言翻译’ - 10%",
+            "analysis": "导数是一个‘三位一体’的概念。几何上，它是函数图像在某一点的切线斜率，描述了曲线在这一点‘最诚实的走向’。代数上，它是函数改变量除以自变量的改变量之后，让自变量改变量这颗沙粒无限缩小到消失时的极限值，即 lim (f(x+h)-f(x))/h。物理上，如果你追踪的目标是位置随时间的变化，那么导数就是那转瞬即逝的真实速度；它告诉我们不是‘这趟旅程的平均’，而是‘此时此刻的刹那’发生了什么。三者都在回答同一个核心：在一个无穷小的局域内，变化的剧烈程度和方向是怎样的。",
+            "points": 20,
+            "hasAnswer": false
+          },
+          {
+            "id": "q6",
+            "type": "multiple",
+            "question": "关于导数概念的核心本质，以下哪些说法是正确的？ (请选出所有正确的选项)",
+            "options": [
+              {
+                "value": "A",
+                "label": "A. 导数本质上是一个极限，它刻画了函数在某一点‘附近’的线性变化趋势。"
+              },
+              {
+                "value": "B",
+                "label": "B. 如果一条曲线在某个点处有尖锐的拐角，该点仍然可能存在导数。"
+              },
+              {
+                "value": "C",
+                "label": "C. 我们可以把导数看作是在函数图像上，把该点放到极大，最终该处曲线趋近于一小段直线的斜率。"
+              },
+              {
+                "value": "D",
+                "label": "D. 在生活中的意义，导数就像是‘气温正在以多快的速度上升/下降’这一瞬时的体感，而非一天内的平均气温变化。"
+              }
+            ],
+            "answer": [
+              "A",
+              "C",
+              "D"
+            ],
+            "analysis": "选项A正确：这是导数的代数定义核心，即Δy/Δx的极限。选项B错误：尖锐的拐角（如‘V’字形底部）意味着左侧割线逼近的斜率与右侧不同，极限不一致，因此导数不存在，无法画出唯一的切线。这正是连续但不可导的经典反例。选项C正确：这是几何上对‘局部线性化’的生动描述，也是微积分中‘以直代曲’的哲学基础。选项D正确：使用体感温度变化类比，准确地传达了导数作为‘瞬时变化率’在生活中的直观对照，区别于平均变化率（日均温升降）。",
+            "points": 15,
+            "hasAnswer": true
+          }
+        ]
+      },
+      "actions": [
+        {
+          "id": "action_IeIiHPKs",
+          "type": "speech",
+          "text": "这是一组关于“后测：从平均变化率到导数综合测评”的独立测验。同学们，刚才我们完整梳理了全课的思路，把从平均变化率到导数的这条逻辑链条都打通了。现在，让我们用最后这组综合测评，来检验一下大家真正的迁移能力和深层理解。别紧张，这更像是我们用新学到的眼光，去重新审视一些关键问题。"
+        },
+        {
+          "id": "action_iLEUYr8b",
+          "type": "speech",
+          "text": "大家看第一题和第二题，它们回顾了我们经历过的拖动实验和符号辨析。想一想，为什么平均速度明明算对了，却可能抓不住那一瞬间的真实快慢？还有那个微妙的符号 'd'，它和我们之前用来量小段距离的 'Δ'，在逻辑上到底差在哪里？这些是我们理解微积分思想的基石。",
+          "audioRef": "audio/tts_s19_action_iLEUYr8b.mp3"
+        },
+        {
+          "id": "action_pziVr6Td",
+          "type": "speech",
+          "text": "而接下来的三道题，会更有挑战性。比如，如果函数的图像突然断开了，我们还能用那条无限逼近的割线来找出切线吗？这个问题直指导数定义的核心条件。还有，为什么 'h 趋近于 0' 这个简单的想法，能成为开启整个微积分大门的第一把钥匙？最后，请大家尝试从几何的线、代数的数、物理的运动这三个完全不同的窗口望进去，看看能不能发现导数那个统一而深刻的内核。",
+          "audioRef": "audio/tts_s19_action_pziVr6Td.mp3"
+        },
+        {
+          "id": "action_VoOV3lwR",
+          "type": "speech",
+          "text": "同学们，这是一次对我们整个学习旅程的总结与升华。请调动你所有的直观感受和理性思考，仔细作答。当你完成这个测评，你会发现，导数的思想已经像一粒种子，在你脑海里生根发芽了。",
+          "audioRef": "audio/tts_s19_action_VoOV3lwR.mp3"
+        },
+        {
+          "id": "action_DaxNO_3O",
+          "type": "discussion",
+          "topic": "学完这节课，你认为导数思想中最让你感到震撼或最有启发的部分是什么？它与我们最初理解的“速度”或者说“变化快慢”有什么本质的不同？",
+          "prompt": "请结合你的生活经验或学习感受，分享你最触动的一点。",
+          "agentIndex": 2
+        }
+      ]
+    }
+  ],
+  "mediaIndex": {
+    "audio/tts_action_eWGwk2qS.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 210480
+    },
+    "audio/tts_action_FqmemeiP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 179952
+    },
+    "audio/tts_action_LNU9rlRI.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125712
+    },
+    "audio/tts_action_vSvTveBz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 107520
+    },
+    "audio/tts_s10_action_4sMJHX-f.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105144
+    },
+    "audio/tts_s10_action_At8p9OqA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135744
+    },
+    "audio/tts_s10_action_BpxzAL3b.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 163584
+    },
+    "audio/tts_s10_action_OYRcj-at.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 113256
+    },
+    "audio/tts_s10_action_vZYCKhUZ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 149880
+    },
+    "audio/tts_s11_action_8rPzgs9p.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 111720
+    },
+    "audio/tts_s11_action_J3XTGwWB.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 134784
+    },
+    "audio/tts_s11_action_MW7_9ZBg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105576
+    },
+    "audio/tts_s11_action_Y-mPl4YH.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 96456
+    },
+    "audio/tts_s12_action_mADLe4Cg.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140688
+    },
+    "audio/tts_s12_action_MqOOGMeD.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127464
+    },
+    "audio/tts_s12_action_wek-XVWp.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 144312
+    },
+    "audio/tts_s13_action_hmPGvlBP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 176424
+    },
+    "audio/tts_s13_action_iA9s66SA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 209856
+    },
+    "audio/tts_s13_action_KajtYGwQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 163560
+    },
+    "audio/tts_s13_action_mxJ086wk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 258096
+    },
+    "audio/tts_s13_action_oE9ENUlA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 233016
+    },
+    "audio/tts_s14_action_7APWZKVM.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 86280
+    },
+    "audio/tts_s14_action_B3nRil1J.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157056
+    },
+    "audio/tts_s14_action_i8Ltrneb.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121776
+    },
+    "audio/tts_s14_action_LLc05H1n.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 126768
+    },
+    "audio/tts_s15_action_5ojXkCa5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 150480
+    },
+    "audio/tts_s15_action_mJnd_QPd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 79296
+    },
+    "audio/tts_s15_action_OzIm_LrG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 93600
+    },
+    "audio/tts_s15_action_u-quP1AE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114408
+    },
+    "audio/tts_s16_action_eJJ9IwND.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 134400
+    },
+    "audio/tts_s16_action_RtcoC86_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 105528
+    },
+    "audio/tts_s16_action_uJLh20vP.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97824
+    },
+    "audio/tts_s16_action_YlkNWGqh.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 72816
+    },
+    "audio/tts_s17_action_6J3KvBnQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 68184
+    },
+    "audio/tts_s17_action_aS2rpCD1.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 117912
+    },
+    "audio/tts_s17_action_BTGCzego.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 116088
+    },
+    "audio/tts_s17_action_h2QYpR36.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 85656
+    },
+    "audio/tts_s17_action_zNJNHj9t.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135072
+    },
+    "audio/tts_s18_action_-ZcXBb-H.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 156984
+    },
+    "audio/tts_s18_action_0OyE6ZZ6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 133008
+    },
+    "audio/tts_s18_action_580G_ByC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 109584
+    },
+    "audio/tts_s18_action_ljf5n5Gt.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 188088
+    },
+    "audio/tts_s18_action_Mtn4JMV6.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 87816
+    },
+    "audio/tts_s18_action_NSSQXMVZ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 108912
+    },
+    "audio/tts_s18_action_Yp4MxGkl.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 121296
+    },
+    "audio/tts_s19_action_IeIiHPKs.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 195168
+    },
+    "audio/tts_s19_action_iLEUYr8b.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 169488
+    },
+    "audio/tts_s19_action_pziVr6Td.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 248112
+    },
+    "audio/tts_s19_action_VoOV3lwR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 123864
+    },
+    "audio/tts_s2_action_7yExsBto.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 184728
+    },
+    "audio/tts_s2_action_A9Gbebon.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 160368
+    },
+    "audio/tts_s2_action_dOTl10MJ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 119928
+    },
+    "audio/tts_s2_action_lCrFyDdT.wav": {
+      "type": "audio",
+      "format": "wav",
+      "size": 852524
+    },
+    "audio/tts_s2_action_Nb8sHThc.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 195312
+    },
+    "audio/tts_s2_action_PANx5AXy.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 180720
+    },
+    "audio/tts_s2_action_xQ3qsjWR.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 115344
+    },
+    "audio/tts_s3_action_BVmFt3mo.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 66000
+    },
+    "audio/tts_s3_action_DH5JGD7s.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 140904
+    },
+    "audio/tts_s3_action_z2cPauyn.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 136968
+    },
+    "audio/tts_s3_action__xxt7H57.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 169632
+    },
+    "audio/tts_s4_action_959VYoA8.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 230112
+    },
+    "audio/tts_s4_action_Au0RErEW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 155712
+    },
+    "audio/tts_s4_action_dJg1QbFy.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 135168
+    },
+    "audio/tts_s4_action_Et8oUFNU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127776
+    },
+    "audio/tts_s4_action_wm0MvnBE.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106872
+    },
+    "audio/tts_s4_action_WU9i9TTd.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106608
+    },
+    "audio/tts_s4_action_ZqyXUj1I.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 90384
+    },
+    "audio/tts_s5_action_balSnKDA.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 63096
+    },
+    "audio/tts_s5_action_Vuuo3gy0.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 78768
+    },
+    "audio/tts_s5_action_YD5MPSbU.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 123408
+    },
+    "audio/tts_s5_action_YhF0vhgv.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 103008
+    },
+    "audio/tts_s6_action_L5OYSq31.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 87840
+    },
+    "audio/tts_s6_action_neCKYqC-.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 77352
+    },
+    "audio/tts_s6_action_qp5Nt7RW.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 38112
+    },
+    "audio/tts_s6_action_vhyHQPxZ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 114024
+    },
+    "audio/tts_s6_action_xL8DaW_O.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 122616
+    },
+    "audio/tts_s7_action_4drr471f.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 137976
+    },
+    "audio/tts_s7_action_63RpyQIi.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 131040
+    },
+    "audio/tts_s7_action_9Uf7eS46.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 127200
+    },
+    "audio/tts_s7_action_asbP1vj_.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 157680
+    },
+    "audio/tts_s7_action_BiOO0Sh0.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 212520
+    },
+    "audio/tts_s7_action_XAdP8MoG.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 151152
+    },
+    "audio/tts_s7_action_yahG4JxC.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 143424
+    },
+    "audio/tts_s8_action_0TXDGSLk.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 97200
+    },
+    "audio/tts_s8_action_J2apBGNK.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 164304
+    },
+    "audio/tts_s8_action_k8XPTWA5.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 106368
+    },
+    "audio/tts_s8_action_oxibfyml.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 120696
+    },
+    "audio/tts_s9_action_gslOGsy7.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 75120
+    },
+    "audio/tts_s9_action_ih4cxUEr.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 86232
+    },
+    "audio/tts_s9_action_kUOoChNz.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 80088
+    },
+    "audio/tts_s9_action_Lh1wJW6Z.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 125832
+    },
+    "audio/tts_s9_action_vMCiuYKQ.mp3": {
+      "type": "audio",
+      "format": "mp3",
+      "size": 107832
+    }
+  },
+  "sourceManifest": "manifest.json",
+  "resourceMode": "lightweight-index"
+}

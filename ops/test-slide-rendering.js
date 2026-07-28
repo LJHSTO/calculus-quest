@@ -192,13 +192,19 @@ for (const chapter of route.chapters || []) {
       const routeCanvas = knowledgePoint.slide?.canvas;
       const elements = routeCanvas?.elements || [];
       const images = elements.filter((element) => element.type === "image");
+      const vectorLines = elements.filter((element) => element.type === "line");
+      const vectorShapes = elements.filter((element) => element.type === "shape");
+      const hasVectorFigure = vectorLines.length >= 2 && vectorShapes.length >= 2;
       const hasFigureCaption = elements
         .filter((element) => element.type === "text")
         .some((element) => /(?:图\s*\d|如图|下图|上图|图中|右图|左图)/.test(
           String(element.content || "").replace(/<[^>]+>/g, " ")
         ));
       if (hasFigureCaption) {
-        assert.ok(images.length > 0, `${knowledgePoint.id} has a figure caption but no image element`);
+        assert.ok(
+          images.length > 0 || hasVectorFigure,
+          `${knowledgePoint.id} has a figure caption but no image or complete vector figure`
+        );
       }
       for (const image of images) {
         const src = String(image.src || "");
