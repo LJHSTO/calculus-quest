@@ -9,6 +9,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 const route = JSON.parse(read("data/multi-scene-learning-route.json"));
 const { routeUnits } = require("../lib/kg-build");
 const labelsApi = require("../app/main/knowledge-point-labels");
+const quizReviewStateApi = require("../app/main/quiz-review-state");
 const unitById = new Map(
   route.chapters.flatMap((chapter) => routeUnits(chapter)).map((unit) => [unit.id, unit])
 );
@@ -28,6 +29,8 @@ const syntheticUnits = new Map([
     label: "后续课件"
   }]
 ]);
+let completionAllowed = true;
+const previewFeedback = { textContent: "", closest: () => null };
 assert.equal(route.quizKnowledgePointCuration?.questionSetPreserved, true);
 assert.deepEqual(route.quizKnowledgePointCuration?.selectionReplacements, []);
 const quizIdentity = (route.chapters || []).flatMap((chapter) =>
@@ -64,7 +67,8 @@ const accessibleQuizResources = new Set();
 const sandbox = {
   console,
   curriculum: route.chapters,
-  state: { submittedQuizzes: [], returnToQuiz: null },
+  submitInProgress: null,
+  state: { submittedQuizzes: [], completed: [], quizDrafts: {}, returnToQuiz: null },
   els: {
     lessonPlayer: {
       innerHTML: "",
@@ -75,6 +79,7 @@ const sandbox = {
     }
   },
   document: {
+    querySelector: () => previewFeedback,
     querySelectorAll: () => []
   },
   KnowledgePointLabels: labelsApi,
@@ -100,12 +105,16 @@ const sandbox = {
   getUnit: (unitId) => syntheticUnits.get(unitId) || unitById.get(unitId) || null,
   agenticGuardNavigation: (unitId) => accessibleQuizResources.has(unitId),
   quizMaxScoreFor: (question) => Number(question.points || 1),
-  quizAiReviewFailed: () => false,
-  quizReviewIsPending: () => false,
+  quizAiReviewFailed: (result) => quizReviewStateApi.aiReviewFailed(result),
+  quizReviewIsPending: (result) => quizReviewStateApi.isPending(result),
   quizScoreFromAiScore: (score) => Number(score || 0),
   quizFormatScore: (score) => String(score),
   quizQuestionScoreLabel: () => "1 / 1 分",
   completeAndAdvanceCurrentUnit: () => {},
+  agenticUnitCompletionAllowed: () => completionAllowed,
+  readQuizDraft: (unitId, questionId, fallback = "") => (
+    sandbox.state.quizDrafts?.[`${unitId}:${questionId}`] ?? fallback
+  ),
   knowledgeInteractionTypes: () => [],
   selectedKnowledgeSceneType: () => "",
   knowledgeResourceCandidate: () => null
@@ -126,7 +135,6 @@ assert.ok(firstQuizQuestion, "expected at least one quiz question with knowledge
 sandbox.renderResourceShell = (_unit, _title, body) => body;
 sandbox.renderAssessmentBanner = () => "";
 sandbox.renderCoach = () => "";
-sandbox.renderQuestionInput = () => "<input>";
 sandbox.setupQuizVisibilityTracking = () => {};
 sandbox.renderQuiz({
   id: "quiz-unsubmitted",
@@ -143,6 +151,39 @@ assert.equal(
   0,
   "unsubmitted quiz cards must not expose knowledge-point coverage"
 );
+
+async function testLockedQuizPreview() {
+  completionAllowed = false;
+  const previewOnlyQuiz = {
+    id: "quiz-preview-only",
+    label: "预览测验",
+    chapterId: route.chapters[0].id,
+    assessmentPhase: "formative",
+    scene: {
+      type: "quiz",
+      content: { questions: [firstQuizQuestion] }
+    }
+  };
+  syntheticUnits.set(previewOnlyQuiz.id, previewOnlyQuiz);
+  sandbox.renderQuiz(previewOnlyQuiz);
+  assert.match(sandbox.els.lessonPlayer.innerHTML, /data-submit-quiz="quiz-preview-only"[^>]*disabled/);
+  assert.match(sandbox.els.lessonPlayer.innerHTML, /未解锁：先接受学习建议/);
+  assert.doesNotMatch(
+    sandbox.els.lessonPlayer.innerHTML,
+    /data-short-answer|data-choice-answer/,
+    "a locked future quiz must not expose interactive question controls"
+  );
+  assert.deepEqual(
+    sandbox.state.quizDrafts,
+    {},
+    "rendering a locked future quiz must not create a draft"
+  );
+  await sandbox.submitQuiz("quiz-preview-only");
+  assert.match(previewFeedback.textContent, /当前仅供预览/);
+  assert.deepEqual(sandbox.state.completed, []);
+  assert.deepEqual(sandbox.state.submittedQuizzes, []);
+  completionAllowed = true;
+}
 
 const reviewUnit = {
   ...unitById.get("V14-C1-formative"),
@@ -194,6 +235,29 @@ reviewCases.forEach(({ label, question, result }) => {
     `${label} review must show knowledge-point coverage exactly once`
   );
 });
+
+const failedShortAnswerHtml = sandbox.renderQuestionReview({
+  question: {
+    ...firstQuizQuestion,
+    id: "failed-short-answer",
+    type: "short_answer",
+    referenceAnswer: "参考答案"
+  },
+  result: {
+    unitId: reviewUnit.id,
+    questionId: "failed-short-answer",
+    response: "作答",
+    status: "ai_reviewed",
+    isCorrect: false,
+    aiScore: 0,
+    aiErrorType: "empty_response",
+    aiFeedback: "模型接口返回了空文本。"
+  },
+  index: 0,
+  unit: reviewUnit
+});
+assert.match(failedShortAnswerHtml, /data-retry-ai-grade/);
+assert.match(failedShortAnswerHtml, /重新批改/);
 
 const linkedQuestion = {
   ...choiceQuestion,
@@ -362,4 +426,9 @@ const declaredCoverageGaps = (route.quizKnowledgePointCuration?.coverageGaps || 
 assert.deepEqual(observedCoverageGaps.sort(), declaredCoverageGaps);
 assert.deepEqual(declaredCoverageGaps, ["GH-03-K03", "GH-10-K04", "GH-14-K05"]);
 
-console.log(`quiz coverage labels passed (${questionCount} questions)`);
+testLockedQuizPreview()
+  .then(() => console.log(`quiz coverage labels passed (${questionCount} questions)`))
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });

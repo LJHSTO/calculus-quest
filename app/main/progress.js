@@ -12,14 +12,16 @@ function renderLibrary() {
   const cards = units
     .map((unit) => {
       const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
-      const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
+      const isUnlocked = typeof agenticUnitCompletionAllowed === "function"
+        ? agenticUnitCompletionAllowed(unit.id)
+        : typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
       const isDone = state.completed.includes(unit.id);
       const statusText = isDone
         ? "已完成"
         : isSkipped
           ? "已跳过"
-          : unit.flowKind === "adaptive" && !isUnlocked
-            ? "重学/拓展课件待解锁"
+          : !isUnlocked
+            ? "未解锁 · 可预览"
             : "可学习";
       const statusClass = isDone ? "done" : isSkipped || isUnlocked ? "todo" : "locked";
       const flowText = unit.flowKind === "adaptive" ? ` · ${escapeHtml(unit.flowLabel || "新加课件")}` : "";

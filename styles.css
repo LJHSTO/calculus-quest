@@ -1357,7 +1357,7 @@ h3 {
 
 .lesson-scene-chip.locked {
   opacity: 1;
-  cursor: not-allowed;
+  cursor: pointer;
   border-style: dashed;
   background: #f1f4f2;
   color: #767f7a;
@@ -2998,7 +2998,7 @@ textarea {
 }
 .lesson-card.locked {
   opacity: 0.48;
-  cursor: not-allowed;
+  cursor: pointer;
   background: #f5f1e8;
   border-style: dashed;
 }
@@ -3200,7 +3200,8 @@ textarea {
 
 .lesson-card.locked:hover {
   border-color: #cfc5b2;
-  box-shadow: none;
+  box-shadow: 0 4px 14px rgba(64, 78, 70, 0.12);
+  transform: translateY(-1px);
 }
 
 .lesson-card.locked strong,
@@ -3209,7 +3210,7 @@ textarea {
 }
 
 .chapter-card.locked {
-  cursor: not-allowed;
+  cursor: pointer;
   border-style: dashed;
   background: #f2eee4;
   color: #7d827e;
@@ -3778,14 +3779,11 @@ textarea:focus-visible {
 .chapter-card.locked {
   background: #f1f4f2;
   color: #767f7a;
-  cursor: not-allowed;
+  cursor: pointer;
   border-style: dashed;
   box-shadow: none;
 }
 
-.lesson-card:disabled,
-.chapter-card:disabled,
-.lesson-scene-chip:disabled,
 .agentic-scene-choice:disabled {
   opacity: 1;
   pointer-events: none;

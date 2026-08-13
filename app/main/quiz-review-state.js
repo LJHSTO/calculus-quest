@@ -7,6 +7,7 @@
     "api_error",
     "api_timeout",
     "parse_error",
+    "empty_response",
     "mock_provider",
     "manual_fallback",
     "unknown"

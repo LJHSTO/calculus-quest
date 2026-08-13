@@ -85,16 +85,68 @@ async function returnToLearningCourseware() {
   }
 }
 
+function returnToQuizFromCourseware(unitId = currentUnitId) {
+  const context = typeof quizResourceReviewContext === "function"
+    ? quizResourceReviewContext(unitId)
+    : null;
+  if (!context?.quizUnit) return false;
+  const questionId = context.questionId || "";
+  state.returnToQuiz = null;
+  if (typeof analyticsTrack === "function") {
+    analyticsTrack("quiz_resource_review_returned", {
+      source: "quiz",
+      data: {
+        fromUnitId: unitId,
+        targetUnitId: context.quizUnit.id,
+        questionId
+      }
+    });
+  }
+  currentChapterId = context.quizUnit.chapterId;
+  currentUnitId = context.quizUnit.id;
+  switchView("learn");
+  renderAll();
+  window.setTimeout(() => {
+    if (!questionId) return;
+    const safeQuestionId = typeof CSS !== "undefined" && CSS.escape
+      ? CSS.escape(questionId)
+      : String(questionId).replace(/"/g, '\\"');
+    const card = document.querySelector(`[data-question="${safeQuestionId}"]`);
+    if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 80);
+  return true;
+}
+
+function retireQuizReturnContext(nextUnitId = "") {
+  const context = state.returnToQuiz;
+  if (!context?.targetUnitId || !nextUnitId || nextUnitId === context.targetUnitId) return false;
+  state.returnToQuiz = null;
+  if (typeof saveState === "function") saveState();
+  if (typeof trackLearningEvent === "function") {
+    trackLearningEvent("quiz_resource_review_abandoned", {
+      fromQuizUnitId: context.unitId || "",
+      reviewedUnitId: context.targetUnitId,
+      nextUnitId,
+      questionId: context.questionId || ""
+    }, false);
+  }
+  if (typeof analyticsTrack === "function") {
+    analyticsTrack("quiz_resource_review_abandoned", {
+      source: "quiz",
+      data: {
+        fromQuizUnitId: context.unitId || "",
+        reviewedUnitId: context.targetUnitId,
+        nextUnitId,
+        questionId: context.questionId || ""
+      }
+    });
+  }
+  return true;
+}
+
 async function selectChapter(chapterId) {
   const targetChapter = getChapter(chapterId);
-  if (typeof agenticIsChapterUnlocked === "function" && !agenticIsChapterUnlocked(chapterId)) {
-    const label = typeof chapterDisplayCopy === "function"
-      ? chapterDisplayCopy(targetChapter || {}).label
-      : targetChapter?.label;
-    addLog(`「${label || "该章节"}」尚未解锁，请先完成当前下一步。`);
-    if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
-    return false;
-  }
+  if (!targetChapter) return false;
   const previousChapterId = currentChapterId;
   const previousUnitId = currentUnitId;
   analyticsTrack("chapter_select", {
@@ -108,17 +160,9 @@ async function selectChapter(chapterId) {
   const chapterPathUnits = typeof agenticDisplayUnitsForChapter === "function"
     ? agenticDisplayUnitsForChapter(chapter)
     : chapter.units;
-  const firstUnlocked = chapterPathUnits.find((unit) =>
-    typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id)
-  );
-  if (!firstUnlocked?.id && chapterPathUnits.length) {
-    currentChapterId = previousChapterId;
-    currentUnitId = previousUnitId;
-    addLog(`「${chapter.label}」的入口尚未解锁，请先完成当前路径。`);
-    renderAll();
-    return false;
-  }
-  currentUnitId = firstUnlocked?.id || chapter.units[0]?.id || "";
+  const firstVisible = chapterPathUnits[0] || chapter.units?.[0] || null;
+  retireQuizReturnContext(firstVisible?.id || "");
+  currentUnitId = firstVisible?.id || "";
   trackLearningEvent("select_chapter", { chapterId, chapterLabel: chapter.label });
   if (!chapter.loaded) {
     renderAll();
@@ -128,17 +172,9 @@ async function selectChapter(chapterId) {
       const loadedPathUnits = typeof agenticDisplayUnitsForChapter === "function"
         ? agenticDisplayUnitsForChapter(loadedChapter)
         : loadedChapter.units;
-      const unlocked = loadedPathUnits.find((unit) =>
-        typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id)
-      );
-      if (!unlocked?.id && loadedPathUnits.length) {
-        currentChapterId = previousChapterId;
-        currentUnitId = previousUnitId;
-        addLog(`「${loadedChapter.label}」的入口尚未解锁，请先完成当前路径。`);
-        renderAll();
-        return false;
-      }
-      currentUnitId = unlocked?.id || loadedChapter.units[0]?.id || "";
+      const loadedFirst = loadedPathUnits[0] || loadedChapter.units?.[0] || null;
+      retireQuizReturnContext(loadedFirst?.id || "");
+      currentUnitId = loadedFirst?.id || "";
       preloadChapterResources(chapterId);
     } catch {
       // Chapter load failed; stay on current chapter view
@@ -163,6 +199,7 @@ function selectUnit(unitId) {
   if (!unit) return false;
   if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unitId, { allowPrevious: true })) return false;
   const previousUnit = getUnit(currentUnitId);
+  retireQuizReturnContext(unit.id);
   currentChapterId = unit.chapterId;
   currentUnitId = unit.id;
   if (typeof agenticConsumeCompletedExtensionResume === "function") {
@@ -187,6 +224,16 @@ function selectUnit(unitId) {
 function completeCurrentUnit() {
   const unit = getUnit();
   if (!unit) return false;
+  if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
+    return false;
+  }
+  if (
+    typeof agenticUnitCompletionAllowed === "function"
+    && !agenticUnitCompletionAllowed(unit.id)
+  ) {
+    addLog(`「${unit.label}」当前仅供预览；接受学习建议后才能完成本节。`);
+    return false;
+  }
   if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unit.id, { allowPrevious: true, silent: true })) return false;
   if (!state.completed.includes(unit.id)) {
     state.completed.push(unit.id);
@@ -246,6 +293,14 @@ async function completeAndAdvanceCurrentUnit(event) {
   event?.preventDefault?.();
   const unit = getUnit();
   if (!unit) return false;
+
+  if (
+    typeof quizResourceReviewContext === "function"
+    && quizResourceReviewContext(unit.id)
+    && typeof returnToQuizFromCourseware === "function"
+  ) {
+    return returnToQuizFromCourseware(unit.id);
+  }
 
   if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
     addLog("请先选择一个互动场景，再完成本节。");

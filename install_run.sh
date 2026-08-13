@@ -1,60 +1,168 @@
-# 根据/Users/l/other_git_repos/calculus-quest/README.md 实现
 #!/usr/bin/env bash
+# Calculus Quest one-click deployment entry, compatible with the historical 3789 default.
 set -euo pipefail
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
+fail() { log "错误：$*"; exit 1; }
 
-log "脚本开始 (pid=$$)"
 cd "$(dirname "$0")"
-log "工作目录: $(pwd)"
+APP_DIR="$(pwd -P)"
 
-# 端口可通过第一个参数指定，默认使用项目约定端口 3789
-PORT="${1:-3789}"
-# 监听地址：默认 0.0.0.0（server.js 通过 HOST 环境变量读取），可用 HOST 环境变量覆盖
-export HOST="${HOST:-0.0.0.0}"
-# 子路径前缀：README 约定访问路径为 /calculus_quest/，server.js 通过 BASE_PATH 剥离该前缀
-export BASE_PATH="${BASE_PATH:-/calculus_quest}"
-log "PORT=${PORT} HOST=${HOST}"
+env_value() {
+  node - "$1" <<'NODE'
+const fs = require("fs");
+const path = require("path");
+const key = process.argv[2];
+if (process.env[key] !== undefined) {
+  process.stdout.write(process.env[key]);
+  process.exit(0);
+}
+const envPath = path.join(process.cwd(), ".env");
+if (!fs.existsSync(envPath)) process.exit(0);
+const text = fs.readFileSync(envPath, "utf8");
+for (const line of text.split(/\r?\n/)) {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) continue;
+  const index = trimmed.indexOf("=");
+  if (index < 0 || trimmed.slice(0, index).trim() !== key) continue;
+  let value = trimmed.slice(index + 1).trim();
+  if (
+    value.length >= 2
+    && value.charCodeAt(0) === value.charCodeAt(value.length - 1)
+    && [34, 39].includes(value.charCodeAt(0))
+  ) {
+    value = value.slice(1, -1);
+  }
+  process.stdout.write(value);
+  break;
+}
+NODE
+}
 
-log "node: $(command -v node || echo 未找到) $(node --version 2>/dev/null || true)"
-log "pnpm: $(command -v pnpm || echo 未找到)"
-which pnpm
+command -v node >/dev/null 2>&1 || fail "未找到 node。"
+command -v pnpm >/dev/null 2>&1 || fail "未找到 pnpm。"
+command -v lsof >/dev/null 2>&1 || fail "未找到 lsof，无法安全识别监听进程。"
+command -v curl >/dev/null 2>&1 || fail "未找到 curl，无法执行启动健康检查。"
 
-# 端口被占用时直接杀掉占用进程
-OCCUPYING_PIDS="$(lsof -tnP -iTCP:"${PORT}" -sTCP:LISTEN 2>/dev/null || true)"
-if [ -n "${OCCUPYING_PIDS}" ]; then
-  log "端口 ${PORT} 已被占用，杀掉占用进程: ${OCCUPYING_PIDS}"
-  lsof -nP -iTCP:"${PORT}" -sTCP:LISTEN || true
-  kill ${OCCUPYING_PIDS} 2>/dev/null || true
-  # 等待端口释放，最多 5 秒，仍未释放则强杀
-  for _ in 1 2 3 4 5; do
-    sleep 1
-    lsof -tnP -iTCP:"${PORT}" -sTCP:LISTEN >/dev/null 2>&1 || break
+ENV_PORT="$(env_value PORT)"
+ENV_HOST="$(env_value HOST)"
+ENV_BASE_PATH="$(env_value BASE_PATH)"
+NODE_ENV_VALUE="$(env_value NODE_ENV)"
+DB_PATH_VALUE="$(env_value DB_PATH)"
+
+# 保留历史一键部署的 3789 默认端口；可用第一个参数或 PORT 覆盖。
+PORT="${1:-${PORT:-${ENV_PORT:-3789}}}"
+export HOST="${HOST:-${ENV_HOST:-0.0.0.0}}"
+export BASE_PATH="${BASE_PATH:-${ENV_BASE_PATH:-/calculus_quest}}"
+export APP_VERSION="${APP_VERSION:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
+
+[[ "${NODE_ENV_VALUE}" == "production" ]] || fail ".env 必须设置 NODE_ENV=production。"
+[[ -n "${DB_PATH_VALUE}" ]] || fail ".env 必须设置仓库外的绝对 DB_PATH。"
+
+DB_PATH_ABS="$(
+  node - "${APP_DIR}" "${DB_PATH_VALUE}" <<'NODE'
+const path = require("path");
+const appDir = path.resolve(process.argv[2]);
+const configured = process.argv[3] || "";
+if (!path.isAbsolute(configured)) process.exit(2);
+const dbPath = path.resolve(configured);
+const relative = path.relative(appDir, dbPath);
+if (relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))) process.exit(3);
+process.stdout.write(dbPath);
+NODE
+)" || fail "DB_PATH 必须是仓库外的绝对路径。"
+
+[[ -f "${DB_PATH_ABS}" ]] || fail "生产数据库不存在：${DB_PATH_ABS}"
+
+log "工作目录：${APP_DIR}"
+log "运行配置：PORT=${PORT} HOST=${HOST} BASE_PATH=${BASE_PATH}"
+log "Node：$(node --version)"
+log "先安装锁定依赖并执行部署前检查。"
+pnpm install --frozen-lockfile --reporter=append-only
+node --check server.js
+node ops/test-deployment-safety.js
+node ops/test-subpath-deployment.js
+node ops/test-install-run-safety.js
+
+OCCUPYING_PIDS="$(lsof -tnP -iTCP:"${PORT}" -sTCP:LISTEN 2>/dev/null | sort -u || true)"
+if [[ -n "${OCCUPYING_PIDS}" ]]; then
+  for pid in ${OCCUPYING_PIDS}; do
+    [[ -r "/proc/${pid}/cmdline" && -e "/proc/${pid}/cwd" ]] || fail "无法核验端口 ${PORT} 上的进程 ${pid}。"
+    command_line="$(tr '\0' ' ' < "/proc/${pid}/cmdline")"
+    process_cwd="$(readlink -f "/proc/${pid}/cwd")"
+    [[ "${process_cwd}" == "${APP_DIR}" ]] || fail "端口 ${PORT} 被其他目录的进程占用：PID ${pid}，${process_cwd}"
+    [[ "${command_line}" == *"node"*"server.js"* ]] || fail "端口 ${PORT} 不是 Calculus Quest 服务：PID ${pid}，${command_line}"
   done
-  REMAINING="$(lsof -tnP -iTCP:"${PORT}" -sTCP:LISTEN 2>/dev/null || true)"
-  if [ -n "${REMAINING}" ]; then
-    log "进程未退出，强制 kill -9: ${REMAINING}"
-    kill -9 ${REMAINING} 2>/dev/null || true
+
+  log "向已核验的 Calculus Quest 进程发送 SIGTERM：${OCCUPYING_PIDS}"
+  kill -TERM ${OCCUPYING_PIDS}
+  for _ in $(seq 1 30); do
+    remaining=""
+    for pid in ${OCCUPYING_PIDS}; do
+      kill -0 "${pid}" 2>/dev/null && remaining="${remaining} ${pid}"
+    done
+    [[ -z "${remaining}" ]] && break
     sleep 1
+  done
+  for pid in ${OCCUPYING_PIDS}; do
+    kill -0 "${pid}" 2>/dev/null && fail "进程 ${pid} 未能优雅退出；已停止部署，不会强制终止。"
+  done
+fi
+
+[[ ! -e "${DB_PATH_ABS}.lock" ]] || fail "数据库锁仍存在：${DB_PATH_ABS}.lock"
+
+STAMP="$(date '+%Y%m%d-%H%M%S')"
+BACKUP_DIR="$(dirname "${DB_PATH_ABS}")/backups"
+REPORT_PATH="${BACKUP_DIR}/release-before-${STAMP}.json"
+BACKUP_PATH="${BACKUP_DIR}/$(basename "${DB_PATH_ABS}" .db).before-${STAMP}.db"
+mkdir -p "${BACKUP_DIR}"
+
+log "生成发布前数据库报告并备份历史数据。"
+node ops/database-release-check.js \
+  --db "${DB_PATH_ABS}" \
+  --assert-external \
+  --write-report "${REPORT_PATH}"
+cp -p -- "${DB_PATH_ABS}" "${BACKUP_PATH}"
+node - "${DB_PATH_ABS}" "${BACKUP_PATH}" <<'NODE'
+const crypto = require("crypto");
+const fs = require("fs");
+const [source, backup] = process.argv.slice(2);
+const digest = (file) => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+if (digest(source) !== digest(backup)) {
+  console.error("数据库备份 SHA-256 不一致。");
+  process.exit(1);
+}
+NODE
+log "数据库备份完成：${BACKUP_PATH}"
+
+PUBLIC_BASE_PATH="/${BASE_PATH#/}"
+PUBLIC_BASE_PATH="${PUBLIC_BASE_PATH%/}"
+HEALTH_URL="http://127.0.0.1:${PORT}${PUBLIC_BASE_PATH}/api/health"
+
+log "启动 Calculus Quest，健康检查：${HEALTH_URL}"
+node server.js "${PORT}" &
+APP_PID=$!
+
+forward_signal() {
+  kill -TERM "${APP_PID}" 2>/dev/null || true
+  wait "${APP_PID}" || true
+}
+trap forward_signal INT TERM
+
+for _ in $(seq 1 60); do
+  if ! kill -0 "${APP_PID}" 2>/dev/null; then
+    wait "${APP_PID}" || true
+    fail "服务在健康检查前退出。"
   fi
-  log "端口 ${PORT} 已释放"
-fi
+  if curl --fail --silent --show-error "${HEALTH_URL}" >/dev/null; then
+    node ops/database-release-check.js --db "${DB_PATH_ABS}" --compare "${REPORT_PATH}"
+    log "部署完成：服务健康，历史数据库备份已保留。"
+    wait "${APP_PID}"
+    exit $?
+  fi
+  sleep 1
+done
 
-# 安装依赖
-log "开始 pnpm install ..."
-pnpm install --reporter=append-only
-log "pnpm install 完成"
-
-# 管理后台 token：优先用环境变量 ADMIN_TOKEN；未设置时服务会自动读取 data/admin-token.txt
-if [ -z "${ADMIN_TOKEN:-}" ] && [ ! -f data/admin-token.txt ]; then
-  log "提示：未设置 ADMIN_TOKEN 且 data/admin-token.txt 不存在，管理后台 token 将由服务自行处理"
-fi
-
-log "启动服务："
-log "  学习页面：http://127.0.0.1:${PORT}/calculus_quest/"
-log "  管理后台：http://127.0.0.1:${PORT}/calculus_quest/admin"
-log "  健康检查：http://127.0.0.1:${PORT}/calculus_quest/api/health"
-
-log "exec node server.js ${PORT}（之后的输出来自 server.js）"
-set -x
-exec node server.js "${PORT}"
+kill -TERM "${APP_PID}" 2>/dev/null || true
+wait "${APP_PID}" || true
+fail "服务启动后 60 秒内未通过健康检查。"

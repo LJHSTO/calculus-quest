@@ -28,6 +28,11 @@ assert.match(html, /app\/flow-test\/flow-test\.js/);
 assert.match(html, /id="quiz-list"/);
 assert.match(html, /id="slide-frame"/);
 assert.match(html, /id="quiz-preview"/);
+assert.match(html, /id="toggle-navigation"/);
+assert.match(html, /<body class="is-navigation-collapsed">/);
+assert.doesNotMatch(html, /class="validation-rail"/);
+assert.doesNotMatch(html, /answer-access|answer-token/);
+assert.doesNotMatch(html, /id="audio-(?:player|play|pause|stop|progress)"/);
 assert.doesNotMatch(html, /admin_flow/);
 assert.doesNotMatch(html, /target="_blank"/);
 assert.doesNotMatch(html, /open-resource/);
@@ -41,7 +46,28 @@ assert.match(css, /grid-template-columns:\s*minmax\(0,\s*1fr\)/);
 assert.match(css, /\.frame-empty\[hidden\]\s*\{\s*display:\s*none;/);
 assert.match(css, /\.frame-shell\.is-local-fullscreen/);
 assert.match(css, /\.frame-shell[^}]*display:\s*flex/);
-assert.match(css, /@media \(max-width:\s*1600px\)[\s\S]*?grid-template-columns:\s*150px\s+340px\s+minmax\(0,\s*1fr\)/);
+assert.match(css, /body\.is-navigation-collapsed \.workspace/);
+assert.match(
+  css,
+  /body\.is-navigation-collapsed \.workspace\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)/s
+);
+assert.match(
+  css,
+  /body\.is-navigation-collapsed \.viewer-pane\s*\{[^}]*grid-template-rows:\s*auto auto auto minmax\(0,\s*1fr\)[^}]*overflow:\s*hidden/s
+);
+assert.match(
+  css,
+  /body\.is-navigation-collapsed \.frame-shell,\s*body\.is-navigation-collapsed \.frame-shell iframe\s*\{[^}]*min-height:\s*0[^}]*height:\s*100%/s
+);
+assert.match(css, /body\.is-navigation-collapsed \.chapter-pane/);
+assert.match(css, /\.frame-shell\s*\{[^}]*min-height:\s*680px/);
+assert.match(css, /\.frame-shell iframe\s*\{[^}]*width:\s*100%[^}]*min-height:\s*680px/);
+assert.match(
+  css,
+  /@media \(max-width:\s*640px\)[\s\S]*?body\.is-navigation-collapsed \.workspace\s*\{[^}]*grid-template-rows:\s*minmax\(0,\s*1fr\)/,
+);
+assert.doesNotMatch(css, /\.answer-access-|\.flow-audio-/);
+assert.match(css, /@media \(max-width:\s*1600px\)[\s\S]*?grid-template-columns:\s*136px\s+312px\s+minmax\(0,\s*1fr\)/);
 assert.match(css, /@media \(max-width:\s*1400px\)[\s\S]*?grid-template-columns:\s*320px\s+minmax\(0,\s*1fr\)/);
 assert.match(js, /const BASE_PATH =/);
 assert.match(js, /flow-test(?:\\\\\.html)?/);
@@ -67,7 +93,7 @@ const flowCssVersion = html.match(/flow-test\.css\?v=([^"]+)/)?.[1];
 const flowJsVersion = html.match(/flow-test\.js\?v=([^"]+)/)?.[1];
 assert.ok(flowCssVersion);
 assert.equal(flowCssVersion, flowJsVersion);
-assert.equal(flowJsVersion, "20260727-courseware-interaction-v4");
+assert.equal(flowJsVersion, "20260813-platform-fixes-v1");
 assert.match(server, /relative === "flow-test\.html"/);
 assert.match(server, /publicFlowTestFiles\.has\(relative\)/);
 assert.match(server, /"app\/flow-test\/flow-test\.css"/);
@@ -82,6 +108,9 @@ assert.match(js, /function fetchRoute/);
 assert.match(js, /appUrl\("api\/course\/flow-test-route"\)/);
 assert.match(js, /appUrl\("data\/multi-scene-learning-route\.json"\)/);
 assert.match(js, /appUrl\("data\/knowledge-graph\.json"\)/);
+assert.match(js, /function setNavigationUi/);
+assert.match(js, /state\.navigationCollapsed = !state\.navigationCollapsed/);
+assert.doesNotMatch(js, /openAnswerAccessDialog|unlockAnswers|answerAccess|answerToken/);
 assert.match(js, /kgResponse\.kg \|\| kgResponse/);
 assert.match(js, /function renderQuizPreview/);
 assert.match(js, /function renderSlidePreview/);
@@ -93,7 +122,7 @@ assert.match(js, /frameShell:\s*document\.querySelector\("\.frame-shell"\)/);
 assert.match(js, /requestFullscreen/);
 assert.match(js, /is-local-fullscreen/);
 assert.match(js, /function viewerFullscreenActive/);
-assert.match(js, /const maxFitScale = viewerFullscreenActive\(\) \? 3 : 1/);
+assert.match(js, /const maxFitScale = viewerFullscreenActive\(\) \? 3 : 1\.44/);
 assert.doesNotMatch(js, /const fitScale = Math\.min\(1,/);
 assert.match(js, /new ResizeObserver\(scheduleSlidePreviewScale\)/);
 assert.match(js, /await els\.frameShell\.requestFullscreen\(\)/);
@@ -106,6 +135,10 @@ assert.match(js, /function quizQuestionDisplayText/);
 assert.match(js, /resourcesForKnowledgePoint/);
 assert.match(js, /function slideStructureState/);
 assert.match(js, /candidate.type === "slide"/);
+assert.doesNotMatch(
+  js,
+  /allAudioResources|openmaic-audio-map|syncAudioPlayer|playAudioPackage|pauseAudioPackage|stopAudioPackage|new Audio\(\)/,
+);
 assert.match(js, /appUrl\(`resources\/\$\{candidate\.root\}\/\$\{candidate\.file\}`\)/);
 assert.match(learningRenderer, /coursewareFrameUrl\(`resources\/\$\{candidate\.root\}\/\$\{candidate\.file\}`\)/);
 assert.match(learningRenderer, /knowledgeResourceCandidate\(unit, selectedTypeId\)/);
@@ -118,7 +151,7 @@ assert.ok(formalStyleVersion);
 assert.notEqual(formalStyleVersion, "20260726-courseware-layout-v2");
 const formalCoreScriptVersion = mainHtml.match(/app\/main\/core\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalCoreScriptVersion);
-assert.equal(formalCoreScriptVersion, "20260727-courseware-interaction-v4");
+assert.equal(formalCoreScriptVersion, "20260813-platform-fixes-v1");
 assert.match(mainHtml, /lib\/quiz-question-order\.js\?v=20260726-quiz-order-v1/);
 const formalRenderScriptVersion = mainHtml.match(/app\/main\/render-learning\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalRenderScriptVersion);
@@ -151,6 +184,26 @@ assert.equal(new Set(resourceKeys).size, resourceKeys.length, "resource candidat
 const encodedByFlow = resourceKeys.map((key) => key.split("/").map(encodeURIComponent).join("/"));
 const encodedByFormalSite = resourceKeys.map((key) => encodeURI(key));
 assert.deepEqual(encodedByFlow, encodedByFormalSite, "Flow Test and formal site must encode resource paths identically");
+const audioResources = [];
+const audioRoots = new Set(route.chapters.flatMap((chapter) => (chapter.modules || []).map(
+  (module) => module.source?.resourceRoot
+)).filter(Boolean));
+audioRoots.forEach((resourceRoot) => {
+  const manifestPath = path.join(root, "resources", resourceRoot, "manifest.json");
+  assert.ok(fs.existsSync(manifestPath), `Missing manifest for audio root: ${resourceRoot}`);
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  (manifest.scenes || []).forEach((scene) => {
+    (scene.actions || []).forEach((action) => {
+      if (!action.audioRef) return;
+      const audioPath = path.join(root, "resources", resourceRoot, action.audioRef);
+      audioResources.push(audioPath);
+      assert.ok(fs.existsSync(audioPath), `Missing audio resource: ${audioPath}`);
+    });
+  });
+});
+assert.equal(audioRoots.size, 19);
+assert.equal(audioResources.length, 1481);
+assert.equal(new Set(audioResources).size, audioResources.length, "audio references must be unique");
 const slides = route.chapters.flatMap((chapter) => (chapter.modules || []).flatMap((module) => (
   (module.knowledgePoints || []).filter((knowledgePoint) => knowledgePoint.slide?.canvas)
 )));
@@ -188,4 +241,12 @@ assert.match(overlayRegression, /#overlay[\s\S]*background:\s*#0a0a2e;/);
 assert.match(overlayRegression, /#overlay[\s\S]*isolation:\s*isolate;/);
 assert.match(overlayRegression, /#overlay[\s\S]*z-index:\s*2147483647\s*!important;/);
 assert.doesNotMatch(overlayRegression, /<div id="overlay" id="startScreen">/);
-console.log(JSON.stringify({ ok: true, chapters: route.chapters.length, resources: resources.length, slides: slides.length, quizzes, checkableResources: resources.length + slides.length }, null, 2));
+console.log(JSON.stringify({
+  ok: true,
+  chapters: route.chapters.length,
+  resources: resources.length,
+  slides: slides.length,
+  quizzes,
+  audio: audioResources.length,
+  checkableResources: resources.length + slides.length + audioResources.length
+}, null, 2));

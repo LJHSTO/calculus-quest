@@ -3,9 +3,12 @@ const ANALYTICS_SESSION_KEY = "calculus-quest-analytics-session-v1";
 const ANALYTICS_SESSION_OWNER_KEY = "calculus-quest-analytics-session-owner-v1";
 const ANALYTICS_SEQUENCE_KEY = "cq_analytics_sequence";
 const analyticsQueue = [];
+const analyticsInFlightGroups = new Map();
 const analyticsOnlinePeriodFlushMs = 5 * 60 * 1000;
 const analyticsMinOnlinePeriodSeconds = 60;
 const analyticsMinUnitSeconds = 5;
+const analyticsMaxDeliveryAttempts = 3;
+const analyticsRetryDelayMs = 5000;
 let analyticsFlushTimer = null;
 let analyticsFlushChain = Promise.resolve();
 let analyticsSequence = 0;
@@ -20,7 +23,9 @@ let analyticsLastActiveAt = Date.now();
 let analyticsLastTrackedView = "";
 let analyticsCoachRefreshTimer = null;
 let analyticsCoachLastRefreshAt = 0;
-const analyticsPageStartedAt = Date.now();
+let analyticsParticipantSessionStartedAt = 0;
+let analyticsParticipantSessionActive = false;
+let analyticsDeliverySequence = 0;
 let analyticsResearchContext = {
   appVersion: "",
   courseVersion: "",
@@ -93,7 +98,10 @@ function analyticsSessionId() {
 }
 
 syncAnalyticsSessionScope();
-window.addEventListener("cq:participant-change", syncAnalyticsSessionScope);
+window.addEventListener("cq:participant-change", (event) => {
+  syncAnalyticsSessionScope();
+  if (!event.detail?.participantId) analyticsResetParticipantSession();
+});
 
 function ensureAnalyticsState() {
   state.analytics = state.analytics || {};
@@ -387,7 +395,14 @@ function analyticsControlData(element, event) {
 }
 
 function analyticsTrack(eventType, payload = {}) {
-  if (!isSignedIn() || (typeof authTransitionInProgress !== "undefined" && authTransitionInProgress)) return;
+  if (
+    !isSignedIn()
+    || (
+      typeof authTransitionInProgress !== "undefined"
+      && authTransitionInProgress
+      && payload.allowDuringAuthTransition !== true
+    )
+  ) return;
   const persist = payload.persist !== false;
   const now = Date.now();
   const unit = payload.unitId ? getUnit?.(payload.unitId) : currentAnalyticsUnit();
@@ -424,6 +439,7 @@ function analyticsTrack(eventType, payload = {}) {
     },
     data: payload.data || {}
   };
+  event.eventId = `${event.sessionId}:${sequenceIndex}`;
   if (eventType === "switch_view" && event.data?.to) {
     analyticsLastTrackedView = String(event.data.to);
   }
@@ -437,6 +453,7 @@ function analyticsTrack(eventType, payload = {}) {
   analyticsQueue.push({
     token: state.authToken,
     participantId: state.participant?.participantId || "",
+    attempts: 0,
     event
   });
   if (analyticsQueue.length >= 50) analyticsFlush();
@@ -485,10 +502,28 @@ function analyticsBatchGroups(batch = []) {
     if (!token || !entry?.event) return;
     const participantId = String(entry.participantId || "");
     const key = `${participantId}\n${token}`;
-    if (!groups.has(key)) groups.set(key, { token, participantId, events: [] });
+    if (!groups.has(key)) groups.set(key, { token, participantId, entries: [], events: [] });
+    groups.get(key).entries.push(entry);
     groups.get(key).events.push(entry.event);
   });
   return Array.from(groups.values());
+}
+
+function analyticsDeliveryRetryable(error = {}) {
+  const status = Number(error.status || 0);
+  return !status || status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+function analyticsRequeueFailedGroup(group, error) {
+  if (!analyticsDeliveryRetryable(error)) return;
+  const retryEntries = (group.entries || [])
+    .map((entry) => ({ ...entry, attempts: Number(entry.attempts || 0) + 1 }))
+    .filter((entry) => entry.attempts < analyticsMaxDeliveryAttempts);
+  if (!retryEntries.length) return;
+  analyticsQueue.unshift(...retryEntries);
+  const retryAfterMs = Math.max(0, Number(error.retryAfterSeconds || 0) * 1000);
+  const delayMs = Math.max(analyticsRetryDelayMs, retryAfterMs) + Math.round(Math.random() * 750);
+  if (!analyticsFlushTimer) analyticsFlushTimer = setTimeout(analyticsFlush, delayMs);
 }
 
 function analyticsFlush() {
@@ -499,13 +534,21 @@ function analyticsFlush() {
   const groups = analyticsBatchGroups(batch);
   const flushGroups = async () => {
     for (const group of groups) {
+      const deliveryId = ++analyticsDeliverySequence;
+      analyticsInFlightGroups.set(deliveryId, group);
       try {
         await apiRequest("api/learning/events", {
           token: group.token,
-          events: group.events.map((event) => ({ type: "interaction", payload: event }))
-        });
-      } catch {
-        // Keep the UI responsive; failed analytics should not block learning.
+          events: group.events.map((event) => ({
+            eventId: event.eventId,
+            type: "interaction",
+            payload: event
+          }))
+        }, { timeoutMs: 10000 });
+      } catch (error) {
+        analyticsRequeueFailedGroup(group, error);
+      } finally {
+        analyticsInFlightGroups.delete(deliveryId);
       }
     }
   };
@@ -513,15 +556,47 @@ function analyticsFlush() {
   return analyticsFlushChain;
 }
 
+async function analyticsFlushUntilSettled(maxWaitMs = 20000) {
+  const deadline = Date.now() + Math.max(1000, Number(maxWaitMs || 0));
+  do {
+    clearTimeout(analyticsFlushTimer);
+    analyticsFlushTimer = null;
+    await analyticsFlush();
+    if (!analyticsQueue.length && !analyticsInFlightGroups.size) return true;
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) break;
+    await new Promise((resolve) => setTimeout(resolve, Math.min(250, remaining)));
+  } while (Date.now() < deadline);
+  return !analyticsQueue.length && !analyticsInFlightGroups.size;
+}
+
 function analyticsFlushBeforeUnload() {
   clearTimeout(analyticsFlushTimer);
   analyticsFlushTimer = null;
-  if (!analyticsQueue.length) return;
-  const batch = analyticsQueue.splice(0);
+  const pending = [
+    ...analyticsQueue.splice(0),
+    ...Array.from(analyticsInFlightGroups.values()).flatMap((group) => group.entries || [])
+  ];
+  if (!pending.length) return;
+  const seen = new Set();
+  const batch = pending.filter((entry) => {
+    const key = [
+      entry?.participantId || "",
+      entry?.token || "",
+      entry?.event?.eventId || ""
+    ].join("\n");
+    if (!entry?.event || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   analyticsBatchGroups(batch).forEach((group) => {
     const body = JSON.stringify({
       token: group.token,
-      events: group.events.map((event) => ({ type: "interaction", payload: event }))
+      events: group.events.map((event) => ({
+        eventId: event.eventId,
+        type: "interaction",
+        payload: event
+      }))
     });
 
     if (navigator.sendBeacon) {
@@ -602,12 +677,13 @@ function analyticsEnterUnit(unit, reason = "open") {
   });
 }
 
-function analyticsLeaveUnit(reason = "leave") {
+function analyticsLeaveUnit(reason = "leave", options = {}) {
   if (!analyticsActiveUnit || !analyticsUnitStart) return;
   const seconds = Math.round((Date.now() - analyticsUnitStart) / 1000);
   const unitId = analyticsActiveUnit;
   if (seconds >= analyticsMinUnitSeconds) {
     analyticsTrack("time_on_unit", {
+      allowDuringAuthTransition: options.allowDuringAuthTransition === true,
       unitId,
       durationMs: seconds * 1000,
       data: { unitId, seconds, reason }
@@ -638,12 +714,13 @@ function analyticsTrackTarget(eventType, element, event, extra = {}) {
   });
 }
 
-function analyticsTrackOnlinePeriod(reason = "interval") {
+function analyticsTrackOnlinePeriod(reason = "interval", options = {}) {
   if (!isSignedIn() || !analyticsOnlinePeriodStart) return;
   const now = Date.now();
   const seconds = Math.round((now - analyticsOnlinePeriodStart) / 1000);
   if (seconds >= analyticsMinOnlinePeriodSeconds) {
     analyticsTrack("online_period", {
+      allowDuringAuthTransition: options.allowDuringAuthTransition === true,
       data: {
         startedAt: new Date(analyticsOnlinePeriodStart).toISOString(),
         endedAt: new Date(now).toISOString(),
@@ -658,11 +735,29 @@ function analyticsTrackOnlinePeriod(reason = "interval") {
   analyticsOnlinePeriodStart = document.hidden ? null : now;
 }
 
-function setupInteractionTracking() {
-  if (!isSignedIn()) return;
-  analyticsOnlinePeriodStart = Date.now();
-  if (analyticsTrackingReady) return;
-  analyticsTrackingReady = true;
+function analyticsResetParticipantSession() {
+  analyticsParticipantSessionActive = false;
+  analyticsParticipantSessionStartedAt = 0;
+  analyticsOnlinePeriodStart = null;
+  analyticsActiveUnit = null;
+  analyticsUnitStart = null;
+  analyticsLastEventAt = Date.now();
+  analyticsLastActiveAt = analyticsLastEventAt;
+  analyticsLastTrackedView = "";
+  clearTimeout(analyticsCoachRefreshTimer);
+  analyticsCoachRefreshTimer = null;
+  analyticsCoachLastRefreshAt = 0;
+}
+
+function analyticsBeginParticipantSession() {
+  if (!isSignedIn() || analyticsParticipantSessionActive) return false;
+  syncAnalyticsSessionScope();
+  const now = Date.now();
+  analyticsParticipantSessionActive = true;
+  analyticsParticipantSessionStartedAt = now;
+  analyticsOnlinePeriodStart = document.hidden ? null : now;
+  analyticsLastEventAt = now;
+  analyticsLastActiveAt = now;
   analyticsLastTrackedView = currentAnalyticsView();
   analyticsTrack("session_start", {
     source: "system",
@@ -670,6 +765,35 @@ function setupInteractionTracking() {
       environment: analyticsEnvironment()
     }
   });
+  return true;
+}
+
+function analyticsEndParticipantSession(reason = "logout") {
+  if (!analyticsParticipantSessionActive || !isSignedIn()) {
+    analyticsResetParticipantSession();
+    return false;
+  }
+  analyticsLeaveUnit(reason, { allowDuringAuthTransition: true });
+  analyticsTrackOnlinePeriod(reason, { allowDuringAuthTransition: true });
+  analyticsTrack("session_end", {
+    source: "system",
+    allowDuringAuthTransition: true,
+    data: {
+      reason,
+      pageOpenSeconds: analyticsParticipantSessionStartedAt
+        ? Math.max(0, Math.round((Date.now() - analyticsParticipantSessionStartedAt) / 1000))
+        : 0
+    }
+  });
+  analyticsResetParticipantSession();
+  return true;
+}
+
+function setupInteractionTracking() {
+  if (!isSignedIn()) return;
+  analyticsBeginParticipantSession();
+  if (analyticsTrackingReady) return;
+  analyticsTrackingReady = true;
 
   const uiActionSelector = [
     "button",
@@ -756,33 +880,6 @@ function setupInteractionTracking() {
     }
   }, 500);
 
-  window.addEventListener("message", (event) => {
-    const messageType = String(event.data?.type || "");
-    const trustedFrame = Array.from(document.querySelectorAll("iframe.embed-frame"))
-      .find((frame) => frame.contentWindow === event.source);
-    if (!trustedFrame) return;
-    if (messageType === "cq:interaction" && event.data.eventType === "parameter_commit") {
-      const contextRef = event.data.contextRef || event.data.payload || {};
-      analyticsTrack("parameter_commit", {
-        source: "courseware-bridge",
-        unitId: contextRef.unitId || currentUnitId,
-        value: contextRef.state || null,
-        data: {
-          sceneType: trustedFrame.dataset.contextSceneType || contextRef.sceneType || "",
-          contextKind: contextRef.kind || "interaction",
-          contextConfidence: contextRef.confidence || "low"
-        }
-      });
-      return;
-    }
-    if (messageType === "interaction_track") {
-      analyticsTrack(event.data.eventType || "iframe_event", {
-        source: "iframe",
-        data: event.data.payload || {}
-      });
-    }
-  });
-
   ["pointerdown", "keydown", "input", "change", "scroll", "wheel"].forEach((type) => {
     document.addEventListener(type, () => {
       analyticsLastActiveAt = Date.now();
@@ -805,16 +902,21 @@ function setupInteractionTracking() {
     if (!document.hidden) analyticsTrackOnlinePeriod("interval");
   }, analyticsOnlinePeriodFlushMs);
 
-  window.addEventListener("beforeunload", () => {
-    analyticsTrack("session_end", {
-      source: "system",
-      data: {
-        reason: "unload",
-        pageOpenSeconds: Math.max(0, Math.round((Date.now() - analyticsPageStartedAt) / 1000))
-      }
-    });
-    analyticsLeaveUnit("unload");
-    analyticsTrackOnlinePeriod("unload");
+  let unloadHandled = false;
+  const endForUnload = () => {
+    if (unloadHandled) return;
+    unloadHandled = true;
+    analyticsEndParticipantSession("unload");
     analyticsFlushBeforeUnload();
+  };
+  window.addEventListener("pagehide", endForUnload);
+  window.addEventListener("beforeunload", endForUnload);
+  window.addEventListener("pageshow", (event) => {
+    if (!event.persisted) return;
+    unloadHandled = false;
+    analyticsBeginParticipantSession();
+    if (currentAnalyticsView() === "learn" && currentAnalyticsUnit()) {
+      analyticsResumeUnitTimer(currentAnalyticsUnit());
+    }
   });
 }

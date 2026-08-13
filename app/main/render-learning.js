@@ -13,6 +13,88 @@ const COURSEWARE_BRIDGE_INTERACTION_EVENTS = new Set([
   "parameter_change",
   "parameter_commit"
 ]);
+const COURSEWARE_LEARNING_EVENT_TYPES = Object.freeze({
+  page_loaded: "courseware_page_loaded",
+  pre_check_submitted: "courseware_pre_check_submitted",
+  prediction_made: "courseware_prediction_made",
+  interaction_change: "courseware_interaction_change",
+  hint_used: "courseware_hint_used",
+  observable_evidence_captured: "courseware_observable_evidence_captured",
+  short_explanation_submitted: "courseware_short_explanation_submitted",
+  formative_check_submitted: "courseware_formative_check_submitted",
+  interaction_complete: "courseware_interaction_complete",
+  challenge_result: "courseware_challenge_result",
+  exit_ticket_submitted: "courseware_exit_ticket_submitted",
+  confidence_rating: "courseware_confidence_submitted",
+  confidence_submitted: "courseware_confidence_submitted",
+  reflection_submitted: "courseware_reflection_submitted",
+  page_summary_shown: "courseware_page_summary_shown"
+});
+const COURSEWARE_LEARNING_EVENT_KEYS = new Set([
+  "lesson_id",
+  "module_id",
+  "course_version",
+  "concept_tag",
+  "event_type",
+  "phase",
+  "timestamp",
+  "time_on_task_ms",
+  "interaction_state",
+  "pre_check_score",
+  "formative_score",
+  "exit_ticket_score",
+  "next_recommendation",
+  "check_id",
+  "question_id",
+  "attempt_id",
+  "attempt_number",
+  "is_correct",
+  "score",
+  "max_score",
+  "hint_type",
+  "confidence",
+  "reflection",
+  "prediction",
+  "response",
+  "answer",
+  "choice",
+  "completed",
+  "challenge_id",
+  "result"
+]);
+
+function sanitizeCoursewareLearningValue(value, depth = 0) {
+  if (value === null || typeof value === "boolean") return value;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string") return value.replace(/\u0000/g, "").trim().slice(0, 1200);
+  if (depth >= 3) return undefined;
+  if (Array.isArray(value)) {
+    return value
+      .slice(0, 30)
+      .map((item) => sanitizeCoursewareLearningValue(item, depth + 1))
+      .filter((item) => item !== undefined);
+  }
+  if (!value || typeof value !== "object") return undefined;
+  const result = {};
+  Object.entries(value).slice(0, 40).forEach(([key, item]) => {
+    const safeKey = String(key || "").trim().slice(0, 80);
+    if (!safeKey) return;
+    const safeValue = sanitizeCoursewareLearningValue(item, depth + 1);
+    if (safeValue !== undefined) result[safeKey] = safeValue;
+  });
+  return result;
+}
+
+function sanitizeCoursewareLearningEvent(raw = {}) {
+  const source = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  const result = {};
+  COURSEWARE_LEARNING_EVENT_KEYS.forEach((key) => {
+    if (source[key] === undefined) return;
+    const value = sanitizeCoursewareLearningValue(source[key]);
+    if (value !== undefined) result[key] = value;
+  });
+  return result;
+}
 
 function coursewareFrameUrl(path) {
   const url = resourceUrl(path);
@@ -112,6 +194,29 @@ function trackCoursewareBridgeInteraction(frame, message = {}) {
   return true;
 }
 
+function trackCoursewareLearningEvent(frame, message = {}) {
+  const raw = message.payload && typeof message.payload === "object"
+    ? message.payload
+    : {};
+  const sourceType = String(raw.event_type || raw.eventType || "").trim().toLowerCase();
+  const eventType = COURSEWARE_LEARNING_EVENT_TYPES[sourceType];
+  if (!eventType) return false;
+  const unitId = frame.closest?.("[data-resource-unit]")?.dataset?.resourceUnit || currentUnitId || "";
+  const unit = getUnit(unitId);
+  const payload = sanitizeCoursewareLearningEvent(raw);
+  trackInteraction(eventType, {
+    source: "courseware_semantic",
+    unitId: unit?.id || unitId,
+    unitLabel: unit?.label || "",
+    chapterId: unit?.chapterId || currentChapterId || "",
+    sceneType: frame.dataset.contextSceneType || "",
+    resourceTitle: frame.title || "",
+    coursewareEventType: sourceType,
+    ...payload
+  });
+  return true;
+}
+
 function setupLearningCanvasLayoutSync() {
   const player = els?.lessonPlayer || document.querySelector("#lesson-player");
   if (!player) return false;
@@ -153,6 +258,18 @@ function setupLearningCanvasLayoutSync() {
     }
     if (event.data?.type === "cq:interaction") {
       trackCoursewareBridgeInteraction(frame, event.data);
+      return;
+    }
+    if (event.data?.type === "maic_learning_event") {
+      trackCoursewareLearningEvent(frame, event.data);
+      return;
+    }
+    if (event.data?.type === "interaction_track") {
+      trackCoursewareBridgeInteraction(frame, {
+        eventType: event.data.eventType,
+        payload: event.data.payload,
+        persist: true
+      });
     }
   });
   scheduleLearningCanvasLayoutSync("layout-sync-ready");
@@ -833,9 +950,32 @@ function renderQuiz(unit) {
   });
   const questions = unit.scene.content?.questions || [];
   const submitted = (state.submittedQuizzes || []).includes(unit.id);
+  const completionAllowed = typeof agenticUnitCompletionAllowed !== "function"
+    || agenticUnitCompletionAllowed(unit.id);
   const isPre = unit.assessmentPhase === "pre";
   if (unit.placeholderQuiz || !questions.length) {
     renderPlaceholderQuiz(unit);
+    return;
+  }
+  if (!completionAllowed && !submitted) {
+    els.lessonPlayer.innerHTML = `
+      ${renderResourceShell(
+        unit,
+        unit.label,
+        `
+          ${renderAssessmentBanner(unit)}
+          <div class="quiz-card quiz-preview-locked">
+            <div class="empty-state">
+              <h2>测验尚未解锁</h2>
+              <p>这份测验属于后续学习路径。你可以浏览课程结构，但题目会在接受相应学习建议后显示。</p>
+              <button class="button primary" type="button" data-submit-quiz="${escapeHtml(unit.id)}" disabled>未解锁：先接受学习建议</button>
+            </div>
+          </div>
+        `,
+        "quiz-resource"
+      )}
+      ${renderCoach(unit.scene, unit.chapterId, unit.id)}
+    `;
     return;
   }
 
@@ -906,8 +1046,8 @@ function renderQuiz(unit) {
             })
             .join("")}
           <div class="quiz-submit-panel${submitted ? ' submitted' : ''}">
-            <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted ? "disabled" : ""}>${submitted ? '已提交' : '提交本次测验'}</button>
-            <p>${submitted ? '该测验已提交，答案、解析、每题得分和小节总分见下方。' : '提交后会记录本次测验结果；评分参考会在提交后随解析显示。'}</p>
+            <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted || !completionAllowed ? "disabled" : ""}>${submitted ? '已提交' : completionAllowed ? '提交本次测验' : '未解锁：先接受学习建议'}</button>
+            <p>${submitted ? '该测验已提交，答案、解析、每题得分和小节总分见下方。' : completionAllowed ? '提交后会记录本次测验结果；评分参考会在提交后随解析显示。' : '该测验当前仅供预览；接受学习建议后才能提交并记录本节。'}</p>
             <div class="answer-feedback" id="feedback-${unit.id}">${submittedTotalHtml}</div>
           </div>
         </div>
@@ -1804,7 +1944,7 @@ function lessonTimelineCaption(unit, statusText = "") {
 }
 
 function lessonTimelineStatus(unit, isLocked, isSkipped, isDone, statusKind = "") {
-  if (isLocked) return "待解锁";
+  if (isLocked) return "未解锁";
   if (statusKind === "review") return "待复习";
   if (isSkipped) return "已跳过";
   if (isDone) return "已完成";
@@ -1913,12 +2053,14 @@ function renderLessonSceneButton(unit) {
   const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
   const statusKind = typeof agenticLessonStatusKind === "function" ? agenticLessonStatusKind(unit.id) : "";
   const isPendingReview = statusKind === "review";
-  const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
+  const isUnlocked = typeof agenticUnitCompletionAllowed === "function"
+    ? agenticUnitCompletionAllowed(unit.id)
+    : typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
   const isLocked = !isUnlocked && !isSkipped;
   const isDone = state.completed.includes(unit.id);
   const cls = ["lesson-scene-chip", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isPendingReview ? "review-pending" : "", isSkipped ? "skipped" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
-  const statusText = isLocked ? "\u5f85\u89e3\u9501" : isPendingReview ? "\u5f85\u590d\u4e60" : isSkipped ? "\u5df2\u8df3\u8fc7" : isDone ? "\u5df2\u5b8c\u6210" : unit.flowKind === "adaptive" ? "\u53ef\u9009" : "\u5f85\u5b66\u4e60";
-  return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '"' + (isLocked ? ' aria-disabled="true" disabled' : '') + '>'
+  const statusText = isLocked ? "\u672a解锁" : isPendingReview ? "\u5f85\u590d\u4e60" : isSkipped ? "\u5df2\u8df3\u8fc7" : isDone ? "\u5df2\u5b8c\u6210" : unit.flowKind === "adaptive" ? "\u53ef\u9009" : "\u5f85\u5b66\u4e60";
+  return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '">'
     + '<span>' + unitIcon(unit) + '</span>'
     + '<strong>' + escapeHtml(unit.label) + '</strong>'
     + '<small>' + escapeHtml(learningSceneRole(unit)) + ' · ' + statusText + '</small>'
@@ -1945,14 +2087,16 @@ function renderLessons() {
     const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
     const statusKind = typeof agenticLessonStatusKind === "function" ? agenticLessonStatusKind(unit.id) : "";
     const isPendingReview = statusKind === "review";
-    const isUnlocked = typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
+    const isUnlocked = typeof agenticUnitCompletionAllowed === "function"
+      ? agenticUnitCompletionAllowed(unit.id)
+      : typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
     const isLocked = !isUnlocked && !isSkipped;
     const isDone = state.completed.includes(unit.id);
     const isRecommended = isUnlocked && !isSkipped && !isDone && !isPendingReview;
     const cls = ["lesson-card", "lesson-step-card", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isPendingReview ? "review-pending" : "", isSkipped ? "skipped" : "", isRecommended ? "recommended" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
     const statusText = lessonTimelineStatus(unit, isLocked, isSkipped, isDone, statusKind);
     const caption = lessonTimelineCaption(unit, statusText);
-    return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '"' + (isLocked ? ' aria-disabled="true" disabled' : '') + '>'
+    return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '">'
       + '<span class="lesson-step-index">' + (index + 1) + '</span>'
       + '<span class="lesson-card-body"><strong>' + escapeHtml(unit.label) + '</strong>'
       + '<small>' + escapeHtml(caption) + '</small></span>'
@@ -1992,7 +2136,7 @@ function renderChapters() {
       const trackLabel = chapterTrackLabel(chapter);
       const focusText = displayCopy.focus || guide?.checkpoint || "讲解页 + 自选互动场景";
       return `
-        <button class="${cls}" type="button" data-chapter="${chapter.id}" ${isUnlocked ? "" : 'aria-disabled="true" disabled'}>
+        <button class="${cls}" type="button" data-chapter="${chapter.id}">
           <span class="chapter-card-top">
             <strong><span class="chapter-card-code">${escapeHtml(chapterCode)}</span>${escapeHtml(displayCopy.label)}</strong>
             <span>${escapeHtml(trackLabel)}</span>
@@ -2011,7 +2155,16 @@ function syncAgenticPlayerCta(unit) {
   els.completeLesson.disabled = false;
   els.completeLesson.removeAttribute("aria-controls");
   delete els.completeLesson.dataset.scrollKnowledgeScene;
-  if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
+  if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
+    els.completeLesson.textContent = "返回测验";
+    return;
+  }
+  const completionAllowed = typeof agenticUnitCompletionAllowed !== "function"
+    || agenticUnitCompletionAllowed(unit.id);
+  if (!completionAllowed) {
+    els.completeLesson.textContent = "未解锁：先接受学习建议";
+    els.completeLesson.disabled = true;
+  } else if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
     els.completeLesson.disabled = false;
     els.completeLesson.textContent = "先选择一个互动场景";
     els.completeLesson.dataset.scrollKnowledgeScene = "true";

@@ -86,6 +86,7 @@
     let enteredAt = 0;
     let lastMeaningfulAt = 0;
     let activeSuggestion = null;
+    let lastResolution = null;
     let suggestionSequence = 0;
 
     function enterUnit(event, at) {
@@ -215,8 +216,7 @@
       if (MEANINGFUL_EVENTS.has(eventType)) {
         lastMeaningfulAt = at;
         if (activeSuggestion && activeSuggestion.kind !== "quiz_review") {
-          activeSuggestion = null;
-          commits.clear();
+          resolve("ignore", at);
         }
       }
       if (["quiz_submit_success", "quiz_review_ready"].includes(eventType)) {
@@ -250,22 +250,26 @@
       const resolved = activeSuggestion;
       const at = timestamp(atValue);
       const previousStreak = Number(dismissStreaks.get(resolved.unitId) || 0);
-      const nextStreak = reason === "dismiss"
+      const negativeResolution = reason === "dismiss" || reason === "ignore";
+      const nextStreak = negativeResolution
         ? Math.min(previousStreak + 1, 3)
         : reason === "accept" ? 0 : previousStreak;
       dismissStreaks.set(resolved.unitId, nextStreak);
-      const cooldownMultiplier = reason === "dismiss" ? Math.max(1, nextStreak) : 1;
+      const cooldownMultiplier = negativeResolution ? Math.max(1, nextStreak) : 1;
       const cooldownUntil = at + config.cooldownMs * cooldownMultiplier;
       cooldowns.set(resolved.unitId, cooldownUntil);
       activeSuggestion = null;
       commits.clear();
       lastMeaningfulAt = at;
-      return {
+      lastResolution = {
         ...resolved,
         resolution: compactText(reason, 40) || "dismiss",
         dismissStreak: nextStreak,
-        cooldownUntil
+        cooldownUntil,
+        resolvedAt: new Date(at).toISOString(),
+        latencyMs: Math.max(0, at - timestamp(resolved.createdAt, at))
       };
+      return lastResolution;
     }
 
     function reset(options = {}) {
@@ -273,6 +277,7 @@
       enteredAt = 0;
       lastMeaningfulAt = 0;
       activeSuggestion = null;
+      lastResolution = null;
       commits.clear();
       if (options.clearCooldowns === true) {
         cooldowns.clear();
@@ -288,6 +293,11 @@
       reset,
       getSuggestion() {
         return activeSuggestion;
+      },
+      takeResolution() {
+        const resolution = lastResolution;
+        lastResolution = null;
+        return resolution;
       },
       getCurrentUnit() {
         return currentUnit ? { ...currentUnit, enteredAt, lastMeaningfulAt } : null;

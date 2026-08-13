@@ -18,15 +18,25 @@ assert.ok(
 );
 assert.match(core, /SceneRecommender\.rank/);
 assert.match(core, /experiencedSceneTypes/);
+assert.match(core, /previewKnowledgeScenes/);
+assert.match(core, /recordSelectionForAccess/);
+assert.match(core, /agenticUnitCompletionAllowed/);
 assert.match(render, /Coach 建议/);
 assert.match(render, /系统不会替你选择/);
 assert.match(render, /data-coach-score/);
+assert.match(render, /agenticUnitCompletionAllowed/);
 assert.match(styles, /\.coach-recommendation-badge/);
 assert.match(styles, /\.multi-scene-scene-option\.coach-recommended/);
 assert.match(analytics, /experiencedSceneTypes/);
-assert.match(analytics, /messageType === "cq:interaction"/);
-assert.match(analytics, /source:\s*"courseware-bridge"/);
+assert.match(render, /event\.data\?\.type === "cq:interaction"/);
+assert.match(render, /trackCoursewareBridgeInteraction/);
+assert.doesNotMatch(
+  analytics,
+  /event\.data\.eventType === "parameter_commit"/,
+  "courseware bridge events must be persisted only by the learning renderer"
+);
 assert.match(pathSource, /agenticKnowledgeMasteryForUnit/);
+assert.match(pathSource, /agenticDiscardUnavailableSceneSelections/);
 assert.doesNotMatch(
   pathSource,
   /function agenticPlannerRankedCandidates/,

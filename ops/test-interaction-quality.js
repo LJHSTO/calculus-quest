@@ -4,6 +4,22 @@ const os = require("node:os");
 const path = require("node:path");
 
 async function main() {
+  const renderLearningSource = fs.readFileSync(
+    path.join(__dirname, "../app/main/render-learning.js"),
+    "utf8"
+  );
+  const analyticsSource = fs.readFileSync(
+    path.join(__dirname, "../app/main/analytics.js"),
+    "utf8"
+  );
+  assert.match(renderLearningSource, /event\.data\?\.type === "maic_learning_event"/);
+  assert.match(renderLearningSource, /COURSEWARE_LEARNING_EVENT_TYPES/);
+  assert.match(renderLearningSource, /candidate\.contentWindow === event\.source/);
+  assert.doesNotMatch(
+    analyticsSource,
+    /messageType === "cq:interaction" && event\.data\.eventType === "parameter_commit"/
+  );
+
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cq-interaction-quality-"));
   const dbPath = path.join(tmpDir, "interaction-quality.db");
   process.env.DB_PATH = dbPath;
@@ -28,8 +44,8 @@ async function main() {
         sequenceIndex,
         chapterId: "V14-C1",
         chapterLabel: "函数、极限与导数入口",
-        unitId,
-        unitLabel: unitId,
+        unitId: data.unitId || unitId,
+        unitLabel: data.unitId || unitId,
         timing: {
           clientAt: createdAt,
           durationMs: Number(data.durationMs || 0)
@@ -77,9 +93,16 @@ async function main() {
     "2026-07-18T09:00:30.000+08:00"
   );
   insertInteraction(
+    "event-time-capped",
+    "time_on_unit",
+    10,
+    { unitId: "GH-01-K02", seconds: 5400, durationMs: 5400000 },
+    "2026-07-18T09:00:30.500+08:00"
+  );
+  insertInteraction(
     "event-click",
     "interactive_click",
-    10,
+    11,
     { unitId, label: "函数规则按钮", source: "iframe" },
     "2026-07-18T09:00:31.000+08:00"
   );
@@ -104,6 +127,11 @@ async function main() {
   assert.equal(policy.isMeaningfulEventType("online_period"), false);
   assert.equal(policy.isMeaningfulEventType("switch_view"), false);
   assert.equal(policy.isMeaningfulEventType("interactive_click"), true);
+  assert.equal(policy.isMeaningfulEventType("knowledge_panel_moved"), false);
+  assert.equal(policy.isMeaningfulEventType("knowledge_launcher_moved"), false);
+  assert.equal(policy.isMeaningfulEventType("knowledge_proactive_suggestion_shown"), true);
+  assert.equal(policy.isMeaningfulEventType("knowledge_proactive_suggestion_accepted"), true);
+  assert.equal(policy.isMeaningfulEventType("knowledge_quiz_review_completed"), true);
 
   const meaningful = db.getEventsByType("interaction", {
     limit: 20,
@@ -117,32 +145,40 @@ async function main() {
     userId,
     detailMode: "all"
   });
-  assert.equal(meaningful.total, 4);
-  assert.equal(raw.total, 10);
+  assert.equal(meaningful.total, 5);
+  assert.equal(raw.total, 11);
   assert.deepEqual(
     new Set(meaningful.rows.map((row) => JSON.parse(row.payload).eventType)),
     new Set(["unit_enter", "knowledge_scene_select", "time_on_unit", "interactive_click"])
   );
 
   const summary = db.interactionSummary({ userId });
-  assert.equal(summary.total, 4);
-  assert.equal(summary.rawTotal, 10);
+  assert.equal(summary.total, 5);
+  assert.equal(summary.rawTotal, 11);
   assert.equal(summary.hiddenLowValue, 6);
-  assert.deepEqual(summary.byRole, [{ module_role: "knowledge_point", count: 4 }]);
+  assert.deepEqual(summary.byRole, [{ module_role: "knowledge_point", count: 5 }]);
 
   const engagement = db.unitEngagement({ userId });
-  assert.equal(engagement.length, 1);
-  assert.equal(engagement[0].seconds, 30, "time_on_unit and unit_leave must not double count");
-  assert.equal(engagement[0].unit_label, "输入、输出和函数规则");
+  assert.equal(engagement.length, 2);
+  const firstEngagement = engagement.find((row) => row.unit_id === unitId);
+  const cappedEngagement = engagement.find((row) => row.unit_id === "GH-01-K02");
+  assert.equal(firstEngagement.seconds, 30, "time_on_unit and unit_leave must not double count");
+  assert.equal(firstEngagement.unit_label, "输入、输出和函数规则");
+  assert.equal(cappedEngagement.seconds, 1800, "one dwell segment must be capped at 30 minutes");
 
   const paths = db.pathAnalysis({ userId });
   assert.equal(paths.length, 1);
-  assert.equal(paths[0].total_seconds, 30);
-  assert.equal(paths[0].step_count, 1);
+  assert.equal(paths[0].total_seconds, 1830);
+  assert.equal(paths[0].raw_total_seconds, 5430);
+  assert.equal(paths[0].capped_segments, 1);
+  assert.equal(paths[0].step_count, 2);
   assert.equal(paths[0].steps[0].unit_label, "输入、输出和函数规则");
   assert.equal(paths[0].steps[0].scene_type, "game");
   assert.equal(paths[0].steps[0].scene_label, "找错并改正");
   assert.equal(paths[0].steps[0].display_label, "输入、输出和函数规则 · 找错并改正");
+  assert.equal(paths[0].steps[1].seconds, 1800);
+  assert.equal(paths[0].steps[1].raw_seconds, 5400);
+  assert.equal(paths[0].steps[1].capped, true);
   assert.doesNotMatch(paths[0].path_preview, /GH-01|V14-C1/);
 
   const coverage = db.interactionDashboard({ userId }).actionCoverage;
@@ -172,6 +208,62 @@ async function main() {
     detailEventTypes.filter((type) => type === "login" || type === "login_success").length,
     1
   );
+
+  insertInteraction(
+    "event-proactive-decided",
+    "knowledge_proactive_agent_decided",
+    12,
+    { unitId, suggestionKind: "quiet_dwell", action: "ask_clarification" },
+    "2026-07-18T09:00:40.000+08:00"
+  );
+  insertInteraction(
+    "event-proactive-shown",
+    "knowledge_proactive_suggestion_shown",
+    13,
+    { unitId, suggestionId: "suggestion-accepted", suggestionKind: "quiet_dwell" },
+    "2026-07-18T09:00:41.000+08:00"
+  );
+  insertInteraction(
+    "event-proactive-accepted",
+    "knowledge_proactive_suggestion_accepted",
+    14,
+    { unitId, suggestionId: "suggestion-accepted", suggestionKind: "quiet_dwell", action: "ask_clarification" },
+    "2026-07-18T09:00:42.000+08:00"
+  );
+  insertInteraction(
+    "event-proactive-shown-ignored",
+    "knowledge_proactive_suggestion_shown",
+    15,
+    { unitId, suggestionId: "suggestion-ignored", suggestionKind: "repeated_parameter" },
+    "2026-07-18T09:00:42.500+08:00"
+  );
+  insertInteraction(
+    "event-proactive-ignored",
+    "knowledge_proactive_suggestion_ignored",
+    16,
+    { unitId, suggestionId: "suggestion-ignored", suggestionKind: "repeated_parameter", dismissStreak: 1 },
+    "2026-07-18T09:00:43.000+08:00"
+  );
+  insertInteraction(
+    "event-proactive-review-completed",
+    "knowledge_quiz_review_completed",
+    17,
+    { unitId, reviewTotal: 2 },
+    "2026-07-18T09:00:44.000+08:00"
+  );
+  const proactiveFunnel = db.interactionDashboard({ userId }).proactiveFunnel;
+  assert.deepEqual(proactiveFunnel, {
+    agentDecided: 1,
+    agentSilent: 0,
+    shown: 2,
+    accepted: 1,
+    dismissed: 0,
+    ignored: 1,
+    quizReviewCompleted: 1,
+    acceptedUsers: 1,
+    acceptanceRate: 50,
+    resolutionRate: 100
+  });
 
   db.saveNow();
   fs.rmSync(tmpDir, { recursive: true, force: true });

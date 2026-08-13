@@ -167,8 +167,12 @@ function parameterEvent(at, {
   assert.equal(coach.tick(90_000).kind, "quiet_dwell");
   coach.consume({ eventType: "interactive_click", unitId: "KP1" }, 91_000);
   assert.equal(coach.getSuggestion(), null, "学生恢复课件操作后，旧的停留建议必须立即失效");
-  assert.equal(coach.tick(180_999), null);
-  assert.equal(coach.tick(181_000).kind, "quiet_dwell");
+  const ignored = coach.takeResolution();
+  assert.equal(ignored.resolution, "ignore");
+  assert.equal(ignored.dismissStreak, 1);
+  assert.equal(ignored.cooldownUntil, 691_000);
+  assert.equal(coach.tick(690_999), null, "隐式忽略后必须遵守冷却时间");
+  assert.equal(coach.tick(691_000).kind, "quiet_dwell");
 }
 
 {

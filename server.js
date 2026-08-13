@@ -33,6 +33,7 @@ const llm = require("./lib/llm");
 const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
+const gradingRegrade = require("./lib/grading-regrade");
 const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
@@ -74,6 +75,7 @@ const packageInfo = JSON.parse(fs.readFileSync(path.join(root, "package.json"), 
 const port = Number(process.argv[2] || process.env.PORT || 8765);
 const host = process.env.HOST || "127.0.0.1";
 const configuredBasePath = String(process.env.BASE_PATH || "").trim();
+const gradingRegradeInFlightIds = new Set();
 const normalizedBasePath = configuredBasePath.replace(/^\/+|\/+$/g, "");
 const basePath = normalizedBasePath ? `/${normalizedBasePath}` : "";
 const researchConfig = {
@@ -313,38 +315,37 @@ function streamStaticFile(req, res, filePath, type, url, stat) {
 function getDateRange(url) {
   const range = url.searchParams.get("range") || "";
   if (range) {
-    const bj = new Date(new Date().getTime() + 8 * 3600 * 1000);
-    const fmt = (d) => d.toISOString().slice(0, 10);
+    const now = new Date();
+    const fmt = (date) => new Date(date.getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+    const startOfDay = (date) => `${fmt(date)}T00:00:00.000+08:00`;
+    const endOfDay = (date) => `${fmt(date)}T23:59:59.999+08:00`;
     let start, end;
     switch (range) {
       case "today":
-        start = fmt(bj); end = fmt(bj) + "T23:59:59.999";
+        start = startOfDay(now); end = endOfDay(now);
         break;
       case "yesterday": {
-        const y = new Date(bj.getTime() - 86400000);
-        start = fmt(y); end = fmt(y) + "T23:59:59.999";
+        const y = new Date(now.getTime() - 86400000);
+        start = startOfDay(y); end = endOfDay(y);
         break;
       }
-     case "24h": {
-       const pad = (n) => String(n).padStart(2, "0");
-        const d = new Date(bj.getTime() - 86400000); // 24h ago Beijing time
-       start = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}+08:00`;
-       end = "";
-       break;
-     }
+      case "24h":
+        start = beijingIso(new Date(now.getTime() - 86400000));
+        end = beijingIso(now);
+        break;
       case "14d": {
-        const d = new Date(bj.getTime() - 14 * 86400000);
-        start = fmt(d); end = fmt(bj) + "T23:59:59.999";
+        const d = new Date(now.getTime() - 14 * 86400000);
+        start = startOfDay(d); end = endOfDay(now);
         break;
       }
       case "30d": {
-        const d = new Date(bj.getTime() - 30 * 86400000);
-        start = fmt(d); end = fmt(bj) + "T23:59:59.999";
+        const d = new Date(now.getTime() - 30 * 86400000);
+        start = startOfDay(d); end = endOfDay(now);
         break;
       }
       case "month": {
-        start = fmt(new Date(bj.getFullYear(), bj.getMonth(), 1));
-        end = fmt(bj) + "T23:59:59.999";
+        start = `${fmt(now).slice(0, 7)}-01T00:00:00.000+08:00`;
+        end = endOfDay(now);
         break;
       }
       default:
@@ -354,9 +355,9 @@ function getDateRange(url) {
   }
   const start = url.searchParams.get("start_date") || "";
   const end = url.searchParams.get("end_date") || "";
-  // adjust end_date to be inclusive (end of day)
-  const endInclusive = end ? end + "T23:59:59.999" : "";
-  return { startDate: start, endDate: endInclusive };
+  const startInclusive = start ? `${start}T00:00:00.000+08:00` : "";
+  const endInclusive = end ? `${end}T23:59:59.999+08:00` : "";
+  return { startDate: startInclusive, endDate: endInclusive };
 }
 
 function beijingIso(date = new Date()) {
@@ -370,6 +371,26 @@ function nowIso() {
 
 function futureIso(msFromNow) {
   return beijingIso(new Date(Date.now() + msFromNow));
+}
+
+function trustedClientEventTime(item = {}, receivedAt = new Date()) {
+  const candidate = item?.payload?.timing?.clientAt;
+  const parsed = Date.parse(String(candidate || ""));
+  if (!Number.isFinite(parsed)) return receivedAt.getTime();
+  const delta = parsed - receivedAt.getTime();
+  const maxPastSkewMs = 7 * 24 * 60 * 60 * 1000;
+  const maxFutureSkewMs = 10 * 60 * 1000;
+  return delta >= -maxPastSkewMs && delta <= maxFutureSkewMs
+    ? parsed
+    : receivedAt.getTime();
+}
+
+function clientEventId(userId = "", item = {}) {
+  const raw = String(item.eventId || item.payload?.eventId || "").trim();
+  if (!raw || raw.length > 200 || !/^[A-Za-z0-9:._-]+$/.test(raw)) {
+    return crypto.randomUUID();
+  }
+  return `${userId}:${raw}`;
 }
 
 function cleanNickname(value = "") {
@@ -740,9 +761,30 @@ function persistGradingResults(participant, results = []) {
       confidence: gr.confidence,
       llm_provider: gr.provider || "",
       latency_ms: 0,
-      created_at: new Date().toISOString()
+      created_at: nowIso()
     });
   });
+}
+
+function gradingRuntimeInfo() {
+  const provider = String(
+    process.env.GRADING_LLM_PROVIDER
+    || llm.provider()
+  ).toLowerCase();
+  return {
+    provider,
+    model: String(
+      process.env.GRADING_MODEL
+      || process.env.OPENAI_COMPATIBLE_MODEL
+      || process.env.INNOSPARK_MODEL
+      || ""
+    ).slice(0, 120),
+    liveConfigured: Boolean(
+      process.env.GRADING_API_KEY
+      || process.env.OPENAI_COMPATIBLE_API_KEY
+      || process.env.INNOSPARK_API_KEY
+    )
+  };
 }
 
 function getAdminToken() {
@@ -817,7 +859,7 @@ function sendSnapshotConflict(res, result) {
     code: generationConflict ? "snapshot_generation_conflict" : "snapshot_revision_conflict",
     message: generationConflict
       ? "学习记录已在其他页面重置或更新，请刷新后继续。"
-      : "学习记录已在其他页面更新，请刷新后再重置。",
+      : "学习记录已在其他页面更新，已拒绝当前页面的旧版本覆盖。",
     generation: result.generation,
     revision: result.revision
   });
@@ -1266,7 +1308,7 @@ function sanitizeLearningNoteInput(userId, input = {}, noteIdOverride = "") {
 
 function publicLearningNote(row = {}) {
   return {
-    id: row.id || "",
+    id: row.client_id || row.id || "",
     ownerKey: row.user_id || "",
     threadKey: row.thread_key || "",
     chapterId: row.chapter_id || "",
@@ -1773,6 +1815,7 @@ async function handleApi(req, res, url) {
         payload: body.payload || {},
         created_at: timestamp
       });
+      db.saveNow();
 
       sendJson(res, 200, { ok: true, eventId });
       return;
@@ -1784,19 +1827,24 @@ async function handleApi(req, res, url) {
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const events = Array.isArray(body.events) ? body.events.slice(0, 100) : [];
       const eventIds = [];
-      const timestamp = nowIso();
+      const receivedAt = new Date();
+      let previousEventTime = 0;
 
       events.forEach((item) => {
-        const eventId = crypto.randomUUID();
+        const eventId = clientEventId(auth.participant.id, item);
+        const requestedEventTime = trustedClientEventTime(item, receivedAt);
+        const eventTime = Math.max(requestedEventTime, previousEventTime + 1);
+        previousEventTime = eventTime;
         eventIds.push(eventId);
         db.insertEvent({
           id: eventId,
           user_id: auth.participant.id,
           type: String(item.type || "event").slice(0, 80),
           payload: item.payload || {},
-          created_at: timestamp
+          created_at: beijingIso(new Date(eventTime))
         });
       });
+      db.saveNow();
 
       sendJson(res, 200, { ok: true, eventIds });
       return;
@@ -2958,6 +3006,7 @@ async function handleApi(req, res, url) {
 
       const seen = new Set();
       const timestamp = nowIso();
+      const learningGeneration = db.currentLearningGeneration(auth.participant.id, timestamp);
       const prepared = [];
       for (const submitted of answers) {
         const questionId = String(submitted?.questionId || "").trim();
@@ -2995,7 +3044,7 @@ async function handleApi(req, res, url) {
           ? { isCorrect: null, score: 0, maxScore, status: "pending_review" }
           : courseAssessment.scoreObjectiveQuestion(question, response);
         prepared.push({
-          id: `${auth.participant.id}-${unitId}-${question.id}`,
+          id: `${auth.participant.id}-g${learningGeneration}-${unitId}-${question.id}`,
           unitId,
           chapterId,
           questionId: question.id,
@@ -3027,6 +3076,7 @@ async function handleApi(req, res, url) {
           status: result.status,
           score: result.score,
           max_score: result.maxScore,
+          learning_generation: learningGeneration,
           created_at: result.timestamp
         });
       });
@@ -3195,6 +3245,101 @@ async function handleApi(req, res, url) {
       sendJson(res, 200, { ok: true, data: db.shortAnswerResponses(dates) });
       return;
     }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/grading/regrade-candidates") {
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
+      const limit = Math.max(1, Math.min(Number(url.searchParams.get("limit") || 20), 100));
+      const offset = Math.max(0, Number(url.searchParams.get("offset") || 0));
+      const candidates = db.shortAnswerRegradeCandidates({ limit, offset });
+      sendJson(res, 200, {
+        ok: true,
+        data: {
+          ...candidates,
+          runtime: gradingRuntimeInfo()
+        }
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/grading/regrade-audits") {
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
+      sendJson(res, 200, {
+        ok: true,
+        data: db.gradingRegradeAudits({
+          batchId: url.searchParams.get("batchId") || "",
+          limit: Math.max(1, Math.min(Number(url.searchParams.get("limit") || 100), 1000))
+        })
+      });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/grading/regrade") {
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
+      const body = await readJsonBody(req);
+      if (body.confirm !== "REVIEW_AND_REGRADING") {
+        sendJson(res, 400, {
+          ok: false,
+          code: "grading_regrade_confirmation_required",
+          message: "请先预览候选，并显式确认本次重新评分。"
+        });
+        return;
+      }
+      const requestedIds = Array.from(new Set(
+        (Array.isArray(body.ids) ? body.ids : [])
+          .map((id) => String(id || "").trim())
+          .filter(Boolean)
+      ));
+      const batchSize = Math.max(1, Math.min(Number(body.limit || 5), 5));
+      if (!requestedIds.length || requestedIds.length > batchSize) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "grading_regrade_batch_invalid",
+          message: `每批必须选择 1 到 ${batchSize} 条具体记录。`
+        });
+        return;
+      }
+      const busyIds = requestedIds.filter((id) => gradingRegradeInFlightIds.has(id));
+      if (busyIds.length) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "grading_regrade_in_progress",
+          message: "选中的记录正在另一批重评中，请等待当前评分完成后刷新候选。",
+          ids: busyIds
+        });
+        return;
+      }
+      const runtime = gradingRuntimeInfo();
+      if (!runtime.liveConfigured || !["openai-compatible", "innospark", "openai"].includes(runtime.provider)) {
+        sendJson(res, 503, {
+          ok: false,
+          code: "grading_provider_not_configured",
+          message: "服务器尚未配置真实评分模型，已停止重评，原评分未改变。",
+          runtime
+        });
+        return;
+      }
+      requestedIds.forEach((id) => gradingRegradeInFlightIds.add(id));
+      try {
+        const batch = await gradingRegrade.runRegradeBatch({
+          db,
+          courseAssessment,
+          assessmentIndex,
+          gradeOnly: (questions) => orchestrator.gradeOnly(questions),
+          requestedIds,
+          runtime,
+          nowIso,
+          randomUUID: () => crypto.randomUUID()
+        });
+        db.saveNow();
+        sendJson(res, 200, {
+          ok: true,
+          data: batch
+        });
+      } finally {
+        requestedIds.forEach((id) => gradingRegradeInFlightIds.delete(id));
+      }
+      return;
+    }
     
     // ---- Admin: Interactions tracking ----
     if (req.method === "GET" && url.pathname === "/api/admin/stats/interactions") {
@@ -3248,6 +3393,14 @@ async function handleApi(req, res, url) {
         assessmentIndex,
         Array.from(latest.values())
       ).slice(0, 50);
+      if (!requestedIds.size || !questions.length) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "grading_target_not_found",
+          message: "没有找到可重新批改的简答题。"
+        });
+        return;
+      }
       if (fallbackToZero) {
         const fallbackQuestions = questions.filter((question) => {
           const row = latest.get(`${question.unitId || ""}:${question.questionId || ""}`) || {};
@@ -3316,7 +3469,7 @@ async function handleApi(req, res, url) {
           interactionEvidence: body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null,
           interactionEvents: recentEvents,
           completedUnitIds: Array.isArray(body.completedUnitIds) ? body.completedUnitIds.slice(0, 500) : [],
-          studentName: auth.participant.nickname || "ͬѧ"
+          studentName: auth.participant.nickname || "同学"
         });
         persistGradingResults(auth.participant, result.gradingResults);
         const decisionId = crypto.randomUUID();

@@ -86,8 +86,92 @@ assert.equal((longContent.match(/这是一条需要完整展示的较长反馈�
 assert.doesNotMatch(longContent, /<summary>/);
 
 const adminSource = fs.readFileSync(path.join(__dirname, "..", "admin", "admin.js"), "utf8");
+const adminHtml = fs.readFileSync(path.join(__dirname, "..", "admin.html"), "utf8");
 assert.doesNotMatch(adminSource, /<td>\$\{d\.nickname\}<\/td>/);
 assert.doesNotMatch(adminSource, /<td[^>]*>\$\{users\[i\]\}<\/td>/);
 assert.doesNotMatch(adminSource, /<th>\$\{ch\}<\/th>/);
+[
+  "quiz_submission",
+  "quiz_resource_link_open",
+  "quiz_resource_review_returned",
+  "quiz_resource_review_abandoned",
+  "short_answer_regrade_requested",
+  "short_answer_regrade_succeeded",
+  "short_answer_regrade_failed",
+  "quiz_review_ready",
+  "courseware_pre_check_submitted",
+  "courseware_formative_check_submitted",
+  "courseware_exit_ticket_submitted",
+  "courseware_confidence_submitted",
+  "courseware_reflection_submitted",
+  "knowledge_proactive_agent_decided",
+  "knowledge_proactive_agent_silent",
+  "knowledge_proactive_suggestion_shown",
+  "knowledge_proactive_suggestion_accepted",
+  "knowledge_proactive_suggestion_dismissed",
+  "knowledge_quiz_review_continue",
+  "knowledge_quiz_review_next",
+  "knowledge_quiz_review_stopped",
+  "knowledge_quiz_review_completed"
+].forEach((eventType) => {
+  assert.match(adminSource, new RegExp(`\\b${eventType}:\\s*["']`), `${eventType} must have a Chinese admin label`);
+  if (eventType.startsWith("courseware_")) {
+    assert.match(adminSource, /type\.startsWith\("courseware_"\)/, `${eventType} must use the courseware behavior summary`);
+  } else {
+    assert.match(adminSource, new RegExp(`type === ["']${eventType}["']|includes\\([^\\n]*["']${eventType}["']`), `${eventType} must have an admin behavior summary`);
+  }
+});
+assert.match(adminHtml, /id="proactive-funnel-metrics"/);
+assert.match(adminHtml, /id="export-phase-csv"/);
+assert.match(adminHtml, /id="export-paths-csv"/);
+assert.match(adminHtml, /id="export-engagement-csv"/);
+assert.match(adminHtml, /id="export-courseware-checks-csv"/);
+assert.match(adminHtml, /id="preview-regrade-btn"/);
+assert.match(adminHtml, /id="run-regrade-btn"/);
+assert.match(adminHtml, /id="select-all-regrade"/);
+assert.match(adminHtml, /全选全部候选/);
+assert.match(adminHtml, /id="export-regrade-audits-csv"/);
+assert.match(adminHtml, /id="table-regrade-candidates"/);
+assert.doesNotMatch(adminHtml, /id="table-phase-comparison"/);
+assert.match(adminSource, /function phaseCsvRows/);
+assert.match(adminSource, /function pathCsvRows/);
+assert.match(adminSource, /function engagementCsvRows/);
+assert.match(adminSource, /function renderProactiveFunnel/);
+assert.match(adminSource, /interactionDashboard\?\.proactiveFunnel/);
+assert.match(adminSource, /function loadRegradeCandidates/);
+assert.match(adminSource, /function runSelectedRegrade/);
+assert.match(adminSource, /function refreshRegradeAffectedViews/);
+assert.match(adminSource, /function chunkedRegradeIds/);
+assert.match(adminSource, /await loadUserDetail\(openUserDetailId, \{ scroll: false, signal \}\)/);
+assert.match(adminSource, /function regradeAuditCsvRows/);
+assert.match(adminSource, /REVIEW_AND_REGRADING/);
+const regradeRefreshSource = adminSource.match(
+  /async function refreshRegradeAffectedViews[\s\S]*?(?=\nasync function runSelectedRegrade)/
+)?.[0] || "";
+assert.ok(regradeRefreshSource, "the regrade refresh function must be inspectable");
+[
+  "overview",
+  "user-progress",
+  "chapter-accuracy",
+  "question-errors",
+  "phase-comparison",
+  "question-type-accuracy",
+  "score-distribution",
+  "short-answer-responses"
+].forEach((endpoint) => {
+  assert.match(
+    regradeRefreshSource,
+    new RegExp(`fetchStats\\("${endpoint}"\\)`),
+    `regrade refresh must reload ${endpoint}`
+  );
+});
+assert.match(regradeRefreshSource, /cachedChapterData\s*=\s*chapter/);
+assert.match(regradeRefreshSource, /cachedPhaseData\s*=\s*phase/);
+assert.match(regradeRefreshSource, /loadUserDetail\(detailUserId,\s*\{\s*scroll:\s*false\s*\}\)/);
+assert.match(
+  adminSource,
+  /await loadRegradeCandidates\(\{\s*quiet:\s*true\s*\}\);[\s\S]*await refreshRegradeAffectedViews\(affectedUserIds\)/,
+  "a successful regrade must refresh candidates before all affected learning-outcome views"
+);
 
 console.log("admin presentation tests passed");

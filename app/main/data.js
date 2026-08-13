@@ -9,6 +9,7 @@ let activeNarration = null;
 let syncTimer = null;
 let lastSnapshotJson = "";
 let submitInProgress = null;
+let previewKnowledgeScenes = {};
 const narrationDurationCache = new Map();
 
 const chapters = [

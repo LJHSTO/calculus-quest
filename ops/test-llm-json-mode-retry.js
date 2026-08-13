@@ -10,8 +10,8 @@ const originalEnv = {
 
 process.env.LLM_PROVIDER = "openai-compatible";
 process.env.OPENAI_COMPATIBLE_API_KEY = "test-key";
-process.env.OPENAI_COMPATIBLE_BASE_URL = "https://example.invalid/v1";
-process.env.OPENAI_COMPATIBLE_MODEL = "test-model";
+process.env.OPENAI_COMPATIBLE_BASE_URL = "https://api.siliconflow.cn/v1";
+process.env.OPENAI_COMPATIBLE_MODEL = "Qwen/Qwen3.5-35B-A3B";
 
 const requests = [];
 global.fetch = async (_url, options = {}) => {
@@ -48,7 +48,9 @@ global.fetch = async (_url, options = {}) => {
 
     assert.equal(requests.length, 2, "unsupported JSON mode should retry exactly once");
     assert.deepEqual(requests[0].response_format, { type: "json_object" });
+    assert.equal(requests[0].enable_thinking, false, "structured Qwen grading must reserve tokens for the JSON answer");
     assert.equal(requests[1].response_format, undefined);
+    assert.equal(requests[1].enable_thinking, false);
     assert.equal(result.text, '{"action":"stay_silent","confidence":0.8}');
     console.log("llm JSON mode retry tests passed");
   } finally {

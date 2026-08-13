@@ -5,6 +5,72 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const initSqlJs = require("sql.js");
+const vm = require("node:vm");
+
+const learningRoute = require("../data/multi-scene-learning-route.json");
+
+function firstPretestSubmission() {
+  const chapter = learningRoute.chapters?.[0];
+  const questions = chapter?.flow?.preQuiz?.questions || [];
+  assert.ok(chapter?.id && questions.length, "the first chapter pretest must remain available");
+  return {
+    unitId: `${chapter.id}-pre`,
+    chapterId: chapter.id,
+    phase: "pre",
+    questionCount: questions.length,
+    answers: questions.map((question) => ({
+      questionId: question.id,
+      response: question.type === "short_answer"
+        ? "我会说明关键概念、判断依据和对应的数学关系。"
+        : question.type === "multiple"
+          ? question.answer
+          : question.answer?.[0]
+    }))
+  };
+}
+
+function testClientSnapshotIncludesReturnToQuiz() {
+  const coreSource = fs.readFileSync(path.resolve(__dirname, "../app/main/core.js"), "utf8");
+  const snapshotStart = coreSource.indexOf("function learningSnapshot()");
+  const snapshotEnd = coreSource.indexOf("\nfunction snapshotContentJson", snapshotStart);
+  assert.ok(snapshotStart >= 0 && snapshotEnd > snapshotStart, "client learning snapshot must remain testable");
+  const returnToQuiz = {
+    unitId: "V14-C1-formative",
+    targetUnitId: "GH-01-K01",
+    questionId: "GH-01-formative-q1"
+  };
+  const context = vm.createContext({
+    state: {
+      participant: { participantId: "snapshot-test" },
+      completed: [],
+      quizResults: [],
+      quizDrafts: {},
+      quizAttempts: {},
+      submittedQuizzes: [],
+      selectedKnowledgeScenes: {},
+      returnToQuiz,
+      narrationCollapsed: false,
+      logs: [],
+      note: "",
+      analytics: {},
+      lastLearningContext: null,
+      agenticPath: null
+    },
+    currentChapterId: "V14-C1",
+    currentUnitId: "GH-01-K01",
+    currentView: "learn",
+    beijingNow: () => "2026-08-13T12:00:00.000+08:00"
+  });
+  vm.runInContext(coreSource.slice(snapshotStart, snapshotEnd), context, {
+    filename: "app/main/core.js"
+  });
+  const snapshotReturnContext = context.learningSnapshot().returnToQuiz;
+  assert.ok(
+    snapshotReturnContext,
+    "return-to-quiz context must be included in the client learning snapshot"
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(snapshotReturnContext)), returnToQuiz);
+}
 
 function freePort() {
   return new Promise((resolve, reject) => {
@@ -134,7 +200,57 @@ async function assertLegacySnapshotMigrated(dbPath) {
   assert.equal(Number(legacySnapshot.revision), 0);
 }
 
+async function assertResetHistoryRetained(dbPath, userId, beforeGeneration, resetGeneration, expectedQuizRows) {
+  const SQL = await initSqlJs();
+  const migratedDb = new SQL.Database(fs.readFileSync(dbPath));
+  try {
+    const quizStatement = migratedDb.prepare(
+      "SELECT COUNT(*) AS count FROM quiz_results WHERE user_id = ?"
+    );
+    quizStatement.bind([userId]);
+    assert.equal(quizStatement.step(), true);
+    const quizCount = Number(quizStatement.getAsObject().count || 0);
+    quizStatement.free();
+    assert.equal(
+      quizCount,
+      expectedQuizRows,
+      "reset must retain prior quiz rows for administrator and research audit"
+    );
+
+    const snapshotStatement = migratedDb.prepare(`
+      SELECT generation, reason
+      FROM snapshots
+      WHERE user_id = ?
+      ORDER BY generation, revision
+    `);
+    snapshotStatement.bind([userId]);
+    const snapshots = [];
+    while (snapshotStatement.step()) snapshots.push(snapshotStatement.getAsObject());
+    snapshotStatement.free();
+    assert.equal(
+      snapshots.some((row) => Number(row.generation) === Number(beforeGeneration)),
+      true,
+      "reset must retain snapshots from the prior learning generation"
+    );
+    assert.equal(
+      snapshots.some((row) =>
+        Number(row.generation) === Number(resetGeneration) && row.reason === "reset"
+      ),
+      true,
+      "reset must append an authoritative snapshot for the new learning generation"
+    );
+  } finally {
+    migratedDb.close();
+  }
+}
+
 async function main() {
+  const regressionFailures = [];
+  try {
+    testClientSnapshotIncludesReturnToQuiz();
+  } catch (error) {
+    regressionFailures.push(error);
+  }
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cq-snapshot-versioning-"));
   const dbPath = path.join(tmpDir, "snapshot-versioning.db");
   const port = await freePort();
@@ -191,6 +307,7 @@ async function main() {
     });
     assert.equal(registered.response.status, 200);
     const token = registered.payload.token;
+    const participantId = registered.payload.participant.participantId;
 
     const initial = await requestJson(baseUrl, "/api/learning/snapshot", { token });
     assert.equal(initial.response.status, 200);
@@ -210,8 +327,21 @@ async function main() {
         }
       ],
       submittedQuizzes: ["V14-C1-M1-pre"],
+      selectedKnowledgeScenes: {
+        "GH-01-K01": "game"
+      },
       logs: ["原有学习记录"],
       note: "保留这条反思",
+      returnToQuiz: {
+        unitId: "V14-C1-formative",
+        targetUnitId: "GH-01-K01",
+        questionId: "GH-01-formative-q1"
+      },
+      agenticPath: {
+        skipped: {
+          "GH-01-K01": true
+        }
+      },
       capturedAt: "2026-07-18T09:00:00.000+08:00"
     };
     const richSave = await requestJson(baseUrl, "/api/learning/snapshot", {
@@ -225,6 +355,20 @@ async function main() {
       }
     });
     assert.equal(richSave.response.status, 200);
+
+    const pretest = firstPretestSubmission();
+    const quizSubmission = await requestJson(baseUrl, "/api/learning/quiz/submit", {
+      method: "POST",
+      token,
+      body: {
+        unitId: pretest.unitId,
+        chapterId: pretest.chapterId,
+        phase: pretest.phase,
+        answers: pretest.answers
+      }
+    });
+    assert.equal(quizSubmission.response.status, 200);
+    assert.equal(quizSubmission.payload.results.length, pretest.questionCount);
 
     const lateEmpty = await requestJson(baseUrl, "/api/learning/snapshot", {
       method: "POST",
@@ -243,19 +387,58 @@ async function main() {
         }
       }
     });
-    assert.equal(lateEmpty.response.status, 200);
+    try {
+      assert.equal(lateEmpty.response.status, 409);
+      assert.equal(lateEmpty.payload.code, "snapshot_revision_conflict");
+    } catch (error) {
+      regressionFailures.push(error);
+    }
 
     const afterLateEmpty = await requestJson(baseUrl, "/api/learning/snapshot", { token });
     assert.deepEqual(afterLateEmpty.payload.snapshot.completed, ["V14-C1-M1-pre"]);
     assert.equal(afterLateEmpty.payload.snapshot.quizResults[0].id, "snapshot-result-1");
     assert.equal(afterLateEmpty.payload.snapshot.note, "保留这条反思");
+    assert.deepEqual(afterLateEmpty.payload.snapshot.returnToQuiz, richSnapshot.returnToQuiz);
 
-    const reset = await requestJson(baseUrl, "/api/learning/reset", {
+    const resumeSkippedLesson = await requestJson(baseUrl, "/api/learning/snapshot", {
       method: "POST",
       token,
       body: {
         generation: afterLateEmpty.payload.generation,
         baseRevision: afterLateEmpty.payload.revision,
+        reason: "resume_skipped_lesson",
+        snapshot: {
+          agenticPath: {
+            skipped: {}
+          },
+          selectedKnowledgeScenes: {},
+          capturedAt: "2026-07-18T09:01:00.000+08:00"
+        }
+      }
+    });
+    assert.equal(resumeSkippedLesson.response.status, 200);
+    const afterResume = await requestJson(baseUrl, "/api/learning/snapshot", { token });
+    try {
+      assert.deepEqual(
+        afterResume.payload.snapshot.agenticPath.skipped,
+        {},
+        "removing a skipped lesson must survive snapshot sync and refresh"
+      );
+      assert.deepEqual(
+        afterResume.payload.snapshot.selectedKnowledgeScenes,
+        {},
+        "removing a selected knowledge scene must survive snapshot sync and refresh"
+      );
+    } catch (error) {
+      regressionFailures.push(error);
+    }
+
+    const reset = await requestJson(baseUrl, "/api/learning/reset", {
+      method: "POST",
+      token,
+      body: {
+        generation: afterResume.payload.generation,
+        baseRevision: afterResume.payload.revision,
         snapshot: {
           completed: [],
           quizResults: [],
@@ -266,7 +449,7 @@ async function main() {
       }
     });
     assert.equal(reset.response.status, 200);
-    assert.equal(reset.payload.generation > afterLateEmpty.payload.generation, true);
+    assert.equal(reset.payload.generation > afterResume.payload.generation, true);
 
     const staleAfterReset = await requestJson(baseUrl, "/api/learning/snapshot", {
       method: "POST",
@@ -285,6 +468,13 @@ async function main() {
     assert.deepEqual(finalState.payload.snapshot.completed, []);
     assert.deepEqual(finalState.payload.snapshot.quizResults, []);
     assert.equal(finalState.payload.generation, reset.payload.generation);
+    const currentQuizResults = await requestJson(baseUrl, "/api/learning/quiz-results", { token });
+    assert.equal(currentQuizResults.response.status, 200);
+    assert.deepEqual(
+      currentQuizResults.payload.data,
+      [],
+      "student APIs must expose only the current learning generation after reset"
+    );
 
     const unversioned = await requestJson(baseUrl, "/api/learning/snapshot", {
       method: "POST",
@@ -301,7 +491,17 @@ async function main() {
     await stopChild(child);
     child = null;
     await assertLegacySnapshotMigrated(dbPath);
+    await assertResetHistoryRetained(
+      dbPath,
+      participantId,
+      richSave.payload.generation,
+      reset.payload.generation,
+      pretest.questionCount
+    );
 
+    if (regressionFailures.length) {
+      throw new AggregateError(regressionFailures, "learning snapshot regression tests failed");
+    }
     console.log("learning snapshot versioning tests passed");
   } finally {
     await stopChild(child);
@@ -310,6 +510,11 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error(error.stack || error.message);
+  if (error instanceof AggregateError) {
+    console.error(error.message);
+    error.errors.forEach((item) => console.error(item.stack || item.message));
+  } else {
+    console.error(error.stack || error.message);
+  }
   process.exitCode = 1;
 });

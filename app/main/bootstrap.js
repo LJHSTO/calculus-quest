@@ -24,11 +24,19 @@ function renderBottomNextButton() {
   const needsQuizSubmit = unit.type === "quiz" && !unit.placeholderQuiz && !(state.submittedQuizzes || []).includes(unit.id);
   const needsSceneChoice = unit.type === "knowledge" && !selectedKnowledgeSceneType(unit);
   const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
+  const returningToQuiz = typeof quizResourceReviewContext === "function"
+    && Boolean(quizResourceReviewContext(unit.id));
   const cta = typeof agenticCompletionCta === "function"
     ? agenticCompletionCta(unit)
     : { label: state.completed.includes(unit.id) ? "复习并跳到下一节" : "完成本节并跳到下一节", disabled: false };
-  nextBtn.disabled = !needsSceneChoice && !needsQuizSubmit && !pending && Boolean(cta.disabled);
-  nextBtn.textContent = needsSceneChoice
+  const completionAllowed = typeof agenticUnitCompletionAllowed !== "function"
+    || agenticUnitCompletionAllowed(unit.id);
+  nextBtn.disabled = !returningToQuiz && (!completionAllowed || (!needsSceneChoice && !needsQuizSubmit && !pending && Boolean(cta.disabled)));
+  nextBtn.textContent = returningToQuiz
+    ? "返回测验"
+    : !completionAllowed
+    ? "未解锁：先接受学习建议"
+    : needsSceneChoice
     ? "先选择一个互动场景"
     : needsQuizSubmit
       ? "先提交测验"
@@ -289,7 +297,7 @@ els.profileForm?.addEventListener("submit", async (event) => {
 
 document.querySelector("#reset-progress").addEventListener("click", async () => {
   setUserMenuOpen(false);
-  if (!confirm("确定要重置所有学习记录吗？此操作不可撤销，所有测验结果和进度将被清除。")) return;
+  if (!confirm("确定要开始一轮新的学习记录吗？当前进度、测验结果、知点对话和笔记将从学生端清空，历史研究记录会保留。")) return;
   const completedCount = state.completed.length;
   const quizResultCount = (state.quizResults || []).length;
   await trackLearningEvent("reset_progress", {
@@ -322,7 +330,7 @@ document.querySelector("#reset-progress").addEventListener("click", async () => 
     currentChapterId: firstChapterId,
     currentUnitId: firstUnitId,
     currentView: "home",
-    logs: ["已重置学习记录。"],
+    logs: ["已开始新一轮学习记录，历史研究数据已保留。"],
     capturedAt: beijingNow()
   };
 
@@ -334,6 +342,10 @@ document.querySelector("#reset-progress").addEventListener("click", async () => 
       snapshot: resetSnapshot
     });
     setLearningSnapshotVersion(payload);
+    if (typeof clearPreviewKnowledgeSceneSelections === "function") {
+      clearPreviewKnowledgeSceneSelections();
+    }
+    window.KnowledgeAssistant?.resetLearningGeneration?.();
     Object.assign(state, learningDefaults(), resetSnapshot, {
       participant: state.participant,
       authToken: state.authToken
@@ -570,10 +582,6 @@ async function init() {
     if (!currentUnitId) currentUnitId = getChapter().units[0]?.id || "";
     if (typeof ensureAgenticPath === "function") {
       ensureAgenticPath();
-      const initialUnitId = getChapter()?.units?.[0]?.id || currentUnitId || "";
-      if (typeof agenticUnlockUnit === "function" && (!currentUnitId || currentUnitId === initialUnitId || state.completed.includes(currentUnitId))) {
-        agenticUnlockUnit(currentUnitId || initialUnitId, "initial_load");
-      }
       if (typeof agenticGuardNavigation === "function" && currentUnitId && !agenticGuardNavigation(currentUnitId, { allowPrevious: true, silent: true })) {
         currentChapterId = chapters[0]?.id || "";
         currentUnitId = getChapter(currentChapterId)?.units?.[0]?.id || "";
@@ -583,11 +591,11 @@ async function init() {
       }
     }
 
+    setupInteractionTracking();
     if (isSignedIn()) analyticsEnterUnit(getUnit(currentUnitId), "initial_load");
     preloadChapterResources(currentChapterId);
     renderAll();
     scheduleChapterPrefetch();
-    setupInteractionTracking();
   } catch (error) {
     clearTimeout(safetyTimer);
     document.getElementById("app-loader")?.classList.add("hidden");

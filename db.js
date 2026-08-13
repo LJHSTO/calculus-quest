@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const initSqlJs = require("sql.js");
@@ -12,11 +13,22 @@ const FAILED_AI_REVIEW_TYPES = [
   "api_error",
   "api_timeout",
   "parse_error",
+  "empty_response",
   "mock_provider",
   "manual_fallback",
   "unknown"
 ];
 const FAILED_AI_REVIEW_SUFFIX = "。已先按 0 分计入，不影响继续学习。";
+const LEGACY_AI_REVIEW_FAILURE_PATTERNS = [
+  "评分出错",
+  "评分超时",
+  "解析失败",
+  "模型接口返回了空文本",
+  "未启用真实大模型",
+  "已先按 0 分计入"
+];
+const EFFECTIVE_PATH_MIN_SECONDS = 10;
+const EFFECTIVE_PATH_MAX_SECONDS = 30 * 60;
 
 function pathInside(parent, child) {
   const relative = path.relative(parent, child);
@@ -352,12 +364,40 @@ function sceneDisplayLabel(sceneType = "", fallback = "") {
   })[id] || publicCourseLabel(fallback) || "";
 }
 
+function tableHasColumn(d, tableName, columnName) {
+  const stmt = d.prepare(`PRAGMA table_info(${tableName})`);
+  let found = false;
+  while (stmt.step()) {
+    if (stmt.getAsObject().name === columnName) {
+      found = true;
+      break;
+    }
+  }
+  stmt.free();
+  return found;
+}
+
+function ensureLearningGenerationColumn(d, tableName) {
+  if (tableHasColumn(d, tableName, "learning_generation")) return;
+  d.run(`ALTER TABLE ${tableName} ADD COLUMN learning_generation INTEGER NOT NULL DEFAULT 1`);
+  d.run(
+    `UPDATE ${tableName}
+     SET learning_generation = COALESCE(
+       (SELECT generation
+        FROM learning_state_versions
+        WHERE learning_state_versions.user_id = ${tableName}.user_id),
+       1
+     )`
+  );
+}
+
 function migrateLegacyLearningAssistantMessages(d) {
   const groups = [];
   const stmt = d.prepare(`
     SELECT
       m.user_id,
       m.thread_key,
+      m.learning_generation,
       MIN(m.id) AS first_message_id,
       MIN(m.chapter_id) AS chapter_id,
       MIN(m.unit_id) AS unit_id,
@@ -369,6 +409,7 @@ function migrateLegacyLearningAssistantMessages(d) {
         FROM learning_assistant_messages first_user
         WHERE first_user.user_id = m.user_id
           AND first_user.thread_key = m.thread_key
+          AND first_user.learning_generation = m.learning_generation
           AND COALESCE(first_user.conversation_id, '') = ''
           AND first_user.role = 'user'
         ORDER BY first_user.created_at ASC, first_user.id ASC
@@ -376,7 +417,7 @@ function migrateLegacyLearningAssistantMessages(d) {
       ), '历史对话') AS title
     FROM learning_assistant_messages m
     WHERE COALESCE(m.conversation_id, '') = ''
-    GROUP BY m.user_id, m.thread_key
+    GROUP BY m.user_id, m.thread_key, m.learning_generation
   `);
   while (stmt.step()) groups.push(stmt.getAsObject());
   stmt.free();
@@ -387,8 +428,8 @@ function migrateLegacyLearningAssistantMessages(d) {
     d.run(
       `INSERT OR IGNORE INTO learning_assistant_conversations
         (id, user_id, thread_key, chapter_id, unit_id, knowledge_point_id,
-         title, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         title, learning_generation, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         conversationId,
         group.user_id,
@@ -397,6 +438,7 @@ function migrateLegacyLearningAssistantMessages(d) {
         group.unit_id || "",
         group.knowledge_point_id || "",
         title,
+        Number(group.learning_generation || 1),
         group.created_at || new Date().toISOString(),
         group.updated_at || group.created_at || new Date().toISOString()
       ]
@@ -405,8 +447,9 @@ function migrateLegacyLearningAssistantMessages(d) {
       `UPDATE learning_assistant_messages
        SET conversation_id = ?
        WHERE user_id = ? AND thread_key = ?
+         AND learning_generation = ?
          AND COALESCE(conversation_id, '') = ''`,
-      [conversationId, group.user_id, group.thread_key]
+      [conversationId, group.user_id, group.thread_key, Number(group.learning_generation || 1)]
     );
   }
 }
@@ -447,6 +490,7 @@ function initSchema() {
       status TEXT DEFAULT '',
       score REAL DEFAULT 0,
       max_score REAL DEFAULT 0,
+      learning_generation INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL
     )
   `);
@@ -470,6 +514,7 @@ function initSchema() {
       context_json TEXT DEFAULT '{}',
       provider TEXT DEFAULT '',
       quiz_submitted INTEGER NOT NULL DEFAULT 0,
+      learning_generation INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL
     )
   `);
@@ -488,13 +533,13 @@ function initSchema() {
       knowledge_point_id TEXT DEFAULT '',
       title TEXT NOT NULL DEFAULT '新对话',
       archived_at TEXT DEFAULT '',
+      learning_generation INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     )
   `);
   try { d.run("ALTER TABLE learning_assistant_conversations ADD COLUMN archived_at TEXT DEFAULT ''"); } catch {}
   d.run("CREATE INDEX IF NOT EXISTS idx_lac_user_thread ON learning_assistant_conversations(user_id, thread_key, updated_at)");
-  migrateLegacyLearningAssistantMessages(d);
 
   d.run(`
     CREATE TABLE IF NOT EXISTS learning_assistant_daily_usage (
@@ -511,6 +556,7 @@ function initSchema() {
   d.run(`
     CREATE TABLE IF NOT EXISTS learning_notes (
       id TEXT NOT NULL,
+      client_id TEXT NOT NULL DEFAULT '',
       user_id TEXT NOT NULL REFERENCES users(id),
       thread_key TEXT NOT NULL,
       chapter_id TEXT DEFAULT '',
@@ -520,11 +566,14 @@ function initSchema() {
       color TEXT NOT NULL DEFAULT 'amber',
       context_json TEXT DEFAULT '{}',
       locator_json TEXT DEFAULT '{}',
+      learning_generation INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       PRIMARY KEY (user_id, id)
     )
   `);
+  try { d.run("ALTER TABLE learning_notes ADD COLUMN client_id TEXT NOT NULL DEFAULT ''"); } catch {}
+  d.run("UPDATE learning_notes SET client_id = id WHERE COALESCE(client_id, '') = ''");
   d.run("CREATE INDEX IF NOT EXISTS idx_learning_notes_user_unit ON learning_notes(user_id, unit_id, updated_at)");
 
   d.run(`
@@ -533,6 +582,7 @@ function initSchema() {
       user_id TEXT NOT NULL REFERENCES users(id),
       type TEXT NOT NULL,
       payload TEXT DEFAULT '{}',
+      learning_generation INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL
     )
   `);
@@ -627,6 +677,28 @@ function initSchema() {
   d.run("CREATE INDEX IF NOT EXISTS idx_ies_unit ON interaction_evidence_snapshots(unit_id)");
   d.run("CREATE INDEX IF NOT EXISTS idx_ies_created ON interaction_evidence_snapshots(created_at)");
 
+  d.run(`
+    CREATE TABLE IF NOT EXISTS grading_regrade_audits (
+      id TEXT PRIMARY KEY,
+      batch_id TEXT DEFAULT '',
+      quiz_result_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      question_id TEXT NOT NULL,
+      unit_id TEXT DEFAULT '',
+      trigger_source TEXT NOT NULL DEFAULT 'admin',
+      status TEXT NOT NULL,
+      previous_grade_json TEXT NOT NULL DEFAULT '{}',
+      proposed_grade_json TEXT NOT NULL DEFAULT '{}',
+      applied_grade_json TEXT NOT NULL DEFAULT '{}',
+      llm_provider TEXT DEFAULT '',
+      llm_model TEXT DEFAULT '',
+      error_message TEXT DEFAULT '',
+      created_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_gra_quiz_result ON grading_regrade_audits(quiz_result_id, created_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_gra_user ON grading_regrade_audits(user_id, created_at)");
+
   try { d.run("ALTER TABLE users ADD COLUMN nickname_norm TEXT DEFAULT ''"); } catch {}
   try { d.run("ALTER TABLE users ADD COLUMN email TEXT DEFAULT ''"); } catch {}
   try { d.run("ALTER TABLE users ADD COLUMN email_norm TEXT DEFAULT ''"); } catch {}
@@ -659,9 +731,23 @@ function initSchema() {
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_confidence REAL"); } catch {}
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_feedback TEXT DEFAULT ''"); } catch {}
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_error_type TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE grading_regrade_audits ADD COLUMN batch_id TEXT DEFAULT ''"); } catch {}
+  d.run("CREATE INDEX IF NOT EXISTS idx_gra_batch ON grading_regrade_audits(batch_id, created_at)");
+  ensureLearningGenerationColumn(d, "quiz_results");
+  ensureLearningGenerationColumn(d, "learning_assistant_messages");
+  ensureLearningGenerationColumn(d, "learning_assistant_conversations");
+  ensureLearningGenerationColumn(d, "learning_notes");
+  ensureLearningGenerationColumn(d, "events");
   try { d.run("ALTER TABLE snapshots ADD COLUMN generation INTEGER NOT NULL DEFAULT 0"); } catch {}
   try { d.run("ALTER TABLE snapshots ADD COLUMN revision INTEGER NOT NULL DEFAULT 0"); } catch {}
+  migrateLegacyLearningAssistantMessages(d);
   d.run("CREATE INDEX IF NOT EXISTS idx_snap_user_version ON snapshots(user_id, generation, revision)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_qr_user_generation ON quiz_results(user_id, learning_generation)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_ev_user_generation ON events(user_id, learning_generation)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_lam_user_generation ON learning_assistant_messages(user_id, learning_generation)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_lac_user_generation ON learning_assistant_conversations(user_id, learning_generation)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_notes_user_generation ON learning_notes(user_id, learning_generation)");
+  d.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_user_generation_client ON learning_notes(user_id, learning_generation, client_id)");
 
   scheduleSave();
 }
@@ -826,38 +912,53 @@ function revokeSession(token, timestamp) {
   execute("UPDATE sessions SET revoked_at = ?, last_seen_at = ? WHERE token = ?", [timestamp, timestamp, token]);
 }
 
+function currentLearningGeneration(userId, timestamp = new Date().toISOString()) {
+  return Number(ensureLearningStateVersion(userId, timestamp).generation);
+}
+
 // ---- Quiz Results ----
 
 function insertQuizResult(record) {
+  const generation = Number(record.learning_generation || currentLearningGeneration(record.user_id, record.created_at));
   execute(
     `INSERT OR REPLACE INTO quiz_results
       (id, user_id, chapter_id, chapter_label, unit_id, unit_label,
        question_id, question_type, phase, points, response, is_correct,
-       status, score, max_score, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       status, score, max_score, learning_generation, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       record.id, record.user_id, record.chapter_id, record.chapter_label || "",
       record.unit_id, record.unit_label || "", record.question_id,
       record.question_type || "", record.phase || "", record.points || 0,
       typeof record.response === "string" ? record.response : JSON.stringify(record.response),
       typeof record.is_correct === "number" ? record.is_correct : (record.is_correct ? 1 : 0), record.status || "",
-      record.score || 0, record.max_score || 0, record.created_at
+      record.score || 0, record.max_score || 0, generation, record.created_at
     ]
   );
 }
 
 function getQuizResultsByUser(userId, limit = 200) {
+  const generation = currentLearningGeneration(userId);
   return queryAll(
-    "SELECT * FROM quiz_results WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
-    [userId, limit]
+    `SELECT * FROM quiz_results
+     WHERE user_id = ? AND learning_generation = ?
+     ORDER BY created_at DESC LIMIT ?`,
+    [userId, generation, limit]
   );
 }
 
 function getQuizResultsByUserUnit(userId, unitId) {
+  const generation = currentLearningGeneration(userId);
   return queryAll(
-    "SELECT * FROM quiz_results WHERE user_id = ? AND unit_id = ? ORDER BY created_at DESC",
-    [userId, unitId]
+    `SELECT * FROM quiz_results
+     WHERE user_id = ? AND learning_generation = ? AND unit_id = ?
+     ORDER BY created_at DESC`,
+    [userId, generation, unitId]
   );
+}
+
+function getQuizResultById(id) {
+  return queryOne("SELECT * FROM quiz_results WHERE id = ?", [id]);
 }
 
 // ---- Learning Assistant ----
@@ -865,13 +966,13 @@ function getQuizResultsByUserUnit(userId, unitId) {
 const LEARNING_ASSISTANT_MESSAGE_INSERT = `INSERT INTO learning_assistant_messages
   (id, user_id, thread_key, conversation_id, chapter_id, unit_id,
    knowledge_point_id, role, content, context_json, provider,
-   quiz_submitted, created_at)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+   quiz_submitted, learning_generation, created_at)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 const LEARNING_ASSISTANT_CONVERSATION_INSERT = `INSERT INTO learning_assistant_conversations
   (id, user_id, thread_key, chapter_id, unit_id, knowledge_point_id,
-   title, created_at, updated_at)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+   title, learning_generation, created_at, updated_at)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 function learningAssistantMessageValues(record) {
   return [
@@ -887,6 +988,7 @@ function learningAssistantMessageValues(record) {
     JSON.stringify(record.context || {}),
     record.provider || "",
     record.quiz_submitted ? 1 : 0,
+    Number(record.learning_generation || currentLearningGeneration(record.user_id, record.created_at)),
     record.created_at
   ];
 }
@@ -900,6 +1002,7 @@ function learningAssistantConversationValues(record) {
     record.unit_id,
     record.knowledge_point_id || "",
     String(record.title || "新对话").slice(0, 80),
+    Number(record.learning_generation || currentLearningGeneration(record.user_id, record.created_at)),
     record.created_at,
     record.updated_at || record.created_at
   ];
@@ -907,14 +1010,16 @@ function learningAssistantConversationValues(record) {
 
 function getLearningAssistantMessages(userId, threadKey, limit = 80, conversationId = "") {
   const conversation = String(conversationId || "").trim();
+  const generation = currentLearningGeneration(userId);
   const rows = queryAll(
     `SELECT * FROM learning_assistant_messages
-     WHERE user_id = ? AND thread_key = ?
+     WHERE user_id = ? AND learning_generation = ? AND thread_key = ?
        ${conversation ? "AND conversation_id = ?" : ""}
      ORDER BY created_at DESC, id DESC
      LIMIT ?`,
     [
       userId,
+      generation,
       threadKey,
       ...(conversation ? [conversation] : []),
       Math.max(1, Math.min(Number(limit || 80), 200))
@@ -924,10 +1029,11 @@ function getLearningAssistantMessages(userId, threadKey, limit = 80, conversatio
 }
 
 function getLearningAssistantMessage(userId, messageId) {
+  const generation = currentLearningGeneration(userId);
   return queryOne(
     `SELECT * FROM learning_assistant_messages
-     WHERE user_id = ? AND id = ?`,
-    [userId, String(messageId || "").trim()]
+     WHERE user_id = ? AND learning_generation = ? AND id = ?`,
+    [userId, generation, String(messageId || "").trim()]
   );
 }
 
@@ -937,8 +1043,13 @@ function updateLearningAssistantMessageContext(userId, messageId, context = {}) 
   execute(
     `UPDATE learning_assistant_messages
      SET context_json = ?
-     WHERE user_id = ? AND id = ?`,
-    [JSON.stringify(context && typeof context === "object" ? context : {}), userId, messageId]
+     WHERE user_id = ? AND learning_generation = ? AND id = ?`,
+    [
+      JSON.stringify(context && typeof context === "object" ? context : {}),
+      userId,
+      existing.learning_generation,
+      messageId
+    ]
   );
   return getLearningAssistantMessage(userId, messageId);
 }
@@ -970,8 +1081,15 @@ function saveLearningAssistantTurn({
       `UPDATE learning_assistant_conversations
        SET title = CASE WHEN ? <> '' THEN ? ELSE title END,
            updated_at = ?
-       WHERE user_id = ? AND id = ?`,
-      [safeTitle, safeTitle, updatedAt, conversation.user_id, conversation.id]
+       WHERE user_id = ? AND learning_generation = ? AND id = ?`,
+      [
+        safeTitle,
+        safeTitle,
+        updatedAt,
+        conversation.user_id,
+        Number(conversation.learning_generation || currentLearningGeneration(conversation.user_id, updatedAt)),
+        conversation.id
+      ]
     );
     d.run("COMMIT");
     scheduleSave();
@@ -982,13 +1100,16 @@ function saveLearningAssistantTurn({
 }
 
 function getLearningAssistantConversation(userId, conversationId) {
+  const generation = currentLearningGeneration(userId);
   return queryOne(
     `SELECT c.*,
       (SELECT COUNT(*) FROM learning_assistant_messages m
-       WHERE m.user_id = c.user_id AND m.conversation_id = c.id) AS message_count
+       WHERE m.user_id = c.user_id
+         AND m.learning_generation = c.learning_generation
+         AND m.conversation_id = c.id) AS message_count
      FROM learning_assistant_conversations c
-     WHERE c.user_id = ? AND c.id = ?`,
-    [userId, conversationId]
+     WHERE c.user_id = ? AND c.learning_generation = ? AND c.id = ?`,
+    [userId, generation, conversationId]
   );
 }
 
@@ -996,13 +1117,15 @@ function listLearningAssistantConversations(userId, threadKey, limit = 60, optio
   const archived = options.archived === true;
   const searchQuery = String(options.query || "").replace(/\s+/g, " ").trim().slice(0, 120);
   const escapedSearch = searchQuery.replace(/[\\%_]/g, "\\$&");
+  const generation = currentLearningGeneration(userId);
   const searchClause = escapedSearch
     ? `AND (
         c.title LIKE ? ESCAPE '\\'
         OR EXISTS (
-          SELECT 1 FROM learning_assistant_messages search_message
-          WHERE search_message.user_id = c.user_id
-            AND search_message.conversation_id = c.id
+           SELECT 1 FROM learning_assistant_messages search_message
+           WHERE search_message.user_id = c.user_id
+             AND search_message.learning_generation = c.learning_generation
+             AND search_message.conversation_id = c.id
             AND search_message.content LIKE ? ESCAPE '\\'
         )
       )`
@@ -1010,15 +1133,18 @@ function listLearningAssistantConversations(userId, threadKey, limit = 60, optio
   return queryAll(
     `SELECT c.*,
       (SELECT COUNT(*) FROM learning_assistant_messages m
-       WHERE m.user_id = c.user_id AND m.conversation_id = c.id) AS message_count
+       WHERE m.user_id = c.user_id
+         AND m.learning_generation = c.learning_generation
+         AND m.conversation_id = c.id) AS message_count
      FROM learning_assistant_conversations c
-     WHERE c.user_id = ? AND c.thread_key = ?
+     WHERE c.user_id = ? AND c.learning_generation = ? AND c.thread_key = ?
        AND ${archived ? "COALESCE(c.archived_at, '') <> ''" : "COALESCE(c.archived_at, '') = ''"}
        ${searchClause}
      ORDER BY c.updated_at DESC, c.created_at DESC
      LIMIT ?`,
     [
       userId,
+      generation,
       threadKey,
       ...(escapedSearch ? [`%${escapedSearch}%`, `%${escapedSearch}%`] : []),
       Math.max(1, Math.min(Number(limit || 60), 100))
@@ -1032,8 +1158,8 @@ function renameLearningAssistantConversation(userId, conversationId, title, upda
   execute(
     `UPDATE learning_assistant_conversations
      SET title = ?, updated_at = ?
-     WHERE user_id = ? AND id = ?`,
-    [String(title || "").slice(0, 80), updatedAt, userId, conversationId]
+     WHERE user_id = ? AND learning_generation = ? AND id = ?`,
+    [String(title || "").slice(0, 80), updatedAt, userId, existing.learning_generation, conversationId]
   );
   return getLearningAssistantConversation(userId, conversationId);
 }
@@ -1044,8 +1170,8 @@ function setLearningAssistantConversationArchived(userId, conversationId, archiv
   execute(
     `UPDATE learning_assistant_conversations
      SET archived_at = ?, updated_at = ?
-     WHERE user_id = ? AND id = ?`,
-    [archivedAt || "", updatedAt, userId, conversationId]
+     WHERE user_id = ? AND learning_generation = ? AND id = ?`,
+    [archivedAt || "", updatedAt, userId, existing.learning_generation, conversationId]
   );
   return getLearningAssistantConversation(userId, conversationId);
 }
@@ -1057,12 +1183,14 @@ function deleteLearningAssistantConversation(userId, conversationId) {
   d.run("BEGIN IMMEDIATE");
   try {
     d.run(
-      "DELETE FROM learning_assistant_messages WHERE user_id = ? AND conversation_id = ?",
-      [userId, conversationId]
+      `DELETE FROM learning_assistant_messages
+       WHERE user_id = ? AND learning_generation = ? AND conversation_id = ?`,
+      [userId, existing.learning_generation, conversationId]
     );
     d.run(
-      "DELETE FROM learning_assistant_conversations WHERE user_id = ? AND id = ?",
-      [userId, conversationId]
+      `DELETE FROM learning_assistant_conversations
+       WHERE user_id = ? AND learning_generation = ? AND id = ?`,
+      [userId, existing.learning_generation, conversationId]
     );
     d.run("COMMIT");
     scheduleSave();
@@ -1195,24 +1323,31 @@ function releaseLearningAssistantDailyQuota(userId, usageDate, limit, updatedAt)
 }
 
 const LEARNING_NOTE_UPSERT = `INSERT INTO learning_notes
-  (id, user_id, thread_key, chapter_id, unit_id, excerpt, note, color,
-   context_json, locator_json, created_at, updated_at)
- VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
- ON CONFLICT(user_id, id) DO UPDATE SET
+  (id, client_id, user_id, thread_key, chapter_id, unit_id, excerpt, note, color,
+   context_json, locator_json, learning_generation, created_at, updated_at)
+ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(user_id, id) DO UPDATE SET
+   client_id = excluded.client_id,
    thread_key = excluded.thread_key,
    chapter_id = excluded.chapter_id,
    unit_id = excluded.unit_id,
    excerpt = excluded.excerpt,
    note = excluded.note,
-   color = excluded.color,
-   context_json = excluded.context_json,
-   locator_json = excluded.locator_json,
-   updated_at = excluded.updated_at
- WHERE excluded.updated_at >= learning_notes.updated_at`;
+    color = excluded.color,
+    context_json = excluded.context_json,
+    locator_json = excluded.locator_json,
+    learning_generation = excluded.learning_generation,
+    updated_at = excluded.updated_at
+ WHERE excluded.learning_generation = learning_notes.learning_generation
+   AND excluded.updated_at >= learning_notes.updated_at`;
 
 function learningNoteValues(record) {
+  const generation = Number(record.learning_generation || currentLearningGeneration(record.user_id, record.updated_at));
+  const clientId = String(record.client_id || record.id || "");
+  const storageId = generation > 1 ? `g${generation}:${clientId}` : clientId;
   return [
-    record.id,
+    storageId,
+    clientId,
     record.user_id,
     record.thread_key,
     record.chapter_id || "",
@@ -1222,27 +1357,33 @@ function learningNoteValues(record) {
     record.color || "amber",
     JSON.stringify(record.context || {}),
     JSON.stringify(record.locator || {}),
+    generation,
     record.created_at,
     record.updated_at
   ];
 }
 
 function getLearningNote(userId, noteId) {
+  const generation = currentLearningGeneration(userId);
   return queryOne(
-    "SELECT * FROM learning_notes WHERE user_id = ? AND id = ?",
-    [userId, noteId]
+    `SELECT * FROM learning_notes
+     WHERE user_id = ? AND learning_generation = ? AND client_id = ?`,
+    [userId, generation, noteId]
   );
 }
 
 function listLearningNotes(userId, unitId = "", limit = 500) {
   const normalizedUnitId = String(unitId || "").trim();
+  const generation = currentLearningGeneration(userId);
   return queryAll(
     `SELECT * FROM learning_notes
-     WHERE user_id = ? ${normalizedUnitId ? "AND unit_id = ?" : ""}
+     WHERE user_id = ? AND learning_generation = ?
+       ${normalizedUnitId ? "AND unit_id = ?" : ""}
      ORDER BY updated_at DESC, created_at DESC
      LIMIT ?`,
     [
       userId,
+      generation,
       ...(normalizedUnitId ? [normalizedUnitId] : []),
       Math.max(1, Math.min(Number(limit || 500), 500))
     ]
@@ -1255,15 +1396,20 @@ function upsertLearningNote(record) {
 }
 
 function syncLearningNotes(userId, records = [], deletedIds = []) {
+  const generation = currentLearningGeneration(userId);
   const d = getDbSync();
   d.run("BEGIN IMMEDIATE");
   try {
     records.forEach((record) => {
       if (record.user_id !== userId) throw new Error("Learning note owner mismatch.");
-      d.run(LEARNING_NOTE_UPSERT, learningNoteValues(record));
+      d.run(LEARNING_NOTE_UPSERT, learningNoteValues({ ...record, learning_generation: generation }));
     });
     deletedIds.forEach((noteId) => {
-      d.run("DELETE FROM learning_notes WHERE user_id = ? AND id = ?", [userId, noteId]);
+      d.run(
+        `DELETE FROM learning_notes
+         WHERE user_id = ? AND learning_generation = ? AND client_id = ?`,
+        [userId, generation, noteId]
+      );
     });
     d.run("COMMIT");
     scheduleSave();
@@ -1276,16 +1422,30 @@ function syncLearningNotes(userId, records = [], deletedIds = []) {
 function deleteLearningNote(userId, noteId) {
   const existing = getLearningNote(userId, noteId);
   if (!existing) return false;
-  execute("DELETE FROM learning_notes WHERE user_id = ? AND id = ?", [userId, noteId]);
+  execute(
+    `DELETE FROM learning_notes
+     WHERE user_id = ? AND learning_generation = ? AND client_id = ?`,
+    [userId, existing.learning_generation, noteId]
+  );
   return true;
 }
 
 // ---- Events ----
 
 function insertEvent(record) {
+  const generation = Number(record.learning_generation || currentLearningGeneration(record.user_id, record.created_at));
   execute(
-    "INSERT OR REPLACE INTO events (id, user_id, type, payload, created_at) VALUES (?, ?, ?, ?, ?)",
-    [record.id, record.user_id, record.type, JSON.stringify(record.payload || {}), record.created_at]
+    `INSERT OR IGNORE INTO events
+      (id, user_id, type, payload, learning_generation, created_at)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.user_id,
+      record.type,
+      JSON.stringify(record.payload || {}),
+      generation,
+      record.created_at
+    ]
   );
 }
 
@@ -1343,9 +1503,23 @@ function insertInteractionEvidenceBatch(userId, decisionId, chapterId, interacti
   });
 }
 
-function updateQuizResultAiGrading(questionId, userId, { aiScore, aiConfidence, aiFeedback, aiErrorType, unitId = "" }) {
+function updateQuizResultAiGrading(questionId, userId, {
+  aiScore,
+  aiConfidence,
+  aiFeedback,
+  aiErrorType,
+  unitId = "",
+  learningGeneration
+}) {
   const unitScope = unitId ? " AND unit_id = ?" : "";
   const unitParams = unitId ? [unitId] : [];
+  const generation = Number(
+    learningGeneration || currentLearningGeneration(userId)
+  );
+  const generationScope = " AND learning_generation = ?";
+  const retryablePlaceholders = FAILED_AI_REVIEW_TYPES.map(() => "?").join(", ");
+  const reviewableScope = `${generationScope} AND (is_correct = -1 OR lower(trim(COALESCE(ai_error_type, ''))) IN (${retryablePlaceholders}))`;
+  const reviewableParams = [...unitParams, generation, ...FAILED_AI_REVIEW_TYPES];
   const normalizedErrorType = String(aiErrorType || "").trim().toLowerCase();
   let resolvedScore = aiScore;
   let resolvedFeedback = aiFeedback || "";
@@ -1363,15 +1537,16 @@ function updateQuizResultAiGrading(questionId, userId, { aiScore, aiConfidence, 
   // Keep genuinely unresolved reviews pending when no explicit failure was reported.
   if (resolvedScore == null) {
     execute(
-      `UPDATE quiz_results SET ai_confidence = ?, ai_feedback = ?, ai_error_type = ? WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1`,
-      [aiConfidence || 0, resolvedFeedback, normalizedErrorType, questionId, userId, ...unitParams]
+      `UPDATE quiz_results SET ai_confidence = ?, ai_feedback = ?, ai_error_type = ? WHERE question_id = ? AND user_id = ?${unitScope}${reviewableScope}`,
+      [aiConfidence || 0, resolvedFeedback, normalizedErrorType, questionId, userId, ...reviewableParams]
     );
     return;
   }
   const existing = queryOne(
-    `SELECT max_score FROM quiz_results WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1 ORDER BY created_at DESC LIMIT 1`,
-    [questionId, userId, ...unitParams]
+    `SELECT max_score FROM quiz_results WHERE question_id = ? AND user_id = ?${unitScope}${reviewableScope} ORDER BY created_at DESC LIMIT 1`,
+    [questionId, userId, ...reviewableParams]
   );
+  if (!existing) return;
   const maxScore = Number(existing?.max_score || 0);
   const rawScore = Number(resolvedScore);
   const earnedScore = maxScore
@@ -1379,8 +1554,226 @@ function updateQuizResultAiGrading(questionId, userId, { aiScore, aiConfidence, 
     : rawScore;
   const passScore = maxScore ? maxScore * 0.6 : 60;
   execute(
-    `UPDATE quiz_results SET ai_score = ?, ai_confidence = ?, ai_feedback = ?, ai_error_type = ?, is_correct = CASE WHEN ? >= ? THEN 1 ELSE 0 END, status = 'ai_reviewed', score = ? WHERE question_id = ? AND user_id = ?${unitScope} AND is_correct = -1`,
-    [resolvedScore, aiConfidence || 0, resolvedFeedback, normalizedErrorType, earnedScore, passScore, earnedScore, questionId, userId, ...unitParams]
+    `UPDATE quiz_results SET ai_score = ?, ai_confidence = ?, ai_feedback = ?, ai_error_type = ?, is_correct = CASE WHEN ? >= ? THEN 1 ELSE 0 END, status = 'ai_reviewed', score = ? WHERE question_id = ? AND user_id = ?${unitScope}${reviewableScope}`,
+    [resolvedScore, aiConfidence || 0, resolvedFeedback, normalizedErrorType, earnedScore, passScore, earnedScore, questionId, userId, ...reviewableParams]
+  );
+}
+
+function failedAiReviewWhere(alias = "qr") {
+  const prefix = alias ? `${alias}.` : "";
+  const typePlaceholders = FAILED_AI_REVIEW_TYPES.map(() => "?").join(", ");
+  const feedbackClauses = LEGACY_AI_REVIEW_FAILURE_PATTERNS
+    .map(() => `${prefix}ai_feedback LIKE ?`)
+    .join(" OR ");
+  return {
+    clause: `(
+      ${prefix}status = 'pending_review'
+      OR ${prefix}is_correct = -1
+      OR lower(trim(COALESCE(${prefix}ai_error_type, ''))) IN (${typePlaceholders})
+      OR ${feedbackClauses}
+    )`,
+    params: [
+      ...FAILED_AI_REVIEW_TYPES,
+      ...LEGACY_AI_REVIEW_FAILURE_PATTERNS.map((pattern) => `%${pattern}%`)
+    ]
+  };
+}
+
+function gradingFailureReason(row = {}) {
+  const errorType = String(row.ai_error_type || "").trim().toLowerCase();
+  if (FAILED_AI_REVIEW_TYPES.includes(errorType)) return errorType;
+  if (row.status === "pending_review" || Number(row.is_correct) === -1) return "pending_review";
+  if (LEGACY_AI_REVIEW_FAILURE_PATTERNS.some((pattern) => String(row.ai_feedback || "").includes(pattern))) {
+    return "legacy_failure";
+  }
+  return "";
+}
+
+function shortAnswerRegradeCandidates(options = {}) {
+  const limit = Math.max(1, Math.min(Number(options.limit || 50), 1000));
+  const offset = Math.max(0, Number(options.offset || 0));
+  const ids = Array.isArray(options.ids)
+    ? Array.from(new Set(options.ids.map((id) => String(id || "").trim()).filter(Boolean))).slice(0, 50)
+    : [];
+  const failed = failedAiReviewWhere("qr");
+  const idClause = ids.length ? ` AND qr.id IN (${ids.map(() => "?").join(", ")})` : "";
+  const baseParams = [...failed.params, ...ids];
+  const total = queryOne(
+    `SELECT COUNT(*) AS c
+     FROM quiz_results qr
+     WHERE qr.question_type = 'short_answer'
+       AND ${failed.clause}${idClause}`,
+    baseParams
+  )?.c || 0;
+  const rows = queryAll(
+    `SELECT qr.*, u.nickname
+     FROM quiz_results qr
+     JOIN users u ON u.id = qr.user_id
+     WHERE qr.question_type = 'short_answer'
+       AND ${failed.clause}${idClause}
+     ORDER BY julianday(qr.created_at) ASC, qr.id ASC
+     LIMIT ? OFFSET ?`,
+    [...baseParams, limit, offset]
+  ).map((row) => ({
+    ...row,
+    failure_reason: gradingFailureReason(row)
+  }));
+  const errorTypes = queryAll(
+    `SELECT
+       CASE
+         WHEN lower(trim(COALESCE(qr.ai_error_type, ''))) <> ''
+           THEN lower(trim(qr.ai_error_type))
+         WHEN qr.status = 'pending_review' OR qr.is_correct = -1
+           THEN 'pending_review'
+         ELSE 'legacy_failure'
+       END AS error_type,
+       COUNT(*) AS count
+     FROM quiz_results qr
+     WHERE qr.question_type = 'short_answer'
+       AND ${failed.clause}${idClause}
+     GROUP BY error_type
+     ORDER BY count DESC, error_type ASC`,
+    baseParams
+  );
+  return { rows, total, limit, offset, errorTypes };
+}
+
+function gradingSnapshot(row = {}) {
+  return {
+    status: row.status || "",
+    score: row.score == null ? null : Number(row.score),
+    maxScore: row.max_score == null ? null : Number(row.max_score),
+    isCorrect: row.is_correct == null ? null : Number(row.is_correct),
+    aiScore: row.ai_score == null ? null : Number(row.ai_score),
+    aiConfidence: row.ai_confidence == null ? null : Number(row.ai_confidence),
+    aiFeedback: row.ai_feedback || "",
+    aiErrorType: row.ai_error_type || ""
+  };
+}
+
+function insertGradingRegradeAudit(record = {}) {
+  const existing = record.quiz_result_id
+    ? queryOne("SELECT * FROM quiz_results WHERE id = ?", [record.quiz_result_id])
+    : null;
+  execute(
+    `INSERT INTO grading_regrade_audits
+      (id, batch_id, quiz_result_id, user_id, question_id, unit_id,
+       trigger_source, status, previous_grade_json, proposed_grade_json,
+       applied_grade_json, llm_provider, llm_model, error_message, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.batch_id || "",
+      record.quiz_result_id || "",
+      record.user_id || "",
+      record.question_id || "",
+      record.unit_id || "",
+      record.trigger_source || "admin",
+      record.status || "",
+      JSON.stringify(record.previous_grade || gradingSnapshot(existing || {})),
+      JSON.stringify(record.proposed_grade || {}),
+      JSON.stringify(record.applied_grade || {}),
+      record.llm_provider || "",
+      record.llm_model || "",
+      String(record.error_message || "").slice(0, 1000),
+      record.created_at
+    ]
+  );
+}
+
+function applyQuizResultRegrade(record = {}) {
+  const quizResultId = String(record.quiz_result_id || "").trim();
+  const existing = queryOne("SELECT * FROM quiz_results WHERE id = ?", [quizResultId]);
+  if (!existing || existing.question_type !== "short_answer") {
+    return { ok: false, code: "grading_target_not_found", row: existing || null };
+  }
+  const failureReason = gradingFailureReason(existing);
+  if (!failureReason) {
+    return { ok: false, code: "grading_target_no_longer_retryable", row: existing };
+  }
+
+  const proposed = record.proposed_grade || {};
+  const rawScore = Number(proposed.score);
+  if (!Number.isFinite(rawScore)) {
+    return { ok: false, code: "grading_result_invalid", row: existing };
+  }
+  const maxScore = Math.max(0, Number(existing.max_score || existing.points || 0));
+  const score = maxScore
+    ? Math.round(Math.max(0, Math.min(maxScore, rawScore)) * 10) / 10
+    : Math.max(0, Math.round(rawScore * 10) / 10);
+  const confidence = Math.max(0, Math.min(1, Number(proposed.confidence || 0)));
+  const passScore = maxScore ? maxScore * 0.6 : 60;
+  const applied = {
+    status: "ai_reviewed",
+    score,
+    maxScore,
+    isCorrect: score >= passScore ? 1 : 0,
+    aiScore: score,
+    aiConfidence: confidence,
+    aiFeedback: String(proposed.feedback || "").slice(0, 4000),
+    aiErrorType: String(proposed.errorType || "none").trim().toLowerCase() || "none"
+  };
+  const d = getDbSync();
+  try {
+    d.run("BEGIN IMMEDIATE");
+    d.run(
+      `UPDATE quiz_results
+       SET ai_score = ?, ai_confidence = ?, ai_feedback = ?, ai_error_type = ?,
+           is_correct = ?, status = 'ai_reviewed', score = ?
+       WHERE id = ?`,
+      [
+        applied.aiScore,
+        applied.aiConfidence,
+        applied.aiFeedback,
+        applied.aiErrorType,
+        applied.isCorrect,
+        applied.score,
+        quizResultId
+      ]
+    );
+    d.run(
+      `INSERT INTO grading_regrade_audits
+        (id, batch_id, quiz_result_id, user_id, question_id, unit_id,
+         trigger_source, status, previous_grade_json, proposed_grade_json,
+         applied_grade_json, llm_provider, llm_model, error_message, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'applied', ?, ?, ?, ?, ?, '', ?)`,
+      [
+        record.id,
+        record.batch_id || "",
+        existing.id,
+        existing.user_id,
+        existing.question_id,
+        existing.unit_id || "",
+        record.trigger_source || "admin",
+        JSON.stringify(gradingSnapshot(existing)),
+        JSON.stringify(proposed),
+        JSON.stringify(applied),
+        record.llm_provider || "",
+        record.llm_model || "",
+        record.created_at
+      ]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return { ok: true, row: existing, applied };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function gradingRegradeAudits(options = {}) {
+  const limit = Math.max(1, Math.min(Number(options.limit || 100), 1000));
+  const batchId = String(options.batchId || "").trim();
+  const batchClause = batchId ? " WHERE gra.batch_id = ?" : "";
+  return queryAll(
+    `SELECT gra.*, u.nickname
+     FROM grading_regrade_audits gra
+     LEFT JOIN users u ON u.id = gra.user_id
+     ${batchClause}
+     ORDER BY julianday(gra.created_at) DESC, gra.id DESC
+     LIMIT ?`,
+    [...(batchId ? [batchId] : []), limit]
   );
 }
 
@@ -1539,7 +1932,9 @@ function mergeAgenticPath(existing, incoming) {
   ["unlocked", "visibleUnits", "unlockedExtensionChapters"].forEach((key) => {
     merged[key] = uniqueStrings([...(existing[key] || []), ...(incoming[key] || [])]);
   });
-  merged.skipped = { ...(existing.skipped || {}), ...(incoming.skipped || {}) };
+  merged.skipped = Object.prototype.hasOwnProperty.call(incoming, "skipped")
+    ? { ...(incoming.skipped || {}) }
+    : { ...(existing.skipped || {}) };
   merged.chapterAdvanceReady = {
     ...(existing.chapterAdvanceReady || {}),
     ...(incoming.chapterAdvanceReady || {})
@@ -1567,10 +1962,9 @@ function mergeLearningSnapshot(existing = {}, incoming = {}) {
   merged.logs = uniqueStrings([...(right.logs || []), ...(left.logs || [])]).slice(0, 100);
   merged.quizDrafts = { ...(left.quizDrafts || {}), ...(right.quizDrafts || {}) };
   merged.quizAttempts = { ...(left.quizAttempts || {}), ...(right.quizAttempts || {}) };
-  merged.selectedKnowledgeScenes = {
-    ...(left.selectedKnowledgeScenes || {}),
-    ...(right.selectedKnowledgeScenes || {})
-  };
+  merged.selectedKnowledgeScenes = Object.prototype.hasOwnProperty.call(right, "selectedKnowledgeScenes")
+    ? { ...(right.selectedKnowledgeScenes || {}) }
+    : { ...(left.selectedKnowledgeScenes || {}) };
   merged.submittedQuizzes = normalizeLearningSnapshot(merged).submittedQuizzes;
   merged.analytics = mergeAnalytics(left.analytics, right.analytics);
   merged.agenticPath = mergeAgenticPath(left.agenticPath, right.agenticPath);
@@ -1629,6 +2023,14 @@ function saveLearningSnapshot(record) {
     return {
       ok: false,
       conflict: "generation",
+      generation: currentGeneration,
+      revision: currentRevision
+    };
+  }
+  if (Number(record.baseRevision) !== currentRevision) {
+    return {
+      ok: false,
+      conflict: "revision",
       generation: currentGeneration,
       revision: currentRevision
     };
@@ -1713,11 +2115,6 @@ function resetLearningSnapshot(record) {
   const d = getDbSync();
   d.run("BEGIN");
   try {
-    d.run("DELETE FROM quiz_results WHERE user_id = ?", [record.user_id]);
-    d.run("DELETE FROM learning_assistant_messages WHERE user_id = ?", [record.user_id]);
-    d.run("DELETE FROM learning_assistant_conversations WHERE user_id = ?", [record.user_id]);
-    d.run("DELETE FROM learning_notes WHERE user_id = ?", [record.user_id]);
-    d.run("DELETE FROM snapshots WHERE user_id = ?", [record.user_id]);
     d.run(
       `UPDATE learning_state_versions
        SET generation = ?, revision = ?, updated_at = ?
@@ -1871,13 +2268,68 @@ function dateFilter(prefix, dates) {
   if (!dates || (!dates.startDate && !dates.endDate)) return { clause: "", params: [] };
   const parts = [];
   const p = [];
-  if (dates.startDate) { parts.push(`${prefix} >= ?`); p.push(dates.startDate); }
-  if (dates.endDate) { parts.push(`${prefix} <= ?`); p.push(dates.endDate); }
+  if (dates.startDate) { parts.push(`julianday(${prefix}) >= julianday(?)`); p.push(dates.startDate); }
+  if (dates.endDate) { parts.push(`julianday(${prefix}) <= julianday(?)`); p.push(dates.endDate); }
   return { clause: parts.length ? " AND " + parts.join(" AND ") : "", params: p };
 }
 
+function beijingDateString(date = new Date()) {
+  return new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+function quizSubmissionCount(dates, prefix = "qr") {
+  const filter = dateFilter(`${prefix}.created_at`, dates);
+  return queryOne(
+    `SELECT COUNT(*) as c
+     FROM (
+       SELECT ${prefix}.user_id, ${prefix}.unit_id, ${prefix}.created_at
+       FROM quiz_results ${prefix}
+       WHERE 1=1${filter.clause}
+       GROUP BY ${prefix}.user_id, ${prefix}.unit_id, ${prefix}.created_at
+     )`,
+    filter.params
+  ).c || 0;
+}
+
+function eventPayloadObject(row = {}) {
+  try {
+    return typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload || {};
+  } catch {
+    return {};
+  }
+}
+
+function quizSubmissionEventKey(row = {}, period = "") {
+  const payload = eventPayloadObject(row);
+  const unitId = String(payload.unitId || payload.unit_id || "").trim();
+  if (!unitId) return `${row.type}:${row.id}`;
+  return `${row.user_id}:${unitId}:${period}`;
+}
+
+function aggregateActivityEvents(rows = [], bucketFor) {
+  const buckets = new Map();
+  rows.forEach((row) => {
+    const bucket = String(bucketFor(row));
+    if (!buckets.has(bucket)) {
+      buckets.set(bucket, {
+        key: bucket,
+        users: new Set(),
+        quizSubmissions: new Set(),
+        events_count: 0
+      });
+    }
+    const entry = buckets.get(bucket);
+    entry.events_count += 1;
+    if (row.user_id) entry.users.add(row.user_id);
+    if (row.type === "quiz_result" || row.type === "quiz_submission") {
+      entry.quizSubmissions.add(quizSubmissionEventKey(row, bucket));
+    }
+  });
+  return Array.from(buckets.values());
+}
+
 function statsOverview(dates) {
-  const today = new Date().toISOString().slice(0, 10);
+  const todayStart = `${beijingDateString()}T00:00:00.000+08:00`;
   const qrFilter = dateFilter("qr.created_at", dates);
   const evFilter = dateFilter("created_at", dates);
   const interactionFilter = dateFilter("e.created_at", dates);
@@ -1888,8 +2340,8 @@ function statsOverview(dates) {
   // activeInRange: count distinct users within the date filter (or today if no filter)
   const activeQuery = hasFilter
     ? `SELECT COUNT(DISTINCT user_id) as c FROM events WHERE 1=1${evFilter.clause}`
-    : "SELECT COUNT(DISTINCT user_id) as c FROM events WHERE created_at >= ?";
-  const activeParams = hasFilter ? evFilter.params : [today];
+    : "SELECT COUNT(DISTINCT user_id) as c FROM events WHERE julianday(created_at) >= julianday(?)";
+  const activeParams = hasFilter ? evFilter.params : [todayStart];
   const pairedPrePost = queryOne(
     `SELECT COUNT(DISTINCT user_id) as c
      FROM (
@@ -1914,11 +2366,14 @@ function statsOverview(dates) {
   ).c || 0;
   return {
     totalUsers: queryOne("SELECT COUNT(*) as c FROM users").c,
-    totalQuizResults: queryOne(`SELECT COUNT(*) as c FROM quiz_results qr WHERE 1=1${qrFilter.clause}`, qrFilter.params).c,
+    totalQuizResults: quizSubmissionCount(dates),
     totalEvents: queryOne(`SELECT COUNT(*) as c FROM events WHERE 1=1${evFilter.clause}`, evFilter.params).c,
     rawInteractionEvents,
     meaningfulInteractions,
-    activeToday: queryOne("SELECT COUNT(DISTINCT user_id) as c FROM events WHERE created_at >= ?", [today]).c,
+    activeToday: queryOne(
+      "SELECT COUNT(DISTINCT user_id) as c FROM events WHERE julianday(created_at) >= julianday(?)",
+      [todayStart]
+    ).c,
     activeInRange: queryOne(activeQuery, activeParams).c,
     avgAccuracy: queryOne(`SELECT ROUND(AVG(CAST(qr.is_correct AS REAL)) * 100, 1) as c FROM quiz_results qr WHERE qr.is_correct >= 0${qrFilter.clause}`, qrFilter.params).c || 0,
     usersWithQuiz: queryOne(`SELECT COUNT(DISTINCT qr.user_id) as c FROM quiz_results qr WHERE 1=1${qrFilter.clause}`, qrFilter.params).c || 0,
@@ -1968,7 +2423,10 @@ function userProgress(dates) {
   return queryAll(`
     SELECT u.id as user_id, u.nickname, u.created_at, u.last_seen_at,
            COUNT(DISTINCT qr.unit_id) as units_attempted,
-           COUNT(qr.id) as quiz_count,
+           COUNT(DISTINCT CASE
+             WHEN qr.id IS NOT NULL
+             THEN qr.user_id || char(31) || qr.unit_id || char(31) || qr.created_at
+           END) as quiz_count,
            ROUND(AVG(CASE WHEN qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as avg_accuracy,
            ROUND(SUM(qr.score), 0) as total_score,
            ROUND(SUM(qr.max_score), 0) as total_max,
@@ -1991,17 +2449,22 @@ function userProgress(dates) {
 
 function dailyActivity(days = 30, dates) {
   const df = dateFilter("created_at", dates);
-  return queryAll(
-    `SELECT substr(created_at, 1, 10) as date,
-            COUNT(DISTINCT user_id) as active_users,
-            COUNT(*) as events_count,
-            SUM(CASE WHEN type = 'quiz_result' THEN 1 ELSE 0 END) as quiz_submissions
+  const fallbackStart = `${beijingDateString(new Date(Date.now() - days * 86400000))}T00:00:00.000+08:00`;
+  const rows = queryAll(
+    `SELECT id, user_id, type, payload, created_at
      FROM events
-     WHERE created_at >= date('now', ? || ' days')${df.clause}
-     GROUP BY date
-     ORDER BY date`,
-    [String(-days), ...df.params]
+     WHERE julianday(created_at) >= julianday(?)${df.clause}
+     ORDER BY julianday(created_at), id`,
+    [fallbackStart, ...df.params]
   );
+  return aggregateActivityEvents(rows, (row) => String(row.created_at || "").slice(0, 10))
+    .map((entry) => ({
+      date: entry.key,
+      active_users: entry.users.size,
+      events_count: entry.events_count,
+      quiz_submissions: entry.quizSubmissions.size
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
 }
 
 function phaseComparison(dates) {
@@ -2010,13 +2473,30 @@ function phaseComparison(dates) {
     SELECT u.nickname, qr.user_id, qr.chapter_id, qr.chapter_label,
            ROUND(AVG(CASE WHEN qr.phase = 'pre' AND qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as pre_accuracy,
            COUNT(CASE WHEN qr.phase = 'pre' THEN 1 END) as pre_count,
+           COUNT(DISTINCT CASE WHEN qr.phase = 'pre' THEN qr.learning_generation || char(31) || qr.unit_id || char(31) || qr.created_at END) as pre_submissions,
+           SUM(CASE WHEN qr.phase = 'pre' THEN qr.score ELSE 0 END) as pre_score,
+           SUM(CASE WHEN qr.phase = 'pre' THEN qr.max_score ELSE 0 END) as pre_max_score,
+           SUM(CASE WHEN qr.phase = 'pre' AND qr.is_correct = 1 THEN 1 ELSE 0 END) as pre_correct,
+           SUM(CASE WHEN qr.phase = 'pre' AND qr.is_correct < 0 THEN 1 ELSE 0 END) as pre_pending,
+           ROUND(AVG(CASE WHEN qr.phase = 'formative' AND qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as formative_accuracy,
+           COUNT(CASE WHEN qr.phase = 'formative' THEN 1 END) as formative_count,
+           COUNT(DISTINCT CASE WHEN qr.phase = 'formative' THEN qr.learning_generation || char(31) || qr.unit_id || char(31) || qr.created_at END) as formative_submissions,
+           SUM(CASE WHEN qr.phase = 'formative' THEN qr.score ELSE 0 END) as formative_score,
+           SUM(CASE WHEN qr.phase = 'formative' THEN qr.max_score ELSE 0 END) as formative_max_score,
+           SUM(CASE WHEN qr.phase = 'formative' AND qr.is_correct = 1 THEN 1 ELSE 0 END) as formative_correct,
+           SUM(CASE WHEN qr.phase = 'formative' AND qr.is_correct < 0 THEN 1 ELSE 0 END) as formative_pending,
            ROUND(AVG(CASE WHEN qr.phase = 'post' AND qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as post_accuracy,
-           COUNT(CASE WHEN qr.phase = 'post' THEN 1 END) as post_count
+           COUNT(CASE WHEN qr.phase = 'post' THEN 1 END) as post_count,
+           COUNT(DISTINCT CASE WHEN qr.phase = 'post' THEN qr.learning_generation || char(31) || qr.unit_id || char(31) || qr.created_at END) as post_submissions,
+           SUM(CASE WHEN qr.phase = 'post' THEN qr.score ELSE 0 END) as post_score,
+           SUM(CASE WHEN qr.phase = 'post' THEN qr.max_score ELSE 0 END) as post_max_score,
+           SUM(CASE WHEN qr.phase = 'post' AND qr.is_correct = 1 THEN 1 ELSE 0 END) as post_correct,
+           SUM(CASE WHEN qr.phase = 'post' AND qr.is_correct < 0 THEN 1 ELSE 0 END) as post_pending
     FROM quiz_results qr
     JOIN users u ON u.id = qr.user_id
-    WHERE qr.phase IN ('pre', 'post')${df.clause}
+    WHERE qr.phase IN ('pre', 'formative', 'post')${df.clause}
     GROUP BY qr.user_id, qr.chapter_id
-    HAVING pre_count > 0 OR post_count > 0
+    HAVING pre_count > 0 OR formative_count > 0 OR post_count > 0
     ORDER BY qr.user_id, qr.chapter_id
   `, df.params);
 }
@@ -2051,9 +2531,10 @@ function researchSummaryForUser(eventRows, feedbackCount, agentDecisionCount) {
     }
     if (eventType === "repeat_unit_enter") repeatVisits += 1;
     if (eventType === "online_period") estimatedOnlineSeconds += Math.max(0, Number(data.seconds || 0));
-    if (eventType === "time_on_unit") unitStudySeconds += Math.max(0, Number(data.seconds || 0));
     if (
       payload.source === "iframe"
+      || payload.source === "courseware_semantic"
+      || eventType.startsWith("courseware_")
       || eventType.startsWith("interactive_")
       || eventType.startsWith("canvas_")
       || eventType === "parameter_change"
@@ -2066,6 +2547,25 @@ function researchSummaryForUser(eventRows, feedbackCount, agentDecisionCount) {
       latestEnvironmentAt = row.created_at;
     }
   });
+  const durationSamples = effectiveUnitDurationSamples(
+    eventRows
+      .filter((row) => row.type === "interaction")
+      .map((row) => ({
+        ...row,
+        payload: eventPayloadObject(row)
+      }))
+  ).filter(({ seconds }) => seconds >= EFFECTIVE_PATH_MIN_SECONDS);
+  const rawUnitStudySeconds = durationSamples.reduce(
+    (total, sample) => total + sample.seconds,
+    0
+  );
+  unitStudySeconds = durationSamples.reduce(
+    (total, sample) => total + Math.min(sample.seconds, EFFECTIVE_PATH_MAX_SECONDS),
+    0
+  );
+  const cappedStudySegments = durationSamples.filter(
+    ({ seconds }) => seconds > EFFECTIVE_PATH_MAX_SECONDS
+  ).length;
 
   return {
     activeDays: activeDays.size,
@@ -2077,6 +2577,8 @@ function researchSummaryForUser(eventRows, feedbackCount, agentDecisionCount) {
     coursewareActions,
     estimatedOnlineSeconds,
     unitStudySeconds,
+    rawUnitStudySeconds,
+    cappedStudySegments,
     feedbackCount: Number(feedbackCount || 0),
     agentDecisionCount: Number(agentDecisionCount || 0),
     latestEnvironment
@@ -2145,10 +2647,24 @@ function userDetail(userId, dates) {
   const evDf = dateFilter("created_at", dates);
   const feedbackDf = dateFilter("created_at", dates);
   const decisionDf = dateFilter("created_at", dates);
-  const quizResults = queryAll(
-    `SELECT * FROM quiz_results WHERE user_id = ?${qrDf.clause} ORDER BY created_at DESC LIMIT 500`,
+  const quizQuestionTotal = queryOne(
+    `SELECT COUNT(*) as count
+     FROM quiz_results
+     WHERE user_id = ?${qrDf.clause}`,
+    [userId, ...qrDf.params]
+  ).count || 0;
+  const quizQuestionRows = queryAll(
+    `SELECT id, user_id, chapter_id, chapter_label, unit_id, unit_label,
+            question_id, question_type, phase, response, is_correct, status,
+            score, max_score, ai_score, ai_confidence, ai_feedback,
+            ai_error_type, learning_generation, created_at
+     FROM quiz_results
+     WHERE user_id = ?${qrDf.clause}
+     ORDER BY julianday(created_at) DESC, id DESC
+     LIMIT 5000`,
     [userId, ...qrDf.params]
   );
+  const quizResults = quizQuestionRows;
   const events = recentMeaningfulEvents(queryAll(
     `SELECT * FROM events WHERE user_id = ?${evDf.clause} ORDER BY created_at DESC LIMIT 2000`,
     [userId, ...evDf.params]
@@ -2158,11 +2674,11 @@ function userDetail(userId, dates) {
     [userId, ...evDf.params]
   ).count || 0;
   const researchEvents = queryAll(
-    `SELECT type, payload, created_at
+    `SELECT id, user_id, type, payload, created_at
      FROM events
      WHERE user_id = ?${evDf.clause}
      ORDER BY created_at DESC
-     LIMIT 20000`,
+     LIMIT 100000`,
     [userId, ...evDf.params]
   );
   const feedbackCount = queryOne(
@@ -2198,21 +2714,160 @@ function userDetail(userId, dates) {
            ROUND(AVG(score), 1) as avg_score
     FROM quiz_results WHERE user_id = ?${qrDf.clause} GROUP BY chapter_id ORDER BY chapter_id
   `, [userId, ...qrDf.params]);
+  const quizOverallRow = queryOne(`
+    SELECT
+      COUNT(*) as questions,
+      COUNT(DISTINCT learning_generation || char(31) || unit_id || char(31) || created_at) as submissions,
+      SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
+      SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) as incorrect,
+      SUM(CASE WHEN is_correct < 0 THEN 1 ELSE 0 END) as pending,
+      ROUND(
+        100.0 * SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END)
+        / NULLIF(SUM(CASE WHEN is_correct >= 0 THEN 1 ELSE 0 END), 0),
+        1
+      ) as accuracy,
+      ROUND(SUM(score), 1) as total_score,
+      ROUND(SUM(max_score), 1) as total_max_score,
+      ROUND(100.0 * SUM(score) / NULLIF(SUM(max_score), 0), 1) as score_rate,
+      COUNT(DISTINCT learning_generation) as generation_count,
+      MIN(created_at) as first_at,
+      MAX(created_at) as last_at
+    FROM quiz_results
+    WHERE user_id = ?${qrDf.clause}
+  `, [userId, ...qrDf.params]) || {};
+  const currentGenerationRow = queryOne(
+    "SELECT generation FROM learning_state_versions WHERE user_id = ?",
+    [userId]
+  );
+  const phaseOrder = { pre: 0, formative: 1, post: 2 };
+  const quizPhaseSummary = queryAll(`
+    SELECT
+      phase,
+      COUNT(*) as questions,
+      COUNT(DISTINCT learning_generation || char(31) || unit_id || char(31) || created_at) as submissions,
+      SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
+      SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) as incorrect,
+      SUM(CASE WHEN is_correct < 0 THEN 1 ELSE 0 END) as pending,
+      ROUND(
+        100.0 * SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END)
+        / NULLIF(SUM(CASE WHEN is_correct >= 0 THEN 1 ELSE 0 END), 0),
+        1
+      ) as accuracy,
+      ROUND(SUM(score), 1) as total_score,
+      ROUND(SUM(max_score), 1) as total_max_score,
+      ROUND(100.0 * SUM(score) / NULLIF(SUM(max_score), 0), 1) as score_rate,
+      MIN(created_at) as first_at,
+      MAX(created_at) as last_at
+    FROM quiz_results
+    WHERE user_id = ? AND phase IN ('pre', 'formative', 'post')${qrDf.clause}
+    GROUP BY phase
+  `, [userId, ...qrDf.params]).sort(
+    (left, right) => (phaseOrder[left.phase] ?? 99) - (phaseOrder[right.phase] ?? 99)
+  );
+  const chapterPhaseSummary = queryAll(`
+    SELECT
+      chapter_id,
+      chapter_label,
+      phase,
+      COUNT(*) as questions,
+      COUNT(DISTINCT learning_generation || char(31) || unit_id || char(31) || created_at) as submissions,
+      SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
+      SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) as incorrect,
+      SUM(CASE WHEN is_correct < 0 THEN 1 ELSE 0 END) as pending,
+      ROUND(
+        100.0 * SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END)
+        / NULLIF(SUM(CASE WHEN is_correct >= 0 THEN 1 ELSE 0 END), 0),
+        1
+      ) as accuracy,
+      ROUND(SUM(score), 1) as total_score,
+      ROUND(SUM(max_score), 1) as total_max_score,
+      ROUND(100.0 * SUM(score) / NULLIF(SUM(max_score), 0), 1) as score_rate,
+      MIN(created_at) as first_at,
+      MAX(created_at) as last_at
+    FROM quiz_results
+    WHERE user_id = ? AND phase IN ('pre', 'formative', 'post')${qrDf.clause}
+    GROUP BY chapter_id, phase
+    ORDER BY chapter_id,
+      CASE phase WHEN 'pre' THEN 0 WHEN 'formative' THEN 1 WHEN 'post' THEN 2 ELSE 3 END
+  `, [userId, ...qrDf.params]);
+  const parsedInteractionRows = researchEvents
+    .filter((row) => row.type === "interaction")
+    .map((row) => ({
+      ...row,
+      nickname: user.nickname || "",
+      payload: eventPayloadObject(row)
+    }));
+  const effectivePath = pathAnalysis(parsedInteractionRows)[0] || {
+    user_id: userId,
+    nickname: user.nickname || "",
+    steps: [],
+    step_count: 0,
+    total_seconds: 0,
+    raw_total_seconds: 0,
+    capped_segments: 0,
+    first_at: "",
+    last_at: ""
+  };
+  const scopeAllHistory = !(dates?.startDate || dates?.endDate);
   return {
     user,
     quizResults,
+    quizQuestionRows,
+    quizQuestionTotal: Number(quizQuestionTotal || 0),
+    quizQuestionLimit: 5000,
+    quizOverall: {
+      submissions: Number(quizOverallRow.submissions || 0),
+      questions: Number(quizOverallRow.questions || 0),
+      correct: Number(quizOverallRow.correct || 0),
+      incorrect: Number(quizOverallRow.incorrect || 0),
+      pending: Number(quizOverallRow.pending || 0),
+      accuracy: Number(quizOverallRow.accuracy || 0),
+      totalScore: Number(quizOverallRow.total_score || 0),
+      totalMaxScore: Number(quizOverallRow.total_max_score || 0),
+      scoreRate: Number(quizOverallRow.score_rate || 0),
+      generationCount: Number(quizOverallRow.generation_count || 0),
+      currentGeneration: Number(
+        currentGenerationRow?.generation
+        || quizQuestionRows[0]?.learning_generation
+        || 1
+      ),
+      firstAt: quizOverallRow.first_at || "",
+      lastAt: quizOverallRow.last_at || ""
+    },
+    quizPhaseSummary,
+    chapterPhaseSummary,
     events,
     eventCount,
     chapterSummary,
     feedbackRows,
-    researchSummary: researchSummaryForUser(researchEvents, feedbackCount, agentDecisionCount)
+    researchSummary: researchSummaryForUser(researchEvents, feedbackCount, agentDecisionCount),
+    effectivePath,
+    proactiveSummary: proactiveFunnel(parsedInteractionRows),
+    scope: {
+      allHistory: scopeAllHistory,
+      startDate: dates?.startDate || "",
+      endDate: dates?.endDate || "",
+      eventRowsTruncated: researchEvents.length >= 100000,
+      quizRowsTruncated: Number(quizQuestionTotal || 0) > 5000
+    }
   };
 }
 
 function listUsers() {
-  return queryAll(
-    "SELECT u.*, (SELECT COUNT(*) FROM quiz_results WHERE user_id = u.id) as quiz_count FROM users u ORDER BY last_seen_at DESC"
-  );
+  return queryAll(`
+    SELECT u.*,
+           (
+             SELECT COUNT(*)
+             FROM (
+               SELECT qr.unit_id, qr.created_at
+               FROM quiz_results qr
+               WHERE qr.user_id = u.id
+               GROUP BY qr.unit_id, qr.created_at
+             )
+           ) as quiz_count
+    FROM users u
+    ORDER BY u.last_seen_at DESC
+  `);
 }
 
 function questionTypeAccuracy(dates) {
@@ -2235,17 +2890,24 @@ function scoreDistribution(dates) {
   return queryAll(`
     SELECT
       CASE
-        WHEN CAST(score AS REAL) / NULLIF(max_score, 0) >= 1.0 THEN '满分 (100%)'
-        WHEN CAST(score AS REAL) / NULLIF(max_score, 0) >= 0.8 THEN '80-99%'
-        WHEN CAST(score AS REAL) / NULLIF(max_score, 0) >= 0.6 THEN '60-79%'
-        WHEN CAST(score AS REAL) / NULLIF(max_score, 0) >= 0.4 THEN '40-59%'
-        WHEN CAST(score AS REAL) / NULLIF(max_score, 0) >= 0.2 THEN '20-39%'
+        WHEN CAST(total_score AS REAL) / NULLIF(total_max, 0) >= 1.0 THEN '满分 (100%)'
+        WHEN CAST(total_score AS REAL) / NULLIF(total_max, 0) >= 0.8 THEN '80-99%'
+        WHEN CAST(total_score AS REAL) / NULLIF(total_max, 0) >= 0.6 THEN '60-79%'
+        WHEN CAST(total_score AS REAL) / NULLIF(total_max, 0) >= 0.4 THEN '40-59%'
+        WHEN CAST(total_score AS REAL) / NULLIF(total_max, 0) >= 0.2 THEN '20-39%'
         ELSE '0-19%'
       END as bucket,
       COUNT(*) as count,
-      MIN(CAST(score AS REAL) / NULLIF(max_score, 0)) as min_ratio
-    FROM quiz_results
-    WHERE max_score > 0${df.clause}
+      MIN(CAST(total_score AS REAL) / NULLIF(total_max, 0)) as min_ratio
+    FROM (
+      SELECT user_id, unit_id, created_at,
+             SUM(score) as total_score,
+             SUM(max_score) as total_max
+      FROM quiz_results
+      WHERE max_score > 0${df.clause}
+      GROUP BY user_id, unit_id, created_at
+    )
+    WHERE total_max > 0
     GROUP BY bucket
     ORDER BY min_ratio
   `, df.params);
@@ -2253,17 +2915,22 @@ function scoreDistribution(dates) {
 
 function hourlyActivity(days = 30, dates) {
   const df = dateFilter("created_at", dates);
-  return queryAll(
-    `SELECT CAST(substr(created_at, 12, 2) AS INTEGER) as hour,
-            COUNT(*) as events_count,
-            COUNT(DISTINCT user_id) as active_users,
-            SUM(CASE WHEN type = 'quiz_result' THEN 1 ELSE 0 END) as quiz_submissions
+  const fallbackStart = `${beijingDateString(new Date(Date.now() - days * 86400000))}T00:00:00.000+08:00`;
+  const rows = queryAll(
+    `SELECT id, user_id, type, payload, created_at
      FROM events
-     WHERE created_at >= date('now', ? || ' days')${df.clause}
-     GROUP BY hour
-     ORDER BY hour`,
-    [String(-days), ...df.params]
+     WHERE julianday(created_at) >= julianday(?)${df.clause}
+     ORDER BY julianday(created_at), id`,
+    [fallbackStart, ...df.params]
   );
+  return aggregateActivityEvents(rows, (row) => Number(String(row.created_at || "").slice(11, 13)) || 0)
+    .map((entry) => ({
+      hour: Number(entry.key),
+      events_count: entry.events_count,
+      active_users: entry.users.size,
+      quiz_submissions: entry.quizSubmissions.size
+    }))
+    .sort((a, b) => a.hour - b.hour);
 }
 
 function shortAnswerResponses(options = {}) {
@@ -2411,6 +3078,25 @@ function isParameterOperation(meta) {
 }
 
 function interactionActionCategory(eventType = "") {
+  if (eventType === "courseware_page_loaded" || eventType === "courseware_page_summary_shown") return "ready";
+  if (eventType === "courseware_hint_used") return "support";
+  if (
+    eventType === "courseware_prediction_made"
+    || eventType === "courseware_confidence_submitted"
+    || eventType === "courseware_reflection_submitted"
+    || eventType === "courseware_short_explanation_submitted"
+  ) return "reflection";
+  if (
+    eventType === "courseware_pre_check_submitted"
+    || eventType === "courseware_formative_check_submitted"
+    || eventType === "courseware_exit_ticket_submitted"
+    || eventType === "courseware_challenge_result"
+  ) return "assessment";
+  if (
+    eventType === "courseware_interaction_complete"
+    || eventType === "courseware_observable_evidence_captured"
+    || eventType === "courseware_interaction_change"
+  ) return "completion";
   if (eventType === "interactive_ready" || eventType === "interactive_render") return "ready";
   if (eventType === "interactive_submit") return "submit";
   if (eventType === "parameter_change" || eventType === "parameter_commit") return "parameter";
@@ -2424,7 +3110,9 @@ function interactionActionCategory(eventType = "") {
 }
 
 function isCoursewareAction(meta) {
-  return meta.source === "iframe" || Boolean(interactionActionCategory(meta.eventType));
+  return meta.source === "iframe"
+    || meta.source === "courseware_semantic"
+    || Boolean(interactionActionCategory(meta.eventType));
 }
 
 function coursewareActionCoverage(dates) {
@@ -2563,7 +3251,10 @@ function unitEngagement(dates) {
   const durationByUnit = new Map();
   effectiveUnitDurationSamples(rows).forEach(({ meta, seconds }) => {
     const key = `${meta.unitId}|${meta.userId}`;
-    durationByUnit.set(key, (durationByUnit.get(key) || 0) + seconds);
+    durationByUnit.set(
+      key,
+      (durationByUnit.get(key) || 0) + Math.min(seconds, EFFECTIVE_PATH_MAX_SECONDS)
+    );
   });
   const units = new Map();
   const ensureItem = (meta, unitId = meta.unitId, fallback = {}) => {
@@ -2588,6 +3279,10 @@ function unitEngagement(dates) {
       gestures: 0,
       inputs: 0,
       submits: 0,
+      assessments: 0,
+      reflections: 0,
+      support_actions: 0,
+      completion_evidence: 0,
       keyboard_actions: 0,
       wheel_actions: 0,
       courseware_actions: 0,
@@ -2634,6 +3329,10 @@ function unitEngagement(dates) {
     if (actionCategory === "gesture") item.gestures += 1;
     if (actionCategory === "input") item.inputs += 1;
     if (actionCategory === "submit") item.submits += 1;
+    if (actionCategory === "assessment") item.assessments += 1;
+    if (actionCategory === "reflection") item.reflections += 1;
+    if (actionCategory === "support") item.support_actions += 1;
+    if (actionCategory === "completion") item.completion_evidence += 1;
     if (actionCategory === "keyboard") item.keyboard_actions += 1;
     if (actionCategory === "wheel") item.wheel_actions += 1;
     if (/quiz|answer|question|short_answer/.test(meta.eventType)) item.quiz_events += 1;
@@ -2754,8 +3453,6 @@ function interactionDurationSeconds(meta) {
   return Math.max(0, Math.round(seconds || durationMs / 1000));
 }
 
-const EFFECTIVE_PATH_MIN_SECONDS = 10;
-
 function interactionSceneEvidenceIndex(source) {
   const evidenceByContext = new Map();
   interactionSourceRows(source).forEach((row) => {
@@ -2819,17 +3516,23 @@ function pathAnalysis(dates) {
     return leftAt - rightAt;
   });
   const paths = new Map();
-  samples.forEach(({ meta, seconds }) => {
-    if (seconds < EFFECTIVE_PATH_MIN_SECONDS) return;
+  samples.forEach(({ meta, seconds: rawSeconds }) => {
+    if (rawSeconds < EFFECTIVE_PATH_MIN_SECONDS) return;
+    const effectiveSeconds = Math.min(rawSeconds, EFFECTIVE_PATH_MAX_SECONDS);
+    const capped = rawSeconds > EFFECTIVE_PATH_MAX_SECONDS;
     const item = paths.get(meta.userId) || {
       user_id: meta.userId,
       nickname: meta.nickname,
       steps: [],
       first_at: meta.createdAt,
       last_at: meta.createdAt,
-      total_seconds: 0
+      total_seconds: 0,
+      raw_total_seconds: 0,
+      capped_segments: 0
     };
-    item.total_seconds += seconds;
+    item.total_seconds += effectiveSeconds;
+    item.raw_total_seconds += rawSeconds;
+    if (capped) item.capped_segments += 1;
     const lastStep = item.steps[item.steps.length - 1];
     const labels = unitDisplayMeta(meta.unitId, meta);
     const isKnowledgePoint = (labels.unit_type || meta.unitType) === "knowledge"
@@ -2842,7 +3545,9 @@ function pathAnalysis(dates) {
       ? resolvedScene?.scene_label || "历史记录未包含场景"
       : "";
     if (lastStep?.unit_id === meta.unitId && lastStep?.scene_type === sceneType) {
-      lastStep.seconds += seconds;
+      lastStep.seconds += effectiveSeconds;
+      lastStep.raw_seconds += rawSeconds;
+      lastStep.capped = lastStep.capped || capped;
       lastStep.events += 1;
       lastStep.last_at = meta.createdAt;
     } else {
@@ -2859,7 +3564,9 @@ function pathAnalysis(dates) {
         display_label: sceneLabel ? `${labels.unit_label} · ${sceneLabel}` : labels.unit_label,
         at: meta.createdAt,
         last_at: meta.createdAt,
-        seconds,
+        seconds: effectiveSeconds,
+        raw_seconds: rawSeconds,
+        capped,
         events: 1
       });
     }
@@ -2870,15 +3577,54 @@ function pathAnalysis(dates) {
     ...item,
     step_count: item.steps.length,
     path_preview: item.steps.slice(0, 20).map((step) => step.display_label || step.unit_label || step.unit_id).join(" -> ")
-  })).sort((a, b) => b.total_seconds - a.total_seconds || b.step_count - a.step_count).slice(0, 500);
+  })).sort((a, b) => b.total_seconds - a.total_seconds || b.step_count - a.step_count);
+}
+
+function proactiveFunnel(source) {
+  const rows = interactionSourceRows(source);
+  const counts = new Map();
+  const acceptedUsers = new Set();
+  rows.forEach((row) => {
+    const type = interactionPayloadType(row.payload || {});
+    if (!type.startsWith("knowledge_proactive_") && !type.startsWith("knowledge_quiz_review_")) return;
+    counts.set(type, Number(counts.get(type) || 0) + 1);
+    if (type === "knowledge_proactive_suggestion_accepted" && row.user_id) {
+      acceptedUsers.add(row.user_id);
+    }
+  });
+  const count = (type) => Number(counts.get(type) || 0);
+  const accepted = count("knowledge_proactive_suggestion_accepted");
+  const dismissed = count("knowledge_proactive_suggestion_dismissed");
+  const ignored = count("knowledge_proactive_suggestion_ignored");
+  const resolved = accepted + dismissed + ignored;
+  const shown = count("knowledge_proactive_suggestion_shown");
+  return {
+    agentDecided: count("knowledge_proactive_agent_decided"),
+    agentSilent: count("knowledge_proactive_agent_silent")
+      + count("knowledge_proactive_fallback_silent")
+      + count("knowledge_proactive_budget_exhausted"),
+    shown,
+    accepted,
+    dismissed,
+    ignored,
+    quizReviewCompleted: count("knowledge_quiz_review_completed"),
+    acceptedUsers: acceptedUsers.size,
+    acceptanceRate: resolved ? Math.round((accepted / resolved) * 1000) / 10 : 0,
+    resolutionRate: shown ? Math.min(100, Math.round((resolved / shown) * 1000) / 10) : 0
+  };
 }
 
 function interactionDashboard(dates) {
   const rows = interactionRows(dates);
   return {
     summary: interactionSummary(rows),
+    proactiveFunnel: proactiveFunnel(rows),
     actionCoverage: coursewareActionCoverage(rows),
-    pathRule: { minSeconds: EFFECTIVE_PATH_MIN_SECONDS, label: `单次模块停留至少 ${EFFECTIVE_PATH_MIN_SECONDS} 秒` },
+    pathRule: {
+      minSeconds: EFFECTIVE_PATH_MIN_SECONDS,
+      maxSeconds: EFFECTIVE_PATH_MAX_SECONDS,
+      label: `单次模块停留计入 ${EFFECTIVE_PATH_MIN_SECONDS}-${EFFECTIVE_PATH_MAX_SECONDS} 秒`
+    },
     unitEngagement: unitEngagement(rows),
     skipRepeat: skipRepeatStats(rows),
     parameterChanges: parameterChangeStats(rows),
@@ -2910,7 +3656,7 @@ function agenticDecisionTrace(dates = {}) {
      FROM agent_decisions ad
      LEFT JOIN users u ON u.id = ad.user_id
      WHERE ad.agent_type = 'orchestrator'${df.clause}${userClause}
-     ORDER BY ad.created_at DESC, ad.id DESC
+     ORDER BY julianday(ad.created_at) DESC, ad.id DESC
      LIMIT ? OFFSET ?`,
     [...params, limit, offset]
   );
@@ -2924,7 +3670,7 @@ function agenticDecisionTrace(dates = {}) {
     const snapshot = queryOne(
       `SELECT * FROM interaction_evidence_snapshots
        WHERE agent_decision_id = ? AND evidence_scope = 'current'
-       ORDER BY created_at DESC LIMIT 1`,
+       ORDER BY julianday(created_at) DESC LIMIT 1`,
       [row.id]
     );
     const snapshotEvidence = snapshot ? parseJsonField(snapshot.evidence_json) : {};
@@ -2934,8 +3680,9 @@ function agenticDecisionTrace(dates = {}) {
     const executedEvents = queryAll(
       `SELECT e.created_at, e.payload
        FROM events e
-       WHERE e.user_id = ? AND e.type = 'interaction' AND e.created_at >= ?
-       ORDER BY e.created_at ASC
+       WHERE e.user_id = ? AND e.type = 'interaction'
+         AND julianday(e.created_at) >= julianday(?)
+       ORDER BY julianday(e.created_at) ASC, e.id ASC
        LIMIT 80`,
       [row.user_id, row.created_at]
     ).map((eventRow) => {
@@ -2954,13 +3701,13 @@ function agenticDecisionTrace(dates = {}) {
     });
     const executedData = executed?.payload?.data || {};
     const outcome = unitId ? queryOne(
-      `SELECT COUNT(*) as quiz_count,
+      `SELECT COUNT(DISTINCT unit_id || char(31) || created_at) as quiz_count,
               ROUND(AVG(CASE WHEN is_correct >= 0 THEN CAST(is_correct AS REAL) END) * 100, 1) as accuracy,
               SUM(score) as score,
               SUM(max_score) as max_score,
               MAX(created_at) as last_quiz_at
        FROM quiz_results
-       WHERE user_id = ? AND created_at >= ? AND chapter_id = ?`,
+       WHERE user_id = ? AND julianday(created_at) >= julianday(?) AND chapter_id = ?`,
       [row.user_id, row.created_at, input.chapterId || unitMeta.chapter_id || ""]
     ) : {};
     return {
@@ -3023,7 +3770,7 @@ function interactionEvidenceSnapshots(dates = {}) {
      FROM interaction_evidence_snapshots ies
      LEFT JOIN users u ON u.id = ies.user_id
      WHERE 1=1${df.clause}${userClause}
-     ORDER BY ies.created_at DESC
+     ORDER BY julianday(ies.created_at) DESC, ies.id DESC
      LIMIT 1000`,
     [...df.params, ...(userId ? [userId] : [])]
   );
@@ -3048,9 +3795,11 @@ module.exports = {
   getSession,
   touchSession,
   revokeSession,
+  currentLearningGeneration,
   insertQuizResult,
   getQuizResultsByUser,
   getQuizResultsByUserUnit,
+  getQuizResultById,
   getLearningAssistantMessages,
   getLearningAssistantMessage,
   updateLearningAssistantMessageContext,
@@ -3090,6 +3839,10 @@ module.exports = {
   hourlyActivity,
   getEventsByType,
   shortAnswerResponses,
+  shortAnswerRegradeCandidates,
+  insertGradingRegradeAudit,
+  applyQuizResultRegrade,
+  gradingRegradeAudits,
   interactionSummary,
   unitEngagement,
   skipRepeatStats,

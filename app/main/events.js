@@ -13,25 +13,11 @@ document.addEventListener("click", (event) => {
     return;
   }
 
-  if (brandBackButton && state.returnToQuiz?.unitId && currentUnitId !== state.returnToQuiz.unitId) {
-    const quizUnitId = state.returnToQuiz.unitId;
-    const questionId = state.returnToQuiz.questionId || "";
-    const quizUnit = getUnit(quizUnitId);
-    state.returnToQuiz = null;
-    if (quizUnit) {
-      currentChapterId = quizUnit.chapterId;
-      currentUnitId = quizUnit.id;
-      switchView("learn");
-      renderAll();
-    } else {
-      saveState();
-    }
-    window.setTimeout(() => {
-      if (!questionId) return;
-      const safeQuestionId = typeof CSS !== "undefined" && CSS.escape ? CSS.escape(questionId) : String(questionId).replace(/"/g, '\\"');
-      const card = document.querySelector(`[data-question="${safeQuestionId}"]`);
-      if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 80);
+  if (
+    brandBackButton
+    && typeof returnToQuizFromCourseware === "function"
+    && returnToQuizFromCourseware(currentUnitId)
+  ) {
     return;
   }
 
@@ -76,8 +62,18 @@ document.addEventListener("click", (event) => {
       trackLearningEvent("quiz_resource_link_open", {
         fromUnitId: sourceUnit?.id || "",
         targetUnitId,
-        sceneType
+        sceneType,
+        questionId: questionCard?.dataset.question || ""
       }, false);
+      analyticsTrack("quiz_resource_link_open", {
+        source: "quiz",
+        data: {
+          fromUnitId: sourceUnit?.id || "",
+          targetUnitId,
+          sceneType,
+          questionId: questionCard?.dataset.question || ""
+        }
+      });
       switchView("learn");
       renderAll();
       window.setTimeout(() => {
@@ -125,9 +121,9 @@ document.addEventListener("click", (event) => {
   if (unitButton) {
     const uid = unitButton.dataset.unit;
     const skipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(uid);
-    if (typeof agenticIsUnitUnlocked === "function" && !agenticIsUnitUnlocked(uid) && !skipped) {
-      if (typeof agenticLockedMessage === "function") agenticLockedMessage(uid);
-    } else {
+    if (typeof agenticGuardNavigation === "function") {
+      if (agenticGuardNavigation(uid, { allowPrevious: true })) selectUnit(uid);
+    } else if (!skipped) {
       selectUnit(uid);
     }
     return;
@@ -196,6 +192,36 @@ document.addEventListener("click", (event) => {
   const submitQuizButton = event.target.closest("[data-submit-quiz]");
   if (submitQuizButton) {
     submitQuiz(submitQuizButton.dataset.submitQuiz);
+    return;
+  }
+
+  const retryAiGradeButton = event.target.closest("[data-retry-ai-grade]");
+  if (retryAiGradeButton) {
+    retryAiGradeButton.disabled = true;
+    retryAiGradeButton.textContent = "正在重新批改";
+    const retryUnitId = retryAiGradeButton.dataset.unit || currentUnitId;
+    const retryQuestionId = retryAiGradeButton.dataset.questionId || "";
+    retryFailedShortAnswer(
+      retryUnitId,
+      retryQuestionId
+    ).then((succeeded) => {
+      if (succeeded) return;
+      retryAiGradeButton.disabled = false;
+      retryAiGradeButton.textContent = "重新批改";
+    }).catch((error) => {
+        console.warn("Short-answer retry failed:", error);
+        addLog(`简答题重新批改失败：${error.message || "服务暂时不可用"}。`);
+        analyticsTrack("short_answer_regrade_failed", {
+          source: "quiz",
+          data: {
+            unitId: retryUnitId,
+            questionId: retryQuestionId,
+            reason: error.code || "request_failed"
+          }
+        });
+        retryAiGradeButton.disabled = false;
+        retryAiGradeButton.textContent = "重新批改";
+      });
     return;
   }
 

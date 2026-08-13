@@ -29,8 +29,50 @@
       && selectedType(unitId, selections, types) !== next;
   }
 
+  function selectedTypeForAccess(
+    unitId = "",
+    committedSelections = {},
+    previewSelections = {},
+    types = [],
+    canPersist = false
+  ) {
+    return selectedType(
+      unitId,
+      canPersist ? committedSelections : previewSelections,
+      types
+    );
+  }
+
+  function recordSelectionForAccess(
+    unitId = "",
+    committedSelections = {},
+    previewSelections = {},
+    nextType = "",
+    types = [],
+    canPersist = false
+  ) {
+    const id = clean(unitId);
+    const target = canPersist ? committedSelections : previewSelections;
+    if (!id || !target || typeof target !== "object") {
+      return { changed: false, persisted: Boolean(canPersist) };
+    }
+    if (!shouldRecordSelection(id, target, nextType, types)) {
+      return { changed: false, persisted: Boolean(canPersist) };
+    }
+    target[id] = clean(nextType);
+    if (canPersist) {
+      if (previewSelections && typeof previewSelections === "object") delete previewSelections[id];
+    } else if (committedSelections && typeof committedSelections === "object") {
+      // A locked lesson selection is only a preview and must not survive its later unlock.
+      delete committedSelections[id];
+    }
+    return { changed: true, persisted: Boolean(canPersist) };
+  }
+
   return {
     selectedType,
-    shouldRecordSelection
+    shouldRecordSelection,
+    selectedTypeForAccess,
+    recordSelectionForAccess
   };
 });

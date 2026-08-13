@@ -144,11 +144,8 @@ function agenticUnlockExtensionChapter(chapterId = "", fromChapterId = "", reaso
 }
 
 function agenticVisibleChapterEntries() {
-  const path = state.agenticPath || {};
   const main = (curriculum || []).filter((chapter) => !agenticIsExtensionChapter(chapter));
-  const extensions = (curriculum || []).filter((chapter) =>
-    agenticIsExtensionChapter(chapter) && agenticExtensionChapterVisible(chapter.id, path)
-  );
+  const extensions = (curriculum || []).filter(agenticIsExtensionChapter);
   const entries = [];
   let extensionIndex = 0;
   main.forEach((chapter, mainIndex) => {
@@ -311,19 +308,19 @@ function agenticChapterUnlockedBySequence(chapterId) {
 function agenticCurrentUnitIsAllowed(unitId = "") {
   if (!unitId || !agenticMultiSceneMode()) return true;
   const chapterId = agenticChapterIdForUnitId(unitId) || currentChapterId;
-  return agenticChapterUnlockedBySequence(chapterId);
+  return agenticChapterBrowseAllowed(chapterId);
 }
 
 function agenticNormalizeCurrentPosition() {
   if (!agenticMultiSceneMode()) return;
   const firstChapter = curriculum?.[0];
   if (!firstChapter) return;
-  if (!agenticChapterUnlockedBySequence(currentChapterId)) {
+  if (!agenticChapterBrowseAllowed(currentChapterId)) {
     currentChapterId = firstChapter.id;
     currentUnitId = firstChapter.units?.[0]?.id || "";
     return;
   }
-  if (currentUnitId && !agenticCurrentUnitIsAllowed(currentUnitId)) {
+  if (currentUnitId && !agenticUnitBrowseAllowed(currentUnitId)) {
     currentUnitId = getChapter(currentChapterId)?.units?.[0]?.id || firstChapter.units?.[0]?.id || "";
   }
 }
@@ -358,21 +355,42 @@ function agenticDefaults() {
 
 function agenticPruneLockedRoutePath(path) {
   if (!agenticMultiSceneMode() || !path) return;
-  const allowedChapters = new Set((curriculum || [])
-    .filter((chapter) => agenticChapterUnlockedBySequence(chapter.id))
-    .map((chapter) => chapter.id));
-  const keepUnit = (unitId) => {
-    const chapterId = agenticChapterIdForUnitId(unitId);
-    return !chapterId || allowedChapters.has(chapterId);
-  };
-  path.unlocked = (path.unlocked || []).filter(keepUnit);
-  path.visibleUnits = (path.visibleUnits || []).filter(keepUnit);
-  Object.keys(path.skipped || {}).forEach((unitId) => {
-    if (!keepUnit(unitId)) delete path.skipped[unitId];
-  });
-  Object.keys(path.chapterAdvanceReady || {}).forEach((key) => {
-    const chapterId = getChapter?.(key)?.id || agenticChapterIdForUnitId(key) || key;
-    if (chapterId && !allowedChapters.has(chapterId)) delete path.chapterAdvanceReady[key];
+  const validUnit = (unitId) => Boolean(findMainUnit(unitId) || agenticParseUnitId(unitId));
+  path.unlocked = Array.from(new Set((path.unlocked || []).filter(validUnit)));
+  path.visibleUnits = Array.from(new Set((path.visibleUnits || []).filter(validUnit)));
+  agenticDiscardUnavailableSceneSelections(path);
+}
+
+function agenticUnitIsActivePathTarget(path, unitId = "") {
+  if (!path || !unitId) return false;
+  const reviewQueue = path.reviewQueue?.queue || path.reviewQueue?.unitIds || [];
+  return path.reviewResume?.unitId === unitId
+    || reviewQueue.includes(unitId)
+    || path.activeDetour?.unitId === unitId
+    || path.oneStepExtension?.unitId === unitId;
+}
+
+function agenticPathCompletionAllowed(path, unitId = "") {
+  if (!path || !unitId) return false;
+  if ((state.completed || []).includes(unitId)) return true;
+  if (!(path.unlocked || []).includes(unitId)) return false;
+  const chapterId = agenticChapterIdForUnitId(unitId);
+  if (
+    agenticMultiSceneMode()
+    && chapterId
+    && !agenticChapterUnlockedBySequence(chapterId)
+    && !agenticUnitIsActivePathTarget(path, unitId)
+  ) return false;
+  if (path.pendingPlan && !agenticPendingAppliesToUnitId(path.pendingPlan, unitId)) return false;
+  if (path.skipped?.[unitId] && !agenticUnitIsActivePathTarget(path, unitId)) return false;
+  return true;
+}
+
+function agenticDiscardUnavailableSceneSelections(path) {
+  if (!path || !state.selectedKnowledgeScenes || typeof state.selectedKnowledgeScenes !== "object") return;
+  Object.keys(state.selectedKnowledgeScenes).forEach((unitId) => {
+    if ((state.completed || []).includes(unitId)) return;
+    if (!agenticPathCompletionAllowed(path, unitId)) delete state.selectedKnowledgeScenes[unitId];
   });
 }
 function ensureAgenticPath() {
@@ -403,8 +421,8 @@ function ensureAgenticPath() {
   agenticRepairCompletedExtensionResumes(state.agenticPath);
   if (agenticMultiSceneMode()) agenticNormalizeCurrentPosition();
   const firstUnitId = agenticInitialUnitId();
-  const safeCurrentUnitId = agenticCurrentUnitIsAllowed(currentUnitId) ? currentUnitId : "";
-  state.agenticPath.unlocked = Array.from(new Set([...(state.agenticPath.unlocked || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
+  const safeCurrentUnitId = agenticUnitBrowseAllowed(currentUnitId) ? currentUnitId : "";
+  state.agenticPath.unlocked = Array.from(new Set([...(state.agenticPath.unlocked || []), firstUnitId, ...(state.completed || [])].filter(Boolean)));
   state.agenticPath.visibleUnits = Array.from(new Set([...(state.agenticPath.visibleUnits || []), firstUnitId, safeCurrentUnitId, ...(state.completed || [])].filter(Boolean)));
   agenticPruneLockedRoutePath(state.agenticPath);
   return state.agenticPath;
@@ -676,6 +694,9 @@ function agenticVisibleChaptersForNav() {
 function agenticUnlockUnit(unitId, reason = "agent_recommended") {
   if (!unitId) return false;
   const path = ensureAgenticPath();
+  if (typeof clearPreviewKnowledgeSceneSelections === "function") {
+    clearPreviewKnowledgeSceneSelections(unitId);
+  }
   agenticRevealUnit(unitId);
   if (!path.unlocked.includes(unitId)) {
     path.unlocked.push(unitId);
@@ -920,8 +941,14 @@ function agenticQuizPathReady(unit) {
 
 function agenticCompletionCta(unit) {
   if (!unit) return { label: "完成本节", disabled: false };
+  if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
+    return { label: "返回测验", disabled: false };
+  }
   const path = ensureAgenticPath();
   const completed = (state.completed || []).includes(unit.id);
+  if (!completed && !agenticUnitCompletionAllowed(unit.id)) {
+    return { label: "未解锁：先接受学习建议", disabled: true };
+  }
   const activeExtensionTarget = agenticActiveExtensionTargetFromSource(path, unit.id);
   if (activeExtensionTarget?.id) {
     return { label: "继续扩展学习", disabled: false };
@@ -964,7 +991,7 @@ function agenticCompletionCta(unit) {
     };
   }
 
-  const next = agenticNextUnlockedUnitAfter(unit.id) || agenticNextMainUnitAfter(unit.id);
+  const next = agenticNextUnlockedUnitAfter(unit.id);
   if (next?.id) {
     const crossChapter = agenticIsCrossChapterResume(unit.id, next.id);
     return {
@@ -1261,7 +1288,6 @@ function agenticShouldShowUnit(unit) {
 
 function agenticDisplayUnitsForChapter(chapter = getChapter()) {
   const units = agenticMultiSceneMode() ? chapter?.units || [] : chapter?.allUnits || chapter?.units || [];
-  if (agenticMultiSceneMode() && agenticIsExtensionChapter(chapter) && !agenticExtensionChapterVisible(chapter.id)) return [];
   if (agenticMultiSceneMode()) return agenticOrderDisplayedUnits(units);
   return agenticOrderDisplayedUnits(units.filter(agenticShouldShowUnit));
 }
@@ -1366,19 +1392,9 @@ function agenticGuardNavigation(targetUnitId, { allowPrevious = false, silent = 
     (allowPrevious && state.completed.includes(targetUnitId)) ||
     targetUnitId === path.pendingPlan?.unitId;
 
-  const pendingBlocksTarget = path.pendingPlan && agenticPendingAppliesToCurrent(path.pendingPlan);
-  if (pendingBlocksTarget && targetUnitId !== path.pendingPlan.unitId && !isReviewTarget) {
-    if (!silent) {
-      const pendingLabel = agenticUnitLabel(path.pendingPlan.unitId || path.pendingPlan.anchorUnitId || "");
-      addLog(`请先回到「${pendingLabel || "当前测验"}」处理学习建议，再继续通关。`);
-      renderAgenticCoachPanel();
-    }
-    return false;
-  }
-
   const chapterAllowed = !agenticMultiSceneMode()
     || !target.chapterId
-    || agenticChapterUnlockedBySequence(target.chapterId);
+    || agenticChapterBrowseAllowed(target.chapterId);
   if (!chapterAllowed && !isReviewTarget && current?.id !== targetUnitId) {
     if (!silent) agenticLockedMessage(targetUnitId);
     return false;
@@ -1386,10 +1402,9 @@ function agenticGuardNavigation(targetUnitId, { allowPrevious = false, silent = 
 
   if (agenticIsSkipped(targetUnitId)) return true;
   if (allowPrevious && state.completed.includes(targetUnitId)) return true;
-  if (current?.id === targetUnitId && agenticIsUnitUnlocked(targetUnitId)) return true;
-  const allowed = agenticIsUnitUnlocked(targetUnitId);
-  if (!allowed && !silent) agenticLockedMessage(targetUnitId);
-  return allowed;
+  // Any courseware can be opened for preview. The completion CTA remains gated
+  // by agenticIsUnitUnlocked so browsing does not advance the learning path.
+  return agenticUnitBrowseAllowed(targetUnitId);
 }
 
 function agenticLockedMessage(unitId) {
@@ -1474,6 +1489,23 @@ function agenticNotifyQuizReviewReady(unit, records = [], source = "grading_comp
   saveState();
   return true;
 }
+
+// Browsing is broader than the Agent-confirmed learning path.
+// Sequence readiness remains the source of truth for recommendations and completion.
+function agenticChapterBrowseAllowed(chapterId = "") {
+  if (!chapterId) return true;
+  return Boolean((curriculum || []).some((chapter) => chapter.id === chapterId));
+}
+
+function agenticUnitBrowseAllowed(unitId = "") {
+  return Boolean(unitId && findMainUnit(unitId));
+}
+
+function agenticUnitCompletionAllowed(unitId = "") {
+  if (!unitId) return false;
+  return agenticPathCompletionAllowed(ensureAgenticPath(), unitId);
+}
+
 function agenticKnowledgePointsForChapter(chapterId) {
   const chapter = getChapter(chapterId);
   return (chapter?.modules || []).flatMap((module) => (module.knowledgePoints || []).map((point) => ({
@@ -2828,6 +2860,9 @@ async function agenticApplyDecision(type, actionKey = "") {
     if (type === "skip") {
       action.units.forEach((unit) => {
         path.skipped[unit.id] = true;
+        if (typeof clearKnowledgeSceneSelectionForUnit === "function") {
+          clearKnowledgeSceneSelectionForUnit(unit.id);
+        }
       });
       skippedUnitIds = action.units.map((unit) => unit.id);
       const lastSkipped = action.units[action.units.length - 1]?.id || pending.unitId;
@@ -2844,14 +2879,19 @@ async function agenticApplyDecision(type, actionKey = "") {
       const skippedChoices = choices.filter((choice) => !selectedIds.has(choice.id));
       skippedChoices.forEach((choice) => {
         const unit = findMainUnit(choice.id);
-        if (unit?.type === "knowledge") path.skipped[unit.id] = true;
+        if (unit?.type === "knowledge") {
+          path.skipped[unit.id] = true;
+          if (typeof clearKnowledgeSceneSelectionForUnit === "function") {
+            clearKnowledgeSceneSelectionForUnit(unit.id);
+          }
+        }
       });
       skippedUnitIds = skippedChoices.map((choice) => choice.id).filter((id) => findMainUnit(id));
       const anchorUnitId = pending.anchorUnitId || pending.unitId;
       const next = agenticNextMainUnitAfter(anchorUnitId) || agenticNextUnitIdAfter(anchorUnitId);
       targetId = next?.id || (typeof next === "string" ? next : "");
       choices.forEach((choice) => {
-        if (selectedIds.has(choice.id)) delete path.skipped[choice.id];
+        if (selectedIds.has(choice.id)) path.skipped[choice.id] = false;
       });
       agenticUnlockUnit(targetId, "pretest_knowledge_selection");
       const learnCount = choices.length - skippedChoices.length;
@@ -2886,7 +2926,7 @@ async function agenticApplyDecision(type, actionKey = "") {
           .map((choice) => choice.id);
         if (unskipIds.length) {
           unskipIds.forEach((unitId) => {
-            delete path.skipped[unitId];
+            path.skipped[unitId] = false;
           });
         }
         const anchorUnitId = pending.anchorUnitId || pending.unitId;
@@ -3138,7 +3178,10 @@ function agenticSceneChoicePanel(unit) {
   const scenes = rankSiblingLearningScenes(unit).filter((scene) => scene.id !== unit.id);
   if (!cluster || !scenes.length) return "";
   const chips = scenes.slice(0, 5).map((scene) => {
-    const locked = typeof agenticIsUnitUnlocked === "function" && !agenticIsUnitUnlocked(scene.id) && !(typeof agenticIsSkipped === "function" && agenticIsSkipped(scene.id));
+    const learningAllowed = typeof agenticUnitCompletionAllowed === "function"
+      ? agenticUnitCompletionAllowed(scene.id)
+      : typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(scene.id);
+    const locked = !learningAllowed && !(typeof agenticIsSkipped === "function" && agenticIsSkipped(scene.id));
     const cls = ["agentic-scene-choice", scene.flowKind === "adaptive" ? "adaptive" : "", locked ? "locked" : ""].filter(Boolean).join(" ");
     return '<button class="' + cls + '" type="button" data-unit="' + scene.id + '"' + (locked ? ' aria-disabled="true"' : '') + '>'
       + '<span>' + escapeHtml(learningSceneRole(scene)) + '</span>'

@@ -700,8 +700,15 @@
     if (lastPresentedSuggestionId !== suggestion.id) {
       lastPresentedSuggestionId = suggestion.id;
       track("knowledge_proactive_suggestion_shown", {
+        suggestionId: suggestion.id,
+        interventionId: suggestion.interventionId || "",
         suggestionKind: suggestion.kind,
-        unitId: suggestion.unitId
+        action: suggestion.action || "",
+        why: suggestion.why || "",
+        confidence: suggestion.confidence,
+        unitId: suggestion.unitId,
+        createdAt: suggestion.createdAt || "",
+        shownAt: new Date().toISOString()
       });
     }
   }
@@ -767,15 +774,24 @@
   function acceptProactiveSuggestion() {
     const suggestion = proactiveDecision;
     if (!suggestion || !executeProactiveAction(suggestion)) return false;
-    proactiveCoach.resolve("accept", Date.now());
+    const resolution = proactiveCoach.resolve("accept", Date.now()) || {};
     proactiveDecision = null;
     proactiveCandidateId = "";
     renderProactiveSuggestion();
     track("knowledge_proactive_suggestion_accepted", {
+      suggestionId: suggestion.id,
+      interventionId: suggestion.interventionId || "",
       suggestionKind: suggestion.kind,
       action: suggestion.action,
+      why: suggestion.why || "",
       confidence: suggestion.confidence,
-      unitId: suggestion.unitId
+      unitId: suggestion.unitId,
+      resolution: resolution.resolution || "accept",
+      dismissStreak: resolution.dismissStreak || 0,
+      cooldownUntil: resolution.cooldownUntil || 0,
+      createdAt: resolution.createdAt || suggestion.createdAt || "",
+      resolvedAt: resolution.resolvedAt || new Date().toISOString(),
+      latencyMs: resolution.latencyMs || 0
     });
     return true;
   }
@@ -789,9 +805,17 @@
     proactiveCandidateId = "";
     renderProactiveSuggestion();
     track("knowledge_proactive_suggestion_dismissed", {
+      suggestionId: suggestion.id,
+      interventionId: suggestion.interventionId || "",
       suggestionKind: suggestion.kind,
       unitId: suggestion.unitId,
-      reason
+      reason,
+      resolution: suggestion.resolution || reason,
+      dismissStreak: suggestion.dismissStreak || 0,
+      cooldownUntil: suggestion.cooldownUntil || 0,
+      createdAt: suggestion.createdAt || "",
+      resolvedAt: suggestion.resolvedAt || new Date().toISOString(),
+      latencyMs: suggestion.latencyMs || 0
     });
     return true;
   }
@@ -852,8 +876,15 @@
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || payload.ok === false) {
         if (payload.code === "assistant_intervention_budget_exhausted") {
-          proactiveCoach.resolve("agent-silent", Date.now());
+          const resolution = proactiveCoach.resolve("agent-silent", Date.now()) || {};
           proactiveCandidateId = "";
+          track("knowledge_proactive_budget_exhausted", {
+            suggestionId: candidate.id,
+            suggestionKind: candidate.kind,
+            unitId: candidate.unitId,
+            resolution: resolution.resolution || "agent-silent",
+            cooldownUntil: resolution.cooldownUntil || 0
+          });
           return false;
         }
         throw new Error(payload.message || "主动判断暂时不可用。");
@@ -861,11 +892,17 @@
       if (proactiveCoach.getSuggestion()?.id !== candidate.id) return false;
       const decision = payload.decision || {};
       if (!decision.intervene || decision.action === "stay_silent") {
-        proactiveCoach.resolve("agent-silent", Date.now());
+        const resolution = proactiveCoach.resolve("agent-silent", Date.now()) || {};
         proactiveCandidateId = "";
         proactiveDecision = null;
         renderProactiveSuggestion();
-        track("knowledge_proactive_agent_silent", { suggestionKind: candidate.kind });
+        track("knowledge_proactive_agent_silent", {
+          suggestionId: candidate.id,
+          suggestionKind: candidate.kind,
+          unitId: candidate.unitId,
+          resolution: resolution.resolution || "agent-silent",
+          cooldownUntil: resolution.cooldownUntil || 0
+        });
         return true;
       }
       proactiveDecision = {
@@ -873,27 +910,37 @@
         id: candidate.id,
         kind: candidate.kind,
         unitId: candidate.unitId,
+        createdAt: candidate.createdAt || "",
+        dismissStreak: candidate.dismissStreak || 0,
         interventionId: payload.interventionId || ""
       };
       renderProactiveSuggestion();
       track("knowledge_proactive_agent_decided", {
+        suggestionId: candidate.id,
+        interventionId: payload.interventionId || "",
         suggestionKind: candidate.kind,
         action: decision.action,
+        why: decision.why || "",
         confidence: decision.confidence,
-        fallback: Boolean(payload.fallback)
+        fallback: Boolean(payload.fallback),
+        createdAt: candidate.createdAt || ""
       });
       return true;
     } catch (error) {
       if (error.name === "AbortError") return false;
       if (proactiveCoach.getSuggestion()?.id !== candidate.id) return false;
       if (candidate.kind !== "repeated_parameter") {
-        proactiveCoach.resolve("agent-silent", Date.now());
+        const resolution = proactiveCoach.resolve("agent-silent", Date.now()) || {};
         proactiveCandidateId = "";
         proactiveDecision = null;
         renderProactiveSuggestion();
         track("knowledge_proactive_fallback_silent", {
+          suggestionId: candidate.id,
           suggestionKind: candidate.kind,
-          reason: "server_context_unavailable"
+          unitId: candidate.unitId,
+          reason: "server_context_unavailable",
+          resolution: resolution.resolution || "agent-silent",
+          cooldownUntil: resolution.cooldownUntil || 0
         });
         return false;
       }
@@ -933,6 +980,26 @@
     const signal = event?.detail?.event;
     if (!proactiveCoach || !signal) return;
     proactiveCoach.consume(signal);
+    const resolution = proactiveCoach.takeResolution?.();
+    if (resolution?.resolution === "ignore") {
+      proactiveDecisionRequest?.abort();
+      proactiveDecisionRequest = null;
+      proactiveDecision = null;
+      proactiveCandidateId = "";
+      renderProactiveSuggestion();
+      track("knowledge_proactive_suggestion_ignored", {
+        suggestionId: resolution.id,
+        suggestionKind: resolution.kind,
+        unitId: resolution.unitId,
+        resolution: resolution.resolution,
+        dismissStreak: resolution.dismissStreak || 0,
+        cooldownUntil: resolution.cooldownUntil || 0,
+        createdAt: resolution.createdAt || "",
+        resolvedAt: resolution.resolvedAt || "",
+        latencyMs: resolution.latencyMs || 0,
+        ignoredByEventType: signal.eventType || ""
+      });
+    }
     if (signal.eventType === "quiz_submit_success") {
       window.setTimeout(() => {
         scheduleSync();
@@ -2747,6 +2814,19 @@
 
   global.KnowledgeAssistant = Object.freeze({
     sync,
+    resetLearningGeneration() {
+      const ownerKey = noteOwnerKey();
+      Notes.clearOwnerNotes?.(localStorage, ownerKey);
+      localStorage.removeItem(`${NOTE_MIGRATION_STORAGE_PREFIX}${ownerKey}`);
+      localStorage.removeItem(`${NOTE_PENDING_STORAGE_PREFIX}${ownerKey}`);
+      noteSyncRequestId += 1;
+      activeConversationId = "";
+      conversations = [];
+      messages = [];
+      noteSyncState = "local";
+      syncNoteHighlights();
+      render();
+    },
     open() {
       setOpen(true);
     },

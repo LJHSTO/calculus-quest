@@ -19,7 +19,8 @@
     quizQuestion: null,
     resourceResults: new Map(),
     slideZoom: 1,
-    answersVisible: false
+    answersVisible: false,
+    navigationCollapsed: true
   };
 
   const COURSEWARE_RESOURCE_VERSION = "20260727-courseware-interaction-v4";
@@ -57,6 +58,7 @@
     slideFullscreen: document.getElementById("slide-fullscreen"),
     viewerPane: document.querySelector(".viewer-pane"),
     frameShell: document.querySelector(".frame-shell"),
+    toggleNavigation: document.getElementById("toggle-navigation"),
     checkResources: document.getElementById("check-resources"),
     liveStatus: document.getElementById("live-status")
   };
@@ -117,6 +119,15 @@
   }
 
   function setGate(name, status, text) {
+    if (name === "resources") {
+      els.checkResources.textContent = status === "busy"
+        ? `检查中 ${text}`
+        : status === "ok"
+          ? `检查完成 · ${text}`
+          : status === "error"
+            ? `检查完成 · ${text}`
+            : "检查全部资源";
+    }
     const node = document.querySelector(`[data-gate="${name}"]`);
     if (!node) return;
     node.classList.remove("is-ok", "is-error", "is-busy");
@@ -126,6 +137,13 @@
 
   function announce(text) {
     els.liveStatus.textContent = text;
+  }
+
+  function setNavigationUi() {
+    document.body.classList.toggle("is-navigation-collapsed", state.navigationCollapsed);
+    els.toggleNavigation.textContent = state.navigationCollapsed ? "显示目录" : "隐藏目录";
+    els.toggleNavigation.setAttribute("aria-expanded", String(!state.navigationCollapsed));
+    scheduleSlidePreviewScale();
   }
 
   async function fetchJson(url) {
@@ -620,7 +638,7 @@
     const verticalPadding = (parseFloat(frameStyle.paddingTop) || 0) + (parseFloat(frameStyle.paddingBottom) || 0);
     const availableWidth = Math.max(120, els.slideFrame.clientWidth - horizontalPadding);
     const availableHeight = Math.max(120, els.slideFrame.clientHeight - verticalPadding);
-    const maxFitScale = viewerFullscreenActive() ? 3 : 1;
+    const maxFitScale = viewerFullscreenActive() ? 3 : 1.44;
     const fitScale = Math.min(maxFitScale, availableWidth / baseWidth, availableHeight / baseHeight);
     const scale = Math.max(0.25, Math.min(3, fitScale * state.slideZoom));
     const renderWidth = Number((baseWidth * scale).toFixed(3));
@@ -797,45 +815,60 @@
     return [...unique.values()];
   }
 
+  async function checkResourceSet(items, check, onProgress) {
+    let cursor = 0;
+    let passed = 0;
+    const worker = async () => {
+      while (cursor < items.length) {
+        const item = items[cursor++];
+        try {
+          if (await check(item)) passed += 1;
+        } catch {}
+        onProgress(cursor, items.length);
+      }
+    };
+    await Promise.all(new Array(Math.min(10, items.length)).fill(null).map(worker));
+    return { passed, failed: items.length - passed, total: items.length };
+  }
+
   async function checkAllResources() {
     const resources = allResources();
     if (!resources.length) return;
     els.checkResources.disabled = true;
     setGate("resources", "busy", `0/${resources.length}`);
-    let cursor = 0;
-    let passed = 0;
-    const worker = async () => {
-      while (cursor < resources.length) {
-        const candidate = resources[cursor++];
-        const key = resourceKey(candidate);
-        try {
+    try {
+      const result = await checkResourceSet(
+        resources,
+        async (candidate) => {
+          const key = resourceKey(candidate);
           if (candidate.type === "slide") {
             const ok = slideStructureState(candidate) === "ok";
             state.resourceResults.set(key, ok ? "ok" : "error");
-            if (ok) passed += 1;
-            setGate("resources", "busy", `${cursor}/${resources.length}`);
-            continue;
+            return ok;
           }
-          const url = resourceUrl(candidate);
-          const response = await fetch(url, { method: "HEAD", cache: "no-store" });
-          const ok = response.ok;
-          state.resourceResults.set(key, ok ? "ok" : "error");
-          if (ok) passed += 1;
-        } catch {
-          state.resourceResults.set(key, "error");
-        }
-        setGate("resources", "busy", `${cursor}/${resources.length}`);
-      }
-    };
-    await Promise.all(new Array(Math.min(10, resources.length)).fill(null).map(worker));
-    const failed = resources.length - passed;
-    setGate("resources", failed ? "error" : "ok", failed ? `${failed} 失败` : `${passed} 可用`);
-    els.checkResources.disabled = false;
-    renderResource();
-    announce(`资源检查完成，${passed} 个可用，${failed} 个失败。`);
+          const response = await fetch(resourceUrl(candidate), { method: "HEAD", cache: "no-store" });
+          state.resourceResults.set(key, response.ok ? "ok" : "error");
+          return response.ok;
+        },
+        (done, total) => setGate("resources", "busy", `${done}/${total}`)
+      );
+      setGate(
+        "resources",
+        result.failed ? "error" : "ok",
+        result.failed ? `${result.failed} 失败` : `${result.passed} 可用`
+      );
+      renderResource();
+      announce(`资源检查完成，${result.passed} 个可用，${result.failed} 个失败。`);
+    } finally {
+      els.checkResources.disabled = false;
+    }
   }
 
   els.checkResources.addEventListener("click", checkAllResources);
+  els.toggleNavigation.addEventListener("click", () => {
+    state.navigationCollapsed = !state.navigationCollapsed;
+    setNavigationUi();
+  });
   window.addEventListener("resize", scheduleSlidePreviewScale);
   if (typeof ResizeObserver !== "undefined") {
     new ResizeObserver(scheduleSlidePreviewScale).observe(els.slideFrame);
@@ -861,6 +894,7 @@
   els.slideFullscreen.addEventListener("click", toggleViewerFullscreen);
 
   async function init() {
+    setNavigationUi();
     setGate("route", "busy", "加载中");
     try {
       const [route, kgResponse] = await Promise.all([

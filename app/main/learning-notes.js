@@ -179,6 +179,13 @@
     return true;
   }
 
+  function clearOwnerNotes(storage, ownerKey) {
+    const owner = compactText(ownerKey, 180);
+    if (!owner) return false;
+    const notes = loadNotes(storage);
+    return saveNotes(storage, notes.filter((item) => item.ownerKey !== owner));
+  }
+
   function notesFor(storage, filter = {}) {
     const ownerKey = compactText(filter.ownerKey, 180);
     const threadKey = compactText(filter.threadKey, 240);
@@ -226,6 +233,7 @@
     NOTE_COLORS,
     STORAGE_KEY,
     SCHEMA_VERSION,
+    clearOwnerNotes,
     createNote,
     findMatchingNote,
     loadNotes,

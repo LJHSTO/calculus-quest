@@ -4,29 +4,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex,nofollow" />
-    <title>课程流程检视 | Calculus Quest</title>
+    <title>课件检视 | Calculus Quest</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
-    <link rel="stylesheet" href="app/flow-test/flow-test.css?v=20260727-courseware-interaction-v4" />
+    <link rel="stylesheet" href="app/flow-test/flow-test.css?v=20260813-platform-fixes-v1" />
   </head>
-  <body>
+  <body class="is-navigation-collapsed">
     <header class="app-header">
-      <div class="product-mark">
-        <span class="product-name">Calculus Quest</span>
-        <span class="product-mode">流程检视</span>
-      </div>
       <div class="header-actions">
+        <button id="toggle-navigation" class="command-button" type="button" aria-controls="chapter-list knowledge-list quiz-list" aria-expanded="false">显示目录</button>
         <button id="check-resources" class="command-button" type="button">检查全部资源</button>
       </div>
     </header>
-
-    <section class="validation-rail" aria-label="一致性状态">
-      <div class="rail-item" data-gate="route"><span class="rail-dot"></span><strong>课程路线</strong><span>加载中</span></div>
-      <div class="rail-connector"></div>
-      <div class="rail-item" data-gate="kg"><span class="rail-dot"></span><strong>知识图谱</strong><span>等待</span></div>
-      <div class="rail-connector"></div>
-      <div class="rail-item" data-gate="resources"><span class="rail-dot"></span><strong>资源</strong><span>待检查</span></div>
-    </section>
 
     <main class="workspace">
       <aside class="chapter-pane" aria-label="章节">
@@ -86,6 +75,6 @@
 
     <div id="live-status" class="sr-only" aria-live="polite"></div>
     <script src="lib/katex.min.js?v=0.17.0"></script>
-    <script src="app/flow-test/flow-test.js?v=20260727-courseware-interaction-v4"></script>
+    <script src="app/flow-test/flow-test.js?v=20260813-platform-fixes-v1"></script>
   </body>
 </html>

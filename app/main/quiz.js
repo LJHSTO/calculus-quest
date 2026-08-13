@@ -152,6 +152,7 @@ function renderQuestionReview({ question, result, index, unit }) {
           ${weakConceptLabels.length ? `<p><b>薄弱概念：</b>${escapeHtml(weakConceptLabels.join("、"))}</p>` : ""}
           ${result.aiReasoning ? `<p><b>评分依据：</b>${escapeHtml(result.aiReasoning)}</p>` : ""}
         </div>
+        ${ai.aiFailed ? `<button class="button soft" type="button" data-retry-ai-grade data-unit="${escapeHtml(unit?.id || result.unitId || "")}" data-question-id="${escapeHtml(question.id || result.questionId || "")}">重新批改</button>` : ""}
         <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示参考答案和解析</button>
         <div class="question-answer-hidden" data-answer-hidden style="display:none">
           <p><b>参考答案：</b>${renderInlineMath(referenceText)}</p>
@@ -205,6 +206,65 @@ function renderQuestionReview({ question, result, index, unit }) {
       ${renderQuizCoverage(question, unit)}
     </div>
   `;
+}
+
+async function retryFailedShortAnswer(unitId = "", questionId = "") {
+  const unit = getUnit(unitId);
+  if (!unit?.id || !questionId) return false;
+  const trackRegrade = (eventType, data = {}) => {
+    if (typeof analyticsTrack !== "function") return;
+    analyticsTrack(eventType, {
+      source: "quiz",
+      data: { unitId: unit.id, questionId, ...data }
+    });
+  };
+  trackRegrade("short_answer_regrade_requested");
+  const payload = await apiRequest("api/learning/grade", {
+    unitId: unit.id,
+    questions: [{ questionId }]
+  });
+  if (Array.isArray(payload?.results) && typeof agenticApplyGradingResults === "function") {
+    agenticApplyGradingResults(payload.results, unit);
+  }
+  const result = (payload?.results || []).find((item) => item.questionId === questionId) || null;
+  if (!result) {
+    trackRegrade("short_answer_regrade_failed", { reason: "empty_response" });
+    if (unit.id === currentUnitId) renderQuiz(unit);
+    addLog(`「${unit.label}」中的简答题没有收到有效的重新批改结果。`);
+    return false;
+  }
+  const failed = result && typeof QuizReviewState !== "undefined"
+    ? QuizReviewState.FAILURE_TYPES.has(String(result.errorType || "").toLowerCase())
+    : Boolean(result?.errorType && result.errorType !== "none");
+  if (failed) {
+    trackRegrade("short_answer_regrade_failed", {
+      reason: result.errorType || "grading_failed"
+    });
+    if (unit.id === currentUnitId) renderQuiz(unit);
+    addLog(`「${unit.label}」中的简答题重新批改仍未完成。`);
+    return false;
+  }
+
+  const path = typeof ensureAgenticPath === "function" ? ensureAgenticPath() : null;
+  if (
+    path?.pendingPlan?.unitId === unit.id
+    && path.pendingPlan.phase !== "grading_pending"
+    && typeof agenticBuildRecommendationAfterGrading === "function"
+  ) {
+    await agenticBuildRecommendationAfterGrading(
+      unit,
+      typeof agenticQuizRecordsForUnit === "function" ? agenticQuizRecordsForUnit(unit.id) : [],
+      null
+    );
+  }
+  if (unit.id === currentUnitId) renderQuiz(unit);
+  trackRegrade("short_answer_regrade_succeeded", {
+    score: result.score,
+    confidence: result.confidence,
+    provider: result.provider || ""
+  });
+  addLog(`「${unit.label}」中的简答题已重新批改。`);
+  return true;
 }
 
 function revealQuestionAnswer(button) {
@@ -284,6 +344,13 @@ function jumpToFeedback(unitId) {
   }
 }
 
+function quizResourceReviewContext(unitId = currentUnitId) {
+  const context = state.returnToQuiz;
+  if (!context?.unitId || !context?.targetUnitId || context.targetUnitId !== unitId) return null;
+  const quizUnit = getUnit(context.unitId);
+  return quizUnit ? { ...context, quizUnit } : null;
+}
+
 function findNavTargets(unitId) {
   const previous = typeof agenticPreviousUnlockedUnitBefore === "function"
     ? agenticPreviousUnlockedUnitBefore(unitId)
@@ -327,6 +394,14 @@ async function submitQuiz(unitId) {
   try {
   const unit = getUnit(unitId);
   if (!unit?.scene?.content?.questions) return;
+  if (
+    typeof agenticUnitCompletionAllowed === "function"
+    && !agenticUnitCompletionAllowed(unit.id)
+  ) {
+    feedback = document.querySelector(`#feedback-${unit.id}`);
+    if (feedback) feedback.textContent = "该测验当前仅供预览；接受学习建议后才能提交并记录本节。";
+    return;
+  }
   const questions = unit.scene.content.questions;
   feedback = document.querySelector(`#feedback-${unit.id}`);
   const missing = [];

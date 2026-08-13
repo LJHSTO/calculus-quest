@@ -2,6 +2,32 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const vm = require("node:vm");
+
+async function testEmptyRetryResultFails() {
+  const quizSource = fs.readFileSync(path.join(__dirname, "../app/main/quiz.js"), "utf8");
+  const retryStart = quizSource.indexOf("async function retryFailedShortAnswer");
+  const retryEnd = quizSource.indexOf("\nfunction revealQuestionAnswer", retryStart);
+  assert.ok(retryStart >= 0 && retryEnd > retryStart, "short-answer retry must remain testable");
+  const logs = [];
+  const context = vm.createContext({
+    getUnit: () => ({ id: "V14-C3-pre", label: "第三章前测" }),
+    apiRequest: async () => ({ results: [] }),
+    agenticApplyGradingResults: () => {},
+    currentUnitId: "V14-C3-pre",
+    renderQuiz: () => {},
+    addLog: (message) => logs.push(message)
+  });
+  vm.runInContext(quizSource.slice(retryStart, retryEnd), context, {
+    filename: "app/main/quiz.js"
+  });
+  assert.equal(
+    await context.retryFailedShortAnswer("V14-C3-pre", "GH-07-pre-q5"),
+    false,
+    "an empty grading response must not be reported as a successful retry"
+  );
+  assert.equal(logs.some((message) => message.includes("已重新批改")), false);
+}
 
 async function testDatabaseRecovery() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cq-short-answer-recovery-"));
@@ -108,6 +134,18 @@ async function testDatabaseRecovery() {
     assert.deepEqual(failed.slice(0, 5), ["ai_reviewed", 0, 0, 0, "api_error"]);
     assert.match(failed[5], /已先按 0 分计入/);
 
+    db.updateQuizResultAiGrading("GH-07-pre-q5", "recovery-user", {
+      unitId: "V14-C3-pre",
+      aiScore: 2,
+      aiConfidence: 0.98,
+      aiFeedback: "重新批改成功。",
+      aiErrorType: "none"
+    });
+    const retried = db.getDbSync().exec(
+      "SELECT status, is_correct, score, ai_score, ai_error_type FROM quiz_results WHERE id = 'failed-review'"
+    )[0].values[0];
+    assert.deepEqual(retried, ["ai_reviewed", 1, 2, 2, "none"], "explicit AI failures must be safely regradable");
+
     const pending = db.getDbSync().exec(
       "SELECT status, is_correct, ai_score, ai_error_type FROM quiz_results WHERE id = 'genuine-pending'"
     )[0].values[0];
@@ -132,6 +170,7 @@ async function testDatabaseRecovery() {
 }
 
 async function main() {
+  await testEmptyRetryResultFails();
   const reviewState = require("../app/main/quiz-review-state");
   const failedPending = {
     questionType: "short_answer",
@@ -161,6 +200,16 @@ async function main() {
   );
   assert.equal(
     reviewState.isPending({ status: "pending_review", isCorrect: null, aiErrorType: "" }),
+    true
+  );
+  assert.equal(
+    reviewState.aiReviewFailed({
+      status: "ai_reviewed",
+      isCorrect: false,
+      aiScore: 0,
+      aiErrorType: "empty_response",
+      aiFeedback: "模型接口返回了空文本。"
+    }),
     true
   );
   assert.equal(

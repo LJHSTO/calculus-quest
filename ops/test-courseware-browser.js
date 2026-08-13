@@ -418,9 +418,18 @@ async function assertSlidePreview(page, label) {
   assert.ok(await page.locator("#slide-frame .flow-slide-element").count(), `${label}: Flow Test slide is empty`);
 }
 
+async function ensureFlowNavigationOpen(page) {
+  const toggle = page.locator("#toggle-navigation");
+  await toggle.waitFor({ state: "visible", timeout: 10000 });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
+  }
+  await page.locator("[data-chapter-id]").first().waitFor({ state: "visible", timeout: 15000 });
+}
+
 async function auditFlowTest(page, entries) {
   await page.goto(`${basePath}/flow-test`, { waitUntil: "domcontentloaded" });
-  await page.locator("[data-chapter-id]").first().waitFor({ state: "visible", timeout: 15000 });
+  await ensureFlowNavigationOpen(page);
   assert.equal(await page.locator("[data-chapter-id]").count(), route.chapters.length);
 
   let slides = 0;
@@ -797,7 +806,7 @@ async function main() {
       if (targetSurface !== "formal") {
         if (targetKnowledgePointId) {
           await flowPage.goto(`${basePath}/flow-test`, { waitUntil: "domcontentloaded" });
-          await flowPage.locator("[data-chapter-id]").first().waitFor({ state: "visible", timeout: 15000 });
+          await ensureFlowNavigationOpen(flowPage);
         }
         await assertGh04Drag(flowPage, "flow");
         dragRegression.push("flow");
@@ -814,6 +823,14 @@ async function main() {
         fullscreen.push("flow-courseware");
       }
       if (targetSurface !== "flow") {
+        if (formalPage.url() === "about:blank") {
+          await prepareFormalPlayer(formalPage, registration.participant, registration.token);
+        }
+        assert.notEqual(
+          formalPage.url(),
+          "about:blank",
+          "formal host features must run against the prepared learning player"
+        );
         await verifyFormalHostFeatures(formalPage);
         fullscreen.push("formal-courseware", "formal-slide", "formal-learning");
       }

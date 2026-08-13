@@ -68,6 +68,8 @@ let learningSnapshotSyncChain = Promise.resolve();
 let learningSnapshotRetryTimer = null;
 let authTransitionInProgress = false;
 const learningEventRequests = new Set();
+const learningEventMaxDeliveryAttempts = 3;
+const learningEventRetryDelayMs = 750;
 
 function storageKeyFor(participantId) {
   return participantId ? `${STORAGE_KEY}:${participantId}` : STORAGE_KEY;
@@ -654,28 +656,44 @@ function showLogin(message = "") {
   els.loginIdentifier?.focus();
 }
 
-async function apiRequest(path, body = {}) {
+async function apiRequest(path, body = {}, options = {}) {
   const requestToken = typeof body?.token === "string" && body.token
     ? body.token
     : state.authToken;
-  const response = await fetch(appRelativeUrl(path), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(requestToken ? { Authorization: `Bearer ${requestToken}` } : {})
-    },
-    body: JSON.stringify(body)
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || payload.ok === false) {
-    const error = new Error(payload.message || "请求失败，请稍后再试。");
-    error.status = response.status;
-    error.field = payload.field || "";
-    error.code = payload.code || "";
-    error.retryAfterSeconds = payload.retryAfterSeconds || 0;
+  const timeoutMs = Math.max(0, Number(options.timeoutMs || 0));
+  const controller = timeoutMs ? new AbortController() : null;
+  const timeout = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
+  try {
+    const response = await fetch(appRelativeUrl(path), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(requestToken ? { Authorization: `Bearer ${requestToken}` } : {})
+      },
+      body: JSON.stringify(body),
+      signal: controller?.signal
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || payload.ok === false) {
+      const error = new Error(payload.message || "请求失败，请稍后再试。");
+      error.status = response.status;
+      error.field = payload.field || "";
+      error.code = payload.code || "";
+      error.retryAfterSeconds = payload.retryAfterSeconds || 0;
+      throw error;
+    }
+    return payload;
+  } catch (error) {
+    if (controller?.signal.aborted) {
+      const timeoutError = new Error("请求超时，请检查网络后重试。");
+      timeoutError.status = 408;
+      timeoutError.code = "request_timeout";
+      throw timeoutError;
+    }
     throw error;
+  } finally {
+    if (timeout) clearTimeout(timeout);
   }
-  return payload;
 }
 
 function learningSnapshot() {
@@ -687,6 +705,7 @@ function learningSnapshot() {
     quizAttempts: state.quizAttempts || {},
     submittedQuizzes: state.submittedQuizzes || [],
     selectedKnowledgeScenes: state.selectedKnowledgeScenes || {},
+    returnToQuiz: state.returnToQuiz || null,
     narrationCollapsed: Boolean(state.narrationCollapsed),
     logs: state.logs || [],
     note: state.note || "",
@@ -764,6 +783,7 @@ function applyServerLearningSnapshot(serverSnapshot, options = {}) {
   const incoming = serverSnapshot && typeof serverSnapshot === "object" ? serverSnapshot : null;
 
   if (replace) {
+    clearPreviewKnowledgeSceneSelections();
     Object.assign(state, learningDefaults(), incoming || {}, identity);
     normalizeLearningStateCompatibility(state);
     currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
@@ -786,10 +806,9 @@ function applyServerLearningSnapshot(serverSnapshot, options = {}) {
   state.logs = [...new Set([...(state.logs || []), ...(incoming.logs || [])])].slice(0, 100);
   state.quizAttempts = { ...(incoming.quizAttempts || {}), ...(state.quizAttempts || {}) };
   state.quizDrafts = { ...(incoming.quizDrafts || {}), ...(state.quizDrafts || {}) };
-  state.selectedKnowledgeScenes = {
-    ...(incoming.selectedKnowledgeScenes || {}),
-    ...(state.selectedKnowledgeScenes || {})
-  };
+  if (Object.prototype.hasOwnProperty.call(incoming, "selectedKnowledgeScenes")) {
+    state.selectedKnowledgeScenes = { ...(incoming.selectedKnowledgeScenes || {}) };
+  }
   if (!state.note && incoming.note) state.note = incoming.note;
   if (!state.agenticPath && incoming.agenticPath) state.agenticPath = incoming.agenticPath;
   if (!state.lastLearningContext && incoming.lastLearningContext) {
@@ -869,12 +888,15 @@ async function performLearningSnapshotSync(reason = "manual") {
       baseRevision: learningSnapshotRevision,
       reason,
       snapshot
-    });
+    }, { timeoutMs: 15000 });
     setLearningSnapshotVersion(payload);
     lastSnapshotJson = snapshotJson;
     clearLearningSnapshotRetry();
   } catch (error) {
-    if (error.code === "snapshot_generation_conflict") {
+    if (
+      error.code === "snapshot_generation_conflict"
+      || error.code === "snapshot_revision_conflict"
+    ) {
       clearLearningSnapshotRetry();
       await hydrateLearningState({ replace: true }).catch(() => {});
     } else if (
@@ -940,15 +962,61 @@ function resumeLearningSnapshotSync() {
   learningSnapshotSyncPaused = false;
 }
 
+function learningEventClientId() {
+  if (globalThis.crypto?.randomUUID) return `learning-${globalThis.crypto.randomUUID()}`;
+  return `learning-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+function learningEventDeliveryRetryable(error = {}) {
+  const status = Number(error.status || 0);
+  return !status || status === 408 || status === 425 || status === 429 || status >= 500;
+}
+
+async function deliverLearningEvent(item, token) {
+  let lastError = null;
+  for (let attempt = 0; attempt < learningEventMaxDeliveryAttempts; attempt += 1) {
+    try {
+      return await apiRequest("/api/learning/events", {
+        token,
+        events: [item]
+      }, { timeoutMs: 10000 });
+    } catch (error) {
+      lastError = error;
+      if (
+        !learningEventDeliveryRetryable(error)
+        || attempt + 1 >= learningEventMaxDeliveryAttempts
+      ) break;
+      const retryAfterMs = Math.max(0, Number(error.retryAfterSeconds || 0) * 1000);
+      const delayMs = Math.max(learningEventRetryDelayMs * (attempt + 1), retryAfterMs)
+        + Math.round(Math.random() * 250);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError || new Error("学习事件同步失败。");
+}
+
 async function trackLearningEvent(type, payload = {}, syncSnapshot = true) {
   if (!isSignedIn() || authTransitionInProgress) return;
   const token = state.authToken;
-  const request = apiRequest("/api/learning/event", {
-    token,
+  const clientAt = new Date().toISOString();
+  const eventPayload = payload && typeof payload === "object" && !Array.isArray(payload)
+    ? {
+        ...payload,
+        timing: {
+          ...(payload.timing || {}),
+          clientAt: payload.timing?.clientAt || clientAt
+        }
+      }
+    : { value: payload, timing: { clientAt } };
+  const request = deliverLearningEvent({
+    eventId: learningEventClientId(),
     type,
-    payload
-  });
+    payload: eventPayload
+  }, token);
   learningEventRequests.add(request);
+  if (syncSnapshot && state.authToken === token && !authTransitionInProgress) {
+    queueLearningSnapshot(type);
+  }
   try {
     await request;
   } catch (error) {
@@ -956,15 +1024,18 @@ async function trackLearningEvent(type, payload = {}, syncSnapshot = true) {
   } finally {
     learningEventRequests.delete(request);
   }
-  if (syncSnapshot && state.authToken === token && !authTransitionInProgress) {
-    queueLearningSnapshot(type);
-  }
 }
 
-async function waitForLearningEventSync() {
-  while (learningEventRequests.size) {
-    await Promise.allSettled(Array.from(learningEventRequests));
+async function waitForLearningEventSync(maxWaitMs = 20000) {
+  const deadline = Date.now() + Math.max(1000, Number(maxWaitMs || 0));
+  while (learningEventRequests.size && Date.now() < deadline) {
+    const remaining = deadline - Date.now();
+    await Promise.race([
+      Promise.allSettled(Array.from(learningEventRequests)),
+      new Promise((resolve) => setTimeout(resolve, Math.min(500, Math.max(0, remaining))))
+    ]);
   }
+  return learningEventRequests.size === 0;
 }
 
 async function loginParticipant(credentials = {}) {
@@ -992,6 +1063,7 @@ async function loginParticipant(credentials = {}) {
     let hasSavedState = isSameUser;
 
     if (!isSameUser) {
+      clearPreviewKnowledgeSceneSelections();
       const oldGeneric = localStorage.getItem(STORAGE_KEY);
       if (oldGeneric && !localStorage.getItem(storageKeyFor(newPid))) {
         localStorage.setItem(storageKeyFor(newPid), oldGeneric);
@@ -1055,14 +1127,21 @@ async function logoutParticipant() {
   authTransitionInProgress = true;
   try {
     clearTimeout(syncTimer);
-    if (typeof analyticsFlush === "function") await analyticsFlush();
-    await waitForLearningEventSync();
+    if (typeof analyticsEndParticipantSession === "function") {
+      analyticsEndParticipantSession("logout");
+    }
+    if (typeof analyticsFlushUntilSettled === "function") {
+      await analyticsFlushUntilSettled(20000);
+    } else if (typeof analyticsFlush === "function") {
+      await analyticsFlush();
+    }
+    await waitForLearningEventSync(20000);
     await syncLearningSnapshot("logout");
     await pauseLearningSnapshotSync();
     persistStateLocally();
     const token = state.authToken;
     if (token) {
-      await apiRequest("/api/auth/logout", { token }).catch(() => {});
+      await apiRequest("/api/auth/logout", { token }, { timeoutMs: 10000 }).catch(() => {});
     }
     stopNarrationQueue();
     state.participant = null;
@@ -1076,6 +1155,7 @@ async function logoutParticipant() {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(LAST_PARTICIPANT_KEY);
     // Reset runtime learning state to defaults
+    clearPreviewKnowledgeSceneSelections();
     Object.assign(state, learningDefaults(), { participant: null, authToken: "" });
     currentChapterId = chapters[0]?.id || "V14-C1";
     currentUnitId = "";
@@ -1627,13 +1707,39 @@ function knowledgeSceneDisplayLabel(typeOrId = "") {
 function selectedKnowledgeSceneType(unit) {
   if (!unit?.id) return "";
   state.selectedKnowledgeScenes = state.selectedKnowledgeScenes || {};
+  previewKnowledgeScenes = previewKnowledgeScenes || {};
   const types = knowledgeInteractionTypes(unit);
+  const canPersist = typeof agenticUnitCompletionAllowed !== "function"
+    || agenticUnitCompletionAllowed(unit.id);
   if (typeof KnowledgeSceneSelection !== "undefined") {
-    return KnowledgeSceneSelection.selectedType(unit.id, state.selectedKnowledgeScenes, types);
+    return KnowledgeSceneSelection.selectedTypeForAccess(
+      unit.id,
+      state.selectedKnowledgeScenes,
+      previewKnowledgeScenes,
+      types,
+      canPersist
+    );
   }
   const validIds = new Set(types.map((type) => type.id));
-  const existing = state.selectedKnowledgeScenes[unit.id];
+  const selections = canPersist ? state.selectedKnowledgeScenes : previewKnowledgeScenes;
+  const existing = selections[unit.id];
   return existing && validIds.has(existing) ? existing : "";
+}
+
+function clearPreviewKnowledgeSceneSelections(unitId = "") {
+  previewKnowledgeScenes = previewKnowledgeScenes || {};
+  if (unitId) {
+    delete previewKnowledgeScenes[unitId];
+    return;
+  }
+  previewKnowledgeScenes = {};
+}
+
+function clearKnowledgeSceneSelectionForUnit(unitId = "") {
+  if (!unitId) return;
+  state.selectedKnowledgeScenes = state.selectedKnowledgeScenes || {};
+  delete state.selectedKnowledgeScenes[unitId];
+  clearPreviewKnowledgeSceneSelections(unitId);
 }
 
 function setKnowledgeSceneType(unitId, typeId) {
@@ -1641,16 +1747,33 @@ function setKnowledgeSceneType(unitId, typeId) {
   if (!unit || unit.type !== "knowledge") return false;
   const types = knowledgeInteractionTypes(unit);
   state.selectedKnowledgeScenes = state.selectedKnowledgeScenes || {};
-  const shouldRecord = typeof KnowledgeSceneSelection !== "undefined"
-    ? KnowledgeSceneSelection.shouldRecordSelection(unit.id, state.selectedKnowledgeScenes, typeId, types)
-    : types.some((type) => type.id === typeId) && state.selectedKnowledgeScenes[unit.id] !== typeId;
-  if (!shouldRecord) return false;
+  previewKnowledgeScenes = previewKnowledgeScenes || {};
+  const canPersist = typeof agenticUnitCompletionAllowed !== "function"
+    || agenticUnitCompletionAllowed(unit.id);
+  const result = typeof KnowledgeSceneSelection !== "undefined"
+    ? KnowledgeSceneSelection.recordSelectionForAccess(
+        unit.id,
+        state.selectedKnowledgeScenes,
+        previewKnowledgeScenes,
+        typeId,
+        types,
+        canPersist
+      )
+    : (() => {
+        const target = canPersist ? state.selectedKnowledgeScenes : previewKnowledgeScenes;
+        const valid = types.some((type) => type.id === typeId);
+        if (!valid || target[unit.id] === typeId) return { changed: false, persisted: canPersist };
+        target[unit.id] = typeId;
+        if (canPersist) delete previewKnowledgeScenes[unit.id];
+        else delete state.selectedKnowledgeScenes[unit.id];
+        return { changed: true, persisted: canPersist };
+      })();
+  if (!result.changed) return false;
 
   if (currentUnitId === unit.id && typeof analyticsLeaveUnit === "function") {
     analyticsLeaveUnit("switch_knowledge_scene");
   }
-  state.selectedKnowledgeScenes[unit.id] = typeId;
-  saveState();
+  if (result.persisted) saveState();
   const selected = types.find((type) => type.id === typeId);
   const candidate = knowledgeResourceCandidate(unit, typeId);
   if (currentUnitId === unit.id && typeof analyticsResumeUnitTimer === "function") {
@@ -1664,8 +1787,9 @@ function setKnowledgeSceneType(unitId, typeId) {
     sceneType: typeId,
     sceneLabel: knowledgeSceneDisplayLabel(selected || typeId),
     resourceTitle: candidate?.title || "",
-    hasResource: Boolean(candidate)
-  });
+    hasResource: Boolean(candidate),
+    previewOnly: !result.persisted
+  }, result.persisted);
   analyticsTrack("knowledge_scene_select", {
     data: {
       unitId: unit.id,
@@ -1675,7 +1799,8 @@ function setKnowledgeSceneType(unitId, typeId) {
       sceneType: typeId,
       sceneLabel: knowledgeSceneDisplayLabel(selected || typeId),
       resourceTitle: candidate?.title || "",
-      hasResource: Boolean(candidate)
+      hasResource: Boolean(candidate),
+      previewOnly: !result.persisted
     }
   });
   return true;
