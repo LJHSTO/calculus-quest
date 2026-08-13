@@ -163,7 +163,7 @@ async function main() {
     },
     output_summary: {
       action: "continue",
-      qa: { pass: true }
+      qa: { approved: true }
     },
     confidence: 0.8,
     llm_provider: "mock",
@@ -184,7 +184,7 @@ async function main() {
     },
     output_summary: {
       action: "continue",
-      qa: { pass: true }
+      qa: { approved: true }
     },
     confidence: 0.8,
     llm_provider: "mock",
@@ -373,6 +373,10 @@ async function main() {
     recordCheck(failures, "Agent 建议后的测验次数按整份提交计数", () => {
       assert.equal(decisionTrace.rows.length, 2);
       assert.equal(decisionTrace.rows[0].outcome_quiz_count, 3);
+    });
+    recordCheck(failures, "QA approved 字段映射为管理员质量检查通过", () => {
+      assert.equal(decisionTrace.rows.every((row) => row.qa_pass === true), true);
+      assert.equal(todayDecisionTrace.rows.every((row) => row.qa_pass === true), true);
     });
     recordCheck(failures, "历史 UTC Agent 决策按北京时间日期纳入统计", () => {
       assert.equal(todayOverview.agentDecisionCount, 2);

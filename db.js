@@ -1015,7 +1015,7 @@ function getLearningAssistantMessages(userId, threadKey, limit = 80, conversatio
     `SELECT * FROM learning_assistant_messages
      WHERE user_id = ? AND learning_generation = ? AND thread_key = ?
        ${conversation ? "AND conversation_id = ?" : ""}
-     ORDER BY created_at DESC, id DESC
+     ORDER BY julianday(created_at) DESC, id DESC
      LIMIT ?`,
     [
       userId,
@@ -3720,7 +3720,7 @@ function agenticDecisionTrace(dates = {}) {
       unit_id: unitId,
       unit_label: unitMeta.unit_label,
       suggested_action: output.action || "",
-      qa_pass: output.qa?.pass ?? output.qa?.ok ?? null,
+      qa_pass: output.qa?.approved ?? output.qa?.pass ?? output.qa?.ok ?? null,
       evidence_snapshot_id: snapshot?.id || "",
       planner_strategy: planner.strategy || "",
       planner_action: planner.recommendedPath?.action || "",

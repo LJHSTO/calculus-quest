@@ -85,6 +85,43 @@ const index = buildAssessmentIndex(route);
 assert.equal(index.get("q-single").phase, "pre");
 assert.equal(index.get("q-single").chapterId, "C1");
 
+const retryableRows = [
+  {
+    question_id: "q-short",
+    chapter_id: "C1",
+    unit_id: "M1-pre",
+    response: "待批改回答",
+    status: "pending_review",
+    is_correct: -1,
+    ai_error_type: ""
+  },
+  {
+    question_id: "q-short",
+    chapter_id: "C1",
+    unit_id: "M1-pre",
+    response: "已经成功评分",
+    status: "ai_reviewed",
+    is_correct: 1,
+    ai_error_type: "none"
+  },
+  {
+    question_id: "q-short",
+    chapter_id: "C1",
+    unit_id: "M1-pre",
+    response: "旧模型失败",
+    status: "ai_reviewed",
+    is_correct: 0,
+    ai_error_type: "api_error"
+  }
+];
+assert.equal(authoritativeGradingQuestions(index, retryableRows).length, 3);
+assert.deepEqual(
+  authoritativeGradingQuestions(index, retryableRows, { retryableOnly: true })
+    .map((question) => question.response),
+  ["待批改回答", "旧模型失败"],
+  "automatic path planning must not regrade successful short answers"
+);
+
 assert.deepEqual(scoreObjectiveQuestion(index.get("q-single").question, "B"), {
   isCorrect: true,
   score: 10,

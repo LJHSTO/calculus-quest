@@ -491,7 +491,7 @@ assert.match(
 assert.match(stylesCss, /\.learning-shell\.is-local-fullscreen-target\s*\{/);
 assert.match(narrationSource, /scheduleLearningCanvasLayoutSync\("learning-fullscreen-toggle"\)/);
 assert.match(eventsSource, /scheduleLearningCanvasLayoutSync\("fullscreen-change"\)/);
-assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20260727-v7"/);
+assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20260813-v8"/);
 assert.match(contextSource, /function selectionLocator/);
 assert.match(contextSource, /function renderNotes/);
 assert.match(contextSource, /type:\s*"cq:notes-sync"/);

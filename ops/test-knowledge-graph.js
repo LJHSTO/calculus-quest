@@ -1,4 +1,5 @@
 const assert = require("assert");
+const fs = require("fs");
 const path = require("path");
 const { loadRoute, validateKnowledgeGraph } = require("../lib/kg-build");
 
@@ -32,6 +33,41 @@ const coachResult = coach.plan({ chapterId, currentUnitId, quizSummary });
 assert.equal(coachResult.ok, true, JSON.stringify(coachResult, null, 2));
 assert.ok(coachResult.skipCandidates.length > 0, "Coach should generate skip candidates from the pre-test result");
 assert.ok(coachResult.remediationCandidates.length > 0, "Coach should generate remediation candidates from the post-test result");
+assert.equal(
+  coach.recommendedAction(coachResult),
+  "remediate",
+  "the persisted Coach action must follow the bounded rule plan instead of the assessment model suggestion"
+);
+assert.equal(
+  coach.recommendedAction({
+    ok: true,
+    skipCandidates: [{ id: "skip-target" }],
+    remediationCandidates: [],
+    extensionCandidates: []
+  }),
+  "skip"
+);
+assert.equal(
+  coach.recommendedAction({
+    ok: true,
+    skipCandidates: [],
+    remediationCandidates: [],
+    extensionCandidates: [{ id: "extension-target" }]
+  }),
+  "extend"
+);
+assert.equal(
+  coach.recommendedAction({
+    ok: true,
+    skipCandidates: [],
+    remediationCandidates: [],
+    extensionCandidates: []
+  }),
+  "continue"
+);
+const serverSource = fs.readFileSync(path.join(rootDir, "server.js"), "utf8");
+assert.match(serverSource, /action:\s*coach\.recommendedAction\(result\.plan\)/);
+assert.match(serverSource, /action:\s*coach\.recommendedAction\(planResult\)/);
 const extensionResult = coach.plan({ chapterId: "V14-C3", currentUnitId: "V14-C3-post", quizSummary: { byChapter: [], wrongConcepts: [] } });
 assert.equal(extensionResult.ok, true, JSON.stringify(extensionResult, null, 2));
 assert.ok(extensionResult.extensionCandidates.length > 0, "Coach should generate an extension candidate from graph edges");

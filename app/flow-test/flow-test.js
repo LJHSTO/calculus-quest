@@ -24,7 +24,7 @@
   };
 
   const COURSEWARE_RESOURCE_VERSION = "20260727-courseware-interaction-v4";
-  const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260727-v7";
+  const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260813-v8";
   const FLOW_TEST_ADMIN_TOKEN_KEY = "cq-flow-test-admin-token";
 
   const BASE_PATH = (() => {

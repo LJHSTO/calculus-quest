@@ -36,8 +36,16 @@ npm start
 | OPENAI_COMPATIBLE_BASE_URL | — | API 基础地址 |
 | OPENAI_COMPATIBLE_API_KEY | — | API 密钥 |
 | OPENAI_COMPATIBLE_MODEL | — | 默认模型名 |
+| GRADING_LLM_PROVIDER | 跟随 LLM_PROVIDER | 历史简答题重评使用的评分提供方 |
+| GRADING_BASE_URL | 跟随默认模型接口 | 历史简答题重评专用 API 地址 |
+| GRADING_API_KEY | 跟随默认模型密钥 | 历史简答题重评专用密钥 |
 | GRADING_MODEL | — | 简答题批改专用模型 |
-| ASSESSMENT_MODEL | — | 评估生成专用模型 |
+| GRADING_TIMEOUT_MS | 25000 | 单道简答题模型评分超时毫秒数 |
+| ASSESSMENT_LLM_ENABLED | false | 是否启用模型生成学习诊断；默认使用固定规则 |
+| ASSESSMENT_MODEL | — | 学习诊断专用模型 |
+| ASSESSMENT_TIMEOUT_MS | 12000 | 学习诊断模型超时毫秒数 |
+| COACH_NARRATION_MODEL | 跟随默认模型 | Coach 建议叙述专用模型 |
+| COACH_NARRATION_TIMEOUT_MS | 12000 | Coach 建议叙述超时毫秒数 |
 | ADMIN_TOKEN | — | 管理后台登录密码 |
 | APP_VERSION | package.json 版本 | 写入新交互事件的发布版本 |
 | EXPERIMENT_ID | — | 研究实验编号 |
@@ -46,7 +54,11 @@ npm start
 
 当 LLM_PROVIDER=mock 时，简答题统一按 0 分兜底并标记需人工复核，不会卡住学习流程。
 
-生产站点部署到 `/calculus_quest/` 时，设置 `BASE_PATH=/calculus_quest`。服务兼容 Nginx 保留或剥离前缀两种转发方式；生产发布、数据库迁移、备份与回退步骤见 `docs/production-release.md`。
+生产站点部署到 `/calculus_quest/` 时，设置 `BASE_PATH=/calculus_quest`。服务兼容 Nginx 保留或剥离前缀两种转发方式。
+
+Linux 一键部署继续使用 `./install_run.sh [端口]`，未传端口时为兼容历史服务器使用 3789。部署脚本要求 `.env` 中设置 `NODE_ENV=production` 和仓库外绝对 `DB_PATH`；它会先安装锁定依赖并运行部署检查，再核验并优雅停止本项目进程，生成数据库报告和备份，启动后验证健康接口。脚本不会按端口强杀未知进程，也不会使用 `kill -9`。
+
+首次从旧版仓库内数据库迁移时，不能只覆盖 `.env`：应先停止旧服务并确认数据库已落盘，再把现有 `data/calculus-quest.db` 备份并复制到 `.env` 指定的仓库外路径。完成这一次迁移后，后续发布只需保留服务器 `.env` 和外部数据库，再拉取代码并运行部署脚本。
 
 ## 课程数据
 

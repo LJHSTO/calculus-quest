@@ -3465,7 +3465,11 @@ async function handleApi(req, res, url) {
           .slice(-80);
         const result = await orchestrator.orchestrate({
           chapterId, currentUnitId, quizResults: filtered,
-          quizQuestions: courseAssessment.authoritativeGradingQuestions(assessmentIndex, filtered),
+          quizQuestions: courseAssessment.authoritativeGradingQuestions(
+            assessmentIndex,
+            filtered,
+            { retryableOnly: true }
+          ),
           interactionEvidence: body.interactionEvidence && typeof body.interactionEvidence === "object" ? body.interactionEvidence : null,
           interactionEvents: recentEvents,
           completedUnitIds: Array.isArray(body.completedUnitIds) ? body.completedUnitIds.slice(0, 500) : [],
@@ -3477,7 +3481,7 @@ async function handleApi(req, res, url) {
         db.insertAgentDecision({
           id: decisionId, user_id: auth.participant.id, agent_type: "orchestrator",
           decision_type: "plan", input_summary: { chapterId, currentUnitId },
-          output_summary: { action: result.assessment?.suggestedAction, qa: result.qa, planner: result.planner, interactionEvidence: result.interactionEvidence },
+          output_summary: { action: coach.recommendedAction(result.plan), qa: result.qa, planner: result.planner, interactionEvidence: result.interactionEvidence },
           confidence: result.assessment?.confidenceLevel || 0, llm_provider: result.provider,
           latency_ms: result.latencyMs || 0, created_at: decisionCreatedAt
         });
@@ -3497,7 +3501,7 @@ async function handleApi(req, res, url) {
           db.insertAgentDecision({
             id: decisionId, user_id: auth.participant.id, agent_type: "orchestrator",
             decision_type: "plan_fallback", input_summary: { chapterId, currentUnitId },
-            output_summary: { action: planResult?.suggestedAction || "", error: err.message, interactionEvidence: fallbackEvidence },
+            output_summary: { action: coach.recommendedAction(planResult), error: err.message, interactionEvidence: fallbackEvidence },
             confidence: 0, llm_provider: provider, latency_ms: 0, created_at: decisionCreatedAt
           });
           db.insertInteractionEvidenceBatch(auth.participant.id, decisionId, chapterId, fallbackEvidence, decisionCreatedAt);

@@ -15,6 +15,7 @@
   let listenersActive = false;
   let selectionReportTimer = null;
   let pickPreview = null;
+  let coursewareLayoutRepairScheduled = false;
   const candidateElements = new Set();
   const noteFallbackElements = new Set();
   let renderedNotes = [];
@@ -71,6 +72,122 @@
 
   function post(type, payload = {}) {
     PARENT.postMessage({ type, ...payload }, "*");
+  }
+
+  function removeImportantInlineProperties(element, properties = []) {
+    if (!element?.style) return false;
+    let repaired = false;
+    properties.forEach((property) => {
+      if (element.style.getPropertyPriority(property) !== "important") return;
+      element.style.removeProperty(property);
+      repaired = true;
+    });
+    return repaired;
+  }
+
+  function repairRiskMasterLayout() {
+    const container = document.querySelector("#game-container");
+    const chart = document.querySelector("#capitalChart");
+    const chartPanel = chart?.closest?.("#chart-panel");
+    const mainArea = document.querySelector("#main-area");
+    const contractArea = document.querySelector("#contract-area");
+    const controls = document.querySelector("#controls-panel");
+    const reserveSlider = document.querySelector("#reserve-slider");
+    if (
+      !container
+      || !chart
+      || !chartPanel
+      || !mainArea
+      || !contractArea
+      || !controls
+      || !reserveSlider
+      || mainArea.parentElement !== container
+      || controls.parentElement !== container
+      || chartPanel.parentElement !== mainArea
+      || contractArea.parentElement !== mainArea
+      || !controls.contains(reserveSlider)
+    ) return false;
+
+    let repaired = false;
+    repaired = removeImportantInlineProperties(container, [
+      "display",
+      "flex-direction",
+      "flex-wrap",
+      "align-items",
+      "width",
+      "max-width",
+      "min-width",
+      "min-height",
+      "height",
+      "max-height",
+      "overflow"
+    ]) || repaired;
+    repaired = removeImportantInlineProperties(controls, [
+      "flex",
+      "width",
+      "min-width",
+      "max-width",
+      "height",
+      "min-height",
+      "max-height",
+      "align-self",
+      "order",
+      "margin",
+      "overflow-x",
+      "overflow-y"
+    ]) || repaired;
+    repaired = removeImportantInlineProperties(mainArea, [
+      "flex",
+      "width",
+      "min-width",
+      "min-height",
+      "height",
+      "max-height",
+      "align-self",
+      "order",
+      "margin",
+      "overflow"
+    ]) || repaired;
+    repaired = removeImportantInlineProperties(chartPanel, [
+      "min-width",
+      "min-height",
+      "height",
+      "max-height",
+      "align-self"
+    ]) || repaired;
+    repaired = removeImportantInlineProperties(chart, [
+      "display",
+      "width",
+      "height",
+      "max-width",
+      "max-height"
+    ]) || repaired;
+
+    [
+      [container, "data-openmaic-responsive-layout"],
+      [controls, "data-openmaic-responsive-panel"],
+      [controls, "data-openmaic-overlay-panel"],
+      [mainArea, "data-openmaic-responsive-canvas"]
+    ].forEach(([element, attribute]) => {
+      if (!element.hasAttribute(attribute)) return;
+      element.removeAttribute(attribute);
+      repaired = true;
+    });
+    return repaired;
+  }
+
+  function scheduleCoursewareLayoutRepair() {
+    if (coursewareLayoutRepairScheduled) return;
+    coursewareLayoutRepairScheduled = true;
+    window.requestAnimationFrame(() => {
+      repairRiskMasterLayout();
+      window.requestAnimationFrame(repairRiskMasterLayout);
+      window.setTimeout(repairRiskMasterLayout, 80);
+      window.setTimeout(() => {
+        repairRiskMasterLayout();
+        coursewareLayoutRepairScheduled = false;
+      }, 380);
+    });
   }
 
   function applyHostLayout(payload = {}) {
@@ -850,8 +967,16 @@
   document.addEventListener("change", reportParameterCommit, true);
   document.addEventListener("change", reportGenericChange, true);
   document.addEventListener("submit", reportSubmit, true);
+  document.addEventListener("click", scheduleCoursewareLayoutRepair, true);
+  window.addEventListener("resize", scheduleCoursewareLayoutRepair);
+  window.addEventListener("cq:host-layout", scheduleCoursewareLayoutRepair);
+  window.addEventListener("openmaic:courseware-layout", scheduleCoursewareLayoutRepair);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", scheduleCoursewareLayoutRepair, { once: true });
+  }
 
   injectStyle();
+  scheduleCoursewareLayoutRepair();
   window.requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
   post("cq:bridge-ready", {
     version: 5,

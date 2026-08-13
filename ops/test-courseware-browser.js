@@ -10,6 +10,7 @@ const root = path.resolve(__dirname, "..");
 const route = require("../data/multi-scene-learning-route.json");
 const basePath = "/calculus_quest";
 const targetKnowledgePointId = String(process.env.COURSEWARE_BROWSER_TARGET || "").trim();
+const targetChapterId = String(process.env.COURSEWARE_BROWSER_CHAPTER || "").trim();
 const targetSurface = String(process.env.COURSEWARE_BROWSER_SURFACE || "both").trim().toLowerCase();
 const targetHostFeatures = process.env.COURSEWARE_BROWSER_HOST_FEATURES === "1";
 const browserCandidates = [
@@ -65,9 +66,10 @@ function coursewareEntries() {
       }))
     ))
   ));
-  return targetKnowledgePointId
-    ? entries.filter((entry) => entry.knowledgePoint.id === targetKnowledgePointId)
-    : entries;
+  return entries.filter((entry) => (
+    (!targetKnowledgePointId || entry.knowledgePoint.id === targetKnowledgePointId)
+    && (!targetChapterId || entry.chapter.id === targetChapterId)
+  ));
 }
 
 function encodedResourcePath(candidate) {
@@ -150,12 +152,52 @@ async function waitForUsableBox(locator, options = {}) {
   const minWidth = Number(options.minWidth || 0);
   const minHeight = Number(options.minHeight || 0);
   const deadline = Date.now() + timeoutMs;
+  let lastBox = null;
   while (Date.now() < deadline) {
     const box = await locator.boundingBox();
+    lastBox = box;
     if (box && box.width >= minWidth && box.height >= minHeight) return box;
     await new Promise((resolve) => setTimeout(resolve, 120));
   }
-  assert.fail("element did not reach a usable layout size");
+  const diagnostic = await locator.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const parentRect = element.parentElement?.getBoundingClientRect?.();
+    const style = getComputedStyle(element);
+    const parentStyle = element.parentElement ? getComputedStyle(element.parentElement) : null;
+    return {
+      element: {
+        tagName: element.tagName,
+        id: element.id,
+        className: String(element.className || ""),
+        rect: {
+          width: Math.round(rect.width * 10) / 10,
+          height: Math.round(rect.height * 10) / 10
+        },
+        display: style.display,
+        visibility: style.visibility,
+        position: style.position,
+        flex: style.flex,
+        minWidth: style.minWidth,
+        maxWidth: style.maxWidth
+      },
+      parent: parentRect ? {
+        tagName: element.parentElement?.tagName,
+        id: element.parentElement?.id || "",
+        className: String(element.parentElement?.className || ""),
+        rect: {
+          width: Math.round(parentRect.width * 10) / 10,
+          height: Math.round(parentRect.height * 10) / 10
+        },
+        display: parentStyle?.display || "",
+        flex: parentStyle?.flex || ""
+      } : null
+    };
+  }).catch(() => null);
+  assert.fail(`element did not reach a usable layout size ${JSON.stringify({
+    required: { minWidth, minHeight },
+    lastBox,
+    diagnostic
+  })}`);
 }
 
 async function frameHealth(frame, label, options = {}) {
@@ -382,7 +424,7 @@ async function exerciseBasicControls(frame, label) {
       coveredControls.push(pointerHit);
       continue;
     }
-    await button.click({ timeout: 2500, force: true });
+    await button.evaluate((element) => element.click());
     await new Promise((resolve) => setTimeout(resolve, 20));
     coveredControls.length = 0;
     break;
@@ -438,6 +480,10 @@ async function auditFlowTest(page, entries) {
   for (const entry of entries) {
     if (entry.chapter.id !== activeChapterId) {
       if (activeChapterId) console.log(`[Flow Test] ${activeChapterId} 完成`);
+      if (activeChapterId) {
+        await page.goto(`${basePath}/flow-test`, { waitUntil: "domcontentloaded" });
+        await ensureFlowNavigationOpen(page);
+      }
       activeChapterId = entry.chapter.id;
       await page.locator(`[data-chapter-id="${entry.chapter.id}"]`).click();
     }
@@ -724,8 +770,10 @@ async function main() {
   const entries = coursewareEntries();
   assert.ok(entries.length, targetKnowledgePointId
     ? `knowledge point was not found: ${targetKnowledgePointId}`
-    : "courseware route has no knowledge points");
-  if (!targetKnowledgePointId) {
+    : targetChapterId
+      ? `chapter was not found: ${targetChapterId}`
+      : "courseware route has no knowledge points");
+  if (!targetKnowledgePointId && !targetChapterId) {
     assert.equal(entries.length, 72);
     assert.equal(entries.reduce((sum, entry) => sum + entry.resources.length, 0), 288);
   }
@@ -801,7 +849,10 @@ async function main() {
     if (targetSurface !== "formal") {
       flowResult = await auditFlowTest(flowPage, entries);
     }
-    const shouldCheckGh04Drag = !targetKnowledgePointId || targetKnowledgePointId === "GH-04-K01";
+    const shouldCheckGh04Drag = (
+      (!targetKnowledgePointId && (!targetChapterId || targetChapterId === "V14-C2"))
+      || targetKnowledgePointId === "GH-04-K01"
+    );
     if (shouldCheckGh04Drag) {
       if (targetSurface !== "formal") {
         if (targetKnowledgePointId) {
@@ -817,7 +868,7 @@ async function main() {
         dragRegression.push("formal");
       }
     }
-    if (!targetKnowledgePointId || targetHostFeatures) {
+    if ((!targetKnowledgePointId && !targetChapterId) || targetHostFeatures) {
       if (targetSurface !== "formal") {
         await verifyFlowHostFeatures(flowPage);
         fullscreen.push("flow-courseware");
@@ -846,6 +897,7 @@ async function main() {
       fullscreen,
       basePath,
       targetKnowledgePointId: targetKnowledgePointId || null,
+      targetChapterId: targetChapterId || null,
       targetSurface
     }, null, 2));
   } finally {

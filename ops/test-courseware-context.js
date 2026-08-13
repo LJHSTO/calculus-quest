@@ -1,4 +1,6 @@
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const {
   contextThreadKey,
   createObjectPickStateMachine,
@@ -10,6 +12,14 @@ const {
   normalizeContextRef,
   suggestionsForContext
 } = require("../app/main/courseware-context");
+
+const bridgeSource = fs.readFileSync(
+  path.join(__dirname, "..", "app", "main", "courseware-bridge.js"),
+  "utf8"
+);
+assert.match(bridgeSource, /function repairRiskMasterLayout/);
+assert.match(bridgeSource, /#reserve-slider/);
+assert.match(bridgeSource, /scheduleCoursewareLayoutRepair/);
 
 const normalized = normalizeContextRef({
   schemaVersion: 99,
