@@ -77,6 +77,11 @@ esac
 [[ -f "${DB_PATH_ABS}" ]] || fail "数据库文件不存在：${DB_PATH_ABS}（首次部署请先把历史库迁移到该位置）。"
 export DB_PATH="${DB_PATH_ABS}"
 
+# shell 里遗留的 HOST/PORT 会盖掉 .env，曾导致服务绑到 cpu3(127.0.1.1) 而健康检查连不上。
+if [[ -n "${ENV_HOST}" && "${HOST}" != "${ENV_HOST}" ]]; then
+  log "警告：shell 环境变量 HOST=${HOST} 覆盖了 .env 中的 HOST=${ENV_HOST}。"
+fi
+
 log "工作目录：${APP_DIR}"
 log "运行配置：PORT=${PORT} HOST=${HOST} BASE_PATH=${BASE_PATH}"
 log "数据库：${DB_PATH_ABS}"
@@ -141,7 +146,16 @@ log "数据库备份完成：${BACKUP_PATH}"
 
 PUBLIC_BASE_PATH="/${BASE_PATH#/}"
 PUBLIC_BASE_PATH="${PUBLIC_BASE_PATH%/}"
-HEALTH_URL="http://127.0.0.1:${PORT}${PUBLIC_BASE_PATH}/api/health"
+
+# 健康检查必须打到 server.js 实际绑定的地址：绑通配地址时回落到 127.0.0.1，
+# 否则直连 HOST 本身（例如 HOST=cpu3 只监听 127.0.1.1，写死 127.0.0.1 会连不上）。
+case "${HOST}" in
+  "" | "0.0.0.0" | "*") HEALTH_HOST="127.0.0.1" ;;
+  "::" | "[::]") HEALTH_HOST="[::1]" ;;
+  *:*) HEALTH_HOST="[${HOST}]" ;;
+  *) HEALTH_HOST="${HOST}" ;;
+esac
+HEALTH_URL="http://${HEALTH_HOST}:${PORT}${PUBLIC_BASE_PATH}/api/health"
 
 log "启动 Calculus Quest，健康检查：${HEALTH_URL}"
 node server.js "${PORT}" &
