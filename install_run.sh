@@ -52,7 +52,10 @@ DB_PATH_VALUE="$(env_value DB_PATH)"
 
 # 保留历史一键部署的 3789 默认端口；可用第一个参数或 PORT 覆盖。
 PORT="${1:-${PORT:-${ENV_PORT:-3789}}}"
-export HOST="${HOST:-${ENV_HOST:-0.0.0.0}}"
+# HOST 以 .env 为准：shell 里漏进来的 HOST（例如集群环境设的 HOST=cpu3，
+# 解析到 127.0.1.1）会让服务绑到非预期地址，端口转发和健康检查都连不上。
+SHELL_HOST="${HOST:-}"
+export HOST="${ENV_HOST:-${SHELL_HOST:-127.0.0.1}}"
 export BASE_PATH="${BASE_PATH:-${ENV_BASE_PATH:-/calculus_quest}}"
 export APP_VERSION="${APP_VERSION:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
 
@@ -77,9 +80,8 @@ esac
 [[ -f "${DB_PATH_ABS}" ]] || fail "数据库文件不存在：${DB_PATH_ABS}（首次部署请先把历史库迁移到该位置）。"
 export DB_PATH="${DB_PATH_ABS}"
 
-# shell 里遗留的 HOST/PORT 会盖掉 .env，曾导致服务绑到 cpu3(127.0.1.1) 而健康检查连不上。
-if [[ -n "${ENV_HOST}" && "${HOST}" != "${ENV_HOST}" ]]; then
-  log "警告：shell 环境变量 HOST=${HOST} 覆盖了 .env 中的 HOST=${ENV_HOST}。"
+if [[ -n "${SHELL_HOST}" && "${SHELL_HOST}" != "${HOST}" ]]; then
+  log "提示：已忽略 shell 环境变量 HOST=${SHELL_HOST}，按 .env 绑定 ${HOST}。"
 fi
 
 log "工作目录：${APP_DIR}"
