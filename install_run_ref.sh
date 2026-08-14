@@ -56,8 +56,26 @@ export HOST="${HOST:-${ENV_HOST:-0.0.0.0}}"
 export BASE_PATH="${BASE_PATH:-${ENV_BASE_PATH:-/calculus_quest}}"
 export APP_VERSION="${APP_VERSION:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
 
+# 一键部署始终按生产模式运行，与 db.js 的 assertProductionDatabasePath 保持一致。
+if [[ -n "${NODE_ENV_VALUE}" && "${NODE_ENV_VALUE}" != "production" ]]; then
+  log "提示：.env 中 NODE_ENV=${NODE_ENV_VALUE}，一键部署将强制覆盖为 production。"
+fi
+export NODE_ENV=production
 
-
+# DB_PATH 必须是仓库外的绝对路径，避免 git pull / 重装依赖时覆盖生产数据。
+DB_PATH_INPUT="${DB_PATH:-${DB_PATH_VALUE}}"
+[[ -n "${DB_PATH_INPUT}" ]] || fail "DB_PATH 必须是仓库外的绝对路径：请先在 .env 中设置 DB_PATH。"
+[[ "${DB_PATH_INPUT}" == /* ]] || fail "DB_PATH 必须是仓库外的绝对路径：${DB_PATH_INPUT} 不是绝对路径。"
+DB_DIR_ABS="$(cd "$(dirname "${DB_PATH_INPUT}")" 2>/dev/null && pwd -P)" \
+  || fail "DB_PATH 所在目录不存在：$(dirname "${DB_PATH_INPUT}")"
+DB_PATH_ABS="${DB_DIR_ABS%/}/$(basename "${DB_PATH_INPUT}")"
+case "${DB_PATH_ABS}" in
+  "${APP_DIR}" | "${APP_DIR}"/*)
+    fail "DB_PATH 必须是仓库外的绝对路径：${DB_PATH_ABS} 位于代码仓库 ${APP_DIR} 内。"
+    ;;
+esac
+[[ -f "${DB_PATH_ABS}" ]] || fail "数据库文件不存在：${DB_PATH_ABS}（首次部署请先把历史库迁移到该位置）。"
+export DB_PATH="${DB_PATH_ABS}"
 
 
 log "工作目录：${APP_DIR}"
