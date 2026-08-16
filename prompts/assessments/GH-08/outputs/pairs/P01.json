@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q1",
+    "type": "single",
+    "question": "某工厂生产一种产品，其每日总成本由两种原料的消耗量决定。若设原料甲的日消耗量为 x 吨，原料乙的日消耗量为 y 吨，总成本为 C 万元。在评估生产方案时，我们需要根据这两种原料的不同组合来计算相应的总成本。关于这一成本计算过程所对应的数学模型，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "这是一个多输入函数，因为总成本 C 的值依赖于 x 和 y 两个独立变量的取值"
+      },
+      {
+        "value": "B",
+        "label": "这是一个多输入函数，因为 x 和 y 的取值都会随总成本 C 的变化而改变"
+      },
+      {
+        "value": "C",
+        "label": "这不是多输入函数，因为总成本 C 只能是一个确定的数值，不能作为函数的因变量"
+      },
+      {
+        "value": "D",
+        "label": "这不是多输入函数，因为 x 和 y 两种原料在同一个生产过程中被同时使用，不能拆分成两个独立的输入"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "多输入函数的核心含义是因变量的值由两个或两个以上的自变量共同决定。在该情境中，总成本 C 是因变量，原料甲消耗量 x 和原料乙消耗量 y 是自变量，给定一对 (x, y) 的值就能计算出一个对应的 C 值，这正符合多输入函数的定义。选项 B 颠倒了自变量与因变量的依赖关系；选项 C 误以为因变量不能是确定的数值；选项 D 混淆了物理上的混合使用与数学上的独立输入变量。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q1",
+    "type": "single",
+    "question": "气象观测站记录某地区的温度变化情况。已知该地区的实时温度 T 受到经度 u 和纬度 v 的共同影响，只要输入一组具体的地理坐标 (u, v)，就能对应测得一个明确的温度值 T。针对这一温度测量机制所体现的数学特征，下列判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "温度 T 作为一个单值结果出现，说明该机制不能建立多输入函数模型"
+      },
+      {
+        "value": "B",
+        "label": "经度 u 和纬度 v 在地理空间中相互交织，无法作为两个独立的输入变量来构建多输入函数"
+      },
+      {
+        "value": "C",
+        "label": "由于温度 T 的数值是由经度 u 和纬度 v 两个变量共同决定的，该机制体现了多输入函数的特征"
+      },
+      {
+        "value": "D",
+        "label": "由于温度 T 会随经度 u 或纬度 v 的改变而改变，说明 u 和 v 是因变量，该机制不属于多输入函数"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "多输入函数强调因变量的值由多个自变量共同决定。在该情境中，温度 T 是因变量，经度 u 和纬度 v 是自变量，给定坐标 (u, v) 就能测得对应的 T 值，符合多输入函数的核心含义。选项 A 误以为因变量是单值就不能作为多输入函数的输出；选项 B 混淆了空间位置的关联性与数学上独立输入变量的设定；选项 D 颠倒了自变量与因变量的逻辑关系。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  }
+}

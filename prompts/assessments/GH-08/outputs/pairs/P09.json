@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q9",
+    "type": "multiple",
+    "question": "已知函数 f(x, y) = x^2 + 3xy - y^2，关于其在点 (1, 2) 处的偏导数，下列说法中所有正确说法是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "f_x(1, 2) 的值等于 8"
+      },
+      {
+        "value": "B",
+        "label": "f_y(1, 2) 的值等于 4"
+      },
+      {
+        "value": "C",
+        "label": "计算 f_x(1, 2) 时，应将 y 视为常数，对 x 求导"
+      },
+      {
+        "value": "D",
+        "label": "计算 f_y(1, 2) 时，应将 x 视为变量，对 y 求导"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "偏导数 f_x 是将 y 视为常数对 x 求导，f_x = 2x + 3y，代入 (1, 2) 得 2(1) + 3(2) = 8，故 A、C 正确。f_y 是将 x 视为常数对 y 求导，f_y = 3x - 2y，代入 (1, 2) 得 3(1) - 2(2) = -1，故 B 错误。计算 f_y 时应将 x 视为常数，故 D 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-08-K03"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "partial-correct-set"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q9",
+    "type": "multiple",
+    "question": "对于函数 z(x, y) = 2x^2 - 3xy + y^3，在考察点 (2, 1) 处的偏导数时，下列选项中所有错误说法是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "求 z_x(2, 1) 的过程中，变量 y 被当作常数处理"
+      },
+      {
+        "value": "B",
+        "label": "求 z_y(2, 1) 的过程中，变量 x 被当作常数处理"
+      },
+      {
+        "value": "C",
+        "label": "z_x(2, 1) 的计算结果为 1"
+      },
+      {
+        "value": "D",
+        "label": "z_y(2, 1) 的计算结果为 0"
+      }
+    ],
+    "answer": [
+      "C",
+      "D"
+    ],
+    "analysis": "求 z_x 时将 y 视为常数对 x 求导，z_x = 4x - 3y，代入 (2, 1) 得 4(2) - 3(1) = 5，故 A 正确，C 结果错误。求 z_y 时将 x 视为常数对 y 求导，z_y = -3x + 3y^2，代入 (2, 1) 得 -3(2) + 3(1)^2 = -3，故 B 正确，D 结果错误。题目要求选出所有错误说法，因此选 C 和 D。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-08-K03"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "partial-correct-set"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q3",
+    "type": "single",
+    "question": "某物理实验中，一个长方体无盖水箱的底面边长固定为 x=2 且 y=3。水箱的侧面积 S 由水箱的高度 h 决定，计算关系为 S(h)=2xh+2yh。若改变水箱高度 h，侧面积 S 会随之变化。关于 S(h) 的性质，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "S(h) 是一个多输入函数，因为侧面积取决于 x、y 和 h 三个变量"
+      },
+      {
+        "value": "B",
+        "label": "S(h) 是一个单输入函数，因为 x 和 y 已经取定具体数值，只有 h 是自变量"
+      },
+      {
+        "value": "C",
+        "label": "S(h) 既不是单输入函数也不是多输入函数，而是一个常数"
+      },
+      {
+        "value": "D",
+        "label": "S(h) 是一个多输入函数，因为公式中含有 x、y 和 h 三个字母"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "多输入函数的核心含义是函数的输出值由多个独立变化的输入变量共同决定。在本题中，底面边长 x 和 y 已经固定为常数（x=2, y=3），不再变化。此时影响侧面积 S 的自变量只有高度 h，因此 S(h) 是一个单输入函数。不能仅凭公式中含有的字母数量或物理情境中涉及的整体维度来判断函数的输入数量，而必须看实际参与变化的独立自变量个数。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "variable-count-identification"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q3",
+    "type": "single",
+    "question": "某气象站记录每日的平均温度 T，它随时间 t 变化，记为 T(t)。已知该气象站所在城市的经度 m 和纬度 n 是固定不变的。如果把 T(t) 看作一个函数，关于它的输入特征，下列判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "T(t) 是多输入函数，因为温度受气象站所在城市的经度、纬度和时间共同影响"
+      },
+      {
+        "value": "B",
+        "label": "T(t) 是单输入函数，因为经度 m 和纬度 n 是固定值，实际发生变化的只有时间 t"
+      },
+      {
+        "value": "C",
+        "label": "T(t) 是多输入函数，因为描述气象站位置和时间的变量总共有三个"
+      },
+      {
+        "value": "D",
+        "label": "T(t) 既不是单输入函数也不是多输入函数，因为温度是一个物理量而不是函数"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "多输入函数要求函数的输出由多个可以独立变化的输入量共同决定。本题中，气象站的经度 m 和纬度 n 是固定不变的常数，不随时间推移而改变。因此，决定每日平均温度 T 变化的实际自变量只有时间 t，T(t) 是一个单输入函数。判断函数的输入个数不能仅看物理情境中涉及了多少个物理量，而必须区分哪些是固定常数，哪些是真正发生变化的独立自变量。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "variable-count-identification"
+    }
+  }
+}

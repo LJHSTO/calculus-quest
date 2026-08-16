@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q4",
+    "type": "single",
+    "question": "某工厂生产两种产品 A 和 B。生产 A 的数量记为 x，生产 B 的数量记为 y。工厂的总成本 C 取决于 A 和 B 的产量，且总成本随产量的增加而上升。若只增加产品 A 的产量，而保持产品 B 的产量不变，总成本 C 会发生怎样的变化？",
+    "options": [
+      {
+        "value": "A",
+        "label": "总成本 C 保持不变，因为只有当两种产品产量都改变时，总成本才会改变"
+      },
+      {
+        "value": "B",
+        "label": "总成本 C 会改变，因为 C 是由 A 和 B 的产量共同决定的，改变其中任何一个都会影响总成本"
+      },
+      {
+        "value": "C",
+        "label": "总成本 C 变为原来的两倍，因为增加了一种产品的产量"
+      },
+      {
+        "value": "D",
+        "label": "无法判断总成本 C 是否改变，因为不知道具体的成本计算公式"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "题干已明确总成本随产量增加而上升。因此，保持产品 B 的产量不变而增加产品 A 的产量时，总成本 C 会改变，选 B。仅凭‘C 是多输入函数’本身，不能断言任一输入变化都必然引起输出变化；这里的判断依据是题干给出的变化关系。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "single-variable-change-effect"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q4",
+    "type": "single",
+    "question": "在一个温室大棚中，植物的生长速率 R 同时受温度 T 和光照强度 L 的影响。实验已知在考察范围内改变温度会影响生长速率。如果光照强度 L 保持恒定，而温度 T 逐渐升高，关于生长速率 R 的变化，以下说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "生长速率 R 不会发生任何改变，因为只有温度和光照同时变化时 R 才会改变"
+      },
+      {
+        "value": "B",
+        "label": "生长速率 R 会随之发生改变，因为 R 是温度 T 和光照强度 L 的函数，改变其中任意一个输入都会引起输出的变化"
+      },
+      {
+        "value": "C",
+        "label": "生长速率 R 将立即降为零，因为光照强度没有随温度一起升高"
+      },
+      {
+        "value": "D",
+        "label": "无法确定 R 是否改变，必须同时知道温度和光照的具体函数关系式才能判断"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "题干已明确在考察范围内改变温度会影响生长速率。因此，保持光照强度 L 不变而提高温度 T 时，R 会发生改变，选 B。仅凭‘R 是 T 和 L 的函数’本身不能保证改变 T 必然改变 R；这里的结论来自题干给出的实验条件。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "single-variable-change-effect"
+    }
+  }
+}

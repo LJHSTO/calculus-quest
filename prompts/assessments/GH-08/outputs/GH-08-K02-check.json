@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "多元函数、梯度与 Jacobian",
+  "outlines": [
+    {
+      "id": "GH-08-K02-check",
+      "type": "quiz",
+      "title": "即时检查：曲面与等高线",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-08-K02-check-q1",
+          "type": "single",
+          "question": "在三维空间中，二元函数 z = f(x, y) 的图像是一个曲面。若将该曲面上所有高度 z = c（c 为常数）的点投影到 xy 坐标平面上，得到的曲线称为等高线。关于曲面与等高线的关系，以下说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "等高线是曲面与平面 z = c 的交线在 xy 平面上的投影，同一条等高线上的点对应的函数值都相等"
+            },
+            {
+              "value": "B",
+              "label": "等高线是曲面与平面 x = c 的交线在 yz 平面上的投影，同一条等高线上的点对应的 x 坐标都相等"
+            },
+            {
+              "value": "C",
+              "label": "等高线是曲面与平面 y = c 的交线在 xz 平面上的投影，同一条等高线上的点对应的 y 坐标都相等"
+            },
+            {
+              "value": "D",
+              "label": "等高线是曲面在 x 轴上的投影，同一条等高线上的点对应的 z 值随 x 的增大而增大"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "等高线的定义是在函数值 z = c（常数）的水平面上，曲面与该平面的交线在 xy 平面上的投影。因此，同一条等高线上的所有点具有相同的函数值 c。选项 B 和 C 描述的是用垂直于 x 轴或 y 轴的平面截取曲面得到的截痕，不是等高线。选项 D 错误地将等高线描述为在 x 轴上的投影，且等高线上的 z 值是恒定的，不会随 x 增大而增大。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-08-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-08-K02-check-p1",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "definition"
+          }
+        },
+        {
+          "id": "GH-08-K02-check-q2",
+          "type": "multiple",
+          "question": "同学甲在观察二元函数 z = f(x, y) 的曲面模型时，只记住了等高线的符号表示，没有将等高线与曲面的几何特征联系起来。为了纠正这种只记符号而脱离图像的理解，请选出所有关于曲面与等高线关系的正确说法，以说明这种联系：",
+          "options": [
+            {
+              "value": "A",
+              "label": "等高线图中的每一条闭合曲线，都对应着曲面上处于同一高度的一条环线"
+            },
+            {
+              "value": "B",
+              "label": "等高线越密集的地方，说明在 xy 平面上移动很小的距离，曲面的高度变化就越大，即曲面越陡峭"
+            },
+            {
+              "value": "C",
+              "label": "等高线图上相邻两条等高线的高度差必须是固定的，否则无法反映曲面的形状"
+            },
+            {
+              "value": "D",
+              "label": "等高线图只能用来判断函数值的大小，不能从中看出曲面在某个方向上是上升还是下降"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "选项 A 正确，等高线本质上是三维曲面上等高点在二维平面的投影，闭合等高线对应曲面上的等高环线。选项 B 正确，等高线密集意味着梯度模长较大，即曲面在该区域陡峭。选项 C 错误，虽然常用固定等高距作图，但等高距的选择是灵活的，不影响等高线反映曲面形状的本质功能。选项 D 错误，通过观察等高线数值的变化趋势，完全可以判断曲面在各个方向上的上升或下降情况，这正是等高线图的重要应用。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-08-K02"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-08-K02-check-p1",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "property"
+          }
+        }
+      ]
+    }
+  ]
+}
