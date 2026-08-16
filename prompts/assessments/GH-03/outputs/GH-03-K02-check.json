@@ -1,6 +1,6 @@
 {
-  "languageDirective": "zh",
-  "courseTitle": "函数、极限与导数入口",
+  "languageDirective": "输出语言与题目语言保持一致，使用简体中文。",
+  "courseTitle": "从平均变化率到导数",
   "outlines": [
     {
       "id": "GH-03-K02-check",
@@ -8,7 +8,7 @@
       "title": "即时检查：瞬时变化率和切线",
       "order": 1,
       "quizConfig": {
-        "questionCount": 3,
+        "questionCount": 2,
         "difficulty": "medium",
         "questionTypes": [
           "single",
@@ -19,125 +19,86 @@
         {
           "id": "GH-03-K02-check-q1",
           "type": "single",
-          "question": "关于瞬时变化率和切线的概念，下列说法正确的是：",
+          "question": "已知函数 f(x) = x² 在点 (2, 4) 处的切线斜率为 4。下列哪个选项最准确地描述了“瞬时变化率”的含义？",
           "options": [
             {
               "value": "A",
-              "label": "瞬时变化率就是函数在某一点处的函数值"
+              "label": "函数在 x=2 到 x=4 这一整段区间上的平均变化率"
             },
             {
               "value": "B",
-              "label": "切线可以理解为割线在两个端点无限接近时的极限位置"
+              "label": "当自变量的改变量趋近于 0 时，函数值改变量与自变量改变量之比的极限"
             },
             {
               "value": "C",
-              "label": "瞬时变化率等于函数在两个不同点之间的平均变化率"
+              "label": "函数图像在点 (2, 4) 处的切线长度"
             },
             {
               "value": "D",
-              "label": "曲线的切线与该曲线在所有点处都只有一个公共点"
+              "label": "函数在 x=2 处的函数值 4"
             }
           ],
           "answer": [
             "B"
           ],
-          "analysis": "瞬时变化率是平均变化率在自变量增量趋近于零时的极限值，不是某点的函数值，A错误；瞬时变化率反映的是单点的变化快慢，不等于两个不同点之间的平均变化率，C错误；圆等曲线的切线与曲线在切点之外可能还有其他交点，D错误。切线的几何意义正是割线两端点无限靠近时的极限位置，B正确。",
+          "analysis": "瞬时变化率是平均变化率在自变量改变量趋于 0 时的极限，它对应函数图像在该点处切线的斜率。选项 B 准确描述了这一核心含义。",
           "points": 10,
           "knowledgePointIds": [
             "GH-03-K02"
           ],
           "cognitiveLevel": "理解",
           "estimatedSteps": 1,
-          "pairId": "GH-03-K02-q1",
+          "pairId": "GH-03-K02-check-q1",
+          "adaptiveRole": "core",
           "equivalence": {
             "presentationMode": "text",
-            "knownConditionCount": 1,
+            "knownConditionCount": 2,
             "operationCount": 0,
-            "symbolComplexity": "低",
-            "conclusionClass": "概念辨析"
+            "symbolComplexity": "low",
+            "conclusionClass": "concept"
           }
         },
         {
           "id": "GH-03-K02-check-q2",
-          "type": "single",
-          "question": "已知函数f(x)=x²，求曲线y=f(x)在点(1,1)处的切线斜率。",
-          "options": [
-            {
-              "value": "A",
-              "label": "1"
-            },
-            {
-              "value": "B",
-              "label": "0"
-            },
-            {
-              "value": "C",
-              "label": "3"
-            },
-            {
-              "value": "D",
-              "label": "2"
-            }
-          ],
-          "answer": [
-            "D"
-          ],
-          "analysis": "切线斜率即该点的瞬时变化率。按定义计算：函数 f 在 1 处的导数=lim(h→0)[f(1+h)−f(1)]/h=lim(h→0)[(1+h)²−1]/h=lim(h→0)(2h+h²)/h=lim(h→0)(2+h)=2。故选D。",
-          "points": 10,
-          "knowledgePointIds": [
-            "GH-03-K02"
-          ],
-          "cognitiveLevel": "应用",
-          "estimatedSteps": 2,
-          "pairId": "GH-03-K02-q2",
-          "equivalence": {
-            "presentationMode": "text",
-            "knownConditionCount": 1,
-            "operationCount": 1,
-            "symbolComplexity": "低",
-            "conclusionClass": "基础计算"
-          }
-        },
-        {
-          "id": "GH-03-K02-check-q3",
           "type": "multiple",
-          "question": "下列关于瞬时变化率和切线的说法中，正确的有哪些？",
+          "question": "关于“瞬时变化率和切线”，下列哪些说法是正确的？（选择所有正确说法）",
           "options": [
             {
               "value": "A",
-              "label": "瞬时变化率是平均变化率在自变量改变量趋近于零时的极限"
+              "label": "函数在某一点的瞬时变化率，在数值上等于该点处切线的斜率"
             },
             {
               "value": "B",
-              "label": "瞬时变化率就是函数在某点附近的平均变化率"
+              "label": "如果函数在某点存在切线，那么该点的瞬时变化率一定存在"
             },
             {
               "value": "C",
-              "label": "曲线在某点的切线斜率反映了函数在该点的瞬时变化率"
+              "label": "瞬时变化率就是平均变化率在自变量改变量趋于 0 时的极限"
             },
             {
               "value": "D",
-              "label": "只要知道函数在某点的瞬时变化率，就能确定该点处切线的方程"
+              "label": "函数在某点的瞬时变化率等于该点函数值本身"
             }
           ],
           "answer": [
             "A",
             "C"
           ],
-          "analysis": "瞬时变化率是极限概念，不是平均变化率本身，A正确，B错误。切线斜率的几何意义正是瞬时变化率，C正确。知道瞬时变化率（即斜率）和切点坐标才能确定切线方程，仅有变化率无法确定切线，D错误。",
+          "analysis": "选项 A 正确：瞬时变化率的几何意义就是切线的斜率。选项 C 正确：这是瞬时变化率的定义。选项 B 错误：函数在某点有切线（如竖直切线）时，斜率可能不存在，因此瞬时变化率不一定存在。选项 D 错误：瞬时变化率是函数值变化与自变量变化的比值极限，与函数值本身无关。",
           "points": 10,
           "knowledgePointIds": [
             "GH-03-K02"
           ],
-          "cognitiveLevel": "理解",
-          "estimatedSteps": 1,
-          "pairId": "GH-03-K02-q3",
+          "cognitiveLevel": "分析",
+          "estimatedSteps": 2,
+          "pairId": "GH-03-K02-check-q1",
+          "adaptiveRole": "diagnostic",
           "equivalence": {
             "presentationMode": "text",
-            "knownConditionCount": 1,
+            "knownConditionCount": 4,
             "operationCount": 0,
-            "symbolComplexity": "低",
-            "conclusionClass": "误解诊断"
+            "symbolComplexity": "low",
+            "conclusionClass": "concept"
           }
         }
       ]

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q7",
+    "type": "single",
+    "question": "已知函数 y = f(x) 在某点处的导数值为 f'(x0) = -3。关于该点处切线与函数局部变化状态的描述，以下说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "切线倾斜角为锐角，函数在该点附近呈上升趋势"
+      },
+      {
+        "value": "B",
+        "label": "切线倾斜角为钝角，函数在该点附近呈下降趋势"
+      },
+      {
+        "value": "C",
+        "label": "切线倾斜角为锐角，函数在该点附近呈下降趋势"
+      },
+      {
+        "value": "D",
+        "label": "切线倾斜角为钝角，函数在该点附近呈上升趋势"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "导数 f'(x0) = -3 < 0，说明切线斜率为负，因此切线倾斜角为钝角。同时，导数值小于0表明函数在该点附近的局部变化方向是下降的，即函数呈下降趋势。故选B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "tangent-trend-sign"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q7",
+    "type": "single",
+    "question": "若函数 y = g(x) 在 x = a 处的切线斜率为 2，则关于该点处导数值的符号及函数局部变化方向的判断，正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "g'(a) < 0，且函数在该点附近呈下降趋势"
+      },
+      {
+        "value": "B",
+        "label": "g'(a) > 0，且函数在该点附近呈上升趋势"
+      },
+      {
+        "value": "C",
+        "label": "g'(a) > 0，且函数在该点附近呈下降趋势"
+      },
+      {
+        "value": "D",
+        "label": "g'(a) < 0，且函数在该点附近呈上升趋势"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "切线斜率即为该点处的导数值，已知斜率为2，故 g'(a) = 2 > 0，导数符号为正。导数值大于0说明函数在该点附近的局部变化方向是上升的，即呈上升趋势。故选B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "tangent-trend-sign"
+    }
+  }
+}

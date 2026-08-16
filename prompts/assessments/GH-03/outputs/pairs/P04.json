@@ -2,83 +2,83 @@
   "pre": {
     "id": "GH-03-pre-q4",
     "type": "single",
-    "question": "一辆汽车沿直线运动，位移 s（单位：米）随时间 t（单位：秒）变化。已知位移函数在 t=2 秒时的导数为 4，这个数值的正确含义是：",
+    "question": "一辆汽车沿直线行驶，其位移 s（单位：米）随时间 t（单位：秒）变化的规律为 s(t)=5t^2。当考察汽车在 t=3 秒这一时刻的瞬时速度时，我们通过考察 t=3 附近极小区间内位移改变量与时间改变量的比值来进行估计。随着时间区间不断缩小并无限趋近于 0，这个比值在几何上对应于位移图像在 t=3 处的切线斜率。请问这条切线的斜率在运动情境中直接表示什么物理量？",
     "options": [
       {
         "value": "A",
-        "label": "汽车在 0 到 2 秒内的平均速度为 4 米/秒"
+        "label": "汽车在 t=3 秒这一时刻的瞬时速度"
       },
       {
         "value": "B",
-        "label": "汽车在 t=2 秒时的瞬时速度为 4 米/秒"
+        "label": "汽车在 0 到 3 秒这段时间内的平均速度"
       },
       {
         "value": "C",
-        "label": "汽车在 t=2 秒时的加速度为 4 米/秒²"
+        "label": "汽车在 0 到 3 秒这段时间内行驶的总路程"
       },
       {
         "value": "D",
-        "label": "汽车在前 2 秒内共行驶了 4 米"
+        "label": "汽车在 t=3 秒这一时刻的瞬时加速度"
       }
     ],
     "answer": [
-      "B"
+      "A"
     ],
-    "analysis": "由 s(t)=t² 可得，在任意时刻 t 的瞬时变化率为 2t，故 函数 s 在 2 处的导数=4。此值的物理含义是：当 t=2 秒时，汽车速度的瞬时大小为 4 米/秒。A 错误，因为平均速度应为 [s(2)−s(0)]/(2−0)=2 米/秒；C 错误，瞬时速度的变化率（加速度）才是 2t 的导数，即 2 米/秒²；D 错误，前 2 秒的总位移为 s(2)=4 米，但 函数 s 在 2 处的导数=4 描述的是速度而非位移总量。",
+    "analysis": "在位移-时间图像中，某一点处切线的斜率表示该时刻的瞬时变化率。在运动情境下，位移对时间的瞬时变化率即为瞬时速度。当时间区间无限趋近于 0 时，平均变化率（割线斜率）的极限即为切线斜率，它直接对应 t=3 秒时的瞬时速度，而不是平均速度、总路程或加速度。",
     "points": 8,
     "knowledgePointIds": [
       "GH-03-K02"
     ],
-    "cognitiveLevel": "理解",
-    "estimatedSteps": 3,
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
     "pairId": "P04",
     "equivalence": {
-      "presentationMode": "word",
-      "knownConditionCount": 1,
-      "operationCount": 1,
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
       "symbolComplexity": "low",
-      "conclusionClass": "含义解释"
+      "conclusionClass": "physical-interpretation-of-tangent-slope"
     }
   },
   "post": {
     "id": "GH-03-post-q4",
     "type": "single",
-    "question": "在曲线 y=f(x) 上固定点 P(2,4)，另取曲线上的点 Q。当 Q 沿曲线不断靠近 P 时，割线 PQ 的斜率趋近 4。关于数值 4 的几何意义，下列判断正确的是：",
+    "question": "某物体的位置随时间变化的规律由函数关系决定。为了探明该物体在指定瞬间的运动快慢程度，我们考察该瞬间附近一个极短时间段内的位置改变量与时间改变量之比。当这个极短时间段无限趋近于零时，所求得的极限值在数学上被称为位置-时间图像在该瞬间的切线斜率。关于这条切线的斜率，以下哪种说法准确地揭示了它在上述运动情境下的物理含义？",
     "options": [
       {
         "value": "A",
-        "label": "切线斜率等于 f(x) 在区间 [2, x_Q] 上的平均变化率"
+        "label": "它表示物体在该指定瞬间的瞬时加速度大小"
       },
       {
         "value": "B",
-        "label": "切线斜率反映了 f(x) 在 x=2 处函数值随自变量变化的瞬时快慢程度"
+        "label": "它表示物体在该指定瞬间的瞬时速度大小"
       },
       {
         "value": "C",
-        "label": "切线斜率等于 secant 线 PQ 在 Q 未逼近 P 之前的平均斜率"
+        "label": "它表示物体在到达该指定瞬间之前所经历的平均速度"
       },
       {
         "value": "D",
-        "label": "切线斜率等于点 P 的纵坐标 f(2)=4"
+        "label": "它表示物体在该指定瞬间相对于起点的位移大小"
       }
     ],
     "answer": [
       "B"
     ],
-    "analysis": "当 Q 沿曲线趋近于 P 时，secant 线 PQ 的斜率极限即为曲线在 P 处的切线斜率，其几何意义是函数在该点处变化的瞬时速率。B 正确，切线斜率刻画的是 f(x) 在 x=2 处的瞬时变化趋势；A 错误，平均变化率对应 secant 线的斜率，而非切线斜率；C 错误，Q 未逼近 P 时的是 secant 线斜率，而不是极限位置的切线斜率；D 错误，f(2)=4 只是点 P 的纵坐标，切线斜率为 4 是巧合，并非点 P 纵坐标的必然结果。",
+    "analysis": "位置-时间图像上某点切线的斜率反映了位置对时间的瞬时变化率。在运动情境中，位置随时间变化的瞬时变化率正是物体在该瞬间的瞬时速度。当时间间隔趋近于零时，位置改变量与时间改变量比值的极限即为切线斜率，它直接刻画了该瞬间的运动快慢，而非加速度、平均速度或累计位移。",
     "points": 8,
     "knowledgePointIds": [
       "GH-03-K02"
     ],
-    "cognitiveLevel": "理解",
-    "estimatedSteps": 3,
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
     "pairId": "P04",
     "equivalence": {
-      "presentationMode": "word",
-      "knownConditionCount": 1,
-      "operationCount": 1,
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
       "symbolComplexity": "low",
-      "conclusionClass": "含义解释"
+      "conclusionClass": "physical-interpretation-of-tangent-slope"
     }
   }
 }

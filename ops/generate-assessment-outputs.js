@@ -4,7 +4,8 @@ const fs = require("node:fs/promises");
 const path = require("node:path");
 const {
   validatePairedAssessment,
-  validateFormativeAssessment
+  validateFormativeAssessment,
+  templateSimilarity
 } = require("./assessment-output-validator");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -146,13 +147,31 @@ async function generatePairedInPieces(task, config) {
     const type = index === 9 ? "text" : index >= 7 ? "multiple" : "single";
     const pointsValue = index === 9 ? 20 : index >= 7 ? 12 : 8;
     const blueprint = PAIRED_BLUEPRINTS[task.module.id]?.[index] || `${kpId}：严格依据该知识点名称、学习目标和常见误解命题，不得扩展到其他知识点。`;
-    const prompt = `${sourcePrompt}\n\n【本次分片生成规则】只生成 ${pairId} 这一对题，不要输出 outlines。专用蓝图：${blueprint} 两题只考查 ${kpId}，题型均为 ${type}，分值均为 ${pointsValue}。只输出 {"pre":题目对象,"post":题目对象}。pre.id 必须为 ${task.module.id}-pre-q${index + 1}，post.id 必须为 ${task.module.id}-post-q${index + 1}，两题 pairId 都为 ${pairId}。keyPoints 字符串规则不适用于本次分片。equivalence 只能含 presentationMode、knownConditionCount、operationCount、symbolComplexity、conclusionClass 五个字段且两题逐项完全相同。除非题干和根层 evidence 都提供完整六行双侧数表，否则 presentationMode 不得写 table。A/B 题必须测量等值但表面异构，禁止只换数值、变量或选项顺序；不得依赖图片、课件或学习场景。`;
+    const presentationRule = task.module.id === "GH-02" && index < 2
+      ? "本题对按蓝图生成双侧数表。"
+      : "equivalence.presentationMode 必须严格写 text，题目根层不得输出 evidence。";
+    const multipleAnswerRule = type === "multiple" && index === 8
+      ? "本题对 pre.answer 与 post.answer 都必须恰好包含 2 个不同的选项 value。"
+      : "若题型为 multiple，pre 与 post 的正确答案数量必须完全相同，允许为 1、2 或 3。";
+    const prompt = `${sourcePrompt}\n\n【本次分片生成规则】只生成 ${pairId} 这一对题，不要输出 outlines。专用蓝图：${blueprint} 两题只考查 ${kpId}，题型均为 ${type}，分值均为 ${pointsValue}。只输出 {"pre":题目对象,"post":题目对象}。pre.id 必须为 ${task.module.id}-pre-q${index + 1}，post.id 必须为 ${task.module.id}-post-q${index + 1}，两题 pairId 都为 ${pairId}。keyPoints 字符串规则不适用于本次分片。equivalence 只能含 presentationMode、knownConditionCount、operationCount、symbolComplexity、conclusionClass 五个字段且两题逐项完全相同。${presentationRule} A/B 题必须测量等值但表面异构，禁止只换数值、变量或选项顺序；不得依赖图片、课件或学习场景。${multipleAnswerRule} 若题型为 text，两题的 answer 都必须是非空字符串且 rubric 的项目数与逐项分值完全相同。`;
     let generated;
     const pairCachePath = path.join(pairCacheDir, `${pairId}.json`);
     if (!config.force) {
       try {
         const cached = JSON.parse(await fs.readFile(pairCachePath, "utf8"));
-        if (cached?.pre?.id === `${task.module.id}-pre-q${index + 1}` && cached?.post?.id === `${task.module.id}-post-q${index + 1}`) generated = cached;
+        const cacheMatchesBlueprint = [cached?.pre, cached?.post].every((question) =>
+          question?.type === type
+          && Number(question?.points) === pointsValue
+          && question?.pairId === pairId
+          && Array.isArray(question?.knowledgePointIds)
+          && question.knowledgePointIds.length === 1
+          && question.knowledgePointIds[0] === kpId
+        );
+        if (
+          cached?.pre?.id === `${task.module.id}-pre-q${index + 1}`
+          && cached?.post?.id === `${task.module.id}-post-q${index + 1}`
+          && cacheMatchesBlueprint
+        ) generated = cached;
       } catch {}
     }
     let lastError;
@@ -162,11 +181,35 @@ async function generatePairedInPieces(task, config) {
       try {
         generated = await requestJson({ ...config, prompt, signal: controller.signal });
         if (!generated?.pre || !generated?.post) throw new Error("分片缺少 pre 或 post 题目对象");
+        const generatedQuestions = [generated.pre, generated.post];
+        if (generatedQuestions.some((question) =>
+          question.type !== type
+          || Number(question.points) !== pointsValue
+          || question.pairId !== pairId
+          || !Array.isArray(question.knowledgePointIds)
+          || question.knowledgePointIds.length !== 1
+          || question.knowledgePointIds[0] !== kpId
+        )) throw new Error("分片题型、分值、pairId 或知识点不符合蓝图");
+        if (task.module.id !== "GH-02" && generatedQuestions.some((question) => question.equivalence?.presentationMode !== "text" || question.evidence !== undefined)) {
+          throw new Error("非 GH-02 数表题不得输出 table/evidence");
+        }
+        if (type === "multiple" && generated.pre.answer?.length !== generated.post.answer?.length) {
+          throw new Error("A/B 多选题正确答案数量不一致");
+        }
+        if (type === "text" && (
+          typeof generated.pre.answer !== "string"
+          || typeof generated.post.answer !== "string"
+          || JSON.stringify((generated.pre.rubric || []).map((item) => Number(item.points))) !== JSON.stringify((generated.post.rubric || []).map((item) => Number(item.points)))
+        )) throw new Error("A/B 简答题答案或评分量规不等值");
+        if (templateSimilarity(generated.pre.question, generated.post.question) >= 0.86) {
+          throw new Error("A/B 题干表面过于相似，疑似同模板换数值");
+        }
         await fs.mkdir(pairCacheDir, { recursive: true });
         await fs.writeFile(pairCachePath, `${JSON.stringify(generated, null, 2)}\n`, "utf8");
         break;
       } catch (error) {
         lastError = error;
+        generated = undefined;
         if (attempt < config.retries) await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
       } finally { clearTimeout(timer); }
     }

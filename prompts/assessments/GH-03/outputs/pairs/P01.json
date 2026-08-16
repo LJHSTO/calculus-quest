@@ -2,83 +2,83 @@
   "pre": {
     "id": "GH-03-pre-q1",
     "type": "single",
-    "question": "已知函数 f(x)=x²，求 f 在闭区间 [1,3] 上的平均变化率，并说明该数值在几何上代表什么。",
+    "question": "某物体沿直线运动，位移 S（单位：米）与时间 t（单位：秒）的函数关系为 S(t) = 3t^2。若考察从 t=2 秒到 t=4 秒这段时间内物体位置的改变情况，求出该时间段内位移的平均变化率，并指出该数值在函数图像上直接对应的几何特征是什么？",
     "options": [
       {
         "value": "A",
-        "label": "平均变化率为 4，几何上表示连接点 (1,1) 与点 (3,9) 的割线的斜率"
+        "label": "平均变化率为 18 米/秒，对应连接图像上点 (2, 12) 与点 (4, 48) 的割线斜率"
       },
       {
         "value": "B",
-        "label": "平均变化率为 6，几何上表示曲线在 x=2 处的切线斜率"
+        "label": "平均变化率为 36 米/秒，对应连接图像上点 (2, 12) 与点 (4, 48) 的割线斜率"
       },
       {
         "value": "C",
-        "label": "平均变化率为 8，几何上表示函数图像的纵坐标增量"
+        "label": "平均变化率为 18 米/秒，对应函数在 t=4 秒处的切线斜率"
       },
       {
         "value": "D",
-        "label": "平均变化率为 2，几何上表示连接点 (1,0) 与点 (3,0) 的水平割线的斜率"
+        "label": "平均变化率为 36 米/秒，对应函数在 t=2 秒处的切线斜率"
       }
     ],
     "answer": [
       "A"
     ],
-    "analysis": "平均变化率的计算公式为 [f(b)−f(a)]/(b−a)。将 a=1，b=3，f(x)=x² 代入得 [f(3)−f(1)]/(3−1)=[9−1]/2=4。几何上，平均变化率等于连接函数图像上两点的割线斜率，此处即为连接 (1,1) 和 (3,9) 的割线斜率。选项 B 混淆了平均变化率与瞬时变化率；选项 C 误将分子 8 当作比值；选项 D 使用了错误的起点 (1,0)。",
+    "analysis": "根据平均变化率的定义，从 t=2 到 t=4 的平均变化率为 [S(4) - S(2)] / (4 - 2) = (3 * 4^2 - 3 * 2^2) / 2 = (48 - 12) / 2 = 36 / 2 = 18。在函数图像上，两点间的平均变化率等于连接这两点的割线斜率。点 (2, 12) 和 (4, 48) 在函数图像上，连接它们的割线斜率即为 18。选项 A 正确。选项 B 计算错误地直接用位移差除以了单一时间值；选项 C 和 D 混淆了割线斜率与切线斜率的概念。",
     "points": 8,
     "knowledgePointIds": [
       "GH-03-K01"
     ],
-    "cognitiveLevel": "理解",
+    "cognitiveLevel": "apply",
     "estimatedSteps": 3,
     "pairId": "P01",
     "equivalence": {
       "presentationMode": "text",
-      "knownConditionCount": 2,
-      "operationCount": 2,
-      "symbolComplexity": "低",
-      "conclusionClass": "计算+解释"
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": "low",
+      "conclusionClass": "slope-identification"
     }
   },
   "post": {
     "id": "GH-03-post-q1",
     "type": "single",
-    "question": "某蓄水池在第 t 小时的蓄水量为 W(t)=2t²+10（单位：立方米）。管理员要描述第 1 小时到第 4 小时之间蓄水量的平均变化。下列计算及解释正确的是：",
+    "question": "已知函数 y = f(x) 的图像经过点 P(1, 5) 和点 Q(3, 17)。若将这两点在图像上用直线相连，这条割线的倾斜程度反映了自变量从 1 变化到 3 时函数值的某种整体变化特征。求出该特征的具体数值，并说明它在代数上被称为该区间上的什么？",
     "options": [
       {
         "value": "A",
-        "label": "平均变化率为 10 立方米/小时，表示图像上连接 (1,12) 与 (4,42) 两点的割线斜率"
+        "label": "数值为 6，称为该区间上的平均变化率"
       },
       {
         "value": "B",
-        "label": "平均变化率为 30 立方米/小时，表示两时刻蓄水量之差"
+        "label": "数值为 12，称为该区间上的平均变化率"
       },
       {
         "value": "C",
-        "label": "平均变化率为 13.5 立方米/小时，等于两端蓄水量的算术平均"
+        "label": "数值为 6，称为函数在 x=3 处的瞬时变化率"
       },
       {
         "value": "D",
-        "label": "平均变化率为 8 立方米/小时，表示 t=4 时图像切线的斜率"
+        "label": "数值为 12，称为函数在 x=1 处的瞬时变化率"
       }
     ],
     "answer": [
       "A"
     ],
-    "analysis": "W(1)=12，W(4)=42，因此平均变化率为 [42−12]/(4−1)=10 立方米/小时。它在几何上等于连接图像上两端点的割线斜率，所以 A 正确。B 只计算了蓄水量之差，C 混淆了函数值平均数，D 混淆了平均变化率与瞬时变化率。",
+    "analysis": "割线的斜率反映了函数值在两点间的整体变化特征，其数值计算为 [f(3) - f(1)] / (3 - 1) = (17 - 5) / 2 = 12 / 2 = 6。在代数上，这个由两点纵坐标之差除以横坐标之差得到的数值，被称为函数在该区间上的平均变化率。选项 A 正确。选项 B 错误地只计算了纵坐标之差而未除以横坐标之差；选项 C 和 D 将区间上的平均变化率（割线斜率）错误等同于某一点的瞬时变化率（切线斜率）。",
     "points": 8,
     "knowledgePointIds": [
       "GH-03-K01"
     ],
-    "cognitiveLevel": "理解",
+    "cognitiveLevel": "apply",
     "estimatedSteps": 3,
     "pairId": "P01",
     "equivalence": {
       "presentationMode": "text",
-      "knownConditionCount": 2,
-      "operationCount": 2,
-      "symbolComplexity": "低",
-      "conclusionClass": "计算+解释"
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": "low",
+      "conclusionClass": "slope-identification"
     }
   }
 }

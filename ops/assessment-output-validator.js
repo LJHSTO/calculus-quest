@@ -430,5 +430,6 @@ function validateFormativeAssessment(payload, moduleDefinition, knowledgePointId
 
 module.exports = {
   validatePairedAssessment,
-  validateFormativeAssessment
+  validateFormativeAssessment,
+  templateSimilarity
 };
