@@ -29,6 +29,7 @@ for (const chapter of route.chapters || []) {
     assert.match(paired, /可由 JSON\.parse 直接解析/);
     assert.match(paired, /equivalence 必须且只能包含 presentationMode/);
     assert.match(paired, /two-sided-table/);
+    assert.match(paired, /question 只能包含题干/);
 
     for (const point of module.knowledgePoints || []) {
       pointCount += 1;
@@ -49,6 +50,7 @@ for (const chapter of route.chapters || []) {
       assert.match(check, /正确项数量可以为 1、2 或 3/);
       assert.match(check, /可由 JSON\.parse 直接解析/);
       assert.match(check, /equivalence 必须且只能包含 presentationMode/);
+      assert.match(check, /question 只能包含题干/);
       assert.doesNotMatch(check, /四选一|四个候选|恰好 2 个正确|exactly two/i);
     }
   }

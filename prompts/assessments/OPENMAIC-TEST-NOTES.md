@@ -104,3 +104,10 @@
 - 未通过：模型把 `evidence` 和 `rubric` 错误嵌套进 `equivalence`，没有放在题目对象根层级。
 - 未通过：选择题 options 使用 `text/correct`，而不是稳定的 `value/label`；answer 使用 `"B"`、`"ABD"` 字符串，而不是答案数组。
 - 结论：数学内容已接近可用，但机器契约仍不合格；本次不确认生成课程。后续提示词改为明确禁止字段变体，并给出唯一允许的 options、answer、evidence 和 rubric 层级。
+
+### GH-02 规范化字段版复测
+
+- P01、P02 成功使用 `value/label` 选项、答案数组、根层级 `evidence` 和纯五字段 `equivalence`，两卷结构及数表趋势对应。
+- P03-P05 把人类可读的“选项：A…D…”重复写入 `question`，随后直接拼接 `"options"`，形成 `"question":"...""options"`，缺少 JSON 逗号。
+- P06 同样在 `question` 与 `answer` 之间形成无逗号拼接；因此两卷均只有前两题能够被 `JSON.parse`，其余题目必须判为生成失败。
+- 结论：程序校验能准确拦截“界面看似完整但底层 JSON 非法”的结果；本次仍不确认生成课程。提示词进一步禁止在题干中重复选项，并明确 question 后必须用 JSON 逗号连接独立 options 字段。
