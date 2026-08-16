@@ -220,7 +220,7 @@ function validateQuestion(question, context, errors) {
   if (MARKDOWN_TABLE_PATTERN.test(String(question.question || ""))) {
     addError(errors, "MARKDOWN_TABLE_NOT_RENDERED", `${path}.question`, "OpenMAIC 测验题干不得使用 Markdown 表格，请改用两行纯文本数表");
   }
-  if (/""|''|“”|‘’/.test(String(question.question || ""))) {
+  if (/""|''|“”|‘’|_{2,}/.test(String(question.question || ""))) {
     addError(errors, "EMPTY_PLACEHOLDER", `${path}.question`, "题干含有空引号或未填充占位符");
   }
   const equivalence = isObject(question.equivalence) ? question.equivalence : {};

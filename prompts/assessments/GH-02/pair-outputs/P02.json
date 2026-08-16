@@ -1,0 +1,32 @@
+{
+  "pre": {
+    "id": "GH-02-pre-q2",
+    "type": "single",
+    "question": "数表给出：x 值：0.7，0.9，0.99，1.01，1.1，1.3；f(x) 值：2.7，2.9，2.99，3.01，3.1，3.3。小林说：‘表中没有出现 3，所以趋近值不能是 3。’应如何评价？",
+    "options": [{"value":"A","label":"正确，趋近值必须是表中已经取得的数"},{"value":"B","label":"正确，应把 2.99 作为趋近值"},{"value":"C","label":"错误，但趋近值应是 3.01"},{"value":"D","label":"错误，趋近值可以是数据不断接近但未实际列出的 3"}],
+    "answer": ["D"],
+    "analysis": "数表中的值从 1 的两侧逐步接近时，f(x) 从 3 的两侧接近 3。趋近值描述变化趋势，不要求在有限数表中实际出现。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K01"],
+    "cognitiveLevel": "分析",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {"presentationMode":"table","knownConditionCount":6,"operationCount":0,"symbolComplexity":"low","conclusionClass":"limit_not_in_table"},
+    "evidence": {"kind":"two-sided-table","targetX":1,"targetY":3,"correctOptionId":"D","rows":[{"x":0.7,"y":2.7},{"x":0.9,"y":2.9},{"x":0.99,"y":2.99},{"x":1.01,"y":3.01},{"x":1.1,"y":3.1},{"x":1.3,"y":3.3}]}
+  },
+  "post": {
+    "id": "GH-02-post-q2",
+    "type": "single",
+    "question": "小周查看记录：x 值：1.7，1.9，1.99，2.01，2.1，2.3；h(x) 值：3.7，3.9，3.99，4.01，4.1，4.3。他断言有限记录中找不到 4，便不能说 h(x) 趋近 4。下列回应最合理的是？",
+    "options": [{"value":"A","label":"记录虽未取到 4，但两侧数据越来越接近 4，仍可判断趋近值为 4"},{"value":"B","label":"只有出现 4 才能把 4 当作趋近值"},{"value":"C","label":"应选择记录中最接近 4 的 3.99 作为趋近值"},{"value":"D","label":"应选择 3.99 与 4.01 的平均数，因为趋近值只能这样计算"}],
+    "answer": ["A"],
+    "analysis": "趋近关注的是自变量靠近目标点时函数值呈现的趋势，而不是某一行是否恰好等于目标值。左右两侧数据都越来越接近 4，所以回应 A 正确。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K01"],
+    "cognitiveLevel": "分析",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {"presentationMode":"table","knownConditionCount":6,"operationCount":0,"symbolComplexity":"low","conclusionClass":"limit_not_in_table"},
+    "evidence": {"kind":"two-sided-table","targetX":2,"targetY":4,"correctOptionId":"A","rows":[{"x":1.7,"y":3.7},{"x":1.9,"y":3.9},{"x":1.99,"y":3.99},{"x":2.01,"y":4.01},{"x":2.1,"y":4.1},{"x":2.3,"y":4.3}]}
+  }
+}

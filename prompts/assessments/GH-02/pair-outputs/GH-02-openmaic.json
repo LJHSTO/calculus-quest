@@ -1,0 +1,54 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "极限与连续：直觉探索测评",
+  "outlines": [
+    {
+      "id": "GH-02-pre",
+      "type": "quiz",
+      "title": "前测：极限与连续：直觉探索（A卷）",
+      "order": 1,
+      "difficulty": "medium",
+      "quizConfig": {
+        "questionCount": 6,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple",
+          "text"
+        ]
+      },
+      "keyPoints": [
+        "{\"id\":\"GH-02-pre-q1\",\"type\":\"single\",\"question\":\"观察下面六组数据。x 值：1.7，1.9，1.99，2.01，2.1，2.3；f(x) 值：3.7，3.9，3.99，4.01，4.1，4.3。当 x 从两侧趋近 2 时，f(x) 的趋近值是？\",\"options\":[{\"value\":\"A\",\"label\":\"2\"},{\"value\":\"B\",\"label\":\"4\"},{\"value\":\"C\",\"label\":\"3.99\"},{\"value\":\"D\",\"label\":\"不存在\"}],\"answer\":[\"B\"],\"analysis\":\"左侧三组数据随 x 接近 2 而接近 4，右侧三组数据也随 x 接近 2 而接近 4，因此双侧观察得到的趋近值为 4。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K01\"],\"cognitiveLevel\":\"理解\",\"estimatedSteps\":2,\"pairId\":\"P01\",\"equivalence\":{\"presentationMode\":\"table\",\"knownConditionCount\":6,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"reading_limit_from_table\"},\"evidence\":{\"kind\":\"two-sided-table\",\"targetX\":2,\"targetY\":4,\"correctOptionId\":\"B\",\"rows\":[{\"x\":1.7,\"y\":3.7},{\"x\":1.9,\"y\":3.9},{\"x\":1.99,\"y\":3.99},{\"x\":2.01,\"y\":4.01},{\"x\":2.1,\"y\":4.1},{\"x\":2.3,\"y\":4.3}]}}",
+        "{\"id\":\"GH-02-pre-q2\",\"type\":\"single\",\"question\":\"数表给出：x 值：0.7，0.9，0.99，1.01，1.1，1.3；f(x) 值：2.7，2.9，2.99，3.01，3.1，3.3。小林说：‘表中没有出现 3，所以趋近值不能是 3。’应如何评价？\",\"options\":[{\"value\":\"A\",\"label\":\"正确，趋近值必须是表中已经取得的数\"},{\"value\":\"B\",\"label\":\"正确，应把 2.99 作为趋近值\"},{\"value\":\"C\",\"label\":\"错误，但趋近值应是 3.01\"},{\"value\":\"D\",\"label\":\"错误，趋近值可以是数据不断接近但未实际列出的 3\"}],\"answer\":[\"D\"],\"analysis\":\"数表中的值从 1 的两侧逐步接近时，f(x) 从 3 的两侧接近 3。趋近值描述变化趋势，不要求在有限数表中实际出现。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K01\"],\"cognitiveLevel\":\"分析\",\"estimatedSteps\":3,\"pairId\":\"P02\",\"equivalence\":{\"presentationMode\":\"table\",\"knownConditionCount\":6,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"limit_not_in_table\"},\"evidence\":{\"kind\":\"two-sided-table\",\"targetX\":1,\"targetY\":3,\"correctOptionId\":\"D\",\"rows\":[{\"x\":0.7,\"y\":2.7},{\"x\":0.9,\"y\":2.9},{\"x\":0.99,\"y\":2.99},{\"x\":1.01,\"y\":3.01},{\"x\":1.1,\"y\":3.1},{\"x\":1.3,\"y\":3.3}]}}",
+        "{\"id\":\"GH-02-pre-q3\",\"type\":\"single\",\"question\":\"当 x 取小于 3 的值并逐渐靠近 3 时，f(x) 依次接近 5.7、5.9、5.99。由此判断 f(x) 在 x=3 处的左极限是？\",\"options\":[{\"value\":\"A\",\"label\":\"3\"},{\"value\":\"B\",\"label\":\"5.99\"},{\"value\":\"C\",\"label\":\"6\"},{\"value\":\"D\",\"label\":\"不存在\"}],\"answer\":[\"C\"],\"analysis\":\"题目只要求读取左侧趋势。随着 x 从左侧靠近 3，f(x) 的值越来越接近 6，因此左极限为 6。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K02\"],\"cognitiveLevel\":\"理解\",\"estimatedSteps\":2,\"pairId\":\"P03\",\"equivalence\":{\"presentationMode\":\"text\",\"knownConditionCount\":3,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"one_sided_limit_judgment\"}}",
+        "{\"id\":\"GH-02-pre-q4\",\"type\":\"multiple\",\"question\":\"已知 x 趋近 2 时，f(x) 的左极限和右极限都等于 5，而 f(2)=8。请选择所有正确说法。\",\"options\":[{\"value\":\"A\",\"label\":\"双侧极限存在\"},{\"value\":\"B\",\"label\":\"双侧极限等于 5\"},{\"value\":\"C\",\"label\":\"函数值 8 不影响双侧极限是否存在\"},{\"value\":\"D\",\"label\":\"因为 f(2) 不等于 5，所以双侧极限不存在\"}],\"answer\":[\"A\",\"B\",\"C\"],\"analysis\":\"左右极限都存在且相等，因此双侧极限存在并等于 5。函数在该点的取值是否等于极限值，会影响连续性，但不影响双侧极限本身是否存在。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K02\"],\"cognitiveLevel\":\"应用\",\"estimatedSteps\":3,\"pairId\":\"P04\",\"equivalence\":{\"presentationMode\":\"text\",\"knownConditionCount\":3,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"two_sided_limit_exists\"}}",
+        "{\"id\":\"GH-02-pre-q5\",\"type\":\"single\",\"question\":\"小明写道：‘f(x) 在 x=1 处的左极限和右极限都等于 2，所以 f(x) 在 x=1 处一定连续。’对这段推理评价最准确的是？\",\"options\":[{\"value\":\"A\",\"label\":\"推理完整，左右极限相等就能保证连续\"},{\"value\":\"B\",\"label\":\"推理不完整，还必须确认 f(1) 有定义且等于 2\"},{\"value\":\"C\",\"label\":\"推理错误，因为左右极限相等时极限不存在\"},{\"value\":\"D\",\"label\":\"无法评价，因为连续性与极限没有关系\"}],\"answer\":[\"B\"],\"analysis\":\"左右极限相等只能说明双侧极限存在。判断连续还需确认函数在该点有定义，并且函数值等于极限值。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K03\"],\"cognitiveLevel\":\"分析\",\"estimatedSteps\":3,\"pairId\":\"P05\",\"equivalence\":{\"presentationMode\":\"text\",\"knownConditionCount\":2,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"continuity_reasoning_diagnosis\"}}",
+        "{\"id\":\"GH-02-pre-q6\",\"type\":\"text\",\"question\":\"关于函数 h(x) 在 x=c 处有三条观察记录：①从左侧靠近 c 时，h(x) 趋近 4；②从右侧靠近 c 时，h(x) 也趋近 4；③h(c)=7。判断 h(x) 在 x=c 处是否连续，并完整说明理由。\",\"answer\":\"h(x) 在 x=c 处不连续。左右极限都等于 4，所以双侧极限存在且等于 4；但 h(c)=7，函数值不等于极限值，因此不满足连续性的条件。\",\"analysis\":\"应依次检查双侧极限是否存在、极限值是否等于函数值，再给出连续性结论。这里前一项成立，后一项不成立。\",\"points\":20,\"knowledgePointIds\":[\"GH-02-K03\"],\"cognitiveLevel\":\"分析\",\"estimatedSteps\":4,\"pairId\":\"P06\",\"equivalence\":{\"presentationMode\":\"text\",\"knownConditionCount\":3,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"discontinuous\"},\"rubric\":[{\"criterion\":\"判断双侧极限是否存在\",\"points\":6},{\"criterion\":\"比较极限值与函数值\",\"points\":6},{\"criterion\":\"给出连续性结论并完整说明理由\",\"points\":8}]}"
+      ]
+    },
+    {
+      "id": "GH-02-post",
+      "type": "quiz",
+      "title": "后测：极限与连续：直觉探索（B卷）",
+      "order": 2,
+      "difficulty": "medium",
+      "quizConfig": {
+        "questionCount": 6,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple",
+          "text"
+        ]
+      },
+      "keyPoints": [
+        "{\"id\":\"GH-02-post-q1\",\"type\":\"single\",\"question\":\"某次数值观察记录为：x 值：2.7，2.9，2.99，3.01，3.1，3.3；g(x) 值：4.7，4.9，4.99，5.01，5.1，5.3。下列哪项能同时概括左侧趋势、右侧趋势和最终结果？\",\"options\":[{\"value\":\"A\",\"label\":\"两侧函数值都趋近 3\"},{\"value\":\"B\",\"label\":\"左侧趋近 5，右侧趋近 3\"},{\"value\":\"C\",\"label\":\"两侧函数值都趋近 5\"},{\"value\":\"D\",\"label\":\"两侧趋势不同，因此没有共同趋近值\"}],\"answer\":[\"C\"],\"analysis\":\"从 3 的左侧观察，g(x) 由 4.7、4.9、4.99 接近 5；从右侧观察，按 x 接近 3 的顺序，g(x) 由 5.3、5.1、5.01 接近 5。两侧具有共同趋近值 5。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K01\"],\"cognitiveLevel\":\"理解\",\"estimatedSteps\":2,\"pairId\":\"P01\",\"equivalence\":{\"presentationMode\":\"table\",\"knownConditionCount\":6,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"reading_limit_from_table\"},\"evidence\":{\"kind\":\"two-sided-table\",\"targetX\":3,\"targetY\":5,\"correctOptionId\":\"C\",\"rows\":[{\"x\":2.7,\"y\":4.7},{\"x\":2.9,\"y\":4.9},{\"x\":2.99,\"y\":4.99},{\"x\":3.01,\"y\":5.01},{\"x\":3.1,\"y\":5.1},{\"x\":3.3,\"y\":5.3}]}}",
+        "{\"id\":\"GH-02-post-q2\",\"type\":\"single\",\"question\":\"小周查看记录：x 值：1.7，1.9，1.99，2.01，2.1，2.3；h(x) 值：3.7，3.9，3.99，4.01，4.1，4.3。他断言有限记录中找不到 4，便不能说 h(x) 趋近 4。下列回应最合理的是？\",\"options\":[{\"value\":\"A\",\"label\":\"记录虽未取到 4，但两侧数据越来越接近 4，仍可判断趋近值为 4\"},{\"value\":\"B\",\"label\":\"只有出现 4 才能把 4 当作趋近值\"},{\"value\":\"C\",\"label\":\"应选择记录中最接近 4 的 3.99 作为趋近值\"},{\"value\":\"D\",\"label\":\"应选择 3.99 与 4.01 的平均数，因为趋近值只能这样计算\"}],\"answer\":[\"A\"],\"analysis\":\"趋近关注的是自变量靠近目标点时函数值呈现的趋势，而不是某一行是否恰好等于目标值。左右两侧数据都越来越接近 4，所以回应 A 正确。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K01\"],\"cognitiveLevel\":\"分析\",\"estimatedSteps\":3,\"pairId\":\"P02\",\"equivalence\":{\"presentationMode\":\"table\",\"knownConditionCount\":6,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"limit_not_in_table\"},\"evidence\":{\"kind\":\"two-sided-table\",\"targetX\":2,\"targetY\":4,\"correctOptionId\":\"A\",\"rows\":[{\"x\":1.7,\"y\":3.7},{\"x\":1.9,\"y\":3.9},{\"x\":1.99,\"y\":3.99},{\"x\":2.01,\"y\":4.01},{\"x\":2.1,\"y\":4.1},{\"x\":2.3,\"y\":4.3}]}}",
+        "{\"id\":\"GH-02-post-q3\",\"type\":\"single\",\"question\":\"观察右侧记录：自变量从 2.3、2.1、2.01 逐步靠近 2，相应的 g(x) 为 4.3、4.1、4.01。哪一陈述准确概括这一单侧趋势？\",\"options\":[{\"value\":\"A\",\"label\":\"g(x) 的右极限为 2\"},{\"value\":\"B\",\"label\":\"g(x) 的右极限为 4\"},{\"value\":\"C\",\"label\":\"g(x) 的左极限为 4\"},{\"value\":\"D\",\"label\":\"g(x) 的右极限不存在\"}],\"answer\":[\"B\"],\"analysis\":\"给出的自变量都在 2 的右侧，并向 2 靠近；相应函数值由 4.3、4.1、4.01 接近 4，所以右极限为 4。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K02\"],\"cognitiveLevel\":\"理解\",\"estimatedSteps\":2,\"pairId\":\"P03\",\"equivalence\":{\"presentationMode\":\"text\",\"knownConditionCount\":3,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"one_sided_limit_judgment\"}}",
+        "{\"id\":\"GH-02-post-q4\",\"type\":\"multiple\",\"question\":\"某组讨论已知：从 3 的左侧和右侧靠近时，g(x) 都趋近 7，但 g(3)=4。四位同学分别作出判断，请选择所有判断正确的同学。\",\"options\":[{\"value\":\"A\",\"label\":\"甲：左右两侧得到共同趋近值，所以双侧极限存在\"},{\"value\":\"B\",\"label\":\"乙：双侧极限的值是 7\"},{\"value\":\"C\",\"label\":\"丙：g(3)=4 并不会使已经存在的双侧极限消失\"},{\"value\":\"D\",\"label\":\"丁：只有 g(3)=7 时，双侧极限才存在\"}],\"answer\":[\"A\",\"B\",\"C\"],\"analysis\":\"甲、乙正确描述了左右极限相等时双侧极限存在且等于 7；丙正确区分了极限存在与函数值。丁把连续性的条件误当成极限存在的条件。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K02\"],\"cognitiveLevel\":\"应用\",\"estimatedSteps\":3,\"pairId\":\"P04\",\"equivalence\":{\"presentationMode\":\"text\",\"knownConditionCount\":3,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"two_sided_limit_exists\"}}",
+        "{\"id\":\"GH-02-post-q5\",\"type\":\"single\",\"question\":\"小红认为：‘因为 g(3)=5，所以 g(x) 在 x=3 处连续。’老师应指出这份判断缺少什么关键信息？\",\"options\":[{\"value\":\"A\",\"label\":\"还需知道左右极限是否存在、是否相等，并比较极限值与 g(3)\"},{\"value\":\"B\",\"label\":\"还需知道 g(x) 在其他所有点的函数值\"},{\"value\":\"C\",\"label\":\"不缺信息，函数在该点有值就一定连续\"},{\"value\":\"D\",\"label\":\"只需再确认左极限存在，不必考虑右极限\"}],\"answer\":[\"A\"],\"analysis\":\"单独知道函数值不能判断连续。还要检查左右极限存在且相等，并确认所得极限值等于该点函数值。\",\"points\":8,\"knowledgePointIds\":[\"GH-02-K03\"],\"cognitiveLevel\":\"分析\",\"estimatedSteps\":3,\"pairId\":\"P05\",\"equivalence\":{\"presentationMode\":\"text\",\"knownConditionCount\":2,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"continuity_reasoning_diagnosis\"}}",
+        "{\"id\":\"GH-02-post-q6\",\"type\":\"text\",\"question\":\"某同学看到 p(2)=8，又知道 x 从 2 的左右两侧靠近时 p(x) 都趋近 5，便写下：‘左右极限相等，所以 p(x) 在 x=2 处连续。’请纠正这份解答，给出正确结论和完整推理。\",\"answer\":\"该结论错误，p(x) 在 x=2 处不连续。左右极限都等于 5，说明双侧极限存在且等于 5；然而 p(2)=8，与极限值 5 不相等，所以不满足连续性的条件。\",\"analysis\":\"纠错时既要肯定左右极限相等带来的结论，又要指出原解答漏掉了极限值与函数值的比较，最后得出不连续。\",\"points\":20,\"knowledgePointIds\":[\"GH-02-K03\"],\"cognitiveLevel\":\"分析\",\"estimatedSteps\":4,\"pairId\":\"P06\",\"equivalence\":{\"presentationMode\":\"text\",\"knownConditionCount\":3,\"operationCount\":0,\"symbolComplexity\":\"low\",\"conclusionClass\":\"discontinuous\"},\"rubric\":[{\"criterion\":\"判断双侧极限是否存在\",\"points\":6},{\"criterion\":\"比较极限值与函数值\",\"points\":6},{\"criterion\":\"给出连续性结论并完整说明理由\",\"points\":8}]}"
+      ]
+    }
+  ]
+}

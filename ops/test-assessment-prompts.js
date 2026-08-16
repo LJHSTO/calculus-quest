@@ -104,7 +104,8 @@ for (const [index, name] of gh02PairPrompts.sort().entries()) {
   assert.match(pairPrompt, new RegExp(`GH-02-pre-q${index + 1}`));
   assert.match(pairPrompt, new RegExp(`GH-02-post-q${index + 1}`));
   assert.match(pairPrompt, /严禁仅替换数字、函数名、变量、坐标或选项顺序/);
-  assert.match(pairPrompt, /顶层只能有 pre 和 post 两个键/);
+  assert.match(pairPrompt, /顶层键只允许 languageDirective、courseTitle、outlines/);
+  assert.match(pairPrompt, /两个 keyPoints 各恰好一个题目对象字符串/);
 }
 
 process.stdout.write(`Assessment prompts verified: ${moduleCount} modules, ${pointCount} knowledge points.\n`);

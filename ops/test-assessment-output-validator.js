@@ -141,7 +141,7 @@ assert.equal(validPaired.valid, true);
 
 const malformed = pairedPayload();
 const malformedPre = malformed.outlines[0].keyPoints.map(JSON.parse);
-malformedPre[0].question = '数表题要求判断""的趋近值。';
+malformedPre[0].question = "数表题要求判断 ____ 的趋近值。";
 malformedPre.push({ ...malformedPre[5], id: "GH-02-pre-q6b" });
 malformed.outlines[0].keyPoints = malformedPre.map(JSON.stringify);
 const malformedPost = malformed.outlines[1].keyPoints.map(JSON.parse);

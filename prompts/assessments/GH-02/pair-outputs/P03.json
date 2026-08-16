@@ -1,0 +1,30 @@
+{
+  "pre": {
+    "id": "GH-02-pre-q3",
+    "type": "single",
+    "question": "当 x 取小于 3 的值并逐渐靠近 3 时，f(x) 依次接近 5.7、5.9、5.99。由此判断 f(x) 在 x=3 处的左极限是？",
+    "options": [{"value":"A","label":"3"},{"value":"B","label":"5.99"},{"value":"C","label":"6"},{"value":"D","label":"不存在"}],
+    "answer": ["C"],
+    "analysis": "题目只要求读取左侧趋势。随着 x 从左侧靠近 3，f(x) 的值越来越接近 6，因此左极限为 6。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K02"],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {"presentationMode":"text","knownConditionCount":3,"operationCount":0,"symbolComplexity":"low","conclusionClass":"one_sided_limit_judgment"}
+  },
+  "post": {
+    "id": "GH-02-post-q3",
+    "type": "single",
+    "question": "观察右侧记录：自变量从 2.3、2.1、2.01 逐步靠近 2，相应的 g(x) 为 4.3、4.1、4.01。哪一陈述准确概括这一单侧趋势？",
+    "options": [{"value":"A","label":"g(x) 的右极限为 2"},{"value":"B","label":"g(x) 的右极限为 4"},{"value":"C","label":"g(x) 的左极限为 4"},{"value":"D","label":"g(x) 的右极限不存在"}],
+    "answer": ["B"],
+    "analysis": "给出的自变量都在 2 的右侧，并向 2 靠近；相应函数值由 4.3、4.1、4.01 接近 4，所以右极限为 4。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K02"],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {"presentationMode":"text","knownConditionCount":3,"operationCount":0,"symbolComplexity":"low","conclusionClass":"one_sided_limit_judgment"}
+  }
+}
