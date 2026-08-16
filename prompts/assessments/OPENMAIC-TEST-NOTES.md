@@ -163,3 +163,4 @@
 - generation 专项测试共 12 项通过，TypeScript 类型检查通过；测试覆盖“合法 JSON 不调用模型”“模型少题被拒绝”“非法结构化 JSON 不触发二次改写”。
 - calculus-quest 的前后测提示词现强制输出 `quizConfig.questionCount=6`，验证器也检查 questionCount、difficulty 和三种题型声明。
 - 浏览器复测第一轮被门禁拦截：前后测 Q6 均漏掉 JSON 结束大括号，只能解析 5 题；第二轮 outline 整体无法解析并返回 0 场景。两轮均未确认课堂，说明失败已从“悄悄生成残缺课堂”转变为“明确阻止不合格输入”。
+- 第三轮模型把 `keyPoints` 直接输出为题目对象数组，审阅编辑器因尝试渲染对象而报 React 错误。OpenMAIC 提交 `a7f18e7` 已在流式大纲入口把对象型 keyPoints 统一 `JSON.stringify` 为字符串，兼容模型的两种输出形态。
