@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q4",
+    "type": "single",
+    "question": "一辆汽车沿直线运动，位移 s（单位：米）随时间 t（单位：秒）变化。已知位移函数在 t=2 秒时的导数为 4，这个数值的正确含义是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "汽车在 0 到 2 秒内的平均速度为 4 米/秒"
+      },
+      {
+        "value": "B",
+        "label": "汽车在 t=2 秒时的瞬时速度为 4 米/秒"
+      },
+      {
+        "value": "C",
+        "label": "汽车在 t=2 秒时的加速度为 4 米/秒²"
+      },
+      {
+        "value": "D",
+        "label": "汽车在前 2 秒内共行驶了 4 米"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "由 s(t)=t² 可得，在任意时刻 t 的瞬时变化率为 2t，故 函数 s 在 2 处的导数=4。此值的物理含义是：当 t=2 秒时，汽车速度的瞬时大小为 4 米/秒。A 错误，因为平均速度应为 [s(2)−s(0)]/(2−0)=2 米/秒；C 错误，瞬时速度的变化率（加速度）才是 2t 的导数，即 2 米/秒²；D 错误，前 2 秒的总位移为 s(2)=4 米，但 函数 s 在 2 处的导数=4 描述的是速度而非位移总量。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K02"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "word",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "含义解释"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q4",
+    "type": "single",
+    "question": "在曲线 y=f(x) 上固定点 P(2,4)，另取曲线上的点 Q。当 Q 沿曲线不断靠近 P 时，割线 PQ 的斜率趋近 4。关于数值 4 的几何意义，下列判断正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "切线斜率等于 f(x) 在区间 [2, x_Q] 上的平均变化率"
+      },
+      {
+        "value": "B",
+        "label": "切线斜率反映了 f(x) 在 x=2 处函数值随自变量变化的瞬时快慢程度"
+      },
+      {
+        "value": "C",
+        "label": "切线斜率等于 secant 线 PQ 在 Q 未逼近 P 之前的平均斜率"
+      },
+      {
+        "value": "D",
+        "label": "切线斜率等于点 P 的纵坐标 f(2)=4"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "当 Q 沿曲线趋近于 P 时，secant 线 PQ 的斜率极限即为曲线在 P 处的切线斜率，其几何意义是函数在该点处变化的瞬时速率。B 正确，切线斜率刻画的是 f(x) 在 x=2 处的瞬时变化趋势；A 错误，平均变化率对应 secant 线的斜率，而非切线斜率；C 错误，Q 未逼近 P 时的是 secant 线斜率，而不是极限位置的切线斜率；D 错误，f(2)=4 只是点 P 的纵坐标，切线斜率为 4 是巧合，并非点 P 纵坐标的必然结果。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K02"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "word",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "含义解释"
+    }
+  }
+}

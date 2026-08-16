@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q1",
+    "type": "single",
+    "question": "已知函数 f(x)=x²，求 f 在闭区间 [1,3] 上的平均变化率，并说明该数值在几何上代表什么。",
+    "options": [
+      {
+        "value": "A",
+        "label": "平均变化率为 4，几何上表示连接点 (1,1) 与点 (3,9) 的割线的斜率"
+      },
+      {
+        "value": "B",
+        "label": "平均变化率为 6，几何上表示曲线在 x=2 处的切线斜率"
+      },
+      {
+        "value": "C",
+        "label": "平均变化率为 8，几何上表示函数图像的纵坐标增量"
+      },
+      {
+        "value": "D",
+        "label": "平均变化率为 2，几何上表示连接点 (1,0) 与点 (3,0) 的水平割线的斜率"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "平均变化率的计算公式为 [f(b)−f(a)]/(b−a)。将 a=1，b=3，f(x)=x² 代入得 [f(3)−f(1)]/(3−1)=[9−1]/2=4。几何上，平均变化率等于连接函数图像上两点的割线斜率，此处即为连接 (1,1) 和 (3,9) 的割线斜率。选项 B 混淆了平均变化率与瞬时变化率；选项 C 误将分子 8 当作比值；选项 D 使用了错误的起点 (1,0)。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "低",
+      "conclusionClass": "计算+解释"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q1",
+    "type": "single",
+    "question": "某蓄水池在第 t 小时的蓄水量为 W(t)=2t²+10（单位：立方米）。管理员要描述第 1 小时到第 4 小时之间蓄水量的平均变化。下列计算及解释正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "平均变化率为 10 立方米/小时，表示图像上连接 (1,12) 与 (4,42) 两点的割线斜率"
+      },
+      {
+        "value": "B",
+        "label": "平均变化率为 30 立方米/小时，表示两时刻蓄水量之差"
+      },
+      {
+        "value": "C",
+        "label": "平均变化率为 13.5 立方米/小时，等于两端蓄水量的算术平均"
+      },
+      {
+        "value": "D",
+        "label": "平均变化率为 8 立方米/小时，表示 t=4 时图像切线的斜率"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "W(1)=12，W(4)=42，因此平均变化率为 [42−12]/(4−1)=10 立方米/小时。它在几何上等于连接图像上两端点的割线斜率，所以 A 正确。B 只计算了蓄水量之差，C 混淆了函数值平均数，D 混淆了平均变化率与瞬时变化率。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "低",
+      "conclusionClass": "计算+解释"
+    }
+  }
+}

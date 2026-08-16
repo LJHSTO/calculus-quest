@@ -1,0 +1,72 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q6",
+    "type": "text",
+    "question": "水箱体积 V(t) 以升计，时间 t 以分钟计。已知 t=3 分钟时体积函数的导数为 5。请解释这一导数对应的时刻、正负号、大小、单位，以及它对 t=3 附近体积变化的近似描述。",
+    "answer": "函数 V 在 3 处的导数 表示 t=3 分钟时刻水箱注水体积的瞬时变化率（即导数）。数值 5 表示该时刻体积每分钟增加 5 升，正号表示体积在增加。单位为 升/分钟。在 t=3 附近，微小时间变化 Δt 引起的体积变化约为 5·Δt 升，即体积呈现局部线性增长。",
+    "analysis": "本题考查导数的几何与物理意义：符号表示瞬时变化率，数值大小给出变化快慢，正负给出增减方向，单位由因变量单位除自变量单位得出，局部线性近似是导数的核心应用。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-03-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 4,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": 1,
+      "conclusionClass": "interpretation"
+    },
+    "rubric": [
+      {
+        "criterion": "准确说明 函数 V 在 3 处的导数 表示 t=3 时的瞬时变化率/导数",
+        "points": 6
+      },
+      {
+        "criterion": "正确解释数值 5 与正号：每分钟增加 5 升，体积增加",
+        "points": 7
+      },
+      {
+        "criterion": "给出单位 升/分钟，并说明局部线性近似 ΔV≈5·Δt",
+        "points": 7
+      }
+    ]
+  },
+  "post": {
+    "id": "GH-03-post-q6",
+    "type": "text",
+    "question": "研究热水温度 T(t)（单位：℃）随时间 t（单位：分钟）的变化时，测得 t=2 分钟时温度函数的导数为 −4。小林说：‘这表示第 2 分钟到第 3 分钟温度必定恰好下降 4℃，而且不需要写单位。’请纠正他的说法，并从对应时刻、正负号、大小、单位和局部变化五方面给出完整解释。",
+    "answer": "函数 T 在 2 处的导数 描述的是 t=2 分钟这一时刻的瞬时变化率，不保证随后整整一分钟都保持相同速度。负号表示温度在该时刻附近随时间增加而下降，大小 4 表示瞬时降温速率为每分钟 4℃，单位必须写成 ℃/分钟。仅在 t=2 附近很短的时间 Δt 内，才可近似认为温度变化量为 -4Δt ℃。",
+    "analysis": "本题考查导数的几何与物理意义：符号表示瞬时变化率，数值大小给出变化快慢，正负给出增减方向，单位由因变量单位除自变量单位得出，局部线性近似是导数的核心应用。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-03-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 4,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": 1,
+      "conclusionClass": "interpretation"
+    },
+    "rubric": [
+      {
+        "criterion": "指出原说法把瞬时变化错误推广到完整一分钟，并说明 函数 T 在 2 处的导数 对应 t=2 时刻",
+        "points": 6
+      },
+      {
+        "criterion": "正确解释负号、大小 4 及 ℃/分钟这一单位",
+        "points": 7
+      },
+      {
+        "criterion": "说明局部变化趋势，并给出短时间内 ΔT≈-4Δt 的近似含义",
+        "points": 7
+      }
+    ]
+  }
+}

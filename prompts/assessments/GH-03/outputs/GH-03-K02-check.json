@@ -1,0 +1,146 @@
+{
+  "languageDirective": "zh",
+  "courseTitle": "函数、极限与导数入口",
+  "outlines": [
+    {
+      "id": "GH-03-K02-check",
+      "type": "quiz",
+      "title": "即时检查：瞬时变化率和切线",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 3,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-03-K02-check-q1",
+          "type": "single",
+          "question": "关于瞬时变化率和切线的概念，下列说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "瞬时变化率就是函数在某一点处的函数值"
+            },
+            {
+              "value": "B",
+              "label": "切线可以理解为割线在两个端点无限接近时的极限位置"
+            },
+            {
+              "value": "C",
+              "label": "瞬时变化率等于函数在两个不同点之间的平均变化率"
+            },
+            {
+              "value": "D",
+              "label": "曲线的切线与该曲线在所有点处都只有一个公共点"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "瞬时变化率是平均变化率在自变量增量趋近于零时的极限值，不是某点的函数值，A错误；瞬时变化率反映的是单点的变化快慢，不等于两个不同点之间的平均变化率，C错误；圆等曲线的切线与曲线在切点之外可能还有其他交点，D错误。切线的几何意义正是割线两端点无限靠近时的极限位置，B正确。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-03-K02"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 1,
+          "pairId": "GH-03-K02-q1",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "低",
+            "conclusionClass": "概念辨析"
+          }
+        },
+        {
+          "id": "GH-03-K02-check-q2",
+          "type": "single",
+          "question": "已知函数f(x)=x²，求曲线y=f(x)在点(1,1)处的切线斜率。",
+          "options": [
+            {
+              "value": "A",
+              "label": "1"
+            },
+            {
+              "value": "B",
+              "label": "0"
+            },
+            {
+              "value": "C",
+              "label": "3"
+            },
+            {
+              "value": "D",
+              "label": "2"
+            }
+          ],
+          "answer": [
+            "D"
+          ],
+          "analysis": "切线斜率即该点的瞬时变化率。按定义计算：函数 f 在 1 处的导数=lim(h→0)[f(1+h)−f(1)]/h=lim(h→0)[(1+h)²−1]/h=lim(h→0)(2h+h²)/h=lim(h→0)(2+h)=2。故选D。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-03-K02"
+          ],
+          "cognitiveLevel": "应用",
+          "estimatedSteps": 2,
+          "pairId": "GH-03-K02-q2",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "低",
+            "conclusionClass": "基础计算"
+          }
+        },
+        {
+          "id": "GH-03-K02-check-q3",
+          "type": "multiple",
+          "question": "下列关于瞬时变化率和切线的说法中，正确的有哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "瞬时变化率是平均变化率在自变量改变量趋近于零时的极限"
+            },
+            {
+              "value": "B",
+              "label": "瞬时变化率就是函数在某点附近的平均变化率"
+            },
+            {
+              "value": "C",
+              "label": "曲线在某点的切线斜率反映了函数在该点的瞬时变化率"
+            },
+            {
+              "value": "D",
+              "label": "只要知道函数在某点的瞬时变化率，就能确定该点处切线的方程"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "瞬时变化率是极限概念，不是平均变化率本身，A正确，B错误。切线斜率的几何意义正是瞬时变化率，C正确。知道瞬时变化率（即斜率）和切点坐标才能确定切线方程，仅有变化率无法确定切线，D错误。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-03-K02"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 1,
+          "pairId": "GH-03-K02-q3",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "低",
+            "conclusionClass": "误解诊断"
+          }
+        }
+      ]
+    }
+  ]
+}

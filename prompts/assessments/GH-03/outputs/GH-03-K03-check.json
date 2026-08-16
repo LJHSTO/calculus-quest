@@ -1,0 +1,147 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "函数、极限与导数入口",
+  "outlines": [
+    {
+      "id": "GH-03-K03-check",
+      "type": "quiz",
+      "title": "即时检查：导数符号和意义",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 3,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-03-K03-check-q1",
+          "type": "single",
+          "question": "设函数 f(x) = x²，在 x = 2 处的导数 f′(2) = 4。以下说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "f(2) = 4，说明函数在此处的函数值为正"
+            },
+            {
+              "value": "B",
+              "label": "f′(2) > 0，说明函数在全体实数上单调递增"
+            },
+            {
+              "value": "C",
+              "label": "f′(2) < 0，说明函数在 x = 2 附近单调递减"
+            },
+            {
+              "value": "D",
+              "label": "f′(2) > 0，说明函数在 x = 2 附近单调递增"
+            }
+          ],
+          "answer": [
+            "D"
+          ],
+          "analysis": "f′(2) = 4 > 0 表示函数在 x = 2 这一点的瞬时变化率为正，即在该点附近函数值随自变量增大而增大，函数单调递增。A 混淆了 f(2) 的值与导数的意义；B 将由一点导数为正推广到了全体实数，范围过度扩大；C 符号判断错误。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-03-K03"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 1,
+          "pairId": "GH-03-K03",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "sign-interpretation"
+          }
+        },
+        {
+          "id": "GH-03-K03-check-q2",
+          "type": "single",
+      "question": "水箱体积 V(t) 以升计、时间 t 以分钟计。已知 函数 V 在 5 处的导数=12，则在 t=5 附近经过很短的 0.1 分钟，体积变化量的合理近似是：",
+          "options": [
+            {
+              "value": "A",
+          "label": "增加约 1.2 升"
+            },
+            {
+              "value": "B",
+          "label": "增加约 12 升"
+            },
+            {
+              "value": "C",
+          "label": "减少约 1.2 升"
+            },
+            {
+              "value": "D",
+          "label": "无法由导数作任何近似"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+    "analysis": "函数 V 在 5 处的导数=12 升/分钟表示 t=5 附近体积以每分钟约 12 升的速率增加。很短的 0.1 分钟内，体积变化量可近似为 12×0.1=1.2 升，因此 A 正确。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-03-K03"
+          ],
+          "cognitiveLevel": "应用",
+          "estimatedSteps": 2,
+          "pairId": "GH-03-K03",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 1,
+      "operationCount": 1,
+            "symbolComplexity": "low",
+      "conclusionClass": "local-change-estimate"
+          }
+        },
+        {
+          "id": "GH-03-K03-check-q3",
+          "type": "multiple",
+          "question": "下列关于导数符号与实际意义的说法中，正确的有（多选）：",
+          "options": [
+            {
+              "value": "A",
+          "label": "若路程 s 以米计、时间 t 以秒计，则 函数 s 在 t₀ 处的导数 的单位是米/秒"
+            },
+            {
+              "value": "B",
+          "label": "函数 f 在 x₀ 处的导数<0 表示函数图像在点 (x₀,f(x₀)) 处的切线斜率为负"
+            },
+            {
+              "value": "C",
+          "label": "函数 f 在 x₀ 处的导数=0 必然说明 f(x₀)=0"
+            },
+            {
+              "value": "D",
+          "label": "函数 f 在 x₀ 处的导数 表示函数在 x₀ 处的瞬时变化率，而不是某个固定区间上的平均变化率"
+            }
+          ],
+          "answer": [
+      "A",
+      "B",
+      "D"
+          ],
+    "analysis": "A 的单位由因变量单位除以自变量单位得到；B 正确解释了负导数的几何意义；D 正确区分瞬时变化率和区间平均变化率。C 混淆了导数值与函数值，例如 f(x)=x²+1 在 x=0 处导数为 0，但函数值为 1。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-03-K03"
+          ],
+          "cognitiveLevel": "分析",
+          "estimatedSteps": 1,
+          "pairId": "GH-03-K03",
+          "equivalence": {
+            "presentationMode": "conceptual",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "misconception-diagnosis"
+          }
+        }
+      ]
+    }
+  ]
+}

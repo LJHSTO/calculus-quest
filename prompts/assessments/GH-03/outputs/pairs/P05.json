@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q5",
+    "type": "multiple",
+    "question": "某容器中水温 f(t)（单位：℃）随时间 t（单位：分钟）变化。已知 t=a 时水温函数的导数为 −2。下列叙述哪些正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "函数 f 在 a 处的导数 的单位为 °C/min"
+      },
+      {
+        "value": "B",
+        "label": "函数 f 在 a 处的导数 = −2 表示在 t = a 时水温以每分钟 2°C 的速度下降"
+      },
+      {
+        "value": "C",
+        "label": "函数 f 在 a 处的导数 的符号为负，说明在 t = a 附近 f(t) 是减函数，其图像切线斜率为正"
+      },
+      {
+        "value": "D",
+        "label": "函数 f 在 a 处的导数 的几何意义是曲线在点 (a, f(a)) 处切线的斜率"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "analysis": "函数 f 在 a 处的导数 = −2 表示水温在 t = a 处的瞬时变化率为 −2°C/min，即每分钟下降 2°C，故 A、B 正确。函数 f 在 a 处的导数 的符号为负表示切线斜率为负，C 错误。函数 f 在 a 处的导数 的几何意义正是曲线在 (a, f(a)) 处切线的斜率，D 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K03"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "conceptual_understanding"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q5",
+    "type": "multiple",
+    "question": "某地区人口数量 P(x)（单位：万人）随年份 x 变化。已知 x=b 时人口函数的导数为 3.5。下列叙述哪些正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "函数 P 在 b 处的导数 的值为正，说明在 x = b 附近人口逐年增长，其图像切线斜率为负"
+      },
+      {
+        "value": "B",
+        "label": "函数 P 在 b 处的导数 = 3.5 表示在 x = b 时人口以每年 3.5 万人的速度增长"
+      },
+      {
+        "value": "C",
+        "label": "函数 P 在 b 处的导数 的几何意义是曲线在点 (b, P(b)) 处切线的斜率"
+      },
+      {
+        "value": "D",
+        "label": "函数 P 在 b 处的导数 的单位为万人/年"
+      }
+    ],
+    "answer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "analysis": "函数 P 在 b 处的导数=3.5>0，表示该年人口以每年 3.5 万人的瞬时速率增长，B 正确；它也是曲线在 (b,P(b)) 处切线的斜率，C 正确；单位为万人/年，D 正确。A 把正导数错误解释成负斜率。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K03"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "conceptual_understanding"
+    }
+  }
+}
