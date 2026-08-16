@@ -291,8 +291,7 @@ function validateGh02Blueprint(parsedByPhase, errors) {
     0: "reading_limit_from_table",
     1: "limit_not_in_table",
     3: "two_sided_limit_exists",
-    4: "continuity_reasoning_diagnosis",
-    5: "discontinuous"
+    9: "discontinuous"
   };
   for (const [phase, questions] of Object.entries(parsedByPhase)) {
     for (const [indexText, expectedClass] of Object.entries(expectedConclusionClasses)) {
@@ -309,9 +308,9 @@ function validateGh02Blueprint(parsedByPhase, errors) {
         addError(errors, "GH02_TABLE_POSITIVE_VALUES_REQUIRED", `$.${phase}.q${index + 1}.evidence`, "GH-02 的 P01、P02 数表必须全部使用正数，以保持 A/B 符号复杂度一致");
       }
     }
-    const rubricPoints = (questions[5]?.rubric || []).map((item) => Number(item?.points));
+    const rubricPoints = (questions[9]?.rubric || []).map((item) => Number(item?.points));
     if (JSON.stringify(rubricPoints) !== JSON.stringify([6, 6, 8])) {
-      addError(errors, "GH02_RUBRIC_INVALID", `$.${phase}.q6.rubric`, "GH-02 P06 必须恰好使用 6、6、8 分三个评分点");
+      addError(errors, "GH02_RUBRIC_INVALID", `$.${phase}.q10.rubric`, "GH-02 P10 必须恰好使用 6、6、8 分三个评分点");
     }
   }
 }
@@ -340,42 +339,45 @@ function validatePairedAssessment(payload, moduleDefinition) {
     if (outline.difficulty !== "medium") addError(errors, "DIFFICULTY_INVALID", `${outlinePath}.difficulty`, "前后测 difficulty 必须为 medium");
     const quizConfigTypes = Array.isArray(outline.quizConfig?.questionTypes) ? outline.quizConfig.questionTypes : [];
     if (
-      Number(outline.quizConfig?.questionCount) !== 6 ||
+      Number(outline.quizConfig?.questionCount) !== 10 ||
       outline.quizConfig?.difficulty !== "medium" ||
       !["single", "multiple", "text"].every((type) => quizConfigTypes.includes(type))
     ) {
-      addError(errors, "QUIZ_CONFIG_INVALID", `${outlinePath}.quizConfig`, "前后测 quizConfig 必须声明 6 题、medium，并包含 single、multiple、text");
+      addError(errors, "QUIZ_CONFIG_INVALID", `${outlinePath}.quizConfig`, "前后测 quizConfig 必须声明 10 题、medium，并包含 single、multiple、text");
     }
     const entries = questionEntries(outline);
-    if (entries.length !== 6) addError(errors, "QUESTION_COUNT_INVALID", `${outlinePath}.keyPoints`, "每卷必须恰好包含 6 道题");
+    if (entries.length !== 10) addError(errors, "QUESTION_COUNT_INVALID", `${outlinePath}.keyPoints`, "每卷必须恰好包含 10 道题");
     const parsed = entries.map((entry, questionIndex) => validateQuestion(
       parseQuestion(entry, `${outlinePath}.keyPoints[${questionIndex}]`, errors),
       {
         path: `${outlinePath}.keyPoints[${questionIndex}]`,
         expectedId: `${moduleId}-${phase}-q${questionIndex + 1}`,
-        expectedPoints: questionIndex === 5 ? 20 : 8,
+        expectedPoints: questionIndex === 9 ? 20 : questionIndex >= 7 ? 12 : 8,
         allowedKnowledgePoints,
-        allowText: questionIndex === 5
+        allowText: questionIndex === 9
       },
       errors
     ));
     const types = parsed.map((question) => question?.type);
-    if (types.slice(0, 5).filter((type) => type === "single").length !== 4 || types.slice(0, 5).filter((type) => type === "multiple").length !== 1 || types[5] !== "text") {
-      addError(errors, "QUESTION_TYPE_DISTRIBUTION", `${outlinePath}.keyPoints`, "Q1-Q5 必须为 4 道单选和 1 道多选，Q6 必须为简答题");
+    if (!types.slice(0, 7).every((type) => type === "single") || !types.slice(7, 9).every((type) => type === "multiple") || types[9] !== "text") {
+      addError(errors, "QUESTION_TYPE_DISTRIBUTION", `${outlinePath}.keyPoints`, "Q1-Q7 必须为单选题，Q8-Q9 必须为多选题，Q10 必须为简答题");
     }
     const pairIds = parsed.map((question) => question?.pairId);
     const expectedPairIds = parsed.map((question, index) => `P${String(index + 1).padStart(2, "0")}`);
     if (JSON.stringify(pairIds) !== JSON.stringify(expectedPairIds)) {
-      addError(errors, "PAIR_ID_SEQUENCE_INVALID", `${outlinePath}.keyPoints`, "pairId 必须按 P01 至 P06 各出现一次且与题位一致");
+      addError(errors, "PAIR_ID_SEQUENCE_INVALID", `${outlinePath}.keyPoints`, "pairId 必须按 P01 至 P10 各出现一次且与题位一致");
     }
     const total = parsed.reduce((sum, question) => sum + Number(question?.points || 0), 0);
-    if (total !== 60) addError(errors, "TOTAL_POINTS_INVALID", `${outlinePath}.keyPoints`, "每卷总分必须为 60 分");
+    if (total !== 100) addError(errors, "TOTAL_POINTS_INVALID", `${outlinePath}.keyPoints`, "每卷总分必须为 100 分");
     const normalizedQuestions = parsed.filter(Boolean).map((question) => normalizeText(question.question));
     if (new Set(normalizedQuestions).size !== normalizedQuestions.length) addError(errors, "DUPLICATE_QUESTION", `${outlinePath}.keyPoints`, "同一卷内不得出现重复题目");
     validateWithinFormDiversity(parsed, `${outlinePath}.keyPoints`, errors);
-    const covered = new Set(parsed.filter(Boolean).map((question) => question.kpId));
+    const coverageCounts = parsed.filter(Boolean).reduce((counts, question) => {
+      counts.set(question.kpId, (counts.get(question.kpId) || 0) + 1);
+      return counts;
+    }, new Map());
     for (const kpId of allowedKnowledgePoints) {
-      if (!covered.has(kpId)) addError(errors, "KNOWLEDGE_POINT_NOT_COVERED", `${outlinePath}.keyPoints`, `知识点 ${kpId} 未被覆盖`);
+      if ((coverageCounts.get(kpId) || 0) < 2) addError(errors, "KNOWLEDGE_POINT_NOT_COVERED", `${outlinePath}.keyPoints`, `知识点 ${kpId} 至少需要两道题形成稳定测量`);
     }
     parsedByPhase[phase] = parsed;
   });
@@ -394,11 +396,11 @@ function validateFormativeAssessment(payload, moduleDefinition, knowledgePointId
   if (outline.type !== "quiz") addError(errors, "OUTLINE_TYPE_INVALID", "$.outlines[0].type", "outline type 必须为 quiz");
   if (point && outline.title !== `即时检查：${point.name}`) addError(errors, "OUTLINE_TITLE_INVALID", "$.outlines[0].title", `outline title 必须为 即时检查：${point.name}`);
   if (Number(outline.order) !== 1) addError(errors, "OUTLINE_ORDER_INVALID", "$.outlines[0].order", "outline order 必须为 1");
-  if (Number(outline.quizConfig?.questionCount) !== 3 || outline.quizConfig?.difficulty !== "medium") {
-    addError(errors, "QUIZ_CONFIG_INVALID", "$.outlines[0].quizConfig", "形成性测验 quizConfig 必须声明 3 题且 difficulty=medium");
+  if (Number(outline.quizConfig?.questionCount) !== 2 || outline.quizConfig?.difficulty !== "medium") {
+    addError(errors, "QUIZ_CONFIG_INVALID", "$.outlines[0].quizConfig", "形成性测验 quizConfig 必须声明 2 题且 difficulty=medium");
   }
   const entries = questionEntries(outline);
-  if (entries.length !== 3) addError(errors, "QUESTION_COUNT_INVALID", "$.outlines[0].keyPoints", "形成性测验必须恰好有 3 题");
+  if (entries.length !== 2) addError(errors, "QUESTION_COUNT_INVALID", "$.outlines[0].keyPoints", "形成性测验必须恰好有 2 题（1 道核心题 + 1 道诊断题）");
   const parsed = entries.map((entry, index) => validateQuestion(
     parseQuestion(entry, `$.outlines[0].keyPoints[${index}]`, errors),
     {
@@ -411,11 +413,15 @@ function validateFormativeAssessment(payload, moduleDefinition, knowledgePointId
     errors
   ));
   const types = parsed.map((question) => question?.type);
-  if (types.filter((type) => type === "single").length !== 2 || types.filter((type) => type === "multiple").length !== 1) {
-    addError(errors, "QUESTION_TYPE_DISTRIBUTION", "$.outlines[0].keyPoints", "形成性测验必须包含 2 道单选和 1 道多选");
+  if (types[0] !== "single" || types[1] !== "multiple") {
+    addError(errors, "QUESTION_TYPE_DISTRIBUTION", "$.outlines[0].keyPoints", "形成性测验 Q1 必须为核心单选题，Q2 必须为诊断多选题");
   }
-  if (parsed.reduce((sum, question) => sum + Number(question?.points || 0), 0) !== 30) {
-    addError(errors, "TOTAL_POINTS_INVALID", "$.outlines[0].keyPoints", "形成性测验总分必须为 30 分");
+  const adaptiveRoles = parsed.map((question) => question?.adaptiveRole);
+  if (adaptiveRoles[0] !== "core" || adaptiveRoles[1] !== "diagnostic") {
+    addError(errors, "ADAPTIVE_ROLE_INVALID", "$.outlines[0].keyPoints", "Q1 adaptiveRole 必须为 core，Q2 必须为 diagnostic");
+  }
+  if (parsed.reduce((sum, question) => sum + Number(question?.points || 0), 0) !== 20) {
+    addError(errors, "TOTAL_POINTS_INVALID", "$.outlines[0].keyPoints", "形成性测验题库总分必须为 20 分");
   }
   const moduleKpIds = new Set((moduleDefinition?.knowledgePoints || []).map((item) => item.id));
   if (!moduleKpIds.has(knowledgePointId)) addError(errors, "KNOWLEDGE_POINT_UNKNOWN", "$", `知识点 ${knowledgePointId} 不属于模块 ${moduleDefinition?.id}`);

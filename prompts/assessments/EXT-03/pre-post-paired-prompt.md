@@ -48,17 +48,17 @@
 1. id="EXT-03-pre"；title="前测：概率统计直觉之旅（A卷）"；order=1。
 2. id="EXT-03-post"；title="后测：概率统计直觉之旅（B卷）"；order=2。
 
-场景与题目归属是硬约束：第一个 outline 的 keyPoints 只能依次包含 EXT-03-pre-q1 至 EXT-03-pre-q6；第二个 outline 的 keyPoints 只能依次包含 EXT-03-post-q1 至 EXT-03-post-q6。不得把 post 题放入 pre outline，不得把 pre 题放入 post outline，不得把同一道题同时放入两个 outline。整个响应中题目对象总数必须恰好为 12，每个规定 id 恰好出现一次；一个 outline 的 keyPoints 数组结束后立即关闭该 outline 对象，再开始下一个 outline 对象。
+场景与题目归属是硬约束：第一个 outline 的 keyPoints 只能依次包含 EXT-03-pre-q1 至 EXT-03-pre-q10；第二个 outline 的 keyPoints 只能依次包含 EXT-03-post-q1 至 EXT-03-post-q10。不得把 post 题放入 pre outline，不得把 pre 题放入 post outline，不得把同一道题同时放入两个 outline。整个响应中题目对象总数必须恰好为 20，每个规定 id 恰好出现一次；一个 outline 的 keyPoints 数组结束后立即关闭该 outline 对象，再开始下一个 outline 对象。
 
-两卷各 6 题，总分均为 60 分。每个 outline 对象根层级的 difficulty 都必须写为 "medium"，并且必须写出 quizConfig={"questionCount":6,"difficulty":"medium","questionTypes":["single","multiple","text"]}；不得依赖 OpenMAIC 的默认题量。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
-每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 EXT-03-pre-q1 至 EXT-03-pre-q6、EXT-03-post-q1 至 EXT-03-post-q6，不得缩写、重复或增加 q6b 等变体；pairId 必须按题位严格使用 P01 至 P06，每卷各出现一次。
+两卷各 10 题，总分均为 100 分。每个 outline 对象根层级的 difficulty 都必须写为 "medium"，并且必须写出 quizConfig={"questionCount":10,"difficulty":"medium","questionTypes":["single","multiple","text"]}；不得依赖 OpenMAIC 的默认题量。题型、顺序和分值结构固定一致：Q1-Q7 为 single，每题 8 分；Q8-Q9 为 multiple，每题 12 分；Q10 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 10 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
+每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 EXT-03-pre-q1 至 EXT-03-pre-q10、EXT-03-post-q1 至 EXT-03-post-q10，不得缩写、重复或增加 q10b 等变体；pairId 必须按题位严格使用 P01 至 P10，每卷各出现一次。
 所有选择题的 question 只能包含题干，不得在 question 内重复写“选项：A…B…C…D…”或①②③④选项清单；question 字符串结束后必须有 JSON 逗号，再写独立 options 字段。options 必须严格使用 [{"value":"A","label":"选项文字"},...] 结构；answer 必须始终为数组，单选如 ["B"]，多选如 ["A","B","D"]，不得写成 "B" 或 "ABD"，不得在 options 中使用 correct 字段。
 equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass，用作 A/B 程序等值检查；配对题这些字段必须逐项相同。若 presentationMode="table"，题目对象根层级还必须提供 evidence={kind:"two-sided-table",targetX,targetY,correctOptionId:"B",rows:[{x,y},...]}，左右各 3 行，并保证数值确实从两侧趋近 targetY；evidence 不得嵌套在 equivalence 中。text 题必须在题目对象根层级提供 rubric 数组，每项包含 criterion 和整数 points；rubric 不得嵌套在 equivalence 中。
 OpenMAIC 的测验题干不会渲染 Markdown 表格。数表题的 question 必须写出左侧 3 组和右侧 3 组、合计 6 组数据，并使用两行纯文本，例如“x 值：1.9，1.99，1.999，2.001，2.01，2.1；f(x) 值：3.9，3.99，3.999，4.001，4.01，4.1”；根层级 evidence.rows 必须逐项保存题干中的这 6 组数据，不多不少、不得漏项；不得包含竖线 |、表头分隔线 ---、HTML 表格或代码围栏。
 
 不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。题干不得出现 ""、''、“”或‘’等空引号占位符；数学对象、极限表达式和所求内容必须完整写出。
 
-所有现有知识点必须至少被一个题位覆盖；多出的题位用于覆盖本模块的核心概念或基础应用，不得引入新知识点。
+所有现有知识点必须至少由两个不同测量功能的题位覆盖；多出的题位用于覆盖本模块的核心概念或基础应用，不得引入新知识点。
 
 【前后测测量等值与表面异构】
 
@@ -76,9 +76,9 @@ A、B 配对题严禁仅替换数值、坐标、变量名、函数名或选项�
 
 【题型与答案规则】
 
-- single：固定 4 个选项，恰好一个正确答案，points=8。
-- multiple：固定 4 个选项，points=8；题干必须明确要求选择所有正确说法或所有错误说法；正确项数量可以为 1、2 或 3，不得让全部选项都正确或全部错误。A/B 配对题的正确项数量必须相同，但不同多选题之间不要求相同。
-- text：必须为 Q6 和全卷最后一题，points=20，是全卷分值最高的题；给出参考答案和可独立评分的评分点，每个评分点必须标明确切整数分值且合计恰好为 20，不得使用“6~7 分”等分值区间。A/B 配对题的评分点数量、逐项分值和要求必须一致。Q6 即使 answer 已经写出完整解法，也绝对不得省略 analysis；answer、analysis、rubric 是三个彼此独立且全部必填的根层级字段。Q6 的字段顺序固定为 id、type、question、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId、equivalence、rubric，输出 rubric 前必须确认 analysis 已经出现。
+- single：Q1-Q7，固定 4 个选项，恰好一个正确答案，points=8。
+- multiple：Q8-Q9，固定 4 个选项，points=12；题干必须明确要求选择所有正确说法或所有错误说法；正确项数量可以为 1、2 或 3，不得让全部选项都正确或全部错误。A/B 配对题的正确项数量必须相同，但两道多选题之间不要求相同。
+- text：必须为 Q10 和全卷最后一题，points=20，是全卷分值最高的题；给出参考答案和可独立评分的评分点，每个评分点必须标明确切整数分值且合计恰好为 20，不得使用“6~7 分”等分值区间。A/B 配对题的评分点数量、逐项分值和要求必须一致。Q10 即使 answer 已经写出完整解法，也绝对不得省略 analysis；answer、analysis、rubric 是三个彼此独立且全部必填的根层级字段。
 - 正确答案的位置不得形成固定规律；干扰项必须来自对应知识点的真实计算错误、符号误读或概念混淆。
 
 【质量与适龄要求】
@@ -89,5 +89,5 @@ A、B 配对题严禁仅替换数值、坐标、变量名、函数名或选项�
 
 【输出前静默检查】
 
-逐题重新计算并确认：整个响应恰好有 12 个题目对象且 12 个 id 全部唯一；pre outline 只含 6 个 pre id，post outline 只含 6 个 post id，不串卷、不重复；两个 quiz 的 keyPoints 均恰好有 6 个可 JSON.parse 的完整题目对象字符串，不含纯考查目标摘要或重复变体；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题；前后测 Q6 都分别具有非空的 answer、非空的 analysis 和 3 项 rubric，三个字段一个也不能省略；两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的 equivalence 字段、先备运算、解题步骤与实际难度一致，但没有任何配对题只是换数字、变量或选项顺序；同一卷没有连续或非连续的近似重复题干模板；同一知识点的不同题位承担不同测量功能；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；数表 evidence 的数值趋势与答案一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+逐题重新计算并确认：整个响应恰好有 20 个题目对象且 20 个 id 全部唯一；pre outline 只含 10 个 pre id，post outline 只含 10 个 post id，不串卷、不重复；两个 quiz 的 keyPoints 均恰好有 10 个可 JSON.parse 的完整题目对象字符串；Q1-Q7 均为 8 分 single，Q8-Q9 均为 12 分 multiple，Q10 为 20 分 text 且固定最后；前后测 Q10 都具有非空 answer、analysis 和 rubric；两卷总分严格等于 100；每个 pairId 在 A/B 卷各出现一次；所有知识点至少覆盖两种测量功能；其余等值、异构、独立作答和质量要求全部满足。
 ```

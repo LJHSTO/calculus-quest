@@ -29,16 +29,20 @@
 
 以上章节、模块、知识点的 ID 和名称必须逐字保持，不得改名、缩写、翻译、合并、拆分、删除或新增知识点。所有题目只能考查这些知识点，不得混入其他模块、后续内容、未列出的定理、标准极限公式或额外运算技巧。每道题必须标注一个主要 knowledgePointId，不得用笼统的模块主题掩盖越界内容。
 
-【本模块专用六题蓝图】
+【本模块专用十题蓝图】
 
 - P01：GH-02-K01；single；给出完整的双侧数表，从数值趋势读取趋近值；A/B 都使用大于 0 的 targetX、targetY，题干与 evidence.rows 都固定为左侧 3 组、右侧 3 组共 6 组正数，两卷逐列使用完全相同的小数位数分布。A 卷采用‘直接估计趋近值’问法；B 卷不得沿用‘已知函数、下表给出、根据数表’句式，改为要求选择哪条陈述能同时概括左侧趋势、右侧趋势和最终趋近结果。两卷核心读取步骤相同但提问句式与选项组织不同；equivalence.conclusionClass 固定为 reading_limit_from_table；8 分。
 - P02：GH-02-K01；single；给出完整的双侧数表，辨析趋近值不必等于表中任何一个数；A/B 都使用大于 0 的 targetX、targetY，题干与 evidence.rows 都固定为左侧 3 组、右侧 3 组共 6 组正数，不得出现 0 或负数，两卷逐列使用完全相同的小数位数分布。P02 必须是学生观点诊断题，题干先引用‘趋近值必须在表中实际出现’这一错误观点，再要求评价；不得像 P01 一样直接询问趋近值。A/B 使用不同的学生推理表达、不同的信息叙述顺序和不同干扰项误解，不得使用同一题干模板；equivalence.conclusionClass 固定为 limit_not_in_table；8 分。
 - P03：GH-02-K02；single；考查单侧极限，不使用图片。A 卷只叙述自变量从左侧靠近目标点时的函数值趋势，直接询问左极限；B 卷改为先给出一组从右侧逐步靠近的函数值记录，再要求选出能正确概括右侧趋势的陈述。两卷都只读取一个单侧趋势、数据量和步骤数相同，但方向、信息组织和提问句式必须不同；不得仅替换函数名、目标点或数值；8 分。
-- P04：GH-02-K02；multiple；辨析双侧极限存在条件；A/B 的左极限与右极限都必须相等，因此两题的双侧极限都存在；不得让一卷存在而另一卷不存在；equivalence.conclusionClass 固定为 two_sided_limit_exists；4 个选项，正确项数量在 A/B 中相同。A 卷直接给出左右极限与函数值，要求选择所有正确结论；B 卷改为给出学生对左右趋势的四条判断，要求选择所有判断正确的说法，不得沿用 A 卷的题干开头、信息顺序或选项句式；8 分。
-- P05：GH-02-K03；single；必须设计为错误诊断题，不得直接使用‘给出左极限、右极限和函数值，判断是否连续’的模板。题干先给出一名学生对连续性的简短判断过程，再要求识别该判断是否严谨或指出缺失条件；A/B 分别使用不同的典型误解与不同句式，但诊断步骤数和阅读负荷相当；equivalence.conclusionClass 固定为 continuity_reasoning_diagnosis；8 分。
-- P06：GH-02-K03；text；固定最后；给出相等的左极限和右极限，以及与极限值不相等的函数值，要求完整说明连续性。A 卷使用‘三条观察记录’的形式依次列出左侧趋势、右侧趋势和该点取值，再要求形成判断；B 卷必须改为‘纠正一份错误解答’，先给出函数值和一名学生‘左右极限相等所以连续’的错误结论，再补充左右极限数据，要求写出反驳与正确推理。不得沿用 P05 的选择式问法。A/B 都得到不连续结论，equivalence.conclusionClass 固定为 discontinuous；两卷信息量、核心三步推理和评分标准相同，但题干开头、信息顺序、作答语境与提问句式全部不同，不得仅替换数值；题目对象必须同时具有 answer、analysis 和 rubric；rubric 必须恰好 3 项且逐项完全同构：①判断双侧极限是否存在（6 分），②比较极限值与函数值（6 分），③给出连续性结论并完整说明理由（8 分），合计 20 分，不得拆成第 4 项或使用分值区间；20 分。
+- P04：GH-02-K02；single；给出左右两侧趋近结果相等的条件，判断双侧极限是否存在；A/B 改变信息组织与提问方式，不能只换数字；8 分。
+- P05：GH-02-K02；single；给出左右两侧趋近结果不相等的条件，诊断双侧极限不存在的原因；与 P04 的结论和问法均不同；8 分。
+- P06：GH-02-K02；single；诊断把函数在目标点的取值与单侧极限混淆的典型错误；不得复刻 P03-P05 的句式；8 分。
+- P07：GH-02-K03；single；以学生推理为材料诊断连续性三个条件中遗漏的一项；A/B 使用不同典型误解和不同叙述顺序；8 分。
+- P08：GH-02-K01；multiple；综合辨析数表中的左右趋近趋势、极限值是否必须实际取到等概念；4 个选项，正确项为 1 至 3 个且 A/B 数量相同；12 分。
+- P09：GH-02-K03；multiple；综合辨析函数在一点连续所需的三个条件及常见误解；4 个选项，正确项为 1 至 3 个且 A/B 数量相同；12 分。
+- P10：GH-02-K03；text；固定最后；给出相等的左极限和右极限，以及与极限值不相等的函数值，要求完整说明连续性。A 卷使用观察记录形成判断，B 卷使用纠正错误解答；两卷核心三步推理与评分标准相同但表面结构不同，禁止仅换数值；rubric 恰好三项 6、6、8 分，合计 20 分；equivalence.conclusionClass 固定为 discontinuous。
 
-严格按 P01-P06 的题型、顺序、知识点和信息呈现方式生成。所有数表必须把每个 x 与 f(x) 数值完整写入题干，并使用 OpenMAIC 可直接显示的两行纯文本格式，例如“x 值：1.9，1.99，1.999，2.001，2.01，2.1；f(x) 值：3.9，3.99，3.999，4.001，4.01，4.1”；不得使用 Markdown 表格、竖线 | 或 --- 分隔线。配对数表必须逐列保持相同的小数位数和正负号复杂度；GH-02 的 P01、P02 两卷一律只用正数，不得出现 0 或负数。不得要求因式分解、约分或直接代数求极限；不得使用“如图”“下图”；不得引入介值定理、夹逼定理、无穷小、去心邻域、sin(x)/x 等标准极限或导数。
+严格按 P01-P10 的题型、顺序、知识点和信息呈现方式生成。Q1-Q7 为单选、每题 8 分；Q8-Q9 为多选、每题 12 分；Q10 为简答、20 分。所有数表必须把每个 x 与 f(x) 数值完整写入题干，并使用 OpenMAIC 可直接显示的两行纯文本格式；不得使用 Markdown 表格。配对数表必须逐列保持相同的小数位数和正负号复杂度；GH-02 的 P01、P02 两卷一律只用正数。不得要求因式分解、约分或直接代数求极限；不得使用“如图”“下图”；不得引入超出既定知识点的内容。
 
 【输出结构】
 
@@ -47,17 +51,17 @@
 1. id="GH-02-pre"；title="前测：极限与连续：直觉探索（A卷）"；order=1。
 2. id="GH-02-post"；title="后测：极限与连续：直觉探索（B卷）"；order=2。
 
-场景与题目归属是硬约束：第一个 outline 的 keyPoints 只能依次包含 GH-02-pre-q1 至 GH-02-pre-q6；第二个 outline 的 keyPoints 只能依次包含 GH-02-post-q1 至 GH-02-post-q6。不得把 post 题放入 pre outline，不得把 pre 题放入 post outline，不得把同一道题同时放入两个 outline。整个响应中题目对象总数必须恰好为 12，每个规定 id 恰好出现一次；一个 outline 的 keyPoints 数组结束后立即关闭该 outline 对象，再开始下一个 outline 对象。
+场景与题目归属是硬约束：第一个 outline 的 keyPoints 只能依次包含 GH-02-pre-q1 至 GH-02-pre-q10；第二个 outline 的 keyPoints 只能依次包含 GH-02-post-q1 至 GH-02-post-q10。不得把 post 题放入 pre outline，不得把 pre 题放入 post outline，不得把同一道题同时放入两个 outline。整个响应中题目对象总数必须恰好为 20，每个规定 id 恰好出现一次；一个 outline 的 keyPoints 数组结束后立即关闭该 outline 对象，再开始下一个 outline 对象。
 
-两卷各 6 题，总分均为 60 分。每个 outline 对象根层级的 difficulty 都必须写为 "medium"，并且必须写出 quizConfig={"questionCount":6,"difficulty":"medium","questionTypes":["single","multiple","text"]}；不得依赖 OpenMAIC 的默认题量。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
-每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 GH-02-pre-q1 至 GH-02-pre-q6、GH-02-post-q1 至 GH-02-post-q6，不得缩写、重复或增加 q6b 等变体；pairId 必须按题位严格使用 P01 至 P06，每卷各出现一次。
+两卷各 10 题，总分均为 100 分。每个 outline 对象根层级的 difficulty 都必须写为 "medium"，并且必须写出 quizConfig={"questionCount":10,"difficulty":"medium","questionTypes":["single","multiple","text"]}；不得依赖 OpenMAIC 的默认题量。题型、顺序和分值结构固定一致：Q1-Q7 为 single，每题 8 分；Q8-Q9 为 multiple，每题 12 分；Q10 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 10 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
+每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 GH-02-pre-q1 至 GH-02-pre-q10、GH-02-post-q1 至 GH-02-post-q10，不得缩写、重复或增加 q10b 等变体；pairId 必须按题位严格使用 P01 至 P10，每卷各出现一次。
 所有选择题的 question 只能包含题干，不得在 question 内重复写“选项：A…B…C…D…”或①②③④选项清单；question 字符串结束后必须有 JSON 逗号，再写独立 options 字段。options 必须严格使用 [{"value":"A","label":"选项文字"},...] 结构；answer 必须始终为数组，单选如 ["B"]，多选如 ["A","B","D"]，不得写成 "B" 或 "ABD"，不得在 options 中使用 correct 字段。
 equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass，用作 A/B 程序等值检查；配对题这些字段必须逐项相同。若 presentationMode="table"，题目对象根层级还必须提供 evidence={kind:"two-sided-table",targetX,targetY,correctOptionId:"B",rows:[{x,y},...]}，左右各 3 行，并保证数值确实从两侧趋近 targetY；evidence 不得嵌套在 equivalence 中。text 题必须在题目对象根层级提供 rubric 数组，每项包含 criterion 和整数 points；rubric 不得嵌套在 equivalence 中。
 OpenMAIC 的测验题干不会渲染 Markdown 表格。数表题的 question 必须写出左侧 3 组和右侧 3 组、合计 6 组数据，并使用两行纯文本，例如“x 值：1.9，1.99，1.999，2.001，2.01，2.1；f(x) 值：3.9，3.99，3.999，4.001，4.01，4.1”；根层级 evidence.rows 必须逐项保存题干中的这 6 组数据，不多不少、不得漏项；不得包含竖线 |、表头分隔线 ---、HTML 表格或代码围栏。
 
 不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。题干不得出现 ""、''、“”或‘’等空引号占位符；数学对象、极限表达式和所求内容必须完整写出。
 
-所有现有知识点必须至少被一个题位覆盖；多出的题位用于覆盖本模块的核心概念或基础应用，不得引入新知识点。
+所有现有知识点必须至少由两个不同测量功能的题位覆盖；多出的题位用于覆盖本模块的核心概念或基础应用，不得引入新知识点。
 
 【前后测测量等值与表面异构】
 
@@ -75,9 +79,9 @@ A、B 配对题严禁仅替换数值、坐标、变量名、函数名或选项�
 
 【题型与答案规则】
 
-- single：固定 4 个选项，恰好一个正确答案，points=8。
-- multiple：固定 4 个选项，points=8；题干必须明确要求选择所有正确说法或所有错误说法；正确项数量可以为 1、2 或 3，不得让全部选项都正确或全部错误。A/B 配对题的正确项数量必须相同，但不同多选题之间不要求相同。
-- text：必须为 Q6 和全卷最后一题，points=20，是全卷分值最高的题；给出参考答案和可独立评分的评分点，每个评分点必须标明确切整数分值且合计恰好为 20，不得使用“6~7 分”等分值区间。A/B 配对题的评分点数量、逐项分值和要求必须一致。Q6 即使 answer 已经写出完整解法，也绝对不得省略 analysis；answer、analysis、rubric 是三个彼此独立且全部必填的根层级字段。Q6 的字段顺序固定为 id、type、question、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId、equivalence、rubric，输出 rubric 前必须确认 analysis 已经出现。
+- single：Q1-Q7，固定 4 个选项，恰好一个正确答案，points=8。
+- multiple：Q8-Q9，固定 4 个选项，points=12；题干必须明确要求选择所有正确说法或所有错误说法；正确项数量可以为 1、2 或 3，不得让全部选项都正确或全部错误。A/B 配对题的正确项数量必须相同，但两道多选题之间不要求相同。
+- text：必须为 Q10 和全卷最后一题，points=20，是全卷分值最高的题；给出参考答案和可独立评分的评分点，每个评分点必须标明确切整数分值且合计恰好为 20，不得使用“6~7 分”等分值区间。A/B 配对题的评分点数量、逐项分值和要求必须一致。Q10 即使 answer 已经写出完整解法，也绝对不得省略 analysis；answer、analysis、rubric 是三个彼此独立且全部必填的根层级字段。
 - 正确答案的位置不得形成固定规律；干扰项必须来自对应知识点的真实计算错误、符号误读或概念混淆。
 
 【质量与适龄要求】
@@ -88,5 +92,5 @@ A、B 配对题严禁仅替换数值、坐标、变量名、函数名或选项�
 
 【输出前静默检查】
 
-逐题重新计算并确认：整个响应恰好有 12 个题目对象且 12 个 id 全部唯一；pre outline 只含 6 个 pre id，post outline 只含 6 个 post id，不串卷、不重复；两个 quiz 的 keyPoints 均恰好有 6 个可 JSON.parse 的完整题目对象字符串，不含纯考查目标摘要或重复变体；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题；前后测 Q6 都分别具有非空的 answer、非空的 analysis 和 3 项 rubric，三个字段一个也不能省略；两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的 equivalence 字段、先备运算、解题步骤与实际难度一致，但没有任何配对题只是换数字、变量或选项顺序；同一卷没有连续或非连续的近似重复题干模板；同一知识点的不同题位承担不同测量功能；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；数表 evidence 的数值趋势与答案一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+逐题重新计算并确认：整个响应恰好有 20 个题目对象且 20 个 id 全部唯一；pre outline 只含 10 个 pre id，post outline 只含 10 个 post id，不串卷、不重复；两个 quiz 的 keyPoints 均恰好有 10 个可 JSON.parse 的完整题目对象字符串；Q1-Q7 均为 8 分 single，Q8-Q9 均为 12 分 multiple，Q10 为 20 分 text 且固定最后；前后测 Q10 都具有非空 answer、analysis 和 rubric；两卷总分严格等于 100；每个 pairId 在 A/B 卷各出现一次；所有知识点至少覆盖两种测量功能；其余等值、异构、独立作答和质量要求全部满足。
 ```

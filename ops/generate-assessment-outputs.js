@@ -18,9 +18,30 @@ const PAIRED_BLUEPRINTS = {
     "GH-03-K01：诊断把平均变化率误当成两个函数值平均数等典型错误；不得与 P01 同为直接套公式题。",
     "GH-03-K02：给出同等数量的逐步缩短时间间隔或横坐标间隔及对应平均变化率，判断瞬时变化率的趋近值；不得要求符号求导。",
     "GH-03-K02：解释某点切线斜率在几何或运动情境中的含义；不得依赖图片，不得与 P03 只换数字。",
-    "GH-03-K03：多选辨析 f'(a) 的符号、单位、局部变化方向和切线斜率含义；不得求单调区间、极值或使用求导法则。",
+    "GH-03-K02：诊断把瞬时变化率误当作函数值或某一个固定区间平均变化率的典型错误。",
+    "GH-03-K02：在不依赖图像的局部变化情境中辨认瞬时变化率的合理估计与意义。",
+    "GH-03-K03：根据已知导数值判断符号、单位、局部变化方向和切线斜率含义。",
+    "GH-03-K01：多选辨析平均变化率的计算、单位和割线斜率意义；正确项数量不固定为二。",
+    "GH-03-K02：多选辨析瞬时变化率的逼近过程、切线斜率与常见误解；正确项数量不固定为二。",
     "GH-03-K03：简答题，依据已直接给出的 f'(a) 数值，完整解释符号、大小、单位和局部变化意义；不得计算导函数，不得判断完整单调区间或极值。"
+  ],
+  "GH-04": [
+    "GH-04-K01：用幂函数求导规则计算一个低次数单项式在指定点的导数；A/B 运算步数和指数复杂度相同。",
+    "GH-04-K01：诊断学生使用幂函数求导时遗漏系数、指数减一或把函数值当导数的典型错误；不得与 P01 同为直接套公式题。",
+    "GH-04-K02：对包含两个简单函数因子的表达式使用乘积法则，或对等量复杂的商使用商法则；A/B 必须使用同一种规则和相同步数。",
+    "GH-04-K02：辨析和差、乘积、商的求导步骤，重点判断一份学生解答的第一处错误；不得只替换 P03 的函数。",
+    "GH-04-K03：辨析复合函数的内外层及链式法则中必须乘内层导数。",
+    "GH-04-K03：诊断链式法则中遗漏内层导数的典型错误。",
+    "GH-04-K04：根据已给导数值解释变化速度、符号和单位。",
+    "GH-04-K01：多选辨析幂函数求导规则及常见误解；正确项数量不固定为二。",
+    "GH-04-K02：多选辨析和差、乘积与商的求导步骤；正确项数量不固定为二。",
+    "GH-04-K04：简答题，已直接给出一个常见函数的导数值及变量单位，要求解释变化速度、符号、单位并作一步短时变化估计；不得引入高阶导数、极值或完整单调区间。"
   ]
+};
+
+const PAIRED_KP_SEQUENCES = {
+  "GH-03": [0, 0, 1, 1, 1, 1, 2, 0, 1, 2],
+  "GH-04": [0, 0, 1, 1, 2, 2, 3, 0, 1, 3]
 };
 
 function readEnvValue(text, name) {
@@ -117,12 +138,13 @@ async function generatePairedInPieces(task, config) {
   const points = task.module.knowledgePoints;
   const pairs = [];
   const pairCacheDir = path.join(outputDir, "pairs");
-  for (let index = 0; index < 6; index += 1) {
+  for (let index = 0; index < 10; index += 1) {
     const pairId = `P${String(index + 1).padStart(2, "0")}`;
-    const kpIndex = Math.min(Math.floor(index * points.length / 6), points.length - 1);
+    const kpIndex = PAIRED_KP_SEQUENCES[task.module.id]?.[index]
+      ?? Math.min(Math.floor(index * points.length / 10), points.length - 1);
     const kpId = points[kpIndex].id;
-    const type = index === 5 ? "text" : index === 4 ? "multiple" : "single";
-    const pointsValue = index === 5 ? 20 : 8;
+    const type = index === 9 ? "text" : index >= 7 ? "multiple" : "single";
+    const pointsValue = index === 9 ? 20 : index >= 7 ? 12 : 8;
     const blueprint = PAIRED_BLUEPRINTS[task.module.id]?.[index] || `${kpId}：严格依据该知识点名称、学习目标和常见误解命题，不得扩展到其他知识点。`;
     const prompt = `${sourcePrompt}\n\n【本次分片生成规则】只生成 ${pairId} 这一对题，不要输出 outlines。专用蓝图：${blueprint} 两题只考查 ${kpId}，题型均为 ${type}，分值均为 ${pointsValue}。只输出 {"pre":题目对象,"post":题目对象}。pre.id 必须为 ${task.module.id}-pre-q${index + 1}，post.id 必须为 ${task.module.id}-post-q${index + 1}，两题 pairId 都为 ${pairId}。keyPoints 字符串规则不适用于本次分片。equivalence 只能含 presentationMode、knownConditionCount、operationCount、symbolComplexity、conclusionClass 五个字段且两题逐项完全相同。除非题干和根层 evidence 都提供完整六行双侧数表，否则 presentationMode 不得写 table。A/B 题必须测量等值但表面异构，禁止只换数值、变量或选项顺序；不得依赖图片、课件或学习场景。`;
     let generated;
@@ -158,7 +180,7 @@ async function generatePairedInPieces(task, config) {
     title: `${phase === "pre" ? "前测" : "后测"}：${task.module.title}（${phase === "pre" ? "A" : "B"}卷）`,
     order,
     difficulty: "medium",
-    quizConfig: { questionCount: 6, difficulty: "medium", questionTypes: ["single", "multiple", "text"] },
+    quizConfig: { questionCount: 10, difficulty: "medium", questionTypes: ["single", "multiple", "text"] },
     keyPoints: pairs.map((pair) => JSON.stringify(pair[phase]))
   });
   const payload = {

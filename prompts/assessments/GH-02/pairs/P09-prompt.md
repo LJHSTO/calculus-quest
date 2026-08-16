@@ -1,24 +1,24 @@
-# GH-02 P04 独立配对生成提示词
+# GH-02 P09 独立配对生成提示词
 
 ```text
 你只生成一对前后测平行题，不生成整卷，不生成课件。这是 assessment-only 任务。只输出一个 OpenMAIC 可解析的合法 JSON object，不要输出 Markdown、代码围栏、解释或自检文字。
 
 顶层键只允许 languageDirective、courseTitle、outlines。outlines.length 必须严格等于 2，且两个对象都必须是 type="quiz"；绝对不得输出 slide、html、simulation、discussion、讲解、导入或总结场景。outlines 必须且只能包含：
-1. id="GH-02-pre-P04"，title="前测题对 P04"，order=1，difficulty="medium"，quizConfig={"questionCount":1,"difficulty":"medium","questionTypes":["single"]}。
-2. id="GH-02-post-P04"，title="后测题对 P04"，order=2，difficulty="medium"，quizConfig={"questionCount":1,"difficulty":"medium","questionTypes":["single"]}。
+1. id="GH-02-pre-P09"，title="前测题对 P09"，order=1，difficulty="medium"，quizConfig={"questionCount":1,"difficulty":"medium","questionTypes":["multiple"]}。
+2. id="GH-02-post-P09"，title="后测题对 P09"，order=2，difficulty="medium"，quizConfig={"questionCount":1,"difficulty":"medium","questionTypes":["multiple"]}。
 每个 quiz 的 keyPoints 必须恰好包含一个字符串，该字符串是可由 JSON.parse 直接解析的完整题目对象。pre 题只能放入第一个 quiz，post 题只能放入第二个 quiz。
 
 本题对规则：
-P04：GH-02-K02；single；给出左右两侧趋近结果相等的条件，判断双侧极限是否存在；A/B 改变信息组织与提问方式，不能只换数字；8 分。
+P09：GH-02-K03；multiple；综合辨析函数在一点连续所需的三个条件及常见误解；4 个选项，正确项为 1 至 3 个且 A/B 数量相同；12 分。
 
 现有知识点名称和 ID 不得修改：
 - GH-02-K01：从数表观察趋近
 - GH-02-K02：图像上的左右极限
 - GH-02-K03：连续就是不跳断
 
-pre.id 必须为 "GH-02-pre-q4"；post.id 必须为 "GH-02-post-q4"。两题的 pairId 都必须为 "P04"，type 都必须为 "single"，points 都必须为 8。
+pre.id 必须为 "GH-02-pre-q9"；post.id 必须为 "GH-02-post-q9"。两题的 pairId 都必须为 "P09"，type 都必须为 "multiple"，points 都必须为 12。
 
-每个题目对象必须完整包含 id、type、question、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId、equivalence。必须输出 4 个 value/label 选项；answer 必须是选项 value 数组。恰好 1 个正确项。
+每个题目对象必须完整包含 id、type、question、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId、equivalence。必须输出 4 个 value/label 选项；answer 必须是选项 value 数组。正确项为 1 至 3 个。
 
 equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity、conclusionClass；pre 与 post 的五项值必须逐项相同。两题还必须保持相同知识点、认知层级、步骤数、正确项数量和评分负荷。
 

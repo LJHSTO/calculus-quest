@@ -36,15 +36,14 @@ id="GH-11-K04-check"
 type="quiz"
 title="即时检查：驻点类型判断"
 order=1
-quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","multiple"]}
+quizConfig={"questionCount":2,"difficulty":"medium","questionTypes":["single","multiple"]}
 
-只生成 3 道选择题，不生成 text 或简答题。每题固定 10 分，总分 30 分：
+只生成 2 道选择题，不生成 text 或简答题。这是一套“1+1 自适应形测”，不是两道同时必答：
 
-1. Q1：single，核心概念辨析。
-2. Q2：single，一至两步基础应用。
-3. Q3：multiple，围绕常见误解的诊断题。
+1. Q1：single，核心题，points=10，adaptiveRole="core"，所有学生先作答。
+2. Q2：multiple，诊断题，points=10，adaptiveRole="diagnostic"，仅在 Q1 回答错误时显示；围绕该知识点的常见误解定位错误来源。
 
-keyPoints 必须恰好包含 3 个字符串，每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用非 JSON 的字段拼接文本。每题完整写出 id、type、question、4 个 options、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence；id 必须严格为 GH-11-K04-check-q1 至 GH-11-K04-check-q3。question 只能包含题干，不得内嵌或重复选项清单，question 后必须用 JSON 逗号分隔独立 options 字段。options 必须严格使用 [{"value":"A","label":"选项文字"},...]，answer 必须为数组，单选如 ["B"]、多选如 ["A","C"]，不得使用 correct 字段或 "AC" 字符串。equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass；数表题还必须在题目对象根层级提供可程序复算的 two-sided-table evidence，不得嵌套在 equivalence 中。数表题的 question 必须用“x 值：…；f(x) 值：…”两行纯文本，完整写出左侧 3 组和右侧 3 组、合计 6 组数据；evidence.rows 必须逐项保存同样的 6 组数据，不多不少、不得漏项；不得使用 Markdown 表格、竖线 | 或 --- 分隔线。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["GH-11-K04"]。
+keyPoints 必须恰好包含 2 个字符串，每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用非 JSON 的字段拼接文本。每题完整写出 id、type、question、4 个 options、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId、adaptiveRole 和 equivalence；id 必须严格为 GH-11-K04-check-q1 至 GH-11-K04-check-q2。question 只能包含题干，不得内嵌或重复选项清单，question 后必须用 JSON 逗号分隔独立 options 字段。options 必须严格使用 [{"value":"A","label":"选项文字"},...]，answer 必须为数组，单选如 ["B"]、多选如 ["A","C"]，不得使用 correct 字段或 "AC" 字符串。equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass；数表题还必须在题目对象根层级提供可程序复算的 two-sided-table evidence，不得嵌套在 equivalence 中。数表题的 question 必须用“x 值：…；f(x) 值：…”两行纯文本，完整写出左侧 3 组和右侧 3 组、合计 6 组数据；evidence.rows 必须逐项保存同样的 6 组数据，不多不少、不得漏项；不得使用 Markdown 表格、竖线 | 或 --- 分隔线。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["GH-11-K04"]；Q1 adaptiveRole 必须为 "core"，Q2 必须为 "diagnostic"；题库总分 20 分。
 
 【选择题规则】
 
@@ -59,5 +58,5 @@ keyPoints 必须恰好包含 3 个字符串，每个字符串本身必须是可�
 
 【输出前静默检查】
 
-逐题重新计算并确认：只输出一个 quiz；keyPoints 恰好有 3 个完整题目字符串且不含纯考查目标摘要；恰好 3 道选择题且每题 10 分、总分 30 分；只考查 GH-11-K04；没有学习场景、课件或图片依赖；single 恰好一个正确答案；multiple 有 1 至 3 个正确项且题干选择目标明确；答案、选项与解析完全一致；没有新增或改写知识点；输出中没有自我纠错或检查过程。
+逐题重新计算并确认：只输出一个 quiz；keyPoints 恰好有 2 个完整题目字符串；Q1 是 10 分 single 核心题且 adaptiveRole="core"；Q2 是 10 分 multiple 诊断题且 adaptiveRole="diagnostic"；Q2 只在 Q1 错误时出现；两题只考查 GH-11-K04，没有场景或图片依赖，答案、选项与解析完全一致。
 ```

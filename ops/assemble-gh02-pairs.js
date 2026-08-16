@@ -21,7 +21,7 @@ function parsePairFile(filePath) {
   return parsed;
 }
 
-const pairs = Array.from({ length: 6 }, (_, index) => {
+const pairs = Array.from({ length: 10 }, (_, index) => {
   const pairId = `P${String(index + 1).padStart(2, "0")}`;
   return parsePairFile(path.join(inputDir, `${pairId}.json`));
 });
@@ -36,7 +36,7 @@ const payload = {
       title: "前测：极限与连续：直觉探索（A卷）",
       order: 1,
       difficulty: "medium",
-      quizConfig: { questionCount: 6, difficulty: "medium", questionTypes: ["single", "multiple", "text"] },
+      quizConfig: { questionCount: 10, difficulty: "medium", questionTypes: ["single", "multiple", "text"] },
       keyPoints: pairs.map((pair) => JSON.stringify(pair.pre))
     },
     {
@@ -45,7 +45,7 @@ const payload = {
       title: "后测：极限与连续：直觉探索（B卷）",
       order: 2,
       difficulty: "medium",
-      quizConfig: { questionCount: 6, difficulty: "medium", questionTypes: ["single", "multiple", "text"] },
+      quizConfig: { questionCount: 10, difficulty: "medium", questionTypes: ["single", "multiple", "text"] },
       keyPoints: pairs.map((pair) => JSON.stringify(pair.post))
     }
   ]

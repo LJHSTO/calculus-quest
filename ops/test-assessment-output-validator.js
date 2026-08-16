@@ -81,7 +81,7 @@ function tableChoice(phase, targetX, targetY, pairId, index = 1, conclusionClass
 
 function textQuestion(phase, value) {
   return {
-    id: `GH-02-${phase}-q6`,
+    id: `GH-02-${phase}-q10`,
     type: "text",
     question: phase === "pre"
       ? `在目标点处，两侧趋近结果均为 ${value}，而实际函数值是 ${value + 1}。请按三个条件说明是否连续。`
@@ -92,7 +92,7 @@ function textQuestion(phase, value) {
     knowledgePointIds: ["GH-02-K03"],
     cognitiveLevel: "分析",
     estimatedSteps: 3,
-    pairId: "P06",
+    pairId: "P10",
     equivalence: {
       presentationMode: "text",
       knownConditionCount: 3,
@@ -113,24 +113,32 @@ function pairedPayload() {
     tableChoice("pre", 2, 4, "P01"),
     tableChoice("pre", 3, 5, "P02", 2, "limit_not_in_table"),
     choice(null, "pre", 3, "single", "GH-02-K02", "P03"),
-    choice(null, "pre", 4, "multiple", "GH-02-K02", "P04"),
-    choice(null, "pre", 5, "single", "GH-02-K03", "P05"),
+    choice(null, "pre", 4, "single", "GH-02-K02", "P04", { equivalence: { presentationMode: "text", knownConditionCount: 3, operationCount: 1, symbolComplexity: "low", conclusionClass: "two_sided_limit_exists" } }),
+    choice(null, "pre", 5, "single", "GH-02-K02", "P05"),
+    choice(null, "pre", 6, "single", "GH-02-K02", "P06"),
+    choice(null, "pre", 7, "single", "GH-02-K03", "P07"),
+    choice(null, "pre", 8, "multiple", "GH-02-K01", "P08", { points: 12 }),
+    choice(null, "pre", 9, "multiple", "GH-02-K03", "P09", { points: 12 }),
     textQuestion("pre", 4)
   ];
   const post = [
     tableChoice("post", 3, 5, "P01"),
     tableChoice("post", 4, 6, "P02", 2, "limit_not_in_table"),
     choice(null, "post", 3, "single", "GH-02-K02", "P03"),
-    choice(null, "post", 4, "multiple", "GH-02-K02", "P04"),
-    choice(null, "post", 5, "single", "GH-02-K03", "P05"),
+    choice(null, "post", 4, "single", "GH-02-K02", "P04", { equivalence: { presentationMode: "text", knownConditionCount: 3, operationCount: 1, symbolComplexity: "low", conclusionClass: "two_sided_limit_exists" } }),
+    choice(null, "post", 5, "single", "GH-02-K02", "P05"),
+    choice(null, "post", 6, "single", "GH-02-K02", "P06"),
+    choice(null, "post", 7, "single", "GH-02-K03", "P07"),
+    choice(null, "post", 8, "multiple", "GH-02-K01", "P08", { points: 12 }),
+    choice(null, "post", 9, "multiple", "GH-02-K03", "P09", { points: 12 }),
     textQuestion("post", 6)
   ];
   return {
     languageDirective: "zh-CN",
     courseTitle: "极限与连续：直觉探索测评",
     outlines: [
-      { id: "GH-02-pre", type: "quiz", title: "前测：极限与连续：直觉探索（A卷）", order: 1, difficulty: "medium", quizConfig: { questionCount: 6, difficulty: "medium", questionTypes: ["single", "multiple", "text"] }, keyPoints: pre.map(JSON.stringify) },
-      { id: "GH-02-post", type: "quiz", title: "后测：极限与连续：直觉探索（B卷）", order: 2, difficulty: "medium", quizConfig: { questionCount: 6, difficulty: "medium", questionTypes: ["single", "multiple", "text"] }, keyPoints: post.map(JSON.stringify) }
+      { id: "GH-02-pre", type: "quiz", title: "前测：极限与连续：直觉探索（A卷）", order: 1, difficulty: "medium", quizConfig: { questionCount: 10, difficulty: "medium", questionTypes: ["single", "multiple", "text"] }, keyPoints: pre.map(JSON.stringify) },
+      { id: "GH-02-post", type: "quiz", title: "后测：极限与连续：直觉探索（B卷）", order: 2, difficulty: "medium", quizConfig: { questionCount: 10, difficulty: "medium", questionTypes: ["single", "multiple", "text"] }, keyPoints: post.map(JSON.stringify) }
     ]
   };
 }
@@ -162,7 +170,7 @@ for (const outline of blueprintInvalid.outlines) {
   const questions = outline.keyPoints.map(JSON.parse);
   questions[1].evidence.targetX = 0;
   questions[3].equivalence.conclusionClass = "judgment";
-  questions[5].rubric = [
+  questions[9].rubric = [
     { criterion: "结论", points: 6 },
     { criterion: "左极限", points: 6 },
     { criterion: "右极限", points: 4 },
@@ -188,9 +196,8 @@ for (const code of ["INTRA_FORM_TEMPLATE_REPETITION", "PAIR_SURFACE_CLONE"]) {
 }
 
 const formativeQuestions = [
-  choice(null, "check", 1, "single", "GH-02-K01", "F01", { id: "GH-02-K01-check-q1", points: 10 }),
-  choice(null, "check", 2, "single", "GH-02-K01", "F02", { id: "GH-02-K01-check-q2", points: 10 }),
-  choice(null, "check", 3, "multiple", "GH-02-K01", "F03", { id: "GH-02-K01-check-q3", points: 10 })
+  choice(null, "check", 1, "single", "GH-02-K01", "F01", { id: "GH-02-K01-check-q1", points: 10, adaptiveRole: "core" }),
+  choice(null, "check", 2, "multiple", "GH-02-K01", "F02", { id: "GH-02-K01-check-q2", points: 10, adaptiveRole: "diagnostic" })
 ];
 const formativePayload = {
   outlines: [{
@@ -198,7 +205,7 @@ const formativePayload = {
     type: "quiz",
     title: "即时检查：从数表观察趋近",
     order: 1,
-    quizConfig: { questionCount: 3, difficulty: "medium", questionTypes: ["single", "multiple"] },
+    quizConfig: { questionCount: 2, difficulty: "medium", questionTypes: ["single", "multiple"] },
     keyPoints: formativeQuestions.map(JSON.stringify)
   }]
 };

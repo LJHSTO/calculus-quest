@@ -13,17 +13,17 @@ const moduleDefinition = route.chapters
 if (!moduleDefinition) throw new Error("GH-02 module definition not found");
 
 const blueprints = guidance.modules?.["GH-02"]?.pairedBlueprint || [];
-if (blueprints.length !== 6) throw new Error("GH-02 must define exactly six paired blueprints");
+if (blueprints.length !== 10) throw new Error("GH-02 must define exactly ten paired blueprints");
 
-const pairTypes = ["single", "single", "single", "multiple", "single", "text"];
+const pairTypes = ["single", "single", "single", "single", "single", "single", "single", "multiple", "multiple", "text"];
 const outputDir = path.join(rootDir, "prompts", "assessments", "GH-02", "pairs");
 fs.mkdirSync(outputDir, { recursive: true });
 
-for (let index = 0; index < 6; index += 1) {
+for (let index = 0; index < 10; index += 1) {
   const pairNumber = String(index + 1).padStart(2, "0");
   const pairId = `P${pairNumber}`;
   const type = pairTypes[index];
-  const points = type === "text" ? 20 : 8;
+  const points = type === "text" ? 20 : type === "multiple" ? 12 : 8;
   const optionsRule = type === "text"
     ? "不得输出 options；必须输出非空 answer、非空 analysis，以及根层级 rubric。rubric 恰好为 6、6、8 分三项。"
     : `必须输出 4 个 value/label 选项；answer 必须是选项 value 数组。${type === "single" ? "恰好 1 个正确项。" : "正确项为 1 至 3 个。"}`;
