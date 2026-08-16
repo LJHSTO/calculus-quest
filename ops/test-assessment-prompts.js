@@ -96,4 +96,15 @@ const gh02K01 = fs.readFileSync(path.join(promptRoot, "GH-02", "checks", "GH-02-
 assert.match(gh02K01, /本知识点专用边界/);
 assert.match(gh02K01, /不得使用未给数据的“根据下表”/);
 
+const gh02PairDir = path.join(promptRoot, "GH-02", "pairs");
+const gh02PairPrompts = fs.readdirSync(gh02PairDir).filter((name) => /^P0[1-6]-prompt\.md$/.test(name));
+assert.strictEqual(gh02PairPrompts.length, 6, "GH-02 must have six independently generated pair prompts");
+for (const [index, name] of gh02PairPrompts.sort().entries()) {
+  const pairPrompt = fs.readFileSync(path.join(gh02PairDir, name), "utf8");
+  assert.match(pairPrompt, new RegExp(`GH-02-pre-q${index + 1}`));
+  assert.match(pairPrompt, new RegExp(`GH-02-post-q${index + 1}`));
+  assert.match(pairPrompt, /严禁仅替换数字、函数名、变量、坐标或选项顺序/);
+  assert.match(pairPrompt, /顶层只能有 pre 和 post 两个键/);
+}
+
 process.stdout.write(`Assessment prompts verified: ${moduleCount} modules, ${pointCount} knowledge points.\n`);
