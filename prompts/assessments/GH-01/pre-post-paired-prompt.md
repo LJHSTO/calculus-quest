@@ -40,11 +40,13 @@
 1. id="GH-01-pre"；title="前测：函数、坐标与图像读法入门（A卷）"；order=1。
 2. id="GH-01-post"；title="后测：函数、坐标与图像读法入门（B卷）"；order=2。
 
-两卷各 6 题，总分均为 60 分，difficulty 均为 medium。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
+场景与题目归属是硬约束：第一个 outline 的 keyPoints 只能依次包含 GH-01-pre-q1 至 GH-01-pre-q6；第二个 outline 的 keyPoints 只能依次包含 GH-01-post-q1 至 GH-01-post-q6。不得把 post 题放入 pre outline，不得把 pre 题放入 post outline，不得把同一道题同时放入两个 outline。整个响应中题目对象总数必须恰好为 12，每个规定 id 恰好出现一次；一个 outline 的 keyPoints 数组结束后立即关闭该 outline 对象，再开始下一个 outline 对象。
+
+两卷各 6 题，总分均为 60 分，每个 outline 对象根层级的 difficulty 都必须写为 "medium"。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
 每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 GH-01-pre-q1 至 GH-01-pre-q6、GH-01-post-q1 至 GH-01-post-q6，不得缩写、重复或增加 q6b 等变体；pairId 必须按题位严格使用 P01 至 P06，每卷各出现一次。
 所有选择题的 question 只能包含题干，不得在 question 内重复写“选项：A…B…C…D…”或①②③④选项清单；question 字符串结束后必须有 JSON 逗号，再写独立 options 字段。options 必须严格使用 [{"value":"A","label":"选项文字"},...] 结构；answer 必须始终为数组，单选如 ["B"]，多选如 ["A","B","D"]，不得写成 "B" 或 "ABD"，不得在 options 中使用 correct 字段。
 equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass，用作 A/B 程序等值检查；配对题这些字段必须逐项相同。若 presentationMode="table"，题目对象根层级还必须提供 evidence={kind:"two-sided-table",targetX,targetY,correctOptionId:"B",rows:[{x,y},...]}，左右各 3 行，并保证数值确实从两侧趋近 targetY；evidence 不得嵌套在 equivalence 中。text 题必须在题目对象根层级提供 rubric 数组，每项包含 criterion 和整数 points；rubric 不得嵌套在 equivalence 中。
-OpenMAIC 的测验题干不会渲染 Markdown 表格。数表题的 question 必须使用两行纯文本，例如“x 值：1.9，1.99，2.01，2.1；f(x) 值：3.9，3.99，4.01，4.1”，不得包含竖线 |、表头分隔线 ---、HTML 表格或代码围栏。
+OpenMAIC 的测验题干不会渲染 Markdown 表格。数表题的 question 必须写出左侧 3 组和右侧 3 组、合计 6 组数据，并使用两行纯文本，例如“x 值：1.9，1.99，1.999，2.001，2.01，2.1；f(x) 值：3.9，3.99，3.999，4.001，4.01，4.1”；根层级 evidence.rows 必须逐项保存题干中的这 6 组数据，不多不少、不得漏项；不得包含竖线 |、表头分隔线 ---、HTML 表格或代码围栏。
 
 不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。
 
@@ -75,5 +77,5 @@ A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项�
 
 【输出前静默检查】
 
-逐题重新计算并确认：两个 quiz 的 keyPoints 均恰好有 6 个可 JSON.parse 的完整题目对象字符串，不含纯考查目标摘要或重复变体；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题，两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的 equivalence 字段、呈现方式、先备运算、解题步骤与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；数表 evidence 的数值趋势与答案一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+逐题重新计算并确认：整个响应恰好有 12 个题目对象且 12 个 id 全部唯一；pre outline 只含 6 个 pre id，post outline 只含 6 个 post id，不串卷、不重复；两个 quiz 的 keyPoints 均恰好有 6 个可 JSON.parse 的完整题目对象字符串，不含纯考查目标摘要或重复变体；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题，两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的 equivalence 字段、呈现方式、先备运算、解题步骤与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；数表 evidence 的数值趋势与答案一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
 ```

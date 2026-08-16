@@ -31,6 +31,13 @@ for (const chapter of route.chapters || []) {
     assert.match(paired, /two-sided-table/);
     assert.match(paired, /question 只能包含题干/);
     assert.match(paired, /不得包含竖线 \|/);
+    assert.match(paired, /场景与题目归属是硬约束/);
+    assert.match(paired, /整个响应中题目对象总数必须恰好为 12/);
+    assert.match(paired, /不得把 post 题放入 pre outline/);
+    assert.match(paired, /不得把 pre 题放入 post outline/);
+    assert.match(paired, /outline 对象根层级的 difficulty/);
+    assert.match(paired, /左侧 3 组和右侧 3 组、合计 6 组数据/);
+    assert.match(paired, /evidence\.rows 必须逐项保存题干中的这 6 组数据/);
 
     for (const point of module.knowledgePoints || []) {
       pointCount += 1;
@@ -52,6 +59,7 @@ for (const chapter of route.chapters || []) {
       assert.match(check, /可由 JSON\.parse 直接解析/);
       assert.match(check, /equivalence 必须且只能包含 presentationMode/);
       assert.match(check, /question 只能包含题干/);
+      assert.match(check, /左侧 3 组和右侧 3 组、合计 6 组数据/);
       assert.doesNotMatch(check, /四选一|四个候选|恰好 2 个正确|exactly two/i);
     }
   }
