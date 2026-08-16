@@ -144,3 +144,12 @@
 - 前测场景保留了审阅页的 6 道题和 60 分结构，题干未出现乱码，六组纯文本数表能够正常显示。
 - 后测审阅页原本有 6 道题，但最终课堂只保留 `GH-02-post-q1`，页面显示“1 道题、共 8 分”；其余 5 题在“确认并生成课程”阶段丢失。
 - 这进一步证明 OpenMAIC 的审阅大纲与最终课堂之间存在不稳定的二次生成/解析链路。提示词生成结果必须在审阅阶段导出并校验；不能把最终课堂的完整性只交给 OpenMAIC 当前生成流程。
+
+### OpenMAIC 丢题根因（代码核查）
+
+- `packages/@openmaic/generation/src/scene-generator.ts` 的 `generateQuizContent()` 会把 outline 的 `keyPoints` 拼成 `Test Points`，再调用一次 quiz-content 模型；审阅页中的完整题目 JSON 并不会原样成为课堂题目。
+- 同一函数只检查模型结果是否为数组，没有检查 `generatedQuestions.length === quizConfig.questionCount`。模型返回 1 题时仍会生成合法课堂内容。
+- `packages/@openmaic/generation/src/json-repair.ts` 会把截断的 JSON 数组裁剪到最后一个完整对象并补上 `]`。这适合容错，但若缺少数量校验，会把截断后的 1 题数组误判为完整结果。
+- `lib/hooks/use-scene-generator.ts` 的客户端重试条件只检查 `result.success` 和 `result.content`；只要存在 content，即使题量不足也不会重试。
+- 当前 `app/api/generate/scene-content/route.ts` 调用 `generateSceneContent()` 时没有传入 logger，而 `generateQuizContent()` 调用 `parseJsonResponse()` 时也没有传 logger，因此截断修复过程不会出现在现有日志中。日志只显示 scene content 成功。
+- 建议修复顺序：①若所有 `keyPoints` 都是合法题目 JSON，则直接确定性转换为 quiz questions，禁止二次生成；②普通自然语言 keyPoints 才走 LLM；③无论哪条路径都强制检查题量、题型和分值；④题量不符返回失败以触发重试；⑤给截断恢复和题量不足增加自动化测试。
