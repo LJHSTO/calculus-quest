@@ -36,6 +36,7 @@ for (const chapter of route.chapters || []) {
       assert.ok(check.includes(`knowledgePointIds 必须且只能填写 ["${point.id}"]`), `Unscoped formative prompt: ${point.id}`);
       assert.match(check, /任意数量的候选学习场景/);
       assert.match(check, /只生成 3 道选择题，不生成 text 或简答题/);
+      assert.match(check, /每题固定 10 分，总分 30 分/);
       assert.match(check, /正确项数量可以为 1、2 或 3/);
       assert.doesNotMatch(check, /四选一|四个候选|恰好 2 个正确|exactly two/i);
     }
