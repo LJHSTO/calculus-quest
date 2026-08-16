@@ -26,15 +26,15 @@
 4. “图像的上升、下降与变化方向”即时检查
 5. 后测 B 卷
 
-前后测等值硬约束：前测和后测必须采用同一份六题测验蓝图。两卷 questionCount、总分、知识点权重、题型顺序、认知层级、预计解题步骤、阅读量和评分规则必须一致；两卷整体 difficulty 都为 medium。后测不得增加综合性、迁移性、符号复杂度、计算量或步骤数。A/B 卷不得使用完全相同的题干、数值或选项顺序，只允许更换数值、函数规则、坐标或等价生活情境。
+前后测等值硬约束：前测和后测必须采用同一份六题测验蓝图。两卷 questionCount、总分、知识点权重、题型顺序、认知层级、预计解题步骤、阅读量和评分规则必须一致；两卷整体 difficulty 都为 medium。P01-P05 为选择题且每题 8 分；P06 为 text，固定放在最后、分值 20 分且为全卷最高分题；两卷总分都严格等于 60。后测不得增加综合性、迁移性、符号复杂度、计算量或步骤数。A/B 卷不得使用完全相同的题干、数值或选项顺序，只允许更换数值、函数规则、坐标或等价生活情境。
 
 前后测六题平行蓝图必须逐题写入前测与后测 scene 的 description 和 keyPoints：
-- P01：输入、输出和函数规则；single；概念辨析；1 步；10 分；A/B 都使用一次函数 ax+b，且 a、b 均为小整数、a 为正数。
-- P02：输入、输出和函数规则；single；基础代入；2 步；10 分；A/B 都使用一次函数 ax+b、负整数输入、一次乘法和一次加减法，不得一卷用二次函数而另一卷用一次函数。
-- P03：坐标点与函数图像；single；坐标读取；2 步；10 分；A/B 都使用正斜率一次函数 ax+b 和正整数横坐标，只提供一个目标点的数据，不加入无关点。
-- P04：坐标点与函数图像；multiple；表示转换；2 步；10 分；A/B 都使用正斜率一次函数 ax+b 和 4 个选项，四个选项采用相同的验证结构。正确项数量不预先固定，但 A/B 配对题必须相同，且至少有一个正确项和一个错误项。
-- P05：图像的上升、下降与变化方向；single；局部趋势判断；1 步；10 分；A/B 都提供 3 个有序数据点并询问完整区间的总体趋势，不加入题目未使用的数据。
-- P06：图像的上升、下降与变化方向；text；解释变化；两个明确评分点；10 分；A/B 都提供 3 个有序数据点，变化结构均为先上升后下降。
+- P01：输入、输出和函数规则；single；概念辨析；1 步；8 分；A/B 都使用一次函数 ax+b，且 a、b 均为小整数、a 为正数。
+- P02：输入、输出和函数规则；single；基础代入；2 步；8 分；A/B 都使用一次函数 ax+b、负整数输入、一次乘法和一次加减法，不得一卷用二次函数而另一卷用一次函数。
+- P03：坐标点与函数图像；single；坐标读取；2 步；8 分；A/B 都使用正斜率一次函数 ax+b 和正整数横坐标，只提供一个目标点的数据，不加入无关点。
+- P04：坐标点与函数图像；multiple；表示转换；2 步；8 分；A/B 都使用正斜率一次函数 ax+b 和 4 个选项，四个选项采用相同的验证结构。正确项数量不预先固定，但 A/B 配对题必须相同，且至少有一个正确项和一个错误项。
+- P05：图像的上升、下降与变化方向；single；局部趋势判断；1 步；8 分；A/B 都提供 3 个有序数据点并询问完整区间的总体趋势，不加入题目未使用的数据。
+- P06：图像的上升、下降与变化方向；text；解释变化；两个明确评分点；20 分；固定放在全卷最后且为最高分题；A/B 都提供 3 个有序数据点，变化结构均为先上升后下降。
 
 前测不得引用尚未学习的课件、操作记录或图片。后测也不得依赖学生记住课件中的特定读数。两卷所有题目必须脱离课件和图片独立作答。
 
@@ -72,6 +72,6 @@
 
 5. id="GH-01-post"；type="quiz"；title="后测：函数、坐标与图像读法综合测评（B卷）"；order=5；quizConfig={"questionCount":6,"difficulty":"medium","questionTypes":["single","multiple","text"]}；description 和 keyPoints 必须完整写入与前测一一对应的 P01-P06 B 卷蓝图、知识点对应关系、步骤数和分值，并明确 B 卷不得比 A 卷更难。
 
-生成前自检但不要输出自检：top-level keys exactly languageDirective/courseTitle/outlines; outlines count exactly 5; every outline type is quiz; no slide or interactive; ids/titles/orders match verbatim; pre and post both have 6 questions and medium difficulty; pre/post use identical P01-P06 blueprint, weights, information counts and option counts; every single has exactly one correct option; every multiple has one to three correct options and contains at least one distractor; paired pre/post multiple questions have the same number of correct options; no unused data; every keyPoint includes answer and analysis; three immediate checks each have exactly 3 choice questions and only one named knowledge point; no contradictory multiple-choice instruction; no future-content bridge question; no image dependency; no renamed or added knowledge point; no local file path or conversation trace.
+生成前自检但不要输出自检：top-level keys exactly languageDirective/courseTitle/outlines; outlines count exactly 5; every outline type is quiz; no slide or interactive; ids/titles/orders match verbatim; pre and post both have 6 questions and medium difficulty; P01-P05 are choice questions worth 8 points each; P06 is the final text question worth 20 points and is the highest-value item; both totals exactly 60; pre/post use identical P01-P06 blueprint, weights, information counts and option counts; every single has exactly one correct option; every multiple has one to three correct options and contains at least one distractor; paired pre/post multiple questions have the same number of correct options; no unused data; every keyPoint includes answer and analysis; three immediate checks each have exactly 3 choice questions and only one named knowledge point; no contradictory multiple-choice instruction; no future-content bridge question; no image dependency; no renamed or added knowledge point; no local path or conversation trace.
 
 ```

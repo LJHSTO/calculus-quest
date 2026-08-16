@@ -23,6 +23,8 @@ for (const chapter of route.chapters || []) {
     assert.match(paired, /keyPoints 都必须恰好包含 6 个字符串/);
     assert.match(paired, /不得用“主题相近”代替逐题同构/);
     assert.match(paired, /points 求和都严格等于 60/);
+    assert.match(paired, /Q6 为 text 且 points=20/);
+    assert.match(paired, /Q1-Q5 的 points 均为 8/);
     assert.match(paired, /正确项数量可以为 1、2 或 3/);
 
     for (const point of module.knowledgePoints || []) {

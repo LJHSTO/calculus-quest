@@ -17,7 +17,7 @@
 
 前后测必须是等值平行卷：题量、总分、知识点权重、题型顺序、函数族、系数正负结构、已知条件数量、运算次数、认知层级、题干长度和评分规则一致。B 卷只更换数值、字母或等价情境，不增加迁移性、阅读量、符号复杂度或步骤数。题目不依赖图片和课件。
 
-每个 outline 的 keyPoints 必须恰好包含 6 个字符串，分别为 P01-P06。每个字符串必须给出：题位、知识点、题型、认知目标、步骤数、分值、完整题干、全部选项、正确答案、简短解析。text 题给出参考答案和两个独立评分点。每题 10 分，总分 60 分。
+每个 outline 的 keyPoints 必须恰好包含 6 个字符串，分别为 P01-P06。每个字符串必须给出：题位、知识点、题型、认知目标、步骤数、分值、完整题干、全部选项、正确答案、简短解析。P01-P05 为选择题，每题 8 分；P06 为 text，固定放在最后，20 分，是全卷分值最高的题，并给出参考答案和两个独立评分点。总分 60 分。
 
 逐题平行蓝图：
 - P01：输入、输出和函数规则；single；概念辨析；1 步。A/B 都用正斜率一次函数 ax+b；不做计算，只辨析 x、f(x) 和函数规则。4 个选项，恰好 1 个正确。
@@ -30,10 +30,10 @@
 计算与答案硬约束：
 - 不使用二次函数、分式、根式、小数或超出绝对值 20 的计算结果。
 - 生成后逐题重新计算，不得让答案字母、选项值和解析互相矛盾。
-- P04 必须逐项代入验证，并在解析中明确 A/C 正确、B/D 错误。
+- P04 必须逐项代入验证；正确项数量可以为 1、2 或 3，A/B 配对题的正确项数量必须相同，答案字母、选项内容和解析必须一致。
 - description 只概述测评目的和等值设计，不得写错误的知识点分值小计。
 - 不得在输出中出现“需修正”“重新设置”“可能正确”等自我纠错痕迹；发现错误必须在输出前直接改好。
 
-生成前静默自检：outlines exactly 2; both type quiz; ids/titles/orders verbatim; both 6 questions and medium; keyPoints exactly 6 per outline; P01-P06 one-to-one parallel; every single exactly one correct; P04 exactly A/C correct; all arithmetic verified; no unused data; no image dependency; no renamed knowledge point; no local path or conversation trace.
+生成前静默自检：outlines exactly 2; both type quiz; ids/titles/orders verbatim; both 6 questions and medium; keyPoints exactly 6 per outline; P01-P05 are choice questions worth 8 points each; P06 is the final text question worth 20 points and is the highest-value item; total exactly 60; P01-P06 one-to-one parallel; every single exactly one correct; P04 has one to three correct options and the paired count matches; all arithmetic verified; no unused data; no image dependency; no renamed knowledge point; no local path or conversation trace.
 
 ```
