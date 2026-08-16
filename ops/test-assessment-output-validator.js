@@ -128,10 +128,11 @@ malformedPost.splice(1, 1);
 malformedPost[0].evidence.targetY = 99;
 malformedPost[0].answer = ["A"];
 malformedPost[0].analysis = "这是示意性设计，实际趋近行为需结合题目设定。";
+malformedPost[0].question = "x | f(x)\n---|---\n1 | 2";
 malformed.outlines[1].keyPoints = malformedPost.map(JSON.stringify);
 const invalidPaired = validatePairedAssessment(malformed, moduleDefinition);
 assert.equal(invalidPaired.valid, false);
-for (const code of ["QUESTION_COUNT_INVALID", "TABLE_TREND_INCORRECT", "FORBIDDEN_CONTENT", "QUESTION_ID_INVALID", "PAIR_MISMATCH"]) {
+for (const code of ["QUESTION_COUNT_INVALID", "TABLE_TREND_INCORRECT", "FORBIDDEN_CONTENT", "MARKDOWN_TABLE_NOT_RENDERED", "QUESTION_ID_INVALID", "PAIR_MISMATCH"]) {
   assert.ok(invalidPaired.errors.some((error) => error.code === code), `missing expected error ${code}`);
 }
 

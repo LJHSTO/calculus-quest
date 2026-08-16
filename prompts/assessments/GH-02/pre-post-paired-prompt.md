@@ -38,7 +38,7 @@
 - P05：GH-02-K03；single；用文字给出左极限、右极限和函数值，判断指定点是否连续；A/B 使用相同判断步骤并得到相同类别的结论，即两题都连续或两题都不连续；8 分。
 - P06：GH-02-K03；text；固定最后；用文字给出左极限、右极限和函数值，要求说明是否连续并分别解释三个条件；A/B 得到相同类别的结论，并各设 3 个完全相同的评分点，分值固定为 6 分、6 分、8 分，合计 20 分，不得使用分值区间；20 分。
 
-严格按 P01-P06 的题型、顺序、知识点和信息呈现方式生成。所有数表必须把每个 x 与 f(x) 数值完整写入题干。配对数表必须逐列保持相同的小数位数和正负号复杂度，不能让其中一卷额外出现负数或更多位小数。不得要求因式分解、约分或直接代数求极限；不得使用“如图”“下图”；不得引入介值定理、夹逼定理、无穷小、去心邻域、sin(x)/x 等标准极限或导数。
+严格按 P01-P06 的题型、顺序、知识点和信息呈现方式生成。所有数表必须把每个 x 与 f(x) 数值完整写入题干，并使用 OpenMAIC 可直接显示的两行纯文本格式，例如“x 值：1.9，1.99，2.01，2.1；f(x) 值：3.9，3.99，4.01，4.1”；不得使用 Markdown 表格、竖线 | 或 --- 分隔线。配对数表必须逐列保持相同的小数位数和正负号复杂度，不能让其中一卷额外出现负数或更多位小数。不得要求因式分解、约分或直接代数求极限；不得使用“如图”“下图”；不得引入介值定理、夹逼定理、无穷小、去心邻域、sin(x)/x 等标准极限或导数。
 
 【输出结构】
 
@@ -51,6 +51,7 @@
 每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 GH-02-pre-q1 至 GH-02-pre-q6、GH-02-post-q1 至 GH-02-post-q6，不得缩写、重复或增加 q6b 等变体；pairId 必须按题位严格使用 P01 至 P06，每卷各出现一次。
 所有选择题的 question 只能包含题干，不得在 question 内重复写“选项：A…B…C…D…”或①②③④选项清单；question 字符串结束后必须有 JSON 逗号，再写独立 options 字段。options 必须严格使用 [{"value":"A","label":"选项文字"},...] 结构；answer 必须始终为数组，单选如 ["B"]，多选如 ["A","B","D"]，不得写成 "B" 或 "ABD"，不得在 options 中使用 correct 字段。
 equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass，用作 A/B 程序等值检查；配对题这些字段必须逐项相同。若 presentationMode="table"，题目对象根层级还必须提供 evidence={kind:"two-sided-table",targetX,targetY,correctOptionId:"B",rows:[{x,y},...]}，左右各 3 行，并保证数值确实从两侧趋近 targetY；evidence 不得嵌套在 equivalence 中。text 题必须在题目对象根层级提供 rubric 数组，每项包含 criterion 和整数 points；rubric 不得嵌套在 equivalence 中。
+OpenMAIC 的测验题干不会渲染 Markdown 表格。数表题的 question 必须使用两行纯文本，例如“x 值：1.9，1.99，2.01，2.1；f(x) 值：3.9，3.99，4.01，4.1”，不得包含竖线 |、表头分隔线 ---、HTML 表格或代码围栏。
 
 不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。
 

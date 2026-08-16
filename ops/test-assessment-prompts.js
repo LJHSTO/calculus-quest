@@ -30,6 +30,7 @@ for (const chapter of route.chapters || []) {
     assert.match(paired, /equivalence 必须且只能包含 presentationMode/);
     assert.match(paired, /two-sided-table/);
     assert.match(paired, /question 只能包含题干/);
+    assert.match(paired, /不得包含竖线 \|/);
 
     for (const point of module.knowledgePoints || []) {
       pointCount += 1;

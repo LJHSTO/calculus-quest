@@ -14,6 +14,8 @@ const FORBIDDEN_CONTENT = [
   /示意性设计|实际趋近行为需结合题目设定|重新分析|自我纠正/
 ];
 
+const MARKDOWN_TABLE_PATTERN = /(^|\n)\s*[^\n]*\|[^\n]*(\n|$)|---+\s*\|/;
+
 function addError(errors, code, path, message) {
   errors.push({ code, path, message });
 }
@@ -169,6 +171,9 @@ function validateQuestion(question, context, errors) {
   const combinedText = [question.question, question.analysis, ...options.map((option) => option.label)].join(" ");
   for (const pattern of FORBIDDEN_CONTENT) {
     if (pattern.test(combinedText)) addError(errors, "FORBIDDEN_CONTENT", path, `题目包含禁止表达：${pattern.source}`);
+  }
+  if (MARKDOWN_TABLE_PATTERN.test(String(question.question || ""))) {
+    addError(errors, "MARKDOWN_TABLE_NOT_RENDERED", `${path}.question`, "OpenMAIC 测验题干不得使用 Markdown 表格，请改用两行纯文本数表");
   }
   const equivalence = isObject(question.equivalence) ? question.equivalence : {};
   const extraEquivalenceFields = Object.keys(equivalence).filter((field) => !REQUIRED_EQUIVALENCE_FIELDS.includes(field));
