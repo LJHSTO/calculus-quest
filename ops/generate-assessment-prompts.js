@@ -69,7 +69,8 @@ ${blueprintGuidance}
 
 两卷各 6 题，总分均为 60 分，difficulty 均为 medium。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
 每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 ${module.id}-pre-q1 至 ${module.id}-pre-q6、${module.id}-post-q1 至 ${module.id}-post-q6，不得缩写、重复或增加 q6b 等变体；pairId 必须按题位严格使用 P01 至 P06，每卷各出现一次。
-equivalence 必须包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass，用作 A/B 程序等值检查；配对题这些字段必须逐项相同。若 presentationMode="table"，还必须提供 evidence={kind:"two-sided-table",targetX,targetY,correctOptionValue,rows:[{x,y},...]}，左右各 3 行，并保证数值确实从两侧趋近 targetY。text 题还必须提供 rubric 数组，每项包含 criterion 和整数 points。
+所有选择题的 options 必须严格使用 [{"value":"A","label":"选项文字"},...] 结构；answer 必须始终为数组，单选如 ["B"]，多选如 ["A","B","D"]，不得写成 "B" 或 "ABD"，不得在 options 中使用 correct 字段。
+equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass，用作 A/B 程序等值检查；配对题这些字段必须逐项相同。若 presentationMode="table"，题目对象根层级还必须提供 evidence={kind:"two-sided-table",targetX,targetY,correctOptionId:"B",rows:[{x,y},...]}，左右各 3 行，并保证数值确实从两侧趋近 targetY；evidence 不得嵌套在 equivalence 中。text 题必须在题目对象根层级提供 rubric 数组，每项包含 criterion 和整数 points；rubric 不得嵌套在 equivalence 中。
 
 不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。
 
@@ -154,7 +155,7 @@ quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","m
 2. Q2：single，一至两步基础应用。
 3. Q3：multiple，围绕常见误解的诊断题。
 
-keyPoints 必须恰好包含 3 个字符串，每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用非 JSON 的字段拼接文本。每题完整写出 id、type、question、4 个 options、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence；id 必须严格为 ${point.id}-check-q1 至 ${point.id}-check-q3。equivalence 必须包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass；数表题还必须提供可程序复算的 two-sided-table evidence。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["${point.id}"]。
+keyPoints 必须恰好包含 3 个字符串，每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用非 JSON 的字段拼接文本。每题完整写出 id、type、question、4 个 options、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence；id 必须严格为 ${point.id}-check-q1 至 ${point.id}-check-q3。options 必须严格使用 [{"value":"A","label":"选项文字"},...]，answer 必须为数组，单选如 ["B"]、多选如 ["A","C"]，不得使用 correct 字段或 "AC" 字符串。equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass；数表题还必须在题目对象根层级提供可程序复算的 two-sided-table evidence，不得嵌套在 equivalence 中。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["${point.id}"]。
 
 【选择题规则】
 

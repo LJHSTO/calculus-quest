@@ -80,6 +80,9 @@ function signClass(value) {
 function validateTableEvidence(question, path, errors) {
   const evidence = question.evidence;
   if (!isObject(evidence) || evidence.kind !== "two-sided-table") {
+    if (isObject(question.equivalence?.evidence)) {
+      addError(errors, "TABLE_EVIDENCE_MISPLACED", `${path}.equivalence.evidence`, "evidence 必须位于题目对象根层级，不得嵌套在 equivalence 中");
+    }
     addError(errors, "TABLE_EVIDENCE_MISSING", `${path}.evidence`, "数表题必须提供 two-sided-table 结构化证据");
     return null;
   }
@@ -111,8 +114,8 @@ function validateTableEvidence(question, path, errors) {
     }
   }
   const answer = normalizeAnswer(question.answer);
-  if (String(evidence.correctOptionValue || "").trim() !== answer[0]) {
-    addError(errors, "TABLE_ANSWER_MISMATCH", `${path}.evidence.correctOptionValue`, "数表证据标注的正确选项必须与题目答案一致");
+  if (String(evidence.correctOptionId || "").trim() !== answer[0]) {
+    addError(errors, "TABLE_ANSWER_MISMATCH", `${path}.evidence.correctOptionId`, "数表证据标注的正确选项 ID 必须与题目答案一致");
   }
   return {
     rowCount: rows.length,
@@ -142,6 +145,10 @@ function validateQuestion(question, context, errors) {
   const options = normalizeOptions(question.options);
   const answer = normalizeAnswer(question.answer);
   if (question.type === "single" || question.type === "multiple") {
+    if (!Array.isArray(question.answer)) addError(errors, "ANSWER_ARRAY_REQUIRED", `${path}.answer`, "选择题 answer 必须是选项 ID 数组");
+    if (!Array.isArray(question.options) || question.options.some((option) => !isObject(option) || !String(option.value || "").trim() || !String(option.label || "").trim() || Object.hasOwn(option, "correct"))) {
+      addError(errors, "OPTION_SCHEMA_INVALID", `${path}.options`, "options 必须只使用带 value、label 的对象，不得使用 correct 字段");
+    }
     if (options.length !== 4) addError(errors, "OPTION_COUNT_INVALID", `${path}.options`, "选择题必须恰好有 4 个选项");
     const optionValues = new Set(options.map((option) => option.value));
     if (answer.some((value) => !optionValues.has(value))) addError(errors, "ANSWER_OPTION_INVALID", `${path}.answer`, "答案必须引用现有选项 value");
@@ -150,6 +157,9 @@ function validateQuestion(question, context, errors) {
   }
   if (question.type === "text") {
     const rubric = Array.isArray(question.rubric) ? question.rubric : [];
+    if (!rubric.length && Array.isArray(question.equivalence?.rubric)) {
+      addError(errors, "RUBRIC_MISPLACED", `${path}.equivalence.rubric`, "rubric 必须位于题目对象根层级，不得嵌套在 equivalence 中");
+    }
     if (rubric.length === 0) addError(errors, "RUBRIC_MISSING", `${path}.rubric`, "简答题必须提供结构化评分点");
     const rubricTotal = rubric.reduce((sum, item) => sum + Number(item?.points || 0), 0);
     if (rubricTotal !== expectedPoints || rubric.some((item) => !Number.isInteger(Number(item?.points)) || Number(item.points) <= 0)) {
@@ -161,6 +171,10 @@ function validateQuestion(question, context, errors) {
     if (pattern.test(combinedText)) addError(errors, "FORBIDDEN_CONTENT", path, `题目包含禁止表达：${pattern.source}`);
   }
   const equivalence = isObject(question.equivalence) ? question.equivalence : {};
+  const extraEquivalenceFields = Object.keys(equivalence).filter((field) => !REQUIRED_EQUIVALENCE_FIELDS.includes(field));
+  if (extraEquivalenceFields.length) {
+    addError(errors, "EQUIVALENCE_KEYS_INVALID", `${path}.equivalence`, `equivalence 含有不允许的字段：${extraEquivalenceFields.join(", ")}`);
+  }
   for (const field of REQUIRED_EQUIVALENCE_FIELDS) {
     if (equivalence[field] === undefined || equivalence[field] === "") {
       addError(errors, "EQUIVALENCE_FIELD_MISSING", `${path}.equivalence.${field}`, `缺少等值签名字段 ${field}`);

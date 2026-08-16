@@ -55,7 +55,7 @@ function tableChoice(phase, targetX, targetY, pairId) {
       kind: "two-sided-table",
       targetX,
       targetY,
-      correctOptionValue: "B",
+      correctOptionId: "B",
       rows: [...left, ...right]
     }
   });

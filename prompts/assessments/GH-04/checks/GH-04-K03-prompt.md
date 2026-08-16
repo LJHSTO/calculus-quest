@@ -44,7 +44,7 @@ quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","m
 2. Q2：single，一至两步基础应用。
 3. Q3：multiple，围绕常见误解的诊断题。
 
-keyPoints 必须恰好包含 3 个字符串，每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用非 JSON 的字段拼接文本。每题完整写出 id、type、question、4 个 options、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence；id 必须严格为 GH-04-K03-check-q1 至 GH-04-K03-check-q3。equivalence 必须包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass；数表题还必须提供可程序复算的 two-sided-table evidence。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["GH-04-K03"]。
+keyPoints 必须恰好包含 3 个字符串，每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用非 JSON 的字段拼接文本。每题完整写出 id、type、question、4 个 options、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence；id 必须严格为 GH-04-K03-check-q1 至 GH-04-K03-check-q3。options 必须严格使用 [{"value":"A","label":"选项文字"},...]，answer 必须为数组，单选如 ["B"]、多选如 ["A","C"]，不得使用 correct 字段或 "AC" 字符串。equivalence 必须且只能包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass；数表题还必须在题目对象根层级提供可程序复算的 two-sided-table evidence，不得嵌套在 equivalence 中。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["GH-04-K03"]。
 
 【选择题规则】
 
