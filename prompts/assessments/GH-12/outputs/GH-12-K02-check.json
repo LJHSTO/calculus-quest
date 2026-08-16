@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "无约束优化与梯度下降基础",
+  "outlines": [
+    {
+      "id": "GH-12-K02-check",
+      "type": "quiz",
+      "title": "即时检查：负梯度方向",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-12-K02-check-q1",
+          "type": "single",
+          "question": "已知可导函数 f(x, y) 在点 (1, 2) 处的梯度向量为 ∇f(1, 2) = (3, 4)。若以该点为起点，沿负梯度方向移动一个微小的步长，则坐标变化向量是哪一个？",
+          "options": [
+            {
+              "value": "A",
+              "label": "(3, 4)"
+            },
+            {
+              "value": "B",
+              "label": "(-3, -4)"
+            },
+            {
+              "value": "C",
+              "label": "(4, 3)"
+            },
+            {
+              "value": "D",
+              "label": "(-4, -3)"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "负梯度方向定义为 -∇f(1, 2)。已知 ∇f(1, 2) = (3, 4)，因此 -∇f(1, 2) = (-3, -4)。沿该方向移动意味着坐标变化向量与 (-3, -4) 同向，故正确选项为 (-3, -4)。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-12-K02"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 2,
+          "pairId": "GH-12-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "vector-direction"
+          }
+        },
+        {
+          "id": "GH-12-K02-check-q2",
+          "type": "multiple",
+          "question": "关于可导函数 f(x, y) 在点 P 处的负梯度方向，以下说法中正确的有哪些？（选择所有正确说法）",
+          "options": [
+            {
+              "value": "A",
+              "label": "负梯度方向是 -∇f(P) 表示的方向"
+            },
+            {
+              "value": "B",
+              "label": "在点 P 处，负梯度方向是使函数值下降最快的方向"
+            },
+            {
+              "value": "C",
+              "label": "负梯度方向就是梯度向量取相反数后的方向，因此它一定指向函数图像的最低点"
+            },
+            {
+              "value": "D",
+              "label": "只要沿负梯度方向移动，函数值就一定会减小，无论步长多大"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "A 正确：负梯度方向即 -∇f(P) 表示的方向。B 正确：在点 P 的局部邻域内，负梯度方向是函数值下降最快的方向。C 错误：负梯度方向是局部下降最快方向，不保证一步指向全局最低点或图像最低点。D 错误：沿负梯度方向移动仅在步长适当、函数可导且在局部邻域内时能保证函数值减小；步长过大时函数值可能反而增大，不能无条件保证减小。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-12-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "GH-12-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-explanation"
+          }
+        }
+      ]
+    }
+  ]
+}

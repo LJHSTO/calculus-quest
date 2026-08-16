@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q1",
+    "type": "single",
+    "question": "在无约束优化中，常把目标函数的几何形态称为目标函数地形。若某单变量目标函数的图像存在一个谷底，且越靠近谷底函数值越小，则关于该目标函数地形的下列说法中，正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "地形仅指函数图像在坐标系中的颜色映射，与函数值大小变化无关"
+      },
+      {
+        "value": "B",
+        "label": "地形反映了函数值随自变量变化的整体高低起伏，谷底对应函数值较小的区域"
+      },
+      {
+        "value": "C",
+        "label": "只要记住目标函数的表达式，不需要理解地形就能直接判断函数的极小值位置"
+      },
+      {
+        "value": "D",
+        "label": "地形只存在于多变量目标函数中，单变量目标函数没有地形"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "目标函数地形是用几何方式刻画目标函数值随自变量变化的整体高低起伏。题干明确指出越靠近谷底函数值越小，说明地形中的谷底对应函数值较小的区域，因此选项 B 正确。选项 A 把地形误解为与函数值无关的颜色映射，选项 C 忽略了地形对判断极小值位置的几何意义，选项 D 错误地把地形限定为多变量函数独有，均属于对目标函数地形核心含义的误解。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-explanation"
+    }
+  },
+  "post": {
+    "id": "GH-12-post-q1",
+    "type": "single",
+    "question": "某同学认为“目标函数地形”只是教材里对目标函数的一个代数符号记法，只要背下公式即可，不需要把它和函数图像的高低变化联系起来。下列对该同学理解的评价中，最准确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该同学理解正确，目标函数地形确实是一种纯代数符号记法，与图像无关"
+      },
+      {
+        "value": "B",
+        "label": "该同学理解正确，只要记住目标函数的表达式就等于掌握了目标函数地形"
+      },
+      {
+        "value": "C",
+        "label": "该同学理解不准确，目标函数地形强调用几何方式刻画函数值随自变量变化的整体高低起伏，不能只记符号"
+      },
+      {
+        "value": "D",
+        "label": "该同学理解不准确，目标函数地形只用于多变量函数，单变量函数不需要讨论地形"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "目标函数地形的核心含义是用几何方式刻画目标函数值随自变量变化的整体高低起伏，而不是纯代数符号记法。题干中该同学只记符号、不与图像和函数值变化联系，正好属于常见误解。因此选项 C 的评价最准确。选项 A 和 B 支持了该同学的误解，选项 D 错误地把地形限定为多变量函数独有，均不正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-explanation"
+    }
+  }
+}

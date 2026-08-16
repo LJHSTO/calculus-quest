@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q8",
+    "type": "multiple",
+    "question": "在无约束优化中，使用固定步长进行梯度下降迭代。关于步长大小与算法收敛性的关系，下列说法中所有正确说法是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "若步长设置过小，每次迭代移动的位移极短，虽然最终能逼近极小点，但需要大量迭代次数，收敛极其缓慢。"
+      },
+      {
+        "value": "B",
+        "label": "只要步长不为零，无论步长取多大，算法最终都能收敛到目标函数的极小点。"
+      },
+      {
+        "value": "C",
+        "label": "若步长设置过大，跨越了函数局部的最优下降范围，可能导致迭代点在极小点两侧来回震荡甚至发散。"
+      },
+      {
+        "value": "D",
+        "label": "步长过小会导致单次迭代越过极小点，使得目标函数值不降反增，算法无法收敛。"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "步长决定每次迭代的移动距离。步长过小时，单次移动极短，虽方向正确但收敛极慢，A正确。步长过大时，迭代点可能跨过极小点，导致目标函数值反弹、震荡甚至发散，无法收敛，B错误、C正确。越过极小点是由步长过大引起的，而非步长过小，D错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-12-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "qualitative-judgment"
+    }
+  },
+  "post": {
+    "id": "GH-12-post-q8",
+    "type": "multiple",
+    "question": "在无约束优化中，采用固定学习率沿负梯度方向更新参数。关于学习率大小对迭代过程的影响，下列说法中所有错误说法是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "学习率取值越小越好，因为这样能保证目标函数值在每一步都严格下降，绝不会发生上升或发散现象。"
+      },
+      {
+        "value": "B",
+        "label": "当学习率取值过大时，参数更新步幅过宽，可能使得目标函数值在迭代中不降反升，甚至出现发散。"
+      },
+      {
+        "value": "C",
+        "label": "无论学习率设定为多少，只要迭代次数足够多，目标函数值最终一定会趋于稳定并达到极小点。"
+      },
+      {
+        "value": "D",
+        "label": "过大的学习率会使更新过程反复跨过谷底，造成迭代轨迹在极小点附近来回震荡而难以收敛。"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "学习率过小虽能保证下降，但会导致收敛极其缓慢，并非越小越好，A说法错误。学习率过大时，单次更新跨度过大，会导致目标函数值上升甚至发散，B说法正确。若学习率过大，无论迭代多少次都可能持续震荡或发散，无法达到极小点，C说法错误。过大的学习率使参数在极小点两侧来回震荡，D说法正确。本题要求选出所有错误说法，故选A和C。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-12-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "qualitative-judgment"
+    }
+  }
+}

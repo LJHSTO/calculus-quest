@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q3",
+    "type": "single",
+    "question": "在无约束优化中，常把目标函数的图像比作地形。若某目标函数在极小值点附近的局部形状是一个四周高中间低的碗状曲面，关于该点附近的目标函数地形，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "从该点向任何方向微小移动，目标函数值都会增大"
+      },
+      {
+        "value": "B",
+        "label": "从该点向任何方向微小移动，目标函数值都会减小"
+      },
+      {
+        "value": "C",
+        "label": "从该点向某些方向移动函数值增大，向另一些方向移动函数值减小"
+      },
+      {
+        "value": "D",
+        "label": "该点附近所有位置的函数值都完全相等，地形是平坦的"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "目标函数地形描述了函数值在空间中的高低分布。极小值点对应地形中的“谷底”，四周高中间低意味着从谷底向任何方向移动都会爬升，即函数值增大。B 描述的是极大值点附近的地形特征，C 描述的是鞍点附近的地形特征，D 描述的是平坦区域的地形特征。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric-shape-interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-12-post-q3",
+    "type": "single",
+    "question": "如果把目标函数的图像视作连绵起伏的山脉，优化算法的目标是寻找最低的谷底。当探索者站在一个四周都比当前位置高、且处于局部最低的洼地时，关于该探索者所处位置的目标函数地形特征，下列推断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "无论朝哪个方向迈出微小一步，所处的高度都会上升"
+      },
+      {
+        "value": "B",
+        "label": "无论朝哪个方向迈出微小一步，所处的高度都会下降"
+      },
+      {
+        "value": "C",
+        "label": "朝部分方向迈步高度上升，朝其他方向迈步高度下降"
+      },
+      {
+        "value": "D",
+        "label": "向四周任意方向迈出微小一步，高度都不会发生改变"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "目标函数地形用高度代表函数值。探索者处于局部最低的洼地，意味着该点是一个局部极小值点。由于四周都比该点高，从该点向任何方向微小移动都会导致高度上升，即目标函数值增大。B 对应局部极大值点，C 对应鞍点，D 对应平坦的驻点。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric-shape-interpretation"
+    }
+  }
+}

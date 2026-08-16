@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q7",
+    "type": "single",
+    "question": "在无约束优化中，使用固定步长进行梯度下降迭代。若步长设置过小，关于算法的运行表现，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "每次移动量极微，导致需要非常多的迭代次数才能接近极小点，计算成本高"
+      },
+      {
+        "value": "B",
+        "label": "会越过极小点，导致目标函数值来回震荡甚至发散"
+      },
+      {
+        "value": "C",
+        "label": "步长过小会使得算法在第一步就提前触发停止信号"
+      },
+      {
+        "value": "D",
+        "label": "对收敛过程没有任何影响，因为负梯度方向始终指向极小点"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "步长过小意味着每次沿负梯度方向移动的距离极短，目标函数值下降极其缓慢。这会导致算法需要极多的迭代次数才能达到收敛要求，大幅增加计算时间成本，但不会引起震荡或发散。故选A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "behavior-identification"
+    }
+  },
+  "post": {
+    "id": "GH-12-post-q7",
+    "type": "single",
+    "question": "梯度下降算法求解无约束优化问题时，如果将步长设定得过大，通常会对优化过程产生怎样的影响？",
+    "options": [
+      {
+        "value": "A",
+        "label": "迭代点会跨越极小点，使目标函数值上下波动，严重时无法收敛"
+      },
+      {
+        "value": "B",
+        "label": "每次迭代前进过于缓慢，导致算法长时间运行也难以接近极小点"
+      },
+      {
+        "value": "C",
+        "label": "算法会立即停止迭代，因为步长过大直接满足了停止条件"
+      },
+      {
+        "value": "D",
+        "label": "由于负梯度方向保证了下降，步长多大都不会导致目标函数值上升"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "步长过大时，单次迭代更新步幅过宽，迭代点会越过谷底极小点跳到对侧高处，导致目标函数值不降反升并来回震荡，甚至发散而无法收敛。故选A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "behavior-identification"
+    }
+  }
+}
