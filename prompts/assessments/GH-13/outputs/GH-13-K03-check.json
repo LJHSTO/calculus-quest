@@ -1,0 +1,137 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "约束优化与机器学习闭环",
+  "outlines": [
+    {
+      "id": "GH-13-K03-check",
+      "type": "quiz",
+      "title": "即时检查：凸函数和凸集合",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-13-K03-check-q1",
+          "type": "single",
+          "question": "x 值：-1，0，1；f(x) 值：2，0，2\nx 值：2，3，4；f(x) 值：5，8，13\n已知函数 f(x) 在实数集上由上述数据点构成折线。根据凸集合与凸函数的定义，判断该函数在区间 [-1, 4] 上的凸性，并选择正确结论。",
+          "evidence": {
+            "type": "two-sided-table",
+            "rows": [
+              {
+                "x": -1,
+                "f(x)": 2
+              },
+              {
+                "x": 0,
+                "f(x)": 0
+              },
+              {
+                "x": 1,
+                "f(x)": 2
+              },
+              {
+                "x": 2,
+                "f(x)": 5
+              },
+              {
+                "x": 3,
+                "f(x)": 8
+              },
+              {
+                "x": 4,
+                "f(x)": 13
+              }
+            ]
+          },
+          "options": [
+            {
+              "value": "A",
+              "label": "f(x) 是凸函数，因为连接折线上任意两点构成的线段始终位于折线之上或重合"
+            },
+            {
+              "value": "B",
+              "label": "f(x) 是凸函数，因为其定义域 [-1, 4] 是一个凸集合"
+            },
+            {
+              "value": "C",
+              "label": "f(x) 不是凸函数，因为定义域 [-1, 4] 是凸集合但函数值先减后增"
+            },
+            {
+              "value": "D",
+              "label": "f(x) 不是凸函数，因为连接 (-1, 2) 和 (4, 13) 的线段在 x=1 处位于折线下方"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "按相邻数据点连接成折线，各段斜率依次为 -2、2、3、3、5，呈非递减，因此该折线函数在 [-1,4] 上为凸函数，选 A。定义域为凸集只是讨论凸函数的必要前提，并不足以单独推出函数凸性。连接 (-1,2) 与 (4,13) 的弦在 x=1 处高度为 2+(11/5)×2=6.4，高于 f(1)=2，也符合凸函数的弦在图像上方这一特征。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-13-K03"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 3,
+          "pairId": "GH-13-K03-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "two-sided-table",
+            "knownConditionCount": 6,
+            "operationCount": 3,
+            "symbolComplexity": "low",
+            "conclusionClass": "property-identification"
+          }
+        },
+        {
+          "id": "GH-13-K03-check-q2",
+          "type": "multiple",
+          "question": "关于凸函数和凸集合，以下说法中哪些是正确的？请选择所有正确的说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "凸集合的几何意义是：集合内任取两点，连接它们的线段也完全落在该集合内部"
+            },
+            {
+              "value": "B",
+              "label": "只要一个函数的定义域是凸集合，该函数就必然是凸函数"
+            },
+            {
+              "value": "C",
+              "label": "若函数 f(x) 是凸函数，则其定义域必须是凸集合"
+            },
+            {
+              "value": "D",
+              "label": "凸函数的几何意义是：函数图像上任意两点之间的线段，不会位于函数图像的下方"
+            }
+          ],
+          "answer": [
+            "A",
+            "C",
+            "D"
+          ],
+          "analysis": "选项 A 正确描述了凸集合的定义；选项 B 是常见误解，定义域是凸集合仅是讨论函数凸性的前提，函数本身还需满足 f(λx1+(1-λ)x2) ≤ λf(x1)+(1-λ)f(x2) 的不等式条件，例如 f(x)=x^3 在凸集合 R 上并不是凸函数；选项 C 正确，凸函数的定义要求在定义域内任取两点进行线段组合，若定义域不是凸集合，则两点间的线段可能不在定义域内，不等式无意义；选项 D 正确描述了凸函数的图像特征，即两点间的割线始终位于函数图像上方或重合。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-13-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-13-K03-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 4,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-judgment"
+          }
+        }
+      ]
+    }
+  ]
+}

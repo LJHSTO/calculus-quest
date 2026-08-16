@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q3",
+    "type": "single",
+    "question": "某工厂生产桌子和椅子，方案 (x,y) 必须满足 2x+y≤10、x≥0、y≥0。下列哪个候选方案属于可行区域？",
+    "options": [
+      {
+        "value": "A",
+        "label": "(-1,4)"
+      },
+      {
+        "value": "B",
+        "label": "(3,4)"
+      },
+      {
+        "value": "C",
+        "label": "(5,1)"
+      },
+      {
+        "value": "D",
+        "label": "(6,0)"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "候选点必须同时满足三个约束。(3,4) 满足 2×3+4=10 且两坐标非负，故选 B。A 的 x 为负；C、D 的资源消耗分别为 11、12，超过上限。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "region_with_implicit_bounds"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q3",
+    "type": "single",
+    "question": "某饮食搭配方案 (x,y) 必须满足 3x+2y≤12、x≥0、y≥0。将下列候选方案逐一代入约束，哪一个属于可行区域？",
+    "options": [
+      {
+        "value": "A",
+        "label": "(4,1)"
+      },
+      {
+        "value": "B",
+        "label": "(-1,5)"
+      },
+      {
+        "value": "C",
+        "label": "(2,3)"
+      },
+      {
+        "value": "D",
+        "label": "(3,2)"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "(2,3) 满足 3×2+2×3=12，且两坐标非负，故选 C。A、D 的总量分别为 14、13，超过上限；B 的 x 为负。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "region_with_implicit_bounds"
+    }
+  }
+}

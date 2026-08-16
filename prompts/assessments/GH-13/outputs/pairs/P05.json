@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q5",
+    "type": "single",
+    "question": "在约束优化中，拉格朗日乘子提供了目标函数与约束条件之间的关键联系。若目标函数的等高线与约束边界曲线恰好相切于最优点，关于拉格朗日乘子在该点处的几何与代数意义，以下哪个说法是正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "拉格朗日乘子表示目标函数在最优点处的函数值大小"
+      },
+      {
+        "value": "B",
+        "label": "拉格朗日乘子反映了目标函数梯度与约束函数梯度之间的比例关系，其大小揭示了约束条件对最优解的敏感程度"
+      },
+      {
+        "value": "C",
+        "label": "拉格朗日乘子代表约束边界曲线的绝对长度或覆盖范围"
+      },
+      {
+        "value": "D",
+        "label": "拉格朗日乘子决定了目标函数在无约束情况下的下降方向"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "在最优点处，目标函数的梯度与约束函数的梯度共线，即它们之间存在比例关系，这个比例系数就是拉格朗日乘子。它衡量了目标函数最优值随约束条件微小变动而变化的程度，即约束的敏感度或影子价格。选项A、C、D均未正确表达这一核心代数与几何直觉。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-explanation"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q5",
+    "type": "single",
+    "question": "设想某工厂在既定资源限制下追求最大利润，数学上体现为目标函数在约束边界上的极值问题。当利润函数的等高面与资源约束曲面恰好相切时，拉格朗日乘子在此处的核心直觉是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它表示资源约束曲面在该切点处的曲率半径大小"
+      },
+      {
+        "value": "B",
+        "label": "它衡量了利润函数梯度与资源约束梯度之间的共线比例，其数值反映了放宽一单位资源限制所能带来的最大利润增量"
+      },
+      {
+        "value": "C",
+        "label": "它等于该工厂在无约束状态下所能达到的最大理论利润"
+      },
+      {
+        "value": "D",
+        "label": "它决定了利润函数等高面在空间中的整体分布密度"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "在切点处，目标函数（利润）的梯度与约束函数（资源）的梯度方向共线，拉格朗日乘子即为它们之间的比例系数。从应用直觉来看，该数值表示当资源限制微小增加时，最优利润的相应增加量，即资源的边际价值或影子价格。选项A、C、D均偏离了梯度共线与敏感度的核心含义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-explanation"
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q9",
+    "type": "multiple",
+    "question": "在将实际优化问题转化为线性规划入口模型时，下列关于模型特征与适用性的说法，正确的有哪几项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "目标函数和约束条件中的决策变量均保持一次方形式，不包含变量间的乘积项"
+      },
+      {
+        "value": "B",
+        "label": "若原问题中某项成本随产量呈二次方增长，则该问题无法直接套用线性规划入口模型"
+      },
+      {
+        "value": "C",
+        "label": "线性规划入口模型允许目标函数求最小值，同时约束条件可以是等式或不等式"
+      },
+      {
+        "value": "D",
+        "label": "只要决策变量取正值，任何包含资源限制与利润最大化的问题都能直接作为线性规划入口模型处理"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "选项A描述了线性规划中线性关系的核心特征，正确。选项B正确指出了二次项违背线性假设，无法直接套用。选项C正确描述了目标函数极值方向与约束形式的灵活性。选项D错误，即使变量为正且存在资源限制，若目标函数或约束含非线性关系（如指数、分式），仍不能直接作为线性规划处理。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-13-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "feature-identification"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q9",
+    "type": "multiple",
+    "question": "某工厂在制定生产计划时，需要将实际生产场景转化为线性规划入口模型。关于该转化过程中的模型边界与结构要求，下列说法错误的有哪几项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "若运输费用与行驶距离呈正比，且距离为决策变量的一次组合，则该项费用可以直接纳入线性规划入口模型的目标函数"
+      },
+      {
+        "value": "B",
+        "label": "当生产过程中的设备磨损费用随产量呈二次方递增时，该问题仍能直接作为线性规划入口模型求解"
+      },
+      {
+        "value": "C",
+        "label": "线性规划入口模型的目标函数只能求最大值，所有资源约束条件必须全部写成小于等于的不等式形式"
+      },
+      {
+        "value": "D",
+        "label": "只要实际场景涉及资源分配与产量限制，无论决策变量间的相互作用如何表达，都能直接套用线性规划入口模型"
+      }
+    ],
+    "answer": [
+      "B",
+      "C",
+      "D"
+    ],
+    "analysis": "选项A描述了线性项的合法组合，说法正确。选项B错误，二次递增项属于非线性关系，不能直接纳入线性规划入口模型。选项C错误，线性规划入口模型的目标函数既可以求最大值也可以求最小值，约束条件可以是等式或不等式。选项D错误，若变量间存在非线性相互作用（如乘积或分式），即使涉及资源分配也不能直接套用线性规划入口模型。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-13-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "feature-identification"
+    }
+  }
+}

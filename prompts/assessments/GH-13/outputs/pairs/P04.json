@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q4",
+    "type": "single",
+    "question": "某工厂在产能约束 x+y=10 下优化利润。采用拉格朗日函数 L=P(x,y)+λ(10-x-y)，完整求解该约束优化问题后得到最优点处 λ=3。关于这个数值结果，以下哪种解释最符合拉格朗日乘子的核心直觉？",
+    "options": [
+      {
+        "value": "A",
+        "label": "λ=3表示如果产能约束的右端常数从10增加1个单位变为11，工厂的最大利润理论上将增加3个单位。"
+      },
+      {
+        "value": "B",
+        "label": "λ=3表示在当前最优点处，目标函数P(x,y)的梯度向量长度恰好为3。"
+      },
+      {
+        "value": "C",
+        "label": "λ=3表示在最优点处，约束边界x+y=10的法线方向与坐标轴x轴的夹角正切值为3。"
+      },
+      {
+        "value": "D",
+        "label": "λ=3表示无论产能约束如何放宽，目标函数的最大值都将固定增加3个单位。"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "拉格朗日乘子λ的直觉意义在于衡量约束条件右端常数微小变动时，目标函数最优值的边际变化率。在本题中，λ=3意味着当产能约束x+y=10的常数项增加1时，最大利润将增加约3。选项B混淆了乘子与梯度长度；选项C将其误解为几何角度参数；选项D忽略了边际变化率的局部有效性，将其误认为全局固定增量。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "marginal-rate"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q4",
+    "type": "single",
+    "question": "物流公司在总配额约束 u+v=10 下优化运输效率。采用拉格朗日函数 L=E(u,v)+λ(10-u-v)，完整求解该约束优化问题后得到最优点处 λ=5。针对 λ=5，依据拉格朗日乘子的核心含义，下面哪种理解正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "λ=5说明在最优点处，目标函数E(u,v)的等高线切线斜率绝对值等于5。"
+      },
+      {
+        "value": "B",
+        "label": "λ=5说明若将物资总重量的配额限制从10吨放宽至11吨，系统的最大总运输效率将提升约5个单位。"
+      },
+      {
+        "value": "C",
+        "label": "λ=5说明约束方程u+v=10所代表的几何平面在最优分配点处的曲率半径为5。"
+      },
+      {
+        "value": "D",
+        "label": "λ=5说明目标函数E(u,v)在可行区域内部的极小值与极大值之差为5。"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "拉格朗日乘子代表了约束条件右端项变动对目标函数最优值的边际贡献。在此题中，λ=5表明如果物资总重量的限制常数增加1个单位，最大运输效率将相应提升约5个单位。选项A将乘子与等高线斜率混淆；选项C错误关联了乘子与几何曲率；选项D则误解为函数极值差的度量，均偏离了拉格朗日乘子作为边际变化率的核心直觉。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "marginal-rate"
+    }
+  }
+}

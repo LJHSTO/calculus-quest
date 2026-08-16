@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "GH-13-K04-check",
+      "type": "quiz",
+      "title": "即时检查：线性/二次规划入口",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-13-K04-check-q1",
+          "type": "single",
+          "question": "在线性规划中，目标函数和约束条件需要满足特定的数学形式要求。下列关于线性规划“入口”形式要求的说法中，正确的是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "目标函数可以是关于变量的二次多项式，只要约束条件是线性等式或不等式即可"
+            },
+            {
+              "value": "B",
+              "label": "目标函数和约束条件中的每一项关于变量都必须是线性的，不允许出现变量乘积或平方项"
+            },
+            {
+              "value": "C",
+              "label": "约束条件只允许使用线性等式，不能包含任何线性不等式"
+            },
+            {
+              "value": "D",
+              "label": "目标函数必须是线性函数，而约束条件允许包含变量的乘积项"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "线性规划的标准要求是：目标函数是线性函数，且所有约束条件均为线性等式或线性不等式。因此，无论是目标函数还是约束条件，都不允许出现变量之间的乘积项或变量的平方项等非线性项。选项 B 准确描述了这一形式要求。选项 A、D 错在允许目标函数或约束条件出现非线性项；选项 C 错在认为约束条件只能使用等式。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-13-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-13-K04-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text-choice",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "form-identification"
+          }
+        },
+        {
+          "id": "GH-13-K04-check-q2",
+          "type": "multiple",
+          "question": "关于线性规划与二次规划在形式上的区别与联系，下列说法中所有正确的选项是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "二次规划的目标函数可以包含变量的平方项或两变量乘积项，但其约束条件仍须为线性等式或线性不等式"
+            },
+            {
+              "value": "B",
+              "label": "线性规划可以看作二次规划在目标函数二次项系数全为零时的特殊情形"
+            },
+            {
+              "value": "C",
+              "label": "只要目标函数是二次函数，无论约束条件是线性还是非线性，都属于二次规划"
+            },
+            {
+              "value": "D",
+              "label": "线性规划和二次规划都要求约束条件为线性形式，区别主要在于目标函数是否允许含有二次项"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "二次规划的标准形式要求目标函数为二次函数，而约束条件仍为线性等式或线性不等式，因此选项 A 正确。当二次规划目标函数中的二次项系数全部为零时，目标函数退化为线性函数，此时即为线性规划，因此选项 B 正确。线性规划与二次规划的主要区别在于目标函数是否允许含有二次项，且二者都要求约束条件为线性形式，因此选项 D 正确。选项 C 错误：若约束条件包含非线性项，即使目标函数是二次函数，也不属于标准的二次规划范畴。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-13-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-13-K04-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text-choice",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "form-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

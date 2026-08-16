@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q2",
+    "type": "single",
+    "question": "某工厂生产甲、乙两种产品。生产每单位甲产品需要消耗2个单位的原料A和3个单位的原料B；生产每单位乙产品需要消耗4个单位的原料A和1个单位的原料B。工厂每天可供的原料A最多为20个单位，原料B最多为15个单位。若设每天生产甲产品x单位、乙产品y单位，则下列关于该工厂实际生产允许范围的判断中，正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "只要x和y都取正数，工厂就能按计划完成生产"
+      },
+      {
+        "value": "B",
+        "label": "必须同时满足2x+4y≤20、3x+y≤15且x≥0、y≥0，所有满足这些不等式的点(x,y)才构成可行区域"
+      },
+      {
+        "value": "C",
+        "label": "只要2x+4y≤20成立，原料B的消耗量就自然不会超过15个单位"
+      },
+      {
+        "value": "D",
+        "label": "可行区域是由2x+4y=20和3x+y=15两直线交点唯一确定的一个点"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "可行区域是指在给定约束条件下，所有满足这些约束条件的决策变量取值组合的集合。本题中决策变量为x和y，约束条件包括原料A的限制2x+4y≤20、原料B的限制3x+y≤15以及实际生产量非负的性质x≥0、y≥0。只有B选项完整准确地描述了可行区域必须包含所有这些约束条件的交集，A、C选项遗漏了部分约束，D选项错误地将可行区域理解为一个边界交点而非区域。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "set-identification"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q2",
+    "type": "single",
+    "question": "在营养学配餐问题中，一份主食由谷物和牛奶混合而成。每百克谷物含蛋白质5克和钙2克；每百克牛奶含蛋白质3克和钙6克。一份主食要求总蛋白质不低于15克，总钙不低于12克。设该份主食中谷物含量为a百克、牛奶含量为b百克，关于这份主食符合营养标准的搭配范围，下列说法正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "只要5a+3b≥15成立，就能保证这份主食的钙含量也必然达到12克以上"
+      },
+      {
+        "value": "B",
+        "label": "符合要求的搭配范围仅是直线5a+3b=15与2a+6b=12相交得到的那一个具体坐标点"
+      },
+      {
+        "value": "C",
+        "label": "搭配范围由满足5a+3b≥15、2a+6b≥12且a≥0、b≥0的所有实数对(a,b)共同构成"
+      },
+      {
+        "value": "D",
+        "label": "只要a和b都取正值，这份主食就能自动满足蛋白质和钙两项营养标准"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "可行区域是所有满足全部约束条件的变量组合的集合。本题的决策变量为a和b，约束条件包括蛋白质需求5a+3b≥15、钙需求2a+6b≥12以及实际配餐中食材量非负的隐含条件a≥0、b≥0。C选项正确指出了可行区域是这些不等式共同界定的集合。A选项和D选项忽略了钙的约束或两项约束的联合限制，B选项则错误地将可行区域缩小为边界直线的交点。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "set-identification"
+    }
+  }
+}
