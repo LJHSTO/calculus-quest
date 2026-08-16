@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q6",
+    "type": "single",
+    "question": "在山坡地形图中，某点处的方向导数衡量登山者沿指定方向走一小步时的海拔变化率。若甲同学仅记住了方向导数的符号表达式，却未将其与实际地形或行走方向联系起来，他最容易产生以下哪种误解？",
+    "options": [
+      {
+        "value": "A",
+        "label": "认为方向导数就是函数在该点沿任意方向的值都相同，与所选方向无关"
+      },
+      {
+        "value": "B",
+        "label": "认为方向导数表示沿指定方向移动单位水平距离时函数值的变化率，方向不同则变化率一般不同"
+      },
+      {
+        "value": "C",
+        "label": "认为方向导数只适用于二元函数，对三元函数无意义"
+      },
+      {
+        "value": "D",
+        "label": "认为方向导数必须等于零，否则该点不是极值点"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "方向导数的核心含义是函数在某点沿给定方向的变化率，方向不同变化率一般不同。只记符号而不联系实际行走方向，最典型的误解就是忽视方向依赖性，误以为各方向变化率相同。选项B正确描述了方向导数的含义，不是误解；选项C、D属于范围或极值相关的错误，不是题干所指的典型误解。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "misconception-identification"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q6",
+    "type": "single",
+    "question": "某气象站用方向导数描述某地沿不同方向移动时气温的瞬时变化率。一位同学只背下了方向导数的计算公式，却没有把它和实际风向、移动方向联系起来。下列判断中，最符合这种只记符号、脱离情境的典型错误的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "误以为无论沿哪个方向移动，该点气温的瞬时变化率都相同，从而忽略方向对变化率的影响"
+      },
+      {
+        "value": "B",
+        "label": "认为方向导数表示沿指定方向移动单位距离时气温的变化率，方向不同结果一般不同"
+      },
+      {
+        "value": "C",
+        "label": "认为方向导数只能用于气温分布，不能用于海拔或浓度等场量"
+      },
+      {
+        "value": "D",
+        "label": "认为方向导数若不为零，则该点气温一定处于局部最高或最低"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "方向导数的核心含义是函数在某点沿给定方向的变化率，方向不同变化率一般不同。只背公式而不联系实际移动方向，最典型的误解就是忽视方向依赖性，误以为各方向变化率相同。选项B正确描述了方向导数的含义，不是误解；选项C、D属于适用范围或极值相关的错误，不是题干所指的典型误解。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "misconception-identification"
+    }
+  }
+}

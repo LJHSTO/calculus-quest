@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q5",
+    "type": "single",
+    "question": "在研究洞穴内部的温度时，温度 T 是空间坐标 (x, y, z) 的函数。已知某点沿 x 轴正方向的变化率为 -3，沿 y 轴正方向的变化率为 1。若指定行进方向还含有非零的竖直 z 分量，仅凭这两个方向的观测数据，能否唯一确定沿该指定方向的温度变化率？",
+    "options": [
+      {
+        "value": "A",
+        "label": "能唯一确定，因为只需把 -3 和 1 按该方向的水平分量加权即可"
+      },
+      {
+        "value": "B",
+        "label": "能唯一确定，因为竖直分量不会影响方向导数"
+      },
+      {
+        "value": "C",
+        "label": "不能唯一确定，因为还缺少沿 z 轴方向的偏导数，梯度向量并不完整"
+      },
+      {
+        "value": "D",
+        "label": "不能唯一确定，因为方向导数只能通过实际移动来测量，不能通过梯度计算"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "三元函数的梯度为 (T_x,T_y,T_z)。题干只给出了 T_x=-3 和 T_y=1，却没有给出 T_z；而指定方向含有非零的 z 分量，所以点积 ∇T·u 中含有未知项 T_z u_z，无法唯一计算。选 C。方向导数可以由完整梯度与方向单位向量的点积计算，因此 D 也不正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K02"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "sufficiency-judgment"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q5",
+    "type": "single",
+    "question": "某气象站监测室内温度 T，它是空间坐标 (x, y, z) 的函数。已知在观测点处，温度沿水平 x 轴正方向的变化率为 2，沿水平 y 轴正方向的变化率为 -1。现要求计算该点沿斜向上方某指定方向的方向导数，某同学认为无需知道沿竖直 z 轴方向的变化率即可算出结果。仅根据方向导数的定义，该判断是否正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "正确，因为指定方向在水平面内的投影可以由 x 轴和 y 轴方向的分量完全决定，竖直方向的变化不影响最终结果"
+      },
+      {
+        "value": "B",
+        "label": "正确，因为方向导数只取决于指定方向在 x-y 平面上的投影方向，竖直 z 轴方向的变化率是独立无关的量"
+      },
+      {
+        "value": "C",
+        "label": "错误，因为方向导数是梯度向量与指定方向单位向量的点积，缺少竖直 z 轴方向的偏导数意味着梯度向量不完整，无法准确计算该斜向的方向导数"
+      },
+      {
+        "value": "D",
+        "label": "错误，因为只要知道指定方向与 x 轴正方向的夹角，就可以直接用沿 x 轴正方向的变化率乘以该夹角的余弦值求出方向导数"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "方向导数的核心含义是函数沿某一特定方向的变化率，其计算依赖于该点完整的梯度向量与目标方向的单位向量做点积。在本题中，温度 T 是关于 (x, y, z) 的三元函数，其梯度向量由三个偏导数构成。已知沿 x 轴和 y 轴正方向的变化率仅提供了梯度向量的前两个分量，缺失了沿 z 轴正方向的变化率，导致梯度向量不完整。由于目标方向是斜向的，包含竖直方向的分量，因此必须知道竖直方向的变化率才能准确计算该方向导数。选项 C 准确指出了方向导数对完整梯度向量的依赖关系，避免了将三维空间问题降维处理或忽略竖直分量的常见概念混淆。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K02"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "sufficiency-judgment"
+    }
+  }
+}

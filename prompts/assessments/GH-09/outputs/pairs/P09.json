@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q9",
+    "type": "multiple",
+    "question": "在多元函数的光滑等高线图中，某条等高线在点 P 处的非零切线方向记为向量 t，且该点梯度非零。关于梯度向量与 t 的关系，下列哪些说法正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "梯度向量与 t 的点积为零"
+      },
+      {
+        "value": "B",
+        "label": "梯度向量与 t 的夹角为 90 度"
+      },
+      {
+        "value": "C",
+        "label": "梯度方向就是沿等高线保持函数值不变的方向"
+      },
+      {
+        "value": "D",
+        "label": "梯度向量可作为该等高线在 P 点的法向量"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "analysis": "沿等高线切线方向移动时函数值的瞬时变化率为零，所以 ∇f·t/|t|=0。由梯度和 t 都非零可知二者垂直，夹角为 90 度，梯度也就是等高线的法向量。因此 A、B、D 正确，C 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-09-K03"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric_relation"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q9",
+    "type": "multiple",
+    "question": "已知某座山的光滑等高线地图，探险者位于等高线上的 M 点，且该点梯度非零。若探险者选择一条在 M 点处高度不发生瞬时改变的非零行进方向，下列哪些判断正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该行进方向与梯度向量的夹角为直角"
+      },
+      {
+        "value": "B",
+        "label": "该行进方向与梯度向量平行"
+      },
+      {
+        "value": "C",
+        "label": "该行进方向上的方向导数为零"
+      },
+      {
+        "value": "D",
+        "label": "该行进方向与梯度向量的点积为零"
+      }
+    ],
+    "answer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "analysis": "高度在该方向的瞬时变化率为零，即方向导数为零；方向导数等于梯度与行进方向单位向量的点积，因此两向量点积为零。两者均非零，所以夹角为直角而不是平行。因此 A、C、D 正确。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-09-K03"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric_relation"
+    }
+  }
+}
