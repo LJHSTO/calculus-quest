@@ -19,9 +19,13 @@ for (const chapter of route.chapters || []) {
     const paired = fs.readFileSync(pairedPath, "utf8");
     assert.match(paired, new RegExp(`章节 ID：${chapter.id}`));
     assert.match(paired, new RegExp(`学习模块 ID：${module.id}`));
-    assert.match(paired, /前后测严格等值/);
+    assert.match(paired, /前后测测量等值与表面异构/);
     assert.match(paired, /keyPoints 都必须恰好包含 6 个字符串/);
-    assert.match(paired, /不得用“主题相近”代替逐题同构/);
+    assert.match(paired, /严禁仅替换数值、坐标、变量名/);
+    assert.match(paired, /同卷题目多样性/);
+    assert.match(paired, /删除题干中的数字、字母变量和坐标后/);
+    assert.match(paired, /同一知识点安排两道题时，两题必须承担不同测量功能/);
+    assert.match(paired, /题干不得出现 ""、''、“”或‘’等空引号占位符/);
     assert.match(paired, /points 求和都严格等于 60/);
     assert.match(paired, /Q6 为 text 且 points=20/);
     assert.match(paired, /Q1-Q5 的 points 均为 8/);

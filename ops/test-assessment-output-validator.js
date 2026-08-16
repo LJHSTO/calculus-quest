@@ -14,10 +14,22 @@ function options(correctValue, labels = ["1", "2", "3", "4"]) {
 
 function choice(id, phase, index, type, kpId, pairId, overrides = {}) {
   const multiple = type === "multiple";
+  const questionTemplates = {
+    pre: {
+      3: "观察函数从指定点左侧接近时的变化，哪项正确描述该单侧趋势？",
+      4: "一名学生整理了左右两侧的趋近信息，请选择所有能够推出的结论。",
+      5: "小明只检查了两个连续性条件便作出判断，以下评价哪项最准确？"
+    },
+    post: {
+      3: "函数值沿数轴右侧向目标点靠近，哪项结论与这段描述相符？",
+      4: "关于单侧趋势和双侧极限的关系，下列说法中哪些能够成立？",
+      5: "某份解答遗漏了连续性定义中的关键比较，应该如何评价该推理？"
+    }
+  };
   return {
     id: `GH-02-${phase}-q${index}`,
     type,
-    question: `${phase} 第 ${index} 题的完整题干`,
+    question: questionTemplates[phase]?.[index] || `${phase} 阶段第 ${index} 题的完整题干`,
     options: options(),
     answer: multiple ? ["A", "C"] : ["B"],
     analysis: "依据已知条件逐步判断，答案与选项一致。",
@@ -31,7 +43,7 @@ function choice(id, phase, index, type, kpId, pairId, overrides = {}) {
       knownConditionCount: index === 4 ? 3 : 2,
       operationCount: 1,
       symbolComplexity: "low",
-      conclusionClass: index === 4 ? "two_sided_limit_exists" : index === 5 ? "continuous" : "limit-reading"
+      conclusionClass: index === 4 ? "two_sided_limit_exists" : index === 5 ? "continuity_reasoning_diagnosis" : "limit-reading"
     },
     ...overrides
   };
@@ -41,7 +53,13 @@ function tableChoice(phase, targetX, targetY, pairId, index = 1, conclusionClass
   const left = [0.3, 0.2, 0.1].map((delta) => ({ x: targetX - delta, y: targetY - delta }));
   const right = [0.1, 0.2, 0.3].map((delta) => ({ x: targetX + delta, y: targetY + delta }));
   return choice(`GH-02-${phase}-q${index}`, phase, index, "single", "GH-02-K01", pairId, {
-    question: `完整数表显示 x 从两侧趋近 ${targetX}，判断 f(x) 的趋近值。`,
+    question: index === 1
+      ? (phase === "pre"
+        ? `读取六组双侧数表数据，估计函数在目标点 ${targetX} 附近的趋近值。`
+        : `六个观测值分别从目标点 ${targetX} 两边靠近，哪项结论符合整体变化趋势？`)
+      : (phase === "pre"
+        ? `学生认为极限必须等于数表中已经列出的某个函数值，这种说法是否正确？`
+        : `面对未直接列出目标值的六组数据，应怎样理解函数值最终趋近的结果？`),
     options: options("B", [String(targetY - 1), String(targetY), String(targetY + 1), "不存在"]),
     answer: ["B"],
     equivalence: {
@@ -65,7 +83,9 @@ function textQuestion(phase, value) {
   return {
     id: `GH-02-${phase}-q6`,
     type: "text",
-    question: `已知左极限和右极限都为 ${value}，函数值为 ${value + 1}，判断并说明连续性。`,
+    question: phase === "pre"
+      ? `在目标点处，两侧趋近结果均为 ${value}，而实际函数值是 ${value + 1}。请按三个条件说明是否连续。`
+      : `请完整判断函数在指定点的连续性：该点函数值为 ${value + 1}，从右侧和左侧观察到的极限都等于 ${value}。`,
     answer: "不连续。左右极限相等，但极限值不等于函数值。",
     analysis: "分别核对双侧极限是否存在、极限值与函数值是否相等，再作出连续性结论。",
     points: 20,
@@ -121,6 +141,7 @@ assert.equal(validPaired.valid, true);
 
 const malformed = pairedPayload();
 const malformedPre = malformed.outlines[0].keyPoints.map(JSON.parse);
+malformedPre[0].question = '数表题要求判断""的趋近值。';
 malformedPre.push({ ...malformedPre[5], id: "GH-02-pre-q6b" });
 malformed.outlines[0].keyPoints = malformedPre.map(JSON.stringify);
 const malformedPost = malformed.outlines[1].keyPoints.map(JSON.parse);
@@ -132,7 +153,7 @@ malformedPost[0].question = "x | f(x)\n---|---\n1 | 2";
 malformed.outlines[1].keyPoints = malformedPost.map(JSON.stringify);
 const invalidPaired = validatePairedAssessment(malformed, moduleDefinition);
 assert.equal(invalidPaired.valid, false);
-for (const code of ["QUESTION_COUNT_INVALID", "TABLE_TREND_INCORRECT", "FORBIDDEN_CONTENT", "MARKDOWN_TABLE_NOT_RENDERED", "QUESTION_ID_INVALID", "PAIR_MISMATCH"]) {
+for (const code of ["QUESTION_COUNT_INVALID", "TABLE_TREND_INCORRECT", "FORBIDDEN_CONTENT", "MARKDOWN_TABLE_NOT_RENDERED", "EMPTY_PLACEHOLDER", "QUESTION_ID_INVALID", "PAIR_MISMATCH"]) {
   assert.ok(invalidPaired.errors.some((error) => error.code === code), `missing expected error ${code}`);
 }
 
@@ -152,6 +173,18 @@ for (const outline of blueprintInvalid.outlines) {
 const invalidBlueprint = validatePairedAssessment(blueprintInvalid, moduleDefinition);
 for (const code of ["GH02_TABLE_POSITIVE_VALUES_REQUIRED", "GH02_CONCLUSION_CLASS_INVALID", "GH02_RUBRIC_INVALID"]) {
   assert.ok(invalidBlueprint.errors.some((error) => error.code === code), `missing expected GH-02 blueprint error ${code}`);
+}
+
+const repetitive = pairedPayload();
+const repetitivePre = repetitive.outlines[0].keyPoints.map(JSON.parse);
+const repetitivePost = repetitive.outlines[1].keyPoints.map(JSON.parse);
+repetitivePre[3].question = repetitivePre[2].question.replace("左侧", "右侧");
+repetitivePost[2].question = repetitivePre[2].question.replace("指定点", "另一个指定点");
+repetitive.outlines[0].keyPoints = repetitivePre.map(JSON.stringify);
+repetitive.outlines[1].keyPoints = repetitivePost.map(JSON.stringify);
+const invalidRepetition = validatePairedAssessment(repetitive, moduleDefinition);
+for (const code of ["INTRA_FORM_TEMPLATE_REPETITION", "PAIR_SURFACE_CLONE"]) {
+  assert.ok(invalidRepetition.errors.some((error) => error.code === code), `missing expected repetition error ${code}`);
 }
 
 const formativeQuestions = [

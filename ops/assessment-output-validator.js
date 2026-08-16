@@ -70,6 +70,51 @@ function normalizeText(value) {
   return String(value || "").replace(/\s+/g, "").toLowerCase();
 }
 
+function normalizeQuestionTemplate(value) {
+  return String(value || "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/\\[a-z]+/g, "")
+    .replace(/-?\d+(?:\.\d+)?/g, "数")
+    .replace(/[a-z]+(?:\([^)]*\))?/g, "量")
+    .replace(/[\s\p{P}\p{S}_]+/gu, "");
+}
+
+function bigrams(value) {
+  const result = new Set();
+  for (let index = 0; index < value.length - 1; index += 1) result.add(value.slice(index, index + 2));
+  return result;
+}
+
+function templateSimilarity(left, right) {
+  const normalizedLeft = normalizeQuestionTemplate(left);
+  const normalizedRight = normalizeQuestionTemplate(right);
+  if (normalizedLeft.length < 12 || normalizedRight.length < 12) return 0;
+  if (normalizedLeft === normalizedRight) return 1;
+  const leftBigrams = bigrams(normalizedLeft);
+  const rightBigrams = bigrams(normalizedRight);
+  let overlap = 0;
+  for (const item of leftBigrams) if (rightBigrams.has(item)) overlap += 1;
+  return (2 * overlap) / (leftBigrams.size + rightBigrams.size);
+}
+
+function validateWithinFormDiversity(questions, path, errors) {
+  for (let left = 0; left < questions.length; left += 1) {
+    for (let right = left + 1; right < questions.length; right += 1) {
+      if (!questions[left] || !questions[right]) continue;
+      const similarity = templateSimilarity(questions[left].question, questions[right].question);
+      if (similarity >= 0.82) {
+        addError(
+          errors,
+          "INTRA_FORM_TEMPLATE_REPETITION",
+          `${path}[${left}],${path}[${right}]`,
+          `同一试卷第 ${left + 1} 题与第 ${right + 1} 题在删除数字和变量后仍高度相似（${similarity.toFixed(2)}）`
+        );
+      }
+    }
+  }
+}
+
 function decimalPlaces(value) {
   const text = String(value);
   return text.includes(".") ? text.split(".")[1].length : 0;
@@ -175,6 +220,9 @@ function validateQuestion(question, context, errors) {
   if (MARKDOWN_TABLE_PATTERN.test(String(question.question || ""))) {
     addError(errors, "MARKDOWN_TABLE_NOT_RENDERED", `${path}.question`, "OpenMAIC 测验题干不得使用 Markdown 表格，请改用两行纯文本数表");
   }
+  if (/""|''|“”|‘’/.test(String(question.question || ""))) {
+    addError(errors, "EMPTY_PLACEHOLDER", `${path}.question`, "题干含有空引号或未填充占位符");
+  }
   const equivalence = isObject(question.equivalence) ? question.equivalence : {};
   const extraEquivalenceFields = Object.keys(equivalence).filter((field) => !REQUIRED_EQUIVALENCE_FIELDS.includes(field));
   if (extraEquivalenceFields.length) {
@@ -216,6 +264,15 @@ function comparePairs(preQuestions, postQuestions, errors) {
         addError(errors, "PAIR_EQUIVALENCE_MISMATCH", `${path}.equivalence.${field}`, `A/B 配对题的 ${field} 不一致`);
       }
     }
+    const surfaceSimilarity = templateSimilarity(pre.question, post.question);
+    if (surfaceSimilarity >= 0.86) {
+      addError(
+        errors,
+        "PAIR_SURFACE_CLONE",
+        `${path}.question`,
+        `A/B 配对题删除数字和变量后仍高度相似（${surfaceSimilarity.toFixed(2)}），疑似仅换数值或变量`
+      );
+    }
     if (pre.tableProfile && post.tableProfile && JSON.stringify(pre.tableProfile) !== JSON.stringify(post.tableProfile)) {
       addError(errors, "PAIR_TABLE_PROFILE_MISMATCH", `${path}.evidence`, "A/B 配对数表的行数、小数位或正负号复杂度不一致");
     }
@@ -234,7 +291,7 @@ function validateGh02Blueprint(parsedByPhase, errors) {
     0: "reading_limit_from_table",
     1: "limit_not_in_table",
     3: "two_sided_limit_exists",
-    4: "continuous",
+    4: "continuity_reasoning_diagnosis",
     5: "discontinuous"
   };
   for (const [phase, questions] of Object.entries(parsedByPhase)) {
@@ -315,6 +372,7 @@ function validatePairedAssessment(payload, moduleDefinition) {
     if (total !== 60) addError(errors, "TOTAL_POINTS_INVALID", `${outlinePath}.keyPoints`, "每卷总分必须为 60 分");
     const normalizedQuestions = parsed.filter(Boolean).map((question) => normalizeText(question.question));
     if (new Set(normalizedQuestions).size !== normalizedQuestions.length) addError(errors, "DUPLICATE_QUESTION", `${outlinePath}.keyPoints`, "同一卷内不得出现重复题目");
+    validateWithinFormDiversity(parsed, `${outlinePath}.keyPoints`, errors);
     const covered = new Set(parsed.filter(Boolean).map((question) => question.kpId));
     for (const kpId of allowedKnowledgePoints) {
       if (!covered.has(kpId)) addError(errors, "KNOWLEDGE_POINT_NOT_COVERED", `${outlinePath}.keyPoints`, `知识点 ${kpId} 未被覆盖`);
