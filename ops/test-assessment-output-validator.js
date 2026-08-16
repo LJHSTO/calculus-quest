@@ -31,16 +31,16 @@ function choice(id, phase, index, type, kpId, pairId, overrides = {}) {
       knownConditionCount: index === 4 ? 3 : 2,
       operationCount: 1,
       symbolComplexity: "low",
-      conclusionClass: index === 5 ? "continuous" : "limit-reading"
+      conclusionClass: index === 4 ? "two_sided_limit_exists" : index === 5 ? "continuous" : "limit-reading"
     },
     ...overrides
   };
 }
 
-function tableChoice(phase, targetX, targetY, pairId) {
+function tableChoice(phase, targetX, targetY, pairId, index = 1, conclusionClass = "reading_limit_from_table") {
   const left = [0.3, 0.2, 0.1].map((delta) => ({ x: targetX - delta, y: targetY - delta }));
   const right = [0.1, 0.2, 0.3].map((delta) => ({ x: targetX + delta, y: targetY + delta }));
-  return choice(`GH-02-${phase}-q1`, phase, 1, "single", "GH-02-K01", pairId, {
+  return choice(`GH-02-${phase}-q${index}`, phase, index, "single", "GH-02-K01", pairId, {
     question: `完整数表显示 x 从两侧趋近 ${targetX}，判断 f(x) 的趋近值。`,
     options: options("B", [String(targetY - 1), String(targetY), String(targetY + 1), "不存在"]),
     answer: ["B"],
@@ -49,7 +49,7 @@ function tableChoice(phase, targetX, targetY, pairId) {
       knownConditionCount: 6,
       operationCount: 0,
       symbolComplexity: "low",
-      conclusionClass: "finite-limit"
+      conclusionClass
     },
     evidence: {
       kind: "two-sided-table",
@@ -65,9 +65,9 @@ function textQuestion(phase, value) {
   return {
     id: `GH-02-${phase}-q6`,
     type: "text",
-    question: `已知左极限、右极限和函数值都为 ${value}，判断并说明连续性。`,
-    answer: "连续。左右极限相等，且极限值等于函数值。",
-    analysis: "分别核对左右极限、双侧极限和函数值三个条件。",
+    question: `已知左极限和右极限都为 ${value}，函数值为 ${value + 1}，判断并说明连续性。`,
+    answer: "不连续。左右极限相等，但极限值不等于函数值。",
+    analysis: "分别核对双侧极限是否存在、极限值与函数值是否相等，再作出连续性结论。",
     points: 20,
     knowledgePointIds: ["GH-02-K03"],
     cognitiveLevel: "分析",
@@ -78,7 +78,7 @@ function textQuestion(phase, value) {
       knownConditionCount: 3,
       operationCount: 0,
       symbolComplexity: "low",
-      conclusionClass: "continuous"
+      conclusionClass: "discontinuous"
     },
     rubric: [
       { criterion: "说明左极限存在", points: 6 },
@@ -91,7 +91,7 @@ function textQuestion(phase, value) {
 function pairedPayload() {
   const pre = [
     tableChoice("pre", 2, 4, "P01"),
-    choice(null, "pre", 2, "single", "GH-02-K01", "P02"),
+    tableChoice("pre", 3, 5, "P02", 2, "limit_not_in_table"),
     choice(null, "pre", 3, "single", "GH-02-K02", "P03"),
     choice(null, "pre", 4, "multiple", "GH-02-K02", "P04"),
     choice(null, "pre", 5, "single", "GH-02-K03", "P05"),
@@ -99,7 +99,7 @@ function pairedPayload() {
   ];
   const post = [
     tableChoice("post", 3, 5, "P01"),
-    choice(null, "post", 2, "single", "GH-02-K01", "P02"),
+    tableChoice("post", 4, 6, "P02", 2, "limit_not_in_table"),
     choice(null, "post", 3, "single", "GH-02-K02", "P03"),
     choice(null, "post", 4, "multiple", "GH-02-K02", "P04"),
     choice(null, "post", 5, "single", "GH-02-K03", "P05"),
@@ -134,6 +134,24 @@ const invalidPaired = validatePairedAssessment(malformed, moduleDefinition);
 assert.equal(invalidPaired.valid, false);
 for (const code of ["QUESTION_COUNT_INVALID", "TABLE_TREND_INCORRECT", "FORBIDDEN_CONTENT", "MARKDOWN_TABLE_NOT_RENDERED", "QUESTION_ID_INVALID", "PAIR_MISMATCH"]) {
   assert.ok(invalidPaired.errors.some((error) => error.code === code), `missing expected error ${code}`);
+}
+
+const blueprintInvalid = pairedPayload();
+for (const outline of blueprintInvalid.outlines) {
+  const questions = outline.keyPoints.map(JSON.parse);
+  questions[1].evidence.targetX = 0;
+  questions[3].equivalence.conclusionClass = "judgment";
+  questions[5].rubric = [
+    { criterion: "结论", points: 6 },
+    { criterion: "左极限", points: 6 },
+    { criterion: "右极限", points: 4 },
+    { criterion: "函数值", points: 4 }
+  ];
+  outline.keyPoints = questions.map(JSON.stringify);
+}
+const invalidBlueprint = validatePairedAssessment(blueprintInvalid, moduleDefinition);
+for (const code of ["GH02_TABLE_POSITIVE_VALUES_REQUIRED", "GH02_CONCLUSION_CLASS_INVALID", "GH02_RUBRIC_INVALID"]) {
+  assert.ok(invalidBlueprint.errors.some((error) => error.code === code), `missing expected GH-02 blueprint error ${code}`);
 }
 
 const formativeQuestions = [

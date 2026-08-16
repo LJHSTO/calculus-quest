@@ -82,7 +82,10 @@ const gh02Paired = fs.readFileSync(path.join(promptRoot, "GH-02", "pre-post-pair
 assert.match(gh02Paired, /本模块专用六题蓝图/);
     assert.match(gh02Paired, /不得要求因式分解、约分或直接代数求极限/);
     assert.match(gh02Paired, /相同的小数位数和正负号复杂度/);
-    assert.match(gh02Paired, /6 分、6 分、8 分/);
+    assert.match(gh02Paired, /①判断双侧极限是否存在（6 分）/);
+    assert.match(gh02Paired, /②比较极限值与函数值（6 分）/);
+    assert.match(gh02Paired, /③给出连续性结论并完整说明理由（8 分）/);
+    assert.match(gh02Paired, /P01、P02 两卷一律只用正数/);
 const gh02K01 = fs.readFileSync(path.join(promptRoot, "GH-02", "checks", "GH-02-K01-prompt.md"), "utf8");
 assert.match(gh02K01, /本知识点专用边界/);
 assert.match(gh02K01, /不得使用未给数据的“根据下表”/);

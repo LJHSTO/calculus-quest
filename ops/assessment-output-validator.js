@@ -229,6 +229,36 @@ function comparePairs(preQuestions, postQuestions, errors) {
   }
 }
 
+function validateGh02Blueprint(parsedByPhase, errors) {
+  const expectedConclusionClasses = {
+    0: "reading_limit_from_table",
+    1: "limit_not_in_table",
+    3: "two_sided_limit_exists",
+    4: "continuous",
+    5: "discontinuous"
+  };
+  for (const [phase, questions] of Object.entries(parsedByPhase)) {
+    for (const [indexText, expectedClass] of Object.entries(expectedConclusionClasses)) {
+      const index = Number(indexText);
+      const question = questions[index];
+      if (question && question.equivalence?.conclusionClass !== expectedClass) {
+        addError(errors, "GH02_CONCLUSION_CLASS_INVALID", `$.${phase}.q${index + 1}.equivalence.conclusionClass`, `GH-02 P${String(index + 1).padStart(2, "0")} 的 conclusionClass 必须为 ${expectedClass}`);
+      }
+    }
+    for (const index of [0, 1]) {
+      const evidence = questions[index]?.evidence;
+      const values = [evidence?.targetX, evidence?.targetY, ...(evidence?.rows || []).flatMap((row) => [row?.x, row?.y])];
+      if (values.some((value) => !Number.isFinite(Number(value)) || Number(value) <= 0)) {
+        addError(errors, "GH02_TABLE_POSITIVE_VALUES_REQUIRED", `$.${phase}.q${index + 1}.evidence`, "GH-02 的 P01、P02 数表必须全部使用正数，以保持 A/B 符号复杂度一致");
+      }
+    }
+    const rubricPoints = (questions[5]?.rubric || []).map((item) => Number(item?.points));
+    if (JSON.stringify(rubricPoints) !== JSON.stringify([6, 6, 8])) {
+      addError(errors, "GH02_RUBRIC_INVALID", `$.${phase}.q6.rubric`, "GH-02 P06 必须恰好使用 6、6、8 分三个评分点");
+    }
+  }
+}
+
 function validatePairedAssessment(payload, moduleDefinition) {
   const errors = [];
   const moduleId = moduleDefinition?.id;
@@ -284,6 +314,7 @@ function validatePairedAssessment(payload, moduleDefinition) {
     parsedByPhase[phase] = parsed;
   });
   comparePairs(parsedByPhase.pre || [], parsedByPhase.post || [], errors);
+  if (moduleId === "GH-02") validateGh02Blueprint(parsedByPhase, errors);
   return { valid: errors.length === 0, errors };
 }
 
