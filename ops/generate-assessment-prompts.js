@@ -67,7 +67,9 @@ ${blueprintGuidance}
 1. id="${module.id}-pre"；title="前测：${module.title}（A卷）"；order=1。
 2. id="${module.id}-post"；title="后测：${module.title}（B卷）"；order=2。
 
-两卷各 6 题，总分均为 60 分，difficulty 均为 medium。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串，每个字符串对应一道完整题目，并完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps 和 pairId。
+两卷各 6 题，总分均为 60 分，difficulty 均为 medium。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
+每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 ${module.id}-pre-q1 至 ${module.id}-pre-q6、${module.id}-post-q1 至 ${module.id}-post-q6，不得缩写、重复或增加 q6b 等变体；pairId 必须按题位严格使用 P01 至 P06，每卷各出现一次。
+equivalence 必须包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass，用作 A/B 程序等值检查；配对题这些字段必须逐项相同。若 presentationMode="table"，还必须提供 evidence={kind:"two-sided-table",targetX,targetY,correctOptionValue,rows:[{x,y},...]}，左右各 3 行，并保证数值确实从两侧趋近 targetY。text 题还必须提供 rubric 数组，每项包含 criterion 和整数 points。
 
 不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。
 
@@ -98,7 +100,7 @@ A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项�
 
 【输出前静默检查】
 
-逐题重新计算并确认：两个 quiz 的 keyPoints 均恰好有 6 个完整题目字符串，不含纯考查目标摘要；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题，两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的呈现方式、先备运算、解题步骤与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+逐题重新计算并确认：两个 quiz 的 keyPoints 均恰好有 6 个可 JSON.parse 的完整题目对象字符串，不含纯考查目标摘要或重复变体；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题，两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的 equivalence 字段、呈现方式、先备运算、解题步骤与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；数表 evidence 的数值趋势与答案一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
 \`\`\`
 `;
 }
@@ -152,7 +154,7 @@ quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","m
 2. Q2：single，一至两步基础应用。
 3. Q3：multiple，围绕常见误解的诊断题。
 
-keyPoints 必须恰好包含 3 个字符串，每个字符串对应一道完整题目，并完整写出 id、type、question、4 个选项、answer、analysis、points 和 knowledgePointIds。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["${point.id}"]。
+keyPoints 必须恰好包含 3 个字符串，每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用非 JSON 的字段拼接文本。每题完整写出 id、type、question、4 个 options、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence；id 必须严格为 ${point.id}-check-q1 至 ${point.id}-check-q3。equivalence 必须包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass；数表题还必须提供可程序复算的 two-sided-table evidence。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["${point.id}"]。
 
 【选择题规则】
 
@@ -181,6 +183,10 @@ function buildReadme(chapters, moduleCount, pointCount) {
     `当前覆盖 ${chapters.length} 个章节、${moduleCount} 个学习模块、${pointCount} 个知识点。每个模块一份前后测配对提示词，每个知识点一份共用形测提示词。`,
     "",
     "形测按知识点设置，与候选学习场景的数量和具体内容解耦。建议在 OpenMAIC 中一次只提交一个文件，生成后必须进行答案复算和人工审阅。",
+    "",
+    "## 生成结果校验",
+    "",
+    "把模型返回的完整 JSON 保存为文件后，前后测运行 `npm run assessment:validate -- result.json --module GH-02`；形成性测验追加 `--knowledge-point GH-02-K01`。只有输出 PASS 的结果才能进入题库。校验器会拦截题数、题型、分值、知识点、重复题、A/B 等值签名、评分量表和结构化数表趋势错误；数学内容仍需人工复核。",
     "",
     "## 目录",
     ""

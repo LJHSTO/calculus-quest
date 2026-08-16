@@ -26,6 +26,9 @@ for (const chapter of route.chapters || []) {
     assert.match(paired, /Q6 为 text 且 points=20/);
     assert.match(paired, /Q1-Q5 的 points 均为 8/);
     assert.match(paired, /正确项数量可以为 1、2 或 3/);
+    assert.match(paired, /可由 JSON\.parse 直接解析/);
+    assert.match(paired, /equivalence 必须包含 presentationMode/);
+    assert.match(paired, /two-sided-table/);
 
     for (const point of module.knowledgePoints || []) {
       pointCount += 1;
@@ -44,6 +47,8 @@ for (const chapter of route.chapters || []) {
       assert.match(check, /keyPoints 必须恰好包含 3 个字符串/);
       assert.match(check, /每题固定 10 分，总分 30 分/);
       assert.match(check, /正确项数量可以为 1、2 或 3/);
+      assert.match(check, /可由 JSON\.parse 直接解析/);
+      assert.match(check, /equivalence 必须包含 presentationMode/);
       assert.doesNotMatch(check, /四选一|四个候选|恰好 2 个正确|exactly two/i);
     }
   }

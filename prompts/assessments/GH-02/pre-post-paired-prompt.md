@@ -47,7 +47,9 @@
 1. id="GH-02-pre"；title="前测：极限与连续：直觉探索（A卷）"；order=1。
 2. id="GH-02-post"；title="后测：极限与连续：直觉探索（B卷）"；order=2。
 
-两卷各 6 题，总分均为 60 分，difficulty 均为 medium。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串，每个字符串对应一道完整题目，并完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps 和 pairId。
+两卷各 6 题，总分均为 60 分，difficulty 均为 medium。题型、顺序和分值结构固定一致：Q1-Q5 为选择题，合计包含 4 道 single 和 1 道 multiple，每题 8 分；Q6 为 text，固定放在最后且为全卷最高分题，分值 20 分。前测和后测的 keyPoints 都必须恰好包含 6 个字符串；每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用 id:q1,type:single 之类的非 JSON 文本。
+每个题目对象完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence。题目 id 必须严格为 GH-02-pre-q1 至 GH-02-pre-q6、GH-02-post-q1 至 GH-02-post-q6，不得缩写、重复或增加 q6b 等变体；pairId 必须按题位严格使用 P01 至 P06，每卷各出现一次。
+equivalence 必须包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass，用作 A/B 程序等值检查；配对题这些字段必须逐项相同。若 presentationMode="table"，还必须提供 evidence={kind:"two-sided-table",targetX,targetY,correctOptionValue,rows:[{x,y},...]}，左右各 3 行，并保证数值确实从两侧趋近 targetY。text 题还必须提供 rubric 数组，每项包含 criterion 和整数 points。
 
 不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。
 
@@ -78,5 +80,5 @@ A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项�
 
 【输出前静默检查】
 
-逐题重新计算并确认：两个 quiz 的 keyPoints 均恰好有 6 个完整题目字符串，不含纯考查目标摘要；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题，两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的呈现方式、先备运算、解题步骤与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+逐题重新计算并确认：两个 quiz 的 keyPoints 均恰好有 6 个可 JSON.parse 的完整题目对象字符串，不含纯考查目标摘要或重复变体；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题，两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的 equivalence 字段、呈现方式、先备运算、解题步骤与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；数表 evidence 的数值趋势与答案一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
 ```

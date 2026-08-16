@@ -44,7 +44,7 @@ quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","m
 2. Q2：single，一至两步基础应用。
 3. Q3：multiple，围绕常见误解的诊断题。
 
-keyPoints 必须恰好包含 3 个字符串，每个字符串对应一道完整题目，并完整写出 id、type、question、4 个选项、answer、analysis、points 和 knowledgePointIds。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["GH-09-K02"]。
+keyPoints 必须恰好包含 3 个字符串，每个字符串本身必须是可由 JSON.parse 直接解析的单个题目对象，不得使用非 JSON 的字段拼接文本。每题完整写出 id、type、question、4 个 options、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId 和 equivalence；id 必须严格为 GH-09-K02-check-q1 至 GH-09-K02-check-q3。equivalence 必须包含 presentationMode、knownConditionCount、operationCount、symbolComplexity 和 conclusionClass；数表题还必须提供可程序复算的 two-sided-table evidence。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["GH-09-K02"]。
 
 【选择题规则】
 
