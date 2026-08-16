@@ -21,6 +21,8 @@ for (const chapter of route.chapters || []) {
     assert.match(paired, new RegExp(`学习模块 ID：${module.id}`));
     assert.match(paired, /前后测严格等值/);
     assert.match(paired, /keyPoints 都必须恰好包含 6 个字符串/);
+    assert.match(paired, /不得用“主题相近”代替逐题同构/);
+    assert.match(paired, /points 求和都严格等于 60/);
     assert.match(paired, /正确项数量可以为 1、2 或 3/);
 
     for (const point of module.knowledgePoints || []) {
