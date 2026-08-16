@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-14-pre-q5",
+    "type": "single",
+    "question": "模型的计算图为 t=wx、L=t²。忽略反向传播开始时设置的种子梯度 dL/dL=1，系统从输出端反向遍历时，首先需要计算哪个局部导数？",
+    "options": [
+      {
+        "value": "A",
+        "label": "针对输入特征 x 的偏导数"
+      },
+      {
+        "value": "B",
+        "label": "针对中间变量 t 的偏导数"
+      },
+      {
+        "value": "C",
+        "label": "针对权重 w 的偏导数"
+      },
+      {
+        "value": "D",
+        "label": "针对损失值 L 的偏导数"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "反向传播从输出端出发，沿着计算图反向传递梯度。在此计算图中，输出节点是产生 L 的平方操作。反向传播首先应用链式法则计算损失 L 相对于其直接输入（即中间变量 t）的局部梯度 dL/dt = 2t。随后，该梯度才会继续向后传递至产生 t 的乘法操作，以计算 dL/dw。因此，系统最先执行的是针对中间变量 t 的局部求导。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "node identification"
+    }
+  },
+  "post": {
+    "id": "GH-14-post-q5",
+    "type": "single",
+    "question": "自动微分图先计算 s=ab，再计算 E=exp(s)。忽略初始化的种子梯度 dE/dE=1，反向计算 E 对 a 的梯度时，首先需要计算哪一个局部导数？",
+    "options": [
+      {
+        "value": "A",
+        "label": "计算 E 对参数 a 的直接偏导"
+      },
+      {
+        "value": "B",
+        "label": "计算乘法节点输出对参数 a 的偏导"
+      },
+      {
+        "value": "C",
+        "label": "计算指数节点输出对其输入的偏导"
+      },
+      {
+        "value": "D",
+        "label": "计算误差 E 对数据 b 的偏导"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "在反向模式自动微分中，梯度计算从最终输出 E 开始反向流动。计算图的最后一个节点是产生 E 的指数运算，因此系统首先计算 E 相对于其直接输入（即乘法节点的输出）的局部梯度 dE/d(乘法输出) = exp(a*b)。获得该局部梯度后，系统才会将其传递至乘法节点，继续计算对参数 a 的梯度。因此，梯度信息最先流经的是指数节点输出对其输入的偏导计算。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "node identification"
+    }
+  }
+}

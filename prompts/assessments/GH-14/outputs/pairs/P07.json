@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-14-pre-q7",
+    "type": "single",
+    "question": "在利用小批量梯度下降更新参数时，若当前小批量包含5个样本，各样本对应的梯度分别为 2，4，6，8，10。根据该小批量数据计算出的梯度估计值是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "6"
+      },
+      {
+        "value": "B",
+        "label": "5"
+      },
+      {
+        "value": "C",
+        "label": "8"
+      },
+      {
+        "value": "D",
+        "label": "30"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "小批量梯度下降的核心操作是对当前小批量内所有样本的梯度求算术平均，以此作为整体梯度方向的估计。将给定的5个梯度值相加得 2+4+6+8+10=30，再除以样本数5，得到梯度估计值为 6。选项 B 是中位数，选项 C 是众数，选项 D 是求和结果，均不符合求平均的核心含义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 5,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_mean"
+    }
+  },
+  "post": {
+    "id": "GH-14-post-q7",
+    "type": "single",
+    "question": "某次小批量梯度下降迭代中抽取了4个数据点，它们产生的单点梯度分别为 -1，3，5，9。该迭代步骤实际采用的梯度估计量应取何值？",
+    "options": [
+      {
+        "value": "A",
+        "label": "4"
+      },
+      {
+        "value": "B",
+        "label": "5"
+      },
+      {
+        "value": "C",
+        "label": "16"
+      },
+      {
+        "value": "D",
+        "label": "3"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "小批量梯度下降的机制是将小批量内各个样本计算出的梯度进行算术平均，以代表这一批数据的整体更新方向。4个梯度值求和为 -1+3+5+9=16，除以样本量4得到估计梯度 4。选项 B 是中位数，选项 C 是求和结果，选项 D 是绝对值最小的那个单点梯度，均不能反映批量梯度的聚合规则。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 5,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_mean"
+    }
+  }
+}

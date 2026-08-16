@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-14-pre-q6",
+    "type": "single",
+    "question": "在训练神经网络时，前向传播得到预测值并计算出标量损失 L。随后框架自动反向遍历计算图，为每个节点算出局部偏导并逐层相乘，最终得到各参数的梯度。这种自动计算梯度的核心机制是利用计算图进行什么操作？",
+    "options": [
+      {
+        "value": "A",
+        "label": "沿着有向边反向链式求导，将局部偏导逐层相乘以合成全局梯度"
+      },
+      {
+        "value": "B",
+        "label": "对损失函数表达式进行符号化代数展开，再套用求导公式化简"
+      },
+      {
+        "value": "C",
+        "label": "对每个参数施加微小扰动，通过测量损失变化量来估算导数"
+      },
+      {
+        "value": "D",
+        "label": "将计算图中的所有节点偏导求算术平均，作为该参数的梯度"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "自动微分通过构建计算图记录运算过程，在反向传播时利用链式法则，将每个节点的局部偏导数沿路径相乘，从而高效合成从损失到各参数的全局梯度。选项 B 描述的是符号微分，选项 C 描述的是数值微分，选项 D 混淆了梯度聚合与偏导计算的本质，均不符合自动微分的机制。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "mechanism-identification"
+    }
+  },
+  "post": {
+    "id": "GH-14-post-q6",
+    "type": "single",
+    "question": "某同学认为自动微分之所以能算出网络参数的梯度，是因为系统直接对包含所有参数的损失函数公式进行了代数化简和求导。这个观点忽略了自动微分在实际运行时真正依赖的底层结构。自动微分能够高效追踪并合成梯度的根本依托是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "直接调用基本初等函数导数表，无需记录运算之间的依赖关系"
+      },
+      {
+        "value": "B",
+        "label": "对每个参数独立进行有限差分近似，不涉及函数内部结构"
+      },
+      {
+        "value": "C",
+        "label": "将前向运算拆解为基本节点并记录依赖关系，反向沿图结构应用链式法则"
+      },
+      {
+        "value": "D",
+        "label": "把所有节点的局部偏导相加，以此作为损失对该参数的最终梯度"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "自动微分的核心在于将复杂的复合运算拆解为基本操作节点并构建计算图，记录节点间的数据流向。在反向模式中，它依托该图结构，运用链式法则将局部偏导逐层相乘合成全局梯度。选项 A 和 B 分别混淆了符号微分与数值微分，选项 D 误将偏导相加当作链式法则的乘积合成，均未抓住计算图作为底层依托的核心。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "mechanism-identification"
+    }
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "机器学习高数闭环：从导数到训练",
+  "outlines": [
+    {
+      "id": "GH-14-K03-check",
+      "type": "quiz",
+      "title": "即时检查：计算图与自动微分",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-14-K03-check-q1",
+          "type": "single",
+          "question": "在计算图中，节点表示变量或中间结果，边表示运算。若某中间变量 z 由 x 和 y 经乘法得到，即 z = x·y，且已知 x = 2、y = 3、z = 6，则在该乘法节点处，自动微分反向传播时，x 的局部梯度（∂z/∂x）是多少？",
+          "options": [
+            {
+              "value": "A",
+              "label": "3"
+            },
+            {
+              "value": "B",
+              "label": "2"
+            },
+            {
+              "value": "C",
+              "label": "6"
+            },
+            {
+              "value": "D",
+              "label": "0"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "在乘法节点 z = x·y 处，自动微分按偏导数计算局部梯度：∂z/∂x = y = 3，∂z/∂y = x = 2。因此 x 的局部梯度为 3，与上游梯度相乘后继续向后传播。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-14-K03-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "numeric"
+          }
+        },
+        {
+          "id": "GH-14-K03-check-q2",
+          "type": "multiple",
+          "question": "关于计算图与自动微分，以下说法中哪些是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "计算图把复合运算拆成若干基本节点和边，便于逐节点计算局部梯度并按链式法则累积。"
+            },
+            {
+              "value": "B",
+              "label": "反向模式自动微分从输出端开始，沿计算图反向传播梯度，可高效计算损失对多个参数的梯度。"
+            },
+            {
+              "value": "C",
+              "label": "自动微分就是数值微分，只要对每个变量加一个很小的扰动再作差近似即可。"
+            },
+            {
+              "value": "D",
+              "label": "在加法节点 u = a + b 处，反向传播时 a 和 b 的局部梯度都为 1。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确：计算图将复合运算分解为基本节点，逐节点求局部梯度并按链式法则累积。B 正确：反向模式从输出端反向传播，适合计算一个标量损失对多个参数的梯度。C 错误：自动微分直接对实际执行的基本运算应用精确导数规则，它既不是符号表达式化简，也不是有限差分近似。D 正确：加法节点的两个局部导数均为 1。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K03"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-14-K03-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptual"
+          }
+        }
+      ]
+    }
+  ]
+}
