@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "微积分基本定理与积分方法",
+  "outlines": [
+    {
+      "id": "GH-07-K01-check",
+      "type": "quiz",
+      "title": "即时检查：变上限积分",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-07-K01-check-q1",
+          "type": "single",
+          "question": "已知连续函数 f(x) 的图像始终在 x 轴上方。设 F(x) = ∫₀ˣ f(t) dt，当上限 x 从 1 增大到 3 的过程中，F(x) 的值如何变化？",
+          "options": [
+            {
+              "value": "A",
+              "label": "一直增大，因为不断有正的面积累积进积分值"
+            },
+            {
+              "value": "B",
+              "label": "一直减小，因为积分上限变大导致被积区间变长"
+            },
+            {
+              "value": "C",
+              "label": "先增大后减小，取决于 f(x) 的具体形状"
+            },
+            {
+              "value": "D",
+              "label": "保持不变，因为 f(x) 的值没有随 x 改变"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "变上限积分 F(x) = ∫₀ˣ f(t) dt 的核心含义是：随着上限 x 的移动，它记录了从 0 到 x 之间 f(t) 下的累积面积。当 f(t) 始终在 x 轴上方时，每增加一点上限，都有一块正面积加入，因此 F(x) 随 x 增大而一直增大。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-07-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-07-K01-check-p1",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "verbal-graph",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "monotonicity"
+          }
+        },
+        {
+          "id": "GH-07-K01-check-q2",
+          "type": "multiple",
+          "question": "关于变上限积分 F(x) = ∫ₐˣ f(t) dt（a 为常数，f 连续），以下说法中正确的有哪些？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "F(x) 的值随上限 x 的变化而变化，是一个以 x 为自变量的函数"
+            },
+            {
+              "value": "B",
+              "label": "F(x) 的几何意义是：从常数 a 到变量 x 之间，f(t) 与 x 轴围成的累积面积"
+            },
+            {
+              "value": "C",
+              "label": "只要 f(t) 不恒为 0，F(x) 的值就一定随 x 增大而增大"
+            },
+            {
+              "value": "D",
+              "label": "F(x) 只是定积分的一个简写符号，它本身没有函数意义，也不随 x 变化"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "A、B 正确：变上限积分把上限视为变量，因此 F(x) 是 x 的函数，几何上表示从 a 到 x 的累积面积。C 错误：若 f(t) 取负值，则 x 增大时 F(x) 可能减小，单调性取决于 f(t) 的正负。D 错误：这正是只记符号、未与函数和面积含义连接的常见误解，F(x) 是真正的函数，不是固定符号。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-07-K01"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-07-K01-check-p1",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "verbal-symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-check"
+          }
+        }
+      ]
+    }
+  ]
+}

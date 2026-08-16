@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q8",
+    "type": "multiple",
+    "question": "在计算定积分时，某同学决定采用换元法。他观察到被积函数的结构由复合部分与另一部分相乘构成，于是引入新变量替换内层表达式。关于此操作中必须满足的条件，下列说法中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "新变量的取值范围必须由原积分上下限经过相同的替换关系准确确定"
+      },
+      {
+        "value": "B",
+        "label": "换元后，必须将原被积函数中的所有自变量与新引入的微分关系完全转化为关于新变量的表达式"
+      },
+      {
+        "value": "C",
+        "label": "只要原被积函数中存在复合结构，无论其余部分是否与新变量的导数匹配，都能直接使用换元法消去原变量"
+      },
+      {
+        "value": "D",
+        "label": "完成换元并求出关于新变量的原函数后，可以直接代入原积分上下限求值，无需转换积分限"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "换元法求解定积分的核心在于将原积分变量转换为新变量。在此过程中，原积分的上下限必须通过替换关系转换为新变量的上下限，选项A正确。同时，被积表达式和微分必须完全转化为新变量的表达式，不能残留原变量，选项B正确。如果缺少与新变量导数匹配的因子，无法顺利凑出关于新变量的完整微分，选项C错误。定积分换元后必须使用新上下限，或者换回原变量后再使用原上下限，选项D错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-07-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "condition-identification"
+    }
+  },
+  "post": {
+    "id": "GH-07-post-q8",
+    "type": "multiple",
+    "question": "针对定积分的换元求解过程，有同学提出了一套操作流程：选定新变量替换原被积函数的某一部分，接着将原积分上下限直接保留，最后将积分结果中的新变量再替换回原变量进行计算。关于这套流程的严谨性，下列评价中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该流程有误，因为选定新变量后，必须依据替换关系将原积分上下限转换为新变量的上下限"
+      },
+      {
+        "value": "B",
+        "label": "该流程有误，因为若积分上下限未转换，则积分变量必须最终还原为原变量，而不能保留新变量直接代入原上下限"
+      },
+      {
+        "value": "C",
+        "label": "该流程合理，只要被积函数中存在可替换的局部表达式，就能保证积分计算的正确性"
+      },
+      {
+        "value": "D",
+        "label": "该流程合理，因为定积分的值只与被积函数和积分区间有关，换元时改变积分限与否不影响最终结果"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "定积分换元法要求变量替换与积分限的转换保持一致。若引入新变量，原上下限必须随之转换，选项A的评价正确。如果选择不转换积分限，则必须将积分表达式最终还原为原变量后再代入原上下限，而不能直接用新变量代入原上下限，选项B的评价正确。仅有可替换的局部表达式不足以保证换元成功，还需微分关系的匹配，选项C错误。换元时若不改变积分限且不还原变量，会导致积分对象与积分区间错位，严重影响结果，选项D错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-07-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "condition-identification"
+    }
+  }
+}

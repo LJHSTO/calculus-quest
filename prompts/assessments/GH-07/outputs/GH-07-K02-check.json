@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "GH-07-K02-check",
+      "type": "quiz",
+      "title": "即时检查：牛顿-莱布尼茨公式",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-07-K02-check-q1",
+          "type": "single",
+          "question": "已知函数 f(x) 在区间 [a, b] 上连续，F(x) 是 f(x) 的一个原函数。关于牛顿-莱布尼茨公式 ∫ₐᵇ f(x) dx = F(b) - F(a) 的核心含义，下列说法中最准确的是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "它表明定积分的值等于被积函数在区间端点处函数值之差"
+            },
+            {
+              "value": "B",
+              "label": "它建立了定积分与原函数之间的联系，将区间上的积分计算转化为求原函数在端点的值差"
+            },
+            {
+              "value": "C",
+              "label": "它要求 f(x) 的所有原函数在区间 [a, b] 上的取值都必须相同"
+            },
+            {
+              "value": "D",
+              "label": "它表明任何函数的定积分都可以通过代入区间端点直接相减求得"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "牛顿-莱布尼茨公式的核心在于沟通了定积分与原函数两个概念，使得定积分的计算不必依赖复杂的极限分割，而是通过寻找被积函数的一个原函数，并计算该原函数在积分上下限处的差值得到。选项 A 错误，因为相减的是原函数的值，而非被积函数的值；选项 C 错误，原函数之间相差一个常数，取值不必相同，但端点差值相同；选项 D 错误，公式成立需要满足被积函数连续且存在原函数的前提条件，并非对任意函数都适用。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-07-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-07-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "medium",
+            "conclusionClass": "concept-explanation"
+          }
+        },
+        {
+          "id": "GH-07-K02-check-q2",
+          "type": "multiple",
+          "question": "在应用牛顿-莱布尼茨公式 ∫ₐᵇ f(x) dx = F(b) - F(a) 时，常因只记符号或结论而产生误解。下列关于该公式应用的说法中，所有正确的项是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "若 f(x) 在 [a, b] 上连续，则必存在原函数 F(x)，使得公式成立"
+            },
+            {
+              "value": "B",
+              "label": "若 F₁(x) 和 F₂(x) 都是 f(x) 的原函数，则用它们代入公式算得的定积分结果相同"
+            },
+            {
+              "value": "C",
+              "label": "只要记住公式右侧的符号形式，即使不知道 F(x) 是哪个函数的原函数，也能正确求得定积分值"
+            },
+            {
+              "value": "D",
+              "label": "公式中的 F(b) - F(a) 对应于原函数 F(x) 在区间 [a, b] 上的累积净变化量"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "选项 A 正确，连续函数的定积分存在且原函数存在，这是公式成立的基础前提；选项 B 正确，同一函数的任意两个原函数相差一个常数，在作差 F(b) - F(a) 时常数相消，结果一致；选项 D 正确，F(b) - F(a) 在几何与物理意义上可解释为原函数所代表的累积量在区间上的净变化。选项 C 错误，这正是只记符号而未理解含义的常见误解，若不明确 F(x) 与被积函数 f(x) 的原函数关系，盲目代入端点会导致错误结果。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-07-K02"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-07-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "misjudgment-diagnosis"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "微积分基本定理与积分方法",
+  "outlines": [
+    {
+      "id": "GH-07-K04-check",
+      "type": "quiz",
+      "title": "即时检查：分部积分直觉",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-07-K04-check-q1",
+          "type": "single",
+          "question": "在分部积分直觉中，我们通常希望把被积表达式拆成 u 与 dv 两部分，并优先选择满足什么特征的因子作为 u？",
+          "options": [
+            {
+              "value": "A",
+              "label": "求导后会变得更简单，且容易和 dv 的积分结果配合"
+            },
+            {
+              "value": "B",
+              "label": "积分后会变得更简单，即使求导后变得更复杂"
+            },
+            {
+              "value": "C",
+              "label": "在乘积中系数最大，无论求导或积分是否简化"
+            },
+            {
+              "value": "D",
+              "label": "只看是否为多项式，不关心求导后是否简化"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "分部积分直觉的核心是：选择 u 时应优先考虑“求导后会简化”的因子，例如多项式因子；这样在 ∫u dv = uv - ∫v du 中，新的积分 ∫v du 往往比原积分更易处理。若只记公式而不联系“求导简化”这一直觉，容易误选与简化目标无关的选项。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-07-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-07-K04-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-choice"
+          }
+        },
+        {
+          "id": "GH-07-K04-check-q2",
+          "type": "multiple",
+          "question": "关于分部积分直觉，下列说法中所有正确说法是哪些？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "选择 u 的关键直觉之一是：该因子求导后会变得更简单或更易处理。"
+            },
+            {
+              "value": "B",
+              "label": "分部积分直觉就是把公式 ∫u dv = uv - ∫v du 记住，不需要理解为什么这样选 u。"
+            },
+            {
+              "value": "C",
+              "label": "在 x e^x 这类乘积中，常选 x 为 u，是因为 x 求导后会降次，有助于简化后续积分。"
+            },
+            {
+              "value": "D",
+              "label": "选择 dv 时，应优先选择容易积分且能与 u 配合简化的因子作为 dv。"
+            }
+          ],
+          "answer": [
+            "A",
+            "C",
+            "D"
+          ],
+          "analysis": "A、C、D 都体现了分部积分直觉：u 求导简化、dv 易积分并配合简化。B 只记符号公式而不理解选择依据，正是常见误解，错误。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-07-K04"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-07-K04-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-choice"
+          }
+        }
+      ]
+    }
+  ]
+}

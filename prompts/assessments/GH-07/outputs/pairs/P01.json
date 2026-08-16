@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q1",
+    "type": "single",
+    "question": "已知函数 f(x) 在区间 [0, 4] 上连续。构造一个新函数 G(x) = ∫[0, x] f(t) dt，其中 x 的取值范围是 [0, 4]。关于函数 G(x) 的导数与原函数 f(x) 的关系，下列说法正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "G(x) 的导数等于 f(x)，即 G'(x) = f(x)"
+      },
+      {
+        "value": "B",
+        "label": "G(x) 的导数等于 f(x) 的原函数，即 G'(x) = ∫f(x)dx"
+      },
+      {
+        "value": "C",
+        "label": "G(x) 的导数等于 f(x) 乘以 x，即 G'(x) = x·f(x)"
+      },
+      {
+        "value": "D",
+        "label": "G(x) 的导数等于 f(x) 在区间 [0, 4] 上的定积分值，即 G'(x) = ∫[0, 4] f(t) dt"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "根据微积分基本定理，若 f(x) 在区间上连续，则变上限积分函数 G(x) = ∫[a, x] f(t) dt 在区间内可导，且其导数等于被积函数在下限处的值，即 G'(x) = f(x)。选项 B 错误地认为导数是原函数；选项 C 错误地引入了变量 x 的乘积；选项 D 混淆了变上限积分与定积分的概念，将上限固定为了常数 4。因此正确选项为 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "derivative_of_integral"
+    }
+  },
+  "post": {
+    "id": "GH-07-post-q1",
+    "type": "single",
+    "question": "设 f(t) 是一条连续曲线，定义累积量函数 H(x) 为从起点 a 到终点 x 之间曲线 f(t) 下的面积，即 H(x) = ∫[a, x] f(t) dt。当终点 x 发生微小变化 dx 时，面积函数 H(x) 的瞬时变化率 dH/dx 由什么决定？",
+    "options": [
+      {
+        "value": "A",
+        "label": "瞬时变化率等于终点处的曲线高度，即 dH/dx = f(x)"
+      },
+      {
+        "value": "B",
+        "label": "瞬时变化率等于起点处的曲线高度，即 dH/dx = f(a)"
+      },
+      {
+        "value": "C",
+        "label": "瞬时变化率等于区间 [a, x] 内的平均高度，即 dH/dx = H(x)/(x-a)"
+      },
+      {
+        "value": "D",
+        "label": "瞬时变化率等于整个区间内的总高度累加，即 dH/dx = ∫[a, x] f(t) dt"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "变上限积分函数 H(x) = ∫[a, x] f(t) dt 描述了从 a 到 x 的累积面积。当上限 x 增加微小量 dx 时，新增的面积近似为高 f(x) 乘以宽 dx，即 dH = f(x)dx。因此，面积函数的瞬时变化率 dH/dx = f(x)。选项 B 错误地使用了起点处的函数值；选项 C 混淆了瞬时变化率与平均变化率；选项 D 将积分函数本身误认为其导数。因此正确选项为 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "derivative_of_integral"
+    }
+  }
+}

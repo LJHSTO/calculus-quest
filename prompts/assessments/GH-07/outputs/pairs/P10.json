@@ -1,0 +1,80 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q10",
+    "type": "text",
+    "question": "已知连续函数 f(x) 与可导函数 g(x) 满足 g'(x)=f(x)。在计算定积分 ∫[0,2] x f(x) dx 时，某同学写出了分部积分的初步表达式：∫[0,2] x f(x) dx = [x g(x)]_[0,2] - ∫[0,2] g(x) dx。请说明该表达式的推导依据，并解释为什么这一步操作能帮助我们把原本含有 f(x) 的积分转化为关于 g(x) 的计算，最后求出该定积分的值（用 g(x) 表达）。",
+    "answer": "推导依据是乘积求导法则的逆运算。因为 g'(x)=f(x)，所以 (x g(x))' = g(x) + x g'(x) = g(x) + x f(x)。移项得 x f(x) = (x g(x))' - g(x)。两边在 [0,2] 上积分，即得 ∫[0,2] x f(x) dx = [x g(x)]_[0,2] - ∫[0,2] g(x) dx。这一步操作将含有未知导数 f(x) 的积分，转化为已知原函数 g(x) 的代数计算与积分。代入上下限得：[x g(x)]_[0,2] = 2g(2) - 0*g(0) = 2g(2)，所以定积分的值为 2g(2) - ∫[0,2] g(x) dx。",
+    "analysis": "分部积分的本质是乘积求导法则的逆运算。本题中 f(x) 虽然形式未知，但已知其原函数为 g(x)，因此将 x 与 f(x) 的乘积积分转化为 x 与 g'(x) 的乘积积分。利用 (uv)' = u'v + uv'，令 u=x，dv=f(x)dx=g'(x)dx，可得 du=dx，v=g(x)。代入分部积分公式 ∫ u dv = uv - ∫ v du，即可将原式转化为 [x g(x)]_[0,2] - ∫[0,2] g(x) dx，从而实现降阶或转化为已知函数的计算。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-07-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "expression_evaluation"
+    },
+    "rubric": [
+      {
+        "criterion": "正确指出推导依据为乘积求导法则的逆运算（或分部积分公式）",
+        "points": 5
+      },
+      {
+        "criterion": "正确说明 x f(x) = (x g(x))' - g(x) 的推导关系",
+        "points": 5
+      },
+      {
+        "criterion": "正确解释该操作将含有 f(x) 的积分转化为关于原函数 g(x) 的计算",
+        "points": 5
+      },
+      {
+        "criterion": "正确求出定积分的值为 2g(2) - ∫[0,2] g(x) dx",
+        "points": 5
+      }
+    ]
+  },
+  "post": {
+    "id": "GH-07-post-q10",
+    "type": "text",
+    "question": "已知可导函数 h(x) 的导数为 h'(x)=e^x，现需要计算定积分 ∫[1,3] x e^x dx。请说明如何利用乘积求导的逆向关系构造分部积分过程，写出推导步骤，并解释为什么这种方法能将 e^x 的积分问题转化为导数已知的 h(x) 的直接计算，最后求出该定积分的数值。",
+    "answer": "由h'(x)=e^x可知h(x)=e^x+C。利用乘积求导法则，(xh(x))'=h(x)+xh'(x)=h(x)+xe^x，所以xe^x=(xh(x))'-h(x)。在[1,3]上积分得∫[1,3]xe^x dx=[xh(x)]_[1,3]-∫[1,3]h(x)dx。代入h(x)=e^x+C，端点项中的常数贡献为2C，积分项中的常数贡献也为2C，二者抵消。因此结果等同于取方便的原函数h(x)=e^x计算：[xe^x]_[1,3]-∫[1,3]e^x dx=(3e^3-e)-(e^3-e)=2e^3。",
+    "analysis": "分部积分来自乘积求导的逆运算。h'(x)=e^x只确定h(x)=e^x+C，而不是唯一确定h=e^x；不过任意积分常数在端点项与剩余积分中会完全抵消，因此可选择最方便的原函数e^x完成计算，结果为2e^3。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-07-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "expression_evaluation"
+    },
+    "rubric": [
+      {
+        "criterion": "正确指出利用乘积求导的逆向关系构造分部积分（或分部积分公式）",
+        "points": 5
+      },
+      {
+        "criterion": "正确写出 x e^x = (x h(x))' - h(x) 的推导步骤",
+        "points": 5
+      },
+      {
+        "criterion": "正确解释该方法将 e^x 的积分转化为导数已知的 h(x) 的计算",
+        "points": 5
+      },
+      {
+        "criterion": "正确求出定积分的数值为 2e^3",
+        "points": 5
+      }
+    ]
+  }
+}

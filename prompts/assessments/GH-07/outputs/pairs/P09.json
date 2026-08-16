@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q9",
+    "type": "multiple",
+    "question": "在推导分部积分公式时，我们将乘积的求导法则 (uv)' = u'v + uv' 两边同时求不定积分，并移项得到 ∫u dv = uv - ∫v du。关于这一推导过程与公式结构的理解，下列说法中正确的有：",
+    "options": [
+      {
+        "value": "A",
+        "label": "公式右边的 uv 项对应于乘积求导展开后直接积分得到的 uv 项，而右边的积分项对应于移到等号另一侧的交叉项"
+      },
+      {
+        "value": "B",
+        "label": "分部积分公式的核心作用是将计算 ∫u dv 的任务转化为计算 ∫v du 的任务，通过这种转化来简化原积分"
+      },
+      {
+        "value": "C",
+        "label": "在推导过程中，等式两边取不定积分后必定会产生一个任意常数 C，移项后该常数被吸收到右侧的不定积分符号中"
+      },
+      {
+        "value": "D",
+        "label": "分部积分公式本质上是乘积求导法则的逆向运用，因此它只能用于求解被积函数显式包含两个函数乘积的积分"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "选项A正确，分部积分公式的结构直接对应乘积求导法则 (uv)' = u'v + uv' 移项后的积分形式，uv 项与交叉项的对应关系准确。选项B正确，分部积分的核心目的就是通过转化积分对象来简化计算。选项C错误，不定积分中的任意常数在公式推导的代数变形中被自然吸收，不需要在公式推导中特别强调其作为独立结构项的存在。选项D错误，虽然公式源于乘积求导，但也可用于被积函数并非显式乘积形式的情况（如 ∫ln x dx），并非只能用于显式乘积。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-07-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "medium",
+      "conclusionClass": "formula-derivation-interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-07-post-q9",
+    "type": "multiple",
+    "question": "对于分部积分公式 ∫u dv = uv - ∫v du，若从微元累积的直觉角度来审视，下列说法中正确的有：",
+    "options": [
+      {
+        "value": "A",
+        "label": "公式揭示了两个函数微元积分的对称关系：对 u 的微元进行积分累积的结果，等于乘积 uv 减去对 v 的微元进行积分累积的结果"
+      },
+      {
+        "value": "B",
+        "label": "公式中的 uv 项可以理解为整体乘积的完整累积，而减去 ∫v du 则是扣除了由 v 的变化所引起的那部分累积效应"
+      },
+      {
+        "value": "C",
+        "label": "由于分部积分本质上是乘积微分法则的逆运算，公式中各项微元的代数符号与微分展开式中的各项符号保持完全一致，不会发生改变"
+      },
+      {
+        "value": "D",
+        "label": "该公式仅适用于被积函数能够被直接拆分为两个具有明确几何面积意义的函数乘积时的积分计算"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "选项A正确，公式确实刻画了 u 与 v 互换微元积分位置后的对称累积关系，体现了积分转换的核心直觉。选项B正确，uv 代表乘积整体的累积，扣除由另一函数变化产生的积分累积部分，符合微元分解的直觉理解。选项C错误，在乘积求导法则 (uv)' = u'v + uv' 中，两项均为正号；但移项转化为积分公式后，右侧的交叉积分项前变为负号，符号并非完全一致。选项D错误，分部积分的应用并不要求被积函数必须具有明确的几何面积意义，其适用范围远超几何直观限制。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-07-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "medium",
+      "conclusionClass": "formula-derivation-interpretation"
+    }
+  }
+}
