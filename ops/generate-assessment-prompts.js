@@ -3,7 +3,11 @@ const path = require("path");
 
 const rootDir = path.resolve(__dirname, "..");
 const routePath = path.join(rootDir, "data", "multi-scene-learning-route.json");
+const guidancePath = path.join(rootDir, "prompts", "assessment-guidance.json");
 const outputRoot = path.join(rootDir, "prompts", "assessments");
+const assessmentGuidance = fs.existsSync(guidancePath)
+  ? JSON.parse(fs.readFileSync(guidancePath, "utf8"))
+  : { modules: {}, knowledgePoints: {} };
 
 function readRoute() {
   return JSON.parse(fs.readFileSync(routePath, "utf8"));
@@ -30,6 +34,10 @@ function knowledgePointBlock(knowledgePoints) {
 }
 
 function prePostPrompt(chapter, module) {
+  const moduleGuidance = assessmentGuidance.modules?.[module.id];
+  const blueprintGuidance = moduleGuidance?.pairedBlueprint?.length
+    ? `【本模块专用六题蓝图】\n\n${moduleGuidance.pairedBlueprint.map((item) => `- ${item}`).join("\n")}\n\n${moduleGuidance.boundary || ""}`
+    : "【本模块题目边界】\n\n严格按照上方知识点名称、目标和误解确定题目内容，不得从模块标题自行扩展额外定理或技巧。";
   return `# ${module.id} 前测与后测配对生成提示词
 
 \`\`\`text
@@ -49,6 +57,8 @@ function prePostPrompt(chapter, module) {
 ${knowledgePointBlock(module.knowledgePoints)}
 
 以上章节、模块、知识点的 ID 和名称必须逐字保持，不得改名、缩写、翻译、合并、拆分、删除或新增知识点。所有题目只能考查这些知识点，不得混入其他模块、后续内容、未列出的定理、标准极限公式或额外运算技巧。每道题必须标注一个主要 knowledgePointId，不得用笼统的模块主题掩盖越界内容。
+
+${blueprintGuidance}
 
 【输出结构】
 
@@ -94,6 +104,10 @@ A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项�
 }
 
 function checkPrompt(chapter, module, point) {
+  const pointGuidance = assessmentGuidance.knowledgePoints?.[point.id];
+  const boundaryGuidance = pointGuidance
+    ? `【本知识点专用边界】\n\n允许内容：${pointGuidance.allowed}\n\n禁止内容：${pointGuidance.forbidden}`
+    : "【本知识点专用边界】\n\n只使用知识点名称、目标和常见误解直接支持的数学内容，不得从模块标题扩展额外定理或技巧。";
   return `# ${point.id} 形测生成提示词
 
 \`\`\`text
@@ -113,6 +127,8 @@ function checkPrompt(chapter, module, point) {
 常见误解：${point.misconception || "围绕该知识点的典型概念混淆设置干扰项。"}
 
 以上名称和 ID 必须逐字保持，不得改名、缩写、翻译、合并、拆分或新增知识点。
+
+${boundaryGuidance}
 
 【学习场景与形测关系】
 

@@ -62,4 +62,11 @@ assert.strictEqual(generatedChecks.length, pointCount, "Unexpected generated for
 assert.strictEqual(moduleCount, 19, "Course route module count changed; review assessment design before accepting it");
 assert.strictEqual(pointCount, 72, "Course route knowledge-point count changed; review assessment design before accepting it");
 
+const gh02Paired = fs.readFileSync(path.join(promptRoot, "GH-02", "pre-post-paired-prompt.md"), "utf8");
+assert.match(gh02Paired, /本模块专用六题蓝图/);
+assert.match(gh02Paired, /不得要求因式分解、约分或直接代数求极限/);
+const gh02K01 = fs.readFileSync(path.join(promptRoot, "GH-02", "checks", "GH-02-K01-prompt.md"), "utf8");
+assert.match(gh02K01, /本知识点专用边界/);
+assert.match(gh02K01, /不得使用未给数据的“根据下表”/);
+
 process.stdout.write(`Assessment prompts verified: ${moduleCount} modules, ${pointCount} knowledge points.\n`);
