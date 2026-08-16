@@ -1,0 +1,219 @@
+const fs = require("fs");
+const path = require("path");
+
+const rootDir = path.resolve(__dirname, "..");
+const routePath = path.join(rootDir, "data", "multi-scene-learning-route.json");
+const outputRoot = path.join(rootDir, "prompts", "assessments");
+
+function readRoute() {
+  return JSON.parse(fs.readFileSync(routePath, "utf8"));
+}
+
+function ensureDir(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
+}
+
+function writeText(filePath, value) {
+  ensureDir(path.dirname(filePath));
+  fs.writeFileSync(filePath, `${value.trim()}\n`, "utf8");
+}
+
+function knowledgePointBlock(knowledgePoints) {
+  return knowledgePoints
+    .map((point) => [
+      `- ID：${point.id}`,
+      `  名称：${point.name}`,
+      `  学习目标：${point.goal || "以网站中该知识点的现有定义为准。"}`,
+      `  常见误解：${point.misconception || "围绕该知识点的典型概念混淆设置干扰项。"}`
+    ].join("\n"))
+    .join("\n");
+}
+
+function prePostPrompt(chapter, module) {
+  return `# ${module.id} 前测与后测配对生成提示词
+
+\`\`\`text
+请为 OpenMAIC 生成一组严格配对的前测 A 卷和后测 B 卷。这是 assessment-only 任务，只生成测评题目，不生成课件、讲解、实验、游戏、模拟、关系图、3D 可视化或其他学习资源。
+
+只输出一个合法 JSON object，不要输出 Markdown、代码围栏、说明、自检过程或修改痕迹。
+
+【网站原始信息】
+
+章节 ID：${chapter.id}
+章节名称：${chapter.title}
+学习模块 ID：${module.id}
+学习模块名称：${module.title}
+先修要求：${module.prerequisite || "以网站现有学习路线为准。"}
+
+本模块现有知识点：
+${knowledgePointBlock(module.knowledgePoints)}
+
+以上章节、模块、知识点的 ID 和名称必须逐字保持，不得改名、缩写、翻译、合并、拆分、删除或新增知识点。所有题目只能考查这些知识点，不得混入其他模块或后续内容。
+
+【输出结构】
+
+顶层键只允许 languageDirective、courseTitle、outlines。outlines 必须且只能包含两个 type="quiz" 的对象：
+
+1. id="${module.id}-pre"；title="前测：${module.title}（A卷）"；order=1。
+2. id="${module.id}-post"；title="后测：${module.title}（B卷）"；order=2。
+
+两卷各 6 题，每题 10 分，总分均为 60 分，difficulty 均为 medium。题型结构和排列顺序保持一致：4 道 single、1 道 multiple、1 道 text。每道题必须在 description 或 keyPoints 中完整给出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps 和 pairId，不得只写考查目标。
+
+所有现有知识点必须至少被一个题位覆盖；多出的题位用于覆盖本模块的核心概念或基础应用，不得引入新知识点。
+
+【前后测严格等值】
+
+按照题位逐题配对：pre-q1 对应 post-q1，依此类推。每对题使用相同 pairId，并保持完全一致的知识点、题型、认知层级、预计解题步骤、分值、已知条件数量、信息呈现方式、数学对象类型、函数或表达式结构、符号复杂度、计算量、选项数量、正确项数量和评分规则。
+
+A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项顺序或数学结构等价的熟悉情境，不得改变解题路径。不得使用完全相同的题干、数值或选项顺序。
+
+后测不得比前测增加综合性、迁移要求、阅读量、陌生情境、运算步骤、符号复杂度、干扰信息或抽象程度。不能只凭 difficulty 标签判断等值，必须根据题目实际结构配对。
+
+【题型与答案规则】
+
+- single：固定 4 个选项，恰好一个正确答案。
+- multiple：固定 4 个选项，题干必须明确要求选择所有正确说法或所有错误说法；正确项数量可以为 1、2 或 3，不得让全部选项都正确或全部错误。A/B 配对题的正确项数量必须相同，但不同多选题之间不要求相同。
+- text：给出参考答案和可独立评分的评分点；A/B 配对题的评分点数量、分值和要求必须一致。
+- 正确答案的位置不得形成固定规律；干扰项必须来自对应知识点的真实计算错误、符号误读或概念混淆。
+
+【质量与适龄要求】
+
+参考正式数学教材课后练习题的严谨性、条件完整性和推理结构，但面向高中生控制符号密度、阅读量和计算长度。数据应适合手算，不使用竞赛技巧、偏题或故意绕弯的表达。
+
+前测不得引用尚未学习的课件或实验；后测不得要求回忆学习场景中的特定画面、按钮、操作步骤或实验读数。所有题目必须脱离课件和图片独立作答。
+
+【输出前静默检查】
+
+逐题重新计算并确认：两卷均为 6 题、60 分、medium；每个 pairId 在 A/B 卷各出现一次；配对题结构与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+\`\`\`
+`;
+}
+
+function checkPrompt(chapter, module, point) {
+  return `# ${point.id} 形测生成提示词
+
+\`\`\`text
+请为 OpenMAIC 生成一套严格围绕单个知识点的形成性测验。这是 assessment-only 任务，只生成题目，不生成课件、讲解、实验、游戏、模拟、关系图、3D 可视化或其他学习资源。
+
+只输出一个合法 JSON object，不要输出 Markdown、代码围栏、说明、自检过程或修改痕迹。
+
+【网站原始信息】
+
+章节 ID：${chapter.id}
+章节名称：${chapter.title}
+学习模块 ID：${module.id}
+学习模块名称：${module.title}
+知识点 ID：${point.id}
+知识点名称：${point.name}
+知识点目标：${point.goal || "以网站中该知识点的现有定义为准。"}
+常见误解：${point.misconception || "围绕该知识点的典型概念混淆设置干扰项。"}
+
+以上名称和 ID 必须逐字保持，不得改名、缩写、翻译、合并、拆分或新增知识点。
+
+【学习场景与形测关系】
+
+该知识点可以有任意数量的候选学习场景，场景数量以后可能增减。无论学生选择哪个现有场景学习，本知识点始终只有这一套共用形测；不得按场景数量生成多套题。
+
+题目必须与具体学习资源无关，不得引用任何场景专属的界面、按钮、拖动操作、游戏规则、图像画面、实验步骤或特定读数，也不得使用“刚才的实验”“课件中”“如图”“见上图”等表达。选择不同场景的学生必须能够公平作答。
+
+【固定输出】
+
+顶层键只允许 languageDirective、courseTitle、outlines。outlines 必须且只能包含一个 quiz：
+
+id="${point.id}-check"
+type="quiz"
+title="即时检查：${point.name}"
+order=1
+quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","multiple"]}
+
+只生成 3 道选择题，不生成 text 或简答题：
+
+1. Q1：single，核心概念辨析。
+2. Q2：single，一至两步基础应用。
+3. Q3：multiple，围绕常见误解的诊断题。
+
+每道题必须在 description 或 keyPoints 中完整给出 id、type、question、4 个选项、answer、analysis、points 和 knowledgePointIds，不得只写考查目标。knowledgePointIds 必须且只能填写 ["${point.id}"]。
+
+【选择题规则】
+
+- single 恰好一个正确答案。
+- multiple 的题干必须明确要求选择所有正确说法或所有错误说法；正确项数量可以为 1、2 或 3，不得固定为某一种比例，也不得让全部选项都正确或全部错误。
+- 正确答案位置不得形成固定规律。
+- 干扰项必须来自上方常见误解或该知识点真实、典型的计算错误和概念混淆，不得使用无意义随机选项。
+
+【内容与质量边界】
+
+只考查“${point.name}”，不得混入同模块其他知识点、后续知识点或额外内容。参考正式数学教材课后练习题的严谨性、条件完整性和推理结构，但面向高中生控制符号密度、阅读量和计算长度。题意必须能够独立理解，数据适合手算，不使用竞赛技巧，每题只测量一个明确目标。
+
+【输出前静默检查】
+
+逐题重新计算并确认：只输出一个 quiz；恰好 3 道选择题；只考查 ${point.id}；没有学习场景、课件或图片依赖；single 恰好一个正确答案；multiple 有 1 至 3 个正确项且题干选择目标明确；答案、选项与解析完全一致；没有新增或改写知识点；输出中没有自我纠错或检查过程。
+\`\`\`
+`;
+}
+
+function buildReadme(chapters, moduleCount, pointCount) {
+  const lines = [
+    "# 全站测评题生成提示词",
+    "",
+    "本目录由 `node ops/generate-assessment-prompts.js` 根据 `data/multi-scene-learning-route.json` 生成。课程路线是章节、模块和知识点名称及 ID 的唯一来源。",
+    "",
+    `当前覆盖 ${chapters.length} 个章节、${moduleCount} 个学习模块、${pointCount} 个知识点。每个模块一份前后测配对提示词，每个知识点一份共用形测提示词。`,
+    "",
+    "形测按知识点设置，与候选学习场景的数量和具体内容解耦。建议在 OpenMAIC 中一次只提交一个文件，生成后必须进行答案复算和人工审阅。",
+    "",
+    "## 目录",
+    ""
+  ];
+
+  for (const chapter of chapters) {
+    lines.push(`### ${chapter.id} ${chapter.title}`, "");
+    for (const module of chapter.modules || []) {
+      lines.push(`- \`${module.id}\` ${module.title}：1 份前后测提示词，${module.knowledgePoints.length} 份形测提示词`);
+    }
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+function main() {
+  const route = readRoute();
+  const chapters = Array.isArray(route.chapters) ? route.chapters : [];
+  const seenModuleIds = new Set();
+  const seenPointIds = new Set();
+  let moduleCount = 0;
+  let pointCount = 0;
+
+  ensureDir(outputRoot);
+
+  for (const chapter of chapters) {
+    for (const module of chapter.modules || []) {
+      if (!module.id || seenModuleIds.has(module.id)) {
+        throw new Error(`Invalid or duplicate module ID: ${module.id || "<empty>"}`);
+      }
+      if (!Array.isArray(module.knowledgePoints) || module.knowledgePoints.length === 0) {
+        throw new Error(`Module has no knowledge points: ${module.id}`);
+      }
+
+      seenModuleIds.add(module.id);
+      moduleCount += 1;
+      const moduleDir = path.join(outputRoot, module.id);
+      writeText(path.join(moduleDir, "pre-post-paired-prompt.md"), prePostPrompt(chapter, module));
+
+      for (const point of module.knowledgePoints) {
+        if (!point.id || seenPointIds.has(point.id)) {
+          throw new Error(`Invalid or duplicate knowledge-point ID: ${point.id || "<empty>"}`);
+        }
+        seenPointIds.add(point.id);
+        pointCount += 1;
+        writeText(path.join(moduleDir, "checks", `${point.id}-prompt.md`), checkPrompt(chapter, module, point));
+      }
+    }
+  }
+
+  writeText(path.join(outputRoot, "README.md"), buildReadme(chapters, moduleCount, pointCount));
+  process.stdout.write(`Generated ${moduleCount} pre/post prompts and ${pointCount} formative prompts.\n`);
+}
+
+main();

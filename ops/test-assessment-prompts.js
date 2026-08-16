@@ -1,0 +1,58 @@
+const assert = require("assert");
+const fs = require("fs");
+const path = require("path");
+
+const rootDir = path.resolve(__dirname, "..");
+const route = JSON.parse(fs.readFileSync(path.join(rootDir, "data", "multi-scene-learning-route.json"), "utf8"));
+const promptRoot = path.join(rootDir, "prompts", "assessments");
+
+let moduleCount = 0;
+let pointCount = 0;
+
+for (const chapter of route.chapters || []) {
+  for (const module of chapter.modules || []) {
+    moduleCount += 1;
+    const moduleDir = path.join(promptRoot, module.id);
+    const pairedPath = path.join(moduleDir, "pre-post-paired-prompt.md");
+    assert.ok(fs.existsSync(pairedPath), `Missing paired prompt: ${module.id}`);
+
+    const paired = fs.readFileSync(pairedPath, "utf8");
+    assert.match(paired, new RegExp(`章节 ID：${chapter.id}`));
+    assert.match(paired, new RegExp(`学习模块 ID：${module.id}`));
+    assert.match(paired, /前后测严格等值/);
+    assert.match(paired, /正确项数量可以为 1、2 或 3/);
+
+    for (const point of module.knowledgePoints || []) {
+      pointCount += 1;
+      assert.ok(paired.includes(`- ID：${point.id}`), `Paired prompt omits knowledge point: ${point.id}`);
+      assert.ok(paired.includes(`名称：${point.name}`), `Paired prompt renames knowledge point: ${point.id}`);
+
+      const checkPath = path.join(moduleDir, "checks", `${point.id}-prompt.md`);
+      assert.ok(fs.existsSync(checkPath), `Missing formative prompt: ${point.id}`);
+      const check = fs.readFileSync(checkPath, "utf8");
+
+      assert.ok(check.includes(`知识点 ID：${point.id}`), `Wrong knowledge-point ID: ${point.id}`);
+      assert.ok(check.includes(`知识点名称：${point.name}`), `Wrong knowledge-point name: ${point.id}`);
+      assert.ok(check.includes(`knowledgePointIds 必须且只能填写 ["${point.id}"]`), `Unscoped formative prompt: ${point.id}`);
+      assert.match(check, /任意数量的候选学习场景/);
+      assert.match(check, /只生成 3 道选择题，不生成 text 或简答题/);
+      assert.match(check, /正确项数量可以为 1、2 或 3/);
+      assert.doesNotMatch(check, /四选一|四个候选|恰好 2 个正确|exactly two/i);
+    }
+  }
+}
+
+const moduleDirs = fs.readdirSync(promptRoot, { withFileTypes: true }).filter((entry) => entry.isDirectory());
+const generatedChecks = moduleDirs.flatMap((entry) => {
+  const checksDir = path.join(promptRoot, entry.name, "checks");
+  return fs.existsSync(checksDir)
+    ? fs.readdirSync(checksDir).filter((name) => name.endsWith("-prompt.md"))
+    : [];
+});
+
+assert.strictEqual(moduleDirs.length, moduleCount, "Unexpected generated module directory count");
+assert.strictEqual(generatedChecks.length, pointCount, "Unexpected generated formative prompt count");
+assert.strictEqual(moduleCount, 19, "Course route module count changed; review assessment design before accepting it");
+assert.strictEqual(pointCount, 72, "Course route knowledge-point count changed; review assessment design before accepting it");
+
+process.stdout.write(`Assessment prompts verified: ${moduleCount} modules, ${pointCount} knowledge points.\n`);
