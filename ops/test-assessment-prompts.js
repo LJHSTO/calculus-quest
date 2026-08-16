@@ -36,6 +36,8 @@ for (const chapter of route.chapters || []) {
     assert.match(paired, /不得把 post 题放入 pre outline/);
     assert.match(paired, /不得把 pre 题放入 post outline/);
     assert.match(paired, /outline 对象根层级的 difficulty/);
+    assert.match(paired, /quizConfig=\{"questionCount":6,"difficulty":"medium"/);
+    assert.match(paired, /不得依赖 OpenMAIC 的默认题量/);
     assert.match(paired, /左侧 3 组和右侧 3 组、合计 6 组数据/);
     assert.match(paired, /evidence\.rows 必须逐项保存题干中的这 6 组数据/);
 

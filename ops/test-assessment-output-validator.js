@@ -109,8 +109,8 @@ function pairedPayload() {
     languageDirective: "zh-CN",
     courseTitle: "极限与连续：直觉探索测评",
     outlines: [
-      { id: "GH-02-pre", type: "quiz", title: "前测：极限与连续：直觉探索（A卷）", order: 1, difficulty: "medium", keyPoints: pre.map(JSON.stringify) },
-      { id: "GH-02-post", type: "quiz", title: "后测：极限与连续：直觉探索（B卷）", order: 2, difficulty: "medium", keyPoints: post.map(JSON.stringify) }
+      { id: "GH-02-pre", type: "quiz", title: "前测：极限与连续：直觉探索（A卷）", order: 1, difficulty: "medium", quizConfig: { questionCount: 6, difficulty: "medium", questionTypes: ["single", "multiple", "text"] }, keyPoints: pre.map(JSON.stringify) },
+      { id: "GH-02-post", type: "quiz", title: "后测：极限与连续：直觉探索（B卷）", order: 2, difficulty: "medium", quizConfig: { questionCount: 6, difficulty: "medium", questionTypes: ["single", "multiple", "text"] }, keyPoints: post.map(JSON.stringify) }
     ]
   };
 }

@@ -281,6 +281,14 @@ function validatePairedAssessment(payload, moduleDefinition) {
     if (outline.title !== expectedTitle) addError(errors, "OUTLINE_TITLE_INVALID", `${outlinePath}.title`, `outline title 必须为 ${expectedTitle}`);
     if (Number(outline.order) !== outlineIndex + 1) addError(errors, "OUTLINE_ORDER_INVALID", `${outlinePath}.order`, `outline order 必须为 ${outlineIndex + 1}`);
     if (outline.difficulty !== "medium") addError(errors, "DIFFICULTY_INVALID", `${outlinePath}.difficulty`, "前后测 difficulty 必须为 medium");
+    const quizConfigTypes = Array.isArray(outline.quizConfig?.questionTypes) ? outline.quizConfig.questionTypes : [];
+    if (
+      Number(outline.quizConfig?.questionCount) !== 6 ||
+      outline.quizConfig?.difficulty !== "medium" ||
+      !["single", "multiple", "text"].every((type) => quizConfigTypes.includes(type))
+    ) {
+      addError(errors, "QUIZ_CONFIG_INVALID", `${outlinePath}.quizConfig`, "前后测 quizConfig 必须声明 6 题、medium，并包含 single、multiple、text");
+    }
     const entries = questionEntries(outline);
     if (entries.length !== 6) addError(errors, "QUESTION_COUNT_INVALID", `${outlinePath}.keyPoints`, "每卷必须恰好包含 6 道题");
     const parsed = entries.map((entry, questionIndex) => validateQuestion(
