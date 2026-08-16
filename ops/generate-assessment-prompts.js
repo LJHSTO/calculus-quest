@@ -57,7 +57,9 @@ ${knowledgePointBlock(module.knowledgePoints)}
 1. id="${module.id}-pre"；title="前测：${module.title}（A卷）"；order=1。
 2. id="${module.id}-post"；title="后测：${module.title}（B卷）"；order=2。
 
-两卷各 6 题，每题 10 分，总分均为 60 分，difficulty 均为 medium。题型结构和排列顺序保持一致：4 道 single、1 道 multiple、1 道 text。每道题必须在 description 或 keyPoints 中完整给出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps 和 pairId，不得只写考查目标。
+两卷各 6 题，每题 10 分，总分均为 60 分，difficulty 均为 medium。题型结构和排列顺序保持一致：4 道 single、1 道 multiple、1 道 text。前测和后测的 keyPoints 都必须恰好包含 6 个字符串，每个字符串对应一道完整题目，并完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps 和 pairId。
+
+不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。
 
 所有现有知识点必须至少被一个题位覆盖；多出的题位用于覆盖本模块的核心概念或基础应用，不得引入新知识点。
 
@@ -84,7 +86,7 @@ A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项�
 
 【输出前静默检查】
 
-逐题重新计算并确认：两卷均为 6 题、60 分、medium；每个 pairId 在 A/B 卷各出现一次；配对题结构与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+逐题重新计算并确认：两个 quiz 的 keyPoints 均恰好有 6 个完整题目字符串，不含纯考查目标摘要；两卷均为 6 题、60 分、medium；每个 pairId 在 A/B 卷各出现一次；配对题结构与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
 \`\`\`
 `;
 }
@@ -132,7 +134,7 @@ quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","m
 2. Q2：single，一至两步基础应用。
 3. Q3：multiple，围绕常见误解的诊断题。
 
-每道题必须在 description 或 keyPoints 中完整给出 id、type、question、4 个选项、answer、analysis、points 和 knowledgePointIds，不得只写考查目标。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["${point.id}"]。
+keyPoints 必须恰好包含 3 个字符串，每个字符串对应一道完整题目，并完整写出 id、type、question、4 个选项、answer、analysis、points 和 knowledgePointIds。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["${point.id}"]。
 
 【选择题规则】
 
@@ -147,7 +149,7 @@ quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","m
 
 【输出前静默检查】
 
-逐题重新计算并确认：只输出一个 quiz；恰好 3 道选择题且每题 10 分、总分 30 分；只考查 ${point.id}；没有学习场景、课件或图片依赖；single 恰好一个正确答案；multiple 有 1 至 3 个正确项且题干选择目标明确；答案、选项与解析完全一致；没有新增或改写知识点；输出中没有自我纠错或检查过程。
+逐题重新计算并确认：只输出一个 quiz；keyPoints 恰好有 3 个完整题目字符串且不含纯考查目标摘要；恰好 3 道选择题且每题 10 分、总分 30 分；只考查 ${point.id}；没有学习场景、课件或图片依赖；single 恰好一个正确答案；multiple 有 1 至 3 个正确项且题干选择目标明确；答案、选项与解析完全一致；没有新增或改写知识点；输出中没有自我纠错或检查过程。
 \`\`\`
 `;
 }

@@ -44,7 +44,9 @@
 1. id="GH-14-pre"；title="前测：机器学习高数闭环：从导数到训练（A卷）"；order=1。
 2. id="GH-14-post"；title="后测：机器学习高数闭环：从导数到训练（B卷）"；order=2。
 
-两卷各 6 题，每题 10 分，总分均为 60 分，difficulty 均为 medium。题型结构和排列顺序保持一致：4 道 single、1 道 multiple、1 道 text。每道题必须在 description 或 keyPoints 中完整给出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps 和 pairId，不得只写考查目标。
+两卷各 6 题，每题 10 分，总分均为 60 分，difficulty 均为 medium。题型结构和排列顺序保持一致：4 道 single、1 道 multiple、1 道 text。前测和后测的 keyPoints 都必须恰好包含 6 个字符串，每个字符串对应一道完整题目，并完整写出 id、type、question、options（text 除外）、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps 和 pairId。
+
+不得只写“考查某概念”“判断某性质”“诊断某误解”等题目摘要。若没有完整题干、完整选项、明确答案和解析，该 keyPoint 视为未生成，不得输出。
 
 所有现有知识点必须至少被一个题位覆盖；多出的题位用于覆盖本模块的核心概念或基础应用，不得引入新知识点。
 
@@ -71,5 +73,5 @@ A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项�
 
 【输出前静默检查】
 
-逐题重新计算并确认：两卷均为 6 题、60 分、medium；每个 pairId 在 A/B 卷各出现一次；配对题结构与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+逐题重新计算并确认：两个 quiz 的 keyPoints 均恰好有 6 个完整题目字符串，不含纯考查目标摘要；两卷均为 6 题、60 分、medium；每个 pairId 在 A/B 卷各出现一次；配对题结构与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
 ```

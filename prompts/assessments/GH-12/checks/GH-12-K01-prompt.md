@@ -40,7 +40,7 @@ quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","m
 2. Q2：single，一至两步基础应用。
 3. Q3：multiple，围绕常见误解的诊断题。
 
-每道题必须在 description 或 keyPoints 中完整给出 id、type、question、4 个选项、answer、analysis、points 和 knowledgePointIds，不得只写考查目标。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["GH-12-K01"]。
+keyPoints 必须恰好包含 3 个字符串，每个字符串对应一道完整题目，并完整写出 id、type、question、4 个选项、answer、analysis、points 和 knowledgePointIds。不得只写“考查某概念”“进行基础应用”“诊断某误解”等题目摘要；缺少完整题干、4 个选项、明确答案或解析时不得输出。每题 points 必须等于 10；knowledgePointIds 必须且只能填写 ["GH-12-K01"]。
 
 【选择题规则】
 
@@ -55,5 +55,5 @@ quizConfig={"questionCount":3,"difficulty":"medium","questionTypes":["single","m
 
 【输出前静默检查】
 
-逐题重新计算并确认：只输出一个 quiz；恰好 3 道选择题且每题 10 分、总分 30 分；只考查 GH-12-K01；没有学习场景、课件或图片依赖；single 恰好一个正确答案；multiple 有 1 至 3 个正确项且题干选择目标明确；答案、选项与解析完全一致；没有新增或改写知识点；输出中没有自我纠错或检查过程。
+逐题重新计算并确认：只输出一个 quiz；keyPoints 恰好有 3 个完整题目字符串且不含纯考查目标摘要；恰好 3 道选择题且每题 10 分、总分 30 分；只考查 GH-12-K01；没有学习场景、课件或图片依赖；single 恰好一个正确答案；multiple 有 1 至 3 个正确项且题干选择目标明确；答案、选项与解析完全一致；没有新增或改写知识点；输出中没有自我纠错或检查过程。
 ```
