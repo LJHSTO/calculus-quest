@@ -73,7 +73,7 @@ A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项�
 
 - single：固定 4 个选项，恰好一个正确答案，points=8。
 - multiple：固定 4 个选项，points=8；题干必须明确要求选择所有正确说法或所有错误说法；正确项数量可以为 1、2 或 3，不得让全部选项都正确或全部错误。A/B 配对题的正确项数量必须相同，但不同多选题之间不要求相同。
-- text：必须为 Q6 和全卷最后一题，points=20，是全卷分值最高的题；给出参考答案和可独立评分的评分点，每个评分点必须标明确切整数分值且合计恰好为 20，不得使用“6~7 分”等分值区间。A/B 配对题的评分点数量、逐项分值和要求必须一致。
+- text：必须为 Q6 和全卷最后一题，points=20，是全卷分值最高的题；给出参考答案和可独立评分的评分点，每个评分点必须标明确切整数分值且合计恰好为 20，不得使用“6~7 分”等分值区间。A/B 配对题的评分点数量、逐项分值和要求必须一致。Q6 即使 answer 已经写出完整解法，也绝对不得省略 analysis；answer、analysis、rubric 是三个彼此独立且全部必填的根层级字段。Q6 的字段顺序固定为 id、type、question、answer、analysis、points、knowledgePointIds、cognitiveLevel、estimatedSteps、pairId、equivalence、rubric，输出 rubric 前必须确认 analysis 已经出现。
 - 正确答案的位置不得形成固定规律；干扰项必须来自对应知识点的真实计算错误、符号误读或概念混淆。
 
 【质量与适龄要求】
@@ -84,5 +84,5 @@ A、B 卷只能替换数值、函数表达式、坐标、变量名称、选项�
 
 【输出前静默检查】
 
-逐题重新计算并确认：整个响应恰好有 12 个题目对象且 12 个 id 全部唯一；pre outline 只含 6 个 pre id，post outline 只含 6 个 post id，不串卷、不重复；两个 quiz 的 keyPoints 均恰好有 6 个可 JSON.parse 的完整题目对象字符串，不含纯考查目标摘要或重复变体；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题，两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的 equivalence 字段、呈现方式、先备运算、解题步骤与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；数表 evidence 的数值趋势与答案一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
+逐题重新计算并确认：整个响应恰好有 12 个题目对象且 12 个 id 全部唯一；pre outline 只含 6 个 pre id，post outline 只含 6 个 post id，不串卷、不重复；两个 quiz 的 keyPoints 均恰好有 6 个可 JSON.parse 的完整题目对象字符串，不含纯考查目标摘要或重复变体；Q1-Q5 的 points 均为 8，Q6 为 text 且 points=20，Q6 固定最后并为最高分题；前后测 Q6 都分别具有非空的 answer、非空的 analysis 和 3 项 rubric，三个字段一个也不能省略；两卷 points 求和都严格等于 60；每个 pairId 在 A/B 卷各出现一次；配对题的 equivalence 字段、呈现方式、先备运算、解题步骤与实际难度一致；所有知识点至少覆盖一次；所有 knowledgePointIds 来自上方清单；没有未列出的定理或标准极限；single 只有一个正确答案；multiple 有 1 至 3 个正确项且配对数量一致；答案、选项与解析一致；数表 evidence 的数值趋势与答案一致；没有缺失条件、无关数据、图片依赖、自我纠错文字或新增知识点。
 ```
