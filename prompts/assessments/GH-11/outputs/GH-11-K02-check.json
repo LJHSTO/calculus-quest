@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "Taylor、Hessian 与无约束优化",
+  "outlines": [
+    {
+      "id": "GH-11-K02-check",
+      "type": "quiz",
+      "title": "即时检查：二阶 Taylor 近似",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-11-K02-check-q1",
+          "type": "single",
+          "question": "已知 f(x) 在 x=0 处的函数值 f(0)=1，一阶导数 f'(0)=2，二阶导数 f''(0)=2。根据二阶 Taylor 近似，f(x) 在 x=0 附近的最合适近似表达式是哪一个？",
+          "options": [
+            {
+              "value": "A",
+              "label": "1 + 2x"
+            },
+            {
+              "value": "B",
+              "label": "1 + 2x + 2x²"
+            },
+            {
+              "value": "C",
+              "label": "1 + 2x + x²"
+            },
+            {
+              "value": "D",
+              "label": "1 + x + x²"
+            }
+          ],
+          "answer": [
+            "C"
+          ],
+          "analysis": "二阶 Taylor 近似的公式为 f(x) ≈ f(0) + f'(0)x + f''(0)/2 · x²。代入已知数据得：f(x) ≈ 1 + 2x + (2/2)x² = 1 + 2x + x²。选项 C 正确。选项 A 只是一阶 Taylor 近似，未包含二阶项；选项 B 错误地省略了二阶导数除以 2 的步骤；选项 D 错误地修改了一阶导数系数。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-11-K02"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 2,
+          "pairId": "GH-11-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "formula-derivation",
+            "knownConditionCount": 3,
+            "operationCount": 3,
+            "symbolComplexity": "low",
+            "conclusionClass": "quadratic-expression"
+          }
+        },
+        {
+          "id": "GH-11-K02-check-q2",
+          "type": "multiple",
+          "question": "关于二阶 Taylor 近似 f(x) ≈ f(a) + f'(a)(x-a) + f''(a)/2 · (x-a)²，以下说法中正确的有哪些？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "它比一阶 Taylor 近似多包含了一个关于 (x-a) 的二次项"
+            },
+            {
+              "value": "B",
+              "label": "公式中的二阶项系数是 f''(a)，不需要再除以 2"
+            },
+            {
+              "value": "C",
+              "label": "当 f''(a) > 0 时，二阶 Taylor 近似在 x=a 附近呈现开口向上的抛物线形状"
+            },
+            {
+              "value": "D",
+              "label": "它仅适用于 f(x) 本身就是二次多项式的函数，对其他函数无效"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "选项 A 正确，二阶 Taylor 近似在一阶基础上增加了 f''(a)/2 · (x-a)² 这一项。选项 B 错误，二阶项的系数是 f''(a)/2，必须除以 2，这是常见误解。选项 C 正确，二阶导数大于 0 意味着近似二次函数的开口向上。选项 D 错误，二阶 Taylor 近似适用于任何在 a 点二阶可导的函数，不仅限于二次多项式。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-11-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "GH-11-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "concept-analysis",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "medium",
+            "conclusionClass": "property-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

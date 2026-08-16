@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q8",
+    "type": "multiple",
+    "question": "已知二元函数 f(x,y) 在某点邻域内二阶连续可微，其二阶偏导数构成 Hessian 矩阵 H。关于 Hessian 矩阵的核心含义与作用，下列说法中所有正确的选项是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "Hessian 矩阵是由函数的所有二阶偏导数按固定顺序排列而成的对称方阵"
+      },
+      {
+        "value": "B",
+        "label": "Hessian 矩阵的行列式可以用来判断二元函数驻点的类型是极大值、极小值还是鞍点"
+      },
+      {
+        "value": "C",
+        "label": "Hessian 矩阵记录的是函数在某点的一阶偏导数值，用于确定梯度下降的方向"
+      },
+      {
+        "value": "D",
+        "label": "Hessian 矩阵反映了函数图像在驻点附近的局部曲率特征"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "analysis": "Hessian 矩阵是由二阶偏导数构成的方阵，对于二元函数表现为对称矩阵，选项 A 正确。在驻点处，通过 Hessian 矩阵的行列式及其对角线元素的符号可以判断驻点的类型（极大值、极小值或鞍点），选项 B 正确。一阶偏导数构成的是梯度向量，而非 Hessian 矩阵，选项 C 错误。Hessian 矩阵本质上刻画了函数图像在局部邻域内的曲率信息，选项 D 正确。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-11-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "medium",
+      "conclusionClass": "concept_identification"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q8",
+    "type": "multiple",
+    "question": "在无约束优化中，设目标函数在驻点邻域内二阶连续可微。针对 Hessian 矩阵的本质与功能，下列所有正确的说法是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它是一个包含函数各二阶偏导数信息的方阵，体现了二阶导数在多维情况下的推广"
+      },
+      {
+        "value": "B",
+        "label": "通过计算该矩阵的行列式及主对角线元素的正负号，能够推断驻点处是局部极大值、局部极小值或鞍点"
+      },
+      {
+        "value": "C",
+        "label": "它由函数的一阶偏导数排列而成，主要用于寻找函数值下降最快的方向"
+      },
+      {
+        "value": "D",
+        "label": "它刻画了目标函数图像在驻点附近区域的弯曲程度和凹凸结构"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "analysis": "Hessian 矩阵是多元函数二阶偏导数组成的方阵，是一元函数二阶导数在多维情形下的自然推广，选项 A 正确。在驻点处，利用 Hessian 矩阵的行列式和主对角线元素的符号可以判定极值或鞍点，选项 B 正确。一阶偏导数构成的是梯度向量，用于确定下降方向，而非 Hessian 矩阵，选项 C 错误。Hessian 矩阵反映了函数图像在局部区域的曲率和凹凸性态，选项 D 正确。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-11-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "medium",
+      "conclusionClass": "concept_identification"
+    }
+  }
+}
