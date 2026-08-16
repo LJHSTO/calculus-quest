@@ -153,3 +153,13 @@
 - `lib/hooks/use-scene-generator.ts` 的客户端重试条件只检查 `result.success` 和 `result.content`；只要存在 content，即使题量不足也不会重试。
 - 当前 `app/api/generate/scene-content/route.ts` 调用 `generateSceneContent()` 时没有传入 logger，而 `generateQuizContent()` 调用 `parseJsonResponse()` 时也没有传 logger，因此截断修复过程不会出现在现有日志中。日志只显示 scene content 成功。
 - 建议修复顺序：①若所有 `keyPoints` 都是合法题目 JSON，则直接确定性转换为 quiz questions，禁止二次生成；②普通自然语言 keyPoints 才走 LLM；③无论哪条路径都强制检查题量、题型和分值；④题量不符返回失败以触发重试；⑤给截断恢复和题量不足增加自动化测试。
+
+### OpenMAIC 结构化题目直通修复
+
+- OpenMAIC 分支：`fix/quiz-json-pass-through`；核心提交：`960e981`，补充测试提交：`4bbcb88`。
+- 当 quiz 的全部 `keyPoints` 都是合法题目 JSON 时，课堂生成阶段直接转换并保留题号、题干、选项、答案、解析与分值，不再调用 quiz-content 模型二次改写。
+- `text` 题确定性转换为 OpenMAIC 的 `short_answer`，参考答案与解析写入 `analysis`，结构化 `rubric` 转换为 `commentPrompt`。
+- 结构化 JSON 非法、字段不全或题量与 `quizConfig.questionCount` 不一致时返回失败；普通自然语言 keyPoints 仍保留原有 LLM 生成路径，但生成数量不足同样判失败。
+- generation 专项测试共 12 项通过，TypeScript 类型检查通过；测试覆盖“合法 JSON 不调用模型”“模型少题被拒绝”“非法结构化 JSON 不触发二次改写”。
+- calculus-quest 的前后测提示词现强制输出 `quizConfig.questionCount=6`，验证器也检查 questionCount、difficulty 和三种题型声明。
+- 浏览器复测第一轮被门禁拦截：前后测 Q6 均漏掉 JSON 结束大括号，只能解析 5 题；第二轮 outline 整体无法解析并返回 0 场景。两轮均未确认课堂，说明失败已从“悄悄生成残缺课堂”转变为“明确阻止不合格输入”。
