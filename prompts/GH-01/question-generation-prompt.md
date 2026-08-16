@@ -32,15 +32,15 @@
 - P01：输入、输出和函数规则；single；概念辨析；1 步；10 分；A/B 都使用一次函数 ax+b，且 a、b 均为小整数、a 为正数。
 - P02：输入、输出和函数规则；single；基础代入；2 步；10 分；A/B 都使用一次函数 ax+b、负整数输入、一次乘法和一次加减法，不得一卷用二次函数而另一卷用一次函数。
 - P03：坐标点与函数图像；single；坐标读取；2 步；10 分；A/B 都使用正斜率一次函数 ax+b 和正整数横坐标，只提供一个目标点的数据，不加入无关点。
-- P04：坐标点与函数图像；multiple；表示转换；2 步；10 分；A/B 都使用正斜率一次函数 ax+b，固定 4 个选项，其中恰好 2 个正确、2 个错误，四个选项采用相同的验证结构。
+- P04：坐标点与函数图像；multiple；表示转换；2 步；10 分；A/B 都使用正斜率一次函数 ax+b 和 4 个选项，四个选项采用相同的验证结构。正确项数量不预先固定，但 A/B 配对题必须相同，且至少有一个正确项和一个错误项。
 - P05：图像的上升、下降与变化方向；single；局部趋势判断；1 步；10 分；A/B 都提供 3 个有序数据点并询问完整区间的总体趋势，不加入题目未使用的数据。
 - P06：图像的上升、下降与变化方向；text；解释变化；两个明确评分点；10 分；A/B 都提供 3 个有序数据点，变化结构均为先上升后下降。
 
 前测不得引用尚未学习的课件、操作记录或图片。后测也不得依赖学生记住课件中的特定读数。两卷所有题目必须脱离课件和图片独立作答。
 
-即时检查硬约束：每个即时检查 questionCount 等于 3，只考标题对应的一个知识点，不得混入其他知识点或后续内容。题序固定为：Q1 single 概念辨析；Q2 single 一至两步基础应用；Q3 multiple 常见错误诊断。difficulty 为 medium；不使用 text，以便立即自动反馈。题干必须简短、条件充分；single 题答案唯一；multiple 错误诊断题必须明确写“选择所有错误说法”，不得再写“选择所有正确选项”，并固定为 4 个选项、恰好 2 个错误说法和 2 个正确说法。错误说法必须对应下面列出的真实误解。
+即时检查硬约束：每个即时检查 questionCount 等于 3，只考标题对应的一个知识点，不得混入其他知识点或后续内容。题序固定为：Q1 single 概念辨析；Q2 single 一至两步基础应用；Q3 multiple 常见错误诊断。difficulty 为 medium；只使用 single 和 multiple，不使用 text，以便立即自动反馈。题干必须简短、条件充分；single 题答案唯一；multiple 题必须明确要求“选择所有正确说法”或“选择所有错误说法”，固定提供 4 个选项，但不固定正确项与错误项的数量比例；至少有一个正确项和一个错误项。错误选项必须对应下面列出的真实误解。
 
-即时检查按知识点设置，不按实验场景设置。每个知识点的学习环节提供四个等价实验场景，学生任选一个完成后进入同一套 3 题即时检查；不得为四个场景分别生成题目。即时检查必须与具体资源无关，不得引用任一场景专属的界面、控件、操作过程、画面或实验数值。
+即时检查按知识点设置，不按学习场景设置。每个知识点可以有任意数量的候选学习场景，学生任选一个完成后都进入同一套 3 题即时检查；场景数量增减不得改变即时检查的套数。即时检查必须与具体资源无关，不得引用任一场景专属的界面、控件、操作过程、画面或实验数值。
 
 知识点目标和误解：
 - 输入、输出和函数规则：目标是区分 x、f(x) 和函数规则；误解是把函数看成一个数、把 f(x) 误读成 f×x，或忽略输入经过规则才得到输出。
@@ -52,10 +52,10 @@
 - 使用高中生熟悉的语言，不用偏题、竞赛技巧和故意绕弯的表述。
 - 所有必要数据必须出现在题干中，不使用“观察下图”“如下图所示”“见上图”“根据图片”等表达。
 - 不得加入解题不需要的无关数据；A/B 对应题提供的信息条数必须相同，题干长度差不超过约 20%。
-- 每道 single 题固定 4 个选项且恰好 1 个正确答案；每道 multiple 题固定 4 个选项且恰好 2 个正确答案。选项必须互斥、语法平行、长度接近，不得出现全部选项都正确、全部选项都错误或用明显最长选项暗示答案。
+- 每道 single 题固定 4 个选项且恰好 1 个正确答案；每道 multiple 题固定 4 个选项，正确项数量可以为 1、2 或 3，不得预先固定。multiple 题至少包含一个正确项和一个错误项，题干必须明确选择目标。选项必须互斥、语法平行、长度接近，不得用明显最长选项暗示答案。
 - 干扰项必须来自计算错误、符号误读、坐标交换或概念混淆，不得使用无意义随机答案。
 - 每道题在 keyPoints 中必须给出完整题干、全部选项（text 除外）、正确答案和简短解析，不得只写考查目标。text 题必须给出参考答案和两个可独立判分的评分点，不按措辞是否一致评分。
-- A/B 对应题必须使用相同数量的已知条件、相同数量的选项、相同的正确选项数量和相同的数值复杂度；若 A 卷使用负数输入，B 卷也使用负数输入。
+- A/B 对应题必须使用相同数量的已知条件、相同数量的选项、相同的正确选项数量和相同的数值复杂度；不同多选题之间可以采用不同的正确项数量。若 A 卷使用负数输入，B 卷也使用负数输入。
 - A/B 对应题必须属于同一函数族，具有相同的最高次数、系数正负结构和运算次数；不得用一次函数配对二次函数，不得用正斜率函数配对负斜率函数。
 - 在输出前逐题反算：把标注的正确答案代回题干验证，并逐一验证所有干扰项。若计算结果与答案字母、选项值或解析不一致，必须先修正再输出。解析中的方程求解结果必须与最终选项完全一致。
 - 不得把数字更大、阅读更长、步骤更多或情境更陌生当作后测难度。
@@ -72,6 +72,6 @@
 
 5. id="GH-01-post"；type="quiz"；title="后测：函数、坐标与图像读法综合测评（B卷）"；order=5；quizConfig={"questionCount":6,"difficulty":"medium","questionTypes":["single","multiple","text"]}；description 和 keyPoints 必须完整写入与前测一一对应的 P01-P06 B 卷蓝图、知识点对应关系、步骤数和分值，并明确 B 卷不得比 A 卷更难。
 
-生成前自检但不要输出自检：top-level keys exactly languageDirective/courseTitle/outlines; outlines count exactly 5; every outline type is quiz; no slide or interactive; ids/titles/orders match verbatim; pre and post both have 6 questions and medium difficulty; pre/post use identical P01-P06 blueprint, weights, information counts and option counts; every single has exactly one correct option; every multiple has exactly two correct options; no unused data; every keyPoint includes answer and analysis; three immediate checks each have exactly 3 questions and only one named knowledge point; no contradictory multiple-choice instruction; no future-content bridge question; no image dependency; no renamed or added knowledge point; no local file path or conversation trace.
+生成前自检但不要输出自检：top-level keys exactly languageDirective/courseTitle/outlines; outlines count exactly 5; every outline type is quiz; no slide or interactive; ids/titles/orders match verbatim; pre and post both have 6 questions and medium difficulty; pre/post use identical P01-P06 blueprint, weights, information counts and option counts; every single has exactly one correct option; every multiple has one to three correct options and contains at least one distractor; paired pre/post multiple questions have the same number of correct options; no unused data; every keyPoint includes answer and analysis; three immediate checks each have exactly 3 choice questions and only one named knowledge point; no contradictory multiple-choice instruction; no future-content bridge question; no image dependency; no renamed or added knowledge point; no local file path or conversation trace.
 
 ```
