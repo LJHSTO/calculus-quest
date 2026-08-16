@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q2",
+    "type": "single",
+    "question": "某同学在估算曲线下方区域的面积时，将区间等分为若干份并用小矩形逼近。当分割越来越细、每个小矩形的宽度趋近于零时，这些小矩形面积之和的极限代表什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "仅是所有矩形顶部的线段总长度，与面积无关"
+      },
+      {
+        "value": "B",
+        "label": "曲线下方区域的真实面积"
+      },
+      {
+        "value": "C",
+        "label": "函数在区间端点处的取值之差"
+      },
+      {
+        "value": "D",
+        "label": "区间长度与函数最大值的乘积"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "小矩形逼近面积的核心在于：当分割无限细化时，所有小矩形面积之和的极限就等于曲线与坐标轴所围成的区域的真实面积。选项A混淆了线段长度与面积；选项C描述的是函数值之差，与面积累积无关；选项D仅代表以最大高度构造的单一外接矩形面积，并非无限逼近的真实面积。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "limit_equals_area"
+    }
+  },
+  "post": {
+    "id": "GH-06-post-q2",
+    "type": "single",
+    "question": "在用矩形条分割某不规则图形以估算其面积的过程中，随着矩形条被切分得越来越窄，所有矩形条面积相加得到的总和会稳定趋向于一个确定数值。这个确定数值的几何意义是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "图形内部最长水平跨度与最高点高度的乘积"
+      },
+      {
+        "value": "B",
+        "label": "所有矩形条顶边中点连线的总长度"
+      },
+      {
+        "value": "C",
+        "label": "该不规则图形的实际面积"
+      },
+      {
+        "value": "D",
+        "label": "图形左右边界处高度相减得到的差值"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "小矩形逼近面积的本质是极限过程：当矩形宽度趋近于零时，矩形面积总和的极限精确刻画了不规则图形的实际面积。选项A给出的是粗略的外包矩形面积，不是极限逼近值；选项B将面积误解为线段长度；选项D仅描述了边界高度之差，未体现面积累积的极限思想。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "limit_equals_area"
+    }
+  }
+}

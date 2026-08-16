@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q1",
+    "type": "single",
+    "question": "用小矩形逼近曲线 y=f(x) 在区间 [1, 5] 下方与 x 轴围成的面积时，将区间等分为 n 个小区间，并在每个小区间上取右端点函数值作为矩形的高。当分割越来越细，即 n 不断增大时，这些小矩形的面积总和 S_n 的变化趋势反映了什么核心含义？",
+    "options": [
+      {
+        "value": "A",
+        "label": "S_n 会无限接近一个固定的常数，这个常数代表了曲线在区间内与 x 轴围成的真实面积"
+      },
+      {
+        "value": "B",
+        "label": "S_n 会不断增大且没有上限，因为矩形的数量越来越多"
+      },
+      {
+        "value": "C",
+        "label": "S_n 会趋近于零，因为每个小矩形的宽度越来越窄"
+      },
+      {
+        "value": "D",
+        "label": "S_n 的值始终在区间长度 4 附近上下振荡，无法确定一个固定趋势"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "小矩形逼近面积的核心含义在于极限思想：随着分割不断加细（n 趋于无穷），所有小矩形的面积总和会趋近于一个确定的极限值，这个极限值就是曲线在指定区间内与 x 轴围成的真实面积。选项 B 和 C 忽略了宽度变窄与高度共同作用产生的收敛极限，选项 D 则误解了逼近过程的确定性。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "limit_behavior"
+    }
+  },
+  "post": {
+    "id": "GH-06-post-q1",
+    "type": "single",
+    "question": "某同学在计算曲线 y=g(x) 在区间 [2, 6] 下方与 x 轴围成的面积时，将区间等分为 n 份，并取每个小区间的左端点函数值作为矩形的高。他发现随着 n 不断增大，所有小矩形面积的总和 T_n 越来越稳定地接近数值 12。根据“小矩形逼近面积”的核心含义，这一现象说明了什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "只要 n 足够大，T_n 就可以任意接近 12，因此该曲线在区间内与 x 轴围成的面积就是 12"
+      },
+      {
+        "value": "B",
+        "label": "T_n 接近 12 只是一种巧合，真实的面积必须通过圆的内接多边形来计算"
+      },
+      {
+        "value": "C",
+        "label": "因为使用的是左端点而不是右端点，T_n 永远小于真实面积，所以真实面积大于 12"
+      },
+      {
+        "value": "D",
+        "label": "T_n 接近 12 说明矩形的宽度已经变为零，此时不再有任何面积可以累加"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "“小矩形逼近面积”的核心在于通过不断加细的分割与累加，用矩形面积总和的极限来定义和逼近真实的曲线面积。当 n 趋于无穷时 T_n 稳定接近 12，说明该极限值即为所求的真实面积。选项 B 引入了无关的计算方法，选项 C 误判了左端点逼近的极限性质，选项 D 错误理解了极限状态下宽度的趋近行为。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "limit_behavior"
+    }
+  }
+}

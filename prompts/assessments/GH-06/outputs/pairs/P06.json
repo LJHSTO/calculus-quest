@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q6",
+    "type": "single",
+    "question": "一辆汽车在笔直公路上行驶，其瞬时速度 v(t) 随时间 t 连续变化。已知在时间段 [0, 4] 内，汽车速度始终为正。若要计算这 4 小时内汽车行驶的总路程，根据定积分作为累积的核心含义，应通过计算哪个积分来直接得出？",
+    "options": [
+      {
+        "value": "A",
+        "label": "∫ 从 0 到 4 v(t) dt，因为定积分是把每一时刻微小位移连续累加起来的结果"
+      },
+      {
+        "value": "B",
+        "label": "∫ 从 0 到 4 |v(t)| dt，因为路程是速度绝对值的积分，即使速度为负也适用"
+      },
+      {
+        "value": "C",
+        "label": "v(4) - v(0)，因为总路程只取决于起点和终点的速度差"
+      },
+      {
+        "value": "D",
+        "label": "∫ 从 0 到 4 t dt，因为时间是驱动汽车运动的根本因素"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "定积分作为累积的核心含义是：将一个连续变化量的微小增量在区间上无限求和。由于速度始终为正，每一微小时间段 dt 内的微小位移就是 v(t)dt，将这些微小位移在 [0, 4] 上累加即为 ∫(0 到 4) v(t) dt，这正是汽车行驶的总路程。选项 B 虽然在数学计算上结果与 A 相同，但题干已明确速度始终为正，此时引入绝对值符号偏离了“直接将速度累积为路程”的最核心直觉理解。选项 C 混淆了定积分与牛顿-莱布尼茨公式的端点代入。选项 D 脱离了被积函数 v(t) 的实际物理意义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "integral_accumulation"
+    }
+  },
+  "post": {
+    "id": "GH-06-post-q6",
+    "type": "single",
+    "question": "某水箱正在被匀速注水，但底部存在一个漏水孔，导致水箱内的实际水位 h(t) 随时间 t 变化。已知在时间段 [1, 5] 内，水位的净变化率 h'(t) 始终为正值。若要计算这 4 个小时内水箱水位上升的总高度，根据定积分作为累积的核心含义，应通过计算哪个积分来直接得出？",
+    "options": [
+      {
+        "value": "A",
+        "label": "∫ 从 1 到 5 h'(t) dt，因为定积分是把每一微小时间段内水位的微小增量连续累加的结果"
+      },
+      {
+        "value": "B",
+        "label": "∫ 从 1 到 5 |h'(t)| dt，因为总高度是变化率绝对值的积分，即使水位下降也适用"
+      },
+      {
+        "value": "C",
+        "label": "h(5) - h(1)，因为水位上升总高度只取决于起点和终点的水位差"
+      },
+      {
+        "value": "D",
+        "label": "∫ 从 1 到 5 t dt，因为时间是导致水位发生变化的根本因素"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "定积分作为累积的核心含义是：将一个连续变化量的微小增量在区间上无限求和。由于水位净变化率 h'(t) 始终为正，每一微小时间段 dt 内水位的微小增量就是 h'(t)dt，将这些微小增量在 [1, 5] 上累加即为 ∫(1 到 5) h'(t) dt，这正是水位上升的总高度。选项 B 虽然在数学计算上结果与 A 相同，但题干已明确变化率始终为正，此时引入绝对值符号偏离了“直接将变化率累积为净增量”的最核心直觉理解。选项 C 混淆了定积分与微积分基本定理的端点代入。选项 D 脱离了被积函数 h'(t) 的实际物理意义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "integral_accumulation"
+    }
+  }
+}
