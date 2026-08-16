@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q6",
+    "type": "single",
+    "question": "已知向量值函数 f(x,y) = (2x, 3y) 将输入坐标映射为输出坐标。在某次局部线性分析中，我们将其所有偏导数按特定规则排成了一个 2 行 2 列的二维数表，其中第一行记录了输出第一个分量对各个输入变量的偏导数，第二行记录了输出第二个分量对各个输入变量的偏导数。关于这个二维数表的构造规则与核心特征，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该数表仅用于记录纯量函数的偏导数，其行数等于输入变量的个数"
+      },
+      {
+        "value": "B",
+        "label": "该数表将每个输出分量对各个输入变量的偏导数按行排列，其行数等于输出分量的个数"
+      },
+      {
+        "value": "C",
+        "label": "该数表将每个输入变量对各个输出分量的偏导数按列排列，其列数等于输出变量的个数"
+      },
+      {
+        "value": "D",
+        "label": "该数表只保存函数在原点处的二阶导数信息，不包含一阶偏导数"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "Jacobian 表格（矩阵）的核心构造规则是：行数对应输出分量的个数，列数对应输入变量的个数。每一行填入对应输出分量关于各个输入变量的偏导数。对于 f(x,y) = (2x, 3y)，输出有两个分量，输入有两个变量，因此构成 2 行 2 列的数表，第一行为 (2, 0)，第二行为 (0, 3)。选项 A 混淆了行数与输入变量的关系；选项 C 颠倒了行列与输入输出的对应关系；选项 D 错误地将其与二阶导数关联。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "structure-rule"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q6",
+    "type": "single",
+    "question": "在研究向量值函数 g(s, t) = (s + t, s - t) 的局部线性变形时，需要提取它的一阶偏导数并整理成 Jacobian 表格。若把该表格视为一个二维阵列，决定这个阵列“行”与“列”数量的直接依据是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "行的数量由输入变量的个数决定，列的数量由输出分量的个数决定"
+      },
+      {
+        "value": "B",
+        "label": "行的数量由输出分量的个数决定，列的数量由输入变量的个数决定"
+      },
+      {
+        "value": "C",
+        "label": "行和列的数量都仅由输入变量的个数决定，与输出分量无关"
+      },
+      {
+        "value": "D",
+        "label": "行和列的数量都仅由输出分量的个数决定，与输入变量无关"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "Jacobian 表格的维度由向量值函数的输出分量数和输入变量数共同决定。其构造原则是“每一行对应一个输出分量的偏导数集合”，因此行数严格等于输出分量的个数，列数严格等于输入变量的个数。对于 g(s, t) = (s + t, s - t)，有 2 个输出分量和 2 个输入变量，故 Jacobian 表格为 2 行 2 列。选项 A 颠倒了行列与输入输出的对应关系；选项 C 和 D 割裂了输入输出与行列的全面联系。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "structure-rule"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q1",
+    "type": "single",
+    "question": "已知变量 w 依赖于 x 和 y，而 x 和 y 都受第三个变量 t 的影响。若在某时刻测得 x 对 t 的变化率为 2，y 对 t 的变化率为 3，且此时 w 对 x 的偏导数为 4，w 对 y 的偏导数为 5。根据多元链式法则，该时刻 w 对 t 的总变化率是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "23"
+      },
+      {
+        "value": "B",
+        "label": "14"
+      },
+      {
+        "value": "C",
+        "label": "120"
+      },
+      {
+        "value": "D",
+        "label": "9"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "根据多元链式法则，w 对 t 的总变化率等于 w 对各中间变量的偏导数与该中间变量对 t 的导数乘积之和。即 dw/dt = (∂w/∂x)(dx/dt) + (∂w/∂y)(dy/dt)。代入数据得：4×2 + 5×3 = 8 + 15 = 23。选项 A 正确。选项 B 只计算了 ∂w/∂x + ∂w/∂y = 9，遗漏了中间变量的导数。选项 C 错误地将所有导数相乘。选项 D 仅计算了 dx/dt + dy/dt，遗漏了 w 的偏导数部分。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_rate"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q1",
+    "type": "single",
+    "question": "某物理量 z 由两个独立分量 u 和 v 决定，且 u 和 v 均随时间 t 变化。在某特定瞬间，已知 z 对 u 的偏导数为 6，z 对 v 的偏导数为 1，同时 u 随时间 t 的变化率为 4，v 随时间 t 的变化率为 2。利用多元链式法则计算该瞬间 z 随时间 t 的变化率，下列结果正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "26"
+      },
+      {
+        "value": "B",
+        "label": "7"
+      },
+      {
+        "value": "C",
+        "label": "48"
+      },
+      {
+        "value": "D",
+        "label": "6"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "根据多元链式法则，z 对 t 的总变化率等于 z 对各分量的偏导数与该分量对 t 的变化率乘积之和。即 dz/dt = (∂z/∂u)(du/dt) + (∂z/∂v)(dv/dt)。代入数据得：6×4 + 1×2 = 24 + 2 = 26。选项 A 正确。选项 B 只计算了 ∂z/∂u + ∂z/∂v = 7，遗漏了分量对 t 的变化率。选项 C 错误地将所有数值相乘。选项 D 仅计算了偏导数之和与时间变化率之和的差值，属于概念混淆。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_rate"
+    }
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "多元函数、梯度与 Jacobian",
+  "outlines": [
+    {
+      "id": "GH-10-K03-check",
+      "type": "quiz",
+      "title": "即时检查：Jacobian 表格",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-10-K03-check-q1",
+          "type": "single",
+          "question": "设映射 F(x,y)=(x²+y,xy)。按‘行对应输出分量、列对应输入变量’的约定，它的 Jacobian 矩阵是哪一个？",
+          "options": [
+            {
+              "value": "A",
+              "label": "[[2x,1],[y,x]]"
+            },
+            {
+              "value": "B",
+              "label": "[[2x,y],[1,x]]"
+            },
+            {
+              "value": "C",
+              "label": "[[x²+y,xy],[2x,1]]"
+            },
+            {
+              "value": "D",
+              "label": "[[2x,1],[x,y]]"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "第一行是输出分量 x²+y 对 x、y 的偏导，得到 (2x,1)；第二行是输出分量 xy 对 x、y 的偏导，得到 (y,x)。因此 Jacobian 为 [[2x,1],[y,x]]，选 A。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-10-K03"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 2,
+          "pairId": "GH-10-K03-check-pair",
+          "adaptiveRole": "core",
+          "evidence": {
+            "type": "two-sided-table",
+            "rows": [
+              {
+                "side": "left",
+                "x": 1,
+                "f_x": 3
+              },
+              {
+                "side": "left",
+                "x": 2,
+                "f_x": 5
+              },
+              {
+                "side": "left",
+                "x": 3,
+                "f_x": 7
+              },
+              {
+                "side": "right",
+                "x": 1,
+                "g_x": 2
+              },
+              {
+                "side": "right",
+                "x": 2,
+                "g_x": 4
+              },
+              {
+                "side": "right",
+                "x": 3,
+                "g_x": 8
+              },
+              {
+                "side": "right",
+                "x": 4,
+                "g_x": 16
+              },
+              {
+                "side": "right",
+                "x": 5,
+                "g_x": 32
+              },
+              {
+                "side": "right",
+                "x": 6,
+                "g_x": 64
+              }
+            ]
+          },
+          "equivalence": {
+            "presentationMode": "two-sided-table",
+            "knownConditionCount": 2,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "numeric-value"
+          }
+        },
+        {
+          "id": "GH-10-K03-check-q2",
+          "type": "multiple",
+          "question": "关于可微映射 F:R²→R³ 的 Jacobian 矩阵，下列哪些说法正确？",
+          "options": [
+            {
+              "value": "A",
+              "label": "Jacobian 有 3 行 2 列"
+            },
+            {
+              "value": "B",
+              "label": "每一行对应一个输出分量对两个输入变量的偏导数"
+            },
+            {
+              "value": "C",
+              "label": "Jacobian 只是一张符号表，不能描述映射的局部线性响应"
+            },
+            {
+              "value": "D",
+              "label": "Jacobian 作用于二维微小位移后，给出三维输出变化的一阶近似"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "F 有 3 个输出分量和 2 个输入变量，所以 Jacobian 为 3×2，A 正确；每行对应一个输出分量，B 正确；它给出映射的局部线性响应，故 C 错误；矩阵乘二维微小位移得到三维输出变化的一阶近似，D 正确。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-10-K03"
+          ],
+          "cognitiveLevel": "evaluate",
+          "estimatedSteps": 3,
+          "pairId": "GH-10-K03-check-pair",
+          "adaptiveRole": "diagnostic",
+          "evidence": {
+            "type": "two-sided-table",
+            "rows": [
+              {
+                "side": "left",
+                "x": 1,
+                "f_x": 3
+              },
+              {
+                "side": "left",
+                "x": 2,
+                "f_x": 5
+              },
+              {
+                "side": "left",
+                "x": 3,
+                "f_x": 7
+              },
+              {
+                "side": "left",
+                "x": 4,
+                "f_x": 9
+              },
+              {
+                "side": "left",
+                "x": 5,
+                "f_x": 11
+              },
+              {
+                "side": "left",
+                "x": 6,
+                "f_x": 13
+              },
+              {
+                "side": "right",
+                "x": 1,
+                "g_x": 2
+              },
+              {
+                "side": "right",
+                "x": 2,
+                "g_x": 4
+              },
+              {
+                "side": "right",
+                "x": 3,
+                "g_x": 8
+              },
+              {
+                "side": "right",
+                "x": 4,
+                "g_x": 16
+              },
+              {
+                "side": "right",
+                "x": 5,
+                "g_x": 32
+              },
+              {
+                "side": "right",
+                "x": 6,
+                "g_x": 64
+              }
+            ]
+          },
+          "equivalence": {
+            "presentationMode": "two-sided-table",
+            "knownConditionCount": 2,
+            "operationCount": 3,
+            "symbolComplexity": "low",
+            "conclusionClass": "multi-judgment"
+          }
+        }
+      ]
+    }
+  ]
+}

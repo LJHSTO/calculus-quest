@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q3",
+    "type": "single",
+    "question": "已知函数 z=f(x,y) 通过中间变量 x=u^2 和 y=v+1 由 u,v 决定。若在 u=2, v=1 时，偏导数 ∂z/∂x=3 且 ∂z/∂y=5，根据多元链式法则，此时复合函数 z 对 u 的偏导数是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "∂z/∂u = 3 × 2 + 5 × 1 = 11"
+      },
+      {
+        "value": "B",
+        "label": "∂z/∂u = 3 × 4 + 5 × 2 = 22"
+      },
+      {
+        "value": "C",
+        "label": "∂z/∂u = 3 × 4 + 5 × 0 = 12"
+      },
+      {
+        "value": "D",
+        "label": "∂z/∂u = 3 × 4 + 5 × 1 = 17"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "根据多元链式法则，∂z/∂u=(∂z/∂x)(∂x/∂u)+(∂z/∂y)(∂y/∂u)。由 x=u² 得 ∂x/∂u=2u=4，由 y=v+1 得 ∂y/∂u=0。代入得 3×4+5×0=12，因此选 C。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "partial_derivative_value"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q3",
+    "type": "single",
+    "question": "某物理量 W 依赖于温度 T 和压强 P，而 T 随高度 h 以变化率 dT/dh=0.5 变化，P 不随 h 变化。若在某高度处测得 ∂W/∂T=4，根据多元链式法则，该高度上 W 对 h 的变化率是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "dW/dh = 4 × 0.5 + (∂W/∂P) × 0 = 2"
+      },
+      {
+        "value": "B",
+        "label": "dW/dh = 4 + 0.5 = 4.5"
+      },
+      {
+        "value": "C",
+        "label": "dW/dh = 4 × 0.5 + ∂W/∂P"
+      },
+      {
+        "value": "D",
+        "label": "dW/dh = 4 × 0 = 0"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "根据多元链式法则，dW/dh=(∂W/∂T)(dT/dh)+(∂W/∂P)(dP/dh)。因为 dP/dh=0，代入得 4×0.5+(∂W/∂P)×0=2，因此选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "partial_derivative_value"
+    }
+  }
+}

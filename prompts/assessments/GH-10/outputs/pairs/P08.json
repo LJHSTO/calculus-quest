@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q8",
+    "type": "multiple",
+    "question": "已知向量值函数 f(x,y) = (u(x,y), v(x,y))，其中 u(x,y) = x^2 + y，v(x,y) = xy。关于其 Jacobian 表格的构造与含义，下列说法中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "Jacobian 表格的第一行由 u 对各变量的偏导数构成，第一列由各函数对 x 的偏导数构成"
+      },
+      {
+        "value": "B",
+        "label": "该函数的 Jacobian 表格是一个 2 行 2 列的结构，其内部数值完全由四个一阶偏导数确定"
+      },
+      {
+        "value": "C",
+        "label": "Jacobian 表格仅是数学符号的无意义堆砌，无法反映函数对输入变量的局部变化率"
+      },
+      {
+        "value": "D",
+        "label": "表格中第 2 行第 1 列的数值代表 v(x,y) 沿 x 方向的偏导数，即 y"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "analysis": "Jacobian 表格的行对应输出函数分量，列对应输入变量。第一行为 u 的偏导数，第一列为各函数对 x 的偏导数，A 正确。函数有 2 个分量和 2 个输入变量，故为 2×2 结构，B 正确。表格元素反映函数对变量的局部变化率，C 错误。第 2 行第 1 列是 v 对 x 的偏导数，即 y，D 正确。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-10-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "structural-interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q8",
+    "type": "multiple",
+    "question": "考虑映射 F(r,s) = (p(r,s), q(r,s))，其中 p(r,s) = rs，q(r,s) = r^2 - s。针对该映射的 Jacobian 表格，下列叙述中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "表格的列数由输入变量 r 和 s 的个数决定，行数由输出分量 p 和 q 的个数决定"
+      },
+      {
+        "value": "B",
+        "label": "该映射对应的 Jacobian 表格包含四个偏导数值，整体规模为 2 行 2 列"
+      },
+      {
+        "value": "C",
+        "label": "Jacobian 表格只是机械记录偏导符号的格式，不能体现输出对输入的局部线性响应关系"
+      },
+      {
+        "value": "D",
+        "label": "表格中第 1 行第 2 列的数值表示 p(r,s) 沿 s 方向的偏导数，即 r"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "analysis": "Jacobian 表格的行对应输出分量，列对应输入变量，A 正确。映射有 2 个输出分量和 2 个输入变量，故为 2×2 结构，B 正确。表格元素体现输出对输入的局部线性变化关系，C 错误。第 1 行第 2 列是 p 对 s 的偏导数，即 r，D 正确。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-10-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "structural-interpretation"
+    }
+  }
+}
