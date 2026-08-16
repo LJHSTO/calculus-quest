@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-04-pre-q1",
+    "type": "single",
+    "question": "已知某物体的位移随时间变化的规律为 s(t) = 5t^3（其中 t > 0），若将瞬时速度理解为位移对时间的导数，求该物体在 t = 2 时的瞬时速度。",
+    "options": [
+      {
+        "value": "A",
+        "label": "20"
+      },
+      {
+        "value": "B",
+        "label": "40"
+      },
+      {
+        "value": "C",
+        "label": "60"
+      },
+      {
+        "value": "D",
+        "label": "80"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "根据幂函数求导法则，对于 s(t) = 5t^3，其导数为 s'(t) = 5 × 3 × t^(3-1) = 15t^2。将 t = 2 代入导函数，得到 s'(2) = 15 × 2^2 = 15 × 4 = 60。因此，物体在 t = 2 时的瞬时速度为 60。若误认为导数是 5 × 3 × t^3 则会得到 120；若忘记将指数减一，只把系数乘以 3，则会得到 5 × 3 × 2 = 30；若只算 2^3 × 5 则得到 40。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-04-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_derivative"
+    }
+  },
+  "post": {
+    "id": "GH-04-post-q1",
+    "type": "single",
+    "question": "在研究一个立方体容器的容积变化时，设其边长为 x，容积 V(x) = 4x^3。当边长恰好为 3 时，容积关于边长的瞬时变化率是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "36"
+      },
+      {
+        "value": "B",
+        "label": "72"
+      },
+      {
+        "value": "C",
+        "label": "108"
+      },
+      {
+        "value": "D",
+        "label": "144"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "容积关于边长的瞬时变化率即为导数 V'(x)。根据幂函数求导法则，V(x) = 4x^3 的导数为 V'(x) = 4 × 3 × x^(3-1) = 12x^2。将 x = 3 代入，求得 V'(3) = 12 × 3^2 = 12 × 9 = 108。若忘记将指数减一，直接计算 4 × 3 × 3 = 36；若只计算原函数值 4 × 3^3 = 108，虽然数值巧合相同，但概念错误；若误用平方求导为 2 倍系数，则会得到 72。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-04-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_derivative"
+    }
+  }
+}

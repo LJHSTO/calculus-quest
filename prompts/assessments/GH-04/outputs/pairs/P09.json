@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-04-pre-q9",
+    "type": "multiple",
+    "question": "已知函数 f(x) = x^3 - 2x^2 + x - 5，关于其导函数 f'(x) 的求解过程与结论，下列说法中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "根据和差规则，原函数各项分别求导后相加减，可得 f'(x) = 3x^2 - 4x + 1"
+      },
+      {
+        "value": "B",
+        "label": "常数项 -5 的导数为 0，因此它不出现在最终的导函数表达式中"
+      },
+      {
+        "value": "C",
+        "label": "若误用乘积规则处理 x^3 项，则该项求导结果会错误地变为 3x^4"
+      },
+      {
+        "value": "D",
+        "label": "计算 -2x^2 的导数时，只把指数 2 减为 1，直接得到 -2x"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "根据和差规则逐项求导：x^3的导数为3x^2，-2x^2的导数为-4x，x的导数为1，常数-5的导数为0，所以f'(x)=3x^2-4x+1，A、B正确。C给出的3x^4不符合幂函数求导规则；D遗漏了原指数2与系数-2相乘，因此错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-04-K02"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "procedure-validation"
+    }
+  },
+  "post": {
+    "id": "GH-04-post-q9",
+    "type": "multiple",
+    "question": "在运用求导法则处理函数 g(x) = 5x^2 + 3x - 7 时，某同学记录了四条推导观察。从和差规则与幂函数求导的正确应用来看，哪些观察是正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "由于多项式各项间用加号连接，可分别独立求导后再合并，得出 g'(x) = 10x + 3"
+      },
+      {
+        "value": "B",
+        "label": "常数项 -7 因其变化率为零，故在求导结果中消失"
+      },
+      {
+        "value": "C",
+        "label": "若将 5x^2 视作两个函数相乘并套用积规则，会得出 5x^2 + 10x^2 = 15x^2 的错误导数"
+      },
+      {
+        "value": "D",
+        "label": "对 3x 求导时，系数 3 需保持不变，仅对变量部分 x 求导得 1，两者相加得 4"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "多项式求导可依据和差规则逐项进行。5x^2 的导数为 10x，3x 的导数为 3，常数 -7 的导数为 0。合并后得 g'(x) = 10x + 3，A、B 项正确。C 项错误，对 5x^2 套用积规则会错误地产生包含额外变量因子的项，而非简单的代数合并。D 项错误，3x 是一个整体单项式，应直接应用幂函数求导法则得 3，不能将常数系数与变量部分分别求导后再相加。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-04-K02"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "procedure-validation"
+    }
+  }
+}

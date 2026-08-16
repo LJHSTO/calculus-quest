@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "求导规则与导数应用",
+  "outlines": [
+    {
+      "id": "GH-04-K01-check",
+      "type": "quiz",
+      "title": "即时检查：幂函数求导",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-04-K01-check-q1",
+          "type": "single",
+          "question": "已知幂函数 f(x) = x^4，根据幂函数的求导规则，其导函数 f'(x) 的正确表达式是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "f'(x) = x^3"
+            },
+            {
+              "value": "B",
+              "label": "f'(x) = 4x^3"
+            },
+            {
+              "value": "C",
+              "label": "f'(x) = 4x^4"
+            },
+            {
+              "value": "D",
+              "label": "f'(x) = x^4 / 4"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "幂函数求导的规则是将指数放至系数位置作为乘数，同时将指数减去 1。对于 f(x) = x^4，指数为 4，系数为 1，求导后指数变为 3，系数变为 4，因此 f'(x) = 4x^3。选项 A 仅将指数减 1 而未将原指数乘至系数；选项 C 乘了指数但未将指数减 1；选项 D 将原函数除以指数，属于对规则的混淆。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-04-K01"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 1,
+          "pairId": "GH-04-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "derivative_expression"
+          }
+        },
+        {
+          "id": "GH-04-K01-check-q2",
+          "type": "multiple",
+          "question": "在计算幂函数 f(x) = x^3 的导数时，部分同学得出了错误结果。请根据幂函数求导的核心规则，选出以下所有说法正确的选项。",
+          "options": [
+            {
+              "value": "A",
+              "label": "幂函数求导的核心规则是：将原指数作为系数，同时将新指数减去 1。"
+            },
+            {
+              "value": "B",
+              "label": "若计算结果为 f'(x) = 3x^3，该错误在于只将指数乘到了系数位置，而忘记将指数减去 1。"
+            },
+            {
+              "value": "C",
+              "label": "若计算结果为 f'(x) = x^2，该错误在于只将指数减去了 1，而忘记将原指数乘到系数位置。"
+            },
+            {
+              "value": "D",
+              "label": "幂函数求导仅需要记住导数符号的表面形式，不需要理解指数和系数的变化操作。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "C"
+          ],
+          "analysis": "选项 A 正确描述了幂函数求导的核心规则。选项 B 和 C 分别指出了两种典型的计算错误来源：只乘不减或只减不乘，均符合常见误解。选项 D 属于只记住符号或结论而未将规则与操作连接的常见误解，是错误的说法，因此不选。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-04-K01"
+          ],
+          "cognitiveLevel": "evaluate",
+          "estimatedSteps": 2,
+          "pairId": "GH-04-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "error_identification"
+          }
+        }
+      ]
+    }
+  ]
+}

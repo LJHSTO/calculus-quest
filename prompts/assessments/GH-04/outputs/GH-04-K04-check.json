@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "求导规则与导数应用",
+  "outlines": [
+    {
+      "id": "GH-04-K04-check",
+      "type": "quiz",
+      "title": "即时检查：常见函数变化速度",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-04-K04-check-q1",
+          "type": "single",
+          "question": "在区间 (0, +∞) 上，对于指数函数 f(x)=2^x 与幂函数 g(x)=x^2，当 x 逐渐增大时，关于它们变化速度的比较，下列结论正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "在 (0, +∞) 上始终有 f(x) 的变化速度大于 g(x) 的变化速度"
+            },
+            {
+              "value": "B",
+              "label": "在 (0, +∞) 上始终有 f(x) 的变化速度小于 g(x) 的变化速度"
+            },
+            {
+              "value": "C",
+              "label": "当 x 充分大时，f(x) 的变化速度会超过 g(x) 的变化速度"
+            },
+            {
+              "value": "D",
+              "label": "在 (0, +∞) 上两者的变化速度始终保持相等"
+            }
+          ],
+          "answer": [
+            "C"
+          ],
+          "analysis": "“常见函数变化速度”关注的是函数值随自变量增长而增长的快慢程度。虽然当 x 较小时，2^x 的增长可能慢于 x^2，但随着 x 的增大，指数函数 2^x 的变化速度会远超幂函数 x^2。因此，当 x 充分大时，f(x) 的变化速度必然超过 g(x) 的变化速度。选项 A、B 忽略了变化速度在不同区间的动态对比，选项 D 错误判断了两者速度关系。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-04-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-04-K04-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "medium",
+            "conclusionClass": "comparative-growth-rate"
+          }
+        },
+        {
+          "id": "GH-04-K04-check-q2",
+          "type": "multiple",
+          "question": "关于常见函数 y=a^x (a>1) 与 y=x^n (n>0) 在区间 (0, +∞) 上的变化速度，下列说法中所有正确的选项是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "当 x 足够大时，指数函数 y=a^x 的变化速度会大于幂函数 y=x^n 的变化速度"
+            },
+            {
+              "value": "B",
+              "label": "在 x 增大的过程中，指数函数与幂函数变化速度的相对快慢始终保持不变"
+            },
+            {
+              "value": "C",
+              "label": "仅凭函数表达式的形式，就可以断定在 (0, 1) 区间内指数函数的变化速度一定大于幂函数"
+            },
+            {
+              "value": "D",
+              "label": "当 x 充分大时，对数函数 y=log_a(x) (a>1) 的变化速度会小于幂函数 y=x^n 的变化速度"
+            }
+          ],
+          "answer": [
+            "A",
+            "D"
+          ],
+          "analysis": "常见函数变化速度的核心在于随自变量增大时函数值增长的快慢对比。当 x 足够大时，指数函数增长快于幂函数，幂函数增长快于对数函数，故 A、D 正确。选项 B 忽略了在不同区间内变化速度相对快慢可能发生改变的事实，属于只记结论而不联系动态变化过程的误解。选项 C 则是在没有具体数据或图像证据的情况下，仅凭函数形式作出绝对判断，缺乏依据。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-04-K04"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-04-K04-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "medium",
+            "conclusionClass": "comparative-growth-rate"
+          }
+        }
+      ]
+    }
+  ]
+}

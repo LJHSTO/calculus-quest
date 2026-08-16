@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-04-pre-q7",
+    "type": "single",
+    "question": "某型号无人机在起飞阶段，其爬升高度 h（单位：米）关于时间 t（单位：秒）的导函数为 h'(t)=4t-6。已知在第 5 秒末，该无人机的高度为 60 米。根据导数值解释该无人机在第 5 秒末的变化速度，并求出此时它距离地面的实际高度。",
+    "options": [
+      {
+        "value": "A",
+        "label": "变化速度为 14 米/秒，实际高度为 60 米"
+      },
+      {
+        "value": "B",
+        "label": "变化速度为 14 米/秒，实际高度为 74 米"
+      },
+      {
+        "value": "C",
+        "label": "变化速度为 20 米/秒，实际高度为 60 米"
+      },
+      {
+        "value": "D",
+        "label": "变化速度为 20 米/秒，实际高度为 74 米"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "将 t=5 代入导函数 h'(t)=4t-6，得到 h'(5)=4×5-6=14。导数的物理意义是瞬时变化速度，因此第 5 秒末的爬升变化速度为 14 米/秒。题目已直接给出第 5 秒末的实际高度为 60 米，不需要也不能用导数值去累加或修改这个已知高度。故变化速度为 14 米/秒，实际高度为 60 米。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-04-K04"
+    ],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "speed_and_state"
+    }
+  },
+  "post": {
+    "id": "GH-04-post-q7",
+    "type": "single",
+    "question": "在一个注水实验中，水池内水量 W（单位：升）随时间 x（单位：分钟）变化的规律满足 W'(x)=3x+2。已知在第 4 分钟末，水池中已存有 50 升水。根据导数值解释该注水过程在第 4 分钟末的变化速度，并指出此时水池中的实际水量。",
+    "options": [
+      {
+        "value": "A",
+        "label": "变化速度为 14 升/分钟，实际水量为 50 升"
+      },
+      {
+        "value": "B",
+        "label": "变化速度为 14 升/分钟，实际水量为 64 升"
+      },
+      {
+        "value": "C",
+        "label": "变化速度为 12 升/分钟，实际水量为 50 升"
+      },
+      {
+        "value": "D",
+        "label": "变化速度为 12 升/分钟，实际水量为 64 升"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "将 x=4 代入导函数 W'(x)=3x+2，得到 W'(4)=3×4+2=14。导数的物理意义是瞬时变化速度，因此第 4 分钟末的注水变化速度为 14 升/分钟。题目已直接给出第 4 分钟末的实际水量为 50 升，导数值仅反映该时刻的变化快慢，不能用来替代或叠加已知的实际水量状态。故变化速度为 14 升/分钟，实际水量为 50 升。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-04-K04"
+    ],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "speed_and_state"
+    }
+  }
+}
