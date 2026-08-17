@@ -70,5 +70,5 @@ for (const moduleId of modules) {
 }
 
 const target = path.join(assessmentRoot, 'ASSESSMENT-REVIEW-ALL.md');
-fs.writeFileSync(target, `${out.join('\n')}\n`, 'utf8');
+fs.writeFileSync(target, `${out.join('\n').replace(/\n+$/, '')}\n`, 'utf8');
 console.log(target);
