@@ -1,0 +1,72 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q10",
+    "type": "text",
+    "question": "某模型用普通 SGD 训练时，较大的学习率使损失在低值附近反复波动，而把学习率调得很小后，损失下降又十分缓慢。现考虑改用 Adam。请说明：1）为什么学习率过大和过小会分别产生上述现象；2）Adam 的一阶矩估计和二阶矩估计分别概括梯度的什么信息；3）写出利用偏差校正后的 m_hat_t、v_hat_t 更新参数 θ 的表达式（另用 α 表示基础学习率、ε 表示稳定项）。",
+    "answer": "1）学习率过大时，每次参数更新可能跨过低损失区域，造成震荡甚至发散；学习率过小时，每次移动距离很短，因而收敛缓慢。2）一阶矩估计是梯度的指数移动平均，用于平滑估计更新方向；二阶矩估计是梯度平方的指数移动平均，用于按参数缩放更新幅度。3）θ_t = θ_{t-1} - α·m_hat_t/(sqrt(v_hat_t)+ε)。",
+    "analysis": "三问依次考查固定学习率对 SGD 步长的影响、Adam 两类统计量的含义以及参数更新式。大步长可能反复越过低损失区域，小步长则使下降缓慢；Adam 用一阶矩平滑方向，用二阶矩按梯度尺度调整各参数的有效步长，最后代入更新式。",
+    "points": 20,
+    "knowledgePointIds": [
+      "EXT-04-K05"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": 3,
+      "conclusionClass": "explanation"
+    },
+    "rubric": [
+      {
+        "criterion": "正确解释学习率过大和过小的影响，各得 4 分，共 8 分",
+        "points": 8
+      },
+      {
+        "criterion": "正确指出一阶矩和二阶矩的含义，各得 3 分，共 6 分",
+        "points": 6
+      },
+      {
+        "criterion": "正确写出包含 α、m_hat_t、v_hat_t 和 ε 的参数更新表达式，得 6 分",
+        "points": 6
+      }
+    ]
+  },
+  "post": {
+    "id": "EXT-04-post-q10",
+    "type": "text",
+    "question": "一位同学比较两次 SGD 训练：第一次步长太大，参数在谷底两侧来回越过；第二次步长太小，很多次更新后参数只移动了很短距离。他准备使用 Adam。请说明：1）这两种学习率为何分别造成震荡和收敛缓慢；2）Adam 如何用梯度的一阶矩和二阶矩决定更新方向与相对步幅；3）写出利用偏差校正后的 m_hat_t、v_hat_t 更新参数 θ 的表达式（另用 α 表示基础学习率、ε 表示稳定项）。",
+    "answer": "1）学习率过大时，更新距离可能超过谷底并在两侧往返，甚至发散；学习率过小时，每次更新距离过短，所以收敛缓慢。2）一阶矩估计平滑梯度方向，二阶矩估计反映梯度平方的尺度，并据此缩放不同参数的更新幅度。3）θ_t = θ_{t-1} - α·m_hat_t/(sqrt(v_hat_t)+ε)。",
+    "analysis": "题目从参数运动现象反推学习率的作用，再要求说明 Adam 的一阶矩、二阶矩及更新式。震荡来自步长跨过谷底，缓慢来自单次移动过短；一阶矩平滑方向，二阶矩调节相对步幅，二者共同进入参数更新式。",
+    "points": 20,
+    "knowledgePointIds": [
+      "EXT-04-K05"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": 3,
+      "conclusionClass": "explanation"
+    },
+    "rubric": [
+      {
+        "criterion": "正确解释学习率过大导致震荡及过小导致收敛缓慢，各得 4 分，共 8 分",
+        "points": 8
+      },
+      {
+        "criterion": "正确说明一阶矩和二阶矩在自适应学习率中的作用，各得 3 分，共 6 分",
+        "points": 6
+      },
+      {
+        "criterion": "正确写出参数更新表达式，得 6 分",
+        "points": 6
+      }
+    ]
+  }
+}

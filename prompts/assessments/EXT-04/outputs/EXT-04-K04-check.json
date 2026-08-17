@@ -1,0 +1,108 @@
+{
+  "languageDirective": "输出必须为合法 JSON object，且只包含指定键。",
+  "courseTitle": "深度学习数学直觉：从矩阵到优化",
+  "outlines": [
+    {
+      "id": "EXT-04-K04-check",
+      "type": "quiz",
+      "title": "即时检查：正则化的数学",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-04-K04-check-q1",
+          "type": "single",
+          "question": "在训练一个线性回归模型时，损失函数为 L(w) = MSE(w) + λ·R(w)。若将正则化系数 λ 从 0.1 增大到 10，且特征权重 w 的初始值不变，下列对模型训练结果变化的描述，哪一项是正确的？",
+          "options": [
+            {
+              "value": "A",
+              "label": "模型对训练数据的拟合误差会严格下降，因为正则项增强了模型表达能力。"
+            },
+            {
+              "value": "B",
+              "label": "权重 w 的数值会整体变得更小，模型复杂度降低，但训练集上的拟合误差可能上升。"
+            },
+            {
+              "value": "C",
+              "label": "权重 w 的数值会整体变得更大，以抵消正则项的影响。"
+            },
+            {
+              "value": "D",
+              "label": "正则项只影响损失函数的数值大小，不会改变最终求得的权重 w。"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "增大 λ 会加大正则项在总损失中的权重，优化过程会更倾向于减小权重的范数，从而使权重整体变小、模型更简单。这可能导致模型在训练集上的拟合误差上升（欠拟合），但通常能提升泛化能力。A 错误，因为正则化限制模型复杂度，不一定降低训练误差；C 错误，因为增大 λ 是惩罚大权重，而非鼓励大权重；D 错误，因为正则项会改变损失函数的形状，从而改变最优解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-04-K04"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 2,
+          "pairId": "EXT-04-K04-check-q1",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 3,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptual"
+          }
+        },
+        {
+          "id": "EXT-04-K04-check-q2",
+          "type": "multiple",
+          "question": "关于正则化的数学含义，以下哪些说法是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "正则化项是在原始损失函数上增加一个关于模型参数的惩罚项，目的是限制模型的复杂度。"
+            },
+            {
+              "value": "B",
+              "label": "L2 正则化（权重衰减）会使权重向量趋向于零向量，但通常不会让权重恰好等于零。"
+            },
+            {
+              "value": "C",
+              "label": "正则化系数 λ 越大，模型在训练集上的表现一定越好，因为损失函数值更小。"
+            },
+            {
+              "value": "D",
+              "label": "正则化的本质是在优化目标中引入对参数大小的偏好，从而在拟合数据与保持模型简单之间取得平衡。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确：正则化就是在损失函数中加入对参数的惩罚项，以限制模型复杂度。B 正确：L2 正则化会连续地缩小权重，但很少精确到零。C 错误：λ 增大会使总损失中的正则项占比增大，但训练集上的拟合误差（MSE 部分）可能上升，因此训练集表现不一定更好。D 正确：正则化通过惩罚参数大小，在拟合数据与模型简洁性之间进行权衡。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-04-K04"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 3,
+          "pairId": "EXT-04-K04-check-q2",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptual"
+          }
+        }
+      ]
+    }
+  ]
+}

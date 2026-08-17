@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q7",
+    "type": "single",
+    "question": "在训练一个线性回归模型时，损失函数为 L(w) = (1/2)(y - wx)^2。若在损失函数中加入 L2 正则化项 λw²，当 λ 从 0 增大到 1 时，最优权重 w* 的绝对值会如何变化？",
+    "options": [
+      {
+        "value": "A",
+        "label": "保持不变，因为正则化项不影响最优解的位置"
+      },
+      {
+        "value": "B",
+        "label": "增大，因为正则化项会放大原始损失函数的梯度"
+      },
+      {
+        "value": "C",
+        "label": "减小，因为正则化项会惩罚较大的权重值"
+      },
+      {
+        "value": "D",
+        "label": "先增大后减小，因为正则化项与数据拟合项相互竞争"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "加入 L2 正则化项 λw² 后，新的损失函数为 L(w) + λw²。求导并令其为零：d/dw [L(w) + λw²] = (y - wx)(-x) + 2λw = 0。整理得 w* = yx / (x² + 2λ)。当 λ 增大时，分母增大，因此 w* 的绝对值减小。这体现了 L2 正则化通过惩罚大权重来防止过拟合的作用。选项 A 忽略了正则化项对最优解的影响；选项 B 混淆了正则化项的作用方向；选项 D 错误地认为存在非单调关系。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K04"
+    ],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 3,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": 2,
+      "conclusionClass": "关系判断"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q7",
+    "type": "single",
+    "question": "考虑一个简单的二次损失函数 L(a) = (a - b)²，其中 b 是某个常数。若在损失函数中加入 L2 正则化项 μa²，并且 μ 从 0.5 增加到 2，那么最优参数 a* 的绝对值会发生什么变化？",
+    "options": [
+      {
+        "value": "A",
+        "label": "减小，因为正则化项在损失函数中增加了对参数大小的惩罚"
+      },
+      {
+        "value": "B",
+        "label": "增大，因为正则化项会推动参数远离零点"
+      },
+      {
+        "value": "C",
+        "label": "不变，因为正则化项只影响训练速度而不影响最终参数"
+      },
+      {
+        "value": "D",
+        "label": "先减小后增大，因为正则化项与数据拟合项之间存在复杂的交互"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "加入 L2 正则化项 μa² 后，损失函数变为 (a - b)² + μa²。求导并令其为零：2(a - b) + 2μa = 0，解得 a* = b / (1 + μ)。当 μ 从 0.5 增加到 2 时，分母从 1.5 增大到 3，因此 a* 的绝对值减小。这体现了 L2 正则化通过惩罚大参数来抑制过拟合。选项 B 错误地认为正则化会推动参数远离零点；选项 C 忽略了正则化对最优解的直接影响；选项 D 错误地假设存在非单调关系。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K04"
+    ],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 3,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": 2,
+      "conclusionClass": "关系判断"
+    }
+  }
+}

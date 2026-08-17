@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q2",
+    "type": "single",
+    "question": "在多层全连接网络中，某层的权重矩阵 W 维度为 4×3，输入向量 a 维度为 3×1，偏置 b 维度为 4×1，激活函数为 σ。关于该层前向传播的输出，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "输出为 σ(Wa + b)，维度为 4×1，矩阵乘法将 3 维输入映射到 4 维输出"
+      },
+      {
+        "value": "B",
+        "label": "输出为 σ(aW + b)，维度为 1×4，输入向量右乘权重矩阵"
+      },
+      {
+        "value": "C",
+        "label": "输出为 σ(W⊙a + b)，维度为 3×1，逐元素乘法保持输入维度不变"
+      },
+      {
+        "value": "D",
+        "label": "输出为 Wσ(a) + b，维度为 4×1，先对输入施加激活再进行矩阵乘法"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "全连接层的前向传播为 z = Wa + b，再通过激活函数 σ 得到 σ(z)。W 为 4×3、a 为 3×1，Wa 是合法矩阵乘法，结果 4×1，与偏置 b（4×1）相加后维度仍为 4×1。选项 B 中 aW（3×1 乘 4×3）维度不匹配；选项 C 中 W（4×3）与 a（3×1）形状不同，无法逐元素相乘，且逐元素乘法不能实现维度变换；选项 D 先对 a 施加激活再乘 W，改变了前向传播中先线性变换后非线性的标准顺序。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 3,
+      "symbolComplexity": "medium",
+      "conclusionClass": "matrix-multiplication-mapping"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q2",
+    "type": "single",
+    "question": "某同学在推导全连接层的前向传播时，已知权重矩阵 W 维度为 4×3、输入向量 a 维度为 3×1，他将计算写成 z = W⊙a + b（⊙ 表示逐元素乘法），并据此认为输出维度等于输入维度。关于这一写法的问题，下列判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "W⊙a 要求 W 与 a 逐元素匹配，但 W 为 4×3、a 为 3×1 无法逐元素相乘，且逐元素乘法不能将 3 维映射到 4 维，正确写法应为 z = Wa + b"
+      },
+      {
+        "value": "B",
+        "label": "逐元素乘法本身没有错误，只是漏写了激活函数，应改为 z = σ(W⊙a + b)"
+      },
+      {
+        "value": "C",
+        "label": "逐元素乘法与矩阵乘法等价，输出维度确实等于输入维度，写法无误"
+      },
+      {
+        "value": "D",
+        "label": "问题仅在于偏置 b 的维度未指定，若 b 与 a 同维则写法正确"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "全连接层前向传播的核心是矩阵乘法 z = Wa + b，W（4×3）左乘 a（3×1）得到 4×1 输出，实现了从 3 维到 4 维的映射。逐元素乘法 W⊙a 要求两操作数形状相同，但 W 为 4×3、a 为 3×1，形状不匹配无法执行；即使形状匹配，逐元素乘法也不改变维度，无法实现全连接层的维度变换功能。选项 B 认为逐元素乘法正确，忽略了维度映射问题；选项 C 混淆了逐元素乘法与矩阵乘法；选项 D 将问题归结为偏置维度，未触及核心错误。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 3,
+      "symbolComplexity": "medium",
+      "conclusionClass": "matrix-multiplication-mapping"
+    }
+  }
+}
