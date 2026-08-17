@@ -402,12 +402,17 @@ async function submitQuiz(unitId) {
     if (feedback) feedback.textContent = "该测验当前仅供预览；接受学习建议后才能提交并记录本节。";
     return;
   }
-  const questions = unit.scene.content.questions;
+  const allQuestions = unit.scene.content.questions;
+  const questions = typeof quizQuestionsForCurrentStage === "function"
+    ? quizQuestionsForCurrentStage(unit)
+    : allQuestions;
+  if (!questions.length) return;
   feedback = document.querySelector(`#feedback-${unit.id}`);
   const missing = [];
   const submissions = [];
 
-  questions.forEach((question, index) => {
+  questions.forEach((question) => {
+    const index = Math.max(0, allQuestions.findIndex((item) => item.id === question.id));
     if (question.type === "short_answer") {
       const textarea = document.querySelector(`textarea[name="${unit.id}-${question.id}"]`);
       const response = (textarea?.value || readQuizDraft(unit.id, question.id, "")).trim();
@@ -499,8 +504,12 @@ async function submitQuiz(unitId) {
     };
   });
 
-  // Clear old results for this quiz to avoid duplicate counting
-  state.quizResults = (state.quizResults || []).filter(r => r.unitId !== unit.id);
+  // Ordinary quizzes replace a whole attempt. Adaptive formative quizzes retain
+  // the core result while a diagnostic follow-up is submitted separately.
+  const submittedIds = new Set(records.map(({ question }) => question.id));
+  state.quizResults = (state.quizResults || []).filter((row) => (
+    row.unitId !== unit.id || (unit.adaptiveFormative && !submittedIds.has(row.questionId))
+  ));
   const storedRecords = records.map(({ question, result, index }) =>
     recordQuizResult(unit, question, result, { sync: false, track: false, index })
   );
@@ -528,6 +537,22 @@ async function submitQuiz(unitId) {
       incorrect: records.filter(({ result }) => result.isCorrect === false).length
     }
   });
+  const needsDiagnostic = Boolean(
+    unit.adaptiveFormative
+    && records.some(({ question, result }) => question.adaptiveRole === "core" && result.isCorrect === false)
+  );
+  if (needsDiagnostic) {
+    saveState();
+    addLog(`「${unit.label}」核心题答错，进入诊断题。`);
+    renderProgress();
+    renderRecommendationPanel();
+    renderLibrary();
+    window.setTimeout(() => {
+      renderLessons();
+      renderPlayer();
+    }, 250);
+    return;
+  }
   state.submittedQuizzes = state.submittedQuizzes || [];
   if (!state.submittedQuizzes.includes(unit.id)) state.submittedQuizzes.push(unit.id);
   if (!state.completed.includes(unit.id)) {
@@ -552,7 +577,8 @@ async function submitQuiz(unitId) {
     if (existingBanner) existingBanner.remove();
     const existingHint = quizCard.querySelector(".quiz-scroll-hint");
     if (existingHint) existingHint.remove();
-    const summary = summarizeQuizAttempt(records, questions);
+    const summaryQuestions = unit.adaptiveFormative ? stageQuestions : allQuestions;
+    const summary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), summaryQuestions);
     const outcomeHtml = quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
     if (isPre) {
@@ -566,7 +592,8 @@ async function submitQuiz(unitId) {
 
   // Navigation buttons in the submit panel
   if (feedback) {
-    const currentSummary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), questions);
+    const summaryQuestions = unit.adaptiveFormative ? stageQuestions : allQuestions;
+    const currentSummary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), summaryQuestions);
     const totalLine = quizOutcomeHtml(currentSummary);
     feedback.innerHTML = `
     <div class="quiz-section-total">${totalLine}</div>

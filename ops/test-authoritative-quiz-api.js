@@ -74,8 +74,11 @@ async function main() {
   const root = path.resolve(__dirname, "..");
   const sourceRoute = JSON.parse(fs.readFileSync(path.join(root, "data", "multi-scene-learning-route.json"), "utf8"));
   const sourceQuestion = sourceRoute.chapters[0].flow.preQuiz.questions.find((question) => question.type === "single");
-  const sourceFormativeQuestions = sourceRoute.chapters[0].flow.formativeQuiz.questions;
+  const sourceFormativeQuestions = sourceRoute.chapters[0].flow.postQuiz.questions;
   const sourceShortQuestion = sourceFormativeQuestions.find((question) => question.type === "short_answer");
+  const adaptiveQuestions = sourceRoute.chapters[0].modules[0].knowledgePoints[0].formativeQuiz.questions;
+  const adaptiveCore = adaptiveQuestions.find((question) => question.adaptiveRole === "core");
+  const adaptiveDiagnostic = adaptiveQuestions.find((question) => question.adaptiveRole === "diagnostic");
   assert.ok(sourceQuestion?.answer?.length);
   assert.ok(sourceShortQuestion);
 
@@ -197,9 +200,9 @@ async function main() {
       baseUrl,
       "/api/learning/quiz/submit",
       {
-        unitId: "V14-C1-formative",
+        unitId: "V14-C1-post",
         chapterId: "V14-C1",
-        phase: "formative",
+        phase: "post",
         answers: sourceFormativeQuestions.map((question) => ({
           questionId: question.id,
           response: question.type === "short_answer"
@@ -217,7 +220,7 @@ async function main() {
       baseUrl,
       "/api/learning/grade",
       {
-        unitId: "V14-C1-formative",
+        unitId: "V14-C1-post",
         fallbackToZero: true,
         questions: [{ questionId: sourceShortQuestion.id }]
       },
@@ -238,6 +241,33 @@ async function main() {
     assert.equal(storedShort.score, 0);
     assert.equal(storedShort.ai_score, 0);
     assert.equal(storedShort.ai_error_type, "manual_fallback");
+
+    const wrongCoreAnswer = adaptiveCore.options.find((option) => !adaptiveCore.answer.includes(option.value)).value;
+    const adaptiveCoreSubmission = await postJson(baseUrl, "/api/learning/quiz/submit", {
+      unitId: "GH-01-K01-formative",
+      chapterId: "V14-C1",
+      phase: "formative",
+      answers: [{ questionId: adaptiveCore.id, response: wrongCoreAnswer }]
+    }, token);
+    assert.equal(adaptiveCoreSubmission.response.status, 200);
+    assert.equal(adaptiveCoreSubmission.payload.results[0].isCorrect, false);
+
+    const adaptiveDiagnosticSubmission = await postJson(baseUrl, "/api/learning/quiz/submit", {
+      unitId: "GH-01-K01-formative",
+      chapterId: "V14-C1",
+      phase: "formative",
+      answers: [{ questionId: adaptiveDiagnostic.id, response: adaptiveDiagnostic.answer }]
+    }, token);
+    assert.equal(adaptiveDiagnosticSubmission.response.status, 200);
+    assert.equal(adaptiveDiagnosticSubmission.payload.results[0].questionId, adaptiveDiagnostic.id);
+
+    const adaptiveResubmission = await postJson(baseUrl, "/api/learning/quiz/submit", {
+      unitId: "GH-01-K01-formative",
+      chapterId: "V14-C1",
+      phase: "formative",
+      answers: [{ questionId: adaptiveDiagnostic.id, response: adaptiveDiagnostic.answer }]
+    }, token);
+    assert.equal(adaptiveResubmission.response.status, 409);
 
     console.log("authoritative quiz API tests passed");
   } finally {
