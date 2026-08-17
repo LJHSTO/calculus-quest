@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "EXT-02-K01-check",
+      "type": "quiz",
+      "title": "即时检查：向量和向量空间直觉",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-02-K01-check-q1",
+          "type": "single",
+          "question": "已知向量 v = (3, 4)，则向量 2v = (6, 8) 相对于 v 的几何关系是？",
+          "options": [
+            {
+              "value": "A",
+              "label": "方向相同，长度是 v 的 2 倍"
+            },
+            {
+              "value": "B",
+              "label": "方向相反，长度是 v 的 2 倍"
+            },
+            {
+              "value": "C",
+              "label": "方向相同，长度不变"
+            },
+            {
+              "value": "D",
+              "label": "方向垂直于 v"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "标量乘法 2v 保持向量方向不变，将长度缩放为原来的 2 倍。v 的长度为 √(3²+4²)=5，2v 的长度为 √(6²+8²)=10，方向一致。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K01"
+          ],
+          "cognitiveLevel": "understanding",
+          "estimatedSteps": 2,
+          "pairId": "EXT-02-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "geometric",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "direction-magnitude"
+          }
+        },
+        {
+          "id": "EXT-02-K01-check-q2",
+          "type": "multiple",
+          "question": "下列关于向量和向量空间的说法中，哪些是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "零向量的长度为 0，没有确定的方向"
+            },
+            {
+              "value": "B",
+              "label": "向量空间中任意两个向量相加，结果仍属于该向量空间"
+            },
+            {
+              "value": "C",
+              "label": "向量 (1, 2) 与向量 (2, 4) 方向相反"
+            },
+            {
+              "value": "D",
+              "label": "向量乘以负标量后，方向反转"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确：零向量长度为 0，方向不确定。B 正确：向量空间对加法封闭。C 错误：(2,4) = 2×(1,2)，两向量方向相同，此选项针对将正标量倍数误认为方向反转的常见误解。D 正确：负标量使向量方向反转。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K01"
+          ],
+          "cognitiveLevel": "understanding",
+          "estimatedSteps": 3,
+          "pairId": "EXT-02-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "conceptual",
+            "knownConditionCount": 4,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "vector-space-properties"
+          }
+        }
+      ]
+    }
+  ]
+}

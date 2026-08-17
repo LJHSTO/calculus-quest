@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "EXT-02-K03-check",
+      "type": "quiz",
+      "title": "即时检查：行列式、逆矩阵与线性方程组",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-02-K03-check-q1",
+          "type": "single",
+          "question": "已知二阶矩阵 A 的行列式 det(A) = 0，关于线性方程组 Ax = b 的解，下列说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "方程组必有唯一解"
+            },
+            {
+              "value": "B",
+              "label": "方程组必无解"
+            },
+            {
+              "value": "C",
+              "label": "矩阵 A 不可逆，方程组不可能有唯一解"
+            },
+            {
+              "value": "D",
+              "label": "矩阵 A 可逆，方程组必有唯一解"
+            }
+          ],
+          "answer": [
+            "C"
+          ],
+          "analysis": "det(A) = 0 表明矩阵 A 不可逆，因此无法通过 x = A⁻¹b 求解。此时线性方程组 Ax = b 不可能有唯一解，可能无解，也可能有无穷多解，取决于 b 是否位于 A 的列空间中。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-02-K03-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text-symbol",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "solvability"
+          }
+        },
+        {
+          "id": "EXT-02-K03-check-q2",
+          "type": "multiple",
+          "question": "关于行列式、逆矩阵与线性方程组之间的关系，下列说法中所有正确说法是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "若 det(A) ≠ 0，则矩阵 A 可逆，线性方程组 Ax = b 有唯一解"
+            },
+            {
+              "value": "B",
+              "label": "若 det(A) = 0，则矩阵 A 不可逆，线性方程组 Ax = b 不可能有唯一解"
+            },
+            {
+              "value": "C",
+              "label": "只要写出 det(A) 的符号或结论，就能直接判断线性方程组 Ax = b 是否有唯一解，无需考虑 b 的情况"
+            },
+            {
+              "value": "D",
+              "label": "当 det(A) = 0 时，线性方程组 Ax = b 可能无解，也可能有无穷多解"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确：det(A) ≠ 0 时 A 可逆，Ax = b 有唯一解 x = A⁻¹b。B 正确：det(A) = 0 时 A 不可逆，Ax = b 不可能有唯一解。D 正确：det(A) = 0 时，Ax = b 可能无解，也可能有无穷多解，取决于 b 是否在 A 的列空间中。C 错误：仅记住 det(A) 的符号而不与 b 的情况联系，无法判断 det(A) = 0 时方程组是无解还是无穷多解，这正是常见误解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K03"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "EXT-02-K03-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text-symbol",
+            "knownConditionCount": 2,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "solvability"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q2",
+    "type": "single",
+    "question": "在二维平面上，下列集合中能构成向量空间的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "第一象限内所有向量（含坐标轴正半轴）的集合"
+      },
+      {
+        "value": "B",
+        "label": "单位圆上所有向量的集合"
+      },
+      {
+        "value": "C",
+        "label": "过原点的直线上所有向量的集合"
+      },
+      {
+        "value": "D",
+        "label": "直线 x=1 上所有向量的集合"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "向量空间要求集合包含零向量，且对向量的加法和数乘封闭。选项A对加法封闭，但乘以负数后向量离开第一象限，数乘不封闭；选项B不含零向量，且两个单位向量相加一般不再是单位向量；选项D不含零向量。选项C过原点的直线包含零向量，且同一直线上向量相加、数乘后仍在该直线上，对加法和数乘都封闭，构成向量空间。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "subspace-identification"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q2",
+    "type": "single",
+    "question": "在三维空间中，下列集合满足向量空间要求（含零向量且对加法、数乘封闭）的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "所有分量之和等于 1 的向量组成的集合"
+      },
+      {
+        "value": "B",
+        "label": "所有分量之和等于 0 的向量组成的集合"
+      },
+      {
+        "value": "C",
+        "label": "所有长度等于 1 的向量组成的集合"
+      },
+      {
+        "value": "D",
+        "label": "所有分量均为正数的向量组成的集合"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "向量空间要求集合含零向量且对加法、数乘封闭。选项A分量和为1，零向量分量和为0不属于该集合；选项C长度为1的向量不含零向量，且两个单位向量相加长度一般不为1；选项D乘以负数后分量变负，数乘不封闭。选项B分量和为0，零向量属于该集合，且两个分量和为0的向量相加后分量和仍为0，数乘后分量和仍为0，对加法和数乘都封闭，构成向量空间。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "subspace-identification"
+    }
+  }
+}

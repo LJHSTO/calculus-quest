@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "扩展：线性代数基础",
+  "outlines": [
+    {
+      "id": "EXT-02-K05-check",
+      "type": "quiz",
+      "title": "即时检查：正交性与投影",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-02-K05-check-q1",
+          "type": "single",
+          "question": "已知向量 u = (1, 2, -1)，v = (3, -1, 1)。向量 u 在向量 v 上的投影向量是哪一个？",
+          "options": [
+            {
+              "value": "A",
+            "label": "(1, 2, -1)"
+            },
+            {
+              "value": "B",
+            "label": "(0, 0, 0)"
+            },
+            {
+              "value": "C",
+            "label": "(3, -1, 1)"
+            },
+            {
+              "value": "D",
+            "label": "(-1, -2, 1)"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "u·v = 1×3 + 2×(-1) + (-1)×1 = 0，v·v = 9 + 1 + 1 = 11。投影向量为 ((u·v)/(v·v)) v = (0/11) v = (0, 0, 0)。由于两向量正交，投影为零向量。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K05"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 3,
+          "pairId": "EXT-02-K05-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "vector"
+          }
+        },
+        {
+          "id": "EXT-02-K05-check-q2",
+          "type": "multiple",
+          "question": "已知向量 a = (1, 2, -1)，b = (3, -1, 1)，且 a 在 b 上的投影向量为 0。下列说法中哪些是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "a 与 b 正交，即 a·b = 0"
+            },
+            {
+              "value": "B",
+              "label": "a 在 b 上的投影向量等于 a 本身"
+            },
+            {
+              "value": "C",
+              "label": "a 在 b 上的投影向量等于 b 本身"
+            },
+            {
+              "value": "D",
+              "label": "a 与 b 的夹角为 90°"
+            }
+          ],
+          "answer": [
+            "A",
+            "D"
+          ],
+          "analysis": "a·b = 1×3 + 2×(-1) + (-1)×1 = 0，因此 a 与 b 正交，夹角为 90°，A、D 正确。投影向量为 ((a·b)/(b·b)) b = 0，既不等于 a 也不等于 b，B、C 错误。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K05"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-02-K05-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "medium",
+            "conclusionClass": "relation"
+          }
+        }
+      ]
+    }
+  ]
+}

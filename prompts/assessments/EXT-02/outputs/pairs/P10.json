@@ -1,0 +1,80 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q10",
+    "type": "text",
+    "question": "在三维空间中，已知向量 a=(1,2,0) 和向量 b=(3,0,0)。请计算向量 a 在向量 b 上的投影向量，并说明该投影向量与原向量 a 的差向量具有怎样的几何位置关系。",
+    "answer": "proj_b(a)=[(a·b)/(b·b)]b=(3/9)(3,0,0)=(1,0,0)。差向量 a-proj_b(a)=(0,2,0)，它与 b 的点积为 0，因此二者垂直。",
+    "analysis": "a·b=3，b·b=9，所以投影系数为 1/3，投影向量为 (1/3)(3,0,0)=(1,0,0)。余量 a-proj_b(a)=(0,2,0)，与 b 的点积为 0，故垂直。",
+    "points": 20,
+    "knowledgePointIds": [
+      "EXT-02-K05"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "orthogonality"
+    },
+    "rubric": [
+      {
+        "criterion": "正确写出投影向量的计算公式并代入数据",
+        "points": 5
+      },
+      {
+        "criterion": "正确计算出投影向量的结果为 (1,0,0)",
+        "points": 5
+      },
+      {
+        "criterion": "正确求出原向量与投影向量的差向量为 (0,2,0)",
+        "points": 5
+      },
+      {
+        "criterion": "正确说明该差向量与投影方向向量 b 互相垂直的几何位置关系",
+        "points": 5
+      }
+    ]
+  },
+  "post": {
+    "id": "EXT-02-post-q10",
+    "type": "text",
+    "question": "已知平面内有两个非零向量 u 和 v，其中 u 在 v 方向上的投影向量记为 p。请写出用 u 和 v 表示 p 的计算公式，并证明：从向量 u 的终点指向投影向量 p 的终点的向量与向量 v 互相垂直。",
+    "answer": "投影向量 p 的计算公式为 p = (u·v / |v|^2) * v。设从 u 的终点指向 p 的终点的向量为 d = p - u。因为 d·v = (p - u)·v = p·v - u·v，将 p = (u·v / |v|^2) * v 代入，可得 p·v = [(u·v / |v|^2) * v]·v = (u·v / |v|^2) * |v|^2 = u·v。因此 d·v = u·v - u·v = 0。由于 v 为非零向量，数量积为 0 证明 d 与 v 互相垂直。",
+    "analysis": "投影向量的定义是将向量 u 分解到 v 的方向上，其公式为 p = (u·v / |v|^2) * v，其中 u·v 是两向量的数量积，|v|^2 是向量 v 长度的平方。要证明向量 p - u 与 v 垂直，只需证明它们的数量积为零。计算 (p - u)·v = p·v - u·v。将 p 的表达式代入 p·v 中：[(u·v / |v|^2) * v]·v。根据数量积的线性性质，提取标量部分得 (u·v / |v|^2) * (v·v)。因为 v·v = |v|^2，所以该项化简为 (u·v / |v|^2) * |v|^2 = u·v。代回原式得到 (p - u)·v = u·v - u·v = 0。数量积为零是非零向量互相垂直的充要条件，由此结论得证。",
+    "points": 20,
+    "knowledgePointIds": [
+      "EXT-02-K05"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "orthogonality"
+    },
+    "rubric": [
+      {
+        "criterion": "正确写出投影向量 p 的计算公式并代入数据",
+        "points": 5
+      },
+      {
+        "criterion": "正确计算出投影向量的结果为 (1,0,0)",
+        "points": 5
+      },
+      {
+        "criterion": "正确求出原向量与投影向量的差向量为 (0,2,0)",
+        "points": 5
+      },
+      {
+        "criterion": "正确说明该差向量与投影方向向量 b 互相垂直的几何位置关系",
+        "points": 5
+      }
+    ]
+  }
+}
