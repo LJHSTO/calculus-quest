@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q2",
+    "type": "single",
+    "question": "微分方程 y'=2y 不只是一个含导数的符号。它对未知函数 y 的变化过程表达了什么意思？",
+    "options": [
+      {
+        "value": "A",
+        "label": "y 的函数值始终等于 2"
+      },
+      {
+        "value": "B",
+        "label": "y 在每一点的瞬时变化率等于该点函数值的 2 倍"
+      },
+      {
+        "value": "C",
+        "label": "自变量 x 的变化率等于 y 的平方"
+      },
+      {
+        "value": "D",
+        "label": "y 在任意区间内的平均值都等于 2"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "y' 表示未知函数 y 对自变量的瞬时变化率，方程 y'=2y 表明这一变化率在每一点都等于当前函数值的 2 倍，因此选 B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 1,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "identification"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q2",
+    "type": "single",
+    "question": "在方程 dy/dx=xy 中，y 是 x 的未知函数。这个式子对变化过程的直接含义是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "在每个点，y 对 x 的瞬时变化率等于该点 x 与 y 的乘积"
+      },
+      {
+        "value": "B",
+        "label": "y 的函数值始终等于 x"
+      },
+      {
+        "value": "C",
+        "label": "x 和 y 的变化率始终相等"
+      },
+      {
+        "value": "D",
+        "label": "dy/dx 表示 y 与 x 两个数的普通商"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "dy/dx 是 y 对 x 的瞬时变化率，所以方程直接规定该变化率等于当前 x、y 的乘积，选 A。它不是把 dy 与 dx 当两个普通数相除。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 1,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "identification"
+    }
+  }
+}

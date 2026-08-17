@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q8",
+    "type": "multiple",
+    "question": "下列关于指数增长与衰减模型的说法中，选出所有正确的说法",
+    "options": [
+      {
+        "value": "A",
+        "label": "某放射性物质每经过相同时间后剩余量乘以固定比例 0.8，该变化过程符合指数衰减模型"
+      },
+      {
+        "value": "B",
+        "label": "函数 y = 3·(1.5)^t 描述指数增长，其增长率（即变化率与当前量的比值）与时间 t 成正比"
+      },
+      {
+        "value": "C",
+        "label": "若某量按 y = y₀·e^{-0.2t} 衰减，则每经过单位时间，该量减少的比例是固定的"
+      },
+      {
+        "value": "D",
+        "label": "指数模型 y = y₀·a^t 中，只要 a > 0 就一定描述增长过程"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "A 正确：每经过相同时间剩余量乘以固定比例 0.8（0 < 0.8 < 1），即 y = y₀·0.8^t，符合指数衰减模型。B 错误：y = 3·(1.5)^t 确实是指数增长，但其增长率（变化率与当前量的比值）为 ln(1.5)，是常数，不与时间 t 成正比。C 正确：y = y₀·e^{-0.2t} 中，每经过单位时间量乘以 e^{-0.2}，减少比例为 1 - e^{-0.2}，是固定值。D 错误：当 0 < a < 1 时，y = y₀·a^t 描述衰减而非增长。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-01-K03"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "property-identification"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q8",
+    "type": "multiple",
+    "question": "关于指数增长与衰减模型，以下各项判断中选出所有正确的说法",
+    "options": [
+      {
+        "value": "A",
+        "label": "某细菌种群数量每小时变为原来的 1.3 倍，可用 y = y₀·(1.3)^t 建模，属于指数增长"
+      },
+      {
+        "value": "B",
+        "label": "在指数衰减模型 y = y₀·e^{-kt}（k > 0）中，相邻相等时间间隔内衰减的百分比逐渐增大"
+      },
+      {
+        "value": "C",
+        "label": "函数 y = 5·(0.6)^t 中底数 0.6 介于 0 和 1 之间，表示该量随时间递减"
+      },
+      {
+        "value": "D",
+        "label": "指数增长模型中，量的增长率（即变化率与当前量的比值）随时间增大而增大"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "A 正确：每小时变为原来的 1.3 倍，即 y = y₀·(1.3)^t，底数 1.3 > 1，属于指数增长。B 错误：y = y₀·e^{-kt}（k > 0）中，每经过单位时间量乘以 e^{-k}，衰减百分比为 1 - e^{-k}，是常数而非逐渐增大。C 正确：y = 5·(0.6)^t 中底数 0.6 满足 0 < 0.6 < 1，函数随 t 增大而递减。D 错误：指数增长模型中增长率（变化率与当前量的比值）为常数，不随时间增大而增大。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-01-K03"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "property-identification"
+    }
+  }
+}

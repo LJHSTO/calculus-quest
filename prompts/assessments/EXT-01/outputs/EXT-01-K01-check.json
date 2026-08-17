@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "EXT-01-K01-check",
+      "type": "quiz",
+      "title": "即时检查：什么是微分方程",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-01-K01-check-q1",
+          "type": "single",
+          "question": "下列关于微分方程的说法，正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "微分方程是含有未知函数及其导数（或微分）的方程"
+            },
+            {
+              "value": "B",
+              "label": "微分方程是只含有未知函数导数的等式，方程中不能出现函数本身"
+            },
+            {
+              "value": "C",
+              "label": "微分方程是含有未知量和常数的代数方程"
+            },
+            {
+              "value": "D",
+              "label": "微分方程是描述函数极值位置的方程"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "微分方程的核心含义是：方程中含有未知函数以及该函数的导数（或微分）。选项A正确。选项B错误，微分方程中可以同时出现函数本身和它的导数，例如 y' + y = 0 中既有 y' 也有 y。选项C描述的是普通代数方程，不含导数，不是微分方程。选项D描述的是求极值的问题，与微分方程的定义无关。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-01-K01"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 2,
+          "pairId": "EXT-01-K01-check-pair1",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "definition-recognition"
+          }
+        },
+        {
+          "id": "EXT-01-K01-check-q2",
+          "type": "multiple",
+          "question": "下列关于微分方程的说法，正确的有（请选出所有正确说法）：",
+          "options": [
+            {
+              "value": "A",
+              "label": "在方程 y' = 2x 中，y 是未知函数，y' 表示 y 对 x 的导数，因此该方程是微分方程"
+            },
+            {
+              "value": "B",
+              "label": "方程 3x + 2 = 8 含有未知量 x，所以它是微分方程"
+            },
+            {
+              "value": "C",
+              "label": "方程 y'' + y = 0 含有未知函数 y 及其二阶导数 y''，因此它是微分方程"
+            },
+            {
+              "value": "D",
+              "label": "微分方程与普通代数方程的本质区别在于微分方程中出现了导数或微分"
+            }
+          ],
+          "answer": [
+            "A",
+            "C",
+            "D"
+          ],
+          "analysis": "选项A正确：y' = 2x 中 y 是未知函数，y' 是 y 对 x 的导数，方程含有导数，是微分方程。选项B错误：3x + 2 = 8 中只有未知量 x 和常数，不含任何导数或微分，是普通代数方程而非微分方程——仅凭含有未知量不能判定为微分方程。选项C正确：y'' + y = 0 含有未知函数 y 及其二阶导数 y''，满足微分方程的定义。选项D正确：是否出现导数或微分，正是微分方程与普通代数方程的本质区别。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-01-K01"
+          ],
+          "cognitiveLevel": "分析",
+          "estimatedSteps": 4,
+          "pairId": "EXT-01-K01-check-pair1",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 4,
+            "operationCount": 4,
+            "symbolComplexity": "medium",
+            "conclusionClass": "multi-statement-judgment"
+          }
+        }
+      ]
+    }
+  ]
+}
