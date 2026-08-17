@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q7",
+    "type": "single",
+    "question": "在求解线性方程组 Qx = b 时，共轭梯度法通过构造一系列相互正交的搜索方向来逼近解。关于该方法如何利用二阶信息以加速收敛，下列哪种描述抓住了其核心机制？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它直接计算并存储黑塞矩阵 Q 的逆矩阵，从而一步得到精确解"
+      },
+      {
+        "value": "B",
+        "label": "它仅依赖一阶梯度信息，完全不涉及任何与二阶曲率相关的正交性构造"
+      },
+      {
+        "value": "C",
+        "label": "它通过矩阵向量乘法隐式利用二阶曲率信息，构造关于 Q 正交的搜索方向，从而避免显式求逆"
+      },
+      {
+        "value": "D",
+        "label": "它要求在每一步迭代中显式计算目标函数在当前点的二阶导数矩阵及其特征值"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "共轭梯度法（CG）是介于纯一阶梯度下降与显式二阶牛顿法之间的方法。它不需要显式计算或存储黑塞矩阵的逆，而是通过矩阵 Q 与向量的乘积（Qp）隐式利用二阶曲率信息，构造出关于 Q 相互正交（即共轭）的搜索方向。这种共轭性保证了在 n 步内收敛于二次函数的极小点，既加速了收敛又避免了显式二阶矩阵求逆的巨大开销。选项A描述的是直接法，选项B忽略了其利用二阶信息的本质，选项D描述的是显式二阶方法的要求。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "medium",
+      "conclusionClass": "mechanism_description"
+    }
+  },
+  "post": {
+    "id": "EXT-05-post-q7",
+    "type": "single",
+    "question": "在处理大规模二次优化问题时，共轭梯度法展现出优于普通梯度下降的收敛速度。从二阶信息利用的角度来看，该方法能够高效逼近最优解的根本原因是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它将原始问题转化为求解黑塞矩阵的特征值，通过特征向量空间寻找最速下降方向"
+      },
+      {
+        "value": "B",
+        "label": "它利用矩阵向量乘积隐式提取二阶曲率特征，生成相互共轭的探索方向，从而消除了显式矩阵求逆的需求"
+      },
+      {
+        "value": "C",
+        "label": "它在每次迭代中仅根据当前梯度的符号决定步长，不涉及任何二阶正交性条件"
+      },
+      {
+        "value": "D",
+        "label": "它通过显式构造并分解黑塞矩阵，利用分解后的因子来指导搜索路径的生成"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "共轭梯度法在二次优化中的高效性源于其对二阶信息的隐式利用。它不显式构造或分解黑塞矩阵，而是通过计算黑塞矩阵与向量的乘积来隐式获取曲率信息，并据此生成一组相互共轭（即关于黑塞矩阵正交）的搜索方向。这种机制使得算法在无需承受 O(n^3) 矩阵求逆或分解开销的情况下，依然能像二阶方法那样在有限步内达到最优解。选项A错误描述了特征值求解过程，选项C退化为纯一阶方法，选项D则违背了其避免显式矩阵操作的核心优势。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "medium",
+      "conclusionClass": "mechanism_description"
+    }
+  }
+}

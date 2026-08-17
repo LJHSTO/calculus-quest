@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q5",
+    "type": "single",
+    "question": "在求解线性方程组时，共轭梯度法通过构造一组相互正交的搜索方向来避免重复搜索并加速收敛。关于该方法在实际迭代中的核心机制，下列说法正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "每一步都计算目标函数的二阶导数矩阵，以保证搜索方向之间的正交性"
+      },
+      {
+        "value": "B",
+        "label": "利用当前残差与前一步的搜索方向进行线性组合，构造出与已有方向相互共轭的新方向"
+      },
+      {
+        "value": "C",
+        "label": "将所有搜索方向强制设为坐标轴方向，从而保证每步只在一个维度上下降"
+      },
+      {
+        "value": "D",
+        "label": "通过随机生成搜索方向并保留使目标函数下降最快的方向，来减少计算量"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "共轭梯度法是一种二阶方法，它不需要显式计算和存储二阶导数矩阵。其核心机制是利用当前残差和前一步的搜索方向进行线性组合，构造出新的搜索方向，使得新方向与已有方向关于系数矩阵相互共轭（即一种广义的正交关系），从而避免重复搜索并加速收敛。选项A错误，因为该方法不需要计算二阶导数矩阵；选项C描述的是坐标下降法；选项D描述的是随机搜索法。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "mechanism_identification"
+    }
+  },
+  "post": {
+    "id": "EXT-05-post-q5",
+    "type": "single",
+    "question": "在处理大规模线性方程组时，共轭梯度法能够以较少的迭代次数逼近精确解。关于该方法在迭代过程中如何确定每一步的移动方向，下列描述正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "直接求解包含二阶导数信息的线性方程组，以获得最优的下降方向"
+      },
+      {
+        "value": "B",
+        "label": "沿着当前残差方向进行搜索，并在后续步骤中修正方向，使其与之前的搜索路径保持共轭关系"
+      },
+      {
+        "value": "C",
+        "label": "每次迭代均沿着负梯度方向搜索，通过调整步长来保证路径互不干扰"
+      },
+      {
+        "value": "D",
+        "label": "将搜索方向限制在当前残差的正交补空间内，通过投影算子直接获取最速下降方向"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "共轭梯度法在每一步迭代中，首先沿着当前残差方向（即最速下降方向）进行搜索，随后通过结合前一步的搜索方向来修正当前方向，使得新方向与之前所有的搜索方向关于系数矩阵共轭。这种共轭关系保证了搜索路径互不干扰，从而在有限步内达到精确解。选项A错误，该方法不需要直接求解二阶导数方程组；选项C描述的是普通梯度下降法，无法保证路径互不干扰；选项D错误，共轭梯度法不使用投影算子直接获取方向。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "mechanism_identification"
+    }
+  }
+}

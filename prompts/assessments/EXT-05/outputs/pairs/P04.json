@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q4",
+    "type": "single",
+    "question": "一位同学说：拟牛顿法既然不直接计算二阶导数，就等于完全舍弃了曲率信息。以下哪项最准确地指出了这句话的问题？",
+    "options": [
+      {
+        "value": "A",
+        "label": "拟牛顿法会利用连续两次迭代的位置差和梯度差更新曲率近似，所以没有直接求二阶导数不等于没有曲率信息"
+      },
+      {
+        "value": "B",
+        "label": "这句话没有问题，因为所有不求二阶导数的方法都只能得到普通梯度下降"
+      },
+      {
+        "value": "C",
+        "label": "问题在于拟牛顿法实际上每一步都会精确恢复真实海森矩阵"
+      },
+      {
+        "value": "D",
+        "label": "问题在于拟牛顿法不使用梯度差，而是只用函数值判断曲率"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "拟牛顿法不显式求二阶导数，但会利用位置差与梯度差满足割线条件，逐步更新曲率近似。因此它保留的是近似二阶信息，而不是完全退化为梯度下降；近似也不必等于真实海森矩阵。A 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "method-advantage"
+    }
+  },
+  "post": {
+    "id": "EXT-05-post-q4",
+    "type": "single",
+    "question": "当目标函数的维度较大且海森矩阵难以解析求取时，工程实践中常采用拟牛顿法进行迭代求解。关于该方法在迭代中处理二阶信息的方式，下列说法正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "仅依靠一阶梯度差分信息更新海森矩阵的近似，无需显式求导二阶项，从而在计算上更具可行性"
+      },
+      {
+        "value": "B",
+        "label": "直接舍弃二阶导数信息，仅通过一维线搜索确定下降方向，本质上与共轭梯度法等价"
+      },
+      {
+        "value": "C",
+        "label": "要求在每个迭代点精确计算海森矩阵的逆，以保证搜索方向始终指向全局最优解"
+      },
+      {
+        "value": "D",
+        "label": "将海森矩阵强制设定为对角正定矩阵，通过舍弃变量间的耦合关系来简化计算过程"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "拟牛顿法通过一阶梯度信息构造或更新海森矩阵的近似（如BFGS或DFP算法），避免了直接计算高维海森矩阵及其逆矩阵的困难。选项A正确描述了这一机制。选项B错误，拟牛顿法保留了近似的二阶信息，并非舍弃。选项C错误，拟牛顿法不精确计算海森矩阵的逆。选项D错误，拟牛顿法的近似矩阵通常是稠密的，并未强制设定为对角矩阵以舍弃耦合。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "method-advantage"
+    }
+  }
+}
