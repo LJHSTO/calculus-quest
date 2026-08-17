@@ -386,13 +386,22 @@ function renderQuizPathNavigation(unit) {
 }
 
 async function submitQuiz(unitId) {
-  if ((state.submittedQuizzes || []).includes(unitId)) return;
+  const unit = getUnit(unitId);
+  const diagnosticPending = Boolean(
+    unit?.adaptiveFormative
+    && typeof quizAdaptiveFormativeState === "function"
+    && quizAdaptiveFormativeState(unit).needsDiagnostic
+  );
+  if ((state.submittedQuizzes || []).includes(unitId) && !diagnosticPending) return;
+  if (diagnosticPending) {
+    state.submittedQuizzes = (state.submittedQuizzes || []).filter((id) => id !== unitId);
+    state.completed = (state.completed || []).filter((id) => id !== unitId);
+  }
   if (submitInProgress === unitId) return;
   submitInProgress = unitId;
   let feedback = null;
   let submitButton = null;
   try {
-  const unit = getUnit(unitId);
   if (!unit?.scene?.content?.questions) return;
   if (
     typeof agenticUnitCompletionAllowed === "function"

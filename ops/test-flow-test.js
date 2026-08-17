@@ -151,7 +151,7 @@ assert.ok(formalStyleVersion);
 assert.notEqual(formalStyleVersion, "20260726-courseware-layout-v2");
 const formalCoreScriptVersion = mainHtml.match(/app\/main\/core\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalCoreScriptVersion);
-assert.equal(formalCoreScriptVersion, "20260817-assessment-redesign-v3");
+assert.equal(formalCoreScriptVersion, "20260817-assessment-redesign-v6");
 assert.match(mainHtml, /lib\/quiz-question-order\.js\?v=20260726-quiz-order-v1/);
 const formalRenderScriptVersion = mainHtml.match(/app\/main\/render-learning\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalRenderScriptVersion);

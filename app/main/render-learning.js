@@ -970,9 +970,15 @@ function renderQuiz(unit) {
     }
   });
   const questions = unit.scene.content?.questions || [];
-  const submitted = (state.submittedQuizzes || []).includes(unit.id);
+  let submitted = (state.submittedQuizzes || []).includes(unit.id);
   const unitResults = quizRecordsForUnit(unit.id);
   const adaptiveState = unit.adaptiveFormative ? quizAdaptiveFormativeState(unit, unitResults) : null;
+  if (submitted && adaptiveState?.needsDiagnostic) {
+    submitted = false;
+    state.submittedQuizzes = (state.submittedQuizzes || []).filter((id) => id !== unit.id);
+    state.completed = (state.completed || []).filter((id) => id !== unit.id);
+    saveState();
+  }
   const visibleQuestions = unit.adaptiveFormative
     ? [adaptiveState.core, adaptiveState.coreResult?.isCorrect === false ? adaptiveState.diagnostic : null].filter(Boolean)
     : questions;

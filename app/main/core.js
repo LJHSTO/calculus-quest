@@ -115,11 +115,20 @@ function learningSubmittedQuizIds(learningState = state) {
     && !Array.isArray(learningState.quizAttempts)
     ? learningState.quizAttempts
     : {};
-  return [...new Set([
+  const candidates = [...new Set([
     ...(Array.isArray(learningState?.submittedQuizzes) ? learningState.submittedQuizzes : []),
     ...quizResults.map(learningQuizUnitId),
     ...Object.keys(quizAttempts)
   ].filter(Boolean))];
+  return candidates.filter((unitId) => {
+    if (!unitId.endsWith("-formative")) return true;
+    const records = quizResults.filter((record) => learningQuizUnitId(record) === unitId);
+    return records.some((record) => {
+      const questionId = String(record.questionId || record.question_id || "");
+      return questionId.endsWith("-check-q2")
+        || (questionId.endsWith("-check-q1") && record.isCorrect === true);
+    });
+  });
 }
 
 function normalizeLearningStateCompatibility(learningState) {
@@ -133,6 +142,9 @@ function normalizeLearningStateCompatibility(learningState) {
     ? learningState.quizAttempts
     : {};
   learningState.submittedQuizzes = learningSubmittedQuizIds(learningState);
+  const submitted = new Set(learningState.submittedQuizzes);
+  learningState.completed = (Array.isArray(learningState.completed) ? learningState.completed : [])
+    .filter((unitId) => !String(unitId).endsWith("-formative") || submitted.has(unitId));
   return learningState;
 }
 
