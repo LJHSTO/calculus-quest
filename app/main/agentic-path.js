@@ -1626,12 +1626,10 @@ function agenticKnowledgeCandidatesFromMastery(records = [], chapterId = "", rea
 function agenticBuildPreKnowledgeSelectionPlan(unit, records = [], remote = null) {
   const choices = agenticQuizKnowledgeMastery(records, unit.chapterId);
   if (!choices.length) return null;
-  const chapter = getChapter(unit.chapterId);
-  const requiredAllKnowledge = Boolean((chapter?.units || []).some((candidate) => candidate.adaptiveFormative));
   const stats = agenticQuizStats(records);
   const highMastery = stats.accuracy !== null && stats.accuracy >= AGENTIC_PRE_SKIP_THRESHOLD;
   const knowledgeChoices = choices.map((choice) => {
-    const checked = requiredAllKnowledge || !highMastery || choice.status !== "strong";
+    const checked = highMastery ? choice.status !== "strong" : true;
     const reason = choice.status === "strong"
       ? "前测表现较稳，可考虑跳过。"
       : choice.status === "weak"
@@ -1666,7 +1664,6 @@ function agenticBuildPreKnowledgeSelectionPlan(unit, records = [], remote = null
         type: "select_knowledge",
         label: "按勾选知识点开始学习",
         primary: true,
-        requiredAllKnowledge,
         knowledgeChoices,
         units: []
       }
@@ -2878,12 +2875,14 @@ async function agenticApplyDecision(type, actionKey = "") {
       addLog(`接受学习建议，跳过 ${action.units.length} 个已掌握模块。`);
     } else if (type === "select_knowledge") {
       const choices = action.knowledgeChoices || [];
-      const selectedIds = new Set(choices.filter((choice) => action.requiredAllKnowledge || choice.checked).map((choice) => choice.id));
+      const selectedIds = new Set(choices.filter((choice) => choice.checked).map((choice) => choice.id));
       const skippedChoices = choices.filter((choice) => !selectedIds.has(choice.id));
       skippedChoices.forEach((choice) => {
         const unit = findMainUnit(choice.id);
         if (unit?.type === "knowledge") {
           path.skipped[unit.id] = true;
+          const checkUnit = findMainUnit(`${unit.id}-formative`);
+          if (checkUnit) path.skipped[checkUnit.id] = true;
           if (typeof clearKnowledgeSceneSelectionForUnit === "function") {
             clearKnowledgeSceneSelectionForUnit(unit.id);
           }
@@ -2894,7 +2893,11 @@ async function agenticApplyDecision(type, actionKey = "") {
       const next = agenticNextMainUnitAfter(anchorUnitId) || agenticNextUnitIdAfter(anchorUnitId);
       targetId = next?.id || (typeof next === "string" ? next : "");
       choices.forEach((choice) => {
-        if (selectedIds.has(choice.id)) path.skipped[choice.id] = false;
+        if (selectedIds.has(choice.id)) {
+          path.skipped[choice.id] = false;
+          const checkUnit = findMainUnit(`${choice.id}-formative`);
+          if (checkUnit) path.skipped[checkUnit.id] = false;
+        }
       });
       agenticUnlockUnit(targetId, "pretest_knowledge_selection");
       const learnCount = choices.length - skippedChoices.length;
@@ -3420,7 +3423,7 @@ function agenticRenderKnowledgeSelectionPlan(pending, inFlight = "") {
         const mastery = choice.mastery === null || choice.mastery === undefined ? "证据不足" : `掌握度 ${Math.round(Number(choice.mastery) * 100)}%`;
         return `
           <label class="agentic-knowledge-check ${choice.checked ? "checked" : ""}">
-            <input type="checkbox" data-agentic-knowledge-choice="${escapeHtml(choice.id)}" ${choice.checked ? "checked" : ""} ${inFlight || action.requiredAllKnowledge ? "disabled" : ""} />
+            <input type="checkbox" data-agentic-knowledge-choice="${escapeHtml(choice.id)}" ${choice.checked ? "checked" : ""} ${inFlight ? "disabled" : ""} />
             <span><b>${escapeHtml(choice.name)}</b><small>${escapeHtml(mastery)} · ${escapeHtml(choice.reason || "")}</small></span>
           </label>
         `;
@@ -3433,11 +3436,11 @@ function agenticRenderKnowledgeSelectionPlan(pending, inFlight = "") {
         <strong>选择本章要学的知识点</strong>
       </div>
       <p>${escapeHtml(agenticStudentNarrationForPending(pending))}</p>
-      ${action.requiredAllKnowledge ? '<p class="agentic-required-learning-note">为保证前后测学习增益可比，本章所有知识点都需要完成场景学习和即时检测。</p>' : `<div class="agentic-bulk-toolbar" role="group" aria-label="批量设置本章知识点">
+      <div class="agentic-bulk-toolbar" role="group" aria-label="批量设置本章知识点">
         <span>一键选择</span>
         <button class="button soft" type="button" data-agentic-knowledge-bulk="learn" ${inFlight ? "disabled" : ""}>全部学习</button>
         <button class="button soft" type="button" data-agentic-knowledge-bulk="skip" ${inFlight ? "disabled" : ""}>全部暂时跳过</button>
-      </div>`}
+      </div>
       <div class="agentic-knowledge-selection">${groups}</div>
       <div class="agentic-actions">
         <button class="button primary" type="button" data-agentic-action="select_knowledge" ${inFlight ? "disabled" : ""}>
