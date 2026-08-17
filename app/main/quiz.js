@@ -577,7 +577,7 @@ async function submitQuiz(unitId) {
     if (existingBanner) existingBanner.remove();
     const existingHint = quizCard.querySelector(".quiz-scroll-hint");
     if (existingHint) existingHint.remove();
-    const summaryQuestions = unit.adaptiveFormative ? stageQuestions : allQuestions;
+    const summaryQuestions = unit.adaptiveFormative ? questions : allQuestions;
     const summary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), summaryQuestions);
     const outcomeHtml = quizOutcomeHtml(summary);
     const isPost = unit.assessmentPhase === "post";
@@ -592,7 +592,7 @@ async function submitQuiz(unitId) {
 
   // Navigation buttons in the submit panel
   if (feedback) {
-    const summaryQuestions = unit.adaptiveFormative ? stageQuestions : allQuestions;
+    const summaryQuestions = unit.adaptiveFormative ? questions : allQuestions;
     const currentSummary = summarizeQuizAttempt(state.quizResults.filter((r) => r.unitId === unit.id), summaryQuestions);
     const totalLine = quizOutcomeHtml(currentSummary);
     feedback.innerHTML = `

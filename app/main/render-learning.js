@@ -1066,7 +1066,7 @@ function renderQuiz(unit) {
               return `
               <article class="question-card" data-question="${question.id}" data-context-id="quiz:${escapeHtml(question.id)}" data-context-kind="quiz" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-confidence="high" data-context-label="${escapeHtml(displayQuestionText(question))}">
                 <div class="question-title-row">
-                <h3>${index + 1}. ${renderQuestionTextWithLinks(question, unit)}</h3>
+                <h3>${question.type === "multiple" ? '<span class="question-type-marker">【多选题】</span> ' : ""}${index + 1}. ${renderQuestionTextWithLinks(question, unit)}</h3>
                   ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
                 </div>
                 ${renderQuestionInput(unit, question, questionSubmitted, reviewResult)}
