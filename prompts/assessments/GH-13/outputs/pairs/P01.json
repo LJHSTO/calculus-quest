@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q1",
+    "type": "single",
+    "question": "某工厂生产甲、乙两种产品。生产每件甲需耗用2单位的原料A和1单位的原料B；生产每件乙需耗用1单位的原料A和2单位的原料B。仓库目前仅有6单位原料A和6单位原料B可供分配。若设甲的产量为x件，乙的产量为y件，根据上述资源限制，下列哪个不等式组正确地界定了满足所有生产约束的可行区域？",
+    "options": [
+      {
+        "value": "A",
+        "label": "x + y ≤ 6 且 2x + y ≤ 6 且 x ≥ 0 且 y ≥ 0"
+      },
+      {
+        "value": "B",
+        "label": "2x + y ≤ 6 且 x + 2y ≤ 6 且 x ≥ 0 且 y ≥ 0"
+      },
+      {
+        "value": "C",
+        "label": "2x + y ≥ 6 且 x + 2y ≥ 6 且 x ≥ 0 且 y ≥ 0"
+      },
+      {
+        "value": "D",
+        "label": "2x + y ≤ 6 且 x + 2y ≤ 6 且 x + y ≤ 6"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "可行区域是由所有满足给定约束条件的决策变量取值组成的集合。本题中决策变量为产量x和y，隐含约束为x≥0且y≥0。原料A的总量限制为6，消耗量为2x+y，故约束为2x+y≤6；原料B的总量限制为6，消耗量为x+2y，故约束为x+2y≤6。因此界定可行区域的不等式组为2x+y≤6，x+2y≤6，x≥0，y≥0。选项B正确。选项A混淆了两种原料的消耗系数；选项C将资源上限误写为下限；选项D遗漏了产量不能为负的隐含约束。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "inequality-system"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q1",
+    "type": "single",
+    "question": "某物流公司要将两种尺寸不同的标准箱装入一辆货车。大箱每件占地3平方米、高1米；小箱每件占地1平方米、高2米。货车货厢底面积最大为9平方米，允许的最大装载高度为6米。设装载的大箱数量为u，小箱数量为v，为了确保装载方案不超载，界定该问题可行区域的不等式组应为下列哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "3u + v ≤ 9 且 u + 2v ≤ 6 且 u ≥ 0 且 v ≥ 0"
+      },
+      {
+        "value": "B",
+        "label": "3u + v ≥ 9 且 u + 2v ≥ 6 且 u ≥ 0 且 v ≥ 0"
+      },
+      {
+        "value": "C",
+        "label": "3u + v ≤ 9 且 u + 2v ≤ 6 且 u + v ≤ 9"
+      },
+      {
+        "value": "D",
+        "label": "u + 3v ≤ 9 且 2u + v ≤ 6 且 u ≥ 0 且 v ≥ 0"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "可行区域是满足所有限制条件的变量取值集合。本题变量为装箱数量u和v，隐含约束为u≥0且v≥0。底面积限制为9，占地面积为3u+v，故约束为3u+v≤9；高度限制为6，堆叠高度为u+2v，故约束为u+2v≤6。因此界定可行区域的不等式组为3u+v≤9，u+2v≤6，u≥0，v≥0。选项A正确。选项B将容量上限误写为下限；选项C遗漏了数量非负的隐含约束；选项D错配了两种尺寸箱子的参数与对应限制条件。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "inequality-system"
+    }
+  }
+}

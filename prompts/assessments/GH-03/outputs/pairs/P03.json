@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q3",
+    "type": "single",
+    "question": "某汽车在平直公路上行驶，其行驶路程 s（单位：米）与时间 t（单位：秒）满足函数关系 s(t)=5t^2。为了估计汽车在 t=2 秒时的瞬时速度，我们计算了 t=2 附近几组时间间隔内的平均速度。已知四组时间区间及对应的平均速度如下：区间 [1.9, 2] 的平均速度为 19.5 米/秒；区间 [1.99, 2] 的平均速度为 19.95 米/秒；区间 [2, 2.01] 的平均速度为 20.05 米/秒；区间 [2, 2.1] 的平均速度为 20.5 米/秒。根据这四组数据的变化趋势，判断汽车在 t=2 秒时的瞬时速度最接近以下哪个值？",
+    "options": [
+      {
+        "value": "A",
+        "label": "19.5 米/秒"
+      },
+      {
+        "value": "B",
+        "label": "20 米/秒"
+      },
+      {
+        "value": "C",
+        "label": "20.5 米/秒"
+      },
+      {
+        "value": "D",
+        "label": "40 米/秒"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "题目给出了在 t=2 附近逐渐缩小的四个时间区间内的平均速度。左侧区间的平均速度依次为 19.5、19.95，右侧区间的平均速度依次为 20.05、20.5。随着时间间隔逐渐缩小并趋近于 0，左右两侧的平均速度均向 20 米/秒趋近。因此，汽车在 t=2 秒时的瞬时速度最接近 20 米/秒。选项 A 和 C 只是某个特定区间内的平均速度，而非瞬时值；选项 D 是将 2 秒代入位移函数得出的瞬时路程的两倍，属于概念混淆。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "limit-value-estimation"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q3",
+    "type": "single",
+    "question": "一个质点沿直线运动，其位置坐标 x（单位：米）与运动时间 t（单位：秒）的函数关系为 x(t)=3t^2。为了探究质点在 t=3 秒时的运动快慢程度，观察者记录了以 t=3 秒为中心的四个微小时间区间内的平均变化率。已知这四组数据如下：区间 [2.9, 3] 的平均变化率为 17.7 米/秒；区间 [2.99, 3] 的平均变化率为 17.97 米/秒；区间 [3, 3.01] 的平均变化率为 18.03 米/秒；区间 [3, 3.1] 的平均变化率为 18.3 米/秒。依据上述平均变化率的变化趋势，推断质点在 t=3 秒时的瞬时变化率最接近下列哪个数值？",
+    "options": [
+      {
+        "value": "A",
+        "label": "17.7 米/秒"
+      },
+      {
+        "value": "B",
+        "label": "18 米/秒"
+      },
+      {
+        "value": "C",
+        "label": "18.3 米/秒"
+      },
+      {
+        "value": "D",
+        "label": "27 米/秒"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "题目列出了以 t=3 秒为中心的四个逐渐缩小的区间内的平均变化率。从左侧逼近时，平均变化率依次为 17.7、17.97；从右侧逼近时，平均变化率依次为 18.03、18.3。随着时间间隔不断缩小，这些平均变化率明显向 18 米/秒趋近。由此可推断，质点在 t=3 秒时的瞬时变化率最接近 18 米/秒。选项 A 和 C 仅反映了某个特定较宽区间内的平均快慢，而非瞬时状态；选项 D 是将时间 3 秒直接代入位置函数得出位置坐标后产生的混淆误判。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "limit-value-estimation"
+    }
+  }
+}

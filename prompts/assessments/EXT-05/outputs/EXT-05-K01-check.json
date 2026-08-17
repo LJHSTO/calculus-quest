@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC 形成性测验",
+  "outlines": [
+    {
+      "id": "EXT-05-K01-check",
+      "type": "quiz",
+      "title": "即时检查：牛顿法与拟牛顿法",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-05-K01-check-q1",
+          "type": "single",
+          "question": "在无约束数值优化中，牛顿法在每一步迭代时使用 Hessian 矩阵的主要目的是什么？",
+          "options": [
+            {
+              "value": "A",
+              "label": "直接作为目标函数的梯度，用于判断函数值升降方向"
+            },
+            {
+              "value": "B",
+              "label": "提供目标函数的二阶曲率信息，用于更准确地逼近极小点"
+            },
+            {
+              "value": "C",
+              "label": "代替目标函数本身，使迭代不再需要任何一阶梯度信息"
+            },
+            {
+              "value": "D",
+              "label": "仅用于约束优化中的可行域投影，与无约束优化无关"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "牛顿法在每一步通过 Hessian 矩阵获取目标函数的二阶曲率信息，从而构造二次模型并更准确地逼近极小点；它并不把 Hessian 当作梯度，也不能完全替代一阶信息，故选 B。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-05-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-05-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "medium",
+            "conclusionClass": "concept-identification"
+          }
+        },
+        {
+          "id": "EXT-05-K01-check-q2",
+          "type": "multiple",
+          "question": "关于牛顿法与拟牛顿法，下列说法中所有正确说法是哪些？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "拟牛顿法构造近似矩阵来逼近 Hessian，以降低每步计算二阶导数的成本"
+            },
+            {
+              "value": "B",
+              "label": "牛顿法在每步迭代中都必须直接计算完整的 Hessian 矩阵及其逆"
+            },
+            {
+              "value": "C",
+              "label": "拟牛顿法完全不依赖任何梯度信息，只靠函数值本身就能确定搜索方向"
+            },
+            {
+              "value": "D",
+              "label": "当 Hessian 难以计算或规模较大时，拟牛顿法是常用的替代策略之一"
+            }
+          ],
+          "answer": [
+            "A",
+            "D"
+          ],
+          "analysis": "A 正确：拟牛顿法用近似矩阵逼近 Hessian，降低二阶导数计算成本；D 正确：Hessian 难算或规模大时拟牛顿法是常见替代。B 不准确：牛顿法理论上用 Hessian，但“每步都必须直接计算完整逆”不是拟牛顿法引入的必要条件，且题干要求判断正确说法，B 属于过度绝对化。C 错误：拟牛顿法仍需梯度信息更新近似矩阵，不能只靠函数值。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-05-K01"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "EXT-05-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "concept-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

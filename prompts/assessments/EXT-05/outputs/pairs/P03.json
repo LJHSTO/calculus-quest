@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q3",
+    "type": "single",
+    "question": "在牛顿法的迭代公式中，需要计算目标函数 f(x) 的一阶导数和二阶导数。如果在某次迭代时，当前点 x_k 处的二阶导数值恰好等于 0，直接套用公式会遇到什么本质障碍？",
+    "options": [
+      {
+        "value": "A",
+        "label": "迭代公式中需要除以二阶导数，此时分母为零导致无法计算步长"
+      },
+      {
+        "value": "B",
+        "label": "二阶导数为零意味着目标函数没有最小值，优化必须立即停止"
+      },
+      {
+        "value": "C",
+        "label": "一阶导数的计算公式失效，无法继续获取当前点的梯度信息"
+      },
+      {
+        "value": "D",
+        "label": "牛顿法只适用于线性函数，此时函数自动退化为非线性而无法求解"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "牛顿法的核心更新公式为 x_{k+1} = x_k - f'(x_k) / f''(x_k)。当 f''(x_k) = 0 时，更新步长公式中的分母为零，导致数学上无法定义除法运算，进而无法计算出下一个迭代点。这属于操作情境中直接可见的计算障碍，而非函数本身不存在极值的结论。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "computational_barrier"
+    }
+  },
+  "post": {
+    "id": "EXT-05-post-q3",
+    "type": "single",
+    "question": "拟牛顿法通过构造矩阵 B_k 来近似牛顿法中的二阶导数矩阵，并使用 x_{k+1} = x_k - B_k^{-1} * 梯度 进行更新。如果在某次迭代中，近似矩阵 B_k 的行列式等于 0，此时算法无法继续推进的根本原因是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "矩阵不可逆导致无法求逆，更新公式中无法计算搜索方向的步长因子"
+      },
+      {
+        "value": "B",
+        "label": "行列式为零说明目标函数本身存在计算误差，必须重新选择初始迭代点"
+      },
+      {
+        "value": "C",
+        "label": "梯度向量自动归零，算法已经提前到达极值点并自动终止"
+      },
+      {
+        "value": "D",
+        "label": "拟牛顿法只能处理行列式恒为 1 的矩阵，此时算法超出适用范围"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "在拟牛顿法的更新步骤中，需要计算近似矩阵 B_k 的逆矩阵 B_k^{-1}。当 B_k 的行列式为 0 时，该矩阵是奇异矩阵，不可逆。这导致更新公式中的求逆运算无法完成，算法无法计算出有效的搜索方向和步长，从而无法继续推进。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "computational_barrier"
+    }
+  }
+}

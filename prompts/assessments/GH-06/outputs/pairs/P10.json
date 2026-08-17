@@ -1,0 +1,80 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q10",
+    "type": "text",
+    "question": "已知函数 f(x) = 3x^2。甲同学说：“f(x) 的原函数是 x^3，因为求导会得到 3x^2。”乙同学说：“f(x) 的不定积分是 x^3 + C，因为所有形如 x^3 + C 的函数求导都是 3x^2。”请根据“原函数和不定积分”的核心含义，判断这两位同学的说法是否准确，并说明原函数与不定积分之间的核心区别。",
+    "answer": "甲、乙两位同学的说法都准确。x^3求导等于3x^2，所以x^3确实是f(x)的一个原函数；x^3+C表示全部只相差常数的原函数，因此是不定积分。原函数指满足导数等于f(x)的某一个具体函数，不定积分则表示所有原函数组成的函数族，必须包含任意常数C。",
+    "analysis": "因为(x^3)'=3x^2，所以甲给出的x^3是一个具体原函数，甲的说法准确。因为(x^3+C)'=3x^2且C可取任意常数，所以乙正确写出了不定积分所表示的全部原函数。两人的对象不同：一个原函数与原函数函数族不能混为一谈。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-06-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "conceptual-distinction"
+    },
+    "rubric": [
+      {
+        "criterion": "正确判断甲同学说法准确，并指出 x^3 是一个具体原函数",
+        "points": 5
+      },
+      {
+        "criterion": "正确判断乙同学说法准确，并指出其正确包含了任意常数 C",
+        "points": 5
+      },
+      {
+        "criterion": "准确说明原函数的核心含义：导数等于已知函数的某一个具体函数",
+        "points": 5
+      },
+      {
+        "criterion": "准确说明不定积分的核心含义：表示所有原函数的集合，必须包含任意常数 C",
+        "points": 5
+      }
+    ]
+  },
+  "post": {
+    "id": "GH-06-post-q10",
+    "type": "text",
+    "question": "已知函数 g(x) = cos(x)。丙同学说：“g(x) 的不定积分是 sin(x) + C，这表示求导后等于 cos(x) 的函数有无穷多个。”丁同学说：“sin(x) 就是 g(x) 的不定积分。”请根据“原函数和不定积分”的核心含义，判断这两位同学的说法是否准确，并说明原函数与不定积分之间的核心区别。",
+    "answer": "丙同学的说法准确，丁同学的说法不准确。原函数与不定积分的核心区别在于：原函数是导数等于已知函数的“某一个”具体函数，而不定积分是导数等于已知函数的“所有”原函数的集合，必须包含任意常数 C。丁同学把“一个具体的原函数 sin(x)”直接当成了“不定积分”，遗漏了常数项；丙同学正确指出了不定积分 sin(x) + C 表示所有原函数的集合这一核心含义。",
+    "analysis": "本题考查原函数与不定积分的核心含义及其区别。已知 g(x) = cos(x)，因为 (sin(x) + C)' = cos(x)（C为任意常数），所以 sin(x) 只是 g(x) 的一个原函数，而 g(x) 的不定积分是 sin(x) + C。丁同学混淆了“一个原函数”与“不定积分”的概念，漏掉了积分常数；丙同学准确理解了不定积分表示所有原函数的集合这一核心含义。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-06-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "conceptual-distinction"
+    },
+    "rubric": [
+      {
+        "criterion": "正确判断丙同学说法准确，并指出其正确包含了任意常数 C 且说明了原函数有无穷多个",
+        "points": 5
+      },
+      {
+        "criterion": "正确判断丁同学说法不准确，并指出其只找出了一个具体的原函数而遗漏了常数项",
+        "points": 5
+      },
+      {
+        "criterion": "准确说明原函数的核心含义：导数等于已知函数的某一个具体函数",
+        "points": 5
+      },
+      {
+        "criterion": "准确说明不定积分的核心含义：表示所有原函数的集合，必须包含任意常数 C",
+        "points": 5
+      }
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q9",
+    "type": "multiple",
+    "question": "已知可微函数 f(x,y) 在点 (a,b) 处的梯度为 ∇f(a,b)=(p,q)。若自变量产生微小位移 (Δx,Δy)=(h,k)，且 h²+k² 足够小，关于函数值增量 Δf=f(a+h,b+k)-f(a,b) 的近似，下列说法中所有正确说法是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "Δf 的最佳线性近似为 p·h+q·k"
+      },
+      {
+        "value": "B",
+        "label": "若 ∇f(a,b) 与位移向量 (h,k) 垂直，则 Δf 的线性近似为 0"
+      },
+      {
+        "value": "C",
+        "label": "若 ∇f(a,b) 为零向量，则微小位移必然导致函数值下降"
+      },
+      {
+        "value": "D",
+        "label": "Δf 的线性近似在数值上等于 ∇f(a,b) 与 (h,k) 的内积"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "analysis": "可微函数的增量满足 Δf=∇f(a,b)·(h,k)+o(√(h²+k²))，所以 A、D 正确。若梯度与位移垂直，内积为零，线性近似也为零，因此 B 正确。梯度为零只说明一阶线性项为零，实际增量由高阶项决定，不一定下降，因此 C 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-10-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "linear-approximation"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q9",
+    "type": "multiple",
+    "question": "在点 (u,v) 附近，光滑曲面 z=g(u,v) 具有良好的局部线性性质。设该点处的梯度为 ∇g(u,v)=(m,n)，自变量微调为 (du,dv)。关于函数 g 的局部改变量 dg 的线性主部，下列说法中所有错误说法是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "梯度与微调向量的内积严格等于实际函数改变量，不存在任何高阶余项"
+      },
+      {
+        "value": "B",
+        "label": "微调向量长度固定时，当它与梯度向量平行或反平行，线性主部的绝对值取得最大值"
+      },
+      {
+        "value": "C",
+        "label": "只要梯度向量不为零，任何微调下的线性主部都绝不会等于零"
+      },
+      {
+        "value": "D",
+        "label": "线性主部只取决于微调方向在梯度方向上的投影，与梯度向量的模长无关"
+      }
+    ],
+    "answer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "analysis": "梯度与微调向量的内积只给出实际改变量的一阶线性主部，一般仍有高阶余项，因此 A 错误。固定微调长度时，平行或反平行使内积绝对值最大，B 正确。微调与非零梯度垂直时线性主部可以为零，因此 C 错误。内积等于微调在梯度方向上的有符号投影乘以梯度模长，不能忽略梯度模长，因此 D 错误。题目要求选错误说法，选 A、C、D。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-10-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "linear-approximation"
+    }
+  }
+}

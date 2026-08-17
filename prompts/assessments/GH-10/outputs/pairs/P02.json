@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q2",
+    "type": "single",
+    "question": "已知复合函数 z = f(x, y)，其中 x = u^2 且 y = u + 1。若 f 对 x 的偏导数为 2，f 对 y 的偏导数为 3，当 u = 1 时，复合函数 z 对 u 的全导数是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "5"
+      },
+      {
+        "value": "B",
+        "label": "7"
+      },
+      {
+        "value": "C",
+        "label": "2u + 3"
+      },
+      {
+        "value": "D",
+        "label": "4u + 3"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "根据多元链式法则，全导数 dz/du = (∂f/∂x)(dx/du) + (∂f/∂y)(dy/du)。已知 ∂f/∂x = 2，∂f/∂y = 3。计算中间变量的导数得 dx/du = 2u，dy/du = 1。当 u = 1 时，dx/du = 2，dy/du = 1。代入链式法则得 dz/du = 2 × 2 + 3 × 1 = 4 + 3 = 7。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 3,
+      "symbolComplexity": "medium",
+      "conclusionClass": "numerical_value"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q2",
+    "type": "single",
+    "question": "设某物理量 W 由两个中间变量 p 与 q 决定，记为 W = F(p, q)。已知 p 随时间 t 变化的规律为 p = 3t，q 随时间 t 变化的规律为 q = t^2。若在某时刻测得 F 对 p 的变化率为 1，F 对 q 的变化率为 4，且此时 t = 2，求该时刻 W 对时间 t 的瞬时变化率。",
+    "options": [
+      {
+        "value": "A",
+        "label": "10"
+      },
+      {
+        "value": "B",
+        "label": "14"
+      },
+      {
+        "value": "C",
+        "label": "19"
+      },
+      {
+        "value": "D",
+        "label": "3 + 4t"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "根据多元链式法则，W 对 t 的变化率 dW/dt = (∂F/∂p)(dp/dt) + (∂F/∂q)(dq/dt)。已知 ∂F/∂p = 1，∂F/∂q = 4。计算中间变量的导数得 dp/dt = 3，dq/dt = 2t。当 t = 2 时，dp/dt = 3，dq/dt = 4。代入链式法则得 dW/dt = 1 × 3 + 4 × 4 = 3 + 16 = 19。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 3,
+      "symbolComplexity": "medium",
+      "conclusionClass": "numerical_value"
+    }
+  }
+}

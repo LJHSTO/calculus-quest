@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "EXT-03-K05-check",
+      "type": "quiz",
+      "title": "即时检查：常见分布与中心极限定理",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-03-K05-check-q1",
+          "type": "single",
+          "question": "某工厂生产的零件长度服从非正态分布，均值为 μ，标准差为 σ。现从中随机抽取 n 个零件（n 足够大），计算样本均值 X̄。根据中心极限定理，以下说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "X̄ 的分布与总体分布完全相同"
+            },
+            {
+              "value": "B",
+              "label": "X̄ 近似服从正态分布 N(μ, σ²/n)"
+            },
+            {
+              "value": "C",
+              "label": "X̄ 服从均匀分布"
+            },
+            {
+              "value": "D",
+              "label": "X̄ 的均值不等于 μ"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "中心极限定理指出，当样本量 n 足够大时，无论总体服从何种分布，样本均值 X̄ 的抽样分布都近似服从正态分布，其均值等于总体均值 μ，方差为 σ²/n（即标准差为 σ/√n）。因此 B 正确。A 错误，因为抽样分布与总体分布不同；C 错误，均匀分布与中心极限定理无关；D 错误，X̄ 的期望恰好等于 μ。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K05"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-03-K05-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 1,
+            "symbolComplexity": "medium",
+            "conclusionClass": "distribution-identification"
+          }
+        },
+        {
+          "id": "EXT-03-K05-check-q2",
+          "type": "multiple",
+          "question": "关于常见分布与中心极限定理，以下说法中正确的有（选出所有正确的说法）：",
+          "options": [
+            {
+              "value": "A",
+              "label": "当样本量足够大时，样本均值的抽样分布近似正态分布，即使总体本身不是正态分布"
+            },
+            {
+              "value": "B",
+              "label": "中心极限定理说明任何分布的数据本身都会变成正态分布"
+            },
+            {
+              "value": "C",
+              "label": "样本均值 X̄ 的期望等于总体均值 μ"
+            },
+            {
+              "value": "D",
+              "label": "样本量越大，样本均值的抽样分布的标准差越大"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "A 正确：中心极限定理的核心结论就是当 n 足够大时，样本均值的抽样分布近似正态，与总体分布形状无关。B 错误：中心极限定理描述的是样本均值的抽样分布趋于正态，而非原始数据本身变为正态分布——这是常见的符号记忆型误解。C 正确：无论总体分布如何，样本均值的期望始终等于总体均值 μ。D 错误：样本均值抽样分布的标准差为 σ/√n，n 越大标准差越小，而非越大。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K05"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "EXT-03-K05-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 0,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "conceptual-judgment"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q2",
+    "type": "single",
+    "question": "已知函数 f(x) 的导函数 f'(x) 的图像在区间 (a, b) 内始终位于 x 轴下方，且在区间 (b, c) 内始终位于 x 轴上方。仅根据此信息，关于原函数 f(x) 的最准确推断是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "f(x) 在 (a, b) 上单调递减，在 (b, c) 上单调递增，且在 x=b 处取得极小值"
+      },
+      {
+        "value": "B",
+        "label": "f(x) 在 (a, b) 上单调递增，在 (b, c) 上单调递减，且在 x=b 处取得极大值"
+      },
+      {
+        "value": "C",
+        "label": "f(x) 在整个区间 (a, c) 上始终保持单调递增"
+      },
+      {
+        "value": "D",
+        "label": "f(x) 在 x=b 处取得极大值，因为导函数在该点发生了符号变化"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "导函数 f'(x) 的符号决定了原函数 f(x) 的单调性。f'(x) 在 (a, b) 上小于零，说明 f(x) 在该区间单调递减；f'(x) 在 (b, c) 上大于零，说明 f(x) 在该区间单调递增。由于在 x=b 两侧导数由负变正，f(x) 在 x=b 处取得极小值。选项 B 弄反了单调性；选项 C 忽略了导数小于零的区间；选项 D 弄反了极值类型。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity-and-extremum"
+    }
+  },
+  "post": {
+    "id": "GH-05-post-q2",
+    "type": "single",
+    "question": "若函数 y = g(x) 的导函数 y = g'(x) 的图像自左向右先穿过 x 轴向下行，随后又穿过 x 轴向上行，由此可推断原函数 g(x) 的变化规律是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "g(x) 先单调递减后单调递增，在导数由负转正的穿越处取得极小值"
+      },
+      {
+        "value": "B",
+        "label": "g(x) 先单调递增后单调递减，在导数由正转负的穿越处取得极大值"
+      },
+      {
+        "value": "C",
+        "label": "g(x) 在导函数图像与 x 轴的两个交点处均取得极值，一极大一极小"
+      },
+      {
+        "value": "D",
+        "label": "g(x) 的凹凸性在导函数图像的最低点处发生改变，此时取得拐点"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "导函数第一次向下穿过x轴时由正变负，原函数先增后减，取得极大值；第二次向上穿过x轴时由负变正，原函数先减后增，取得极小值。因此两个交点分别对应一极大值和一极小值，C正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity-and-extremum"
+    }
+  }
+}

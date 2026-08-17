@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "migrate": "node migrate.js",
+    "prompts:build": "node ops/generate-assessment-prompts.js",
+    "prompts:test": "node ops/test-assessment-prompts.js && node ops/test-assessment-output-validator.js",
+    "assessment:validate": "node ops/validate-assessment-output.js",
     "kg:build": "node ops/build-knowledge-graph.js",
     "kg:test": "node ops/test-knowledge-graph.js",
     "flow:test": "node ops/test-flow-test.js",

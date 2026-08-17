@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-14-pre-q8",
+    "type": "multiple",
+    "question": "在应用小批量梯度下降优化模型参数时，关于小批量样本数量与梯度方差及计算效率的关系，下列说法中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "小批量包含的样本数越多，计算出的平均梯度方差通常越小，更新方向越稳定。"
+      },
+      {
+        "value": "B",
+        "label": "当小批量样本数设为1时，每次参数更新完全依赖单个样本的梯度，方差最大。"
+      },
+      {
+        "value": "C",
+        "label": "小批量样本数越大，单次更新所需的计算开销越大，但更新频率会降低。"
+      },
+      {
+        "value": "D",
+        "label": "无论小批量样本数是多少，每次更新计算的梯度方差恒为零。"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "小批量梯度下降通过计算部分样本的平均梯度来更新参数。样本数越多，平均梯度的方差越小（A对，D错）；样本数为1即为随机梯度下降，方差最大（B对）；样本数增大导致单次计算量增加，但总样本量固定时更新次数减少，频率降低（C对）。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-14-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "qualitative-judgment"
+    }
+  },
+  "post": {
+    "id": "GH-14-post-q8",
+    "type": "multiple",
+    "question": "工程师在调试小批量梯度下降算法时，需要权衡单次迭代的计算耗时与梯度估计的波动程度。针对这一权衡过程，下列描述中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "增加每个小批量的样本容量，能够平滑梯度估计的波动，降低单次参数更新的随机性。"
+      },
+      {
+        "value": "B",
+        "label": "将小批量样本容量缩减至1，会使每次更新方向的震荡最为剧烈，因为梯度估计未做任何平均。"
+      },
+      {
+        "value": "C",
+        "label": "扩大小批量样本容量会延长每次计算梯度的耗时，从而在相同数据总量下减少一个周期的更新次数。"
+      },
+      {
+        "value": "D",
+        "label": "小批量样本容量的大小仅影响内存占用，不会对梯度估计的波动幅度产生任何影响。"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "权衡计算耗时与梯度波动是小批量梯度下降的核心。增加样本容量通过平均效应平滑了波动（A对，D错）；容量为1时没有平均，震荡最剧烈（B对）；容量变大使得单次计算耗时增加，相同数据量下更新次数减少（C对）。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-14-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "qualitative-judgment"
+    }
+  }
+}

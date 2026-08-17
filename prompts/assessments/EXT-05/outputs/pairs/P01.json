@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q1",
+    "type": "single",
+    "question": "在数值优化中，牛顿法通过在当前点对目标函数进行二阶泰勒展开来寻找极值。相比于仅利用一阶导数信息的梯度下降法，牛顿法在每次迭代中需要额外计算并使用海森矩阵。关于牛顿法利用海森矩阵的核心目的，下列说法中最准确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "海森矩阵提供了目标函数曲率信息，使得牛顿法能够根据曲率调整搜索方向和步长，从而在靠近极值点时加速收敛"
+      },
+      {
+        "value": "B",
+        "label": "海森矩阵能够保证在每次迭代中目标函数值单调下降，从而避免算法陷入局部极小值"
+      },
+      {
+        "value": "C",
+        "label": "海森矩阵将原本的非凸优化问题转化为凸优化问题，确保牛顿法总是能找到全局最优解"
+      },
+      {
+        "value": "D",
+        "label": "海森矩阵用于消除目标函数中的高阶导数项，使得泰勒展开式简化为线性近似"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "牛顿法在当前点对目标函数进行二阶泰勒展开，利用海森矩阵获取目标函数的局部曲率信息。通过求解海森矩阵的逆与梯度的乘积，牛顿法能够直接指向二次近似模型的极小点，从而在靠近极值点时实现二次收敛速度。选项B错误，因为牛顿法不保证函数值单调下降，且可能陷入局部极小值；选项C错误，海森矩阵不改变问题本身的凸性；选项D错误，牛顿法正是保留了二阶项而非消除它。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-interpretation"
+    }
+  },
+  "post": {
+    "id": "EXT-05-post-q1",
+    "type": "single",
+    "question": "梯度下降法在优化目标函数时，仅依赖一阶导数确定搜索方向，其迭代步长往往需要手动调整且收敛较慢。牛顿法则在迭代中引入了海森矩阵。从优化机制的角度来看，海森矩阵的引入为牛顿法带来的核心优势是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "海森矩阵使得算法能够自动识别并跳过鞍点，保证搜索过程始终沿着正确的下降方向进行"
+      },
+      {
+        "value": "B",
+        "label": "海森矩阵提供了目标函数局部的二阶曲率特征，使算法能够更精准地确定搜索方向，在适宜条件下实现更快的收敛"
+      },
+      {
+        "value": "C",
+        "label": "海森矩阵通过计算目标函数的三阶导数，进一步提高了泰勒展开的近似精度，从而减少迭代次数"
+      },
+      {
+        "value": "D",
+        "label": "海森矩阵将目标函数的梯度直接归一化为单位向量，使得每次迭代的步长固定为1，简化了调参过程"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "梯度下降仅利用一阶梯度信息，而牛顿法引入海森矩阵获取二阶曲率信息。这使得牛顿法能够构建更精确的局部二次模型，并据此确定搜索方向，在满足一定条件时具有比梯度下降更快的收敛速度。选项A错误，牛顿法不能自动跳过鞍点；选项C错误，海森矩阵是二阶导数而非三阶导数；选项D错误，海森矩阵不用于梯度归一化，牛顿法的步长和方向由海森矩阵的逆与梯度共同决定。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-interpretation"
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "微积分基本定理与积分方法",
+  "outlines": [
+    {
+      "id": "GH-07-K03-check",
+      "type": "quiz",
+      "title": "即时检查：换元法直觉",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-07-K03-check-q1",
+          "type": "single",
+          "question": "在计算定积分 ∫₀¹ 2x·√(1+x²) dx 时，若令 u = 1+x²，则当 x 从 0 变到 1 时，u 从 1 变到 2，且 du = 2x dx。根据换元法直觉，原积分应转化为下列哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "∫₁² √u du"
+            },
+            {
+              "value": "B",
+              "label": "∫₀¹ √u du"
+            },
+            {
+              "value": "C",
+              "label": "∫₁² u du"
+            },
+            {
+              "value": "D",
+              "label": "∫₀¹ √(1+x²) dx"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "换元法直觉的核心在于：把被积函数中的某一部分整体看作新变量 u，同时把微分 dx 也按关系 du = (du/dx)dx 替换，并把积分上下限换成 u 的对应值。本题中 u = 1+x²，du = 2x dx，2x dx 正好替换为 du，√(1+x²) 替换为 √u；x=0 时 u=1，x=1 时 u=2，所以原积分等于 ∫₁² √u du。选项 B 没有更换上下限，选项 C 丢了根号，选项 D 没有完成换元，均不符合换元法直觉。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-07-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "GH-07-K03-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 3,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "definite-integral-substitution"
+          }
+        },
+        {
+          "id": "GH-07-K03-check-q2",
+          "type": "multiple",
+          "question": "关于用换元法计算 ∫₀¹ 2x·√(1+x²) dx，令 u = 1+x²。下列说法中哪些是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "换元后，积分变量从 x 变为 u，被积表达式中的 2x dx 应替换为 du。"
+            },
+            {
+              "value": "B",
+              "label": "换元后，积分上下限仍保持 0 和 1，不需要随 u = 1+x² 改变。"
+            },
+            {
+              "value": "C",
+              "label": "因为 u = 1+x²，当 x=0 时 u=1，当 x=1 时 u=2，所以新的积分区间是 [1,2]。"
+            },
+            {
+              "value": "D",
+              "label": "换元只是把 √(1+x²) 写成 √u，但 2x dx 必须仍保留在新的积分中。"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "换元法直觉要求同时替换三部分：被积函数中的复合部分、微分部分、积分上下限。选项 A 正确指出 2x dx 替换为 du；选项 C 正确给出了上下限的对应变化。选项 B 错在保持原上下限，这是只记符号、不把换元和区间变化联系起来的常见误解；选项 D 错在只换函数不换微分，说明没有把操作整体理解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-07-K03"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 4,
+          "pairId": "GH-07-K03-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 3,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "substitution-step-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

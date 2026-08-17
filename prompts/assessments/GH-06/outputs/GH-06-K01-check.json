@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "积分直觉与积分方法",
+  "outlines": [
+    {
+      "id": "GH-06-K01-check",
+      "type": "quiz",
+      "title": "即时检查：小矩形逼近面积",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-06-K01-check-q1",
+          "type": "single",
+          "question": "用小矩形逼近曲线 y=f(x) 在区间 [0, 4] 下方的面积时，将区间等分为 4 份，取每个小区间左端点对应的函数值作为矩形高度。已知 f(0)=1，f(1)=2，f(2)=3，f(3)=4，按此规则得到的 4 个小矩形面积之和是多少？",
+          "options": [
+            {
+              "value": "A",
+              "label": "6"
+            },
+            {
+              "value": "B",
+              "label": "8"
+            },
+            {
+              "value": "C",
+              "label": "10"
+            },
+            {
+              "value": "D",
+              "label": "20"
+            }
+          ],
+          "answer": [
+            "C"
+          ],
+          "analysis": "区间长度为 4，等分为 4 份后每个小区间长度为 1。取左端点函数值作为高度，4 个矩形的高度依次为 f(0)=1、f(1)=2、f(2)=3、f(3)=4，面积之和为 1×1+2×1+3×1+4×1=10。若只记住结论而忽略“左端点高度”和“区间长度”的对应关系，容易误选 8 或 6。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-06-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "GH-06-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "numeric",
+            "knownConditionCount": 5,
+            "operationCount": 5,
+            "symbolComplexity": "low",
+            "conclusionClass": "sum-of-rectangles"
+          }
+        },
+        {
+          "id": "GH-06-K01-check-q2",
+          "type": "multiple",
+          "question": "关于用小矩形逼近曲线 y=f(x) 在区间 [a,b] 下方面积的做法，下列说法中哪些是错误的？请选择所有错误说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "小矩形的宽度越小，矩形面积之和通常越接近曲线下方的真实面积。"
+            },
+            {
+              "value": "B",
+              "label": "只要写出小矩形面积之和的符号，就等于已经完成了面积逼近，不需要再与图像或区间对应。"
+            },
+            {
+              "value": "C",
+              "label": "取不同端点（左端点、右端点或中点）作为矩形高度，得到的矩形面积之和一定相同。"
+            },
+            {
+              "value": "D",
+              "label": "小矩形逼近面积的核心是把曲线下方面积转化为若干矩形面积之和，并通过加密矩形提高近似程度。"
+            }
+          ],
+          "answer": [
+            "B",
+            "C"
+          ],
+          "analysis": "A、D 正确描述了小矩形逼近面积的含义和加密趋势。B 错误：只记符号而不与图像、区间、高度对应，正是常见误解，不能说明真正完成逼近。C 错误：对一般曲线，取左端点、右端点或中点作为高度，矩形面积之和通常不同，只有在特殊情况下才可能相等。因此错误说法是 B、C。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-06-K01"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-06-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "conceptual",
+            "knownConditionCount": 3,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "misconception-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

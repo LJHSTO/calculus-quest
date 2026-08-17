@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q7",
+    "type": "single",
+    "question": "设矩阵 A = [[2, 1], [1, 2]]，则 A 的特征值为",
+    "options": [
+      {
+        "value": "A",
+        "label": "1 和 3"
+      },
+      {
+        "value": "B",
+        "label": "2 和 2"
+      },
+      {
+        "value": "C",
+        "label": "-1 和 3"
+      },
+      {
+        "value": "D",
+        "label": "1 和 -3"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "A 的迹 tr(A)=2+2=4，行列式 det(A)=2×2-1×1=3。特征方程为 λ²-4λ+3=0，因式分解得 (λ-1)(λ-3)=0，故特征值为 λ=1 和 λ=3。选项 B 误认为对角线元素即为特征值；选项 C 和 D 在因式分解时出现符号错误。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 4,
+      "symbolComplexity": "2x2-matrix",
+      "conclusionClass": "eigenvalue-computation"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q7",
+    "type": "single",
+    "question": "已知 B = [[3, 2], [1, 2]]，下列关于 B 的特征值的结论中，正确的是",
+    "options": [
+      {
+        "value": "A",
+        "label": "1 和 4"
+      },
+      {
+        "value": "B",
+        "label": "3 和 2"
+      },
+      {
+        "value": "C",
+        "label": "1 和 5"
+      },
+      {
+        "value": "D",
+        "label": "-4 和 1"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "B 的迹 tr(B)=3+2=5，行列式 det(B)=3×2-2×1=4。特征方程为 λ²-5λ+4=0，因式分解得 (λ-1)(λ-4)=0，故特征值为 λ=1 和 λ=4。选项 B 误认为对角线元素即为特征值；选项 C 将一个特征值误取为迹的值；选项 D 在因式分解时出现符号错误。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 4,
+      "symbolComplexity": "2x2-matrix",
+      "conclusionClass": "eigenvalue-computation"
+    }
+  }
+}

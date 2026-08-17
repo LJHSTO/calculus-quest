@@ -2881,6 +2881,8 @@ async function agenticApplyDecision(type, actionKey = "") {
         const unit = findMainUnit(choice.id);
         if (unit?.type === "knowledge") {
           path.skipped[unit.id] = true;
+          const checkUnit = findMainUnit(`${unit.id}-formative`);
+          if (checkUnit) path.skipped[checkUnit.id] = true;
           if (typeof clearKnowledgeSceneSelectionForUnit === "function") {
             clearKnowledgeSceneSelectionForUnit(unit.id);
           }
@@ -2891,7 +2893,11 @@ async function agenticApplyDecision(type, actionKey = "") {
       const next = agenticNextMainUnitAfter(anchorUnitId) || agenticNextUnitIdAfter(anchorUnitId);
       targetId = next?.id || (typeof next === "string" ? next : "");
       choices.forEach((choice) => {
-        if (selectedIds.has(choice.id)) path.skipped[choice.id] = false;
+        if (selectedIds.has(choice.id)) {
+          path.skipped[choice.id] = false;
+          const checkUnit = findMainUnit(`${choice.id}-formative`);
+          if (checkUnit) path.skipped[checkUnit.id] = false;
+        }
       });
       agenticUnlockUnit(targetId, "pretest_knowledge_selection");
       const learnCount = choices.length - skippedChoices.length;

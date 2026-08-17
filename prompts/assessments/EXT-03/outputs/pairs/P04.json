@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q4",
+    "type": "single",
+    "question": "某工厂有甲、乙两条生产线。甲线产量占全厂60%，次品率2%；乙线次品率5%。现从总产品中随机抽取一件，发现是次品。这件次品来自乙线的概率是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "2/5"
+      },
+      {
+        "value": "B",
+        "label": "5/8"
+      },
+      {
+        "value": "C",
+        "label": "5/7"
+      },
+      {
+        "value": "D",
+        "label": "3/8"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "乙线占比为1-60%=40%。由贝叶斯公式，P(乙|次品)=P(次品|乙)·P(乙)/[P(次品|甲)·P(甲)+P(次品|乙)·P(乙)]=(0.05×0.40)/(0.02×0.60+0.05×0.40)=0.02/0.032=5/8。选项A是先验概率P(乙)=40%，忽略了次品这一证据；选项C=0.05/(0.02+0.05)未用先验加权；选项D=3/8是P(甲|次品)，混淆了所求假设。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "two-hypothesis-bayesian",
+      "conclusionClass": "posterior-probability"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q4",
+    "type": "single",
+    "question": "某地区人群中一种疾病的患病率为1%。已知患者检测呈阳性的概率为90%，未患病者检测呈阳性的概率为10%。某人做了该检测，结果为阳性。此人确实患病的概率是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "9/10"
+      },
+      {
+        "value": "B",
+        "label": "1/100"
+      },
+      {
+        "value": "C",
+        "label": "1/12"
+      },
+      {
+        "value": "D",
+        "label": "11/12"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "未患病率为1-1%=99%。由贝叶斯公式，P(患病|阳性)=P(阳性|患病)·P(患病)/[P(阳性|患病)·P(患病)+P(阳性|未患病)·P(未患病)]=(0.90×0.01)/(0.90×0.01+0.10×0.99)=0.009/0.108=1/12。选项A=9/10混淆了P(患病|阳性)与P(阳性|患病)的方向；选项B=1/100是先验概率P(患病)，忽略了检测结果；选项D=11/12是P(未患病|阳性)，求反了。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "two-hypothesis-bayesian",
+      "conclusionClass": "posterior-probability"
+    }
+  }
+}

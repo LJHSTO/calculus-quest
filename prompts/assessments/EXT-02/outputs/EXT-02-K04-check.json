@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "线性代数基础",
+  "outlines": [
+    {
+      "id": "EXT-02-K04-check",
+      "type": "quiz",
+      "title": "即时检查：特征值与特征向量",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-02-K04-check-q1",
+          "type": "single",
+          "question": "已知矩阵 A 作用于向量 v 时，结果 Av = 5v。关于这一关系，下列说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "v 是矩阵 A 的特征向量，5 是对应的特征值"
+            },
+            {
+              "value": "B",
+              "label": "v 是矩阵 A 的特征向量，1/5 是对应的特征值"
+            },
+            {
+              "value": "C",
+              "label": "5 是矩阵 A 的特征向量，v 是对应的特征值"
+            },
+            {
+              "value": "D",
+              "label": "只要 v 非零，任意常数 k 都可称为 A 的特征值"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "特征值与特征向量的定义是：对于方阵 A，若存在非零向量 v 和标量 λ，使得 Av = λv，则称 λ 为 A 的特征值，v 为对应于 λ 的特征向量。题中 Av = 5v，满足定义，因此 5 是特征值，v 是对应的特征向量。选项 B 把比例关系颠倒；选项 C 把向量和标量的角色互换；选项 D 忽略了 λ 必须与 v 满足 Av = λv 这一特定关系，不能任意取值。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-02-K04-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic-relation",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "identify-eigen-pair"
+          }
+        },
+        {
+          "id": "EXT-02-K04-check-q2",
+          "type": "multiple",
+          "question": "关于特征值与特征向量的含义，下列说法中正确的有：",
+          "options": [
+            {
+              "value": "A",
+            "label": "特征向量在矩阵作用后仍位于原来的直线上，只发生缩放；特征值为负时方向会反转"
+            },
+            {
+              "value": "B",
+              "label": "若 Av = λv 且 v ≠ 0，则 λ 是标量，v 是向量，二者角色不能互换"
+            },
+            {
+              "value": "C",
+              "label": "只要记住 λ 和 v 的符号写法，就等于理解了特征值与特征向量的含义"
+            },
+            {
+              "value": "D",
+              "label": "零向量满足 A0 = λ0，所以零向量也可以作为特征向量"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "A 正确：Av=λv 表明像仍在 v 所在直线上；λ 控制缩放，λ<0 时还会反向。B 正确，λ 是标量、v 是非零向量。C 只记符号不等于理解。D 错误，特征向量按定义必须非零。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K04"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "EXT-02-K04-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "concept-judgment",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "identify-misconceptions"
+          }
+        }
+      ]
+    }
+  ]
+}

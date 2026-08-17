@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q8",
+    "type": "multiple",
+    "question": "已知二维方阵 M 作用在平面上，使得沿 x 轴方向的向量被拉伸为原来的 3 倍，沿 y 轴方向的向量被压缩为原来的 1/2。关于该变换的几何效果，下列说法中所有正确的选项是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "矩阵 M 的两个特征值分别是 3 和 1/2"
+      },
+      {
+        "value": "B",
+        "label": "x 轴和 y 轴方向上的单位向量构成了该矩阵的一组特征向量"
+      },
+      {
+        "value": "C",
+        "label": "该变换使得平面上任意区域的面积放大为原来的 3/2 倍"
+      },
+      {
+        "value": "D",
+        "label": "所有处于第一象限的向量在变换后其方向保持不变"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "根据题意，x 轴和 y 轴方向的向量在变换后方向不变，仅长度发生缩放，因此它们是特征向量，对应的特征值分别为 3 和 1/2，选项 A 和 B 正确。该线性变换的行列式等于特征值之积，即 3 × 1/2 = 3/2，表示面积放大为原来的 3/2 倍，选项 C 正确。对于第一象限的任意非基向量，由于各方向缩放比例不同，其方向通常会偏转，只有恰好位于坐标轴上的向量方向才保持不变，选项 D 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-02-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "geometric-interpretation"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q8",
+    "type": "multiple",
+    "question": "某三维线性变换保持空间中一条过原点的直线 L 上所有点的位置不变，同时将垂直于 L 的平面内的所有向量长度变为原来的 0 倍。关于该变换的几何特征与代数表示，下列说法中所有正确的选项是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该变换的三个特征值分别是 1、0 和 0"
+      },
+      {
+        "value": "B",
+        "label": "直线 L 的方向向量是该变换的一个特征向量，且对应特征值为 1"
+      },
+      {
+        "value": "C",
+        "label": "该变换的行列式等于 0，意味着它将整个三维空间压缩成了一个一维子空间"
+      },
+      {
+        "value": "D",
+        "label": "垂直于 L 的平面内的非零向量经变换后仍保持原方向且长度不为零"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "L 上的方向保持不变，对应特征值 1；垂直平面内的向量都映为零，对应两个特征值 0，因此 A、B 正确。特征值之积为 0，像空间是直线 L，故 C 正确。D 声称这些向量映射后仍非零，与题设直接矛盾。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-02-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "geometric-interpretation"
+    }
+  }
+}

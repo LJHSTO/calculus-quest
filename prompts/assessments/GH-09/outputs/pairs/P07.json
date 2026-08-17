@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q7",
+    "type": "single",
+    "question": "在研究山地高程变化的情境中，设某处地表高度为二元函数 H(x,y)。测得在该点沿正东方向行进时高度增加，沿正北方向行进时高度降低。已知正东方向与正北方向的单位向量分别为 e1 和 e2。根据方向导数与梯度的关系，判断该点处梯度向量在基底 e1, e2 下的分量符号特征。",
+    "options": [
+      {
+        "value": "A",
+        "label": "e1 分量为正，e2 分量为正"
+      },
+      {
+        "value": "B",
+        "label": "e1 分量为正，e2 分量为负"
+      },
+      {
+        "value": "C",
+        "label": "e1 分量为负，e2 分量为正"
+      },
+      {
+        "value": "D",
+        "label": "e1 分量为负，e2 分量为负"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "沿 e1 的方向导数就是梯度的 e1 分量；高度增加说明该分量为正。沿 e2 的方向导数就是梯度的 e2 分量；高度降低说明该分量为负。因此选 B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "sign-determination"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q7",
+    "type": "single",
+    "question": "气象观测站测得某区域气压分布为 P(x,y)。在观测点处，沿正东方向探测时气压降低，沿正北方向探测时气压升高。设正东方向与正北方向的单位向量分别为 u 和 v。利用方向导数的物理意义，推断该点处气压梯度向量在基底 u, v 下的分量正负情况。",
+    "options": [
+      {
+        "value": "A",
+        "label": "u 分量为正，v 分量为正"
+      },
+      {
+        "value": "B",
+        "label": "u 分量为正，v 分量为负"
+      },
+      {
+        "value": "C",
+        "label": "u 分量为负，v 分量为正"
+      },
+      {
+        "value": "D",
+        "label": "u 分量为负，v 分量为负"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "沿 u 的方向导数就是梯度的 u 分量；气压降低说明该分量为负。沿 v 的方向导数就是梯度的 v 分量；气压升高说明该分量为正。因此选 C。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "sign-determination"
+    }
+  }
+}

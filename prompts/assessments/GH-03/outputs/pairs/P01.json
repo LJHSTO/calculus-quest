@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q1",
+    "type": "single",
+    "question": "某物体沿直线运动，位移 S（单位：米）与时间 t（单位：秒）的函数关系为 S(t) = 3t^2。若考察从 t=2 秒到 t=4 秒这段时间内物体位置的改变情况，求出该时间段内位移的平均变化率，并指出该数值在函数图像上直接对应的几何特征是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "平均变化率为 18 米/秒，对应连接图像上点 (2, 12) 与点 (4, 48) 的割线斜率"
+      },
+      {
+        "value": "B",
+        "label": "平均变化率为 36 米/秒，对应连接图像上点 (2, 12) 与点 (4, 48) 的割线斜率"
+      },
+      {
+        "value": "C",
+        "label": "平均变化率为 18 米/秒，对应函数在 t=4 秒处的切线斜率"
+      },
+      {
+        "value": "D",
+        "label": "平均变化率为 36 米/秒，对应函数在 t=2 秒处的切线斜率"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "根据平均变化率的定义，从 t=2 到 t=4 的平均变化率为 [S(4) - S(2)] / (4 - 2) = (3 * 4^2 - 3 * 2^2) / 2 = (48 - 12) / 2 = 36 / 2 = 18。在函数图像上，两点间的平均变化率等于连接这两点的割线斜率。点 (2, 12) 和 (4, 48) 在函数图像上，连接它们的割线斜率即为 18。选项 A 正确。选项 B 计算错误地直接用位移差除以了单一时间值；选项 C 和 D 混淆了割线斜率与切线斜率的概念。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": "low",
+      "conclusionClass": "slope-identification"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q1",
+    "type": "single",
+    "question": "已知函数 y = f(x) 的图像经过点 P(1, 5) 和点 Q(3, 17)。若将这两点在图像上用直线相连，这条割线的倾斜程度反映了自变量从 1 变化到 3 时函数值的某种整体变化特征。求出该特征的具体数值，并说明它在代数上被称为该区间上的什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "数值为 6，称为该区间上的平均变化率"
+      },
+      {
+        "value": "B",
+        "label": "数值为 12，称为该区间上的平均变化率"
+      },
+      {
+        "value": "C",
+        "label": "数值为 6，称为函数在 x=3 处的瞬时变化率"
+      },
+      {
+        "value": "D",
+        "label": "数值为 12，称为函数在 x=1 处的瞬时变化率"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "割线的斜率反映了函数值在两点间的整体变化特征，其数值计算为 [f(3) - f(1)] / (3 - 1) = (17 - 5) / 2 = 12 / 2 = 6。在代数上，这个由两点纵坐标之差除以横坐标之差得到的数值，被称为函数在该区间上的平均变化率。选项 A 正确。选项 B 错误地只计算了纵坐标之差而未除以横坐标之差；选项 C 和 D 将区间上的平均变化率（割线斜率）错误等同于某一点的瞬时变化率（切线斜率）。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": "low",
+      "conclusionClass": "slope-identification"
+    }
+  }
+}

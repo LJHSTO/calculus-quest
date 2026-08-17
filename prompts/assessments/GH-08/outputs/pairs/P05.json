@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q5",
+    "type": "single",
+    "question": "在绘制二元函数 z = f(x, y) 的曲面图时，等高线图是从曲面图向 xy 坐标平面的投影。若某条等高线在平面上是一条闭合曲线，且沿该闭合曲线移动时，曲面上对应点的竖坐标始终保持不变。关于这条等高线所反映的几何特征，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "等高线上各点对应的函数值相同，它直观展示了达到同一高度的所有二维输入位置"
+      },
+      {
+        "value": "B",
+        "label": "等高线越密集的地方，说明该区域内的函数值越大"
+      },
+      {
+        "value": "C",
+        "label": "闭合的等高线意味着该区域内必然存在一个局部极小值点"
+      },
+      {
+        "value": "D",
+        "label": "等高线图直接给出了曲面上各点在三维空间中的具体高度分布"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "等高线是将函数值 z = c 相同的所有 (x, y) 点连接起来的曲线。沿闭合等高线移动时，由于函数值 c 固定，曲面上对应点的高度保持不变，这直观展示了达到同一高度的所有二维输入位置。选项 B 错误，等高线密集反映的是函数值变化剧烈（坡度陡），而非函数值本身的大小。选项 C 错误，闭合等高线内部可能包含局部极大值、极小值或鞍点。选项 D 错误，等高线图是二维投影，不直接显示三维空间分布，而是通过等高线标签间接反映高度。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric-interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q5",
+    "type": "single",
+    "question": "气象图上的等温线是一种典型的等高线应用。假设某地区的气温分布可以用二元函数 T(x, y) 表示，图上的一条等温线连接了所有气温为 20 摄氏度的位置。如果仅观察这条 20 摄氏度的等温线，能否直接判断出该地区气温最高点的具体位置和最高温度值？关于等高线图与曲面图之间的信息对应关系，下列结论正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "不能直接判断最高点位置和最高温度，因为等高线图只保留了同一函数值对应的二维输入位置，丢失了其他高度的三维空间分布细节"
+      },
+      {
+        "value": "B",
+        "label": "能直接判断，因为等温线最密集的区域必定就是气温最高的位置"
+      },
+      {
+        "value": "C",
+        "label": "能直接判断，只要找到被该等温线完全包围的区域中心，那里必定是最高温度点"
+      },
+      {
+        "value": "D",
+        "label": "不能直接判断，因为等高线图只能反映二维坐标的变化，与函数值大小没有任何关联"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "等高线图是三维曲面在二维平面上的投影，一条特定的等高线只保留了函数值等于该特定常数（如 20 摄氏度）的二维输入坐标集合。它不提供其他高度的三维空间分布细节，因此无法仅凭一条等高线直接判断最高点的位置和最高温度。选项 B 错误，等高线密集反映的是函数值变化率大（梯度大），而非函数值达到最高。选项 C 错误，闭合等高线内部可能存在极大值、极小值或鞍点，不能仅凭一条闭合线断定内部必为最高点。选项 D 错误，等高线图通过不同的等高线标签与函数值建立关联，并非毫无关联。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric-interpretation"
+    }
+  }
+}

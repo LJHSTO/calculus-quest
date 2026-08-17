@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q6",
+    "type": "single",
+    "question": "在绘制二元函数 z = f(x, y) 的等高线图时，我们保持 z 的取值为常数 c，并在 xy 平面上描绘出满足 f(x, y) = c 的所有点。若平面上某区域内的等高线分布极其密集，当观察者在曲面上沿对应路径行走时，其最可能体验到什么现象？",
+    "options": [
+      {
+        "value": "A",
+        "label": "水平移动很小的距离，高度就发生极大的变化"
+      },
+      {
+        "value": "B",
+        "label": "水平移动很小的距离，高度几乎不发生改变"
+      },
+      {
+        "value": "C",
+        "label": "该区域内的曲面必定是一个水平平面"
+      },
+      {
+        "value": "D",
+        "label": "该区域内的曲面必定呈现为向下凹陷的碗状"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "等高线图是在 xy 平面上将具有相同高度 z 值的点连接起来的图形。等高线密集意味着在水平面上极短的距离内，就需要跨越多条不同高度的等高线，这表明高度 z 随水平距离的变化非常剧烈，即曲面在该处十分陡峭。因此，水平移动很小的距离，高度就会发生极大的变化。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q6",
+    "type": "single",
+    "question": "某地理考察队正在分析一座山峰的三维地形图。他们发现，在地图上某处相邻等高线之间的水平间距非常宽泛。根据这一等高线分布特征，关于该处山坡的实际形态，下列推断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该处山坡极为陡峭，攀爬时海拔会迅速攀升"
+      },
+      {
+        "value": "B",
+        "label": "该处山坡十分平缓，在水平方向行进较远海拔变化也不大"
+      },
+      {
+        "value": "C",
+        "label": "该处地形必然是一个四周高中间低的盆地"
+      },
+      {
+        "value": "D",
+        "label": "该处地形必然存在一个垂直的悬崖断面"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "等高线图通过水平间距反映高度变化的剧烈程度。相邻等高线之间的水平间距宽泛，意味着在水平面上跨越较大的距离才会遇到下一条代表不同高度的等高线，说明高度变化缓慢。因此，该处山坡十分平缓，在水平方向行进较远距离时，海拔变化也不大。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric interpretation"
+    }
+  }
+}

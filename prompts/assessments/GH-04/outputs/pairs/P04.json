@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-04-pre-q4",
+    "type": "single",
+    "question": "某同学在求函数 f(x)=x^2·sin(x) 的导数时，写出了如下解答步骤：第一步，识别这是两个函数 u(x)=x^2 与 v(x)=sin(x) 的乘积。第二步，应用乘积求导法则，得 f'(x)=u'(x)·v'(x)。第三步，代入具体函数求导，得 f'(x)=2x·cos(x)。第四步，得出最终结果。以上步骤中，第一处出现错误的是哪一步？",
+    "options": [
+      {
+        "value": "A",
+        "label": "第一步"
+      },
+      {
+        "value": "B",
+        "label": "第二步"
+      },
+      {
+        "value": "C",
+        "label": "第三步"
+      },
+      {
+        "value": "D",
+        "label": "第四步"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "乘积求导法则的正确公式为 (uv)'=u'v+uv'。该同学在第二步将法则误写为 (uv)'=u'v'，遗漏了交叉相加项，这是解答过程中第一处出现的错误。第三步基于错误的法则进行了正确的代入计算，因此第一处错误在第二步。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-04-K02"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "error-identification"
+    }
+  },
+  "post": {
+    "id": "GH-04-post-q4",
+    "type": "single",
+    "question": "给出一份针对函数 g(x)=(e^x)·ln(x) 的求导过程记录。记录显示：作者先令 a(x)=e^x 且 b(x)=ln(x)。随后断言两函数乘积的导数等于各自导数的乘积，即 g'(x)=a'(x)·b'(x)。接着计算并化简得到 g'(x)=(e^x)·(1/x)=e^x/x。最后标记该式为所求答案。在这份记录中，最初违背求导规则的操作出现在哪个环节？",
+    "options": [
+      {
+        "value": "A",
+        "label": "令 a(x)=e^x 且 b(x)=ln(x) 的环节"
+      },
+      {
+        "value": "B",
+        "label": "断言乘积导数等于各自导数乘积的环节"
+      },
+      {
+        "value": "C",
+        "label": "计算并化简得到 e^x/x 的环节"
+      },
+      {
+        "value": "D",
+        "label": "标记该式为所求答案的环节"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "根据积的求导法则，(ab)'=a'b+ab'。记录中“断言两函数乘积的导数等于各自导数的乘积”直接错用了法则，漏掉了 a(x)b'(x) 与 a'(x)b(x) 的相加结构，这是最初违背求导规则的操作。后续的计算只是基于该错误前提执行，故最初的错误出现在断言环节。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-04-K02"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "error-identification"
+    }
+  }
+}

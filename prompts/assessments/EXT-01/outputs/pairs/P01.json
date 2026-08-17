@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q1",
+    "type": "single",
+    "question": "下列方程中，哪一个是微分方程？",
+    "options": [
+      {
+        "value": "A",
+        "label": "y = sin(x) + cos(x)"
+      },
+      {
+        "value": "B",
+        "label": "y' + y = 0"
+      },
+      {
+        "value": "C",
+        "label": "x² + y² = 1"
+      },
+      {
+        "value": "D",
+        "label": "∫₀¹ f(x)dx = 2"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "微分方程是含有未知函数及其导数的方程。选项 B 中 y' 是未知函数 y 的导数，且方程中同时出现 y' 和 y，因此是微分方程。选项 A 是普通函数表达式，不含导数；选项 C 是隐函数方程，不含导数；选项 D 是积分方程，不含导数符号。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 1,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "identification"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q1",
+    "type": "single",
+    "question": "小华整理了四个方程，想找出其中的微分方程。她记得微分方程的关键特征是方程中含有未知函数的导数。下列哪个方程符合这一特征？",
+    "options": [
+      {
+        "value": "A",
+        "label": "2x + 3y = 6"
+      },
+      {
+        "value": "B",
+        "label": "y = eˣ"
+      },
+      {
+        "value": "C",
+        "label": "y'' + 2y' + y = 0"
+      },
+      {
+        "value": "D",
+        "label": "∫₀ˣ f(t)dt = x²"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "微分方程是含有未知函数及其导数的方程。选项 C 中 y'' 和 y' 都是未知函数 y 的导数，方程同时含有 y 的导数和 y 本身，因此是微分方程。选项 A 是二元一次方程，不含导数；选项 B 是显函数表达式，不含导数；选项 D 是积分方程，不含导数符号。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 1,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "identification"
+    }
+  }
+}

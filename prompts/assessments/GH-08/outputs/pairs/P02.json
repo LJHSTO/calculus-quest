@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q2",
+    "type": "single",
+    "question": "某物理实验中，金属杆的电阻 R 同时依赖于温度 T 和施加的压力 P。若将 T 和 P 视为输入，R 视为输出，下列关于该多输入函数的叙述最准确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "输入 T 和 P 必须先合并成单一变量，才能代入函数求出 R"
+      },
+      {
+        "value": "B",
+        "label": "该函数的自变量是一个有序对 (T, P)，输出 R 由这个有序对共同决定"
+      },
+      {
+        "value": "C",
+        "label": "T 和 P 中只有一个是真正的自变量，另一个只是常数参数"
+      },
+      {
+        "value": "D",
+        "label": "因为有两个输入，该函数无法在坐标系中用任何图形表示"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "多输入函数的核心含义是：自变量是一个有序的变量组合（如 (T, P)），函数根据这个组合给出唯一的输出值。选项 B 准确表达了这一点。选项 A 错误，因为多输入函数直接接收多个输入，不需要合并；选项 C 错误，T 和 P 都是自变量；选项 D 错误，多输入函数可以在三维空间中用曲面表示。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q2",
+    "type": "single",
+    "question": "某农场的某种作物产量 Y 取决于每公顷施肥量 x 和灌溉量 w。若把 x 和 w 作为输入，Y 作为输出，下列说法中正确反映了该多输入函数本质的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "x 和 w 需要先通过某种加权求和转化为单一标量，才能作为函数的输入"
+      },
+      {
+        "value": "B",
+        "label": "该函数的输入是二维组合 (x, w)，对于每一组确定的 (x, w) 都有确定的 Y 与之对应"
+      },
+      {
+        "value": "C",
+        "label": "由于存在两个输入变量，该函数关系无法用确定的数学表达式写出"
+      },
+      {
+        "value": "D",
+        "label": "x 是自变量而 w 只是函数表达式中的固定系数，不随输入改变"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "多输入函数的本质特征是：输入是一个多维的组合变量，对于每一组确定的输入组合，函数都给出唯一确定的输出。选项 B 准确描述了这一核心含义。选项 A 错误，多输入函数直接处理多维输入，无需降维；选项 C 错误，多输入函数完全可以用确定的数学表达式描述；选项 D 错误，x 和 w 都是自变量，均可在定义域内自由取值。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-interpretation"
+    }
+  }
+}

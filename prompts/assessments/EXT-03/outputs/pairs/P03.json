@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q3",
+    "type": "single",
+    "question": "某地区有一种罕见疾病，人群总患病率为 1%。现有一种医学检测方法，该方法在患者确实患病时呈阳性的概率为 90%，在患者确实未患病时呈阳性的概率为 10%。现有一人接受了该检测且结果呈阳性，基于条件概率与贝叶斯思想，其真正患病的概率最接近以下哪个数值？",
+    "options": [
+      {
+        "value": "A",
+        "label": "约 8.3%"
+      },
+      {
+        "value": "B",
+        "label": "约 50.0%"
+      },
+      {
+        "value": "C",
+        "label": "约 90.0%"
+      },
+      {
+        "value": "D",
+        "label": "约 99.0%"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "设事件 D 为患病，事件 T 为检测呈阳性。根据题意，P(D)=0.01，P(T|D)=0.90，P(T|D')=0.10。根据贝叶斯公式，P(D|T) = P(T|D)P(D) / [P(T|D)P(D) + P(T|D')P(D')] = (0.90 × 0.01) / (0.90 × 0.01 + 0.10 × 0.99) = 0.009 / (0.009 + 0.099) = 0.009 / 0.108 ≈ 0.0833，即约 8.3%。这说明在阳性结果中真正患病的比例并不高，体现了基础概率对后验概率的重要影响。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K02"
+    ],
+    "cognitiveLevel": "application",
+    "estimatedSteps": 3,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": "low",
+      "conclusionClass": "posterior-probability-estimation"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q3",
+    "type": "single",
+    "question": "某工厂有甲、乙两条生产线制造同一种零件，甲线产量占总量的 80%，乙线占 20%。已知甲线生产的不合格品率为 5%，乙线生产的不合格品率为 10%。质检员从总库中随机抽取一件，发现它是不合格品。根据贝叶斯思想推断这件不合格品来自甲线生产的概率最接近以下哪个数值？",
+    "options": [
+      {
+        "value": "A",
+        "label": "约 66.7%"
+      },
+      {
+        "value": "B",
+        "label": "约 80.0%"
+      },
+      {
+        "value": "C",
+        "label": "约 25.0%"
+      },
+      {
+        "value": "D",
+        "label": "约 95.0%"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "设事件 A 为零件来自甲线，事件 D 为零件不合格。根据题意，P(A)=0.80，P(A')=0.20，P(D|A)=0.05，P(D|A')=0.10。根据贝叶斯公式，P(A|D) = P(D|A)P(A) / [P(D|A)P(A) + P(D|A')P(A')] = (0.05 × 0.80) / (0.05 × 0.80 + 0.10 × 0.20) = 0.04 / (0.04 + 0.02) = 0.04 / 0.06 ≈ 0.667，即约 66.7%。这说明尽管甲线的不合格品率较低，但由于其基数大，在总体不合格品中仍占主要比例。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K02"
+    ],
+    "cognitiveLevel": "application",
+    "estimatedSteps": 3,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": "low",
+      "conclusionClass": "posterior-probability-estimation"
+    }
+  }
+}

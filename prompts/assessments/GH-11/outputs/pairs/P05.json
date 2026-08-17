@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q5",
+    "type": "single",
+    "question": "已知函数 f(x, y) 在点 (1, 1) 处的函数值、一阶偏导数和二阶偏导数均存在。若仅使用一阶 Taylor 近似来估计该点附近的函数值，估计误差主要来源于哪一项被忽略？",
+    "options": [
+      {
+        "value": "A",
+        "label": "常数项 f(1, 1)"
+      },
+      {
+        "value": "B",
+        "label": "一次项 f_x(1, 1)(x-1) + f_y(1, 1)(y-1)"
+      },
+      {
+        "value": "C",
+        "label": "二次项 1/2[f_xx(1, 1)(x-1)^2 + 2f_xy(1, 1)(x-1)(y-1) + f_yy(1, 1)(y-1)^2]"
+      },
+      {
+        "value": "D",
+        "label": "三次及更高次项"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "一阶 Taylor 近似只保留到一次项，即常数项和一次项。由于函数在该点的二阶偏导数存在，二阶 Taylor 近似中的二次项是紧接一次项之后的主要部分。因此，仅使用一阶近似时，被忽略的主要误差来源于二次项。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "term_identification"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q5",
+    "type": "single",
+    "question": "在构建函数 g(u, v) 在点 (0, 0) 处的二阶 Taylor 近似公式时，公式中包含的交叉乘积项 2g_uv(0, 0)uv 体现了二阶近似相比于一阶近似新增的哪种几何或代数特征？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它表示函数在 (0, 0) 处的梯度向量方向"
+      },
+      {
+        "value": "B",
+        "label": "它表示函数在 (0, 0) 处的纯函数值大小"
+      },
+      {
+        "value": "C",
+        "label": "它反映了两个自变量同时变化时对函数值产生的交互影响"
+      },
+      {
+        "value": "D",
+        "label": "它反映了函数沿单一坐标轴方向的独立曲率信息"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "二阶 Taylor 近似在一阶近似的基础上增加了二次项。其中，交叉乘积项 2g_uv(0, 0)uv 体现了两个自变量 u 和 v 同时偏离中心点时，它们之间对函数值产生的交互（耦合）影响，这是仅含单变量平方项无法刻画的特征。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "term_identification"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q1",
+    "type": "single",
+    "question": "某气象站将明天的天气划分为三种互斥且完备的结果：晴天、阴天、雨天，并给出概率分配 P(晴天)=0.45，P(阴天)=0.35，P(雨天)=0.30。这一概率分配违反了哪条概率公理？",
+    "options": [
+      {
+        "value": "A",
+        "label": "非负性公理：任一事件的概率非负"
+      },
+      {
+        "value": "B",
+        "label": "规范性公理：样本空间的概率为 1，即互斥完备事件组的概率之和等于 1"
+      },
+      {
+        "value": "C",
+        "label": "可加性公理：互斥事件并集的概率等于各自概率之和"
+      },
+      {
+        "value": "D",
+        "label": "以上公理均未被违反"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "三个事件互斥且完备，概率之和应等于 1。但 0.45+0.35+0.30=1.10≠1，违反规范性公理。每个概率值均非负，非负性未被违反；事件互斥时可加性对任意两两组合都成立，可加性也未被违反。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 5,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "axiom-identification"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q1",
+    "type": "single",
+    "question": "一位同学为三个互斥且完备的事件 E₁、E₂、E₃ 分配概率 P(E₁)=0.55，P(E₂)=0.30，P(E₃)=0.25，随后断言：每个概率都在 0 到 1 之间，因此该分配满足概率公理。以下哪个说法正确指出了问题所在？",
+    "options": [
+      {
+        "value": "A",
+        "label": "同学的判断正确，每个概率都在 0 到 1 之间，满足非负性即可"
+      },
+      {
+        "value": "B",
+        "label": "同学的判断错误，三个概率之和为 1.10，违反规范性公理"
+      },
+      {
+        "value": "C",
+        "label": "同学的判断错误，三个概率之和为 1.10，违反可加性公理"
+      },
+      {
+        "value": "D",
+        "label": "同学的判断错误，三个概率之和为 1.10，违反非负性公理"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "三个事件互斥且完备，概率之和应等于 1。0.55+0.30+0.25=1.10≠1，违反规范性公理。同学只验证了非负性（每个概率非负），却忽略了规范性要求。可加性对互斥事件的两两组合成立，未被违反；非负性也未被违反。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 5,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "axiom-identification"
+    }
+  }
+}

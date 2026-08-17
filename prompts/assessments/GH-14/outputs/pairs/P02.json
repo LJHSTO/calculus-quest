@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-14-pre-q2",
+    "type": "single",
+    "question": "单参数模型的预测式为 ŷ=wx。对样本 x=2、真实值 y=5，当前参数 w=2。若采用单点平方损失 L=(ŷ-y)²，则当前损失是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "1"
+      },
+      {
+        "value": "B",
+        "label": "3"
+      },
+      {
+        "value": "C",
+        "label": "4"
+      },
+      {
+        "value": "D",
+        "label": "9"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "当前预测为 ŷ=2×2=4，与真实值 5 的残差为 -1，所以平方损失 L=(-1)²=1，选 A。这说明损失值依赖当前参数和样本。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  },
+  "post": {
+    "id": "GH-14-post-q2",
+    "type": "single",
+    "question": "单参数模型的预测式为 ŷ=2b。对真实值 y=8 的样本，当前参数 b=3。若采用平方损失 J=(ŷ-y)²，则当前损失是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "1"
+      },
+      {
+        "value": "B",
+        "label": "2"
+      },
+      {
+        "value": "C",
+        "label": "4"
+      },
+      {
+        "value": "D",
+        "label": "16"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "当前预测为 ŷ=2×3=6，残差为 -2，所以平方损失 J=(-2)²=4，选 C。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  }
+}

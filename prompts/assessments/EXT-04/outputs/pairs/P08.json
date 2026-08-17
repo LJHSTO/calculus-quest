@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q8",
+    "type": "multiple",
+    "question": "在训练一个多层神经网络时，总损失由预测误差的平方和与 λ·R(w) 相加得到。其中 λ 是正则化系数，R(w) 是关于权重 w 的正则化项。关于正则化项的作用，以下哪些说法是正确的？请选择所有正确说法。",
+    "options": [
+      {
+        "value": "A",
+        "label": "增大 λ 会使得模型对训练数据中噪声的拟合程度降低，从而可能减少过拟合。"
+      },
+      {
+        "value": "B",
+        "label": "正则化项 R(w) 的作用是增加模型的复杂度，使得模型能够更好地拟合训练数据中的每一个点。"
+      },
+      {
+        "value": "C",
+        "label": "当 λ 增大时，权重 w 的取值通常会变得更小（更接近零），这有助于控制模型的复杂度。"
+      },
+      {
+        "value": "D",
+        "label": "正则化项 R(w) 的作用是让损失函数 L(w) 在训练过程中始终等于零，从而保证模型完全正确。"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "选项 A 正确：增大 λ 会加强对权重的惩罚，使模型更简单，从而可能减少对噪声的过拟合。选项 B 错误：正则化用于限制而非增加模型复杂度。选项 C 正确：L2 正则化惩罚权重平方和，通常会使权重趋向较小的值。选项 D 错误：正则化只是总损失中的惩罚项，不会让损失恒等于零。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-04-K04"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": 3,
+      "conclusionClass": "concept-application"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q8",
+    "type": "multiple",
+    "question": "在训练一个神经网络时，为了抑制过拟合，工程师在损失函数中添加了正则化项。设原始损失为 J(w)，添加正则化后的总损失为 J_total(w) = J(w) + λ·Ω(w)，其中 λ > 0 是正则化强度，Ω(w) 是正则化函数。关于这个设置，以下哪些说法是正确的？请选择所有正确说法。",
+    "options": [
+      {
+        "value": "A",
+        "label": "如果 Ω(w) 是权重各分量的平方和，那么增大 λ 通常会使最优解中的权重整体变小。"
+      },
+      {
+        "value": "B",
+        "label": "正则化项 Ω(w) 的作用是让模型在训练集上的损失 J(w) 尽可能小，从而提升训练集准确率。"
+      },
+      {
+        "value": "C",
+        "label": "当 λ 过大时，模型可能会变得过于简单，导致欠拟合，即在训练集和测试集上的表现都不好。"
+      },
+      {
+        "value": "D",
+        "label": "正则化项 Ω(w) 的作用是消除损失函数 J(w) 中的所有局部极小值，使得优化过程更容易找到全局最优解。"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "选项 A 正确：L2 正则化会惩罚权重的平方和，增大 λ 会使得最优解中权重的范数变小。选项 B 错误：正则化的目的不是让训练集损失最小，而是通过惩罚复杂度来提升泛化能力。选项 C 正确：λ 过大时，模型会过于简单，可能出现欠拟合。选项 D 错误：正则化项不会消除局部极小值，它只是改变了损失函数的形状，但局部极小值仍然可能存在。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-04-K04"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": 3,
+      "conclusionClass": "concept-application"
+    }
+  }
+}

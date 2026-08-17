@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q3",
+    "type": "single",
+    "question": "在山地地形图中，各点的海拔高度由二元函数 h(x, y) 给出。某登山者位于地图坐标 (1, 2) 处，此时该位置的海拔高度为 h(1, 2) = 100 米。经测算，在此处沿正东方向（x轴正方向）走一小步，海拔上升最快，且沿正北方向（y轴正方向）走一小步，海拔高度不发生变化。根据这些线索，该点处的梯度向量 ∇h(1, 2) 具有何种特征？",
+    "options": [
+      {
+        "value": "A",
+        "label": "方向指向正东，且向量的垂直分量（y方向分量）为 0"
+      },
+      {
+        "value": "B",
+        "label": "方向指向正北，且向量的水平分量（x方向分量）为 0"
+      },
+      {
+        "value": "C",
+        "label": "方向指向东北，且向量的两个分量均大于 0"
+      },
+      {
+        "value": "D",
+        "label": "方向指向正东，且向量的水平分量（x方向分量）为 0"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "梯度向量的核心含义是：在给定点处，它指向函数值增加最快的方向。题干指出沿正东方向海拔上升最快，说明梯度方向即为正东方向。又知沿正北方向海拔不发生变化，说明在 y 方向的变化率为 0，即梯度向量的 y 分量为 0。因此，该点的梯度向量指向正东且垂直分量为 0。选项 A 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "vector-direction-and-component"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q3",
+    "type": "single",
+    "question": "气象图上各点的温度由二元函数 T(x, y) 描述。一架探测无人机悬停在坐标 (3, 4) 处，测得当前环境温度为 T(3, 4) = 25 摄氏度。系统数据显示，在此位置若沿正西方向（x轴负方向）移动，温度下降得最剧烈；若沿正南方向（y轴负方向）移动，温度数值保持不变。由此推断，该点处的温度梯度向量 ∇T(3, 4) 的指向与分量情况是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "指向正东，且向量的水平分量（x方向分量）为 0"
+      },
+      {
+        "value": "B",
+        "label": "指向正北，且向量的垂直分量（y方向分量）为 0"
+      },
+      {
+        "value": "C",
+        "label": "指向正东，且向量的垂直分量（y方向分量）为 0"
+      },
+      {
+        "value": "D",
+        "label": "指向正西，且向量的两个分量均小于 0"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "梯度向量的核心含义是：在给定点处，它指向函数值增加最快的方向。题干指出沿正西方向温度下降最剧烈，这意味着沿正西的相反方向（即正东方向）温度上升最快，因此梯度方向指向正东。同时，沿正南方向温度不变，说明在 y 方向的变化率为 0，即梯度向量的 y 分量为 0。综合来看，该点的梯度向量指向正东且垂直分量为 0。选项 C 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "vector-direction-and-component"
+    }
+  }
+}

@@ -204,7 +204,22 @@ function registerCourseDisplayIndex(route = {}) {
       adminUnitLabels[`${module.id}-post`] = `${moduleTitle} · 后测`;
       (module.knowledgePoints || []).forEach((knowledgePoint) => {
         adminUnitLabels[knowledgePoint.id] = knowledgePoint.name || `${moduleTitle} · 知识点`;
+        adminUnitLabels[`${knowledgePoint.id}-formative`] = `${knowledgePoint.name || moduleTitle} · 即时形测`;
         adminKnowledgePointIds.add(knowledgePoint.id);
+        (knowledgePoint.formativeQuiz?.questions || []).forEach((question, index) => {
+          const id = String(question.id || "").trim();
+          if (!id) return;
+          adminQuestionMeta[id.toLowerCase()] = {
+            questionId: id,
+            phase: "formative",
+            order: index + 1,
+            moduleId: module.id,
+            moduleTitle,
+            questionText: question.question || question.prompt || question.title || question.text || "",
+            knowledgePointIds: [knowledgePoint.id],
+            adaptiveRole: question.adaptiveRole || (index === 0 ? "core" : "diagnostic")
+          };
+        });
       });
     });
     [
@@ -929,7 +944,10 @@ function renderPhaseCompactTable(data) {
     const phaseCell = (phase) => {
       const count = Number(d[`${phase}_count`] || 0);
       if (!count) return "—";
-      return `${d[`${phase}_accuracy`] ?? "-"}%<br><span class="muted">${d[`${phase}_submissions`] || 0} 次提交 · ${count} 题 · ${d[`${phase}_score`] || 0}/${d[`${phase}_max_score`] || 0} 分</span>`;
+      const adaptiveDetail = phase === "formative" && Number(d.formative_core_count || 0)
+        ? `<br><span class="muted">核心题 ${d.formative_core_accuracy ?? "-"}%（${d.formative_core_correct || 0}/${d.formative_core_count || 0}） · 诊断触发 ${d.formative_diagnostic_count || 0} 次${Number(d.formative_diagnostic_count || 0) ? `，正确率 ${d.formative_diagnostic_accuracy ?? "-"}%` : ""}</span>`
+        : "";
+      return `${d[`${phase}_accuracy`] ?? "-"}%<br><span class="muted">${d[`${phase}_submissions`] || 0} 次提交 · ${count} 题 · ${d[`${phase}_score`] || 0}/${d[`${phase}_max_score`] || 0} 分</span>${adaptiveDetail}`;
     };
     return `<tr>
       <td>${esc(d.nickname || "")}</td><td>${esc(publicCourseText(d.chapter_label, "未命名章节"))}</td>
@@ -3656,6 +3674,7 @@ function phaseCsvRows(data) {
     "学生", "用户ID", "章节", "章节ID",
     "前测提交数", "前测题数", "前测正确数", "前测待复核", "前测正确率%", "前测得分", "前测满分",
     "形成性提交数", "形成性题数", "形成性正确数", "形成性待复核", "形成性正确率%", "形成性得分", "形成性满分",
+    "核心形测题数", "核心形测正确数", "核心形测正确率%", "诊断题触发数", "诊断题正确数", "诊断题正确率%",
     "后测提交数", "后测题数", "后测正确数", "后测待复核", "后测正确率%", "后测得分", "后测满分",
     "学习增益%"
   ]];
@@ -3682,6 +3701,12 @@ function phaseCsvRows(data) {
       row.formative_accuracy ?? "",
       row.formative_score || 0,
       row.formative_max_score || 0,
+      row.formative_core_count || 0,
+      row.formative_core_correct || 0,
+      row.formative_core_accuracy ?? "",
+      row.formative_diagnostic_count || 0,
+      row.formative_diagnostic_correct || 0,
+      row.formative_diagnostic_accuracy ?? "",
       row.post_submissions || 0,
       row.post_count || 0,
       row.post_correct || 0,

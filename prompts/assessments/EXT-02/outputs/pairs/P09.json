@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q9",
+    "type": "multiple",
+    "question": "某同学在笔记中记录了四条关于正交性与投影的结论，其中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "两个非零向量的内积为零，意味着它们在几何上互相垂直"
+      },
+      {
+        "value": "B",
+        "label": "向量 a 投影到向量 b 上所得的投影向量，方向一定与 b 相同"
+      },
+      {
+        "value": "C",
+        "label": "向量 a 在自身方向上的投影向量恰好等于 a"
+      },
+      {
+        "value": "D",
+        "label": "若 a 在 b 上的投影为零向量，则 a 必定是零向量"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "选项A正确：两个非零向量的内积为零等价于它们的夹角为90°，即互相垂直。选项B错误：当向量 a 与 b 的夹角大于90°时，a 在 b 上的投影向量方向与 b 相反。选项C正确：向量 a 在自身方向上的投影为 (a·a)/(a·a)·a = a。选项D错误：a 在 b 上的投影为零向量意味着 a·b=0，即 a 与 b 正交，但 a 本身不一定是零向量。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-02-K05"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 0,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-identification"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q9",
+    "type": "multiple",
+    "question": "关于正交向量与投影运算的性质，下列说法中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "非零向量互相垂直的充要条件是它们的点积为零"
+      },
+      {
+        "value": "B",
+        "label": "向量 a 在向量 b 上的投影长度等于 a·b/|b|"
+      },
+      {
+        "value": "C",
+        "label": "向量在自身方向上的投影向量等于该向量本身"
+      },
+      {
+        "value": "D",
+        "label": "若向量 a 与 b 正交，则 a 在 b 上的投影向量等于 a"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "选项A正确：非零向量正交的充要条件是点积为零，这是正交性的基本定义。选项B错误：a·b/|b| 是投影的标量值，可正可负；投影长度应为 |a·b|/|b|。选项C正确：向量在自身方向上的投影为 (a·a)/(a·a)·a = a，即等于该向量本身。选项D错误：a 与 b 正交时 a·b=0，a 在 b 上的投影为零向量，而非 a 本身。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-02-K05"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 0,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-identification"
+    }
+  }
+}

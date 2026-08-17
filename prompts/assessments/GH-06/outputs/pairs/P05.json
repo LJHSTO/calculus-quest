@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q5",
+    "type": "single",
+    "question": "一辆汽车在平直公路上行驶，其速度 v(t) 随时间 t 连续变化。已知在时间段 [0, T] 内，汽车速度始终为正。若用定积分表示该时间段内汽车行驶的总路程，下列关于该定积分作为累积量的理解最准确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "定积分的值就是把每个时刻的速度值相加，不考虑时间间隔的累加过程"
+      },
+      {
+        "value": "B",
+        "label": "定积分的值等于速度函数图像在区间 [0, T] 下方与坐标轴围成的面积，代表路程的连续累积结果"
+      },
+      {
+        "value": "C",
+        "label": "定积分的值仅由 t=0 时的初始速度和 t=T 时的末速度决定，与中间过程无关"
+      },
+      {
+        "value": "D",
+        "label": "定积分的值代表汽车在时刻 T 的瞬时速度大小，反映速度的最终状态"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "定积分作为累积量的核心含义在于：将连续时间段内每个极短时间间隔内通过的路程（速度乘以时间间隔）不断累加，其几何意义即为速度函数图像下方与坐标轴围成的面积。选项 A 忽略了时间间隔的累加过程；选项 C 错误地认为只与端点有关；选项 D 将积分结果误解为瞬时状态。因此选项 B 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "conceptual_cumulative_interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-06-post-q5",
+    "type": "single",
+    "question": "某水箱正在注水，水流入的速率 r(t) 随时间 t 连续变化且始终大于 0。若用定积分表示在时间段 [0, T] 内水箱增加的总水量，从定积分作为累积量的角度来看，下列叙述正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "定积分的结果只取决于注水开始时的速率和结束时的速率，中间的注水快慢波动不影响总水量"
+      },
+      {
+        "value": "B",
+        "label": "定积分的结果表示在时刻 T 这一瞬间流入水箱的水量，体现的是某一时刻的瞬时状态"
+      },
+      {
+        "value": "C",
+        "label": "定积分的结果是将各个时刻的注水速率直接相加，与时间区间的长度无关"
+      },
+      {
+        "value": "D",
+        "label": "定积分的结果对应注水速率函数图像在区间 [0, T] 下方与坐标轴围成的面积，代表增加水量的连续累积总和"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "analysis": "定积分作为累积量，是将连续变化的时间段内每个极短时间间隔内增加的水量（注水速率乘以时间间隔）不断累加，其几何意义对应速率函数图像下方与坐标轴围成的面积。选项 A 错误地认为只与端点有关；选项 B 将积分结果误解为瞬时状态；选项 C 忽略了时间间隔的累加过程。因此选项 D 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "conceptual_cumulative_interpretation"
+    }
+  }
+}

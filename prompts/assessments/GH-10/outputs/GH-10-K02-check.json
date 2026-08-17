@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "多元函数、梯度与 Jacobian",
+  "outlines": [
+    {
+      "id": "GH-10-K02-check",
+      "type": "quiz",
+      "title": "即时检查：向量值函数",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-10-K02-check-q1",
+          "type": "single",
+          "question": "已知向量值函数 f(t) = (t, t², t³)，当 t = 2 时，f(2) 的值为：",
+          "options": [
+            {
+              "value": "A",
+              "label": "(2, 4, 8)"
+            },
+            {
+              "value": "B",
+              "label": "(2, 2, 2)"
+            },
+            {
+              "value": "C",
+              "label": "(4, 8, 16)"
+            },
+            {
+              "value": "D",
+              "label": "(1, 2, 3)"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "向量值函数 f(t) = (t, t², t³) 的自变量是标量 t，输出是三维向量。将 t = 2 代入各分量，得 f(2) = (2, 2², 2³) = (2, 4, 8)。选项 A 正确。选项 B 错在未对 t 进行平方和立方运算；选项 C 错在将 t 误认为 t²；选项 D 错在只取了各分量的幂次而没有代入 t = 2。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-10-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-10-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 1,
+            "operationCount": 3,
+            "symbolComplexity": "low",
+            "conclusionClass": "vector-evaluation"
+          }
+        },
+        {
+          "id": "GH-10-K02-check-q2",
+          "type": "multiple",
+          "question": "关于向量值函数 f(t) = (cos t, sin t, t)，下列说法中正确的有：",
+          "options": [
+            {
+              "value": "A",
+              "label": "f(t) 的输入是标量 t，输出是一个三维向量"
+            },
+            {
+              "value": "B",
+              "label": "f(t) 可以看作参数 t 在空间中描出的一条曲线"
+            },
+            {
+              "value": "C",
+              "label": "f(t) 的输出是一个标量，其值为 cos t + sin t + t"
+            },
+            {
+              "value": "D",
+              "label": "f(t) 的每个分量都是关于 t 的函数"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "向量值函数 f(t) = (cos t, sin t, t) 的自变量是标量 t，因变量是三维向量，选项 A 正确。随着 t 变化，f(t) 的终点在三维空间中描出一条螺旋曲线，选项 B 正确。向量值函数的输出是向量而非标量，选项 C 错误。f(t) 的三个分量 cos t、sin t、t 都是关于 t 的函数，选项 D 正确。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-10-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "GH-10-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "medium",
+            "conclusionClass": "concept-interpretation"
+          }
+        }
+      ]
+    }
+  ]
+}

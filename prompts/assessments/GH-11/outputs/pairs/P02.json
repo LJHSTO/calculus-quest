@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q2",
+    "type": "single",
+    "question": "函数 f(x) 在 x=2 附近的一阶 Taylor 近似为 L(x)=5+3(x-2)。仅根据这条近似式，可以直接读出哪组中心点信息？",
+    "options": [
+      {
+        "value": "A",
+        "label": "f(2)=5，f'(2)=3"
+      },
+      {
+        "value": "B",
+        "label": "f(2)=3，f'(2)=5"
+      },
+      {
+        "value": "C",
+        "label": "f(0)=5，f'(0)=3"
+      },
+      {
+        "value": "D",
+        "label": "f(2)=5，f'(2)=2"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "一阶 Taylor 近似的标准形式是 L(x)=f(a)+f'(a)(x-a)。对照 L(x)=5+3(x-2)，中心为 a=2，常数项给出 f(2)=5，一次项系数给出 f'(2)=3，因此选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_estimation"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q2",
+    "type": "single",
+    "question": "图像证据显示：曲线在横坐标 4 处的切线经过点 (4,10) 和 (5,8)。据此构造一阶局部模型时，中心函数值与中心导数应是哪一组？",
+    "options": [
+      {
+        "value": "A",
+        "label": "g(4)=8，g'(4)=2"
+      },
+      {
+        "value": "B",
+        "label": "g(4)=10，g'(4)=-2"
+      },
+      {
+        "value": "C",
+        "label": "g(4)=10，g'(4)=2"
+      },
+      {
+        "value": "D",
+        "label": "g(4)=8，g'(4)=-2"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "切点 (4,10) 给出 g(4)=10；切线斜率为 (8-10)/(5-4)=-2，所以 g'(4)=-2。故选 B，一阶模型可写成 10-2(t-4)。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_estimation"
+    }
+  }
+}

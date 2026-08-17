@@ -1,0 +1,32 @@
+{
+  "pre": {
+    "id": "GH-02-pre-q1",
+    "type": "single",
+    "question": "观察下面六组数据。x 值：1.7，1.9，1.99，2.01，2.1，2.3；f(x) 值：3.7，3.9，3.99，4.01，4.1，4.3。当 x 从两侧趋近 2 时，f(x) 的趋近值是？",
+    "options": [{"value":"A","label":"2"},{"value":"B","label":"4"},{"value":"C","label":"3.99"},{"value":"D","label":"不存在"}],
+    "answer": ["B"],
+    "analysis": "左侧三组数据随 x 接近 2 而接近 4，右侧三组数据也随 x 接近 2 而接近 4，因此双侧观察得到的趋近值为 4。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K01"],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {"presentationMode":"table","knownConditionCount":6,"operationCount":0,"symbolComplexity":"low","conclusionClass":"reading_limit_from_table"},
+    "evidence": {"kind":"two-sided-table","targetX":2,"targetY":4,"correctOptionId":"B","rows":[{"x":1.7,"y":3.7},{"x":1.9,"y":3.9},{"x":1.99,"y":3.99},{"x":2.01,"y":4.01},{"x":2.1,"y":4.1},{"x":2.3,"y":4.3}]}
+  },
+  "post": {
+    "id": "GH-02-post-q1",
+    "type": "single",
+    "question": "某次数值观察记录为：x 值：2.7，2.9，2.99，3.01，3.1，3.3；g(x) 值：4.7，4.9，4.99，5.01，5.1，5.3。下列哪项能同时概括左侧趋势、右侧趋势和最终结果？",
+    "options": [{"value":"A","label":"两侧函数值都趋近 3"},{"value":"B","label":"左侧趋近 5，右侧趋近 3"},{"value":"C","label":"两侧函数值都趋近 5"},{"value":"D","label":"两侧趋势不同，因此没有共同趋近值"}],
+    "answer": ["C"],
+    "analysis": "从 3 的左侧观察，g(x) 由 4.7、4.9、4.99 接近 5；从右侧观察，按 x 接近 3 的顺序，g(x) 由 5.3、5.1、5.01 接近 5。两侧具有共同趋近值 5。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K01"],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {"presentationMode":"table","knownConditionCount":6,"operationCount":0,"symbolComplexity":"low","conclusionClass":"reading_limit_from_table"},
+    "evidence": {"kind":"two-sided-table","targetX":3,"targetY":5,"correctOptionId":"C","rows":[{"x":2.7,"y":4.7},{"x":2.9,"y":4.9},{"x":2.99,"y":4.99},{"x":3.01,"y":5.01},{"x":3.1,"y":5.1},{"x":3.3,"y":5.3}]}
+  }
+}

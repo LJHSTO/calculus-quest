@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q6",
+    "type": "single",
+    "question": "小明在分析损失地形时说：梯度为零的点，如果存在一个方向使损失下降，那它一定是局部极小值，因为只要还有下降方向就说明没到最小。这句话的错误在于？",
+    "options": [
+      {
+        "value": "A",
+        "label": "混淆了鞍点与局部极小值；若同时存在上升方向和下降方向，该点应为鞍点而非局部极小值"
+      },
+      {
+        "value": "B",
+        "label": "没有错误，梯度为零且存在下降方向确实说明是局部极小值"
+      },
+      {
+        "value": "C",
+        "label": "错误在于梯度为零的点不可能是局部极小值，局部极小值处梯度应不为零"
+      },
+      {
+        "value": "D",
+        "label": "错误在于存在下降方向说明该点是局部极大值，而非局部极小值"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "局部极小值要求在某个充分小的邻域内都找不到更低的损失，因此只要存在任一局部下降方向，就能排除局部极小值。若同时存在上升和下降方向，则该临界点符合本题所述鞍点特征。小明把“仍有下降方向”误当成局部极小值的依据，结论正好相反。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K03"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "saddle-point-mixed-curvature"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q6",
+    "type": "single",
+    "question": "在高维损失地形中，某点梯度为零，且沿不同方向移动时损失既有上升也有下降。关于该点，以下判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "所有方向曲率均为负，该点是局部极大值"
+      },
+      {
+        "value": "B",
+        "label": "该点同时存在正曲率和负曲率方向，是鞍点，这是它与局部极小值的本质区别"
+      },
+      {
+        "value": "C",
+        "label": "所有方向曲率均为正，该点是局部极小值"
+      },
+      {
+        "value": "D",
+        "label": "该点梯度不为零，优化器会自然离开，无需逃逸策略"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "梯度为零且沿一些方向上升、另一些方向下降，说明该点具有鞍点特征。局部极小值要求在充分小的邻域内没有更低的函数值；本题已经给出下降方向，因此可排除局部极小值。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K03"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "saddle-point-mixed-curvature"
+    }
+  }
+}

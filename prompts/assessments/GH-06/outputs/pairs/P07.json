@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q7",
+    "type": "single",
+    "question": "已知某水库的进水速度函数为 v(t)（单位：立方米/小时），t 表示从早上 8 点开始计时的小时数。若用定积分表示早上 8 点到中午 12 点之间水库增加的总水量，下列表达式正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "∫(0 到 4) v(t) dt，它等于进水速度曲线下的区域面积，代表这段时间内的累积进水量"
+      },
+      {
+        "value": "B",
+        "label": "∫(0 到 12) v(t) dt，它代表从早上 8 点到晚上 8 点的累积进水量"
+      },
+      {
+        "value": "C",
+        "label": "v(4) - v(0)，它代表中午 12 点与早上 8 点的进水速度之差"
+      },
+      {
+        "value": "D",
+        "label": "∫(0 到 4) v'(t) dt，它代表进水速度变化量的累积"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "定积分作为累积的核心含义是：函数在某区间上的定积分等于该函数图像与坐标轴围成的区域面积，且这个面积代表了该物理量在指定时间段内的总累积量。早上 8 点到中午 12 点对应时间区间 t ∈ [0, 4]，因此总累积进水量为 ∫(0 到 4) v(t) dt。选项 B 的时间区间错误；选项 C 计算的是速度差而非水量累积；选项 D 积分对象错误，累积的是速度本身而非其导数。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "physical_accumulation_expression"
+    }
+  },
+  "post": {
+    "id": "GH-06-post-q7",
+    "type": "single",
+    "question": "一列火车沿直线行驶，其速度函数为 w(t)（单位：千米/小时），t 表示从发车时刻开始计时的小时数。发车后前 3 个小时内火车行驶的总路程应表示为定积分 ∫(0 到 3) w(t) dt。关于该定积分的核心含义，下列说法中最准确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "该定积分的数值等于 w(3) - w(0)，表示这段时间内火车速度的净增加量"
+      },
+      {
+        "value": "B",
+        "label": "该定积分的数值等于速度函数 w(t) 在 t ∈ [0, 3] 上的曲线与 t 轴所围成的区域面积，代表这段时间内的累积行驶路程"
+      },
+      {
+        "value": "C",
+        "label": "该定积分的数值等于 ∫(0 到 3) w'(t) dt，表示火车加速度的累积效果"
+      },
+      {
+        "value": "D",
+        "label": "该定积分的数值等于 w(3) × 3，表示用第 3 小时末的速度乘以总时间估算路程"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "定积分作为累积的核心含义在于，被积函数（速度）在指定时间区间内的定积分，其几何意义是函数曲线与横轴围成的区域面积，物理意义则是该物理量（路程）在此时段内的总累积值。选项 A 混淆了积分与函数值差；选项 C 错误地积分了导数；选项 D 误用了矩形面积近似代替精确的定积分累积，不符合定积分作为累积的核心含义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "physical_accumulation_expression"
+    }
+  }
+}

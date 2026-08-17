@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q6",
+    "type": "single",
+    "question": "某同学在研究函数 y=f(x) 的图像弯曲方向时，观察到在区间 (a, b) 内，随着 x 的增大，曲线的切线斜率 k 不断减小。由此他判断该区间内曲线是向下凸的（即开口向下）。关于这一判断过程所依赖的数学概念，下列说法正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "切线斜率 k 就是 f(x)，它的减小意味着 f(x) 在下降，因此曲线向下凸"
+      },
+      {
+        "value": "B",
+        "label": "切线斜率 k 就是 f'(x)，它随 x 增大而减小意味着 f''(x)<0，所以曲线开口向下"
+      },
+      {
+        "value": "C",
+        "label": "切线斜率 k 就是 f''(x)，它的减小意味着 f''(x)<0，所以曲线向下凸"
+      },
+      {
+        "value": "D",
+        "label": "切线斜率 k 就是 f'(x)，它的减小意味着 f(x) 在下降，因此曲线向下凸"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "切线斜率 k 即为导函数 f'(x)。切线斜率不断减小，说明 f'(x) 随着 x 的增大而下降，即 f'(x) 的变化率为负，也就是二阶导数 f''(x)<0。根据二阶变化和凹凸的关系，f''(x)<0 对应曲线向下凸（开口向下）。该同学的结论正确，其推理依据是二阶导数的符号。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  },
+  "post": {
+    "id": "GH-05-post-q6",
+    "type": "single",
+    "question": "在区间 (m,n) 内，函数 g(x) 随 x 增大而持续增加，但图像越来越平缓。若用一阶导数和二阶导数解释这一现象，下列推理链正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "g(x) 持续增大说明 g''(x)>0，这直接对应开口向上的弯曲状态"
+      },
+      {
+        "value": "B",
+        "label": "弯曲程度越来越平缓说明 g'(x) 在增大，即 g''(x)>0，对应开口向上"
+      },
+      {
+        "value": "C",
+        "label": "g(x) 持续增大说明 g'(x)>0；弯曲变平缓说明 g'(x) 的增量在减小，即 g''(x)<0，对应开口向下"
+      },
+      {
+        "value": "D",
+        "label": "g(x) 持续增大说明 g'(x)>0；弯曲变平缓说明 g'(x) 的增量在减小，即 g''(x)>0，对应开口向上"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "函数持续增加说明g'(x)>0；图像越来越平缓说明正的切线斜率在减小，因此g''(x)<0，图像开口向下。故C正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  }
+}

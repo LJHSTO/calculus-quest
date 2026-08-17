@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "深度学习数学直觉：从矩阵到优化",
+  "outlines": [
+    {
+      "id": "EXT-04-K02-check",
+      "type": "quiz",
+      "title": "即时检查：反向传播的完整推导直觉",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-04-K02-check-q1",
+          "type": "single",
+          "question": "在一个三层全连接网络中，若某隐藏层激活值 z 对损失 L 的偏导 ∂L/∂z 已知，现要更新该层权重 w，下列哪一项最准确地体现了反向传播在该权重梯度推导中的核心直觉？",
+          "options": [
+            {
+              "value": "A",
+              "label": "权重 w 的梯度等于 ∂L/∂z 直接乘以学习率，无需链式法则"
+            },
+            {
+              "value": "B",
+              "label": "权重 w 的梯度等于 ∂L/∂z 乘以该层输入 x，即 ∂L/∂w = (∂L/∂z)·x"
+            },
+            {
+              "value": "C",
+              "label": "权重 w 的梯度等于 ∂L/∂z 乘以下一层权重矩阵的转置"
+            },
+            {
+              "value": "D",
+              "label": "权重 w 的梯度等于损失 L 对输出层权重的偏导再乘以输入 x"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "反向传播的核心直觉在于：权重 w 先通过 z = w·x + b 影响激活值 z，z 再影响最终损失 L。因此由链式法则可得 ∂L/∂w = (∂L/∂z)·(∂z/∂w) = (∂L/∂z)·x。选项 B 正确。选项 A 忽略了链式法则；选项 C 描述的是将误差信号向前传播到上一层，而非当前层权重的梯度；选项 D 混淆了不同层的权重。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-04-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "EXT-04-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "formula"
+          }
+        },
+        {
+          "id": "EXT-04-K02-check-q2",
+          "type": "multiple",
+          "question": "关于反向传播完整推导的直觉，下列说法中哪些是错误的？请选择所有错误说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "反向传播只是把损失对输出的梯度直接复制给每一层权重，不需要逐层链式求导"
+            },
+            {
+              "value": "B",
+              "label": "在反向传播中，当前层的权重梯度依赖于后一层传回的误差信号和当前层的输入"
+            },
+            {
+              "value": "C",
+              "label": "反向传播的推导与网络的前向计算结构无关，可以脱离计算图独立得到权重梯度"
+            },
+            {
+              "value": "D",
+              "label": "只要记住 ∂L/∂w 的最终公式，就能理解反向传播，不需要理解误差信号是如何逐层传递的"
+            }
+          ],
+          "answer": [
+            "A",
+            "C",
+            "D"
+          ],
+          "analysis": "选项 A 错误：反向传播必须逐层应用链式法则，不能直接复制梯度。选项 B 正确：当前层权重梯度 = 后层传回的误差信号 × 当前层输入，这是反向传播的核心直觉。选项 C 错误：反向传播严格依赖前向计算图的结构，路径和依赖关系决定了链式求导的顺序。选项 D 错误：只记公式而不理解误差信号逐层传递的过程，正是常见误解，无法真正解释反向传播的完整推导直觉。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-04-K02"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 4,
+          "pairId": "EXT-04-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept"
+          }
+        }
+      ]
+    }
+  ]
+}

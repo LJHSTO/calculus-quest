@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q9",
+    "type": "multiple",
+    "question": "已知函数 y=f(x) 在点 P 处的切线为定直线 L。当自变量改变量 Δx 趋近于 0 时，考察曲线在 P 点附近的割线变化情况。关于此逼近过程与瞬时变化率的几何意义，下列说法中所有正确的选项是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "割线的斜率 k=Δy/Δx 会随着 Δx 趋近于 0 而无限趋近于切线 L 的斜率"
+      },
+      {
+        "value": "B",
+        "label": "当 Δx 极其接近 0 时，对应的割线与切线 L 的倾斜角必定完全相同"
+      },
+      {
+        "value": "C",
+        "label": "若点 P 处的切线斜率存在，则函数在该点的瞬时变化率即为切线 L 的斜率"
+      },
+      {
+        "value": "D",
+        "label": "逼近瞬时变化率时，只需让函数值改变量 Δy 趋近于 0，自变量改变量 Δx 可以保持不变"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "选项A正确，Δx 趋近于 0 时，割线斜率 Δy/Δx 的极限值即为切线斜率；选项B错误，当 Δx 趋近于 0 时，割线的倾斜角无限趋近于切线的倾斜角，但在 Δx≠0 的逼近过程中，两者并非完全相同；选项C正确，瞬时变化率在几何上表现为切线的斜率；选项D错误，逼近瞬时变化率的关键是让自变量改变量 Δx 趋近于 0，不能让 Δx 保持不变。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-03-K02"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "geometric-interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q9",
+    "type": "multiple",
+    "question": "在利用平均变化率逼近瞬时变化率的过程中，某同学得出了四个结论。关于这些结论的判断，其中所有正确的选项是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "瞬时变化率是当自变量改变量无限趋近于 0 时，平均变化率所逼近的确定数值"
+      },
+      {
+        "value": "B",
+        "label": "在逼近过程中，若某一步的平均变化率与瞬时变化率数值相等，则说明此时自变量改变量已经精确达到了 0"
+      },
+      {
+        "value": "C",
+        "label": "当自变量改变量越来越接近 0 时，对应的割线斜率与切线斜率的差距可以任意小"
+      },
+      {
+        "value": "D",
+        "label": "只要自变量改变量足够小，对应的割线斜率就可以完全替代该点切线的斜率"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "选项A正确，瞬时变化率是平均变化率在自变量改变量趋近于 0 时的极限；选项B错误，在逼近过程中，平均变化率可能在某一步恰好等于极限值，但这并不意味着改变量达到了 0，极限是一种无限趋近的趋势；选项C正确，随着改变量趋近于 0，割线斜率与切线斜率之差的绝对值可以任意小；选项D错误，割线斜率只是趋近于切线斜率，在改变量不为 0 时，两者存在微小差异，不能完全替代。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-03-K02"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "geometric-interpretation"
+    }
+  }
+}

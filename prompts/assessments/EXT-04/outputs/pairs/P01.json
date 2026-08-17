@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q1",
+    "type": "single",
+    "question": "某全连接层有 3 个输入特征和 2 个神经元。每个神经元计算输入的加权求和加偏置，再通过激活函数 σ。关于该层前向传播的矩阵表示，以下哪个说法正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "权重矩阵 W 形状为 2×3，输入向量 x 形状为 3×1，前向传播为 σ(Wx + b)，其中 b 形状为 2×1"
+      },
+      {
+        "value": "B",
+        "label": "权重矩阵 W 形状为 3×2，输入向量 x 形状为 2×1，前向传播为 σ(Wx + b)"
+      },
+      {
+        "value": "C",
+        "label": "写成矩阵形式后，激活函数 σ 不再需要单独应用，矩阵乘法已包含非线性变换"
+      },
+      {
+        "value": "D",
+        "label": "两个神经元的偏置必须取相同值，否则无法合并为一次矩阵乘法"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "全连接层的矩阵视角：权重矩阵 W 的行数 = 输出神经元个数（2），列数 = 输入特征个数（3），因此 W 为 2×3。输入 x 为 3×1，Wx 为 2×1，偏置 b 为 2×1，相加后经 σ 得到 2×1 输出。B 把行列写反；C 混淆了线性变换与非线性激活，矩阵乘法只完成线性部分，σ 必须单独应用；D 错误，不同神经元的偏置可以不同，矩阵形式天然支持每个输出分量有独立偏置。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "matrix-formulation-identification"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q1",
+    "type": "single",
+    "question": "某教材给出一个全连接层：输入维度为 4，输出维度为 3，权重矩阵 W 为 3×4，偏置向量 b 为 3×1，前向传播公式为 a = σ(Wx + b)。以下关于该公式的判断，哪个是正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "W 的列数应等于输出维度，教材将行列写反了"
+      },
+      {
+        "value": "B",
+        "label": "偏置 b 的维度应为 4×1 以匹配输入维度，教材写法有误"
+      },
+      {
+        "value": "C",
+        "label": "公式正确：W 的行数对应输出神经元数，列数对应输入特征数，b 与输出同维"
+      },
+      {
+        "value": "D",
+        "label": "σ 应作用于 Wx 而非 Wx + b，偏置应在激活之后再加"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "全连接层前向传播 a = σ(Wx + b) 中，W 行数 = 输出神经元数（3），列数 = 输入特征数（4），故 W 为 3×4 正确；x 为 4×1，Wx 为 3×1，偏置 b 为 3×1 与输出同维正确；σ 作用于仿射变换 Wx + b 的整体结果，先加偏置再激活，公式无误。A 混淆了行列含义；B 误认为偏置应与输入同维；D 颠倒了偏置与激活的顺序。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "matrix-formulation-identification"
+    }
+  }
+}

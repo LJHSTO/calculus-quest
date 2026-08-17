@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q8",
+    "type": "multiple",
+    "question": "关于函数 f(x) 的二阶变化和凹凸性，下列说法正确的有？已知 f(x) 在区间 I 上具有二阶导数。",
+    "options": [
+      {
+        "value": "A",
+        "label": "若 f''(x) 在 I 上恒为正，则 f(x) 在 I 上是凹的（开口向上）"
+      },
+      {
+        "value": "B",
+        "label": "若 f''(x) 在 I 上恒为负，则 f(x) 在 I 上是凹的（开口向上）"
+      },
+      {
+        "value": "C",
+        "label": "若 f(x) 在 I 上是凸的（开口向下），则 f''(x) 在 I 上必恒为负"
+      },
+      {
+        "value": "D",
+        "label": "若 f''(x) 在某点 x0 处为零，则 x0 必是 f(x) 的拐点"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "二阶导数 f''(x) 的符号决定函数图像的凹凸性。当 f''(x)>0 时，切线斜率递增，图像凹（开口向上）；当 f''(x)<0 时，切线斜率递减，图像凸（开口向下）。因此 A、C 正确，B 错误。对于 D，f''(x0)=0 仅是拐点的必要条件，还需 f''(x) 在 x0 左右两侧变号才构成拐点，故 D 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-05-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "property-judgment"
+    }
+  },
+  "post": {
+    "id": "GH-05-post-q8",
+    "type": "multiple",
+    "question": "设函数 g(x) 在区间 D 内存在二阶导数。根据二阶变化和凹凸的判定规则，下列结论错误的有？",
+    "options": [
+      {
+        "value": "A",
+        "label": "若 g''(x) 在 D 上始终大于零，则 g(x) 的图像在 D 上是凸的（开口向下）"
+      },
+      {
+        "value": "B",
+        "label": "若 g(x) 的图像在 D 上是凹的（开口向上），则 g''(x) 在 D 上必然始终大于零"
+      },
+      {
+        "value": "C",
+        "label": "若 g''(x) 在 D 上始终小于零，则 g(x) 的图像在 D 上是凸的（开口向下）"
+      },
+      {
+        "value": "D",
+        "label": "若 g''(x) 在 x0 处发生变号，则点 (x0, g(x0)) 必定是 g(x) 的拐点"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "二阶导数 g''(x) 的符号直接反映图像的凹凸性。g''(x)>0 对应凹（开口向上），g''(x)<0 对应凸（开口向下）。A 选项将大于零对应为凸，结论错误。B 选项中，图像凹意味着 g''(x)≥0，若仅要求始终大于零则过于绝对（可能存在个别点为零但仍保持凹），故 B 错误。C 选项正确反映了符号与凹凸的对应关系。D 选项中，二阶导数变号是拐点的充分条件，结论正确。题目要求选出错误的说法，因此选 A、B。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-05-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "property-judgment"
+    }
+  }
+}

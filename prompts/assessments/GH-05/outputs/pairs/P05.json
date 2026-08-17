@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q5",
+    "type": "single",
+    "question": "已知函数 f(x) 在区间 I 上可导。若 x=c 是 f(x) 在 I 内的一个极小值点，则关于 f'(c) 以及 c 两侧附近导数符号的描述，哪一项是正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "f'(c)=0；若导数在 c 左侧为负、右侧为正，则该符号变化可以确认 c 为极小值点"
+      },
+      {
+        "value": "B",
+        "label": "f'(c) 必定等于 0，且在 c 的左侧附近 f'(x) > 0，在 c 的右侧附近 f'(x) < 0"
+      },
+      {
+        "value": "C",
+        "label": "f'(c) 必定不存在，且在 c 的左侧附近 f'(x) < 0，在 c 的右侧附近 f'(x) > 0"
+      },
+      {
+        "value": "D",
+        "label": "f'(c) 必定等于 0，且在 c 的左侧附近 f'(x) = 0，在 c 的右侧附近 f'(x) > 0"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "函数在内部极小值点c处可导时，必要条件是f'(c)=0。导数由负变正是判定极小值的充分符号特征，但并非所有极小值都必须严格变号。A准确区分了必要条件与判定条件，因此正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-judgment"
+    }
+  },
+  "post": {
+    "id": "GH-05-post-q5",
+    "type": "single",
+    "question": "已知可导函数 g(x) 在 x=a 处取得极大值。下列关于该点处导数状态及 a 点附近单调性的推断中，正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "g'(a) = 0，且在 a 的左侧附近 g'(x) < 0，在 a 的右侧附近 g'(x) > 0"
+      },
+      {
+        "value": "B",
+        "label": "g'(a)=0；若导数在 a 左侧为正、右侧为负，则该符号变化可以确认 a 为极大值点"
+      },
+      {
+        "value": "C",
+        "label": "g'(a) = 0，且在 a 的左侧附近 g'(x) = 0，在 a 的右侧附近 g'(x) < 0"
+      },
+      {
+        "value": "D",
+        "label": "g'(a) 不存在，且在 a 的左侧附近 g'(x) > 0，在 a 的右侧附近 g'(x) < 0"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "函数在内部极大值点a处可导时，必要条件是g'(a)=0。导数由正变负是判定极大值的充分符号特征，但不是所有极大值都必须严格变号。B准确区分了必要条件与判定条件，因此正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-judgment"
+    }
+  }
+}

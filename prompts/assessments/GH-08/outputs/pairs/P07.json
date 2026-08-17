@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q7",
+    "type": "single",
+    "question": "在地理学中，常使用等高线地形图来描述某区域的海拔分布。若某座山的地表高度函数为二元函数，其图像是一个连续的曲面，且该曲面被一系列水平面截割后，将截线投影到水平坐标面上形成等高线。关于等高线与原曲面关系的描述，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "同一条等高线上的所有点在曲面上的对应点具有相同的垂直高度（即函数值相同）"
+      },
+      {
+        "value": "B",
+        "label": "等高线越密集的地方，说明该区域曲面的高度值越大"
+      },
+      {
+        "value": "C",
+        "label": "每条等高线都是原曲面本身的一条弯曲曲线，只是观察视角不同"
+      },
+      {
+        "value": "D",
+        "label": "等高线图上的点表示的是空间曲面上的点，其坐标包含三个维度的数值"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "等高线本质上是空间曲面与水平面（如 z=c）相交所得曲线在底面（xOy平面）上的投影。因此，同一条等高线上的所有点对应的函数值 z 都等于常数 c，即高度相同。选项 B 错误，等高线密集反映的是高度变化率大（坡度陡），而非绝对高度大；选项 C 错误，等高线是二维平面投影曲线，不是三维空间中的曲面截线本身；选项 D 错误，等高线图上的点只有二维坐标，丢失了垂直高度维度的直接显式表示，需通过等高线标签才能知道高度。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept_verification"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q7",
+    "type": "single",
+    "question": "气象图上的等温线是将空间中温度分布曲面与一系列等温水平面相交后，把交线投影到地理坐标面上得到的图形。若某地区的温度分布可用一个二元函数的曲面来表示，则关于该等温线图与温度曲面之间联系的判断，正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "等温线的疏密程度反映了温度曲面在对应区域的倾斜程度，越密说明曲面越陡峭"
+      },
+      {
+        "value": "B",
+        "label": "同一条等温线上的各个投影点，对应着温度曲面上函数值相同的点"
+      },
+      {
+        "value": "C",
+        "label": "等温线就是温度曲面被垂直剖切后留下的曲线痕迹"
+      },
+      {
+        "value": "D",
+        "label": "等温线图直接给出了空间中每一点的三个坐标值，完整还原了温度曲面"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "等温线是空间温度曲面与水平面 T=c 的交线在二维坐标面上的投影。因此，同一条等温线上所有点对应的温度值 T 都等于同一个常数 c，即函数值相同。选项 A 描述了等温线疏密与坡度的关系，虽然物理意义正确，但它没有直接说明等温线与曲面函数值的等值对应关系，不如 B 准确切题；选项 C 错误，等温线是水平面截割的投影，而非垂直剖切；选项 D 错误，等温线图是二维投影，只包含两个坐标，第三个坐标需通过等温线标注的数值获取，并未直接给出所有三维坐标。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-08-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept_verification"
+    }
+  }
+}

@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "数值优化进阶：从梯度到二阶与约束",
+  "outlines": [
+    {
+      "id": "EXT-05-K02-check",
+      "type": "quiz",
+      "title": "即时检查：共轭梯度与二阶方法",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-05-K02-check-q1",
+          "type": "single",
+          "question": "在求解二次函数 f(x)=xᵀQx 的最小值时，设 Q 为对称正定矩阵。共轭梯度法构造的搜索方向 dₖ 需要满足关于 Q 的共轭条件。若 d₀ 与 d₁ 是两个非零搜索方向，该条件对应的数学表达式是下列哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "d₀ᵀd₁ = 0"
+            },
+            {
+              "value": "B",
+              "label": "d₀ᵀQd₁ = 0"
+            },
+            {
+              "value": "C",
+              "label": "Qd₀ = d₁"
+            },
+            {
+              "value": "D",
+              "label": "d₀ᵀQ⁻¹d₁ = 0"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "共轭梯度法要求不同搜索方向关于正定矩阵 Q 相互共轭，即 dᵢᵀQdⱼ = 0（i≠j），因此 B 正确。A 只是普通正交；C 不是共轭条件；D 使用 Q⁻¹，不符合这里关于 Q 的标准定义。在精确算术下，这种构造可使 n 维正定二次问题至多经过 n 个方向得到精确解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-05-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-05-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "medium",
+            "conclusionClass": "definition"
+          }
+        },
+        {
+          "id": "EXT-05-K02-check-q2",
+          "type": "multiple",
+          "question": "关于共轭梯度法与二阶方法，下列说法中所有错误说法是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "共轭梯度法的搜索方向只需满足普通正交条件 dᵢᵀdⱼ=0 即可。"
+            },
+            {
+              "value": "B",
+              "label": "牛顿法在每一步迭代中都需要计算或近似计算 Hessian 矩阵。"
+            },
+            {
+              "value": "C",
+              "label": "共轭梯度法结合了梯度信息与共轭性，可在有限步内求得二次函数的最小值。"
+            },
+            {
+              "value": "D",
+              "label": "二阶方法仅指使用一阶梯度方向的优化方法。"
+            }
+          ],
+          "answer": [
+            "A",
+            "D"
+          ],
+          "analysis": "A 错误：共轭梯度法要求搜索方向关于 Q 共轭（dᵢᵀQdⱼ=0），而非普通正交。B 正确：牛顿法需用 Hessian 矩阵构造搜索方向。C 正确：对二次函数，共轭梯度法具有有限步终止性。D 错误：二阶方法利用二阶导数信息，不属于一阶梯度方法。故所有错误说法为 A、D。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-05-K02"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "EXT-05-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 4,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "misconception"
+          }
+        }
+      ]
+    }
+  ]
+}

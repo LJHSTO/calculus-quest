@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q8",
+    "type": "multiple",
+    "question": "在约束优化中，我们常需要判断可行区域的几何特征。关于凸集合，下列说法中所有正确的选项是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "给定一个集合，若其中任意两点之间的线段完全包含在该集合内，则该集合是凸集合"
+      },
+      {
+        "value": "B",
+        "label": "一个集合的边界只要没有凹陷缺口，它就一定是凸集合"
+      },
+      {
+        "value": "C",
+        "label": "两个凸集合的交集必然是凸集合"
+      },
+      {
+        "value": "D",
+        "label": "若一个集合是凸集合，则它内部任意两点间的连线可能穿出该集合"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "凸集合的定义要求集合内任意两点间的线段均包含在集合内，故A正确。B错误，边界无凹陷缺口并不能保证任意两点连线在集合内，例如月牙形边界可能无尖锐缺口但内部连线会穿出集合。C正确，交集内任意两点同时在原凸集合中，其连线也同时在两个凸集合中，故在交集内。D错误，若连线穿出集合，则与凸集合定义矛盾。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-13-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-identification"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q8",
+    "type": "multiple",
+    "question": "在求解约束优化问题时，可行区域的形状决定了最优解的性质。关于凸集合，下列说法中所有错误的选项是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "若集合内存在一对点，它们之间的连线段有一部分落在集合外部，则该集合不是凸集合"
+      },
+      {
+        "value": "B",
+        "label": "只要集合的外围轮廓呈现向外凸出的平滑弧线，该集合就一定是凸集合"
+      },
+      {
+        "value": "C",
+        "label": "任意两个凸集合的交集仍然是凸集合"
+      },
+      {
+        "value": "D",
+        "label": "对于凸集合内的任意两点，连接它们的直线段有可能不完全属于该集合"
+      }
+    ],
+    "answer": [
+      "B",
+      "D"
+    ],
+    "analysis": "A正确，它直接符合凸集合定义的逆否命题。B错误，轮廓平滑外凸不代表内部满足任意两点连线在集合内的条件，如带有内凹平滑弧线的环形区域。C正确，交集内任意两点同时在原凸集合中，其连线也同时在两个凸集合中，故在交集内。D错误，若存在两点连线不完全属于该集合，则该集合不是凸集合，这与凸集合的定义相矛盾。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-13-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-identification"
+    }
+  }
+}

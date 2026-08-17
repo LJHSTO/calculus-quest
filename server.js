@@ -2978,11 +2978,27 @@ async function handleApi(req, res, url) {
         sendJson(res, 400, { ok: false, message: "测验提交信息不完整。" });
         return;
       }
-      const expectedEntries = courseAssessment.assessmentEntriesForUnit(assessmentIndex, {
+      let expectedEntries = courseAssessment.assessmentEntriesForUnit(assessmentIndex, {
         chapterId,
         unitId,
         phase
       });
+      const existingResults = db.getQuizResultsByUserUnit(auth.participant.id, unitId);
+      const coreEntry = expectedEntries.find((entry) => entry.question?.adaptiveRole === "core");
+      const diagnosticEntry = expectedEntries.find((entry) => entry.question?.adaptiveRole === "diagnostic");
+      const adaptiveFormative = phase === "formative" && Boolean(coreEntry && diagnosticEntry);
+      if (adaptiveFormative) {
+        const coreResult = existingResults.find((row) => row.question_id === coreEntry.question.id);
+        const diagnosticResult = existingResults.find((row) => row.question_id === diagnosticEntry.question.id);
+        if (!coreResult) {
+          expectedEntries = [coreEntry];
+        } else if (Number(coreResult.is_correct) === 0 && !diagnosticResult) {
+          expectedEntries = [diagnosticEntry];
+        } else {
+          sendJson(res, 409, { ok: false, code: "quiz_already_submitted", message: "这份知识点检测已经完成，不能重复覆盖成绩。" });
+          return;
+        }
+      }
       const submittedQuestionIds = new Set(
         answers.map((answer) => String(answer?.questionId || "").trim()).filter(Boolean)
       );
@@ -2999,7 +3015,7 @@ async function handleApi(req, res, url) {
         });
         return;
       }
-      if (db.getQuizResultsByUserUnit(auth.participant.id, unitId).length) {
+      if (!adaptiveFormative && existingResults.length) {
         sendJson(res, 409, { ok: false, code: "quiz_already_submitted", message: "这份测验已经提交，不能重复覆盖成绩。" });
         return;
       }
@@ -3084,6 +3100,12 @@ async function handleApi(req, res, url) {
 
       sendJson(res, 200, {
         ok: true,
+        requiresDiagnostic: Boolean(
+          adaptiveFormative
+          && expectedEntries.length === 1
+          && expectedEntries[0] === coreEntry
+          && prepared[0]?.isCorrect === false
+        ),
         results: prepared.map(({ entry, ...result }) => result)
       });
       return;

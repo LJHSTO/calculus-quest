@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "线性代数基础",
+  "outlines": [
+    {
+      "id": "EXT-02-K02-check",
+      "type": "quiz",
+      "title": "即时检查：矩阵运算与线性变换",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-02-K02-check-q1",
+          "type": "single",
+          "question": "在平面直角坐标系中，向量 v = (1, 0) 经过矩阵 A = [[0, 1], [1, 0]] 对应的线性变换后，得到的新向量坐标是什么？",
+          "options": [
+            {
+              "value": "A",
+              "label": "(0, 1)"
+            },
+            {
+              "value": "B",
+              "label": "(1, 1)"
+            },
+            {
+              "value": "C",
+              "label": "(0, 0)"
+            },
+            {
+              "value": "D",
+              "label": "(1, 0)"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "矩阵 A 作用于向量 v 相当于计算 A 与列向量 (1, 0)^T 的乘积。计算过程为 [[0, 1], [1, 0]] * (1, 0)^T = (0*1 + 1*0, 1*1 + 0*0)^T = (0, 1)^T。从几何意义上看，该变换将 x 轴上的单位向量映射到了 y 轴上，体现了矩阵运算与线性变换之间的直接联系。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K02"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 2,
+          "pairId": "EXT-02-K02-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "coordinate-pair"
+          }
+        },
+        {
+          "id": "EXT-02-K02-check-q2",
+          "type": "multiple",
+          "question": "关于矩阵运算与线性变换的关系，下列说法中正确的有？",
+          "options": [
+            {
+              "value": "A",
+              "label": "矩阵与向量相乘，本质上是对向量进行了一次线性变换，改变了向量的位置或方向。"
+            },
+            {
+              "value": "B",
+              "label": "矩阵仅仅是一种数字符号的排列，它和几何图形的变换操作没有任何联系。"
+            },
+            {
+              "value": "C",
+              "label": "矩阵的每一列代表了变换后原坐标系中对应单位基向量的新位置。"
+            },
+            {
+              "value": "D",
+              "label": "任意一个 2x2 矩阵作用于二维平面，都会把平面内所有向量等比例放大或缩小。"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "选项 A 正确，矩阵乘法对应着向量的线性变换，这是矩阵运算的核心几何意义；选项 B 错误，这正是常见的误解，只记住了矩阵的符号形式，忽略了它与图像和操作的连接；选项 C 正确，矩阵的列向量正是原基向量变换后的结果，这是理解线性变换的关键；选项 D 错误，矩阵变换不仅包含缩放，还包括旋转、拉伸、剪切甚至投影，并非只有等比例缩放。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-02-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "EXT-02-K02-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 4,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "proposition-set"
+          }
+        }
+      ]
+    }
+  ]
+}

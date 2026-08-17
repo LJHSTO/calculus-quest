@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q5",
+    "type": "single",
+    "question": "已知一个二阶线性方程组对应的系数矩阵为 M，其行列式的值 det(M) = 0。若该方程组的右侧常数项全为 0，关于此齐次方程组的解，以下判断正确的是哪个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "方程组没有解，因为矩阵不可逆"
+      },
+      {
+        "value": "B",
+        "label": "方程组只有零解，因为矩阵不可逆"
+      },
+      {
+        "value": "C",
+        "label": "方程组存在无穷多解，包含非零解"
+      },
+      {
+        "value": "D",
+        "label": "方程组解的数量无法仅由行列式为零判断"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "当系数矩阵的行列式为零时，矩阵不可逆，对应的齐次线性方程组必然存在非零解。由于齐次方程组至少有零解，且此时存在非零解，因此解的个数是无穷多的。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "solution-existence"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q5",
+    "type": "single",
+    "question": "考虑一个由两个二元一次方程构成的齐次线性方程组，其系数矩阵的行列式等于 0。关于该方程组解的情况，下列结论中正确的是哪个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该方程组只有唯一的一组零解"
+      },
+      {
+        "value": "B",
+        "label": "该方程组无解，不存在满足条件的变量值"
+      },
+      {
+        "value": "C",
+        "label": "该方程组除了零解外，还存在无穷多个非零解"
+      },
+      {
+        "value": "D",
+        "label": "该方程组是否存在非零解取决于方程的具体系数"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "齐次线性方程组的系数矩阵行列式为零，意味着矩阵不可逆，方程组不存在唯一解。由于齐次方程组必然存在零解，且行列式为零保证了非零解的存在，因此该方程组有无穷多解，包含零解和非零解。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "solution-existence"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q7",
+    "type": "single",
+    "question": "已知函数f(x)在区间I上可导，且f'(x)>0。某同学据此推断：f(x)在I上不仅递增，而且必定开口向上。这个推断是否正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "正确，因为导数为正同时决定单调性和凹凸性"
+      },
+      {
+        "value": "B",
+        "label": "正确，因为函数递增时图像必然越来越陡"
+      },
+      {
+        "value": "C",
+        "label": "不正确，f'(x)>0只能说明函数递增；凹凸性还要看f'(x)随x如何变化或f''(x)的符号"
+      },
+      {
+        "value": "D",
+        "label": "不正确，因为f'(x)>0不能说明函数递增"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "f'(x)>0只能判断f(x)在I上递增，不能判断切线斜率是在增大还是减小。凹凸性需要考察f'(x)的增减或f''(x)的符号，因此C正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K03"
+    ],
+    "cognitiveLevel": "evaluate",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-validation"
+    }
+  },
+  "post": {
+    "id": "GH-05-post-q7",
+    "type": "single",
+    "question": "某同学观察到函数g(x)在区间D内始终递增，便断定其图像在D内一定开口向上。关于这一判断，下列说法最准确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "判断正确，因为函数递增必然意味着切线斜率递增"
+      },
+      {
+        "value": "B",
+        "label": "判断不正确；递增只说明g'(x)≥0，弯曲方向还要考察g'(x)的增减或g''(x)的符号"
+      },
+      {
+        "value": "C",
+        "label": "判断不正确，因为递增函数的导数必定小于零"
+      },
+      {
+        "value": "D",
+        "label": "判断正确，因为只要函数值增加，二阶导数就必定大于零"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "函数递增只说明一阶导数非负，不能说明一阶导数本身是在增大还是减小。判断开口方向需要考察切线斜率的变化或二阶导数符号，因此B正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K03"
+    ],
+    "cognitiveLevel": "evaluate",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-validation"
+    }
+  }
+}

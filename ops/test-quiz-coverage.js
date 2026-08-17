@@ -31,25 +31,34 @@ const syntheticUnits = new Map([
 ]);
 let completionAllowed = true;
 const previewFeedback = { textContent: "", closest: () => null };
-assert.equal(route.quizKnowledgePointCuration?.questionSetPreserved, true);
+assert.equal(route.quizKnowledgePointCuration?.version, "knowledge-checks-v2");
+assert.equal(route.quizKnowledgePointCuration?.questionSetPreserved, false);
 assert.deepEqual(route.quizKnowledgePointCuration?.selectionReplacements, []);
-const quizIdentity = (route.chapters || []).flatMap((chapter) =>
-  ["preQuiz", "formativeQuiz", "postQuiz"].flatMap((phase) =>
+const quizIdentity = (route.chapters || []).flatMap((chapter) => [
+  ...["preQuiz", "postQuiz"].flatMap((phase) =>
     (chapter.flow?.[phase]?.questions || []).map((question) => ({
       chapterId: chapter.id,
-      phase,
+      unitId: `${chapter.id}-${phase === "preQuiz" ? "pre" : "post"}`,
       id: question.id,
       sourceId: question.sourceId,
-      moduleId: question.moduleId,
       type: question.type,
-      question: question.question || question.prompt || "",
-      options: question.options || [],
-      answer: question.answer,
+      knowledgePointIds: question.knowledgePointIds,
       points: question.points,
-      selectionOrder: question.selectionOrder
     }))
-  )
-);
+  ),
+  ...(chapter.modules || []).flatMap((module) => (module.knowledgePoints || []).flatMap((knowledgePoint) => (
+    (knowledgePoint.formativeQuiz?.questions || []).map((question) => ({
+      chapterId: chapter.id,
+      unitId: `${knowledgePoint.id}-formative`,
+      id: question.id,
+      sourceId: question.sourceId,
+      type: question.type,
+      knowledgePointIds: question.knowledgePointIds,
+      adaptiveRole: question.adaptiveRole,
+      points: question.points
+    }))
+  )))
+]);
 const quizIdentityFingerprint = crypto
   .createHash("sha256")
   .update(JSON.stringify(quizIdentity))
@@ -186,8 +195,8 @@ async function testLockedQuizPreview() {
 }
 
 const reviewUnit = {
-  ...unitById.get("V14-C1-formative"),
-  id: "quiz-submitted",
+  ...unitById.get("GH-01-K01-formative"),
+  id: "GH-01-K01-formative",
   chapterId: route.chapters[0].id,
   assessmentPhase: "formative"
 };
@@ -261,7 +270,7 @@ assert.match(failedShortAnswerHtml, /重新批改/);
 
 const linkedQuestion = {
   ...choiceQuestion,
-  question: "请先回看[[cq-unit:knowledge-target|simulation|回看课件：目标课件]]，再回答：测试题目。"
+  question: "请先回看[[cq-unit:GH-01-K01|simulation|回看课件：目标课件]]，再回答：测试题目。"
 };
 const linkedResult = { response: ["B"], answer: ["A"], isCorrect: false };
 const lockedPreHtml = sandbox.renderQuestionReview({
@@ -285,14 +294,14 @@ assert.doesNotMatch(lockedFormativeHtml, /data-quiz-resource-link/);
 assert.match(lockedFormativeHtml, /对应课件尚未解锁/);
 assert.doesNotMatch(lockedFormativeHtml, /可以先回看/);
 
-accessibleQuizResources.add("knowledge-target");
+accessibleQuizResources.add("GH-01-K01");
 const unlockedFormativeHtml = sandbox.renderQuestionReview({
   question: linkedQuestion,
   result: linkedResult,
   index: 0,
   unit: { ...reviewUnit, assessmentPhase: "formative" }
 });
-assert.match(unlockedFormativeHtml, /data-quiz-resource-link="knowledge-target"/);
+assert.match(unlockedFormativeHtml, /data-quiz-resource-link="GH-01-K01"/);
 assert.match(unlockedFormativeHtml, /可以先回看/);
 assert.match(unlockedFormativeHtml, /回看「目标课件」课件/);
 assert.doesNotMatch(unlockedFormativeHtml, /请先回看回看课件/);
@@ -383,7 +392,7 @@ for (const chapter of route.chapters || []) {
     .reduce((map, point) => map.set(point.id, point.name), new Map());
   const moduleById = new Map(chapter.modules.map((module) => [module.id, module]));
   const chapterCoverage = new Set();
-  for (const phase of ["preQuiz", "formativeQuiz", "postQuiz"]) {
+  for (const phase of ["preQuiz", "postQuiz"]) {
     const phaseModules = new Set();
     for (const question of chapter.flow?.[phase]?.questions || []) {
       const ids = question.knowledgePointIds || [];
@@ -415,6 +424,18 @@ for (const chapter of route.chapters || []) {
       `${chapter.id}/${phase} does not represent every source module`
     );
   }
+  for (const module of chapter.modules) {
+    for (const point of module.knowledgePoints || []) {
+      const checks = point.formativeQuiz?.questions || [];
+      assert.equal(checks.length, 2, `${point.id} must have one core and one diagnostic question`);
+      assert.deepEqual(checks.map((question) => question.adaptiveRole), ["core", "diagnostic"]);
+      assert.deepEqual(checks.map((question) => question.type), ["single", "multiple"]);
+      checks.forEach((question) => {
+        assert.deepEqual(question.knowledgePointIds, [point.id]);
+        questionCount += 1;
+      });
+    }
+  }
   [...lookup.keys()]
     .filter((id) => !chapterCoverage.has(id))
     .forEach((id) => observedCoverageGaps.push(id));
@@ -424,7 +445,7 @@ const declaredCoverageGaps = (route.quizKnowledgePointCuration?.coverageGaps || 
   .map((gap) => gap.knowledgePointId)
   .sort();
 assert.deepEqual(observedCoverageGaps.sort(), declaredCoverageGaps);
-assert.deepEqual(declaredCoverageGaps, ["GH-03-K03", "GH-10-K04", "GH-14-K05"]);
+assert.deepEqual(declaredCoverageGaps, []);
 
 testLockedQuizPreview()
   .then(() => console.log(`quiz coverage labels passed (${questionCount} questions)`))

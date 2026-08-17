@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q2",
+    "type": "single",
+    "question": "比较两个具有相同最低函数值的目标函数：甲在最低点附近形成狭窄陡峭的谷底，乙形成宽阔平缓的谷底。下列哪项正确描述了这种地形差异？",
+    "options": [
+      {
+        "value": "A",
+        "label": "两者最低值相同，所以局部坡度与优化路径也必然完全相同"
+      },
+      {
+        "value": "B",
+        "label": "甲在谷底附近函数值随位置变化更快，乙的低值区域更平坦"
+      },
+      {
+        "value": "C",
+        "label": "甲必有多个局部极小值，乙必只有一个极小值"
+      },
+      {
+        "value": "D",
+        "label": "陡峭或平缓只与绘图颜色有关，与函数值变化率无关"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "目标函数地形不仅描述最低值的位置，也描述附近坡度和曲率。狭窄陡谷意味着离开最低点时函数值上升较快，宽阔平谷意味着一片区域内变化较慢，因此选 B。最低值相同并不推出局部形状或优化路径相同。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric-feature-identification"
+    }
+  },
+  "post": {
+    "id": "GH-12-post-q2",
+    "type": "single",
+    "question": "某二维目标函数的等高线在最低点附近都是闭合曲线：图甲的相邻等高线非常密集，图乙则较稀疏。若两图使用相同等高距，下列判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "图甲对应区域更平缓，因为等高线越密集高度变化越慢"
+      },
+      {
+        "value": "B",
+        "label": "两图局部陡峭程度必然相同，因为都画成闭合曲线"
+      },
+      {
+        "value": "C",
+        "label": "图甲对应区域更陡峭，图乙对应区域更平缓"
+      },
+      {
+        "value": "D",
+        "label": "仅凭等高线疏密只能判断函数值正负，不能判断地形陡缓"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "等高距相同时，相邻等高线越密集，表示在更短的水平距离内发生同样的函数值变化，局部地形越陡。因此图甲更陡、图乙更平缓，选 C。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "geometric-feature-identification"
+    }
+  }
+}

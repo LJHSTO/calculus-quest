@@ -115,11 +115,20 @@ function learningSubmittedQuizIds(learningState = state) {
     && !Array.isArray(learningState.quizAttempts)
     ? learningState.quizAttempts
     : {};
-  return [...new Set([
+  const candidates = [...new Set([
     ...(Array.isArray(learningState?.submittedQuizzes) ? learningState.submittedQuizzes : []),
     ...quizResults.map(learningQuizUnitId),
     ...Object.keys(quizAttempts)
   ].filter(Boolean))];
+  return candidates.filter((unitId) => {
+    if (!unitId.endsWith("-formative")) return true;
+    const records = quizResults.filter((record) => learningQuizUnitId(record) === unitId);
+    return records.some((record) => {
+      const questionId = String(record.questionId || record.question_id || "");
+      return questionId.endsWith("-check-q2")
+        || (questionId.endsWith("-check-q1") && record.isCorrect === true);
+    });
+  });
 }
 
 function normalizeLearningStateCompatibility(learningState) {
@@ -133,6 +142,9 @@ function normalizeLearningStateCompatibility(learningState) {
     ? learningState.quizAttempts
     : {};
   learningState.submittedQuizzes = learningSubmittedQuizIds(learningState);
+  const submitted = new Set(learningState.submittedQuizzes);
+  learningState.completed = (Array.isArray(learningState.completed) ? learningState.completed : [])
+    .filter((unitId) => !String(unitId).endsWith("-formative") || submitted.has(unitId));
   return learningState;
 }
 
@@ -1480,14 +1492,11 @@ function buildMultiSceneLearningChapter(routeChapter, chapterIndex = 0) {
   let sceneOrder = 1;
   const modules = routeChapter.modules || [];
   const allKnowledgePoints = modules.flatMap((module, moduleIndex) => (module.knowledgePoints || []).map((knowledgePoint, kpIndex) => ({ module, moduleIndex, knowledgePoint, kpIndex })));
-  const formativeIndex = openMaicFormativeMidpointIndex(routeChapter, allKnowledgePoints);
-  const formativeFlow = openMaicFormativeQuizFlow(routeChapter, allKnowledgePoints, formativeIndex);
   units.push(createOpenMaicQuizUnit(chapter, routeChapter, "pre", sceneOrder++, -1));
   allKnowledgePoints.forEach((entry, index) => {
-    if (index === formativeIndex) units.push(createOpenMaicQuizUnit(chapter, routeChapter, "formative", sceneOrder++, -1, formativeFlow));
     units.push(createOpenMaicKnowledgeUnit(chapter, entry.module, entry.knowledgePoint, entry.kpIndex, sceneOrder++, entry.moduleIndex));
+    units.push(createOpenMaicKnowledgeCheckUnit(chapter, entry.module, entry.knowledgePoint, sceneOrder++, entry.moduleIndex));
   });
-  if (allKnowledgePoints.length <= formativeIndex) units.push(createOpenMaicQuizUnit(chapter, routeChapter, "formative", sceneOrder++, -1, formativeFlow));
   if (openMaicReviewHasCourseware(routeChapter)) units.push(createOpenMaicReviewUnit(chapter, routeChapter, sceneOrder++, -1));
   units.push(createOpenMaicQuizUnit(chapter, routeChapter, "post", sceneOrder++, -1));
 
@@ -1499,6 +1508,47 @@ function buildMultiSceneLearningChapter(routeChapter, chapterIndex = 0) {
     units,
     allUnits: units,
     loaded: true
+  };
+}
+
+function createOpenMaicKnowledgeCheckUnit(chapter, module, knowledgePoint, sceneOrder, moduleIndex) {
+  const rawFlow = knowledgePoint.formativeQuiz || {};
+  const flow = openMaicQuizFlowForPhase(rawFlow, "formative");
+  return {
+    id: `${knowledgePoint.id}-formative`,
+    kind: "quiz",
+    chapterId: chapter.id,
+    moduleId: module.id,
+    moduleTitle: module.title,
+    moduleOrder: moduleIndex + 1,
+    sceneOrder,
+    flowKind: "core",
+    flowLabel: knowledgePoint.id,
+    label: `检测：${knowledgePoint.name}`,
+    summary: `完成「${knowledgePoint.name}」后的即时检测`,
+    type: "quiz",
+    assessmentPhase: "formative",
+    adaptiveFormative: true,
+    knowledgePointId: knowledgePoint.id,
+    placeholderQuiz: !(flow.questions || []).length,
+    conceptClusterId: knowledgePoint.id,
+    conceptClusterLabel: knowledgePoint.name,
+    conceptClusterFocus: knowledgePoint.goal || "",
+    representation: "assessment",
+    scenarioType: "check",
+    difficultyBand: flow.difficulty || "medium",
+    scene: {
+      type: "quiz",
+      title: readableRouteText(flow.title, `知识点检测：${knowledgePoint.name}`),
+      order: sceneOrder,
+      content: {
+        questions: flow.questions || [],
+        quizConfig: flow,
+        knowledgePoint,
+        adaptiveFormative: true
+      },
+      actions: []
+    }
   };
 }
 

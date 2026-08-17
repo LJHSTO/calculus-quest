@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "机器学习高数闭环：从导数到训练",
+  "outlines": [
+    {
+      "id": "GH-14-K01-check",
+      "type": "quiz",
+      "title": "即时检查：损失函数和参数",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-14-K01-check-q1",
+          "type": "single",
+          "question": "在用某模型预测房价时，采用平方损失函数 L(w)=(y-wx)^2 衡量预测值 wx 与真实值 y 的误差。若固定一组训练数据，让参数 w 变化，损失函数 L(w) 的值也随之变化。关于“损失函数和参数”的关系，下列说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "参数 w 是损失函数的自变量，改变 w 会改变损失函数的值"
+            },
+            {
+              "value": "B",
+              "label": "损失函数的值由参数 w 单独决定，与真实值 y 无关"
+            },
+            {
+              "value": "C",
+              "label": "参数 w 是损失函数的常数，改变 w 不会影响损失函数的值"
+            },
+            {
+              "value": "D",
+              "label": "损失函数和参数是两个独立概念，二者没有数学联系"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "在 L(w)=(y-wx)^2 中，w 是自变量，y 和 x 在给定数据下视为常数；改变 w 会改变预测值 wx，从而改变误差和损失函数的值。选项 B 忽略了 y 对损失的影响；选项 C 把参数误认为常数；选项 D 割裂了二者关系。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-14-K01-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "relation"
+          }
+        },
+        {
+          "id": "GH-14-K01-check-q2",
+          "type": "multiple",
+          "question": "小林认为：“只要记住损失函数的公式 L(w)=(y-wx)^2 和参数符号 w，就算理解了损失函数和参数。”关于“损失函数和参数”的理解，下列说法中正确的有：",
+          "options": [
+            {
+              "value": "A",
+              "label": "只记住公式和符号，但没有把参数 w 与预测值 wx、误差和损失值的变化联系起来，属于常见误解"
+            },
+            {
+              "value": "B",
+              "label": "参数 w 的不同取值会通过预测值 wx 影响损失函数 L(w) 的值"
+            },
+            {
+              "value": "C",
+              "label": "损失函数的值只由公式形式决定，与参数 w 的具体取值无关"
+            },
+            {
+              "value": "D",
+              "label": "理解损失函数和参数，应能说明改变 w 会怎样改变预测和误差，而不仅复述符号"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "选项 A 指出只记符号而不联系预测和误差是误解；选项 B 正确描述了参数通过预测值影响损失；选项 D 强调理解应体现在解释参数变化对预测和误差的影响上。选项 C 错误，因为损失值依赖于 w 的具体取值。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K01"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-14-K01-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "relation"
+          }
+        }
+      ]
+    }
+  ]
+}

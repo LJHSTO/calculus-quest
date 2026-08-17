@@ -1,0 +1,30 @@
+{
+  "pre": {
+    "id": "GH-02-pre-q6",
+    "type": "text",
+    "question": "关于函数 h(x) 在 x=c 处有三条观察记录：①从左侧靠近 c 时，h(x) 趋近 4；②从右侧靠近 c 时，h(x) 也趋近 4；③h(c)=7。判断 h(x) 在 x=c 处是否连续，并完整说明理由。",
+    "answer": "h(x) 在 x=c 处不连续。左右极限都等于 4，所以双侧极限存在且等于 4；但 h(c)=7，函数值不等于极限值，因此不满足连续性的条件。",
+    "analysis": "应依次检查双侧极限是否存在、极限值是否等于函数值，再给出连续性结论。这里前一项成立，后一项不成立。",
+    "points": 20,
+    "knowledgePointIds": ["GH-02-K03"],
+    "cognitiveLevel": "分析",
+    "estimatedSteps": 4,
+    "pairId": "P06",
+    "equivalence": {"presentationMode":"text","knownConditionCount":3,"operationCount":0,"symbolComplexity":"low","conclusionClass":"discontinuous"},
+    "rubric": [{"criterion":"判断双侧极限是否存在","points":6},{"criterion":"比较极限值与函数值","points":6},{"criterion":"给出连续性结论并完整说明理由","points":8}]
+  },
+  "post": {
+    "id": "GH-02-post-q6",
+    "type": "text",
+    "question": "某同学看到 p(2)=8，又知道 x 从 2 的左右两侧靠近时 p(x) 都趋近 5，便写下：‘左右极限相等，所以 p(x) 在 x=2 处连续。’请纠正这份解答，给出正确结论和完整推理。",
+    "answer": "该结论错误，p(x) 在 x=2 处不连续。左右极限都等于 5，说明双侧极限存在且等于 5；然而 p(2)=8，与极限值 5 不相等，所以不满足连续性的条件。",
+    "analysis": "纠错时既要肯定左右极限相等带来的结论，又要指出原解答漏掉了极限值与函数值的比较，最后得出不连续。",
+    "points": 20,
+    "knowledgePointIds": ["GH-02-K03"],
+    "cognitiveLevel": "分析",
+    "estimatedSteps": 4,
+    "pairId": "P06",
+    "equivalence": {"presentationMode":"text","knownConditionCount":3,"operationCount":0,"symbolComplexity":"low","conclusionClass":"discontinuous"},
+    "rubric": [{"criterion":"判断双侧极限是否存在","points":6},{"criterion":"比较极限值与函数值","points":6},{"criterion":"给出连续性结论并完整说明理由","points":8}]
+  }
+}

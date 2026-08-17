@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q1",
+    "type": "single",
+    "question": "已知函数 f(x) 在 x=2 处的导数值为 f'(2)=4，且 f(2)=5。若利用该点的一阶 Taylor 近似公式 L(x) 来估算 f(2.1) 的数值，估算结果是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "5.4"
+      },
+      {
+        "value": "B",
+        "label": "5.8"
+      },
+      {
+        "value": "C",
+        "label": "9.0"
+      },
+      {
+        "value": "D",
+        "label": "13.4"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "一阶 Taylor 近似公式为 L(x) = f(x0) + f'(x0)(x - x0)。代入已知条件 x0=2，f(2)=5，f'(2)=4，得到 L(x) = 5 + 4(x - 2)。当 x=2.1 时，L(2.1) = 5 + 4 × 0.1 = 5.4。选项 C 是直接将 f(2) 与 f'(2) 相加的结果，属于对公式结构的误解。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_estimation"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q1",
+    "type": "single",
+    "question": "在运用一阶 Taylor 近似对函数 g(x) 进行局部逼近时，若已知 g(3)=7 且其线性近似直线的斜率为 5，请写出该近似直线的表达式 L(x)，并指出当自变量取何值时，L(x) 的计算结果等于 22。",
+    "options": [
+      {
+        "value": "A",
+        "label": "L(x)=7+5(x-3)，且 x=6"
+      },
+      {
+        "value": "B",
+        "label": "L(x)=7+5x，且 x=3"
+      },
+      {
+        "value": "C",
+        "label": "L(x)=5+7(x-3)，且 x=6"
+      },
+      {
+        "value": "D",
+        "label": "L(x)=5+7x，且 x=3"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "一阶 Taylor 近似的核心公式为 L(x) = g(x0) + g'(x0)(x - x0)。已知 g(3)=7，斜率 g'(3)=5，故 L(x) = 7 + 5(x - 3)。令 L(x) = 22，有 7 + 5(x - 3) = 22，解得 5(x - 3) = 15，即 x = 6。选项 B 错将斜率当作常数项，选项 C 混淆了函数值与导数值的位置，选项 D 同时犯了这两种结构错误。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_estimation"
+    }
+  }
+}

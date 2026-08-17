@@ -1,0 +1,108 @@
+{
+  "languageDirective": "本测验使用简体中文。",
+  "courseTitle": "深度学习数学直觉：从矩阵到优化",
+  "outlines": [
+    {
+      "id": "EXT-04-K03-check",
+      "type": "quiz",
+      "title": "即时检查：损失地形、鞍点、局部极小与逃逸策略",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-04-K03-check-q1",
+          "type": "single",
+          "question": "在训练神经网络时，损失地形（loss landscape）表示的是损失函数值随什么变化而变化的曲面？",
+          "options": [
+            {
+              "value": "A",
+              "label": "训练数据的数量"
+            },
+            {
+              "value": "B",
+              "label": "模型参数（权重和偏置）"
+            },
+            {
+              "value": "C",
+              "label": "学习率的大小"
+            },
+            {
+              "value": "D",
+              "label": "训练轮数（epoch）"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "损失地形是损失函数关于模型参数的图像。横轴是参数空间，纵轴是损失值，曲面高低反映了不同参数组合下的误差大小。A、C、D 都是训练过程中的超参数或数据属性，不是损失地形的自变量。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-04-K03"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 1,
+          "pairId": "EXT-04-K03-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept"
+          }
+        },
+        {
+          "id": "EXT-04-K03-check-q2",
+          "type": "multiple",
+          "question": "关于鞍点、局部极小值与逃逸策略，以下哪些说法是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "鞍点是损失地形中某些方向上升、某些方向下降的点，梯度为零但既不是局部极小也不是局部极大。"
+            },
+            {
+              "value": "B",
+              "label": "在高维空间中，鞍点比局部极小值更常见，是优化困难的重要原因之一。"
+            },
+            {
+              "value": "C",
+              "label": "一旦陷入局部极小值，任何优化算法都无法逃逸。"
+            },
+            {
+              "value": "D",
+              "label": "动量法通过累积历史梯度方向，可以帮助优化过程越过鞍点或较浅的局部极小区域。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确：鞍点处梯度为零，但 Hessian 矩阵特征值有正有负，因此不同方向升降不同。B 正确：高维空间中鞍点数量远多于局部极小点，是优化困难的主要来源。C 错误：局部极小并非不可逃逸，随机扰动、动量、调整学习率等策略都可能帮助跳出。D 正确：动量法累积梯度方向，在梯度接近零的鞍点区域能借助历史动量继续前进。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-04-K03"
+          ],
+          "cognitiveLevel": "分析",
+          "estimatedSteps": 2,
+          "pairId": "EXT-04-K03-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 4,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept"
+          }
+        }
+      ]
+    }
+  ]
+}

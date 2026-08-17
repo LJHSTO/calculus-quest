@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "积分直觉与积分方法",
+  "outlines": [
+    {
+      "id": "GH-06-K02-check",
+      "type": "quiz",
+      "title": "即时检查：定积分作为累积",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-06-K02-check-q1",
+          "type": "single",
+          "question": "已知某水箱的注水速率 r(t)（单位：升/分钟）随时间 t 变化。若从时刻 a 到时刻 b 水箱持续注水，则定积分 ∫ₐᵇ r(t) dt 的实际含义是什么？",
+          "options": [
+            {
+              "value": "A",
+              "label": "表示时刻 a 与时刻 b 之间注入水箱的总水量（单位：升）。"
+            },
+            {
+              "value": "B",
+              "label": "表示时刻 b 的瞬时注水速率减去时刻 a 的瞬时注水速率。"
+            },
+            {
+              "value": "C",
+              "label": "表示时间段 [a, b] 内注水速率的平均值。"
+            },
+            {
+              "value": "D",
+              "label": "表示时刻 a 到时刻 b 之间水箱内剩余的水量。"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "定积分作为累积，其核心含义是把连续变化率在区间上无限细分并求和。注水速率 r(t) 乘以时间微元 dt 得到微小水量 r(t)dt，从 a 到 b 积分得到总水量。选项 B 描述的是速率的改变量，选项 C 是平均值，选项 D 忽略了可能存在的初始水量或流出过程，均不符合“累积”的含义。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-06-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-06-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "word-problem",
+            "knownConditionCount": 3,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-interpretation"
+          }
+        },
+        {
+          "id": "GH-06-K02-check-q2",
+          "type": "multiple",
+          "question": "关于定积分作为累积的含义，以下说法中所有正确的说法是哪些？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "定积分表示把微小变化率与自变量微元相乘，再在整个区间上累加起来。"
+            },
+            {
+              "value": "B",
+              "label": "若速度始终为正，则位移的定积分等于路程的累积。"
+            },
+            {
+              "value": "C",
+              "label": "定积分的值只取决于被积函数在端点的取值，与区间内部的变化无关。"
+            },
+            {
+              "value": "D",
+              "label": "当被积函数表示变化率时，定积分的结果表示该区间内累积的总量。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "选项 A、B、D 正确：A 概括了“细分—乘积—求和”的累积过程；B 在速度为正时位移与路程一致，符合累积含义；D 直接说明了变化率积分对应总量。选项 C 错误，它只关注端点取值，忽略了定积分作为累积需要对整个区间上的变化进行求和，这正是常见误解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-06-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "GH-06-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "concept-judgment",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-interpretation"
+          }
+        }
+      ]
+    }
+  ]
+}

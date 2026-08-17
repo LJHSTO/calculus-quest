@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q4",
+    "type": "single",
+    "question": "某同学在纸上画出一条始终位于 x 轴上方的曲线 y=f(x)，并想用若干等宽的小矩形来逼近该曲线下方在区间 [a,b] 上的面积。他发现，无论怎么画，所有小矩形的顶端总会留下一些未被填满的空白区域。关于这些空白区域与小矩形面积之和的关系，下列说法中最准确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "只要曲线是连续的，这些空白区域的面积就必定等于零，因此小矩形面积之和直接等于真实面积"
+      },
+      {
+        "value": "B",
+        "label": "当小矩形的宽度不断减小时，这些空白区域的面积总和会趋近于零，此时小矩形面积之和趋近于曲线下方的真实面积"
+      },
+      {
+        "value": "C",
+        "label": "这些空白区域的存在说明小矩形逼近法有根本性缺陷，因此小矩形面积之和永远不会趋近于真实面积"
+      },
+      {
+        "value": "D",
+        "label": "小矩形面积之和是否趋近真实面积，取决于曲线是否为直线，若曲线弯曲则必然存在无法消除的误差"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "小矩形逼近面积的核心在于：用有限个矩形去近似曲线下方面积时，顶端确实会留出空白误差；但当矩形宽度趋于零（即数量趋于无穷）时，这些空白误差的总和会趋近于零，使得矩形面积之和趋近于真实的曲线下方面积。A 项错误在于有限宽度下空白面积不为零；C 项否定了极限趋近的有效性；D 项错误地把曲线形状作为能否逼近的前提。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "limit-approximation-validity"
+    }
+  },
+  "post": {
+    "id": "GH-06-post-q4",
+    "type": "single",
+    "question": "用一组等宽的小矩形去近似区间 [m,n] 上某条连续曲线 y=g(x) 下方的面积时，每个小矩形的高度取其左端点对应的函数值。若不断增加小矩形的个数，使得每个小矩形的宽度都变得非常小，那么这些小矩形面积之和与该区间上曲线下方的实际面积之间的关系，最准确的描述是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "小矩形面积之和会无限接近实际面积，两者之间的差距随着矩形宽度的减小而趋近于零"
+      },
+      {
+        "value": "B",
+        "label": "由于每个小矩形的高度只取左端点的函数值，小矩形面积之和与实际面积之间始终存在一个固定不变的差距"
+      },
+      {
+        "value": "C",
+        "label": "小矩形面积之和最终会精确等于实际面积，因为矩形宽度变小时所有误差在有限步内就会完全消失"
+      },
+      {
+        "value": "D",
+        "label": "只有当小矩形的个数恰好等于曲线在区间内的零点个数时，小矩形面积之和才会接近实际面积"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "以左端点函数值作为小矩形高度进行逼近时，随着矩形宽度趋于零，矩形面积之和与曲线下方实际面积之间的误差会不断缩小并趋近于零，这正是小矩形逼近面积的核心含义。B 项错误地认为误差固定不变；C 项混淆了“趋近”与“有限步内精确相等”；D 项把零点个数与逼近条件挂钩，属于无关条件。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-06-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "limit-approximation-validity"
+    }
+  }
+}

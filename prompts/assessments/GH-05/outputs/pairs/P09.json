@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q9",
+    "type": "multiple",
+    "question": "在物理实验中，某物体的位移随时间变化的规律为 s(t) = -t^3 + 12t^2 - 36t + 10（单位：米），其中时间 t 的取值范围为 0 ≤ t ≤ 5（单位：秒）。为了使物体的位移达到最大，应将时间控制在何值？关于该实际最值建模的判断，下列说法中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "目标函数为位移 s(t)，自变量为时间 t，其取值范围构成闭区间。"
+      },
+      {
+        "value": "B",
+        "label": "对 s(t) 求导得 s'(t) = -3t^2 + 24t - 36，令其为零解得 t=2 或 t=6。"
+      },
+      {
+        "value": "C",
+        "label": "在自变量允许的范围内，导函数的零点为 t=2，该点处取得最大值。"
+      },
+      {
+        "value": "D",
+        "label": "比较端点与驻点的函数值后，可知最大值在区间端点处取得。"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "本题考查实际最值建模。选项A正确指出了目标函数与自变量及其闭区间约束，是建立最值模型的基础。选项B错误，求导过程无误，但令其为零得到 t^2 - 8t + 12 = 0，解得 t=2 或 t=6，其中 t=6 不在区间 [0,5] 内，不能作为该物理情境下的临界点。选项C正确，在 [0,5] 内仅有 t=2 这一个驻点，代入计算 s(2)=38，而端点 s(0)=10，s(5)=-15，因此 t=2 时取得最大值。选项D错误，盲目认为最大值在端点处取得，忽略了内部驻点可能存在的更大值，属于实际最值建模中的常见误解。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-05-K04"
+    ],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "model_validation"
+    }
+  },
+  "post": {
+    "id": "GH-05-post-q9",
+    "type": "multiple",
+    "question": "制造一种无盖圆柱形金属罐，要求其总容积固定为 16π 立方厘米。若金属底面材料的单价是侧面材料单价的 2 倍，建立以总材料成本最低为目标的数学模型时，关于该实际最值建模过程的描述，下列说法中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "设底面半径为 r，则高 h 可表示为 16/r^2，目标函数可转化为仅关于半径 r 的一元函数。"
+      },
+      {
+        "value": "B",
+        "label": "将目标成本函数对 r 求导后，令导数等于零，解得驻点恰好为 r=4。"
+      },
+      {
+        "value": "C",
+        "label": "由于驻点 r=2 是唯一极小值点，故无需考虑实际背景中半径趋近于 0 或无穷大的边界情况即可直接确定最小值。"
+      },
+      {
+        "value": "D",
+        "label": "若误将底面单价与侧面单价设为相同，求出的最低成本所对应的半径将发生改变，说明建模目标设定错误会导致最值结论失效。"
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "analysis": "由πr^2h=16π得h=16/r^2，A正确。设侧面单价为1、底面单价为2，则C(r)=2πr^2+32π/r，令C'(r)=0得r^3=8，即r=2而不是4，所以B错误。还需考察r趋近0和无穷大时的边界趋势，C错误。改变材料单价会改变目标函数和最优半径，D正确。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-05-K04"
+    ],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "model_validation"
+    }
+  }
+}

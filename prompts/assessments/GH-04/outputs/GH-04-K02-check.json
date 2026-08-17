@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "求导规则与导数应用",
+  "outlines": [
+    {
+      "id": "GH-04-K02-check",
+      "type": "quiz",
+      "title": "即时检查：和差积商规则",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-04-K02-check-q1",
+          "type": "single",
+          "question": "已知函数 f(x)=x^2·sin x，下列关于其导函数 f'(x) 的表达式正确的是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "f'(x)=2x·cos x"
+            },
+            {
+              "value": "B",
+              "label": "f'(x)=2x·sin x + x^2·cos x"
+            },
+            {
+              "value": "C",
+              "label": "f'(x)=2x·sin x - x^2·cos x"
+            },
+            {
+              "value": "D",
+              "label": "f'(x)=x^2·cos x"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "函数 f(x)=x^2·sin x 是 x^2 与 sin x 的乘积，应使用积规则：(uv)'=u'v+uv'。令 u=x^2，v=sin x，则 u'=2x，v'=cos x，代入得 f'(x)=2x·sin x+x^2·cos x。选项 A 只对其中一个因子求导并改变了函数名，属于只记符号未对应操作；选项 C 把 v' 误写为 -cos x；选项 D 只对 sin x 求导，忽略了对 x^2 求导及乘积结构。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-04-K02"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 3,
+          "pairId": "GH-04-K02-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic-expression",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "derivative-expression"
+          }
+        },
+        {
+          "id": "GH-04-K02-check-q2",
+          "type": "multiple",
+          "question": "设 u(x)、v(x) 均为可导函数且 v(x)≠0。关于和差积商规则，下列说法中所有正确说法是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "(u+v)'=u'+v'，说明和函数的导数等于各部分导数之和。"
+            },
+            {
+              "value": "B",
+              "label": "(u-v)'=u'-v'，说明差函数的导数等于各部分导数之差。"
+            },
+            {
+              "value": "C",
+              "label": "(uv)'=u'v'，即乘积的导数等于导数的乘积。"
+            },
+            {
+              "value": "D",
+              "label": "(u/v)'=(u'v-uv')/v^2，即商的导数遵循“分子导乘分母不导减分子不导乘分母导，再除以分母平方”。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "和规则 (u+v)'=u'+v' 与差规则 (u-v)'=u'-v' 正确，线性结构可逐项求导。积规则应为 (uv)'=u'v+uv'，不是 u'v'，选项 C 是把导数符号当乘法分配的典型误解。商规则 (u/v)'=(u'v-uv')/v^2 正确，选项 D 的文字描述与该公式一致。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-04-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 4,
+          "pairId": "GH-04-K02-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "rule-statement",
+            "knownConditionCount": 2,
+            "operationCount": 4,
+            "symbolComplexity": "medium",
+            "conclusionClass": "rule-validity"
+          }
+        }
+      ]
+    }
+  ]
+}

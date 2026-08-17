@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q6",
+    "type": "single",
+    "question": "在用固定步长梯度法寻找函数极小值时，若每步都严格沿当前点的负梯度方向前进，但迭代过程中函数值始终上下震荡，始终无法稳定在某一固定值附近。根据步长和收敛的核心含义，造成此现象的最直接原因是步长取值出现了什么问题？",
+    "options": [
+      {
+        "value": "A",
+        "label": "步长过小，导致算法在平坦区域停滞不前"
+      },
+      {
+        "value": "B",
+        "label": "步长过大，导致每次更新跨过了极小值点并在两侧反复反弹"
+      },
+      {
+        "value": "C",
+        "label": "步长为负数，导致实际更新方向与负梯度方向相反"
+      },
+      {
+        "value": "D",
+        "label": "步长恒定为零，导致参数始终不发生实质性更新"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "在无约束优化中，负梯度方向是函数值下降最快的局部方向。如果步长设置过大，即使方向正确，更新后的新点也会跨过谷底（极小值点），到达另一侧更高的位置。下一步的负梯度方向会指向相反的侧壁，导致迭代路径在极小值点两侧来回震荡，无法收敛到稳定的极小值。步长过小只会导致收敛极慢；步长恒为零则参数不更新；步长通常取正值。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "divergence-diagnosis"
+    }
+  },
+  "post": {
+    "id": "GH-12-post-q6",
+    "type": "single",
+    "question": "沿山坡寻找最低谷底时，每步都准确朝着最陡峭的下坡方向迈出。然而，记录的海拔高度却呈现忽高忽低的反复跳动，始终无法平稳停留在谷底。从步长和收敛的机制判断，导致该算法无法收敛的最根本原因是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "每步迈出的距离太短，导致在谷底附近的平坦地带停滞"
+      },
+      {
+        "value": "B",
+        "label": "每步迈出的距离太长，导致直接跨越谷底冲向对侧山坡"
+      },
+      {
+        "value": "C",
+        "label": "下坡方向判断错误，导致实际朝着上坡方向行进"
+      },
+      {
+        "value": "D",
+        "label": "迈步的频率过快，导致算法来不及计算新的下坡方向"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "寻找谷底的过程即无约束优化中的寻找极小值。即使每步方向正确（最陡下坡方向即负梯度方向），若单步距离（步长）设置过长，会越过谷底到达对侧更高处。此时新位置的下坡方向指向相反侧壁，导致路径在谷底两侧来回穿梭，海拔高度反复震荡，无法收敛。步长过短只会导致停滞；方向错误会导致高度持续上升；频率与收敛性无直接矛盾关联。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "divergence-diagnosis"
+    }
+  }
+}

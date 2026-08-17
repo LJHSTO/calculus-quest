@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "多元函数、梯度与 Jacobian",
+  "outlines": [
+    {
+      "id": "GH-08-K01-check",
+      "type": "quiz",
+      "title": "即时检查：多输入函数",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-08-K01-check-q1",
+          "type": "single",
+          "question": "某农场种植作物的产量 W 取决于每公顷施加的氮肥量 x 与磷肥量 y，其对应关系为 W = f(x, y)。若氮肥施用量保持不变，仅增加磷肥的施用量，则关于该多输入函数 W 的说法正确的是？",
+          "options": [
+            {
+              "value": "A",
+              "label": "W 的值一定不会发生变化"
+            },
+            {
+              "value": "B",
+              "label": "W 的值可能会发生变化，因为 W 同时受 x 和 y 的影响"
+            },
+            {
+              "value": "C",
+              "label": "W 的值只由 x 决定，与 y 的变化无关"
+            },
+            {
+              "value": "D",
+              "label": "W 的值将变为原来的两倍"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "多输入函数的自变量不止一个，函数值由所有自变量共同决定。当 x 保持不变而 y 改变时，由于 y 是自变量之一，W 的值可能会随之改变。选项 A 和 C 错误地忽略了 y 对函数值的影响；选项 D 缺乏依据，函数值不会仅仅因为某个自变量改变就必然变为两倍。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-08-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 1,
+          "pairId": "GH-08-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-identification"
+          }
+        },
+        {
+          "id": "GH-08-K01-check-q2",
+          "type": "multiple",
+          "question": "已知矩形金属片的面积 S 是其长度 a 和宽度 b 的函数，记为 S = g(a, b)。关于该多输入函数，下列说法中正确的有？",
+          "options": [
+            {
+              "value": "A",
+              "label": "当 a 和 b 都固定时，S 的值是唯一确定的"
+            },
+            {
+              "value": "B",
+              "label": "若只改变 a 的值而保持 b 不变，S 的值可能会发生变化"
+            },
+            {
+              "value": "C",
+              "label": "由于有两个自变量，S 的值无法通过 a 和 b 计算得出"
+            },
+            {
+              "value": "D",
+              "label": "只要 a 发生变化，无论 b 取何值，S 的值必定改变"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "选项 A 正确：多输入函数在所有自变量取值确定后，函数值唯一确定。选项 B 正确：a 是自变量之一，改变 a 可能导致 S 改变。选项 C 错误：这混淆了多输入函数与计算可行性，自变量个数不影响函数的可计算性。选项 D 错误：若 b = 0，则 S 恒为 0，此时 a 的变化不改变 S，说明多输入函数的值取决于所有自变量的组合，而非单一变量。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-08-K01"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 2,
+          "pairId": "GH-08-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-analysis"
+          }
+        }
+      ]
+    }
+  ]
+}

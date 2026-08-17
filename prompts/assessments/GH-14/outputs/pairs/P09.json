@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-14-pre-q9",
+    "type": "multiple",
+    "question": "在回顾从导数到训练的完整学习路线时，几位同学对各个阶段的核心作用发表了看法。请选出所有说法正确的选项。",
+    "options": [
+      {
+        "value": "A",
+        "label": "导数刻画了参数变化时损失函数的局部变化方向，是后续更新参数的基础"
+      },
+      {
+        "value": "B",
+        "label": "计算图与自动微分的作用是把整体损失拆解为基本运算，从而自动求出梯度"
+      },
+      {
+        "value": "C",
+        "label": "小批量梯度下降通过每次使用全部数据计算梯度，保证每步都沿最陡方向下降"
+      },
+      {
+        "value": "D",
+        "label": "最小二乘梯度只是导数的别名，与损失函数的具体形式无关"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "选项A正确，导数描述了损失函数随参数变化的局部趋势，是参数更新的依据。选项B正确，计算图将复合运算拆解为节点，自动微分利用链式法则自动计算梯度。选项C错误，小批量梯度下降每次只使用一部分数据，并非全部数据。选项D错误，最小二乘梯度是由具体的平方误差损失函数求导得到的，不是导数的泛称。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-14-K05"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 4,
+      "symbolComplexity": "low",
+      "conclusionClass": "conceptual-validation"
+    }
+  },
+  "post": {
+    "id": "GH-14-post-q9",
+    "type": "multiple",
+    "question": "某学习总结梳理了从导数到训练的闭环结构，以下是对该路线中各环节衔接逻辑的判断。请选出所有判断正确的选项。",
+    "options": [
+      {
+        "value": "A",
+        "label": "损失函数量化了预测值与真实值的偏差，为参数更新提供了优化目标"
+      },
+      {
+        "value": "B",
+        "label": "自动微分依赖计算图结构，按链式法则完成从输出到各参数的梯度回传"
+      },
+      {
+        "value": "C",
+        "label": "小批量梯度下降要求每轮必须遍历整个数据集，否则无法计算损失"
+      },
+      {
+        "value": "D",
+        "label": "最小二乘梯度与损失函数的数学构造无关，仅用于展示导数符号"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "选项A正确，损失函数定义了模型预测与真实结果之间的误差度量，是整个优化过程的目标。选项B正确，自动微分在计算图上应用链式法则，将梯度从输出端反向传播至各个参数。选项C错误，小批量梯度下降每次仅抽取数据的一个子集进行计算，不需要遍历整个数据集。选项D错误，最小二乘梯度直接来源于平方损失函数的求导结果，与损失函数的构造紧密相关。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-14-K05"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 4,
+      "symbolComplexity": "low",
+      "conclusionClass": "conceptual-validation"
+    }
+  }
+}

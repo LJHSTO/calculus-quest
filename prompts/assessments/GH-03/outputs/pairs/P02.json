@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q2",
+    "type": "single",
+    "question": "已知函数 f(x) 的自变量 x 从 1 变到 3 时，函数值 f(x) 从 5 变到 11。某同学认为，这段区间内函数的平均变化率就是把两端点的函数值相加再除以 2，即 (5+11)/2=8。关于这个判断及其对应的平均变化率，下列说法正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "该同学判断正确，平均变化率就是两端点函数值的算术平均数"
+      },
+      {
+        "value": "B",
+        "label": "该同学判断错误，平均变化率应为 (11-5)/(3-1)=3，它表示单位区间内函数值的平均增长快慢"
+      },
+      {
+        "value": "C",
+        "label": "该同学判断错误，平均变化率应为 (11+5)/(3+1)=4，它表示函数值的总体平均水平"
+      },
+      {
+        "value": "D",
+        "label": "该同学判断错误，平均变化率应为 (11-5)/(3+1)=1.5，它表示起点和终点连线的倾斜程度"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "平均变化率定义为函数值的增量与自变量的增量之比，即 Δy/Δx = (f(x2)-f(x1))/(x2-x1)。本题中 Δy=11-5=6，Δx=3-1=2，故平均变化率为 6/2=3。它反映的是区间内函数值变化的平均快慢程度，而不是两端点函数值的算术平均数 (5+11)/2=8。因此该同学的判断错误，正确的平均变化率为 3。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept_diagnosis"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q2",
+    "type": "single",
+    "question": "在研究某段路程的运动规律时，已知自变量 t 从 2 增加到 6，对应的因变量 s 从 10 增加到 22。有同学据此得出这段过程的平均变化率为 (10+22)/2=16，并认为这就是该过程的变化率。对于这个结论及平均变化率的实际意义，下列判断最准确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "结论正确，因为平均变化率衡量的是因变量在起点和终点的平均状态"
+      },
+      {
+        "value": "B",
+        "label": "结论错误，平均变化率应为 (22-10)/(6-2)=3，它刻画的是因变量随自变量改变的平均快慢"
+      },
+      {
+        "value": "C",
+        "label": "结论错误，平均变化率应为 (22+10)/(6+2)=4，它刻画的是因变量随自变量改变的平均快慢"
+      },
+      {
+        "value": "D",
+        "label": "结论错误，平均变化率应为 (22-10)/(6+2)=1.5，它表示因变量总体变化的平均水平"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "平均变化率的定义是因变量的增量与自变量的增量之比，即 Δs/Δt = (s(t2)-s(t1))/(t2-t1)。本题中 Δs=22-10=12，Δt=6-2=4，故平均变化率为 12/4=3。它刻画的是因变量随自变量改变的平均快慢程度，而不是两端点因变量的算术平均数 (10+22)/2=16。因此该同学的结论错误，正确的平均变化率为 3。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept_diagnosis"
+    }
+  }
+}

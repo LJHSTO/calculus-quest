@@ -1,0 +1,80 @@
+{
+  "pre": {
+    "id": "GH-04-pre-q10",
+    "type": "text",
+    "question": "某容器内正在发生化学反应，反应物的物质的量 n（单位：摩尔）随时间变化。已知在反应进行到第 5 秒末时，n'(5)=-0.2 摩尔/秒。请解释：此时反应物的物质的量是增加还是减少？变化速度的绝对值是多少？单位是什么？并估计从第 5 秒末到第 5.5 秒末这 0.5 秒内，反应物的物质的量变化了多少摩尔？",
+    "answer": "此时反应物的物质的量正在减少。变化速度的绝对值为 0.2 摩尔/秒，单位是摩尔/秒。估计在这 0.5 秒内，反应物的物质的量变化了 -0.1 摩尔。",
+    "analysis": "导数值为负，说明对应时刻反应物的物质的量随时间增加而减少。导数绝对值为 0.2 摩尔/秒。在极短时间内用瞬时变化率近似估计变化量：-0.2 摩尔/秒 × 0.5 秒 = -0.1 摩尔，负号表示减少。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-04-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "sign-and-magnitude-estimation"
+    },
+    "rubric": [
+      {
+        "criterion": "正确判断出此时反应物的物质的量在减少",
+        "points": 4
+      },
+      {
+        "criterion": "正确写出变化速度的绝对值为 0.2",
+        "points": 4
+      },
+      {
+        "criterion": "正确写出单位为摩尔/秒",
+        "points": 4
+      },
+      {
+        "criterion": "正确列出估算式并得出物质的量变化量为 -0.1 摩尔",
+        "points": 8
+      }
+    ]
+  },
+  "post": {
+    "id": "GH-04-post-q10",
+    "type": "text",
+    "question": "一水箱底部正在漏水，箱内水位随时间推移而下降。已知在漏水第 10 分钟末，水深函数的导数值为 -0.3 米/分钟。请说明：此时水位是上升还是下降？瞬时变化速度的绝对值是多少？其单位是什么？并估算从第 10 分钟末到第 10.5 分钟末这 0.5 分钟内，水深变化了多少米？",
+    "answer": "此时水位正在下降。瞬时变化速度的绝对值为 0.3 米/分钟，单位是米/分钟。估算在这 0.5 分钟内，水深变化了 -0.15 米。",
+    "analysis": "导数值为负，表明对应时刻水深随时间增加而降低，因此水位在下降。导数值的绝对值反映了瞬时变化速度的大小，即 |-0.3| = 0.3 米/分钟。利用瞬时变化率可对极短时间段内的水深变化量进行估算，计算式为 -0.3 米/分钟 × 0.5 分钟 = -0.15 米，负号表示水位下降。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-04-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "sign-and-magnitude-estimation"
+    },
+    "rubric": [
+      {
+        "criterion": "正确判断出此时水位在下降",
+        "points": 4
+      },
+      {
+        "criterion": "正确写出瞬时变化速度的绝对值为 0.3",
+        "points": 4
+      },
+      {
+        "criterion": "正确写出单位为米/分钟",
+        "points": 4
+      },
+      {
+        "criterion": "正确列出估算式并得出水深变化量为 -0.15 米",
+        "points": 8
+      }
+    ]
+  }
+}

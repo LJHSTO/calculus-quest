@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-14-pre-q3",
+    "type": "single",
+    "question": "在求解线性回归模型时，我们采用平方损失函数来衡量预测值与真实值之间的差距。假设当前模型只有一个参数 w，且针对单个数据点构建的损失函数定义为 L(w) = (w - 3)^2。若使用梯度下降算法更新该参数，请问在当前参数取值处，损失函数关于参数 w 的梯度表达式是什么形式？",
+    "options": [
+      {
+        "value": "A",
+        "label": "梯度为 2w-6；梯度下降应沿该梯度的反方向更新 w"
+      },
+      {
+        "value": "B",
+        "label": "梯度为 w - 3，表示预测误差本身的大小"
+      },
+      {
+        "value": "C",
+        "label": "梯度为 (w - 3)^2，与损失函数的值完全相同"
+      },
+      {
+        "value": "D",
+        "label": "梯度为 w^2 - 6w + 9，反映了损失函数的整体展开形态"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "对 L(w)=(w-3)² 求导得 dL/dw=2(w-3)=2w-6。梯度指向损失局部上升最快的方向，梯度下降按 w_new=w-αdL/dw 沿其反方向更新，因此选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "expression-form"
+    }
+  },
+  "post": {
+    "id": "GH-14-post-q3",
+    "type": "single",
+    "question": "针对单变量线性模型的参数 b，某同学构建了衡量单点拟合误差的平方损失函数：J(b) = (b - 5)^2。为了通过梯度下降法寻找使误差最小的参数，需要计算损失函数关于 b 的梯度。下列对该梯度表达式的求解及作用描述正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "梯度为 b - 5，它的大小反映了当前预测值与目标之间的绝对偏差"
+      },
+      {
+        "value": "B",
+        "label": "梯度为 (b - 5)^2，说明梯度的数值就是当前损失函数的计算结果"
+      },
+      {
+        "value": "C",
+        "label": "梯度为 b^2 - 10b + 25，这是多项式展开后用于直接判断极值点的形式"
+      },
+      {
+        "value": "D",
+        "label": "梯度为 2b-10；梯度下降按其相反方向调整参数 b"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "analysis": "对 J(b)=(b-5)² 求导得 dJ/db=2(b-5)=2b-10。梯度下降使用 b_new=b-αdJ/db，即沿梯度反方向更新，因此选 D。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-14-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "expression-form"
+    }
+  }
+}

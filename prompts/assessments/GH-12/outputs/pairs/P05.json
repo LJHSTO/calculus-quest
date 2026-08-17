@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q5",
+    "type": "single",
+    "question": "对 f(x)=x² 使用梯度下降，从 x=3 出发，学习率 α=0.1。按 x_new=x-αf'(x) 更新一次后，新的 x 是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "3.6"
+      },
+      {
+        "value": "B",
+        "label": "2.4"
+      },
+      {
+        "value": "C",
+        "label": "2.9"
+      },
+      {
+        "value": "D",
+        "label": "0.6"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "f'(x)=2x，所以在 x=3 处梯度为 6。更新一次得到 x_new=3-0.1×6=2.4，选 B。减号体现了沿负梯度方向移动。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "direction"
+    }
+  },
+  "post": {
+    "id": "GH-12-post-q5",
+    "type": "single",
+    "question": "对 g(x)=(x-1)² 使用梯度下降，从 x=4 出发，学习率 α=0.25。按标准更新式迭代一次后，新的 x 是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "5.5"
+      },
+      {
+        "value": "B",
+        "label": "2.5"
+      },
+      {
+        "value": "C",
+        "label": "3.75"
+      },
+      {
+        "value": "D",
+        "label": "1.5"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "g'(x)=2(x-1)，所以在 x=4 处梯度为 6。标准更新为 x_new=4-0.25×6=2.5，选 B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "direction"
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q9",
+    "type": "multiple",
+    "question": "某内点法子问题要求 0<x<1，并在目标函数中加入障碍项 -μln(x)，其中 μ>0。以下哪些判断正确？请选择所有正确说法。",
+    "options": [
+      {
+        "value": "A",
+        "label": "当 x 从可行域内部趋近 0 时，-μln(x) 趋于正无穷"
+      },
+      {
+        "value": "B",
+        "label": "固定同一个 0<x<1 时，减小 μ 会减小该障碍项的数值"
+      },
+      {
+        "value": "C",
+        "label": "当 x≤0 时，ln(x) 在实数范围内无定义，所以障碍子问题不会把这类点作为普通可行点计算"
+      },
+      {
+        "value": "D",
+        "label": "只要不断减小 μ，有限次迭代后就必然会令 x 精确等于 0"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "因为 ln(x) 在 x→0+ 时趋于负无穷，所以 -μln(x) 趋于正无穷，A 正确。对固定的 0<x<1，有 -ln(x)>0，减小 μ 会按比例减小障碍值，B 正确。x≤0 时实数对数无定义，C 正确。内点法的有限次子问题解保持在内部，只能在极限意义下逼近边界，D 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-05-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "mechanism-identification"
+    }
+  },
+  "post": {
+    "id": "EXT-05-post-q9",
+    "type": "multiple",
+    "question": "把约束 x<2 改写为余量 s=2-x>0，并加入 -μln(s)。现只考虑 0<s<1 的内部点。以下哪些说法正确？请选择所有正确说法。",
+    "options": [
+      {
+        "value": "A",
+        "label": "当 x 从左侧趋近 2 时，余量 s 趋近 0，障碍项趋于正无穷"
+      },
+      {
+        "value": "B",
+        "label": "固定同一个内部点时，较小的 μ 对应较小的障碍项数值"
+      },
+      {
+        "value": "C",
+        "label": "当 x≥2 时，可以继续计算实数对数，只是障碍值会比较大"
+      },
+      {
+        "value": "D",
+        "label": "每个 μ>0 的障碍子问题都把候选点限制在 x<2 的内部，但一系列内部解可以逐渐逼近边界"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "D"
+    ],
+    "analysis": "x→2- 时 s=2-x→0+，故 -μln(s)→+∞，A 正确。在 0<s<1 时 -ln(s)>0，固定 s 而减小 μ 会减小障碍值，B 正确。x≥2 时 s≤0，实数对数不能按该公式计算，C 错误。每个正 μ 的子问题保持严格可行，但其解序列可以在 μ 逐渐减小时逼近边界，D 正确。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-05-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "mechanism-identification"
+    }
+  }
+}

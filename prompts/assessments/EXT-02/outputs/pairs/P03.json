@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q3",
+    "type": "single",
+    "question": "矩阵 A = [[2, 0], [0, 1]] 定义了平面上的一个线性变换。关于该变换的几何效果，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "将平面内每个点的横坐标拉伸为原来的 2 倍，纵坐标不变"
+      },
+      {
+        "value": "B",
+        "label": "将平面内每个点的纵坐标拉伸为原来的 2 倍，横坐标不变"
+      },
+      {
+        "value": "C",
+        "label": "将平面绕原点逆时针旋转一定角度"
+      },
+      {
+        "value": "D",
+        "label": "将平面关于 x 轴做镜面反射"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "矩阵 A 作用于任意向量 (x, y) 时，结果为 (2x, y)：横坐标乘以 2，纵坐标保持不变。因此该变换沿 x 轴方向将平面拉伸为原来的 2 倍。选项 B 混淆了两个对角元所对应的坐标轴；选项 C 误以为非单位对角矩阵表示旋转；选项 D 将缩放与反射混淆。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "matrix-transformation-correspondence"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q3",
+    "type": "single",
+    "question": "某线性变换 T 将平面内每个点 (x, y) 映射为 (x, 3y)，即横坐标保持不变、纵坐标变为原来的 3 倍。下列矩阵中能表示变换 T 的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "[[3, 0], [0, 1]]"
+      },
+      {
+        "value": "B",
+        "label": "[[1, 0], [0, 3]]"
+      },
+      {
+        "value": "C",
+        "label": "[[0, 3], [1, 0]]"
+      },
+      {
+        "value": "D",
+        "label": "[[1, 3], [0, 0]]"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "变换 T 要求 (x, y) → (x, 3y)。矩阵 [[1, 0], [0, 3]] 作用于 (x, y) 恰好得到 (1·x + 0·y, 0·x + 3·y) = (x, 3y)，符合要求。选项 A 将缩放方向弄反，对应的是 (3x, y)；选项 C 使用了非对角结构，会交换坐标而非缩放；选项 D 的第二行 [0, 0] 会将纵坐标变为 0，不符合保持纵坐标非零的要求。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "matrix-transformation-correspondence"
+    }
+  }
+}

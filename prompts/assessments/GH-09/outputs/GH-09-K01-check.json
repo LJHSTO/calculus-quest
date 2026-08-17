@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "多元函数、梯度与 Jacobian",
+  "outlines": [
+    {
+      "id": "GH-09-K01-check",
+      "type": "quiz",
+      "title": "即时检查：梯度向量",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-09-K01-check-q1",
+          "type": "single",
+          "question": "设二元函数 f(x, y) 在点 P 处可微。关于梯度向量 ∇f(P) 的核心含义，下列说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "它是一个标量，表示函数在点 P 的最大函数值"
+            },
+            {
+              "value": "B",
+              "label": "它是一个向量，其方向是函数在点 P 处增长率最大的方向"
+            },
+            {
+              "value": "C",
+              "label": "它是一个向量，其方向是函数在点 P 处函数值不变的方向"
+            },
+            {
+              "value": "D",
+              "label": "它是一个向量，其模长表示函数在点 P 处沿任意方向的变化率"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "梯度向量 ∇f(P) 的核心含义是一个向量，它的方向指向函数在点 P 处增长率（方向导数）最大的方向，它的模长等于这个最大的增长率。选项 A 错误，梯度是向量而非标量；选项 C 错误，函数值不变的方向是与梯度垂直的方向；选项 D 错误，梯度的模长表示的是最大增长率，而非沿任意方向的变化率。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-09-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-09-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-interpretation"
+          }
+        },
+        {
+          "id": "GH-09-K01-check-q2",
+          "type": "multiple",
+          "question": "关于二元函数 f(x, y) 在点 P 处的梯度向量 ∇f(P)，下列说法中所有正确的说法是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "梯度向量 ∇f(P) 的方向是函数在点 P 处方向导数取最大值的方向"
+            },
+            {
+              "value": "B",
+              "label": "梯度向量 ∇f(P) 的模长等于函数在点 P 处沿其方向的方向导数值"
+            },
+            {
+              "value": "C",
+              "label": "梯度向量 ∇f(P) 就是函数在点 P 处的全微分 df"
+            },
+            {
+              "value": "D",
+              "label": "梯度向量 ∇f(P) 仅是一个用于书写偏导数 (∂f/∂x, ∂f/∂y) 的数学符号，不指示任何实际变化方向"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "选项 A 和 B 正确，它们准确描述了梯度向量的核心含义：方向为最大方向导数方向，模长为该最大方向导数值。选项 C 错误，全微分 df 是一个标量量，而梯度是一个向量，两者概念不同。选项 D 错误，这正是常见的误解，只记住了梯度是偏导数的符号组合，而忽略了它指示最快增长方向的几何与物理意义。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-09-K01"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-09-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-interpretation"
+          }
+        }
+      ]
+    }
+  ]
+}

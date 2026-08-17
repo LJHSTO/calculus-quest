@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q9",
+    "type": "multiple",
+    "question": "在训练一个深层网络时，你观察到损失曲线在下降过程中出现明显的震荡，但整体趋势仍在缓慢下降。你怀疑是优化器参数设置不当所致。以下哪些调整最有可能缓解这种震荡并保持收敛？（选择所有正确说法）",
+    "options": [
+      {
+        "value": "A",
+        "label": "适当降低学习率，使每次参数更新的步长变小"
+      },
+      {
+        "value": "B",
+        "label": "增大动量参数（如从0.9提高到0.99），以平滑历史梯度方向"
+      },
+      {
+        "value": "C",
+        "label": "将优化器从SGD更换为Adam，并保持默认学习率不变"
+      },
+      {
+        "value": "D",
+        "label": "增大批大小（batch size），使每次梯度估计更稳定"
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "analysis": "损失曲线震荡且下降缓慢，通常源于梯度估计噪声过大或学习率偏高。降低学习率（A）直接减小每次更新的波动幅度；增大批大小（D）能降低梯度估计的方差，使更新方向更稳定。增大动量（B）虽然能平滑方向，但过大的动量（0.99）在震荡场景下可能加剧惯性，反而导致越过极小点或持续震荡，并非稳妥的缓解手段。将SGD换成Adam并保持默认学习率（C）不一定能解决问题，因为Adam自带自适应学习率，但默认学习率在特定问题上仍可能偏高，且更换优化器本身并非针对震荡的直接调整。因此正确选项为A和D。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-04-K05"
+    ],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": 2,
+      "conclusionClass": "策略选择"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q9",
+    "type": "multiple",
+    "question": "某模型使用普通 SGD 训练时，训练损失在较低数值附近反复上下波动；同时，小批量梯度在相邻迭代中的变化较大。以下哪些措施最可能让更新更稳定？（选择所有正确说法）",
+    "options": [
+      {
+        "value": "A",
+        "label": "在训练后期采用学习率衰减，使参数更新步长逐渐变小"
+      },
+      {
+        "value": "B",
+        "label": "减小批大小，使每次梯度估计包含更少样本"
+      },
+      {
+        "value": "C",
+        "label": "加入更强的权重衰减，但保持原来的学习率和批大小不变"
+      },
+      {
+        "value": "D",
+        "label": "适当增大批大小，降低小批量梯度估计的随机波动"
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "analysis": "学习率衰减（A）可让训练后期的参数更新更精细，减少跨过低损失区域造成的波动；适当增大批大小（D）可降低梯度估计方差，使相邻更新更稳定。减小批大小（B）通常会增加梯度噪声。权重衰减（C）主要限制参数规模，不能在学习率和批大小不变时直接解决由步长或梯度噪声造成的振荡。因此正确选项为 A、D。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-04-K05"
+    ],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 4,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": 2,
+      "conclusionClass": "策略选择"
+    }
+  }
+}

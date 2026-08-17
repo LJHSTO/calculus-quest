@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q1",
+    "type": "single",
+    "question": "在研究某座山的高度变化时，设水平坐标为 (x, y)，高度函数为 f(x, y)。某同学在地图上标出了某一点处的梯度向量，并指出它具有特定的指向。关于梯度向量在该点指向的物理或几何含义，以下说法正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它指向高度下降最快的方向，因为梯度总是与高度减小方向一致"
+      },
+      {
+        "value": "B",
+        "label": "它指向高度增加最快的方向，且其长度表示在该方向上的最大变化率"
+      },
+      {
+        "value": "C",
+        "label": "它指向水平面上正北的方向，与高度变化无关"
+      },
+      {
+        "value": "D",
+        "label": "它垂直于水平地面，指向天空正上方"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "梯度向量的核心含义是：在给定点处，函数值增加最快的方向就是梯度向量的方向，其模长（长度）等于该方向上的最大变化率。选项 A 错在“下降最快”，选项 C 错在“与高度变化无关”，选项 D 错在“垂直于水平地面”。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": 1,
+      "conclusionClass": "direction-of-max-increase"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q1",
+    "type": "single",
+    "question": "设某区域的温度分布函数为 T(x, y)。在某测温点处，计算出的梯度向量具有确定的长度和方向。若要利用该梯度向量来判断该点附近温度变化最剧烈的情况，根据梯度向量的核心含义，下列判断正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "梯度向量的长度反映了该点温度变化率的最大绝对值，方向指向温度上升最快的方向"
+      },
+      {
+        "value": "B",
+        "label": "梯度向量的方向指向温度最低的位置，长度表示到该位置的距离"
+      },
+      {
+        "value": "C",
+        "label": "梯度向量的方向平行于等温线，长度表示沿等温线方向的变化率"
+      },
+      {
+        "value": "D",
+        "label": "梯度向量的方向指向温度下降最快的方向，长度表示该方向的变化率"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "梯度向量的核心含义是：在给定点处，函数值增加最快的方向就是梯度向量的方向，其模长（长度）等于该方向上的最大变化率。选项 B 错在“指向温度最低的位置”，选项 C 错在“平行于等温线”，选项 D 错在“温度下降最快”。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": 1,
+      "conclusionClass": "direction-of-max-increase"
+    }
+  }
+}

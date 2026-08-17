@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "GH-05-K02-check",
+      "type": "quiz",
+      "title": "即时检查：临界点与极值",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-05-K02-check-q1",
+          "type": "single",
+          "question": "已知函数 f(x) 在 x=2 处的导数 f'(2)=0，且在 x=2 附近 f'(x) 由正变负。关于 x=2，下列说法正确的是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "x=2 是函数 f(x) 的一个极小值点"
+            },
+            {
+              "value": "B",
+              "label": "x=2 是函数 f(x) 的一个极大值点"
+            },
+            {
+              "value": "C",
+              "label": "x=2 是函数 f(x) 的一个拐点"
+            },
+            {
+              "value": "D",
+              "label": "x=2 只是临界点，必定不是极值点"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "由 f'(2)=0 知 x=2 是临界点。又因为在 x=2 附近 f'(x) 由正变负，说明函数 f(x) 在 x=2 左侧单调递增、右侧单调递减，因此 x=2 是极大值点。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-05-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-05-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "extremum-type"
+          }
+        },
+        {
+          "id": "GH-05-K02-check-q2",
+          "type": "multiple",
+          "question": "已知函数 f(x) 在区间内可导，x=c 是其临界点。关于临界点与极值的关系，下列说法中正确的有哪几项？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "若 f'(c)=0，则 x=c 必定是极值点"
+            },
+            {
+              "value": "B",
+              "label": "若 f'(c)=0 且在 x=c 两侧 f'(x) 符号相反，则 x=c 是极值点"
+            },
+            {
+              "value": "C",
+              "label": "若 f'(c)=0 且在 x=c 两侧 f'(x) 同号，则 x=c 不是极值点"
+            },
+            {
+              "value": "D",
+              "label": "若 x=c 是极值点，则必有 f'(c)=0"
+            }
+          ],
+          "answer": [
+            "B",
+            "C"
+          ],
+          "analysis": "选项 A 错误，f'(c)=0 只能说明 x=c 是临界点，若两侧导数同号则不是极值点（如 f(x)=x^3 在 x=0 处）。选项 B 正确，两侧导数符号相反是判断极值点的充分条件。选项 C 正确，两侧导数同号说明单调性未变，不是极值点。选项 D 错误，极值点处导数也可能不存在，不一定必须有 f'(c)=0。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-05-K02"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-05-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "extremum-condition"
+          }
+        }
+      ]
+    }
+  ]
+}

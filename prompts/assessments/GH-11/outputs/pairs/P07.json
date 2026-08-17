@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q7",
+    "type": "single",
+    "question": "对函数 f(x,y)=x³+xy+y² 构造 Hessian 矩阵，并在点 (1,0) 处求值。结果是哪一个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "[[3,1],[1,2]]"
+      },
+      {
+        "value": "B",
+        "label": "[[6,1],[1,2]]"
+      },
+      {
+        "value": "C",
+        "label": "[[6,0],[0,2]]"
+      },
+      {
+        "value": "D",
+        "label": "[[6,1],[1,0]]"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "f_xx=6x，f_xy=f_yx=1，f_yy=2，所以 H_f(x,y)=[[6x,1],[1,2]]。代入 (1,0) 得 [[6,1],[1,2]]，选 B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept_identification"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q7",
+    "type": "single",
+    "question": "函数 g(u,v)=u²v+v³ 的 Hessian 随位置变化。在点 (0,1) 处，其 Hessian 矩阵是哪一个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "[[2,0],[0,6]]"
+      },
+      {
+        "value": "B",
+        "label": "[[0,2],[2,6]]"
+      },
+      {
+        "value": "C",
+        "label": "[[2,2],[2,3]]"
+      },
+      {
+        "value": "D",
+        "label": "[[2,0],[0,3]]"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "g_uu=2v，g_uv=g_vu=2u，g_vv=6v。代入 (0,1) 得 H_g(0,1)=[[2,0],[0,6]]，选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept_identification"
+    }
+  }
+}

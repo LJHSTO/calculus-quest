@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q8",
+    "type": "multiple",
+    "question": "已知函数 f(x) 的导函数为 f'(x)。关于原函数与不定积分的概念，下列说法中所有正确说法的组合是哪些？①若 F(x) 是 f(x) 的一个原函数，则 F(x)+C（C为任意常数）也是 f(x) 的原函数；②函数 f(x) 的不定积分就是它的某一个具体的原函数；③若 F(x) 和 G(x) 都是 f(x) 的原函数，那么它们相差一个常数；④原函数的几何意义是曲线 f(x) 下方与 x 轴围成的面积。",
+    "options": [
+      {
+        "value": "A",
+        "label": "仅①"
+      },
+      {
+        "value": "B",
+        "label": "仅①和③"
+      },
+      {
+        "value": "C",
+        "label": "仅①、②和③"
+      },
+      {
+        "value": "D",
+        "label": "仅①、③和④"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "①正确：原函数加上任意常数 C 后，导数仍为 f(x)，故均为原函数；②错误：不定积分表示所有原函数的全体，不能等同于某一个具体的原函数；③正确：同一函数的任意两个原函数仅相差一个常数；④错误：原函数的几何意义是一族相互平行的曲线，而曲线下方的面积对应的是定积分的值。因此正确的说法是①和③。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-06-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-judgment"
+    }
+  },
+  "post": {
+    "id": "GH-06-post-q8",
+    "type": "multiple",
+    "question": "设 F(x) 是 f(x) 的一个原函数。关于原函数与不定积分的辨析，下列说法中所有错误说法的组合是哪些？①不定积分的结果是一个函数族，而不是单一确定的函数；②如果对 F(x) 求导得到 f(x)，那么 F(x)+1 也是 f(x) 的原函数；③任意两个原函数在同一个区间上的图像可以通过上下平移完全重合；④原函数就是用来计算 f(x) 在某区间上累积总量的代数式。",
+    "options": [
+      {
+        "value": "A",
+        "label": "仅④"
+      },
+      {
+        "value": "B",
+        "label": "仅②和④"
+      },
+      {
+        "value": "C",
+        "label": "仅①和③"
+      },
+      {
+        "value": "D",
+        "label": "仅②、③和④"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "①说法正确：不定积分表示所有原函数的全体，是一个函数族；②说法正确：常数求导为零，F(x)+1 的导数也是 f(x)，它是原函数；③说法正确：任意两个原函数相差一个常数，反映在几何图像上即为上下平移关系；④说法错误：原函数是指求导后能得到 f(x) 的函数，而用来计算区间上累积总量的是定积分，不能将原函数直接等同于计算累积总量的代数式。因此，只有④是错误说法。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-06-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-judgment"
+    }
+  }
+}

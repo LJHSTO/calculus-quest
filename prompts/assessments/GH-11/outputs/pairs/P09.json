@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q9",
+    "type": "multiple",
+    "question": "某同学在分析无约束优化问题时，求得目标函数在驻点处的 Hessian 矩阵特征值全为负数。关于该驻点类型的判断，下列说法中所有正确的选项是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该驻点处目标函数取得局部极大值"
+      },
+      {
+        "value": "B",
+        "label": "该驻点处目标函数取得局部极小值"
+      },
+      {
+        "value": "C",
+        "label": "该驻点处目标函数的局部极值类型无法判定"
+      },
+      {
+        "value": "D",
+        "label": "该驻点处目标函数不可能为鞍点"
+      }
+    ],
+    "answer": [
+      "A",
+      "D"
+    ],
+    "analysis": "Hessian 矩阵特征值全为负数，说明 Hessian 矩阵是负定的。在无约束优化中，若驻点处的 Hessian 矩阵负定，则该驻点为局部极大值点。由于鞍点要求 Hessian 矩阵的特征值既有正也有负，因此该驻点不可能为鞍点。选项 A 和 D 正确，选项 B 和 C 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-11-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "stationary-point-classification"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q9",
+    "type": "multiple",
+    "question": "已知目标函数在某驻点处的 Hessian 矩阵是正定矩阵，针对该驻点性质的推断，下列结论中所有正确的选项是哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该驻点处目标函数取得局部极大值"
+      },
+      {
+        "value": "B",
+        "label": "该驻点处目标函数取得局部极小值"
+      },
+      {
+        "value": "C",
+        "label": "该驻点处目标函数不可能为鞍点"
+      },
+      {
+        "value": "D",
+        "label": "该驻点处目标函数的局部极值类型无法判定"
+      }
+    ],
+    "answer": [
+      "B",
+      "C"
+    ],
+    "analysis": "Hessian 矩阵是正定矩阵，意味着其所有特征值均为正数。在无约束优化中，若驻点处的 Hessian 矩阵正定，则该驻点为局部极小值点。由于鞍点要求 Hessian 矩阵的特征值既有正也有负，因此该驻点不可能为鞍点。选项 B 和 C 正确，选项 A 和 D 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-11-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "stationary-point-classification"
+    }
+  }
+}

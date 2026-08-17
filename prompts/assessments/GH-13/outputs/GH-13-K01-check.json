@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "约束优化与机器学习闭环",
+  "outlines": [
+    {
+      "id": "GH-13-K01-check",
+      "type": "quiz",
+      "title": "即时检查：可行区域",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-13-K01-check-q1",
+          "type": "single",
+          "question": "在平面直角坐标系中，点 (x, y) 需要同时满足约束条件：x ≥ 0，y ≥ 0，且 x + y ≤ 4。关于由这些约束条件确定的可行区域，下列说法正确的是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "可行区域是直线 x + y = 4 右上方的无界区域"
+            },
+            {
+              "value": "B",
+              "label": "可行区域是由直线 x = 0、y = 0 和 x + y = 4 围成的封闭三角形区域，包含边界"
+            },
+            {
+              "value": "C",
+              "label": "可行区域是直线 x = 0 与 y = 0 之间的带状区域，不包含任何边界"
+            },
+            {
+              "value": "D",
+              "label": "可行区域是直线 x + y = 4 上的所有点组成的线段"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "可行区域是指满足所有给定约束条件的点的集合。约束条件 x ≥ 0 限定在 y 轴右侧（含 y 轴），y ≥ 0 限定在 x 轴上方（含 x 轴），x + y ≤ 4 限定在直线 x + y = 4 的左下方（含该直线）。这三个半平面的交集是一个封闭的三角形区域，且包含边界，因此选项 B 正确。选项 A 忽略了不等号方向，选项 C 遗漏了 x + y ≤ 4 的限制，选项 D 错误地将可行区域缩小为一条线段。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-13-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-13-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "region-shape"
+          }
+        },
+        {
+          "id": "GH-13-K01-check-q2",
+          "type": "multiple",
+          "question": "已知点 (x, y) 需满足约束条件：x ≥ 1，y ≥ 0，x + y ≤ 5。关于该可行区域及其判定，下列说法中正确的有哪些？（请选择所有正确说法）",
+          "options": [
+            {
+              "value": "A",
+              "label": "点 (2, 3) 在可行区域内，因为它的两个坐标都大于 0 且横纵坐标之和等于 5"
+            },
+            {
+              "value": "B",
+              "label": "点 (1, 4) 在可行区域内，因为将 x=1、y=4 代入所有不等式后，各个不等式均成立"
+            },
+            {
+              "value": "C",
+              "label": "可行区域是第一象限内直线 x + y = 5 左下方的所有点组成的无界区域"
+            },
+            {
+              "value": "D",
+              "label": "点 (0, 5) 不在可行区域内，因为它不满足 x ≥ 1 这一约束条件"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "逐一代入三个约束：点 (2,3) 满足 2≥1、3≥0、2+3≤5，故 A 正确；点 (1,4) 也满足全部约束，故 B 正确。C 错误，该区域还受 x≥1 限制，而且是有界三角形。点 (0,5) 不满足 x≥1，故 D 正确。答案为 A、B、D。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-13-K01"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 4,
+          "pairId": "GH-13-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 4,
+            "symbolComplexity": "low",
+            "conclusionClass": "point-membership"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q2",
+    "type": "single",
+    "question": "已知函数 f(t) 在区间 [0, +∞) 上连续且始终为正。构造函数 G(x) = ∫(0 到 x) f(t) dt，若把上限 x 视作一个连续增加的变量，关于 G(x) 随 x 增大的变化趋势，下列判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "G(x) 会随着 x 的增大而不断减小，因为积分上限变大使得被积区间变长导致累加值变小"
+      },
+      {
+        "value": "B",
+        "label": "G(x) 会随着 x 的增大而不断增大，因为始终为正的被积函数在更长的区间上持续累加正的面积增量"
+      },
+      {
+        "value": "C",
+        "label": "G(x) 的值始终保持为常数，因为积分变量 t 与上限变量 x 是两个独立的变量，互不影响"
+      },
+      {
+        "value": "D",
+        "label": "G(x) 的增减性无法仅凭 f(t) 始终为正来判断，必须知道 f(t) 的具体解析式才能确定其变化趋势"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "变上限积分 G(x) = ∫(0 到 x) f(t) dt 的核心直觉是：当上限 x 发生微小变化 dx 时，G(x) 的微小增量 dG(x) = f(x) dx。由于题设 f(t) 在区间上始终为正，所以面积增量始终为正，G(x) 必然随着 x 的增大而不断增大。选项 A 违背了正函数累加的基本事实；选项 C 错把变上限积分当成与上限无关的定积分常数；选项 D 忽略了“被积函数为正”这一条件已经足以判断增减性，陷入没有解析式就无法判断的符号记忆误区。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity"
+    }
+  },
+  "post": {
+    "id": "GH-07-post-q2",
+    "type": "single",
+    "question": "已知连续函数 h(t) 在实数轴上满足 h(t) < 0。定义新函数 M(x) = ∫(1 到 x) h(t) dt，当自变量 x 从数值 3 连续变动到数值 5 时，关于 M(x) 数值变化的正确结论是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "M(x) 会不断减小，因为变动过程中新增的面积微元 h(x)dx 始终是负值，导致累加结果变小"
+      },
+      {
+        "value": "B",
+        "label": "M(x) 会不断增大，因为积分上限 x 从 3 增加到 5 使得积分区间变长，累加得到的数值更大"
+      },
+      {
+        "value": "C",
+        "label": "M(x) 的数值在变动过程中保持不变，因为 h(t) 的解析式没有给出，无法计算具体的累加数值"
+      },
+      {
+        "value": "D",
+        "label": "M(x) 的增减性无法确定，因为下限常数 1 与变动上限 5 之间的距离对积分结果的影响未知"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "变上限积分 M(x) = ∫(1 到 x) h(t) dt 的变化量取决于被积函数在上限处的值与上限微元的乘积，即 dM(x) = h(x) dx。由于 h(t) 始终小于 0，当 x 从 3 向 5 增大时，dx > 0，因此 dM(x) 始终为负，M(x) 的数值会不断减小。选项 B 错误地认为区间变长必然导致积分值变大，忽略了被积函数为负的情境；选项 C 误以为没有解析式就无法判断变化趋势，属于只记符号不理解动态累加概念的误区；选项 D 混淆了定积分下限的作用与变上限积分的动态变化机制。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity"
+    }
+  }
+}
