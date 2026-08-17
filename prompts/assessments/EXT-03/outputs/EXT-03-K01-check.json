@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "概率统计直觉之旅",
+  "outlines": [
+    {
+      "id": "EXT-03-K01-check",
+      "type": "quiz",
+      "title": "即时检查：随机事件与概率公理",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-03-K01-check-q1",
+          "type": "single",
+          "question": "已知某试验的样本空间为 Ω，A、B 为两个随机事件。若 P(A) = 0.6，P(B) = 0.5，且 P(A∪B) = 0.8，则 P(A∩B) 等于多少？",
+          "options": [
+            {
+              "value": "A",
+              "label": "0.1"
+            },
+            {
+              "value": "B",
+              "label": "0.3"
+            },
+            {
+              "value": "C",
+              "label": "0.5"
+            },
+            {
+              "value": "D",
+              "label": "0.8"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "根据概率的加法公理，对于任意两个事件 A 和 B，有 P(A∪B) = P(A) + P(B) - P(A∩B)。将已知数值代入：0.8 = 0.6 + 0.5 - P(A∩B)，解得 P(A∩B) = 1.1 - 0.8 = 0.3。该结果满足概率公理及事件交的非负性。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K01"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 2,
+          "pairId": "EXT-03-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "numeric"
+          }
+        },
+        {
+          "id": "EXT-03-K01-check-q2",
+          "type": "multiple",
+          "question": "关于随机事件与概率公理，下列说法中所有正确的说法是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "对于任意事件 A，必有 0 ≤ P(A) ≤ 1"
+            },
+            {
+              "value": "B",
+              "label": "若事件 A 与事件 B 互斥，则 P(A∪B) = P(A) + P(B)"
+            },
+            {
+              "value": "C",
+              "label": "对于任意两个事件 A 和 B，P(A∪B) 始终等于 P(A) + P(B)"
+            },
+            {
+              "value": "D",
+              "label": "必然事件的概率为 1，不可能事件的概率为 0"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确，概率的非负性公理指出任何事件的概率在 0 到 1 之间；B 正确，互斥事件意味着 A∩B 为空事件，根据概率的可加性公理，其并事件概率等于概率之和；D 正确，必然事件即样本空间本身，概率为 1，不可能事件即空集，概率为 0；C 错误，只有当 A 与 B 互斥（即 A∩B 为不可能事件）时，P(A∪B) 才等于 P(A) + P(B)，一般情况下需减去 P(A∩B)。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 4,
+          "pairId": "EXT-03-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "propositional"
+          }
+        }
+      ]
+    }
+  ]
+}

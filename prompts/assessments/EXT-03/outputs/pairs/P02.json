@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q2",
+    "type": "single",
+    "question": "掷一枚均匀骰子，事件 A 为「出现偶数点」，事件 B 为「出现点数不超过 3」。以下关于概率的说法，正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "P(A∪B) = P(A) + P(B)，因为概率加法公理对任意两个事件都成立"
+      },
+      {
+        "value": "B",
+        "label": "P(A∪B) = P(A) + P(B) − P(A∩B)，因为 A 与 B 不互斥，需扣除重叠部分的概率"
+      },
+      {
+        "value": "C",
+        "label": "P(A) + P(B) > 1，因为 A 和 B 各自包含多个样本点"
+      },
+      {
+        "value": "D",
+        "label": "P(A∩B) = 0，因为 A 和 B 是描述不同性质的事件"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "A = {2,4,6}，B = {1,2,3}，A∩B = {2} ≠ ∅，故 A 与 B 不互斥。概率加法公理 P(A₁∪A₂∪…) = ΣP(Aᵢ) 仅对两两互斥事件成立；当事件不互斥时，需用容斥原理 P(A∪B) = P(A) + P(B) − P(A∩B)。代入：P(A) = 3/6 = 1/2，P(B) = 3/6 = 1/2，P(A∩B) = 1/6，P(A∪B) = 1/2 + 1/2 − 1/6 = 5/6，与 A∪B = {1,2,3,4,6} 共 5 个样本点一致。选项 A 误认为加法公理无条件适用；选项 C 混淆了概率值与样本点个数，P(A)+P(B)=1 并非大于 1；选项 D 误认为描述不同性质的事件就一定不重叠，实际上 A∩B={2}。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "axiom-application"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q2",
+    "type": "single",
+    "question": "一个袋中有 5 个红球、3 个蓝球、2 个绿球，从中随机取出一球。事件 A 为「取到红球」，事件 B 为「取到蓝球」。以下说法正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "P(A∪B) = P(A) + P(B) − P(A∩B)，因为 A 与 B 存在重叠部分"
+      },
+      {
+        "value": "B",
+        "label": "P(A∪B) < P(A) + P(B)，因为并集的概率总是严格小于各事件概率之和"
+      },
+      {
+        "value": "C",
+        "label": "P(A∪B) = P(A) + P(B)，因为 A 与 B 互斥，加法公理直接适用"
+      },
+      {
+        "value": "D",
+        "label": "P(A∪B) = 1 − P(A)，因为 A∪B 与 A 互为对立事件"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "一次取球不可能同时是红球和蓝球，故 A∩B = ∅，A 与 B 互斥。根据概率加法公理，互斥事件的并事件概率等于各事件概率之和：P(A∪B) = P(A) + P(B) = 5/10 + 3/10 = 8/10，与 A∪B = {红球, 蓝球} 共 8 个样本点一致。选项 A 误用容斥公式，实际上 A∩B = ∅，P(A∩B) = 0，虽数值巧合相等但推理错误；选项 B 误认为并集概率总严格小于概率之和，对互斥事件等号成立；选项 D 误判对立事件，A∪B 的对立事件是「取到绿球」而非 A 本身。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "axiom-application"
+    }
+  }
+}

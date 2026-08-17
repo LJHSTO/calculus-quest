@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "扩展：概率统计直觉",
+  "outlines": [
+    {
+      "id": "EXT-03-K04-check",
+      "type": "quiz",
+      "title": "即时检查：期望、方差与大数定律",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-03-K04-check-q1",
+          "type": "single",
+          "question": "已知随机变量 X 的分布为 P(X=1)=0.2，P(X=2)=0.5，P(X=3)=0.3。某同学据此认为：只要重复独立观测 X 足够多次，其样本平均值必然会趋近于 2.1。关于这一判断，下列说法最准确的是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "判断正确，这正是大数定律所保证的必然趋势"
+            },
+            {
+              "value": "B",
+              "label": "判断正确，因为样本均值最终会精确等于期望 2.1"
+            },
+            {
+              "value": "C",
+              "label": "说法不严谨：大数定律保证的是样本均值依概率收敛于期望，而不是每一次都必然等于 2.1 或必然趋近"
+            },
+            {
+              "value": "D",
+              "label": "说法错误，样本均值与期望无关，重复观测次数再多也不会接近 2.1"
+            }
+          ],
+          "answer": [
+            "C"
+          ],
+          "analysis": "先算期望：E(X)=1×0.2+2×0.5+3×0.3=2.1。大数定律的含义是：在独立重复试验中，样本均值会依概率收敛于期望值，也就是随着次数增加，样本均值与 2.1 的偏差任意小的概率趋于 1。它并不保证某一次或某段过程中样本均值精确等于 2.1，也不表示“必然”趋近而不允许波动。因此应选 C。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "EXT-03-K04-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptual"
+          }
+        },
+        {
+          "id": "EXT-03-K04-check-q2",
+          "type": "multiple",
+          "question": "关于期望、方差与大数定律，下列说法中所有正确说法是哪些？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "期望反映随机变量取值的中心位置，方差反映取值围绕期望的离散程度"
+            },
+            {
+              "value": "B",
+              "label": "大数定律说明：在独立重复试验次数很大时，样本均值会依概率收敛于期望"
+            },
+            {
+              "value": "C",
+              "label": "只要一个随机变量的方差很大，重复观测多次后样本均值就一定更快趋近于期望"
+            },
+            {
+              "value": "D",
+              "label": "大数定律要求重复试验具有独立性和相同的分布，不能随意套用到任意相关或分布不同的数据上"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确：期望刻画中心，方差刻画离散程度。B 正确：这是大数定律的核心含义。C 错误：方差越大，取值波动通常越大，不能推出“更快趋近”；收敛速度还与独立性、同分布等条件有关，不能只凭方差大就下结论。D 正确：大数定律有独立性、同分布等前提，不能随意套用。故选 A、B、D。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K04"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 4,
+          "pairId": "EXT-03-K04-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptual"
+          }
+        }
+      ]
+    }
+  ]
+}

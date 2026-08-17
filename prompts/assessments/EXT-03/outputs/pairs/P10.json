@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q10",
+    "type": "text",
+    "question": "某工厂生产了一批零件，总数非常多。已知每个零件的合格概率都是 0.90，且各个零件合格与否互不影响。质检部门从中随机抽取了 100 个零件进行检验。设这 100 个零件中合格品的数量为随机变量 X。请根据常见分布与中心极限定理，解答以下两个问题：\n1. 指出 X 服从哪种常见分布，并写出其期望 E(X) 和方差 D(X) 的数值。\n2. 利用中心极限定理，说明当抽取的零件总数非常大时，X 的标准化随机变量趋近于哪种常见连续型分布？并简述中心极限定理在解决此类实际问题时的核心作用。",
+    "answer": "1. X~B(100,0.90)，E(X)=90，D(X)=9。\n2. 对一般样本量 n，令 X_n~B(n,0.90)，则 n→∞ 时 [X_n-0.9n]/sqrt(0.09n) 依分布收敛到标准正态分布 N(0,1)。因此 n 较大时可用正态分布近似二项概率；在本题 n=100 时，相应标准化量为 (X-90)/3。",
+    "analysis": "本题考查二项分布的识别与数字特征计算，以及中心极限定理的基本内涵。每个零件合格概率相同且相互独立，故合格品数 X 服从二项分布 B(n, p)。其期望为 np，方差为 np(1-p)。根据中心极限定理，当 n 足够大时，二项分布的标准化变量趋近于标准正态分布，这为解决大批量生产中的合格率估计问题提供了近似计算的理论依据。",
+    "points": 20,
+    "knowledgePointIds": [
+      "EXT-03-K05"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "rubric": [
+      {
+        "criterion": "正确指出 X 服从二项分布 B(100, 0.90)",
+        "points": 4
+      },
+      {
+        "criterion": "正确计算期望 E(X) = 90",
+        "points": 4
+      },
+      {
+        "criterion": "正确计算方差 D(X) = 9",
+        "points": 4
+      },
+      {
+        "criterion": "正确指出标准化随机变量趋近于标准正态分布",
+        "points": 4
+      },
+      {
+        "criterion": "正确说明中心极限定理的核心作用是利用正态分布近似计算复杂随机事件的概率",
+        "points": 4
+      }
+    ],
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "distribution_approximation"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q10",
+    "type": "text",
+    "question": "某网络平台进行在线问卷调查，向大量用户发送了邀请。假设每个用户参与问卷的概率均为 0.80，且用户之间是否参与互不影响。平台从发送名单中随机抽取了 100 名用户进行追踪。设这 100 名用户中实际参与问卷的人数为随机变量 Y。请根据常见分布与中心极限定理，解答以下两个问题：\n1. 判断 Y 服从哪种常见分布，并计算其期望 E(Y) 和方差 D(Y) 的数值。\n2. 依据中心极限定理，当追踪的用户总数足够大时，Y 的标准化变量趋近于哪种常见连续型分布？并说明中心极限定理如何帮助我们理解大规模独立重复事件的总体规律。",
+    "answer": "1. Y~B(100,0.80)，E(Y)=80，D(Y)=16。\n2. 对一般样本量 n，令 Y_n~B(n,0.80)，则 n→∞ 时 [Y_n-0.8n]/sqrt(0.16n) 依分布收敛到标准正态分布 N(0,1)。因此 n 较大时可用正态分布近似参与人数的二项概率；在本题 n=100 时，相应标准化量为 (Y-80)/4。",
+    "analysis": "本题考查二项分布模型的建立与数字特征求解，以及中心极限定理的实际意义。用户参与概率相同且相互独立，参与人数 Y 服从二项分布 B(n, p)。其期望为 np，方差为 np(1-p)。根据中心极限定理，当 n 足够大时，二项分布的标准化变量趋近于标准正态分布，揭示了大规模独立随机现象的整体稳定性规律。",
+    "points": 20,
+    "knowledgePointIds": [
+      "EXT-03-K05"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "rubric": [
+      {
+        "criterion": "正确指出 Y 服从二项分布 B(100, 0.80)",
+        "points": 4
+      },
+      {
+        "criterion": "正确计算期望 E(Y) = 80",
+        "points": 4
+      },
+      {
+        "criterion": "正确计算方差 D(Y) = 16",
+        "points": 4
+      },
+      {
+        "criterion": "正确指出标准化随机变量趋近于标准正态分布",
+        "points": 4
+      },
+      {
+        "criterion": "正确说明中心极限定理揭示了大规模独立重复事件总体呈现稳定的正态分布规律，可用于近似预测",
+        "points": 4
+      }
+    ],
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "distribution_approximation"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q5",
+    "type": "single",
+    "question": "掷一枚均匀骰子，设 X 为朝上的点数。下列关于 X 的说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "X 是一个待定的常数，在掷骰子之前它有一个确定但未知的值"
+      },
+      {
+        "value": "B",
+        "label": "X 是将每个可能结果映射到对应点数的函数，其分布列出 X 取 1 至 6 各值的概率"
+      },
+      {
+        "value": "C",
+        "label": "X 的分布就是骰子本身，与每个结果出现的概率无关"
+      },
+      {
+        "value": "D",
+        "label": "因为每个结果概率相等，所以 X 没有分布可言"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "随机变量是将样本空间中每个结果映射为实数的函数，而非未知常数，故 A 错。分布描述的是随机变量取各值的概率，不是物理实体本身，故 C 错。即使各结果概率相等，随机变量仍有确定的分布（均匀分布），故 D 错。B 正确描述了 X 的函数本质及其分布的含义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "identify-correct-characterization"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q5",
+    "type": "single",
+    "question": "从装有 2 个红球和 3 个白球的袋中随机摸出 1 个球。规定 Y：摸到红球记为 1，摸到白球记为 0。关于 Y 及其概率分布，下列判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "Y 只能取 0 或 1 两个值，取值种类太少，因此 Y 不构成随机变量"
+      },
+      {
+        "value": "B",
+        "label": "Y 的分布只需写出 P(Y=1) 的值，P(Y=0) 可以省略不写"
+      },
+      {
+        "value": "C",
+        "label": "Y 是将每个摸球结果映射为 0 或 1 的函数，其分布完整给出 Y 取 0 和取 1 的概率"
+      },
+      {
+        "value": "D",
+        "label": "Y 的取值在摸球前已被物理决定，只是观察者暂时未知，所以 Y 是常数而非随机变量"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "随机变量取值的多少不影响其是否为随机变量，0-1 变量也是合法的随机变量，故 A 错。分布必须完整描述随机变量取每个可能值的概率，不能只写一部分，故 B 错。随机变量的值在试验前不确定，并非已被物理决定的常数，故 D 错。C 正确描述了 Y 的函数本质及其分布的完整含义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "identify-correct-characterization"
+    }
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q8",
+    "type": "multiple",
+    "question": "已知甲、乙两人玩掷硬币游戏，硬币均匀。游戏规则是：若第一次出现正面则甲赢，游戏立即结束；若第一次出现反面，则换乙掷一次，若乙掷出正面则乙赢，若乙掷出反面则游戏继续换甲掷，依此类推。关于此游戏的期望长度（即平均投掷次数）与方差，下列说法中正确的有？",
+    "options": [
+      {
+        "value": "A",
+        "label": "设投掷次数为 X，则 P(X=1)=1/2，P(X=2)=1/4"
+      },
+      {
+        "value": "B",
+        "label": "该游戏期望长度的准确值为 2 次"
+      },
+      {
+        "value": "C",
+        "label": "若仅进行前 3 轮试验并记录平均投掷次数，该平均值通常与精确期望值存在较大差异，这体现了大数定律需要大量重复试验才趋于稳定的现象"
+      },
+      {
+        "value": "D",
+        "label": "由于硬币均匀，每次投掷互不影响，因此投掷次数的方差为 0"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "对于选项 A，第一次甲掷，正面的概率为 1/2，故 P(X=1)=1/2；若甲掷出反面（概率 1/2），换乙掷，乙掷出正面（概率 1/2）则游戏结束，故 P(X=2)=1/2×1/2=1/4，A 正确。对于选项 B，由 P(X=k)=(1/2)^k 可知期望 E(X)=Σk·(1/2)^k = 2，B 正确。对于选项 C，大数定律表明只有当试验次数趋于无穷大时，样本均值才依概率收敛于期望，少量试验的样本均值往往偏离期望，C 正确。对于选项 D，每次投掷结果并非完全相同（取值可能为 1, 2, 3...），存在波动，方差 E(X^2)-[E(X)]^2 = 6 - 4 = 2 ≠ 0，D 错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-03-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "expectedValueAndVarianceProperty"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q8",
+    "type": "multiple",
+    "question": "某射手射击目标，每次命中的概率均为 1/3，且各次射击结果相互独立。该射手持续射击直到首次命中目标为止。关于其停止时的射击次数 X 的期望与方差，下列说法中正确的有？",
+    "options": [
+      {
+        "value": "A",
+        "label": "P(X=3) 表示前两次均未命中、第三次命中的概率，其值为 4/27"
+      },
+      {
+        "value": "B",
+        "label": "射击次数 X 的期望为 3 次"
+      },
+      {
+        "value": "C",
+        "label": "若仅观察前 2 名射手的射击次数并求平均值，该平均值通常不能精确代表所有射手平均需要的射击次数，这反映了大数定律描述的大量重复下平均值才趋于稳定的特征"
+      },
+      {
+        "value": "D",
+        "label": "因为每次命中概率固定且独立，所以随机变量 X 的方差为 1"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "首次命中发生在第3次，要求前两次失败、第三次成功，概率为 (2/3)²(1/3)=4/27，A正确。几何分布期望为 1/p=3，B正确；两个样本的均值波动仍可能很大，C正确；方差为 (1-p)/p²=6，D错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-03-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "expectedValueAndVarianceProperty"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q6",
+    "type": "single",
+    "question": "已知随机变量 X 表示某零件出厂前的抽检结果，若抽到次品记为 1，抽到正品记为 0。现从同一批次中独立抽取两个零件，记第一个零件的抽检结果为 X1，第二个零件的抽检结果为 X2。关于 X1 与 X2 的联合分布，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "因为 X1 和 X2 都只能取 0 或 1，所以它们必定取相同的值"
+      },
+      {
+        "value": "B",
+        "label": "X1 与 X2 各自的取值规律决定了它们联合取值的概率，且独立抽取意味着联合概率等于各自概率的乘积"
+      },
+      {
+        "value": "C",
+        "label": "由于两次抽检面对同一批次，X1 取 1 会导致 X2 取 1 的概率变大，无法用单一分布描述"
+      },
+      {
+        "value": "D",
+        "label": "联合分布只能列出 X1 和 X2 各自取 0 或 1 的频数，不能给出两个变量同时取某组具体值的概率"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "随机变量的分布不仅描述单一变量的取值规律，多个随机变量还可以构成联合分布，用于刻画它们同时取某些值的概率。本题中两次抽取是独立的，因此 X1 和 X2 的联合概率等于边缘概率的乘积。选项 A 错误，取值范围相同不代表取值必定相同；选项 C 错误，独立抽取时 X1 的结果不会改变 X2 的概率；选项 D 错误，联合分布正是用来描述多个变量同时取值的概率规律，而非仅仅记录频数。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "joint-distribution-concept"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q6",
+    "type": "single",
+    "question": "某气象站定义一种指示变量 Y：若某日降雨量达到暴雨级别则记为 1，否则记为 0。现考察相邻两天的天气状态，令第一天对应的变量为 Y1，第二天对应的变量为 Y2。针对 Y1 与 Y2 的概率规律，下列叙述中正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "由于 Y1 和 Y2 描述的是同一个气象站，它们必定具有完全相同的取值"
+      },
+      {
+        "value": "B",
+        "label": "Y1 与 Y2 的联合分布可以刻画两天同时为暴雨、一天暴雨一天非暴雨等所有组合情况的发生概率"
+      },
+      {
+        "value": "C",
+        "label": "指示变量只关心单日是否暴雨，因此无法建立涉及两日状态的联合概率模型"
+      },
+      {
+        "value": "D",
+        "label": "只要两天的暴雨发生概率相等，联合分布就等同于把单日概率简单复制两遍，无需考虑变量间的关联结构"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "随机变量的联合分布用于描述多个变量取值组合的概率规律。即使两个变量具有相同的边缘分布，其联合分布也取决于它们之间的关联结构。选项 A 错误，同一分布不意味着取值必定相同；选项 C 错误，指示变量同样可以构建联合分布来研究多日状态；选项 D 错误，边缘概率相同不代表联合分布就是边缘的简单复制，变量间可能存在相依性，必须通过联合分布来完整刻画。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "joint-distribution-concept"
+    }
+  }
+}
