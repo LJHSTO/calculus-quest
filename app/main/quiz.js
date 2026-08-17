@@ -537,9 +537,11 @@ async function submitQuiz(unitId) {
       incorrect: records.filter(({ result }) => result.isCorrect === false).length
     }
   });
-  const needsDiagnostic = Boolean(
-    unit.adaptiveFormative
-    && records.some(({ question, result }) => question.adaptiveRole === "core" && result.isCorrect === false)
+  const needsDiagnostic = submitted.requiresDiagnostic === true || Boolean(
+    unit.assessmentPhase === "formative"
+    && (submitted.results || []).some((result) => (
+      result.questionType !== "multiple" && result.status === "incorrect"
+    ))
   );
   if (needsDiagnostic) {
     saveState();

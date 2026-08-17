@@ -251,6 +251,7 @@ async function main() {
     }, token);
     assert.equal(adaptiveCoreSubmission.response.status, 200);
     assert.equal(adaptiveCoreSubmission.payload.results[0].isCorrect, false);
+    assert.equal(adaptiveCoreSubmission.payload.requiresDiagnostic, true);
 
     const adaptiveDiagnosticSubmission = await postJson(baseUrl, "/api/learning/quiz/submit", {
       unitId: "GH-01-K01-formative",
@@ -260,6 +261,7 @@ async function main() {
     }, token);
     assert.equal(adaptiveDiagnosticSubmission.response.status, 200);
     assert.equal(adaptiveDiagnosticSubmission.payload.results[0].questionId, adaptiveDiagnostic.id);
+    assert.equal(adaptiveDiagnosticSubmission.payload.requiresDiagnostic, false);
 
     const adaptiveResubmission = await postJson(baseUrl, "/api/learning/quiz/submit", {
       unitId: "GH-01-K01-formative",

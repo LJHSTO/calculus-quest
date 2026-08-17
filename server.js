@@ -3100,6 +3100,12 @@ async function handleApi(req, res, url) {
 
       sendJson(res, 200, {
         ok: true,
+        requiresDiagnostic: Boolean(
+          adaptiveFormative
+          && expectedEntries.length === 1
+          && expectedEntries[0] === coreEntry
+          && prepared[0]?.isCorrect === false
+        ),
         results: prepared.map(({ entry, ...result }) => result)
       });
       return;
