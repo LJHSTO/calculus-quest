@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "机器学习高数闭环：从导数到训练",
+  "outlines": [
+    {
+      "id": "GH-14-K05-check",
+      "type": "quiz",
+      "title": "即时检查：完整学习路线回看",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-14-K05-check-q1",
+          "type": "single",
+          "question": "在机器学习高数闭环中，“完整学习路线回看”的核心含义是指什么？",
+          "options": [
+            {
+              "value": "A",
+              "label": "只记住导数、梯度下降等数学符号和最终结论，能够默写公式即可"
+            },
+            {
+              "value": "B",
+              "label": "能够把数学原理、操作过程与实际应用情境连接起来，形成贯通的理解和判断"
+            },
+            {
+              "value": "C",
+              "label": "只需回顾机器学习的最终模型评估指标，不需要关心数学推导过程"
+            },
+            {
+              "value": "D",
+              "label": "把学习路线拆分成孤立的步骤，分别记忆每个步骤的名称而不建立联系"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "“完整学习路线回看”强调将数学原理、操作过程与应用情境贯通，而不是只记住符号或结论。选项B体现了这种贯通理解，符合知识点目标；其他选项都停留在孤立记忆或只看结论的层面，属于常见误解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K05"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 1,
+          "pairId": "GH-14-K05-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-identification"
+          }
+        },
+        {
+          "id": "GH-14-K05-check-q2",
+          "type": "multiple",
+          "question": "关于“完整学习路线回看”，以下说法中所有正确的说法是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "只记住“完整学习路线回看”的符号或结论，就等于完成了该知识点的学习"
+            },
+            {
+              "value": "B",
+              "label": "应当能够把数学原理与图像、操作或应用情境连接起来，说明自己的判断"
+            },
+            {
+              "value": "C",
+              "label": "回看路线时，可以用交互证据或操作过程来说明对路线的理解"
+            },
+            {
+              "value": "D",
+              "label": "只要能背诵学习路线的步骤名称，就说明已经掌握了完整学习路线回看"
+            }
+          ],
+          "answer": [
+            "B",
+            "C"
+          ],
+          "analysis": "正确说法是B、C。该知识点要求把符号或结论与图像、操作、应用情境连接，并能用交互证据说明判断；A、D属于只记符号或步骤名称的常见误解，没有建立贯通理解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K05"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 1,
+          "pairId": "GH-14-K05-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "misconception-diagnosis"
+          }
+        }
+      ]
+    }
+  ]
+}

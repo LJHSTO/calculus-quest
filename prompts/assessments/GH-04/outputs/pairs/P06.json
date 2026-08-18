@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-04-pre-q6",
+    "type": "single",
+    "question": "某同学在求函数 f(x) = (3x - 2)^5 的导数时，写出的计算结果为 f'(x) = 5(3x - 2)^4。这个结果遗漏了链式法则中的哪一步操作？",
+    "options": [
+      {
+        "value": "A",
+        "label": "未对复合函数的外层结构进行求导"
+      },
+      {
+        "value": "B",
+        "label": "未对内层函数 3x - 2 进行求导并相乘"
+      },
+      {
+        "value": "C",
+        "label": "未将外层导数与内层导数进行相加"
+      },
+      {
+        "value": "D",
+        "label": "未将指数 5 乘以系数 3"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "根据链式法则，复合函数 y = g(h(x)) 的导数为 y' = g'(h(x)) * h'(x)。对于 f(x) = (3x - 2)^5，外层函数为 u^5，内层函数为 u = 3x - 2。外层求导得到 5(3x - 2)^4，内层求导得到 3。因此正确结果应为 f'(x) = 5(3x - 2)^4 * 3 = 15(3x - 2)^4。该同学的结果中缺少了内层函数的导数 3，即遗漏了“未对内层函数 3x - 2 进行求导并相乘”这一步。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-04-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "missing_inner_derivative"
+    }
+  },
+  "post": {
+    "id": "GH-04-post-q6",
+    "type": "single",
+    "question": "在计算 g(x) = (4 - x^2)^3 的导数时，有同学得出 g'(x) = 3(4 - x^2)^2。关于这个计算过程，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该同学错误地将外层函数与内层函数的导数进行了相加"
+      },
+      {
+        "value": "B",
+        "label": "该同学在应用链式法则时，漏乘了内层函数 4 - x^2 的导数"
+      },
+      {
+        "value": "C",
+        "label": "该同学错误地只对内层函数进行了求导，未处理外层函数"
+      },
+      {
+        "value": "D",
+        "label": "该同学错误地将内层函数的导数当成了外层函数的导数"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "根据链式法则，对于复合函数 g(x) = (4 - x^2)^3，外层函数为 u^3，内层函数为 u = 4 - x^2。外层求导为 3(4 - x^2)^2，内层求导为 -2x。正确的导数应为 g'(x) = 3(4 - x^2)^2 * (-2x) = -6x(4 - x^2)^2。该同学的结果仅为外层导数，漏掉了内层函数的导数 -2x，即“漏乘了内层函数 4 - x^2 的导数”。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-04-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "missing_inner_derivative"
+    }
+  }
+}

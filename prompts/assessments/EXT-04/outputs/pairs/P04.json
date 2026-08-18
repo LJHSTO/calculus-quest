@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q4",
+    "type": "single",
+    "question": "在一个三层全连接神经网络中，计算损失函数对第一层权重的梯度时，反向传播会先在输出层计算出误差信号，再逐层向回传递。与对每个权重独立地从损失出发重复展开链式法则相比，反向传播效率更高的根本原因是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "反向传播使用了更大的学习率，使梯度下降更快收敛"
+      },
+      {
+        "value": "B",
+        "label": "反向传播将下游层已算出的误差信号逐层复用，避免了为每个权重重复展开从损失到该权重的完整链式乘积"
+      },
+      {
+        "value": "C",
+        "label": "反向传播只更新最后一层的权重，从而减少了需要计算的梯度数量"
+      },
+      {
+        "value": "D",
+        "label": "反向传播用加法替代乘法，降低了每一步的计算复杂度"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "反向传播的核心直觉在于链式法则的共享结构。在三层网络中，第一层权重的梯度依赖于从损失到该权重的完整链式乘积，但这条链的前半段（从损失到第二层输出）与第二层权重梯度所需的链完全相同。反向传播先计算输出层的误差信号（即损失对该层输入的梯度），再逐层向回传递，使每一层只需在上一层误差信号基础上乘以本层的局部雅可比即可得到本层误差信号。同一层所有权重共享同一个误差信号，无需为每个权重独立展开整条链式法则。选项A混淆了优化器学习率与梯度计算效率；选项C错误地认为反向传播只更新最后一层；选项D错误地认为反向传播改变了运算类型。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K02"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "intermediate-gradient-reuse"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q4",
+    "type": "single",
+    "question": "训练神经网络时，若不共享任何中间结果，仅按链式法则定义为每个权重单独计算损失梯度，则每个权重的梯度都需要从损失出发独立展开一整条乘法链。反向传播通过什么机制避免了这种冗余计算？",
+    "options": [
+      {
+        "value": "A",
+        "label": "对所有权重同时做矩阵求逆，数学上等价但速度更快"
+      },
+      {
+        "value": "B",
+        "label": "用有限差分近似梯度，只需前向传播即可完成"
+      },
+      {
+        "value": "C",
+        "label": "将误差信号从输出层逐层向回传递，使每一层直接复用上一层已算出的梯度信息，而非从损失重新展开"
+      },
+      {
+        "value": "D",
+        "label": "按权重绝对值排序，仅对最大的若干权重计算梯度"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "反向传播避免冗余计算的关键在于误差信号的逐层复用。若不共享中间结果，同一层所有权重会重复计算从损失到该层输出的相同链段。反向传播从输出层开始计算损失对输出层输入的梯度（误差信号），然后逐层向回传递：每一层只需将收到的误差信号乘以本层的局部导数（权重转置与激活函数导数），就得到本层的误差信号，再与前向激活值相乘得到各权重的梯度。选项A将反向传播与矩阵求逆混淆；选项B将反向传播与有限差分近似混淆；选项D将反向传播与权重剪枝混淆。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K02"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "intermediate-gradient-reuse"
+    }
+  }
+}

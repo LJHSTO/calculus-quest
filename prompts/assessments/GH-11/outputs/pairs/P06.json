@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q6",
+    "type": "single",
+    "question": "已知二元函数 f(x, y) 在某点处的二阶偏导数全为零。关于该点处的 Hessian 矩阵，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该矩阵不存在，因为二阶偏导数为零意味着无法构造 Hessian 矩阵"
+      },
+      {
+        "value": "B",
+        "label": "该矩阵是一个所有元素均为零的二阶方阵，它依然存在且可参与驻点类型判断"
+      },
+      {
+        "value": "C",
+        "label": "该矩阵退化为一个一维向量，因为所有二维信息都丢失了"
+      },
+      {
+        "value": "D",
+        "label": "该矩阵的对角线元素为零，但非对角线元素可能不为零"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "Hessian 矩阵由二元函数的两个二阶纯偏导数和两个二阶混合偏导数构成。当所有二阶偏导数均为零时，Hessian 矩阵的每个元素都是 0，构成一个零矩阵，但它作为矩阵依然存在，并可代入判别式进行驻点类型判断。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-interpretation"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q6",
+    "type": "single",
+    "question": "在计算二元函数 g(u, v) 的 Hessian 矩阵时，矩阵的四个位置分别需要填入对应的二阶偏导数。若某同学将矩阵主对角线上的两个位置填入了 g 的两个一阶偏导数，他主要违背了 Hessian 矩阵的哪项核心构成规则？",
+    "options": [
+      {
+        "value": "A",
+        "label": "Hessian 矩阵必须由一阶偏导数构成，他填入的位置完全正确"
+      },
+      {
+        "value": "B",
+        "label": "Hessian 矩阵必须由二阶偏导数构成，主对角线应填入二阶纯偏导数而非一阶偏导数"
+      },
+      {
+        "value": "C",
+        "label": "Hessian 矩阵的元素只能是混合偏导数，主对角线必须始终留空"
+      },
+      {
+        "value": "D",
+        "label": "Hessian 矩阵的行数和列数由一阶偏导数的个数决定，与二阶偏导数无关"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "Hessian 矩阵的核心构成规则是收集函数的所有二阶偏导数。主对角线元素对应二阶纯偏导数，非主对角线元素对应二阶混合偏导数。填入一阶偏导数违背了其作为二阶导数矩阵的本质定义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-interpretation"
+    }
+  }
+}

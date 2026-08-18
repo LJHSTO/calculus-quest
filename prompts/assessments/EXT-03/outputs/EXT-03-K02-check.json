@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "概率统计直觉之旅",
+  "outlines": [
+    {
+      "id": "EXT-03-K02-check",
+      "type": "quiz",
+      "title": "即时检查：条件概率与贝叶斯",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-03-K02-check-q1",
+          "type": "single",
+          "question": "某人群中患某病的概率为 0.01。一种检测对真患者的阳性率为 0.95，对无病者的误判阳性率为 0.05。若某人检测结果为阳性，其确实患病的概率最接近以下哪个值？",
+          "options": [
+            {
+              "value": "A",
+              "label": "约 0.95"
+            },
+            {
+              "value": "B",
+              "label": "约 0.16"
+            },
+            {
+              "value": "C",
+              "label": "约 0.01"
+            },
+            {
+              "value": "D",
+              "label": "约 0.50"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "设 D 为患病，+ 为阳性。P(D)=0.01，P(+|D)=0.95，P(+|非D)=0.05。P(+)=0.01×0.95+0.99×0.05=0.0095+0.0495=0.0590。由贝叶斯公式，P(D|+)=0.0095/0.0590≈0.161，最接近 0.16。常见误解是把阳性率 0.95 直接当作患病概率，忽略了基础率。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K02"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 4,
+          "pairId": "EXT-03-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "word-problem",
+            "knownConditionCount": 3,
+            "operationCount": 4,
+            "symbolComplexity": "low",
+            "conclusionClass": "posterior-probability"
+          }
+        },
+        {
+          "id": "EXT-03-K02-check-q2",
+          "type": "multiple",
+          "question": "在用贝叶斯公式由阳性结果推断患病概率时，以下说法中所有正确说法是哪些？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "若患病率很低，即使检测准确率较高，阳性结果也未必意味着患病概率很高。"
+            },
+            {
+              "value": "B",
+            "label": "阳性后患病的概率等于‘真阳性率×患病率’除以所有阳性结果的总概率"
+            },
+            {
+              "value": "C",
+              "label": "只要检测对真患者的阳性率为 0.95，那么阳性者患病的概率就是 0.95。"
+            },
+            {
+              "value": "D",
+              "label": "贝叶斯公式需要考虑患病率、真阳性率和误判阳性率三类信息。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确：基础率较低时后验概率会被拉低。B 正确：P(病|阳性)=P(阳性|病)P(病)/P(阳性)，分母为全概率。C 错误：这是典型误解，忽略了基础率和误判率。D 正确：贝叶斯推断需要这三类信息。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "EXT-03-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "word-problem",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

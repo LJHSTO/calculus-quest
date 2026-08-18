@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q1",
+    "type": "single",
+    "question": "某同学在研究函数 y=f(x) 的单调性时，画出了其导函数 y=f'(x) 的图像。他观察到导函数图像在区间 (a, b) 内始终位于 x 轴的下方。基于这一观察，关于原函数 y=f(x) 在区间 (a, b) 上的单调性，下列判断中正确的是哪一个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "原函数 y=f(x) 在该区间内单调递增"
+      },
+      {
+        "value": "B",
+        "label": "原函数 y=f(x) 在该区间内单调递减"
+      },
+      {
+        "value": "C",
+        "label": "原函数 y=f(x) 在该区间内先减后增"
+      },
+      {
+        "value": "D",
+        "label": "原函数 y=f(x) 在该区间内为常数"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "导函数 f'(x) 的图像在 x 轴下方，意味着在该区间内 f'(x)<0。根据导函数图像读法，导数小于零说明原函数 y=f(x) 在对应区间内的切线斜率为负，函数值随 x 增大而减小，因此原函数在该区间单调递减。选项 A 对应导数大于零的情况，选项 C 对应导数由负变正的情况，选项 D 对应导数恒为零的情况，均不符合题意。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity"
+    }
+  },
+  "post": {
+    "id": "GH-05-post-q1",
+    "type": "single",
+    "question": "已知函数 y=g(x) 在区间 [m, n] 上是单调递增的。若仅通过导函数 y=g'(x) 的图像来分析这一性质，则在该区间内，导函数的图像应当满足下列哪种位置特征？",
+    "options": [
+      {
+        "value": "A",
+        "label": "图像位于 x 轴上方或与 x 轴接触，即 g'(x)≥0"
+      },
+      {
+        "value": "B",
+        "label": "图像全部落在 x 轴的下方区域"
+      },
+      {
+        "value": "C",
+        "label": "图像恰好与 x 轴重合"
+      },
+      {
+        "value": "D",
+        "label": "图像从 x 轴下方穿过 x 轴到达上方"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "可导函数单调递增时导数应满足g'(x)≥0，因此导函数图像位于x轴上方或与x轴接触；个别点导数可以等于0，不必处处严格大于0。故A正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity"
+    }
+  }
+}

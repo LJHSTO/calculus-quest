@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q4",
+    "type": "single",
+    "question": "已知函数 f(x) 在闭区间 [2, 6] 上连续，且 f(x) 的一个原函数为 F(x)。若 F(6) 与 F(2) 的差值为 12，根据牛顿-莱布尼茨公式，定积分 ∫(2 到 6) f(x) dx 的值是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "12"
+      },
+      {
+        "value": "B",
+        "label": "-12"
+      },
+      {
+        "value": "C",
+        "label": "24"
+      },
+      {
+        "value": "D",
+        "label": "无法确定，因为不知道 F(x) 的具体表达式"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "牛顿-莱布尼茨公式表明，若 F(x) 是连续函数 f(x) 在区间 [a, b] 上的一个原函数，则定积分 ∫(a 到 b) f(x) dx = F(b) - F(a)。本题中 a=2，b=6，已知 F(6) - F(2) = 12，因此积分值直接等于 12。选项 B 错误地认为积分上下限相减是 2-6 导致符号取反；选项 C 误将原函数差值乘以 2；选项 D 忽略了牛顿-莱布尼茨公式只需知道原函数在端点的差值即可求出定积分的核心意义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric-value"
+    }
+  },
+  "post": {
+    "id": "GH-07-post-q4",
+    "type": "single",
+    "question": "设物体做直线运动，其速度函数 v(t) 在时间区间 [1, 5] 上连续。已知位置函数 S(t) 是 v(t) 的一个原函数，且从时刻 t=1 到 t=5 物体的位置改变量为 16。运用牛顿-莱布尼茨公式判断，速度函数在该区间上的定积分 ∫(1 到 5) v(t) dt 的结果是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "16"
+      },
+      {
+        "value": "B",
+        "label": "4"
+      },
+      {
+        "value": "C",
+        "label": "-16"
+      },
+      {
+        "value": "D",
+        "label": "必须求出 S(t) 的具体解析式才能计算该定积分"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "牛顿-莱布尼茨公式指出，如果 F(x) 是 f(x) 在 [a, b] 上的原函数，那么 ∫(a 到 b) f(x) dx = F(b) - F(a)。在本题中，S(t) 是 v(t) 的原函数，因此 ∫(1 到 5) v(t) dt = S(5) - S(1)。题目已知位置改变量为 S(5) - S(1) = 16，故定积分值即为 16。选项 B 错误地将区间长度除以了位置改变量；选项 C 混淆了上下限的代入顺序；选项 D 反映了只记公式结论而未理解其与原函数端点值关联的核心含义，实际上无需知道 S(t) 的具体表达式即可求出定积分。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric-value"
+    }
+  }
+}

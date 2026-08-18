@@ -1,0 +1,107 @@
+{
+  "languageDirective": "本测验使用简体中文。",
+  "courseTitle": "深度学习数学直觉：从矩阵到优化",
+  "outlines": [
+    {
+      "id": "EXT-04-K01-check",
+      "type": "quiz",
+      "title": "即时检查：多层网络的前向传播与矩阵视角",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-04-K01-check-q1",
+          "type": "single",
+          "question": "一个两层网络（不含输入层）的权重矩阵分别为 W1（形状 3×2）和 W2（形状 1×3），输入向量 x 的形状为 2×1。若忽略偏置和激活函数，仅考虑线性变换，则网络输出 y 的计算过程可表示为：",
+          "options": [
+            {
+              "value": "A",
+              "label": "y = W1 · W2 · x，最终输出形状为 3×1"
+            },
+            {
+              "value": "B",
+              "label": "y = W2 · W1 · x，最终输出形状为 1×1"
+            },
+            {
+              "value": "C",
+              "label": "y = W1 · x · W2，最终输出形状为 3×1"
+            },
+            {
+              "value": "D",
+              "label": "y = W2 · (W1 · x)，最终输出形状为 1×1"
+            }
+          ],
+          "answer": [
+            "D"
+          ],
+          "analysis": "前向传播按层依次进行：先计算第一层输出 h = W1·x（形状 3×1），再计算第二层输出 y = W2·h（形状 1×1）。矩阵乘法必须满足维度匹配，且顺序不能颠倒。选项 D 正确描述了这一过程。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-04-K01"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 2,
+          "pairId": "EXT-04-K01-check-q1",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 3,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "expression"
+          }
+        },
+        {
+          "id": "EXT-04-K01-check-q2",
+          "type": "multiple",
+          "question": "关于多层网络的前向传播与矩阵视角，以下哪些说法是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "矩阵视角下，每一层的前向传播都可以看作对输入向量做一次线性变换（忽略激活函数时）。"
+            },
+            {
+              "value": "B",
+              "label": "权重矩阵的行数必须等于该层输入向量的维度。"
+            },
+            {
+              "value": "C",
+              "label": "前向传播中，矩阵乘法的顺序是从输入层向输出层逐层进行，不能随意交换层间矩阵的乘法顺序。"
+            },
+            {
+              "value": "D",
+              "label": "只要最终输出维度正确，各层权重矩阵的乘法顺序可以任意交换。"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "A 正确：忽略激活函数时，每层就是一次线性变换。B 错误：权重矩阵的行数等于该层输出维度，列数等于输入维度。C 正确：前向传播必须按网络结构从输入到输出逐层计算，矩阵乘法顺序由网络连接决定。D 错误：矩阵乘法不满足交换律，交换顺序会改变结果且可能维度不匹配。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-04-K01"
+          ],
+          "cognitiveLevel": "分析",
+          "estimatedSteps": 3,
+          "pairId": "EXT-04-K01-check-q2",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "propositional",
+            "knownConditionCount": 4,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "classification"
+          }
+        }
+      ]
+    }
+  ]
+}

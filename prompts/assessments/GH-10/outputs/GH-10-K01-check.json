@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "GH-10-K01-check",
+      "type": "quiz",
+      "title": "即时检查：多元链式法则",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-10-K01-check-q1",
+          "type": "single",
+          "question": "设 z = f(x, y)，其中 x = g(t)，y = h(t) 均可导，f 可微。若在某时刻 t0 处有 g'(t0) = 2，h'(t0) = -1，且 f 在 (g(t0), h(t0)) 处对 x 的偏导数为 3、对 y 的偏导数为 4，那么 z 关于 t 在 t0 处的链式法则表达式是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "dz/dt = f'(g(t0)) · g'(t0) + f'(h(t0)) · h'(t0)"
+            },
+            {
+              "value": "B",
+              "label": "dz/dt = ∂f/∂x · dx/dt + ∂f/∂y · dy/dt = 3·2 + 4·(-1)"
+            },
+            {
+              "value": "C",
+              "label": "dz/dt = ∂f/∂x · ∂f/∂y = 3·4"
+            },
+            {
+              "value": "D",
+              "label": "dz/dt = (∂f/∂x + ∂f/∂y) · (dx/dt + dy/dt) = (3 + 4)·(2 + (-1))"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "多元链式法则要求把 z 对每个中间变量的偏导乘以该中间变量对 t 的导数，再相加：dz/dt = ∂f/∂x · dx/dt + ∂f/∂y · dy/dt。代入数据得 3·2 + 4·(-1) = 2。A 误用一元 f' 符号；C 把两个偏导相乘，漏掉了 dx/dt、dy/dt；D 先把偏导相加、再把 t 的导数相加后整体相乘，破坏了逐路径相乘再相加的结构。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-10-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-10-K01-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 4,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "formula-application"
+          }
+        },
+        {
+          "id": "GH-10-K01-check-q2",
+          "type": "multiple",
+          "question": "关于多元链式法则，下列说法中哪些是错误的？请选择所有错误说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "只要记住 dz/dt = ∂f/∂x · dx/dt + ∂f/∂y · dy/dt 这个公式，就等于理解了多元链式法则，不需要再联系图像或变化过程。"
+            },
+            {
+              "value": "B",
+              "label": "多元链式法则可理解为：沿 t 变化时，z 的总变化率等于 z 经 x 通道的变化率与经 y 通道的变化率之和。"
+            },
+            {
+              "value": "C",
+              "label": "在 z = f(x, y)，x = g(t)，y = h(t) 的情形中，∂f/∂x 和 ∂f/∂y 应在中间变量取值点 (g(t), h(t)) 处计算。"
+            },
+            {
+              "value": "D",
+              "label": "多元链式法则中，z 对 t 的总变化率等于 ∂f/∂x 与 ∂f/∂y 的乘积，再乘以 dx/dt 与 dy/dt 之和。"
+            }
+          ],
+          "answer": [
+            "A",
+            "D"
+          ],
+          "analysis": "A 错误：只记符号公式而不联系图像、操作或应用情境，正是常见误解，不能说明理解了链式法则。B 正确：它把公式与“通道相加”的直观含义连接，符合多元链式法则的核心含义。C 正确：偏导数必须在中间变量取值点处计算，这是链式法则的基本要求。D 错误：链式法则是“逐路径相乘再相加”，不是把偏导相乘、再把 t 的导数相加后整体相乘，该项混淆了乘法与加法的结构。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-10-K01"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-10-K01-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "medium",
+            "conclusionClass": "misconception-diagnosis"
+          }
+        }
+      ]
+    }
+  ]
+}

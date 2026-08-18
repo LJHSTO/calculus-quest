@@ -1,0 +1,80 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q10",
+    "type": "text",
+    "question": "某农场计划用总长为 60 米的栅栏，一面靠墙围成一个长方形蔬菜大棚。要求大棚的面积尽可能大。小王认为大棚越长面积越大，于是直接取平行于墙的边长为 40 米，垂直于墙的边长为 10 米。请说明小王的设计是否使面积达到最大，并给出正确的设计方案及最大面积。",
+    "answer": "小王的设计没有使面积达到最大。设垂直于墙的边长为 x 米，则平行于墙的边长为 60-2x 米。面积 S = x(60-2x) = -2x^2 + 60x。求导得 S' = -4x + 60。令 S' = 0，解得 x = 15。此时 60-2x = 30，最大面积为 S = 15 × 30 = 450 平方米。因此，正确方案为垂直于墙的边长 15 米，平行于墙的边长 30 米，最大面积为 450 平方米。",
+    "analysis": "本题考查实际最值建模。小王仅凭直觉认为一边越长面积越大，忽略了栅栏总长限制导致另一边变短的影响。正确做法是将面积表示为单一变量的函数，利用导数求极值。由 S = -2x^2 + 60x，求导找临界点 x = 15，并结合实际意义确认该临界点即为最大值点。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-05-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "low",
+      "conclusionClass": "max-value"
+    },
+    "rubric": [
+      {
+        "criterion": "明确指出小王的设计没有使面积达到最大",
+        "points": 4
+      },
+      {
+        "criterion": "正确设未知数并建立面积关于单一变量的函数关系式",
+        "points": 4
+      },
+      {
+        "criterion": "正确求导并解出临界点",
+        "points": 6
+      },
+      {
+        "criterion": "得出正确的设计方案尺寸并计算出最大面积",
+        "points": 6
+      }
+    ]
+  },
+  "post": {
+    "id": "GH-05-post-q10",
+    "type": "text",
+    "question": "工厂生产某产品，生产并销售 x 件时的销售收入为 R(x)=80x-x^2 元，总成本为 C(x)=200+20x 元，且 0≤x≤60。请建立利润函数，利用导数判断利润是否会随产量一直增加，并求使利润最大的产量和最大利润。",
+    "answer": "利润P(x)=R(x)-C(x)=-x^2+60x-200。P'(x)=-2x+60，令P'(x)=0得x=30。P'(x)在x<30时为正、x>30时为负，所以利润先增加后减少，在x=30时最大。最大利润P(30)=-900+1800-200=700元。",
+    "analysis": "本题考查实际最值建模。先由收入减成本建立利润函数P(x)=-x^2+60x-200，再用导数判断其先增后减。临界点x=30位于允许区间内，并给出最大利润700元。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-05-K04"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "low",
+      "conclusionClass": "max-value"
+    },
+    "rubric": [
+      {
+        "criterion": "正确判断利润先增加后减少，不会随产量一直增大",
+        "points": 4
+      },
+      {
+        "criterion": "正确建立利润关于产量的函数关系式",
+        "points": 4
+      },
+      {
+        "criterion": "正确求导并解出临界点",
+        "points": 6
+      },
+      {
+        "criterion": "得出使利润最大的产量及最大利润",
+        "points": 6
+      }
+    ]
+  }
+}

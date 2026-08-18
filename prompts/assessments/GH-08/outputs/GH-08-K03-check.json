@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "多元函数、梯度与 Jacobian",
+  "outlines": [
+    {
+      "id": "GH-08-K03-check",
+      "type": "quiz",
+      "title": "即时检查：偏导数",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-08-K03-check-q1",
+          "type": "single",
+          "question": "设二元函数 z = f(x, y) 表示某曲面的高度。在固定 y = y₀ 的截面上，偏导数 ∂z/∂x 在 x = x₀ 处的值，其核心含义是什么？",
+          "options": [
+            {
+              "value": "A",
+              "label": "当 x 和 y 同时变化时，曲面在点 (x₀, y₀) 处的整体倾斜方向"
+            },
+            {
+              "value": "B",
+              "label": "保持 y = y₀ 不变，曲面沿 x 方向在点 (x₀, y₀) 处的瞬时变化率"
+            },
+            {
+              "value": "C",
+              "label": "函数 f(x, y) 在点 (x₀, y₀) 处取得的最大可能变化率"
+            },
+            {
+              "value": "D",
+              "label": "曲面在点 (x₀, y₀) 处切平面的法线斜率"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "偏导数 ∂z/∂x 的核心含义是：在保持其他自变量（此处为 y）固定的前提下，函数沿 x 方向的瞬时变化率。选项 A 描述的是整体变化，未体现“固定 y”这一关键操作；选项 C 混淆了偏导数与方向导数或梯度的最大值概念；选项 D 错误描述了切平面法线的几何意义。因此正确选项为 B。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-08-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-08-K03-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-explanation"
+          }
+        },
+        {
+          "id": "GH-08-K03-check-q2",
+          "type": "multiple",
+          "question": "关于二元函数 z = f(x, y) 的偏导数，以下说法中哪些是错误的？（请选择所有错误说法）",
+          "options": [
+            {
+              "value": "A",
+              "label": "偏导数 ∂f/∂x 只是一个形式化的符号，它不反映任何具体的图像变化或操作意义。"
+            },
+            {
+              "value": "B",
+              "label": "计算 ∂f/∂x 时，必须将 y 视为常数，只对 x 求导。"
+            },
+            {
+              "value": "C",
+              "label": "若在某点 ∂f/∂x = 0 且 ∂f/∂y = 0，则该点一定是函数的最大值或最小值点。"
+            },
+            {
+              "value": "D",
+              "label": "偏导数反映的是固定一个变量时，函数沿另一个变量方向的瞬时变化率。"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "选项 A 错误，偏导数不仅是符号，它具有明确的几何与操作意义（即固定一个变量时函数沿另一变量方向的瞬时变化率）。选项 B 正确描述了偏导数的计算法则。选项 C 错误，两个偏导数同时为零的点仅为驻点，可能是极大值、极小值或鞍点，不能直接断定为最值点。选项 D 正确描述了偏导数的核心含义。题目要求选择错误说法，因此选择 A 和 C。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-08-K03"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-08-K03-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "misconception-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

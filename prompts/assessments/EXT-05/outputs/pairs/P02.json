@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q2",
+    "type": "single",
+    "question": "某高维问题可以计算梯度，但逐项计算并存储完整海森矩阵代价很高。若希望保留对曲率的近似利用，为什么适合考虑拟牛顿法？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它只比较函数值，不再需要计算梯度"
+      },
+      {
+        "value": "B",
+        "label": "它利用相邻迭代的梯度变化更新曲率近似，避免显式计算完整海森矩阵"
+      },
+      {
+        "value": "C",
+        "label": "它把海森矩阵固定为零矩阵，因此不再考虑曲率"
+      },
+      {
+        "value": "D",
+        "label": "它保证近似矩阵从第一步起就与真实海森矩阵完全相同"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "拟牛顿法根据相邻位置和梯度的变化更新海森矩阵或其逆的近似，从而利用近似曲率信息，同时避免显式计算、存储完整海森矩阵。它仍需要梯度，不会把曲率固定为零，也不保证近似从一开始就完全精确，因此 B 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": 2,
+      "conclusionClass": "mechanism-identification"
+    }
+  },
+  "post": {
+    "id": "EXT-05-post-q2",
+    "type": "single",
+    "question": "拟牛顿法在迭代过程中并不直接计算和存储完整的二阶导数矩阵，而是通过收集梯度信息来构造该矩阵的近似。关于拟牛顿法采用这种近似策略的主要目的，以下说法最准确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它通过近似矩阵避免直接计算二阶导数，在保留加速收敛特性的同时降低每步的计算与存储开销"
+      },
+      {
+        "value": "B",
+        "label": "它通过近似矩阵保证目标函数在任意迭代点处必定取得全局最小值"
+      },
+      {
+        "value": "C",
+        "label": "它通过近似矩阵将原本的无约束优化问题自动转化为带有等式约束的优化问题"
+      },
+      {
+        "value": "D",
+        "label": "它通过近似矩阵彻底消除一阶梯度信息的使用，仅依靠函数值进行迭代搜索"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "拟牛顿法的核心思想是利用一阶梯度信息构造二阶导数矩阵（海森矩阵或其逆矩阵）的近似。这种策略的主要目的是避免直接计算和存储完整的海森矩阵，从而在保留牛顿法加快收敛速度这一优势的同时，显著降低计算和存储开销。选项B错误，拟牛顿法不保证全局最优；选项C错误，拟牛顿法不引入约束；选项D错误，拟牛顿法仍需使用一阶梯度信息。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": 2,
+      "conclusionClass": "mechanism-identification"
+    }
+  }
+}

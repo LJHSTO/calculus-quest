@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "求导规则与导数应用",
+  "outlines": [
+    {
+      "id": "GH-05-K04-check",
+      "type": "quiz",
+      "title": "即时检查：实际最值建模",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-05-K04-check-q1",
+          "type": "single",
+          "question": "某工厂生产一种产品，固定成本为 200 元。每生产一件产品的变动成本为 10 元，且总产量为 x 件时的总收入为 R(x) = 100x - x²（0 < x < 50）。为了使利润最大，应生产多少件产品？",
+          "options": [
+            {
+              "value": "A",
+              "label": "45 件"
+            },
+            {
+              "value": "B",
+              "label": "50 件"
+            },
+            {
+              "value": "C",
+              "label": "40 件"
+            },
+            {
+              "value": "D",
+              "label": "30 件"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "利润函数 L(x) = R(x) - C(x) = (100x - x²) - (200 + 10x) = -x² + 90x - 200。求导得 L'(x) = -2x + 90。令 L'(x) = 0，解得 x = 45。由于 L'(x) 在 x=45 左右由正变负，故 x=45 是极大值点。结合实际定义域 0 < x < 50，且极值点唯一，因此生产 45 件时利润最大。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-05-K04"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 4,
+          "pairId": "GH-05-K04-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "word-problem",
+            "knownConditionCount": 3,
+            "operationCount": 4,
+            "symbolComplexity": "medium",
+            "conclusionClass": "max-value"
+          }
+        },
+        {
+          "id": "GH-05-K04-check-q2",
+          "type": "multiple",
+          "question": "在求解实际最值建模问题时，关于建模与求最值的过程，以下说法中正确的有？",
+          "options": [
+            {
+              "value": "A",
+              "label": "实际最值建模的关键是将实际问题转化为数学模型，构造出目标函数并明确其定义域。"
+            },
+            {
+              "value": "B",
+              "label": "只要找到导数为零的点，该点就一定是实际问题的最大值或最小值点，无需结合定义域和实际意义检验。"
+            },
+            {
+              "value": "C",
+              "label": "在确定最值时，除了考虑导数为零的驻点外，还需要考虑不可导点或定义域的端点。"
+            },
+            {
+              "value": "D",
+              "label": "如果目标函数在定义域内只有一个极值点，且该极值点是极大值点，那么该点也是函数在定义域内的最大值点。"
+            }
+          ],
+          "answer": [
+            "A",
+            "C",
+            "D"
+          ],
+          "analysis": "A 正确，实际最值建模的核心就是建立目标函数和界定定义域；B 错误，导数为零仅为可疑极值点，必须结合实际定义域和极值性质检验，否则会陷入只记结论的误解；C 正确，最值可能出现在驻点、不可导点或端点；D 正确，在实际单峰问题中，唯一的极大值点即为最大值点。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-05-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 3,
+          "pairId": "GH-05-K04-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "concept-judgment",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

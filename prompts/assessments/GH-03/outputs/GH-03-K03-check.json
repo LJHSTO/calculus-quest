@@ -1,0 +1,108 @@
+{
+  "languageDirective": "输出必须为合法 JSON object，且只包含指定键。",
+  "courseTitle": "从平均变化率到导数",
+  "outlines": [
+    {
+      "id": "GH-03-K03-check",
+      "type": "quiz",
+      "title": "即时检查：导数符号和意义",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-03-K03-check-q1",
+          "type": "single",
+          "question": "已知函数 f(x) 在 x = 2 处的导数 f'(2) = -3。下列哪个说法正确描述了 f'(2) = -3 的意义？",
+          "options": [
+            {
+              "value": "A",
+              "label": "函数 f(x) 在 x = 2 处的瞬时变化率为 -3，表示函数值在该点附近随 x 增大而减小。"
+            },
+            {
+              "value": "B",
+              "label": "函数 f(x) 在 x = 2 处的函数值为 -3。"
+            },
+            {
+              "value": "C",
+              "label": "函数 f(x) 在 x = 2 处的平均变化率为 -3。"
+            },
+            {
+              "value": "D",
+              "label": "函数 f(x) 在 x = 2 处的图像斜率为 3。"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "导数 f'(2) 表示函数在 x = 2 处的瞬时变化率，即该点切线的斜率。f'(2) = -3 为负数，说明函数值在该点附近随 x 增大而减小。选项 B 混淆了导数值与函数值；选项 C 混淆了瞬时变化率与平均变化率；选项 D 忽略了负号。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-03-K03"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 1,
+          "pairId": "GH-03-K03-p1",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "interpretation"
+          }
+        },
+        {
+          "id": "GH-03-K03-check-q2",
+          "type": "multiple",
+          "question": "下列关于导数符号和意义的说法中，哪些是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "若 f'(a) > 0，则函数 f(x) 在 x = a 附近呈上升趋势。"
+            },
+            {
+              "value": "B",
+              "label": "导数 f'(a) 表示函数 f(x) 在 x = a 处的瞬时变化率。"
+            },
+            {
+              "value": "C",
+              "label": "若 f'(a) = 0，则函数 f(x) 在 x = a 处的函数值一定为 0。"
+            },
+            {
+              "value": "D",
+              "label": "导数 f'(a) 的绝对值越大，函数在 x = a 附近变化得越快。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "选项 A 正确：正导数表示函数在该点附近递增。选项 B 正确：导数的核心意义就是瞬时变化率。选项 C 错误：f'(a) = 0 只说明该点切线斜率为 0，与函数值是否为 0 无关，这是常见的概念混淆。选项 D 正确：导数的绝对值衡量变化速率的大小。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-03-K03"
+          ],
+          "cognitiveLevel": "理解",
+          "estimatedSteps": 1,
+          "pairId": "GH-03-K03-p1",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 4,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept_identification"
+          }
+        }
+      ]
+    }
+  ]
+}

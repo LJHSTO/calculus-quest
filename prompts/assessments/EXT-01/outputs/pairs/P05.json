@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q5",
+    "type": "single",
+    "question": "已知微分方程 dy/dx = (2x+1)·y。关于该方程的类型，下列判断正确的是哪个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "是可分离变量方程，但不是一阶线性方程"
+      },
+      {
+        "value": "B",
+        "label": "是一阶线性方程，但不是可分离变量方程"
+      },
+      {
+        "value": "C",
+        "label": "既是可分离变量方程，又是一阶线性方程"
+      },
+      {
+        "value": "D",
+        "label": "既不是可分离变量方程，也不是一阶线性方程"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "将 dy/dx = (2x+1)·y 改写为 dy/y = (2x+1)dx，等号两侧分别只含 y 和只含 x，因此是可分离变量方程。同时移项得 dy/dx − (2x+1)·y = 0，符合一阶线性方程的标准形式 dy/dx + P(x)·y = Q(x)，其中 P(x) = −(2x+1)，Q(x) = 0，y 及其导数均为一次，因此也是一阶线性方程。故选 C。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K02"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "equation-type-classification"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q5",
+    "type": "single",
+    "question": "同学甲看到方程 dy/dx = x·y² 后判断：\"它可以改写为 dy/y² = x·dx，所以是可分离变量方程；但右端含 y² 而非 y 的一次式，所以不是一阶线性方程。\" 下列对该判断的评价正确的是哪个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "甲判断正确：该方程是可分离变量方程，但不是一阶线性方程"
+      },
+      {
+        "value": "B",
+        "label": "甲判断正确：该方程既是可分离变量方程，又是一阶线性方程"
+      },
+      {
+        "value": "C",
+        "label": "甲判断有误：该方程不是可分离变量方程，但是一阶线性方程"
+      },
+      {
+        "value": "D",
+        "label": "甲判断有误：该方程既不是可分离变量方程，也不是一阶线性方程"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "dy/dx = x·y² 可改写为 dy/y² = x·dx，两侧分别只含 y 和只含 x，确实是可分离变量方程，甲此判断正确。但方程右端含 y²，不满足一阶线性方程要求 y 及 dy/dx 均为一次的条件，因此不是一阶线性方程，甲此判断也正确。故选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K02"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "equation-type-classification"
+    }
+  }
+}

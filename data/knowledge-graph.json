@@ -304,7 +304,7 @@
       "kind": "chapter",
       "chapterId": "V14-C1",
       "label": "函数、极限与导数入口",
-      "sceneCount": 12
+      "sceneCount": 20
     },
     {
       "id": "V14-C2",
@@ -331,7 +331,7 @@
       "kind": "chapter",
       "chapterId": "V14-C2",
       "label": "求导规则与导数应用",
-      "sceneCount": 11
+      "sceneCount": 18
     },
     {
       "id": "V14-C3",
@@ -357,7 +357,7 @@
       "kind": "chapter",
       "chapterId": "V14-C3",
       "label": "积分直觉与积分方法",
-      "sceneCount": 10
+      "sceneCount": 16
     },
     {
       "id": "V14-C4",
@@ -387,7 +387,7 @@
       "kind": "chapter",
       "chapterId": "V14-C4",
       "label": "多元函数、梯度与 Jacobian",
-      "sceneCount": 13
+      "sceneCount": 22
     },
     {
       "id": "V14-C5",
@@ -414,7 +414,7 @@
       "kind": "chapter",
       "chapterId": "V14-C5",
       "label": "Taylor、Hessian 与无约束优化",
-      "sceneCount": 11
+      "sceneCount": 18
     },
     {
       "id": "V14-C6",
@@ -442,7 +442,7 @@
       "kind": "chapter",
       "chapterId": "V14-C6",
       "label": "约束优化与机器学习闭环",
-      "sceneCount": 12
+      "sceneCount": 20
     },
     {
       "id": "V14-X1",
@@ -463,7 +463,7 @@
       "kind": "chapter",
       "chapterId": "V14-X1",
       "label": "扩展：微分方程直觉",
-      "sceneCount": 6
+      "sceneCount": 8
     },
     {
       "id": "V14-X2",
@@ -486,7 +486,7 @@
       "kind": "chapter",
       "chapterId": "V14-X2",
       "label": "扩展：线性代数基础",
-      "sceneCount": 8
+      "sceneCount": 12
     },
     {
       "id": "V14-X3",
@@ -509,7 +509,7 @@
       "kind": "chapter",
       "chapterId": "V14-X3",
       "label": "扩展：概率统计直觉",
-      "sceneCount": 8
+      "sceneCount": 12
     },
     {
       "id": "V14-X4",
@@ -532,7 +532,7 @@
       "kind": "chapter",
       "chapterId": "V14-X4",
       "label": "扩展：深度学习数学直觉",
-      "sceneCount": 8
+      "sceneCount": 12
     },
     {
       "id": "V14-X5",
@@ -553,7 +553,7 @@
       "kind": "chapter",
       "chapterId": "V14-X5",
       "label": "扩展：数值优化进阶",
-      "sceneCount": 6
+      "sceneCount": 8
     },
     {
       "id": "V14-C1-pre",
@@ -572,12 +572,14 @@
       "conceptClusterLabel": "函数、极限与导数入口",
       "assessedKnowledgePointIds": [
         "GH-01-K01",
-        "GH-02-K01",
-        "GH-03-K01",
         "GH-01-K02",
+        "GH-01-K03",
+        "GH-02-K01",
         "GH-02-K02",
         "GH-02-K03",
-        "GH-03-K02"
+        "GH-03-K01",
+        "GH-03-K02",
+        "GH-03-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -651,12 +653,35 @@
       "isOptional": false
     },
     {
-      "id": "GH-01-K02",
+      "id": "GH-01-K01-formative",
       "kind": "unit",
       "chapterId": "V14-C1",
       "moduleId": "GH-01",
       "moduleTitle": "函数、坐标与图像读法入门",
       "order": 3,
+      "type": "quiz",
+      "title": "输入、输出和函数规则 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01-K01",
+      "conceptClusterLabel": "输入、输出和函数规则",
+      "assessedKnowledgePointIds": [
+        "GH-01-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-01-K02",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 4,
       "type": "knowledge",
       "title": "坐标点与函数图像",
       "role": "knowledge",
@@ -719,12 +744,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-01-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 5,
+      "type": "quiz",
+      "title": "坐标点与函数图像 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01-K02",
+      "conceptClusterLabel": "坐标点与函数图像",
+      "assessedKnowledgePointIds": [
+        "GH-01-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-01-K03",
       "kind": "unit",
       "chapterId": "V14-C1",
       "moduleId": "GH-01",
       "moduleTitle": "函数、坐标与图像读法入门",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "图像的上升、下降与变化方向",
       "role": "knowledge",
@@ -787,12 +835,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-01-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 7,
+      "type": "quiz",
+      "title": "图像的上升、下降与变化方向 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01-K03",
+      "conceptClusterLabel": "图像的上升、下降与变化方向",
+      "assessedKnowledgePointIds": [
+        "GH-01-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-02-K01",
       "kind": "unit",
       "chapterId": "V14-C1",
       "moduleId": "GH-02",
       "moduleTitle": "极限与连续：直觉探索",
-      "order": 5,
+      "order": 8,
       "type": "knowledge",
       "title": "从数表观察趋近",
       "role": "knowledge",
@@ -855,12 +926,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-02-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 9,
+      "type": "quiz",
+      "title": "从数表观察趋近 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-02-K01",
+      "conceptClusterLabel": "从数表观察趋近",
+      "assessedKnowledgePointIds": [
+        "GH-02-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-02-K02",
       "kind": "unit",
       "chapterId": "V14-C1",
       "moduleId": "GH-02",
       "moduleTitle": "极限与连续：直觉探索",
-      "order": 6,
+      "order": 10,
       "type": "knowledge",
       "title": "图像上的左右极限",
       "role": "knowledge",
@@ -923,12 +1017,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-02-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 11,
+      "type": "quiz",
+      "title": "图像上的左右极限 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-02-K02",
+      "conceptClusterLabel": "图像上的左右极限",
+      "assessedKnowledgePointIds": [
+        "GH-02-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-02-K03",
       "kind": "unit",
       "chapterId": "V14-C1",
       "moduleId": "GH-02",
       "moduleTitle": "极限与连续：直觉探索",
-      "order": 7,
+      "order": 12,
       "type": "knowledge",
       "title": "连续就是不跳断",
       "role": "knowledge",
@@ -991,26 +1108,24 @@
       "isOptional": false
     },
     {
-      "id": "V14-C1-formative",
+      "id": "GH-02-K03-formative",
       "kind": "unit",
       "chapterId": "V14-C1",
-      "order": 8,
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 13,
       "type": "quiz",
-      "title": "函数、极限与导数入口 · 形成测验",
+      "title": "连续就是不跳断 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-C1",
-      "conceptClusterLabel": "函数、极限与导数入口",
+      "conceptClusterId": "GH-02-K03",
+      "conceptClusterLabel": "连续就是不跳断",
       "assessedKnowledgePointIds": [
-        "GH-01-K01",
-        "GH-02-K01",
-        "GH-03-K02",
-        "GH-01-K02",
-        "GH-02-K02"
+        "GH-02-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -1021,7 +1136,7 @@
       "chapterId": "V14-C1",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 9,
+      "order": 14,
       "type": "knowledge",
       "title": "平均变化率和割线",
       "role": "knowledge",
@@ -1084,12 +1199,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-03-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-03",
+      "moduleTitle": "从平均变化率到导数",
+      "order": 15,
+      "type": "quiz",
+      "title": "平均变化率和割线 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-03-K01",
+      "conceptClusterLabel": "平均变化率和割线",
+      "assessedKnowledgePointIds": [
+        "GH-03-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-03-K02",
       "kind": "unit",
       "chapterId": "V14-C1",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 10,
+      "order": 16,
       "type": "knowledge",
       "title": "瞬时变化率和切线",
       "role": "knowledge",
@@ -1152,12 +1290,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-03-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-03",
+      "moduleTitle": "从平均变化率到导数",
+      "order": 17,
+      "type": "quiz",
+      "title": "瞬时变化率和切线 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-03-K02",
+      "conceptClusterLabel": "瞬时变化率和切线",
+      "assessedKnowledgePointIds": [
+        "GH-03-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-03-K03",
       "kind": "unit",
       "chapterId": "V14-C1",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 11,
+      "order": 18,
       "type": "knowledge",
       "title": "导数符号和意义",
       "role": "knowledge",
@@ -1220,10 +1381,33 @@
       "isOptional": false
     },
     {
+      "id": "GH-03-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-03",
+      "moduleTitle": "从平均变化率到导数",
+      "order": 19,
+      "type": "quiz",
+      "title": "导数符号和意义 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-03-K03",
+      "conceptClusterLabel": "导数符号和意义",
+      "assessedKnowledgePointIds": [
+        "GH-03-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-C1-post",
       "kind": "unit",
       "chapterId": "V14-C1",
-      "order": 12,
+      "order": 20,
       "type": "quiz",
       "title": "函数、极限与导数入口 · 结业后测",
       "role": "post_test",
@@ -1236,11 +1420,14 @@
       "conceptClusterLabel": "函数、极限与导数入口",
       "assessedKnowledgePointIds": [
         "GH-01-K01",
-        "GH-02-K02",
-        "GH-03-K01",
         "GH-01-K02",
         "GH-01-K03",
-        "GH-02-K03"
+        "GH-02-K01",
+        "GH-02-K02",
+        "GH-02-K03",
+        "GH-03-K01",
+        "GH-03-K02",
+        "GH-03-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -1262,12 +1449,13 @@
       "conceptClusterLabel": "求导规则与导数应用",
       "assessedKnowledgePointIds": [
         "GH-04-K01",
-        "GH-05-K01",
-        "GH-04-K03",
         "GH-04-K02",
-        "GH-05-K02",
+        "GH-04-K03",
         "GH-04-K04",
-        "GH-05-K03"
+        "GH-05-K01",
+        "GH-05-K02",
+        "GH-05-K03",
+        "GH-05-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -1341,12 +1529,35 @@
       "isOptional": false
     },
     {
-      "id": "GH-04-K02",
+      "id": "GH-04-K01-formative",
       "kind": "unit",
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
       "order": 3,
+      "type": "quiz",
+      "title": "幂函数求导 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-04-K01",
+      "conceptClusterLabel": "幂函数求导",
+      "assessedKnowledgePointIds": [
+        "GH-04-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-04-K02",
+      "kind": "unit",
+      "chapterId": "V14-C2",
+      "moduleId": "GH-04",
+      "moduleTitle": "常用求导规则与函数组合",
+      "order": 4,
       "type": "knowledge",
       "title": "和差积商规则",
       "role": "knowledge",
@@ -1409,12 +1620,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-04-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C2",
+      "moduleId": "GH-04",
+      "moduleTitle": "常用求导规则与函数组合",
+      "order": 5,
+      "type": "quiz",
+      "title": "和差积商规则 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-04-K02",
+      "conceptClusterLabel": "和差积商规则",
+      "assessedKnowledgePointIds": [
+        "GH-04-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-04-K03",
       "kind": "unit",
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "链式法则",
       "role": "knowledge",
@@ -1477,12 +1711,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-04-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C2",
+      "moduleId": "GH-04",
+      "moduleTitle": "常用求导规则与函数组合",
+      "order": 7,
+      "type": "quiz",
+      "title": "链式法则 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-04-K03",
+      "conceptClusterLabel": "链式法则",
+      "assessedKnowledgePointIds": [
+        "GH-04-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-04-K04",
       "kind": "unit",
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 5,
+      "order": 8,
       "type": "knowledge",
       "title": "常见函数变化速度",
       "role": "knowledge",
@@ -1545,28 +1802,24 @@
       "isOptional": false
     },
     {
-      "id": "V14-C2-formative",
+      "id": "GH-04-K04-formative",
       "kind": "unit",
       "chapterId": "V14-C2",
-      "order": 6,
+      "moduleId": "GH-04",
+      "moduleTitle": "常用求导规则与函数组合",
+      "order": 9,
       "type": "quiz",
-      "title": "求导规则与导数应用 · 形成测验",
+      "title": "常见函数变化速度 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-C2",
-      "conceptClusterLabel": "求导规则与导数应用",
+      "conceptClusterId": "GH-04-K04",
+      "conceptClusterLabel": "常见函数变化速度",
       "assessedKnowledgePointIds": [
-        "GH-04-K01",
-        "GH-05-K01",
-        "GH-04-K02",
-        "GH-04-K03",
-        "GH-05-K02",
-        "GH-05-K03",
-        "GH-05-K04"
+        "GH-04-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -1577,7 +1830,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 7,
+      "order": 10,
       "type": "knowledge",
       "title": "导函数图像读法",
       "role": "knowledge",
@@ -1640,12 +1893,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-05-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C2",
+      "moduleId": "GH-05",
+      "moduleTitle": "导数应用：单调、极值与弯曲",
+      "order": 11,
+      "type": "quiz",
+      "title": "导函数图像读法 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-05-K01",
+      "conceptClusterLabel": "导函数图像读法",
+      "assessedKnowledgePointIds": [
+        "GH-05-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-05-K02",
       "kind": "unit",
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 8,
+      "order": 12,
       "type": "knowledge",
       "title": "临界点与极值",
       "role": "knowledge",
@@ -1708,12 +1984,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-05-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C2",
+      "moduleId": "GH-05",
+      "moduleTitle": "导数应用：单调、极值与弯曲",
+      "order": 13,
+      "type": "quiz",
+      "title": "临界点与极值 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-05-K02",
+      "conceptClusterLabel": "临界点与极值",
+      "assessedKnowledgePointIds": [
+        "GH-05-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-05-K03",
       "kind": "unit",
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 9,
+      "order": 14,
       "type": "knowledge",
       "title": "二阶变化和凹凸",
       "role": "knowledge",
@@ -1776,12 +2075,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-05-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C2",
+      "moduleId": "GH-05",
+      "moduleTitle": "导数应用：单调、极值与弯曲",
+      "order": 15,
+      "type": "quiz",
+      "title": "二阶变化和凹凸 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-05-K03",
+      "conceptClusterLabel": "二阶变化和凹凸",
+      "assessedKnowledgePointIds": [
+        "GH-05-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-05-K04",
       "kind": "unit",
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 10,
+      "order": 16,
       "type": "knowledge",
       "title": "实际最值建模",
       "role": "knowledge",
@@ -1844,10 +2166,33 @@
       "isOptional": false
     },
     {
+      "id": "GH-05-K04-formative",
+      "kind": "unit",
+      "chapterId": "V14-C2",
+      "moduleId": "GH-05",
+      "moduleTitle": "导数应用：单调、极值与弯曲",
+      "order": 17,
+      "type": "quiz",
+      "title": "实际最值建模 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-05-K04",
+      "conceptClusterLabel": "实际最值建模",
+      "assessedKnowledgePointIds": [
+        "GH-05-K04"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-C2-post",
       "kind": "unit",
       "chapterId": "V14-C2",
-      "order": 11,
+      "order": 18,
       "type": "quiz",
       "title": "求导规则与导数应用 · 结业后测",
       "role": "post_test",
@@ -1860,12 +2205,13 @@
       "conceptClusterLabel": "求导规则与导数应用",
       "assessedKnowledgePointIds": [
         "GH-04-K01",
-        "GH-05-K03",
-        "GH-04-K03",
         "GH-04-K02",
+        "GH-04-K03",
         "GH-04-K04",
         "GH-05-K01",
-        "GH-05-K02"
+        "GH-05-K02",
+        "GH-05-K03",
+        "GH-05-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -1887,11 +2233,12 @@
       "conceptClusterLabel": "积分直觉与积分方法",
       "assessedKnowledgePointIds": [
         "GH-06-K01",
-        "GH-07-K01",
         "GH-06-K02",
+        "GH-07-K01",
+        "GH-07-K02",
         "GH-07-K03",
-        "GH-07-K04",
-        "GH-07-K02"
+        "GH-06-K03",
+        "GH-07-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -1965,12 +2312,35 @@
       "isOptional": false
     },
     {
-      "id": "GH-06-K02",
+      "id": "GH-06-K01-formative",
       "kind": "unit",
       "chapterId": "V14-C3",
       "moduleId": "GH-06",
       "moduleTitle": "积分直觉：面积、累积与原函数",
       "order": 3,
+      "type": "quiz",
+      "title": "小矩形逼近面积 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-06-K01",
+      "conceptClusterLabel": "小矩形逼近面积",
+      "assessedKnowledgePointIds": [
+        "GH-06-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-06-K02",
+      "kind": "unit",
+      "chapterId": "V14-C3",
+      "moduleId": "GH-06",
+      "moduleTitle": "积分直觉：面积、累积与原函数",
+      "order": 4,
       "type": "knowledge",
       "title": "定积分作为累积",
       "role": "knowledge",
@@ -2033,12 +2403,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-06-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C3",
+      "moduleId": "GH-06",
+      "moduleTitle": "积分直觉：面积、累积与原函数",
+      "order": 5,
+      "type": "quiz",
+      "title": "定积分作为累积 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-06-K02",
+      "conceptClusterLabel": "定积分作为累积",
+      "assessedKnowledgePointIds": [
+        "GH-06-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-06-K03",
       "kind": "unit",
       "chapterId": "V14-C3",
       "moduleId": "GH-06",
       "moduleTitle": "积分直觉：面积、累积与原函数",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "原函数和不定积分",
       "role": "knowledge",
@@ -2101,27 +2494,24 @@
       "isOptional": false
     },
     {
-      "id": "V14-C3-formative",
+      "id": "GH-06-K03-formative",
       "kind": "unit",
       "chapterId": "V14-C3",
-      "order": 5,
+      "moduleId": "GH-06",
+      "moduleTitle": "积分直觉：面积、累积与原函数",
+      "order": 7,
       "type": "quiz",
-      "title": "积分直觉与积分方法 · 形成测验",
+      "title": "原函数和不定积分 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-C3",
-      "conceptClusterLabel": "积分直觉与积分方法",
+      "conceptClusterId": "GH-06-K03",
+      "conceptClusterLabel": "原函数和不定积分",
       "assessedKnowledgePointIds": [
-        "GH-06-K01",
-        "GH-07-K01",
-        "GH-07-K02",
-        "GH-06-K02",
-        "GH-07-K03",
-        "GH-07-K04"
+        "GH-06-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -2132,7 +2522,7 @@
       "chapterId": "V14-C3",
       "moduleId": "GH-07",
       "moduleTitle": "微积分基本定理与积分方法",
-      "order": 6,
+      "order": 8,
       "type": "knowledge",
       "title": "变上限积分",
       "role": "knowledge",
@@ -2195,12 +2585,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-07-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C3",
+      "moduleId": "GH-07",
+      "moduleTitle": "微积分基本定理与积分方法",
+      "order": 9,
+      "type": "quiz",
+      "title": "变上限积分 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-07-K01",
+      "conceptClusterLabel": "变上限积分",
+      "assessedKnowledgePointIds": [
+        "GH-07-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-07-K02",
       "kind": "unit",
       "chapterId": "V14-C3",
       "moduleId": "GH-07",
       "moduleTitle": "微积分基本定理与积分方法",
-      "order": 7,
+      "order": 10,
       "type": "knowledge",
       "title": "牛顿-莱布尼茨公式",
       "role": "knowledge",
@@ -2263,12 +2676,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-07-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C3",
+      "moduleId": "GH-07",
+      "moduleTitle": "微积分基本定理与积分方法",
+      "order": 11,
+      "type": "quiz",
+      "title": "牛顿-莱布尼茨公式 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-07-K02",
+      "conceptClusterLabel": "牛顿-莱布尼茨公式",
+      "assessedKnowledgePointIds": [
+        "GH-07-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-07-K03",
       "kind": "unit",
       "chapterId": "V14-C3",
       "moduleId": "GH-07",
       "moduleTitle": "微积分基本定理与积分方法",
-      "order": 8,
+      "order": 12,
       "type": "knowledge",
       "title": "换元法直觉",
       "role": "knowledge",
@@ -2331,12 +2767,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-07-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C3",
+      "moduleId": "GH-07",
+      "moduleTitle": "微积分基本定理与积分方法",
+      "order": 13,
+      "type": "quiz",
+      "title": "换元法直觉 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-07-K03",
+      "conceptClusterLabel": "换元法直觉",
+      "assessedKnowledgePointIds": [
+        "GH-07-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-07-K04",
       "kind": "unit",
       "chapterId": "V14-C3",
       "moduleId": "GH-07",
       "moduleTitle": "微积分基本定理与积分方法",
-      "order": 9,
+      "order": 14,
       "type": "knowledge",
       "title": "分部积分直觉",
       "role": "knowledge",
@@ -2399,10 +2858,33 @@
       "isOptional": false
     },
     {
+      "id": "GH-07-K04-formative",
+      "kind": "unit",
+      "chapterId": "V14-C3",
+      "moduleId": "GH-07",
+      "moduleTitle": "微积分基本定理与积分方法",
+      "order": 15,
+      "type": "quiz",
+      "title": "分部积分直觉 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-07-K04",
+      "conceptClusterLabel": "分部积分直觉",
+      "assessedKnowledgePointIds": [
+        "GH-07-K04"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-C3-post",
       "kind": "unit",
       "chapterId": "V14-C3",
-      "order": 10,
+      "order": 16,
       "type": "quiz",
       "title": "积分直觉与积分方法 · 结业后测",
       "role": "post_test",
@@ -2415,10 +2897,11 @@
       "conceptClusterLabel": "积分直觉与积分方法",
       "assessedKnowledgePointIds": [
         "GH-06-K01",
-        "GH-07-K01",
         "GH-06-K02",
-        "GH-06-K03",
+        "GH-07-K01",
         "GH-07-K02",
+        "GH-07-K03",
+        "GH-06-K03",
         "GH-07-K04"
       ],
       "isCheckpoint": true,
@@ -2440,13 +2923,16 @@
       "conceptClusterId": "V14-C4",
       "conceptClusterLabel": "多元函数、梯度与 Jacobian",
       "assessedKnowledgePointIds": [
-        "GH-08-K03",
+        "GH-08-K01",
+        "GH-08-K02",
+        "GH-09-K01",
         "GH-09-K02",
         "GH-10-K01",
-        "GH-08-K02",
-        "GH-08-K01",
+        "GH-10-K02",
+        "GH-10-K03",
+        "GH-08-K03",
         "GH-09-K03",
-        "GH-10-K03"
+        "GH-10-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -2520,12 +3006,35 @@
       "isOptional": false
     },
     {
-      "id": "GH-08-K02",
+      "id": "GH-08-K01-formative",
       "kind": "unit",
       "chapterId": "V14-C4",
       "moduleId": "GH-08",
       "moduleTitle": "多元函数、曲面与偏导数",
       "order": 3,
+      "type": "quiz",
+      "title": "多输入函数 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-08-K01",
+      "conceptClusterLabel": "多输入函数",
+      "assessedKnowledgePointIds": [
+        "GH-08-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-08-K02",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-08",
+      "moduleTitle": "多元函数、曲面与偏导数",
+      "order": 4,
       "type": "knowledge",
       "title": "曲面与等高线",
       "role": "knowledge",
@@ -2588,12 +3097,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-08-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-08",
+      "moduleTitle": "多元函数、曲面与偏导数",
+      "order": 5,
+      "type": "quiz",
+      "title": "曲面与等高线 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-08-K02",
+      "conceptClusterLabel": "曲面与等高线",
+      "assessedKnowledgePointIds": [
+        "GH-08-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-08-K03",
       "kind": "unit",
       "chapterId": "V14-C4",
       "moduleId": "GH-08",
       "moduleTitle": "多元函数、曲面与偏导数",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "偏导数",
       "role": "knowledge",
@@ -2656,12 +3188,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-08-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-08",
+      "moduleTitle": "多元函数、曲面与偏导数",
+      "order": 7,
+      "type": "quiz",
+      "title": "偏导数 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-08-K03",
+      "conceptClusterLabel": "偏导数",
+      "assessedKnowledgePointIds": [
+        "GH-08-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-09-K01",
       "kind": "unit",
       "chapterId": "V14-C4",
       "moduleId": "GH-09",
       "moduleTitle": "梯度与方向导数实战：寻找最快路径",
-      "order": 5,
+      "order": 8,
       "type": "knowledge",
       "title": "梯度向量",
       "role": "knowledge",
@@ -2724,12 +3279,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-09-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-09",
+      "moduleTitle": "梯度与方向导数实战：寻找最快路径",
+      "order": 9,
+      "type": "quiz",
+      "title": "梯度向量 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-09-K01",
+      "conceptClusterLabel": "梯度向量",
+      "assessedKnowledgePointIds": [
+        "GH-09-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-09-K02",
       "kind": "unit",
       "chapterId": "V14-C4",
       "moduleId": "GH-09",
       "moduleTitle": "梯度与方向导数实战：寻找最快路径",
-      "order": 6,
+      "order": 10,
       "type": "knowledge",
       "title": "方向导数",
       "role": "knowledge",
@@ -2792,12 +3370,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-09-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-09",
+      "moduleTitle": "梯度与方向导数实战：寻找最快路径",
+      "order": 11,
+      "type": "quiz",
+      "title": "方向导数 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-09-K02",
+      "conceptClusterLabel": "方向导数",
+      "assessedKnowledgePointIds": [
+        "GH-09-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-09-K03",
       "kind": "unit",
       "chapterId": "V14-C4",
       "moduleId": "GH-09",
       "moduleTitle": "梯度与方向导数实战：寻找最快路径",
-      "order": 7,
+      "order": 12,
       "type": "knowledge",
       "title": "梯度与等高线垂直",
       "role": "knowledge",
@@ -2860,27 +3461,24 @@
       "isOptional": false
     },
     {
-      "id": "V14-C4-formative",
+      "id": "GH-09-K03-formative",
       "kind": "unit",
       "chapterId": "V14-C4",
-      "order": 8,
+      "moduleId": "GH-09",
+      "moduleTitle": "梯度与方向导数实战：寻找最快路径",
+      "order": 13,
       "type": "quiz",
-      "title": "多元函数、梯度与 Jacobian · 形成测验",
+      "title": "梯度与等高线垂直 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-C4",
-      "conceptClusterLabel": "多元函数、梯度与 Jacobian",
+      "conceptClusterId": "GH-09-K03",
+      "conceptClusterLabel": "梯度与等高线垂直",
       "assessedKnowledgePointIds": [
-        "GH-08-K01",
-        "GH-09-K01",
-        "GH-10-K01",
-        "GH-08-K02",
-        "GH-08-K03",
-        "GH-09-K02"
+        "GH-09-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -2891,7 +3489,7 @@
       "chapterId": "V14-C4",
       "moduleId": "GH-10",
       "moduleTitle": "多元链式法则与 Jacobian 实战",
-      "order": 9,
+      "order": 14,
       "type": "knowledge",
       "title": "多元链式法则",
       "role": "knowledge",
@@ -2954,12 +3552,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-10-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-10",
+      "moduleTitle": "多元链式法则与 Jacobian 实战",
+      "order": 15,
+      "type": "quiz",
+      "title": "多元链式法则 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-10-K01",
+      "conceptClusterLabel": "多元链式法则",
+      "assessedKnowledgePointIds": [
+        "GH-10-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-10-K02",
       "kind": "unit",
       "chapterId": "V14-C4",
       "moduleId": "GH-10",
       "moduleTitle": "多元链式法则与 Jacobian 实战",
-      "order": 10,
+      "order": 16,
       "type": "knowledge",
       "title": "向量值函数",
       "role": "knowledge",
@@ -3022,12 +3643,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-10-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-10",
+      "moduleTitle": "多元链式法则与 Jacobian 实战",
+      "order": 17,
+      "type": "quiz",
+      "title": "向量值函数 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-10-K02",
+      "conceptClusterLabel": "向量值函数",
+      "assessedKnowledgePointIds": [
+        "GH-10-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-10-K03",
       "kind": "unit",
       "chapterId": "V14-C4",
       "moduleId": "GH-10",
       "moduleTitle": "多元链式法则与 Jacobian 实战",
-      "order": 11,
+      "order": 18,
       "type": "knowledge",
       "title": "Jacobian 表格",
       "role": "knowledge",
@@ -3090,12 +3734,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-10-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-10",
+      "moduleTitle": "多元链式法则与 Jacobian 实战",
+      "order": 19,
+      "type": "quiz",
+      "title": "Jacobian 表格 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-10-K03",
+      "conceptClusterLabel": "Jacobian 表格",
+      "assessedKnowledgePointIds": [
+        "GH-10-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-10-K04",
       "kind": "unit",
       "chapterId": "V14-C4",
       "moduleId": "GH-10",
       "moduleTitle": "多元链式法则与 Jacobian 实战",
-      "order": 12,
+      "order": 20,
       "type": "knowledge",
       "title": "局部线性变形",
       "role": "knowledge",
@@ -3158,10 +3825,33 @@
       "isOptional": false
     },
     {
+      "id": "GH-10-K04-formative",
+      "kind": "unit",
+      "chapterId": "V14-C4",
+      "moduleId": "GH-10",
+      "moduleTitle": "多元链式法则与 Jacobian 实战",
+      "order": 21,
+      "type": "quiz",
+      "title": "局部线性变形 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-10-K04",
+      "conceptClusterLabel": "局部线性变形",
+      "assessedKnowledgePointIds": [
+        "GH-10-K04"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-C4-post",
       "kind": "unit",
       "chapterId": "V14-C4",
-      "order": 13,
+      "order": 22,
       "type": "quiz",
       "title": "多元函数、梯度与 Jacobian · 结业后测",
       "role": "post_test",
@@ -3174,11 +3864,15 @@
       "conceptClusterLabel": "多元函数、梯度与 Jacobian",
       "assessedKnowledgePointIds": [
         "GH-08-K01",
+        "GH-08-K02",
         "GH-09-K01",
-        "GH-10-K01",
-        "GH-08-K03",
         "GH-09-K02",
-        "GH-10-K02"
+        "GH-10-K01",
+        "GH-10-K02",
+        "GH-10-K03",
+        "GH-08-K03",
+        "GH-09-K03",
+        "GH-10-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -3199,11 +3893,14 @@
       "conceptClusterId": "V14-C5",
       "conceptClusterLabel": "Taylor、Hessian 与无约束优化",
       "assessedKnowledgePointIds": [
-        "GH-11-K04",
-        "GH-12-K02",
+        "GH-11-K01",
+        "GH-11-K02",
         "GH-11-K03",
-        "GH-12-K04",
-        "GH-12-K03"
+        "GH-12-K01",
+        "GH-12-K02",
+        "GH-12-K03",
+        "GH-11-K04",
+        "GH-12-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -3277,12 +3974,35 @@
       "isOptional": false
     },
     {
-      "id": "GH-11-K02",
+      "id": "GH-11-K01-formative",
       "kind": "unit",
       "chapterId": "V14-C5",
       "moduleId": "GH-11",
       "moduleTitle": "Taylor 近似与驻点判断",
       "order": 3,
+      "type": "quiz",
+      "title": "一阶 Taylor 近似 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-11-K01",
+      "conceptClusterLabel": "一阶 Taylor 近似",
+      "assessedKnowledgePointIds": [
+        "GH-11-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-11-K02",
+      "kind": "unit",
+      "chapterId": "V14-C5",
+      "moduleId": "GH-11",
+      "moduleTitle": "Taylor 近似与驻点判断",
+      "order": 4,
       "type": "knowledge",
       "title": "二阶 Taylor 近似",
       "role": "knowledge",
@@ -3345,12 +4065,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-11-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C5",
+      "moduleId": "GH-11",
+      "moduleTitle": "Taylor 近似与驻点判断",
+      "order": 5,
+      "type": "quiz",
+      "title": "二阶 Taylor 近似 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-11-K02",
+      "conceptClusterLabel": "二阶 Taylor 近似",
+      "assessedKnowledgePointIds": [
+        "GH-11-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-11-K03",
       "kind": "unit",
       "chapterId": "V14-C5",
       "moduleId": "GH-11",
       "moduleTitle": "Taylor 近似与驻点判断",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "Hessian 矩阵",
       "role": "knowledge",
@@ -3413,12 +4156,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-11-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C5",
+      "moduleId": "GH-11",
+      "moduleTitle": "Taylor 近似与驻点判断",
+      "order": 7,
+      "type": "quiz",
+      "title": "Hessian 矩阵 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-11-K03",
+      "conceptClusterLabel": "Hessian 矩阵",
+      "assessedKnowledgePointIds": [
+        "GH-11-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-11-K04",
       "kind": "unit",
       "chapterId": "V14-C5",
       "moduleId": "GH-11",
       "moduleTitle": "Taylor 近似与驻点判断",
-      "order": 5,
+      "order": 8,
       "type": "knowledge",
       "title": "驻点类型判断",
       "role": "knowledge",
@@ -3481,26 +4247,24 @@
       "isOptional": false
     },
     {
-      "id": "V14-C5-formative",
+      "id": "GH-11-K04-formative",
       "kind": "unit",
       "chapterId": "V14-C5",
-      "order": 6,
+      "moduleId": "GH-11",
+      "moduleTitle": "Taylor 近似与驻点判断",
+      "order": 9,
       "type": "quiz",
-      "title": "Taylor、Hessian 与无约束优化 · 形成测验",
+      "title": "驻点类型判断 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-C5",
-      "conceptClusterLabel": "Taylor、Hessian 与无约束优化",
+      "conceptClusterId": "GH-11-K04",
+      "conceptClusterLabel": "驻点类型判断",
       "assessedKnowledgePointIds": [
-        "GH-11-K01",
-        "GH-12-K01",
-        "GH-11-K04",
-        "GH-11-K02",
-        "GH-12-K02"
+        "GH-11-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -3511,7 +4275,7 @@
       "chapterId": "V14-C5",
       "moduleId": "GH-12",
       "moduleTitle": "无约束优化与梯度下降基础",
-      "order": 7,
+      "order": 10,
       "type": "knowledge",
       "title": "目标函数地形",
       "role": "knowledge",
@@ -3574,12 +4338,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-12-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C5",
+      "moduleId": "GH-12",
+      "moduleTitle": "无约束优化与梯度下降基础",
+      "order": 11,
+      "type": "quiz",
+      "title": "目标函数地形 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-12-K01",
+      "conceptClusterLabel": "目标函数地形",
+      "assessedKnowledgePointIds": [
+        "GH-12-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-12-K02",
       "kind": "unit",
       "chapterId": "V14-C5",
       "moduleId": "GH-12",
       "moduleTitle": "无约束优化与梯度下降基础",
-      "order": 8,
+      "order": 12,
       "type": "knowledge",
       "title": "负梯度方向",
       "role": "knowledge",
@@ -3642,12 +4429,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-12-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C5",
+      "moduleId": "GH-12",
+      "moduleTitle": "无约束优化与梯度下降基础",
+      "order": 13,
+      "type": "quiz",
+      "title": "负梯度方向 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-12-K02",
+      "conceptClusterLabel": "负梯度方向",
+      "assessedKnowledgePointIds": [
+        "GH-12-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-12-K03",
       "kind": "unit",
       "chapterId": "V14-C5",
       "moduleId": "GH-12",
       "moduleTitle": "无约束优化与梯度下降基础",
-      "order": 9,
+      "order": 14,
       "type": "knowledge",
       "title": "步长和收敛",
       "role": "knowledge",
@@ -3710,12 +4520,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-12-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C5",
+      "moduleId": "GH-12",
+      "moduleTitle": "无约束优化与梯度下降基础",
+      "order": 15,
+      "type": "quiz",
+      "title": "步长和收敛 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-12-K03",
+      "conceptClusterLabel": "步长和收敛",
+      "assessedKnowledgePointIds": [
+        "GH-12-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-12-K04",
       "kind": "unit",
       "chapterId": "V14-C5",
       "moduleId": "GH-12",
       "moduleTitle": "无约束优化与梯度下降基础",
-      "order": 10,
+      "order": 16,
       "type": "knowledge",
       "title": "迭代路径与停止信号",
       "role": "knowledge",
@@ -3778,10 +4611,33 @@
       "isOptional": false
     },
     {
+      "id": "GH-12-K04-formative",
+      "kind": "unit",
+      "chapterId": "V14-C5",
+      "moduleId": "GH-12",
+      "moduleTitle": "无约束优化与梯度下降基础",
+      "order": 17,
+      "type": "quiz",
+      "title": "迭代路径与停止信号 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-12-K04",
+      "conceptClusterLabel": "迭代路径与停止信号",
+      "assessedKnowledgePointIds": [
+        "GH-12-K04"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-C5-post",
       "kind": "unit",
       "chapterId": "V14-C5",
-      "order": 11,
+      "order": 18,
       "type": "quiz",
       "title": "Taylor、Hessian 与无约束优化 · 结业后测",
       "role": "post_test",
@@ -3793,10 +4649,13 @@
       "conceptClusterId": "V14-C5",
       "conceptClusterLabel": "Taylor、Hessian 与无约束优化",
       "assessedKnowledgePointIds": [
+        "GH-11-K01",
+        "GH-11-K02",
         "GH-11-K03",
         "GH-12-K01",
         "GH-12-K02",
         "GH-12-K03",
+        "GH-11-K04",
         "GH-12-K04"
       ],
       "isCheckpoint": true,
@@ -3819,12 +4678,14 @@
       "conceptClusterLabel": "约束优化与机器学习闭环",
       "assessedKnowledgePointIds": [
         "GH-13-K01",
-        "GH-14-K01",
         "GH-13-K02",
         "GH-13-K03",
-        "GH-13-K04",
+        "GH-14-K01",
+        "GH-14-K02",
         "GH-14-K03",
-        "GH-14-K04"
+        "GH-14-K04",
+        "GH-13-K04",
+        "GH-14-K05"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -3898,12 +4759,35 @@
       "isOptional": false
     },
     {
-      "id": "GH-13-K02",
+      "id": "GH-13-K01-formative",
       "kind": "unit",
       "chapterId": "V14-C6",
       "moduleId": "GH-13",
       "moduleTitle": "约束优化、拉格朗日与凸性",
       "order": 3,
+      "type": "quiz",
+      "title": "可行区域 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-13-K01",
+      "conceptClusterLabel": "可行区域",
+      "assessedKnowledgePointIds": [
+        "GH-13-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-13-K02",
+      "kind": "unit",
+      "chapterId": "V14-C6",
+      "moduleId": "GH-13",
+      "moduleTitle": "约束优化、拉格朗日与凸性",
+      "order": 4,
       "type": "knowledge",
       "title": "拉格朗日乘子直觉",
       "role": "knowledge",
@@ -3966,12 +4850,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-13-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C6",
+      "moduleId": "GH-13",
+      "moduleTitle": "约束优化、拉格朗日与凸性",
+      "order": 5,
+      "type": "quiz",
+      "title": "拉格朗日乘子直觉 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-13-K02",
+      "conceptClusterLabel": "拉格朗日乘子直觉",
+      "assessedKnowledgePointIds": [
+        "GH-13-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-13-K03",
       "kind": "unit",
       "chapterId": "V14-C6",
       "moduleId": "GH-13",
       "moduleTitle": "约束优化、拉格朗日与凸性",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "凸函数和凸集合",
       "role": "knowledge",
@@ -4034,12 +4941,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-13-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C6",
+      "moduleId": "GH-13",
+      "moduleTitle": "约束优化、拉格朗日与凸性",
+      "order": 7,
+      "type": "quiz",
+      "title": "凸函数和凸集合 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-13-K03",
+      "conceptClusterLabel": "凸函数和凸集合",
+      "assessedKnowledgePointIds": [
+        "GH-13-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-13-K04",
       "kind": "unit",
       "chapterId": "V14-C6",
       "moduleId": "GH-13",
       "moduleTitle": "约束优化、拉格朗日与凸性",
-      "order": 5,
+      "order": 8,
       "type": "knowledge",
       "title": "线性/二次规划入口",
       "role": "knowledge",
@@ -4102,28 +5032,24 @@
       "isOptional": false
     },
     {
-      "id": "V14-C6-formative",
+      "id": "GH-13-K04-formative",
       "kind": "unit",
       "chapterId": "V14-C6",
-      "order": 6,
+      "moduleId": "GH-13",
+      "moduleTitle": "约束优化、拉格朗日与凸性",
+      "order": 9,
       "type": "quiz",
-      "title": "约束优化与机器学习闭环 · 形成测验",
+      "title": "线性/二次规划入口 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-C6",
-      "conceptClusterLabel": "约束优化与机器学习闭环",
+      "conceptClusterId": "GH-13-K04",
+      "conceptClusterLabel": "线性/二次规划入口",
       "assessedKnowledgePointIds": [
-        "GH-13-K01",
-        "GH-14-K01",
-        "GH-14-K04",
-        "GH-13-K02",
-        "GH-13-K03",
-        "GH-14-K02",
-        "GH-14-K03"
+        "GH-13-K04"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -4134,7 +5060,7 @@
       "chapterId": "V14-C6",
       "moduleId": "GH-14",
       "moduleTitle": "机器学习高数闭环：从导数到训练",
-      "order": 7,
+      "order": 10,
       "type": "knowledge",
       "title": "损失函数和参数",
       "role": "knowledge",
@@ -4197,12 +5123,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-14-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C6",
+      "moduleId": "GH-14",
+      "moduleTitle": "机器学习高数闭环：从导数到训练",
+      "order": 11,
+      "type": "quiz",
+      "title": "损失函数和参数 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-14-K01",
+      "conceptClusterLabel": "损失函数和参数",
+      "assessedKnowledgePointIds": [
+        "GH-14-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-14-K02",
       "kind": "unit",
       "chapterId": "V14-C6",
       "moduleId": "GH-14",
       "moduleTitle": "机器学习高数闭环：从导数到训练",
-      "order": 8,
+      "order": 12,
       "type": "knowledge",
       "title": "最小二乘梯度",
       "role": "knowledge",
@@ -4265,12 +5214,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-14-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C6",
+      "moduleId": "GH-14",
+      "moduleTitle": "机器学习高数闭环：从导数到训练",
+      "order": 13,
+      "type": "quiz",
+      "title": "最小二乘梯度 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-14-K02",
+      "conceptClusterLabel": "最小二乘梯度",
+      "assessedKnowledgePointIds": [
+        "GH-14-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-14-K03",
       "kind": "unit",
       "chapterId": "V14-C6",
       "moduleId": "GH-14",
       "moduleTitle": "机器学习高数闭环：从导数到训练",
-      "order": 9,
+      "order": 14,
       "type": "knowledge",
       "title": "计算图与自动微分",
       "role": "knowledge",
@@ -4333,12 +5305,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-14-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C6",
+      "moduleId": "GH-14",
+      "moduleTitle": "机器学习高数闭环：从导数到训练",
+      "order": 15,
+      "type": "quiz",
+      "title": "计算图与自动微分 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-14-K03",
+      "conceptClusterLabel": "计算图与自动微分",
+      "assessedKnowledgePointIds": [
+        "GH-14-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-14-K04",
       "kind": "unit",
       "chapterId": "V14-C6",
       "moduleId": "GH-14",
       "moduleTitle": "机器学习高数闭环：从导数到训练",
-      "order": 10,
+      "order": 16,
       "type": "knowledge",
       "title": "小批量梯度下降",
       "role": "knowledge",
@@ -4401,12 +5396,35 @@
       "isOptional": false
     },
     {
+      "id": "GH-14-K04-formative",
+      "kind": "unit",
+      "chapterId": "V14-C6",
+      "moduleId": "GH-14",
+      "moduleTitle": "机器学习高数闭环：从导数到训练",
+      "order": 17,
+      "type": "quiz",
+      "title": "小批量梯度下降 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-14-K04",
+      "conceptClusterLabel": "小批量梯度下降",
+      "assessedKnowledgePointIds": [
+        "GH-14-K04"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "GH-14-K05",
       "kind": "unit",
       "chapterId": "V14-C6",
       "moduleId": "GH-14",
       "moduleTitle": "机器学习高数闭环：从导数到训练",
-      "order": 11,
+      "order": 18,
       "type": "knowledge",
       "title": "完整学习路线回看",
       "role": "knowledge",
@@ -4469,10 +5487,33 @@
       "isOptional": false
     },
     {
+      "id": "GH-14-K05-formative",
+      "kind": "unit",
+      "chapterId": "V14-C6",
+      "moduleId": "GH-14",
+      "moduleTitle": "机器学习高数闭环：从导数到训练",
+      "order": 19,
+      "type": "quiz",
+      "title": "完整学习路线回看 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-14-K05",
+      "conceptClusterLabel": "完整学习路线回看",
+      "assessedKnowledgePointIds": [
+        "GH-14-K05"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-C6-post",
       "kind": "unit",
       "chapterId": "V14-C6",
-      "order": 12,
+      "order": 20,
       "type": "quiz",
       "title": "约束优化与机器学习闭环 · 结业后测",
       "role": "post_test",
@@ -4484,13 +5525,15 @@
       "conceptClusterId": "V14-C6",
       "conceptClusterLabel": "约束优化与机器学习闭环",
       "assessedKnowledgePointIds": [
+        "GH-13-K01",
         "GH-13-K02",
-        "GH-14-K04",
-        "GH-14-K03",
-        "GH-13-K04",
         "GH-13-K03",
         "GH-14-K01",
-        "GH-14-K02"
+        "GH-14-K02",
+        "GH-14-K03",
+        "GH-14-K04",
+        "GH-13-K04",
+        "GH-14-K05"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -4512,8 +5555,8 @@
       "conceptClusterLabel": "扩展：微分方程直觉",
       "assessedKnowledgePointIds": [
         "EXT-01-K01",
-        "EXT-01-K03",
-        "EXT-01-K02"
+        "EXT-01-K02",
+        "EXT-01-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -4587,12 +5630,35 @@
       "isOptional": true
     },
     {
-      "id": "EXT-01-K02",
+      "id": "EXT-01-K01-formative",
       "kind": "unit",
       "chapterId": "V14-X1",
       "moduleId": "EXT-01",
       "moduleTitle": "微分方程直觉入门：从变化率到函数",
       "order": 3,
+      "type": "quiz",
+      "title": "什么是微分方程 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-01-K01",
+      "conceptClusterLabel": "什么是微分方程",
+      "assessedKnowledgePointIds": [
+        "EXT-01-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "EXT-01-K02",
+      "kind": "unit",
+      "chapterId": "V14-X1",
+      "moduleId": "EXT-01",
+      "moduleTitle": "微分方程直觉入门：从变化率到函数",
+      "order": 4,
       "type": "knowledge",
       "title": "可分离变量与一阶线性方程",
       "role": "knowledge",
@@ -4655,23 +5721,23 @@
       "isOptional": true
     },
     {
-      "id": "V14-X1-formative",
+      "id": "EXT-01-K02-formative",
       "kind": "unit",
       "chapterId": "V14-X1",
-      "order": 4,
+      "moduleId": "EXT-01",
+      "moduleTitle": "微分方程直觉入门：从变化率到函数",
+      "order": 5,
       "type": "quiz",
-      "title": "扩展：微分方程直觉 · 形成测验",
+      "title": "可分离变量与一阶线性方程 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-X1",
-      "conceptClusterLabel": "扩展：微分方程直觉",
+      "conceptClusterId": "EXT-01-K02",
+      "conceptClusterLabel": "可分离变量与一阶线性方程",
       "assessedKnowledgePointIds": [
-        "EXT-01-K01",
-        "EXT-01-K03",
         "EXT-01-K02"
       ],
       "isCheckpoint": true,
@@ -4683,7 +5749,7 @@
       "chapterId": "V14-X1",
       "moduleId": "EXT-01",
       "moduleTitle": "微分方程直觉入门：从变化率到函数",
-      "order": 5,
+      "order": 6,
       "type": "knowledge",
       "title": "指数增长与衰减模型",
       "role": "knowledge",
@@ -4746,10 +5812,33 @@
       "isOptional": true
     },
     {
+      "id": "EXT-01-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-X1",
+      "moduleId": "EXT-01",
+      "moduleTitle": "微分方程直觉入门：从变化率到函数",
+      "order": 7,
+      "type": "quiz",
+      "title": "指数增长与衰减模型 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-01-K03",
+      "conceptClusterLabel": "指数增长与衰减模型",
+      "assessedKnowledgePointIds": [
+        "EXT-01-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-X1-post",
       "kind": "unit",
       "chapterId": "V14-X1",
-      "order": 6,
+      "order": 8,
       "type": "quiz",
       "title": "扩展：微分方程直觉 · 结业后测",
       "role": "post_test",
@@ -4761,9 +5850,9 @@
       "conceptClusterId": "V14-X1",
       "conceptClusterLabel": "扩展：微分方程直觉",
       "assessedKnowledgePointIds": [
-        "EXT-01-K03",
         "EXT-01-K01",
-        "EXT-01-K02"
+        "EXT-01-K02",
+        "EXT-01-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -4784,9 +5873,10 @@
       "conceptClusterId": "V14-X2",
       "conceptClusterLabel": "扩展：线性代数基础",
       "assessedKnowledgePointIds": [
-        "EXT-02-K02",
         "EXT-02-K01",
+        "EXT-02-K02",
         "EXT-02-K03",
+        "EXT-02-K04",
         "EXT-02-K05"
       ],
       "isCheckpoint": true,
@@ -4861,12 +5951,35 @@
       "isOptional": true
     },
     {
-      "id": "EXT-02-K02",
+      "id": "EXT-02-K01-formative",
       "kind": "unit",
       "chapterId": "V14-X2",
       "moduleId": "EXT-02",
       "moduleTitle": "线性代数基础",
       "order": 3,
+      "type": "quiz",
+      "title": "向量和向量空间直觉 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-02-K01",
+      "conceptClusterLabel": "向量和向量空间直觉",
+      "assessedKnowledgePointIds": [
+        "EXT-02-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "EXT-02-K02",
+      "kind": "unit",
+      "chapterId": "V14-X2",
+      "moduleId": "EXT-02",
+      "moduleTitle": "线性代数基础",
+      "order": 4,
       "type": "knowledge",
       "title": "矩阵运算与线性变换",
       "role": "knowledge",
@@ -4929,12 +6042,35 @@
       "isOptional": true
     },
     {
+      "id": "EXT-02-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-X2",
+      "moduleId": "EXT-02",
+      "moduleTitle": "线性代数基础",
+      "order": 5,
+      "type": "quiz",
+      "title": "矩阵运算与线性变换 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-02-K02",
+      "conceptClusterLabel": "矩阵运算与线性变换",
+      "assessedKnowledgePointIds": [
+        "EXT-02-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "EXT-02-K03",
       "kind": "unit",
       "chapterId": "V14-X2",
       "moduleId": "EXT-02",
       "moduleTitle": "线性代数基础",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "行列式、逆矩阵与线性方程组",
       "role": "knowledge",
@@ -4997,26 +6133,24 @@
       "isOptional": true
     },
     {
-      "id": "V14-X2-formative",
+      "id": "EXT-02-K03-formative",
       "kind": "unit",
       "chapterId": "V14-X2",
-      "order": 5,
+      "moduleId": "EXT-02",
+      "moduleTitle": "线性代数基础",
+      "order": 7,
       "type": "quiz",
-      "title": "扩展：线性代数基础 · 形成测验",
+      "title": "行列式、逆矩阵与线性方程组 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-X2",
-      "conceptClusterLabel": "扩展：线性代数基础",
+      "conceptClusterId": "EXT-02-K03",
+      "conceptClusterLabel": "行列式、逆矩阵与线性方程组",
       "assessedKnowledgePointIds": [
-        "EXT-02-K01",
-        "EXT-02-K05",
-        "EXT-02-K02",
-        "EXT-02-K03",
-        "EXT-02-K04"
+        "EXT-02-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -5027,7 +6161,7 @@
       "chapterId": "V14-X2",
       "moduleId": "EXT-02",
       "moduleTitle": "线性代数基础",
-      "order": 6,
+      "order": 8,
       "type": "knowledge",
       "title": "特征值与特征向量",
       "role": "knowledge",
@@ -5090,12 +6224,35 @@
       "isOptional": true
     },
     {
+      "id": "EXT-02-K04-formative",
+      "kind": "unit",
+      "chapterId": "V14-X2",
+      "moduleId": "EXT-02",
+      "moduleTitle": "线性代数基础",
+      "order": 9,
+      "type": "quiz",
+      "title": "特征值与特征向量 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-02-K04",
+      "conceptClusterLabel": "特征值与特征向量",
+      "assessedKnowledgePointIds": [
+        "EXT-02-K04"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "EXT-02-K05",
       "kind": "unit",
       "chapterId": "V14-X2",
       "moduleId": "EXT-02",
       "moduleTitle": "线性代数基础",
-      "order": 7,
+      "order": 10,
       "type": "knowledge",
       "title": "正交性与投影",
       "role": "knowledge",
@@ -5158,10 +6315,33 @@
       "isOptional": true
     },
     {
+      "id": "EXT-02-K05-formative",
+      "kind": "unit",
+      "chapterId": "V14-X2",
+      "moduleId": "EXT-02",
+      "moduleTitle": "线性代数基础",
+      "order": 11,
+      "type": "quiz",
+      "title": "正交性与投影 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-02-K05",
+      "conceptClusterLabel": "正交性与投影",
+      "assessedKnowledgePointIds": [
+        "EXT-02-K05"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-X2-post",
       "kind": "unit",
       "chapterId": "V14-X2",
-      "order": 8,
+      "order": 12,
       "type": "quiz",
       "title": "扩展：线性代数基础 · 结业后测",
       "role": "post_test",
@@ -5173,9 +6353,11 @@
       "conceptClusterId": "V14-X2",
       "conceptClusterLabel": "扩展：线性代数基础",
       "assessedKnowledgePointIds": [
+        "EXT-02-K01",
+        "EXT-02-K02",
         "EXT-02-K03",
-        "EXT-02-K05",
-        "EXT-02-K04"
+        "EXT-02-K04",
+        "EXT-02-K05"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -5197,9 +6379,9 @@
       "conceptClusterLabel": "扩展：概率统计直觉",
       "assessedKnowledgePointIds": [
         "EXT-03-K01",
-        "EXT-03-K04",
         "EXT-03-K02",
         "EXT-03-K03",
+        "EXT-03-K04",
         "EXT-03-K05"
       ],
       "isCheckpoint": true,
@@ -5274,12 +6456,35 @@
       "isOptional": true
     },
     {
-      "id": "EXT-03-K02",
+      "id": "EXT-03-K01-formative",
       "kind": "unit",
       "chapterId": "V14-X3",
       "moduleId": "EXT-03",
       "moduleTitle": "概率统计直觉之旅",
       "order": 3,
+      "type": "quiz",
+      "title": "随机事件与概率公理 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-03-K01",
+      "conceptClusterLabel": "随机事件与概率公理",
+      "assessedKnowledgePointIds": [
+        "EXT-03-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "EXT-03-K02",
+      "kind": "unit",
+      "chapterId": "V14-X3",
+      "moduleId": "EXT-03",
+      "moduleTitle": "概率统计直觉之旅",
+      "order": 4,
       "type": "knowledge",
       "title": "条件概率与贝叶斯",
       "role": "knowledge",
@@ -5342,12 +6547,35 @@
       "isOptional": true
     },
     {
+      "id": "EXT-03-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-X3",
+      "moduleId": "EXT-03",
+      "moduleTitle": "概率统计直觉之旅",
+      "order": 5,
+      "type": "quiz",
+      "title": "条件概率与贝叶斯 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-03-K02",
+      "conceptClusterLabel": "条件概率与贝叶斯",
+      "assessedKnowledgePointIds": [
+        "EXT-03-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "EXT-03-K03",
       "kind": "unit",
       "chapterId": "V14-X3",
       "moduleId": "EXT-03",
       "moduleTitle": "概率统计直觉之旅",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "随机变量与分布",
       "role": "knowledge",
@@ -5410,25 +6638,24 @@
       "isOptional": true
     },
     {
-      "id": "V14-X3-formative",
+      "id": "EXT-03-K03-formative",
       "kind": "unit",
       "chapterId": "V14-X3",
-      "order": 5,
+      "moduleId": "EXT-03",
+      "moduleTitle": "概率统计直觉之旅",
+      "order": 7,
       "type": "quiz",
-      "title": "扩展：概率统计直觉 · 形成测验",
+      "title": "随机变量与分布 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-X3",
-      "conceptClusterLabel": "扩展：概率统计直觉",
+      "conceptClusterId": "EXT-03-K03",
+      "conceptClusterLabel": "随机变量与分布",
       "assessedKnowledgePointIds": [
-        "EXT-03-K03",
-        "EXT-03-K01",
-        "EXT-03-K04",
-        "EXT-03-K02"
+        "EXT-03-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -5439,7 +6666,7 @@
       "chapterId": "V14-X3",
       "moduleId": "EXT-03",
       "moduleTitle": "概率统计直觉之旅",
-      "order": 6,
+      "order": 8,
       "type": "knowledge",
       "title": "期望、方差与大数定律",
       "role": "knowledge",
@@ -5502,12 +6729,35 @@
       "isOptional": true
     },
     {
+      "id": "EXT-03-K04-formative",
+      "kind": "unit",
+      "chapterId": "V14-X3",
+      "moduleId": "EXT-03",
+      "moduleTitle": "概率统计直觉之旅",
+      "order": 9,
+      "type": "quiz",
+      "title": "期望、方差与大数定律 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-03-K04",
+      "conceptClusterLabel": "期望、方差与大数定律",
+      "assessedKnowledgePointIds": [
+        "EXT-03-K04"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "EXT-03-K05",
       "kind": "unit",
       "chapterId": "V14-X3",
       "moduleId": "EXT-03",
       "moduleTitle": "概率统计直觉之旅",
-      "order": 7,
+      "order": 10,
       "type": "knowledge",
       "title": "常见分布与中心极限定理",
       "role": "knowledge",
@@ -5570,10 +6820,33 @@
       "isOptional": true
     },
     {
+      "id": "EXT-03-K05-formative",
+      "kind": "unit",
+      "chapterId": "V14-X3",
+      "moduleId": "EXT-03",
+      "moduleTitle": "概率统计直觉之旅",
+      "order": 11,
+      "type": "quiz",
+      "title": "常见分布与中心极限定理 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-03-K05",
+      "conceptClusterLabel": "常见分布与中心极限定理",
+      "assessedKnowledgePointIds": [
+        "EXT-03-K05"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-X3-post",
       "kind": "unit",
       "chapterId": "V14-X3",
-      "order": 8,
+      "order": 12,
       "type": "quiz",
       "title": "扩展：概率统计直觉 · 结业后测",
       "role": "post_test",
@@ -5585,7 +6858,9 @@
       "conceptClusterId": "V14-X3",
       "conceptClusterLabel": "扩展：概率统计直觉",
       "assessedKnowledgePointIds": [
+        "EXT-03-K01",
         "EXT-03-K02",
+        "EXT-03-K03",
         "EXT-03-K04",
         "EXT-03-K05"
       ],
@@ -5610,6 +6885,7 @@
       "assessedKnowledgePointIds": [
         "EXT-04-K01",
         "EXT-04-K02",
+        "EXT-04-K03",
         "EXT-04-K04",
         "EXT-04-K05"
       ],
@@ -5685,12 +6961,35 @@
       "isOptional": true
     },
     {
-      "id": "EXT-04-K02",
+      "id": "EXT-04-K01-formative",
       "kind": "unit",
       "chapterId": "V14-X4",
       "moduleId": "EXT-04",
       "moduleTitle": "深度学习数学直觉：从矩阵到优化",
       "order": 3,
+      "type": "quiz",
+      "title": "多层网络的前向传播与矩阵视角 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-04-K01",
+      "conceptClusterLabel": "多层网络的前向传播与矩阵视角",
+      "assessedKnowledgePointIds": [
+        "EXT-04-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "EXT-04-K02",
+      "kind": "unit",
+      "chapterId": "V14-X4",
+      "moduleId": "EXT-04",
+      "moduleTitle": "深度学习数学直觉：从矩阵到优化",
+      "order": 4,
       "type": "knowledge",
       "title": "反向传播的完整推导直觉",
       "role": "knowledge",
@@ -5753,12 +7052,35 @@
       "isOptional": true
     },
     {
+      "id": "EXT-04-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-X4",
+      "moduleId": "EXT-04",
+      "moduleTitle": "深度学习数学直觉：从矩阵到优化",
+      "order": 5,
+      "type": "quiz",
+      "title": "反向传播的完整推导直觉 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-04-K02",
+      "conceptClusterLabel": "反向传播的完整推导直觉",
+      "assessedKnowledgePointIds": [
+        "EXT-04-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "EXT-04-K03",
       "kind": "unit",
       "chapterId": "V14-X4",
       "moduleId": "EXT-04",
       "moduleTitle": "深度学习数学直觉：从矩阵到优化",
-      "order": 4,
+      "order": 6,
       "type": "knowledge",
       "title": "损失地形、鞍点、局部极小与逃逸策略",
       "role": "knowledge",
@@ -5821,26 +7143,24 @@
       "isOptional": true
     },
     {
-      "id": "V14-X4-formative",
+      "id": "EXT-04-K03-formative",
       "kind": "unit",
       "chapterId": "V14-X4",
-      "order": 5,
+      "moduleId": "EXT-04",
+      "moduleTitle": "深度学习数学直觉：从矩阵到优化",
+      "order": 7,
       "type": "quiz",
-      "title": "扩展：深度学习数学直觉 · 形成测验",
+      "title": "损失地形、鞍点、局部极小与逃逸策略 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-X4",
-      "conceptClusterLabel": "扩展：深度学习数学直觉",
+      "conceptClusterId": "EXT-04-K03",
+      "conceptClusterLabel": "损失地形、鞍点、局部极小与逃逸策略",
       "assessedKnowledgePointIds": [
-        "EXT-04-K01",
-        "EXT-04-K02",
-        "EXT-04-K03",
-        "EXT-04-K04",
-        "EXT-04-K05"
+        "EXT-04-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -5851,7 +7171,7 @@
       "chapterId": "V14-X4",
       "moduleId": "EXT-04",
       "moduleTitle": "深度学习数学直觉：从矩阵到优化",
-      "order": 6,
+      "order": 8,
       "type": "knowledge",
       "title": "正则化的数学",
       "role": "knowledge",
@@ -5914,12 +7234,35 @@
       "isOptional": true
     },
     {
+      "id": "EXT-04-K04-formative",
+      "kind": "unit",
+      "chapterId": "V14-X4",
+      "moduleId": "EXT-04",
+      "moduleTitle": "深度学习数学直觉：从矩阵到优化",
+      "order": 9,
+      "type": "quiz",
+      "title": "正则化的数学 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-04-K04",
+      "conceptClusterLabel": "正则化的数学",
+      "assessedKnowledgePointIds": [
+        "EXT-04-K04"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "EXT-04-K05",
       "kind": "unit",
       "chapterId": "V14-X4",
       "moduleId": "EXT-04",
       "moduleTitle": "深度学习数学直觉：从矩阵到优化",
-      "order": 7,
+      "order": 10,
       "type": "knowledge",
       "title": "Adam/SGD 变体",
       "role": "knowledge",
@@ -5982,10 +7325,33 @@
       "isOptional": true
     },
     {
+      "id": "EXT-04-K05-formative",
+      "kind": "unit",
+      "chapterId": "V14-X4",
+      "moduleId": "EXT-04",
+      "moduleTitle": "深度学习数学直觉：从矩阵到优化",
+      "order": 11,
+      "type": "quiz",
+      "title": "Adam/SGD 变体 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-04-K05",
+      "conceptClusterLabel": "Adam/SGD 变体",
+      "assessedKnowledgePointIds": [
+        "EXT-04-K05"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-X4-post",
       "kind": "unit",
       "chapterId": "V14-X4",
-      "order": 8,
+      "order": 12,
       "type": "quiz",
       "title": "扩展：深度学习数学直觉 · 结业后测",
       "role": "post_test",
@@ -5998,8 +7364,8 @@
       "conceptClusterLabel": "扩展：深度学习数学直觉",
       "assessedKnowledgePointIds": [
         "EXT-04-K01",
-        "EXT-04-K03",
         "EXT-04-K02",
+        "EXT-04-K03",
         "EXT-04-K04",
         "EXT-04-K05"
       ],
@@ -6098,12 +7464,35 @@
       "isOptional": true
     },
     {
-      "id": "EXT-05-K02",
+      "id": "EXT-05-K01-formative",
       "kind": "unit",
       "chapterId": "V14-X5",
       "moduleId": "EXT-05",
       "moduleTitle": "数值优化进阶：从梯度到二阶与约束",
       "order": 3,
+      "type": "quiz",
+      "title": "牛顿法与拟牛顿法 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-05-K01",
+      "conceptClusterLabel": "牛顿法与拟牛顿法",
+      "assessedKnowledgePointIds": [
+        "EXT-05-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "EXT-05-K02",
+      "kind": "unit",
+      "chapterId": "V14-X5",
+      "moduleId": "EXT-05",
+      "moduleTitle": "数值优化进阶：从梯度到二阶与约束",
+      "order": 4,
       "type": "knowledge",
       "title": "共轭梯度与二阶方法",
       "role": "knowledge",
@@ -6166,24 +7555,24 @@
       "isOptional": true
     },
     {
-      "id": "V14-X5-formative",
+      "id": "EXT-05-K02-formative",
       "kind": "unit",
       "chapterId": "V14-X5",
-      "order": 4,
+      "moduleId": "EXT-05",
+      "moduleTitle": "数值优化进阶：从梯度到二阶与约束",
+      "order": 5,
       "type": "quiz",
-      "title": "扩展：数值优化进阶 · 形成测验",
+      "title": "共轭梯度与二阶方法 · 即时检测",
       "role": "formative_quiz",
       "modality": "assessment",
       "representation": "assessment",
       "scenarioType": "check",
       "difficultyBand": "core",
       "flowKind": "core",
-      "conceptClusterId": "V14-X5",
-      "conceptClusterLabel": "扩展：数值优化进阶",
+      "conceptClusterId": "EXT-05-K02",
+      "conceptClusterLabel": "共轭梯度与二阶方法",
       "assessedKnowledgePointIds": [
-        "EXT-05-K01",
-        "EXT-05-K02",
-        "EXT-05-K03"
+        "EXT-05-K02"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -6194,7 +7583,7 @@
       "chapterId": "V14-X5",
       "moduleId": "EXT-05",
       "moduleTitle": "数值优化进阶：从梯度到二阶与约束",
-      "order": 5,
+      "order": 6,
       "type": "knowledge",
       "title": "内点法与对偶方法",
       "role": "knowledge",
@@ -6257,10 +7646,33 @@
       "isOptional": true
     },
     {
+      "id": "EXT-05-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-X5",
+      "moduleId": "EXT-05",
+      "moduleTitle": "数值优化进阶：从梯度到二阶与约束",
+      "order": 7,
+      "type": "quiz",
+      "title": "内点法与对偶方法 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "EXT-05-K03",
+      "conceptClusterLabel": "内点法与对偶方法",
+      "assessedKnowledgePointIds": [
+        "EXT-05-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
       "id": "V14-X5-post",
       "kind": "unit",
       "chapterId": "V14-X5",
-      "order": 6,
+      "order": 8,
       "type": "quiz",
       "title": "扩展：数值优化进阶 · 结业后测",
       "role": "post_test",
@@ -6273,8 +7685,8 @@
       "conceptClusterLabel": "扩展：数值优化进阶",
       "assessedKnowledgePointIds": [
         "EXT-05-K01",
-        "EXT-05-K03",
-        "EXT-05-K02"
+        "EXT-05-K02",
+        "EXT-05-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -6295,7 +7707,19 @@
     },
     {
       "from": "V14-C1",
+      "to": "GH-01-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
       "to": "GH-01-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-01-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6307,7 +7731,19 @@
     },
     {
       "from": "V14-C1",
+      "to": "GH-01-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
       "to": "GH-02-K01",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-02-K01-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6319,13 +7755,19 @@
     },
     {
       "from": "V14-C1",
+      "to": "GH-02-K02-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
       "to": "GH-02-K03",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-C1",
-      "to": "V14-C1-formative",
+      "to": "GH-02-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6337,13 +7779,31 @@
     },
     {
       "from": "V14-C1",
+      "to": "GH-03-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
       "to": "GH-03-K02",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-C1",
+      "to": "GH-03-K02-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
       "to": "GH-03-K03",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-03-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6361,60 +7821,108 @@
     },
     {
       "from": "GH-01-K01",
+      "to": "GH-01-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K01-formative",
       "to": "GH-01-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-01-K02",
+      "to": "GH-01-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K02-formative",
       "to": "GH-01-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-01-K03",
+      "to": "GH-01-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K03-formative",
       "to": "GH-02-K01",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-02-K01",
+      "to": "GH-02-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K01-formative",
       "to": "GH-02-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-02-K02",
+      "to": "GH-02-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K02-formative",
       "to": "GH-02-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-02-K03",
-      "to": "V14-C1-formative",
+      "to": "GH-02-K03-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-C1-formative",
+      "from": "GH-02-K03-formative",
       "to": "GH-03-K01",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-03-K01",
+      "to": "GH-03-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K01-formative",
       "to": "GH-03-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-03-K02",
+      "to": "GH-03-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K02-formative",
       "to": "GH-03-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-03-K03",
+      "to": "GH-03-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K03-formative",
       "to": "V14-C1-post",
       "kind": "follows",
       "scope": "unit"
@@ -6427,19 +7935,19 @@
     },
     {
       "from": "V14-C1-pre",
-      "to": "GH-02-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-pre",
-      "to": "GH-03-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-pre",
       "to": "GH-01-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-01-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-02-K01",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -6457,55 +7965,79 @@
     },
     {
       "from": "V14-C1-pre",
+      "to": "GH-03-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
       "to": "GH-03-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C1-formative",
+      "from": "V14-C1-pre",
+      "to": "GH-03-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K01-formative",
       "to": "GH-01-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C1-formative",
-      "to": "GH-02-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-formative",
-      "to": "GH-03-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-formative",
+      "from": "GH-01-K02-formative",
       "to": "GH-01-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C1-formative",
+      "from": "GH-01-K03-formative",
+      "to": "GH-01-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K01-formative",
+      "to": "GH-02-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K02-formative",
       "to": "GH-02-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K03-formative",
+      "to": "GH-02-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K01-formative",
+      "to": "GH-03-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K02-formative",
+      "to": "GH-03-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K03-formative",
+      "to": "GH-03-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C1-post",
       "to": "GH-01-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-post",
-      "to": "GH-02-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-post",
-      "to": "GH-03-K01",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -6523,7 +8055,37 @@
     },
     {
       "from": "V14-C1-post",
+      "to": "GH-02-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-02-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
       "to": "GH-02-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-03-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-03-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-03-K03",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -6541,7 +8103,19 @@
     },
     {
       "from": "V14-C2",
+      "to": "GH-04-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
       "to": "GH-04-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
+      "to": "GH-04-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6553,13 +8127,19 @@
     },
     {
       "from": "V14-C2",
+      "to": "GH-04-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
       "to": "GH-04-K04",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-C2",
-      "to": "V14-C2-formative",
+      "to": "GH-04-K04-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6571,7 +8151,19 @@
     },
     {
       "from": "V14-C2",
+      "to": "GH-05-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
       "to": "GH-05-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
+      "to": "GH-05-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6583,7 +8175,19 @@
     },
     {
       "from": "V14-C2",
+      "to": "GH-05-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
       "to": "GH-05-K04",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
+      "to": "GH-05-K04-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6601,54 +8205,96 @@
     },
     {
       "from": "GH-04-K01",
+      "to": "GH-04-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-04-K01-formative",
       "to": "GH-04-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-04-K02",
+      "to": "GH-04-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-04-K02-formative",
       "to": "GH-04-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-04-K03",
+      "to": "GH-04-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-04-K03-formative",
       "to": "GH-04-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-04-K04",
-      "to": "V14-C2-formative",
+      "to": "GH-04-K04-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-C2-formative",
+      "from": "GH-04-K04-formative",
       "to": "GH-05-K01",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-05-K01",
+      "to": "GH-05-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-05-K01-formative",
       "to": "GH-05-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-05-K02",
+      "to": "GH-05-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-05-K02-formative",
       "to": "GH-05-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-05-K03",
+      "to": "GH-05-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-05-K03-formative",
       "to": "GH-05-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-05-K04",
+      "to": "GH-05-K04-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-05-K04-formative",
       "to": "V14-C2-post",
       "kind": "follows",
       "scope": "unit"
@@ -6661,25 +8307,13 @@
     },
     {
       "from": "V14-C2-pre",
-      "to": "GH-05-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C2-pre",
-      "to": "GH-04-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C2-pre",
       "to": "GH-04-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C2-pre",
-      "to": "GH-05-K02",
+      "to": "GH-04-K03",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -6691,48 +8325,72 @@
     },
     {
       "from": "V14-C2-pre",
-      "to": "GH-05-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C2-formative",
-      "to": "GH-04-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C2-formative",
       "to": "GH-05-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C2-formative",
-      "to": "GH-04-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C2-formative",
-      "to": "GH-04-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C2-formative",
+      "from": "V14-C2-pre",
       "to": "GH-05-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C2-formative",
+      "from": "V14-C2-pre",
       "to": "GH-05-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C2-formative",
+      "from": "V14-C2-pre",
+      "to": "GH-05-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-04-K01-formative",
+      "to": "GH-04-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-04-K02-formative",
+      "to": "GH-04-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-04-K03-formative",
+      "to": "GH-04-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-04-K04-formative",
+      "to": "GH-04-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-05-K01-formative",
+      "to": "GH-05-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-05-K02-formative",
+      "to": "GH-05-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-05-K03-formative",
+      "to": "GH-05-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-05-K04-formative",
       "to": "GH-05-K04",
       "kind": "assesses",
       "scope": "unit"
@@ -6745,19 +8403,13 @@
     },
     {
       "from": "V14-C2-post",
-      "to": "GH-05-K03",
+      "to": "GH-04-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C2-post",
       "to": "GH-04-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C2-post",
-      "to": "GH-04-K02",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -6776,6 +8428,18 @@
     {
       "from": "V14-C2-post",
       "to": "GH-05-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C2-post",
+      "to": "GH-05-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C2-post",
+      "to": "GH-05-K04",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -6793,7 +8457,19 @@
     },
     {
       "from": "V14-C3",
+      "to": "GH-06-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C3",
       "to": "GH-06-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C3",
+      "to": "GH-06-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6805,7 +8481,7 @@
     },
     {
       "from": "V14-C3",
-      "to": "V14-C3-formative",
+      "to": "GH-06-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6817,7 +8493,19 @@
     },
     {
       "from": "V14-C3",
+      "to": "GH-07-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C3",
       "to": "GH-07-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C3",
+      "to": "GH-07-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6829,7 +8517,19 @@
     },
     {
       "from": "V14-C3",
+      "to": "GH-07-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C3",
       "to": "GH-07-K04",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C3",
+      "to": "GH-07-K04-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -6847,48 +8547,84 @@
     },
     {
       "from": "GH-06-K01",
+      "to": "GH-06-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-06-K01-formative",
       "to": "GH-06-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-06-K02",
+      "to": "GH-06-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-06-K02-formative",
       "to": "GH-06-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-06-K03",
-      "to": "V14-C3-formative",
+      "to": "GH-06-K03-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-C3-formative",
+      "from": "GH-06-K03-formative",
       "to": "GH-07-K01",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-07-K01",
+      "to": "GH-07-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-07-K01-formative",
       "to": "GH-07-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-07-K02",
+      "to": "GH-07-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-07-K02-formative",
       "to": "GH-07-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-07-K03",
+      "to": "GH-07-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-07-K03-formative",
       "to": "GH-07-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-07-K04",
+      "to": "GH-07-K04-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-07-K04-formative",
       "to": "V14-C3-post",
       "kind": "follows",
       "scope": "unit"
@@ -6901,13 +8637,19 @@
     },
     {
       "from": "V14-C3-pre",
+      "to": "GH-06-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C3-pre",
       "to": "GH-07-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C3-pre",
-      "to": "GH-06-K02",
+      "to": "GH-07-K02",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -6919,48 +8661,54 @@
     },
     {
       "from": "V14-C3-pre",
-      "to": "GH-07-K04",
+      "to": "GH-06-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C3-pre",
-      "to": "GH-07-K02",
+      "to": "GH-07-K04",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C3-formative",
+      "from": "GH-06-K01-formative",
       "to": "GH-06-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C3-formative",
-      "to": "GH-07-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C3-formative",
-      "to": "GH-07-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C3-formative",
+      "from": "GH-06-K02-formative",
       "to": "GH-06-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C3-formative",
+      "from": "GH-06-K03-formative",
+      "to": "GH-06-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-07-K01-formative",
+      "to": "GH-07-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-07-K02-formative",
+      "to": "GH-07-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-07-K03-formative",
       "to": "GH-07-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C3-formative",
+      "from": "GH-07-K04-formative",
       "to": "GH-07-K04",
       "kind": "assesses",
       "scope": "unit"
@@ -6973,25 +8721,31 @@
     },
     {
       "from": "V14-C3-post",
+      "to": "GH-06-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C3-post",
       "to": "GH-07-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C3-post",
-      "to": "GH-06-K02",
+      "to": "GH-07-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C3-post",
+      "to": "GH-07-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C3-post",
       "to": "GH-06-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C3-post",
-      "to": "GH-07-K02",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7015,7 +8769,19 @@
     },
     {
       "from": "V14-C4",
+      "to": "GH-08-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
       "to": "GH-08-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
+      "to": "GH-08-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7027,7 +8793,19 @@
     },
     {
       "from": "V14-C4",
+      "to": "GH-08-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
       "to": "GH-09-K01",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
+      "to": "GH-09-K01-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7039,13 +8817,19 @@
     },
     {
       "from": "V14-C4",
+      "to": "GH-09-K02-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
       "to": "GH-09-K03",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-C4",
-      "to": "V14-C4-formative",
+      "to": "GH-09-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7057,7 +8841,19 @@
     },
     {
       "from": "V14-C4",
+      "to": "GH-10-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
       "to": "GH-10-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
+      "to": "GH-10-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7069,7 +8865,19 @@
     },
     {
       "from": "V14-C4",
+      "to": "GH-10-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
       "to": "GH-10-K04",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C4",
+      "to": "GH-10-K04-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7087,73 +8895,139 @@
     },
     {
       "from": "GH-08-K01",
+      "to": "GH-08-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-08-K01-formative",
       "to": "GH-08-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-08-K02",
+      "to": "GH-08-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-08-K02-formative",
       "to": "GH-08-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-08-K03",
+      "to": "GH-08-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-08-K03-formative",
       "to": "GH-09-K01",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-09-K01",
+      "to": "GH-09-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-09-K01-formative",
       "to": "GH-09-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-09-K02",
+      "to": "GH-09-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-09-K02-formative",
       "to": "GH-09-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-09-K03",
-      "to": "V14-C4-formative",
+      "to": "GH-09-K03-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-C4-formative",
+      "from": "GH-09-K03-formative",
       "to": "GH-10-K01",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-10-K01",
+      "to": "GH-10-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-10-K01-formative",
       "to": "GH-10-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-10-K02",
+      "to": "GH-10-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-10-K02-formative",
       "to": "GH-10-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-10-K03",
+      "to": "GH-10-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-10-K03-formative",
       "to": "GH-10-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-10-K04",
+      "to": "GH-10-K04-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-10-K04-formative",
       "to": "V14-C4-post",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "V14-C4-pre",
-      "to": "GH-08-K03",
+      "to": "GH-08-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-pre",
+      "to": "GH-08-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-pre",
+      "to": "GH-09-K01",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7171,13 +9045,19 @@
     },
     {
       "from": "V14-C4-pre",
-      "to": "GH-08-K02",
+      "to": "GH-10-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C4-pre",
-      "to": "GH-08-K01",
+      "to": "GH-10-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-pre",
+      "to": "GH-08-K03",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7189,43 +9069,67 @@
     },
     {
       "from": "V14-C4-pre",
-      "to": "GH-10-K03",
+      "to": "GH-10-K04",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C4-formative",
+      "from": "GH-08-K01-formative",
       "to": "GH-08-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C4-formative",
-      "to": "GH-09-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C4-formative",
-      "to": "GH-10-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C4-formative",
+      "from": "GH-08-K02-formative",
       "to": "GH-08-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C4-formative",
+      "from": "GH-08-K03-formative",
       "to": "GH-08-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C4-formative",
+      "from": "GH-09-K01-formative",
+      "to": "GH-09-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-09-K02-formative",
       "to": "GH-09-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-09-K03-formative",
+      "to": "GH-09-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-10-K01-formative",
+      "to": "GH-10-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-10-K02-formative",
+      "to": "GH-10-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-10-K03-formative",
+      "to": "GH-10-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-10-K04-formative",
+      "to": "GH-10-K04",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7237,31 +9141,55 @@
     },
     {
       "from": "V14-C4-post",
+      "to": "GH-08-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-post",
       "to": "GH-09-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C4-post",
-      "to": "GH-10-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C4-post",
-      "to": "GH-08-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C4-post",
       "to": "GH-09-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-post",
+      "to": "GH-10-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C4-post",
       "to": "GH-10-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-post",
+      "to": "GH-10-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-post",
+      "to": "GH-08-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-post",
+      "to": "GH-09-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C4-post",
+      "to": "GH-10-K04",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7279,7 +9207,19 @@
     },
     {
       "from": "V14-C5",
+      "to": "GH-11-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C5",
       "to": "GH-11-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C5",
+      "to": "GH-11-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7291,13 +9231,19 @@
     },
     {
       "from": "V14-C5",
+      "to": "GH-11-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C5",
       "to": "GH-11-K04",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-C5",
-      "to": "V14-C5-formative",
+      "to": "GH-11-K04-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7309,7 +9255,19 @@
     },
     {
       "from": "V14-C5",
+      "to": "GH-12-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C5",
       "to": "GH-12-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C5",
+      "to": "GH-12-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7321,7 +9279,19 @@
     },
     {
       "from": "V14-C5",
+      "to": "GH-12-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C5",
       "to": "GH-12-K04",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C5",
+      "to": "GH-12-K04-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7339,61 +9309,121 @@
     },
     {
       "from": "GH-11-K01",
+      "to": "GH-11-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-11-K01-formative",
       "to": "GH-11-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-11-K02",
+      "to": "GH-11-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-11-K02-formative",
       "to": "GH-11-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-11-K03",
+      "to": "GH-11-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-11-K03-formative",
       "to": "GH-11-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-11-K04",
-      "to": "V14-C5-formative",
+      "to": "GH-11-K04-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-C5-formative",
+      "from": "GH-11-K04-formative",
       "to": "GH-12-K01",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-12-K01",
+      "to": "GH-12-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-12-K01-formative",
       "to": "GH-12-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-12-K02",
+      "to": "GH-12-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-12-K02-formative",
       "to": "GH-12-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-12-K03",
+      "to": "GH-12-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-12-K03-formative",
       "to": "GH-12-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-12-K04",
+      "to": "GH-12-K04-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-12-K04-formative",
       "to": "V14-C5-post",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "V14-C5-pre",
-      "to": "GH-11-K04",
+      "to": "GH-11-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C5-pre",
+      "to": "GH-11-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C5-pre",
+      "to": "GH-11-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C5-pre",
+      "to": "GH-12-K01",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7405,7 +9435,13 @@
     },
     {
       "from": "V14-C5-pre",
-      "to": "GH-11-K03",
+      "to": "GH-12-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C5-pre",
+      "to": "GH-11-K04",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7416,38 +9452,62 @@
       "scope": "unit"
     },
     {
-      "from": "V14-C5-pre",
-      "to": "GH-12-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C5-formative",
+      "from": "GH-11-K01-formative",
       "to": "GH-11-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C5-formative",
-      "to": "GH-12-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C5-formative",
-      "to": "GH-11-K04",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C5-formative",
+      "from": "GH-11-K02-formative",
       "to": "GH-11-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C5-formative",
+      "from": "GH-11-K03-formative",
+      "to": "GH-11-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-11-K04-formative",
+      "to": "GH-11-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-12-K01-formative",
+      "to": "GH-12-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-12-K02-formative",
       "to": "GH-12-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-12-K03-formative",
+      "to": "GH-12-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-12-K04-formative",
+      "to": "GH-12-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C5-post",
+      "to": "GH-11-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C5-post",
+      "to": "GH-11-K02",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7472,6 +9532,12 @@
     {
       "from": "V14-C5-post",
       "to": "GH-12-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C5-post",
+      "to": "GH-11-K04",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7495,7 +9561,19 @@
     },
     {
       "from": "V14-C6",
+      "to": "GH-13-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C6",
       "to": "GH-13-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C6",
+      "to": "GH-13-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7507,13 +9585,19 @@
     },
     {
       "from": "V14-C6",
+      "to": "GH-13-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C6",
       "to": "GH-13-K04",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-C6",
-      "to": "V14-C6-formative",
+      "to": "GH-13-K04-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7525,7 +9609,19 @@
     },
     {
       "from": "V14-C6",
+      "to": "GH-14-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C6",
       "to": "GH-14-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C6",
+      "to": "GH-14-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7537,13 +9633,31 @@
     },
     {
       "from": "V14-C6",
+      "to": "GH-14-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C6",
       "to": "GH-14-K04",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-C6",
+      "to": "GH-14-K04-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C6",
       "to": "GH-14-K05",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C6",
+      "to": "GH-14-K05-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7561,60 +9675,108 @@
     },
     {
       "from": "GH-13-K01",
+      "to": "GH-13-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-13-K01-formative",
       "to": "GH-13-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-13-K02",
+      "to": "GH-13-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-13-K02-formative",
       "to": "GH-13-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-13-K03",
+      "to": "GH-13-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-13-K03-formative",
       "to": "GH-13-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-13-K04",
-      "to": "V14-C6-formative",
+      "to": "GH-13-K04-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-C6-formative",
+      "from": "GH-13-K04-formative",
       "to": "GH-14-K01",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-14-K01",
+      "to": "GH-14-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K01-formative",
       "to": "GH-14-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-14-K02",
+      "to": "GH-14-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K02-formative",
       "to": "GH-14-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-14-K03",
+      "to": "GH-14-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K03-formative",
       "to": "GH-14-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-14-K04",
+      "to": "GH-14-K04-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K04-formative",
       "to": "GH-14-K05",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "GH-14-K05",
+      "to": "GH-14-K05-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K05-formative",
       "to": "V14-C6-post",
       "kind": "follows",
       "scope": "unit"
@@ -7627,12 +9789,6 @@
     },
     {
       "from": "V14-C6-pre",
-      "to": "GH-14-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C6-pre",
       "to": "GH-13-K02",
       "kind": "assesses",
       "scope": "unit"
@@ -7645,7 +9801,13 @@
     },
     {
       "from": "V14-C6-pre",
-      "to": "GH-13-K04",
+      "to": "GH-14-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C6-pre",
+      "to": "GH-14-K02",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7662,44 +9824,74 @@
       "scope": "unit"
     },
     {
-      "from": "V14-C6-formative",
+      "from": "V14-C6-pre",
+      "to": "GH-13-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C6-pre",
+      "to": "GH-14-K05",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-13-K01-formative",
       "to": "GH-13-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C6-formative",
-      "to": "GH-14-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C6-formative",
-      "to": "GH-14-K04",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C6-formative",
+      "from": "GH-13-K02-formative",
       "to": "GH-13-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C6-formative",
+      "from": "GH-13-K03-formative",
       "to": "GH-13-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C6-formative",
+      "from": "GH-13-K04-formative",
+      "to": "GH-13-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K01-formative",
+      "to": "GH-14-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K02-formative",
       "to": "GH-14-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-C6-formative",
+      "from": "GH-14-K03-formative",
       "to": "GH-14-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K04-formative",
+      "to": "GH-14-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-14-K05-formative",
+      "to": "GH-14-K05",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C6-post",
+      "to": "GH-13-K01",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7711,13 +9903,31 @@
     },
     {
       "from": "V14-C6-post",
-      "to": "GH-14-K04",
+      "to": "GH-13-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C6-post",
+      "to": "GH-14-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C6-post",
+      "to": "GH-14-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C6-post",
       "to": "GH-14-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C6-post",
+      "to": "GH-14-K04",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7729,19 +9939,7 @@
     },
     {
       "from": "V14-C6-post",
-      "to": "GH-13-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C6-post",
-      "to": "GH-14-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C6-post",
-      "to": "GH-14-K02",
+      "to": "GH-14-K05",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7759,19 +9957,31 @@
     },
     {
       "from": "V14-X1",
+      "to": "EXT-01-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X1",
       "to": "EXT-01-K02",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-X1",
-      "to": "V14-X1-formative",
+      "to": "EXT-01-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-X1",
       "to": "EXT-01-K03",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X1",
+      "to": "EXT-01-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7789,24 +9999,36 @@
     },
     {
       "from": "EXT-01-K01",
+      "to": "EXT-01-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-01-K01-formative",
       "to": "EXT-01-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-01-K02",
-      "to": "V14-X1-formative",
+      "to": "EXT-01-K02-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-X1-formative",
+      "from": "EXT-01-K02-formative",
       "to": "EXT-01-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-01-K03",
+      "to": "EXT-01-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-01-K03-formative",
       "to": "V14-X1-post",
       "kind": "follows",
       "scope": "unit"
@@ -7819,36 +10041,30 @@
     },
     {
       "from": "V14-X1-pre",
-      "to": "EXT-01-K03",
+      "to": "EXT-01-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-X1-pre",
-      "to": "EXT-01-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-X1-formative",
-      "to": "EXT-01-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-X1-formative",
       "to": "EXT-01-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X1-formative",
+      "from": "EXT-01-K01-formative",
+      "to": "EXT-01-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-01-K02-formative",
       "to": "EXT-01-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X1-post",
+      "from": "EXT-01-K03-formative",
       "to": "EXT-01-K03",
       "kind": "assesses",
       "scope": "unit"
@@ -7862,6 +10078,12 @@
     {
       "from": "V14-X1-post",
       "to": "EXT-01-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X1-post",
+      "to": "EXT-01-K03",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7879,7 +10101,19 @@
     },
     {
       "from": "V14-X2",
+      "to": "EXT-02-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X2",
       "to": "EXT-02-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X2",
+      "to": "EXT-02-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7891,7 +10125,7 @@
     },
     {
       "from": "V14-X2",
-      "to": "V14-X2-formative",
+      "to": "EXT-02-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7903,7 +10137,19 @@
     },
     {
       "from": "V14-X2",
+      "to": "EXT-02-K04-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X2",
       "to": "EXT-02-K05",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X2",
+      "to": "EXT-02-K05-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -7921,55 +10167,85 @@
     },
     {
       "from": "EXT-02-K01",
+      "to": "EXT-02-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-02-K01-formative",
       "to": "EXT-02-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-02-K02",
+      "to": "EXT-02-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-02-K02-formative",
       "to": "EXT-02-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-02-K03",
-      "to": "V14-X2-formative",
+      "to": "EXT-02-K03-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-X2-formative",
+      "from": "EXT-02-K03-formative",
       "to": "EXT-02-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-02-K04",
+      "to": "EXT-02-K04-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-02-K04-formative",
       "to": "EXT-02-K05",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-02-K05",
+      "to": "EXT-02-K05-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-02-K05-formative",
       "to": "V14-X2-post",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "V14-X2-pre",
-      "to": "EXT-02-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-X2-pre",
       "to": "EXT-02-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-X2-pre",
+      "to": "EXT-02-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X2-pre",
       "to": "EXT-02-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X2-pre",
+      "to": "EXT-02-K04",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -7980,50 +10256,62 @@
       "scope": "unit"
     },
     {
-      "from": "V14-X2-formative",
+      "from": "EXT-02-K01-formative",
       "to": "EXT-02-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X2-formative",
-      "to": "EXT-02-K05",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-X2-formative",
+      "from": "EXT-02-K02-formative",
       "to": "EXT-02-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X2-formative",
+      "from": "EXT-02-K03-formative",
       "to": "EXT-02-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X2-formative",
+      "from": "EXT-02-K04-formative",
       "to": "EXT-02-K04",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X2-post",
-      "to": "EXT-02-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-X2-post",
+      "from": "EXT-02-K05-formative",
       "to": "EXT-02-K05",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-X2-post",
+      "to": "EXT-02-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X2-post",
+      "to": "EXT-02-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X2-post",
+      "to": "EXT-02-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X2-post",
       "to": "EXT-02-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X2-post",
+      "to": "EXT-02-K05",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -8041,7 +10329,19 @@
     },
     {
       "from": "V14-X3",
+      "to": "EXT-03-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X3",
       "to": "EXT-03-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X3",
+      "to": "EXT-03-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -8053,7 +10353,7 @@
     },
     {
       "from": "V14-X3",
-      "to": "V14-X3-formative",
+      "to": "EXT-03-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -8065,7 +10365,19 @@
     },
     {
       "from": "V14-X3",
+      "to": "EXT-03-K04-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X3",
       "to": "EXT-03-K05",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X3",
+      "to": "EXT-03-K05-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -8083,36 +10395,60 @@
     },
     {
       "from": "EXT-03-K01",
+      "to": "EXT-03-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-03-K01-formative",
       "to": "EXT-03-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-03-K02",
+      "to": "EXT-03-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-03-K02-formative",
       "to": "EXT-03-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-03-K03",
-      "to": "V14-X3-formative",
+      "to": "EXT-03-K03-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-X3-formative",
+      "from": "EXT-03-K03-formative",
       "to": "EXT-03-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-03-K04",
+      "to": "EXT-03-K04-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-03-K04-formative",
       "to": "EXT-03-K05",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-03-K05",
+      "to": "EXT-03-K05-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-03-K05-formative",
       "to": "V14-X3-post",
       "kind": "follows",
       "scope": "unit"
@@ -8125,12 +10461,6 @@
     },
     {
       "from": "V14-X3-pre",
-      "to": "EXT-03-K04",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-X3-pre",
       "to": "EXT-03-K02",
       "kind": "assesses",
       "scope": "unit"
@@ -8138,6 +10468,12 @@
     {
       "from": "V14-X3-pre",
       "to": "EXT-03-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X3-pre",
+      "to": "EXT-03-K04",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -8148,32 +10484,50 @@
       "scope": "unit"
     },
     {
-      "from": "V14-X3-formative",
-      "to": "EXT-03-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-X3-formative",
+      "from": "EXT-03-K01-formative",
       "to": "EXT-03-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X3-formative",
+      "from": "EXT-03-K02-formative",
+      "to": "EXT-03-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-03-K03-formative",
+      "to": "EXT-03-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-03-K04-formative",
       "to": "EXT-03-K04",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X3-formative",
-      "to": "EXT-03-K02",
+      "from": "EXT-03-K05-formative",
+      "to": "EXT-03-K05",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X3-post",
+      "to": "EXT-03-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-X3-post",
       "to": "EXT-03-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X3-post",
+      "to": "EXT-03-K03",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -8203,7 +10557,19 @@
     },
     {
       "from": "V14-X4",
+      "to": "EXT-04-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X4",
       "to": "EXT-04-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X4",
+      "to": "EXT-04-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -8215,7 +10581,7 @@
     },
     {
       "from": "V14-X4",
-      "to": "V14-X4-formative",
+      "to": "EXT-04-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -8227,7 +10593,19 @@
     },
     {
       "from": "V14-X4",
+      "to": "EXT-04-K04-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X4",
       "to": "EXT-04-K05",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X4",
+      "to": "EXT-04-K05-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -8245,36 +10623,60 @@
     },
     {
       "from": "EXT-04-K01",
+      "to": "EXT-04-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-04-K01-formative",
       "to": "EXT-04-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-04-K02",
+      "to": "EXT-04-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-04-K02-formative",
       "to": "EXT-04-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-04-K03",
-      "to": "V14-X4-formative",
+      "to": "EXT-04-K03-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-X4-formative",
+      "from": "EXT-04-K03-formative",
       "to": "EXT-04-K04",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-04-K04",
+      "to": "EXT-04-K04-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-04-K04-formative",
       "to": "EXT-04-K05",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-04-K05",
+      "to": "EXT-04-K05-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-04-K05-formative",
       "to": "V14-X4-post",
       "kind": "follows",
       "scope": "unit"
@@ -8293,6 +10695,12 @@
     },
     {
       "from": "V14-X4-pre",
+      "to": "EXT-04-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-X4-pre",
       "to": "EXT-04-K04",
       "kind": "assesses",
       "scope": "unit"
@@ -8304,31 +10712,31 @@
       "scope": "unit"
     },
     {
-      "from": "V14-X4-formative",
+      "from": "EXT-04-K01-formative",
       "to": "EXT-04-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X4-formative",
+      "from": "EXT-04-K02-formative",
       "to": "EXT-04-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X4-formative",
+      "from": "EXT-04-K03-formative",
       "to": "EXT-04-K03",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X4-formative",
+      "from": "EXT-04-K04-formative",
       "to": "EXT-04-K04",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X4-formative",
+      "from": "EXT-04-K05-formative",
       "to": "EXT-04-K05",
       "kind": "assesses",
       "scope": "unit"
@@ -8341,13 +10749,13 @@
     },
     {
       "from": "V14-X4-post",
-      "to": "EXT-04-K03",
+      "to": "EXT-04-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-X4-post",
-      "to": "EXT-04-K02",
+      "to": "EXT-04-K03",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -8377,19 +10785,31 @@
     },
     {
       "from": "V14-X5",
+      "to": "EXT-05-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X5",
       "to": "EXT-05-K02",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-X5",
-      "to": "V14-X5-formative",
+      "to": "EXT-05-K02-formative",
       "kind": "contains",
       "scope": "chapter"
     },
     {
       "from": "V14-X5",
       "to": "EXT-05-K03",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-X5",
+      "to": "EXT-05-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -8407,24 +10827,36 @@
     },
     {
       "from": "EXT-05-K01",
+      "to": "EXT-05-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-05-K01-formative",
       "to": "EXT-05-K02",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-05-K02",
-      "to": "V14-X5-formative",
+      "to": "EXT-05-K02-formative",
       "kind": "follows",
       "scope": "unit"
     },
     {
-      "from": "V14-X5-formative",
+      "from": "EXT-05-K02-formative",
       "to": "EXT-05-K03",
       "kind": "follows",
       "scope": "unit"
     },
     {
       "from": "EXT-05-K03",
+      "to": "EXT-05-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "EXT-05-K03-formative",
       "to": "V14-X5-post",
       "kind": "follows",
       "scope": "unit"
@@ -8448,19 +10880,19 @@
       "scope": "unit"
     },
     {
-      "from": "V14-X5-formative",
+      "from": "EXT-05-K01-formative",
       "to": "EXT-05-K01",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X5-formative",
+      "from": "EXT-05-K02-formative",
       "to": "EXT-05-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
-      "from": "V14-X5-formative",
+      "from": "EXT-05-K03-formative",
       "to": "EXT-05-K03",
       "kind": "assesses",
       "scope": "unit"
@@ -8473,13 +10905,13 @@
     },
     {
       "from": "V14-X5-post",
-      "to": "EXT-05-K03",
+      "to": "EXT-05-K02",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-X5-post",
-      "to": "EXT-05-K02",
+      "to": "EXT-05-K03",
       "kind": "assesses",
       "scope": "unit"
     },

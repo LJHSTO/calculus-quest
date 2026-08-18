@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "积分直觉与积分方法",
+  "outlines": [
+    {
+      "id": "GH-06-K03-check",
+      "type": "quiz",
+      "title": "即时检查：原函数和不定积分",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-06-K03-check-q1",
+          "type": "single",
+          "question": "已知 f(x)=2x，若 F(x) 是 f(x) 的一个原函数，且 F(0)=1。根据原函数与不定积分的含义，下列说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "F(x)=x²+C，由 F(0)=1 可得 C=1，所以 F(x)=x²+1"
+            },
+            {
+              "value": "B",
+              "label": "不定积分 ∫2x dx 表示 f(x) 的全体原函数，结果为 x²+C"
+            },
+            {
+              "value": "C",
+              "label": "因为 F(x) 是原函数，所以 F(x) 只能等于 x²，不能再加任意常数"
+            },
+            {
+              "value": "D",
+              "label": "由 F(0)=1 可知不定积分 ∫2x dx 的值就是 1"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "原函数是指满足 F'(x)=f(x) 的函数。对于 f(x)=2x，其全体原函数为 x²+C，这正是不定积分 ∫2x dx 的含义。F(0)=1 只是在全体原函数中确定了一个特定的原函数（x²+1），并不改变不定积分表示全体原函数这一核心含义。故选 B。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-06-K03"
+          ],
+          "cognitiveLevel": "understanding",
+          "estimatedSteps": 2,
+          "pairId": "GH-06-K03-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept"
+          }
+        },
+        {
+          "id": "GH-06-K03-check-q2",
+          "type": "multiple",
+          "question": "关于原函数和不定积分，下列说法中所有正确的说法是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "若 F(x) 是 f(x) 的一个原函数，则 f(x) 的全体原函数可表示为 F(x)+C，其中 C 为任意常数"
+            },
+            {
+              "value": "B",
+              "label": "不定积分 ∫f(x) dx 表示的就是 f(x) 的全体原函数，因此结果中必须含有任意常数 C"
+            },
+            {
+              "value": "C",
+              "label": "只要记住 ∫f(x) dx=F(x)+C 这个符号结论即可，不需要理解它与“求导逆运算”之间的联系"
+            },
+            {
+              "value": "D",
+              "label": "同一个函数 f(x) 的任意两个原函数之间，其差一定是一个常数"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "A 正确，原函数的全体可表示为 F(x)+C；B 正确，这正是不定积分的含义；D 正确，若 F(x) 和 G(x) 都是 f(x) 的原函数，则 (F-G)'=f-f=0，故 F-G 为常数。C 错误，只记符号而不理解其与求导逆运算的联系，正是常见误解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-06-K03"
+          ],
+          "cognitiveLevel": "analyzing",
+          "estimatedSteps": 3,
+          "pairId": "GH-06-K03-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept"
+          }
+        }
+      ]
+    }
+  ]
+}

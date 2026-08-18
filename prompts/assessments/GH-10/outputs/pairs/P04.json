@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q4",
+    "type": "single",
+    "question": "已知映射 F 将平面坐标 (u, v) 映射到新坐标 (x, y)，其分量形式为 x=u²-v²，y=2uv。在点 (u,v)=(1,0) 处，若输入沿向量 (1,2) 发生微小位移，则输出的局部线性变化向量是哪一个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "(2, 4)"
+      },
+      {
+        "value": "B",
+        "label": "(-2, 4)"
+      },
+      {
+        "value": "C",
+        "label": "(0, 2)"
+      },
+      {
+        "value": "D",
+        "label": "(1, 2)"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "F 的 Jacobian 为 [[2u,-2v],[2v,2u]]。在 (1,0) 处为 [[2,0],[0,2]]，乘以输入位移向量 (1,2)，得到局部线性变化向量 (2,4)，因此选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 3,
+      "symbolComplexity": "medium",
+      "conclusionClass": "vector_parallel_relation"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q4",
+    "type": "single",
+    "question": "考虑向量值函数 G(s,t)=(s²-t²,2st)。如果在某一点处，任意非零微小位移经过 Jacobian 作用后都得到非零且与原位移平行的局部响应（方向可同可反），则该点必须满足什么条件？",
+    "options": [
+      {
+        "value": "A",
+        "label": "t = 0 且 s ≠ 0"
+      },
+      {
+        "value": "B",
+        "label": "s = 0"
+      },
+      {
+        "value": "C",
+        "label": "s = t"
+      },
+      {
+        "value": "D",
+        "label": "s = -t"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "G 的 Jacobian 为 [[2s,-2t],[2t,2s]]。要让所有位移都映成与自身平行的非零向量，矩阵必须是非零数量矩阵，因此非对角元必须为零，即 t=0，同时缩放因子 2s 不能为零，即 s≠0。选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 3,
+      "symbolComplexity": "medium",
+      "conclusionClass": "vector_parallel_relation"
+    }
+  }
+}

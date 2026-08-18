@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "概率统计直觉之旅",
+  "outlines": [
+    {
+      "id": "EXT-03-K03-check",
+      "type": "quiz",
+      "title": "即时检查：随机变量与分布",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-03-K03-check-q1",
+          "type": "single",
+          "question": "已知随机变量 X 的概率分布为 P(X=1)=0.2，P(X=2)=0.3，P(X=3)=0.5。某同学根据分布表计算得出 P(X=2 或 X=3)=0.8。这一计算结果说明了随机变量分布的哪种核心含义？",
+          "options": [
+            {
+              "value": "A",
+              "label": "分布不仅列出可能取值，还规定了随机变量取若干互斥值时的概率可加性"
+            },
+            {
+              "value": "B",
+              "label": "分布只表示随机变量的取值范围，与具体概率大小无关"
+            },
+            {
+              "value": "C",
+              "label": "分布是固定不变的常数，不随试验变化"
+            },
+            {
+              "value": "D",
+              "label": "分布保证随机变量取每个可能值的概率必须相等"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "随机变量的分布描述了它取每个可能值的概率规律。当取值互斥时，事件并的概率等于各自概率之和，这正是分布刻画概率规律的核心体现。B、C、D 都只记住符号或表面结论，没有把分布与概率运算和规律联系起来。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-03-K03-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-explanation"
+          }
+        },
+        {
+          "id": "EXT-03-K03-check-q2",
+          "type": "multiple",
+          "question": "关于随机变量 X 的分布 P(X=1)=0.4，P(X=2)=0.4，P(X=3)=0.2，下列说法中所有正确说法是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "分布只记录了 X 的三个取值符号，不能用于判断任何事件概率"
+            },
+            {
+              "value": "B",
+              "label": "由该分布可知 P(X≥2)=0.6"
+            },
+            {
+              "value": "C",
+              "label": "该分布说明 X 取值为 1 或 2 的概率大于取值为 3 的概率"
+            },
+            {
+              "value": "D",
+              "label": "该分布保证 X 每次试验一定取值为 2，因为 2 在中间"
+            }
+          ],
+          "answer": [
+            "B",
+            "C"
+          ],
+          "analysis": "B 正确：P(X≥2)=P(X=2)+P(X=3)=0.4+0.2=0.6。C 正确：P(X=1 或 X=2)=0.8，大于 P(X=3)=0.2。A 是常见误解，把分布只当作符号记忆，忽略了它可用于计算事件概率。D 错误，分布表示概率规律，不保证某次试验一定取某值。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-03-K03"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 2,
+          "pairId": "EXT-03-K03-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-application"
+          }
+        }
+      ]
+    }
+  ]
+}

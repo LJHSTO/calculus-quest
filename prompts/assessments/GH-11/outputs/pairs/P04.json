@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q4",
+    "type": "single",
+    "question": "已知函数 f(x) 在 x=0 处的二阶 Taylor 近似多项式为 P(x) = 5 - 3x + 4x^2。关于该多项式与原函数在 x=0 附近的关系，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "P(x) 与 f(x) 在 x=0 处有相同的函数值，且 P(x) 的图像在 x=0 附近为开口向上的抛物线。"
+      },
+      {
+        "value": "B",
+        "label": "P(x) 与 f(x) 在 x=0 处有相同的函数值和一阶导数值，但二阶导数值不一定相同。"
+      },
+      {
+        "value": "C",
+        "label": "P(x) 的二阶导数为 4，说明原函数 f(x) 在 x=0 处的二阶导数值为 8。"
+      },
+      {
+        "value": "D",
+        "label": "P(x) 是对 f(x) 的全局精确逼近，因此在整个定义域内 P(x) 与 f(x) 的误差恒为零。"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "二阶 Taylor 近似多项式 P(x) = f(0) + f'(0)x + (f''(0)/2)x^2。对比 P(x) = 5 - 3x + 4x^2，可知 f(0)=5，f'(0)=-3，f''(0)/2=4（即 f''(0)=8）。因此 P(x) 与 f(x) 在 x=0 处的函数值、一阶导数和二阶导数值均相同。由于 x^2 项系数为 4，大于 0，其图像为开口向上的抛物线。选项 A 正确描述了函数值与开口方向；选项 B 错误，二阶导数值也相同；选项 C 错误，误将系数 4 当作二阶导数值，实际应为 8；选项 D 错误，Taylor 近似仅为局部逼近，非全局精确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 3,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-identification"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q4",
+    "type": "single",
+    "question": "某曲线在点 (1,2) 附近的二阶局部模型是 Q(x)=2+4(x-1)-3(x-1)²。把模型系数还原成原函数在中心点的导数信息，下列哪项不成立？",
+    "options": [
+      {
+        "value": "A",
+        "label": "原函数 g(x) 在 x=1 处的二阶导数值为 -6。"
+      },
+      {
+        "value": "B",
+        "label": "多项式 Q(x) 在 x=1 附近的图像表现为开口向下的抛物线。"
+      },
+      {
+        "value": "C",
+        "label": "Q(x) 仅在 x=1 的局部邻域内贴近 g(x)，超出该范围后两者误差通常不可控。"
+      },
+      {
+        "value": "D",
+        "label": "Q(x) 在 x=1 处的切线斜率与原函数 g(x) 在 x=1 处的切线斜率不相等。"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "analysis": "二阶 Taylor 近似多项式 Q(x) = g(1) + g'(1)(x-1) + (g''(1)/2)(x-1)^2。对比 Q(x) = 2 + 4(x-1) - 3(x-1)^2，可知 g(1)=2，g'(1)=4，g''(1)/2=-3（即 g''(1)=-6）。选项 A 正确计算了二阶导数值；选项 B 正确，二次项系数为负，开口向下；选项 C 正确指出了 Taylor 近似的局部性；选项 D 错误，因为 Q(x) 的一阶项系数 4 等于 g'(1)，两者在 x=1 处的切线斜率必然相等。题目要求选出错误的推断，故选 D。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 3,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-identification"
+    }
+  }
+}

@@ -938,6 +938,27 @@ function renderQuizCoverage(question = {}, unit = {}) {
   `;
 }
 
+function quizAdaptiveFormativeState(unit, records = quizRecordsForUnit(unit.id)) {
+  const questions = unit.scene.content?.questions || [];
+  const latest = quizLatestResultsByQuestion(records);
+  const core = questions.find((question) => question.adaptiveRole === "core") || questions[0];
+  const diagnostic = questions.find((question) => question.adaptiveRole === "diagnostic") || questions[1];
+  const coreResult = core ? latest[core.id] : null;
+  const diagnosticResult = diagnostic ? latest[diagnostic.id] : null;
+  const needsDiagnostic = Boolean(coreResult && coreResult.isCorrect === false && !diagnosticResult);
+  const complete = Boolean(coreResult && (coreResult.isCorrect === true || diagnosticResult));
+  return { questions, latest, core, diagnostic, coreResult, diagnosticResult, needsDiagnostic, complete };
+}
+
+function quizQuestionsForCurrentStage(unit) {
+  const questions = unit.scene.content?.questions || [];
+  if (!unit.adaptiveFormative) return questions;
+  const stage = quizAdaptiveFormativeState(unit);
+  if (!stage.coreResult) return stage.core ? [stage.core] : [];
+  if (stage.needsDiagnostic) return stage.diagnostic ? [stage.diagnostic] : [];
+  return [];
+}
+
 function renderQuiz(unit) {
   analyticsTrack("quiz_render", {
     source: "quiz",
@@ -949,7 +970,18 @@ function renderQuiz(unit) {
     }
   });
   const questions = unit.scene.content?.questions || [];
-  const submitted = (state.submittedQuizzes || []).includes(unit.id);
+  let submitted = (state.submittedQuizzes || []).includes(unit.id);
+  const unitResults = quizRecordsForUnit(unit.id);
+  const adaptiveState = unit.adaptiveFormative ? quizAdaptiveFormativeState(unit, unitResults) : null;
+  if (submitted && adaptiveState?.needsDiagnostic) {
+    submitted = false;
+    state.submittedQuizzes = (state.submittedQuizzes || []).filter((id) => id !== unit.id);
+    state.completed = (state.completed || []).filter((id) => id !== unit.id);
+    saveState();
+  }
+  const visibleQuestions = unit.adaptiveFormative
+    ? [adaptiveState.core, adaptiveState.coreResult?.isCorrect === false ? adaptiveState.diagnostic : null].filter(Boolean)
+    : questions;
   const completionAllowed = typeof agenticUnitCompletionAllowed !== "function"
     || agenticUnitCompletionAllowed(unit.id);
   const isPre = unit.assessmentPhase === "pre";
@@ -981,9 +1013,9 @@ function renderQuiz(unit) {
 
   // Persist encouragement banner for submitted quizzes
   let quizTopBanner = "";
-  const unitResults = quizRecordsForUnit(unit.id);
   if (submitted) {
-    const summary = summarizeQuizAttempt(unitResults, questions);
+    const summaryQuestions = unit.adaptiveFormative ? visibleQuestions : questions;
+    const summary = summarizeQuizAttempt(unitResults, summaryQuestions);
     const outcomeHtml = quizOutcomeHtml(summary);
     if (isPre) {
       quizTopBanner = `
@@ -1009,9 +1041,12 @@ function renderQuiz(unit) {
   // Build a lookup of latest result per question for persisted review
   const latestByQuestion = {};
   let submittedTotalHtml = "";
-  if (submitted) {
+  if (submitted || unit.adaptiveFormative) {
     Object.assign(latestByQuestion, quizLatestResultsByQuestion(unitResults));
-    const summary = summarizeQuizAttempt(unitResults, questions);
+  }
+  if (submitted) {
+    const summaryQuestions = unit.adaptiveFormative ? visibleQuestions : questions;
+    const summary = summarizeQuizAttempt(unitResults, summaryQuestions);
     const pathNavigation = typeof renderQuizPathNavigation === "function"
       ? renderQuizPathNavigation(unit)
       : "";
@@ -1026,28 +1061,29 @@ function renderQuiz(unit) {
         ${renderAssessmentBanner(unit)}
         <div class="quiz-card" data-context-id="quiz:${escapeHtml(unit.id)}:page" data-context-kind="quiz" data-context-scope="quiz" data-context-confidence="medium" data-context-label="${escapeHtml(unit.label)}">
           ${quizTopBanner}
-          ${questions
+          ${visibleQuestions
             .map((question, index) => {
               const result = latestByQuestion[question.id];
               const restoredResult = submitted && !result ? restoredQuizResultFromDraft(unit, question, index) : null;
               const reviewResult = result || restoredResult;
+              const questionSubmitted = submitted || Boolean(result);
               const review = reviewResult ? renderQuestionReview({ question, result: reviewResult, index, unit }) : "";
               const scoreLabel = quizQuestionScoreLabel(question, reviewResult || null);
               return `
               <article class="question-card" data-question="${question.id}" data-context-id="quiz:${escapeHtml(question.id)}" data-context-kind="quiz" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-confidence="high" data-context-label="${escapeHtml(displayQuestionText(question))}">
                 <div class="question-title-row">
-                <h3>${index + 1}. ${renderQuestionTextWithLinks(question, unit)}</h3>
+                <h3>${question.type === "multiple" ? '<span class="question-type-marker">【多选题】</span> ' : ""}${index + 1}. ${renderQuestionTextWithLinks(question, unit)}</h3>
                   ${scoreLabel ? `<span class="question-score-pill">${escapeHtml(scoreLabel)}</span>` : ""}
                 </div>
-                ${renderQuestionInput(unit, question, submitted, reviewResult)}
+                ${renderQuestionInput(unit, question, questionSubmitted, reviewResult)}
                 ${review}
               </article>
             `;
             })
             .join("")}
           <div class="quiz-submit-panel${submitted ? ' submitted' : ''}">
-            <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted || !completionAllowed ? "disabled" : ""}>${submitted ? '已提交' : completionAllowed ? '提交本次测验' : '未解锁：先接受学习建议'}</button>
-            <p>${submitted ? '该测验已提交，答案、解析、每题得分和小节总分见下方。' : completionAllowed ? '提交后会记录本次测验结果；评分参考会在提交后随解析显示。' : '该测验当前仅供预览；接受学习建议后才能提交并记录本节。'}</p>
+            <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted || !completionAllowed ? "disabled" : ""}>${submitted ? '已提交' : adaptiveState?.needsDiagnostic ? '提交诊断题' : completionAllowed ? '提交本次测验' : '未解锁：先接受学习建议'}</button>
+            <p>${submitted ? '该测验已提交，答案、解析、每题得分和小节总分见下方。' : adaptiveState?.needsDiagnostic ? '核心题答错了，再完成一道诊断多选题，系统会据此定位具体误解。' : completionAllowed ? '先完成核心题；答对即可通过，答错时会立即出现诊断题。' : '该测验当前仅供预览；接受学习建议后才能提交并记录本节。'}</p>
             <div class="answer-feedback" id="feedback-${unit.id}">${submittedTotalHtml}</div>
           </div>
         </div>

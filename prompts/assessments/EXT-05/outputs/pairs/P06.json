@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q6",
+    "type": "single",
+    "question": "某次共轭梯度迭代使用 p_new = -g_new + βp_old。已知 p_old = (-1,0)，g_new = (0,2)，β = 1/2，则新搜索方向 p_new 是多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "(1/2, -2)"
+      },
+      {
+        "value": "B",
+        "label": "(-1, -2)"
+      },
+      {
+        "value": "C",
+        "label": "(-1/2, -2)"
+      },
+      {
+        "value": "D",
+        "label": "(-1/2, 2)"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "先求 -g_new = (0,-2)，再求 βp_old = (-1/2,0)，相加得到 p_new = (-1/2,-2)，因此 C 正确。计算同时体现了新方向由当前负梯度与历史搜索方向共同构成。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "direction-computation"
+    }
+  },
+  "post": {
+    "id": "EXT-05-post-q6",
+    "type": "single",
+    "question": "在另一轮共轭梯度计算中，当前负梯度为 (1,-1)，历史方向乘以系数 β 后为 (0,2)。按照“新方向 = 当前负梯度 + β×历史方向”，应选择哪个新方向？",
+    "options": [
+      {
+        "value": "A",
+        "label": "(-1,1)"
+      },
+      {
+        "value": "B",
+        "label": "(1,1)"
+      },
+      {
+        "value": "C",
+        "label": "(1,-3)"
+      },
+      {
+        "value": "D",
+        "label": "(0,2)"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "将两个已给向量逐分量相加：(1,-1)+(0,2)=(1,1)，所以 B 正确。该更新不是只沿当前负梯度，而是把历史方向的信息组合进新方向。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-05-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "direction-computation"
+    }
+  }
+}

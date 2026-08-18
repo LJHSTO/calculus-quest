@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q4",
+    "type": "single",
+    "question": "在三维地形图中，某位置 P 处的梯度向量指向正东方向。某同学据此断言：“无论从 P 点往哪个方向走，高度都在增加；且往正东方向走时，高度增加得最慢。”这条断言中包含了对梯度向量含义的几处误读？",
+    "options": [
+      {
+        "value": "A",
+        "label": "两处误读：梯度指向高度增加的方向，而非任意方向都增加；梯度指向最快增加的方向，而非最慢。"
+      },
+      {
+        "value": "B",
+        "label": "一处误读：梯度只代表正东方向的高度变化率，与其他方向无关。"
+      },
+      {
+        "value": "C",
+        "label": "两处误读：梯度指向高度减小最快的方向；且正东方向高度增加最快。"
+      },
+      {
+        "value": "D",
+        "label": "没有误读：梯度确实意味着所有方向高度都增加，正东方向增加最慢。"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "梯度向量的核心含义是：它指向函数值在该点增加最快的方向，且其大小等于最大变化率。该同学的断言有两处误读：第一，梯度指向特定方向（正东），不代表“无论往哪个方向走高度都增加”，其他方向完全可能下降或不变；第二，梯度指向的是高度增加“最快”的方向，而不是“最慢”的方向。因此，该断言包含两处对梯度向量核心含义的误读。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K01"
+    ],
+    "cognitiveLevel": "evaluate",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "misconception-count"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q4",
+    "type": "single",
+    "question": "已知可微函数 f(x,y) 在点 M 处的梯度向量为零向量。甲说“M 必是最高点”；乙说“M 必是最低点”；丙说“M 点处各方向导数均为零，但在 M 的邻域内函数仍可能在某些方向增大、另一些方向减小，无法仅凭梯度为零断定它是极值点”。谁的解释准确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "仅丙"
+      },
+      {
+        "value": "B",
+        "label": "仅甲"
+      },
+      {
+        "value": "C",
+        "label": "仅乙"
+      },
+      {
+        "value": "D",
+        "label": "甲和乙"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "函数可微且梯度为零时，该点处每个方向的方向导数都为零，但这并不等价于该点必然是极大值点或极小值点；例如鞍点的梯度也可能为零，而邻域内函数可在不同方向呈现增减。因此仅丙正确，选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K01"
+    ],
+    "cognitiveLevel": "evaluate",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "misconception-count"
+    }
+  }
+}

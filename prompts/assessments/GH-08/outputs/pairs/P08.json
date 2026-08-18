@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-08-pre-q8",
+    "type": "multiple",
+    "question": "已知函数 f(x, y) = x^2 - 3xy。关于在点 (1, 2) 处的偏导数，下列说法中所有正确的请选择出来。",
+    "options": [
+      {
+        "value": "A",
+        "label": "计算 f 对 x 的偏导数时，应把 y 视为常数，按一元函数求导法则进行"
+      },
+      {
+        "value": "B",
+        "label": "f 对 x 的偏导数表达式为 2x - 3y"
+      },
+      {
+        "value": "C",
+        "label": "在点 (1, 2) 处，f 对 y 的偏导数值为 -3"
+      },
+      {
+        "value": "D",
+        "label": "在点 (1, 2) 处，f 对 x 的偏导数值为 4"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "偏导数求解时，将非求导变量视为常数。f_x(x, y) = 2x - 3y，f_y(x, y) = -3x。代入点 (1, 2) 得 f_x(1, 2) = 2 - 6 = -4，f_y(1, 2) = -3。因此 A、B、C 说法正确，D 说法错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-08-K03"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "derivative-evaluation"
+    }
+  },
+  "post": {
+    "id": "GH-08-post-q8",
+    "type": "multiple",
+    "question": "对于函数 z(u, v) = 4uv - v^2，某同学在求点 (3, 1) 处的偏导数时得出了四个结论。请选出该同学得出的所有正确结论。",
+    "options": [
+      {
+        "value": "A",
+        "label": "对变量 u 求偏导时，v^2 项的系数应当取零"
+      },
+      {
+        "value": "B",
+        "label": "z 对 v 的偏导数表达式为 4u - 2v"
+      },
+      {
+        "value": "C",
+        "label": "在点 (3, 1) 处，z 对 u 的偏导数值为 4"
+      },
+      {
+        "value": "D",
+        "label": "在点 (3, 1) 处，z 对 v 的偏导数值为 8"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "求偏导时将非求导变量视为常数。z_u(u, v) = 4v，z_v(u, v) = 4u - 2v。代入点 (3, 1) 得 z_u(3, 1) = 4，z_v(3, 1) = 12 - 2 = 10。因此 A、B、C 结论正确，D 结论错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-08-K03"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 4,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 4,
+      "symbolComplexity": "medium",
+      "conclusionClass": "derivative-evaluation"
+    }
+  }
+}

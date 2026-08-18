@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q7",
+    "type": "single",
+    "question": "已知向量值函数 f 将二维平面的点 (u, v) 映射到 (x, y)，其对应关系为 x = u^2 + v，y = u + v^2。若把偏导数按 Jacobian 表格的方式排布，表格第 2 行第 1 列填入的数值代表哪个偏导数？",
+    "options": [
+      {
+        "value": "A",
+        "label": "∂x/∂u"
+      },
+      {
+        "value": "B",
+        "label": "∂x/∂v"
+      },
+      {
+        "value": "C",
+        "label": "∂y/∂u"
+      },
+      {
+        "value": "D",
+        "label": "∂y/∂v"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "在 Jacobian 表格的标准排布中，行由输出变量（x, y）决定，列由输入变量（u, v）决定。第 2 行对应输出变量 y，第 1 列对应输入变量 u，因此第 2 行第 1 列代表 ∂y/∂u。对于 y = u + v^2，对 u 求偏导得 ∂y/∂u = 1。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "structural_mapping"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q7",
+    "type": "single",
+    "question": "某向量值函数 g 将输入坐标 (s, t) 映射为输出坐标 (p, q)，其中 p = s * t + s，q = s^2 - t。若按 Jacobian 表格的行列约定填表，位于第 1 行第 2 列的单元格对应哪个偏导数？",
+    "options": [
+      {
+        "value": "A",
+        "label": "∂p/∂s"
+      },
+      {
+        "value": "B",
+        "label": "∂p/∂t"
+      },
+      {
+        "value": "C",
+        "label": "∂q/∂s"
+      },
+      {
+        "value": "D",
+        "label": "∂q/∂t"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "Jacobian 表格的行对应输出变量（p, q），列对应输入变量（s, t）。第 1 行对应输出变量 p，第 2 列对应输入变量 t，因此第 1 行第 2 列代表 ∂p/∂t。对于 p = s * t + s，对 t 求偏导得 ∂p/∂t = s。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "structural_mapping"
+    }
+  }
+}

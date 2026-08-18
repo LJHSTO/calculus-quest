@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "机器学习高数闭环：从导数到训练",
+  "outlines": [
+    {
+      "id": "GH-14-K02-check",
+      "type": "quiz",
+      "title": "即时检查：最小二乘梯度",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-14-K02-check-q1",
+          "type": "single",
+          "question": "在最小二乘法中，设损失函数为 L(w) = (1/2) * Σ(y_i - w x_i)²，其中 (x_i, y_i) 为数据点，w 为待求参数。关于该损失函数对参数 w 的梯度，下列说法正确的是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "梯度为 Σ(y_i - w x_i)，方向指向预测误差本身"
+            },
+            {
+              "value": "B",
+            "label": "梯度为 -Σ x_i (y_i-wx_i)；其反方向才是损失局部下降最快的方向"
+            },
+            {
+              "value": "C",
+              "label": "梯度为 Σ x_i²，方向与数据点的分布无关"
+            },
+            {
+              "value": "D",
+              "label": "梯度为 (1/2) * Σ x_i²，是一个与预测误差无关的常数"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "对 L(w) = (1/2) * Σ(y_i - w x_i)² 求导，应用链式法则得 dL/dw = (1/2) * Σ 2(y_i - w x_i) * (-x_i) = -Σ x_i (y_i - w x_i)。梯度的负方向才是损失下降最快的方向，故选 B。选项 A 漏乘了 -x_i 且未区分梯度方向与误差；C 和 D 丢失了误差项 (y_i - w x_i)，误把二阶导数或常数当成一阶梯度。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K02"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 3,
+          "pairId": "GH-14-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "gradient-expression"
+          }
+        },
+        {
+          "id": "GH-14-K02-check-q2",
+          "type": "multiple",
+          "question": "关于最小二乘梯度，下列说法中所有正确的项请全部选出。已知损失函数为 L(w) = (1/2) * Σ(y_i - w x_i)²，梯度为 ∇L(w) = -Σ x_i (y_i - w x_i)。",
+          "options": [
+            {
+              "value": "A",
+              "label": "最小二乘梯度是由预测误差 (y_i - w x_i) 与输入 x_i 共同决定的向量，不是孤立的符号"
+            },
+            {
+              "value": "B",
+              "label": "当所有预测误差均为 0 时，最小二乘梯度为 0，此时损失达到极小"
+            },
+            {
+              "value": "C",
+              "label": "最小二乘梯度只与样本数量有关，与数据点的具体取值无关"
+            },
+            {
+              "value": "D",
+              "label": "在梯度下降中，应沿梯度的正方向更新参数 w 才能使损失下降"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "A 正确：梯度表达式 -Σ x_i (y_i - w x_i) 同时包含误差和输入，体现了数据与模型的连接，而非死记符号。B 正确：当 y_i - w x_i = 0 对所有 i 成立时，梯度为 0，是极小点条件。C 错误：这是典型误解，梯度不仅与样本数量有关，更取决于 x_i 和误差的具体取值。D 错误：应沿梯度的负方向更新 w 才能使损失下降，沿正方向反而增大损失。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K02"
+          ],
+          "cognitiveLevel": "evaluate",
+          "estimatedSteps": 4,
+          "pairId": "GH-14-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "gradient-property"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q5",
+    "type": "single",
+    "question": "在深度学习的损失地形中，某点处梯度为零。若该点是鞍点而非局部极小值，则以下哪个说法正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该点处损失函数在所有方向上都是凸的"
+      },
+      {
+        "value": "B",
+        "label": "该点处损失函数在所有方向上都是凹的"
+      },
+      {
+        "value": "C",
+        "label": "该点处损失函数在某些方向上上升，在另一些方向上下降"
+      },
+      {
+        "value": "D",
+        "label": "该点处损失函数在所有方向上都不变化"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "在本题所述的光滑情形中，鞍点处梯度为零，而 Hessian 同时存在正、负特征值：沿相应方向做很小移动时，损失分别呈上升和下降趋势。局部极小值附近不存在这样的下降方向，因此正确说法是损失在不同方向呈现不同变化。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "saddle-point-property"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q5",
+    "type": "single",
+    "question": "在高维损失地形中，优化算法到达梯度为零的点。关于鞍点比局部极小值更容易逃逸的根本原因，以下哪个说法正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "鞍点处梯度不为零，优化算法可以继续沿梯度方向下降"
+      },
+      {
+        "value": "B",
+        "label": "鞍点处存在下降方向，沿负曲率方向可以继续降低损失"
+      },
+      {
+        "value": "C",
+        "label": "鞍点处损失函数在所有方向上都上升，因此算法会被弹离"
+      },
+      {
+        "value": "D",
+        "label": "鞍点处学习率会自动增大，从而跳出该点"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "鞍点处虽然梯度为零，但 Hessian 存在负特征值，对应局部下降方向；受到扰动或借助已有动量后，优化过程可能沿该方向继续降低损失。局部极小值的充分小邻域内不存在更低的函数值，因此没有这种局部下降路径。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "saddle-point-property"
+    }
+  }
+}

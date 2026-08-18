@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q9",
+    "type": "multiple",
+    "question": "某地区人口数量 P(t) 满足：人口的变化率与当前人口数成正比，比例系数为 k，初始人口为 P₀。以下说法正确的有（选出所有正确说法）",
+    "options": [
+      {
+        "value": "A",
+        "label": "该模型可写为 dP/dt = kP，其解为 P(t) = P₀·e^(kt)"
+      },
+      {
+        "value": "B",
+        "label": "当 k > 0 时，人口增长速率 dP/dt 随时间增大而增大"
+      },
+      {
+        "value": "C",
+        "label": "当 k < 0 时，人口每经过相同的时间间隔都减少相同的数量"
+      },
+      {
+        "value": "D",
+        "label": "若 k 增大一倍，则人口达到 P₀ 的两倍所需时间也增大一倍"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "选项A正确：变化率与当前数量成正比即 dP/dt = kP，分离变量后解得 P(t) = P₀e^(kt)。选项B正确：k > 0 时 dP/dt = kP₀e^(kt)，随 t 增大而增大。选项C错误：k < 0 时人口按指数衰减，每经过相同时间间隔减少的比例相同（乘以 e^(kΔt)），但减少的绝对数量递减，并非相同。选项D错误：人口翻倍所需时间 t = ln2/k，k 增大一倍则时间减半，而非增大一倍。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-01-K03"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": "single-variable-exponential",
+      "conclusionClass": "model-identification-and-rate-analysis"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q9",
+    "type": "multiple",
+    "question": "在药物代谢研究中，血液中药物浓度 c(t) 的变化率与当前浓度成正比，比例系数记为 r，初始浓度为 c₀。下列判断正确的有（选出所有正确说法）",
+    "options": [
+      {
+        "value": "A",
+        "label": "当 r < 0 时浓度递减，模型写作 dc/dt = rc，解为 c(t) = c₀·e^(rt)"
+      },
+      {
+        "value": "B",
+        "label": "浓度下降的速率 |dc/dt| 随时间推移而减小"
+      },
+      {
+        "value": "C",
+        "label": "若 r 的值变为原来的两倍（仍为负），浓度降为初始值一半所需时间不变"
+      },
+      {
+        "value": "D",
+        "label": "将初始浓度 c₀ 减半，浓度降为初始值一半所需的时间也减半"
+      }
+    ],
+    "answer": [
+      "A",
+      "B"
+    ],
+    "analysis": "选项A正确：变化率与当前浓度成正比即 dc/dt = rc，r < 0 时浓度递减，解为 c(t) = c₀e^(rt)。选项B正确：|dc/dt| = |r|c₀e^(rt)，r < 0 时该值随 t 增大而减小。选项C错误：半衰期 t₁/₂ = ln2/|r|，|r| 增大一倍则半衰期减半，并非不变。选项D错误：半衰期只与 |r| 有关，与初始浓度无关，c₀ 减半不影响半衰期。",
+    "points": 12,
+    "knowledgePointIds": [
+      "EXT-01-K03"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 3,
+      "symbolComplexity": "single-variable-exponential",
+      "conclusionClass": "model-identification-and-rate-analysis"
+    }
+  }
+}

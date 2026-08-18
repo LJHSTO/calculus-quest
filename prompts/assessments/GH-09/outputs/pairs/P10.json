@@ -1,0 +1,72 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q10",
+    "type": "text",
+    "question": "已知可微二元函数 f(x,y) 的等高线图是一组平行直线。在其中一条等高线上选取梯度非零的点 P，过 P 作该等高线的切线。请说明：函数在 P 点的梯度向量与这条切线有什么几何关系？为什么这种关系成立？请结合梯度向量的定义和方向导数的概念写出完整的推理过程。",
+    "answer": "梯度向量与切线垂直。理由：等高线是 f(x,y) 取值相同的点集，沿等高线切线方向移动时函数值不变，因此函数沿切线方向的方向导数为 0。方向导数等于梯度向量与该方向单位向量的内积，内积为 0 说明梯度向量与切线方向向量互相垂直。",
+    "analysis": "设等高线方程为 f(x,y)=c，在点 P 处对它求微分可得 fx dx + fy dy = 0，这正是梯度向量 (fx, fy) 与切向量 (dx, dy) 的内积为零，因此二者垂直。也可从方向导数角度理解：沿等高线移动函数值不变，故切线方向的方向导数为零，而方向导数等于梯度在切线方向的投影，投影为零意味着梯度与切线垂直。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-09-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "perpendicularity"
+    },
+    "rubric": [
+      {
+        "criterion": "明确指出梯度向量与等高线切线垂直",
+        "points": 6
+      },
+      {
+        "criterion": "利用等高线上函数值不变，说明沿切线方向的方向导数为 0",
+        "points": 7
+      },
+      {
+        "criterion": "由方向导数等于梯度在切线方向的投影，推出梯度与切线垂直",
+        "points": 7
+      }
+    ]
+  },
+  "post": {
+    "id": "GH-09-post-q10",
+    "type": "text",
+    "question": "设想一座山坡的高度由可微二元函数 h(x,y) 描述，其等高线图是一组同心圆。在某一等高线上取梯度非零的点 Q，登山者沿该等高线的切线方向行走。请论证：函数在 Q 点的梯度向量与登山者在 Q 点的行进方向之间存在怎样的几何关系？请利用方向导数的物理意义给出推理步骤。",
+    "answer": "梯度向量与行进方向垂直。理由：沿等高线行进时高度不变，说明沿行进方向的方向导数为 0。方向导数等于梯度向量与行进方向单位向量的内积，内积为 0 说明梯度向量与行进方向互相垂直。",
+    "analysis": "等高线是高度相同的点集，沿等高线移动时高度变化量为零，因此行进方向的方向导数为零。方向导数在数学上是梯度向量与行进方向单位向量的内积，内积为零意味着两个向量正交，故梯度向量与行进方向垂直。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-09-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "perpendicularity"
+    },
+    "rubric": [
+      {
+        "criterion": "明确指出梯度向量与行进方向垂直",
+        "points": 6
+      },
+      {
+        "criterion": "利用沿等高线行进高度不变，说明沿行进方向的方向导数为 0",
+        "points": 7
+      },
+      {
+        "criterion": "由方向导数等于梯度在行进方向的投影，推出梯度与行进方向垂直",
+        "points": 7
+      }
+    ]
+  }
+}

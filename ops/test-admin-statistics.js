@@ -115,18 +115,36 @@ async function main() {
     user_id: quizUserId,
     chapter_id: "V14-C1",
     chapter_label: "函数、极限与导数入口",
-    unit_id: "V14-C1-formative",
+    unit_id: "GH-01-K01-formative",
     unit_label: "函数、极限与导数入口 · 形成测验",
-    question_id: "admin-stat-formative-question",
+    question_id: "GH-01-K01-check-q1",
     question_type: "single",
     phase: "formative",
     points: 1,
     response: "A",
+    is_correct: 0,
+    status: "graded",
+    score: 0,
+    max_score: 1,
+    created_at: `${currentBeijingDate}T00:16:00.000+08:00`
+  });
+  db.insertQuizResult({
+    id: "admin-stat-formative-diagnostic-result",
+    user_id: quizUserId,
+    chapter_id: "V14-C1",
+    chapter_label: "函数、极限与导数入口",
+    unit_id: "GH-01-K01-formative",
+    unit_label: "输入、输出和函数规则 · 即时形测",
+    question_id: "GH-01-K01-check-q2",
+    question_type: "multiple",
+    phase: "formative",
+    points: 1,
+    response: "C,D",
     is_correct: 1,
     status: "graded",
     score: 1,
     max_score: 1,
-    created_at: `${currentBeijingDate}T00:16:00.000+08:00`
+    created_at: `${currentBeijingDate}T00:16:30.000+08:00`
   });
   db.getDbSync().run(
     `UPDATE learning_state_versions
@@ -366,7 +384,8 @@ async function main() {
         scoreDistribution.map(({ bucket, count }) => ({ bucket, count })),
         [
           { bucket: "20-39%", count: 1 },
-          { bucket: "满分 (100%)", count: 2 }
+          { bucket: "40-59%", count: 1 },
+          { bucket: "满分 (100%)", count: 1 }
         ]
       );
     });
@@ -409,8 +428,12 @@ async function main() {
       const row = phaseComparison.find((item) => item.user_id === quizUserId && item.chapter_id === "V14-C1");
       assert.ok(row, "phase comparison row was not returned");
       assert.equal(row.pre_count, 3);
-      assert.equal(row.formative_count, 1);
-      assert.equal(row.formative_accuracy, 100);
+      assert.equal(row.formative_count, 2);
+      assert.equal(row.formative_accuracy, 50);
+      assert.equal(row.formative_core_count, 1);
+      assert.equal(row.formative_core_accuracy, 0);
+      assert.equal(row.formative_diagnostic_count, 1);
+      assert.equal(row.formative_diagnostic_accuracy, 100);
       assert.equal(row.post_count, 1);
       assert.equal(row.pre_submissions, 1);
       assert.equal(row.formative_submissions, 1);
@@ -421,10 +444,10 @@ async function main() {
     recordCheck(failures, "用户详情按全部历史学习代次返回总体统计", () => {
       assert.equal(userDetail.scope.allHistory, true);
       assert.equal(userDetail.quizOverall.submissions, 3);
-      assert.equal(userDetail.quizOverall.questions, 5);
+      assert.equal(userDetail.quizOverall.questions, 6);
       assert.equal(userDetail.quizOverall.correct, 3);
       assert.equal(userDetail.quizOverall.totalScore, 3);
-      assert.equal(userDetail.quizOverall.totalMaxScore, 5);
+      assert.equal(userDetail.quizOverall.totalMaxScore, 6);
       assert.equal(userDetail.quizOverall.generationCount, 2);
       assert.equal(userDetail.quizOverall.currentGeneration, 2);
     });
@@ -433,13 +456,13 @@ async function main() {
         userDetail.quizPhaseSummary.map((row) => [row.phase, row.submissions, row.questions]),
         [
           ["pre", 1, 3],
-          ["formative", 1, 1],
+          ["formative", 1, 2],
           ["post", 1, 1]
         ]
       );
       assert.equal(userDetail.chapterPhaseSummary.length, 3);
-      assert.equal(userDetail.quizQuestionTotal, 5);
-      assert.equal(userDetail.quizQuestionRows.length, 5);
+      assert.equal(userDetail.quizQuestionTotal, 6);
+      assert.equal(userDetail.quizQuestionRows.length, 6);
       assert.equal(userDetail.quizQuestionRows[0].learning_generation, 2);
     });
     recordCheck(failures, "用户详情按有效路径规则截尾并统计主动 AI", () => {

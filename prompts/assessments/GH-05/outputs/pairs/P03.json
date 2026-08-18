@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-05-pre-q3",
+    "type": "single",
+    "question": "已知函数 y = f(x) 的导函数 y = f'(x) 的图像在区间 (1, 4) 内位于 x 轴上方，且在区间 (4, 7) 内位于 x 轴下方。仅根据此导函数图像特征，关于原函数 y = f(x) 的单调性，下列判断正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "在 (1, 4) 单调递减，在 (4, 7) 单调递增"
+      },
+      {
+        "value": "B",
+        "label": "在 (1, 4) 单调递增，在 (4, 7) 单调递减"
+      },
+      {
+        "value": "C",
+        "label": "在 (1, 7) 单调递增"
+      },
+      {
+        "value": "D",
+        "label": "在 (1, 7) 单调递减"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "导函数 f'(x) 的符号决定原函数 f(x) 的单调性。当 f'(x) > 0 时，f(x) 单调递增；当 f'(x) < 0 时，f(x) 单调递减。题干指出导函数图像在 (1, 4) 位于 x 轴上方，即 f'(x) > 0，故 f(x) 在 (1, 4) 单调递增；导函数图像在 (4, 7) 位于 x 轴下方，即 f'(x) < 0，故 f(x) 在 (4, 7) 单调递减。因此选项 B 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity-from-sign"
+    }
+  },
+  "post": {
+    "id": "GH-05-post-q3",
+    "type": "single",
+    "question": "某质点沿直线运动，其速度函数 v(t) 的图像在 t 属于 (2, 5) 时处于横轴下方，在 t 属于 (5, 8) 时处于横轴上方。若把质点的位移 s(t) 视为原函数，根据上述速度图像提供的信息，位移 s(t) 的单调性应当是哪一种？",
+    "options": [
+      {
+        "value": "A",
+        "label": "在 (2, 5) 单调递减，在 (5, 8) 单调递增"
+      },
+      {
+        "value": "B",
+        "label": "在 (2, 5) 单调递增，在 (5, 8) 单调递减"
+      },
+      {
+        "value": "C",
+        "label": "在 (2, 8) 单调递减"
+      },
+      {
+        "value": "D",
+        "label": "在 (2, 8) 单调递增"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "位移 s(t) 的导数即为速度 v(t)，因此 v(t) 的符号决定 s(t) 的单调性。当 v(t) < 0 时，s(t) 单调递减；当 v(t) > 0 时，s(t) 单调递增。题干指出速度图像在 (2, 5) 位于横轴下方，即 v(t) < 0，故 s(t) 在 (2, 5) 单调递减；速度图像在 (5, 8) 位于横轴上方，即 v(t) > 0，故 s(t) 在 (5, 8) 单调递增。因此选项 A 正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-05-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity-from-sign"
+    }
+  }
+}

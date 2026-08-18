@@ -2303,10 +2303,10 @@ function quizSubmissionCount(dates, prefix = "qr") {
   return queryOne(
     `SELECT COUNT(*) as c
      FROM (
-       SELECT ${prefix}.user_id, ${prefix}.unit_id, ${prefix}.created_at
+       SELECT ${prefix}.user_id, ${prefix}.learning_generation, ${prefix}.unit_id
        FROM quiz_results ${prefix}
        WHERE 1=1${filter.clause}
-       GROUP BY ${prefix}.user_id, ${prefix}.unit_id, ${prefix}.created_at
+       GROUP BY ${prefix}.user_id, ${prefix}.learning_generation, ${prefix}.unit_id
      )`,
     filter.params
   ).c || 0;
@@ -2446,7 +2446,7 @@ function userProgress(dates) {
            COUNT(DISTINCT qr.unit_id) as units_attempted,
            COUNT(DISTINCT CASE
              WHEN qr.id IS NOT NULL
-             THEN qr.user_id || char(31) || qr.unit_id || char(31) || qr.created_at
+             THEN qr.user_id || char(31) || qr.learning_generation || char(31) || qr.unit_id
            END) as quiz_count,
            ROUND(AVG(CASE WHEN qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as avg_accuracy,
            ROUND(SUM(qr.score), 0) as total_score,
@@ -2494,21 +2494,27 @@ function phaseComparison(dates) {
     SELECT u.nickname, qr.user_id, qr.chapter_id, qr.chapter_label,
            ROUND(AVG(CASE WHEN qr.phase = 'pre' AND qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as pre_accuracy,
            COUNT(CASE WHEN qr.phase = 'pre' THEN 1 END) as pre_count,
-           COUNT(DISTINCT CASE WHEN qr.phase = 'pre' THEN qr.learning_generation || char(31) || qr.unit_id || char(31) || qr.created_at END) as pre_submissions,
+           COUNT(DISTINCT CASE WHEN qr.phase = 'pre' THEN qr.learning_generation || char(31) || qr.unit_id END) as pre_submissions,
            SUM(CASE WHEN qr.phase = 'pre' THEN qr.score ELSE 0 END) as pre_score,
            SUM(CASE WHEN qr.phase = 'pre' THEN qr.max_score ELSE 0 END) as pre_max_score,
            SUM(CASE WHEN qr.phase = 'pre' AND qr.is_correct = 1 THEN 1 ELSE 0 END) as pre_correct,
            SUM(CASE WHEN qr.phase = 'pre' AND qr.is_correct < 0 THEN 1 ELSE 0 END) as pre_pending,
            ROUND(AVG(CASE WHEN qr.phase = 'formative' AND qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as formative_accuracy,
            COUNT(CASE WHEN qr.phase = 'formative' THEN 1 END) as formative_count,
-           COUNT(DISTINCT CASE WHEN qr.phase = 'formative' THEN qr.learning_generation || char(31) || qr.unit_id || char(31) || qr.created_at END) as formative_submissions,
+           COUNT(DISTINCT CASE WHEN qr.phase = 'formative' THEN qr.learning_generation || char(31) || qr.unit_id END) as formative_submissions,
            SUM(CASE WHEN qr.phase = 'formative' THEN qr.score ELSE 0 END) as formative_score,
            SUM(CASE WHEN qr.phase = 'formative' THEN qr.max_score ELSE 0 END) as formative_max_score,
            SUM(CASE WHEN qr.phase = 'formative' AND qr.is_correct = 1 THEN 1 ELSE 0 END) as formative_correct,
            SUM(CASE WHEN qr.phase = 'formative' AND qr.is_correct < 0 THEN 1 ELSE 0 END) as formative_pending,
+           COUNT(CASE WHEN qr.phase = 'formative' AND qr.question_id LIKE '%-check-q1' THEN 1 END) as formative_core_count,
+           SUM(CASE WHEN qr.phase = 'formative' AND qr.question_id LIKE '%-check-q1' AND qr.is_correct = 1 THEN 1 ELSE 0 END) as formative_core_correct,
+           ROUND(AVG(CASE WHEN qr.phase = 'formative' AND qr.question_id LIKE '%-check-q1' AND qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as formative_core_accuracy,
+           COUNT(CASE WHEN qr.phase = 'formative' AND qr.question_id LIKE '%-check-q2' THEN 1 END) as formative_diagnostic_count,
+           SUM(CASE WHEN qr.phase = 'formative' AND qr.question_id LIKE '%-check-q2' AND qr.is_correct = 1 THEN 1 ELSE 0 END) as formative_diagnostic_correct,
+           ROUND(AVG(CASE WHEN qr.phase = 'formative' AND qr.question_id LIKE '%-check-q2' AND qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as formative_diagnostic_accuracy,
            ROUND(AVG(CASE WHEN qr.phase = 'post' AND qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as post_accuracy,
            COUNT(CASE WHEN qr.phase = 'post' THEN 1 END) as post_count,
-           COUNT(DISTINCT CASE WHEN qr.phase = 'post' THEN qr.learning_generation || char(31) || qr.unit_id || char(31) || qr.created_at END) as post_submissions,
+           COUNT(DISTINCT CASE WHEN qr.phase = 'post' THEN qr.learning_generation || char(31) || qr.unit_id END) as post_submissions,
            SUM(CASE WHEN qr.phase = 'post' THEN qr.score ELSE 0 END) as post_score,
            SUM(CASE WHEN qr.phase = 'post' THEN qr.max_score ELSE 0 END) as post_max_score,
            SUM(CASE WHEN qr.phase = 'post' AND qr.is_correct = 1 THEN 1 ELSE 0 END) as post_correct,
@@ -2738,7 +2744,7 @@ function userDetail(userId, dates) {
   const quizOverallRow = queryOne(`
     SELECT
       COUNT(*) as questions,
-      COUNT(DISTINCT learning_generation || char(31) || unit_id || char(31) || created_at) as submissions,
+      COUNT(DISTINCT learning_generation || char(31) || unit_id) as submissions,
       SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
       SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) as incorrect,
       SUM(CASE WHEN is_correct < 0 THEN 1 ELSE 0 END) as pending,
@@ -2765,7 +2771,7 @@ function userDetail(userId, dates) {
     SELECT
       phase,
       COUNT(*) as questions,
-      COUNT(DISTINCT learning_generation || char(31) || unit_id || char(31) || created_at) as submissions,
+      COUNT(DISTINCT learning_generation || char(31) || unit_id) as submissions,
       SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
       SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) as incorrect,
       SUM(CASE WHEN is_correct < 0 THEN 1 ELSE 0 END) as pending,
@@ -2791,7 +2797,7 @@ function userDetail(userId, dates) {
       chapter_label,
       phase,
       COUNT(*) as questions,
-      COUNT(DISTINCT learning_generation || char(31) || unit_id || char(31) || created_at) as submissions,
+      COUNT(DISTINCT learning_generation || char(31) || unit_id) as submissions,
       SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
       SUM(CASE WHEN is_correct = 0 THEN 1 ELSE 0 END) as incorrect,
       SUM(CASE WHEN is_correct < 0 THEN 1 ELSE 0 END) as pending,
@@ -2880,10 +2886,10 @@ function listUsers() {
            (
              SELECT COUNT(*)
              FROM (
-               SELECT qr.unit_id, qr.created_at
+               SELECT qr.learning_generation, qr.unit_id
                FROM quiz_results qr
                WHERE qr.user_id = u.id
-               GROUP BY qr.unit_id, qr.created_at
+               GROUP BY qr.learning_generation, qr.unit_id
              )
            ) as quiz_count
     FROM users u
@@ -2921,12 +2927,12 @@ function scoreDistribution(dates) {
       COUNT(*) as count,
       MIN(CAST(total_score AS REAL) / NULLIF(total_max, 0)) as min_ratio
     FROM (
-      SELECT user_id, unit_id, created_at,
+      SELECT user_id, learning_generation, unit_id,
              SUM(score) as total_score,
              SUM(max_score) as total_max
       FROM quiz_results
       WHERE max_score > 0${df.clause}
-      GROUP BY user_id, unit_id, created_at
+      GROUP BY user_id, learning_generation, unit_id
     )
     WHERE total_max > 0
     GROUP BY bucket
@@ -3722,7 +3728,7 @@ function agenticDecisionTrace(dates = {}) {
     });
     const executedData = executed?.payload?.data || {};
     const outcome = unitId ? queryOne(
-      `SELECT COUNT(DISTINCT unit_id || char(31) || created_at) as quiz_count,
+      `SELECT COUNT(DISTINCT learning_generation || char(31) || unit_id) as quiz_count,
               ROUND(AVG(CASE WHEN is_correct >= 0 THEN CAST(is_correct AS REAL) END) * 100, 1) as accuracy,
               SUM(score) as score,
               SUM(max_score) as max_score,

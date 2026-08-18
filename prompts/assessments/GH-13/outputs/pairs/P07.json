@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q7",
+    "type": "single",
+    "question": "已知函数 f(x) 在区间 I 上有定义。对于区间 I 内的任意两点 x1 和 x2，以及任意实数 λ 属于 [0, 1]，都满足 f(λ x1 + (1-λ) x2) ≤ λ f(x1) + (1-λ) f(x2)。某同学据此断定：连接函数图像上任意两点的线段，必定位于该函数图像的上方或图像上。这个判断是否正确，且该函数属于哪一类函数？",
+    "options": [
+      {
+        "value": "A",
+        "label": "判断正确，该函数是凸函数"
+      },
+      {
+        "value": "B",
+        "label": "判断正确，该函数是凹函数"
+      },
+      {
+        "value": "C",
+        "label": "判断不正确，该函数是凹函数"
+      },
+      {
+        "value": "D",
+        "label": "判断不正确，该函数既非凸函数也非凹函数"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "题目给出的不等式 f(λ x1 + (1-λ) x2) ≤ λ f(x1) + (1-λ) f(x2) 正是凸函数的代数定义。从几何意义上看，这个不等式表明任意两点连线上的点（由 λ 和 1-λ 加权得到）的函数值，小于或等于这两点函数值的线性组合。这意味着连接函数图像上任意两点的线段，必定位于该函数图像的上方或图像上。因此，该同学的判断是正确的，且该函数是凸函数。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "medium",
+      "conclusionClass": "concept-identification"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q7",
+    "type": "single",
+    "question": "在坐标系中，某曲线段具有如下特征：在其上任取两点 A 和 B，弦 AB 始终不在曲线弧 AB 的下方，而是位于弧的上方或与弧重合。关于该曲线对应的函数，下列说法正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该函数满足 f(λ x1 + (1-λ) x2) ≥ λ f(x1) + (1-λ) f(x2)，是凹函数"
+      },
+      {
+        "value": "B",
+        "label": "该函数满足 f(λ x1 + (1-λ) x2) ≤ λ f(x1) + (1-λ) f(x2)，是凸函数"
+      },
+      {
+        "value": "C",
+        "label": "该函数满足 f(λ x1 + (1-λ) x2) = λ f(x1) + (1-λ) f(x2)，是线性函数"
+      },
+      {
+        "value": "D",
+        "label": "该函数既不满足凸函数也不满足凹函数的代数定义"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "题目描述的几何特征为：弦始终不在曲线弧的下方，即弦位于弧的上方或重合。这表明对于任意两点 x1、x2 及 λ 属于 [0, 1]，连接两点弦上的点的高度 λ f(x1) + (1-λ) f(x2) 大于或等于弧上对应点的高度 f(λ x1 + (1-λ) x2)。由此可得出代数关系 f(λ x1 + (1-λ) x2) ≤ λ f(x1) + (1-λ) f(x2)，这正是凸函数的定义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "medium",
+      "conclusionClass": "concept-identification"
+    }
+  }
+}

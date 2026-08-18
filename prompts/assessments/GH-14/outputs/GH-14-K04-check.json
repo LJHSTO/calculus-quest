@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "机器学习高数闭环：从导数到训练",
+  "outlines": [
+    {
+      "id": "GH-14-K04-check",
+      "type": "quiz",
+      "title": "即时检查：小批量梯度下降",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-14-K04-check-q1",
+          "type": "single",
+          "question": "小批量梯度下降每次利用一小批样本的平均梯度更新参数。若当前参数 x=1，本轮小批量的平均梯度为 1.8，学习率 η=0.1，则更新后的 x 是多少？",
+          "options": [
+            {
+              "value": "A",
+              "label": "0.82"
+            },
+            {
+              "value": "B",
+              "label": "0.90"
+            },
+            {
+              "value": "C",
+              "label": "0.80"
+            },
+            {
+              "value": "D",
+              "label": "1.18"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "按 x_new=x-ηg 计算：x_new=1-0.1×1.8=0.82，选 A。B 的 0.90 相当于误用梯度 1；C 的 0.80 相当于误用梯度 2；D 则把减号写成了加号。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K04"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 3,
+          "pairId": "GH-14-K04-check-p1",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "numericValue"
+          }
+        },
+        {
+          "id": "GH-14-K04-check-q2",
+          "type": "multiple",
+          "question": "在理解小批量梯度下降时，常有同学只记住符号或结论，而未将其与实际操作情境连接。下列关于小批量梯度下降的说法中，所有正确的说法是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "小批量梯度下降每次参数更新使用的是一小批样本计算得到的平均梯度，而不是全部样本的真实梯度。"
+            },
+            {
+              "value": "B",
+              "label": "小批量梯度下降的更新公式可写为 x ← x - η·g，其中 g 是该小批量样本对应的平均梯度。"
+            },
+            {
+              "value": "C",
+              "label": "小批量梯度下降就是批量大小固定为 1 的随机梯度下降，每次只用一个样本。"
+            },
+            {
+              "value": "D",
+              "label": "只要学习率相同，小批量梯度下降每一轮更新后的参数值一定与全批量梯度下降完全相同。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "选项 A 正确：小批量梯度下降的核心含义就是每次用一小批样本的平均梯度近似全数据集梯度。选项 B 正确：其参数更新公式与 x ← x - η·g 一致，g 为该小批量的平均梯度。选项 C 错误：这是把小批量与随机梯度下降混淆，小批量的批量大小通常大于 1。选项 D 错误：这是只记结论而未与操作情境连接的典型误解；小批量梯度下降用的是该批样本的平均梯度，通常不等于全数据集的真实梯度，因此即使学习率相同，更新后的参数值一般也不同。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-14-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-14-K04-check-p1",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptIdentification"
+          }
+        }
+      ]
+    }
+  ]
+}

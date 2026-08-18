@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q2",
+    "type": "single",
+    "question": "在温度场 T(x, y) 中，某登山者位于坐标 (1, 2) 处。已知该点的高度函数为 h(x, y) = x^2 * y，登山者想要寻找最陡峭的上升路径。根据梯度向量的核心含义，以下关于该点处最快上升方向的判断，哪一项是正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "计算 h 在该点的梯度向量，该向量所指的方向即为最快上升方向，其模长表示最大上升速率"
+      },
+      {
+        "value": "B",
+        "label": "最快上升方向垂直于 x 轴，因为 y 方向的变化对高度影响更显著"
+      },
+      {
+        "value": "C",
+        "label": "最快上升方向取决于 x 方向的偏导数符号，只需沿 x 轴正方向或负方向移动"
+      },
+      {
+        "value": "D",
+        "label": "最快上升方向是当前点指向坐标原点的方向，因为原点是函数的对称中心"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "梯度向量的核心含义是：在多元函数的某一点，梯度向量指向函数值在该点增加最快的方向，且其模长即为该方向上的最大变化率。对于 h(x, y) = x^2 * y，其梯度为 (2xy, x^2)，在点 (1, 2) 处梯度为 (4, 1)。这表明最快上升方向就是向量 (4, 1) 所指的方向，而不是单纯沿某个坐标轴或指向特定几何点。选项 A 正确概括了梯度的核心含义；选项 B 和 C 仅凭单一变量的影响主观臆断方向，割裂了梯度的整体性；选项 D 将方向指向原点，属于脱离函数变化率的几何误解。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "directional-identification"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q2",
+    "type": "single",
+    "question": "无人机在风力场 W(x, y) 中执行任务，当前悬停在坐标 (2, 3) 处。已知该区域的风压分布函数为 W(x, y) = x * y^2，操作员需要规划一条路径使无人机瞬间获得最大的风压增益。依据梯度向量的核心含义，下列关于最大风压增益方向的判断，哪一项是正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "最大增益方向必须沿 y 轴正方向，因为函数中 y 的平方项使得 y 方向的变化占主导地位"
+      },
+      {
+        "value": "B",
+        "label": "最大增益方向应沿 x 轴正方向，因为 x 的幂次较低，变量变化对函数影响更直接"
+      },
+      {
+        "value": "C",
+        "label": "最大增益方向指向点 (3, 9)，因为该方向远离原点且函数值显著增大"
+      },
+      {
+        "value": "D",
+        "label": "计算 W 在该点的梯度向量，其指出的方向即为最大增益方向，该向量的长度表示最大增益的速率"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "analysis": "梯度向量的核心含义在于指示多元函数在某点处值增长最快的方向，其模长即为最大变化率。对于 W(x, y) = x * y^2，其梯度向量为 (y^2, 2xy)，在点 (2, 3) 处梯度为 (9, 12)。因此，无人机获取最大风压增益的瞬间方向就是向量 (9, 12) 所指的方向，其大小代表了最大增益速率。选项 D 准确描述了梯度的这一核心含义；选项 A 和 B 仅根据变量幂次高低臆断主导方向，割裂了梯度的整体计算与含义；选项 C 错误地将方向指向某具体坐标点，混淆了梯度方向与位置向量的概念。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-09-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P02",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "directional-identification"
+    }
+  }
+}

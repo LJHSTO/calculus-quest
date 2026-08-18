@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q4",
+    "type": "single",
+    "question": "在无约束优化中，我们希望找到目标函数的极小值点。已知目标函数在某点处的梯度向量指向函数值增加最快的方向，那么负梯度方向的几何意义是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "函数值下降最快的方向"
+      },
+      {
+        "value": "B",
+        "label": "函数值增加最快的方向"
+      },
+      {
+        "value": "C",
+        "label": "与等高线相切的方向"
+      },
+      {
+        "value": "D",
+        "label": "指向局部极大值点的方向"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "梯度方向是函数值增加最快的方向，因此负梯度方向就是函数值下降最快的方向。在无约束优化中，沿着负梯度方向移动可以最快地降低目标函数值，从而寻找极小值点。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": 1,
+      "conclusionClass": "geometric_meaning"
+    }
+  },
+  "post": {
+    "id": "GH-12-post-q4",
+    "type": "single",
+    "question": "在寻找目标函数极小值点的过程中，算法通常选择沿着负梯度方向进行迭代。若某同学误认为负梯度方向是“与等高线平行的方向”，这会导致什么问题？",
+    "options": [
+      {
+        "value": "A",
+        "label": "无法最快地降低目标函数值，因为负梯度方向实际上是函数值下降最快的方向"
+      },
+      {
+        "value": "B",
+        "label": "会直接跳过极小值点，因为负梯度方向是函数值增加最快的方向"
+      },
+      {
+        "value": "C",
+        "label": "算法将无法终止，因为负梯度方向总是指向局部极大值点"
+      },
+      {
+        "value": "D",
+        "label": "没有任何影响，因为等高线方向和负梯度方向是相同的"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "负梯度方向是函数值下降最快的方向，与等高线方向垂直。若误认为其与等高线平行，则违背了负梯度方向的核心几何意义，导致算法无法沿着最快下降路径降低目标函数值。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-12-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 1,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": 1,
+      "conclusionClass": "geometric_meaning"
+    }
+  }
+}

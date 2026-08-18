@@ -1,0 +1,72 @@
+{
+  "pre": {
+    "id": "GH-12-pre-q10",
+    "type": "text",
+    "question": "某梯度下降程序使用三类停止信号：①梯度范数小于阈值；②目标函数值连续多次变化小于阈值；③达到最大迭代次数。程序在一片远离已知最优区域的平坦平台上同时触发①和②。请评价此时能否断言已经找到全局最小值，并说明③的作用以及报告结果时应保留哪些信息。",
+    "answer": "不能断言已找到全局最小值。平坦平台也可能同时造成梯度很小和函数值变化很小，这两项只说明当前迭代在给定尺度下进展很弱，不证明全局最优。最大迭代次数是防止程序无限运行的资源保护信号，也不证明收敛。报告时应注明触发的停止原因，并保留最终梯度范数、函数值变化、迭代次数和必要的轨迹信息，以便判断是合理收敛还是平台停滞。",
+    "analysis": "小梯度与小函数值变化都是局部数值证据，平坦但非最优的区域同样可能触发它们，故不能据此推出全局最小。最大迭代次数只提供计算预算上的兜底。把停止原因和关键诊断量一起报告，才能区分近似收敛、停滞和预算耗尽。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-12-K04"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "stopping-criteria-reliability"
+    },
+    "rubric": [
+      {
+        "criterion": "指出小梯度与小函数值变化不能证明全局最优，并结合平坦平台解释",
+        "points": 6
+      },
+      {
+        "criterion": "准确说明最大迭代次数是资源保护信号而非收敛证明",
+        "points": 8
+      },
+      {
+        "criterion": "提出报告停止原因、梯度范数、函数值变化、迭代次数或轨迹等诊断信息",
+        "points": 6
+      }
+    ]
+  },
+  "post": {
+    "id": "GH-12-post-q10",
+    "type": "text",
+    "question": "另一程序也使用三类停止信号：①梯度范数小于阈值；②目标函数值连续多次变化小于阈值；③达到最大迭代次数。迭代点在狭长峡谷两侧反复震荡，函数值变化偶尔很小，但梯度范数仍较大。请判断是否应仅凭②宣布收敛，并说明①与③分别提供什么补充信息，以及结果报告应如何避免误导。",
+    "answer": "不应仅凭②宣布收敛。震荡可能使相邻函数值接近，但较大的梯度范数表明当前点仍不是近似驻点，①可揭示这一矛盾。③能在震荡长期不消失时按预算终止计算，但只是保护机制，不代表找到最优点。报告应明确是满足收敛阈值还是达到迭代上限，并给出最终梯度范数、函数值变化和震荡轨迹等证据。",
+    "analysis": "相邻函数值变化小并不排除在等高或近等高位置间震荡。梯度范数提供近似驻点证据，最大迭代次数提供资源兜底；两者都不能单独保证全局最优。清楚报告触发原因和诊断量，可避免把预算终止或震荡误写成成功收敛。",
+    "points": 20,
+    "knowledgePointIds": [
+      "GH-12-K04"
+    ],
+    "cognitiveLevel": "analyze",
+    "estimatedSteps": 4,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "stopping-criteria-reliability"
+    },
+    "rubric": [
+      {
+        "criterion": "指出不能仅凭小函数值变化宣布收敛，并结合震荡解释",
+        "points": 6
+      },
+      {
+        "criterion": "说明梯度范数的补充意义以及最大迭代次数的保护作用",
+        "points": 8
+      },
+      {
+        "criterion": "提出区分阈值收敛与预算终止并报告关键诊断量",
+        "points": 6
+      }
+    ]
+  }
+}

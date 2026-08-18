@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q7",
+    "type": "single",
+    "question": "已知 dy/dx=P(x)y+Q(x)。甲说它符合一阶线性方程形式；乙说只要 P、Q 连续，这类方程就总能分离成 g(y)dy=h(x)dx；丙说若 Q(x) 恒为零，它既可分离变量，也是一阶线性方程。哪项判断正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "只有甲和乙对"
+      },
+      {
+        "value": "B",
+        "label": "只有甲和丙对"
+      },
+      {
+        "value": "C",
+        "label": "只有乙和丙对"
+      },
+      {
+        "value": "D",
+        "label": "甲、乙、丙全对"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "一阶线性方程的标准形式为 dy/dx + p(x)y = q(x)，可化为 dy/dx = P(x)y + Q(x)，故甲正确。当 Q(x)≠0 时，dy/dx = P(x)y + Q(x) 无法写成 g(y)dy = h(x)dx，故乙错误。当 Q(x)≡0 时，方程变为 dy/dx = P(x)y，既可化为 dy/y = P(x)dx，也可视为一阶线性齐次方程，故丙正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "classification"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q7",
+    "type": "single",
+    "question": "对于微分方程 dy/dx = M(x)y + N(x)，三位同学分别给出判断：甲说，若 N(x) 不恒为零，则该方程一定不是可分离变量方程；乙说，若 M(x) 恒为零且 N(x) 不恒为零，则该方程是可分离变量方程，但不是一阶线性方程；丙说，若 N(x) 恒为零，则该方程既是一阶线性方程，也是可分离变量方程。哪位同学的判断是正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "只有甲正确"
+      },
+      {
+        "value": "B",
+        "label": "只有乙正确"
+      },
+      {
+        "value": "C",
+        "label": "只有丙正确"
+      },
+      {
+        "value": "D",
+        "label": "甲和丙都正确"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "甲错误：N(x) 不恒为零并不能推出不可分离，例如 M(x)≡0 时 y'=N(x) 可直接写成 dy=N(x)dx。乙也错误：M(x)≡0 时方程不仅可分离，仍符合一阶线性方程形式。丙正确：N(x)≡0 时 y'=M(x)y 可写成 dy/y=M(x)dx，同时是一阶线性齐次方程。因此只有丙正确，选 C。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "classification"
+    }
+  }
+}

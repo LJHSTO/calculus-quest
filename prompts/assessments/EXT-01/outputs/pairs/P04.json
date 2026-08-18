@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q4",
+    "type": "single",
+    "question": "在关系式 y'=x²+1 中，微分方程真正要求求出的未知对象是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "一个固定数值 x"
+      },
+      {
+        "value": "B",
+        "label": "一个函数 y(x)，它的导数满足给定关系"
+      },
+      {
+        "value": "C",
+        "label": "圆 x²+y²=25 的半径"
+      },
+      {
+        "value": "D",
+        "label": "表达式 x²+1 的最大值"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "微分方程的未知对象通常是函数。这里要寻找满足 y'(x)=x²+1 的函数 y(x)，而不是只求一个数，因此选 B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 4,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "identification"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q4",
+    "type": "single",
+    "question": "面对关系式 y'=3x+2，四位同学解释它所约束的未知对象。哪项解释正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它只要求找出使 3x+2=0 的数 x"
+      },
+      {
+        "value": "B",
+        "label": "它要求求直线 3x+2 的横截距"
+      },
+      {
+        "value": "C",
+        "label": "它要求寻找一个函数 y(x)，使其导数在每一点等于 3x+2"
+      },
+      {
+        "value": "D",
+        "label": "它要求把 y' 当作一个与 y 无关的普通变量"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "y' 是未知函数 y(x) 的导数，所以方程要求寻找导数满足 3x+2 的函数，选 C。它不是只求一个自变量数值。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K01"
+    ],
+    "cognitiveLevel": "understanding",
+    "estimatedSteps": 4,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "identification"
+    }
+  }
+}

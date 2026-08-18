@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-04-pre-q3",
+    "type": "single",
+    "question": "在一个三层全连接网络中，前向传播依次经过权重 W₁、W₂、W₃ 产生输出并计算损失 L。反向传播需要求 ∂L/∂W₁、∂L/∂W₂、∂L/∂W₃。关于这三个梯度的计算顺序与依赖关系，下列说法正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "三个梯度可以同时独立计算，因为链式法则对每一层分别成立，各层之间无信息传递"
+      },
+      {
+        "value": "B",
+        "label": "必须先算 ∂L/∂W₃，再算 ∂L/∂W₂，最后算 ∂L/∂W₁，因为每层权重梯度依赖后一层回传的误差信号"
+      },
+      {
+        "value": "C",
+        "label": "必须先算 ∂L/∂W₁，再算 ∂L/∂W₂，最后算 ∂L/∂W₃，因为链式法则按前向传播顺序逐层展开"
+      },
+      {
+        "value": "D",
+        "label": "只需计算 ∂L/∂W₃，其余两层梯度可通过对称性直接得到"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "反向传播的核心是链式法则的逐层应用。∂L/∂W₃ 只依赖输出层的误差信号，可直接计算；∂L/∂W₂ 需要第三层回传的误差信号；∂L/∂W₁ 需要第二层回传的误差信号。因此计算顺序必须从输出层向输入层进行，即 W₃→W₂→W₁。选项 A 忽略了跨层依赖；选项 C 的顺序与前向传播方向相同，混淆了前向与反向；选项 D 无对称性依据，不同层权重梯度一般不同。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "backward-dependency"
+    }
+  },
+  "post": {
+    "id": "EXT-04-post-q3",
+    "type": "single",
+    "question": "某同学认为：在反向传播中，要计算损失 L 对第一层权重 W₁ 的梯度，只需要知道第一层的输入和 W₁ 本身，不需要后续层的信息。关于这一观点及链式法则在反向传播中的作用，下列判断正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "观点正确，每层权重的梯度只依赖本层输入和权重，链式法则允许逐层独立求导"
+      },
+      {
+        "value": "B",
+        "label": "观点正确，因为 ∂L/∂W₁ 可以仅由第一层的激活值和 W₁ 直接求出，与损失函数无关"
+      },
+      {
+        "value": "C",
+        "label": "观点错误，∂L/∂W₁ 的表达式中包含损失对后续各层激活值的偏导数，必须从输出端逐层回传误差信号才能计算"
+      },
+      {
+        "value": "D",
+        "label": "观点错误，因为计算 ∂L/∂W₁ 需要重新进行一次完整的前向传播才能获得所需信息"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "∂L/∂W₁ 通过链式法则展开后，包含损失对第二层、第三层激活值的偏导数。这些偏导数无法仅从第一层信息得到，必须从输出端开始，逐层将误差信号回传至第一层。选项 A 和 B 忽略了链式法则的跨层依赖，误以为每层梯度可以局部独立计算；选项 D 错误，前向传播的中间结果已在正向阶段保存，反向传播复用这些结果，不需要重新前向传播。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-04-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 1,
+      "symbolComplexity": "medium",
+      "conclusionClass": "backward-dependency"
+    }
+  }
+}

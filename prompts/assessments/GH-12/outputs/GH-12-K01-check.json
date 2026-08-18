@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "无约束优化与梯度下降基础",
+  "outlines": [
+    {
+      "id": "GH-12-K01-check",
+      "type": "quiz",
+      "title": "即时检查：目标函数地形",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-12-K01-check-q1",
+          "type": "single",
+          "question": "在无约束优化中，我们将目标函数 f(x) 的函数值视为一种“地形”。若仅根据目标函数地形的核心含义，以下哪种描述是准确的？",
+          "options": [
+            {
+              "value": "A",
+              "label": "目标函数地形是指自变量 x 的取值范围大小，范围越大则地形越陡峭。"
+            },
+            {
+              "value": "B",
+              "label": "目标函数地形是指目标函数 f(x) 在不同自变量取值下的高低起伏形态，反映了函数值的变化规律。"
+            },
+            {
+              "value": "C",
+              "label": "目标函数地形是指函数图像在二维坐标系中与坐标轴围成的面积大小。"
+            },
+            {
+              "value": "D",
+              "label": "目标函数地形是指函数导数的符号，导数为正即为上坡，导数为零即为平地，与其他因素无关。"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "目标函数地形的核心含义是将目标函数 f(x) 的函数值大小类比为地理上的海拔高度，从而把函数在不同自变量处的变化情况直观地理解为地形的起伏。选项 A 错误，地形描述的是函数值的起伏形态而非自变量的取值范围；选项 C 错误，地形不是指面积；选项 D 错误，虽然导数能反映局部变化趋势，但目标函数地形是整体的直观形态概念，不能仅归结为导数的符号。因此选项 B 正确。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-12-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-12-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "definition"
+          }
+        },
+        {
+          "id": "GH-12-K01-check-q2",
+          "type": "multiple",
+          "question": "关于“目标函数地形”的理解，以下说法中所有错误说法是哪些？（选出所有错误说法）",
+          "options": [
+            {
+              "value": "A",
+              "label": "目标函数地形就是函数的解析式本身，只要写出解析式就等于完全掌握了地形的具体起伏特征。"
+            },
+            {
+              "value": "B",
+              "label": "目标函数地形可以通过函数值的分布来体现，例如在某个区间内函数值持续增大，对应着地形中的“上坡”趋势。"
+            },
+            {
+              "value": "C",
+              "label": "目标函数地形仅由函数的极值点决定，只要没有极值点，函数图像就是一条平坦的直线。"
+            },
+            {
+              "value": "D",
+              "label": "在无约束优化中，寻找目标函数的最小值相当于在地形中寻找海拔最低的谷底位置。"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "选项 A 错误，解析式只是抽象的数学符号，而“地形”强调将函数值具象化为高低起伏的形态，写出解析式不等于直观掌握了地形特征，这属于典型的只记符号未连接图像的误解。选项 B 正确，函数值的增减直接对应地形的上坡与下坡。选项 C 错误，即使没有极值点，函数也可能呈现单调上升或单调下降的斜坡形态，并非平坦直线。选项 D 正确，无约束优化的最小值在地形比喻中正是最低谷。题目要求选出所有错误说法，故选 A 和 C。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-12-K01"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-12-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "misconception"
+          }
+        }
+      ]
+    }
+  ]
+}

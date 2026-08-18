@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q6",
+    "type": "single",
+    "question": "已知二阶矩阵 A 的行列式为零，关于方程组 Ax = b 的解，下列判断正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "A 不可逆，因此方程组 Ax = b 必定无解"
+      },
+      {
+        "value": "B",
+        "label": "A 不可逆，因此方程组 Ax = b 要么无解，要么有无穷多解，不可能有唯一解"
+      },
+      {
+        "value": "C",
+        "label": "A 不可逆，但只要 b 不为零向量，方程组 Ax = b 仍必有唯一解"
+      },
+      {
+        "value": "D",
+        "label": "A 不可逆，因此方程组 Ax = b 必有无穷多解"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "行列式为零意味着矩阵 A 不可逆。对于不可逆矩阵 A，方程组 Ax = b 不可能有唯一解。此时解的情况取决于向量 b 是否落在 A 的列空间中：若 b 在列空间中，则存在无穷多解；若 b 不在列空间中，则无解。因此，解只能是“无解”或“无穷多解”，不可能有唯一解，故选项 B 正确。选项 A 和 D 错误地认为必定无解或必有无穷多解；选项 C 错误地认为存在唯一解。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "solvability-classification"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q6",
+    "type": "single",
+    "question": "若方阵 M 是可逆矩阵，现考虑线性方程组 Mx = c 的解的情况，下列结论中正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "由于 M 可逆，方程组 Mx = c 可能无解，也可能有无穷多解"
+      },
+      {
+        "value": "B",
+        "label": "由于 M 可逆，方程组 Mx = c 必定存在唯一解，且解为 x = M⁻¹c"
+      },
+      {
+        "value": "C",
+        "label": "由于 M 可逆，方程组 Mx = c 只有当 c 为零向量时才有唯一解"
+      },
+      {
+        "value": "D",
+        "label": "由于 M 可逆，方程组 Mx = c 的解是否存在与 c 的取值无关，但解的个数不确定"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "方阵 M 可逆意味着其行列式不为零。对于可逆矩阵 M，其列空间是整个空间，因此对于任意向量 c，方程组 Mx = c 都有解。同时，由于 M 可逆，可以在方程两边左乘 M⁻¹，得到 x = M⁻¹c，这表明解是唯一的。因此，方程组必定存在唯一解，选项 B 正确。选项 A 和 D 错误地认为可能无解或解的个数不确定；选项 C 错误地附加了 c 为零向量的条件。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "solvability-classification"
+    }
+  }
+}

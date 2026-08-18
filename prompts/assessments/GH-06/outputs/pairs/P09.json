@@ -1,0 +1,86 @@
+{
+  "pre": {
+    "id": "GH-06-pre-q9",
+    "type": "multiple",
+    "question": "已知 F(x) 是 f(x) 的一个原函数，即 F'(x) = f(x)。关于不定积分与原函数的关系，下列说法中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "不定积分的结果是一个函数族，其中任意两个函数的图像在垂直方向上只相差一个常数距离"
+      },
+      {
+        "value": "B",
+        "label": "不定积分的结果是一个具体的常数，代表函数 f(x) 在某段区间内的累积总和"
+      },
+      {
+        "value": "C",
+        "label": "对不定积分的结果求导数，必然会还原得到被积函数 f(x)"
+      },
+      {
+        "value": "D",
+        "label": "若 G(x) 也是 f(x) 的原函数，则 G(x) - F(x) 在定义域内必然是一个固定的常数"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "本题考查不定积分与原函数的核心概念。选项A正确，原函数族之间仅相差一个常数，反映在图像上即为垂直平移。选项B错误，这是将不定积分与定积分混淆，不定积分是函数族而非常数。选项C正确，不定积分是求导的逆运算，对其求导必然还原为被积函数。选项D错误，虽然G(x)和F(x)都是原函数，但若它们不在同一个连续区间内，其差值不一定恒为同一常数。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-06-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept_relation"
+    }
+  },
+  "post": {
+    "id": "GH-06-post-q9",
+    "type": "multiple",
+    "question": "在微积分中，求导与求不定积分互逆。若已知 ∫ f(x) dx = G(x) + C（C为任意常数），根据这层互逆关系，下列推断中正确的有哪些？",
+    "options": [
+      {
+        "value": "A",
+        "label": "将 G(x) + C 对 x 求导，得到的结果必然等于被积函数 f(x)"
+      },
+      {
+        "value": "B",
+        "label": "常数 C 在求导过程中会消失，因此不定积分运算只能还原出 G(x) 这一个特定函数"
+      },
+      {
+        "value": "C",
+        "label": "由于互逆关系，对 f(x) 先求不定积分再求导，能够完全恢复回 f(x)"
+      },
+      {
+        "value": "D",
+        "label": "任意常数 C 的存在说明，被积函数 f(x) 的所有原函数在垂直平移后可以完全重合"
+      }
+    ],
+    "answer": [
+      "A",
+      "C"
+    ],
+    "analysis": "本题从逆运算视角考查不定积分与原函数的关系。选项A正确，求导与不定积分互逆，积分结果的导数必然等于被积函数。选项B错误，常数C在求导时消失不代表原函数只有G(x)，而是存在一族函数G(x)+C。选项C正确，先积分后求导相当于没有改变原函数的本质，能完全恢复f(x)。选项D错误，虽然原函数之间相差常数，但常数C是任意的，不能说所有原函数平移后必然重合于某一个特定函数，且此推断偏离了互逆运算的核心推理链。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-06-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P09",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept_relation"
+    }
+  }
+}

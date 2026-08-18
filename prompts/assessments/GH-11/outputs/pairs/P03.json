@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-11-pre-q3",
+    "type": "single",
+    "question": "不用计算器，利用 f(x)=√x 在 x=4 处的一阶 Taylor 近似估算 √4.1，结果最接近哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "2.025"
+      },
+      {
+        "value": "B",
+        "label": "2.050"
+      },
+      {
+        "value": "C",
+        "label": "2.100"
+      },
+      {
+        "value": "D",
+        "label": "1.975"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "f(4)=2，f'(x)=1/(2√x)，所以 f'(4)=1/4。在 x=4 处线性化得 √x≈2+(1/4)(x-4)。代入 x=4.1，得到 2+0.025=2.025，选 A。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_estimation"
+    }
+  },
+  "post": {
+    "id": "GH-11-post-q3",
+    "type": "single",
+    "question": "校准图把倒数曲线在横坐标 1 附近替换成切线 y=2-t。现在从这条直线上读取横坐标 1.02 对应的纵坐标，应得到多少？",
+    "options": [
+      {
+        "value": "A",
+        "label": "1.02"
+      },
+      {
+        "value": "B",
+        "label": "0.98"
+      },
+      {
+        "value": "C",
+        "label": "0.50"
+      },
+      {
+        "value": "D",
+        "label": "1.20"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "g(1)=1，g'(t)=-1/t²，所以 g'(1)=-1。在 t=1 处线性化得 1/t≈1-(t-1)。代入 t=1.02，得到 1-0.02=0.98，选 B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-11-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "numeric_estimation"
+    }
+  }
+}

@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "Taylor、Hessian 与无约束优化",
+  "outlines": [
+    {
+      "id": "GH-11-K03-check",
+      "type": "quiz",
+      "title": "即时检查：Hessian 矩阵",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-11-K03-check-q1",
+          "type": "single",
+          "question": "已知二元函数 f(x, y) 的梯度向量为 [2x, 2y]。关于该函数的 Hessian 矩阵，下列说法正确的是？",
+          "options": [
+            {
+              "value": "A",
+              "label": "Hessian 矩阵是梯度向量的一阶导数，结果为一个 1×2 的行向量"
+            },
+            {
+              "value": "B",
+              "label": "Hessian 矩阵是由二阶偏导数构成的 2×2 矩阵，且其非对角线元素均为 0"
+            },
+            {
+              "value": "C",
+              "label": "Hessian 矩阵的值随 x 和 y 的具体取值变化，因此无法写出确定的矩阵形式"
+            },
+            {
+              "value": "D",
+              "label": "Hessian 矩阵仅包含纯二阶偏导数，不包含混合二阶偏导数"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "Hessian 矩阵是标量函数的二阶偏导数构成的方阵。对梯度 [2x, 2y] 再次求偏导，可得 Hessian 矩阵为 [[2, 0], [0, 2]]。它是一个 2×2 的矩阵，且由于混合偏导数为 0，非对角线元素均为 0。选项 A 错误描述了维度，选项 C 忽略了二阶导数在此例中是常数，选项 D 错误地排除了混合二阶偏导数。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-11-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-11-K03-check-p1",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "definition"
+          }
+        },
+        {
+          "id": "GH-11-K03-check-q2",
+          "type": "multiple",
+          "question": "关于二元函数 f(x, y) 的 Hessian 矩阵，下列说法中正确的有？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "Hessian 矩阵是一个由二阶偏导数组成的方阵"
+            },
+            {
+              "value": "B",
+              "label": "Hessian 矩阵可以用来反映函数图像在局部的凹凸性质"
+            },
+            {
+              "value": "C",
+              "label": "Hessian 矩阵就是函数梯度的雅可比矩阵"
+            },
+            {
+              "value": "D",
+              "label": "只要写出了 Hessian 矩阵的符号形式，就等于完成了对该矩阵实际作用的完整分析"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "C"
+          ],
+          "analysis": "选项 A、B、C 正确。Hessian 矩阵由二阶偏导数构成，反映局部的凹凸性。从定义上看，Hessian 矩阵正是梯度向量的雅可比矩阵。选项 D 错误，仅记住符号形式而不将其与函数图像或应用情境连接，属于常见误解，无法完成对矩阵实际作用的完整分析。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-11-K03"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-11-K03-check-p1",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept"
+          }
+        }
+      ]
+    }
+  ]
+}

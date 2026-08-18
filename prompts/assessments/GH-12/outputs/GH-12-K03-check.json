@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "无约束优化与梯度下降基础",
+  "outlines": [
+    {
+      "id": "GH-12-K03-check",
+      "type": "quiz",
+      "title": "即时检查：步长和收敛",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-12-K03-check-q1",
+          "type": "single",
+          "question": "在梯度下降法中，步长（学习率）设置得过大往往会导致迭代失败。关于其核心原因，最准确的解释是？",
+          "options": [
+            {
+              "value": "A",
+              "label": "步长过大会使每次迭代都严格沿着梯度方向移动，但移动速度过快，导致计算量过大而无法收敛。"
+            },
+            {
+              "value": "B",
+              "label": "步长过大会使每次更新跨越过远，反复越过极小值点，导致目标函数值来回震荡甚至发散，无法收敛。"
+            },
+            {
+              "value": "C",
+              "label": "步长过大会改变梯度的方向，使得迭代点偏离最速下降方向，从而无法找到极小值。"
+            },
+            {
+              "value": "D",
+              "label": "步长过大会使目标函数的 Hessian 矩阵变为非正定矩阵，导致二阶导数信息失效，无法判定极值点。"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "在梯度下降中，更新公式为 x_{k+1} = x_k - α∇f(x_k)。步长 α 过大意味着每次沿负梯度方向移动的距离过大，这会导致迭代点直接越过极小值点，跳到对侧山坡上。此时目标函数值不但不下降，反而可能来回震荡甚至越来越高（发散），因此无法收敛。步长不会改变梯度的方向，也不会直接改变 Hessian 矩阵的性质，故选 B。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-12-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-12-K03-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 1,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptual-explanation"
+          }
+        },
+        {
+          "id": "GH-12-K03-check-q2",
+          "type": "multiple",
+          "question": "关于梯度下降法中的步长与收敛，以下说法中所有正确的说法是哪些？（多选）",
+          "options": [
+            {
+              "value": "A",
+              "label": "步长是一个固定不变的常数，无论目标函数的形状如何，只要步长大于零就一定能保证函数值单调下降并最终收敛。"
+            },
+            {
+              "value": "B",
+            "label": "在常规光滑问题中，步长过小通常使单次下降幅度很有限，可能需要大量迭代才能接近极小值。"
+            },
+            {
+              "value": "C",
+              "label": "在陡峭的区域（梯度模长较大时），如果步长保持固定且偏大，更容易发生跨越极小值并震荡的现象。"
+            },
+            {
+              "value": "D",
+              "label": "只要迭代过程中目标函数值在下降，就说明当前步长一定是最优的，无需考虑收敛速度和震荡风险。"
+            }
+          ],
+          "answer": [
+            "B",
+            "C"
+          ],
+          "analysis": "A 错误：正步长不保证收敛，过大时可能发散，且步长也可以动态调整。B 正确：在常规光滑问题中，过小步长使更新距离很短，通常造成收敛缓慢。C 正确：陡峭区域配合偏大的固定步长更容易产生过大的更新并震荡。D 错误：函数值暂时下降不代表步长最优，还需考虑速度和稳定性。故选 B、C。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-12-K03"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-12-K03-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "misconception-diagnosis"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "GH-04-K03-check",
+      "type": "quiz",
+      "title": "即时检查：链式法则",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-04-K03-check-q1",
+          "type": "single",
+          "question": "函数 y = sin(3x) 由外层函数 y = sin(u) 和内层函数 u = 3x 复合而成。根据链式法则，该复合函数的导数 y' 的正确表达式是哪一个？",
+          "options": [
+            {
+              "value": "A",
+              "label": "y' = cos(3x)"
+            },
+            {
+              "value": "B",
+              "label": "y' = 3cos(3x)"
+            },
+            {
+              "value": "C",
+              "label": "y' = cos(3) + sin(x)"
+            },
+            {
+              "value": "D",
+              "label": "y' = -3sin(3x)"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "链式法则的核心含义是：复合函数对自变量的导数，等于外层函数对中间变量的导数乘以中间变量对自变量的导数。本题中，外层 sin(u) 对 u 的导数是 cos(u)，内层 u = 3x 对 x 的导数是 3。因此 y' = cos(u) · 3 = 3cos(3x)。选项 A 只求了外层导数而漏乘内层导数，是典型的常见误解；选项 C 错误拆分了复合结构；选项 D 符号计算错误。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-04-K03"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 3,
+          "pairId": "GH-04-K03-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 2,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "formula-derivation"
+          }
+        },
+        {
+          "id": "GH-04-K03-check-q2",
+          "type": "multiple",
+          "question": "关于链式法则的理解与运用，以下说法中所有正确的说法是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "链式法则用于求复合函数的导数，其核心是将复合结构分解为外层和内层，并按“由外向内”依次求导再相乘"
+            },
+            {
+              "value": "B",
+              "label": "对于 y = (2x + 1)^2，运用链式法则求导可得 y' = 2(2x + 1) · 2"
+            },
+            {
+              "value": "C",
+              "label": "对于 y = e^(x^2)，运用链式法则求导的结果是 y' = e^(x^2) · 2x"
+            },
+            {
+              "value": "D",
+              "label": "链式法则只是把外层函数的导数写出来即可，不需要再乘以内层函数的导数"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "C"
+          ],
+          "analysis": "选项 A 正确描述了链式法则的核心含义与操作逻辑；选项 B 中外层函数 u^2 对 u 的导数是 2u，内层 2x+1 对 x 的导数是 2，相乘得到 2(2x+1)·2，计算正确；选项 C 中外层 e^u 对 u 的导数是 e^u，内层 x^2 对 x 的导数是 2x，相乘得到 e^(x^2)·2x，计算正确。选项 D 只写出外层导数而漏乘内层导数，正是“只记住符号或结论，未理解操作”的常见误解。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-04-K03"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 4,
+          "pairId": "GH-04-K03-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic",
+            "knownConditionCount": 3,
+            "operationCount": 3,
+            "symbolComplexity": "medium",
+            "conclusionClass": "concept-validation"
+          }
+        }
+      ]
+    }
+  ]
+}

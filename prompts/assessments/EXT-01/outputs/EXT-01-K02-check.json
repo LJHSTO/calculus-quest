@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "扩展：微分方程直觉",
+  "outlines": [
+    {
+      "id": "EXT-01-K02-check",
+      "type": "quiz",
+      "title": "即时检查：可分离变量与一阶线性方程",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-01-K02-check-q1",
+          "type": "single",
+          "question": "已知一阶微分方程 dy/dx + P(x)y = Q(x)。若 Q(x) = 0，关于该方程的求解，下列说法正确的是：",
+          "options": [
+            {
+              "value": "A",
+              "label": "此时方程退化为可分离变量方程，可直接分离为 dy/y = -P(x)dx 求解"
+            },
+            {
+              "value": "B",
+              "label": "此时方程不再是一阶线性方程，必须使用二阶微分方程的解法"
+            },
+            {
+              "value": "C",
+              "label": "此时方程只能通过积分因子法求解，不能分离变量"
+            },
+            {
+              "value": "D",
+              "label": "此时方程的通解必定为 y = 0，没有非零解"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "当 Q(x) = 0 时，一阶线性微分方程变为 dy/dx + P(x)y = 0。此时可以将变量分离，得到 dy/y = -P(x)dx，两边积分即可求解。因此它既是可分离变量方程，也是一阶线性方程的特例。选项 B、C、D 均错误。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-01-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-01-K02-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "symbolic-equation",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "medium",
+            "conclusionClass": "classification"
+          }
+        },
+        {
+          "id": "EXT-01-K02-check-q2",
+          "type": "multiple",
+          "question": "关于可分离变量微分方程与一阶线性微分方程的关系与求解，下列说法中正确的有：",
+          "options": [
+            {
+              "value": "A",
+            "label": "可分离变量方程可按分离变量、两边积分的基本步骤求解，并需检查分离时可能漏掉的常值解"
+            },
+            {
+              "value": "B",
+            "label": "只要 Q(x) 不恒为零，任何一阶线性方程 dy/dx+P(x)y=Q(x) 都一定能直接分离变量"
+            },
+            {
+              "value": "C",
+              "label": "可分离变量方程形如 dy/dx = f(x)g(y)，其核心特征是可将 x 与 y 的函数分别置于等式两侧"
+            },
+            {
+              "value": "D",
+              "label": "若一阶微分方程可分离变量，则它一定不是线性方程"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "A、C 正确，分别说明了分离变量的求解步骤和结构特征。B 的‘任何’错误：一般非齐次一阶线性方程不能直接分离，但特殊情形（如 P=0 时 y'=Q(x)）可以，不能由 Q 不恒为零一概而论。D 错误，可分离与线性并不互斥，例如 y'=xy 既可写成 dy/y=x dx，也是一阶线性齐次方程。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-01-K02"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "EXT-01-K02-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "symbolic-equation",
+            "knownConditionCount": 2,
+            "operationCount": 3,
+            "symbolComplexity": "medium",
+            "conclusionClass": "relation"
+          }
+        }
+      ]
+    }
+  ]
+}

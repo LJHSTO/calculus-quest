@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "EXT-01-K03-check",
+      "type": "quiz",
+      "title": "即时检查：指数增长与衰减模型",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "EXT-01-K03-check-q1",
+          "type": "single",
+          "question": "某物质的质量随时间变化满足指数衰减模型 f(t)=C·e^(kt)，其中 C 为初始质量，k 为常数。已知初始质量为 120 克，且每经过 1 个单位时间质量变为原来的 1/2。若 t=3，求此时的质量。",
+          "options": [
+            {
+              "value": "A",
+              "label": "15 克"
+            },
+            {
+              "value": "B",
+              "label": "30 克"
+            },
+            {
+              "value": "C",
+              "label": "40 克"
+            },
+            {
+              "value": "D",
+              "label": "60 克"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "由题意，每经过 1 个单位时间质量变为原来的 1/2，故衰减常数 k 满足 e^k=1/2，即 k=ln(1/2)。因此 f(3)=120·e^(3ln(1/2))=120·(1/2)^3=120·1/8=15 克。答案为 A。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-01-K03"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 3,
+          "pairId": "EXT-01-K03-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 3,
+            "symbolComplexity": "medium",
+            "conclusionClass": "numeric"
+          }
+        },
+        {
+          "id": "EXT-01-K03-check-q2",
+          "type": "multiple",
+          "question": "关于指数增长与衰减模型 f(t)=C·e^(kt)，下列说法中正确的有？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "当 k>0 时，函数值随 t 增大而增大，表示指数增长。"
+            },
+            {
+              "value": "B",
+              "label": "当 k<0 时，函数值随 t 增大而减小，表示指数衰减。"
+            },
+            {
+              "value": "C",
+              "label": "指数增长与衰减模型的图像一定是直线。"
+            },
+            {
+              "value": "D",
+              "label": "只要记住公式符号 f(t)=C·e^(kt) 就能判断实际问题中的增减趋势，无需理解 k 的正负含义。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "在 f(t)=C·e^(kt) 中，k 的正负决定增减：k>0 时函数值随 t 增大而增大，为指数增长；k<0 时函数值随 t 增大而减小，为指数衰减。A、B 正确。指数增长与衰减模型的图像是曲线，不是直线，C 错误。只记住符号而不理解 k 的正负含义，无法正确判断实际问题的增减趋势，D 错误。答案为 A、B。",
+          "points": 10,
+          "knowledgePointIds": [
+            "EXT-01-K03"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "EXT-01-K03-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptual"
+          }
+        }
+      ]
+    }
+  ]
+}

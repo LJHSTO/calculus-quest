@@ -1,0 +1,72 @@
+{
+  "pre": {
+    "id": "EXT-05-pre-q10",
+    "type": "text",
+    "question": "在求解带不等式约束的非线性优化问题时，内点法通过在目标函数中引入对数障碍项来逼近最优解。请说明内点法中障碍项的核心作用机制，并解释为什么该方法被称为“内点法”以及它如何处理边界约束。",
+    "answer": "内点法把障碍项加入目标函数；对每个固定的正障碍参数，当候选点趋近约束边界时，障碍值趋于正无穷，从而阻止子问题的解越界。它称为内点法，是因为各个障碍子问题的迭代点保持严格可行。外层过程逐渐减小障碍参数，使障碍项在固定内部点处的影响减弱，因此内部解序列可以越来越靠近边界，并逼近原问题的最优解。",
+    "analysis": "内点法的核心在于通过障碍函数将不等式约束融入目标函数，将约束优化转化为无约束优化序列。障碍项的作用是确保迭代点不违反约束，即不越出可行域边界。由于迭代点始终在可行域内部，故称为内点法。随着障碍参数趋于零，障碍项的影响逐渐消失，迭代点逼近原问题的最优解，此时可能位于边界上。",
+    "points": 20,
+    "knowledgePointIds": [
+      "EXT-05-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "mechanism-explanation"
+    },
+    "rubric": [
+      {
+        "criterion": "正确说明障碍项在目标函数中产生排斥力，使迭代点保持在可行域内部",
+        "points": 8
+      },
+      {
+        "criterion": "正确解释“内点法”名称来源于迭代轨迹始终严格位于可行域内部",
+        "points": 6
+      },
+      {
+        "criterion": "正确说明通过逐渐减小障碍参数使迭代点逼近边界以收敛到最优解",
+        "points": 6
+      }
+    ]
+  },
+  "post": {
+    "id": "EXT-05-post-q10",
+    "type": "text",
+    "question": "对于带不等式约束的非线性优化问题，内点法在迭代过程中要求严格满足约束。请阐述障碍函数如何保证迭代点不越出可行域，解释“内点法”这一名称的来源，并说明障碍参数的变化趋势及其对逼近最优解的影响。",
+    "answer": "内点法利用障碍函数在目标函数中增加一个惩罚项，当迭代点接近可行域边界时，该惩罚项的值急剧增大，从而阻止迭代点越出边界，保证迭代点始终在可行域内部。随着迭代进行，障碍参数逐渐减小，使得惩罚项对目标函数的影响逐渐减弱，迭代点得以越来越接近可行域边界，最终逼近原问题的最优解。",
+    "analysis": "内点法通过障碍函数将不等式约束转化为目标函数的一部分，惩罚项在边界附近形成屏障。迭代点因惩罚项的存在而始终保持在可行域内部。随着障碍参数趋于零，惩罚项的影响逐渐消失，迭代点可以逼近边界，从而收敛到原约束优化问题的最优解。",
+    "points": 20,
+    "knowledgePointIds": [
+      "EXT-05-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P10",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "mechanism-explanation"
+    },
+    "rubric": [
+      {
+        "criterion": "正确说明障碍项在目标函数中产生排斥力，使迭代点保持在可行域内部",
+        "points": 8
+      },
+      {
+        "criterion": "正确解释“内点法”名称来源于迭代轨迹始终严格位于可行域内部",
+        "points": 6
+      },
+      {
+        "criterion": "正确说明通过逐渐减小障碍参数使迭代点逼近边界以收敛到最优解",
+        "points": 6
+      }
+    ]
+  }
+}

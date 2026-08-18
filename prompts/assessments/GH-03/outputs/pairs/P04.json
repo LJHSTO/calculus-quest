@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-03-pre-q4",
+    "type": "single",
+    "question": "一辆汽车沿直线行驶，其位移 s（单位：米）随时间 t（单位：秒）变化的规律为 s(t)=5t^2。当考察汽车在 t=3 秒这一时刻的瞬时速度时，我们通过考察 t=3 附近极小区间内位移改变量与时间改变量的比值来进行估计。随着时间区间不断缩小并无限趋近于 0，这个比值在几何上对应于位移图像在 t=3 处的切线斜率。请问这条切线的斜率在运动情境中直接表示什么物理量？",
+    "options": [
+      {
+        "value": "A",
+        "label": "汽车在 t=3 秒这一时刻的瞬时速度"
+      },
+      {
+        "value": "B",
+        "label": "汽车在 0 到 3 秒这段时间内的平均速度"
+      },
+      {
+        "value": "C",
+        "label": "汽车在 0 到 3 秒这段时间内行驶的总路程"
+      },
+      {
+        "value": "D",
+        "label": "汽车在 t=3 秒这一时刻的瞬时加速度"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "在位移-时间图像中，某一点处切线的斜率表示该时刻的瞬时变化率。在运动情境下，位移对时间的瞬时变化率即为瞬时速度。当时间区间无限趋近于 0 时，平均变化率（割线斜率）的极限即为切线斜率，它直接对应 t=3 秒时的瞬时速度，而不是平均速度、总路程或加速度。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "physical-interpretation-of-tangent-slope"
+    }
+  },
+  "post": {
+    "id": "GH-03-post-q4",
+    "type": "single",
+    "question": "某物体的位置随时间变化的规律由函数关系决定。为了探明该物体在指定瞬间的运动快慢程度，我们考察该瞬间附近一个极短时间段内的位置改变量与时间改变量之比。当这个极短时间段无限趋近于零时，所求得的极限值在数学上被称为位置-时间图像在该瞬间的切线斜率。关于这条切线的斜率，以下哪种说法准确地揭示了它在上述运动情境下的物理含义？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它表示物体在该指定瞬间的瞬时加速度大小"
+      },
+      {
+        "value": "B",
+        "label": "它表示物体在该指定瞬间的瞬时速度大小"
+      },
+      {
+        "value": "C",
+        "label": "它表示物体在到达该指定瞬间之前所经历的平均速度"
+      },
+      {
+        "value": "D",
+        "label": "它表示物体在该指定瞬间相对于起点的位移大小"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "位置-时间图像上某点切线的斜率反映了位置对时间的瞬时变化率。在运动情境中，位置随时间变化的瞬时变化率正是物体在该瞬间的瞬时速度。当时间间隔趋近于零时，位置改变量与时间改变量比值的极限即为切线斜率，它直接刻画了该瞬间的运动快慢，而非加速度、平均速度或累计位移。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-03-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "physical-interpretation-of-tangent-slope"
+    }
+  }
+}

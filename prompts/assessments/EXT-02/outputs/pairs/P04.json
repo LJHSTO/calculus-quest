@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q4",
+    "type": "single",
+    "question": "已知一个二维线性变换将基向量 e1=(1,0) 映射到 (3,1)，将基向量 e2=(0,1) 映射到 (1,2)。若对该空间先做此变换，再做一个将所有向量横坐标与纵坐标对调的变换，最终复合变换对应的矩阵是哪一个？",
+    "options": [
+      {
+        "value": "A",
+        "label": "[[1, 3], [2, 1]]"
+      },
+      {
+        "value": "B",
+        "label": "[[3, 1], [1, 2]]"
+      },
+      {
+        "value": "C",
+        "label": "[[3, 1], [2, 1]]"
+      },
+      {
+        "value": "D",
+        "label": "[[1, 2], [3, 1]]"
+      }
+    ],
+    "answer": [
+      "D"
+    ],
+    "analysis": "原变换矩阵的两列是基向量的像，所以 M=[[3,1],[1,2]]。交换坐标的矩阵为 T=[[0,1],[1,0]]。先做 M、再做 T，对应乘积 TM=[[1,2],[3,1]]，故选 D。矩阵不能因‘按列读取’而擅自转置。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "matrix-product"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q4",
+    "type": "single",
+    "question": "在平面直角坐标系中，某变换 A 把点 (1,0) 移至 (2,5)，把点 (0,1) 移至 (4,1)。另有变换 B 使任意点 (x,y) 变为 (y,x)。如果先执行 B 再执行 A，那么描述这一复合过程的矩阵应表示为？",
+    "options": [
+      {
+        "value": "A",
+        "label": "[[5, 1], [2, 4]]"
+      },
+      {
+        "value": "B",
+        "label": "[[2, 4], [5, 1]]"
+      },
+      {
+        "value": "C",
+        "label": "[[4, 2], [1, 5]]"
+      },
+      {
+        "value": "D",
+        "label": "[[4, 1], [2, 5]]"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "A 的矩阵为 [[2,4],[5,1]]，交换坐标的 B 为 [[0,1],[1,0]]。先 B 后 A，对应 AB=[[4,2],[1,5]]，故选 C。计算结果本身已经采用标准列向量约定，不应再转置。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K02"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "matrix-product"
+    }
+  }
+}

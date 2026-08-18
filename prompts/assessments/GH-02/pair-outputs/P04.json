@@ -1,0 +1,30 @@
+{
+  "pre": {
+    "id": "GH-02-pre-q4",
+    "type": "multiple",
+    "question": "已知 x 趋近 2 时，f(x) 的左极限和右极限都等于 5，而 f(2)=8。请选择所有正确说法。",
+    "options": [{"value":"A","label":"双侧极限存在"},{"value":"B","label":"双侧极限等于 5"},{"value":"C","label":"函数值 8 不影响双侧极限是否存在"},{"value":"D","label":"因为 f(2) 不等于 5，所以双侧极限不存在"}],
+    "answer": ["A","B","C"],
+    "analysis": "左右极限都存在且相等，因此双侧极限存在并等于 5。函数在该点的取值是否等于极限值，会影响连续性，但不影响双侧极限本身是否存在。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K02"],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {"presentationMode":"text","knownConditionCount":3,"operationCount":0,"symbolComplexity":"low","conclusionClass":"two_sided_limit_exists"}
+  },
+  "post": {
+    "id": "GH-02-post-q4",
+    "type": "multiple",
+    "question": "某组讨论已知：从 3 的左侧和右侧靠近时，g(x) 都趋近 7，但 g(3)=4。四位同学分别作出判断，请选择所有判断正确的同学。",
+    "options": [{"value":"A","label":"甲：左右两侧得到共同趋近值，所以双侧极限存在"},{"value":"B","label":"乙：双侧极限的值是 7"},{"value":"C","label":"丙：g(3)=4 并不会使已经存在的双侧极限消失"},{"value":"D","label":"丁：只有 g(3)=7 时，双侧极限才存在"}],
+    "answer": ["A","B","C"],
+    "analysis": "甲、乙正确描述了左右极限相等时双侧极限存在且等于 7；丙正确区分了极限存在与函数值。丁把连续性的条件误当成极限存在的条件。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K02"],
+    "cognitiveLevel": "应用",
+    "estimatedSteps": 3,
+    "pairId": "P04",
+    "equivalence": {"presentationMode":"text","knownConditionCount":3,"operationCount":0,"symbolComplexity":"low","conclusionClass":"two_sided_limit_exists"}
+  }
+}

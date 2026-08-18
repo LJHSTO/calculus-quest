@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-10-pre-q5",
+    "type": "single",
+    "question": "在物理实验中，某质点的位置坐标随时间 t 变化，其映射关系为 r(t)=(2t, 3t^2)。关于该映射，下列说法正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "这是一个向量值函数，因为输入一个标量 t，输出是一个包含两个分量的向量"
+      },
+      {
+        "value": "B",
+        "label": "这是一个多元函数，因为它有两个输出分量 2t 和 3t^2"
+      },
+      {
+        "value": "C",
+        "label": "这不是向量值函数，因为输入变量 t 只有一个，而不是多个"
+      },
+      {
+        "value": "D",
+        "label": "这是一个向量值函数，因为它同时描述了位置和速度两个物理量"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "向量值函数的核心特征是输入为标量（或向量），输出为多维向量。本题中输入为单个时间标量 t，输出为二维坐标向量 (2t, 3t^2)，符合向量值函数的定义。选项 B 混淆了多元函数（多输入单输出）与向量值函数（单/多输入多输出）的概念；选项 C 错误地将向量值函数要求为多输入；选项 D 错误地将输出分量直接等同于物理量位置和速度，属于对符号背后物理含义的误读。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  },
+  "post": {
+    "id": "GH-10-post-q5",
+    "type": "single",
+    "question": "气象观测中，某地区的大气状态由气压 P 和温度 T 决定，风场模型将其映射为水平风速和垂直风速：V(P,T)=(3P-T, 2P+T)。针对该模型，下列判断正确的是：",
+    "options": [
+      {
+        "value": "A",
+        "label": "这是一个向量值函数，因为输入是二维变量，输出也是包含两个分量的向量"
+      },
+      {
+        "value": "B",
+        "label": "这是一个多元函数，因为输入包含气压 P 和温度 T 两个变量"
+      },
+      {
+        "value": "C",
+        "label": "这不是向量值函数，因为输出分量 3P-T 和 2P+T 都是标量计算结果"
+      },
+      {
+        "value": "D",
+        "label": "这是一个向量值函数，因为它直接计算出了风速的大小和方向角"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "向量值函数的判定关键在于输出是多维向量。本题输入为二维变量 (P,T)，输出为二维风速向量 (3P-T, 2P+T)，符合向量值函数的定义。选项 B 仅依据输入有两个变量就误判为多元函数，忽略了多元函数要求输出为单值标量的特征；选项 C 错误地认为向量值函数的每个分量不能由标量运算构成；选项 D 错误地将输出的两个分量直接等同于风速大小和方向角，混淆了向量分量与向量的极坐标表示。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-10-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  }
+}

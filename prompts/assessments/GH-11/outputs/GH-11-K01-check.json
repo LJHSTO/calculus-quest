@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "GH-11-K01-check",
+      "type": "quiz",
+      "title": "即时检查：一阶 Taylor 近似",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-11-K01-check-q1",
+          "type": "single",
+          "question": "已知函数 f(x) 在 x=1 处的函数值为 f(1)=3，导数为 f'(1)=2。利用一阶 Taylor 近似，估计 x=1.2 时的函数值 f(1.2) 约为多少？",
+          "options": [
+            {
+              "value": "A",
+              "label": "3.2"
+            },
+            {
+              "value": "B",
+              "label": "3.4"
+            },
+            {
+              "value": "C",
+              "label": "3.6"
+            },
+            {
+              "value": "D",
+              "label": "5.0"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "一阶 Taylor 近似的公式为 f(x) ≈ f(a) + f'(a)(x-a)。将 a=1, f(1)=3, f'(1)=2, x=1.2 代入，得 f(1.2) ≈ 3 + 2×(1.2-1) = 3 + 0.4 = 3.4。选项 B 正确。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-11-K01"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 2,
+          "pairId": "GH-11-K01-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 3,
+            "operationCount": 2,
+            "symbolComplexity": "low",
+            "conclusionClass": "numeric-estimation"
+          }
+        },
+        {
+          "id": "GH-11-K01-check-q2",
+          "type": "multiple",
+          "question": "关于在 x=a 附近对函数 f(x) 进行一阶 Taylor 近似，下列说法中所有正确的项是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "一阶 Taylor 近似的表达式为 f(x) ≈ f(a) + f'(a)(x-a)"
+            },
+            {
+              "value": "B",
+              "label": "该近似在几何上表示函数图象在点 (a, f(a)) 处的切线"
+            },
+            {
+              "value": "C",
+              "label": "一阶 Taylor 近似公式中的 f'(a) 应替换为 f'(x)"
+            },
+            {
+              "value": "D",
+              "label": "只要知道函数在任意两点的函数值，就能直接写出一阶 Taylor 近似式"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "选项 A 正确给出了一阶 Taylor 近似的标准公式；选项 B 正确指出其几何意义是图象在 a 点处的切线。选项 C 错误，公式中应使用在 a 点处的导数值 f'(a)，而不是任意 x 处的 f'(x)。选项 D 错误，一阶 Taylor 近似需要已知该点处的函数值和导数值，仅靠任意两点的函数值无法直接写出该点的一阶 Taylor 近似式。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-11-K01"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-11-K01-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "medium",
+            "conclusionClass": "concept-identification"
+          }
+        }
+      ]
+    }
+  ]
+}

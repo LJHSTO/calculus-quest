@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q5",
+    "type": "single",
+    "question": "已知函数 f(x) 在区间 [2, 6] 上连续，且 f(x) 的一个原函数为 F(x)。若根据牛顿-莱布尼茨公式计算该区间上的定积分，下列关于计算过程与结果的描述哪一项是完全正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "计算结果为 F(6) - F(2)，其几何意义是曲线 f(x) 与 x 轴之间在 [2, 6] 上围成的代数面积"
+      },
+      {
+        "value": "B",
+        "label": "计算结果为 F(2) - F(6)，因为积分上限与下限的顺序不影响最终代数和"
+      },
+      {
+        "value": "C",
+        "label": "计算结果为 F(6) + F(2)，这表示区间端点处原函数值的累加"
+      },
+      {
+        "value": "D",
+        "label": "计算结果为 F(6) × F(2)，这表示区间端点处原函数值的积"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "牛顿-莱布尼茨公式的核心含义是将定积分的计算转化为求原函数在积分区间端点处的函数值之差。对于区间 [2, 6] 上的定积分，其值为 F(6) - F(2)。这一过程的本质是利用原函数来刻画累积量，且其几何意义正是曲线与 x 轴在对应区间内围成的代数面积。选项 B 颠倒了上下限的代数顺序，选项 C 和 D 错误地将减法运算理解为加法或乘法，均属于对公式符号和结论的机械误读。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "formula_application"
+    }
+  },
+  "post": {
+    "id": "GH-07-post-q5",
+    "type": "single",
+    "question": "在应用牛顿-莱布尼茨公式求解定积分时，需要确定被积函数的某个原函数 G(x)。若针对区间 [a, b] 进行计算，以下对该公式结构与运算实质的表述正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "实质是用 G(b) 减去 G(a)，该差值量化了被积函数在 [a, b] 上的总累积效应"
+      },
+      {
+        "value": "B",
+        "label": "实质是用 G(a) 减去 G(b)，因为下限对应的原函数值决定了初始基准"
+      },
+      {
+        "value": "C",
+        "label": "实质是将 G(b) 与 G(a) 相加，以综合区间两端的原函数状态"
+      },
+      {
+        "value": "D",
+        "label": "实质是计算 G(b) 与 G(a) 的比值，用以反映原函数在区间内的相对变化率"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "牛顿-莱布尼茨公式揭示了定积分与原函数之间的本质联系：定积分的值等于被积函数的一个原函数在积分上限处的值减去在积分下限处的值，即 G(b) - G(a)。这一差值不仅在代数上给出了定积分的精确结果，还在物理或几何情境中量化了被积函数在区间 [a, b] 上的总累积效应。选项 B 颠倒了减法顺序，选项 C 和 D 将减法误用为加法或除法，均脱离了公式的核心含义。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K02"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P05",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "formula_application"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q6",
+    "type": "single",
+    "question": "下列关于微分方程 dy/dx = (x²+1)y 的说法，正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "可分离变量，且为一阶线性方程"
+      },
+      {
+        "value": "B",
+        "label": "可分离变量，但不是一阶线性方程"
+      },
+      {
+        "value": "C",
+        "label": "不可分离变量，但为一阶线性方程"
+      },
+      {
+        "value": "D",
+        "label": "不可分离变量，且不是一阶线性方程"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "方程 dy/dx = (x²+1)y 中，将 y 除到左边可得 dy/y = (x²+1)dx，因此可分离变量。同时原方程可改写为 dy/dx - (x²+1)y = 0，即 y' + P(x)y = Q(x) 的形式，其中 P(x) = -(x²+1)，Q(x) = 0，符合一阶线性方程的标准形式。故该方程既可分离变量又是一阶线性方程。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K02"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "classification"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q6",
+    "type": "single",
+    "question": "同学甲认为方程 dy/dx = y·sin x 含有 y 与 sin x 的乘积，因此不是一阶线性方程。同学乙认为该方程可以分离变量。下列判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "甲和乙都对"
+      },
+      {
+        "value": "B",
+        "label": "甲对，乙错"
+      },
+      {
+        "value": "C",
+        "label": "甲错，乙对"
+      },
+      {
+        "value": "D",
+        "label": "甲和乙都错"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "方程 dy/dx = y·sin x 中，y 与 sin x 相乘并不妨碍其为一阶线性方程，因为可改写为 y' - sin x·y = 0，即 y' + P(x)y = Q(x) 的形式，其中 P(x) = -sin x，Q(x) = 0，故甲判断错误。同时方程两边除以 y（y≠0）可得 dy/y = sin x dx，因此可分离变量，乙判断正确。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K02"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 2,
+      "symbolComplexity": "low",
+      "conclusionClass": "classification"
+    }
+  }
+}

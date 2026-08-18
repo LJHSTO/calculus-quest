@@ -1,0 +1,88 @@
+{
+  "pre": {
+    "id": "GH-09-pre-q8",
+    "type": "multiple",
+    "question": "在解析几何中，光滑曲线 C 由方程 f(x,y)=k 给出，其中 k 为常数。若点 P(a,b) 在曲线 C 上，函数 f 在该点处可微，且 ∇f(a,b)≠0。关于曲线 C 在点 P 处的切线方向向量与梯度向量 ∇f(a,b) 的关系，以下哪些说法是正确的？请选择所有正确说法。",
+    "options": [
+      {
+        "value": "A",
+        "label": "切线方向向量与梯度向量相互垂直"
+      },
+      {
+        "value": "B",
+        "label": "梯度向量 ∇f(a,b) 是曲线 C 在点 P 处的法向量"
+      },
+      {
+        "value": "C",
+        "label": "若将曲线 C 的方程改写为 g(x,y)=f(x,y)-k=0，则 ∇g(a,b) 与 ∇f(a,b) 方向相同"
+      },
+      {
+        "value": "D",
+        "label": "沿梯度方向移动时，必定保持在同一条曲线 C 上"
+      }
+    ],
+    "answer": [
+      "A",
+      "B",
+      "C"
+    ],
+    "analysis": "对于隐式方程 f(x,y)=k 定义的曲线，其梯度 ∇f(a,b) 始终垂直于该曲线在点 P 处的切线，因此切线方向向量与梯度向量垂直（A正确）。由于梯度垂直于切线，它自然构成了曲线在该点的法向量（B正确）。若令 g(x,y)=f(x,y)-k，则 ∇g=∇f，两者方向相同（C正确）。沿梯度方向移动会导致函数值改变，从而离开等值线 f(x,y)=k，因此D错误。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-09-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "geometric_relation"
+    }
+  },
+  "post": {
+    "id": "GH-09-post-q8",
+    "type": "multiple",
+    "question": "考虑一个二维标量场，其所有函数值相同的点构成了一条光滑等高线 L。设点 Q 是等高线 L 上的一点，该标量场在 Q 处可微，且梯度不为零。关于等高线 L 在点 Q 处的几何特征及其与该点梯度向量的关系，以下哪些说法是正确的？请选择所有正确说法。",
+    "options": [
+      {
+        "value": "A",
+        "label": "等高线 L 在点 Q 处的切线向量与该点的梯度向量成 90 度夹角"
+      },
+      {
+        "value": "B",
+        "label": "梯度向量是等高线 L 在点 Q 处的切线方向向量"
+      },
+      {
+        "value": "C",
+        "label": "等高线 L 在点 Q 处的法线方向与该点梯度向量的方向平行"
+      },
+      {
+        "value": "D",
+        "label": "从点 Q 出发沿梯度方向作足够小的移动，会离开当前等高线并使函数值改变"
+      }
+    ],
+    "answer": [
+      "A",
+      "C",
+      "D"
+    ],
+    "analysis": "在题设梯度非零且等高线光滑的条件下，梯度垂直于等高线，所以切线与梯度夹角为 90 度（A正确），梯度指示法线方向而非切线方向（B错误，C正确）。沿梯度方向作足够小的移动时函数值以最大速率增加，会离开当前等高线（D正确）。",
+    "points": 12,
+    "knowledgePointIds": [
+      "GH-09-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P08",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 3,
+      "operationCount": 2,
+      "symbolComplexity": "medium",
+      "conclusionClass": "geometric_relation"
+    }
+  }
+}

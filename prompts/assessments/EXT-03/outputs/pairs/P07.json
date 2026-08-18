@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-03-pre-q7",
+    "type": "single",
+    "question": "某射击运动员进行打靶训练。根据长期数据统计，他每次射击命中靶心的概率为0.4。教练要求他连续射击20次，并记录命中靶心的总次数。关于这20次射击的结果，以下说法正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "因为每次命中的概率是0.4，所以20次射击中一定恰好有8次命中靶心。"
+      },
+      {
+        "value": "B",
+        "label": "20次的命中数是随机变量；若把独立射击次数不断增加，累计命中频率会趋于稳定在0.4附近"
+      },
+      {
+        "value": "C",
+        "label": "由于单次射击具有随机性，所以无论射击多少次，命中靶心的次数与总射击次数的比值都不会呈现出任何规律。"
+      },
+      {
+        "value": "D",
+        "label": "只要射击次数超过20次，每次射击命中靶心的概率就会自动从0.4逐渐增加到0.5。"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "20次射击的命中数不必恰好等于期望 8。大数定律说明，当独立射击的累计次数不断增加时，累计命中频率趋近 0.4；它不是说某一组固定 20 次的结果必然稳定。故选 B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "frequency-stability"
+    }
+  },
+  "post": {
+    "id": "EXT-03-post-q7",
+    "type": "single",
+    "question": "某工厂生产一批标准零件，根据历史质检数据，该批次零件的合格率稳定在0.9。质检员从这批零件中随机抽取100个进行检验。关于这100个零件的质检结果，以下判断正确的是哪一项？",
+    "options": [
+      {
+        "value": "A",
+        "label": "由于这批零件的合格率是0.9，所以抽出的这100个零件中必定有且只有90个是合格品。"
+      },
+      {
+        "value": "B",
+        "label": "100个样本中的合格数是随机变量；若随机抽检的样本量不断增加，累计合格频率会趋于稳定在0.9附近"
+      },
+      {
+        "value": "C",
+        "label": "既然每个零件是否合格都是随机的，那么抽取的100个零件中合格品所占的比例完全没有任何规律可循。"
+      },
+      {
+        "value": "D",
+        "label": "随着质检员抽取的零件数量不断增加，这批零件本身的合格率也会随之自动提高并趋近于1。"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "抽取100个时合格数不必恰好为90。大数定律讨论的是样本量增长时累计频率趋近真实概率 0.9，而不是把期望当成必然结果。故选 B。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-03-K04"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P07",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "frequency-stability"
+    }
+  }
+}

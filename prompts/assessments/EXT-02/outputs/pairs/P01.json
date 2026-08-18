@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-02-pre-q1",
+    "type": "single",
+    "question": "在平面直角坐标系中，向量 a=(1,2) 和 b=(3,1) 都从原点出发。关于这两个向量所张成的空间，下列哪种理解是正确的？",
+    "options": [
+      {
+        "value": "A",
+        "label": "它们张成的空间就是连接 a 和 b 两个端点的那条线段"
+      },
+      {
+        "value": "B",
+        "label": "它们张成的空间是所有形如 s·a + t·b 的向量集合，其中 s、t 取遍所有实数"
+      },
+      {
+        "value": "C",
+        "label": "它们张成的空间只包含 a、b 以及 a+b 这三个向量"
+      },
+      {
+        "value": "D",
+        "label": "它们张成的空间是所有从原点出发、长度不超过 |a| 或 |b| 的向量"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "向量张成的空间（span）的核心直觉是：给定一组向量，通过任意实数缩放和相加（即线性组合）所能得到的全部向量的集合。a 和 b 不共线，因此它们张成的是整个二维平面。选项 A 混淆了张成与端点连线；选项 C 只取了三个特殊组合，遗漏了无限多其他线性组合；选项 D 错误地用长度限制来理解向量空间，而向量空间对缩放没有长度上界。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  },
+  "post": {
+    "id": "EXT-02-post-q1",
+    "type": "single",
+    "question": "小红认为：两个从原点出发的非零向量 u 和 v，它们张成的空间就是 u 和 v 端点之间的连线段上的所有向量。下列哪个判断最准确地指出了问题并给出了正确理解？",
+    "options": [
+      {
+        "value": "A",
+        "label": "小红正确，两个向量端点间的连线确实就是张成的空间"
+      },
+      {
+        "value": "B",
+        "label": "小红不正确，张成的空间仅包含 u、v 和 u+v 三个向量"
+      },
+      {
+        "value": "C",
+        "label": "小红不正确，张成的空间应为 u 和 v 的所有线性组合 s·u + t·v（s、t 取遍实数）的全体，而非端点连线"
+      },
+      {
+        "value": "D",
+        "label": "小红不正确，张成的空间是所有长度不超过 max(|u|,|v|) 的向量"
+      }
+    ],
+    "answer": [
+      "C"
+    ],
+    "analysis": "向量张成的空间是指通过 u 和 v 的所有线性组合 s·u + t·v（s、t 为任意实数）所得到的向量全体。小红将张成误解为端点之间的连线段，这只覆盖了形如 (1-t)·u + t·v（0≤t≤1）的向量，是线性组合的一个极小子集。选项 B 同样只取了有限个特殊组合；选项 D 用长度上界来理解向量空间，违背了向量空间对缩放封闭的性质。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-02-K01"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P01",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  }
+}

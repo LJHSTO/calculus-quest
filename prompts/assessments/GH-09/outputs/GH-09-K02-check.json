@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "OpenMAIC",
+  "outlines": [
+    {
+      "id": "GH-09-K02-check",
+      "type": "quiz",
+      "title": "即时检查：方向导数",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-09-K02-check-q1",
+          "type": "single",
+          "question": "已知函数 f(x, y) 在点 P 处沿正东方向（x 轴正方向）的方向导数为 2，沿正北方向（y 轴正方向）的方向导数为 3。求 f(x, y) 在点 P 处沿东北方向（即向量 (1, 1) 方向）的方向导数。",
+          "options": [
+            {
+              "value": "A",
+              "label": "2.5"
+            },
+            {
+              "value": "B",
+              "label": "5"
+            },
+            {
+              "value": "C",
+              "label": "5/√2"
+            },
+            {
+              "value": "D",
+              "label": "√13"
+            }
+          ],
+          "answer": [
+            "C"
+          ],
+          "analysis": "方向导数本质上是梯度向量在指定方向上的投影。已知沿 x 轴正方向的方向导数为 2，说明梯度向量的 x 分量为 2；沿 y 轴正方向的方向导数为 3，说明梯度向量的 y 分量为 3。因此梯度向量为 (2, 3)。东北方向即向量 (1, 1) 方向，其单位向量为 (1/√2, 1/√2)。将梯度与该单位向量作内积，可得方向导数为 2×(1/√2) + 3×(1/√2) = 5/√2。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-09-K02"
+          ],
+          "cognitiveLevel": "apply",
+          "estimatedSteps": 3,
+          "pairId": "GH-09-K02-check",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 2,
+            "operationCount": 3,
+            "symbolComplexity": "medium",
+            "conclusionClass": "numeric"
+          }
+        },
+        {
+          "id": "GH-09-K02-check-q2",
+          "type": "multiple",
+          "question": "关于方向导数的含义，下列说法中所有正确的说法是哪些？",
+          "options": [
+            {
+              "value": "A",
+              "label": "方向导数表示函数在该方向上变化的瞬时快慢，其值可正可负。"
+            },
+            {
+              "value": "B",
+              "label": "函数在一点处沿任意方向的方向导数大小，不可能超过该点梯度向量的模长。"
+            },
+            {
+              "value": "C",
+              "label": "只要函数在某点存在偏导数，则它在该点沿任意方向的方向导数必然都存在。"
+            },
+            {
+              "value": "D",
+              "label": "方向导数就是梯度向量本身，是一个具有方向和大小属性的矢量。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B"
+          ],
+          "analysis": "A 项正确，方向导数是标量，反映函数沿特定方向的变化率，可正可负；B 项正确，方向导数是梯度在单位方向上的投影，投影长度不会超过梯度模长；C 项错误，偏导数存在仅保证沿坐标轴方向的方向导数存在，沿任意方向的方向导数需要更强的条件（如函数可微）；D 项错误，方向导数是标量而非矢量，梯度才是矢量。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-09-K02"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-09-K02-check",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 0,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "conceptual"
+          }
+        }
+      ]
+    }
+  ]
+}

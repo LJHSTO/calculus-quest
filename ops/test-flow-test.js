@@ -151,7 +151,7 @@ assert.ok(formalStyleVersion);
 assert.notEqual(formalStyleVersion, "20260726-courseware-layout-v2");
 const formalCoreScriptVersion = mainHtml.match(/app\/main\/core\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalCoreScriptVersion);
-assert.equal(formalCoreScriptVersion, "20260813-platform-fixes-v1");
+assert.equal(formalCoreScriptVersion, "20260817-assessment-redesign-v6");
 assert.match(mainHtml, /lib\/quiz-question-order\.js\?v=20260726-quiz-order-v1/);
 const formalRenderScriptVersion = mainHtml.match(/app\/main\/render-learning\.js\?v=([^"]+)/)?.[1];
 assert.ok(formalRenderScriptVersion);
@@ -207,12 +207,20 @@ assert.equal(new Set(audioResources).size, audioResources.length, "audio referen
 const slides = route.chapters.flatMap((chapter) => (chapter.modules || []).flatMap((module) => (
   (module.knowledgePoints || []).filter((knowledgePoint) => knowledgePoint.slide?.canvas)
 )));
-const quizzes = route.chapters.reduce((sum, chapter) => sum + ["preQuiz", "formativeQuiz", "postQuiz"].reduce(
+const chapterQuizzes = route.chapters.reduce((sum, chapter) => sum + ["preQuiz", "postQuiz"].reduce(
   (phaseSum, key) => phaseSum + (chapter.flow?.[key]?.questions || []).length,
   0
 ), 0);
+const knowledgeChecks = route.chapters.reduce((sum, chapter) => sum + (chapter.modules || []).reduce(
+  (moduleSum, module) => moduleSum + (module.knowledgePoints || []).reduce(
+    (knowledgeSum, knowledgePoint) => knowledgeSum + (knowledgePoint.formativeQuiz?.questions || []).length,
+    0
+  ),
+  0
+), 0);
 assert.equal(slides.length, 72);
-assert.equal(quizzes, 330);
+assert.equal(chapterQuizzes, 220);
+assert.equal(knowledgeChecks, 144);
 assert.ok(slides.every((knowledgePoint) => Array.isArray(knowledgePoint.slide.canvas.elements)));
 
 const gh04SpaceFiles = [
@@ -246,7 +254,7 @@ console.log(JSON.stringify({
   chapters: route.chapters.length,
   resources: resources.length,
   slides: slides.length,
-  quizzes,
+  quizzes: chapterQuizzes + knowledgeChecks,
   audio: audioResources.length,
   checkableResources: resources.length + slides.length + audioResources.length
 }, null, 2));

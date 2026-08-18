@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q6",
+    "type": "single",
+    "question": "在计算定积分时，若被积函数包含复合结构，常通过引入新变量进行换元。从几何与代数对应的角度看，换元法最核心的操作本质是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "将原积分区间直接平移，使被积函数形式简化后套用基本积分公式"
+      },
+      {
+        "value": "B",
+        "label": "把原变量的一小段变化量替换为新变量对应的变化量，同时把积分上下限更新为新变量的对应值"
+      },
+      {
+        "value": "C",
+        "label": "保持积分上下限不变，仅对被积函数的内部表达式求导并替换原变量符号"
+      },
+      {
+        "value": "D",
+        "label": "将被积函数展开为多项式，逐项求原函数后再代入原积分上下限相减"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "换元法直觉的核心在于：当用新变量 u 替换原变量 x 的某个表达式时，x 的微小增量 dx 与 u 的微小增量 du 之间存在由导数决定的缩放关系。因此，不仅被积函数要替换，微分元 dx 必须替换为 du 乘以相应的导数因子，同时积分上下限也必须从 x 的值转换为 u 的对应值。选项 A 只提到区间平移，忽略了微分元的变换；选项 C 错在保持上下限不变；选项 D 是多项式展开，不属于换元法的核心思想。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  },
+  "post": {
+    "id": "GH-07-post-q6",
+    "type": "single",
+    "question": "某同学在用换元法处理定积分时，只把被积函数中的旧变量表达式替换为新变量，却保留了原来的积分上下限和原来的微分符号。从换元法必须保证积分值不变的角度看，该做法缺失的关键理解是什么？",
+    "options": [
+      {
+        "value": "A",
+        "label": "缺失了对新变量求原函数后必须回代为旧变量再代入上下限这一步骤的认识"
+      },
+      {
+        "value": "B",
+        "label": "缺失了旧变量的微分元与新变量的微分元之间存在导数缩放关系，且上下限需同步转换为新变量对应值的认识"
+      },
+      {
+        "value": "C",
+        "label": "缺失了被积函数必须先展开为多项式才能逐项积分的认识"
+      },
+      {
+        "value": "D",
+        "label": "缺失了积分区间必须先平移到以原点为中心才能简化计算的认识"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "换元法要求在替换变量的同时，把旧变量的微分元按导数关系替换为新变量的微分元，并把积分上下限更新为新变量对应的值。该同学只替换了被积函数中的表达式，却未替换微分元和上下限，说明他缺失了对微分元缩放和上下限同步转换的认识。选项 A 指的是回代步骤，但定积分换元通常不需要回代；选项 C 和 D 与换元法的核心思想无关。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 2,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 1,
+      "operationCount": 0,
+      "symbolComplexity": "low",
+      "conclusionClass": "concept-identification"
+    }
+  }
+}

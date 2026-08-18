@@ -1,0 +1,30 @@
+{
+  "pre": {
+    "id": "GH-02-pre-q5",
+    "type": "single",
+    "question": "小明写道：‘f(x) 在 x=1 处的左极限和右极限都等于 2，所以 f(x) 在 x=1 处一定连续。’对这段推理评价最准确的是？",
+    "options": [{"value":"A","label":"推理完整，左右极限相等就能保证连续"},{"value":"B","label":"推理不完整，还必须确认 f(1) 有定义且等于 2"},{"value":"C","label":"推理错误，因为左右极限相等时极限不存在"},{"value":"D","label":"无法评价，因为连续性与极限没有关系"}],
+    "answer": ["B"],
+    "analysis": "左右极限相等只能说明双侧极限存在。判断连续还需确认函数在该点有定义，并且函数值等于极限值。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K03"],
+    "cognitiveLevel": "分析",
+    "estimatedSteps": 3,
+    "pairId": "P05",
+    "equivalence": {"presentationMode":"text","knownConditionCount":2,"operationCount":0,"symbolComplexity":"low","conclusionClass":"continuity_reasoning_diagnosis"}
+  },
+  "post": {
+    "id": "GH-02-post-q5",
+    "type": "single",
+    "question": "小红认为：‘因为 g(3)=5，所以 g(x) 在 x=3 处连续。’老师应指出这份判断缺少什么关键信息？",
+    "options": [{"value":"A","label":"还需知道左右极限是否存在、是否相等，并比较极限值与 g(3)"},{"value":"B","label":"还需知道 g(x) 在其他所有点的函数值"},{"value":"C","label":"不缺信息，函数在该点有值就一定连续"},{"value":"D","label":"只需再确认左极限存在，不必考虑右极限"}],
+    "answer": ["A"],
+    "analysis": "单独知道函数值不能判断连续。还要检查左右极限存在且相等，并确认所得极限值等于该点函数值。",
+    "points": 8,
+    "knowledgePointIds": ["GH-02-K03"],
+    "cognitiveLevel": "分析",
+    "estimatedSteps": 3,
+    "pairId": "P05",
+    "equivalence": {"presentationMode":"text","knownConditionCount":2,"operationCount":0,"symbolComplexity":"low","conclusionClass":"continuity_reasoning_diagnosis"}
+  }
+}

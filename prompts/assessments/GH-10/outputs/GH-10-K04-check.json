@@ -1,0 +1,107 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "多元函数、梯度与 Jacobian",
+  "outlines": [
+    {
+      "id": "GH-10-K04-check",
+      "type": "quiz",
+      "title": "即时检查：局部线性变形",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-10-K04-check-q1",
+          "type": "single",
+          "question": "在点 P 附近，二元函数 z=f(x,y) 的图像被某平面很好地近似。当观察点在 P 邻域内作微小移动时，函数值的变化量与自变量变化量之间呈现何种关系？",
+          "options": [
+            {
+              "value": "A",
+              "label": "近似满足线性关系，变化量可由一个线性式表示"
+            },
+            {
+              "value": "B",
+              "label": "严格保持非线性关系，必须用原函数精确计算"
+            },
+            {
+              "value": "C",
+              "label": "完全无关，自变量变化不会引起函数值变化"
+            },
+            {
+              "value": "D",
+              "label": "仅当自变量沿坐标轴移动时才近似线性，斜向移动则不成立"
+            }
+          ],
+          "answer": [
+            "A"
+          ],
+          "analysis": "在可微点 P 附近，函数图像可由切平面近似，函数值增量的一阶主部是自变量增量的线性组合，即 dz=f_x dx+f_y dy，所以 A 正确。B 否认了局部线性近似；C 错误地声称自变量与函数值变化完全无关；D 错误地把近似限制在坐标轴方向。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-10-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-10-K04-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-explanation"
+          }
+        },
+        {
+          "id": "GH-10-K04-check-q2",
+          "type": "multiple",
+          "question": "关于局部线性变形的含义，以下说法中哪些是正确的？请选择所有正确说法。",
+          "options": [
+            {
+              "value": "A",
+              "label": "局部线性变形是指在一点附近用线性函数近似原函数的变化"
+            },
+            {
+              "value": "B",
+              "label": "局部线性变形只是一种符号记法，不能用于近似估计函数值的变化"
+            },
+            {
+              "value": "C",
+              "label": "在局部线性近似下，函数值的变化量可表示为自变量变化量的线性组合"
+            },
+            {
+              "value": "D",
+              "label": "局部线性变形要求自变量的变化量必须很大，才能保证线性关系成立"
+            }
+          ],
+          "answer": [
+            "A",
+            "C"
+          ],
+          "analysis": "A 正确，局部线性变形正是指在一点附近用线性函数近似原函数的变化。C 正确，在局部线性近似下，函数值的变化量可表示为自变量变化量的线性组合，例如 dz = f_x dx + f_y dy。B 错误，这属于只记符号而未理解其可用于近似估计的常见误解。D 错误，局部线性近似要求自变量变化量足够小，而非很大，变化量过大时非线性效应显著，线性近似不再成立。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-10-K04"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-10-K04-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "misconception-diagnosis"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "languageDirective": "zh-CN",
+  "courseTitle": "无约束优化与梯度下降基础",
+  "outlines": [
+    {
+      "id": "GH-12-K04-check",
+      "type": "quiz",
+      "title": "即时检查：迭代路径与停止信号",
+      "order": 1,
+      "quizConfig": {
+        "questionCount": 2,
+        "difficulty": "medium",
+        "questionTypes": [
+          "single",
+          "multiple"
+        ]
+      },
+      "keyPoints": [
+        {
+          "id": "GH-12-K04-check-q1",
+          "type": "single",
+          "question": "在无约束优化中，迭代路径与停止信号用于判断算法是否结束。下列关于“迭代路径与停止信号”核心含义的叙述，最准确的是哪一项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "迭代路径是函数解析式，停止信号是函数取极值时的解析条件。"
+            },
+            {
+              "value": "B",
+            "label": "迭代路径是逐步更新得到的一组点，停止信号可依据梯度、函数值变化、迭代点变化或次数上限等信息给出终止判据。"
+            },
+            {
+              "value": "C",
+              "label": "迭代路径是函数图像，停止信号是图像与坐标轴交点的个数。"
+            },
+            {
+              "value": "D",
+              "label": "迭代路径是学习率取值表，停止信号是学习率为零时的函数值。"
+            }
+          ],
+          "answer": [
+            "B"
+          ],
+          "analysis": "迭代路径是算法从初始点出发按规则产生的点序列；停止信号可综合梯度、函数值或位置变化及迭代预算等信息，而不是函数解析式、图像交点或学习率表。选 B。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-12-K04"
+          ],
+          "cognitiveLevel": "understand",
+          "estimatedSteps": 2,
+          "pairId": "GH-12-K04-check-pair",
+          "adaptiveRole": "core",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "concept-identification"
+          }
+        },
+        {
+          "id": "GH-12-K04-check-q2",
+          "type": "multiple",
+          "question": "某同学说：“迭代路径与停止信号就是记住公式和符号，不需要和图像、操作或应用情境联系。”下列说法中，所有正确说法是哪几项？",
+          "options": [
+            {
+              "value": "A",
+              "label": "只记住符号或结论，可能导致无法判断迭代是否接近极值点。"
+            },
+            {
+              "value": "B",
+              "label": "把迭代路径和函数值变化联系起来，有助于理解停止信号的意义。"
+            },
+            {
+              "value": "C",
+              "label": "停止信号只与函数解析式有关，与相邻迭代点的变化无关。"
+            },
+            {
+              "value": "D",
+              "label": "在应用情境中，停止信号通常表示迭代点变化已很小，可终止迭代。"
+            }
+          ],
+          "answer": [
+            "A",
+            "B",
+            "D"
+          ],
+          "analysis": "选项 A、B、D 都指出需要把迭代路径与停止信号和图像、操作或应用情境联系，符合知识点目标。选项 C 把停止信号只归于解析式，忽略相邻迭代点变化，属于常见误解，错误。",
+          "points": 10,
+          "knowledgePointIds": [
+            "GH-12-K04"
+          ],
+          "cognitiveLevel": "analyze",
+          "estimatedSteps": 3,
+          "pairId": "GH-12-K04-check-pair",
+          "adaptiveRole": "diagnostic",
+          "equivalence": {
+            "presentationMode": "text",
+            "knownConditionCount": 1,
+            "operationCount": 0,
+            "symbolComplexity": "low",
+            "conclusionClass": "misconception-diagnosis"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-07-pre-q3",
+    "type": "single",
+    "question": "已知函数 f(x) 在区间 [0, 4] 上连续且始终为正。构造变上限积分 F(x) = ∫[0 to x] f(t) dt。若 x 从 1 增加到 2 的过程中，f(x) 的值越来越大，那么关于 F(x) 在此区间内的增长方式，下列说法正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "F(x) 的值在逐渐减小，因为积分下限固定为 0"
+      },
+      {
+        "value": "B",
+        "label": "F(x) 的值在增加，且增加的速度在变快"
+      },
+      {
+        "value": "C",
+        "label": "F(x) 的值在增加，且增加的速度保持不变"
+      },
+      {
+        "value": "D",
+        "label": "F(x) 的值在增加，且增加的速度在变慢"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "变上限积分 F(x) 表示从 0 到 x 的曲线下面积。由于 f(x) 始终为正，随着上限 x 的增加，F(x) 不断累加正的面积，所以 F(x) 的值在增加。F(x) 的导数等于 f(x)，即 F(x) 增加的速度由 f(x) 的大小决定。当 f(x) 越来越大时，F(x) 增加的速度也在变快。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity-and-rate"
+    }
+  },
+  "post": {
+    "id": "GH-07-post-q3",
+    "type": "single",
+    "question": "已知函数 g(x) 在区间 [-2, 2] 上连续且始终为负。构造变上限积分 G(x) = ∫[0 to x] g(t) dt。当 x 从 -1 逐渐减小到 -2 的过程中，g(x) 的值变得越来越负（即绝对值越来越大）。关于 G(x) 在此区间内的变化特征，下列推断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "G(x) 的值在逐渐减小，因为积分上限在向左移动"
+      },
+      {
+        "value": "B",
+        "label": "G(x) 的值在增加，且增加的速度在变快"
+      },
+      {
+        "value": "C",
+        "label": "G(x) 的值在增加，且增加的速度保持不变"
+      },
+      {
+        "value": "D",
+        "label": "G(x) 的值在增加，且增加的速度在变慢"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "变上限积分 G(x) 表示从 0 到 x 的曲线下面积。当 x 为负且向左移动时，积分方向与正向相反，由于 g(t) 始终为负，负方向上的负面积累加使得 G(x) 的值增加。G(x) 的变化率由 g(x) 决定，当 g(x) 变得越来越负时，其绝对值越来越大，意味着 G(x) 增加的速度在变快。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-07-K01"
+    ],
+    "cognitiveLevel": "apply",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "monotonicity-and-rate"
+    }
+  }
+}

@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "EXT-01-pre-q3",
+    "type": "single",
+    "question": "某运动量 q(x) 的瞬时变化率被观测为 3x²+2x+1。下列哪一个式子准确把这条观测写成微分方程？",
+    "options": [
+      {
+        "value": "A",
+        "label": "q(x)=3x²+2x+1"
+      },
+      {
+        "value": "B",
+        "label": "q'(x)=3x²+2x+1"
+      },
+      {
+        "value": "C",
+        "label": "∫₀ˣq(t)dt=3x²+2x+1"
+      },
+      {
+        "value": "D",
+        "label": "q(x)²=3x²+2x+1"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "瞬时变化率由导数 q'(x) 表示，因此观测应写成 q'(x)=3x²+2x+1，选 B。A 把函数值误当变化率，C、D 也没有表达题干给出的导数关系。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "identification"
+    }
+  },
+  "post": {
+    "id": "EXT-01-post-q3",
+    "type": "single",
+    "question": "某温度函数 T(x) 的瞬时变化率等于 eˣ+1。四位同学给出数学模型，下列哪一项正确？",
+    "options": [
+      {
+        "value": "A",
+        "label": "T(x)=eˣ+1"
+      },
+      {
+        "value": "B",
+        "label": "T'(x)=eˣ+1"
+      },
+      {
+        "value": "C",
+        "label": "∫₀ˣT(t)dt=eˣ+1"
+      },
+      {
+        "value": "D",
+        "label": "T(x)²=eˣ+1"
+      }
+    ],
+    "answer": [
+      "B"
+    ],
+    "analysis": "温度的瞬时变化率是 T'(x)，所以模型为 T'(x)=eˣ+1，选 B。其他选项分别描述函数值、积分或平方，而不是给定的变化率。",
+    "points": 8,
+    "knowledgePointIds": [
+      "EXT-01-K01"
+    ],
+    "cognitiveLevel": "理解",
+    "estimatedSteps": 2,
+    "pairId": "P03",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 4,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "identification"
+    }
+  }
+}

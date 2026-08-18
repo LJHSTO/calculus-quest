@@ -1,0 +1,84 @@
+{
+  "pre": {
+    "id": "GH-13-pre-q6",
+    "type": "single",
+    "question": "已知集合 M 是由所有满足不等式 x^2 + y^2 <= 1 的点 (x, y) 构成的区域，集合 N 是由所有满足不等式 x + y >= 1 的点 (x, y) 构成的区域。关于集合 M 与集合 N 的交集，以下判断正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "该交集是一个凸集合，因为对于交集中任意两点，连接它们的线段上的所有点都同时满足上述两个不等式"
+      },
+      {
+        "value": "B",
+        "label": "该交集不是凸集合，因为圆形区域与直线划分出的半平面相交后必然产生凹陷的边界"
+      },
+      {
+        "value": "C",
+        "label": "该交集不是凸集合，因为两个不同区域相交的结果总会破坏原有的几何凸性特征"
+      },
+      {
+        "value": "D",
+        "label": "无法仅凭上述代数条件判断交集是否为凸集合，必须画出精确图形并测量边界曲率后才能确定"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "集合 M 是一个以原点为圆心、半径为 1 的实心圆盘，它是一个凸集合。集合 N 是一个由直线 x + y = 1 划分出的右上侧半平面，它也是一个凸集合。根据凸集合的性质，任意多个凸集合的交集仍然是凸集合。因此，M 与 N 的交集（即圆盘内且在直线上方的弓形区域）必然是凸集合。对于该交集中的任意两点，由于它们各自都在 M 和 N 中，连接它们的线段也必然完全在 M 和 N 中，从而完全在交集中。选项 B 和 C 对凸集合相交的性质存在误解，选项 D 则错误地认为判断凸性必须依赖图形测量而非代数性质。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-judgment"
+    }
+  },
+  "post": {
+    "id": "GH-13-post-q6",
+    "type": "single",
+    "question": "在平面直角坐标系中，区域 W 被定义为同时满足 x >= 0、y >= 0 以及 x + y <= 2 的所有点 (x, y) 的集合。关于区域 W 的几何特征，下列说法中正确的是？",
+    "options": [
+      {
+        "value": "A",
+        "label": "区域 W 是一个凸集合，因为从 W 中任取两点，连接这两点的线段上的所有点都仍然满足上述三个不等式约束"
+      },
+      {
+        "value": "B",
+        "label": "区域 W 不是凸集合，因为不等式组在边界处引入了多个折角，导致两点连线可能穿出区域"
+      },
+      {
+        "value": "C",
+        "label": "区域 W 不是凸集合，因为由多个不等式共同界定的区域必定存在向内凹陷的空隙部分"
+      },
+      {
+        "value": "D",
+        "label": "仅凭这三个不等式无法断定 W 是否为凸集合，还需要具体计算边界交点处的切线斜率才能下结论"
+      }
+    ],
+    "answer": [
+      "A"
+    ],
+    "analysis": "区域 W 是由三个半平面（x >= 0、y >= 0、x + y <= 2）相交而成的三角形区域。每一个半平面本身都是凸集合。根据凸集合的性质，任意多个凸集合的交集仍然是凸集合。因此，这三个半平面的交集 W 必然是凸集合。对于 W 中的任意两点，它们都满足这三个线性不等式，由于线性不等式在两点连线的线性插值下保持成立，连接这两点的线段必然完全包含在 W 中。选项 B 错误地认为折角会破坏凸性，选项 C 错误地认为多不等式交集必含凹陷，选项 D 错误地引入了不必要的切线斜率计算，凸性由集合的基本定义即可直接判定。",
+    "points": 8,
+    "knowledgePointIds": [
+      "GH-13-K03"
+    ],
+    "cognitiveLevel": "understand",
+    "estimatedSteps": 3,
+    "pairId": "P06",
+    "equivalence": {
+      "presentationMode": "text",
+      "knownConditionCount": 2,
+      "operationCount": 1,
+      "symbolComplexity": "low",
+      "conclusionClass": "property-judgment"
+    }
+  }
+}
