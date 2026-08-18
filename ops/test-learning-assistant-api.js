@@ -210,6 +210,18 @@ async function main() {
     assert.equal(lockedQuizIntervention.response.status, 403);
     assert.equal(lockedQuizIntervention.payload.code, "assistant_quiz_locked_until_submit");
 
+    const lockedFormativeHistoryResponse = await fetch(
+      `${baseUrl}/api/learning/assistant/history?chapterId=${encodeURIComponent(chapter.id)}&unitId=${encodeURIComponent(`${knowledgePoint.id}-formative`)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const lockedFormativeHistory = await lockedFormativeHistoryResponse.json();
+    assert.equal(lockedFormativeHistoryResponse.status, 403);
+    assert.equal(
+      lockedFormativeHistory.code,
+      "assistant_quiz_locked_until_submit",
+      "知识点形成性测验未提交时应进入测验锁定，而不是报告单元不存在"
+    );
+
     const earlyInteractiveDwell = await postJson(baseUrl, "/api/learning/assistant/intervention", {
       chapterId: chapter.id,
       unitId: knowledgePoint.id,

@@ -96,7 +96,23 @@ const route = {
                   type: "simulation",
                   description: "拖动 h 观察割线变化。"
                 }
-              ]
+              ],
+              formativeQuiz: {
+                title: "从割线到切线即时检测",
+                questions: [
+                  {
+                    id: "KP1-formative-q1",
+                    type: "single",
+                    question: "当横向间隔趋近于零时，割线斜率会怎样？",
+                    options: [
+                      { value: "A", label: "趋近切线斜率" },
+                      { value: "B", label: "必然变成零" }
+                    ],
+                    answer: ["A"],
+                    points: 10
+                  }
+                ]
+              }
             }
           ],
           flow: {}
@@ -109,6 +125,29 @@ const route = {
 const index = buildCourseContextIndex(route);
 assert.equal(index.units.get("KP1").knowledgePointLabel, "从割线到切线");
 assert.equal(index.units.get("C1-pre").type, "quiz");
+const formativeUnit = index.units.get("KP1-formative");
+assert.ok(formativeUnit, "知识点级形成性测验必须进入助教上下文索引");
+assert.equal(formativeUnit.type, "quiz");
+assert.equal(formativeUnit.phase, "formative");
+assert.equal(formativeUnit.knowledgePointId, "KP1");
+assert.equal(formativeUnit.moduleId, "M1");
+assert.equal(formativeUnit.quizQuestions[0].id, "KP1-formative-q1");
+
+const formativeContext = resolveAssistantContext({
+  index,
+  chapterId: "C1",
+  unitId: "KP1-formative",
+  contextRef: {
+    kind: "quiz",
+    scope: "quiz",
+    semanticId: "quiz:KP1-formative-q1",
+    questionId: "KP1-formative-q1"
+  },
+  quizSubmitted: false
+});
+assert.equal(formativeContext.isQuiz, true);
+assert.equal(formativeContext.contextRef.knowledgePointId, "KP1");
+assert.equal(formativeContext.question.id, "KP1-formative-q1");
 
 const reorderedQuizIndex = buildCourseContextIndex({
   versionId: "assistant-question-order-v1",

@@ -228,7 +228,9 @@ async function main() {
       "/api/admin/stats/overview"
     );
     assert.equal(beforeOverview.payload.data.avgAccuracy, 0);
-    assert.equal(beforeOverview.payload.data.totalQuizResults, 8);
+    // The overview metric counts submitted quiz units; the candidate table
+    // still exposes all 8 question rows eligible for regrading.
+    assert.equal(beforeOverview.payload.data.totalQuizResults, 3);
     const beforeQuestionErrors = await adminRequest(
       baseUrl,
       adminToken,
@@ -256,7 +258,7 @@ async function main() {
       `/api/admin/stats/user-detail?userId=${encodeURIComponent(users[0][0])}`
     );
     const beforeUserDetail = beforeUserDetailResponse.payload.data;
-    assert.equal(beforeUserDetail.quizOverall.submissions, 7);
+    assert.equal(beforeUserDetail.quizOverall.submissions, 2);
     assert.equal(beforeUserDetail.quizOverall.questions, 7);
     assert.equal(beforeUserDetail.quizOverall.correct, 0);
     assert.equal(beforeUserDetail.quizOverall.totalScore, 0);
@@ -352,7 +354,7 @@ async function main() {
       "/api/admin/stats/overview"
     );
     assert.equal(afterOverview.payload.data.avgAccuracy, 75);
-    assert.equal(afterOverview.payload.data.totalQuizResults, 8);
+    assert.equal(afterOverview.payload.data.totalQuizResults, 3);
     const afterQuestionErrors = await adminRequest(
       baseUrl,
       adminToken,

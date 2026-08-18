@@ -1988,6 +1988,115 @@ function lessonTimelineStatus(unit, isLocked, isSkipped, isDone, statusKind = ""
   return unit?.type === "quiz" ? "待完成" : "待学习";
 }
 
+function renderLessonTimelineCard(unit, index) {
+  const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
+  const statusKind = typeof agenticLessonStatusKind === "function" ? agenticLessonStatusKind(unit.id) : "";
+  const isPendingReview = statusKind === "review";
+  const isUnlocked = typeof agenticUnitCompletionAllowed === "function"
+    ? agenticUnitCompletionAllowed(unit.id)
+    : typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
+  const isLocked = !isUnlocked && !isSkipped;
+  const isDone = state.completed.includes(unit.id);
+  const isRecommended = isUnlocked && !isSkipped && !isDone && !isPendingReview;
+  const cls = [
+    "lesson-card",
+    "lesson-step-card",
+    unit.id === currentUnitId ? "active" : "",
+    isLocked ? "locked" : "",
+    isPendingReview ? "review-pending" : "",
+    isSkipped ? "skipped" : "",
+    isRecommended ? "recommended" : "",
+    unit.flowKind === "adaptive" ? "adaptive" : ""
+  ].filter(Boolean).join(" ");
+  const statusText = lessonTimelineStatus(unit, isLocked, isSkipped, isDone, statusKind);
+  const caption = lessonTimelineCaption(unit, statusText);
+  return '<button class="' + cls + '" type="button" data-unit="' + escapeHtml(unit.id) + '">'
+    + '<span class="lesson-step-index">' + (index + 1) + '</span>'
+    + '<span class="lesson-card-body"><strong>' + escapeHtml(unit.label) + '</strong>'
+    + '<small>' + escapeHtml(caption) + '</small></span>'
+    + '<em>' + escapeHtml(statusText) + '</em>'
+    + '</button>';
+}
+
+function lessonPathGroupsForChapter(chapter, displayUnits = []) {
+  const moduleById = new Map((chapter.modules || []).map((module) => [module.id, module]));
+  const groups = new Map();
+  displayUnits.forEach((unit, index) => {
+    const module = moduleById.get(unit.moduleId);
+    const key = module
+      ? `module:${module.id}`
+      : unit.assessmentPhase === "pre"
+        ? "chapter-start"
+        : "chapter-end";
+    const existing = groups.get(key) || {
+      key,
+      module,
+      kind: module ? "module" : key === "chapter-start" ? "start" : "end",
+      units: []
+    };
+    existing.units.push({ unit, index });
+    groups.set(key, existing);
+  });
+  return Array.from(groups.values());
+}
+
+function renderLessonPathGroup(group, groupIndex) {
+  const units = group.units || [];
+  if (!units.length) return "";
+  const knowledgePointIds = Array.from(new Set(
+    units.map(({ unit }) => unit.knowledgePointId).filter(Boolean)
+  ));
+  const completedKnowledgePoints = knowledgePointIds.filter((knowledgePointId) => {
+    const formative = units.find(({ unit }) => (
+      unit.knowledgePointId === knowledgePointId
+      && unit.type === "quiz"
+      && unit.assessmentPhase === "formative"
+    ));
+    return formative
+      ? unitCountsTowardProgress(formative.unit)
+      : units
+        .filter(({ unit }) => unit.knowledgePointId === knowledgePointId)
+        .every(({ unit }) => unitCountsTowardProgress(unit));
+  }).length;
+  const completedSteps = units.filter(({ unit }) => unitCountsTowardProgress(unit)).length;
+  const progressText = knowledgePointIds.length
+    ? `${completedKnowledgePoints}/${knowledgePointIds.length} 个知识点`
+    : `${completedSteps}/${units.length} 个步骤`;
+  const active = units.some(({ unit }) => unit.id === currentUnitId);
+  const title = group.kind === "module"
+    ? group.module?.title || "学习模块"
+    : group.kind === "start"
+      ? "开始定位"
+      : "本章收束";
+  const subtitle = group.kind === "module"
+    ? `${group.module?.knowledgePoints?.length || units.filter(({ unit }) => unit.type === "knowledge").length} 个知识点`
+    : group.kind === "start"
+      ? "前测与学习路径确认"
+      : "复盘与后测";
+  const open = active || (!currentUnitId && groupIndex === 0);
+  const groupClass = ["lesson-module-group", active ? "active" : ""].filter(Boolean).join(" ");
+  return `
+    <details class="${groupClass}"${open ? " open" : ""}>
+      <summary class="lesson-module-summary">
+        <span class="lesson-module-summary-copy">
+          <strong>${escapeHtml(title)}</strong>
+          <small>${escapeHtml(subtitle)}</small>
+        </span>
+        <span class="lesson-module-summary-meta">${escapeHtml(progressText)}</span>
+      </summary>
+      <div class="lesson-module-steps">
+        ${units.map(({ unit, index }) => renderLessonTimelineCard(unit, index)).join("")}
+      </div>
+    </details>
+  `;
+}
+
+function renderGroupedLessonPath(chapter, displayUnits = []) {
+  return lessonPathGroupsForChapter(chapter, displayUnits)
+    .map(renderLessonPathGroup)
+    .join("");
+}
+
 function syncPathRailsToCurrent() {
   const safeId = (value) => (typeof CSS !== "undefined" && CSS.escape ? CSS.escape(value) : String(value).replace(/"/g, '\\"'));
   window.requestAnimationFrame(() => {
@@ -2107,6 +2216,7 @@ function renderLessons() {
   const chapter = getChapter();
   els.chapterTitle.textContent = chapter.label;
   els.lessonList.classList.toggle("multi-scene-step-list", isMultiSceneLearningRoute());
+  els.lessonList.classList.toggle("lesson-path-grouped", isMultiSceneLearningRoute());
   if (!chapter.loaded) {
     els.lessonList.innerHTML = '<div class="empty-state">\u70b9\u51fb\u5de6\u4fa7\u7ae0\u8282\u5361\u7247\u52a0\u8f7d\u672c\u7ae0\u5b66\u4e60\u6a21\u5757\u3002</div>';
     syncPathRailsToCurrent();
@@ -2119,26 +2229,9 @@ function renderLessons() {
     syncPathRailsToCurrent();
     return;
   }
-  els.lessonList.innerHTML = displayUnits.map((unit, index) => {
-    const isSkipped = typeof agenticIsSkipped === "function" && agenticIsSkipped(unit.id);
-    const statusKind = typeof agenticLessonStatusKind === "function" ? agenticLessonStatusKind(unit.id) : "";
-    const isPendingReview = statusKind === "review";
-    const isUnlocked = typeof agenticUnitCompletionAllowed === "function"
-      ? agenticUnitCompletionAllowed(unit.id)
-      : typeof agenticIsUnitUnlocked !== "function" || agenticIsUnitUnlocked(unit.id);
-    const isLocked = !isUnlocked && !isSkipped;
-    const isDone = state.completed.includes(unit.id);
-    const isRecommended = isUnlocked && !isSkipped && !isDone && !isPendingReview;
-    const cls = ["lesson-card", "lesson-step-card", unit.id === currentUnitId ? "active" : "", isLocked ? "locked" : "", isPendingReview ? "review-pending" : "", isSkipped ? "skipped" : "", isRecommended ? "recommended" : "", unit.flowKind === "adaptive" ? "adaptive" : ""].filter(Boolean).join(" ");
-    const statusText = lessonTimelineStatus(unit, isLocked, isSkipped, isDone, statusKind);
-    const caption = lessonTimelineCaption(unit, statusText);
-    return '<button class="' + cls + '" type="button" data-unit="' + unit.id + '">'
-      + '<span class="lesson-step-index">' + (index + 1) + '</span>'
-      + '<span class="lesson-card-body"><strong>' + escapeHtml(unit.label) + '</strong>'
-      + '<small>' + escapeHtml(caption) + '</small></span>'
-      + '<em>' + escapeHtml(statusText) + '</em>'
-      + '</button>';
-  }).join('');
+  els.lessonList.innerHTML = isMultiSceneLearningRoute()
+    ? renderGroupedLessonPath(chapter, displayUnits)
+    : displayUnits.map(renderLessonTimelineCard).join("");
   syncPathRailsToCurrent();
 }
 
@@ -2163,7 +2256,7 @@ function renderChapters() {
         chapter.id === currentChapterId ? "active" : "",
         isUnlocked ? "" : "locked"
       ].filter(Boolean).join(" ");
-      const status = isUnlocked ? `${done}/${total} 模块` : "未解锁";
+      const status = isUnlocked ? `${done}/${total} 步骤` : "未解锁";
       const safeExtensionIndex = extensionIndex || curriculum.slice(0, index + 1).filter((item) => item.extension || item.track === "extension").length;
       const safeMainIndex = mainIndex || curriculum.slice(0, index + 1).filter((item) => !(item.extension || item.track === "extension")).length;
       const chapterCode = isExtension ? `扩展 ${safeExtensionIndex}` : `第 ${safeMainIndex} 章`;
