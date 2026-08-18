@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const http = require("http");
+const net = require("net");
 const path = require("path");
 const zlib = require("zlib");
 // Load .env (if present) so LLM_PROVIDER / OPENAI_COMPATIBLE_API_KEY etc. can be configured without a process manager.
@@ -74,6 +75,18 @@ const coursewareFeedbackTargetLookup = feedback.buildCoursewareFeedbackTargetLoo
 const packageInfo = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const port = Number(process.argv[2] || process.env.PORT || 8765);
 const host = process.env.HOST || "127.0.0.1";
+
+function isLoopbackHost(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/^\[|\]$/g, "");
+  if (normalized === "localhost" || normalized === "::1") return true;
+  return net.isIPv4(normalized) && normalized.split(".")[0] === "127";
+}
+
+// This switch is runtime-only: it is accepted only for a development
+// server bound to loopback, so production and shared listeners keep token auth.
+const localAdminAuthDisabled = process.env.LOCAL_ADMIN_AUTH_DISABLED === "true"
+  && process.env.NODE_ENV === "development"
+  && isLoopbackHost(host);
 const configuredBasePath = String(process.env.BASE_PATH || "").trim();
 const gradingRegradeInFlightIds = new Set();
 const normalizedBasePath = configuredBasePath.replace(/^\/+|\/+$/g, "");
@@ -800,6 +813,7 @@ function getAdminToken() {
 }
 
 function checkAdmin(req) {
+  if (localAdminAuthDisabled) return true;
   const configuredToken = getAdminToken();
   if (!configuredToken) return false;
   const requestedToken = bearerToken(req) || "";
@@ -1470,6 +1484,17 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/research/config") {
       const courseVersion = String(learningRoute?.versionId || "").slice(0, 120);
       sendJson(res, 200, { ok: true, data: { ...researchConfig, courseVersion } });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/auth/status") {
+      sendJson(res, 200, {
+        ok: true,
+        data: {
+          authenticated: checkAdmin(req),
+          localBypass: localAdminAuthDisabled
+        }
+      });
       return;
     }
 
