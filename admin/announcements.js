@@ -112,13 +112,12 @@
   }
 
   async function request(path, options = {}) {
-    const requestHeaders = options.body === undefined ? {} : { "Content-Type": "application/json" };
-    const headers = window.CQAdminAuth?.headers
-      ? window.CQAdminAuth.headers(requestHeaders)
-      : (adminToken ? { ...requestHeaders, Authorization: `Bearer ${adminToken}` } : requestHeaders);
     const response = await fetch(`${API_BASE}${path}`, {
       method: options.method || "GET",
-      headers,
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        ...(options.body === undefined ? {} : { "Content-Type": "application/json" })
+      },
       ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
     });
     const payload = await response.json().catch(() => ({}));
@@ -229,8 +228,7 @@
   }
 
   async function load(options = {}) {
-    const hasAccess = window.CQAdminAuth?.hasAccess?.() || Boolean(adminToken);
-    if (!hasAccess || (loading && options.force !== true)) return;
+    if (!adminToken || (loading && options.force !== true)) return;
     const previousLoading = loading;
     setBusy(true);
     try {
@@ -357,7 +355,7 @@
   });
 
   window.CQAnnouncementAdmin = { load };
-  if (!document.getElementById("app")?.classList.contains("hidden")) {
+  if (!document.getElementById("app")?.classList.contains("hidden") && adminToken) {
     queueMicrotask(load);
   }
 })();

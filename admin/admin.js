@@ -5,7 +5,6 @@ const API_BASE = ADMIN_SCRIPT_URL
   ? new URL("../", ADMIN_SCRIPT_URL).href.replace(/\/$/, "")
   : new URL(".", window.location.href).href.replace(/\/admin(?:\.html)?\/?$/, "").replace(/\/$/, "");
 let adminToken = sessionStorage.getItem("cq_admin_token") || "";
-let localAdminAuth = false;
 let charts = {};
 let allUsers = [];
 let cachedChapterData = [];
@@ -42,46 +41,7 @@ let refreshTimer = null;
 let feedbackFilterTimer = null;
 
 // ---- Auth ----
-function hasAdminAccess() {
-  return Boolean(adminToken || localAdminAuth);
-}
-
-function adminRequestHeaders(extra = {}) {
-  const headers = { ...(extra || {}) };
-  if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
-  return headers;
-}
-
-window.CQAdminAuth = {
-  hasAccess: () => hasAdminAccess(),
-  headers: (extra = {}) => adminRequestHeaders(extra)
-};
-
-async function testLocalAdminAuth() {
-  try {
-    const r = await fetch(`${API_BASE}/api/admin/auth/status`, { cache: "no-store" });
-    const payload = await r.json().catch(() => ({}));
-    return {
-      ok: r.ok && payload.ok === true,
-      status: r.status,
-      authenticated: Boolean(payload.data?.authenticated),
-      localBypass: Boolean(payload.data?.localBypass)
-    };
-  } catch (error) {
-    return { ok: false, status: 0, error: error?.message || "网络请求失败" };
-  }
-}
-
-async function checkAuth() {
-  const localResult = await testLocalAdminAuth();
-  if (localResult.ok && localResult.authenticated && localResult.localBypass) {
-    localAdminAuth = true;
-    adminToken = "";
-    sessionStorage.removeItem("cq_admin_token");
-    showApp();
-    return;
-  }
-  localAdminAuth = false;
+function checkAuth() {
   if (adminToken) {
     testToken().then(result => {
       if (result.ok) { showApp(); }
@@ -115,7 +75,7 @@ function showApp() {
 async function testToken() {
   try {
     const r = await fetch(`${API_BASE}/api/admin/stats/overview`, {
-      headers: adminRequestHeaders()
+      headers: { Authorization: `Bearer ${adminToken}` }
     });
     return { ok: r.ok, status: r.status };
   } catch (error) {
@@ -134,7 +94,6 @@ document.getElementById("login-btn").addEventListener("click", async () => {
   adminToken = token;
   const result = await testToken();
   if (result.ok) {
-    localAdminAuth = false;
     sessionStorage.setItem("cq_admin_token", token);
     showApp();
   } else if (result.status === 0) {
@@ -155,7 +114,6 @@ document.getElementById("admin-token-input").addEventListener("keydown", (e) => 
 
 document.getElementById("logout-btn").addEventListener("click", () => {
   adminToken = "";
-  localAdminAuth = false;
   sessionStorage.removeItem("cq_admin_token");
   showLogin();
 });
@@ -175,7 +133,7 @@ async function fetchStats(endpoint, params = "", signal) {
   if (params) parts.push(params);
   if (parts.length) url += "?" + parts.join("&");
   const r = await fetch(url, {
-    headers: adminRequestHeaders(),
+    headers: { Authorization: `Bearer ${adminToken}` },
     signal
   });
   if (!r.ok) throw new Error(`API error: ${r.status}`);
@@ -189,7 +147,8 @@ async function adminApi(pathname, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...adminRequestHeaders(options.headers || {})
+      Authorization: `Bearer ${adminToken}`,
+      ...(options.headers || {})
     }
   });
   const payload = await response.json().catch(() => ({}));
