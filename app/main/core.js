@@ -83,6 +83,8 @@ function learningDefaults() {
     quizAttempts: {},
     submittedQuizzes: [],
     selectedKnowledgeScenes: {},
+    pendingKnowledgeTransition: null,
+    knowledgeTransitionChoices: {},
     returnToQuiz: null,
     narrationCollapsed: false,
     logs: [],
@@ -106,6 +108,84 @@ function learningQuizUnitId(record = {}) {
   return String(record?.unitId || record?.unit_id || "").trim();
 }
 
+function learningQuizQuestionRole(record = {}) {
+  const explicitRole = String(record?.adaptiveRole || record?.adaptive_role || "").trim().toLowerCase();
+  if (explicitRole === "core" || explicitRole === "diagnostic") return explicitRole;
+  const questionId = String(record?.questionId || record?.question_id || "").trim();
+  if (questionId.endsWith("-check-q1")) return "core";
+  if (questionId.endsWith("-check-q2")) return "diagnostic";
+  return "";
+}
+
+function learningQuizResultIsCorrect(record = {}) {
+  return record?.isCorrect === true
+    || record?.is_correct === true
+    || Number(record?.isCorrect) === 1
+    || Number(record?.is_correct) === 1
+    || String(record?.status || "").trim().toLowerCase() === "correct";
+}
+
+function learningQuizRecordTimestamp(record = {}) {
+  const result = record?.result && typeof record.result === "object" ? record.result : record;
+  return Date.parse(
+    result?.timestamp
+      || result?.createdAt
+      || result?.created_at
+      || result?.submittedAt
+      || record?.timestamp
+      || record?.createdAt
+      || record?.created_at
+      || ""
+  ) || 0;
+}
+
+function learningQuizAttemptHasSubmissionMarker(attempt = {}) {
+  if (!attempt || typeof attempt !== "object" || Array.isArray(attempt)) return false;
+  const status = String(attempt.status || "").trim().toLowerCase();
+  return attempt.submitted === true
+    || attempt.completed === true
+    || status === "submitted"
+    || status === "completed"
+    || Boolean(attempt.submittedAt || attempt.completedAt);
+}
+
+function learningFormativeAttemptComplete(unitId = "", learningState = state) {
+  if (!unitId) return false;
+  const quizResults = Array.isArray(learningState?.quizResults)
+    ? learningState.quizResults.filter((record) => learningQuizUnitId(record) === unitId)
+    : [];
+  const attempt = learningState?.quizAttempts?.[unitId];
+  const attemptRecords = Array.isArray(attempt?.records) ? attempt.records : [];
+  const records = [...quizResults, ...attemptRecords];
+  const latestByRole = new Map();
+  records.forEach((record, index) => {
+    const role = learningQuizQuestionRole(record);
+    if (!role) return;
+    const current = latestByRole.get(role);
+    if (!current) {
+      latestByRole.set(role, { record, index });
+      return;
+    }
+    const currentAt = learningQuizRecordTimestamp(current.record);
+    const candidateAt = learningQuizRecordTimestamp(record);
+    if (candidateAt > currentAt || (candidateAt === currentAt && index < current.index)) {
+      latestByRole.set(role, { record, index });
+    }
+  });
+
+  if (latestByRole.has("diagnostic")) return true;
+  if (learningQuizResultIsCorrect(latestByRole.get("core")?.record)) return true;
+
+  // Preserve legacy formative markers whose old question IDs did not carry
+  // the paired core/diagnostic naming. A recognized adaptive attempt must
+  // still remain incomplete until its diagnostic follow-up is submitted.
+  const hasRecognizedAdaptiveRecord = latestByRole.size > 0;
+  if (hasRecognizedAdaptiveRecord) return false;
+  const explicitlySubmitted = Array.isArray(learningState?.submittedQuizzes)
+    && learningState.submittedQuizzes.includes(unitId);
+  return Boolean(explicitlySubmitted || records.length || learningQuizAttemptHasSubmissionMarker(attempt));
+}
+
 function learningSubmittedQuizIds(learningState = state) {
   const quizResults = Array.isArray(learningState?.quizResults)
     ? learningState.quizResults
@@ -122,12 +202,7 @@ function learningSubmittedQuizIds(learningState = state) {
   ].filter(Boolean))];
   return candidates.filter((unitId) => {
     if (!unitId.endsWith("-formative")) return true;
-    const records = quizResults.filter((record) => learningQuizUnitId(record) === unitId);
-    return records.some((record) => {
-      const questionId = String(record.questionId || record.question_id || "");
-      return questionId.endsWith("-check-q2")
-        || (questionId.endsWith("-check-q1") && record.isCorrect === true);
-    });
+    return learningFormativeAttemptComplete(unitId, learningState);
   });
 }
 
@@ -141,6 +216,19 @@ function normalizeLearningStateCompatibility(learningState) {
     && !Array.isArray(learningState.quizAttempts)
     ? learningState.quizAttempts
     : {};
+  learningState.knowledgeTransitionChoices = learningState.knowledgeTransitionChoices
+    && typeof learningState.knowledgeTransitionChoices === "object"
+    && !Array.isArray(learningState.knowledgeTransitionChoices)
+    ? learningState.knowledgeTransitionChoices
+    : {};
+  if (
+    learningState.pendingKnowledgeTransition !== null
+    && (!learningState.pendingKnowledgeTransition
+      || typeof learningState.pendingKnowledgeTransition !== "object"
+      || Array.isArray(learningState.pendingKnowledgeTransition))
+  ) {
+    learningState.pendingKnowledgeTransition = null;
+  }
   learningState.submittedQuizzes = learningSubmittedQuizIds(learningState);
   const submitted = new Set(learningState.submittedQuizzes);
   learningState.completed = (Array.isArray(learningState.completed) ? learningState.completed : [])
@@ -428,9 +516,15 @@ function renderInlineMath(text) {
 
 function quizLatestResultsByQuestion(records = []) {
   const latest = {};
-  (records || []).forEach((entry) => {
+  const metadata = {};
+  (records || []).forEach((entry, index) => {
     const questionId = entry?.questionId || entry?.question?.id;
-    if (!questionId || latest[questionId]) return;
+    if (!questionId) return;
+    const current = metadata[questionId];
+    const currentAt = current ? learningQuizRecordTimestamp(current.entry) : 0;
+    const candidateAt = learningQuizRecordTimestamp(entry);
+    if (current && !(candidateAt > currentAt || (candidateAt === currentAt && index < current.index))) return;
+    metadata[questionId] = { entry, index };
     latest[questionId] = entry?.result ? { ...entry.result, questionId } : entry;
   });
   return latest;
@@ -474,6 +568,13 @@ function quizReviewIsPending(result = {}) {
   return result.status === "pending_review" || result.isCorrect === null;
 }
 
+function quizHasScoredEvidence(result = {}) {
+  if (typeof QuizReviewState !== "undefined" && typeof QuizReviewState.hasScoredEvidence === "function") {
+    return QuizReviewState.hasScoredEvidence(result);
+  }
+  return !quizReviewIsPending(result) && !quizAiReviewFailed(result);
+}
+
 function normalizeFailedQuizReviews() {
   if (typeof QuizReviewState === "undefined") return 0;
   let changed = 0;
@@ -505,6 +606,7 @@ function quizQuestionScoreLabel(question = {}, result = null) {
   const max = quizMaxScoreFor(question, result || {});
   if (!max) return "";
   if (!result) return `\u672c\u9898 ${quizFormatScore(max)} \u5206`;
+  if (quizAiReviewFailed(result)) return `\u672c\u9898\u6682\u8bb0\uff1a0 / ${quizFormatScore(max)} \u5206\uff08\u5f85\u590d\u6838\uff09`;
   const earned = quizEarnedScore(result, question);
   if (earned === null) return `\u672c\u9898\u5f97\u5206\uff1a\u590d\u6838\u4e2d / ${quizFormatScore(max)} \u5206`;
   return `\u672c\u9898\u5f97\u5206\uff1a${quizFormatScore(earned)} / ${quizFormatScore(max)} \u5206`;
@@ -513,8 +615,12 @@ function quizQuestionScoreLabel(question = {}, result = null) {
 function summarizeQuizAttempt(records = [], questions = []) {
   const latest = quizLatestResultsByQuestion(records);
   const results = Object.values(latest);
-  const objective = results.filter((result) => result?.isCorrect === true || result?.isCorrect === false);
+  const objective = results.filter((result) => (
+    (result?.isCorrect === true || result?.isCorrect === false)
+    && quizHasScoredEvidence(result)
+  ));
   const pendingReview = results.filter((result) => quizReviewIsPending(result)).length;
+  const reviewUnavailable = results.filter((result) => quizAiReviewFailed(result)).length;
   const questionById = new Map((questions || []).map((question) => [question.id, question]));
   const totalPossible = (questions || []).reduce((sum, question) => sum + quizMaxScoreFor(question, {}), 0) || results.reduce((sum, result) => sum + quizMaxScoreFor({}, result), 0);
   let earnedScore = 0;
@@ -522,6 +628,7 @@ function summarizeQuizAttempt(records = [], questions = []) {
   let scoredQuestions = 0;
   results.forEach((result) => {
     const question = questionById.get(result.questionId || result.question_id) || {};
+    if (!quizHasScoredEvidence(result)) return;
     const earned = quizEarnedScore(result, question);
     if (earned === null) return;
     earnedScore += earned;
@@ -534,11 +641,15 @@ function summarizeQuizAttempt(records = [], questions = []) {
     objectiveTotal: objective.length,
     correctObjective: objective.filter((result) => result.isCorrect === true).length,
     pendingReview,
+    reviewUnavailable,
     scoredQuestions,
     earnedScore: Math.round(earnedScore * 10) / 10,
     scoredPossible: Math.round(scoredPossible * 10) / 10,
     totalPossible,
-    scoreReady: Boolean(totalPossible) && scoredQuestions >= totalQuestions && pendingReview === 0
+    scoreReady: Boolean(totalPossible)
+      && scoredQuestions >= totalQuestions
+      && pendingReview === 0
+      && reviewUnavailable === 0
   };
 }
 
@@ -547,15 +658,20 @@ function quizOutcomeHtml(summary) {
   if (summary.totalPossible > 0) {
     const scoreText = summary.scoreReady
       ? `\u603b\u5206 <strong>${quizFormatScore(summary.earnedScore)}</strong> / ${quizFormatScore(summary.totalPossible)} \u5206`
-      : `\u5df2\u5224\u5206 <strong>${quizFormatScore(summary.earnedScore)}</strong> / ${quizFormatScore(summary.scoredPossible || summary.totalPossible)} \u5206`;
+      : summary.scoredQuestions > 0
+        ? `\u5df2\u5224\u5206 <strong>${quizFormatScore(summary.earnedScore)}</strong> / ${quizFormatScore(summary.scoredPossible)} \u5206`
+        : "\u672c\u6b21\u8bc4\u5206\u5f85\u590d\u6838";
     parts.push(scoreText);
   }
   if (summary.objectiveTotal > 0) {
-    const objectiveLabel = summary.pendingReview > 0 ? "\u5ba2\u89c2\u9898" : "\u9898";
+    const objectiveLabel = summary.pendingReview > 0 || summary.reviewUnavailable > 0 ? "\u5ba2\u89c2\u9898" : "\u9898";
     parts.push(`${summary.objectiveTotal} \u9053${objectiveLabel}\u4e2d\u7b54\u5bf9\u4e86 <strong>${summary.correctObjective}</strong> \u9053`);
   }
   if (summary.pendingReview > 0) {
     parts.push(`${summary.pendingReview} \u9053\u7b80\u7b54\u9898\u7b49\u5f85\u590d\u6838`);
+  }
+  if (summary.reviewUnavailable > 0) {
+    parts.push(`${summary.reviewUnavailable} \u9053\u7b80\u7b54\u9898\u6682\u672a\u8fd4\u56de\u8bc4\u5206\uff0c\u5df2\u4fdd\u7559\u5f85\u590d\u6838`);
   }
   if (!parts.length) {
     parts.push(`${summary.totalQuestions} \u9053\u9898\u5df2\u63d0\u4ea4`);
@@ -717,6 +833,8 @@ function learningSnapshot() {
     quizAttempts: state.quizAttempts || {},
     submittedQuizzes: state.submittedQuizzes || [],
     selectedKnowledgeScenes: state.selectedKnowledgeScenes || {},
+    pendingKnowledgeTransition: state.pendingKnowledgeTransition || null,
+    knowledgeTransitionChoices: state.knowledgeTransitionChoices || {},
     returnToQuiz: state.returnToQuiz || null,
     narrationCollapsed: Boolean(state.narrationCollapsed),
     logs: state.logs || [],
@@ -820,6 +938,31 @@ function applyServerLearningSnapshot(serverSnapshot, options = {}) {
   state.quizDrafts = { ...(incoming.quizDrafts || {}), ...(state.quizDrafts || {}) };
   if (Object.prototype.hasOwnProperty.call(incoming, "selectedKnowledgeScenes")) {
     state.selectedKnowledgeScenes = { ...(incoming.selectedKnowledgeScenes || {}) };
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "knowledgeTransitionChoices")) {
+    const localChoices = state.knowledgeTransitionChoices || {};
+    const serverChoices = incoming.knowledgeTransitionChoices || {};
+    state.knowledgeTransitionChoices = { ...serverChoices, ...localChoices };
+    Object.keys(serverChoices).forEach((knowledgeUnitId) => {
+      const local = localChoices[knowledgeUnitId];
+      const remote = serverChoices[knowledgeUnitId];
+      if (!local || !remote) return;
+      const localAt = Date.parse(local.chosenAt || local.createdAt || "") || 0;
+      const remoteAt = Date.parse(remote.chosenAt || remote.createdAt || "") || 0;
+      if (remoteAt >= localAt) state.knowledgeTransitionChoices[knowledgeUnitId] = remote;
+    });
+  }
+  if (Object.prototype.hasOwnProperty.call(incoming, "pendingKnowledgeTransition")) {
+    const remotePending = incoming.pendingKnowledgeTransition;
+    const localPending = state.pendingKnowledgeTransition;
+    const localAt = Date.parse(localPending?.createdAt || "") || 0;
+    const remoteAt = Date.parse(remotePending?.createdAt || incoming.capturedAt || "") || 0;
+    const shouldApply = remotePending
+      ? (!localPending || remoteAt >= localAt)
+      : (!localPending || !incoming.capturedAt || remoteAt >= localAt);
+    if (shouldApply) {
+      state.pendingKnowledgeTransition = remotePending || null;
+    }
   }
   if (!state.note && incoming.note) state.note = incoming.note;
   if (!state.agenticPath && incoming.agenticPath) state.agenticPath = incoming.agenticPath;
@@ -1209,6 +1352,7 @@ function rememberQuizAttempt(unit, records = []) {
     chapterId: unit.chapterId,
     unitLabel: unit.label,
     phase: unit.assessmentPhase || "",
+    adaptiveFormative: Boolean(unit.adaptiveFormative),
     submittedAt: beijingNow(),
     records
   };

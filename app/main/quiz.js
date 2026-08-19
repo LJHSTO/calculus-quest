@@ -98,25 +98,22 @@ function aiReviewStatus(result, question = {}) {
   const pendingReview = quizReviewIsPending(result);
   const fallbackScored = aiFailed && !pendingReview;
   const displayScore = hasAiScore ? quizScoreFromAiScore(aiScore, maxScore) : fallbackScored ? 0 : null;
-  const reviewCompleted = !pendingReview && (hasAiScore || fallbackScored);
-  const badgeText = reviewCompleted ? (Number(displayScore) === 0 ? "需复盘" : "已批改") : "待批改";
+  const reviewCompleted = !pendingReview && !aiFailed && hasAiScore;
+  const badgeText = aiFailed ? "待复核" : reviewCompleted ? (Number(displayScore) === 0 ? "需复盘" : "已批改") : "待批改";
   const badgeClass = reviewCompleted && Number(displayScore) > 0 ? "done" : "todo";
   let line = "智能批改正在等待返回；结果回来后会保留在这里。";
-  if (fallbackScored) {
-    const denominator = maxScore ? ` / ${quizFormatScore(maxScore)}` : "";
-    line = `智能批改暂时失败，已先按 ${quizFormatScore(displayScore || 0)}${denominator} 分计入；你可以继续学习。`;
-  } else if (hasAiScore && !aiFailed) {
+  if (aiFailed) {
+    line = aiErrorType === "mock_provider"
+      ? "当前环境未启用真实智能评分。这题已暂记为 0 分并保留待复核；你可以继续学习，暂记分数不会用于学习建议。"
+      : aiErrorType === "api_timeout"
+        ? "智能评分在规定时间内未返回。这题已暂记为 0 分并保留待复核；你可以继续学习，暂记分数不会用于学习建议。"
+        : "智能评分暂时未得到可用结果。这题已暂记为 0 分并保留待复核；你可以继续学习，暂记分数不会用于学习建议。";
+  } else if (hasAiScore) {
     const confidence = result.aiConfidence != null ? ` · 判断把握 ${Math.round(Number(result.aiConfidence) * 100)}%` : "";
     const denominator = maxScore ? ` / ${quizFormatScore(maxScore)}` : "";
     line = `建议得分：${quizFormatScore(displayScore)}${denominator} 分${confidence}`;
-  } else if (aiFailed) {
-    line = aiErrorType === "mock_provider"
-      ? "本地 mock 环境未启用真实大模型，已保留给人工复核。"
-      : aiErrorType === "api_timeout"
-        ? "评分超时，已保留给人工复核。"
-      : "评测暂时未完成，已保留给人工复核。";
   }
-  return { hasAiScore, aiFailed, badgeText, badgeClass, line, feedback };
+  return { hasAiScore, aiFailed, badgeText, badgeClass, line, feedback: aiFailed ? "" : feedback };
 }
 
 function shortAnswerReferenceText(question, result = {}) {
@@ -523,6 +520,8 @@ async function submitQuiz(unitId) {
     recordQuizResult(unit, question, result, { sync: false, track: false, index })
   );
   rememberQuizAttempt(unit, storedRecords);
+  const scoredRecords = records.filter(({ result }) => quizHasScoredEvidence(result));
+  const unavailableReviews = records.filter(({ result }) => quizAiReviewFailed(result)).length;
   trackLearningEvent("quiz_submission", {
     unitId: unit.id,
     chapterId: unit.chapterId,
@@ -530,8 +529,9 @@ async function submitQuiz(unitId) {
     phase: unit.assessmentPhase || "",
     questionCount: records.length,
     pendingReview: records.filter(({ result }) => quizReviewIsPending(result)).length,
-    correct: records.filter(({ result }) => result.isCorrect === true).length,
-    incorrect: records.filter(({ result }) => result.isCorrect === false).length
+    reviewUnavailable: unavailableReviews,
+    correct: scoredRecords.filter(({ result }) => result.isCorrect === true).length,
+    incorrect: scoredRecords.filter(({ result }) => result.isCorrect === false).length
   });
   analyticsTrack("quiz_submit_success", {
     source: "quiz",
@@ -542,8 +542,9 @@ async function submitQuiz(unitId) {
       phase: unit.assessmentPhase || "",
       questionCount: records.length,
       pendingReview: records.filter(({ result }) => quizReviewIsPending(result)).length,
-      correct: records.filter(({ result }) => result.isCorrect === true).length,
-      incorrect: records.filter(({ result }) => result.isCorrect === false).length
+      reviewUnavailable: unavailableReviews,
+      correct: scoredRecords.filter(({ result }) => result.isCorrect === true).length,
+      incorrect: scoredRecords.filter(({ result }) => result.isCorrect === false).length
     }
   });
   const needsDiagnostic = submitted.requiresDiagnostic === true || Boolean(
@@ -554,6 +555,9 @@ async function submitQuiz(unitId) {
   );
   if (needsDiagnostic) {
     saveState();
+    if (unit.adaptiveFormative && typeof syncLearningSnapshot === "function") {
+      await syncLearningSnapshot("adaptive_formative_core_pending");
+    }
     addLog(`「${unit.label}」核心题答错，进入诊断题。`);
     renderProgress();
     renderRecommendationPanel();
@@ -571,6 +575,9 @@ async function submitQuiz(unitId) {
     addLog(`提交并完成「${unit.label}」。`);
   }
   saveState();
+  if (unit.adaptiveFormative && typeof syncLearningSnapshot === "function") {
+    await syncLearningSnapshot("adaptive_formative_completed");
+  }
   // Lock all answer controls to prevent modification after submission
   document.querySelectorAll(`[data-question]`).forEach(card => {
     card.querySelectorAll("input, textarea").forEach(el => el.disabled = true);
@@ -647,6 +654,7 @@ function recordQuizResult(unit, question, result, options = {}) {
     chapterLabel: chapter.label,
     unitLabel: unit.label,
     questionType: question.type,
+    adaptiveRole: question.adaptiveRole || "",
     moduleId: question.moduleId || "",
     moduleTitle: question.moduleTitle || "",
     knowledgePointIds: question.knowledgePointIds || question.coachHint?.knowledgePointIds || [],

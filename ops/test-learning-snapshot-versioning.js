@@ -6,6 +6,7 @@ const path = require("node:path");
 const { spawn } = require("node:child_process");
 const initSqlJs = require("sql.js");
 const vm = require("node:vm");
+const { normalizeLearningSnapshot } = require("../db");
 
 const learningRoute = require("../data/multi-scene-learning-route.json");
 
@@ -48,6 +49,18 @@ function testClientSnapshotIncludesReturnToQuiz() {
       quizAttempts: {},
       submittedQuizzes: [],
       selectedKnowledgeScenes: {},
+      pendingKnowledgeTransition: {
+        knowledgeUnitId: "GH-01-K01",
+        formativeUnitId: "GH-01-K01-formative",
+        targetUnitId: "GH-01-K02",
+        createdAt: "2026-08-13T12:00:00.000+08:00"
+      },
+      knowledgeTransitionChoices: {
+        "GH-01-K00": {
+          choice: "continue",
+          chosenAt: "2026-08-13T11:00:00.000+08:00"
+        }
+      },
       returnToQuiz,
       narrationCollapsed: false,
       logs: [],
@@ -70,6 +83,91 @@ function testClientSnapshotIncludesReturnToQuiz() {
     "return-to-quiz context must be included in the client learning snapshot"
   );
   assert.deepEqual(JSON.parse(JSON.stringify(snapshotReturnContext)), returnToQuiz);
+  assert.equal(context.learningSnapshot().pendingKnowledgeTransition.formativeUnitId, "GH-01-K01-formative");
+  assert.equal(context.learningSnapshot().knowledgeTransitionChoices["GH-01-K00"].choice, "continue");
+}
+
+function testServerSnapshotKeepsAdaptiveAttemptOpen() {
+  const unitId = "GH-01-K01-formative";
+  const coreWrong = {
+    id: "adaptive-core-wrong",
+    unitId,
+    questionId: "GH-01-K01-check-q1",
+    adaptiveRole: "core",
+    isCorrect: false,
+    status: "incorrect",
+    timestamp: "2026-08-19T01:00:00.000Z"
+  };
+  const incomplete = normalizeLearningSnapshot({
+    completed: ["GH-01-K01", unitId],
+    submittedQuizzes: [unitId],
+    quizResults: [coreWrong],
+    quizAttempts: {
+      [unitId]: {
+        adaptiveFormative: true,
+        records: [coreWrong]
+      }
+    },
+    note: "历史备注必须保留"
+  });
+  assert.equal(incomplete.submittedQuizzes.includes(unitId), false);
+  assert.deepEqual(incomplete.completed, ["GH-01-K01"]);
+  assert.equal(incomplete.quizResults.length, 1, "核心错题记录不能被快照归一化删除");
+  assert.equal(incomplete.quizAttempts[unitId].records.length, 1);
+  assert.equal(incomplete.note, "历史备注必须保留");
+
+  const diagnosticWrong = {
+    ...coreWrong,
+    id: "adaptive-diagnostic-wrong",
+    questionId: "GH-01-K01-check-q2",
+    adaptiveRole: "diagnostic",
+    timestamp: "2026-08-19T01:01:00.000Z"
+  };
+  const diagnosticComplete = normalizeLearningSnapshot({
+    completed: [unitId],
+    quizResults: [diagnosticWrong, coreWrong],
+    quizAttempts: { [unitId]: { records: [diagnosticWrong] } }
+  });
+  assert.equal(diagnosticComplete.submittedQuizzes.includes(unitId), true);
+  assert.deepEqual(diagnosticComplete.completed, [unitId]);
+
+  const coreCorrect = {
+    ...coreWrong,
+    id: "adaptive-core-correct",
+    isCorrect: true,
+    status: "correct",
+    timestamp: "2026-08-19T01:02:00.000Z"
+  };
+  const coreComplete = normalizeLearningSnapshot({
+    completed: [unitId],
+    quizResults: [coreCorrect],
+    quizAttempts: { [unitId]: { records: [coreCorrect] } }
+  });
+  assert.equal(coreComplete.submittedQuizzes.includes(unitId), true);
+  assert.deepEqual(coreComplete.completed, [unitId]);
+
+  const legacyUnitId = "legacy-module-formative";
+  const legacy = normalizeLearningSnapshot({
+    completed: [legacyUnitId],
+    submittedQuizzes: [legacyUnitId],
+    quizResults: [{ unit_id: legacyUnitId, question_id: "legacy-question", is_correct: 0 }]
+  });
+  assert.equal(legacy.submittedQuizzes.includes(legacyUnitId), true);
+  assert.deepEqual(legacy.completed, [legacyUnitId]);
+
+  const emptyAttempt = normalizeLearningSnapshot({
+    completed: [unitId],
+    quizAttempts: { [unitId]: { adaptiveFormative: true } }
+  });
+  assert.equal(emptyAttempt.submittedQuizzes.includes(unitId), false, "空 attempt 不能伪造形成性测验完成");
+  assert.deepEqual(emptyAttempt.completed, []);
+
+  const legacySubmittedAttempt = normalizeLearningSnapshot({
+    completed: [unitId],
+    quizAttempts: { [unitId]: { submittedAt: "2026-08-19T01:03:00.000Z" } }
+  });
+  assert.equal(legacySubmittedAttempt.submittedQuizzes.includes(unitId), true, "旧格式正式提交标记必须兼容");
+  assert.deepEqual(legacySubmittedAttempt.completed, [unitId]);
 }
 
 function freePort() {
@@ -248,6 +346,7 @@ async function main() {
   const regressionFailures = [];
   try {
     testClientSnapshotIncludesReturnToQuiz();
+    testServerSnapshotKeepsAdaptiveAttemptOpen();
   } catch (error) {
     regressionFailures.push(error);
   }
@@ -330,6 +429,18 @@ async function main() {
       selectedKnowledgeScenes: {
         "GH-01-K01": "game"
       },
+      pendingKnowledgeTransition: {
+        knowledgeUnitId: "GH-01-K01",
+        formativeUnitId: "GH-01-K01-formative",
+        targetUnitId: "GH-01-K02",
+        createdAt: "2026-07-18T09:00:00.000+08:00"
+      },
+      knowledgeTransitionChoices: {
+        "GH-01-K00": {
+          choice: "continue",
+          chosenAt: "2026-07-18T08:55:00.000+08:00"
+        }
+      },
       logs: ["原有学习记录"],
       note: "保留这条反思",
       returnToQuiz: {
@@ -399,6 +510,16 @@ async function main() {
     assert.equal(afterLateEmpty.payload.snapshot.quizResults[0].id, "snapshot-result-1");
     assert.equal(afterLateEmpty.payload.snapshot.note, "保留这条反思");
     assert.deepEqual(afterLateEmpty.payload.snapshot.returnToQuiz, richSnapshot.returnToQuiz);
+    assert.deepEqual(
+      afterLateEmpty.payload.snapshot.pendingKnowledgeTransition,
+      richSnapshot.pendingKnowledgeTransition,
+      "未携带该字段的旧页面不能覆盖待选择状态"
+    );
+    assert.equal(
+      afterLateEmpty.payload.snapshot.knowledgeTransitionChoices["GH-01-K00"].choice,
+      "continue",
+      "选择记录必须随快照保留"
+    );
 
     const resumeSkippedLesson = await requestJson(baseUrl, "/api/learning/snapshot", {
       method: "POST",
@@ -412,6 +533,7 @@ async function main() {
             skipped: {}
           },
           selectedKnowledgeScenes: {},
+          pendingKnowledgeTransition: null,
           capturedAt: "2026-07-18T09:01:00.000+08:00"
         }
       }
@@ -428,6 +550,16 @@ async function main() {
         afterResume.payload.snapshot.selectedKnowledgeScenes,
         {},
         "removing a selected knowledge scene must survive snapshot sync and refresh"
+      );
+      assert.equal(
+        afterResume.payload.snapshot.pendingKnowledgeTransition,
+        null,
+        "完成选择后清除待选择状态必须随快照同步"
+      );
+      assert.equal(
+        afterResume.payload.snapshot.knowledgeTransitionChoices["GH-01-K00"].choice,
+        "continue",
+        "清除待选择状态不能删除既有选择记录"
       );
     } catch (error) {
       regressionFailures.push(error);

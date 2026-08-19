@@ -5,11 +5,14 @@ function renderBottomNextButton() {
 
   const wrapper = document.createElement("div");
   wrapper.className = "bottom-next-wrapper";
+  const knowledgeTransition = typeof agenticPendingKnowledgeTransitionFor === "function"
+    ? agenticPendingKnowledgeTransitionFor(unit.id)
+    : null;
 
   const previous = typeof agenticPreviousUnlockedUnitBefore === "function"
     ? agenticPreviousUnlockedUnitBefore(unit.id)
     : null;
-  if (previous) {
+  if (previous && !knowledgeTransition) {
     const prevBtn = document.createElement("button");
     prevBtn.className = "button soft bottom-nav-btn bottom-nav-prev";
     prevBtn.type = "button";
@@ -34,22 +37,28 @@ function renderBottomNextButton() {
   nextBtn.disabled = !returningToQuiz && (!completionAllowed || (!needsSceneChoice && !needsQuizSubmit && !pending && Boolean(cta.disabled)));
   nextBtn.textContent = returningToQuiz
     ? "返回测验"
+    : knowledgeTransition
+      ? "请选择下一步"
     : !completionAllowed
     ? "未解锁：先接受学习建议"
     : needsSceneChoice
     ? "先选择一个互动场景"
     : needsQuizSubmit
       ? "先提交测验"
-      : pending
+    : pending
         ? "先选择下一步"
         : cta.label;
+  if (knowledgeTransition) {
+    nextBtn.textContent = "请选择下一步";
+    nextBtn.setAttribute("aria-controls", "agentic-coach-panel");
+    nextBtn.dataset.focusKnowledgeTransition = "true";
+  }
   if (needsSceneChoice) {
     nextBtn.dataset.scrollKnowledgeScene = "true";
     nextBtn.setAttribute("aria-controls", "knowledge-scene-panel");
   }
   nextBtn.addEventListener("click", completeAndAdvanceCurrentUnit);
   wrapper.appendChild(nextBtn);
-
   els.lessonPlayer.appendChild(wrapper);
 }
 

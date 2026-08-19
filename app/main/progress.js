@@ -74,11 +74,12 @@ function renderProgress() {
 
 function renderQuizDashboard() {
   const results = state.quizResults || [];
-  const objective = results.filter((item) => !quizReviewIsPending(item));
+  const objective = results.filter((item) => quizHasScoredEvidence(item));
   const correct = objective.filter((item) => item.isCorrect).length;
   const pending = results.filter((item) => quizReviewIsPending(item)).length;
+  const reviewUnavailable = results.filter((item) => quizAiReviewFailed(item)).length;
   const accuracy = objective.length ? Math.round((correct / objective.length) * 100) : 0;
-  const scored = results.filter((item) => item.maxScore);
+  const scored = results.filter((item) => item.maxScore && quizHasScoredEvidence(item));
   const earned = scored.reduce((sum, item) => sum + (item.score || 0), 0);
   const possible = scored.reduce((sum, item) => sum + (item.maxScore || 0), 0);
   const scoreRate = possible ? Math.round((earned / possible) * 100) : 0;
@@ -95,7 +96,7 @@ function renderQuizDashboard() {
           <div class="progress-line" aria-label="${phaseText(phase)} 得分率 ${stats.scoreRate}%">
             <span style="width:${stats.scoreRate}%"></span>
           </div>
-          <small>正确率 ${stats.accuracy}% · 待复核 ${stats.pending}</small>
+          <small>正确率 ${stats.accuracy}% · 待复核 ${stats.pending + stats.reviewUnavailable}</small>
         </div>
       `;
     })
@@ -110,7 +111,7 @@ function renderQuizDashboard() {
           <td>${escapeHtml(item.unitLabel)}</td>
           <td>${phaseText(resultPhase(item)) || "测验"}</td>
           <td>${statusText(item)}</td>
-          <td>${item.maxScore ? `${item.score || 0}/${item.maxScore}` : "-"}</td>
+          <td>${quizAiReviewFailed(item) ? "待复核" : item.maxScore ? `${item.score || 0}/${item.maxScore}` : "-"}</td>
           <td>${formatTime(item.timestamp)}</td>
         </tr>
       `
@@ -122,6 +123,7 @@ function renderQuizDashboard() {
   const postAttempts = totals.filter((item) => item.phase === "post").length;
   const encouragement = !totals.length
     ? "你还没有提交任何测验。试试点击首页的「学习」进入第一个模块！"
+    : !objective.length ? "已有简答题等待复核；暂记分数不会影响当前的学习建议。"
     : accuracy >= 85 ? "很棒！你的正确率很高，继续保持，尝试挑战更难的内容。"
     : accuracy >= 60 ? "不错的开端！每次提交都在积累理解，多看看答案解析会有帮助。"
     : accuracy >= 30 ? "加油！学习本身就是不断试错的过程。建议先看完答案解析，再回看对应的讲解页。"
@@ -130,7 +132,7 @@ function renderQuizDashboard() {
     <p class="quiz-encouragement">${encouragement}</p>
     <div class="quiz-stats">
       <div><strong>${accuracy}%</strong><span>客观题正确率</span></div>
-      <div><strong>${pending}</strong><span>短答待复核</span></div>
+      <div><strong>${pending + reviewUnavailable}</strong><span>短答待复核</span></div>
       <div><strong>${scoreRate}%</strong><span>估算得分率</span></div>
     </div>
     <div class="phase-dashboard">
@@ -163,14 +165,15 @@ function renderChapterQuizRow(results, chapter) {
 
 function phaseStats(results, phase = "") {
   const phaseResults = phase ? results.filter((item) => resultPhase(item) === phase) : results;
-  const objective = phaseResults.filter((item) => !quizReviewIsPending(item));
+  const objective = phaseResults.filter((item) => quizHasScoredEvidence(item));
   const correct = objective.filter((item) => item.isCorrect).length;
-  const scored = phaseResults.filter((item) => item.maxScore);
+  const scored = phaseResults.filter((item) => item.maxScore && quizHasScoredEvidence(item));
   const earned = scored.reduce((sum, item) => sum + (item.score || 0), 0);
   const possible = scored.reduce((sum, item) => sum + (item.maxScore || 0), 0);
   return {
     attempts: phaseResults.length,
     pending: phaseResults.filter((item) => quizReviewIsPending(item)).length,
+    reviewUnavailable: phaseResults.filter((item) => quizAiReviewFailed(item)).length,
     accuracy: objective.length ? Math.round((correct / objective.length) * 100) : 0,
     scoreRate: possible ? Math.round((earned / possible) * 100) : 0
   };
@@ -186,6 +189,7 @@ function resultPhase(item) {
 }
 
 function statusText(item) {
+  if (quizAiReviewFailed(item)) return "待复核";
   if (quizReviewIsPending(item)) return "待复核";
   if (item.isCorrect === true) return "正确";
   if (item.isCorrect === false) return "需复盘";

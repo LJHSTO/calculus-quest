@@ -5,6 +5,8 @@ const AGENTIC_ENABLE_EXTENSION = false;
 const AGENTIC_REMOTE_PLAN_TIMEOUT_MS = 2500;
 const AGENTIC_ALWAYS_RECOMMEND_EXTENSION_CHAPTERS = new Set(["V14-X2", "V14-X5"]);
 const AGENTIC_FINAL_MASTERY_EXTENSION_CHAPTERS = new Set(["V14-X3", "V14-X4"]);
+let knowledgeTransitionChoiceInFlight = "";
+let knowledgeCompletionInFlight = "";
 
 function agenticMultiSceneMode() {
   return typeof isMultiSceneLearningRoute === "function" && isMultiSceneLearningRoute();
@@ -416,6 +418,14 @@ function ensureAgenticPath() {
   state.agenticPath.chapterAdvanceReady = state.agenticPath.chapterAdvanceReady || {};
   state.agenticPath.chapterAdvanceReasons = state.agenticPath.chapterAdvanceReasons || {};
   state.agenticPath.quizReviewSignals = state.agenticPath.quizReviewSignals || {};
+  const pendingKnowledgeUnitId = state.pendingKnowledgeTransition?.knowledgeUnitId || "";
+  const pendingKnowledgeUnit = pendingKnowledgeUnitId ? findMainUnit(pendingKnowledgeUnitId) : null;
+  if (pendingKnowledgeUnit) {
+    // A refresh or an older tab may restore a different cursor. A pending
+    // student choice always takes priority until it is explicitly answered.
+    currentChapterId = pendingKnowledgeUnit.chapterId;
+    currentUnitId = pendingKnowledgeUnit.id;
+  }
   agenticReconcilePathWithEvidence(state.agenticPath);
   agenticBackfillChapterAdvanceFromEvidence(state.agenticPath);
   agenticRepairCompletedExtensionResumes(state.agenticPath);
@@ -447,16 +457,25 @@ function agenticReconcilePathWithEvidence(path) {
 
   agenticEvidenceUnitIds().forEach((unitId) => {
     if (!unitId) return;
+    const unit = findMainUnit(unitId);
+    const incompleteAdaptiveFormative = Boolean(
+      unit?.type === "quiz"
+      && unit.adaptiveFormative
+      && typeof learningFormativeAttemptComplete === "function"
+      && !learningFormativeAttemptComplete(unitId, state)
+    );
     unlocked.add(unitId);
     visible.add(unitId);
-    if (submitted.has(unitId) || quizEvidence.has(unitId)) {
+    if (incompleteAdaptiveFormative) {
+      submitted.delete(unitId);
+      completed.delete(unitId);
+    } else if (submitted.has(unitId) || quizEvidence.has(unitId)) {
       submitted.add(unitId);
       completed.add(unitId);
     }
-    const unit = findMainUnit(unitId);
     if (!unit) return;
 
-    if (unit.type === "quiz") {
+    if (unit.type === "quiz" && !incompleteAdaptiveFormative) {
       submitted.add(unit.id);
       completed.add(unit.id);
     }
@@ -625,13 +644,350 @@ function agenticRememberAdaptiveUse(unitId, fromUnitId = "", options = {}) {
   if (fromUnitId && options.insertAfter !== false) path.insertedAfter[unitId] = fromUnitId;
 }
 
+function agenticKnowledgeCheckUnit(unitOrId = "") {
+  const unit = typeof unitOrId === "object" ? unitOrId : findMainUnit(unitOrId);
+  if (!unit || unit.type !== "quiz" || unit.assessmentPhase !== "formative") return null;
+  if (!unit.knowledgePointId) return null;
+  const questions = unit.scene?.content?.questions || [];
+  return questions.length ? unit : null;
+}
+
+function agenticKnowledgeTransitionChoiceFor(knowledgeUnitId = "") {
+  const choices = state.knowledgeTransitionChoices;
+  if (!choices || typeof choices !== "object" || !knowledgeUnitId) return null;
+  const choice = choices[knowledgeUnitId];
+  return choice && (choice.choice === "continue" || choice.choice === "formative")
+    ? choice
+    : null;
+}
+
+function agenticPendingKnowledgeTransitionFor(knowledgeUnitId = currentUnitId) {
+  const pending = state.pendingKnowledgeTransition;
+  return pending?.knowledgeUnitId === knowledgeUnitId ? pending : null;
+}
+
+function agenticKnowledgeTransitionFormativeHasEvidence(formativeUnitId = "") {
+  if (!formativeUnitId) return false;
+  if (typeof learningFormativeAttemptComplete === "function") {
+    return learningFormativeAttemptComplete(formativeUnitId, state);
+  }
+  return (state.completed || []).includes(formativeUnitId)
+    || (state.submittedQuizzes || []).includes(formativeUnitId)
+    || (state.quizResults || []).some((entry) => (
+      (entry?.unitId || entry?.unit_id) === formativeUnitId
+    ));
+}
+
+function agenticKnowledgeTransitionHasDraft(formativeUnitId = "") {
+  if (!formativeUnitId) return false;
+  const attempts = state.quizAttempts || {};
+  if (Object.prototype.hasOwnProperty.call(attempts, formativeUnitId)) return true;
+  const drafts = state.quizDrafts || {};
+  return Object.keys(drafts).some((key) => key.startsWith(`${formativeUnitId}:`));
+}
+
+function agenticKnowledgeTransitionChoiceRequiresFormative(choice = {}, formative = null) {
+  if (choice?.choice !== "formative" || !formative?.id) return false;
+  // An explicit student choice keeps the formative check in the review path,
+  // even when an earlier visit already produced completion evidence. Older
+  // inferred choices carry the next unit as target and must remain compatible.
+  return choice.source === "knowledge_completion" || choice.targetUnitId === formative.id;
+}
+
+function agenticOptionalKnowledgeCheckSkipped(unitOrId = "", path = state.agenticPath || {}) {
+  const formative = typeof unitOrId === "object" ? unitOrId : findMainUnit(unitOrId);
+  if (!agenticKnowledgeCheckUnit(formative)) return false;
+  if (agenticKnowledgeTransitionFormativeHasEvidence(formative.id)) return false;
+  if (path.skipped?.[formative.id]) return true;
+
+  const knowledgeUnitId = formative.knowledgePointId;
+  if (agenticPendingKnowledgeTransitionFor(knowledgeUnitId)) return false;
+  if (knowledgeCompletionInFlight === knowledgeUnitId) return false;
+  const choice = agenticKnowledgeTransitionChoiceFor(knowledgeUnitId);
+  if (choice?.choice === "formative") return false;
+  if (choice?.choice === "continue") return true;
+  if (currentUnitId === formative.id || agenticKnowledgeTransitionHasDraft(formative.id)) return false;
+  if (path.skipped?.[knowledgeUnitId]) return true;
+
+  // A completed knowledge point without a transition record predates this
+  // optional check flow. Treat the inserted check as bypassed for that learner.
+  return (state.completed || []).includes(knowledgeUnitId);
+}
+
+function agenticKnowledgeTransitionTargetFor(unitOrId = "") {
+  const knowledge = typeof unitOrId === "object" ? unitOrId : findMainUnit(unitOrId);
+  const formative = knowledge ? agenticKnowledgeCheckUnit(`${knowledge.id}-formative`) : null;
+  if (!knowledge || knowledge.type !== "knowledge" || !formative) return null;
+  return agenticNextMainUnitAfter(formative.id) || null;
+}
+
+function agenticKnowledgeTransitionNeedsLegacyBackfill(unitOrId = "") {
+  const knowledge = typeof unitOrId === "object" ? unitOrId : findMainUnit(unitOrId);
+  if (!knowledge || knowledge.type !== "knowledge" || !(state.completed || []).includes(knowledge.id)) return false;
+  const formative = agenticKnowledgeCheckUnit(`${knowledge.id}-formative`);
+  if (!formative || agenticPendingKnowledgeTransitionFor(knowledge.id)) return false;
+  const choice = agenticKnowledgeTransitionChoiceFor(knowledge.id);
+  if (choice?.choice === "formative" || agenticKnowledgeTransitionFormativeHasEvidence(formative.id)) return false;
+  if (agenticKnowledgeTransitionHasDraft(formative.id)) return false;
+  return true;
+}
+
+function agenticKnowledgeTransitionResumeFor(unitOrId = "") {
+  const knowledge = typeof unitOrId === "object" ? unitOrId : findMainUnit(unitOrId);
+  if (!knowledge || knowledge.type !== "knowledge") return null;
+  const choice = agenticKnowledgeTransitionChoiceFor(knowledge.id);
+  if (!choice) return null;
+  const formative = agenticKnowledgeCheckUnit(choice.formativeUnitId || `${knowledge.id}-formative`);
+  if (agenticKnowledgeTransitionChoiceRequiresFormative(choice, formative)) {
+    return { choice: "formative", target: formative };
+  }
+  const target = agenticKnowledgeTransitionTargetFor(knowledge);
+  return target ? { choice: choice.choice, target } : null;
+}
+
+function agenticKnowledgeTransitionCtaFor(unit) {
+  const resume = agenticKnowledgeTransitionResumeFor(unit);
+  if (!resume?.target?.id) return null;
+  if (
+    resume.choice === "formative"
+    && resume.target.assessmentPhase === "formative"
+    && resume.target.knowledgePointId === unit?.id
+  ) {
+    return {
+      label: "复习后做小题测一测",
+      disabled: false,
+      targetId: resume.target.id
+    };
+  }
+  return {
+    label: resume.target.type === "knowledge" ? "复习并跳到下一节" : "复习后继续本章",
+    disabled: false,
+    targetId: resume.target.id
+  };
+}
+
+function agenticKnowledgeTransitionPreviewFor(unitOrId = "") {
+  const knowledge = typeof unitOrId === "object" ? unitOrId : findMainUnit(unitOrId);
+  if (
+    !agenticMultiSceneMode()
+    || !knowledge
+    || knowledge.type !== "knowledge"
+    || (state.completed || []).includes(knowledge.id)
+    || agenticPendingKnowledgeTransitionFor(knowledge.id)
+    || agenticKnowledgeTransitionChoiceFor(knowledge.id)
+    || !agenticUnitCompletionAllowed(knowledge.id)
+  ) return null;
+  const selectedScene = typeof selectedKnowledgeSceneType === "function"
+    ? selectedKnowledgeSceneType(knowledge)
+    : "";
+  if (!selectedScene) return null;
+  const formative = agenticKnowledgeCheckUnit(`${knowledge.id}-formative`);
+  if (!formative) return null;
+  const target = agenticKnowledgeTransitionTargetFor(knowledge);
+  return {
+    knowledgeUnitId: knowledge.id,
+    formativeUnitId: formative.id,
+    targetUnitId: target?.id || "",
+    chapterId: knowledge.chapterId,
+    selectedScene
+  };
+}
+
+function agenticKnowledgeTransitionTargetCopy(pending = {}) {
+  const target = findMainUnit(pending.targetUnitId);
+  const targetLabel = target?.label || "下一步学习";
+  return {
+    target,
+    targetLabel,
+    text: target?.type === "knowledge"
+      ? `直接继续会进入下一个知识点：${targetLabel}。`
+      : `直接继续会进入：${targetLabel}。`
+  };
+}
+
+function agenticRenderKnowledgeTransitionPanel(pending, inFlight = "") {
+  const knowledge = findMainUnit(pending?.knowledgeUnitId);
+  const formative = agenticKnowledgeCheckUnit(pending?.formativeUnitId);
+  if (!knowledge || !formative) return "";
+  const { targetLabel, text: targetCopy } = agenticKnowledgeTransitionTargetCopy(pending);
+  const busy = Boolean(inFlight);
+  const busyChoice = inFlight === "formative" ? "formative" : "continue";
+  const continueBusyLabel = `跳过小测直接进入「${targetLabel}」`;
+  return `
+    <section class="agentic-coach-card decision knowledge-transition-choice" id="knowledge-transition-choice" data-knowledge-transition-panel="true" data-knowledge-transition-stage="ready" aria-label="知识点完成后的下一步选择" tabindex="-1" ${busy ? 'aria-busy="true"' : ""}>
+      <div class="agentic-coach-header">
+        <strong>选择下一步</strong>
+      </div>
+      <p>当前知识点已完成。请选择直接进入下一步，或先做一道小题检查理解。</p>
+      <small class="knowledge-transition-target">${escapeHtml(targetCopy)} 做小题时，核心题答错会再补一道诊断题，帮助定位卡点。</small>
+      <div class="agentic-actions knowledge-transition-actions" role="group" aria-label="知识点完成后的下一步">
+        <button class="button primary" type="button" data-knowledge-transition="continue" ${busy ? "disabled" : ""}>${busyChoice === "continue" ? escapeHtml(continueBusyLabel) : "直接继续"}</button>
+        <button class="button soft" type="button" data-knowledge-transition="formative" ${busy ? "disabled" : ""}>${busyChoice === "formative" ? "正在打开即时检测" : "做小题测一测"}</button>
+      </div>
+    </section>
+  `;
+}
+
+function agenticRenderKnowledgeTransitionPreviewPanel(preview) {
+  const knowledge = findMainUnit(preview?.knowledgeUnitId);
+  const formative = agenticKnowledgeCheckUnit(preview?.formativeUnitId);
+  if (!knowledge || !formative) return "";
+  const { text: targetCopy } = agenticKnowledgeTransitionTargetCopy(preview);
+  return `
+    <section class="agentic-coach-card calm knowledge-transition-choice" id="knowledge-transition-choice" data-knowledge-transition-panel="true" data-knowledge-transition-stage="preview" aria-label="完成当前互动后的下一步安排" tabindex="-1">
+      <div class="agentic-coach-header">
+        <strong>完成当前互动后，选择下一步</strong>
+      </div>
+      <p>互动场景已经选好。先完成这次互动；完成后，你可以直接进入下一知识点，或做一道小题检查理解。</p>
+      <small class="knowledge-transition-target">${escapeHtml(targetCopy)} 完成本节后，这里会自动变为可操作的选择。</small>
+      <p class="knowledge-transition-preview-options"><span>完成互动后可选：</span><strong>直接继续</strong><span>或</span><strong>做小题测一测</strong></p>
+    </section>
+  `;
+}
+
+function focusKnowledgeTransitionChoice() {
+  if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+  const node = document.querySelector("#knowledge-transition-choice");
+  if (!node) return false;
+  node.scrollIntoView({ behavior: "smooth", block: "center" });
+  const coach = document.querySelector("#agentic-coach-panel");
+  coach?.classList.remove("coach-focus-pulse");
+  void coach?.offsetWidth;
+  coach?.classList.add("coach-focus-pulse");
+  window.setTimeout(() => {
+    const firstAction = node.querySelector("[data-knowledge-transition]:not([disabled])");
+    if (firstAction) firstAction.focus({ preventScroll: true });
+    else node.focus({ preventScroll: true });
+  }, 320);
+  return true;
+}
+
+function agenticBeginKnowledgeTransition(unit) {
+  if (!unit || unit.type !== "knowledge" || !state.completed.includes(unit.id)) return null;
+  const existingChoice = agenticKnowledgeTransitionChoiceFor(unit.id);
+  if (existingChoice) return null;
+  const formative = agenticKnowledgeCheckUnit(`${unit.id}-formative`);
+  if (!formative) return null;
+
+  const existing = agenticPendingKnowledgeTransitionFor(unit.id);
+  if (existing) return existing;
+  const target = agenticKnowledgeTransitionTargetFor(unit);
+  const pending = {
+    knowledgeUnitId: unit.id,
+    formativeUnitId: formative.id,
+    targetUnitId: target?.id || "",
+    chapterId: unit.chapterId,
+    createdAt: beijingNow(),
+    source: "knowledge_complete"
+  };
+  state.pendingKnowledgeTransition = pending;
+  saveState();
+  analyticsTrack("knowledge_transition_prompt", {
+    source: "knowledge",
+    data: {
+      knowledgeUnitId: unit.id,
+      formativeUnitId: formative.id,
+      targetUnitId: pending.targetUnitId,
+      chapterId: unit.chapterId
+    }
+  });
+  trackLearningEvent("knowledge_transition_prompt", {
+    knowledgeUnitId: unit.id,
+    formativeUnitId: formative.id,
+    targetUnitId: pending.targetUnitId,
+    chapterId: unit.chapterId
+  }, false);
+  return pending;
+}
+
+async function agenticChooseKnowledgeTransition(choice = "") {
+  const pending = state.pendingKnowledgeTransition;
+  const normalizedChoice = choice === "continue" || choice === "formative" ? choice : "";
+  if (!pending || !normalizedChoice || knowledgeTransitionChoiceInFlight) return false;
+  if (currentUnitId !== pending.knowledgeUnitId) return false;
+
+  const knowledge = findMainUnit(pending.knowledgeUnitId);
+  const formative = agenticKnowledgeCheckUnit(pending.formativeUnitId);
+  if (!knowledge || !formative || !state.completed.includes(knowledge.id)) {
+    state.pendingKnowledgeTransition = null;
+    saveState();
+    return false;
+  }
+
+  const existingChoice = agenticKnowledgeTransitionChoiceFor(knowledge.id);
+  if (existingChoice && existingChoice.choice !== normalizedChoice) return false;
+  const target = normalizedChoice === "formative"
+    ? formative
+    : agenticKnowledgeTransitionTargetFor(knowledge);
+  const targetId = target?.id || "";
+  const path = ensureAgenticPath();
+  knowledgeTransitionChoiceInFlight = normalizedChoice;
+  try {
+    state.knowledgeTransitionChoices = state.knowledgeTransitionChoices || {};
+    state.knowledgeTransitionChoices[knowledge.id] = {
+      choice: normalizedChoice,
+      knowledgeUnitId: knowledge.id,
+      formativeUnitId: formative.id,
+      targetUnitId: targetId,
+      chosenAt: beijingNow(),
+      source: "knowledge_completion"
+    };
+    path.skipped = path.skipped || {};
+    path.skipped[formative.id] = normalizedChoice === "continue";
+    state.pendingKnowledgeTransition = null;
+
+    if (targetId) agenticUnlockUnit(targetId, normalizedChoice === "formative" ? "knowledge_formative_choice" : "knowledge_formative_bypass");
+    const targetLabel = targetId ? agenticUnitLabel(targetId) : "当前章节的收束步骤";
+    const actionLabel = normalizedChoice === "formative" ? "做小题测一测" : "直接继续学习";
+    addLog(`${actionLabel}：${targetLabel}。`);
+    analyticsTrack("knowledge_transition_choice", {
+      source: "knowledge",
+      data: {
+        knowledgeUnitId: knowledge.id,
+        formativeUnitId: formative.id,
+        choice: normalizedChoice,
+        targetUnitId: targetId,
+        chapterId: knowledge.chapterId
+      }
+    });
+    trackLearningEvent("knowledge_transition_choice", {
+      knowledgeUnitId: knowledge.id,
+      formativeUnitId: formative.id,
+      choice: normalizedChoice,
+      targetUnitId: targetId,
+      chapterId: knowledge.chapterId
+    }, false);
+    saveState();
+
+    if (targetId) {
+      await agenticOpenUnit(targetId);
+    } else {
+      renderAll();
+    }
+    // Sync after navigation so a refresh resumes at the selected target,
+    // together with the explicit transition choice.
+    if (typeof syncLearningSnapshot === "function") {
+      try {
+        await syncLearningSnapshot("knowledge_transition_choice");
+      } catch (error) {
+        console.warn("Knowledge transition snapshot sync failed:", error);
+        addLog("下一步已在当前设备保存，网络恢复后会自动同步。");
+      }
+    }
+    return true;
+  } finally {
+    knowledgeTransitionChoiceInFlight = "";
+  }
+}
+
 function agenticUnitIndex(unitId) {
   return agenticAllMainUnits().findIndex((unit) => unit.id === unitId);
 }
 
 function agenticIsSkipped(unitId) {
   if ((state.completed || []).includes(unitId)) return false;
-  return Boolean(ensureAgenticPath().skipped?.[unitId]);
+  const path = ensureAgenticPath();
+  return Boolean(path.skipped?.[unitId]) || agenticOptionalKnowledgeCheckSkipped(unitId, path);
 }
 
 function agenticIsPendingReviewUnit(unitId) {
@@ -944,10 +1300,26 @@ function agenticCompletionCta(unit) {
   if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
     return { label: "返回测验", disabled: false };
   }
+  if (agenticPendingKnowledgeTransitionFor(unit.id)) {
+    return { label: "请选择下一步", disabled: false, knowledgeTransitionPending: true };
+  }
   const path = ensureAgenticPath();
   const completed = (state.completed || []).includes(unit.id);
   if (!completed && !agenticUnitCompletionAllowed(unit.id)) {
     return { label: "未解锁：先接受学习建议", disabled: true };
+  }
+  if (
+    !completed
+    && agenticMultiSceneMode()
+    && unit.type === "knowledge"
+    && agenticKnowledgeCheckUnit(`${unit.id}-formative`)
+    && !agenticKnowledgeTransitionChoiceFor(unit.id)
+  ) {
+    return { label: "完成本节并选择下一步", disabled: false };
+  }
+  if (completed && unit.type === "knowledge") {
+    const transitionCta = agenticKnowledgeTransitionCtaFor(unit);
+    if (transitionCta) return transitionCta;
   }
   const activeExtensionTarget = agenticActiveExtensionTargetFromSource(path, unit.id);
   if (activeExtensionTarget?.id) {
@@ -1199,6 +1571,7 @@ function agenticActiveExtensionTargetFromSource(path, unitId) {
 
 function agenticNextUnlockedUnitAfter(unitId) {
   if (agenticPendingAppliesToUnit(unitId)) return null;
+  if (agenticPendingKnowledgeTransitionFor(unitId)) return null;
   const reviewNext = agenticReviewQueueTargetAfter(unitId);
   if (reviewNext?.id) return reviewNext;
   const path = ensureAgenticPath();
@@ -1239,6 +1612,13 @@ function agenticNextUnlockedUnitAfter(unitId) {
   }
   const next = agenticNextMainUnitAfter(unitId);
   if (!next?.id || agenticIsSkipped(next.id)) return null;
+  if (
+    agenticKnowledgeTransitionNeedsLegacyBackfill(unitId)
+    && !agenticIsUnitUnlocked(next.id)
+    && !state.completed.includes(next.id)
+  ) {
+    agenticUnlockUnit(next.id, "legacy_formative_bypass");
+  }
   return agenticIsUnitUnlocked(next.id) || state.completed.includes(next.id) ? next : null;
 }
 
@@ -1372,6 +1752,7 @@ async function agenticOpenUnit(unitId) {
 }
 
 function agenticCanLeaveCurrent() {
+  if (agenticPendingKnowledgeTransitionFor(currentUnitId)) return false;
   const pending = ensureAgenticPath().pendingPlan;
   return !pending || !agenticPendingAppliesToCurrent(pending);
 }
@@ -1386,6 +1767,18 @@ function agenticGuardNavigation(targetUnitId, { allowPrevious = false, silent = 
   if (!target) return false;
   const current = getUnit(currentUnitId);
   const path = ensureAgenticPath();
+
+  if (
+    current?.id
+    && targetUnitId !== current.id
+    && agenticPendingKnowledgeTransitionFor(current.id)
+  ) {
+    if (!silent) {
+      addLog("请先在顶部学习建议中选择下一步，再离开当前知识点。");
+      if (typeof focusKnowledgeTransitionChoice === "function") focusKnowledgeTransitionChoice();
+    }
+    return false;
+  }
 
   const isReviewTarget =
     agenticIsSkipped(targetUnitId) ||
@@ -1423,13 +1816,33 @@ function focusAgenticCoachPanel() {
   void node.offsetWidth;
   node.classList.add("coach-focus-pulse");
   window.setTimeout(() => {
-    const firstAction = node.querySelector("[data-agentic-action]");
+    const firstAction = node.querySelector("[data-knowledge-transition]:not([disabled]), [data-agentic-action]:not([disabled])");
     if (firstAction) firstAction.focus({ preventScroll: true });
   }, 320);
 }
 
+function agenticQuizReviewFailed(result = {}) {
+  return typeof quizAiReviewFailed === "function" && quizAiReviewFailed(result);
+}
+
+function agenticQuizHasScoredEvidence(result = {}) {
+  if (typeof quizHasScoredEvidence === "function") return quizHasScoredEvidence(result);
+  return !quizReviewIsPending(result) && !agenticQuizReviewFailed(result);
+}
+
+function agenticQuizReviewUnavailableCount(records = []) {
+  return records.filter(({ result }) => agenticQuizReviewFailed(result)).length;
+}
+
+function agenticQuizReviewUnavailableNotice(records = []) {
+  const count = agenticQuizReviewUnavailableCount(records);
+  return count
+    ? `有 ${count} 道简答题尚待复核，暂记分数不会用于判断你的掌握程度。`
+    : "";
+}
+
 function agenticQuizStats(records) {
-  const objective = records.filter(({ result }) => !quizReviewIsPending(result));
+  const objective = records.filter(({ result }) => agenticQuizHasScoredEvidence(result));
   const correct = objective.filter(({ result }) => result.isCorrect === true).length;
   return {
     objective: objective.length,
@@ -1466,12 +1879,14 @@ function agenticNotifyQuizReviewReady(unit, records = [], source = "grading_comp
   const path = ensureAgenticPath();
   path.quizReviewSignals = path.quizReviewSignals || {};
   const fingerprint = records
-    .map(({ question, result }) => `${question?.id || ""}:${result?.status || ""}:${result?.isCorrect}`)
+    .map(({ question, result }) => `${question?.id || ""}:${result?.status || ""}:${result?.isCorrect}:${result?.aiErrorType || result?.ai_error_type || ""}:${result?.aiScore ?? result?.ai_score ?? ""}`)
     .join("|");
   if (path.quizReviewSignals[unit.id] === fingerprint) return false;
   path.quizReviewSignals[unit.id] = fingerprint;
-  const correct = records.filter(({ result }) => result?.isCorrect === true).length;
-  const incorrect = records.filter(({ result }) => result?.isCorrect === false).length;
+  const scoredRecords = records.filter(({ result }) => agenticQuizHasScoredEvidence(result));
+  const reviewUnavailable = agenticQuizReviewUnavailableCount(records);
+  const correct = scoredRecords.filter(({ result }) => result?.isCorrect === true).length;
+  const incorrect = scoredRecords.filter(({ result }) => result?.isCorrect === false).length;
   analyticsTrack("quiz_review_ready", {
     source: "quiz",
     data: {
@@ -1481,6 +1896,7 @@ function agenticNotifyQuizReviewReady(unit, records = [], source = "grading_comp
       phase: unit.assessmentPhase || "",
       questionCount: records.length,
       pendingReview: 0,
+      reviewUnavailable,
       correct,
       incorrect,
       reviewSource: source
@@ -1536,6 +1952,7 @@ function agenticQuizKnowledgeMastery(records = [], chapterId = "") {
     earned: 0,
     possible: 0,
     pending: 0,
+    reviewUnavailable: 0,
     questions: []
   }]));
 
@@ -1546,6 +1963,11 @@ function agenticQuizKnowledgeMastery(records = [], chapterId = "") {
       if (!item) return;
       item.attempts += 1;
       item.questions.push(question.id);
+      if (agenticQuizReviewFailed(result)) {
+        item.pending += 1;
+        item.reviewUnavailable += 1;
+        return;
+      }
       const maxScore = quizMaxScoreFor(question, result);
       const earned = quizEarnedScore(result, question);
       if (earned !== null && earned !== undefined) {
@@ -1553,7 +1975,7 @@ function agenticQuizKnowledgeMastery(records = [], chapterId = "") {
         item.earned += earned;
       }
       if (result.isCorrect === true) item.correct += 1;
-      else if (result.isCorrect === false || quizAiReviewFailed(result)) item.wrong += 1;
+      else if (result.isCorrect === false) item.wrong += 1;
       else item.pending += 1;
     });
   });
@@ -1707,7 +2129,7 @@ function agenticApplyGradingResults(gradingResults = [], unit = null) {
     if (!grade) return entry;
     const maxScore = quizMaxScoreFor({}, entry);
     if (grade.score == null) {
-      const fallbackFeedback = grade.feedback || "智能批改暂时失败，已先按 0 分计入，不影响继续学习。";
+      const fallbackFeedback = grade.feedback || "智能评分暂时未得到可用结果。已暂记 0 分以便继续本次学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。";
       changed = true;
       return {
         ...entry,
@@ -1750,7 +2172,8 @@ function interactionEvidenceForUnit(unitId) {
   const quizRows = (state.quizResults || []).filter((row) => (row.unitId || row.unit_id) === unitId);
   const questionCount = new Set(quizRows.map((row) => row.questionId || row.question_id).filter(Boolean)).size;
   const pendingReview = quizRows.filter((row) => quizReviewIsPending(row)).length;
-  const scoredRows = quizRows.filter((row) => !quizReviewIsPending(row));
+  const reviewUnavailable = quizRows.filter((row) => agenticQuizReviewFailed(row)).length;
+  const scoredRows = quizRows.filter((row) => agenticQuizHasScoredEvidence(row));
   const correctRows = scoredRows.filter((row) => row.isCorrect === true);
   const accuracy = scoredRows.length ? correctRows.length / scoredRows.length : null;
   const repeatCount = Math.max(bucket.repeatCount || 0, state.analytics?.visitedUnits?.[unitId] || 0);
@@ -1805,6 +2228,7 @@ function interactionEvidenceForUnit(unitId) {
     reviewMode,
     questionCount,
     pendingReview,
+    reviewUnavailable,
     accuracy,
     frictionScore: Math.round(frictionScore * 1000) / 1000,
     engagementScore: Math.round(engagementScore * 1000) / 1000,
@@ -1913,7 +2337,7 @@ function agenticApplyRemoteGrading(remote, unit) {
   }
 }
 
-function agenticScorePendingShortAnswersAsZero(unit, reason = "智能批改暂时失败，已先按 0 分计入，不影响继续学习。") {
+function agenticScorePendingShortAnswersAsZero(unit, reason = "智能评分暂时未得到可用结果。已暂记 0 分以便继续本次学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。") {
   if (!unit?.id) return false;
   let changed = false;
   state.quizResults = (state.quizResults || []).map((entry) => {
@@ -2011,7 +2435,7 @@ async function agenticResolvePendingGrading(action = "retry") {
     if (action === "continue" && agenticQuizHasPendingShortAnswer(records)) {
       agenticScorePendingShortAnswersAsZero(
         unit,
-        "智能批改暂时未完成；系统已先按 0 分记录，后续仍可人工复核。"
+        "智能评分暂时未完成；这题已暂记为 0 分并保留待复核，暂记分数不会用于学习建议。"
       );
       records = agenticQuizRecordsForUnit(unit.id);
     }
@@ -2026,7 +2450,7 @@ async function agenticResolvePendingGrading(action = "retry") {
     agenticNotifyQuizReviewReady(unit, records, action === "continue" ? "grading_fallback" : "grading_retry");
     if (unit.id === currentUnitId && typeof renderQuiz === "function") renderQuiz(unit);
     addLog(action === "continue"
-      ? `「${unit.label}」已按 0 分兜底生成学习建议。`
+      ? `「${unit.label}」的暂记评分未用于学习建议，仍可稍后重新评分或人工复核。`
       : `「${unit.label}」简答题已重新批改并生成学习建议。`);
     return true;
   } catch (error) {
@@ -2070,6 +2494,7 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
   ensureAgenticPath();
   const stats = agenticQuizStats(records);
   const phase = unit.assessmentPhase;
+  const reviewUnavailableNotice = agenticQuizReviewUnavailableNotice(records);
 
   if (phase === "pre") {
     const knowledgePlan = agenticBuildPreKnowledgeSelectionPlan(unit, records, null);
@@ -2077,7 +2502,7 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
       const path = ensureAgenticPath();
       path.pendingPlan = knowledgePlan;
       path.pendingAt = unit.id;
-      path.lastNarration = agenticStudentNarrationForPending(knowledgePlan);
+      path.lastNarration = [agenticStudentNarrationForPending(knowledgePlan), reviewUnavailableNotice].filter(Boolean).join(" ");
       saveState();
       agenticRenderLearningUpdate();
       return;
@@ -2237,7 +2662,7 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
     }
     if (phase === "post") agenticMarkChapterReadyOnPath(path, unit.chapterId, "post_no_special_plan");
     const next = agenticUnlockDefaultNext(unit.id, "quiz_no_special_plan");
-    path.lastNarration = agenticNoSpecialPlanNarration(unit, next);
+    path.lastNarration = [agenticNoSpecialPlanNarration(unit, next), reviewUnavailableNotice].filter(Boolean).join(" ");
     if (next) path.oneStepExtension = null;
     saveState();
     agenticRenderLearningUpdate();
@@ -2261,7 +2686,7 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
     createdAt: beijingNow()
   };
   path.pendingAt = unit.id;
-  path.lastNarration = agenticStudentNarrationForPending(path.pendingPlan);
+  path.lastNarration = [agenticStudentNarrationForPending(path.pendingPlan), reviewUnavailableNotice].filter(Boolean).join(" ");
   saveState();
   agenticRenderLearningUpdate();
 }
@@ -2521,6 +2946,61 @@ function agenticOnUnitCompleted(unit) {
     path.lastNarration = `这节互动课件已经复习完成，回到主线：${adaptiveResume.label}。`;
     return adaptiveResume;
   }
+  if (agenticMultiSceneMode() && unit.type === "knowledge") {
+    const formative = agenticKnowledgeCheckUnit(`${unit.id}-formative`);
+    const existingChoice = agenticKnowledgeTransitionChoiceFor(unit.id);
+    const formativeComplete = formative
+      && agenticKnowledgeTransitionFormativeHasEvidence(formative.id);
+    if (formative && agenticKnowledgeTransitionChoiceRequiresFormative(existingChoice, formative)) {
+      agenticUnlockUnit(formative.id, "resume_knowledge_formative");
+      path.lastNarration = formativeComplete
+        ? `这道知识点检测已有记录，按你选择的路径继续查看：${agenticUnitLabel(formative.id)}。`
+        : `这道知识点检测还没有完成，继续进入：${agenticUnitLabel(formative.id)}。`;
+      saveState();
+      return formative;
+    }
+    if (
+      formative
+      && !formativeComplete
+      && (existingChoice?.choice === "formative" || agenticKnowledgeTransitionHasDraft(formative.id))
+    ) {
+      agenticUnlockUnit(formative.id, "resume_knowledge_formative");
+      path.lastNarration = `这道知识点检测还没有完成，继续进入：${agenticUnitLabel(formative.id)}。`;
+      saveState();
+      return formative;
+    }
+    if (
+      formative
+      && existingChoice?.choice !== "continue"
+      && formativeComplete
+    ) {
+      if (!existingChoice) {
+        state.knowledgeTransitionChoices = state.knowledgeTransitionChoices || {};
+        state.knowledgeTransitionChoices[unit.id] = {
+          choice: "formative",
+          knowledgeUnitId: unit.id,
+          formativeUnitId: formative.id,
+          targetUnitId: agenticKnowledgeTransitionTargetFor(unit)?.id || "",
+          chosenAt: beijingNow(),
+          source: "existing_formative_evidence"
+        };
+      }
+      const existingFormativeTarget = agenticKnowledgeTransitionTargetFor(unit);
+      if (existingFormativeTarget?.id) {
+        agenticUnlockUnit(existingFormativeTarget.id, "existing_formative_evidence");
+        path.lastNarration = `这道知识点检测已经有记录，继续进入：${agenticUnitLabel(existingFormativeTarget.id)}。`;
+        saveState();
+        return existingFormativeTarget;
+      }
+      saveState();
+    } else if (knowledgeCompletionInFlight === unit.id) {
+      const transition = agenticBeginKnowledgeTransition(unit);
+      if (transition) {
+        path.lastNarration = "这个知识点已经完成。请选择直接进入下一步，还是先做一道小题测一测。";
+        return null;
+      }
+    }
+  }
   const sceneChoicePlan = agenticBuildSceneChoicePlan(unit);
   if (!agenticMultiSceneMode() && sceneChoicePlan) {
     path.pendingPlan = sceneChoicePlan;
@@ -2568,6 +3048,9 @@ function renderAgenticDecisionTrail() {
 
 function agenticNextStatusText(unit) {
   if (!unit?.id) return "完成当前小节后，我会根据学习记录更新下一步。";
+  if (agenticPendingKnowledgeTransitionFor(unit.id)) {
+    return "这个知识点已经完成，请先选择直接继续，还是做一道小题测一测。";
+  }
   const next = agenticNextUnlockedUnitAfter(unit.id);
   if (next?.id) return `当前已解锁的下一步是「${next.label || agenticUnitLabel(next.id)}」。`;
   const planned = agenticNextMainUnitAfter(unit.id);
@@ -2663,6 +3146,12 @@ function agenticCurrentUnitNarration(unit, path) {
   }
 
   if (unit.type === "knowledge") {
+    if (agenticPendingKnowledgeTransitionFor(unit.id)) {
+      return "这个知识点已经完成。请选择直接进入下一步，还是先做一道小题测一测。你的选择会保留在学习记录中。";
+    }
+    if (agenticKnowledgeTransitionPreviewFor(unit)) {
+      return "互动场景已经选好。完成当前互动后，我会在这里让你选择直接继续，还是先做一道小题测一测。";
+    }
     const selectedType = typeof selectedKnowledgeSceneType === "function" ? selectedKnowledgeSceneType(unit) : "";
     const types = typeof knowledgeInteractionTypes === "function" ? knowledgeInteractionTypes(unit) : [];
     const selected = types.find((type) => type.id === selectedType) || {};
@@ -3456,6 +3945,25 @@ function renderAgenticCoachPanel() {
   const path = ensureAgenticPath();
   const pending = path.pendingPlan;
   const shouldShowPending = pending && agenticPendingAppliesToCurrent(pending);
+  const knowledgeTransition = agenticPendingKnowledgeTransitionFor(currentUnitId);
+  const knowledgeTransitionPreview = (knowledgeTransition || shouldShowPending)
+    ? null
+    : agenticKnowledgeTransitionPreviewFor(getUnit(currentUnitId));
+
+  if (knowledgeTransition) {
+    node.hidden = false;
+    node.innerHTML = agenticRenderKnowledgeTransitionPanel(
+      knowledgeTransition,
+      knowledgeTransitionChoiceInFlight
+    );
+    return;
+  }
+
+  if (knowledgeTransitionPreview) {
+    node.hidden = false;
+    node.innerHTML = agenticRenderKnowledgeTransitionPreviewPanel(knowledgeTransitionPreview);
+    return;
+  }
 
   if (!shouldShowPending) {
     const currentUnit = getUnit(currentUnitId);

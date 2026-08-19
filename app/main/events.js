@@ -109,6 +109,32 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const knowledgeTransitionButton = event.target.closest("[data-knowledge-transition]");
+  if (knowledgeTransitionButton) {
+    if (typeof agenticChooseKnowledgeTransition !== "function") return;
+    const choice = knowledgeTransitionButton.dataset.knowledgeTransition;
+    if (choice !== "continue" && choice !== "formative") return;
+    const panel = knowledgeTransitionButton.closest("[data-knowledge-transition-panel]");
+    if (panel?.dataset.knowledgeTransitionBusy === "true") return;
+    if (panel) {
+      panel.dataset.knowledgeTransitionBusy = "true";
+      panel.setAttribute("aria-busy", "true");
+    }
+    panel?.querySelectorAll("[data-knowledge-transition]").forEach((button) => {
+      button.disabled = true;
+    });
+    agenticChooseKnowledgeTransition(choice)
+      .then((chosen) => {
+        if (!chosen) renderAll();
+      })
+      .catch((error) => {
+        console.warn("Knowledge transition choice failed:", error);
+        addLog(`知识点下一步选择失败：${error.message || "请稍后重试"}`);
+        renderAll();
+      });
+    return;
+  }
+
   const quizPathAction = event.target.closest("[data-quiz-path-action]");
   if (quizPathAction) {
     if (quizPathAction.dataset.quizPathAction === "coach" && typeof focusAgenticCoachPanel === "function") {

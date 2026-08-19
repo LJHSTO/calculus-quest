@@ -78,7 +78,8 @@ async function testEmptyResponseGradingFallback() {
       response: "函数是输入对应输出的规则。"
     });
     assert.equal(result.errorType, "empty_response");
-    assert.match(result.feedback, /空文本/);
+    assert.match(result.feedback, /可用结果/);
+    assert.match(result.feedback, /暂记 0 分/);
     assert.equal(result.score, 0);
   } finally {
     global.fetch = originalFetch;

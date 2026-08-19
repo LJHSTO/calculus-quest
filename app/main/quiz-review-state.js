@@ -12,7 +12,8 @@
     "manual_fallback",
     "unknown"
   ]);
-  const CONTINUE_SUFFIX = "已先按 0 分计入，不影响继续学习。";
+  const CONTINUE_SUFFIX = "已暂记 0 分，可继续学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。";
+  const FAILED_FEEDBACK_RE = /评分超时|评分出错|解析失败|评分.*未返回|模型接口返回了空文本|未启用真实(?:大模型|智能评分)|(?:已先按|已暂记)\s*0\s*分|fetch failed|failed to fetch/i;
 
   function errorType(result = {}) {
     return String(result.aiErrorType || result.ai_error_type || "").trim().toLowerCase();
@@ -28,25 +29,24 @@
 
   function aiReviewFailed(result = {}) {
     if (FAILURE_TYPES.has(errorType(result))) return true;
-    const resolved = result.status === "ai_reviewed" && (
-      result.aiScore !== undefined && result.aiScore !== null
-      || result.ai_score !== undefined && result.ai_score !== null
-      || result.isCorrect === true
-      || result.isCorrect === false
-      || result.is_correct === 1
-      || result.is_correct === 0
-    );
-    if (resolved) return false;
-    return /解析失败|评分超时|评分出错|人工评阅|人工复核|fetch failed|failed to fetch/i.test(feedback(result));
+    if (FAILED_FEEDBACK_RE.test(feedback(result))) return true;
+    // A manual-review recommendation is not a failed score. Without an
+    // explicit failure type or legacy failure message, keep the record as
+    // pending when it is unresolved and as scored when it is resolved.
+    return false;
   }
 
   function isPending(result = {}) {
     return rawPending(result) && !aiReviewFailed(result);
   }
 
+  function hasScoredEvidence(result = {}) {
+    return !isPending(result) && !aiReviewFailed(result);
+  }
+
   function continuationFeedback(value = "") {
     const text = String(value || "").trim();
-    if (text.includes("已先按 0 分计入") || text.includes("可以继续学习")) return text;
+    if (text.includes("已先按 0 分计入") || text.includes("已暂记 0 分") || text.includes("可以继续学习")) return text;
     const prefix = text ? `${text.replace(/[。.!！？?\s]+$/u, "")}。` : "";
     return `${prefix}${CONTINUE_SUFFIX}`;
   }
@@ -73,6 +73,7 @@
     continuationFeedback,
     errorType,
     feedback,
+    hasScoredEvidence,
     isPending,
     normalizeFailed,
     rawPending

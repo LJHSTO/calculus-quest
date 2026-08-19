@@ -29,6 +29,53 @@ async function testEmptyRetryResultFails() {
   assert.equal(logs.some((message) => message.includes("已重新批改")), false);
 }
 
+function testClientFallbackEvidence(reviewState) {
+  const coreSource = fs.readFileSync(path.join(__dirname, "../app/main/core.js"), "utf8");
+  const helpersStart = coreSource.indexOf("function quizLatestResultsByQuestion");
+  const helpersEnd = coreSource.indexOf("// Render $...$ math", helpersStart);
+  assert.ok(helpersStart >= 0 && helpersEnd > helpersStart, "quiz summary helpers must remain testable");
+  const context = vm.createContext({
+    QuizReviewState: reviewState,
+    learningQuizRecordTimestamp: () => 0
+  });
+  vm.runInContext(coreSource.slice(helpersStart, helpersEnd), context, {
+    filename: "app/main/core.js"
+  });
+
+  const timedOut = {
+    questionId: "timeout-q",
+    status: "ai_reviewed",
+    isCorrect: false,
+    score: 0,
+    maxScore: 2,
+    aiScore: 0,
+    aiErrorType: "api_timeout"
+  };
+  assert.equal(context.quizHasScoredEvidence(timedOut), false);
+  assert.equal(context.quizQuestionScoreLabel({ points: 2 }, timedOut), "本题暂记：0 / 2 分（待复核）");
+  const timeoutSummary = context.summarizeQuizAttempt([timedOut], [{ id: "timeout-q", points: 2 }]);
+  assert.equal(timeoutSummary.reviewUnavailable, 1);
+  assert.equal(timeoutSummary.scoredQuestions, 0);
+  assert.equal(timeoutSummary.scoreReady, false);
+  assert.match(context.quizOutcomeHtml(timeoutSummary), /本次评分待复核/);
+  assert.match(context.quizOutcomeHtml(timeoutSummary), /暂未返回评分/);
+
+  const scoredZero = {
+    questionId: "scored-zero-q",
+    status: "ai_reviewed",
+    isCorrect: false,
+    score: 0,
+    maxScore: 2,
+    aiScore: 0,
+    aiErrorType: "none"
+  };
+  assert.equal(context.quizHasScoredEvidence(scoredZero), true);
+  const scoredSummary = context.summarizeQuizAttempt([scoredZero], [{ id: "scored-zero-q", points: 2 }]);
+  assert.equal(scoredSummary.reviewUnavailable, 0);
+  assert.equal(scoredSummary.scoredQuestions, 1);
+  assert.equal(scoredSummary.scoreReady, true);
+}
+
 async function testDatabaseRecovery() {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "cq-short-answer-recovery-"));
   const dbPath = path.join(tmpDir, "recovery.db");
@@ -132,7 +179,7 @@ async function testDatabaseRecovery() {
       "SELECT status, is_correct, score, ai_score, ai_error_type, ai_feedback FROM quiz_results WHERE id = 'failed-review'"
     )[0].values[0];
     assert.deepEqual(failed.slice(0, 5), ["ai_reviewed", 0, 0, 0, "api_error"]);
-    assert.match(failed[5], /已先按 0 分计入/);
+    assert.match(failed[5], /已暂记 0 分/);
 
     db.updateQuizResultAiGrading("GH-07-pre-q5", "recovery-user", {
       unitId: "V14-C3-pre",
@@ -183,13 +230,14 @@ async function main() {
   };
   assert.equal(reviewState.aiReviewFailed(failedPending), true);
   assert.equal(reviewState.isPending(failedPending), false);
+  assert.equal(reviewState.hasScoredEvidence(failedPending), false);
   assert.deepEqual(
     reviewState.normalizeFailed(failedPending),
     {
       ...failedPending,
       aiScore: 0,
       aiConfidence: 0,
-      aiFeedback: "评分出错：fetch failed。已先按 0 分计入，不影响继续学习。",
+      aiFeedback: "评分出错：fetch failed。已暂记 0 分，可继续学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。",
       aiErrorType: "api_error",
       aiNeedsReview: true,
       status: "ai_reviewed",
@@ -222,6 +270,28 @@ async function main() {
     }),
     false
   );
+  assert.equal(
+    reviewState.aiReviewFailed({
+      status: "ai_reviewed",
+      isCorrect: false,
+      aiScore: 0,
+      aiErrorType: "",
+      aiFeedback: "已先按 0 分计入，不影响继续学习。"
+    }),
+    true,
+    "旧版暂记 0 分文案即使缺少错误类型也应保留待复核"
+  );
+  assert.equal(
+    reviewState.isPending({
+      status: "pending_review",
+      isCorrect: null,
+      aiErrorType: "",
+      aiFeedback: "评分完成，但建议人工复核表达质量。"
+    }),
+    true,
+    "仅有人工复核建议时应保持真正待复核，而不是伪造失败 0 分"
+  );
+  testClientFallbackEvidence(reviewState);
 
   const agenticSource = fs.readFileSync(path.join(__dirname, "../app/main/agentic-path.js"), "utf8");
   const eventsSource = fs.readFileSync(path.join(__dirname, "../app/main/events.js"), "utf8");

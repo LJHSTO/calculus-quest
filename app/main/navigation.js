@@ -147,6 +147,16 @@ function retireQuizReturnContext(nextUnitId = "") {
 async function selectChapter(chapterId) {
   const targetChapter = getChapter(chapterId);
   if (!targetChapter) return false;
+  if (
+    chapterId !== currentChapterId
+    && typeof agenticPendingKnowledgeTransitionFor === "function"
+    && agenticPendingKnowledgeTransitionFor(currentUnitId)
+  ) {
+    addLog("请先在顶部学习建议中选择下一步，再切换章节。");
+    if (typeof focusKnowledgeTransitionChoice === "function") focusKnowledgeTransitionChoice();
+    else if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+    return false;
+  }
   const previousChapterId = currentChapterId;
   const previousUnitId = currentUnitId;
   analyticsTrack("chapter_select", {
@@ -295,6 +305,17 @@ async function completeAndAdvanceCurrentUnit(event) {
   if (!unit) return false;
 
   if (
+    unit.type === "knowledge"
+    && typeof agenticPendingKnowledgeTransitionFor === "function"
+    && agenticPendingKnowledgeTransitionFor(unit.id)
+  ) {
+    addLog("请先在顶部学习建议中选择下一步，再离开当前知识点。");
+    if (typeof focusKnowledgeTransitionChoice === "function") focusKnowledgeTransitionChoice();
+    else if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+    return false;
+  }
+
+  if (
     typeof quizResourceReviewContext === "function"
     && quizResourceReviewContext(unit.id)
     && typeof returnToQuizFromCourseware === "function"
@@ -336,10 +357,36 @@ async function completeAndAdvanceCurrentUnit(event) {
     : null;
   if (completionCta?.disabled) return false;
 
-  const nextFromCompletion = typeof agenticOnUnitCompleted === "function"
-    ? agenticOnUnitCompleted(unit)
-    : null;
-  if (completeCurrentUnit() === false) return false;
+  const wasCompleted = state.completed.includes(unit.id);
+  let nextFromCompletion = null;
+  if (unit.type === "knowledge" && !wasCompleted) {
+    // Knowledge completion must be recorded before the optional transition is
+    // created, so a refresh cannot lose the fact that the concept was learned.
+    knowledgeCompletionInFlight = unit.id;
+    try {
+      if (completeCurrentUnit() === false) return false;
+      nextFromCompletion = typeof agenticOnUnitCompleted === "function"
+        ? agenticOnUnitCompleted(unit)
+        : null;
+      if (typeof agenticPendingKnowledgeTransitionFor === "function" && agenticPendingKnowledgeTransitionFor(unit.id)) {
+        renderAll();
+        if (typeof focusKnowledgeTransitionChoice === "function") focusKnowledgeTransitionChoice();
+        // The prompt is a navigation gate. Flush it before returning control
+        // so an immediate refresh cannot replace it with an older snapshot.
+        if (typeof syncLearningSnapshot === "function") {
+          await syncLearningSnapshot("knowledge_transition_prompt");
+        }
+        return true;
+      }
+    } finally {
+      knowledgeCompletionInFlight = "";
+    }
+  } else {
+    nextFromCompletion = typeof agenticOnUnitCompleted === "function"
+      ? agenticOnUnitCompleted(unit)
+      : null;
+    if (completeCurrentUnit() === false) return false;
+  }
 
   if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
     if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();

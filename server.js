@@ -35,6 +35,7 @@ const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
 const gradingRegrade = require("./lib/grading-regrade");
+const quizReconciliation = require("./lib/quiz-reconciliation");
 const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
@@ -778,6 +779,53 @@ function persistGradingResults(participant, results = []) {
       created_at: nowIso()
     });
   });
+}
+
+function parseSnapshotForReconciliation(row) {
+  if (!row) return null;
+  try {
+    return db.normalizeLearningSnapshot(JSON.parse(row.data || "{}"));
+  } catch {
+    return null;
+  }
+}
+
+function reconcileSnapshotQuizResultsForUser(userId, snapshot, generation, fallbackTimestamp = nowIso()) {
+  const resolvedGeneration = Number(generation) > 0
+    ? Number(generation)
+    : db.currentLearningGeneration(userId, fallbackTimestamp);
+  return quizReconciliation.reconcileSnapshotQuizResults({
+    db,
+    userId,
+    generation: resolvedGeneration,
+    snapshot: db.normalizeLearningSnapshot(snapshot || {}),
+    assessmentIndex,
+    courseAssessment,
+    fallbackTimestamp
+  });
+}
+
+function reconcileLatestSnapshotQuizResults() {
+  let inserted = 0;
+  let candidates = 0;
+  db.listUsers().forEach((user) => {
+    const row = db.getLatestSnapshot(user.id);
+    const snapshot = parseSnapshotForReconciliation(row);
+    if (!snapshot) return;
+    const result = reconcileSnapshotQuizResultsForUser(
+      user.id,
+      snapshot,
+      Number(row.generation || 0),
+      row.created_at || nowIso()
+    );
+    inserted += result.inserted;
+    candidates += result.candidates;
+  });
+  if (inserted > 0) {
+    db.saveNow();
+    console.log(`Data reconciliation: restored ${inserted} missing quiz result(s) from submitted snapshots (${candidates} candidate(s)).`);
+  }
+  return { inserted, candidates };
 }
 
 function gradingRuntimeInfo() {
@@ -1942,6 +1990,19 @@ async function handleApi(req, res, url) {
       }
 
       db.upsertUser(auth.participant.id, auth.participant.nickname, auth.participant.created_at, timestamp);
+      try {
+        const reconciliation = reconcileSnapshotQuizResultsForUser(
+          auth.participant.id,
+          result.data,
+          result.generation,
+          timestamp
+        );
+        if (reconciliation.inserted > 0) db.saveNow();
+      } catch (error) {
+        // A snapshot must remain saveable even if a legacy row cannot be
+        // reconciled; the next snapshot or startup scan can retry it.
+        console.warn("Quiz result reconciliation skipped:", error.message);
+      }
       sendJson(res, 200, {
         ok: true,
         snapshotId,
@@ -3461,9 +3522,9 @@ async function handleApi(req, res, url) {
         const results = fallbackQuestions.map((question) => {
           const row = latest.get(`${question.unitId || ""}:${question.questionId || ""}`) || {};
           const existingFeedback = String(row.ai_feedback || "").trim();
-          const feedback = /已先按 0 分计入|可以继续学习/.test(existingFeedback)
+          const feedback = /已先按 0 分计入|已暂记 0 分|可以继续学习/.test(existingFeedback)
             ? existingFeedback
-            : `${existingFeedback ? `${existingFeedback.replace(/[。.!！？?\s]+$/u, "")}。` : ""}你选择先按 0 分继续学习，后续仍可重新评分或人工复核。`;
+            : `${existingFeedback ? `${existingFeedback.replace(/[。.!！？?\s]+$/u, "")}。` : ""}你选择继续学习。这题已暂记为 0 分并保留待复核，暂记分数不会用于学习建议。`;
           return {
             questionId: question.questionId,
             unitId: question.unitId,
@@ -3474,7 +3535,7 @@ async function handleApi(req, res, url) {
             errorType: "manual_fallback",
             weakConcepts: [],
             feedback,
-            reasoning: "学生选择先按 0 分继续学习。",
+            reasoning: "学生选择在评分尚未完成时继续学习。",
             needsReview: true,
             provider: "manual-fallback"
           };
@@ -3858,6 +3919,11 @@ db.getDb().then(() => {
     }
   } catch (e) {
     console.warn("Failed short answer recovery migration skipped:", e.message);
+  }
+  try {
+    reconcileLatestSnapshotQuizResults();
+  } catch (e) {
+    console.warn("Quiz result reconciliation migration skipped:", e.message);
   }
  server.listen(port, host, () => {
     console.log(`Calculus Quest running at http://${host}:${port}/`);

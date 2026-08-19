@@ -1022,19 +1022,19 @@ function renderQuiz(unit) {
         <div class="quiz-encouragement-banner" id="quiz-top-banner-${unit.id}">
           前测已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`;
+        <p class="quiz-scroll-hint">先看学习建议；需要复盘或等待复核的题再看参考要点。</p>`;
     } else if (unit.assessmentPhase === "post") {
       quizTopBanner = `
         <div class="quiz-encouragement-banner post" id="quiz-top-banner-${unit.id}">
           后测已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`;
+        <p class="quiz-scroll-hint">先看学习建议；需要复盘或等待复核的题再看参考要点。</p>`;
     } else {
       quizTopBanner = `
         <div class="quiz-encouragement-banner formative" id="quiz-top-banner-${unit.id}">
           形成性测验已提交：${outcomeHtml}。
         </div>
-        <p class="quiz-scroll-hint">先看学习建议，答错的题再看解析。</p>`;
+        <p class="quiz-scroll-hint">先看学习建议；需要复盘或等待复核的题再看参考要点。</p>`;
     }
   }
 
@@ -2047,11 +2047,15 @@ function renderLessonPathGroup(group, groupIndex) {
     units.map(({ unit }) => unit.knowledgePointId).filter(Boolean)
   ));
   const completedKnowledgePoints = knowledgePointIds.filter((knowledgePointId) => {
+    const knowledge = units.find(({ unit }) => (
+      unit.knowledgePointId === knowledgePointId && unit.type === "knowledge"
+    ));
     const formative = units.find(({ unit }) => (
       unit.knowledgePointId === knowledgePointId
       && unit.type === "quiz"
       && unit.assessmentPhase === "formative"
     ));
+    if (knowledge) return unitCountsTowardProgress(knowledge.unit);
     return formative
       ? unitCountsTowardProgress(formative.unit)
       : units
@@ -2284,6 +2288,7 @@ function syncAgenticPlayerCta(unit) {
   els.completeLesson.disabled = false;
   els.completeLesson.removeAttribute("aria-controls");
   delete els.completeLesson.dataset.scrollKnowledgeScene;
+  delete els.completeLesson.dataset.focusKnowledgeTransition;
   if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
     els.completeLesson.textContent = "返回测验";
     return;
@@ -2293,6 +2298,11 @@ function syncAgenticPlayerCta(unit) {
   if (!completionAllowed) {
     els.completeLesson.textContent = "未解锁：先接受学习建议";
     els.completeLesson.disabled = true;
+  } else if (typeof agenticPendingKnowledgeTransitionFor === "function" && agenticPendingKnowledgeTransitionFor(unit.id)) {
+    els.completeLesson.textContent = "请选择下一步";
+    els.completeLesson.disabled = false;
+    els.completeLesson.setAttribute("aria-controls", "knowledge-transition-choice");
+    els.completeLesson.dataset.focusKnowledgeTransition = "true";
   } else if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
     els.completeLesson.disabled = false;
     els.completeLesson.textContent = "先选择一个互动场景";

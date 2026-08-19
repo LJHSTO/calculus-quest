@@ -19,14 +19,15 @@ const FAILED_AI_REVIEW_TYPES = [
   "manual_fallback",
   "unknown"
 ];
-const FAILED_AI_REVIEW_SUFFIX = "。已先按 0 分计入，不影响继续学习。";
+const FAILED_AI_REVIEW_SUFFIX = "。已暂记 0 分以便继续本次学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。";
 const LEGACY_AI_REVIEW_FAILURE_PATTERNS = [
   "评分出错",
   "评分超时",
   "解析失败",
   "模型接口返回了空文本",
   "未启用真实大模型",
-  "已先按 0 分计入"
+  "已先按 0 分计入",
+  "已暂记 0 分"
 ];
 const AI_REVIEW_CONFIDENCE_THRESHOLD = 0.7;
 const EFFECTIVE_PATH_MIN_SECONDS = 10;
@@ -939,6 +940,73 @@ function insertQuizResult(record) {
   );
 }
 
+function insertQuizResultsIfMissing(records = []) {
+  const candidates = Array.isArray(records) ? records.filter((record) => (
+    record
+    && String(record.id || "").trim()
+    && String(record.user_id || "").trim()
+    && String(record.unit_id || "").trim()
+    && String(record.question_id || "").trim()
+    && String(record.created_at || "").trim()
+  )) : [];
+  if (!candidates.length) return { inserted: 0, skipped: 0 };
+
+  const d = getDbSync();
+  let inserted = 0;
+  let skipped = 0;
+  d.run("BEGIN IMMEDIATE");
+  try {
+    candidates.forEach((record) => {
+      const generation = Number(record.learning_generation || currentLearningGeneration(record.user_id, record.created_at));
+      const existing = queryOne(
+        `SELECT id
+         FROM quiz_results
+         WHERE user_id = ? AND learning_generation = ? AND unit_id = ? AND question_id = ?
+         LIMIT 1`,
+        [record.user_id, generation, record.unit_id, record.question_id]
+      );
+      if (existing) {
+        skipped += 1;
+        return;
+      }
+      d.run(
+        `INSERT OR IGNORE INTO quiz_results
+          (id, user_id, chapter_id, chapter_label, unit_id, unit_label,
+           question_id, question_type, phase, points, response, is_correct,
+           status, score, max_score, learning_generation, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          String(record.id),
+          String(record.user_id),
+          String(record.chapter_id || ""),
+          String(record.chapter_label || ""),
+          String(record.unit_id),
+          String(record.unit_label || ""),
+          String(record.question_id),
+          String(record.question_type || ""),
+          String(record.phase || ""),
+          Number(record.points || 0),
+          typeof record.response === "string" ? record.response : JSON.stringify(record.response),
+          typeof record.is_correct === "number" ? record.is_correct : (record.is_correct ? 1 : 0),
+          String(record.status || ""),
+          Number(record.score || 0),
+          Number(record.max_score || 0),
+          generation,
+          String(record.created_at)
+        ]
+      );
+      if (d.getRowsModified() > 0) inserted += 1;
+      else skipped += 1;
+    });
+    d.run("COMMIT");
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+  if (inserted > 0) scheduleSave();
+  return { inserted, skipped };
+}
+
 function getQuizResultsByUser(userId, limit = 200) {
   const generation = currentLearningGeneration(userId);
   return queryAll(
@@ -1528,7 +1596,7 @@ function updateQuizResultAiGrading(questionId, userId, {
 
   if (resolvedScore == null && FAILED_AI_REVIEW_TYPES.includes(normalizedErrorType)) {
     resolvedScore = 0;
-    if (!/已先按 0 分计入|可以继续学习/.test(resolvedFeedback)) {
+    if (!/已先按 0 分计入|已暂记 0 分|可以继续学习/.test(resolvedFeedback)) {
       const feedbackPrefix = String(resolvedFeedback || "").replace(/[。.!！？?\s]+$/u, "");
       resolvedFeedback = feedbackPrefix
         ? `${feedbackPrefix}${FAILED_AI_REVIEW_SUFFIX}`
@@ -1807,7 +1875,7 @@ function normalizeFailedPendingQuizReviews() {
          ai_confidence = COALESCE(ai_confidence, 0),
          ai_feedback = CASE
            WHEN trim(COALESCE(ai_feedback, '')) = '' THEN ?
-           WHEN instr(ai_feedback, '已先按 0 分计入') > 0 OR instr(ai_feedback, '可以继续学习') > 0 THEN ai_feedback
+           WHEN instr(ai_feedback, '已先按 0 分计入') > 0 OR instr(ai_feedback, '已暂记 0 分') > 0 OR instr(ai_feedback, '可以继续学习') > 0 THEN ai_feedback
            ELSE rtrim(ai_feedback, '。.!！？? ') || ?
          END,
          is_correct = 0,
@@ -1896,6 +1964,96 @@ function uniqueStrings(values = []) {
   return Array.from(new Set(values.filter((value) => typeof value === "string" && value)));
 }
 
+function snapshotQuizRecordUnitId(record = {}) {
+  return String(record?.unitId || record?.unit_id || "").trim();
+}
+
+function snapshotQuizRecordQuestionRole(record = {}) {
+  const explicitRole = String(record?.adaptiveRole || record?.adaptive_role || "")
+    .trim()
+    .toLowerCase();
+  if (explicitRole === "core" || explicitRole === "diagnostic") return explicitRole;
+  const questionId = String(record?.questionId || record?.question_id || "").trim();
+  if (/-check-q1$/i.test(questionId)) return "core";
+  if (/-check-q2$/i.test(questionId)) return "diagnostic";
+  return "";
+}
+
+function snapshotQuizRecordIsCorrect(record = {}) {
+  return record?.isCorrect === true
+    || record?.is_correct === true
+    || Number(record?.isCorrect) === 1
+    || Number(record?.is_correct) === 1
+    || String(record?.status || "").trim().toLowerCase() === "correct";
+}
+
+function snapshotQuizRecordTimestamp(record = {}) {
+  return Date.parse(
+    record?.timestamp
+      || record?.createdAt
+      || record?.created_at
+      || record?.submittedAt
+      || ""
+  ) || 0;
+}
+
+function snapshotQuizAttemptHasSubmissionMarker(attempt = {}) {
+  if (!attempt || typeof attempt !== "object" || Array.isArray(attempt)) return false;
+  const status = String(attempt.status || "").trim().toLowerCase();
+  return attempt.submitted === true
+    || attempt.completed === true
+    || status === "submitted"
+    || status === "completed"
+    || Boolean(attempt.submittedAt || attempt.completedAt);
+}
+
+function snapshotQuizRecordsForUnit(source, unitId) {
+  const resultRecords = Array.isArray(source.quizResults)
+    ? source.quizResults.filter((record) => snapshotQuizRecordUnitId(record) === unitId)
+    : [];
+  const attempt = source.quizAttempts?.[unitId];
+  const attemptRecords = Array.isArray(attempt?.records)
+    ? attempt.records.filter((record) => {
+      const recordUnitId = snapshotQuizRecordUnitId(record);
+      return !recordUnitId || recordUnitId === unitId;
+    })
+    : [];
+  return { attempt, records: [...resultRecords, ...attemptRecords] };
+}
+
+function snapshotFormativeAttemptComplete(source, unitId) {
+  const { attempt, records } = snapshotQuizRecordsForUnit(source, unitId);
+  const latestByRole = new Map();
+  records.forEach((record, index) => {
+    const role = snapshotQuizRecordQuestionRole(record);
+    if (!role) return;
+    const current = latestByRole.get(role);
+    if (!current) {
+      latestByRole.set(role, { record, index });
+      return;
+    }
+    const currentAt = snapshotQuizRecordTimestamp(current.record);
+    const candidateAt = snapshotQuizRecordTimestamp(record);
+    if (candidateAt > currentAt || (candidateAt === currentAt && index < current.index)) {
+      latestByRole.set(role, { record, index });
+    }
+  });
+
+  if (latestByRole.has("diagnostic")) return true;
+  if (snapshotQuizRecordIsCorrect(latestByRole.get("core")?.record)) return true;
+
+  // A recognized adaptive attempt is incomplete until its diagnostic follow-up
+  // is submitted. Unknown legacy formative records remain compatible below.
+  if (latestByRole.size > 0) return false;
+  const explicitlySubmitted = Array.isArray(source.submittedQuizzes)
+    && source.submittedQuizzes.includes(unitId);
+  return Boolean(
+    explicitlySubmitted
+      || records.length
+      || snapshotQuizAttemptHasSubmissionMarker(attempt)
+  );
+}
+
 function normalizeLearningSnapshot(snapshot = {}) {
   const source = snapshot && typeof snapshot === "object" && !Array.isArray(snapshot)
     ? snapshot
@@ -1908,13 +2066,25 @@ function normalizeLearningSnapshot(snapshot = {}) {
     && !Array.isArray(source.quizAttempts)
     ? Object.keys(source.quizAttempts)
     : [];
-  return {
+  const submittedQuizzes = uniqueStrings([
+    ...(Array.isArray(source.submittedQuizzes) ? source.submittedQuizzes : []),
+    ...quizResultIds,
+    ...quizAttemptIds
+  ]).filter((unitId) => (
+    !/-formative$/i.test(unitId) || snapshotFormativeAttemptComplete(source, unitId)
+  ));
+  const normalized = {
     ...source,
-    submittedQuizzes: uniqueStrings([
-      ...(Array.isArray(source.submittedQuizzes) ? source.submittedQuizzes : []),
-      ...quizResultIds,
-      ...quizAttemptIds
-    ])
+    submittedQuizzes
+  };
+  if (Array.isArray(source.completed)) {
+    const submitted = new Set(submittedQuizzes);
+    normalized.completed = source.completed.filter((unitId) => (
+      !/-formative$/i.test(String(unitId)) || submitted.has(unitId)
+    ));
+  }
+  return {
+    ...normalized
   };
 }
 
@@ -1971,6 +2141,25 @@ function mergeAgenticPath(existing, incoming) {
   return merged;
 }
 
+function mergeKnowledgeTransitionChoices(existing = {}, incoming = {}) {
+  const left = existing && typeof existing === "object" && !Array.isArray(existing)
+    ? existing
+    : {};
+  const right = incoming && typeof incoming === "object" && !Array.isArray(incoming)
+    ? incoming
+    : {};
+  const merged = { ...left, ...right };
+  Object.keys(left).forEach((knowledgeUnitId) => {
+    const local = left[knowledgeUnitId];
+    const remote = right[knowledgeUnitId];
+    if (!remote || !local) return;
+    const localAt = Date.parse(local.chosenAt || local.createdAt || "") || 0;
+    const remoteAt = Date.parse(remote.chosenAt || remote.createdAt || "") || 0;
+    if (localAt > remoteAt) merged[knowledgeUnitId] = local;
+  });
+  return merged;
+}
+
 function mergeLearningSnapshot(existing = {}, incoming = {}) {
   const left = normalizeLearningSnapshot(existing);
   const right = normalizeLearningSnapshot(incoming);
@@ -1987,6 +2176,10 @@ function mergeLearningSnapshot(existing = {}, incoming = {}) {
   merged.selectedKnowledgeScenes = Object.prototype.hasOwnProperty.call(right, "selectedKnowledgeScenes")
     ? { ...(right.selectedKnowledgeScenes || {}) }
     : { ...(left.selectedKnowledgeScenes || {}) };
+  merged.knowledgeTransitionChoices = mergeKnowledgeTransitionChoices(
+    left.knowledgeTransitionChoices,
+    right.knowledgeTransitionChoices
+  );
   merged.submittedQuizzes = normalizeLearningSnapshot(merged).submittedQuizzes;
   merged.analytics = mergeAnalytics(left.analytics, right.analytics);
   merged.agenticPath = mergeAgenticPath(left.agenticPath, right.agenticPath);
@@ -3830,6 +4023,7 @@ module.exports = {
   revokeSession,
   currentLearningGeneration,
   insertQuizResult,
+  insertQuizResultsIfMissing,
   getQuizResultsByUser,
   getQuizResultsByUserUnit,
   getQuizResultById,

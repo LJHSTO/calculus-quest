@@ -28,6 +28,14 @@ const c1 = {
   label: "第一章",
   order: 1,
   track: "main",
+  modules: [{
+    id: "C1-M1",
+    title: "第一章模块",
+    knowledgePoints: [
+      { id: "C1-k1", name: "第一知识点" },
+      { id: "C1-k2", name: "第二知识点" }
+    ]
+  }],
   units: [
     unit("C1-pre", "C1", 1, "quiz", "pre"),
     unit("C1-k1", "C1", 2),
@@ -109,6 +117,17 @@ const context = vm.createContext({
   analyticsTrack: (eventType, payload) => analyticsEvents.push({ eventType, payload }),
   trackLearningEvent: () => {},
   quizReviewIsPending: (result = {}) => result.status === "pending_review" || result.isCorrect === null,
+  quizAiReviewFailed: (result = {}) => new Set([
+    "api_error", "api_timeout", "parse_error", "empty_response", "mock_provider", "manual_fallback", "unknown"
+  ]).has(String(result.aiErrorType || result.ai_error_type || "").toLowerCase()),
+  quizHasScoredEvidence: (result = {}) => !context.quizReviewIsPending(result) && !context.quizAiReviewFailed(result),
+  quizMaxScoreFor: (question = {}, result = {}) => Number(result.maxScore ?? question.points ?? 0),
+  quizEarnedScore: (result = {}, question = {}) => {
+    if (context.quizAiReviewFailed(result)) return 0;
+    if (result.score !== undefined && result.score !== null) return Number(result.score) || 0;
+    if (result.isCorrect === true) return Number(question.points || 0);
+    return result.isCorrect === false ? 0 : null;
+  },
   saveState: () => {},
   renderAll: () => {},
   renderAgenticCoachPanel: () => {},
@@ -591,6 +610,33 @@ function testQuizReviewReadySignalWaitsForAllScoring() {
   assert.equal(context.agenticNotifyQuizReviewReady(quizUnit, pendingRecords), false);
   assert.equal(analyticsEvents.some((event) => event.eventType === "quiz_review_ready"), false);
 
+  const failedRecords = [
+    pendingRecords[0],
+    {
+      question: { id: "q2", type: "short_answer" },
+      result: { isCorrect: false, status: "ai_reviewed", aiScore: 0, aiErrorType: "api_timeout" }
+    }
+  ];
+  assert.equal(context.agenticNotifyQuizReviewReady(quizUnit, failedRecords), true);
+  const failedEvent = analyticsEvents.find((event) => event.eventType === "quiz_review_ready");
+  assert.equal(failedEvent.payload.data.pendingReview, 0);
+  assert.equal(failedEvent.payload.data.reviewUnavailable, 1);
+  assert.equal(failedEvent.payload.data.incorrect, 1, "暂记 0 分不能被统计为答错");
+  assert.equal(context.agenticNotifyQuizReviewReady(quizUnit, failedRecords), false, "同一失败评分状态不能重复弹复盘");
+
+  reset({
+    chapterId: "C1",
+    unitId: "C1-pre",
+    state: {
+      agenticPath: {
+        unlocked: ["C1-pre"],
+        visibleUnits: ["C1-pre"],
+        chapterAdvanceReady: {},
+        chapterAdvanceReasons: {}
+      }
+    }
+  });
+
   const scoredRecords = [
     pendingRecords[0],
     { question: { id: "q2", type: "short_answer" }, result: { isCorrect: false, status: "ai_reviewed" } }
@@ -600,6 +646,56 @@ function testQuizReviewReadySignalWaitsForAllScoring() {
   assert.equal(readyEvent.payload.data.pendingReview, 0);
   assert.equal(readyEvent.payload.data.incorrect, 2);
   assert.equal(context.agenticNotifyQuizReviewReady(quizUnit, scoredRecords), false, "相同评分结果不能重复弹复盘");
+}
+
+function testFailedAiReviewDoesNotChangeKnowledgeMastery() {
+  const failedRecords = [{
+    question: {
+      id: "timeout-q",
+      type: "short_answer",
+      points: 2,
+      knowledgePointIds: ["C1-k1"]
+    },
+    result: {
+      isCorrect: false,
+      status: "ai_reviewed",
+      score: 0,
+      maxScore: 2,
+      aiScore: 0,
+      aiErrorType: "api_timeout"
+    }
+  }];
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(context.agenticQuizStats(failedRecords))),
+    { objective: 0, correct: 0, accuracy: null }
+  );
+  const mastery = context.agenticQuizKnowledgeMastery(failedRecords, "C1").find((item) => item.id === "C1-k1");
+  assert.equal(mastery.attempts, 1);
+  assert.equal(mastery.wrong, 0);
+  assert.equal(mastery.pending, 1);
+  assert.equal(mastery.reviewUnavailable, 1);
+  assert.equal(mastery.mastery, null);
+  assert.equal(mastery.status, "pending");
+
+  const scoredZero = [{
+    question: {
+      id: "scored-zero-q",
+      type: "short_answer",
+      points: 2,
+      knowledgePointIds: ["C1-k1"]
+    },
+    result: {
+      isCorrect: false,
+      status: "ai_reviewed",
+      score: 0,
+      maxScore: 2,
+      aiScore: 0,
+      aiErrorType: "none"
+    }
+  }];
+  const scoredMastery = context.agenticQuizKnowledgeMastery(scoredZero, "C1").find((item) => item.id === "C1-k1");
+  assert.equal(scoredMastery.wrong, 1, "真实评分为 0 分仍应作为掌握度证据");
+  assert.equal(scoredMastery.status, "weak");
 }
 
 async function testFormativeQuizAlwaysProvidesAnExit() {
@@ -742,6 +838,7 @@ Promise.resolve()
   .then(testDeferredReviewAndExtensionFlows)
   .then(testDirectExtensionPostReturnsToMainRoute)
   .then(testQuizReviewReadySignalWaitsForAllScoring)
+  .then(testFailedAiReviewDoesNotChangeKnowledgeMastery)
   .then(testFormativeQuizAlwaysProvidesAnExit)
   .then(async () => {
     const failures = [];
