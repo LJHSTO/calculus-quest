@@ -58,10 +58,15 @@ let learningRoute = null;
 let publicLearningRouteJson = "";
 let flowTestRouteJson = "";
 let assessmentIndex = new Map();
+let courseAssessmentFingerprint = "";
 let assistantContextIndex = { routeVersion: "", units: new Map(), questions: new Map() };
 try {
   learningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
-  publicLearningRouteJson = JSON.stringify(courseAssessment.buildPublicLearningRoute(learningRoute));
+  courseAssessmentFingerprint = courseAssessment.assessmentFingerprint(learningRoute);
+  publicLearningRouteJson = JSON.stringify({
+    ...courseAssessment.buildPublicLearningRoute(learningRoute),
+    courseAssessmentFingerprint
+  });
   flowTestRouteJson = JSON.stringify(learningRoute);
   assessmentIndex = courseAssessment.buildAssessmentIndex(learningRoute);
   assistantContextIndex = learningAssistant.buildCourseContextIndex(learningRoute);
@@ -768,51 +773,64 @@ function persistGradingResults(participant, results = []) {
   });
 }
 
-function parseSnapshotForReconciliation(row) {
-  if (!row) return null;
+function parseSnapshotDataValue(value) {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
   try {
-    return db.normalizeLearningSnapshot(JSON.parse(row.data || "{}"));
+    const parsed = JSON.parse(String(value || "{}"));
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
   } catch {
-    return null;
+    return {};
   }
 }
 
-function reconcileSnapshotQuizResultsForUser(userId, snapshot, generation, fallbackTimestamp = nowIso()) {
-  const resolvedGeneration = Number(generation) > 0
-    ? Number(generation)
-    : db.currentLearningGeneration(userId, fallbackTimestamp);
+function reconcileSnapshotQuizResultsForUser(userId, snapshot, generation, fallbackTimestamp = "") {
+  const resolvedGeneration = Number(generation) > 0 ? Number(generation) : 1;
   return quizReconciliation.reconcileSnapshotQuizResults({
     db,
     userId,
     generation: resolvedGeneration,
-    snapshot: db.normalizeLearningSnapshot(snapshot || {}),
+    snapshot: db.normalizeLearningSnapshot(parseSnapshotDataValue(snapshot)),
     assessmentIndex,
     courseAssessment,
+    assessmentFingerprint: courseAssessmentFingerprint,
     fallbackTimestamp
   });
 }
 
-function reconcileLatestSnapshotQuizResults() {
-  let inserted = 0;
-  let candidates = 0;
+function reconcileStoredSnapshotQuizResults() {
+  const totals = {
+    users: 0,
+    snapshots: 0,
+    candidates: 0,
+    inserted: 0,
+    updated: 0,
+    skipped: 0
+  };
   db.listUsers().forEach((user) => {
-    const row = db.getLatestSnapshot(user.id);
-    const snapshot = parseSnapshotForReconciliation(row);
-    if (!snapshot) return;
-    const result = reconcileSnapshotQuizResultsForUser(
-      user.id,
-      snapshot,
-      Number(row.generation || 0),
-      row.created_at || nowIso()
-    );
-    inserted += result.inserted;
-    candidates += result.candidates;
+    totals.users += 1;
+    try {
+      const snapshots = db.listLearningSnapshots(user.id);
+      snapshots.forEach((snapshot) => {
+        totals.snapshots += 1;
+        // Generation 0 is the pre-versioning legacy snapshot format.  It
+        // belongs to the first learning generation, not to a later reset.
+        const generation = Number(snapshot.generation) > 0 ? Number(snapshot.generation) : 1;
+        const result = reconcileSnapshotQuizResultsForUser(
+          user.id,
+          snapshot.data,
+          generation,
+          snapshot.created_at
+        );
+        totals.inserted += result.inserted;
+        totals.updated += result.updated;
+        totals.skipped += result.skipped;
+        totals.candidates += result.candidates;
+      });
+    } catch (error) {
+      console.error(`Stored snapshot quiz reconciliation skipped for ${user.id}:`, error.message);
+    }
   });
-  if (inserted > 0) {
-    db.saveNow();
-    console.log(`Data reconciliation: restored ${inserted} missing quiz result(s) from submitted snapshots (${candidates} candidate(s)).`);
-  }
-  return { inserted, candidates };
+  return totals;
 }
 
 function gradingRuntimeInfo() {
@@ -1517,7 +1535,10 @@ async function handleApi(req, res, url) {
 
     if (req.method === "GET" && url.pathname === "/api/research/config") {
       const courseVersion = String(learningRoute?.versionId || "").slice(0, 120);
-      sendJson(res, 200, { ok: true, data: { ...researchConfig, courseVersion } });
+      sendJson(res, 200, {
+        ok: true,
+        data: { ...researchConfig, courseVersion, courseAssessmentFingerprint }
+      });
       return;
     }
 
@@ -1965,14 +1986,21 @@ async function handleApi(req, res, url) {
       }
 
       db.upsertUser(auth.participant.id, auth.participant.nickname, auth.participant.created_at, timestamp);
+      let quizReconciliationResult = {
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        total: 0,
+        candidates: 0
+      };
       try {
-        const reconciliation = reconcileSnapshotQuizResultsForUser(
+        quizReconciliationResult = reconcileSnapshotQuizResultsForUser(
           auth.participant.id,
           result.data,
           result.generation,
           timestamp
         );
-        if (reconciliation.inserted > 0) db.saveNow();
+        if (quizReconciliationResult.inserted || quizReconciliationResult.updated) db.saveNow();
       } catch (error) {
         // A snapshot must remain saveable even if a legacy row cannot be
         // reconciled; the next snapshot or startup scan can retry it.
@@ -1982,7 +2010,8 @@ async function handleApi(req, res, url) {
         ok: true,
         snapshotId,
         generation: result.generation,
-        revision: result.revision
+        revision: result.revision,
+        quizReconciliation: quizReconciliationResult
       });
       return;
     }
@@ -2020,13 +2049,32 @@ async function handleApi(req, res, url) {
         return;
       }
       db.upsertUser(auth.participant.id, auth.participant.nickname, auth.participant.created_at, timestamp);
+      let quizReconciliationResult = {
+        inserted: 0,
+        updated: 0,
+        skipped: 0,
+        total: 0,
+        candidates: 0
+      };
+      try {
+        quizReconciliationResult = reconcileSnapshotQuizResultsForUser(
+          auth.participant.id,
+          snapshotData,
+          result.generation,
+          timestamp
+        );
+        if (quizReconciliationResult.inserted || quizReconciliationResult.updated) db.saveNow();
+      } catch (error) {
+        console.warn("Learning reset quiz reconciliation skipped:", error.message);
+      }
 
       sendJson(res, 200, {
         ok: true,
         snapshotId,
         cleared: true,
         generation: result.generation,
-        revision: result.revision
+        revision: result.revision,
+        quizReconciliation: quizReconciliationResult
       });
       return;
     }
@@ -3896,9 +3944,16 @@ db.getDb().then(() => {
     console.warn("Failed short answer recovery migration skipped:", e.message);
   }
   try {
-    reconcileLatestSnapshotQuizResults();
+    const reconciled = reconcileStoredSnapshotQuizResults();
+    if (reconciled.inserted || reconciled.updated) db.saveNow();
+    if (reconciled.inserted || reconciled.updated || reconciled.snapshots) {
+      console.log(
+        `Data reconciliation: checked ${reconciled.snapshots}/${reconciled.users} snapshots, `
+        + `inserted ${reconciled.inserted} quiz results, updated ${reconciled.updated}.`
+      );
+    }
   } catch (e) {
-    console.warn("Quiz result reconciliation migration skipped:", e.message);
+    console.warn("Stored snapshot quiz reconciliation skipped:", e.message);
   }
  server.listen(port, host, () => {
     console.log(`Calculus Quest running at http://${host}:${port}/`);

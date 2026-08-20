@@ -1,4 +1,5 @@
 // View, chapter, unit, completion, and activity-log navigation.
+let completionNavigationInFlight = "";
 function renderAll() {
   applyView(currentView);
   renderAuth();
@@ -159,6 +160,7 @@ async function selectChapter(chapterId) {
   }
   const previousChapterId = currentChapterId;
   const previousUnitId = currentUnitId;
+  const previousReturnToQuiz = state.returnToQuiz;
   analyticsTrack("chapter_select", {
     data: {
       fromChapterId: previousChapterId,
@@ -177,7 +179,8 @@ async function selectChapter(chapterId) {
   if (!chapter.loaded) {
     renderAll();
     try {
-      await ensureChapterLoaded(chapterId);
+      const loaded = await ensureChapterLoaded(chapterId);
+      if (loaded === false) throw new Error("chapter_load_rejected");
       const loadedChapter = getChapter(chapterId);
       const loadedPathUnits = typeof agenticDisplayUnitsForChapter === "function"
         ? agenticDisplayUnitsForChapter(loadedChapter)
@@ -190,6 +193,8 @@ async function selectChapter(chapterId) {
       // Chapter load failed; stay on current chapter view
       currentChapterId = previousChapterId;
       currentUnitId = previousUnitId;
+      state.returnToQuiz = previousReturnToQuiz;
+      renderAll();
       return false;
     }
   }
@@ -352,65 +357,81 @@ async function completeAndAdvanceCurrentUnit(event) {
     return false;
   }
 
-  const completionCta = typeof agenticCompletionCta === "function"
-    ? agenticCompletionCta(unit)
-    : null;
-  if (completionCta?.disabled) return false;
+  if (completionNavigationInFlight) {
+    if (typeof analyticsTrack === "function") {
+      analyticsTrack("navigation_duplicate_blocked", {
+        source: "completion",
+        data: { unitId: unit.id, inFlightUnitId: completionNavigationInFlight }
+      });
+    }
+    return false;
+  }
 
-  const wasCompleted = state.completed.includes(unit.id);
-  let nextFromCompletion = null;
-  if (unit.type === "knowledge" && !wasCompleted) {
-    // Knowledge completion must be recorded before the optional transition is
-    // created, so a refresh cannot lose the fact that the concept was learned.
-    knowledgeCompletionInFlight = unit.id;
-    try {
-      if (completeCurrentUnit() === false) return false;
+  completionNavigationInFlight = unit.id;
+  try {
+    const completionCta = typeof agenticCompletionCta === "function"
+      ? agenticCompletionCta(unit)
+      : null;
+    if (completionCta?.disabled) return false;
+
+    const wasCompleted = state.completed.includes(unit.id);
+    let nextFromCompletion = null;
+    if (unit.type === "knowledge" && !wasCompleted) {
+      // Record completion before creating the explicit next-step prompt so a
+      // refresh cannot lose either side of the transition.
+      knowledgeCompletionInFlight = unit.id;
+      try {
+        if (completeCurrentUnit() === false) return false;
+        nextFromCompletion = typeof agenticOnUnitCompleted === "function"
+          ? agenticOnUnitCompleted(unit)
+          : null;
+        if (
+          typeof agenticPendingKnowledgeTransitionFor === "function"
+          && agenticPendingKnowledgeTransitionFor(unit.id)
+        ) {
+          renderAll();
+          if (typeof focusKnowledgeTransitionChoice === "function") focusKnowledgeTransitionChoice();
+          if (typeof syncLearningSnapshot === "function") {
+            await syncLearningSnapshot("knowledge_transition_prompt");
+          }
+          return true;
+        }
+      } finally {
+        knowledgeCompletionInFlight = "";
+      }
+    } else {
       nextFromCompletion = typeof agenticOnUnitCompleted === "function"
         ? agenticOnUnitCompleted(unit)
         : null;
-      if (typeof agenticPendingKnowledgeTransitionFor === "function" && agenticPendingKnowledgeTransitionFor(unit.id)) {
-        renderAll();
-        if (typeof focusKnowledgeTransitionChoice === "function") focusKnowledgeTransitionChoice();
-        // The prompt is a navigation gate. Flush it before returning control
-        // so an immediate refresh cannot replace it with an older snapshot.
-        if (typeof syncLearningSnapshot === "function") {
-          await syncLearningSnapshot("knowledge_transition_prompt");
-        }
-        return true;
-      }
-    } finally {
-      knowledgeCompletionInFlight = "";
+      if (completeCurrentUnit() === false) return false;
     }
-  } else {
-    nextFromCompletion = typeof agenticOnUnitCompleted === "function"
-      ? agenticOnUnitCompleted(unit)
-      : null;
-    if (completeCurrentUnit() === false) return false;
-  }
 
-  if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
-    if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
-    else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+    if (typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id)) {
+      if (typeof focusAgenticCoachPanel === "function") focusAgenticCoachPanel();
+      else if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+      return true;
+    }
+
+    const next = nextFromCompletion?.id
+      ? nextFromCompletion
+      : typeof agenticNextUnlockedUnitAfter === "function"
+        ? agenticNextUnlockedUnitAfter(unit.id)
+        : null;
+    if (next?.id && typeof agenticOpenUnit === "function") {
+      const opened = await agenticOpenUnit(next.id, { source: "completion" });
+      return opened === true;
+    }
+
+    const chapter = getChapter(unit.chapterId);
+    const isExtension = typeof agenticIsExtensionChapter === "function" && agenticIsExtensionChapter(chapter);
+    addLog(isExtension
+      ? "当前扩展学习已完成，可从章节栏返回主线。"
+      : "你已到达当前课程路线的最后一步。");
+    renderAll();
     return true;
+  } finally {
+    completionNavigationInFlight = "";
   }
-
-  const next = nextFromCompletion?.id
-    ? nextFromCompletion
-    : typeof agenticNextUnlockedUnitAfter === "function"
-      ? agenticNextUnlockedUnitAfter(unit.id)
-      : null;
-  if (next?.id && typeof agenticOpenUnit === "function") {
-    await agenticOpenUnit(next.id);
-    return true;
-  }
-
-  const chapter = getChapter(unit.chapterId);
-  const isExtension = typeof agenticIsExtensionChapter === "function" && agenticIsExtensionChapter(chapter);
-  addLog(isExtension
-    ? "当前扩展学习已完成，可从章节栏返回主线。"
-    : "你已到达当前课程路线的最后一步。");
-  renderAll();
-  return true;
 }
 
 function addLog(text) {
