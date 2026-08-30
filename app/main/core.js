@@ -95,7 +95,7 @@ function learningDefaults() {
       repeats: {},
       skips: []
     },
-    currentChapterId: chapters[0]?.id || "V14-C1",
+    currentChapterId: chapters[0]?.id || "V14-C3",
     currentUnitId: "",
     currentView: "home",
     lastLearningContext: null
@@ -921,7 +921,7 @@ function applyServerLearningSnapshot(serverSnapshot, options = {}) {
     clearPreviewKnowledgeSceneSelections();
     Object.assign(state, learningDefaults(), incoming || {}, identity);
     normalizeLearningStateCompatibility(state);
-    currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
+    currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C3";
     currentUnitId = state.currentUnitId || "";
     currentView = validViews.has(state.currentView) ? state.currentView : "home";
     return;
@@ -1240,7 +1240,7 @@ async function loginParticipant(credentials = {}) {
         Object.assign(state, learningDefaults());
       }
       normalizeLearningStateCompatibility(state);
-      currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
+      currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C3";
       currentUnitId = state.currentUnitId || "";
       switchView("home");
     }
@@ -1317,7 +1317,7 @@ async function logoutParticipant() {
     // Reset runtime learning state to defaults
     clearPreviewKnowledgeSceneSelections();
     Object.assign(state, learningDefaults(), { participant: null, authToken: "" });
-    currentChapterId = chapters[0]?.id || "V14-C1";
+    currentChapterId = chapters[0]?.id || "V14-C3";
     currentUnitId = "";
     switchView("home");
     renderAuth();

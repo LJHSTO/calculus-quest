@@ -293,6 +293,89 @@
   white-space: nowrap;
 }
 
+.knowledge-proactive-preference {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(168px, 1.25fr);
+  gap: 10px;
+  align-items: center;
+  margin: 8px 12px 0;
+  border-bottom: 1px solid rgba(22, 50, 79, 0.09);
+  padding: 4px 0 10px;
+}
+
+.knowledge-proactive-preference[hidden] {
+  display: none;
+}
+
+.knowledge-proactive-preference > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.knowledge-proactive-preference > div:first-child strong {
+  color: var(--knowledge-deep);
+  font-size: 0.76rem;
+}
+
+.knowledge-proactive-preference > div:first-child small {
+  overflow-wrap: anywhere;
+  color: #6b7d88;
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.knowledge-proactive-preference > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 3px;
+  border-radius: 8px;
+  background: #eaf0ef;
+  padding: 3px;
+}
+
+.knowledge-proactive-preference button {
+  min-width: 0;
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 5px 4px;
+  color: #526a74;
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition-property: background-color, color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.knowledge-proactive-preference button:hover,
+.knowledge-proactive-preference button:focus-visible {
+  color: var(--knowledge-teal-dark);
+  outline: 2px solid rgba(11, 143, 138, 0.14);
+  outline-offset: 1px;
+}
+
+.knowledge-proactive-preference button.is-selected {
+  background: #fff;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.92) inset,
+    0 3px 10px rgba(22, 50, 79, 0.11);
+  color: var(--knowledge-teal-dark);
+}
+
+.knowledge-proactive-preference button:active {
+  transform: scale(0.96);
+}
+
+.knowledge-proactive-preference button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+  transform: none;
+}
+
 .knowledge-quiz-policy {
   display: grid;
   grid-template-columns: 26px minmax(0, 1fr);
@@ -777,6 +860,193 @@
   color: var(--knowledge-teal-dark);
   outline: 2px solid rgba(11, 143, 138, 0.14);
   outline-offset: 1px;
+}
+
+.knowledge-proactive-verification,
+.knowledge-proactive-inline-offer,
+.knowledge-proactive-check-feedback {
+  gap: 9px;
+  margin: 3px 0 14px 14px;
+  border: 1px solid rgba(22, 50, 79, 0.12);
+  border-left: 3px solid var(--knowledge-teal);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(22, 50, 79, 0.08);
+  padding: 11px;
+}
+
+.knowledge-proactive-verification > div:first-child,
+.knowledge-proactive-inline-offer > div:first-child,
+.knowledge-proactive-check-feedback > div:first-child {
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.knowledge-proactive-verification > div:first-child strong,
+.knowledge-proactive-inline-offer > div:first-child strong,
+.knowledge-proactive-check-feedback > div:first-child strong {
+  color: var(--knowledge-deep);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.knowledge-proactive-verification > div:first-child small,
+.knowledge-proactive-inline-offer > div:first-child small {
+  flex: 0 0 auto;
+  border-radius: 5px;
+  background: #e8f3ef;
+  padding: 3px 6px;
+  color: #35665f;
+  font-size: 0.62rem;
+  font-weight: 800;
+}
+
+.knowledge-proactive-verification > p,
+.knowledge-proactive-inline-offer > p,
+.knowledge-proactive-check-feedback > p {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  color: #244858;
+  font-weight: 700;
+  line-height: 1.58;
+}
+
+.knowledge-message > .knowledge-proactive-verification-options {
+  display: grid;
+  gap: 7px;
+  align-items: stretch;
+}
+
+.knowledge-proactive-verification-options button {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid rgba(22, 50, 79, 0.14);
+  border-radius: 8px;
+  background: #f7fafb;
+  padding: 8px 10px;
+  color: #365664;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition-property: border-color, background-color, box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.knowledge-proactive-verification-options button:hover,
+.knowledge-proactive-verification-options button:focus-visible {
+  border-color: rgba(11, 143, 138, 0.48);
+  background: #eef9f6;
+  box-shadow: 0 0 0 2px rgba(11, 143, 138, 0.12);
+  outline: 0;
+}
+
+.knowledge-proactive-verification-options button.is-selected {
+  border-color: var(--knowledge-teal);
+  background: var(--knowledge-mint);
+  box-shadow: 0 0 0 2px rgba(11, 143, 138, 0.14);
+  color: var(--knowledge-teal-dark);
+}
+
+.knowledge-proactive-verification-options button:active {
+  transform: scale(0.985);
+}
+
+.knowledge-proactive-verification footer,
+.knowledge-proactive-inline-offer footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 7px;
+}
+
+.knowledge-proactive-verification footer button,
+.knowledge-proactive-inline-offer footer button {
+  min-width: 0;
+  min-height: 40px;
+  border: 1px solid rgba(22, 50, 79, 0.12);
+  border-radius: 8px;
+  background: #f3f6f7;
+  padding: 7px 9px;
+  color: #526a74;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition-property: background-color, border-color, color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.knowledge-proactive-verification footer button.is-primary,
+.knowledge-proactive-inline-offer footer button.is-primary {
+  border-color: var(--knowledge-teal);
+  background: var(--knowledge-teal);
+  color: #fff;
+}
+
+.knowledge-proactive-verification footer button:hover,
+.knowledge-proactive-verification footer button:focus-visible,
+.knowledge-proactive-inline-offer footer button:hover,
+.knowledge-proactive-inline-offer footer button:focus-visible {
+  border-color: var(--knowledge-teal-dark);
+  background: var(--knowledge-mint);
+  color: var(--knowledge-teal-dark);
+  outline: 2px solid rgba(11, 143, 138, 0.14);
+  outline-offset: 1px;
+}
+
+.knowledge-proactive-verification footer button:active,
+.knowledge-proactive-inline-offer footer button:active {
+  transform: scale(0.97);
+}
+
+.knowledge-proactive-verification button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+  transform: none;
+}
+
+.knowledge-message > .knowledge-proactive-inline-offer-detail {
+  display: block;
+  border-left: 2px solid rgba(11, 143, 138, 0.36);
+  padding-left: 9px;
+  color: #52707a;
+  font-size: 0.7rem;
+  font-weight: 650;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.knowledge-proactive-inline-offer {
+  border-left-color: #c4772d;
+  background: #fffdfa;
+}
+
+.knowledge-proactive-check-feedback {
+  border-left-color: #8b9aa2;
+  background: #f7fafb;
+}
+
+.knowledge-proactive-check-feedback.is-success {
+  border-left-color: #2d8063;
+  background: #f2faf6;
+}
+
+.knowledge-proactive-check-feedback.is-warning {
+  border-left-color: #c4772d;
+  background: #fff9f0;
+}
+
+.knowledge-proactive-check-feedback.is-error {
+  border-left-color: #b74c3c;
+  background: #fff5f2;
 }
 
 .knowledge-quiz-review-follow-up {
@@ -3085,16 +3355,27 @@
 }
 
 @media (max-width: 760px) {
-  .knowledge-proactive-nudge {
-    display: none;
-  }
-
   .knowledge-launcher-shell {
     right: 10px;
   }
 
+  .knowledge-assistant-root.has-proactive-nudge .knowledge-launcher-shell {
+    flex-direction: column;
+    align-items: flex-end;
+    width: min(340px, calc(100vw - 20px));
+  }
+
   .knowledge-assistant-root.is-launcher-left .knowledge-launcher-shell {
     left: 10px;
+  }
+
+  .knowledge-assistant-root.is-launcher-left.has-proactive-nudge .knowledge-launcher-shell {
+    align-items: flex-start;
+  }
+
+  .knowledge-proactive-nudge {
+    width: 100%;
+    max-width: 100%;
   }
 
   .knowledge-assistant-launcher {
@@ -3150,6 +3431,15 @@
 
   .knowledge-context-card blockquote {
     max-height: 62px;
+  }
+
+  .knowledge-proactive-preference {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .knowledge-proactive-preference button {
+    min-height: 44px;
   }
 
   .knowledge-message-list {

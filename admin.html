@@ -50,6 +50,7 @@
       <button class="tab" data-tab="chapters">章节分析</button>
       <button class="tab" data-tab="questions">题目分析</button>
       <button class="tab" data-tab="effectiveness">学习效果</button>
+      <button class="tab" data-tab="proactive">主动实验</button>
       <button class="tab" data-tab="users">用户详情</button>
       <button class="tab" data-tab="feedback">问题反馈</button>
       <button class="tab" data-tab="activity">活跃趋势</button>
@@ -149,6 +150,74 @@
           <p class="chart-desc">仅显示同时有前测和后测数据的用户/章节组合。正值(绿色)=进步, 负值(红色)=退步</p>
           <div class="chart-wrap tall"><canvas id="chart-learning-gain"></canvas></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Tab: Proactive Study -->
+    <div id="tab-proactive" class="tab-content hidden">
+      <div class="metric-row" id="proactive-study-metrics"></div>
+      <div class="chart-grid interaction-grid">
+        <section class="chart-card full-width proactive-audit-card">
+          <div class="section-heading-row">
+            <div>
+              <h3>主动策略审计台</h3>
+              <p class="chart-desc">按学习代次回放候选评估、证据门控、状态转移、政策判断、实际呈现和学生反馈；保持安静同样会被记录。</p>
+            </div>
+            <button class="btn btn-sm btn-outline" id="proactive-audit-load-all" type="button">加载全部决策</button>
+          </div>
+          <div class="proactive-audit-toolbar">
+            <span class="page-status" id="proactive-audit-status">正在读取决策时间线</span>
+            <span class="muted">选择左侧事件查看结构化证据</span>
+          </div>
+          <div class="proactive-audit-grid">
+            <section class="proactive-audit-column" aria-labelledby="proactive-audit-timeline-title">
+              <div class="proactive-audit-column-heading">
+                <h4 id="proactive-audit-timeline-title">决策时间线</h4>
+                <span class="muted" id="proactive-audit-timeline-count"></span>
+              </div>
+              <div class="proactive-audit-timeline" id="proactive-audit-timeline" role="list"></div>
+            </section>
+            <aside class="proactive-audit-detail" id="proactive-audit-detail" aria-live="polite">
+              <p class="inline-empty-state">选择一条决策后，这里会显示证据、约束和执行结果。</p>
+            </aside>
+          </div>
+        </section>
+        <section class="chart-card full-width">
+          <div class="section-heading-row">
+            <div>
+              <h3>主动政策决策账本</h3>
+              <p class="chart-desc" id="proactive-policy-summary">正在读取实验政策与分组状态。</p>
+            </div>
+            <button class="btn btn-sm btn-primary" id="export-proactive-decisions-csv" type="button">导出完整 CSV</button>
+          </div>
+          <div class="interaction-toolbar">
+            <label>实验条件
+              <select id="proactive-condition-filter">
+                <option value="">全部条件</option>
+                <option value="control">Control</option>
+                <option value="treatment">Treatment</option>
+              </select>
+            </label>
+            <label>政策判断
+              <select id="proactive-decision-filter">
+                <option value="">全部判断</option>
+                <option value="intervene">应介入</option>
+                <option value="stay_silent">保持安静</option>
+              </select>
+            </label>
+            <span class="page-status" id="proactive-study-page-status">0 条决策</span>
+          </div>
+          <div class="table-wrap table-scroll-primary interaction-main-scroll">
+            <table id="table-proactive-decisions">
+              <thead><tr>
+                <th>时间</th><th>学生</th><th>条件 / 层级</th><th>学习位置</th>
+                <th>候选信号</th><th>政策 / 实际呈现</th><th>动作 / 支架</th>
+                <th>HelpNeed / 可打断 / 不确定性</th><th>理由</th><th>学生反馈</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -537,7 +606,7 @@
 <script src="admin/csv.js?v=20260718-export-all-v1"></script>
 <script src="admin/presentation.js?v=20260718-admin-quality-v5"></script>
 <script src="lib/interaction-policy.js?v=20260813-platform-fixes-v1"></script>
-<script src="admin/admin.js?v=20260818-v2-adaptive-assessment-regrade-v2"></script>
+<script src="admin/admin.js?v=20260830-proactive-lifecycle-v3"></script>
 <script src="admin/announcements.js?v=20260726-announcements-v3"></script>
 </body>
 </html>

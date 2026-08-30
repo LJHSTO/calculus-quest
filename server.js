@@ -29,6 +29,7 @@ const zlib = require("zlib");
 const db = require("./db");
 const courseAssessment = require("./lib/course-assessment");
 const learningAssistant = require("./lib/learning-assistant");
+const proactivePolicy = require("./lib/proactive-policy");
 const llm = require("./lib/llm");
 const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
@@ -38,6 +39,7 @@ const quizReconciliation = require("./lib/quiz-reconciliation");
 const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
+const proactiveStudyConfig = proactivePolicy.configFromEnv();
 let coursewareBridgeScript = "";
 try {
   coursewareBridgeScript = fs.readFileSync(
@@ -63,8 +65,12 @@ let assistantContextIndex = { routeVersion: "", units: new Map(), questions: new
 try {
   learningRoute = JSON.parse(fs.readFileSync(learningRoutePath, "utf8"));
   courseAssessmentFingerprint = courseAssessment.assessmentFingerprint(learningRoute);
+  const publicLearningRoute = proactivePolicy.projectRoute(
+    learningRoute,
+    proactiveStudyConfig
+  );
   publicLearningRouteJson = JSON.stringify({
-    ...courseAssessment.buildPublicLearningRoute(learningRoute),
+    ...courseAssessment.buildPublicLearningRoute(publicLearningRoute),
     courseAssessmentFingerprint
   });
   flowTestRouteJson = JSON.stringify(learningRoute);
@@ -88,7 +94,8 @@ const researchConfig = {
   appVersion: String(process.env.APP_VERSION || packageInfo.version || "").slice(0, 80),
   experimentId: String(process.env.EXPERIMENT_ID || "").slice(0, 120),
   condition: String(process.env.EXPERIMENT_CONDITION || "").slice(0, 120),
-  cohort: String(process.env.EXPERIMENT_COHORT || "").slice(0, 120)
+  cohort: String(process.env.EXPERIMENT_COHORT || "").slice(0, 120),
+  proactive: proactivePolicy.publicConfig(proactiveStudyConfig)
 };
 const maxBodyBytes = 1024 * 1024;
 const maxBufferedStaticBytes = 512 * 1024;
@@ -104,6 +111,15 @@ const assistantInterventionRegistry = new Map();
 const assistantRateLimitWindowMs = 60 * 1000;
 const assistantRateLimitMax = 20;
 const assistantInterventionTtlMs = 15 * 60 * 1000;
+const proactiveGlobalScopeKey = "__chapter__";
+const proactiveStudentPreferences = new Set(["standard", "reduced", "off"]);
+const proactiveNaturalBoundaryEventTypes = new Set([
+  "parameter_commit",
+  "interactive_submit",
+  "courseware_interaction_complete",
+  "courseware_formative_check_submitted",
+  "courseware_challenge_result"
+]);
 const assistantInterventionRegistryLimit = 5000;
 const assistantHistoryMessageLimit = 60;
 const assistantConversationTurnLimit = 30;
@@ -1013,6 +1029,717 @@ function consumeAssistantInterventionBudget(userId, date = new Date()) {
   };
 }
 
+function proactiveInterventionBudgetInfo(userId, date = new Date()) {
+  const usageDate = beijingDateKey(date);
+  const used = db.getLearningAssistantDailyUsage(userId, usageDate).interventionCount;
+  return {
+    usageDate,
+    limit: assistantDailyInterventionLimit,
+    used,
+    remaining: Math.max(0, assistantDailyInterventionLimit - used)
+  };
+}
+
+function publicProactiveAssignment(assignment = null) {
+  if (!assignment) return null;
+  return {
+    experimentId: assignment.experiment_id || "",
+    cohort: assignment.cohort || "",
+    stratum: assignment.stratum || "unstratified",
+    assignmentVersion: assignment.assignment_version || "",
+    assignedAt: assignment.assigned_at || ""
+  };
+}
+
+function proactivePretestStratum(userId) {
+  const pretestUnitId = `${proactiveStudyConfig.chapterId}-pre`;
+  const expectedEntries = Array.from(assessmentIndex.values())
+    .filter((entry) => (
+      entry.chapterId === proactiveStudyConfig.chapterId
+      && entry.phase === "pre"
+      && entry.unitId === pretestUnitId
+    ));
+  const basis = "server_scored_objective_items";
+  if (!expectedEntries.length) {
+    return { ready: false, stratum: "unstratified", basis };
+  }
+  const expectedIds = new Set(expectedEntries.map((entry) => entry.question.id));
+  const latest = new Map();
+  db.getQuizResultsByUser(userId, 500).forEach((row) => {
+    if (
+      row.chapter_id === proactiveStudyConfig.chapterId
+      && row.phase === "pre"
+      && row.unit_id === pretestUnitId
+      && expectedIds.has(row.question_id)
+      && !latest.has(row.question_id)
+    ) {
+      latest.set(row.question_id, row);
+    }
+  });
+  if (latest.size < expectedIds.size) {
+    return {
+      ready: false,
+      stratum: "unstratified",
+      submitted: latest.size,
+      expected: expectedIds.size,
+      basis
+    };
+  }
+  const objectiveIds = new Set(
+    expectedEntries
+      .filter((entry) => entry.question.type !== "short_answer")
+      .map((entry) => entry.question.id)
+  );
+  const scored = Array.from(latest.values())
+    .filter((row) => (
+      objectiveIds.has(row.question_id)
+      && Number(row.is_correct) >= 0
+      && Number(row.max_score || 0) > 0
+    ));
+  const earned = scored.reduce((sum, row) => sum + Number(row.score || 0), 0);
+  const possible = scored.reduce((sum, row) => sum + Number(row.max_score || 0), 0);
+  const accuracy = possible > 0 ? earned / possible : null;
+  return {
+    ready: true,
+    stratum: accuracy !== null && accuracy >= 0.6 ? "pre-high" : "pre-low",
+    accuracy,
+    submitted: latest.size,
+    expected: expectedIds.size,
+    stratificationQuestions: objectiveIds.size,
+    earned,
+    possible,
+    basis
+  };
+}
+
+function proactiveAssignmentForUser(userId) {
+  const existing = db.getExperimentAssignment(userId, proactiveStudyConfig.experimentId);
+  const pretest = proactivePretestStratum(userId);
+  if (
+    existing
+    && !["", "unassigned", "unstratified"].includes(String(existing.stratum || ""))
+  ) {
+    return existing;
+  }
+  if (!proactiveStudyConfig.assignmentReady) return null;
+  if (!pretest.ready) return null;
+  const proposed = proactivePolicy.createAssignment({
+    userId,
+    config: proactiveStudyConfig,
+    stratum: pretest.stratum,
+    assignedAt: nowIso()
+  });
+  const assigned = existing
+    ? db.finalizeExperimentAssignment(proposed)
+    : db.getOrCreateExperimentAssignment(proposed);
+  db.saveNow();
+  return assigned;
+}
+
+function proactiveStudentPreference(userId) {
+  const row = db.getProactivePolicyState(
+    userId,
+    proactiveStudyConfig.experimentId,
+    proactiveGlobalScopeKey
+  );
+  const preference = String(row?.student_preference || "standard");
+  return proactiveStudentPreferences.has(preference) ? preference : "standard";
+}
+
+function proactiveEventType(row = {}) {
+  const payload = row.payload || {};
+  return String(payload.eventType || payload.data?.eventType || "");
+}
+
+function proactiveEventAt(row = {}) {
+  const parsed = Date.parse(row.created_at || "");
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function proactivePendingQuietCandidate(row = {}, now = Date.now()) {
+  const kind = String(row.pending_candidate_kind || "");
+  const candidateAt = Date.parse(row.pending_candidate_at || "");
+  const expiresAt = Date.parse(row.pending_candidate_expires_at || "");
+  const valid = kind === "quiet_dwell"
+    && Number.isFinite(candidateAt)
+    && candidateAt <= now
+    && Number.isFinite(expiresAt)
+    && expiresAt > now;
+  return {
+    valid,
+    kind: valid ? kind : "",
+    candidateAt: valid ? candidateAt : 0,
+    candidateAtIso: valid ? row.pending_candidate_at : "",
+    expiresAt: valid ? expiresAt : 0,
+    expiresAtIso: valid ? row.pending_candidate_expires_at : "",
+    evidence: valid
+      ? parseStoredJson(row.pending_evidence_json || "{}", {})
+      : {}
+  };
+}
+
+function proactiveParameter(row = {}) {
+  const payload = row.payload || {};
+  const data = payload.data || {};
+  const value = payload.value || data.value || data.state || data.contextRef?.state || {};
+  return boundedLearningText(
+    value.parameter || value.param || data.parameter || data.param || data.label,
+    120
+  );
+}
+
+function proactiveIndependentAttemptResult(row = {}) {
+  const payload = row.payload || {};
+  const data = payload.data || {};
+  const raw = data.is_correct
+    ?? data.isCorrect
+    ?? data.correct
+    ?? data.success
+    ?? data.passed
+    ?? data.completed
+    ?? data.result;
+  if (typeof raw === "boolean") return raw;
+  if (typeof raw === "number") return raw > 0;
+  const normalized = boundedLearningText(raw, 40).toLowerCase();
+  if (["correct", "success", "passed", "pass", "completed", "true"].includes(normalized)) {
+    return true;
+  }
+  if (["incorrect", "failed", "fail", "wrong", "false"].includes(normalized)) {
+    return false;
+  }
+  const score = Number(data.score);
+  const maxScore = Number(data.max_score ?? data.maxScore);
+  if (Number.isFinite(score) && Number.isFinite(maxScore) && maxScore > 0) {
+    return score >= maxScore * 0.6;
+  }
+  return null;
+}
+
+function proactiveConfirmedGapCount(userId, knowledgePointId = "") {
+  if (!knowledgePointId) return 0;
+  const latest = new Map();
+  db.getQuizResultsByUser(userId, 500).forEach((row) => {
+    if (
+      row.chapter_id !== proactiveStudyConfig.chapterId
+      || latest.has(row.question_id)
+    ) return;
+    latest.set(row.question_id, row);
+  });
+  let count = 0;
+  latest.forEach((row) => {
+    if (Number(row.is_correct) !== 0) return;
+    const entry = assessmentIndex.get(row.question_id);
+    const ids = entry?.question?.knowledgePointIds || [];
+    if (ids.includes(knowledgePointId)) count += 1;
+  });
+  return count;
+}
+
+function proactiveEvidenceForRequest({
+  userId,
+  resolved,
+  signal = {},
+  quizAttempt = null,
+  policyState = {},
+  now = Date.now()
+}) {
+  const rows = db.recentInteractionEventsForUnit(userId, resolved.unit.id, 800);
+  const pendingQuiet = proactivePendingQuietCandidate(policyState, now);
+  const lifecycleState = proactivePolicy.lifecycle.normalize(
+    parseStoredJson(policyState.lifecycle_json || "{}", {})
+  );
+  const refs = [];
+  const families = new Set();
+  const evidence = {
+    families: [],
+    evidenceRefs: refs,
+    parameterCommitCount: 0,
+    taskProgressSinceFirstCommit: 0,
+    confirmedIncorrect: Number(quizAttempt?.incorrect || 0),
+    confirmedCorrect: Number(quizAttempt?.correct || 0),
+    pendingReview: Number(quizAttempt?.pendingReview || 0),
+    questionCount: Number(quizAttempt?.total || 0),
+    confirmedGapCount: proactiveConfirmedGapCount(
+      userId,
+      resolved.unit.knowledgePointId || resolved.unit.id
+    ),
+    dwellSeconds: 0,
+    naturalBoundary: false,
+    pendingCandidateValid: pendingQuiet.valid,
+    pendingCandidateAt: pendingQuiet.candidateAtIso,
+    pendingCandidateExpiresAt: pendingQuiet.expiresAtIso,
+    boundaryEventType: ""
+  };
+  if (["quiz_review", "formative_outcome"].includes(signal.kind)) {
+    if (evidence.questionCount > 0) families.add("result");
+    if (
+      signal.kind === "formative_outcome"
+      && [
+        "accepted_pending_response",
+        "awaiting_independent_attempt"
+      ].includes(lifecycleState.phase)
+    ) {
+      families.add("history");
+      if (lifecycleState.activeInterventionId) {
+        refs.push({
+          id: lifecycleState.activeInterventionId,
+          sourceType: "proactive_intervention",
+          capturedAt: lifecycleState.responseSubmittedAt
+            || lifecycleState.acceptedAt
+        });
+      }
+    }
+    db.getQuizResultsByUserUnit(userId, resolved.unit.id)
+      .slice(0, 30)
+      .forEach((row) => refs.push({
+        id: row.id,
+        sourceType: "quiz_result",
+        capturedAt: row.created_at
+      }));
+  }
+
+  const latestEvent = rows
+    .map((row) => ({ row, at: proactiveEventAt(row), type: proactiveEventType(row) }))
+    .filter((entry) => entry.at > 0 && entry.at <= now)
+    .sort((left, right) => right.at - left.at)[0] || null;
+  if (latestEvent) {
+    evidence.dwellSeconds = Math.max(0, Math.floor((now - latestEvent.at) / 1000));
+    const boundaryAgeMs = now - latestEvent.at;
+    evidence.naturalBoundary = proactiveNaturalBoundaryEventTypes.has(latestEvent.type)
+      && boundaryAgeMs >= 0
+      && boundaryAgeMs <= 12_000;
+    evidence.boundaryEventType = evidence.naturalBoundary ? latestEvent.type : "";
+  }
+  if (signal.kind === "quiet_dwell") {
+    if (signal.boundaryRecheck === true) {
+      const boundaryAfterCandidate = pendingQuiet.valid
+        && latestEvent
+        && evidence.naturalBoundary
+        && latestEvent.at >= pendingQuiet.candidateAt;
+      evidence.naturalBoundary = Boolean(boundaryAfterCandidate);
+      evidence.boundaryEventType = boundaryAfterCandidate ? latestEvent.type : "";
+      if (boundaryAfterCandidate) {
+        const pendingFamilies = Array.isArray(pendingQuiet.evidence.families)
+          ? pendingQuiet.evidence.families
+          : [];
+        pendingFamilies
+          .filter((family) => ["time", "result"].includes(family))
+          .forEach((family) => families.add(family));
+        evidence.dwellSeconds = Math.max(
+          0,
+          Number(pendingQuiet.evidence.dwellSeconds || 0)
+        );
+        evidence.confirmedGapCount = Math.max(
+          evidence.confirmedGapCount,
+          Number(pendingQuiet.evidence.confirmedGapCount || 0)
+        );
+        (Array.isArray(pendingQuiet.evidence.evidenceRefs)
+          ? pendingQuiet.evidence.evidenceRefs
+          : []
+        ).forEach((ref) => refs.push(ref));
+        refs.push({
+          id: latestEvent.row.id,
+          sourceType: "interaction",
+          eventType: latestEvent.type,
+          capturedAt: latestEvent.row.created_at
+        });
+      }
+    } else if (
+      evidence.dwellSeconds >= assistantMinimumDwellSeconds(resolved, resolved.scene?.type)
+    ) {
+      families.add("time");
+      if (evidence.confirmedGapCount > 0) families.add("result");
+      if (latestEvent) {
+        refs.push({
+          id: latestEvent.row.id,
+          sourceType: "interaction",
+          eventType: latestEvent.type,
+          capturedAt: latestEvent.row.created_at
+        });
+      }
+    }
+  }
+
+  if (signal.kind === "repeated_parameter") {
+    const requestedParameter = boundedLearningText(signal.parameter, 120);
+    const commits = rows
+      .map((row) => ({
+        row,
+        at: proactiveEventAt(row),
+        type: proactiveEventType(row),
+        parameter: proactiveParameter(row)
+      }))
+      .filter((entry) => (
+        entry.type === "parameter_commit"
+        && entry.at > 0
+        && entry.at <= now
+        && now - entry.at <= 45_000
+        && (!requestedParameter || entry.parameter === requestedParameter)
+      ))
+      .sort((left, right) => left.at - right.at);
+    evidence.parameterCommitCount = commits.length;
+    if (commits.length >= 3) {
+      families.add("process");
+      families.add("task");
+      const firstAt = commits[0].at;
+      evidence.taskProgressSinceFirstCommit = rows.filter((row) => {
+        const at = proactiveEventAt(row);
+        return at >= firstAt && at <= now && [
+          "courseware_interaction_complete",
+          "courseware_observable_evidence_captured",
+          "courseware_challenge_result"
+        ].includes(proactiveEventType(row));
+      }).length;
+      commits.slice(-5).forEach((entry) => refs.push({
+        id: entry.row.id,
+        sourceType: "interaction",
+        eventType: entry.type,
+        capturedAt: entry.row.created_at
+      }));
+    }
+  }
+  if (signal.kind === "independent_attempt_outcome") {
+    const responseSubmittedAt = Date.parse(
+      lifecycleState.responseSubmittedAt || ""
+    );
+    const attempt = rows
+      .map((row) => ({
+        row,
+        at: proactiveEventAt(row),
+        type: proactiveEventType(row),
+        success: proactiveIndependentAttemptResult(row)
+      }))
+      .filter((entry) => (
+        [
+          "courseware_challenge_result",
+          "courseware_formative_check_submitted"
+        ].includes(entry.type)
+        && entry.at > 0
+        && entry.at <= now
+        && now - entry.at <= 2 * 60 * 1000
+        && (
+          !Number.isFinite(responseSubmittedAt)
+          || entry.at >= responseSubmittedAt
+        )
+        && typeof entry.success === "boolean"
+      ))
+      .sort((left, right) => right.at - left.at)[0] || null;
+    if (attempt) {
+      evidence.independentAttemptVerified = true;
+      evidence.independentAttemptSuccess = attempt.success;
+      evidence.confirmedCorrect = attempt.success ? 1 : 0;
+      evidence.confirmedIncorrect = attempt.success ? 0 : 1;
+      evidence.questionCount = 1;
+      evidence.verificationSource = "courseware_semantic_event";
+      evidence.verificationEventType = attempt.type;
+      evidence.verificationStage = String(
+        lifecycleState.supportLevel || policyState.current_level || ""
+      ).toUpperCase() === "L2"
+        ? "after_l2"
+        : "after_l1";
+      families.add("task");
+      if (lifecycleState.phase === "awaiting_independent_attempt") {
+        families.add("history");
+      }
+      refs.push({
+        id: attempt.row.id,
+        sourceType: "interaction",
+        eventType: attempt.type,
+        capturedAt: attempt.row.created_at
+      });
+    }
+  }
+  evidence.families = Array.from(families);
+  return evidence;
+}
+
+function mergeProactiveEvidence(rebuilt = {}, trusted = null) {
+  if (!trusted || typeof trusted !== "object" || Array.isArray(trusted)) {
+    return rebuilt;
+  }
+  return {
+    ...rebuilt,
+    ...trusted,
+    families: Array.from(new Set([
+      ...(Array.isArray(rebuilt.families) ? rebuilt.families : []),
+      ...(Array.isArray(trusted.families) ? trusted.families : [])
+    ])),
+    evidenceRefs: [
+      ...(Array.isArray(rebuilt.evidenceRefs) ? rebuilt.evidenceRefs : []),
+      ...(Array.isArray(trusted.evidenceRefs) ? trusted.evidenceRefs : [])
+    ]
+  };
+}
+
+function proactiveSilentAssistantDecision(policyDecision = {}) {
+  const reason = policyDecision.reasonCodes?.[0] || "policy_stay_silent";
+  const messages = {
+    protected_assessment_stage: "当前是独立测量阶段，知点保持安静。",
+    experiment_assignment_pending: "完成章前测后，知点才会启用本章实验政策。",
+    policy_mode_off: "当前主动政策已关闭。",
+    intervention_budget_exhausted: "知点今天已减少主动打扰。",
+    policy_cooldown_active: "正在遵守学生的冷却与降频选择。",
+    open_intervention_exists: "当前已有一条建议等待处理，知点暂不重复打扰。",
+    quiet_dwell_waiting_for_boundary: "知点先记录这处停留，等你完成当前一步后再判断是否需要介入。",
+    quiet_dwell_boundary_not_verified: "还没有出现合适的任务边界，知点继续保持安静。",
+    quiet_dwell_pending_absent: "这次边界没有对应的待评估停留证据，知点保持安静。"
+  };
+  return {
+    action: "stay_silent",
+    intervene: false,
+    eyebrow: "",
+    title: "",
+    body: "",
+    actionLabel: "",
+    draftQuestion: "",
+    assistantPrompt: "",
+    replyOptions: [],
+    interactionMode: "none",
+    contextMode: "unit",
+    contextSummary: "",
+    why: messages[reason] || "当前证据不足或不适合打断，知点保持安静。",
+    confidence: Math.max(0, 1 - Number(policyDecision.uncertaintyScore ?? 1))
+  };
+}
+
+function publicProactivePolicyState(row = {}, options = {}) {
+  const pendingQuiet = proactivePendingQuietCandidate(row);
+  const studentPreference = proactiveStudentPreferences.has(
+    String(options.studentPreference || row.student_preference || "")
+  )
+    ? String(options.studentPreference || row.student_preference)
+    : "standard";
+  const lifecycleState = proactivePolicy.lifecycle.normalize(
+    parseStoredJson(row.lifecycle_json || "{}", {})
+  );
+  const adapter = proactivePolicy.adapterForChapter(
+    proactiveStudyConfig.chapterId
+  );
+  const candidateCheck = studentPreference !== "off"
+    && lifecycleState.phase === "awaiting_independent_attempt"
+    ? adapter?.publicVerificationCheck?.(
+        row.scope_key || "",
+        row.current_level || lifecycleState.supportLevel
+      )
+    : null;
+  const verificationCheck = candidateCheck
+    && candidateCheck.id !== lifecycleState.lastVerificationCheckId
+    ? candidateCheck
+    : null;
+  return {
+    scopeKey: row.scope_key || "",
+    dismissStreak: Number(row.dismiss_streak || 0),
+    cooldownUntil: row.cooldown_until || "",
+    currentLevel: row.current_level || "L0",
+    fadeLevel: Number(row.fade_level || 0),
+    studentPreference,
+    lastReasonCode: row.last_reason_code || "",
+    pendingCandidateKind: pendingQuiet.kind,
+    pendingCandidateAt: pendingQuiet.candidateAtIso,
+    pendingCandidateExpiresAt: pendingQuiet.expiresAtIso,
+    pendingBoundaryEvaluation: pendingQuiet.valid,
+    lifecycle: {
+      phase: lifecycleState.phase,
+      activeAction: lifecycleState.activeAction,
+      supportLevel: lifecycleState.supportLevel,
+      reasonCode: lifecycleState.reasonCode,
+      acceptedAt: lifecycleState.acceptedAt,
+      responseSubmittedAt: lifecycleState.responseSubmittedAt,
+      lastOutcome: lifecycleState.lastOutcome,
+      lastOutcomeAt: lifecycleState.lastOutcomeAt,
+      lastVerificationCheckId: lifecycleState.lastVerificationCheckId,
+      attemptCount: lifecycleState.attemptCount,
+      successEvidenceCount: lifecycleState.successEvidenceCount,
+      frictionEvidenceCount: lifecycleState.frictionEvidenceCount
+    },
+    verificationCheck,
+    updatedAt: row.updated_at || ""
+  };
+}
+
+function proactivePolicyStateRecord(existing = {}, {
+  userId,
+  scopeKey,
+  updatedAt,
+  lastReasonCode = existing.last_reason_code || "",
+  pendingCandidateKind = existing.pending_candidate_kind || "",
+  pendingCandidateAt = existing.pending_candidate_at || "",
+  pendingCandidateExpiresAt = existing.pending_candidate_expires_at || "",
+  pendingEvidence = parseStoredJson(existing.pending_evidence_json || "{}", {}),
+  currentLevel = existing.current_level || "L0",
+  fadeLevel = Number(existing.fade_level || 0),
+  studentPreference = existing.student_preference || "standard",
+  lifecycle = parseStoredJson(existing.lifecycle_json || "{}", {})
+} = {}) {
+  return {
+    user_id: userId,
+    experiment_id: proactiveStudyConfig.experimentId,
+    scope_key: scopeKey,
+    dismiss_streak: Number(existing.dismiss_streak || 0),
+    cooldown_until: existing.cooldown_until || "",
+    current_level: currentLevel,
+    fade_level: fadeLevel,
+    student_preference: proactiveStudentPreferences.has(String(studentPreference))
+      ? String(studentPreference)
+      : "standard",
+    last_reason_code: lastReasonCode,
+    pending_candidate_kind: pendingCandidateKind,
+    pending_candidate_at: pendingCandidateAt,
+    pending_candidate_expires_at: pendingCandidateExpiresAt,
+    pending_evidence: pendingEvidence,
+    lifecycle,
+    updated_at: updatedAt
+  };
+}
+
+function proactivePolicyStateSnapshot(row = {}) {
+  const lifecycleState = proactivePolicy.lifecycle.normalize(
+    parseStoredJson(row.lifecycle_json || "{}", {})
+  );
+  return {
+    scopeKey: row.scope_key || "",
+    dismissStreak: Number(row.dismiss_streak || 0),
+    cooldownUntil: row.cooldown_until || "",
+    currentLevel: row.current_level || "L0",
+    fadeLevel: Number(row.fade_level || 0),
+    studentPreference: proactiveStudentPreferences.has(
+      String(row.student_preference || "")
+    )
+      ? String(row.student_preference)
+      : "standard",
+    pendingCandidateKind: row.pending_candidate_kind || "",
+    pendingCandidateAt: row.pending_candidate_at || "",
+    pendingCandidateExpiresAt: row.pending_candidate_expires_at || "",
+    lifecycle: lifecycleState
+  };
+}
+
+function proactiveStudyState(userId, chapterId) {
+  const managed = chapterId === proactiveStudyConfig.chapterId;
+  const pretest = managed ? proactivePretestStratum(userId) : null;
+  const assignment = managed ? proactiveAssignmentForUser(userId) : null;
+  const studentPreference = managed
+    ? proactiveStudentPreference(userId)
+    : "standard";
+  return {
+    managed,
+    ...proactivePolicy.publicConfig(proactiveStudyConfig),
+    assignmentPending: Boolean(managed && !assignment),
+    assignment: publicProactiveAssignment(assignment),
+    studentPreference,
+    pretest,
+    candidateCollectionEnabled: Boolean(managed && proactiveStudyConfig.mode !== "off"),
+    policyStates: assignment
+      ? db.listProactivePolicyStates(userId, proactiveStudyConfig.experimentId)
+          .filter((row) => row.scope_key !== proactiveGlobalScopeKey)
+          .map((row) => publicProactivePolicyState(row, { studentPreference }))
+      : []
+  };
+}
+
+function proactiveDecisionRecord({
+  decisionId,
+  userId,
+  assignment,
+  policyDecision,
+  evidence,
+  budget,
+  policyStateBefore,
+  policyStateAfter
+}) {
+  return {
+    id: decisionId,
+    user_id: userId,
+    experiment_id: proactiveStudyConfig.experimentId,
+    condition: policyDecision.condition || assignment?.condition || "unassigned",
+    cohort: assignment?.cohort || proactiveStudyConfig.cohort || "",
+    stratum: assignment?.stratum || "unassigned",
+    assignment_version: assignment?.assignment_version
+      || proactiveStudyConfig.assignmentVersion
+      || "",
+    learning_generation: db.currentLearningGeneration(
+      userId,
+      policyDecision.createdAt
+    ),
+    policy_mode: proactiveStudyConfig.mode,
+    chapter_id: policyDecision.chapterId,
+    unit_id: policyDecision.unitId,
+    scope_key: policyDecision.scopeKey || policyDecision.unitId,
+    scene_type: policyDecision.sceneType,
+    candidate_kind: policyDecision.candidateKind,
+    policy_version: proactiveStudyConfig.policyVersion,
+    contract_version: proactiveStudyConfig.contractVersion,
+    adapter_version: proactiveStudyConfig.adapterVersion,
+    decision: policyDecision.decision,
+    delivery_decision: policyDecision.deliveryDecision,
+    action: policyDecision.action,
+    support_level: policyDecision.supportLevel,
+    help_need_score: policyDecision.helpNeedScore,
+    interruptibility_score: policyDecision.interruptibilityScore,
+    uncertainty_score: policyDecision.uncertaintyScore,
+    reason_codes: policyDecision.reasonCodes,
+    evidence_refs: evidence.evidenceRefs || [],
+    evidence_snapshot: {
+      ...evidence,
+      evidenceRefs: undefined,
+      policyStateBefore,
+      policyStateAfter,
+      lifecycleOutcome: policyDecision.lifecycleOutcome || "",
+      stateTransition: policyDecision.stateTransition || null
+    },
+    budget_snapshot: budget,
+    created_at: policyDecision.createdAt,
+    expires_at: policyDecision.expiresAt
+  };
+}
+
+function proactivePolicyStateAfterResolution({
+  existing = {},
+  decision = {},
+  interventionId = "",
+  resolution,
+  resolvedAt,
+  latencyMs = 0
+}) {
+  const priorStreak = Math.max(0, Number(existing.dismiss_streak || 0));
+  const negative = resolution === "dismissed" || resolution === "ignored";
+  const nextStreak = negative
+    ? Math.min(3, priorStreak + 1)
+    : resolution === "accepted" ? 0 : priorStreak;
+  const baseCooldownMs = 10 * 60 * 1000;
+  const cooldownMs = resolution === "accepted"
+    ? baseCooldownMs
+    : negative ? baseCooldownMs * Math.max(1, nextStreak) : 0;
+  const lifecycleState = proactivePolicy.lifecycle.afterResolution({
+    lifecycle: parseStoredJson(existing.lifecycle_json || "{}", {}),
+    decision,
+    interventionId,
+    resolution,
+    resolvedAt
+  });
+  return {
+    user_id: decision.user_id,
+    experiment_id: decision.experiment_id,
+    scope_key: decision.scope_key || decision.unit_id,
+    dismiss_streak: nextStreak,
+    cooldown_until: cooldownMs
+      ? new Date(Date.parse(resolvedAt) + cooldownMs).toISOString()
+      : existing.cooldown_until || "",
+    current_level: resolution === "accepted"
+      ? decision.support_level || "L0"
+      : existing.current_level || "L0",
+    fade_level: Math.max(0, Number(existing.fade_level || 0)),
+    student_preference: existing.student_preference || "standard",
+    last_reason_code: `${resolution}:${Math.max(0, Math.trunc(Number(latencyMs || 0)))}`,
+    pending_candidate_kind: existing.pending_candidate_kind || "",
+    pending_candidate_at: existing.pending_candidate_at || "",
+    pending_candidate_expires_at: existing.pending_candidate_expires_at || "",
+    pending_evidence: parseStoredJson(existing.pending_evidence_json || "{}", {}),
+    lifecycle: lifecycleState,
+    updated_at: resolvedAt
+  };
+}
+
 function publicAssistantConversation(row = {}) {
   return {
     id: row.id || "",
@@ -1075,6 +1802,15 @@ function parseAssistantContextJson(value = "") {
   }
 }
 
+function parseStoredJson(value, fallback) {
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return parsed === undefined || parsed === null ? fallback : parsed;
+  } catch {
+    return fallback;
+  }
+}
+
 function publicAssistantMessage(row = {}) {
   const storedContext = parseAssistantContextJson(row.context_json || row.context);
   const {
@@ -1117,13 +1853,20 @@ function pruneAssistantInterventions(now = Date.now()) {
   }
 }
 
-function issueAssistantIntervention(userId, resolved, decision = {}, now = Date.now()) {
+function issueAssistantIntervention(
+  userId,
+  resolved,
+  decision = {},
+  now = Date.now(),
+  options = {}
+) {
   const assistantPrompt = boundedLearningText(decision.assistantPrompt, 500, true);
   if (!assistantPrompt || decision.interactionMode !== "student_reply") return "";
   pruneAssistantInterventions(now);
-  const id = crypto.randomUUID();
+  const id = boundedLearningText(options.id, 180) || crypto.randomUUID();
   assistantInterventionRegistry.set(id, {
     id,
+    decisionId: boundedLearningText(options.decisionId, 180),
     userId,
     unitId: resolved.unit.id,
     threadKey: resolved.threadKey,
@@ -1514,6 +2257,363 @@ async function generateInterventionDecision({ resolved, signal, history = [] }) 
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function handleManagedProactiveIntervention({
+  res,
+  auth,
+  resolved,
+  signal,
+  quizAttempt,
+  sceneType,
+  trustedEvidence = null,
+  responseExtras = {}
+}) {
+  const now = new Date();
+  const assignment = proactiveAssignmentForUser(auth.participant.id);
+  const policyScopeKey = boundedLearningText(
+    resolved.unit.knowledgePointId || resolved.unit.id,
+    180
+  );
+  const studentPreference = proactiveStudentPreference(auth.participant.id);
+  let policyState = assignment
+    ? db.getProactivePolicyState(
+        auth.participant.id,
+        proactiveStudyConfig.experimentId,
+        policyScopeKey
+      ) || {}
+    : {};
+  policyState = {
+    ...policyState,
+    student_preference: studentPreference
+  };
+  const policyStateBefore = proactivePolicyStateSnapshot(policyState);
+  const evidence = mergeProactiveEvidence(
+    proactiveEvidenceForRequest({
+      userId: auth.participant.id,
+      resolved,
+      signal,
+      quizAttempt,
+      policyState,
+      now: now.getTime()
+    }),
+    trustedEvidence
+  );
+  let interventionBudget = proactiveInterventionBudgetInfo(auth.participant.id, now);
+  let policyDecision = proactivePolicy.evaluate({
+    config: proactiveStudyConfig,
+    assignment,
+    context: {
+      chapterId: resolved.unit.chapterId,
+      unitId: resolved.unit.id,
+      knowledgePointId: resolved.unit.knowledgePointId || "",
+      policyScopeKey,
+      sceneType,
+      isQuiz: resolved.isQuiz,
+      quizSubmitted: resolved.quizSubmitted,
+      phase: resolved.unit.phase || ""
+    },
+    signal,
+    evidence,
+    policyState,
+    budget: interventionBudget,
+    now: now.getTime()
+  });
+  const waitingForBoundary = policyDecision.reasonCodes.includes(
+    "quiet_dwell_waiting_for_boundary"
+  );
+  const consumedPendingBoundary = signal.kind === "quiet_dwell"
+    && signal.boundaryRecheck === true
+    && evidence.pendingCandidateValid
+    && evidence.naturalBoundary;
+  const stalePendingBoundary = signal.kind === "quiet_dwell"
+    && signal.boundaryRecheck === true
+    && !evidence.pendingCandidateValid
+    && policyState.pending_candidate_kind === "quiet_dwell";
+  if (waitingForBoundary) {
+    policyState = db.upsertProactivePolicyState(proactivePolicyStateRecord(
+      policyState,
+      {
+        userId: auth.participant.id,
+        scopeKey: policyScopeKey,
+        updatedAt: policyDecision.createdAt,
+        lastReasonCode: "quiet_dwell_waiting_for_boundary",
+        pendingCandidateKind: "quiet_dwell",
+        pendingCandidateAt: policyDecision.createdAt,
+        pendingCandidateExpiresAt: policyDecision.expiresAt,
+        pendingEvidence: {
+          families: evidence.families.filter((family) => (
+            family === "time" || family === "result"
+          )),
+          dwellSeconds: evidence.dwellSeconds,
+          confirmedGapCount: evidence.confirmedGapCount,
+          evidenceRefs: evidence.evidenceRefs,
+          capturedAt: policyDecision.createdAt
+        }
+      }
+    ));
+  } else if (consumedPendingBoundary || stalePendingBoundary) {
+    policyState = db.upsertProactivePolicyState(proactivePolicyStateRecord(
+      policyState,
+      {
+        userId: auth.participant.id,
+        scopeKey: policyScopeKey,
+        updatedAt: policyDecision.createdAt,
+        lastReasonCode: consumedPendingBoundary
+          ? "quiet_dwell_boundary_consumed"
+          : "quiet_dwell_pending_expired",
+        pendingCandidateKind: "",
+        pendingCandidateAt: "",
+        pendingCandidateExpiresAt: "",
+        pendingEvidence: {}
+      }
+    ));
+  }
+
+  if (policyDecision.displayAllowed) {
+    db.expireProactiveInterventions({
+      at: now.toISOString(),
+      userId: auth.participant.id,
+      experimentId: proactiveStudyConfig.experimentId,
+      scopeKey: policyScopeKey
+    });
+    const openIntervention = db.getOpenProactiveInterventionForScope(
+      auth.participant.id,
+      proactiveStudyConfig.experimentId,
+      policyScopeKey,
+      now.toISOString()
+    );
+    if (openIntervention) {
+      evidence.openInterventionId = openIntervention.id;
+      policyDecision = {
+        ...policyDecision,
+        deliveryDecision: "stay_silent",
+        displayAllowed: false,
+        reasonCodes: Array.from(new Set([
+          ...(policyDecision.reasonCodes || []),
+          "open_intervention_exists"
+        ]))
+      };
+    }
+  }
+
+  let renderedDecision = proactiveSilentAssistantDecision(policyDecision);
+  if (policyDecision.displayAllowed) {
+    const adapter = proactivePolicy.adapterForChapter(resolved.unit.chapterId);
+    const candidate = adapter?.renderAction?.(policyDecision.action, {
+      knowledgePointId: resolved.unit.knowledgePointId || "",
+      unitId: resolved.unit.id,
+      unitLabel: resolved.unit.unitLabel,
+      signal,
+      evidence,
+      quizAttempt
+    }) || learningAssistant.deterministicInterventionDecision({
+      resolved,
+      signal
+    });
+    if (
+      candidate.intervene
+      && candidate.action === policyDecision.action
+    ) {
+      renderedDecision = candidate;
+    } else {
+      policyDecision = {
+        ...policyDecision,
+        deliveryDecision: "stay_silent",
+        displayAllowed: false,
+        reasonCodes: Array.from(new Set([
+          ...(policyDecision.reasonCodes || []),
+          "renderer_action_mismatch"
+        ]))
+      };
+      renderedDecision = proactiveSilentAssistantDecision(policyDecision);
+    }
+  }
+
+  if (policyDecision.displayAllowed) {
+    interventionBudget = consumeAssistantInterventionBudget(auth.participant.id, now);
+    if (!interventionBudget.ok) {
+      policyDecision = {
+        ...policyDecision,
+        deliveryDecision: "stay_silent",
+        displayAllowed: false,
+        reasonCodes: Array.from(new Set([
+          ...(policyDecision.reasonCodes || []),
+          "intervention_budget_exhausted"
+        ]))
+      };
+      renderedDecision = proactiveSilentAssistantDecision(policyDecision);
+    }
+  }
+
+  if (
+    policyDecision.stateTransition
+    && proactivePolicy.lifecycle.isLifecycleAction(policyDecision.action)
+    && !policyDecision.displayAllowed
+  ) {
+    const deliveryReason = [
+      "intervention_budget_exhausted",
+      "open_intervention_exists",
+      "renderer_action_mismatch",
+      "shadow_mode_suppressed",
+      "control_condition_suppressed"
+    ].find((code) => policyDecision.reasonCodes.includes(code))
+      || "delivery_suppressed";
+    const closedTransition = proactivePolicy.lifecycle.closeUndeliveredAction({
+      transition: policyDecision.stateTransition,
+      deliveryReason
+    });
+    policyDecision = {
+      ...policyDecision,
+      lifecycleOutcome: "support_escalation_not_delivered",
+      stateTransition: closedTransition,
+      followupOutcome: closedTransition.followupOutcome,
+      reasonCodes: Array.from(new Set([
+        ...(policyDecision.reasonCodes || []),
+        "support_escalation_not_delivered"
+      ]))
+    };
+  }
+
+  const priorLifecycle = proactivePolicy.lifecycle.normalize(
+    parseStoredJson(policyState.lifecycle_json || "{}", {})
+  );
+  if (policyDecision.followupOutcome && priorLifecycle.activeInterventionId) {
+    db.updateProactiveInterventionFollowup({
+      userId: auth.participant.id,
+      interventionId: priorLifecycle.activeInterventionId,
+      followupOutcome: {
+        independentAttempt: {
+          ...policyDecision.followupOutcome,
+          unitId: resolved.unit.id,
+          recordedAt: policyDecision.createdAt
+        }
+      },
+      updatedAt: policyDecision.createdAt
+    });
+  }
+  if (policyDecision.stateTransition) {
+    const transition = policyDecision.stateTransition;
+    policyState = db.upsertProactivePolicyState(proactivePolicyStateRecord(
+      policyState,
+      {
+        userId: auth.participant.id,
+        scopeKey: policyScopeKey,
+        updatedAt: policyDecision.createdAt,
+        lastReasonCode: policyDecision.lifecycleOutcome
+          || "lifecycle_state_updated",
+        currentLevel: transition.currentLevel || policyState.current_level || "L0",
+        fadeLevel: Number(
+          transition.fadeLevel ?? policyState.fade_level ?? 0
+        ),
+        lifecycle: {
+          ...(transition.lifecycle || {}),
+          lastOutcomeAt: policyDecision.createdAt
+        }
+      }
+    ));
+  }
+  const policyStateAfter = proactivePolicyStateSnapshot(policyState);
+
+  const decisionId = crypto.randomUUID();
+  db.insertProactiveDecision(proactiveDecisionRecord({
+    decisionId,
+    userId: auth.participant.id,
+    assignment,
+    policyDecision,
+    evidence,
+    budget: interventionBudget,
+    policyStateBefore,
+    policyStateAfter
+  }));
+
+  let interventionId = "";
+  if (policyDecision.displayAllowed && renderedDecision.intervene) {
+    interventionId = crypto.randomUUID();
+    db.insertProactiveIntervention({
+      id: interventionId,
+      decision_id: decisionId,
+      user_id: auth.participant.id,
+      status: "offered",
+      presentation: renderedDecision,
+      created_at: policyDecision.createdAt,
+      updated_at: policyDecision.createdAt
+    });
+    issueAssistantIntervention(
+      auth.participant.id,
+      resolved,
+      renderedDecision,
+      now.getTime(),
+      { id: interventionId, decisionId }
+    );
+  }
+
+  db.insertEvent({
+    id: `${decisionId}:event`,
+    user_id: auth.participant.id,
+    type: "interaction",
+    payload: {
+      schemaVersion: 1,
+      eventType: policyDecision.decision === "intervene"
+        ? "proactive_decision_intervene"
+        : "proactive_decision_silent",
+      source: "proactive_policy",
+      chapterId: resolved.unit.chapterId,
+      unitId: resolved.unit.id,
+      sceneType,
+      research: {
+        experimentId: proactiveStudyConfig.experimentId,
+        condition: policyDecision.condition || "unassigned",
+        cohort: assignment?.cohort || proactiveStudyConfig.cohort || ""
+      },
+      data: {
+        decisionId,
+        interventionId,
+        policyMode: proactiveStudyConfig.mode,
+        policyVersion: proactiveStudyConfig.policyVersion,
+        contractVersion: proactiveStudyConfig.contractVersion,
+        adapterVersion: proactiveStudyConfig.adapterVersion,
+        candidateKind: signal.kind,
+        policyDecision: policyDecision.decision,
+        deliveryDecision: policyDecision.deliveryDecision,
+        action: policyDecision.action,
+        supportLevel: policyDecision.supportLevel,
+        reasonCodes: policyDecision.reasonCodes
+      },
+      timing: {
+        clientAt: policyDecision.createdAt,
+        durationMs: 0
+      }
+    },
+    created_at: policyDecision.createdAt
+  });
+  db.saveNow();
+
+  sendJson(res, 200, {
+    ok: true,
+    provider: "deterministic-policy",
+    fallback: false,
+    ...responseExtras,
+    decisionId,
+    interventionId,
+    decision: renderedDecision,
+    study: {
+      ...proactivePolicy.publicConfig(proactiveStudyConfig),
+      assignment: publicProactiveAssignment(assignment),
+      assignmentPending: !assignment,
+      studentPreference,
+      deliveryDecision: policyDecision.deliveryDecision,
+      policyState: publicProactivePolicyState(policyState, {
+        studentPreference
+      }),
+      pendingBoundaryEvaluation: proactivePendingQuietCandidate(
+        policyState,
+        now.getTime()
+      ).valid
+    },
+    interventionBudget,
+    quota: assistantQuotaInfo(auth.participant.id)
+  });
 }
 
 async function handleApi(req, res, url) {
@@ -2068,13 +3168,62 @@ async function handleApi(req, res, url) {
         console.warn("Learning reset quiz reconciliation skipped:", error.message);
       }
 
+      const proactiveReset = {
+        closedInterventions: db.closeOpenProactiveInterventionsForUser({
+          userId: auth.participant.id,
+          experimentId: proactiveStudyConfig.experimentId,
+          resolvedAt: timestamp,
+          followupOutcome: {
+            outcome: "learning_generation_reset",
+            generation: result.generation
+          }
+        }),
+        clearedPolicyStates: db.clearProactivePolicyStatesForUser({
+          userId: auth.participant.id,
+          experimentId: proactiveStudyConfig.experimentId,
+          preserveScopeKey: proactiveGlobalScopeKey
+        })
+      };
+      if (
+        proactiveReset.closedInterventions
+        || proactiveReset.clearedPolicyStates
+      ) {
+        db.insertEvent({
+          id: crypto.randomUUID(),
+          user_id: auth.participant.id,
+          type: "interaction",
+          payload: {
+            schemaVersion: 1,
+            eventType: "proactive_policy_lifecycle_reset",
+            source: "proactive_policy",
+            chapterId: proactiveStudyConfig.chapterId,
+            unitId: "",
+            sceneType: "",
+            research: {
+              experimentId: proactiveStudyConfig.experimentId
+            },
+            data: {
+              generation: result.generation,
+              ...proactiveReset
+            },
+            timing: {
+              clientAt: timestamp,
+              durationMs: 0
+            }
+          },
+          created_at: timestamp
+        });
+        db.saveNow();
+      }
+
       sendJson(res, 200, {
         ok: true,
         snapshotId,
         cleared: true,
         generation: result.generation,
         revision: result.revision,
-        quizReconciliation: quizReconciliationResult
+        quizReconciliation: quizReconciliationResult,
+        proactiveReset
       });
       return;
     }
@@ -2168,6 +3317,542 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "GET" && url.pathname === "/api/learning/proactive/state") {
+      const auth = authenticate(req);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const chapterId = boundedLearningText(
+        url.searchParams.get("chapterId") || proactiveStudyConfig.chapterId,
+        120
+      );
+      sendJson(res, 200, {
+        ok: true,
+        data: proactiveStudyState(auth.participant.id, chapterId)
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/proactive/preference"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      if (chapterId !== proactiveStudyConfig.chapterId) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_preference_scope_invalid",
+          message: "当前章节不支持主动提示设置。"
+        });
+        return;
+      }
+      const preference = boundedLearningText(body.preference, 20);
+      if (!proactiveStudentPreferences.has(preference)) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_preference_invalid",
+          message: "主动提示设置无效。"
+        });
+        return;
+      }
+
+      const changedAt = nowIso();
+      const previousPreference = proactiveStudentPreference(auth.participant.id);
+      const existingGlobalState = db.getProactivePolicyState(
+        auth.participant.id,
+        proactiveStudyConfig.experimentId,
+        proactiveGlobalScopeKey
+      ) || {};
+      db.upsertProactivePolicyState(proactivePolicyStateRecord(
+        existingGlobalState,
+        {
+          userId: auth.participant.id,
+          scopeKey: proactiveGlobalScopeKey,
+          updatedAt: changedAt,
+          lastReasonCode: `student_preference_${preference}`,
+          studentPreference: preference
+        }
+      ));
+
+      let closedInterventions = 0;
+      let closedLifecycleEpisodes = 0;
+      if (preference === "off") {
+        closedInterventions = db.closeOpenProactiveInterventionsForUser({
+          userId: auth.participant.id,
+          experimentId: proactiveStudyConfig.experimentId,
+          resolvedAt: changedAt,
+          followupOutcome: {
+            outcome: "student_preference_off",
+            previousPreference,
+            preference
+          }
+        });
+      }
+      db.listProactivePolicyStates(
+        auth.participant.id,
+        proactiveStudyConfig.experimentId
+      )
+        .filter((row) => row.scope_key !== proactiveGlobalScopeKey)
+        .forEach((row) => {
+          const lifecycleState = proactivePolicy.lifecycle.normalize(
+            parseStoredJson(row.lifecycle_json || "{}", {})
+          );
+          const lifecycleActive = [
+            "accepted_pending_response",
+            "awaiting_independent_attempt"
+          ].includes(lifecycleState.phase);
+          if (preference === "off" && lifecycleActive) {
+            closedLifecycleEpisodes += 1;
+          }
+          db.upsertProactivePolicyState(proactivePolicyStateRecord(row, {
+            userId: auth.participant.id,
+            scopeKey: row.scope_key,
+            updatedAt: changedAt,
+            lastReasonCode: `student_preference_${preference}`,
+            currentLevel: preference === "off" && lifecycleActive
+              ? "L0"
+              : row.current_level || "L0",
+            studentPreference: preference,
+            pendingCandidateKind: preference === "off"
+              ? ""
+              : row.pending_candidate_kind || "",
+            pendingCandidateAt: preference === "off"
+              ? ""
+              : row.pending_candidate_at || "",
+            pendingCandidateExpiresAt: preference === "off"
+              ? ""
+              : row.pending_candidate_expires_at || "",
+            pendingEvidence: preference === "off"
+              ? {}
+              : parseStoredJson(row.pending_evidence_json || "{}", {}),
+            lifecycle: preference === "off" && lifecycleActive
+              ? {
+                  ...lifecycleState,
+                  phase: "declined",
+                  supportLevel: "L0",
+                  activeAction: "",
+                  activeDecisionId: "",
+                  activeInterventionId: "",
+                  reasonCode: "student_preference_off",
+                  lastOutcome: "student_preference_off",
+                  lastOutcomeAt: changedAt
+                }
+              : lifecycleState
+          }));
+        });
+
+      db.insertEvent({
+        id: crypto.randomUUID(),
+        user_id: auth.participant.id,
+        type: "interaction",
+        payload: {
+          schemaVersion: 1,
+          eventType: "proactive_student_preference_changed",
+          source: "proactive_policy",
+          chapterId,
+          unitId: "",
+          sceneType: "",
+          research: {
+            experimentId: proactiveStudyConfig.experimentId
+          },
+          data: {
+            previousPreference,
+            preference,
+            closedInterventions,
+            closedLifecycleEpisodes
+          },
+          timing: {
+            clientAt: changedAt,
+            durationMs: 0
+          }
+        },
+        created_at: changedAt
+      });
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        data: proactiveStudyState(auth.participant.id, chapterId),
+        previousPreference,
+        studentPreference: preference,
+        closedInterventions,
+        closedLifecycleEpisodes
+      });
+      return;
+    }
+
+    const proactiveResolutionMatch = url.pathname.match(
+      /^\/api\/learning\/proactive\/([^/]+)\/resolution$/
+    );
+    if (req.method === "POST" && proactiveResolutionMatch) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const decisionId = boundedLearningText(
+        decodeURIComponent(proactiveResolutionMatch[1]),
+        180
+      );
+      const decision = db.getProactiveDecisionForUser(auth.participant.id, decisionId);
+      if (!decision) {
+        sendJson(res, 404, {
+          ok: false,
+          code: "proactive_decision_not_found",
+          message: "这条主动建议不存在，或不属于当前学生。"
+        });
+        return;
+      }
+      const resolutionAliases = {
+        shown: "shown",
+        accept: "accepted",
+        accepted: "accepted",
+        dismiss: "dismissed",
+        dismissed: "dismissed",
+        ignore: "ignored",
+        ignored: "ignored"
+      };
+      const resolution = resolutionAliases[String(body.resolution || "").trim()] || "";
+      if (!resolution) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_resolution_invalid",
+          message: "主动建议状态无效。"
+        });
+        return;
+      }
+      const resolvedAt = nowIso();
+      const expiresAt = Date.parse(decision.expires_at || "");
+      if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+        db.resolveProactiveIntervention({
+          userId: auth.participant.id,
+          decisionId,
+          resolution: "expired",
+          resolvedAt,
+          latencyMs: Math.max(0, Date.now() - Date.parse(decision.created_at || resolvedAt))
+        });
+        db.saveNow();
+        sendJson(res, 410, {
+          ok: false,
+          code: "proactive_decision_expired",
+          message: "这条主动建议已过期。"
+        });
+        return;
+      }
+      const latencyMs = Math.max(
+        0,
+        Date.now() - Date.parse(decision.created_at || resolvedAt)
+      );
+      const result = db.resolveProactiveIntervention({
+        userId: auth.participant.id,
+        decisionId,
+        resolution,
+        resolvedAt,
+        latencyMs
+      });
+      if (!result.ok) {
+        const notFound = result.reason === "not_found";
+        const shownRequired = result.reason === "shown_required";
+        sendJson(res, notFound ? 404 : 409, {
+          ok: false,
+          code: notFound
+            ? "proactive_intervention_not_found"
+            : shownRequired
+              ? "proactive_resolution_shown_required"
+              : "proactive_resolution_replayed",
+          message: notFound
+            ? "这条主动建议没有可更新的展示记录。"
+            : shownRequired
+              ? "只有确认展示过的主动建议才能被接受或关闭。"
+              : "这条主动建议已经处理，不能重复改变状态。"
+        });
+        return;
+      }
+      const studentPreference = proactiveStudentPreference(auth.participant.id);
+      let policyState = db.getProactivePolicyState(
+        auth.participant.id,
+        decision.experiment_id,
+        decision.scope_key || decision.unit_id
+      ) || {};
+      policyState = {
+        ...policyState,
+        student_preference: studentPreference
+      };
+      if (resolution !== "shown") {
+        policyState = db.upsertProactivePolicyState(
+          proactivePolicyStateAfterResolution({
+            existing: policyState,
+            decision,
+            interventionId: result.intervention?.id || "",
+            resolution,
+            resolvedAt,
+            latencyMs
+          })
+        );
+      }
+      db.insertEvent({
+        id: `${decisionId}:${resolution}`,
+        user_id: auth.participant.id,
+        type: "interaction",
+        payload: {
+          schemaVersion: 1,
+          eventType: `proactive_offer_${resolution}`,
+          source: "proactive_policy",
+          chapterId: decision.chapter_id,
+          unitId: decision.unit_id,
+          sceneType: decision.scene_type,
+          research: {
+            experimentId: decision.experiment_id,
+            condition: decision.condition
+          },
+          data: {
+            decisionId,
+            interventionId: result.intervention?.id || "",
+            action: decision.action,
+            supportLevel: decision.support_level,
+            resolution,
+            latencyMs
+          },
+          timing: {
+            clientAt: resolvedAt,
+            durationMs: latencyMs
+          }
+        },
+        created_at: resolvedAt
+      });
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        data: {
+          decisionId,
+          resolution,
+          idempotent: Boolean(result.idempotent),
+          policyState: publicProactivePolicyState(policyState, {
+            studentPreference
+          })
+        }
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/proactive/check"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const unitId = boundedLearningText(body.unitId, 180);
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        180
+      );
+      const sceneType = boundedLearningText(body.sceneType, 80);
+      const scopeKey = boundedLearningText(body.scopeKey, 180);
+      if (
+        chapterId !== proactiveStudyConfig.chapterId
+        || !scopeKey
+        || !unitId
+      ) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_verification_scope_invalid",
+          message: "当前学习位置没有可提交的主动验证题。"
+        });
+        return;
+      }
+      const assignment = proactiveAssignmentForUser(auth.participant.id);
+      if (!assignment) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_assignment_pending",
+          message: "完成章前测后才能提交本章主动验证题。"
+        });
+        return;
+      }
+      const policyState = db.getProactivePolicyState(
+        auth.participant.id,
+        proactiveStudyConfig.experimentId,
+        scopeKey
+      );
+      const publicState = publicProactivePolicyState(policyState || {});
+      const expectedCheck = publicState.verificationCheck;
+      if (!policyState || !expectedCheck) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_verification_not_expected",
+          message: "这道无提示检查已经处理，或当前还没到独立验证阶段。"
+        });
+        return;
+      }
+      if (expectedCheck.id !== boundedLearningText(body.checkId, 180)) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_verification_stale",
+          message: "这道无提示检查已经更新，请刷新后再作答。"
+        });
+        return;
+      }
+
+      const quizResults = db.getQuizResultsByUserUnit(
+        auth.participant.id,
+        unitId
+      );
+      let resolved;
+      try {
+        resolved = learningAssistant.resolveAssistantContext({
+          index: assistantContextIndex,
+          chapterId,
+          unitId,
+          sceneType,
+          contextRef: body.contextRef || {
+            kind: "proactive_verification",
+            scope: "lesson"
+          },
+          quizSubmitted: Boolean(quizResults.length)
+        });
+      } catch (error) {
+        sendJson(res, error.status || 400, {
+          ok: false,
+          code: error.code || "assistant_context_error",
+          message: error.message
+        });
+        return;
+      }
+      const resolvedScopeKey = boundedLearningText(
+        resolved.unit.knowledgePointId || resolved.unit.id,
+        180
+      );
+      if (
+        resolved.unit.chapterId !== proactiveStudyConfig.chapterId
+        || resolvedScopeKey !== scopeKey
+      ) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_verification_context_mismatch",
+          message: "验证题与当前知识点不一致，未记录本次作答。"
+        });
+        return;
+      }
+
+      const adapter = proactivePolicy.adapterForChapter(
+        proactiveStudyConfig.chapterId
+      );
+      const declined = String(body.resolution || "") === "declined";
+      const grade = declined
+        ? null
+        : adapter?.gradeVerificationCheck?.({
+            knowledgePointId: scopeKey,
+            supportLevel: publicState.currentLevel,
+            checkId: expectedCheck.id,
+            response: boundedLearningText(body.response, 80)
+          });
+      if (!declined && !grade) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_verification_response_invalid",
+          message: "请选择一个选项后再提交。"
+        });
+        return;
+      }
+
+      const submittedAt = nowIso();
+      const attemptId = crypto.randomUUID();
+      const verificationResult = {
+        attemptId,
+        checkId: expectedCheck.id,
+        stage: expectedCheck.stage,
+        supportLevel: expectedCheck.supportLevel,
+        source: "policy_owned_probe",
+        status: declined
+          ? "declined"
+          : grade.correct ? "correct" : "incorrect",
+        correct: declined ? null : grade.correct
+      };
+      const evidence = {
+        families: declined ? ["history"] : ["task", "history"],
+        evidenceRefs: [{
+          id: attemptId,
+          sourceType: "policy_owned_probe",
+          eventType: declined
+            ? "proactive_verification_declined"
+            : "proactive_verification_submitted",
+          capturedAt: submittedAt
+        }],
+        independentAttemptDeclined: declined,
+        independentAttemptVerified: !declined,
+        independentAttemptSuccess: declined ? false : grade.correct,
+        confirmedIncorrect: declined || grade.correct ? 0 : 1,
+        confirmedCorrect: !declined && grade.correct ? 1 : 0,
+        questionCount: declined ? 0 : 1,
+        verificationCheckId: expectedCheck.id,
+        verificationStage: expectedCheck.stage,
+        verificationSource: "policy_owned_probe",
+        verificationResponse: declined ? "" : grade.response
+      };
+      db.insertEvent({
+        id: attemptId,
+        user_id: auth.participant.id,
+        type: "interaction",
+        payload: {
+          schemaVersion: 1,
+          eventType: declined
+            ? "proactive_verification_declined"
+            : "proactive_verification_submitted",
+          source: "proactive_policy",
+          chapterId,
+          unitId: resolved.unit.id,
+          sceneType,
+          research: {
+            experimentId: proactiveStudyConfig.experimentId,
+            condition: assignment.condition
+          },
+          data: {
+            checkId: expectedCheck.id,
+            stage: expectedCheck.stage,
+            supportLevel: expectedCheck.supportLevel,
+            response: declined ? "" : grade.response,
+            isCorrect: declined ? null : grade.correct
+          },
+          timing: {
+            clientAt: submittedAt,
+            durationMs: Math.max(
+              0,
+              Math.min(
+                60 * 60 * 1000,
+                Math.trunc(Number(body.durationMs || 0))
+              )
+            )
+          }
+        },
+        created_at: submittedAt
+      });
+      await handleManagedProactiveIntervention({
+        res,
+        auth,
+        resolved,
+        signal: {
+          kind: "independent_attempt_outcome",
+          sourceEventType: "policy_owned_probe",
+          attemptId
+        },
+        quizAttempt: attachAssistantQuizAttempt(resolved, quizResults),
+        sceneType,
+        trustedEvidence: evidence,
+        responseExtras: {
+          checkResult: verificationResult
+        }
+      });
+      return;
+    }
+
     if (req.method === "POST" && url.pathname === "/api/learning/assistant/intervention") {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
@@ -2178,7 +3863,13 @@ async function handleApi(req, res, url) {
       const signal = body.signal && typeof body.signal === "object" && !Array.isArray(body.signal)
         ? body.signal
         : {};
-      if (!["repeated_parameter", "quiz_review", "quiet_dwell"].includes(String(signal.kind || ""))) {
+      if (![
+        "repeated_parameter",
+        "quiz_review",
+        "quiet_dwell",
+        "formative_outcome",
+        "independent_attempt_outcome"
+      ].includes(String(signal.kind || ""))) {
         sendJson(res, 400, {
           ok: false,
           code: "assistant_intervention_signal_invalid",
@@ -2199,7 +3890,9 @@ async function handleApi(req, res, url) {
           sceneType,
           contextRef: body.contextRef || {
             kind: signal.kind === "repeated_parameter" ? "interaction" : "unit",
-            scope: signal.kind === "quiz_review" ? "quiz" : "lesson"
+            scope: ["quiz_review", "formative_outcome"].includes(signal.kind)
+              ? "quiz"
+              : "lesson"
           },
           quizSubmitted
         });
@@ -2211,11 +3904,22 @@ async function handleApi(req, res, url) {
         });
         return;
       }
+      const quizAttempt = attachAssistantQuizAttempt(resolved, quizResults);
+      if (resolved.unit.chapterId === proactiveStudyConfig.chapterId) {
+        await handleManagedProactiveIntervention({
+          res,
+          auth,
+          resolved,
+          signal,
+          quizAttempt,
+          sceneType
+        });
+        return;
+      }
       if (resolved.isQuiz && !quizSubmitted) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
-      const quizAttempt = attachAssistantQuizAttempt(resolved, quizResults);
       let verifiedSignal = signal;
       if (signal.kind === "quiz_review") {
         if (!resolved.isQuiz || !quizAttempt || quizAttempt.incorrect <= 0) {
@@ -2229,6 +3933,44 @@ async function handleApi(req, res, url) {
         verifiedSignal = {
           ...signal,
           incorrect: quizAttempt.incorrect,
+          pendingReview: quizAttempt.pendingReview,
+          questionCount: quizAttempt.total,
+          reviewIndex: 0
+        };
+      } else if (signal.kind === "formative_outcome") {
+        if (
+          !resolved.isQuiz
+          || resolved.unit.phase !== "formative"
+          || !resolved.unit.knowledgePointId
+          || !quizAttempt
+          || quizAttempt.pendingReview > 0
+        ) {
+          sendAssistantSignalMismatch(res, "当前没有可用于主动策略的完整形成性结果。");
+          return;
+        }
+        if (quizAttempt.incorrect <= 0) {
+          sendJson(res, 200, {
+            ok: true,
+            provider: "deterministic-policy",
+            fallback: false,
+            decision: proactiveSilentAssistantDecision({
+              reasonCodes: ["confirmed_error_absent"],
+              uncertaintyScore: 0.05
+            }),
+            interventionId: "",
+            interventionBudget: proactiveInterventionBudgetInfo(
+              auth.participant.id,
+              new Date()
+            ),
+            quota: assistantQuotaInfo(auth.participant.id)
+          });
+          return;
+        }
+        verifiedSignal = {
+          ...signal,
+          kind: "quiz_review",
+          incorrect: quizAttempt.incorrect,
+          correct: quizAttempt.correct,
           pendingReview: quizAttempt.pendingReview,
           questionCount: quizAttempt.total,
           reviewIndex: 0
@@ -3012,6 +4754,98 @@ async function handleApi(req, res, url) {
         title: conversation.messageCount === 0 ? question : "",
         updatedAt: answeredAt
       });
+      if (
+        proactiveIntervention
+        && proactivePolicy.lifecycle.isLifecycleAction(
+          proactiveIntervention.action
+        )
+      ) {
+        const storedIntervention = db.getProactiveIntervention(
+          proactiveInterventionId
+        );
+        const lifecycleDecision = proactiveIntervention.decisionId
+          ? db.getProactiveDecisionForUser(
+              auth.participant.id,
+              proactiveIntervention.decisionId
+            )
+          : null;
+        if (
+          storedIntervention?.status === "accepted"
+          && lifecycleDecision
+        ) {
+          const scopeKey = lifecycleDecision.scope_key
+            || resolved.unit.knowledgePointId
+            || lifecycleDecision.unit_id;
+          const existingPolicyState = db.getProactivePolicyState(
+            auth.participant.id,
+            lifecycleDecision.experiment_id,
+            scopeKey
+          ) || {};
+          const nextLifecycle = proactivePolicy.lifecycle.afterStudentResponse({
+            lifecycle: parseStoredJson(
+              existingPolicyState.lifecycle_json || "{}",
+              {}
+            ),
+            interventionId: proactiveInterventionId,
+            respondedAt: answeredAt
+          });
+          if (nextLifecycle.phase === "awaiting_independent_attempt") {
+            db.upsertProactivePolicyState(proactivePolicyStateRecord(
+              existingPolicyState,
+              {
+                userId: auth.participant.id,
+                scopeKey,
+                updatedAt: answeredAt,
+                lastReasonCode: "student_response_submitted",
+                lifecycle: nextLifecycle
+              }
+            ));
+            db.updateProactiveInterventionFollowup({
+              userId: auth.participant.id,
+              interventionId: proactiveInterventionId,
+              followupOutcome: {
+                studentResponse: {
+                  submitted: true,
+                  submittedAt: answeredAt,
+                  responseLength: question.length,
+                  assistantMessageId,
+                  provider: generated.provider
+                }
+              },
+              updatedAt: answeredAt
+            });
+            db.insertEvent({
+              id: `${proactiveInterventionId}:student-response`,
+              user_id: auth.participant.id,
+              type: "interaction",
+              payload: {
+                schemaVersion: 1,
+                eventType: "proactive_student_response_submitted",
+                source: "proactive_policy",
+                chapterId: lifecycleDecision.chapter_id,
+                unitId: lifecycleDecision.unit_id,
+                research: {
+                  experimentId: lifecycleDecision.experiment_id,
+                  condition: lifecycleDecision.condition
+                },
+                data: {
+                  decisionId: lifecycleDecision.id,
+                  interventionId: proactiveInterventionId,
+                  action: lifecycleDecision.action,
+                  supportLevel: lifecycleDecision.support_level,
+                  responseLength: question.length
+                },
+                timing: {
+                  clientAt: answeredAt,
+                  durationMs: 0
+                }
+              },
+              created_at: answeredAt
+            });
+            db.saveNow();
+          }
+        }
+      }
       if (proactiveReviewSourceMessage) {
         const sourceProgress = assistantQuizReviewProgress(proactiveReviewSourceMessage);
         updateAssistantQuizReviewProgress(proactiveReviewSourceMessage, {
@@ -3265,6 +5099,54 @@ async function handleApi(req, res, url) {
       }
       sendJson(res, 202, { ok: true, message: "服务正在保存数据库并安全停止。" });
       setTimeout(() => shutdown("ADMIN_SHUTDOWN"), 50);
+      return;
+    }
+
+    if (
+      req.method === "GET"
+      && url.pathname === "/api/admin/research/proactive-decisions"
+    ) {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
+      const experimentId = boundedLearningText(
+        url.searchParams.get("experimentId") || proactiveStudyConfig.experimentId,
+        120
+      );
+      const expiredInterventions = db.expireProactiveInterventions({
+        at: nowIso(),
+        experimentId
+      });
+      if (expiredInterventions > 0) db.saveNow();
+      const page = db.proactiveDecisionRows({
+        experimentId,
+        userId: boundedLearningText(url.searchParams.get("userId"), 180),
+        condition: boundedLearningText(url.searchParams.get("condition"), 40),
+        decision: boundedLearningText(url.searchParams.get("decision"), 40),
+        limit: Math.max(1, Math.min(Number(url.searchParams.get("limit") || 500), 1000)),
+        offset: Math.max(0, Number(url.searchParams.get("offset") || 0))
+      });
+      const rows = page.rows.map((row) => ({
+        ...row,
+        reason_codes: parseStoredJson(row.reason_codes_json || "[]", []),
+        evidence_refs: parseStoredJson(row.evidence_refs_json || "[]", []),
+        evidence_snapshot: parseStoredJson(row.evidence_snapshot_json || "{}", {}),
+        budget_snapshot: parseStoredJson(row.budget_snapshot_json || "{}", {}),
+        presentation: parseStoredJson(row.presentation || "{}", {}),
+        followup_outcome: parseStoredJson(row.followup_outcome_json || "{}", {}),
+        current_lifecycle: parseStoredJson(row.current_lifecycle_json || "{}", {})
+      }));
+      sendJson(res, 200, {
+        ok: true,
+        data: {
+          ...page,
+          rows,
+          assignments: db.proactiveAssignmentSummary(experimentId),
+          summary: db.proactiveDecisionSummary(experimentId),
+          policy: proactivePolicy.publicConfig(proactiveStudyConfig)
+        }
+      });
       return;
     }
 

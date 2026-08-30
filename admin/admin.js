@@ -27,6 +27,20 @@ let interactionDetailMode = sessionStorage.getItem("cq_interaction_detail") === 
 let cachedUnitEngagementRows = [];
 let cachedPathRows = [];
 let cachedAgenticTraceRows = [];
+let cachedProactiveDecisionRows = [];
+let cachedProactiveStudyData = {
+  rows: [],
+  total: 0,
+  limit: 500,
+  offset: 0,
+  assignments: [],
+  summary: {},
+  policy: {}
+};
+let proactiveConditionFilter = sessionStorage.getItem("cq_proactive_condition") || "";
+let proactiveDecisionFilter = sessionStorage.getItem("cq_proactive_decision") || "";
+let selectedProactiveDecisionId = sessionStorage.getItem("cq_proactive_selected_decision") || "";
+let proactiveAuditAllLoaded = false;
 let cachedRegradeCandidates = [];
 let cachedUserDetail = null;
 let regradeRuntime = { provider: "", model: "", liveConfigured: false };
@@ -160,6 +174,39 @@ async function adminApi(pathname, options = {}) {
     throw error;
   }
   return payload.data;
+}
+
+function proactiveStudyParams({ limit = 500, offset = 0 } = {}) {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    offset: String(offset)
+  });
+  if (proactiveConditionFilter) params.set("condition", proactiveConditionFilter);
+  if (proactiveDecisionFilter) params.set("decision", proactiveDecisionFilter);
+  return params.toString();
+}
+
+async function fetchProactiveStudy(signal, options = {}) {
+  const response = await fetch(
+    `${API_BASE}/api/admin/research/proactive-decisions?${proactiveStudyParams(options)}`,
+    {
+      headers: { Authorization: `Bearer ${adminToken}` },
+      signal
+    }
+  );
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.ok === false) {
+    throw new Error(payload.message || `API error: ${response.status}`);
+  }
+  return {
+    rows: safeRows(payload.data?.rows),
+    total: Number(payload.data?.total || 0),
+    limit: Number(payload.data?.limit || options.limit || 500),
+    offset: Number(payload.data?.offset || options.offset || 0),
+    assignments: safeRows(payload.data?.assignments),
+    summary: payload.data?.summary || {},
+    policy: payload.data?.policy || {}
+  };
 }
 
 function normalizePageData(data, fallbackLimit = 500) {
@@ -395,7 +442,7 @@ async function loadAll(signal) {
   try {
     const openUserDetailId = cachedUserDetail?.user?.id || "";
     await loadCourseDisplayIndex(signal);
-    const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, feedbackDashboard, interactions, interactionDashboard, agenticTrace] = await Promise.all([
+    const [overview, daily, userProg, chapter, questions, phase, qType, scoreDist, hourly, shortAnswers, feedbackDashboard, interactions, interactionDashboard, agenticTrace, proactiveStudyData] = await Promise.all([
       fetchStats("overview", "", signal),
       fetchStats("daily-activity", "", signal),
       fetchStats("user-progress", "", signal),
@@ -409,7 +456,8 @@ async function loadAll(signal) {
       fetchStats("feedback", feedbackFilterQueryParams(), signal),
       fetchStats("interactions", interactionQueryParams(), signal),
       fetchStats("interaction-dashboard", interactionQueryParams(), signal),
-      fetchStats("agentic-decision-trace", interactionUserId ? "userId=" + encodeURIComponent(interactionUserId) : "", signal)
+      fetchStats("agentic-decision-trace", interactionUserId ? "userId=" + encodeURIComponent(interactionUserId) : "", signal),
+      fetchProactiveStudy(signal)
     ]);
     allUsers = userProg;
     cachedChapterData = chapter;
@@ -422,6 +470,8 @@ async function loadAll(signal) {
     const unitEngagement = interactionDashboard?.unitEngagement || [];
     const pathAnalysis = interactionDashboard?.pathAnalysis || [];
     cachedPathRows = safeRows(pathAnalysis);
+    cachedProactiveStudyData = proactiveStudyData;
+    cachedProactiveDecisionRows = safeRows(proactiveStudyData.rows);
 
     try { renderMetrics(overview, phase); } catch (e) { console.warn("Metrics:", e); }
     try { renderDailyChart(daily); } catch (e) { console.warn("Daily chart:", e); }
@@ -447,6 +497,7 @@ async function loadAll(signal) {
     try { renderUnitEngagement(unitEngagement); } catch (e) { console.warn("Unit engagement:", e); }
     try { renderPathAnalysis(pathAnalysis, pathRule); } catch (e) { console.warn("Path analysis:", e); }
     try { renderAgenticTrace(agenticTrace); } catch (e) { console.warn("Agentic trace:", e); }
+    try { renderProactiveStudy(proactiveStudyData); } catch (e) { console.warn("Proactive study:", e); }
     try { renderInteractions(interactions); } catch (e) { console.warn("Interactions:", e); }
     prepareSortableTables();
     if (openUserDetailId) {
@@ -2354,7 +2405,9 @@ function proactiveSuggestionKindName(kind = "") {
   return ({
     repeated_parameter: "连续调参观察",
     quiz_review: "错题复盘",
-    quiet_dwell: "停留后的澄清"
+    quiet_dwell: "停留后的澄清",
+    formative_outcome: "形成性结果",
+    independent_attempt_outcome: "独立尝试结果"
   })[kind] || "学习时机";
 }
 
@@ -2364,6 +2417,8 @@ function proactiveActionName(action = "") {
     review_mistake: "复盘错题",
     self_explain: "自我解释",
     ask_clarification: "回答澄清问题",
+    elicit_self_explanation: "引导学生自我解释",
+    concept_hint: "提供概念关系线索",
     stay_silent: "保持安静"
   })[action] || "下一步支持";
 }
@@ -3335,6 +3390,688 @@ document.addEventListener("keydown", (event) => {
   header.click();
 });
 
+// ---- Proactive study ----
+const proactiveCandidateLabels = {
+  repeated_parameter: "连续调参",
+  quiet_dwell: "安静停留",
+  quiz_review: "错题复盘",
+  formative_outcome: "形成性测验结果",
+  independent_attempt_outcome: "支架后独立尝试"
+};
+
+const proactiveActionLabels = {
+  stay_silent: "保持安静",
+  observe_change: "引导观察变化",
+  review_mistake: "复盘错因",
+  ask_clarification: "澄清卡点",
+  self_explain: "自我解释",
+  elicit_self_explanation: "引导自我解释",
+  concept_hint: "概念关系线索"
+};
+
+const proactiveResolutionLabels = {
+  accepted: "已接受",
+  dismissed: "已关闭",
+  ignored: "已忽略",
+  expired: "已过期",
+  shown: "已展示",
+  offered: "待展示"
+};
+
+const proactiveEvidenceSourceLabels = {
+  policy_owned_probe: "平台无提示近端验证题",
+  courseware_semantic_event: "课件语义结果事件",
+  interaction: "学习交互事件",
+  quiz_result: "平台测验结果",
+  proactive_intervention: "主动干预记录"
+};
+
+const proactiveEvidenceEventLabels = {
+  proactive_verification_submitted: "无提示验证已提交",
+  proactive_verification_declined: "学生跳过无提示验证",
+  courseware_challenge_result: "课件挑战结果",
+  courseware_formative_check_submitted: "课件形成性检查结果",
+  parameter_commit: "参数提交",
+  courseware_interaction_complete: "课件互动完成",
+  courseware_observable_evidence_captured: "课件可观察证据"
+};
+
+function proactiveEvidenceSourceLabel(source = "", eventType = "") {
+  const sourceLabel = proactiveEvidenceSourceLabels[source] || source || "未标记来源";
+  const eventLabel = proactiveEvidenceEventLabels[eventType] || eventType || "";
+  return eventLabel ? `${sourceLabel} · ${eventLabel}` : sourceLabel;
+}
+
+function proactiveConditionLabel(value = "") {
+  return value === "treatment" ? "Treatment" : value === "control" ? "Control" : value || "未分配";
+}
+
+function proactiveStratumLabel(value = "") {
+  return value === "pre-high"
+    ? "前测较高"
+    : value === "pre-low"
+      ? "前测较低"
+      : "未分层";
+}
+
+function proactiveDecisionLabel(value = "") {
+  return value === "intervene" ? "应介入" : "保持安静";
+}
+
+function proactiveDeliveryLabel(value = "") {
+  return value === "intervene" ? "已签发展示" : "实际静默";
+}
+
+function proactiveScore(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toFixed(2) : "-";
+}
+
+function proactiveReasonText(reasons) {
+  const labels = {
+    repeated_parameter_verified: "连续调参已核验",
+    natural_parameter_boundary: "处于自然操作边界",
+    confirmed_quiz_error: "存在已确认错题",
+    confirmed_formative_error: "形成性测验确认错误",
+    quiz_submission_boundary: "测验已提交",
+    quiet_dwell_with_confirmed_gap: "停留且存在已确认薄弱点",
+    quiet_dwell_time_only: "只有停留证据",
+    quiet_dwell_waiting_for_boundary: "已登记 HelpNeed，等待自然边界",
+    quiet_dwell_boundary_not_verified: "自然边界尚未核验",
+    quiet_dwell_pending_absent: "没有待评估停留候选",
+    natural_task_boundary: "处于自然任务边界",
+    independent_task_boundary: "处于支架后的独立任务边界",
+    continued_friction_after_self_explanation: "L1 后独立尝试仍失败，允许升级至 L2",
+    independent_attempt_success: "独立尝试成功，渐退并退出",
+    accepted_response_pending: "已接受支架，等待学生实际回复",
+    independent_attempt_required: "等待平台无提示验证或课件语义结果",
+    independent_attempt_not_expected: "当前生命周期不接受独立结果",
+    independent_attempt_not_verified: "没有服务端可核验的独立任务证据",
+    verification_declined_without_escalation: "学生跳过验证，本轮结束且不升级",
+    verification_check_already_submitted: "同一道验证题已提交，阻止重放",
+    student_response_submitted: "学生已完成本轮支架回复",
+    support_declined: "学生已拒绝，本轮闭环终止",
+    lifecycle_closed: "本轮支架闭环已经结束",
+    maximum_support_reached: "已到本轮最高支架强度，停止升级",
+    policy_thresholds_met: "达到政策门槛",
+    shadow_mode_suppressed: "Shadow 不展示",
+    control_condition_suppressed: "Control 不展示",
+    protected_assessment_stage: "受保护测量阶段",
+    experiment_assignment_pending: "前测完成前不分组",
+    intervention_budget_exhausted: "主动预算已用尽",
+    policy_cooldown_active: "学生冷却期",
+    open_intervention_exists: "同一知识点已有待处理建议",
+    repeated_rejection_guard: "连续拒绝保护",
+    evidence_families_insufficient: "证据族不足",
+    help_need_below_threshold: "HelpNeed 未达门槛",
+    interruptibility_below_threshold: "当前不宜打断",
+    uncertainty_above_threshold: "不确定性过高",
+    repeated_parameter_not_verified: "连续调参未核验",
+    progress_already_resumed: "学习进展已恢复",
+    confirmed_error_absent: "没有已确认错题",
+    grading_incomplete: "评分尚未完成",
+    formative_outcome_scope_invalid: "形成性结果不在合法测验范围",
+    formative_knowledge_point_absent: "形成性结果缺少知识点映射",
+    independent_attempt_scope_invalid: "独立结果缺少知识点映射",
+    candidate_kind_unsupported: "当前 Adapter 不支持该候选",
+    adapter_unit_unsupported: "当前单元未纳入 Adapter",
+    chapter_not_managed: "当前章节不属于本试点",
+    policy_mode_off: "主动政策已关闭",
+    student_preference_reduced: "学生选择少提醒，仅保留强证据介入",
+    student_preference_off: "学生已关闭主动提示",
+    assignment_salt_required: "分组盐未配置，Active 失败关闭",
+    no_legal_action: "没有满足教学契约的合法动作",
+    renderer_action_mismatch: "呈现动作不匹配",
+    support_escalation_not_delivered: "升级支架未实际交付，本轮已安全结束"
+  };
+  return safeRows(reasons).map((reason) => labels[reason] || reason).join("、") || "无";
+}
+
+function proactiveAuditTime(value = "") {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value || "未记录");
+  return date.toLocaleString("zh-CN", {
+    year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit"
+  });
+}
+
+function proactiveAuditJson(value, fallback = {}) {
+  const parsed = parseJsonMaybe(value);
+  if (parsed && typeof parsed === "object") {
+    try { return JSON.stringify(parsed, null, 2); } catch {}
+  }
+  try { return JSON.stringify(fallback, null, 2); } catch { return "{}"; }
+}
+
+function proactiveAuditStatus(row = {}) {
+  const resolution = row.resolution || row.intervention_status || "";
+  return proactiveResolutionLabels[resolution]
+    || (row.delivery_decision === "intervene" ? "待展示" : "未展示");
+}
+
+function proactiveAuditReasonItems(row = {}) {
+  return safeRows(row.reason_codes).map((reason) => ({
+    code: reason,
+    label: proactiveReasonText([reason])
+  }));
+}
+
+function proactiveAuditFact(label, value) {
+  return '<div class="proactive-audit-detail-fact"><span>'
+    + esc(label)
+    + '</span><strong>'
+    + esc(value || "未记录")
+    + '</strong></div>';
+}
+
+function proactiveLifecyclePhaseLabel(value = "") {
+  return ({
+    idle: "尚未开启",
+    accepted_pending_response: "已接受，等待学生回复",
+    awaiting_independent_attempt: "等待无提示验证或课件语义结果",
+    declined: "学生拒绝，本轮已退出",
+    exited: "独立成功，已渐退退出",
+    closed: "升级未交付，本轮已安全结束",
+    maximum_support_reached: "达到本轮最高支架，已停止升级"
+  })[value] || value || "尚未开启";
+}
+
+function proactiveOutcomeLabel(value = "") {
+  return ({
+    student_response_submitted: "学生已提交自我解释",
+    continued_friction: "独立尝试失败，仍有卡点",
+    continued_friction_after_concept_hint: "L2 后仍失败，停止继续升级",
+    independent_attempt_success: "独立尝试成功",
+    support_escalation_not_delivered: "升级支架未交付，本轮安全结束",
+    verification_declined: "学生跳过验证，本轮结束",
+    dismissed: "学生关闭建议",
+    ignored: "建议被忽略"
+  })[value] || value || "";
+}
+
+function proactiveFollowupSummary(row = {}) {
+  const outcome = row.followup_outcome || {};
+  const response = outcome.studentResponse || {};
+  const attempt = outcome.independentAttempt || {};
+  const parts = [];
+  if (response.submitted) {
+    const length = Number(response.responseLength || 0);
+    parts.push(`学生已回复${length ? ` ${length} 字` : ""}`);
+  }
+  if (attempt.outcome) {
+    parts.push(proactiveOutcomeLabel(attempt.outcome));
+  }
+  if (attempt.source || attempt.eventType) {
+    parts.push(proactiveEvidenceSourceLabel(attempt.source, attempt.eventType));
+  }
+  return parts.join(" · ");
+}
+
+function proactiveEvidenceItems(row = {}) {
+  const refs = safeRows(row.evidence_refs);
+  const attempt = row.followup_outcome?.independentAttempt || {};
+  const items = refs.map((ref) => ({
+    id: String(ref.id || ""),
+    label: proactiveEvidenceSourceLabel(ref.sourceType, ref.eventType)
+  }));
+  if (attempt.source || attempt.eventType) {
+    items.push({
+      id: String(attempt.checkId || ""),
+      label: proactiveEvidenceSourceLabel(attempt.source, attempt.eventType)
+    });
+  }
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = `${item.label}|${item.id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function proactiveScopeKey(row = {}) {
+  return String(row.scope_key || row.unit_id || "");
+}
+
+function proactiveLearningGeneration(row = {}) {
+  return Math.max(1, Number(row.learning_generation || 1));
+}
+
+function proactiveStateSummary(snapshot = {}) {
+  const lifecycle = snapshot.lifecycle
+    && typeof snapshot.lifecycle === "object"
+    ? snapshot.lifecycle
+    : {};
+  return {
+    phase: proactiveLifecyclePhaseLabel(lifecycle.phase),
+    level: snapshot.currentLevel || lifecycle.supportLevel || "L0",
+    fadeLevel: Math.max(0, Number(snapshot.fadeLevel || 0)),
+    preference: ({
+      standard: "标准",
+      reduced: "少提醒",
+      off: "关闭"
+    })[snapshot.studentPreference] || snapshot.studentPreference || "标准",
+    reason: proactiveReasonText([
+      lifecycle.reasonCode || snapshot.lastReasonCode || ""
+    ].filter(Boolean))
+  };
+}
+
+function proactiveStateTransitionHtml(row = {}) {
+  const before = proactiveStateSummary(
+    row.evidence_snapshot?.policyStateBefore || {}
+  );
+  const transition = row.evidence_snapshot?.stateTransition || {};
+  const hasTransition = Boolean(
+    transition
+    && typeof transition === "object"
+    && Object.keys(transition).length
+  );
+  const transitionState = hasTransition
+    ? proactiveStateSummary({
+        currentLevel: transition.currentLevel,
+        fadeLevel: transition.fadeLevel,
+        lifecycle: transition.lifecycle || {}
+      })
+    : {
+        phase: "状态未改变",
+        level: before.level,
+        fadeLevel: before.fadeLevel,
+        preference: before.preference,
+        reason: "本次决策只记录判断，没有更新支架生命周期"
+      };
+  const after = proactiveStateSummary(
+    row.evidence_snapshot?.policyStateAfter || {}
+  );
+  const stateBlock = (label, state, tone = "") => [
+    '<div class="proactive-audit-transition-state ', tone, '">',
+    '<span>', esc(label), '</span>',
+    '<strong>', esc(state.phase), '</strong>',
+    '<small>强度 ', esc(state.level), ' · 渐退 ', esc(state.fadeLevel), ' 次 · ', esc(state.preference), '</small>',
+    state.reason && state.reason !== "无"
+      ? '<small>' + esc(state.reason) + '</small>'
+      : "",
+    '</div>'
+  ].join("");
+  return [
+    '<div class="proactive-audit-transition">',
+    stateBlock("决策前", before),
+    '<div class="proactive-audit-transition-arrow" aria-hidden="true">→</div>',
+    stateBlock(
+      "本次转移",
+      transitionState,
+      hasTransition ? "is-transition" : "is-unchanged"
+    ),
+    '<div class="proactive-audit-transition-arrow" aria-hidden="true">→</div>',
+    stateBlock("决策后", after, "is-after"),
+    '</div>'
+  ].join("");
+}
+
+function proactiveAuditChain(rows = [], selected = {}) {
+  const scopeKey = proactiveScopeKey(selected);
+  const learningGeneration = proactiveLearningGeneration(selected);
+  const chain = safeRows(rows)
+    .filter((row) => (
+      row.user_id === selected.user_id
+      && row.experiment_id === selected.experiment_id
+      && proactiveScopeKey(row) === scopeKey
+      && proactiveLearningGeneration(row) === learningGeneration
+    ))
+    .sort((left, right) => (
+      Date.parse(left.created_at || "") - Date.parse(right.created_at || "")
+      || String(left.id || "").localeCompare(String(right.id || ""))
+    ));
+  const isCurrentGeneration = learningGeneration === Math.max(
+    1,
+    Number(selected.current_learning_generation || learningGeneration)
+  );
+  const currentLifecycle = selected.current_lifecycle
+    && typeof selected.current_lifecycle === "object"
+    ? selected.current_lifecycle
+    : {};
+  const lifecycle = isCurrentGeneration && Object.keys(currentLifecycle).length
+    ? currentLifecycle
+    : selected.evidence_snapshot?.policyStateAfter?.lifecycle || {};
+  const currentPhase = proactiveLifecyclePhaseLabel(lifecycle.phase);
+  const currentLevel = isCurrentGeneration
+    ? selected.current_policy_level || lifecycle.supportLevel || "L0"
+    : selected.evidence_snapshot?.policyStateAfter?.currentLevel
+      || lifecycle.supportLevel
+      || "L0";
+  const fadeLevel = Math.max(0, Number(
+    isCurrentGeneration
+      ? selected.current_fade_level || 0
+      : selected.evidence_snapshot?.policyStateAfter?.fadeLevel || 0
+  ));
+  const stateSummary = [
+    `${isCurrentGeneration ? "当前状态" : "该次决策后状态"}：${currentPhase}`,
+    `强度 ${currentLevel}`,
+    fadeLevel ? `渐退 ${fadeLevel} 次` : "",
+    `第 ${learningGeneration} 次学习`
+  ].filter(Boolean).join(" · ");
+
+  return [
+    '<div class="proactive-audit-chain-state"><strong>', esc(stateSummary), '</strong>',
+    isCurrentGeneration && selected.policy_state_updated_at
+      ? '<span>状态更新于 ' + esc(proactiveAuditTime(selected.policy_state_updated_at)) + '</span>'
+      : "",
+    '</div>',
+    '<ol class="proactive-audit-chain">',
+    chain.map((row) => {
+      const followup = proactiveFollowupSummary(row);
+      const action = proactiveActionLabels[row.action] || row.action || "无动作";
+      const candidate = proactiveCandidateLabels[row.candidate_kind]
+        || row.candidate_kind
+        || "未知候选";
+      const classes = [
+        "proactive-audit-chain-step",
+        row.id === selected.id ? "is-selected" : "",
+        row.support_level === "L1" ? "is-l1" : "",
+        row.support_level === "L2" ? "is-l2" : "",
+        row.followup_outcome?.independentAttempt?.outcome === "independent_attempt_success"
+          ? "is-success"
+          : ""
+      ].filter(Boolean).join(" ");
+      return [
+        '<li class="', classes, '">',
+        '<span class="proactive-audit-chain-time">', esc(proactiveAuditTime(row.created_at)), '</span>',
+        '<strong>', esc(candidate), ' → ', esc(action), ' · ', esc(row.support_level || "L0"), '</strong>',
+        '<p>', esc(proactiveDecisionLabel(row.decision)), '，', esc(proactiveDeliveryLabel(row.delivery_decision)), '；', esc(proactiveAuditStatus(row)), '。</p>',
+        followup ? '<p class="proactive-audit-chain-outcome">' + esc(followup) + '。</p>' : "",
+        '<small>', esc(proactiveReasonText(row.reason_codes)), '</small>',
+        '</li>'
+      ].join("");
+    }).join(""),
+    '</ol>'
+  ].join("");
+}
+
+function renderProactiveAudit(data = {}) {
+  const timeline = document.getElementById("proactive-audit-timeline");
+  const detail = document.getElementById("proactive-audit-detail");
+  const status = document.getElementById("proactive-audit-status");
+  const count = document.getElementById("proactive-audit-timeline-count");
+  if (!timeline || !detail) return;
+
+  const rows = safeRows(data.rows);
+  if (!rows.length) {
+    if (status) status.textContent = "当前筛选条件下暂无决策";
+    if (count) count.textContent = "0 条";
+    timeline.innerHTML = '<p class="inline-empty-state proactive-audit-empty">当前筛选条件下暂无主动策略事件。</p>';
+    detail.innerHTML = '<p class="inline-empty-state">没有可查看的决策详情。</p>';
+    return;
+  }
+
+  const selected = rows.find((row) => row.id === selectedProactiveDecisionId) || rows[0];
+  selectedProactiveDecisionId = selected.id || "";
+  if (selectedProactiveDecisionId) {
+    sessionStorage.setItem("cq_proactive_selected_decision", selectedProactiveDecisionId);
+  }
+  if (status) {
+    const total = Number(data.total || rows.length);
+    status.textContent = proactiveAuditAllLoaded
+      ? "已载入全部 " + rows.length + " 条决策"
+      : (total > rows.length
+        ? "时间线显示最近 " + rows.length + " / " + total + " 条"
+        : rows.length + " 条决策");
+  }
+  if (count) count.textContent = rows.length + " 条";
+
+  timeline.innerHTML = rows.map((row) => {
+    const isSelected = row.id === selectedProactiveDecisionId;
+    const delivered = row.delivery_decision === "intervene";
+    const classes = [
+      "proactive-audit-event",
+      row.decision === "intervene" ? "is-intervene" : "",
+      delivered ? "is-delivered" : "",
+      isSelected ? "is-selected" : ""
+    ].filter(Boolean).join(" ");
+    const title = proactiveDecisionLabel(row.decision) + " · " + proactiveDeliveryLabel(row.delivery_decision);
+      const location = chapterName(row.chapter_id) + " · " + moduleName(row.unit_id, row.unit_id || "");
+    return [
+      '<button class="', classes, '" type="button" data-proactive-audit-id="', esc(row.id || ""), '" aria-pressed="', isSelected ? "true" : "false", '">',
+      '<span class="proactive-audit-event-header"><span class="proactive-audit-event-title">', esc(title), '</span><span class="proactive-audit-event-time">', esc(proactiveAuditTime(row.created_at)), '</span></span>',
+      '<span class="proactive-audit-event-meta">', esc(row.nickname || "匿名学生"), ' · 第 ', esc(proactiveLearningGeneration(row)), ' 次学习 · ', esc(location), '</span>',
+      '<span class="proactive-audit-event-meta">', esc(proactiveCandidateLabels[row.candidate_kind] || row.candidate_kind || "未知候选"), ' · ', esc(proactiveActionLabels[row.action] || row.action || "无动作"), ' · ', esc(proactiveAuditStatus(row)), '</span>',
+      '<span class="proactive-audit-event-reason">', esc(proactiveReasonText(row.reason_codes)), '</span>',
+      '<span class="proactive-audit-event-facts"><span>H ', esc(proactiveScore(row.help_need_score)), '</span><span>I ', esc(proactiveScore(row.interruptibility_score)), '</span><span>U ', esc(proactiveScore(row.uncertainty_score)), '</span></span>',
+      '</button>'
+    ].join("");
+  }).join("");
+
+  const row = selected;
+  const reasons = proactiveAuditReasonItems(row);
+  const evidenceRefs = safeRows(row.evidence_refs);
+  const evidenceItems = proactiveEvidenceItems(row);
+  const interventionState = row.intervention_status
+    || (row.delivery_decision === "intervene" ? "待展示" : "未创建");
+  const outcome = row.followup_outcome
+    && typeof row.followup_outcome === "object"
+    && Object.keys(row.followup_outcome).length
+    ? row.followup_outcome
+    : {};
+  const evidenceFamilies = safeRows(row.evidence_snapshot?.families || []);
+  const currentLifecycle = row.current_lifecycle
+    && typeof row.current_lifecycle === "object"
+    ? row.current_lifecycle
+    : {};
+  const isCurrentGeneration = proactiveLearningGeneration(row) === Math.max(
+    1,
+    Number(row.current_learning_generation || proactiveLearningGeneration(row))
+  );
+  const displayedLifecycle = isCurrentGeneration && Object.keys(currentLifecycle).length
+    ? currentLifecycle
+    : row.evidence_snapshot?.policyStateAfter?.lifecycle || {};
+  detail.innerHTML = [
+    '<div class="proactive-audit-detail-header"><div><h4>',
+    esc(proactiveDecisionLabel(row.decision) + " · " + (proactiveCandidateLabels[row.candidate_kind] || row.candidate_kind || "未知候选")),
+    '</h4><p>', esc(row.id || ""), ' · ', esc(proactiveAuditTime(row.created_at)), '</p></div>',
+    '<span class="badge ', row.delivery_decision === "intervene" ? "badge-green" : "badge-blue", '">', esc(proactiveDeliveryLabel(row.delivery_decision)), '</span></div>',
+    '<div class="proactive-audit-detail-grid">',
+    proactiveAuditFact("学生", row.nickname || row.user_id),
+    proactiveAuditFact("学习代次", `第 ${proactiveLearningGeneration(row)} 次学习`),
+    proactiveAuditFact("学习位置", chapterName(row.chapter_id) + " · " + moduleName(row.unit_id, row.unit_id || "")),
+    proactiveAuditFact("策略范围", row.scope_key || row.unit_id),
+    proactiveAuditFact("实验条件", proactiveConditionLabel(row.condition)),
+    proactiveAuditFact("策略版本", row.policy_version),
+    proactiveAuditFact("动作 / 支架", (proactiveActionLabels[row.action] || row.action || "无动作") + " · " + (row.support_level || "L0")),
+    proactiveAuditFact("干预状态", interventionState),
+    proactiveAuditFact(
+      isCurrentGeneration ? "当前生命周期" : "该次决策后生命周期",
+      proactiveLifecyclePhaseLabel(displayedLifecycle.phase)
+    ),
+    '</div>',
+    '<section class="proactive-audit-detail-section"><h5>决策状态转移</h5>',
+    proactiveStateTransitionHtml(row),
+    '</section>',
+    '<section class="proactive-audit-detail-section"><h5>知识点策略链</h5>',
+    proactiveAuditChain(rows, row),
+    '</section>',
+    '<section class="proactive-audit-detail-section"><h5>评分与证据族</h5><div class="decision-facts"><span>HelpNeed ', esc(proactiveScore(row.help_need_score)), '</span><span>可打断性 ', esc(proactiveScore(row.interruptibility_score)), '</span><span>不确定性 ', esc(proactiveScore(row.uncertainty_score)), '</span>',
+    evidenceFamilies.map((family) => '<span>' + esc(family) + '</span>').join(""),
+    '</div></section>',
+    '<section class="proactive-audit-detail-section"><h5>结构化理由</h5><div class="proactive-audit-reasons">',
+    reasons.length
+      ? reasons.map((item) => '<span class="proactive-audit-reason" title="' + esc(item.code) + '">' + esc(item.label) + '</span>').join("")
+      : '<span class="muted">无</span>',
+    '</div></section>',
+    '<section class="proactive-audit-detail-section"><h5>证据来源</h5><div class="proactive-audit-reasons">',
+    evidenceItems.length
+      ? evidenceItems.map((item) => '<span class="proactive-audit-reason" title="' + esc(item.id) + '">' + esc(item.label) + '</span>').join("")
+      : '<span class="muted">无</span>',
+    '</div></section>',
+    '<section class="proactive-audit-detail-section"><h5>证据引用（', evidenceRefs.length, '）</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson(evidenceRefs, [])), '</pre></section>',
+    '<section class="proactive-audit-detail-section"><h5>证据快照</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson(row.evidence_snapshot)), '</pre></section>',
+    '<section class="proactive-audit-detail-section"><h5>约束与预算</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson(row.budget_snapshot)), '</pre></section>',
+    '<section class="proactive-audit-detail-section"><h5>执行生命周期</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson({
+      offeredAt: row.created_at || "",
+      shownAt: row.shown_at || "",
+      resolvedAt: row.resolved_at || "",
+      resolution: row.resolution || "",
+      latencyMs: row.latency_ms || 0,
+      expiresAt: row.expires_at || "",
+      interventionUpdatedAt: row.intervention_updated_at || "",
+      currentPhase: currentLifecycle.phase || "",
+      currentLevel: row.current_policy_level || "",
+      fadeLevel: Number(row.current_fade_level || 0),
+      lifecycleUpdatedAt: row.policy_state_updated_at || ""
+    })), '</pre></section>',
+    '<section class="proactive-audit-detail-section"><h5>后续结果</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson(outcome)), '</pre></section>'
+  ].join("");
+}
+
+function selectProactiveDecision(decisionId) {
+  selectedProactiveDecisionId = String(decisionId || "");
+  if (selectedProactiveDecisionId) {
+    sessionStorage.setItem("cq_proactive_selected_decision", selectedProactiveDecisionId);
+  }
+  renderProactiveAudit(cachedProactiveStudyData);
+  Array.from(document.querySelectorAll("[data-proactive-audit-id]"))
+    .find((node) => node.dataset.proactiveAuditId === selectedProactiveDecisionId)
+    ?.scrollIntoView({ block: "nearest" });
+}
+
+function renderProactiveStudy(data = {}) {
+  cachedProactiveStudyData = data;
+  cachedProactiveDecisionRows = safeRows(data.rows);
+  const summary = data.summary || {};
+  const assignments = safeRows(data.assignments);
+  const assignmentCount = assignments.reduce(
+    (sum, row) => sum + Number(row.participants || 0),
+    0
+  );
+  const controlCount = assignments
+    .filter((row) => row.condition === "control")
+    .reduce((sum, row) => sum + Number(row.participants || 0), 0);
+  const treatmentCount = assignments
+    .filter((row) => row.condition === "treatment")
+    .reduce((sum, row) => sum + Number(row.participants || 0), 0);
+  const terminalResponses = Number(summary.accepted || 0)
+    + Number(summary.dismissed || 0)
+    + Number(summary.ignored || 0);
+  const acceptanceRate = terminalResponses
+    ? Math.round((Number(summary.accepted || 0) / terminalResponses) * 100)
+    : 0;
+  const metrics = document.getElementById("proactive-study-metrics");
+  if (metrics) {
+    metrics.innerHTML = `
+      <div class="metric-card highlight"><div class="label">已分组学生</div><div class="value">${assignmentCount}</div><div class="sub">Control ${controlCount} · Treatment ${treatmentCount}</div></div>
+      <div class="metric-card"><div class="label">决策窗口</div><div class="value">${Number(summary.decisions || 0)}</div><div class="sub">${Number(summary.participants || 0)} 名学生产生证据</div></div>
+      <div class="metric-card warn"><div class="label">政策判断应介入</div><div class="value">${Number(summary.policy_interventions || 0)}</div><div class="sub">含 Shadow 与 Control 的反事实判断</div></div>
+      <div class="metric-card good"><div class="label">实际签发展示</div><div class="value">${Number(summary.delivered_interventions || 0)}</div><div class="sub">仅 Active Treatment</div></div>
+      <div class="metric-card"><div class="label">接受率</div><div class="value">${acceptanceRate}%</div><div class="sub">接受 ${Number(summary.accepted || 0)} · 关闭 ${Number(summary.dismissed || 0)} · 忽略 ${Number(summary.ignored || 0)} · 过期 ${Number(summary.expired || 0)} · 待处理 ${Number(summary.unresolved_offers || 0)}</div></div>
+      <div class="metric-card warn"><div class="label">测量保护阻断</div><div class="value">${Number(summary.protected_blocks || 0)}</div><div class="sub">受保护测验阶段保持静默</div></div>
+      <div class="metric-card"><div class="label">纵向支架动作</div><div class="value">${Number(summary.l1_self_explanations || 0) + Number(summary.l2_concept_hints || 0)}</div><div class="sub">L1 自我解释 ${Number(summary.l1_self_explanations || 0)} · L2 概念线索 ${Number(summary.l2_concept_hints || 0)}</div></div>
+      <div class="metric-card good"><div class="label">独立验证结果</div><div class="value">${Number(summary.independent_success_exits || 0)}</div><div class="sub">成功渐退退出 · 持续卡点 ${Number(summary.continued_friction || 0)}</div></div>
+    `;
+  }
+
+  const policy = data.policy || {};
+  const policySummary = document.getElementById("proactive-policy-summary");
+  if (policySummary) {
+    policySummary.textContent = [
+      `模式 ${String(policy.mode || "off").toUpperCase()}`,
+      `实验 ${policy.experimentId || "未配置"}`,
+      `政策 ${policy.policyVersion || "未配置"}`,
+      `契约 ${policy.contractVersion || "未配置"}`,
+      `Adapter ${policy.adapterVersion || "未配置"}`
+    ].join(" · ");
+  }
+  const pageStatus = document.getElementById("proactive-study-page-status");
+  if (pageStatus) {
+    pageStatus.textContent = data.total > cachedProactiveDecisionRows.length
+      ? `显示最近 ${cachedProactiveDecisionRows.length} / ${data.total} 条`
+      : `${Number(data.total || 0)} 条决策`;
+  }
+
+  const tbody = document.querySelector("#table-proactive-decisions tbody");
+  if (!tbody) {
+    renderProactiveAudit(data);
+    return;
+  }
+  const table = tbody.closest("table");
+  if (!cachedProactiveDecisionRows.length) {
+    tbody.innerHTML = "<tr><td colspan='10'>当前筛选条件下暂无主动政策决策。</td></tr>";
+    syncTableDensity(table);
+    renderProactiveAudit(data);
+    return;
+  }
+  tbody.innerHTML = cachedProactiveDecisionRows.map((row) => {
+    const conditionClass = row.condition === "treatment" ? "badge-green" : "badge-blue";
+    const decisionClass = row.decision === "intervene" ? "badge-amber" : "badge-blue";
+    const deliveryClass = row.delivery_decision === "intervene" ? "badge-green" : "badge-blue";
+    const resolution = row.resolution || row.intervention_status || "";
+    const resolutionText = proactiveResolutionLabels[resolution]
+      || (row.delivery_decision === "stay_silent" ? "未展示" : "待处理");
+    const latency = Number(row.latency_ms || 0);
+    return `<tr>
+      <td style="white-space:nowrap;font-size:0.78rem;">${esc((row.created_at || "").replace("T", " ").slice(0, 19))}<br><span class="muted">第 ${esc(proactiveLearningGeneration(row))} 次学习</span></td>
+      <td><strong>${esc(row.nickname || "")}</strong><br><span class="muted">${esc(row.user_id || "")}</span></td>
+      <td><span class="badge ${conditionClass}">${esc(proactiveConditionLabel(row.condition))}</span><br><span class="muted">${esc(proactiveStratumLabel(row.stratum))}</span></td>
+      <td>${esc(chapterName(row.chapter_id))}<br><span class="muted">${esc(moduleName(row.unit_id, row.unit_id || ""))}</span></td>
+      <td>${esc(proactiveCandidateLabels[row.candidate_kind] || row.candidate_kind || "")}<br><span class="muted">${esc(AdminPresentation.sceneTypeLabel(row.scene_type || ""))}</span></td>
+      <td><span class="badge ${decisionClass}">${esc(proactiveDecisionLabel(row.decision))}</span><br><span class="badge ${deliveryClass}">${esc(proactiveDeliveryLabel(row.delivery_decision))}</span></td>
+      <td>${esc(proactiveActionLabels[row.action] || row.action || "")}<br><span class="muted">${esc(row.support_level || "L0")}</span></td>
+      <td class="decision-facts"><span>H ${proactiveScore(row.help_need_score)}</span><span>I ${proactiveScore(row.interruptibility_score)}</span><span>U ${proactiveScore(row.uncertainty_score)}</span></td>
+      <td>${esc(proactiveReasonText(row.reason_codes))}</td>
+      <td>${esc(resolutionText)}${latency ? `<br><span class="muted">${latency} ms</span>` : ""}</td>
+    </tr>`;
+  }).join("");
+  syncTableDensity(table);
+  renderProactiveAudit(data);
+}
+
+async function reloadProactiveStudy() {
+  const status = document.getElementById("proactive-study-page-status");
+  if (status) status.textContent = "正在刷新...";
+  try {
+    const data = await fetchProactiveStudy();
+    renderProactiveStudy(data);
+  } catch (error) {
+    if (status) status.textContent = error.message || "加载失败";
+  }
+}
+
+async function fetchAllProactiveDecisionRows() {
+  const pageSize = 1000;
+  const rows = [];
+  let offset = 0;
+  let total = Infinity;
+  while (offset < total) {
+    const page = await fetchProactiveStudy(undefined, { limit: pageSize, offset });
+    rows.push(...page.rows);
+    total = page.total;
+    if (!page.rows.length) break;
+    offset += page.rows.length;
+  }
+  return rows;
+}
+
+document.addEventListener("click", (event) => {
+  const auditEvent = event.target.closest?.("[data-proactive-audit-id]");
+  if (!auditEvent) return;
+  selectProactiveDecision(auditEvent.dataset.proactiveAuditId);
+});
+
+document.getElementById("proactive-audit-load-all")?.addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  const previousText = button.textContent;
+  button.disabled = true;
+  button.textContent = "正在加载...";
+  try {
+    const rows = await fetchAllProactiveDecisionRows();
+    proactiveAuditAllLoaded = true;
+    renderProactiveStudy({ ...cachedProactiveStudyData, rows, total: rows.length, limit: rows.length, offset: 0 });
+  } catch (error) {
+    const status = document.getElementById("proactive-audit-status");
+    if (status) status.textContent = error.message || "加载失败";
+  } finally {
+    button.disabled = false;
+    button.textContent = previousText;
+  }
+});
+
 // ---- Interaction Tracking ----
 function renderInteractions(data) {
   const meta = normalizeInteractionData(data);
@@ -3420,6 +4157,23 @@ document.getElementById("interaction-next-page").addEventListener("click", () =>
   interactionPage += 1;
   sessionStorage.setItem("cq_interaction_page", String(interactionPage));
   debouncedLoadAll();
+});
+
+const proactiveConditionSelect = document.getElementById("proactive-condition-filter");
+const proactiveDecisionSelect = document.getElementById("proactive-decision-filter");
+if (proactiveConditionSelect) proactiveConditionSelect.value = proactiveConditionFilter;
+if (proactiveDecisionSelect) proactiveDecisionSelect.value = proactiveDecisionFilter;
+proactiveConditionSelect?.addEventListener("change", (event) => {
+  proactiveConditionFilter = event.target.value;
+  sessionStorage.setItem("cq_proactive_condition", proactiveConditionFilter);
+  proactiveAuditAllLoaded = false;
+  reloadProactiveStudy();
+});
+proactiveDecisionSelect?.addEventListener("change", (event) => {
+  proactiveDecisionFilter = event.target.value;
+  sessionStorage.setItem("cq_proactive_decision", proactiveDecisionFilter);
+  proactiveAuditAllLoaded = false;
+  reloadProactiveStudy();
 });
 
 // ---- Quick range buttons ----
@@ -3638,6 +4392,67 @@ function agenticTraceCsvRows(data) {
       moduleName(row.planner_target_id, row.planner_target_label || ""),
       row.planner_top_score ?? "",
       AdminPresentation.plannerReasonsText(row.planner_top_reasons)
+    ]);
+  });
+  return rows;
+}
+
+function proactiveDecisionCsvRows(data) {
+  const rows = [[
+    "决策ID", "干预ID", "时间", "学习代次", "学生", "用户ID", "实验", "条件", "队列", "前测层级",
+    "章节", "单元", "策略范围", "场景", "候选信号", "政策模式", "政策版本", "契约版本", "Adapter版本",
+    "政策判断", "实际呈现", "动作", "支架强度", "HelpNeed", "可打断性", "不确定性",
+    "理由码", "证据引用", "证据快照", "预算快照", "干预状态", "展示时间", "反馈", "反馈时间", "反馈耗时毫秒",
+    "后续结果", "独立证据来源", "独立证据事件", "验证题ID", "验证阶段",
+    "当前生命周期", "当前强度", "渐退次数", "状态更新时间"
+  ]];
+  safeRows(data).forEach((row) => {
+    const attempt = row.followup_outcome?.independentAttempt || {};
+    rows.push([
+      row.id || "",
+      row.intervention_id || "",
+      row.created_at || "",
+      proactiveLearningGeneration(row),
+      row.nickname || "",
+      row.user_id || "",
+      row.experiment_id || "",
+      row.condition || "",
+      row.cohort || "",
+      row.stratum || "",
+      row.chapter_id || "",
+      row.unit_id || "",
+      row.scope_key || row.unit_id || "",
+      row.scene_type || "",
+      row.candidate_kind || "",
+      row.policy_mode || "",
+      row.policy_version || "",
+      row.contract_version || "",
+      row.adapter_version || "",
+      row.decision || "",
+      row.delivery_decision || "",
+      row.action || "",
+      row.support_level || "",
+      row.help_need_score ?? "",
+      row.interruptibility_score ?? "",
+      row.uncertainty_score ?? "",
+      JSON.stringify(row.reason_codes || []),
+      JSON.stringify(row.evidence_refs || []),
+      JSON.stringify(row.evidence_snapshot || {}),
+      JSON.stringify(row.budget_snapshot || {}),
+      row.intervention_status || "",
+      row.shown_at || "",
+      row.resolution || "",
+      row.resolved_at || "",
+      row.latency_ms || 0,
+      JSON.stringify(row.followup_outcome || {}),
+      attempt.source || "",
+      attempt.eventType || "",
+      attempt.checkId || "",
+      attempt.stage || "",
+      JSON.stringify(row.current_lifecycle || {}),
+      row.current_policy_level || "",
+      row.current_fade_level || 0,
+      row.policy_state_updated_at || ""
     ]);
   });
   return rows;
@@ -3916,6 +4731,13 @@ document.getElementById("export-agentic-trace-csv").addEventListener("click", (e
       rows: agenticTraceCsvRows(data)
     };
   });
+});
+
+document.getElementById("export-proactive-decisions-csv")?.addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => ({
+    filename: `V14-C3主动政策决策账本-${exportDateStamp()}.csv`,
+    rows: proactiveDecisionCsvRows(await fetchAllProactiveDecisionRows())
+  }));
 });
 
 document.getElementById("export-shortanswers-csv").addEventListener("click", (event) => {

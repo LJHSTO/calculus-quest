@@ -331,7 +331,7 @@ document.querySelector("#reset-progress").addEventListener("click", async () => 
   }
 
   await pauseLearningSnapshotSync();
-  const firstChapterId = chapters[0]?.id || "V14-C1";
+  const firstChapterId = chapters[0]?.id || "V14-C3";
   const firstUnitId = getChapter(firstChapterId)?.units?.[0]?.id || "";
   const resetSnapshot = {
     ...learningDefaults(),

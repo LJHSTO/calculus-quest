@@ -681,6 +681,110 @@ function initSchema() {
   d.run("CREATE INDEX IF NOT EXISTS idx_ies_created ON interaction_evidence_snapshots(created_at)");
 
   d.run(`
+    CREATE TABLE IF NOT EXISTS experiment_assignments (
+      user_id TEXT NOT NULL REFERENCES users(id),
+      experiment_id TEXT NOT NULL,
+      condition TEXT NOT NULL,
+      cohort TEXT DEFAULT '',
+      stratum TEXT DEFAULT 'unstratified',
+      assignment_version TEXT NOT NULL,
+      assigned_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, experiment_id)
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_experiment_assignments_experiment ON experiment_assignments(experiment_id, condition)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_decisions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      experiment_id TEXT NOT NULL,
+      condition TEXT NOT NULL,
+      cohort TEXT DEFAULT '',
+      stratum TEXT DEFAULT '',
+      assignment_version TEXT DEFAULT '',
+      learning_generation INTEGER NOT NULL DEFAULT 1,
+      policy_mode TEXT NOT NULL,
+      chapter_id TEXT NOT NULL,
+      unit_id TEXT NOT NULL,
+      scope_key TEXT DEFAULT '',
+      scene_type TEXT DEFAULT '',
+      candidate_kind TEXT NOT NULL,
+      policy_version TEXT NOT NULL,
+      contract_version TEXT NOT NULL,
+      adapter_version TEXT NOT NULL,
+      decision TEXT NOT NULL,
+      delivery_decision TEXT NOT NULL,
+      action TEXT NOT NULL,
+      support_level TEXT NOT NULL,
+      help_need_score REAL NOT NULL DEFAULT 0,
+      interruptibility_score REAL NOT NULL DEFAULT 0,
+      uncertainty_score REAL NOT NULL DEFAULT 1,
+      reason_codes_json TEXT NOT NULL DEFAULT '[]',
+      evidence_refs_json TEXT NOT NULL DEFAULT '[]',
+      evidence_snapshot_json TEXT NOT NULL DEFAULT '{}',
+      budget_snapshot_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL
+    )
+  `);
+  try { d.run("ALTER TABLE proactive_decisions ADD COLUMN cohort TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE proactive_decisions ADD COLUMN stratum TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE proactive_decisions ADD COLUMN assignment_version TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE proactive_decisions ADD COLUMN scope_key TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE proactive_decisions ADD COLUMN learning_generation INTEGER NOT NULL DEFAULT 1"); } catch {}
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_decisions_user ON proactive_decisions(user_id, created_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_decisions_generation ON proactive_decisions(user_id, learning_generation, scope_key, created_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_decisions_experiment ON proactive_decisions(experiment_id, condition, created_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_decisions_chapter ON proactive_decisions(chapter_id, unit_id, created_at)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_interventions (
+      id TEXT PRIMARY KEY,
+      decision_id TEXT NOT NULL UNIQUE REFERENCES proactive_decisions(id),
+      user_id TEXT NOT NULL REFERENCES users(id),
+      status TEXT NOT NULL DEFAULT 'offered',
+      presentation TEXT NOT NULL DEFAULT '{}',
+      shown_at TEXT DEFAULT '',
+      resolved_at TEXT DEFAULT '',
+      resolution TEXT DEFAULT '',
+      latency_ms INTEGER NOT NULL DEFAULT 0,
+      followup_outcome_json TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_interventions_user ON proactive_interventions(user_id, created_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_interventions_status ON proactive_interventions(status, updated_at)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_policy_state (
+      user_id TEXT NOT NULL REFERENCES users(id),
+      experiment_id TEXT NOT NULL,
+      scope_key TEXT NOT NULL,
+      dismiss_streak INTEGER NOT NULL DEFAULT 0,
+      cooldown_until TEXT DEFAULT '',
+      current_level TEXT NOT NULL DEFAULT 'L0',
+      fade_level INTEGER NOT NULL DEFAULT 0,
+      student_preference TEXT NOT NULL DEFAULT 'standard',
+      last_reason_code TEXT DEFAULT '',
+      pending_candidate_kind TEXT DEFAULT '',
+      pending_candidate_at TEXT DEFAULT '',
+      pending_candidate_expires_at TEXT DEFAULT '',
+      pending_evidence_json TEXT NOT NULL DEFAULT '{}',
+      lifecycle_json TEXT NOT NULL DEFAULT '{}',
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, experiment_id, scope_key)
+    )
+  `);
+  try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN pending_candidate_kind TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN pending_candidate_at TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN pending_candidate_expires_at TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN pending_evidence_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
+  try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN lifecycle_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_policy_state_experiment ON proactive_policy_state(experiment_id, updated_at)");
+
+  d.run(`
     CREATE TABLE IF NOT EXISTS grading_regrade_audits (
       id TEXT PRIMARY KEY,
       batch_id TEXT DEFAULT '',
@@ -1195,7 +1299,7 @@ function getLearningAssistantMessages(userId, threadKey, limit = 80, conversatio
     `SELECT * FROM learning_assistant_messages
      WHERE user_id = ? AND learning_generation = ? AND thread_key = ?
        ${conversation ? "AND conversation_id = ?" : ""}
-     ORDER BY julianday(created_at) DESC, id DESC
+     ORDER BY julianday(created_at) DESC, rowid DESC
      LIMIT ?`,
     [
       userId,
@@ -1681,6 +1785,625 @@ function insertInteractionEvidenceBatch(userId, decisionId, chapterId, interacti
       created_at: createdAt
     });
   });
+}
+
+// ---- Proactive study policy ----
+
+function getExperimentAssignment(userId, experimentId) {
+  return queryOne(
+    `SELECT *
+     FROM experiment_assignments
+     WHERE user_id = ? AND experiment_id = ?`,
+    [userId, experimentId]
+  );
+}
+
+function getOrCreateExperimentAssignment(record) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    d.run(
+      `INSERT OR IGNORE INTO experiment_assignments
+        (user_id, experiment_id, condition, cohort, stratum, assignment_version, assigned_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        record.user_id,
+        record.experiment_id,
+        record.condition,
+        record.cohort || "",
+        record.stratum || "unstratified",
+        record.assignment_version,
+        record.assigned_at
+      ]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+  return getExperimentAssignment(record.user_id, record.experiment_id);
+}
+
+function finalizeExperimentAssignment(record) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    d.run(
+      `UPDATE experiment_assignments
+       SET condition = ?, cohort = ?, stratum = ?, assignment_version = ?, assigned_at = ?
+       WHERE user_id = ? AND experiment_id = ?
+         AND (stratum = '' OR stratum = 'unstratified')`,
+      [
+        record.condition,
+        record.cohort || "",
+        record.stratum,
+        record.assignment_version,
+        record.assigned_at,
+        record.user_id,
+        record.experiment_id
+      ]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+  return getExperimentAssignment(record.user_id, record.experiment_id);
+}
+
+function getProactivePolicyState(userId, experimentId, scopeKey) {
+  return queryOne(
+    `SELECT *
+     FROM proactive_policy_state
+     WHERE user_id = ? AND experiment_id = ? AND scope_key = ?`,
+    [userId, experimentId, scopeKey]
+  );
+}
+
+function listProactivePolicyStates(userId, experimentId) {
+  return queryAll(
+    `SELECT *
+     FROM proactive_policy_state
+     WHERE user_id = ? AND experiment_id = ?
+     ORDER BY updated_at DESC, scope_key`,
+    [userId, experimentId]
+  );
+}
+
+function closeOpenProactiveInterventionsForUser({
+  userId,
+  experimentId,
+  resolvedAt,
+  followupOutcome = {}
+}) {
+  const rows = queryAll(
+    `SELECT pi.id
+     FROM proactive_interventions pi
+     JOIN proactive_decisions pd ON pd.id = pi.decision_id
+     WHERE pi.user_id = ?
+       AND pd.experiment_id = ?
+       AND pi.status IN ('offered', 'shown')`,
+    [userId, experimentId]
+  );
+  if (!rows.length) return 0;
+
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    rows.forEach((row) => {
+      d.run(
+        `UPDATE proactive_interventions
+         SET status = 'ignored', resolution = 'ignored', resolved_at = ?,
+             followup_outcome_json = ?, updated_at = ?
+         WHERE id = ? AND status IN ('offered', 'shown')`,
+        [
+          resolvedAt,
+          JSON.stringify(followupOutcome || {}),
+          resolvedAt,
+          row.id
+        ]
+      );
+    });
+    d.run("COMMIT");
+    scheduleSave();
+    return rows.length;
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function clearProactivePolicyStatesForUser({
+  userId,
+  experimentId,
+  preserveScopeKey = ""
+}) {
+  const params = [userId, experimentId];
+  const preserve = String(preserveScopeKey || "").trim();
+  const preserveClause = preserve ? " AND scope_key <> ?" : "";
+  if (preserve) params.push(preserve);
+  const count = Number(queryOne(
+    `SELECT COUNT(*) AS c
+     FROM proactive_policy_state
+     WHERE user_id = ? AND experiment_id = ?${preserveClause}`,
+    params
+  )?.c || 0);
+  if (!count) return 0;
+  execute(
+    `DELETE FROM proactive_policy_state
+     WHERE user_id = ? AND experiment_id = ?${preserveClause}`,
+    params
+  );
+  return count;
+}
+
+function upsertProactivePolicyState(record) {
+  const pendingEvidenceJson = typeof record.pending_evidence_json === "string"
+    ? record.pending_evidence_json
+    : JSON.stringify(record.pending_evidence || {});
+  const lifecycleJson = typeof record.lifecycle_json === "string"
+    ? record.lifecycle_json
+    : JSON.stringify(record.lifecycle || {});
+  execute(
+    `INSERT INTO proactive_policy_state
+      (user_id, experiment_id, scope_key, dismiss_streak, cooldown_until,
+       current_level, fade_level, student_preference, last_reason_code,
+       pending_candidate_kind, pending_candidate_at, pending_candidate_expires_at,
+       pending_evidence_json, lifecycle_json, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(user_id, experiment_id, scope_key) DO UPDATE SET
+       dismiss_streak = excluded.dismiss_streak,
+       cooldown_until = excluded.cooldown_until,
+       current_level = excluded.current_level,
+       fade_level = excluded.fade_level,
+       student_preference = excluded.student_preference,
+       last_reason_code = excluded.last_reason_code,
+       pending_candidate_kind = excluded.pending_candidate_kind,
+       pending_candidate_at = excluded.pending_candidate_at,
+       pending_candidate_expires_at = excluded.pending_candidate_expires_at,
+       pending_evidence_json = excluded.pending_evidence_json,
+       lifecycle_json = excluded.lifecycle_json,
+       updated_at = excluded.updated_at`,
+    [
+      record.user_id,
+      record.experiment_id,
+      record.scope_key,
+      Math.max(0, Math.trunc(Number(record.dismiss_streak || 0))),
+      record.cooldown_until || "",
+      record.current_level || "L0",
+      Math.max(0, Math.trunc(Number(record.fade_level || 0))),
+      record.student_preference || "standard",
+      record.last_reason_code || "",
+      record.pending_candidate_kind || "",
+      record.pending_candidate_at || "",
+      record.pending_candidate_expires_at || "",
+      pendingEvidenceJson,
+      lifecycleJson,
+      record.updated_at
+    ]
+  );
+  return getProactivePolicyState(record.user_id, record.experiment_id, record.scope_key);
+}
+
+function insertProactiveDecision(record) {
+  execute(
+    `INSERT INTO proactive_decisions
+      (id, user_id, experiment_id, condition, cohort, stratum, assignment_version,
+       learning_generation, policy_mode, chapter_id, unit_id, scope_key, scene_type, candidate_kind, policy_version,
+       contract_version, adapter_version, decision, delivery_decision, action,
+       support_level, help_need_score, interruptibility_score, uncertainty_score,
+       reason_codes_json, evidence_refs_json, evidence_snapshot_json,
+       budget_snapshot_json, created_at, expires_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.user_id,
+      record.experiment_id,
+      record.condition,
+      record.cohort || "",
+      record.stratum || "",
+      record.assignment_version || "",
+      Math.max(1, Math.trunc(Number(record.learning_generation || 1))),
+      record.policy_mode,
+      record.chapter_id,
+      record.unit_id,
+      record.scope_key || record.unit_id,
+      record.scene_type || "",
+      record.candidate_kind,
+      record.policy_version,
+      record.contract_version,
+      record.adapter_version,
+      record.decision,
+      record.delivery_decision,
+      record.action,
+      record.support_level,
+      Number(record.help_need_score || 0),
+      Number(record.interruptibility_score || 0),
+      Number(record.uncertainty_score ?? 1),
+      JSON.stringify(record.reason_codes || []),
+      JSON.stringify(record.evidence_refs || []),
+      JSON.stringify(record.evidence_snapshot || {}),
+      JSON.stringify(record.budget_snapshot || {}),
+      record.created_at,
+      record.expires_at
+    ]
+  );
+  return getProactiveDecision(record.id);
+}
+
+function getProactiveDecision(decisionId) {
+  return queryOne(
+    "SELECT * FROM proactive_decisions WHERE id = ?",
+    [decisionId]
+  );
+}
+
+function getProactiveDecisionForUser(userId, decisionId) {
+  return queryOne(
+    "SELECT * FROM proactive_decisions WHERE id = ? AND user_id = ?",
+    [decisionId, userId]
+  );
+}
+
+function insertProactiveIntervention(record) {
+  execute(
+    `INSERT INTO proactive_interventions
+      (id, decision_id, user_id, status, presentation, shown_at, resolved_at,
+       resolution, latency_ms, followup_outcome_json, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.decision_id,
+      record.user_id,
+      record.status || "offered",
+      JSON.stringify(record.presentation || {}),
+      record.shown_at || "",
+      record.resolved_at || "",
+      record.resolution || "",
+      Math.max(0, Math.trunc(Number(record.latency_ms || 0))),
+      JSON.stringify(record.followup_outcome || {}),
+      record.created_at,
+      record.updated_at || record.created_at
+    ]
+  );
+  return getProactiveIntervention(record.id);
+}
+
+function getProactiveIntervention(interventionId) {
+  return queryOne(
+    `SELECT pi.*, pd.unit_id, pd.chapter_id, pd.expires_at, pd.experiment_id,
+            pd.condition, pd.policy_version
+     FROM proactive_interventions pi
+     JOIN proactive_decisions pd ON pd.id = pi.decision_id
+     WHERE pi.id = ?`,
+    [interventionId]
+  );
+}
+
+function getProactiveInterventionForDecision(userId, decisionId) {
+  return queryOne(
+    `SELECT pi.*, pd.unit_id, pd.chapter_id, pd.expires_at, pd.experiment_id,
+            pd.condition, pd.policy_version
+     FROM proactive_interventions pi
+     JOIN proactive_decisions pd ON pd.id = pi.decision_id
+     WHERE pi.user_id = ? AND pi.decision_id = ?`,
+    [userId, decisionId]
+  );
+}
+
+function getOpenProactiveInterventionForScope(
+  userId,
+  experimentId,
+  scopeKey,
+  at = new Date().toISOString()
+) {
+  return queryOne(
+    `SELECT pi.*, pd.unit_id, pd.chapter_id, pd.expires_at, pd.experiment_id,
+            pd.condition, pd.policy_version
+     FROM proactive_interventions pi
+     JOIN proactive_decisions pd ON pd.id = pi.decision_id
+     WHERE pi.user_id = ?
+       AND pd.experiment_id = ?
+       AND COALESCE(NULLIF(pd.scope_key, ''), pd.unit_id) = ?
+       AND pi.status IN ('offered', 'shown')
+       AND julianday(pd.expires_at) > julianday(?)
+     ORDER BY pd.created_at DESC, pi.id DESC
+     LIMIT 1`,
+    [userId, experimentId, scopeKey, at]
+  );
+}
+
+function expireProactiveInterventions({
+  at = new Date().toISOString(),
+  userId = "",
+  experimentId = "",
+  scopeKey = ""
+} = {}) {
+  const clauses = [
+    "pi.status IN ('offered', 'shown')",
+    "julianday(pd.expires_at) <= julianday(?)"
+  ];
+  const params = [at];
+  if (userId) {
+    clauses.push("pi.user_id = ?");
+    params.push(userId);
+  }
+  if (experimentId) {
+    clauses.push("pd.experiment_id = ?");
+    params.push(experimentId);
+  }
+  if (scopeKey) {
+    clauses.push("COALESCE(NULLIF(pd.scope_key, ''), pd.unit_id) = ?");
+    params.push(scopeKey);
+  }
+  const rows = queryAll(
+    `SELECT pi.id, pd.created_at, pd.expires_at
+     FROM proactive_interventions pi
+     JOIN proactive_decisions pd ON pd.id = pi.decision_id
+     WHERE ${clauses.join(" AND ")}`,
+    params
+  );
+  if (!rows.length) return 0;
+
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    rows.forEach((row) => {
+      const createdAt = Date.parse(row.created_at || "");
+      const expiresAt = Date.parse(row.expires_at || "");
+      const latencyMs = Number.isFinite(createdAt) && Number.isFinite(expiresAt)
+        ? Math.max(0, Math.trunc(expiresAt - createdAt))
+        : 0;
+      const resolvedAt = row.expires_at || at;
+      d.run(
+        `UPDATE proactive_interventions
+         SET status = 'expired', resolution = 'expired', resolved_at = ?,
+             latency_ms = ?, updated_at = ?
+         WHERE id = ? AND status IN ('offered', 'shown')`,
+        [resolvedAt, latencyMs, at, row.id]
+      );
+    });
+    d.run("COMMIT");
+    scheduleSave();
+    return rows.length;
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function resolveProactiveIntervention({
+  userId,
+  decisionId,
+  resolution,
+  resolvedAt,
+  latencyMs = 0,
+  followupOutcome = {}
+}) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const row = getProactiveInterventionForDecision(userId, decisionId);
+    if (!row) {
+      d.run("ROLLBACK");
+      return { ok: false, reason: "not_found" };
+    }
+    const terminal = new Set(["accepted", "dismissed", "ignored", "expired", "acted", "resolved"]);
+    const requested = String(resolution || "");
+    if (requested === "shown") {
+      if (row.status === "shown") {
+        d.run("ROLLBACK");
+        return { ok: true, idempotent: true, intervention: row };
+      }
+      if (row.status !== "offered") {
+        d.run("ROLLBACK");
+        return { ok: false, reason: "invalid_transition", intervention: row };
+      }
+      d.run(
+        `UPDATE proactive_interventions
+         SET status = 'shown', shown_at = ?, updated_at = ?
+         WHERE id = ?`,
+        [resolvedAt, resolvedAt, row.id]
+      );
+    } else {
+      if (["accepted", "dismissed"].includes(requested) && row.status === "offered") {
+        d.run("ROLLBACK");
+        return { ok: false, reason: "shown_required", intervention: row };
+      }
+      if (!terminal.has(requested) || !["offered", "shown"].includes(row.status)) {
+        d.run("ROLLBACK");
+        return { ok: false, reason: "invalid_transition", intervention: row };
+      }
+      d.run(
+        `UPDATE proactive_interventions
+         SET status = ?, resolution = ?, resolved_at = ?, latency_ms = ?,
+             followup_outcome_json = ?, updated_at = ?
+         WHERE id = ?`,
+        [
+          requested,
+          requested,
+          resolvedAt,
+          Math.max(0, Math.trunc(Number(latencyMs || 0))),
+          JSON.stringify(followupOutcome || {}),
+          resolvedAt,
+          row.id
+        ]
+      );
+    }
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      idempotent: false,
+      intervention: getProactiveIntervention(row.id)
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function updateProactiveInterventionFollowup({
+  userId,
+  interventionId,
+  followupOutcome = {},
+  updatedAt
+}) {
+  const existing = getProactiveIntervention(interventionId);
+  if (!existing || existing.user_id !== userId) return null;
+  const current = parseJsonField(existing.followup_outcome_json);
+  execute(
+    `UPDATE proactive_interventions
+     SET followup_outcome_json = ?, updated_at = ?
+     WHERE id = ? AND user_id = ?`,
+    [
+      JSON.stringify({
+        ...current,
+        ...followupOutcome
+      }),
+      updatedAt,
+      interventionId,
+      userId
+    ]
+  );
+  return getProactiveIntervention(interventionId);
+}
+
+function proactiveDecisionRows(options = {}) {
+  const experimentId = String(options.experimentId || "").trim();
+  const userId = String(options.userId || "").trim();
+  const condition = String(options.condition || "").trim();
+  const decision = String(options.decision || "").trim();
+  const limit = Math.max(1, Math.min(Number(options.limit || 500), 1000));
+  const offset = Math.max(0, Number(options.offset || 0));
+  const clauses = [];
+  const params = [];
+  if (experimentId) {
+    clauses.push("pd.experiment_id = ?");
+    params.push(experimentId);
+  }
+  if (userId) {
+    clauses.push("pd.user_id = ?");
+    params.push(userId);
+  }
+  if (condition) {
+    clauses.push("pd.condition = ?");
+    params.push(condition);
+  }
+  if (decision) {
+    clauses.push("pd.decision = ?");
+    params.push(decision);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const total = Number(queryOne(
+    `SELECT COUNT(*) AS c FROM proactive_decisions pd ${where}`,
+    params
+  )?.c || 0);
+  const rows = queryAll(
+    `SELECT pd.*, u.nickname,
+            COALESCE(lsv.generation, 1) AS current_learning_generation,
+            pi.id AS intervention_id, pi.status AS intervention_status,
+            pi.shown_at, pi.resolved_at, pi.resolution, pi.latency_ms,
+            pi.presentation, pi.followup_outcome_json,
+            pi.created_at AS intervention_created_at,
+            pi.updated_at AS intervention_updated_at,
+            pps.current_level AS current_policy_level,
+            pps.fade_level AS current_fade_level,
+            pps.last_reason_code AS current_policy_reason,
+            pps.lifecycle_json AS current_lifecycle_json,
+            pps.updated_at AS policy_state_updated_at
+     FROM proactive_decisions pd
+     LEFT JOIN users u ON u.id = pd.user_id
+     LEFT JOIN learning_state_versions lsv ON lsv.user_id = pd.user_id
+     LEFT JOIN proactive_interventions pi ON pi.decision_id = pd.id
+     LEFT JOIN proactive_policy_state pps
+       ON pps.user_id = pd.user_id
+      AND pps.experiment_id = pd.experiment_id
+      AND pps.scope_key = COALESCE(NULLIF(pd.scope_key, ''), pd.unit_id)
+      AND pd.learning_generation = COALESCE(lsv.generation, 1)
+     ${where}
+     ORDER BY pd.created_at DESC, pd.id DESC
+     LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
+  );
+  return { rows, total, limit, offset };
+}
+
+function proactiveAssignmentSummary(experimentId = "") {
+  const params = [];
+  const clauses = ["stratum NOT IN ('', 'unassigned', 'unstratified')"];
+  if (experimentId) {
+    clauses.push("experiment_id = ?");
+    params.push(experimentId);
+  }
+  return queryAll(
+    `SELECT experiment_id, condition, stratum, COUNT(*) AS participants,
+            MIN(assigned_at) AS first_assigned_at,
+            MAX(assigned_at) AS last_assigned_at
+     FROM experiment_assignments
+     WHERE ${clauses.join(" AND ")}
+     GROUP BY experiment_id, condition, stratum
+     ORDER BY experiment_id, condition, stratum`,
+    params
+  );
+}
+
+function proactiveDecisionSummary(experimentId = "") {
+  const params = experimentId ? [experimentId] : [];
+  const where = experimentId ? "WHERE pd.experiment_id = ?" : "";
+  const totals = queryOne(
+    `SELECT
+       COUNT(*) AS decisions,
+       COUNT(DISTINCT pd.user_id) AS participants,
+       SUM(CASE WHEN pd.decision = 'intervene' THEN 1 ELSE 0 END) AS policy_interventions,
+       SUM(CASE WHEN pd.delivery_decision = 'intervene' THEN 1 ELSE 0 END) AS delivered_interventions,
+       SUM(CASE WHEN pd.delivery_decision = 'stay_silent' THEN 1 ELSE 0 END) AS silent_deliveries,
+       SUM(CASE WHEN pd.policy_mode = 'shadow' THEN 1 ELSE 0 END) AS shadow_decisions,
+       SUM(CASE WHEN pd.reason_codes_json LIKE '%protected_assessment_stage%' THEN 1 ELSE 0 END) AS protected_blocks,
+       SUM(CASE WHEN pi.shown_at <> '' THEN 1 ELSE 0 END) AS shown,
+       SUM(CASE WHEN pi.resolution = 'accepted' THEN 1 ELSE 0 END) AS accepted,
+       SUM(CASE WHEN pi.resolution = 'dismissed' THEN 1 ELSE 0 END) AS dismissed,
+       SUM(CASE WHEN pi.resolution = 'ignored' THEN 1 ELSE 0 END) AS ignored,
+       SUM(CASE WHEN pi.resolution = 'expired' THEN 1 ELSE 0 END) AS expired,
+       SUM(CASE WHEN pi.status IN ('offered', 'shown') THEN 1 ELSE 0 END) AS unresolved_offers,
+       SUM(CASE WHEN pd.action = 'elicit_self_explanation' THEN 1 ELSE 0 END) AS l1_self_explanations,
+       SUM(CASE WHEN pd.action = 'concept_hint' THEN 1 ELSE 0 END) AS l2_concept_hints,
+       SUM(CASE WHEN pi.followup_outcome_json LIKE '%"outcome":"continued_friction"%' THEN 1 ELSE 0 END) AS continued_friction,
+       SUM(CASE WHEN pi.followup_outcome_json LIKE '%"outcome":"independent_attempt_success"%' THEN 1 ELSE 0 END) AS independent_success_exits
+     FROM proactive_decisions pd
+     LEFT JOIN proactive_interventions pi ON pi.decision_id = pd.id
+     ${where}`,
+    params
+  ) || {};
+  const conditions = queryAll(
+    `SELECT
+       pd.condition,
+       COUNT(*) AS decisions,
+       COUNT(DISTINCT pd.user_id) AS participants,
+       SUM(CASE WHEN pd.decision = 'intervene' THEN 1 ELSE 0 END) AS policy_interventions,
+       SUM(CASE WHEN pd.delivery_decision = 'intervene' THEN 1 ELSE 0 END) AS delivered_interventions,
+       SUM(CASE WHEN pi.resolution = 'accepted' THEN 1 ELSE 0 END) AS accepted,
+       SUM(CASE WHEN pi.resolution = 'dismissed' THEN 1 ELSE 0 END) AS dismissed,
+       SUM(CASE WHEN pi.resolution = 'ignored' THEN 1 ELSE 0 END) AS ignored
+     FROM proactive_decisions pd
+     LEFT JOIN proactive_interventions pi ON pi.decision_id = pd.id
+     ${where}
+     GROUP BY pd.condition
+     ORDER BY pd.condition`,
+    params
+  );
+  return { ...totals, conditions };
+}
+
+function recentInteractionEventsForUnit(userId, unitId, limit = 500) {
+  return interactionRows({ userId }, Math.max(1, Math.min(Number(limit || 500), 2000)))
+    .filter((row) => {
+      const payload = row.payload || {};
+      const data = payload.data || {};
+      return String(payload.unitId || data.unitId || "") === String(unitId || "");
+    });
 }
 
 function updateQuizResultAiGrading(questionId, userId, {
@@ -4201,6 +4924,28 @@ module.exports = {
   insertAgentDecision,
   insertInteractionEvidenceBatch,
   insertInteractionEvidenceSnapshot,
+  getExperimentAssignment,
+  getOrCreateExperimentAssignment,
+  finalizeExperimentAssignment,
+  getProactivePolicyState,
+  listProactivePolicyStates,
+  closeOpenProactiveInterventionsForUser,
+  clearProactivePolicyStatesForUser,
+  upsertProactivePolicyState,
+  insertProactiveDecision,
+  getProactiveDecision,
+  getProactiveDecisionForUser,
+  insertProactiveIntervention,
+  getProactiveIntervention,
+  getProactiveInterventionForDecision,
+  getOpenProactiveInterventionForScope,
+  expireProactiveInterventions,
+  resolveProactiveIntervention,
+  updateProactiveInterventionFollowup,
+  proactiveDecisionRows,
+  proactiveAssignmentSummary,
+  proactiveDecisionSummary,
+  recentInteractionEventsForUnit,
   updateQuizResultAiGrading,
   normalizeFailedPendingQuizReviews,
   normalizeLegacyPendingShortAnswerFlags,

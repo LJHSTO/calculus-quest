@@ -22,6 +22,14 @@ const serverSource = read("server.js");
 const llmSource = read("lib/llm.js");
 const envExample = read(".env.example");
 
+assert.match(
+  indexHtml,
+  /app\/main\/knowledge-assistant\.css\?v=20260830-proactive-lifecycle-v3/
+);
+assert.match(
+  indexHtml,
+  /app\/main\/knowledge-assistant\.js\?v=20260830-proactive-lifecycle-v3/
+);
 assert.match(assistantSource, /aria-label="打开知点"/);
 assert.match(assistantSource, /id="knowledge-assistant-panel"[^>]*tabindex="-1"/);
 assert.match(assistantSource, /data-knowledge-panel-dragbar/);
@@ -64,6 +72,21 @@ assert.match(assistantSource, /data-knowledge-quota/);
 assert.match(assistantSource, /data-knowledge-proactive/);
 assert.match(assistantSource, /data-knowledge-proactive-accept/);
 assert.match(assistantSource, /data-knowledge-proactive-dismiss/);
+assert.match(assistantSource, /data-knowledge-proactive-preference/);
+assert.match(assistantSource, /data-proactive-preference="standard"/);
+assert.match(assistantSource, /data-proactive-preference="reduced"/);
+assert.match(assistantSource, /data-proactive-preference="off"/);
+assert.match(
+  assistantSource,
+  /api\/learning\/proactive\/preference/,
+  "学生的主动提示偏好必须由服务端持久化"
+);
+assert.match(
+  serverSource,
+  /proactive_student_preference_changed/,
+  "偏好改变必须进入行为审计事件"
+);
+assert.match(assistantCss, /\.knowledge-proactive-preference\s*\{/);
 assert.match(assistantSource, /function executeProactiveAction/);
 assert.match(
   assistantSource,
@@ -78,7 +101,14 @@ assert.match(
   /studentReplyActions\.has\(suggestion\?\.action\)[\s\S]*?pendingProactivePrompt\s*=[\s\S]*?els\.input\.value = ""/,
   "assistant clarification and quiz-review questions must be shown above an empty student composer"
 );
-assert.match(proactiveActionBody, /new Set\(\["ask_clarification", "review_mistake"\]\)/);
+assert.match(
+  proactiveActionBody,
+  /new Set\(\[[\s\S]*?"ask_clarification"[\s\S]*?"review_mistake"[\s\S]*?"elicit_self_explanation"[\s\S]*?"concept_hint"[\s\S]*?\]\)/
+);
+assert.match(
+  proactiveActionBody,
+  /allowedActions = \[[\s\S]*?"elicit_self_explanation"[\s\S]*?"concept_hint"[\s\S]*?\]/
+);
 assert.match(
   proactiveActionBody,
   /pendingAssistantIntent = suggestion\.action === "self_explain" \? "self_check" : ""[\s\S]*?els\.input\.value = String\(suggestion\.draftQuestion\)/,
@@ -375,6 +405,21 @@ assert.match(assistantCss, /\.knowledge-history-view\s*\{/);
 assert.match(assistantCss, /\.knowledge-conversation-card\s*\{/);
 assert.match(assistantCss, /\.knowledge-proactive-nudge\s*\{/);
 assert.match(assistantCss, /\.knowledge-assistant-root\.is-open \.knowledge-proactive-nudge/);
+assert.match(
+  indexHtml,
+  /knowledge-assistant\.css\?v=20260830-proactive-lifecycle-v3/,
+  "the proactive verification UI must ship behind a fresh stylesheet cache key"
+);
+assert.doesNotMatch(
+  assistantCss,
+  /@media \(max-width: 760px\)\s*\{\s*\.knowledge-proactive-nudge\s*\{\s*display:\s*none;/,
+  "mobile learners must be able to see and resolve a server-issued proactive suggestion"
+);
+assert.match(
+  assistantCss,
+  /@media \(max-width: 760px\)[\s\S]*?\.knowledge-assistant-root\.has-proactive-nudge \.knowledge-launcher-shell\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?align-items:\s*flex-end;/,
+  "mobile proactive suggestions must stack above the launcher within the viewport"
+);
 assert.match(assistantCss, /font-variant-numeric:\s*tabular-nums/);
 assert.match(assistantSource, /data-knowledge-history-search/);
 assert.match(assistantSource, /data-knowledge-history-filter="current"/);
@@ -411,9 +456,71 @@ assert.match(assistantSource, /deletedIds/);
 assert.match(assistantSource, /function notePendingOperations/);
 assert.match(assistantSource, /function requestProactiveDecision/);
 assert.match(assistantSource, /api\/learning\/assistant\/intervention/);
+assert.match(assistantSource, /api\/learning\/proactive\/state/);
+assert.match(assistantSource, /api\/learning\/proactive\/\$\{encodeURIComponent\(decisionId\)\}\/resolution/);
+assert.match(assistantSource, /api\/learning\/proactive\/check/);
 assert.match(assistantSource, /proactiveDecisionRequest\?\.abort/);
 assert.match(assistantSource, /decision\.intervene/);
+assert.match(assistantSource, /function serverAuthorizedProactiveDecision/);
+assert.match(assistantSource, /study\.deliveryDecision === "intervene"/);
+assert.doesNotMatch(
+  assistantSource,
+  /study\.assignment\?\.condition/,
+  "the student client must not receive or inspect the randomized condition"
+);
+assert.match(assistantSource, /suggestion\.serverIssued === true/);
+assert.match(assistantSource, /const PROACTIVE_NATURAL_BOUNDARY_EVENTS = new Set/);
+assert.match(assistantSource, /function proactivePendingQuietState/);
+assert.match(assistantSource, /function proactiveBoundaryCandidate/);
+assert.match(
+  proactiveDecisionBody,
+  /boundaryRecheck: candidate\.boundaryRecheck === true[\s\S]*?boundaryEventType:/,
+  "the client must label a boundary recheck while leaving boundary verification to the server"
+);
+assert.match(
+  assistantSource,
+  /pendingBoundaryCandidate[\s\S]*?requestProactiveDecision\([\s\S]*?persistedBoundary: true/,
+  "a persisted quiet-dwell candidate must be reconsidered at the next natural task boundary"
+);
+assert.match(
+  assistantSource,
+  /if \(proactiveDecision\?\.serverIssued\) \{[\s\S]*?renderProactiveSuggestion\(\);[\s\S]*?return;/,
+  "a server-issued boundary intervention must remain visible after the local dwell candidate is cleared"
+);
+assert.match(
+  proactiveDecisionBody,
+  /await Promise\.resolve\(\)[\s\S]*?analyticsFlushUntilSettled\(20000\)[\s\S]*?api\/learning\/assistant\/intervention/,
+  "managed proactive decisions must flush the triggering evidence before asking the server"
+);
+assert.match(
+  proactiveDecisionBody,
+  /if \(proactiveStudyManaged\(meta\) \|\| candidate\.kind !== "repeated_parameter"\)[\s\S]*?managed_policy_unavailable/,
+  "the managed chapter must fail silent instead of showing the historical local fallback"
+);
+["shown", "accepted", "dismissed", "ignored"].forEach((resolution) => {
+  assert.match(
+    assistantSource,
+    new RegExp(`queueProactiveResolution\\([^\\n]+, "${resolution}"\\)`),
+    `the student client must persist the ${resolution} resolution`
+  );
+});
 assert.match(assistantSource, /function executeProactiveAction/);
+assert.match(assistantSource, /function proactiveVerificationNode/);
+assert.match(assistantSource, /function proactiveInlineOfferNode/);
+assert.match(assistantSource, /function proactiveCheckFeedbackNode/);
+assert.match(
+  assistantSource,
+  /resolution:\s*declined\s*\?\s*"declined"\s*:\s*""/,
+  "the learner must be able to end a verification round without triggering escalation"
+);
+const proactiveVerificationBody = assistantSource.match(
+  /function proactiveVerificationNode\([^)]*\)[\s\S]*?(?=\s*function setMessageQuizReviewProgress)/
+)?.[0] || "";
+assert.doesNotMatch(
+  proactiveVerificationBody,
+  /\banswer\b/,
+  "the student verification renderer must never contain or inspect an answer key"
+);
 assert.match(assistantSource, /observe_change/);
 assert.match(assistantSource, /review_mistake/);
 assert.match(assistantSource, /self_explain/);
@@ -431,6 +538,10 @@ assert.match(
   /\.knowledge-composer\[hidden\]\s*\{[\s\S]*?display:\s*none\s*!important;/,
   "history mode must hide the composer even when later cascade layers define its layout"
 );
+assert.match(assistantCss, /\.knowledge-proactive-verification\s*,/);
+assert.match(assistantCss, /\.knowledge-proactive-verification-options\s+button\s*\{/);
+assert.match(assistantCss, /\.knowledge-proactive-inline-offer\s*\{/);
+assert.match(assistantCss, /\.knowledge-proactive-check-feedback\.is-success\s*\{/);
 assert.match(assistantCss, /::highlight\(cq-learning-notes\)/);
 
 const targetSelector = contextSource.match(

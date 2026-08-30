@@ -14,7 +14,7 @@ function agenticMultiSceneMode() {
 }
 function agenticInitialUnitId() {
   const firstChapter = (typeof curriculum !== "undefined" && curriculum[0]) || getChapter?.();
-  return firstChapter?.units?.[0]?.id || currentUnitId || `${chapters[0]?.id || "V14-C1"}-pre`;
+  return firstChapter?.units?.[0]?.id || currentUnitId || `${chapters[0]?.id || "V14-C3"}-pre`;
 }
 
 function agenticChapterPostUnit(chapter) {

@@ -162,6 +162,70 @@ function parameterEvent(at, {
 }
 
 {
+  const coach = createProactiveCoach();
+  coach.consume(unitEvent("KP1-formative", {
+    unitType: "quiz",
+    unitLabel: "小矩形逼近形成性测验"
+  }), 0);
+  const successfulOutcome = coach.consume({
+    eventType: "quiz_submit_success",
+    unitId: "KP1-formative",
+    unitLabel: "小矩形逼近形成性测验",
+    unitType: "quiz",
+    data: {
+      phase: "formative",
+      incorrect: 0,
+      correct: 2,
+      pendingReview: 0,
+      questionCount: 2
+    }
+  }, 20_000);
+  assert.equal(successfulOutcome.kind, "formative_outcome");
+  assert.equal(successfulOutcome.incorrect, 0);
+  assert.equal(successfulOutcome.correct, 2);
+  assert.equal(successfulOutcome.phase, "formative");
+  coach.resolve("outcome-recorded", 21_000);
+  assert.equal(
+    coach.getPreference().cooldownUntil,
+    0,
+    "服务端只记录形成性结果而不展示时，客户端不应制造十分钟冷却"
+  );
+}
+
+{
+  const coach = createProactiveCoach({ repeatCount: 3 });
+  coach.consume(unitEvent("KP1"), 0);
+  coach.consume(parameterEvent(1_000, { oldValue: "1", newValue: "0.5" }), 1_000);
+  coach.consume(parameterEvent(2_000, { oldValue: "0.5", newValue: "0.2" }), 2_000);
+  assert.equal(
+    coach.consume(
+      parameterEvent(3_000, { oldValue: "0.2", newValue: "0.1" }),
+      3_000
+    ).kind,
+    "repeated_parameter"
+  );
+  coach.resolve("accept", 4_000);
+  const independentOutcome = coach.consume({
+    eventType: "courseware_challenge_result",
+    unitId: "KP1",
+    unitType: "knowledge",
+    sceneType: "simulation",
+    data: {
+      challenge_id: "challenge-1",
+      attempt_id: "attempt-1",
+      is_correct: false
+    }
+  }, 10_000);
+  assert.equal(
+    independentOutcome.kind,
+    "independent_attempt_outcome",
+    "接受支架后的独立任务结果必须绕过展示冷却并交给服务端生命周期判断"
+  );
+  assert.equal(independentOutcome.success, false);
+  assert.equal(independentOutcome.attemptId, "attempt-1");
+}
+
+{
   const coach = createProactiveCoach({ dwellThresholdMs: 90_000 });
   coach.consume(unitEvent(), 0);
   assert.equal(coach.tick(90_000).kind, "quiet_dwell");

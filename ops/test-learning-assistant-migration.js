@@ -102,6 +102,31 @@ async function createLegacyDatabase(dbPath) {
       ]
     );
   });
+  [
+    ["z-same-time-user", "user", "同一时刻的问题", ""],
+    ["a-same-time-assistant", "assistant", "同一时刻的回答", "mock"]
+  ].forEach(([id, role, content, provider]) => {
+    legacyDb.run(
+      `INSERT INTO learning_assistant_messages
+        (id, user_id, thread_key, chapter_id, unit_id, knowledge_point_id,
+         role, content, context_json, provider, quiz_submitted, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        "legacy-assistant-user",
+        "knowledge:same-time-unit",
+        "legacy-chapter",
+        "same-time-unit",
+        "same-time-knowledge-point",
+        role,
+        content,
+        "{}",
+        provider,
+        0,
+        "2026-08-13T14:06:00.000Z"
+      ]
+    );
+  });
   fs.writeFileSync(dbPath, Buffer.from(legacyDb.export()));
   legacyDb.close();
 }
@@ -148,6 +173,23 @@ async function main() {
       mixedTimeMessages.map((message) => message.role),
       ["user", "assistant", "user", "assistant"],
       "refresh must preserve alternating turns when historical timestamps mix Z and +08:00 formats"
+    );
+
+    const sameTimeConversations = db.listLearningAssistantConversations(
+      "legacy-assistant-user",
+      "knowledge:same-time-unit"
+    );
+    assert.equal(sameTimeConversations.length, 1);
+    const sameTimeMessages = db.getLearningAssistantMessages(
+      "legacy-assistant-user",
+      "knowledge:same-time-unit",
+      10,
+      sameTimeConversations[0].id
+    );
+    assert.deepEqual(
+      sameTimeMessages.map((message) => message.role),
+      ["user", "assistant"],
+      "messages sharing one timestamp must retain database insertion order after restart"
     );
     db.saveNow();
     console.log("learning assistant migration tests passed");

@@ -77,6 +77,32 @@
     };
   }
 
+  function independentAttemptResult(event = {}) {
+    const data = event.data || {};
+    const raw = data.is_correct
+      ?? data.isCorrect
+      ?? data.correct
+      ?? data.success
+      ?? data.passed
+      ?? data.completed
+      ?? data.result;
+    if (typeof raw === "boolean") return raw;
+    if (typeof raw === "number") return raw > 0;
+    const normalized = compactText(raw, 40).toLowerCase();
+    if (["correct", "success", "passed", "pass", "completed", "true"].includes(normalized)) {
+      return true;
+    }
+    if (["incorrect", "failed", "fail", "wrong", "false"].includes(normalized)) {
+      return false;
+    }
+    const score = Number(data.score);
+    const maxScore = Number(data.max_score ?? data.maxScore);
+    if (Number.isFinite(score) && Number.isFinite(maxScore) && maxScore > 0) {
+      return score >= maxScore * 0.6;
+    }
+    return null;
+  }
+
   function createProactiveCoach(options = {}) {
     const config = { ...DEFAULTS, ...options };
     const cooldowns = new Map();
@@ -118,13 +144,14 @@
       return null;
     }
 
-    function canSuggest(at) {
+    function canSuggest(at, options = {}) {
       if (!currentUnit?.unitId || !currentUnit.supported || activeSuggestion) return false;
-      return at >= Number(cooldowns.get(currentUnit.unitId) || 0);
+      return options.bypassCooldown === true
+        || at >= Number(cooldowns.get(currentUnit.unitId) || 0);
     }
 
-    function createSuggestion(kind, at, content = {}) {
-      if (!canSuggest(at)) return null;
+    function createSuggestion(kind, at, content = {}, options = {}) {
+      if (!canSuggest(at, options)) return null;
       activeSuggestion = Object.freeze({
         id: `${currentUnit.unitId}:${kind}:${++suggestionSequence}`,
         kind,
@@ -150,13 +177,51 @@
       });
     }
 
+    function independentAttemptSuggestion(event, at) {
+      const success = independentAttemptResult(event);
+      if (success === null || currentUnit?.unitType === "quiz") return null;
+      const data = event.data || {};
+      return createSuggestion("independent_attempt_outcome", at, {
+        success,
+        sourceEventType: compactText(event.eventType, 80),
+        attemptId: compactText(
+          data.attempt_id || data.attemptId || data.challenge_id || data.challengeId,
+          120
+        ),
+        eyebrow: "知点正在核对",
+        title: "独立尝试结果已记录",
+        body: "知点会结合上一轮支架判断是否退出或只升级一级。",
+        actionLabel: "继续",
+        question: "",
+        contextMode: "unit"
+      }, { bypassCooldown: true });
+    }
+
     function quizSuggestion(event, at) {
       const incorrect = Math.max(0, Number(event.data?.incorrect || 0));
-      if (!incorrect) return null;
+      const correct = Math.max(0, Number(event.data?.correct || 0));
       const pendingReview = Math.max(0, Number(event.data?.pendingReview || 0));
       if (pendingReview > 0) return null;
+      const phase = compactText(event.data?.phase, 40).toLowerCase();
+      if (phase === "formative") {
+        return createSuggestion("formative_outcome", at, {
+          incorrect,
+          correct,
+          pendingReview,
+          phase,
+          questionCount: Math.max(0, Number(event.data?.questionCount || 0)),
+          eyebrow: "知点正在核对",
+          title: "形成性结果已记录",
+          body: "知点会先判断是否需要帮助；证据不足时不会出现提示。",
+          actionLabel: "继续",
+          question: "",
+          contextMode: "unit"
+        });
+      }
+      if (!incorrect) return null;
       return createSuggestion("quiz_review", at, {
         incorrect,
+        correct,
         pendingReview,
         questionCount: Math.max(0, Number(event.data?.questionCount || 0)),
         eyebrow: "适合现在复盘",
@@ -215,12 +280,21 @@
 
       if (MEANINGFUL_EVENTS.has(eventType)) {
         lastMeaningfulAt = at;
-        if (activeSuggestion && activeSuggestion.kind !== "quiz_review") {
+        if (
+          activeSuggestion
+          && !["quiz_review", "formative_outcome"].includes(activeSuggestion.kind)
+        ) {
           resolve("ignore", at);
         }
       }
       if (["quiz_submit_success", "quiz_review_ready"].includes(eventType)) {
         return quizSuggestion(event, at);
+      }
+      if ([
+        "courseware_challenge_result",
+        "courseware_formative_check_submitted"
+      ].includes(eventType)) {
+        return independentAttemptSuggestion(event, at);
       }
       if (eventType === "parameter_commit" && currentUnit.unitType !== "quiz") {
         return recordParameterCommit(event, at);
@@ -256,8 +330,12 @@
         : reason === "accept" ? 0 : previousStreak;
       dismissStreaks.set(resolved.unitId, nextStreak);
       const cooldownMultiplier = negativeResolution ? Math.max(1, nextStreak) : 1;
-      const cooldownUntil = at + config.cooldownMs * cooldownMultiplier;
-      cooldowns.set(resolved.unitId, cooldownUntil);
+      const noClientCooldown = reason === "outcome-recorded";
+      const cooldownUntil = noClientCooldown
+        ? 0
+        : at + config.cooldownMs * cooldownMultiplier;
+      if (cooldownUntil) cooldowns.set(resolved.unitId, cooldownUntil);
+      else cooldowns.delete(resolved.unitId);
       activeSuggestion = null;
       commits.clear();
       lastMeaningfulAt = at;
