@@ -4,6 +4,8 @@
   const Proactive = global.ProactiveLearningCore;
   const root = document.querySelector("#knowledge-assistant-root");
   if (!Core || !Notes || !root) return;
+  const fullscreenHomeParent = root.parentNode;
+  const fullscreenHomeNextSibling = root.nextSibling;
 
   const OPEN_STORAGE_KEY = "calculus-quest-knowledge-assistant-open-v1";
   const LAUNCHER_STORAGE_KEY = "calculus-quest-knowledge-launcher-v1";
@@ -54,7 +56,12 @@
   let selectedNoteColor = "amber";
   let noteSyncState = "local";
   let noteSyncRequestId = 0;
-  let provider = { id: "mock", live: false, label: "本地引导" };
+  let provider = {
+    id: "mock",
+    live: false,
+    verification: "local",
+    label: "本地引导"
+  };
   let quota = { limit: 30, used: 0, remaining: 30, usageDate: "" };
   let launcherPlacement = Core.normalizeLauncherPlacement();
   let panelPosition = null;
@@ -74,6 +81,22 @@
   let proactiveCheckSubmitting = false;
   let proactiveCheckFeedback = null;
   let proactivePreferenceSaving = false;
+  let proactiveChoiceSaving = false;
+  let proactiveParticipationSaving = false;
+  let proactiveWithdrawalConfirming = false;
+  let proactiveOutcomesOpen = false;
+  let proactiveOutcomesLoading = false;
+  let proactiveOutcomesSubmitting = false;
+  let proactiveOutcomeDraftSaving = false;
+  let proactiveOutcomeDraftPending = 0;
+  let proactiveOutcomeDraftChain = Promise.resolve();
+  let proactiveOutcomeDraftGeneration = 0;
+  let proactiveOutcomeWithdrawing = false;
+  let proactiveOutcomes = null;
+  let proactiveOutcomeStageId = "";
+  let proactiveOutcomeResponses = {};
+  let proactiveOutcomeStatus = "";
+  let proactiveOutcomeOwnerKey = "";
   let proactiveStudy = {
     loaded: false,
     managed: false,
@@ -81,6 +104,12 @@
     chapterId: PROACTIVE_STUDY_CHAPTER_ID,
     candidateCollectionEnabled: false,
     assignment: null,
+    participation: {
+      mode: "implicit-pilot",
+      status: "not_enrolled",
+      enrolled: false,
+      withdrawn: false
+    },
     studentPreference: "standard",
     policyStates: []
   };
@@ -106,7 +135,11 @@
           <p data-knowledge-proactive-body></p>
           <div class="knowledge-proactive-actions">
             <button type="button" data-knowledge-proactive-accept>带我看看</button>
-            <button type="button" data-knowledge-proactive-dismiss>先不用</button>
+            <button type="button" data-knowledge-proactive-snooze>稍后</button>
+          </div>
+          <div class="knowledge-proactive-secondary-actions">
+            <button type="button" data-knowledge-proactive-alternative>换一种帮助</button>
+            <button type="button" data-knowledge-proactive-mute>关闭此知识点提醒</button>
           </div>
         </div>
       </aside>
@@ -147,6 +180,29 @@
           <small data-knowledge-unit-detail>打开 Quiz、Slide 或互动课件后即可提问。</small>
         </div>
 
+        <section class="knowledge-study-participation" data-knowledge-study-participation hidden>
+          <div>
+            <strong data-knowledge-study-participation-title>本章主动伴学研究</strong>
+            <small data-knowledge-study-participation-status></small>
+          </div>
+          <a data-knowledge-study-consent-link hidden target="_blank" rel="noopener noreferrer">查看研究说明</a>
+          <label data-knowledge-study-consent-confirm hidden>
+            <input type="checkbox" data-knowledge-study-consent-checkbox>
+            <span>我已阅读当前版本的研究说明，并自愿参加。</span>
+          </label>
+          <div class="knowledge-study-participation-actions">
+            <button type="button" data-knowledge-study-enroll hidden>同意参加</button>
+            <button type="button" data-knowledge-study-withdraw hidden>退出研究</button>
+          </div>
+          <div class="knowledge-study-withdraw-confirm" data-knowledge-study-withdraw-confirm hidden role="group" aria-label="确认退出研究">
+            <p>退出后将停止新的实验性主动提示和研究测量；课程、普通知点提问和已有学习记录不受影响。本实验中的退出记录不可撤销。</p>
+            <div>
+              <button type="button" data-knowledge-study-withdraw-cancel>保留参加</button>
+              <button type="button" data-knowledge-study-withdraw-submit>确认退出</button>
+            </div>
+          </div>
+        </section>
+
         <section class="knowledge-proactive-preference" data-knowledge-proactive-preference hidden>
           <div>
             <strong>主动提示</strong>
@@ -157,6 +213,7 @@
             <button type="button" role="radio" data-proactive-preference="reduced" aria-checked="false">少提醒</button>
             <button type="button" role="radio" data-proactive-preference="off" aria-checked="false">关闭</button>
           </div>
+          <button type="button" class="knowledge-proactive-scope-restore" data-knowledge-proactive-scope-restore hidden>恢复当前知识点提醒</button>
         </section>
 
         <div class="knowledge-quiz-policy" data-knowledge-quiz-policy hidden>
@@ -239,6 +296,24 @@
       </form>
     </section>
 
+    <section class="knowledge-outcomes-layer" data-knowledge-outcomes hidden role="dialog" aria-modal="true" aria-labelledby="knowledge-outcomes-title">
+      <div class="knowledge-outcomes-dialog" tabindex="-1">
+        <header>
+          <div>
+            <small>本章独立测量</small>
+            <strong id="knowledge-outcomes-title">学习结果记录</strong>
+          </div>
+          <button type="button" data-knowledge-outcomes-close aria-label="关闭学习结果记录">×</button>
+        </header>
+        <div class="knowledge-outcomes-intro">
+          <strong>请独立完成</strong>
+          <p>开始后，服务端暂停知点、主动提示和路径建议；作答草稿可跨设备恢复，提交后只确认记录成功。</p>
+        </div>
+        <div class="knowledge-outcomes-content" data-knowledge-outcomes-content></div>
+        <p class="knowledge-outcomes-status" data-knowledge-outcomes-status role="status"></p>
+      </div>
+    </section>
+
     <div class="knowledge-pick-notice" data-knowledge-pick-notice hidden role="status">
       <span class="knowledge-crosshair" aria-hidden="true"></span>
       <p><strong>选择一处作为学习焦点</strong><small data-knowledge-pick-instructions>移动鼠标可预览可选范围；本次点击只作标记，不会触发课件操作。按 Esc 退出。</small></p>
@@ -295,7 +370,9 @@
     proactiveTitle: root.querySelector("[data-knowledge-proactive-title]"),
     proactiveBody: root.querySelector("[data-knowledge-proactive-body]"),
     proactiveAccept: root.querySelector("[data-knowledge-proactive-accept]"),
-    proactiveDismiss: root.querySelector("[data-knowledge-proactive-dismiss]"),
+    proactiveSnooze: root.querySelector("[data-knowledge-proactive-snooze]"),
+    proactiveAlternative: root.querySelector("[data-knowledge-proactive-alternative]"),
+    proactiveMute: root.querySelector("[data-knowledge-proactive-mute]"),
     panel: root.querySelector("[data-knowledge-assistant-panel], #knowledge-assistant-panel"),
     panelDragbar: root.querySelector("[data-knowledge-panel-dragbar]"),
     scroll: root.querySelector("[data-knowledge-scroll]"),
@@ -308,6 +385,21 @@
     proactivePreference: root.querySelector("[data-knowledge-proactive-preference]"),
     proactivePreferenceStatus: root.querySelector("[data-knowledge-proactive-preference-status]"),
     proactivePreferenceButtons: Array.from(root.querySelectorAll("[data-proactive-preference]")),
+    proactiveScopeRestore: root.querySelector("[data-knowledge-proactive-scope-restore]"),
+    proactiveParticipation: root.querySelector("[data-knowledge-study-participation]"),
+    proactiveParticipationTitle: root.querySelector("[data-knowledge-study-participation-title]"),
+    proactiveParticipationStatus: root.querySelector("[data-knowledge-study-participation-status]"),
+    proactiveConsentLink: root.querySelector("[data-knowledge-study-consent-link]"),
+    proactiveConsentConfirm: root.querySelector("[data-knowledge-study-consent-confirm]"),
+    proactiveConsentCheckbox: root.querySelector("[data-knowledge-study-consent-checkbox]"),
+    proactiveEnroll: root.querySelector("[data-knowledge-study-enroll]"),
+    proactiveWithdraw: root.querySelector("[data-knowledge-study-withdraw]"),
+    proactiveWithdrawConfirmPanel: root.querySelector("[data-knowledge-study-withdraw-confirm]"),
+    proactiveWithdrawCancel: root.querySelector("[data-knowledge-study-withdraw-cancel]"),
+    proactiveWithdrawConfirm: root.querySelector("[data-knowledge-study-withdraw-submit]"),
+    proactiveOutcomesOpen: document.querySelector("[data-proactive-outcomes-open]"),
+    proactiveOutcomesPanel: document.querySelector("#chapter-outcome-panel"),
+    proactiveOutcomesSummary: document.querySelector("[data-proactive-outcomes-summary]"),
     quizPolicy: root.querySelector("[data-knowledge-quiz-policy]"),
     context: root.querySelector("[data-knowledge-context]"),
     contextTitle: root.querySelector("[data-knowledge-context-title]"),
@@ -349,7 +441,12 @@
     noteCancelFooter: root.querySelector("[data-knowledge-note-cancel-footer]"),
     noteDelete: root.querySelector("[data-knowledge-note-delete]"),
     noteSave: root.querySelector("[data-knowledge-note-save]"),
-    noteSyncStatus: root.querySelector("[data-knowledge-note-sync-status]")
+    noteSyncStatus: root.querySelector("[data-knowledge-note-sync-status]"),
+    outcomes: root.querySelector("[data-knowledge-outcomes]"),
+    outcomesDialog: root.querySelector(".knowledge-outcomes-dialog"),
+    outcomesClose: root.querySelector("[data-knowledge-outcomes-close]"),
+    outcomesContent: root.querySelector("[data-knowledge-outcomes-content]"),
+    outcomesStatus: root.querySelector("[data-knowledge-outcomes-status]")
   };
 
   function isSignedInNow() {
@@ -413,13 +510,63 @@
     return Boolean(meta?.isQuiz && !meta.quizSubmitted);
   }
 
+  function quizParticipationAccessAllowed(meta = courseMeta()) {
+    const participation = proactiveStudy.participation || {};
+    return Boolean(
+      quizAssistantLocked(meta)
+      && proactiveStudyManaged(meta)
+      && proactiveStudy.loaded
+      && isSignedInNow()
+      && (
+        participation.canEnroll === true
+        || participation.canWithdraw === true
+      )
+    );
+  }
+
   function renderLauncherAvailability(meta = courseMeta()) {
     const quizLocked = quizAssistantLocked(meta);
+    const participationOnly = quizParticipationAccessAllowed(meta);
+    const measurementBlocked = Boolean(
+      proactiveStudy.agentAssistanceBlocked
+      || activeProactiveOutcomeSession()
+    );
     root.classList.toggle("is-quiz-locked", quizLocked);
-    els.launcher.setAttribute("aria-disabled", quizLocked ? "true" : "false");
-    els.launcher.setAttribute("aria-label", quizLocked ? "知点将在提交测验后解锁" : "打开知点");
-    els.launcher.setAttribute("title", quizLocked ? QUIZ_LOCKED_MESSAGE : "打开知点：围绕当前课件提问");
-    els.launcherSubtitle.textContent = quizLocked ? "提交测验后解锁" : "陪你理清眼前这一处";
+    root.classList.toggle("is-quiz-participation-only", participationOnly);
+    root.classList.toggle("is-measurement-blocked", measurementBlocked);
+    els.launcher.setAttribute(
+      "aria-disabled",
+      (quizLocked && !participationOnly) || measurementBlocked
+        ? "true"
+        : "false"
+    );
+    els.launcher.setAttribute(
+      "aria-label",
+      measurementBlocked
+        ? "独立测量期间知点暂时关闭"
+        : participationOnly
+          ? "打开研究参与设置；测验问答仍保持关闭"
+          : quizLocked
+          ? "知点将在提交测验后解锁"
+          : "打开知点"
+    );
+    els.launcher.setAttribute(
+      "title",
+      measurementBlocked
+        ? "完成或退出独立测量后恢复知点"
+        : participationOnly
+          ? "管理本章研究参与；提交测验前不能提问或查看学习提示"
+          : quizLocked
+          ? QUIZ_LOCKED_MESSAGE
+          : "打开知点：围绕当前课件提问"
+    );
+    els.launcherSubtitle.textContent = measurementBlocked
+      ? "独立测量期间暂停"
+      : participationOnly
+        ? "研究参与设置"
+        : quizLocked
+        ? "提交测验后解锁"
+        : "陪你理清眼前这一处";
   }
 
   function track(eventType, data = {}) {
@@ -440,6 +587,19 @@
 
   function proactiveScopeKey(meta = courseMeta()) {
     return String(meta.knowledgePointId || meta.unitId || "");
+  }
+
+  function proactiveScopeState(meta = courseMeta()) {
+    const scopeKey = proactiveScopeKey(meta);
+    return proactiveStudy.policyStates.find(
+      (item) => item.scopeKey === scopeKey
+    ) || null;
+  }
+
+  function proactiveScopeMuted(meta = courseMeta()) {
+    const row = proactiveScopeState(meta);
+    return row?.scopePreference === "off"
+      || row?.studentPreference === "off";
   }
 
   function proactiveVerificationCheck(meta = courseMeta()) {
@@ -498,12 +658,18 @@
   }
 
   function proactiveCollectionEnabled(meta = courseMeta()) {
+    if (
+      proactiveOutcomesOpen
+      || proactiveStudy.agentAssistanceBlocked
+      || activeProactiveOutcomeSession()
+    ) return false;
     if (!proactiveStudyManaged(meta)) return true;
     return Boolean(
       proactiveStudy.loaded
       && proactiveStudy.managed
       && proactiveStudy.candidateCollectionEnabled
       && proactiveStudy.studentPreference !== "off"
+      && !proactiveScopeMuted(meta)
     );
   }
 
@@ -529,6 +695,10 @@
       ),
       candidateCollectionEnabled: Boolean(data.candidateCollectionEnabled),
       assignment: data.assignment || null,
+      participation: data.participation
+        && typeof data.participation === "object"
+        ? { ...data.participation }
+        : proactiveStudy.participation,
       studentPreference: ["standard", "reduced", "off"].includes(
         String(data.studentPreference || "")
       )
@@ -537,6 +707,95 @@
       policyStates
     };
     syncProactiveCheckState(meta);
+  }
+
+  async function updateProactiveParticipation(action) {
+    const meta = courseMeta();
+    const participation = proactiveStudy.participation || {};
+    const hadAssignment = Boolean(proactiveStudy.assignment);
+    if (
+      proactiveParticipationSaving
+      || !["enroll", "withdraw"].includes(action)
+      || !proactiveStudyManaged(meta)
+      || !isSignedInNow()
+    ) return false;
+    if (action === "enroll" && !els.proactiveConsentCheckbox.checked) {
+      setStatus("请先阅读并确认当前版本的研究说明。", "warning");
+      els.proactiveConsentCheckbox.focus();
+      return false;
+    }
+    proactiveParticipationSaving = true;
+    renderUnit();
+    try {
+      const response = await fetch("api/learning/proactive/participation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          action,
+          confirmed: action === "enroll",
+          consentVersion: participation.consentVersion || "",
+          reason: action === "withdraw" ? "student_withdrawal" : ""
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        const error = new Error(
+          payload.message || "研究参与状态暂时无法保存。"
+        );
+        error.code = payload.code || "";
+        throw error;
+      }
+      applyProactiveStudy(payload.data || {}, meta);
+      els.proactiveConsentCheckbox.checked = false;
+      if (action === "withdraw") {
+        proactiveWithdrawalConfirming = false;
+        proactiveCoach?.reset?.();
+        proactiveDecisionRequest?.abort();
+        proactiveDecisionRequest = null;
+        proactiveDecision = null;
+        proactiveCandidateId = "";
+        pendingProactivePrompt = null;
+        pendingGeneratedDraft = "";
+        resetProactiveOutcomes({ close: true, clearData: true });
+        setStatus(
+          "已退出本章研究；课程和普通知点提问仍可继续使用。",
+          ""
+        );
+        if (quizAssistantLocked(meta)) {
+          setOpen(false, { focus: false });
+        }
+      } else {
+        setStatus("已记录参加意愿；完成章前测后固定实验分组。", "");
+        await loadProactiveStudy(meta, { force: true });
+      }
+      track(
+        action === "withdraw"
+          ? "knowledge_proactive_participation_withdrawn"
+          : "knowledge_proactive_participation_enrolled",
+        {
+          chapterId: meta.chapterId,
+          consentVersion: participation.consentVersion || "",
+          assignmentRetained: action === "withdraw"
+            ? hadAssignment
+            : undefined
+        }
+      );
+      render();
+      return true;
+    } catch (error) {
+      setStatus(
+        error.message || "研究参与状态暂时无法保存。",
+        "error"
+      );
+      return false;
+    } finally {
+      proactiveParticipationSaving = false;
+      renderUnit();
+    }
   }
 
   async function updateProactivePreference(preference) {
@@ -603,6 +862,671 @@
     }
   }
 
+  async function updateProactiveScopePreference(
+    preference,
+    meta = courseMeta()
+  ) {
+    const scopeKey = proactiveScopeKey(meta);
+    const nextPreference = String(preference || "");
+    if (
+      proactiveChoiceSaving
+      || !["standard", "off"].includes(nextPreference)
+      || !scopeKey
+      || !proactiveStudyManaged(meta)
+      || !isSignedInNow()
+    ) return false;
+
+    proactiveChoiceSaving = true;
+    render();
+    try {
+      const response = await fetch("api/learning/proactive/scope-preference", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          scopeKey,
+          preference: nextPreference
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.message || "当前知识点提醒设置暂时无法保存。");
+      }
+      applyProactiveStudy(payload.data || {}, meta);
+      if (nextPreference === "off") {
+        proactiveCoach?.resolve?.("scope-muted", Date.now());
+        proactiveDecisionRequest?.abort();
+        proactiveDecisionRequest = null;
+        proactiveDecision = null;
+        proactiveCandidateId = "";
+        if (
+          pendingProactivePrompt?.unitId === meta.unitId
+          || pendingProactivePrompt?.scopeKey === scopeKey
+        ) {
+          pendingProactivePrompt = null;
+          pendingGeneratedDraft = "";
+        }
+      } else {
+        syncProactiveUnit(meta, { force: true });
+      }
+      setStatus(
+        nextPreference === "off"
+          ? "当前知识点的主动提醒已关闭；你仍可随时主动提问。"
+          : "当前知识点的主动提醒已恢复。",
+        ""
+      );
+      track("knowledge_proactive_scope_preference_changed", {
+        chapterId: meta.chapterId,
+        scopeKey,
+        previousPreference: payload.previousPreference || "",
+        preference: nextPreference,
+        closedInterventions: Number(payload.closedInterventions || 0)
+      });
+      render();
+      return true;
+    } catch (error) {
+      setStatus(error.message || "当前知识点提醒设置暂时无法保存。", "error");
+      return false;
+    } finally {
+      proactiveChoiceSaving = false;
+      render();
+    }
+  }
+
+  function outcomeUnlockLabel(value = "") {
+    const timestamp = Date.parse(value);
+    if (!Number.isFinite(timestamp)) return "";
+    return new Intl.DateTimeFormat("zh-CN", {
+      month: "numeric",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(new Date(timestamp));
+  }
+
+  function proactiveOutcomesOwner(meta = courseMeta()) {
+    return `${String(state?.participant?.participantId || "")}|${meta.chapterId}`;
+  }
+
+  function resetProactiveOutcomes({
+    close = true,
+    clearData = false
+  } = {}) {
+    if (close) proactiveOutcomesOpen = false;
+    proactiveOutcomesLoading = false;
+    proactiveOutcomesSubmitting = false;
+    proactiveOutcomeDraftSaving = false;
+    proactiveOutcomeDraftPending = 0;
+    proactiveOutcomeDraftChain = Promise.resolve();
+    proactiveOutcomeDraftGeneration += 1;
+    proactiveOutcomeWithdrawing = false;
+    proactiveOutcomeStageId = "";
+    proactiveOutcomeResponses = {};
+    proactiveOutcomeStatus = "";
+    if (clearData) {
+      proactiveOutcomes = null;
+      proactiveOutcomeOwnerKey = "";
+    }
+  }
+
+  function activeProactiveOutcomeSession() {
+    const session = proactiveOutcomes?.activeSession;
+    return session?.status === "active" ? session : null;
+  }
+
+  function applyActiveProactiveOutcomeSession({ open = true } = {}) {
+    const session = activeProactiveOutcomeSession();
+    if (!session) return false;
+    proactiveOutcomeStageId = session.stageId || "";
+    proactiveOutcomeResponses = session.responses
+      && typeof session.responses === "object"
+      && !Array.isArray(session.responses)
+      ? { ...session.responses }
+      : {};
+    proactiveOutcomesOpen = open;
+    if (proactiveDecision) {
+      ignoreProactiveSuggestion("measurement-active");
+    }
+    proactiveDecisionRequest?.abort();
+    proactiveDecisionRequest = null;
+    proactiveDecision = null;
+    proactiveCandidateId = "";
+    proactiveCoach?.resolve?.("measurement-active", Date.now());
+    if (isOpen) setOpen(false, { focus: false });
+    return true;
+  }
+
+  async function loadProactiveOutcomes(options = {}) {
+    const meta = courseMeta();
+    const ownerKey = proactiveOutcomesOwner(meta);
+    if (
+      proactiveOutcomesLoading
+      || !proactiveStudyManaged(meta)
+      || !isSignedInNow()
+    ) return proactiveOutcomes;
+    if (
+      proactiveOutcomes
+      && proactiveOutcomeOwnerKey === ownerKey
+      && options.force !== true
+    ) return proactiveOutcomes;
+    proactiveOutcomesLoading = true;
+    proactiveOutcomeOwnerKey = ownerKey;
+    proactiveOutcomeStatus = "";
+    renderProactiveOutcomes();
+    try {
+      const response = await fetch(
+        `api/learning/proactive/outcomes?chapterId=${encodeURIComponent(meta.chapterId)}`,
+        {
+          headers: { Authorization: `Bearer ${state.authToken}` }
+        }
+      );
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.message || "学习结果测量暂时无法读取。");
+      }
+      if (ownerKey !== proactiveOutcomesOwner()) return null;
+      proactiveOutcomes = payload.data || null;
+      if (activeProactiveOutcomeSession()) {
+        applyActiveProactiveOutcomeSession({
+          open: options.restoreActive !== false
+        });
+      }
+      return proactiveOutcomes;
+    } catch (error) {
+      if (ownerKey !== proactiveOutcomesOwner()) return null;
+      proactiveOutcomes = null;
+      proactiveOutcomeStatus = error.message || "学习结果测量暂时无法读取。";
+      return null;
+    } finally {
+      if (ownerKey === proactiveOutcomesOwner()) {
+        proactiveOutcomesLoading = false;
+        renderProactiveOutcomes();
+      }
+    }
+  }
+
+  async function openProactiveOutcomes() {
+    const meta = courseMeta();
+    if (
+      !proactiveStudyManaged(meta)
+      || !proactiveStudy.assignment
+      || !isSignedInNow()
+    ) return false;
+    proactiveOutcomesOpen = true;
+    proactiveOutcomeOwnerKey = proactiveOutcomesOwner(meta);
+    proactiveOutcomeStatus = "";
+    if (proactiveDecision) {
+      ignoreProactiveSuggestion("measurement-open");
+    }
+    proactiveDecisionRequest?.abort();
+    proactiveDecisionRequest = null;
+    proactiveDecision = null;
+    proactiveCandidateId = "";
+    proactiveCoach?.resolve?.("measurement-open", Date.now());
+    setOpen(false, { focus: false });
+    render();
+    await loadProactiveOutcomes({ force: true, restoreActive: true });
+    track("knowledge_proactive_outcomes_opened", {
+      chapterId: meta.chapterId,
+      activeSession: Boolean(activeProactiveOutcomeSession())
+    });
+    window.requestAnimationFrame(() => {
+      els.outcomesDialog?.focus({ preventScroll: true });
+    });
+    return true;
+  }
+
+  function closeProactiveOutcomes() {
+    if (
+      proactiveOutcomesSubmitting
+      || proactiveOutcomeDraftSaving
+      || proactiveOutcomeWithdrawing
+    ) return false;
+    if (activeProactiveOutcomeSession()) {
+      proactiveOutcomeStatus = "独立测量已开始。请提交本阶段，或使用“退出本阶段”明确结束并记录失访。";
+      renderProactiveOutcomes();
+      els.outcomesDialog?.focus({ preventScroll: true });
+      return false;
+    }
+    resetProactiveOutcomes({ close: true, clearData: false });
+    render();
+    els.proactiveOutcomesOpen?.focus({ preventScroll: true });
+    return true;
+  }
+
+  async function beginProactiveOutcomeStage(stageId = "") {
+    const stage = proactiveOutcomes?.stages?.find(
+      (entry) => entry.id === stageId
+    );
+    if (
+      proactiveOutcomesSubmitting
+      || stage?.status !== "available"
+      || !Array.isArray(stage.items)
+    ) return false;
+    proactiveOutcomesSubmitting = true;
+    proactiveOutcomeStatus = "正在创建独立测量会话。";
+    renderProactiveOutcomes();
+    try {
+      const response = await fetch("api/learning/proactive/outcomes/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: courseMeta().chapterId,
+          stageId: stage.id
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        const error = new Error(payload.message || "本阶段暂时无法开始。");
+        error.code = payload.code || "";
+        throw error;
+      }
+      proactiveOutcomes = payload.data || proactiveOutcomes;
+      applyActiveProactiveOutcomeSession({ open: true });
+      proactiveOutcomeStatus = payload.idempotent
+        ? "已恢复此前开始的独立测量。"
+        : "独立测量已开始；作答草稿会保存到服务端。";
+      track("knowledge_proactive_outcome_started", {
+        stageId: stage.id,
+        sessionId: payload.sessionId || "",
+        itemCount: stage.items.length,
+        idempotent: payload.idempotent === true
+      });
+      return true;
+    } catch (error) {
+      proactiveOutcomeStatus = error.message || "本阶段暂时无法开始。";
+      track("knowledge_proactive_outcome_failed", {
+        stageId: stage.id,
+        reason: error.code || error.message || "start_failed"
+      });
+      return false;
+    } finally {
+      proactiveOutcomesSubmitting = false;
+      render();
+      if (activeProactiveOutcomeSession()) {
+        window.requestAnimationFrame(() => {
+          els.outcomesContent
+            ?.querySelector(".knowledge-outcome-active input:not(:disabled)")
+            ?.focus({ preventScroll: true });
+        });
+      }
+    }
+  }
+
+  async function saveProactiveOutcomeDraft() {
+    const meta = courseMeta();
+    const session = activeProactiveOutcomeSession();
+    if (!session) return false;
+    const draftOwnerKey = proactiveOutcomesOwner(meta);
+    const draftGeneration = proactiveOutcomeDraftGeneration;
+    const draftAuthToken = state.authToken;
+    const responses = { ...proactiveOutcomeResponses };
+    const ownsCurrentDraftQueue = () => (
+      draftGeneration === proactiveOutcomeDraftGeneration
+      && draftOwnerKey === proactiveOutcomesOwner()
+    );
+    proactiveOutcomeDraftPending += 1;
+    proactiveOutcomeDraftSaving = true;
+    renderProactiveOutcomes();
+    const operation = proactiveOutcomeDraftChain.then(async () => {
+      const response = await fetch("api/learning/proactive/outcomes/draft", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${draftAuthToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          stageId: session.stageId,
+          sessionId: session.id,
+          responses
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        const error = new Error(payload.message || "作答草稿暂时无法保存。");
+        error.code = payload.code || "";
+        throw error;
+      }
+      return payload;
+    });
+    proactiveOutcomeDraftChain = operation.catch(() => null);
+    try {
+      await operation;
+      if (ownsCurrentDraftQueue()) {
+        proactiveOutcomeStatus = proactiveOutcomeDraftPending <= 1
+          ? "作答草稿已保存。"
+          : "正在保存后续作答。";
+      }
+      return true;
+    } catch (error) {
+      if (ownsCurrentDraftQueue()) {
+        proactiveOutcomeStatus = error.message || "作答草稿暂时无法保存。";
+        track("knowledge_proactive_outcome_failed", {
+          stageId: session.stageId,
+          sessionId: session.id,
+          reason: error.code || error.message || "draft_failed"
+        });
+      }
+      return false;
+    } finally {
+      if (ownsCurrentDraftQueue()) {
+        proactiveOutcomeDraftPending = Math.max(
+          0,
+          proactiveOutcomeDraftPending - 1
+        );
+        proactiveOutcomeDraftSaving = proactiveOutcomeDraftPending > 0;
+        renderProactiveOutcomes();
+      }
+    }
+  }
+
+  async function withdrawProactiveOutcomeStage() {
+    const meta = courseMeta();
+    const session = activeProactiveOutcomeSession();
+    if (
+      !session
+      || proactiveOutcomesSubmitting
+      || proactiveOutcomeDraftSaving
+      || proactiveOutcomeWithdrawing
+    ) return false;
+    proactiveOutcomeWithdrawing = true;
+    proactiveOutcomeStatus = "正在退出本阶段并记录失访状态。";
+    renderProactiveOutcomes();
+    try {
+      const response = await fetch("api/learning/proactive/outcomes/withdraw", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          sessionId: session.id,
+          reason: "student_exit"
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        const error = new Error(payload.message || "本阶段暂时无法退出。");
+        error.code = payload.code || "";
+        throw error;
+      }
+      proactiveOutcomes = payload.data || proactiveOutcomes;
+      proactiveOutcomeStageId = "";
+      proactiveOutcomeResponses = {};
+      proactiveOutcomesOpen = false;
+      proactiveOutcomeStatus = "";
+      track("knowledge_proactive_outcome_withdrawn", {
+        stageId: session.stageId,
+        sessionId: session.id,
+        withdrawalReason: payload.withdrawalReason || "student_exit"
+      });
+      await loadProactiveStudy(meta, { force: true });
+      render();
+      els.proactiveOutcomesOpen?.focus({ preventScroll: true });
+      return true;
+    } catch (error) {
+      proactiveOutcomeStatus = error.message || "本阶段暂时无法退出。";
+      track("knowledge_proactive_outcome_failed", {
+        stageId: session.stageId,
+        sessionId: session.id,
+        reason: error.code || error.message || "withdraw_failed"
+      });
+      return false;
+    } finally {
+      proactiveOutcomeWithdrawing = false;
+      render();
+    }
+  }
+
+  async function submitProactiveOutcomeStage() {
+    const meta = courseMeta();
+    const session = activeProactiveOutcomeSession();
+    const stage = proactiveOutcomes?.stages?.find(
+      (entry) => entry.id === proactiveOutcomeStageId
+    );
+    if (
+      proactiveOutcomesSubmitting
+      || !session
+      || session.stageId !== stage?.id
+      || stage?.status !== "active"
+      || !Array.isArray(stage.items)
+      || stage.items.some((item) => !proactiveOutcomeResponses[item.id])
+    ) return false;
+    proactiveOutcomesSubmitting = true;
+    proactiveOutcomeStatus = "正在提交本阶段记录。";
+    renderProactiveOutcomes();
+    try {
+      const response = await fetch("api/learning/proactive/outcomes/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          stageId: stage.id,
+          sessionId: session.id,
+          responses: proactiveOutcomeResponses
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        const error = new Error(payload.message || "本阶段暂时无法提交。");
+        error.code = payload.code || "";
+        throw error;
+      }
+      proactiveOutcomes = payload.data || proactiveOutcomes;
+      proactiveOutcomeStageId = "";
+      proactiveOutcomeResponses = {};
+      proactiveOutcomeStatus = "本阶段已记录。为避免影响后续测量，不显示即时对错。";
+      track("knowledge_proactive_outcome_submitted", {
+        stageId: payload.stageId || stage.id,
+        sessionId: payload.sessionId || session.id,
+        attemptId: payload.attemptId || "",
+        feedbackPolicy: payload.feedbackPolicy || ""
+      });
+      await loadProactiveStudy(meta, { force: true });
+      renderProactiveOutcomes();
+      return true;
+    } catch (error) {
+      proactiveOutcomeStatus = error.message || "本阶段暂时无法提交。";
+      track("knowledge_proactive_outcome_failed", {
+        stageId: stage.id,
+        reason: error.code || error.message || "request_failed"
+      });
+      return false;
+    } finally {
+      proactiveOutcomesSubmitting = false;
+      renderProactiveOutcomes();
+    }
+  }
+
+  function proactiveOutcomeStageNode(stage) {
+    const section = document.createElement("section");
+    section.className = `knowledge-outcome-stage is-${stage.status || "locked"}`;
+    const copy = document.createElement("div");
+    const heading = document.createElement("strong");
+    heading.textContent = stage.label || stage.id;
+    const purpose = document.createElement("p");
+    purpose.textContent = stage.purpose || "";
+    const stateLabel = document.createElement("small");
+    stateLabel.textContent = stage.status === "submitted"
+      ? "已提交"
+      : stage.status === "withdrawn"
+        ? "已退出"
+      : stage.status === "active"
+        ? `${stage.itemCount || 0} 题，进行中`
+      : stage.status === "available"
+        ? `${stage.itemCount || 0} 题，可开始`
+        : stage.unlockAt
+          ? `${outcomeUnlockLabel(stage.unlockAt)} 后开放`
+          : "尚未开放";
+    copy.append(heading, purpose, stateLabel);
+    const action = document.createElement("button");
+    action.type = "button";
+    action.textContent = ({
+      available: "开始",
+      active: "继续作答",
+      submitted: "已记录",
+      withdrawn: "已退出"
+    })[stage.status] || "未开放";
+    action.disabled = !["available", "active"].includes(stage.status)
+      || proactiveOutcomesSubmitting
+      || proactiveOutcomeWithdrawing;
+    if (stage.status === "available") {
+      action.addEventListener("click", () => {
+        beginProactiveOutcomeStage(stage.id);
+      });
+    } else if (stage.status === "active") {
+      action.addEventListener("click", () => {
+        applyActiveProactiveOutcomeSession({ open: true });
+        renderProactiveOutcomes();
+      });
+    }
+    section.append(copy, action);
+    if (stage.reason) {
+      const reason = document.createElement("p");
+      reason.className = "knowledge-outcome-stage-reason";
+      reason.textContent = stage.reason;
+      section.appendChild(reason);
+    }
+    return section;
+  }
+
+  function activeProactiveOutcomeNode(stage) {
+    const section = document.createElement("section");
+    section.className = "knowledge-outcome-active";
+    const heading = document.createElement("header");
+    const copy = document.createElement("div");
+    const label = document.createElement("strong");
+    label.textContent = stage.label || "独立测量";
+    const purpose = document.createElement("small");
+    purpose.textContent = stage.purpose || "";
+    copy.append(label, purpose);
+    const withdraw = document.createElement("button");
+    withdraw.type = "button";
+    withdraw.textContent = proactiveOutcomeWithdrawing
+      ? "正在退出"
+      : "退出本阶段";
+    withdraw.disabled = proactiveOutcomesSubmitting
+      || proactiveOutcomeDraftSaving
+      || proactiveOutcomeWithdrawing;
+    withdraw.addEventListener("click", withdrawProactiveOutcomeStage);
+    heading.append(copy, withdraw);
+    section.appendChild(heading);
+
+    stage.items.forEach((item, index) => {
+      const fieldset = document.createElement("fieldset");
+      const legend = document.createElement("legend");
+      legend.textContent = `${index + 1}. ${item.prompt || ""}`;
+      fieldset.appendChild(legend);
+      item.options.forEach((option) => {
+        const labelNode = document.createElement("label");
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = `outcome-${stage.id}-${item.id}`;
+        input.value = option.value;
+        input.checked = proactiveOutcomeResponses[item.id] === option.value;
+        input.disabled = proactiveOutcomesSubmitting
+          || proactiveOutcomeWithdrawing;
+        input.addEventListener("change", () => {
+          proactiveOutcomeResponses = {
+            ...proactiveOutcomeResponses,
+            [item.id]: option.value
+          };
+          proactiveOutcomeStatus = "正在保存作答草稿。";
+          renderProactiveOutcomes();
+          saveProactiveOutcomeDraft();
+        });
+        const text = document.createElement("span");
+        text.textContent = option.label || "";
+        labelNode.append(input, text);
+        fieldset.appendChild(labelNode);
+      });
+      section.appendChild(fieldset);
+    });
+
+    const submit = document.createElement("button");
+    submit.type = "button";
+    submit.className = "knowledge-outcome-submit";
+    submit.textContent = proactiveOutcomesSubmitting
+      ? "正在提交"
+      : proactiveOutcomeDraftSaving
+        ? "正在保存"
+        : "提交本阶段";
+    submit.disabled = proactiveOutcomesSubmitting
+      || proactiveOutcomeDraftSaving
+      || proactiveOutcomeWithdrawing
+      || stage.items.some((item) => !proactiveOutcomeResponses[item.id]);
+    submit.addEventListener("click", submitProactiveOutcomeStage);
+    section.appendChild(submit);
+    return section;
+  }
+
+  function renderProactiveOutcomes() {
+    if (!els.outcomes) return;
+    root.classList.toggle("has-outcomes-layer", proactiveOutcomesOpen);
+    document.body?.classList.toggle(
+      "knowledge-outcomes-open",
+      proactiveOutcomesOpen
+    );
+    els.outcomes.hidden = !proactiveOutcomesOpen;
+    if (!proactiveOutcomesOpen) return;
+    els.outcomesClose.disabled = proactiveOutcomesSubmitting
+      || proactiveOutcomeDraftSaving
+      || proactiveOutcomeWithdrawing
+      || Boolean(activeProactiveOutcomeSession());
+    els.outcomesClose.title = activeProactiveOutcomeSession()
+      ? "独立测量开始后需提交或明确退出本阶段"
+      : "关闭学习结果记录";
+    els.outcomesStatus.textContent = proactiveOutcomeStatus;
+    els.outcomesContent.replaceChildren();
+    if (proactiveOutcomesLoading) {
+      const loading = document.createElement("p");
+      loading.className = "knowledge-outcomes-loading";
+      loading.textContent = "正在读取测量阶段。";
+      els.outcomesContent.appendChild(loading);
+      return;
+    }
+    if (!proactiveOutcomes?.managed) {
+      const unavailable = document.createElement("p");
+      unavailable.className = "knowledge-outcomes-loading";
+      unavailable.textContent = proactiveOutcomeStatus || "当前章节没有学习结果测量。";
+      els.outcomesContent.appendChild(unavailable);
+      return;
+    }
+    const activeStage = proactiveOutcomes.stages?.find(
+      (stage) => (
+        stage.id === proactiveOutcomeStageId
+        && stage.status === "active"
+        && Array.isArray(stage.items)
+      )
+    );
+    if (activeStage) {
+      els.outcomesContent.appendChild(
+        activeProactiveOutcomeNode(activeStage)
+      );
+      return;
+    }
+    (proactiveOutcomes.stages || []).forEach((stage) => {
+      els.outcomesContent.appendChild(proactiveOutcomeStageNode(stage));
+    });
+    if (!els.outcomesContent.childElementCount) {
+      const unavailable = document.createElement("p");
+      unavailable.className = "knowledge-outcomes-loading";
+      unavailable.textContent = "当前没有可显示的测量阶段。";
+      els.outcomesContent.appendChild(unavailable);
+    }
+  }
+
   function clearProactivePresentation() {
     proactiveDecisionRequest?.abort();
     proactiveDecisionRequest = null;
@@ -625,6 +1549,12 @@
         managed: false,
         candidateCollectionEnabled: false,
         assignment: null,
+        participation: {
+          mode: "implicit-pilot",
+          status: "not_enrolled",
+          enrolled: false,
+          withdrawn: false
+        },
         studentPreference: "standard",
         policyStates: []
       };
@@ -654,6 +1584,15 @@
       }
       proactiveStudyKey = key;
       applyProactiveStudy(payload.data || {}, meta);
+      if (proactiveStudy.assignment && proactiveStudyManaged(meta)) {
+        await loadProactiveOutcomes({
+          force: options.force === true,
+          restoreActive: true
+        });
+      } else {
+        resetProactiveOutcomes({ close: true, clearData: true });
+      }
+      renderUnit();
       if (!proactiveCollectionEnabled(meta)) {
         proactiveCoach?.reset?.();
         clearProactivePresentation();
@@ -671,6 +1610,12 @@
         managed: meta.chapterId === PROACTIVE_STUDY_CHAPTER_ID,
         candidateCollectionEnabled: false,
         assignment: null,
+        participation: {
+          mode: "implicit-pilot",
+          status: "not_enrolled",
+          enrolled: false,
+          withdrawn: false
+        },
         studentPreference: "standard",
         policyStates: []
       };
@@ -696,7 +1641,10 @@
 
   function queueProactiveResolution(suggestion, resolution) {
     const decisionId = String(suggestion?.decisionId || "");
-    if (!decisionId || !["shown", "accepted", "dismissed", "ignored"].includes(resolution)) {
+    if (
+      !decisionId
+      || !["shown", "accepted", "dismissed", "ignored", "snoozed"].includes(resolution)
+    ) {
       return Promise.resolve(null);
     }
     const participantId = String(state?.participant?.participantId || "");
@@ -1028,6 +1976,24 @@
     return !activeView || activeView.id === "learn-view";
   }
 
+  function syncFullscreenHost() {
+    const fullscreenHost = document.fullscreenElement;
+    if (fullscreenHost) {
+      if (!fullscreenHost.contains(root) && !root.contains(fullscreenHost)) {
+        fullscreenHost.appendChild(root);
+      }
+      root.classList.add("is-fullscreen-hosted");
+      return;
+    }
+
+    root.classList.remove("is-fullscreen-hosted");
+    if (!fullscreenHomeParent?.isConnected || root.parentNode === fullscreenHomeParent) return;
+    const restoreBefore = fullscreenHomeNextSibling?.parentNode === fullscreenHomeParent
+      ? fullscreenHomeNextSibling
+      : null;
+    fullscreenHomeParent.insertBefore(root, restoreBefore);
+  }
+
   function proactiveSuggestionVisible(suggestion, meta = courseMeta()) {
     return Boolean(
       suggestion
@@ -1077,7 +2043,157 @@
     els.proactiveTitle.textContent = suggestion.title || "这里可能值得停一下";
     els.proactiveBody.textContent = suggestion.body || "先找一个观察点，再决定是否展开解释。";
     els.proactiveAccept.textContent = suggestion.actionLabel || "带我看看";
+    const options = suggestion.learnerOptions || {};
+    els.proactiveAlternative.hidden = options.canRequestAlternative !== true;
+    els.proactiveMute.hidden = options.canMuteScope !== true;
+    [
+      els.proactiveAccept,
+      els.proactiveSnooze,
+      els.proactiveAlternative,
+      els.proactiveMute
+    ].forEach((button) => {
+      button.disabled = proactiveChoiceSaving;
+    });
     markProactiveSuggestionShown(suggestion);
+  }
+
+  function proactiveSceneForScope(scopeKey = "", fallback = "") {
+    const unit = typeof getUnit === "function" ? getUnit(scopeKey) : null;
+    if (!unit || unit.type !== "knowledge") return String(fallback || "");
+    return typeof selectedKnowledgeSceneType === "function"
+      ? selectedKnowledgeSceneType(unit) || String(fallback || "")
+      : state?.selectedKnowledgeScenes?.[scopeKey] || String(fallback || "");
+  }
+
+  async function requestProactiveAlternative() {
+    const source = proactiveDecision;
+    const meta = courseMeta();
+    const targetUnitId = proactiveScopeKey(meta);
+    if (
+      proactiveChoiceSaving
+      || !source?.serverIssued
+      || !source.decisionId
+      || source.learnerOptions?.canRequestAlternative !== true
+      || !targetUnitId
+    ) return false;
+
+    proactiveChoiceSaving = true;
+    render();
+    try {
+      await queueProactiveResolution(source, "shown");
+      const currentSceneType = proactiveSceneForScope(
+        targetUnitId,
+        meta.sceneType
+      );
+      const response = await fetch("api/learning/assistant/intervention", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          unitId: targetUnitId,
+          sceneType: currentSceneType,
+          signal: {
+            kind: "student_requested_alternative",
+            sourceDecisionId: source.decisionId
+          },
+          contextRef: {
+            kind: "unit",
+            scope: "lesson",
+            chapterId: meta.chapterId,
+            unitId: targetUnitId,
+            knowledgePointId: targetUnitId
+          }
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        const error = new Error(payload.message || "暂时没有可用的替代帮助。");
+        error.code = payload.code || "";
+        throw error;
+      }
+      if (payload.study) {
+        applyProactiveStudy({
+          ...payload.study,
+          managed: true,
+          candidateCollectionEnabled: payload.study.mode !== "off"
+        }, meta);
+      }
+      const decision = payload.decision || {};
+      proactiveCoach?.resolve?.("alternative-requested", Date.now());
+      if (
+        !decision.intervene
+        || decision.action !== "switch_representation"
+        || !serverAuthorizedProactiveDecision(payload, meta)
+      ) {
+        proactiveDecision = null;
+        proactiveCandidateId = "";
+        setStatus("这次没有可用的替代表征，你仍可继续当前学习或主动提问。", "");
+        render();
+        return true;
+      }
+      proactiveDecision = {
+        ...decision,
+        id: `alternative:${payload.decisionId}`,
+        decisionId: payload.decisionId || "",
+        kind: "student_requested_alternative",
+        unitId: meta.unitId,
+        targetUnitId: decision.targetUnitId || targetUnitId,
+        createdAt: new Date().toISOString(),
+        interventionId: payload.interventionId || "",
+        serverIssued: true
+      };
+      proactiveCandidateId = proactiveDecision.id;
+      track("knowledge_proactive_alternative_offered", {
+        sourceDecisionId: source.decisionId,
+        decisionId: payload.decisionId || "",
+        interventionId: payload.interventionId || "",
+        targetUnitId: proactiveDecision.targetUnitId,
+        targetSceneType: proactiveDecision.targetSceneType || ""
+      });
+      render();
+      return true;
+    } catch (error) {
+      proactiveDecision = null;
+      proactiveCandidateId = "";
+      await loadProactiveStudy(meta, { force: true });
+      setStatus(error.message || "暂时没有可用的替代帮助。", "warning");
+      track("knowledge_proactive_alternative_failed", {
+        sourceDecisionId: source.decisionId,
+        reason: error.code || error.message || "request_failed"
+      });
+      render();
+      return false;
+    } finally {
+      proactiveChoiceSaving = false;
+      render();
+    }
+  }
+
+  function snoozeProactiveSuggestion() {
+    const presented = proactiveDecision;
+    const resolution = proactiveCoach?.resolve?.("snooze", Date.now()) || {};
+    if (!presented && !resolution.id) return false;
+    if (presented?.serverIssued) {
+      queueProactiveResolution(presented, "snoozed");
+    }
+    proactiveDecisionRequest?.abort();
+    proactiveDecisionRequest = null;
+    proactiveDecision = null;
+    proactiveCandidateId = "";
+    render();
+    setStatus("知点会先保持安静，稍后再根据新的学习证据判断。", "");
+    track("knowledge_proactive_suggestion_snoozed", {
+      suggestionId: presented?.id || resolution.id || "",
+      decisionId: presented?.decisionId || "",
+      interventionId: presented?.interventionId || "",
+      suggestionKind: presented?.kind || resolution.kind || "",
+      unitId: presented?.unitId || resolution.unitId || "",
+      cooldownUntil: resolution.cooldownUntil || 0
+    });
+    return true;
   }
 
   function executeProactiveAction(suggestion) {
@@ -1088,14 +2204,46 @@
       "self_explain",
       "ask_clarification",
       "elicit_self_explanation",
-      "concept_hint"
+      "concept_hint",
+      "decompose_subgoal",
+      "next_step_hint",
+      "partial_worked_example",
+      "switch_representation"
     ];
     const studentReplyActions = new Set([
       "ask_clarification",
       "review_mistake",
       "elicit_self_explanation",
-      "concept_hint"
+      "concept_hint",
+      "decompose_subgoal",
+      "next_step_hint",
+      "partial_worked_example"
     ]);
+    if (suggestion?.action === "switch_representation") {
+      const targetUnitId = String(suggestion.targetUnitId || proactiveScopeKey(meta));
+      const targetSceneType = String(suggestion.targetSceneType || "");
+      const targetUnit = typeof getUnit === "function"
+        ? getUnit(targetUnitId)
+        : null;
+      const legalScene = targetUnit?.type === "knowledge"
+        && typeof knowledgeInteractionTypes === "function"
+        && knowledgeInteractionTypes(targetUnit).some(
+          (type) => type.id === targetSceneType
+        );
+      if (!legalScene || typeof setKnowledgeSceneType !== "function") return false;
+      setKnowledgeSceneType(targetUnitId, targetSceneType);
+      if (
+        targetUnitId !== currentUnitId
+        && typeof selectUnit === "function"
+      ) {
+        selectUnit(targetUnitId);
+      }
+      setStatus(
+        `已切换到${suggestion.targetSceneLabel || "另一种表征"}；路径仍由你决定。`,
+        ""
+      );
+      return true;
+    }
     const expectsStudentReply = studentReplyActions.has(suggestion?.action);
     const preparedCopy = expectsStudentReply
       ? String(suggestion?.assistantPrompt || "").trim()
@@ -1152,7 +2300,19 @@
 
   function acceptProactiveSuggestion() {
     const suggestion = proactiveDecision;
-    if (!suggestion || !executeProactiveAction(suggestion)) return false;
+    if (!suggestion) return false;
+    const sceneSwitch = suggestion.action === "switch_representation";
+    if (sceneSwitch) {
+      proactiveDecision = null;
+      proactiveCandidateId = "";
+    }
+    if (!executeProactiveAction(suggestion)) {
+      if (sceneSwitch) {
+        proactiveDecision = suggestion;
+        proactiveCandidateId = suggestion.id || "";
+      }
+      return false;
+    }
     const resolution = proactiveCoach.resolve("accept", Date.now()) || {};
     if (suggestion.serverIssued) {
       queueProactiveResolution(suggestion, "accepted");
@@ -1555,7 +2715,26 @@
   function setOpen(next, options = {}) {
     const nextOpen = Boolean(next);
     const wasOpen = isOpen;
-    if (nextOpen && quizAssistantLocked()) {
+    if (
+      nextOpen
+      && (
+        proactiveStudy.agentAssistanceBlocked
+        || activeProactiveOutcomeSession()
+      )
+    ) {
+      proactiveOutcomesOpen = true;
+      proactiveOutcomeStatus = "独立测量进行中，知点与路径建议暂时关闭。";
+      render();
+      window.requestAnimationFrame(() => {
+        els.outcomesDialog?.focus({ preventScroll: true });
+      });
+      return false;
+    }
+    if (
+      nextOpen
+      && quizAssistantLocked()
+      && !quizParticipationAccessAllowed()
+    ) {
       setStatus(QUIZ_LOCKED_MESSAGE, "warning");
       renderLauncherAvailability();
       return false;
@@ -1595,8 +2774,23 @@
       detail: { open: isOpen }
     }));
     if (isOpen) window.requestAnimationFrame(applyPanelPosition);
+    if (
+      isOpen
+      && proactiveStudyManaged()
+      && (!proactiveStudy.loaded || !proactiveStudy.assignment)
+    ) {
+      loadProactiveStudy(courseMeta(), { force: true }).catch(() => {});
+    }
     if (isOpen && options.focus !== false) {
-      window.setTimeout(() => composerFocusTarget()?.focus({ preventScroll: true }), 180);
+      window.setTimeout(() => {
+        const participation = proactiveStudy.participation || {};
+        const focusTarget = quizParticipationAccessAllowed()
+          ? participation.canEnroll === true
+            ? els.proactiveConsentCheckbox
+            : els.proactiveWithdraw
+          : composerFocusTarget();
+        focusTarget?.focus({ preventScroll: true });
+      }, 180);
     }
     track(isOpen ? "knowledge_assistant_open" : "knowledge_assistant_close");
     return true;
@@ -1798,11 +2992,21 @@
   }
 
   function renderProvider() {
-    els.provider.textContent = provider.label || (provider.live ? "AI 助教" : "本地引导");
+    const verification = provider.verification
+      || (provider.live ? "pending" : "local");
+    els.provider.textContent = provider.label
+      || (verification === "verified"
+        ? "AI 助教"
+        : provider.live
+          ? "模型待验证"
+          : "本地引导");
     els.provider.dataset.live = provider.live ? "true" : "false";
-    els.provider.title = provider.live
-      ? "已配置真实模型服务；首次提问会验证连接"
-      : "当前使用本地确定性引导，不冒充真实大模型";
+    els.provider.dataset.verification = verification;
+    els.provider.title = verification === "verified"
+      ? "本次回答已由真实模型服务生成"
+      : provider.live
+        ? "已读取模型配置；首次提问会验证真实连接"
+        : "当前使用本地确定性引导，不冒充真实大模型";
   }
 
   function applyQuota(nextQuota) {
@@ -2177,9 +3381,13 @@
     article.dataset.proactiveDecisionId = suggestion.decisionId || "";
     const heading = document.createElement("div");
     const label = document.createElement("strong");
-    label.textContent = suggestion.supportLevel === "L2"
-      ? "知点建议只加一层线索"
-      : "知点建议";
+    label.textContent = {
+      L1: "知点建议先做最小澄清",
+      L2: "知点建议只加一层线索",
+      L3: "知点建议拆成两个子目标",
+      L4: "知点建议只推进下一步",
+      L5: "知点建议接着完成半成品"
+    }[suggestion.supportLevel] || "知点建议";
     const badge = document.createElement("small");
     badge.textContent = suggestion.supportLevel || "可选";
     heading.append(label, badge);
@@ -2198,12 +3406,39 @@
     });
     const dismiss = document.createElement("button");
     dismiss.type = "button";
-    dismiss.textContent = "不用了";
+    dismiss.textContent = "稍后";
     dismiss.addEventListener("click", () => {
-      dismissProactiveSuggestion("inline-dismiss");
+      snoozeProactiveSuggestion();
     });
     actions.append(accept, dismiss);
     article.append(heading, title, detail, actions);
+    const learnerOptions = suggestion.learnerOptions || {};
+    if (
+      learnerOptions.canRequestAlternative === true
+      || learnerOptions.canMuteScope === true
+    ) {
+      const secondary = document.createElement("div");
+      secondary.className = "knowledge-proactive-inline-options";
+      if (learnerOptions.canRequestAlternative === true) {
+        const alternative = document.createElement("button");
+        alternative.type = "button";
+        alternative.textContent = "换一种帮助";
+        alternative.disabled = proactiveChoiceSaving;
+        alternative.addEventListener("click", requestProactiveAlternative);
+        secondary.appendChild(alternative);
+      }
+      if (learnerOptions.canMuteScope === true) {
+        const mute = document.createElement("button");
+        mute.type = "button";
+        mute.textContent = "关闭此知识点提醒";
+        mute.disabled = proactiveChoiceSaving;
+        mute.addEventListener("click", () => {
+          updateProactiveScopePreference("off");
+        });
+        secondary.appendChild(mute);
+      }
+      article.appendChild(secondary);
+    }
     markProactiveSuggestionShown(suggestion);
     return article;
   }
@@ -2261,6 +3496,13 @@
         }, meta);
       }
       const result = payload.checkResult || {};
+      const decision = payload.decision || {};
+      const nextSupportCopy = {
+        L2: "一条概念关系线索",
+        L3: "一次子目标拆分",
+        L4: "一个可执行的下一步",
+        L5: "一个保留最后步骤的部分例题"
+      }[decision.supportLevel] || "下一层最小必要支架";
       proactiveCheckFeedback = {
         scopeKey,
         tone: result.status === "correct"
@@ -2274,10 +3516,9 @@
         text: result.status === "correct"
           ? "这次无提示作答已经恢复，知点停止加码；它只结束当前帮助回合，不代表已经掌握。"
           : result.status === "incorrect"
-            ? "这次无提示作答仍有卡点。只有你确认后，知点才会提供一条概念关系线索。"
+            ? `这次无提示作答仍有卡点。只有你确认后，知点才会提供${nextSupportCopy}。`
             : "知点不会继续升级支架，你仍可以按自己的节奏学习。"
       };
-      const decision = payload.decision || {};
       if (
         decision.intervene
         && decision.action !== "stay_silent"
@@ -2337,7 +3578,13 @@
     const label = document.createElement("strong");
     label.textContent = "无提示检查";
     const badge = document.createElement("small");
-    badge.textContent = check.supportLevel === "L2" ? "第二次独立作答" : "独立作答";
+    badge.textContent = {
+      L1: "第 1 次独立作答",
+      L2: "第 2 次独立作答",
+      L3: "第 3 次独立作答",
+      L4: "第 4 次独立作答",
+      L5: "第 5 次独立作答"
+    }[check.supportLevel] || "独立作答";
     heading.append(label, badge);
     const prompt = document.createElement("p");
     prompt.textContent = check.prompt || "";
@@ -2695,9 +3942,135 @@
     }
   }
 
+  function renderProactiveOutcomeEntry() {
+    const panel = els.proactiveOutcomesPanel;
+    const button = els.proactiveOutcomesOpen;
+    if (!panel || !button) return;
+    const visible = Boolean(
+      proactiveStudyManaged()
+      && proactiveStudy.loaded
+      && proactiveStudy.assignment
+      && proactiveStudy.participation?.status === "enrolled"
+      && proactiveOutcomes?.managed
+      && isSignedInNow()
+    );
+    panel.hidden = !visible;
+    if (!visible) return;
+
+    const stages = Array.isArray(proactiveOutcomes.stages)
+      ? proactiveOutcomes.stages
+      : [];
+    const active = activeProactiveOutcomeSession();
+    const available = stages.filter((stage) => stage.status === "available");
+    const submitted = stages.filter((stage) => stage.status === "submitted");
+    const withdrawn = stages.filter((stage) => stage.status === "withdrawn");
+    panel.classList.toggle("is-active", Boolean(active));
+    if (active) {
+      const stage = stages.find((entry) => entry.id === active.stageId);
+      const answered = Object.keys(active.responses || {}).length;
+      els.proactiveOutcomesSummary.textContent = `${stage?.label || "独立测量"}进行中，已作答 ${answered}/${stage?.itemCount || 0} 题；Agent 帮助暂时关闭。`;
+      button.textContent = "继续作答";
+      button.disabled = proactiveOutcomesLoading
+        || proactiveOutcomesSubmitting
+        || proactiveOutcomeWithdrawing;
+      return;
+    }
+    if (available.length) {
+      els.proactiveOutcomesSummary.textContent = `${available.map((stage) => stage.label).join("、")}已开放；作答期间不提供 Agent 帮助或即时反馈。`;
+      button.textContent = "查看测量任务";
+      button.disabled = proactiveOutcomesLoading
+        || proactiveOutcomesSubmitting;
+      return;
+    }
+    if (submitted.length === stages.length && stages.length) {
+      els.proactiveOutcomesSummary.textContent = "本章独立测量已全部提交；学生端不显示即时得分。";
+      button.textContent = "查看记录";
+      button.disabled = false;
+      return;
+    }
+    if (withdrawn.length) {
+      els.proactiveOutcomesSummary.textContent = "本章存在已退出的测量阶段；失访状态已记录。";
+      button.textContent = "查看记录";
+      button.disabled = false;
+      return;
+    }
+    const nextStage = stages.find((stage) => stage.unlockAt)
+      || stages.find((stage) => stage.status === "locked");
+    els.proactiveOutcomesSummary.textContent = nextStage?.reason
+      || "完成章后测后开放，不提供 Agent 帮助或即时反馈。";
+    button.textContent = "尚未开放";
+    button.disabled = true;
+  }
+
+  function renderProactiveParticipation() {
+    const section = els.proactiveParticipation;
+    if (!section) return;
+    const visible = Boolean(
+      proactiveStudyManaged()
+      && proactiveStudy.loaded
+      && isSignedInNow()
+    );
+    section.hidden = !visible;
+    if (!visible) return;
+    const participation = proactiveStudy.participation || {};
+    const status = participation.status || "not_enrolled";
+    if (status !== "enrolled") proactiveWithdrawalConfirming = false;
+    els.proactiveParticipationTitle.textContent = "本章主动伴学研究";
+    els.proactiveParticipationStatus.textContent = status === "withdrawn"
+      ? "已退出。课程、普通知点提问和已有学习记录不受影响。"
+      : status === "enrolled"
+        ? participation.mode === "explicit-consent"
+          ? "已按当前研究说明记录自愿参加；可随时退出。"
+          : "当前为工程试点记录；可随时退出，不影响正常学习。"
+        : participation.ready === false
+          ? "研究说明与同意版本尚未配置完成，当前不会分组或展示实验性主动提示。"
+          : "尚未参加；不参加不会影响课程和普通知点提问。";
+
+    const hasNotice = Boolean(participation.consentNoticeUrl);
+    els.proactiveConsentLink.hidden = !hasNotice;
+    if (hasNotice) {
+      els.proactiveConsentLink.href = participation.consentNoticeUrl;
+      els.proactiveConsentLink.textContent = `查看研究说明${
+        participation.consentVersion
+          ? `（${participation.consentVersion}）`
+          : ""
+      }`;
+    } else {
+      els.proactiveConsentLink.removeAttribute("href");
+    }
+    const canEnroll = participation.canEnroll === true;
+    els.proactiveConsentConfirm.hidden = !canEnroll;
+    els.proactiveConsentCheckbox.disabled = proactiveParticipationSaving;
+    els.proactiveEnroll.hidden = !canEnroll;
+    els.proactiveEnroll.disabled = proactiveParticipationSaving
+      || !els.proactiveConsentCheckbox.checked;
+    els.proactiveWithdraw.hidden = participation.canWithdraw !== true
+      || proactiveWithdrawalConfirming;
+    els.proactiveWithdraw.disabled = proactiveParticipationSaving;
+    els.proactiveEnroll.textContent = proactiveParticipationSaving
+      ? "正在记录"
+      : "同意参加";
+    els.proactiveWithdraw.textContent = proactiveParticipationSaving
+      ? "正在保存"
+      : "退出研究";
+    els.proactiveWithdrawConfirmPanel.hidden = !(
+      participation.canWithdraw === true
+      && proactiveWithdrawalConfirming
+    );
+    els.proactiveWithdrawCancel.disabled = proactiveParticipationSaving;
+    els.proactiveWithdrawConfirm.disabled = proactiveParticipationSaving;
+    els.proactiveWithdrawConfirm.textContent = proactiveParticipationSaving
+      ? "正在保存"
+      : "确认退出";
+  }
+
   function renderUnit() {
     const meta = courseMeta();
     const quizLocked = quizAssistantLocked(meta);
+    const measurementBlocked = Boolean(
+      proactiveStudy.agentAssistanceBlocked
+      || activeProactiveOutcomeSession()
+    );
     const conversationLimited = conversationAtLimit();
     renderLauncherAvailability(meta);
     els.unit.textContent = meta.knowledgePointLabel || meta.unitLabel || "等待课件加载";
@@ -2712,8 +4085,14 @@
         : "可直接提问，也可以先选择课件中的文字、公式或对象";
     els.quizPolicy.hidden = !quizLocked;
     root.classList.toggle("is-unavailable", !meta.supported || !isSignedInNow());
-    els.input.disabled = !meta.supported || !isSignedInNow() || quizLocked || conversationLimited;
-    els.input.placeholder = quizLocked
+    els.input.disabled = !meta.supported
+      || !isSignedInNow()
+      || quizLocked
+      || measurementBlocked
+      || conversationLimited;
+    els.input.placeholder = measurementBlocked
+      ? "独立测量期间暂停知点"
+      : quizLocked
       ? "提交测验后可继续提问"
       : conversationLimited
         ? "本段对话已满，请新建对话"
@@ -2723,9 +4102,16 @@
             ? "写下你的回答……"
           : "例如：为什么 h 变小时，割线更接近切线？";
     els.send.disabled = els.input.disabled || isAsking || (provider.live && quota.remaining <= 0);
-    els.pick.disabled = !meta.supported || !isSignedInNow() || quizLocked;
-    els.selectionAsk.disabled = quizLocked || conversationLimited;
-    els.selectionAsk.title = quizLocked
+    els.pick.disabled = !meta.supported
+      || !isSignedInNow()
+      || quizLocked
+      || measurementBlocked;
+    els.selectionAsk.disabled = quizLocked
+      || measurementBlocked
+      || conversationLimited;
+    els.selectionAsk.title = measurementBlocked
+      ? "独立测量期间暂停知点"
+      : quizLocked
       ? QUIZ_LOCKED_MESSAGE
       : conversationLimited
         ? "本段对话已满，请新建对话继续"
@@ -2734,6 +4120,7 @@
       proactiveStudyManaged(meta)
       && proactiveStudy.loaded
       && proactiveStudy.assignment
+      && proactiveStudy.participation?.status === "enrolled"
       && isSignedInNow()
     );
     const preference = ["standard", "reduced", "off"].includes(
@@ -2741,18 +4128,25 @@
     )
       ? proactiveStudy.studentPreference
       : "standard";
+    const scopeMuted = preference !== "off" && proactiveScopeMuted(meta);
     els.proactivePreference.hidden = !preferenceVisible;
-    els.proactivePreferenceStatus.textContent = {
-      standard: "按标准频率判断",
-      reduced: "仅保留强证据提醒",
-      off: "由你主动发起提问"
-    }[preference];
+    els.proactivePreferenceStatus.textContent = scopeMuted
+      ? "当前知识点已关闭提醒"
+      : {
+          standard: "按标准频率判断",
+          reduced: "仅保留强证据提醒",
+          off: "由你主动发起提问"
+        }[preference];
+    els.proactiveScopeRestore.hidden = !preferenceVisible || !scopeMuted;
+    els.proactiveScopeRestore.disabled = proactiveChoiceSaving;
     els.proactivePreferenceButtons.forEach((button) => {
       const selected = button.dataset.proactivePreference === preference;
       button.setAttribute("aria-checked", selected ? "true" : "false");
       button.classList.toggle("is-selected", selected);
-      button.disabled = proactivePreferenceSaving;
+      button.disabled = proactivePreferenceSaving || proactiveChoiceSaving;
     });
+    renderProactiveParticipation();
+    renderProactiveOutcomeEntry();
   }
 
   function render() {
@@ -2769,6 +4163,7 @@
     renderQuota();
     renderProactiveSuggestion();
     renderNoteSyncStatus();
+    renderProactiveOutcomes();
   }
 
   function hideNoteEditor(options = {}) {
@@ -3182,12 +4577,30 @@
       assistantMessage.guidance = event.guidance || event.message?.guidance || null;
       assistantMessage.quizReviewFollowUp = event.quizReviewFollowUp || null;
       assistantMessage.assistantIntent = event.message?.assistantIntent || "";
+      assistantMessage.fallback = event.fallback === true;
       assistantMessage.streaming = false;
       if (!assistantMessage.content) assistantMessage.content = event.message?.content || "";
       if (event.fallback) {
-        provider = { id: "fallback", live: false, label: "本地引导" };
+        provider = {
+          id: "fallback",
+          live: false,
+          verification: "failed",
+          label: "本地引导"
+        };
         renderProvider();
         setStatus("模型服务暂时不可用，已切换到本地引导。", "warning");
+      } else if (
+        assistantMessage.provider
+        && !["mock", "fallback"].includes(assistantMessage.provider)
+      ) {
+        provider = {
+          ...provider,
+          id: assistantMessage.provider,
+          live: true,
+          verification: "verified",
+          label: "AI 助教"
+        };
+        renderProvider();
       }
       applyQuota(event.quota);
       if (event.conversation?.id) {
@@ -3335,7 +4748,12 @@
       }
       assistantMessage.streaming = false;
       renderMessages();
-      setStatus("可以继续追问；对话会保存在这个知识点下。");
+      setStatus(
+        assistantMessage.fallback
+          ? "模型服务未接通，本次回答来自本地引导；仍可继续追问。"
+          : "可以继续追问；对话会保存在这个知识点下。",
+        assistantMessage.fallback ? "warning" : ""
+      );
       track("knowledge_answer_received", {
         provider: assistantMessage.provider || provider.id,
         answerLength: assistantMessage.content.length
@@ -3403,16 +4821,44 @@
     const sceneChanged = meta.sceneType !== currentSceneType;
     const quizStateChanged = meta.quizSubmitted !== currentQuizSubmitted;
     const supportChanged = meta.supported !== currentSupported;
+    const outcomeOwnerChanged = proactiveOutcomeOwnerKey
+      && proactiveOutcomeOwnerKey !== proactiveOutcomesOwner(meta);
+    const activeOutcome = activeProactiveOutcomeSession();
+    if (
+      proactiveOutcomesOpen
+      && (
+        participantChanged
+        || outcomeOwnerChanged
+        || (!activeOutcome && (unitChanged || supportChanged))
+      )
+    ) {
+      resetProactiveOutcomes({
+        close: true,
+        clearData: participantChanged || outcomeOwnerChanged
+      });
+      renderProactiveOutcomes();
+    } else if (participantChanged || outcomeOwnerChanged) {
+      resetProactiveOutcomes({
+        close: true,
+        clearData: true
+      });
+    }
     if ((unitChanged || participantChanged || supportChanged) && proactiveDecision) {
       ignoreProactiveSuggestion(participantChanged ? "participant-change" : "unit-change");
     }
     if (participantChanged) proactiveCoach?.reset?.({ clearCooldowns: true });
     loadProactiveStudy(meta, {
-      force: participantChanged || quizStateChanged || proactiveStudyKey !== `${nextParticipantId}|${meta.chapterId}`
+      force: participantChanged
+        || quizStateChanged
+        || (unitChanged && !proactiveStudy.assignment)
+        || proactiveStudyKey !== `${nextParticipantId}|${meta.chapterId}`
     }).catch(() => {});
     syncProactiveUnit(meta, { force: unitChanged || participantChanged || supportChanged });
 
-    if (quizAssistantLocked(meta)) {
+    if (
+      quizAssistantLocked(meta)
+      && !quizParticipationAccessAllowed(meta)
+    ) {
       if (isOpen) setOpen(false, { focus: false });
       if (CoursewareContext.getPickState().phase === "picking") {
         CoursewareContext.cancelObjectPick("quiz-lock");
@@ -3560,7 +5006,49 @@
     renderConversations();
   });
   els.proactiveAccept.addEventListener("click", acceptProactiveSuggestion);
-  els.proactiveDismiss.addEventListener("click", () => dismissProactiveSuggestion("dismiss"));
+  els.proactiveSnooze.addEventListener("click", snoozeProactiveSuggestion);
+  els.proactiveAlternative.addEventListener("click", requestProactiveAlternative);
+  els.proactiveMute.addEventListener("click", () => {
+    updateProactiveScopePreference("off");
+  });
+  els.proactiveScopeRestore.addEventListener("click", () => {
+    updateProactiveScopePreference("standard");
+  });
+  els.proactiveConsentCheckbox.addEventListener("change", renderUnit);
+  els.proactiveConsentLink.addEventListener("click", () => {
+    const participation = proactiveStudy.participation || {};
+    track("knowledge_proactive_consent_notice_opened", {
+      chapterId: courseMeta().chapterId,
+      consentVersion: participation.consentVersion || ""
+    });
+  });
+  els.proactiveEnroll.addEventListener("click", () => {
+    updateProactiveParticipation("enroll");
+  });
+  els.proactiveWithdraw.addEventListener("click", () => {
+    proactiveWithdrawalConfirming = true;
+    track("knowledge_proactive_withdrawal_confirm_opened", {
+      chapterId: courseMeta().chapterId
+    });
+    renderUnit();
+    window.setTimeout(() => {
+      els.proactiveWithdrawConfirm?.focus({ preventScroll: true });
+    }, 0);
+  });
+  els.proactiveWithdrawCancel.addEventListener("click", () => {
+    if (proactiveParticipationSaving) return;
+    proactiveWithdrawalConfirming = false;
+    track("knowledge_proactive_withdrawal_confirm_cancelled", {
+      chapterId: courseMeta().chapterId
+    });
+    renderUnit();
+    els.proactiveWithdraw?.focus({ preventScroll: true });
+  });
+  els.proactiveWithdrawConfirm.addEventListener("click", () => {
+    updateProactiveParticipation("withdraw");
+  });
+  els.proactiveOutcomesOpen.addEventListener("click", openProactiveOutcomes);
+  els.outcomesClose.addEventListener("click", closeProactiveOutcomes);
   els.proactivePreferenceButtons.forEach((button) => {
     button.addEventListener("click", () => {
       updateProactivePreference(button.dataset.proactivePreference);
@@ -3624,14 +5112,48 @@
     hideSelectionAction();
   }, true);
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || (els.selectionToolbar.hidden && els.noteEditor.hidden)) return;
-    hideSelectionAction();
+    if (proactiveOutcomesOpen) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeProactiveOutcomes();
+        return;
+      }
+      if (event.key === "Tab") {
+        const focusable = Array.from(
+          els.outcomes.querySelectorAll(
+            'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((node) => !node.hidden && node.getClientRects().length);
+        if (!focusable.length) {
+          event.preventDefault();
+          els.outcomesDialog?.focus({ preventScroll: true });
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable.at(-1);
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus({ preventScroll: true });
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus({ preventScroll: true });
+        }
+      }
+      return;
+    }
+    if (
+      event.key === "Escape"
+      && (!els.selectionToolbar.hidden || !els.noteEditor.hidden)
+    ) {
+      hideSelectionAction();
+    }
   });
   window.addEventListener("resize", () => {
     hideSelectionAction();
     applyLauncherPlacement();
     applyPanelPosition();
   });
+  document.addEventListener("fullscreenchange", syncFullscreenHost);
   window.addEventListener("cq:lesson-rendered", scheduleSync);
   window.addEventListener("cq:learning-signal", consumeProactiveSignal);
   proactiveTickTimer = window.setInterval(runProactiveTick, 10 * 1000);
@@ -3671,9 +5193,11 @@
       return submitQuestion();
     },
     useContext,
-    saveSelectionNote
+    saveSelectionNote,
+    syncFullscreenHost
   });
 
+  syncFullscreenHost();
   applyLauncherPlacement();
   setupLauncherDrag();
   setupPanelDrag();

@@ -695,6 +695,57 @@ function initSchema() {
   d.run("CREATE INDEX IF NOT EXISTS idx_experiment_assignments_experiment ON experiment_assignments(experiment_id, condition)");
 
   d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_participation (
+      user_id TEXT NOT NULL REFERENCES users(id),
+      experiment_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'enrolled',
+      enrollment_basis TEXT DEFAULT '',
+      consent_version TEXT DEFAULT '',
+      consented_at TEXT DEFAULT '',
+      withdrawn_at TEXT DEFAULT '',
+      withdrawal_reason TEXT DEFAULT '',
+      updated_by TEXT DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY (user_id, experiment_id)
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_participation_experiment ON proactive_participation(experiment_id, status, updated_at)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_protocol_snapshots (
+      experiment_id TEXT PRIMARY KEY,
+      chapter_id TEXT NOT NULL,
+      protocol_fingerprint TEXT NOT NULL,
+      protocol_json TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_proactive_protocol_fingerprint ON proactive_protocol_snapshots(protocol_fingerprint)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_experiment_runtime (
+      experiment_id TEXT PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'active',
+      pause_reason TEXT DEFAULT '',
+      paused_at TEXT DEFAULT '',
+      updated_by TEXT DEFAULT '',
+      updated_at TEXT NOT NULL
+    )
+  `);
+  d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_experiment_runtime_events (
+      id TEXT PRIMARY KEY,
+      experiment_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      reason TEXT DEFAULT '',
+      updated_by TEXT DEFAULT '',
+      created_at TEXT NOT NULL
+    )
+  `);
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_runtime_events_experiment ON proactive_experiment_runtime_events(experiment_id, created_at)");
+
+  d.run(`
     CREATE TABLE IF NOT EXISTS proactive_decisions (
       id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(id),
@@ -767,6 +818,7 @@ function initSchema() {
       current_level TEXT NOT NULL DEFAULT 'L0',
       fade_level INTEGER NOT NULL DEFAULT 0,
       student_preference TEXT NOT NULL DEFAULT 'standard',
+      scope_preference TEXT NOT NULL DEFAULT 'standard',
       last_reason_code TEXT DEFAULT '',
       pending_candidate_kind TEXT DEFAULT '',
       pending_candidate_at TEXT DEFAULT '',
@@ -782,7 +834,63 @@ function initSchema() {
   try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN pending_candidate_expires_at TEXT DEFAULT ''"); } catch {}
   try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN pending_evidence_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
   try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN lifecycle_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
+  try { d.run("ALTER TABLE proactive_policy_state ADD COLUMN scope_preference TEXT NOT NULL DEFAULT 'standard'"); } catch {}
   d.run("CREATE INDEX IF NOT EXISTS idx_proactive_policy_state_experiment ON proactive_policy_state(experiment_id, updated_at)");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_outcome_sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      experiment_id TEXT NOT NULL,
+      condition TEXT NOT NULL,
+      cohort TEXT DEFAULT '',
+      chapter_id TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      instrument_version TEXT NOT NULL,
+      protocol_fingerprint TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'active',
+      learning_generation INTEGER NOT NULL DEFAULT 1,
+      draft_response_json TEXT NOT NULL DEFAULT '{}',
+      started_at TEXT NOT NULL,
+      ended_at TEXT DEFAULT '',
+      outcome_attempt_id TEXT DEFAULT '',
+      withdrawal_reason TEXT DEFAULT '',
+      updated_at TEXT NOT NULL,
+      UNIQUE (user_id, experiment_id, stage)
+    )
+  `);
+  try { d.run("ALTER TABLE proactive_outcome_sessions ADD COLUMN draft_response_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_outcome_sessions_experiment ON proactive_outcome_sessions(experiment_id, condition, stage, status, started_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_outcome_sessions_user ON proactive_outcome_sessions(user_id, experiment_id, status, updated_at)");
+  d.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_proactive_outcome_sessions_one_active ON proactive_outcome_sessions(user_id, experiment_id) WHERE status = 'active'");
+
+  d.run(`
+    CREATE TABLE IF NOT EXISTS proactive_outcome_attempts (
+      id TEXT PRIMARY KEY,
+      session_id TEXT DEFAULT '',
+      user_id TEXT NOT NULL REFERENCES users(id),
+      experiment_id TEXT NOT NULL,
+      condition TEXT NOT NULL,
+      cohort TEXT DEFAULT '',
+      chapter_id TEXT NOT NULL,
+      stage TEXT NOT NULL,
+      instrument_version TEXT NOT NULL,
+      response_json TEXT NOT NULL DEFAULT '{}',
+      item_results_json TEXT NOT NULL DEFAULT '[]',
+      score REAL NOT NULL DEFAULT 0,
+      max_score REAL NOT NULL DEFAULT 0,
+      accuracy REAL NOT NULL DEFAULT 0,
+      duration_ms INTEGER NOT NULL DEFAULT 0,
+      learning_generation INTEGER NOT NULL DEFAULT 1,
+      started_at TEXT DEFAULT '',
+      submitted_at TEXT NOT NULL,
+      UNIQUE (user_id, experiment_id, stage)
+    )
+  `);
+  try { d.run("ALTER TABLE proactive_outcome_attempts ADD COLUMN session_id TEXT DEFAULT ''"); } catch {}
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_outcomes_experiment ON proactive_outcome_attempts(experiment_id, condition, stage, submitted_at)");
+  d.run("CREATE INDEX IF NOT EXISTS idx_proactive_outcomes_user ON proactive_outcome_attempts(user_id, experiment_id, submitted_at)");
+  d.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_proactive_outcomes_session ON proactive_outcome_attempts(session_id) WHERE session_id <> ''");
 
   d.run(`
     CREATE TABLE IF NOT EXISTS grading_regrade_audits (
@@ -1798,6 +1906,175 @@ function getExperimentAssignment(userId, experimentId) {
   );
 }
 
+function proactiveAssignmentCountsByStratum(experimentId, stratum) {
+  return Object.fromEntries(
+    queryAll(
+      `SELECT condition, COUNT(*) AS participants
+       FROM experiment_assignments
+       WHERE experiment_id = ? AND stratum = ?
+       GROUP BY condition`,
+      [experimentId, stratum]
+    ).map((row) => [
+      row.condition,
+      Math.max(0, Number(row.participants || 0))
+    ])
+  );
+}
+
+function getProactiveParticipation(userId, experimentId) {
+  return queryOne(
+    `SELECT *
+     FROM proactive_participation
+     WHERE user_id = ? AND experiment_id = ?`,
+    [userId, experimentId]
+  );
+}
+
+function enrollProactiveParticipation(record) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const existing = getProactiveParticipation(
+      record.user_id,
+      record.experiment_id
+    );
+    if (existing?.status === "withdrawn") {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        idempotent: false,
+        reason: "withdrawn_terminal",
+        participation: existing
+      };
+    }
+    if (existing?.status === "enrolled") {
+      d.run("ROLLBACK");
+      return {
+        ok: true,
+        idempotent: true,
+        reason: "",
+        participation: existing
+      };
+    }
+    d.run(
+      `INSERT INTO proactive_participation
+        (user_id, experiment_id, status, enrollment_basis, consent_version,
+         consented_at, withdrawn_at, withdrawal_reason, updated_by,
+         created_at, updated_at)
+       VALUES (?, ?, 'enrolled', ?, ?, ?, '', '', ?, ?, ?)
+       ON CONFLICT(user_id, experiment_id) DO UPDATE SET
+         status = 'enrolled',
+         enrollment_basis = excluded.enrollment_basis,
+         consent_version = excluded.consent_version,
+         consented_at = excluded.consented_at,
+         withdrawn_at = '',
+         withdrawal_reason = '',
+         updated_by = excluded.updated_by,
+         updated_at = excluded.updated_at
+       WHERE proactive_participation.status <> 'withdrawn'`,
+      [
+        record.user_id,
+        record.experiment_id,
+        record.enrollment_basis || "",
+        record.consent_version || "",
+        record.consented_at || record.updated_at,
+        record.updated_by || "student",
+        record.created_at || record.updated_at,
+        record.updated_at
+      ]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      idempotent: false,
+      reason: "",
+      participation: getProactiveParticipation(
+        record.user_id,
+        record.experiment_id
+      )
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function withdrawProactiveParticipation(record) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const existing = getProactiveParticipation(
+      record.user_id,
+      record.experiment_id
+    );
+    if (existing?.status === "withdrawn") {
+      d.run("ROLLBACK");
+      return {
+        ok: true,
+        idempotent: true,
+        reason: "",
+        participation: existing
+      };
+    }
+    d.run(
+      `INSERT INTO proactive_participation
+        (user_id, experiment_id, status, enrollment_basis, consent_version,
+         consented_at, withdrawn_at, withdrawal_reason, updated_by,
+         created_at, updated_at)
+       VALUES (?, ?, 'withdrawn', ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(user_id, experiment_id) DO UPDATE SET
+         status = 'withdrawn',
+         withdrawn_at = excluded.withdrawn_at,
+         withdrawal_reason = excluded.withdrawal_reason,
+         updated_by = excluded.updated_by,
+         updated_at = excluded.updated_at`,
+      [
+        record.user_id,
+        record.experiment_id,
+        existing?.enrollment_basis || record.enrollment_basis || "",
+        existing?.consent_version || record.consent_version || "",
+        existing?.consented_at || "",
+        record.withdrawn_at || record.updated_at,
+        record.withdrawal_reason || "student_withdrawal",
+        record.updated_by || "student",
+        existing?.created_at || record.created_at || record.updated_at,
+        record.updated_at
+      ]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      idempotent: false,
+      reason: "",
+      participation: getProactiveParticipation(
+        record.user_id,
+        record.experiment_id
+      )
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function proactiveParticipationSummary(experimentId = "") {
+  const params = experimentId ? [experimentId] : [];
+  const where = experimentId ? "WHERE experiment_id = ?" : "";
+  return queryAll(
+    `SELECT experiment_id, status, enrollment_basis, consent_version,
+            COUNT(*) AS participants,
+            MIN(created_at) AS first_recorded_at,
+            MAX(updated_at) AS last_updated_at
+     FROM proactive_participation
+     ${where}
+     GROUP BY experiment_id, status, enrollment_basis, consent_version
+     ORDER BY experiment_id, status, enrollment_basis`,
+    params
+  );
+}
+
 function getOrCreateExperimentAssignment(record) {
   const d = getDbSync();
   d.run("BEGIN IMMEDIATE");
@@ -1853,6 +2130,157 @@ function finalizeExperimentAssignment(record) {
   return getExperimentAssignment(record.user_id, record.experiment_id);
 }
 
+function getProactiveProtocolSnapshot(experimentId) {
+  return queryOne(
+    `SELECT *
+     FROM proactive_protocol_snapshots
+     WHERE experiment_id = ?`,
+    [experimentId]
+  );
+}
+
+function ensureProactiveProtocolSnapshot(record) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const existing = getProactiveProtocolSnapshot(record.experiment_id);
+    if (existing) {
+      d.run("ROLLBACK");
+      return {
+        ok: existing.protocol_fingerprint === record.protocol_fingerprint,
+        created: false,
+        reason: existing.protocol_fingerprint === record.protocol_fingerprint
+          ? ""
+          : "protocol_fingerprint_mismatch",
+        snapshot: existing
+      };
+    }
+    d.run(
+      `INSERT INTO proactive_protocol_snapshots
+        (experiment_id, chapter_id, protocol_fingerprint, protocol_json, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        record.experiment_id,
+        record.chapter_id,
+        record.protocol_fingerprint,
+        typeof record.protocol_json === "string"
+          ? record.protocol_json
+          : JSON.stringify(record.protocol || {}),
+        record.created_at
+      ]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      created: true,
+      reason: "",
+      snapshot: getProactiveProtocolSnapshot(record.experiment_id)
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function getProactiveExperimentRuntime(experimentId) {
+  return queryOne(
+    `SELECT *
+     FROM proactive_experiment_runtime
+     WHERE experiment_id = ?`,
+    [experimentId]
+  );
+}
+
+function ensureProactiveExperimentRuntime({
+  experimentId,
+  updatedAt
+}) {
+  execute(
+    `INSERT OR IGNORE INTO proactive_experiment_runtime
+      (experiment_id, status, pause_reason, paused_at, updated_by, updated_at)
+     VALUES (?, 'active', '', '', 'system', ?)`,
+    [experimentId, updatedAt]
+  );
+  return getProactiveExperimentRuntime(experimentId);
+}
+
+function setProactiveExperimentRuntime({
+  experimentId,
+  status,
+  reason = "",
+  updatedBy = "admin",
+  updatedAt
+}) {
+  const normalizedStatus = status === "paused" ? "paused" : "active";
+  const normalizedReason = normalizedStatus === "paused" ? String(reason || "") : "";
+  const existing = getProactiveExperimentRuntime(experimentId);
+  const changed = !existing
+    || existing.status !== normalizedStatus
+    || String(existing.pause_reason || "") !== normalizedReason;
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    d.run(
+      `INSERT INTO proactive_experiment_runtime
+        (experiment_id, status, pause_reason, paused_at, updated_by, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)
+       ON CONFLICT(experiment_id) DO UPDATE SET
+         status = excluded.status,
+         pause_reason = excluded.pause_reason,
+         paused_at = excluded.paused_at,
+         updated_by = excluded.updated_by,
+         updated_at = excluded.updated_at`,
+      [
+        experimentId,
+        normalizedStatus,
+        normalizedReason,
+        normalizedStatus === "paused" ? updatedAt : "",
+        updatedBy,
+        updatedAt
+      ]
+    );
+    if (changed) {
+      d.run(
+        `INSERT INTO proactive_experiment_runtime_events
+          (id, experiment_id, status, reason, updated_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          crypto.randomUUID(),
+          experimentId,
+          normalizedStatus,
+          normalizedReason,
+          updatedBy,
+          updatedAt
+        ]
+      );
+    }
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ...getProactiveExperimentRuntime(experimentId),
+      changed
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function listProactiveExperimentRuntimeEvents(experimentId, limit = 50) {
+  return queryAll(
+    `SELECT *
+     FROM proactive_experiment_runtime_events
+     WHERE experiment_id = ?
+     ORDER BY created_at DESC, id DESC
+     LIMIT ?`,
+    [
+      experimentId,
+      Math.max(1, Math.min(500, Math.trunc(Number(limit || 50))))
+    ]
+  );
+}
+
 function getProactivePolicyState(userId, experimentId, scopeKey) {
   return queryOne(
     `SELECT *
@@ -1875,17 +2303,35 @@ function listProactivePolicyStates(userId, experimentId) {
 function closeOpenProactiveInterventionsForUser({
   userId,
   experimentId,
+  scopeKey = "",
+  resolution = "ignored",
   resolvedAt,
   followupOutcome = {}
 }) {
+  const terminalResolution = String(resolution || "").trim();
+  if (![
+    "ignored",
+    "scope_muted",
+    "preference_off",
+    "learning_reset",
+    "measurement_started",
+    "study_withdrawn"
+  ].includes(terminalResolution)) {
+    throw new Error("invalid_proactive_close_resolution");
+  }
+  const params = [userId, experimentId];
+  const scopeClause = scopeKey
+    ? " AND COALESCE(NULLIF(pd.scope_key, ''), pd.unit_id) = ?"
+    : "";
+  if (scopeKey) params.push(scopeKey);
   const rows = queryAll(
     `SELECT pi.id
      FROM proactive_interventions pi
      JOIN proactive_decisions pd ON pd.id = pi.decision_id
      WHERE pi.user_id = ?
        AND pd.experiment_id = ?
-       AND pi.status IN ('offered', 'shown')`,
-    [userId, experimentId]
+       AND pi.status IN ('offered', 'shown')${scopeClause}`,
+    params
   );
   if (!rows.length) return 0;
 
@@ -1895,10 +2341,60 @@ function closeOpenProactiveInterventionsForUser({
     rows.forEach((row) => {
       d.run(
         `UPDATE proactive_interventions
-         SET status = 'ignored', resolution = 'ignored', resolved_at = ?,
+         SET status = ?, resolution = ?, resolved_at = ?,
+              followup_outcome_json = ?, updated_at = ?
+         WHERE id = ? AND status IN ('offered', 'shown')`,
+        [
+          terminalResolution,
+          terminalResolution,
+          resolvedAt,
+          JSON.stringify(followupOutcome || {}),
+          resolvedAt,
+          row.id
+        ]
+      );
+    });
+    d.run("COMMIT");
+    scheduleSave();
+    return rows.length;
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function closeOpenProactiveInterventionsForExperiment({
+  experimentId,
+  resolution = "experiment_paused",
+  resolvedAt,
+  followupOutcome = {}
+}) {
+  const terminalResolution = String(resolution || "").trim();
+  if (terminalResolution !== "experiment_paused") {
+    throw new Error("invalid_proactive_experiment_close_resolution");
+  }
+  const rows = queryAll(
+    `SELECT pi.id
+     FROM proactive_interventions pi
+     JOIN proactive_decisions pd ON pd.id = pi.decision_id
+     WHERE pd.experiment_id = ?
+       AND pi.status IN ('offered', 'shown')`,
+    [experimentId]
+  );
+  if (!rows.length) return 0;
+
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    rows.forEach((row) => {
+      d.run(
+        `UPDATE proactive_interventions
+         SET status = ?, resolution = ?, resolved_at = ?,
              followup_outcome_json = ?, updated_at = ?
          WHERE id = ? AND status IN ('offered', 'shown')`,
         [
+          terminalResolution,
+          terminalResolution,
           resolvedAt,
           JSON.stringify(followupOutcome || {}),
           resolvedAt,
@@ -1949,16 +2445,17 @@ function upsertProactivePolicyState(record) {
   execute(
     `INSERT INTO proactive_policy_state
       (user_id, experiment_id, scope_key, dismiss_streak, cooldown_until,
-       current_level, fade_level, student_preference, last_reason_code,
+       current_level, fade_level, student_preference, scope_preference, last_reason_code,
        pending_candidate_kind, pending_candidate_at, pending_candidate_expires_at,
        pending_evidence_json, lifecycle_json, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(user_id, experiment_id, scope_key) DO UPDATE SET
        dismiss_streak = excluded.dismiss_streak,
        cooldown_until = excluded.cooldown_until,
        current_level = excluded.current_level,
        fade_level = excluded.fade_level,
        student_preference = excluded.student_preference,
+       scope_preference = excluded.scope_preference,
        last_reason_code = excluded.last_reason_code,
        pending_candidate_kind = excluded.pending_candidate_kind,
        pending_candidate_at = excluded.pending_candidate_at,
@@ -1975,6 +2472,7 @@ function upsertProactivePolicyState(record) {
       record.current_level || "L0",
       Math.max(0, Math.trunc(Number(record.fade_level || 0))),
       record.student_preference || "standard",
+      record.scope_preference || "standard",
       record.last_reason_code || "",
       record.pending_candidate_kind || "",
       record.pending_candidate_at || "",
@@ -2190,7 +2688,16 @@ function resolveProactiveIntervention({
       d.run("ROLLBACK");
       return { ok: false, reason: "not_found" };
     }
-    const terminal = new Set(["accepted", "dismissed", "ignored", "expired", "acted", "resolved"]);
+    const terminal = new Set([
+      "accepted",
+      "dismissed",
+      "ignored",
+      "snoozed",
+      "alternative_requested",
+      "expired",
+      "acted",
+      "resolved"
+    ]);
     const requested = String(resolution || "");
     if (requested === "shown") {
       if (row.status === "shown") {
@@ -2208,7 +2715,10 @@ function resolveProactiveIntervention({
         [resolvedAt, resolvedAt, row.id]
       );
     } else {
-      if (["accepted", "dismissed"].includes(requested) && row.status === "offered") {
+      if (
+        ["accepted", "dismissed", "snoozed", "alternative_requested"].includes(requested)
+        && row.status === "offered"
+      ) {
         d.run("ROLLBACK");
         return { ok: false, reason: "shown_required", intervention: row };
       }
@@ -2303,6 +2813,11 @@ function proactiveDecisionRows(options = {}) {
   )?.c || 0);
   const rows = queryAll(
     `SELECT pd.*, u.nickname,
+            pp.status AS participation_status,
+            pp.consent_version AS participation_consent_version,
+            pp.consented_at AS participation_consented_at,
+            pp.withdrawn_at AS participation_withdrawn_at,
+            pp.withdrawal_reason AS participation_withdrawal_reason,
             COALESCE(lsv.generation, 1) AS current_learning_generation,
             pi.id AS intervention_id, pi.status AS intervention_status,
             pi.shown_at, pi.resolved_at, pi.resolution, pi.latency_ms,
@@ -2316,6 +2831,9 @@ function proactiveDecisionRows(options = {}) {
             pps.updated_at AS policy_state_updated_at
      FROM proactive_decisions pd
      LEFT JOIN users u ON u.id = pd.user_id
+     LEFT JOIN proactive_participation pp
+       ON pp.user_id = pd.user_id
+      AND pp.experiment_id = pd.experiment_id
      LEFT JOIN learning_state_versions lsv ON lsv.user_id = pd.user_id
      LEFT JOIN proactive_interventions pi ON pi.decision_id = pd.id
      LEFT JOIN proactive_policy_state pps
@@ -2366,10 +2884,16 @@ function proactiveDecisionSummary(experimentId = "") {
        SUM(CASE WHEN pi.resolution = 'accepted' THEN 1 ELSE 0 END) AS accepted,
        SUM(CASE WHEN pi.resolution = 'dismissed' THEN 1 ELSE 0 END) AS dismissed,
        SUM(CASE WHEN pi.resolution = 'ignored' THEN 1 ELSE 0 END) AS ignored,
+       SUM(CASE WHEN pi.resolution = 'snoozed' THEN 1 ELSE 0 END) AS snoozed,
+       SUM(CASE WHEN pi.resolution = 'alternative_requested' THEN 1 ELSE 0 END) AS alternative_requested,
        SUM(CASE WHEN pi.resolution = 'expired' THEN 1 ELSE 0 END) AS expired,
        SUM(CASE WHEN pi.status IN ('offered', 'shown') THEN 1 ELSE 0 END) AS unresolved_offers,
        SUM(CASE WHEN pd.action = 'elicit_self_explanation' THEN 1 ELSE 0 END) AS l1_self_explanations,
        SUM(CASE WHEN pd.action = 'concept_hint' THEN 1 ELSE 0 END) AS l2_concept_hints,
+       SUM(CASE WHEN pd.action = 'decompose_subgoal' THEN 1 ELSE 0 END) AS l3_subgoal_decompositions,
+       SUM(CASE WHEN pd.action = 'next_step_hint' THEN 1 ELSE 0 END) AS l4_next_step_hints,
+       SUM(CASE WHEN pd.action = 'partial_worked_example' THEN 1 ELSE 0 END) AS l5_partial_examples,
+       SUM(CASE WHEN pd.action = 'switch_representation' THEN 1 ELSE 0 END) AS representation_switches,
        SUM(CASE WHEN pi.followup_outcome_json LIKE '%"outcome":"continued_friction"%' THEN 1 ELSE 0 END) AS continued_friction,
        SUM(CASE WHEN pi.followup_outcome_json LIKE '%"outcome":"independent_attempt_success"%' THEN 1 ELSE 0 END) AS independent_success_exits
      FROM proactive_decisions pd
@@ -2386,7 +2910,9 @@ function proactiveDecisionSummary(experimentId = "") {
        SUM(CASE WHEN pd.delivery_decision = 'intervene' THEN 1 ELSE 0 END) AS delivered_interventions,
        SUM(CASE WHEN pi.resolution = 'accepted' THEN 1 ELSE 0 END) AS accepted,
        SUM(CASE WHEN pi.resolution = 'dismissed' THEN 1 ELSE 0 END) AS dismissed,
-       SUM(CASE WHEN pi.resolution = 'ignored' THEN 1 ELSE 0 END) AS ignored
+       SUM(CASE WHEN pi.resolution = 'ignored' THEN 1 ELSE 0 END) AS ignored,
+       SUM(CASE WHEN pi.resolution = 'snoozed' THEN 1 ELSE 0 END) AS snoozed,
+       SUM(CASE WHEN pi.resolution = 'alternative_requested' THEN 1 ELSE 0 END) AS alternative_requested
      FROM proactive_decisions pd
      LEFT JOIN proactive_interventions pi ON pi.decision_id = pd.id
      ${where}
@@ -2395,6 +2921,982 @@ function proactiveDecisionSummary(experimentId = "") {
     params
   );
   return { ...totals, conditions };
+}
+
+function proactiveAutonomySummary(experimentId = "") {
+  const eventTypes = [
+    "proactive_student_preference_changed",
+    "proactive_scope_preference_changed"
+  ];
+  const rows = queryAll(
+    `SELECT payload
+     FROM events
+     WHERE type = 'interaction'
+       AND (${eventTypes.map(() => "payload LIKE ?").join(" OR ")})`,
+    eventTypes.map((eventType) => `%${eventType}%`)
+  );
+  const summary = {
+    scope_mutes: 0,
+    scope_restores: 0,
+    global_standard_changes: 0,
+    global_reduced_changes: 0,
+    global_off_changes: 0
+  };
+  rows.forEach((row) => {
+    const payload = parseJsonField(row.payload);
+    if (
+      experimentId
+      && String(payload.research?.experimentId || "") !== experimentId
+    ) return;
+    const eventType = String(
+      payload.eventType || payload.data?.eventType || ""
+    );
+    const data = payload.data && typeof payload.data === "object"
+      ? payload.data
+      : {};
+    const preference = String(data.preference || "");
+    if (eventType === "proactive_scope_preference_changed") {
+      if (preference === "off") summary.scope_mutes += 1;
+      if (preference === "standard") summary.scope_restores += 1;
+      return;
+    }
+    if (eventType !== "proactive_student_preference_changed") return;
+    if (preference === "standard") summary.global_standard_changes += 1;
+    if (preference === "reduced") summary.global_reduced_changes += 1;
+    if (preference === "off") summary.global_off_changes += 1;
+  });
+
+  const params = experimentId ? [experimentId] : [];
+  const where = experimentId ? "WHERE experiment_id = ?" : "";
+  const current = queryOne(
+    `SELECT
+       SUM(CASE WHEN scope_key <> '__chapter__' AND scope_preference = 'off' THEN 1 ELSE 0 END) AS current_muted_scopes,
+       COUNT(DISTINCT CASE WHEN scope_key <> '__chapter__' AND scope_preference = 'off' THEN user_id END) AS current_users_with_muted_scopes,
+       COUNT(DISTINCT CASE WHEN scope_key = '__chapter__' AND student_preference = 'off' THEN user_id END) AS current_global_off_users,
+       COUNT(DISTINCT CASE WHEN scope_key = '__chapter__' AND student_preference = 'reduced' THEN user_id END) AS current_global_reduced_users
+     FROM proactive_policy_state
+     ${where}`,
+    params
+  ) || {};
+  return {
+    ...summary,
+    current_muted_scopes: Number(current.current_muted_scopes || 0),
+    current_users_with_muted_scopes: Number(
+      current.current_users_with_muted_scopes || 0
+    ),
+    current_global_off_users: Number(current.current_global_off_users || 0),
+    current_global_reduced_users: Number(
+      current.current_global_reduced_users || 0
+    )
+  };
+}
+
+function proactiveIntegrityDiagnostics({
+  experimentId,
+  experimentArms = [],
+  displayArms = [],
+  assignmentStrategy = "hash",
+  repeatWindowMs = 2 * 60 * 1000,
+  unresolvedThreshold = 10,
+  unresolvedAgeMs = 30 * 60 * 1000,
+  now = Date.now()
+} = {}) {
+  const rows = queryAll(
+    `SELECT pd.user_id, pd.condition, pd.scope_key, pd.unit_id, pd.decision,
+            pd.reason_codes_json, pd.evidence_refs_json,
+            pd.evidence_snapshot_json, pd.delivery_decision, pd.created_at,
+            pi.status AS intervention_status, pi.shown_at, pi.resolution
+     FROM proactive_decisions pd
+     LEFT JOIN proactive_interventions pi ON pi.decision_id = pd.id
+     WHERE pd.experiment_id = ?
+     ORDER BY pd.created_at, pd.id`,
+    [experimentId]
+  );
+  const displaySet = new Set(displayArms.map((arm) => String(arm || "")));
+  const shownRows = rows.filter((row) => String(row.shown_at || "").trim());
+  const protectedDisplays = shownRows.filter((row) => {
+    const reasons = parseJsonField(row.reason_codes_json);
+    return Array.isArray(reasons) && reasons.includes("protected_assessment_stage");
+  });
+  const nonDisplayArmDisplays = shownRows.filter((row) => !displaySet.has(row.condition));
+  const withdrawnAtByUser = new Map(
+    queryAll(
+      `SELECT user_id, withdrawn_at
+       FROM proactive_participation
+       WHERE experiment_id = ? AND status = 'withdrawn'`,
+      [experimentId]
+    ).map((row) => [row.user_id, Date.parse(row.withdrawn_at || "")])
+  );
+  const postWithdrawalDisplays = shownRows.filter((row) => {
+    const withdrawnAt = withdrawnAtByUser.get(row.user_id);
+    const shownAt = Date.parse(row.shown_at || row.created_at || "");
+    return Number.isFinite(withdrawnAt)
+      && Number.isFinite(shownAt)
+      && shownAt >= withdrawnAt;
+  });
+  const incompleteEvidence = rows.filter((row) => {
+    if (row.decision !== "intervene" && row.delivery_decision !== "intervene") return false;
+    const refs = parseJsonField(row.evidence_refs_json);
+    const snapshot = parseJsonField(row.evidence_snapshot_json);
+    return !Array.isArray(refs)
+      || refs.length === 0
+      || !snapshot
+      || typeof snapshot !== "object"
+      || Array.isArray(snapshot)
+      || Object.keys(snapshot).length === 0;
+  });
+  const unresolvedRows = rows.filter((row) => (
+    ["offered", "shown"].includes(String(row.intervention_status || ""))
+  ));
+  const unresolvedOldestAt = unresolvedRows
+    .map((row) => row.shown_at || row.created_at || "")
+    .filter(Boolean)
+    .sort()[0] || "";
+  const unresolvedOldestTimestamp = Date.parse(unresolvedOldestAt);
+  const unresolvedOldestAgeMs = Number.isFinite(unresolvedOldestTimestamp)
+    ? Math.max(0, now - unresolvedOldestTimestamp)
+    : 0;
+
+  let repeatedDisplays = 0;
+  const displayGroups = new Map();
+  shownRows.forEach((row) => {
+    const key = [
+      row.user_id,
+      row.scope_key || row.unit_id || ""
+    ].join("\n");
+    if (!displayGroups.has(key)) displayGroups.set(key, []);
+    displayGroups.get(key).push(Date.parse(row.shown_at || row.created_at || ""));
+  });
+  displayGroups.forEach((timestamps) => {
+    timestamps
+      .filter(Number.isFinite)
+      .sort((a, b) => a - b)
+      .forEach((timestamp, index, sorted) => {
+        if (index > 0 && timestamp - sorted[index - 1] < repeatWindowMs) {
+          repeatedDisplays += 1;
+        }
+      });
+  });
+
+  const preferenceEvents = queryAll(
+    `SELECT user_id, payload, created_at
+     FROM events
+     WHERE type = 'interaction'
+       AND (
+         payload LIKE '%proactive_student_preference_changed%'
+         OR payload LIKE '%proactive_scope_preference_changed%'
+       )
+     ORDER BY created_at`,
+    []
+  ).map((row) => ({
+    ...row,
+    parsed: parseJsonField(row.payload)
+  })).filter((row) => (
+    String(row.parsed?.research?.experimentId || "") === String(experimentId || "")
+  ));
+  const timelineByUser = new Map();
+  preferenceEvents.forEach((row) => {
+    if (!timelineByUser.has(row.user_id)) timelineByUser.set(row.user_id, []);
+    timelineByUser.get(row.user_id).push({
+      type: "preference",
+      at: Date.parse(row.created_at || ""),
+      eventType: String(row.parsed?.eventType || ""),
+      scopeKey: String(row.parsed?.data?.scopeKey || row.parsed?.unitId || ""),
+      preference: String(row.parsed?.data?.preference || "")
+    });
+  });
+  shownRows.forEach((row) => {
+    if (!timelineByUser.has(row.user_id)) timelineByUser.set(row.user_id, []);
+    timelineByUser.get(row.user_id).push({
+      type: "shown",
+      at: Date.parse(row.shown_at || row.created_at || ""),
+      scopeKey: String(row.scope_key || row.unit_id || "")
+    });
+  });
+  let optOutDisplays = 0;
+  timelineByUser.forEach((entries) => {
+    let globalPreference = "standard";
+    const scopePreferences = new Map();
+    entries
+      .filter((entry) => Number.isFinite(entry.at))
+      .sort((left, right) => (
+        left.at - right.at
+        || (left.type === "preference" ? -1 : 1)
+      ))
+      .forEach((entry) => {
+        if (entry.type === "preference") {
+          if (entry.eventType === "proactive_student_preference_changed") {
+            globalPreference = entry.preference || "standard";
+          } else if (entry.eventType === "proactive_scope_preference_changed") {
+            scopePreferences.set(entry.scopeKey, entry.preference || "standard");
+          }
+          return;
+        }
+        if (
+          globalPreference === "off"
+          || scopePreferences.get(entry.scopeKey) === "off"
+        ) {
+          optOutDisplays += 1;
+        }
+      });
+  });
+
+  const arms = Array.from(new Set(
+    experimentArms.map((arm) => String(arm || "")).filter(Boolean)
+  ));
+  const assignmentRows = queryAll(
+    `SELECT stratum, condition, COUNT(*) AS participants
+     FROM experiment_assignments
+     WHERE experiment_id = ?
+       AND stratum NOT IN ('', 'unassigned', 'unstratified')
+     GROUP BY stratum, condition
+     ORDER BY stratum, condition`,
+    [experimentId]
+  );
+  const strata = new Map();
+  assignmentRows.forEach((row) => {
+    if (!strata.has(row.stratum)) {
+      strata.set(row.stratum, Object.fromEntries(arms.map((arm) => [arm, 0])));
+    }
+    strata.get(row.stratum)[row.condition] = Number(row.participants || 0);
+  });
+  const imbalancedStrata = [];
+  strata.forEach((counts, stratum) => {
+    const values = arms.map((arm) => Number(counts[arm] || 0));
+    const total = values.reduce((sum, value) => sum + value, 0);
+    if (!values.length || total < arms.length * 2) return;
+    const gap = Math.max(...values) - Math.min(...values);
+    const allowedGap = assignmentStrategy === "stratified-balanced"
+      ? 1
+      : Math.max(2, Math.ceil(total * 0.25));
+    if (gap > allowedGap) {
+      imbalancedStrata.push({
+        stratum,
+        total,
+        gap,
+        allowedGap,
+        counts
+      });
+    }
+  });
+
+  return {
+    generatedAt: new Date(now).toISOString(),
+    protectedDisplays: protectedDisplays.length,
+    nonDisplayArmDisplays: nonDisplayArmDisplays.length,
+    postWithdrawalDisplays: postWithdrawalDisplays.length,
+    optOutDisplays,
+    repeatedDisplays,
+    repeatWindowMs,
+    unresolvedOffers: unresolvedRows.length,
+    unresolvedThreshold,
+    unresolvedOldestAt,
+    unresolvedOldestAgeMs,
+    unresolvedAgeMs,
+    incompleteEvidence: incompleteEvidence.length,
+    imbalancedStrata
+  };
+}
+
+function getProactiveOutcomeSession(userId, experimentId, stage) {
+  return queryOne(
+    `SELECT *
+     FROM proactive_outcome_sessions
+     WHERE user_id = ? AND experiment_id = ? AND stage = ?`,
+    [userId, experimentId, stage]
+  );
+}
+
+function getProactiveOutcomeSessionById(userId, sessionId) {
+  return queryOne(
+    `SELECT *
+     FROM proactive_outcome_sessions
+     WHERE user_id = ? AND id = ?`,
+    [userId, sessionId]
+  );
+}
+
+function getActiveProactiveOutcomeSession(userId, experimentId) {
+  return queryOne(
+    `SELECT *
+     FROM proactive_outcome_sessions
+     WHERE user_id = ? AND experiment_id = ? AND status = 'active'
+     ORDER BY started_at DESC, id DESC
+     LIMIT 1`,
+    [userId, experimentId]
+  );
+}
+
+function listProactiveOutcomeSessions(userId, experimentId) {
+  return queryAll(
+    `SELECT *
+     FROM proactive_outcome_sessions
+     WHERE user_id = ? AND experiment_id = ?
+     ORDER BY started_at, stage`,
+    [userId, experimentId]
+  );
+}
+
+function startProactiveOutcomeSession(record) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const existing = getProactiveOutcomeSession(
+      record.user_id,
+      record.experiment_id,
+      record.stage
+    );
+    if (existing) {
+      d.run("ROLLBACK");
+      return {
+        ok: existing.status === "active",
+        idempotent: existing.status === "active",
+        reason: existing.status === "active"
+          ? ""
+          : `stage_${existing.status}`,
+        session: existing
+      };
+    }
+    const active = getActiveProactiveOutcomeSession(
+      record.user_id,
+      record.experiment_id
+    );
+    if (active) {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        idempotent: false,
+        reason: "another_session_active",
+        session: active
+      };
+    }
+    d.run(
+      `INSERT INTO proactive_outcome_sessions
+        (id, user_id, experiment_id, condition, cohort, chapter_id, stage,
+         instrument_version, protocol_fingerprint, status, learning_generation,
+         draft_response_json, started_at, ended_at, outcome_attempt_id,
+         withdrawal_reason, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, '{}', ?, '', '', '', ?)`,
+      [
+        record.id,
+        record.user_id,
+        record.experiment_id,
+        record.condition,
+        record.cohort || "",
+        record.chapter_id,
+        record.stage,
+        record.instrument_version,
+        record.protocol_fingerprint || "",
+        Math.max(1, Math.trunc(Number(record.learning_generation || 1))),
+        record.started_at,
+        record.started_at
+      ]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      idempotent: false,
+      reason: "",
+      session: getProactiveOutcomeSessionById(record.user_id, record.id)
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function updateProactiveOutcomeSessionDraft({
+  userId,
+  sessionId,
+  responses = {},
+  updatedAt
+}) {
+  const session = getProactiveOutcomeSessionById(userId, sessionId);
+  if (!session) return { ok: false, reason: "not_found", session: null };
+  if (session.status !== "active") {
+    return {
+      ok: false,
+      reason: `session_${session.status}`,
+      session
+    };
+  }
+  execute(
+    `UPDATE proactive_outcome_sessions
+     SET draft_response_json = ?, updated_at = ?
+     WHERE id = ? AND user_id = ? AND status = 'active'`,
+    [JSON.stringify(responses || {}), updatedAt, sessionId, userId]
+  );
+  return {
+    ok: true,
+    reason: "",
+    session: getProactiveOutcomeSessionById(userId, sessionId)
+  };
+}
+
+function withdrawProactiveOutcomeSession({
+  userId,
+  sessionId,
+  reason = "student_exit",
+  endedAt
+}) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const session = getProactiveOutcomeSessionById(userId, sessionId);
+    if (!session) {
+      d.run("ROLLBACK");
+      return { ok: false, reason: "not_found", session: null };
+    }
+    if (session.status === "withdrawn") {
+      d.run("ROLLBACK");
+      return {
+        ok: true,
+        idempotent: true,
+        reason: "",
+        session
+      };
+    }
+    if (session.status !== "active") {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        reason: `session_${session.status}`,
+        session
+      };
+    }
+    d.run(
+      `UPDATE proactive_outcome_sessions
+       SET status = 'withdrawn', ended_at = ?, withdrawal_reason = ?,
+           updated_at = ?
+       WHERE id = ? AND user_id = ? AND status = 'active'`,
+      [endedAt, reason, endedAt, sessionId, userId]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      idempotent: false,
+      reason: "",
+      session: getProactiveOutcomeSessionById(userId, sessionId)
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function withdrawActiveProactiveOutcomeSessionsForUser({
+  userId,
+  experimentId,
+  reason = "learning_reset",
+  endedAt
+}) {
+  const active = getActiveProactiveOutcomeSession(userId, experimentId);
+  if (!active) return [];
+  const result = withdrawProactiveOutcomeSession({
+    userId,
+    sessionId: active.id,
+    reason,
+    endedAt
+  });
+  return result.ok && result.session ? [result.session] : [];
+}
+
+function getProactiveOutcomeAttempt(userId, experimentId, stage) {
+  return queryOne(
+    `SELECT *
+     FROM proactive_outcome_attempts
+     WHERE user_id = ? AND experiment_id = ? AND stage = ?`,
+    [userId, experimentId, stage]
+  );
+}
+
+function listProactiveOutcomeAttempts(userId, experimentId) {
+  return queryAll(
+    `SELECT *
+     FROM proactive_outcome_attempts
+     WHERE user_id = ? AND experiment_id = ?
+     ORDER BY submitted_at, stage`,
+    [userId, experimentId]
+  );
+}
+
+function insertProactiveOutcomeAttempt(record) {
+  execute(
+    `INSERT INTO proactive_outcome_attempts
+      (id, session_id, user_id, experiment_id, condition, cohort, chapter_id, stage,
+       instrument_version, response_json, item_results_json, score, max_score,
+       accuracy, duration_ms, learning_generation, started_at, submitted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.session_id || "",
+      record.user_id,
+      record.experiment_id,
+      record.condition,
+      record.cohort || "",
+      record.chapter_id,
+      record.stage,
+      record.instrument_version,
+      typeof record.response_json === "string"
+        ? record.response_json
+        : JSON.stringify(record.responses || {}),
+      typeof record.item_results_json === "string"
+        ? record.item_results_json
+        : JSON.stringify(record.item_results || []),
+      Number(record.score || 0),
+      Number(record.max_score || 0),
+      Number(record.accuracy || 0),
+      Math.max(0, Math.trunc(Number(record.duration_ms || 0))),
+      Math.max(1, Math.trunc(Number(record.learning_generation || 1))),
+      record.started_at || "",
+      record.submitted_at
+    ]
+  );
+  return getProactiveOutcomeAttempt(
+    record.user_id,
+    record.experiment_id,
+    record.stage
+  );
+}
+
+function submitProactiveOutcomeSession({
+  userId,
+  sessionId,
+  attempt,
+  submittedAt
+}) {
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const session = getProactiveOutcomeSessionById(userId, sessionId);
+    if (!session) {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        idempotent: false,
+        reason: "not_found",
+        session: null,
+        attempt: null
+      };
+    }
+    if (session.status === "submitted") {
+      const storedAttempt = getProactiveOutcomeAttempt(
+        userId,
+        session.experiment_id,
+        session.stage
+      );
+      d.run("ROLLBACK");
+      return {
+        ok: Boolean(storedAttempt),
+        idempotent: Boolean(storedAttempt),
+        reason: storedAttempt ? "" : "submitted_attempt_missing",
+        session,
+        attempt: storedAttempt || null
+      };
+    }
+    if (session.status !== "active") {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        idempotent: false,
+        reason: `session_${session.status}`,
+        session,
+        attempt: null
+      };
+    }
+    if (
+      attempt.user_id !== session.user_id
+      || attempt.experiment_id !== session.experiment_id
+      || attempt.chapter_id !== session.chapter_id
+      || attempt.stage !== session.stage
+      || attempt.instrument_version !== session.instrument_version
+      || Number(attempt.learning_generation) !== Number(
+        session.learning_generation
+      )
+    ) {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        idempotent: false,
+        reason: "session_attempt_mismatch",
+        session,
+        attempt: null
+      };
+    }
+    d.run(
+      `INSERT INTO proactive_outcome_attempts
+        (id, session_id, user_id, experiment_id, condition, cohort, chapter_id,
+         stage, instrument_version, response_json, item_results_json, score,
+         max_score, accuracy, duration_ms, learning_generation, started_at,
+         submitted_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        attempt.id,
+        session.id,
+        attempt.user_id,
+        attempt.experiment_id,
+        attempt.condition,
+        attempt.cohort || "",
+        attempt.chapter_id,
+        attempt.stage,
+        attempt.instrument_version,
+        typeof attempt.response_json === "string"
+          ? attempt.response_json
+          : JSON.stringify(attempt.responses || {}),
+        typeof attempt.item_results_json === "string"
+          ? attempt.item_results_json
+          : JSON.stringify(attempt.item_results || []),
+        Number(attempt.score || 0),
+        Number(attempt.max_score || 0),
+        Number(attempt.accuracy || 0),
+        Math.max(0, Math.trunc(Number(attempt.duration_ms || 0))),
+        Math.max(1, Math.trunc(Number(attempt.learning_generation || 1))),
+        session.started_at,
+        submittedAt
+      ]
+    );
+    d.run(
+      `UPDATE proactive_outcome_sessions
+       SET status = 'submitted', ended_at = ?, outcome_attempt_id = ?,
+           draft_response_json = '{}', updated_at = ?
+       WHERE id = ? AND user_id = ? AND status = 'active'`,
+      [submittedAt, attempt.id, submittedAt, session.id, userId]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      idempotent: false,
+      reason: "",
+      session: getProactiveOutcomeSessionById(userId, session.id),
+      attempt: getProactiveOutcomeAttempt(
+        userId,
+        session.experiment_id,
+        session.stage
+      )
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function proactiveOutcomeSessionRows({
+  experimentId = "",
+  userId = "",
+  condition = "",
+  stage = "",
+  status = "",
+  limit = 1000,
+  offset = 0
+} = {}) {
+  const clauses = [];
+  const params = [];
+  if (experimentId) {
+    clauses.push("pos.experiment_id = ?");
+    params.push(experimentId);
+  }
+  if (userId) {
+    clauses.push("pos.user_id = ?");
+    params.push(userId);
+  }
+  if (condition) {
+    clauses.push("pos.condition = ?");
+    params.push(condition);
+  }
+  if (stage) {
+    clauses.push("pos.stage = ?");
+    params.push(stage);
+  }
+  if (status) {
+    clauses.push("pos.status = ?");
+    params.push(status);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const safeLimit = Math.max(1, Math.min(Number(limit || 1000), 1000));
+  const safeOffset = Math.max(0, Number(offset || 0));
+  const total = Number(queryOne(
+    `SELECT COUNT(*) AS c FROM proactive_outcome_sessions pos ${where}`,
+    params
+  )?.c || 0);
+  const rows = queryAll(
+    `SELECT pos.id, pos.user_id, pos.experiment_id, pos.condition, pos.cohort,
+            pos.chapter_id, pos.stage, pos.instrument_version,
+            pos.protocol_fingerprint, pos.status, pos.learning_generation,
+            pos.started_at, pos.ended_at, pos.outcome_attempt_id,
+            pos.withdrawal_reason, pos.updated_at, u.nickname,
+            pp.status AS participation_status,
+            pp.consent_version AS participation_consent_version,
+            pp.consented_at AS participation_consented_at,
+            pp.withdrawn_at AS participation_withdrawn_at,
+            pp.withdrawal_reason AS participation_withdrawal_reason
+     FROM proactive_outcome_sessions pos
+     LEFT JOIN users u ON u.id = pos.user_id
+     LEFT JOIN proactive_participation pp
+       ON pp.user_id = pos.user_id
+      AND pp.experiment_id = pos.experiment_id
+     ${where}
+     ORDER BY pos.started_at DESC, pos.id DESC
+     LIMIT ? OFFSET ?`,
+    [...params, safeLimit, safeOffset]
+  );
+  return { rows, total, limit: safeLimit, offset: safeOffset };
+}
+
+function proactiveOutcomeSessionSummary(experimentId = "") {
+  const params = experimentId ? [experimentId] : [];
+  const where = experimentId ? "WHERE experiment_id = ?" : "";
+  return queryAll(
+    `SELECT experiment_id, condition, stage, status,
+            COUNT(*) AS sessions,
+            COUNT(DISTINCT user_id) AS participants,
+            MIN(started_at) AS first_started_at,
+            MAX(updated_at) AS last_updated_at
+     FROM proactive_outcome_sessions
+     ${where}
+     GROUP BY experiment_id, condition, stage, status
+     ORDER BY experiment_id, stage, condition, status`,
+    params
+  );
+}
+
+function proactiveOutcomeRows({
+  experimentId = "",
+  userId = "",
+  condition = "",
+  stage = "",
+  limit = 1000,
+  offset = 0
+} = {}) {
+  const clauses = [];
+  const params = [];
+  if (experimentId) {
+    clauses.push("poa.experiment_id = ?");
+    params.push(experimentId);
+  }
+  if (userId) {
+    clauses.push("poa.user_id = ?");
+    params.push(userId);
+  }
+  if (condition) {
+    clauses.push("poa.condition = ?");
+    params.push(condition);
+  }
+  if (stage) {
+    clauses.push("poa.stage = ?");
+    params.push(stage);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  const safeLimit = Math.max(1, Math.min(Number(limit || 1000), 1000));
+  const safeOffset = Math.max(0, Number(offset || 0));
+  const total = Number(queryOne(
+    `SELECT COUNT(*) AS c FROM proactive_outcome_attempts poa ${where}`,
+    params
+  )?.c || 0);
+  const rows = queryAll(
+    `SELECT poa.*, u.nickname,
+            pp.status AS participation_status,
+            pp.consent_version AS participation_consent_version,
+            pp.consented_at AS participation_consented_at,
+            pp.withdrawn_at AS participation_withdrawn_at,
+            pp.withdrawal_reason AS participation_withdrawal_reason
+     FROM proactive_outcome_attempts poa
+     LEFT JOIN users u ON u.id = poa.user_id
+     LEFT JOIN proactive_participation pp
+       ON pp.user_id = poa.user_id
+      AND pp.experiment_id = poa.experiment_id
+     ${where}
+     ORDER BY poa.submitted_at DESC, poa.id DESC
+     LIMIT ? OFFSET ?`,
+    [...params, safeLimit, safeOffset]
+  );
+  return { rows, total, limit: safeLimit, offset: safeOffset };
+}
+
+function proactiveOutcomeSummary(experimentId = "") {
+  const params = experimentId ? [experimentId] : [];
+  const where = experimentId ? "WHERE experiment_id = ?" : "";
+  return queryAll(
+    `SELECT experiment_id, condition, stage,
+            COUNT(*) AS submissions,
+            COUNT(DISTINCT user_id) AS participants,
+            AVG(accuracy) AS mean_accuracy,
+            AVG(duration_ms) AS mean_duration_ms,
+            MIN(submitted_at) AS first_submitted_at,
+            MAX(submitted_at) AS last_submitted_at
+     FROM proactive_outcome_attempts
+     ${where}
+     GROUP BY experiment_id, condition, stage
+     ORDER BY experiment_id, stage, condition`,
+    params
+  );
+}
+
+function proactiveParticipantFlow({
+  experimentId,
+  chapterId,
+  posttestQuestionCount = 0
+} = {}) {
+  const assignments = queryAll(
+    `SELECT user_id, condition
+     FROM experiment_assignments
+     WHERE experiment_id = ?
+       AND stratum NOT IN ('', 'unassigned', 'unstratified')`,
+    [experimentId]
+  );
+  const decisions = queryAll(
+    `SELECT user_id, condition, delivery_decision, learning_generation
+     FROM proactive_decisions
+     WHERE experiment_id = ?`,
+    [experimentId]
+  );
+  const sessions = queryAll(
+    `SELECT user_id, condition, stage, status, learning_generation
+     FROM proactive_outcome_sessions
+     WHERE experiment_id = ?`,
+    [experimentId]
+  );
+  const attempts = queryAll(
+    `SELECT user_id, condition, stage, learning_generation
+     FROM proactive_outcome_attempts
+     WHERE experiment_id = ?`,
+    [experimentId]
+  );
+  const participationRows = queryAll(
+    `SELECT user_id, status
+     FROM proactive_participation
+     WHERE experiment_id = ?`,
+    [experimentId]
+  );
+  const posttestRows = queryAll(
+    `SELECT user_id, learning_generation,
+            COUNT(DISTINCT question_id) AS submitted
+     FROM quiz_results
+     WHERE chapter_id = ? AND phase = 'post'
+     GROUP BY user_id, learning_generation`,
+    [chapterId]
+  );
+  const assignmentCondition = new Map(
+    assignments.map((row) => [row.user_id, row.condition])
+  );
+  const conditionNames = Array.from(new Set(
+    assignments.map((row) => row.condition).filter(Boolean)
+  )).sort();
+  const buckets = new Map();
+  const bucket = (condition) => {
+    if (!buckets.has(condition)) {
+      buckets.set(condition, {
+        assigned: new Set(),
+        evidence: new Set(),
+        exposed: new Set(),
+        posttestCompleted: new Set(),
+        nearStarted: new Set(),
+        nearSubmitted: new Set(),
+        nearWithdrawn: new Set(),
+        representationStarted: new Set(),
+        representationSubmitted: new Set(),
+        representationWithdrawn: new Set(),
+        retentionStarted: new Set(),
+        retentionSubmitted: new Set(),
+        retentionWithdrawn: new Set(),
+        studyWithdrawn: new Set(),
+        repeatedLearning: new Set()
+      });
+    }
+    return buckets.get(condition);
+  };
+  const generationsByUser = new Map();
+  const rememberGeneration = (userId, generation) => {
+    if (!userId) return;
+    const numeric = Math.max(1, Number(generation || 1));
+    if (!generationsByUser.has(userId)) generationsByUser.set(userId, new Set());
+    generationsByUser.get(userId).add(numeric);
+  };
+
+  assignments.forEach((row) => bucket(row.condition).assigned.add(row.user_id));
+  participationRows.forEach((row) => {
+    if (row.status !== "withdrawn") return;
+    const condition = assignmentCondition.get(row.user_id);
+    if (condition) bucket(condition).studyWithdrawn.add(row.user_id);
+  });
+  decisions.forEach((row) => {
+    const current = bucket(row.condition || assignmentCondition.get(row.user_id) || "unassigned");
+    current.evidence.add(row.user_id);
+    if (row.delivery_decision === "intervene") current.exposed.add(row.user_id);
+    rememberGeneration(row.user_id, row.learning_generation);
+  });
+  posttestRows.forEach((row) => {
+    if (
+      Number(posttestQuestionCount || 0) > 0
+      && Number(row.submitted || 0) < Number(posttestQuestionCount)
+    ) return;
+    const condition = assignmentCondition.get(row.user_id);
+    if (!condition) return;
+    bucket(condition).posttestCompleted.add(row.user_id);
+    rememberGeneration(row.user_id, row.learning_generation);
+  });
+  sessions.forEach((row) => {
+    const current = bucket(row.condition || assignmentCondition.get(row.user_id) || "unassigned");
+    const prefix = row.stage === "near_transfer"
+      ? "near"
+      : row.stage === "representation_transfer"
+        ? "representation"
+        : row.stage === "retention"
+          ? "retention"
+          : "";
+    if (!prefix) return;
+    current[`${prefix}Started`].add(row.user_id);
+    if (row.status === "withdrawn") {
+      current[`${prefix}Withdrawn`].add(row.user_id);
+    }
+    rememberGeneration(row.user_id, row.learning_generation);
+  });
+  attempts.forEach((row) => {
+    const current = bucket(row.condition || assignmentCondition.get(row.user_id) || "unassigned");
+    const prefix = row.stage === "near_transfer"
+      ? "near"
+      : row.stage === "representation_transfer"
+        ? "representation"
+        : row.stage === "retention"
+          ? "retention"
+          : "";
+    if (!prefix) return;
+    current[`${prefix}Submitted`].add(row.user_id);
+    current[`${prefix}Started`].add(row.user_id);
+    rememberGeneration(row.user_id, row.learning_generation);
+  });
+  generationsByUser.forEach((generations, userId) => {
+    if (generations.size <= 1) return;
+    const condition = assignmentCondition.get(userId);
+    if (condition) bucket(condition).repeatedLearning.add(userId);
+  });
+
+  return conditionNames.map((condition) => {
+    const current = bucket(condition);
+    const count = (name) => current[name].size;
+    return {
+      condition,
+      assigned: count("assigned"),
+      evidenceParticipants: count("evidence"),
+      exposedParticipants: count("exposed"),
+      posttestCompleted: count("posttestCompleted"),
+      nearStarted: count("nearStarted"),
+      nearSubmitted: count("nearSubmitted"),
+      nearWithdrawn: count("nearWithdrawn"),
+      representationStarted: count("representationStarted"),
+      representationSubmitted: count("representationSubmitted"),
+      representationWithdrawn: count("representationWithdrawn"),
+      transferCompleted: Array.from(current.nearSubmitted)
+        .filter((userId) => current.representationSubmitted.has(userId)).length,
+      retentionStarted: count("retentionStarted"),
+      retentionSubmitted: count("retentionSubmitted"),
+      retentionWithdrawn: count("retentionWithdrawn"),
+      studyWithdrawn: count("studyWithdrawn"),
+      repeatedLearningParticipants: count("repeatedLearning")
+    };
+  });
 }
 
 function recentInteractionEventsForUnit(userId, unitId, limit = 500) {
@@ -4925,11 +6427,23 @@ module.exports = {
   insertInteractionEvidenceBatch,
   insertInteractionEvidenceSnapshot,
   getExperimentAssignment,
+  proactiveAssignmentCountsByStratum,
+  getProactiveParticipation,
+  enrollProactiveParticipation,
+  withdrawProactiveParticipation,
+  proactiveParticipationSummary,
   getOrCreateExperimentAssignment,
   finalizeExperimentAssignment,
+  getProactiveProtocolSnapshot,
+  ensureProactiveProtocolSnapshot,
+  getProactiveExperimentRuntime,
+  ensureProactiveExperimentRuntime,
+  setProactiveExperimentRuntime,
+  listProactiveExperimentRuntimeEvents,
   getProactivePolicyState,
   listProactivePolicyStates,
   closeOpenProactiveInterventionsForUser,
+  closeOpenProactiveInterventionsForExperiment,
   clearProactivePolicyStatesForUser,
   upsertProactivePolicyState,
   insertProactiveDecision,
@@ -4945,6 +6459,25 @@ module.exports = {
   proactiveDecisionRows,
   proactiveAssignmentSummary,
   proactiveDecisionSummary,
+  proactiveAutonomySummary,
+  proactiveIntegrityDiagnostics,
+  getProactiveOutcomeSession,
+  getProactiveOutcomeSessionById,
+  getActiveProactiveOutcomeSession,
+  listProactiveOutcomeSessions,
+  startProactiveOutcomeSession,
+  updateProactiveOutcomeSessionDraft,
+  withdrawProactiveOutcomeSession,
+  withdrawActiveProactiveOutcomeSessionsForUser,
+  getProactiveOutcomeAttempt,
+  listProactiveOutcomeAttempts,
+  insertProactiveOutcomeAttempt,
+  submitProactiveOutcomeSession,
+  proactiveOutcomeSessionRows,
+  proactiveOutcomeSessionSummary,
+  proactiveOutcomeRows,
+  proactiveOutcomeSummary,
+  proactiveParticipantFlow,
   recentInteractionEventsForUnit,
   updateQuizResultAiGrading,
   normalizeFailedPendingQuizReviews,

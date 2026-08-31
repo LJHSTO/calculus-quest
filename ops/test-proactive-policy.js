@@ -14,6 +14,42 @@ function config(overrides = {}) {
   });
 }
 
+const incompleteConsentConfig = config({
+  PROACTIVE_POLICY_MODE: "active",
+  PROACTIVE_PARTICIPATION_MODE: "explicit-consent",
+  PROACTIVE_CONSENT_VERSION: "",
+  PROACTIVE_CONSENT_NOTICE_URL: ""
+});
+assert.equal(incompleteConsentConfig.participationMode, "explicit-consent");
+assert.equal(incompleteConsentConfig.participationReady, false);
+assert.equal(incompleteConsentConfig.activationReady, false);
+
+const explicitConsentConfig = config({
+  PROACTIVE_POLICY_MODE: "active",
+  PROACTIVE_PARTICIPATION_MODE: "explicit-consent",
+  PROACTIVE_CONSENT_VERSION: "v14-c3-consent-v1",
+  PROACTIVE_CONSENT_NOTICE_URL: "/research/v14-c3-consent-v1.html"
+});
+assert.equal(explicitConsentConfig.participationReady, true);
+assert.equal(explicitConsentConfig.activationReady, true);
+assert.equal(
+  proactivePolicy.publicConfig(explicitConsentConfig).consentNoticeUrl,
+  "/research/v14-c3-consent-v1.html"
+);
+const externalConsentConfig = config({
+  PROACTIVE_PARTICIPATION_MODE: "explicit-consent",
+  PROACTIVE_CONSENT_VERSION: "v14-c3-consent-v1",
+  PROACTIVE_CONSENT_NOTICE_URL: "https://example.edu/research/v14-c3"
+});
+assert.equal(externalConsentConfig.participationReady, true);
+const insecureConsentConfig = config({
+  PROACTIVE_PARTICIPATION_MODE: "explicit-consent",
+  PROACTIVE_CONSENT_VERSION: "v14-c3-consent-v1",
+  PROACTIVE_CONSENT_NOTICE_URL: "http://example.edu/research/v14-c3"
+});
+assert.equal(insecureConsentConfig.participationReady, false);
+assert.equal(insecureConsentConfig.consentNoticeUrl, "");
+
 const sourceChapter = route.chapters.find((chapter) => chapter.id === "V14-C3");
 const projected = proactivePolicy.projectRoute(route, config());
 assert.equal(projected.chapters.length, 1);
@@ -36,8 +72,26 @@ assert.deepEqual(projected.totals, {
 });
 
 const chapterAdapter = proactivePolicy.adapterForChapter("V14-C3");
+const supportLadder = [
+  ["L1", "elicit_self_explanation"],
+  ["L2", "concept_hint"],
+  ["L3", "decompose_subgoal"],
+  ["L4", "next_step_hint"],
+  ["L5", "partial_worked_example"]
+];
+supportLadder.forEach(([supportLevel]) => {
+  assert.equal(
+    proactivePolicy.lifecycle.verificationStageForSupportLevel(supportLevel),
+    `after_${supportLevel.toLowerCase()}`
+  );
+});
+assert.equal(
+  proactivePolicy.lifecycle.verificationStageForSupportLevel("L0"),
+  "",
+  "L0 表示不提供可见支架，不应生成支架后验证阶段"
+);
 Object.keys(chapterAdapter.knowledgePoints).forEach((knowledgePointId) => {
-  ["L1", "L2"].forEach((supportLevel) => {
+  supportLadder.forEach(([supportLevel, action]) => {
     const check = chapterAdapter.publicVerificationCheck(
       knowledgePointId,
       supportLevel
@@ -60,8 +114,38 @@ Object.keys(chapterAdapter.knowledgePoints).forEach((knowledgePointId) => {
     });
     assert.ok(grade);
     assert.equal(typeof grade.correct, "boolean");
+    const rendered = chapterAdapter.renderAction(action, {
+      knowledgePointId,
+      currentSceneType: "simulation",
+      availableSceneTypes: [
+        "simulation",
+        "mindMap",
+        "game",
+        "visualization3d"
+      ]
+    });
+    assert.equal(rendered.action, action);
+    assert.ok(rendered.assistantPrompt);
+    assert.equal(rendered.interactionMode, "student_reply");
   });
 });
+const representationAlternative = chapterAdapter.renderAction(
+  "switch_representation",
+  {
+    knowledgePointId: "GH-06-K01",
+    currentSceneType: "simulation",
+    availableSceneTypes: [
+      "simulation",
+      "mindMap",
+      "game",
+      "visualization3d"
+    ]
+  }
+);
+assert.equal(representationAlternative.action, "switch_representation");
+assert.equal(representationAlternative.interactionMode, "scene_switch");
+assert.notEqual(representationAlternative.targetSceneType, "simulation");
+assert.ok(representationAlternative.targetSceneLabel);
 assert.equal(
   chapterAdapter.gradeVerificationCheck({
     knowledgePointId: "GH-06-K01",
@@ -88,6 +172,92 @@ const assignmentARepeat = proactivePolicy.createAssignment({
 assert.equal(assignmentA.condition, assignmentARepeat.condition);
 assert.ok(["control", "treatment"].includes(assignmentA.condition));
 assert.equal(assignmentA.assignment_version, "test-hash-v1");
+assert.equal(config().assignmentStrategy, "hash");
+
+const balancedConfig = config({
+  PROACTIVE_EXPERIMENT_ARMS: "control,minimal,adaptive",
+  PROACTIVE_DISPLAY_ARMS: "minimal,adaptive",
+  PROACTIVE_ASSIGNMENT_STRATEGY: "stratified-balanced",
+  PROACTIVE_ASSIGNMENT_VERSION: ""
+});
+assert.equal(balancedConfig.assignmentStrategy, "stratified-balanced");
+assert.equal(balancedConfig.assignmentVersion, "stratified-balanced-v1");
+const balancedCounts = { control: 0, minimal: 0, adaptive: 0 };
+for (let index = 0; index < 30; index += 1) {
+  const assignment = proactivePolicy.createAssignment({
+    userId: `balanced-student-${index}`,
+    config: balancedConfig,
+    stratum: "pre-low",
+    assignmentCounts: balancedCounts
+  });
+  balancedCounts[assignment.condition] += 1;
+}
+assert.ok(
+  Math.max(...Object.values(balancedCounts)) - Math.min(...Object.values(balancedCounts)) <= 1,
+  `层内平衡分配的实验臂人数差不应超过 1：${JSON.stringify(balancedCounts)}`
+);
+const leastUsedArmAssignment = proactivePolicy.createAssignment({
+  userId: "balanced-student-least-used",
+  config: balancedConfig,
+  stratum: "pre-high",
+  assignmentCounts: { control: 4, minimal: 2, adaptive: 3 }
+});
+assert.equal(leastUsedArmAssignment.condition, "minimal");
+assert.equal(
+  proactivePolicy.publicConfig(balancedConfig).assignmentStrategy,
+  "stratified-balanced"
+);
+
+const multiArmConfig = config({
+  PROACTIVE_EXPERIMENT_ARMS: "control,minimal,adaptive",
+  PROACTIVE_DISPLAY_ARMS: "minimal,adaptive",
+  PROACTIVE_ARM_PROFILES_JSON: JSON.stringify({
+    control: {
+      display: false,
+      maxSupportLevel: "L0",
+      allowRepresentationSwitch: false
+    },
+    minimal: {
+      display: true,
+      maxSupportLevel: "L2",
+      allowRepresentationSwitch: false
+    },
+    adaptive: {
+      display: true,
+      maxSupportLevel: "L5",
+      allowRepresentationSwitch: true
+    }
+  })
+});
+assert.deepEqual(multiArmConfig.experimentArms, [
+  "control",
+  "minimal",
+  "adaptive"
+]);
+assert.deepEqual(multiArmConfig.displayArms, ["minimal", "adaptive"]);
+assert.equal(multiArmConfig.armProfiles.minimal.maxSupportLevel, "L2");
+assert.equal(multiArmConfig.armProfiles.adaptive.allowRepresentationSwitch, true);
+const multiArmAssignment = proactivePolicy.createAssignment({
+  userId: "student-multi-arm",
+  config: multiArmConfig,
+  stratum: "pre-low"
+});
+assert.ok(multiArmConfig.experimentArms.includes(multiArmAssignment.condition));
+assert.equal(proactivePolicy.publicConfig(multiArmConfig).armCount, 3);
+assert.deepEqual(
+  proactivePolicy.adminConfig(multiArmConfig).experimentArms,
+  multiArmConfig.experimentArms
+);
+const invalidDisplayArmConfig = config({
+  PROACTIVE_EXPERIMENT_ARMS: "control,treatment",
+  PROACTIVE_DISPLAY_ARMS: "not a valid arm"
+});
+assert.deepEqual(
+  invalidDisplayArmConfig.displayArms,
+  ["treatment"],
+  "无效展示臂配置必须回退到安全的默认展示臂，不能把 Control 变成展示臂"
+);
+assert.equal(invalidDisplayArmConfig.armProfiles.control.display, false);
 
 const treatment = { ...assignmentA, condition: "treatment" };
 const control = { ...assignmentA, condition: "control" };
@@ -132,6 +302,69 @@ const activeTreatmentDecision = proactivePolicy.evaluate({
 });
 assert.equal(activeTreatmentDecision.deliveryDecision, "intervene");
 assert.equal(activeTreatmentDecision.displayAllowed, true);
+
+const incompleteConsentDecision = proactivePolicy.evaluate({
+  config: incompleteConsentConfig,
+  assignment: treatment,
+  context: baseContext,
+  signal: repeatedSignal,
+  evidence: repeatedEvidence,
+  budget: { remaining: 10 },
+  runtime: { participationStatus: "enrolled" },
+  now: Date.parse("2026-08-27T12:10:00.000Z")
+});
+assert.equal(incompleteConsentDecision.deliveryDecision, "stay_silent");
+assert.ok(
+  incompleteConsentDecision.reasonCodes.includes(
+    "participation_config_required"
+  )
+);
+
+const notEnrolledDecision = proactivePolicy.evaluate({
+  config: explicitConsentConfig,
+  assignment: treatment,
+  context: baseContext,
+  signal: repeatedSignal,
+  evidence: repeatedEvidence,
+  budget: { remaining: 10 },
+  runtime: { participationStatus: "not_enrolled" },
+  now: Date.parse("2026-08-27T12:10:00.000Z")
+});
+assert.equal(notEnrolledDecision.deliveryDecision, "stay_silent");
+assert.ok(
+  notEnrolledDecision.reasonCodes.includes("participant_not_enrolled")
+);
+
+const withdrawnParticipantDecision = proactivePolicy.evaluate({
+  config: explicitConsentConfig,
+  assignment: treatment,
+  context: baseContext,
+  signal: repeatedSignal,
+  evidence: repeatedEvidence,
+  budget: { remaining: 10 },
+  runtime: { participationStatus: "withdrawn" },
+  now: Date.parse("2026-08-27T12:10:00.000Z")
+});
+assert.equal(withdrawnParticipantDecision.deliveryDecision, "stay_silent");
+assert.ok(
+  withdrawnParticipantDecision.reasonCodes.includes("participant_withdrawn")
+);
+
+const runtimePausedDecision = proactivePolicy.evaluate({
+  config: config({ PROACTIVE_POLICY_MODE: "active" }),
+  assignment: treatment,
+  context: baseContext,
+  signal: repeatedSignal,
+  evidence: repeatedEvidence,
+  budget: { remaining: 10 },
+  runtime: { status: "paused" },
+  now: Date.parse("2026-08-27T12:10:00.000Z")
+});
+assert.equal(runtimePausedDecision.decision, "stay_silent");
+assert.equal(runtimePausedDecision.deliveryDecision, "stay_silent");
+assert.ok(
+  runtimePausedDecision.reasonCodes.includes("experiment_runtime_paused")
+);
 
 const activeControlDecision = proactivePolicy.evaluate({
   config: config({ PROACTIVE_POLICY_MODE: "active" }),
@@ -300,8 +533,67 @@ const quietBoundaryDecision = proactivePolicy.evaluate({
 });
 assert.equal(quietBoundaryDecision.decision, "intervene");
 assert.equal(quietBoundaryDecision.action, "ask_clarification");
+assert.equal(
+  quietBoundaryDecision.supportLevel,
+  "L1",
+  "L0 必须严格表示静默，任何可见澄清动作至少是 L1"
+);
 assert.equal(quietBoundaryDecision.displayAllowed, true);
 assert.ok(quietBoundaryDecision.reasonCodes.includes("natural_task_boundary"));
+
+const fadedRepeatedDecision = proactivePolicy.evaluate({
+  config: config({ PROACTIVE_POLICY_MODE: "active" }),
+  assignment: treatment,
+  context: baseContext,
+  signal: repeatedSignal,
+  evidence: repeatedEvidence,
+  policyState: { fade_level: 2 },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T12:10:00.000Z")
+});
+assert.equal(fadedRepeatedDecision.decision, "stay_silent");
+assert.ok(
+  fadedRepeatedDecision.reasonCodes.includes("fade_evidence_threshold_raised"),
+  "已经独立恢复过的学生，应需要更强行为证据才再次触发弱信号提示"
+);
+assert.equal(fadedRepeatedDecision.policyAdjustments.requiredParameterCommits, 5);
+
+const fadedRepeatedConfirmed = proactivePolicy.evaluate({
+  config: config({ PROACTIVE_POLICY_MODE: "active" }),
+  assignment: treatment,
+  context: baseContext,
+  signal: repeatedSignal,
+  evidence: {
+    ...repeatedEvidence,
+    parameterCommitCount: 5
+  },
+  policyState: { fade_level: 2 },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T12:10:00.000Z")
+});
+assert.equal(fadedRepeatedConfirmed.decision, "intervene");
+assert.ok(
+  fadedRepeatedConfirmed.reasonCodes.includes("fade_evidence_requirement_met")
+);
+
+const fadedQuietDecision = proactivePolicy.evaluate({
+  config: config({ PROACTIVE_POLICY_MODE: "active" }),
+  assignment: treatment,
+  context: baseContext,
+  signal: { kind: "quiet_dwell", boundaryRecheck: true },
+  evidence: {
+    families: ["time", "result"],
+    dwellSeconds: 180,
+    confirmedGapCount: 1,
+    naturalBoundary: true,
+    pendingCandidateValid: true
+  },
+  policyState: { fade_level: 2 },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T12:10:00.000Z")
+});
+assert.equal(fadedQuietDecision.decision, "stay_silent");
+assert.ok(fadedQuietDecision.reasonCodes.includes("fade_threshold_raised"));
 
 const quietBoundaryWithoutPending = proactivePolicy.evaluate({
   config: config({ PROACTIVE_POLICY_MODE: "active" }),
@@ -432,6 +724,27 @@ assert.ok(
     "policy_cooldown_active"
   ),
   "尚未开启的形成性支架必须遵守当前知识点冷却"
+);
+
+const snoozedFormativeCooldownDecision = proactivePolicy.evaluate({
+  config: config({ PROACTIVE_POLICY_MODE: "active" }),
+  assignment: treatment,
+  context: formativeContext,
+  signal: { kind: "formative_outcome" },
+  evidence: formativeWrongEvidence,
+  policyState: {
+    cooldown_until: "2026-08-27T12:30:00.000Z",
+    lifecycle: { phase: "deferred" }
+  },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T12:20:00.000Z")
+});
+assert.equal(snoozedFormativeCooldownDecision.decision, "stay_silent");
+assert.ok(
+  snoozedFormativeCooldownDecision.reasonCodes.includes(
+    "policy_cooldown_active"
+  ),
+  "学生选择稍后后，新的形成性结果也必须遵守冷却，不能立即再次弹出"
 );
 
 const pendingSelfExplanationDecision = proactivePolicy.evaluate({
@@ -606,6 +919,10 @@ assert.equal(
 assert.equal(independentRecoveryDecision.stateTransition.phase, "exited");
 assert.equal(independentRecoveryDecision.stateTransition.currentLevel, "L0");
 assert.equal(independentRecoveryDecision.stateTransition.fadeLevel, 1);
+assert.ok(
+  independentRecoveryDecision.stateTransition.cooldownMs >= 20 * 60 * 1000,
+  "独立恢复后的渐退必须延长后续知识点冷却，而不只是把 fadeLevel 加一"
+);
 assert.equal(independentRecoveryDecision.helpNeedScore, 0.1);
 assert.equal(independentRecoveryDecision.uncertaintyScore, 0.05);
 assert.ok(
@@ -665,7 +982,7 @@ assert.ok(
   )
 );
 
-const maximumSupportDecision = proactivePolicy.evaluate({
+const subgoalDecision = proactivePolicy.evaluate({
   config: config({ PROACTIVE_POLICY_MODE: "active" }),
   assignment: treatment,
   context: independentContext,
@@ -689,6 +1006,93 @@ const maximumSupportDecision = proactivePolicy.evaluate({
   budget: { remaining: 10 },
   now: Date.parse("2026-08-27T12:40:00.000Z")
 });
+assert.equal(subgoalDecision.decision, "intervene");
+assert.equal(subgoalDecision.action, "decompose_subgoal");
+assert.equal(subgoalDecision.supportLevel, "L3");
+assert.ok(
+  subgoalDecision.reasonCodes.includes("continued_friction_after_concept_hint")
+);
+
+const nextStepDecision = proactivePolicy.evaluate({
+  config: config({ PROACTIVE_POLICY_MODE: "active" }),
+  assignment: treatment,
+  context: independentContext,
+  signal: { kind: "independent_attempt_outcome" },
+  evidence: {
+    families: ["task"],
+    independentAttemptVerified: true,
+    independentAttemptSuccess: false,
+    confirmedIncorrect: 1,
+    questionCount: 1
+  },
+  policyState: {
+    current_level: "L3",
+    lifecycle: {
+      phase: "awaiting_independent_attempt",
+      activeAction: "decompose_subgoal",
+      activeInterventionId: "intervention-l3",
+      attemptCount: 2
+    }
+  },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T12:50:00.000Z")
+});
+assert.equal(nextStepDecision.decision, "intervene");
+assert.equal(nextStepDecision.action, "next_step_hint");
+assert.equal(nextStepDecision.supportLevel, "L4");
+
+const partialExampleDecision = proactivePolicy.evaluate({
+  config: config({ PROACTIVE_POLICY_MODE: "active" }),
+  assignment: treatment,
+  context: independentContext,
+  signal: { kind: "independent_attempt_outcome" },
+  evidence: {
+    families: ["task"],
+    independentAttemptVerified: true,
+    independentAttemptSuccess: false,
+    confirmedIncorrect: 1,
+    questionCount: 1
+  },
+  policyState: {
+    current_level: "L4",
+    lifecycle: {
+      phase: "awaiting_independent_attempt",
+      activeAction: "next_step_hint",
+      activeInterventionId: "intervention-l4",
+      attemptCount: 3
+    }
+  },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T13:00:00.000Z")
+});
+assert.equal(partialExampleDecision.decision, "intervene");
+assert.equal(partialExampleDecision.action, "partial_worked_example");
+assert.equal(partialExampleDecision.supportLevel, "L5");
+
+const maximumSupportDecision = proactivePolicy.evaluate({
+  config: config({ PROACTIVE_POLICY_MODE: "active" }),
+  assignment: treatment,
+  context: independentContext,
+  signal: { kind: "independent_attempt_outcome" },
+  evidence: {
+    families: ["task"],
+    independentAttemptVerified: true,
+    independentAttemptSuccess: false,
+    confirmedIncorrect: 1,
+    questionCount: 1
+  },
+  policyState: {
+    current_level: "L5",
+    lifecycle: {
+      phase: "awaiting_independent_attempt",
+      activeAction: "partial_worked_example",
+      activeInterventionId: "intervention-l5",
+      attemptCount: 4
+    }
+  },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T13:10:00.000Z")
+});
 assert.equal(maximumSupportDecision.decision, "stay_silent");
 assert.equal(
   maximumSupportDecision.lifecycleOutcome,
@@ -700,10 +1104,74 @@ assert.equal(
 );
 assert.equal(
   maximumSupportDecision.stateTransition.lifecycle.attemptCount,
-  2
+  5
+);
+assert.equal(
+  maximumSupportDecision.stateTransition.lifecycle.lastOutcome,
+  "continued_friction_after_partial_worked_example"
 );
 assert.equal(maximumSupportDecision.helpNeedScore, 0.95);
 assert.equal(maximumSupportDecision.uncertaintyScore, 0.05);
+
+const minimalArm = { ...assignmentA, condition: "minimal" };
+const minimalCeilingDecision = proactivePolicy.evaluate({
+  config: {
+    ...multiArmConfig,
+    mode: "active"
+  },
+  assignment: minimalArm,
+  context: independentContext,
+  signal: { kind: "independent_attempt_outcome" },
+  evidence: {
+    families: ["task"],
+    independentAttemptVerified: true,
+    independentAttemptSuccess: false,
+    confirmedIncorrect: 1,
+    questionCount: 1
+  },
+  policyState: {
+    current_level: "L2",
+    lifecycle: {
+      phase: "awaiting_independent_attempt",
+      activeAction: "concept_hint",
+      activeInterventionId: "minimal-intervention-l2"
+    }
+  },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T13:15:00.000Z")
+});
+assert.equal(minimalCeilingDecision.decision, "intervene");
+assert.equal(minimalCeilingDecision.deliveryDecision, "stay_silent");
+assert.ok(minimalCeilingDecision.reasonCodes.includes("arm_support_ceiling"));
+
+const adaptiveArm = { ...assignmentA, condition: "adaptive" };
+const representationDecision = proactivePolicy.evaluate({
+  config: {
+    ...multiArmConfig,
+    mode: "active"
+  },
+  assignment: adaptiveArm,
+  context: {
+    ...independentContext,
+    sceneType: "simulation"
+  },
+  signal: {
+    kind: "student_requested_alternative",
+    sourceDecisionId: "source-decision"
+  },
+  evidence: {
+    families: ["history", "preference"],
+    sourceDecisionId: "source-decision"
+  },
+  budget: { remaining: 10 },
+  now: Date.parse("2026-08-27T13:20:00.000Z")
+});
+assert.equal(representationDecision.decision, "intervene");
+assert.equal(representationDecision.action, "switch_representation");
+assert.equal(representationDecision.supportLevel, "L2");
+assert.ok(
+  representationDecision.reasonCodes.includes("student_requested_alternative")
+);
 
 const verificationDeclinedDecision = proactivePolicy.evaluate({
   config: config({ PROACTIVE_POLICY_MODE: "active" }),

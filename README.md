@@ -10,9 +10,10 @@
 - AI 简答题批改 — 接入任意 OpenAI 兼容接口的大模型，自动批改简答题并给出反馈
 - 知识点图谱 — 按知识点追踪掌握程度，可视化学习进度
 - 学习分析后台 — 查看学生进度、测验正确率、活跃度图表、简答题复核
-- 主动实验账本 — 记录 Control/Treatment 分组、政策判断、实际呈现、证据来源、原因码、学生反馈与 L1→L2→退出策略链
-- 无提示近端验证 — 形成性错误后的自我解释完成后，由服务端签发知识点验证题；学生可跳过，答案不会下发到浏览器
-- 学生主动权 — 知点侧栏提供“标准 / 少提醒 / 关闭”三档；少提醒只保留强结果证据，关闭会结束当前主动回合但不影响学生主动提问
+- 主动实验账本 — 记录可配置实验臂、政策判断、实际呈现、证据来源、原因码、学生反馈与 L1→L5→渐退/退出策略链
+- 无提示近端验证 — 每一级支架后由服务端签发知识点验证题；学生可跳过，答案不会下发到浏览器
+- 学生主动权 — 支持“稍后”“换一种帮助”“关闭当前知识点提醒”以及全局“标准 / 少提醒 / 关闭”
+- 独立学习结果 — 章后提供近迁移、跨表征迁移与延迟保持测量；测量期间暂停知点，学生端不显示即时得分
 
 ## 快速开始
 
@@ -38,12 +39,16 @@ npm start
 | BASE_PATH | — | 生产站点公开前缀，例如 `/calculus_quest` |
 | DB_PATH | data/calculus-quest.db | 生产环境必须设为仓库外的绝对路径 |
 | LLM_PROVIDER | mock | mock（不调用真实模型）或 openai-compatible |
+| LLM_CONFIG_FILE | — | 服务端密钥配置文件；支持纯密钥、`KEY=value`、JSON 或 `curl` 示例 |
 | OPENAI_COMPATIBLE_BASE_URL | — | API 基础地址 |
 | OPENAI_COMPATIBLE_API_KEY | — | API 密钥 |
 | OPENAI_COMPATIBLE_MODEL | — | 默认模型名 |
+| OPENAI_COMPATIBLE_WIRE_API | chat-completions | `chat-completions` 或 `responses` |
 | GRADING_LLM_PROVIDER | 跟随 LLM_PROVIDER | 历史简答题重评使用的评分提供方 |
 | GRADING_BASE_URL | 跟随默认模型接口 | 历史简答题重评专用 API 地址 |
 | GRADING_API_KEY | 跟随默认模型密钥 | 历史简答题重评专用密钥 |
+| GRADING_CONFIG_FILE | 跟随 LLM_CONFIG_FILE | 历史简答题重评专用配置文件 |
+| GRADING_WIRE_API | 跟随默认接口 | 历史简答题重评专用请求形态 |
 | GRADING_MODEL | — | 简答题批改专用模型 |
 | GRADING_TIMEOUT_MS | 25000 | 单道简答题模型评分超时毫秒数 |
 | ASSESSMENT_LLM_ENABLED | false | 是否启用模型生成学习诊断；默认使用固定规则 |
@@ -56,17 +61,36 @@ npm start
 | EXPERIMENT_ID | — | 研究实验编号 |
 | EXPERIMENT_CONDITION | — | 实验条件 |
 | EXPERIMENT_COHORT | — | 学生队列 |
-| PROACTIVE_POLICY_MODE | shadow | `off`、`shadow` 或 `active`；只有 `active` 的 Treatment 展示主动建议 |
+| PROACTIVE_POLICY_MODE | shadow | `off`、`shadow` 或 `active`；只有 `active` 且实验臂允许展示时才签发主动建议 |
 | PROACTIVE_EXPERIMENT_ID | v14-c3-proactive-pilot-2026 | 主动实验编号 |
 | PROACTIVE_EXPERIMENT_CHAPTER_ID | V14-C3 | 当前主动政策适配章节 |
-| PROACTIVE_POLICY_VERSION | v14-c3-fixed-v2 | 固定政策版本 |
-| PROACTIVE_ADAPTER_VERSION | v14-c3-adapter-v2 | V14-C3 知识点支架与呈现规则版本 |
+| PROACTIVE_POLICY_VERSION | v14-c3-fixed-v3 | 固定政策版本 |
+| PROACTIVE_ADAPTER_VERSION | v14-c3-adapter-v3 | V14-C3 知识点支架、验证题与呈现规则版本 |
+| PROACTIVE_ASSIGNMENT_STRATEGY | hash | `hash` 为层内加盐哈希；`stratified-balanced` 为层内最少人数优先、加盐哈希打破平局的小样本平衡分配 |
+| PROACTIVE_ASSIGNMENT_VERSION | student-hash-v1 | 分配算法版本；切换策略时必须使用新版本与新实验 ID |
 | PROACTIVE_ASSIGNMENT_SALT | — | 创建任何实验分组前必须在 `.env` 中设置稳定私有值；`active` 缺失时主动展示失败关闭 |
-| PROACTIVE_PUBLIC_CHAPTER_ONLY | true | 学生端只投影试点完整章，管理端和 Flow Test 仍读取完整 route |
+| PROACTIVE_PUBLIC_CHAPTER_ONLY | true | 学生端只投影试点完整章，服务端和管理端仍以完整 route 为课程事实源 |
+| PROACTIVE_PARTICIPATION_MODE | implicit-pilot | `implicit-pilot` 仅供工程联调；正式研究使用 `explicit-consent` |
+| PROACTIVE_CONSENT_VERSION | engineering-pilot-v1 | 冻结到协议指纹的研究说明/同意版本 |
+| PROACTIVE_CONSENT_NOTICE_URL | — | 显式同意模式必填；只接受同源路径或 HTTPS 地址 |
+| PROACTIVE_EXPERIMENT_ARMS | control,treatment | 参与稳定哈希随机分组的实验臂，支持两个以上 |
+| PROACTIVE_DISPLAY_ARMS | treatment | 允许实际展示主动介入的实验臂 |
+| PROACTIVE_ARM_PROFILES_JSON | — | 按实验臂设置 `display`、`maxSupportLevel` 与 `allowRepresentationSwitch` |
+| PROACTIVE_RETENTION_DELAY_HOURS | 168 | 延迟保持测量相对章后测的开放时长 |
 
 当 LLM_PROVIDER=mock 时，简答题统一按 0 分兜底并标记需人工复核，不会卡住学习流程。
 
-主动政策的触发、沉默、动作和支架强度由服务端确定性规则决定，不依赖实时大模型。当前 OpenMAIC 场景没有主动策略所需的语义结果事件，因此支架后闭环默认使用平台自有、服务端评分的无提示近端验证；未来课件可按统一事件契约接入同一政策生命周期。学生偏好由服务端持久化并进入审计：`reduced` 屏蔽停留/调参等行为型候选，`off` 关闭主动提示并结束当前未完成回合；开始新的学习代次时会清理旧知识点生命周期，但保留学生偏好与实验 assignment。知点的学生主动问答仍沿用现有 OpenAI-compatible 配置；仓库不会读取或提交 Codex 的密钥。
+推荐只在本地 `.env` 中保存 `LLM_CONFIG_FILE` 的绝对路径。文件中的密钥只在服务端内存中使用；不要把真实密钥写进 `.env`、源码、日志或 Git。若配置文件是供应商提供的 `curl` 示例，系统会同时识别其中的请求地址、Bearer 密钥、模型名和 `chat/completions`/`responses` 请求形态。
+
+主动政策的触发、沉默、动作和支架强度由服务端确定性规则决定，不依赖实时大模型。V14-C3 当前支持 L1 自我解释、L2 概念线索、L3 子目标拆分、L4 下一步提示、L5 部分示例，并在每一级后要求无提示独立验证；成功后渐退并延长冷却，持续失败才升级，达到 L5 后停止继续加码。当前 OpenMAIC 场景没有完整的主动策略语义结果事件，因此支架后闭环默认使用平台自有、服务端评分的验证题；未来课件可按统一事件契约接入同一政策生命周期。学生偏好由服务端持久化并进入审计：`reduced` 屏蔽停留/调参等行为型候选，`off` 关闭主动提示并结束当前未完成回合；开始新的学习代次时会清理旧知识点生命周期，但保留学生偏好与实验 assignment。知点的学生主动问答仍沿用现有 OpenAI-compatible 配置；仓库不会读取或提交 Codex 的密钥。
+
+当前内容化覆盖范围是 `V14-C3` 的 2 个模块、7 个知识点，即全课程 11 章、72 个知识点中的 1 章、7 个知识点。Policy Kernel、生命周期、预算/冷却、实验臂、学生自主权、独立结果测量和管理 Harness 可跨章复用，但 Adapter registry 目前只注册 `V14-C3`；其他章节会以 `chapter_not_managed` 保持沉默。要接入新章，仍需提供该章的目标与误解、任务里程碑、合法支架、验证题、换表征映射和迁移蓝图。
+
+管理端“主动实验”页将过程指标与独立学习结果分开呈现。接受率、支架次数和换表征次数只描述交互过程；近迁移、跨表征迁移和延迟保持才属于学习结果。页面同时显示不可变 protocol fingerprint、运行时暂停/恢复记录、停止规则信号和 assignment→证据→曝光→测量→保持的参与者样本流；暂停会收束未决提示，但不会修改协议或重新分组。Shadow 编码模板会导出结构化证据及空白的 `reviewer_id`、`help_need_label`、`interruptibility_label`、`should_intervene`、`false_positive` 和 `notes` 列。小样本阶段只做描述性比较，正式因果分析仍需预注册实验臂、样本量、排除规则和主结果。
+
+`explicit-consent` 模式会在知点侧栏提供研究说明、版本确认、加入和退出入口。退出在当前实验中不可撤销，停止新的实验性主动提示、候选收集和研究测量，并收束未决支架回合；课程、普通知点提问和已有学习记录仍可使用，既有 assignment 保留用于 ITT。管理端可分别导出已提交测量结果与全部测量会话/失访状态。平台流程只是正式研究的工程载体，不替代伦理审批、未成年人监护人同意/assent、招募说明或数据保留与删除政策。
+
+服务启动时会把 route、Policy Kernel、生命周期、V14-C3 Adapter、学生端呈现器、结果量表、阈值、实验臂、分配策略、参与模式与同意版本、模型配置摘要和停止规则冻结为同一协议指纹。同一 `PROACTIVE_EXPERIMENT_ID` 下出现漂移时服务拒绝启动；需要修改协议时必须创建新的实验 ID。`stratified-balanced` 只影响尚未分组的新学生，数据库中的既有 assignment 不会被重写。
 
 运行主动试点专项回归：
 

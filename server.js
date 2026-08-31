@@ -30,6 +30,7 @@ const db = require("./db");
 const courseAssessment = require("./lib/course-assessment");
 const learningAssistant = require("./lib/learning-assistant");
 const proactivePolicy = require("./lib/proactive-policy");
+const proactiveOutcomes = require("./lib/proactive-outcomes/v14-c3");
 const llm = require("./lib/llm");
 const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
@@ -40,6 +41,17 @@ const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
 const proactiveStudyConfig = proactivePolicy.configFromEnv();
+const configuredRetentionDelayHours = Number(
+  process.env.PROACTIVE_RETENTION_DELAY_HOURS
+);
+const proactiveRetentionDelayHours = Number.isFinite(
+  configuredRetentionDelayHours
+)
+  ? Math.max(0, Math.min(24 * 365, configuredRetentionDelayHours))
+  : 24 * 7;
+let proactiveProtocolDefinition = null;
+let proactiveProtocolFingerprint = "";
+let proactiveProtocolSnapshot = null;
 let coursewareBridgeScript = "";
 try {
   coursewareBridgeScript = fs.readFileSync(
@@ -78,6 +90,101 @@ try {
   assistantContextIndex = learningAssistant.buildCourseContextIndex(learningRoute);
 } catch (error) {
   console.warn("Multi-scene learning route load skipped:", error.message);
+}
+function protocolSourceDigest(relativePath) {
+  return crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(path.join(root, relativePath)))
+    .digest("hex");
+}
+
+const proactiveStoppingRules = Object.freeze({
+  advisoryOnly: true,
+  protectedAssessmentDisplays: 0,
+  nonDisplayArmDisplays: 0,
+  postWithdrawalDisplays: 0,
+  optOutDisplays: 0,
+  incompleteEvidenceChains: 0,
+  repeatDisplayWindowMs: 2 * 60 * 1000,
+  unresolvedOfferThreshold: 10,
+  unresolvedOfferAgeMs: 30 * 60 * 1000,
+  balancedAssignmentMaximumGap: 1
+});
+
+{
+  const {
+    mode: _runtimeMode,
+    assignmentReady: _assignmentReady,
+    activationReady: _activationReady,
+    ...frozenPolicy
+  } = proactivePolicy.adminConfig(proactiveStudyConfig);
+  const modelRuntime = llm.runtimeInfo();
+  proactiveProtocolDefinition = {
+    schemaVersion: 1,
+    experimentId: proactiveStudyConfig.experimentId,
+    chapterId: proactiveStudyConfig.chapterId,
+    policy: frozenPolicy,
+    assignmentSaltDigest: crypto
+      .createHash("sha256")
+      .update(proactiveStudyConfig.assignmentSalt)
+      .digest("hex"),
+    decisionTtlMs: proactiveStudyConfig.decisionTtlMs,
+    courseRouteVersion: learningRoute?.versionId || "",
+    courseRouteDigest: protocolSourceDigest("data/multi-scene-learning-route.json"),
+    courseAssessmentFingerprint,
+    outcomeInstrumentVersion: proactiveOutcomes.version,
+    retentionDelayHours: proactiveRetentionDelayHours,
+    stoppingRules: proactiveStoppingRules,
+    measurementProtection: {
+      agentAssistanceAllowed: false,
+      stages: ["pre", "post", "near_transfer", "representation_transfer", "retention"],
+      immediateFeedback: false
+    },
+    modelRuntime: {
+      provider: modelRuntime.provider || "",
+      liveConfigured: modelRuntime.liveConfigured === true,
+      model: modelRuntime.model || "",
+      wireApi: modelRuntime.wireApi || ""
+    },
+    sourceDigests: {
+      policyKernel: protocolSourceDigest("lib/proactive-policy/index.js"),
+      lifecycle: protocolSourceDigest("lib/proactive-policy/lifecycle.js"),
+      adapter: protocolSourceDigest("lib/proactive-policy/adapters/v14-c3.js"),
+      outcomeInstrument: protocolSourceDigest("lib/proactive-outcomes/v14-c3.js"),
+      studentRenderer: protocolSourceDigest("app/main/knowledge-assistant.js"),
+      studentSignalClient: protocolSourceDigest("app/main/proactive-learning.js"),
+      reactiveAssistant: protocolSourceDigest("lib/learning-assistant.js"),
+      pathCoach: protocolSourceDigest("lib/agentic-coach.js")
+    }
+  };
+  proactiveProtocolFingerprint = crypto
+    .createHash("sha256")
+    .update(JSON.stringify(proactiveProtocolDefinition))
+    .digest("hex");
+}
+
+function freezeProactiveProtocol() {
+  const frozenAt = new Date().toISOString();
+  const protocolResult = db.ensureProactiveProtocolSnapshot({
+    experiment_id: proactiveStudyConfig.experimentId,
+    chapter_id: proactiveStudyConfig.chapterId,
+    protocol_fingerprint: proactiveProtocolFingerprint,
+    protocol: proactiveProtocolDefinition,
+    created_at: frozenAt
+  });
+  if (!protocolResult.ok) {
+    const error = new Error(
+      `实验 ${proactiveStudyConfig.experimentId} 的协议指纹与已冻结快照不一致；请恢复原配置，或使用新的 PROACTIVE_EXPERIMENT_ID。`
+    );
+    error.code = "PROACTIVE_PROTOCOL_FINGERPRINT_MISMATCH";
+    throw error;
+  }
+  proactiveProtocolSnapshot = protocolResult.snapshot;
+  db.ensureProactiveExperimentRuntime({
+    experimentId: proactiveStudyConfig.experimentId,
+    updatedAt: frozenAt
+  });
+  db.saveNow();
 }
 const coursewareFeedbackTargetLookup = feedback.buildCoursewareFeedbackTargetLookup(
   learningRoute,
@@ -854,19 +961,20 @@ function gradingRuntimeInfo() {
     process.env.GRADING_LLM_PROVIDER
     || llm.provider()
   ).toLowerCase();
+  const runtime = llm.runtimeInfo({
+    provider,
+    model: process.env.GRADING_MODEL || undefined,
+    baseUrl: process.env.GRADING_BASE_URL || undefined,
+    apiKey: process.env.GRADING_API_KEY || undefined,
+    wireApi: process.env.GRADING_WIRE_API || undefined,
+    configFile: process.env.GRADING_CONFIG_FILE || undefined
+  });
   return {
     provider,
-    model: String(
-      process.env.GRADING_MODEL
-      || process.env.OPENAI_COMPATIBLE_MODEL
-      || process.env.INNOSPARK_MODEL
-      || ""
-    ).slice(0, 120),
-    liveConfigured: Boolean(
-      process.env.GRADING_API_KEY
-      || process.env.OPENAI_COMPATIBLE_API_KEY
-      || process.env.INNOSPARK_API_KEY
-    )
+    model: String(runtime.model || "").slice(0, 120),
+    wireApi: runtime.wireApi || "",
+    credentialSource: runtime.credentialSource || "",
+    liveConfigured: runtime.liveConfigured === true
   };
 }
 
@@ -949,12 +1057,17 @@ function sendSnapshotConflict(res, result) {
 }
 
 function assistantProviderInfo() {
-  const id = llm.provider();
-  const live = ["openai-compatible", "innospark", "openai"].includes(id);
+  const runtime = llm.runtimeInfo();
+  const id = runtime.provider;
+  const live = runtime.live === true && runtime.liveConfigured === true;
   return {
     id,
     live,
-    label: live ? "AI 助教" : "本地引导"
+    model: String(runtime.model || "").slice(0, 120),
+    wireApi: runtime.wireApi || "",
+    credentialSource: runtime.credentialSource || "",
+    verification: live ? "pending" : "local",
+    label: live ? "模型待验证" : "本地引导"
   };
 }
 
@@ -1051,6 +1164,208 @@ function publicProactiveAssignment(assignment = null) {
   };
 }
 
+function publicProactiveParticipation(participation = null) {
+  const status = participation?.status === "withdrawn"
+    ? "withdrawn"
+    : participation?.status === "enrolled"
+      ? "enrolled"
+      : "not_enrolled";
+  return {
+    mode: proactiveStudyConfig.participationMode,
+    ready: proactiveStudyConfig.participationReady,
+    status,
+    enrolled: status === "enrolled",
+    withdrawn: status === "withdrawn",
+    canEnroll: status === "not_enrolled"
+      && proactiveStudyConfig.participationMode === "explicit-consent"
+      && proactiveStudyConfig.participationReady,
+    canWithdraw: status === "enrolled",
+    consentVersion: proactiveStudyConfig.consentVersion,
+    consentNoticeUrl: proactiveStudyConfig.consentNoticeUrl,
+    enrollmentBasis: participation?.enrollment_basis || "",
+    consentedAt: participation?.consented_at || "",
+    withdrawnAt: participation?.withdrawn_at || "",
+    withdrawalReason: participation?.withdrawal_reason || ""
+  };
+}
+
+function proactiveParticipationForUser(userId, options = {}) {
+  const existing = db.getProactiveParticipation(
+    userId,
+    proactiveStudyConfig.experimentId
+  );
+  if (existing || options.createImplicit === false) return existing;
+  if (proactiveStudyConfig.participationMode !== "implicit-pilot") return null;
+  const recordedAt = nowIso();
+  return db.enrollProactiveParticipation({
+    user_id: userId,
+    experiment_id: proactiveStudyConfig.experimentId,
+    enrollment_basis: "implicit_engineering_pilot",
+    consent_version: proactiveStudyConfig.consentVersion,
+    consented_at: recordedAt,
+    updated_by: "system",
+    created_at: recordedAt,
+    updated_at: recordedAt
+  }).participation;
+}
+
+function proactiveExperimentRuntime() {
+  return db.getProactiveExperimentRuntime(
+    proactiveStudyConfig.experimentId
+  ) || db.ensureProactiveExperimentRuntime({
+    experimentId: proactiveStudyConfig.experimentId,
+    updatedAt: nowIso()
+  });
+}
+
+function publicProactiveRuntime(runtime = proactiveExperimentRuntime()) {
+  const status = runtime?.status === "paused" ? "paused" : "active";
+  return {
+    status,
+    paused: status === "paused",
+    reason: status === "paused" ? runtime.pause_reason || "" : "",
+    pausedAt: status === "paused" ? runtime.paused_at || "" : "",
+    updatedAt: runtime?.updated_at || ""
+  };
+}
+
+function adminProactiveRuntime(runtime = proactiveExperimentRuntime()) {
+  return {
+    ...publicProactiveRuntime(runtime),
+    updatedBy: runtime?.updated_by || "",
+    changed: runtime?.changed === true
+  };
+}
+
+function proactiveProtocolPayload(experimentId = proactiveStudyConfig.experimentId) {
+  const snapshot = experimentId === proactiveStudyConfig.experimentId
+    ? proactiveProtocolSnapshot
+    : db.getProactiveProtocolSnapshot(experimentId);
+  if (!snapshot) return null;
+  const definition = parseStoredJson(snapshot.protocol_json || "{}", {});
+  return {
+    experimentId: snapshot.experiment_id || experimentId,
+    chapterId: snapshot.chapter_id || definition.chapterId || "",
+    fingerprint: snapshot.protocol_fingerprint || "",
+    frozenAt: snapshot.created_at || "",
+    definition,
+    currentMatches: experimentId === proactiveStudyConfig.experimentId
+      ? snapshot.protocol_fingerprint === proactiveProtocolFingerprint
+      : null
+  };
+}
+
+function proactiveAssessmentQuestionCount(phase = "") {
+  const normalizedPhase = boundedLearningText(phase, 40).toLowerCase();
+  return Array.from(assessmentIndex.values()).filter((entry) => (
+    entry.chapterId === proactiveStudyConfig.chapterId
+    && entry.phase === normalizedPhase
+    && entry.unitId === `${proactiveStudyConfig.chapterId}-${normalizedPhase}`
+  )).length;
+}
+
+function proactiveIntegrityReport(experimentId = proactiveStudyConfig.experimentId) {
+  const protocol = proactiveProtocolPayload(experimentId);
+  const policy = protocol?.definition?.policy || proactivePolicy.adminConfig(
+    proactiveStudyConfig
+  );
+  const rules = protocol?.definition?.stoppingRules || proactiveStoppingRules;
+  const metrics = db.proactiveIntegrityDiagnostics({
+    experimentId,
+    experimentArms: policy.experimentArms || [],
+    displayArms: policy.displayArms || [],
+    assignmentStrategy: policy.assignmentStrategy || "hash",
+    repeatWindowMs: Number(
+      rules.repeatDisplayWindowMs || proactiveStoppingRules.repeatDisplayWindowMs
+    ),
+    unresolvedThreshold: Number(
+      rules.unresolvedOfferThreshold || proactiveStoppingRules.unresolvedOfferThreshold
+    ),
+    unresolvedAgeMs: Number(
+      rules.unresolvedOfferAgeMs || proactiveStoppingRules.unresolvedOfferAgeMs
+    )
+  });
+  const signal = (id, label, severity, count, detail, flagged = count > 0) => ({
+    id,
+    label,
+    severity,
+    status: flagged ? severity : "ok",
+    count: Number(count || 0),
+    detail
+  });
+  const signals = [
+    signal(
+      "protected_assessment_display",
+      "受保护测量阶段出现展示",
+      "critical",
+      metrics.protectedDisplays,
+      "前测、后测与独立迁移/保持测量期间不得展示主动帮助。"
+    ),
+    signal(
+      "non_display_arm_display",
+      "非展示实验臂出现展示",
+      "critical",
+      metrics.nonDisplayArmDisplays,
+      "Control 或协议中 display=false 的实验臂不得收到主动提示。"
+    ),
+    signal(
+      "post_withdrawal_display",
+      "退出研究后仍出现展示",
+      "critical",
+      metrics.postWithdrawalDisplays,
+      "学生退出研究后仍可继续正常学习，但不得再收到主动实验提示。"
+    ),
+    signal(
+      "opt_out_display",
+      "学生关闭后仍出现展示",
+      "critical",
+      metrics.optOutDisplays,
+      "全局关闭或知识点静音后，后续展示视为自主权违规。"
+    ),
+    signal(
+      "incomplete_evidence_chain",
+      "应介入决策缺少证据链",
+      "critical",
+      metrics.incompleteEvidence,
+      "应介入判断必须同时保留结构化证据引用与证据快照。"
+    ),
+    signal(
+      "rapid_repeat_display",
+      "同知识点短时间重复展示",
+      "warning",
+      metrics.repeatedDisplays,
+      `同一学生同一知识点 ${Math.round(metrics.repeatWindowMs / 60000)} 分钟内重复展示需要人工复核。`
+    ),
+    signal(
+      "unresolved_offer_backlog",
+      "未决主动提示积压",
+      "warning",
+      metrics.unresolvedOffers,
+      `未决提示达到 ${metrics.unresolvedThreshold} 条，或最早一条超过 ${Math.round(metrics.unresolvedAgeMs / 60000)} 分钟时建议暂停排查。`,
+      metrics.unresolvedOffers >= metrics.unresolvedThreshold
+        || metrics.unresolvedOldestAgeMs >= metrics.unresolvedAgeMs
+    ),
+    signal(
+      "assignment_imbalance",
+      "分层实验臂明显失衡",
+      "warning",
+      metrics.imbalancedStrata.length,
+      "该信号只提示分配可行性风险，不自动判定因果分析失效。"
+    )
+  ];
+  return {
+    advisoryOnly: true,
+    generatedAt: metrics.generatedAt,
+    summary: {
+      critical: signals.filter((entry) => entry.status === "critical").length,
+      warning: signals.filter((entry) => entry.status === "warning").length,
+      ok: signals.filter((entry) => entry.status === "ok").length
+    },
+    signals,
+    metrics
+  };
+}
+
 function proactivePretestStratum(userId) {
   const pretestUnitId = `${proactiveStudyConfig.chapterId}-pre`;
   const expectedEntries = Array.from(assessmentIndex.values())
@@ -1112,7 +1427,326 @@ function proactivePretestStratum(userId) {
   };
 }
 
+function proactiveAssessmentCompletion(userId, phase = "") {
+  const normalizedPhase = boundedLearningText(phase, 40).toLowerCase();
+  const unitId = `${proactiveStudyConfig.chapterId}-${normalizedPhase}`;
+  const expectedEntries = Array.from(assessmentIndex.values())
+    .filter((entry) => (
+      entry.chapterId === proactiveStudyConfig.chapterId
+      && entry.phase === normalizedPhase
+      && entry.unitId === unitId
+    ));
+  if (!expectedEntries.length) {
+    return {
+      ready: false,
+      phase: normalizedPhase,
+      unitId,
+      submitted: 0,
+      expected: 0,
+      completedAt: ""
+    };
+  }
+  const expectedIds = new Set(
+    expectedEntries.map((entry) => entry.question.id)
+  );
+  const latest = new Map();
+  db.getQuizResultsByUser(userId, 500).forEach((row) => {
+    if (
+      row.chapter_id === proactiveStudyConfig.chapterId
+      && row.phase === normalizedPhase
+      && row.unit_id === unitId
+      && expectedIds.has(row.question_id)
+      && !latest.has(row.question_id)
+    ) {
+      latest.set(row.question_id, row);
+    }
+  });
+  const completedAt = Array.from(latest.values())
+    .map((row) => row.created_at || "")
+    .filter(Boolean)
+    .sort()
+    .at(-1) || "";
+  return {
+    ready: latest.size >= expectedIds.size,
+    phase: normalizedPhase,
+    unitId,
+    submitted: latest.size,
+    expected: expectedIds.size,
+    completedAt
+  };
+}
+
+function publicProactiveOutcomeSession(session = null) {
+  if (!session) return null;
+  return {
+    id: session.id,
+    stageId: session.stage,
+    status: session.status,
+    startedAt: session.started_at || "",
+    endedAt: session.ended_at || "",
+    learningGeneration: Number(session.learning_generation || 1),
+    instrumentVersion: session.instrument_version || "",
+    protocolFingerprint: session.protocol_fingerprint || "",
+    withdrawalReason: session.withdrawal_reason || "",
+    responses: session.status === "active"
+      ? parseStoredJson(session.draft_response_json || "{}", {})
+      : {}
+  };
+}
+
+function proactiveOutcomeState(
+  userId,
+  chapterId,
+  now = Date.now()
+) {
+  const managed = chapterId === proactiveStudyConfig.chapterId
+    && proactiveOutcomes.chapterId === proactiveStudyConfig.chapterId;
+  const participation = managed
+    ? proactiveParticipationForUser(userId)
+    : null;
+  const assignment = managed ? proactiveAssignmentForUser(userId) : null;
+  const posttest = managed
+    ? proactiveAssessmentCompletion(userId, "post")
+    : { ready: false, completedAt: "", submitted: 0, expected: 0 };
+  const attempts = managed
+    ? db.listProactiveOutcomeAttempts(
+        userId,
+        proactiveStudyConfig.experimentId
+      )
+    : [];
+  const sessions = managed
+    ? db.listProactiveOutcomeSessions(
+        userId,
+        proactiveStudyConfig.experimentId
+      )
+    : [];
+  const attemptByStage = new Map(
+    attempts.map((attempt) => [attempt.stage, attempt])
+  );
+  const sessionByStage = new Map(
+    sessions.map((session) => [session.stage, session])
+  );
+  const activeSession = sessions.find(
+    (session) => session.status === "active"
+  ) || null;
+  const postCompletedAt = Date.parse(posttest.completedAt || "");
+  const retentionUnlockAt = Number.isFinite(postCompletedAt)
+    ? postCompletedAt + proactiveRetentionDelayHours * 60 * 60 * 1000
+    : NaN;
+  const transferComplete = attemptByStage.has("near_transfer")
+    && attemptByStage.has("representation_transfer");
+
+  const stages = proactiveOutcomes.stageIds.map((stageId) => {
+    const instrument = proactiveOutcomes.publicStage(stageId);
+    const attempt = attemptByStage.get(stageId) || null;
+    const session = sessionByStage.get(stageId) || null;
+    let status = "locked";
+    let reason = "完成章后测后开放。";
+    let unlockAt = "";
+    if (attempt || session?.status === "submitted") {
+      status = "submitted";
+      reason = "已提交；为避免影响后续测量，不显示即时对错。";
+    } else if (session?.status === "withdrawn") {
+      status = "withdrawn";
+      reason = "已退出本阶段；该失访状态会保留在研究记录中。";
+    } else if (session?.status === "active") {
+      status = "active";
+      reason = "测量进行中；刷新或换设备后会继续同一会话。";
+    } else if (activeSession) {
+      reason = "请先完成或退出当前正在进行的独立测量。";
+    } else if (participation?.status === "withdrawn") {
+      reason = "你已退出本章研究；课程与主动提问仍可继续使用。";
+    } else if (participation?.status !== "enrolled") {
+      reason = "加入本章研究并完成章前测后开放。";
+    } else if (!assignment) {
+      reason = "完成章前测并进入本章实验后开放。";
+    } else if (!posttest.ready) {
+      reason = "完成章后测后开放。";
+    } else if (stageId === "retention" && !transferComplete) {
+      reason = "完成两项迁移测量后进入延迟保持阶段。";
+    } else if (
+      stageId === "retention"
+      && Number.isFinite(retentionUnlockAt)
+      && now < retentionUnlockAt
+    ) {
+      unlockAt = new Date(retentionUnlockAt).toISOString();
+      reason = "将在延迟窗口结束后开放。";
+    } else {
+      status = "available";
+      reason = "可独立作答；本阶段不提供知点提示、路径建议或即时反馈。";
+    }
+    return {
+      id: instrument.id,
+      label: instrument.label,
+      purpose: instrument.purpose,
+      itemCount: instrument.itemCount,
+      agentAssistanceAllowed: false,
+      feedbackPolicy: instrument.feedbackPolicy,
+      status,
+      reason,
+      unlockAt,
+      sessionId: session?.id || "",
+      startedAt: session?.started_at || "",
+      submittedAt: attempt?.submitted_at || "",
+      endedAt: session?.ended_at || "",
+      withdrawalReason: session?.withdrawal_reason || "",
+      ...(["available", "active"].includes(status)
+        ? { items: instrument.items }
+        : {})
+    };
+  });
+  return {
+    managed,
+    chapterId,
+    instrumentVersion: proactiveOutcomes.version,
+    protocolFingerprint: proactiveProtocolFingerprint,
+    retentionDelayHours: proactiveRetentionDelayHours,
+    posttest,
+    participation: publicProactiveParticipation(participation),
+    assignmentPending: Boolean(
+      managed
+      && participation?.status === "enrolled"
+      && !assignment
+    ),
+    activeSession: publicProactiveOutcomeSession(activeSession),
+    agentAssistanceBlocked: Boolean(activeSession),
+    stages
+  };
+}
+
+function closeProactiveSupportForOutcomeSession(userId, startedAt) {
+  const closedInterventions = db.closeOpenProactiveInterventionsForUser({
+    userId,
+    experimentId: proactiveStudyConfig.experimentId,
+    resolution: "measurement_started",
+    resolvedAt: startedAt,
+    followupOutcome: {
+      outcome: "measurement_started",
+      startedAt
+    }
+  });
+  let closedLifecycleEpisodes = 0;
+  db.listProactivePolicyStates(
+    userId,
+    proactiveStudyConfig.experimentId
+  ).forEach((row) => {
+    if (row.scope_key === proactiveGlobalScopeKey) return;
+    const lifecycleState = proactivePolicy.lifecycle.normalize(
+      parseStoredJson(row.lifecycle_json || "{}", {})
+    );
+    if (![
+      "accepted_pending_response",
+      "awaiting_independent_attempt"
+    ].includes(lifecycleState.phase)) return;
+    closedLifecycleEpisodes += 1;
+    db.upsertProactivePolicyState(proactivePolicyStateRecord(row, {
+      userId,
+      scopeKey: row.scope_key,
+      updatedAt: startedAt,
+      lastReasonCode: "measurement_started",
+      currentLevel: "L0",
+      lifecycle: {
+        ...lifecycleState,
+        phase: "closed",
+        supportLevel: "L0",
+        activeAction: "",
+        activeDecisionId: "",
+        activeInterventionId: "",
+        reasonCode: "measurement_started",
+        lastOutcome: "measurement_started",
+        lastOutcomeAt: startedAt
+      }
+    }));
+  });
+  return { closedInterventions, closedLifecycleEpisodes };
+}
+
+function closeProactiveSupportForStudyWithdrawal(userId, withdrawnAt) {
+  const closedInterventions = db.closeOpenProactiveInterventionsForUser({
+    userId,
+    experimentId: proactiveStudyConfig.experimentId,
+    resolution: "study_withdrawn",
+    resolvedAt: withdrawnAt,
+    followupOutcome: {
+      outcome: "study_withdrawn",
+      withdrawnAt
+    }
+  });
+  let closedLifecycleEpisodes = 0;
+  db.listProactivePolicyStates(
+    userId,
+    proactiveStudyConfig.experimentId
+  ).forEach((row) => {
+    if (row.scope_key === proactiveGlobalScopeKey) return;
+    const lifecycleState = proactivePolicy.lifecycle.normalize(
+      parseStoredJson(row.lifecycle_json || "{}", {})
+    );
+    const lifecycleActive = [
+      "accepted_pending_response",
+      "awaiting_independent_attempt"
+    ].includes(lifecycleState.phase);
+    if (lifecycleActive) closedLifecycleEpisodes += 1;
+    db.upsertProactivePolicyState(proactivePolicyStateRecord(row, {
+      userId,
+      scopeKey: row.scope_key,
+      updatedAt: withdrawnAt,
+      lastReasonCode: "study_withdrawn",
+      currentLevel: lifecycleActive ? "L0" : row.current_level || "L0",
+      pendingCandidateKind: "",
+      pendingCandidateAt: "",
+      pendingCandidateExpiresAt: "",
+      pendingEvidence: {},
+      lifecycle: lifecycleActive
+        ? {
+            ...lifecycleState,
+            phase: "closed",
+            supportLevel: "L0",
+            activeAction: "",
+            activeDecisionId: "",
+            activeInterventionId: "",
+            reasonCode: "study_withdrawn",
+            lastOutcome: "study_withdrawn",
+            lastOutcomeAt: withdrawnAt
+          }
+        : lifecycleState
+    }));
+  });
+  const withdrawnOutcomeSessions = db
+    .withdrawActiveProactiveOutcomeSessionsForUser({
+      userId,
+      experimentId: proactiveStudyConfig.experimentId,
+      reason: "consent_withdrawal",
+      endedAt: withdrawnAt
+    });
+  return {
+    closedInterventions,
+    closedLifecycleEpisodes,
+    withdrawnOutcomeSessions
+  };
+}
+
+function activeProactiveOutcomeSession(userId) {
+  return db.getActiveProactiveOutcomeSession(
+    userId,
+    proactiveStudyConfig.experimentId
+  );
+}
+
+function rejectAgentAssistanceDuringOutcome(res, userId) {
+  const session = activeProactiveOutcomeSession(userId);
+  if (!session) return false;
+  sendJson(res, 409, {
+    ok: false,
+    code: "proactive_outcome_session_active",
+    message: "独立测量进行中，知点、主动提示和路径建议暂时关闭。",
+    session: publicProactiveOutcomeSession(session)
+  });
+  return true;
+}
+
 function proactiveAssignmentForUser(userId) {
+  const participation = proactiveParticipationForUser(userId);
+  if (participation?.status !== "enrolled") return null;
   const existing = db.getExperimentAssignment(userId, proactiveStudyConfig.experimentId);
   const pretest = proactivePretestStratum(userId);
   if (
@@ -1123,10 +1757,17 @@ function proactiveAssignmentForUser(userId) {
   }
   if (!proactiveStudyConfig.assignmentReady) return null;
   if (!pretest.ready) return null;
+  const assignmentCounts = proactiveStudyConfig.assignmentStrategy === "stratified-balanced"
+    ? db.proactiveAssignmentCountsByStratum(
+        proactiveStudyConfig.experimentId,
+        pretest.stratum
+      )
+    : {};
   const proposed = proactivePolicy.createAssignment({
     userId,
     config: proactiveStudyConfig,
     stratum: pretest.stratum,
+    assignmentCounts,
     assignedAt: nowIso()
   });
   const assigned = existing
@@ -1136,7 +1777,7 @@ function proactiveAssignmentForUser(userId) {
   return assigned;
 }
 
-function proactiveStudentPreference(userId) {
+function proactiveGlobalPreference(userId) {
   const row = db.getProactivePolicyState(
     userId,
     proactiveStudyConfig.experimentId,
@@ -1144,6 +1785,24 @@ function proactiveStudentPreference(userId) {
   );
   const preference = String(row?.student_preference || "standard");
   return proactiveStudentPreferences.has(preference) ? preference : "standard";
+}
+
+function proactiveScopePreference(userId, scopeKey = "") {
+  if (!scopeKey || scopeKey === proactiveGlobalScopeKey) return "standard";
+  const row = db.getProactivePolicyState(
+    userId,
+    proactiveStudyConfig.experimentId,
+    scopeKey
+  );
+  const preference = String(row?.scope_preference || "standard");
+  return ["standard", "off"].includes(preference) ? preference : "standard";
+}
+
+function proactiveStudentPreference(userId, scopeKey = "") {
+  const globalPreference = proactiveGlobalPreference(userId);
+  if (globalPreference === "off") return "off";
+  if (proactiveScopePreference(userId, scopeKey) === "off") return "off";
+  return globalPreference === "reduced" ? "reduced" : "standard";
 }
 
 function proactiveEventType(row = {}) {
@@ -1432,11 +2091,10 @@ function proactiveEvidenceForRequest({
       evidence.questionCount = 1;
       evidence.verificationSource = "courseware_semantic_event";
       evidence.verificationEventType = attempt.type;
-      evidence.verificationStage = String(
-        lifecycleState.supportLevel || policyState.current_level || ""
-      ).toUpperCase() === "L2"
-        ? "after_l2"
-        : "after_l1";
+      evidence.verificationStage = proactivePolicy.lifecycle
+        .verificationStageForSupportLevel(
+          lifecycleState.supportLevel || policyState.current_level
+        ) || "after_l1";
       families.add("task");
       if (lifecycleState.phase === "awaiting_independent_attempt") {
         families.add("history");
@@ -1476,6 +2134,9 @@ function proactiveSilentAssistantDecision(policyDecision = {}) {
   const messages = {
     protected_assessment_stage: "当前是独立测量阶段，知点保持安静。",
     experiment_assignment_pending: "完成章前测后，知点才会启用本章实验政策。",
+    participant_not_enrolled: "当前未加入本章主动学习研究，知点不会展示实验性主动提示。",
+    participant_withdrawn: "你已退出本章研究，知点不会再展示实验性主动提示。",
+    participation_config_required: "本章研究参与配置尚未冻结，主动政策保持关闭。",
     policy_mode_off: "当前主动政策已关闭。",
     intervention_budget_exhausted: "知点今天已减少主动打扰。",
     policy_cooldown_active: "正在遵守学生的冷却与降频选择。",
@@ -1512,6 +2173,11 @@ function publicProactivePolicyState(row = {}, options = {}) {
   const lifecycleState = proactivePolicy.lifecycle.normalize(
     parseStoredJson(row.lifecycle_json || "{}", {})
   );
+  const scopePreference = ["standard", "off"].includes(
+    String(row.scope_preference || "")
+  )
+    ? String(row.scope_preference)
+    : "standard";
   const adapter = proactivePolicy.adapterForChapter(
     proactiveStudyConfig.chapterId
   );
@@ -1533,6 +2199,7 @@ function publicProactivePolicyState(row = {}, options = {}) {
     currentLevel: row.current_level || "L0",
     fadeLevel: Number(row.fade_level || 0),
     studentPreference,
+    scopePreference,
     lastReasonCode: row.last_reason_code || "",
     pendingCandidateKind: pendingQuiet.kind,
     pendingCandidateAt: pendingQuiet.candidateAtIso,
@@ -1569,6 +2236,8 @@ function proactivePolicyStateRecord(existing = {}, {
   currentLevel = existing.current_level || "L0",
   fadeLevel = Number(existing.fade_level || 0),
   studentPreference = existing.student_preference || "standard",
+  scopePreference = existing.scope_preference || "standard",
+  cooldownUntil = existing.cooldown_until || "",
   lifecycle = parseStoredJson(existing.lifecycle_json || "{}", {})
 } = {}) {
   return {
@@ -1576,11 +2245,14 @@ function proactivePolicyStateRecord(existing = {}, {
     experiment_id: proactiveStudyConfig.experimentId,
     scope_key: scopeKey,
     dismiss_streak: Number(existing.dismiss_streak || 0),
-    cooldown_until: existing.cooldown_until || "",
+    cooldown_until: cooldownUntil,
     current_level: currentLevel,
     fade_level: fadeLevel,
     student_preference: proactiveStudentPreferences.has(String(studentPreference))
       ? String(studentPreference)
+      : "standard",
+    scope_preference: ["standard", "off"].includes(String(scopePreference))
+      ? String(scopePreference)
       : "standard",
     last_reason_code: lastReasonCode,
     pending_candidate_kind: pendingCandidateKind,
@@ -1607,6 +2279,11 @@ function proactivePolicyStateSnapshot(row = {}) {
     )
       ? String(row.student_preference)
       : "standard",
+    scopePreference: ["standard", "off"].includes(
+      String(row.scope_preference || "")
+    )
+      ? String(row.scope_preference)
+      : "standard",
     pendingCandidateKind: row.pending_candidate_kind || "",
     pendingCandidateAt: row.pending_candidate_at || "",
     pendingCandidateExpiresAt: row.pending_candidate_expires_at || "",
@@ -1616,23 +2293,49 @@ function proactivePolicyStateSnapshot(row = {}) {
 
 function proactiveStudyState(userId, chapterId) {
   const managed = chapterId === proactiveStudyConfig.chapterId;
+  const participation = managed
+    ? proactiveParticipationForUser(userId)
+    : null;
   const pretest = managed ? proactivePretestStratum(userId) : null;
   const assignment = managed ? proactiveAssignmentForUser(userId) : null;
+  const runtime = managed ? proactiveExperimentRuntime() : null;
+  const activeOutcomeSession = managed
+    ? activeProactiveOutcomeSession(userId)
+    : null;
   const studentPreference = managed
-    ? proactiveStudentPreference(userId)
+    ? proactiveGlobalPreference(userId)
     : "standard";
   return {
     managed,
     ...proactivePolicy.publicConfig(proactiveStudyConfig),
-    assignmentPending: Boolean(managed && !assignment),
+    participation: publicProactiveParticipation(participation),
+    assignmentPending: Boolean(
+      managed
+      && participation?.status === "enrolled"
+      && !assignment
+    ),
     assignment: publicProactiveAssignment(assignment),
+    runtime: runtime ? publicProactiveRuntime(runtime) : null,
     studentPreference,
     pretest,
-    candidateCollectionEnabled: Boolean(managed && proactiveStudyConfig.mode !== "off"),
+    outcomeSession: publicProactiveOutcomeSession(activeOutcomeSession),
+    agentAssistanceBlocked: Boolean(activeOutcomeSession),
+    candidateCollectionEnabled: Boolean(
+      managed
+      && proactiveStudyConfig.mode !== "off"
+      && runtime?.status !== "paused"
+      && !activeOutcomeSession
+      && participation?.status === "enrolled"
+    ),
     policyStates: assignment
       ? db.listProactivePolicyStates(userId, proactiveStudyConfig.experimentId)
           .filter((row) => row.scope_key !== proactiveGlobalScopeKey)
-          .map((row) => publicProactivePolicyState(row, { studentPreference }))
+          .map((row) => publicProactivePolicyState(row, {
+            studentPreference: proactiveStudentPreference(
+              userId,
+              row.scope_key
+            )
+          }))
       : []
   };
 }
@@ -1685,7 +2388,9 @@ function proactiveDecisionRecord({
       policyStateBefore,
       policyStateAfter,
       lifecycleOutcome: policyDecision.lifecycleOutcome || "",
-      stateTransition: policyDecision.stateTransition || null
+      stateTransition: policyDecision.stateTransition || null,
+      policyAdjustments: policyDecision.policyAdjustments || {},
+      learnerOptions: policyDecision.learnerOptions || {}
     },
     budget_snapshot: budget,
     created_at: policyDecision.createdAt,
@@ -1709,6 +2414,8 @@ function proactivePolicyStateAfterResolution({
   const baseCooldownMs = 10 * 60 * 1000;
   const cooldownMs = resolution === "accepted"
     ? baseCooldownMs
+    : resolution === "snoozed"
+      ? 15 * 60 * 1000
     : negative ? baseCooldownMs * Math.max(1, nextStreak) : 0;
   const lifecycleState = proactivePolicy.lifecycle.afterResolution({
     lifecycle: parseStoredJson(existing.lifecycle_json || "{}", {}),
@@ -1730,6 +2437,7 @@ function proactivePolicyStateAfterResolution({
       : existing.current_level || "L0",
     fade_level: Math.max(0, Number(existing.fade_level || 0)),
     student_preference: existing.student_preference || "standard",
+    scope_preference: existing.scope_preference || "standard",
     last_reason_code: `${resolution}:${Math.max(0, Math.trunc(Number(latencyMs || 0)))}`,
     pending_candidate_kind: existing.pending_candidate_kind || "",
     pending_candidate_at: existing.pending_candidate_at || "",
@@ -1904,6 +2612,130 @@ function getAssistantIntervention(
   ) return null;
   if (consume) assistantInterventionRegistry.delete(id);
   return record;
+}
+
+function proactiveDecisionInteractionAccess(userId, decision = {}, now = Date.now()) {
+  if (
+    !decision?.id
+    || decision.user_id !== userId
+    || decision.experiment_id !== proactiveStudyConfig.experimentId
+    || decision.chapter_id !== proactiveStudyConfig.chapterId
+    || decision.delivery_decision !== "intervene"
+    || Number(decision.learning_generation || 1)
+      !== db.currentLearningGeneration(userId)
+    || proactiveStudyConfig.mode !== "active"
+  ) {
+    return { ok: false, reason: "inactive", scopeKey: "" };
+  }
+  const expiresAt = Date.parse(decision.expires_at || "");
+  if (Number.isFinite(expiresAt) && expiresAt <= now) {
+    return {
+      ok: false,
+      reason: "expired",
+      scopeKey: decision.scope_key || decision.unit_id
+    };
+  }
+  const runtime = proactiveExperimentRuntime();
+  if (runtime?.status === "paused") {
+    return {
+      ok: false,
+      reason: "paused",
+      scopeKey: decision.scope_key || decision.unit_id
+    };
+  }
+  const participation = db.getProactiveParticipation(
+    userId,
+    decision.experiment_id
+  );
+  const scopeKey = decision.scope_key || decision.unit_id;
+  if (
+    participation?.status !== "enrolled"
+    || !scopeKey
+    || proactiveStudentPreference(userId, scopeKey) === "off"
+    || Boolean(activeProactiveOutcomeSession(userId))
+  ) {
+    return { ok: false, reason: "inactive", scopeKey };
+  }
+  return { ok: true, reason: "", scopeKey };
+}
+
+function policyAssistantInterventionAccess(userId, unitId, record = {}) {
+  if (!record.decisionId) return { ok: true, code: "", terminal: false };
+  const decision = db.getProactiveDecisionForUser(userId, record.decisionId);
+  const intervention = db.getProactiveIntervention(record.id);
+  if (
+    !decision
+    || !intervention
+    || intervention.user_id !== userId
+    || intervention.decision_id !== decision.id
+    || decision.experiment_id !== proactiveStudyConfig.experimentId
+    || decision.unit_id !== unitId
+    || decision.delivery_decision !== "intervene"
+    || decision.action !== record.action
+    || Number(decision.learning_generation || 1)
+      !== db.currentLearningGeneration(userId)
+  ) {
+    return {
+      ok: false,
+      code: "assistant_intervention_expired",
+      terminal: true
+    };
+  }
+  if (intervention.status !== "accepted") {
+    const pendingAcceptance = ["offered", "shown"].includes(intervention.status);
+    return {
+      ok: false,
+      code: pendingAcceptance
+        ? "assistant_intervention_not_accepted"
+        : "assistant_intervention_expired",
+      terminal: !pendingAcceptance
+    };
+  }
+  const runtime = proactiveExperimentRuntime();
+  if (runtime?.status === "paused") {
+    return {
+      ok: false,
+      code: "assistant_intervention_paused",
+      terminal: false
+    };
+  }
+  const participation = db.getProactiveParticipation(
+    userId,
+    decision.experiment_id
+  );
+  const scopeKey = decision.scope_key || decision.unit_id;
+  if (
+    participation?.status !== "enrolled"
+    || proactiveStudentPreference(userId, scopeKey) === "off"
+  ) {
+    return {
+      ok: false,
+      code: "assistant_intervention_expired",
+      terminal: true
+    };
+  }
+  if (proactivePolicy.lifecycle.isLifecycleAction(decision.action)) {
+    const policyState = db.getProactivePolicyState(
+      userId,
+      decision.experiment_id,
+      scopeKey
+    ) || {};
+    const lifecycleState = proactivePolicy.lifecycle.normalize(
+      parseStoredJson(policyState.lifecycle_json || "{}", {})
+    );
+    if (
+      lifecycleState.phase !== "accepted_pending_response"
+      || lifecycleState.activeDecisionId !== decision.id
+      || lifecycleState.activeInterventionId !== record.id
+    ) {
+      return {
+        ok: false,
+        code: "assistant_intervention_expired",
+        terminal: true
+      };
+    }
+  }
+  return { ok: true, code: "", terminal: false };
 }
 
 function normalizeAssistantQuizReviewProgress(progress = {}) {
@@ -2270,12 +3102,16 @@ async function handleManagedProactiveIntervention({
   responseExtras = {}
 }) {
   const now = new Date();
+  const participation = proactiveParticipationForUser(auth.participant.id);
   const assignment = proactiveAssignmentForUser(auth.participant.id);
   const policyScopeKey = boundedLearningText(
     resolved.unit.knowledgePointId || resolved.unit.id,
     180
   );
-  const studentPreference = proactiveStudentPreference(auth.participant.id);
+  const studentPreference = proactiveStudentPreference(
+    auth.participant.id,
+    policyScopeKey
+  );
   let policyState = assignment
     ? db.getProactivePolicyState(
         auth.participant.id,
@@ -2300,6 +3136,11 @@ async function handleManagedProactiveIntervention({
     trustedEvidence
   );
   let interventionBudget = proactiveInterventionBudgetInfo(auth.participant.id, now);
+  const experimentRuntime = proactiveExperimentRuntime();
+  const policyRuntime = {
+    ...experimentRuntime,
+    participationStatus: participation?.status || "not_enrolled"
+  };
   let policyDecision = proactivePolicy.evaluate({
     config: proactiveStudyConfig,
     assignment,
@@ -2317,6 +3158,7 @@ async function handleManagedProactiveIntervention({
     evidence,
     policyState,
     budget: interventionBudget,
+    runtime: policyRuntime,
     now: now.getTime()
   });
   const waitingForBoundary = policyDecision.reasonCodes.includes(
@@ -2400,10 +3242,17 @@ async function handleManagedProactiveIntervention({
   let renderedDecision = proactiveSilentAssistantDecision(policyDecision);
   if (policyDecision.displayAllowed) {
     const adapter = proactivePolicy.adapterForChapter(resolved.unit.chapterId);
+    const representationUnit = assistantContextIndex.units.get(policyScopeKey);
+    const availableSceneTypes = representationUnit?.scenes instanceof Map
+      ? Array.from(representationUnit.scenes.keys())
+      : [];
     const candidate = adapter?.renderAction?.(policyDecision.action, {
       knowledgePointId: resolved.unit.knowledgePointId || "",
       unitId: resolved.unit.id,
       unitLabel: resolved.unit.unitLabel,
+      targetUnitId: policyScopeKey,
+      currentSceneType: sceneType,
+      availableSceneTypes,
       signal,
       evidence,
       quizAttempt
@@ -2415,7 +3264,20 @@ async function handleManagedProactiveIntervention({
       candidate.intervene
       && candidate.action === policyDecision.action
     ) {
-      renderedDecision = candidate;
+      renderedDecision = {
+        ...candidate,
+        supportLevel: policyDecision.supportLevel,
+        learnerOptions: {
+          canSnooze: policyDecision.learnerOptions?.canSnooze === true,
+          canMuteScope: policyDecision.learnerOptions?.canMuteScope === true,
+          canRequestAlternative: policyDecision.learnerOptions
+            ?.canRequestAlternative === true
+        },
+        targetUnitId: candidate.targetUnitId
+          || (candidate.action === "switch_representation"
+            ? policyScopeKey
+            : "")
+      };
     } else {
       policyDecision = {
         ...policyDecision,
@@ -2456,7 +3318,10 @@ async function handleManagedProactiveIntervention({
       "open_intervention_exists",
       "renderer_action_mismatch",
       "shadow_mode_suppressed",
-      "control_condition_suppressed"
+      "control_condition_suppressed",
+      "experiment_arm_display_suppressed",
+      "arm_support_ceiling",
+      "arm_representation_switch_disabled"
     ].find((code) => policyDecision.reasonCodes.includes(code))
       || "delivery_suppressed";
     const closedTransition = proactivePolicy.lifecycle.closeUndeliveredAction({
@@ -2506,6 +3371,12 @@ async function handleManagedProactiveIntervention({
         fadeLevel: Number(
           transition.fadeLevel ?? policyState.fade_level ?? 0
         ),
+        cooldownUntil: Number(transition.cooldownMs || 0) > 0
+          ? new Date(
+              Date.parse(policyDecision.createdAt)
+              + Number(transition.cooldownMs)
+            ).toISOString()
+          : policyState.cooldown_until || "",
         lifecycle: {
           ...(transition.lifecycle || {}),
           lastOutcomeAt: policyDecision.createdAt
@@ -2599,8 +3470,10 @@ async function handleManagedProactiveIntervention({
     decision: renderedDecision,
     study: {
       ...proactivePolicy.publicConfig(proactiveStudyConfig),
+      participation: publicProactiveParticipation(participation),
       assignment: publicProactiveAssignment(assignment),
-      assignmentPending: !assignment,
+      assignmentPending: participation?.status === "enrolled" && !assignment,
+      runtime: publicProactiveRuntime(experimentRuntime),
       studentPreference,
       deliveryDecision: policyDecision.deliveryDecision,
       policyState: publicProactivePolicyState(policyState, {
@@ -3168,10 +4041,56 @@ async function handleApi(req, res, url) {
         console.warn("Learning reset quiz reconciliation skipped:", error.message);
       }
 
+      const withdrawnOutcomeSessions = db
+        .withdrawActiveProactiveOutcomeSessionsForUser({
+          userId: auth.participant.id,
+          experimentId: proactiveStudyConfig.experimentId,
+          reason: "learning_reset",
+          endedAt: timestamp
+        });
+      withdrawnOutcomeSessions.forEach((session) => {
+        const started = Date.parse(session.started_at || "");
+        const ended = Date.parse(session.ended_at || timestamp);
+        db.insertEvent({
+          id: `${session.id}:withdrawn`,
+          user_id: auth.participant.id,
+          type: "interaction",
+          payload: {
+            schemaVersion: 1,
+            eventType: "proactive_outcome_withdrawn",
+            source: "proactive_outcome_measurement",
+            chapterId: session.chapter_id,
+            unitId: `${session.chapter_id}-${session.stage}`,
+            sceneType: "",
+            research: {
+              experimentId: session.experiment_id,
+              condition: session.condition,
+              cohort: session.cohort || proactiveStudyConfig.cohort || ""
+            },
+            data: {
+              sessionId: session.id,
+              stageId: session.stage,
+              withdrawalReason: "learning_reset",
+              instrumentVersion: session.instrument_version,
+              learningGeneration: Number(session.learning_generation || 1),
+              nextLearningGeneration: result.generation,
+              agentAssistanceAllowed: false
+            },
+            timing: {
+              clientAt: session.ended_at || timestamp,
+              durationMs: Number.isFinite(started) && Number.isFinite(ended)
+                ? Math.max(0, Math.trunc(ended - started))
+                : 0
+            }
+          },
+          created_at: session.ended_at || timestamp
+        });
+      });
       const proactiveReset = {
         closedInterventions: db.closeOpenProactiveInterventionsForUser({
           userId: auth.participant.id,
           experimentId: proactiveStudyConfig.experimentId,
+          resolution: "learning_reset",
           resolvedAt: timestamp,
           followupOutcome: {
             outcome: "learning_generation_reset",
@@ -3182,11 +4101,13 @@ async function handleApi(req, res, url) {
           userId: auth.participant.id,
           experimentId: proactiveStudyConfig.experimentId,
           preserveScopeKey: proactiveGlobalScopeKey
-        })
+        }),
+        withdrawnOutcomeSessions: withdrawnOutcomeSessions.length
       };
       if (
         proactiveReset.closedInterventions
         || proactiveReset.clearedPolicyStates
+        || proactiveReset.withdrawnOutcomeSessions
       ) {
         db.insertEvent({
           id: crypto.randomUUID(),
@@ -3333,6 +4254,791 @@ async function handleApi(req, res, url) {
 
     if (
       req.method === "POST"
+      && url.pathname === "/api/learning/proactive/participation"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      if (chapterId !== proactiveStudyConfig.chapterId) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_participation_chapter_invalid",
+          message: "当前章节不属于这项主动学习研究。"
+        });
+        return;
+      }
+      const action = boundedLearningText(body.action, 40).toLowerCase();
+      const recordedAt = nowIso();
+      if (action === "enroll") {
+        const existing = proactiveParticipationForUser(
+          auth.participant.id,
+          { createImplicit: false }
+        );
+        if (existing?.status === "withdrawn") {
+          sendJson(res, 409, {
+            ok: false,
+            code: "proactive_participation_withdrawn_terminal",
+            message: "本实验中的退出记录不可撤销；你仍可继续正常学习。"
+          });
+          return;
+        }
+        if (
+          proactiveStudyConfig.participationMode === "explicit-consent"
+          && !proactiveStudyConfig.participationReady
+        ) {
+          sendJson(res, 503, {
+            ok: false,
+            code: "proactive_participation_config_incomplete",
+            message: "研究说明与同意版本尚未配置完成，暂时不能加入。"
+          });
+          return;
+        }
+        if (
+          proactiveStudyConfig.participationMode === "explicit-consent"
+          && (
+            body.confirmed !== true
+            || boundedLearningText(body.consentVersion, 120)
+              !== proactiveStudyConfig.consentVersion
+          )
+        ) {
+          sendJson(res, 409, {
+            ok: false,
+            code: "proactive_consent_confirmation_required",
+            message: "请先阅读当前版本的研究说明，并明确确认参加。"
+          });
+          return;
+        }
+        const enrollment = db.enrollProactiveParticipation({
+          user_id: auth.participant.id,
+          experiment_id: proactiveStudyConfig.experimentId,
+          enrollment_basis: proactiveStudyConfig.participationMode,
+          consent_version: proactiveStudyConfig.consentVersion,
+          consented_at: recordedAt,
+          updated_by: "student",
+          created_at: recordedAt,
+          updated_at: recordedAt
+        });
+        if (!enrollment.ok) {
+          sendJson(res, 409, {
+            ok: false,
+            code: "proactive_participation_withdrawn_terminal",
+            message: "本实验中的退出记录不可撤销；你仍可继续正常学习。"
+          });
+          return;
+        }
+        if (!enrollment.idempotent) {
+          db.insertEvent({
+            id: crypto.randomUUID(),
+            user_id: auth.participant.id,
+            type: "interaction",
+            payload: {
+              schemaVersion: 1,
+              eventType: "proactive_participation_enrolled",
+              source: "proactive_participation",
+              chapterId,
+              unitId: "",
+              sceneType: "",
+              research: {
+                experimentId: proactiveStudyConfig.experimentId,
+                cohort: proactiveStudyConfig.cohort
+              },
+              data: {
+                enrollmentBasis: enrollment.participation.enrollment_basis,
+                consentVersion: enrollment.participation.consent_version
+              },
+              timing: {
+                clientAt: recordedAt,
+                durationMs: 0
+              }
+            },
+            created_at: recordedAt
+          });
+        }
+        db.saveNow();
+        sendJson(res, 200, {
+          ok: true,
+          idempotent: enrollment.idempotent,
+          data: proactiveStudyState(auth.participant.id, chapterId)
+        });
+        return;
+      }
+      if (action === "withdraw") {
+        const withdrawalReasons = new Set([
+          "student_withdrawal",
+          "burden",
+          "privacy_concern",
+          "other"
+        ]);
+        const requestedReason = boundedLearningText(
+          body.reason || "student_withdrawal",
+          80
+        );
+        const withdrawalReason = withdrawalReasons.has(requestedReason)
+          ? requestedReason
+          : "student_withdrawal";
+        const withdrawal = db.withdrawProactiveParticipation({
+          user_id: auth.participant.id,
+          experiment_id: proactiveStudyConfig.experimentId,
+          enrollment_basis: proactiveStudyConfig.participationMode,
+          consent_version: proactiveStudyConfig.consentVersion,
+          withdrawn_at: recordedAt,
+          withdrawal_reason: withdrawalReason,
+          updated_by: "student",
+          created_at: recordedAt,
+          updated_at: recordedAt
+        });
+        const closure = withdrawal.idempotent
+          ? {
+              closedInterventions: 0,
+              closedLifecycleEpisodes: 0,
+              withdrawnOutcomeSessions: []
+            }
+          : closeProactiveSupportForStudyWithdrawal(
+              auth.participant.id,
+              recordedAt
+            );
+        if (!withdrawal.idempotent) {
+          db.insertEvent({
+            id: crypto.randomUUID(),
+            user_id: auth.participant.id,
+            type: "interaction",
+            payload: {
+              schemaVersion: 1,
+              eventType: "proactive_participation_withdrawn",
+              source: "proactive_participation",
+              chapterId,
+              unitId: "",
+              sceneType: "",
+              research: {
+                experimentId: proactiveStudyConfig.experimentId,
+                cohort: proactiveStudyConfig.cohort
+              },
+              data: {
+                withdrawalReason,
+                closedInterventions: closure.closedInterventions,
+                closedLifecycleEpisodes: closure.closedLifecycleEpisodes,
+                withdrawnOutcomeSessions: closure.withdrawnOutcomeSessions.length,
+                assignmentRetainedForItt: Boolean(
+                  db.getExperimentAssignment(
+                    auth.participant.id,
+                    proactiveStudyConfig.experimentId
+                  )
+                )
+              },
+              timing: {
+                clientAt: recordedAt,
+                durationMs: 0
+              }
+            },
+            created_at: recordedAt
+          });
+        }
+        db.saveNow();
+        sendJson(res, 200, {
+          ok: true,
+          idempotent: withdrawal.idempotent,
+          closure: {
+            closedInterventions: closure.closedInterventions,
+            closedLifecycleEpisodes: closure.closedLifecycleEpisodes,
+            withdrawnOutcomeSessions: closure.withdrawnOutcomeSessions.length
+          },
+          data: proactiveStudyState(auth.participant.id, chapterId)
+        });
+        return;
+      }
+      sendJson(res, 400, {
+        ok: false,
+        code: "proactive_participation_action_invalid",
+        message: "研究参与操作无效。"
+      });
+      return;
+    }
+
+    if (
+      req.method === "GET"
+      && url.pathname === "/api/learning/proactive/outcomes"
+    ) {
+      const auth = authenticate(req);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        url.searchParams.get("chapterId") || proactiveStudyConfig.chapterId,
+        120
+      );
+      sendJson(res, 200, {
+        ok: true,
+        data: proactiveOutcomeState(auth.participant.id, chapterId)
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/proactive/outcomes/start"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      const stageId = boundedLearningText(body.stageId, 80);
+      const stateBefore = proactiveOutcomeState(
+        auth.participant.id,
+        chapterId
+      );
+      const stage = stateBefore.stages.find((entry) => entry.id === stageId);
+      if (!stateBefore.managed || !stage) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_outcome_stage_invalid",
+          message: "当前测量阶段不存在。"
+        });
+        return;
+      }
+      if (stateBefore.activeSession) {
+        if (stateBefore.activeSession.stageId === stageId) {
+          sendJson(res, 200, {
+            ok: true,
+            idempotent: true,
+            sessionId: stateBefore.activeSession.id,
+            startedAt: stateBefore.activeSession.startedAt,
+            data: stateBefore
+          });
+          return;
+        }
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_active",
+          message: "请先完成或退出当前正在进行的独立测量。",
+          session: stateBefore.activeSession
+        });
+        return;
+      }
+      if (stage.status === "submitted") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_already_submitted",
+          message: "本阶段已经提交，不能重复作答。"
+        });
+        return;
+      }
+      if (stage.status === "withdrawn") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_already_withdrawn",
+          message: "本阶段已经退出，失访状态已被记录。"
+        });
+        return;
+      }
+      if (stage.status !== "available") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_stage_locked",
+          message: stage.reason || "本阶段尚未开放。",
+          unlockAt: stage.unlockAt || ""
+        });
+        return;
+      }
+      const assignment = proactiveAssignmentForUser(auth.participant.id);
+      if (!assignment) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_assignment_pending",
+          message: "本章实验分组尚未完成。"
+        });
+        return;
+      }
+      const startedAt = nowIso();
+      const sessionId = crypto.randomUUID();
+      const startResult = db.startProactiveOutcomeSession({
+        id: sessionId,
+        user_id: auth.participant.id,
+        experiment_id: proactiveStudyConfig.experimentId,
+        condition: assignment.condition,
+        cohort: assignment.cohort || proactiveStudyConfig.cohort || "",
+        chapter_id: chapterId,
+        stage: stageId,
+        instrument_version: proactiveOutcomes.version,
+        protocol_fingerprint: proactiveProtocolFingerprint,
+        learning_generation: db.currentLearningGeneration(
+          auth.participant.id,
+          startedAt
+        ),
+        started_at: startedAt
+      });
+      if (!startResult.ok) {
+        sendJson(res, 409, {
+          ok: false,
+          code: startResult.reason === "another_session_active"
+            ? "proactive_outcome_session_active"
+            : "proactive_outcome_session_conflict",
+          message: startResult.reason === "another_session_active"
+            ? "请先完成或退出当前正在进行的独立测量。"
+            : "本阶段已经存在测量记录，不能重新开始。",
+          session: publicProactiveOutcomeSession(startResult.session)
+        });
+        return;
+      }
+      const closed = startResult.idempotent
+        ? { closedInterventions: 0, closedLifecycleEpisodes: 0 }
+        : closeProactiveSupportForOutcomeSession(
+            auth.participant.id,
+            startResult.session.started_at
+          );
+      if (!startResult.idempotent) {
+        db.insertEvent({
+          id: `${startResult.session.id}:started`,
+          user_id: auth.participant.id,
+          type: "interaction",
+          payload: {
+            schemaVersion: 1,
+            eventType: "proactive_outcome_started",
+            source: "proactive_outcome_measurement",
+            chapterId,
+            unitId: `${chapterId}-${stageId}`,
+            sceneType: "",
+            research: {
+              experimentId: proactiveStudyConfig.experimentId,
+              condition: assignment.condition,
+              cohort: assignment.cohort || proactiveStudyConfig.cohort || ""
+            },
+            data: {
+              sessionId: startResult.session.id,
+              stageId,
+              instrumentVersion: proactiveOutcomes.version,
+              protocolFingerprint: proactiveProtocolFingerprint,
+              learningGeneration: Number(
+                startResult.session.learning_generation || 1
+              ),
+              agentAssistanceAllowed: false,
+              closedInterventions: closed.closedInterventions,
+              closedLifecycleEpisodes: closed.closedLifecycleEpisodes
+            },
+            timing: {
+              clientAt: startResult.session.started_at,
+              durationMs: 0
+            }
+          },
+          created_at: startResult.session.started_at
+        });
+      }
+      db.saveNow();
+      const stateAfter = proactiveOutcomeState(
+        auth.participant.id,
+        chapterId
+      );
+      sendJson(res, 200, {
+        ok: true,
+        idempotent: startResult.idempotent,
+        sessionId: startResult.session.id,
+        startedAt: startResult.session.started_at,
+        data: stateAfter
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/proactive/outcomes/draft"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      const stageId = boundedLearningText(body.stageId, 80);
+      const sessionId = boundedLearningText(body.sessionId, 180);
+      const session = sessionId
+        ? db.getProactiveOutcomeSessionById(
+            auth.participant.id,
+            sessionId
+          )
+        : null;
+      if (
+        !session
+        || session.experiment_id !== proactiveStudyConfig.experimentId
+        || session.chapter_id !== chapterId
+        || session.stage !== stageId
+      ) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_required",
+          message: "当前没有可保存的独立测量会话。"
+        });
+        return;
+      }
+      const responses = proactiveOutcomes.sanitizeResponses(
+        stageId,
+        body.responses
+      );
+      if (!responses) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_outcome_draft_invalid",
+          message: "本阶段作答草稿包含无效选项。"
+        });
+        return;
+      }
+      const updatedAt = nowIso();
+      const draft = db.updateProactiveOutcomeSessionDraft({
+        userId: auth.participant.id,
+        sessionId,
+        responses,
+        updatedAt
+      });
+      if (!draft.ok) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_not_active",
+          message: "当前测量会话已经结束，不能再保存草稿。"
+        });
+        return;
+      }
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        sessionId,
+        stageId,
+        updatedAt,
+        answered: Object.keys(responses).length,
+        data: proactiveOutcomeState(auth.participant.id, chapterId)
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/proactive/outcomes/withdraw"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      const sessionId = boundedLearningText(body.sessionId, 180);
+      const requestedReason = boundedLearningText(body.reason, 80);
+      const withdrawalReason = [
+        "student_exit",
+        "learning_reset",
+        "consent_withdrawal",
+        "technical_exit"
+      ].includes(requestedReason)
+        ? requestedReason
+        : "student_exit";
+      const session = sessionId
+        ? db.getProactiveOutcomeSessionById(
+            auth.participant.id,
+            sessionId
+          )
+        : null;
+      if (
+        !session
+        || session.experiment_id !== proactiveStudyConfig.experimentId
+        || session.chapter_id !== chapterId
+      ) {
+        sendJson(res, 404, {
+          ok: false,
+          code: "proactive_outcome_session_not_found",
+          message: "当前测量会话不存在。"
+        });
+        return;
+      }
+      const endedAt = nowIso();
+      const withdrawal = db.withdrawProactiveOutcomeSession({
+        userId: auth.participant.id,
+        sessionId,
+        reason: withdrawalReason,
+        endedAt
+      });
+      if (!withdrawal.ok) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_not_active",
+          message: "当前测量会话已经结束，不能再次退出。"
+        });
+        return;
+      }
+      if (!withdrawal.idempotent) {
+        const started = Date.parse(withdrawal.session.started_at || "");
+        const ended = Date.parse(withdrawal.session.ended_at || endedAt);
+        const durationMs = Number.isFinite(started) && Number.isFinite(ended)
+          ? Math.max(0, Math.trunc(ended - started))
+          : 0;
+        db.insertEvent({
+          id: `${sessionId}:withdrawn`,
+          user_id: auth.participant.id,
+          type: "interaction",
+          payload: {
+            schemaVersion: 1,
+            eventType: "proactive_outcome_withdrawn",
+            source: "proactive_outcome_measurement",
+            chapterId,
+            unitId: `${chapterId}-${session.stage}`,
+            sceneType: "",
+            research: {
+              experimentId: proactiveStudyConfig.experimentId,
+              condition: session.condition,
+              cohort: session.cohort || proactiveStudyConfig.cohort || ""
+            },
+            data: {
+              sessionId,
+              stageId: session.stage,
+              withdrawalReason,
+              instrumentVersion: session.instrument_version,
+              learningGeneration: Number(session.learning_generation || 1),
+              agentAssistanceAllowed: false
+            },
+            timing: {
+              clientAt: withdrawal.session.ended_at || endedAt,
+              durationMs
+            }
+          },
+          created_at: withdrawal.session.ended_at || endedAt
+        });
+      }
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        idempotent: withdrawal.idempotent,
+        sessionId,
+        endedAt: withdrawal.session.ended_at || endedAt,
+        withdrawalReason,
+        data: proactiveOutcomeState(auth.participant.id, chapterId)
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/proactive/outcomes/submit"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      const stageId = boundedLearningText(body.stageId, 80);
+      const sessionId = boundedLearningText(body.sessionId, 180);
+      const session = sessionId
+        ? db.getProactiveOutcomeSessionById(
+            auth.participant.id,
+            sessionId
+          )
+        : null;
+      if (
+        !session
+        || session.experiment_id !== proactiveStudyConfig.experimentId
+        || session.chapter_id !== chapterId
+        || session.stage !== stageId
+      ) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_required",
+          message: "请先开始本阶段独立测量，再提交答案。"
+        });
+        return;
+      }
+      if (session.status === "submitted") {
+        const attempt = db.getProactiveOutcomeAttempt(
+          auth.participant.id,
+          proactiveStudyConfig.experimentId,
+          stageId
+        );
+        if (!attempt) {
+          sendJson(res, 409, {
+            ok: false,
+            code: "proactive_outcome_session_inconsistent",
+            message: "测量记录状态不一致，请联系研究管理员。"
+          });
+          return;
+        }
+        sendJson(res, 200, {
+          ok: true,
+          idempotent: true,
+          attemptId: attempt.id,
+          sessionId,
+          stageId,
+          startedAt: attempt.started_at || session.started_at || "",
+          submittedAt: attempt.submitted_at || session.ended_at || "",
+          durationMs: Number(attempt.duration_ms || 0),
+          feedbackPolicy: "acknowledgement_only",
+          data: proactiveOutcomeState(auth.participant.id, chapterId)
+        });
+        return;
+      }
+      if (session.status !== "active") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_not_active",
+          message: "当前测量会话已经结束，不能提交答案。"
+        });
+        return;
+      }
+      const stateBefore = proactiveOutcomeState(
+        auth.participant.id,
+        chapterId
+      );
+      const stage = stateBefore.stages.find((entry) => entry.id === stageId);
+      if (!stateBefore.managed || !stage) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_outcome_stage_invalid",
+          message: "当前测量阶段不存在。"
+        });
+        return;
+      }
+      if (stage.status !== "active") {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_not_active",
+          message: stage.reason || "本阶段测量会话已经结束。",
+          unlockAt: stage.unlockAt || ""
+        });
+        return;
+      }
+      const grade = proactiveOutcomes.grade(stageId, body.responses);
+      if (!grade) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_outcome_responses_incomplete",
+          message: "请完成本阶段全部题目后再提交。"
+        });
+        return;
+      }
+      const assignment = proactiveAssignmentForUser(auth.participant.id);
+      if (!assignment) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_assignment_pending",
+          message: "本章实验分组尚未完成。"
+        });
+        return;
+      }
+      const submittedAt = nowIso();
+      const startedAtValue = Date.parse(session.started_at || "");
+      const submittedAtValue = Date.parse(submittedAt);
+      const durationMs = Number.isFinite(startedAtValue)
+        && Number.isFinite(submittedAtValue)
+        ? Math.max(0, Math.trunc(submittedAtValue - startedAtValue))
+        : 0;
+      const attemptId = crypto.randomUUID();
+      const completion = db.submitProactiveOutcomeSession({
+        userId: auth.participant.id,
+        sessionId,
+        submittedAt,
+        attempt: {
+          id: attemptId,
+          user_id: auth.participant.id,
+          experiment_id: proactiveStudyConfig.experimentId,
+          condition: assignment.condition,
+          cohort: assignment.cohort || proactiveStudyConfig.cohort || "",
+          chapter_id: chapterId,
+          stage: stageId,
+          instrument_version: proactiveOutcomes.version,
+          responses: Object.fromEntries(
+            grade.results.map((result) => [result.itemId, result.response])
+          ),
+          item_results: grade.results,
+          score: grade.score,
+          max_score: grade.maxScore,
+          accuracy: grade.accuracy,
+          duration_ms: durationMs,
+          learning_generation: Number(session.learning_generation || 1),
+          started_at: session.started_at,
+          submitted_at: submittedAt
+        }
+      });
+      if (!completion.ok) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_conflict",
+          message: "测量会话状态已经变化，本次答案未被重复写入。"
+        });
+        return;
+      }
+      db.insertEvent({
+        id: `${sessionId}:submitted`,
+        user_id: auth.participant.id,
+        type: "interaction",
+        payload: {
+          schemaVersion: 1,
+          eventType: "proactive_outcome_submitted",
+          source: "proactive_outcome_measurement",
+          chapterId,
+          unitId: `${chapterId}-${stageId}`,
+          sceneType: "",
+          research: {
+            experimentId: proactiveStudyConfig.experimentId,
+            condition: assignment.condition,
+            cohort: assignment.cohort || proactiveStudyConfig.cohort || ""
+          },
+          data: {
+            sessionId,
+            attemptId,
+            stageId,
+            instrumentVersion: proactiveOutcomes.version,
+            protocolFingerprint: session.protocol_fingerprint || "",
+            learningGeneration: Number(session.learning_generation || 1),
+            itemCount: grade.maxScore,
+            score: grade.score,
+            maxScore: grade.maxScore,
+            accuracy: grade.accuracy,
+            agentAssistanceAllowed: false
+          },
+          timing: {
+            clientAt: submittedAt,
+            durationMs
+          }
+        },
+        created_at: submittedAt
+      });
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        idempotent: false,
+        attemptId,
+        sessionId,
+        stageId,
+        startedAt: session.started_at,
+        submittedAt,
+        durationMs,
+        feedbackPolicy: "acknowledgement_only",
+        data: proactiveOutcomeState(auth.participant.id, chapterId)
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
       && url.pathname === "/api/learning/proactive/preference"
     ) {
       const body = await readJsonBody(req);
@@ -3364,7 +5070,7 @@ async function handleApi(req, res, url) {
       }
 
       const changedAt = nowIso();
-      const previousPreference = proactiveStudentPreference(auth.participant.id);
+      const previousPreference = proactiveGlobalPreference(auth.participant.id);
       const existingGlobalState = db.getProactivePolicyState(
         auth.participant.id,
         proactiveStudyConfig.experimentId,
@@ -3387,6 +5093,7 @@ async function handleApi(req, res, url) {
         closedInterventions = db.closeOpenProactiveInterventionsForUser({
           userId: auth.participant.id,
           experimentId: proactiveStudyConfig.experimentId,
+          resolution: "preference_off",
           resolvedAt: changedAt,
           followupOutcome: {
             outcome: "student_preference_off",
@@ -3419,7 +5126,7 @@ async function handleApi(req, res, url) {
             currentLevel: preference === "off" && lifecycleActive
               ? "L0"
               : row.current_level || "L0",
-            studentPreference: preference,
+            studentPreference: row.student_preference || "standard",
             pendingCandidateKind: preference === "off"
               ? ""
               : row.pending_candidate_kind || "",
@@ -3487,6 +5194,152 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/proactive/scope-preference"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      const scopeKey = boundedLearningText(body.scopeKey, 180);
+      const preference = boundedLearningText(body.preference, 20);
+      const adapter = proactivePolicy.adapterForChapter(chapterId);
+      if (
+        chapterId !== proactiveStudyConfig.chapterId
+        || !scopeKey
+        || !adapter?.knowledgePoint?.(scopeKey)
+      ) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_scope_preference_scope_invalid",
+          message: "当前知识点不支持单独设置主动提醒。"
+        });
+        return;
+      }
+      if (!["standard", "off"].includes(preference)) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_scope_preference_invalid",
+          message: "知识点提醒设置无效。"
+        });
+        return;
+      }
+
+      const changedAt = nowIso();
+      const existing = db.getProactivePolicyState(
+        auth.participant.id,
+        proactiveStudyConfig.experimentId,
+        scopeKey
+      ) || {};
+      const previousPreference = proactiveScopePreference(
+        auth.participant.id,
+        scopeKey
+      );
+      const lifecycleState = proactivePolicy.lifecycle.normalize(
+        parseStoredJson(existing.lifecycle_json || "{}", {})
+      );
+      const lifecycleActive = [
+        "accepted_pending_response",
+        "awaiting_independent_attempt"
+      ].includes(lifecycleState.phase);
+      const closedInterventions = preference === "off"
+        ? db.closeOpenProactiveInterventionsForUser({
+            userId: auth.participant.id,
+            experimentId: proactiveStudyConfig.experimentId,
+            scopeKey,
+            resolution: "scope_muted",
+            resolvedAt: changedAt,
+            followupOutcome: {
+              outcome: "scope_preference_off",
+              scopeKey,
+              previousPreference,
+              preference
+            }
+          })
+        : 0;
+      db.upsertProactivePolicyState(proactivePolicyStateRecord(existing, {
+        userId: auth.participant.id,
+        scopeKey,
+        updatedAt: changedAt,
+        lastReasonCode: `scope_preference_${preference}`,
+        currentLevel: preference === "off" && lifecycleActive
+          ? "L0"
+          : existing.current_level || "L0",
+        scopePreference: preference,
+        pendingCandidateKind: preference === "off"
+          ? ""
+          : existing.pending_candidate_kind || "",
+        pendingCandidateAt: preference === "off"
+          ? ""
+          : existing.pending_candidate_at || "",
+        pendingCandidateExpiresAt: preference === "off"
+          ? ""
+          : existing.pending_candidate_expires_at || "",
+        pendingEvidence: preference === "off"
+          ? {}
+          : parseStoredJson(existing.pending_evidence_json || "{}", {}),
+        lifecycle: preference === "off" && lifecycleActive
+          ? {
+              ...lifecycleState,
+              phase: "declined",
+              supportLevel: "L0",
+              activeAction: "",
+              activeDecisionId: "",
+              activeInterventionId: "",
+              reasonCode: "scope_preference_off",
+              lastOutcome: "scope_preference_off",
+              lastOutcomeAt: changedAt
+            }
+          : lifecycleState
+      }));
+      db.insertEvent({
+        id: crypto.randomUUID(),
+        user_id: auth.participant.id,
+        type: "interaction",
+        payload: {
+          schemaVersion: 1,
+          eventType: "proactive_scope_preference_changed",
+          source: "proactive_policy",
+          chapterId,
+          unitId: scopeKey,
+          sceneType: "",
+          research: {
+            experimentId: proactiveStudyConfig.experimentId
+          },
+          data: {
+            scopeKey,
+            previousPreference,
+            preference,
+            closedInterventions,
+            closedLifecycleEpisode: preference === "off" && lifecycleActive
+          },
+          timing: {
+            clientAt: changedAt,
+            durationMs: 0
+          }
+        },
+        created_at: changedAt
+      });
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        data: proactiveStudyState(auth.participant.id, chapterId),
+        scopeKey,
+        previousPreference,
+        scopePreference: preference,
+        closedInterventions,
+        closedLifecycleEpisode: preference === "off" && lifecycleActive
+      });
+      return;
+    }
+
     const proactiveResolutionMatch = url.pathname.match(
       /^\/api\/learning\/proactive\/([^/]+)\/resolution$/
     );
@@ -3514,7 +5367,11 @@ async function handleApi(req, res, url) {
         dismiss: "dismissed",
         dismissed: "dismissed",
         ignore: "ignored",
-        ignored: "ignored"
+        ignored: "ignored",
+        later: "snoozed",
+        snooze: "snoozed",
+        snoozed: "snoozed",
+        alternative_requested: "alternative_requested"
       };
       const resolution = resolutionAliases[String(body.resolution || "").trim()] || "";
       if (!resolution) {
@@ -3526,8 +5383,12 @@ async function handleApi(req, res, url) {
         return;
       }
       const resolvedAt = nowIso();
-      const expiresAt = Date.parse(decision.expires_at || "");
-      if (Number.isFinite(expiresAt) && expiresAt <= Date.now()) {
+      const access = proactiveDecisionInteractionAccess(
+        auth.participant.id,
+        decision,
+        Date.now()
+      );
+      if (!access.ok && access.reason === "expired") {
         db.resolveProactiveIntervention({
           userId: auth.participant.id,
           decisionId,
@@ -3540,6 +5401,19 @@ async function handleApi(req, res, url) {
           ok: false,
           code: "proactive_decision_expired",
           message: "这条主动建议已过期。"
+        });
+        return;
+      }
+      if (!access.ok) {
+        const paused = access.reason === "paused";
+        sendJson(res, paused ? 409 : 410, {
+          ok: false,
+          code: paused
+            ? "proactive_decision_paused"
+            : "proactive_decision_inactive",
+          message: paused
+            ? "主动实验已暂停，这条建议暂不能继续执行。"
+            : "这条主动建议已不属于当前有效学习回合。"
         });
         return;
       }
@@ -3572,7 +5446,10 @@ async function handleApi(req, res, url) {
         });
         return;
       }
-      const studentPreference = proactiveStudentPreference(auth.participant.id);
+      const studentPreference = proactiveStudentPreference(
+        auth.participant.id,
+        decision.scope_key || decision.unit_id
+      );
       let policyState = db.getProactivePolicyState(
         auth.participant.id,
         decision.experiment_id,
@@ -3647,6 +5524,9 @@ async function handleApi(req, res, url) {
       const auth = authenticate(req, body);
       if (!auth) {
         sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      if (rejectAgentAssistanceDuringOutcome(res, auth.participant.id)) {
         return;
       }
       const unitId = boundedLearningText(body.unitId, 180);
@@ -3857,6 +5737,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if (rejectAgentAssistanceDuringOutcome(res, auth.participant.id)) return;
       const unitId = boundedLearningText(body.unitId, 180);
       const chapterId = boundedLearningText(body.chapterId, 180);
       const sceneType = boundedLearningText(body.sceneType, 80);
@@ -3868,7 +5749,8 @@ async function handleApi(req, res, url) {
         "quiz_review",
         "quiet_dwell",
         "formative_outcome",
-        "independent_attempt_outcome"
+        "independent_attempt_outcome",
+        "student_requested_alternative"
       ].includes(String(signal.kind || ""))) {
         sendJson(res, 400, {
           ok: false,
@@ -3906,13 +5788,188 @@ async function handleApi(req, res, url) {
       }
       const quizAttempt = attachAssistantQuizAttempt(resolved, quizResults);
       if (resolved.unit.chapterId === proactiveStudyConfig.chapterId) {
+        let trustedEvidence = null;
+        if (signal.kind === "student_requested_alternative") {
+          const sourceDecisionId = boundedLearningText(
+            signal.sourceDecisionId,
+            180
+          );
+          const sourceDecision = sourceDecisionId
+            ? db.getProactiveDecisionForUser(
+                auth.participant.id,
+                sourceDecisionId
+              )
+            : null;
+          if (!sourceDecision) {
+            sendJson(res, 404, {
+              ok: false,
+              code: "proactive_alternative_source_not_found",
+              message: "原主动建议不存在，或不属于当前学生。"
+            });
+            return;
+          }
+          const resolvedScopeKey = boundedLearningText(
+            resolved.unit.knowledgePointId || resolved.unit.id,
+            180
+          );
+          const sourceScopeKey = boundedLearningText(
+            sourceDecision.scope_key || sourceDecision.unit_id,
+            180
+          );
+          if (
+            sourceDecision.chapter_id !== proactiveStudyConfig.chapterId
+            || sourceScopeKey !== resolvedScopeKey
+            || sourceDecision.delivery_decision !== "intervene"
+            || sourceDecision.action === "switch_representation"
+          ) {
+            sendJson(res, 409, {
+              ok: false,
+              code: "proactive_alternative_source_mismatch",
+              message: "原建议与当前知识点不一致，不能据此切换帮助。"
+            });
+            return;
+          }
+          const sourceAccess = proactiveDecisionInteractionAccess(
+            auth.participant.id,
+            sourceDecision,
+            Date.now()
+          );
+          if (!sourceAccess.ok) {
+            const paused = sourceAccess.reason === "paused";
+            const expired = sourceAccess.reason === "expired";
+            sendJson(res, paused ? 409 : 410, {
+              ok: false,
+              code: paused
+                ? "proactive_alternative_source_paused"
+                : expired
+                  ? "proactive_alternative_source_expired"
+                  : "proactive_alternative_source_inactive",
+              message: paused
+                ? "主动实验已暂停，暂不能由这条建议切换帮助。"
+                : expired
+                  ? "原主动建议已过期，不能再由它切换帮助。"
+                  : "原主动建议已不属于当前有效学习回合。"
+            });
+            return;
+          }
+          const sourceIntervention = db.getProactiveInterventionForDecision(
+            auth.participant.id,
+            sourceDecisionId
+          );
+          if (!sourceIntervention || sourceIntervention.status !== "shown") {
+            sendJson(res, 409, {
+              ok: false,
+              code: "proactive_alternative_source_not_shown",
+              message: "只有已经展示的主动建议才能换一种帮助。"
+            });
+            return;
+          }
+          const requestedAt = nowIso();
+          const sourceResolution = db.resolveProactiveIntervention({
+            userId: auth.participant.id,
+            decisionId: sourceDecisionId,
+            resolution: "alternative_requested",
+            resolvedAt: requestedAt,
+            latencyMs: Math.max(
+              0,
+              Date.now() - Date.parse(
+                sourceDecision.created_at || requestedAt
+              )
+            ),
+            followupOutcome: {
+              outcome: "student_requested_alternative",
+              sourceDecisionId,
+              requestedAt
+            }
+          });
+          if (!sourceResolution.ok) {
+            sendJson(res, 409, {
+              ok: false,
+              code: "proactive_alternative_source_replayed",
+              message: "原建议已经处理，不能重复换帮助。"
+            });
+            return;
+          }
+          const effectivePreference = proactiveStudentPreference(
+            auth.participant.id,
+            sourceScopeKey
+          );
+          const sourceState = db.getProactivePolicyState(
+            auth.participant.id,
+            sourceDecision.experiment_id,
+            sourceScopeKey
+          ) || {};
+          db.upsertProactivePolicyState(
+            proactivePolicyStateAfterResolution({
+              existing: {
+                ...sourceState,
+                student_preference: effectivePreference
+              },
+              decision: sourceDecision,
+              interventionId: sourceIntervention.id || "",
+              resolution: "alternative_requested",
+              resolvedAt: requestedAt,
+              latencyMs: Math.max(
+                0,
+                Date.now() - Date.parse(
+                  sourceDecision.created_at || requestedAt
+                )
+              )
+            })
+          );
+          db.insertEvent({
+            id: `${sourceDecisionId}:alternative_requested`,
+            user_id: auth.participant.id,
+            type: "interaction",
+            payload: {
+              schemaVersion: 1,
+              eventType: "proactive_alternative_requested",
+              source: "proactive_policy",
+              chapterId: sourceDecision.chapter_id,
+              unitId: sourceDecision.unit_id,
+              sceneType,
+              research: {
+                experimentId: sourceDecision.experiment_id,
+                condition: sourceDecision.condition
+              },
+              data: {
+                sourceDecisionId,
+                sourceInterventionId: sourceIntervention.id || "",
+                sourceAction: sourceDecision.action,
+                sourceSupportLevel: sourceDecision.support_level
+              },
+              timing: {
+                clientAt: requestedAt,
+                durationMs: Math.max(
+                  0,
+                  Date.now() - Date.parse(
+                    sourceDecision.created_at || requestedAt
+                  )
+                )
+              }
+            },
+            created_at: requestedAt
+          });
+          trustedEvidence = {
+            families: ["history", "preference"],
+            sourceDecisionId,
+            evidenceRefs: [{
+              id: sourceDecisionId,
+              sourceType: "proactive_decision",
+              eventType: "proactive_alternative_requested",
+              capturedAt: requestedAt
+            }]
+          };
+          db.saveNow();
+        }
         await handleManagedProactiveIntervention({
           res,
           auth,
           resolved,
           signal,
           quizAttempt,
-          sceneType
+          sceneType,
+          trustedEvidence
         });
         return;
       }
@@ -4491,6 +6548,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if (rejectAgentAssistanceDuringOutcome(res, auth.participant.id)) return;
       const question = String(body.question || "").replace(/\u0000/g, "").trim().slice(0, 1200);
       const assistantIntent = ["self_check", "rephrase", "practice"].includes(String(body.assistantIntent || "").trim())
         ? String(body.assistantIntent).trim()
@@ -4536,6 +6594,37 @@ async function handleApi(req, res, url) {
           ok: false,
           code: "assistant_intervention_expired",
           message: "这次复盘提示已失效，请重新开始复盘。",
+          quota: assistantQuotaInfo(auth.participant.id)
+        });
+        return;
+      }
+      const policyInterventionAccess = proactiveIntervention
+        ? policyAssistantInterventionAccess(
+            auth.participant.id,
+            unitId,
+            proactiveIntervention
+          )
+        : { ok: true, code: "", terminal: false };
+      if (!policyInterventionAccess.ok) {
+        if (policyInterventionAccess.terminal) {
+          getAssistantIntervention(
+            auth.participant.id,
+            unitId,
+            proactiveInterventionId,
+            { consume: true }
+          );
+        }
+        const paused = policyInterventionAccess.code === "assistant_intervention_paused";
+        const notAccepted = policyInterventionAccess.code
+          === "assistant_intervention_not_accepted";
+        sendJson(res, 409, {
+          ok: false,
+          code: policyInterventionAccess.code,
+          message: paused
+            ? "主动实验已暂停，这次帮助暂不继续；你仍可移除提示后主动提问。"
+            : notAccepted
+              ? "请先明确接受这次主动建议，再提交对应回复。"
+              : "这次主动帮助已结束，请按你的想法重新提问。",
           quota: assistantQuotaInfo(auth.participant.id)
         });
         return;
@@ -5137,14 +7226,157 @@ async function handleApi(req, res, url) {
         followup_outcome: parseStoredJson(row.followup_outcome_json || "{}", {}),
         current_lifecycle: parseStoredJson(row.current_lifecycle_json || "{}", {})
       }));
+      const outcomePage = db.proactiveOutcomeRows({
+        experimentId,
+        userId: boundedLearningText(url.searchParams.get("userId"), 180),
+        condition: boundedLearningText(url.searchParams.get("condition"), 40),
+        stage: boundedLearningText(url.searchParams.get("stage"), 80),
+        limit: Math.max(1, Math.min(Number(url.searchParams.get("limit") || 500), 1000)),
+        offset: Math.max(0, Number(url.searchParams.get("offset") || 0))
+      });
+      const outcomeRows = outcomePage.rows.map((row) => ({
+        ...row,
+        responses: parseStoredJson(row.response_json || "{}", {}),
+        item_results: parseStoredJson(row.item_results_json || "[]", [])
+      }));
+      const outcomeSessionPage = db.proactiveOutcomeSessionRows({
+        experimentId,
+        userId: boundedLearningText(url.searchParams.get("userId"), 180),
+        condition: boundedLearningText(url.searchParams.get("condition"), 40),
+        stage: boundedLearningText(url.searchParams.get("stage"), 80),
+        status: boundedLearningText(
+          url.searchParams.get("outcomeSessionStatus"),
+          40
+        ),
+        limit: Math.max(1, Math.min(Number(url.searchParams.get("limit") || 500), 1000)),
+        offset: Math.max(0, Number(url.searchParams.get("offset") || 0))
+      });
+      const protocol = proactiveProtocolPayload(experimentId);
+      const storedPolicy = protocol?.definition?.policy || {};
+      const policy = experimentId === proactiveStudyConfig.experimentId
+        ? proactivePolicy.adminConfig(proactiveStudyConfig)
+        : storedPolicy;
+      const runtime = experimentId === proactiveStudyConfig.experimentId
+        ? proactiveExperimentRuntime()
+        : db.getProactiveExperimentRuntime(experimentId);
+      const chapterId = protocol?.chapterId || proactiveStudyConfig.chapterId;
       sendJson(res, 200, {
         ok: true,
         data: {
           ...page,
           rows,
           assignments: db.proactiveAssignmentSummary(experimentId),
-          summary: db.proactiveDecisionSummary(experimentId),
-          policy: proactivePolicy.publicConfig(proactiveStudyConfig)
+          participation: db.proactiveParticipationSummary(experimentId),
+          summary: {
+            ...db.proactiveDecisionSummary(experimentId),
+            autonomy: db.proactiveAutonomySummary(experimentId)
+          },
+          policy,
+          protocol,
+          runtime: runtime ? adminProactiveRuntime(runtime) : null,
+          runtimeEvents: db.listProactiveExperimentRuntimeEvents(experimentId),
+          integrity: proactiveIntegrityReport(experimentId),
+          participantFlow: db.proactiveParticipantFlow({
+            experimentId,
+            chapterId,
+            posttestQuestionCount: chapterId === proactiveStudyConfig.chapterId
+              ? proactiveAssessmentQuestionCount("post")
+              : 0
+          }),
+          outcomes: {
+            ...outcomePage,
+            rows: outcomeRows,
+            summary: db.proactiveOutcomeSummary(experimentId),
+            sessions: outcomeSessionPage.rows,
+            sessionTotal: outcomeSessionPage.total,
+            sessionLimit: outcomeSessionPage.limit,
+            sessionOffset: outcomeSessionPage.offset,
+            sessionSummary: db.proactiveOutcomeSessionSummary(experimentId),
+            instrumentVersion: protocol?.definition?.outcomeInstrumentVersion
+              || (experimentId === proactiveStudyConfig.experimentId
+                ? proactiveOutcomes.version
+                : ""),
+            retentionDelayHours: Number(
+              protocol?.definition?.retentionDelayHours
+              ?? (experimentId === proactiveStudyConfig.experimentId
+                ? proactiveRetentionDelayHours
+                : 0)
+            )
+          }
+        }
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/admin/research/proactive-runtime"
+    ) {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
+      const body = await readJsonBody(req);
+      const experimentId = boundedLearningText(
+        body.experimentId || proactiveStudyConfig.experimentId,
+        120
+      );
+      if (experimentId !== proactiveStudyConfig.experimentId) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_runtime_historical_experiment",
+          message: "只能控制当前服务正在运行的主动实验。"
+        });
+        return;
+      }
+      const status = boundedLearningText(body.status, 20).toLowerCase();
+      if (!["active", "paused"].includes(status)) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_runtime_status_invalid",
+          message: "运行状态只能设为 active 或 paused。"
+        });
+        return;
+      }
+      const reason = boundedLearningText(body.reason, 500, true);
+      if (status === "paused" && !reason) {
+        sendJson(res, 400, {
+          ok: false,
+          code: "proactive_pause_reason_required",
+          message: "暂停实验时必须记录原因。"
+        });
+        return;
+      }
+      const updatedBy = boundedLearningText(body.updatedBy || "admin", 120);
+      const updatedAt = nowIso();
+      const runtime = db.setProactiveExperimentRuntime({
+        experimentId,
+        status,
+        reason,
+        updatedBy,
+        updatedAt
+      });
+      const closedInterventions = status === "paused"
+        ? db.closeOpenProactiveInterventionsForExperiment({
+            experimentId,
+            resolvedAt: updatedAt,
+            followupOutcome: {
+              outcome: "experiment_paused",
+              reason,
+              updatedBy,
+              recordedAt: updatedAt
+            }
+          })
+        : 0;
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        data: {
+          experimentId,
+          protocolFingerprint: proactiveProtocolFingerprint,
+          runtime: adminProactiveRuntime(runtime),
+          closedInterventions,
+          runtimeEvents: db.listProactiveExperimentRuntimeEvents(experimentId)
         }
       });
       return;
@@ -5463,6 +7695,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if (rejectAgentAssistanceDuringOutcome(res, auth.participant.id)) return;
       const chapterId = String(body.chapterId || "").trim();
       const currentUnitId = String(body.currentUnitId || "").trim();
       if (!chapterId) { sendJson(res, 400, { ok: false, message: "chapterId required." }); return; }
@@ -5796,6 +8029,7 @@ try {
 db.getDb().then(() => {
  console.log("Database initialized.");
   systemAnnouncementApi.ensureSchema(db.getDbSync());
+  freezeProactiveProtocol();
   db.saveNow();
   // Migration: fix existing is_correct bug where pending short answers (-1) were stored as 1
  try {

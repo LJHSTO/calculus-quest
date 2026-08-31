@@ -48,7 +48,7 @@
 </script>
 
     <link rel="stylesheet" href="styles.css?v=20260819-v2-score-evidence-v1" />
-    <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260830-proactive-lifecycle-v3" />
+    <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260831-proactive-participation-v1" />
     <link rel="stylesheet" href="app/main/system-announcements.css?v=20260726-announcements-v5" />
     <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
   </head>
@@ -347,6 +347,14 @@
               </div>
             </div>
             <div id="agentic-coach-panel" class="agentic-coach-panel" aria-live="polite"></div>
+            <section id="chapter-outcome-panel" class="chapter-outcome-panel" hidden aria-live="polite">
+              <div>
+                <p class="eyebrow">章后独立任务</p>
+                <strong>学习结果测量</strong>
+                <small data-proactive-outcomes-summary>完成章后测后开放，不提供 Agent 帮助或即时反馈。</small>
+              </div>
+              <button class="button soft" type="button" data-proactive-outcomes-open>查看测量任务</button>
+            </section>
             <div id="lesson-player" class="lesson-player"></div>
           </section>
           <aside id="knowledge-assistant-root" class="knowledge-assistant-root" aria-label="知点学习侧栏"></aside>
@@ -517,7 +525,7 @@
     <script src="app/main/system-announcements.js?v=20260726-announcements-v7"></script>
     <script src="app/main/knowledge-point-labels.js?v=20260724-knowledge-labels-v1"></script>
     <script src="app/main/return-context.js?v=20260722-multi-scene-v1"></script>
-    <script src="app/main/proactive-learning.js?v=20260813-platform-fixes-v1"></script>
+    <script src="app/main/proactive-learning.js?v=20260830-proactive-continuation-v1"></script>
     <script src="lib/active-time-policy.js?v=20260818-active-time-v1"></script>
     <script src="app/main/analytics.js?v=20260818-active-time-v1"></script>
     <script src="app/main/render-learning.js?v=20260819-v2-score-evidence-v1"></script>
@@ -530,7 +538,7 @@
     <script src="app/main/agentic-path.js?v=20260819-v2-score-evidence-v3"></script>
     <script src="app/main/feedback-targets.js?v=20260722-multi-scene-v1"></script>
     <script src="app/main/feedback.js?v=20260726-content-limit-v1"></script>
-    <script src="app/main/knowledge-assistant.js?v=20260830-proactive-lifecycle-v3"></script>
+    <script src="app/main/knowledge-assistant.js?v=20260831-proactive-participation-v1"></script>
     <script src="app/main/theme.js?v=20260724-home-themes-v1"></script>
     <script src="app/main/bootstrap.js?v=20260819-v2-knowledge-transition-v5"></script>
   </body>

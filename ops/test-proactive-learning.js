@@ -51,6 +51,17 @@ function parameterEvent(at, {
   assert.match(suggestion.title, /步长 h/);
   assert.match(suggestion.question, /重点观察/);
   assert.equal(coach.getSuggestion()?.id, suggestion.id);
+  assert.equal(
+    coach.consume(parameterEvent(30_400, { oldValue: "0.1", newValue: "0.08" }), 30_400),
+    null,
+    "触发提示后的同类参数提交不应在学生看清提示前立即将其关闭"
+  );
+  assert.equal(
+    coach.getSuggestion()?.id,
+    suggestion.id,
+    "连续调参仍属于原卡点证据，主动提示应保持可见"
+  );
+  assert.equal(coach.takeResolution(), null);
 
   coach.resolve("dismiss", 31_000);
   assert.equal(coach.getSuggestion(), null);

@@ -671,6 +671,14 @@ async function assertFullscreen(page, button, target, label) {
     () => page.evaluate(() => Boolean(document.fullscreenElement || document.querySelector(".is-local-fullscreen, .is-local-fullscreen-target"))),
     `${label}: fullscreen did not activate`
   );
+  await assertEventually(
+    () => page.evaluate(() => {
+      const fullscreenElement = document.fullscreenElement;
+      const assistantRoot = document.querySelector("#knowledge-assistant-root");
+      return !fullscreenElement || !assistantRoot || fullscreenElement.contains(assistantRoot);
+    }),
+    `${label}: knowledge assistant did not join the fullscreen top layer`
+  );
   const viewport = page.viewportSize();
   const box = await target.boundingBox();
   assert.ok(box && box.width >= viewport.width * 0.8, `${label}: fullscreen width is too small`);
@@ -679,6 +687,14 @@ async function assertFullscreen(page, button, target, label) {
   await assertEventually(
     () => page.evaluate(() => !document.fullscreenElement && !document.querySelector(".is-local-fullscreen, .is-local-fullscreen-target")),
     `${label}: fullscreen did not exit`
+  );
+  await assertEventually(
+    () => page.evaluate(() => {
+      const assistantRoot = document.querySelector("#knowledge-assistant-root");
+      const learningShell = document.querySelector(".learning-shell");
+      return !assistantRoot || !learningShell || assistantRoot.parentElement === learningShell;
+    }),
+    `${label}: knowledge assistant did not return to the learning shell`
   );
 }
 
@@ -795,6 +811,8 @@ async function main() {
         HOST: "127.0.0.1",
         BASE_PATH: `${basePath}/`,
         LLM_PROVIDER: "mock",
+        PROACTIVE_PUBLIC_CHAPTER_ONLY: "false",
+        RATE_LIMIT_MAX: "5000",
         NODE_ENV: "test"
       },
       stdio: ["ignore", "pipe", "pipe"],

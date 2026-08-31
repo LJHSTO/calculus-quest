@@ -33,6 +33,13 @@
     "assistant_open",
     "assistant_close"
   ]);
+  const REPEATED_PARAMETER_CONTINUATION_EVENTS = new Set([
+    "interactive_change",
+    "interactive_drag_end",
+    "interactive_input",
+    "parameter_change",
+    "parameter_commit"
+  ]);
 
   function compactText(value = "", limit = 160) {
     return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, limit);
@@ -266,6 +273,11 @@
       return repeatedParameterSuggestion(change, at);
     }
 
+    function continuesActiveSuggestion(eventType) {
+      return activeSuggestion?.kind === "repeated_parameter"
+        && REPEATED_PARAMETER_CONTINUATION_EVENTS.has(eventType);
+    }
+
     function consume(event = {}, atValue) {
       const at = timestamp(atValue, timestamp(event.timing?.clientAt));
       const eventType = compactText(event.eventType, 80);
@@ -283,6 +295,7 @@
         if (
           activeSuggestion
           && !["quiz_review", "formative_outcome"].includes(activeSuggestion.kind)
+          && !continuesActiveSuggestion(eventType)
         ) {
           resolve("ignore", at);
         }

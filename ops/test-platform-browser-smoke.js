@@ -7,10 +7,15 @@ const { spawn } = require("node:child_process");
 const { chromium } = require("playwright-core");
 
 const root = path.resolve(__dirname, "..");
+const courseRoute = require(path.join(root, "data", "multi-scene-learning-route.json"));
+const v14C3PostQuiz = courseRoute.chapters
+  .find((chapter) => chapter.id === "V14-C3")
+  ?.flow?.postQuiz;
 const studentDesktopScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-student-desktop.png");
 const studentMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-student-mobile.png");
 const proactivePreferenceMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-proactive-preference-mobile.png");
 const proactiveMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-proactive-mobile.png");
+const proactiveOutcomesMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-proactive-outcomes-mobile.png");
 const screenshotPath = path.join(root, "tmp", "platform-browser-smoke-admin.png");
 const proactiveAdminScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-admin-proactive.png");
 const proactiveAdminMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-admin-proactive-mobile.png");
@@ -92,6 +97,41 @@ async function registerParticipant(page, nickname, password) {
   await page.locator("#nickname").fill(nickname);
   await page.locator("#register-password").fill(password);
   await page.locator("#register-password-confirm").fill(password);
+  try {
+    await page.waitForFunction((expectedPassword) => {
+      const form = document.querySelector("#login-form");
+      const passwordInput = document.querySelector("#register-password");
+      const confirmation = document.querySelector("#register-password-confirm");
+      return passwordInput?.value === expectedPassword
+        && confirmation?.value === expectedPassword
+        && form?.checkValidity() === true;
+    }, password, { timeout: 5000 });
+  } catch (error) {
+    const diagnostic = await page.locator("#login-form").evaluate((form) => ({
+      formMode: form.dataset.authFormMode || "",
+      valid: form.checkValidity(),
+      controls: Array.from(form.elements)
+        .filter((element) => element instanceof HTMLInputElement)
+        .map((element) => ({
+          id: element.id,
+          hidden: element.closest("[hidden]") !== null,
+          required: element.required,
+          valueLength: element.value.length,
+          validity: {
+            valid: element.validity.valid,
+            valueMissing: element.validity.valueMissing,
+            tooShort: element.validity.tooShort,
+            tooLong: element.validity.tooLong,
+            typeMismatch: element.validity.typeMismatch,
+            patternMismatch: element.validity.patternMismatch,
+            customError: element.validity.customError
+          }
+        }))
+    }));
+    throw new Error(
+      `registration form did not become valid: ${JSON.stringify(diagnostic)}\n${error.message}`
+    );
+  }
 
   const validity = await page.locator("#login-form").evaluate((form) => ({
     valid: form.checkValidity(),
@@ -162,6 +202,40 @@ async function answerVisibleQuiz(page) {
     assert.equal(await textarea.count(), 1, `question ${index + 1} has no answer control`);
     await textarea.fill(`浏览器回归作答 ${index + 1}`);
   }
+}
+
+async function submitV14C3Posttest(page) {
+  assert.ok(v14C3PostQuiz?.questions?.length, "V14-C3 posttest fixture is missing");
+  const answers = v14C3PostQuiz.questions.map((question) => ({
+    questionId: question.id,
+    response: question.type === "multiple"
+      ? question.answer
+      : question.type === "short_answer"
+        ? question.answer
+        : question.answer[0]
+  }));
+  const result = await page.evaluate(async (submittedAnswers) => {
+    const token = sessionStorage.getItem("calculus-quest-auth-token-v1") || "";
+    const response = await fetch("api/learning/quiz/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        unitId: "V14-C3-post",
+        chapterId: "V14-C3",
+        phase: "post",
+        answers: submittedAnswers
+      })
+    });
+    return {
+      status: response.status,
+      payload: await response.json().catch(() => ({}))
+    };
+  }, answers);
+  assert.equal(result.status, 200, JSON.stringify(result.payload));
+  assert.equal(result.payload.results?.length, v14C3PostQuiz.questions.length);
 }
 
 async function injectProactiveEvents(page) {
@@ -251,6 +325,10 @@ async function main() {
         PROACTIVE_POLICY_MODE: "active",
         PROACTIVE_ASSIGNMENT_SALT: "platform-browser-smoke-fixed-salt",
         PROACTIVE_PUBLIC_CHAPTER_ONLY: "true",
+        PROACTIVE_PARTICIPATION_MODE: "explicit-consent",
+        PROACTIVE_CONSENT_VERSION: "platform-browser-consent-v1",
+        PROACTIVE_CONSENT_NOTICE_URL:
+          "/research/V14-C3完整主动Agent策略设计.md",
         NODE_ENV: "test"
       },
       stdio: ["ignore", "pipe", "pipe"],
@@ -317,6 +395,54 @@ async function main() {
     }
     await page.locator('[data-chapter="V14-C3"]').click();
     await page.locator('[data-submit-quiz="V14-C3-pre"]').waitFor({ state: "visible", timeout: 20000 });
+    const assistantPanel = page.locator("#knowledge-assistant-panel");
+    await page.locator("[data-knowledge-open]").click();
+    await assistantPanel.waitFor({ state: "visible", timeout: 10000 });
+    const studyParticipation = page.locator(
+      "[data-knowledge-study-participation]"
+    );
+    await studyParticipation.waitFor({ state: "visible", timeout: 10000 });
+    assert.match(
+      await studyParticipation.locator(
+        "[data-knowledge-study-participation-status]"
+      ).innerText(),
+      /尚未参加/
+    );
+    const consentLink = studyParticipation.locator(
+      "[data-knowledge-study-consent-link]"
+    );
+    await consentLink.waitFor({ state: "visible", timeout: 10000 });
+    assert.match(
+      await consentLink.getAttribute("href"),
+      /V14-C3.*Agent/
+    );
+    const consentCheckbox = studyParticipation.locator(
+      "[data-knowledge-study-consent-checkbox]"
+    );
+    const enrollButton = studyParticipation.locator(
+      "[data-knowledge-study-enroll]"
+    );
+    assert.equal(await enrollButton.isDisabled(), true);
+    await consentCheckbox.check();
+    assert.equal(await enrollButton.isDisabled(), false);
+    await enrollButton.click();
+    const withdrawButton = studyParticipation.locator(
+      "[data-knowledge-study-withdraw]"
+    );
+    await withdrawButton.waitFor({ state: "visible", timeout: 10000 });
+    assert.match(
+      await studyParticipation.locator(
+        "[data-knowledge-study-participation-status]"
+      ).innerText(),
+      /已按当前研究说明记录自愿参加/
+    );
+    assert.equal(
+      await page.locator("[data-knowledge-proactive-preference]").isVisible(),
+      false,
+      "完成章前测前不应显示实验内主动提示偏好"
+    );
+    await page.locator("[data-knowledge-close]").click();
+    await assistantPanel.waitFor({ state: "hidden", timeout: 10000 });
     await answerVisibleQuiz(page);
     await page.locator('[data-submit-quiz="V14-C3-pre"]').click();
     await page.locator('[data-submit-quiz="V14-C3-pre"]').filter({ hasText: "已提交" }).waitFor({ timeout: 30000 });
@@ -330,13 +456,101 @@ async function main() {
       "the confirmed Coach action must unlock the selected next unit"
     );
     await page.setViewportSize({ width: 390, height: 844 });
-    const assistantPanel = page.locator("#knowledge-assistant-panel");
     if (await assistantPanel.getAttribute("aria-hidden") !== "false") {
       await page.locator("[data-knowledge-open]").click();
     }
     await assistantPanel.waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForFunction(() => {
+      const panel = document.querySelector("#knowledge-assistant-panel");
+      if (!panel) return false;
+      const rect = panel.getBoundingClientRect();
+      const viewportWidth = document.documentElement.clientWidth;
+      return rect.left >= -1 && rect.right <= viewportWidth + 1;
+    }, null, { timeout: 10000 });
+    await studyParticipation.waitFor({ state: "visible", timeout: 10000 });
+    await studyParticipation.scrollIntoViewIfNeeded();
+    await withdrawButton.click();
+    const withdrawalConfirmation = studyParticipation.locator(
+      "[data-knowledge-study-withdraw-confirm]"
+    );
+    await withdrawalConfirmation.waitFor({ state: "visible", timeout: 10000 });
+    const participationLayout = await studyParticipation.evaluate((node) => {
+      const rect = node.getBoundingClientRect();
+      const confirmation = node.querySelector(
+        "[data-knowledge-study-withdraw-confirm]"
+      );
+      const buttons = Array.from(
+        confirmation?.querySelectorAll("button") || []
+      );
+      return {
+        viewportWidth: document.documentElement.clientWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        left: rect.left,
+        right: rect.right,
+        confirmationVisible: Boolean(
+          confirmation
+          && getComputedStyle(confirmation).display !== "none"
+        ),
+        buttonHeights: buttons.map(
+          (button) => button.getBoundingClientRect().height
+        )
+      };
+    });
+    assert.equal(participationLayout.confirmationVisible, true);
+    assert.ok(
+      participationLayout.documentWidth
+        <= participationLayout.viewportWidth + 1,
+      `study participation overflows mobile viewport: ${JSON.stringify(participationLayout)}`
+    );
+    assert.ok(
+      participationLayout.left >= -1
+      && participationLayout.right <= participationLayout.viewportWidth + 1,
+      `study participation escapes assistant panel: ${JSON.stringify(participationLayout)}`
+    );
+    assert.ok(
+      participationLayout.buttonHeights.every((height) => height >= 44),
+      `study withdrawal controls need 44px mobile touch targets: ${JSON.stringify(participationLayout)}`
+    );
+    await studyParticipation.locator(
+      "[data-knowledge-study-withdraw-cancel]"
+    ).click();
+    await withdrawalConfirmation.waitFor({ state: "hidden", timeout: 10000 });
+    await withdrawButton.waitFor({ state: "visible", timeout: 10000 });
+    assert.ok(
+      (await withdrawButton.evaluate(
+        (button) => button.getBoundingClientRect().height
+      )) >= 44
+    );
     const proactivePreference = page.locator("[data-knowledge-proactive-preference]");
-    await proactivePreference.waitFor({ state: "visible", timeout: 10000 });
+    try {
+      await proactivePreference.waitFor({ state: "visible", timeout: 10000 });
+    } catch (error) {
+      const diagnostic = await page.evaluate(async () => {
+        const meta = typeof currentUnit === "function" ? currentUnit() : null;
+        const chapterId = meta?.chapterId || "V14-C3";
+        const response = await fetch(
+          `api/learning/proactive/state?chapterId=${encodeURIComponent(chapterId)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${state?.authToken || ""}`
+            }
+          }
+        );
+        return {
+          currentUnitId: typeof currentUnitId === "string" ? currentUnitId : "",
+          chapterId,
+          participantId: state?.participant?.participantId || "",
+          preferenceHidden: document.querySelector(
+            "[data-knowledge-proactive-preference]"
+          )?.hidden,
+          stateStatus: response.status,
+          statePayload: await response.json().catch(() => ({}))
+        };
+      });
+      throw new Error(
+        `proactive preference did not become visible: ${JSON.stringify(diagnostic)}\n${error.message}`
+      );
+    }
     const proactivePreferenceButtons = proactivePreference.locator("[data-proactive-preference]");
     assert.equal(await proactivePreferenceButtons.count(), 3);
     assert.deepEqual(
@@ -383,6 +597,106 @@ async function main() {
     await page.waitForFunction(() => (
       document.querySelector('[data-proactive-preference="standard"]')?.getAttribute("aria-checked") === "true"
     ));
+    const outcomesButton = page.locator("[data-proactive-outcomes-open]");
+    assert.equal(await outcomesButton.isDisabled(), true);
+    assert.equal((await outcomesButton.textContent())?.trim(), "尚未开放");
+    const lockedOutcomeState = await page.evaluate(async () => {
+      const token = sessionStorage.getItem("calculus-quest-auth-token-v1") || "";
+      const response = await fetch(
+        "api/learning/proactive/outcomes?chapterId=V14-C3",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      return {
+        status: response.status,
+        payload: await response.json().catch(() => ({}))
+      };
+    });
+    assert.equal(lockedOutcomeState.status, 200);
+    assert.ok(
+      lockedOutcomeState.payload.data?.stages?.every((stage) => stage.status === "locked"),
+      JSON.stringify(lockedOutcomeState.payload)
+    );
+    assert.ok(
+      lockedOutcomeState.payload.data?.stages?.every((stage) => !Object.hasOwn(stage, "items")),
+      "章后测前不得在 API 中下发独立测量题目"
+    );
+
+    await submitV14C3Posttest(page);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator("#app-loader").waitFor({ state: "hidden", timeout: 20000 });
+    await page.locator("#chapter-outcome-panel").waitFor({ state: "visible", timeout: 20000 });
+    await page.waitForFunction(() => {
+      const button = document.querySelector("[data-proactive-outcomes-open]");
+      return button && !button.disabled && button.textContent?.includes("查看测量任务");
+    }, null, { timeout: 20000 });
+    if (await assistantPanel.getAttribute("aria-hidden") !== "true") {
+      await page.locator("[data-knowledge-close]").click();
+      await page.waitForFunction(() => (
+        document.querySelector("#knowledge-assistant-panel")?.getAttribute("aria-hidden") === "true"
+      ));
+    }
+    await outcomesButton.click();
+    const outcomesLayer = page.locator("[data-knowledge-outcomes]");
+    await outcomesLayer.waitFor({ state: "visible", timeout: 10000 });
+    await outcomesLayer.locator(".knowledge-outcome-stage").first().waitFor({
+      state: "visible",
+      timeout: 10000
+    });
+    assert.equal(await outcomesLayer.locator(".knowledge-outcome-stage").count(), 3);
+    await outcomesLayer
+      .locator(".knowledge-outcome-stage.is-available > button")
+      .first()
+      .click();
+    await outcomesLayer.locator(".knowledge-outcome-active").waitFor({
+      state: "visible",
+      timeout: 10000
+    });
+    assert.ok(await outcomesLayer.locator('input[type="radio"]').count() > 0);
+    const outcomesMobileLayout = await outcomesLayer.evaluate((layer) => {
+      const dialog = layer.querySelector(".knowledge-outcomes-dialog");
+      const close = layer.querySelector("[data-knowledge-outcomes-close]");
+      const rect = dialog?.getBoundingClientRect();
+      const closeRect = close?.getBoundingClientRect();
+      return {
+        bodyLocked: document.body.classList.contains("knowledge-outcomes-open"),
+        viewportWidth: document.documentElement.clientWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        dialog: rect ? {
+          left: rect.left,
+          right: rect.right,
+          top: rect.top,
+          bottom: rect.bottom
+        } : null,
+        closeHeight: closeRect?.height || 0,
+        activeElementInside: layer.contains(document.activeElement)
+      };
+    });
+    assert.equal(outcomesMobileLayout.bodyLocked, true);
+    assert.equal(outcomesMobileLayout.activeElementInside, true);
+    assert.ok(outcomesMobileLayout.dialog);
+    assert.ok(
+      outcomesMobileLayout.documentWidth <= outcomesMobileLayout.viewportWidth + 1,
+      `proactive outcomes overflow mobile viewport: ${JSON.stringify(outcomesMobileLayout)}`
+    );
+    assert.ok(
+      outcomesMobileLayout.dialog.left >= -1
+      && outcomesMobileLayout.dialog.right <= outcomesMobileLayout.viewportWidth + 1,
+      `proactive outcomes dialog escapes viewport: ${JSON.stringify(outcomesMobileLayout)}`
+    );
+    assert.ok(outcomesMobileLayout.closeHeight >= 44);
+    await page.screenshot({ path: proactiveOutcomesMobileScreenshotPath });
+    await outcomesLayer.locator(".knowledge-outcome-active > header button").click();
+    await outcomesLayer.locator(".knowledge-outcome-active").waitFor({
+      state: "hidden",
+      timeout: 10000
+    });
+    await page.keyboard.press("Escape");
+    await outcomesLayer.waitFor({ state: "hidden", timeout: 10000 });
+    if (await assistantPanel.getAttribute("aria-hidden") !== "false") {
+      await page.locator("[data-knowledge-open]").click();
+    }
+    await assistantPanel.waitFor({ state: "visible", timeout: 10000 });
+    await page.waitForTimeout(800);
     await page.evaluate(() => {
       const messages = document.querySelector("[data-knowledge-messages]");
       if (!messages) return;
@@ -405,8 +719,9 @@ async function main() {
       `;
       messages.appendChild(check);
     });
-    await page.waitForTimeout(250);
-    await page.locator(".knowledge-proactive-verification footer").scrollIntoViewIfNeeded();
+    const verificationFooter = page.locator(".knowledge-proactive-verification footer");
+    await verificationFooter.waitFor({ state: "visible", timeout: 10000 });
+    await verificationFooter.scrollIntoViewIfNeeded();
     const proactiveMobileLayout = await page.evaluate(() => {
       const panel = document.querySelector("#knowledge-assistant-panel");
       const check = document.querySelector(".knowledge-proactive-verification");
@@ -530,7 +845,7 @@ async function main() {
     await adminPage.locator("#app:not(.hidden)").waitFor({ timeout: 30000 });
     const submissionMetric = adminPage.locator("#overview-metrics .metric-card").filter({ hasText: "测验提交总数" });
     await submissionMetric.waitFor({ state: "visible", timeout: 30000 });
-    assert.equal((await submissionMetric.locator(".value").textContent()).trim(), "1");
+    assert.equal((await submissionMetric.locator(".value").textContent()).trim(), "2");
 
     await adminPage.locator('[data-tab="proactive"]').click();
     await adminPage.locator("#tab-proactive:not(.hidden)").waitFor({ timeout: 30000 });
@@ -545,7 +860,7 @@ async function main() {
             nickname: "试点学生 A",
             user_id: "visual-user-a",
             experiment_id: "v14-c3-proactive-pilot-2026",
-            condition: "treatment",
+            condition: "adaptive",
             cohort: "pilot",
             stratum: "pre-low",
             chapter_id: "V14-C3",
@@ -610,7 +925,7 @@ async function main() {
             nickname: "试点学生 A",
             user_id: "visual-user-a",
             experiment_id: "v14-c3-proactive-pilot-2026",
-            condition: "treatment",
+            condition: "adaptive",
             cohort: "pilot",
             stratum: "pre-low",
             chapter_id: "V14-C3",
@@ -706,7 +1021,24 @@ async function main() {
         ],
         assignments: [
           { condition: "control", stratum: "pre-high", participants: 1 },
-          { condition: "treatment", stratum: "pre-low", participants: 1 }
+          { condition: "minimal", stratum: "pre-low", participants: 1 },
+          { condition: "adaptive", stratum: "pre-low", participants: 1 }
+        ],
+        participation: [
+          {
+            experiment_id: "v14-c3-proactive-pilot-2026",
+            status: "enrolled",
+            enrollment_basis: "explicit-consent",
+            consent_version: "v14-c3-consent-v1",
+            participants: 19
+          },
+          {
+            experiment_id: "v14-c3-proactive-pilot-2026",
+            status: "withdrawn",
+            enrollment_basis: "explicit-consent",
+            consent_version: "v14-c3-consent-v1",
+            participants: 1
+          }
         ],
         summary: {
           decisions: 3,
@@ -716,20 +1048,265 @@ async function main() {
           accepted: 2,
           dismissed: 0,
           ignored: 0,
+          snoozed: 1,
+          alternative_requested: 1,
           expired: 0,
           unresolved_offers: 0,
           protected_blocks: 0,
           l1_self_explanations: 1,
           l2_concept_hints: 1,
+          l3_subgoal_decompositions: 1,
+          l4_next_step_hints: 1,
+          l5_partial_examples: 1,
+          representation_switches: 1,
           continued_friction: 1,
-          independent_success_exits: 1
+          independent_success_exits: 1,
+          autonomy: {
+            scope_mutes: 1,
+            scope_restores: 1,
+            current_muted_scopes: 0
+          }
         },
         policy: {
           mode: "active",
           experimentId: "v14-c3-proactive-pilot-2026",
           policyVersion: "v14-c3-fixed-v2",
           contractVersion: "proactive-learning-contract-v1",
-          adapterVersion: "v14-c3-adapter-v2"
+          adapterVersion: "v14-c3-adapter-v2",
+          assignmentVersion: "stratified-balanced-v1",
+          assignmentStrategy: "stratified-balanced",
+          participationMode: "explicit-consent",
+          participationReady: true,
+          consentVersion: "v14-c3-consent-v1",
+          consentNoticeUrl: "/research/v14-c3-consent-v1.html",
+          experimentArms: ["control", "minimal", "adaptive"],
+          displayArms: ["minimal", "adaptive"],
+          armProfiles: {
+            control: { display: false, maxSupportLevel: "L0", allowRepresentationSwitch: false },
+            minimal: { display: true, maxSupportLevel: "L2", allowRepresentationSwitch: false },
+            adaptive: { display: true, maxSupportLevel: "L5", allowRepresentationSwitch: true }
+          }
+        },
+        protocol: {
+          experimentId: "v14-c3-proactive-pilot-2026",
+          chapterId: "V14-C3",
+          fingerprint: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          frozenAt: "2026-08-30T08:00:00.000Z",
+          currentMatches: true,
+          definition: {
+            courseRouteVersion: "multi-scene-learning-route-20260722",
+            courseRouteDigest: "route-digest",
+            outcomeInstrumentVersion: "v14-c3-outcomes-v1",
+            modelRuntime: {
+              provider: "mock",
+              liveConfigured: false,
+              model: "",
+              wireApi: "chat-completions"
+            },
+            sourceDigests: {
+              policyKernel: "policy-digest",
+              lifecycle: "lifecycle-digest",
+              adapter: "adapter-digest",
+              outcomeInstrument: "outcome-digest",
+              studentRenderer: "renderer-digest",
+              studentSignalClient: "signal-client-digest"
+            },
+            stoppingRules: { advisoryOnly: true }
+          }
+        },
+        runtime: {
+          status: "active",
+          paused: false,
+          reason: "",
+          pausedAt: "",
+          updatedAt: "2026-08-30T08:00:00.000Z",
+          updatedBy: "system"
+        },
+        runtimeEvents: [
+          {
+            id: "runtime-resume",
+            status: "active",
+            reason: "",
+            updated_by: "research-admin",
+            created_at: "2026-08-30T08:30:00.000Z"
+          },
+          {
+            id: "runtime-pause",
+            status: "paused",
+            reason: "停止规则演练",
+            updated_by: "research-admin",
+            created_at: "2026-08-30T08:20:00.000Z"
+          }
+        ],
+        integrity: {
+          advisoryOnly: true,
+          summary: { critical: 0, warning: 1, ok: 6 },
+          signals: [
+            {
+              id: "protected_assessment_display",
+              label: "受保护测量阶段出现展示",
+              severity: "critical",
+              status: "ok",
+              count: 0,
+              detail: "受保护测量期间不得展示主动帮助。"
+            },
+            {
+              id: "assignment_imbalance",
+              label: "分层实验臂明显失衡",
+              severity: "warning",
+              status: "warning",
+              count: 1,
+              detail: "该信号只提示分配可行性风险。"
+            }
+          ]
+        },
+        participantFlow: [
+          {
+            condition: "control",
+            assigned: 10,
+            evidenceParticipants: 8,
+            exposedParticipants: 0,
+            posttestCompleted: 7,
+            nearStarted: 7,
+            nearSubmitted: 6,
+            nearWithdrawn: 1,
+            representationStarted: 6,
+            representationSubmitted: 5,
+            representationWithdrawn: 0,
+            retentionStarted: 5,
+            retentionSubmitted: 4,
+            retentionWithdrawn: 1,
+            studyWithdrawn: 0
+          },
+          {
+            condition: "adaptive",
+            assigned: 10,
+            evidenceParticipants: 9,
+            exposedParticipants: 8,
+            posttestCompleted: 8,
+            nearStarted: 8,
+            nearSubmitted: 7,
+            nearWithdrawn: 0,
+            representationStarted: 7,
+            representationSubmitted: 7,
+            representationWithdrawn: 0,
+            retentionStarted: 6,
+            retentionSubmitted: 5,
+            retentionWithdrawn: 1,
+            studyWithdrawn: 1
+          }
+        ],
+        outcomes: {
+          total: 3,
+          instrumentVersion: "v14-c3-outcomes-v1",
+          retentionDelayHours: 168,
+          sessionTotal: 5,
+          sessionSummary: [
+            {
+              condition: "control",
+              stage: "near_transfer",
+              status: "submitted",
+              sessions: 1,
+              participants: 1
+            },
+            {
+              condition: "control",
+              stage: "near_transfer",
+              status: "withdrawn",
+              sessions: 1,
+              participants: 1
+            },
+            {
+              condition: "adaptive",
+              stage: "retention",
+              status: "active",
+              sessions: 1,
+              participants: 1
+            }
+          ],
+          sessions: [
+            {
+              id: "session-control-withdrawn",
+              started_at: "2026-08-30T10:20:00.000Z",
+              ended_at: "2026-08-30T10:22:00.000Z",
+              nickname: "试点学生 B",
+              user_id: "visual-user-b",
+              condition: "control",
+              stage: "near_transfer",
+              status: "withdrawn",
+              withdrawal_reason: "student_withdrawal",
+              participation_status: "enrolled",
+              participation_consent_version: "v14-c3-consent-v1",
+              learning_generation: 1
+            }
+          ],
+          summary: [
+            {
+              condition: "control",
+              stage: "near_transfer",
+              submissions: 1,
+              participants: 1,
+              mean_accuracy: 0.67,
+              mean_duration_ms: 65000
+            },
+            {
+              condition: "minimal",
+              stage: "representation_transfer",
+              submissions: 1,
+              participants: 1,
+              mean_accuracy: 0.67,
+              mean_duration_ms: 72000
+            },
+            {
+              condition: "adaptive",
+              stage: "retention",
+              submissions: 1,
+              participants: 1,
+              mean_accuracy: 1,
+              mean_duration_ms: 58000
+            }
+          ],
+          rows: [
+            {
+              id: "outcome-adaptive-retention",
+              submitted_at: "2026-08-30T11:00:00.000Z",
+              nickname: "试点学生 A",
+              user_id: "visual-user-a",
+              condition: "adaptive",
+              stage: "retention",
+              score: 3,
+              max_score: 3,
+              accuracy: 1,
+              duration_ms: 58000,
+              learning_generation: 1
+            },
+            {
+              id: "outcome-minimal-transfer",
+              submitted_at: "2026-08-30T10:50:00.000Z",
+              nickname: "试点学生 C",
+              user_id: "visual-user-c",
+              condition: "minimal",
+              stage: "representation_transfer",
+              score: 2,
+              max_score: 3,
+              accuracy: 2 / 3,
+              duration_ms: 72000,
+              learning_generation: 1
+            },
+            {
+              id: "outcome-control-near",
+              submitted_at: "2026-08-30T10:40:00.000Z",
+              nickname: "试点学生 B",
+              user_id: "visual-user-b",
+              condition: "control",
+              stage: "near_transfer",
+              score: 2,
+              max_score: 3,
+              accuracy: 2 / 3,
+              duration_ms: 65000,
+              learning_generation: 1
+            }
+          ]
         }
       });
     });
@@ -737,6 +1314,34 @@ async function main() {
       state: "visible",
       timeout: 10000
     });
+    assert.equal(
+      (await adminPage.locator("#proactive-runtime-status").textContent()).trim(),
+      "运行中"
+    );
+    assert.match(
+      await adminPage.locator("#proactive-protocol-facts").innerText(),
+      /层内小样本平衡/
+    );
+    assert.match(
+      await adminPage.locator("#proactive-protocol-facts").innerText(),
+      /显式同意/
+    );
+    assert.match(
+      await adminPage.locator("#proactive-protocol-facts").innerText(),
+      /已退出 1/
+    );
+    assert.equal(
+      await adminPage.locator("#proactive-integrity-signals .proactive-integrity-signal").count(),
+      2
+    );
+    assert.equal(
+      await adminPage.locator("#table-proactive-participant-flow tbody tr").count(),
+      2
+    );
+    assert.equal(
+      await adminPage.locator("#table-proactive-runtime-events tbody tr").count(),
+      2
+    );
     const proactiveAuditText = await adminPage.locator("#proactive-audit-detail").innerText();
     assert.match(proactiveAuditText, /引导自我解释/);
     assert.match(proactiveAuditText, /独立尝试失败/);
@@ -745,12 +1350,82 @@ async function main() {
     assert.match(proactiveAuditText, /已渐退退出/);
     assert.match(proactiveAuditText, /平台无提示近端验证题/);
     assert.match(proactiveAuditText, /课件语义结果事件/);
+    const proactiveAuditDisclosures = adminPage.locator(
+      "#proactive-audit-detail details.proactive-audit-disclosure"
+    );
+    assert.equal(await proactiveAuditDisclosures.count(), 5);
+    const proactiveAuditDisclosureLabels = await proactiveAuditDisclosures
+      .locator("summary span")
+      .allTextContents();
+    assert.match(proactiveAuditDisclosureLabels[0], /^证据引用（\d+）$/);
+    assert.deepEqual(
+      proactiveAuditDisclosureLabels.slice(1),
+      ["证据快照", "约束与预算", "执行生命周期", "后续结果"]
+    );
+    assert.deepEqual(
+      await proactiveAuditDisclosures.evaluateAll((elements) => (
+        elements.map((element) => element.open)
+      )),
+      [false, false, false, false, false],
+      "原始主动决策 JSON 应默认折叠"
+    );
+    const firstAuditDisclosure = proactiveAuditDisclosures.first();
+    await firstAuditDisclosure.locator("summary").click();
+    assert.equal(await firstAuditDisclosure.evaluate((element) => element.open), true);
+    await firstAuditDisclosure.locator(".proactive-audit-code").waitFor({
+      state: "visible",
+      timeout: 5000
+    });
+    assert.ok(
+      (await firstAuditDisclosure.locator(".proactive-audit-code").innerText()).trim().length > 0,
+      "展开后的原始证据 JSON 不应为空"
+    );
+    await firstAuditDisclosure.locator("summary").click();
+    assert.equal(await firstAuditDisclosure.evaluate((element) => element.open), false);
+    assert.deepEqual(
+      await adminPage.locator("#proactive-condition-filter option").allTextContents(),
+      ["全部条件", "Control", "Minimal", "Adaptive"]
+    );
+    assert.equal(
+      await adminPage.locator("#table-proactive-outcome-summary tbody tr").count(),
+      3
+    );
+    assert.equal(
+      await adminPage.locator("#table-proactive-outcome-attempts tbody tr").count(),
+      3
+    );
+    assert.equal(
+      await adminPage.locator("#export-proactive-outcome-sessions-csv").isVisible(),
+      true
+    );
+    assert.match(
+      await adminPage.locator("#proactive-outcome-overview").innerText(),
+      /已退出 1/
+    );
+    assert.match(
+      await adminPage.locator("#proactive-study-metrics").innerText(),
+      /L1-L5 支架动作/
+    );
+    assert.match(
+      await adminPage.locator("#proactive-study-metrics").innerText(),
+      /学生自主权动作/
+    );
     await adminPage.screenshot({ path: proactiveAdminScreenshotPath, fullPage: true });
     await adminPage.setViewportSize({ width: 390, height: 844 });
     await adminPage.waitForTimeout(250);
     const proactiveAdminMobileLayout = await adminPage.evaluate(() => ({
       documentWidth: document.documentElement.scrollWidth,
       viewportWidth: document.documentElement.clientWidth,
+      disclosureSummaryHeight: document.querySelector(
+        "#proactive-audit-detail .proactive-audit-disclosure summary"
+      )?.getBoundingClientRect().height || 0,
+      runtimeButtonHeight: document.querySelector(
+        "#proactive-runtime-toggle"
+      )?.getBoundingClientRect().height || 0,
+      activeTabLeft: document.querySelector(".tab.active")
+        ?.getBoundingClientRect().left || 0,
+      activeTabRight: document.querySelector(".tab.active")
+        ?.getBoundingClientRect().right || 0,
       tableOverflowX: getComputedStyle(
         document.querySelector("#table-proactive-decisions")?.closest(".table-wrap")
       ).overflowX
@@ -758,6 +1433,20 @@ async function main() {
     assert.ok(
       proactiveAdminMobileLayout.documentWidth <= proactiveAdminMobileLayout.viewportWidth + 1,
       `proactive admin page overflows mobile viewport: ${JSON.stringify(proactiveAdminMobileLayout)}`
+    );
+    assert.ok(
+      proactiveAdminMobileLayout.disclosureSummaryHeight >= 44,
+      `proactive audit disclosure is too small for touch: ${JSON.stringify(proactiveAdminMobileLayout)}`
+    );
+    assert.ok(
+      proactiveAdminMobileLayout.runtimeButtonHeight >= 44,
+      `proactive runtime control is too small for touch: ${JSON.stringify(proactiveAdminMobileLayout)}`
+    );
+    assert.ok(
+      proactiveAdminMobileLayout.activeTabLeft >= -1
+        && proactiveAdminMobileLayout.activeTabRight
+          <= proactiveAdminMobileLayout.viewportWidth + 1,
+      `active admin tab is not visible on mobile: ${JSON.stringify(proactiveAdminMobileLayout)}`
     );
     assert.match(proactiveAdminMobileLayout.tableOverflowX, /auto|scroll/);
     await adminPage.screenshot({ path: proactiveAdminMobileScreenshotPath, fullPage: true });
@@ -842,7 +1531,7 @@ async function main() {
     assert.deepEqual([...issues, ...adminIssues], []);
 
     console.log(
-      `platform browser smoke tests passed (${studentDesktopScreenshotPath}, ${studentMobileScreenshotPath}, ${proactivePreferenceMobileScreenshotPath}, ${proactiveMobileScreenshotPath}, ${screenshotPath}, ${proactiveAdminScreenshotPath}, ${proactiveAdminMobileScreenshotPath}, ${shortAnswerScreenshotPath}, ${mobileScreenshotPath})`
+      `platform browser smoke tests passed (${studentDesktopScreenshotPath}, ${studentMobileScreenshotPath}, ${proactivePreferenceMobileScreenshotPath}, ${proactiveOutcomesMobileScreenshotPath}, ${proactiveMobileScreenshotPath}, ${screenshotPath}, ${proactiveAdminScreenshotPath}, ${proactiveAdminMobileScreenshotPath}, ${shortAnswerScreenshotPath}, ${mobileScreenshotPath})`
     );
   } finally {
     await browser?.close().catch(() => {});

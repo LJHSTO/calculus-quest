@@ -34,8 +34,26 @@ let cachedProactiveStudyData = {
   limit: 500,
   offset: 0,
   assignments: [],
+  participation: [],
   summary: {},
-  policy: {}
+  policy: {},
+  protocol: null,
+  runtime: null,
+  runtimeEvents: [],
+  integrity: { advisoryOnly: true, summary: {}, signals: [] },
+  participantFlow: [],
+  outcomes: {
+    rows: [],
+    total: 0,
+    limit: 500,
+    offset: 0,
+    summary: [],
+    sessions: [],
+    sessionTotal: 0,
+    sessionLimit: 500,
+    sessionOffset: 0,
+    sessionSummary: []
+  }
 };
 let proactiveConditionFilter = sessionStorage.getItem("cq_proactive_condition") || "";
 let proactiveDecisionFilter = sessionStorage.getItem("cq_proactive_decision") || "";
@@ -204,8 +222,38 @@ async function fetchProactiveStudy(signal, options = {}) {
     limit: Number(payload.data?.limit || options.limit || 500),
     offset: Number(payload.data?.offset || options.offset || 0),
     assignments: safeRows(payload.data?.assignments),
+    participation: safeRows(payload.data?.participation),
     summary: payload.data?.summary || {},
-    policy: payload.data?.policy || {}
+    policy: payload.data?.policy || {},
+    protocol: payload.data?.protocol || null,
+    runtime: payload.data?.runtime || null,
+    runtimeEvents: safeRows(payload.data?.runtimeEvents),
+    integrity: payload.data?.integrity || {
+      advisoryOnly: true,
+      summary: {},
+      signals: []
+    },
+    participantFlow: safeRows(payload.data?.participantFlow),
+    outcomes: {
+      rows: safeRows(payload.data?.outcomes?.rows),
+      total: Number(payload.data?.outcomes?.total || 0),
+      limit: Number(payload.data?.outcomes?.limit || options.limit || 500),
+      offset: Number(payload.data?.outcomes?.offset || options.offset || 0),
+      summary: safeRows(payload.data?.outcomes?.summary),
+      sessions: safeRows(payload.data?.outcomes?.sessions),
+      sessionTotal: Number(payload.data?.outcomes?.sessionTotal || 0),
+      sessionLimit: Number(
+        payload.data?.outcomes?.sessionLimit || options.limit || 500
+      ),
+      sessionOffset: Number(
+        payload.data?.outcomes?.sessionOffset || options.offset || 0
+      ),
+      sessionSummary: safeRows(payload.data?.outcomes?.sessionSummary),
+      instrumentVersion: payload.data?.outcomes?.instrumentVersion || "",
+      retentionDelayHours: Number(
+        payload.data?.outcomes?.retentionDelayHours || 0
+      )
+    }
   };
 }
 
@@ -2255,6 +2303,22 @@ function interactionTypeName(type) {
     knowledge_proactive_suggestion_accepted: "接受知点主动建议",
     knowledge_proactive_suggestion_dismissed: "关闭知点主动建议",
     knowledge_proactive_suggestion_ignored: "隐式忽略知点主动建议",
+    knowledge_proactive_suggestion_snoozed: "稍后处理知点主动建议",
+    knowledge_proactive_alternative_offered: "知点提供替代表征",
+    knowledge_proactive_alternative_failed: "替代表征请求未完成",
+    knowledge_proactive_preference_changed: "调整主动提示频率",
+    knowledge_proactive_scope_preference_changed: "调整知识点主动提醒",
+    knowledge_proactive_consent_notice_opened: "查看主动学习研究说明",
+    knowledge_proactive_withdrawal_confirm_opened: "打开退出研究确认",
+    knowledge_proactive_withdrawal_confirm_cancelled: "取消退出研究",
+    knowledge_proactive_participation_enrolled: "加入本章主动学习研究",
+    knowledge_proactive_participation_withdrawn: "退出本章主动学习研究",
+    proactive_participation_enrolled: "服务端记录研究加入",
+    proactive_participation_withdrawn: "服务端记录研究退出",
+    knowledge_proactive_outcomes_opened: "打开独立学习测量",
+    knowledge_proactive_outcome_started: "开始独立学习测量",
+    knowledge_proactive_outcome_submitted: "提交独立学习测量",
+    knowledge_proactive_outcome_failed: "独立学习测量提交失败",
     knowledge_proactive_budget_exhausted: "知点主动预算已用尽",
     knowledge_proactive_reply_option_selected: "选择主动提示回答起点",
     knowledge_proactive_reply_skipped: "跳过主动提示回答",
@@ -2273,6 +2337,13 @@ function interactionTypeName(type) {
     knowledge_launcher_moved: "移动知点入口",
     knowledge_panel_moved: "移动知点面板",
     knowledge_panel_position_reset: "重置知点面板位置",
+    proactive_student_preference_changed: "服务端记录主动提示偏好",
+    proactive_scope_preference_changed: "服务端记录知识点提醒偏好",
+    proactive_alternative_requested: "服务端记录替代帮助请求",
+    proactive_outcome_submitted: "服务端记录独立学习结果",
+    proactive_verification_submitted: "服务端记录无提示验证",
+    proactive_verification_declined: "服务端记录跳过无提示验证",
+    proactive_student_response_submitted: "服务端记录支架回复",
     feedback_submit: "提交问题反馈",
     reflection_save: "保存反思",
     skip_units: "跳过模块",
@@ -2354,7 +2425,11 @@ function actionCategoryForType(type = "") {
     if (/pre_check|formative_check|exit_ticket|challenge_result/.test(type)) return "assessment";
     return "completion";
   }
-  if (type.startsWith("knowledge_proactive_") || type.startsWith("knowledge_quiz_review_")) return "proactive";
+  if (
+    type.startsWith("knowledge_proactive_")
+    || type.startsWith("knowledge_quiz_review_")
+    || type.startsWith("proactive_")
+  ) return "proactive";
   if (type.startsWith("agentic_")) return "coach";
   if (type.startsWith("knowledge_note_")) return "note";
   if (type.startsWith("knowledge_")) return "assistant";
@@ -2419,6 +2494,10 @@ function proactiveActionName(action = "") {
     ask_clarification: "回答澄清问题",
     elicit_self_explanation: "引导学生自我解释",
     concept_hint: "提供概念关系线索",
+    decompose_subgoal: "拆分当前子目标",
+    next_step_hint: "提示下一步",
+    partial_worked_example: "查看部分解题示例",
+    switch_representation: "切换学习表征",
     stay_silent: "保持安静"
   })[action] || "下一步支持";
 }
@@ -2625,6 +2704,75 @@ function humanInteractionSummary(row) {
   }
   if (type === "knowledge_proactive_suggestion_ignored") {
     return `学生继续操作并隐式忽略关于「${proactiveSuggestionKindName(data.suggestionKind)}」的主动建议；连续忽略 ${data.dismissStreak || 0} 次。`;
+  }
+  if (type === "knowledge_proactive_suggestion_snoozed") {
+    return `学生将「${proactiveActionName(data.action)}」设为稍后处理，本知识点进入冷却。`;
+  }
+  if (type === "knowledge_proactive_alternative_offered") {
+    return `学生请求换一种帮助后，知点提供「${proactiveActionName(data.action)}」。`;
+  }
+  if (type === "knowledge_proactive_alternative_failed") {
+    return `学生请求换一种帮助，但本次未能生成合法替代方案；原因：${data.reason || "未知"}。`;
+  }
+  if (type === "knowledge_proactive_preference_changed") {
+    return `学生将主动提示频率从「${data.previousPreference || "未记录"}」改为「${data.preference || "未记录"}」。`;
+  }
+  if (type === "knowledge_proactive_scope_preference_changed") {
+    return `学生将当前知识点主动提醒改为「${data.preference === "off" ? "关闭" : "恢复"}」。`;
+  }
+  if (type === "knowledge_proactive_consent_notice_opened") {
+    return `学生打开本章研究说明，版本为 ${data.consentVersion || "未记录"}。`;
+  }
+  if (type === "knowledge_proactive_withdrawal_confirm_opened") {
+    return "学生打开退出研究确认，但尚未提交退出。";
+  }
+  if (type === "knowledge_proactive_withdrawal_confirm_cancelled") {
+    return "学生取消退出研究并继续保留参与状态。";
+  }
+  if (type === "knowledge_proactive_participation_enrolled") {
+    return `学生确认参加本章主动学习研究，记录版本为 ${data.consentVersion || "未记录"}。`;
+  }
+  if (type === "knowledge_proactive_participation_withdrawn") {
+    return "学生退出本章主动学习研究；课程与普通知点提问仍可继续使用。";
+  }
+  if (type === "proactive_participation_enrolled") {
+    return `服务端已记录研究加入，依据为 ${data.enrollmentBasis || "未记录"}，版本为 ${data.consentVersion || "未记录"}。`;
+  }
+  if (type === "proactive_participation_withdrawn") {
+    return `服务端已记录研究退出，并收束 ${Number(data.closedInterventions || 0)} 个未决提示、${Number(data.closedLifecycleEpisodes || 0)} 个支架回合和 ${Number(data.withdrawnOutcomeSessions || 0)} 个测量会话。`;
+  }
+  if (type === "knowledge_proactive_outcomes_opened") {
+    return "学生打开本章独立学习测量；主动提示在测量期间暂停。";
+  }
+  if (type === "knowledge_proactive_outcome_started") {
+    return `学生开始${proactiveOutcomeStageLabel(data.stageId)}，共 ${Number(data.itemCount || 0)} 题。`;
+  }
+  if (type === "knowledge_proactive_outcome_submitted") {
+    return `学生提交${proactiveOutcomeStageLabel(data.stageId)}；学生端只确认记录成功，不显示即时得分。`;
+  }
+  if (type === "knowledge_proactive_outcome_failed") {
+    return `${proactiveOutcomeStageLabel(data.stageId)}提交未完成；原因：${data.reason || "请求失败"}。`;
+  }
+  if (type === "proactive_student_preference_changed") {
+    return `服务端确认主动提示偏好改为「${data.preference || "未记录"}」，并关闭 ${Number(data.closedInterventions || 0)} 条未完成建议。`;
+  }
+  if (type === "proactive_scope_preference_changed") {
+    return `服务端确认知识点「${data.scopeKey || payload.unitId || ""}」提醒已${data.preference === "off" ? "关闭" : "恢复"}。`;
+  }
+  if (type === "proactive_alternative_requested") {
+    return `服务端核验原建议后，记录学生主动请求替代帮助；原支架为 ${data.sourceSupportLevel || "未记录"}。`;
+  }
+  if (type === "proactive_outcome_submitted") {
+    return `服务端记录${proactiveOutcomeStageLabel(data.stageId)}，共 ${Number(data.itemCount || 0)} 题；结果仅进入研究后台。`;
+  }
+  if (type === "proactive_verification_submitted") {
+    return `服务端记录无提示验证「${data.checkId || "未标记"}」，用于决定渐退或升级支架。`;
+  }
+  if (type === "proactive_verification_declined") {
+    return "学生跳过本轮无提示验证，服务端结束当前支架回合且不自动升级。";
+  }
+  if (type === "proactive_student_response_submitted") {
+    return "服务端确认学生已提交本轮支架回复，下一步等待独立尝试证据。";
   }
   if (type === "knowledge_proactive_budget_exhausted") {
     return `知点检测到「${proactiveSuggestionKindName(data.suggestionKind)}」信号，但本次主动介入预算已用尽。`;
@@ -3406,13 +3554,23 @@ const proactiveActionLabels = {
   ask_clarification: "澄清卡点",
   self_explain: "自我解释",
   elicit_self_explanation: "引导自我解释",
-  concept_hint: "概念关系线索"
+  concept_hint: "概念关系线索",
+  decompose_subgoal: "拆分子目标",
+  next_step_hint: "提示下一步",
+  partial_worked_example: "部分解题示例",
+  switch_representation: "切换学习表征"
 };
 
 const proactiveResolutionLabels = {
   accepted: "已接受",
   dismissed: "已关闭",
   ignored: "已忽略",
+  snoozed: "稍后处理",
+  alternative_requested: "已请求换一种帮助",
+  scope_muted: "已关闭知识点提醒",
+  preference_off: "已关闭全局主动提示",
+  learning_reset: "学习代次已重置",
+  experiment_paused: "实验暂停时收束",
   expired: "已过期",
   shown: "已展示",
   offered: "待展示"
@@ -3443,7 +3601,12 @@ function proactiveEvidenceSourceLabel(source = "", eventType = "") {
 }
 
 function proactiveConditionLabel(value = "") {
-  return value === "treatment" ? "Treatment" : value === "control" ? "Control" : value || "未分配";
+  return ({
+    treatment: "Treatment",
+    control: "Control",
+    minimal: "Minimal",
+    adaptive: "Adaptive"
+  })[value] || value || "未分配";
 }
 
 function proactiveStratumLabel(value = "") {
@@ -3491,6 +3654,9 @@ function proactiveReasonText(reasons) {
     verification_check_already_submitted: "同一道验证题已提交，阻止重放",
     student_response_submitted: "学生已完成本轮支架回复",
     support_declined: "学生已拒绝，本轮闭环终止",
+    student_snoozed_support: "学生选择稍后处理",
+    student_requested_alternative: "学生主动请求换一种帮助",
+    student_choice_boundary: "学生主动选择形成合法介入边界",
     lifecycle_closed: "本轮支架闭环已经结束",
     maximum_support_reached: "已到本轮最高支架强度，停止升级",
     policy_thresholds_met: "达到政策门槛",
@@ -3517,9 +3683,19 @@ function proactiveReasonText(reasons) {
     adapter_unit_unsupported: "当前单元未纳入 Adapter",
     chapter_not_managed: "当前章节不属于本试点",
     policy_mode_off: "主动政策已关闭",
+    experiment_runtime_paused: "实验运行时已暂停",
     student_preference_reduced: "学生选择少提醒，仅保留强证据介入",
     student_preference_off: "学生已关闭主动提示",
+    fade_threshold_raised: "渐退后提高弱证据介入门槛",
+    fade_evidence_threshold_raised: "渐退后要求更多独立证据",
+    fade_evidence_requirement_met: "渐退后的更高证据要求已满足",
+    experiment_arm_display_suppressed: "当前实验臂不展示主动介入",
+    arm_support_ceiling: "当前实验臂已达到支架上限",
+    arm_representation_switch_disabled: "当前实验臂不允许换表征",
     assignment_salt_required: "分组盐未配置，Active 失败关闭",
+    participation_config_required: "研究参与配置未完成，Active 失败关闭",
+    participant_not_enrolled: "学生尚未参加本章研究",
+    participant_withdrawn: "学生已退出本章研究",
     no_legal_action: "没有满足教学契约的合法动作",
     renderer_action_mismatch: "呈现动作不匹配",
     support_escalation_not_delivered: "升级支架未实际交付，本轮已安全结束"
@@ -3535,12 +3711,193 @@ function proactiveAuditTime(value = "") {
   });
 }
 
+function proactiveAssignmentStrategyLabel(value = "") {
+  return value === "stratified-balanced"
+    ? "层内小样本平衡"
+    : "层内加盐哈希";
+}
+
+function proactiveRuntimeLabel(status = "") {
+  return status === "paused" ? "已暂停" : "运行中";
+}
+
+function proactiveProtocolFact(label, value, title = "") {
+  return `
+    <div class="proactive-protocol-fact"${title ? ` title="${esc(title)}"` : ""}>
+      <span>${esc(label)}</span>
+      <strong>${esc(value || "未记录")}</strong>
+    </div>
+  `;
+}
+
+function renderProactiveGovernance(data = {}) {
+  const policy = data.policy || {};
+  const protocol = data.protocol || null;
+  const definition = protocol?.definition || {};
+  const participation = safeRows(data.participation);
+  const enrolledParticipants = participation
+    .filter((row) => row.status === "enrolled")
+    .reduce((sum, row) => sum + Number(row.participants || 0), 0);
+  const withdrawnParticipants = participation
+    .filter((row) => row.status === "withdrawn")
+    .reduce((sum, row) => sum + Number(row.participants || 0), 0);
+  const runtime = data.runtime || null;
+  const runtimeStatus = runtime?.status === "paused" ? "paused" : "active";
+  const statusNode = document.getElementById("proactive-runtime-status");
+  if (statusNode) {
+    statusNode.className = `proactive-runtime-badge is-${runtimeStatus}`;
+    statusNode.textContent = runtime
+      ? proactiveRuntimeLabel(runtimeStatus)
+      : "未配置";
+  }
+  const runtimeToggle = document.getElementById("proactive-runtime-toggle");
+  if (runtimeToggle) {
+    runtimeToggle.disabled = !runtime;
+    runtimeToggle.dataset.nextStatus = runtimeStatus === "paused" ? "active" : "paused";
+    runtimeToggle.textContent = runtimeStatus === "paused" ? "恢复实验" : "暂停实验";
+    runtimeToggle.classList.toggle("btn-primary", runtimeStatus === "paused");
+    runtimeToggle.classList.toggle("btn-outline", runtimeStatus !== "paused");
+  }
+  const reasonInput = document.getElementById("proactive-pause-reason");
+  if (reasonInput && document.activeElement !== reasonInput) {
+    reasonInput.value = runtimeStatus === "paused" ? runtime?.reason || "" : "";
+  }
+  const facts = document.getElementById("proactive-protocol-facts");
+  if (facts) {
+    const fingerprint = protocol?.fingerprint || "";
+    const modelRuntime = definition.modelRuntime || {};
+    const sourceDigests = definition.sourceDigests || {};
+    facts.innerHTML = [
+      proactiveProtocolFact(
+        "实验 / 章节",
+        `${protocol?.experimentId || policy.experimentId || "未配置"} · ${protocol?.chapterId || policy.chapterId || "未配置"}`
+      ),
+      proactiveProtocolFact(
+        "协议指纹",
+        fingerprint ? `${fingerprint.slice(0, 16)}…` : "未冻结",
+        fingerprint
+      ),
+      proactiveProtocolFact(
+        "冻结时间",
+        protocol?.frozenAt ? proactiveAuditTime(protocol.frozenAt) : "未冻结"
+      ),
+      proactiveProtocolFact(
+        "课程版本",
+        definition.courseRouteVersion || "未记录",
+        definition.courseRouteDigest || ""
+      ),
+      proactiveProtocolFact(
+        "分配策略",
+        `${proactiveAssignmentStrategyLabel(policy.assignmentStrategy)} · ${policy.assignmentVersion || "未版本化"}`
+      ),
+      proactiveProtocolFact(
+        "参与模式",
+        policy.participationMode === "explicit-consent"
+          ? `显式同意 · ${policy.consentVersion || "未版本化"}`
+          : `工程试点 · ${policy.consentVersion || "未版本化"}`
+      ),
+      proactiveProtocolFact(
+        "参与状态",
+        `在研 ${enrolledParticipants} · 已退出 ${withdrawnParticipants}`
+      ),
+      proactiveProtocolFact(
+        "政策版本",
+        `${policy.policyVersion || "未记录"} · ${policy.adapterVersion || "未记录"}`
+      ),
+      proactiveProtocolFact(
+        "模型配置",
+        modelRuntime.liveConfigured
+          ? `${modelRuntime.provider || "模型"} · ${modelRuntime.model || "未指定模型"}`
+          : `${modelRuntime.provider || "mock"} · 未启用实时生成`
+      ),
+      proactiveProtocolFact(
+        "冻结源码",
+        `${Object.keys(sourceDigests).length} 个摘要 · ${definition.outcomeInstrumentVersion || "测量版本未记录"}`
+      )
+    ].join("");
+  }
+
+  const integrity = data.integrity || {};
+  const integrityStatus = document.getElementById("proactive-integrity-status");
+  if (integrityStatus) {
+    const summary = integrity.summary || {};
+    integrityStatus.textContent = Number(summary.critical || 0) > 0
+      ? `${Number(summary.critical || 0)} 个需立即复核`
+      : Number(summary.warning || 0) > 0
+        ? `${Number(summary.warning || 0)} 个观察信号`
+        : "当前无违规信号";
+  }
+  const integrityList = document.getElementById("proactive-integrity-signals");
+  if (integrityList) {
+    const signals = safeRows(integrity.signals);
+    integrityList.innerHTML = signals.length
+      ? signals.map((signal) => `
+          <div class="proactive-integrity-signal is-${esc(signal.status || "ok")}">
+            <div>
+              <strong>${esc(signal.label || signal.id || "未命名信号")}</strong>
+              <p>${esc(signal.detail || "")}</p>
+            </div>
+            <b>${Number(signal.count || 0)}</b>
+          </div>
+        `).join("")
+      : '<p class="inline-empty-state">尚未生成停止规则诊断。</p>';
+  }
+
+  const flowBody = document.querySelector("#table-proactive-participant-flow tbody");
+  if (flowBody) {
+    const participantFlow = safeRows(data.participantFlow);
+    flowBody.innerHTML = participantFlow.length
+      ? participantFlow.map((row) => {
+          const withdrawn = Number(row.nearWithdrawn || 0)
+            + Number(row.representationWithdrawn || 0)
+            + Number(row.retentionWithdrawn || 0);
+          return `<tr>
+            <td><span class="badge ${proactiveConditionBadgeClass(policy, row.condition)}">${esc(proactiveConditionLabel(row.condition))}</span></td>
+            <td>${Number(row.assigned || 0)}</td>
+            <td>${Number(row.evidenceParticipants || 0)}</td>
+            <td>${Number(row.exposedParticipants || 0)}</td>
+            <td>${Number(row.posttestCompleted || 0)}</td>
+            <td>${Number(row.nearSubmitted || 0)} / ${Number(row.nearStarted || 0)}</td>
+            <td>${Number(row.representationSubmitted || 0)} / ${Number(row.representationStarted || 0)}</td>
+            <td>${Number(row.retentionSubmitted || 0)} / ${Number(row.retentionStarted || 0)}</td>
+            <td>${Number(row.studyWithdrawn || 0)}</td>
+            <td>${withdrawn}</td>
+          </tr>`;
+        }).join("")
+      : "<tr><td colspan='10'>尚无已分组参与者。</td></tr>";
+    syncTableDensity(flowBody.closest("table"));
+  }
+
+  const runtimeBody = document.querySelector("#table-proactive-runtime-events tbody");
+  if (runtimeBody) {
+    const events = safeRows(data.runtimeEvents);
+    runtimeBody.innerHTML = events.length
+      ? events.map((row) => `<tr>
+          <td style="white-space:nowrap;">${esc(proactiveAuditTime(row.created_at || ""))}</td>
+          <td><span class="badge ${row.status === "paused" ? "badge-amber" : "badge-green"}">${esc(proactiveRuntimeLabel(row.status))}</span></td>
+          <td>${esc(row.updated_by || "admin")}</td>
+          <td>${esc(row.reason || (row.status === "active" ? "恢复既有冻结协议" : ""))}</td>
+        </tr>`).join("")
+      : "<tr><td colspan='4'>尚无人工暂停或恢复记录。</td></tr>";
+    syncTableDensity(runtimeBody.closest("table"));
+  }
+}
+
 function proactiveAuditJson(value, fallback = {}) {
   const parsed = parseJsonMaybe(value);
   if (parsed && typeof parsed === "object") {
     try { return JSON.stringify(parsed, null, 2); } catch {}
   }
   try { return JSON.stringify(fallback, null, 2); } catch { return "{}"; }
+}
+
+function proactiveAuditDisclosure(label, value, fallback = {}, hint = "查看原始 JSON") {
+  return [
+    '<details class="proactive-audit-disclosure">',
+    '<summary><span>', esc(label), '</span><small>', esc(hint), '</small></summary>',
+    '<pre class="proactive-audit-code">', esc(proactiveAuditJson(value, fallback)), '</pre>',
+    '</details>'
+  ].join("");
 }
 
 function proactiveAuditStatus(row = {}) {
@@ -3569,6 +3926,7 @@ function proactiveLifecyclePhaseLabel(value = "") {
     idle: "尚未开启",
     accepted_pending_response: "已接受，等待学生回复",
     awaiting_independent_attempt: "等待无提示验证或课件语义结果",
+    deferred: "学生选择稍后，本轮暂缓",
     declined: "学生拒绝，本轮已退出",
     exited: "独立成功，已渐退退出",
     closed: "升级未交付，本轮已安全结束",
@@ -3581,9 +3939,14 @@ function proactiveOutcomeLabel(value = "") {
     student_response_submitted: "学生已提交自我解释",
     continued_friction: "独立尝试失败，仍有卡点",
     continued_friction_after_concept_hint: "L2 后仍失败，停止继续升级",
+    continued_friction_after_subgoal_decomposition: "L3 后仍有卡点",
+    continued_friction_after_next_step_hint: "L4 后仍有卡点",
+    continued_friction_after_partial_worked_example: "L5 后仍有卡点，停止升级",
     independent_attempt_success: "独立尝试成功",
     support_escalation_not_delivered: "升级支架未交付，本轮安全结束",
     verification_declined: "学生跳过验证，本轮结束",
+    snoozed: "学生选择稍后处理",
+    alternative_requested: "学生请求换一种帮助",
     dismissed: "学生关闭建议",
     ignored: "建议被忽略"
   })[value] || value || "";
@@ -3769,6 +4132,9 @@ function proactiveAuditChain(rows = [], selected = {}) {
         row.id === selected.id ? "is-selected" : "",
         row.support_level === "L1" ? "is-l1" : "",
         row.support_level === "L2" ? "is-l2" : "",
+        row.support_level === "L3" ? "is-l3" : "",
+        row.support_level === "L4" ? "is-l4" : "",
+        row.support_level === "L5" ? "is-l5" : "",
         row.followup_outcome?.independentAttempt?.outcome === "independent_attempt_success"
           ? "is-success"
           : ""
@@ -3901,10 +4267,10 @@ function renderProactiveAudit(data = {}) {
       ? evidenceItems.map((item) => '<span class="proactive-audit-reason" title="' + esc(item.id) + '">' + esc(item.label) + '</span>').join("")
       : '<span class="muted">无</span>',
     '</div></section>',
-    '<section class="proactive-audit-detail-section"><h5>证据引用（', evidenceRefs.length, '）</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson(evidenceRefs, [])), '</pre></section>',
-    '<section class="proactive-audit-detail-section"><h5>证据快照</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson(row.evidence_snapshot)), '</pre></section>',
-    '<section class="proactive-audit-detail-section"><h5>约束与预算</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson(row.budget_snapshot)), '</pre></section>',
-    '<section class="proactive-audit-detail-section"><h5>执行生命周期</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson({
+    proactiveAuditDisclosure(`证据引用（${evidenceRefs.length}）`, evidenceRefs, [], "按需展开"),
+    proactiveAuditDisclosure("证据快照", row.evidence_snapshot, {}, "按需展开"),
+    proactiveAuditDisclosure("约束与预算", row.budget_snapshot, {}, "按需展开"),
+    proactiveAuditDisclosure("执行生命周期", {
       offeredAt: row.created_at || "",
       shownAt: row.shown_at || "",
       resolvedAt: row.resolved_at || "",
@@ -3916,8 +4282,8 @@ function renderProactiveAudit(data = {}) {
       currentLevel: row.current_policy_level || "",
       fadeLevel: Number(row.current_fade_level || 0),
       lifecycleUpdatedAt: row.policy_state_updated_at || ""
-    })), '</pre></section>',
-    '<section class="proactive-audit-detail-section"><h5>后续结果</h5><pre class="proactive-audit-code">', esc(proactiveAuditJson(outcome)), '</pre></section>'
+    }, {}, "按需展开"),
+    proactiveAuditDisclosure("后续结果", outcome, {}, "按需展开")
   ].join("");
 }
 
@@ -3932,47 +4298,217 @@ function selectProactiveDecision(decisionId) {
     ?.scrollIntoView({ block: "nearest" });
 }
 
+const proactiveOutcomeStageLabels = {
+  near_transfer: "近迁移",
+  representation_transfer: "跨表征迁移",
+  retention: "延迟保持"
+};
+
+function proactiveOutcomeStageLabel(value = "") {
+  return proactiveOutcomeStageLabels[value] || value || "未标记阶段";
+}
+
+function proactiveOutcomePercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "-";
+  return `${(number * 100).toFixed(1).replace(/\.0$/, "")}%`;
+}
+
+function proactiveDuration(value) {
+  const seconds = Math.max(0, Math.round(Number(value || 0) / 1000));
+  if (seconds < 60) return `${seconds} 秒`;
+  return `${Math.floor(seconds / 60)} 分 ${seconds % 60} 秒`;
+}
+
+function proactiveArmList(data = {}) {
+  return Array.from(new Set([
+    ...safeRows(data.policy?.experimentArms),
+    ...safeRows(data.assignments).map((row) => row.condition),
+    ...safeRows(data.summary?.conditions).map((row) => row.condition),
+    ...safeRows(data.outcomes?.summary).map((row) => row.condition)
+  ].filter(Boolean)));
+}
+
+function syncProactiveConditionOptions(data = {}) {
+  const select = document.getElementById("proactive-condition-filter");
+  if (!select) return;
+  const arms = proactiveArmList(data);
+  select.replaceChildren();
+  const all = document.createElement("option");
+  all.value = "";
+  all.textContent = "全部条件";
+  select.appendChild(all);
+  arms.forEach((arm) => {
+    const option = document.createElement("option");
+    option.value = arm;
+    option.textContent = proactiveConditionLabel(arm);
+    select.appendChild(option);
+  });
+  if (proactiveConditionFilter && !arms.includes(proactiveConditionFilter)) {
+    proactiveConditionFilter = "";
+    sessionStorage.removeItem("cq_proactive_condition");
+  }
+  select.value = proactiveConditionFilter;
+}
+
+function proactiveConditionBadgeClass(policy = {}, condition = "") {
+  const profile = policy.armProfiles?.[condition];
+  if (profile && typeof profile.display === "boolean") {
+    return profile.display ? "badge-green" : "badge-blue";
+  }
+  return condition === "treatment" ? "badge-green" : "badge-blue";
+}
+
+function renderProactiveOutcomes(outcomes = {}, policy = {}) {
+  const rows = safeRows(outcomes.rows);
+  const sessionSummaryRows = safeRows(outcomes.sessionSummary);
+  const summaryRows = safeRows(outcomes.summary).sort((left, right) => {
+    const stageOrder = Object.keys(proactiveOutcomeStageLabels);
+    return stageOrder.indexOf(left.stage) - stageOrder.indexOf(right.stage)
+      || String(left.condition || "").localeCompare(String(right.condition || ""));
+  });
+  const overview = document.getElementById("proactive-outcome-overview");
+  const stageSubmissionCount = (stage) => summaryRows
+    .filter((row) => row.stage === stage)
+    .reduce((sum, row) => sum + Number(row.submissions || 0), 0);
+  const sessionStatusCount = (status) => sessionSummaryRows
+    .filter((row) => row.status === status)
+    .reduce((sum, row) => sum + Number(row.sessions || 0), 0);
+  if (overview) {
+    overview.innerHTML = [
+      ["全部测量提交", Number(outcomes.total || rows.length), `量表 ${outcomes.instrumentVersion || "未标记"}`],
+      ["近迁移", stageSubmissionCount("near_transfer"), "新情境应用"],
+      ["跨表征迁移", stageSubmissionCount("representation_transfer"), "图像、语言与符号转换"],
+      ["延迟保持", stageSubmissionCount("retention"), `延迟 ${Number(outcomes.retentionDelayHours || 0)} 小时`],
+      [
+        "测量会话",
+        Number(outcomes.sessionTotal || 0),
+        `进行中 ${sessionStatusCount("active")} · 已退出 ${sessionStatusCount("withdrawn")}`
+      ]
+    ].map(([label, value, detail]) => `
+      <div class="proactive-outcome-overview-item">
+        <span>${esc(label)}</span><strong>${esc(value)}</strong><small>${esc(detail)}</small>
+      </div>
+    `).join("");
+  }
+
+  const summaryBody = document.querySelector("#table-proactive-outcome-summary tbody");
+  if (summaryBody) {
+    summaryBody.innerHTML = summaryRows.length
+      ? summaryRows.map((row) => `
+        <tr>
+          <td><strong>${esc(proactiveOutcomeStageLabel(row.stage))}</strong></td>
+          <td><span class="badge ${proactiveConditionBadgeClass(policy, row.condition)}">${esc(proactiveConditionLabel(row.condition))}</span></td>
+          <td>${Number(row.participants || 0)}</td>
+          <td>${Number(row.submissions || 0)}</td>
+          <td>${esc(proactiveOutcomePercent(row.mean_accuracy))}</td>
+          <td>${esc(proactiveDuration(row.mean_duration_ms))}</td>
+        </tr>
+      `).join("")
+      : "<tr><td colspan='6'>尚无独立学习结果。</td></tr>";
+    syncTableDensity(summaryBody.closest("table"));
+  }
+  const summaryStatus = document.getElementById("proactive-outcome-summary-status");
+  if (summaryStatus) summaryStatus.textContent = `${summaryRows.length} 个阶段×实验臂组合`;
+
+  const attemptsBody = document.querySelector("#table-proactive-outcome-attempts tbody");
+  if (attemptsBody) {
+    attemptsBody.innerHTML = rows.length
+      ? rows.map((row) => `
+        <tr>
+          <td style="white-space:nowrap;font-size:0.78rem;">${esc((row.submitted_at || "").replace("T", " ").slice(0, 19))}</td>
+          <td><strong>${esc(row.nickname || "")}</strong><br><span class="muted">${esc(row.user_id || "")}</span></td>
+          <td><span class="badge ${proactiveConditionBadgeClass(policy, row.condition)}">${esc(proactiveConditionLabel(row.condition))}</span></td>
+          <td>${esc(proactiveOutcomeStageLabel(row.stage))}</td>
+          <td>${Number(row.score || 0)} / ${Number(row.max_score || 0)}</td>
+          <td>${esc(proactiveOutcomePercent(row.accuracy))}</td>
+          <td>${esc(proactiveDuration(row.duration_ms))}</td>
+          <td>第 ${Math.max(1, Number(row.learning_generation || 1))} 次</td>
+        </tr>
+      `).join("")
+      : "<tr><td colspan='8'>当前筛选条件下暂无测量提交。</td></tr>";
+    syncTableDensity(attemptsBody.closest("table"));
+  }
+  const attemptsStatus = document.getElementById("proactive-outcome-attempts-status");
+  if (attemptsStatus) {
+    attemptsStatus.textContent = Number(outcomes.total || 0) > rows.length
+      ? `最近 ${rows.length} / ${Number(outcomes.total || 0)} 条`
+      : `${rows.length} 条`;
+  }
+}
+
 function renderProactiveStudy(data = {}) {
   cachedProactiveStudyData = data;
   cachedProactiveDecisionRows = safeRows(data.rows);
   const summary = data.summary || {};
   const assignments = safeRows(data.assignments);
-  const assignmentCount = assignments.reduce(
-    (sum, row) => sum + Number(row.participants || 0),
-    0
+  const participation = safeRows(data.participation);
+  const policy = data.policy || {};
+  const arms = proactiveArmList(data);
+  const assignmentByArm = Object.fromEntries(
+    arms.map((arm) => [
+      arm,
+      assignments
+        .filter((row) => row.condition === arm)
+        .reduce((sum, row) => sum + Number(row.participants || 0), 0)
+    ])
   );
-  const controlCount = assignments
-    .filter((row) => row.condition === "control")
+  const assignmentCount = Object.values(assignmentByArm)
+    .reduce((sum, value) => sum + value, 0);
+  const enrolledParticipants = participation
+    .filter((row) => row.status === "enrolled")
     .reduce((sum, row) => sum + Number(row.participants || 0), 0);
-  const treatmentCount = assignments
-    .filter((row) => row.condition === "treatment")
+  const withdrawnParticipants = participation
+    .filter((row) => row.status === "withdrawn")
     .reduce((sum, row) => sum + Number(row.participants || 0), 0);
   const terminalResponses = Number(summary.accepted || 0)
     + Number(summary.dismissed || 0)
-    + Number(summary.ignored || 0);
+    + Number(summary.ignored || 0)
+    + Number(summary.snoozed || 0)
+    + Number(summary.alternative_requested || 0);
   const acceptanceRate = terminalResponses
     ? Math.round((Number(summary.accepted || 0) / terminalResponses) * 100)
     : 0;
+  const supportCounts = [
+    Number(summary.l1_self_explanations || 0),
+    Number(summary.l2_concept_hints || 0),
+    Number(summary.l3_subgoal_decompositions || 0),
+    Number(summary.l4_next_step_hints || 0),
+    Number(summary.l5_partial_examples || 0)
+  ];
+  const autonomy = summary.autonomy || {};
+  syncProactiveConditionOptions(data);
+  renderProactiveGovernance(data);
+  renderProactiveOutcomes(data.outcomes || {}, policy);
+
   const metrics = document.getElementById("proactive-study-metrics");
   if (metrics) {
+    const armBreakdown = arms.length
+      ? `<div class="metric-breakdown">${arms.map((arm) => (
+          `<span><b>${esc(proactiveConditionLabel(arm))}</b><em>${Number(assignmentByArm[arm] || 0)}</em></span>`
+        )).join("")}</div>`
+      : '<div class="metric-empty">尚未配置实验臂</div>';
     metrics.innerHTML = `
-      <div class="metric-card highlight"><div class="label">已分组学生</div><div class="value">${assignmentCount}</div><div class="sub">Control ${controlCount} · Treatment ${treatmentCount}</div></div>
+      <div class="metric-card highlight detail"><div><div class="label">已分组学生</div><div class="value">${assignmentCount}</div></div>${armBreakdown}</div>
+      <div class="metric-card"><div class="label">研究参与状态</div><div class="value">${enrolledParticipants}</div><div class="sub">当前在研 · 已退出 ${withdrawnParticipants} · assignment 保留用于 ITT</div></div>
       <div class="metric-card"><div class="label">决策窗口</div><div class="value">${Number(summary.decisions || 0)}</div><div class="sub">${Number(summary.participants || 0)} 名学生产生证据</div></div>
-      <div class="metric-card warn"><div class="label">政策判断应介入</div><div class="value">${Number(summary.policy_interventions || 0)}</div><div class="sub">含 Shadow 与 Control 的反事实判断</div></div>
-      <div class="metric-card good"><div class="label">实际签发展示</div><div class="value">${Number(summary.delivered_interventions || 0)}</div><div class="sub">仅 Active Treatment</div></div>
-      <div class="metric-card"><div class="label">接受率</div><div class="value">${acceptanceRate}%</div><div class="sub">接受 ${Number(summary.accepted || 0)} · 关闭 ${Number(summary.dismissed || 0)} · 忽略 ${Number(summary.ignored || 0)} · 过期 ${Number(summary.expired || 0)} · 待处理 ${Number(summary.unresolved_offers || 0)}</div></div>
-      <div class="metric-card warn"><div class="label">测量保护阻断</div><div class="value">${Number(summary.protected_blocks || 0)}</div><div class="sub">受保护测验阶段保持静默</div></div>
-      <div class="metric-card"><div class="label">纵向支架动作</div><div class="value">${Number(summary.l1_self_explanations || 0) + Number(summary.l2_concept_hints || 0)}</div><div class="sub">L1 自我解释 ${Number(summary.l1_self_explanations || 0)} · L2 概念线索 ${Number(summary.l2_concept_hints || 0)}</div></div>
-      <div class="metric-card good"><div class="label">独立验证结果</div><div class="value">${Number(summary.independent_success_exits || 0)}</div><div class="sub">成功渐退退出 · 持续卡点 ${Number(summary.continued_friction || 0)}</div></div>
+      <div class="metric-card warn"><div class="label">政策判断应介入</div><div class="value">${Number(summary.policy_interventions || 0)}</div><div class="sub">包含未实际展示的反事实判断</div></div>
+      <div class="metric-card good"><div class="label">实际签发展示</div><div class="value">${Number(summary.delivered_interventions || 0)}</div><div class="sub">展示实验臂：${esc(safeRows(policy.displayArms).map(proactiveConditionLabel).join("、") || "无")}</div></div>
+      <div class="metric-card"><div class="label">接受率</div><div class="value">${acceptanceRate}%</div><div class="sub">接受 ${Number(summary.accepted || 0)} · 关闭 ${Number(summary.dismissed || 0)} · 忽略 ${Number(summary.ignored || 0)} · 稍后 ${Number(summary.snoozed || 0)} · 换帮助 ${Number(summary.alternative_requested || 0)}</div></div>
+      <div class="metric-card"><div class="label">学生自主权动作</div><div class="value">${Number(summary.snoozed || 0) + Number(summary.alternative_requested || 0) + Number(autonomy.scope_mutes || 0)}</div><div class="sub">稍后 ${Number(summary.snoozed || 0)} · 换帮助 ${Number(summary.alternative_requested || 0)} · 关闭知识点 ${Number(autonomy.scope_mutes || 0)} · 已恢复 ${Number(autonomy.scope_restores || 0)}</div></div>
+      <div class="metric-card detail"><div><div class="label">L1-L5 支架动作</div><div class="value">${supportCounts.reduce((sum, value) => sum + value, 0)}</div></div><div class="metric-breakdown">${supportCounts.map((value, index) => `<span><b>L${index + 1}</b><em>${value}</em></span>`).join("")}</div></div>
+      <div class="metric-card"><div class="label">换表征执行</div><div class="value">${Number(summary.representation_switches || 0)}</div><div class="sub">只在学生明确确认且实验臂允许时执行</div></div>
+      <div class="metric-card good"><div class="label">独立验证成功退出</div><div class="value">${Number(summary.independent_success_exits || 0)}</div><div class="sub">持续卡点 ${Number(summary.continued_friction || 0)} · 当前静音知识点 ${Number(autonomy.current_muted_scopes || 0)}</div></div>
+      <div class="metric-card warn"><div class="label">测量保护阻断</div><div class="value">${Number(summary.protected_blocks || 0)}</div><div class="sub">受保护测量阶段保持静默</div></div>
     `;
   }
 
-  const policy = data.policy || {};
   const policySummary = document.getElementById("proactive-policy-summary");
   if (policySummary) {
     policySummary.textContent = [
       `模式 ${String(policy.mode || "off").toUpperCase()}`,
       `实验 ${policy.experimentId || "未配置"}`,
+      `实验臂 ${arms.map(proactiveConditionLabel).join(" / ") || "未配置"}`,
       `政策 ${policy.policyVersion || "未配置"}`,
       `契约 ${policy.contractVersion || "未配置"}`,
       `Adapter ${policy.adapterVersion || "未配置"}`
@@ -3998,7 +4534,7 @@ function renderProactiveStudy(data = {}) {
     return;
   }
   tbody.innerHTML = cachedProactiveDecisionRows.map((row) => {
-    const conditionClass = row.condition === "treatment" ? "badge-green" : "badge-blue";
+    const conditionClass = proactiveConditionBadgeClass(policy, row.condition);
     const decisionClass = row.decision === "intervene" ? "badge-amber" : "badge-blue";
     const deliveryClass = row.delivery_decision === "intervene" ? "badge-green" : "badge-blue";
     const resolution = row.resolution || row.intervention_status || "";
@@ -4033,6 +4569,42 @@ async function reloadProactiveStudy() {
   }
 }
 
+async function updateProactiveRuntime(status) {
+  const resultNode = document.getElementById("proactive-runtime-result");
+  const reasonInput = document.getElementById("proactive-pause-reason");
+  const operatorInput = document.getElementById("proactive-runtime-operator");
+  const reason = reasonInput?.value.trim() || "";
+  if (status === "paused" && !reason) {
+    if (resultNode) resultNode.textContent = "暂停前需要填写原因。";
+    reasonInput?.focus();
+    return false;
+  }
+  const response = await fetch(`${API_BASE}/api/admin/research/proactive-runtime`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${adminToken}`
+    },
+    body: JSON.stringify({
+      experimentId: cachedProactiveStudyData.policy?.experimentId || "",
+      status,
+      reason,
+      updatedBy: operatorInput?.value.trim() || "research-admin"
+    })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload.message || `运行状态更新失败（HTTP ${response.status}）`);
+  }
+  if (resultNode) {
+    resultNode.textContent = status === "paused"
+      ? `实验已暂停；收束 ${Number(payload.data?.closedInterventions || 0)} 条未决提示。`
+      : "实验已按原冻结协议恢复。";
+  }
+  await reloadProactiveStudy();
+  return true;
+}
+
 async function fetchAllProactiveDecisionRows() {
   const pageSize = 1000;
   const rows = [];
@@ -4044,6 +4616,44 @@ async function fetchAllProactiveDecisionRows() {
     total = page.total;
     if (!page.rows.length) break;
     offset += page.rows.length;
+  }
+  return rows;
+}
+
+async function fetchAllProactiveOutcomeRows() {
+  const pageSize = 1000;
+  const rows = [];
+  let offset = 0;
+  let total = Infinity;
+  while (offset < total) {
+    const page = await fetchProactiveStudy(undefined, {
+      limit: pageSize,
+      offset
+    });
+    const outcomeRows = safeRows(page.outcomes?.rows);
+    rows.push(...outcomeRows);
+    total = Number(page.outcomes?.total || 0);
+    if (!outcomeRows.length) break;
+    offset += outcomeRows.length;
+  }
+  return rows;
+}
+
+async function fetchAllProactiveOutcomeSessionRows() {
+  const pageSize = 1000;
+  const rows = [];
+  let offset = 0;
+  let total = Infinity;
+  while (offset < total) {
+    const page = await fetchProactiveStudy(undefined, {
+      limit: pageSize,
+      offset
+    });
+    const sessionRows = safeRows(page.outcomes?.sessions);
+    rows.push(...sessionRows);
+    total = Number(page.outcomes?.sessionTotal || 0);
+    if (!sessionRows.length) break;
+    offset += sessionRows.length;
   }
   return rows;
 }
@@ -4069,6 +4679,29 @@ document.getElementById("proactive-audit-load-all")?.addEventListener("click", a
   } finally {
     button.disabled = false;
     button.textContent = previousText;
+  }
+});
+
+document.getElementById("proactive-runtime-toggle")?.addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  const nextStatus = button.dataset.nextStatus === "active" ? "active" : "paused";
+  const prompt = nextStatus === "paused"
+    ? "暂停后，系统会立即停止新主动介入并收束所有未决提示。确认暂停吗？"
+    : "恢复后，系统会继续执行当前已冻结协议，不会重新分组。确认恢复吗？";
+  if (!window.confirm(prompt)) return;
+  const previousText = button.textContent;
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.textContent = nextStatus === "paused" ? "正在暂停…" : "正在恢复…";
+  try {
+    await updateProactiveRuntime(nextStatus);
+  } catch (error) {
+    const resultNode = document.getElementById("proactive-runtime-result");
+    if (resultNode) resultNode.textContent = error.message || "运行状态更新失败。";
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+    if (button.textContent.includes("正在")) button.textContent = previousText;
   }
 });
 
@@ -4102,6 +4735,18 @@ function renderInteractions(data) {
 }
 
 // ---- Tab switching ----
+function revealActiveAdminTab(tab = document.querySelector(".tab.active")) {
+  const tabs = tab?.closest(".tabs");
+  if (!tab || !tabs) return;
+  tabs.scrollTo({
+    left: Math.max(
+      0,
+      tab.offsetLeft - ((tabs.clientWidth - tab.offsetWidth) / 2)
+    ),
+    behavior: "auto"
+  });
+}
+
 document.querySelectorAll(".tab").forEach(tab => {
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -4109,7 +4754,12 @@ document.querySelectorAll(".tab").forEach(tab => {
     document.querySelectorAll(".tab-content").forEach(c => c.classList.add("hidden"));
     const target = document.getElementById("tab-" + tab.dataset.tab);
     if (target) target.classList.remove("hidden");
+    revealActiveAdminTab(tab);
   });
+});
+
+window.addEventListener("resize", () => {
+  window.requestAnimationFrame(() => revealActiveAdminTab());
 });
 
 // ---- Refresh with debounce + abort ----
@@ -4400,6 +5050,7 @@ function agenticTraceCsvRows(data) {
 function proactiveDecisionCsvRows(data) {
   const rows = [[
     "决策ID", "干预ID", "时间", "学习代次", "学生", "用户ID", "实验", "条件", "队列", "前测层级",
+    "研究参与状态", "同意版本", "同意时间", "退出时间", "退出原因",
     "章节", "单元", "策略范围", "场景", "候选信号", "政策模式", "政策版本", "契约版本", "Adapter版本",
     "政策判断", "实际呈现", "动作", "支架强度", "HelpNeed", "可打断性", "不确定性",
     "理由码", "证据引用", "证据快照", "预算快照", "干预状态", "展示时间", "反馈", "反馈时间", "反馈耗时毫秒",
@@ -4419,6 +5070,11 @@ function proactiveDecisionCsvRows(data) {
       row.condition || "",
       row.cohort || "",
       row.stratum || "",
+      row.participation_status || "",
+      row.participation_consent_version || "",
+      row.participation_consented_at || "",
+      row.participation_withdrawn_at || "",
+      row.participation_withdrawal_reason || "",
       row.chapter_id || "",
       row.unit_id || "",
       row.scope_key || row.unit_id || "",
@@ -4453,6 +5109,136 @@ function proactiveDecisionCsvRows(data) {
       row.current_policy_level || "",
       row.current_fade_level || 0,
       row.policy_state_updated_at || ""
+    ]);
+  });
+  return rows;
+}
+
+function proactiveShadowCodingCsvRows(data) {
+  const rows = [[
+    "decision_id", "timestamp", "user_id", "learning_generation", "condition", "stratum",
+    "participation_status", "participation_consent_version",
+    "participation_consented_at", "participation_withdrawn_at",
+    "participation_withdrawal_reason",
+    "chapter_id", "unit_id", "scope_key", "scene_type", "candidate_kind",
+    "help_need_score", "interruptibility_score", "uncertainty_score",
+    "evidence_refs", "evidence_snapshot", "reason_codes",
+    "policy_decision", "delivery_decision", "action", "support_level",
+    "intervention_status", "student_resolution",
+    "reviewer_id", "help_need_label", "interruptibility_label",
+    "should_intervene", "false_positive", "notes"
+  ]];
+  safeRows(data)
+    .filter((row) => row.policy_mode === "shadow")
+    .forEach((row) => {
+      rows.push([
+        row.id || "",
+        row.created_at || "",
+        row.user_id || "",
+        proactiveLearningGeneration(row),
+        row.condition || "",
+        row.stratum || "",
+        row.participation_status || "",
+        row.participation_consent_version || "",
+        row.participation_consented_at || "",
+        row.participation_withdrawn_at || "",
+        row.participation_withdrawal_reason || "",
+        row.chapter_id || "",
+        row.unit_id || "",
+        row.scope_key || row.unit_id || "",
+        row.scene_type || "",
+        row.candidate_kind || "",
+        row.help_need_score ?? "",
+        row.interruptibility_score ?? "",
+        row.uncertainty_score ?? "",
+        JSON.stringify(row.evidence_refs || []),
+        JSON.stringify(row.evidence_snapshot || {}),
+        JSON.stringify(row.reason_codes || []),
+        row.decision || "",
+        row.delivery_decision || "",
+        row.action || "",
+        row.support_level || "",
+        row.intervention_status || "",
+        row.resolution || "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+      ]);
+    });
+  return rows;
+}
+
+function proactiveOutcomeCsvRows(data) {
+  const rows = [[
+    "测量ID", "提交时间", "开始时间", "用时毫秒", "学生", "用户ID",
+    "实验", "实验臂", "队列", "研究参与状态", "同意版本", "同意时间", "退出时间", "退出原因",
+    "章节", "测量阶段", "量表版本",
+    "得分", "满分", "正确率", "学习代次", "逐题结果", "原始作答"
+  ]];
+  safeRows(data).forEach((row) => {
+    rows.push([
+      row.id || "",
+      row.submitted_at || "",
+      row.started_at || "",
+      Number(row.duration_ms || 0),
+      row.nickname || "",
+      row.user_id || "",
+      row.experiment_id || "",
+      row.condition || "",
+      row.cohort || "",
+      row.participation_status || "",
+      row.participation_consent_version || "",
+      row.participation_consented_at || "",
+      row.participation_withdrawn_at || "",
+      row.participation_withdrawal_reason || "",
+      row.chapter_id || "",
+      row.stage || "",
+      row.instrument_version || "",
+      Number(row.score || 0),
+      Number(row.max_score || 0),
+      Number(row.accuracy || 0),
+      Math.max(1, Number(row.learning_generation || 1)),
+      JSON.stringify(row.item_results || []),
+      JSON.stringify(row.responses || {})
+    ]);
+  });
+  return rows;
+}
+
+function proactiveOutcomeSessionCsvRows(data) {
+  const rows = [[
+    "会话ID", "开始时间", "结束时间", "会话状态", "退出原因",
+    "测量提交ID", "学生", "用户ID", "实验", "实验臂", "队列",
+    "研究参与状态", "同意版本", "同意时间", "研究退出时间", "研究退出原因",
+    "章节", "测量阶段", "量表版本", "协议指纹", "学习代次", "最后更新时间"
+  ]];
+  safeRows(data).forEach((row) => {
+    rows.push([
+      row.id || "",
+      row.started_at || "",
+      row.ended_at || "",
+      row.status || "",
+      row.withdrawal_reason || "",
+      row.outcome_attempt_id || "",
+      row.nickname || "",
+      row.user_id || "",
+      row.experiment_id || "",
+      row.condition || "",
+      row.cohort || "",
+      row.participation_status || "",
+      row.participation_consent_version || "",
+      row.participation_consented_at || "",
+      row.participation_withdrawn_at || "",
+      row.participation_withdrawal_reason || "",
+      row.chapter_id || "",
+      row.stage || "",
+      row.instrument_version || "",
+      row.protocol_fingerprint || "",
+      Math.max(1, Number(row.learning_generation || 1)),
+      row.updated_at || ""
     ]);
   });
   return rows;
@@ -4737,6 +5523,29 @@ document.getElementById("export-proactive-decisions-csv")?.addEventListener("cli
   runCsvExport(event.currentTarget, async () => ({
     filename: `V14-C3主动政策决策账本-${exportDateStamp()}.csv`,
     rows: proactiveDecisionCsvRows(await fetchAllProactiveDecisionRows())
+  }));
+});
+
+document.getElementById("export-proactive-shadow-csv")?.addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => ({
+    filename: `V14-C3-Shadow双人编码模板-${exportDateStamp()}.csv`,
+    rows: proactiveShadowCodingCsvRows(await fetchAllProactiveDecisionRows())
+  }));
+});
+
+document.getElementById("export-proactive-outcomes-csv")?.addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => ({
+    filename: `V14-C3独立学习结果-${exportDateStamp()}.csv`,
+    rows: proactiveOutcomeCsvRows(await fetchAllProactiveOutcomeRows())
+  }));
+});
+
+document.getElementById("export-proactive-outcome-sessions-csv")?.addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => ({
+    filename: `V14-C3测量会话与失访-${exportDateStamp()}.csv`,
+    rows: proactiveOutcomeSessionCsvRows(
+      await fetchAllProactiveOutcomeSessionRows()
+    )
   }));
 });
 

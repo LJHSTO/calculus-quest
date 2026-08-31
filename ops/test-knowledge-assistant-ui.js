@@ -24,11 +24,15 @@ const envExample = read(".env.example");
 
 assert.match(
   indexHtml,
-  /app\/main\/knowledge-assistant\.css\?v=20260830-proactive-lifecycle-v3/
+  /app\/main\/knowledge-assistant\.css\?v=20260831-proactive-participation-v1/
 );
 assert.match(
   indexHtml,
-  /app\/main\/knowledge-assistant\.js\?v=20260830-proactive-lifecycle-v3/
+  /app\/main\/knowledge-assistant\.js\?v=20260831-proactive-participation-v1/
+);
+assert.match(
+  indexHtml,
+  /app\/main\/proactive-learning\.js\?v=20260830-proactive-continuation-v1/
 );
 assert.match(assistantSource, /aria-label="打开知点"/);
 assert.match(assistantSource, /id="knowledge-assistant-panel"[^>]*tabindex="-1"/);
@@ -69,10 +73,54 @@ assert.match(assistantSource, /data-knowledge-history-view/);
 assert.match(assistantSource, /data-knowledge-conversation-list/);
 assert.match(assistantSource, /data-knowledge-new-conversation/);
 assert.match(assistantSource, /data-knowledge-quota/);
+assert.match(
+  serverSource,
+  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "模型待验证" : "本地引导"/,
+  "已配置的真实模型必须先显示为待验证，不能提前冒充在线 AI 助教"
+);
+assert.match(
+  assistantSource,
+  /verification === "verified"[\s\S]*?"AI 助教"[\s\S]*?"模型待验证"/,
+  "学生端必须区分待验证配置与已经成功返回的模型"
+);
+assert.match(
+  assistantSource,
+  /event\.fallback[\s\S]*?verification:\s*"failed"[\s\S]*?模型服务暂时不可用，已切换到本地引导/,
+  "真实模型失败时必须明确降级为本地引导"
+);
+assert.match(
+  assistantSource,
+  /assistantMessage\.fallback = event\.fallback === true[\s\S]*?模型服务未接通，本次回答来自本地引导；仍可继续追问/,
+  "模型失败后的最终状态不能被通用成功提示覆盖"
+);
+assert.match(
+  assistantSource,
+  /!\["mock", "fallback"\]\.includes\(assistantMessage\.provider\)[\s\S]*?verification:\s*"verified"[\s\S]*?label:\s*"AI 助教"/,
+  "只有真实模型回答成功后才能显示 AI 助教"
+);
 assert.match(assistantSource, /data-knowledge-proactive/);
 assert.match(assistantSource, /data-knowledge-proactive-accept/);
-assert.match(assistantSource, /data-knowledge-proactive-dismiss/);
+assert.match(assistantSource, /data-knowledge-proactive-snooze/);
+assert.match(assistantSource, /data-knowledge-proactive-alternative/);
+assert.match(assistantSource, /data-knowledge-proactive-mute/);
+assert.match(assistantSource, /data-knowledge-proactive-scope-restore/);
+assert.match(indexHtml, /id="chapter-outcome-panel"/);
+assert.match(indexHtml, /data-proactive-outcomes-open/);
+assert.match(assistantSource, /document\.querySelector\("\[data-proactive-outcomes-open\]"\)/);
+assert.match(assistantSource, /data-knowledge-outcomes/);
+assert.match(assistantSource, /data-knowledge-outcomes-content/);
+assert.match(assistantSource, /data-knowledge-outcomes-status/);
 assert.match(assistantSource, /data-knowledge-proactive-preference/);
+assert.match(
+  assistantSource,
+  /function syncFullscreenHost\(\)[\s\S]*?fullscreenHost\.appendChild\(root\)[\s\S]*?fullscreenHomeParent\.insertBefore\(root,\s*restoreBefore\)/,
+  "知点必须进入当前 Fullscreen top layer，并在退出后恢复原位"
+);
+assert.match(
+  assistantSource,
+  /document\.addEventListener\("fullscreenchange",\s*syncFullscreenHost\)/,
+  "知点必须跟随浏览器全屏目标变化"
+);
 assert.match(assistantSource, /data-proactive-preference="standard"/);
 assert.match(assistantSource, /data-proactive-preference="reduced"/);
 assert.match(assistantSource, /data-proactive-preference="off"/);
@@ -80,6 +128,88 @@ assert.match(
   assistantSource,
   /api\/learning\/proactive\/preference/,
   "学生的主动提示偏好必须由服务端持久化"
+);
+assert.match(
+  assistantSource,
+  /api\/learning\/proactive\/scope-preference/,
+  "关闭当前知识点提醒必须由服务端持久化"
+);
+assert.match(
+  assistantSource,
+  /api\/learning\/proactive\/outcomes\?chapterId=/,
+  "学生端必须从服务端读取独立测量阶段"
+);
+assert.match(
+  assistantSource,
+  /api\/learning\/proactive\/outcomes\/submit/,
+  "学生端必须把独立测量提交到服务端评分"
+);
+assert.match(
+  assistantSource,
+  /let proactiveOutcomeDraftGeneration = 0[\s\S]*?proactiveOutcomeDraftGeneration \+= 1/,
+  "重置独立测量状态时必须使旧草稿队列失效"
+);
+assert.match(
+  assistantSource,
+  /const draftOwnerKey = proactiveOutcomesOwner\(meta\)[\s\S]*?const draftGeneration = proactiveOutcomeDraftGeneration[\s\S]*?const draftAuthToken = state\.authToken/,
+  "草稿请求必须绑定创建时的账号、队列代次和凭据"
+);
+assert.match(
+  assistantSource,
+  /draftGeneration === proactiveOutcomeDraftGeneration[\s\S]*?draftOwnerKey === proactiveOutcomesOwner\(\)/,
+  "旧账号草稿完成后不得改写新账号的测量界面状态"
+);
+assert.match(
+  assistantSource,
+  /Authorization: `Bearer \$\{draftAuthToken\}`/,
+  "排队中的草稿必须使用原账号凭据"
+);
+assert.match(
+  assistantSource,
+  /function proactiveCollectionEnabled[\s\S]*?proactiveOutcomesOpen[\s\S]*?return false;/,
+  "独立测量打开期间必须暂停主动候选检测"
+);
+assert.match(
+  assistantSource,
+  /function render\(\)[\s\S]*?renderProactiveOutcomes\(\);/,
+  "独立测量必须纳入主渲染周期"
+);
+assert.match(
+  assistantSource,
+  /applyProactiveStudy\(payload\.data \|\| \{\}, meta\);[\s\S]*?renderUnit\(\);/,
+  "主动状态异步加载后必须立即重绘偏好与测量入口，不能依赖后续偶发 render"
+);
+assert.match(
+  assistantSource,
+  /\(unitChanged && !proactiveStudy\.assignment\)/,
+  "前测后进入首个学习单元时必须刷新可能过早缓存的未分组状态"
+);
+assert.match(
+  assistantSource,
+  /isOpen[\s\S]*?!proactiveStudy\.assignment[\s\S]*?loadProactiveStudy\(courseMeta\(\), \{ force: true \}\)/,
+  "打开知点时必须为缺失 assignment 提供可靠的状态同步边界"
+);
+assert.match(
+  assistantSource,
+  /els\.proactiveOutcomesOpen\.addEventListener\("click", openProactiveOutcomes\)/,
+  "独立测量入口必须完成事件接线"
+);
+assert.match(
+  assistantSource,
+  /if \(proactiveOutcomesOpen\)[\s\S]*?event\.key === "Escape"[\s\S]*?closeProactiveOutcomes\(\)/,
+  "独立测量必须支持键盘退出"
+);
+assert.match(
+  assistantSource,
+  /proactiveOutcomeOwnerKey !== proactiveOutcomesOwner\(meta\)[\s\S]*?resetProactiveOutcomes/,
+  "学生或章节变化后不得保留上一位学生的测量状态"
+);
+assert.doesNotMatch(
+  assistantSource.match(
+    /function activeProactiveOutcomeNode[\s\S]*?(?=\s*function renderProactiveOutcomes)/
+  )?.[0] || "",
+  /\banswer\b/,
+  "独立测量渲染器不得包含或检查答案键"
 );
 assert.match(
   serverSource,
@@ -103,11 +233,16 @@ assert.match(
 );
 assert.match(
   proactiveActionBody,
-  /new Set\(\[[\s\S]*?"ask_clarification"[\s\S]*?"review_mistake"[\s\S]*?"elicit_self_explanation"[\s\S]*?"concept_hint"[\s\S]*?\]\)/
+  /new Set\(\[[\s\S]*?"ask_clarification"[\s\S]*?"review_mistake"[\s\S]*?"elicit_self_explanation"[\s\S]*?"concept_hint"[\s\S]*?"decompose_subgoal"[\s\S]*?"next_step_hint"[\s\S]*?"partial_worked_example"[\s\S]*?\]\)/
 );
 assert.match(
   proactiveActionBody,
-  /allowedActions = \[[\s\S]*?"elicit_self_explanation"[\s\S]*?"concept_hint"[\s\S]*?\]/
+  /allowedActions = \[[\s\S]*?"elicit_self_explanation"[\s\S]*?"concept_hint"[\s\S]*?"decompose_subgoal"[\s\S]*?"next_step_hint"[\s\S]*?"partial_worked_example"[\s\S]*?"switch_representation"[\s\S]*?\]/
+);
+assert.match(
+  proactiveActionBody,
+  /suggestion\?\.action === "switch_representation"[\s\S]*?setKnowledgeSceneType\(targetUnitId, targetSceneType\)[\s\S]*?selectUnit\(targetUnitId\)/,
+  "换表征必须在学生确认后调用现有场景选择和单元导航"
 );
 assert.match(
   proactiveActionBody,
@@ -329,8 +464,12 @@ assert.match(assistantSource, /const supportChanged = meta\.supported !== curren
 assert.match(assistantSource, /function quizAssistantLocked\(meta = courseMeta\(\)\)/);
 assert.match(
   assistantSource,
-  /function setOpen\(next, options = \{\}\) \{[\s\S]*?if \(nextOpen && quizAssistantLocked\(\)\) \{[\s\S]*?return false;/,
-  "an unsubmitted quiz must not open the assistant panel"
+  /function quizParticipationAccessAllowed\(meta = courseMeta\(\)\)/
+);
+assert.match(
+  assistantSource,
+  /function setOpen\(next, options = \{\}\) \{[\s\S]*?quizAssistantLocked\(\)[\s\S]*?!quizParticipationAccessAllowed\(\)[\s\S]*?return false;/,
+  "an unsubmitted quiz may only open the assistant panel for participation settings"
 );
 assert.match(
   assistantSource,
@@ -348,6 +487,7 @@ assert.match(
   "quiz lock state must not expose question shortcuts"
 );
 assert.match(assistantSource, /提交本次测验后即可使用知点复盘/);
+assert.match(assistantCss, /\.is-quiz-participation-only[\s\S]*?\[data-knowledge-form\]/);
 assert.match(serverSource, /assistant_quiz_locked_until_submit/);
 assert.match(serverSource, /assistantHistoryMessageLimit = 60/);
 assert.match(serverSource, /assistantConversationTurnLimit = 30/);
@@ -407,7 +547,7 @@ assert.match(assistantCss, /\.knowledge-proactive-nudge\s*\{/);
 assert.match(assistantCss, /\.knowledge-assistant-root\.is-open \.knowledge-proactive-nudge/);
 assert.match(
   indexHtml,
-  /knowledge-assistant\.css\?v=20260830-proactive-lifecycle-v3/,
+  /knowledge-assistant\.css\?v=20260831-proactive-participation-v1/,
   "the proactive verification UI must ship behind a fresh stylesheet cache key"
 );
 assert.doesNotMatch(
@@ -430,6 +570,14 @@ assert.match(assistantSource, /data-conversation-action="delete"/);
 assert.match(assistantSource, /function updateConversation/);
 assert.match(assistantSource, /function deleteConversation/);
 assert.doesNotMatch(assistantSource, /\bconfirm\s*\(/, "conversation deletion must use an inline confirmation");
+assert.match(assistantSource, /data-knowledge-study-withdraw-confirm/);
+assert.match(assistantSource, /data-knowledge-study-withdraw-cancel/);
+assert.match(assistantSource, /data-knowledge-study-withdraw-submit/);
+assert.match(assistantSource, /proactiveWithdrawalConfirming/);
+assert.match(assistantSource, /knowledge_proactive_consent_notice_opened/);
+assert.match(assistantSource, /knowledge_proactive_withdrawal_confirm_opened/);
+assert.match(assistantSource, /knowledge_proactive_withdrawal_confirm_cancelled/);
+assert.match(assistantCss, /\.knowledge-study-withdraw-confirm\s*\{/);
 assert.match(assistantCss, /\.knowledge-history-search\s*\{/);
 assert.match(assistantCss, /\.knowledge-history-filters\s*\{/);
 assert.match(assistantCss, /\.knowledge-conversation-menu\s*\{/);
@@ -497,13 +645,23 @@ assert.match(
   /if \(proactiveStudyManaged\(meta\) \|\| candidate\.kind !== "repeated_parameter"\)[\s\S]*?managed_policy_unavailable/,
   "the managed chapter must fail silent instead of showing the historical local fallback"
 );
-["shown", "accepted", "dismissed", "ignored"].forEach((resolution) => {
+["shown", "accepted", "dismissed", "ignored", "snoozed"].forEach((resolution) => {
   assert.match(
     assistantSource,
     new RegExp(`queueProactiveResolution\\([^\\n]+, "${resolution}"\\)`),
     `the student client must persist the ${resolution} resolution`
   );
 });
+assert.match(
+  assistantSource,
+  /async function requestProactiveAlternative[\s\S]*?student_requested_alternative[\s\S]*?sourceDecisionId/,
+  "换一种帮助必须携带原服务端决策作为证据"
+);
+assert.match(
+  assistantSource,
+  /function snoozeProactiveSuggestion[\s\S]*?queueProactiveResolution\(presented, "snoozed"\)/,
+  "稍后处理必须同步为独立的 snoozed 状态"
+);
 assert.match(assistantSource, /function executeProactiveAction/);
 assert.match(assistantSource, /function proactiveVerificationNode/);
 assert.match(assistantSource, /function proactiveInlineOfferNode/);
@@ -541,6 +699,14 @@ assert.match(
 assert.match(assistantCss, /\.knowledge-proactive-verification\s*,/);
 assert.match(assistantCss, /\.knowledge-proactive-verification-options\s+button\s*\{/);
 assert.match(assistantCss, /\.knowledge-proactive-inline-offer\s*\{/);
+assert.match(assistantCss, /\.knowledge-proactive-inline-options\s+button\s*\{/);
+assert.match(assistantCss, /\.knowledge-proactive-secondary-actions\s*\{/);
+assert.match(assistantCss, /\.knowledge-proactive-scope-restore/);
+assert.match(assistantCss, /\.knowledge-outcomes-layer\s*\{/);
+assert.match(assistantCss, /\.knowledge-outcomes-dialog\s*\{/);
+assert.match(assistantCss, /\.knowledge-outcome-stage\s*\{/);
+assert.match(assistantCss, /\.knowledge-outcome-active\s+label\s*\{/);
+assert.match(assistantCss, /body\.knowledge-outcomes-open\s*\{/);
 assert.match(assistantCss, /\.knowledge-proactive-check-feedback\.is-success\s*\{/);
 assert.match(assistantCss, /::highlight\(cq-learning-notes\)/);
 

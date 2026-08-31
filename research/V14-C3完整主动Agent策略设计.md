@@ -1,7 +1,7 @@
 # Calculus Quest V14-C3 完整主动 Agent 策略设计
 
-> 状态：Phase 1-2 纵向支架闭环、代次隔离 Harness 与小范围实验蓝图 v8
-> 核实日期：2026-08-30
+> 状态：V14-C3 单章 v3 主动政策、独立结果测量、协议治理与研究 Harness 完成；全课程内容化、Shadow、预注册与正式实验待完成
+> 核实日期：2026-08-31
 > 实验分支：`proactive_test`
 > 实验对象：Calculus Quest 网站完整章 `V14-C3`，不是单个 OpenMAIC 课件包
 
@@ -86,6 +86,17 @@ vs.
 
 当前 `proactive-learning.js` 与 `knowledge-assistant.js` 中的主动提示应视为**历史原型**，不能直接成为 Control 的一部分。进入 V14-C3 正式实验后，`off`、`shadow` 和 Control 都必须同时关闭历史原型的展示与网络失败本地 fallback；Treatment 只展示新服务端政策签发的干预。
 
+### 0.4 是否已经设计完所有章节
+
+没有。当前完成的是两种不同层级的工作：
+
+| 层级 | 当前状态 |
+|---|---|
+| 通用系统框架 | Policy Kernel、证据门控、预算/冷却、L1-L5 生命周期、多实验臂、学生自主权、结果测量和管理 Harness 已完成 |
+| 章节内容化 | 只有 `V14-C3` 的 2 个模块、7 个知识点完成 Adapter、支架、验证题和迁移量表 |
+
+课程 route 共有 11 章、72 个知识点，因此当前内容化覆盖是 1/11 章、7/72 个知识点。Adapter registry 只有 `V14-C3`；其余 10 章、65 个知识点返回 `chapter_not_managed` 并保持沉默。通用框架可以迁移，不代表其他章节已经拥有可运行的错误语义、L1-L5 内容、验证题和迁移蓝图。
+
 ---
 
 # 一、研究范围与当前系统事实
@@ -156,44 +167,71 @@ vs.
 | v2 单章继承 | 完整 route 仍是唯一事实源；学生端只投影 `V14-C3`，题目与页面结构不复制 |
 | 严格分组门槛 | 完整提交 10 道章前测前不创建 assignment；所有候选只记为 `unassigned + stay_silent` |
 | 可复现分层 | 当前按 9 道服务端即时评分客观题的 80 分部分划分 `pre-high/pre-low`，阈值为 `0.60`；简答题不进入分层，避免异步 LLM 评分时机改变条件 |
-| 服务端政策 | `off / shadow / active`、Control/Treatment、双阈值、预算、冷却、测验保护和确定性动作白名单 |
+| 服务端政策 | `off / shadow / active`、可配置多实验臂、按臂展示/支架上限/换表征权限、双阈值、预算、冷却、测验保护和确定性动作白名单 |
 | 决策账本 | assignment、decision、intervention、policy state 均持久化；decision 保存决策时的条件、队列和层级快照 |
-| 条件盲化 | 学生状态与干预响应只返回不含 `condition` 的 assignment 收据；真实 Control/Treatment 仅保留在服务端决策账本和管理端 |
-| 学生端隔离 | V14-C3 只展示服务端签发的 Active Treatment 决策；网络失败时静默，不启用历史本地展示 fallback |
-| 学生反馈 | `offered -> shown -> accepted/dismissed` 由服务端强制；`ignored/expired` 可在上下文离开或超时时结束，跨用户、越序、伪造和重放被拒绝 |
+| 条件盲化 | 学生状态与干预响应只返回不含 `condition` 的 assignment 收据；真实实验臂仅保留在服务端决策账本和管理端 |
+| 学生端隔离 | V14-C3 只展示服务端签发、且当前实验臂允许展示的 Active 决策；网络失败时静默，不启用历史本地展示 fallback |
+| 学生反馈 | `offered -> shown -> accepted/dismissed/snoozed/alternative_requested` 由服务端强制；`ignored/expired` 可在上下文离开或超时时结束，跨用户、越序、伪造和重放被拒绝 |
 | 测量保护 | 章前测、章后测、迁移与保持阶段即使已经提交也持续强制静默，避免把答后教学暴露混入独立测量 |
 | 重复打扰保护 | 同一学生、同一知识点已有未决 offer 时不再签发第二条建议，也不重复消耗预算 |
-| 纵向支架闭环 | 知识点形成性错误先触发 L1 自我解释；学生接受并实际回复后，平台签发无提示近端验证；失败才允许升级到 L2，成功则渐退并退出 |
+| 纵向支架闭环 | 知识点形成性错误先触发 L1 自我解释；学生接受并实际回复后，平台签发无提示近端验证；持续失败依次升级到 L2 概念线索、L3 子目标拆分、L4 下一步提示和 L5 部分示例，成功则渐退并退出 |
 | 双通道独立证据 | 当前运行 `policy_owned_probe`；未来课件可通过 `courseware_challenge_result` 或 `courseware_formative_check_submitted` 接入同一生命周期 |
 | 拒绝与等待保护 | 未回复、拒绝、跳过验证或无独立证据时不升级；拒绝后本轮闭环结束 |
-| 未交付升级收束 | L1 后独立失败虽满足 L2 升级条件，但若预算、已有提示、模式或 renderer 门控使 L2 未实际交付，生命周期进入 `closed`，不会停在没有验证题的等待状态 |
-| 学生主动权 | 知点侧栏已提供“标准 / 少提醒 / 关闭”三档；少提醒屏蔽停留和调参等行为型候选，关闭结束当前未完成回合但保留学生主动提问 |
+| 未交付升级收束 | 任一级独立失败虽满足下一级升级条件，但若预算、已有提示、实验臂、模式或 renderer 门控使升级未实际交付，生命周期进入 `closed`，不会停在没有验证题的等待状态 |
+| 学生主动权 | 知点侧栏提供“标准 / 少提醒 / 关闭”三档，并支持“稍后”“换一种帮助”和关闭/恢复当前知识点提醒；换表征只在学生再次确认后执行 |
+| 真实渐退 | 独立成功增加 `fadeLevel`、延长后续冷却，并提高弱证据候选的门槛；它只表示减少未来打扰，不等同于稳定掌握 |
 | 学习代次隔离 | 重置学习后清除旧知识点生命周期，保留 assignment 与学生偏好；每条主动决策固化 `learning_generation`，Harness 不跨代串联策略链 |
 | 分组配置门控 | 未设置稳定私有分组盐时不创建新 assignment；`active` 缺失时失败关闭；assignment 创建后同步落盘 |
-| 管理端 Harness | 查看与导出条件、反事实政策判断、实际呈现、三项分数、理由码、中文证据来源、回复、独立结果、决策前后状态转移和同一学习代次内的知识点 L1→L2→退出策略链 |
+| 独立学习结果 | 章后测后开放近迁移、跨表征迁移和延迟保持三阶段；题目仅在阶段开放时下发，测量期间暂停主动检测，提交后不显示即时得分或逐题反馈 |
+| 分配策略 | 默认保留层内加盐哈希；可切换为 `stratified-balanced`，按当前层内人数最少的实验臂分配新学生，并以私有盐哈希打破平局；既有 assignment 不重写 |
+| 协议冻结 | route、Policy Kernel、生命周期、V14-C3 Adapter、学生端信号与呈现器、结果量表、阈值、实验臂、分配策略、模型摘要和停止规则共同生成协议指纹；同一 experiment id 漂移时拒绝启动 |
+| 运行时治理 | 管理员可无需重启暂停/恢复当前实验；暂停必须填写原因，收束未决提示并写入不可变历史，但不改变协议或 assignment |
+| 管理端 Harness | 查看与导出实验臂、反事实政策判断、实际呈现、三项分数、理由码、中文证据来源、回复、独立结果、决策前后状态转移和同一学习代次内的知识点 L1→L5→退出策略链；过程指标与学习结果分栏 |
+| 完整性与样本流 | 管理端显示 advisory 停止信号、assignment→证据→曝光→后测→迁移→保持样本流、暂停历史和只含 Shadow 决策的双人编码模板 |
+| 旧决策授权门控 | resolution、替代帮助和接受后回复会再次检查实验、章节、active 模式、学习代次、TTL、暂停、参与状态、全局/知识点关闭和独立测量；旧代次或失效提示不能继续执行 |
 
 ### 1.4 已完成验证
 
-- `proactive_test` 的 HEAD 为 `v2@522e54c`；工作树中的 `data/multi-scene-learning-route.json` 与 `v2` 的 Git blob 均为 `36534480161b7edecc4c52dad5ed09890099f9ff`。
-- 题目仍由完整 v2 route 唯一维护；学生 API 只投影 `V14-C3`，管理端与 Flow Test 仍可读取完整 route。
+- `proactive_test` 继承 `v2@522e54c`，本轮实现从 `4922db4` 继续演进；`data/multi-scene-learning-route.json` 仍由 v2 路线唯一维护。
+- 题目仍由完整 v2 route 唯一维护；学生 API 只投影 `V14-C3`，服务端与管理端仍读取完整 route。
 - V14-C3 含 7 个知识点、28 个资源候选；对 GH-06/GH-07 导入资源的全量静态检索没有发现 `courseware_challenge_result`、`courseware_formative_check_submitted` 或 `maic_learning_event`。
 - 已通过 `proactive:test`、`assistant:test`、`admin:test`、`durability:test`、`security:test`、`auth:test`、`quiz:test`、`path:test` 和 `browser:smoke:test`。
 - 浏览器使用独立临时数据库完成桌面与 390×844 移动端验收：单章导航、10 题章前测、刷新恢复、主动提示卡、跨账号行为隔离、主动实验账本、CSV 入口与大数据管理布局均通过；页面无横向溢出，宽表保留横向滚动。
 - 浏览器验收发现并修复主动实验表从空态刷新到有数据后仍保持 `overflow: hidden` 的问题。
 - 回归验收发现并修复学习助手同一时间戳消息以随机 UUID 排序、导致重启后 user/assistant 顺序不稳定的问题；现在以数据库插入顺序恢复。
-- 本轮策略没有调用实时 LLM，也没有读取、复制或提交 Codex/API 凭据。
+- 本轮主动决策仍不调用实时 LLM；真实模型仅用于学生主动提交后的生成反馈，并通过统一服务端适配器读取本地配置，密钥不进入源码、日志或 Git。
 
 当前仍不是正式效果实验：
 
-- 现有 assignment 是“层内加盐确定性哈希”，能保证稳定和近似 1:1，不能保证小样本严格平衡；正式试验应在预注册前决定是否改为分层置换区组或中心化分配。
-- 独立近迁移、跨表征迁移和 7 天保持测验尚未接入。
-- L1、知识点专属 L2、14 道平台无提示 probe、一次独立成功后的本次帮助渐退/退出已经实现；L3、跨帮助回合的长期渐退、OpenMAIC 生成期语义事件和教师内容复核尚未完成。
-- 三档学生偏好、学习代次隔离、决策前后状态快照和未交付升级的 `closed` 安全收束已经实现；自动第三次负向反馈关闭、L3 与人工转介仍未实现。
-- 当前一次可核验独立成功只表示“本次帮助可以退出”，不表示该知识点已稳定掌握；掌握、迁移和保持仍必须由后续无 Agent 测量判断。
-- Shadow 人工双人复核、停止规则告警和正式伦理流程尚未完成。
+- 默认 assignment 是“层内加盐确定性哈希”，能保证稳定和近似均分；代码也提供 `stratified-balanced`，可把每层各臂人数差控制在至多 1，但它仍是单实例数据库上的可复演分配，不等同于中心化随机服务。正式试验应在首位参与者进入前冻结二者之一，或改用预注册的中心化分层置换区组。
+- 近迁移、跨表征迁移和延迟保持入口已接入，但当前每阶段只有 3 道试点题，尚未完成学科专家复核、平行题型等值检验、信度估计与真实参与者数据收集。
+- 七知识点 L1-L5、每级服务端无提示 probe、成功后的跨帮助回合渐退和 L5 后停止加码已经实现；OpenMAIC 生成期语义事件、运行时教师覆盖和真实人工转介尚未完成。
+- 全局三档偏好、知识点级静音、稍后、替代帮助、学习代次隔离、决策前后状态快照和未交付升级的 `closed` 安全收束已经实现；正式试验仍需决定是否加入“连续三次负向反馈自动全章关闭”，当前学生可随时手动关闭。
+- 当前一次可核验独立成功只表示“本次帮助可以退出并提高后续介入门槛”，不表示该知识点已稳定掌握；稳定掌握仍必须由后续无 Agent 迁移与保持结果判断。
+- Shadow 编码模板和 advisory 停止规则信号已实现；真实双人编码、一致率、正式告警阈值、自动停止权限和伦理流程尚未完成。
 - 服务端不会接受客户端指定的 condition、action 或 support level，但普通浏览器学习事件仍是客户端来源，当前防护是结构校验与服务端重建，不是密码学防伪；正式对抗性试验还需签名桥接事件或更强的服务端序列校验。
 - 私有分组盐必须从 shadow 分组开始前固定；不得先用公开默认值分组、再在 active 阶段更换盐。更改盐或分组算法时必须新建 experiment id 或 assignment version。
 - 首轮策略不调用实时 LLM；后续若只做语言呈现，应复用现有服务端 OpenAI-compatible 适配与环境配置，不读取、复制或提交 Codex 凭据。
+
+### 1.5 OpenMAIC v1.0.0 的三层状态
+
+| 层级 | 当前事实 | 可承担的职责 |
+|---|---|---|
+| 正式 `v1.0.0` | 2026-08-27 发布；Pro workbench、持久会话、resume/steer、session materials、校验课程工具、官方说明中的 20 个 built-in skills、owner-scoped 用户 Skill 和 provider-neutral 服务端能力已存在 | 作为 Calculus Quest 生成期 Skill 和导出合同的正式底座 |
+| 本机进行中补丁 | OpenMAIC 当前工作树存在未提交的语义合同、知识证据、flow audit 和 `calculus-quest-authoring` Skill 原型 | 只说明补丁位置可行，不能视为正式版能力或当前集成 |
+| 当前 V14-C3 导入资源 | 28 个互动候选未上报 proactive 语义结果事件，也没有可由平台直接装载的 proactive manifest | 目前由 Calculus Quest 静态 Adapter 与平台 probe 完成闭环 |
+
+目标接口应是生成期插件，而不是把运行时政策塞回课件：
+
+```text
+OpenMAIC Skill + Guard
+  -> 生成并校验 courseware + proactive manifest + semantic events
+
+Calculus Quest Policy Kernel
+  -> 运行时重建证据、决定沉默/介入、执行学生权限、测量与审计
+```
+
+正式 v1.0.0 已提供 Skill、持久会话、材料和校验工具，但没有现成的 Calculus Quest proactive schema。当前 OpenMAIC 工作树中的相关文件仍是未提交原型；在它们通过独立验收并重新导出课程包之前，本项目不能声称课件已经原生支持 proactive。
 
 ---
 
@@ -574,7 +612,7 @@ Gate B: 现在是否适合出现
 
 ### D9 教学动作
 
-首轮动作白名单：
+设计空间保留的动作词汇包括：
 
 ```text
 stay_silent
@@ -591,18 +629,35 @@ recommend_break
 handoff_human
 ```
 
-动作不能由 LLM 自由发明。V14-C3 adapter 决定每个知识点允许哪些动作。
+动作不能由 LLM 自由发明。V14-C3 adapter 决定每个知识点允许哪些动作。当前 v3 冻结包实际接线的是：
+
+```text
+stay_silent
+observe_change
+ask_clarification
+review_mistake
+elicit_self_explanation
+concept_hint
+decompose_subgoal
+next_step_hint
+partial_worked_example
+switch_representation
+```
+
+没有把设计词汇中的每个动作全部放入首轮实验，因为动作越多，处理包越难解释。`handoff_human` 只有在存在真实教师值守流程时才可展示，不能做成虚假按钮。
 
 ### D10 支架强度
 
 | 等级 | 名称 | 典型动作 | 答案边界 |
 |---|---|---|---|
-| L0 | 确认与选择 | check-in、继续/稍后/关闭 | 不提供概念内容 |
-| L1 | 注意与自检 | 预测、观察点、自我解释 | 不给方法和结果 |
-| L2 | 概念与表征线索 | 对比图像/符号、关键关系、子目标 | 不完成核心推理 |
-| L3 | 部分示例 | 一个中间步骤、部分 worked example | 仅在明确同意后；不用于测量题 |
+| L0 | 无可见支架 | `stay_silent`、Control/Shadow 不展示 | 不提供提示、概念或教学内容 |
+| L1 | 注意与自检 | check-in、预测、观察点、自我解释 | 不给方法和结果 |
+| L2 | 概念线索 | 关键关系、误解对照 | 不完成核心推理 |
+| L3 | 子目标拆分 | 把任务拆成可执行子目标 | 不代替学生完成子目标 |
+| L4 | 下一步提示 | 给出下一步要写或比较的对象 | 不给最终结果 |
+| L5 | 部分示例 | 展示部分 worked example，保留最后计算与解释 | 仅在前四级失败后；不用于测量题 |
 
-首轮策略总是从 L0 或 L1 开始。只有学生接受帮助、仍有持续证据且未恢复进展，才允许升级。
+L0 是正式的沉默基线；任何可见提示从 L1 开始。只有学生接受帮助、仍有持续证据且未恢复进展，才允许升级。
 
 ### D11 呈现方式
 
@@ -612,18 +667,19 @@ handoff_human
 - 提供简短的“为什么现在提示”。
 - 需要学生回复时，允许点选起点或自由输入。
 - 推荐场景时展示真实场景名称和表征类型。
-- L3 使用题旁局部支架，不把完整解答塞入聊天。
+- L3-L5 使用局部支架，不把完整解答塞入聊天。
 - 支持键盘和屏幕阅读器，移动端不遮挡主内容。
 
 ### D12 学生自主权
 
-每次建议至少提供：
+当前建议根据动作提供以下学生控制：
 
 ```text
 继续自己试
 给我一个观察点
 稍后提醒
-本知识点少提醒
+关闭当前知识点提醒
+换一种帮助
 ```
 
 全局设置提供：
@@ -647,9 +703,9 @@ handoff_human
 
 ```text
 ELIGIBLE
-  -> SILENT
-  -> OFFERED_L0/L1
-  -> ACCEPTED | DISMISSED | IGNORED | EXPIRED
+  -> SILENT_L0
+  -> OFFERED_L1
+  -> ACCEPTED | DISMISSED | IGNORED | SNOOZED | ALTERNATIVE_REQUESTED | EXPIRED
 
 FORMATIVE_ERROR
   -> OFFERED_L1_SELF_EXPLANATION
@@ -659,11 +715,14 @@ FORMATIVE_ERROR
 AWAITING_INDEPENDENT_ATTEMPT
   -> SUCCESS -> FADE_AND_EXIT_HELP_EPISODE
   -> FAILURE_AT_L1 -> OFFERED_L2_CONCEPT_HINT
-  -> FAILURE_AT_L1_BUT_L2_NOT_DELIVERED -> CLOSED
-  -> FAILURE_AT_L2 -> MAXIMUM_SUPPORT_REACHED
+  -> FAILURE_AT_L2 -> OFFERED_L3_SUBGOAL
+  -> FAILURE_AT_L3 -> OFFERED_L4_NEXT_STEP
+  -> FAILURE_AT_L4 -> OFFERED_L5_PARTIAL_EXAMPLE
+  -> FAILURE_AT_L5 -> MAXIMUM_SUPPORT_REACHED
+  -> FAILURE_BUT_NEXT_LEVEL_NOT_DELIVERED -> CLOSED
   -> VERIFY_DECLINED -> EXIT_WITHOUT_ESCALATION
 
-DISMISSED | IGNORED
+DISMISSED | IGNORED | SNOOZED | ALTERNATIVE_REQUESTED
   -> DECLINED
   -> EXIT_WITHOUT_ESCALATION
 ```
@@ -672,15 +731,15 @@ DISMISSED | IGNORED
 
 1. 同一知识点同一原因 10 分钟内不重复。
 2. 第一次拒绝后冷却 10 分钟。
-3. 第二次拒绝后冷却 20 分钟，并关闭本知识点同类建议。
-4. 第三次负向反馈后，本章主动提示默认关闭，学生仍可主动提问。
+3. 第二次拒绝后冷却 20 分钟，并由重复拒绝门控阻止弱证据建议。
+4. “连续三次负向反馈后自动关闭全章”保留为正式试验前待定政策；当前不静默替学生修改全局偏好，而是提供全局关闭与知识点级关闭按钮。
 5. 拒绝后绝不升级。
 6. 形成性测验只负责开启 L1；不得重复提交或重复读取同一份一次性测验来触发 L2。
 7. 学生接受并实际回复后，才允许签发平台无提示验证或监听课件语义结果。
 8. 一次可核验独立成功足以结束当前帮助回合并把强度恢复到 L0，但不把知识点标成稳定掌握。
-9. L1 后独立失败只升级一级到 L2；L2 后仍失败则停止自动升级，当前试点不自动进入 L3。
+9. 独立失败每次只升级一级，顺序为 L1→L2→L3→L4→L5；L5 后仍失败则停止自动加码。
 10. 学生跳过平台验证时，本轮进入 `declined`，不得把跳过解释成失败并继续升级。
-11. 跨帮助回合的长期渐退需要至少两个独立成功证据，当前只保留计数字段，尚未用于正式政策。
+11. 每次独立成功增加 `fadeLevel`、延长冷却，并提高安静停留与重复调参这类弱证据候选的门槛；这是一种跨帮助回合的行为渐退，不是掌握判定。
 12. 候选超过时限、场景改变、学生恢复操作或证据失效时退出。
 13. 知识点达到稳定掌握后退出，不为了增加曝光继续发消息。
 14. 如果独立失败已经产生，但升级动作因预算、开放中的提示、Shadow/Control 或 renderer 门控未实际交付，则进入 `closed` 并记录未交付原因；不能继续等待一个不存在的验证题。
@@ -771,7 +830,9 @@ const result = proactivePolicy.evaluate({
 - 每条决策固化学习代次，当前状态只允许挂接到同一代次；
 - 首轮 LLM 只负责语言表达，不负责触发、动作和强度；
 - 模型不可用时仍能执行同一确定性政策；
-- 管理端可以暂停实验，但不能修改历史条件；
+- 当前管理员可通过 `POST /api/admin/research/proactive-runtime` 无需重启暂停或恢复实验；暂停必须记录原因，收束未决提示并保留不可变历史，但不能修改协议、历史条件或既有 assignment；
+- 服务启动时冻结完整协议指纹；同一 experiment id 下出现 route、政策、量表、阈值、实验臂、分配策略、模型摘要或停止规则漂移时拒绝启动；
+- 管理端停止规则信号只提供 advisory 诊断，正式阈值、责任人和自动停止权限必须在预注册和事故响应流程中另行确定；
 - 所有高影响动作支持人工复核和审计导出。
 
 ### D16 学习效果评价与因果实验
@@ -1092,7 +1153,7 @@ POST /api/learning/assistant/intervention
 POST /api/learning/proactive/:decisionId/resolution
 GET  /api/learning/proactive/state?chapterId=V14-C3
 GET  /api/admin/research/proactive-decisions
-POST /api/admin/research/proactive-pause
+POST /api/admin/research/proactive-runtime
 ```
 
 关键不变量：
@@ -1110,15 +1171,19 @@ POST /api/admin/research/proactive-pause
 ```text
 PROACTIVE_POLICY_MODE=off|shadow|active
 PROACTIVE_EXPERIMENT_ID=v14-c3-proactive-pilot-2026
-PROACTIVE_POLICY_VERSION=v14-c3-fixed-v2
-PROACTIVE_ADAPTER_VERSION=v14-c3-adapter-v2
+PROACTIVE_POLICY_VERSION=v14-c3-fixed-v3
+PROACTIVE_ADAPTER_VERSION=v14-c3-adapter-v3
+PROACTIVE_EXPERIMENT_ARMS=control,treatment
+PROACTIVE_DISPLAY_ARMS=treatment
+PROACTIVE_ARM_PROFILES_JSON={...}
+PROACTIVE_RETENTION_DELAY_HOURS=168
 ```
 
 - `off`：完全关闭新政策。
 - `shadow`：完整决策和记录，但不展示。
-- `active`：仅 treatment 条件展示。
+- `active`：仅配置为 `display=true` 的实验臂展示。
 
-以上三种模式都覆盖 V14-C3 的历史前端主动原型。`off` 与 `shadow` 不得展示历史建议；Control 不得触发本地 repeated-parameter fallback；只有服务端签发、处于 Treatment 且未过期的 decision 可以展示。
+以上三种模式都覆盖 V14-C3 的历史前端主动原型。`off` 与 `shadow` 不得展示历史建议；任何不允许展示的实验臂都不得触发本地 repeated-parameter fallback；只有服务端签发、实验臂允许、未过期且未命中受保护门控的 decision 可以展示。
 
 不要再使用部署级 `EXPERIMENT_CONDITION` 代替学生级随机分配。
 
@@ -1212,7 +1277,7 @@ serverAt
 ```text
 help_needed: yes / no / uncertain
 interruptible: yes / no / uncertain
-best_action: silent / L0 / L1 / L2 / L3
+best_action: L0-silent / L1 / L2 / L3 / L4 / L5
 ```
 
 先报告一致率和分歧，不用模型替代人工真值。
@@ -1321,7 +1386,7 @@ best_action: silent / L0 / L1 / L2 / L3
 ### 过程机制
 
 - HelpNeed 高窗口中获得帮助的比例；
-- 从 L0/L1 到恢复进展的比例；
+- 从首个可见 L1 到恢复进展的比例；
 - 升级率、渐退率和退出率；
 - 推荐场景是否被选择；
 - 支架后第一次独立尝试；
@@ -1429,7 +1494,7 @@ post_transfer ~ condition + pretest + stratum
 - HelpNeed 与可打断性双门；
 - 不确定性和误报成本；
 - 动作白名单；
-- L0-L3 支架；
+- L0 静默基线与 L1-L5 可见支架；
 - 自主权、预算、冷却；
 - 重复、升级、渐退、退出；
 - assignment、审计和因果评价。
@@ -1477,6 +1542,69 @@ post_transfer ~ condition + pretest + stratum
 
 只有固定政策被证明安全、事件量足够且近端结果可靠后，才考虑 learned policy 或 LLM judge。
 
+## 10.5 当前边界：单章、全课程与研究运营
+
+### 已在 V14-C3 单章完成
+
+- 服务端确定性 Policy Kernel、学生级 assignment 和多实验臂；
+- HelpNeed、可打断性、不确定性、预算、冷却与受保护窗口；
+- L0 静默及 L1-L5 逐级支架、每级服务端验证、成功渐退和 L5 停止；
+- 稍后、替代帮助、全局频率、知识点静音与学生确认后的换表征；
+- 学习代次隔离、全屏呈现、过程证据链和管理 Harness；
+- 近迁移、跨表征迁移和延迟保持三阶段独立测量外壳；
+- `implicit-pilot` / `explicit-consent` 参与模式、版本化研究说明、终局退出、ITT assignment 保留和退出后的候选/支架/测量收束；
+- 管理端逐人导出的测量会话与失访证据链，以及研究说明打开、退出确认打开/取消、加入和退出事件。
+
+### 必须由其他章节或 OpenMAIC 配合
+
+| 设计 | 为什么单章补丁不能完成 |
+|---|---|
+| 全课程学习目标与误解本体 | 每章需要自己的概念、先修关系、错误类型和合法支架 |
+| 全部课件/游戏语义轨迹 | iframe 内部数学策略、任务里程碑和失败原因必须由课件按统一 semantic event contract 上报 |
+| proactive manifest | OpenMAIC 生成期需要导出学习目标、场景能力、事件、支架边界和测量保护声明 |
+| 跨章节长期掌握 | 需要多个章节的间隔证据、遗忘与复学数据，不能从 V14-C3 一章推断 |
+| 跨章迁移与远迁移 | 需要其他章节或学科提供未用于调参的目标任务 |
+| Adapter registry 泛化验证 | 必须至少再实现一章，才能检验“只新增 adapter、不复制内核”的真实迁移成本 |
+| 跨领域 HelpNeed 校准 | 当前固定 profile 只能用于试点，泛化需要不同任务族的人工标签和外部验证 |
+
+OpenMAIC 的接入应优先复用正式 v1.0.0 的 owner Skill、持久会话、session materials 和 validated course tools，把主动学习要求固化为生成期输入与 Guard 门控。当前本机的语义合同和 `calculus-quest-authoring` Skill 仍是未提交原型；它们通过验收后，也只负责生成 manifest、事件桥和报告，不接管 Calculus Quest 的实时 Policy Kernel。
+
+### 不依赖全章节、但依赖真实研究运营
+
+- L1-L5 和三阶段测量题的学科专家复核；
+- Shadow 双人 HelpNeed/interruptibility 编码与一致性；
+- 正式伦理审批、最终研究说明文本、排除规则、未成年人监护人同意/assent、招募和数据保留/删除政策；
+- 真实教师转介、响应时限与责任边界；
+- 预注册、停止规则、样本量和 ITT 分析；
+- 管理员暂停/恢复的角色授权、正式阈值和事故响应演练。
+
+## 10.6 现有网站流程的实验化优化
+
+| 现有功能/流程 | 当前优点 | 建议优化 | 优先级 |
+|---|---|---|---|
+| 章前测与 assignment | 只用客观题即时分层；支持稳定哈希与可选层内平衡；管理端显示各层各臂人数 | 正式试验冻结一种策略；多实例部署或确认性试验优先采用中心化分层置换区组并记录分配收据 | P0 |
+| 前测期间的知点入口 | 测验未提交时继续屏蔽问答、历史和快捷问题，但允许打开受限参与设置完成研究说明、加入或退出 | 正式研究用认知访谈验证文案是否被误解为课程强制要求，并保持所有实验臂入口一致 | P0 |
+| 知点主动提示 | 低显著度、全屏可用、学生可拒绝；独立测量入口已位于中立章节任务区 | 冻结卡片显著度、出现位置与动画版本；记录遮挡、关闭和误触，避免不同实验臂获得不同布局负担 | P0 |
+| Reactive 知点问答 | 所有实验臂均可获得基本帮助，伦理上更稳妥 | 冻结模型、系统提示和失败降级版本；单独记录 reactive exposure，避免把它误算为 proactive treatment | P0 |
+| Path Coach 与场景推荐 | 已保留学生确认权 | 明确各实验臂是否允许相同 Coach 建议，并记录共同干预暴露；结果测量期间全部关闭 | P0 |
+| 章后测与独立测量 | 已服务端门控、不显示即时分数；已有开始、提交、退出、样本流和逐人会话/失访 CSV | 增加预约窗口、站外提醒和超窗状态；提醒本身须在各实验臂保持一致 | P0 |
+| 管理端 Harness | 已有条件、证据链、L1-L5、过程/结果分栏、协议快照、暂停、停止信号与折叠审计 | 为 advisory 信号预注册严重度、责任人、处置时限和人工复核结论；不要让仪表盘自动替代研究者裁决 | P0 |
+| 管理端移动操作 | 横向标签会在点击或视口变化后把当前页自动滚到可见区域；主动实验的治理、结果与决策表可横向滚动 | 真实研究现场优先使用桌面端；移动端只用于状态核对和紧急暂停，不承担复杂编码工作 | P1 |
+| 学习事件与 iframe bridge | 平台事件可幂等落盘，已接入语义事件可审计 | 为 OpenMAIC 定义版本化事件 schema、任务里程碑、来源签名/序列和事件覆盖报告 | P1 |
+| 学习重置与恢复 | assignment 保留，生命周期按 generation 隔离 | 管理端显式显示重置次数、跨设备恢复和每代测量资格，防止把重复学习混入单次分析 | P1 |
+| 管理统计 | 已区分过程指标和独立结果，提供 assignment→曝光→测量→保持样本流，并可导出 active/submitted/withdrawn 会话 | 在预注册口径明确后增加排除原因、ITT 分析集、效应量、置信区间和缺失机制模型；不用接受率代替学习效果 | P1 |
+| 版本与配置 | 完整协议指纹已覆盖 route、内核、Adapter、呈现器、量表、阈值、实验臂、模型摘要和停止规则，并拒绝同 id 漂移 | 增加由研究负责人签署的预注册版本收据和部署发布记录；协议变更必须新建 experiment id | P1 |
+| Shadow 复核 | 已可导出仅含 Shadow 决策、证据与空白人工标签列的编码模板 | 建立双人盲编码、分歧裁决、Cohen's kappa/补充一致率与阈值调整记录 | P1 |
+| 同意与退出 | 工程载体已实现显式同意、版本冻结、研究说明、终局退出、ITT assignment 保留、候选/支架/测量收束和参与审计；前测期间只开放受限参与设置，不泄露问答入口 | 正式研究仍需伦理审批、最终文本、监护人同意/assent、招募、排除与数据保留/删除政策 | P1 |
+
+这里最重要的流程调整不是增加更多弹窗，而是把**共同干预、实验处理和独立测量**分成三条明确通道：
+
+```text
+所有实验臂共有：课程、测验、Reactive 知点、Path Coach 的冻结版本
+仅展示实验臂拥有：服务端签发的 proactive policy
+所有实验臂独立完成：不含任何 Agent 帮助的迁移与保持测量
+```
+
 ---
 
 # 十一、分阶段代码路线
@@ -1507,34 +1635,46 @@ post_transfer ~ condition + pretest + stratum
 
 ## Phase 2：V14-C3 adapter
 
-状态：**部分实现。** 已有七知识点元数据、五类候选画像、统一政策入口、七知识点 L1 自我解释、L2 概念线索及 L1/L2 共 14 道平台 probe；OpenMAIC 场景语义事件、L3 内容与教师复核尚未完成。
+状态：**单章运行时已实现。** 已有七知识点元数据、五类候选画像、统一政策入口、七知识点 L1-L5 支架内容、每级服务端验证题、替代表征映射和按知识点政策单测。28 个互动候选只完成 route 合法性接入，不等于已经获得场景内部语义事件；OpenMAIC 场景语义事件与正式学科专家复核仍属于外部依赖。
 
 目标：把七知识点误解、动作和迁移规则结构化。
 
-完成：
+工程已完成：
 
 - adapter schema；
 - route id 校验；
-- 28 个场景语义映射；
-- L0-L3 支架；
-- 教师复核；
+- 从 route 校验 28 个合法场景候选，尚未建立课件内部语义事件映射；
+- L0 静默基线与 L1-L5 可见支架；
 - 按知识点的政策单测。
+
+外部待完成：
+
+- 学科专家复核 L1-L5、每级验证题与迁移题；
+- OpenMAIC 生成期输出场景语义事件和 proactive manifest。
 
 ## Phase 3：shadow 回放
 
+状态：**工程入口已实现，真实 Shadow 数据与人工校准尚未完成。** 管理端可导出只包含 Shadow 决策的编码模板，并显示协议、停止信号和样本流。
+
 目标：校准阈值和误报，不展示。
 
-完成：
+工程已完成：
 
-- 决策回放工具；
-- 双人编码界面或导出；
-- 一致率；
-- 每类信号 precision、coverage 和 abstain；
-- 冻结 `v14-c3-fixed-v2`。
+- Shadow 决策账本和反事实交付结果；
+- 双人编码 CSV 模板；
+- 按候选、知识点、实验臂和原因码筛选导出；
+- 协议指纹与运行时暂停；
+- advisory 停止规则信号。
+
+真实研究待完成：
+
+- 双人盲编码、分歧裁决与一致率；
+- 每类信号 precision、coverage、abstain 和误报成本；
+- 根据 Shadow 结果调整阈值后，以新 experiment id 冻结正式政策包。
 
 ## Phase 4：active UI
 
-状态：**部分实现。** 已接通服务端签发、展示、`shown / accepted / dismissed / ignored` 回传、学生实际回复、平台无提示验证、课件语义事件兼容通道、L1→L2、渐退退出、“标准 / 少提醒 / 关闭”三档偏好、学习代次隔离与未交付升级收束；L3、人工转介、自动第三次负向反馈关闭和跨帮助回合长期渐退仍待实现。
+状态：**单章试点 UI 已实现。** 已接通服务端签发、展示、`shown / accepted / dismissed / ignored / snoozed / alternative_requested` 回传、学生实际回复、平台无提示验证、课件语义事件兼容通道、L1→L5、成功渐退、知识点静音、学生确认后的换表征、学习代次隔离与未交付升级收束。人工转介只有在真实教师支持流程存在时才可实现。
 
 目标：Treatment 展示，Control 不展示。
 
@@ -1551,18 +1691,34 @@ post_transfer ~ condition + pretest + stratum
 
 ## Phase 5：实验闭环
 
-完成：
+状态：**工程入口已实现，研究运营尚未完成。**
 
-- 独立迁移题；
-- 保持测验调度；
-- 条件平衡管理页；
-- ITT 导出；
-- 停止规则告警；
-- 预注册版本锁定。
+已完成：
+
+- 近迁移、跨表征迁移和延迟保持试点题；
+- 章后测门控、两项迁移完成门控和可配置保持延迟；
+- 多实验臂分组与管理端条件汇总；
+- 过程指标、学习结果明细及 CSV 导出；
+- 测量期间暂停主动检测、禁止即时得分和逐题反馈；
+- 可选 `stratified-balanced` 小样本层内平衡分配；
+- 不可变协议指纹、同 experiment id 漂移拒绝启动；
+- 无需重启的管理员暂停/恢复与不可变运行历史；
+- advisory 停止规则信号和参与者样本流。
+- 显式同意与终局退出、退出后的未决支架/测量收束，以及测量会话与失访 CSV。
+
+待研究运营完成：
+
+- 题目专家复核、平行题等值与信度检查；
+- 正式试验是否采用当前层内平衡策略或中心化分层置换区组的预注册决定；
+- ITT 分析脚本、效应量、置信区间、缺失与流失处理；
+- 停止规则严重度、阈值、责任人和自动停止权限；
+- 研究负责人签署的预注册版本锁定。
 
 ## Phase 6：机制拆分与泛化
 
-完成：
+状态：**未开始，必须在单章试点安全、可行并取得足够事件量后开展。**
+
+后续工作：
 
 - 单一设计轴实验；
 - MRT 可行性；
@@ -1636,7 +1792,7 @@ post_transfer ~ condition + pretest + stratum
 - [x] `stay_silent` 是正式动作。
 - [x] HelpNeed 与可打断性独立。
 - [x] 明确不确定性、误报和 abstain。
-- [x] L0-L3、重复、升级、渐退和退出已在设计中定义。
+- [x] L0 静默、L1-L5 可见支架、重复、升级、渐退和退出已在设计与代码中定义。
 - [x] 学生保留帮助和路径决定权。
 
 ## 系统
@@ -1650,18 +1806,23 @@ post_transfer ~ condition + pretest + stratum
 - [x] 同一知识点存在未决 offer 时由服务端阻止重复签发。
 - [x] `active` 缺少稳定私有分组盐时失败关闭。
 - [x] 平台 probe 答案只在服务端；题目 ID、知识点、强度、重放和跳过均受校验。
-- [x] `policy_owned_probe` 与 `courseware_semantic_event` 进入同一生命周期，并在 Harness 中区分来源。
+- [x] `policy_owned_probe` 当前真实运行；`courseware_semantic_event` 已通过合成 API 回归并进入同一生命周期，Harness 会区分来源，但当前课件尚未上报该事件。
 - [x] 每条 decision 固化 `learning_generation`，知识点策略链不跨学习代次拼接。
 - [x] 每条 decision 保存 `policyStateBefore`、`stateTransition` 和 `policyStateAfter`，Harness 提供中文状态转移视图。
 - [x] 升级动作未实际交付时进入 `closed`，保留独立失败证据和未交付原因。
 - [x] 学生可选择“标准 / 少提醒 / 关闭”，关闭不会禁用主动提问。
+- [x] 学生可稍后处理、请求替代帮助、关闭/恢复当前知识点提醒；换表征必须再次确认。
+- [x] 独立成功会提高弱证据介入门槛并延长冷却，L5 后失败停止继续加码。
+- [x] 近迁移、跨表征迁移和延迟保持题仅在阶段开放时下发，测量期间 Agent 保持沉默。
+- [x] 显式同意、终局退出、ITT assignment 保留和退出后的候选/支架/测量收束已接线。
+- [x] 管理端可逐人导出测量会话、状态、退出原因和参与状态，不把失访静默丢弃。
 - [ ] 普通浏览器学习事件尚未达到密码学防伪；正式对抗性试验需增加签名或可信序列来源。
 
 ## 研究
 
 - [ ] 整章 shadow mode 完成。
 - [ ] 人工 HelpNeed/interruptibility 双编码。
-- [ ] 迁移和保持完全无 Agent。
+- [x] 系统层已强制迁移和保持测量无 Agent；正式试验仍需用真实浏览器与参与者流程复核零污染。
 - [ ] ITT 为主分析。
 - [ ] 预注册主要结果和停止规则。
 - [ ] 不把过程指标替代学习效果。

@@ -2,6 +2,7 @@
 
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const llm = require("../lib/llm");
 const {
   validatePairedAssessment,
   validateFormativeAssessment,
@@ -11,7 +12,6 @@ const {
 const ROOT = path.resolve(__dirname, "..");
 const PROMPTS_ROOT = path.join(ROOT, "prompts", "assessments");
 const GRAPH_PATH = path.join(ROOT, "data", "knowledge-graph.json");
-const DEFAULT_ENV_PATH = path.resolve(ROOT, "..", "OpenMAIC", ".env.local");
 
 const PAIRED_BLUEPRINTS = {
   "GH-03": [
@@ -45,11 +45,6 @@ const PAIRED_KP_SEQUENCES = {
   "GH-04": [0, 0, 1, 1, 2, 2, 3, 0, 1, 3]
 };
 
-function readEnvValue(text, name) {
-  const match = text.match(new RegExp(`(?:^|\\n|\\r|\\s)${name}=([^\\r\\n]+)`));
-  return match?.[1]?.trim();
-}
-
 function extractJson(text) {
   const source = String(text || "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   try { return JSON.parse(source); } catch {}
@@ -73,21 +68,17 @@ function buildModules(graph) {
   return [...grouped.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
-async function requestJson({ endpoint, apiKey, model, prompt, signal }) {
-  const response = await fetch(`${endpoint.replace(/\/$/, "")}/chat/completions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      temperature: 0.25,
-      messages: [{ role: "user", content: prompt }]
-    }),
-    signal
+async function requestJson({ model, prompt, signal, maxTokens, temperature }) {
+  const response = await llm.completeChat({
+    system: "严格按用户给出的课程合同生成合法 JSON，不要输出 Markdown 代码围栏。",
+    user: prompt,
+    jsonHint: true,
+    maxTokens,
+    model,
+    signal,
+    temperature
   });
-  const body = await response.text();
-  if (!response.ok) throw new Error(`HTTP ${response.status}: ${body.slice(0, 500)}`);
-  const envelope = JSON.parse(body);
-  return extractJson(envelope.choices?.[0]?.message?.content);
+  return extractJson(response.text);
 }
 
 async function generateOne(task, config) {
@@ -243,15 +234,32 @@ async function generatePairedInPieces(task, config) {
 
 async function main() {
   const args = new Set(process.argv.slice(2));
+  const configPathArg = process.argv.find((arg) => arg.startsWith("--config="));
   const envPathArg = process.argv.find((arg) => arg.startsWith("--env="));
   const modelArg = process.argv.find((arg) => arg.startsWith("--model="));
+  const maxTokensArg = process.argv.find((arg) => arg.startsWith("--max-tokens="));
   const onlyArg = process.argv.find((arg) => arg.startsWith("--only="));
-  const envText = await fs.readFile(envPathArg ? envPathArg.slice(6) : DEFAULT_ENV_PATH, "utf8");
-  const apiKey = readEnvValue(envText, "OPENROUTER_API_KEY");
-  const endpoint = readEnvValue(envText, "OPENROUTER_BASE_URL") || "https://api.hcnsec.cn/v1";
-  const configuredModels = readEnvValue(envText, "OPENROUTER_MODELS")?.split(",").map((item) => item.trim()).filter(Boolean) || [];
-  const model = modelArg?.slice(8) || readEnvValue(envText, "DEFAULT_MODEL") || configuredModels[0] || "auto";
-  if (!apiKey) throw new Error(`没有在 ${DEFAULT_ENV_PATH} 找到 OPENROUTER_API_KEY`);
+  const selectedConfigPath = configPathArg?.slice("--config=".length)
+    || envPathArg?.slice("--env=".length)
+    || process.env.LLM_CONFIG_FILE
+    || "";
+  if (selectedConfigPath) {
+    process.env.LLM_CONFIG_FILE = path.resolve(selectedConfigPath);
+  }
+  process.env.LLM_PROVIDER = "openai-compatible";
+  const runtime = llm.runtimeInfo();
+  if (!runtime.liveConfigured) {
+    throw new Error(
+      "没有找到可用的 LLM 配置。请在项目 .env 设置 LLM_CONFIG_FILE，"
+      + "或传入 --config=D:\\Desktop\\key.txt。"
+    );
+  }
+  const model = modelArg?.slice("--model=".length) || runtime.model;
+  if (!model) throw new Error("LLM 配置中没有模型名，请使用 --model 指定。");
+  const maxTokens = Math.max(
+    1000,
+    Number(maxTokensArg?.slice("--max-tokens=".length) || 32768)
+  );
 
   const graph = JSON.parse(await fs.readFile(GRAPH_PATH, "utf8"));
   const modules = buildModules(graph).filter((module) => module.id !== "GH-02");
@@ -276,8 +284,18 @@ async function main() {
     });
   }
 
-  const config = { apiKey, endpoint, model, force: args.has("--force"), retries: 3, timeoutMs: 120_000 };
-  console.log(`准备生成 ${tasks.length} 份测评，模型 ${model}，服务 ${new URL(endpoint).host}`);
+  const config = {
+    model,
+    maxTokens,
+    temperature: 0.25,
+    force: args.has("--force"),
+    retries: 3,
+    timeoutMs: 120_000
+  };
+  console.log(
+    `准备生成 ${tasks.length} 份测评，模型 ${model}，`
+    + `凭据来源 ${runtime.credentialSource || "未识别"}`
+  );
   const failures = [];
   for (let index = 0; index < tasks.length; index += 1) {
     const task = tasks[index];

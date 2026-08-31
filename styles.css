@@ -1627,6 +1627,50 @@ h3 {
   gap: 8px;
 }
 
+.chapter-outcome-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid rgba(15, 118, 110, 0.18);
+  background: #f1f8f7;
+  padding: 14px 20px;
+}
+
+.chapter-outcome-panel[hidden] {
+  display: none;
+}
+
+.chapter-outcome-panel > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.chapter-outcome-panel .eyebrow {
+  margin: 0;
+}
+
+.chapter-outcome-panel strong {
+  color: var(--ink);
+  font-size: 0.98rem;
+}
+
+.chapter-outcome-panel small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.chapter-outcome-panel.is-active {
+  border-color: rgba(181, 92, 18, 0.28);
+  background: #fff7eb;
+}
+
+.chapter-outcome-panel.is-active > button {
+  background: #174f4b;
+  color: #fff;
+}
+
 .icon-button {
   min-width: 44px;
   padding-inline: 12px;
@@ -1652,6 +1696,20 @@ h3 {
 
 .bottom-nav-prev {
   margin-right: auto;
+}
+
+@media (max-width: 760px) {
+  .chapter-outcome-panel {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+    padding: 13px 16px;
+  }
+
+  .chapter-outcome-panel > button {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 
 .knowledge-transition-choice {

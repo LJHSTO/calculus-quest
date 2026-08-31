@@ -88,6 +88,7 @@ assert.doesNotMatch(longContent, /<summary>/);
 const adminSource = fs.readFileSync(path.join(__dirname, "..", "admin", "admin.js"), "utf8");
 const adminHtml = fs.readFileSync(path.join(__dirname, "..", "admin.html"), "utf8");
 const adminCss = fs.readFileSync(path.join(__dirname, "..", "admin", "admin.css"), "utf8");
+const serverSource = fs.readFileSync(path.join(__dirname, "..", "server.js"), "utf8");
 assert.doesNotMatch(adminSource, /<td>\$\{d\.nickname\}<\/td>/);
 assert.doesNotMatch(adminSource, /<td[^>]*>\$\{users\[i\]\}<\/td>/);
 assert.doesNotMatch(adminSource, /<th>\$\{ch\}<\/th>/);
@@ -110,6 +111,17 @@ assert.doesNotMatch(adminSource, /<th>\$\{ch\}<\/th>/);
   "knowledge_proactive_suggestion_shown",
   "knowledge_proactive_suggestion_accepted",
   "knowledge_proactive_suggestion_dismissed",
+  "knowledge_proactive_suggestion_snoozed",
+  "knowledge_proactive_scope_preference_changed",
+  "knowledge_proactive_consent_notice_opened",
+  "knowledge_proactive_withdrawal_confirm_opened",
+  "knowledge_proactive_withdrawal_confirm_cancelled",
+  "knowledge_proactive_participation_enrolled",
+  "knowledge_proactive_participation_withdrawn",
+  "proactive_participation_enrolled",
+  "proactive_participation_withdrawn",
+  "knowledge_proactive_outcomes_opened",
+  "knowledge_proactive_outcome_submitted",
   "knowledge_quiz_review_continue",
   "knowledge_quiz_review_next",
   "knowledge_quiz_review_stopped",
@@ -131,16 +143,35 @@ assert.match(adminHtml, /data-tab="proactive"/);
 assert.match(adminHtml, /id="proactive-study-metrics"/);
 assert.match(adminHtml, /id="table-proactive-decisions"/);
 assert.match(adminHtml, /id="export-proactive-decisions-csv"/);
+assert.match(adminHtml, /id="proactive-outcome-overview"/);
+assert.match(adminHtml, /id="table-proactive-outcome-summary"/);
+assert.match(adminHtml, /id="table-proactive-outcome-attempts"/);
+assert.match(adminHtml, /id="export-proactive-outcomes-csv"/);
+assert.match(adminHtml, /id="export-proactive-outcome-sessions-csv"/);
+assert.match(adminHtml, /id="proactive-runtime-status"/);
+assert.match(adminHtml, /id="proactive-runtime-toggle"/);
+assert.match(adminHtml, /id="proactive-pause-reason"/);
+assert.match(adminHtml, /id="proactive-protocol-facts"/);
+assert.match(adminHtml, /id="proactive-integrity-signals"/);
+assert.match(adminHtml, /id="table-proactive-participant-flow"/);
+assert.match(adminHtml, /id="table-proactive-runtime-events"/);
+assert.match(adminHtml, /id="export-proactive-shadow-csv"/);
 assert.match(adminHtml, /id="preview-regrade-btn"/);
 assert.match(adminHtml, /id="run-regrade-btn"/);
 assert.match(adminHtml, /id="select-all-regrade"/);
 assert.match(adminHtml, /全选全部候选/);
 assert.match(adminHtml, /id="export-regrade-audits-csv"/);
 assert.match(adminHtml, /id="table-regrade-candidates"/);
-assert.match(adminHtml, /admin\/admin\.js\?v=20260830-proactive-lifecycle-v3/);
+assert.match(adminHtml, /admin\/admin\.js\?v=20260831-proactive-governance-v2/);
+assert.match(adminHtml, /admin\/admin\.css\?v=20260831-proactive-governance-v1/);
 assert.match(adminHtml, /id="proactive-audit-timeline"/);
 assert.match(adminHtml, /id="proactive-audit-detail"/);
 assert.match(adminHtml, /id="proactive-audit-load-all"/);
+assert.match(
+  serverSource,
+  /instrumentVersion:\s*protocol\?\.definition\?\.outcomeInstrumentVersion[\s\S]*?retentionDelayHours:\s*Number\([\s\S]*?protocol\?\.definition\?\.retentionDelayHours/,
+  "历史主动实验必须使用各自冻结协议中的量表版本与保持延迟"
+);
 assert.doesNotMatch(adminHtml, /id="table-phase-comparison"/);
 assert.match(adminSource, /function phaseCsvRows/);
 assert.match(adminSource, /function pathCsvRows/);
@@ -159,6 +190,10 @@ assert.match(adminSource, /formative_outcome:\s*"形成性测验结果"/);
 assert.match(adminSource, /independent_attempt_outcome:\s*"支架后独立尝试"/);
 assert.match(adminSource, /elicit_self_explanation:\s*"引导自我解释"/);
 assert.match(adminSource, /concept_hint:\s*"概念关系线索"/);
+assert.match(adminSource, /decompose_subgoal:\s*"拆分子目标"/);
+assert.match(adminSource, /next_step_hint:\s*"提示下一步"/);
+assert.match(adminSource, /partial_worked_example:\s*"部分解题示例"/);
+assert.match(adminSource, /switch_representation:\s*"切换学习表征"/);
 assert.match(adminSource, /policy_owned_probe:\s*"平台无提示近端验证题"/);
 assert.match(adminSource, /courseware_semantic_event:\s*"课件语义结果事件"/);
 assert.match(adminSource, /proactive_verification_submitted:\s*"无提示验证已提交"/);
@@ -172,11 +207,88 @@ assert.match(adminSource, /"后续结果"/);
 assert.match(adminSource, /"独立证据来源"/);
 assert.match(adminSource, /"验证题ID"/);
 assert.match(adminSource, /summary\.independent_success_exits/);
+assert.match(adminSource, /summary\.l3_subgoal_decompositions/);
+assert.match(adminSource, /summary\.l4_next_step_hints/);
+assert.match(adminSource, /summary\.l5_partial_examples/);
+assert.match(adminSource, /summary\.representation_switches/);
+assert.match(adminSource, /summary\.snoozed/);
+assert.match(adminSource, /summary\.alternative_requested/);
+assert.match(adminSource, /autonomy\.scope_mutes/);
+assert.match(adminSource, /scope_muted:\s*"已关闭知识点提醒"/);
+assert.match(adminSource, /preference_off:\s*"已关闭全局主动提示"/);
+assert.match(adminSource, /learning_reset:\s*"学习代次已重置"/);
+assert.match(adminSource, /function syncProactiveConditionOptions/);
+assert.match(adminSource, /policy\?\.experimentArms/);
+assert.match(adminSource, /function renderProactiveOutcomes/);
+assert.match(adminSource, /function revealActiveAdminTab/);
+assert.match(adminSource, /function proactiveOutcomeCsvRows/);
+assert.match(adminSource, /function fetchAllProactiveOutcomeRows/);
+assert.match(adminSource, /function proactiveOutcomeSessionCsvRows/);
+assert.match(adminSource, /function fetchAllProactiveOutcomeSessionRows/);
+assert.match(adminSource, /sessionSummary:\s*safeRows/);
+assert.match(adminSource, /function proactiveAuditDisclosure/);
+assert.match(adminSource, /<details class="proactive-audit-disclosure">/);
+assert.match(adminSource, /proactiveAuditDisclosure\("证据快照"/);
+assert.match(adminSource, /proactiveAuditDisclosure\("约束与预算"/);
+assert.match(adminSource, /proactiveAuditDisclosure\("执行生命周期"/);
+assert.match(adminSource, /proactiveAuditDisclosure\("后续结果"/);
 assert.match(adminCss, /\.proactive-audit-chain-step/);
 assert.match(adminCss, /\.proactive-audit-transition-state/);
+assert.match(adminCss, /\.proactive-outcome-overview/);
+assert.match(adminCss, /\.proactive-outcome-grid/);
+assert.match(adminCss, /\.proactive-audit-chain-step\.is-l5/);
+assert.match(adminCss, /\.proactive-audit-disclosure > summary/);
+assert.match(adminCss, /\.proactive-audit-disclosure > summary:focus-visible/);
+assert.match(adminCss, /\.proactive-audit-disclosure\[open\] > summary/);
 assert.match(adminSource, /api\/admin\/research\/proactive-decisions/);
 assert.match(adminSource, /function proactiveDecisionCsvRows/);
+assert.match(adminSource, /function proactiveShadowCodingCsvRows/);
 assert.match(adminSource, /function fetchAllProactiveDecisionRows/);
+[
+  "participation_status",
+  "participation_consent_version",
+  "participation_consented_at",
+  "participation_withdrawn_at",
+  "participation_withdrawal_reason"
+].forEach((field) => {
+  assert.match(
+    adminSource,
+    new RegExp(`row\\.${field}`),
+    `proactive CSV exports must retain ${field}`
+  );
+});
+const fetchProactiveStudySource = adminSource.match(
+  /async function fetchProactiveStudy[\s\S]*?(?=\nfunction normalizePageData)/
+)?.[0] || "";
+assert.ok(
+  fetchProactiveStudySource,
+  "the proactive study fetch adapter must be inspectable"
+);
+[
+  "participation",
+  "protocol",
+  "runtime",
+  "runtimeEvents",
+  "integrity",
+  "participantFlow"
+].forEach((field) => {
+  assert.match(
+    fetchProactiveStudySource,
+    new RegExp(`${field}:`),
+    `the live admin fetch adapter must retain ${field}`
+  );
+});
+assert.match(adminSource, /function renderProactiveGovernance/);
+assert.match(adminSource, /function updateProactiveRuntime/);
+assert.match(adminSource, /api\/admin\/research\/proactive-runtime/);
+assert.match(adminSource, /reviewer_id/);
+assert.match(adminSource, /help_need_label/);
+assert.match(adminSource, /interruptibility_label/);
+assert.match(adminSource, /should_intervene/);
+assert.match(adminSource, /false_positive/);
+assert.match(adminCss, /\.proactive-governance-grid/);
+assert.match(adminCss, /\.proactive-integrity-signal/);
+assert.match(adminCss, /\.proactive-runtime-badge/);
 assert.match(adminSource, /function loadRegradeCandidates/);
 assert.match(adminSource, /function runSelectedRegrade/);
 assert.match(adminSource, /function refreshRegradeAffectedViews/);

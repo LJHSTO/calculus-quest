@@ -5,6 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const proactivePolicy = require("../lib/proactive-policy");
+const proactiveOutcomes = require("../lib/proactive-outcomes/v14-c3");
 
 function freePort() {
   return new Promise((resolve, reject) => {
@@ -85,15 +86,25 @@ async function startServer(root, dbPath, mode, adminToken, options = {}) {
       LLM_PROVIDER: "mock",
       ADMIN_TOKEN: adminToken,
       PROACTIVE_POLICY_MODE: mode,
-      PROACTIVE_EXPERIMENT_ID: "v14-c3-api-test",
+      PROACTIVE_EXPERIMENT_ID: options.experimentId || "v14-c3-api-test",
       PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
-      PROACTIVE_POLICY_VERSION: "v14-c3-api-test-v2",
-      PROACTIVE_ADAPTER_VERSION: "v14-c3-adapter-v2",
-      PROACTIVE_ASSIGNMENT_VERSION: "api-test-hash-v1",
+      PROACTIVE_POLICY_VERSION: options.policyVersion || "v14-c3-api-test-v3",
+      PROACTIVE_ADAPTER_VERSION: options.adapterVersion || "v14-c3-adapter-v3",
+      PROACTIVE_ASSIGNMENT_STRATEGY: options.assignmentStrategy || "hash",
+      PROACTIVE_ASSIGNMENT_VERSION: options.assignmentVersion || "api-test-hash-v1",
       PROACTIVE_ASSIGNMENT_SALT: "api-test-only-salt",
       PROACTIVE_PUBLIC_CHAPTER_ONLY: "true",
+      PROACTIVE_PARTICIPATION_MODE:
+        options.participationMode || "implicit-pilot",
+      PROACTIVE_CONSENT_VERSION: options.consentVersion || "",
+      PROACTIVE_CONSENT_NOTICE_URL: options.consentNoticeUrl || "",
+      PROACTIVE_EXPERIMENT_ARMS: options.experimentArms || "control,treatment",
+      PROACTIVE_DISPLAY_ARMS: options.displayArms || "treatment",
+      PROACTIVE_RETENTION_DELAY_HOURS: String(
+        options.retentionDelayHours ?? 0
+      ),
       LEARNING_ASSISTANT_DAILY_INTERVENTIONS: String(
-        options.dailyInterventions || "10"
+        options.dailyInterventions || "30"
       ),
       LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true"
     },
@@ -106,9 +117,16 @@ async function startServer(root, dbPath, mode, adminToken, options = {}) {
   return { child, baseUrl, logs };
 }
 
+let registrationSequence = 0;
+
 async function register(baseUrl, suffix) {
+  registrationSequence += 1;
+  const uniquePrefix = registrationSequence.toString(36);
+  const compactSuffix = String(suffix || "")
+    .replace(/\s+/g, "")
+    .slice(-12);
   const result = await requestJson(baseUrl, "POST", "/api/auth/register", {
-    nickname: `主动试验${suffix}`,
+    nickname: `主动${uniquePrefix}-${compactSuffix}`.slice(0, 24),
     email: "",
     password: "proactive-test-password"
   });
@@ -125,8 +143,8 @@ function testConfig(mode) {
     PROACTIVE_POLICY_MODE: mode,
     PROACTIVE_EXPERIMENT_ID: "v14-c3-api-test",
     PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
-    PROACTIVE_POLICY_VERSION: "v14-c3-api-test-v2",
-    PROACTIVE_ADAPTER_VERSION: "v14-c3-adapter-v2",
+    PROACTIVE_POLICY_VERSION: "v14-c3-api-test-v3",
+    PROACTIVE_ADAPTER_VERSION: "v14-c3-adapter-v3",
     PROACTIVE_ASSIGNMENT_VERSION: "api-test-hash-v1",
     PROACTIVE_ASSIGNMENT_SALT: "api-test-only-salt",
     PROACTIVE_PUBLIC_CHAPTER_ONLY: "true"
@@ -164,6 +182,142 @@ async function submitPretest(baseUrl, token, preQuiz) {
   assert.equal(result.response.status, 200);
   assert.equal(result.payload.results.length, preQuiz.questions.length);
   return result.payload;
+}
+
+async function submitPosttest(baseUrl, token, postQuiz) {
+  const result = await requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/quiz/submit",
+    {
+      unitId: "V14-C3-post",
+      chapterId: "V14-C3",
+      phase: "post",
+      answers: postQuiz.questions.map((question) => ({
+        questionId: question.id,
+        response: question.type === "multiple"
+          ? question.answer
+          : question.type === "short_answer"
+            ? question.answer
+            : question.answer[0]
+      }))
+    },
+    token
+  );
+  assert.equal(result.response.status, 200);
+  assert.equal(result.payload.results.length, postQuiz.questions.length);
+  return result.payload;
+}
+
+async function outcomeState(baseUrl, token) {
+  return requestJson(
+    baseUrl,
+    "GET",
+    "/api/learning/proactive/outcomes?chapterId=V14-C3",
+    undefined,
+    token
+  );
+}
+
+async function updateParticipation(
+  baseUrl,
+  token,
+  action,
+  {
+    confirmed = action === "enroll",
+    consentVersion = "",
+    reason = action === "withdraw" ? "student_withdrawal" : ""
+  } = {}
+) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/proactive/participation",
+    {
+      chapterId: "V14-C3",
+      action,
+      confirmed,
+      consentVersion,
+      reason
+    },
+    token
+  );
+}
+
+async function startOutcome(baseUrl, token, stageId) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/proactive/outcomes/start",
+    {
+      chapterId: "V14-C3",
+      stageId
+    },
+    token
+  );
+}
+
+async function saveOutcomeDraft(
+  baseUrl,
+  token,
+  stageId,
+  sessionId,
+  responses
+) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/proactive/outcomes/draft",
+    {
+      chapterId: "V14-C3",
+      stageId,
+      sessionId,
+      responses
+    },
+    token
+  );
+}
+
+async function submitOutcome(
+  baseUrl,
+  token,
+  stageId,
+  sessionId,
+  responses
+) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/proactive/outcomes/submit",
+    {
+      chapterId: "V14-C3",
+      stageId,
+      sessionId,
+      responses,
+      startedAt: "2000-01-01T00:00:00.000Z",
+      durationMs: 1
+    },
+    token
+  );
+}
+
+async function withdrawOutcome(
+  baseUrl,
+  token,
+  sessionId,
+  reason = "student_exit"
+) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/proactive/outcomes/withdraw",
+    {
+      chapterId: "V14-C3",
+      sessionId,
+      reason
+    },
+    token
+  );
 }
 
 async function seedRepeatedParameterEvidence(
@@ -510,6 +664,53 @@ async function updateProactivePreference(baseUrl, token, preference) {
   );
 }
 
+async function updateProactiveScopePreference(
+  baseUrl,
+  token,
+  scopeKey,
+  preference
+) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/proactive/scope-preference",
+    {
+      chapterId: "V14-C3",
+      scopeKey,
+      preference
+    },
+    token
+  );
+}
+
+async function requestAlternativeHelp(
+  baseUrl,
+  token,
+  unit,
+  currentSceneType,
+  sourceDecisionId
+) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/assistant/intervention",
+    {
+      chapterId: "V14-C3",
+      unitId: unit.id,
+      sceneType: currentSceneType,
+      signal: {
+        kind: "student_requested_alternative",
+        sourceDecisionId
+      },
+      contextRef: {
+        kind: "unit",
+        scope: "lesson"
+      }
+    },
+    token
+  );
+}
+
 async function answerProactivePrompt(
   baseUrl,
   token,
@@ -518,8 +719,34 @@ async function answerProactivePrompt(
   question,
   { knowledgeUnit = false } = {}
 ) {
+  const response = await requestProactivePromptAnswer(
+    baseUrl,
+    token,
+    unit,
+    interventionId,
+    question,
+    { knowledgeUnit }
+  );
+  const text = await response.text();
+  assert.equal(response.status, 200, text);
+  const events = text
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+  assert.ok(events.some((event) => event.type === "done"));
+  return events;
+}
+
+async function requestProactivePromptAnswer(
+  baseUrl,
+  token,
+  unit,
+  interventionId,
+  question,
+  { knowledgeUnit = false } = {}
+) {
   const unitId = knowledgeUnit ? unit.id : `${unit.id}-formative`;
-  const response = await fetch(`${baseUrl}/api/learning/assistant/ask`, {
+  return fetch(`${baseUrl}/api/learning/assistant/ask`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -538,14 +765,6 @@ async function answerProactivePrompt(
       }
     })
   });
-  const text = await response.text();
-  assert.equal(response.status, 200, text);
-  const events = text
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
-  assert.ok(events.some((event) => event.type === "done"));
-  return events;
 }
 
 async function adminDecisions(baseUrl, adminToken) {
@@ -554,6 +773,27 @@ async function adminDecisions(baseUrl, adminToken) {
     "GET",
     "/api/admin/research/proactive-decisions?experimentId=v14-c3-api-test&limit=1000",
     undefined,
+    adminToken
+  );
+}
+
+async function updateExperimentRuntime(
+  baseUrl,
+  adminToken,
+  status,
+  reason = "",
+  updatedBy = "api-test"
+) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/admin/research/proactive-runtime",
+    {
+      experimentId: "v14-c3-api-test",
+      status,
+      reason,
+      updatedBy
+    },
     adminToken
   );
 }
@@ -604,6 +844,18 @@ async function runUndeliveredEscalationRegression({
       preferenceUnit
     );
     assert.equal(preferenceOffer.payload.study.deliveryDecision, "intervene");
+    const prematureReply = await requestProactivePromptAnswer(
+      runtime.baseUrl,
+      treatment.token,
+      preferenceUnit,
+      preferenceOffer.payload.interventionId,
+      "我还没有接受这次主动建议。"
+    );
+    assert.equal(prematureReply.status, 409);
+    assert.equal(
+      (await prematureReply.json()).code,
+      "assistant_intervention_not_accepted"
+    );
     await resolveDecision(
       runtime.baseUrl,
       treatment.token,
@@ -629,6 +881,18 @@ async function runUndeliveredEscalationRegression({
     assert.equal(
       closedPreferenceState.lifecycle.lastOutcome,
       "student_preference_off"
+    );
+    const closedReply = await requestProactivePromptAnswer(
+      runtime.baseUrl,
+      treatment.token,
+      preferenceUnit,
+      preferenceOffer.payload.interventionId,
+      "关闭主动帮助后不应继续复用这条提示。"
+    );
+    assert.equal(closedReply.status, 409);
+    assert.equal(
+      (await closedReply.json()).code,
+      "assistant_intervention_expired"
     );
     await updateProactivePreference(
       runtime.baseUrl,
@@ -748,6 +1012,737 @@ async function runUndeliveredEscalationRegression({
   }
 }
 
+async function runBalancedAssignmentRegression({
+  root,
+  tmpDir,
+  sourceChapter,
+  adminToken
+}) {
+  const dbPath = path.join(tmpDir, "proactive-balanced-assignment.db");
+  let runtime;
+  try {
+    runtime = await startServer(
+      root,
+      dbPath,
+      "shadow",
+      adminToken,
+      {
+        assignmentStrategy: "stratified-balanced",
+        assignmentVersion: "api-test-balanced-v1",
+        experimentArms: "control,minimal,adaptive",
+        displayArms: "minimal,adaptive"
+      }
+    );
+    for (let index = 0; index < 15; index += 1) {
+      const participant = await register(
+        runtime.baseUrl,
+        `平衡分配${Date.now()}${index}`
+      );
+      await submitPretest(
+        runtime.baseUrl,
+        participant.token,
+        sourceChapter.flow.preQuiz
+      );
+      const state = await requestJson(
+        runtime.baseUrl,
+        "GET",
+        "/api/learning/proactive/state?chapterId=V14-C3",
+        undefined,
+        participant.token
+      );
+      assert.equal(state.response.status, 200);
+      assert.equal(state.payload.data.assignmentPending, false);
+    }
+    const admin = await adminDecisions(runtime.baseUrl, adminToken);
+    assert.equal(admin.response.status, 200);
+    assert.equal(
+      admin.payload.data.policy.assignmentStrategy,
+      "stratified-balanced"
+    );
+    assert.equal(
+      admin.payload.data.protocol.definition.policy.assignmentVersion,
+      "api-test-balanced-v1"
+    );
+    const counts = Object.fromEntries(
+      ["control", "minimal", "adaptive"].map((condition) => {
+        const participants = admin.payload.data.assignments
+          .filter((row) => (
+            row.condition === condition
+            && row.stratum === "pre-high"
+          ))
+          .reduce((sum, row) => sum + Number(row.participants || 0), 0);
+        return [condition, participants];
+      })
+    );
+    assert.equal(
+      Object.values(counts).reduce((sum, value) => sum + value, 0),
+      15
+    );
+    assert.ok(
+      Math.max(...Object.values(counts)) - Math.min(...Object.values(counts)) <= 1,
+      `三臂层内平衡分配人数差不应超过 1：${JSON.stringify(counts)}`
+    );
+  } finally {
+    await stopChild(runtime?.child);
+  }
+}
+
+async function runProtocolDriftRegression({
+  root,
+  tmpDir,
+  adminToken
+}) {
+  const dbPath = path.join(tmpDir, "proactive-protocol-drift.db");
+  const experimentId = "v14-c3-protocol-drift-test";
+  const baselineOptions = {
+    experimentId,
+    policyVersion: "v14-c3-protocol-baseline-v1"
+  };
+  let runtime;
+  try {
+    runtime = await startServer(
+      root,
+      dbPath,
+      "shadow",
+      adminToken,
+      baselineOptions
+    );
+    const baseline = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      `/api/admin/research/proactive-decisions?experimentId=${encodeURIComponent(experimentId)}`,
+      undefined,
+      adminToken
+    );
+    assert.equal(baseline.response.status, 200);
+    const baselineFingerprint = baseline.payload.data.protocol.fingerprint;
+    assert.match(baselineFingerprint, /^[a-f0-9]{64}$/);
+    await stopChild(runtime.child);
+    runtime = null;
+
+    let driftRuntime;
+    let driftError = null;
+    try {
+      driftRuntime = await startServer(
+        root,
+        dbPath,
+        "shadow",
+        adminToken,
+        {
+          ...baselineOptions,
+          policyVersion: "v14-c3-protocol-drifted-v2"
+        }
+      );
+    } catch (error) {
+      driftError = error;
+    } finally {
+      await stopChild(driftRuntime?.child);
+    }
+    assert.ok(driftError, "同一 experiment id 的协议漂移必须拒绝启动");
+    assert.match(
+      driftError.message,
+      /协议指纹与已冻结快照不一致|PROACTIVE_PROTOCOL_FINGERPRINT_MISMATCH/
+    );
+
+    runtime = await startServer(
+      root,
+      dbPath,
+      "shadow",
+      adminToken,
+      baselineOptions
+    );
+    const restored = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      `/api/admin/research/proactive-decisions?experimentId=${encodeURIComponent(experimentId)}`,
+      undefined,
+      adminToken
+    );
+    assert.equal(restored.response.status, 200);
+    assert.equal(
+      restored.payload.data.protocol.fingerprint,
+      baselineFingerprint
+    );
+    assert.equal(restored.payload.data.protocol.currentMatches, true);
+  } finally {
+    await stopChild(runtime?.child);
+  }
+}
+
+async function runExplicitParticipationRegression({
+  root,
+  tmpDir,
+  sourceChapter,
+  units,
+  adminToken
+}) {
+  const dbPath = path.join(tmpDir, "proactive-explicit-participation.db");
+  const consentVersion = "v14-c3-consent-test-v1";
+  const consentNoticeUrl = "/research/v14-c3-consent-test-v1.html";
+  let runtime;
+  try {
+    runtime = await startServer(
+      root,
+      dbPath,
+      "active",
+      adminToken,
+      {
+        participationMode: "explicit-consent",
+        consentVersion,
+        consentNoticeUrl,
+        dailyInterventions: 30
+      }
+    );
+
+    let interventionParticipant = null;
+    for (let index = 0; index < 16; index += 1) {
+      const participant = await register(
+        runtime.baseUrl,
+        `显式参与${Date.now()}${index}`
+      );
+      if (
+        expectedCondition(participant.participantId) === "treatment"
+      ) {
+        interventionParticipant = participant;
+        break;
+      }
+    }
+    assert.ok(
+      interventionParticipant,
+      "显式参与回归需要一个 Treatment 学生"
+    );
+
+    await submitPretest(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      sourceChapter.flow.preQuiz
+    );
+    const beforeConsent = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      "/api/learning/proactive/state?chapterId=V14-C3",
+      undefined,
+      interventionParticipant.token
+    );
+    assert.equal(beforeConsent.response.status, 200);
+    assert.equal(beforeConsent.payload.data.pretest.ready, true);
+    assert.equal(beforeConsent.payload.data.participation.mode, "explicit-consent");
+    assert.equal(beforeConsent.payload.data.participation.status, "not_enrolled");
+    assert.equal(beforeConsent.payload.data.participation.canEnroll, true);
+    assert.equal(
+      beforeConsent.payload.data.participation.consentVersion,
+      consentVersion
+    );
+    assert.equal(
+      beforeConsent.payload.data.participation.consentNoticeUrl,
+      consentNoticeUrl
+    );
+    assert.equal(beforeConsent.payload.data.assignment, null);
+    assert.equal(beforeConsent.payload.data.assignmentPending, false);
+    assert.equal(beforeConsent.payload.data.candidateCollectionEnabled, false);
+
+    await seedRepeatedParameterEvidence(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      units[0],
+      units[0].resourceCandidates[0].type,
+      "explicit-before-consent"
+    );
+    const beforeConsentDecision = await requestRepeatedDecision(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      units[0],
+      units[0].resourceCandidates[0].type
+    );
+    assert.equal(beforeConsentDecision.response.status, 200);
+    assert.equal(
+      beforeConsentDecision.payload.study.deliveryDecision,
+      "stay_silent"
+    );
+    assert.equal(beforeConsentDecision.payload.decision.action, "stay_silent");
+
+    const staleConsent = await updateParticipation(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      "enroll",
+      {
+        confirmed: true,
+        consentVersion: "stale-consent-version"
+      }
+    );
+    assert.equal(staleConsent.response.status, 409);
+    assert.equal(
+      staleConsent.payload.code,
+      "proactive_consent_confirmation_required"
+    );
+
+    const unconfirmedConsent = await updateParticipation(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      "enroll",
+      {
+        confirmed: false,
+        consentVersion
+      }
+    );
+    assert.equal(unconfirmedConsent.response.status, 409);
+    assert.equal(
+      unconfirmedConsent.payload.code,
+      "proactive_consent_confirmation_required"
+    );
+
+    const enrollment = await updateParticipation(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      "enroll",
+      { confirmed: true, consentVersion }
+    );
+    assert.equal(enrollment.response.status, 200);
+    assert.equal(enrollment.payload.idempotent, false);
+    assert.equal(enrollment.payload.data.participation.status, "enrolled");
+    assert.equal(enrollment.payload.data.assignmentPending, false);
+    assert.ok(enrollment.payload.data.assignment);
+    assert.equal(enrollment.payload.data.candidateCollectionEnabled, true);
+
+    const lifecycleUnit = units[0];
+    await submitWrongFormative(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      lifecycleUnit
+    );
+    const lifecycleOffer = await requestFormativeOutcome(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      lifecycleUnit
+    );
+    assert.equal(lifecycleOffer.payload.study.deliveryDecision, "intervene");
+    await resolveDecision(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      lifecycleOffer.payload.decisionId,
+      "shown"
+    );
+    await resolveDecision(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      lifecycleOffer.payload.decisionId,
+      "accepted"
+    );
+    await answerProactivePrompt(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      lifecycleUnit,
+      lifecycleOffer.payload.interventionId,
+      "我先解释自己刚才为什么会选错。"
+    );
+    const lifecycleStateBeforeWithdrawal = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      "/api/learning/proactive/state?chapterId=V14-C3",
+      undefined,
+      interventionParticipant.token
+    );
+    assert.ok(
+      lifecycleStateBeforeWithdrawal.payload.data.policyStates.some(
+        (row) => (
+          row.scopeKey === lifecycleUnit.id
+          && row.lifecycle.phase === "awaiting_independent_attempt"
+        )
+      ),
+      "退出研究前应存在一个等待独立验证的支架生命周期"
+    );
+
+    const pendingUnit = units[1];
+    const pendingScene = pendingUnit.resourceCandidates[0].type;
+    await seedRepeatedParameterEvidence(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      pendingUnit,
+      pendingScene,
+      "explicit-pending-offer"
+    );
+    const pendingOffer = await requestRepeatedDecision(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      pendingUnit,
+      pendingScene
+    );
+    assert.equal(pendingOffer.payload.study.deliveryDecision, "intervene");
+    assert.ok(pendingOffer.payload.interventionId);
+
+    const withdrawal = await updateParticipation(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      "withdraw",
+      { reason: "privacy_concern" }
+    );
+    assert.equal(withdrawal.response.status, 200);
+    assert.equal(withdrawal.payload.idempotent, false);
+    assert.ok(withdrawal.payload.closure.closedInterventions >= 1);
+    assert.ok(withdrawal.payload.closure.closedLifecycleEpisodes >= 1);
+    assert.equal(withdrawal.payload.data.participation.status, "withdrawn");
+    assert.equal(withdrawal.payload.data.participation.canEnroll, false);
+    assert.equal(withdrawal.payload.data.participation.canWithdraw, false);
+    assert.equal(withdrawal.payload.data.assignment, null);
+    assert.equal(withdrawal.payload.data.assignmentPending, false);
+    assert.equal(withdrawal.payload.data.candidateCollectionEnabled, false);
+    assert.deepEqual(withdrawal.payload.data.policyStates, []);
+
+    const reenroll = await updateParticipation(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      "enroll",
+      { confirmed: true, consentVersion }
+    );
+    assert.equal(reenroll.response.status, 409);
+    assert.equal(
+      reenroll.payload.code,
+      "proactive_participation_withdrawn_terminal"
+    );
+
+    await seedRepeatedParameterEvidence(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      pendingUnit,
+      pendingScene,
+      "explicit-after-withdrawal"
+    );
+    const withdrawnDecision = await requestRepeatedDecision(
+      runtime.baseUrl,
+      interventionParticipant.token,
+      pendingUnit,
+      pendingScene
+    );
+    assert.equal(withdrawnDecision.response.status, 200);
+    assert.equal(
+      withdrawnDecision.payload.study.deliveryDecision,
+      "stay_silent"
+    );
+    assert.equal(withdrawnDecision.payload.decision.action, "stay_silent");
+
+    const measurementParticipant = await register(
+      runtime.baseUrl,
+      `显式测量退出${Date.now()}`
+    );
+    const measurementEnrollment = await updateParticipation(
+      runtime.baseUrl,
+      measurementParticipant.token,
+      "enroll",
+      { confirmed: true, consentVersion }
+    );
+    assert.equal(measurementEnrollment.response.status, 200);
+    await submitPretest(
+      runtime.baseUrl,
+      measurementParticipant.token,
+      sourceChapter.flow.preQuiz
+    );
+    await submitPosttest(
+      runtime.baseUrl,
+      measurementParticipant.token,
+      sourceChapter.flow.postQuiz
+    );
+    const measurementStart = await startOutcome(
+      runtime.baseUrl,
+      measurementParticipant.token,
+      "near_transfer"
+    );
+    assert.equal(measurementStart.response.status, 200);
+    assert.ok(measurementStart.payload.sessionId);
+    const measurementWithdrawal = await updateParticipation(
+      runtime.baseUrl,
+      measurementParticipant.token,
+      "withdraw",
+      { reason: "burden" }
+    );
+    assert.equal(measurementWithdrawal.response.status, 200);
+    assert.equal(
+      measurementWithdrawal.payload.closure.withdrawnOutcomeSessions,
+      1
+    );
+    const withdrawnOutcomeState = await outcomeState(
+      runtime.baseUrl,
+      measurementParticipant.token
+    );
+    assert.equal(withdrawnOutcomeState.response.status, 200);
+    assert.equal(withdrawnOutcomeState.payload.data.activeSession, null);
+    assert.equal(
+      withdrawnOutcomeState.payload.data.participation.status,
+      "withdrawn"
+    );
+    const withdrawnNearTransfer = withdrawnOutcomeState.payload.data.stages.find(
+      (stage) => stage.id === "near_transfer"
+    );
+    assert.equal(withdrawnNearTransfer.status, "withdrawn");
+
+    const admin = await adminDecisions(runtime.baseUrl, adminToken);
+    assert.equal(admin.response.status, 200);
+    assert.equal(admin.payload.data.policy.participationMode, "explicit-consent");
+    assert.equal(admin.payload.data.policy.participationReady, true);
+    assert.equal(admin.payload.data.integrity.signals.length, 8);
+    assert.equal(
+      admin.payload.data.integrity.signals.find(
+        (signal) => signal.id === "post_withdrawal_display"
+      )?.count,
+      0
+    );
+    assert.ok(
+      admin.payload.data.assignments.reduce(
+        (sum, row) => sum + Number(row.participants || 0),
+        0
+      ) >= 2,
+      "退出研究后原 assignment 必须保留供 ITT 分析"
+    );
+    assert.ok(
+      admin.payload.data.participation.some(
+        (row) => (
+          row.status === "withdrawn"
+          && row.consent_version === consentVersion
+          && Number(row.participants || 0) >= 2
+        )
+      )
+    );
+    const storedPendingOffer = admin.payload.data.rows.find(
+      (row) => row.id === pendingOffer.payload.decisionId
+    );
+    assert.equal(storedPendingOffer.intervention_status, "study_withdrawn");
+    assert.equal(storedPendingOffer.resolution, "study_withdrawn");
+    assert.equal(storedPendingOffer.participation_status, "withdrawn");
+    assert.equal(
+      storedPendingOffer.participation_consent_version,
+      consentVersion
+    );
+    const storedWithdrawnDecision = admin.payload.data.rows.find(
+      (row) => row.id === withdrawnDecision.payload.decisionId
+    );
+    assert.ok(
+      storedWithdrawnDecision.reason_codes.includes("participant_withdrawn")
+    );
+    assert.equal(storedWithdrawnDecision.participation_status, "withdrawn");
+    const storedBeforeConsentDecision = admin.payload.data.rows.find(
+      (row) => row.id === beforeConsentDecision.payload.decisionId
+    );
+    assert.ok(
+      storedBeforeConsentDecision.reason_codes.includes(
+        "participant_not_enrolled"
+      )
+    );
+    const treatmentFlow = admin.payload.data.participantFlow.find(
+      (row) => row.condition === "treatment"
+    );
+    assert.ok(treatmentFlow?.studyWithdrawn >= 1);
+    assert.ok(
+      admin.payload.data.participantFlow.some(
+        (row) => row.nearWithdrawn >= 1 && row.studyWithdrawn >= 1
+      ),
+      "研究退出与测量退出必须在参与者流中分别保留"
+    );
+    assert.ok(
+      Array.isArray(admin.payload.data.outcomes.sessions),
+      "管理员 API 必须返回测量会话明细"
+    );
+    const withdrawnMeasurementSession = admin.payload.data.outcomes.sessions.find(
+      (row) => row.id === measurementStart.payload.sessionId
+    );
+    assert.ok(withdrawnMeasurementSession);
+    assert.equal(withdrawnMeasurementSession.status, "withdrawn");
+    assert.equal(
+      withdrawnMeasurementSession.withdrawal_reason,
+      "consent_withdrawal"
+    );
+    assert.equal(
+      withdrawnMeasurementSession.participation_status,
+      "withdrawn"
+    );
+    assert.equal(
+      withdrawnMeasurementSession.participation_consent_version,
+      consentVersion
+    );
+    assert.ok(
+      admin.payload.data.outcomes.sessionSummary.some(
+        (row) => (
+          row.stage === "near_transfer"
+          && row.status === "withdrawn"
+          && Number(row.sessions || 0) >= 1
+        )
+      ),
+      "管理员 API 必须保留按阶段与状态汇总的测量失访"
+    );
+  } finally {
+    await stopChild(runtime?.child);
+  }
+}
+
+async function runDecisionAuthorizationRegression({
+  root,
+  tmpDir,
+  sourceChapter,
+  units,
+  adminToken
+}) {
+  const dbPath = path.join(tmpDir, "proactive-decision-authorization.db");
+  let runtime;
+  try {
+    runtime = await startServer(root, dbPath, "active", adminToken);
+    let treatment = null;
+    for (let index = 0; index < 24; index += 1) {
+      const candidate = await register(
+        runtime.baseUrl,
+        `decision-auth-${Date.now()}-${index}`
+      );
+      if (expectedCondition(candidate.participantId) === "treatment") {
+        treatment = candidate;
+        break;
+      }
+    }
+    assert.ok(treatment, "决策授权回归需要 Treatment 学生");
+    await submitPretest(runtime.baseUrl, treatment.token, sourceChapter.flow.preQuiz);
+
+    const pausedUnit = units[0];
+    const pausedSceneType = pausedUnit.resourceCandidates[0].type;
+    await seedRepeatedParameterEvidence(
+      runtime.baseUrl,
+      treatment.token,
+      pausedUnit,
+      pausedSceneType,
+      "decision-auth-paused"
+    );
+    const pausedOffer = await requestRepeatedDecision(
+      runtime.baseUrl,
+      treatment.token,
+      pausedUnit,
+      pausedSceneType
+    );
+    assert.equal(pausedOffer.payload.study.deliveryDecision, "intervene");
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      pausedOffer.payload.decisionId,
+      "shown"
+    );
+
+    const paused = await updateExperimentRuntime(
+      runtime.baseUrl,
+      adminToken,
+      "paused",
+      "决策授权回归：暂停后旧提示不得继续执行",
+      "authorization-regression"
+    );
+    assert.equal(paused.response.status, 200);
+    const pausedResolution = await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      pausedOffer.payload.decisionId,
+      "accepted"
+    );
+    assert.equal(pausedResolution.response.status, 409);
+    assert.equal(
+      pausedResolution.payload.code,
+      "proactive_decision_paused",
+      "实验暂停后不得把旧提示继续记为已接受"
+    );
+    const pausedAlternative = await requestAlternativeHelp(
+      runtime.baseUrl,
+      treatment.token,
+      pausedUnit,
+      pausedSceneType,
+      pausedOffer.payload.decisionId
+    );
+    assert.equal(pausedAlternative.response.status, 409);
+    assert.equal(
+      pausedAlternative.payload.code,
+      "proactive_alternative_source_paused",
+      "实验暂停后不得由旧提示继续派生替代帮助"
+    );
+
+    const resumed = await updateExperimentRuntime(
+      runtime.baseUrl,
+      adminToken,
+      "active",
+      "",
+      "authorization-regression"
+    );
+    assert.equal(resumed.response.status, 200);
+
+    const staleUnit = units[1];
+    const staleSceneType = staleUnit.resourceCandidates[0].type;
+    await seedRepeatedParameterEvidence(
+      runtime.baseUrl,
+      treatment.token,
+      staleUnit,
+      staleSceneType,
+      "decision-auth-generation"
+    );
+    const staleOffer = await requestRepeatedDecision(
+      runtime.baseUrl,
+      treatment.token,
+      staleUnit,
+      staleSceneType
+    );
+    assert.equal(staleOffer.payload.study.deliveryDecision, "intervene");
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      staleOffer.payload.decisionId,
+      "shown"
+    );
+
+    const snapshot = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      "/api/learning/snapshot",
+      undefined,
+      treatment.token
+    );
+    assert.equal(snapshot.response.status, 200);
+    const reset = await requestJson(
+      runtime.baseUrl,
+      "POST",
+      "/api/learning/reset",
+      {
+        generation: snapshot.payload.generation,
+        baseRevision: snapshot.payload.revision,
+        snapshot: {
+          currentChapterId: "V14-C3",
+          currentUnitId: "V14-C3-pre",
+          completed: [],
+          submittedQuizzes: [],
+          quizResults: []
+        }
+      },
+      treatment.token
+    );
+    assert.equal(reset.response.status, 200);
+
+    const staleResolution = await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      staleOffer.payload.decisionId,
+      "accepted"
+    );
+    assert.equal(staleResolution.response.status, 410);
+    assert.equal(
+      staleResolution.payload.code,
+      "proactive_decision_inactive",
+      "旧学习代次的提示不得在新代次中继续改变状态"
+    );
+    const staleAlternative = await requestAlternativeHelp(
+      runtime.baseUrl,
+      treatment.token,
+      staleUnit,
+      staleSceneType,
+      staleOffer.payload.decisionId
+    );
+    assert.equal(staleAlternative.response.status, 410);
+    assert.equal(
+      staleAlternative.payload.code,
+      "proactive_alternative_source_inactive",
+      "旧学习代次的提示不得在新代次中派生替代帮助"
+    );
+  } finally {
+    await stopChild(runtime?.child);
+  }
+}
+
 async function main() {
   const root = path.resolve(__dirname, "..");
   const route = JSON.parse(fs.readFileSync(
@@ -857,6 +1852,33 @@ async function main() {
     const pendingAdmin = await adminDecisions(runtime.baseUrl, adminToken);
     assert.equal(pendingAdmin.response.status, 200);
     assert.equal(pendingAdmin.payload.data.assignments.length, 0);
+    assert.equal(pendingAdmin.payload.data.policy.assignmentStrategy, "hash");
+    assert.equal(pendingAdmin.payload.data.runtime.status, "active");
+    assert.equal(pendingAdmin.payload.data.runtimeEvents.length, 0);
+    assert.equal(pendingAdmin.payload.data.protocol.currentMatches, true);
+    assert.match(
+      pendingAdmin.payload.data.protocol.fingerprint,
+      /^[a-f0-9]{64}$/
+    );
+    assert.equal(
+      pendingAdmin.payload.data.protocol.definition.courseRouteVersion,
+      route.versionId
+    );
+    assert.match(
+      pendingAdmin.payload.data.protocol.definition.courseRouteDigest,
+      /^[a-f0-9]{64}$/
+    );
+    assert.match(
+      pendingAdmin.payload.data.protocol.definition.sourceDigests.policyKernel,
+      /^[a-f0-9]{64}$/
+    );
+    assert.equal(
+      pendingAdmin.payload.data.protocol.definition.stoppingRules.advisoryOnly,
+      true
+    );
+    assert.equal(pendingAdmin.payload.data.integrity.advisoryOnly, true);
+    assert.equal(pendingAdmin.payload.data.integrity.signals.length, 8);
+    assert.deepEqual(pendingAdmin.payload.data.participantFlow, []);
     const storedPending = pendingAdmin.payload.data.rows.find(
       (row) => row.id === pendingDecision.payload.decisionId
     );
@@ -1593,11 +2615,142 @@ async function main() {
       awaitingState.verificationCheck.id
     );
 
-    const recoveredOutcome = await submitVerificationCheck(
+    const subgoal = await submitVerificationCheck(
       runtime.baseUrl,
       treatment.token,
       lifecycleUnit,
       l2AwaitingState.verificationCheck,
+      { correct: false }
+    );
+    assert.equal(subgoal.response.status, 200);
+    assert.equal(subgoal.payload.checkResult.status, "incorrect");
+    assert.equal(subgoal.payload.study.deliveryDecision, "intervene");
+    assert.equal(subgoal.payload.decision.action, "decompose_subgoal");
+    assert.equal(subgoal.payload.decision.supportLevel, "L3");
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      subgoal.payload.decisionId,
+      "shown"
+    );
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      subgoal.payload.decisionId,
+      "accepted"
+    );
+    await answerProactivePrompt(
+      runtime.baseUrl,
+      treatment.token,
+      lifecycleUnit,
+      subgoal.payload.interventionId,
+      "我先定义 u，再检查导数因子和 dx 是否合成 du，最后单独换定积分上下限。"
+    );
+    const l3StateResponse = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      "/api/learning/proactive/state?chapterId=V14-C3",
+      undefined,
+      treatment.token
+    );
+    const l3State = l3StateResponse.payload.data.policyStates.find(
+      (row) => row.scopeKey === lifecycleUnit.id
+    );
+    assert.equal(l3State.currentLevel, "L3");
+    assert.equal(l3State.verificationCheck.supportLevel, "L3");
+
+    const nextStep = await submitVerificationCheck(
+      runtime.baseUrl,
+      treatment.token,
+      lifecycleUnit,
+      l3State.verificationCheck,
+      { correct: false }
+    );
+    assert.equal(nextStep.response.status, 200);
+    assert.equal(nextStep.payload.decision.action, "next_step_hint");
+    assert.equal(nextStep.payload.decision.supportLevel, "L4");
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      nextStep.payload.decisionId,
+      "shown"
+    );
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      nextStep.payload.decisionId,
+      "accepted"
+    );
+    await answerProactivePrompt(
+      runtime.baseUrl,
+      treatment.token,
+      lifecycleUnit,
+      nextStep.payload.interventionId,
+      "我会先圈出仍含 x 的部分，让积分号内、微分元和上下限统一使用 u。"
+    );
+    const l4StateResponse = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      "/api/learning/proactive/state?chapterId=V14-C3",
+      undefined,
+      treatment.token
+    );
+    const l4State = l4StateResponse.payload.data.policyStates.find(
+      (row) => row.scopeKey === lifecycleUnit.id
+    );
+    assert.equal(l4State.currentLevel, "L4");
+    assert.equal(l4State.verificationCheck.supportLevel, "L4");
+
+    const partialExample = await submitVerificationCheck(
+      runtime.baseUrl,
+      treatment.token,
+      lifecycleUnit,
+      l4State.verificationCheck,
+      { correct: false }
+    );
+    assert.equal(partialExample.response.status, 200);
+    assert.equal(
+      partialExample.payload.decision.action,
+      "partial_worked_example"
+    );
+    assert.equal(partialExample.payload.decision.supportLevel, "L5");
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      partialExample.payload.decisionId,
+      "shown"
+    );
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      partialExample.payload.decisionId,
+      "accepted"
+    );
+    await answerProactivePrompt(
+      runtime.baseUrl,
+      treatment.token,
+      lifecycleUnit,
+      partialExample.payload.interventionId,
+      "例子里 u=x²、du=2x dx，上下限仍是 0 到 1，所以最后只需计算新的 u 积分。"
+    );
+    const l5StateResponse = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      "/api/learning/proactive/state?chapterId=V14-C3",
+      undefined,
+      treatment.token
+    );
+    const l5State = l5StateResponse.payload.data.policyStates.find(
+      (row) => row.scopeKey === lifecycleUnit.id
+    );
+    assert.equal(l5State.currentLevel, "L5");
+    assert.equal(l5State.verificationCheck.supportLevel, "L5");
+
+    const recoveredOutcome = await submitVerificationCheck(
+      runtime.baseUrl,
+      treatment.token,
+      lifecycleUnit,
+      l5State.verificationCheck,
       { correct: true }
     );
     assert.equal(recoveredOutcome.response.status, 200);
@@ -1617,6 +2770,11 @@ async function main() {
     );
     assert.equal(recoveredOutcome.payload.study.policyState.currentLevel, "L0");
     assert.equal(recoveredOutcome.payload.study.policyState.fadeLevel, 1);
+    assert.ok(
+      Date.parse(recoveredOutcome.payload.study.policyState.cooldownUntil)
+        > Date.now() + 15 * 60 * 1000,
+      "服务端必须真正持久化渐退后的延长冷却"
+    );
 
     const coursewareUnit = units[6];
     const coursewareSceneType = coursewareUnit.resourceCandidates[0].type;
@@ -1684,12 +2842,177 @@ async function main() {
       coursewareEscalation.payload.decisionId,
       "shown"
     );
+    const forgedAlternative = await requestAlternativeHelp(
+      runtime.baseUrl,
+      control.token,
+      coursewareUnit,
+      coursewareSceneType,
+      coursewareEscalation.payload.decisionId
+    );
+    assert.equal(forgedAlternative.response.status, 404);
+    const alternativeHelp = await requestAlternativeHelp(
+      runtime.baseUrl,
+      treatment.token,
+      coursewareUnit,
+      coursewareSceneType,
+      coursewareEscalation.payload.decisionId
+    );
+    assert.equal(alternativeHelp.response.status, 200);
+    assert.equal(alternativeHelp.payload.study.deliveryDecision, "intervene");
+    assert.equal(alternativeHelp.payload.decision.action, "switch_representation");
+    assert.equal(alternativeHelp.payload.decision.interactionMode, "scene_switch");
+    assert.equal(alternativeHelp.payload.decision.targetUnitId, coursewareUnit.id);
+    assert.notEqual(
+      alternativeHelp.payload.decision.targetSceneType,
+      coursewareSceneType
+    );
     await resolveDecision(
       runtime.baseUrl,
       treatment.token,
-      coursewareEscalation.payload.decisionId,
-      "dismissed"
+      alternativeHelp.payload.decisionId,
+      "shown"
     );
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      alternativeHelp.payload.decisionId,
+      "accepted"
+    );
+
+    const autonomyUnit = units[2];
+    const autonomySceneType = autonomyUnit.resourceCandidates[0].type;
+    await seedRepeatedParameterEvidence(
+      runtime.baseUrl,
+      treatment.token,
+      autonomyUnit,
+      autonomySceneType,
+      "autonomy-snooze-evidence"
+    );
+    const autonomyOffer = await requestRepeatedDecision(
+      runtime.baseUrl,
+      treatment.token,
+      autonomyUnit,
+      autonomySceneType
+    );
+    assert.equal(autonomyOffer.payload.study.deliveryDecision, "intervene");
+    await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      autonomyOffer.payload.decisionId,
+      "shown"
+    );
+    const snoozed = await resolveDecision(
+      runtime.baseUrl,
+      treatment.token,
+      autonomyOffer.payload.decisionId,
+      "snoozed"
+    );
+    assert.equal(snoozed.response.status, 200);
+    assert.equal(snoozed.payload.data.resolution, "snoozed");
+    assert.equal(snoozed.payload.data.policyState.dismissStreak, 0);
+    assert.ok(
+      Date.parse(snoozed.payload.data.policyState.cooldownUntil) > Date.now(),
+      "稍后处理必须设置知识点级冷却"
+    );
+
+    let scopeMuteTreatment = null;
+    for (let index = 0; index < 24; index += 1) {
+      const candidate = await register(
+        runtime.baseUrl,
+        `scope-mute-${Date.now()}-${index}`
+      );
+      const condition = expectedCondition(candidate.participantId);
+      if (condition === "treatment") {
+        scopeMuteTreatment = { ...candidate, condition };
+        break;
+      }
+    }
+    assert.ok(
+      scopeMuteTreatment,
+      "知识点静音回归需要一个没有既有政策生命周期的 Treatment 学生"
+    );
+    await submitPretest(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      sourceChapter.flow.preQuiz
+    );
+
+    const scopeMuteUnit = units[3];
+    const scopeMuteSceneType = scopeMuteUnit.resourceCandidates[0].type;
+    await seedRepeatedParameterEvidence(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteUnit,
+      scopeMuteSceneType,
+      "scope-mute-open-evidence"
+    );
+    const scopeMuteOffer = await requestRepeatedDecision(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteUnit,
+      scopeMuteSceneType
+    );
+    assert.equal(scopeMuteOffer.payload.study.deliveryDecision, "intervene");
+    await resolveDecision(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteOffer.payload.decisionId,
+      "shown"
+    );
+    const beforeScopeMuteAudit = await adminDecisions(
+      runtime.baseUrl,
+      adminToken
+    );
+    const ignoredBeforeScopeMute = Number(
+      beforeScopeMuteAudit.payload.data.summary.ignored || 0
+    );
+    const scopeMuted = await updateProactiveScopePreference(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteUnit.id,
+      "off"
+    );
+    assert.equal(scopeMuted.response.status, 200);
+    assert.equal(scopeMuted.payload.scopePreference, "off");
+    const mutedState = scopeMuted.payload.data.policyStates.find(
+      (row) => row.scopeKey === scopeMuteUnit.id
+    );
+    assert.equal(mutedState.scopePreference, "off");
+    assert.equal(mutedState.studentPreference, "off");
+    const scopeMuteAudit = await adminDecisions(runtime.baseUrl, adminToken);
+    const storedScopeMuted = scopeMuteAudit.payload.data.rows.find(
+      (row) => row.id === scopeMuteOffer.payload.decisionId
+    );
+    assert.equal(
+      storedScopeMuted.resolution,
+      "scope_muted",
+      "明确关闭知识点提醒不能记成隐式忽略"
+    );
+    assert.equal(
+      Number(scopeMuteAudit.payload.data.summary.ignored || 0),
+      ignoredBeforeScopeMute,
+      "明确关闭知识点提醒不得污染隐式忽略指标"
+    );
+    const mutedDecision = await requestRepeatedDecision(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteUnit,
+      scopeMuteSceneType
+    );
+    assert.equal(mutedDecision.payload.study.deliveryDecision, "stay_silent");
+    const mutedAudit = await adminDecisions(runtime.baseUrl, adminToken);
+    const mutedDecisionRow = mutedAudit.payload.data.rows.find(
+      (row) => row.id === mutedDecision.payload.decisionId
+    );
+    assert.ok(mutedDecisionRow.reason_codes.includes("student_preference_off"));
+    const scopeRestored = await updateProactiveScopePreference(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteUnit.id,
+      "standard"
+    );
+    assert.equal(scopeRestored.response.status, 200);
+    assert.equal(scopeRestored.payload.scopePreference, "standard");
 
     await seedRepeatedParameterEvidence(
       runtime.baseUrl,
@@ -1847,6 +3170,266 @@ async function main() {
     assert.equal(cooldownDecision.payload.study.deliveryDecision, "stay_silent");
     assert.equal(cooldownDecision.payload.interventionId, "");
 
+    const lockedOutcomes = await outcomeState(
+      runtime.baseUrl,
+      treatment.token
+    );
+    assert.equal(lockedOutcomes.response.status, 200);
+    assert.equal(
+      lockedOutcomes.payload.data.instrumentVersion,
+      proactiveOutcomes.version
+    );
+    assert.ok(
+      lockedOutcomes.payload.data.stages.every(
+        (stage) => stage.status === "locked" && !stage.items
+      ),
+      "章后测前不得下发结果测量题目"
+    );
+    await submitPosttest(
+      runtime.baseUrl,
+      treatment.token,
+      sourceChapter.flow.postQuiz
+    );
+    const availableOutcomes = await outcomeState(
+      runtime.baseUrl,
+      treatment.token
+    );
+    const nearTransfer = availableOutcomes.payload.data.stages.find(
+      (stage) => stage.id === "near_transfer"
+    );
+    const representationTransfer = availableOutcomes.payload.data.stages.find(
+      (stage) => stage.id === "representation_transfer"
+    );
+    const retentionLocked = availableOutcomes.payload.data.stages.find(
+      (stage) => stage.id === "retention"
+    );
+    assert.equal(nearTransfer.status, "available");
+    assert.equal(representationTransfer.status, "available");
+    assert.equal(retentionLocked.status, "locked");
+    assert.ok(nearTransfer.items.length > 0);
+    nearTransfer.items.forEach((item) => {
+      assert.equal(Object.hasOwn(item, "answer"), false);
+      assert.ok(item.options.length >= 3);
+    });
+    const nearStarted = await startOutcome(
+      runtime.baseUrl,
+      treatment.token,
+      "near_transfer"
+    );
+    assert.equal(nearStarted.response.status, 200);
+    assert.equal(nearStarted.payload.data.activeSession.stageId, "near_transfer");
+    assert.equal(nearStarted.payload.data.activeSession.status, "active");
+    assert.ok(nearStarted.payload.data.activeSession.id);
+    assert.ok(nearStarted.payload.data.activeSession.startedAt);
+    const nearSessionId = nearStarted.payload.data.activeSession.id;
+    const nearDraft = await saveOutcomeDraft(
+      runtime.baseUrl,
+      treatment.token,
+      "near_transfer",
+      nearSessionId,
+      {
+        "V14-C3-NT-01": "a"
+      }
+    );
+    assert.equal(nearDraft.response.status, 200);
+    assert.equal(nearDraft.payload.answered, 1);
+
+    const restoredOutcome = await outcomeState(
+      runtime.baseUrl,
+      treatment.token
+    );
+    assert.equal(restoredOutcome.response.status, 200);
+    assert.equal(restoredOutcome.payload.data.activeSession.id, nearSessionId);
+    assert.deepEqual(
+      restoredOutcome.payload.data.activeSession.responses,
+      { "V14-C3-NT-01": "a" },
+      "跨设备读取必须恢复服务端保存的作答草稿"
+    );
+    assert.equal(
+      restoredOutcome.payload.data.stages.find(
+        (stage) => stage.id === "near_transfer"
+      ).status,
+      "active",
+      "刷新或跨设备读取时必须恢复同一测量会话"
+    );
+
+    const blockedIntervention = await requestJson(
+      runtime.baseUrl,
+      "POST",
+      "/api/learning/assistant/intervention",
+      {
+        chapterId: "V14-C3",
+        unitId: unit.id,
+        sceneType,
+        signal: { kind: "quiet_dwell" },
+        contextRef: { kind: "unit", scope: "lesson" }
+      },
+      treatment.token
+    );
+    assert.equal(blockedIntervention.response.status, 409);
+    assert.equal(
+      blockedIntervention.payload.code,
+      "proactive_outcome_session_active"
+    );
+
+    const blockedAskResponse = await fetch(
+      `${runtime.baseUrl}/api/learning/assistant/ask`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${treatment.token}`
+        },
+        body: JSON.stringify({
+          chapterId: "V14-C3",
+          unitId: unit.id,
+          sceneType,
+          question: "这道测量题应该怎么做？",
+          contextRef: { kind: "unit", scope: "lesson" }
+        })
+      }
+    );
+    const blockedAsk = await blockedAskResponse.json();
+    assert.equal(blockedAskResponse.status, 409);
+    assert.equal(blockedAsk.code, "proactive_outcome_session_active");
+
+    const blockedPlan = await requestJson(
+      runtime.baseUrl,
+      "POST",
+      "/api/learning/kg/plan",
+      {
+        chapterId: "V14-C3",
+        currentUnitId: unit.id,
+        completedUnitIds: []
+      },
+      treatment.token
+    );
+    assert.equal(blockedPlan.response.status, 409);
+    assert.equal(blockedPlan.payload.code, "proactive_outcome_session_active");
+
+    const incompleteOutcome = await submitOutcome(
+      runtime.baseUrl,
+      treatment.token,
+      "near_transfer",
+      nearSessionId,
+      {}
+    );
+    assert.equal(incompleteOutcome.response.status, 400);
+    assert.equal(
+      incompleteOutcome.payload.code,
+      "proactive_outcome_responses_incomplete"
+    );
+    const nearSubmitted = await submitOutcome(
+      runtime.baseUrl,
+      treatment.token,
+      "near_transfer",
+      nearSessionId,
+      {
+        "V14-C3-NT-01": "a",
+        "V14-C3-NT-02": "a",
+        "V14-C3-NT-03": "c"
+      }
+    );
+    assert.equal(nearSubmitted.response.status, 200);
+    assert.equal(Object.hasOwn(nearSubmitted.payload, "score"), false);
+    assert.equal(
+      nearSubmitted.payload.feedbackPolicy,
+      "acknowledgement_only"
+    );
+    assert.equal(nearSubmitted.payload.sessionId, nearSessionId);
+    assert.notEqual(
+      nearSubmitted.payload.startedAt,
+      "2000-01-01T00:00:00.000Z",
+      "测量开始时间必须以服务端会话为准"
+    );
+    const nearReplay = await submitOutcome(
+      runtime.baseUrl,
+      treatment.token,
+      "near_transfer",
+      nearSessionId,
+      {
+        "V14-C3-NT-01": "a",
+        "V14-C3-NT-02": "a",
+        "V14-C3-NT-03": "c"
+      }
+    );
+    assert.equal(nearReplay.response.status, 200);
+    assert.equal(nearReplay.payload.idempotent, true);
+    const representationStarted = await startOutcome(
+      runtime.baseUrl,
+      treatment.token,
+      "representation_transfer"
+    );
+    assert.equal(representationStarted.response.status, 200);
+    const representationSubmitted = await submitOutcome(
+      runtime.baseUrl,
+      treatment.token,
+      "representation_transfer",
+      representationStarted.payload.data.activeSession.id,
+      {
+        "V14-C3-RT-01": "b",
+        "V14-C3-RT-02": "a",
+        "V14-C3-RT-03": "a"
+      }
+    );
+    assert.equal(representationSubmitted.response.status, 200);
+    const retentionAvailable = representationSubmitted.payload.data.stages.find(
+      (stage) => stage.id === "retention"
+    );
+    assert.equal(retentionAvailable.status, "available");
+    const retentionStarted = await startOutcome(
+      runtime.baseUrl,
+      treatment.token,
+      "retention"
+    );
+    assert.equal(retentionStarted.response.status, 200);
+    const retentionSubmitted = await submitOutcome(
+      runtime.baseUrl,
+      treatment.token,
+      "retention",
+      retentionStarted.payload.data.activeSession.id,
+      {
+        "V14-C3-DR-01": "a",
+        "V14-C3-DR-02": "b",
+        "V14-C3-DR-03": "a"
+      }
+    );
+    assert.equal(retentionSubmitted.response.status, 200);
+
+    const withdrawalParticipant = await register(
+      runtime.baseUrl,
+      `测量退出${Date.now()}`
+    );
+    await submitPretest(
+      runtime.baseUrl,
+      withdrawalParticipant.token,
+      sourceChapter.flow.preQuiz
+    );
+    await submitPosttest(
+      runtime.baseUrl,
+      withdrawalParticipant.token,
+      sourceChapter.flow.postQuiz
+    );
+    const withdrawalStarted = await startOutcome(
+      runtime.baseUrl,
+      withdrawalParticipant.token,
+      "near_transfer"
+    );
+    assert.equal(withdrawalStarted.response.status, 200);
+    const withdrawn = await withdrawOutcome(
+      runtime.baseUrl,
+      withdrawalParticipant.token,
+      withdrawalStarted.payload.data.activeSession.id
+    );
+    assert.equal(withdrawn.response.status, 200);
+    assert.equal(withdrawn.payload.data.activeSession, null);
+    assert.equal(
+      withdrawn.payload.data.stages.find(
+        (stage) => stage.id === "near_transfer"
+      ).status,
+      "withdrawn"
+    );
+
     const activeAdmin = await adminDecisions(runtime.baseUrl, adminToken);
     assert.equal(activeAdmin.response.status, 200);
     assert.ok(
@@ -1869,6 +3452,15 @@ async function main() {
     const storedConceptHint = activeAdmin.payload.data.rows.find(
       (row) => row.id === conceptHint.payload.decisionId
     );
+    const storedSubgoal = activeAdmin.payload.data.rows.find(
+      (row) => row.id === subgoal.payload.decisionId
+    );
+    const storedNextStep = activeAdmin.payload.data.rows.find(
+      (row) => row.id === nextStep.payload.decisionId
+    );
+    const storedPartialExample = activeAdmin.payload.data.rows.find(
+      (row) => row.id === partialExample.payload.decisionId
+    );
     const storedDeclinedReuse = activeAdmin.payload.data.rows.find(
       (row) => row.id === declinedFormativeReuse.payload.decisionId
     );
@@ -1884,7 +3476,10 @@ async function main() {
     const storedUnverifiedIndependent = activeAdmin.payload.data.rows.find(
       (row) => row.id === unverifiedIndependent.payload.decisionId
     );
-    assert.ok(storedDeclinedReuse.reason_codes.includes("support_declined"));
+    assert.ok(
+      storedDeclinedReuse.reason_codes.includes("policy_cooldown_active"),
+      "学生明确拒绝后的新形成性结果必须先遵守冷却，不能立即再次进入支架生命周期"
+    );
     assert.ok(
       storedDeclinedIndependent.reason_codes.includes(
         "independent_attempt_not_expected"
@@ -1922,6 +3517,21 @@ async function main() {
     assert.equal(storedConceptHint.support_level, "L2");
     assert.equal(
       storedConceptHint.followup_outcome.independentAttempt.outcome,
+      "continued_friction"
+    );
+    assert.equal(storedSubgoal.support_level, "L3");
+    assert.equal(
+      storedSubgoal.followup_outcome.independentAttempt.outcome,
+      "continued_friction"
+    );
+    assert.equal(storedNextStep.support_level, "L4");
+    assert.equal(
+      storedNextStep.followup_outcome.independentAttempt.outcome,
+      "continued_friction"
+    );
+    assert.equal(storedPartialExample.support_level, "L5");
+    assert.equal(
+      storedPartialExample.followup_outcome.independentAttempt.outcome,
       "independent_attempt_success"
     );
     const storedProtectedAfterSubmit = activeAdmin.payload.data.rows.find(
@@ -1941,12 +3551,28 @@ async function main() {
     assert.ok(activeAdmin.payload.data.summary.delivered_interventions >= 1);
     assert.ok(activeAdmin.payload.data.summary.l1_self_explanations >= 3);
     assert.equal(activeAdmin.payload.data.summary.l2_concept_hints, 2);
-    assert.equal(activeAdmin.payload.data.summary.continued_friction, 2);
+    assert.equal(activeAdmin.payload.data.summary.l3_subgoal_decompositions, 1);
+    assert.equal(activeAdmin.payload.data.summary.l4_next_step_hints, 1);
+    assert.equal(activeAdmin.payload.data.summary.l5_partial_examples, 1);
+    assert.equal(activeAdmin.payload.data.summary.representation_switches, 1);
+    assert.ok(activeAdmin.payload.data.summary.snoozed >= 1);
+    assert.ok(activeAdmin.payload.data.summary.alternative_requested >= 1);
+    assert.equal(activeAdmin.payload.data.summary.continued_friction, 5);
     assert.equal(activeAdmin.payload.data.summary.independent_success_exits, 1);
+    assert.ok(activeAdmin.payload.data.summary.autonomy.scope_mutes >= 1);
+    assert.ok(activeAdmin.payload.data.summary.autonomy.scope_restores >= 1);
+    assert.ok(
+      activeAdmin.payload.data.summary.autonomy.global_reduced_changes >= 1
+    );
+    assert.equal(
+      activeAdmin.payload.data.summary.autonomy.current_muted_scopes,
+      0,
+      "恢复知识点提醒后，当前静音范围应回到 0"
+    );
     assert.equal(
       activeAdmin.payload.data.summary.accepted,
-      5,
-      "观察提示、三条自我解释和概念提示五条已展示建议都应保留接受记录"
+      9,
+      "五级支架、换表征与观察提示的已展示接受记录必须完整保留"
     );
     assert.ok(
       activeAdmin.payload.data.summary.conditions.some(
@@ -1967,6 +3593,41 @@ async function main() {
       activeAdmin.payload.data.assignments.some(
         (row) => row.condition === "treatment"
       )
+    );
+    assert.equal(activeAdmin.payload.data.outcomes.rows.length, 3);
+    assert.equal(activeAdmin.payload.data.outcomes.summary.length, 3);
+    assert.ok(
+      activeAdmin.payload.data.outcomes.rows.every(
+        (row) => Array.isArray(row.item_results)
+      )
+    );
+    const treatmentFlow = activeAdmin.payload.data.participantFlow.find(
+      (row) => row.condition === "treatment"
+    );
+    assert.ok(treatmentFlow);
+    assert.ok(treatmentFlow.assigned >= 1);
+    assert.ok(treatmentFlow.evidenceParticipants >= 1);
+    assert.ok(treatmentFlow.exposedParticipants >= 1);
+    assert.ok(treatmentFlow.posttestCompleted >= 1);
+    assert.ok(treatmentFlow.nearSubmitted >= 1);
+    assert.ok(treatmentFlow.representationSubmitted >= 1);
+    assert.ok(treatmentFlow.retentionSubmitted >= 1);
+    assert.ok(
+      activeAdmin.payload.data.participantFlow.some(
+        (row) => row.nearWithdrawn >= 1
+      )
+    );
+    assert.equal(
+      activeAdmin.payload.data.integrity.signals.find(
+        (signal) => signal.id === "protected_assessment_display"
+      ).count,
+      0
+    );
+    assert.equal(
+      activeAdmin.payload.data.integrity.signals.find(
+        (signal) => signal.id === "non_display_arm_display"
+      ).count,
+      0
     );
 
     await stopChild(runtime.child);
@@ -1980,10 +3641,9 @@ async function main() {
     const storedExpired = expiryAdmin.payload.data.rows.find(
       (row) => row.id === quietBoundary.payload.decisionId
     );
-    assert.equal(storedExpired.intervention_status, "expired");
-    assert.equal(storedExpired.resolution, "expired");
+    assert.equal(storedExpired.intervention_status, "measurement_started");
+    assert.equal(storedExpired.resolution, "measurement_started");
     assert.equal(expiryAdmin.payload.data.summary.unresolved_offers, 0);
-    assert.ok(expiryAdmin.payload.data.summary.expired >= 1);
 
     const cooldownAfterRestart = await requestRepeatedDecision(
       runtime.baseUrl,
@@ -2010,6 +3670,117 @@ async function main() {
       units,
       adminToken
     });
+    await runBalancedAssignmentRegression({
+      root,
+      tmpDir,
+      sourceChapter,
+      adminToken
+    });
+    await runExplicitParticipationRegression({
+      root,
+      tmpDir,
+      sourceChapter,
+      units,
+      adminToken
+    });
+    await runDecisionAuthorizationRegression({
+      root,
+      tmpDir,
+      sourceChapter,
+      units,
+      adminToken
+    });
+    await runProtocolDriftRegression({
+      root,
+      tmpDir,
+      adminToken
+    });
+
+    await seedRepeatedParameterEvidence(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteUnit,
+      scopeMuteSceneType,
+      "runtime-pause-open-offer"
+    );
+    const pauseOffer = await requestRepeatedDecision(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteUnit,
+      scopeMuteSceneType
+    );
+    assert.equal(pauseOffer.response.status, 200);
+    assert.equal(pauseOffer.payload.study.deliveryDecision, "intervene");
+    assert.ok(pauseOffer.payload.interventionId);
+    const pauseWithoutReason = await updateExperimentRuntime(
+      runtime.baseUrl,
+      adminToken,
+      "paused"
+    );
+    assert.equal(pauseWithoutReason.response.status, 400);
+    const unauthorizedPause = await requestJson(
+      runtime.baseUrl,
+      "POST",
+      "/api/admin/research/proactive-runtime",
+      {
+        experimentId: "v14-c3-api-test",
+        status: "paused",
+        reason: "未授权测试"
+      }
+    );
+    assert.equal(unauthorizedPause.response.status, 403);
+    const paused = await updateExperimentRuntime(
+      runtime.baseUrl,
+      adminToken,
+      "paused",
+      "停止规则演练：检查未决提示收束",
+      "research-operator-a"
+    );
+    assert.equal(paused.response.status, 200);
+    assert.equal(paused.payload.data.runtime.status, "paused");
+    assert.equal(paused.payload.data.runtime.updatedBy, "research-operator-a");
+    assert.ok(paused.payload.data.closedInterventions >= 1);
+    assert.equal(paused.payload.data.runtimeEvents[0].status, "paused");
+    const pausedDecision = await requestRepeatedDecision(
+      runtime.baseUrl,
+      scopeMuteTreatment.token,
+      scopeMuteUnit,
+      scopeMuteSceneType
+    );
+    assert.equal(pausedDecision.response.status, 200);
+    assert.equal(pausedDecision.payload.study.runtime.status, "paused");
+    assert.equal(pausedDecision.payload.study.deliveryDecision, "stay_silent");
+    const pausedAdmin = await adminDecisions(runtime.baseUrl, adminToken);
+    const closedPauseOffer = pausedAdmin.payload.data.rows.find(
+      (row) => row.id === pauseOffer.payload.decisionId
+    );
+    assert.equal(closedPauseOffer.intervention_status, "experiment_paused");
+    assert.equal(closedPauseOffer.resolution, "experiment_paused");
+    const storedPausedDecision = pausedAdmin.payload.data.rows.find(
+      (row) => row.id === pausedDecision.payload.decisionId
+    );
+    assert.ok(
+      storedPausedDecision.reason_codes.includes("experiment_runtime_paused")
+    );
+    await stopChild(runtime.child);
+    runtime = await startServer(root, dbPath, "active", adminToken);
+    const pausedAfterRestart = await adminDecisions(runtime.baseUrl, adminToken);
+    assert.equal(pausedAfterRestart.payload.data.runtime.status, "paused");
+    assert.equal(
+      pausedAfterRestart.payload.data.runtime.reason,
+      "停止规则演练：检查未决提示收束"
+    );
+    const resumed = await updateExperimentRuntime(
+      runtime.baseUrl,
+      adminToken,
+      "active",
+      "",
+      "research-operator-a"
+    );
+    assert.equal(resumed.response.status, 200);
+    assert.equal(resumed.payload.data.runtime.status, "active");
+    assert.equal(resumed.payload.data.runtimeEvents[0].status, "active");
+    assert.equal(resumed.payload.data.runtimeEvents[1].status, "paused");
 
     const snapshotBeforeReset = await requestJson(
       runtime.baseUrl,
