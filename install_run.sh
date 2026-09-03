@@ -66,18 +66,40 @@ fi
 export NODE_ENV=production
 
 # DB_PATH 必须是仓库外的绝对路径，避免 git pull / 重装依赖时覆盖生产数据。
+# 未显式配置时回落到仓库外的默认数据目录，让首次部署不必先改 .env 就能跑起来。
+if [[ -n "${HOME:-}" ]]; then
+  DEFAULT_DB_PATH="${HOME%/}/.local/share/calculus-quest/calculus-quest.db"
+else
+  DEFAULT_DB_PATH="/var/lib/calculus-quest/calculus-quest.db"
+fi
 DB_PATH_INPUT="${DB_PATH:-${DB_PATH_VALUE}}"
-[[ -n "${DB_PATH_INPUT}" ]] || fail "DB_PATH 必须是仓库外的绝对路径：请先在 .env 中设置 DB_PATH。"
+DB_PATH_IS_DEFAULT=false
+if [[ -z "${DB_PATH_INPUT}" ]]; then
+  DB_PATH_INPUT="${DEFAULT_DB_PATH}"
+  DB_PATH_IS_DEFAULT=true
+  log "提示：未设置 DB_PATH，使用默认数据库路径 ${DB_PATH_INPUT}；生产环境建议在 .env 中显式配置。"
+fi
 [[ "${DB_PATH_INPUT}" == /* ]] || fail "DB_PATH 必须是仓库外的绝对路径：${DB_PATH_INPUT} 不是绝对路径。"
-DB_DIR_ABS="$(cd "$(dirname "${DB_PATH_INPUT}")" 2>/dev/null && pwd -P)" \
-  || fail "DB_PATH 所在目录不存在：$(dirname "${DB_PATH_INPUT}")"
+DB_DIR_INPUT="$(dirname "${DB_PATH_INPUT}")"
+# 只为默认路径自动建目录；显式配置的路径保持严格校验，避免拼错时静默写到新位置。
+if [[ "${DB_PATH_IS_DEFAULT}" == true && ! -d "${DB_DIR_INPUT}" ]]; then
+  mkdir -p "${DB_DIR_INPUT}" || fail "无法创建默认数据库目录：${DB_DIR_INPUT}"
+fi
+DB_DIR_ABS="$(cd "${DB_DIR_INPUT}" 2>/dev/null && pwd -P)" \
+  || fail "DB_PATH 所在目录不存在：${DB_DIR_INPUT}"
 DB_PATH_ABS="${DB_DIR_ABS%/}/$(basename "${DB_PATH_INPUT}")"
 case "${DB_PATH_ABS}" in
   "${APP_DIR}" | "${APP_DIR}"/*)
     fail "DB_PATH 必须是仓库外的绝对路径：${DB_PATH_ABS} 位于代码仓库 ${APP_DIR} 内。"
     ;;
 esac
-[[ -f "${DB_PATH_ABS}" ]] || fail "数据库文件不存在：${DB_PATH_ABS}（首次部署请先把历史库迁移到该位置）。"
+DB_FILE_EXISTS=true
+if [[ ! -f "${DB_PATH_ABS}" ]]; then
+  [[ "${DB_PATH_IS_DEFAULT}" == true ]] \
+    || fail "数据库文件不存在：${DB_PATH_ABS}（首次部署请先把历史库迁移到该位置）。"
+  DB_FILE_EXISTS=false
+  log "提示：默认数据库 ${DB_PATH_ABS} 不存在，将在首次启动时新建空库。"
+fi
 export DB_PATH="${DB_PATH_ABS}"
 
 if [[ -n "${SHELL_HOST}" && "${SHELL_HOST}" != "${HOST}" ]]; then
@@ -126,15 +148,18 @@ STAMP="$(date '+%Y%m%d-%H%M%S')"
 BACKUP_DIR="$(dirname "${DB_PATH_ABS}")/backups"
 REPORT_PATH="${BACKUP_DIR}/release-before-${STAMP}.json"
 BACKUP_PATH="${BACKUP_DIR}/$(basename "${DB_PATH_ABS}" .db).before-${STAMP}.db"
-mkdir -p "${BACKUP_DIR}"
 
-log "生成发布前数据库报告并备份历史数据。"
-node ops/database-release-check.js \
-  --db "${DB_PATH_ABS}" \
-  --assert-external \
-  --write-report "${REPORT_PATH}"
-cp -p -- "${DB_PATH_ABS}" "${BACKUP_PATH}"
-node - "${DB_PATH_ABS}" "${BACKUP_PATH}" <<'NODE'
+# 首次部署还没有历史库，跳过发布前报告与备份；有库时保持原有的强校验流程。
+if [[ "${DB_FILE_EXISTS}" == true ]]; then
+  mkdir -p "${BACKUP_DIR}"
+
+  log "生成发布前数据库报告并备份历史数据。"
+  node ops/database-release-check.js \
+    --db "${DB_PATH_ABS}" \
+    --assert-external \
+    --write-report "${REPORT_PATH}"
+  cp -p -- "${DB_PATH_ABS}" "${BACKUP_PATH}"
+  node - "${DB_PATH_ABS}" "${BACKUP_PATH}" <<'NODE'
 const crypto = require("crypto");
 const fs = require("fs");
 const [source, backup] = process.argv.slice(2);
@@ -144,7 +169,10 @@ if (digest(source) !== digest(backup)) {
   process.exit(1);
 }
 NODE
-log "数据库备份完成：${BACKUP_PATH}"
+  log "数据库备份完成：${BACKUP_PATH}"
+else
+  log "跳过发布前报告与备份：${DB_PATH_ABS} 尚不存在，本次为首次建库。"
+fi
 
 PUBLIC_BASE_PATH="/${BASE_PATH#/}"
 PUBLIC_BASE_PATH="${PUBLIC_BASE_PATH%/}"
@@ -175,8 +203,14 @@ for _ in $(seq 1 60); do
     fail "服务在健康检查前退出。"
   fi
   if curl --fail --silent --show-error "${HEALTH_URL}" >/dev/null; then
-    node ops/database-release-check.js --db "${DB_PATH_ABS}" --compare "${REPORT_PATH}"
-    log "部署完成：服务健康，历史数据库备份已保留。"
+    if [[ "${DB_FILE_EXISTS}" == true ]]; then
+      node ops/database-release-check.js --db "${DB_PATH_ABS}" --compare "${REPORT_PATH}"
+    fi
+    if [[ "${DB_FILE_EXISTS}" == true ]]; then
+      log "部署完成：服务健康，历史数据库备份已保留。"
+    else
+      log "部署完成：服务健康，已在 ${DB_PATH_ABS} 新建数据库。"
+    fi
     wait "${APP_PID}"
     exit $?
   fi
