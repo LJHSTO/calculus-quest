@@ -8,6 +8,7 @@ let adminToken = sessionStorage.getItem("cq_admin_token") || "";
 let localAdminAuth = false;
 let charts = {};
 let allUsers = [];
+const selectedUserIds = new Set();
 let cachedChapterData = [];
 let cachedPhaseData = [];
 let cachedFeedbackRows = [];
@@ -204,6 +205,7 @@ document.getElementById("admin-token-input").addEventListener("keydown", (e) => 
 });
 
 document.getElementById("logout-btn").addEventListener("click", () => {
+  selectedUserIds.clear();
   adminToken = "";
   localAdminAuth = false;
   sessionStorage.removeItem("cq_admin_token");
@@ -523,6 +525,7 @@ function prepareSortableTables(root = document) {
     table.querySelectorAll("thead th").forEach((header, index) => {
       const label = header.textContent.trim();
       const disabled = customSort
+        || Boolean(header.querySelector('input[type="checkbox"]'))
         || header.dataset.sortDisabled === "true"
         || label === "操作";
       if (disabled) return;
@@ -1135,12 +1138,34 @@ function renderPhaseCompactTable(data) {
 }
 
 // ---- User Table ----
+function adminUserName(user) {
+  const name = String(user.nickname || "").trim();
+  return name || String(user.email || "").trim() || "未填写昵称";
+}
+
+function updateUserSelection() {
+  const count = document.getElementById("selected-users-count");
+  if (count) count.textContent = `已选 ${selectedUserIds.size} 人`;
+  document.getElementById("clear-selected-users").disabled = !selectedUserIds.size;
+  const exportButton = document.getElementById("export-selected-users");
+  exportButton.disabled = !selectedUserIds.size || exportButton.getAttribute("aria-busy") === "true";
+  const checkboxes = [...document.querySelectorAll("#table-users .select-user")];
+  const selected = checkboxes.filter(box => box.checked).length;
+  const all = document.getElementById("select-visible-users");
+  if (all) {
+    all.checked = checkboxes.length > 0 && selected === checkboxes.length;
+    all.indeterminate = selected > 0 && selected < checkboxes.length;
+    all.disabled = !checkboxes.length;
+  }
+}
+
 function renderUserTable(users) {
   const table = document.getElementById("table-users");
   document.getElementById("user-total-count").textContent = `共 ${users.length} 位用户`;
-  table.innerHTML = `<thead><tr><th>昵称</th><th>最后活跃</th><th>活跃天数</th><th>行为记录</th><th>测验提交</th><th>覆盖单元</th><th>正确率</th><th>反馈</th><th>智能教练决策</th><th>操作</th></tr></thead>
+  table.innerHTML = `<thead><tr><th><input id="select-visible-users" type="checkbox" aria-label="全选当前列表用户"></th><th>昵称</th><th>最后活跃</th><th>活跃天数</th><th>行为记录</th><th>测验提交</th><th>覆盖单元</th><th>正确率</th><th>反馈</th><th>智能教练决策</th><th>操作</th></tr></thead>
     <tbody>${users.length ? users.map(u => `<tr>
-      <td style="font-weight:600;">${esc(u.nickname || "未命名")}</td>
+      <td><input class="select-user" type="checkbox" data-user-id="${esc(u.user_id || "")}" aria-label="选择 ${esc(adminUserName(u))}" ${selectedUserIds.has(u.user_id) ? "checked" : ""}></td>
+      <td style="font-weight:600;">${esc(adminUserName(u))}<br><small class="muted">${esc(u.user_id || "")}</small></td>
       <td>${esc(shortDateTime(u.last_seen_at))}</td>
       <td>${u.active_days || 0}</td>
       <td>${u.event_count || 0}</td>
@@ -1150,8 +1175,24 @@ function renderUserTable(users) {
       <td>${u.feedback_count || 0}</td>
       <td>${u.agent_decision_count || 0}</td>
       <td><button class="btn btn-sm btn-primary view-user-btn" data-user-id="${esc(u.user_id || "")}">详情</button></td>
-    </tr>`).join("") : "<tr><td colspan='10'>当前筛选范围内没有匹配用户。</td></tr>"}</tbody>`;
+    </tr>`).join("") : "<tr><td colspan='11'>当前筛选范围内没有匹配用户。</td></tr>"}</tbody>`;
 
+  table.querySelectorAll(".select-user").forEach(box => {
+    box.addEventListener("change", () => {
+      if (box.checked) selectedUserIds.add(box.dataset.userId);
+      else selectedUserIds.delete(box.dataset.userId);
+      updateUserSelection();
+    });
+  });
+  document.getElementById("select-visible-users").addEventListener("change", event => {
+    table.querySelectorAll(".select-user").forEach(box => {
+      box.checked = event.target.checked;
+      if (box.checked) selectedUserIds.add(box.dataset.userId);
+      else selectedUserIds.delete(box.dataset.userId);
+    });
+    updateUserSelection();
+  });
+  updateUserSelection();
   table.querySelectorAll(".view-user-btn").forEach(btn => {
     btn.addEventListener("click", () => loadUserDetail(btn.dataset.userId));
   });
@@ -1219,7 +1260,7 @@ async function loadUserDetail(userId, options = {}) {
     cachedUserDetail = detail;
     const section = document.getElementById("user-detail-section");
     section.classList.remove("hidden");
-    document.getElementById("user-detail-title").textContent = `${detail.user.nickname} - 总体数据`;
+    document.getElementById("user-detail-title").textContent = `${adminUserName(detail.user)} - 总体数据`;
     const scope = detail.scope || {};
     document.getElementById("user-detail-scope").textContent = scope.allHistory
       ? `汇总该学生全部历史学习代次；当前为第 ${detail.quizOverall?.currentGeneration || 1} 代学习记录。`
@@ -3220,7 +3261,7 @@ function renderInteractionUserOptions(users = allUsers) {
   if (!select) return;
   const current = interactionUserId;
   select.innerHTML = `<option value="">全部用户</option>` + users
-    .map(u => `<option value="${esc(u.user_id || "")}">${esc(u.nickname || "未命名")} (${esc((u.user_id || "").slice(-6))})</option>`)
+    .map(u => `<option value="${esc(u.user_id || "")}">${esc(adminUserName(u))} (${esc((u.user_id || "").slice(-6))})</option>`)
     .join("");
   select.value = current;
   document.getElementById("interaction-page-size").value = String(interactionPageSize);
@@ -5146,10 +5187,49 @@ if (currentRange) {
 }
 
 // ---- User search ----
+document.getElementById("clear-selected-users")?.addEventListener("click", () => {
+  selectedUserIds.clear();
+  document.querySelectorAll("#table-users .select-user").forEach(box => { box.checked = false; });
+  updateUserSelection();
+});
+
+document.getElementById("export-selected-users")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  if (!selectedUserIds.size || button.getAttribute("aria-busy") === "true") return;
+  const userIds = [...selectedUserIds];
+  button.setAttribute("aria-busy", "true");
+  button.textContent = "正在导出...";
+  updateUserSelection();
+  try {
+    const response = await fetch(`${API_BASE}/api/admin/research/selected-participants`, {
+      method: "POST",
+      headers: adminRequestHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ userIds })
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.message || "导出失败");
+    const blob = new Blob([JSON.stringify(payload.data, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `选中被试完整数据-${userIds.length}人-${exportDateStamp()}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    window.alert(`导出失败：${error.message}`);
+  } finally {
+    button.removeAttribute("aria-busy");
+    button.textContent = "导出选中人员全部数据";
+    updateUserSelection();
+  }
+});
+
 document.getElementById("user-search-btn").addEventListener("click", () => {
   const q = document.getElementById("user-search-input").value.trim().toLowerCase();
   if (!q) { renderUserTable(allUsers); return; }
-  const filtered = allUsers.filter(u => u.nickname.toLowerCase().includes(q) || (u.user_id || "").toLowerCase().includes(q));
+  const filtered = allUsers.filter(u => adminUserName(u).toLowerCase().includes(q) || String(u.email || "").toLowerCase().includes(q) || (u.user_id || "").toLowerCase().includes(q));
   renderUserTable(filtered);
 });
 document.getElementById("user-search-input").addEventListener("keydown", (e) => {

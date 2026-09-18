@@ -6226,7 +6226,7 @@ function userProgress(dates) {
   const feedbackDf = dateFilter("f.created_at", dates);
   const decisionDf = dateFilter("ad.created_at", dates);
   return queryAll(`
-    SELECT u.id as user_id, u.nickname, u.created_at, u.last_seen_at,
+    SELECT u.id as user_id, u.nickname, u.email, u.created_at, u.last_seen_at,
            COUNT(DISTINCT qr.unit_id) as units_attempted,
            COUNT(DISTINCT CASE
              WHEN qr.id IS NOT NULL

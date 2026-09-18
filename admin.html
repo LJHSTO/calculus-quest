@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculus Quest - 研究数据分析面板</title>
   <script src="lib/chart.umd.min.js?v=4.4.7"></script>
-  <link rel="stylesheet" href="admin/admin.css?v=20260831-proactive-governance-v1" />
+  <link rel="stylesheet" href="admin/admin.css?v=20260918-selected-export-v1" />
   <link rel="stylesheet" href="admin/announcements.css?v=20260726-announcements-v2" />
   <link rel="stylesheet" href="app/main/platform-theme.css?v=20260909" />
 </head>
@@ -417,9 +417,12 @@
     <div id="tab-users" class="tab-content hidden">
       <div class="user-search">
         <span id="user-total-count" style="font-size:0.85rem;color:var(--muted);align-self:center;"></span>
-        <input id="user-search-input" type="text" placeholder="搜索用户昵称..." />
+        <input id="user-search-input" type="text" placeholder="搜索昵称、邮箱或用户 ID..." />
         <button class="btn btn-sm btn-primary" id="user-search-btn">搜索</button>
         <button class="btn btn-sm btn-outline" id="export-users-csv" type="button">导出全部 CSV</button>
+        <span id="selected-users-count" aria-live="polite">已选 0 人</span>
+        <button class="btn btn-sm btn-outline" id="clear-selected-users" type="button" disabled>清空选择</button>
+        <button class="btn btn-sm btn-primary" id="export-selected-users" type="button" disabled>导出选中人员全部数据</button>
       </div>
       <div class="chart-card full-width">
         <h3>用户列表与学习进度</h3>
@@ -798,7 +801,7 @@
 <script src="admin/csv.js?v=20260718-export-all-v1"></script>
 <script src="admin/presentation.js?v=20260909-analysis-v6"></script>
 <script src="lib/interaction-policy.js?v=20260813-platform-fixes-v1"></script>
-<script src="admin/admin.js?v=20260909-analysis-package-v11"></script>
+<script src="admin/admin.js?v=20260918-selected-export-v1"></script>
 <script src="admin/error-monitoring.js?v=20260910"></script>
 <script src="admin/announcements.js?v=20260831-local-admin-bypass-v1"></script>
 </body>

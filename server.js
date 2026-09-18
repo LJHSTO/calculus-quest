@@ -8044,6 +8044,24 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (req.method === "POST" && url.pathname === "/api/admin/research/selected-participants") {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
+      const body = await readJsonBody(req);
+      try {
+        const { buildSelectedParticipantPackage } = require("./lib/selected-participant-export");
+        const data = buildSelectedParticipantPackage(db.getDbSync(), body?.userIds);
+        res.setHeader("Cache-Control", "no-store");
+        sendJson(res, 200, { ok: true, data });
+      } catch (error) {
+        if (![400, 413].includes(error.status)) throw error;
+        sendJson(res, error.status, { ok: false, message: error.message });
+      }
+      return;
+    }
+
     if (req.method === "GET" && url.pathname === "/api/admin/research/analysis-package") {
       if (!checkAdmin(req)) {
         sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
