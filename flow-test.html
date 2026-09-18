@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>课件检视 | Calculus Quest</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
+    <link rel="stylesheet" href="app/flow-test/flow-test.css?v=20260902-question-math-v2" />
+    <link rel="stylesheet" href="app/main/platform-theme.css?v=20260909" />
+  </head>
+  <body class="is-navigation-collapsed platform-flow">
+    <header class="app-header">
+      <div class="header-actions">
+        <button id="toggle-navigation" class="command-button" type="button" aria-controls="chapter-list knowledge-list quiz-list" aria-expanded="false">显示目录</button>
+        <button id="check-resources" class="command-button" type="button">检查全部资源</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="chapter-pane" aria-label="章节">
+        <div class="pane-heading">
+          <span>章节</span>
+          <output id="chapter-count">--</output>
+        </div>
+        <nav id="chapter-list" class="chapter-list"></nav>
+      </aside>
+
+      <section class="flow-pane" aria-labelledby="chapter-title">
+        <div class="chapter-heading">
+          <div>
+            <span id="chapter-id" class="utility-label">--</span>
+            <h1 id="chapter-title">正在加载课程路线</h1>
+          </div>
+          <div id="chapter-metrics" class="chapter-metrics"></div>
+        </div>
+        <div id="phase-strip" class="phase-strip" aria-label="章节流程"></div>
+        <div id="knowledge-list" class="knowledge-list" aria-live="polite"></div>
+        <section class="quiz-review" aria-labelledby="quiz-review-title">
+          <div class="section-heading">
+            <div>
+              <span class="utility-label">Quiz 检查</span>
+              <h2 id="quiz-review-title">章节测验题目</h2>
+            </div>
+            <span id="quiz-count" class="section-count">--</span>
+          </div>
+          <div id="quiz-list" class="quiz-list"></div>
+        </section>
+      </section>
+
+      <section class="viewer-pane" aria-labelledby="resource-title">
+        <div class="viewer-heading">
+          <div>
+            <span id="resource-kind" class="utility-label">资源预览</span>
+            <h2 id="resource-title">选择一个知识点</h2>
+          </div>
+          <div class="viewer-tools" aria-label="课件查看工具">
+            <button id="slide-zoom-out" class="icon-button" type="button" aria-label="缩小课件" title="缩小">−</button>
+            <output id="slide-zoom-value" class="zoom-readout" aria-live="polite">100%</output>
+            <button id="slide-zoom-in" class="icon-button" type="button" aria-label="放大课件" title="放大">+</button>
+            <button id="slide-zoom-fit" class="icon-button" type="button" aria-label="恢复适应窗口" title="恢复适应窗口">↺</button>
+            <button id="slide-fullscreen" class="icon-button" type="button" aria-label="全屏查看课件" title="全屏查看">⛶</button>
+          </div>
+        </div>
+        <div id="modality-tabs" class="modality-tabs" role="tablist" aria-label="课件表征"></div>
+        <div id="resource-meta" class="resource-meta"></div>
+        <div class="frame-shell">
+          <div id="frame-empty" class="frame-empty">未选择课件资源</div>
+          <div id="slide-frame" class="slide-preview" hidden></div>
+          <div id="quiz-preview" class="quiz-preview" hidden></div>
+          <iframe id="resource-frame" title="课件资源预览" loading="eager" allow="fullscreen; autoplay" hidden></iframe>
+        </div>
+      </section>
+    </main>
+
+    <div id="live-status" class="sr-only" aria-live="polite"></div>
+    <script src="lib/katex.min.js?v=0.17.0"></script>
+    <script src="lib/question-math.js?v=20260831-question-math-v1"></script>
+    <script src="app/flow-test/flow-test.js?v=20260902-question-math-v2"></script>
+  </body>
+</html>

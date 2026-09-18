@@ -1,0 +1,496 @@
+const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+
+const root = path.resolve(__dirname, "..");
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
+const route = JSON.parse(read("data/multi-scene-learning-route.json"));
+const { routeUnits } = require("../lib/kg-build");
+const labelsApi = require("../app/main/knowledge-point-labels");
+const quizReviewStateApi = require("../app/main/quiz-review-state");
+const unitById = new Map(
+  route.chapters.flatMap((chapter) => routeUnits(chapter)).map((unit) => [unit.id, unit])
+);
+const syntheticUnits = new Map([
+  ["knowledge-target", {
+    id: "knowledge-target",
+    type: "knowledge",
+    chapterId: route.chapters[0].id,
+    order: 2,
+    label: "目标课件"
+  }],
+  ["knowledge-future", {
+    id: "knowledge-future",
+    type: "knowledge",
+    chapterId: route.chapters[0].id,
+    order: 99,
+    label: "后续课件"
+  }]
+]);
+let completionAllowed = true;
+const previewFeedback = { textContent: "", closest: () => null };
+assert.equal(route.quizKnowledgePointCuration?.version, "knowledge-checks-v2");
+assert.equal(route.quizKnowledgePointCuration?.questionSetPreserved, false);
+assert.deepEqual(route.quizKnowledgePointCuration?.selectionReplacements, []);
+const quizIdentity = (route.chapters || []).flatMap((chapter) => [
+  ...["preQuiz", "postQuiz"].flatMap((phase) =>
+    (chapter.flow?.[phase]?.questions || []).map((question) => ({
+      chapterId: chapter.id,
+      unitId: `${chapter.id}-${phase === "preQuiz" ? "pre" : "post"}`,
+      id: question.id,
+      sourceId: question.sourceId,
+      type: question.type,
+      knowledgePointIds: question.knowledgePointIds,
+      points: question.points,
+    }))
+  ),
+  ...(chapter.modules || []).flatMap((module) => (module.knowledgePoints || []).flatMap((knowledgePoint) => (
+    (knowledgePoint.formativeQuiz?.questions || []).map((question) => ({
+      chapterId: chapter.id,
+      unitId: `${knowledgePoint.id}-formative`,
+      id: question.id,
+      sourceId: question.sourceId,
+      type: question.type,
+      knowledgePointIds: question.knowledgePointIds,
+      adaptiveRole: question.adaptiveRole,
+      points: question.points
+    }))
+  )))
+]);
+const quizIdentityFingerprint = crypto
+  .createHash("sha256")
+  .update(JSON.stringify(quizIdentity))
+  .digest("hex");
+assert.equal(route.quizKnowledgePointCuration?.questionSetFingerprint, quizIdentityFingerprint);
+
+const flowSource = read("app/flow-test/flow-test.js");
+assert.match(flowSource, /function quizKnowledgePointLabels\(/);
+assert.doesNotMatch(flowSource, /question\.knowledgePointIds\.join\(/);
+
+const renderSource = read("app/main/render-learning.js");
+const quizSource = read("app/main/quiz.js");
+const eventsSource = read("app/main/events.js");
+const accessibleQuizResources = new Set();
+const sandbox = {
+  console,
+  curriculum: route.chapters,
+  submitInProgress: null,
+  state: { submittedQuizzes: [], completed: [], quizDrafts: {}, returnToQuiz: null },
+  els: {
+    lessonPlayer: {
+      innerHTML: "",
+      querySelector: () => null
+    },
+    completeLesson: {
+      addEventListener: () => {}
+    }
+  },
+  document: {
+    querySelector: () => previewFeedback,
+    querySelectorAll: () => []
+  },
+  KnowledgePointLabels: labelsApi,
+  escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  },
+  renderInlineMath: (value) => String(value ?? ""),
+  renderQuestionMath: (value) => String(value ?? ""),
+  renderMathInHtml: (value) => String(value ?? ""),
+  resourceUrl: (value) => value,
+  CoursewareContextCore: { BRIDGE_VERSION: "test-bridge-v1" },
+  analyticsTrack: () => {},
+  moduleRoleForUnit: () => "",
+  quizRecordsForUnit: () => [],
+  displayOptionLabel: (option) => option.label || option.text || option.value || "",
+  getChapter: (chapterId) => ({
+    allUnits: routeUnits(route.chapters.find((chapter) => chapter.id === chapterId) || {}),
+    units: routeUnits(route.chapters.find((chapter) => chapter.id === chapterId) || {})
+  }),
+  getUnit: (unitId) => syntheticUnits.get(unitId) || unitById.get(unitId) || null,
+  agenticGuardNavigation: (unitId) => accessibleQuizResources.has(unitId),
+  quizMaxScoreFor: (question) => Number(question.points || 1),
+  quizAiReviewFailed: (result) => quizReviewStateApi.aiReviewFailed(result),
+  quizReviewIsPending: (result) => quizReviewStateApi.isPending(result),
+  quizScoreFromAiScore: (score) => Number(score || 0),
+  quizFormatScore: (score) => String(score),
+  quizQuestionScoreLabel: () => "1 / 1 分",
+  completeAndAdvanceCurrentUnit: () => {},
+  agenticUnitCompletionAllowed: () => completionAllowed,
+  readQuizDraft: (unitId, questionId, fallback = "") => (
+    sandbox.state.quizDrafts?.[`${unitId}:${questionId}`] ?? fallback
+  ),
+  knowledgeInteractionTypes: () => [],
+  selectedKnowledgeSceneType: () => "",
+  knowledgeResourceCandidate: () => null
+};
+vm.createContext(sandbox);
+vm.runInContext(renderSource, sandbox, { filename: "render-learning.js" });
+vm.runInContext(quizSource, sandbox, { filename: "quiz.js" });
+assert.equal(typeof sandbox.renderQuizCoverage, "function");
+assert.equal(typeof sandbox.renderQuizReturnNotice, "function");
+assert.equal(typeof sandbox.quizUnitSequenceIndex, "function");
+
+const firstQuizQuestion = route.chapters
+  .flatMap((chapter) => ["preQuiz", "formativeQuiz", "postQuiz"]
+    .flatMap((phase) => chapter.flow?.[phase]?.questions || []))
+  .find((question) => (question.knowledgePointIds || []).length);
+assert.ok(firstQuizQuestion, "expected at least one quiz question with knowledge-point coverage");
+
+sandbox.renderResourceShell = (_unit, _title, body) => body;
+sandbox.renderAssessmentBanner = () => "";
+sandbox.renderCoach = () => "";
+sandbox.setupQuizVisibilityTracking = () => {};
+sandbox.renderQuiz({
+  id: "quiz-unsubmitted",
+  label: "未提交测验",
+  chapterId: route.chapters[0].id,
+  assessmentPhase: "pre",
+  scene: {
+    type: "quiz",
+    content: { questions: [firstQuizQuestion] }
+  }
+});
+assert.equal(
+  (sandbox.els.lessonPlayer.innerHTML.match(/data-quiz-coverage/g) || []).length,
+  0,
+  "unsubmitted quiz cards must not expose knowledge-point coverage"
+);
+
+async function testLockedQuizPreview() {
+  completionAllowed = false;
+  const previewOnlyQuiz = {
+    id: "quiz-preview-only",
+    label: "预览测验",
+    chapterId: route.chapters[0].id,
+    assessmentPhase: "formative",
+    scene: {
+      type: "quiz",
+      content: { questions: [firstQuizQuestion] }
+    }
+  };
+  syntheticUnits.set(previewOnlyQuiz.id, previewOnlyQuiz);
+  sandbox.renderQuiz(previewOnlyQuiz);
+  assert.match(sandbox.els.lessonPlayer.innerHTML, /data-submit-quiz="quiz-preview-only"[^>]*disabled/);
+  assert.match(sandbox.els.lessonPlayer.innerHTML, /未解锁：先接受学习建议/);
+  assert.doesNotMatch(
+    sandbox.els.lessonPlayer.innerHTML,
+    /data-short-answer|data-choice-answer/,
+    "a locked future quiz must not expose interactive question controls"
+  );
+  assert.deepEqual(
+    sandbox.state.quizDrafts,
+    {},
+    "rendering a locked future quiz must not create a draft"
+  );
+  await sandbox.submitQuiz("quiz-preview-only");
+  assert.match(previewFeedback.textContent, /当前仅供预览/);
+  assert.deepEqual(sandbox.state.completed, []);
+  assert.deepEqual(sandbox.state.submittedQuizzes, []);
+  completionAllowed = true;
+}
+
+const reviewUnit = {
+  ...unitById.get("GH-01-K01-formative"),
+  id: "GH-01-K01-formative",
+  chapterId: route.chapters[0].id,
+  assessmentPhase: "formative"
+};
+const choiceQuestion = {
+  ...firstQuizQuestion,
+  type: "single",
+  options: [
+    { value: "A", label: "选项 A" },
+    { value: "B", label: "选项 B" }
+  ],
+  answer: ["A"],
+  analysis: "解析"
+};
+const reviewCases = [
+  {
+    label: "correct choice",
+    question: choiceQuestion,
+    result: { response: ["A"], answer: ["A"], isCorrect: true }
+  },
+  {
+    label: "incorrect choice",
+    question: choiceQuestion,
+    result: { response: ["B"], answer: ["A"], isCorrect: false }
+  },
+  {
+    label: "short answer",
+    question: {
+      ...firstQuizQuestion,
+      type: "short_answer",
+      referenceAnswer: "参考答案",
+      commentPrompt: "评分参考"
+    },
+    result: {
+      response: "作答",
+      aiScore: 1,
+      aiWeakConcepts: []
+    }
+  }
+];
+reviewCases.forEach(({ label, question, result }) => {
+  const html = sandbox.renderQuestionReview({ question, result, index: 0, unit: reviewUnit });
+  assert.equal(
+    (html.match(/data-quiz-coverage/g) || []).length,
+    1,
+    `${label} review must show knowledge-point coverage exactly once`
+  );
+});
+
+const readableAnswerHtml = sandbox.renderQuestionReview({
+  question: {
+    ...choiceQuestion,
+    options: [
+      {
+        value: "A",
+        label: "只要 n 足够大，T_n 就可以任意接近 12，因此该极限值就是所求面积"
+      },
+      { value: "B", label: "T_n 接近 12 只是一种巧合" }
+    ],
+    analysis: "当 n 趋于无穷时，T_n 稳定接近 12，说明该极限值就是所求面积。"
+  },
+  result: { response: ["A"], answer: ["A"], isCorrect: true },
+  index: 0,
+  unit: reviewUnit
+});
+assert.match(readableAnswerHtml, /class="answer-choice-marker"[^>]*>A<\/span>/);
+assert.match(readableAnswerHtml, /class="answer-choice-copy">/);
+assert.match(readableAnswerHtml, /class="analysis-line">/);
+assert.doesNotMatch(readableAnswerHtml, /class="answer-lines analysis-line">/);
+
+const readableShortAnswerHtml = sandbox.renderQuestionReview({
+  question: {
+    ...firstQuizQuestion,
+    type: "short_answer",
+    referenceAnswer: "当 n 趋于无穷时，T_n 收敛到面积极限。",
+    commentPrompt: "说明分割加细与面积和收敛之间的关系。"
+  },
+  result: {
+    response: "作答",
+    aiScore: 1,
+    aiWeakConcepts: []
+  },
+  index: 0,
+  unit: reviewUnit
+});
+assert.match(readableShortAnswerHtml, /review-answer-block reference-answer/);
+assert.match(readableShortAnswerHtml, /review-answer-copy/);
+assert.doesNotMatch(readableShortAnswerHtml, /<p><b>参考答案：<\/b>/);
+
+const failedShortAnswerHtml = sandbox.renderQuestionReview({
+  question: {
+    ...firstQuizQuestion,
+    id: "failed-short-answer",
+    type: "short_answer",
+    referenceAnswer: "参考答案"
+  },
+  result: {
+    unitId: reviewUnit.id,
+    questionId: "failed-short-answer",
+    response: "作答",
+    status: "ai_reviewed",
+    isCorrect: false,
+    aiScore: 0,
+    aiErrorType: "empty_response",
+    aiFeedback: "模型接口返回了空文本。"
+  },
+  index: 0,
+  unit: reviewUnit
+});
+assert.match(failedShortAnswerHtml, /data-retry-ai-grade/);
+assert.match(failedShortAnswerHtml, /重新批改/);
+
+const linkedQuestion = {
+  ...choiceQuestion,
+  question: "请先回看[[cq-unit:GH-01-K01|simulation|回看课件：目标课件]]，再回答：测试题目。"
+};
+const linkedResult = { response: ["B"], answer: ["A"], isCorrect: false };
+const lockedPreHtml = sandbox.renderQuestionReview({
+  question: linkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: { ...reviewUnit, assessmentPhase: "pre" }
+});
+assert.doesNotMatch(lockedPreHtml, /data-quiz-resource-link/);
+assert.match(lockedPreHtml, /请根据对应知识点/);
+assert.match(lockedPreHtml, /完成前测后的学习路径选择/);
+assert.doesNotMatch(lockedPreHtml, /可以先回看/);
+
+const lockedFormativeHtml = sandbox.renderQuestionReview({
+  question: linkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: { ...reviewUnit, assessmentPhase: "formative" }
+});
+assert.doesNotMatch(lockedFormativeHtml, /data-quiz-resource-link/);
+assert.match(lockedFormativeHtml, /对应课件尚未解锁/);
+assert.doesNotMatch(lockedFormativeHtml, /可以先回看/);
+
+accessibleQuizResources.add("GH-01-K01");
+const unlockedFormativeHtml = sandbox.renderQuestionReview({
+  question: linkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: { ...reviewUnit, assessmentPhase: "formative" }
+});
+assert.match(unlockedFormativeHtml, /data-quiz-resource-link="GH-01-K01"/);
+assert.match(unlockedFormativeHtml, /可以先回看/);
+assert.match(unlockedFormativeHtml, /回看「目标课件」课件/);
+assert.doesNotMatch(unlockedFormativeHtml, /请先回看回看课件/);
+
+const unlockedPreHtml = sandbox.renderQuestionReview({
+  question: linkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: { ...reviewUnit, assessmentPhase: "pre" }
+});
+assert.doesNotMatch(unlockedPreHtml, /data-quiz-resource-link/);
+assert.doesNotMatch(unlockedPreHtml, /回看课件/);
+assert.doesNotMatch(unlockedPreHtml, /请先回看/);
+
+accessibleQuizResources.add("knowledge-future");
+const futureLinkedQuestion = {
+  ...choiceQuestion,
+  question: "请先回看[[cq-unit:knowledge-future|simulation|回看课件：后续课件]]，再回答：测试题目。"
+};
+const blockedFutureFormativeHtml = sandbox.renderQuestionReview({
+  question: futureLinkedQuestion,
+  result: linkedResult,
+  index: 0,
+  unit: reviewUnit
+});
+assert.doesNotMatch(blockedFutureFormativeHtml, /data-quiz-resource-link/);
+assert.doesNotMatch(blockedFutureFormativeHtml, /回看课件/);
+assert.doesNotMatch(blockedFutureFormativeHtml, /请先回看/);
+assert.match(blockedFutureFormativeHtml, /本次形成性测验不提供后续课件入口/);
+
+for (const chapter of route.chapters || []) {
+  const units = routeUnits(chapter);
+  const preUnit = {
+    ...units.find((unit) => unit.id === `${chapter.id}-pre`),
+    assessmentPhase: "pre"
+  };
+  const formativeUnit = {
+    ...units.find((unit) => unit.id === `${chapter.id}-formative`),
+    assessmentPhase: "formative"
+  };
+  const preQuestions = chapter.flow?.preQuiz?.questions || [];
+  const formativeQuestions = chapter.flow?.formativeQuiz?.questions || [];
+
+  preQuestions.forEach((question) => {
+    const html = sandbox.renderQuestionTextWithLinks(question, preUnit);
+    assert.doesNotMatch(html, /data-quiz-resource-link/);
+    assert.doesNotMatch(html, /\[\[cq-unit:/);
+    assert.doesNotMatch(html, /请先回看|回看课件/);
+  });
+
+  const markerRe = /\[\[cq-unit:([^|\]]+)\|[^|\]]*\|[^\]]+\]\]/g;
+  formativeQuestions.forEach((question) => {
+    const source = question.question || question.prompt || "";
+    const targetIds = Array.from(source.matchAll(markerRe)).map((match) => match[1]);
+    if (!targetIds.length) return;
+    targetIds.forEach((targetId) => accessibleQuizResources.add(targetId));
+    const html = sandbox.renderQuestionTextWithLinks(question, formativeUnit);
+    targetIds.forEach((targetId) => {
+      const allowed = sandbox.quizResourceAllowedForPhase(targetId, formativeUnit);
+      if (allowed) {
+        assert.match(html, new RegExp(`data-quiz-resource-link="${targetId}"`));
+      } else {
+        assert.doesNotMatch(html, new RegExp(`data-quiz-resource-link="${targetId}"`));
+        assert.doesNotMatch(html, /请先回看(?=对应知识点)|回看课件/);
+      }
+    });
+  });
+}
+
+sandbox.state.returnToQuiz = {
+  unitId: "quiz-submitted",
+  questionId: firstQuizQuestion.id,
+  targetUnitId: "knowledge-target"
+};
+assert.match(
+  sandbox.renderQuizReturnNotice({ id: "knowledge-target" }),
+  /可按左上角“返回”键返回测验/
+);
+assert.equal(sandbox.renderQuizReturnNotice({ id: "knowledge-other" }), "");
+assert.match(eventsSource, /targetUnitId:\s*targetUnit\?\.id\s*\|\|\s*targetUnitId/);
+assert.match(eventsSource, /quizResourceTargetAccessible\(targetUnitId\)/);
+
+let questionCount = 0;
+const observedCoverageGaps = [];
+for (const chapter of route.chapters || []) {
+  const lookup = chapter.modules
+    .flatMap((module) => module.knowledgePoints || [])
+    .reduce((map, point) => map.set(point.id, point.name), new Map());
+  const moduleById = new Map(chapter.modules.map((module) => [module.id, module]));
+  const chapterCoverage = new Set();
+  for (const phase of ["preQuiz", "postQuiz"]) {
+    const phaseModules = new Set();
+    for (const question of chapter.flow?.[phase]?.questions || []) {
+      const ids = question.knowledgePointIds || [];
+      const sourceModule = moduleById.get(question.moduleId);
+      const sourceIds = new Set((sourceModule?.knowledgePoints || []).map((point) => point.id));
+      assert.ok(sourceModule, `${chapter.id}/${phase}/${question.id} has an unknown module`);
+      assert.ok(ids.length >= 1 && ids.length <= 2, `${chapter.id}/${phase}/${question.id} must cover one or two knowledge points`);
+      assert.ok(ids.every((id) => sourceIds.has(id)), `${chapter.id}/${phase}/${question.id} points outside its source module`);
+      assert.equal(question.knowledgePointCoverageSource, "semantic-curation-v1");
+      const coreLabels = ids.map((id) => lookup.get(id)).filter(Boolean);
+      assert.equal(coreLabels.length, ids.length, `${chapter.id}/${phase}/${question.id} has an unknown knowledge point ID`);
+      const labels = question.knowledgePointNames || coreLabels;
+      assert.ok(labels.length >= 1 && labels.length <= 2, `${chapter.id}/${phase}/${question.id} needs concrete knowledge point names`);
+      assert.ok(labels.every((label) => !/^(?:GH|EXT)-\d{2}-K\d{2}$/i.test(label)));
+      assert.deepEqual(question.concepts, labels, `${chapter.id}/${phase}/${question.id} has stale concept labels`);
+      ids.forEach((id) => chapterCoverage.add(id));
+      phaseModules.add(question.moduleId);
+      if (ids.length) {
+        const html = sandbox.renderQuizCoverage(question, { chapterId: chapter.id });
+        assert.match(html, /覆盖知识点/);
+        labels.forEach((label) => assert.match(html, new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))));
+        ids.forEach((id) => assert.doesNotMatch(html, new RegExp(id)));
+      }
+      questionCount += 1;
+    }
+    assert.deepEqual(
+      [...phaseModules].sort(),
+      [...moduleById.keys()].sort(),
+      `${chapter.id}/${phase} does not represent every source module`
+    );
+  }
+  for (const module of chapter.modules) {
+    for (const point of module.knowledgePoints || []) {
+      const checks = point.formativeQuiz?.questions || [];
+      assert.equal(checks.length, 2, `${point.id} must have one core and one diagnostic question`);
+      assert.deepEqual(checks.map((question) => question.adaptiveRole), ["core", "diagnostic"]);
+      assert.deepEqual(checks.map((question) => question.type), ["single", "multiple"]);
+      checks.forEach((question) => {
+        assert.deepEqual(question.knowledgePointIds, [point.id]);
+        questionCount += 1;
+      });
+    }
+  }
+  [...lookup.keys()]
+    .filter((id) => !chapterCoverage.has(id))
+    .forEach((id) => observedCoverageGaps.push(id));
+}
+
+const declaredCoverageGaps = (route.quizKnowledgePointCuration?.coverageGaps || [])
+  .map((gap) => gap.knowledgePointId)
+  .sort();
+assert.deepEqual(observedCoverageGaps.sort(), declaredCoverageGaps);
+assert.deepEqual(declaredCoverageGaps, []);
+
+testLockedQuizPreview()
+  .then(() => console.log(`quiz coverage labels passed (${questionCount} questions)`))
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });

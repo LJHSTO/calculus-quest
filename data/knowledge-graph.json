@@ -1,0 +1,953 @@
+{
+  "schemaVersion": "2.0.0",
+  "generatedAt": "2026-07-07T10:10:15.667Z",
+  "source": "data/multi-scene-learning-route.json",
+  "sourceVersion": "multi-scene-functions-limits-20260917-r2",
+  "description": "由多场景自适应学习路线自动生成的学习规划知识图谱。",
+  "nodeKinds": [
+    "chapter",
+    "unit"
+  ],
+  "edgeKinds": [
+    "contains",
+    "follows",
+    "prerequisite",
+    "chapter_handoff",
+    "extension",
+    "assesses"
+  ],
+  "roleKinds": [
+    "pre_test",
+    "knowledge",
+    "formative_quiz",
+    "post_test"
+  ],
+  "modalityKinds": [
+    "assessment",
+    "multimodal",
+    "interactive"
+  ],
+  "chapters": [
+    {
+      "id": "V14-C1",
+      "title": "函数与极限",
+      "objective": "从输入、输出和坐标图像出发，理解变化方向、极限和连续。只要求基本四则运算。",
+      "order": 1,
+      "track": "main",
+      "extension": false,
+      "recommendedAfter": "",
+      "moduleIds": [
+        "GH-01",
+        "GH-02"
+      ],
+      "concepts": [
+        "输入、输出和函数规则",
+        "坐标点与函数图像",
+        "图像的上升、下降与变化方向",
+        "从数表观察趋近",
+        "图像上的左右极限",
+        "连续就是不跳断"
+      ]
+    }
+  ],
+  "chapterOrder": [
+    "V14-C1"
+  ],
+  "nodes": [
+    {
+      "id": "V14-C1",
+      "title": "函数与极限",
+      "objective": "从输入、输出和坐标图像出发，理解变化方向、极限和连续。只要求基本四则运算。",
+      "order": 1,
+      "track": "main",
+      "extension": false,
+      "recommendedAfter": "",
+      "moduleIds": [
+        "GH-01",
+        "GH-02"
+      ],
+      "concepts": [
+        "输入、输出和函数规则",
+        "坐标点与函数图像",
+        "图像的上升、下降与变化方向",
+        "从数表观察趋近",
+        "图像上的左右极限",
+        "连续就是不跳断"
+      ],
+      "kind": "chapter",
+      "chapterId": "V14-C1",
+      "label": "函数与极限",
+      "sceneCount": 14
+    },
+    {
+      "id": "V14-C1-pre",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "order": 1,
+      "type": "quiz",
+      "title": "函数与极限 · 知识前测",
+      "role": "pre_test",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "diagnose",
+      "difficultyBand": "diagnostic",
+      "flowKind": "core",
+      "conceptClusterId": "V14-C1",
+      "conceptClusterLabel": "函数与极限",
+      "assessedKnowledgePointIds": [
+        "GH-01-K01",
+        "GH-01-K02",
+        "GH-01-K03",
+        "GH-02-K01",
+        "GH-02-K02",
+        "GH-02-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-01-K01",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 2,
+      "type": "knowledge",
+      "title": "输入、输出和函数规则",
+      "role": "knowledge",
+      "modality": "multimodal",
+      "modalities": [
+        "simulation",
+        "mindMap",
+        "diagram",
+        "game",
+        "visualization3d"
+      ],
+      "representation": "mixed",
+      "scenarioType": "student_choice",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01",
+      "conceptClusterLabel": "函数、坐标与图像读法入门",
+      "conceptClusterFocus": "函数、坐标与图像读法入门 要解决哪些可观察的数学变化问题？",
+      "concepts": [
+        "GH-01-K01",
+        "输入、输出和函数规则",
+        "请解释输入、输出与规则的区别，以及为什么同一输入不能有两个不同输出。"
+      ],
+      "misconception": "函数允许不同输入得到相同输出；限制的是同一个输入。检查当前对应关系中有没有重复输入对应不同结果。",
+      "resourceCandidates": [
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/03_输入、输出和函数规则：拖动实验.html",
+          "title": "输入、输出和函数规则：拖动实验",
+          "type": "simulation",
+          "widgetType": "simulation",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/04_输入、输出和函数规则：关系图.html",
+          "title": "输入、输出和函数规则：关系图",
+          "type": "mindMap",
+          "widgetType": "diagram",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/05_输入、输出和函数规则：误解修复挑战.html",
+          "title": "输入、输出和函数规则：误解修复挑战",
+          "type": "game",
+          "widgetType": "game",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/06_输入、输出和函数规则：空间视角.html",
+          "title": "输入、输出和函数规则：空间视角",
+          "type": "visualization3d",
+          "widgetType": "visualization3d",
+          "score": 100
+        }
+      ],
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "GH-01-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 3,
+      "type": "quiz",
+      "title": "输入、输出和函数规则 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01-K01",
+      "conceptClusterLabel": "输入、输出和函数规则",
+      "assessedKnowledgePointIds": [
+        "GH-01-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-01-K02",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 4,
+      "type": "knowledge",
+      "title": "坐标点与函数图像",
+      "role": "knowledge",
+      "modality": "multimodal",
+      "modalities": [
+        "simulation",
+        "mindMap",
+        "diagram",
+        "game",
+        "visualization3d"
+      ],
+      "representation": "mixed",
+      "scenarioType": "student_choice",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01",
+      "conceptClusterLabel": "函数、坐标与图像读法入门",
+      "conceptClusterFocus": "函数、坐标与图像读法入门 要解决哪些可观察的数学变化问题？",
+      "concepts": [
+        "GH-01-K02",
+        "坐标点与函数图像",
+        "请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。"
+      ],
+      "misconception": "有序对先横后纵；图像上的点还必须满足 y=f(x)，不能只看点在哪里。",
+      "resourceCandidates": [
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/08_坐标点与函数图像：拖动实验.html",
+          "title": "坐标点与函数图像：拖动实验",
+          "type": "simulation",
+          "widgetType": "simulation",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/09_坐标点与函数图像：关系图.html",
+          "title": "坐标点与函数图像：关系图",
+          "type": "mindMap",
+          "widgetType": "diagram",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/10_坐标点与函数图像：误解修复挑战.html",
+          "title": "坐标点与函数图像：误解修复挑战",
+          "type": "game",
+          "widgetType": "game",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/11_坐标点与函数图像：空间视角.html",
+          "title": "坐标点与函数图像：空间视角",
+          "type": "visualization3d",
+          "widgetType": "visualization3d",
+          "score": 100
+        }
+      ],
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "GH-01-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 5,
+      "type": "quiz",
+      "title": "坐标点与函数图像 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01-K02",
+      "conceptClusterLabel": "坐标点与函数图像",
+      "assessedKnowledgePointIds": [
+        "GH-01-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-01-K03",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 6,
+      "type": "knowledge",
+      "title": "图像的上升、下降与变化方向",
+      "role": "knowledge",
+      "modality": "multimodal",
+      "modalities": [
+        "simulation",
+        "mindMap",
+        "diagram",
+        "game",
+        "visualization3d"
+      ],
+      "representation": "mixed",
+      "scenarioType": "student_choice",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01",
+      "conceptClusterLabel": "函数、坐标与图像读法入门",
+      "conceptClusterFocus": "函数、坐标与图像读法入门 要解决哪些可观察的数学变化问题？",
+      "concepts": [
+        "GH-01-K03",
+        "图像的上升、下降与变化方向",
+        "请说明判断上升或下降时，为什么必须按输入从小到大比较输出，而不能只看正负。"
+      ],
+      "misconception": "上升下降是函数值随输入增大的变化方向；函数值为负也能上升。",
+      "resourceCandidates": [
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/14_图像的上升、下降与变化方向：拖动实验.html",
+          "title": "图像的上升、下降与变化方向：拖动实验",
+          "type": "simulation",
+          "widgetType": "simulation",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/15_图像的上升、下降与变化方向：关系图.html",
+          "title": "图像的上升、下降与变化方向：关系图",
+          "type": "mindMap",
+          "widgetType": "diagram",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/16_图像的上升、下降与变化方向：误解修复挑战.html",
+          "title": "图像的上升、下降与变化方向：误解修复挑战",
+          "type": "game",
+          "widgetType": "game",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-01-函数、坐标与图像读法入门",
+          "file": "interactive/17_图像的上升、下降与变化方向：空间视角.html",
+          "title": "图像的上升、下降与变化方向：空间视角",
+          "type": "visualization3d",
+          "widgetType": "visualization3d",
+          "score": 100
+        }
+      ],
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "GH-01-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-01",
+      "moduleTitle": "函数、坐标与图像读法入门",
+      "order": 7,
+      "type": "quiz",
+      "title": "图像的上升、下降与变化方向 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-01-K03",
+      "conceptClusterLabel": "图像的上升、下降与变化方向",
+      "assessedKnowledgePointIds": [
+        "GH-01-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-02-K01",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 8,
+      "type": "knowledge",
+      "title": "从数表观察趋近",
+      "role": "knowledge",
+      "modality": "multimodal",
+      "modalities": [
+        "simulation",
+        "mindMap",
+        "diagram",
+        "game",
+        "visualization3d"
+      ],
+      "representation": "mixed",
+      "scenarioType": "student_choice",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-02",
+      "conceptClusterLabel": "极限与连续：直觉探索",
+      "conceptClusterFocus": "极限与连续：直觉探索 要解决哪些可观察的数学变化问题？",
+      "concepts": [
+        "GH-02-K01",
+        "从数表观察趋近",
+        "请说明趋近一个点时考察什么，为什么有限项数表只能帮助猜测而不是证明极限。"
+      ],
+      "misconception": "极限关心该点附近的趋势，不取决于该点本身的值；仅凭有限观测不能排除其他趋势。",
+      "resourceCandidates": [
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/03_从数表观察趋近：拖动实验.html",
+          "title": "从数表观察趋近：拖动实验",
+          "type": "simulation",
+          "widgetType": "simulation",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/04_从数表观察趋近：关系图.html",
+          "title": "从数表观察趋近：关系图",
+          "type": "mindMap",
+          "widgetType": "diagram",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/05_从数表观察趋近：误解修复挑战.html",
+          "title": "从数表观察趋近：误解修复挑战",
+          "type": "game",
+          "widgetType": "game",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/06_从数表观察趋近：空间视角.html",
+          "title": "从数表观察趋近：空间视角",
+          "type": "visualization3d",
+          "widgetType": "visualization3d",
+          "score": 100
+        }
+      ],
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "GH-02-K01-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 9,
+      "type": "quiz",
+      "title": "从数表观察趋近 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-02-K01",
+      "conceptClusterLabel": "从数表观察趋近",
+      "assessedKnowledgePointIds": [
+        "GH-02-K01"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-02-K02",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 10,
+      "type": "knowledge",
+      "title": "图像上的左右极限",
+      "role": "knowledge",
+      "modality": "multimodal",
+      "modalities": [
+        "simulation",
+        "mindMap",
+        "diagram",
+        "game",
+        "visualization3d"
+      ],
+      "representation": "mixed",
+      "scenarioType": "student_choice",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-02",
+      "conceptClusterLabel": "极限与连续：直觉探索",
+      "conceptClusterFocus": "极限与连续：直觉探索 要解决哪些可观察的数学变化问题？",
+      "concepts": [
+        "GH-02-K02",
+        "图像上的左右极限",
+        "请用自己的话解释左极限与右极限，以及双侧极限存在的条件。"
+      ],
+      "misconception": "左右说的是输入从哪侧靠近；比较的是两侧输出趋近的值。",
+      "resourceCandidates": [
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/08_图像上的左右极限：拖动实验.html",
+          "title": "图像上的左右极限：拖动实验",
+          "type": "simulation",
+          "widgetType": "simulation",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/09_图像上的左右极限：关系图.html",
+          "title": "图像上的左右极限：关系图",
+          "type": "mindMap",
+          "widgetType": "diagram",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/10_图像上的左右极限：误解修复挑战.html",
+          "title": "图像上的左右极限：误解修复挑战",
+          "type": "game",
+          "widgetType": "game",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/11_图像上的左右极限：空间视角.html",
+          "title": "图像上的左右极限：空间视角",
+          "type": "visualization3d",
+          "widgetType": "visualization3d",
+          "score": 100
+        }
+      ],
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "GH-02-K02-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 11,
+      "type": "quiz",
+      "title": "图像上的左右极限 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-02-K02",
+      "conceptClusterLabel": "图像上的左右极限",
+      "assessedKnowledgePointIds": [
+        "GH-02-K02"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-02-K03",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 12,
+      "type": "knowledge",
+      "title": "连续就是不跳断",
+      "role": "knowledge",
+      "modality": "multimodal",
+      "modalities": [
+        "simulation",
+        "mindMap",
+        "diagram",
+        "game",
+        "visualization3d"
+      ],
+      "representation": "mixed",
+      "scenarioType": "student_choice",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-02",
+      "conceptClusterLabel": "极限与连续：直觉探索",
+      "conceptClusterFocus": "极限与连续：直觉探索 要解决哪些可观察的数学变化问题？",
+      "concepts": [
+        "GH-02-K03",
+        "连续就是不跳断",
+        "请解释内点连续的三个条件，为什么有极限不等于连续。"
+      ],
+      "misconception": "连续要求函数值有定义、双侧极限存在，且二者相等，三个条件缺一不可。",
+      "resourceCandidates": [
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/14_连续就是不跳断：拖动实验.html",
+          "title": "连续就是不跳断：拖动实验",
+          "type": "simulation",
+          "widgetType": "simulation",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/15_连续就是不跳断：关系图.html",
+          "title": "连续就是不跳断：关系图",
+          "type": "mindMap",
+          "widgetType": "diagram",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/16_连续就是不跳断：误解修复挑战.html",
+          "title": "连续就是不跳断：误解修复挑战",
+          "type": "game",
+          "widgetType": "game",
+          "score": 100
+        },
+        {
+          "root": "open-maic/GH-02-极限与连续：直觉探索",
+          "file": "interactive/17_连续就是不跳断：空间视角.html",
+          "title": "连续就是不跳断：空间视角",
+          "type": "visualization3d",
+          "widgetType": "visualization3d",
+          "score": 100
+        }
+      ],
+      "isCheckpoint": false,
+      "isOptional": false
+    },
+    {
+      "id": "GH-02-K03-formative",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "moduleId": "GH-02",
+      "moduleTitle": "极限与连续：直觉探索",
+      "order": 13,
+      "type": "quiz",
+      "title": "连续就是不跳断 · 即时检测",
+      "role": "formative_quiz",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "check",
+      "difficultyBand": "core",
+      "flowKind": "core",
+      "conceptClusterId": "GH-02-K03",
+      "conceptClusterLabel": "连续就是不跳断",
+      "assessedKnowledgePointIds": [
+        "GH-02-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "V14-C1-post",
+      "kind": "unit",
+      "chapterId": "V14-C1",
+      "order": 14,
+      "type": "quiz",
+      "title": "函数与极限 · 结业后测",
+      "role": "post_test",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "transfer",
+      "difficultyBand": "transfer",
+      "flowKind": "core",
+      "conceptClusterId": "V14-C1",
+      "conceptClusterLabel": "函数与极限",
+      "assessedKnowledgePointIds": [
+        "GH-01-K01",
+        "GH-01-K02",
+        "GH-01-K03",
+        "GH-02-K01",
+        "GH-02-K02",
+        "GH-02-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    }
+  ],
+  "edges": [
+    {
+      "from": "V14-C1",
+      "to": "V14-C1-pre",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-01-K01",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-01-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-01-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-01-K02-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-01-K03",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-01-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-02-K01",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-02-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-02-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-02-K02-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-02-K03",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "GH-02-K03-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1",
+      "to": "V14-C1-post",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-01-K01",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K01",
+      "to": "GH-01-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K01-formative",
+      "to": "GH-01-K02",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K02",
+      "to": "GH-01-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K02-formative",
+      "to": "GH-01-K03",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K03",
+      "to": "GH-01-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K03-formative",
+      "to": "GH-02-K01",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K01",
+      "to": "GH-02-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K01-formative",
+      "to": "GH-02-K02",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K02",
+      "to": "GH-02-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K02-formative",
+      "to": "GH-02-K03",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K03",
+      "to": "GH-02-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K03-formative",
+      "to": "V14-C1-post",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-01-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-01-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-01-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-02-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-02-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-pre",
+      "to": "GH-02-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K01-formative",
+      "to": "GH-01-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K02-formative",
+      "to": "GH-01-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-01-K03-formative",
+      "to": "GH-01-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K01-formative",
+      "to": "GH-02-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K02-formative",
+      "to": "GH-02-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-02-K03-formative",
+      "to": "GH-02-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-01-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-01-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-01-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-02-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-02-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C1-post",
+      "to": "GH-02-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    }
+  ]
+}

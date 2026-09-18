@@ -1,0 +1,23 @@
+.workspace-canvas-toolbar:has(.textbook-reading) { flex-wrap: wrap; }
+.workspace-canvas-toolbar .textbook-reading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 6px 8px;
+  min-height: 32px;
+  color: #5143b4;
+  font-size: 12px;
+  line-height: 1.5;
+  text-decoration: none;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.textbook-reading span { font-size: 10px; color: #687382; }
+.workspace-canvas-toolbar .textbook-reading:hover { background: #f0edff; }
+.workspace-canvas-toolbar .textbook-reading:focus-visible { outline: 2px solid #6757d9; outline-offset: 2px; }
+@media (max-width: 900px) {
+  .workspace-canvas-toolbar:has(.textbook-reading) { display: flex; align-items: center; }
+  .workspace-canvas-toolbar:has(.textbook-reading) > .workspace-canvas-tabs { flex: 0 1 auto; }
+  .workspace-canvas-toolbar:has(.textbook-reading) > .agentic-knowledge-choice { order: 2; flex-basis: 100%; }
+}

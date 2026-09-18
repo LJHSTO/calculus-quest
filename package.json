@@ -1,0 +1,23 @@
+{
+  "name": "calculus-quest",
+  "version": "2.0.0",
+  "description": "函数与极限独立实验章节",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "runtime:build": "node ops/build-learning-runtime.js",
+    "courseware:modules:build": "node ops/build-courseware-modules.js",
+    "kg:build": "node ops/build-knowledge-graph.js",
+    "test": "node ops/test-chapter-scope.js && node ops/test-functions-limits.js && node ops/test-learning-runtime.js && node ops/test-subpath-deployment.js",
+    "functions:test": "node ops/test-functions-limits.js"
+  },
+  "dependencies": {
+    "@sentry/node": "10.74.0",
+    "katex": "^0.17.0",
+    "sql.js": "^1.12.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "playwright-core": "^1.62.0"
+  }
+}

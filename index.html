@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>高等数学互动学习 | 智能伴学平台</title>
+    <meta
+      name="description"
+      content="在互动课件中探索高等数学，通过动手实验、练习反馈和智能伴学，逐步建立数学理解。"
+    />
+    <link rel="icon" href="data:," />
+    <script>
+      (function() {
+        try {
+          var savedTheme = localStorage.getItem("calculus-quest-home-theme");
+          if (savedTheme === "default") {
+            document.documentElement.dataset.cqTheme = savedTheme;
+          }
+        } catch (_) {}
+      })();
+    </script>
+    <script>
+// Auto-detect sub-path deployment for API calls
+(function() {
+  var p = location.pathname;
+  var canonicalPath = !/\/$/.test(p) && !/\.[a-zA-Z0-9]+$/.test(p) ? p + "/" : p;
+  var m = canonicalPath.match(/^(\/[^/]+\/)/);
+  var basePath = m ? m[1].replace(/\/+$/, "") : "";
+  if (basePath) {
+    // 先固定资源解析目录，再跳转补尾斜杠，避免浏览器在跳转提交前请求 /app 或 /styles.css。
+    var base = document.createElement("base");
+    base.href = basePath + "/";
+    document.head.appendChild(base);
+    window.__BASE_PATH__ = basePath;
+    var origFetch = window.fetch;
+    window.fetch = function(url) {
+      var args = Array.prototype.slice.call(arguments, 1);
+      if (typeof url === "string" && url.startsWith("/api/")) {
+        url = basePath + url;
+      }
+      return origFetch.apply(window, [url].concat(args));
+    };
+  }
+  if (canonicalPath !== p) {
+    location.replace(canonicalPath + location.search + location.hash);
+  }
+})();
+</script>
+
+    <link rel="stylesheet" href="styles.css?v=20260903-answer-review-v1" />
+    <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260909-outcome-figures-v3" />
+    <link rel="stylesheet" href="app/main/learning-workspace.css?v=20260908-workspace-v3" />
+    <link rel="stylesheet" href="app/main/openmaic-classroom.css?v=20260909-flow-v7" />
+    <link rel="stylesheet" href="app/main/system-announcements.css?v=20260726-announcements-v5" />
+    <link rel="stylesheet" href="lib/katex.min.css?v=0.17.0" />
+    <link rel="stylesheet" href="app/main/platform-theme.css?v=20260917-loading" />
+    <link rel="stylesheet" href="app/main/textbook-reading.css?v=20260909" />
+  </head>
+  <body class="pilot-single-chapter">
+    <div id="app-loader" aria-label="加载中">
+      <div class="loader-spinner"></div>
+      <p>学习平台加载中…</p>
+    </div>
+    <a class="skip-link" href="#learn-view">跳到学习播放器</a>
+
+    <header class="app-header">
+      <button class="brand" type="button" data-view="home" aria-label="回到首页">
+        <span class="brand-mark">∂</span>
+        <span>返回</span>
+      </button>
+      <nav class="app-nav" aria-label="主导航">
+        <button class="nav-button active" type="button" data-view="home">首页</button>
+        <button class="nav-button" type="button" data-view="learn">学习</button>
+        <button class="nav-button" type="button" data-view="feedback">反馈</button>
+        <button class="nav-button" type="button" data-view="progress">记录</button>
+      </nav>
+      <div class="system-announcement-center" id="system-announcement-center">
+        <button
+          class="announcement-toggle"
+          id="announcement-toggle"
+          type="button"
+          aria-haspopup="dialog"
+          aria-expanded="false"
+          aria-controls="announcement-panel"
+          aria-label="打开系统公告"
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M10.27 21a2 2 0 0 0 3.46 0"></path>
+            <path d="M3.26 15.33A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.67C19.41 13.96 18 12.5 18 8A6 6 0 0 0 6 8c0 4.5-1.41 5.96-2.74 7.33"></path>
+          </svg>
+          <span class="announcement-toggle-label">公告</span>
+          <span class="announcement-unread-count" id="announcement-unread-count" hidden>0</span>
+        </button>
+        <section class="announcement-panel" id="announcement-panel" role="dialog" aria-label="系统公告" hidden>
+          <header>
+            <div>
+              <strong>系统公告</strong>
+              <span id="announcement-panel-summary">暂无未读公告</span>
+            </div>
+            <button class="announcement-mark-read" id="announcement-mark-read" type="button">全部已读</button>
+          </header>
+          <div class="announcement-list" id="announcement-list"></div>
+        </section>
+      </div>
+      <div class="theme-control" id="theme-control">
+        <button
+          class="theme-launcher"
+          id="theme-launcher"
+          type="button"
+          disabled
+          aria-disabled="true"
+          aria-haspopup="true"
+          aria-expanded="false"
+          aria-controls="theme-menu"
+          aria-label="外观设置暂未开放"
+          title="外观设置暂未开放"
+        >
+          <span class="theme-launcher-mark" aria-hidden="true">◒</span>
+          <span>外观</span>
+        </button>
+        <div class="theme-menu" id="theme-menu" role="menu" hidden>
+          <div class="theme-menu-heading">
+            <span class="eyebrow">首页主题</span>
+            <strong>选择你的探索气质</strong>
+          </div>
+          <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme-choice="default">
+            <span class="theme-swatch theme-swatch-default" aria-hidden="true"></span>
+            <span class="theme-option-copy"><strong>探索地图</strong><small>灯塔、山路与轨迹线</small></span>
+            <span class="theme-option-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme-choice="A">
+            <span class="theme-swatch theme-swatch-a" aria-hidden="true"></span>
+            <span class="theme-option-copy"><strong>星轨任务台</strong><small>深色星图与轨道节点</small></span>
+            <span class="theme-option-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme-choice="C">
+            <span class="theme-swatch theme-swatch-c" aria-hidden="true"></span>
+            <span class="theme-option-copy"><strong>导数地牢</strong><small>紫黑关卡与高能脉冲</small></span>
+            <span class="theme-option-check" aria-hidden="true">✓</span>
+          </button>
+          <button class="theme-option" type="button" role="menuitemradio" aria-checked="false" data-theme-choice="E">
+            <span class="theme-swatch theme-swatch-e" aria-hidden="true"></span>
+            <span class="theme-option-copy"><strong>知识荒原</strong><small>夜间城市与开放探索</small></span>
+            <span class="theme-option-check" aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </div>
+      <div class="auth-widget" id="auth-widget" aria-live="polite">
+        <button class="utility-button" id="auth-action" type="button">登录</button>
+        <div class="user-menu" id="user-menu" hidden>
+          <button class="user-menu-toggle" id="auth-menu-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="打开账号菜单" title="账号菜单">
+            <span class="user-avatar" id="auth-avatar">U</span>
+            <span class="user-menu-copy">
+              <span id="auth-status">未登录</span>
+              <span id="auth-subtitle">学习者</span>
+            </span>
+            <span class="user-menu-caret" aria-hidden="true">⌄</span>
+          </button>
+          <div class="user-menu-panel" id="auth-menu-panel" hidden>
+            <div class="user-menu-head">
+              <span class="user-avatar large" id="auth-avatar-large">U</span>
+              <div>
+                <strong id="auth-menu-name">未登录</strong>
+                <span id="auth-menu-identity">补充昵称或邮箱，让账号更好识别。</span>
+              </div>
+            </div>
+            <form class="profile-form" id="profile-form">
+              <label>
+                <span>昵称</span>
+                <input id="profile-nickname" name="nickname" maxlength="24" autocomplete="nickname" placeholder="补充昵称" />
+              </label>
+              <label>
+                <span>邮箱</span>
+                <input id="profile-email" name="email" type="email" autocomplete="email" placeholder="补充邮箱" />
+              </label>
+              <p class="profile-edit-note" id="profile-edit-note">账号信息只能修改一次，保存后将锁定。</p>
+              <div id="profile-feedback" class="profile-feedback" role="status"></div>
+              <button class="button secondary full" id="profile-save" type="submit">保存账号信息</button>
+            </form>
+            <button class="user-menu-item" id="reset-progress" type="button">重置</button>
+            <button class="user-menu-item danger" id="auth-logout" type="button">退出</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <aside class="mobile-browser-notice" role="note" aria-label="电脑端体验提醒">
+      为了您更好的学习体验，请用电脑浏览器打开本网页
+    </aside>
+
+    <section class="announcement-banner" id="announcement-banner" aria-live="polite" hidden>
+      <div class="announcement-banner-inner">
+        <span class="announcement-banner-type" id="announcement-banner-type">重要通知</span>
+        <div>
+          <strong id="announcement-banner-title"></strong>
+          <p id="announcement-banner-content"></p>
+        </div>
+        <button class="announcement-banner-open" id="announcement-banner-open" type="button">查看公告</button>
+        <button class="announcement-banner-close" id="announcement-banner-close" type="button" aria-label="关闭这条公告">×</button>
+      </div>
+    </section>
+
+    <section id="auth-gate" class="auth-gate" hidden>
+      <form id="login-form" class="login-panel is-login" data-auth-form-mode="login">
+        <p class="eyebrow">高等数学互动学习</p>
+        <h1 id="login-title">登录账号</h1>
+        <p id="login-copy">输入注册时使用的昵称或邮箱，继续你的学习进度。</p>
+        <div class="auth-mode-tabs" role="tablist" aria-label="账号操作">
+          <button class="active" type="button" data-auth-mode="login">登录</button>
+          <button type="button" data-auth-mode="register">注册</button>
+        </div>
+        <div class="auth-mode-note" data-login-note>
+          <strong>登录</strong>
+          <span>昵称或邮箱 + 密码</span>
+        </div>
+        <div class="auth-mode-note register-note" data-register-note hidden>
+          <strong>注册</strong>
+          <span>昵称 / 邮箱至少填一项，密码 8-72 个字符</span>
+        </div>
+        <label data-login-field>
+          <span>昵称或邮箱</span>
+          <input id="login-identifier" name="identifier" autocomplete="username" maxlength="254" placeholder="输入昵称或邮箱" required />
+          <small>使用注册时填写过的任一项。</small>
+        </label>
+        <label data-login-field>
+          <span>密码</span>
+          <input id="login-password" name="current-password" type="password" autocomplete="current-password" minlength="8" maxlength="72" placeholder="输入密码" required />
+        </label>
+        <div data-register-fields hidden>
+          <label class="identity-field">
+            <span>昵称 <em>选填</em></span>
+            <input id="nickname" name="nickname" autocomplete="nickname" minlength="2" maxlength="24" placeholder="2-24 个字符" />
+            <small>填写后可用昵称登录。</small>
+          </label>
+          <label class="identity-field">
+            <span>邮箱 <em>选填</em></span>
+            <input id="email" name="email" type="email" autocomplete="email" maxlength="254" placeholder="可只填邮箱" />
+            <small>填写后可用邮箱登录。</small>
+          </label>
+          <label>
+            <span>密码</span>
+            <input id="register-password" name="new-password" type="password" autocomplete="new-password" minlength="8" maxlength="72" placeholder="8-72 个字符" />
+            <small>建议混合字母、数字和符号。</small>
+          </label>
+          <label>
+            <span>确认密码</span>
+            <input id="register-password-confirm" name="new-password-confirm" type="password" autocomplete="new-password" minlength="8" maxlength="72" placeholder="再输入一次密码" />
+          </label>
+        </div>
+        <div id="login-feedback" class="login-feedback" role="status"></div>
+        <button class="button primary full" id="login-submit" type="submit">登录</button>
+      </form>
+    </section>
+
+    <main>
+      <section id="home-view" class="view active">
+        <div class="hero">
+          <div class="hero-bg" aria-hidden="true"></div>
+          <div class="hero-copy">
+            <p class="eyebrow hero-eyebrow">
+              <span>自主探索 · 智能伴学</span>
+              <span class="beta-badge">测试版</span>
+            </p>
+            <h1>高等数学<br /><span>互动学习</span></h1>
+            <p>
+              让抽象的数学，成为看得见的理解。
+            </p>
+            <p class="home-introduction">在互动课件中动手探索，在练习与反馈中检验理解。学习助手伴你梳理思路，按自己的节奏走好每一步。</p>
+            <div class="hero-actions">
+              <button class="button primary" type="button" data-view="learn">开始学习 <span aria-hidden="true">→</span></button>
+              <button class="button secondary" type="button" data-view="progress">查看学习记录</button>
+            </div>
+          </div>
+          <div class="home-metrics-proxy" aria-hidden="true" hidden>
+            <span id="metric-chapters">0</span>
+            <span id="metric-scenes">0</span>
+            <span id="metric-glm">0</span>
+            <span id="metric-html">0</span>
+            <span id="metric-audio">0</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="learn-view" class="view">
+        <div class="learning-shell core-learning-workspace" data-workspace-pane="course">
+          <div class="workspace-mobile-nav" role="tablist" aria-label="学习工作区">
+            <button type="button" role="tab" data-workspace-pane="path" aria-selected="false">课程路径</button>
+            <button type="button" role="tab" data-workspace-pane="course" aria-selected="true">课件</button>
+            <button type="button" role="tab" data-workspace-pane="assistant" aria-selected="false">学习助手</button>
+          </div>
+          <aside class="chapter-rail collapsed" aria-label="大章节" aria-hidden="true" id="chapter-rail" hidden>
+            <div class="rail-header">
+              <div class="rail-header-row">
+                <div>
+                  <p class="eyebrow">章节</p>
+                  <h2>选择章节</h2>
+                </div>
+              </div>
+            </div>
+            <div id="chapter-list" class="chapter-list"></div>
+          </aside>
+          <div class="learning-nav-cluster" aria-label="学习导航">
+            <button class="icon-button rail-toggle learning-rail-control" id="chapter-rail-toggle" type="button" aria-controls="chapter-rail" aria-expanded="false" aria-label="展开章节列表" title="悬浮查看章节，点击可保持展开" hidden>
+              <span class="learning-rail-control-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M6.5 5.5h11M6.5 12h11M6.5 18.5h11"></path>
+                  <circle cx="4" cy="5.5" r="1"></circle>
+                  <circle cx="4" cy="12" r="1"></circle>
+                  <circle cx="4" cy="18.5" r="1"></circle>
+                </svg>
+              </span>
+              <span class="learning-rail-control-label" data-learning-toggle-label>章节</span>
+              <span class="learning-rail-control-caret" aria-hidden="true">›</span>
+            </button>
+            <span class="learning-nav-cluster-divider" aria-hidden="true" hidden></span>
+            <button class="icon-button lesson-rail-toggle learning-rail-control" id="lesson-rail-toggle" type="button" aria-controls="lesson-rail" aria-expanded="true" aria-label="收起本章路径" title="收起本章路径">
+              <span class="learning-rail-control-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M6 5.5h8.5a3.5 3.5 0 0 1 0 7H9.5a3.5 3.5 0 0 0 0 7H18"></path>
+                  <circle cx="5" cy="5.5" r="1.8"></circle>
+                  <circle cx="19" cy="19.5" r="1.8"></circle>
+                </svg>
+              </span>
+              <span class="learning-rail-control-label" data-learning-toggle-label>路径</span>
+              <span class="learning-rail-control-caret" aria-hidden="true">›</span>
+            </button>
+          </div>
+          <aside class="lesson-rail" id="lesson-rail" aria-label="本章路径" aria-hidden="false">
+            <div class="rail-header">
+              <p class="eyebrow">本章路径</p>
+              <h2 id="chapter-title">本章路径</h2>
+              <progress id="workspace-progress" max="100" value="0" aria-label="本章完成进度"></progress>
+              <small id="workspace-progress-label">等待课程加载</small>
+            </div>
+            <div id="lesson-list" class="lesson-list"></div>
+            <details id="chapter-outcome-panel" class="chapter-outcome-panel lesson-module-group" open hidden aria-live="polite">
+              <summary class="lesson-module-summary">
+                <span class="lesson-module-summary-copy"><strong>研究测量</strong></span>
+              </summary>
+              <div class="chapter-outcome-heading" hidden>
+                <small data-proactive-outcomes-summary>完成章后测后开放；作答期间学习助手暂时关闭。</small>
+              </div>
+              <div class="lesson-module-steps chapter-outcome-path-stages" data-proactive-outcomes-path-stages></div>
+              <button class="button soft" type="button" data-proactive-outcomes-open hidden>查看独立任务</button>
+            </details>
+          </aside>
+
+          <section class="player" aria-live="polite">
+            <div class="player-top">
+              <div>
+                <p class="eyebrow" id="lesson-type">学习单元</p>
+                <h1 id="lesson-title">选择一个学习模块</h1>
+                <p id="lesson-summary"></p>
+              </div>
+              <div class="player-actions">
+                <button class="button soft" id="workspace-coach-toggle" type="button" aria-controls="agentic-coach-panel" aria-expanded="false" hidden>待确认选择</button>
+                <button class="classroom-icon-button" id="workspace-tools-toggle" type="button" aria-controls="workspace-tools-body" aria-expanded="true" aria-label="收起学习助手" title="收起学习助手"><img src="assets/classroom-icons/PanelRightClose.svg" alt="" /></button>
+              </div>
+            </div>
+            <div id="agentic-coach-panel" class="agentic-coach-panel" aria-live="polite"></div>
+            <div id="lesson-player" class="lesson-player"></div>
+            <div class="classroom-footer">
+            <section class="classroom-playback" id="classroom-playback" aria-label="课件播放与讲解" hidden>
+              <div class="classroom-controlbar">
+                <span id="classroom-scene-position" class="classroom-scene-position"></span>
+                <div class="classroom-controls">
+                  <button class="classroom-icon-button" type="button" data-classroom-action="play" title="播放讲解" aria-label="播放讲解"><img src="assets/classroom-icons/Play.svg" alt="" /></button>
+                  <button class="classroom-icon-button" type="button" data-classroom-action="replay" title="重新播放讲解" aria-label="重新播放讲解"><img src="assets/classroom-icons/RotateCcw.svg" alt="" /></button>
+                  <select id="classroom-playback-rate" aria-label="讲解播放速度"><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select>
+                  <input id="classroom-narration-seek" type="range" min="0" max="1000" value="0" aria-label="讲解播放进度" />
+                  <span id="classroom-narration-time">00:00</span>
+                  <button class="classroom-icon-button" type="button" data-classroom-action="quote" title="引用当前课件" aria-label="引用当前课件"><img src="assets/classroom-icons/Quote.svg" alt="" /></button>
+                  <button class="classroom-icon-button" type="button" data-classroom-action="note" title="记录课件笔记" aria-label="记录课件笔记"><img src="assets/classroom-icons/NotebookPen.svg" alt="" /></button>
+                  <button class="classroom-icon-button" type="button" data-classroom-action="focus-canvas" title="拓宽画布" aria-label="拓宽画布" aria-pressed="false"><img src="assets/classroom-icons/Maximize2.svg" alt="" /></button>
+                  <button class="classroom-icon-button" type="button" data-classroom-action="fullscreen" title="全屏课件" aria-label="全屏课件"><img src="assets/classroom-icons/Maximize.svg" alt="" /></button>
+                  <button class="classroom-icon-button" type="button" data-classroom-action="toggle-lecture" title="隐藏讲解" aria-label="隐藏讲解"><img src="assets/classroom-icons/ChevronDown.svg" alt="" /></button>
+                </div>
+              </div>
+            </section>
+            <div id="learning-action-dock" class="bottom-next-wrapper learning-action-dock" aria-label="当前学习路径操作" hidden></div>
+              <div class="classroom-lecture" id="classroom-lecture">
+                <span class="classroom-speaker" aria-hidden="true"><img src="assets/classroom-icons/Volume2.svg" alt="" /></span>
+                <div><span class="classroom-lecture-label">讲解</span><p id="classroom-lecture-text"></p></div>
+              </div>
+            </div>
+            <button class="button primary" id="complete-lesson" type="button">完成本节</button>
+          </section>
+          <aside class="learning-workspace-tools" id="workspace-tools-body" aria-label="学习助手工作区">
+            <div class="workspace-tabs" role="tablist" aria-label="学习工具">
+              <button id="workspace-tab-chat" role="tab" type="button" data-workspace-tab="chat" aria-selected="true" aria-controls="workspace-pane-chat">知点</button>
+              <button id="workspace-tab-notes" role="tab" type="button" data-workspace-tab="notes" aria-selected="false" aria-controls="workspace-pane-notes" tabindex="-1">笔记</button>
+              <button id="workspace-tab-profile" role="tab" type="button" data-workspace-tab="profile" aria-selected="false" aria-controls="workspace-pane-profile" tabindex="-1">画像</button>
+              <button id="workspace-tab-map" role="tab" type="button" data-workspace-tab="map" aria-selected="false" aria-controls="workspace-pane-map" tabindex="-1">知识路径</button>
+            </div>
+            <section id="workspace-pane-chat" class="workspace-tool-pane workspace-chat-pane" role="tabpanel" aria-labelledby="workspace-tab-chat">
+              <aside id="knowledge-assistant-root" class="knowledge-assistant-root" aria-label="知点学习侧栏"></aside>
+              <div class="workspace-companion-rest">
+                <h2>知点学习助教</h2>
+                <p id="workspace-current-task">等待课程加载</p>
+                <div class="workspace-quiet-state" id="workspace-assistant-state" role="status">准备就绪</div>
+              </div>
+            </section>
+            <section id="workspace-pane-notes" class="workspace-tool-pane" role="tabpanel" aria-labelledby="workspace-tab-notes" hidden>
+              <header class="workspace-section-heading"><h2>当前课件笔记</h2><button type="button" id="workspace-note-new">记一笔</button></header>
+              <div id="workspace-notes"></div>
+            </section>
+            <section id="workspace-pane-profile" class="workspace-tool-pane" role="tabpanel" aria-labelledby="workspace-tab-profile" hidden>
+              <h2>我的学习画像</h2>
+              <div id="workspace-profile"></div>
+            </section>
+            <section id="workspace-pane-map" class="workspace-tool-pane" role="tabpanel" aria-labelledby="workspace-tab-map" hidden>
+              <h2>本章知识路径</h2>
+              <p class="workspace-caption">课程顺序，不代表掌握程度</p>
+              <ol id="workspace-map" class="workspace-concept-map"></ol>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="agent-view" class="view">
+        <div class="page">
+          <div class="page-heading">
+            <p class="eyebrow">路径编排</p>
+            <h1>学习路径如何编排</h1>
+            <p>这里展示学生会经历的学习动作：前测定位、主动选择、互动学习、阶段检查、回看和通关。</p>
+          </div>
+          <div id="agent-board" class="agent-board"></div>
+        </div>
+      </section>
+
+      <section id="library-view" class="view" hidden aria-hidden="true">
+        <div class="page">
+          <div class="page-heading">
+            <p class="eyebrow">资源索引</p>
+            <h1>站内资源索引</h1>
+            <p>资源索引用简短概括命名。选择任何条目都会回到学习播放器内展示，不再跳转离开网站。</p>
+          </div>
+          <div class="library-toolbar">
+            <button class="filter active" type="button" data-filter="all">全部</button>
+            <button class="filter" type="button" data-filter="scene">流程节点</button>
+            <button class="filter" type="button" data-filter="knowledge">知识点</button>
+            <button class="filter" type="button" data-filter="quiz">测验</button>
+            <button class="filter" type="button" data-filter="interactive">互动</button>
+            <span id="library-count" class="count-pill">0 项</span>
+          </div>
+          <div id="resource-grid" class="resource-grid"></div>
+        </div>
+      </section>
+
+      <section id="progress-view" class="view progress-view">
+        <div class="page progress-page">
+          <div class="page-heading">
+            <p class="eyebrow">学习记录</p>
+            <h1>我的学习记录</h1>
+            <p>这里汇总你的完成进度、测验表现和最近学习动态，方便回看卡点并继续下一步。</p>
+          </div>
+          <div class="progress-summary" aria-label="学习摘要">
+            <div class="progress-summary-item primary">
+              <span>已完成模块</span>
+              <strong id="completed-count">0/69</strong>
+              <small>主线学习节点</small>
+            </div>
+            <div class="progress-summary-item">
+              <span>测验提交</span>
+              <strong id="progress-quiz-count">0</strong>
+              <small>前测、形成性测验和后测</small>
+            </div>
+            <div class="progress-summary-item">
+              <span>最近活动</span>
+              <strong id="progress-activity-count">0</strong>
+              <small>保留最近学习轨迹</small>
+            </div>
+          </div>
+          <div class="progress-grid">
+            <div class="progress-column">
+              <article class="progress-card">
+                <h2>通关进度</h2>
+                <p>看你已经完成哪些模块，哪些章节还可以继续推进。</p>
+                <div id="chapter-progress" class="chapter-progress"></div>
+              </article>
+              <article class="progress-card">
+                <h2>最近学习动态</h2>
+                <p>自动记录完成、复习、测验和路径切换，方便你接着上次的位置继续。</p>
+                <ol id="activity-log" class="activity-log"></ol>
+              </article>
+            </div>
+            <article class="progress-card">
+              <h2>测验表现</h2>
+              <p>把前测、过程测和后测放在一起，帮助你发现需要回看的知识点。</p>
+              <div id="quiz-dashboard" class="quiz-dashboard"></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="feedback-view" class="view feedback-view">
+        <div class="page feedback-page">
+          <div class="feedback-layout">
+            <div class="feedback-intro">
+              <div class="page-heading">
+                <p class="eyebrow">学习问题反馈</p>
+                <h1>告诉我们哪里可以做得更好</h1>
+                <p>反馈会保存给管理员查看，不会改变你的学习路径或测验结果。</p>
+              </div>
+              <div class="feedback-context-callout" role="note">
+                <strong>反馈课件前，先在“学习”页面打开它</strong>
+                <p>打开要反馈的讲解页或互动课件后再进入本页，系统会自动带入当前学习位置。</p>
+              </div>
+            </div>
+            <form id="learning-feedback-form" class="feedback-form-card">
+              <fieldset class="feedback-type-fieldset">
+                <legend>反馈类型</legend>
+                <div class="feedback-type-grid">
+                  <label>
+                    <input type="radio" name="feedback-type" value="courseware" checked />
+                    <span><b>课件反馈</b><small>互动、显示或操作问题</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="feedback-type" value="learning_content" />
+                    <span><b>学习内容</b><small>讲解、题目或知识点建议</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="feedback-type" value="platform" />
+                    <span><b>平台功能</b><small>导航、账号或使用体验</small></span>
+                  </label>
+                  <label>
+                    <input type="radio" name="feedback-type" value="other" />
+                    <span><b>其他建议</b><small>其他想告诉我们的内容</small></span>
+                  </label>
+                </div>
+              </fieldset>
+              <section id="courseware-feedback-targets" class="feedback-target-panel" hidden>
+                <div>
+                  <h2>选择反馈对象</h2>
+                  <p>默认选中刚才学习的课件，也可以拖动选择讲解页或同知识点其他课件。</p>
+                </div>
+                <div id="feedback-target-strip" class="feedback-target-strip" role="group" aria-label="课件反馈对象" tabindex="-1"></div>
+              </section>
+              <label class="feedback-content-label" for="feedback-content">反馈正文</label>
+              <textarea id="feedback-content" name="content" autocomplete="off" maxlength="5000" rows="7" required placeholder="请描述遇到的问题、建议，以及你原本希望看到的结果。"></textarea>
+              <div class="feedback-form-meta">
+                <span id="feedback-char-count">0 / 5000</span>
+                <span id="feedback-form-status" role="status" aria-live="polite"></span>
+              </div>
+              <button class="button primary" id="submit-feedback" type="submit">提交反馈</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <section id="evaluation-view" class="view">
+        <div class="page">
+          <div class="page-heading">
+            <p class="eyebrow">研究评估</p>
+            <h1>主动学习评测工作流</h1>
+            <p>研究者可以把生成任务、系统优化、界面优化、离线裁判、人类评分和真实学习成效放在同一条证据链里比较。</p>
+          </div>
+          <div id="evaluation-board" class="evaluation-board"></div>
+          <div id="evaluation-metrics" class="evaluation-metrics"></div>
+          <div id="evaluation-runs" class="evaluation-runs"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>课件资料来源于 OpenMAIC</span>
+      <button class="text-button" type="button" data-view="learn">继续学习</button>
+    </footer>
+
+    <script src="app/main/error-monitoring.js?v=20260910"></script>
+    <script src="app/main/request-coalescing.js?v=20260917"></script>
+    <script src="lib/katex.min.js?v=0.17.0"></script>
+    <script src="lib/question-math.js?v=20260831-question-math-v1"></script>
+    <script src="lib/quiz-question-order.js?v=20260726-quiz-order-v1"></script>
+    <script src="app/main/data.js?v=20260813-platform-fixes-v1"></script>
+    <script src="app/main/feedback-config.js?v=20260722-multi-scene-v1"></script>
+    <script src="app/main/knowledge-scene-selection.js?v=20260813-platform-fixes-v1"></script>
+    <script src="app/main/scene-recommender.js?v=20260723-scene-recommendation-v2"></script>
+    <script src="app/main/content-security.js?v=20260722-security-v1"></script>
+    <script src="app/main/courseware-context.js?v=20260909-canvas-v4"></script>
+    <script src="app/main/learning-notes.js?v=20260726-sync-v1"></script>
+    <script src="app/main/quiz-review-state.js?v=20260819-v2-score-evidence-v2"></script>
+    <script src="app/main/core.js?v=20260902-pilot-ux-v2"></script>
+    <script src="app/main/system-announcements.js?v=20260726-announcements-v7"></script>
+    <script src="app/main/knowledge-point-labels.js?v=20260724-knowledge-labels-v1"></script>
+    <script src="app/main/return-context.js?v=20260722-multi-scene-v1"></script>
+    <script src="app/main/proactive-learning.js?v=20260909-independent-evidence-v2"></script>
+    <script src="lib/active-time-policy.js?v=20260818-active-time-v1"></script>
+    <script src="app/main/analytics.js?v=20260818-active-time-v1"></script>
+    <script src="app/main/courseware-event-contract.js?v=20260908-contract-v1"></script>
+    <script src="app/main/render-learning.js?v=20260909-evidence-match-v3"></script>
+    <script src="app/main/recommendations.js?v=20260722-multi-scene-v1"></script>
+    <script src="app/main/progress.js?v=20260819-v2-score-evidence-v1"></script>
+    <script src="app/main/navigation.js?v=20260902-pilot-ux-v2"></script>
+    <script src="app/main/events.js?v=20260819-v2-knowledge-transition-v5"></script>
+    <script src="app/main/narration.js?v=20260908-classroom-v1"></script>
+    <script src="app/main/quiz.js?v=20260909-feedback-r1"></script>
+    <script src="app/main/agentic-path.js?v=20260909-flow-v5"></script>
+    <script src="app/main/feedback-targets.js?v=20260722-multi-scene-v1"></script>
+    <script src="app/main/feedback.js?v=20260726-content-limit-v1"></script>
+    <script src="app/main/knowledge-assistant.js?v=20260909-navigation-v10"></script>
+    <script src="app/main/openmaic-slide.js?v=20260909-loading-v2"></script>
+    <script src="app/main/learning-workspace.js?v=20260909-flow-v5"></script>
+    <script src="app/main/textbook-reading.js?v=20260916"></script>
+    <script src="app/main/theme.js?v=20260724-home-themes-v1"></script>
+    <script src="app/main/bootstrap.js?v=20260908-coach-v2"></script>
+  </body>
+</html>

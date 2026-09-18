@@ -1,0 +1,13 @@
+{
+  "upstreamCommit": "64621adfa047097f9594bb535e4a190c8d7a32eb",
+  "rendererVersion": "0.1.6",
+  "sha256": "43447d4a8447efecf52c519ae2b59d0ec481a9e8d3ca9d24806b3c855ea1e052",
+  "assetVersion": "8da6101cf90df1c3c54d",
+  "bytes": 929066,
+  "gzipBytes": 307707,
+  "inputCount": 2718,
+  "optionalHighlighter": {
+    "assetVersion": "8f8f7797099469647db5",
+    "bytes": 9567699
+  }
+}

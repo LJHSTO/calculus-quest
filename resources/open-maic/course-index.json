@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-07-25T16:26:50.173Z",
+  "chapters": [
+    {
+      "id": "GH-01-函数、坐标与图像读法入门",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 60,
+      "indexBytes": 169133
+    },
+    {
+      "id": "GH-02-极限与连续：直觉探索",
+      "scenes": 19,
+      "slides": 4,
+      "quizzes": 3,
+      "interactive": 12,
+      "audio": 68,
+      "indexBytes": 185579
+    }
+  ],
+  "totals": {
+    "chapters": 2,
+    "scenes": 38,
+    "slides": 8,
+    "quizzes": 6,
+    "interactive": 24,
+    "audio": 128,
+    "indexBytes": 354712
+  }
+}
