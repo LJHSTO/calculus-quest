@@ -79,13 +79,13 @@ assert.match(assistantSource, /data-knowledge-new-conversation/);
 assert.match(assistantSource, /data-knowledge-quota/);
 assert.match(
   serverSource,
-  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "待首次提问" : "本地引导"/,
-  "已配置的真实模型必须先显示为待验证，不能提前冒充在线 AI 助教"
+  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "AI 助教" : "本地引导"/,
+  "助教名称不应显示为不可用；连接验证仍保持 pending"
 );
 assert.match(
   assistantSource,
-  /verification === "verified"[\s\S]*?"AI 助教"[\s\S]*?"待首次提问"/,
-  "学生端必须区分待验证配置与已经成功返回的模型"
+  /els\.provider\.dataset\.verification = verification[\s\S]*?本次回答已由真实模型服务生成[\s\S]*?连接状态以实际提问结果为准/,
+  "名称与验证状态分离，通过提示区分配置和真实成功回答"
 );
 assert.match(
   assistantSource,
@@ -100,7 +100,7 @@ assert.match(
 assert.match(
   assistantSource,
   /!\["mock", "fallback"\]\.includes\(assistantMessage\.provider\)[\s\S]*?verification:\s*"verified"[\s\S]*?label:\s*"AI 助教"/,
-  "只有真实模型回答成功后才能显示 AI 助教"
+  "只有真实模型回答成功后才能标记 verified"
 );
 assert.match(assistantSource, /data-knowledge-proactive/);
 assert.match(assistantSource, /data-knowledge-proactive-accept/);
@@ -494,7 +494,7 @@ assert.match(
 );
 assert.match(
   assistantSource,
-  /function renderQuickQuestions\(\) \{[\s\S]*?if \([\s\S]*?quizAssistantLocked\(meta\)[\s\S]*?\) \{[\s\S]*?els\.quick\.hidden = true;[\s\S]*?return;/,
+  /function renderQuickQuestions\(\) \{[\s\S]*?const hidden = Boolean\([\s\S]*?quizAssistantLocked\(meta\)[\s\S]*?if \(hidden\) \{[\s\S]*?els\.quick\.hidden = true;[\s\S]*?return;/,
   "quiz lock state must not expose question shortcuts"
 );
 assert.match(assistantSource, /提交本次测验后即可使用知点复盘/);

@@ -1262,7 +1262,7 @@ function assistantProviderInfo() {
     wireApi: runtime.wireApi || "",
     credentialSource: runtime.credentialSource || "",
     verification: live ? "pending" : "local",
-    label: live ? "待首次提问" : "本地引导"
+    label: live ? "AI 助教" : "本地引导"
   };
 }
 

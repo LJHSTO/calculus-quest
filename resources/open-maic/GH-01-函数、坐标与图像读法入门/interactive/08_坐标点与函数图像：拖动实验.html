@@ -1453,6 +1453,7 @@ function drawParticles() {
     p.y += p.vy;
     p.life -= 0.02;
     p.vy += 0.1;
+    if (p.life <= 0) return;
 
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);

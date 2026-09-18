@@ -915,6 +915,40 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 </style>
 
 <style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
+<style id="limit-challenge-viewport">
+  body:has(#targetDisplay) {
+    height: 100dvh !important;
+    justify-content: flex-start !important;
+  }
+  body #gameContainer {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    flex: 0 0 100dvh !important;
+    overflow: hidden !important;
+  }
+  body #gameContainer #gameCanvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+  }
+  body #gameContainer #controls {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+  }
+  @media (max-width: 480px) {
+    #hud { padding: 8px; gap: 4px; }
+    .hud-item { padding: 4px 6px; gap: 4px; }
+    #controls { gap: 12px; padding: 12px 8px; }
+    .ctrl-btn { font-size: 16px; min-width: 0; flex: 1; }
+  }
+</style>
 </head>
 <body>
 
@@ -1440,13 +1474,13 @@ function addParticles(x, y, color, count) {
 }
 
 function updateParticles() {
-  particles = particles.filter(p => p.life > 0);
   particles.forEach(p => {
     p.x += p.vx;
     p.y += p.vy;
     p.vy += 0.1;
     p.life -= p.decay;
   });
+  particles = particles.filter(p => p.life > 0);
 }
 
 function drawParticles() {
@@ -1633,6 +1667,7 @@ function update(dt) {
     }
   } else if (gameState === 'success') {
     // Celebration particles
+    const { gapX, targetY } = getPlatformHeights();
     if (Math.random() < 0.3) {
       addParticles(gapX + (Math.random()-0.5)*40, targetY, '#ffd700', 2);
     }

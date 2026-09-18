@@ -3385,14 +3385,14 @@
       || (verification === "verified"
         ? "AI 助教"
         : provider.live
-          ? "待首次提问"
+          ? "AI 助教"
           : "本地引导");
     els.provider.dataset.live = provider.live ? "true" : "false";
     els.provider.dataset.verification = verification;
     els.provider.title = verification === "verified"
       ? "本次回答已由真实模型服务生成"
       : provider.live
-        ? "已读取模型配置；首次提问会验证真实连接"
+        ? "已配置在线助教；连接状态以实际提问结果为准"
         : "当前使用本地确定性引导，不冒充真实大模型";
   }
 
@@ -3629,25 +3629,30 @@
     return conversationTurnCount() >= CONVERSATION_TURN_LIMIT;
   }
 
+  let quickQuestionsRenderKey = "";
   function renderQuickQuestions() {
     const meta = courseMeta();
-    els.quick.replaceChildren();
-    if (
+    const hidden = Boolean(
       quizAssistantLocked(meta)
       || conversationAtLimit()
       || messages.length > 0
       || pendingProactivePrompt
       || loadingHistory
-    ) {
-      els.quick.hidden = true;
-      return;
-    }
-    els.quick.hidden = false;
-    const suggestions = Core.suggestionsForContext({
+    );
+    const suggestions = hidden ? [] : Core.suggestionsForContext({
       ...(activeContext || {}),
       scope: meta.isQuiz ? "quiz" : activeContext?.scope,
       quizSubmitted: meta.quizSubmitted
     });
+    const renderKey = JSON.stringify([hidden, suggestions]);
+    if (renderKey === quickQuestionsRenderKey) return;
+    quickQuestionsRenderKey = renderKey;
+    els.quick.replaceChildren();
+    if (hidden) {
+      els.quick.hidden = true;
+      return;
+    }
+    els.quick.hidden = false;
     suggestions.forEach((question) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -4256,6 +4261,7 @@
     return article;
   }
 
+  let messagesRenderKey = "";
   function renderMessages() {
     const scrollViewport = els.scroll || els.messages;
     const previousScrollTop = scrollViewport.scrollTop;
@@ -4275,6 +4281,14 @@
       || scopedFeedback
       || inlineOffer
     );
+    // Preserve focused/pressed controls when a context refresh has no visible changes.
+    const renderKey = JSON.stringify([
+      meta.unitId, messages, pendingProactivePrompt, loadingHistory,
+      verificationCheck, scopedFeedback, inlineOffer, proactiveCheckSelection,
+      proactiveCheckSubmitting, openMessageSourceId
+    ]);
+    if (renderKey === messagesRenderKey) return;
+    messagesRenderKey = renderKey;
     els.messages.replaceChildren();
     if (
       !messages.length

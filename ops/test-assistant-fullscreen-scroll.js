@@ -56,6 +56,12 @@ async function main() {
     await page.locator('[data-openmaic-state="ready"]').waitFor({ timeout: 30000 });
     await page.locator(".knowledge-assistant-launcher").click();
     await page.waitForTimeout(400);
+    const opening = page.locator("[data-knowledge-quick] button").first();
+    const openingText = await opening.textContent();
+    await opening.click({ delay: 180 });
+    assert.equal(await page.locator("[data-knowledge-input]").inputValue(), openingText,
+      "示例问题点击必须填入输入框");
+    await page.locator("[data-knowledge-input]").fill("");
     // Exercise the real fullscreen move and its inline floating-position styles.
     await page.locator('[data-classroom-action="fullscreen"]').click();
     await page.waitForFunction(() => !!document.fullscreenElement);
@@ -63,6 +69,12 @@ async function main() {
     await page.waitForTimeout(300);
     const positionInFullscreen = await page.locator(".knowledge-assistant-panel").evaluate(el => el.style.left);
     assert.ok(positionInFullscreen, "全屏浮窗必须有实际定位，才能覆盖退出时的回归路径");
+    const fullscreenQuestion = page.locator("[data-knowledge-quick] button").last();
+    const fullscreenQuestionText = await fullscreenQuestion.textContent();
+    await fullscreenQuestion.click({ delay: 180 });
+    assert.equal(await page.locator("[data-knowledge-input]").inputValue(), fullscreenQuestionText,
+      "全屏示例问题必须响应");
+    await page.locator("[data-knowledge-input]").fill("");
     await page.evaluate(() => document.exitFullscreen());
     await page.waitForFunction(() => !document.fullscreenElement);
     await page.waitForTimeout(300);
@@ -101,6 +113,27 @@ async function main() {
     releaseReply();
     assert.ok(positions.every(value => value < 5), `模型回答期间阅读顶部不得被自动拉回底部: ${positions}`);
     await page.waitForFunction(() => !document.querySelector("[data-knowledge-send]").disabled);
+    for (const [intent, expected] of [
+      ["self_check", "我理解为："],
+      ["rephrase", "请换一种方式解释刚才这部分，尽量更直观一些。"],
+      ["practice", "请围绕刚才的内容出一道小题，先不要给答案。"]
+    ]) {
+      const button = page.locator(`[data-assistant-intent="${intent}"]`).last();
+      await button.scrollIntoViewIfNeeded();
+      const box = await button.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.evaluate(() => KnowledgeAssistant.sync());
+      await page.mouse.up();
+      assert.equal(await page.locator("[data-knowledge-input]").inputValue(), expected,
+        `巩固按钮 ${intent} 在刷新期间仍须响应点击`);
+    }
+    await page.locator('[data-assistant-intent="self_check"]').last().focus();
+    await page.evaluate(() => KnowledgeAssistant.sync());
+    await page.keyboard.press("Enter");
+    assert.equal(await page.locator("[data-knowledge-input]").inputValue(), "我理解为：",
+      "键盘焦点必须在刷新后保留");
+    await page.locator("[data-knowledge-input]").fill("");
     if (remote) {
       await page.locator('[data-knowledge-provider][data-verification="verified"]').waitFor();
       console.log("公网真实模型回答验证通过。");
@@ -108,7 +141,7 @@ async function main() {
     fs.mkdirSync(path.join(root, "output/playwright/知点回归"), { recursive: true });
     await page.screenshot({ path: path.join(root, "output/playwright/知点回归/退出全屏恢复.png") });
     assert.deepEqual(errors, []);
-    console.log("知点全屏退出恢复、侧栏可见和顶部滚动稳定回归通过。");
+    console.log("示例问题、三种巩固操作、键盘焦点、全屏点击与退出恢复、顶部滚动稳定回归通过。");
   } finally {
     await browser?.close();
     server?.kill();
