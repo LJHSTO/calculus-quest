@@ -1,5 +1,5 @@
 {
-  "version": "03558ca0e9b6afd1e5d6",
+  "version": "d92d76b276c3feb75a06",
   "indexSha256": "a03602baf54f4bf9072f16698be92bcd6f69aa2656a7c278b166e24d303c4aef",
   "scripts": [
     {
@@ -155,7 +155,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20260909-navigation-v10\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "1cfa1b80a353ad2e0fd9ad3c28569b5f170b810aea556f63181ea113687f85de"
+      "sha256": "bbb0561cc033e9af4d70788d48df75d74cb0cb575eda15014d99aa19fd8104fc"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",

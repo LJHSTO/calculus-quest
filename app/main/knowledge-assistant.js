@@ -2351,15 +2351,19 @@
         fullscreenHost.appendChild(root);
       }
       root.classList.add("is-fullscreen-hosted");
+      applyPanelPosition();
       return;
     }
 
     root.classList.remove("is-fullscreen-hosted");
-    if (!fullscreenHomeParent?.isConnected || root.parentNode === fullscreenHomeParent) return;
+    if (!fullscreenHomeParent?.isConnected) return;
     const restoreBefore = fullscreenHomeNextSibling?.parentNode === fullscreenHomeParent
       ? fullscreenHomeNextSibling
       : null;
-    fullscreenHomeParent.insertBefore(root, restoreBefore);
+    if (root.parentNode !== fullscreenHomeParent) {
+      fullscreenHomeParent.insertBefore(root, restoreBefore);
+    }
+    applyPanelPosition();
   }
 
   function proactiveSuggestionVisible(suggestion, meta = courseMeta()) {
@@ -3381,7 +3385,7 @@
       || (verification === "verified"
         ? "AI 助教"
         : provider.live
-          ? "模型待验证"
+          ? "待首次提问"
           : "本地引导");
     els.provider.dataset.live = provider.live ? "true" : "false";
     els.provider.dataset.verification = verification;
@@ -4254,6 +4258,7 @@
 
   function renderMessages() {
     const scrollViewport = els.scroll || els.messages;
+    const previousScrollTop = scrollViewport.scrollTop;
     const nearBottom = scrollViewport.scrollHeight - scrollViewport.scrollTop - scrollViewport.clientHeight < 120;
     const meta = courseMeta();
     const verificationCheck = syncProactiveCheckState(meta);
@@ -4319,16 +4324,10 @@
     if (inlineOffer) {
       els.messages.appendChild(proactiveInlineOfferNode(inlineOffer));
     }
-    if (
-      nearBottom
-      || isAsking
-      || pendingProactivePrompt
-      || hasProactiveContent
-    ) {
-      window.requestAnimationFrame(() => {
-        scrollViewport.scrollTop = scrollViewport.scrollHeight;
-      });
-    }
+    // Replacing the message DOM can clamp scrollTop; never override a learner reading above.
+    scrollViewport.scrollTop = nearBottom && messages.length
+      ? scrollViewport.scrollHeight
+      : previousScrollTop;
   }
 
   function renderProactiveOutcomeEntry() {

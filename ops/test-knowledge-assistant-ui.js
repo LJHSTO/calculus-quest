@@ -79,12 +79,12 @@ assert.match(assistantSource, /data-knowledge-new-conversation/);
 assert.match(assistantSource, /data-knowledge-quota/);
 assert.match(
   serverSource,
-  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "模型待验证" : "本地引导"/,
+  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "待首次提问" : "本地引导"/,
   "已配置的真实模型必须先显示为待验证，不能提前冒充在线 AI 助教"
 );
 assert.match(
   assistantSource,
-  /verification === "verified"[\s\S]*?"AI 助教"[\s\S]*?"模型待验证"/,
+  /verification === "verified"[\s\S]*?"AI 助教"[\s\S]*?"待首次提问"/,
   "学生端必须区分待验证配置与已经成功返回的模型"
 );
 assert.match(
