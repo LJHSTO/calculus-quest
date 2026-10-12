@@ -32,6 +32,59 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>连续判定：三层漏斗结构</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-02",
+  "module_title": "极限与连续：直觉探索",
+  "knowledge_point_id": "GH-02-K03",
+  "concept_tag": "连续就是不跳断",
+  "scene_type": "mindMap",
+  "resource_id": "GH-02-K03:mindMap",
+  "resource_title": "连续就是不跳断：关系图",
+  "learning_objective": "请解释内点连续的三个条件，为什么有极限不等于连续。",
+  "misconception": "连续要求函数值有定义、双侧极限存在，且二者相等，三个条件缺一不可。",
+  "observable_evidence": "我们在拖动实验里亲手修好了断裂点，现在用这张关系图把连续性的逻辑彻底理清。这就像一个三层漏斗——只有每一层都通过，函数在这一点才是连续的。 点击顶部的‘连续判定’节点，我们开始逐层往下走。第一层先问：f(a) 有没有定义？也就是铁轨在这个位置是不是真的铺了一截。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed"
+  ],
+  "capabilities": {
+    "widget_type": "mindMap",
+    "controls": [
+      "button"
+    ],
+    "reports_attempt": false,
+    "reports_challenge": false,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "产生与本知识点目标一致的可观察交互变化",
+    "failure_is_evidence": false
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -952,6 +1005,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
 

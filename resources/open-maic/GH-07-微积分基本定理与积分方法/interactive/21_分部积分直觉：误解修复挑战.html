@@ -32,6 +32,66 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>分部积分直觉：公式收缩师</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-09-game-audit-r3",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-07",
+  "module_title": "微积分基本定理与积分方法",
+  "knowledge_point_id": "GH-07-K04",
+  "concept_tag": "分部积分直觉",
+  "scene_type": "game",
+  "resource_id": "GH-07-K04:game",
+  "resource_title": "分部积分直觉：误解修复挑战",
+  "learning_objective": "能解释「分部积分直觉」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「分部积分直觉」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "分部积分直觉：误解修复挑战 - 策略卡牌游戏",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "hint_requested",
+    "reset_used",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": true,
+    "reports_reset": true,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": true,
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0，且场景自行判定了对错",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -284,6 +344,11 @@ let sessionStorage = window.__openMaicSessionStorage;
     font-family: 'Georgia', serif;
   }
   .func-card:active { cursor: grabbing; }
+  .func-card.selected {
+    outline: 3px solid rgba(241,196,15,0.8);
+    outline-offset: 2px;
+    transform: translateY(-2px);
+  }
   .func-card.card-algebra { background: rgba(243,156,18,0.2); border-color: rgba(243,156,18,0.4); color: #f39c12; }
   .func-card.card-log { background: rgba(155,89,182,0.2); border-color: rgba(155,89,182,0.4); color: #9b59b6; }
   .func-card.card-trig { background: rgba(46,204,113,0.2); border-color: rgba(46,204,113,0.4); color: #2ecc71; }
@@ -1159,6 +1224,48 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style data-parts-desktop-layout>
+#controls-area .hidden { display: none !important; }
+@media (min-width: 640px) {
+  html, body { height: 100%; overflow: hidden; }
+  body { background: #182023; animation: none; }
+  #game-container {
+    width: 100%; max-width: none; height: 100vh; min-height: 0;
+    display: grid; grid-template-columns: minmax(240px, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: 46px 24px 80px 72px 108px 48px minmax(0, 1fr);
+    gap: 6px 14px; padding: 10px;
+  }
+  #game-container > div { min-width: 0; margin: 0; }
+  #hud { grid-column: 1 / -1; grid-row: 1; }
+  #level-progress { grid-column: 1 / -1; grid-row: 2; }
+  #target-area { grid-column: 1; grid-row: 3; padding: 8px; border-radius: 8px; }
+  #target-integral { font-size: 24px; }
+  #slot-area { grid-column: 1; grid-row: 4; }
+  #slot-area .slot { min-height: 0; padding: 8px; border-radius: 8px; }
+  #cards-area { grid-column: 1; grid-row: 5; padding: 8px; overflow: auto; border-radius: 8px; background: #212c30; }
+  #cards-grid { gap: 8px; }
+  #controls-area { grid-column: 1; grid-row: 6; gap: 6px; padding: 0; display: flex; }
+  #controls-area .game-btn { min-width: 0; padding: 8px; font-size: 14px; border-radius: 8px; }
+  #parts-review { grid-column: 2; grid-row: 3 / 8; min-height: 0; display: grid;
+    grid-template-rows: minmax(150px, 1.4fr) minmax(100px, 1fr); gap: 8px; }
+  #chain-area { min-height: 0; height: 100%; margin: 0; overflow: auto;
+    border-radius: 8px; scroll-behavior: auto; background: #111a1d; }
+  #explanation { min-height: 0; margin: 0; overflow: auto; border-radius: 8px;
+    padding: 12px; font-size: 14px; line-height: 1.7; background: #243933; border-color: #42675d; }
+  .chain-step { flex-wrap: wrap; gap: 4px 8px; }
+  .chain-formula { min-width: 0; overflow-wrap: anywhere; font-size: 14px; }
+  .chain-result { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) {
+  body, .chain-step, #explanation.show { animation: none; }
+}
+@media (min-width: 640px) and (max-width: 900px) {
+  #game-container { grid-template-rows: 42px 22px 80px 64px 136px 44px minmax(0, 1fr); }
+  #cards-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  #cards-grid .func-card { min-width: 0; max-width: none; padding: 5px 8px; }
+  #cards-label { margin-bottom: 6px; font-size: 11px; }
+}
+</style>
 </head>
 <body>
 
@@ -1192,6 +1299,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
   </div>
 
   <!-- Formula Chain -->
+  <div id="parts-review">
   <div id="chain-area">
     <div style="color:#555;text-align:center;padding:20px;font-size:13px;" id="chain-placeholder">
       拖拽函数卡片到 u 和 dv 槽位，开始分部积分！
@@ -1200,31 +1308,6 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 
   <!-- Explanation -->
   <div id="explanation"></div>
-
-  <!-- LIATE Tip -->
-  <div id="liate-tip">
-    <div class="tip-title"><span class="icon">💡</span> LIATE 选择法则（优先选 u 的顺序）</div>
-    <div id="liate-ruler">
-      <div class="liate-item" style="background:rgba(155,89,182,0.3);color:#9b59b6;">
-        <span class="liate-letter">L</span><span class="liate-name">对数</span>
-      </div>
-      <span class="liate-arrow">→</span>
-      <div class="liate-item" style="background:rgba(230,126,34,0.3);color:#e67e22;">
-        <span class="liate-letter">I</span><span class="liate-name">反三角</span>
-      </div>
-      <span class="liate-arrow">→</span>
-      <div class="liate-item" style="background:rgba(243,156,18,0.3);color:#f39c12;">
-        <span class="liate-letter">A</span><span class="liate-name">代数</span>
-      </div>
-      <span class="liate-arrow">→</span>
-      <div class="liate-item" style="background:rgba(46,204,113,0.3);color:#2ecc71;">
-        <span class="liate-letter">T</span><span class="liate-name">三角</span>
-      </div>
-      <span class="liate-arrow">→</span>
-      <div class="liate-item" style="background:rgba(52,152,219,0.3);color:#3498db;">
-        <span class="liate-letter">E</span><span class="liate-name">指数</span>
-      </div>
-    </div>
   </div>
 
   <!-- Slots -->
@@ -1250,6 +1333,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     <button class="game-btn btn-hint" onclick="showHint()">💡 提示</button>
     <button class="game-btn btn-reset" onclick="resetSelection()">🔄 重置</button>
     <button class="game-btn btn-confirm" id="btn-confirm" onclick="confirmChoice()" disabled>✅ 确认选择</button>
+    <button class="game-btn btn-confirm hidden" id="btn-result" type="button">查看本关结果</button>
   </div>
 </div>
 
@@ -1264,7 +1348,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       你需要正确选择 <span style="color:#e74c3c;font-weight:bold;">u</span>（被微分）和 <span style="color:#3498db;font-weight:bold;">dv</span>（被积分）。<br><br>
       ✅ 选择正确 → 公式<strong style="color:#2ecc71;">收缩简化</strong> → 得分！<br>
       ❌ 选择错误 → 公式<strong style="color:#e74c3c;">膨胀分裂</strong> → 重试！<br><br>
-      遵循 <strong style="color:#f39c12;">LIATE 法则</strong> 来做出最佳选择！
+      比较求导与积分后的复杂度；循环积分也可能是有效路径。
     </div>
     <button class="overlay-btn primary" onclick="startGame()">🚀 开始挑战</button>
   </div>
@@ -1330,8 +1414,8 @@ const LEVELS = [
   {
     id: 1,
     integral: { f1: "x", f2: "ln(x)", f1Type: "algebra", f2Type: "log" },
-    correct: { u: "ln(x)", dv: "x", uReason: "对数函数（L），微分后变成 1/x 更简单“, dvReason: ”代数函数 x 积分后变成 x²/2，仍是代数" },
-    wrong: { u: "x", dv: "ln(x)", uResult: "dx (常数)", dvResult: "x·ln(x) - x（更复杂！）", reason: "x 微分后消失，但 ln(x) 积分反而变得更复杂，形成恶性循环！" },
+    correct: { u: "ln(x)", dv: "x", uReason: "对数函数（L），微分后变成 1/x 更简单", dvReason: "代数函数 x 积分后变成 x²/2，仍是代数" },
+    wrong: { u: "x", dv: "ln(x)", uResult: "dx", dvResult: "x·ln(x) - x", reason: "这组拆法合法，但先积分 ln(x) 需要额外计算，还会在后续积分中再次出现 x·ln(x)。本关优先选择能直接化简的拆法。" },
     cards: [
       { label: "x", type: "algebra" },
       { label: "ln(x)", type: "log" },
@@ -1345,13 +1429,13 @@ const LEVELS = [
       { label: "简化", formula: "= (x²/2)·ln(x) - ∫ (x/2) dx", type: "step" },
       { label: "完成!", formula: "= (x²/2)·ln(x) - x²/4 + C", type: "done" }
     ],
-    explanation: "根据 <strong>LIATE法则</strong>，<span class='good'>ln(x)（对数，L）</span> 的优先级高于 <span class='good'>x（代数，A）</span>，所以 ln(x) 应该做 u。ln(x) 微分后变成 1/x，问题大大简化！"
+    explanation: "在 x>0 上，选择 ln(x) 做 u，因为它的导数为 1/x；选择 x dx 做 dv，得到 v=x²/2。两者相乘后，剩余积分只含 x/2，更容易计算。"
   },
   {
     id: 2,
     integral: { f1: "x²", f2: "eˣ", f1Type: "algebra", f2Type: "exp" },
     correct: { u: "x²", dv: "eˣ", uReason: "代数函数 x²，微分降次变成 2x", dvReason: "eˣ 积分后仍是 eˣ，完美！" },
-    wrong: { u: "eˣ", dv: "x²", uResult: "eˣ (不变)", dvResult: "x³/3（升次了！）", reason: "eˣ 微分后还是 eˣ（没简化），而 x² 积分变成 x³/3（反而更复杂了）！" },
+    wrong: { u: "eˣ", dv: "x²", uResult: "eˣ dx", dvResult: "x³/3", reason: "这组拆法合法，但新积分的多项式由二次升到三次，计算没有简化。优先让多项式求导降次。" },
     cards: [
       { label: "x²", type: "algebra" },
       { label: "eˣ", type: "exp" },
@@ -1365,13 +1449,13 @@ const LEVELS = [
       { label: "再次分部", formula: "= x²·eˣ - 2(x·eˣ - ∫ eˣ dx)", type: "step" },
       { label: "完成!", formula: "= eˣ(x² - 2x + 2) + C", type: "done" }
     ],
-    explanation: "x² 是<strong>代数函数（A）</strong>，eˣ 是<strong>指数函数（E）</strong>。根据 LIATE，A 在 E 之前，所以 x² 做 u。每次微分 x² 降一次幂，<span class='good'>两次后消失</span>，问题迎刃而解！"
+    explanation: "选择 x² 做 u，是因为求导会逐次降幂，而 eˣ 积分后不变。两次分部后，<span class='good'>剩余积分的多项式因子变成常数2</span>，再直接积分即可。LIATE 是选择线索，不是唯一合法性的判据。"
   },
   {
     id: 3,
     integral: { f1: "x", f2: "sin(x)", f1Type: "algebra", f2Type: "trig" },
     correct: { u: "x", dv: "sin(x)", uReason: "代数函数 x 微分后变成 1（常数，消失）", dvReason: "sin(x) 积分后变成 -cos(x)，仍是三角函数" },
-    wrong: { u: "sin(x)", dv: "x", uResult: "cos(x)", dvResult: "x²/2（升次！）", reason: "sin(x) 微分变成 cos(x)（还是三角函数），而 x 积分变成 x²/2（升次了），问题更复杂！" },
+    wrong: { u: "sin(x)", dv: "x", uResult: "cos(x) dx", dvResult: "x²/2", reason: "这组拆法合法，但新积分的多项式由一次升到二次，计算没有简化。优先对 x 求导。" },
     cards: [
       { label: "x", type: "algebra" },
       { label: "sin(x)", type: "trig" },
@@ -1391,7 +1475,16 @@ const LEVELS = [
     id: 4,
     integral: { f1: "eˣ", f2: "cos(x)", f1Type: "exp", f2Type: "trig" },
     correct: { u: "cos(x)", dv: "eˣ", uReason: "三角函数（T），微分后变成 -sin(x)", dvReason: "eˣ 积分后仍是 eˣ，不变" },
-    wrong: { u: "eˣ", dv: "cos(x)", uResult: "eˣ (不变)", dvResult: "sin(x)", reason: "eˣ 微分不变，cos(x) 积分变成 sin(x)，两次分部后回到原点——形成循环！但这题需要用循环技巧求解。" },
+    alternatives: [{
+      u: "eˣ", dv: "cos(x)",
+      steps: [
+        { label: "原始", formula: "I = ∫ eˣ · cos(x) dx", type: "original" },
+        { label: "另一种有效选择", formula: "u = eˣ, dv = cos(x) dx", type: "choice" },
+        { label: "第一次分部", formula: "I = eˣ·sin(x) - ∫ eˣ·sin(x) dx", type: "step" },
+        { label: "第二次分部", formula: "I = eˣ·sin(x) + eˣ·cos(x) - I", type: "step" },
+        { label: "解方程", formula: "I = eˣ(cos(x)+sin(x))/2 + C", type: "done" }
+      ]
+    }],
     cards: [
       { label: "eˣ", type: "exp" },
       { label: "cos(x)", type: "trig" },
@@ -1400,7 +1493,7 @@ const LEVELS = [
     ],
     steps: [
       { label: "原始", formula: "∫ eˣ · cos(x) dx", type: "original" },
-      { label: "选择（T先于E）", formula: "u = cos(x), dv = eˣ dx", type: "choice" },
+      { label: "一种有效选择", formula: "u = cos(x), dv = eˣ dx", type: "choice" },
       { label: "第一次分部", formula: "= eˣ·cos(x) + ∫ eˣ·sin(x) dx", type: "step" },
       { label: "第二次分部", formula: "= eˣ·cos(x) + (eˣ·sin(x) - ∫ eˣ·cos(x) dx)", type: "step" },
       { label: "循环! 解方程", formula: "I = eˣ(cos(x)+sin(x))/2 + C", type: "done" }
@@ -1411,7 +1504,7 @@ const LEVELS = [
     id: 5,
     integral: { f1: "x", f2: "arctan(x)", f1Type: "algebra", f2Type: "inverse" },
     correct: { u: "arctan(x)", dv: "x", uReason: "反三角函数（I），微分后变成 1/(1+x²)", dvReason: "x 积分后变成 x²/2，仍是代数" },
-    wrong: { u: "x", dv: "arctan(x)", uResult: "1", dvResult: "x·arctan(x) - ∫arctan(x)/x dx（更复杂！）", reason: "arctan(x) 积分非常困难，会产生更复杂的表达式。反三角函数做 u 才是正确选择！" },
+    wrong: { u: "x", dv: "arctan(x)", uResult: "dx", dvResult: "x·arctan(x) - (1/2)ln(1+x²)", reason: "这组拆法是合法的，但先积分 arctan(x) 会引入对数项。本关比较能更直接简化计算的选择，优先对 arctan(x) 求导。" },
     cards: [
       { label: "x", type: "algebra" },
       { label: "arctan(x)", type: "inverse" },
@@ -1420,12 +1513,12 @@ const LEVELS = [
     ],
     steps: [
       { label: "原始", formula: "∫ x · arctan(x) dx", type: "original" },
-      { label: "正确选择（I在A前）", formula: "u = arctan(x), dv = x dx", type: "choice" },
+      { label: "一种简化选择", formula: "u = arctan(x), dv = x dx", type: "choice" },
       { label: "分部积分", formula: "= (x²/2)·arctan(x) - ∫ (x²/2)·(1/(1+x²)) dx", type: "step" },
       { label: "简化", formula: "= (x²/2)·arctan(x) - (1/2)∫ x²/(1+x²) dx", type: "step" },
       { label: "完成!", formula: "= (x²/2)·arctan(x) - x/2 + (1/2)arctan(x) + C", type: "done" }
     ],
-    explanation: "arctan(x) 是<strong>反三角函数（I）</strong>，x 是<strong>代数函数（A）</strong>。I 在 A 之前！arctan(x) 微分后变成简单的 1/(1+x²)，而 x 积分变成 x²/2，<span class='good'>问题从反三角变成了有理函数积分</span>，大大简化！"
+    explanation: "选择 arctan(x) 做 u，它的导数是 1/(1+x²)；选择 x dx 做 dv，得到 v=x²/2。剩余被积函数可写成 x²/(1+x²)=1-1/(1+x²)，因此能直接积分。"
   }
 ];
 
@@ -1448,7 +1541,10 @@ let gameState = {
   draggingCard: null,
   dragOffset: { x: 0, y: 0 },
   dragGhost: null,
-  cards: []
+  cards: [],
+  clickSelectedCard: null,
+  levelResolved: false,
+  sceneCompletionReported: false
 };
 
 // Load saved progress
@@ -1466,14 +1562,19 @@ const $ = id => document.getElementById(id);
 // ============ GAME FUNCTIONS ============
 
 function startGame() {
+  if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+  bindClickSlots();
   $('start-screen').classList.add('hidden');
   gameState.gameActive = true;
+  gameState.paused = false;
   gameState.currentLevel = 0;
   gameState.score = 0;
   gameState.combo = 0;
   gameState.maxCombo = 0;
   gameState.timer = 0;
   gameState.levelAttempts = {};
+  gameState.levelResolved = false;
+  gameState.sceneCompletionReported = false;
   gameState.startTime = Date.now();
   
   updateHUD();
@@ -1481,7 +1582,7 @@ function startGame() {
   initLevel();
   
   gameState.timerInterval = setInterval(() => {
-    if (!gameState.paused && gameState.gameActive) {
+    if (!gameState.paused && gameState.gameActive && !gameState.levelResolved) {
       gameState.timer++;
       $('timer-display').textContent = formatTime(gameState.timer);
     }
@@ -1493,11 +1594,15 @@ function startGame() {
 window.startGame = startGame;
 
 function initLevel() {
+  $('btn-result').classList.add('hidden');
+  $('btn-confirm').classList.remove('hidden');
+  document.querySelectorAll('.btn-hint,.btn-reset,.btn-pause').forEach((button) => { button.disabled = false; });
   const level = LEVELS[gameState.currentLevel];
   gameState.levelStartTime = Date.now();
   gameState.selectedU = null;
   gameState.selectedDv = null;
-  gameState.levelAttempts[gameState.currentLevel] = (gameState.levelAttempts[gameState.currentLevel] || 0) + 1;
+  gameState.clickSelectedCard = null;
+  gameState.levelResolved = false;
   
   // Set target
   $('target-integral').innerHTML = `<span class="integral-symbol">∫</span> ${level.integral.f1}<span class="multiplication">×</span>${level.integral.f2} dx`;
@@ -1535,10 +1640,19 @@ function buildCards(cards) {
     el.dataset.index = idx;
     el.dataset.label = card.label;
     el.dataset.type = card.type;
+    el.setAttribute('role', 'button');
+    el.tabIndex = 0;
     
     // Touch and mouse events for dragging
     el.addEventListener('mousedown', onDragStart);
     el.addEventListener('touchstart', onDragStart, { passive: false });
+    el.addEventListener('click', () => selectCardForClick(el));
+    el.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectCardForClick(el);
+      }
+    });
     
     grid.appendChild(el);
   });
@@ -1561,9 +1675,16 @@ function resetSlots() {
   
   // Reset cards
   document.querySelectorAll('.func-card').forEach(c => c.classList.remove('used'));
+  clearClickSelection();
 }
 
-function resetSelection() {
+function resetSelection(reportReset = true) {
+  if (reportReset && gameState.gameActive && !gameState.levelResolved) {
+    window.OpenMaicLearningEvidence?.recordReset({
+      reset_scope: 'selection',
+      challenge_id: 'GH-07-K04-parts-level-' + (gameState.currentLevel + 1)
+    });
+  }
   gameState.selectedU = null;
   gameState.selectedDv = null;
   resetSlots();
@@ -1580,6 +1701,63 @@ function resetSelection() {
     </div>
     <div style="color:#555;text-align:center;padding:10px;font-size:13px;">选择 u 和 dv，开始分部积分！</div>
   `;
+}
+
+window.resetSelection = resetSelection;
+
+function clearClickSelection() {
+  gameState.clickSelectedCard?.element?.classList.remove('selected');
+  gameState.clickSelectedCard = null;
+}
+
+function selectCardForClick(element) {
+  if (!gameState.gameActive || gameState.paused || gameState.levelResolved || element.classList.contains('used')) return;
+  clearClickSelection();
+  gameState.clickSelectedCard = {
+    element,
+    label: element.dataset.label,
+    type: element.dataset.type
+  };
+  element.classList.add('selected');
+}
+
+function assignCardToSlot(slot, cardData) {
+  if (!slot || !cardData || !gameState.gameActive || gameState.paused || gameState.levelResolved) return false;
+  const slotType = slot.dataset.slot;
+  if (slotType === 'u' && !gameState.selectedU) {
+    gameState.selectedU = cardData;
+    slot.classList.add('filled');
+    slot.innerHTML = `<div class="slot-label">u =</div><div class="slot-content" style="color:#e74c3c;">${cardData.label}</div>`;
+  } else if (slotType === 'dv' && !gameState.selectedDv) {
+    gameState.selectedDv = cardData;
+    slot.classList.add('filled');
+    slot.innerHTML = `<div class="slot-label">dv =</div><div class="slot-content" style="color:#3498db;">${cardData.label} dx</div>`;
+  } else {
+    return false;
+  }
+
+  cardData.element?.classList.add('used');
+  clearClickSelection();
+  $('btn-confirm').disabled = !(gameState.selectedU && gameState.selectedDv);
+  showOriginalInChain();
+  return true;
+}
+
+function bindClickSlots() {
+  document.querySelectorAll('.slot').forEach(slot => {
+    if (slot.dataset.clickBound === 'true') return;
+    slot.dataset.clickBound = 'true';
+    slot.setAttribute('role', 'button');
+    slot.tabIndex = 0;
+    const choose = () => assignCardToSlot(slot, gameState.clickSelectedCard);
+    slot.addEventListener('click', choose);
+    slot.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        choose();
+      }
+    });
+  });
 }
 
 // ============ DRAG AND DROP ============
@@ -1643,18 +1821,7 @@ function onDragStart(e) {
       slot.classList.remove('drag-over');
       
       if (t.clientX >= sRect.left && t.clientX <= sRect.right && t.clientY >= sRect.top && t.clientY <= sRect.bottom) {
-        dropped = true;
-        const slotType = slot.dataset.slot;
-        
-        if (slotType === 'u' && !gameState.selectedU) {
-          gameState.selectedU = gameState.draggingCard;
-          slot.classList.add('filled');
-          slot.innerHTML = `<div class="slot-label">u =</div><div class="slot-content" style="color:#e74c3c;">${gameState.draggingCard.label}</div>`;
-        } else if (slotType === 'dv' && !gameState.selectedDv) {
-          gameState.selectedDv = gameState.draggingCard;
-          slot.classList.add('filled');
-          slot.innerHTML = `<div class="slot-label">dv =</div><div class="slot-content" style="color:#3498db;">${gameState.draggingCard.label} dx</div>`;
-        }
+        dropped = assignCardToSlot(slot, gameState.draggingCard) || dropped;
       }
     });
     
@@ -1699,21 +1866,46 @@ function showOriginalInChain() {
 
 // ============ CONFIRM CHOICE ============
 function confirmChoice() {
-  if (!gameState.selectedU || !gameState.selectedDv) return;
+  if (!gameState.selectedU || !gameState.selectedDv || gameState.levelResolved || gameState.paused) return;
   
   const level = LEVELS[gameState.currentLevel];
-  const isCorrect = gameState.selectedU.label === level.correct.u && 
-                     gameState.selectedDv.label === level.correct.dv;
+  const selectedU = gameState.selectedU.label;
+  const selectedDv = gameState.selectedDv.label;
+  const acceptedChoices = [level.correct, ...(level.alternatives || [])];
+  const acceptedChoice = acceptedChoices.find((choice) => choice.u === selectedU && choice.dv === selectedDv);
+  const isCorrect = Boolean(acceptedChoice);
+  const isValidReverse = level.wrong?.u === selectedU && level.wrong?.dv === selectedDv;
+  gameState.levelAttempts[gameState.currentLevel] = (gameState.levelAttempts[gameState.currentLevel] || 0) + 1;
+  const challengeId = 'GH-07-K04-parts-level-' + (gameState.currentLevel + 1);
+  window.OpenMaicLearningEvidence?.recordChallenge({
+    challenge_id: challengeId,
+    question_id: challengeId,
+    is_correct: isCorrect,
+    score: isCorrect ? 1 : 0,
+    max_score: 1,
+    selected_u: gameState.selectedU.label,
+    selected_dv: gameState.selectedDv.label,
+    expected_u: level.correct.u,
+    expected_dv: level.correct.dv,
+    accepted_choices: acceptedChoices.map(({ u, dv }) => ({ u, dv })),
+    evidence_scope: 'factor_selection',
+    mathematically_valid_split: isCorrect || isValidReverse,
+    error_type: isCorrect ? '' : isValidReverse ? 'inefficient_strategy' : 'factor_mismatch'
+  });
   
   // Disable confirm and reset
   $('btn-confirm').disabled = true;
   
   if (isCorrect) {
-    handleCorrectChoice(level);
+    gameState.levelResolved = true;
+    document.querySelectorAll('.btn-hint,.btn-reset,.btn-pause').forEach((button) => { button.disabled = true; });
+    handleCorrectChoice({ ...level, steps: acceptedChoice.steps || level.steps });
   } else {
     handleWrongChoice(level);
   }
 }
+
+window.confirmChoice = confirmChoice;
 
 function handleCorrectChoice(level) {
   gameState.combo++;
@@ -1746,7 +1938,9 @@ function handleCorrectChoice(level) {
   
   // Level complete after delay
   setTimeout(() => {
-    showLevelResult(true, points);
+    $('btn-confirm').classList.add('hidden');
+    $('btn-result').classList.remove('hidden');
+    $('btn-result').onclick = () => showLevelResult(true, points);
   }, 3000);
 }
 
@@ -1764,7 +1958,10 @@ function handleWrongChoice(level) {
   
   // Show wrong chain
   const chainArea = $('chain-area');
-  const wrongStep = level.wrong;
+  const isReverseChoice = level.wrong
+    && gameState.selectedU.label === level.wrong.u
+    && gameState.selectedDv.label === level.wrong.dv;
+  const wrongStep = isReverseChoice ? level.wrong : null;
   
   chainArea.innerHTML = `
     <div class="chain-step step-original">
@@ -1775,27 +1972,31 @@ function handleWrongChoice(level) {
       <span class="chain-label">你的选择</span>
       <span class="chain-formula">u = ${gameState.selectedU.label}, dv = ${gameState.selectedDv.label}</span>
     </div>
-    <div class="chain-step step-bad">
+    ${wrongStep ? `<div class="chain-step step-bad">
       <span class="chain-label">du =</span>
       <span class="chain-formula">${wrongStep.uResult}</span>
-      <span class="chain-result result-harder">❌ 没简化</span>
+      <span class="chain-result result-harder">比较求导结果</span>
     </div>
     <div class="chain-step step-bad">
       <span class="chain-label">v =</span>
       <span class="chain-formula">${wrongStep.dvResult}</span>
-      <span class="chain-result result-harder">❌ 更复杂</span>
-    </div>
+      <span class="chain-result result-harder">比较积分结果</span>
+    </div>` : ''}
     <div class="chain-step step-bad">
       <span class="chain-label">结果</span>
-      <span class="chain-formula">公式膨胀！积分变得更复杂了...</span>
-      <span class="chain-result result-harder">💥 分裂</span>
+      <span class="chain-formula">${wrongStep ? '这组拆法没有让当前计算更直接。' : '先检查 u 与 dv 中的函数相乘，是否仍等于原被积函数。'}</span>
     </div>
   `;
   
   // Show explanation
   setTimeout(() => {
-    $('explanation').innerHTML = '❌ ' + wrongStep.reason + '<br><br>💡 <strong>正确选择：</strong>u = ' + level.correct.u + '，dv = ' + level.correct.dv;
+    $('explanation').innerHTML = (wrongStep ? wrongStep.reason : '当前选中的两个因子没有还原原被积函数，不能直接套用本题的分部积分。')
+      + '<br><br><strong>一种可用选择：</strong>u = ' + level.correct.u + '，dv = ' + level.correct.dv + ' dx';
     $('explanation').classList.add('show');
+    window.OpenMaicLearningEvidence?.recordHint({
+      reason: 'automatic_answer_feedback',
+      challenge_id: 'GH-07-K04-parts-level-' + (gameState.currentLevel + 1)
+    });
   }, 800);
   
   // Spawn fail particles
@@ -1805,7 +2006,7 @@ function handleWrongChoice(level) {
   setTimeout(() => {
     $('slot-u').classList.remove('wrong');
     $('slot-dv').classList.remove('wrong');
-    resetSelection();
+    resetSelection(false);
     buildCards(level.cards);
   }, 3000);
 }
@@ -1827,7 +2028,7 @@ function animateChain(steps, isCorrect) {
         if (step.type === 'done') {
           resultHtml = '<span class="chain-result result-done">✅ 完成！</span>';
         } else {
-          resultHtml = '<span class="chain-result result-simpler">↓ 简化</span>';
+          resultHtml = '<span class="chain-result result-simpler">等价变形</span>';
         }
       }
       
@@ -1845,6 +2046,7 @@ function animateChain(steps, isCorrect) {
 }
 
 function showLevelResult(success, points) {
+  gameState.levelResolved = true;
   const screen = $('level-screen');
   screen.classList.remove('hidden');
   
@@ -1871,6 +2073,10 @@ function showGameComplete() {
   $('level-screen').classList.add('hidden');
   const screen = $('game-complete-screen');
   screen.classList.remove('hidden');
+  gameState.gameActive = false;
+  gameState.paused = false;
+  if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+  gameState.timerInterval = null;
   
   const minutes = Math.floor(gameState.timer / 60);
   const seconds = gameState.timer % 60;
@@ -1879,12 +2085,24 @@ function showGameComplete() {
     总分：<strong style="color:#f1c40f;font-size:24px;">${gameState.score}</strong><br>
     最大连击：<strong style="color:#e74c3c;">x${gameState.maxCombo}</strong><br>
     用时：<strong>${minutes}:${seconds.toString().padStart(2,'0')}</strong><br><br>
-    🎓 你掌握了分部积分的核心直觉！
+    已完成五关因子选择挑战。
   `;
   
   // Check final achievements
   checkAchievements('complete');
   saveProgress();
+  if (!gameState.sceneCompletionReported) {
+    gameState.sceneCompletionReported = true;
+    window.OpenMaicLearningEvidence?.completeScene({
+      completed: true,
+      score: LEVELS.length,
+      max_score: LEVELS.length,
+      correct_count: LEVELS.length,
+      wrong_count: Object.values(gameState.levelAttempts).reduce((sum, attempts) => sum + Math.max(0, attempts - 1), 0),
+      max_combo: gameState.maxCombo,
+      total_time_seconds: gameState.timer
+    });
+  }
 }
 
 function nextLevel() {
@@ -1896,6 +2114,7 @@ function nextLevel() {
 window.nextLevel = nextLevel;
 
 function restartGame() {
+  window.OpenMaicLearningEvidence?.recordReset({ reset_scope: 'scene' });
   $('game-complete-screen').classList.add('hidden');
   $('level-screen').classList.add('hidden');
   $('pause-screen').classList.add('hidden');
@@ -1911,6 +2130,7 @@ function restartGame() {
 window.restartGame = restartGame;
 
 function togglePause() {
+  if (!gameState.gameActive || gameState.levelResolved) return;
   gameState.paused = !gameState.paused;
   $('pause-screen').classList.toggle('hidden', !gameState.paused);
 }
@@ -1919,22 +2139,15 @@ window.togglePause = togglePause;
 
 // ============ HINT ============
 function showHint() {
+  if (!gameState.gameActive || gameState.paused || gameState.levelResolved) return;
   const level = LEVELS[gameState.currentLevel];
-  const f1Type = level.integral.f1Type;
-  const f2Type = level.integral.f2Type;
-  
-  const liateOrder = ['log', 'inverse', 'algebra', 'trig', 'exp'];
-  const f1Rank = liateOrder.indexOf(f1Type);
-  const f2Rank = liateOrder.indexOf(f2Type);
-  
-  let hint;
-  if (f1Rank !== -1 && f2Rank !== -1 && f1Rank < f2Rank) {
-    hint = `💡 提示：在 LIATE 顺序中，${level.integral.f1}（${getCategoryName(f1Type)}）排在 ${level.integral.f2}（${getCategoryName(f2Type)}）之前，所以 ${level.integral.f1} 应该做 <strong style="color:#e74c3c;">u</strong>！`;
-  } else if (f1Rank !== -1 && f2Rank !== -1 && f2Rank < f1Rank) {
-    hint = `💡 提示：在 LIATE 顺序中，${level.integral.f2}（${getCategoryName(f2Type)}）排在 ${level.integral.f1}（${getCategoryName(f1Type)}）之前，所以 ${level.integral.f2} 应该做 <strong style="color:#e74c3c;">u</strong>！`;
-  } else {
-    hint = `💡 提示：想想哪个函数微分后会<strong>变得更简单</strong>？哪个函数积分后<strong>保持简单</strong>？`;
-  }
+  window.OpenMaicLearningEvidence?.recordHint({
+    hint_type: 'strategy_rule',
+    challenge_id: 'GH-07-K04-parts-level-' + (gameState.currentLevel + 1)
+  });
+  const hint = level.alternatives?.length
+    ? '这一关两种因子分配都可行。连续分部两次后，原积分会再次出现；把它移到等式同一侧再求解。'
+    : `比较一种选择：u = ${level.correct.u}，dv = ${level.correct.dv} dx。<br>${level.correct.uReason}；${level.correct.dvReason}。`;
   
   $('explanation').innerHTML = hint;
   $('explanation').classList.add('show');
@@ -2046,10 +2259,7 @@ function showAchievement(ach) {
 }
 
 function isAllPerfect() {
-  for (let key in gameState.levelAttempts) {
-    if (gameState.levelAttempts[key] > 1) return false;
-  }
-  return true;
+  return LEVELS.every((_, index) => gameState.levelAttempts[index] === 1);
 }
 
 // ============ SAVE/LOAD ============
@@ -2074,7 +2284,7 @@ function gameLoop(timestamp) {
 
 // ============ KEYBOARD SHORTCUTS ============
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') togglePause();
+  if (e.key === 'Escape' && gameState.gameActive && !gameState.levelResolved) togglePause();
   if (e.key === 'Enter' && !gameState.paused && !$('btn-confirm').disabled) confirmChoice();
 });
 

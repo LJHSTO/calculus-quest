@@ -32,6 +32,68 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>变上限积分：面积拼图大师</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-09-game-audit-r3",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-07",
+  "module_title": "微积分基本定理与积分方法",
+  "knowledge_point_id": "GH-07-K01",
+  "concept_tag": "变上限积分",
+  "scene_type": "game",
+  "resource_id": "GH-07-K01:game",
+  "resource_title": "变上限积分：误解修复挑战",
+  "learning_objective": "能解释「变上限积分」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「变上限积分」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "通过拼图游戏修复'只背公式'的误解。拖拽面积微元到正确位置，理解变上限积分的几何意义。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "hint_requested",
+    "reset_used",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "slider",
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": true,
+    "reports_reset": true,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -241,6 +303,11 @@ let sessionStorage = window.__openMaicSessionStorage;
   }
 
   /* Overlays */
+  #gameContainer {
+    position: relative;
+    isolation: isolate;
+    z-index: 0;
+  }
   .overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -1097,6 +1164,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     <div class="control-row" style="justify-content: center; gap: 15px;">
       <button class="btn btn-primary" onclick="spawnNewStrip()" id="spawnBtn">🎯 放置新微元</button>
       <button class="btn btn-secondary" onclick="showHint()">💡 提示</button>
+      <button class="btn btn-secondary" onclick="resetLevel()">重置本关</button>
     </div>
   </div>
 
@@ -1218,6 +1286,10 @@ let startTime = 0;
 let levelStartTime = 0;
 let animationId = null;
 let lastTime = 0;
+let pauseStartedAt = 0;
+let totalPaused = 0;
+let levelPaused = 0;
+let inputsBound = false;
 
 // Dragging state
 let dragging = null;
@@ -1265,11 +1337,11 @@ const levels = [
     funcStr: "f(t) = 0.3t²",
     xRange: [0, 5],
     yRange: [0, 8],
-    stripWidth: 0.4,
+    stripWidth: 5 / 12,
     stripCount: 12,
     tolerance: 0.15,
     insight: "💡 二次函数的积分 F(x) = 0.1x³，面积加速增长！曲线越陡，面积增加越快。",
-    targetArea: 10
+    targetArea: 12.5
   },
   {
     name: "正弦函数",
@@ -1277,11 +1349,11 @@ const levels = [
     funcStr: "f(t) = 2sin(t) + 1",
     xRange: [0, Math.PI * 1.2],
     yRange: [-0.5, 3.5],
-    stripWidth: 0.3,
+    stripWidth: Math.PI * 1.2 / 14,
     stripCount: 14,
     tolerance: 0.15,
-    insight: "💡 正弦函数的积分是 -2cos(t)+t+C。注意：当 f(t) 增大时，面积增长更快！",
-    targetArea: 8
+    insight: "💡 F(x)=2-2cos(x)+x。当 f(x)>0 时累积量增加，f(x)<0 时累积量减少；横轴下方计入负的有向面积。",
+    targetArea: 2 - 2 * Math.cos(Math.PI * 1.2) + Math.PI * 1.2
   },
   {
     name: "绝对值函数",
@@ -1299,13 +1371,13 @@ const levels = [
 
 // Achievements
 const achievements = [
-  { id: "first_place", name: "初出茅庐“, desc: ”第一次正确放置微元", icon: "🌟", earned: false },
-  { id: "combo3", name: "三连击“, desc: ”连续3次正确放置", icon: "🔥", earned: false },
-  { id: "combo5", name: "连击大师“, desc: ”连续5次正确放置", icon: "💥", earned: false },
-  { id: "perfect1", name: "完美开局“, desc: ”第一关满分通过", icon: "💎", earned: false },
+  { id: "first_place", name: "初出茅庐", desc: "第一次正确放置微元", icon: "🌟", earned: false },
+  { id: "combo3", name: "三连击", desc: "连续3次正确放置", icon: "🔥", earned: false },
+  { id: "combo5", name: "连击大师", desc: "连续5次正确放置", icon: "💥", earned: false },
+  { id: "perfect1", name: "完美开局", desc: "第一关满分通过", icon: "💎", earned: false },
   { id: "speed", name: "闪电手", desc: "10秒内放置5个微元", icon: "⚡", earned: false },
-  { id: "all_clear", name: "拼图大师“, desc: ”完成全部5关", icon: "🏆", earned: false },
-  { id: "score100", name: "百分达人“, desc: ”总分达到100", icon: "💯", earned: false }
+  { id: "all_clear", name: "拼图大师", desc: "完成全部5关", icon: "🏆", earned: false },
+  { id: "score100", name: "百分达人", desc: "总分达到100", icon: "💯", earned: false }
 ];
 
 // ============ INITIALIZATION ============
@@ -1313,7 +1385,7 @@ function initCanvas() {
   canvas = document.getElementById('gameCanvas');
   const wrapper = document.getElementById('canvasWrapper');
   const w = wrapper.clientWidth;
-  const h = Math.min(w * 0.65, 500);
+  const h = Math.max(160, wrapper.clientHeight - 4);
   
   canvas.width = w * window.devicePixelRatio;
   canvas.height = h * window.devicePixelRatio;
@@ -1416,15 +1488,17 @@ function initLevel() {
   particles = [];
   floatingTexts = [];
   combo = 0;
+  maxCombo = 0;
   levelScore = 0;
   stripsPlaced = 0;
   attempts = 0;
   levelStartTime = Date.now();
+  levelPaused = 0;
+  pauseStartedAt = 0;
   
   // Generate strips
   stripsTotal = lvl.stripCount;
   const xStart = lvl.xRange[0] + lvl.stripWidth / 2;
-  const xEnd = lvl.xRange[0] + (lvl.stripWidth * lvl.stripCount);
   
   for (let i = 0; i < stripsTotal; i++) {
     const x = xStart + i * lvl.stripWidth;
@@ -1463,6 +1537,7 @@ function initLevel() {
 }
 
 function spawnNextStrip() {
+  if (!gameActive || unplacedStrips.some(u => !u.strip.placed)) return;
   const next = strips.find(s => !s.placed);
   if (!next) return;
   
@@ -1516,6 +1591,12 @@ function render(timestamp) {
   }
 }
 
+function startRenderLoop() {
+  if (animationId) cancelAnimationFrame(animationId);
+  lastTime = 0;
+  animationId = requestAnimationFrame(render);
+}
+
 function update(dt, timestamp) {
   // Animate unplaced strips spawning
   unplacedStrips.forEach(u => {
@@ -1564,6 +1645,9 @@ function draw(timestamp) {
   
   // Placed strips (area under curve)
   drawPlacedStrips();
+
+  // Slider-controlled accumulation preview
+  drawSliderArea();
   
   // Function curve
   drawCurve();
@@ -1741,8 +1825,8 @@ function drawPlacedStrips() {
   strips.forEach(strip => {
     if (!strip.placed) return;
     
-    const cx = toCanvasX(strip.x);
-    const cw = toCanvasX(strip.x + strip.width) - cx;
+    const cx = toCanvasX(strip.x - strip.width / 2);
+    const cw = toCanvasX(strip.x + strip.width / 2) - cx;
     const cy0 = toCanvasY(0);
     const cy1 = toCanvasY(strip.y);
     const ch = cy0 - cy1;
@@ -1760,6 +1844,55 @@ function drawPlacedStrips() {
   });
 }
 
+function getSliderXValue() {
+  const slider = document.getElementById('xSlider');
+  const lvl = levels[currentLevel];
+  const maxVal = Math.max(1, parseInt(slider.max, 10) || 1);
+  const ratio = Math.max(0, Math.min(1, (parseInt(slider.value, 10) || 0) / maxVal));
+  return lvl.xRange[0] + ratio * (lvl.xRange[1] - lvl.xRange[0]);
+}
+
+function integrateToX(lvl, xValue) {
+  const start = lvl.xRange[0];
+  if (xValue <= start) return 0;
+  const steps = 160;
+  const dx = (xValue - start) / steps;
+  let area = 0;
+  for (let i = 0; i < steps; i++) {
+    const left = start + i * dx;
+    const right = left + dx;
+    area += (lvl.func(left) + lvl.func(right)) * dx / 2;
+  }
+  return area;
+}
+
+function drawSliderArea() {
+  const lvl = levels[currentLevel];
+  const xValue = getSliderXValue();
+  if (xValue <= lvl.xRange[0]) return;
+
+  const steps = 100;
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(lvl.xRange[0]), toCanvasY(0));
+  for (let i = 0; i <= steps; i++) {
+    const t = lvl.xRange[0] + (xValue - lvl.xRange[0]) * i / steps;
+    ctx.lineTo(toCanvasX(t), toCanvasY(lvl.func(t)));
+  }
+  ctx.lineTo(toCanvasX(xValue), toCanvasY(0));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(0, 210, 255, 0.18)';
+  ctx.fill();
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.moveTo(toCanvasX(xValue), toCanvasY(0));
+  ctx.lineTo(toCanvasX(xValue), toCanvasY(lvl.func(xValue)));
+  ctx.stroke();
+  ctx.restore();
+}
+
 function drawAreaOutline() {
   const lvl = levels[currentLevel];
   const placedCount = strips.filter(s => s.placed).length;
@@ -1768,12 +1901,12 @@ function drawAreaOutline() {
   
   // Draw the accumulated area outline
   ctx.beginPath();
-  ctx.moveTo(toCanvasX(strips[0].x), toCanvasY(0));
+  ctx.moveTo(toCanvasX(strips[0].x - strips[0].width / 2), toCanvasY(0));
   
   strips.forEach(strip => {
     if (!strip.placed) return;
-    const cx = toCanvasX(strip.x);
-    const cw = toCanvasX(strip.x + strip.width) - cx;
+    const cx = toCanvasX(strip.x - strip.width / 2);
+    const cw = toCanvasX(strip.x + strip.width / 2) - cx;
     const cy1 = toCanvasY(strip.y);
     ctx.lineTo(cx, cy1);
     ctx.lineTo(cx + cw, cy1);
@@ -1781,7 +1914,7 @@ function drawAreaOutline() {
   
   const lastPlaced = strips.filter(s => s.placed).pop();
   if (lastPlaced) {
-    ctx.lineTo(toCanvasX(lastPlaced.x + lastPlaced.width), toCanvasY(0));
+    ctx.lineTo(toCanvasX(lastPlaced.x + lastPlaced.width / 2), toCanvasY(0));
   }
   ctx.closePath();
   
@@ -1796,20 +1929,8 @@ function drawAreaOutline() {
 
 function drawFXValue() {
   const lvl = levels[currentLevel];
-  const placedCount = strips.filter(s => s.placed).length;
-  
-  if (placedCount === 0) return;
-  
-  // Calculate accumulated area
-  let area = 0;
-  strips.forEach(s => {
-    if (s.placed) area += s.y * s.width;
-  });
-  
-  const lastPlaced = strips.filter(s => s.placed).pop();
-  if (!lastPlaced) return;
-  
-  const fx = lastPlaced.x + lastPlaced.width;
+  const fx = getSliderXValue();
+  const area = integrateToX(lvl, fx);
   
   // Draw F(x) label
   ctx.fillStyle = '#ffd700';
@@ -1851,7 +1972,7 @@ function drawUnplacedStrips(timestamp) {
     
     // Draw the strip
     const sw = u.width * 0.8;
-    const sh = u.height * 0.6;
+    const sh = Math.abs(u.height) * 0.6;
     const sx = u.x - sw / 2;
     const sy = u.y - sh / 2;
     
@@ -1881,7 +2002,7 @@ function drawUnplacedStrips(timestamp) {
 function drawDraggingStrip() {
   const u = dragging;
   const sw = u.width * 0.8;
-  const sh = u.height * 0.6;
+  const sh = Math.abs(u.height) * 0.6;
   
   ctx.save();
   ctx.globalAlpha = 0.9;
@@ -1966,7 +2087,7 @@ function findUnplacedStripAt(x, y) {
     const u = unplacedStrips[i];
     if (u.strip.placed) continue;
     const sw = u.width * 0.8;
-    const sh = u.height * 0.6;
+    const sh = Math.abs(u.height) * 0.6;
     if (Math.abs(x - u.x) < sw / 2 + 15 && Math.abs(y - u.y) < sh / 2 + 15) {
       return u;
     }
@@ -2008,11 +2129,24 @@ function onPointerUp(e) {
   const targetY = toCanvasY(u.strip.y);
   
   const dist = Math.sqrt((u.x - targetX) ** 2 + (u.y - targetY) ** 2);
-  const tolerance = Math.max(u.width, u.height) * levels[currentLevel].tolerance + 30;
+  const tolerance = Math.max(u.width, Math.abs(u.height)) * levels[currentLevel].tolerance + 30;
+  const placementCorrect = dist < tolerance;
   
   attempts++;
+  const challengeId = 'GH-07-K01-strip-level-' + (currentLevel + 1) + '-strip-' + (u.strip.id + 1);
+  window.OpenMaicLearningEvidence?.recordChallenge({
+    challenge_id: challengeId,
+    question_id: challengeId,
+    is_correct: placementCorrect,
+    score: placementCorrect ? 1 : 0,
+    max_score: 1,
+    target_x: u.strip.x,
+    target_y: u.strip.y,
+    placement_error: dist,
+    evidence_scope: 'motor_placement'
+  });
   
-  if (dist < tolerance) {
+  if (placementCorrect) {
     // Correct placement!
     placeStrip(u);
   } else {
@@ -2181,18 +2315,19 @@ function unlockAchievement(id) {
 
 // ============ SLIDER ============
 function updateSliderDisplay() {
-  const slider = document.getElementById('xSlider');
-  const lvl = levels[currentLevel];
-  const maxVal = parseInt(slider.max);
-  const ratio = parseInt(slider.value) / maxVal;
-  const xVal = lvl.xRange[0] + ratio * (lvl.stripCount * lvl.stripWidth);
+  const xVal = getSliderXValue();
   document.getElementById('xValue').textContent = (Number.isFinite(Number(xVal)) ? Number(xVal) : 0).toFixed(1);
+  if (ctx && graph.width) draw(performance.now());
 }
 
 // ============ HINT ============
 function showHint() {
   const next = strips.find(s => !s.placed);
   if (!next) return;
+  window.OpenMaicLearningEvidence?.recordHint({
+    hint_type: 'spatial',
+    challenge_id: 'GH-07-K01-strip-level-' + (currentLevel + 1) + '-strip-' + (next.id + 1)
+  });
   
   const targetX = toCanvasX(next.x);
   const targetY = toCanvasY(next.y);
@@ -2220,8 +2355,8 @@ function showHint() {
 function completeLevel() {
   gameActive = false;
   
-  const elapsed = (Date.now() - levelStartTime) / 1000;
-  const accuracy = attempts > 0 ? Math.round((stripsTotal / attempts) * 100) : 100;
+  const elapsed = (Date.now() - levelStartTime - levelPaused) / 1000;
+  const accuracy = attempts > 0 ? Math.min(100, Math.round((stripsTotal / attempts) * 100)) : 100;
   
   // Stars
   const stars = accuracy >= 90 ? 3 : accuracy >= 60 ? 2 : 1;
@@ -2263,23 +2398,26 @@ window.startGame = function() {
   totalScore = 0;
   gameActive = true;
   paused = false;
+  maxCombo = 0;
   startTime = Date.now();
+  totalPaused = 0;
+  pauseStartedAt = 0;
   
   initLevel();
   
-  // Bind input events
-  canvas.addEventListener('mousedown', onPointerDown);
-  canvas.addEventListener('mousemove', onPointerMove);
-  canvas.addEventListener('mouseup', onPointerUp);
-  canvas.addEventListener('mouseleave', onPointerUp);
-  canvas.addEventListener('touchstart', onPointerDown, { passive: false });
-  canvas.addEventListener('touchmove', onPointerMove, { passive: false });
-  canvas.addEventListener('touchend', onPointerUp, { passive: false });
+  if (!inputsBound) {
+    inputsBound = true;
+    canvas.addEventListener('mousedown', onPointerDown);
+    canvas.addEventListener('mousemove', onPointerMove);
+    canvas.addEventListener('mouseup', onPointerUp);
+    canvas.addEventListener('mouseleave', onPointerUp);
+    canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+    canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+    canvas.addEventListener('touchend', onPointerUp, { passive: false });
+    document.getElementById('xSlider').addEventListener('input', updateSliderDisplay);
+  }
   
-  // Slider
-  document.getElementById('xSlider').addEventListener('input', updateSliderDisplay);
-  
-  animationId = requestAnimationFrame(render);
+  startRenderLoop();
 };
 
 window.nextLevel = function() {
@@ -2296,21 +2434,43 @@ window.nextLevel = function() {
   
   gameActive = true;
   initLevel();
+  startRenderLoop();
 };
 
 window.restartGame = function() {
+  window.OpenMaicLearningEvidence?.recordReset({ reset_scope: 'scene' });
   document.getElementById('gameCompleteScreen').classList.add('hidden');
   
   currentLevel = 0;
   totalScore = 0;
   gameActive = true;
+  paused = false;
+  maxCombo = 0;
   startTime = Date.now();
+  totalPaused = 0;
+  pauseStartedAt = 0;
   
   initLevel();
+  startRenderLoop();
+};
+
+window.resetLevel = function() {
+  if (!gameActive && document.getElementById('levelCompleteScreen').classList.contains('hidden')) return;
+  window.OpenMaicLearningEvidence?.recordReset({
+    reset_scope: 'level',
+    challenge_id: 'GH-07-K01-strip-level-' + (currentLevel + 1)
+  });
+  document.getElementById('levelCompleteScreen').classList.add('hidden');
+  gameActive = true;
+  paused = false;
+  initLevel();
+  startRenderLoop();
 };
 
 function showGameComplete() {
-  const totalElapsed = (Date.now() - startTime) / 1000;
+  gameActive = false;
+  paused = false;
+  const totalElapsed = (Date.now() - startTime - totalPaused) / 1000;
   document.getElementById('totalScore').textContent = totalScore;
   document.getElementById('totalTime').textContent = (Number.isFinite(Number(totalElapsed)) ? Number(totalElapsed) : 0).toFixed(1) + 's';
   
@@ -2318,19 +2478,30 @@ function showGameComplete() {
   document.getElementById('allInsights').innerHTML = insights;
   
   document.getElementById('gameCompleteScreen').classList.remove('hidden');
+  window.OpenMaicLearningEvidence?.completeScene({
+    completed: true,
+    score: totalScore,
+    max_score: levels.reduce((sum, level) => sum + level.stripCount * 20, 0),
+    correct_count: levels.reduce((sum, level) => sum + level.stripCount, 0),
+    total_time_seconds: totalElapsed
+  });
 }
 
 window.togglePause = function() {
   paused = !paused;
   
   if (paused) {
+    pauseStartedAt = Date.now();
     document.getElementById('pauseOverlay').classList.remove('hidden');
     document.getElementById('pauseBtn').textContent = '继续';
   } else {
+    const pausedFor = Math.max(0, Date.now() - pauseStartedAt);
+    totalPaused += pausedFor;
+    levelPaused += pausedFor;
+    pauseStartedAt = 0;
     document.getElementById('pauseOverlay').classList.add('hidden');
     document.getElementById('pauseBtn').textContent = '暂停';
     lastTime = 0; // Reset to avoid large dt
-    animationId = requestAnimationFrame(render);
   }
 };
 
@@ -2339,8 +2510,9 @@ window.spawnNewStrip = spawnNewStrip;
 
 // Handle resize
 window.addEventListener('resize', function() {
-  if (gameActive || !canvas) return;
+  if (!canvas) return;
   initCanvas();
+  if (gameActive) draw(performance.now());
 });
 
 }); // End DOMContentLoaded

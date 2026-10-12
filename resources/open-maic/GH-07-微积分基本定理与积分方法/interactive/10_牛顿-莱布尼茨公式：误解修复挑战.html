@@ -32,6 +32,67 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>牛顿-莱布尼茨：分类拦截站</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-09-game-audit-r2",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-07",
+  "module_title": "微积分基本定理与积分方法",
+  "knowledge_point_id": "GH-07-K02",
+  "concept_tag": "牛顿-莱布尼茨公式",
+  "scene_type": "game",
+  "resource_id": "GH-07-K02:game",
+  "resource_title": "牛顿-莱布尼茨公式：误解修复挑战",
+  "learning_objective": "能解释「牛顿-莱布尼茨公式」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「牛顿-莱布尼茨公式」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "符号分类挑战赛：将定积分与原函数正确分类",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "hint_requested",
+    "reset_used",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": true,
+    "reports_reset": true,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": true,
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0，且场景自行判定了对错",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -100,6 +161,10 @@ canvas {
   background: rgba(155, 89, 182, 0.15);
   border-color: rgba(155, 89, 182, 0.3);
 }
+.zone.error {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: rgba(231, 76, 60, 0.35);
+}
 .zone.highlight {
   transform: scale(1.02);
   filter: brightness(1.5);
@@ -111,6 +176,10 @@ canvas {
 .zone.indefinite.highlight {
   background: rgba(155, 89, 182, 0.35);
   border-color: #9b59b6;
+}
+.zone.error.highlight {
+  background: rgba(231, 76, 60, 0.35);
+  border-color: #e74c3c;
 }
 .zone-icon { font-size: 24px; margin-bottom: 2px; }
 .zone-label { font-size: 13px; font-weight: bold; }
@@ -163,6 +232,7 @@ canvas {
 }
 .zone-mini.blue { background: rgba(52,152,219,0.2); border: 1px solid rgba(52,152,219,0.4); }
 .zone-mini.purple { background: rgba(155,89,182,0.2); border: 1px solid rgba(155,89,182,0.4); }
+.zone-mini.red { background: rgba(231,76,60,0.2); border: 1px solid rgba(231,76,60,0.45); }
 .game-btn {
   padding: 14px 40px;
   font-size: 18px;
@@ -244,6 +314,21 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: auto;
+}
+#hintBtn {
+  position: absolute;
+  top: 52px;
+  right: 12px;
+  z-index: 20;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 215, 0, 0.45);
+  border-radius: 18px;
+  background: rgba(20, 24, 48, 0.9);
+  color: #ffd700;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
   pointer-events: auto;
 }
 .level-badge {
@@ -908,17 +993,23 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
   <div id="comboDisplay"></div>
 
   <button id="pauseBtn" class="hidden" onclick="togglePause()">⏸</button>
+  <button id="hintBtn" class="hidden" onclick="showHint()">提示</button>
 
   <div id="zoneBar" class="hidden">
-    <div class="zone determinate" id="zoneDeterminate">
+    <div class="zone determinate" id="zoneDeterminate" role="button" tabindex="0">
       <div class="zone-icon">📐</div>
       <div class="zone-label">定积分</div>
       <div class="zone-sub">有上下限 → 数值</div>
     </div>
-    <div class="zone indefinite" id="zoneIndefinite">
+    <div class="zone indefinite" id="zoneIndefinite" role="button" tabindex="0">
       <div class="zone-icon">〰️</div>
-      <div class="zone-label">原函数</div>
+      <div class="zone-label">不定积分</div>
       <div class="zone-sub">无上下限 → 函数族</div>
+    </div>
+    <div class="zone error" id="zoneError" role="button" tabindex="0">
+      <div class="zone-icon">⚠</div>
+      <div class="zone-label">错误等式</div>
+      <div class="zone-sub">左右类型或结果不一致</div>
     </div>
   </div>
 
@@ -936,7 +1027,8 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       <div class="rule">📥 <strong>拖拽飞来的表达式</strong>到正确的区域</div>
       <div class="zone-demo">
         <div class="zone-mini blue">📐 <strong>定积分</strong><br>∫ₐᵇ f(x)dx = 数值<br>有上下限</div>
-        <div class="zone-mini purple">〰️ <strong>原函数</strong><br>∫ f(x)dx = F(x)+C<br>无上下限</div>
+        <div class="zone-mini purple">〰️ <strong>不定积分</strong><br>∫ f(x)dx = F(x)+C<br>原函数族</div>
+        <div class="zone-mini red">⚠ <strong>错误等式</strong><br>类型或计算结果矛盾</div>
       </div>
       <div class="rule">⚡ <strong>连续正确</strong>获得Combo加分！</div>
       <div class="rule">🎨 分类正确后，看到公式的<strong>几何含义</strong></div>
@@ -973,7 +1065,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 {
   "type": "game",
   "gameType": "action",
-  "description": "符号分类挑战赛：将定积分与原函数正确分类",
+  "description": "符号分类挑战赛：区分定积分、不定积分与错误等式",
   "scoring": {
     "correctPoints": 10,
     "speedBonus": 5,
@@ -983,20 +1075,20 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     {
       "name": "初识积分",
       "speed": 0.4,
-      "spawnRate": 2500,
-      "duration": 30
+      "spawnRate": 2800,
+      "duration": 25
     },
     {
       "name": "加速挑战",
       "speed": 0.7,
-      "spawnRate": 2000,
-      "duration": 30
+      "spawnRate": 2200,
+      "duration": 25
     },
     {
       "name": "大师之路",
       "speed": 1,
-      "spawnRate": 1600,
-      "duration": 40
+      "spawnRate": 1800,
+      "duration": 30
     }
   ]
 }
@@ -1013,7 +1105,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const rect = container.getBoundingClientRect();
     canvas.width = rect.width * window.devicePixelRatio;
     canvas.height = rect.height * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
     canvas.style.width = rect.width + 'px';
     canvas.style.height = rect.height + 'px';
     W = rect.width;
@@ -1034,6 +1128,7 @@ document.addEventListener('DOMContentLoaded', function() {
   let maxCombo = 0;
   let correctCount = 0;
   let wrongCount = 0;
+  let missedCount = 0;
   let levelTimer = 0;
   let spawnTimer = 0;
   let expressions = [];
@@ -1045,11 +1140,13 @@ document.addEventListener('DOMContentLoaded', function() {
   let gracePeriod = 3000;
   let graceEnd = 0;
   let animFrameId = null;
+  let hasStarted = false;
+  let sceneCompletionReported = false;
 
   const TOP_MARGIN = 42;
   const BOTTOM_MARGIN = 100;
   const PLAYABLE_TOP = TOP_MARGIN + 10;
-  const PLAYABLE_BOTTOM = H - BOTTOM_MARGIN - 10;
+  const playableBottom = () => H - BOTTOM_MARGIN - 10;
 
   // Expression pool
   const expressionPool = [
@@ -1089,13 +1186,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Achievements
   const achievementDefs = [
-    { id: "first_correct", name: "初次尝试“, desc: ”首次正确分类", icon: "🌟" },
-    { id: "combo3", name: "连击大师“, desc: ”连续正确3次", icon: "🔥" },
-    { id: "combo5", name: "积分达人“, desc: ”连续正确5次", icon: "⚡" },
-    { id: "perfect1", name: "完美过关“, desc: ”第1关0失误", icon: "💎" },
-    { id: "catch10", name: "拦截专家“, desc: ”正确分类10次", icon: "🏆" },
-    { id: "level3", name: "大师之路“, desc: ”进入第3关", icon: "👑" },
-    { id: "score100", name: "百分挑战“, desc: ”总分达到100", icon: "💯" },
+    { id: "first_correct", name: "初次尝试", desc: "首次正确分类", icon: "🌟" },
+    { id: "combo3", name: "连击大师", desc: "连续正确3次", icon: "🔥" },
+    { id: "combo5", name: "积分达人", desc: "连续正确5次", icon: "⚡" },
+    { id: "perfect1", name: "完美过关", desc: "第1关0失误", icon: "💎" },
+    { id: "catch10", name: "拦截专家", desc: "正确分类10次", icon: "🏆" },
+    { id: "level3", name: "大师之路", desc: "进入第3关", icon: "👑" },
+    { id: "score100", name: "百分挑战", desc: "总分达到100", icon: "💯" },
   ];
   let unlockedAchievements = new Set();
   let levelMistakes = {};
@@ -1144,8 +1241,8 @@ document.addEventListener('DOMContentLoaded', function() {
       this.data = data;
       this.x = x;
       this.y = y;
-      this.w = 130;
-      this.h = 56;
+      this.w = Math.min(220, W - 40);
+      this.h = 64;
       this.vy = levelConfig[Math.min(level-1, 2)].speed * (0.8 + Math.random() * 0.4);
       this.vx = (Math.random() - 0.5) * 0.3;
       this.alive = true;
@@ -1158,6 +1255,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     update(dt) {
+      if (!gameActive || !this.alive) return;
       if (this.grabbed) return;
       this.fadeIn = Math.min(1, this.fadeIn + dt * 2);
       const now = Date.now();
@@ -1176,7 +1274,21 @@ document.addEventListener('DOMContentLoaded', function() {
       if (this.y > H - BOTTOM_MARGIN + 5) {
         this.alive = false;
         if (Date.now() > graceEnd) {
+          const expectedZone = window.OpenMaicLearningEvidence?.expectedIntegralZone(this.data) || (this.isError ? 'error' : this.data.category);
+          window.OpenMaicLearningEvidence?.recordChallenge({
+            challenge_id: this.data.challengeId,
+            question_id: this.data.challengeId,
+            is_correct: false,
+            score: 0,
+            max_score: 1,
+            selected_zone: 'missed',
+            independent: false,
+            expected_zone: expectedZone,
+            error_type: 'missed_expression'
+          });
           lives--;
+          wrongCount++;
+          missedCount++;
           combo = 0;
           updateHUD();
           if (lives <= 0) endGame();
@@ -1195,16 +1307,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
       // Glow for error expressions
       if (this.glow > 0) {
-        ctx.shadowColor = this.isError ? '#ff4444' : '#ffd700';
+        ctx.shadowColor = '#ffd700';
         ctx.shadowBlur = this.glow * 20;
       }
 
       // Background
       const grad = ctx.createLinearGradient(drawX, drawY, drawX + this.w, drawY + this.h);
-      if (this.isError) {
-        grad.addColorStop(0, 'rgba(255, 80, 80, 0.9)');
-        grad.addColorStop(1, 'rgba(200, 50, 50, 0.9)');
-      } else if (this.grabbed) {
+      if (this.grabbed) {
         grad.addColorStop(0, 'rgba(255, 215, 0, 0.95)');
         grad.addColorStop(1, 'rgba(255, 140, 0, 0.95)');
       } else {
@@ -1230,42 +1339,22 @@ document.addEventListener('DOMContentLoaded', function() {
       ctx.fill();
 
       // Border
-      ctx.strokeStyle = this.isError ? '#ff4444' : (this.grabbed ? '#ffd700' : 'rgba(100,120,160,0.3)');
+      ctx.strokeStyle = this.grabbed ? '#ffd700' : 'rgba(100,120,160,0.3)';
       ctx.lineWidth = 2;
       ctx.stroke();
-
-      // Error badge
-      if (this.isError) {
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.arc(drawX + this.w - 14, drawY + 14, 8, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('!', drawX + this.w - 14, drawY + 14);
-      }
 
       // Text
       ctx.shadowBlur = 0;
       ctx.fillStyle = this.grabbed ? '#1a1c3a' : '#333';
-      ctx.font = this.isError ? 'bold 13px sans-serif' : '13px sans-serif';
+      ctx.font = '14px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       // Split text into expression and result
       const exprText = this.data.text;
       const resText = this.data.result;
-      ctx.fillText(exprText + ' ' + resText, drawX + this.w/2, drawY + this.h/2);
-
-      // Category hint (small)
-      if (!this.grabbed && Date.now() > graceEnd) {
-        ctx.fillStyle = this.data.category === 'determinate' ? '#3498db' : '#9b59b6';
-        ctx.font = '9px sans-serif';
-        const hint = this.data.category === 'determinate' ? '📐' : '〰️';
-        ctx.fillText(hint, drawX + 14, drawY + this.h/2);
-      }
+      ctx.fillText(exprText, drawX + this.w/2, drawY + 22, this.w - 20);
+      ctx.fillText(resText, drawX + this.w/2, drawY + 46, this.w - 20);
 
       ctx.restore();
     }
@@ -1380,7 +1469,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ctx.fillStyle = '#ffd700';
       ctx.font = 'bold 11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('面积 = 数值', cx, cy - h/2 - 8);
+      ctx.fillText('有向累积 = 数值', cx, cy - h/2 - 8);
     }
 
     drawCurves(ctx) {
@@ -1437,9 +1526,13 @@ document.addEventListener('DOMContentLoaded', function() {
       pool = expressionPool.filter(e => !e.isError);
     }
     const data = pool[Math.floor(Math.random() * pool.length)];
+    const sourceIndex = expressionPool.indexOf(data) + 1;
     const x = 20 + Math.random() * (W - 160);
     const y = PLAYABLE_TOP - 10;
-    expressions.push(new Expression({...data}, x, y));
+    expressions.push(new Expression({
+      ...data,
+      challengeId: 'GH-07-K02-classification-item-' + sourceIndex
+    }, x, y));
   }
 
   function updateHUD() {
@@ -1476,9 +1569,21 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function classifyExpression(expr, zone) {
-    const now = Date.now();
-    const isCorrect = (zone === 'determinate' && expr.data.category === 'determinate') ||
-                      (zone === 'indefinite' && expr.data.category === 'indefinite');
+    if (!gameActive || paused || !expr.alive) return;
+    const expectedZone = window.OpenMaicLearningEvidence?.expectedIntegralZone(expr.data) || (expr.data.isError ? 'error' : expr.data.category);
+    const isCorrect = zone === expectedZone;
+    const challengeId = expr.data.challengeId;
+    window.OpenMaicLearningEvidence?.recordChallenge({
+      challenge_id: challengeId,
+      question_id: challengeId,
+      is_correct: isCorrect,
+      score: isCorrect ? 1 : 0,
+      max_score: 1,
+      selected_zone: zone,
+      expected_zone: expectedZone,
+      expression: expr.data.text + ' ' + expr.data.result,
+      error_type: isCorrect ? '' : 'classification_error'
+    });
 
     expr.alive = false;
     dragging = null;
@@ -1499,13 +1604,13 @@ document.addEventListener('DOMContentLoaded', function() {
       score += points;
 
       // Visual effects
-      const color = expr.data.category === 'determinate' ? '#3498db' : '#9b59b6';
+      const color = expectedZone === 'error' ? '#e74c3c' : (expectedZone === 'determinate' ? '#3498db' : '#9b59b6');
       spawnParticles(expr.x + expr.w/2, expr.y + expr.h/2, color, 15);
       visualEffects.push(new VisualEffect(expr.data.visual, expr.x + expr.w/2, expr.y + expr.h/2 + 40, color));
 
       showFeedback(
         '✅ 正确! +' + points + '分',
-        expr.isError ? expr.data.errorHint : (expr.data.category === 'determinate' ? '定积分 → 数值' : '原函数 → 函数族'),
+        expr.isError ? '已识别等式矛盾：' + expr.data.errorHint : (expr.data.category === 'determinate' ? '定积分 → 数值' : '不定积分 → 原函数族'),
         color
       );
 
@@ -1531,7 +1636,7 @@ document.addEventListener('DOMContentLoaded', function() {
           '#ff6b6b'
         );
       } else {
-        const correctZone = expr.data.category === 'determinate' ? '定积分📐' : '原函数〰️';
+        const correctZone = expectedZone === 'error' ? '错误等式⚠' : (expectedZone === 'determinate' ? '定积分📐' : '不定积分〰️');
         showFeedback(
           '❌ 分类错误!',
           '应归为: ' + correctZone,
@@ -1546,6 +1651,16 @@ document.addEventListener('DOMContentLoaded', function() {
   // Input handling
   let touchStartX = 0, touchStartY = 0;
   let isDragging = false;
+
+  function zoneFromX(x) {
+    if (x < W / 3) return 'determinate';
+    if (x < W * 2 / 3) return 'indefinite';
+    return 'error';
+  }
+
+  function allZoneElements() {
+    return ['zoneDeterminate', 'zoneIndefinite', 'zoneError'].map(id => document.getElementById(id));
+  }
 
   function getPos(e) {
     const rect = canvas.getBoundingClientRect();
@@ -1570,16 +1685,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Check zone click (for drop)
     if (dragging) {
-      const zx = W / 2;
-      const zy = H - BOTTOM_MARGIN / 2;
       if (pos.y >= H - BOTTOM_MARGIN) {
-        if (pos.x < zx) {
-          classifyExpression(dragging, 'determinate');
-        } else {
-          classifyExpression(dragging, 'indefinite');
-        }
+        classifyExpression(dragging, zoneFromX(pos.x));
         return;
       }
+      return;
     }
 
     // Find expression to grab
@@ -1597,6 +1707,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show zone highlights
         document.getElementById('zoneDeterminate').classList.add('highlight');
         document.getElementById('zoneIndefinite').classList.add('highlight');
+        document.getElementById('zoneError').classList.add('highlight');
         document.getElementById('dragIndicator').style.opacity = '1';
         break;
       }
@@ -1612,38 +1723,27 @@ document.addEventListener('DOMContentLoaded', function() {
     isDragging = true;
 
     // Highlight the zone we're over
-    const zx = W / 2;
     if (pos.y >= H - BOTTOM_MARGIN) {
-      if (pos.x < zx) {
-        document.getElementById('zoneDeterminate').style.filter = 'brightness(1.5)';
-        document.getElementById('zoneIndefinite').style.filter = '';
-      } else {
-        document.getElementById('zoneDeterminate').style.filter = '';
-        document.getElementById('zoneIndefinite').style.filter = 'brightness(1.5)';
-      }
+      const activeZone = zoneFromX(pos.x);
+      allZoneElements().forEach(element => {
+        const zoneName = element.id === 'zoneDeterminate' ? 'determinate' : (element.id === 'zoneIndefinite' ? 'indefinite' : 'error');
+        element.style.filter = zoneName === activeZone ? 'brightness(1.5)' : '';
+      });
     }
   }
 
   function handleEnd(e) {
     if (!dragging) return;
 
-    // If not dragging much, just a tap - auto-classify based on closest zone
+    // A tap selects the expression; the learner must explicitly choose a category.
     if (!isDragging) {
-      // Tap without drag: find closest zone
-      const zx = W / 2;
-      const closest = dragging.x < zx ? 'determinate' : 'indefinite';
-      classifyExpression(dragging, closest);
+      showFeedback('已选中表达式', '请点击下方一个分类区域', '#ffd700');
       return;
     }
 
     // Check if dropped in zone area
     if (dragging.y >= H - BOTTOM_MARGIN - 20) {
-      const zx = W / 2;
-      if (dragging.x < zx) {
-        classifyExpression(dragging, 'determinate');
-      } else {
-        classifyExpression(dragging, 'indefinite');
-      }
+      classifyExpression(dragging, zoneFromX(dragging.x + dragging.w / 2));
     } else {
       // Dropped outside zones - return to normal
       dragging.grabbed = false;
@@ -1652,10 +1752,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     dragging = null;
-    document.getElementById('zoneDeterminate').classList.remove('highlight');
-    document.getElementById('zoneIndefinite').classList.remove('highlight');
-    document.getElementById('zoneDeterminate').style.filter = '';
-    document.getElementById('zoneIndefinite').style.filter = '';
+    allZoneElements().forEach(element => {
+      element.classList.remove('highlight');
+      element.style.filter = '';
+    });
     document.getElementById('dragIndicator').style.opacity = '0';
   }
 
@@ -1667,13 +1767,24 @@ document.addEventListener('DOMContentLoaded', function() {
   canvas.addEventListener('touchend', handleEnd);
 
   // Zone click handlers (alternative way to classify)
-  document.getElementById('zoneDeterminate').addEventListener('click', function(e) {
-    if (!dragging) return;
-    classifyExpression(dragging, 'determinate');
-  });
-  document.getElementById('zoneIndefinite').addEventListener('click', function(e) {
-    if (!dragging) return;
-    classifyExpression(dragging, 'indefinite');
+  [['zoneDeterminate', 'determinate'], ['zoneIndefinite', 'indefinite'], ['zoneError', 'error']].forEach(([id, zone]) => {
+    const element = document.getElementById(id);
+    const choose = () => {
+      if (!dragging) return;
+      classifyExpression(dragging, zone);
+      allZoneElements().forEach(item => {
+        item.classList.remove('highlight');
+        item.style.filter = '';
+      });
+      document.getElementById('dragIndicator').style.opacity = '0';
+    };
+    element.addEventListener('click', choose);
+    element.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        choose();
+      }
+    });
   });
 
   // Background stars
@@ -1710,7 +1821,7 @@ document.addEventListener('DOMContentLoaded', function() {
       ctx.strokeStyle = 'rgba(255,215,0,0.1)';
       ctx.lineWidth = 1;
       ctx.setLineDash([5, 10]);
-      ctx.strokeRect(5, PLAYABLE_TOP, W - 10, PLAYABLE_BOTTOM - PLAYABLE_TOP);
+      ctx.strokeRect(5, PLAYABLE_TOP, W - 10, playableBottom() - PLAYABLE_TOP);
       ctx.setLineDash([]);
     }
   }
@@ -1759,7 +1870,7 @@ document.addEventListener('DOMContentLoaded', function() {
         showLevelUp();
         return;
       } else {
-        endGame();
+        endGame(true);
         return;
       }
     }
@@ -1807,8 +1918,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('levelUpTitle').textContent = '🎉 第' + level + '关';
     const subs = ['速度加快！注意区分！', '更多错误公式出现！', '你能坚持住吗？'];
     const tips = [
-      '定积分：有上下限 ∫ₐᵇ，结果是数值（面积）',
-      '原函数：无上下限 ∫，结果是函数族 F(x)+C',
+      '定积分：有上下限 ∫ₐᵇ，结果是数值（有向累积）',
+      '不定积分：无上下限 ∫，结果表示原函数族 F(x)+C',
       '错误公式：有上下限却给了函数族结果！'
     ];
     document.getElementById('levelUpSub').textContent = subs[Math.min(level-1, 2)];
@@ -1820,10 +1931,12 @@ document.addEventListener('DOMContentLoaded', function() {
       levelMistakes[level] = wrongCount;
       gameActive = true;
       lastTime = 0;
+      animFrameId = requestAnimationFrame(gameLoop);
     }, 2000);
   }
 
-  function endGame() {
+  function endGame(completed = false) {
+    if (sceneCompletionReported) return;
     gameActive = false;
     expressions = [];
     particles = [];
@@ -1839,6 +1952,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('zoneBar').classList.add('hidden');
     document.getElementById('progressBar').classList.add('hidden');
     document.getElementById('pauseBtn').classList.add('hidden');
+    document.getElementById('hintBtn').classList.add('hidden');
     document.getElementById('comboDisplay').style.opacity = '0';
 
     document.getElementById('endScore').textContent = score;
@@ -1857,17 +1971,34 @@ document.addEventListener('DOMContentLoaded', function() {
         ${unlocked ? '<span style="color:#ffd700;">✅</span>' : '<span style="color:#555;">🔒</span>'}
       </div>`;
     });
+    if (!sceneCompletionReported) {
+      sceneCompletionReported = true;
+      window.OpenMaicLearningEvidence?.completeScene({
+        completed,
+        score: correctCount,
+        max_score: correctCount + wrongCount,
+        correct_count: correctCount,
+        wrong_count: wrongCount,
+        missed_count: missedCount,
+        max_combo: maxCombo
+      });
+    }
   }
 
   function showStart() {
     document.getElementById('endScreen').classList.add('hidden');
     document.getElementById('startScreen').classList.remove('hidden');
+    document.getElementById('startScreen').setAttribute('aria-hidden', 'false');
     const saved = loadProgress();
     document.getElementById('bestScore').textContent = saved.highScore > 0 ? '🏆 最高分: ' + saved.highScore : '';
   }
 
+  window.showStart = showStart;
+
   // Global functions for inline onclick
   window.startGame = function() {
+    if (hasStarted) window.OpenMaicLearningEvidence?.recordReset({ reset_scope: 'scene' });
+    hasStarted = true;
     // Reset game state
     score = 0;
     lives = 3;
@@ -1876,6 +2007,7 @@ document.addEventListener('DOMContentLoaded', function() {
     maxCombo = 0;
     correctCount = 0;
     wrongCount = 0;
+    missedCount = 0;
     levelTimer = 0;
     spawnTimer = 0;
     expressions = [];
@@ -1885,6 +2017,7 @@ document.addEventListener('DOMContentLoaded', function() {
     lastTime = 0;
     graceEnd = Date.now() + gracePeriod;
     levelMistakes = {};
+    sceneCompletionReported = false;
 
     // Hide overlays
     document.getElementById('startScreen').classList.add('hidden');
@@ -1897,6 +2030,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('zoneBar').classList.remove('hidden');
     document.getElementById('progressBar').classList.remove('hidden');
     document.getElementById('pauseBtn').classList.remove('hidden');
+    document.getElementById('hintBtn').classList.remove('hidden');
 
     gameActive = true;
     paused = false;
@@ -1905,6 +2039,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (animFrameId) cancelAnimationFrame(animFrameId);
     animFrameId = requestAnimationFrame(gameLoop);
+  };
+
+  window.showHint = function() {
+    if (!gameActive || paused) return;
+    window.OpenMaicLearningEvidence?.recordHint({ hint_type: 'classification_rule' });
+    showFeedback('分类线索', '先看积分限，再核对等号右侧是数值、函数族，还是与左侧矛盾。', '#ffd700');
   };
 
   window.togglePause = function() {
@@ -1926,7 +2066,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('zoneBar').classList.add('hidden');
     document.getElementById('progressBar').classList.add('hidden');
     document.getElementById('pauseBtn').classList.add('hidden');
-    document.getElementById('startScreen').classList.remove('hidden');
+    document.getElementById('hintBtn').classList.add('hidden');
+    showStart();
     if (animFrameId) cancelAnimationFrame(animFrameId);
   };
 
@@ -1946,14 +2087,6 @@ document.addEventListener('DOMContentLoaded', function() {
     el.classList.remove('show','active','open');
     if (!el.classList.contains('hidden')) el.classList.add('hidden');
     if (el.getAttribute('aria-hidden') !== 'true') el.setAttribute('aria-hidden','true');
-    if (el.style.display !== 'none') el.style.display='none';
-    if (el.style.visibility !== 'hidden') el.style.visibility='hidden';
-    if (el.style.opacity !== '0') el.style.opacity='0';
-    if (el.style.pointerEvents !== 'none') el.style.pointerEvents='none';
-    if (el.style.zIndex !== '-1') el.style.zIndex='-1';
-    el.querySelectorAll('button,[role="button"],a,input,select,textarea').forEach(function(child){
-      if (child.style.pointerEvents !== 'none') child.style.pointerEvents='none';
-    });
   }
   function show(el){ if(!el) return; el.classList.remove('hidden'); if(el.style.display==='none') el.style.display=''; }
   function ensure(name, fn){ if(typeof window[name] !== 'function') window[name] = fn || function(){}; }

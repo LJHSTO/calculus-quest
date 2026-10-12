@@ -13,7 +13,7 @@ const v14C3PostQuiz = courseRoute.chapters
   ?.flow?.postQuiz;
 const studentDesktopScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-student-desktop.png");
 const studentMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-student-mobile.png");
-const proactivePreferenceMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-proactive-preference-mobile.png");
+const proactiveScopePreferenceMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-proactive-scope-preference-mobile.png");
 const proactiveMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-proactive-mobile.png");
 const proactiveOutcomesMobileScreenshotPath = path.join(root, "tmp", "platform-browser-smoke-proactive-outcomes-mobile.png");
 const screenshotPath = path.join(root, "tmp", "platform-browser-smoke-admin.png");
@@ -204,6 +204,16 @@ async function answerVisibleQuiz(page) {
   }
 }
 
+async function openStudentAssistant(page) {
+  const mobileTab = page.locator('button[data-workspace-pane="assistant"]');
+  if (await mobileTab.isVisible()) await mobileTab.click();
+  const chatTab = page.locator('[data-workspace-tab="chat"]');
+  if (await chatTab.isVisible()) await chatTab.click();
+  if (await page.locator("#knowledge-assistant-panel").getAttribute("aria-hidden") !== "false") {
+    await page.locator("[data-knowledge-open]").click();
+  }
+}
+
 async function submitV14C3Posttest(page) {
   assert.ok(v14C3PostQuiz?.questions?.length, "V14-C3 posttest fixture is missing");
   const answers = v14C3PostQuiz.questions.map((question) => ({
@@ -322,6 +332,7 @@ async function main() {
         GRADING_API_KEY: "",
         OPENAI_COMPATIBLE_API_KEY: "",
         INNOSPARK_API_KEY: "",
+        RATE_LIMIT_MAX: "2000",
         PROACTIVE_POLICY_MODE: "active",
         PROACTIVE_ASSIGNMENT_SALT: "platform-browser-smoke-fixed-salt",
         PROACTIVE_PUBLIC_CHAPTER_ONLY: "true",
@@ -353,12 +364,17 @@ async function main() {
     await registerParticipant(page, nickname, "browser-smoke-123");
 
     await page.locator('[data-view="learn"]').first().click();
-    await page.locator("#chapter-rail-toggle").click();
-    await page.locator("#chapter-rail").waitFor({ state: "visible", timeout: 10000 });
-    const chapterButtons = page.locator("#chapter-rail [data-chapter]");
-    assert.equal(await chapterButtons.count(), 1, "试点学生端只应投影一个完整章");
-    assert.equal(await chapterButtons.first().getAttribute("data-chapter"), "V14-C3");
-    await page.locator('[data-chapter="V14-C3"]').click();
+    assert.equal(
+      await page.locator("#chapter-rail-toggle").isVisible(),
+      false,
+      "单章试点不应显示多余的章节按钮"
+    );
+    assert.equal(
+      await page.locator("#chapter-rail").isVisible(),
+      false,
+      "单章试点不应显示章节选择栏"
+    );
+    assert.equal(await page.locator("#lesson-rail-toggle").isVisible(), true);
     await page.locator('[data-submit-quiz="V14-C3-pre"]').waitFor({ state: "visible", timeout: 20000 });
     assert.equal(await page.locator(".question-card").count(), 10);
     fs.mkdirSync(path.dirname(studentDesktopScreenshotPath), { recursive: true });
@@ -374,9 +390,6 @@ async function main() {
       true,
       "刷新后必须保留试点章前测的可访问状态"
     );
-    if (await page.locator("#chapter-rail").isVisible()) {
-      await page.locator("#chapter-rail-toggle").click();
-    }
     await page.setViewportSize({ width: 390, height: 844 });
     await page.waitForTimeout(250);
     const studentMobileLayout = await page.evaluate(() => ({
@@ -390,13 +403,9 @@ async function main() {
     await page.screenshot({ path: studentMobileScreenshotPath, fullPage: true });
     await page.setViewportSize({ width: 1440, height: 1000 });
 
-    if (!await page.locator("#chapter-rail").isVisible()) {
-      await page.locator("#chapter-rail-toggle").click();
-    }
-    await page.locator('[data-chapter="V14-C3"]').click();
     await page.locator('[data-submit-quiz="V14-C3-pre"]').waitFor({ state: "visible", timeout: 20000 });
     const assistantPanel = page.locator("#knowledge-assistant-panel");
-    await page.locator("[data-knowledge-open]").click();
+    await openStudentAssistant(page);
     await assistantPanel.waitFor({ state: "visible", timeout: 10000 });
     const studyParticipation = page.locator(
       "[data-knowledge-study-participation]"
@@ -439,15 +448,49 @@ async function main() {
     assert.equal(
       await page.locator("[data-knowledge-proactive-preference]").isVisible(),
       false,
-      "完成章前测前不应显示实验内主动提示偏好"
+      "完成章前测前不应显示知识点提醒恢复入口"
     );
     await page.locator("[data-knowledge-close]").click();
     await assistantPanel.waitFor({ state: "hidden", timeout: 10000 });
     await answerVisibleQuiz(page);
     await page.locator('[data-submit-quiz="V14-C3-pre"]').click();
-    await page.locator('[data-submit-quiz="V14-C3-pre"]').filter({ hasText: "已提交" }).waitFor({ timeout: 30000 });
+    await page.waitForFunction(() => (state.submittedQuizzes || []).includes("V14-C3-pre"), null, { timeout: 30000 });
     const coachAction = page.locator("[data-agentic-action]").first();
     await coachAction.waitFor({ state: "visible", timeout: 30000 });
+    await page.locator("#agentic-coach-panel .knowledge-selection").waitFor();
+    for (const viewport of [{ width: 1366, height: 768 }, { width: 1600, height: 1000 }, { width: 1920, height: 1080 }]) {
+      await page.setViewportSize(viewport);
+      const choices = page.locator("[data-agentic-knowledge-choice]");
+      assert.equal(await choices.count(), 7);
+      const fit = await page.locator("#agentic-coach-panel").evaluate((panel) => ({
+        height: panel.clientHeight, content: panel.scrollHeight
+      }));
+      assert.ok(fit.height > 400 && fit.content <= fit.height + 1,
+        `知识点选择应完整展开：${JSON.stringify({ viewport, ...fit })}`);
+      for (const choice of await choices.all()) await choice.click({ trial: true });
+      await coachAction.click({ trial: true });
+      assert.equal(await page.locator("#lesson-player").isVisible(), false);
+      await page.screenshot({ path: path.join(root, "output", "playwright", `知识点选择-${viewport.width}.png`) });
+    }
+    const firstChoice = page.locator("[data-agentic-knowledge-choice]").first();
+    await page.setViewportSize({ width: 1366, height: 768 });
+    await page.locator("#workspace-tools-toggle").click();
+    await page.waitForTimeout(300);
+    for (const choice of await page.locator("[data-agentic-knowledge-choice]").all()) {
+      await choice.click({ trial: true });
+    }
+    await coachAction.click({ trial: true });
+    await page.screenshot({ path: path.join(root, "output", "playwright", "知识点选择-双栏展开.png") });
+    await page.locator("#workspace-tools-toggle").click();
+    const checked = await firstChoice.isChecked();
+    await firstChoice.setChecked(!checked);
+    assert.equal(await firstChoice.isChecked(), !checked);
+    await page.locator("#workspace-coach-toggle").click();
+    assert.equal(await page.locator("#lesson-player").isVisible(), true);
+    await page.locator("#workspace-coach-toggle").click();
+    assert.equal(await firstChoice.isChecked(), !checked);
+    await firstChoice.setChecked(checked);
+    await page.setViewportSize({ width: 1440, height: 1000 });
     await coachAction.click();
     await page.waitForFunction(() => currentUnitId !== "V14-C3-pre", null, { timeout: 30000 });
     assert.equal(
@@ -456,9 +499,7 @@ async function main() {
       "the confirmed Coach action must unlock the selected next unit"
     );
     await page.setViewportSize({ width: 390, height: 844 });
-    if (await assistantPanel.getAttribute("aria-hidden") !== "false") {
-      await page.locator("[data-knowledge-open]").click();
-    }
+    await openStudentAssistant(page);
     await assistantPanel.waitFor({ state: "visible", timeout: 10000 });
     await page.waitForFunction(() => {
       const panel = document.querySelector("#knowledge-assistant-panel");
@@ -521,82 +562,79 @@ async function main() {
         (button) => button.getBoundingClientRect().height
       )) >= 44
     );
-    const proactivePreference = page.locator("[data-knowledge-proactive-preference]");
-    try {
-      await proactivePreference.waitFor({ state: "visible", timeout: 10000 });
-    } catch (error) {
-      const diagnostic = await page.evaluate(async () => {
-        const meta = typeof currentUnit === "function" ? currentUnit() : null;
-        const chapterId = meta?.chapterId || "V14-C3";
-        const response = await fetch(
-          `api/learning/proactive/state?chapterId=${encodeURIComponent(chapterId)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${state?.authToken || ""}`
-            }
-          }
-        );
-        return {
-          currentUnitId: typeof currentUnitId === "string" ? currentUnitId : "",
-          chapterId,
-          participantId: state?.participant?.participantId || "",
-          preferenceHidden: document.querySelector(
-            "[data-knowledge-proactive-preference]"
-          )?.hidden,
-          stateStatus: response.status,
-          statePayload: await response.json().catch(() => ({}))
-        };
-      });
-      throw new Error(
-        `proactive preference did not become visible: ${JSON.stringify(diagnostic)}\n${error.message}`
-      );
-    }
-    const proactivePreferenceButtons = proactivePreference.locator("[data-proactive-preference]");
-    assert.equal(await proactivePreferenceButtons.count(), 3);
-    assert.deepEqual(
-      await proactivePreferenceButtons.allTextContents(),
-      ["标准", "少提醒", "关闭"]
+    assert.equal(
+      await page.locator("[data-proactive-preference]").count(),
+      0,
+      "正式 Pilot 不得让学生选择实验干预强度"
     );
-    const proactivePreferenceLayout = await proactivePreference.evaluate((node) => {
-      const buttons = Array.from(node.querySelectorAll("[data-proactive-preference]"));
+    const assignmentPrivacy = await page.evaluate(async () => {
+      const token = sessionStorage.getItem("calculus-quest-auth-token-v1") || "";
+      const stateResponse = await fetch(
+        "api/learning/proactive/state?chapterId=V14-C3",
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const statePayload = await stateResponse.json().catch(() => ({}));
+      return {
+        stateStatus: stateResponse.status,
+        statePayload
+      };
+    });
+    assert.equal(assignmentPrivacy.stateStatus, 200);
+    assert.ok(assignmentPrivacy.statePayload.data?.assignment);
+    assert.equal(
+      Object.hasOwn(assignmentPrivacy.statePayload.data.assignment, "condition"),
+      false,
+      "学生状态 API 不得暴露实验臂"
+    );
+    assert.equal(assignmentPrivacy.statePayload.data?.globalPreferenceControlEnabled, false);
+
+    const scopePreferenceResult = await page.evaluate(async () => {
+      const token = sessionStorage.getItem("calculus-quest-auth-token-v1") || "";
+      const meta = typeof currentUnit === "function" ? currentUnit() : null;
+      const scopeKey = meta?.knowledgePointId || meta?.unitId || currentUnitId;
+      const response = await fetch("api/learning/proactive/scope-preference", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          chapterId: "V14-C3",
+          scopeKey,
+          preference: "off"
+        })
+      });
+      return {
+        status: response.status,
+        scopeKey,
+        payload: await response.json().catch(() => ({}))
+      };
+    });
+    assert.equal(scopePreferenceResult.status, 200, JSON.stringify(scopePreferenceResult.payload));
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.locator("#app-loader").waitFor({ state: "hidden", timeout: 20000 });
+    await page.evaluate((scopeKey) => {
+      if (typeof selectUnit === "function" && currentUnitId !== scopeKey) selectUnit(scopeKey);
+    }, scopePreferenceResult.scopeKey);
+    await openStudentAssistant(page);
+    await assistantPanel.waitFor({ state: "visible", timeout: 10000 });
+    const proactiveScopePreference = page.locator("[data-knowledge-proactive-preference]");
+    await proactiveScopePreference.waitFor({ state: "visible", timeout: 10000 });
+    const scopePreferenceLayout = await proactiveScopePreference.evaluate((node) => {
       const rect = node.getBoundingClientRect();
+      const button = node.querySelector("[data-knowledge-proactive-scope-restore]");
       return {
         left: rect.left,
         right: rect.right,
-        buttons: buttons.map((button) => {
-          const buttonRect = button.getBoundingClientRect();
-          return {
-            preference: button.dataset.proactivePreference,
-            height: buttonRect.height,
-            checked: button.getAttribute("aria-checked")
-          };
-        })
+        buttonHeight: button?.getBoundingClientRect().height || 0
       };
     });
-    assert.ok(
-      proactivePreferenceLayout.left >= 0
-      && proactivePreferenceLayout.right <= 390,
-      `proactive preference escapes the mobile viewport: ${JSON.stringify(proactivePreferenceLayout)}`
-    );
-    assert.ok(
-      proactivePreferenceLayout.buttons.every((button) => button.height >= 44),
-      `proactive preference buttons need 44px mobile touch targets: ${JSON.stringify(proactivePreferenceLayout)}`
-    );
-    assert.equal(
-      proactivePreferenceLayout.buttons.find((button) => button.preference === "standard")?.checked,
-      "true"
-    );
-    await proactivePreference.locator('[data-proactive-preference="reduced"]').click();
-    await page.waitForFunction(() => (
-      document.querySelector('[data-proactive-preference="reduced"]')?.getAttribute("aria-checked") === "true"
-      && document.querySelector("[data-knowledge-proactive-preference-status]")?.textContent === "仅保留强证据提醒"
-    ));
-    await proactivePreference.scrollIntoViewIfNeeded();
-    await page.screenshot({ path: proactivePreferenceMobileScreenshotPath });
-    await proactivePreference.locator('[data-proactive-preference="standard"]').click();
-    await page.waitForFunction(() => (
-      document.querySelector('[data-proactive-preference="standard"]')?.getAttribute("aria-checked") === "true"
-    ));
+    assert.ok(scopePreferenceLayout.left >= 0 && scopePreferenceLayout.right <= 390);
+    assert.ok(scopePreferenceLayout.buttonHeight >= 44);
+    await proactiveScopePreference.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: proactiveScopePreferenceMobileScreenshotPath });
+    await proactiveScopePreference.locator("[data-knowledge-proactive-scope-restore]").click();
+    await proactiveScopePreference.waitFor({ state: "hidden", timeout: 10000 });
     const outcomesButton = page.locator("[data-proactive-outcomes-open]");
     assert.equal(await outcomesButton.isDisabled(), true);
     assert.equal((await outcomesButton.textContent())?.trim(), "尚未开放");
@@ -624,18 +662,50 @@ async function main() {
     await submitV14C3Posttest(page);
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.locator("#app-loader").waitFor({ state: "hidden", timeout: 20000 });
-    await page.locator("#chapter-outcome-panel").waitFor({ state: "visible", timeout: 20000 });
     await page.waitForFunction(() => {
       const button = document.querySelector("[data-proactive-outcomes-open]");
-      return button && !button.disabled && button.textContent?.includes("查看测量任务");
+      const panel = document.querySelector("#chapter-outcome-panel");
+      return panel && !panel.hidden
+        && button && !button.disabled
+        && button.textContent?.includes("查看独立任务");
     }, null, { timeout: 20000 });
     if (await assistantPanel.getAttribute("aria-hidden") !== "true") {
+      await openStudentAssistant(page);
       await page.locator("[data-knowledge-close]").click();
       await page.waitForFunction(() => (
         document.querySelector("#knowledge-assistant-panel")?.getAttribute("aria-hidden") === "true"
       ));
     }
-    await outcomesButton.click();
+    const lessonRail = page.locator("#lesson-rail");
+    if (!await lessonRail.isVisible()) {
+      const mobilePath = page.locator('button[data-workspace-pane="path"]');
+      if (await mobilePath.isVisible()) await mobilePath.click();
+      else await page.locator("#lesson-rail-toggle").click();
+    }
+    await lessonRail.waitFor({ state: "visible", timeout: 10000 });
+    const outcomePanel = page.locator("#chapter-outcome-panel");
+    await outcomePanel.waitFor({ state: "visible", timeout: 10000 });
+    assert.equal(
+      await outcomePanel.locator(".outcome-path-step").count(),
+      3,
+      "三段独立测量必须作为本章学习路径的一部分呈现"
+    );
+    assert.equal(
+      await outcomePanel.locator('.outcome-path-step.is-available').count(),
+      1,
+      "章后测后应只开放当前的近迁移阶段"
+    );
+    const outcomeDockButton = page.locator(
+      "#learning-action-dock [data-learning-primary-action]"
+    );
+    const courseTab = page.locator('button[data-workspace-pane="course"]');
+    if (await courseTab.isVisible()) await courseTab.click();
+    const returnToCourse = page.locator('#workspace-coach-toggle[aria-expanded="true"]');
+    if (await returnToCourse.isVisible()) await returnToCourse.click();
+    await outcomeDockButton.waitFor({ state: "visible", timeout: 10000 });
+    assert.match((await outcomeDockButton.textContent()) || "", /开始.*近迁移测量/);
+    assert.equal(await outcomeDockButton.getAttribute("data-outcome-stage"), "near_transfer");
+    await outcomeDockButton.click();
     const outcomesLayer = page.locator("[data-knowledge-outcomes]");
     await outcomesLayer.waitFor({ state: "visible", timeout: 10000 });
     await outcomesLayer.locator(".knowledge-outcome-stage").first().waitFor({
@@ -685,16 +755,45 @@ async function main() {
     );
     assert.ok(outcomesMobileLayout.closeHeight >= 44);
     await page.screenshot({ path: proactiveOutcomesMobileScreenshotPath });
-    await outcomesLayer.locator(".knowledge-outcome-active > header button").click();
+    const activeOutcomeActions = outcomesLayer.locator(
+      ".knowledge-outcome-active-actions button"
+    );
+    assert.deepEqual(
+      await activeOutcomeActions.allTextContents(),
+      ["暂时离开", "永久跳过"]
+    );
+    assert.ok(
+      (await activeOutcomeActions.evaluateAll((buttons) => (
+        buttons.map((button) => button.getBoundingClientRect().height)
+      ))).every((height) => height >= 44),
+      "独立测量的暂离与永久跳过按钮必须适合触屏操作"
+    );
+    await activeOutcomeActions.filter({ hasText: "暂时离开" }).click();
+    await outcomesLayer.waitFor({ state: "hidden", timeout: 10000 });
+
+    await outcomeDockButton.click();
+    await outcomesLayer.waitFor({ state: "visible", timeout: 10000 });
     await outcomesLayer.locator(".knowledge-outcome-active").waitFor({
-      state: "hidden",
+      state: "visible",
+      timeout: 10000
+    });
+    await outcomesLayer.getByRole("button", { name: "永久跳过", exact: true }).click();
+    const skipConfirmation = outcomesLayer.locator(".knowledge-outcome-skip-confirm");
+    await skipConfirmation.waitFor({ state: "visible", timeout: 10000 });
+    assert.ok(
+      (await skipConfirmation.locator("button").evaluateAll((buttons) => (
+        buttons.map((button) => button.getBoundingClientRect().height)
+      ))).every((height) => height >= 44),
+      "永久跳过确认按钮必须适合触屏操作"
+    );
+    await skipConfirmation.getByRole("button", { name: "确认永久跳过" }).click();
+    await outcomesLayer.locator(".knowledge-outcome-stage.is-skipped").waitFor({
+      state: "visible",
       timeout: 10000
     });
     await page.keyboard.press("Escape");
     await outcomesLayer.waitFor({ state: "hidden", timeout: 10000 });
-    if (await assistantPanel.getAttribute("aria-hidden") !== "false") {
-      await page.locator("[data-knowledge-open]").click();
-    }
+    await openStudentAssistant(page);
     await assistantPanel.waitFor({ state: "visible", timeout: 10000 });
     await page.waitForTimeout(800);
     await page.evaluate(() => {
@@ -840,9 +939,8 @@ async function main() {
     const adminPage = await context.newPage();
     const adminIssues = collectBrowserIssues(adminPage);
     await adminPage.goto(`${baseUrl}/admin.html`, { waitUntil: "domcontentloaded" });
-    await adminPage.locator("#admin-token-input").fill(adminToken);
-    await adminPage.locator("#login-btn").click();
     await adminPage.locator("#app:not(.hidden)").waitFor({ timeout: 30000 });
+    assert.equal(await adminPage.locator("#login-gate:not(.hidden)").count(), 0);
     const submissionMetric = adminPage.locator("#overview-metrics .metric-card").filter({ hasText: "测验提交总数" });
     await submissionMetric.waitFor({ state: "visible", timeout: 30000 });
     assert.equal((await submissionMetric.locator(".value").textContent()).trim(), "2");
@@ -860,7 +958,7 @@ async function main() {
             nickname: "试点学生 A",
             user_id: "visual-user-a",
             experiment_id: "v14-c3-proactive-pilot-2026",
-            condition: "adaptive",
+            condition: "treatment_full",
             cohort: "pilot",
             stratum: "pre-low",
             chapter_id: "V14-C3",
@@ -925,7 +1023,7 @@ async function main() {
             nickname: "试点学生 A",
             user_id: "visual-user-a",
             experiment_id: "v14-c3-proactive-pilot-2026",
-            condition: "adaptive",
+            condition: "treatment_full",
             cohort: "pilot",
             stratum: "pre-low",
             chapter_id: "V14-C3",
@@ -1021,9 +1119,52 @@ async function main() {
         ],
         assignments: [
           { condition: "control", stratum: "pre-high", participants: 1 },
-          { condition: "minimal", stratum: "pre-low", participants: 1 },
-          { condition: "adaptive", stratum: "pre-low", participants: 1 }
+          { condition: "treatment_shallow", stratum: "pre-low", participants: 1 },
+          { condition: "treatment_full", stratum: "pre-low", participants: 1 }
         ],
+        assignmentRoster: {
+          total: 3,
+          limit: 500,
+          offset: 0,
+          rows: [
+            {
+              user_id: "visual-user-a",
+              nickname: "试点学生 A",
+              experiment_id: "v14-c3-proactive-pilot-2026",
+              condition: "treatment_full",
+              cohort: "pilot",
+              stratum: "pre-low",
+              assignment_version: "stratified-balanced-v1",
+              assigned_at: "2026-08-30T09:00:00.000Z",
+              participation_status: "enrolled",
+              learning_generation: 1
+            },
+            {
+              user_id: "visual-user-b",
+              nickname: "试点学生 B",
+              experiment_id: "v14-c3-proactive-pilot-2026",
+              condition: "control",
+              cohort: "pilot",
+              stratum: "pre-high",
+              assignment_version: "stratified-balanced-v1",
+              assigned_at: "2026-08-30T09:01:00.000Z",
+              participation_status: "enrolled",
+              learning_generation: 1
+            },
+            {
+              user_id: "visual-user-c",
+              nickname: "试点学生 C",
+              experiment_id: "v14-c3-proactive-pilot-2026",
+              condition: "treatment_shallow",
+              cohort: "pilot",
+              stratum: "pre-low",
+              assignment_version: "stratified-balanced-v1",
+              assigned_at: "2026-08-30T09:02:00.000Z",
+              participation_status: "enrolled",
+              learning_generation: 1
+            }
+          ]
+        },
         participation: [
           {
             experiment_id: "v14-c3-proactive-pilot-2026",
@@ -1079,12 +1220,12 @@ async function main() {
           participationReady: true,
           consentVersion: "v14-c3-consent-v1",
           consentNoticeUrl: "/research/v14-c3-consent-v1.html",
-          experimentArms: ["control", "minimal", "adaptive"],
-          displayArms: ["minimal", "adaptive"],
+          experimentArms: ["control", "treatment_shallow", "treatment_full"],
+          displayArms: ["treatment_shallow", "treatment_full"],
           armProfiles: {
             control: { display: false, maxSupportLevel: "L0", allowRepresentationSwitch: false },
-            minimal: { display: true, maxSupportLevel: "L2", allowRepresentationSwitch: false },
-            adaptive: { display: true, maxSupportLevel: "L5", allowRepresentationSwitch: true }
+            treatment_shallow: { display: true, maxSupportLevel: "L2", allowRepresentationSwitch: true },
+            treatment_full: { display: true, maxSupportLevel: "L5", allowRepresentationSwitch: true }
           }
         },
         protocol: {
@@ -1096,7 +1237,7 @@ async function main() {
           definition: {
             courseRouteVersion: "multi-scene-learning-route-20260722",
             courseRouteDigest: "route-digest",
-            outcomeInstrumentVersion: "v14-c3-outcomes-v1",
+            outcomeInstrumentVersion: "v14-c3-outcomes-v3",
             modelRuntime: {
               provider: "mock",
               liveConfigured: false,
@@ -1179,7 +1320,7 @@ async function main() {
             studyWithdrawn: 0
           },
           {
-            condition: "adaptive",
+            condition: "treatment_full",
             assigned: 10,
             evidenceParticipants: 9,
             exposedParticipants: 8,
@@ -1198,8 +1339,8 @@ async function main() {
         ],
         outcomes: {
           total: 3,
-          instrumentVersion: "v14-c3-outcomes-v1",
-          retentionDelayHours: 168,
+          instrumentVersion: "v14-c3-outcomes-v3",
+          retentionDelayHours: 72,
           sessionTotal: 5,
           sessionSummary: [
             {
@@ -1217,7 +1358,7 @@ async function main() {
               participants: 1
             },
             {
-              condition: "adaptive",
+              condition: "treatment_full",
               stage: "retention",
               status: "active",
               sessions: 1,
@@ -1250,7 +1391,7 @@ async function main() {
               mean_duration_ms: 65000
             },
             {
-              condition: "minimal",
+              condition: "treatment_shallow",
               stage: "representation_transfer",
               submissions: 1,
               participants: 1,
@@ -1258,7 +1399,7 @@ async function main() {
               mean_duration_ms: 72000
             },
             {
-              condition: "adaptive",
+              condition: "treatment_full",
               stage: "retention",
               submissions: 1,
               participants: 1,
@@ -1272,7 +1413,7 @@ async function main() {
               submitted_at: "2026-08-30T11:00:00.000Z",
               nickname: "试点学生 A",
               user_id: "visual-user-a",
-              condition: "adaptive",
+              condition: "treatment_full",
               stage: "retention",
               score: 3,
               max_score: 3,
@@ -1285,7 +1426,7 @@ async function main() {
               submitted_at: "2026-08-30T10:50:00.000Z",
               nickname: "试点学生 C",
               user_id: "visual-user-c",
-              condition: "minimal",
+              condition: "treatment_shallow",
               stage: "representation_transfer",
               score: 2,
               max_score: 3,
@@ -1384,7 +1525,15 @@ async function main() {
     assert.equal(await firstAuditDisclosure.evaluate((element) => element.open), false);
     assert.deepEqual(
       await adminPage.locator("#proactive-condition-filter option").allTextContents(),
-      ["全部条件", "Control", "Minimal", "Adaptive"]
+      ["全部条件", "对照组", "浅层主动组", "完整主动组"]
+    );
+    assert.equal(
+      await adminPage.locator("#table-proactive-assignment-roster tbody tr").count(),
+      3
+    );
+    assert.match(
+      await adminPage.locator("#table-proactive-assignment-roster").innerText(),
+      /试点学生 A[\s\S]*完整主动组/
     );
     assert.equal(
       await adminPage.locator("#table-proactive-outcome-summary tbody tr").count(),
@@ -1531,7 +1680,7 @@ async function main() {
     assert.deepEqual([...issues, ...adminIssues], []);
 
     console.log(
-      `platform browser smoke tests passed (${studentDesktopScreenshotPath}, ${studentMobileScreenshotPath}, ${proactivePreferenceMobileScreenshotPath}, ${proactiveOutcomesMobileScreenshotPath}, ${proactiveMobileScreenshotPath}, ${screenshotPath}, ${proactiveAdminScreenshotPath}, ${proactiveAdminMobileScreenshotPath}, ${shortAnswerScreenshotPath}, ${mobileScreenshotPath})`
+      `platform browser smoke tests passed (${studentDesktopScreenshotPath}, ${studentMobileScreenshotPath}, ${proactiveScopePreferenceMobileScreenshotPath}, ${proactiveOutcomesMobileScreenshotPath}, ${proactiveMobileScreenshotPath}, ${screenshotPath}, ${proactiveAdminScreenshotPath}, ${proactiveAdminMobileScreenshotPath}, ${shortAnswerScreenshotPath}, ${mobileScreenshotPath})`
     );
   } finally {
     await browser?.close().catch(() => {});

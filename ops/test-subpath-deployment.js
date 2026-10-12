@@ -138,7 +138,8 @@ async function main() {
         BASE_PATH: "/calculus_quest/",
         LLM_PROVIDER: "mock",
         NODE_ENV: "development",
-        ADMIN_TOKEN: adminToken
+        ADMIN_TOKEN: adminToken,
+        LOCAL_ADMIN_AUTH_BYPASS: "false"
       },
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true
@@ -170,6 +171,7 @@ async function main() {
       "/calculus_quest/admin/admin.js",
       "/calculus_quest/app/flow-test/flow-test.js",
       "/calculus_quest/app/flow-test/flow-test.css",
+      "/calculus_quest/lib/question-math.js",
       "/calculus_quest/lib/chart.umd.min.js",
       "/calculus_quest/lib/interaction-policy.js",
       "/calculus_quest/lib/active-time-policy.js",
@@ -193,7 +195,7 @@ async function main() {
       + "interactive/03_输入、输出和函数规则：拖动实验.html"
     );
     const coursewareResponse = await fetch(
-      baseUrl + coursewarePath + "?v=20260727-courseware-interaction-v4&cqContextBridge=20260813-v8"
+      baseUrl + coursewarePath + "?v=20260727-courseware-interaction-v4&cqContextBridge=20260903-v9"
     );
     assert.equal(coursewareResponse.status, 200);
     assert.match(coursewareResponse.headers.get("cache-control") || "", /no-store/);
@@ -209,6 +211,7 @@ async function main() {
       "/admin/admin.js",
       "/app/flow-test/flow-test.js",
       "/app/flow-test/flow-test.css",
+      "/lib/question-math.js",
       "/lib/chart.umd.min.js",
       "/data/multi-scene-learning-route.json",
       "/api/course/multi-scene-learning-route",

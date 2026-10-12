@@ -32,6 +32,67 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>换元法直觉：天平平衡挑战</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-07",
+  "module_title": "微积分基本定理与积分方法",
+  "knowledge_point_id": "GH-07-K03",
+  "concept_tag": "换元法直觉",
+  "scene_type": "game",
+  "resource_id": "GH-07-K03:game",
+  "resource_title": "换元法直觉：误解修复挑战",
+  "learning_objective": "能解释「换元法直觉」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「换元法直觉」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "天平平衡挑战 - 换元法直觉误解修复",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "hint_requested",
+    "reset_used",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": true,
+    "reports_reset": true,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": true,
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0，且场景自行判定了对错",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -223,6 +284,11 @@ let sessionStorage = window.__openMaicSessionStorage;
   .piece:hover {
     transform: translateY(-3px) scale(1.05);
     box-shadow: 0 6px 20px rgba(102,126,234,0.4);
+  }
+
+  .piece.selected {
+    border-color: #ffd700;
+    box-shadow: 0 0 0 3px rgba(255,215,0,0.22), 0 6px 18px rgba(0,0,0,0.25);
   }
 
   .piece:active {
@@ -528,6 +594,25 @@ let sessionStorage = window.__openMaicSessionStorage;
   #hint-btn:hover { background: rgba(255,215,0,0.25); }
 
   /* Responsive */
+  @media (min-width: 900px) {
+    body { height: 100dvh; min-height: 0; overflow: hidden; }
+    #game-container {
+      height: 100dvh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto;
+      column-gap: 16px;
+    }
+    #hud { grid-column: 1 / -1; grid-row: 1; }
+    #timer-bar-container { grid-column: 1 / -1; grid-row: 2; }
+    #level-indicator { grid-column: 1 / -1; grid-row: 3; }
+    #scale-canvas { grid-column: 1; grid-row: 4 / 8; height: 100%; min-height: 0; }
+    #problem-area { grid-column: 2; grid-row: 4; min-height: 0; overflow: auto; margin: 0; padding: 8px; }
+    #problem-display { font-size: 18px; padding: 6px; }
+    #feedback-msg { grid-column: 2; grid-row: 5; }
+    #drop-zones { grid-column: 2; grid-row: 6; gap: 12px; margin: 22px 0 8px; }
+    #toolbox { grid-column: 2; grid-row: 7; padding: 8px; }
+  }
   @media (max-width: 500px) {
     #scale-canvas { height: 260px; }
     #problem-display { font-size: 16px; }
@@ -1303,6 +1388,13 @@ let levelStartTime = 0;
 let totalTime = 0;
 let totalPaused = 0;
 let pauseStart = 0;
+let coursePaused = 0;
+let gameStartTime = 0;
+let graceTimeoutId = null;
+let selectedPiece = null;
+let levelResolved = false;
+let totalMistakes = 0;
+let sceneCompletionReported = false;
 let achievements = {};
 let scaleAngle = 0;
 let scaleTargetAngle = 0;
@@ -1465,10 +1557,12 @@ function resizeCanvases() {
   
   canvas.width = canvas.offsetWidth * dpr;
   canvas.height = canvas.offsetHeight * dpr;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.scale(dpr, dpr);
   
   pCanvas.width = window.innerWidth * dpr;
   pCanvas.height = window.innerHeight * dpr;
+  pCtx.setTransform(1, 0, 0, 1, 0, 0);
   pCtx.scale(dpr, dpr);
 }
 
@@ -1633,17 +1727,28 @@ function updateParticles() {
 function initLevel() {
   const level = levels[currentLevel];
   levelStartTime = Date.now();
+  totalPaused = 0;
+  pauseStart = 0;
   mistakes = 0;
   placedPieces = {};
+  levelResolved = false;
+  clearSelectedPiece();
   scaleAngle = 0;
   scaleTargetAngle = -0.2; // Start slightly unbalanced
   gracePeriod = true;
-  setTimeout(() => { gracePeriod = false; }, 3000);
+  if (graceTimeoutId) clearTimeout(graceTimeoutId);
+  graceTimeoutId = setTimeout(() => {
+    gracePeriod = false;
+    graceTimeoutId = null;
+  }, 3000);
   
   // Update HUD
   document.getElementById('level-display').textContent = (currentLevel + 1) + '/' + levels.length;
   document.getElementById('level-indicator').textContent = '第 ' + (currentLevel + 1) + ' 关 · ' + level.title;
-  document.getElementById('timer-bar').style.width = '100%';
+  document.getElementById('time-display').textContent = '0:00';
+  const timerBar = document.getElementById('timer-bar');
+  timerBar.style.width = '100%';
+  timerBar.style.background = '';
   
   // Update problem display
   document.getElementById('problem-display').innerHTML = level.integralDisplay;
@@ -1658,11 +1763,23 @@ function initLevel() {
     div.className = 'drop-zone fade-in';
     div.id = 'zone-' + zone.id;
     div.dataset.zoneId = zone.id;
+    div.setAttribute('role', 'button');
+    div.tabIndex = 0;
     div.innerHTML = '<span class="zone-label">' + zone.label + '</span><span class="zone-content">❓</span>';
     
     div.addEventListener('dragover', handleDragOver);
     div.addEventListener('dragleave', handleDragLeave);
     div.addEventListener('drop', handleDrop);
+    div.addEventListener('click', () => {
+      if (!selectedPiece || !gameActive || paused || levelResolved) return;
+      tryPlacePiece(div, selectedPiece.value, selectedPiece.idx);
+    });
+    div.addEventListener('keydown', event => {
+      if ((event.key === 'Enter' || event.key === ' ') && selectedPiece && gameActive && !paused && !levelResolved) {
+        event.preventDefault();
+        tryPlacePiece(div, selectedPiece.value, selectedPiece.idx);
+      }
+    });
     
     // Touch support
     div.addEventListener('touchmove', preventDefault);
@@ -1686,10 +1803,19 @@ function initLevel() {
     div.draggable = true;
     div.dataset.value = text;
     div.dataset.idx = idx;
+    div.setAttribute('role', 'button');
+    div.tabIndex = 0;
     div.style.animationDelay = (idx * 0.05) + 's';
     
     div.addEventListener('dragstart', handleDragStart);
     div.addEventListener('dragend', handleDragEnd);
+    div.addEventListener('click', () => selectPiece(div, text, idx));
+    div.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectPiece(div, text, idx);
+      }
+    });
     
     // Touch support
     div.addEventListener('touchstart', handleTouchStart, { passive: false });
@@ -1708,6 +1834,19 @@ function initLevel() {
   document.getElementById('win-screen').style.display = 'none';
   
   updateScalePhysics();
+}
+
+function clearSelectedPiece() {
+  if (selectedPiece?.el) selectedPiece.el.classList.remove('selected');
+  selectedPiece = null;
+}
+
+function selectPiece(element, value, idx) {
+  if (!gameActive || paused || levelResolved || element.classList.contains('placed')) return;
+  clearSelectedPiece();
+  selectedPiece = { el: element, value, idx };
+  element.classList.add('selected');
+  showFeedback('已选中 ' + value + '，请点击要填入的空缺。', 'hint');
 }
 
 // ============ DRAG AND DROP ============
@@ -1818,6 +1957,7 @@ function updateGhostPosition(x, y) {
 
 // ============ PIECE PLACEMENT ============
 function tryPlacePiece(zone, value, pieceIdx) {
+  if (!gameActive || paused || levelResolved) return;
   const zoneId = zone.dataset.zoneId;
   const level = levels[currentLevel];
   const correctAnswer = level.correctAnswers[zoneId];
@@ -1836,8 +1976,22 @@ function tryPlacePiece(zone, value, pieceIdx) {
       levelPieces[wrongIdx].el.classList.remove('placed');
     }
   }
+  const isCorrect = value === correctAnswer;
+  const challengeId = 'GH-07-K03-substitution-level-' + (currentLevel + 1) + '-' + zoneId;
+  window.OpenMaicLearningEvidence?.recordChallenge({
+    challenge_id: challengeId,
+    question_id: challengeId,
+    is_correct: isCorrect,
+    score: isCorrect ? 1 : 0,
+    max_score: 1,
+    selected_answer: value,
+    expected_answer: correctAnswer,
+    zone_id: zoneId,
+    error_type: isCorrect ? '' : 'substitution_mismatch'
+  });
+  clearSelectedPiece();
   
-  if (value === correctAnswer) {
+  if (isCorrect) {
     // Correct!
     playSound('place');
     placedPieces[zoneId] = { value: value, correct: true, pieceIdx: pieceIdx };
@@ -1863,9 +2017,8 @@ function tryPlacePiece(zone, value, pieceIdx) {
     
   } else {
     // Wrong!
-    if (!gracePeriod) {
-      mistakes++;
-    }
+    mistakes++;
+    totalMistakes++;
     playSound('error');
     
     zone.classList.add('wrong');
@@ -1909,6 +2062,7 @@ function updateScalePhysics() {
 
 // ============ LEVEL COMPLETE CHECK ============
 function checkLevelComplete() {
+  if (levelResolved) return;
   const level = levels[currentLevel];
   let allCorrect = true;
   
@@ -1919,10 +2073,11 @@ function checkLevelComplete() {
   });
   
   if (allCorrect) {
+    levelResolved = true;
     scaleTargetAngle = 0;
     
     // Calculate score
-    const elapsed = (Date.now() - levelStartTime) / 1000;
+    const elapsed = (Date.now() - levelStartTime - totalPaused) / 1000;
     let points = levels[currentLevel].correctPoints || 10;
     
     if (elapsed < 15) points += levels[currentLevel].speedBonus || 5;
@@ -1973,6 +2128,10 @@ function showLevelWin(points, elapsed) {
 }
 
 function showFinalScreen() {
+  gameActive = false;
+  paused = false;
+  if (graceTimeoutId) clearTimeout(graceTimeoutId);
+  graceTimeoutId = null;
   document.getElementById('win-screen').style.display = 'flex';
   document.getElementById('win-screen').querySelector('h2').textContent = '🏆 恭喜通关！';
   document.getElementById('win-msg').textContent = '总分: ' + score + ' 分';
@@ -1987,16 +2146,36 @@ function showFinalScreen() {
   const nextBtn = document.getElementById('next-level-btn');
   nextBtn.textContent = '🔄 重新开始';
   nextBtn.onclick = function() {
+    window.OpenMaicLearningEvidence?.recordReset({ reset_scope: 'scene' });
     currentLevel = 0;
     score = 0;
     hintsLeft = 3;
+    totalMistakes = 0;
+    coursePaused = 0;
+    gameStartTime = Date.now();
+    gameActive = true;
+    paused = false;
+    sceneCompletionReported = false;
     document.getElementById('score-display').textContent = '0';
     document.getElementById('hints-display').textContent = '3';
     document.getElementById('win-screen').style.display = 'none';
     initLevel();
+    requestAnimationFrame(gameLoop);
   };
   
   document.getElementById('replay-btn').style.display = 'none';
+  if (!sceneCompletionReported) {
+    sceneCompletionReported = true;
+    const totalZones = levels.reduce((sum, level) => sum + level.zones.length, 0);
+    window.OpenMaicLearningEvidence?.completeScene({
+      completed: true,
+      score,
+      max_score: levels.length * 15,
+      correct_count: totalZones,
+      wrong_count: totalMistakes,
+      total_time_seconds: Math.max(0, (Date.now() - gameStartTime - coursePaused) / 1000)
+    });
+  }
 }
 
 // ============ ACHIEVEMENTS ============
@@ -2044,7 +2223,7 @@ function unlockAchievement(id) {
 
 // ============ HINTS ============
 function useHint() {
-  if (!gameActive || paused || hintsLeft <= 0) return;
+  if (!gameActive || paused || levelResolved || hintsLeft <= 0) return;
   
   hintsLeft--;
   document.getElementById('hints-display').textContent = hintsLeft;
@@ -2057,6 +2236,11 @@ function useHint() {
     if (!placedPieces[zone.id] || !placedPieces[zone.id].correct) {
       const zoneEl = document.getElementById('zone-' + zone.id);
       if (zoneEl) {
+        window.OpenMaicLearningEvidence?.recordHint({
+          hint_type: 'conceptual',
+          challenge_id: 'GH-07-K03-substitution-level-' + (currentLevel + 1) + '-' + zone.id,
+          zone_id: zone.id
+        });
         zoneEl.classList.add('active');
         zoneEl.style.borderColor = '#ffd700';
         zoneEl.style.boxShadow = '0 0 20px rgba(255,215,0,0.3)';
@@ -2097,7 +2281,7 @@ function showFeedback(text, type) {
 
 // ============ TIMER ============
 function updateTimer() {
-  if (!gameActive || paused) return;
+  if (!gameActive || paused || levelResolved) return;
   
   const elapsed = (Date.now() - levelStartTime - totalPaused) / 1000;
   const mins = Math.floor(elapsed / 60);
@@ -2114,6 +2298,8 @@ function updateTimer() {
     document.getElementById('timer-bar').style.background = '#ff6b6b';
   }
 }
+
+window.useHint = useHint;
 
 // ============ GAME LOOP ============
 function gameLoop() {
@@ -2143,7 +2329,13 @@ window.nextLevel = function() {
 };
 
 window.replayLevel = function() {
+  window.OpenMaicLearningEvidence?.recordReset({
+    reset_scope: 'level',
+    challenge_id: 'GH-07-K03-substitution-level-' + (currentLevel + 1)
+  });
   document.getElementById('win-screen').style.display = 'none';
+  gameActive = true;
+  paused = false;
   initLevel();
 };
 
@@ -2157,7 +2349,10 @@ window.togglePause = function() {
     overlay.style.display = 'flex';
     btn.textContent = '▶️ 继续';
   } else {
-    totalPaused += Date.now() - pauseStart;
+    const pausedFor = Math.max(0, Date.now() - pauseStart);
+    totalPaused += pausedFor;
+    coursePaused += pausedFor;
+    pauseStart = 0;
     overlay.style.display = 'none';
     btn.textContent = '⏸ 暂停';
   }
@@ -2175,6 +2370,11 @@ window.startGame = function() {
   score = 0;
   hintsLeft = 3;
   totalPaused = 0;
+  pauseStart = 0;
+  coursePaused = 0;
+  gameStartTime = Date.now();
+  totalMistakes = 0;
+  sceneCompletionReported = false;
   
   // Load achievements
   try {

@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
+const crypto = require("node:crypto");
 const { spawn } = require("node:child_process");
 const { chromium } = require("playwright-core");
 
@@ -262,10 +263,31 @@ async function frameHealth(frame, label, options = {}) {
     );
   }
   assert.equal(health.bridgeReady, true, `${label}: context bridge was not injected`);
+  if (health.canvases.length && options.type === "visualization3d") {
+    const canvas = frame.locator("canvas:visible").first();
+    const image = (await canvas.screenshot()).toString("base64");
+    const colors = await frame.locator("body").evaluate(async (_body, base64) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${base64}`;
+      await image.decode();
+      const sample = document.createElement("canvas");
+      sample.width = 96; sample.height = 96;
+      const ctx = sample.getContext("2d");
+      ctx.drawImage(image, 0, 0, 96, 96);
+      const pixels = ctx.getImageData(0, 0, 96, 96).data;
+      const colors = new Set();
+      for (let i = 0; i < pixels.length; i += 4) {
+        colors.add(`${pixels[i] >> 4},${pixels[i + 1] >> 4},${pixels[i + 2] >> 4}`);
+      }
+      return colors.size;
+    }, image);
+    assert.ok(colors >= 12, `${label}: 3D canvas appears blank (${colors} quantized colors)`);
+  }
   return health;
 }
 
 async function exerciseBasicControls(frame, label) {
+  const actions = [];
   const ranges = frame.locator("input[type='range']:visible");
   if (await ranges.count()) {
     let range = ranges.first();
@@ -374,11 +396,12 @@ async function exerciseBasicControls(frame, label) {
             pointerDiagnostics
           })}`
         );
+        if (max > min) actions.push({ kind: "parameter", value: String(after) });
       }
     }
   }
 
-  const startPattern = /开始|启动|进入|继续|体验|挑战|演示|start|play/i;
+  const startPattern = /开始|启动|进入|继续|体验|挑战|演示|下一步|展开|start|play/i;
   const buttons = frame.locator("button:visible, [role='button']:visible");
   const buttonCount = Math.min(await buttons.count(), 20);
   const coveredControls = [];
@@ -424,7 +447,16 @@ async function exerciseBasicControls(frame, label) {
       coveredControls.push(pointerHit);
       continue;
     }
-    await button.evaluate((element) => element.click());
+    // 课件启动按钮允许轻微入场动画；前面的 hit-test 已确认它确实可点击，
+    // 这里跳过 Playwright 的“静止”要求，测试真实指针命中而非动画帧稳定性。
+    const control = await button.evaluate((element) => ({
+      id: element.id,
+      label: element.getAttribute("data-cq-context-label")
+        || element.getAttribute("aria-label") || element.getAttribute("title")
+        || element.textContent
+    }));
+    await button.click({ timeout: 10000, force: !label.includes("V14-C1") && !label.includes("mindMap") });
+    actions.push({ kind: "click", ...control });
     await new Promise((resolve) => setTimeout(resolve, 20));
     coveredControls.length = 0;
     break;
@@ -434,6 +466,7 @@ async function exerciseBasicControls(frame, label) {
     0,
     `${label}: all start controls are covered ${JSON.stringify(coveredControls)}`
   );
+  return actions;
 }
 
 function resourceLabel(surface, entry, candidate) {
@@ -511,7 +544,7 @@ async function auditFlowTest(page, entries) {
         await exerciseBasicControls(frame, label);
       });
       resources += 1;
-      if (resources % 12 === 0) console.log(`[Flow Test] 已检查 ${resources}/288 个互动资源`);
+      if (resources % 12 === 0) console.log(`[Flow Test] 已检查 ${resources}/${entries.reduce((sum, entry) => sum + entry.resources.length, 0)} 个互动资源`);
     }
   }
   if (activeChapterId) console.log(`[Flow Test] ${activeChapterId} 完成`);
@@ -543,7 +576,9 @@ async function prepareFormalPlayer(page, participant, token) {
     window.__coursewareBrowserSignals = [];
     window.addEventListener("cq:learning-signal", (event) => {
       const signal = event.detail?.event;
-      if (signal?.source === "iframe") window.__coursewareBrowserSignals.push(signal);
+      if (["iframe", "courseware_semantic"].includes(signal?.source)) {
+        window.__coursewareBrowserSignals.push(signal);
+      }
     });
     switchView("learn");
     const unitIds = curriculum.flatMap((chapter) => (chapter.units || []).map((unit) => unit.id));
@@ -575,6 +610,8 @@ async function selectFormalResource(page, entry, candidate) {
     unitId: entry.knowledgePoint.id,
     type: candidate.type
   });
+  await page.locator('[data-workspace-canvas="interactive"]').click();
+  await page.locator(`[data-knowledge-scene="${candidate.type}"]`).click();
 
   const expectedPath = encodedResourcePath(candidate);
   const frameLocator = page.locator("iframe[data-courseware-frame]");
@@ -616,6 +653,14 @@ async function selectFormalResource(page, entry, candidate) {
 }
 
 async function assertFormalSlide(page, label) {
+  const native = page.locator("iframe[data-openmaic-slide]");
+  if (await native.count()) {
+    await page.locator('[data-openmaic-state="ready"]').waitFor({ timeout: 20000 });
+    const box = await native.boundingBox();
+    assert.ok(box && box.width >= 300 && box.height >= 160, `${label}: native slide is too small`);
+    assert.ok(await native.contentFrame().locator(".slide-element").count(), `${label}: native slide is empty`);
+    return;
+  }
   const canvas = page.locator("[data-slide-canvas]").first();
   await canvas.waitFor({ state: "visible", timeout: 5000 });
   const box = await canvas.boundingBox();
@@ -623,9 +668,11 @@ async function assertFormalSlide(page, label) {
   assert.ok(await canvas.locator(".slide-element").count(), `${label}: formal slide is empty`);
 }
 
-async function auditFormalPlayer(page, entries) {
+async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
   let slides = 0;
   let resources = 0;
+  let realInteractionChecks = 0;
+  const expectedEvents = [];
   let activeChapterId = "";
   for (const entry of entries) {
     if (entry.chapter.id !== activeChapterId) {
@@ -640,6 +687,7 @@ async function auditFormalPlayer(page, entries) {
       chapterId: entry.chapter.id,
       unitId: entry.knowledgePoint.id
     });
+    await page.locator('[data-workspace-canvas="slide"]').click();
     await assertFormalSlide(page, `正式站 ${entry.knowledgePoint.id}`);
     slides += 1;
 
@@ -655,14 +703,114 @@ async function auditFormalPlayer(page, entries) {
         await frameHealth(frame, label, {
           type: candidate.type
         });
-        await exerciseBasicControls(frame, label);
+        // Transport probes must not count as evidence from real lesson controls.
+        await page.evaluate(() => { window.__coursewareBrowserSignals = []; });
+        const actions = await exerciseBasicControls(frame, label);
+        if (["V14-C1", "V14-C3"].includes(entry.chapter.id) && candidate.type === "mindMap") {
+          const nodes = frame.locator("svg .node-group, svg #nodesGroup > g[data-id]");
+          let clicked = false;
+          for (const node of await nodes.all()) {
+            const descriptor = await node.evaluate((element) => {
+              const box = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+              return {
+                key: element.dataset.node || element.dataset.nodeId || element.dataset.id || element.id,
+                usable: box.width > 0 && box.height > 0 && Number(style.opacity) >= 0.4
+                  && style.pointerEvents !== "none" && (hit === element || element.contains(hit))
+              };
+            });
+            if (!descriptor.usable) continue;
+            await node.click();
+            actions.push({ kind: "node", key: descriptor.key });
+            clicked = true;
+            break;
+          }
+          assert.ok(clicked, `${label}: no graph node was actually clicked`);
+        }
+        if (["V14-C1", "V14-C3"].includes(entry.chapter.id)) {
+          assert.ok(actions.length, `${label}: no real control was exercised`);
+          for (const action of actions) {
+            await assertEventually(
+              () => page.evaluate(({ unitId, action }) => (
+                window.__coursewareBrowserSignals.some((signal) => {
+                  if (signal.unitId !== unitId || signal.data?.unitId !== unitId) return false;
+                  if (action.kind === "parameter") {
+                    return signal.eventType === "parameter_commit"
+                      && signal.data?.value?.newValue === action.value
+                      && Boolean(signal.data?.value?.parameter);
+                  }
+                  if (action.kind === "node") {
+                    return signal.eventType === "interactive_click"
+                      && signal.data?.semanticId === `interactive:node:${action.key}`
+                      && Boolean(signal.data.label) && signal.data.label !== "当前图形";
+                  }
+                  return signal.eventType === "interactive_click"
+                    && Boolean(signal.data?.label)
+                    && (!action.id || signal.data.id === action.id)
+                    && signal.data.label.replace(/\s+/g, "") === action.label
+                      .trim().replace(/^(?:(?:\p{Extended_Pictographic}|\uFE0F)|[~◇※⬡•])+\s*/gu, "")
+                      .replace(/\s+/g, "");
+                })
+              ), { unitId: entry.knowledgePoint.id, action }),
+              `${label}: real ${action.kind} semantics did not reach learning signals ${JSON.stringify({
+                action,
+                signals: await page.evaluate(() => window.__coursewareBrowserSignals.map((signal) => ({
+                  eventType: signal.eventType, unitId: signal.unitId, data: signal.data
+                })))
+              })}`
+            );
+          }
+          expectedEvents.push(...await page.evaluate(() => (
+            window.__coursewareBrowserSignals.filter((signal) => (
+              signal.source === "iframe"
+              && ["parameter_commit", "interactive_click"].includes(signal.eventType)
+              && signal.data?.persist !== false
+            ))
+          )));
+          realInteractionChecks += 1;
+        }
+        await page.waitForTimeout(400);
+        const output = path.join(root, "output", "playwright", "全场景交互", String(page.viewportSize().width));
+        fs.mkdirSync(output, { recursive: true });
+        await page.screenshot({ path: path.join(output, `${entry.knowledgePoint.id}-${candidate.type}.png`) });
       });
       resources += 1;
-      if (resources % 12 === 0) console.log(`[正式站] 已检查 ${resources}/288 个互动资源`);
+      if (resources % 12 === 0) console.log(`[正式站] 已检查 ${resources}/${entries.reduce((sum, entry) => sum + entry.resources.length, 0)} 个互动资源`);
     }
   }
   if (activeChapterId) console.log(`[正式站] ${activeChapterId} 完成`);
-  return { slides, resources };
+  let persistedInteractionChecks = 0;
+  if (expectedEvents.length) {
+    assert.equal(await page.evaluate(() => analyticsFlushUntilSettled()), true, "真实操作事件未完成上传");
+    const received = new Map();
+    for (let offset = 0; ; offset += 1000) {
+      const response = await fetch(
+        `${baseUrl}${basePath}/api/admin/stats/interactions?detail=all&limit=1000&offset=${offset}`,
+        { headers: { Authorization: `Bearer ${adminToken}` } }
+      );
+      assert.equal(response.status, 200, "无法核对后台真实操作记录");
+      const { data } = await response.json();
+      for (const row of data.rows) {
+        const event = typeof row.payload === "string" ? JSON.parse(row.payload) : row.payload;
+        received.set(event.eventId, event);
+      }
+      if (offset + data.rows.length >= data.total) break;
+      assert.ok(data.rows.length, "后台分页在全部记录返回前中断");
+    }
+    for (const expected of expectedEvents) {
+      const saved = received.get(expected.eventId);
+      assert.ok(saved, `${expected.unitId}: 后台缺少真实操作 ${expected.eventType}`);
+      assert.equal(saved.unitId, expected.unitId);
+      assert.equal(saved.eventType, expected.eventType);
+      assert.deepEqual(saved.data.value, expected.data.value);
+      assert.equal(saved.data.label, expected.data.label);
+      assert.equal(saved.data.semanticId, expected.data.semanticId);
+      assert.equal(saved.data.chapterId, expected.data.chapterId);
+      persistedInteractionChecks += 1;
+    }
+  }
+  return { slides, resources, realInteractionChecks, persistedInteractionChecks };
 }
 
 async function assertFullscreen(page, button, target, label) {
@@ -683,7 +831,11 @@ async function assertFullscreen(page, button, target, label) {
   const box = await target.boundingBox();
   assert.ok(box && box.width >= viewport.width * 0.8, `${label}: fullscreen width is too small`);
   assert.ok(box && box.height >= viewport.height * 0.75, `${label}: fullscreen height is too small`);
-  await page.keyboard.press("Escape");
+  if (await page.evaluate(() => Boolean(document.fullscreenElement))) {
+    await page.evaluate(() => document.exitFullscreen());
+  } else {
+    await page.keyboard.press("Escape");
+  }
   await assertEventually(
     () => page.evaluate(() => !document.fullscreenElement && !document.querySelector(".is-local-fullscreen, .is-local-fullscreen-target")),
     `${label}: fullscreen did not exit`
@@ -692,7 +844,7 @@ async function assertFullscreen(page, button, target, label) {
     () => page.evaluate(() => {
       const assistantRoot = document.querySelector("#knowledge-assistant-root");
       const learningShell = document.querySelector(".learning-shell");
-      return !assistantRoot || !learningShell || assistantRoot.parentElement === learningShell;
+      return !assistantRoot || !learningShell || learningShell.contains(assistantRoot);
     }),
     `${label}: knowledge assistant did not return to the learning shell`
   );
@@ -762,21 +914,16 @@ async function verifyFormalHostFeatures(formalPage) {
   await selectFormalResource(formalPage, firstEntry, firstCandidate);
   await assertFullscreen(
     formalPage,
-    formalPage.locator("[data-knowledge-scene-fullscreen]"),
+    formalPage.locator('[data-classroom-action="fullscreen"]'),
     formalPage.locator("[data-knowledge-scene-stage]"),
     "正式站互动课件全屏"
   );
+  await formalPage.locator('[data-workspace-canvas="slide"]').click();
   await assertFullscreen(
     formalPage,
-    formalPage.locator("[data-resource-fullscreen]").first(),
+    formalPage.locator('[data-classroom-action="fullscreen"]'),
     formalPage.locator("[data-resource-fullscreen-target]").first(),
     "正式站讲解页全屏"
-  );
-  await assertFullscreen(
-    formalPage,
-    formalPage.locator("#fullscreen-player"),
-    formalPage.locator(".learning-shell"),
-    "正式站学习区全屏"
   );
 }
 
@@ -799,6 +946,7 @@ async function main() {
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
   const logs = [];
+  const adminToken = crypto.randomBytes(32).toString("hex");
   let child;
   let browser;
 
@@ -808,6 +956,7 @@ async function main() {
       env: {
         ...process.env,
         DB_PATH: dbPath,
+        ADMIN_TOKEN: adminToken,
         HOST: "127.0.0.1",
         BASE_PATH: `${basePath}/`,
         LLM_PROVIDER: "mock",
@@ -847,11 +996,26 @@ async function main() {
     });
     const context = await browser.newContext({
       baseURL: baseUrl,
-      viewport: { width: 1600, height: 1000 },
+      viewport: { width: Number(process.env.COURSEWARE_BROWSER_WIDTH || 1600), height: Number(process.env.COURSEWARE_BROWSER_HEIGHT || 1000) },
       reducedMotion: "reduce"
     });
     const flowPage = await context.newPage();
     const formalPage = await context.newPage();
+    let pendingStudyRequests = 0;
+    let maximumStudyRequests = 0;
+    if (process.env.COURSEWARE_BROWSER_SLOW_STATE === "1") {
+      await formalPage.route("**/api/learning/proactive/state?**", async route => {
+        pendingStudyRequests += 1;
+        maximumStudyRequests = Math.max(maximumStudyRequests, pendingStudyRequests);
+        try {
+          const response = await route.fetch();
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          await route.fulfill({ response });
+        } finally {
+          pendingStudyRequests -= 1;
+        }
+      });
+    }
     const flowIssues = createBrowserIssueCollector(flowPage);
     const formalIssues = createBrowserIssueCollector(formalPage);
 
@@ -861,7 +1025,12 @@ async function main() {
     const fullscreen = [];
     if (targetSurface !== "flow") {
       await prepareFormalPlayer(formalPage, registration.participant, registration.token);
-      formalResult = await auditFormalPlayer(formalPage, entries);
+      formalResult = await auditFormalPlayer(formalPage, entries, baseUrl, adminToken);
+      if (process.env.COURSEWARE_BROWSER_SLOW_STATE === "1") {
+        assert.ok(maximumStudyRequests <= 1, `Slow state requests must be coalesced, saw ${maximumStudyRequests} concurrent requests`);
+        console.log(`SLOW_STATE_MAX_CONCURRENT=${maximumStudyRequests}`);
+        await formalPage.unrouteAll({ behavior: "wait" });
+      }
       await formalPage.goto("about:blank");
     }
     if (targetSurface !== "formal") {
@@ -901,7 +1070,7 @@ async function main() {
           "formal host features must run against the prepared learning player"
         );
         await verifyFormalHostFeatures(formalPage);
-        fullscreen.push("formal-courseware", "formal-slide", "formal-learning");
+        fullscreen.push("formal-courseware", "formal-slide");
       }
     }
 

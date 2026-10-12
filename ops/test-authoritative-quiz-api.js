@@ -120,6 +120,24 @@ async function main() {
     const publicRoute = await routeResponse.json();
     const publicQuestions = questionFields(publicRoute);
     assert.ok(publicQuestions.length > 0);
+    const archivedModules = sourceRoute.chapters.find((chapter) => chapter.id === "V14-C3").modules;
+    for (const module of archivedModules) {
+      for (const phase of ["pre", "post"]) {
+        const questions = module.flow[`${phase}Quiz`].questions;
+        assert.ok(questions.every((question) => !publicQuestions.some((item) => item.id === question.id)),
+          "公开路由不应继续投递归档题目");
+        const archived = await postJson(baseUrl, "/api/learning/quiz/submit", {
+          chapterId: "V14-C3", unitId: `${module.id}-${phase}`, phase,
+          answers: questions.map((question) => ({
+            questionId: question.id,
+            response: question.type === "short_answer" ? "历史题测试"
+              : question.type === "multiple" ? question.answer : question.answer[0]
+          }))
+        }, token);
+        assert.equal(archived.response.status, 409);
+        assert.equal(archived.payload.code, "quiz_archived");
+      }
+    }
     publicQuestions.forEach((question) => {
       assert.equal(question.answer, undefined, `${question.id} leaked answer`);
       assert.equal(question.analysis, undefined, `${question.id} leaked analysis`);
@@ -128,7 +146,7 @@ async function main() {
 
     const submittedAnswers = sourceRoute.chapters[0].flow.preQuiz.questions.map((question) => ({
       questionId: question.id,
-      response: question.type === "multiple"
+      response: question.type === "short_answer" ? "__unknown__" : question.type === "multiple"
         ? question.answer
         : question.answer[0]
     }));

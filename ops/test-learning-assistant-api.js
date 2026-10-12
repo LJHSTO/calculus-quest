@@ -43,7 +43,9 @@ async function stopChild(child) {
 
 async function startFailingLlmStub() {
   const port = await freePort();
+  let requests = 0;
   const server = http.createServer((req, res) => {
+    requests += 1;
     res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ error: { message: "provider unavailable" } }));
   });
@@ -53,6 +55,7 @@ async function startFailingLlmStub() {
   });
   return {
     baseUrl: `http://127.0.0.1:${port}/v1`,
+    requests: () => requests,
     close: () => new Promise((resolve) => server.close(resolve))
   };
 }
@@ -124,6 +127,15 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
+        // 这个测试覆盖的是**反应式**知点（提问、测验复盘、会话历史、配额与预算），
+        // 所以刻意把它部署成"非实验章节"：实验章节指向 V14-C3，于是本测试用的
+        // V14-C1 走传统路径，而不是管理式主动链路。
+        //
+        // 为什么必须显式写出来：V14-C1 恰好就是真实实验的章节。不写这一行，
+        // 服务器会把 V14-C1 当成管理式章节，于是"参与者还没分配条件"这条实验门槛
+        // 会先把所有请求静默掉，本测试一半的断言就再也测不到它们本来的东西。
+        // 管理式链路的覆盖在 test-proactive-study-api.js。
+        PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
         LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
         LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
@@ -492,11 +504,13 @@ async function main() {
       phase: "pre",
       answers: quiz.questions.map((question) => ({
         questionId: question.id,
+        // r2 的两道简答题没有参考答案（answer 是空数组，判分靠人工/模型），
+        // 必须给一段真实作答，否则服务端按"漏题"把整卷拒掉。
         response: question.type === "multiple"
-          ? question.answer
+          ? (question.answer.length ? question.answer : ["A"])
           : Array.isArray(question.answer)
-            ? question.answer[0]
-            : question.answer
+            ? (question.answer[0] || "先把规则代进去算一步，再检查结果是否合理。")
+            : (question.answer || "先把规则代进去算一步，再检查结果是否合理。")
       }))
     }, token);
     assert.equal(quizSubmission.response.status, 200);
@@ -622,6 +636,15 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
+        // 这个测试覆盖的是**反应式**知点（提问、测验复盘、会话历史、配额与预算），
+        // 所以刻意把它部署成"非实验章节"：实验章节指向 V14-C3，于是本测试用的
+        // V14-C1 走传统路径，而不是管理式主动链路。
+        //
+        // 为什么必须显式写出来：V14-C1 恰好就是真实实验的章节。不写这一行，
+        // 服务器会把 V14-C1 当成管理式章节，于是"参与者还没分配条件"这条实验门槛
+        // 会先把所有请求静默掉，本测试一半的断言就再也测不到它们本来的东西。
+        // 管理式链路的覆盖在 test-proactive-study-api.js。
+        PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
         LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
         LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
@@ -670,6 +693,15 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
+        // 这个测试覆盖的是**反应式**知点（提问、测验复盘、会话历史、配额与预算），
+        // 所以刻意把它部署成"非实验章节"：实验章节指向 V14-C3，于是本测试用的
+        // V14-C1 走传统路径，而不是管理式主动链路。
+        //
+        // 为什么必须显式写出来：V14-C1 恰好就是真实实验的章节。不写这一行，
+        // 服务器会把 V14-C1 当成管理式章节，于是"参与者还没分配条件"这条实验门槛
+        // 会先把所有请求静默掉，本测试一半的断言就再也测不到它们本来的东西。
+        // 管理式链路的覆盖在 test-proactive-study-api.js。
+        PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
         LEARNING_ASSISTANT_DAILY_INTERVENTIONS: "2",
         LEARNING_ASSISTANT_COUNT_MOCK_USAGE: "true",
@@ -808,6 +840,7 @@ async function main() {
         OPENAI_COMPATIBLE_BASE_URL: failingLlm.baseUrl,
         OPENAI_COMPATIBLE_API_KEY: "test-only-key",
         OPENAI_COMPATIBLE_MODEL: "test-model",
+        PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
         LEARNING_ASSISTANT_DAILY_QUOTA: "3",
         NODE_ENV: "development"
       },
@@ -846,6 +879,21 @@ async function main() {
       { used: fallbackStatus.quota.used, remaining: fallbackStatus.quota.remaining },
       { used: 0, remaining: 3 }
     );
+
+    const callsBeforeClarification = failingLlm.requests();
+    const clarification = await ask(fallbackBaseUrl, {
+      chapterId: chapter.id,
+      unitId: knowledgePoint.id,
+      sceneType: candidate.type,
+      question: "我点中的红色线段为什么变短了？",
+      contextRef: { kind: "viewport", scope: "interactive", coarse: true, confidence: "low", label: "当前画布" }
+    }, fallbackRegistration.payload.token);
+    assert.equal(clarification.response.status, 200);
+    assert.match(clarification.answer, /无法确认/);
+    assert.equal(clarification.rows.at(-1).message.provider, "grounding-guard");
+    assert.equal(clarification.rows.at(-1).fallback, false);
+    assert.equal(clarification.rows.at(-1).quota.remaining, 3, "本地澄清不消耗模型额度");
+    assert.equal(failingLlm.requests(), callsBeforeClarification, "未定位视觉对象不请求模型猜测");
 
     const resourceUrl = `${baseUrl}/resources/${candidate.root}/${candidate.file}`;
     const coursewareResponse = await fetch(resourceUrl);

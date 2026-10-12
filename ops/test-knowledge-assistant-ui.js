@@ -6,6 +6,9 @@ const root = path.resolve(__dirname, "..");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 
 const assistantSource = read("app/main/knowledge-assistant.js");
+assert.match(assistantSource, /const awaitingFollowup = candidate\?\.kind === "independent_attempt_outcome"\s*&& proactiveScopeState\(meta\)\?\.lifecycle\?\.phase === "awaiting_independent_attempt"/);
+assert.match(assistantSource, /\|\| \(isOpen && !awaitingFollowup\)/,
+  "面板打开时只允许已接受帮助后的结果核对，不放开所有主动候选");
 const assistantCss = read("app/main/knowledge-assistant.css");
 const proactiveSource = read("app/main/proactive-learning.js");
 const analyticsSource = read("app/main/analytics.js");
@@ -14,6 +17,7 @@ const contextSource = read("app/main/courseware-context.js");
 const bridgeSource = read("app/main/courseware-bridge.js");
 const renderLearningSource = read("app/main/render-learning.js");
 const bootstrapSource = read("app/main/bootstrap.js");
+const agenticSource = read("app/main/agentic-path.js");
 const narrationSource = read("app/main/narration.js");
 const eventsSource = read("app/main/events.js");
 const indexHtml = read("index.html");
@@ -24,15 +28,15 @@ const envExample = read(".env.example");
 
 assert.match(
   indexHtml,
-  /app\/main\/knowledge-assistant\.css\?v=20260831-proactive-participation-v1/
+  /app\/main\/knowledge-assistant\.css\?v=20260922-hint-justification-v1/
 );
 assert.match(
   indexHtml,
-  /app\/main\/knowledge-assistant\.js\?v=20260831-proactive-participation-v1/
+  /app\/main\/knowledge-assistant\.js\?v=20260922-hint-justification-v1/
 );
 assert.match(
   indexHtml,
-  /app\/main\/proactive-learning\.js\?v=20260830-proactive-continuation-v1/
+  /app\/main\/proactive-learning\.js\?v=20260922-representation-switch-v1/
 );
 assert.match(assistantSource, /aria-label="打开知点"/);
 assert.match(assistantSource, /id="knowledge-assistant-panel"[^>]*tabindex="-1"/);
@@ -75,13 +79,13 @@ assert.match(assistantSource, /data-knowledge-new-conversation/);
 assert.match(assistantSource, /data-knowledge-quota/);
 assert.match(
   serverSource,
-  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "模型待验证" : "本地引导"/,
-  "已配置的真实模型必须先显示为待验证，不能提前冒充在线 AI 助教"
+  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "AI 助教" : "本地引导"/,
+  "助教名称不应显示为不可用；连接验证仍保持 pending"
 );
 assert.match(
   assistantSource,
-  /verification === "verified"[\s\S]*?"AI 助教"[\s\S]*?"模型待验证"/,
-  "学生端必须区分待验证配置与已经成功返回的模型"
+  /els\.provider\.dataset\.verification = verification[\s\S]*?本次回答已由真实模型服务生成[\s\S]*?连接状态以实际提问结果为准/,
+  "名称与验证状态分离，通过提示区分配置和真实成功回答"
 );
 assert.match(
   assistantSource,
@@ -96,7 +100,7 @@ assert.match(
 assert.match(
   assistantSource,
   /!\["mock", "fallback"\]\.includes\(assistantMessage\.provider\)[\s\S]*?verification:\s*"verified"[\s\S]*?label:\s*"AI 助教"/,
-  "只有真实模型回答成功后才能显示 AI 助教"
+  "只有真实模型回答成功后才能标记 verified"
 );
 assert.match(assistantSource, /data-knowledge-proactive/);
 assert.match(assistantSource, /data-knowledge-proactive-accept/);
@@ -111,6 +115,7 @@ assert.match(assistantSource, /data-knowledge-outcomes/);
 assert.match(assistantSource, /data-knowledge-outcomes-content/);
 assert.match(assistantSource, /data-knowledge-outcomes-status/);
 assert.match(assistantSource, /data-knowledge-proactive-preference/);
+assert.match(assistantSource, /data-knowledge-proactive-scope-restore/);
 assert.match(
   assistantSource,
   /function syncFullscreenHost\(\)[\s\S]*?fullscreenHost\.appendChild\(root\)[\s\S]*?fullscreenHomeParent\.insertBefore\(root,\s*restoreBefore\)/,
@@ -121,13 +126,15 @@ assert.match(
   /document\.addEventListener\("fullscreenchange",\s*syncFullscreenHost\)/,
   "知点必须跟随浏览器全屏目标变化"
 );
-assert.match(assistantSource, /data-proactive-preference="standard"/);
-assert.match(assistantSource, /data-proactive-preference="reduced"/);
-assert.match(assistantSource, /data-proactive-preference="off"/);
-assert.match(
+assert.doesNotMatch(
+  assistantSource,
+  /data-proactive-preference=/,
+  "正式 Pilot 不得让学生选择全局主动提示强度"
+);
+assert.doesNotMatch(
   assistantSource,
   /api\/learning\/proactive\/preference/,
-  "学生的主动提示偏好必须由服务端持久化"
+  "学生端不得调用会改变实验干预剂量的全局偏好接口"
 );
 assert.match(
   assistantSource,
@@ -144,6 +151,10 @@ assert.match(
   /api\/learning\/proactive\/outcomes\/submit/,
   "学生端必须把独立测量提交到服务端评分"
 );
+assert.match(assistantSource, /api\/learning\/proactive\/outcomes\/\$\{nextAction\}/);
+assert.match(assistantSource, /api\/learning\/proactive\/outcomes\/skip/);
+assert.match(assistantSource, /保存草稿并暂时离开/);
+assert.match(assistantSource, /永久跳过/);
 assert.match(
   assistantSource,
   /let proactiveOutcomeDraftGeneration = 0[\s\S]*?proactiveOutcomeDraftGeneration \+= 1/,
@@ -213,8 +224,8 @@ assert.doesNotMatch(
 );
 assert.match(
   serverSource,
-  /proactive_student_preference_changed/,
-  "偏好改变必须进入行为审计事件"
+  /proactive_global_preference_locked/,
+  "正式 Pilot 必须在服务端锁住学生全局主动提示偏好"
 );
 assert.match(assistantCss, /\.knowledge-proactive-preference\s*\{/);
 assert.match(assistantSource, /function executeProactiveAction/);
@@ -241,7 +252,7 @@ assert.match(
 );
 assert.match(
   proactiveActionBody,
-  /suggestion\?\.action === "switch_representation"[\s\S]*?setKnowledgeSceneType\(targetUnitId, targetSceneType\)[\s\S]*?selectUnit\(targetUnitId\)/,
+  /suggestion\?\.action === "switch_representation"[\s\S]*?selectUnit\(targetUnitId\)[\s\S]*?setKnowledgeSceneType\(targetUnitId, targetSceneType\)[\s\S]*?showInteractive/,
   "换表征必须在学生确认后调用现有场景选择和单元导航"
 );
 assert.match(
@@ -483,7 +494,7 @@ assert.match(
 );
 assert.match(
   assistantSource,
-  /function renderQuickQuestions\(\) \{[\s\S]*?if \([\s\S]*?quizAssistantLocked\(meta\)[\s\S]*?\) \{[\s\S]*?els\.quick\.hidden = true;[\s\S]*?return;/,
+  /function renderQuickQuestions\(\) \{[\s\S]*?const hidden = Boolean\([\s\S]*?quizAssistantLocked\(meta\)[\s\S]*?if \(hidden\) \{[\s\S]*?els\.quick\.hidden = true;[\s\S]*?return;/,
   "quiz lock state must not expose question shortcuts"
 );
 assert.match(assistantSource, /提交本次测验后即可使用知点复盘/);
@@ -547,7 +558,7 @@ assert.match(assistantCss, /\.knowledge-proactive-nudge\s*\{/);
 assert.match(assistantCss, /\.knowledge-assistant-root\.is-open \.knowledge-proactive-nudge/);
 assert.match(
   indexHtml,
-  /knowledge-assistant\.css\?v=20260831-proactive-participation-v1/,
+  /knowledge-assistant\.css\?v=20260922-hint-justification-v1/,
   "the proactive verification UI must ship behind a fresh stylesheet cache key"
 );
 assert.doesNotMatch(
@@ -648,10 +659,16 @@ assert.match(
 ["shown", "accepted", "dismissed", "ignored", "snoozed"].forEach((resolution) => {
   assert.match(
     assistantSource,
-    new RegExp(`queueProactiveResolution\\([^\\n]+, "${resolution}"\\)`),
+    new RegExp(`queueProactiveResolution\\([^\\n]+, "${resolution}"[,)]`),
     `the student client must persist the ${resolution} resolution`
   );
 });
+assert.match(
+  assistantSource,
+  /queueProactiveResolution\(suggestion, "accepted", \{[\s\S]*?justification: options\.justification \|\| ""[\s\S]*?justificationRequested: options\.justificationRequested === true/,
+  "接受的主动提示必须把「理由」和「有没有问过理由」一起上报，"
+    + "否则 Hint Justification Rate 的分母无法区分「跳过」和「没问」"
+);
 assert.match(
   assistantSource,
   /async function requestProactiveAlternative[\s\S]*?student_requested_alternative[\s\S]*?sourceDecisionId/,
@@ -731,11 +748,24 @@ assert.match(analyticsSource, /cq:learning-signal/);
 assert.match(indexHtml, /id="lesson-rail"/);
 assert.match(
   indexHtml,
-  /class="learning-nav-cluster"[\s\S]*?id="chapter-rail-toggle"[\s\S]*?id="lesson-rail-toggle"[\s\S]*?<\/div>/,
-  "chapter and path controls should read as one compact navigation cluster"
+  /<body class="pilot-single-chapter">/,
+  "the dedicated pilot site must declare its single-chapter presentation mode"
 );
-assert.match(indexHtml, /id="chapter-rail-toggle"[\s\S]*?data-learning-toggle-label>章节</);
+assert.match(
+  indexHtml,
+  /id="chapter-rail-toggle"[^>]*hidden/,
+  "the chapter switcher must not be exposed in the single-chapter pilot"
+);
 assert.match(indexHtml, /id="lesson-rail-toggle"[\s\S]*?data-learning-toggle-label>路径</);
+assert.match(
+  indexHtml,
+  /id="lesson-list"[\s\S]*?id="chapter-outcome-panel"[\s\S]*?data-proactive-outcomes-path-stages[\s\S]*?<\/aside>/,
+  "independent outcome measurements must appear inside the learner path"
+);
+assert.match(indexHtml, /高等数学互动学习/);
+assert.doesNotMatch(indexHtml, />Calculus Quest 加载中/);
+assert.match(indexHtml, />学习平台加载中/);
+assert.doesNotMatch(indexHtml, /不提供 Agent 帮助/);
 assert.match(indexHtml, /learning-rail-control-icon/);
 assert.match(bootstrapSource, /cq:knowledge-assistant-visibility/);
 assert.match(bootstrapSource, /setLessonRailCollapsed\(true/);
@@ -744,6 +774,13 @@ assert.match(bootstrapSource, /pointerleave/);
 assert.match(bootstrapSource, /CHAPTER_HOVER_OPEN_DELAY_MS/);
 assert.match(bootstrapSource, /cq:learning-layout-change/);
 assert.match(bootstrapSource, /setupLearningCanvasLayoutSync/);
+assert.match(bootstrapSource, /document\.querySelector\("#learning-action-dock"\)/);
+assert.match(bootstrapSource, /wrapper\.replaceChildren\(\)/);
+assert.match(bootstrapSource, /KnowledgeAssistant\?\.outcomeNavigationAction/);
+assert.match(bootstrapSource, /KnowledgeAssistant\?\.openOutcomeStage/);
+assert.match(bootstrapSource, /function syncLearningActionDockPosition/);
+assert.match(agenticSource, /targetUnitId:\s*next\.id/);
+assert.match(agenticSource, /完成并进入「\$\{targetLabel\}」/);
 assert.doesNotMatch(
   bootstrapSource,
   /toggle\.textContent\s*=/,
@@ -758,6 +795,16 @@ assert.match(
 );
 assert.match(stylesCss, /\.learning-rail-control-icon/);
 assert.match(stylesCss, /\.learning-rail-control-caret/);
+assert.match(
+  stylesCss,
+  /\.learning-action-dock\s*\{[\s\S]*?position:\s*fixed;/,
+  "the active path controls must remain fixed at the viewport bottom"
+);
+assert.match(
+  stylesCss,
+  /\.question-math-fragment:not\(\.is-display\)\s*\{[\s\S]*?overflow:\s*visible;/,
+  "short inline symbols such as S_n and T_n must never render a scrollbar"
+);
 assert.match(stylesCss, /--learning-slide-max-width:\s*1440px/);
 assert.match(stylesCss, /min-height:\s*clamp\(680px,\s*78vh,\s*900px\)/);
 assert.match(
@@ -768,7 +815,7 @@ assert.match(
 assert.match(stylesCss, /\.learning-shell\.is-local-fullscreen-target\s*\{/);
 assert.match(narrationSource, /scheduleLearningCanvasLayoutSync\("learning-fullscreen-toggle"\)/);
 assert.match(eventsSource, /scheduleLearningCanvasLayoutSync\("fullscreen-change"\)/);
-assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20260813-v8"/);
+assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20260909-v10"/);
 assert.match(contextSource, /function selectionLocator/);
 assert.match(contextSource, /function renderNotes/);
 assert.match(contextSource, /type:\s*"cq:notes-sync"/);

@@ -303,7 +303,12 @@ assert.equal(context.state.agenticPath.visibleUnits.includes("C1-formative"), tr
 assert.equal(context.state.completed.includes("C1-formative"), false, "recovery must not mark the next unit completed");
 assert.deepEqual(
   JSON.parse(JSON.stringify(context.agenticCompletionCta(context.getUnit("C1-k1")))),
-  { label: "复习并跳到下一节", disabled: false },
+  {
+    label: "复习完成，进入「C1-formative」",
+    disabled: false,
+    targetUnitId: "C1-formative",
+    targetLabel: "C1-formative"
+  },
   "a completed non-final unit must no longer be rendered as course-complete"
 );
 
@@ -473,7 +478,7 @@ context.currentChapterId = "C1";
 context.currentUnitId = "C1-post";
 assert.equal(context.agenticNextUnlockedUnitAfter("C1-post")?.id, "X1-pre");
 const continueExtensionCta = context.agenticCompletionCta(context.getUnit("C1-post"));
-assert.equal(continueExtensionCta.label, "继续扩展学习");
+assert.equal(continueExtensionCta.label, "进入拓展「X1-pre」");
 assert.equal(continueExtensionCta.disabled, false);
 context.currentChapterId = "X1";
 context.currentUnitId = "X1-pre";
@@ -524,8 +529,9 @@ reset({
   }
 });
 const reviewCta = context.agenticCompletionCta(context.getUnit("C1-k1"));
-assert.equal(reviewCta.label, "复习并跳到下一节");
+assert.equal(reviewCta.label, "复习完成，进入「C1-formative」");
 assert.equal(reviewCta.disabled, false);
+assert.equal(reviewCta.targetUnitId, "C1-formative");
 
 reset({
   chapterId: "C2",

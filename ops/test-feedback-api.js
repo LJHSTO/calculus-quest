@@ -69,6 +69,7 @@ async function main() {
         DB_PATH: path.join(tmpDir, "feedback-api.db"),
         ADMIN_TOKEN: adminToken,
         HOST: "127.0.0.1",
+        LOCAL_ADMIN_AUTH_BYPASS: "false",
         LLM_PROVIDER: "mock"
       },
       stdio: ["ignore", "pipe", "pipe"],

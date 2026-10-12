@@ -389,6 +389,17 @@ document.addEventListener("input", (event) => {
 });
 
 document.addEventListener("change", (event) => {
+  const unknown = event.target.closest("[data-short-unknown]");
+  if (unknown) {
+    const input = document.getElementById(`answer-${unknown.dataset.unitId}-${unknown.dataset.questionId}`);
+    if (input) input.disabled = unknown.checked;
+    rememberQuizDraft(unknown.dataset.unitId, unknown.dataset.questionId, unknown.checked ? "__unknown__" : (input?.value || ""));
+    analyticsTrack("answer_select", { source: "quiz", data: {
+      unitId: unknown.dataset.unitId, questionId: unknown.dataset.questionId,
+      values: unknown.checked ? ["__unknown__"] : [], responseKind: unknown.checked ? "dont_know" : "answer"
+    } });
+    return;
+  }
   const knowledgeChoice = event.target.closest("[data-agentic-knowledge-choice]");
   if (knowledgeChoice) {
     if (typeof agenticUpdatePendingKnowledgeChoice === "function") {
@@ -401,6 +412,11 @@ document.addEventListener("change", (event) => {
   if (!choice) return;
   const unitId = choice.dataset.unitId;
   const questionId = choice.dataset.questionId;
+  if (choice.checked) {
+    for (const sibling of document.getElementsByName(choice.name)) {
+      if (sibling !== choice && (choice.value === "__unknown__" || sibling.value === "__unknown__")) sibling.checked = false;
+    }
+  }
   const values = selectedChoiceValues(unitId, questionId);
   const unit = getUnit(unitId);
   const questions = unit?.scene?.content?.questions || [];

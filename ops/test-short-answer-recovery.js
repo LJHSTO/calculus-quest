@@ -181,13 +181,14 @@ async function testDatabaseRecovery() {
     assert.deepEqual(failed.slice(0, 5), ["ai_reviewed", 0, 0, 0, "api_error"]);
     assert.match(failed[5], /已暂记 0 分/);
 
-    db.updateQuizResultAiGrading("GH-07-pre-q5", "recovery-user", {
+    const updatedIds = db.updateQuizResultAiGrading("GH-07-pre-q5", "recovery-user", {
       unitId: "V14-C3-pre",
       aiScore: 2,
       aiConfidence: 0.98,
       aiFeedback: "重新批改成功。",
       aiErrorType: "none"
     });
+    assert.deepEqual(updatedIds, ["failed-review"], "评分应返回实际更新的作答标识供审计绑定");
     const retried = db.getDbSync().exec(
       "SELECT status, is_correct, score, ai_score, ai_error_type FROM quiz_results WHERE id = 'failed-review'"
     )[0].values[0];

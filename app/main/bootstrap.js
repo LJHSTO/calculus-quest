@@ -1,13 +1,51 @@
 // Bottom navigation, auth wiring, interaction tracking, and app startup.
+let learningActionDockFrame = 0;
+
+function syncLearningActionDockPosition() {
+  const wrapper = document.querySelector("#learning-action-dock");
+  const player = document.querySelector("#learn-view .player");
+  const learnView = document.querySelector("#learn-view");
+  if (!wrapper || !player) return false;
+  const active = learnView?.classList.contains("active")
+    && wrapper.childElementCount > 0;
+  wrapper.hidden = !active;
+  if (!active) return false;
+  const rect = player.getBoundingClientRect();
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+  const edge = window.innerWidth <= 760 ? 10 : 12;
+  const left = Math.max(edge, Math.round(rect.left + edge));
+  const right = Math.max(edge, Math.round(viewportWidth - rect.right + edge));
+  wrapper.style.setProperty("--learning-dock-left", `${left}px`);
+  wrapper.style.setProperty("--learning-dock-right", `${right}px`);
+  return true;
+}
+
+function scheduleLearningActionDockPosition() {
+  if (learningActionDockFrame) window.cancelAnimationFrame(learningActionDockFrame);
+  learningActionDockFrame = window.requestAnimationFrame(() => {
+    learningActionDockFrame = 0;
+    syncLearningActionDockPosition();
+  });
+}
+
 function renderBottomNextButton() {
   const unit = getUnit();
-  if (!unit) return;
+  const wrapper = document.querySelector("#learning-action-dock");
+  if (!wrapper) return;
+  wrapper.replaceChildren();
+  if (!unit) {
+    wrapper.hidden = true;
+    return;
+  }
+  if (document.querySelector(".core-learning-workspace.is-coach-surface")) {
+    wrapper.hidden = true;
+    return;
+  }
 
-  const wrapper = document.createElement("div");
-  wrapper.className = "bottom-next-wrapper";
   const knowledgeTransition = typeof agenticPendingKnowledgeTransitionFor === "function"
     ? agenticPendingKnowledgeTransitionFor(unit.id)
     : null;
+  const outcomeAction = window.KnowledgeAssistant?.outcomeNavigationAction?.(unit) || null;
 
   const previous = typeof agenticPreviousUnlockedUnitBefore === "function"
     ? agenticPreviousUnlockedUnitBefore(unit.id)
@@ -24,6 +62,7 @@ function renderBottomNextButton() {
   const nextBtn = document.createElement("button");
   nextBtn.className = "button primary bottom-nav-btn";
   nextBtn.type = "button";
+  nextBtn.dataset.learningPrimaryAction = "true";
   const needsQuizSubmit = unit.type === "quiz" && !unit.placeholderQuiz && !(state.submittedQuizzes || []).includes(unit.id);
   const needsSceneChoice = unit.type === "knowledge" && !selectedKnowledgeSceneType(unit);
   const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
@@ -34,8 +73,10 @@ function renderBottomNextButton() {
     : { label: state.completed.includes(unit.id) ? "复习并跳到下一节" : "完成本节并跳到下一节", disabled: false };
   const completionAllowed = typeof agenticUnitCompletionAllowed !== "function"
     || agenticUnitCompletionAllowed(unit.id);
-  nextBtn.disabled = !returningToQuiz && (!completionAllowed || (!needsSceneChoice && !needsQuizSubmit && !pending && Boolean(cta.disabled)));
-  nextBtn.textContent = returningToQuiz
+  nextBtn.disabled = outcomeAction
+    ? Boolean(outcomeAction.disabled)
+    : !returningToQuiz && (!completionAllowed || (!needsSceneChoice && !needsQuizSubmit && !pending && Boolean(cta.disabled)));
+  nextBtn.textContent = outcomeAction?.label || (returningToQuiz
     ? "返回测验"
     : knowledgeTransition
       ? "请选择下一步"
@@ -47,8 +88,11 @@ function renderBottomNextButton() {
       ? "先提交测验"
     : pending
         ? "先选择下一步"
-        : cta.label;
-  if (knowledgeTransition) {
+        : cta.label);
+  if (outcomeAction) {
+    nextBtn.dataset.outcomeStage = outcomeAction.stageId || "";
+    nextBtn.setAttribute("aria-controls", "knowledge-outcomes-dialog");
+  } else if (knowledgeTransition) {
     nextBtn.textContent = "请选择下一步";
     nextBtn.setAttribute("aria-controls", "agentic-coach-panel");
     nextBtn.dataset.focusKnowledgeTransition = "true";
@@ -57,9 +101,12 @@ function renderBottomNextButton() {
     nextBtn.dataset.scrollKnowledgeScene = "true";
     nextBtn.setAttribute("aria-controls", "knowledge-scene-panel");
   }
-  nextBtn.addEventListener("click", completeAndAdvanceCurrentUnit);
+  nextBtn.addEventListener("click", outcomeAction
+    ? () => window.KnowledgeAssistant?.openOutcomeStage?.(outcomeAction.stageId || "")
+    : completeAndAdvanceCurrentUnit);
   wrapper.appendChild(nextBtn);
-  els.lessonPlayer.appendChild(wrapper);
+  wrapper.hidden = false;
+  scheduleLearningActionDockPosition();
 }
 
 let authMode = "login";
@@ -167,8 +214,12 @@ els.authMenuToggle?.addEventListener("click", (event) => {
 
 els.authLogout?.addEventListener("click", async () => {
   if (els.authLogout.disabled) return;
-  setUserMenuOpen(false);
+  // The menu used to be hidden before the button was disabled, so the disabled
+  // state was never visible and a second click was silently swallowed. Show the
+  // work instead of hiding it.
+  const label = els.authLogout.textContent;
   els.authLogout.disabled = true;
+  els.authLogout.textContent = "正在退出…";
   try {
     await logoutParticipant();
     window.dispatchEvent(new CustomEvent("cq:participant-change", {
@@ -178,7 +229,9 @@ els.authLogout?.addEventListener("click", async () => {
     console.warn("Logout failed:", error.message);
     alert(error.message || "退出失败，请稍后再试。");
   } finally {
+    els.authLogout.textContent = label;
     els.authLogout.disabled = false;
+    setUserMenuOpen(false);
   }
 });
 
@@ -331,7 +384,7 @@ document.querySelector("#reset-progress").addEventListener("click", async () => 
   }
 
   await pauseLearningSnapshotSync();
-  const firstChapterId = chapters[0]?.id || "V14-C3";
+  const firstChapterId = chapters[0]?.id || "V14-C1";
   const firstUnitId = getChapter(firstChapterId)?.units?.[0]?.id || "";
   const resetSnapshot = {
     ...learningDefaults(),
@@ -537,7 +590,7 @@ function setupLessonRailToggle() {
   try {
     collapsed = localStorage.getItem("lessonRailCollapsed") === "1";
   } catch {}
-  if (document.querySelector("#knowledge-assistant-root.is-open")) collapsed = true;
+  if (document.querySelector("#knowledge-assistant-root.is-open") && window.innerWidth <= 1180) collapsed = true;
   setLessonRailCollapsed(collapsed, { persist: false, focusCurrent: false });
 
   toggle.addEventListener("click", () => {
@@ -545,10 +598,20 @@ function setupLessonRailToggle() {
   });
   window.addEventListener("cq:knowledge-assistant-visibility", (event) => {
     if (!event.detail?.open) return;
+    if (document.querySelector(".core-learning-workspace") && window.innerWidth > 1180) return;
     setLessonRailCollapsed(true, { persist: false, focusCurrent: false });
     setChapterRailCollapsed(true, { persist: false, focusCurrent: false });
   });
 }
+
+window.addEventListener("resize", scheduleLearningActionDockPosition);
+window.addEventListener("scroll", scheduleLearningActionDockPosition, { passive: true });
+window.addEventListener("cq:learning-layout-change", scheduleLearningActionDockPosition);
+window.addEventListener("cq:lesson-rendered", scheduleLearningActionDockPosition);
+window.addEventListener("cq:proactive-outcomes-change", () => {
+  renderBottomNextButton();
+});
+document.addEventListener("fullscreenchange", scheduleLearningActionDockPosition);
 
 async function init() {
   const safetyTimer = setTimeout(() => {

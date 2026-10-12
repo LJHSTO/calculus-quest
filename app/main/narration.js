@@ -234,6 +234,7 @@ function getNarrationToolbar(unitId = activeNarration?.unitId) {
 }
 
 function syncNarrationUi() {
+  window.LearningWorkspace?.syncPlayback?.();
   if (!activeNarration) return;
   const toolbar = getNarrationToolbar();
   if (!toolbar) return;
@@ -255,6 +256,7 @@ function syncNarrationUi() {
 }
 
 function resetNarrationUi(unitId) {
+  window.LearningWorkspace?.syncPlayback?.();
   const toolbar = getNarrationToolbar(unitId);
   if (!toolbar) return;
   const range = toolbar.querySelector("[data-narration-seek]");
@@ -290,7 +292,7 @@ async function toggleFullscreenLearning() {
     } else if (typeof shell.requestFullscreen === "function") {
       await shell.requestFullscreen();
     } else {
-      throw new Error("当前浏览器不支持全屏 API");
+      throw new Error("当前浏览器不支持全屏功能");
     }
   } catch {
     shell.classList.add("is-local-fullscreen-target");
@@ -317,7 +319,7 @@ async function toggleResourceFullscreen(shell) {
       return;
     }
     if (document.fullscreenElement) await document.exitFullscreen?.();
-    if (typeof shell.requestFullscreen !== "function") throw new Error("当前浏览器不支持全屏 API");
+    if (typeof shell.requestFullscreen !== "function") throw new Error("当前浏览器不支持全屏功能");
     await shell.requestFullscreen();
   } catch {
     shell.classList.add("is-local-fullscreen-target");

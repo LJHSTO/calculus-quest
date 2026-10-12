@@ -133,6 +133,7 @@ const timeoutChild = spawnSync(process.execPath, ["-e", timeoutProbe], {
     ASSESSMENT_LLM_ENABLED: "true",
     ASSESSMENT_TIMEOUT_MS: "250",
     COACH_NARRATION_TIMEOUT_MS: "250",
+    COACH_NARRATION_LLM_ENABLED: "true",
     LLM_PROVIDER: "openai-compatible"
   }
 });

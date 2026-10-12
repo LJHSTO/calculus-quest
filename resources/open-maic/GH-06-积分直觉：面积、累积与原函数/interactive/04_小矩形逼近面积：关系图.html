@@ -32,6 +32,59 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>小矩形逼近面积：关系图</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-06",
+  "module_title": "积分直觉：面积、累积与原函数",
+  "knowledge_point_id": "GH-06-K01",
+  "concept_tag": "小矩形逼近面积",
+  "scene_type": "mindMap",
+  "resource_id": "GH-06-K01:mindMap",
+  "resource_title": "小矩形逼近面积：关系图",
+  "learning_objective": "能解释「小矩形逼近面积」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「小矩形逼近面积」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "刚才我们在拖动实验里，通过增加 N 亲眼看到误差在变小。现在我们把背后的逻辑用一张关系图梳理清楚，这样就能看到从“分割”到“精确面积”的完整路径。 起点是这个“区间分割”节点。把 [a, b] 切成 n 等份，每一份的宽度都记作 Δx。这就像把一条长面包切成薄片，是黎曼和的第一步。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed"
+  ],
+  "capabilities": {
+    "widget_type": "mindMap",
+    "controls": [
+      "button"
+    ],
+    "reports_attempt": false,
+    "reports_challenge": false,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "产生与本知识点目标一致的可观察交互变化",
+    "failure_is_evidence": false
+  }
+}
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#0f1117;color:#e0e0e0;overflow:hidden;height:100vh;display:flex;flex-direction:column}

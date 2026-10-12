@@ -119,6 +119,36 @@ async function main() {
       created_at: createdAt
     });
   }
+  db.getOrCreateExperimentAssignment({
+    user_id: userId, experiment_id: "export-analysis-fixture", condition: "control",
+    stratum: "low", assignment_version: "test", assigned_at: "2026-07-18T08:00:00Z"
+  });
+  db.ensureProactiveProtocolSnapshot({
+    experiment_id: "export-analysis-fixture", chapter_id: "V14-C1",
+    protocol_fingerprint: "analysis-fixture-fingerprint", protocol: { chapterId: "V14-C1" },
+    created_at: "2026-07-18T08:00:00Z"
+  });
+  const context = { experimentId: "export-analysis-fixture", protocolFingerprint: "analysis-fixture-fingerprint" };
+  db.getDbSync().run(
+    "UPDATE quiz_results SET research_experiment_id = ?, research_context_json = ? WHERE id = 'short-0'",
+    [context.experimentId, JSON.stringify(context)]
+  );
+  db.getDbSync().run(
+    "UPDATE quiz_results SET research_experiment_id = 'other-experiment' WHERE id = 'short-2'"
+  );
+  db.upsertUser("pre-assignment-user", "未分组测试", "2026-07-18T08:00:00Z", "2026-07-18T08:00:00Z");
+  db.insertQuizResult({
+    id: "pre-assignment-result", user_id: "pre-assignment-user", chapter_id: "V14-C1",
+    unit_id: "V14-C1-pre", question_id: "pre-assignment-question", question_type: "single",
+    phase: "pre", response: "b", is_correct: 0, status: "incorrect", score: 0, max_score: 1,
+    research_context: context, created_at: "2026-07-18T08:01:00Z"
+  });
+  assert.equal(db.researchAnalysisSource({
+    experimentId: "export-analysis-fixture", chapterId: "V14-C1"
+  }).quizzes.length, 3);
+  assert.throws(() => db.researchAnalysisSource({
+    experimentId: "export-analysis-fixture", chapterId: "V14-C1", rowLimit: 2
+  }), { code: "ANALYSIS_EXPORT_TOO_LARGE" });
   db.saveNow();
 
   const port = await freePort();
@@ -135,6 +165,7 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         ADMIN_TOKEN: adminToken,
+        LOCAL_ADMIN_AUTH_BYPASS: "false",
         LLM_PROVIDER: "mock",
         NODE_ENV: "development"
       },
@@ -163,7 +194,45 @@ async function main() {
       );
     }
 
-    console.log("admin export-all pagination tests passed");
+    const selectedUrl = `${baseUrl}/api/admin/research/selected-participants`;
+    assert.equal((await fetch(selectedUrl, { method: "POST" })).status, 403);
+    const selectedResponse = await fetch(selectedUrl, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds: [userId] })
+    });
+    assert.equal(selectedResponse.status, 200);
+    const selected = (await selectedResponse.json()).data;
+    assert.equal(selected.tables.users.length, 1);
+    assert.equal(selected.tables.quiz_results.length, 3);
+    assert.ok(selected.tables.quiz_results.every(row => row.user_id === userId));
+    assert.equal(selected.scope.dates, "all_history");
+    assert.equal(selectedResponse.headers.get("cache-control"), "no-store");
+    const invalidSelection = await fetch(selectedUrl, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${adminToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds: [] })
+    });
+    assert.equal(invalidSelection.status, 400);
+    const exportUrl = `${baseUrl}/api/admin/research/analysis-package?experimentId=export-analysis-fixture`;
+    assert.equal((await fetch(exportUrl)).status, 403);
+    const exported = await fetch(exportUrl, { headers: { Authorization: `Bearer ${adminToken}` } });
+    assert.equal(exported.status, 200);
+    const analysis = (await exported.json()).data;
+    assert.equal(analysis.schema_version, "research-analysis-package-v1");
+    assert.equal(analysis.counts.quiz_attempts, 3);
+    assert.equal(analysis.counts.participants, 2, "尚未分组的前测提交也必须保留");
+    assert.equal(analysis.tables.quiz_attempts[0].provenance, "recorded_experiment");
+    assert.ok(analysis.tables.quiz_attempts.some((row) => row.provenance === "roster_history_unverified"));
+    assert.ok(analysis.tables.quiz_attempts.every((row) => row.record_id !== "short-2"),
+      "明确标为另一实验的成绩不得按共同用户名册混入");
+    assert.equal(analysis.tables.quiz_attempts[0].candidate_score, null);
+    assert.equal(analysis.protocol.fingerprint, "analysis-fixture-fingerprint");
+    assert.equal(JSON.stringify(analysis).includes("导出测试用户"), false, "研究包不包含昵称");
+    assert.equal((await fetch(exportUrl.replace("export-analysis-fixture", "missing-experiment"), {
+      headers: { Authorization: `Bearer ${adminToken}` }
+    })).status, 404);
+    console.log("admin export-all pagination and research package API tests passed");
   } finally {
     await stopChild(child);
     if (previousDbPath === undefined) delete process.env.DB_PATH;

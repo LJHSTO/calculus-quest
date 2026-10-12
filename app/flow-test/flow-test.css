@@ -288,6 +288,12 @@ body.is-navigation-collapsed .frame-shell iframe {
 .flow-slide-latex { position: absolute; }
 .flow-slide-latex-content { position: absolute; left: 0; top: 0; width: max-content; }
 .flow-slide-latex .katex-display { margin: 0; }
+.question-math-fragment { display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; margin-block: -0.16em; padding-block: 0.16em; vertical-align: -0.18em; line-height: 1.25; scrollbar-width: thin; }
+.question-math-fragment.is-display { display: block; margin-block: 0.35em; vertical-align: baseline; }
+.question-math-fragment .katex { font-size: 1em; }
+.question-math-fragment .katex-display { margin: 0; }
+.question-math-fragment:not(.is-display) { max-width: none; overflow: visible; margin-inline: 0.03em; padding-inline: 0; scrollbar-width: none; }
+.question-math-fragment:not(.is-display)::-webkit-scrollbar { display: none; }
 .flow-slide-line { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .flow-slide-vector { overflow: visible; }
 .flow-slide-table { overflow: hidden; }

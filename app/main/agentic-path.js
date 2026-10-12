@@ -14,7 +14,7 @@ function agenticMultiSceneMode() {
 }
 function agenticInitialUnitId() {
   const firstChapter = (typeof curriculum !== "undefined" && curriculum[0]) || getChapter?.();
-  return firstChapter?.units?.[0]?.id || currentUnitId || `${chapters[0]?.id || "V14-C3"}-pre`;
+  return firstChapter?.units?.[0]?.id || currentUnitId || `${chapters[0]?.id || "V14-C1"}-pre`;
 }
 
 function agenticChapterPostUnit(chapter) {
@@ -841,6 +841,7 @@ function agenticKnowledgeTransitionResumeFor(unitOrId = "") {
 function agenticKnowledgeTransitionCtaFor(unit) {
   const resume = agenticKnowledgeTransitionResumeFor(unit);
   if (!resume?.target?.id) return null;
+  const targetLabel = resume.target.label || agenticUnitLabel(resume.target.id);
   if (
     resume.choice === "formative"
     && resume.target.assessmentPhase === "formative"
@@ -849,13 +850,17 @@ function agenticKnowledgeTransitionCtaFor(unit) {
     return {
       label: "复习后做小题测一测",
       disabled: false,
-      targetId: resume.target.id
+      targetId: resume.target.id,
+      targetUnitId: resume.target.id,
+      targetLabel
     };
   }
   return {
-    label: resume.target.type === "knowledge" ? "复习并跳到下一节" : "复习后继续本章",
+    label: `复习完成，进入「${targetLabel}」`,
     disabled: false,
-    targetId: resume.target.id
+    targetId: resume.target.id,
+    targetUnitId: resume.target.id,
+    targetLabel
   };
 }
 
@@ -914,7 +919,7 @@ function agenticRenderKnowledgeTransitionPanel(pending, inFlight = "") {
       <p>当前知识点已完成。请选择直接进入下一步，或先做一道小题检查理解。</p>
       <small class="knowledge-transition-target">${escapeHtml(targetCopy)} 做小题时，核心题答错会再补一道诊断题，帮助定位卡点。</small>
       <div class="agentic-actions knowledge-transition-actions" role="group" aria-label="知识点完成后的下一步">
-        <button class="button primary" type="button" data-knowledge-transition="continue" ${busy ? "disabled" : ""}>${busyChoice === "continue" ? escapeHtml(continueBusyLabel) : "直接继续"}</button>
+        <button class="button soft" type="button" data-knowledge-transition="continue" ${busy ? "disabled" : ""}>${busyChoice === "continue" ? escapeHtml(continueBusyLabel) : "直接继续"}</button>
         <button class="button soft" type="button" data-knowledge-transition="formative" ${busy ? "disabled" : ""}>${busyChoice === "formative" ? "正在打开即时检测" : "做小题测一测"}</button>
       </div>
     </section>
@@ -940,6 +945,7 @@ function agenticRenderKnowledgeTransitionPreviewPanel(preview) {
 
 function focusKnowledgeTransitionChoice() {
   if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+  window.LearningWorkspace?.showCoach?.();
   const node = document.querySelector("#knowledge-transition-choice");
   if (!node) return false;
   node.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1398,11 +1404,14 @@ function agenticCompletionCta(unit) {
   }
   const path = ensureAgenticPath();
   const completed = (state.completed || []).includes(unit.id);
+  const onReviewPath = agenticNormalizeReviewQueue(path).includes(unit.id)
+    || path.activeDetour?.unitId === unit.id || path.oneStepExtension?.unitId === unit.id;
   if (!completed && !agenticUnitCompletionAllowed(unit.id)) {
     return { label: "未解锁：先接受学习建议", disabled: true };
   }
   if (
     !completed
+    && !onReviewPath
     && agenticMultiSceneMode()
     && unit.type === "knowledge"
     && agenticKnowledgeCheckUnit(`${unit.id}-formative`)
@@ -1410,62 +1419,86 @@ function agenticCompletionCta(unit) {
   ) {
     return { label: "完成本节并选择下一步", disabled: false };
   }
-  if (completed && unit.type === "knowledge") {
+  if (completed && unit.type === "knowledge" && !onReviewPath) {
     const transitionCta = agenticKnowledgeTransitionCtaFor(unit);
     if (transitionCta) return transitionCta;
   }
   const activeExtensionTarget = agenticActiveExtensionTargetFromSource(path, unit.id);
   if (activeExtensionTarget?.id) {
-    return { label: "继续扩展学习", disabled: false };
+    const targetLabel = activeExtensionTarget.label || agenticUnitLabel(activeExtensionTarget.id);
+    return {
+      label: `进入拓展「${targetLabel}」`,
+      disabled: false,
+      targetUnitId: activeExtensionTarget.id,
+      targetLabel
+    };
   }
   const reviewQueue = agenticNormalizeReviewQueue(path);
   const reviewIndex = reviewQueue.indexOf(unit.id);
   if (reviewIndex >= 0) {
     if (reviewQueue[reviewIndex + 1]) {
-      return { label: completed ? "复习并继续下一个知识点" : "完成回看并继续", disabled: false };
+      const targetUnitId = reviewQueue[reviewIndex + 1];
+      const targetLabel = agenticUnitLabel(targetUnitId);
+      return {
+        label: completed
+          ? `复习完成，继续「${targetLabel}」`
+          : `完成回看，继续「${targetLabel}」`,
+        disabled: false,
+        targetUnitId,
+        targetLabel
+      };
     }
     if (path.deferredExtensionPlan) return { label: "完成回看并选择扩展", disabled: false };
     if (path.deferredReviewPlan) return { label: "完成本节并处理保留的回看", disabled: false };
     const resumeId = path.reviewQueue?.resumeUnitId || path.reviewResume?.resumeUnitId || "";
+    const targetLabel = resumeId ? agenticUnitLabel(resumeId) : "主线";
     return {
       label: agenticIsCrossChapterResume(unit.id, resumeId)
-        ? "完成回看并进入下一章"
-        : "完成回看并返回主线",
-      disabled: false
+        ? `完成回看，进入「${targetLabel}」`
+        : `完成回看，返回「${targetLabel}」`,
+      disabled: false,
+      targetUnitId: resumeId,
+      targetLabel
     };
   }
 
   if (path.oneStepExtension?.unitId === unit.id) {
     if (path.deferredReviewPlan) return { label: "完成拓展并处理回看", disabled: false };
     const resumeId = path.oneStepExtension.resumeUnitId || "";
+    const targetLabel = resumeId ? agenticUnitLabel(resumeId) : "主线";
     return {
       label: agenticIsCrossChapterResume(path.oneStepExtension.fromUnitId, resumeId)
-        ? "完成拓展并进入下一章"
-        : "完成拓展并返回主线",
-      disabled: false
+        ? `完成拓展，进入「${targetLabel}」`
+        : `完成拓展，返回「${targetLabel}」`,
+      disabled: false,
+      targetUnitId: resumeId,
+      targetLabel
     };
   }
 
   if (path.activeDetour?.unitId === unit.id) {
     const resumeId = path.activeDetour.resumeUnitId || "";
+    const targetLabel = resumeId ? agenticUnitLabel(resumeId) : "主线";
     return {
       label: agenticIsCrossChapterResume(path.activeDetour.fromUnitId, resumeId)
-        ? "完成重学并进入下一章"
-        : "完成重学并返回主线",
-      disabled: false
+        ? `完成重学，进入「${targetLabel}」`
+        : `完成重学，返回「${targetLabel}」`,
+      disabled: false,
+      targetUnitId: resumeId,
+      targetLabel
     };
   }
 
   const next = agenticNextUnlockedUnitAfter(unit.id);
   if (next?.id) {
-    const crossChapter = agenticIsCrossChapterResume(unit.id, next.id);
+    const targetLabel = next.label || agenticUnitLabel(next.id);
     return {
       label: completed
-        ? crossChapter ? "复习并进入下一章" : "复习并跳到下一节"
-        : crossChapter
-          ? "完成本节并进入下一章"
-          : "完成本节并进入下一节",
-      disabled: false
+        ? `复习完成，进入「${targetLabel}」`
+        : `完成并进入「${targetLabel}」`,
+      disabled: false,
+      targetUnitId: next.id,
+      targetLabel
     };
   }
 
@@ -2006,6 +2039,7 @@ function agenticLockedMessage(unitId) {
 
 function focusAgenticCoachPanel() {
   if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
+  window.LearningWorkspace?.showCoach?.();
   const node = document.querySelector("#agentic-coach-panel");
   if (!node) return;
   node.scrollIntoView({ behavior: "smooth", block: "start" });

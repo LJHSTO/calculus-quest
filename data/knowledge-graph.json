@@ -2,7 +2,7 @@
   "schemaVersion": "2.0.0",
   "generatedAt": "2026-07-07T10:10:15.667Z",
   "source": "data/multi-scene-learning-route.json",
-  "sourceVersion": "multi-scene-learning-route-20260722",
+  "sourceVersion": "multi-scene-functions-limits-20260917-r2",
   "description": "由多场景自适应学习路线自动生成的学习规划知识图谱。",
   "nodeKinds": [
     "chapter",
@@ -30,16 +30,15 @@
   "chapters": [
     {
       "id": "V14-C1",
-      "title": "函数、极限与导数入口",
-      "objective": "从函数图像读法、极限连续到导数直觉，建立高等数学第一条主线。",
+      "title": "函数与极限",
+      "objective": "从输入、输出和坐标图像出发，理解变化方向、极限和连续。只要求基本四则运算。",
       "order": 1,
       "track": "main",
       "extension": false,
       "recommendedAfter": "",
       "moduleIds": [
         "GH-01",
-        "GH-02",
-        "GH-03"
+        "GH-02"
       ],
       "concepts": [
         "输入、输出和函数规则",
@@ -47,10 +46,7 @@
         "图像的上升、下降与变化方向",
         "从数表观察趋近",
         "图像上的左右极限",
-        "连续就是不跳断",
-        "平均变化率和割线",
-        "瞬时变化率和切线",
-        "导数符号和意义"
+        "连续就是不跳断"
       ]
     },
     {
@@ -62,10 +58,14 @@
       "extension": false,
       "recommendedAfter": "",
       "moduleIds": [
+        "GH-03",
         "GH-04",
         "GH-05"
       ],
       "concepts": [
+        "平均变化率和割线",
+        "瞬时变化率和切线",
+        "导数符号和意义",
         "幂函数求导",
         "和差积商规则",
         "链式法则",
@@ -279,16 +279,15 @@
   "nodes": [
     {
       "id": "V14-C1",
-      "title": "函数、极限与导数入口",
-      "objective": "从函数图像读法、极限连续到导数直觉，建立高等数学第一条主线。",
+      "title": "函数与极限",
+      "objective": "从输入、输出和坐标图像出发，理解变化方向、极限和连续。只要求基本四则运算。",
       "order": 1,
       "track": "main",
       "extension": false,
       "recommendedAfter": "",
       "moduleIds": [
         "GH-01",
-        "GH-02",
-        "GH-03"
+        "GH-02"
       ],
       "concepts": [
         "输入、输出和函数规则",
@@ -296,15 +295,12 @@
         "图像的上升、下降与变化方向",
         "从数表观察趋近",
         "图像上的左右极限",
-        "连续就是不跳断",
-        "平均变化率和割线",
-        "瞬时变化率和切线",
-        "导数符号和意义"
+        "连续就是不跳断"
       ],
       "kind": "chapter",
       "chapterId": "V14-C1",
-      "label": "函数、极限与导数入口",
-      "sceneCount": 20
+      "label": "函数与极限",
+      "sceneCount": 14
     },
     {
       "id": "V14-C2",
@@ -315,10 +311,14 @@
       "extension": false,
       "recommendedAfter": "",
       "moduleIds": [
+        "GH-03",
         "GH-04",
         "GH-05"
       ],
       "concepts": [
+        "平均变化率和割线",
+        "瞬时变化率和切线",
+        "导数符号和意义",
         "幂函数求导",
         "和差积商规则",
         "链式法则",
@@ -331,7 +331,7 @@
       "kind": "chapter",
       "chapterId": "V14-C2",
       "label": "求导规则与导数应用",
-      "sceneCount": 18
+      "sceneCount": 24
     },
     {
       "id": "V14-C3",
@@ -561,7 +561,7 @@
       "chapterId": "V14-C1",
       "order": 1,
       "type": "quiz",
-      "title": "函数、极限与导数入口 · 知识前测",
+      "title": "函数与极限 · 知识前测",
       "role": "pre_test",
       "modality": "assessment",
       "representation": "assessment",
@@ -569,17 +569,14 @@
       "difficultyBand": "diagnostic",
       "flowKind": "core",
       "conceptClusterId": "V14-C1",
-      "conceptClusterLabel": "函数、极限与导数入口",
+      "conceptClusterLabel": "函数与极限",
       "assessedKnowledgePointIds": [
         "GH-01-K01",
         "GH-01-K02",
         "GH-01-K03",
         "GH-02-K01",
         "GH-02-K02",
-        "GH-02-K03",
-        "GH-03-K01",
-        "GH-03-K02",
-        "GH-03-K03"
+        "GH-02-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -612,9 +609,9 @@
       "concepts": [
         "GH-01-K01",
         "输入、输出和函数规则",
-        "能解释「输入、输出和函数规则」的核心含义，并用交互证据说明自己的判断。"
+        "请解释输入、输出与规则的区别，以及为什么同一输入不能有两个不同输出。"
       ],
-      "misconception": "只记住「输入、输出和函数规则」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+      "misconception": "函数允许不同输入得到相同输出；限制的是同一个输入。检查当前对应关系中有没有重复输入对应不同结果。",
       "resourceCandidates": [
         {
           "root": "open-maic/GH-01-函数、坐标与图像读法入门",
@@ -703,9 +700,9 @@
       "concepts": [
         "GH-01-K02",
         "坐标点与函数图像",
-        "能解释「坐标点与函数图像」的核心含义，并用交互证据说明自己的判断。"
+        "请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。"
       ],
-      "misconception": "只记住「坐标点与函数图像」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+      "misconception": "有序对先横后纵；图像上的点还必须满足 y=f(x)，不能只看点在哪里。",
       "resourceCandidates": [
         {
           "root": "open-maic/GH-01-函数、坐标与图像读法入门",
@@ -794,9 +791,9 @@
       "concepts": [
         "GH-01-K03",
         "图像的上升、下降与变化方向",
-        "能解释「图像的上升、下降与变化方向」的核心含义，并用交互证据说明自己的判断。"
+        "请说明判断上升或下降时，为什么必须按输入从小到大比较输出，而不能只看正负。"
       ],
-      "misconception": "只记住「图像的上升、下降与变化方向」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+      "misconception": "上升下降是函数值随输入增大的变化方向；函数值为负也能上升。",
       "resourceCandidates": [
         {
           "root": "open-maic/GH-01-函数、坐标与图像读法入门",
@@ -885,9 +882,9 @@
       "concepts": [
         "GH-02-K01",
         "从数表观察趋近",
-        "能解释「从数表观察趋近」的核心含义，并用交互证据说明自己的判断。"
+        "请说明趋近一个点时考察什么，为什么有限项数表只能帮助猜测而不是证明极限。"
       ],
-      "misconception": "只记住「从数表观察趋近」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+      "misconception": "极限关心该点附近的趋势，不取决于该点本身的值；仅凭有限观测不能排除其他趋势。",
       "resourceCandidates": [
         {
           "root": "open-maic/GH-02-极限与连续：直觉探索",
@@ -976,9 +973,9 @@
       "concepts": [
         "GH-02-K02",
         "图像上的左右极限",
-        "能解释「图像上的左右极限」的核心含义，并用交互证据说明自己的判断。"
+        "请用自己的话解释左极限与右极限，以及双侧极限存在的条件。"
       ],
-      "misconception": "只记住「图像上的左右极限」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+      "misconception": "左右说的是输入从哪侧靠近；比较的是两侧输出趋近的值。",
       "resourceCandidates": [
         {
           "root": "open-maic/GH-02-极限与连续：直觉探索",
@@ -1067,9 +1064,9 @@
       "concepts": [
         "GH-02-K03",
         "连续就是不跳断",
-        "能解释「连续就是不跳断」的核心含义，并用交互证据说明自己的判断。"
+        "请解释内点连续的三个条件，为什么有极限不等于连续。"
       ],
-      "misconception": "只记住「连续就是不跳断」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+      "misconception": "连续要求函数值有定义、双侧极限存在，且二者相等，三个条件缺一不可。",
       "resourceCandidates": [
         {
           "root": "open-maic/GH-02-极限与连续：直觉探索",
@@ -1131,12 +1128,69 @@
       "isOptional": false
     },
     {
-      "id": "GH-03-K01",
+      "id": "V14-C1-post",
       "kind": "unit",
       "chapterId": "V14-C1",
+      "order": 14,
+      "type": "quiz",
+      "title": "函数与极限 · 结业后测",
+      "role": "post_test",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "transfer",
+      "difficultyBand": "transfer",
+      "flowKind": "core",
+      "conceptClusterId": "V14-C1",
+      "conceptClusterLabel": "函数与极限",
+      "assessedKnowledgePointIds": [
+        "GH-01-K01",
+        "GH-01-K02",
+        "GH-01-K03",
+        "GH-02-K01",
+        "GH-02-K02",
+        "GH-02-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "V14-C2-pre",
+      "kind": "unit",
+      "chapterId": "V14-C2",
+      "order": 1,
+      "type": "quiz",
+      "title": "求导规则与导数应用 · 知识前测",
+      "role": "pre_test",
+      "modality": "assessment",
+      "representation": "assessment",
+      "scenarioType": "diagnose",
+      "difficultyBand": "diagnostic",
+      "flowKind": "core",
+      "conceptClusterId": "V14-C2",
+      "conceptClusterLabel": "求导规则与导数应用",
+      "assessedKnowledgePointIds": [
+        "GH-04-K01",
+        "GH-04-K02",
+        "GH-04-K03",
+        "GH-04-K04",
+        "GH-05-K01",
+        "GH-05-K02",
+        "GH-05-K03",
+        "GH-05-K04",
+        "GH-03-K01",
+        "GH-03-K02",
+        "GH-03-K03"
+      ],
+      "isCheckpoint": true,
+      "isOptional": false
+    },
+    {
+      "id": "GH-03-K01",
+      "kind": "unit",
+      "chapterId": "V14-C2",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 14,
+      "order": 2,
       "type": "knowledge",
       "title": "平均变化率和割线",
       "role": "knowledge",
@@ -1201,10 +1255,10 @@
     {
       "id": "GH-03-K01-formative",
       "kind": "unit",
-      "chapterId": "V14-C1",
+      "chapterId": "V14-C2",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 15,
+      "order": 3,
       "type": "quiz",
       "title": "平均变化率和割线 · 即时检测",
       "role": "formative_quiz",
@@ -1224,10 +1278,10 @@
     {
       "id": "GH-03-K02",
       "kind": "unit",
-      "chapterId": "V14-C1",
+      "chapterId": "V14-C2",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 16,
+      "order": 4,
       "type": "knowledge",
       "title": "瞬时变化率和切线",
       "role": "knowledge",
@@ -1292,10 +1346,10 @@
     {
       "id": "GH-03-K02-formative",
       "kind": "unit",
-      "chapterId": "V14-C1",
+      "chapterId": "V14-C2",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 17,
+      "order": 5,
       "type": "quiz",
       "title": "瞬时变化率和切线 · 即时检测",
       "role": "formative_quiz",
@@ -1315,10 +1369,10 @@
     {
       "id": "GH-03-K03",
       "kind": "unit",
-      "chapterId": "V14-C1",
+      "chapterId": "V14-C2",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 18,
+      "order": 6,
       "type": "knowledge",
       "title": "导数符号和意义",
       "role": "knowledge",
@@ -1383,10 +1437,10 @@
     {
       "id": "GH-03-K03-formative",
       "kind": "unit",
-      "chapterId": "V14-C1",
+      "chapterId": "V14-C2",
       "moduleId": "GH-03",
       "moduleTitle": "从平均变化率到导数",
-      "order": 19,
+      "order": 7,
       "type": "quiz",
       "title": "导数符号和意义 · 即时检测",
       "role": "formative_quiz",
@@ -1404,69 +1458,12 @@
       "isOptional": false
     },
     {
-      "id": "V14-C1-post",
-      "kind": "unit",
-      "chapterId": "V14-C1",
-      "order": 20,
-      "type": "quiz",
-      "title": "函数、极限与导数入口 · 结业后测",
-      "role": "post_test",
-      "modality": "assessment",
-      "representation": "assessment",
-      "scenarioType": "transfer",
-      "difficultyBand": "transfer",
-      "flowKind": "core",
-      "conceptClusterId": "V14-C1",
-      "conceptClusterLabel": "函数、极限与导数入口",
-      "assessedKnowledgePointIds": [
-        "GH-01-K01",
-        "GH-01-K02",
-        "GH-01-K03",
-        "GH-02-K01",
-        "GH-02-K02",
-        "GH-02-K03",
-        "GH-03-K01",
-        "GH-03-K02",
-        "GH-03-K03"
-      ],
-      "isCheckpoint": true,
-      "isOptional": false
-    },
-    {
-      "id": "V14-C2-pre",
-      "kind": "unit",
-      "chapterId": "V14-C2",
-      "order": 1,
-      "type": "quiz",
-      "title": "求导规则与导数应用 · 知识前测",
-      "role": "pre_test",
-      "modality": "assessment",
-      "representation": "assessment",
-      "scenarioType": "diagnose",
-      "difficultyBand": "diagnostic",
-      "flowKind": "core",
-      "conceptClusterId": "V14-C2",
-      "conceptClusterLabel": "求导规则与导数应用",
-      "assessedKnowledgePointIds": [
-        "GH-04-K01",
-        "GH-04-K02",
-        "GH-04-K03",
-        "GH-04-K04",
-        "GH-05-K01",
-        "GH-05-K02",
-        "GH-05-K03",
-        "GH-05-K04"
-      ],
-      "isCheckpoint": true,
-      "isOptional": false
-    },
-    {
       "id": "GH-04-K01",
       "kind": "unit",
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 2,
+      "order": 8,
       "type": "knowledge",
       "title": "幂函数求导",
       "role": "knowledge",
@@ -1534,7 +1531,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 3,
+      "order": 9,
       "type": "quiz",
       "title": "幂函数求导 · 即时检测",
       "role": "formative_quiz",
@@ -1557,7 +1554,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 4,
+      "order": 10,
       "type": "knowledge",
       "title": "和差积商规则",
       "role": "knowledge",
@@ -1625,7 +1622,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 5,
+      "order": 11,
       "type": "quiz",
       "title": "和差积商规则 · 即时检测",
       "role": "formative_quiz",
@@ -1648,7 +1645,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 6,
+      "order": 12,
       "type": "knowledge",
       "title": "链式法则",
       "role": "knowledge",
@@ -1716,7 +1713,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 7,
+      "order": 13,
       "type": "quiz",
       "title": "链式法则 · 即时检测",
       "role": "formative_quiz",
@@ -1739,7 +1736,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 8,
+      "order": 14,
       "type": "knowledge",
       "title": "常见函数变化速度",
       "role": "knowledge",
@@ -1807,7 +1804,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-04",
       "moduleTitle": "常用求导规则与函数组合",
-      "order": 9,
+      "order": 15,
       "type": "quiz",
       "title": "常见函数变化速度 · 即时检测",
       "role": "formative_quiz",
@@ -1830,7 +1827,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 10,
+      "order": 16,
       "type": "knowledge",
       "title": "导函数图像读法",
       "role": "knowledge",
@@ -1898,7 +1895,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 11,
+      "order": 17,
       "type": "quiz",
       "title": "导函数图像读法 · 即时检测",
       "role": "formative_quiz",
@@ -1921,7 +1918,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 12,
+      "order": 18,
       "type": "knowledge",
       "title": "临界点与极值",
       "role": "knowledge",
@@ -1989,7 +1986,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 13,
+      "order": 19,
       "type": "quiz",
       "title": "临界点与极值 · 即时检测",
       "role": "formative_quiz",
@@ -2012,7 +2009,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 14,
+      "order": 20,
       "type": "knowledge",
       "title": "二阶变化和凹凸",
       "role": "knowledge",
@@ -2080,7 +2077,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 15,
+      "order": 21,
       "type": "quiz",
       "title": "二阶变化和凹凸 · 即时检测",
       "role": "formative_quiz",
@@ -2103,7 +2100,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 16,
+      "order": 22,
       "type": "knowledge",
       "title": "实际最值建模",
       "role": "knowledge",
@@ -2171,7 +2168,7 @@
       "chapterId": "V14-C2",
       "moduleId": "GH-05",
       "moduleTitle": "导数应用：单调、极值与弯曲",
-      "order": 17,
+      "order": 23,
       "type": "quiz",
       "title": "实际最值建模 · 即时检测",
       "role": "formative_quiz",
@@ -2192,7 +2189,7 @@
       "id": "V14-C2-post",
       "kind": "unit",
       "chapterId": "V14-C2",
-      "order": 18,
+      "order": 24,
       "type": "quiz",
       "title": "求导规则与导数应用 · 结业后测",
       "role": "post_test",
@@ -2211,7 +2208,10 @@
         "GH-05-K01",
         "GH-05-K02",
         "GH-05-K03",
-        "GH-05-K04"
+        "GH-05-K04",
+        "GH-03-K01",
+        "GH-03-K02",
+        "GH-03-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -2237,8 +2237,8 @@
         "GH-07-K01",
         "GH-07-K02",
         "GH-07-K03",
-        "GH-06-K03",
-        "GH-07-K04"
+        "GH-07-K04",
+        "GH-06-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -2901,8 +2901,8 @@
         "GH-07-K01",
         "GH-07-K02",
         "GH-07-K03",
-        "GH-06-K03",
-        "GH-07-K04"
+        "GH-07-K04",
+        "GH-06-K03"
       ],
       "isCheckpoint": true,
       "isOptional": false
@@ -7773,42 +7773,6 @@
     },
     {
       "from": "V14-C1",
-      "to": "GH-03-K01",
-      "kind": "contains",
-      "scope": "chapter"
-    },
-    {
-      "from": "V14-C1",
-      "to": "GH-03-K01-formative",
-      "kind": "contains",
-      "scope": "chapter"
-    },
-    {
-      "from": "V14-C1",
-      "to": "GH-03-K02",
-      "kind": "contains",
-      "scope": "chapter"
-    },
-    {
-      "from": "V14-C1",
-      "to": "GH-03-K02-formative",
-      "kind": "contains",
-      "scope": "chapter"
-    },
-    {
-      "from": "V14-C1",
-      "to": "GH-03-K03",
-      "kind": "contains",
-      "scope": "chapter"
-    },
-    {
-      "from": "V14-C1",
-      "to": "GH-03-K03-formative",
-      "kind": "contains",
-      "scope": "chapter"
-    },
-    {
-      "from": "V14-C1",
       "to": "V14-C1-post",
       "kind": "contains",
       "scope": "chapter"
@@ -7887,42 +7851,6 @@
     },
     {
       "from": "GH-02-K03-formative",
-      "to": "GH-03-K01",
-      "kind": "follows",
-      "scope": "unit"
-    },
-    {
-      "from": "GH-03-K01",
-      "to": "GH-03-K01-formative",
-      "kind": "follows",
-      "scope": "unit"
-    },
-    {
-      "from": "GH-03-K01-formative",
-      "to": "GH-03-K02",
-      "kind": "follows",
-      "scope": "unit"
-    },
-    {
-      "from": "GH-03-K02",
-      "to": "GH-03-K02-formative",
-      "kind": "follows",
-      "scope": "unit"
-    },
-    {
-      "from": "GH-03-K02-formative",
-      "to": "GH-03-K03",
-      "kind": "follows",
-      "scope": "unit"
-    },
-    {
-      "from": "GH-03-K03",
-      "to": "GH-03-K03-formative",
-      "kind": "follows",
-      "scope": "unit"
-    },
-    {
-      "from": "GH-03-K03-formative",
       "to": "V14-C1-post",
       "kind": "follows",
       "scope": "unit"
@@ -7964,24 +7892,6 @@
       "scope": "unit"
     },
     {
-      "from": "V14-C1-pre",
-      "to": "GH-03-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-pre",
-      "to": "GH-03-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-pre",
-      "to": "GH-03-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
       "from": "GH-01-K01-formative",
       "to": "GH-01-K01",
       "kind": "assesses",
@@ -8018,24 +7928,6 @@
       "scope": "unit"
     },
     {
-      "from": "GH-03-K01-formative",
-      "to": "GH-03-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "GH-03-K02-formative",
-      "to": "GH-03-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "GH-03-K03-formative",
-      "to": "GH-03-K03",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
       "from": "V14-C1-post",
       "to": "GH-01-K01",
       "kind": "assesses",
@@ -8072,26 +7964,44 @@
       "scope": "unit"
     },
     {
-      "from": "V14-C1-post",
-      "to": "GH-03-K01",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-post",
-      "to": "GH-03-K02",
-      "kind": "assesses",
-      "scope": "unit"
-    },
-    {
-      "from": "V14-C1-post",
-      "to": "GH-03-K03",
-      "kind": "assesses",
-      "scope": "unit"
+      "from": "V14-C2",
+      "to": "V14-C2-pre",
+      "kind": "contains",
+      "scope": "chapter"
     },
     {
       "from": "V14-C2",
-      "to": "V14-C2-pre",
+      "to": "GH-03-K01",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
+      "to": "GH-03-K01-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
+      "to": "GH-03-K02",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
+      "to": "GH-03-K02-formative",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
+      "to": "GH-03-K03",
+      "kind": "contains",
+      "scope": "chapter"
+    },
+    {
+      "from": "V14-C2",
+      "to": "GH-03-K03-formative",
       "kind": "contains",
       "scope": "chapter"
     },
@@ -8199,6 +8109,42 @@
     },
     {
       "from": "V14-C2-pre",
+      "to": "GH-03-K01",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K01",
+      "to": "GH-03-K01-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K01-formative",
+      "to": "GH-03-K02",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K02",
+      "to": "GH-03-K02-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K02-formative",
+      "to": "GH-03-K03",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K03",
+      "to": "GH-03-K03-formative",
+      "kind": "follows",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K03-formative",
       "to": "GH-04-K01",
       "kind": "follows",
       "scope": "unit"
@@ -8348,6 +8294,42 @@
       "scope": "unit"
     },
     {
+      "from": "V14-C2-pre",
+      "to": "GH-03-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C2-pre",
+      "to": "GH-03-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C2-pre",
+      "to": "GH-03-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K01-formative",
+      "to": "GH-03-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K02-formative",
+      "to": "GH-03-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "GH-03-K03-formative",
+      "to": "GH-03-K03",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
       "from": "GH-04-K01-formative",
       "to": "GH-04-K01",
       "kind": "assesses",
@@ -8440,6 +8422,24 @@
     {
       "from": "V14-C2-post",
       "to": "GH-05-K04",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C2-post",
+      "to": "GH-03-K01",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C2-post",
+      "to": "GH-03-K02",
+      "kind": "assesses",
+      "scope": "unit"
+    },
+    {
+      "from": "V14-C2-post",
+      "to": "GH-03-K03",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -8661,13 +8661,13 @@
     },
     {
       "from": "V14-C3-pre",
-      "to": "GH-06-K03",
+      "to": "GH-07-K04",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C3-pre",
-      "to": "GH-07-K04",
+      "to": "GH-06-K03",
       "kind": "assesses",
       "scope": "unit"
     },
@@ -8745,13 +8745,13 @@
     },
     {
       "from": "V14-C3-post",
-      "to": "GH-06-K03",
+      "to": "GH-07-K04",
       "kind": "assesses",
       "scope": "unit"
     },
     {
       "from": "V14-C3-post",
-      "to": "GH-07-K04",
+      "to": "GH-06-K03",
       "kind": "assesses",
       "scope": "unit"
     },

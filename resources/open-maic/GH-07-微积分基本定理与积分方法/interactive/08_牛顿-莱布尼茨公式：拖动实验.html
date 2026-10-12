@@ -32,6 +32,61 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>牛顿-莱布尼茨公式</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-07",
+  "module_title": "微积分基本定理与积分方法",
+  "knowledge_point_id": "GH-07-K02",
+  "concept_tag": "牛顿-莱布尼茨公式",
+  "scene_type": "simulation",
+  "resource_id": "GH-07-K02:simulation",
+  "resource_title": "牛顿-莱布尼茨公式：拖动实验",
+  "learning_objective": "能解释「牛顿-莱布尼茨公式」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「牛顿-莱布尼茨公式」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "验证牛顿-莱布尼茨公式：定积分 ∫[a,b]f(x)dx = F(b) - F(a)，其中 F 是 f 的原函数。拖动区间端点观察原函数差值与积分面积的匹配关系。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed"
+  ],
+  "capabilities": {
+    "widget_type": "simulation",
+    "controls": [
+      "slider",
+      "button",
+      "canvas"
+    ],
+    "reports_attempt": false,
+    "reports_challenge": false,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "产生与本知识点目标一致的可观察交互变化",
+    "failure_is_evidence": false
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {

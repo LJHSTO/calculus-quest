@@ -1,0 +1,31 @@
+{
+  "$comment": "Generic platform injections extracted verbatim from the shipped V14-C1 courseware. They are content-independent: every sampled file carried a byte-identical copy. Apply with ops/apply-courseware-injections.js. Do not edit by hand.",
+  "frozenAt": "2026-09-21T06:04:02.009Z",
+  "sourceSample": 12,
+  "payloads": [
+    {
+      "label": "openmaic-storage-shim-v2",
+      "file": "storage-shim.html",
+      "placement": "head-first",
+      "scriptBytes": 1166,
+      "seenInFiles": 12,
+      "sha256": "5eb9a778e586ce04475d7856863f6f666e3b9b7f38127588cb8aa2098b0d3baf"
+    },
+    {
+      "label": "openmaic-audit-repair-shim-v5",
+      "file": "audit-repair-shim.html",
+      "placement": "body-last",
+      "scriptBytes": 6127,
+      "seenInFiles": 12,
+      "sha256": "28f8df45bc8c3295eb77f988695a42272d9b8d11d0b3ed868c82d31e56095348"
+    },
+    {
+      "label": "openmaic-courseware-layout-runtime-v52",
+      "file": "layout-runtime.html",
+      "placement": "body-last",
+      "scriptBytes": 20905,
+      "seenInFiles": 12,
+      "sha256": "9bc8cd87a39a93b3a7670328386c3271ae3d99c3ecd0dd3f476acd40afa0de9f"
+    }
+  ]
+}

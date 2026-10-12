@@ -1,0 +1,27 @@
+<script data-openmaic-storage-shim-v2>
+(function () {
+  function createMemoryStorage() {
+    var data = Object.create(null);
+    return {
+      getItem: function (key) { key = String(key); return Object.prototype.hasOwnProperty.call(data, key) ? data[key] : null; },
+      setItem: function (key, value) { data[String(key)] = String(value); },
+      removeItem: function (key) { delete data[String(key)]; },
+      clear: function () { data = Object.create(null); },
+      key: function (index) { var keys = Object.keys(data); return index < keys.length ? keys[index] : null; },
+      get length() { return Object.keys(data).length; }
+    };
+  }
+  function available(name) {
+    try {
+      window[name].getItem("__openmaic_probe__");
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+  window.__openMaicLocalStorage = available("localStorage") ? window.localStorage : createMemoryStorage();
+  window.__openMaicSessionStorage = available("sessionStorage") ? window.sessionStorage : createMemoryStorage();
+})();
+let localStorage = window.__openMaicLocalStorage;
+let sessionStorage = window.__openMaicSessionStorage;
+</script>

@@ -6,11 +6,38 @@ const { loadRoute, validateKnowledgeGraph } = require("../lib/kg-build");
 const rootDir = path.resolve(__dirname, "..");
 const route = loadRoute(rootDir);
 const graph = require("../data/knowledge-graph.json");
-const report = validateKnowledgeGraph(route, graph, { rootDir });
+const report = validateKnowledgeGraph(route, graph, {
+  rootDir,
+  resourceChapterIds: ["V14-C3"]
+});
 
 assert.equal(report.code, "ok", JSON.stringify(report, null, 2));
 assert.equal(report.coverage.chapters, 1);
 assert.equal(report.coverage.units, 1);
+assert.deepEqual(report.resourceChapterIds, ["V14-C3"]);
+
+const scopedGraph = JSON.parse(JSON.stringify(graph));
+const unrelatedUnit = scopedGraph.nodes.find((node) => (
+  node.kind === "unit" && node.chapterId !== "V14-C3"
+));
+assert.ok(unrelatedUnit, "the fixture must include a non-pilot knowledge unit");
+unrelatedUnit.resourceCandidates = [
+  ...(unrelatedUnit.resourceCandidates || []),
+  { root: "open-maic/not-deployed-in-pilot", file: "missing.html" }
+];
+const unscopedResourceReport = validateKnowledgeGraph(route, scopedGraph, { rootDir });
+assert.equal(unscopedResourceReport.ok, false);
+assert.ok(unscopedResourceReport.errors.includes("missing_resource"));
+const pilotResourceReport = validateKnowledgeGraph(route, scopedGraph, {
+  rootDir,
+  resourceChapterIds: ["V14-C3"]
+});
+assert.equal(pilotResourceReport.ok, true, JSON.stringify(pilotResourceReport, null, 2));
+const pilotResourceCount = graph.nodes
+  .filter((node) => node.kind === "unit" && node.chapterId === "V14-C3")
+  .reduce((sum, node) => sum + (node.resourceCandidates || []).length, 0);
+assert.equal(pilotResourceReport.counts.checkedResources, pilotResourceCount);
+assert.deepEqual(pilotResourceReport.resourceChapterIds, ["V14-C3"]);
 
 const brokenGraph = { ...graph, chapters: graph.chapters.filter((chapter) => chapter.id !== "V14-C1") };
 const brokenReport = validateKnowledgeGraph(route, brokenGraph, { rootDir, checkResources: false });

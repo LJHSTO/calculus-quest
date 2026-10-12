@@ -32,6 +32,67 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>曲线家族救援 - 原函数与不定积分</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-06",
+  "module_title": "积分直觉：面积、累积与原函数",
+  "knowledge_point_id": "GH-06-K03",
+  "concept_tag": "原函数和不定积分",
+  "scene_type": "game",
+  "resource_id": "GH-06-K03:game",
+  "resource_title": "原函数和不定积分：误解修复挑战",
+  "learning_objective": "能解释「原函数和不定积分」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「原函数和不定积分」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "根据导数特征在多个干扰项中找回正确的原函数家族",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "hint_requested",
+    "reset_used",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": true,
+    "reports_reset": true,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": true,
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0，且场景自行判定了对错",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -1139,6 +1200,8 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 
     <div id="submit-area">
       <button id="submit-btn" onclick="submitAnswer()">✓ 验证答案</button>
+      <button class="secondary-action" onclick="showHint()">提示</button>
+      <button class="secondary-action" onclick="resetLevel()">重置本关</button>
     </div>
 
     <!-- Start Screen -->
@@ -1293,7 +1356,11 @@ let state = {
   cBadgeAttached: false,
   achievements: [],
   levelTimes: [],
-  timerInterval: null
+  timerInterval: null,
+  paused: false,
+  pauseStartedAt: 0,
+  pausedDuration: 0,
+  levelCompleted: false
 };
 
 // Load saved progress
@@ -1324,10 +1391,10 @@ const canvas = document.getElementById('graph-canvas');
 const ctx = canvas.getContext('2d');
 
 function resizeCanvas() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(canvas.offsetWidth * dpr);
+  canvas.height = Math.round(canvas.offsetHeight * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
 window.addEventListener('resize', () => {
@@ -1475,13 +1542,24 @@ function updateStats() {
 }
 
 function updateTimer() {
-  if (!state.gameActive) return;
-  const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+  if (!state.gameActive || state.paused) return;
+  const elapsed = Math.floor((Date.now() - state.startTime - state.pausedDuration) / 1000);
   state.elapsed = elapsed;
   const mins = Math.floor(elapsed / 60);
   const secs = elapsed % 60;
   document.getElementById('timer-display').textContent = 
     mins + ':' + (secs < 10 ? '0' : '') + secs;
+}
+
+function stopTimer() {
+  if (state.timerInterval) clearInterval(state.timerInterval);
+  state.timerInterval = null;
+}
+
+function startTimer() {
+  stopTimer();
+  updateTimer();
+  state.timerInterval = setInterval(updateTimer, 1000);
 }
 
 function updateLevelDots() {
@@ -1519,6 +1597,8 @@ let dragState = {
 };
 
 function initDrag(element, type) {
+  if (element.dataset.dragBound === 'true') return;
+  element.dataset.dragBound = 'true';
   element.addEventListener('mousedown', (e) => startDrag(e, element, type));
   element.addEventListener('touchstart', (e) => startDrag(e, element, type), { passive: false });
 }
@@ -1602,6 +1682,7 @@ function handleDragEnd(e) {
 }
 
 function placeCard(card) {
+  if (!state.gameActive || state.paused || state.levelCompleted || card.classList.contains('hidden')) return;
   // Remove previously placed card
   const prevFormula = document.getElementById('dropped-formula');
   if (prevFormula.textContent) {
@@ -1628,6 +1709,7 @@ function placeCard(card) {
 }
 
 function placeCBadge() {
+  if (!state.gameActive || state.paused || state.levelCompleted || state.cBadgeAttached) return;
   const badge = document.getElementById('c-badge');
   badge.classList.add('attached');
   state.cBadgeAttached = true;
@@ -1645,8 +1727,13 @@ function placeCBadge() {
 // ============ LEVEL SETUP ============
 function initLevel() {
   const level = LEVELS[state.currentLevel];
+  stopTimer();
   state.selectedCard = null;
   state.cBadgeAttached = false;
+  state.paused = false;
+  state.pauseStartedAt = 0;
+  state.pausedDuration = 0;
+  state.levelCompleted = false;
 
   // Reset UI
   document.getElementById('derivative-formula').textContent = level.derivative;
@@ -1670,12 +1757,34 @@ function initLevel() {
     card.className = 'func-card';
     card.textContent = opt;
     card.setAttribute('data-formula', opt);
+    card.setAttribute('role', 'button');
+    card.tabIndex = 0;
     initDrag(card, 'card');
+    card.addEventListener('click', () => placeCard(card));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        placeCard(card);
+      }
+    });
     cardsArea.appendChild(card);
   });
 
   // Re-init C badge
-  initDrag(document.getElementById('c-badge'), 'c-badge');
+  const cBadge = document.getElementById('c-badge');
+  cBadge.setAttribute('role', 'button');
+  cBadge.tabIndex = 0;
+  initDrag(cBadge, 'c-badge');
+  if (cBadge.dataset.clickBound !== 'true') {
+    cBadge.dataset.clickBound = 'true';
+    cBadge.addEventListener('click', placeCBadge);
+    cBadge.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        placeCBadge();
+      }
+    });
+  }
 
   // Update level dots
   updateLevelDots();
@@ -1686,7 +1795,7 @@ function initLevel() {
 
   // Start timer for this level
   state.startTime = Date.now();
-  state.timerInterval = setInterval(updateTimer, 1000);
+  startTimer();
 }
 
 function shuffleArray(arr) {
@@ -1698,9 +1807,8 @@ function shuffleArray(arr) {
 
 // ============ SUBMIT ANSWER ============
 window.submitAnswer = function() {
+  if (!state.gameActive || state.paused || state.levelCompleted) return;
   const level = LEVELS[state.currentLevel];
-  const levelTime = Math.floor((Date.now() - state.startTime) / 1000);
-  state.levelTimes.push(levelTime);
 
   if (!state.selectedCard || !state.cBadgeAttached) {
     showFeedback('⚠️ 请先拖拽函数和 +C 到答案区！', 'error');
@@ -1709,10 +1817,24 @@ window.submitAnswer = function() {
 
   const selectedFormula = state.selectedCard.getAttribute('data-formula');
   const isCorrect = selectedFormula === level.correct;
+  const challengeId = 'GH-06-K03-antiderivative-level-' + (state.currentLevel + 1);
+  const levelTime = Math.floor((Date.now() - state.startTime - state.pausedDuration) / 1000);
+  window.OpenMaicLearningEvidence?.recordChallenge({
+    challenge_id: challengeId,
+    question_id: challengeId,
+    is_correct: isCorrect,
+    score: isCorrect ? 1 : 0,
+    max_score: 1,
+    selected_answer: selectedFormula,
+    expected_answer: level.correct,
+    elapsed_seconds: levelTime
+  });
 
   if (isCorrect) {
     // SUCCESS
-    clearInterval(state.timerInterval);
+    state.levelCompleted = true;
+    state.levelTimes.push(levelTime);
+    stopTimer();
     
     let points = 10; // base
     // Speed bonus: under 15 seconds gets bonus
@@ -1756,10 +1878,11 @@ window.submitAnswer = function() {
     updateStats();
     
     showFeedback('❌ 不对哦！检查一下：d/dx(你的答案) = ' + level.derivative.split('= ')[1] + ' 吗？', 'error');
-    state.selectedCard.classList.add('wrong-flash');
+    const wrongCard = state.selectedCard;
+    wrongCard.classList.add('wrong-flash');
     setTimeout(() => {
-      state.selectedCard.classList.remove('wrong-flash');
-      state.selectedCard.classList.remove('hidden');
+      wrongCard.classList.remove('wrong-flash');
+      wrongCard.classList.remove('hidden');
     }, 1000);
 
     // Reset drop zone
@@ -1771,6 +1894,24 @@ window.submitAnswer = function() {
     document.getElementById('c-slot').classList.remove('filled');
     document.getElementById('submit-btn').style.display = 'none';
   }
+};
+
+window.showHint = function() {
+  if (!state.gameActive || state.paused || state.levelCompleted) return;
+  window.OpenMaicLearningEvidence?.recordHint({
+    hint_type: 'conceptual',
+    challenge_id: 'GH-06-K03-antiderivative-level-' + (state.currentLevel + 1)
+  });
+  showFeedback('提示：先对候选函数逐个求导，再确认常数 C 是否完整保留。', 'hint');
+};
+
+window.resetLevel = function() {
+  if (!state.gameActive) return;
+  window.OpenMaicLearningEvidence?.recordReset({
+    reset_scope: 'level',
+    challenge_id: 'GH-06-K03-antiderivative-level-' + (state.currentLevel + 1)
+  });
+  initLevel();
 };
 
 // ============ ANIMATIONS ============
@@ -1851,16 +1992,16 @@ function showAchievement(name) {
 
 // ============ GAME FLOW ============
 window.startGame = function() {
+  stopTimer();
   document.getElementById('start-screen').style.display = 'none';
   state.gameActive = true;
+  state.paused = false;
   state.currentLevel = 0;
+  state.score = 0;
   state.combo = 0;
   state.levelTimes = [];
-  state.startTime = Date.now();
   
   initLevel();
-  
-  state.timerInterval = setInterval(updateTimer, 1000);
   requestAnimationFrame(gameLoop);
 };
 
@@ -1878,7 +2019,8 @@ window.nextLevel = function() {
 
 function showEndScreen() {
   state.gameActive = false;
-  clearInterval(state.timerInterval);
+  state.paused = false;
+  stopTimer();
   
   document.getElementById('game-area').style.display = 'none';
   document.getElementById('stats-bar').style.display = 'none';
@@ -1907,22 +2049,32 @@ function showEndScreen() {
   
   spawnParticles(window.innerWidth / 2, window.innerHeight / 2, 40);
   saveProgress();
+  window.OpenMaicLearningEvidence?.completeScene({
+    completed: true,
+    score: LEVELS.length,
+    max_score: LEVELS.length,
+    correct_count: LEVELS.length,
+    total_time_seconds: totalTime
+  });
 }
 
 window.restartGame = function() {
+  stopTimer();
+  window.OpenMaicLearningEvidence?.recordReset({ reset_scope: 'scene' });
   document.getElementById('end-screen').style.display = 'none';
   document.getElementById('game-area').style.display = '';
   document.getElementById('stats-bar').style.display = '';
   document.getElementById('level-bar').style.display = '';
   
   state.gameActive = true;
+  state.paused = false;
   state.currentLevel = 0;
+  state.score = 0;
   state.combo = 0;
   state.levelTimes = [];
-  state.startTime = Date.now();
   
   initLevel();
-  state.timerInterval = setInterval(updateTimer, 1000);
+  requestAnimationFrame(gameLoop);
 };
 
 // ============ GAME LOOP ============
@@ -1934,13 +2086,16 @@ function gameLoop() {
 // ============ PAUSE ============
 window.addEventListener('keydown', (e) => {
   if (e.key === 'p' || e.key === 'P') {
-    if (state.gameActive) {
-      state.gameActive = false;
-      clearInterval(state.timerInterval);
+    if (!state.gameActive || state.levelCompleted) return;
+    state.paused = !state.paused;
+    if (state.paused) {
+      state.pauseStartedAt = Date.now();
+      stopTimer();
       showFeedback('⏸️ 游戏暂停（按P继续）', 'hint');
     } else {
-      state.gameActive = true;
-      state.timerInterval = setInterval(updateTimer, 1000);
+      state.pausedDuration += Date.now() - state.pauseStartedAt;
+      state.pauseStartedAt = 0;
+      startTimer();
       hideFeedback();
       drawGraph();
     }

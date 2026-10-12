@@ -2308,14 +2308,38 @@ h3 {
 }
 
 .answer-line {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
   min-width: 0;
   border: 1px solid rgba(20, 120, 111, 0.12);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.76);
-  padding: 7px 9px;
+  padding: 9px 10px;
   color: var(--ink);
   line-height: 1.5;
+}
+
+.answer-choice-marker {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e4efec;
+  color: #315e56;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.answer-choice-copy {
+  min-width: 0;
+  padding-top: 2px;
   overflow-wrap: anywhere;
+  line-height: 1.55;
+  text-wrap: pretty;
 }
 
 .review-answer-block.correct-answer .answer-line {
@@ -2323,13 +2347,49 @@ h3 {
   background: #f0faf3;
 }
 
-.analysis-line {
+.review-answer-block.correct-answer .answer-choice-marker {
+  background: #2f9f69;
+  color: #ffffff;
+}
+
+/* Per-option reasoning: why each distractor fails, next to the correct answer. */
+.option-feedback-line.is-correct .answer-choice-marker {
+  background: #2f9f69;
+  color: #ffffff;
+}
+
+.option-feedback-line.is-incorrect .answer-choice-marker {
+  background: #f6e4e1;
+  color: #a2412f;
+}
+
+.option-feedback-reason {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.analysis-line,
+.review-answer-copy {
+  display: block;
+  min-width: 0;
   border-left: 3px solid #2f9f69;
   background: #f7fbf8;
   padding: 8px 10px;
   color: var(--muted);
   line-height: 1.6;
   overflow-wrap: anywhere;
+  text-wrap: pretty;
+  white-space: pre-wrap;
+}
+
+.review-answer-copy {
+  border: 1px solid rgba(47, 159, 105, 0.2);
+  border-left-width: 3px;
+  border-radius: 7px;
+  background: #ffffff;
+  color: var(--ink);
 }
 
 .ai-review-box {
@@ -2343,6 +2403,65 @@ h3 {
 
 .ai-review-box strong {
   color: #2e4a7f;
+}
+
+/* Paginated slide deck: one page visible at a time, with prev/next controls. */
+.slide-deck {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.slide-deck-viewport {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.slide-deck-viewport > .slide-page {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.slide-deck-viewport > .slide-page[hidden] {
+  display: none;
+}
+
+.slide-deck-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+.slide-deck-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.slide-deck-btn:hover:not(:disabled) {
+  border-color: var(--accent, #6366f1);
+  color: var(--accent, #6366f1);
+}
+
+.slide-deck-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.slide-deck-status {
+  min-width: 76px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
 }
 
 .slide-wrap {
@@ -2398,6 +2517,44 @@ h3 {
   margin: 0;
 }
 
+.question-math-fragment {
+  display: inline-block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-block: -0.16em;
+  padding-block: 0.16em;
+  vertical-align: -0.18em;
+  line-height: 1.25;
+  scrollbar-width: thin;
+}
+
+.question-math-fragment.is-display {
+  display: block;
+  margin-block: 0.35em;
+  vertical-align: baseline;
+}
+
+.question-math-fragment .katex {
+  font-size: 1em;
+}
+
+.question-math-fragment .katex-display {
+  margin: 0;
+}
+
+.question-math-fragment:not(.is-display) {
+  max-width: none;
+  overflow: visible;
+  margin-inline: 0.03em;
+  padding-inline: 0;
+  scrollbar-width: none;
+}
+
+.question-math-fragment:not(.is-display)::-webkit-scrollbar {
+  display: none;
+}
+
 .slide-table-wrap {
   overflow: hidden;
 }
@@ -2446,6 +2603,24 @@ h3 {
   background: var(--white);
   position: relative;
   z-index: 1;
+}
+
+/* Every courseware scene lays itself out with `vh` units — 117 to 121 of them per
+   file. Inside the frame, `vh` IS the frame's height, so shrinking the frame
+   changes the scene's internal viewport and pushes `vh`-positioned controls out of
+   reach: the scene renders but cannot be operated. The frame therefore keeps the
+   height the courseware was designed for (100vh), and the STAGE scrolls instead.
+   That way the layout is untouched and everything stays reachable. */
+.multi-scene-courseware-stage {
+  height: clamp(420px, 72vh, 820px);
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.multi-scene-courseware-stage > .embed-frame {
+  height: 100vh;
+  min-height: 100vh;
 }
 
 .iframe-container {
@@ -7022,4 +7197,301 @@ body[data-cq-theme="E"] .theme-menu { background: #102022; color: var(--ink); }
   grid-column: 1 !important;
   width: 100% !important;
   max-width: none !important;
+}
+
+/* 单章主动式学习 Pilot：保留原首页，只补充轻量测试版标识。 */
+.hero-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.beta-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 4px;
+  background: rgba(20, 38, 34, 0.58);
+  padding: 2px 8px;
+  color: #fff7df;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: none;
+}
+
+.pilot-single-chapter #chapter-rail[hidden],
+.pilot-single-chapter #chapter-rail-toggle[hidden],
+.pilot-single-chapter .learning-nav-cluster-divider[hidden] {
+  display: none !important;
+}
+
+.pilot-single-chapter .learning-nav-cluster {
+  padding-block: 5px;
+}
+
+.lesson-rail .chapter-outcome-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  border: 1px solid rgba(15, 118, 110, 0.2);
+  border-radius: 8px;
+  background: #f2f8f6;
+  padding: 13px;
+  box-shadow: inset 3px 0 0 rgba(15, 143, 131, 0.52);
+}
+
+.lesson-rail .chapter-outcome-panel[hidden] {
+  display: none;
+}
+
+.chapter-outcome-heading {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.chapter-outcome-heading .eyebrow {
+  margin: 0;
+}
+
+.chapter-outcome-heading strong {
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.chapter-outcome-heading small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-wrap: pretty;
+}
+
+.chapter-outcome-path-stages {
+  display: grid;
+  gap: 6px;
+}
+
+.outcome-path-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(36, 66, 58, 0.12);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 7px 8px;
+  color: #263b35;
+  text-align: left;
+}
+
+.outcome-path-step:not(:disabled) {
+  cursor: pointer;
+}
+
+.outcome-path-step:not(:disabled):is(:hover, :focus-visible) {
+  border-color: rgba(15, 143, 131, 0.38);
+  background: #ffffff;
+}
+
+.outcome-path-step:focus-visible {
+  outline: 3px solid rgba(15, 143, 131, 0.2);
+  outline-offset: 2px;
+}
+
+.outcome-path-step:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.outcome-path-step:disabled {
+  opacity: 0.64;
+}
+
+.outcome-path-step-index {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: #e4eeeb;
+  color: #426159;
+  font-size: 0.76rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+}
+
+.outcome-path-step-copy {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+
+.outcome-path-step-copy strong {
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
+.outcome-path-step-copy small,
+.outcome-path-step-status {
+  color: #70817c;
+  font-size: 0.7rem;
+  line-height: 1.3;
+}
+
+.outcome-path-step-status {
+  white-space: nowrap;
+}
+
+.outcome-path-step.is-available,
+.outcome-path-step.is-active {
+  border-color: rgba(15, 143, 131, 0.3);
+  background: #ffffff;
+}
+
+.outcome-path-step.is-active .outcome-path-step-index,
+.outcome-path-step.is-available .outcome-path-step-index {
+  background: #0f8f83;
+  color: #ffffff;
+}
+
+.outcome-path-step.is-submitted .outcome-path-step-index {
+  background: #e8e5ff;
+  color: #4f46e5;
+}
+
+.lesson-rail .chapter-outcome-panel > .button {
+  width: 100%;
+  min-height: 40px;
+}
+
+.lesson-player {
+  padding-bottom: 112px;
+}
+
+.learning-action-dock {
+  position: fixed;
+  left: var(--learning-dock-left, 16px);
+  right: var(--learning-dock-right, 16px);
+  bottom: max(10px, env(safe-area-inset-bottom));
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-height: 68px;
+  border: 1px solid rgba(21, 55, 47, 0.14);
+  border-radius: 8px;
+  background: rgba(255, 254, 250, 0.96);
+  padding: 9px 10px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.98) inset,
+    0 18px 46px rgba(19, 44, 38, 0.18);
+  backdrop-filter: blur(16px);
+  transition-property: opacity, transform;
+  transition-duration: 160ms;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+}
+
+.learning-action-dock[hidden] {
+  display: none;
+}
+
+.learning-action-dock .button {
+  min-height: 48px;
+  max-width: min(100%, 520px);
+  font-size: 0.94rem;
+  text-wrap: balance;
+}
+
+.learning-action-dock .bottom-nav-prev {
+  margin-right: auto;
+}
+
+body.knowledge-outcomes-open .learning-action-dock {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.question-answer-hidden {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgba(47, 159, 105, 0.22);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.question-answer-hidden > p {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.question-answer-hidden > p > b {
+  display: block;
+}
+
+.question-answer-hidden .review-answer-block + .review-answer-block {
+  margin-top: 0;
+  border-top: 1px solid rgba(47, 159, 105, 0.16);
+  padding-top: 11px;
+}
+
+@media (max-width: 760px) {
+  .learning-action-dock {
+    left: var(--learning-dock-left, 10px);
+    right: var(--learning-dock-right, 10px);
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    gap: 7px;
+    min-height: 64px;
+    padding: 7px;
+  }
+
+  .learning-action-dock .button {
+    width: 100%;
+    min-height: 48px;
+    padding-inline: 10px;
+  }
+
+  .learning-action-dock .button:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .lesson-player {
+    padding-bottom: 106px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .learning-action-dock,
+  .outcome-path-step {
+    transition: none;
+  }
+}
+
+.short-answer-box .quiz-unknown-choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 4px;
+  margin: 4px 0;
+  font-size: 14px;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.quiz-unknown-choice input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
 }

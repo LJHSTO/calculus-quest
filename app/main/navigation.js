@@ -26,6 +26,9 @@ function applyView(view) {
   document.querySelectorAll("[data-view]").forEach((node) => {
     if (node.classList.contains("nav-button")) node.classList.toggle("active", node.dataset.view === nextView);
   });
+  if (typeof scheduleLearningActionDockPosition === "function") {
+    scheduleLearningActionDockPosition();
+  }
 }
 
 function captureLastLearningContext() {

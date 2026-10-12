@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "chapterId": "V14-C1",
+  "courseVersion": "multi-scene-functions-limits-20260917-r2",
+  "purpose": "函数与极限实验任务；界面操作不等于概念掌握，独立验证由平台题库完成。",
+  "knowledgePoints": {
+    "GH-01-K01": {
+      "learningTask": "请解释输入、输出与规则的区别，以及为什么同一输入不能有两个不同输出。",
+      "successEvidence": [
+        "产生与知识点相关的操作",
+        "独立解释概念或完成平台验证题"
+      ],
+      "misconceptionSignals": [
+        "函数允许不同输入得到相同输出；限制的是同一个输入。检查当前对应关系中有没有重复输入对应不同结果。"
+      ],
+      "supports": [
+        "ask_reflection",
+        "highlight_target",
+        "show_comparison",
+        "open_hint"
+      ]
+    },
+    "GH-01-K02": {
+      "learningTask": "请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。",
+      "successEvidence": [
+        "产生与知识点相关的操作",
+        "独立解释概念或完成平台验证题"
+      ],
+      "misconceptionSignals": [
+        "有序对先横后纵；图像上的点还必须满足 y=f(x)，不能只看点在哪里。"
+      ],
+      "supports": [
+        "ask_reflection",
+        "highlight_target",
+        "show_comparison",
+        "open_hint"
+      ]
+    },
+    "GH-01-K03": {
+      "learningTask": "请说明判断上升或下降时，为什么必须按输入从小到大比较输出，而不能只看正负。",
+      "successEvidence": [
+        "产生与知识点相关的操作",
+        "独立解释概念或完成平台验证题"
+      ],
+      "misconceptionSignals": [
+        "上升下降是函数值随输入增大的变化方向；函数值为负也能上升。"
+      ],
+      "supports": [
+        "ask_reflection",
+        "highlight_target",
+        "show_comparison",
+        "open_hint"
+      ]
+    },
+    "GH-02-K01": {
+      "learningTask": "请说明趋近一个点时考察什么，为什么有限项数表只能帮助猜测而不是证明极限。",
+      "successEvidence": [
+        "产生与知识点相关的操作",
+        "独立解释概念或完成平台验证题"
+      ],
+      "misconceptionSignals": [
+        "极限关心该点附近的趋势，不取决于该点本身的值；仅凭有限观测不能排除其他趋势。"
+      ],
+      "supports": [
+        "ask_reflection",
+        "highlight_target",
+        "show_comparison",
+        "open_hint"
+      ]
+    },
+    "GH-02-K02": {
+      "learningTask": "请用自己的话解释左极限与右极限，以及双侧极限存在的条件。",
+      "successEvidence": [
+        "产生与知识点相关的操作",
+        "独立解释概念或完成平台验证题"
+      ],
+      "misconceptionSignals": [
+        "左右说的是输入从哪侧靠近；比较的是两侧输出趋近的值。"
+      ],
+      "supports": [
+        "ask_reflection",
+        "highlight_target",
+        "show_comparison",
+        "open_hint"
+      ]
+    },
+    "GH-02-K03": {
+      "learningTask": "请解释内点连续的三个条件，为什么有极限不等于连续。",
+      "successEvidence": [
+        "产生与知识点相关的操作",
+        "独立解释概念或完成平台验证题"
+      ],
+      "misconceptionSignals": [
+        "连续要求函数值有定义、双侧极限存在，且二者相等，三个条件缺一不可。"
+      ],
+      "supports": [
+        "ask_reflection",
+        "highlight_target",
+        "show_comparison",
+        "open_hint"
+      ]
+    }
+  }
+}

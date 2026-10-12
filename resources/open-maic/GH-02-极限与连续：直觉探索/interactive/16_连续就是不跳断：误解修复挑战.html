@@ -32,6 +32,65 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>桥梁修复挑战 - 连续性误解修复</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-02",
+  "module_title": "极限与连续：直觉探索",
+  "knowledge_point_id": "GH-02-K03",
+  "concept_tag": "连续就是不跳断",
+  "scene_type": "game",
+  "resource_id": "GH-02-K03:game",
+  "resource_title": "连续就是不跳断：误解修复挑战",
+  "learning_objective": "请解释内点连续的三个条件，为什么有极限不等于连续。",
+  "misconception": "连续要求函数值有定义、双侧极限存在，且二者相等，三个条件缺一不可。",
+  "observable_evidence": "桥梁修复挑战 - 连续性误解修复",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不上报提示使用，无法确认本次尝试是否无辅助，因此不作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -932,6 +991,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
 
@@ -1087,11 +1147,11 @@ document.addEventListener('DOMContentLoaded', function() {
   // Achievements
   const achievementDefs = {
     first_fix: { name: "初次修复“, desc: ”完成第一次修复", icon: "🔧" },
-    perfect: { name: "完美修复“, desc: ”一次性选对补丁", icon: "💎" },
+    perfect: { name: "完美修复", desc: "一次性选对补丁", icon: "💎" },
     speed_demon: { name: "闪电修复", desc: "5秒内修复完成", icon: "⚡" },
-    master: { name: "连续大师“, desc: ”全部通关", icon: "🏆" },
-    anti_trap: { name: "慧眼识破“, desc: ”识破视觉陷阱", icon: "👁️" },
-    three_star: { name: "三星修复“, desc: ”单关获得三星", icon: "🌟" }
+    master: { name: "全部通关", desc: "完成全部游戏关卡", icon: "🏆" },
+    anti_trap: { name: "慧眼识破", desc: "识破视觉陷阱", icon: "👁️" },
+    three_star: { name: "三星修复", desc: "单关获得三星", icon: "🌟" }
   };
 
   // Level definitions
@@ -1107,10 +1167,10 @@ document.addEventListener('DOMContentLoaded', function() {
     },
     {
       title: "跳跃间断",
-      desc: "左极限 ≠ 右极限，出现\"断阶\"。需要连接补块修复！",
+      desc: "左极限 ≠ 右极限，改一个点不能修复。连接补块表示改动邻近的一段曲线。",
       functionType: "jump",
       holes: [
-        { x: 0.5, correctPatch: "bridge", explanation: "左极限=2，右极限=5，存在跳跃间断。需要特殊连接补块（但在数学中跳跃间断无法仅用一个点修复连续，这里我们用补块象征性地填补）" }
+        { x: 0.5, correctPatch: "bridge", explanation: "左右极限不等，改变这一点的函数值不能使原函数连续。游戏的桥是改动邻近一段曲线的比喻，不代表原函数只补一个点就连续。" }
       ],
       stars: [10, 7, 5]
     },
@@ -1129,7 +1189,7 @@ document.addEventListener('DOMContentLoaded', function() {
       functionType: "double",
       holes: [
         { x: 0.35, correctPatch: "solid", explanation: "x=1处：左右极限都等于2，放实心点即可连续。" },
-        { x: 0.7, correctPatch: "bridge", explanation: "x=3处：左极限=1，右极限=4，是跳跃间断，需要连接补块。" }
+        { x: 0.7, correctPatch: "bridge", explanation: "x=3处左右极限不等，不能只改f(3)修复。连接补块表示改动邻近一段曲线，并非原函数单点连续修复。" }
       ],
       stars: [15, 10, 7]
     },
@@ -1138,7 +1198,7 @@ document.addEventListener('DOMContentLoaded', function() {
       desc: "极限是4，但函数值被定义成了2！这会导致什么？",
       functionType: "value_mismatch",
       holes: [
-        { x: 0.5, correctPatch: "solid", explanation: "极限 = 4，但函数值 = 2 ≠ 极限。需要重新定义 f(x)=4 才能使函数连续。选实心点（正确值处）！" }
+        { x: 0.5, correctPatch: "solid", explanation: "设问题点为a，极限为4而f(a)=2。只需重新定义f(a)=4，其他点的函数规则保持不变。" }
       ],
       stars: [10, 7, 5]
     },
@@ -1149,7 +1209,7 @@ document.addEventListener('DOMContentLoaded', function() {
       holes: [
         { x: 0.3, correctPatch: "none", explanation: "x=1处：已有实心点且极限=函数值，已经连续！" },
         { x: 0.55, correctPatch: "solid", explanation: "x=2处：空心点，左右极限相等，放实心点。" },
-        { x: 0.8, correctPatch: "bridge", explanation: "x=3处：跳跃间断，需要连接补块。" }
+        { x: 0.8, correctPatch: "bridge", explanation: "x=3处左右极限不等，改一个点无效。桥表示改动邻近一段曲线，不代表单点修复原函数。" }
       ],
       stars: [20, 14, 10]
     }
@@ -1804,6 +1864,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (droppedOnHole !== null) {
       let hole = level.holes[droppedOnHole];
+      window.OpenMaicLearningEvidence?.recordChallenge({
+        challenge_id: 'GH-02-K03-patch-' + currentLevel + '-' + droppedOnHole,
+        is_correct: dragState.type === hole.correctPatch,
+        evidence_scope: 'courseware_gameplay', independent: false,
+        selected_patch: dragState.type, expected_patch: hole.correctPatch
+      });
       if (dragState.type === hole.correctPatch) {
         // Correct!
         hole.repaired = true;

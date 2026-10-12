@@ -15,8 +15,8 @@ const narrationDurationCache = new Map();
 const chapters = [
   {
     id: "V14-C1",
-    label: "函数、极限与导数入口",
-    summary: "从函数图像读法出发，进入极限、连续和导数的第一直觉。"
+    label: "函数与极限",
+    summary: "从函数规则与坐标图像出发，理解趋近、左右极限和连续。"
   },
   {
     id: "V14-C2",
@@ -47,9 +47,9 @@ const chapters = [
 
 const CHAPTER_DISPLAY_COPY = {
   "V14-C1": {
-    label: "一元基础",
-    summary: "函数、极限、连续、导数直觉",
-    focus: "先把变化、图像和瞬时变化率说清楚。"
+    label: "函数与极限",
+    summary: "函数规则、坐标图像、极限与连续",
+    focus: "从输入与输出出发，理解趋近与连续。"
   },
   "V14-C2": {
     label: "求导与应用",

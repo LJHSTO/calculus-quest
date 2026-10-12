@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; media-src 'self' data: blob: https:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>OpenMAIC 课件</title>
+  <link rel="stylesheet" href="../../assets/openmaic-classroom/renderer.css?v=8da6101cf90df1c3c54d">
+  <link rel="stylesheet" href="../../lib/katex.min.css">
+  <style>
+    html, body, #slide { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+    body { font-family: "Microsoft YaHei", sans-serif; color: #344057; background: #fff; }
+    #slide .text { user-select: text; }
+    body.picking .slide-element-hit-target:hover { outline: 2px solid #6757d9; cursor: crosshair; }
+    .reference-selected > :first-child { outline: 2px solid #6757d9; outline-offset: 2px; }
+    ::highlight(note-amber) { background: #fae9ad; }
+    ::highlight(note-mint), ::highlight(note-blue) { background: #dbe8ff; }
+    ::highlight(note-pink) { background: #f9dcea; }
+    ::highlight(note-active) { background: #e4dcff; }
+  </style>
+</head>
+<body><div id="slide"></div><script src="../../assets/openmaic-classroom/renderer.js?v=8da6101cf90df1c3c54d"></script></body>
+</html>

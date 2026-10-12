@@ -110,6 +110,25 @@ async function main() {
       created_at: `${currentBeijingDate}T00:15:00.000+08:00`
     });
   }
+  // Historical (integral) chapter row: admin surfaces must hide it by default.
+  db.insertQuizResult({
+    id: "admin-stat-historical-result",
+    user_id: quizUserId,
+    chapter_id: "V14-C3",
+    chapter_label: "积分直觉",
+    unit_id: "V14-C3-M1-pre",
+    unit_label: "积分直觉 · 前测",
+    question_id: "admin-stat-historical-question",
+    question_type: "single",
+    phase: "pre",
+    points: 1,
+    response: "B",
+    is_correct: 1,
+    status: "graded",
+    score: 1,
+    max_score: 1,
+    created_at: `${currentBeijingDate}T00:17:00.000+08:00`
+  });
   db.insertQuizResult({
     id: "admin-stat-formative-result",
     user_id: quizUserId,
@@ -361,12 +380,37 @@ async function main() {
       adminStats(baseUrl, adminToken, "phase-comparison"),
       adminStats(baseUrl, adminToken, "user-detail", `userId=${encodeURIComponent(quizUserId)}`)
     ]);
-    const listedQuizUser = db.listUsers().find((row) => row.id === quizUserId);
+    const listedQuizUser = db.listUsers({ chapterId: "V14-C1" }).find((row) => row.id === quizUserId);
     const decisionTrace = db.agenticDecisionTrace({ userId: quizUserId });
     const failures = [];
     const quizUser = userProgress.find((row) => row.user_id === quizUserId);
     const todayRow = daily.find((row) => row.date === currentBeijingDate);
     const midnightHour = hourly.find((row) => Number(row.hour) === 0);
+    const scopedChapterAccuracy = await adminStats(baseUrl, adminToken, "chapter-accuracy");
+    const allChapterAccuracy = await adminStats(baseUrl, adminToken, "chapter-accuracy", "chapter=all");
+    const scopedQuestionErrors = await adminStats(baseUrl, adminToken, "question-errors");
+
+    recordCheck(failures, "管理员统计默认排除历史（积分）章节", () => {
+      assert.ok(scopedChapterAccuracy.length > 0, "scoped chapter accuracy was empty");
+      assert.ok(
+        scopedChapterAccuracy.every((row) => row.chapter_id === "V14-C1"),
+        `default scope leaked a non-experiment chapter: ${JSON.stringify(scopedChapterAccuracy.map((r) => r.chapter_id))}`
+      );
+      assert.ok(
+        scopedQuestionErrors.every((row) => row.chapter_id === "V14-C1"),
+        "question errors leaked a non-experiment chapter"
+      );
+    });
+    recordCheck(failures, "chapter=all 可恢复历史章节数据", () => {
+      assert.ok(
+        allChapterAccuracy.some((row) => row.chapter_id === "V14-C3"),
+        "chapter=all did not include the historical chapter"
+      );
+      assert.ok(
+        allChapterAccuracy.some((row) => row.chapter_id === "V14-C1"),
+        "chapter=all dropped the experiment chapter"
+      );
+    });
 
     recordCheck(failures, "多题测验在概览中按一次提交计数", () => {
       assert.equal(overview.totalQuizResults, 3);

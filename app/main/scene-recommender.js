@@ -117,7 +117,7 @@
       ? Math.max(0, Math.min(1, Number(masteryLevel)))
       : null;
     const experienced = new Set(
-      (Array.isArray(experiencedTypes) ? experiencedTypes : [])
+      (reviewMode && Array.isArray(experiencedTypes) ? experiencedTypes : [])
         .map((type) => normalizeType({ type }))
         .filter(Boolean)
     );

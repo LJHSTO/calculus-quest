@@ -1,6 +1,24 @@
 const assert = require("node:assert/strict");
 const route = require("../data/multi-scene-learning-route.json");
 const proactivePolicy = require("../lib/proactive-policy");
+const fs = require("node:fs");
+const path = require("node:path");
+
+const pilotExample = Object.fromEntries(
+  fs.readFileSync(path.join(__dirname, "../.env.example"), "utf8")
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("PROACTIVE_") && line.includes("="))
+    .map((line) => {
+      const separator = line.indexOf("=");
+      return [line.slice(0, separator), line.slice(separator + 1)];
+    })
+);
+const pilotConfig = proactivePolicy.configFromEnv(pilotExample);
+assert.deepEqual(pilotConfig.experimentArms, ["control", "treatment_full"]);
+assert.deepEqual(pilotConfig.displayArms, ["treatment_full"]);
+assert.equal(pilotConfig.armProfiles.control.maxSupportLevel, "L0");
+assert.equal(pilotConfig.armProfiles.treatment_full.maxSupportLevel, "L5");
+assert.equal(pilotConfig.mode, "shadow");
 
 function config(overrides = {}) {
   return proactivePolicy.configFromEnv({
@@ -865,7 +883,11 @@ const continuedFrictionDecision = proactivePolicy.evaluate({
   context: independentContext,
   signal: { kind: "independent_attempt_outcome" },
   evidence: {
-    families: ["task"],
+    // `independent_attempt_outcome` 的画像要求 history 族——它断言的是"支架后的
+    // 独立尝试有了结果"，而 `independentAttemptVerified` 就是那一族证据。
+    // 这里原来只写 ["task"]，靠已删除的 singleConfirmedResult 特例才通过；
+    // 特例删除后这个不准确的声明就暴露出来了。
+    families: ["task", "history"],
     independentAttemptVerified: true,
     independentAttemptSuccess: false,
     confirmedIncorrect: 1,
@@ -900,7 +922,7 @@ const independentRecoveryDecision = proactivePolicy.evaluate({
   context: independentContext,
   signal: { kind: "independent_attempt_outcome" },
   evidence: {
-    families: ["task"],
+    families: ["task", "history"],
     independentAttemptVerified: true,
     independentAttemptSuccess: true,
     confirmedIncorrect: 0,
@@ -959,7 +981,7 @@ const declinedIndependentDecision = proactivePolicy.evaluate({
   context: independentContext,
   signal: { kind: "independent_attempt_outcome" },
   evidence: {
-    families: ["task"],
+    families: ["task", "history"],
     independentAttemptVerified: true,
     independentAttemptSuccess: false,
     confirmedIncorrect: 1,
@@ -988,7 +1010,7 @@ const subgoalDecision = proactivePolicy.evaluate({
   context: independentContext,
   signal: { kind: "independent_attempt_outcome" },
   evidence: {
-    families: ["task"],
+    families: ["task", "history"],
     independentAttemptVerified: true,
     independentAttemptSuccess: false,
     confirmedIncorrect: 1,
@@ -1019,7 +1041,7 @@ const nextStepDecision = proactivePolicy.evaluate({
   context: independentContext,
   signal: { kind: "independent_attempt_outcome" },
   evidence: {
-    families: ["task"],
+    families: ["task", "history"],
     independentAttemptVerified: true,
     independentAttemptSuccess: false,
     confirmedIncorrect: 1,
@@ -1047,7 +1069,7 @@ const partialExampleDecision = proactivePolicy.evaluate({
   context: independentContext,
   signal: { kind: "independent_attempt_outcome" },
   evidence: {
-    families: ["task"],
+    families: ["task", "history"],
     independentAttemptVerified: true,
     independentAttemptSuccess: false,
     confirmedIncorrect: 1,
@@ -1075,7 +1097,7 @@ const maximumSupportDecision = proactivePolicy.evaluate({
   context: independentContext,
   signal: { kind: "independent_attempt_outcome" },
   evidence: {
-    families: ["task"],
+    families: ["task", "history"],
     independentAttemptVerified: true,
     independentAttemptSuccess: false,
     confirmedIncorrect: 1,
@@ -1123,7 +1145,7 @@ const minimalCeilingDecision = proactivePolicy.evaluate({
   context: independentContext,
   signal: { kind: "independent_attempt_outcome" },
   evidence: {
-    families: ["task"],
+    families: ["task", "history"],
     independentAttemptVerified: true,
     independentAttemptSuccess: false,
     confirmedIncorrect: 1,

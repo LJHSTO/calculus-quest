@@ -67,6 +67,9 @@ let learningSnapshotSyncPaused = false;
 let learningSnapshotSyncChain = Promise.resolve();
 let learningSnapshotRetryTimer = null;
 let authTransitionInProgress = false;
+// Bumped on every logout. In-flight async work captures it and refuses to write
+// state once it no longer matches.
+let logoutGeneration = 0;
 const learningEventRequests = new Set();
 const learningEventMaxDeliveryAttempts = 3;
 const learningEventRetryDelayMs = 750;
@@ -80,6 +83,7 @@ function learningDefaults() {
     completed: [],
     quizResults: [],
     quizDrafts: {},
+    quizDraftRecovery: {},
     quizAttempts: {},
     submittedQuizzes: [],
     selectedKnowledgeScenes: {},
@@ -95,7 +99,7 @@ function learningDefaults() {
       repeats: {},
       skips: []
     },
-    currentChapterId: chapters[0]?.id || "V14-C3",
+    currentChapterId: chapters[0]?.id || "V14-C1",
     currentUnitId: "",
     currentView: "home",
     lastLearningContext: null
@@ -514,6 +518,27 @@ function renderInlineMath(text) {
   return parts.join("");
 }
 
+function renderQuestionMath(text) {
+  if (typeof QuestionMath === "undefined") return renderInlineMath(text);
+  return QuestionMath.renderToString(
+    String(text ?? ""),
+    typeof katex === "undefined" ? null : katex
+  );
+}
+
+function setQuestionMathContent(element, text) {
+  if (!element) return element;
+  if (typeof QuestionMath === "undefined") {
+    element.innerHTML = renderInlineMath(String(text ?? ""));
+    return element;
+  }
+  return QuestionMath.renderInto(
+    element,
+    String(text ?? ""),
+    typeof katex === "undefined" ? null : katex
+  );
+}
+
 function quizLatestResultsByQuestion(records = []) {
   const latest = {};
   const metadata = {};
@@ -701,7 +726,7 @@ function participantDisplayName(participant = state.participant) {
 }
 
 function participantSubtitle(participant = state.participant) {
-  if (!participant) return "User";
+  if (!participant) return "学习者";
   if (participant.nickname && participant.email) return participant.email;
   if (participant.nickname) return "未填写邮箱";
   if (participant.email) return "未填写昵称";
@@ -729,7 +754,7 @@ function renderAuth() {
   if (els.authAction) els.authAction.hidden = signedIn;
   if (els.userMenu) els.userMenu.hidden = !signedIn;
   const displayName = signedIn ? participantDisplayName() : "未登录";
-  const subtitle = signedIn ? participantSubtitle() : "User";
+  const subtitle = signedIn ? participantSubtitle() : "学习者";
   if (els.authStatus) els.authStatus.textContent = displayName;
   if (els.authStatus) els.authStatus.title = displayName;
   if (els.authSubtitle) {
@@ -834,7 +859,7 @@ function learningSnapshot() {
     participant: state.participant,
     completed: state.completed || [],
     quizResults: state.quizResults || [],
-    quizDrafts: state.quizDrafts || {},
+    quizDrafts: { ...(state.quizDrafts || {}) },
     quizAttempts: state.quizAttempts || {},
     submittedQuizzes: state.submittedQuizzes || [],
     selectedKnowledgeScenes: state.selectedKnowledgeScenes || {},
@@ -921,7 +946,7 @@ function applyServerLearningSnapshot(serverSnapshot, options = {}) {
     clearPreviewKnowledgeSceneSelections();
     Object.assign(state, learningDefaults(), incoming || {}, identity);
     normalizeLearningStateCompatibility(state);
-    currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C3";
+    currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
     currentUnitId = state.currentUnitId || "";
     currentView = validViews.has(state.currentView) ? state.currentView : "home";
     return;
@@ -1005,10 +1030,21 @@ async function loadAuthoritativeQuizResults(options = {}) {
 
 async function hydrateLearningState(options = {}) {
   if (!isSignedIn()) return false;
+  const generation = logoutGeneration;
   learningSnapshotReady = false;
+  // A bare fetch here had no timeout, so a hung snapshot request could leave the
+  // logout button disabled forever (only a reload recovered). Bound it.
+  const timeoutSignal = typeof AbortSignal?.timeout === "function"
+    ? AbortSignal.timeout(15000)
+    : undefined;
   const response = await fetch("api/learning/snapshot", {
-    headers: { Authorization: `Bearer ${state.authToken}` }
+    headers: { Authorization: `Bearer ${state.authToken}` },
+    ...(timeoutSignal ? { signal: timeoutSignal } : {})
   });
+  // The participant may have logged out while this was in flight; reviving their
+  // learning state afterwards is exactly the "old callback resurrects the old
+  // session" failure.
+  if (generation !== logoutGeneration || !isSignedIn()) return false;
   const payload = await response.json().catch(() => ({}));
   if (!response.ok || payload.ok === false) {
     const error = new Error(payload.message || "学习记录恢复失败，请重新登录。");
@@ -1017,10 +1053,22 @@ async function hydrateLearningState(options = {}) {
     throw error;
   }
 
+  const recovery = options.replace === true ? {} : { ...(state.quizDraftRecovery || {}) };
   setLearningSnapshotVersion(payload);
   const replaceWithServer = options.replace === true || Boolean(payload.snapshot);
   applyServerLearningSnapshot(payload.snapshot, { ...options, replace: replaceWithServer });
   await loadAuthoritativeQuizResults({ ...options, replace: replaceWithServer }).catch(() => {});
+  state.quizDraftRecovery = {};
+  for (const [key, draft] of Object.entries(recovery)) {
+    // Only recover unsynced drafts from this server generation and revision.
+    if (draft.generation !== learningSnapshotGeneration || draft.revision !== learningSnapshotRevision
+      || state.submittedQuizzes?.includes(draft.unitId)
+      || (state.quizResults || []).some(row => row.unitId === draft.unitId && row.questionId === draft.questionId)) continue;
+    const fingerprint = payload.snapshot?.courseAssessmentFingerprint || "";
+    if (fingerprint && draft.courseAssessmentFingerprint && fingerprint !== draft.courseAssessmentFingerprint) continue;
+    state.quizDrafts[key] = draft.value;
+    state.quizDraftRecovery[key] = draft;
+  }
   normalizeFailedQuizReviews();
   learningSnapshotReady = true;
   persistStateLocally();
@@ -1050,6 +1098,15 @@ async function performLearningSnapshotSync(reason = "manual") {
       snapshot
     }, { timeoutMs: 15000 });
     setLearningSnapshotVersion(payload);
+    for (const [key, draft] of Object.entries(state.quizDraftRecovery || {})) {
+      if (JSON.stringify(snapshot.quizDrafts[key]) === JSON.stringify(draft.value)) {
+        delete state.quizDraftRecovery[key];
+      } else {
+        draft.generation = learningSnapshotGeneration;
+        draft.revision = learningSnapshotRevision;
+      }
+    }
+    persistStateLocally();
     lastSnapshotJson = snapshotJson;
     clearLearningSnapshotRetry();
   } catch (error) {
@@ -1240,7 +1297,7 @@ async function loginParticipant(credentials = {}) {
         Object.assign(state, learningDefaults());
       }
       normalizeLearningStateCompatibility(state);
-      currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C3";
+      currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
       currentUnitId = state.currentUnitId || "";
       switchView("home");
     }
@@ -1285,46 +1342,65 @@ async function updateParticipantProfile(profile = {}) {
 async function logoutParticipant() {
   if (authTransitionInProgress) return;
   authTransitionInProgress = true;
+  const generation = ++logoutGeneration;
+  clearTimeout(syncTimer);
+  if (typeof analyticsEndParticipantSession === "function") {
+    analyticsEndParticipantSession("logout");
+  }
+
+  // Everything the learner can see happens synchronously, first. The old order
+  // awaited up to 80s of telemetry (20s analytics + 20s events + 15s + 15s
+  // snapshot + 10s logout) before touching the UI, so a click looked like it did
+  // nothing and the second click was swallowed by the disabled guard.
+  const token = state.authToken;
+  persistStateLocally();
+  stopNarrationQueue();
+  state.participant = null;
+  learningSnapshotGeneration = 0;
+  learningSnapshotRevision = 0;
+  learningSnapshotReady = false;
+  onlinePeriodStart = null;
+  clearPreviewKnowledgeSceneSelections();
+  Object.assign(state, learningDefaults(), { participant: null });
+  currentChapterId = chapters[0]?.id || "V14-C1";
+  currentUnitId = "";
+  switchView("home");
+  renderAuth();
+  showLogin();
+  // state.authToken is deliberately left in place until the telemetry below
+  // settles: the final snapshot is authenticated with it. The UI no longer shows
+  // the participant, and the token is removed in the finally block.
+
+  const pending = [];
+  if (typeof analyticsFlushUntilSettled === "function") {
+    pending.push(analyticsFlushUntilSettled(1500));
+  } else if (typeof analyticsFlush === "function") {
+    pending.push(analyticsFlush());
+  }
+  if (typeof waitForLearningEventSync === "function") {
+    pending.push(waitForLearningEventSync(1500));
+  }
+  if (typeof syncLearningSnapshot === "function") {
+    pending.push(Promise.resolve(syncLearningSnapshot("logout")).catch(() => {}));
+  }
   try {
-    clearTimeout(syncTimer);
-    if (typeof analyticsEndParticipantSession === "function") {
-      analyticsEndParticipantSession("logout");
+    await Promise.allSettled(pending);
+    if (typeof pauseLearningSnapshotSync === "function") {
+      await pauseLearningSnapshotSync().catch(() => {});
     }
-    if (typeof analyticsFlushUntilSettled === "function") {
-      await analyticsFlushUntilSettled(20000);
-    } else if (typeof analyticsFlush === "function") {
-      await analyticsFlush();
-    }
-    await waitForLearningEventSync(20000);
-    await syncLearningSnapshot("logout");
-    await pauseLearningSnapshotSync();
-    persistStateLocally();
-    const token = state.authToken;
     if (token) {
-      await apiRequest("/api/auth/logout", { token }, { timeoutMs: 10000 }).catch(() => {});
+      await apiRequest("/api/auth/logout", { token }, { timeoutMs: 5000 }).catch(() => {});
     }
-    stopNarrationQueue();
-    state.participant = null;
-    state.authToken = "";
-    learningSnapshotGeneration = 0;
-    learningSnapshotRevision = 0;
-    learningSnapshotReady = false;
-    onlinePeriodStart = null;
-    sessionStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(LAST_PARTICIPANT_KEY);
-    // Reset runtime learning state to defaults
-    clearPreviewKnowledgeSceneSelections();
-    Object.assign(state, learningDefaults(), { participant: null, authToken: "" });
-    currentChapterId = chapters[0]?.id || "V14-C3";
-    currentUnitId = "";
-    switchView("home");
-    renderAuth();
-    showLogin();
   } finally {
-    resumeLearningSnapshotSync();
-    authTransitionInProgress = false;
+    if (generation === logoutGeneration) {
+      state.authToken = "";
+      sessionStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(LAST_PARTICIPANT_KEY);
+      if (typeof resumeLearningSnapshotSync === "function") resumeLearningSnapshotSync();
+      authTransitionInProgress = false;
+    }
   }
 }
 
@@ -1340,6 +1416,12 @@ function readQuizDraft(unitId, questionId, fallback = "") {
 function rememberQuizDraft(unitId, questionId, value) {
   state.quizDrafts = state.quizDrafts || {};
   state.quizDrafts[quizDraftKey(unitId, questionId)] = value;
+  state.quizDraftRecovery = state.quizDraftRecovery || {};
+  state.quizDraftRecovery[quizDraftKey(unitId, questionId)] = {
+    unitId, questionId, value,
+    courseAssessmentFingerprint: learningSnapshot().courseAssessmentFingerprint,
+    generation: learningSnapshotGeneration, revision: learningSnapshotRevision
+  };
   saveState();
 }
 
@@ -1644,7 +1726,9 @@ function buildMultiSceneLearningChapter(routeChapter, chapterIndex = 0) {
   units.push(createOpenMaicQuizUnit(chapter, routeChapter, "pre", sceneOrder++, -1));
   allKnowledgePoints.forEach((entry, index) => {
     units.push(createOpenMaicKnowledgeUnit(chapter, entry.module, entry.knowledgePoint, entry.kpIndex, sceneOrder++, entry.moduleIndex));
-    units.push(createOpenMaicKnowledgeCheckUnit(chapter, entry.module, entry.knowledgePoint, sceneOrder++, entry.moduleIndex));
+    if (globalThis.CQ_IN_SITU_FORMATIVE === false) {
+      units.push(createOpenMaicKnowledgeCheckUnit(chapter, entry.module, entry.knowledgePoint, sceneOrder++, entry.moduleIndex));
+    }
   });
   if (openMaicReviewHasCourseware(routeChapter)) units.push(createOpenMaicReviewUnit(chapter, routeChapter, sceneOrder++, -1));
   units.push(createOpenMaicQuizUnit(chapter, routeChapter, "post", sceneOrder++, -1));
@@ -1758,6 +1842,8 @@ function readableRouteText(value = "", fallback = "") {
 
 function createOpenMaicKnowledgeUnit(chapter, module, knowledgePoint, kpIndex, sceneOrder, moduleIndex) {
   const candidates = normalizeResourceCandidates(knowledgePoint.resourceCandidates || []);
+  const rawFlow = knowledgePoint.formativeQuiz || {};
+  const formativeQuestions = Array.isArray(rawFlow.questions) ? rawFlow.questions : [];
   return {
     id: knowledgePoint.id,
     kind: "knowledge",
@@ -1780,6 +1866,8 @@ function createOpenMaicKnowledgeUnit(chapter, module, knowledgePoint, kpIndex, s
     scenarioType: "student_choice",
     difficultyBand: "core",
     resourceCandidates: candidates,
+    formativeQuiz: rawFlow,
+    inSituProbes: formativeQuestions,
     scene: {
       type: "knowledge",
       title: knowledgePoint.name,
@@ -1789,7 +1877,9 @@ function createOpenMaicKnowledgeUnit(chapter, module, knowledgePoint, kpIndex, s
         module,
         knowledgePoint: {
           ...knowledgePoint,
-          resourceCandidates: candidates
+          resourceCandidates: candidates,
+          formativeQuiz: rawFlow,
+          inSituProbes: formativeQuestions
         },
         interactionTypes: routeInteractionTypes()
       },

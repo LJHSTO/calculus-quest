@@ -5,7 +5,7 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const proactivePolicy = require("../lib/proactive-policy");
-const proactiveOutcomes = require("../lib/proactive-outcomes/v14-c3");
+const proactiveOutcomes = require("../lib/proactive-outcomes/archive/v14-c3-v3");
 
 function freePort() {
   return new Promise((resolve, reject) => {
@@ -57,6 +57,25 @@ async function setDecisionExpiry(dbPath, decisionId, expiresAt) {
   }
 }
 
+async function simulateArchivedWaitingCheck(dbPath, userId, scopeKey, checkId = "") {
+  const SQL = await require("sql.js")();
+  const database = new SQL.Database(fs.readFileSync(dbPath));
+  try {
+    const statement = database.prepare(
+      "SELECT lifecycle_json FROM proactive_policy_state WHERE user_id = ? AND scope_key = ? AND experiment_id = ?"
+    );
+    statement.bind([userId, scopeKey, "v14-c3-api-test"]);
+    assert.equal(statement.step(), true);
+    const lifecycle = JSON.parse(statement.getAsObject().lifecycle_json);
+    statement.free();
+    if (checkId) lifecycle.activeVerificationCheckId = checkId;
+    else delete lifecycle.activeVerificationCheckId;
+    database.run("UPDATE proactive_policy_state SET lifecycle_json = ? WHERE user_id = ? AND scope_key = ? AND experiment_id = ?",
+      [JSON.stringify(lifecycle), userId, scopeKey, "v14-c3-api-test"]);
+    fs.writeFileSync(dbPath, Buffer.from(database.export()));
+  } finally { database.close(); }
+}
+
 async function requestJson(baseUrl, method, pathname, body, token = "") {
   const response = await fetch(`${baseUrl}${pathname}`, {
     method,
@@ -66,10 +85,8 @@ async function requestJson(baseUrl, method, pathname, body, token = "") {
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) })
   });
-  return {
-    response,
-    payload: await response.json().catch(() => ({}))
-  };
+  const payload = await response.json().catch(() => ({}));
+  return { response, payload };
 }
 
 async function startServer(root, dbPath, mode, adminToken, options = {}) {
@@ -85,7 +102,9 @@ async function startServer(root, dbPath, mode, adminToken, options = {}) {
       NODE_ENV: "development",
       LLM_PROVIDER: "mock",
       ADMIN_TOKEN: adminToken,
+      LOCAL_ADMIN_AUTH_BYPASS: "false",
       PROACTIVE_POLICY_MODE: mode,
+      PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "v14-c3-outcomes-v3",
       PROACTIVE_EXPERIMENT_ID: options.experimentId || "v14-c3-api-test",
       PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
       PROACTIVE_POLICY_VERSION: options.policyVersion || "v14-c3-api-test-v3",
@@ -93,6 +112,8 @@ async function startServer(root, dbPath, mode, adminToken, options = {}) {
       PROACTIVE_ASSIGNMENT_STRATEGY: options.assignmentStrategy || "hash",
       PROACTIVE_ASSIGNMENT_VERSION: options.assignmentVersion || "api-test-hash-v1",
       PROACTIVE_ASSIGNMENT_SALT: "api-test-only-salt",
+      PROACTIVE_GLOBAL_PREFERENCE_CONTROL:
+        options.globalPreferenceControl === false ? "false" : "true",
       PROACTIVE_PUBLIC_CHAPTER_ONLY: "true",
       PROACTIVE_PARTICIPATION_MODE:
         options.participationMode || "implicit-pilot",
@@ -100,9 +121,27 @@ async function startServer(root, dbPath, mode, adminToken, options = {}) {
       PROACTIVE_CONSENT_NOTICE_URL: options.consentNoticeUrl || "",
       PROACTIVE_EXPERIMENT_ARMS: options.experimentArms || "control,treatment",
       PROACTIVE_DISPLAY_ARMS: options.displayArms || "treatment",
-      PROACTIVE_RETENTION_DELAY_HOURS: String(
-        options.retentionDelayHours ?? 0
-      ),
+      ...(options.retentionDelayHours === "use-server-default"
+        ? {}
+        : {
+            PROACTIVE_RETENTION_DELAY_HOURS: String(
+              options.retentionDelayHours ?? 0
+            )
+          }),
+      ...(options.retentionCloseHours === "use-server-default"
+        ? {}
+        : {
+            PROACTIVE_RETENTION_CLOSE_HOURS: String(
+              options.retentionCloseHours ?? 120
+            )
+          }),
+      ...(options.retentionReminderHours === "use-server-default"
+        ? {}
+        : {
+            PROACTIVE_RETENTION_REMINDER_HOURS: String(
+              options.retentionReminderHours ?? "0,96"
+            )
+          }),
       LEARNING_ASSISTANT_DAILY_INTERVENTIONS: String(
         options.dailyInterventions || "30"
       ),
@@ -311,6 +350,25 @@ async function withdrawOutcome(
     baseUrl,
     "POST",
     "/api/learning/proactive/outcomes/withdraw",
+    {
+      chapterId: "V14-C3",
+      sessionId,
+      reason
+    },
+    token
+  );
+}
+
+async function skipOutcome(
+  baseUrl,
+  token,
+  sessionId,
+  reason = "student_skip"
+) {
+  return requestJson(
+    baseUrl,
+    "POST",
+    "/api/learning/proactive/outcomes/skip",
     {
       chapterId: "V14-C3",
       sessionId,
@@ -533,7 +591,8 @@ async function seedIndependentAttemptEvidence(
   unit,
   sceneType,
   success,
-  eventId
+  eventId,
+  evidenceOverrides = {}
 ) {
   const result = await requestJson(
     baseUrl,
@@ -560,7 +619,11 @@ async function seedIndependentAttemptEvidence(
           data: {
             challenge_id: `${unit.id}-challenge`,
             attempt_id: eventId,
-            is_correct: success
+            is_correct: success,
+            independent: true,
+            hint_count: 0,
+            reset_count: 0,
+            ...evidenceOverrides
           }
         }
       }]
@@ -641,12 +704,12 @@ async function submitVerificationCheck(
   );
 }
 
-async function resolveDecision(baseUrl, token, decisionId, resolution) {
+async function resolveDecision(baseUrl, token, decisionId, resolution, extra = {}) {
   return requestJson(
     baseUrl,
     "POST",
     `/api/learning/proactive/${decisionId}/resolution`,
-    { resolution },
+    { resolution, ...extra },
     token
   );
 }
@@ -767,11 +830,15 @@ async function requestProactivePromptAnswer(
   });
 }
 
-async function adminDecisions(baseUrl, adminToken) {
+async function adminDecisions(
+  baseUrl,
+  adminToken,
+  experimentId = "v14-c3-api-test"
+) {
   return requestJson(
     baseUrl,
     "GET",
-    "/api/admin/research/proactive-decisions?experimentId=v14-c3-api-test&limit=1000",
+    `/api/admin/research/proactive-decisions?experimentId=${encodeURIComponent(experimentId)}&limit=1000`,
     undefined,
     adminToken
   );
@@ -1060,7 +1127,7 @@ async function runBalancedAssignmentRegression({
       "stratified-balanced"
     );
     assert.equal(
-      admin.payload.data.protocol.definition.policy.assignmentVersion,
+      admin.payload.data.policy.assignmentVersion,
       "api-test-balanced-v1"
     );
     const counts = Object.fromEntries(
@@ -1164,6 +1231,180 @@ async function runProtocolDriftRegression({
       baselineFingerprint
     );
     assert.equal(restored.payload.data.protocol.currentMatches, true);
+  } finally {
+    await stopChild(runtime?.child);
+  }
+}
+
+async function runDefaultRetentionDelayRegression({
+  root,
+  tmpDir,
+  adminToken
+}) {
+  const dbPath = path.join(tmpDir, "proactive-retention-default.db");
+  let runtime;
+  try {
+    runtime = await startServer(root, dbPath, "shadow", adminToken, {
+      experimentId: "v14-c3-retention-default-test",
+      policyVersion: "v14-c3-retention-default-v1",
+      adapterVersion: "v14-c3-adapter-v3",
+      assignmentVersion: "retention-default-v1",
+      retentionDelayHours: "use-server-default",
+      retentionCloseHours: "use-server-default",
+      retentionReminderHours: "use-server-default"
+    });
+    const admin = await adminDecisions(
+      runtime.baseUrl,
+      adminToken,
+      "v14-c3-retention-default-test"
+    );
+    assert.equal(admin.response.status, 200);
+    assert.equal(
+      admin.payload.data.protocol.definition.retentionDelayHours,
+      72,
+      "未提供有效配置时，延迟保持测应默认在章后测 72 小时后开放"
+    );
+    assert.equal(admin.payload.data.outcomes.retentionDelayHours, 72);
+    assert.equal(
+      admin.payload.data.protocol.definition.retentionCloseHours,
+      null,
+      "延迟保持测默认不设置关闭时间"
+    );
+    assert.equal(admin.payload.data.outcomes.retentionCloseHours, null);
+    assert.deepEqual(
+      admin.payload.data.protocol.definition.retentionReminderHours,
+      [72, 96],
+      "保持测运营提醒应固定记录 72 小时与 96 小时两个节点"
+    );
+    assert.deepEqual(admin.payload.data.outcomes.retentionReminderHours, [72, 96]);
+  } finally {
+    await stopChild(runtime?.child);
+  }
+}
+
+async function runPilotAssignmentPrivacyRegression({
+  root,
+  tmpDir,
+  sourceChapter,
+  units,
+  adminToken
+}) {
+  const experimentId = "v14-c3-pilot-privacy-test";
+  const dbPath = path.join(tmpDir, "proactive-pilot-privacy.db");
+  let runtime;
+  try {
+    runtime = await startServer(root, dbPath, "active", adminToken, {
+      experimentId,
+      policyVersion: "v14-c3-pilot-privacy-v1",
+      assignmentVersion: "pilot-privacy-hash-v1",
+      globalPreferenceControl: false
+    });
+    const participant = await register(runtime.baseUrl, `隐私${Date.now()}`);
+    await submitPretest(runtime.baseUrl, participant.token, sourceChapter.flow.preQuiz);
+
+    const state = await requestJson(
+      runtime.baseUrl,
+      "GET",
+      "/api/learning/proactive/state?chapterId=V14-C3",
+      undefined,
+      participant.token
+    );
+    assert.equal(state.response.status, 200);
+    assert.ok(state.payload.data.assignment);
+    assert.equal(Object.hasOwn(state.payload.data.assignment, "condition"), false);
+    assert.equal(state.payload.data.globalPreferenceControlEnabled, false);
+
+    const lockedPreference = await updateProactivePreference(
+      runtime.baseUrl,
+      participant.token,
+      "off"
+    );
+    assert.equal(lockedPreference.response.status, 403);
+    assert.equal(lockedPreference.payload.code, "proactive_global_preference_locked");
+
+    const unit = units[0];
+    const semanticEventId = `pilot-binding-${Date.now()}`;
+    const event = await requestJson(
+      runtime.baseUrl,
+      "POST",
+      "/api/learning/events",
+      {
+        events: [{
+          eventId: semanticEventId,
+          type: "interaction",
+          payload: {
+            schemaVersion: 1,
+            eventId: semanticEventId,
+            eventType: "courseware_challenge_result",
+            source: "iframe",
+            chapterId: "V14-C3",
+            unitId: unit.id,
+            unitLabel: unit.name,
+            unitType: "knowledge",
+            sceneType: unit.resourceCandidates[0].type,
+            research: {
+              experimentId: "forged-experiment",
+              condition: "forged-condition",
+              cohort: "forged-cohort",
+              assignmentVersion: "forged-version",
+              learningGeneration: 999,
+              protocolFingerprint: "forged-fingerprint"
+            },
+            data: {
+              event_id: semanticEventId,
+              attempt_id: `${semanticEventId}-attempt`,
+              attempt_number: 1,
+              challenge_id: "pilot-server-binding-check",
+              resource_id: "pilot-courseware-resource",
+              resource_title: "Pilot 服务端绑定检查",
+              knowledge_point_id: unit.id,
+              concept_tag: unit.name,
+              scene_type: unit.resourceCandidates[0].type,
+              independent: true,
+              hint_count: 0,
+              reset_count: 0,
+              is_correct: true,
+              completed: true,
+              time_on_task_ms: 1200
+            }
+          }
+        }]
+      },
+      participant.token
+    );
+    assert.equal(event.response.status, 200);
+
+    const admin = await adminDecisions(runtime.baseUrl, adminToken, experimentId);
+    assert.equal(admin.response.status, 200);
+    const rosterRow = admin.payload.data.assignmentRoster.rows.find(
+      (row) => row.user_id === participant.participantId
+    );
+    const analysisRow = admin.payload.data.participantAnalysis.find(
+      (row) => row.user_id === participant.participantId
+    );
+    assert.ok(rosterRow?.condition);
+    assert.equal(analysisRow?.condition, rosterRow.condition);
+    assert.ok(
+      admin.payload.data.coursewareChallenges.some(
+        (row) => row.challenge_id === "pilot-server-binding-check"
+      )
+    );
+    assert.equal(typeof admin.payload.data.analysisSummary, "object");
+    assert.equal(typeof admin.payload.data.dataQuality, "object");
+    const metadataMismatchIds = new Set([
+      "courseware_experiment_mismatch",
+      "courseware_group_mismatch",
+      "courseware_assignment_version_mismatch",
+      "courseware_generation_mismatch",
+      "courseware_protocol_mismatch"
+    ]);
+    assert.equal(
+      admin.payload.data.dataQuality.signals.some(
+        (signal) => metadataMismatchIds.has(signal.id)
+      ),
+      false,
+      "课件客户端伪造的实验元数据必须被服务端真实分组覆盖"
+    );
   } finally {
     await stopChild(runtime?.child);
   }
@@ -1832,6 +2073,49 @@ async function main() {
     assert.equal(pendingDecision.payload.decision.action, "stay_silent");
     assert.equal(pendingDecision.payload.interventionId, "");
 
+    // 伪造的信号在**知识点单元**上必须被明确拒绝，而不是"碰巧静默"。
+    // 管理式路径会用自己的服务端证据重判一遍，所以伪造本就造不出干预；
+    // 但如果只是静默，"信号校验还在不在"就永远测不出来——一旦哪天被删掉，
+    // 客户端就可以拿任意声明去试探策略层。这条断言就是那道保险。
+    const forgedQuizReviewInManagedChapter = await requestJson(
+      runtime.baseUrl,
+      "POST",
+      "/api/learning/assistant/intervention",
+      {
+        chapterId: "V14-C3",
+        unitId: unit.id,
+        sceneType,
+        signal: { kind: "quiz_review", incorrect: 99, pendingReview: 0 },
+        contextRef: { kind: "unit", scope: "lesson" }
+      },
+      treatment.token
+    );
+    assert.equal(forgedQuizReviewInManagedChapter.response.status, 400);
+    assert.equal(
+      forgedQuizReviewInManagedChapter.payload.code,
+      "assistant_intervention_signal_mismatch",
+      "知识点单元上的 quiz_review 必须被拒绝：这里根本没有测验成绩可复盘"
+    );
+    const forgedDwellInManagedChapter = await requestJson(
+      runtime.baseUrl,
+      "POST",
+      "/api/learning/assistant/intervention",
+      {
+        chapterId: "V14-C3",
+        unitId: unit.id,
+        sceneType,
+        signal: { kind: "quiet_dwell", dwellSeconds: 5 },
+        contextRef: { kind: "unit", scope: "lesson" }
+      },
+      treatment.token
+    );
+    assert.equal(forgedDwellInManagedChapter.response.status, 400);
+    assert.equal(
+      forgedDwellInManagedChapter.payload.code,
+      "assistant_intervention_signal_mismatch",
+      "停留时长不够就不能声称学生在原地卡住"
+    );
+
     const protectedStage = await requestJson(
       runtime.baseUrl,
       "POST",
@@ -1845,6 +2129,10 @@ async function main() {
       },
       treatment.token
     );
+    // 受保护测量阶段（未交卷的预/后测）必须由策略层回答，并**落一条决策记录**：
+    // 管理端统计（protected_blocks）和事后分析都靠它。所以这里要断言 200 静默 +
+    // `protected_assessment_stage` 理由码，而不是"信号不合法"的 400——后者会把
+    // "考试期间不打扰"误报成"你的信号发错了"，并且让决策记录直接消失。
     assert.equal(protectedStage.response.status, 200);
     assert.equal(protectedStage.payload.study.assignmentPending, true);
     assert.equal(protectedStage.payload.decision.action, "stay_silent");
@@ -1875,6 +2163,10 @@ async function main() {
     assert.equal(
       pendingAdmin.payload.data.protocol.definition.stoppingRules.advisoryOnly,
       true
+    );
+    assert.equal(
+      pendingAdmin.payload.data.outcomes.instrumentVersion,
+      "v14-c3-outcomes-v3"
     );
     assert.equal(pendingAdmin.payload.data.integrity.advisoryOnly, true);
     assert.equal(pendingAdmin.payload.data.integrity.signals.length, 8);
@@ -2449,7 +2741,14 @@ async function main() {
       runtime.baseUrl,
       treatment.token,
       selfExplanation.payload.decisionId,
-      "accepted"
+      "accepted",
+      // Hint Justification：学生接受内容型提示时说的那句理由。
+      // 它必须落到**决策行**（followup_outcome_json）上，不能只留在事件载荷里——
+      // 分析包导出的是决策表，三层因变量的过程层要能只凭一份导出就算出来。
+      {
+        justification: "因为要先确定自变量，才能对应到唯一的输出值。",
+        justificationRequested: true
+      }
     );
     assert.equal(selfExplanationAccepted.response.status, 200);
     assert.equal(
@@ -2506,6 +2805,9 @@ async function main() {
       "L1 回复后必须签发平台自有的无提示验证题"
     );
     assert.equal(awaitingState.verificationCheck.supportLevel, "L1");
+    assert.equal(awaitingState.verificationCheck.instrumentVersion, "v14-c3-verification-v3");
+    assert.equal(awaitingState.verificationCheck.evidenceScope, "post_support_local_check");
+    assert.equal(awaitingState.lifecycle.activeVerificationCheckId, awaitingState.verificationCheck.id);
     assert.equal(
       Object.hasOwn(awaitingState.verificationCheck, "answer"),
       false,
@@ -2551,16 +2853,46 @@ async function main() {
       "服务重启后必须恢复同一张尚未作答的无提示验证题"
     );
 
+    await stopChild(runtime.child);
+    await simulateArchivedWaitingCheck(dbPath, treatment.participantId, lifecycleUnit.id,
+      `${lifecycleUnit.id}-probe-l1-v2`);
+    runtime = await startServer(root, dbPath, "active", adminToken);
+    const v2Waiting = await requestJson(runtime.baseUrl, "GET",
+      "/api/learning/proactive/state?chapterId=V14-C3", undefined, treatment.token);
+    const v2Check = v2Waiting.payload.data.policyStates.find((row) => row.scopeKey === lifecycleUnit.id).verificationCheck;
+    assert.equal(v2Check.instrumentVersion, "v14-c3-verification-v2");
+    assert.equal(v2Check.id, `${lifecycleUnit.id}-probe-l1-v2`);
+    const staleV3 = await submitVerificationCheck(runtime.baseUrl, treatment.token,
+      lifecycleUnit, persistedLifecycle.verificationCheck, { correct: false });
+    assert.equal(staleV3.response.status, 409, "v2等待回合不能提交同层v3题");
+    assert.equal(staleV3.payload.code, "proactive_verification_stale");
+    await stopChild(runtime.child);
+    await simulateArchivedWaitingCheck(dbPath, treatment.participantId, lifecycleUnit.id);
+    runtime = await startServer(root, dbPath, "active", adminToken);
+    const legacyWaiting = await requestJson(runtime.baseUrl, "GET",
+      "/api/learning/proactive/state?chapterId=V14-C3", undefined, treatment.token);
+    const legacyCheck = legacyWaiting.payload.data.policyStates.find(
+      (row) => row.scopeKey === lifecycleUnit.id
+    ).verificationCheck;
+    assert.equal(legacyCheck.id, `${lifecycleUnit.id}-probe-l1-v1`,
+      "旧等待回合缺少签发题号时只能恢复原v1题");
+    assert.equal(legacyCheck.instrumentVersion, "v14-c3-verification-v1");
+    const wrongVersionCheck = await submitVerificationCheck(runtime.baseUrl, treatment.token,
+      lifecycleUnit, persistedLifecycle.verificationCheck, { correct: false });
+    assert.equal(wrongVersionCheck.response.status, 409);
+    assert.equal(wrongVersionCheck.payload.code, "proactive_verification_stale");
     const conceptHint = await submitVerificationCheck(
       runtime.baseUrl,
       treatment.token,
       lifecycleUnit,
-      persistedLifecycle.verificationCheck,
+      legacyCheck,
       { correct: false }
     );
     assert.equal(conceptHint.response.status, 200);
     assert.equal(conceptHint.payload.checkResult.status, "incorrect");
     assert.equal(conceptHint.payload.checkResult.source, "policy_owned_probe");
+    assert.equal(conceptHint.payload.checkResult.instrumentVersion, "v14-c3-verification-v1");
+    assert.equal(conceptHint.payload.checkResult.evidenceScope, "post_support_local_check");
     assert.equal(conceptHint.payload.study.deliveryDecision, "intervene");
     assert.equal(conceptHint.payload.decision.action, "concept_hint");
     assert.match(
@@ -2610,6 +2942,7 @@ async function main() {
       "awaiting_independent_attempt"
     );
     assert.equal(l2AwaitingState.verificationCheck.supportLevel, "L2");
+    assert.equal(l2AwaitingState.verificationCheck.instrumentVersion, "v14-c3-verification-v3");
     assert.notEqual(
       l2AwaitingState.verificationCheck.id,
       awaitingState.verificationCheck.id
@@ -2807,13 +3140,59 @@ async function main() {
       coursewareSelfExplanation.payload.interventionId,
       "我会先比较分部积分两种选择转换后的新积分，再选择能让新积分更简单的一种。"
     );
+    for (const [index, spatial] of [
+      { challenge_id: "GH-07-K01-strip-level-1-strip-1" },
+      { challenge_id: "spatial-check", evidence_scope: "motor_placement" }
+    ].entries()) {
+      await seedIndependentAttemptEvidence(runtime.baseUrl, treatment.token, coursewareUnit,
+        coursewareSceneType, true, `courseware-spatial-only-${index}`, spatial);
+      const ignored = await requestIndependentAttemptOutcome(runtime.baseUrl, treatment.token,
+        coursewareUnit, coursewareSceneType);
+      assert.equal(ignored.payload.study.policyState.lifecycle.phase, "awaiting_independent_attempt",
+        "拖拽位置正确不能结束概念支架；历史无范围字段的拼图事件也不例外");
+      assert.equal(ignored.payload.study.policyState.currentLevel, "L1");
+    }
+    for (const [index, invalid] of [
+      { independent: false },
+      { independent: null },
+      { independent: "true" },
+      { hint_count: 1 },
+      { reset_count: 1 },
+      { selected_zone: "missed", error_type: "missed_expression" }
+    ].entries()) {
+      await seedIndependentAttemptEvidence(
+        runtime.baseUrl, treatment.token, coursewareUnit, coursewareSceneType, false,
+        `courseware-not-independent-${index}`, invalid
+      );
+      const ignored = await requestIndependentAttemptOutcome(
+        runtime.baseUrl, treatment.token, coursewareUnit, coursewareSceneType
+      );
+      assert.equal(ignored.response.status, 200);
+      assert.notEqual(ignored.payload.study.deliveryDecision, "intervene",
+        `非独立或漏接结果不能触发支架升级：${JSON.stringify(invalid)}`);
+      assert.equal(ignored.payload.study.policyState.currentLevel, "L1");
+    }
+    for (const success of [true, false]) {
+      await seedIndependentAttemptEvidence(
+        runtime.baseUrl, treatment.token, coursewareUnit, coursewareSceneType,
+        success, `courseware-unaligned-${success}`, { challenge_id: "unaligned-game" }
+      );
+      const ignored = await requestIndependentAttemptOutcome(
+        runtime.baseUrl, treatment.token, coursewareUnit, coursewareSceneType
+      );
+      assert.equal(ignored.response.status, 200);
+      assert.equal(ignored.payload.study.policyState.lifecycle.phase, "awaiting_independent_attempt");
+      assert.equal(ignored.payload.study.policyState.currentLevel, "L1",
+        "未经目标核对的游戏正确或错误都不能改变支架层级");
+    }
     await seedIndependentAttemptEvidence(
       runtime.baseUrl,
       treatment.token,
       coursewareUnit,
       coursewareSceneType,
       false,
-      "courseware-semantic-independent-failed"
+      "courseware-semantic-independent-failed",
+      { evidence_scope: "factor_selection" }
     );
     const coursewareEscalation = await requestIndependentAttemptOutcome(
       runtime.baseUrl,
@@ -2825,6 +3204,19 @@ async function main() {
     assert.equal(coursewareEscalation.payload.study.deliveryDecision, "intervene");
     assert.equal(coursewareEscalation.payload.decision.action, "concept_hint");
     const coursewareAudit = await adminDecisions(runtime.baseUrl, adminToken);
+    const coursewareChallenge = coursewareAudit.payload.data.coursewareChallenges.find(
+      (row) => row.challenge_id === `${coursewareUnit.id}-challenge`
+    );
+    assert.ok(coursewareChallenge, "实际事件应进入管理员挑战分析");
+    assert.equal(coursewareChallenge.attempts, 7);
+    assert.equal(coursewareChallenge.independent_attempts, 1);
+    assert.equal(coursewareChallenge.supported_attempts, 2);
+    assert.equal(coursewareChallenge.missed_attempts, 1);
+    assert.equal(coursewareChallenge.unclassified_attempts, 3);
+    assert.equal(coursewareChallenge.attempts,
+      coursewareChallenge.independent_attempts + coursewareChallenge.supported_attempts
+        + coursewareChallenge.missed_attempts + coursewareChallenge.unclassified_attempts,
+      "四类尝试应互斥且完整，漏接不能混进提示后分母");
     const coursewareL1Row = coursewareAudit.payload.data.rows.find(
       (row) => row.intervention_id === coursewareSelfExplanation.payload.interventionId
     );
@@ -2836,6 +3228,20 @@ async function main() {
       coursewareL1Row.followup_outcome.independentAttempt.eventType,
       "courseware_challenge_result"
     );
+    // 匹配规则版本在 v3 时加了"目标未核对就不采用"和"操作证据不是概念检查"两条拒绝理由
+    // （见本段下面两条断言），所以这里跟随适配器实际版本，而不是历史文档里的 v2。
+    assert.equal(coursewareL1Row.followup_outcome.independentAttempt.matchingVersion,
+      "v14-c3-courseware-match-v3");
+    assert.equal(coursewareL1Row.followup_outcome.independentAttempt.matchReason,
+      "factor_selection_matches_support_target");
+    assert.ok(coursewareAudit.payload.data.rows.filter((row) =>
+      row.evidence_snapshot?.coursewareVerificationMatch?.reasonCode
+        === "courseware_target_alignment_unverified").length >= 2,
+    "未核对目标而拒绝采用的两种成绩必须进入管理员审计");
+    assert.match(coursewareL1Row.followup_outcome.independentAttempt.checkId, /^courseware-event:/);
+    const spatialRows = coursewareAudit.payload.data.rows.filter((row) =>
+      row.evidence_snapshot?.coursewareVerificationMatch?.reasonCode === "motor_placement_not_concept_check");
+    assert.ok(spatialRows.length >= 2, "不采用操作证据的理由必须进入实际管理员数据");
     await resolveDecision(
       runtime.baseUrl,
       treatment.token,
@@ -3204,12 +3610,15 @@ async function main() {
       (stage) => stage.id === "retention"
     );
     assert.equal(nearTransfer.status, "available");
-    assert.equal(representationTransfer.status, "available");
+    assert.equal(representationTransfer.status, "locked");
     assert.equal(retentionLocked.status, "locked");
-    assert.ok(nearTransfer.items.length > 0);
+    assert.equal(nearTransfer.items.length, 5);
+    assert.equal(Object.hasOwn(representationTransfer, "items"), false);
     nearTransfer.items.forEach((item) => {
       assert.equal(Object.hasOwn(item, "answer"), false);
       assert.ok(item.options.length >= 3);
+      assert.ok(item.knowledgePointId);
+      assert.ok(item.cognitiveProcess);
     });
     const nearStarted = await startOutcome(
       runtime.baseUrl,
@@ -3228,7 +3637,7 @@ async function main() {
       "near_transfer",
       nearSessionId,
       {
-        "V14-C3-NT-01": "a"
+        "V14-C3-NT-r3-01": "b"
       }
     );
     assert.equal(nearDraft.response.status, 200);
@@ -3242,7 +3651,7 @@ async function main() {
     assert.equal(restoredOutcome.payload.data.activeSession.id, nearSessionId);
     assert.deepEqual(
       restoredOutcome.payload.data.activeSession.responses,
-      { "V14-C3-NT-01": "a" },
+      { "V14-C3-NT-r3-01": "b" },
       "跨设备读取必须恢复服务端保存的作答草稿"
     );
     assert.equal(
@@ -3325,9 +3734,11 @@ async function main() {
       "near_transfer",
       nearSessionId,
       {
-        "V14-C3-NT-01": "a",
-        "V14-C3-NT-02": "a",
-        "V14-C3-NT-03": "c"
+        "V14-C3-NT-r3-01": "b",
+        "V14-C3-NT-r3-02": "a",
+        "V14-C3-NT-r3-03": "c",
+        "V14-C3-NT-r3-04": "c",
+        "V14-C3-NT-r3-05": "b"
       }
     );
     assert.equal(nearSubmitted.response.status, 200);
@@ -3336,7 +3747,24 @@ async function main() {
       nearSubmitted.payload.feedbackPolicy,
       "acknowledgement_only"
     );
+    const nearSubmittedStage = nearSubmitted.payload.data.stages.find(
+      (stage) => stage.id === "near_transfer"
+    );
+    assert.equal(nearSubmittedStage.review.answersReleased, false);
+    assert.equal(nearSubmittedStage.review.items[0].response, "b");
+    assert.equal(
+      Object.hasOwn(nearSubmittedStage.review.items[0], "isCorrect"),
+      false,
+      "before the retention endpoint, review may show the learner response but must not reveal correctness"
+    );
     assert.equal(nearSubmitted.payload.sessionId, nearSessionId);
+    assert.equal(
+      nearSubmitted.payload.data.stages.find(
+        (stage) => stage.id === "representation_transfer"
+      ).status,
+      "available",
+      "完成近迁移后才开放跨表征迁移"
+    );
     assert.notEqual(
       nearSubmitted.payload.startedAt,
       "2000-01-01T00:00:00.000Z",
@@ -3348,9 +3776,11 @@ async function main() {
       "near_transfer",
       nearSessionId,
       {
-        "V14-C3-NT-01": "a",
-        "V14-C3-NT-02": "a",
-        "V14-C3-NT-03": "c"
+        "V14-C3-NT-r3-01": "b",
+        "V14-C3-NT-r3-02": "a",
+        "V14-C3-NT-r3-03": "c",
+        "V14-C3-NT-r3-04": "c",
+        "V14-C3-NT-r3-05": "b"
       }
     );
     assert.equal(nearReplay.response.status, 200);
@@ -3367,9 +3797,11 @@ async function main() {
       "representation_transfer",
       representationStarted.payload.data.activeSession.id,
       {
-        "V14-C3-RT-01": "b",
-        "V14-C3-RT-02": "a",
-        "V14-C3-RT-03": "a"
+        "V14-C3-RT-r3-01": "a",
+        "V14-C3-RT-r3-02": "c",
+        "V14-C3-RT-r3-03": "b",
+        "V14-C3-RT-r3-04": "b",
+        "V14-C3-RT-r3-05": "a"
       }
     );
     assert.equal(representationSubmitted.response.status, 200);
@@ -3389,12 +3821,21 @@ async function main() {
       "retention",
       retentionStarted.payload.data.activeSession.id,
       {
-        "V14-C3-DR-01": "a",
-        "V14-C3-DR-02": "b",
-        "V14-C3-DR-03": "a"
+        "V14-C3-DR-r3-01": "c",
+        "V14-C3-DR-r3-02": "b",
+        "V14-C3-DR-r3-03": "a",
+        "V14-C3-DR-r3-04": "a",
+        "V14-C3-DR-r3-05": "c"
       }
     );
     assert.equal(retentionSubmitted.response.status, 200);
+    assert.equal(retentionSubmitted.payload.data.answerReviewReleased, true);
+    const releasedNearStage = retentionSubmitted.payload.data.stages.find(
+      (stage) => stage.id === "near_transfer"
+    );
+    assert.equal(releasedNearStage.review.answersReleased, true);
+    assert.equal(releasedNearStage.review.items[0].isCorrect, true);
+    assert.equal(releasedNearStage.review.items[0].correctOption, "b");
 
     const withdrawalParticipant = await register(
       runtime.baseUrl,
@@ -3416,18 +3857,25 @@ async function main() {
       "near_transfer"
     );
     assert.equal(withdrawalStarted.response.status, 200);
-    const withdrawn = await withdrawOutcome(
+    const skipped = await skipOutcome(
       runtime.baseUrl,
       withdrawalParticipant.token,
       withdrawalStarted.payload.data.activeSession.id
     );
-    assert.equal(withdrawn.response.status, 200);
-    assert.equal(withdrawn.payload.data.activeSession, null);
+    assert.equal(skipped.response.status, 200);
+    assert.equal(skipped.payload.data.activeSession, null);
     assert.equal(
-      withdrawn.payload.data.stages.find(
+      skipped.payload.data.stages.find(
         (stage) => stage.id === "near_transfer"
       ).status,
-      "withdrawn"
+      "skipped"
+    );
+    assert.equal(
+      skipped.payload.data.stages.find(
+        (stage) => stage.id === "representation_transfer"
+      ).status,
+      "available",
+      "永久跳过当前阶段后，后续阶段必须继续开放而不能锁死路径"
     );
 
     const activeAdmin = await adminDecisions(runtime.baseUrl, adminToken);
@@ -3448,6 +3896,17 @@ async function main() {
     assert.equal(typeof storedActive.followup_outcome, "object");
     const storedSelfExplanation = activeAdmin.payload.data.rows.find(
       (row) => row.id === selfExplanation.payload.decisionId
+    );
+    // 理由必须能从决策行读出来——分析脚本只吃导出的分析包，读不到事件表。
+    assert.equal(
+      storedSelfExplanation.followup_outcome.studentJustification,
+      "因为要先确定自变量，才能对应到唯一的输出值。",
+      "学生写的接受理由必须落在决策行上，否则分析包算不出 Hint Justification Rate"
+    );
+    assert.equal(
+      storedSelfExplanation.followup_outcome.justificationRequested,
+      true,
+      "确实问过理由的接受要标记 requested=true，才会进比例的分母"
     );
     const storedConceptHint = activeAdmin.payload.data.rows.find(
       (row) => row.id === conceptHint.payload.decisionId
@@ -3515,6 +3974,14 @@ async function main() {
     assert.equal(storedSelfExplanation.current_fade_level, 1);
     assert.equal(storedConceptHint.scope_key, lifecycleUnit.id);
     assert.equal(storedConceptHint.support_level, "L2");
+    assert.equal(storedSelfExplanation.followup_outcome.independentAttempt.instrumentVersion,
+      "v14-c3-verification-v1");
+    assert.equal(storedConceptHint.followup_outcome.independentAttempt.instrumentVersion,
+      "v14-c3-verification-v3");
+    assert.equal(storedConceptHint.followup_outcome.independentAttempt.evidenceScope,
+      "post_support_local_check");
+    assert.equal(storedConceptHint.followup_outcome.independentAttempt.subSkill,
+      l2AwaitingState.verificationCheck.subSkill);
     assert.equal(
       storedConceptHint.followup_outcome.independentAttempt.outcome,
       "continued_friction"
@@ -3594,6 +4061,18 @@ async function main() {
         (row) => row.condition === "treatment"
       )
     );
+    assert.ok(Array.isArray(activeAdmin.payload.data.assignmentRoster.rows));
+    assert.ok(activeAdmin.payload.data.assignmentRoster.total >= 2);
+    const treatmentRoster = activeAdmin.payload.data.assignmentRoster.rows.find(
+      (row) => row.user_id === treatment.participantId
+    );
+    const controlRoster = activeAdmin.payload.data.assignmentRoster.rows.find(
+      (row) => row.user_id === control.participantId
+    );
+    assert.equal(treatmentRoster.condition, "treatment");
+    assert.equal(controlRoster.condition, "control");
+    assert.equal(treatmentRoster.stratum, "pre-high");
+    assert.equal(treatmentRoster.assignment_version, "api-test-hash-v1");
     assert.equal(activeAdmin.payload.data.outcomes.rows.length, 3);
     assert.equal(activeAdmin.payload.data.outcomes.summary.length, 3);
     assert.ok(
@@ -3614,7 +4093,7 @@ async function main() {
     assert.ok(treatmentFlow.retentionSubmitted >= 1);
     assert.ok(
       activeAdmin.payload.data.participantFlow.some(
-        (row) => row.nearWithdrawn >= 1
+        (row) => row.nearSkipped >= 1
       )
     );
     assert.equal(
@@ -3693,6 +4172,18 @@ async function main() {
     await runProtocolDriftRegression({
       root,
       tmpDir,
+      adminToken
+    });
+    await runDefaultRetentionDelayRegression({
+      root,
+      tmpDir,
+      adminToken
+    });
+    await runPilotAssignmentPrivacyRegression({
+      root,
+      tmpDir,
+      sourceChapter,
+      units,
       adminToken
     });
 

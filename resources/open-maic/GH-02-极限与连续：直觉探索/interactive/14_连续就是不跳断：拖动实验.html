@@ -32,6 +32,62 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>函数连续性模拟 — 连续就是不跳断</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-02",
+  "module_title": "极限与连续：直觉探索",
+  "knowledge_point_id": "GH-02-K03",
+  "concept_tag": "连续就是不跳断",
+  "scene_type": "simulation",
+  "resource_id": "GH-02-K03:simulation",
+  "resource_title": "连续就是不跳断：拖动实验",
+  "learning_objective": "请解释内点连续的三个条件，为什么有极限不等于连续。",
+  "misconception": "连续要求函数值有定义、双侧极限存在，且二者相等，三个条件缺一不可。",
+  "observable_evidence": "通过调节孤立点的高度使其与函数极限值重合，直观理解函数连续性的本质：lim f(x) = f(a)。学生拖动紫色点嵌入曲线的空心缺口，当点与空洞完美匹配时触发'连续'视觉反馈。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed"
+  ],
+  "capabilities": {
+    "widget_type": "simulation",
+    "controls": [
+      "slider",
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": false,
+    "reports_challenge": false,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "产生与本知识点目标一致的可观察交互变化",
+    "failure_is_evidence": false
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -939,6 +995,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
 <div class="app-container">

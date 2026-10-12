@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const fs = require("fs");
 const http = require("http");
+const net = require("net");
 const path = require("path");
 const zlib = require("zlib");
 // Load .env (if present) so LLM_PROVIDER / OPENAI_COMPATIBLE_API_KEY etc. can be configured without a process manager.
@@ -26,33 +27,77 @@ const zlib = require("zlib");
   }
 })();
 
+const errorMonitoring = require("./lib/error-monitoring").init();
 const db = require("./db");
 const courseAssessment = require("./lib/course-assessment");
 const learningAssistant = require("./lib/learning-assistant");
 const proactivePolicy = require("./lib/proactive-policy");
-const proactiveOutcomes = require("./lib/proactive-outcomes/v14-c3");
+const representationChoice = require("./lib/proactive-policy/representation-choice");
+const proactivity = require("./lib/proactive-policy/proactivity");
+const proactivityJev = require("./lib/proactive-policy/jev-client");
+const outcomeRegistry = process.env.PROACTIVE_EXPERIMENT_CHAPTER_ID === "V14-C3"
+  ? require("./lib/proactive-outcomes/v14-c3")
+  : require("./lib/proactive-outcomes/functions-limits");
+const proactiveOutcomes = outcomeRegistry.forVersion(
+  process.env.PROACTIVE_OUTCOME_INSTRUMENT_VERSION || outcomeRegistry.version
+);
+if (!proactiveOutcomes) throw new Error("未知研究测量版本，请检查 PROACTIVE_OUTCOME_INSTRUMENT_VERSION。");
 const llm = require("./lib/llm");
 const kg = require("./lib/kg");
 const coach = require("./lib/agentic-coach");
 const orchestrator = require("./lib/agent-orchestrator");
 const gradingRegrade = require("./lib/grading-regrade");
+const researchAnalysis = require("./lib/research-analysis-export");
 const quizReconciliation = require("./lib/quiz-reconciliation");
 const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
 const proactiveStudyConfig = proactivePolicy.configFromEnv();
+const proactiveGlobalPreferenceControlEnabled = ["1", "true", "yes", "on"].includes(
+  String(process.env.PROACTIVE_GLOBAL_PREFERENCE_CONTROL || "").trim().toLowerCase()
+);
 const configuredRetentionDelayHours = Number(
   process.env.PROACTIVE_RETENTION_DELAY_HOURS
 );
 const proactiveRetentionDelayHours = Number.isFinite(
   configuredRetentionDelayHours
 )
-  ? Math.max(0, Math.min(24 * 365, configuredRetentionDelayHours))
-  : 24 * 7;
+  ? Math.max(proactiveOutcomes.version === outcomeRegistry.version || proactiveOutcomes.version.startsWith("functions-limits-retention-") ? 72 : 0,
+      Math.min(24 * 365, configuredRetentionDelayHours))
+  : 24 * 3;
+const configuredRetentionCloseHours = Number(
+  process.env.PROACTIVE_RETENTION_CLOSE_HOURS
+);
+// Zero or an omitted deadline keeps retention available after its unlock time.
+const proactiveRetentionCloseHours = Number.isFinite(configuredRetentionCloseHours)
+  && configuredRetentionCloseHours > 0 ? Math.max(
+    proactiveRetentionDelayHours,
+    Math.min(24 * 365, configuredRetentionCloseHours)
+  ) : null;
+const proactiveRetentionReminderHours = Array.from(new Set(
+  String(process.env.PROACTIVE_RETENTION_REMINDER_HOURS || "72,96")
+    .split(",")
+    .map((value) => Number(value.trim()))
+    .filter((value) => (
+      Number.isFinite(value)
+      && value >= proactiveRetentionDelayHours
+      && (proactiveRetentionCloseHours === null || value < proactiveRetentionCloseHours)
+    ))
+    .map((value) => Math.round(value * 1000) / 1000)
+)).sort((left, right) => left - right);
 let proactiveProtocolDefinition = null;
 let proactiveProtocolFingerprint = "";
 let proactiveProtocolSnapshot = null;
+let coursewareLearningEvidenceScript = "";
 let coursewareBridgeScript = "";
+try {
+  coursewareLearningEvidenceScript = fs.readFileSync(
+    path.join(root, "app", "main", "courseware-learning-evidence.js"),
+    "utf8"
+  );
+} catch (error) {
+  console.warn("Courseware learning evidence load skipped:", error.message);
+}
 try {
   coursewareBridgeScript = fs.readFileSync(
     path.join(root, "app", "main", "courseware-bridge.js"),
@@ -92,9 +137,13 @@ try {
   console.warn("Multi-scene learning route load skipped:", error.message);
 }
 function protocolSourceDigest(relativePath) {
+  const filePath = path.join(root, relativePath);
+  if (!fs.existsSync(filePath)) {
+    return crypto.createHash("sha256").update(Buffer.from(relativePath)).digest("hex");
+  }
   return crypto
     .createHash("sha256")
-    .update(fs.readFileSync(path.join(root, relativePath)))
+    .update(fs.readFileSync(filePath))
     .digest("hex");
 }
 
@@ -119,6 +168,7 @@ const proactiveStoppingRules = Object.freeze({
     ...frozenPolicy
   } = proactivePolicy.adminConfig(proactiveStudyConfig);
   const modelRuntime = llm.runtimeInfo();
+  const gradingRuntime = gradingRuntimeInfo();
   proactiveProtocolDefinition = {
     schemaVersion: 1,
     experimentId: proactiveStudyConfig.experimentId,
@@ -132,13 +182,31 @@ const proactiveStoppingRules = Object.freeze({
     courseRouteVersion: learningRoute?.versionId || "",
     courseRouteDigest: protocolSourceDigest("data/multi-scene-learning-route.json"),
     courseAssessmentFingerprint,
+    courseAssessmentVersion: learningRoute?.chapters?.find(
+      (chapter) => chapter.id === proactiveStudyConfig.chapterId
+    )?.assessmentRevision?.version || "",
     outcomeInstrumentVersion: proactiveOutcomes.version,
+    verificationInstrumentVersion: proactivePolicy.adapterForChapter(proactiveStudyConfig.chapterId)?.verificationVersion || "",
+    outcomeFigureDigests: Object.fromEntries(proactiveOutcomes.stageIds.flatMap((stageId) => (
+      proactiveOutcomes.publicStage(stageId).items.flatMap((item) => (
+        item.figure ? [[item.figure.src, protocolSourceDigest(item.figure.src)]] : []
+      ))
+    ))),
     retentionDelayHours: proactiveRetentionDelayHours,
+    retentionCloseHours: proactiveRetentionCloseHours,
+    retentionReminderHours: proactiveRetentionReminderHours,
     stoppingRules: proactiveStoppingRules,
     measurementProtection: {
       agentAssistanceAllowed: false,
-      stages: ["pre", "post", "near_transfer", "representation_transfer", "retention"],
+      stages: ["pre", "post", ...proactiveOutcomes.stageIds],
       immediateFeedback: false
+    },
+    studentAutonomy: {
+      globalPreferenceControl: proactiveGlobalPreferenceControlEnabled,
+      scopeMuteAndRestore: true,
+      snooze: true,
+      alternativeHelp: true,
+      studyWithdrawal: true
     },
     modelRuntime: {
       provider: modelRuntime.provider || "",
@@ -146,15 +214,56 @@ const proactiveStoppingRules = Object.freeze({
       model: modelRuntime.model || "",
       wireApi: modelRuntime.wireApi || ""
     },
+    modelRoles: {
+      assistantRequestedModel: process.env.LEARNING_ASSISTANT_MODEL || modelRuntime.model || "",
+      coachRequestedModel: process.env.COACH_NARRATION_MODEL || modelRuntime.model || "",
+      assessmentRequestedModel: process.env.ASSESSMENT_MODEL || modelRuntime.model || "",
+      assessmentEnabled: String(process.env.ASSESSMENT_LLM_ENABLED || "").trim().toLowerCase() === "true",
+      coachNarrationEnabled: String(process.env.COACH_NARRATION_LLM_ENABLED || "").trim().toLowerCase() === "true",
+      grading: {
+        provider: gradingRuntime.provider,
+        requestedModel: gradingRuntime.model,
+        wireApi: gradingRuntime.wireApi,
+        liveConfigured: gradingRuntime.liveConfigured
+      }
+    },
     sourceDigests: {
       policyKernel: protocolSourceDigest("lib/proactive-policy/index.js"),
       lifecycle: protocolSourceDigest("lib/proactive-policy/lifecycle.js"),
+      // The representation chooser decides which activity type the agent offers.
+      // It is part of the protocol: changing the selection logic without changing
+      // the fingerprint would be silent protocol drift.
+      representationChoice: protocolSourceDigest("lib/proactive-policy/representation-choice.js"),
+      // 支架后检查题的平行题库：它决定学生每轮看到哪一道题，属于协议的一部分。
+      checkBank: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits-check-bank.js"),
+      // 主动水平与决策点随机化：它决定每个决策点抽到哪个条件，属于协议的一部分。
+      proactivity: protocolSourceDigest("lib/proactive-policy/proactivity.js"),
+      jevClient: protocolSourceDigest("lib/proactive-policy/jev-client.js"),
       adapter: protocolSourceDigest("lib/proactive-policy/adapters/v14-c3.js"),
+      verificationBank: protocolSourceDigest("lib/proactive-policy/adapters/v14-c3-verification-v3.js"),
+      verificationBankV2: protocolSourceDigest("lib/proactive-policy/adapters/v14-c3-verification-v2.js"),
       outcomeInstrument: protocolSourceDigest("lib/proactive-outcomes/v14-c3.js"),
+      outcomeArchiveV2: protocolSourceDigest("lib/proactive-outcomes/archive/v14-c3-v2.js"),
+      outcomeArchiveV3: protocolSourceDigest("lib/proactive-outcomes/archive/v14-c3-v3.js"),
+      outcomeFigureGenerator: protocolSourceDigest("ops/build-outcome-figures-r3.js"),
       studentRenderer: protocolSourceDigest("app/main/knowledge-assistant.js"),
       studentSignalClient: protocolSourceDigest("app/main/proactive-learning.js"),
       reactiveAssistant: protocolSourceDigest("lib/learning-assistant.js"),
-      pathCoach: protocolSourceDigest("lib/agentic-coach.js")
+      pathCoach: protocolSourceDigest("lib/agentic-coach.js"),
+      gradingAgent: protocolSourceDigest("lib/agents/grading.js"),
+      assessmentAgent: protocolSourceDigest("lib/agents/assessment.js"),
+      assessmentFeedback: protocolSourceDigest("lib/assessments/v14-c3-feedback-r1.js"),
+      functionsLimitsAssessment: protocolSourceDigest("lib/assessments/functions-limits-r2.js"),
+      functionsLimitsAssessmentArchive: protocolSourceDigest("lib/assessments/functions-limits-r1.js"),
+      functionsLimitsAdapter: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits-r2.js"),
+      functionsLimitsAdapterArchive: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits.js"),
+      functionsLimitsOutcomes: protocolSourceDigest("lib/proactive-outcomes/functions-limits.js"),
+      functionsLimitsTransfer: protocolSourceDigest("lib/assessments/functions-limits-transfer-r3.js"),
+      functionsLimitsRetention: protocolSourceDigest("lib/assessments/functions-limits-retention-r3.js"),
+      functionsLimitsRetentionArchive: protocolSourceDigest("lib/assessments/functions-limits-retention-r2.js"),
+      textbookReadings: protocolSourceDigest("app/main/textbook-reading.js"),
+      functionsLimitsTasks: protocolSourceDigest("data/functions-limits-courseware-contracts.json"),
+      modelTransport: protocolSourceDigest("lib/llm.js")
     }
   };
   proactiveProtocolFingerprint = crypto
@@ -193,6 +302,44 @@ const coursewareFeedbackTargetLookup = feedback.buildCoursewareFeedbackTargetLoo
 const packageInfo = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
 const port = Number(process.argv[2] || process.env.PORT || 8765);
 const host = process.env.HOST || "127.0.0.1";
+
+function isLoopbackHost(value = "") {
+  let normalized = String(value || "").trim().toLowerCase();
+  if (normalized.startsWith("[") && normalized.includes("]")) {
+    normalized = normalized.slice(1, normalized.indexOf("]"));
+  }
+  if (normalized.startsWith("::ffff:")) normalized = normalized.slice(7);
+  if (normalized === "localhost" || normalized === "::1") return true;
+  return net.isIPv4(normalized) && normalized.startsWith("127.");
+}
+
+function requestHostname(req) {
+  const header = String(req.headers.host || "").trim();
+  if (!header) return "";
+  try {
+    return new URL(`http://${header}`).hostname;
+  } catch {
+    return "";
+  }
+}
+
+const localAdminAuthBypassEnabled = (
+  !["0", "false", "no", "off"].includes(
+    String(process.env.LOCAL_ADMIN_AUTH_BYPASS ?? "true").trim().toLowerCase()
+  )
+  && isLoopbackHost(host)
+);
+
+function isLoopbackAdminRequest(req) {
+  if (!localAdminAuthBypassEnabled) return false;
+  const forwardedFor = String(req.headers["x-forwarded-for"] || "")
+    .split(",")[0]
+    .trim();
+  if (forwardedFor && !isLoopbackHost(forwardedFor)) return false;
+  return isLoopbackHost(req.socket?.remoteAddress)
+    && isLoopbackHost(requestHostname(req));
+}
+
 const configuredBasePath = String(process.env.BASE_PATH || "").trim();
 const gradingRegradeInFlightIds = new Set();
 const normalizedBasePath = configuredBasePath.replace(/^\/+|\/+$/g, "");
@@ -206,7 +353,7 @@ const researchConfig = {
 };
 const maxBodyBytes = 1024 * 1024;
 const maxBufferedStaticBytes = 512 * 1024;
-const maxGzipBytes = 256 * 1024;
+const maxGzipBytes = 4 * 1024 * 1024;
 const gzipCache = new Map();
 const maxGzipCacheEntries = 32;
 const sessionTtlMs = 30 * 24 * 60 * 60 * 1000;
@@ -223,9 +370,11 @@ const proactiveStudentPreferences = new Set(["standard", "reduced", "off"]);
 const proactiveNaturalBoundaryEventTypes = new Set([
   "parameter_commit",
   "interactive_submit",
+  "courseware_attempt_submitted",
   "courseware_interaction_complete",
   "courseware_formative_check_submitted",
-  "courseware_challenge_result"
+  "courseware_challenge_result",
+  "courseware_independent_check_completed"
 ]);
 const assistantInterventionRegistryLimit = 5000;
 const assistantHistoryMessageLimit = 60;
@@ -269,15 +418,33 @@ const publicFlowTestFiles = new Set([
   "app/flow-test/flow-test.js",
   "data/knowledge-graph.json"
 ]);
+const learningRuntimeHtml = require("./lib/learning-runtime").loadLearningRuntime(root);
+const coursewareModules = require("./lib/courseware-module-assets").loadCoursewareModules(root);
+const publicOpenMaicRendererFiles = new Set([
+  "assets/openmaic-classroom/frame.html",
+  "assets/openmaic-classroom/renderer.js",
+  "assets/openmaic-classroom/renderer.css",
+  "assets/openmaic-classroom/renderer.js.LEGAL.txt",
+  "assets/openmaic-classroom/highlighter.js",
+  "assets/openmaic-classroom/highlighter.js.LEGAL.txt"
+]);
 const publicLearningRouteStaticPath = "/data/multi-scene-learning-route.json";
 const publicLibFiles = new Set([
   "lib/katex.min.css",
   "lib/katex.min.js",
+  "lib/question-math.js",
   "lib/chart.umd.min.js",
   "lib/interaction-policy.js",
   "lib/active-time-policy.js",
   "lib/quiz-question-order.js"
 ]);
+const publicOutcomeFigureFiles = new Set([
+  outcomeRegistry,
+  outcomeRegistry.forVersion("v14-c3-outcomes-v3"),
+  outcomeRegistry.forVersion("v14-c3-outcomes-v2")
+].filter(Boolean).flatMap((instrument) => instrument.stageIds.flatMap((stageId) => (
+  instrument.publicStage(stageId).items.flatMap((item) => item.figure ? [item.figure.src] : [])
+))));
 const publicResourceExtensions = new Set([
   ".html",
   ".htm",
@@ -320,19 +487,45 @@ function sendJson(res, status, payload) {
   send(res, status, JSON.stringify(payload), "application/json; charset=utf-8");
 }
 
+function acceptsGzip(req) {
+  return String(req.headers["accept-encoding"] || "").split(",").some((entry) => {
+    const [encoding, ...parameters] = entry.trim().split(";");
+    const quality = parameters.map((part) => part.trim()).find((part) => part.startsWith("q="));
+    return encoding === "gzip" && (!quality || Number(quality.slice(2)) > 0);
+  });
+}
+
 function shouldCompress(req, type, size) {
   if (!/\btext\/|javascript|json|svg|xml/.test(type)) return false;
-  if (!/\bgzip\b/.test(req.headers["accept-encoding"] || "")) return false;
+  if (!acceptsGzip(req)) return false;
   return size > 1024 && size <= maxGzipBytes;
+}
+
+let compressedPublicLearningRoute;
+function sendPublicLearningRoute(req, res) {
+  const compressed = acceptsGzip(req);
+  if (compressed && !compressedPublicLearningRoute) {
+    compressedPublicLearningRoute = zlib.gzipSync(publicLearningRouteJson);
+  }
+  const body = compressed ? compressedPublicLearningRoute : publicLearningRouteJson;
+  const headers = {
+    "Cache-Control": "no-store, max-age=0, no-transform",
+    "Content-Length": String(Buffer.byteLength(body)),
+    Vary: "Accept-Encoding",
+    ...(compressed ? { "Content-Encoding": "gzip" } : {})
+  };
+  send(res, 200, req.method === "HEAD" ? "" : body, "application/json; charset=utf-8", headers);
 }
 
 function cacheControlFor(filePath, url) {
   const relative = path.relative(root, filePath).replaceAll(path.sep, "/");
   const ext = path.extname(filePath).toLowerCase();
+  if (coursewareModules.files.has(relative)) return "public, max-age=604800, immutable";
   if (
     relative === "index.html"
     || relative === "admin.html"
     || relative === "flow-test.html"
+    || relative === "assets/openmaic-classroom/frame.html"
     || publicFlowTestFiles.has(relative)
   ) return "no-store, max-age=0, no-transform";
   if (
@@ -374,6 +567,11 @@ function staticHeaders(filePath, url, extraHeaders = {}) {
     "X-Content-Type-Options": "nosniff",
     ...extraHeaders
   };
+  const relative = path.relative(root, filePath).replaceAll(path.sep, "/");
+  if (relative.startsWith("lib/fonts/") && publicFontExtensions.has(path.extname(filePath).toLowerCase())) {
+    headers["Access-Control-Allow-Origin"] = "*";
+  }
+  if (coursewareModules.files.has(relative)) headers["Access-Control-Allow-Origin"] = "*";
   const csp = contentSecurityPolicyFor(filePath);
   if (csp) headers["Content-Security-Policy"] = csp;
   return headers;
@@ -402,17 +600,31 @@ function isBlockedStaticResource(filePath) {
 }
 
 function isCoursewareHtml(filePath) {
-  if (!coursewareBridgeScript || path.extname(filePath).toLowerCase() !== ".html") return false;
+  if (
+    (!coursewareLearningEvidenceScript && !coursewareBridgeScript)
+    || path.extname(filePath).toLowerCase() !== ".html"
+  ) return false;
   const relative = path.relative(root, filePath).replaceAll(path.sep, "/");
   return /^resources\/open-maic\/.+\.html$/i.test(relative);
 }
 
-function injectCoursewareBridge(data) {
-  if (!coursewareBridgeScript) return data;
-  const source = Buffer.isBuffer(data) ? data.toString("utf8") : String(data || "");
-  if (/data-cq-context-bridge/i.test(source)) return Buffer.from(source, "utf8");
-  const safeScript = coursewareBridgeScript.replace(/<\/script/gi, "<\\/script");
-  const injection = `\n<script data-cq-context-bridge="1">\n${safeScript}\n</script>\n`;
+const rewriteCoursewareFonts = require("./lib/courseware-font-assets").createCoursewareFontRewriter(root);
+
+function injectCoursewareBridge(data, filePath) {
+  if (!coursewareLearningEvidenceScript && !coursewareBridgeScript) return data;
+  const original = Buffer.isBuffer(data) ? data.toString("utf8") : String(data || "");
+  const source = coursewareModules.rewrite(rewriteCoursewareFonts(original, filePath), filePath);
+  if (
+    /data-openmaic-learning-evidence-runtime/i.test(source)
+    || /data-cq-context-bridge/i.test(source)
+  ) return Buffer.from(source, "utf8");
+  const evidenceInjection = coursewareLearningEvidenceScript
+    ? `\n<script data-openmaic-learning-evidence-runtime="1">\n${coursewareLearningEvidenceScript.replace(/<\/script/gi, "<\\/script")}\n</script>\n`
+    : "";
+  const bridgeInjection = coursewareBridgeScript
+    ? `\n<script data-cq-context-bridge="1">\n${coursewareBridgeScript.replace(/<\/script/gi, "<\\/script")}\n</script>\n`
+    : "";
+  const injection = `${evidenceInjection}${bridgeInjection}`;
   const closeBodyAt = source.toLowerCase().lastIndexOf("</body>");
   const html = closeBodyAt >= 0
     ? `${source.slice(0, closeBodyAt)}${injection}${source.slice(closeBodyAt)}`
@@ -421,9 +633,10 @@ function injectCoursewareBridge(data) {
 }
 
 
-function streamStaticFile(req, res, filePath, type, url, stat) {
+function streamStaticFile(req, res, filePath, type, url, stat, extraHeaders = {}) {
   const headers = staticHeaders(filePath, url, {
-    "Content-Length": String(stat.size)
+    "Content-Length": String(stat.size),
+    ...extraHeaders
   });
   res.writeHead(200, {
     "Content-Type": type,
@@ -444,6 +657,13 @@ function streamStaticFile(req, res, filePath, type, url, stat) {
 
 function getDateRange(url) {
   const range = url.searchParams.get("range") || "";
+  // Every admin stats handler funnels through here, so the active-chapter scope
+  // rides along with the date scope. Default: the chapter currently under study.
+  // `chapter=all` widens it; an explicit id narrows it.
+  const requestedChapter = String(url.searchParams.get("chapter") || "").trim();
+  const chapterId = requestedChapter
+    || String(process.env.PROACTIVE_EXPERIMENT_CHAPTER_ID || "").trim()
+    || "V14-C1";
   if (range) {
     const now = new Date();
     const fmt = (date) => new Date(date.getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
@@ -481,13 +701,13 @@ function getDateRange(url) {
       default:
         start = ""; end = "";
     }
-    return { startDate: start, endDate: end };
+    return { startDate: start, endDate: end, chapterId };
   }
   const start = url.searchParams.get("start_date") || "";
   const end = url.searchParams.get("end_date") || "";
   const startInclusive = start ? `${start}T00:00:00.000+08:00` : "";
   const endInclusive = end ? `${end}T23:59:59.999+08:00` : "";
-  return { startDate: startInclusive, endDate: endInclusive };
+  return { startDate: startInclusive, endDate: endInclusive, chapterId };
 }
 
 function beijingIso(date = new Date()) {
@@ -874,7 +1094,7 @@ function persistGradingResults(participant, results = []) {
   if (!participant || !Array.isArray(results)) return;
   results.forEach((gr) => {
     if (!gr?.questionId) return;
-    db.updateQuizResultAiGrading(gr.questionId, participant.id, {
+    const quizResultIds = db.updateQuizResultAiGrading(gr.questionId, participant.id, {
       unitId: gr.unitId || gr.unit_id || "",
       aiScore: gr.score,
       aiConfidence: gr.confidence,
@@ -886,8 +1106,13 @@ function persistGradingResults(participant, results = []) {
       user_id: participant.id,
       agent_type: "grading",
       decision_type: "grade",
-      input_summary: { questionId: gr.questionId },
-      output_summary: { score: gr.score, confidence: gr.confidence, errorType: gr.errorType },
+      input_summary: { questionId: gr.questionId, unitId: gr.unitId || "", chapterId: gr.chapterId || "",
+        quizResultIds: quizResultIds || [] },
+      output_summary: {
+        score: gr.score, confidence: gr.confidence, errorType: gr.errorType,
+        needsReview: Boolean(gr.needsReview), gradingAudit: gr.gradingAudit || null,
+        rubricScores: gr.rubricScores || []
+      },
       confidence: gr.confidence,
       llm_provider: gr.provider || "",
       latency_ms: 0,
@@ -990,6 +1215,7 @@ function getAdminToken() {
 }
 
 function checkAdmin(req) {
+  if (isLoopbackAdminRequest(req)) return true;
   const configuredToken = getAdminToken();
   if (!configuredToken) return false;
   const requestedToken = bearerToken(req) || "";
@@ -1019,6 +1245,11 @@ function safeStaticPath(urlPath) {
       || publicResourceExtensions.has(extension)
     );
   const allowed = publicRootFiles.has(normalized)
+    || publicOutcomeFigureFiles.has(normalized)
+    || publicOpenMaicRendererFiles.has(normalized)
+    || coursewareModules.files.has(normalized)
+    || normalized === "assets/learning-runtime.js"
+    || normalized === "assets/learning-runtime.css"
     || publicFlowTestFiles.has(normalized)
     || normalized.startsWith("app/") && (extension === ".js" || extension === ".css")
     || normalized.startsWith("admin/") && (extension === ".js" || extension === ".css")
@@ -1067,7 +1298,7 @@ function assistantProviderInfo() {
     wireApi: runtime.wireApi || "",
     credentialSource: runtime.credentialSource || "",
     verification: live ? "pending" : "local",
-    label: live ? "模型待验证" : "本地引导"
+    label: live ? "AI 助教" : "本地引导"
   };
 }
 
@@ -1488,9 +1719,95 @@ function publicProactiveOutcomeSession(session = null) {
     instrumentVersion: session.instrument_version || "",
     protocolFingerprint: session.protocol_fingerprint || "",
     withdrawalReason: session.withdrawal_reason || "",
+    pausedAt: session.paused_at || "",
+    pauseCount: Number(session.pause_count || 0),
+    pausedDurationMs: Number(session.paused_duration_ms || 0),
     responses: session.status === "active"
       ? parseStoredJson(session.draft_response_json || "{}", {})
       : {}
+  };
+}
+
+const proactiveOutcomeAnswerKeyCache = new Map();
+
+function proactiveOutcomeAnswerKey(stageId = "", instrument = proactiveOutcomes) {
+  const cacheKey = `${instrument.version}:${stageId}`;
+  if (proactiveOutcomeAnswerKeyCache.has(cacheKey)) {
+    return proactiveOutcomeAnswerKeyCache.get(cacheKey);
+  }
+  const stage = instrument.publicStage(stageId);
+  const answers = {};
+  if (stage?.items?.length) {
+    const baseline = Object.fromEntries(
+      stage.items.map((item) => [item.id, item.options?.[0]?.value || ""])
+    );
+    stage.items.forEach((item) => {
+      const correctOption = (item.options || []).find((option) => {
+        const graded = instrument.grade(stageId, {
+          ...baseline,
+          [item.id]: option.value
+        });
+        return graded?.results?.find((result) => result.itemId === item.id)?.correct === true;
+      });
+      if (correctOption) answers[item.id] = correctOption.value;
+    });
+  }
+  proactiveOutcomeAnswerKeyCache.set(cacheKey, answers);
+  return answers;
+}
+
+function proactiveOutcomeReview(stageId, attempt, answersReleased) {
+  if (!attempt) return null;
+  const instrument = outcomeRegistry.forVersion(attempt.instrument_version || "");
+  const stage = instrument?.publicStage(stageId);
+  if (!stage) return {
+    unavailable: true,
+    reason: "该记录的原题库版本暂不可用，不能用当前题目解释旧作答。",
+    instrumentVersion: attempt.instrument_version || "",
+    items: []
+  };
+  const responses = parseStoredJson(attempt.response_json || "{}", {});
+  const resultRows = parseStoredJson(attempt.item_results_json || "[]", []);
+  const resultByItem = new Map(
+    (Array.isArray(resultRows) ? resultRows : []).map((row) => [row.itemId, row])
+  );
+  const answerKey = answersReleased ? proactiveOutcomeAnswerKey(stageId, instrument) : {};
+  return {
+    instrumentVersion: instrument.version,
+    answersReleased,
+    submittedAt: attempt.submitted_at || "",
+    ...(answersReleased
+      ? {
+          score: Number(attempt.score || 0),
+          maxScore: Number(attempt.max_score || 0),
+          accuracy: Number(attempt.accuracy || 0)
+        }
+      : {}),
+    items: stage.items.map((item) => {
+      const response = String(responses[item.id] || "");
+      const responseOption = item.options.find((option) => option.value === response);
+      const result = resultByItem.get(item.id) || null;
+      const correctOption = answersReleased ? String(answerKey[item.id] || "") : "";
+      const correctOptionEntry = answersReleased
+        ? item.options.find((option) => option.value === correctOption)
+        : null;
+      return {
+        id: item.id,
+        constructId: item.constructId,
+        prompt: item.prompt,
+        options: item.options,
+        ...(item.figure ? { figure: item.figure } : {}),
+        response,
+        responseLabel: responseOption?.label || "未作答",
+        ...(answersReleased
+          ? {
+              isCorrect: result?.correct === true,
+              correctOption,
+              correctOptionLabel: correctOptionEntry?.label || ""
+            }
+          : {})
+      };
+    })
   };
 }
 
@@ -1508,6 +1825,29 @@ function proactiveOutcomeState(
   const posttest = managed
     ? proactiveAssessmentCompletion(userId, "post")
     : { ready: false, completedAt: "", submitted: 0, expected: 0 };
+  const postCompletedAt = Date.parse(posttest.completedAt || "");
+  const retentionUnlockAt = Number.isFinite(postCompletedAt)
+    ? postCompletedAt + proactiveRetentionDelayHours * 60 * 60 * 1000
+    : NaN;
+  const retentionCloseAt = proactiveRetentionCloseHours !== null && Number.isFinite(postCompletedAt)
+    ? postCompletedAt + proactiveRetentionCloseHours * 60 * 60 * 1000
+    : NaN;
+
+  if (managed && Number.isFinite(retentionCloseAt) && now >= retentionCloseAt) {
+    const retentionSession = db.getProactiveOutcomeSession(
+      userId,
+      proactiveStudyConfig.experimentId,
+      "retention"
+    );
+    if (retentionSession?.status === "active") {
+      db.expireProactiveOutcomeSession({
+        userId,
+        sessionId: retentionSession.id,
+        reason: "retention_window_expired",
+        endedAt: new Date(retentionCloseAt).toISOString()
+      });
+    }
+  }
   const attempts = managed
     ? db.listProactiveOutcomeAttempts(
         userId,
@@ -1529,29 +1869,89 @@ function proactiveOutcomeState(
   const activeSession = sessions.find(
     (session) => session.status === "active"
   ) || null;
-  const postCompletedAt = Date.parse(posttest.completedAt || "");
-  const retentionUnlockAt = Number.isFinite(postCompletedAt)
-    ? postCompletedAt + proactiveRetentionDelayHours * 60 * 60 * 1000
-    : NaN;
-  const transferComplete = attemptByStage.has("near_transfer")
-    && attemptByStage.has("representation_transfer");
+  const terminalSessionStatuses = new Set([
+    "submitted",
+    "skipped",
+    "withdrawn",
+    "expired"
+  ]);
+  const stageTerminal = (stageId) => (
+    attemptByStage.has(stageId)
+    || terminalSessionStatuses.has(sessionByStage.get(stageId)?.status)
+  );
+  const priorVersion = sessions[0]?.instrument_version || attempts[0]?.instrument_version;
+  const workflow = priorVersion ? outcomeRegistry.forVersion(priorVersion) || proactiveOutcomes : proactiveOutcomes;
+  const transferComplete = workflow.stageIds
+    .filter((stageId) => stageId !== "retention").every(stageTerminal);
+  const answerReviewReleased = workflow.stageIds.every(stageTerminal);
+  const reminderHistory = managed
+    ? db.proactiveRetentionReminderHistory(
+        userId,
+        proactiveStudyConfig.experimentId
+      )
+    : [];
+  const shownReminderHours = new Set(
+    reminderHistory
+      .filter((row) => row.action === "shown")
+      .map((row) => Number(row.milestoneHours))
+      .filter(Number.isFinite)
+  );
+  const elapsedRetentionHours = Number.isFinite(postCompletedAt)
+    ? Math.max(0, (now - postCompletedAt) / (60 * 60 * 1000))
+    : 0;
+  const dueReminderHours = transferComplete
+    && Number.isFinite(retentionUnlockAt)
+    && now >= retentionUnlockAt
+    && (!Number.isFinite(retentionCloseAt) || now < retentionCloseAt)
+    && !stageTerminal("retention")
+    ? proactiveRetentionReminderHours.filter((hours) => (
+        elapsedRetentionHours >= hours && !shownReminderHours.has(hours)
+      ))
+    : [];
+  const nextReminderHours = proactiveRetentionReminderHours.find(
+    (hours) => hours > elapsedRetentionHours && !shownReminderHours.has(hours)
+  );
+  const retentionWindowStatus = !posttest.ready
+    ? "not_scheduled"
+    : stageTerminal("retention")
+      ? attemptByStage.has("retention") ? "completed" : sessionByStage.get("retention")?.status || "closed"
+      : Number.isFinite(retentionCloseAt) && now >= retentionCloseAt
+        ? "expired"
+        : Number.isFinite(retentionUnlockAt) && now < retentionUnlockAt
+          ? "waiting"
+          : transferComplete
+            ? "open"
+            : "waiting_for_transfer";
 
-  const stages = proactiveOutcomes.stageIds.map((stageId) => {
-    const instrument = proactiveOutcomes.publicStage(stageId);
+  const stages = workflow.stageIds.map((stageId) => {
     const attempt = attemptByStage.get(stageId) || null;
     const session = sessionByStage.get(stageId) || null;
+    const instrumentVersion = attempt
+      ? attempt.instrument_version || ""
+      : session ? session.instrument_version || "" : workflow.version;
+    const stageInstrument = outcomeRegistry.forVersion(instrumentVersion);
+    const instrument = stageInstrument?.publicStage(stageId)
+      || workflow.publicStage(stageId);
     let status = "locked";
     let reason = "完成章后测后开放。";
     let unlockAt = "";
     if (attempt || session?.status === "submitted") {
       status = "submitted";
-      reason = "已提交；为避免影响后续测量，不显示即时对错。";
-    } else if (session?.status === "withdrawn") {
-      status = "withdrawn";
-      reason = "已退出本阶段；该失访状态会保留在研究记录中。";
+      reason = answerReviewReleased
+        ? "已提交；现在可以回看对错、正确答案和总分。"
+        : "已提交；可以回看自己的作答，全部测量完成后统一开放对错和答案。";
+    } else if (["skipped", "withdrawn", "expired"].includes(session?.status)) {
+      status = session.status;
+      reason = session.status === "skipped"
+        ? "已永久跳过本阶段；缺失原因已记录，后续阶段仍可继续。"
+        : session.status === "expired"
+          ? "本阶段已超过作答窗口；超窗状态已记录。"
+          : "已随研究退出结束本阶段；该失访状态会保留在研究记录中。";
     } else if (session?.status === "active") {
       status = "active";
-      reason = "测量进行中；刷新或换设备后会继续同一会话。";
+      reason = session.paused_at
+        ? "本阶段已暂时离开；作答草稿已保留，继续时恢复同一会话。"
+        : "测量进行中；刷新或换设备后会继续同一会话。";
     } else if (activeSession) {
       reason = "请先完成或退出当前正在进行的独立测量。";
     } else if (participation?.status === "withdrawn") {
@@ -1562,20 +1962,40 @@ function proactiveOutcomeState(
       reason = "完成章前测并进入本章实验后开放。";
     } else if (!posttest.ready) {
       reason = "完成章后测后开放。";
+    } else if (
+      stageId === "representation_transfer"
+      && !stageTerminal("near_transfer")
+    ) {
+      reason = "完成或明确跳过近迁移测量后按路径开放。";
     } else if (stageId === "retention" && !transferComplete) {
-      reason = "完成两项迁移测量后进入延迟保持阶段。";
+      reason = "完成或明确跳过两项迁移测量后进入延迟保持阶段。";
     } else if (
       stageId === "retention"
       && Number.isFinite(retentionUnlockAt)
       && now < retentionUnlockAt
     ) {
       unlockAt = new Date(retentionUnlockAt).toISOString();
-      reason = "将在延迟窗口结束后开放。";
+      reason = proactiveRetentionCloseHours === null
+        ? `章后测提交满${proactiveRetentionDelayHours}小时后开放，开放后不设截止时间。`
+        : "将在延迟窗口结束后开放。";
+    } else if (
+      stageId === "retention"
+      && Number.isFinite(retentionCloseAt)
+      && now >= retentionCloseAt
+    ) {
+      status = "expired";
+      reason = "延迟保持测量已超过作答窗口；超窗状态已记录。";
     } else {
       status = "available";
-      reason = "可独立作答；本阶段不提供知点提示、路径建议或即时反馈。";
+      reason = "可独立作答；本阶段不提供知点提示、路径建议或即时反馈。"
+        + (stageId === "retention" && proactiveRetentionCloseHours === null ? "开放后不设截止时间。" : "");
+    }
+    if (!stageInstrument && ["active", "available"].includes(status)) {
+      status = "locked";
+      reason = "该会话的题库版本暂不可用，请联系管理员恢复原版本；已有草稿不会被替换。";
     }
     return {
+      instrumentVersion,
       id: instrument.id,
       label: instrument.label,
       purpose: instrument.purpose,
@@ -1585,11 +2005,18 @@ function proactiveOutcomeState(
       status,
       reason,
       unlockAt,
+      closeAt: stageId === "retention" && Number.isFinite(retentionCloseAt)
+        ? new Date(retentionCloseAt).toISOString()
+        : "",
+      windowStatus: stageId === "retention" ? retentionWindowStatus : "",
       sessionId: session?.id || "",
       startedAt: session?.started_at || "",
       submittedAt: attempt?.submitted_at || "",
       endedAt: session?.ended_at || "",
       withdrawalReason: session?.withdrawal_reason || "",
+      review: attempt
+        ? proactiveOutcomeReview(stageId, attempt, answerReviewReleased)
+        : null,
       ...(["available", "active"].includes(status)
         ? { items: instrument.items }
         : {})
@@ -1598,9 +2025,45 @@ function proactiveOutcomeState(
   return {
     managed,
     chapterId,
-    instrumentVersion: proactiveOutcomes.version,
+    instrumentVersion: workflow.version,
     protocolFingerprint: proactiveProtocolFingerprint,
     retentionDelayHours: proactiveRetentionDelayHours,
+    retentionCloseHours: proactiveRetentionCloseHours,
+    retentionReminderHours: proactiveRetentionReminderHours,
+    retentionWindow: {
+      status: retentionWindowStatus,
+      // The client must not trust its own clock for a countdown: devices drift,
+      // and the retention deadline is a measurement-protection boundary. Send the
+      // server's own "now" so the page can derive a one-shot offset and keep the
+      // server as the sole authority on whether a window is open.
+      serverNow: new Date(now).toISOString(),
+      unlockAt: Number.isFinite(retentionUnlockAt)
+        ? new Date(retentionUnlockAt).toISOString()
+        : "",
+      closeAt: Number.isFinite(retentionCloseAt)
+        ? new Date(retentionCloseAt).toISOString()
+        : "",
+      closePolicy: Number.isFinite(retentionCloseAt) ? "fixed" : "open-ended",
+      // Countdown target, in ms. null means "no countdown applies" — the window is
+      // not scheduled yet, has already ended, or is open with no deadline.
+      remainingMs: (() => {
+        if (["completed", "closed", "expired", "not_scheduled", "waiting_for_transfer"]
+          .includes(retentionWindowStatus)) return null;
+        if (retentionWindowStatus === "waiting") {
+          return Number.isFinite(retentionUnlockAt) ? Math.max(0, retentionUnlockAt - now) : null;
+        }
+        if (retentionWindowStatus === "open") {
+          return Number.isFinite(retentionCloseAt) ? Math.max(0, retentionCloseAt - now) : null;
+        }
+        return null;
+      })(),
+      windowVersion: "retention-v1",
+      dueReminderHours,
+      nextReminderHours: Number.isFinite(nextReminderHours)
+        ? nextReminderHours
+        : null,
+      reminders: reminderHistory
+    },
     posttest,
     participation: publicProactiveParticipation(participation),
     assignmentPending: Boolean(
@@ -1610,6 +2073,8 @@ function proactiveOutcomeState(
     ),
     activeSession: publicProactiveOutcomeSession(activeSession),
     agentAssistanceBlocked: Boolean(activeSession),
+    answerReviewReleased,
+    answerReviewPolicy: "全部独立测量提交、明确跳过或超窗后统一开放已提交阶段的对错和正确答案。",
     stages
   };
 }
@@ -1850,6 +2315,12 @@ function proactiveParameter(row = {}) {
 function proactiveIndependentAttemptResult(row = {}) {
   const payload = row.payload || {};
   const data = payload.data || {};
+  if ((proactiveEventType(row) === "courseware_challenge_result" && data.independent !== true)
+    || data.independent === false
+    || Number(data.hint_count ?? data.hintCount) > 0
+    || Number(data.reset_count ?? data.resetCount) > 0
+    || data.error_type === "missed_expression"
+    || data.selected_zone === "missed") return null;
   const raw = data.is_correct
     ?? data.isCorrect
     ?? data.correct
@@ -1907,10 +2378,32 @@ function proactiveEvidenceForRequest({
   const lifecycleState = proactivePolicy.lifecycle.normalize(
     parseStoredJson(policyState.lifecycle_json || "{}", {})
   );
+  // Struggle that shows up in the courseware rather than in a quiz. Computed once
+  // here because both `quiet_dwell` and `representation_switch` gate on it, and
+  // two independent computations would be free to drift apart.
+  const struggleWindowMs = 5 * 60 * 1000;
+  const struggleRows = rows.filter((row) => {
+    const at = proactiveEventAt(row);
+    return at > 0 && at <= now && now - at <= struggleWindowMs;
+  });
+  const coursewareParameterCommits = struggleRows.filter(
+    (row) => proactiveEventType(row) === "parameter_commit"
+  ).length;
+  let coursewareAttemptCount = 0;
+  let coursewareAttemptFailures = 0;
+  for (const row of struggleRows) {
+    const result = proactiveIndependentAttemptResult(row);
+    if (typeof result !== "boolean") continue;
+    coursewareAttemptCount += 1;
+    if (result === false) coursewareAttemptFailures += 1;
+  }
   const refs = [];
   const families = new Set();
   const evidence = {
     families: [],
+    // 每个证据族的强度（0–1）。原来只有"在不在集合里"，没有"多强"——于是必须靠
+    // `singleConfirmedResult` 这类特例绕过门槛。现在强度随证据一起传，门槛按强度判。
+    familyStrength: {},
     evidenceRefs: refs,
     parameterCommitCount: 0,
     taskProgressSinceFirstCommit: 0,
@@ -2008,6 +2501,12 @@ function proactiveEvidenceForRequest({
     ) {
       families.add("time");
       if (evidence.confirmedGapCount > 0) families.add("result");
+      evidence.parameterCommitCount = coursewareParameterCommits;
+      evidence.sceneAttemptCount = coursewareAttemptCount;
+      evidence.sceneAttemptFailures = coursewareAttemptFailures;
+      if (coursewareAttemptFailures > 0 || coursewareParameterCommits >= 3) {
+        families.add("process");
+      }
       if (latestEvent) {
         refs.push({
           id: latestEvent.row.id,
@@ -2016,6 +2515,65 @@ function proactiveEvidenceForRequest({
           capturedAt: latestEvent.row.created_at
         });
       }
+    }
+  }
+
+  // The agent's own decision to change the KIND of activity, not a rung on the
+  // scaffold ladder. The route is the only place that knows which activity types a
+  // knowledge point offers, so the candidate set and the target are computed here
+  // and handed to the policy, which then decides whether acting is justified.
+  if (signal.kind === "representation_switch") {
+    // 「换一种方式看」的前提是**先试过支架**。
+    //
+    // 设计文档与客户端注释都写明这条：换表征是给"反复调参/失败之后支架也没解决"
+    // 用的，它不是一个先手手段。早先这里无条件 `families.add("history")`，等于把
+    // 这条前提删掉了——`representation_switch` 的 requiredEvidenceFamilies 就是
+    // ["history","process"]，history 白送，门槛形同虚设。
+    //
+    // 后果实测得到：换表征能在每个知识点**抢先**占掉唯一的一次干预机会（客户端冷却
+    // 10 分钟 > 单个知识点约 5 分钟），L1–L5 支架阶梯永远进不去，干跑人均 6 个决策点
+    // 全是换表征，主因子（主动水平）退化成一个水平。
+    //
+    // "试过支架"用生命周期里真实留下的痕迹判断：答过支架后检查（attemptCount），
+    // 或积累过摩擦/成功证据（frictionEvidenceCount / successEvidenceCount）。
+    const supportAlreadyTried = Number(lifecycleState.attemptCount || 0) > 0
+      || Number(lifecycleState.frictionEvidenceCount || 0) > 0
+      || Number(lifecycleState.successEvidenceCount || 0) > 0;
+    if (supportAlreadyTried) families.add("history");
+    evidence.parameterCommitCount = coursewareParameterCommits;
+    evidence.sceneAttemptCount = coursewareAttemptCount;
+    evidence.sceneAttemptFailures = coursewareAttemptFailures;
+    if (coursewareAttemptFailures > 0 || coursewareParameterCommits >= 3
+      || Number(evidence.confirmedGapCount || 0) > 0) {
+      families.add("process");
+    }
+    const point = learningRoute.chapters
+      .find((entry) => entry.id === proactiveStudyConfig.chapterId)
+      ?.modules.flatMap((module) => module.knowledgePoints || [])
+      .find((entry) => entry.id === (resolved.unit.knowledgePointId || resolved.unit.id));
+    if (point) {
+      // Which activity types has this learner already opened for this knowledge
+      // point? Read from the interaction events the platform already records, plus
+      // the scene they are in right now.
+      const history = [];
+      for (const row of rows) {
+        const data = row.payload?.data || row.payload || {};
+        const sceneType = data.sceneType || data.scene_type || data.selectedSceneType;
+        if (sceneType) history.push({ knowledgePointId: point.id, sceneType });
+      }
+      const currentSceneType = resolved.scene?.type || "";
+      if (currentSceneType && currentSceneType !== "knowledge") {
+        history.push({ knowledgePointId: point.id, sceneType: currentSceneType });
+      }
+      const choice = representationChoice.chooseRepresentation({
+        knowledgePoint: point,
+        experiencedTypes: representationChoice.experiencedTypesFor({
+          history, knowledgePointId: point.id
+        }),
+        masteryLevel: null,
+        reviewMode: false
+      });
+      if (choice) evidence.representationChoice = choice;
     }
   }
 
@@ -2084,12 +2642,38 @@ function proactiveEvidenceForRequest({
       ))
       .sort((left, right) => right.at - left.at)[0] || null;
     if (attempt) {
+      const adapter = proactivePolicy.adapterForChapter(resolved.unit.chapterId || proactiveStudyConfig.chapterId);
+      const matching = adapter?.coursewareVerificationMatch?.({
+        knowledgePointId: resolved.unit.knowledgePointId || resolved.unit.id,
+        supportLevel: lifecycleState.supportLevel || policyState.current_level,
+        data: attempt.row.payload?.data || {}
+      }) || { eligible: false, reasonCode: "courseware_matching_unavailable" };
+      evidence.coursewareVerificationMatch = {
+        ...matching,
+        eventId: attempt.row.id,
+        challengeId: boundedLearningText(attempt.row.payload?.data?.challenge_id, 180)
+      };
+      refs.push({
+        id: attempt.row.id,
+        sourceType: "interaction",
+        eventType: attempt.type,
+        capturedAt: attempt.row.created_at
+      });
+      if (!matching.eligible) {
+        evidence.families = Array.from(families);
+        return evidence;
+      }
       evidence.independentAttemptVerified = true;
       evidence.independentAttemptSuccess = attempt.success;
       evidence.confirmedCorrect = attempt.success ? 1 : 0;
       evidence.confirmedIncorrect = attempt.success ? 0 : 1;
       evidence.questionCount = 1;
       evidence.verificationSource = "courseware_semantic_event";
+      evidence.verificationCheckId = `courseware-event:${attempt.row.id}`;
+      evidence.verificationEvidenceScope = matching.evidenceScope;
+      evidence.verificationSubSkill = matching.subSkill;
+      evidence.verificationMatchingVersion = matching.matchingVersion;
+      evidence.verificationMatchReason = matching.reasonCode;
       evidence.verificationEventType = attempt.type;
       evidence.verificationStage = proactivePolicy.lifecycle
         .verificationStageForSupportLevel(
@@ -2099,15 +2683,36 @@ function proactiveEvidenceForRequest({
       if (lifecycleState.phase === "awaiting_independent_attempt") {
         families.add("history");
       }
-      refs.push({
-        id: attempt.row.id,
-        sourceType: "interaction",
-        eventType: attempt.type,
-        capturedAt: attempt.row.created_at
-      });
     }
   }
   evidence.families = Array.from(families);
+  // 证据强度：由底层证据量统一推导，而不是在 10 处 `families.add` 旁边各写一遍。
+  //
+  // 强度的意义在于让"有一点点过程证据"和"大量过程证据"可区分。门槛按强度判之后，
+  // 原来那个 `singleConfirmedResult` 特例（一个错题绕过所有族要求）就不需要了。
+  const clamp01 = (value) => Math.max(0, Math.min(1, Number(value) || 0));
+  evidence.familyStrength = {
+    // 90 秒起算满强度——与前端 dwell 门槛一致
+    time: evidence.dwellSeconds ? clamp01(Number(evidence.dwellSeconds) / 180) : 0,
+    // 3 次参数提交或 1 次判定失败即达满强度
+    process: Math.max(
+      clamp01(Number(evidence.parameterCommitCount || 0) / 3),
+      clamp01(Number(evidence.sceneAttemptFailures || 0))
+    ),
+    // 有进展反而说明任务族证据弱——它记录的是"任务边界"这件事本身
+    task: families.has("task") ? 0.8 : 0,
+    // 已确认的错误/缺口是最强的证据
+    result: clamp01(
+      Number(evidence.confirmedIncorrect || 0) > 0
+      || Number(evidence.confirmedGapCount || 0) > 0 ? 1 : 0
+    ),
+    // 生命周期历史：有一次记录就算存在，多次更强
+    history: families.has("history") ? clamp01(0.6 + Number(evidence.attemptCount || 0) * 0.2) : 0,
+    preference: families.has("preference") ? 0.8 : 0
+  };
+  // 课程语义：该知识点**常见的混淆**（来自课件语义合同），不是"诊断出这个学生错了"。
+  // 这两者必须分清——混淆会在策略里被当成已知事实，从而把"选哪个场景"退化成查表。
+  evidence.topicMisconception = boundedLearningText(resolved.unit.misconception, 240);
   return evidence;
 }
 
@@ -2115,13 +2720,34 @@ function mergeProactiveEvidence(rebuilt = {}, trusted = null) {
   if (!trusted || typeof trusted !== "object" || Array.isArray(trusted)) {
     return rebuilt;
   }
+  const families = Array.from(new Set([
+    ...(Array.isArray(rebuilt.families) ? rebuilt.families : []),
+    ...(Array.isArray(trusted.families) ? trusted.families : [])
+  ]));
+  // 强度表必须跟着 families 一起合并。
+  //
+  // `proactiveEvidenceForRequest` 是按"重建出来的证据"算强度的，它不知道调用方额外
+  // 塞进来的可信证据（学生自己点了"换一种帮助"就是最典型的一种）。只并族名不并强度，
+  // 合并进来的族强度会留在 0，于是按强度判定的门槛照样拦——而且拦得毫无声息。
+  // 实测踩过：history/preference 都是 0，学生主动请求换表征永远得到 stay_silent。
+  const rebuiltStrength = rebuilt.familyStrength && typeof rebuilt.familyStrength === "object"
+    ? rebuilt.familyStrength
+    : {};
+  const trustedStrength = trusted.familyStrength && typeof trusted.familyStrength === "object"
+    ? trusted.familyStrength
+    : {};
+  const familyStrength = { ...rebuiltStrength };
+  for (const family of families) {
+    const candidates = [rebuiltStrength[family], trustedStrength[family]]
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value));
+    familyStrength[family] = candidates.length ? Math.max(...candidates) : 0.5;
+  }
   return {
     ...rebuilt,
     ...trusted,
-    families: Array.from(new Set([
-      ...(Array.isArray(rebuilt.families) ? rebuilt.families : []),
-      ...(Array.isArray(trusted.families) ? trusted.families : [])
-    ])),
+    families,
+    familyStrength,
     evidenceRefs: [
       ...(Array.isArray(rebuilt.evidenceRefs) ? rebuilt.evidenceRefs : []),
       ...(Array.isArray(trusted.evidenceRefs) ? trusted.evidenceRefs : [])
@@ -2181,13 +2807,40 @@ function publicProactivePolicyState(row = {}, options = {}) {
   const adapter = proactivePolicy.adapterForChapter(
     proactiveStudyConfig.chapterId
   );
-  const candidateCheck = studentPreference !== "off"
-    && lifecycleState.phase === "awaiting_independent_attempt"
-    ? adapter?.publicVerificationCheck?.(
-        row.scope_key || "",
-        row.current_level || lifecycleState.supportLevel
-      )
+  const checkLevel = row.current_level || lifecycleState.supportLevel;
+  // 一道题只要已经发给学生，就必须**把同一道题还给他**——中途换题会让学生答的题和
+  // 判分的题不是同一道（判分是按 checkId 查题库的，换了题就等于判了另一道题）。
+  const scopeKeyForCheck = row.scope_key || "";
+  const issuedCheckId = lifecycleState.activeVerificationCheckId || "";
+  const pendingCheck = studentPreference !== "off"
+    && lifecycleState.phase === "awaiting_independent_attempt";
+  const resolvedIssued = pendingCheck && issuedCheckId
+    ? adapter?.publicVerificationCheck?.(scopeKeyForCheck, checkLevel, issuedCheckId)
     : null;
+  let candidateCheck = null;
+  if (pendingCheck && resolvedIssued) {
+    // 本回合签发过题：没答过就原样回放；答过了才换一道没做过的平行题。
+    // 同一 (知识点, 等级) 的第二次支架回合若拿到做过的题，近端结果不是被练习效应
+    // 污染，而是整条缺失——旧逻辑遇到同 id 干脆不发题（实测踩过）。
+    candidateCheck = issuedCheckId !== lifecycleState.lastVerificationCheckId
+      ? resolvedIssued
+      : adapter?.nextVerificationCheck?.(
+          scopeKeyForCheck,
+          checkLevel,
+          issuedCheckId
+        );
+  } else if (pendingCheck) {
+    // 没有签发 id 的旧等待回合（v2 之前不落这个字段）：回放当时那张固定题。
+    // 这里不能"轮转到新题"，因为学生看到的是那张固定题，换掉就不是同一道题了。
+    const legacyCheckId = `${scopeKeyForCheck}-probe-${String(checkLevel).toLowerCase()}-v1`;
+    candidateCheck = adapter?.publicVerificationCheck?.(scopeKeyForCheck, checkLevel, legacyCheckId)
+      || adapter?.nextVerificationCheck?.(
+          scopeKeyForCheck,
+          checkLevel,
+          lifecycleState.lastVerificationCheckId
+        )
+      || null;
+  }
   const verificationCheck = candidateCheck
     && candidateCheck.id !== lifecycleState.lastVerificationCheckId
     ? candidateCheck
@@ -2215,6 +2868,7 @@ function publicProactivePolicyState(row = {}, options = {}) {
       lastOutcome: lifecycleState.lastOutcome,
       lastOutcomeAt: lifecycleState.lastOutcomeAt,
       lastVerificationCheckId: lifecycleState.lastVerificationCheckId,
+      activeVerificationCheckId: lifecycleState.activeVerificationCheckId,
       attemptCount: lifecycleState.attemptCount,
       successEvidenceCount: lifecycleState.successEvidenceCount,
       frictionEvidenceCount: lifecycleState.frictionEvidenceCount
@@ -2317,6 +2971,7 @@ function proactiveStudyState(userId, chapterId) {
     assignment: publicProactiveAssignment(assignment),
     runtime: runtime ? publicProactiveRuntime(runtime) : null,
     studentPreference,
+    globalPreferenceControlEnabled: proactiveGlobalPreferenceControlEnabled,
     pretest,
     outcomeSession: publicProactiveOutcomeSession(activeOutcomeSession),
     agentAssistanceBlocked: Boolean(activeOutcomeSession),
@@ -2337,6 +2992,52 @@ function proactiveStudyState(userId, chapterId) {
             )
           }))
       : []
+  };
+}
+
+function coursewareSemanticEventType(type = "", payload = {}) {
+  if (String(type || "") !== "interaction") return "";
+  const eventType = boundedLearningText(
+    payload?.eventType || payload?.data?.eventType,
+    120
+  ).toLowerCase();
+  return eventType.startsWith("courseware_") ? eventType : "";
+}
+
+function serverBoundLearningEvent(userId, type = "", payload = {}, createdAt = nowIso()) {
+  const sourcePayload = payload && typeof payload === "object" && !Array.isArray(payload)
+    ? payload
+    : {};
+  const eventType = coursewareSemanticEventType(type, sourcePayload);
+  const learningGeneration = db.currentLearningGeneration(userId, createdAt);
+  if (!eventType) {
+    return { payload: sourcePayload, learningGeneration };
+  }
+  const assignment = db.getExperimentAssignment(
+    userId,
+    proactiveStudyConfig.experimentId
+  );
+  const research = sourcePayload.research
+    && typeof sourcePayload.research === "object"
+    && !Array.isArray(sourcePayload.research)
+    ? sourcePayload.research
+    : {};
+  return {
+    learningGeneration,
+    payload: {
+      ...sourcePayload,
+      research: {
+        ...research,
+        experimentId: proactiveStudyConfig.experimentId,
+        condition: assignment?.condition || "unassigned",
+        cohort: assignment?.cohort || proactiveStudyConfig.cohort || "",
+        assignmentVersion: assignment?.assignment_version
+          || proactiveStudyConfig.assignmentVersion
+          || "",
+        learningGeneration,
+        protocolFingerprint: proactiveProtocolFingerprint
+      }
+    }
   };
 }
 
@@ -2889,6 +3590,118 @@ function assistantMinimumDwellSeconds(resolved, sceneType = "") {
   return readingScene ? 150 : 90;
 }
 
+/**
+ * 校验主动信号：这个学生、在这个位置，是不是**真的**发生了这件事？
+ *
+ * 客户端送来的 `signal` 是**声明**，不是事实。管理式（实验章节）路径虽然会用服务端
+ * 自己的证据重新判一遍，伪造的信号造不出干预；但如果不显式拒绝，它就只是"碰巧静默"，
+ * 于是安全断言从"明确拒绝"退化成"碰巧没事"，回归了也测不出来。所以两条路径共用这一份
+ * 校验——只有一份实现，就不会漂移。
+ *
+ * @returns {{ok: true, signal: object} | {ok: false, status: number, code: string, message: string}}
+ */
+function verifyAssistantProactiveSignal({ resolved, signal = {}, quizAttempt = null, sceneType = "" }) {
+  const kind = String(signal.kind || "");
+  if (kind === "quiz_review") {
+    if (!resolved.isQuiz || !quizAttempt || quizAttempt.incorrect <= 0) {
+      return {
+        ok: false,
+        status: 400,
+        code: "assistant_intervention_signal_mismatch",
+        message: "当前没有已确认的错题可供主动复盘。"
+      };
+    }
+    if (quizAttempt.pendingReview > 0) {
+      return {
+        ok: false,
+        status: 400,
+        code: "assistant_intervention_signal_mismatch",
+        message: "简答题仍在批改，完成后再开始完整错题复盘。"
+      };
+    }
+    return {
+      ok: true,
+      // 数字一律用服务端算出来的，不采信客户端报的 incorrect。
+      signal: {
+        ...signal,
+        incorrect: quizAttempt.incorrect,
+        pendingReview: quizAttempt.pendingReview,
+        questionCount: quizAttempt.total,
+        reviewIndex: 0
+      }
+    };
+  }
+  if (kind === "formative_outcome") {
+    if (
+      !resolved.isQuiz
+      || resolved.unit.phase !== "formative"
+      || !resolved.unit.knowledgePointId
+      || !quizAttempt
+      || quizAttempt.pendingReview > 0
+    ) {
+      return {
+        ok: false,
+        status: 400,
+        code: "assistant_intervention_signal_mismatch",
+        message: "当前没有可用于主动策略的完整形成性结果。"
+      };
+    }
+    if (quizAttempt.incorrect <= 0) {
+      // 没有确认的错误不是"伪造"，是"没什么可复盘的"，所以走 200 静默而不是 400。
+      return { ok: true, silentReason: "confirmed_error_absent", signal };
+    }
+    return {
+      ok: true,
+      signal: {
+        ...signal,
+        kind: "quiz_review",
+        incorrect: quizAttempt.incorrect,
+        correct: quizAttempt.correct,
+        pendingReview: quizAttempt.pendingReview,
+        questionCount: quizAttempt.total,
+        reviewIndex: 0
+      }
+    };
+  }
+  if (kind === "repeated_parameter") {
+    if (
+      resolved.isQuiz
+      || !resolved.scene
+      || (
+        resolved.contextRef.kind !== "interaction"
+        && resolved.contextRef.scope !== "interactive"
+      )
+      || !boundedLearningText(signal.parameter, 120)
+      || signal.newValue === undefined
+      || signal.newValue === null
+      || boundedLearningText(signal.newValue, 80) === ""
+    ) {
+      return {
+        ok: false,
+        status: 400,
+        code: "assistant_intervention_signal_mismatch",
+        message: "当前学习位置没有可信的连续调参证据。"
+      };
+    }
+    return { ok: true, signal };
+  }
+  if (kind === "quiet_dwell") {
+    if (
+      resolved.isQuiz
+      || Number(signal.dwellSeconds || 0) < assistantMinimumDwellSeconds(resolved, sceneType)
+    ) {
+      return {
+        ok: false,
+        status: 400,
+        code: "assistant_intervention_signal_mismatch",
+        message: "当前学习状态不足以判断为有效停留。"
+      };
+    }
+    return { ok: true, signal };
+  }
+  return { ok: true, signal };
+}
+
 function learningNoteError(code, message, status = 400) {
   const error = new Error(message);
   error.code = code;
@@ -2987,6 +3800,16 @@ async function generateAssistantTurn({
     assistantIntent,
     proactivePrompt
   });
+  const clarification = learningAssistant.unresolvedVisualReferenceReply({ resolved, question });
+  if (clarification) {
+    return {
+      provider: "grounding-guard",
+      text: clarification,
+      policy: prompt.policy,
+      guidance: { ...prompt.guidance, showUnderstandingCheck: false, actions: [] },
+      fallback: false
+    };
+  }
   const providerInfo = assistantProviderInfo();
   if (!providerInfo.live) {
     return {
@@ -3141,6 +3964,86 @@ async function handleManagedProactiveIntervention({
     ...experimentRuntime,
     participationStatus: participation?.status || "not_enrolled"
   };
+
+  // ---- 决策点随机化 + Jev 判断层 -----------------------------------------
+  // 条件按**参与者内置换区块**分配，所以序号必须跨知识点连续编号。
+  const decisionSequence = db.proactiveDecisionCountForUser(
+    auth.participant.id,
+    proactiveStudyConfig.experimentId
+  ) + 1;
+  // 触发时机这一维**不作为随机化因子**。设计文档《决策点产出实测与设计修正》§5 选了
+  // 方案 A：N=20、6 个知识点分 4 格每格只有 1.5 个观测，功率不够，所以只保留"判断
+  // 来源"（规则 vs Jev）一个因子。这里仍然算出决策点层面分配到的时机格，但只当协变量
+  // 记录（evidence.triggerTimingAssigned），**绝不能当作被操纵的自变量写进主分析**：
+  // 4.5 秒级的随机延迟从未在本系统里实施，两种"时机条件"下的学生实际体验完全相同。
+  const decisionCondition = proactivity.assignDecisionCondition({
+    participantId: auth.participant.id,
+    decisionSequence,
+    salt: proactiveStudyConfig.assignmentSalt || proactiveStudyConfig.experimentId
+  });
+  // 随机化的单位是**知识点**，不是决策点。干跑实测显示一个知识点通常只有 1–2 次
+  // 干预机会（10 分钟冷却 > 每个知识点约 5 分钟的学习时间），决策点层面每格只有
+  // 30–90 个观测，撑不起 2×2。
+  const chapterPoints = learningRoute.chapters
+    .find((entry) => entry.id === proactiveStudyConfig.chapterId)
+    ?.modules.flatMap((module) => module.knowledgePoints || []) || [];
+  const policyScopePointId = resolved.unit.knowledgePointId || resolved.unit.id;
+  const knowledgePointIndex = Math.max(0, chapterPoints.findIndex(
+    (entry) => entry.id === policyScopePointId
+  ));
+  const knowledgePointAssignment = proactivity.assignKnowledgePointCondition({
+    participantId: auth.participant.id,
+    knowledgePointIndex,
+    knowledgePointCount: Math.max(2, chapterPoints.length),
+    salt: proactiveStudyConfig.assignmentSalt || proactiveStudyConfig.experimentId
+  });
+  // 受保护测量阶段（未交卷的测验、预/后测）判定。两个用途：
+  //   1. 跳过 Jev 判断——这段时间不管判什么都一定会被策略层静默掉，
+  //      没有理由为它花一次模型调用（也省掉一段等待时间）；
+  //   2. 让信号校验给策略层的 `protected_assessment_stage` 让路（见下）。
+  const assessmentProtected = proactivePolicy._internals.protectedAssessmentStage({
+    isQuiz: resolved.isQuiz,
+    phase: resolved.unit.phase || "",
+    quizSubmitted: resolved.quizSubmitted
+  });
+
+  // 只有自适应条件需要问 Jev：规则条件是"恒为建议式"的基线。
+  // 这样也把模型调用量减半，并把预算留给真正需要判断的那一半知识点。
+  let jevDecision = null;
+  if (
+    !assessmentProtected
+    && proactivity.proactivityPolicyForCondition(knowledgePointAssignment.condition) === "adaptive"
+  ) {
+    jevDecision = await proactivityJev.decide({
+      knowledgePoint: resolved.unit.label || resolved.unit.id,
+      knowledgePointGoal: resolved.unit.scopeGoal || "",
+      topicMisconception: resolved.unit.misconception || "",
+      currentActivityType: sceneType || resolved.unit.scene?.type || "",
+      activityTypes: (resolved.unit.resourceCandidates || [])
+        .map((candidate) => candidate.widgetType || candidate.type)
+        .filter(Boolean),
+      activityTypesOpened: evidence.representationChoice?.experienced || [],
+      dwellSeconds: evidence.dwellSeconds,
+      parameterCommits: evidence.parameterCommitCount,
+      judgedAttempts: evidence.sceneAttemptCount,
+      judgedFailures: evidence.sceneAttemptFailures,
+      confirmedGaps: evidence.confirmedGapCount,
+      hintsUsed: evidence.hintCount,
+      lastEvent: evidence.lastEventType || ""
+    });
+    if (jevDecision?.decisionSource === "jev") {
+      evidence.agentConfidence = jevDecision.confidence;
+      evidence.decisionSource = "jev";
+      evidence.jevNeedsHelp = jevDecision.needsHelp;
+      evidence.jevNextActivity = jevDecision.nextActivity;
+      evidence.jevScaffoldDepth = jevDecision.scaffoldDepth;
+      evidence.jevProbabilities = jevDecision.probabilities;
+    } else {
+      evidence.decisionSource = "rule_fallback";
+      evidence.jevFallbackReason = jevDecision?.fallbackReason || "unknown";
+    }
+  }
+
   let policyDecision = proactivePolicy.evaluate({
     config: proactiveStudyConfig,
     assignment,
@@ -3152,7 +4055,11 @@ async function handleManagedProactiveIntervention({
       sceneType,
       isQuiz: resolved.isQuiz,
       quizSubmitted: resolved.quizSubmitted,
-      phase: resolved.unit.phase || ""
+      phase: resolved.unit.phase || "",
+      proactivityPolicy: proactivity.proactivityPolicyForCondition(knowledgePointAssignment.condition),
+      proactivityCondition: knowledgePointAssignment.condition,
+      proactivityAssignmentDigest: knowledgePointAssignment.assignmentDigest,
+      knowledgePointIndex
     },
     signal,
     evidence,
@@ -3164,6 +4071,29 @@ async function handleManagedProactiveIntervention({
   const waitingForBoundary = policyDecision.reasonCodes.includes(
     "quiet_dwell_waiting_for_boundary"
   );
+  // 信号校验放在 `evaluate` 之后，是因为受保护测量阶段必须由策略层来回答：
+  // 它会落一条 `protected_assessment_stage` 的决策记录，管理端统计
+  // （protected_blocks）和事后分析都靠它。如果在路由层先返回 400，
+  // "考试期间不打扰"就会被误报成"你的信号发错了"，而且决策记录直接消失。
+  //
+  // `student_requested_alternative` 不需要校验：它的可信来源是服务端刚核验过的
+  // sourceDecisionId，不是客户端声明的"我当时在调参"。
+  if (!assessmentProtected && signal.kind !== "student_requested_alternative") {
+    const signalCheck = verifyAssistantProactiveSignal({
+      resolved,
+      signal,
+      quizAttempt,
+      sceneType
+    });
+    if (!signalCheck.ok) {
+      sendJson(res, signalCheck.status, {
+        ok: false,
+        code: signalCheck.code,
+        message: signalCheck.message
+      });
+      return;
+    }
+  }
   const consumedPendingBoundary = signal.kind === "quiet_dwell"
     && signal.boundaryRecheck === true
     && evidence.pendingCandidateValid
@@ -3398,6 +4328,26 @@ async function handleManagedProactiveIntervention({
     policyStateAfter
   }));
 
+  // 把本次决策点的实验条件写进 evidence。`proactive_decisions` 是固定列表，
+// 新增列要走 schema 迁移；而 `evidence` 会整体写入 `evidence_snapshot_json`，
+// 所以放这里既落库又不用动表结构——分析脚本靠这些字段还原条件。
+  evidence.proactivityCondition = knowledgePointAssignment.condition;
+  evidence.proactivityPolicy = proactivity.proactivityPolicyForCondition(
+    knowledgePointAssignment.condition
+  );
+  evidence.proactivityLevel = policyDecision.proactivityLevel;
+  evidence.proactivityAssignmentDigest = knowledgePointAssignment.assignmentDigest;
+  evidence.knowledgePointIndex = knowledgePointIndex;
+  evidence.decisionSequence = decisionSequence;
+  // 分配到的时机格 —— 只作协变量/依从性分析用。这一维没有被真正实施（见上文注释），
+  // 所以字段名带 Assigned 后缀，避免后来的人把它误读成"学生实际经受的时机操纵"。
+  evidence.triggerTimingAssigned = decisionCondition.triggerTiming;
+  if (jevDecision) {
+    evidence.jevFallbackReason = jevDecision.fallbackReason || "";
+    evidence.jevLatencyMs = jevDecision.latencyMs;
+    evidence.jevCached = jevDecision.cached === true;
+  }
+
   let interventionId = "";
   if (policyDecision.displayAllowed && renderedDecision.intervene) {
     interventionId = crypto.randomUUID();
@@ -3496,6 +4446,27 @@ async function handleApi(req, res, url) {
   }
   try {
     // ---- Auth ----
+    if (req.method === "POST" && url.pathname === "/api/monitoring/errors") {
+      const body = await readJsonBody(req);
+      if (!body || typeof body !== "object" || Array.isArray(body)
+        || Buffer.byteLength(JSON.stringify(body)) > 4096) {
+        sendJson(res, 400, { ok: false });
+        return;
+      }
+      errorMonitoring.capture(body, "browser");
+      sendJson(res, 202, { ok: true });
+      return;
+    }
+    if (url.pathname === "/api/admin/monitoring" && ["GET", "POST"].includes(req.method)) {
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
+      if (req.method === "POST") {
+        const eventId = errorMonitoring.capture({ code: "monitor_test", file: "server.js" });
+        const flushed = await errorMonitoring.flush();
+        sendJson(res, 200, { ok: true, eventId, flushed,
+          message: "测试事件已处理；Sentry接收情况请按事件编号到项目中核对。", data: errorMonitoring.status() });
+      } else sendJson(res, 200, { ok: true, data: errorMonitoring.status() });
+      return;
+    }
     if (req.method === "GET" && url.pathname === "/api/health") {
       sendJson(res, 200, {
         ok: true,
@@ -3511,6 +4482,19 @@ async function handleApi(req, res, url) {
       sendJson(res, 200, {
         ok: true,
         data: { ...researchConfig, courseVersion, courseAssessmentFingerprint }
+      });
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/auth/status") {
+      const localBypass = isLoopbackAdminRequest(req);
+      sendJson(res, 200, {
+        ok: true,
+        data: {
+          authenticated: checkAdmin(req),
+          localBypass,
+          tokenRequired: !localBypass
+        }
       });
       return;
     }
@@ -3531,7 +4515,7 @@ async function handleApi(req, res, url) {
         sendJson(res, 404, { ok: false, message: "未找到多场景自适应学习路线。" });
         return;
       }
-      send(res, 200, publicLearningRouteJson, "application/json; charset=utf-8");
+      sendPublicLearningRoute(req, res);
       return;
     }
 
@@ -3850,12 +4834,19 @@ async function handleApi(req, res, url) {
       const eventId = crypto.randomUUID();
       const timestamp = nowIso();
       const eventType = String(body.type || "event").slice(0, 80);
+      const boundEvent = serverBoundLearningEvent(
+        auth.participant.id,
+        eventType,
+        body.payload,
+        timestamp
+      );
 
       db.insertEvent({
         id: eventId,
         user_id: auth.participant.id,
         type: eventType,
-        payload: body.payload || {},
+        payload: boundEvent.payload,
+        learning_generation: boundEvent.learningGeneration,
         created_at: timestamp
       });
       db.saveNow();
@@ -3878,13 +4869,22 @@ async function handleApi(req, res, url) {
         const requestedEventTime = trustedClientEventTime(item, receivedAt);
         const eventTime = Math.max(requestedEventTime, previousEventTime + 1);
         previousEventTime = eventTime;
+        const eventType = String(item.type || "event").slice(0, 80);
+        const createdAt = beijingIso(new Date(eventTime));
+        const boundEvent = serverBoundLearningEvent(
+          auth.participant.id,
+          eventType,
+          item.payload,
+          createdAt
+        );
         eventIds.push(eventId);
         db.insertEvent({
           id: eventId,
           user_id: auth.participant.id,
-          type: String(item.type || "event").slice(0, 80),
-          payload: item.payload || {},
-          created_at: beijingIso(new Date(eventTime))
+          type: eventType,
+          payload: boundEvent.payload,
+          learning_generation: boundEvent.learningGeneration,
+          created_at: createdAt
         });
       });
       db.saveNow();
@@ -4572,7 +5572,7 @@ async function handleApi(req, res, url) {
         cohort: assignment.cohort || proactiveStudyConfig.cohort || "",
         chapter_id: chapterId,
         stage: stageId,
-        instrument_version: proactiveOutcomes.version,
+        instrument_version: stage.instrumentVersion,
         protocol_fingerprint: proactiveProtocolFingerprint,
         learning_generation: db.currentLearningGeneration(
           auth.participant.id,
@@ -4619,7 +5619,7 @@ async function handleApi(req, res, url) {
             data: {
               sessionId: startResult.session.id,
               stageId,
-              instrumentVersion: proactiveOutcomes.version,
+              instrumentVersion: stage.instrumentVersion,
               protocolFingerprint: proactiveProtocolFingerprint,
               learningGeneration: Number(
                 startResult.session.learning_generation || 1
@@ -4686,7 +5686,18 @@ async function handleApi(req, res, url) {
         });
         return;
       }
-      const responses = proactiveOutcomes.sanitizeResponses(
+      const instrument = outcomeRegistry.forVersion(session.instrument_version || "");
+      if (!instrument) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_version_unavailable",
+          message: "原测量题库版本暂不可用，已有草稿不会被替换。"
+        });
+        return;
+      }
+      const validIds = new Set(instrument.publicStage(stageId)?.items.map((item) => item.id));
+      const unknownItems = Object.keys(body.responses || {}).some((id) => !validIds.has(id));
+      const responses = unknownItems ? null : instrument.sanitizeResponses(
         stageId,
         body.responses
       );
@@ -4834,6 +5845,215 @@ async function handleApi(req, res, url) {
 
     if (
       req.method === "POST"
+      && [
+        "/api/learning/proactive/outcomes/pause",
+        "/api/learning/proactive/outcomes/resume"
+      ].includes(url.pathname)
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      const sessionId = boundedLearningText(body.sessionId, 180);
+      const session = sessionId
+        ? db.getProactiveOutcomeSessionById(auth.participant.id, sessionId)
+        : null;
+      if (
+        !session
+        || session.experiment_id !== proactiveStudyConfig.experimentId
+        || session.chapter_id !== chapterId
+      ) {
+        sendJson(res, 404, {
+          ok: false,
+          code: "proactive_outcome_session_not_found",
+          message: "当前测量会话不存在。"
+        });
+        return;
+      }
+      const action = url.pathname.endsWith("/pause") ? "paused" : "resumed";
+      const recordedAt = nowIso();
+      const result = action === "paused"
+        ? db.pauseProactiveOutcomeSession({
+            userId: auth.participant.id,
+            sessionId,
+            pausedAt: recordedAt
+          })
+        : db.resumeProactiveOutcomeSession({
+            userId: auth.participant.id,
+            sessionId,
+            resumedAt: recordedAt
+          });
+      if (!result.ok) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_not_active",
+          message: "当前测量会话已经结束，不能更新暂离状态。"
+        });
+        return;
+      }
+      if (!result.idempotent) {
+        const assignment = proactiveAssignmentForUser(auth.participant.id);
+        db.insertEvent({
+          id: `${sessionId}:${action}:${result.session.pause_count || 0}`,
+          user_id: auth.participant.id,
+          type: "interaction",
+          payload: {
+            schemaVersion: 1,
+            eventType: `proactive_outcome_${action}`,
+            source: "proactive_outcome_measurement",
+            chapterId,
+            unitId: `${chapterId}-${session.stage}`,
+            sceneType: "",
+            research: {
+              experimentId: proactiveStudyConfig.experimentId,
+              condition: session.condition,
+              cohort: session.cohort || proactiveStudyConfig.cohort || "",
+              assignmentVersion: assignment?.assignment_version || "",
+              protocolFingerprint: session.protocol_fingerprint || proactiveProtocolFingerprint
+            },
+            data: {
+              sessionId,
+              stageId: session.stage,
+              pauseCount: Number(result.session.pause_count || 0),
+              pausedDurationMs: Number(result.session.paused_duration_ms || 0),
+              resumedPauseMs: Number(result.resumedPauseMs || 0),
+              learningGeneration: Number(session.learning_generation || 1)
+            },
+            timing: { clientAt: recordedAt, durationMs: 0 }
+          },
+          created_at: recordedAt
+        });
+      }
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        idempotent: result.idempotent,
+        action,
+        sessionId,
+        recordedAt,
+        data: proactiveOutcomeState(auth.participant.id, chapterId)
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
+      && url.pathname === "/api/learning/proactive/outcomes/skip"
+    ) {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) {
+        sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      const chapterId = boundedLearningText(
+        body.chapterId || proactiveStudyConfig.chapterId,
+        120
+      );
+      const sessionId = boundedLearningText(body.sessionId, 180);
+      const requestedReason = boundedLearningText(body.reason, 80);
+      const skipReason = [
+        "student_skip",
+        "time_constraint",
+        "technical_issue",
+        "prefer_not_to_answer"
+      ].includes(requestedReason)
+        ? requestedReason
+        : "student_skip";
+      const session = sessionId
+        ? db.getProactiveOutcomeSessionById(auth.participant.id, sessionId)
+        : null;
+      if (
+        !session
+        || session.experiment_id !== proactiveStudyConfig.experimentId
+        || session.chapter_id !== chapterId
+      ) {
+        sendJson(res, 404, {
+          ok: false,
+          code: "proactive_outcome_session_not_found",
+          message: "当前测量会话不存在。"
+        });
+        return;
+      }
+      const endedAt = nowIso();
+      const skipped = db.skipProactiveOutcomeSession({
+        userId: auth.participant.id,
+        sessionId,
+        reason: skipReason,
+        endedAt
+      });
+      if (!skipped.ok) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_session_not_active",
+          message: "当前测量会话已经结束，不能再次跳过。"
+        });
+        return;
+      }
+      if (!skipped.idempotent) {
+        const started = Date.parse(session.started_at || "");
+        const ended = Date.parse(endedAt);
+        const elapsedMs = Number.isFinite(started) && Number.isFinite(ended)
+          ? Math.max(0, Math.trunc(ended - started))
+          : 0;
+        const activeDurationMs = Math.max(
+          0,
+          elapsedMs - Number(skipped.session.paused_duration_ms || 0)
+        );
+        const assignment = proactiveAssignmentForUser(auth.participant.id);
+        db.insertEvent({
+          id: `${sessionId}:skipped`,
+          user_id: auth.participant.id,
+          type: "interaction",
+          payload: {
+            schemaVersion: 1,
+            eventType: "proactive_outcome_skipped",
+            source: "proactive_outcome_measurement",
+            chapterId,
+            unitId: `${chapterId}-${session.stage}`,
+            sceneType: "",
+            research: {
+              experimentId: proactiveStudyConfig.experimentId,
+              condition: session.condition,
+              cohort: session.cohort || proactiveStudyConfig.cohort || "",
+              assignmentVersion: assignment?.assignment_version || "",
+              protocolFingerprint: session.protocol_fingerprint || proactiveProtocolFingerprint
+            },
+            data: {
+              sessionId,
+              stageId: session.stage,
+              skipReason,
+              instrumentVersion: session.instrument_version,
+              learningGeneration: Number(session.learning_generation || 1),
+              pauseCount: Number(skipped.session.pause_count || 0),
+              pausedDurationMs: Number(skipped.session.paused_duration_ms || 0),
+              agentAssistanceAllowed: false
+            },
+            timing: { clientAt: endedAt, durationMs: activeDurationMs }
+          },
+          created_at: endedAt
+        });
+      }
+      db.saveNow();
+      sendJson(res, 200, {
+        ok: true,
+        idempotent: skipped.idempotent,
+        sessionId,
+        endedAt: skipped.session.ended_at || endedAt,
+        skipReason,
+        data: proactiveOutcomeState(auth.participant.id, chapterId)
+      });
+      return;
+    }
+
+    if (
+      req.method === "POST"
       && url.pathname === "/api/learning/proactive/outcomes/submit"
     ) {
       const body = await readJsonBody(req);
@@ -4925,7 +6145,18 @@ async function handleApi(req, res, url) {
         });
         return;
       }
-      const grade = proactiveOutcomes.grade(stageId, body.responses);
+      const instrument = outcomeRegistry.forVersion(session.instrument_version || "");
+      if (!instrument) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "proactive_outcome_version_unavailable",
+          message: "原测量题库版本暂不可用，本次作答未被重新判分。"
+        });
+        return;
+      }
+      const validIds = new Set(instrument.publicStage(stageId)?.items.map((item) => item.id));
+      const unknownItems = Object.keys(body.responses || {}).some((id) => !validIds.has(id));
+      const grade = unknownItems ? null : instrument.grade(stageId, body.responses);
       if (!grade) {
         sendJson(res, 400, {
           ok: false,
@@ -4946,10 +6177,21 @@ async function handleApi(req, res, url) {
       const submittedAt = nowIso();
       const startedAtValue = Date.parse(session.started_at || "");
       const submittedAtValue = Date.parse(submittedAt);
-      const durationMs = Number.isFinite(startedAtValue)
+      const elapsedMs = Number.isFinite(startedAtValue)
         && Number.isFinite(submittedAtValue)
         ? Math.max(0, Math.trunc(submittedAtValue - startedAtValue))
         : 0;
+      const currentPauseStartedAt = Date.parse(session.paused_at || "");
+      const currentPauseMs = Number.isFinite(currentPauseStartedAt)
+        && Number.isFinite(submittedAtValue)
+        ? Math.max(0, Math.trunc(submittedAtValue - currentPauseStartedAt))
+        : 0;
+      const durationMs = Math.max(
+        0,
+        elapsedMs
+          - Number(session.paused_duration_ms || 0)
+          - currentPauseMs
+      );
       const attemptId = crypto.randomUUID();
       const completion = db.submitProactiveOutcomeSession({
         userId: auth.participant.id,
@@ -4963,7 +6205,7 @@ async function handleApi(req, res, url) {
           cohort: assignment.cohort || proactiveStudyConfig.cohort || "",
           chapter_id: chapterId,
           stage: stageId,
-          instrument_version: proactiveOutcomes.version,
+          instrument_version: instrument.version,
           responses: Object.fromEntries(
             grade.results.map((result) => [result.itemId, result.response])
           ),
@@ -5005,7 +6247,7 @@ async function handleApi(req, res, url) {
             sessionId,
             attemptId,
             stageId,
-            instrumentVersion: proactiveOutcomes.version,
+            instrumentVersion: instrument.version,
             protocolFingerprint: session.protocol_fingerprint || "",
             learningGeneration: Number(session.learning_generation || 1),
             itemCount: grade.maxScore,
@@ -5045,6 +6287,14 @@ async function handleApi(req, res, url) {
       const auth = authenticate(req, body);
       if (!auth) {
         sendJson(res, 401, { ok: false, message: "请先登录。" });
+        return;
+      }
+      if (!proactiveGlobalPreferenceControlEnabled) {
+        sendJson(res, 403, {
+          ok: false,
+          code: "proactive_global_preference_locked",
+          message: "本次实验的主动提示方案由服务端固定分配，学生不能自行切换。"
+        });
         return;
       }
       const chapterId = boundedLearningText(
@@ -5360,6 +6610,13 @@ async function handleApi(req, res, url) {
         });
         return;
       }
+      // 学生的理由说明（可选）。它是 Hint Justification Rate 的唯一原料——防 gaming
+      // 的关键：只统计"接受且说明了理由"的提示。有界截断，避免变成自由文本垃圾场。
+      const justification = boundedLearningText(body.justification, 600);
+      // 客户端是否真的把"说理由"这一步摆到过学生面前。
+      // 计量口径必须靠它：换表征（switch_representation）这类接受不需要理由，
+      // 若把它们也算进分母，Hint Justification Rate 会被无故压低。
+      const justificationRequested = body.justificationRequested !== false;
       const resolutionAliases = {
         shown: "shown",
         accept: "accepted",
@@ -5426,7 +6683,19 @@ async function handleApi(req, res, url) {
         decisionId,
         resolution,
         resolvedAt,
-        latencyMs
+        latencyMs,
+        // 理由同时写进 followup_outcome_json。
+        //
+        // 为什么不能只留在事件载荷里：三层因变量的过程层（Hint Justification Rate）
+        // 需要跟着**决策行**一起被导出。分析包导出的是 proactive_decisions 表，
+        // 而事件是另一张表；只写事件的话，导出的分析包算不出这个指标，
+        // 分析脚本就得再去拼事件流——那正是"数据一收不可补救"的那类坑。
+        followupOutcome: justification || justificationRequested
+          ? {
+              studentJustification: justification,
+              justificationRequested
+            }
+          : {}
       });
       if (!result.ok) {
         const notFound = result.reason === "not_found";
@@ -5492,7 +6761,14 @@ async function handleApi(req, res, url) {
             action: decision.action,
             supportLevel: decision.support_level,
             resolution,
-            latencyMs
+            latencyMs,
+            // 学生的理由说明（可选，接受时才有）。Hint Justification Rate 的唯一原料：
+            // 只统计"接受且说明了理由"的提示，否则一路点接受就能刷过检查题。
+            // 放在事件载荷里而不是新加列——不动表结构。
+            justification,
+            // 分母修正项：只有 justificationRequested 为真的接受才进 Hint
+            // Justification Rate 的分母（详见 lib/research/process-metrics.js）。
+            justificationRequested
           },
           timing: {
             clientAt: resolvedAt,
@@ -5568,7 +6844,7 @@ async function handleApi(req, res, url) {
         sendJson(res, 409, {
           ok: false,
           code: "proactive_verification_not_expected",
-          message: "这道无提示检查已经处理，或当前还没到独立验证阶段。"
+          message: "这道支架后检查已经处理，或当前还没到检查阶段。"
         });
         return;
       }
@@ -5576,7 +6852,7 @@ async function handleApi(req, res, url) {
         sendJson(res, 409, {
           ok: false,
           code: "proactive_verification_stale",
-          message: "这道无提示检查已经更新，请刷新后再作答。"
+          message: "这道支架后检查已经更新，请刷新后再作答。"
         });
         return;
       }
@@ -5645,12 +6921,18 @@ async function handleApi(req, res, url) {
 
       const submittedAt = nowIso();
       const attemptId = crypto.randomUUID();
+      const checkLifecycle = proactivePolicy.lifecycle.normalize(
+        parseStoredJson(policyState.lifecycle_json || "{}", {})
+      );
       const verificationResult = {
         attemptId,
         checkId: expectedCheck.id,
         stage: expectedCheck.stage,
         supportLevel: expectedCheck.supportLevel,
         source: "policy_owned_probe",
+        instrumentVersion: expectedCheck.instrumentVersion,
+        evidenceScope: expectedCheck.evidenceScope,
+        subSkill: expectedCheck.subSkill,
         status: declined
           ? "declined"
           : grade.correct ? "correct" : "incorrect",
@@ -5675,6 +6957,9 @@ async function handleApi(req, res, url) {
         verificationCheckId: expectedCheck.id,
         verificationStage: expectedCheck.stage,
         verificationSource: "policy_owned_probe",
+        verificationInstrumentVersion: expectedCheck.instrumentVersion,
+        verificationEvidenceScope: expectedCheck.evidenceScope,
+        verificationSubSkill: expectedCheck.subSkill,
         verificationResponse: declined ? "" : grade.response
       };
       db.insertEvent({
@@ -5696,6 +6981,15 @@ async function handleApi(req, res, url) {
           },
           data: {
             checkId: expectedCheck.id,
+            instrumentVersion: expectedCheck.instrumentVersion,
+            evidenceScope: expectedCheck.evidenceScope,
+            subSkill: expectedCheck.subSkill,
+            interventionId: checkLifecycle.activeInterventionId,
+            decisionId: checkLifecycle.activeDecisionId,
+            itemSnapshot: {
+              prompt: expectedCheck.prompt,
+              options: expectedCheck.options
+            },
             stage: expectedCheck.stage,
             supportLevel: expectedCheck.supportLevel,
             response: declined ? "" : grade.response,
@@ -5952,6 +7246,9 @@ async function handleApi(req, res, url) {
           });
           trustedEvidence = {
             families: ["history", "preference"],
+            // 学生刚刚在界面上明确点了"换一种帮助"——这不是推测出来的证据，是确定事件。
+            // 直接给满强度，避免它被别的证据强弱拖累。
+            familyStrength: { history: 1, preference: 1 },
             sourceDecisionId,
             evidenceRefs: [{
               id: sourceDecisionId,
@@ -5962,6 +7259,8 @@ async function handleApi(req, res, url) {
           };
           db.saveNow();
         }
+        // 信号校验与"受保护测量阶段"的判定都在 handleManagedProactiveIntervention
+        // 内部、`evaluate` 之后完成（理由见那里的注释），这里不做拦截。
         await handleManagedProactiveIntervention({
           res,
           auth,
@@ -5977,87 +7276,42 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
-      let verifiedSignal = signal;
-      if (signal.kind === "quiz_review") {
-        if (!resolved.isQuiz || !quizAttempt || quizAttempt.incorrect <= 0) {
-          sendAssistantSignalMismatch(res, "当前没有已确认的错题可供主动复盘。");
-          return;
-        }
-        if (quizAttempt.pendingReview > 0) {
-          sendAssistantSignalMismatch(res, "简答题仍在批改，完成后再开始完整错题复盘。");
-          return;
-        }
-        verifiedSignal = {
-          ...signal,
-          incorrect: quizAttempt.incorrect,
-          pendingReview: quizAttempt.pendingReview,
-          questionCount: quizAttempt.total,
-          reviewIndex: 0
-        };
-      } else if (signal.kind === "formative_outcome") {
-        if (
-          !resolved.isQuiz
-          || resolved.unit.phase !== "formative"
-          || !resolved.unit.knowledgePointId
-          || !quizAttempt
-          || quizAttempt.pendingReview > 0
-        ) {
-          sendAssistantSignalMismatch(res, "当前没有可用于主动策略的完整形成性结果。");
-          return;
-        }
-        if (quizAttempt.incorrect <= 0) {
-          sendJson(res, 200, {
-            ok: true,
-            provider: "deterministic-policy",
-            fallback: false,
-            decision: proactiveSilentAssistantDecision({
-              reasonCodes: ["confirmed_error_absent"],
-              uncertaintyScore: 0.05
-            }),
-            interventionId: "",
-            interventionBudget: proactiveInterventionBudgetInfo(
-              auth.participant.id,
-              new Date()
-            ),
-            quota: assistantQuotaInfo(auth.participant.id)
-          });
-          return;
-        }
-        verifiedSignal = {
-          ...signal,
-          kind: "quiz_review",
-          incorrect: quizAttempt.incorrect,
-          correct: quizAttempt.correct,
-          pendingReview: quizAttempt.pendingReview,
-          questionCount: quizAttempt.total,
-          reviewIndex: 0
-        };
-      } else if (signal.kind === "repeated_parameter") {
-        if (
-          resolved.isQuiz
-          || !resolved.scene
-          || (
-            resolved.contextRef.kind !== "interaction"
-            && resolved.contextRef.scope !== "interactive"
-          )
-          || !boundedLearningText(signal.parameter, 120)
-          || signal.newValue === undefined
-          || signal.newValue === null
-          || boundedLearningText(signal.newValue, 80) === ""
-        ) {
-          sendAssistantSignalMismatch(res, "当前学习位置没有可信的连续调参证据。");
-          return;
-        }
-      } else if (
-        signal.kind === "quiet_dwell"
-        && (
-          resolved.isQuiz
-          || Number(signal.dwellSeconds || 0) < assistantMinimumDwellSeconds(resolved, sceneType)
-        )
-      ) {
-        sendAssistantSignalMismatch(res, "当前学习状态不足以判断为有效停留。");
+      // 信号校验只有一份实现：管理式路径和传统路径都必须先过这一关，
+      // 否则"伪造 quiz_review / 无效调参"在实验章节里只是静默静默掉，
+      // 而不是被明确拒绝（详见 verifyAssistantProactiveSignal 的注释）。
+      const signalCheck = verifyAssistantProactiveSignal({
+        resolved,
+        signal,
+        quizAttempt,
+        sceneType
+      });
+      if (!signalCheck.ok) {
+        sendJson(res, signalCheck.status, {
+          ok: false,
+          code: signalCheck.code,
+          message: signalCheck.message
+        });
         return;
       }
+      if (signalCheck.silentReason === "confirmed_error_absent") {
+        sendJson(res, 200, {
+          ok: true,
+          provider: "deterministic-policy",
+          fallback: false,
+          decision: proactiveSilentAssistantDecision({
+            reasonCodes: ["confirmed_error_absent"],
+            uncertaintyScore: 0.05
+          }),
+          interventionId: "",
+          interventionBudget: proactiveInterventionBudgetInfo(
+            auth.participant.id,
+            new Date()
+          ),
+          quota: assistantQuotaInfo(auth.participant.id)
+        });
+        return;
+      }
+      const verifiedSignal = signalCheck.signal;
       const interventionBudget = consumeAssistantInterventionBudget(auth.participant.id, new Date());
       if (!interventionBudget.ok) {
         sendJson(res, 429, {
@@ -6760,7 +8014,7 @@ async function handleApi(req, res, url) {
         assistantIntent,
         proactivePrompt
       });
-      if (generated.fallback && quotaReserved) {
+      if ((generated.fallback || generated.provider === "grounding-guard") && quotaReserved) {
         quota = releaseAssistantQuota(auth.participant.id, requestedAt);
         quotaReserved = false;
       }
@@ -6870,15 +8124,20 @@ async function handleApi(req, res, url) {
             lifecycleDecision.experiment_id,
             scopeKey
           ) || {};
-          const nextLifecycle = proactivePolicy.lifecycle.afterStudentResponse({
-            lifecycle: parseStoredJson(
+          const previousLifecycle = proactivePolicy.lifecycle.normalize(parseStoredJson(
               existingPolicyState.lifecycle_json || "{}",
               {}
-            ),
+            ));
+          const nextLifecycle = proactivePolicy.lifecycle.afterStudentResponse({
+            lifecycle: previousLifecycle,
             interventionId: proactiveInterventionId,
             respondedAt: answeredAt
           });
-          if (nextLifecycle.phase === "awaiting_independent_attempt") {
+          if (previousLifecycle.phase === "accepted_pending_response"
+            && nextLifecycle.phase === "awaiting_independent_attempt") {
+            const adapter = proactivePolicy.adapterForChapter(lifecycleDecision.chapter_id);
+            const issuedCheck = adapter?.publicVerificationCheck?.(scopeKey, nextLifecycle.supportLevel);
+            nextLifecycle.activeVerificationCheckId = issuedCheck?.id || "";
             db.upsertProactivePolicyState(proactivePolicyStateRecord(
               existingPolicyState,
               {
@@ -6922,6 +8181,8 @@ async function handleApi(req, res, url) {
                   interventionId: proactiveInterventionId,
                   action: lifecycleDecision.action,
                   supportLevel: lifecycleDecision.support_level,
+                  verificationCheckId: issuedCheck?.id || "",
+                  verificationInstrumentVersion: issuedCheck?.instrumentVersion || "",
                   responseLength: question.length
                 },
                 timing: {
@@ -7016,6 +8277,14 @@ async function handleApi(req, res, url) {
         unitId,
         phase
       });
+      if (expectedEntries.some((entry) => entry.assessmentStatus === "archived")) {
+        sendJson(res, 409, {
+          ok: false,
+          code: "quiz_archived",
+          message: "这份旧版模块测验已归档，不再接收作答。请返回当前章节测验；历史记录仍保留。"
+        });
+        return;
+      }
       const existingResults = db.getQuizResultsByUserUnit(auth.participant.id, unitId);
       const coreEntry = expectedEntries.find((entry) => entry.question?.adaptiveRole === "core");
       const diagnosticEntry = expectedEntries.find((entry) => entry.question?.adaptiveRole === "diagnostic");
@@ -7041,10 +8310,14 @@ async function handleApi(req, res, url) {
         || submittedQuestionIds.size !== expectedEntries.length
         || expectedEntries.some((entry) => !submittedQuestionIds.has(entry.question.id))
       ) {
-        sendJson(res, 400, {
+        const legacyIds = new Set(expectedEntries.map((entry) => entry.question.legacyQuestionId).filter(Boolean));
+        const staleVersion = answers.some((answer) => legacyIds.has(String(answer?.questionId || "")));
+        sendJson(res, staleVersion ? 409 : 400, {
           ok: false,
-          code: "quiz_question_set_mismatch",
-          message: "提交题目与当前测验不完整或不匹配。"
+          code: staleVersion ? "quiz_version_changed" : "quiz_question_set_mismatch",
+          message: staleVersion
+            ? "这份测验的题目版本已更新，请刷新页面后重新核对；已保存的成绩不会被覆盖。"
+            : "提交题目与当前测验不完整或不匹配。"
         });
         return;
       }
@@ -7089,7 +8362,19 @@ async function handleApi(req, res, url) {
         }
 
         const maxScore = Math.max(0, Number(question.points || 0));
-        const scored = question.type === "short_answer"
+        const unknown = response === "__unknown__" || (Array.isArray(response) && response.includes("__unknown__"));
+        if (unknown && Array.isArray(response) && response.length !== 1) {
+          sendJson(res, 400, { ok: false, message: "“我不会”不能与其他选项同时选择。" });
+          return;
+        }
+        if (!unknown && question.type !== "short_answer"
+          && (Array.isArray(response) ? response : [response]).some(value => !(question.options || []).some(option => option.value === value))) {
+          sendJson(res, 400, { ok: false, message: "选择了无效选项。" });
+          return;
+        }
+        const scored = unknown
+          ? { isCorrect: false, score: 0, maxScore, status: "incorrect" }
+          : question.type === "short_answer"
           ? { isCorrect: null, score: 0, maxScore, status: "pending_review" }
           : courseAssessment.scoreObjectiveQuestion(question, response);
         prepared.push({
@@ -7097,6 +8382,7 @@ async function handleApi(req, res, url) {
           unitId,
           chapterId,
           questionId: question.id,
+          instrumentVersion: question.instrumentVersion || "",
           questionType: question.type,
           points: maxScore,
           phase,
@@ -7126,7 +8412,18 @@ async function handleApi(req, res, url) {
           score: result.score,
           max_score: result.maxScore,
           learning_generation: learningGeneration,
-          created_at: result.timestamp
+          created_at: result.timestamp,
+          research_context: {
+            schemaVersion: 1,
+            experimentId: result.chapterId === proactiveStudyConfig.chapterId
+              ? proactiveStudyConfig.experimentId : "",
+            protocolFingerprint: result.chapterId === proactiveStudyConfig.chapterId
+              ? proactiveProtocolFingerprint : "",
+            instrumentVersion: result.instrumentVersion,
+            questionDigest: crypto.createHash("sha256")
+              .update(JSON.stringify(result.entry.question)).digest("hex"),
+            capturedAt: result.timestamp
+          }
         });
       });
       db.saveNow();
@@ -7149,7 +8446,11 @@ async function handleApi(req, res, url) {
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
       const results = db.getQuizResultsByUser(auth.participant.id, 500).map((row) => {
         const entry = courseAssessment.assessmentEntry(assessmentIndex, row);
-        return entry ? { ...row, ...courseAssessment.publicReviewFields(entry.question) } : row;
+        const archived = !entry && row.chapter_id === "V14-C1" && ["pre", "post"].includes(row.phase)
+          ? require("./lib/assessments/functions-limits-r1").questions(row.phase)
+            .find(question => question.id === row.question_id) : null;
+        const question = entry?.question || archived;
+        return question ? { ...row, ...courseAssessment.publicReviewFields(question) } : row;
       });
       sendJson(res, 200, { ok: true, data: results });
       return;
@@ -7178,6 +8479,49 @@ async function handleApi(req, res, url) {
       while (qs.step()) qrs.push(qs.getAsObject());
       qs.free();
       sendJson(res, 200, { ok: true, data: { version: 2, participants, quizResults: qrs } });
+      return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/admin/research/selected-participants") {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
+      const body = await readJsonBody(req);
+      try {
+        const { buildSelectedParticipantPackage } = require("./lib/selected-participant-export");
+        const data = buildSelectedParticipantPackage(db.getDbSync(), body?.userIds);
+        res.setHeader("Cache-Control", "no-store");
+        sendJson(res, 200, { ok: true, data });
+      } catch (error) {
+        if (![400, 413].includes(error.status)) throw error;
+        sendJson(res, error.status, { ok: false, message: error.message });
+      }
+      return;
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/research/analysis-package") {
+      if (!checkAdmin(req)) {
+        sendJson(res, 403, { ok: false, message: "需要管理员密码。" });
+        return;
+      }
+      const experimentId = boundedLearningText(
+        url.searchParams.get("experimentId") || proactiveStudyConfig.experimentId, 120
+      );
+      const protocol = proactiveProtocolPayload(experimentId);
+      if (!protocol) {
+        sendJson(res, 404, { ok: false, message: "未找到该实验的冻结协议，不能借用当前协议导出。" });
+        return;
+      }
+      try {
+        const source = db.researchAnalysisSource({ experimentId, chapterId: protocol.chapterId });
+        sendJson(res, 200, { ok: true, data: researchAnalysis.buildPackage({
+          source, protocol, assessmentIndex, generatedAt: nowIso()
+        }) });
+      } catch (error) {
+        if (error.code !== "ANALYSIS_EXPORT_TOO_LARGE") throw error;
+        sendJson(res, 413, { ok: false, message: "数据超过单次分析包上限，未导出截断数据；请使用离线数据库导出。" });
+      }
       return;
     }
 
@@ -7210,6 +8554,7 @@ async function handleApi(req, res, url) {
       if (expiredInterventions > 0) db.saveNow();
       const page = db.proactiveDecisionRows({
         experimentId,
+        chapterId: getDateRange(url).chapterId,
         userId: boundedLearningText(url.searchParams.get("userId"), 180),
         condition: boundedLearningText(url.searchParams.get("condition"), 40),
         decision: boundedLearningText(url.searchParams.get("decision"), 40),
@@ -7260,12 +8605,59 @@ async function handleApi(req, res, url) {
         ? proactiveExperimentRuntime()
         : db.getProactiveExperimentRuntime(experimentId);
       const chapterId = protocol?.chapterId || proactiveStudyConfig.chapterId;
+      const retentionDelayHours = Number(
+        protocol?.definition?.retentionDelayHours
+        ?? (experimentId === proactiveStudyConfig.experimentId
+          ? proactiveRetentionDelayHours
+          : 0)
+      );
+      const recordedRetentionCloseHours = protocol?.definition?.retentionCloseHours;
+      const retentionCloseHours = recordedRetentionCloseHours === null ? null : Number(
+        recordedRetentionCloseHours ?? (experimentId === proactiveStudyConfig.experimentId
+          ? proactiveRetentionCloseHours
+          : retentionDelayHours)
+      );
+      const retentionReminderHours = Array.isArray(
+        protocol?.definition?.retentionReminderHours
+      )
+        ? protocol.definition.retentionReminderHours
+        : experimentId === proactiveStudyConfig.experimentId
+          ? proactiveRetentionReminderHours
+          : [];
+      const assignmentRoster = db.proactiveAssignmentRoster({
+        experimentId,
+        condition: boundedLearningText(url.searchParams.get("condition"), 40),
+        limit: Math.max(1, Math.min(Number(url.searchParams.get("limit") || 500), 1000)),
+        offset: Math.max(0, Number(url.searchParams.get("offset") || 0))
+      });
+      const experimentAnalysis = db.proactiveExperimentAnalysis({
+        outcomeInstrumentVersion: protocol?.definition?.outcomeInstrumentVersion
+          || proactiveOutcomes.version,
+        experimentId,
+        chapterId,
+        assessmentQuestionCounts: {
+          pre: chapterId === proactiveStudyConfig.chapterId
+            ? proactiveAssessmentQuestionCount("pre")
+            : 0,
+          formative: chapterId === proactiveStudyConfig.chapterId
+            ? proactiveAssessmentQuestionCount("formative")
+            : 0,
+          post: chapterId === proactiveStudyConfig.chapterId
+            ? proactiveAssessmentQuestionCount("post")
+            : 0
+        },
+        retentionDelayHours,
+        retentionCloseHours,
+        retentionReminderHours,
+        now: nowIso()
+      });
       sendJson(res, 200, {
         ok: true,
         data: {
           ...page,
           rows,
           assignments: db.proactiveAssignmentSummary(experimentId),
+          assignmentRoster,
           participation: db.proactiveParticipationSummary(experimentId),
           summary: {
             ...db.proactiveDecisionSummary(experimentId),
@@ -7283,6 +8675,10 @@ async function handleApi(req, res, url) {
               ? proactiveAssessmentQuestionCount("post")
               : 0
           }),
+          participantAnalysis: experimentAnalysis.participants,
+          coursewareChallenges: experimentAnalysis.challenges,
+          analysisSummary: experimentAnalysis.summary,
+          dataQuality: experimentAnalysis.quality,
           outcomes: {
             ...outcomePage,
             rows: outcomeRows,
@@ -7296,12 +8692,9 @@ async function handleApi(req, res, url) {
               || (experimentId === proactiveStudyConfig.experimentId
                 ? proactiveOutcomes.version
                 : ""),
-            retentionDelayHours: Number(
-              protocol?.definition?.retentionDelayHours
-              ?? (experimentId === proactiveStudyConfig.experimentId
-                ? proactiveRetentionDelayHours
-                : 0)
-            )
+            retentionDelayHours,
+            retentionCloseHours,
+            retentionReminderHours
           }
         }
       });
@@ -7458,7 +8851,7 @@ async function handleApi(req, res, url) {
 
     if (req.method === "GET" && url.pathname === "/api/admin/stats/users") {
       if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
-      sendJson(res, 200, { ok: true, data: db.listUsers() });
+      sendJson(res, 200, { ok: true, data: db.listUsers(getDateRange(url)) });
       return;
     }
 
@@ -7831,7 +9224,10 @@ async function handleApi(req, res, url) {
       : error.message === "Request body is too large" ? 413
         : error.message === "Invalid JSON body" ? 400
           : 500;
-    if (status >= 500) console.error("API error:", error);
+    if (status >= 500) {
+      errorMonitoring.captureException(error);
+      console.error("API error:", error);
+    }
     const message = status === 500 ? "服务器内部错误。"
       : error.message === "Request body is too large" ? "请求内容过大。"
         : error.message === "Invalid JSON body" ? "请求格式不正确。"
@@ -7869,9 +9265,15 @@ const server = http.createServer((req, res) => {
     rawUrl = rest || "/";
   }
   const url = new URL(rawUrl, `http://${req.headers.host || "localhost"}`);
+  res.once("finish", () => {
+    if (res.statusCode >= 500 && !url.pathname.includes("/monitoring")) {
+      errorMonitoring.capture({ code: "api_5xx", route: url.pathname, status: res.statusCode });
+    }
+  });
 
   if (url.pathname.startsWith("/api/")) {
     handleApi(req, res, url).catch((error) => {
+      errorMonitoring.captureException(error);
       console.error("Unhandled API failure:", error);
       if (!res.headersSent) {
         try {
@@ -7894,19 +9296,7 @@ const server = http.createServer((req, res) => {
       send(res, 404, "Not found");
       return;
     }
-    const headers = {
-      "Cache-Control": "no-store, max-age=0, no-transform",
-      "Content-Length": String(Buffer.byteLength(publicLearningRouteJson))
-    };
-    if (req.method === "HEAD") {
-      res.writeHead(200, {
-        "Content-Type": "application/json; charset=utf-8",
-        ...headers
-      });
-      res.end();
-      return;
-    }
-    send(res, 200, publicLearningRouteJson, "application/json; charset=utf-8", headers);
+    sendPublicLearningRoute(req, res);
     return;
   }
 
@@ -7927,8 +9317,27 @@ const server = http.createServer((req, res) => {
     }
 
     const type = types[path.extname(filePath).toLowerCase()] || "application/octet-stream";
+    if (["assets/learning-runtime.js", "assets/learning-runtime.css", "assets/openmaic-classroom/renderer.js", "assets/openmaic-classroom/highlighter.js"]
+      .includes(path.relative(root, filePath).replaceAll(path.sep, "/"))
+      || coursewareModules.files.has(path.relative(root, filePath).replaceAll(path.sep, "/"))) {
+      if (acceptsGzip(req)) {
+        try {
+          const compressedPath = `${filePath}.gz`;
+          const compressedStat = fs.statSync(compressedPath);
+          if (compressedStat.isFile() && compressedStat.mtimeMs >= stat.mtimeMs) {
+            streamStaticFile(req, res, compressedPath, type, url, compressedStat, {
+              ...staticHeaders(filePath, url),
+              "Content-Encoding": "gzip", Vary: "Accept-Encoding",
+              "Cache-Control": cacheControlFor(filePath, url)
+            });
+            return;
+          }
+        } catch {}
+      }
+    }
     const bridgeCourseware = isCoursewareHtml(filePath);
-    if (!bridgeCourseware && (stat.size > maxBufferedStaticBytes || req.method === "HEAD")) {
+    const bundledIndex = learningRuntimeHtml && filePath === path.join(root, "index.html");
+    if (!bridgeCourseware && !bundledIndex && (stat.size > maxBufferedStaticBytes || req.method === "HEAD")) {
       streamStaticFile(req, res, filePath, type, url, stat);
       return;
     }
@@ -7939,7 +9348,8 @@ const server = http.createServer((req, res) => {
         return;
       }
 
-      const responseData = bridgeCourseware ? injectCoursewareBridge(data) : data;
+      const responseData = bridgeCourseware ? injectCoursewareBridge(data, filePath)
+        : filePath === path.join(root, "index.html") && learningRuntimeHtml ? learningRuntimeHtml : data;
       if (req.method === "HEAD") {
         res.writeHead(200, {
           "Content-Type": type,
@@ -8005,6 +9415,7 @@ let emergencyExitStarted = false;
 function emergencyExit(kind, error) {
   if (emergencyExitStarted) return;
   emergencyExitStarted = true;
+  errorMonitoring.captureException(error, kind === "Unhandled rejection" ? "server_rejection" : "server_exception");
   console.error(`${kind}:`, error);
   try {
     db.saveNow();
@@ -8012,7 +9423,7 @@ function emergencyExit(kind, error) {
     console.error("Emergency database save failed:", saveError.message);
   }
   try { db.releaseWriteLock(); } catch {}
-  process.exit(1);
+  errorMonitoring.flush().finally(() => process.exit(1));
 }
 
 process.on("uncaughtException", (error) => emergencyExit("Uncaught exception", error));

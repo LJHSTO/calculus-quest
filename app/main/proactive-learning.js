@@ -40,6 +40,16 @@
     "parameter_change",
     "parameter_commit"
   ]);
+  // Moments where the learner has just finished something and can act on a
+  // suggestion. Kept in step with PROACTIVE_NATURAL_BOUNDARY_EVENTS in
+  // knowledge-assistant.js, which gates the quiet_dwell deferral the same way.
+  const NATURAL_BOUNDARY_EVENTS = new Set([
+    "parameter_commit",
+    "interactive_submit",
+    "courseware_interaction_complete",
+    "courseware_formative_check_submitted",
+    "courseware_challenge_result"
+  ]);
 
   function compactText(value = "", limit = 160) {
     return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, limit);
@@ -86,6 +96,12 @@
 
   function independentAttemptResult(event = {}) {
     const data = event.data || {};
+    if ((event.eventType === "courseware_challenge_result" && data.independent !== true)
+      || data.independent === false
+      || Number(data.hint_count ?? data.hintCount) > 0
+      || Number(data.reset_count ?? data.resetCount) > 0
+      || data.error_type === "missed_expression"
+      || data.selected_zone === "missed") return null;
     const raw = data.is_correct
       ?? data.isCorrect
       ?? data.correct
@@ -115,6 +131,20 @@
     const cooldowns = new Map();
     const dismissStreaks = new Map();
     const commits = new Map();
+    // Struggle observed while the learner is inside one activity type, per unit.
+    // The switch is proposed at the NEXT natural boundary rather than the moment
+    // the struggle is seen: a learner mid-drag should not be interrupted, and the
+    // boundary is what makes "stop and look at it differently" a reasonable ask.
+    const struggle = new Map();
+    // Which activity types a knowledge point offers. Injected because the coach
+    // only sees events, and the route is the only place that knows the candidate
+    // set. Which types the learner has already opened is tracked here instead:
+    // the coach receives every `knowledge_scene_select`, so it does not need to
+    // depend on where the UI happens to keep its selection state.
+    const sceneTypesFor = typeof options.sceneTypesFor === "function"
+      ? options.sceneTypesFor
+      : () => [];
+    const visitedTypes = new Map();
     let currentUnit = null;
     let enteredAt = 0;
     let lastMeaningfulAt = 0;
@@ -128,18 +158,30 @@
       lastMeaningfulAt = at;
       activeSuggestion = null;
       commits.clear();
+      struggle.clear();
+      // Opening a knowledge point already counts as experiencing its default scene.
+      if (currentUnit.unitId && currentUnit.sceneType) {
+        const visited = visitedTypes.get(currentUnit.unitId) || new Set();
+        visited.add(currentUnit.sceneType);
+        visitedTypes.set(currentUnit.unitId, visited);
+      }
       return null;
     }
 
     function enterScene(event, at) {
-      currentUnit = {
-        ...currentUnit,
-        sceneType: compactText(event.sceneType || event.data?.sceneType, 80)
-      };
+      const sceneType = compactText(event.sceneType || event.data?.sceneType, 80);
+      currentUnit = { ...currentUnit, sceneType };
       enteredAt = at;
       lastMeaningfulAt = at;
       activeSuggestion = null;
       commits.clear();
+      // The struggle belonged to the previous activity type; it does not carry over.
+      struggle.clear();
+      if (currentUnit.unitId && sceneType) {
+        const visited = visitedTypes.get(currentUnit.unitId) || new Set();
+        visited.add(sceneType);
+        visitedTypes.set(currentUnit.unitId, visited);
+      }
       return null;
     }
 
@@ -278,6 +320,81 @@
         && REPEATED_PARAMETER_CONTINUATION_EVENTS.has(eventType);
     }
 
+    // --- representation switch -------------------------------------------------
+    // Trigger design: struggle first, boundary second.
+    //
+    // Need. The learner has to have actually tried and not got there: repeated
+    // parameter commits in this scene without progress, or a judged attempt that
+    // came back wrong. Time spent alone is not enough — sitting and thinking is not
+    // struggling.
+    //
+    // Timing. The proposal waits for a natural boundary, the same set of events
+    // that already gates `quiet_dwell`. Interrupting mid-drag would be worse than
+    // saying nothing, and "look at this a different way" only makes sense at a
+    // moment where the learner can act on it.
+    //
+    // Availability. Switching is pointless if every activity type has been opened,
+    // so the proposal is dropped when there is nothing unseen to offer.
+    //
+    // How much struggle is enough. A single failed attempt is NOT enough: one
+    // mistake is what the scaffold ladder is for, and it escalates one level. A
+    // representation switch is a bigger claim — "this whole way of looking at it
+    // is not working" — so it needs more evidence than that. Failures weigh double
+    // because they are judged outcomes rather than mere activity, which makes the
+    // bar reachable by two failures, by one failure plus one more commit, or by
+    // three commits with no progress.
+    const STRUGGLE_THRESHOLD = 3;
+    const FAILURE_WEIGHT = 2;
+    const STRUGGLE_WINDOW_MS = 5 * 60 * 1000;
+
+    function noteStruggle(unitId, kind, at) {
+      const entry = struggle.get(unitId) || { parameterCommits: 0, failedAttempts: 0, lastAt: at };
+      if (at - entry.lastAt > STRUGGLE_WINDOW_MS) {
+        entry.parameterCommits = 0;
+        entry.failedAttempts = 0;
+      }
+      if (kind === "parameter") entry.parameterCommits += 1;
+      if (kind === "failure") entry.failedAttempts += 1;
+      entry.lastAt = at;
+      struggle.set(unitId, entry);
+      return entry;
+    }
+
+    function struggleLevel(unitId) {
+      const entry = struggle.get(unitId);
+      if (!entry) return 0;
+      return entry.parameterCommits + entry.failedAttempts * FAILURE_WEIGHT;
+    }
+
+    function representationSwitchSuggestion(at) {
+      const unitId = currentUnit?.unitId || "";
+      const offered = sceneTypesFor(unitId) || [];
+      const available = (Array.isArray(offered) ? offered : []).map((type) => ({
+        typeId: compactText(type?.typeId || type?.id || type, 40),
+        title: compactText(type?.title || type?.label || type?.typeId || type, 120)
+      })).filter((type) => type.typeId);
+      if (!available.length) return null;
+      const experienced = new Set(visitedTypes.get(unitId) || []);
+      const current = compactText(currentUnit?.sceneType, 80);
+      if (current) experienced.add(current);
+      const unseen = available.filter((type) => !experienced.has(type.typeId));
+      if (!unseen.length) return null;
+      const target = unseen[0];
+      return createSuggestion("representation_switch", at, {
+        targetTypeId: target.typeId,
+        targetTitle: target.title,
+        availableTypes: available.map((type) => type.typeId),
+        experiencedTypes: [...experienced],
+        eyebrow: "知点有个建议",
+        title: "换一种方式看同一件事",
+        body: `你在当前课件里已经试了几次。同一个知识点还有「${target.title}」这种看法，`
+          + "换过去也许更容易看清。要试试吗？",
+        actionLabel: "换个方式看看",
+        question: "",
+        contextMode: "unit"
+      });
+    }
+
     function consume(event = {}, atValue) {
       const at = timestamp(atValue, timestamp(event.timing?.clientAt));
       const eventType = compactText(event.eventType, 80);
@@ -307,10 +424,33 @@
         "courseware_challenge_result",
         "courseware_formative_check_submitted"
       ].includes(eventType)) {
+        const attempt = independentAttemptResult(event);
+        if (attempt === false && currentUnit.unitType !== "quiz") {
+          noteStruggle(currentUnit.unitId, "failure", at);
+        }
         return independentAttemptSuggestion(event, at);
       }
       if (eventType === "parameter_commit" && currentUnit.unitType !== "quiz") {
-        return recordParameterCommit(event, at);
+        const suggestion = recordParameterCommit(event, at);
+        // A repeated-parameter suggestion already covers "you keep fiddling"; the
+        // switch is for the case where that has not resolved anything, so the
+        // struggle is counted either way and the switch is offered at a boundary.
+        if (!suggestion) noteStruggle(currentUnit.unitId, "parameter", at);
+        if (suggestion) return suggestion;
+      }
+      // Boundary: offer a different activity type if the current one is not working.
+      if (
+        NATURAL_BOUNDARY_EVENTS.has(eventType)
+        && currentUnit.unitType !== "quiz"
+        && struggleLevel(currentUnit.unitId) >= STRUGGLE_THRESHOLD
+      ) {
+        const switchSuggestion = representationSwitchSuggestion(at);
+        if (switchSuggestion) {
+          // The struggle has been acted on; do not raise the same proposal again
+          // until new evidence accumulates.
+          struggle.delete(currentUnit.unitId);
+          return switchSuggestion;
+        }
       }
       return null;
     }
@@ -343,7 +483,14 @@
         : reason === "accept" ? 0 : previousStreak;
       dismissStreaks.set(resolved.unitId, nextStreak);
       const cooldownMultiplier = negativeResolution ? Math.max(1, nextStreak) : 1;
-      const noClientCooldown = reason === "outcome-recorded";
+      // 「没有展示给学生」的结算一律不留冷却。
+      //
+      // 冷却的语义是"学生刚拒绝过，先别再来"，它的依据是**学生做过选择**。
+      // 而 `not-shown` 表示这个候选根本没走到学生面前（例如服务端判定此刻不该
+      // 干预、或客户端自己发现这个信号现在没有意义）。把它也算成一次拒绝，后果是
+      // 一个知识点里的一次无关事件就吃掉该知识点整轮的候选额度——客户端冷却是 10
+      // 分钟，而一个知识点只学约 5 分钟。干跑实测：这条不改，人均决策点是 **0**。
+      const noClientCooldown = reason === "outcome-recorded" || reason === "not-shown";
       const cooldownUntil = noClientCooldown
         ? 0
         : at + config.cooldownMs * cooldownMultiplier;

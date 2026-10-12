@@ -32,6 +32,61 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>换元法直觉 - 拉伸坐标轴实验</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-09-simulation-audit-r2",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-07",
+  "module_title": "微积分基本定理与积分方法",
+  "knowledge_point_id": "GH-07-K03",
+  "concept_tag": "换元法直觉",
+  "scene_type": "simulation",
+  "resource_id": "GH-07-K03:simulation",
+  "resource_title": "换元法直觉：拖动实验",
+  "learning_objective": "能解释「换元法直觉」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「换元法直觉」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "换元法直觉：观察坐标轴变换时dx与du的宽度关系，理解为什么换元积分需要乘以g'(x)。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed"
+  ],
+  "capabilities": {
+    "widget_type": "simulation",
+    "controls": [
+      "slider",
+      "button",
+      "canvas"
+    ],
+    "reports_attempt": false,
+    "reports_challenge": false,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "产生与本知识点目标一致的可观察交互变化",
+    "failure_is_evidence": false
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -901,11 +956,11 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     </button>
     <button class="preset-btn" id="preset2" aria-label="预设：2倍拉伸">
       <div class="preset-name">🔸 2倍拉伸 (a=2)</div>
-      <div class="preset-desc">du = 2·dx，u轴被拉长</div>
+      <div class="preset-desc">du = 2·dx，对应增量扩大2倍</div>
     </button>
     <button class="preset-btn" id="preset3" aria-label="预设：压缩">
       <div class="preset-name">🔹 压缩 (a=0.5)</div>
-      <div class="preset-desc">du = 0.5·dx，u轴被压缩</div>
+      <div class="preset-desc">du = 0.5·dx，对应增量缩为一半</div>
     </button>
     <button class="preset-btn" id="preset4" aria-label="预设：忽略导数">
       <div class="preset-name">⚠️ 忽略 g'(x) 的后果</div>
@@ -1044,19 +1099,21 @@ const resizeObserver = new ResizeObserver(resize);
 resizeObserver.observe(canvas.parentElement);
 
 // Coordinate mapping
+function coordinateExtent() {
+  return Math.max(4, 4 * state.slope) * (1.2 + (2 - state.coordScale) * 0.3);
+}
+
 function xToCanvas(xVal) {
   const margin = 60;
   const axisWidth = W - margin * 2;
-  const xMin = -4, xMax = 4;
+  // Both axes use the same units per pixel; padding keeps every allowed segment visible.
+  const extent = coordinateExtent();
+  const xMin = -extent, xMax = extent;
   return margin + ((xVal - xMin) / (xMax - xMin)) * axisWidth;
 }
 
 function uToCanvas(uVal) {
-  const margin = 60;
-  const axisWidth = W - margin * 2;
-  const uMin = -4 * state.slope - 1;
-  const uMax = 4 * state.slope + 1;
-  return margin + ((uVal - uMin) / (uMax - uMin)) * axisWidth;
+  return xToCanvas(uVal);
 }
 
 function gOfX(x) {
@@ -1159,8 +1216,13 @@ function draw() {
   const mapCenterY = H * 0.52;
 
   // Draw axes
-  drawAxis(ctx, xAxisY, 'x', xAxisY + 30, [-3.5, 3.5], 0.5, '#60a5fa');
-  drawAxis(ctx, uAxisY, 'u', uAxisY - 18, [-3.5 * state.slope, 3.5 * state.slope], Math.max(0.5, state.slope), '#f472b6');
+  const extent = coordinateExtent();
+  const rawStep = 2 * extent / Math.max(2, Math.floor((W - 120) / 64));
+  const magnitude = 10 ** Math.floor(Math.log10(rawStep));
+  const tickStep = [1, 2, 5, 10].find((factor) => factor * magnitude >= rawStep) * magnitude;
+  const tickLimit = Math.floor(extent / tickStep) * tickStep;
+  drawAxis(ctx, xAxisY, 'x', xAxisY + 30, [-tickLimit, tickLimit], tickStep, '#60a5fa');
+  drawAxis(ctx, uAxisY, 'u', uAxisY - 62, [-tickLimit, tickLimit], tickStep, '#f472b6');
 
   // dx segment on x-axis
   const dxLeft = xToCanvas(state.dxPos);
@@ -1168,8 +1230,8 @@ function draw() {
   const dxW = dxRight - dxLeft;
 
   // du segment on u-axis (transformed)
-  const uLeft = xToCanvas(gOfX(state.dxPos));
-  const uRight = xToCanvas(gOfX(state.dxPos + state.dxWidth));
+  const uLeft = uToCanvas(gOfX(state.dxPos));
+  const uRight = uToCanvas(gOfX(state.dxPos + state.dxWidth));
   const duW = uRight - uLeft;
 
   // Animation progress for morphing
@@ -1191,8 +1253,7 @@ function draw() {
   ctx.strokeRect(dxLeft, xAxisY - 18, dxW, 36);
 
   // du filled box on u-axis with animated width
-  const animDuW = state.running ? dxW + (duW - dxW) * easeInOut(p) : duW;
-  const animULeft = state.running ? uLeft + (dxW - animDuW) * (1 - p) * 0 : uLeft;
+  const animDuW = duW;
 
   drawFilledBox(ctx, uLeft, uAxisY - 30, animDuW, 60, 'rgba(244,114,182,0.25)', 1);
   ctx.strokeStyle = '#f472b6';
@@ -1240,7 +1301,9 @@ function draw() {
     ctx.font = 'bold 13px "PingFang SC", "Microsoft YaHei", sans-serif';
     ctx.fillStyle = '#ef4444';
     ctx.textAlign = 'center';
-    ctx.fillText('❌ 忽略 g\'(x): du ≈ dx', wrongDuLeft + wrongDuW / 2, uAxisY - 45);
+    ctx.fillText(Math.abs(state.slope - 1) < 0.0001
+      ? 'a=1 时，du=dx 恰好成立'
+      : '错误对比：直接令 du=dx', wrongDuLeft + wrongDuW / 2, uAxisY + 70);
 
     // Visual gap indicator
     const gap = Math.abs(animDuW - wrongDuW);
@@ -1249,7 +1312,7 @@ function draw() {
       ctx.fillStyle = '#ef4444';
       ctx.textAlign = 'center';
       const gapCenter = Math.min(wrongDuLeft, uLeft) + Math.min(wrongDuW, animDuW) / 2;
-      ctx.fillText(`← 断裂 ${(Number.isFinite(Number(gap)) ? Number(gap) : 0).toFixed(1)}px →`, gapCenter, uAxisY + 45);
+      ctx.fillText(`宽度差 ${gap.toFixed(1)}px`, gapCenter, uAxisY + 45);
     }
   }
 
@@ -1303,7 +1366,8 @@ function animate(time) {
       state.ended = true;
       updateStateUI();
       document.getElementById('infoBox').innerHTML =
-        '✅ <strong>变换完成！</strong>注意观察：du 的宽度是 dx 的 <strong>' + state.slope.toFixed(1) + ' 倍</strong>。这就是为什么换元时需要乘以 g\'(x) = ' + state.slope.toFixed(1) + '。';
+        '<strong>变换完成。</strong>本例 u=ax，a=' + state.slope.toFixed(1)
+        + '>0，因此 du=a dx；反过来写是 dx=du/a。把积分中的 dx 改写成 du 时，应除以 a；若原式已有 a dx，则整体替换成 du。';
     }
   }
   lastTime = time;
@@ -1374,10 +1438,10 @@ function updateInfoBox() {
       '💡 斜率 ≈ 1：du ≈ dx，坐标轴几乎不变形。这是最简单的换元情况。';
   } else if (s > 1) {
     document.getElementById('infoBox').innerHTML =
-      '💡 斜率 ' + (Number.isFinite(Number(s)) ? Number(s) : 0).toFixed(1) + ' > 1：u 轴被<strong>拉伸</strong>了 ' + (Number.isFinite(Number(s)) ? Number(s) : 0).toFixed(1) + ' 倍！du 比 dx 宽 ' + ((s-1)*100).toFixed(0) + '%。';
+      '斜率 ' + s.toFixed(1) + ' > 1：对应增量 du 是 dx 的<strong>' + s.toFixed(1) + '倍</strong>。两轴单位比例相同，因此线段宽度也按这个倍数变化。';
   } else {
     document.getElementById('infoBox').innerHTML =
-      '💡 斜率 ' + (Number.isFinite(Number(s)) ? Number(s) : 0).toFixed(1) + ' < 1：u 轴被<strong>压缩</strong>了。du 比 dx 窄 ' + ((1-s)*100).toFixed(0) + '%。';
+      '0 < 斜率 ' + s.toFixed(1) + ' < 1：对应增量 du 是 dx 的<strong>' + s.toFixed(1) + '倍</strong>。由 dx=du/a 可知，反向换算要除以这个正数。';
   }
 }
 
@@ -1433,8 +1497,8 @@ document.getElementById('preset3').addEventListener('click', function() {
 });
 document.getElementById('preset4').addEventListener('click', function() {
   state.slope = 3.0; state.dxPos = 1.0; state.dxWidth = 0.5; state.coordScale = 1.0;
-  state.showGapWarning = true;
   applySliders(); resetSimulation();
+  state.showGapWarning = true;
   document.getElementById('infoBox').innerHTML =
     '⚠️ <strong>危险！</strong>如果忽略 g\'(x)=' + state.slope.toFixed(1) + '，红色虚线框表示错误的 du。注意它与正确 du（粉色）之间的<strong>视觉断裂</strong>！';
 });

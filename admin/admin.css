@@ -228,6 +228,23 @@
     #table-proactive-participant-flow td,
     #table-proactive-runtime-events td { vertical-align: top; }
     #table-proactive-runtime-events td:last-child { min-width: 260px; white-space: normal; }
+    .proactive-analysis-card { margin-bottom: 18px; }
+    .proactive-analysis-overview {
+      display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 0; margin: 14px 0 18px; border-top: 1px solid #e8e2d8;
+      border-bottom: 1px solid #e8e2d8;
+    }
+    .proactive-analysis-overview .proactive-outcome-overview-item:first-child { border-left: 0; }
+    .proactive-data-quality { margin-bottom: 20px; }
+    #table-proactive-participant-analysis { min-width: 1760px; }
+    #table-proactive-challenge-analysis { min-width: 1420px; }
+    #table-proactive-participant-analysis td,
+    #table-proactive-challenge-analysis td { vertical-align: top; line-height: 1.5; }
+    #table-proactive-participant-analysis td:first-child,
+    #table-proactive-challenge-analysis td:first-child { min-width: 190px; white-space: normal; }
+    .proactive-participant-analysis-scroll,
+    .proactive-challenge-analysis-scroll { max-height: min(58vh, 560px); margin-bottom: 20px; overflow: auto; }
+    .text-warn { color: #9a4c32; }
     .proactive-outcome-overview {
       display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 0; margin: 14px 0 18px; border-top: 1px solid #e8e2d8; border-bottom: 1px solid #e8e2d8;
@@ -678,7 +695,9 @@
     .tab.active { background: var(--teal); color: #fff; border-color: var(--teal); }
     .tab:hover:not(.active) { background: #f0ece4; }
 
-    .user-search { margin-bottom: 16px; display: flex; gap: 8px; }
+    .user-search { margin-bottom: 16px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    #table-users .select-user, #select-visible-users { width: 18px; height: 18px; cursor: pointer; }
+    #table-users small { overflow-wrap: anywhere; }
     .user-search input {
       padding: 8px 14px; border: 1px solid var(--line); border-radius: 8px; width: 260px; font-size: 0.9rem;
     }
@@ -839,6 +858,9 @@
       .proactive-protocol-fact:nth-child(4n + 1) { border-left: 1px solid #e8e2d8; }
       .proactive-protocol-fact:nth-child(2n + 1) { border-left: 0; }
       .proactive-outcome-grid { grid-template-columns: 1fr; }
+      .proactive-analysis-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .proactive-analysis-overview .proactive-outcome-overview-item:nth-child(2n + 1) { border-left: 0; }
+      .proactive-analysis-overview .proactive-outcome-overview-item:nth-child(n + 3) { border-top: 1px solid #e8e2d8; }
       .proactive-outcome-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .proactive-outcome-overview-item:nth-child(2n + 1) { border-left: 0; }
       .proactive-outcome-overview-item:nth-child(n + 3) { border-top: 1px solid #e8e2d8; }
@@ -880,6 +902,12 @@
       .proactive-protocol-fact:nth-child(2n + 1),
       .proactive-protocol-fact:nth-child(4n + 1) { border-left: 0; }
       .proactive-outcome-overview { grid-template-columns: 1fr; }
+      .proactive-analysis-overview { grid-template-columns: 1fr; }
+      .proactive-analysis-overview .proactive-outcome-overview-item,
+      .proactive-analysis-overview .proactive-outcome-overview-item:nth-child(2n + 1) {
+        border-top: 1px solid #e8e2d8; border-left: 0;
+      }
+      .proactive-analysis-overview .proactive-outcome-overview-item:first-child { border-top: 0; }
       .proactive-outcome-overview-item,
       .proactive-outcome-overview-item:nth-child(2n + 1) {
         border-top: 1px solid #e8e2d8; border-left: 0;
@@ -893,3 +921,6 @@
       .proactive-audit-transition-arrow { min-height: 16px; transform: rotate(90deg); }
       .proactive-audit-disclosure > summary small { display: none; }
     }
+.monitoring-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 20px 0; }
+.monitoring-toolbar h2 { margin: 0 auto 0 0; }
+#monitoring-table td { overflow-wrap: anywhere; max-width: 260px; }

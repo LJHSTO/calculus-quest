@@ -32,6 +32,64 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>极限迷宫 - 左右极限挑战</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-02",
+  "module_title": "极限与连续：直觉探索",
+  "knowledge_point_id": "GH-02-K02",
+  "concept_tag": "图像上的左右极限",
+  "scene_type": "game",
+  "resource_id": "GH-02-K02:game",
+  "resource_title": "图像上的左右极限：误解修复挑战",
+  "learning_objective": "请用自己的话解释左极限与右极限，以及双侧极限存在的条件。",
+  "misconception": "左右说的是输入从哪侧靠近；比较的是两侧输出趋近的值。",
+  "observable_evidence": "在分段函数迷宫中寻找出口，通过正确的趋近方向到达目标平台。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不上报提示使用，无法确认本次尝试是否无辅助，因此不作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -880,6 +938,41 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
+<style id="limit-challenge-viewport">
+  body:has(#targetDisplay) {
+    height: 100dvh !important;
+    justify-content: flex-start !important;
+  }
+  body #gameContainer {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    flex: 0 0 100dvh !important;
+    overflow: hidden !important;
+  }
+  body #gameContainer #gameCanvas {
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+  }
+  body #gameContainer #controls {
+    position: absolute !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+  }
+  @media (max-width: 480px) {
+    #hud { padding: 8px; gap: 4px; }
+    .hud-item { padding: 4px 6px; gap: 4px; }
+    #controls { gap: 12px; padding: 12px 8px; }
+    .ctrl-btn { font-size: 16px; min-width: 0; flex: 1; }
+  }
+</style>
 </head>
 <body>
 
@@ -1405,13 +1498,13 @@ function addParticles(x, y, color, count) {
 }
 
 function updateParticles() {
-  particles = particles.filter(p => p.life > 0);
   particles.forEach(p => {
     p.x += p.vx;
     p.y += p.vy;
     p.vy += 0.1;
     p.life -= p.decay;
   });
+  particles = particles.filter(p => p.life > 0);
 }
 
 function drawParticles() {
@@ -1507,6 +1600,11 @@ function checkResult() {
 
   const correctLimit = chosenSide === 'left' ? lvl.leftLimit : lvl.rightLimit;
   const isCorrect = Math.abs(correctLimit - lvl.target) < 0.01;
+  window.OpenMaicLearningEvidence?.recordChallenge({
+    challenge_id: 'GH-02-K02-side-' + String(lvl.target),
+    is_correct: isCorrect, evidence_scope: 'one_sided_choice', independent: false,
+    selected_side: chosenSide, selected_limit: correctLimit, target_limit: lvl.target
+  });
 
   if (isCorrect) {
     // Success!
@@ -1593,6 +1691,7 @@ function update(dt) {
     }
   } else if (gameState === 'success') {
     // Celebration particles
+    const { gapX, targetY } = getPlatformHeights();
     if (Math.random() < 0.3) {
       addParticles(gapX + (Math.random()-0.5)*40, targetY, '#ffd700', 2);
     }

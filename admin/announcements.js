@@ -30,6 +30,18 @@
   let currentAnnouncement = null;
   let loading = false;
 
+  function hasAdminAccess() {
+    return window.CQAdminAuth?.hasAccess?.() || Boolean(adminToken);
+  }
+
+  function adminHeaders(extra = {}) {
+    if (window.CQAdminAuth?.headers) return window.CQAdminAuth.headers(extra);
+    return {
+      ...(adminToken ? { Authorization: `Bearer ${adminToken}` } : {}),
+      ...(extra || {})
+    };
+  }
+
   function escapeText(value = "") {
     return String(value)
       .replace(/&/g, "&amp;")
@@ -114,10 +126,9 @@
   async function request(path, options = {}) {
     const response = await fetch(`${API_BASE}${path}`, {
       method: options.method || "GET",
-      headers: {
-        Authorization: `Bearer ${adminToken}`,
-        ...(options.body === undefined ? {} : { "Content-Type": "application/json" })
-      },
+      headers: adminHeaders(
+        options.body === undefined ? {} : { "Content-Type": "application/json" }
+      ),
       ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) })
     });
     const payload = await response.json().catch(() => ({}));
@@ -228,7 +239,7 @@
   }
 
   async function load(options = {}) {
-    if (!adminToken || (loading && options.force !== true)) return;
+    if (!hasAdminAccess() || (loading && options.force !== true)) return;
     const previousLoading = loading;
     setBusy(true);
     try {
@@ -355,7 +366,7 @@
   });
 
   window.CQAnnouncementAdmin = { load };
-  if (!document.getElementById("app")?.classList.contains("hidden") && adminToken) {
+  if (!document.getElementById("app")?.classList.contains("hidden") && hasAdminAccess()) {
     queueMicrotask(load);
   }
 })();

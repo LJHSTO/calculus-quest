@@ -224,6 +224,7 @@ function parameterEvent(at, {
     data: {
       challenge_id: "challenge-1",
       attempt_id: "attempt-1",
+      independent: true,
       is_correct: false
     }
   }, 10_000);
@@ -234,6 +235,24 @@ function parameterEvent(at, {
   );
   assert.equal(independentOutcome.success, false);
   assert.equal(independentOutcome.attemptId, "attempt-1");
+}
+
+for (const invalid of [
+  { independent: undefined },
+  { independent: false },
+  { independent: "true" },
+  { hint_count: 1 },
+  { reset_count: 1 },
+  { error_type: "missed_expression" },
+  { selected_zone: "missed" }
+]) {
+  const coach = createProactiveCoach();
+  coach.consume(unitEvent("KP1"), 0);
+  assert.equal(coach.consume({
+    eventType: "courseware_challenge_result",
+    unitId: "KP1",
+    data: { is_correct: false, independent: true, ...invalid }
+  }, 1000), null, `不能把非独立作答或漏接转为独立验证：${JSON.stringify(invalid)}`);
 }
 
 {

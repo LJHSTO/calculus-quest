@@ -17,6 +17,7 @@ const bootstrap = read("app/main/bootstrap.js");
 const core = read("app/main/core.js");
 const analytics = read("app/main/analytics.js");
 const renderLearning = read("app/main/render-learning.js");
+const learningWorkspace = read("app/main/learning-workspace.js");
 const agenticPath = read("app/main/agentic-path.js");
 const narration = read("app/main/narration.js");
 const quiz = read("app/main/quiz.js");
@@ -109,9 +110,11 @@ assert.ok(
   adminHtml.indexOf("admin/csv.js") < adminHtml.indexOf("admin/admin.js"),
   "CSV escaping helper must load before the admin dashboard"
 );
-assert.match(adminHtml, /admin\/presentation\.js\?v=20260718-admin-quality-v5/);
-assert.match(adminHtml, /lib\/interaction-policy\.js\?v=20260718-interaction-quality-v3/);
-assert.match(adminHtml, /admin\/admin\.js\?v=20260722-multi-scene-v1/);
+assert.match(adminHtml, /admin\/presentation\.js\?v=20260909-analysis-v6/);
+assert.match(adminHtml, /lib\/interaction-policy\.js\?v=20260813-platform-fixes-v1/);
+// Assert the cache-busting reference itself, not one frozen version string: the
+// previous literal rotted the moment the dashboard's ?v= was bumped.
+assert.match(adminHtml, /admin\/admin\.js\?v=[0-9a-z-]+/, "admin dashboard must be cache-busted");
 assert.ok(
   adminHtml.indexOf('id="overview-metrics"') > adminHtml.indexOf('id="tab-overview"'),
   "overview metrics must live inside the overview tab"
@@ -173,7 +176,18 @@ assert.match(core, /const requestToken = typeof body\?\.token === "string"/);
 assert.match(core, /KnowledgeSceneSelection\.selectedType/);
 assert.doesNotMatch(core, /function chooseDefaultKnowledgeScene/);
 assert.match(knowledgeSceneSelection, /reading the selection|selectedType/);
-assert.match(core, /await analyticsFlush\(\);\s*await waitForLearningEventSync\(\);\s*await syncLearningSnapshot\("logout"\)/);
+// Logout used to await up to 80s of telemetry before touching the UI, which made
+// the button look dead and swallowed the second click. Assert the fixed shape:
+// the visible logout is synchronous, the token survives until telemetry settles,
+// and every wait is bounded well below the old 20s/10s ceilings.
+assert.match(core, /state\.participant = null;[\s\S]*?switchView\("home"\);[\s\S]*?showLogin\(\);[\s\S]*?analyticsFlushUntilSettled\(1500\)/);
+assert.match(core, /waitForLearningEventSync\(1500\)/);
+assert.match(core, /apiRequest\("\/api\/auth\/logout", \{ token \}, \{ timeoutMs: 5000 \}\)/);
+assert.doesNotMatch(core, /analyticsFlushUntilSettled\(20000\)/);
+assert.doesNotMatch(core, /waitForLearningEventSync\(20000\)/);
+assert.match(core, /const generation = \+\+logoutGeneration/);
+assert.match(core, /generation !== logoutGeneration \|\| !isSignedIn\(\)/);
+assert.match(bootstrap, /els\.authLogout\.textContent = "正在退出…"/);
 assert.match(bootstrap, /els\.authLogout\?\.addEventListener\("click", async \(\) =>/);
 assert.match(bootstrap, /const needsSceneChoice = unit\.type === "knowledge" && !selectedKnowledgeSceneType\(unit\)/);
 assert.doesNotMatch(bootstrap, /nextBtn\.disabled\s*=\s*needsSceneChoice/);
@@ -186,7 +200,9 @@ assert.match(renderLearning, /function focusKnowledgeSceneChoicePanel/);
 assert.match(renderLearning, /id="knowledge-scene-panel"/);
 assert.match(renderLearning, /data-knowledge-scene-panel/);
 assert.match(renderLearning, /data-knowledge-scene-stage/);
-assert.match(renderLearning, /data-knowledge-scene-fullscreen/);
+assert.match(index, /data-classroom-action="fullscreen"/);
+assert.match(learningWorkspace, /const surface = activeSurface\(\);[\s\S]*data-knowledge-scene-stage/);
+assert.match(learningWorkspace, /toggleResourceFullscreen\(target\)/);
 assert.match(renderLearning, /data-courseware-frame/);
 assert.doesNotMatch(renderLearning, /data-multi-scene-frame/);
 assert.doesNotMatch(renderLearning, /\sallowfullscreen/);
@@ -205,7 +221,7 @@ assert.match(
   /\.multi-scene-slide-fullscreen-stage:fullscreen[\s\S]*\.multi-scene-required-slide[\s\S]*width:\s*min\(100vw/
 );
 assert.match(renderLearning, /data-resource-fullscreen-target/);
-assert.match(renderLearning, /讲解页全屏/);
+assert.match(index, /aria-label="全屏课件"/);
 assert.match(events, /resourceFullscreenTargetForButton/);
 assert.match(narration, /function resourceFullscreenTargetForButton/);
 assert.match(styles, /\.chapter-rail\.collapsed[\s\S]*visibility:\s*hidden/);

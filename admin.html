@@ -5,15 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calculus Quest - 研究数据分析面板</title>
   <script src="lib/chart.umd.min.js?v=4.4.7"></script>
-  <link rel="stylesheet" href="admin/admin.css?v=20260831-proactive-governance-v1" />
+  <link rel="stylesheet" href="admin/admin.css?v=20260918-selected-export-v1" />
   <link rel="stylesheet" href="admin/announcements.css?v=20260726-announcements-v2" />
+  <link rel="stylesheet" href="app/main/platform-theme.css?v=20260909" />
 </head>
-<body>
+<body class="platform-admin">
 <div id="login-gate" class="hidden">
   <div class="login-card">
     <h2>研究数据分析面板</h2>
-    <p>请输入管理员 Token 以查看学习数据</p>
-    <input id="admin-token-input" type="password" placeholder="管理员 Token" autofocus />
+    <p>请输入管理员密码后进入研究数据面板。</p>
+    <input id="admin-token-input" type="password" placeholder="管理员密码" autofocus />
     <button class="btn btn-primary" id="login-btn">进入面板</button>
     <div id="login-error" class="error hidden" style="margin-top:12px;"></div>
   </div>
@@ -34,12 +35,20 @@
       <button class="btn btn-sm range-btn" data-range="30d">近30天</button>
       <button class="btn btn-sm range-btn" data-range="month">本月</button>
       <span style="opacity:0.4;">|</span>
-      <input type="date" id="date-start" style="padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);color:#fff;font-size:0.8rem;" title="起始日期" />
+      <input type="date" id="date-start" title="起始日期" />
       <span style="opacity:0.6;">—</span>
-      <input type="date" id="date-end" style="padding:3px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.1);color:#fff;font-size:0.8rem;" title="结束日期" />
-      <button class="btn btn-sm btn-outline" id="filter-apply-btn" style="color:#fff;border-color:rgba(255,255,255,0.3);">筛选</button>
-      <button class="btn btn-sm btn-outline" id="refresh-btn" style="color:#fff;border-color:rgba(255,255,255,0.3);">刷新</button>
-      <button class="btn btn-sm btn-outline" id="logout-btn" style="color:#fff;border-color:rgba(255,255,255,0.3);">退出</button>
+      <input type="date" id="date-end" title="结束日期" />
+      <label style="display:inline-flex;align-items:center;gap:6px;">
+        <span style="font-size:0.85rem;color:var(--muted);">章节</span>
+        <select id="chapter-filter" title="默认只显示当前实验章节的数据">
+          <option value="V14-C1" selected>默认教学数据（函数与极限）</option>
+          <option value="all">全部章节</option>
+          <option value="V14-C3">历史章节（积分 V14-C3）</option>
+        </select>
+      </label>
+      <button class="btn btn-sm btn-outline" id="filter-apply-btn">筛选</button>
+      <button class="btn btn-sm btn-outline" id="refresh-btn">刷新</button>
+      <button class="btn btn-sm btn-outline" id="logout-btn">退出</button>
     </div>
   </header>
 
@@ -57,7 +66,24 @@
       <button class="tab" data-tab="shortanswers">简答题</button>
       <button class="tab" data-tab="interactions">交互追踪</button>
       <button class="tab" data-tab="announcements">系统公告</button>
+      <button class="tab" data-tab="monitoring">错误监控</button>
     </div>
+
+    <section id="tab-monitoring" class="tab-content hidden">
+      <div class="monitoring-toolbar">
+        <h2>错误监控</h2>
+        <button class="btn btn-outline" id="monitoring-refresh" type="button">刷新记录</button>
+        <button class="btn btn-outline" id="monitoring-test" type="button">发送测试事件</button>
+        <button class="btn btn-outline" id="monitoring-export" type="button">导出记录</button>
+      </div>
+      <p id="monitoring-status" role="status">尚未读取</p>
+      <div class="table-wrap">
+        <table id="monitoring-table">
+          <thead><tr><th>最近发生</th><th>来源</th><th>错误类别</th><th>代码位置 / 接口</th><th>详情</th><th>次数</th><th>版本</th><th>事件编号</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
 
     <!-- Tab: Overview -->
     <div id="tab-overview" class="tab-content">
@@ -169,7 +195,7 @@
         <div class="proactive-runtime-control">
           <label for="proactive-pause-reason">运行记录</label>
           <input id="proactive-pause-reason" type="text" maxlength="500" placeholder="暂停时填写原因；恢复时可留空" />
-          <input id="proactive-runtime-operator" type="text" maxlength="120" value="research-admin" aria-label="操作人" />
+          <input id="proactive-runtime-operator" type="text" maxlength="120" value="研究管理员" aria-label="操作人" />
           <span class="page-status" id="proactive-runtime-result" role="status"></span>
         </div>
         <div class="proactive-protocol-facts" id="proactive-protocol-facts"></div>
@@ -190,7 +216,7 @@
               <table id="table-proactive-participant-flow">
                 <thead><tr>
                   <th>实验臂</th><th>分组</th><th>有证据</th><th>实际曝光</th>
-                  <th>后测完成</th><th>近迁移</th><th>跨表征</th><th>保持</th>
+                  <th>后测完成</th><th>近迁移（历史）</th><th>跨表征（历史）</th><th>保持</th>
                   <th>研究退出</th><th>测量退出</th>
                 </tr></thead>
                 <tbody></tbody>
@@ -210,6 +236,72 @@
             </div>
           </section>
         </div>
+        <section class="proactive-assignment-roster" aria-labelledby="proactive-assignment-roster-title">
+          <div class="proactive-audit-column-heading">
+            <h4 id="proactive-assignment-roster-title">个人分组名册</h4>
+            <span class="muted" id="proactive-assignment-roster-status">用于核对固定分组，不根据后续行为改组</span>
+          </div>
+          <div class="table-wrap table-scroll-compact">
+            <table id="table-proactive-assignment-roster">
+              <thead><tr>
+                <th>学生</th><th>实验臂</th><th>前测层级</th><th>分配版本</th>
+                <th>分配时间</th><th>参与状态</th><th>学习代次</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+      </section>
+      <section class="chart-card full-width proactive-analysis-card">
+        <div class="section-heading-row">
+          <div>
+            <h3>参与者实验分析数据</h3>
+            <p class="chart-desc">一人一行关联固定分组、三阶段测验、课件挑战、主动提示响应、独立结果测量、保持测窗口和数据质量。页面用于巡检，CSV 包含完整分析字段。</p>
+          </div>
+          <div class="proactive-export-actions">
+            <button class="btn btn-sm btn-outline" id="export-research-analysis-package" type="button">导出分析包与字典</button>
+            <button class="btn btn-sm btn-outline" id="export-proactive-challenges-csv" type="button">导出课件挑战 CSV</button>
+            <button class="btn btn-sm btn-primary" id="export-proactive-participants-csv" type="button">导出参与者分析 CSV</button>
+          </div>
+        </div>
+        <div class="proactive-analysis-overview" id="proactive-analysis-overview"></div>
+        <section class="proactive-data-quality" aria-labelledby="proactive-data-quality-title">
+          <div class="proactive-audit-column-heading">
+            <h4 id="proactive-data-quality-title">数据质量诊断</h4>
+            <span class="muted" id="proactive-data-quality-status"></span>
+          </div>
+          <div class="proactive-integrity-list" id="proactive-data-quality-signals"></div>
+        </section>
+        <section aria-labelledby="proactive-participant-analysis-title">
+          <div class="proactive-audit-column-heading">
+            <h4 id="proactive-participant-analysis-title">参与者分析表</h4>
+            <span class="muted" id="proactive-participant-analysis-status"></span>
+          </div>
+          <div class="table-wrap table-scroll-primary proactive-participant-analysis-scroll">
+            <table id="table-proactive-participant-analysis">
+              <thead><tr>
+                <th>学生 / 固定分组</th><th>前测层级</th><th>前测</th><th>形成测</th><th>后测</th>
+                <th>课件挑战</th><th>主动提示</th><th>近迁移（历史）</th><th>跨表征（历史）</th><th>保持测量</th><th>数据质量</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+        <section aria-labelledby="proactive-challenge-analysis-title">
+          <div class="proactive-audit-column-heading">
+            <h4 id="proactive-challenge-analysis-title">课件挑战汇总</h4>
+            <span class="muted" id="proactive-challenge-analysis-status"></span>
+          </div>
+          <div class="table-wrap table-scroll-primary proactive-challenge-analysis-scroll">
+            <table id="table-proactive-challenge-analysis">
+              <thead><tr>
+                <th>知识点 / 挑战</th><th>学生</th><th>尝试</th><th>首次独立正确</th><th>提示或重置后正确</th>
+                <th>总尝试正确</th><th>重试</th><th>重置</th><th>挑战完成</th><th>场景完成</th><th>质量问题</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
       </section>
       <div class="proactive-section-heading">
         <div>
@@ -223,7 +315,7 @@
           <div class="section-heading-row">
             <div>
               <h3>独立学习结果</h3>
-              <p class="chart-desc">近迁移、跨表征迁移与延迟保持均在无知点提示、无即时反馈的条件下完成。这里展示描述性统计，不自动作因果结论。</p>
+              <p class="chart-desc">新版仅设一项保持测量，在后测提交满72小时后开放。历史迁移测量保留原版本，不与新版合并计算。这里展示描述性统计，不自动作因果结论。</p>
             </div>
             <div class="proactive-export-actions">
               <button class="btn btn-sm btn-outline" id="export-proactive-outcome-sessions-csv" type="button">导出会话与失访 CSV</button>
@@ -333,9 +425,12 @@
     <div id="tab-users" class="tab-content hidden">
       <div class="user-search">
         <span id="user-total-count" style="font-size:0.85rem;color:var(--muted);align-self:center;"></span>
-        <input id="user-search-input" type="text" placeholder="搜索用户昵称..." />
+        <input id="user-search-input" type="text" placeholder="搜索昵称、邮箱或用户 ID..." />
         <button class="btn btn-sm btn-primary" id="user-search-btn">搜索</button>
         <button class="btn btn-sm btn-outline" id="export-users-csv" type="button">导出全部 CSV</button>
+        <span id="selected-users-count" aria-live="polite">已选 0 人</span>
+        <button class="btn btn-sm btn-outline" id="clear-selected-users" type="button" disabled>清空选择</button>
+        <button class="btn btn-sm btn-primary" id="export-selected-users" type="button" disabled>导出选中人员全部数据</button>
       </div>
       <div class="chart-card full-width">
         <h3>用户列表与学习进度</h3>
@@ -712,9 +807,10 @@
 </div>
 
 <script src="admin/csv.js?v=20260718-export-all-v1"></script>
-<script src="admin/presentation.js?v=20260718-admin-quality-v5"></script>
+<script src="admin/presentation.js?v=20260909-analysis-v6"></script>
 <script src="lib/interaction-policy.js?v=20260813-platform-fixes-v1"></script>
-<script src="admin/admin.js?v=20260831-proactive-governance-v2"></script>
-<script src="admin/announcements.js?v=20260726-announcements-v3"></script>
+<script src="admin/admin.js?v=20260921-chapter-scope-v1"></script>
+<script src="admin/error-monitoring.js?v=20260921-timeout-visibility-v1"></script>
+<script src="admin/announcements.js?v=20260831-local-admin-bypass-v1"></script>
 </body>
 </html>

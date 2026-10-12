@@ -32,6 +32,60 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>小矩形逼近面积：空间视角</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-06",
+  "module_title": "积分直觉：面积、累积与原函数",
+  "knowledge_point_id": "GH-06-K01",
+  "concept_tag": "小矩形逼近面积",
+  "scene_type": "visualization3d",
+  "resource_id": "GH-06-K01:visualization3d",
+  "resource_title": "小矩形逼近面积：空间视角",
+  "learning_objective": "能解释「小矩形逼近面积」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「小矩形逼近面积」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "小矩形逼近面积：空间视角 — 用黎曼和 (Riemann Sum) 的 3D 矩形堆叠来直观理解积分 (Integral) 的几何本质。通过旋转视角观察矩形厚度，理解 dx 在空间中的几何表达。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed"
+  ],
+  "capabilities": {
+    "widget_type": "visualization3d",
+    "controls": [
+      "slider",
+      "button"
+    ],
+    "reports_attempt": false,
+    "reports_challenge": false,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": true,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "产生与本知识点目标一致的可观察交互变化",
+    "failure_is_evidence": false
+  }
+}
+</script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -912,6 +966,14 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     }
 
     async function initScene() {
+      await new Promise(resolve => {
+        const host = document.getElementById('canvas-container');
+        if (host.clientWidth && host.clientHeight) return resolve();
+        const observer = new ResizeObserver(() => {
+          if (host.clientWidth && host.clientHeight) { observer.disconnect(); resolve(); }
+        });
+        observer.observe(host);
+      });
       try {
         if (!checkWebGL()) {
           throw new Error('当前浏览器不支持 WebGL');
@@ -942,9 +1004,9 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
-        controls.target.set(2, 1, 0);
+        controls.target.set(2, 8, 0);
         controls.minDistance = 3;
-        controls.maxDistance = 40;
+        controls.maxDistance = 100;
 
         // Lighting
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
@@ -1041,10 +1103,19 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 
         // Camera positions for views
         const viewPositions = {
-          '3d': { pos: new THREE.Vector3(6, 8, 10), target: new THREE.Vector3(2, 1, 0) },
-          'top': { pos: new THREE.Vector3(2, 14, 0.01), target: new THREE.Vector3(2, 0, 0) },
-          'side': { pos: new THREE.Vector3(6, 2, 0.01), target: new THREE.Vector3(2, 1, 0) }
+          '3d': new THREE.Vector3(0.65, 0.4, 1),
+          'top': new THREE.Vector3(0, 1, 0.001),
+          'side': new THREE.Vector3(0, 0, 1)
         };
+        let automaticFraming = true;
+        function fittedPosition(direction) {
+          // Fit the full y=x^2 domain (0..16), not just the first few bars.
+          const halfFov = THREE.MathUtils.degToRad(camera.fov / 2);
+          const limitingAngle = Math.min(halfFov, Math.atan(Math.tan(halfFov) * camera.aspect));
+          const distance = 8.5 / Math.sin(limitingAngle) * 1.12;
+          return direction.clone().normalize().multiplyScalar(distance).add(new THREE.Vector3(2, 8, 0));
+        }
+        controls.addEventListener('start', () => { automaticFraming = false; });
 
         function getBarHeight(x, dx) {
           if (method === 'left') return f(x);
@@ -1236,7 +1307,8 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
           }
 
           // Animate camera
-          animateCamera(vp.pos, vp.target);
+          automaticFraming = true;
+          animateCamera(fittedPosition(vp), new THREE.Vector3(2, 8, 0));
         }
 
         document.getElementById('view-3d').addEventListener('click', () => switchView('3d'));
@@ -1267,6 +1339,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 
         // Zoom controls
         document.getElementById('zoom-in-btn').addEventListener('click', () => {
+          automaticFraming = false;
           const direction = new THREE.Vector3();
           camera.getWorldDirection(direction);
           camera.position.addScaledVector(direction, 3);
@@ -1274,6 +1347,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
         });
 
         document.getElementById('zoom-out-btn').addEventListener('click', () => {
+          automaticFraming = false;
           const direction = new THREE.Vector3();
           camera.getWorldDirection(direction);
           camera.position.addScaledVector(direction, -3);
@@ -1295,13 +1369,24 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
         });
 
         // Resize
-        window.addEventListener('resize', () => {
+        function resizeScene() {
+          const controlsHeight = document.getElementById('controls').getBoundingClientRect().height;
+          container.style.setProperty('height', Math.max(180, innerHeight - controlsHeight) + 'px', 'important');
           const newWidth = container.clientWidth || window.innerWidth;
           const newHeight = container.clientHeight || window.innerHeight;
           camera.aspect = newWidth / newHeight;
           camera.updateProjectionMatrix();
           renderer.setSize(newWidth, newHeight);
-        });
+          if (automaticFraming) {
+            cameraAnimating = false;
+            controls.target.set(2, 8, 0);
+            camera.position.copy(fittedPosition(viewPositions[currentView]));
+            controls.update();
+          }
+        }
+        window.addEventListener('resize', resizeScene);
+        new ResizeObserver(resizeScene).observe(document.getElementById('controls'));
+        resizeScene();
 
         // Animation loop
         function animate() {

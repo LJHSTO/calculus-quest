@@ -24,7 +24,7 @@
   };
 
   const COURSEWARE_RESOURCE_VERSION = "20260727-courseware-interaction-v4";
-  const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260813-v8";
+  const COURSEWARE_CONTEXT_BRIDGE_VERSION = "20260909-v10";
   const FLOW_TEST_ADMIN_TOKEN_KEY = "cq-flow-test-admin-token";
 
   const BASE_PATH = (() => {
@@ -148,7 +148,7 @@
 
   async function fetchJson(url) {
     const response = await fetch(url, { headers: { Accept: "application/json" } });
-    if (!response.ok) throw new Error(`${url} 返回 HTTP ${response.status}`);
+    if (!response.ok) throw new Error(`${url} 返回状态码 ${response.status}`);
     return response.json();
   }
 
@@ -482,6 +482,14 @@
     return parts.join("");
   }
 
+  function renderQuestionMath(value = "") {
+    if (typeof window.QuestionMath === "undefined") return renderInlineMath(value);
+    return window.QuestionMath.renderToString(
+      String(value ?? ""),
+      typeof window.katex === "undefined" ? null : window.katex
+    );
+  }
+
   function renderMathInHtml(value = "") {
     const sanitized = safeSlideMarkup(value);
     if (typeof window.katex === "undefined") return sanitized;
@@ -702,7 +710,7 @@
       return;
     }
     try {
-      if (typeof els.frameShell.requestFullscreen !== "function") throw new Error("当前浏览器不支持全屏 API");
+      if (typeof els.frameShell.requestFullscreen !== "function") throw new Error("当前浏览器不支持全屏功能");
       await els.frameShell.requestFullscreen();
     } catch (error) {
       setLocalFullscreen();
@@ -713,7 +721,7 @@
 
   function renderQuizPreview(question, key) {
     const coverage = quizKnowledgePointLabels(question, state.chapter);
-    const options = (question.options || []).map((option) => `<li><b>${escapeHtml(option.value || "")}</b><span>${escapeHtml(option.label || "")}</span></li>`).join("");
+    const options = (question.options || []).map((option) => `<li><b>${escapeHtml(option.value || "")}</b><span>${renderQuestionMath(option.label || "")}</span></li>`).join("");
     const answer = quizAnswerText(question);
     const hiddenNotice = "已隐藏：使用管理员口令打开流程检视后可见";
     const answersVisible = state.answersVisible
@@ -722,10 +730,10 @@
     return `
       <article class="quiz-detail">
         <div class="quiz-detail-meta"><span>${escapeHtml(quizTypeLabel(question.type))}</span><span>${escapeHtml(String(question.points ?? ""))} 分</span><span>${escapeHtml(question.id || "")}</span></div>
-        <h3>${escapeHtml(quizQuestionDisplayText(question, key, state.chapter))}</h3>
+        <h3>${renderQuestionMath(quizQuestionDisplayText(question, key, state.chapter))}</h3>
         ${options ? `<ol class="quiz-options">${options}</ol>` : ""}
-        <div class="quiz-answer"><strong>标准答案</strong><p>${escapeHtml(answersVisible ? answer || "（空）" : hiddenNotice)}</p></div>
-        <div class="quiz-analysis"><strong>解析</strong><p>${escapeHtml(answersVisible ? question.analysis || "暂无解析" : hiddenNotice)}</p></div>
+        <div class="quiz-answer"><strong>标准答案</strong><p>${renderQuestionMath(answersVisible ? answer || "（空）" : hiddenNotice)}</p></div>
+        <div class="quiz-analysis"><strong>解析</strong><p>${renderQuestionMath(answersVisible ? question.analysis || "暂无解析" : hiddenNotice)}</p></div>
         ${coverage.length ? `<div class="quiz-coverage"><strong>覆盖知识点</strong><p>${escapeHtml(coverage.join("、"))}</p></div>` : ""}
       </article>
     `;

@@ -4,7 +4,7 @@
   if (global && global.document) global.CoursewareContextCore = Object.freeze(api);
 })(typeof globalThis !== "undefined" ? globalThis : this, function coursewareContextFactory() {
   const SCHEMA_VERSION = 1;
-  const BRIDGE_VERSION = "20260813-v8";
+  const BRIDGE_VERSION = "20260909-v10";
   const CONTEXT_KINDS = new Set([
     "unit",
     "text",
@@ -430,6 +430,11 @@
 
     function currentFrames() {
       return Array.from(resolveRoot()?.querySelectorAll?.("iframe.embed-frame, iframe[data-courseware-frame]") || []);
+    }
+
+    function frameMatchesScope(frame, ref = {}) {
+      const scope = frame?.dataset?.contextScope;
+      return !scope || !["slide", "interactive"].includes(ref?.scope) || scope === ref.scope;
     }
 
     function contextDefaults(extra = {}) {
@@ -945,15 +950,15 @@
           } catch {}
         });
       }
-      const frameNotes = renderedNotes
-        .filter((note) => note.locator?.source === "iframe")
-        .map((note) => ({
-          id: compactText(note.id, 180),
-          color: ["amber", "mint", "blue", "pink"].includes(note.color) ? note.color : "amber",
-          locator: note.locator
-        }));
       currentFrames().forEach((frame) => {
         if (bridgeFrames.has(frame)) {
+          const frameNotes = renderedNotes
+            .filter((note) => note.locator?.source === "iframe" && frameMatchesScope(frame, note.contextRef))
+            .map((note) => ({
+              id: compactText(note.id, 180),
+              color: ["amber", "mint", "blue", "pink"].includes(note.color) ? note.color : "amber",
+              locator: note.locator
+            }));
           postFrame(frame, { type: "cq:notes-sync", notes: frameNotes });
         }
       });
@@ -973,7 +978,7 @@
       const locator = note.locator || {};
       if (locator.source === "iframe") {
         currentFrames().forEach((frame) => {
-          if (bridgeFrames.has(frame)) {
+          if (bridgeFrames.has(frame) && frameMatchesScope(frame, note.contextRef)) {
             frame.scrollIntoView?.({ behavior: "smooth", block: "center" });
             postFrame(frame, { type: "cq:note-restore", note: { id: note.id || "", locator } });
           }
@@ -1085,7 +1090,7 @@
         if (element) pinElement(element);
       }
       currentFrames().forEach((frame) => {
-        if (bridgeFrames.has(frame)) {
+        if (bridgeFrames.has(frame) && frameMatchesScope(frame, ref)) {
           postFrame(frame, {
             type: "cq:context-restore",
             semanticId: ref.semanticId
@@ -1118,7 +1123,7 @@
         postFrame(frame, {
           type: "cq:notes-sync",
           notes: renderedNotes
-            .filter((note) => note.locator?.source === "iframe")
+            .filter((note) => note.locator?.source === "iframe" && frameMatchesScope(frame, note.contextRef))
             .map((note) => ({
               id: compactText(note.id, 180),
               color: ["amber", "mint", "blue", "pink"].includes(note.color) ? note.color : "amber",

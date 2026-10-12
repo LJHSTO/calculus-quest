@@ -71,6 +71,11 @@ function startMockLlm(port) {
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
       const prompt = body.messages?.map((message) => message.content || "").join("\n") || "";
       const maxScore = Number(prompt.match(/满分：(\d+(?:\.\d+)?) 分/)?.[1] || 20);
+      const rubricLine = prompt.split("\n").find((line) => line.startsWith("评分标准："));
+      let rubric = [];
+      try { rubric = JSON.parse(rubricLine?.slice("评分标准：".length) || "[]"); } catch {}
+      const responseLine = prompt.split("\n").find((line) => line.startsWith("学生回答（"));
+      const evidence = JSON.parse(responseLine.slice(responseLine.indexOf("：") + 1));
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({
         choices: [{
@@ -81,6 +86,9 @@ function startMockLlm(port) {
               confidence: 0.98,
               errorType: "none",
               weakConcepts: [],
+              rubricScores: Array.isArray(rubric) ? rubric.map((item, criterionIndex) => ({
+                criterionIndex, score: item.points, evidence: [evidence]
+              })) : [],
               feedback: "浏览器回归重评通过。",
               reasoning: "测试回答按本地评分桩判为正确。"
             })
@@ -114,9 +122,10 @@ async function seedDatabase(dbPath) {
     const userId = `layout-user-${userIndex}`;
     db.upsertUser(
       userId,
-      `排版测试用户${userIndex + 1}`,
+      userIndex === 1 ? "" : `排版测试用户${userIndex + 1}`,
       "2026-08-13T08:00:00.000+08:00",
-      "2026-08-13T12:00:00.000+08:00"
+      "2026-08-13T12:00:00.000+08:00",
+      { email: userIndex === 1 ? "layout-email-only@example.test" : "" }
     );
     for (let resultIndex = 0; resultIndex < 5; resultIndex += 1) {
       const createdAt = `2026-08-13T${String(8 + userIndex).padStart(2, "0")}:${String(resultIndex).padStart(2, "0")}:00.000+08:00`;
@@ -284,9 +293,29 @@ async function main() {
     const page = await context.newPage();
     const issues = collectIssues(page);
     await page.goto(`${baseUrl}/admin.html`, { waitUntil: "domcontentloaded" });
-    await page.locator("#admin-token-input").fill(adminToken);
-    await page.locator("#login-btn").click();
     await page.locator("#app:not(.hidden)").waitFor({ timeout: 30000 });
+    assert.equal(await page.locator("#login-gate:not(.hidden)").count(), 0);
+    await page.locator('[data-tab="users"]').click();
+    await page.locator('#table-users .select-user[data-user-id="layout-user-0"]').waitFor();
+    assert.match(await page.locator("#table-users").innerText(), /layout-email-only@example\.test/);
+    await page.locator('#table-users .select-user[data-user-id="layout-user-0"]').check();
+    await page.locator("#user-search-input").fill("layout-email-only");
+    await page.locator("#user-search-btn").click();
+    assert.equal(await page.locator("#table-users .select-user").count(), 1);
+    await page.locator("#select-visible-users").check();
+    assert.match(await page.locator("#selected-users-count").innerText(), /已选 2 人/);
+    const selectedDownloadEvent = page.waitForEvent("download");
+    await page.locator("#export-selected-users").click();
+    const selectedDownload = await selectedDownloadEvent;
+    const exported = JSON.parse(fs.readFileSync(await selectedDownload.path(), "utf8"));
+    assert.deepEqual(exported.selected_user_ids.sort(), ["layout-user-0", "layout-user-1"]);
+    assert.equal(exported.tables.quiz_results.length, 10);
+    assert.ok(exported.tables.quiz_results.every(row => ["layout-user-0", "layout-user-1"].includes(row.user_id)));
+    await page.locator("#clear-selected-users").click();
+    assert.equal(await page.locator("#export-selected-users").isDisabled(), true);
+    await page.locator("#user-search-input").fill("");
+    await page.locator("#user-search-btn").click();
+    await page.screenshot({ path: path.join(root, "tmp/admin-selected-export.png"), fullPage: true });
     await page.locator('[data-tab="shortanswers"]').click();
     await page.locator("#table-regrade-candidates tbody tr").nth(20).waitFor({ timeout: 30000 });
     assert.equal(
@@ -456,6 +485,23 @@ async function main() {
       "20%",
       "an already-open affected user detail must refresh after regrade"
     );
+    await page.locator('[data-tab="proactive"]').click();
+    await page.setViewportSize({ width: 1366, height: 768 });
+    const exportButton = page.locator("#export-research-analysis-package");
+    await exportButton.scrollIntoViewIfNeeded();
+    const exportBox = await exportButton.boundingBox();
+    assert.ok(exportBox.x >= 0 && exportBox.x + exportBox.width <= 1366,
+      "新增导出入口应完整可见");
+    const downloadEvent = page.waitForEvent("download");
+    await exportButton.click();
+    const download = await downloadEvent;
+    assert.match(download.suggestedFilename(), /^实验分析包-.+\.json$/);
+    const downloaded = JSON.parse(fs.readFileSync(await download.path(), "utf8"));
+    assert.equal(downloaded.schema_version, "research-analysis-package-v1");
+    assert.ok(downloaded.dictionary.quiz_attempts.length > 10);
+    assert.equal(downloaded.scope.all_learning_generations, true);
+    await page.waitForFunction(() => !document.getElementById("export-research-analysis-package").disabled);
+    await page.screenshot({ path: path.join(root, "output", "playwright", "管理员分析包导出-1366.png") });
     assert.deepEqual(issues, []);
 
     console.log(

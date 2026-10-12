@@ -32,6 +32,59 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>图像上的左右极限：关系图</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-02",
+  "module_title": "极限与连续：直觉探索",
+  "knowledge_point_id": "GH-02-K02",
+  "concept_tag": "图像上的左右极限",
+  "scene_type": "mindMap",
+  "resource_id": "GH-02-K02:mindMap",
+  "resource_title": "图像上的左右极限：关系图",
+  "learning_objective": "请用自己的话解释左极限与右极限，以及双侧极限存在的条件。",
+  "misconception": "左右说的是输入从哪侧靠近；比较的是两侧输出趋近的值。",
+  "observable_evidence": "刚才我们在图像上用手指拖出了蚂蚁的路径，直观感受了左右极限。现在我想请思思用她最擅长的方式，帮我梳理一下——判定一个极限到底存不存在，我们脑子里需要跑完一整套怎样的流程图？ 我们一起看这张图。一切判断的出发点，是我们选定了一个函数和它趋近的点。就像我们刚拖动的那个‘断崖’图像。选中之后，我们的思维会自动兵分两路。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed"
+  ],
+  "capabilities": {
+    "widget_type": "mindMap",
+    "controls": [
+      "button"
+    ],
+    "reports_attempt": false,
+    "reports_challenge": false,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "产生与本知识点目标一致的可观察交互变化",
+    "failure_is_evidence": false
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -998,6 +1051,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
 

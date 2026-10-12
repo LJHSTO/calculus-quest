@@ -32,6 +32,65 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>极限猎手 - 误解修复挑战</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-02",
+  "module_title": "极限与连续：直觉探索",
+  "knowledge_point_id": "GH-02-K01",
+  "concept_tag": "从数表观察趋近",
+  "scene_type": "game",
+  "resource_id": "GH-02-K01:game",
+  "resource_title": "从数表观察趋近：误解修复挑战",
+  "learning_objective": "请说明趋近一个点时考察什么，为什么有限项数表只能帮助猜测而不是证明极限。",
+  "misconception": "极限关心该点附近的趋势，不取决于该点本身的值；仅凭有限观测不能排除其他趋势。",
+  "observable_evidence": "在存在干扰项（错误函数值）的情况下预测极限，修复将极限等同于函数值的常见误解。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -1145,6 +1204,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
 
@@ -1977,6 +2037,10 @@ function initLevel() {
 }
 
 function completeLevel() {
+  window.OpenMaicLearningEvidence?.recordChallenge({
+    challenge_id: 'GH-02-K01-trend-' + currentLevel,
+    is_correct: true, evidence_scope: 'courseware_gameplay', independent: false
+  });
   gameActive = false;
   
   const elapsed = (Date.now() - levelStartTime) / 1000;
@@ -2044,6 +2108,10 @@ function showFinalScreen() {
 }
 
 function gameOver() {
+  window.OpenMaicLearningEvidence?.recordChallenge({
+    challenge_id: 'GH-02-K01-trend-' + currentLevel,
+    is_correct: false, evidence_scope: 'courseware_gameplay', independent: false
+  });
   gameActive = false;
   
   document.getElementById('gameOverMsg').textContent = 

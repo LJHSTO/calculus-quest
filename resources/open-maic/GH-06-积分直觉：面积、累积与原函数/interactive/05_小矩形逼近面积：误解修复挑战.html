@@ -32,6 +32,68 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>矩形逼近大师 — 面积拼图挑战</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-06",
+  "module_title": "积分直觉：面积、累积与原函数",
+  "knowledge_point_id": "GH-06-K01",
+  "concept_tag": "小矩形逼近面积",
+  "scene_type": "game",
+  "resource_id": "GH-06-K01:game",
+  "resource_title": "小矩形逼近面积：误解修复挑战",
+  "learning_objective": "能解释「小矩形逼近面积」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「小矩形逼近面积」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "通过拼图挑战，证明矩形逼近适用于任何不规则曲线",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "hint_requested",
+    "reset_used",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "slider",
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": true,
+    "reports_reset": true,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -1048,6 +1110,44 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style>
+  @media (min-width: 760px) {
+    html body #game-container {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      grid-template-rows: auto 12px minmax(0, 1fr);
+      gap: 8px 12px;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      padding: 12px !important;
+      overflow: hidden !important;
+    }
+    html body #game-container #header { display: none !important; }
+    html body #stats-bar { grid-column: 1; margin: 0; }
+    html body #progress-bar-container { grid-column: 1; margin: 0; }
+    html body #game-container > div:has(> #game-canvas) {
+      grid-column: 1; min-height: 0; overflow: hidden;
+    }
+    html body #controls-panel {
+      grid-column: 2; grid-row: 1 / 4;
+      margin: 0; overflow-y: auto; min-height: 0;
+    }
+    html body #controls-panel .control-row { gap: 12px; margin-bottom: 24px; }
+    html body #controls-panel .control-label { width: 100%; }
+    html body #start-screen .overlay-content {
+      width: min(760px, 100%); max-width: 760px;
+      max-height: calc(100vh - 32px); padding: 18px 24px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px;
+      border-radius: 8px;
+    }
+    html body #start-screen .overlay-content > h2,
+    html body #start-screen .overlay-content > p,
+    html body #start-screen .overlay-content > button { grid-column: 1 / -1; }
+    html body #start-screen .overlay-content > .tip-box { margin: 0; }
+    html body #start-screen .overlay-content > .tip-box:last-of-type { grid-column: 1 / -1; }
+    html body #start-screen .overlay-content > button { margin: 0; }
+  }
+</style>
 </head>
 <body>
 
@@ -1063,7 +1163,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       <div class="stat-value"><span id="level-badge">第 1 关</span></div>
     </div>
     <div class="stat-item">
-      <div class="stat-label">覆盖率</div>
+      <div class="stat-label">逼近准确度</div>
       <div class="stat-value" id="coverage-value">0%</div>
     </div>
     <div class="stat-item">
@@ -1093,7 +1193,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 
   <div id="controls-panel">
     <div class="control-row">
-      <span class="control-label">📏 矩形宽度</span>
+      <span class="control-label">📏 矩形数量</span>
       <input type="range" id="width-slider" class="control-slider" min="1" max="30" value="5" step="1">
       <span class="slider-value" id="width-display">5</span>
     </div>
@@ -1110,6 +1210,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       <span class="control-label">🎮 操作</span>
       <div class="btn-group">
         <button class="game-btn btn-primary" onclick="autoFill()">⚡ 自动填充</button>
+        <button class="game-btn btn-secondary" onclick="requestHint()">💡 提示</button>
         <button class="game-btn btn-secondary" onclick="undoLast()">↩ 撤销</button>
         <button class="game-btn btn-secondary" onclick="clearRects()">🗑 清除全部</button>
         <button class="game-btn btn-secondary" onclick="togglePause()">⏸ 暂停</button>
@@ -1132,10 +1233,10 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 
     <ul>
       <li>📏 拖动<b>宽度滑块</b>选择矩形宽度</li>
-      <li>🖱️ 在曲线上<b>点击</b>放置矩形</li>
+      <li>🖱️ 在曲线上<b>点击</b>细分局部矩形</li>
       <li>⚡ 点击<b>"自动填充"</b>快速铺满</li>
       <li>📐 切换<b>逼近方式</b>：左端点/右端点/中点/梯形</li>
-      <li>🎯 目标：达到 <b style="color:#ffd200">95%+</b> 覆盖率即可过关</li>
+      <li>🎯 目标：让相对误差足够小，达到关卡要求的<b style="color:#ffd200">逼近准确度</b></li>
     </ul>
 
     <div class="tip-box">
@@ -1215,19 +1316,19 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     {
       "id": "half_way",
       "name": "半途而废？不！",
-      "desc": "覆盖率达到50%",
+      "desc": "逼近准确度达到50%",
       "icon": "📊"
     },
     {
       "id": "close_enough",
       "name": "很接近了",
-      "desc": "覆盖率达到90%",
+      "desc": "逼近准确度达到90%",
       "icon": "🎯"
     },
     {
       "id": "master",
       "name": "逼近大师",
-      "desc": "覆盖率达到95%",
+      "desc": "逼近准确度达到95%",
       "icon": "🏆"
     },
     {
@@ -1266,6 +1367,36 @@ let achievedSet = new Set();
 let levelStartTime = 0;
 let animationId = null;
 let particles = [];
+let meaningfulChanges = 0;
+let rectangleCount = 5;
+let lastAccuracy = 0;
+let lastRelativeError = 1;
+let lastApproxArea = 0;
+let lastTrueArea = 0;
+
+function recordChallenge(payload) {
+  window.OpenMaicLearningEvidence?.recordChallenge(payload);
+}
+
+function recordHint(payload) {
+  window.OpenMaicLearningEvidence?.recordHint(payload);
+}
+
+function recordReset(payload) {
+  window.OpenMaicLearningEvidence?.recordReset(payload);
+}
+
+function completeScene(payload) {
+  window.OpenMaicLearningEvidence?.completeScene(payload);
+}
+
+function relativeAccuracy(approximateArea, trueArea) {
+  if (window.OpenMaicLearningEvidence?.relativeAccuracy) {
+    return window.OpenMaicLearningEvidence.relativeAccuracy(approximateArea, trueArea);
+  }
+  if (!(trueArea > 0)) return approximateArea === 0 ? 1 : 0;
+  return Math.max(0, Math.min(1, 1 - Math.abs(approximateArea - trueArea) / trueArea));
+}
 
 // Canvas margins for UI
 const TOP_MARGIN = 30;
@@ -1278,16 +1409,16 @@ const levels = [
   {
     name: "正弦波浪",
     func: (x) => 1.5 + 1.0 * Math.sin(x * 2.5),
-    domain: [0, 4 * Math.PI / 2.5],
+    domain: [0, Math.PI],
     range: [0, 3],
-    targetCoverage: 0.80,
+    targetCoverage: 0.93,
     time: 90,
-    hint: "试试减小矩形宽度，看看覆盖率如何变化！"
+    hint: "试试增加矩形数量，观察逼近准确度如何变化！"
   },
   {
     name: "抛物线",
     func: (x) => 2.5 - 0.5 * (x - 3) * (x - 3),
-    domain: [0, 6],
+    domain: [1, 5],
     range: [0, 3],
     targetCoverage: 0.85,
     time: 80,
@@ -1352,8 +1483,9 @@ function init() {
 
 function resizeCanvas() {
   const container = document.getElementById('game-container');
-  const w = container.clientWidth - 20;
-  const h = Math.min(400, window.innerHeight * 0.45);
+  const desktop = window.innerWidth >= 760;
+  const w = desktop ? canvas.parentElement.clientWidth : container.clientWidth - 20;
+  const h = desktop ? canvas.parentElement.clientHeight : Math.min(400, window.innerHeight * 0.45);
   canvas.width = w;
   canvas.height = h;
   canvas.style.width = w + 'px';
@@ -1376,6 +1508,11 @@ function startLevel() {
   // Reset state
   rects = [];
   manualRects = [];
+  meaningfulChanges = 0;
+  lastAccuracy = 0;
+  lastRelativeError = 1;
+  lastApproxArea = 0;
+  lastTrueArea = 0;
   timer = level.time;
   gameActive = true;
   paused = false;
@@ -1393,6 +1530,7 @@ function startLevel() {
   // Reset slider
   const slider = document.getElementById('width-slider');
   slider.value = 5;
+  rectangleCount = 5;
   document.getElementById('width-display').textContent = '5';
   
   // Set mode buttons
@@ -1421,7 +1559,7 @@ function startLevel() {
   gameLoop();
   
   // Show hint
-  showHint(level.hint);
+  showHint(level.hint, false);
 }
 
 // ==================== TIMER ====================
@@ -1451,6 +1589,54 @@ function gameLoop() {
 }
 
 // ==================== DRAWING ====================
+function buildApproximationRectangles(level, rectWidth, mode) {
+  const xMin = level.domain[0];
+  const xMax = level.domain[1];
+  const dx = (xMax - xMin) / rectWidth;
+  const refinedIntervals = new Set(manualRects.map(item => item.index));
+  const rectangles = [];
+
+  function sampledHeight(xLeft, width, sampleMode) {
+    const xRight = xLeft + width;
+    if (sampleMode === 'trap') {
+      return Math.max(0, Math.min((level.func(xLeft) + level.func(xRight)) / 2, level.range[1]));
+    }
+    const sampleX = sampleMode === 'right'
+      ? xRight
+      : sampleMode === 'mid'
+        ? (xLeft + xRight) / 2
+        : xLeft;
+    return Math.max(0, Math.min(level.func(sampleX), level.range[1]));
+  }
+
+  for (let i = 0; i < rectWidth; i++) {
+    const xLeft = xMin + i * dx;
+    if (refinedIntervals.has(i)) {
+      const halfWidth = dx / 2;
+      rectangles.push({
+        x: xLeft,
+        w: halfWidth,
+        h: sampledHeight(xLeft, halfWidth, 'mid'),
+        refined: true
+      });
+      rectangles.push({
+        x: xLeft + halfWidth,
+        w: halfWidth,
+        h: sampledHeight(xLeft + halfWidth, halfWidth, 'mid'),
+        refined: true
+      });
+    } else {
+      rectangles.push({
+        x: xLeft,
+        w: dx,
+        h: sampledHeight(xLeft, dx, mode),
+        refined: false
+      });
+    }
+  }
+  return rectangles;
+}
+
 function drawScene() {
   const level = levels[currentLevel];
   const W = canvas.width;
@@ -1502,102 +1688,40 @@ function drawScene() {
   const xMax = level.domain[1];
   const dx = (xMax - xMin) / rectWidth;
   
-  // Draw auto-rectangles
-  for (let i = 0; i < rectWidth; i++) {
-    const xLeft = xMin + i * dx;
-    const xRight = xLeft + dx;
-    let sampleX;
-    
-    switch (currentMode) {
-      case 'left': sampleX = xLeft; break;
-      case 'right': sampleX = xRight; break;
-      case 'mid': sampleX = (xLeft + xRight) / 2; break;
-      case 'trap': sampleX = (xLeft + xRight) / 2; break;
-      default: sampleX = xLeft;
-    }
-    
-    let h;
-    if (currentMode === 'trap') {
-      const hLeft = Math.max(0, level.func(xLeft));
-      const hRight = Math.max(0, level.func(xRight));
-      const midH = Math.max(0, level.func(sampleX));
-      h = Math.min((hLeft + hRight) / 2, level.range[1]);
-    } else {
-      h = Math.max(0, Math.min(level.func(sampleX), level.range[1]));
-    }
-    
-    const px1 = toX(xLeft);
-    const px2 = toX(xRight);
-    const py1 = toY(h);
-    const py2 = toY(0);
-    
-    // Color based on coverage quality
-    const alpha = 0.3 + 0.3 * (rectWidth / 30);
-    ctx.fillStyle = `rgba(100, 180, 255, ${alpha})`;
-    ctx.fillRect(px1, py1, px2 - px1, py2 - py1);
-    
-    ctx.strokeStyle = 'rgba(100, 180, 255, 0.5)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(px1, py1, px2 - px1, py2 - py1);
-  }
-  
-  // Draw manual rectangles (extra placements)
-  manualRects.forEach(r => {
+  const approximationRects = buildApproximationRectangles(level, rectWidth, currentMode);
+  approximationRects.forEach(r => {
     const px1 = toX(r.x);
     const px2 = toX(r.x + r.w);
     const py1 = toY(r.h);
     const py2 = toY(0);
-    
-    ctx.fillStyle = 'rgba(255, 200, 50, 0.35)';
+
+    const alpha = 0.3 + 0.3 * (rectWidth / 30);
+    ctx.fillStyle = r.refined
+      ? `rgba(255, 200, 50, ${Math.min(0.72, alpha + 0.12)})`
+      : `rgba(100, 180, 255, ${alpha})`;
     ctx.fillRect(px1, py1, px2 - px1, py2 - py1);
-    
-    ctx.strokeStyle = 'rgba(255, 200, 50, 0.7)';
-    ctx.lineWidth = 1.5;
+
+    ctx.strokeStyle = r.refined ? 'rgba(255, 200, 50, 0.85)' : 'rgba(100, 180, 255, 0.5)';
+    ctx.lineWidth = r.refined ? 1.5 : 1;
     ctx.strokeRect(px1, py1, px2 - px1, py2 - py1);
   });
   
-  // Calculate true area (using high-precision numerical integration)
-  const trueArea = numericalIntegral(level.func, xMin, xMax, 10000);
-  
-  // Calculate approximate area from auto-rectangles
-  let approxArea = 0;
-  for (let i = 0; i < rectWidth; i++) {
-    const xLeft = xMin + i * dx;
-    const xRight = xLeft + dx;
-    let sampleX;
-    
-    switch (currentMode) {
-      case 'left': sampleX = xLeft; break;
-      case 'right': sampleX = xRight; break;
-      case 'mid': sampleX = (xLeft + xRight) / 2; break;
-      case 'trap': sampleX = (xLeft + xRight) / 2; break;
-      default: sampleX = xLeft;
-    }
-    
-    let h;
-    if (currentMode === 'trap') {
-      const hL = Math.max(0, level.func(xLeft));
-      const hR = Math.max(0, level.func(xRight));
-      h = (hL + hR) / 2;
-    } else {
-      h = Math.max(0, level.func(sampleX));
-    }
-    approxArea += h * dx;
-  }
-  
-  // Add manual rects area
-  manualRects.forEach(r => {
-    approxArea += r.h * r.w;
-  });
-  
-  // Coverage
-  const coverage = Math.min(approxArea / trueArea, 1.0);
-  const coveragePct = Math.round(coverage * 100);
+  // Use the same clamped function for the visible curve and the reference area.
+  const visibleFunction = x => Math.max(0, Math.min(level.func(x), level.range[1]));
+  const trueArea = numericalIntegral(visibleFunction, xMin, xMax, 10000);
+  const approxArea = approximationRects.reduce((sum, r) => sum + r.h * r.w, 0);
+  const accuracy = relativeAccuracy(approxArea, trueArea);
+  const relativeError = trueArea > 0 ? Math.abs(approxArea - trueArea) / trueArea : 1;
+  const coveragePct = Math.round(accuracy * 100);
+  lastAccuracy = accuracy;
+  lastRelativeError = relativeError;
+  lastApproxArea = approxArea;
+  lastTrueArea = trueArea;
   
   // Update UI
   document.getElementById('coverage-value').textContent = coveragePct + '%';
   document.getElementById('progress-bar').style.width = coveragePct + '%';
-  document.getElementById('rect-count').textContent = rectWidth + (manualRects.length > 0 ? ' + ' + manualRects.length : '');
+  document.getElementById('rect-count').textContent = approximationRects.length;
   
   // Color coding
   const covEl = document.getElementById('coverage-value');
@@ -1657,7 +1781,7 @@ function drawScene() {
   }
   
   // Check win condition (only after grace period)
-  if (!gracePeriod && coverage >= level.targetCoverage && gameActive) {
+  if (!gracePeriod && meaningfulChanges > 0 && accuracy >= level.targetCoverage && gameActive) {
     endLevel(true);
   }
 }
@@ -1695,17 +1819,18 @@ function onCanvasClick(e) {
     // Map to function domain
     const funcX = level.domain[0] + ((x - LEFT_MARGIN) / playW) * (level.domain[1] - level.domain[0]);
     
-    // Place a manual rectangle at this position
+    // Split one existing interval into two midpoint rectangles. The refined
+    // pieces replace that interval instead of adding overlapping area.
     const sliderWidth = parseInt(document.getElementById('width-slider').value);
     const dx = (level.domain[1] - level.domain[0]) / sliderWidth;
-    
-    const h = Math.max(0, Math.min(level.func(funcX), level.range[1]));
-    
-    manualRects.push({
-      x: funcX,
-      w: dx * 0.5, // narrower manual rects for fine-tuning
-      h: h
-    });
+    const intervalIndex = Math.min(
+      sliderWidth - 1,
+      Math.max(0, Math.floor((funcX - level.domain[0]) / dx))
+    );
+    if (!manualRects.some(item => item.index === intervalIndex)) {
+      manualRects.push({ index: intervalIndex });
+      meaningfulChanges++;
+    }
     
     // Check achievements
     checkAchievement('first_rect');
@@ -1727,13 +1852,20 @@ function onCanvasTouch(e) {
 }
 
 function onSliderChange() {
-  const val = document.getElementById('width-slider').value;
+  const val = parseInt(document.getElementById('width-slider').value);
+  if (val === rectangleCount) return false;
+  rectangleCount = val;
   document.getElementById('width-display').textContent = val;
+  manualRects = [];
+  meaningfulChanges++;
   drawScene();
+  return true;
 }
 
 window.setMode = function(mode) {
+  if (mode === currentMode) return;
   currentMode = mode;
+  meaningfulChanges++;
   document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
   document.getElementById('btn-' + mode).classList.add('active');
   drawScene();
@@ -1745,8 +1877,7 @@ window.autoFill = function() {
   const slider = document.getElementById('width-slider');
   const newVal = Math.min(30, parseInt(slider.value) + 3);
   slider.value = newVal;
-  document.getElementById('width-display').textContent = newVal;
-  drawScene();
+  if (!onSliderChange()) return;
   
   // Spawn particles for feedback
   spawnParticles(canvas.width / 2, canvas.height / 2, 5, '#87CEEB');
@@ -1755,12 +1886,16 @@ window.autoFill = function() {
 window.undoLast = function() {
   if (manualRects.length > 0) {
     manualRects.pop();
+    meaningfulChanges++;
     drawScene();
   }
 };
 
 window.clearRects = function() {
+  if (manualRects.length === 0) return;
   manualRects = [];
+  meaningfulChanges++;
+  recordReset({ reason: 'clear_refinements', challenge_id: `riemann-level-${currentLevel + 1}` });
   drawScene();
 };
 
@@ -1772,8 +1907,8 @@ window.togglePause = function() {
     clearInterval(timerInterval);
   } else {
     overlay.classList.add('hidden');
+    clearInterval(timerInterval);
     timerInterval = setInterval(tick, 1000);
-    gameLoop();
   }
 };
 
@@ -1781,6 +1916,20 @@ window.togglePause = function() {
 function endLevel(won) {
   gameActive = false;
   clearInterval(timerInterval);
+  const challengeId = 'GH-06-K01-area-level-' + (currentLevel + 1);
+  recordChallenge({
+    challenge_id: challengeId,
+    question_id: challengeId,
+    is_correct: won,
+    completed: won,
+    score: Math.round(lastAccuracy * 100),
+    max_score: 100,
+    accuracy: lastAccuracy,
+    relative_error: lastRelativeError,
+    approximate_area: lastApproxArea,
+    true_area: lastTrueArea,
+    error_type: won ? '' : 'relative_error_above_threshold'
+  });
   
   if (won) {
     const level = levels[currentLevel];
@@ -1823,13 +1972,12 @@ function endLevel(won) {
   } else {
     // Game over
     const level = levels[currentLevel];
-    const slider = document.getElementById('width-slider');
     const covText = document.getElementById('coverage-value').textContent;
     
     document.getElementById('go-message').textContent = 
       `第 ${currentLevel + 1} 关「${level.name}」未完成`;
     document.getElementById('go-stats').innerHTML = 
-      `最终覆盖率: ${covText} | 需要: ${Math.round(level.targetCoverage * 100)}% | 💡 试试减小矩形宽度！`;
+      `最终准确度: ${covText} | 需要: ${Math.round(level.targetCoverage * 100)}% | 💡 试试增加矩形数或切换逼近方式！`;
     
     document.getElementById('gameover-screen').classList.remove('hidden');
   }
@@ -1843,6 +1991,12 @@ window.nextLevel = function() {
     document.getElementById('victory-stats').innerHTML = 
       `🏆 最终得分: ${totalScore}分 | 🎮 通关所有 ${levels.length} 关`;
     document.getElementById('victory-screen').classList.remove('hidden');
+    completeScene({
+      completed: true,
+      is_correct: true,
+      score: totalScore,
+      result: 'passed'
+    });
     return;
   }
   
@@ -1852,6 +2006,7 @@ window.nextLevel = function() {
 
 window.retryLevel = function() {
   document.getElementById('gameover-screen').classList.add('hidden');
+  recordReset({ reason: 'retry_level', challenge_id: `riemann-level-${currentLevel + 1}` });
   startLevel();
 };
 
@@ -1861,6 +2016,7 @@ window.restartGame = function() {
   document.getElementById('level-complete-screen').classList.add('hidden');
   currentLevel = 0;
   totalScore = 0;
+  recordReset({ reason: 'restart_game' });
   startLevel();
 };
 
@@ -1935,10 +2091,16 @@ function spawnParticles(x, y, count, color) {
 
 // ==================== HINT SYSTEM ====================
 let hintTimeout = null;
-function showHint(text) {
+function showHint(text, requested = true) {
   // Brief hint display as floating text
   const level = levels[currentLevel];
   if (!text) return;
+  if (requested) {
+    recordHint({
+      hint_type: 'conceptual',
+      challenge_id: `riemann-level-${currentLevel + 1}`
+    });
+  }
   
   // Draw hint on next frame
   setTimeout(() => {
@@ -1957,6 +2119,10 @@ function showHint(text) {
     }
   }, 1000);
 }
+
+window.requestHint = function() {
+  showHint(levels[currentLevel].hint, true);
+};
 
 // ==================== LOCAL STORAGE ====================
 function saveProgress() {
@@ -1984,17 +2150,16 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'p' || e.key === 'P') {
     if (gameActive) togglePause();
   }
+  if (!gameActive || paused) return;
   if (e.key === 'ArrowLeft') {
     const slider = document.getElementById('width-slider');
     slider.value = Math.max(1, parseInt(slider.value) - 1);
-    document.getElementById('width-display').textContent = slider.value;
-    drawScene();
+    if (onSliderChange()) e.preventDefault();
   }
   if (e.key === 'ArrowRight') {
     const slider = document.getElementById('width-slider');
     slider.value = Math.min(30, parseInt(slider.value) + 1);
-    document.getElementById('width-display').textContent = slider.value;
-    drawScene();
+    if (onSliderChange()) e.preventDefault();
   }
   if (e.key === '1') setMode('left');
   if (e.key === '2') setMode('right');

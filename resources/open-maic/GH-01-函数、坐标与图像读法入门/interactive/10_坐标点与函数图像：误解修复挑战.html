@@ -32,6 +32,65 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>星星收集者 - 坐标点与函数图像</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-01",
+  "module_title": "函数、坐标与图像读法入门",
+  "knowledge_point_id": "GH-01-K02",
+  "concept_tag": "坐标点与函数图像",
+  "scene_type": "game",
+  "resource_id": "GH-01-K02:game",
+  "resource_title": "坐标点与函数图像：误解修复挑战",
+  "learning_objective": "请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。",
+  "misconception": "有序对先横后纵；图像上的点还必须满足 y=f(x)，不能只看点在哪里。",
+  "observable_evidence": "在坐标平面上收集符合函数f(x)=2x的点，避开不符合的点",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不上报提示使用，无法确认本次尝试是否无辅助，因此不作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -817,6 +876,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
 <div id="gameContainer">
@@ -1343,6 +1403,10 @@ function checkCollisions() {
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < collector.radius + s.radius) {
+      window.OpenMaicLearningEvidence?.recordChallenge({
+        challenge_id: 'GH-01-K02-collection-' + level,
+        is_correct: Boolean(s.isCorrect), evidence_scope: 'motor_selection', independent: false
+      });
       if (s.isCorrect) {
         // Correct!
         const speedBonus = s.age < 3 ? 5 : 0;

@@ -1,0 +1,293 @@
+{
+  "version": "67140c92a6d6e4732a6e",
+  "indexSha256": "fe9148f5ab2b0ab5444bbf29691581b55f627a755051fc3e9968b70e01008e00",
+  "scripts": [
+    {
+      "tag": "<script src=\"app/main/request-coalescing.js?v=20260917\"></script>",
+      "file": "app/main/request-coalescing.js",
+      "sha256": "1bdd682102211bad358ea641a2b9aae6fc53b88149e324a727389d2de3e69402"
+    },
+    {
+      "tag": "<script src=\"lib/katex.min.js?v=0.17.0\"></script>",
+      "file": "lib/katex.min.js",
+      "sha256": "45fbe318fea878fdc0a111913dc1f87894b2c439360d0228c086ef313f213efc"
+    },
+    {
+      "tag": "<script src=\"lib/question-math.js?v=20260831-question-math-v1\"></script>",
+      "file": "lib/question-math.js",
+      "sha256": "ebdd0227442f55f6fd317f61a06b999db36327c76aefaaab2538b987ff8ced32"
+    },
+    {
+      "tag": "<script src=\"lib/quiz-question-order.js?v=20260726-quiz-order-v1\"></script>",
+      "file": "lib/quiz-question-order.js",
+      "sha256": "708fb2df268fefb992bbbd1dd27e936dd5d40c2b581f2c8e1afe1d937d288655"
+    },
+    {
+      "tag": "<script src=\"app/main/data.js?v=20260813-platform-fixes-v1\"></script>",
+      "file": "app/main/data.js",
+      "sha256": "85ad14018fbbff74087cd2cbec3f1951d04cab636250e83b30ad73885ed5a034"
+    },
+    {
+      "tag": "<script src=\"app/main/feedback-config.js?v=20260722-multi-scene-v1\"></script>",
+      "file": "app/main/feedback-config.js",
+      "sha256": "3353e17cbd65f205d69d6f125b2d4bb186bbc3f2a4d8be46e6f846a89421d6d0"
+    },
+    {
+      "tag": "<script src=\"app/main/knowledge-scene-selection.js?v=20260813-platform-fixes-v1\"></script>",
+      "file": "app/main/knowledge-scene-selection.js",
+      "sha256": "5cfd10cb909456073558aae120aaa5c58a0b1fd80ba065eb508ef0458d844881"
+    },
+    {
+      "tag": "<script src=\"app/main/scene-recommender.js?v=20260723-scene-recommendation-v2\"></script>",
+      "file": "app/main/scene-recommender.js",
+      "sha256": "19a6c4bb4476987a44e03676a2f9e9f81143845e8da8611f822068009e9ceece"
+    },
+    {
+      "tag": "<script src=\"app/main/content-security.js?v=20260722-security-v1\"></script>",
+      "file": "app/main/content-security.js",
+      "sha256": "bfced0618b76d2bf1f498ed5cbd8c8554806deb5ba89fc1f759123b4d405f75b"
+    },
+    {
+      "tag": "<script src=\"app/main/courseware-context.js?v=20260909-canvas-v4\"></script>",
+      "file": "app/main/courseware-context.js",
+      "sha256": "39b7ebcf1ed7040a096d777182b9a1c92a14276b2002ceb1157fb5fd31e72537"
+    },
+    {
+      "tag": "<script src=\"app/main/learning-notes.js?v=20260726-sync-v1\"></script>",
+      "file": "app/main/learning-notes.js",
+      "sha256": "dcc934588626419655bb273364ae6eb79ea59c9f18333ac2c542fe570cb21733"
+    },
+    {
+      "tag": "<script src=\"app/main/quiz-review-state.js?v=20260819-v2-score-evidence-v2\"></script>",
+      "file": "app/main/quiz-review-state.js",
+      "sha256": "a8832bcd931cf2e1dd9fbe67fb8663f34fd7c3d2942693fb2b0dc125dce876ff"
+    },
+    {
+      "tag": "<script src=\"app/main/core.js?v=20260921-fast-logout-v1\"></script>",
+      "file": "app/main/core.js",
+      "sha256": "68125449131d921ed1148bc59e63e9b4d97c0a107a922c88b7add0c9e1e36cfa"
+    },
+    {
+      "tag": "<script src=\"app/main/system-announcements.js?v=20260726-announcements-v7\"></script>",
+      "file": "app/main/system-announcements.js",
+      "sha256": "22cf5375a9515595fdd65d899d7d12d53cde83c97890a6ac0ba5cd6d6c167e06"
+    },
+    {
+      "tag": "<script src=\"app/main/knowledge-point-labels.js?v=20260724-knowledge-labels-v1\"></script>",
+      "file": "app/main/knowledge-point-labels.js",
+      "sha256": "2555861b4b6e9ff09da1d002fded513a5bc27ec286447a6e2cecc5520f97b1b8"
+    },
+    {
+      "tag": "<script src=\"app/main/return-context.js?v=20260722-multi-scene-v1\"></script>",
+      "file": "app/main/return-context.js",
+      "sha256": "3a73049ddea436293d151bce2ccfc616f13f61f8577eeece460c9038867d394e"
+    },
+    {
+      "tag": "<script src=\"app/main/proactive-learning.js?v=20260922-representation-switch-v1\"></script>",
+      "file": "app/main/proactive-learning.js",
+      "sha256": "59a59bb755210b42596c8e0831686e8069baeea01776a217d3df01d38e5b4184"
+    },
+    {
+      "tag": "<script src=\"lib/active-time-policy.js?v=20260818-active-time-v1\"></script>",
+      "file": "lib/active-time-policy.js",
+      "sha256": "123afd97ce74ec6b3a621aef4ad6473217e9dbfa703a9de67b263e93dcecc491"
+    },
+    {
+      "tag": "<script src=\"app/main/analytics.js?v=20260818-active-time-v1\"></script>",
+      "file": "app/main/analytics.js",
+      "sha256": "d37c7cca563ac290dc3487abb3bf8904ec34fe08c045f7d952124e6a3b85b076"
+    },
+    {
+      "tag": "<script src=\"app/main/courseware-event-contract.js?v=20260908-contract-v1\"></script>",
+      "file": "app/main/courseware-event-contract.js",
+      "sha256": "e0f64dc7fa07af416c3349b368f06f5ee3aa2346b69b96644327aa4c4502c4fd"
+    },
+    {
+      "tag": "<script src=\"app/main/render-learning.js?v=20260922-slide-deck-v2\"></script>",
+      "file": "app/main/render-learning.js",
+      "sha256": "22f0fd2e2d4e23ce06d9c2b5569a8d3041847d6194bd49b2159851433414a64e"
+    },
+    {
+      "tag": "<script src=\"app/main/recommendations.js?v=20260722-multi-scene-v1\"></script>",
+      "file": "app/main/recommendations.js",
+      "sha256": "46bc6c0d1588feae73b681ecc6aa3d59edf210ddee36ae1b9eadb9a807f34bf5"
+    },
+    {
+      "tag": "<script src=\"app/main/progress.js?v=20260819-v2-score-evidence-v1\"></script>",
+      "file": "app/main/progress.js",
+      "sha256": "f94cfc16698494ee272dfa1f9ea6fac7347324751b56f9cdeb2ee934af482484"
+    },
+    {
+      "tag": "<script src=\"app/main/navigation.js?v=20260902-pilot-ux-v2\"></script>",
+      "file": "app/main/navigation.js",
+      "sha256": "5744f9ca7b078361a5092f86cbb3a6ab529fe574b0c1b2e04bb468e8526a6e28"
+    },
+    {
+      "tag": "<script src=\"app/main/events.js?v=20260819-v2-knowledge-transition-v5\"></script>",
+      "file": "app/main/events.js",
+      "sha256": "43502c57ea334143466ea6076999e0556842ac04aaf3d4a645f98814630ec249"
+    },
+    {
+      "tag": "<script src=\"app/main/narration.js?v=20260908-classroom-v1\"></script>",
+      "file": "app/main/narration.js",
+      "sha256": "80f3b714a1c7ee550bb70d6d932a4cf21b196954e9c264ada6becdddf483297b"
+    },
+    {
+      "tag": "<script src=\"app/main/quiz.js?v=20260909-feedback-r1\"></script>",
+      "file": "app/main/quiz.js",
+      "sha256": "fca3834396a052aedee6debd7c89c9da0a78d899f3e35417415c933d1c8ad9e2"
+    },
+    {
+      "tag": "<script src=\"app/main/agentic-path.js?v=20260909-flow-v5\"></script>",
+      "file": "app/main/agentic-path.js",
+      "sha256": "7a6375fdee8cbcf1e716d2498ef55b161e444be3b93a0038b6718f748d8cf842"
+    },
+    {
+      "tag": "<script src=\"app/main/feedback-targets.js?v=20260722-multi-scene-v1\"></script>",
+      "file": "app/main/feedback-targets.js",
+      "sha256": "f8ddd193ba27cc7545118fa9c133afd52f644afc28aa69d2a1fb3294040288a3"
+    },
+    {
+      "tag": "<script src=\"app/main/feedback.js?v=20260726-content-limit-v1\"></script>",
+      "file": "app/main/feedback.js",
+      "sha256": "4100a8ec127c8efbfd911b13003b4e9cb5dd065aad69c82fcc4a154f910a09bf"
+    },
+    {
+      "tag": "<script src=\"app/main/knowledge-assistant.js?v=20260922-hint-justification-v1\"></script>",
+      "file": "app/main/knowledge-assistant.js",
+      "sha256": "27b4c6e221ae5d27001fe6229b480e4d362ecfee4c24c578209ab1755be68de8"
+    },
+    {
+      "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
+      "file": "app/main/openmaic-slide.js",
+      "sha256": "2f051d3acb6794e099242291d8095639249deeb7da185a0582a5534c90d47e3e"
+    },
+    {
+      "tag": "<script src=\"app/main/learning-workspace.js?v=20260909-flow-v5\"></script>",
+      "file": "app/main/learning-workspace.js",
+      "sha256": "ce208278819cb5b5895d4cc833bcb9590076f1a4e289a2c4b6d1500980bbea1f"
+    },
+    {
+      "tag": "<script src=\"app/main/textbook-reading.js?v=20260916\"></script>",
+      "file": "app/main/textbook-reading.js",
+      "sha256": "7f28598159b9f58b198abd4c98d5e762fb15988cf62bd190df0859dadc9f3f10"
+    },
+    {
+      "tag": "<script src=\"app/main/theme.js?v=20260724-home-themes-v1\"></script>",
+      "file": "app/main/theme.js",
+      "sha256": "d91fa70f5005620c3df339e69a9289690dbe48adadeb12a09f0d3fb25d24231c"
+    },
+    {
+      "tag": "<script src=\"app/main/bootstrap.js?v=20260921-fast-logout-v1\"></script>",
+      "file": "app/main/bootstrap.js",
+      "sha256": "abaa83ea59c5549a3628e51dafc79b97d15642b788dd102f6399f39f0421f279"
+    }
+  ],
+  "styles": [
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"styles.css?v=20260922-stage-scroll-v3\" />",
+      "file": "styles.css"
+    },
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"app/main/knowledge-assistant.css?v=20260922-hint-justification-v1\" />",
+      "file": "app/main/knowledge-assistant.css"
+    },
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"app/main/learning-workspace.css?v=20260908-workspace-v3\" />",
+      "file": "app/main/learning-workspace.css"
+    },
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"app/main/openmaic-classroom.css?v=20260909-flow-v7\" />",
+      "file": "app/main/openmaic-classroom.css"
+    },
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"app/main/system-announcements.css?v=20260726-announcements-v5\" />",
+      "file": "app/main/system-announcements.css"
+    },
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"lib/katex.min.css?v=0.17.0\" />",
+      "file": "lib/katex.min.css"
+    },
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"app/main/platform-theme.css?v=20260917-loading\" />",
+      "file": "app/main/platform-theme.css"
+    },
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"app/main/textbook-reading.css?v=20260909\" />",
+      "file": "app/main/textbook-reading.css"
+    }
+  ],
+  "styleVersion": "8a53756ff11eaf3b2f2b",
+  "styleSources": [
+    {
+      "file": "styles.css",
+      "sha256": "166d7edc6ec8318dc81cda68123cb4f53f48eafb045292013cd67df53bdcabd2"
+    },
+    {
+      "file": "app/main/knowledge-assistant.css",
+      "sha256": "5c1e9a54416fa454170ae25fc14bf0501c990bdf8b17c7e206363e47d32e55b4"
+    },
+    {
+      "file": "app/main/learning-workspace.css",
+      "sha256": "ff78b4238629f6cf4ac5eb555d0b68b3b9880009f1527880836a4a6547df0c7d"
+    },
+    {
+      "file": "app/main/openmaic-classroom.css",
+      "sha256": "bab5448d47b2af43b6a3b15a88bcd09631c2d53c27d604daa47fde0aa205f4a0"
+    },
+    {
+      "file": "app/main/system-announcements.css",
+      "sha256": "6c32eabd37092e19e968c7276f6db789064f592e45d2e083a3bdfd93f686a2b4"
+    },
+    {
+      "file": "lib/katex.min.css",
+      "sha256": "3f3b37a6662bc86ced2616032cdbb79dff90284b32160dbb81bd4eded442345a"
+    },
+    {
+      "file": "app/main/platform-theme.css",
+      "sha256": "428c1248301a091e01e3d4e8cbed6a949cf364debe3f3aa22cd3ea975dc7cb89"
+    },
+    {
+      "file": "app/main/textbook-reading.css",
+      "sha256": "b3f5132fce1b6175e6306fa6f379622d6c23b64f3a178813b55c59659923751b"
+    }
+  ],
+  "icons": [
+    {
+      "file": "assets/classroom-icons/PanelRightClose.svg",
+      "sha256": "e6aa1196f4c05ed1ceebbc49ec54375d3f9c4aee97edd5c559c8d012e0dea9e8"
+    },
+    {
+      "file": "assets/classroom-icons/Play.svg",
+      "sha256": "280cce18c86e84f29bb814fa120ede698e1183f6613ca81cecf4ec9f656031ad"
+    },
+    {
+      "file": "assets/classroom-icons/RotateCcw.svg",
+      "sha256": "4ea9c742c03795321e917e514c644be9bfdfe78849c70a2ec1561f5170bd0e15"
+    },
+    {
+      "file": "assets/classroom-icons/Quote.svg",
+      "sha256": "7d8ecf979ad6e05666667eed6046b1a0e868d121cd8f42826d005c1b251773a4"
+    },
+    {
+      "file": "assets/classroom-icons/NotebookPen.svg",
+      "sha256": "a208ce9ff5c7cfd4ce6866806c4d15c7289a91e2f4b53ab4e79e664662a3f9d3"
+    },
+    {
+      "file": "assets/classroom-icons/Maximize2.svg",
+      "sha256": "6e61aabf1a372c9d2e845c6e58587583c2f1339b27a9eac2f2402d4feb4a0e4e"
+    },
+    {
+      "file": "assets/classroom-icons/Maximize.svg",
+      "sha256": "d39b82ca7cb6e08c89db7f519397b1fb6f6c917a6d0cc8a50adb13fb43989316"
+    },
+    {
+      "file": "assets/classroom-icons/ChevronDown.svg",
+      "sha256": "7345b09168970e85352af7a397ba107fd9d8b12db292ccbc74e2dee1d536efd5"
+    },
+    {
+      "file": "assets/classroom-icons/Volume2.svg",
+      "sha256": "d0916404d00818199f1bee463e8c42b636eb3c0d061e1a3962785a51406d91b7"
+    }
+  ]
+}

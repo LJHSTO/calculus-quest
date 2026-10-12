@@ -90,7 +90,8 @@ async function main() {
         HOST: "127.0.0.1",
         BASE_PATH: "calculus_quest",
         LLM_PROVIDER: "mock",
-        NODE_ENV: "development"
+        NODE_ENV: "development",
+        LOCAL_ADMIN_AUTH_BYPASS: "false"
       },
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true

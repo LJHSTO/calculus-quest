@@ -4,9 +4,11 @@
 
   const PARENT = window.parent;
   const HOVER_DELAY_MS = 120;
+  const GRAPH_NODE_SELECTOR = "svg .node-group, svg #nodesGroup > g[data-id]";
   const rangeStarts = new WeakMap();
   const pointerStarts = new Map();
   const lastParameterInputAt = new WeakMap();
+  const challengeAttempts = new Map();
   let picking = false;
   let singleShot = true;
   let hoverTimer = null;
@@ -73,6 +75,50 @@
   function post(type, payload = {}) {
     PARENT.postMessage({ type, ...payload }, "*");
   }
+
+  function reportChallengeResult(detail = {}) {
+    const challengeId = compactText(
+      detail.challengeId || detail.questionId || "courseware-challenge",
+      120
+    );
+    const isCorrect = detail.isCorrect === true;
+    const numericScore = Number(detail.score);
+    const numericMaxScore = Number(detail.maxScore);
+    const normalized = {
+      challenge_id: challengeId,
+      question_id: compactText(detail.questionId || challengeId, 120),
+      is_correct: isCorrect,
+      score: Number.isFinite(numericScore) ? numericScore : (isCorrect ? 1 : 0),
+      max_score: Number.isFinite(numericMaxScore) ? numericMaxScore : 1,
+      result: compactText(detail.result || (isCorrect ? "correct" : "incorrect"), 80)
+    };
+
+    if (typeof window.OpenMaicLearningEvidence?.recordChallenge === "function") {
+      window.OpenMaicLearningEvidence.recordChallenge(normalized);
+      return true;
+    }
+
+    const attemptNumber = (challengeAttempts.get(challengeId) || 0) + 1;
+    challengeAttempts.set(challengeId, attemptNumber);
+    post("maic_learning_event", {
+      payload: {
+        event_type: "challenge_result",
+        ...normalized,
+        attempt_id: compactText(
+          detail.attemptId || challengeId + "-" + attemptNumber,
+          180
+        ),
+        attempt_number: attemptNumber,
+        timestamp: new Date().toISOString()
+      }
+    });
+    return true;
+  }
+
+  Object.defineProperty(window, "__calculusQuestReportChallengeResult", {
+    configurable: true,
+    value: reportChallengeResult
+  });
 
   function removeImportantInlineProperties(element, properties = []) {
     if (!element?.style) return false;
@@ -180,13 +226,72 @@
     if (coursewareLayoutRepairScheduled) return;
     coursewareLayoutRepairScheduled = true;
     window.requestAnimationFrame(() => {
+      repairDisplacementOverlays();
+      repairAreaSimulationLayout();
       repairRiskMasterLayout();
-      window.requestAnimationFrame(repairRiskMasterLayout);
-      window.setTimeout(repairRiskMasterLayout, 80);
+      window.requestAnimationFrame(() => {
+        repairAreaSimulationLayout();
+        repairRiskMasterLayout();
+      });
       window.setTimeout(() => {
+        repairAreaSimulationLayout();
+        repairRiskMasterLayout();
+      }, 80);
+      window.setTimeout(() => {
+        repairAreaSimulationLayout();
         repairRiskMasterLayout();
         coursewareLayoutRepairScheduled = false;
       }, 380);
+    });
+  }
+
+  function repairDisplacementOverlays() {
+    if (!document.querySelector("#btn-forward") || !document.querySelector("#track-canvas")) return;
+    // Exported controls create high stacking contexts; modal surfaces must be siblings.
+    ["start-overlay", "level-overlay", "pause-overlay"].forEach((id) => {
+      const overlay = document.getElementById(id);
+      if (overlay && overlay.parentElement !== document.body) document.body.appendChild(overlay);
+    });
+  }
+
+  function repairAreaSimulationLayout() {
+    const container = document.querySelector(".app-container");
+    const controls = container?.querySelector(":scope > #controls");
+    const pane = container?.querySelector(":scope > #canvas-container");
+    const canvas = pane?.querySelector(":scope > #canvas");
+    if (!controls?.querySelector("#partition_count-slider") || !canvas) return;
+    // The exported responsive helper otherwise stacks this scene and compresses its plot.
+    const set = (element, values) => Object.entries(values).forEach(([key, value]) => {
+      if (element.style.getPropertyValue(key) !== value
+        || element.style.getPropertyPriority(key) !== "important") {
+        element.style.setProperty(key, value, "important");
+      }
+    });
+    const stacked = window.innerWidth < 600;
+    // Embedded desktop panes can cross the export's mobile breakpoint. The
+    // platform keeps controls in-flow, so its overlay toggle has no role here.
+    const mobileToggle = document.querySelector("body > .mobile-toggle");
+    if (mobileToggle) set(mobileToggle, { display: "none" });
+    set(document.body, { margin: "0", height: `${window.innerHeight}px`, overflow: "hidden" });
+    set(container, {
+      display: "flex", "flex-direction": stacked ? "column" : "row",
+      height: `${window.innerHeight}px`, "min-height": "0", "max-height": "none",
+      overflow: "hidden", "align-items": "stretch"
+    });
+    set(controls, {
+      flex: stacked ? "0 0 44%" : "0 0 280px", width: stacked ? "100%" : "280px",
+      "min-width": "0", "max-width": "100%", height: "auto",
+      "min-height": "0", "max-height": "100%", "overflow-y": "auto", order: "0",
+      position: "relative", inset: "auto"
+    });
+    set(pane, {
+      flex: "1 1 0px", width: "auto", height: "auto", "min-width": "0",
+      "min-height": "0", "max-height": "100%", position: "relative", order: "1",
+      overflow: "hidden"
+    });
+    set(canvas, {
+      position: "absolute", inset: "0", width: "100%", height: "100%",
+      "max-height": "none", "object-fit": "fill"
     });
   }
 
@@ -232,11 +337,18 @@
     return tag === "html" || tag === "body";
   }
 
+  function graphNodeKey(element) {
+    if (!element?.matches?.(GRAPH_NODE_SELECTOR)) return "";
+    return element.dataset.node || element.dataset.nodeId || element.dataset.id || element.id || "";
+  }
+
   function semanticId(element) {
     if (!element) return "";
     const explicit = element.getAttribute?.("data-cq-context-id")
       || element.getAttribute?.("data-context-id");
     if (explicit) return `interactive:data:${compactText(explicit, 160)}`;
+    const nodeKey = graphNodeKey(element);
+    if (nodeKey) return `interactive:node:${compactText(nodeKey, 160)}`;
     if (element.id) return `interactive:id:${compactText(element.id, 160)}`;
     const name = element.getAttribute?.("name");
     if (name) return `interactive:name:${compactText(name, 140)}`;
@@ -260,6 +372,7 @@
       || element.getAttribute?.("title")
       || labelByFor?.textContent
       || wrappingLabel?.textContent
+      || (graphNodeKey(element) ? element.querySelector?.(".node-label")?.textContent : "")
       || (tag === "canvas" ? "当前画布" : "")
       || (tag === "svg" ? "当前图形" : "")
       || element.getAttribute?.("alt")
@@ -306,6 +419,7 @@
       "[data-context-id]",
       "[aria-label]",
       INTERACTIVE_ROLE_SELECTOR,
+      GRAPH_NODE_SELECTOR,
       "button",
       "a",
       "input",
@@ -354,16 +468,74 @@
     const style = document.createElement("style");
     style.id = "cq-context-bridge-style";
     style.textContent = [
+      "@media(max-width:600px) {",
+      "body:has(#diagram-svg) { display:flex !important; flex-direction:column !important; height:100dvh !important; overflow:hidden !important; }",
+      "body:has(#diagram-svg) #main { flex:1 1 0 !important; min-height:0 !important; height:0 !important; }",
+      "body:has(#diagram-svg) #header { min-height:48px !important; padding:6px !important; }",
+      "body:has(#diagram-svg) #header button { min-width:64px !important; min-height:40px !important; white-space:nowrap !important; }",
+      "body:has(#diagram-svg):has(#sidebar) #diagram-container { height:100% !important; max-height:100% !important; min-height:0 !important; }",
+      "body:has(#diagram-svg) #diagram-svg { width:100% !important; height:100% !important; min-height:0 !important; max-height:100% !important; }",
+      "body:has(#svgDiagram) #diagramArea { position:absolute !important; inset:0 !important; width:100vw !important; margin:0 !important; }",
+      "body:has(#svgDiagram) #sidebar { position:fixed !important; inset:0 auto 0 0 !important; width:280px !important; z-index:2147483501 !important; }",
+      "body:has(#svgDiagram) #sidebar.collapsed { transform:translateX(-100%) !important; visibility:hidden !important; }",
+      "body:has(#svgDiagram) #toggleBtn { top:8px !important; left:auto !important; right:8px !important; }",
+      "body:has(.main-wrap):has(#constant_C-slider) { display:flex !important; flex-direction:column !important; height:100dvh !important; overflow:hidden !important; }",
+      "body:has(.main-wrap):has(#constant_C-slider) .main-wrap { flex:1 !important; height:0 !important; min-height:0 !important; overflow:hidden !important; }",
+      "body:has(.main-wrap):has(#constant_C-slider) #canvasWrap { min-height:0 !important; }",
+      "body:has(#width-slider):has(#game-canvas) { height:100dvh !important; overflow:hidden !important; }",
+      "body:has(#width-slider):has(#game-canvas) #game-container { height:100dvh !important; min-height:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; }",
+      "body:has(#width-slider):has(#game-canvas) #header { display:none !important; }",
+      "body:has(#width-slider):has(#game-canvas) #game-container > div:has(> #game-canvas) { flex:1 1 0 !important; min-height:160px !important; height:auto !important; }",
+      "body:has(#width-slider):has(#game-canvas) #controls-panel { flex:0 1 auto !important; max-height:210px !important; overflow-y:auto !important; }",
+      "body:has(#width-slider):has(#game-canvas) .overlay-content { display:flex !important; flex-direction:column !important; padding:14px !important; }",
+      "body:has(#width-slider):has(#game-canvas) #start-screen .overlay-content > :not(button):not(h2) { display:none !important; }",
+      "body:has(#scale-canvas):has(#pieces-container) { height:100dvh !important; overflow:hidden !important; }",
+      "body:has(#scale-canvas):has(#pieces-container) #game-container { height:100dvh !important; min-height:0 !important; overflow-y:auto !important; }",
+      "body:has(#scale-canvas):has(#pieces-container) #scale-canvas { height:180px !important; min-height:180px !important; max-height:180px !important; }",
+      "}",
+      "body:has(#zoneDeterminate):has(#zoneError) #gameContainer { position:relative !important; width:100vw !important; height:100dvh !important; overflow:hidden !important; }",
+      "body:has(#zoneDeterminate):has(#zoneError) #gameCanvas { position:absolute !important; inset:0 !important; width:100% !important; height:100% !important; min-height:0 !important; max-width:none !important; max-height:none !important; object-fit:fill !important; margin:0 !important; }",
+      "body:has(#track-canvas):has(#btn-forward) #game-container { isolation:isolate !important; position:relative !important; z-index:0 !important; }",
+      "body:has(#track-canvas):has(#btn-forward) :is(#start-overlay,#level-overlay,#pause-overlay,#result-overlay):not(.hidden) { position:fixed !important; inset:0 !important; z-index:2147483647 !important; display:flex !important; flex-direction:column !important; justify-content:safe center !important; align-items:center !important; overflow-y:auto !important; padding:16px !important; background:rgba(12,15,32,.97) !important; pointer-events:auto !important; }",
+      "body:has(#track-canvas):has(#btn-forward) #result-overlay .result-card { box-sizing:border-box !important; width:min(680px,100%) !important; max-height:calc(100dvh - 32px) !important; padding:16px 24px !important; overflow:auto !important; pointer-events:auto !important; }",
+      "body:has(#track-canvas):has(#btn-forward) #result-overlay :is(h2,.score,.stat,.explanation) { margin:6px 0 !important; padding:4px !important; }",
+      "body:has(#track-canvas):has(#btn-forward) #result-btn { min-height:44px !important; position:sticky !important; bottom:0 !important; }",
+      ".overlay .overlay-content, #startScreen .overlay-content, #start-screen .overlay-content, #start-overlay .overlay-content { box-sizing:border-box !important; width:min(760px,calc(100vw - 32px)) !important; max-width:calc(100vw - 32px) !important; max-height:calc(100dvh - 24px) !important; padding:20px 24px !important; overflow-y:auto !important; overscroll-behavior:contain !important; pointer-events:auto !important; }",
+      ".overlay .overlay-content h1, .overlay .overlay-content h2 { font-size:24px !important; margin:0 0 12px !important; line-height:1.3 !important; }",
+      ".overlay .overlay-content :is(p,li) { font-size:14px !important; line-height:1.55 !important; }",
+      ".overlay .overlay-content > :is(ul,ol) { margin:12px 0 !important; padding:12px 12px 12px 32px !important; }",
+      ".overlay .overlay-content > button { min-height:44px !important; margin-top:12px !important; position:sticky !important; bottom:0 !important; flex-shrink:0 !important; }",
+      "body:has(#xSlider):has(#spawnBtn) #gameContainer { height:100dvh !important; min-height:0 !important; padding:8px !important; display:flex !important; flex-direction:column !important; overflow:hidden !important; }",
+      "body:has(#xSlider):has(#spawnBtn) #canvasWrapper { flex:1 1 0 !important; height:auto !important; min-height:160px !important; max-height:none !important; overflow:hidden !important; }",
+      "body:has(#xSlider):has(#spawnBtn) #gameCanvas { width:100% !important; height:100% !important; object-fit:fill !important; max-height:none !important; }",
+      "body:has(#xSlider):has(#spawnBtn) :is(#header,#statsBar,#controls,#infoPanel) { flex:0 0 auto !important; padding:6px 10px !important; margin:3px 0 !important; }",
+      "body:has(#xSlider):has(#spawnBtn) #header { display:none !important; }",
       ".cq-context-bridge-picking, .cq-context-bridge-picking * { cursor: crosshair !important; }",
-      ".cq-context-bridge-picking .cq-context-bridge-candidate { outline: 1px dashed rgba(11,143,138,.58) !important; outline-offset: 2px !important; box-shadow:0 0 0 4px rgba(221,245,239,.12) !important; }",
-      ".cq-context-bridge-picking canvas.cq-context-bridge-candidate, .cq-context-bridge-picking svg.cq-context-bridge-candidate, .cq-context-bridge-picking figure.cq-context-bridge-candidate, .cq-context-bridge-picking table.cq-context-bridge-candidate { outline:0 !important; box-shadow:inset 0 0 0 2px rgba(11,143,138,.36) !important; }",
-      ".cq-context-bridge-hover { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.12) !important; }",
-      ".cq-context-bridge-selected { outline: 3px solid #0B8F8A !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(11,143,138,.16) !important; }",
+      ".cq-context-bridge-picking .cq-context-bridge-candidate { outline: 1px dashed rgba(103,87,217,.58) !important; outline-offset: 2px !important; box-shadow:0 0 0 4px rgba(228,220,255,.12) !important; }",
+      ".cq-context-bridge-picking canvas.cq-context-bridge-candidate, .cq-context-bridge-picking svg.cq-context-bridge-candidate, .cq-context-bridge-picking figure.cq-context-bridge-candidate, .cq-context-bridge-picking table.cq-context-bridge-candidate { outline:0 !important; box-shadow:inset 0 0 0 2px rgba(103,87,217,.36) !important; }",
+      ".cq-context-bridge-hover { outline: 3px solid #6757d9 !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(103,87,217,.12) !important; }",
+      ".cq-context-bridge-selected { outline: 3px solid #6757d9 !important; outline-offset: 3px !important; box-shadow: 0 0 0 7px rgba(103,87,217,.16) !important; }",
+      ".app-container:has(#partition_count-slider) #controls :is(.main-btn, .reset-btn) { padding:8px !important; font-size:14px !important; border-radius:6px !important; }",
+      ".app-container:has(#partition_count-slider) #mainBtn.btn-restart { background:#6757d9 !important; box-shadow:none !important; animation:none !important; }",
+      "body:has(#game-area):has(#graph-canvas) { height:100vh !important; min-height:0 !important; overflow:hidden !important; }",
+      "body:has(#game-area):has(#graph-canvas) #game-container { height:100vh !important; max-width:none !important; min-height:0 !important; display:flex !important; flex-direction:column !important; overflow:hidden !important; padding:8px !important; }",
+      "body:has(#game-area):has(#graph-canvas) #header, body:has(#game-area):has(#graph-canvas) #stats-bar, body:has(#game-area):has(#graph-canvas) #level-bar { flex:0 0 auto !important; }",
+      "body:has(#game-area):has(#graph-canvas) #header { padding:6px !important; }",
+      "body:has(#game-area):has(#graph-canvas) #header h1 { font-size:1.25em !important; }",
+      "body:has(#game-area):has(#graph-canvas) #game-area { flex:1 1 auto !important; min-height:0 !important; height:auto !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; margin:5px 0 !important; }",
+      "body:has(#game-area):has(#graph-canvas) #graph-canvas { flex:1 1 220px !important; min-height:180px !important; height:auto !important; max-height:none !important; width:100% !important; }",
+      "body:has(#game-area):has(#graph-canvas) #derivative-display, body:has(#game-area):has(#graph-canvas) #feedback-msg { flex:0 0 auto !important; margin:4px 0 !important; padding:6px !important; }",
+      "body:has(#game-area):has(#graph-canvas) #cards-area { flex:0 0 auto !important; min-height:48px !important; margin:5px 0 !important; gap:5px !important; }",
+      "body:has(#game-area):has(#graph-canvas) #cards-area .func-card { padding:6px 10px !important; font-size:.9em !important; min-width:80px !important; }",
+      "body:has(#game-area):has(#graph-canvas) #c-badge-area, body:has(#game-area):has(#graph-canvas) #drop-zone, body:has(#game-area):has(#graph-canvas) #submit-area { flex:0 0 auto !important; margin:4px 0 !important; padding:7px !important; min-height:0 !important; }",
+      "body:has(#game-area):has(#graph-canvas) #drop-zone { min-height:52px !important; }",
+      "body:has(#game-area):has(#graph-canvas) #submit-area button { padding:7px 14px !important; min-height:34px !important; font-size:.9em !important; }",
+      "body:has(#game-area):has(#graph-canvas) #submit-btn { background:#6757d9 !important; box-shadow:none !important; }",
       "#overlay:has(.start-btn), .overlay:has(.start-btn), #start-screen:has(.start-btn), #startScreen:has(.start-btn), .start-screen:has(.start-btn), .startScreen:has(.start-btn) { z-index:2147483600 !important; isolation:isolate !important; }",
       "#overlay:has(.start-btn) .overlay-content, .overlay:has(.start-btn) .overlay-content, #start-screen:has(.start-btn) > *, #startScreen:has(.start-btn) > *, .start-screen:has(.start-btn) > *, .startScreen:has(.start-btn) > * { position:relative !important; z-index:2147483601 !important; }",
       "#overlay:has(.start-btn) .start-btn, .overlay:has(.start-btn) .start-btn, #start-screen:has(.start-btn) .start-btn, #startScreen:has(.start-btn) .start-btn, .start-screen:has(.start-btn) .start-btn, .startScreen:has(.start-btn) .start-btn { position:relative !important; z-index:2147483602 !important; pointer-events:auto !important; }"
       + "\n::highlight(cq-learning-notes-amber) { background-color:rgba(246,183,60,.22); text-decoration:underline 2px #D28D13; text-underline-offset:3px; }"
-      + "\n::highlight(cq-learning-notes-mint) { background-color:rgba(94,210,173,.2); text-decoration:underline 2px #2A9D78; text-underline-offset:3px; }"
+      + "\n::highlight(cq-learning-notes-mint) { background-color:rgba(103,87,217,.2); text-decoration:underline 2px #6757d9; text-underline-offset:3px; }"
       + "\n::highlight(cq-learning-notes-blue) { background-color:rgba(112,176,255,.2); text-decoration:underline 2px #4E8ED9; text-underline-offset:3px; }"
       + "\n::highlight(cq-learning-notes-pink) { background-color:rgba(241,137,185,.2); text-decoration:underline 2px #D35F98; text-underline-offset:3px; }"
       + "\n.cq-learning-note-fallback { box-shadow:inset 0 -3px rgba(246,183,60,.38) !important; }"
@@ -528,6 +700,11 @@
 
   function findBySemanticId(value = "") {
     const id = String(value || "");
+    if (id.startsWith("interactive:node:")) {
+      const key = id.slice("interactive:node:".length);
+      return Array.from(document.querySelectorAll(GRAPH_NODE_SELECTOR))
+        .find((element) => compactText(graphNodeKey(element), 160) === key) || null;
+    }
     if (id.startsWith("interactive:id:")) {
       return document.getElementById(id.slice("interactive:id:".length));
     }

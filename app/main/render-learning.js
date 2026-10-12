@@ -14,16 +14,24 @@ const COURSEWARE_BRIDGE_INTERACTION_EVENTS = new Set([
   "parameter_commit"
 ]);
 const COURSEWARE_LEARNING_EVENT_TYPES = Object.freeze({
+  scene_entered: "courseware_page_loaded",
   page_loaded: "courseware_page_loaded",
   pre_check_submitted: "courseware_pre_check_submitted",
   prediction_made: "courseware_prediction_made",
   interaction_change: "courseware_interaction_change",
+  parameter_changed: "courseware_interaction_change",
+  representation_switched: "courseware_representation_switched",
+  attempt_submitted: "courseware_attempt_submitted",
+  hint_requested: "courseware_hint_used",
   hint_used: "courseware_hint_used",
+  reset_used: "courseware_reset_used",
   observable_evidence_captured: "courseware_observable_evidence_captured",
   short_explanation_submitted: "courseware_short_explanation_submitted",
   formative_check_submitted: "courseware_formative_check_submitted",
   interaction_complete: "courseware_interaction_complete",
   challenge_result: "courseware_challenge_result",
+  independent_check_completed: "courseware_independent_check_completed",
+  scene_completed: "courseware_interaction_complete",
   exit_ticket_submitted: "courseware_exit_ticket_submitted",
   confidence_rating: "courseware_confidence_submitted",
   confidence_submitted: "courseware_confidence_submitted",
@@ -31,10 +39,31 @@ const COURSEWARE_LEARNING_EVENT_TYPES = Object.freeze({
   page_summary_shown: "courseware_page_summary_shown"
 });
 const COURSEWARE_LEARNING_EVENT_KEYS = new Set([
+  "schema_version",
+  "scene_id",
+  "task_id",
+  "strategy_tag",
+  "independence_level",
+  "evidence_confidence",
+  "representation",
+  "outcome",
+  "sequence",
+  "parameter",
+  "value",
+  "previous_value",
+  "contract_revision",
+  "event_id",
   "lesson_id",
   "module_id",
+  "chapter_id",
+  "knowledge_point_id",
   "course_version",
   "concept_tag",
+  "scene_type",
+  "resource_id",
+  "resource_title",
+  "learning_objective",
+  "misconception",
   "event_type",
   "phase",
   "timestamp",
@@ -48,6 +77,9 @@ const COURSEWARE_LEARNING_EVENT_KEYS = new Set([
   "question_id",
   "attempt_id",
   "attempt_number",
+  "independent",
+  "hint_count",
+  "reset_count",
   "is_correct",
   "score",
   "max_score",
@@ -60,7 +92,42 @@ const COURSEWARE_LEARNING_EVENT_KEYS = new Set([
   "choice",
   "completed",
   "challenge_id",
-  "result"
+  "result",
+  "error_type",
+  "reason",
+  "verification_source",
+  "evidence_scope",
+  "mathematically_valid_split",
+  "accepted_choices",
+  "target",
+  "position",
+  "error",
+  "accuracy",
+  "relative_error",
+  "approximate_area",
+  "true_area",
+  "total_distance",
+  "had_positive_velocity",
+  "had_negative_velocity",
+  "selected_answer",
+  "expected_answer",
+  "selected_zone",
+  "expected_zone",
+  "selected_u",
+  "selected_dv",
+  "expected_u",
+  "expected_dv",
+  "zone_id",
+  "target_x",
+  "target_y",
+  "placement_error",
+  "elapsed_seconds",
+  "total_time_seconds",
+  "max_combo",
+  "reset_scope",
+  "expression",
+  "correct_count",
+  "wrong_count"
 ]);
 
 function sanitizeCoursewareLearningValue(value, depth = 0) {
@@ -195,9 +262,13 @@ function trackCoursewareBridgeInteraction(frame, message = {}) {
 }
 
 function trackCoursewareLearningEvent(frame, message = {}) {
-  const raw = message.payload && typeof message.payload === "object"
+  const source = message.payload && typeof message.payload === "object"
     ? message.payload
     : {};
+  const raw = window.CoursewareEventContract
+    ? window.CoursewareEventContract.normalize(source)
+    : source;
+  if (!raw) return false;
   const sourceType = String(raw.event_type || raw.eventType || "").trim().toLowerCase();
   const eventType = COURSEWARE_LEARNING_EVENT_TYPES[sourceType];
   if (!eventType) return false;
@@ -422,7 +493,7 @@ function unitLearningFocus(unit) {
 function renderPlayer() {
   const unit = getUnit();
   if (!unit) {
-    els.lessonType.textContent = "Loading";
+    els.lessonType.textContent = "正在加载";
     els.lessonTitle.textContent = "正在加载章节";
     els.lessonSummary.textContent = "按章节加载资源，稍等片刻即可开始学习。";
     els.completeLesson.disabled = true;
@@ -613,6 +684,7 @@ function refreshKnowledgeAudioPack(unitId = currentUnitId) {
 }
 
 function focusKnowledgeSceneChoicePanel() {
+  window.LearningWorkspace?.showInteractive?.();
   const panel = document.querySelector("[data-knowledge-scene-panel]");
   if (!panel) return false;
   panel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -682,9 +754,12 @@ function renderKnowledgeUnit(unit) {
     }
   });
 
-  const slideBody = canvas
-    ? renderSlideCanvas(
-      canvas,
+  const slidePages = Array.isArray(slide.pages) && slide.pages.length
+    ? slide.pages
+    : (canvas ? [canvas] : []);
+  const slideBody = slidePages.length
+    ? renderSlideDeck(
+      slidePages,
       unit.chapterId,
       "multi-scene-required-slide",
       module.source?.resourceRoot || ""
@@ -699,7 +774,6 @@ function renderKnowledgeUnit(unit) {
          <span class="type-pill">${escapeHtml(knowledgeSceneDisplayLabel(selectedType))}</span>
          <strong>${escapeHtml(cleanStudentResourceTitle(candidate.title || candidate.file, unit.label))}</strong>
          <small>已按你的选择加载，可随时切换其他场景。</small>
-         <button class="button soft icon-button multi-scene-scene-fullscreen" type="button" data-knowledge-scene-fullscreen aria-label="全屏查看当前课件" title="全屏查看当前课件">课件全屏</button>
         </div>
        <div class="iframe-container multi-scene-courseware-stage" data-knowledge-scene-stage>
          <div class="iframe-loader"><div class="iframe-loader-spinner"></div><p>课件加载中…</p></div>
@@ -725,7 +799,6 @@ function renderKnowledgeUnit(unit) {
         <section class="multi-scene-slide-panel required">
           <div class="multi-scene-slide-heading">
             <span class="type-pill multi-scene-slide-kind">讲解页</span>
-            <button class="button soft" type="button" data-resource-fullscreen>讲解页全屏</button>
             <h2>${renderInlineMath(slide.title || kp.name || unit.label)}</h2>
             <p>${renderInlineMath(module.title || unit.moduleTitle || "")}</p>
           </div>
@@ -758,6 +831,11 @@ function renderKnowledgeUnit(unit) {
     )}
   `;
   setupSlideCanvasScaling(els.lessonPlayer);
+  setupSlideDeckControls(els.lessonPlayer);
+  window.OpenMaicSlide?.mount(
+    els.lessonPlayer.querySelector(".multi-scene-slide-fullscreen-stage"),
+    canvas, unit, module.source?.resourceRoot || ""
+  );
 
   const iframeEl = els.lessonPlayer.querySelector("iframe[data-courseware-frame]");
   if (iframeEl && candidate) {
@@ -907,14 +985,14 @@ function renderQuestionTextWithLinks(question = {}, unit = {}) {
   let html = "";
   let match;
   while ((match = markerRe.exec(text))) {
-    if (match.index > last) html += renderInlineMath(text.slice(last, match.index));
+    if (match.index > last) html += renderQuestionMath(text.slice(last, match.index));
     const unitId = match[1] || "";
     const sceneType = match[2] || "";
     const label = match[3] || "回看课件";
     html += `<button class="quiz-resource-link" type="button" data-quiz-resource-link="${escapeHtml(unitId)}" data-quiz-resource-scene="${escapeHtml(sceneType)}">${escapeHtml(label)}</button>`;
     last = markerRe.lastIndex;
   }
-  if (last < text.length) html += renderInlineMath(text.slice(last));
+  if (last < text.length) html += renderQuestionMath(text.slice(last));
   return html;
 }
 
@@ -969,9 +1047,15 @@ function renderQuiz(unit) {
       moduleRole: moduleRoleForUnit(unit)
     }
   });
-  const questions = unit.scene.content?.questions || [];
+  let questions = unit.scene.content?.questions || [];
   let submitted = (state.submittedQuizzes || []).includes(unit.id);
   const unitResults = quizRecordsForUnit(unit.id);
+  const archivedQuestions = unit.scene.content?.quizConfig?.archivedQuestions || [];
+  const resultQuestionIds = new Set(unitResults.map(result => result.questionId || result.question_id));
+  const reviewingArchive = submitted && archivedQuestions.length
+    && !questions.some(question => resultQuestionIds.has(question.id))
+    && archivedQuestions.some(question => resultQuestionIds.has(question.id));
+  if (reviewingArchive) questions = archivedQuestions;
   const adaptiveState = unit.adaptiveFormative ? quizAdaptiveFormativeState(unit, unitResults) : null;
   if (submitted && adaptiveState?.needsDiagnostic) {
     submitted = false;
@@ -1061,6 +1145,7 @@ function renderQuiz(unit) {
         ${renderAssessmentBanner(unit)}
         <div class="quiz-card" data-context-id="quiz:${escapeHtml(unit.id)}:page" data-context-kind="quiz" data-context-scope="quiz" data-context-confidence="medium" data-context-label="${escapeHtml(unit.label)}">
           ${quizTopBanner}
+          ${reviewingArchive ? '<p class="quiz-version-notice">这是此前已提交的旧版测验，保留原题和原成绩；新版题目不会覆盖这份记录。</p>' : ""}
           ${visibleQuestions
             .map((question, index) => {
               const result = latestByQuestion[question.id];
@@ -1145,9 +1230,12 @@ function renderQuestionInput(unit, question, submitted, result = null) {
           data-short-answer
           data-unit-id="${unit.id}"
          data-question-id="${question.id}"
-          ${submitted ? "disabled" : ""}
+          ${submitted || draft === "__unknown__" ? "disabled" : ""}
          placeholder="例如：先写出计算步骤，再解释几何或物理意义。"
-        >${escapeHtml(draft)}</textarea>
+        >${escapeHtml(draft === "__unknown__" ? "" : draft)}</textarea>
+        <label class="quiz-unknown-choice"><input type="checkbox" data-short-unknown
+          data-unit-id="${unit.id}" data-question-id="${question.id}"
+          ${draft === "__unknown__" ? "checked" : ""} ${submitted ? "disabled" : ""}>我不会</label>
         <div class="draft-status">本题草稿会自动保存在本地记录中</div>
       </div>
     `;
@@ -1155,12 +1243,12 @@ function renderQuestionInput(unit, question, submitted, result = null) {
 
   return `
     <fieldset>
-      ${(question.options || [])
+      ${[...(question.options || []).filter(option => option.value !== "__unknown__"), { value: "__unknown__", label: "我不会" }]
         .map((option) => {
           const draft = submitted && result?.response != null ? result.response : readQuizDraft(unit.id, question.id, question.type === "multiple" ? [] : "");
           const selected = Array.isArray(draft) ? draft.includes(option.value) : draft === option.value;
           return `
-          <label data-context-id="quiz:${escapeHtml(question.id)}:option:${escapeHtml(option.value)}" data-context-kind="quiz-option" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-option="${escapeHtml(option.value)}" data-context-confidence="high" data-context-label="${escapeHtml(`${option.value}. ${displayOptionLabel(option)}`)}">
+          <label class="${option.value === "__unknown__" ? "unknown-choice-option" : "knowledge-choice-option"}" data-context-id="quiz:${escapeHtml(question.id)}:option:${escapeHtml(option.value)}" data-context-kind="quiz-option" data-context-scope="quiz" data-context-question="${escapeHtml(question.id)}" data-context-option="${escapeHtml(option.value)}" data-context-confidence="high" data-context-label="${escapeHtml(option.value === "__unknown__" ? "我不会" : `${option.value}. ${displayOptionLabel(option)}`)}">
             <input
               type="${question.type === "multiple" ? "checkbox" : "radio"}"
               name="${unit.id}-${question.id}"
@@ -1171,7 +1259,7 @@ function renderQuestionInput(unit, question, submitted, result = null) {
               ${selected ? "checked" : ""}
               ${submitted ? "disabled" : ""}
             />
-            <span>${option.value}. ${renderInlineMath(displayOptionLabel(option))}</span>
+            <span>${option.value === "__unknown__" ? "我不会" : `${option.value}. ${renderQuestionMath(displayOptionLabel(option))}`}</span>
           </label>
         `;
         })
@@ -1215,6 +1303,7 @@ function renderSlide(unit) {
     ${renderCoach(unit.scene, unit.chapterId, unit.id)}
   `;
   setupSlideCanvasScaling(els.lessonPlayer);
+  setupSlideDeckControls(els.lessonPlayer);
 }
 
 function renderRouteReview(unit) {
@@ -1259,6 +1348,80 @@ function renderSlideCanvas(canvas = {}, chapterId = currentChapterId, className 
       ${(canvas.elements || []).map((element, index) => renderSlideElement(element, canvas, chapterId, resourceRoot, index)).join("")}
     </div>
   </div>`;
+}
+
+// A knowledge point ships two slide pages (concept + worked example). The route
+// model has one `slide` slot, so the pages are carried as `slide.pages` and shown
+// one at a time with prev/next controls. Stacking them into a single tall canvas
+// was the earlier approach and it reads as one long page, not as slides.
+function renderSlideDeck(pages = [], chapterId = currentChapterId, className = "", resourceRoot = "") {
+  const canvases = (Array.isArray(pages) ? pages : []).filter((canvas) => canvas?.elements?.length);
+  if (!canvases.length) return "";
+  if (canvases.length === 1) return renderSlideCanvas(canvases[0], chapterId, className, resourceRoot);
+  const slides = canvases.map((canvas, index) => `<div class="slide-page" data-slide-page="${index}"${index ? " hidden" : ""}>
+      ${renderSlideCanvas(canvas, chapterId, className, resourceRoot)}
+    </div>`).join("");
+  return `<div class="slide-deck" data-slide-deck data-slide-count="${canvases.length}" data-slide-active="0">
+    <div class="slide-deck-viewport">${slides}</div>
+    <div class="slide-deck-controls">
+      <button type="button" class="slide-deck-btn" data-slide-deck-prev aria-label="上一页">‹ 上一页</button>
+      <span class="slide-deck-status" data-slide-deck-status aria-live="polite">第 1 / ${canvases.length} 页</span>
+      <button type="button" class="slide-deck-btn" data-slide-deck-next aria-label="下一页">下一页 ›</button>
+    </div>
+  </div>`;
+}
+
+function showSlideDeckPage(deck, target) {
+  if (!deck) return;
+  const pages = Array.from(deck.querySelectorAll("[data-slide-page]"));
+  if (!pages.length) return;
+  const index = Math.max(0, Math.min(pages.length - 1, Number(target) || 0));
+  // Hide with an inline style, not the `hidden` attribute. The attribute only
+  // works through the UA stylesheet, and any `display` rule on the same element
+  // outranks it — which is how both pages can end up visible at once, making the
+  // slide look half blank and the controls look like they do nothing.
+  pages.forEach((page, i) => {
+    page.hidden = i !== index;
+    page.style.display = i === index ? "" : "none";
+    page.setAttribute("aria-hidden", i === index ? "false" : "true");
+  });
+  deck.dataset.slideActive = String(index);
+  const status = deck.querySelector("[data-slide-deck-status]");
+  if (status) status.textContent = `第 ${index + 1} / ${pages.length} 页`;
+  const prev = deck.querySelector("[data-slide-deck-prev]");
+  const next = deck.querySelector("[data-slide-deck-next]");
+  if (prev) prev.disabled = index === 0;
+  if (next) next.disabled = index === pages.length - 1;
+  // The newly shown page had no measurable width while hidden, so its scale was
+  // never applied; re-run it now that it is visible. Scale against the canvas
+  // wrap — the element the scale is derived from — not the page wrapper, whose
+  // width is the whole deck.
+  const wrap = pages[index].querySelector("[data-slide-canvas]");
+  if (wrap) syncSlideCanvasScale(wrap);
+  analyticsTrack("slide_page_view", {
+    data: { page: index + 1, pageCount: pages.length }
+  });
+}
+
+function setupSlideDeckControls(root = typeof document !== "undefined" ? document : null) {
+  if (!root?.querySelectorAll) return;
+  root.querySelectorAll("[data-slide-deck]").forEach((deck) => {
+    if (deck.dataset.slideDeckReady === "1") return;
+    deck.dataset.slideDeckReady = "1";
+    deck.addEventListener("click", (event) => {
+      const button = event.target?.closest?.("[data-slide-deck-prev], [data-slide-deck-next]");
+      if (!button) return;
+      const current = Number(deck.dataset.slideActive || 0);
+      showSlideDeckPage(deck, button.hasAttribute("data-slide-deck-next") ? current + 1 : current - 1);
+    });
+    deck.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      const current = Number(deck.dataset.slideActive || 0);
+      showSlideDeckPage(deck, event.key === "ArrowRight" ? current + 1 : current - 1);
+    });
+    // Start on the first page with a correct scale.
+    showSlideDeckPage(deck, 0);
+  });
 }
 
 function fitSlideCanvasContents(wrap) {
@@ -2145,12 +2308,8 @@ function renderKnowledgeSceneChoicePanel(unit) {
     ? knowledgeSceneRecommendation(unit)
     : { ranked: [], recommended: null };
   const rankingByType = new Map((recommendation.ranked || []).map((item) => [item.typeId, item]));
-  const orderedTypes = [...types].sort((a, b) => {
-    const aRank = rankingByType.get(a.id);
-    const bRank = rankingByType.get(b.id);
-    return Number(bRank?.score ?? -Infinity) - Number(aRank?.score ?? -Infinity)
-      || types.indexOf(a) - types.indexOf(b);
-  });
+  const sceneOrder = ["simulation", "game", "mindMap", "visualization3d"];
+  const orderedTypes = sceneOrder.map((id) => types.find((type) => type.id === id)).filter(Boolean);
   const choices = orderedTypes.map((type) => {
     const candidate = knowledgeResourceCandidate(unit, type.id);
     const hasResource = Boolean(candidate);
@@ -2171,14 +2330,17 @@ function renderKnowledgeSceneChoicePanel(unit) {
       hasResource ? "available" : "pending"
     ].filter(Boolean).join(" ");
     return `
-      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" data-coach-score="${escapeHtml(ranking?.score ?? "")}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(resourceTitle)}${reason ? `；${escapeHtml(reason)}` : ""}">
+      <button class="${cls}" type="button" data-knowledge-scene="${type.id}" data-unit="${unit.id}" data-coach-score="${escapeHtml(ranking?.score ?? "")}" data-recommended="${recommended}" aria-pressed="${active ? "true" : "false"}" ${hasResource ? "" : "disabled"} title="${escapeHtml(meta.title)}：${escapeHtml(resourceTitle)}${recommended ? "；系统推荐" : ""}${active ? "；当前已选" : ""}${reason ? `；${escapeHtml(reason)}` : ""}">
         <span class="scene-option-icon" aria-hidden="true">${escapeHtml(meta.icon)}</span>
         <span class="scene-option-copy">
           <strong>${escapeHtml(meta.title)}</strong>
           <small>${escapeHtml(sceneTitle)}</small>
           ${recommended && reason ? `<small class="coach-recommendation-reason">${escapeHtml(reason)}</small>` : ""}
         </span>
-        ${recommended ? '<em class="coach-recommendation-badge">Coach 建议</em>' : ""}
+        <span class="scene-choice-state">
+          ${recommended ? '<em class="coach-recommendation-badge">系统推荐</em>' : ""}
+          ${active ? '<span class="scene-selection-badge">当前已选</span>' : ""}
+        </span>
       </button>
     `;
   }).join("");
@@ -2287,8 +2449,17 @@ function syncAgenticPlayerCta(unit) {
   if (!els.completeLesson || !unit) return;
   els.completeLesson.disabled = false;
   els.completeLesson.removeAttribute("aria-controls");
+  delete els.completeLesson.dataset.outcomeStage;
   delete els.completeLesson.dataset.scrollKnowledgeScene;
   delete els.completeLesson.dataset.focusKnowledgeTransition;
+  const outcomeAction = window.KnowledgeAssistant?.outcomeNavigationAction?.(unit) || null;
+  if (outcomeAction) {
+    els.completeLesson.textContent = outcomeAction.label;
+    els.completeLesson.disabled = Boolean(outcomeAction.disabled);
+    els.completeLesson.dataset.outcomeStage = outcomeAction.stageId || "";
+    els.completeLesson.setAttribute("aria-controls", "knowledge-outcomes-dialog");
+    return;
+  }
   if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
     els.completeLesson.textContent = "返回测验";
     return;

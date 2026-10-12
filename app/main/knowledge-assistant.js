@@ -14,7 +14,7 @@
   const NOTE_PENDING_STORAGE_PREFIX = "calculus-quest-learning-notes-pending-v2:";
   const QUIZ_LOCKED_MESSAGE = "提交本次测验后即可使用知点复盘。";
   const CONVERSATION_TURN_LIMIT = 30;
-  const PROACTIVE_STUDY_CHAPTER_ID = "V14-C3";
+  const PROACTIVE_STUDY_CHAPTER_ID = "V14-C1";
   const PROACTIVE_NATURAL_BOUNDARY_EVENTS = new Set([
     "parameter_commit",
     "interactive_submit",
@@ -66,7 +66,21 @@
   let launcherPlacement = Core.normalizeLauncherPlacement();
   let panelPosition = null;
   let suppressLauncherClickUntil = 0;
-  const proactiveCoach = Proactive?.createProactiveCoach?.() || null;
+  // The coach decides when to offer a different activity type, but only the route
+  // knows which types a knowledge point offers, so it is handed a resolver. Which
+  // types the learner has already opened is tracked inside the coach.
+  const proactiveCoach = Proactive?.createProactiveCoach?.({
+    sceneTypesFor: (unitId) => {
+      const unit = typeof getUnit === "function" ? getUnit() : null;
+      if (!unit || unit.id !== unitId) return [];
+      const types = typeof knowledgeInteractionTypes === "function"
+        ? knowledgeInteractionTypes(unit)
+        : [];
+      return (Array.isArray(types) ? types : [])
+        .map((type) => ({ typeId: type?.id || type?.widgetType, title: type?.label || type?.id }))
+        .filter((type) => type.typeId);
+    }
+  }) || null;
   let lastPresentedSuggestionId = "";
   let proactiveTickTimer = null;
   let proactiveDecision = null;
@@ -80,8 +94,12 @@
   let proactiveCheckStartedAt = 0;
   let proactiveCheckSubmitting = false;
   let proactiveCheckFeedback = null;
-  let proactivePreferenceSaving = false;
   let proactiveChoiceSaving = false;
+// Hint Justification：需要理由的提示在真正执行前先展开「先说你的理由」输入。
+// 学生可以一键跳过——跳过也是数据（it counts in the denominator），
+// 所以绝不把它做成必填，否则 providedRate 会因为"不想写字的人干脆不接受"而虚高。
+let proactiveJustificationOpen = false;
+let proactiveJustifyBuiltFor = "";
   let proactiveParticipationSaving = false;
   let proactiveWithdrawalConfirming = false;
   let proactiveOutcomesOpen = false;
@@ -92,8 +110,10 @@
   let proactiveOutcomeDraftChain = Promise.resolve();
   let proactiveOutcomeDraftGeneration = 0;
   let proactiveOutcomeWithdrawing = false;
+  let proactiveOutcomeSkipConfirming = false;
   let proactiveOutcomes = null;
   let proactiveOutcomeStageId = "";
+  let proactiveOutcomeReviewStageId = "";
   let proactiveOutcomeResponses = {};
   let proactiveOutcomeStatus = "";
   let proactiveOutcomeOwnerKey = "";
@@ -133,10 +153,11 @@
           <small data-knowledge-proactive-eyebrow>知点留意到</small>
           <strong data-knowledge-proactive-title></strong>
           <p data-knowledge-proactive-body></p>
-          <div class="knowledge-proactive-actions">
+          <div class="knowledge-proactive-actions" data-knowledge-proactive-actions>
             <button type="button" data-knowledge-proactive-accept>带我看看</button>
             <button type="button" data-knowledge-proactive-snooze>稍后</button>
           </div>
+          <div class="knowledge-proactive-justify-slot" data-knowledge-proactive-justify-slot hidden></div>
           <div class="knowledge-proactive-secondary-actions">
             <button type="button" data-knowledge-proactive-alternative>换一种帮助</button>
             <button type="button" data-knowledge-proactive-mute>关闭此知识点提醒</button>
@@ -205,15 +226,10 @@
 
         <section class="knowledge-proactive-preference" data-knowledge-proactive-preference hidden>
           <div>
-            <strong>主动提示</strong>
-            <small data-knowledge-proactive-preference-status>按标准频率判断</small>
+            <strong>当前知识点提醒已关闭</strong>
+            <small data-knowledge-proactive-preference-status>恢复后，系统会继续按本组既定方案判断是否提供帮助。</small>
           </div>
-          <div role="radiogroup" aria-label="主动提示频率">
-            <button type="button" role="radio" data-proactive-preference="standard" aria-checked="true">标准</button>
-            <button type="button" role="radio" data-proactive-preference="reduced" aria-checked="false">少提醒</button>
-            <button type="button" role="radio" data-proactive-preference="off" aria-checked="false">关闭</button>
-          </div>
-          <button type="button" class="knowledge-proactive-scope-restore" data-knowledge-proactive-scope-restore hidden>恢复当前知识点提醒</button>
+          <button type="button" class="knowledge-proactive-scope-restore" data-knowledge-proactive-scope-restore>恢复当前知识点提醒</button>
         </section>
 
         <div class="knowledge-quiz-policy" data-knowledge-quiz-policy hidden>
@@ -297,17 +313,17 @@
     </section>
 
     <section class="knowledge-outcomes-layer" data-knowledge-outcomes hidden role="dialog" aria-modal="true" aria-labelledby="knowledge-outcomes-title">
-      <div class="knowledge-outcomes-dialog" tabindex="-1">
+      <div class="knowledge-outcomes-dialog" id="knowledge-outcomes-dialog" tabindex="-1">
         <header>
           <div>
-            <small>本章独立测量</small>
-            <strong id="knowledge-outcomes-title">学习结果记录</strong>
+            <small>本章研究测量</small>
+            <strong id="knowledge-outcomes-title">保持测量</strong>
           </div>
           <button type="button" data-knowledge-outcomes-close aria-label="关闭学习结果记录">×</button>
         </header>
         <div class="knowledge-outcomes-intro">
           <strong>请独立完成</strong>
-          <p>开始后，服务端暂停知点、主动提示和路径建议；作答草稿可跨设备恢复，提交后只确认记录成功。</p>
+          <p data-outcome-policy>作答期间暂停学习助手和路径建议。提交后可以回看作答和结果。</p>
         </div>
         <div class="knowledge-outcomes-content" data-knowledge-outcomes-content></div>
         <p class="knowledge-outcomes-status" data-knowledge-outcomes-status role="status"></p>
@@ -346,7 +362,7 @@
       <fieldset class="knowledge-note-colors" data-knowledge-note-colors>
         <legend>划线颜色</legend>
         <button type="button" data-note-color="amber" aria-label="琥珀色划线" aria-pressed="true"></button>
-        <button type="button" data-note-color="mint" aria-label="薄荷色划线" aria-pressed="false"></button>
+        <button type="button" data-note-color="mint" aria-label="淡紫色划线" aria-pressed="false"></button>
         <button type="button" data-note-color="blue" aria-label="天空蓝划线" aria-pressed="false"></button>
         <button type="button" data-note-color="pink" aria-label="樱粉色划线" aria-pressed="false"></button>
       </fieldset>
@@ -370,6 +386,8 @@
     proactiveTitle: root.querySelector("[data-knowledge-proactive-title]"),
     proactiveBody: root.querySelector("[data-knowledge-proactive-body]"),
     proactiveAccept: root.querySelector("[data-knowledge-proactive-accept]"),
+    proactiveActions: root.querySelector("[data-knowledge-proactive-actions]"),
+    proactiveJustifySlot: root.querySelector("[data-knowledge-proactive-justify-slot]"),
     proactiveSnooze: root.querySelector("[data-knowledge-proactive-snooze]"),
     proactiveAlternative: root.querySelector("[data-knowledge-proactive-alternative]"),
     proactiveMute: root.querySelector("[data-knowledge-proactive-mute]"),
@@ -384,7 +402,6 @@
     unitDetail: root.querySelector("[data-knowledge-unit-detail]"),
     proactivePreference: root.querySelector("[data-knowledge-proactive-preference]"),
     proactivePreferenceStatus: root.querySelector("[data-knowledge-proactive-preference-status]"),
-    proactivePreferenceButtons: Array.from(root.querySelectorAll("[data-proactive-preference]")),
     proactiveScopeRestore: root.querySelector("[data-knowledge-proactive-scope-restore]"),
     proactiveParticipation: root.querySelector("[data-knowledge-study-participation]"),
     proactiveParticipationTitle: root.querySelector("[data-knowledge-study-participation-title]"),
@@ -400,6 +417,7 @@
     proactiveOutcomesOpen: document.querySelector("[data-proactive-outcomes-open]"),
     proactiveOutcomesPanel: document.querySelector("#chapter-outcome-panel"),
     proactiveOutcomesSummary: document.querySelector("[data-proactive-outcomes-summary]"),
+    proactiveOutcomePathStages: document.querySelector("[data-proactive-outcomes-path-stages]"),
     quizPolicy: root.querySelector("[data-knowledge-quiz-policy]"),
     context: root.querySelector("[data-knowledge-context]"),
     contextTitle: root.querySelector("[data-knowledge-context-title]"),
@@ -468,6 +486,9 @@
 
   function selectedSceneMeta(unit) {
     if (!unit || unit.type !== "knowledge") return { sceneType: "", candidate: null };
+    if (document.querySelector(".core-learning-workspace")?.dataset.classroomSurface === "slide") {
+      return { sceneType: "", candidate: null };
+    }
     const sceneType = typeof selectedKnowledgeSceneType === "function"
       ? selectedKnowledgeSceneType(unit)
       : state?.selectedKnowledgeScenes?.[unit.id] || "";
@@ -500,6 +521,9 @@
       knowledgePointLabel: knowledgePoint?.name || (unit?.type === "knowledge" ? unit.label : ""),
       sceneType: scene.sceneType || "",
       resourceTitle: scene.candidate?.title || "",
+      learningSurface: unit?.type === "knowledge"
+        ? (document.querySelector(".core-learning-workspace")?.dataset.classroomSurface === "interactive" ? "interactive" : "slide")
+        : "lesson",
       quizSubmitted,
       isQuiz: unit?.type === "quiz",
       supported
@@ -517,6 +541,7 @@
       && proactiveStudyManaged(meta)
       && proactiveStudy.loaded
       && isSignedInNow()
+      && participation.mode === "explicit-consent"
       && (
         participation.canEnroll === true
         || participation.canWithdraw === true
@@ -798,70 +823,6 @@
     }
   }
 
-  async function updateProactivePreference(preference) {
-    const meta = courseMeta();
-    const nextPreference = String(preference || "");
-    if (
-      proactivePreferenceSaving
-      || !["standard", "reduced", "off"].includes(nextPreference)
-      || nextPreference === proactiveStudy.studentPreference
-      || !proactiveStudyManaged(meta)
-      || !isSignedInNow()
-    ) return false;
-
-    proactivePreferenceSaving = true;
-    renderUnit();
-    try {
-      const response = await fetch("api/learning/proactive/preference", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${state.authToken}`
-        },
-        body: JSON.stringify({
-          chapterId: meta.chapterId,
-          preference: nextPreference
-        })
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) {
-        throw new Error(payload.message || "主动提示设置暂时无法保存。");
-      }
-      applyProactiveStudy(payload.data || {
-        studentPreference: payload.studentPreference || nextPreference
-      }, meta);
-      if (nextPreference === "off") {
-        proactiveCoach?.reset?.();
-        proactiveDecision = null;
-        proactiveCandidateId = "";
-        proactiveCheckFeedback = null;
-        if (pendingProactivePrompt?.interventionId) {
-          pendingProactivePrompt = null;
-          pendingGeneratedDraft = "";
-        }
-      }
-      setStatus({
-        standard: "主动提示已恢复为标准频率。",
-        reduced: "已减少行为型提醒；形成性错误等强证据仍可触发帮助。",
-        off: "主动提示已关闭；你仍可随时主动提问。"
-      }[nextPreference], "");
-      track("knowledge_proactive_preference_changed", {
-        chapterId: meta.chapterId,
-        previousPreference: payload.previousPreference || "",
-        preference: nextPreference,
-        closedInterventions: Number(payload.closedInterventions || 0)
-      });
-      render();
-      return true;
-    } catch (error) {
-      setStatus(error.message || "主动提示设置暂时无法保存。", "error");
-      return false;
-    } finally {
-      proactivePreferenceSaving = false;
-      renderUnit();
-    }
-  }
-
   async function updateProactiveScopePreference(
     preference,
     meta = courseMeta()
@@ -902,6 +863,7 @@
         proactiveDecisionRequest = null;
         proactiveDecision = null;
         proactiveCandidateId = "";
+        resetProactiveJustification();
         if (
           pendingProactivePrompt?.unitId === meta.unitId
           || pendingProactivePrompt?.scopeKey === scopeKey
@@ -963,7 +925,9 @@
     proactiveOutcomeDraftChain = Promise.resolve();
     proactiveOutcomeDraftGeneration += 1;
     proactiveOutcomeWithdrawing = false;
+    proactiveOutcomeSkipConfirming = false;
     proactiveOutcomeStageId = "";
+    proactiveOutcomeReviewStageId = "";
     proactiveOutcomeResponses = {};
     proactiveOutcomeStatus = "";
     if (clearData) {
@@ -975,6 +939,15 @@
   function activeProactiveOutcomeSession() {
     const session = proactiveOutcomes?.activeSession;
     return session?.status === "active" ? session : null;
+  }
+
+  function notifyProactiveOutcomesChanged() {
+    global.dispatchEvent(new CustomEvent("cq:proactive-outcomes-change", {
+      detail: {
+        chapterId: courseMeta().chapterId,
+        answerReviewReleased: proactiveOutcomes?.answerReviewReleased === true
+      }
+    }));
   }
 
   function applyActiveProactiveOutcomeSession({ open = true } = {}) {
@@ -1029,11 +1002,22 @@
       }
       if (ownerKey !== proactiveOutcomesOwner()) return null;
       proactiveOutcomes = payload.data || null;
-      if (activeProactiveOutcomeSession()) {
-        applyActiveProactiveOutcomeSession({
-          open: options.restoreActive !== false
-        });
+      const activeSession = activeProactiveOutcomeSession();
+      if (activeSession) {
+        proactiveOutcomeResponses = activeSession.responses
+          && typeof activeSession.responses === "object"
+          && !Array.isArray(activeSession.responses)
+          ? { ...activeSession.responses }
+          : {};
+        if (activeSession.pausedAt) {
+          proactiveOutcomeStageId = "";
+        } else {
+          applyActiveProactiveOutcomeSession({
+            open: options.restoreActive !== false
+          });
+        }
       }
+      notifyProactiveOutcomesChanged();
       return proactiveOutcomes;
     } catch (error) {
       if (ownerKey !== proactiveOutcomesOwner()) return null;
@@ -1048,7 +1032,7 @@
     }
   }
 
-  async function openProactiveOutcomes() {
+  async function openProactiveOutcomes(options = {}) {
     const meta = courseMeta();
     if (
       !proactiveStudyManaged(meta)
@@ -1056,6 +1040,7 @@
       || !isSignedInNow()
     ) return false;
     proactiveOutcomesOpen = true;
+    proactiveOutcomeReviewStageId = String(options.reviewStageId || "");
     proactiveOutcomeOwnerKey = proactiveOutcomesOwner(meta);
     proactiveOutcomeStatus = "";
     if (proactiveDecision) {
@@ -1069,6 +1054,23 @@
     setOpen(false, { focus: false });
     render();
     await loadProactiveOutcomes({ force: true, restoreActive: true });
+    if (
+      activeProactiveOutcomeSession()?.pausedAt
+      && !proactiveOutcomeReviewStageId
+      && options.resumePaused !== false
+    ) {
+      await resumeProactiveOutcomeStage();
+    }
+    if (
+      proactiveOutcomeReviewStageId
+      && !proactiveOutcomes?.stages?.some((stage) => (
+        stage.id === proactiveOutcomeReviewStageId
+        && stage.status === "submitted"
+        && stage.review
+      ))
+    ) {
+      proactiveOutcomeReviewStageId = "";
+    }
     track("knowledge_proactive_outcomes_opened", {
       chapterId: meta.chapterId,
       activeSession: Boolean(activeProactiveOutcomeSession())
@@ -1079,22 +1081,115 @@
     return true;
   }
 
-  function closeProactiveOutcomes() {
+  async function closeProactiveOutcomes() {
     if (
       proactiveOutcomesSubmitting
       || proactiveOutcomeDraftSaving
       || proactiveOutcomeWithdrawing
     ) return false;
     if (activeProactiveOutcomeSession()) {
-      proactiveOutcomeStatus = "独立测量已开始。请提交本阶段，或使用“退出本阶段”明确结束并记录失访。";
-      renderProactiveOutcomes();
-      els.outcomesDialog?.focus({ preventScroll: true });
-      return false;
+      return pauseProactiveOutcomeStage();
     }
     resetProactiveOutcomes({ close: true, clearData: false });
     render();
     els.proactiveOutcomesOpen?.focus({ preventScroll: true });
     return true;
+  }
+
+  async function updateProactiveOutcomePauseState(action = "pause") {
+    const meta = courseMeta();
+    const session = activeProactiveOutcomeSession();
+    const nextAction = action === "resume" ? "resume" : "pause";
+    if (
+      !session
+      || proactiveOutcomesSubmitting
+      || proactiveOutcomeDraftSaving
+      || proactiveOutcomeWithdrawing
+    ) return false;
+    if (nextAction === "pause" && session.pausedAt) {
+      proactiveOutcomesOpen = false;
+      proactiveOutcomeStageId = "";
+      render();
+      return true;
+    }
+    if (nextAction === "resume" && !session.pausedAt) {
+      applyActiveProactiveOutcomeSession({ open: true });
+      render();
+      return true;
+    }
+
+    proactiveOutcomeWithdrawing = true;
+    proactiveOutcomeSkipConfirming = false;
+    proactiveOutcomeStatus = nextAction === "pause"
+      ? "正在保存草稿并暂时离开。"
+      : "正在恢复本阶段作答。";
+    renderProactiveOutcomes();
+    try {
+      const response = await fetch(`api/learning/proactive/outcomes/${nextAction}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${state.authToken}`
+        },
+        body: JSON.stringify({
+          chapterId: meta.chapterId,
+          sessionId: session.id
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload.ok === false) {
+        const error = new Error(payload.message || "暂离状态暂时无法保存。");
+        error.code = payload.code || "";
+        throw error;
+      }
+      proactiveOutcomes = payload.data || proactiveOutcomes;
+      if (nextAction === "pause") {
+        proactiveOutcomeStageId = "";
+        proactiveOutcomesOpen = false;
+        proactiveOutcomeStatus = "";
+      } else {
+        applyActiveProactiveOutcomeSession({ open: true });
+      }
+      track(`knowledge_proactive_outcome_${nextAction}d`, {
+        stageId: session.stageId,
+        sessionId: session.id,
+        pauseCount: Number(payload.data?.activeSession?.pauseCount || session.pauseCount || 0)
+      });
+      await loadProactiveStudy(meta, { force: true });
+      if (nextAction === "resume") {
+        proactiveOutcomeStatus = "已恢复同一测量会话；暂停期间不计入作答时长。";
+      }
+      render();
+      if (nextAction === "pause") {
+        els.proactiveOutcomesOpen?.focus({ preventScroll: true });
+      } else {
+        window.requestAnimationFrame(() => {
+          els.outcomesContent
+            ?.querySelector(".knowledge-outcome-active input:not(:disabled)")
+            ?.focus({ preventScroll: true });
+        });
+      }
+      return true;
+    } catch (error) {
+      proactiveOutcomeStatus = error.message || "暂离状态暂时无法保存。";
+      track("knowledge_proactive_outcome_failed", {
+        stageId: session.stageId,
+        sessionId: session.id,
+        reason: error.code || error.message || `${nextAction}_failed`
+      });
+      return false;
+    } finally {
+      proactiveOutcomeWithdrawing = false;
+      render();
+    }
+  }
+
+  function pauseProactiveOutcomeStage() {
+    return updateProactiveOutcomePauseState("pause");
+  }
+
+  function resumeProactiveOutcomeStage() {
+    return updateProactiveOutcomePauseState("resume");
   }
 
   async function beginProactiveOutcomeStage(stageId = "") {
@@ -1128,6 +1223,7 @@
         throw error;
       }
       proactiveOutcomes = payload.data || proactiveOutcomes;
+      proactiveOutcomeReviewStageId = "";
       applyActiveProactiveOutcomeSession({ open: true });
       proactiveOutcomeStatus = payload.idempotent
         ? "已恢复此前开始的独立测量。"
@@ -1227,7 +1323,7 @@
     }
   }
 
-  async function withdrawProactiveOutcomeStage() {
+  async function skipProactiveOutcomeStage() {
     const meta = courseMeta();
     const session = activeProactiveOutcomeSession();
     if (
@@ -1237,10 +1333,10 @@
       || proactiveOutcomeWithdrawing
     ) return false;
     proactiveOutcomeWithdrawing = true;
-    proactiveOutcomeStatus = "正在退出本阶段并记录失访状态。";
+    proactiveOutcomeStatus = "正在永久跳过本阶段并记录缺失原因。";
     renderProactiveOutcomes();
     try {
-      const response = await fetch("api/learning/proactive/outcomes/withdraw", {
+      const response = await fetch("api/learning/proactive/outcomes/skip", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1249,35 +1345,36 @@
         body: JSON.stringify({
           chapterId: meta.chapterId,
           sessionId: session.id,
-          reason: "student_exit"
+          reason: "student_skip"
         })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || payload.ok === false) {
-        const error = new Error(payload.message || "本阶段暂时无法退出。");
+        const error = new Error(payload.message || "本阶段暂时无法跳过。");
         error.code = payload.code || "";
         throw error;
       }
       proactiveOutcomes = payload.data || proactiveOutcomes;
       proactiveOutcomeStageId = "";
+      proactiveOutcomeReviewStageId = "";
       proactiveOutcomeResponses = {};
-      proactiveOutcomesOpen = false;
-      proactiveOutcomeStatus = "";
-      track("knowledge_proactive_outcome_withdrawn", {
+      proactiveOutcomeSkipConfirming = false;
+      track("knowledge_proactive_outcome_skipped", {
         stageId: session.stageId,
         sessionId: session.id,
-        withdrawalReason: payload.withdrawalReason || "student_exit"
+        skipReason: payload.skipReason || "student_skip"
       });
       await loadProactiveStudy(meta, { force: true });
+      proactiveOutcomeStatus = "本阶段已永久跳过；后续阶段会按原路径继续开放。";
+      notifyProactiveOutcomesChanged();
       render();
-      els.proactiveOutcomesOpen?.focus({ preventScroll: true });
       return true;
     } catch (error) {
-      proactiveOutcomeStatus = error.message || "本阶段暂时无法退出。";
+      proactiveOutcomeStatus = error.message || "本阶段暂时无法跳过。";
       track("knowledge_proactive_outcome_failed", {
         stageId: session.stageId,
         sessionId: session.id,
-        reason: error.code || error.message || "withdraw_failed"
+        reason: error.code || error.message || "skip_failed"
       });
       return false;
     } finally {
@@ -1326,7 +1423,10 @@
       proactiveOutcomes = payload.data || proactiveOutcomes;
       proactiveOutcomeStageId = "";
       proactiveOutcomeResponses = {};
-      proactiveOutcomeStatus = "本阶段已记录。为避免影响后续测量，不显示即时对错。";
+      proactiveOutcomeReviewStageId = stage.id;
+      proactiveOutcomeStatus = proactiveOutcomes?.answerReviewReleased
+        ? "全部独立测量已完成，现在可以回看对错、正确答案和总分。"
+        : "本阶段已记录。你可以回看自己的作答；全部测量完成后统一开放对错和答案。";
       track("knowledge_proactive_outcome_submitted", {
         stageId: payload.stageId || stage.id,
         sessionId: payload.sessionId || session.id,
@@ -1334,6 +1434,7 @@
         feedbackPolicy: payload.feedbackPolicy || ""
       });
       await loadProactiveStudy(meta, { force: true });
+      notifyProactiveOutcomesChanged();
       renderProactiveOutcomes();
       return true;
     } catch (error) {
@@ -1349,6 +1450,126 @@
     }
   }
 
+  function proactiveOutcomeStageStatusLabel(stage = {}) {
+    if (stage.status === "active") return "进行中";
+    if (stage.status === "available") return "可开始";
+    if (stage.status === "submitted") {
+      return stage.review?.answersReleased ? "可看结果" : "可回看";
+    }
+    if (stage.status === "skipped") return "已跳过";
+    if (stage.status === "expired") return "已超窗";
+    if (stage.status === "withdrawn") return "已退出";
+    return stage.unlockAt ? "等待开放" : "未开放";
+  }
+
+  async function openProactiveOutcomeStage(stageId = "") {
+    const requestedStageId = String(stageId || "");
+    const existing = proactiveOutcomes?.stages?.find(
+      (stage) => stage.id === requestedStageId
+    );
+    await openProactiveOutcomes({
+      reviewStageId: existing?.status === "submitted" ? requestedStageId : ""
+    });
+    const stage = proactiveOutcomes?.stages?.find(
+      (entry) => entry.id === requestedStageId
+    );
+    if (stage?.status === "submitted" && stage.review) {
+      proactiveOutcomeReviewStageId = stage.id;
+      renderProactiveOutcomes();
+    } else if (stage?.status === "active" && activeProactiveOutcomeSession()?.pausedAt) {
+      await resumeProactiveOutcomeStage();
+    }
+    return Boolean(stage || proactiveOutcomesOpen);
+  }
+
+  function proactiveOutcomeNavigationAction(unit = null) {
+    const current = unit || (typeof getUnit === "function" ? getUnit() : null);
+    if (
+      !current
+      || !proactiveOutcomes?.managed
+      || !proactiveStudy.assignment
+    ) return null;
+    const stages = Array.isArray(proactiveOutcomes.stages)
+      ? proactiveOutcomes.stages
+      : [];
+    const submittedQuizIds = Array.isArray(state.submittedQuizzes)
+      ? state.submittedQuizzes
+      : [];
+    const currentIsSubmittedPost = current.assessmentPhase === "post"
+      && submittedQuizIds.includes(current.id);
+    // Research tasks have their own path entry; never hijack a reviewed lesson's CTA.
+    if (!currentIsSubmittedPost) return null;
+    const path = state.agenticPath || {};
+    if (path.pendingPlan || path.reviewQueue || path.reviewResume
+      || path.activeDetour || path.oneStepExtension
+      || path.deferredReviewPlan || path.deferredExtensionPlan) return null;
+    const active = stages.find((stage) => stage.status === "active");
+    if (active) {
+      return {
+        label: `继续「${active.label}」`,
+        stageId: active.id,
+        disabled: false
+      };
+    }
+    const available = stages.find((stage) => stage.status === "available");
+    if (available) {
+      return {
+        label: `开始「${available.label}」`,
+        stageId: available.id,
+        disabled: false
+      };
+    }
+    if (proactiveOutcomes.answerReviewReleased === true) {
+      return {
+        label: "回看独立测量结果",
+        stageId: stages[0]?.id || "",
+        disabled: false
+      };
+    }
+    if (stages.some((stage) => stage.status === "submitted")) {
+      const nextStage = stages.find((stage) => stage.status === "locked") || null;
+      return {
+        label: nextStage?.label
+          ? `查看「${nextStage.label}」开放时间`
+          : "查看独立测量进度",
+        stageId: nextStage?.id || "",
+        disabled: false
+      };
+    }
+    return null;
+  }
+
+  function renderProactiveOutcomePathStages(stages = []) {
+    if (!els.proactiveOutcomePathStages) return;
+    els.proactiveOutcomePathStages.replaceChildren();
+    stages.forEach((stage, index) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `lesson-card lesson-step-card outcome-path-step is-${stage.status || "locked"}${stage.status === "active" ? " active" : ""}`;
+      button.disabled = !["available", "active", "submitted"].includes(stage.status)
+        || (stage.status === "submitted" && !stage.review);
+      const step = document.createElement("span");
+      step.className = "lesson-step-index";
+      const chapter = typeof getChapter === "function" ? getChapter() : null;
+      step.textContent = String((chapter?.units?.length || 0) + index + 1);
+      const copy = document.createElement("span");
+      copy.className = "lesson-card-body";
+      const title = document.createElement("strong");
+      title.textContent = stage.label || stage.id;
+      const purpose = document.createElement("small");
+      purpose.textContent = stage.purpose || "独立完成本阶段任务";
+      copy.append(title, purpose);
+      const status = document.createElement("em");
+      status.className = "outcome-path-step-status";
+      status.textContent = proactiveOutcomeStageStatusLabel(stage);
+      button.append(step, copy, status);
+      button.addEventListener("click", () => {
+        openProactiveOutcomeStage(stage.id);
+      });
+      els.proactiveOutcomePathStages.appendChild(button);
+    });
+  }
+
   function proactiveOutcomeStageNode(stage) {
     const section = document.createElement("section");
     section.className = `knowledge-outcome-stage is-${stage.status || "locked"}`;
@@ -1360,8 +1581,12 @@
     const stateLabel = document.createElement("small");
     stateLabel.textContent = stage.status === "submitted"
       ? "已提交"
+      : stage.status === "skipped"
+        ? "已永久跳过"
+      : stage.status === "expired"
+        ? "已超过作答窗口"
       : stage.status === "withdrawn"
-        ? "已退出"
+        ? "已退出研究"
       : stage.status === "active"
         ? `${stage.itemCount || 0} 题，进行中`
       : stage.status === "available"
@@ -1375,10 +1600,13 @@
     action.textContent = ({
       available: "开始",
       active: "继续作答",
-      submitted: "已记录",
+      submitted: "回看作答",
+      skipped: "已跳过",
+      expired: "已超窗",
       withdrawn: "已退出"
     })[stage.status] || "未开放";
-    action.disabled = !["available", "active"].includes(stage.status)
+    action.disabled = !["available", "active", "submitted"].includes(stage.status)
+      || (stage.status === "submitted" && !stage.review)
       || proactiveOutcomesSubmitting
       || proactiveOutcomeWithdrawing;
     if (stage.status === "available") {
@@ -1387,8 +1615,21 @@
       });
     } else if (stage.status === "active") {
       action.addEventListener("click", () => {
-        applyActiveProactiveOutcomeSession({ open: true });
+        if (activeProactiveOutcomeSession()?.pausedAt) {
+          resumeProactiveOutcomeStage();
+        } else {
+          applyActiveProactiveOutcomeSession({ open: true });
+          renderProactiveOutcomes();
+        }
+      });
+    } else if (stage.status === "submitted") {
+      action.addEventListener("click", () => {
+        proactiveOutcomeReviewStageId = stage.id;
         renderProactiveOutcomes();
+        track("knowledge_proactive_outcome_reviewed", {
+          stageId: stage.id,
+          answersReleased: stage.review?.answersReleased === true
+        });
       });
     }
     section.append(copy, action);
@@ -1398,6 +1639,94 @@
       reason.textContent = stage.reason;
       section.appendChild(reason);
     }
+    return section;
+  }
+
+  function proactiveOutcomeFigureNode(figure) {
+    if (!figure || !/^resources\/assessment\/v14-c3-r3\/[^/\\]+-r3\.svg$/u.test(figure.src || "")) {
+      return null;
+    }
+    const node = document.createElement("figure");
+    node.className = "knowledge-outcome-figure";
+    const image = document.createElement("img");
+    image.src = figure.src;
+    image.alt = String(figure.alt || "");
+    image.width = 640;
+    image.height = 300;
+    image.loading = "lazy";
+    node.appendChild(image);
+    return node;
+  }
+
+  function proactiveOutcomeReviewNode(stage) {
+    const review = stage?.review;
+    const section = document.createElement("section");
+    section.className = "knowledge-outcome-review";
+    const heading = document.createElement("header");
+    const copy = document.createElement("div");
+    const label = document.createElement("strong");
+    label.textContent = `${stage?.label || "独立测量"}作答回看`;
+    const policy = document.createElement("small");
+    policy.textContent = review?.unavailable
+      ? review.reason
+      : review?.answersReleased
+      ? `已统一开放结果：${Number(review.score || 0)}/${Number(review.maxScore || 0)} 题正确。`
+      : "当前只显示你的作答；完成全部独立测量后统一开放对错和正确答案。";
+    copy.append(label, policy);
+    const back = document.createElement("button");
+    back.type = "button";
+    back.textContent = "返回任务列表";
+    back.addEventListener("click", () => {
+      proactiveOutcomeReviewStageId = "";
+      renderProactiveOutcomes();
+    });
+    heading.append(copy, back);
+    section.appendChild(heading);
+
+    (review?.items || []).forEach((item, index) => {
+      const article = document.createElement("article");
+      article.className = "knowledge-outcome-review-item";
+      if (review.answersReleased) {
+        article.classList.add(item.isCorrect ? "is-correct" : "is-incorrect");
+      }
+      const itemHeading = document.createElement("div");
+      const number = document.createElement("span");
+      number.textContent = `第 ${index + 1} 题`;
+      const result = document.createElement("strong");
+      result.textContent = review.answersReleased
+        ? item.isCorrect ? "回答正确" : "需要复盘"
+        : "作答已记录";
+      itemHeading.append(number, result);
+      const prompt = document.createElement("p");
+      setQuestionMathContent(prompt, item.prompt || "");
+      const options = document.createElement("div");
+      options.className = "knowledge-outcome-review-options";
+      (item.options || []).forEach((option) => {
+        const row = document.createElement("div");
+        row.className = "knowledge-outcome-review-option";
+        const selected = option.value === item.response;
+        const correct = review.answersReleased
+          && option.value === item.correctOption;
+        row.classList.toggle("is-selected", selected);
+        row.classList.toggle("is-correct", correct);
+        row.classList.toggle("is-wrong", selected && review.answersReleased && !correct);
+        const marker = document.createElement("span");
+        marker.textContent = option.value === "__unknown__" ? "?" : String(option.value || "").toUpperCase();
+        const text = document.createElement("span");
+        setQuestionMathContent(text, option.label || "");
+        const note = document.createElement("small");
+        note.textContent = correct
+          ? selected ? "你的选择 · 正确答案" : "正确答案"
+          : selected ? "你的选择" : "";
+        row.append(marker, text, note);
+        options.appendChild(row);
+      });
+      article.append(itemHeading, prompt);
+      const figure = proactiveOutcomeFigureNode(item.figure);
+      if (figure) article.appendChild(figure);
+      article.appendChild(options);
+      section.appendChild(article);
+    });
     return section;
   }
 
@@ -1411,32 +1740,74 @@
     const purpose = document.createElement("small");
     purpose.textContent = stage.purpose || "";
     copy.append(label, purpose);
-    const withdraw = document.createElement("button");
-    withdraw.type = "button";
-    withdraw.textContent = proactiveOutcomeWithdrawing
-      ? "正在退出"
-      : "退出本阶段";
-    withdraw.disabled = proactiveOutcomesSubmitting
+    const actions = document.createElement("div");
+    actions.className = "knowledge-outcome-active-actions";
+    const pause = document.createElement("button");
+    pause.type = "button";
+    pause.textContent = proactiveOutcomeWithdrawing
+      ? "正在保存"
+      : "暂时离开";
+    pause.disabled = proactiveOutcomesSubmitting
       || proactiveOutcomeDraftSaving
       || proactiveOutcomeWithdrawing;
-    withdraw.addEventListener("click", withdrawProactiveOutcomeStage);
-    heading.append(copy, withdraw);
+    pause.addEventListener("click", pauseProactiveOutcomeStage);
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.className = "knowledge-outcome-skip";
+    skip.textContent = "永久跳过";
+    skip.disabled = proactiveOutcomesSubmitting
+      || proactiveOutcomeDraftSaving
+      || proactiveOutcomeWithdrawing;
+    skip.addEventListener("click", () => {
+      proactiveOutcomeSkipConfirming = true;
+      proactiveOutcomeStatus = "永久跳过后，本阶段不能重新作答；后续阶段仍可继续。";
+      renderProactiveOutcomes();
+    });
+    actions.append(pause, skip);
+    heading.append(copy, actions);
     section.appendChild(heading);
+
+    if (proactiveOutcomeSkipConfirming) {
+      const confirmation = document.createElement("div");
+      confirmation.className = "knowledge-outcome-skip-confirm";
+      const message = document.createElement("p");
+      message.textContent = "确认永久跳过本阶段吗？当前草稿会作为未完成记录保留，本阶段不能再次进入。";
+      const controls = document.createElement("div");
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.textContent = "继续作答";
+      cancel.addEventListener("click", () => {
+        proactiveOutcomeSkipConfirming = false;
+        proactiveOutcomeStatus = "";
+        renderProactiveOutcomes();
+      });
+      const confirm = document.createElement("button");
+      confirm.type = "button";
+      confirm.textContent = "确认永久跳过";
+      confirm.addEventListener("click", skipProactiveOutcomeStage);
+      controls.append(cancel, confirm);
+      confirmation.append(message, controls);
+      section.appendChild(confirmation);
+    }
 
     stage.items.forEach((item, index) => {
       const fieldset = document.createElement("fieldset");
       const legend = document.createElement("legend");
-      legend.textContent = `${index + 1}. ${item.prompt || ""}`;
+      setQuestionMathContent(legend, `${index + 1}. ${item.prompt || ""}`);
       fieldset.appendChild(legend);
+      const figure = proactiveOutcomeFigureNode(item.figure);
+      if (figure) fieldset.appendChild(figure);
       item.options.forEach((option) => {
         const labelNode = document.createElement("label");
+        labelNode.classList.toggle("unknown-choice-option", option.value === "__unknown__");
         const input = document.createElement("input");
         input.type = "radio";
         input.name = `outcome-${stage.id}-${item.id}`;
         input.value = option.value;
         input.checked = proactiveOutcomeResponses[item.id] === option.value;
         input.disabled = proactiveOutcomesSubmitting
-          || proactiveOutcomeWithdrawing;
+          || proactiveOutcomeWithdrawing
+          || proactiveOutcomeSkipConfirming;
         input.addEventListener("change", () => {
           proactiveOutcomeResponses = {
             ...proactiveOutcomeResponses,
@@ -1447,7 +1818,7 @@
           saveProactiveOutcomeDraft();
         });
         const text = document.createElement("span");
-        text.textContent = option.label || "";
+        setQuestionMathContent(text, option.value === "__unknown__" ? "我不会" : `${option.value}. ${option.label || ""}`);
         labelNode.append(input, text);
         fieldset.appendChild(labelNode);
       });
@@ -1465,6 +1836,7 @@
     submit.disabled = proactiveOutcomesSubmitting
       || proactiveOutcomeDraftSaving
       || proactiveOutcomeWithdrawing
+      || proactiveOutcomeSkipConfirming
       || stage.items.some((item) => !proactiveOutcomeResponses[item.id]);
     submit.addEventListener("click", submitProactiveOutcomeStage);
     section.appendChild(submit);
@@ -1480,12 +1852,18 @@
     );
     els.outcomes.hidden = !proactiveOutcomesOpen;
     if (!proactiveOutcomesOpen) return;
+    const retentionOnly = Array.isArray(proactiveOutcomes?.stages)
+      && proactiveOutcomes.stages.length === 1 && proactiveOutcomes.stages[0].id === "retention";
+    els.outcomes.querySelector("#knowledge-outcomes-title").textContent = retentionOnly
+      ? "保持测量" : "迁移与保持任务";
+    els.outcomes.querySelector("[data-outcome-policy]").textContent = retentionOnly
+      ? "作答期间暂停学习助手和路径建议。提交后可以回看作答和结果。"
+      : "开始后会暂停学习助手和路径建议。提交后可回看自己的作答；全部阶段完成后统一显示对错、答案和总分。";
     els.outcomesClose.disabled = proactiveOutcomesSubmitting
       || proactiveOutcomeDraftSaving
-      || proactiveOutcomeWithdrawing
-      || Boolean(activeProactiveOutcomeSession());
+      || proactiveOutcomeWithdrawing;
     els.outcomesClose.title = activeProactiveOutcomeSession()
-      ? "独立测量开始后需提交或明确退出本阶段"
+      ? "保存草稿并暂时离开"
       : "关闭学习结果记录";
     els.outcomesStatus.textContent = proactiveOutcomeStatus;
     els.outcomesContent.replaceChildren();
@@ -1516,6 +1894,18 @@
       );
       return;
     }
+    const reviewStage = proactiveOutcomes.stages?.find(
+      (stage) => (
+        stage.id === proactiveOutcomeReviewStageId
+        && stage.status === "submitted"
+        && stage.review
+      )
+    );
+    if (reviewStage) {
+      els.outcomesContent.appendChild(proactiveOutcomeReviewNode(reviewStage));
+      return;
+    }
+    proactiveOutcomeReviewStageId = "";
     (proactiveOutcomes.stages || []).forEach((stage) => {
       els.outcomesContent.appendChild(proactiveOutcomeStageNode(stage));
     });
@@ -1532,7 +1922,129 @@
     proactiveDecisionRequest = null;
     proactiveDecision = null;
     proactiveCandidateId = "";
+    resetProactiveJustification();
     render();
+  }
+
+  /**
+   * 哪些提示要问理由？
+   *
+   * 只认动作名，不依赖服务端字段是否传到客户端：
+   *   - 9 个"给内容"的动作（澄清 / 线索 / 拆子目标 / 下一步 / 半成品 / 自解释…）
+   *     都会把解释递到学生手上，正好是"为什么这一步是对的"该问的时候。
+   *   - `switch_representation` 是纯换视角导航，问理由文不对题，明确排除；
+   *     换表征的动机另有 representation-choice 探针在采。
+   */
+  const PROACTIVE_JUSTIFICATION_ACTIONS = new Set([
+    "observe_change",
+    "review_mistake",
+    "self_explain",
+    "ask_clarification",
+    "elicit_self_explanation",
+    "concept_hint",
+    "decompose_subgoal",
+    "next_step_hint",
+    "partial_worked_example"
+  ]);
+
+  function proactiveJustificationRequired(suggestion) {
+    if (!suggestion) return false;
+    return PROACTIVE_JUSTIFICATION_ACTIONS.has(String(suggestion.action || ""));
+  }
+
+  /**
+   * 理由输入控件的唯一实现。两个挂载点共用：
+   *   1. 悬浮提示卡（els.proactiveJustifySlot）
+   *   2. 对话流里的内联建议卡（proactiveInlineOfferNode）
+   * 两处必须共用，否则两条路径的采集口径会不一致。
+   */
+  function proactiveJustificationForm(suggestion) {
+    const form = document.createElement("form");
+    form.className = "knowledge-proactive-justify";
+    form.dataset.proactiveJustify = "";
+    const label = document.createElement("label");
+    label.textContent = "先说说你的想法：你觉得这一步为什么是对的？";
+    const input = document.createElement("textarea");
+    input.rows = 2;
+    input.maxLength = 600;
+    input.placeholder = "一句话就行；不想写也可以直接看提示。";
+    input.dataset.proactiveJustifyInput = "";
+    const footer = document.createElement("div");
+    footer.className = "knowledge-proactive-justify-actions";
+    const submit = document.createElement("button");
+    submit.type = "submit";
+    submit.className = "is-primary";
+    submit.textContent = "看提示";
+    const skip = document.createElement("button");
+    skip.type = "button";
+    skip.textContent = "跳过，直接看提示";
+    skip.addEventListener("click", () => {
+      submitProactiveJustification(suggestion, form, { skipped: true });
+    });
+    footer.append(submit, skip);
+    const note = document.createElement("small");
+    note.textContent = "理由只用来判断这份提示是否真的帮到你，不计成绩。";
+    form.append(label, input, footer, note);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      submitProactiveJustification(suggestion, form, { skipped: false });
+    });
+    return form;
+  }
+
+  function revealProactiveJustification(suggestion, form, actions) {
+    if (actions) actions.hidden = true;
+    form.hidden = false;
+    const input = form.querySelector("[data-proactive-justify-input]");
+    try {
+      input?.focus({ preventScroll: true });
+    } catch {
+      input?.focus?.();
+    }
+    track("knowledge_proactive_justification_prompted", {
+      suggestionId: suggestion?.id,
+      decisionId: suggestion?.decisionId || "",
+      interventionId: suggestion?.interventionId || "",
+      suggestionKind: suggestion?.kind || "",
+      action: suggestion?.action || "",
+      supportLevel: suggestion?.supportLevel || ""
+    });
+  }
+
+  function submitProactiveJustification(suggestion, form, options = {}) {
+    const input = form?.querySelector?.("[data-proactive-justify-input]");
+    const text = String(input?.value || "").trim().slice(0, 600);
+    if (form) form.hidden = true;
+    track("knowledge_proactive_justification_submitted", {
+      suggestionId: suggestion?.id,
+      decisionId: suggestion?.decisionId || "",
+      action: suggestion?.action || "",
+      skipped: options.skipped === true,
+      provided: text.length > 0,
+      length: text.length
+    });
+    // justificationRequested 明确为 true：这一次确实问过理由，
+    // 所以无论学生写没写，都该进 Hint Justification Rate 的分母。
+    return acceptProactiveSuggestion({ justification: text, justificationRequested: true });
+  }
+
+  function openProactiveJustification(suggestion) {
+    // 卡片在当前界面状态下展示不出来时返回 false，交给调用方降级执行，
+    // 绝不让"问理由"变成卡住学生的死路。
+    if (!proactiveSuggestionVisible(suggestion)) return false;
+    proactiveJustificationOpen = true;
+    renderProactiveSuggestion();
+    return true;
+  }
+
+  function resetProactiveJustification() {
+    proactiveJustificationOpen = false;
+    proactiveJustifyBuiltFor = "";
+    if (els.proactiveJustifySlot) {
+      els.proactiveJustifySlot.replaceChildren();
+      els.proactiveJustifySlot.hidden = true;
+    }
+    if (els.proactiveActions) els.proactiveActions.hidden = false;
   }
 
   async function loadProactiveStudy(meta = courseMeta(), options = {}) {
@@ -1597,7 +2109,8 @@
         proactiveCoach?.reset?.();
         clearProactivePresentation();
       } else {
-        syncProactiveUnit(meta, { force: true });
+        // A status refresh after submission must not erase its pending outcome.
+        syncProactiveUnit(courseMeta());
         considerProactiveSuggestion();
       }
       return proactiveStudy;
@@ -1639,7 +2152,7 @@
     );
   }
 
-  function queueProactiveResolution(suggestion, resolution) {
+  function queueProactiveResolution(suggestion, resolution, options = {}) {
     const decisionId = String(suggestion?.decisionId || "");
     if (
       !decisionId
@@ -1663,7 +2176,14 @@
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`
             },
-            body: JSON.stringify({ resolution }),
+            body: JSON.stringify({
+              resolution,
+              // 学生的理由说明（可选）。用于 Hint Justification Rate —— 防 gaming 的
+              // 关键指标：只统计"接受且说明了理由"的提示，否则一路点接受就能刷过检查题。
+              justification: String(options.justification || "").slice(0, 600),
+              // 这一次到底有没有把"说理由"摆到学生面前。分母靠它才准。
+              justificationRequested: options.justificationRequested === true
+            }),
             keepalive: resolution === "ignored"
           }
         );
@@ -1750,7 +2270,7 @@
   }
 
   function applyPanelPosition() {
-    if (!panelIsDesktop()) {
+    if (!panelIsDesktop() || root.closest(".workspace-chat-pane")) {
       els.panel.style.removeProperty("left");
       els.panel.style.removeProperty("top");
       els.panel.style.removeProperty("right");
@@ -1983,15 +2503,19 @@
         fullscreenHost.appendChild(root);
       }
       root.classList.add("is-fullscreen-hosted");
+      applyPanelPosition();
       return;
     }
 
     root.classList.remove("is-fullscreen-hosted");
-    if (!fullscreenHomeParent?.isConnected || root.parentNode === fullscreenHomeParent) return;
+    if (!fullscreenHomeParent?.isConnected) return;
     const restoreBefore = fullscreenHomeNextSibling?.parentNode === fullscreenHomeParent
       ? fullscreenHomeNextSibling
       : null;
-    fullscreenHomeParent.insertBefore(root, restoreBefore);
+    if (root.parentNode !== fullscreenHomeParent) {
+      fullscreenHomeParent.insertBefore(root, restoreBefore);
+    }
+    applyPanelPosition();
   }
 
   function proactiveSuggestionVisible(suggestion, meta = courseMeta()) {
@@ -2002,6 +2526,11 @@
       && isSignedInNow()
       && !quizAssistantLocked(meta)
       && !isOpen
+      && !root.closest("[hidden]")
+      && !root.closest(".workspace-chat-pane.is-tool-inactive")
+      && !root.closest(".core-learning-workspace.tools-collapsed")
+      && (!root.closest(".core-learning-workspace") || global.innerWidth > 900
+        || root.closest(".core-learning-workspace").dataset.workspacePane === "assistant")
       && !document.hidden
       && learningViewActive()
       && (
@@ -2038,6 +2567,7 @@
     const visible = proactiveSuggestionVisible(suggestion);
     els.proactive.hidden = !visible;
     root.classList.toggle("has-proactive-nudge", visible);
+    global.dispatchEvent(new CustomEvent("cq:workspace-support-change"));
     if (!visible) return;
     els.proactiveEyebrow.textContent = suggestion.eyebrow || "知点留意到";
     els.proactiveTitle.textContent = suggestion.title || "这里可能值得停一下";
@@ -2054,6 +2584,29 @@
     ].forEach((button) => {
       button.disabled = proactiveChoiceSaving;
     });
+    // 理由输入：需要理由的提示被展开时，主操作行让位给输入框；
+    // 次级操作行（换一种帮助 / 关闭此知识点提醒）始终保留，学生任何时候都有退路。
+    const justifyOpen = proactiveJustificationOpen && proactiveJustificationRequired(suggestion);
+    const justifyKey = String(suggestion.decisionId || suggestion.id || "");
+    if (els.proactiveJustifySlot) {
+      if (!justifyOpen) {
+        if (proactiveJustifyBuiltFor) {
+          els.proactiveJustifySlot.replaceChildren();
+          proactiveJustifyBuiltFor = "";
+        }
+        els.proactiveJustifySlot.hidden = true;
+      } else if (proactiveJustifyBuiltFor !== justifyKey) {
+        // 同一个提示只建一次，避免重渲染清掉学生已经打进去的字。
+        proactiveJustifyBuiltFor = justifyKey;
+        els.proactiveJustifySlot.replaceChildren(proactiveJustificationForm(suggestion));
+        els.proactiveJustifySlot.hidden = false;
+        revealProactiveJustification(
+          suggestion,
+          els.proactiveJustifySlot.firstElementChild,
+          els.proactiveActions
+        );
+      }
+    }
     markProactiveSuggestionShown(suggestion);
   }
 
@@ -2123,6 +2676,7 @@
       }
       const decision = payload.decision || {};
       proactiveCoach?.resolve?.("alternative-requested", Date.now());
+      resetProactiveJustification();
       if (
         !decision.intervene
         || decision.action !== "switch_representation"
@@ -2183,6 +2737,7 @@
     proactiveDecisionRequest = null;
     proactiveDecision = null;
     proactiveCandidateId = "";
+    resetProactiveJustification();
     render();
     setStatus("知点会先保持安静，稍后再根据新的学习证据判断。", "");
     track("knowledge_proactive_suggestion_snoozed", {
@@ -2220,24 +2775,30 @@
       "partial_worked_example"
     ]);
     if (suggestion?.action === "switch_representation") {
+      if (!meta.supported || quizAssistantLocked(meta)) return false;
       const targetUnitId = String(suggestion.targetUnitId || proactiveScopeKey(meta));
       const targetSceneType = String(suggestion.targetSceneType || "");
       const targetUnit = typeof getUnit === "function"
         ? getUnit(targetUnitId)
         : null;
       const legalScene = targetUnit?.type === "knowledge"
+        && targetUnit.chapterId === meta.chapterId
         && typeof knowledgeInteractionTypes === "function"
         && knowledgeInteractionTypes(targetUnit).some(
           (type) => type.id === targetSceneType
         );
       if (!legalScene || typeof setKnowledgeSceneType !== "function") return false;
-      setKnowledgeSceneType(targetUnitId, targetSceneType);
-      if (
-        targetUnitId !== currentUnitId
-        && typeof selectUnit === "function"
-      ) {
-        selectUnit(targetUnitId);
-      }
+      if (typeof agenticUnitCompletionAllowed === "function"
+        && !agenticUnitCompletionAllowed(targetUnitId)) return false;
+      if (typeof agenticGuardNavigation === "function"
+        && !agenticGuardNavigation(targetUnitId, { allowPrevious: true, silent: true })) return false;
+      if (targetUnitId !== currentUnitId
+        && (typeof selectUnit !== "function" || !selectUnit(targetUnitId))) return false;
+      const changed = setKnowledgeSceneType(targetUnitId, targetSceneType);
+      if (!changed && typeof selectedKnowledgeSceneType === "function"
+        && selectedKnowledgeSceneType(targetUnit) !== targetSceneType) return false;
+      if (typeof renderAll === "function") renderAll();
+      global.LearningWorkspace?.showInteractive?.();
       setStatus(
         `已切换到${suggestion.targetSceneLabel || "另一种表征"}；路径仍由你决定。`,
         ""
@@ -2298,9 +2859,19 @@
     return true;
   }
 
-  function acceptProactiveSuggestion() {
+  function acceptProactiveSuggestion(options = {}) {
     const suggestion = proactiveDecision;
     if (!suggestion) return false;
+    // 需要理由的提示：先把「你觉得这一步为什么是对的」摆出来，学生提交或一
+    // 键跳过后才真正执行。理由在**看到提示之前**写才算自我解释；先给答案再问
+    // 就只是复述，防不了 gaming。
+    if (
+      proactiveJustificationRequired(suggestion)
+      && options.justificationRequested !== true
+      && openProactiveJustification(suggestion)
+    ) {
+      return true;
+    }
     const sceneSwitch = suggestion.action === "switch_representation";
     if (sceneSwitch) {
       proactiveDecision = null;
@@ -2315,10 +2886,16 @@
     }
     const resolution = proactiveCoach.resolve("accept", Date.now()) || {};
     if (suggestion.serverIssued) {
-      queueProactiveResolution(suggestion, "accepted");
+      queueProactiveResolution(suggestion, "accepted", {
+        justification: options.justification || "",
+        // 没被问过理由的接受（换表征、卡片展示不出来时的降级）不进
+        // Hint Justification Rate 的分母，否则比例会被凭空压低。
+        justificationRequested: options.justificationRequested === true
+      });
     }
     proactiveDecision = null;
     proactiveCandidateId = "";
+    resetProactiveJustification();
     render();
     track("knowledge_proactive_suggestion_accepted", {
       suggestionId: suggestion.id,
@@ -2351,6 +2928,7 @@
     proactiveDecisionRequest = null;
     proactiveDecision = null;
     proactiveCandidateId = "";
+    resetProactiveJustification();
     renderProactiveSuggestion();
     track("knowledge_proactive_suggestion_dismissed", {
       suggestionId: suggestion.id,
@@ -2423,6 +3001,26 @@
 
   async function requestProactiveDecision(candidate, options = {}) {
     const meta = courseMeta();
+    const awaitingFollowup = candidate?.kind === "independent_attempt_outcome"
+      && proactiveScopeState(meta)?.lifecycle?.phase === "awaiting_independent_attempt";
+    // 「独立尝试结果」只在**已经开着一轮支架**时才有意义。
+    //
+    // 服务端的契约就是这样：生命周期没进入 awaiting_independent_attempt 时一律回
+    // `independent_attempt_not_expected`。反过来问一次是纯浪费——而且代价很大：
+    // 这一步要走完"结算客户端建议 + 10 分钟冷却"，而客户端冷却比一个知识点的学习
+    // 时间还长，于是这个知识点后面所有候选（反复调参 / 静坐 / 形成性错题，也就
+    // 是设计里的**入口信号**）全被自己这一次注定被拒的提问挤掉了。
+    //
+    // 干跑实测：不修这一条，人均决策点是 **0**，整场实验一个干预都发不出去。
+    if (candidate?.kind === "independent_attempt_outcome" && !awaitingFollowup) {
+      // 关键：要用**不留冷却**的 `not-shown` 把这个候选放掉。
+      // 用 `agent-silent`（会留 10 分钟冷却）等于把整个知识点的候选额度送给一次
+      // 注定被拒的提问——客户端冷却比一个知识点的学习时间还长。
+      proactiveCoach.resolve("not-shown", Date.now());
+      proactiveCandidateId = "";
+      renderProactiveSuggestion();
+      return false;
+    }
     if (
       !candidate
       || !proactiveCollectionEnabled(meta)
@@ -2430,7 +3028,7 @@
       || !meta.supported
       || !isSignedInNow()
       || quizAssistantLocked(meta)
-      || isOpen
+      || (isOpen && !awaitingFollowup)
       || document.hidden
       || !learningViewActive()
     ) return false;
@@ -2512,12 +3110,16 @@
       if (!proactiveCandidateStillCurrent(candidate, meta, options)) return false;
       const decision = payload.decision || {};
       if (!decision.intervene || decision.action === "stay_silent") {
-        const resolution = proactiveCoach.resolve(
-          candidate.kind === "formative_outcome"
-            ? "outcome-recorded"
-            : "agent-silent",
-          Date.now()
-        ) || {};
+        // 服务端判定这次不该打扰。**用 `not-shown` 而不是 `agent-silent`**：
+        // 后者会留下 10 分钟的客户端冷却，而冷却的语义是"学生刚拒绝过，先别再来"。
+        // 这一次压根没走到学生面前，凭什么按学生的拒绝来计？
+        //
+        // 代价实测过：用 `agent-silent` 时，一个知识点里的**第一个**被拒候选就会
+        // 吃掉该知识点整轮的候选额度（客户端冷却 10 分钟 > 单个知识点约 5 分钟），
+        // 于是一个知识点最多只剩一次机会，而且往往被排序靠前的候选占走——
+        // 干跑实测人均 6 个决策点全是"换一种方式看"，L1–L5 支架阶梯永远进不去，
+        // 主因子（主动水平）的分布直接退化。
+        const resolution = proactiveCoach.resolve("not-shown", Date.now()) || {};
         proactiveCandidateId = "";
         proactiveDecision = null;
         renderProactiveSuggestion();
@@ -2856,6 +3458,7 @@
         })
       : [];
     CoursewareContext?.renderNotes?.(notes);
+    global.dispatchEvent(new CustomEvent("cq:workspace-data-change"));
     return notes;
   }
 
@@ -2998,14 +3601,14 @@
       || (verification === "verified"
         ? "AI 助教"
         : provider.live
-          ? "模型待验证"
+          ? "AI 助教"
           : "本地引导");
     els.provider.dataset.live = provider.live ? "true" : "false";
     els.provider.dataset.verification = verification;
     els.provider.title = verification === "verified"
       ? "本次回答已由真实模型服务生成"
       : provider.live
-        ? "已读取模型配置；首次提问会验证真实连接"
+        ? "已配置在线助教；连接状态以实际提问结果为准"
         : "当前使用本地确定性引导，不冒充真实大模型";
   }
 
@@ -3242,25 +3845,30 @@
     return conversationTurnCount() >= CONVERSATION_TURN_LIMIT;
   }
 
+  let quickQuestionsRenderKey = "";
   function renderQuickQuestions() {
     const meta = courseMeta();
-    els.quick.replaceChildren();
-    if (
+    const hidden = Boolean(
       quizAssistantLocked(meta)
       || conversationAtLimit()
       || messages.length > 0
       || pendingProactivePrompt
       || loadingHistory
-    ) {
-      els.quick.hidden = true;
-      return;
-    }
-    els.quick.hidden = false;
-    const suggestions = Core.suggestionsForContext({
+    );
+    const suggestions = hidden ? [] : Core.suggestionsForContext({
       ...(activeContext || {}),
       scope: meta.isQuiz ? "quiz" : activeContext?.scope,
       quizSubmitted: meta.quizSubmitted
     });
+    const renderKey = JSON.stringify([hidden, suggestions]);
+    if (renderKey === quickQuestionsRenderKey) return;
+    quickQuestionsRenderKey = renderKey;
+    els.quick.replaceChildren();
+    if (hidden) {
+      els.quick.hidden = true;
+      return;
+    }
+    els.quick.hidden = false;
     suggestions.forEach((question) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -3290,13 +3898,13 @@
     badge.textContent = "等你回答";
     heading.append(label, badge);
     const body = document.createElement("p");
-    body.textContent = prompt?.content || "";
+    setQuestionMathContent(body, prompt?.content || "");
     article.append(heading, body);
     if (prompt?.contextSummary) {
       const evidence = document.createElement("div");
       evidence.className = "knowledge-proactive-evidence";
       evidence.setAttribute("aria-label", "本次复盘依据");
-      evidence.textContent = prompt.contextSummary;
+      setQuestionMathContent(evidence, prompt.contextSummary);
       article.appendChild(evidence);
     }
     if (Array.isArray(prompt?.replyOptions) && prompt.replyOptions.length) {
@@ -3311,7 +3919,7 @@
         if (!option) return;
         const button = document.createElement("button");
         button.type = "button";
-        button.textContent = option;
+        setQuestionMathContent(button, option);
         button.addEventListener("click", () => {
           els.input.value = option;
           pendingGeneratedDraft = option;
@@ -3370,7 +3978,7 @@
     label.textContent = feedback.title || "本轮支架状态";
     heading.appendChild(label);
     const body = document.createElement("p");
-    body.textContent = feedback.text || "";
+    setQuestionMathContent(body, feedback.text || "");
     article.append(heading, body);
     return article;
   }
@@ -3392,17 +4000,25 @@
     badge.textContent = suggestion.supportLevel || "可选";
     heading.append(label, badge);
     const title = document.createElement("p");
-    title.textContent = suggestion.title || "这里可能需要一个更小的切入点";
+    setQuestionMathContent(title, suggestion.title || "这里可能需要一个更小的切入点");
     const detail = document.createElement("div");
     detail.className = "knowledge-proactive-inline-offer-detail";
-    detail.textContent = suggestion.body || "";
+    setQuestionMathContent(detail, suggestion.body || "");
     const actions = document.createElement("footer");
     const accept = document.createElement("button");
     accept.type = "button";
     accept.className = "is-primary";
     accept.textContent = suggestion.actionLabel || "接受线索";
+    // 内联卡也要走同一套「先说理由」流程：如果走对话流的学生不必说理由，
+    // 两条路径的 Hint Justification Rate 就不可比，等于给自己开了个后门。
+    const justify = proactiveJustificationForm(suggestion);
+    justify.hidden = true;
     accept.addEventListener("click", () => {
-      acceptProactiveSuggestion();
+      if (proactiveJustificationRequired(suggestion)) {
+        revealProactiveJustification(suggestion, justify, actions);
+        return;
+      }
+      acceptProactiveSuggestion({ justificationRequested: false });
     });
     const dismiss = document.createElement("button");
     dismiss.type = "button";
@@ -3411,7 +4027,7 @@
       snoozeProactiveSuggestion();
     });
     actions.append(accept, dismiss);
-    article.append(heading, title, detail, actions);
+    article.append(heading, title, detail, justify, actions);
     const learnerOptions = suggestion.learnerOptions || {};
     if (
       learnerOptions.canRequestAlternative === true
@@ -3484,7 +4100,7 @@
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || payload.ok === false) {
-        const error = new Error(payload.message || "这道无提示检查暂时无法提交。");
+        const error = new Error(payload.message || "这道支架后检查暂时无法提交。");
         error.code = payload.code || "";
         throw error;
       }
@@ -3497,6 +4113,11 @@
       }
       const result = payload.checkResult || {};
       const decision = payload.decision || {};
+      const nextSupportAuthorized = decision.intervene
+        && decision.action !== "stay_silent"
+        && serverAuthorizedProactiveDecision(payload, meta);
+      const maximumSupportReached = payload.study?.policyState?.lifecycle?.phase
+        === "maximum_support_reached";
       const nextSupportCopy = {
         L2: "一条概念关系线索",
         L3: "一次子目标拆分",
@@ -3514,16 +4135,16 @@
             ? "还差一个关键关系"
             : "已结束本轮检查",
         text: result.status === "correct"
-          ? "这次无提示作答已经恢复，知点停止加码；它只结束当前帮助回合，不代表已经掌握。"
+          ? "这次支架后检查通过，知点停止加码；它只结束当前帮助回合，不代表已经掌握。"
           : result.status === "incorrect"
-            ? `这次无提示作答仍有卡点。只有你确认后，知点才会提供${nextSupportCopy}。`
+            ? nextSupportAuthorized
+              ? `这次支架后作答仍有卡点。只有你确认后，知点才会提供${nextSupportCopy}。`
+              : maximumSupportReached
+                ? "这次作答仍有卡点，本轮帮助已到上限，知点不再追加提示。你可以回看课件，或主动提问梳理困难。"
+                : "这次作答仍有卡点，本轮不再追加提示。你可以继续学习，或主动提问。"
             : "知点不会继续升级支架，你仍可以按自己的节奏学习。"
       };
-      if (
-        decision.intervene
-        && decision.action !== "stay_silent"
-        && serverAuthorizedProactiveDecision(payload, meta)
-      ) {
+      if (nextSupportAuthorized) {
         proactiveDecision = {
           ...decision,
           id: `verification:${result.attemptId || check.id}`,
@@ -3554,7 +4175,7 @@
       proactiveCheckFeedback = {
         scopeKey,
         tone: "error",
-        title: "无提示检查未提交",
+        title: "支架后检查未提交",
         text: error.message || "请稍后再试。"
       };
       track("knowledge_proactive_verification_failed", {
@@ -3576,23 +4197,24 @@
     article.dataset.proactiveCheckId = check.id || "";
     const heading = document.createElement("div");
     const label = document.createElement("strong");
-    label.textContent = "无提示检查";
+    label.textContent = "支架后检查";
     const badge = document.createElement("small");
     badge.textContent = {
-      L1: "第 1 次独立作答",
-      L2: "第 2 次独立作答",
-      L3: "第 3 次独立作答",
-      L4: "第 4 次独立作答",
-      L5: "第 5 次独立作答"
-    }[check.supportLevel] || "独立作答";
+      L1: "第 1 次检查",
+      L2: "第 2 次检查",
+      L3: "第 3 次检查",
+      L4: "第 4 次检查",
+      L5: "第 5 次检查"
+    }[check.supportLevel] || "本轮检查";
     heading.append(label, badge);
     const prompt = document.createElement("p");
-    prompt.textContent = check.prompt || "";
+    setQuestionMathContent(prompt, check.prompt || "");
     const options = document.createElement("div");
     options.className = "knowledge-proactive-verification-options";
     options.setAttribute("role", "radiogroup");
     (Array.isArray(check.options) ? check.options : []).forEach((item) => {
       const button = document.createElement("button");
+      button.classList.toggle("unknown-choice-option", item.value === "__unknown__");
       button.type = "button";
       button.setAttribute("role", "radio");
       button.setAttribute(
@@ -3604,7 +4226,7 @@
         proactiveCheckSelection === item.value
       );
       button.disabled = proactiveCheckSubmitting;
-      button.textContent = item.label || "";
+      setQuestionMathContent(button, item.value === "__unknown__" ? "我不会" : `${item.value}. ${item.label || ""}`);
       button.addEventListener("click", () => {
         proactiveCheckSelection = item.value;
         proactiveCheckFeedback = null;
@@ -3807,7 +4429,7 @@
       heading.appendChild(badge);
     }
     const body = document.createElement("p");
-    body.textContent = message.content || (message.streaming ? "正在组织解释…" : "");
+    setQuestionMathContent(body, message.content || (message.streaming ? "正在组织解释…" : ""));
     article.append(heading, body);
     if (message.role === "assistant" && !message.streaming && !message.error) {
       const guidance = message.guidance || {};
@@ -3863,8 +4485,10 @@
     return article;
   }
 
+  let messagesRenderKey = "";
   function renderMessages() {
     const scrollViewport = els.scroll || els.messages;
+    const previousScrollTop = scrollViewport.scrollTop;
     const nearBottom = scrollViewport.scrollHeight - scrollViewport.scrollTop - scrollViewport.clientHeight < 120;
     const meta = courseMeta();
     const verificationCheck = syncProactiveCheckState(meta);
@@ -3881,6 +4505,14 @@
       || scopedFeedback
       || inlineOffer
     );
+    // Preserve focused/pressed controls when a context refresh has no visible changes.
+    const renderKey = JSON.stringify([
+      meta.unitId, messages, pendingProactivePrompt, loadingHistory,
+      verificationCheck, scopedFeedback, inlineOffer, proactiveCheckSelection,
+      proactiveCheckSubmitting, openMessageSourceId
+    ]);
+    if (renderKey === messagesRenderKey) return;
+    messagesRenderKey = renderKey;
     els.messages.replaceChildren();
     if (
       !messages.length
@@ -3930,16 +4562,10 @@
     if (inlineOffer) {
       els.messages.appendChild(proactiveInlineOfferNode(inlineOffer));
     }
-    if (
-      nearBottom
-      || isAsking
-      || pendingProactivePrompt
-      || hasProactiveContent
-    ) {
-      window.requestAnimationFrame(() => {
-        scrollViewport.scrollTop = scrollViewport.scrollHeight;
-      });
-    }
+    // Replacing the message DOM can clamp scrollTop; never override a learner reading above.
+    scrollViewport.scrollTop = nearBottom && messages.length
+      ? scrollViewport.scrollHeight
+      : previousScrollTop;
   }
 
   function renderProactiveOutcomeEntry() {
@@ -3955,20 +4581,29 @@
       && isSignedInNow()
     );
     panel.hidden = !visible;
-    if (!visible) return;
+    if (!visible) {
+      els.proactiveOutcomePathStages?.replaceChildren();
+      return;
+    }
 
     const stages = Array.isArray(proactiveOutcomes.stages)
       ? proactiveOutcomes.stages
       : [];
+    renderProactiveOutcomePathStages(stages);
     const active = activeProactiveOutcomeSession();
     const available = stages.filter((stage) => stage.status === "available");
     const submitted = stages.filter((stage) => stage.status === "submitted");
     const withdrawn = stages.filter((stage) => stage.status === "withdrawn");
+    const skipped = stages.filter((stage) => stage.status === "skipped");
+    const expired = stages.filter((stage) => stage.status === "expired");
+    const terminalCount = submitted.length + withdrawn.length + skipped.length + expired.length;
     panel.classList.toggle("is-active", Boolean(active));
     if (active) {
       const stage = stages.find((entry) => entry.id === active.stageId);
       const answered = Object.keys(active.responses || {}).length;
-      els.proactiveOutcomesSummary.textContent = `${stage?.label || "独立测量"}进行中，已作答 ${answered}/${stage?.itemCount || 0} 题；Agent 帮助暂时关闭。`;
+      els.proactiveOutcomesSummary.textContent = active.pausedAt
+        ? `${stage?.label || "独立测量"}已暂时离开，草稿保留 ${answered}/${stage?.itemCount || 0} 题；继续时恢复同一会话。`
+        : `${stage?.label || "独立测量"}进行中，已作答 ${answered}/${stage?.itemCount || 0} 题；学习助手暂时关闭。`;
       button.textContent = "继续作答";
       button.disabled = proactiveOutcomesLoading
         || proactiveOutcomesSubmitting
@@ -3976,28 +4611,32 @@
       return;
     }
     if (available.length) {
-      els.proactiveOutcomesSummary.textContent = `${available.map((stage) => stage.label).join("、")}已开放；作答期间不提供 Agent 帮助或即时反馈。`;
-      button.textContent = "查看测量任务";
+      els.proactiveOutcomesSummary.textContent = `${available[0].label}已开放；每次只完成路径中的当前任务。`;
+      button.textContent = "查看独立任务";
       button.disabled = proactiveOutcomesLoading
         || proactiveOutcomesSubmitting;
       return;
     }
-    if (submitted.length === stages.length && stages.length) {
-      els.proactiveOutcomesSummary.textContent = "本章独立测量已全部提交；学生端不显示即时得分。";
-      button.textContent = "查看记录";
+    if (terminalCount === stages.length && stages.length) {
+      els.proactiveOutcomesSummary.textContent = proactiveOutcomes.answerReviewReleased
+        ? skipped.length || expired.length || withdrawn.length
+          ? `独立测量路径已结束：提交 ${submitted.length} 项、跳过 ${skipped.length} 项、超窗 ${expired.length} 项；可回看已提交结果。`
+          : "独立测量已全部完成，现在可以回看对错、答案和总分。"
+        : "独立测量路径已结束，可以回看已提交阶段的作答。";
+      button.textContent = "查看测量记录";
       button.disabled = false;
       return;
     }
     if (withdrawn.length) {
       els.proactiveOutcomesSummary.textContent = "本章存在已退出的测量阶段；失访状态已记录。";
-      button.textContent = "查看记录";
+      button.textContent = "查看任务状态";
       button.disabled = false;
       return;
     }
     const nextStage = stages.find((stage) => stage.unlockAt)
       || stages.find((stage) => stage.status === "locked");
     els.proactiveOutcomesSummary.textContent = nextStage?.reason
-      || "完成章后测后开放，不提供 Agent 帮助或即时反馈。";
+      || "完成章后测后开放；作答期间学习助手暂时关闭。";
     button.textContent = "尚未开放";
     button.disabled = true;
   }
@@ -4009,6 +4648,7 @@
       proactiveStudyManaged()
       && proactiveStudy.loaded
       && isSignedInNow()
+      && proactiveStudy.participation?.mode === "explicit-consent"
     );
     section.hidden = !visible;
     if (!visible) return;
@@ -4116,7 +4756,7 @@
       : conversationLimited
         ? "本段对话已满，请新建对话继续"
         : "围绕选中内容询问知点";
-    const preferenceVisible = Boolean(
+    const scopePreferenceAvailable = Boolean(
       proactiveStudyManaged(meta)
       && proactiveStudy.loaded
       && proactiveStudy.assignment
@@ -4129,22 +4769,10 @@
       ? proactiveStudy.studentPreference
       : "standard";
     const scopeMuted = preference !== "off" && proactiveScopeMuted(meta);
-    els.proactivePreference.hidden = !preferenceVisible;
-    els.proactivePreferenceStatus.textContent = scopeMuted
-      ? "当前知识点已关闭提醒"
-      : {
-          standard: "按标准频率判断",
-          reduced: "仅保留强证据提醒",
-          off: "由你主动发起提问"
-        }[preference];
-    els.proactiveScopeRestore.hidden = !preferenceVisible || !scopeMuted;
+    els.proactivePreference.hidden = !scopePreferenceAvailable || !scopeMuted;
+    els.proactivePreferenceStatus.textContent = "恢复后，系统会继续按本组既定方案判断是否提供帮助。";
+    els.proactiveScopeRestore.hidden = !scopePreferenceAvailable || !scopeMuted;
     els.proactiveScopeRestore.disabled = proactiveChoiceSaving;
-    els.proactivePreferenceButtons.forEach((button) => {
-      const selected = button.dataset.proactivePreference === preference;
-      button.setAttribute("aria-checked", selected ? "true" : "false");
-      button.classList.toggle("is-selected", selected);
-      button.disabled = proactivePreferenceSaving || proactiveChoiceSaving;
-    });
     renderProactiveParticipation();
     renderProactiveOutcomeEntry();
   }
@@ -4164,6 +4792,7 @@
     renderProactiveSuggestion();
     renderNoteSyncStatus();
     renderProactiveOutcomes();
+    global.dispatchEvent(new CustomEvent("cq:workspace-data-change"));
   }
 
   function hideNoteEditor(options = {}) {
@@ -4252,6 +4881,7 @@
     els.noteDelete.hidden = !editingNoteId;
     renderNoteColorChoice();
     els.noteEditor.hidden = false;
+    els.noteEditor.dataset.workspace = selection.workspace ? "true" : "false";
     renderNoteSyncStatus();
     placeFloatingElement(els.noteEditor, selection.rect, 420, 390, 11);
     window.setTimeout(() => els.noteInput.focus({ preventScroll: true }), 0);
@@ -4308,7 +4938,7 @@
   }
 
   function useContext(ref, source = "selection") {
-    if (quizAssistantLocked()) return false;
+    if (quizAssistantLocked() || proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession()) return false;
     activeContext = Core.normalizeContextRef(ref, courseMeta());
     CoursewareContext.restoreContext(activeContext);
     hideSelectionAction();
@@ -4688,7 +5318,7 @@
       proactiveInterventionId: proactivePrompt?.interventionId || "",
       contextRef: activeContext || {
         kind: "unit",
-        scope: meta.isQuiz ? "quiz" : "lesson",
+        scope: meta.isQuiz ? "quiz" : meta.learningSurface || "lesson",
         chapterId: meta.chapterId,
         unitId: meta.unitId,
         unitLabel: meta.unitLabel,
@@ -5005,7 +5635,9 @@
     openConversationMenuId = "";
     renderConversations();
   });
-  els.proactiveAccept.addEventListener("click", acceptProactiveSuggestion);
+  els.proactiveAccept.addEventListener("click", () => {
+    acceptProactiveSuggestion();
+  });
   els.proactiveSnooze.addEventListener("click", snoozeProactiveSuggestion);
   els.proactiveAlternative.addEventListener("click", requestProactiveAlternative);
   els.proactiveMute.addEventListener("click", () => {
@@ -5049,11 +5681,6 @@
   });
   els.proactiveOutcomesOpen.addEventListener("click", openProactiveOutcomes);
   els.outcomesClose.addEventListener("click", closeProactiveOutcomes);
-  els.proactivePreferenceButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      updateProactivePreference(button.dataset.proactivePreference);
-    });
-  });
   els.selectionToolbar.addEventListener("pointerdown", (event) => event.preventDefault());
   els.selectionAsk.addEventListener("click", () => {
     if (pendingSelection?.contextRef) useContext(pendingSelection.contextRef, "text-selection");
@@ -5109,6 +5736,7 @@
   }, true);
   window.addEventListener("scroll", (event) => {
     if (els.noteEditor.contains(event.target) || els.selectionToolbar.contains(event.target)) return;
+    if (!els.noteEditor.hidden && noteEditorSelection?.workspace) return;
     hideSelectionAction();
   }, true);
   document.addEventListener("keydown", (event) => {
@@ -5155,6 +5783,7 @@
   });
   document.addEventListener("fullscreenchange", syncFullscreenHost);
   window.addEventListener("cq:lesson-rendered", scheduleSync);
+  window.addEventListener("cq:classroom-surface-change", sync);
   window.addEventListener("cq:learning-signal", consumeProactiveSignal);
   proactiveTickTimer = window.setInterval(runProactiveTick, 10 * 1000);
   window.addEventListener("beforeunload", () => window.clearInterval(proactiveTickTimer), { once: true });
@@ -5167,6 +5796,53 @@
 
   global.KnowledgeAssistant = Object.freeze({
     sync,
+    workspaceSnapshot() {
+      const meta = courseMeta();
+      const locked = quizAssistantLocked(meta)
+        || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession());
+      return {
+        unitId: meta.unitId,
+        unitLabel: meta.unitLabel,
+        chapterLabel: meta.chapterLabel,
+        nickname: state?.participant?.nickname || "",
+        signedIn: isSignedInNow(),
+        locked,
+        pendingSupport: Boolean(proactiveDecision && !locked && isSignedInNow()
+          && proactiveDecision.unitId === meta.unitId
+          && (!proactiveStudyManaged(meta) || proactiveDecision.serverIssued === true)),
+        noteSyncLabel: noteSyncState === "synced" ? "已同步" : noteSyncState === "syncing"
+          ? "同步中" : ["error", "pending"].includes(noteSyncState) ? "同步未完成，本机保留" : "本机记录",
+        notes: locked || !isSignedInNow() ? [] : Notes.notesFor(localStorage, {
+          ownerKey: noteOwnerKey(), unitId: meta.unitId
+        })
+      };
+    },
+    editWorkspaceNote(noteId = "") {
+      const meta = courseMeta();
+      if (!isSignedInNow() || !meta.unitId || quizAssistantLocked(meta)
+        || proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession()) return false;
+      const note = noteId ? Notes.notesFor(localStorage, {
+        ownerKey: noteOwnerKey(), unitId: meta.unitId
+      }).find((entry) => entry.id === noteId) : null;
+      if (noteId && !note) return false;
+      const anchor = document.querySelector("#workspace-note-new") || els.launcher;
+      const contextRef = Core.normalizeContextRef(note?.contextRef || {
+        kind: "text",
+        scope: "slide",
+        label: meta.unitLabel,
+        excerpt: meta.unitLabel,
+        confidence: "low",
+        coarse: true
+      }, meta);
+      showNoteEditor({
+        contextRef,
+        workspace: true,
+        locator: note?.locator,
+        rect: anchor.getBoundingClientRect(),
+        source: note?.locator?.source || "document"
+      }, note);
+      return true;
+    },
     resetLearningGeneration() {
       const ownerKey = noteOwnerKey();
       Notes.clearOwnerNotes?.(localStorage, ownerKey);
@@ -5192,6 +5868,8 @@
       setOpen(true);
       return submitQuestion();
     },
+    outcomeNavigationAction: proactiveOutcomeNavigationAction,
+    openOutcomeStage: openProactiveOutcomeStage,
     useContext,
     saveSelectionNote,
     syncFullscreenHost

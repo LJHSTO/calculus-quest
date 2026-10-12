@@ -57,6 +57,9 @@ tools/_encoding_test.txt
 
 # Private local research and deployment notes; never publish to GitHub.
 docs/
+research/
+prompts/
+resources/assessment/
 
 # OS/editor noise
 .DS_Store
@@ -68,3 +71,22 @@ Thumbs.db
 calculus-quest-source.zip
 calculus-quest-main.bundle
 PROJECT_GUIDE.md
+
+# Local deployment archives and agent workspace state
+_deploy_stage/
+_deploy_bundle.tar.gz
+_node_modules.tar.gz
+.workbuddy-ai/
+temp-ssh-askpass.cmd
+核心学习工作区-最终稿.html
+
+# Local presentation and script notes
+*.pptx
+*.docx
+ppt_*.md
+qa.md
+script.md
+script_paragraphs.txt
+assets/*.png
+assets/*.webp
+

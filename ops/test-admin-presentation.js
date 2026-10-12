@@ -103,6 +103,7 @@ assert.doesNotMatch(adminSource, /<th>\$\{ch\}<\/th>/);
   "quiz_review_ready",
   "courseware_pre_check_submitted",
   "courseware_formative_check_submitted",
+  "courseware_challenge_result",
   "courseware_exit_ticket_submitted",
   "courseware_confidence_submitted",
   "courseware_reflection_submitted",
@@ -155,6 +156,14 @@ assert.match(adminHtml, /id="proactive-protocol-facts"/);
 assert.match(adminHtml, /id="proactive-integrity-signals"/);
 assert.match(adminHtml, /id="table-proactive-participant-flow"/);
 assert.match(adminHtml, /id="table-proactive-runtime-events"/);
+assert.match(adminHtml, /id="table-proactive-assignment-roster"/);
+assert.match(adminHtml, /个人分组名册/);
+assert.match(adminHtml, /id="proactive-analysis-overview"/);
+assert.match(adminHtml, /id="proactive-data-quality-status"/);
+assert.match(adminHtml, /id="table-proactive-participant-analysis"/);
+assert.match(adminHtml, /id="table-proactive-challenge-analysis"/);
+assert.match(adminHtml, /id="export-proactive-participants-csv"/);
+assert.match(adminHtml, /id="export-proactive-challenges-csv"/);
 assert.match(adminHtml, /id="export-proactive-shadow-csv"/);
 assert.match(adminHtml, /id="preview-regrade-btn"/);
 assert.match(adminHtml, /id="run-regrade-btn"/);
@@ -162,14 +171,14 @@ assert.match(adminHtml, /id="select-all-regrade"/);
 assert.match(adminHtml, /全选全部候选/);
 assert.match(adminHtml, /id="export-regrade-audits-csv"/);
 assert.match(adminHtml, /id="table-regrade-candidates"/);
-assert.match(adminHtml, /admin\/admin\.js\?v=20260831-proactive-governance-v2/);
+assert.match(adminHtml, /admin\/admin\.js\?v=20260909-analysis-package-v11/);
 assert.match(adminHtml, /admin\/admin\.css\?v=20260831-proactive-governance-v1/);
 assert.match(adminHtml, /id="proactive-audit-timeline"/);
 assert.match(adminHtml, /id="proactive-audit-detail"/);
 assert.match(adminHtml, /id="proactive-audit-load-all"/);
 assert.match(
   serverSource,
-  /instrumentVersion:\s*protocol\?\.definition\?\.outcomeInstrumentVersion[\s\S]*?retentionDelayHours:\s*Number\([\s\S]*?protocol\?\.definition\?\.retentionDelayHours/,
+  /const retentionDelayHours = Number\([\s\S]*?protocol\?\.definition\?\.retentionDelayHours[\s\S]*?instrumentVersion:\s*protocol\?\.definition\?\.outcomeInstrumentVersion[\s\S]*?retentionDelayHours,/,
   "历史主动实验必须使用各自冻结协议中的量表版本与保持延迟"
 );
 assert.doesNotMatch(adminHtml, /id="table-phase-comparison"/);
@@ -194,9 +203,9 @@ assert.match(adminSource, /decompose_subgoal:\s*"拆分子目标"/);
 assert.match(adminSource, /next_step_hint:\s*"提示下一步"/);
 assert.match(adminSource, /partial_worked_example:\s*"部分解题示例"/);
 assert.match(adminSource, /switch_representation:\s*"切换学习表征"/);
-assert.match(adminSource, /policy_owned_probe:\s*"平台无提示近端验证题"/);
+assert.match(adminSource, /policy_owned_probe:\s*"平台支架后检查题"/);
 assert.match(adminSource, /courseware_semantic_event:\s*"课件语义结果事件"/);
-assert.match(adminSource, /proactive_verification_submitted:\s*"无提示验证已提交"/);
+assert.match(adminSource, /proactive_verification_submitted:\s*"支架后检查已提交"/);
 assert.match(adminSource, /support_escalation_not_delivered:\s*"升级支架未实际交付，本轮已安全结束"/);
 assert.match(adminSource, /closed:\s*"升级未交付，本轮已安全结束"/);
 assert.match(adminSource, /function proactiveEvidenceItems/);
@@ -204,7 +213,7 @@ assert.match(adminSource, /"策略范围"/);
 assert.match(adminSource, /"学习代次"/);
 assert.match(adminSource, /<h5>决策状态转移<\/h5>/);
 assert.match(adminSource, /"后续结果"/);
-assert.match(adminSource, /"独立证据来源"/);
+assert.match(adminSource, /"后续证据来源"/);
 assert.match(adminSource, /"验证题ID"/);
 assert.match(adminSource, /summary\.independent_success_exits/);
 assert.match(adminSource, /summary\.l3_subgoal_decompositions/);
@@ -219,6 +228,10 @@ assert.match(adminSource, /preference_off:\s*"已关闭全局主动提示"/);
 assert.match(adminSource, /learning_reset:\s*"学习代次已重置"/);
 assert.match(adminSource, /function syncProactiveConditionOptions/);
 assert.match(adminSource, /policy\?\.experimentArms/);
+assert.match(adminSource, /treatment_shallow:\s*"浅层主动组"/);
+assert.match(adminSource, /treatment_full:\s*"完整主动组"/);
+assert.match(adminSource, /data\.assignmentRoster/);
+assert.match(adminSource, /#table-proactive-assignment-roster tbody/);
 assert.match(adminSource, /function renderProactiveOutcomes/);
 assert.match(adminSource, /function revealActiveAdminTab/);
 assert.match(adminSource, /function proactiveOutcomeCsvRows/);
@@ -270,7 +283,12 @@ assert.ok(
   "runtime",
   "runtimeEvents",
   "integrity",
-  "participantFlow"
+  "participantFlow",
+  "assignmentRoster",
+  "participantAnalysis",
+  "coursewareChallenges",
+  "analysisSummary",
+  "dataQuality"
 ].forEach((field) => {
   assert.match(
     fetchProactiveStudySource,
@@ -279,6 +297,11 @@ assert.ok(
   );
 });
 assert.match(adminSource, /function renderProactiveGovernance/);
+assert.match(adminSource, /function renderProactiveExperimentAnalysis/);
+assert.match(adminSource, /function proactiveParticipantAnalysisCsvRows/);
+assert.match(adminSource, /function proactiveChallengeAnalysisCsvRows/);
+assert.match(adminSource, /cachedProactiveStudyData\.participantAnalysis/);
+assert.match(adminSource, /cachedProactiveStudyData\.coursewareChallenges/);
 assert.match(adminSource, /function updateProactiveRuntime/);
 assert.match(adminSource, /api\/admin\/research\/proactive-runtime/);
 assert.match(adminSource, /reviewer_id/);

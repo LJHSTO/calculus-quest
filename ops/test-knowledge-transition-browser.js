@@ -96,7 +96,9 @@ async function register(page) {
   await page.locator("#register-password").fill("knowledge-transition-123");
   await page.locator("#register-password-confirm").fill("knowledge-transition-123");
   await page.locator("#login-submit").click();
-  await page.locator("#auth-status").filter({ hasText: nickname }).waitFor({ timeout: 20000 });
+  await page.locator("#auth-gate").waitFor({ state: "hidden", timeout: 20000 });
+  await page.waitForFunction((name) => state.participant?.nickname === name && Boolean(state.authToken),
+    nickname, { timeout: 20000 });
 }
 
 async function prepareKnowledgePoint(page, unitId) {
@@ -134,7 +136,7 @@ async function prepareKnowledgePoint(page, unitId) {
 }
 
 async function completeCurrentKnowledgePoint(page) {
-  await page.locator("#complete-lesson").filter({ hasText: "完成本节并选择下一步" }).click();
+  await page.locator("[data-learning-primary-action]").filter({ hasText: "完成本节并选择下一步" }).click();
   const ready = page.locator('[data-knowledge-transition-stage="ready"]');
   await ready.waitFor({ state: "visible", timeout: 10000 });
   await page.waitForTimeout(400);
@@ -190,11 +192,12 @@ async function main() {
     await page.locator("#app-loader").waitFor({ state: "hidden", timeout: 20000 });
     await register(page);
     await page.locator('[data-view="learn"]').first().click();
-    await page.locator("#complete-lesson").waitFor({ state: "visible", timeout: 20000 });
+    await page.locator("[data-learning-primary-action]").waitFor({ state: "visible", timeout: 20000 });
 
     await prepareKnowledgePoint(page, "GH-01-K01");
     const preview = page.locator('[data-knowledge-transition-stage="preview"]');
-    await preview.waitFor({ state: "visible", timeout: 10000 });
+    await preview.waitFor({ state: "attached", timeout: 10000 });
+    assert.equal(await preview.isVisible(), false, "日常预告不应占用画布空间");
     await expectPreviewCard(page, preview);
     await page.waitForTimeout(500);
     await page.screenshot({ path: screenshotPath, fullPage: true });
@@ -213,7 +216,7 @@ async function main() {
     );
 
     await prepareKnowledgePoint(page, "GH-01-K02");
-    await page.locator('[data-knowledge-transition-stage="preview"]').waitFor({ state: "visible", timeout: 10000 });
+    await page.locator('[data-knowledge-transition-stage="preview"]').waitFor({ state: "attached", timeout: 10000 });
     const readyK2 = await completeCurrentKnowledgePoint(page);
     await readyK2.locator('[data-knowledge-transition="formative"]').click();
     await page.waitForFunction(() => currentUnitId === "GH-01-K02-formative", null, { timeout: 10000 });
@@ -252,11 +255,11 @@ async function main() {
       "已有检测记录后应能返回原知识点"
     );
     assert.equal(
-      (await page.locator("#complete-lesson").textContent()).trim(),
+      (await page.locator("[data-learning-primary-action]").textContent()).trim(),
       "复习后做小题测一测",
       "显式选择做小题后，复习按钮不能被已有检测记录改写为直接继续"
     );
-    await page.locator("#complete-lesson").click();
+    await page.locator("[data-learning-primary-action]").click();
     await page.waitForFunction(() => currentUnitId === "GH-01-K02-formative", null, { timeout: 10000 });
 
     assert.deepEqual(issues, []);
@@ -274,7 +277,7 @@ async function expectPreviewCard(page, preview) {
   assert.match(await preview.textContent(), /完成互动后可选：直接继续或做小题测一测/);
   assert.equal(await preview.locator("button").count(), 0, "预览阶段不能出现可误点的选择按钮");
   assert.equal(
-    (await page.locator("#complete-lesson").textContent()).trim(),
+    (await page.locator("[data-learning-primary-action]").textContent()).trim(),
     "完成本节并选择下一步"
   );
 }

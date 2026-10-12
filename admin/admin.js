@@ -5,8 +5,10 @@ const API_BASE = ADMIN_SCRIPT_URL
   ? new URL("../", ADMIN_SCRIPT_URL).href.replace(/\/$/, "")
   : new URL(".", window.location.href).href.replace(/\/admin(?:\.html)?\/?$/, "").replace(/\/$/, "");
 let adminToken = sessionStorage.getItem("cq_admin_token") || "";
+let localAdminAuth = false;
 let charts = {};
 let allUsers = [];
+const selectedUserIds = new Set();
 let cachedChapterData = [];
 let cachedPhaseData = [];
 let cachedFeedbackRows = [];
@@ -32,9 +34,15 @@ let cachedProactiveStudyData = {
   rows: [],
   total: 0,
   limit: 500,
-  offset: 0,
-  assignments: [],
-  participation: [],
+    offset: 0,
+    assignments: [],
+    assignmentRoster: {
+      rows: [],
+      total: 0,
+      limit: 500,
+      offset: 0
+    },
+    participation: [],
   summary: {},
   policy: {},
   protocol: null,
@@ -42,6 +50,10 @@ let cachedProactiveStudyData = {
   runtimeEvents: [],
   integrity: { advisoryOnly: true, summary: {}, signals: [] },
   participantFlow: [],
+  participantAnalysis: [],
+  coursewareChallenges: [],
+  analysisSummary: {},
+  dataQuality: { status: "pending", signals: [] },
   outcomes: {
     rows: [],
     total: 0,
@@ -52,7 +64,11 @@ let cachedProactiveStudyData = {
     sessionTotal: 0,
     sessionLimit: 500,
     sessionOffset: 0,
-    sessionSummary: []
+    sessionSummary: [],
+    instrumentVersion: "",
+    retentionDelayHours: 0,
+    retentionCloseHours: 0,
+    retentionReminderHours: []
   }
 };
 let proactiveConditionFilter = sessionStorage.getItem("cq_proactive_condition") || "";
@@ -73,20 +89,44 @@ let refreshTimer = null;
 let feedbackFilterTimer = null;
 
 // ---- Auth ----
-function checkAuth() {
+function hasAdminAccess() {
+  return Boolean(localAdminAuth || adminToken);
+}
+
+function adminRequestHeaders(extra = {}) {
+  const headers = { ...(extra || {}) };
+  if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
+  return headers;
+}
+
+window.CQAdminAuth = {
+  hasAccess: () => hasAdminAccess(),
+  headers: (extra = {}) => adminRequestHeaders(extra)
+};
+
+async function checkAuth() {
+  const result = await testAdminAuth();
+  if (result.ok && result.authenticated) {
+    localAdminAuth = result.localBypass;
+    if (localAdminAuth) {
+      adminToken = "";
+      sessionStorage.removeItem("cq_admin_token");
+    }
+    showApp();
+    return;
+  }
+  localAdminAuth = false;
+  if (result.status === 0) {
+    showLogin();
+    document.getElementById("login-error").classList.remove("hidden");
+    document.getElementById("login-error").textContent = adminConnectionError(result);
+    return;
+  }
   if (adminToken) {
-    testToken().then(result => {
-      if (result.ok) { showApp(); }
-      else if (result.status === 0) {
-        // Network error — keep token, show login with error
-        showLogin();
-        document.getElementById("login-error").classList.remove("hidden");
-        document.getElementById("login-error").textContent = adminConnectionError(result);
-      } else {
-        adminToken = ""; sessionStorage.removeItem("cq_admin_token"); showLogin();
-      }
-    });
-  } else { showLogin(); }
+    adminToken = "";
+    sessionStorage.removeItem("cq_admin_token");
+  }
+  showLogin();
 }
 
 function showLogin() {
@@ -97,6 +137,7 @@ function showLogin() {
 function showApp() {
   document.getElementById("login-gate").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
+  document.getElementById("logout-btn")?.classList.toggle("hidden", localAdminAuth);
   // Initial load — no debounce, but abort any stale requests
   if (loadController) loadController.abort();
   loadController = new AbortController();
@@ -104,10 +145,28 @@ function showApp() {
   window.CQAnnouncementAdmin?.load();
 }
 
+async function testAdminAuth() {
+  try {
+    const r = await fetch(`${API_BASE}/api/admin/auth/status`, {
+      headers: adminRequestHeaders(),
+      cache: "no-store"
+    });
+    const payload = await r.json().catch(() => ({}));
+    return {
+      ok: r.ok && payload.ok === true,
+      status: r.status,
+      authenticated: Boolean(payload.data?.authenticated),
+      localBypass: Boolean(payload.data?.localBypass)
+    };
+  } catch (error) {
+    return { ok: false, status: 0, error: error?.message || "网络请求失败" };
+  }
+}
+
 async function testToken() {
   try {
     const r = await fetch(`${API_BASE}/api/admin/stats/overview`, {
-      headers: { Authorization: `Bearer ${adminToken}` }
+      headers: adminRequestHeaders()
     });
     return { ok: r.ok, status: r.status };
   } catch (error) {
@@ -117,7 +176,7 @@ async function testToken() {
 
 function adminConnectionError(result = {}) {
   const detail = result.error ? `（${result.error}）` : "";
-  return `无法连接管理接口 ${API_BASE}/api/admin/stats/overview${detail}`;
+  return `无法连接管理接口 ${API_BASE}/api/admin/auth/status${detail}`;
 }
 
 document.getElementById("login-btn").addEventListener("click", async () => {
@@ -126,6 +185,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
   adminToken = token;
   const result = await testToken();
   if (result.ok) {
+    localAdminAuth = false;
     sessionStorage.setItem("cq_admin_token", token);
     showApp();
   } else if (result.status === 0) {
@@ -136,7 +196,7 @@ document.getElementById("login-btn").addEventListener("click", async () => {
   } else {
     adminToken = "";
     document.getElementById("login-error").classList.remove("hidden");
-    document.getElementById("login-error").textContent = "Token 无效，请重试。";
+    document.getElementById("login-error").textContent = "管理员密码无效，请重试。";
   }
 });
 
@@ -145,12 +205,30 @@ document.getElementById("admin-token-input").addEventListener("keydown", (e) => 
 });
 
 document.getElementById("logout-btn").addEventListener("click", () => {
+  selectedUserIds.clear();
   adminToken = "";
+  localAdminAuth = false;
   sessionStorage.removeItem("cq_admin_token");
   showLogin();
 });
 
 // ---- API helpers ----
+// The active-chapter scope. Defaults to the chapter under study so a new
+// chapter's pilot is never mixed with historical chapters; "all" widens it.
+function currentChapterFilter() {
+  const value = document.getElementById("chapter-filter")?.value || "";
+  return value || "all";
+}
+
+// Export filenames used to hardcode "V14-C3", so a new chapter's pilot would
+// download files labelled with the historical chapter. Name them by the scope
+// actually applied instead.
+function chapterExportLabel() {
+  const scope = currentChapterFilter();
+  if (scope === "all") return "全部章节";
+  return chapterName(scope) || scope;
+}
+
 async function fetchStats(endpoint, params = "", signal) {
   let url = `${API_BASE}/api/admin/stats/${endpoint}`;
   const parts = [];
@@ -162,10 +240,11 @@ async function fetchStats(endpoint, params = "", signal) {
     if (start) parts.push("start_date=" + encodeURIComponent(start));
     if (end) parts.push("end_date=" + encodeURIComponent(end));
   }
+  parts.push("chapter=" + encodeURIComponent(currentChapterFilter()));
   if (params) parts.push(params);
   if (parts.length) url += "?" + parts.join("&");
   const r = await fetch(url, {
-    headers: { Authorization: `Bearer ${adminToken}` },
+    headers: adminRequestHeaders(),
     signal
   });
   if (!r.ok) throw new Error(`API error: ${r.status}`);
@@ -179,8 +258,7 @@ async function adminApi(pathname, options = {}) {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${adminToken}`,
-      ...(options.headers || {})
+      ...adminRequestHeaders(options.headers || {})
     }
   });
   const payload = await response.json().catch(() => ({}));
@@ -208,7 +286,7 @@ async function fetchProactiveStudy(signal, options = {}) {
   const response = await fetch(
     `${API_BASE}/api/admin/research/proactive-decisions?${proactiveStudyParams(options)}`,
     {
-      headers: { Authorization: `Bearer ${adminToken}` },
+      headers: adminRequestHeaders(),
       signal
     }
   );
@@ -222,6 +300,12 @@ async function fetchProactiveStudy(signal, options = {}) {
     limit: Number(payload.data?.limit || options.limit || 500),
     offset: Number(payload.data?.offset || options.offset || 0),
     assignments: safeRows(payload.data?.assignments),
+    assignmentRoster: {
+      rows: safeRows(payload.data?.assignmentRoster?.rows),
+      total: Number(payload.data?.assignmentRoster?.total || 0),
+      limit: Number(payload.data?.assignmentRoster?.limit || options.limit || 500),
+      offset: Number(payload.data?.assignmentRoster?.offset || options.offset || 0)
+    },
     participation: safeRows(payload.data?.participation),
     summary: payload.data?.summary || {},
     policy: payload.data?.policy || {},
@@ -234,6 +318,10 @@ async function fetchProactiveStudy(signal, options = {}) {
       signals: []
     },
     participantFlow: safeRows(payload.data?.participantFlow),
+    participantAnalysis: safeRows(payload.data?.participantAnalysis),
+    coursewareChallenges: safeRows(payload.data?.coursewareChallenges),
+    analysisSummary: payload.data?.analysisSummary || {},
+    dataQuality: payload.data?.dataQuality || { status: "pending", signals: [] },
     outcomes: {
       rows: safeRows(payload.data?.outcomes?.rows),
       total: Number(payload.data?.outcomes?.total || 0),
@@ -252,7 +340,13 @@ async function fetchProactiveStudy(signal, options = {}) {
       instrumentVersion: payload.data?.outcomes?.instrumentVersion || "",
       retentionDelayHours: Number(
         payload.data?.outcomes?.retentionDelayHours || 0
-      )
+      ),
+      retentionCloseHours: Number(
+        payload.data?.outcomes?.retentionCloseHours || 0
+      ),
+      retentionReminderHours: safeRows(
+        payload.data?.outcomes?.retentionReminderHours
+      ).map(Number).filter(Number.isFinite)
     }
   };
 }
@@ -448,6 +542,7 @@ function prepareSortableTables(root = document) {
     table.querySelectorAll("thead th").forEach((header, index) => {
       const label = header.textContent.trim();
       const disabled = customSort
+        || Boolean(header.querySelector('input[type="checkbox"]'))
         || header.dataset.sortDisabled === "true"
         || label === "操作";
       if (disabled) return;
@@ -1060,12 +1155,34 @@ function renderPhaseCompactTable(data) {
 }
 
 // ---- User Table ----
+function adminUserName(user) {
+  const name = String(user.nickname || "").trim();
+  return name || String(user.email || "").trim() || "未填写昵称";
+}
+
+function updateUserSelection() {
+  const count = document.getElementById("selected-users-count");
+  if (count) count.textContent = `已选 ${selectedUserIds.size} 人`;
+  document.getElementById("clear-selected-users").disabled = !selectedUserIds.size;
+  const exportButton = document.getElementById("export-selected-users");
+  exportButton.disabled = !selectedUserIds.size || exportButton.getAttribute("aria-busy") === "true";
+  const checkboxes = [...document.querySelectorAll("#table-users .select-user")];
+  const selected = checkboxes.filter(box => box.checked).length;
+  const all = document.getElementById("select-visible-users");
+  if (all) {
+    all.checked = checkboxes.length > 0 && selected === checkboxes.length;
+    all.indeterminate = selected > 0 && selected < checkboxes.length;
+    all.disabled = !checkboxes.length;
+  }
+}
+
 function renderUserTable(users) {
   const table = document.getElementById("table-users");
   document.getElementById("user-total-count").textContent = `共 ${users.length} 位用户`;
-  table.innerHTML = `<thead><tr><th>昵称</th><th>最后活跃</th><th>活跃天数</th><th>行为记录</th><th>测验提交</th><th>覆盖单元</th><th>正确率</th><th>反馈</th><th>智能教练决策</th><th>操作</th></tr></thead>
+  table.innerHTML = `<thead><tr><th><input id="select-visible-users" type="checkbox" aria-label="全选当前列表用户"></th><th>昵称</th><th>最后活跃</th><th>活跃天数</th><th>行为记录</th><th>测验提交</th><th>覆盖单元</th><th>正确率</th><th>反馈</th><th>智能教练决策</th><th>操作</th></tr></thead>
     <tbody>${users.length ? users.map(u => `<tr>
-      <td style="font-weight:600;">${esc(u.nickname || "未命名")}</td>
+      <td><input class="select-user" type="checkbox" data-user-id="${esc(u.user_id || "")}" aria-label="选择 ${esc(adminUserName(u))}" ${selectedUserIds.has(u.user_id) ? "checked" : ""}></td>
+      <td style="font-weight:600;">${esc(adminUserName(u))}<br><small class="muted">${esc(u.user_id || "")}</small></td>
       <td>${esc(shortDateTime(u.last_seen_at))}</td>
       <td>${u.active_days || 0}</td>
       <td>${u.event_count || 0}</td>
@@ -1075,8 +1192,24 @@ function renderUserTable(users) {
       <td>${u.feedback_count || 0}</td>
       <td>${u.agent_decision_count || 0}</td>
       <td><button class="btn btn-sm btn-primary view-user-btn" data-user-id="${esc(u.user_id || "")}">详情</button></td>
-    </tr>`).join("") : "<tr><td colspan='10'>当前筛选范围内没有匹配用户。</td></tr>"}</tbody>`;
+    </tr>`).join("") : "<tr><td colspan='11'>当前筛选范围内没有匹配用户。</td></tr>"}</tbody>`;
 
+  table.querySelectorAll(".select-user").forEach(box => {
+    box.addEventListener("change", () => {
+      if (box.checked) selectedUserIds.add(box.dataset.userId);
+      else selectedUserIds.delete(box.dataset.userId);
+      updateUserSelection();
+    });
+  });
+  document.getElementById("select-visible-users").addEventListener("change", event => {
+    table.querySelectorAll(".select-user").forEach(box => {
+      box.checked = event.target.checked;
+      if (box.checked) selectedUserIds.add(box.dataset.userId);
+      else selectedUserIds.delete(box.dataset.userId);
+    });
+    updateUserSelection();
+  });
+  updateUserSelection();
   table.querySelectorAll(".view-user-btn").forEach(btn => {
     btn.addEventListener("click", () => loadUserDetail(btn.dataset.userId));
   });
@@ -1144,7 +1277,7 @@ async function loadUserDetail(userId, options = {}) {
     cachedUserDetail = detail;
     const section = document.getElementById("user-detail-section");
     section.classList.remove("hidden");
-    document.getElementById("user-detail-title").textContent = `${detail.user.nickname} - 总体数据`;
+    document.getElementById("user-detail-title").textContent = `${adminUserName(detail.user)} - 总体数据`;
     const scope = detail.scope || {};
     document.getElementById("user-detail-scope").textContent = scope.allHistory
       ? `汇总该学生全部历史学习代次；当前为第 ${detail.quizOverall?.currentGeneration || 1} 代学习记录。`
@@ -2341,8 +2474,8 @@ function interactionTypeName(type) {
     proactive_scope_preference_changed: "服务端记录知识点提醒偏好",
     proactive_alternative_requested: "服务端记录替代帮助请求",
     proactive_outcome_submitted: "服务端记录独立学习结果",
-    proactive_verification_submitted: "服务端记录无提示验证",
-    proactive_verification_declined: "服务端记录跳过无提示验证",
+    proactive_verification_submitted: "服务端记录支架后检查",
+    proactive_verification_declined: "服务端记录跳过支架后检查",
     proactive_student_response_submitted: "服务端记录支架回复",
     feedback_submit: "提交问题反馈",
     reflection_save: "保存反思",
@@ -2766,10 +2899,10 @@ function humanInteractionSummary(row) {
     return `服务端记录${proactiveOutcomeStageLabel(data.stageId)}，共 ${Number(data.itemCount || 0)} 题；结果仅进入研究后台。`;
   }
   if (type === "proactive_verification_submitted") {
-    return `服务端记录无提示验证「${data.checkId || "未标记"}」，用于决定渐退或升级支架。`;
+    return `服务端记录支架后检查「${data.checkId || "未标记"}」${data.instrumentVersion ? `（${data.instrumentVersion}）` : ""}，用于决定渐退或升级支架，不等同于独立结果测量。`;
   }
   if (type === "proactive_verification_declined") {
-    return "学生跳过本轮无提示验证，服务端结束当前支架回合且不自动升级。";
+    return "学生跳过本轮支架后检查，服务端结束当前支架回合且不自动升级。";
   }
   if (type === "proactive_student_response_submitted") {
     return "服务端确认学生已提交本轮支架回复，下一步等待独立尝试证据。";
@@ -3145,7 +3278,7 @@ function renderInteractionUserOptions(users = allUsers) {
   if (!select) return;
   const current = interactionUserId;
   select.innerHTML = `<option value="">全部用户</option>` + users
-    .map(u => `<option value="${esc(u.user_id || "")}">${esc(u.nickname || "未命名")} (${esc((u.user_id || "").slice(-6))})</option>`)
+    .map(u => `<option value="${esc(u.user_id || "")}">${esc(adminUserName(u))} (${esc((u.user_id || "").slice(-6))})</option>`)
     .join("");
   select.value = current;
   document.getElementById("interaction-page-size").value = String(interactionPageSize);
@@ -3577,7 +3710,7 @@ const proactiveResolutionLabels = {
 };
 
 const proactiveEvidenceSourceLabels = {
-  policy_owned_probe: "平台无提示近端验证题",
+  policy_owned_probe: "平台支架后检查题",
   courseware_semantic_event: "课件语义结果事件",
   interaction: "学习交互事件",
   quiz_result: "平台测验结果",
@@ -3585,8 +3718,8 @@ const proactiveEvidenceSourceLabels = {
 };
 
 const proactiveEvidenceEventLabels = {
-  proactive_verification_submitted: "无提示验证已提交",
-  proactive_verification_declined: "学生跳过无提示验证",
+  proactive_verification_submitted: "支架后检查已提交",
+  proactive_verification_declined: "学生跳过支架后检查",
   courseware_challenge_result: "课件挑战结果",
   courseware_formative_check_submitted: "课件形成性检查结果",
   parameter_commit: "参数提交",
@@ -3602,10 +3735,12 @@ function proactiveEvidenceSourceLabel(source = "", eventType = "") {
 
 function proactiveConditionLabel(value = "") {
   return ({
-    treatment: "Treatment",
-    control: "Control",
-    minimal: "Minimal",
-    adaptive: "Adaptive"
+    treatment: "主动提示组",
+    control: "对照组",
+    treatment_shallow: "浅层主动组",
+    treatment_full: "完整主动组",
+    minimal: "最小主动组",
+    adaptive: "自适应主动组"
   })[value] || value || "未分配";
 }
 
@@ -3647,7 +3782,7 @@ function proactiveReasonText(reasons) {
     continued_friction_after_self_explanation: "L1 后独立尝试仍失败，允许升级至 L2",
     independent_attempt_success: "独立尝试成功，渐退并退出",
     accepted_response_pending: "已接受支架，等待学生实际回复",
-    independent_attempt_required: "等待平台无提示验证或课件语义结果",
+    independent_attempt_required: "等待支架后检查或课件语义结果",
     independent_attempt_not_expected: "当前生命周期不接受独立结果",
     independent_attempt_not_verified: "没有服务端可核验的独立任务证据",
     verification_declined_without_escalation: "学生跳过验证，本轮结束且不升级",
@@ -3868,6 +4003,32 @@ function renderProactiveGovernance(data = {}) {
     syncTableDensity(flowBody.closest("table"));
   }
 
+  const assignmentRoster = data.assignmentRoster || {};
+  const assignmentRows = safeRows(assignmentRoster.rows);
+  const assignmentRosterStatus = document.getElementById("proactive-assignment-roster-status");
+  if (assignmentRosterStatus) {
+    assignmentRosterStatus.textContent = Number(assignmentRoster.total || 0) > assignmentRows.length
+      ? "最近 " + assignmentRows.length + " / " + Number(assignmentRoster.total || 0) + " 人"
+      : assignmentRows.length + " 人；分组固定且保留用于 ITT";
+  }
+  const assignmentRosterBody = document.querySelector("#table-proactive-assignment-roster tbody");
+  if (assignmentRosterBody) {
+    assignmentRosterBody.innerHTML = assignmentRows.length
+      ? assignmentRows.map((row) => (
+          "<tr>"
+          + "<td><strong>" + esc(row.nickname || "未命名学生") + "</strong><br><span class=\"muted\">" + esc(row.user_id || "") + "</span></td>"
+          + "<td><span class=\"badge " + proactiveConditionBadgeClass(policy, row.condition) + "\">" + esc(proactiveConditionLabel(row.condition)) + "</span></td>"
+          + "<td>" + esc(proactiveStratumLabel(row.stratum)) + "</td>"
+          + "<td>" + esc(row.assignment_version || "未版本化") + "</td>"
+          + "<td style=\"white-space:nowrap;\">" + esc(proactiveAuditTime(row.assigned_at || "")) + "</td>"
+          + "<td>" + esc(row.participation_status === "withdrawn" ? "已退出（保留分组）" : row.participation_status === "enrolled" ? "在研" : "未记录") + "</td>"
+          + "<td>第 " + Math.max(1, Number(row.learning_generation || 1)) + " 次</td>"
+          + "</tr>"
+        )).join("")
+      : "<tr><td colspan='7'>尚无已完成前测并固定分组的学生。</td></tr>";
+    syncTableDensity(assignmentRosterBody.closest("table"));
+  }
+
   const runtimeBody = document.querySelector("#table-proactive-runtime-events tbody");
   if (runtimeBody) {
     const events = safeRows(data.runtimeEvents);
@@ -3925,7 +4086,7 @@ function proactiveLifecyclePhaseLabel(value = "") {
   return ({
     idle: "尚未开启",
     accepted_pending_response: "已接受，等待学生回复",
-    awaiting_independent_attempt: "等待无提示验证或课件语义结果",
+    awaiting_independent_attempt: "等待支架后检查或课件语义结果",
     deferred: "学生选择稍后，本轮暂缓",
     declined: "学生拒绝，本轮已退出",
     exited: "独立成功，已渐退退出",
@@ -4377,9 +4538,11 @@ function renderProactiveOutcomes(outcomes = {}, policy = {}) {
   if (overview) {
     overview.innerHTML = [
       ["全部测量提交", Number(outcomes.total || rows.length), `量表 ${outcomes.instrumentVersion || "未标记"}`],
-      ["近迁移", stageSubmissionCount("near_transfer"), "新情境应用"],
-      ["跨表征迁移", stageSubmissionCount("representation_transfer"), "图像、语言与符号转换"],
-      ["延迟保持", stageSubmissionCount("retention"), `延迟 ${Number(outcomes.retentionDelayHours || 0)} 小时`],
+      ...(["v14-c3-retention-v4", "functions-limits-retention-r1", "functions-limits-retention-r2", "functions-limits-retention-r3"].includes(outcomes.instrumentVersion) ? [] : [
+        ["近迁移（历史）", stageSubmissionCount("near_transfer"), "新情境应用"],
+        ["跨表征迁移（历史）", stageSubmissionCount("representation_transfer"), "图像、语言与符号转换"]
+      ]),
+      ["保持测量", stageSubmissionCount("retention"), `延迟 ${Number(outcomes.retentionDelayHours || 0)} 小时`],
       [
         "测量会话",
         Number(outcomes.sessionTotal || 0),
@@ -4397,7 +4560,7 @@ function renderProactiveOutcomes(outcomes = {}, policy = {}) {
     summaryBody.innerHTML = summaryRows.length
       ? summaryRows.map((row) => `
         <tr>
-          <td><strong>${esc(proactiveOutcomeStageLabel(row.stage))}</strong></td>
+          <td><strong>${esc(proactiveOutcomeStageLabel(row.stage))}</strong><br><small>${esc(row.instrument_version || "历史版本未标记")}</small></td>
           <td><span class="badge ${proactiveConditionBadgeClass(policy, row.condition)}">${esc(proactiveConditionLabel(row.condition))}</span></td>
           <td>${Number(row.participants || 0)}</td>
           <td>${Number(row.submissions || 0)}</td>
@@ -4409,7 +4572,7 @@ function renderProactiveOutcomes(outcomes = {}, policy = {}) {
     syncTableDensity(summaryBody.closest("table"));
   }
   const summaryStatus = document.getElementById("proactive-outcome-summary-status");
-  if (summaryStatus) summaryStatus.textContent = `${summaryRows.length} 个阶段×实验臂组合`;
+  if (summaryStatus) summaryStatus.textContent = `${summaryRows.length} 个阶段×版本×实验臂组合`;
 
   const attemptsBody = document.querySelector("#table-proactive-outcome-attempts tbody");
   if (attemptsBody) {
@@ -4434,6 +4597,183 @@ function renderProactiveOutcomes(outcomes = {}, policy = {}) {
     attemptsStatus.textContent = Number(outcomes.total || 0) > rows.length
       ? `最近 ${rows.length} / ${Number(outcomes.total || 0)} 条`
       : `${rows.length} 条`;
+  }
+}
+
+const proactiveDataQualityLabels = {
+  courseware_metadata_missing: "课件实验元数据缺失",
+  courseware_experiment_mismatch: "课件实验编号不一致",
+  courseware_group_mismatch: "课件事件分组不一致",
+  courseware_assignment_version_mismatch: "课件分配版本不一致",
+  courseware_generation_mismatch: "课件学习代次不一致",
+  courseware_protocol_mismatch: "课件协议指纹不一致",
+  courseware_semantic_id_missing: "课件语义事件 ID 缺失",
+  courseware_semantic_id_duplicate: "课件语义事件 ID 重复",
+  courseware_event_order_anomaly: "课件事件顺序异常",
+  courseware_event_chain_missing: "课件挑战事件链缺失",
+  courseware_events_missing: "完成后测但无课件语义记录",
+  repeated_learning_generation: "存在重复学习代次",
+  decision_group_mismatch: "主动决策分组不一致",
+  decision_assignment_version_mismatch: "主动决策分配版本不一致",
+  outcome_group_mismatch: "结果测量分组不一致",
+  outcome_protocol_mismatch: "结果测量协议不一致"
+};
+
+function proactivePhaseAnalysisCell(phase = {}) {
+  if (!Number(phase.submitted || 0)) return '<span class="muted">未提交</span>';
+  const completion = phase.completed ? "已完成" : "未完整";
+  const pending = Number(phase.pending || 0)
+    ? ` · 待评分 ${Number(phase.pending || 0)}`
+    : "";
+  return `${Number(phase.score || 0)} / ${Number(phase.max_score || 0)}<br><span class="muted">${esc(completion)} · ${Number(phase.score_rate || 0)}%${pending}</span>`;
+}
+
+function proactiveOutcomeAnalysisCell(outcome = {}) {
+  const labels = {
+    not_started: "未开始",
+    not_applicable: "本版本不适用",
+    active: "作答中",
+    paused: "已暂离",
+    submitted: "已提交",
+    skipped: "永久跳过",
+    withdrawn: "随研究退出",
+    expired: "已超窗"
+  };
+  const label = labels[outcome.status] || outcome.status || "未开始";
+  const score = outcome.status === "submitted"
+    ? `${Number(outcome.score || 0)} / ${Number(outcome.max_score || 0)} · ${Number(outcome.accuracy || 0)}%`
+    : outcome.withdrawal_reason || "";
+  return `${esc(label)}${score ? `<br><span class="muted">${esc(score)}</span>` : ""}`;
+}
+
+function proactiveRetentionWindowLabel(windowState = {}) {
+  const labels = {
+    not_scheduled: "尚未排期",
+    waiting_for_transfer: "等待迁移测量",
+    waiting: "等待开放",
+    open: "可作答",
+    reminder_due: "提醒待发送",
+    closing_soon: "即将超窗",
+    active: "作答中",
+    paused: "已暂离",
+    submitted: "已提交",
+    skipped: "永久跳过",
+    withdrawn: "随研究退出",
+    expired: "已超窗"
+  };
+  const reminder = safeRows(windowState.due_reminder_hours).length
+    ? ` · 待提醒 ${safeRows(windowState.due_reminder_hours).join("、")} 小时`
+    : safeRows(windowState.shown_reminder_hours).length
+      ? ` · 已提醒 ${safeRows(windowState.shown_reminder_hours).join("、")} 小时`
+      : "";
+  return `${labels[windowState.status] || windowState.status || "未知"}${reminder}`;
+}
+
+function renderProactiveExperimentAnalysis(data = {}, policy = {}) {
+  const rows = safeRows(data.participantAnalysis);
+  const challenges = safeRows(data.coursewareChallenges);
+  const summary = data.analysisSummary || {};
+  const quality = data.dataQuality || {};
+  const overview = document.getElementById("proactive-analysis-overview");
+  if (overview) {
+    const values = [
+      ["已固定分组", Number(summary.participants || rows.length), "学生不能自行选择实验臂"],
+      ["课件语义事件", Number(summary.courseware_events || 0), "服务端绑定实验元数据"],
+      ["挑战尝试", Number(summary.challenge_attempts || 0), `${challenges.length} 个稳定挑战 ID`],
+      ["数据完整", Number(summary.data_complete || 0), "当前未发现质量标记"],
+      ["需要复核", Number(summary.needs_review || 0), `待学习 ${Number(summary.pending_learning || 0)} 人`]
+    ];
+    overview.innerHTML = values.map(([label, value, note]) => `
+      <div class="proactive-outcome-overview-item">
+        <span>${esc(label)}</span><strong>${Number(value || 0)}</strong><small>${esc(note)}</small>
+      </div>
+    `).join("");
+  }
+
+  const qualityStatus = document.getElementById("proactive-data-quality-status");
+  const qualitySignals = safeRows(quality.signals);
+  if (qualityStatus) {
+    qualityStatus.textContent = quality.status === "critical"
+      ? "存在阻断性数据问题"
+      : quality.status === "warning"
+        ? "存在需要解释的数据标记"
+        : quality.status === "ok"
+          ? "课件事件链当前完整"
+          : "等待学生产生课件记录";
+  }
+  const qualityList = document.getElementById("proactive-data-quality-signals");
+  if (qualityList) {
+    qualityList.innerHTML = qualitySignals.length
+      ? qualitySignals.map((signal) => `
+        <div class="proactive-integrity-signal is-${esc(signal.severity || "warning")}">
+          <div>
+            <strong>${esc(proactiveDataQualityLabels[signal.id] || signal.id)}</strong>
+            <p>${Number(signal.participants || 0)} 名学生 · ${Number(signal.events || 0)} 次记录</p>
+          </div>
+          <b>${Number(signal.events || 0)}</b>
+        </div>
+      `).join("")
+      : '<div class="proactive-integrity-signal is-ok"><div><strong>未发现课件数据链异常</strong><p>仍需结合样本量和实际学习进度解释。</p></div><b>0</b></div>';
+  }
+
+  const participantStatus = document.getElementById("proactive-participant-analysis-status");
+  if (participantStatus) participantStatus.textContent = `${rows.length} 人；一人一行`;
+  const participantBody = document.querySelector("#table-proactive-participant-analysis tbody");
+  if (participantBody) {
+    participantBody.innerHTML = rows.length
+      ? rows.map((row) => {
+          const courseware = row.courseware || {};
+          const proactive = row.proactive || {};
+          const flags = safeRows(row.data_quality?.flags);
+          const qualityLabel = row.data_quality?.status === "complete"
+            ? "完整"
+            : row.data_quality?.status === "review"
+              ? "需复核"
+              : "待学习";
+          return `<tr>
+            <td><strong>${esc(row.nickname || "未命名学生")}</strong><br><span class="muted">${esc(row.user_id || "")}</span><br><span class="badge ${proactiveConditionBadgeClass(policy, row.condition)}">${esc(proactiveConditionLabel(row.condition))}</span></td>
+            <td>${esc(proactiveStratumLabel(row.stratum))}<br><span class="muted">第 ${Number(row.analysis_learning_generation || 1)} 次数据</span></td>
+            <td>${proactivePhaseAnalysisCell(row.pretest)}</td>
+            <td>${proactivePhaseAnalysisCell(row.formative)}</td>
+            <td>${proactivePhaseAnalysisCell(row.posttest)}</td>
+            <td>首次独立 ${Number(courseware.first_independent_correct || 0)} / ${Number(courseware.challenge_count || 0)}<br><span class="muted">总尝试 ${Number(courseware.challenge_attempt_accuracy || 0)}% · 重试 ${Number(courseware.retry_challenges || 0)} · 重置 ${Number(courseware.reset_events || 0)}</span></td>
+            <td>展示 ${Number(proactive.shown || 0)} · 接受 ${Number(proactive.accepted || 0)}<br><span class="muted">稍后 ${Number(proactive.snoozed || 0)} · 换帮助 ${Number(proactive.alternative_requested || 0)} · 关闭知识点 ${Number(proactive.scope_mutes || 0)}</span></td>
+            <td>${proactiveOutcomeAnalysisCell(row.outcomes?.near_transfer)}</td>
+            <td>${proactiveOutcomeAnalysisCell(row.outcomes?.representation_transfer)}</td>
+            <td>${proactiveOutcomeAnalysisCell(row.outcomes?.retention)}<br><span class="muted">${esc(proactiveRetentionWindowLabel(row.retention_window))}</span></td>
+            <td><strong>${esc(qualityLabel)}</strong>${flags.length ? `<br><span class="muted">${esc(flags.map((flag) => proactiveDataQualityLabels[flag] || flag).join("；"))}</span>` : ""}</td>
+          </tr>`;
+        }).join("")
+      : "<tr><td colspan='11'>尚无已固定分组的参与者。</td></tr>";
+    syncTableDensity(participantBody.closest("table"));
+  }
+
+  const challengeStatus = document.getElementById("proactive-challenge-analysis-status");
+  if (challengeStatus) challengeStatus.textContent = `${challenges.length} 个挑战`;
+  const challengeBody = document.querySelector("#table-proactive-challenge-analysis tbody");
+  if (challengeBody) {
+    challengeBody.innerHTML = challenges.length
+      ? challenges.map((row) => {
+          const qualityCount = Number(row.metadata_issues || 0)
+            + Number(row.duplicate_events || 0)
+            + Number(row.order_anomalies || 0)
+            + Number(row.missing_event_chains || 0);
+          return `<tr>
+            <td><strong>${esc(row.knowledge_point || row.knowledge_point_id || "知识点")}</strong><br><span class="muted">${esc(row.challenge_id || "未命名挑战")}</span></td>
+            <td>${Number(row.participants || 0)}</td>
+            <td>${Number(row.attempts || 0)}<br><span class="muted">漏接 ${Number(row.missed_attempts || 0)} · 未归类 ${Number(row.unclassified_attempts || 0)}</span></td>
+            <td>${Number(row.first_independent_correct || 0)} · ${Number(row.first_independent_accuracy || 0)}%</td>
+            <td>${Number(row.supported_correct || 0)} / ${Number(row.supported_attempts || 0)} · ${Number(row.supported_accuracy || 0)}%</td>
+            <td>${Number(row.correct_attempts || 0)} / ${Number(row.attempts || 0)} · ${Number(row.total_attempt_accuracy || 0)}%</td>
+            <td>${Number(row.retry_participants || 0)} · ${Number(row.retry_rate || 0)}%</td>
+            <td>${Number(row.reset_participants || 0)} · ${Number(row.reset_rate || 0)}%</td>
+            <td>${Number(row.challenge_completed_participants || 0)} · ${Number(row.challenge_completion_rate || 0)}%</td>
+            <td>${Number(row.scene_completed_participants || 0)} · ${Number(row.scene_completion_rate || 0)}%</td>
+            <td>${qualityCount ? `<strong class="text-warn">${qualityCount}</strong>` : "0"}</td>
+          </tr>`;
+        }).join("")
+      : "<tr><td colspan='11'>尚无课件挑战结果。</td></tr>";
+    syncTableDensity(challengeBody.closest("table"));
   }
 }
 
@@ -4479,6 +4819,7 @@ function renderProactiveStudy(data = {}) {
   const autonomy = summary.autonomy || {};
   syncProactiveConditionOptions(data);
   renderProactiveGovernance(data);
+  renderProactiveExperimentAnalysis(data, policy);
   renderProactiveOutcomes(data.outcomes || {}, policy);
 
   const metrics = document.getElementById("proactive-study-metrics");
@@ -4498,7 +4839,7 @@ function renderProactiveStudy(data = {}) {
       <div class="metric-card"><div class="label">学生自主权动作</div><div class="value">${Number(summary.snoozed || 0) + Number(summary.alternative_requested || 0) + Number(autonomy.scope_mutes || 0)}</div><div class="sub">稍后 ${Number(summary.snoozed || 0)} · 换帮助 ${Number(summary.alternative_requested || 0)} · 关闭知识点 ${Number(autonomy.scope_mutes || 0)} · 已恢复 ${Number(autonomy.scope_restores || 0)}</div></div>
       <div class="metric-card detail"><div><div class="label">L1-L5 支架动作</div><div class="value">${supportCounts.reduce((sum, value) => sum + value, 0)}</div></div><div class="metric-breakdown">${supportCounts.map((value, index) => `<span><b>L${index + 1}</b><em>${value}</em></span>`).join("")}</div></div>
       <div class="metric-card"><div class="label">换表征执行</div><div class="value">${Number(summary.representation_switches || 0)}</div><div class="sub">只在学生明确确认且实验臂允许时执行</div></div>
-      <div class="metric-card good"><div class="label">独立验证成功退出</div><div class="value">${Number(summary.independent_success_exits || 0)}</div><div class="sub">持续卡点 ${Number(summary.continued_friction || 0)} · 当前静音知识点 ${Number(autonomy.current_muted_scopes || 0)}</div></div>
+      <div class="metric-card good"><div class="label">检查成功结束帮助</div><div class="value">${Number(summary.independent_success_exits || 0)}</div><div class="sub">含支架后检查或课件结果 · 持续卡点 ${Number(summary.continued_friction || 0)} · 静音知识点 ${Number(autonomy.current_muted_scopes || 0)}</div></div>
       <div class="metric-card warn"><div class="label">测量保护阻断</div><div class="value">${Number(summary.protected_blocks || 0)}</div><div class="sub">受保护测量阶段保持静默</div></div>
     `;
   }
@@ -4581,15 +4922,12 @@ async function updateProactiveRuntime(status) {
   }
   const response = await fetch(`${API_BASE}/api/admin/research/proactive-runtime`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${adminToken}`
-    },
+    headers: adminRequestHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({
       experimentId: cachedProactiveStudyData.policy?.experimentId || "",
       status,
       reason,
-      updatedBy: operatorInput?.value.trim() || "research-admin"
+      updatedBy: operatorInput?.value.trim() || "研究管理员"
     })
   });
   const payload = await response.json().catch(() => ({}));
@@ -4856,6 +5194,15 @@ document.getElementById("filter-apply-btn").addEventListener("click", () => {
   debouncedLoadAll();
 });
 
+// Switching the chapter scope reloads immediately: it changes what "the data"
+// means, so leaving stale charts on screen would be misleading.
+document.getElementById("chapter-filter")?.addEventListener("change", (event) => {
+  sessionStorage.setItem("cq_admin_chapter", event.target.value || "all");
+  resetInteractionPage();
+  destroyAllCharts();
+  debouncedLoadAll();
+});
+
 // Restore active range button on page load
 if (currentRange) {
   const activeBtn = document.querySelector(`.range-btn[data-range="${currentRange}"]`);
@@ -4865,11 +5212,59 @@ if (currentRange) {
   }
 }
 
+// Restore the persisted chapter scope, falling back to the markup default.
+{
+  const storedChapter = sessionStorage.getItem("cq_admin_chapter") || "";
+  const select = document.getElementById("chapter-filter");
+  if (select && storedChapter && [...select.options].some(o => o.value === storedChapter)) {
+    select.value = storedChapter;
+  }
+}
+
 // ---- User search ----
+document.getElementById("clear-selected-users")?.addEventListener("click", () => {
+  selectedUserIds.clear();
+  document.querySelectorAll("#table-users .select-user").forEach(box => { box.checked = false; });
+  updateUserSelection();
+});
+
+document.getElementById("export-selected-users")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  if (!selectedUserIds.size || button.getAttribute("aria-busy") === "true") return;
+  const userIds = [...selectedUserIds];
+  button.setAttribute("aria-busy", "true");
+  button.textContent = "正在导出...";
+  updateUserSelection();
+  try {
+    const response = await fetch(`${API_BASE}/api/admin/research/selected-participants`, {
+      method: "POST",
+      headers: adminRequestHeaders({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ userIds })
+    });
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) throw new Error(payload.message || "导出失败");
+    const blob = new Blob([JSON.stringify(payload.data, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `选中被试完整数据-${userIds.length}人-${exportDateStamp()}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) {
+    window.alert(`导出失败：${error.message}`);
+  } finally {
+    button.removeAttribute("aria-busy");
+    button.textContent = "导出选中人员全部数据";
+    updateUserSelection();
+  }
+});
+
 document.getElementById("user-search-btn").addEventListener("click", () => {
   const q = document.getElementById("user-search-input").value.trim().toLowerCase();
   if (!q) { renderUserTable(allUsers); return; }
-  const filtered = allUsers.filter(u => u.nickname.toLowerCase().includes(q) || (u.user_id || "").toLowerCase().includes(q));
+  const filtered = allUsers.filter(u => adminUserName(u).toLowerCase().includes(q) || String(u.email || "").toLowerCase().includes(q) || (u.user_id || "").toLowerCase().includes(q));
   renderUserTable(filtered);
 });
 document.getElementById("user-search-input").addEventListener("keydown", (e) => {
@@ -4899,7 +5294,9 @@ function downloadCsv(filename, rows) {
 }
 
 function exportDateStamp() {
-  return new Date().toISOString().slice(0, 10);
+  // The operator is in Beijing time: a UTC stamp dates exports made between
+  // 00:00 and 08:00 local as the previous day.
+  return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
 function pagedStatsParams(baseParams, limit, offset) {
@@ -5054,11 +5451,14 @@ function proactiveDecisionCsvRows(data) {
     "章节", "单元", "策略范围", "场景", "候选信号", "政策模式", "政策版本", "契约版本", "Adapter版本",
     "政策判断", "实际呈现", "动作", "支架强度", "HelpNeed", "可打断性", "不确定性",
     "理由码", "证据引用", "证据快照", "预算快照", "干预状态", "展示时间", "反馈", "反馈时间", "反馈耗时毫秒",
-    "后续结果", "独立证据来源", "独立证据事件", "验证题ID", "验证阶段",
-    "当前生命周期", "当前强度", "渐退次数", "状态更新时间"
+    "后续结果", "后续证据来源", "后续证据事件", "验证题ID", "验证阶段",
+    "当前生命周期", "当前强度", "渐退次数", "状态更新时间",
+    "支架检查版本", "检查证据范围", "检查子技能",
+    "课件匹配版本", "课件证据采用", "课件匹配理由", "课件证据范围", "课件证据子技能", "课件证据事件ID"
   ]];
   safeRows(data).forEach((row) => {
     const attempt = row.followup_outcome?.independentAttempt || {};
+    const matching = row.evidence_snapshot?.coursewareVerificationMatch || {};
     rows.push([
       row.id || "",
       row.intervention_id || "",
@@ -5108,7 +5508,16 @@ function proactiveDecisionCsvRows(data) {
       JSON.stringify(row.current_lifecycle || {}),
       row.current_policy_level || "",
       row.current_fade_level || 0,
-      row.policy_state_updated_at || ""
+      row.policy_state_updated_at || "",
+      attempt.instrumentVersion || "",
+      attempt.evidenceScope || "",
+      attempt.subSkill || "",
+      matching.matchingVersion || "",
+      matching.eligible === true ? "是" : matching.eligible === false ? "否" : "",
+      matching.reasonCode || "",
+      matching.evidenceScope || "",
+      matching.subSkill || "",
+      matching.eventId || ""
     ]);
   });
   return rows;
@@ -5244,6 +5653,125 @@ function proactiveOutcomeSessionCsvRows(data) {
   return rows;
 }
 
+function proactiveParticipantAnalysisCsvRows(data, protocol = null) {
+  const rows = [[
+    "学生", "用户ID", "实验", "固定实验臂", "队列", "前测层级", "分配版本", "分配时间",
+    "参与状态", "同意时间", "退出时间", "当前学习代次", "主分析学习代次", "学习代次数",
+    "前测已交", "前测应交", "前测得分", "前测满分", "前测得分率%", "前测完成时间",
+    "形成测已交", "形成测应交", "形成测得分", "形成测满分", "形成测得分率%", "形成测待评分", "形成测完成时间",
+    "后测已交", "后测应交", "后测得分", "后测满分", "后测得分率%", "后测待评分", "后测完成时间",
+    "课件语义事件", "打开课件数", "完成场景数", "挑战数", "挑战尝试", "挑战正确尝试", "总尝试正确率%",
+    "首次独立正确", "首次独立正确率%", "独立尝试", "独立正确", "独立正确率%",
+    "提示或重置后尝试", "提示或重置后正确", "提示或重置后正确率%", "重试挑战", "重试率%", "提示事件", "重置事件", "课件时长毫秒",
+    "政策决策", "政策判断应介入", "实际签发", "实际展示", "接受", "关闭", "忽略", "稍后", "换帮助", "关闭知识点", "恢复知识点",
+    "L1", "L2", "L3", "L4", "L5",
+    "近迁移状态", "近迁移得分", "近迁移满分", "近迁移正确率%", "近迁移暂停次数", "近迁移暂停毫秒",
+    "跨表征状态", "跨表征得分", "跨表征满分", "跨表征正确率%", "跨表征暂停次数", "跨表征暂停毫秒",
+    "保持测状态", "保持测得分", "保持测满分", "保持测正确率%", "保持测暂停次数", "保持测暂停毫秒",
+    "保持窗口状态", "保持测开放时间", "保持测关闭时间", "章后经过小时", "已提醒节点", "待提醒节点", "即将超窗", "已超窗",
+    "数据质量状态", "数据质量问题数", "数据质量标记", "学习代次列表",
+    "前测状态", "前测待评分", "形成测状态", "后测状态",
+    "协议指纹", "题库指纹", "题库版本", "独立测量版本", "漏接尝试", "未归类尝试"
+  ]];
+  const stageValues = (stage = {}) => [
+    stage.status || "",
+    stage.score ?? "",
+    stage.max_score ?? "",
+    stage.accuracy ?? "",
+    Number(stage.pause_count || 0),
+    Number(stage.paused_duration_ms || 0)
+  ];
+  safeRows(data).forEach((row) => {
+    const pre = row.pretest || {};
+    const formative = row.formative || {};
+    const post = row.posttest || {};
+    const courseware = row.courseware || {};
+    const proactive = row.proactive || {};
+    const retentionWindow = row.retention_window || {};
+    const preExport = AdminPresentation.measurementExport(pre);
+    const formativeExport = AdminPresentation.measurementExport(formative, { adaptive: true });
+    const postExport = AdminPresentation.measurementExport(post);
+    const observedRate = AdminPresentation.observedRate;
+    const sameExperiment = protocol && protocol.experimentId === row.experiment_id;
+    const definition = sameExperiment ? protocol.definition || {} : {};
+    rows.push([
+      row.nickname || "", row.user_id || "", row.experiment_id || "", row.condition || "",
+      row.cohort || "", row.stratum || "", row.assignment_version || "", row.assigned_at || "",
+      row.participation_status || "", row.consented_at || "", row.withdrawn_at || "",
+      Number(row.current_learning_generation || 1), Number(row.analysis_learning_generation || 1),
+      Number(row.learning_generation_count || 1),
+      pre.submitted || 0, pre.expected || 0, preExport.score, preExport.maxScore, preExport.rate,
+      preExport.status === "complete" ? pre.completed_at || "" : "",
+      formative.submitted || 0, formative.expected || 0, formativeExport.score, formativeExport.maxScore,
+      formativeExport.rate, formative.pending || 0, formative.completed_at || "",
+      post.submitted || 0, post.expected || 0, postExport.score, postExport.maxScore,
+      postExport.rate, post.pending || 0, postExport.status === "complete" ? post.completed_at || "" : "",
+      courseware.semantic_events || 0, courseware.resources_opened || 0, courseware.scenes_completed || 0,
+      courseware.challenge_count || 0, courseware.challenge_attempts || 0,
+      courseware.challenge_correct_attempts || 0, observedRate(courseware.challenge_attempt_accuracy, courseware.challenge_attempts),
+      courseware.first_independent_correct || 0, observedRate(courseware.first_independent_accuracy, courseware.challenge_count),
+      courseware.independent_attempts || 0, courseware.independent_correct || 0,
+      observedRate(courseware.independent_accuracy, courseware.independent_attempts),
+      courseware.supported_attempts || 0, courseware.supported_correct || 0,
+      observedRate(courseware.supported_accuracy, courseware.supported_attempts),
+      courseware.retry_challenges || 0, observedRate(courseware.retry_rate, courseware.challenge_count), courseware.hint_events || 0,
+      courseware.reset_events || 0, courseware.time_on_task_ms || 0,
+      proactive.decisions || 0, proactive.policy_interventions || 0, proactive.delivered_interventions || 0,
+      proactive.shown || 0, proactive.accepted || 0, proactive.dismissed || 0, proactive.ignored || 0,
+      proactive.snoozed || 0, proactive.alternative_requested || 0, proactive.scope_mutes || 0,
+      proactive.scope_restores || 0, proactive.l1 || 0, proactive.l2 || 0, proactive.l3 || 0,
+      proactive.l4 || 0, proactive.l5 || 0,
+      ...stageValues(row.outcomes?.near_transfer),
+      ...stageValues(row.outcomes?.representation_transfer),
+      ...stageValues(row.outcomes?.retention),
+      retentionWindow.status || "", retentionWindow.unlock_at || "", retentionWindow.close_at || "",
+      retentionWindow.elapsed_hours ?? "",
+      safeRows(retentionWindow.shown_reminder_hours).join("|"),
+      safeRows(retentionWindow.due_reminder_hours).join("|"),
+      retentionWindow.closing_soon === true ? 1 : 0,
+      retentionWindow.expired === true ? 1 : 0,
+      row.data_quality?.status || "", row.data_quality?.issue_count || 0,
+      safeRows(row.data_quality?.flags).join("|"), safeRows(row.learning_generations).join("|"),
+      preExport.status, preExport.pending, formativeExport.status, postExport.status,
+      sameExperiment ? protocol.fingerprint || "" : "",
+      definition.courseAssessmentFingerprint || "", definition.courseAssessmentVersion || "",
+      definition.outcomeInstrumentVersion || "", courseware.missed_attempts || 0,
+      courseware.unclassified_attempts || 0
+    ]);
+  });
+  return rows;
+}
+
+function proactiveChallengeAnalysisCsvRows(data) {
+  const rate = AdminPresentation.observedRate;
+  const rows = [[
+    "知识点ID", "知识点", "挑战ID", "课件资源ID", "课件标题", "场景类型", "学生数", "尝试数",
+    "正确尝试", "总尝试正确率%", "首次独立正确", "首次独立正确率%",
+    "独立尝试", "独立正确", "独立正确率%", "提示或重置后尝试", "提示或重置后正确", "提示或重置后正确率%",
+    "重试学生", "重试率%", "使用提示学生", "重置学生", "重置率%",
+    "挑战完成学生", "挑战完成率%", "场景完成学生", "场景完成率%",
+    "元数据问题", "重复事件", "顺序异常", "缺失事件链", "漏接尝试", "未归类尝试"
+  ]];
+  safeRows(data).forEach((row) => {
+    rows.push([
+      row.knowledge_point_id || "", row.knowledge_point || "", row.challenge_id || "",
+      row.resource_id || "", row.resource_title || "", row.scene_type || "",
+      row.participants || 0, row.attempts || 0, row.correct_attempts || 0,
+      rate(row.total_attempt_accuracy, row.attempts), row.first_independent_correct || 0,
+      rate(row.first_independent_accuracy, row.participants), row.independent_attempts || 0,
+      row.independent_correct || 0, rate(row.independent_accuracy, row.independent_attempts),
+      row.supported_attempts || 0, row.supported_correct || 0, rate(row.supported_accuracy, row.supported_attempts),
+      row.retry_participants || 0, rate(row.retry_rate, row.participants), row.hint_participants || 0,
+      row.reset_participants || 0, rate(row.reset_rate, row.participants),
+      row.challenge_completed_participants || 0, rate(row.challenge_completion_rate, row.participants),
+      row.scene_completed_participants || 0, rate(row.scene_completion_rate, row.participants),
+      row.metadata_issues || 0, row.duplicate_events || 0, row.order_anomalies || 0,
+      row.missing_event_chains || 0, row.missed_attempts || 0, row.unclassified_attempts || 0
+    ]);
+  });
+  return rows;
+}
+
 function shortAnswerCsvRows(data) {
   const rows = [["学生","章节","单元","题目ID","答案","得分","满分","状态","时间"]];
   safeRows(data).forEach((row) => {
@@ -5263,8 +5791,13 @@ function shortAnswerCsvRows(data) {
 }
 
 function regradeAuditCsvRows(data) {
-  const rows = [["审计ID", "批次ID", "状态", "学生", "用户ID", "题目ID", "单元ID", "评分提供方", "评分模型", "原评分", "建议评分", "实际应用", "错误信息", "时间"]];
-  safeRows(data).forEach((row) => rows.push([
+  const rows = [["审计ID", "批次ID", "状态", "学生", "用户ID", "题目ID", "单元ID", "评分提供方", "评分模型", "原评分", "建议评分", "实际应用", "错误信息", "时间",
+    "请求模型", "服务端报告模型", "评分提示版本", "系统提示摘要", "评分量规摘要", "逐项评分"]];
+  safeRows(data).forEach((row) => {
+    let proposed = {};
+    try { proposed = JSON.parse(row.proposed_grade_json || "{}") || {}; } catch {}
+    const audit = proposed.gradingAudit || {};
+    rows.push([
     row.id || "",
     row.batch_id || "",
     row.status || "",
@@ -5278,8 +5811,15 @@ function regradeAuditCsvRows(data) {
     row.proposed_grade_json || "{}",
     row.applied_grade_json || "{}",
     row.error_message || "",
-    row.created_at || ""
-  ]));
+    row.created_at || "",
+    audit.requestedModel || "",
+    audit.reportedModel || "",
+    audit.promptVersion || "",
+    audit.promptHash || "",
+    audit.rubricHash || "",
+    Array.isArray(proposed.rubricScores) ? JSON.stringify(proposed.rubricScores) : ""
+  ]);
+  });
   return rows;
 }
 
@@ -5290,10 +5830,12 @@ function phaseCsvRows(data) {
     "形成性提交数", "形成性题数", "形成性正确数", "形成性待复核", "形成性正确率%", "形成性得分", "形成性满分",
     "核心形测题数", "核心形测正确数", "核心形测正确率%", "诊断题触发数", "诊断题正确数", "诊断题正确率%",
     "后测提交数", "后测题数", "后测正确数", "后测待复核", "后测正确率%", "后测得分", "后测满分",
-    "学习增益%"
+    "观测正确率变化（百分点）"
   ]];
   safeRows(data).forEach((row) => {
     const gain = row.pre_count > 0 && row.post_count > 0
+      && !Number(row.pre_pending || 0) && !Number(row.post_pending || 0)
+      && row.pre_accuracy != null && row.post_accuracy != null
       ? Number(row.post_accuracy || 0) - Number(row.pre_accuracy || 0)
       : "";
     rows.push([
@@ -5521,31 +6063,77 @@ document.getElementById("export-agentic-trace-csv").addEventListener("click", (e
 
 document.getElementById("export-proactive-decisions-csv")?.addEventListener("click", (event) => {
   runCsvExport(event.currentTarget, async () => ({
-    filename: `V14-C3主动政策决策账本-${exportDateStamp()}.csv`,
+    filename: `${chapterExportLabel()}主动政策决策账本-${exportDateStamp()}.csv`,
     rows: proactiveDecisionCsvRows(await fetchAllProactiveDecisionRows())
   }));
 });
 
 document.getElementById("export-proactive-shadow-csv")?.addEventListener("click", (event) => {
   runCsvExport(event.currentTarget, async () => ({
-    filename: `V14-C3-Shadow双人编码模板-${exportDateStamp()}.csv`,
+    filename: `${chapterExportLabel()}-Shadow双人编码模板-${exportDateStamp()}.csv`,
     rows: proactiveShadowCodingCsvRows(await fetchAllProactiveDecisionRows())
   }));
 });
 
 document.getElementById("export-proactive-outcomes-csv")?.addEventListener("click", (event) => {
   runCsvExport(event.currentTarget, async () => ({
-    filename: `V14-C3独立学习结果-${exportDateStamp()}.csv`,
+    filename: `${chapterExportLabel()}独立学习结果-${exportDateStamp()}.csv`,
     rows: proactiveOutcomeCsvRows(await fetchAllProactiveOutcomeRows())
   }));
 });
 
 document.getElementById("export-proactive-outcome-sessions-csv")?.addEventListener("click", (event) => {
   runCsvExport(event.currentTarget, async () => ({
-    filename: `V14-C3测量会话与失访-${exportDateStamp()}.csv`,
+    filename: `${chapterExportLabel()}测量会话与失访-${exportDateStamp()}.csv`,
     rows: proactiveOutcomeSessionCsvRows(
       await fetchAllProactiveOutcomeSessionRows()
     )
+  }));
+});
+
+document.getElementById("export-proactive-participants-csv")?.addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => ({
+    filename: `${chapterExportLabel()}参与者实验分析-${exportDateStamp()}.csv`,
+    rows: proactiveParticipantAnalysisCsvRows(
+      cachedProactiveStudyData.participantAnalysis, cachedProactiveStudyData.protocol
+    )
+  }));
+});
+
+document.getElementById("export-research-analysis-package")?.addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  if (button.disabled) return;
+  const label = button.textContent;
+  button.disabled = true;
+  button.setAttribute("aria-busy", "true");
+  button.textContent = "正在导出...";
+  try {
+    const experimentId = cachedProactiveStudyData.protocol?.experimentId
+      || cachedProactiveStudyData.policy?.experimentId || "";
+    const params = new URLSearchParams({ experimentId });
+    const data = await adminApi(`/api/admin/research/analysis-package?${params}`);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `实验分析包-${exportDateStamp()}.json`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  } catch (error) {
+    window.alert(`分析包导出失败：${error.message || "请稍后重试。"}`);
+  } finally {
+    button.disabled = false;
+    button.removeAttribute("aria-busy");
+    button.textContent = label;
+  }
+});
+
+document.getElementById("export-proactive-challenges-csv")?.addEventListener("click", (event) => {
+  runCsvExport(event.currentTarget, async () => ({
+    filename: `${chapterExportLabel()}课件挑战分析-${exportDateStamp()}.csv`,
+    rows: proactiveChallengeAnalysisCsvRows(cachedProactiveStudyData.coursewareChallenges)
   }));
 });
 

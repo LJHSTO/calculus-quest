@@ -32,6 +32,61 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>坐标点与函数图像：空间视角</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-01",
+  "module_title": "函数、坐标与图像读法入门",
+  "knowledge_point_id": "GH-01-K02",
+  "concept_tag": "坐标点与函数图像",
+  "scene_type": "visualization3d",
+  "resource_id": "GH-01-K02:visualization3d",
+  "resource_title": "坐标点与函数图像：空间视角",
+  "learning_objective": "请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。",
+  "misconception": "有序对先横后纵；图像上的点还必须满足 y=f(x)，不能只看点在哪里。",
+  "observable_evidence": "坐标点与函数图像：空间视角 — 在3D视角下展示从平面到立体的坐标投影。学生通过点击地面生成立柱，直观理解函数值f(x)即立柱高度的概念。",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed"
+  ],
+  "capabilities": {
+    "widget_type": "visualization3d",
+    "controls": [
+      "slider",
+      "select",
+      "button"
+    ],
+    "reports_attempt": false,
+    "reports_challenge": false,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": true,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "产生与本知识点目标一致的可观察交互变化",
+    "failure_is_evidence": false
+  }
+}
+</script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
@@ -833,6 +888,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
   <div id="loading">
@@ -923,6 +979,18 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
         if (!checkWebGL()) throw new Error('浏览器不支持 WebGL');
 
         const container = document.getElementById('canvas-container');
+        // functions-limits-visible-container: hidden host panes have no initial viewport.
+        if (!container.clientWidth || !container.clientHeight) {
+          await new Promise(resolve => {
+            const observer = new ResizeObserver(() => {
+              if (container.clientWidth > 0 && container.clientHeight > 0) {
+                observer.disconnect();
+                resolve();
+              }
+            });
+            observer.observe(container);
+          });
+        }
         const width = container.clientWidth || window.innerWidth;
         const height = container.clientHeight || window.innerHeight;
         if (width === 0 || height === 0) throw new Error('容器尺寸为零');

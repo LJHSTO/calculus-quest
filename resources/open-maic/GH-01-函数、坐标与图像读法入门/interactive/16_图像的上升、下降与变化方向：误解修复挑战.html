@@ -32,6 +32,65 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>函数赛车手 - 趋势判断挑战</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-03",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-01",
+  "module_title": "函数、坐标与图像读法入门",
+  "knowledge_point_id": "GH-01-K03",
+  "concept_tag": "图像的上升、下降与变化方向",
+  "scene_type": "game",
+  "resource_id": "GH-01-K03:game",
+  "resource_title": "图像的上升、下降与变化方向：误解修复挑战",
+  "learning_objective": "请说明判断上升或下降时，为什么必须按输入从小到大比较输出，而不能只看正负。",
+  "misconception": "上升下降是函数值随输入增大的变化方向；函数值为负也能上升。",
+  "observable_evidence": "函数赛车手 - 通过驾驶小球在函数图像上行驶，学习识别函数的上升和下降区间",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -940,6 +999,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
 
@@ -1711,6 +1771,10 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   function completeLevel() {
+    window.OpenMaicLearningEvidence?.recordChallenge({
+      challenge_id: 'GH-01-K03-driving-' + level,
+      is_correct: true, evidence_scope: 'motor_control', independent: false
+    });
     gameActive = false;
     
     let bonus = Math.floor(levelScore / 10);
@@ -1725,7 +1789,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (level >= MAX_LEVELS) {
       // Game won!
       document.getElementById('levelTitle').textContent = '🏆 全部通关！';
-      document.getElementById('levelSubtitle').textContent = '你已经成为函数赛车大师了！完美掌握了上升和下降趋势的判断！';
+      document.getElementById('levelSubtitle').textContent = '已完成赛车关卡。接下来用独立检测检查你对上升和下降趋势的理解。';
       document.getElementById('levelScore').textContent = score;
       document.getElementById('levelScreen').classList.remove('hidden');
       
@@ -1759,6 +1823,10 @@ document.addEventListener('DOMContentLoaded', function() {
   };
 
   function gameOver(reason) {
+    window.OpenMaicLearningEvidence?.recordChallenge({
+      challenge_id: 'GH-01-K03-driving-' + level,
+      is_correct: false, evidence_scope: 'motor_control', independent: false
+    });
     gameActive = false;
     
     document.getElementById('hud').classList.add('hidden');

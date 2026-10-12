@@ -100,6 +100,7 @@ const sandbox = {
       .replace(/"/g, "&quot;");
   },
   renderInlineMath: (value) => String(value ?? ""),
+  renderQuestionMath: (value) => String(value ?? ""),
   renderMathInHtml: (value) => String(value ?? ""),
   resourceUrl: (value) => value,
   CoursewareContextCore: { BRIDGE_VERSION: "test-bridge-v1" },
@@ -244,6 +245,46 @@ reviewCases.forEach(({ label, question, result }) => {
     `${label} review must show knowledge-point coverage exactly once`
   );
 });
+
+const readableAnswerHtml = sandbox.renderQuestionReview({
+  question: {
+    ...choiceQuestion,
+    options: [
+      {
+        value: "A",
+        label: "只要 n 足够大，T_n 就可以任意接近 12，因此该极限值就是所求面积"
+      },
+      { value: "B", label: "T_n 接近 12 只是一种巧合" }
+    ],
+    analysis: "当 n 趋于无穷时，T_n 稳定接近 12，说明该极限值就是所求面积。"
+  },
+  result: { response: ["A"], answer: ["A"], isCorrect: true },
+  index: 0,
+  unit: reviewUnit
+});
+assert.match(readableAnswerHtml, /class="answer-choice-marker"[^>]*>A<\/span>/);
+assert.match(readableAnswerHtml, /class="answer-choice-copy">/);
+assert.match(readableAnswerHtml, /class="analysis-line">/);
+assert.doesNotMatch(readableAnswerHtml, /class="answer-lines analysis-line">/);
+
+const readableShortAnswerHtml = sandbox.renderQuestionReview({
+  question: {
+    ...firstQuizQuestion,
+    type: "short_answer",
+    referenceAnswer: "当 n 趋于无穷时，T_n 收敛到面积极限。",
+    commentPrompt: "说明分割加细与面积和收敛之间的关系。"
+  },
+  result: {
+    response: "作答",
+    aiScore: 1,
+    aiWeakConcepts: []
+  },
+  index: 0,
+  unit: reviewUnit
+});
+assert.match(readableShortAnswerHtml, /review-answer-block reference-answer/);
+assert.match(readableShortAnswerHtml, /review-answer-copy/);
+assert.doesNotMatch(readableShortAnswerHtml, /<p><b>参考答案：<\/b>/);
 
 const failedShortAnswerHtml = sandbox.renderQuestionReview({
   question: {

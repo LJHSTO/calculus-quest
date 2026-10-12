@@ -32,6 +32,67 @@ let sessionStorage = window.__openMaicSessionStorage;
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>定积分赛车 - 累积的奥秘</title>
+<script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-09-09-game-audit-r2",
+  "course_version": "multi-scene-functions-limits-20260917-r2",
+  "chapter_id": "V14-C3",
+  "chapter_title": "积分直觉与积分方法",
+  "module_id": "GH-06",
+  "module_title": "积分直觉：面积、累积与原函数",
+  "knowledge_point_id": "GH-06-K02",
+  "concept_tag": "定积分作为累积",
+  "scene_type": "game",
+  "resource_id": "GH-06-K02:game",
+  "resource_title": "定积分作为累积：误解修复挑战",
+  "learning_objective": "能解释「定积分作为累积」的核心含义，并用交互证据说明自己的判断。",
+  "misconception": "只记住「定积分作为累积」的符号或结论，没有把它和图像、操作或应用情境连接起来。",
+  "observable_evidence": "控制小车根据速度变化到达目标位置，理解定积分作为累积的含义，特别是负面积代表反向位移",
+  "evidence_events": [
+    "scene_entered",
+    "scene_completed",
+    "hint_requested",
+    "reset_used",
+    "attempt_submitted",
+    "challenge_result",
+    "independent_check_completed"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [
+      "button",
+      "drag",
+      "canvas"
+    ],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": true,
+    "reports_reset": true,
+    "judges_correctness": false,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": true
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": true,
+    "reentry_after_help": "resume_or_restart"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "该场景不判定对错，不能作为独立掌握证据",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "本次提交前 hint_count=0 且 reset_count=0",
+    "failure_is_evidence": true
+  }
+}
+</script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   
@@ -1056,6 +1117,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       <h2 id="level-title">第 1 关</h2>
       <p id="level-desc">简单前进</p>
       <div class="hint" id="level-hint"></div>
+      <button class="game-btn" id="level-hint-btn" onclick="showLevelHint()">💡 查看提示</button>
       <button class="game-btn" onclick="beginLevel()">出发！</button>
     </div>
     <!-- Pause overlay -->
@@ -1229,6 +1291,45 @@ document.addEventListener('DOMContentLoaded', function() {
   let forwardPressed = false;
   let brakePressed = false;
   let reversePressed = false;
+  let hadPositiveVelocity = false;
+  let hadNegativeVelocity = false;
+  let lastLevelPassed = false;
+
+  function recordChallenge(payload) {
+    window.OpenMaicLearningEvidence?.recordChallenge(payload);
+  }
+
+  function recordReset(payload) {
+    window.OpenMaicLearningEvidence?.recordReset(payload);
+  }
+
+  function recordHint(payload) {
+    window.OpenMaicLearningEvidence?.recordHint(payload);
+  }
+
+  function completeScene(payload) {
+    window.OpenMaicLearningEvidence?.completeScene(payload);
+  }
+
+  function evaluateDisplacementAttempt(payload) {
+    if (window.OpenMaicLearningEvidence?.evaluateDisplacementAttempt) {
+      return window.OpenMaicLearningEvidence.evaluateDisplacementAttempt(payload);
+    }
+    const error = Math.abs(payload.position - payload.target);
+    const precisionPassed = error < 1;
+    const conceptPassed = payload.target === 0
+      ? payload.hadPositiveVelocity && payload.hadNegativeVelocity && payload.totalDistance >= 2
+      : payload.target < 0
+        ? payload.hadNegativeVelocity
+        : payload.hadPositiveVelocity;
+    return {
+      passed: precisionPassed && conceptPassed,
+      precisionPassed,
+      conceptPassed,
+      error,
+      reason: precisionPassed ? '速度方向证据不足' : `最终位置与目标相差 ${error.toFixed(2)}m`
+    };
+  }
 
   // Constants
   const MAX_VELOCITY = 8;
@@ -1309,6 +1410,26 @@ document.addEventListener('DOMContentLoaded', function() {
     trackCtx = trackCanvas.getContext('2d');
     resizeCanvases();
     window.addEventListener('resize', resizeCanvases);
+    bindHoldControl('btn-forward', value => { forwardPressed = value; });
+    bindHoldControl('btn-brake', value => { brakePressed = value; });
+    bindHoldControl('btn-reverse', value => { reversePressed = value; });
+  }
+
+  function bindHoldControl(id, onChange) {
+    const button = document.getElementById(id);
+    if (!button) return;
+    const start = event => {
+      if (!gameActive || paused) return;
+      event.preventDefault();
+      onChange(true);
+      button.setPointerCapture?.(event.pointerId);
+    };
+    const stop = () => onChange(false);
+    button.addEventListener('pointerdown', start);
+    button.addEventListener('pointerup', stop);
+    button.addEventListener('pointercancel', stop);
+    button.addEventListener('pointerleave', stop);
+    window.addEventListener('pointerup', stop);
   }
 
   function resizeCanvases() {
@@ -1338,10 +1459,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const lvl = levels[currentLevel];
     document.getElementById('level-title').textContent = lvl.title;
     document.getElementById('level-desc').textContent = lvl.desc;
-    document.getElementById('level-hint').innerHTML = '💡 ' + lvl.hint;
+    document.getElementById('level-hint').textContent = '先独立尝试；卡住时再查看提示。';
+    document.getElementById('level-hint-btn').disabled = false;
     document.getElementById('level-overlay').classList.remove('hidden');
     document.getElementById('level-num').textContent = lvl.id;
   }
+
+  window.showLevelHint = function() {
+    const lvl = levels[currentLevel];
+    document.getElementById('level-hint').innerHTML = '💡 ' + lvl.hint;
+    document.getElementById('level-hint-btn').disabled = true;
+    recordHint({
+      hint_type: 'conceptual',
+      challenge_id: 'GH-06-K02-displacement-level-' + (currentLevel + 1)
+    });
+  };
 
   window.beginLevel = function() {
     document.getElementById('level-overlay').classList.add('hidden');
@@ -1363,6 +1495,9 @@ document.addEventListener('DOMContentLoaded', function() {
     forwardPressed = false;
     brakePressed = false;
     reversePressed = false;
+    hadPositiveVelocity = false;
+    hadNegativeVelocity = false;
+    lastLevelPassed = false;
 
     document.getElementById('hud-target').textContent = (lvl.target >= 0 ? '+' : '') + lvl.target.toFixed(1) + 'm';
     updateHUD();
@@ -1419,6 +1554,8 @@ document.addEventListener('DOMContentLoaded', function() {
       carVelocity *= (1 - 0.5 * dt);
       if (Math.abs(carVelocity) < 0.1) carVelocity = 0;
     }
+    if (carVelocity > 0.2) hadPositiveVelocity = true;
+    if (carVelocity < -0.2) hadNegativeVelocity = true;
 
     // Update position (Riemann sum / integral approximation)
     const oldPos = carPosition;
@@ -1442,30 +1579,54 @@ document.addEventListener('DOMContentLoaded', function() {
     gameActive = false;
     
     const lvl = levels[currentLevel];
-    const error = Math.abs(carPosition - lvl.target);
     const displacement = carPosition;
+    const outcome = evaluateDisplacementAttempt({
+      target: lvl.target,
+      position: carPosition,
+      totalDistance,
+      hadPositiveVelocity,
+      hadNegativeVelocity,
+      tolerance: 1,
+      minimumMovement: 2
+    });
+    const error = outcome.error;
+    lastLevelPassed = outcome.passed;
+    const challengeId = 'GH-06-K02-displacement-level-' + (currentLevel + 1);
+    recordChallenge({
+      challenge_id: challengeId,
+      question_id: challengeId,
+      is_correct: outcome.passed,
+      completed: outcome.passed,
+      score: outcome.passed ? 1 : 0,
+      max_score: 1,
+      target: lvl.target,
+      position: carPosition,
+      error,
+      total_distance: totalDistance,
+      had_positive_velocity: hadPositiveVelocity,
+      had_negative_velocity: hadNegativeVelocity,
+      error_type: outcome.passed ? '' : (outcome.precisionPassed ? 'missing_direction_evidence' : 'position_error'),
+      reason: outcome.reason
+    });
     
     // Calculate score
     let points = 0;
     let grade = '';
     
-    if (error < 0.3) {
+    if (!outcome.passed) {
+      points = 0;
+      grade = '再试一次';
+    } else if (error < 0.3) {
       points = 10;
       grade = '🌟🌟🌟 完美！';
-    } else if (error < 1.0) {
+    } else {
       points = 8;
       grade = '🌟🌟 优秀！';
-    } else if (error < 2.0) {
-      points = 5;
-      grade = '🌟 不错！';
-    } else {
-      points = 2;
-      grade = '💪 继续努力！';
     }
 
     // Bonus for efficiency
     const efficiency = Math.abs(displacement) / totalDistance;
-    if (totalDistance > 0 && efficiency > 0.9) {
+    if (outcome.passed && totalDistance > 0 && efficiency > 0.9) {
       points += 2;
     }
 
@@ -1473,10 +1634,19 @@ document.addEventListener('DOMContentLoaded', function() {
     totalScore += points;
 
     // Check achievements
-    checkAchievements(lvl, error, totalDistance);
+    if (outcome.passed) checkAchievements(lvl, error, totalDistance);
 
     // Show results
-    showResults(lvl, error, totalDistance, displacement, points, grade);
+    showResults(lvl, error, totalDistance, displacement, points, grade, outcome);
+    if (outcome.passed && currentLevel >= levels.length - 1) {
+      completeScene({
+        completed: true,
+        is_correct: true,
+        score: levels.length,
+        max_score: levels.length,
+        result: 'passed'
+      });
+    }
     saveProgress();
   }
 
@@ -1513,7 +1683,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => popup.classList.remove('show'), 3000);
   }
 
-  function showResults(lvl, error, totalDistance, displacement, points, grade) {
+  function showResults(lvl, error, totalDistance, displacement, points, grade, outcome) {
     document.getElementById('result-overlay').classList.remove('hidden');
     document.getElementById('result-title').textContent = grade;
     document.getElementById('result-score').textContent = '+' + points;
@@ -1525,7 +1695,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Explanation
     let explanation = '';
-    if (error < 0.3) {
+    if (!outcome.conceptPassed) {
+      explanation = '<strong>💡 还缺一项关键证据：</strong>' + outcome.reason + '。<br>速度-时间图上方与下方的面积分别表示正、负位移。';
+    } else if (!outcome.precisionPassed) {
+      explanation = '<strong>💡 位置还不够准确：</strong>' + outcome.reason + '。<br>提前刹车并观察净面积是否接近目标位移。';
+    } else if (error < 0.3) {
       explanation = '<strong>🎉 完美定位！</strong><br>你准确地控制了速度，使得 <strong>∫v(t)dt = ' + (Number.isFinite(Number(displacement)) ? Number(displacement) : 0).toFixed(1) + 'm</strong>，正好到达目标！';
     } else if (lvl.target < 0) {
       explanation = '<strong>💡 关键点：</strong>负数目标需要负速度（倒车）！<br>速度-时间图在 t 轴<strong>下方</strong>的面积是<strong>负的</strong>，代表往回走。<br>这就是为什么 <strong>∫v(t)dt</strong> 可能为负，而总路程总是正的。';
@@ -1535,7 +1709,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('result-explanation').innerHTML = explanation;
 
     const btn = document.getElementById('result-btn');
-    if (currentLevel >= levels.length - 1) {
+    if (!outcome.passed) {
+      btn.textContent = '重试本关';
+    } else if (currentLevel >= levels.length - 1) {
       btn.textContent = '🔄 重新开始';
     } else {
       btn.textContent = '下一关 ➜';
@@ -1544,12 +1720,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.nextLevel = function() {
     document.getElementById('result-overlay').classList.add('hidden');
-    if (currentLevel >= levels.length - 1) {
+    if (!lastLevelPassed) {
+      recordReset({
+        reason: 'retry_level',
+        challenge_id: 'GH-06-K02-displacement-level-' + (currentLevel + 1)
+      });
+    } else if (currentLevel >= levels.length - 1) {
       currentLevel = 0;
+      totalScore = 0;
+      recordReset({ reason: 'restart_after_completion' });
     } else {
       currentLevel++;
     }
     document.getElementById('level-num').textContent = levels[currentLevel].id;
+    saveProgress();
     showLevelIntro();
   };
 

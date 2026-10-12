@@ -855,11 +855,17 @@ function initSchema() {
       ended_at TEXT DEFAULT '',
       outcome_attempt_id TEXT DEFAULT '',
       withdrawal_reason TEXT DEFAULT '',
+      paused_at TEXT DEFAULT '',
+      pause_count INTEGER NOT NULL DEFAULT 0,
+      paused_duration_ms INTEGER NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL,
       UNIQUE (user_id, experiment_id, stage)
     )
   `);
   try { d.run("ALTER TABLE proactive_outcome_sessions ADD COLUMN draft_response_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
+  try { d.run("ALTER TABLE proactive_outcome_sessions ADD COLUMN paused_at TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE proactive_outcome_sessions ADD COLUMN pause_count INTEGER NOT NULL DEFAULT 0"); } catch {}
+  try { d.run("ALTER TABLE proactive_outcome_sessions ADD COLUMN paused_duration_ms INTEGER NOT NULL DEFAULT 0"); } catch {}
   d.run("CREATE INDEX IF NOT EXISTS idx_proactive_outcome_sessions_experiment ON proactive_outcome_sessions(experiment_id, condition, stage, status, started_at)");
   d.run("CREATE INDEX IF NOT EXISTS idx_proactive_outcome_sessions_user ON proactive_outcome_sessions(user_id, experiment_id, status, updated_at)");
   d.run("CREATE UNIQUE INDEX IF NOT EXISTS idx_proactive_outcome_sessions_one_active ON proactive_outcome_sessions(user_id, experiment_id) WHERE status = 'active'");
@@ -946,6 +952,8 @@ function initSchema() {
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_confidence REAL"); } catch {}
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_feedback TEXT DEFAULT ''"); } catch {}
   try { d.run("ALTER TABLE quiz_results ADD COLUMN ai_error_type TEXT DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE quiz_results ADD COLUMN research_experiment_id TEXT NOT NULL DEFAULT ''"); } catch {}
+  try { d.run("ALTER TABLE quiz_results ADD COLUMN research_context_json TEXT NOT NULL DEFAULT '{}'"); } catch {}
   try { d.run("ALTER TABLE grading_regrade_audits ADD COLUMN batch_id TEXT DEFAULT ''"); } catch {}
   d.run("CREATE INDEX IF NOT EXISTS idx_gra_batch ON grading_regrade_audits(batch_id, created_at)");
   ensureLearningGenerationColumn(d, "quiz_results");
@@ -1139,15 +1147,18 @@ function insertQuizResult(record) {
     `INSERT OR REPLACE INTO quiz_results
       (id, user_id, chapter_id, chapter_label, unit_id, unit_label,
        question_id, question_type, phase, points, response, is_correct,
-       status, score, max_score, learning_generation, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       status, score, max_score, learning_generation, created_at,
+       research_experiment_id, research_context_json)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       record.id, record.user_id, record.chapter_id, record.chapter_label || "",
       record.unit_id, record.unit_label || "", record.question_id,
       record.question_type || "", record.phase || "", record.points || 0,
       typeof record.response === "string" ? record.response : JSON.stringify(record.response),
       typeof record.is_correct === "number" ? record.is_correct : (record.is_correct ? 1 : 0), record.status || "",
-      record.score || 0, record.max_score || 0, generation, record.created_at
+      record.score || 0, record.max_score || 0, generation, record.created_at,
+      record.research_context?.experimentId || "",
+      JSON.stringify(record.research_context || {})
     ]
   );
 }
@@ -1188,6 +1199,23 @@ function existingQuizResultNeedsReview(row = {}) {
     || LEGACY_AI_REVIEW_FAILURE_PATTERNS.some((pattern) => feedback.includes(pattern));
 }
 
+/**
+ * A regrade is an administrative decision about one specific attempt. A client
+ * snapshot captured before it must never silently revert it — which is exactly
+ * what happens when the regraded row still looks "needs review" (a regrade can
+ * legitimately leave ai_confidence below the threshold, and the row then stays
+ * eligible for the snapshot overwrite branch below).
+ */
+function quizResultHasAppliedRegrade(quizResultId = "") {
+  const id = String(quizResultId || "").trim();
+  if (!id) return false;
+  return Boolean(queryOne(
+    `SELECT 1 AS present FROM grading_regrade_audits
+     WHERE quiz_result_id = ? AND status = 'applied' LIMIT 1`,
+    [id]
+  ));
+}
+
 function reconciledQuizResultParams(record = {}) {
   const isCorrect = Number(record.is_correct);
   const aiScore = finiteQuizValue(record.ai_score);
@@ -1223,6 +1251,7 @@ function reconcileQuizResults(records = []) {
   let inserted = 0;
   let updated = 0;
   let skipped = 0;
+  let regradeProtected = 0;
   const seen = new Set();
   d.run("BEGIN IMMEDIATE");
   try {
@@ -1280,6 +1309,7 @@ function reconcileQuizResults(records = []) {
         existingQuizResultNeedsReview(existing)
         && String(existing.question_type || record.question_type || "").trim().toLowerCase() === "short_answer"
         && incomingQuizReviewIsGraded(record)
+        && !quizResultHasAppliedRegrade(existing.id)
       ) {
         const aiScore = finiteQuizValue(record.ai_score);
         const aiConfidence = finiteQuizValue(record.ai_confidence);
@@ -1318,6 +1348,7 @@ function reconcileQuizResults(records = []) {
         updated += 1;
       } else {
         skipped += 1;
+        if (quizResultHasAppliedRegrade(existing.id)) regradeProtected += 1;
       }
     }
     d.run("COMMIT");
@@ -1326,7 +1357,7 @@ function reconcileQuizResults(records = []) {
     throw error;
   }
   if (inserted || updated) scheduleSave();
-  return { inserted, updated, skipped, total: candidates.length };
+  return { inserted, updated, skipped, regradeProtected, total: candidates.length };
 }
 
 function getQuizResultsByUser(userId, limit = 200) {
@@ -2781,11 +2812,33 @@ function updateProactiveInterventionFollowup({
   return getProactiveIntervention(interventionId);
 }
 
-function proactiveDecisionRows(options = {}) {
-  const experimentId = String(options.experimentId || "").trim();
+/**
+ * 该参与者在本次实验里已经产生过多少个决策点。
+ *
+ * 决策点条件的置换区块需要**跨知识点连续编号**：区块是"参与者每 4 个决策点"，不是
+ * "每个知识点每 4 个决策点"。用每知识点自己的计数会让区块在知识点之间反复重启，
+ * 破坏参与者内的均衡。
+ */
+function proactiveDecisionCountForUser(userId = "", experimentId = "") {
+  const id = String(userId || "").trim();
+  if (!id) return 0;
+  const params = [id];
+  let where = "WHERE pd.user_id = ?";
+  if (experimentId) {
+    where += " AND pd.experiment_id = ?";
+    params.push(String(experimentId));
+  }
+  return Number(queryOne(
+    `SELECT COUNT(*) AS c FROM proactive_decisions pd ${where}`,
+    params
+  )?.c || 0);
+}
+
+function proactiveDecisionRows(options = {}) {  const experimentId = String(options.experimentId || "").trim();
   const userId = String(options.userId || "").trim();
   const condition = String(options.condition || "").trim();
   const decision = String(options.decision || "").trim();
+  const chapterId = String(options.chapterId || "").trim();
   const limit = Math.max(1, Math.min(Number(options.limit || 500), 1000));
   const offset = Math.max(0, Number(options.offset || 0));
   const clauses = [];
@@ -2793,6 +2846,10 @@ function proactiveDecisionRows(options = {}) {
   if (experimentId) {
     clauses.push("pd.experiment_id = ?");
     params.push(experimentId);
+  }
+  if (chapterId && chapterId.toLowerCase() !== "all") {
+    clauses.push("pd.chapter_id = ?");
+    params.push(chapterId);
   }
   if (userId) {
     clauses.push("pd.user_id = ?");
@@ -2866,6 +2923,53 @@ function proactiveAssignmentSummary(experimentId = "") {
      ORDER BY experiment_id, condition, stratum`,
     params
   );
+}
+
+function proactiveAssignmentRoster({
+  experimentId = "",
+  condition = "",
+  limit = 1000,
+  offset = 0
+} = {}) {
+  const clauses = ["ea.stratum NOT IN ('', 'unassigned', 'unstratified')"];
+  const params = [];
+  if (experimentId) {
+    clauses.push("ea.experiment_id = ?");
+    params.push(experimentId);
+  }
+  if (condition) {
+    clauses.push("ea.condition = ?");
+    params.push(condition);
+  }
+  const safeLimit = Math.max(1, Math.min(Number(limit || 1000), 5000));
+  const safeOffset = Math.max(0, Number(offset || 0));
+  const where = clauses.join(" AND ");
+  const total = Number(queryOne(
+    `SELECT COUNT(*) AS total
+     FROM experiment_assignments ea
+     WHERE ${where}`,
+    params
+  )?.total || 0);
+  const rows = queryAll(
+    `SELECT ea.user_id, u.nickname, ea.experiment_id, ea.condition,
+            ea.cohort, ea.stratum, ea.assignment_version, ea.assigned_at,
+            COALESCE(pp.status, '') AS participation_status,
+            COALESCE(pp.enrollment_basis, '') AS enrollment_basis,
+            COALESCE(pp.consented_at, '') AS consented_at,
+            COALESCE(pp.withdrawn_at, '') AS withdrawn_at,
+            COALESCE(lsv.generation, 1) AS learning_generation
+     FROM experiment_assignments ea
+     LEFT JOIN users u ON u.id = ea.user_id
+     LEFT JOIN proactive_participation pp
+       ON pp.user_id = ea.user_id
+      AND pp.experiment_id = ea.experiment_id
+     LEFT JOIN learning_state_versions lsv ON lsv.user_id = ea.user_id
+     WHERE ${where}
+     ORDER BY ea.assigned_at DESC, ea.user_id
+     LIMIT ? OFFSET ?`,
+    [...params, safeLimit, safeOffset]
+  );
+  return { rows, total, limit: safeLimit, offset: safeOffset };
 }
 
 function proactiveDecisionSummary(experimentId = "") {
@@ -3334,6 +3438,156 @@ function updateProactiveOutcomeSessionDraft({
   };
 }
 
+function pauseProactiveOutcomeSession({ userId, sessionId, pausedAt }) {
+  const session = getProactiveOutcomeSessionById(userId, sessionId);
+  if (!session) return { ok: false, idempotent: false, reason: "not_found", session: null };
+  if (session.status !== "active") {
+    return {
+      ok: false,
+      idempotent: false,
+      reason: `session_${session.status}`,
+      session
+    };
+  }
+  if (session.paused_at) {
+    return { ok: true, idempotent: true, reason: "", session };
+  }
+  execute(
+    `UPDATE proactive_outcome_sessions
+     SET paused_at = ?, pause_count = pause_count + 1, updated_at = ?
+     WHERE id = ? AND user_id = ? AND status = 'active' AND paused_at = ''`,
+    [pausedAt, pausedAt, sessionId, userId]
+  );
+  return {
+    ok: true,
+    idempotent: false,
+    reason: "",
+    session: getProactiveOutcomeSessionById(userId, sessionId)
+  };
+}
+
+function resumeProactiveOutcomeSession({ userId, sessionId, resumedAt }) {
+  const session = getProactiveOutcomeSessionById(userId, sessionId);
+  if (!session) return { ok: false, idempotent: false, reason: "not_found", session: null };
+  if (session.status !== "active") {
+    return {
+      ok: false,
+      idempotent: false,
+      reason: `session_${session.status}`,
+      session
+    };
+  }
+  if (!session.paused_at) {
+    return { ok: true, idempotent: true, reason: "", session };
+  }
+  const paused = Date.parse(session.paused_at || "");
+  const resumed = Date.parse(resumedAt || "");
+  const pauseMs = Number.isFinite(paused) && Number.isFinite(resumed)
+    ? Math.max(0, Math.trunc(resumed - paused))
+    : 0;
+  execute(
+    `UPDATE proactive_outcome_sessions
+     SET paused_at = '', paused_duration_ms = paused_duration_ms + ?, updated_at = ?
+     WHERE id = ? AND user_id = ? AND status = 'active'`,
+    [pauseMs, resumedAt, sessionId, userId]
+  );
+  return {
+    ok: true,
+    idempotent: false,
+    reason: "",
+    resumedPauseMs: pauseMs,
+    session: getProactiveOutcomeSessionById(userId, sessionId)
+  };
+}
+
+function finishProactiveOutcomeSessionWithoutAttempt({
+  userId,
+  sessionId,
+  status,
+  reason,
+  endedAt
+}) {
+  const allowedStatuses = new Set(["skipped", "expired"]);
+  if (!allowedStatuses.has(status)) {
+    return { ok: false, idempotent: false, reason: "status_invalid", session: null };
+  }
+  const d = getDbSync();
+  d.run("BEGIN IMMEDIATE");
+  try {
+    const session = getProactiveOutcomeSessionById(userId, sessionId);
+    if (!session) {
+      d.run("ROLLBACK");
+      return { ok: false, idempotent: false, reason: "not_found", session: null };
+    }
+    if (session.status === status) {
+      d.run("ROLLBACK");
+      return { ok: true, idempotent: true, reason: "", session };
+    }
+    if (session.status !== "active") {
+      d.run("ROLLBACK");
+      return {
+        ok: false,
+        idempotent: false,
+        reason: `session_${session.status}`,
+        session
+      };
+    }
+    const paused = Date.parse(session.paused_at || "");
+    const ended = Date.parse(endedAt || "");
+    const currentPauseMs = Number.isFinite(paused) && Number.isFinite(ended)
+      ? Math.max(0, Math.trunc(ended - paused))
+      : 0;
+    d.run(
+      `UPDATE proactive_outcome_sessions
+       SET status = ?, ended_at = ?, withdrawal_reason = ?, paused_at = '',
+           paused_duration_ms = paused_duration_ms + ?, updated_at = ?
+       WHERE id = ? AND user_id = ? AND status = 'active'`,
+      [status, endedAt, reason, currentPauseMs, endedAt, sessionId, userId]
+    );
+    d.run("COMMIT");
+    scheduleSave();
+    return {
+      ok: true,
+      idempotent: false,
+      reason: "",
+      session: getProactiveOutcomeSessionById(userId, sessionId)
+    };
+  } catch (error) {
+    try { d.run("ROLLBACK"); } catch {}
+    throw error;
+  }
+}
+
+function skipProactiveOutcomeSession({
+  userId,
+  sessionId,
+  reason = "student_skip",
+  endedAt
+}) {
+  return finishProactiveOutcomeSessionWithoutAttempt({
+    userId,
+    sessionId,
+    status: "skipped",
+    reason,
+    endedAt
+  });
+}
+
+function expireProactiveOutcomeSession({
+  userId,
+  sessionId,
+  reason = "retention_window_expired",
+  endedAt
+}) {
+  return finishProactiveOutcomeSessionWithoutAttempt({
+    userId,
+    sessionId,
+    status: "expired",
+    reason,
+    endedAt
+  });
+}
+
 function withdrawProactiveOutcomeSession({
   userId,
   sessionId,
@@ -3525,6 +3779,11 @@ function submitProactiveOutcomeSession({
         attempt: null
       };
     }
+    const paused = Date.parse(session.paused_at || "");
+    const submitted = Date.parse(submittedAt || "");
+    const currentPauseMs = Number.isFinite(paused) && Number.isFinite(submitted)
+      ? Math.max(0, Math.trunc(submitted - paused))
+      : 0;
     d.run(
       `INSERT INTO proactive_outcome_attempts
         (id, session_id, user_id, experiment_id, condition, cohort, chapter_id,
@@ -3560,9 +3819,10 @@ function submitProactiveOutcomeSession({
     d.run(
       `UPDATE proactive_outcome_sessions
        SET status = 'submitted', ended_at = ?, outcome_attempt_id = ?,
-           draft_response_json = '{}', updated_at = ?
+           draft_response_json = '{}', paused_at = '',
+           paused_duration_ms = paused_duration_ms + ?, updated_at = ?
        WHERE id = ? AND user_id = ? AND status = 'active'`,
-      [submittedAt, attempt.id, submittedAt, session.id, userId]
+      [submittedAt, attempt.id, currentPauseMs, submittedAt, session.id, userId]
     );
     d.run("COMMIT");
     scheduleSave();
@@ -3626,7 +3886,8 @@ function proactiveOutcomeSessionRows({
             pos.chapter_id, pos.stage, pos.instrument_version,
             pos.protocol_fingerprint, pos.status, pos.learning_generation,
             pos.started_at, pos.ended_at, pos.outcome_attempt_id,
-            pos.withdrawal_reason, pos.updated_at, u.nickname,
+            pos.withdrawal_reason, pos.paused_at, pos.pause_count,
+            pos.paused_duration_ms, pos.updated_at, u.nickname,
             pp.status AS participation_status,
             pp.consent_version AS participation_consent_version,
             pp.consented_at AS participation_consented_at,
@@ -3719,7 +3980,7 @@ function proactiveOutcomeSummary(experimentId = "") {
   const params = experimentId ? [experimentId] : [];
   const where = experimentId ? "WHERE experiment_id = ?" : "";
   return queryAll(
-    `SELECT experiment_id, condition, stage,
+    `SELECT experiment_id, condition, stage, instrument_version,
             COUNT(*) AS submissions,
             COUNT(DISTINCT user_id) AS participants,
             AVG(accuracy) AS mean_accuracy,
@@ -3728,10 +3989,43 @@ function proactiveOutcomeSummary(experimentId = "") {
             MAX(submitted_at) AS last_submitted_at
      FROM proactive_outcome_attempts
      ${where}
-     GROUP BY experiment_id, condition, stage
-     ORDER BY experiment_id, stage, condition`,
+     GROUP BY experiment_id, condition, stage, instrument_version
+     ORDER BY experiment_id, stage, condition, instrument_version`,
     params
   );
+}
+
+function proactiveRetentionReminderHistory(userId, experimentId) {
+  return queryAll(
+    `SELECT id, payload, created_at
+     FROM events
+     WHERE user_id = ?
+       AND type = 'interaction'
+       AND payload LIKE '%proactive_retention_reminder_%'
+     ORDER BY created_at, id`,
+    [userId]
+  ).map((row) => {
+    const payload = parseJsonField(row.payload);
+    const research = payload.research && typeof payload.research === "object"
+      ? payload.research
+      : {};
+    const data = payload.data && typeof payload.data === "object"
+      ? payload.data
+      : {};
+    return {
+      id: row.id,
+      experimentId: research.experimentId || "",
+      action: String(payload.eventType || "").replace(
+        /^proactive_retention_reminder_/,
+        ""
+      ),
+      milestoneHours: Number(data.milestoneHours),
+      createdAt: row.created_at || ""
+    };
+  }).filter((row) => (
+    row.experimentId === experimentId
+    && Number.isFinite(row.milestoneHours)
+  ));
 }
 
 function proactiveParticipantFlow({
@@ -3794,12 +4088,16 @@ function proactiveParticipantFlow({
         posttestCompleted: new Set(),
         nearStarted: new Set(),
         nearSubmitted: new Set(),
+        nearSkipped: new Set(),
         nearWithdrawn: new Set(),
         representationStarted: new Set(),
         representationSubmitted: new Set(),
+        representationSkipped: new Set(),
         representationWithdrawn: new Set(),
         retentionStarted: new Set(),
         retentionSubmitted: new Set(),
+        retentionSkipped: new Set(),
+        retentionExpired: new Set(),
         retentionWithdrawn: new Set(),
         studyWithdrawn: new Set(),
         repeatedLearning: new Set()
@@ -3851,6 +4149,12 @@ function proactiveParticipantFlow({
     if (row.status === "withdrawn") {
       current[`${prefix}Withdrawn`].add(row.user_id);
     }
+    if (row.status === "skipped") {
+      current[`${prefix}Skipped`].add(row.user_id);
+    }
+    if (row.status === "expired" && prefix === "retention") {
+      current.retentionExpired.add(row.user_id);
+    }
     rememberGeneration(row.user_id, row.learning_generation);
   });
   attempts.forEach((row) => {
@@ -3884,19 +4188,1002 @@ function proactiveParticipantFlow({
       posttestCompleted: count("posttestCompleted"),
       nearStarted: count("nearStarted"),
       nearSubmitted: count("nearSubmitted"),
+      nearSkipped: count("nearSkipped"),
       nearWithdrawn: count("nearWithdrawn"),
       representationStarted: count("representationStarted"),
       representationSubmitted: count("representationSubmitted"),
+      representationSkipped: count("representationSkipped"),
       representationWithdrawn: count("representationWithdrawn"),
       transferCompleted: Array.from(current.nearSubmitted)
         .filter((userId) => current.representationSubmitted.has(userId)).length,
       retentionStarted: count("retentionStarted"),
       retentionSubmitted: count("retentionSubmitted"),
+      retentionSkipped: count("retentionSkipped"),
+      retentionExpired: count("retentionExpired"),
       retentionWithdrawn: count("retentionWithdrawn"),
       studyWithdrawn: count("studyWithdrawn"),
       repeatedLearningParticipants: count("repeatedLearning")
     };
   });
+}
+
+function proactiveRate(numerator, denominator) {
+  const total = Number(denominator || 0);
+  if (!total) return 0;
+  return Math.round((Number(numerator || 0) / total) * 1000) / 10;
+}
+
+function proactiveAttemptCategory(event = {}) {
+  if (event.data?.selected_zone === "missed" || event.data?.error_type === "missed_expression") {
+    return "missed";
+  }
+  if (event.hint_count > 0 || event.reset_count > 0) return "supported";
+  if (event.independent === true && event.hint_count === 0 && event.reset_count === 0) {
+    return "independent";
+  }
+  return "unclassified";
+}
+
+function proactiveBoolean(value) {
+  if (value === true || value === 1) return true;
+  if (value === false || value === 0 || value == null) return false;
+  return ["1", "true", "yes", "correct", "passed", "complete", "completed"]
+    .includes(String(value).trim().toLowerCase());
+}
+
+function proactiveQuizPhaseSummary(rows, phase, expected = 0) {
+  const latest = new Map();
+  rows.forEach((row) => {
+    if (row.phase !== phase) return;
+    latest.set(`${row.unit_id}|${row.question_id}`, row);
+  });
+  const values = Array.from(latest.values());
+  const score = values.reduce((sum, row) => sum + Number(row.score || 0), 0);
+  const maxScore = values.reduce((sum, row) => sum + Number(row.max_score || 0), 0);
+  const pending = values.filter((row) => Number(row.is_correct) < 0).length;
+  const completedAt = values
+    .map((row) => row.created_at || "")
+    .filter(Boolean)
+    .sort()
+    .at(-1) || "";
+  const expectedCount = Math.max(0, Number(expected || 0));
+  return {
+    submitted: values.length,
+    expected: expectedCount,
+    completed: expectedCount > 0 ? values.length >= expectedCount : values.length > 0,
+    pending,
+    score: Math.round(score * 100) / 100,
+    max_score: Math.round(maxScore * 100) / 100,
+    score_rate: proactiveRate(score, maxScore),
+    completed_at: completedAt
+  };
+}
+
+function researchAnalysisSource({ experimentId, chapterId, rowLimit = 50000 }) {
+  const members = `SELECT user_id FROM experiment_assignments WHERE experiment_id = ?
+    UNION SELECT user_id FROM proactive_participation WHERE experiment_id = ?
+    UNION SELECT user_id FROM quiz_results WHERE research_experiment_id = ?`;
+  const memberParams = [experimentId, experimentId, experimentId];
+  const read = (sql, params = []) => {
+    const rows = queryAll(`${sql} LIMIT ?`, [...params, rowLimit + 1]);
+    if (rows.length > rowLimit) {
+      const error = new Error("分析包超过单表上限，拒绝静默截断。");
+      error.code = "ANALYSIS_EXPORT_TOO_LARGE";
+      throw error;
+    }
+    return rows;
+  };
+  return {
+    experimentId, chapterId,
+    participants: read(
+      `SELECT m.user_id, ea.condition, ea.cohort, ea.stratum, ea.assignment_version,
+              ea.assigned_at, pp.status AS participation_status, pp.enrollment_basis,
+              pp.consented_at, pp.withdrawn_at,
+              COALESCE(lsv.generation, 1) AS current_learning_generation
+       FROM (${members}) m
+       LEFT JOIN experiment_assignments ea ON ea.user_id = m.user_id AND ea.experiment_id = ?
+       LEFT JOIN proactive_participation pp ON pp.user_id = m.user_id AND pp.experiment_id = ?
+       LEFT JOIN learning_state_versions lsv ON lsv.user_id = m.user_id
+       ORDER BY m.user_id`, [...memberParams, experimentId, experimentId]),
+    quizzes: read(
+      `SELECT * FROM quiz_results WHERE chapter_id = ?
+       AND (research_experiment_id = ? OR (research_experiment_id = '' AND user_id IN (${members})))
+       ORDER BY created_at, id`, [chapterId, experimentId, ...memberParams]),
+    events: read(
+      `SELECT id, user_id, payload, learning_generation, created_at FROM events
+       WHERE type = 'interaction' AND user_id IN (${members}) ORDER BY created_at, id`, memberParams),
+    initialGrades: read(
+      `SELECT id, user_id, input_summary, output_summary, llm_provider, created_at
+       FROM agent_decisions WHERE agent_type = 'grading' AND user_id IN (${members})
+       ORDER BY created_at, id`, memberParams),
+    regrades: read(
+      `SELECT gra.* FROM grading_regrade_audits gra
+       JOIN quiz_results qr ON qr.id = gra.quiz_result_id
+       WHERE qr.chapter_id = ? AND qr.user_id IN (${members}) ORDER BY gra.created_at, gra.id`,
+      [chapterId, ...memberParams]),
+    outcomes: read(
+      "SELECT * FROM proactive_outcome_attempts WHERE experiment_id = ? ORDER BY submitted_at, id", [experimentId]),
+    sessions: read(
+      "SELECT * FROM proactive_outcome_sessions WHERE experiment_id = ? ORDER BY started_at, id", [experimentId]),
+    decisions: read(
+      `SELECT pd.*, pi.status AS intervention_status, pi.resolution,
+              pi.followup_outcome_json, pi.shown_at
+       FROM proactive_decisions pd
+       LEFT JOIN proactive_interventions pi ON pi.decision_id = pd.id
+       WHERE pd.experiment_id = ? ORDER BY pd.created_at, pd.id`, [experimentId])
+  };
+}
+
+function proactiveExperimentAnalysis({
+  experimentId = "",
+  chapterId = "",
+  assessmentQuestionCounts = {},
+  outcomeInstrumentVersion = "v14-c3-outcomes-v3",
+  retentionDelayHours = 72,
+  retentionCloseHours = null,
+  retentionReminderHours = [72, 96],
+  now = new Date().toISOString()
+} = {}) {
+  const assignments = queryAll(
+    `SELECT ea.user_id, u.nickname, ea.experiment_id, ea.condition, ea.cohort,
+            ea.stratum, ea.assignment_version, ea.assigned_at,
+            COALESCE(pp.status, '') AS participation_status,
+            COALESCE(pp.enrollment_basis, '') AS enrollment_basis,
+            COALESCE(pp.consented_at, '') AS consented_at,
+            COALESCE(pp.withdrawn_at, '') AS withdrawn_at,
+            COALESCE(lsv.generation, 1) AS current_learning_generation
+     FROM experiment_assignments ea
+     LEFT JOIN users u ON u.id = ea.user_id
+     LEFT JOIN proactive_participation pp
+       ON pp.user_id = ea.user_id AND pp.experiment_id = ea.experiment_id
+     LEFT JOIN learning_state_versions lsv ON lsv.user_id = ea.user_id
+     WHERE ea.experiment_id = ?
+       AND ea.stratum NOT IN ('', 'unassigned', 'unstratified')
+     ORDER BY ea.assigned_at, ea.user_id`,
+    [experimentId]
+  );
+  if (!assignments.length) {
+    return {
+      participants: [],
+      challenges: [],
+      summary: {
+        participants: 0,
+        courseware_events: 0,
+        challenge_attempts: 0,
+        data_complete: 0,
+        needs_review: 0,
+        pending_learning: 0
+      },
+      quality: { status: "pending", signals: [] }
+    };
+  }
+
+  const protocol = getProactiveProtocolSnapshot(experimentId);
+  const expectedProtocolFingerprint = protocol?.protocol_fingerprint || "";
+  const participants = new Map();
+  const issueCounts = new Map();
+  const issueUsers = new Map();
+  const addIssue = (participant, issue, amount = 1) => {
+    if (!participant || !issue) return;
+    participant._quality.set(
+      issue,
+      Number(participant._quality.get(issue) || 0) + Math.max(1, Number(amount || 1))
+    );
+    issueCounts.set(issue, Number(issueCounts.get(issue) || 0) + Math.max(1, Number(amount || 1)));
+    if (!issueUsers.has(issue)) issueUsers.set(issue, new Set());
+    issueUsers.get(issue).add(participant.user_id);
+  };
+
+  assignments.forEach((row) => {
+    participants.set(row.user_id, {
+      ...row,
+      _generations: new Set([Math.max(1, Number(row.current_learning_generation || 1))]),
+      _events: [],
+      _reminders: [],
+      _scopeEvents: [],
+      _decisions: [],
+      _quizRows: [],
+      _sessions: [],
+      _attempts: [],
+      _quality: new Map()
+    });
+  });
+
+  const rememberGeneration = (participant, value) => {
+    const generation = Number(value);
+    if (Number.isFinite(generation) && generation > 0) {
+      participant._generations.add(Math.trunc(generation));
+    }
+  };
+  const eventRows = queryAll(
+    `SELECT e.id, e.user_id, e.payload, e.learning_generation, e.created_at
+     FROM events e
+     JOIN experiment_assignments ea
+       ON ea.user_id = e.user_id AND ea.experiment_id = ?
+     WHERE e.type = 'interaction'
+     ORDER BY julianday(e.created_at), e.id`,
+    [experimentId]
+  );
+  const semanticIdIndex = new Map();
+  const attemptChains = new Map();
+  const sequenceState = new Map();
+  const challengeChainIssues = new Map();
+  const eventRank = {
+    courseware_attempt_submitted: 1,
+    courseware_challenge_result: 2,
+    courseware_independent_check_completed: 3
+  };
+
+  eventRows.forEach((row) => {
+    const participant = participants.get(row.user_id);
+    if (!participant) return;
+    rememberGeneration(participant, row.learning_generation);
+    const payload = parseJsonField(row.payload);
+    const eventType = String(payload.eventType || payload.data?.eventType || "");
+    const research = payload.research && typeof payload.research === "object"
+      ? payload.research
+      : {};
+    const data = payload.data && typeof payload.data === "object"
+      ? payload.data
+      : {};
+
+    if (eventType.startsWith("proactive_retention_reminder_")) {
+      participant._reminders.push({
+        action: eventType.replace(/^proactive_retention_reminder_/, ""),
+        milestone_hours: Number(data.milestoneHours),
+        created_at: row.created_at || ""
+      });
+    }
+    if (eventType === "proactive_scope_preference_changed") {
+      participant._scopeEvents.push({
+        preference: String(data.preference || ""),
+        created_at: row.created_at || "",
+        learning_generation: Number(row.learning_generation || 1)
+      });
+    }
+    if (!eventType.startsWith("courseware_")) return;
+
+    const eventChapterId = String(
+      payload.chapterId || data.chapter_id || data.chapterId || ""
+    );
+    if (chapterId && eventChapterId && eventChapterId !== chapterId) return;
+    const generation = Math.max(1, Number(row.learning_generation || 1));
+    const semanticEventId = String(data.event_id || data.eventId || "");
+    const attemptId = String(data.attempt_id || data.attemptId || "");
+    const challengeId = String(
+      data.challenge_id || data.challengeId || data.question_id || data.questionId || ""
+    );
+    const resourceId = String(
+      data.resource_id || data.resourceId || payload.resourceId || ""
+    );
+    const knowledgePointId = String(
+      data.knowledge_point_id || data.knowledgePointId || payload.unitId || ""
+    );
+    const event = {
+      id: row.id,
+      user_id: row.user_id,
+      created_at: row.created_at || "",
+      learning_generation: generation,
+      event_type: eventType,
+      semantic_event_id: semanticEventId,
+      attempt_id: attemptId,
+      attempt_number: Number(data.attempt_number || data.attemptNumber || 0),
+      challenge_id: challengeId,
+      resource_id: resourceId,
+      resource_title: String(data.resource_title || data.resourceTitle || payload.resourceTitle || ""),
+      knowledge_point_id: knowledgePointId,
+      knowledge_point: String(data.concept_tag || payload.knowledgePoint || ""),
+      scene_type: String(data.scene_type || payload.sceneType || ""),
+      independent: typeof data.independent === "boolean" ? data.independent : null,
+      hint_count: Math.max(0, Number(data.hint_count || data.hintCount || 0)),
+      reset_count: Math.max(0, Number(data.reset_count || data.resetCount || 0)),
+      is_correct: data.is_correct === undefined ? null : proactiveBoolean(data.is_correct),
+      completed: proactiveBoolean(data.completed),
+      time_on_task_ms: Math.max(0, Number(data.time_on_task_ms || data.timeOnTaskMs || 0)),
+      research,
+      data,
+      issues: new Set()
+    };
+    const requiredResearch = [
+      "experimentId",
+      "condition",
+      "assignmentVersion",
+      "learningGeneration",
+      "protocolFingerprint"
+    ];
+    if (requiredResearch.some((key) => research[key] === undefined || research[key] === "")) {
+      event.issues.add("courseware_metadata_missing");
+      addIssue(participant, "courseware_metadata_missing");
+    }
+    if (research.experimentId && research.experimentId !== experimentId) {
+      event.issues.add("courseware_experiment_mismatch");
+      addIssue(participant, "courseware_experiment_mismatch");
+    }
+    if (research.condition && research.condition !== participant.condition) {
+      event.issues.add("courseware_group_mismatch");
+      addIssue(participant, "courseware_group_mismatch");
+    }
+    if (
+      research.assignmentVersion
+      && research.assignmentVersion !== participant.assignment_version
+    ) {
+      event.issues.add("courseware_assignment_version_mismatch");
+      addIssue(participant, "courseware_assignment_version_mismatch");
+    }
+    if (
+      Number.isFinite(Number(research.learningGeneration))
+      && Number(research.learningGeneration) !== generation
+    ) {
+      event.issues.add("courseware_generation_mismatch");
+      addIssue(participant, "courseware_generation_mismatch");
+    }
+    if (
+      expectedProtocolFingerprint
+      && research.protocolFingerprint
+      && research.protocolFingerprint !== expectedProtocolFingerprint
+    ) {
+      event.issues.add("courseware_protocol_mismatch");
+      addIssue(participant, "courseware_protocol_mismatch");
+    }
+    if (!semanticEventId) {
+      event.issues.add("courseware_semantic_id_missing");
+      addIssue(participant, "courseware_semantic_id_missing");
+    } else if (semanticIdIndex.has(semanticEventId)) {
+      const previous = semanticIdIndex.get(semanticEventId);
+      event.issues.add("courseware_semantic_id_duplicate");
+      previous.event.issues.add("courseware_semantic_id_duplicate");
+      addIssue(participant, "courseware_semantic_id_duplicate");
+      addIssue(previous.participant, "courseware_semantic_id_duplicate");
+    } else {
+      semanticIdIndex.set(semanticEventId, { participant, event });
+    }
+
+    const resourceKey = resourceId || `${payload.unitId || knowledgePointId}|${event.scene_type}`;
+    const sequenceKey = `${row.user_id}|${generation}|${resourceKey}`;
+    const rank = Number(eventRank[eventType] || 0);
+    const previousSequence = sequenceState.get(sequenceKey);
+    if (
+      event.attempt_number > 0
+      && previousSequence
+      && (
+        event.attempt_number < previousSequence.attemptNumber
+        || (
+          event.attempt_number === previousSequence.attemptNumber
+          && event.attempt_id
+          && event.attempt_id === previousSequence.attemptId
+          && rank > 0
+          && previousSequence.rank > rank
+        )
+      )
+    ) {
+      event.issues.add("courseware_event_order_anomaly");
+      addIssue(participant, "courseware_event_order_anomaly");
+    }
+    if (event.attempt_number > 0) {
+      sequenceState.set(sequenceKey, {
+        attemptNumber: event.attempt_number,
+        attemptId,
+        rank
+      });
+    }
+
+    if (attemptId && Object.hasOwn(eventRank, eventType)) {
+      const chainKey = `${row.user_id}|${generation}|${attemptId}`;
+      const chain = attemptChains.get(chainKey) || {
+        participant,
+        challengeId,
+        knowledgePointId,
+        resourceId: resourceKey,
+        attempt: null,
+        result: null,
+        independentCheck: null
+      };
+      if (eventType === "courseware_attempt_submitted") chain.attempt = event;
+      if (eventType === "courseware_challenge_result") chain.result = event;
+      if (eventType === "courseware_independent_check_completed") {
+        chain.independentCheck = event;
+      }
+      if (!chain.challengeId && challengeId) chain.challengeId = challengeId;
+      attemptChains.set(chainKey, chain);
+    }
+    participant._events.push(event);
+  });
+
+  attemptChains.forEach((chain) => {
+    if (!chain.result || (chain.attempt && chain.independentCheck)) return;
+    addIssue(chain.participant, "courseware_event_chain_missing");
+    const key = `${chain.knowledgePointId}|${chain.challengeId || chain.resourceId}`;
+    challengeChainIssues.set(key, Number(challengeChainIssues.get(key) || 0) + 1);
+    chain.result.issues.add("courseware_event_chain_missing");
+  });
+
+  const decisionRows = queryAll(
+    `SELECT pd.*, pi.status AS intervention_status, pi.shown_at, pi.resolution,
+            pi.latency_ms, pi.followup_outcome_json
+     FROM proactive_decisions pd
+     LEFT JOIN proactive_interventions pi ON pi.decision_id = pd.id
+     WHERE pd.experiment_id = ?
+     ORDER BY julianday(pd.created_at), pd.id`,
+    [experimentId]
+  );
+  decisionRows.forEach((row) => {
+    const participant = participants.get(row.user_id);
+    if (!participant) return;
+    rememberGeneration(participant, row.learning_generation);
+    participant._decisions.push(row);
+    if (row.condition && row.condition !== participant.condition) {
+      addIssue(participant, "decision_group_mismatch");
+    }
+    if (
+      row.assignment_version
+      && row.assignment_version !== participant.assignment_version
+    ) {
+      addIssue(participant, "decision_assignment_version_mismatch");
+    }
+  });
+
+  const quizRows = queryAll(
+    `SELECT qr.*
+     FROM quiz_results qr
+     JOIN experiment_assignments ea
+       ON ea.user_id = qr.user_id AND ea.experiment_id = ?
+     WHERE qr.chapter_id = ?
+     ORDER BY julianday(qr.created_at), qr.id`,
+    [experimentId, chapterId]
+  );
+  quizRows.forEach((row) => {
+    const participant = participants.get(row.user_id);
+    if (!participant) return;
+    rememberGeneration(participant, row.learning_generation);
+    participant._quizRows.push(row);
+  });
+
+  const sessionRows = queryAll(
+    `SELECT * FROM proactive_outcome_sessions
+     WHERE experiment_id = ?
+     ORDER BY julianday(started_at), id`,
+    [experimentId]
+  );
+  sessionRows.forEach((row) => {
+    const participant = participants.get(row.user_id);
+    if (!participant) return;
+    rememberGeneration(participant, row.learning_generation);
+    participant._sessions.push(row);
+    if (row.condition && row.condition !== participant.condition) {
+      addIssue(participant, "outcome_group_mismatch");
+    }
+    if (
+      expectedProtocolFingerprint
+      && row.protocol_fingerprint
+      && row.protocol_fingerprint !== expectedProtocolFingerprint
+    ) {
+      addIssue(participant, "outcome_protocol_mismatch");
+    }
+  });
+  const outcomeRows = queryAll(
+    `SELECT * FROM proactive_outcome_attempts
+     WHERE experiment_id = ?
+     ORDER BY julianday(submitted_at), id`,
+    [experimentId]
+  );
+  outcomeRows.forEach((row) => {
+    const participant = participants.get(row.user_id);
+    if (!participant) return;
+    rememberGeneration(participant, row.learning_generation);
+    participant._attempts.push(row);
+    if (row.condition && row.condition !== participant.condition) {
+      addIssue(participant, "outcome_group_mismatch");
+    }
+  });
+
+  const nowMs = Date.parse(now || "");
+  const delayHours = Math.max(0, Number(retentionDelayHours || 0));
+  const closeHours = retentionCloseHours === null || Number(retentionCloseHours) === 0
+    ? null : Math.max(delayHours, Number(retentionCloseHours));
+  const reminderHours = Array.from(new Set(
+    (Array.isArray(retentionReminderHours) ? retentionReminderHours : [])
+      .map(Number)
+      .filter(Number.isFinite)
+  )).sort((left, right) => left - right);
+  const outcomeForStage = (participant, stage, generation) => {
+    const attempt = participant._attempts.find((row) => (
+      row.stage === stage && Number(row.learning_generation || 1) === generation
+    ));
+    const session = participant._sessions.find((row) => (
+      row.stage === stage && Number(row.learning_generation || 1) === generation
+    ));
+    if (attempt) {
+      return {
+        status: "submitted",
+        score: Number(attempt.score || 0),
+        max_score: Number(attempt.max_score || 0),
+        accuracy: Math.round(Number(attempt.accuracy || 0) * 1000) / 10,
+        duration_ms: Number(attempt.duration_ms || 0),
+        started_at: attempt.started_at || session?.started_at || "",
+        ended_at: attempt.submitted_at || "",
+        pause_count: Number(session?.pause_count || 0),
+        paused_duration_ms: Number(session?.paused_duration_ms || 0),
+        withdrawal_reason: ""
+      };
+    }
+    if (session) {
+      return {
+        status: session.status === "active" && session.paused_at ? "paused" : session.status,
+        score: null,
+        max_score: null,
+        accuracy: null,
+        duration_ms: 0,
+        started_at: session.started_at || "",
+        ended_at: session.ended_at || "",
+        pause_count: Number(session.pause_count || 0),
+        paused_duration_ms: Number(session.paused_duration_ms || 0),
+        withdrawal_reason: session.withdrawal_reason || ""
+      };
+    }
+    return {
+      status: "not_started",
+      score: null,
+      max_score: null,
+      accuracy: null,
+      duration_ms: 0,
+      started_at: "",
+      ended_at: "",
+      pause_count: 0,
+      paused_duration_ms: 0,
+      withdrawal_reason: ""
+    };
+  };
+  const terminalOutcome = (outcome) => [
+    "submitted",
+    "skipped",
+    "withdrawn",
+    "expired"
+  ].includes(outcome.status);
+
+  const challengeMap = new Map();
+  const participantRows = assignments.map((assignment) => {
+    const participant = participants.get(assignment.user_id);
+    const generations = Array.from(participant._generations).sort((a, b) => a - b);
+    const analysisGeneration = generations[0] || 1;
+    if (generations.length > 1) addIssue(participant, "repeated_learning_generation");
+    const quiz = participant._quizRows.filter(
+      (row) => Number(row.learning_generation || 1) === analysisGeneration
+    );
+    const pretest = proactiveQuizPhaseSummary(
+      quiz,
+      "pre",
+      assessmentQuestionCounts.pre
+    );
+    const formative = proactiveQuizPhaseSummary(
+      quiz,
+      "formative",
+      assessmentQuestionCounts.formative
+    );
+    const posttest = proactiveQuizPhaseSummary(
+      quiz,
+      "post",
+      assessmentQuestionCounts.post
+    );
+    const coursewareEvents = participant._events.filter(
+      (event) => event.learning_generation === analysisGeneration
+    );
+    const resources = new Set();
+    const completedResources = new Set();
+    const challengeResults = [];
+    const resourceState = new Map();
+    coursewareEvents.forEach((event) => {
+      const resourceKey = event.resource_id
+        || `${event.knowledge_point_id}|${event.scene_type}`;
+      if (resourceKey) resources.add(resourceKey);
+      if (!resourceState.has(resourceKey)) {
+        resourceState.set(resourceKey, { hint: false, reset: false, complete: false });
+      }
+      const state = resourceState.get(resourceKey);
+      if (event.event_type === "courseware_hint_used") state.hint = true;
+      if (event.event_type === "courseware_reset_used") state.reset = true;
+      if (event.event_type === "courseware_interaction_complete" && event.completed) {
+        state.complete = true;
+        completedResources.add(resourceKey);
+      }
+      if (event.event_type === "courseware_challenge_result") {
+        challengeResults.push(event);
+      }
+    });
+    if (posttest.completed && !coursewareEvents.length) {
+      addIssue(participant, "courseware_events_missing");
+    }
+    const challengeAttempts = new Map();
+    challengeResults.forEach((event) => {
+      const challengeId = event.challenge_id
+        || `${event.resource_id || event.knowledge_point_id}:unnamed`;
+      const list = challengeAttempts.get(challengeId) || [];
+      list.push(event);
+      challengeAttempts.set(challengeId, list);
+
+      const challengeKey = `${event.knowledge_point_id}|${challengeId}`;
+      const item = challengeMap.get(challengeKey) || {
+        challenge_id: challengeId,
+        knowledge_point_id: event.knowledge_point_id,
+        knowledge_point: event.knowledge_point,
+        resource_id: event.resource_id,
+        resource_title: event.resource_title,
+        scene_type: event.scene_type,
+        participants: new Set(),
+        completedParticipants: new Set(),
+        sceneCompletedParticipants: new Set(),
+        hintParticipants: new Set(),
+        resetParticipants: new Set(),
+        attemptsByParticipant: new Map(),
+        attempts: 0,
+        correctAttempts: 0,
+        independentAttempts: 0,
+        independentCorrect: 0,
+        supportedAttempts: 0,
+        supportedCorrect: 0,
+        missedAttempts: 0,
+        unclassifiedAttempts: 0,
+        firstIndependentCorrect: 0,
+        metadataIssues: 0,
+        duplicateEvents: 0,
+        orderAnomalies: 0,
+        missingChains: Number(challengeChainIssues.get(challengeKey) || 0)
+      };
+      item.participants.add(participant.user_id);
+      if (!item.attemptsByParticipant.has(participant.user_id)) {
+        item.attemptsByParticipant.set(participant.user_id, []);
+      }
+      item.attemptsByParticipant.get(participant.user_id).push(event);
+      item.attempts += 1;
+      if (event.is_correct === true) {
+        item.correctAttempts += 1;
+        item.completedParticipants.add(participant.user_id);
+      }
+      const attemptCategory = proactiveAttemptCategory(event);
+      if (attemptCategory === "independent") {
+        item.independentAttempts += 1;
+        if (event.is_correct === true) item.independentCorrect += 1;
+      } else if (attemptCategory === "supported") {
+        item.supportedAttempts += 1;
+        if (event.is_correct === true) item.supportedCorrect += 1;
+      } else if (attemptCategory === "missed") {
+        item.missedAttempts += 1;
+      } else {
+        item.unclassifiedAttempts += 1;
+      }
+      const resourceKey = event.resource_id
+        || `${event.knowledge_point_id}|${event.scene_type}`;
+      const state = resourceState.get(resourceKey) || {};
+      if (state.hint) item.hintParticipants.add(participant.user_id);
+      if (state.reset) item.resetParticipants.add(participant.user_id);
+      if (state.complete) item.sceneCompletedParticipants.add(participant.user_id);
+      if (event.issues.has("courseware_metadata_missing")) item.metadataIssues += 1;
+      if (event.issues.has("courseware_semantic_id_duplicate")) item.duplicateEvents += 1;
+      if (event.issues.has("courseware_event_order_anomaly")) item.orderAnomalies += 1;
+      challengeMap.set(challengeKey, item);
+    });
+
+    let firstIndependentCorrect = 0;
+    let retryChallenges = 0;
+    challengeAttempts.forEach((events) => {
+      const first = events[0];
+      if (
+        proactiveAttemptCategory(first) === "independent"
+        && first.is_correct === true
+      ) {
+        firstIndependentCorrect += 1;
+      }
+      if (events.length > 1) retryChallenges += 1;
+    });
+    const independentAttempts = challengeResults.filter((event) => (
+      proactiveAttemptCategory(event) === "independent"
+    ));
+    const supportedAttempts = challengeResults.filter((event) => proactiveAttemptCategory(event) === "supported");
+    const missedAttempts = challengeResults.filter((event) => proactiveAttemptCategory(event) === "missed");
+    const unclassifiedAttempts = challengeResults.filter((event) => proactiveAttemptCategory(event) === "unclassified");
+    const coursewareTimeByResource = new Map();
+    coursewareEvents.forEach((event) => {
+      const resourceKey = event.resource_id
+        || `${event.knowledge_point_id}|${event.scene_type}`;
+      coursewareTimeByResource.set(
+        resourceKey,
+        Math.max(
+          Number(coursewareTimeByResource.get(resourceKey) || 0),
+          event.time_on_task_ms
+        )
+      );
+    });
+
+    const decisions = participant._decisions.filter(
+      (row) => Number(row.learning_generation || 1) === analysisGeneration
+    );
+    const resolutionCount = (resolution) => decisions.filter(
+      (row) => row.resolution === resolution
+    ).length;
+    const scopeEvents = participant._scopeEvents.filter(
+      (row) => row.learning_generation === analysisGeneration
+    );
+    const near = outcomeForStage(participant, "near_transfer", analysisGeneration);
+    const representation = outcomeForStage(
+      participant,
+      "representation_transfer",
+      analysisGeneration
+    );
+    const retention = outcomeForStage(participant, "retention", analysisGeneration);
+    const postCompletedMs = Date.parse(posttest.completed_at || "");
+    const unlockAtMs = Number.isFinite(postCompletedMs)
+      ? postCompletedMs + delayHours * 60 * 60 * 1000
+      : NaN;
+    const closeAtMs = closeHours !== null && Number.isFinite(postCompletedMs)
+      ? postCompletedMs + closeHours * 60 * 60 * 1000
+      : NaN;
+    const shownReminderHours = Array.from(new Set(
+      participant._reminders
+        .filter((entry) => entry.action === "shown")
+        .map((entry) => Number(entry.milestone_hours))
+        .filter(Number.isFinite)
+    )).sort((left, right) => left - right);
+    const elapsedHours = Number.isFinite(postCompletedMs) && Number.isFinite(nowMs)
+      ? Math.max(0, (nowMs - postCompletedMs) / (60 * 60 * 1000))
+      : 0;
+    const participantOutcomeVersion = participant._sessions[0]?.instrument_version
+      || participant._attempts[0]?.instrument_version || outcomeInstrumentVersion;
+    const retentionOnly = ["v14-c3-retention-v4", "functions-limits-retention-r1", "functions-limits-retention-r2", "functions-limits-retention-r3"].includes(participantOutcomeVersion);
+    if (retentionOnly) {
+      near.status = "not_applicable";
+      representation.status = "not_applicable";
+    }
+    const transferTerminal = retentionOnly || (terminalOutcome(near) && terminalOutcome(representation));
+    const dueReminderHours = transferTerminal
+      && retention.status === "not_started"
+      && Number.isFinite(nowMs)
+      && Number.isFinite(unlockAtMs)
+      && nowMs >= unlockAtMs
+      && (!Number.isFinite(closeAtMs) || nowMs < closeAtMs)
+      ? reminderHours.filter((hours) => (
+          elapsedHours >= hours && !shownReminderHours.includes(hours)
+        ))
+      : [];
+    const retentionWindowStatus = retention.status !== "not_started"
+      ? retention.status
+      : !posttest.completed
+        ? "not_scheduled"
+        : !transferTerminal
+          ? "waiting_for_transfer"
+          : Number.isFinite(nowMs) && Number.isFinite(closeAtMs) && nowMs >= closeAtMs
+            ? "expired"
+            : Number.isFinite(nowMs) && Number.isFinite(unlockAtMs) && nowMs < unlockAtMs
+              ? "waiting"
+              : dueReminderHours.length
+                ? "reminder_due"
+                : Number.isFinite(nowMs)
+                  && Number.isFinite(closeAtMs)
+                  && nowMs >= closeAtMs - 24 * 60 * 60 * 1000
+                  ? "closing_soon"
+                  : "open";
+
+    const flags = Array.from(participant._quality.keys()).sort();
+    const dataQualityStatus = flags.length
+      ? "review"
+      : coursewareEvents.length
+        ? "complete"
+        : "pending";
+    return {
+      user_id: participant.user_id,
+      nickname: participant.nickname || "",
+      experiment_id: participant.experiment_id,
+      condition: participant.condition,
+      cohort: participant.cohort || "",
+      stratum: participant.stratum,
+      assignment_version: participant.assignment_version,
+      assigned_at: participant.assigned_at,
+      participation_status: participant.participation_status || "",
+      enrollment_basis: participant.enrollment_basis || "",
+      consented_at: participant.consented_at || "",
+      withdrawn_at: participant.withdrawn_at || "",
+      current_learning_generation: Number(participant.current_learning_generation || 1),
+      analysis_learning_generation: analysisGeneration,
+      learning_generation_count: generations.length,
+      learning_generations: generations,
+      pretest,
+      formative,
+      posttest,
+      courseware: {
+        semantic_events: coursewareEvents.length,
+        resources_opened: resources.size,
+        scenes_completed: completedResources.size,
+        challenge_count: challengeAttempts.size,
+        challenge_attempts: challengeResults.length,
+        challenge_correct_attempts: challengeResults.filter((event) => event.is_correct === true).length,
+        challenge_attempt_accuracy: proactiveRate(
+          challengeResults.filter((event) => event.is_correct === true).length,
+          challengeResults.length
+        ),
+        first_independent_correct: firstIndependentCorrect,
+        first_independent_accuracy: proactiveRate(
+          firstIndependentCorrect,
+          challengeAttempts.size
+        ),
+        independent_attempts: independentAttempts.length,
+        independent_correct: independentAttempts.filter((event) => event.is_correct === true).length,
+        independent_accuracy: proactiveRate(
+          independentAttempts.filter((event) => event.is_correct === true).length,
+          independentAttempts.length
+        ),
+        supported_attempts: supportedAttempts.length,
+        missed_attempts: missedAttempts.length,
+        unclassified_attempts: unclassifiedAttempts.length,
+        supported_correct: supportedAttempts.filter((event) => event.is_correct === true).length,
+        supported_accuracy: proactiveRate(
+          supportedAttempts.filter((event) => event.is_correct === true).length,
+          supportedAttempts.length
+        ),
+        retry_challenges: retryChallenges,
+        retry_rate: proactiveRate(retryChallenges, challengeAttempts.size),
+        hint_events: coursewareEvents.filter((event) => event.event_type === "courseware_hint_used").length,
+        reset_events: coursewareEvents.filter((event) => event.event_type === "courseware_reset_used").length,
+        time_on_task_ms: Array.from(coursewareTimeByResource.values())
+          .reduce((sum, value) => sum + Number(value || 0), 0)
+      },
+      proactive: {
+        decisions: decisions.length,
+        policy_interventions: decisions.filter((row) => row.decision === "intervene").length,
+        delivered_interventions: decisions.filter((row) => row.delivery_decision === "intervene").length,
+        shown: decisions.filter((row) => Boolean(row.shown_at)).length,
+        accepted: resolutionCount("accepted"),
+        dismissed: resolutionCount("dismissed"),
+        ignored: resolutionCount("ignored"),
+        snoozed: resolutionCount("snoozed"),
+        alternative_requested: resolutionCount("alternative_requested"),
+        scope_mutes: scopeEvents.filter((row) => row.preference === "off").length,
+        scope_restores: scopeEvents.filter((row) => row.preference === "standard").length,
+        l1: decisions.filter((row) => row.support_level === "L1").length,
+        l2: decisions.filter((row) => row.support_level === "L2").length,
+        l3: decisions.filter((row) => row.support_level === "L3").length,
+        l4: decisions.filter((row) => row.support_level === "L4").length,
+        l5: decisions.filter((row) => row.support_level === "L5").length
+      },
+      outcomes: {
+        near_transfer: near,
+        representation_transfer: representation,
+        retention
+      },
+      retention_window: {
+        status: retentionWindowStatus,
+        unlock_at: Number.isFinite(unlockAtMs) ? new Date(unlockAtMs).toISOString() : "",
+        close_at: Number.isFinite(closeAtMs) ? new Date(closeAtMs).toISOString() : "",
+        elapsed_hours: Math.round(elapsedHours * 10) / 10,
+        shown_reminder_hours: shownReminderHours,
+        due_reminder_hours: dueReminderHours,
+        reminded: shownReminderHours.length > 0,
+        reminder_due: dueReminderHours.length > 0,
+        closing_soon: retentionWindowStatus === "closing_soon",
+        expired: retentionWindowStatus === "expired"
+      },
+      data_quality: {
+        status: dataQualityStatus,
+        flags,
+        issue_count: Array.from(participant._quality.values())
+          .reduce((sum, value) => sum + Number(value || 0), 0)
+      }
+    };
+  });
+
+  challengeMap.forEach((item) => {
+    item.attemptsByParticipant.forEach((attempts) => {
+      const first = attempts[0];
+      if (
+        proactiveAttemptCategory(first) === "independent"
+        && first.is_correct === true
+      ) {
+        item.firstIndependentCorrect += 1;
+      }
+    });
+  });
+  const challenges = Array.from(challengeMap.values()).map((item) => {
+    const retryParticipants = Array.from(item.attemptsByParticipant.values())
+      .filter((attempts) => attempts.length > 1).length;
+    return {
+      challenge_id: item.challenge_id,
+      knowledge_point_id: item.knowledge_point_id,
+      knowledge_point: item.knowledge_point,
+      resource_id: item.resource_id,
+      resource_title: item.resource_title,
+      scene_type: item.scene_type,
+      participants: item.participants.size,
+      attempts: item.attempts,
+      correct_attempts: item.correctAttempts,
+      total_attempt_accuracy: proactiveRate(item.correctAttempts, item.attempts),
+      first_independent_correct: item.firstIndependentCorrect,
+      first_independent_accuracy: proactiveRate(
+        item.firstIndependentCorrect,
+        item.attemptsByParticipant.size
+      ),
+      independent_attempts: item.independentAttempts,
+      independent_correct: item.independentCorrect,
+      independent_accuracy: proactiveRate(item.independentCorrect, item.independentAttempts),
+      supported_attempts: item.supportedAttempts,
+      missed_attempts: item.missedAttempts,
+      unclassified_attempts: item.unclassifiedAttempts,
+      supported_correct: item.supportedCorrect,
+      supported_accuracy: proactiveRate(item.supportedCorrect, item.supportedAttempts),
+      retry_participants: retryParticipants,
+      retry_rate: proactiveRate(retryParticipants, item.attemptsByParticipant.size),
+      hint_participants: item.hintParticipants.size,
+      reset_participants: item.resetParticipants.size,
+      reset_rate: proactiveRate(item.resetParticipants.size, item.participants.size),
+      challenge_completed_participants: item.completedParticipants.size,
+      challenge_completion_rate: proactiveRate(
+        item.completedParticipants.size,
+        item.participants.size
+      ),
+      scene_completed_participants: item.sceneCompletedParticipants.size,
+      scene_completion_rate: proactiveRate(
+        item.sceneCompletedParticipants.size,
+        item.participants.size
+      ),
+      metadata_issues: item.metadataIssues,
+      duplicate_events: item.duplicateEvents,
+      order_anomalies: item.orderAnomalies,
+      missing_event_chains: item.missingChains
+    };
+  }).sort((left, right) => (
+    left.knowledge_point_id.localeCompare(right.knowledge_point_id)
+    || left.challenge_id.localeCompare(right.challenge_id)
+  ));
+
+  const criticalIssues = new Set([
+    "courseware_experiment_mismatch",
+    "courseware_group_mismatch",
+    "courseware_assignment_version_mismatch",
+    "courseware_generation_mismatch",
+    "courseware_protocol_mismatch",
+    "courseware_semantic_id_duplicate",
+    "courseware_event_chain_missing",
+    "decision_group_mismatch",
+    "decision_assignment_version_mismatch",
+    "outcome_group_mismatch",
+    "outcome_protocol_mismatch"
+  ]);
+  const signals = Array.from(issueCounts.entries()).map(([id, events]) => ({
+    id,
+    severity: criticalIssues.has(id) ? "critical" : "warning",
+    participants: issueUsers.get(id)?.size || 0,
+    events
+  })).sort((left, right) => (
+    (left.severity === right.severity ? 0 : left.severity === "critical" ? -1 : 1)
+    || right.events - left.events
+  ));
+  const coursewareEventCount = participantRows.reduce(
+    (sum, row) => sum + Number(row.courseware.semantic_events || 0),
+    0
+  );
+  const challengeAttemptCount = participantRows.reduce(
+    (sum, row) => sum + Number(row.courseware.challenge_attempts || 0),
+    0
+  );
+  return {
+    participants: participantRows,
+    challenges,
+    summary: {
+      participants: participantRows.length,
+      courseware_events: coursewareEventCount,
+      challenge_attempts: challengeAttemptCount,
+      data_complete: participantRows.filter((row) => row.data_quality.status === "complete").length,
+      needs_review: participantRows.filter((row) => row.data_quality.status === "review").length,
+      pending_learning: participantRows.filter((row) => row.data_quality.status === "pending").length
+    },
+    quality: {
+      status: signals.some((signal) => signal.severity === "critical")
+        ? "critical"
+        : signals.length
+          ? "warning"
+          : coursewareEventCount
+            ? "ok"
+            : "pending",
+      expected_protocol_fingerprint: expectedProtocolFingerprint,
+      signals
+    }
+  };
 }
 
 function recentInteractionEventsForUnit(userId, unitId, limit = 500) {
@@ -3925,6 +5212,10 @@ function updateQuizResultAiGrading(questionId, userId, {
   const retryablePlaceholders = FAILED_AI_REVIEW_TYPES.map(() => "?").join(", ");
   const reviewableScope = `${generationScope} AND (is_correct = -1 OR lower(trim(COALESCE(ai_error_type, ''))) IN (${retryablePlaceholders}))`;
   const reviewableParams = [...unitParams, generation, ...FAILED_AI_REVIEW_TYPES];
+  const targetIds = queryAll(
+    `SELECT id FROM quiz_results WHERE question_id = ? AND user_id = ?${unitScope}${reviewableScope}`,
+    [questionId, userId, ...reviewableParams]
+  ).map((row) => row.id);
   const normalizedErrorType = String(aiErrorType || "").trim().toLowerCase();
   let resolvedScore = aiScore;
   let resolvedFeedback = aiFeedback || "";
@@ -3945,13 +5236,13 @@ function updateQuizResultAiGrading(questionId, userId, {
       `UPDATE quiz_results SET ai_confidence = ?, ai_feedback = ?, ai_error_type = ? WHERE question_id = ? AND user_id = ?${unitScope}${reviewableScope}`,
       [aiConfidence || 0, resolvedFeedback, normalizedErrorType, questionId, userId, ...reviewableParams]
     );
-    return;
+    return targetIds;
   }
   const existing = queryOne(
     `SELECT max_score FROM quiz_results WHERE question_id = ? AND user_id = ?${unitScope}${reviewableScope} ORDER BY created_at DESC LIMIT 1`,
     [questionId, userId, ...reviewableParams]
   );
-  if (!existing) return;
+  if (!existing) return [];
   const maxScore = Number(existing?.max_score || 0);
   const rawScore = Number(resolvedScore);
   const earnedScore = maxScore
@@ -3962,6 +5253,7 @@ function updateQuizResultAiGrading(questionId, userId, {
     `UPDATE quiz_results SET ai_score = ?, ai_confidence = ?, ai_feedback = ?, ai_error_type = ?, is_correct = CASE WHEN ? >= ? THEN 1 ELSE 0 END, status = 'ai_reviewed', score = ? WHERE question_id = ? AND user_id = ?${unitScope}${reviewableScope}`,
     [resolvedScore, aiConfidence || 0, resolvedFeedback, normalizedErrorType, earnedScore, passScore, earnedScore, questionId, userId, ...reviewableParams]
   );
+  return targetIds;
 }
 
 function failedAiReviewWhere(alias = "qr") {
@@ -4832,21 +6124,37 @@ function dateFilter(prefix, dates) {
   return { clause: parts.length ? " AND " + parts.join(" AND ") : "", params: p };
 }
 
+/**
+ * Admin surfaces default to the chapter currently under study so a new chapter's
+ * pilot is not mixed with historical chapters. Pass chapterId "all" (or empty) to
+ * widen. Always key on the stable chapter_id column: display labels carry a
+ * positional 第N章 prefix that shifts whenever a chapter is inserted.
+ *
+ * Only works for tables that actually have chapter_id. The `events` table does
+ * not, so event-derived surfaces cannot be scoped this way.
+ */
+function chapterFilter(prefix, dates) {
+  const chapterId = String(dates?.chapterId || "").trim();
+  if (!chapterId || chapterId.toLowerCase() === "all") return { clause: "", params: [] };
+  return { clause: ` AND ${prefix}.chapter_id = ?`, params: [chapterId] };
+}
+
 function beijingDateString(date = new Date()) {
   return new Date(date.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 function quizSubmissionCount(dates, prefix = "qr") {
   const filter = dateFilter(`${prefix}.created_at`, dates);
+  const cf = chapterFilter(prefix, dates);
   return queryOne(
     `SELECT COUNT(*) as c
      FROM (
        SELECT ${prefix}.user_id, ${prefix}.learning_generation, ${prefix}.unit_id
        FROM quiz_results ${prefix}
-       WHERE 1=1${filter.clause}
+       WHERE 1=1${filter.clause}${cf.clause}
        GROUP BY ${prefix}.user_id, ${prefix}.learning_generation, ${prefix}.unit_id
      )`,
-    filter.params
+    [...filter.params, ...cf.params]
   ).c || 0;
 }
 
@@ -4947,20 +6255,22 @@ function statsOverview(dates) {
 
 function chapterAccuracy(dates) {
   const df = dateFilter("qr.created_at", dates);
+  const cf = chapterFilter("qr", dates);
   return queryAll(`
     SELECT u.nickname, qr.user_id, qr.chapter_id, qr.chapter_label,
            ROUND(AVG(CASE WHEN qr.is_correct >= 0 THEN CAST(qr.is_correct AS REAL) END) * 100, 1) as accuracy,
            COUNT(*) as total
     FROM quiz_results qr
     JOIN users u ON u.id = qr.user_id
-    WHERE 1=1${df.clause}
+    WHERE 1=1${df.clause}${cf.clause}
     GROUP BY qr.user_id, qr.chapter_id
     ORDER BY qr.user_id, qr.chapter_id
-  `, df.params);
+  `, [...df.params, ...cf.params]);
 }
 
 function questionErrors(dates) {
   const df = dateFilter("created_at", dates);
+  const cf = chapterFilter("quiz_results", dates);
   return queryAll(`
     SELECT question_id, unit_id, unit_label, chapter_id, chapter_label, question_type, phase,
            COUNT(*) as attempts,
@@ -4968,10 +6278,10 @@ function questionErrors(dates) {
            ROUND(AVG(score), 1) as avg_score,
            ROUND(AVG(max_score), 1) as avg_max
     FROM quiz_results
-    WHERE 1=1${df.clause}
+    WHERE 1=1${df.clause}${cf.clause}
     GROUP BY question_id, unit_id, phase
     ORDER BY error_rate DESC
-  `, df.params);
+  `, [...df.params, ...cf.params]);
 }
 
 function userProgress(dates) {
@@ -4979,8 +6289,13 @@ function userProgress(dates) {
   const evDf = dateFilter("e.created_at", dates);
   const feedbackDf = dateFilter("f.created_at", dates);
   const decisionDf = dateFilter("ad.created_at", dates);
+  // quiz_results and feedback carry chapter_id, so they are scoped to the active
+  // chapter. events and agent_decisions have no chapter column, so their counts
+  // stay global — see the note this endpoint returns to the UI.
+  const qrCf = chapterFilter("qr", dates);
+  const fbCf = chapterFilter("f", dates);
   return queryAll(`
-    SELECT u.id as user_id, u.nickname, u.created_at, u.last_seen_at,
+    SELECT u.id as user_id, u.nickname, u.email, u.created_at, u.last_seen_at,
            COUNT(DISTINCT qr.unit_id) as units_attempted,
            COUNT(DISTINCT CASE
              WHEN qr.id IS NOT NULL
@@ -4991,18 +6306,20 @@ function userProgress(dates) {
            ROUND(SUM(qr.max_score), 0) as total_max,
            (SELECT COUNT(*) FROM events e WHERE e.user_id = u.id${evDf.clause}) as event_count,
            (SELECT COUNT(DISTINCT substr(e.created_at, 1, 10)) FROM events e WHERE e.user_id = u.id${evDf.clause}) as active_days,
-           (SELECT COUNT(*) FROM feedback f WHERE f.user_id = u.id${feedbackDf.clause}) as feedback_count,
+           (SELECT COUNT(*) FROM feedback f WHERE f.user_id = u.id${feedbackDf.clause}${fbCf.clause}) as feedback_count,
            (SELECT COUNT(*) FROM agent_decisions ad WHERE ad.user_id = u.id${decisionDf.clause}) as agent_decision_count
     FROM users u
-    LEFT JOIN quiz_results qr ON qr.user_id = u.id${df.clause}
+    LEFT JOIN quiz_results qr ON qr.user_id = u.id${df.clause}${qrCf.clause}
     GROUP BY u.id
     ORDER BY quiz_count DESC
   `, [
     ...evDf.params,
     ...evDf.params,
     ...feedbackDf.params,
+    ...fbCf.params,
     ...decisionDf.params,
-    ...df.params
+    ...df.params,
+    ...qrCf.params
   ]);
 }
 
@@ -5059,11 +6376,11 @@ function phaseComparison(dates) {
            SUM(CASE WHEN qr.phase = 'post' AND qr.is_correct < 0 THEN 1 ELSE 0 END) as post_pending
     FROM quiz_results qr
     JOIN users u ON u.id = qr.user_id
-    WHERE qr.phase IN ('pre', 'formative', 'post')${df.clause}
+    WHERE qr.phase IN ('pre', 'formative', 'post')${df.clause}${chapterFilter("qr", dates).clause}
     GROUP BY qr.user_id, qr.chapter_id
     HAVING pre_count > 0 OR formative_count > 0 OR post_count > 0
     ORDER BY qr.user_id, qr.chapter_id
-  `, df.params);
+  `, [...df.params, ...chapterFilter("qr", dates).params]);
 }
 
 function researchSummaryForUser(eventRows, feedbackCount, agentDecisionCount) {
@@ -5217,11 +6534,16 @@ function userDetail(userId, dates) {
   const evDf = dateFilter("created_at", dates);
   const feedbackDf = dateFilter("created_at", dates);
   const decisionDf = dateFilter("created_at", dates);
+  // quiz_results and feedback carry chapter_id, so they follow the active
+  // chapter scope. events and agent_decisions have no chapter column: their
+  // counts stay global and the UI says so.
+  const qrCf = chapterFilter("quiz_results", dates);
+  const fbCf = chapterFilter("feedback", dates);
   const quizQuestionTotal = queryOne(
     `SELECT COUNT(*) as count
      FROM quiz_results
-     WHERE user_id = ?${qrDf.clause}`,
-    [userId, ...qrDf.params]
+     WHERE user_id = ?${qrDf.clause}${qrCf.clause}`,
+    [userId, ...qrDf.params, ...qrCf.params]
   ).count || 0;
   const quizQuestionRows = queryAll(
     `SELECT id, user_id, chapter_id, chapter_label, unit_id, unit_label,
@@ -5229,10 +6551,10 @@ function userDetail(userId, dates) {
             score, max_score, ai_score, ai_confidence, ai_feedback,
             ai_error_type, learning_generation, created_at
      FROM quiz_results
-     WHERE user_id = ?${qrDf.clause}
+     WHERE user_id = ?${qrDf.clause}${qrCf.clause}
      ORDER BY julianday(created_at) DESC, id DESC
      LIMIT 5000`,
-    [userId, ...qrDf.params]
+    [userId, ...qrDf.params, ...qrCf.params]
   );
   const quizResults = quizQuestionRows;
   const events = recentMeaningfulEvents(queryAll(
@@ -5252,8 +6574,8 @@ function userDetail(userId, dates) {
     [userId, ...evDf.params]
   );
   const feedbackCount = queryOne(
-    `SELECT COUNT(*) as count FROM feedback WHERE user_id = ?${feedbackDf.clause}`,
-    [userId, ...feedbackDf.params]
+    `SELECT COUNT(*) as count FROM feedback WHERE user_id = ?${feedbackDf.clause}${fbCf.clause}`,
+    [userId, ...feedbackDf.params, ...fbCf.params]
   ).count || 0;
   const agentDecisionCount = queryOne(
     `SELECT COUNT(*) as count FROM agent_decisions WHERE user_id = ?${decisionDf.clause}`,
@@ -5262,10 +6584,10 @@ function userDetail(userId, dates) {
   const feedbackRows = queryAll(
     `SELECT *
      FROM feedback
-     WHERE user_id = ?${feedbackDf.clause}
+     WHERE user_id = ?${feedbackDf.clause}${fbCf.clause}
      ORDER BY created_at DESC
      LIMIT 20`,
-    [userId, ...feedbackDf.params]
+    [userId, ...feedbackDf.params, ...fbCf.params]
   ).map((row) => {
     const labels = unitDisplayMeta(row.unit_id, {
       chapter_id: row.chapter_id,
@@ -5282,8 +6604,8 @@ function userDetail(userId, dates) {
            COUNT(*) as total, SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct,
            ROUND(AVG(CASE WHEN is_correct >= 0 THEN CAST(is_correct AS REAL) END) * 100, 1) as accuracy,
            ROUND(AVG(score), 1) as avg_score
-    FROM quiz_results WHERE user_id = ?${qrDf.clause} GROUP BY chapter_id ORDER BY chapter_id
-  `, [userId, ...qrDf.params]);
+    FROM quiz_results WHERE user_id = ?${qrDf.clause}${qrCf.clause} GROUP BY chapter_id ORDER BY chapter_id
+  `, [userId, ...qrDf.params, ...qrCf.params]);
   const quizOverallRow = queryOne(`
     SELECT
       COUNT(*) as questions,
@@ -5303,8 +6625,8 @@ function userDetail(userId, dates) {
       MIN(created_at) as first_at,
       MAX(created_at) as last_at
     FROM quiz_results
-    WHERE user_id = ?${qrDf.clause}
-  `, [userId, ...qrDf.params]) || {};
+    WHERE user_id = ?${qrDf.clause}${qrCf.clause}
+  `, [userId, ...qrDf.params, ...qrCf.params]) || {};
   const currentGenerationRow = queryOne(
     "SELECT generation FROM learning_state_versions WHERE user_id = ?",
     [userId]
@@ -5329,9 +6651,9 @@ function userDetail(userId, dates) {
       MIN(created_at) as first_at,
       MAX(created_at) as last_at
     FROM quiz_results
-    WHERE user_id = ? AND phase IN ('pre', 'formative', 'post')${qrDf.clause}
+    WHERE user_id = ? AND phase IN ('pre', 'formative', 'post')${qrDf.clause}${qrCf.clause}
     GROUP BY phase
-  `, [userId, ...qrDf.params]).sort(
+  `, [userId, ...qrDf.params, ...qrCf.params]).sort(
     (left, right) => (phaseOrder[left.phase] ?? 99) - (phaseOrder[right.phase] ?? 99)
   );
   const chapterPhaseSummary = queryAll(`
@@ -5355,11 +6677,11 @@ function userDetail(userId, dates) {
       MIN(created_at) as first_at,
       MAX(created_at) as last_at
     FROM quiz_results
-    WHERE user_id = ? AND phase IN ('pre', 'formative', 'post')${qrDf.clause}
+    WHERE user_id = ? AND phase IN ('pre', 'formative', 'post')${qrDf.clause}${qrCf.clause}
     GROUP BY chapter_id, phase
     ORDER BY chapter_id,
       CASE phase WHEN 'pre' THEN 0 WHEN 'formative' THEN 1 WHEN 'post' THEN 2 ELSE 3 END
-  `, [userId, ...qrDf.params]);
+  `, [userId, ...qrDf.params, ...qrCf.params]);
   const parsedInteractionRows = researchEvents
     .filter((row) => row.type === "interaction")
     .map((row) => ({
@@ -5423,7 +6745,8 @@ function userDetail(userId, dates) {
   };
 }
 
-function listUsers() {
+function listUsers(dates = {}) {
+  const cf = chapterFilter("qr", dates);
   return queryAll(`
     SELECT u.*,
            (
@@ -5431,17 +6754,18 @@ function listUsers() {
              FROM (
                SELECT qr.learning_generation, qr.unit_id
                FROM quiz_results qr
-               WHERE qr.user_id = u.id
+               WHERE qr.user_id = u.id${cf.clause}
                GROUP BY qr.learning_generation, qr.unit_id
              )
            ) as quiz_count
     FROM users u
     ORDER BY u.last_seen_at DESC
-  `);
+  `, cf.params);
 }
 
 function questionTypeAccuracy(dates) {
   const df = dateFilter("created_at", dates);
+  const cf = chapterFilter("quiz_results", dates);
   return queryAll(`
     SELECT question_type,
            COUNT(*) as total,
@@ -5449,14 +6773,15 @@ function questionTypeAccuracy(dates) {
            ROUND(AVG(score), 1) as avg_score,
            ROUND(AVG(max_score), 1) as avg_max
     FROM quiz_results
-    WHERE question_type != ''${df.clause}
+    WHERE question_type != ''${df.clause}${cf.clause}
     GROUP BY question_type
     ORDER BY accuracy
-  `, df.params);
+  `, [...df.params, ...cf.params]);
 }
 
 function scoreDistribution(dates) {
   const df = dateFilter("created_at", dates);
+  const cf = chapterFilter("quiz_results", dates);
   return queryAll(`
     SELECT
       CASE
@@ -5474,13 +6799,13 @@ function scoreDistribution(dates) {
              SUM(score) as total_score,
              SUM(max_score) as total_max
       FROM quiz_results
-      WHERE max_score > 0${df.clause}
+      WHERE max_score > 0${df.clause}${cf.clause}
       GROUP BY user_id, learning_generation, unit_id
     )
     WHERE total_max > 0
     GROUP BY bucket
     ORDER BY min_ratio
-  `, df.params);
+  `, [...df.params, ...cf.params]);
 }
 
 function hourlyActivity(days = 30, dates) {
@@ -5507,11 +6832,12 @@ function shortAnswerResponses(options = {}) {
   const df = dateFilter("qr.created_at", options);
   const limit = Math.max(1, Math.min(Number(options.limit || 500), 1000));
   const offset = Math.max(0, Number(options.offset || 0));
+  const cf = chapterFilter("qr", options);
   const total = queryOne(
     `SELECT COUNT(*) as c
      FROM quiz_results qr
-     WHERE qr.question_type = 'short_answer'${df.clause}`,
-    df.params
+     WHERE qr.question_type = 'short_answer'${df.clause}${cf.clause}`,
+    [...df.params, ...cf.params]
   ).c;
   const rows = queryAll(`
     SELECT qr.id, u.nickname, qr.user_id, qr.chapter_id, qr.chapter_label, qr.unit_id, qr.unit_label,
@@ -5520,10 +6846,10 @@ function shortAnswerResponses(options = {}) {
            qr.ai_score, qr.ai_confidence, qr.ai_feedback, qr.ai_error_type
     FROM quiz_results qr
     JOIN users u ON u.id = qr.user_id
-    WHERE qr.question_type = 'short_answer'${df.clause}
+    WHERE qr.question_type = 'short_answer'${df.clause}${cf.clause}
     ORDER BY qr.created_at DESC, qr.id DESC
     LIMIT ? OFFSET ?
-  `, [...df.params, limit, offset]);
+  `, [...df.params, ...cf.params, limit, offset]);
   return { rows, total, limit, offset };
 }
 
@@ -6333,16 +7659,17 @@ function agenticDecisionTrace(dates = {}) {
 
 function interactionEvidenceSnapshots(dates = {}) {
   const df = dateFilter("ies.created_at", dates);
+  const cf = chapterFilter("ies", dates);
   const userId = String(dates?.userId || "").trim();
   const userClause = userId ? " AND ies.user_id = ?" : "";
   return queryAll(
     `SELECT ies.*, u.nickname
      FROM interaction_evidence_snapshots ies
      LEFT JOIN users u ON u.id = ies.user_id
-     WHERE 1=1${df.clause}${userClause}
+     WHERE 1=1${df.clause}${cf.clause}${userClause}
      ORDER BY julianday(ies.created_at) DESC, ies.id DESC
      LIMIT 1000`,
-    [...df.params, ...(userId ? [userId] : [])]
+    [...df.params, ...cf.params, ...(userId ? [userId] : [])]
   );
 }
 
@@ -6457,7 +7784,9 @@ module.exports = {
   resolveProactiveIntervention,
   updateProactiveInterventionFollowup,
   proactiveDecisionRows,
+  proactiveDecisionCountForUser,
   proactiveAssignmentSummary,
+  proactiveAssignmentRoster,
   proactiveDecisionSummary,
   proactiveAutonomySummary,
   proactiveIntegrityDiagnostics,
@@ -6467,6 +7796,10 @@ module.exports = {
   listProactiveOutcomeSessions,
   startProactiveOutcomeSession,
   updateProactiveOutcomeSessionDraft,
+  pauseProactiveOutcomeSession,
+  resumeProactiveOutcomeSession,
+  skipProactiveOutcomeSession,
+  expireProactiveOutcomeSession,
   withdrawProactiveOutcomeSession,
   withdrawActiveProactiveOutcomeSessionsForUser,
   getProactiveOutcomeAttempt,
@@ -6477,7 +7810,10 @@ module.exports = {
   proactiveOutcomeSessionSummary,
   proactiveOutcomeRows,
   proactiveOutcomeSummary,
+  proactiveRetentionReminderHistory,
   proactiveParticipantFlow,
+  proactiveExperimentAnalysis,
+  researchAnalysisSource,
   recentInteractionEventsForUnit,
   updateQuizResultAiGrading,
   normalizeFailedPendingQuizReviews,

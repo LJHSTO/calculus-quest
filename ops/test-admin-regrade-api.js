@@ -61,8 +61,14 @@ function startMockLlm(port) {
         return;
       }
       const maxScore = Number(prompt.match(/满分：(\d+(?:\.\d+)?) 分/)?.[1] || 2);
+      const rubricLine = prompt.split("\n").find((line) => line.startsWith("评分标准："));
+      let rubric = [];
+      try { rubric = JSON.parse(rubricLine?.slice("评分标准：".length) || "[]"); } catch {}
+      const responseLine = prompt.split("\n").find((line) => line.startsWith("学生回答（"));
+      const evidence = JSON.parse(responseLine.slice(responseLine.indexOf("：") + 1));
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({
+        model: "reported-regrade-model",
         choices: [{
           message: {
             content: JSON.stringify({
@@ -71,6 +77,9 @@ function startMockLlm(port) {
               confidence: 0.97,
               errorType: "none",
               weakConcepts: [],
+              rubricScores: Array.isArray(rubric) ? rubric.map((item, criterionIndex) => ({
+                criterionIndex, score: item.points, evidence
+              })) : [],
               feedback: "重评通过。",
               reasoning: "回答符合参考答案。"
             })
@@ -419,6 +428,12 @@ async function main() {
     assert.equal(audits.payload.data.length, 7);
     assert.equal(audits.payload.data.filter((row) => row.status === "applied").length, 6);
     assert.equal(audits.payload.data.filter((row) => row.status === "failed").length, 1);
+    for (const row of audits.payload.data.filter((item) => item.status === "applied")) {
+      const audit = JSON.parse(row.proposed_grade_json).gradingAudit;
+      assert.equal(audit.reportedModel, "reported-regrade-model");
+      assert.ok(audit.requestedModel);
+      assert.match(audit.rubricHash, /^[a-f0-9]{64}$/);
+    }
 
     const secondPreview = await adminRequest(
       baseUrl,

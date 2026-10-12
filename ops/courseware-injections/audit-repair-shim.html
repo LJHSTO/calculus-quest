@@ -1,0 +1,113 @@
+<script id="openmaic-audit-repair-shim-v5">
+(function(){
+  function hide(el){
+    if(!el) return;
+    el.classList.remove('show','active','open');
+    if (!el.classList.contains('hidden')) el.classList.add('hidden');
+    if (el.getAttribute('aria-hidden') !== 'true') el.setAttribute('aria-hidden','true');
+    if (el.style.display !== 'none') el.style.display='none';
+    if (el.style.visibility !== 'hidden') el.style.visibility='hidden';
+    if (el.style.opacity !== '0') el.style.opacity='0';
+    if (el.style.pointerEvents !== 'none') el.style.pointerEvents='none';
+    if (el.style.zIndex !== '-1') el.style.zIndex='-1';
+    el.querySelectorAll('button,[role="button"],a,input,select,textarea').forEach(function(child){
+      if (child.style.pointerEvents !== 'none') child.style.pointerEvents='none';
+    });
+  }
+  function show(el){ if(!el) return; el.classList.remove('hidden'); if(el.style.display==='none') el.style.display=''; }
+  function ensure(name, fn){ if(typeof window[name] !== 'function') window[name] = fn || function(){}; }
+  function safeCanvasContext(){
+    var noop = function(){};
+    return {
+      canvas: null,
+      fillStyle: '', strokeStyle: '', lineWidth: 1, globalAlpha: 1, font: '',
+      save: noop, restore: noop, clearRect: noop, fillRect: noop, strokeRect: noop,
+      beginPath: noop, closePath: noop, moveTo: noop, lineTo: noop, arc: noop, rect: noop,
+      fill: noop, stroke: noop, clip: noop, scale: noop, translate: noop, rotate: noop,
+      setTransform: noop, resetTransform: noop, setLineDash: noop,
+      fillText: noop, strokeText: noop, measureText: function(text){ return { width: String(text || '').length * 8 }; },
+      createLinearGradient: function(){ return { addColorStop: noop }; },
+      createRadialGradient: function(){ return { addColorStop: noop }; },
+      drawImage: noop, getImageData: function(){ return { data: new Uint8ClampedArray(4) }; },
+      putImageData: noop
+    };
+  }
+  window.__openMaicSafeCanvasContext = safeCanvasContext;
+  if (!window.__openMaicSafeCanvasPatched && window.HTMLCanvasElement && window.HTMLCanvasElement.prototype) {
+    var originalGetContext = window.HTMLCanvasElement.prototype.getContext;
+    window.HTMLCanvasElement.prototype.getContext = function(type){
+      var ctx = null;
+      try { ctx = originalGetContext.apply(this, arguments); } catch (_) {}
+      if (!ctx && String(type).toLowerCase() === '2d') {
+        ctx = safeCanvasContext();
+        ctx.canvas = this;
+      }
+      return ctx;
+    };
+    window.__openMaicSafeCanvasPatched = true;
+  }
+  function closeHintOverlays(){
+    document.querySelectorAll('#hintOverlay,.hint-overlay,[id*="hintOverlay"],[class*="hint-overlay"]').forEach(function(el){
+      el.classList.remove('show','active','open');
+      el.classList.add('hidden');
+      el.style.display='none';
+      el.style.pointerEvents='none';
+    });
+  }
+  function closeStartOverlays(){
+    ['startScreen','start-screen','startOverlay','menu-screen'].forEach(function(id){ hide(document.getElementById(id)); });
+    document.querySelectorAll('.start-screen,.startScreen,.start-overlay,#start-screen,#startScreen,#startOverlay,#menu-screen').forEach(hide);
+    document.querySelectorAll('canvas,#gameCanvas,#mainCanvas,.game-area,#main-area,#contract-area').forEach(show);
+    window.dispatchEvent(new Event('resize'));
+  }
+  function normalizePauseScreen(){
+    var pause = document.getElementById('pauseScreen') || document.getElementById('pause-screen') || document.querySelector('.pause-screen,#pauseOverlay,#pause-overlay');
+    if (!pause || pause.classList.contains('hidden')) return;
+    closeHintOverlays();
+    pause.style.zIndex='2147483000';
+    pause.style.pointerEvents='auto';
+    pause.querySelectorAll('p,h1,h2,h3').forEach(function(el){ el.style.pointerEvents='none'; });
+    pause.querySelectorAll('button,.game-btn,.overlay-btn,.start-btn').forEach(function(el){
+      el.style.position='relative';
+      el.style.zIndex='2147483003';
+      el.style.pointerEvents='auto';
+    });
+  }
+  function wrapAndNormalize(name, after){
+    var original = window[name];
+    if (typeof original !== 'function' || original.__openMaicAuditWrapped) return;
+    var wrapped = function(){
+      var result = original.apply(this, arguments);
+      try { after(); } catch (_) {}
+      return result;
+    };
+    wrapped.__openMaicAuditWrapped = true;
+    window[name] = wrapped;
+  }
+  ensure('startGame', function(){
+    closeStartOverlays();
+  });
+  ['useHint','showHint','clearPath','undoLast','submitPath','resetSelection','onSliderChange','nudgeBall','togglePause','resetLevel','resumeGame','backToMenu','retryLevel','startLevel','nextLevel','restartGame','showOptimal'].forEach(function(name){ ensure(name); });
+  wrapAndNormalize('togglePause', normalizePauseScreen);
+  wrapAndNormalize('restartGame', closeHintOverlays);
+  wrapAndNormalize('startGame', function(){ closeStartOverlays(); closeHintOverlays(); });
+  document.addEventListener('click', function(event){
+    var target = event.target && event.target.closest ? event.target.closest('.start-btn,#start-screen button,#startScreen button,.start-screen button,.startScreen button') : null;
+    if (target) setTimeout(closeStartOverlays, 0);
+    setTimeout(normalizePauseScreen, 0);
+  }, true);
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(function(){
+      wrapAndNormalize('startGame', function(){ closeStartOverlays(); closeHintOverlays(); });
+      wrapAndNormalize('restartGame', function(){ closeStartOverlays(); closeHintOverlays(); });
+      document.querySelectorAll('#start-screen.hidden,#startScreen.hidden,.start-screen.hidden,.startScreen.hidden').forEach(hide);
+    }, 0);
+  });
+  normalizePauseScreen();
+  window.__openMaicSafeNumber = function(value, fallback){ return Number.isFinite(value) ? value : fallback; };
+  window.__openMaicFinite = function(value, fallback){
+    var n = Number(value);
+    return Number.isFinite(n) ? n : Number(fallback || 0);
+  };
+})();
+</script>

@@ -4,6 +4,7 @@ function selectedChoiceValues(unitId, questionId) {
 }
 
 function optionText(question, value) {
+  if (value === "__unknown__") return "我不会";
   const option = (question.options || []).find((item) => item.value === value);
   return option ? `${option.value}. ${displayOptionLabel(option)}` : value;
 }
@@ -24,7 +25,15 @@ function formatAnswerValuesHtml(question, values) {
   if (!list.length) return '<div class="answer-lines muted">未作答</div>';
   return `
     <div class="answer-lines">
-      ${list.map((value) => `<div class="answer-line">${renderInlineMath(optionText(question, value))}</div>`).join("")}
+      ${list.map((value) => {
+        const option = (question.options || []).find((item) => item.value === value);
+        const marker = value === "__unknown__" ? "?" : String(option?.value || value || "?").trim().toUpperCase();
+        const label = value === "__unknown__" ? "我不会" : option ? displayOptionLabel(option) : String(value || "");
+        return `<div class="answer-line">
+          <span class="answer-choice-marker" aria-hidden="true">${escapeHtml(marker)}</span>
+          <span class="answer-choice-copy">${renderQuestionMath(label)}</span>
+        </div>`;
+      }).join("")}
     </div>
   `;
 }
@@ -39,7 +48,61 @@ function renderReviewBlock(label, bodyHtml, className = "") {
 }
 
 function renderAnalysisBlock(text) {
-  return renderReviewBlock("解析", `<div class="answer-lines analysis-line">${renderInlineMath(text || "这道题暂无解析。")}</div>`);
+  const paragraphs = String(text || "请结合题干条件说明关键步骤，并核对答案与条件是否一致。").split(/\n\s*\n/);
+  return renderReviewBlock("解析", paragraphs.map((paragraph) =>
+    `<div class="analysis-line">${renderQuestionMath(paragraph)}</div>`).join(""));
+}
+
+function renderReferenceAnswerBlock(label, text, className = "") {
+  return renderReviewBlock(
+    label,
+    `<div class="review-answer-copy">${renderQuestionMath(text || "暂无内容。")}</div>`,
+    className
+  );
+}
+
+// Per-option reasoning. The server has always sent `optionFeedback`, but the
+// client never rendered it: students only ever saw one flat analysis block.
+// Skipped when it would merely restate text the analysis already carries (the
+// frozen V14-C3 feedback bank folds its per-option lines into `analysis`).
+function renderOptionFeedbackBlock(question = {}, result = {}) {
+  const feedback = Array.isArray(result.optionFeedback)
+    ? result.optionFeedback
+    : Array.isArray(question.optionFeedback) ? question.optionFeedback : [];
+  if (!feedback.length) return "";
+  const analysis = String(result.analysis || question.analysis || "");
+  const addsInformation = feedback.some((item) => {
+    const reason = String(item.reason || "").trim();
+    return reason && !analysis.includes(reason);
+  });
+  if (!addsInformation) return "";
+  return renderReviewBlock("逐选项说明", `
+    <div class="answer-lines">
+      ${feedback.map((item) => {
+        const marker = String(item.value || "?").trim().toUpperCase();
+        const tone = item.isCorrect ? "is-correct" : "is-incorrect";
+        return `<div class="answer-line option-feedback-line ${tone}">
+          <span class="answer-choice-marker" aria-hidden="true">${escapeHtml(marker)}</span>
+          <span class="answer-choice-copy">
+            <b>${renderQuestionMath(String(item.label || ""))}</b>
+            <span class="option-feedback-reason">${renderQuestionMath(String(item.reason || ""))}</span>
+          </span>
+        </div>`;
+      }).join("")}
+    </div>
+  `, "option-feedback");
+}
+
+function questionReviewAnalysis(question = {}, result = {}) {
+  return String(
+    result.analysis
+      || question.analysis
+      || result.referenceAnswer
+      || question.referenceAnswer
+      || result.answerText
+      || question.answerText
+      || "请结合题干条件说明关键步骤，并核对答案与条件是否一致。"
+  );
 }
 
 function questionConceptTags(question) {
@@ -127,6 +190,9 @@ function shortAnswerReferenceText(question, result = {}) {
 }
 
 function renderQuestionReview({ question, result, index, unit }) {
+  if (question.type === "short_answer" && result.response === "__unknown__") {
+    return renderReviewBlock("你的回答", "我不会（0 分）") + renderAnalysisBlock(shortAnswerReferenceText(question, result));
+  }
   if (question.type === "short_answer") {
     const ai = aiReviewStatus(result, question);
     const referenceText = shortAnswerReferenceText(question, result);
@@ -150,11 +216,8 @@ function renderQuestionReview({ question, result, index, unit }) {
           ${result.aiReasoning ? `<p><b>评分依据：</b>${escapeHtml(result.aiReasoning)}</p>` : ""}
         </div>
         ${ai.aiFailed ? `<button class="button soft" type="button" data-retry-ai-grade data-unit="${escapeHtml(unit?.id || result.unitId || "")}" data-question-id="${escapeHtml(question.id || result.questionId || "")}">重新批改</button>` : ""}
-        <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示参考答案和解析</button>
-        <div class="question-answer-hidden" data-answer-hidden style="display:none">
-          <p><b>参考答案：</b>${renderInlineMath(referenceText)}</p>
-          ${rubricText ? `<p><b>解析/评分参考：</b>${renderInlineMath(rubricText)}</p>` : ""}
-        </div>
+        ${renderReferenceAnswerBlock("参考答案", referenceText, "reference-answer")}
+        ${renderReferenceAnswerBlock("解析与评分参考", rubricText || "请围绕题目要求说明关键步骤、依据和结论。", "reference-rubric")}
         ${renderQuizCoverage(question, unit)}
       </div>
     `;
@@ -173,7 +236,7 @@ function renderQuestionReview({ question, result, index, unit }) {
       ? `对应课件尚未解锁。请先完成当前学习建议，解锁后再学习「${escapeHtml(coach.reviewTarget)}」。`
       : `${escapeHtml(coach.guidance)} 可以先回看「${escapeHtml(coach.reviewTarget)}」，再用一句话解释为什么自己的选择符合或不符合题干。`;
   const correctAnswer = result.answer ?? question.answer ?? [];
-  const analysis = result.analysis || question.analysis || "";
+  const analysis = questionReviewAnalysis(question, result);
   return `
     <div class="question-review ${correct ? "correct" : "incorrect"}" data-question-review>
       <div class="review-heading">
@@ -184,21 +247,20 @@ function renderQuestionReview({ question, result, index, unit }) {
       ${renderReviewBlock("你的选择", formatAnswerValuesHtml(question, result.response))}
       ${correct
         ? `${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, correctAnswer), "correct-answer")}
+          ${renderOptionFeedbackBlock(question, result)}
           ${renderAnalysisBlock(analysis)}`
         : `<div class="coach-hint-box" data-coach-hint>
             <div class="coach-hint-content">
               <strong>学习建议</strong>
               <p><b>题目焦点：</b>${renderQuestionTextWithLinks(question, unit)}</p>
-              <p><b>你的选择：</b>${renderInlineMath(coach.selectedText)}</p>
+              <p><b>你的选择：</b>${renderQuestionMath(coach.selectedText)}</p>
               <p><b>先复盘：</b>这题主要卡在 <em>${escapeHtml(coach.conceptText)}</em>。${escapeHtml(coach.misconception)}</p>
               <p><b>行动建议：</b>${actionAdvice}</p>
             </div>
           </div>
-          <button class="button soft coach-reveal-btn" type="button" data-reveal-answer>显示正确答案和解析</button>
-          <div class="question-answer-hidden" data-answer-hidden style="display:none">
-            ${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, correctAnswer), "correct-answer")}
-            ${renderAnalysisBlock(analysis)}
-          </div>`
+          ${renderReviewBlock("正确答案", formatAnswerValuesHtml(question, correctAnswer), "correct-answer")}
+          ${renderOptionFeedbackBlock(question, result)}
+          ${renderAnalysisBlock(analysis)}`
       }
       ${renderQuizCoverage(question, unit)}
     </div>
@@ -421,7 +483,8 @@ async function submitQuiz(unitId) {
     const index = Math.max(0, allQuestions.findIndex((item) => item.id === question.id));
     if (question.type === "short_answer") {
       const textarea = document.querySelector(`textarea[name="${unit.id}-${question.id}"]`);
-      const response = (textarea?.value || readQuizDraft(unit.id, question.id, "")).trim();
+      const unknown = document.querySelector(`[data-short-unknown][data-question-id="${question.id}"]`)?.checked;
+      const response = unknown ? "__unknown__" : (textarea?.value || readQuizDraft(unit.id, question.id, "")).trim();
 
       if (!response) {
         missing.push(index + 1);
@@ -490,6 +553,7 @@ async function submitQuiz(unitId) {
     const review = {
       answer: result.answer,
       analysis: result.analysis || "",
+      feedbackVersion: result.feedbackVersion || "",
       commentPrompt: result.commentPrompt || ""
     };
     Object.assign(question, review);
@@ -677,7 +741,15 @@ function recordQuizResult(unit, question, result, options = {}) {
   return record;
 }
 
-els.completeLesson.addEventListener("click", completeAndAdvanceCurrentUnit);
+els.completeLesson.addEventListener("click", (event) => {
+  const outcomeAction = window.KnowledgeAssistant?.outcomeNavigationAction?.(getUnit()) || null;
+  if (outcomeAction) {
+    event.preventDefault();
+    window.KnowledgeAssistant?.openOutcomeStage?.(outcomeAction.stageId || "");
+    return;
+  }
+  completeAndAdvanceCurrentUnit(event);
+});
 
 async function goToPrevUnit() {
   const previous = typeof agenticPreviousUnlockedUnitBefore === "function"

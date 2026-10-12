@@ -358,7 +358,7 @@ async function testReviewFollowsSavedTransitionChoice() {
       }
     }
   });
-  assert.equal(context.agenticCompletionCta(context.getUnit("KP1")).label, "复习并跳到下一节");
+  assert.equal(context.agenticCompletionCta(context.getUnit("KP1")).label, "复习完成，进入「KP2」");
   assert.equal(await context.completeAndAdvanceCurrentUnit({ preventDefault() {} }), true);
   assert.equal(context.currentUnitId, "KP2", "选择直接继续后，复习不能重新插入小题");
 
@@ -634,6 +634,24 @@ function testEmptyAdaptiveAttemptDoesNotCompleteFormative() {
 }
 
 (async () => {
+  reset({
+    state: {
+      completed: ["KP1"],
+      selectedKnowledgeScenes: { KP1: "simulation" },
+      knowledgeTransitionChoices: {
+        KP1: { choice: "formative", source: "knowledge_completion",
+          formativeUnitId: "KP1-formative", targetUnitId: "KP1-formative" }
+      },
+      agenticPath: {
+        unlocked: ["KP1", "KP2", "KP1-formative"],
+        reviewQueue: { queue: ["KP1", "KP2"], currentIndex: 0, resumeUnitId: "C1-post" }
+      }
+    }
+  });
+  assert.equal(context.agenticCompletionCta(context.getUnit("KP1")).targetUnitId, "KP2",
+    "回看队列应优先于初学时保存的小测选择");
+  assert.equal(await context.completeAndAdvanceCurrentUnit({ preventDefault() {} }), true);
+  assert.equal(context.currentUnitId, "KP2", "回看按钮承诺的目标应与真实跳转一致");
   testSelectedSceneShowsTransitionPreview();
   await testCompletionCreatesChoice();
   await testContinueSkipsOnlyOptionalCheck();

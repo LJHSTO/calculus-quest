@@ -230,6 +230,26 @@
     }) * multiplier;
   }
 
+  function measurementExport(phase = {}, options = {}) {
+    const submitted = Math.max(0, Number(phase.submitted || 0));
+    const pending = Math.max(0, Number(phase.pending || 0));
+    const expected = Math.max(0, Number(phase.expected || 0));
+    const completed = typeof phase.completed === "boolean"
+      ? phase.completed : expected > 0 && submitted >= expected;
+    const status = !submitted ? "not_started" : pending ? "pending_review"
+      : options.adaptive ? "recorded_adaptive" : completed ? "complete" : "partial";
+    const usable = status === "complete" || status === "recorded_adaptive";
+    const value = (field) => usable && phase[field] != null && phase[field] !== "" && Number.isFinite(Number(phase[field]))
+      ? Number(phase[field]) : "";
+    return { status, score: value("score"), maxScore: value("max_score"),
+      rate: value("score_rate"), pending };
+  }
+
+  function observedRate(rate, denominator) {
+    return Number(denominator) > 0 && rate != null && rate !== "" && Number.isFinite(Number(rate))
+      ? Number(rate) : "";
+  }
+
   return {
     publicCourseText,
     sceneTypeLabel,
@@ -244,6 +264,8 @@
     plannerReasonsText,
     qaStatusLabel,
     tableSortToken,
-    compareTableValues
+    compareTableValues,
+    measurementExport,
+    observedRate
   };
 });
