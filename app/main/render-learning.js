@@ -819,7 +819,10 @@ function renderKnowledgeUnit(unit) {
             </div>
           </div>
           ${renderKnowledgeSceneChoicePanel(unit)}
-          <div class="multi-scene-selected-resource ${selectedTypeId && candidate ? "has-resource" : "no-resource"}">${resourceBody}</div>
+          <div class="multi-scene-selected-resource ${selectedTypeId && candidate ? "has-resource" : "no-resource"}">
+            ${resourceBody}
+            <div class="proactive-inline-host" data-proactive-inline-host></div>
+          </div>
           ${selectedTypeId ? renderKnowledgeAudioPack(unit, {
             slotKey: `scene-${selectedTypeId}`,
             sceneOrder: candidate?.sceneOrder,

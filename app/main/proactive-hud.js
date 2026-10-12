@@ -238,6 +238,128 @@
     }, 1000);
   }
 
+  function escapeHtml(str) {
+    return String(str || "").replace(/[&<>"']/g, (m) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[m]));
+  }
+
+  function removeInSituIntervention() {
+    const host = document.querySelector("[data-proactive-inline-host]");
+    if (host) host.innerHTML = "";
+  }
+
+  function renderInSituIntervention(opts = {}) {
+    const host = document.querySelector("[data-proactive-inline-host]");
+    if (!host) return;
+
+    const level = opts.level || hudState.d3.level || "L2";
+    const title = opts.title || hudState.d3.title || "知点建议：留意自变量从两侧逼近时的对应值";
+    const prompt = opts.prompt || hudState.d3.check_prompt || "当 x 从负侧无限趋近 0 时，函数值是否有唯一确定极限？";
+    const showProbe = opts.showProbe === true;
+
+    host.innerHTML = `
+      <div class="proactive-insitu-card ${opts.isEscalated ? 'is-escalated' : ''}" data-proactive-insitu-card>
+        <div class="proactive-insitu-header">
+          <div class="proactive-insitu-badge-group">
+            <span class="proactive-insitu-chip chip-level">⚡ ${escapeHtml(level)} 概念支架</span>
+            <span class="proactive-insitu-chip chip-placement">D4 内嵌原位 (Inline)</span>
+            <span class="proactive-insitu-chip chip-guard">🛡️ 防泄题: PASS</span>
+            <span class="proactive-insitu-chip chip-auth">D5: ${escapeHtml(hudState.d5.authority_level)}</span>
+          </div>
+          <button type="button" class="proactive-insitu-close" title="稍后处理" data-insitu-action="snooze">&times;</button>
+        </div>
+        <div class="proactive-insitu-body">
+          <h4 class="proactive-insitu-title">${escapeHtml(title)}</h4>
+          <p class="proactive-insitu-desc">
+            ${level === 'L3'
+              ? '建议拆解为两个子目标：① 观察左极限 lim(x→0⁻) f(x)；② 观察右极限 lim(x→0⁺) f(x)。对比两侧是否收敛于同一数值。'
+              : '观察滑块滑动到 0 附近时，左侧蓝点与右侧橙点的纵坐标落点。两点是否在垂直方向重合？'}
+          </p>
+        </div>
+        <div class="proactive-insitu-footer">
+          <button type="button" class="insitu-btn is-primary" data-insitu-action="accept">接受线索并高亮焦点</button>
+          <button type="button" class="insitu-btn is-secondary" data-insitu-action="probe">${showProbe ? '收起随堂微测' : '📝 原位随堂微测 (Formative Probe)'}</button>
+          <button type="button" class="insitu-btn is-outline" data-insitu-action="alternative">换一种帮助 (A4)</button>
+          <button type="button" class="insitu-btn is-subtle" data-insitu-action="snooze">稍后 (30s 冷却)</button>
+        </div>
+        <div class="proactive-insitu-probe-container ${showProbe ? '' : 'is-hidden'}" data-insitu-probe-container>
+          <div class="insitu-probe-card">
+            <div class="insitu-probe-header">
+              <span class="insitu-probe-tag">随堂形成性微测 · 闭环评估 (D6)</span>
+              <small>此测试不计入总分，仅用于自查当前理解</small>
+            </div>
+            <div class="insitu-probe-question">
+              <strong>问题：</strong> ${escapeHtml(prompt)}
+            </div>
+            <div class="insitu-probe-options">
+              <button type="button" class="insitu-probe-opt" data-opt-idx="0">A. 有，两侧极限一定存在且相等</button>
+              <button type="button" class="insitu-probe-opt" data-opt-idx="1">B. 不一定，若左侧与右侧趋近值不同，则整体极限不存在 (正确)</button>
+              <button type="button" class="insitu-probe-opt" data-opt-idx="2">C. 只要 x=0 点有定义，极限就必定存在</button>
+              <button type="button" class="insitu-probe-opt" data-opt-idx="3">D. 极限仅取决于函数定义域的端点值</button>
+            </div>
+            <div class="insitu-probe-feedback is-hidden" data-insitu-probe-feedback></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const card = host.querySelector("[data-proactive-insitu-card]");
+    if (!card) return;
+
+    card.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-insitu-action]");
+      if (btn) {
+        const action = btn.dataset.insituAction;
+        if (action === "snooze") {
+          triggerStudentSnooze();
+          removeInSituIntervention();
+        } else if (action === "accept") {
+          hudState.d5.student_action = "accept (采纳建议)";
+          hudState.d6.episode_state = "engaged";
+          renderHUD();
+          btn.textContent = "✓ 已采纳线索";
+          btn.disabled = true;
+        } else if (action === "probe") {
+          const probeContainer = card.querySelector("[data-insitu-probe-container]");
+          if (probeContainer) {
+            probeContainer.classList.toggle("is-hidden");
+            btn.textContent = probeContainer.classList.contains("is-hidden")
+              ? "📝 原位随堂微测 (Formative Probe)"
+              : "收起随堂微测";
+          }
+        } else if (action === "alternative") {
+          triggerErrorEscalation();
+        }
+      }
+
+      const optBtn = e.target.closest(".insitu-probe-opt");
+      if (optBtn) {
+        const idx = parseInt(optBtn.dataset.optIdx, 10);
+        const fb = card.querySelector("[data-insitu-probe-feedback]");
+        card.querySelectorAll(".insitu-probe-opt").forEach(b => b.classList.remove("is-selected", "is-correct", "is-wrong"));
+        optBtn.classList.add("is-selected");
+        if (fb) {
+          fb.classList.remove("is-hidden");
+          if (idx === 1) {
+            optBtn.classList.add("is-correct");
+            fb.className = "insitu-probe-feedback is-success";
+            fb.innerHTML = "<strong>✓ 理解正确！</strong> 左右极限必须同时存在且相等，整体极限才存在。D6 支架已完成闭环，正在褪除为自主探索状态。";
+            hudState.d6.episode_state = "faded";
+            hudState.d6.probe_result = "passed";
+            renderHUD();
+          } else {
+            optBtn.classList.add("is-wrong");
+            fb.className = "insitu-probe-feedback is-warning";
+            fb.innerHTML = "<strong>思考一下：</strong> 极限强调的是两侧无限趋近时的趋势是否一致，而非单侧或定义值。建议再观察上方图像。";
+            hudState.d6.probe_result = "incorrect_retry";
+            renderHUD();
+          }
+        }
+      }
+    });
+  }
+
   // Quick Sandbox Interactive Triggers
   function triggerBoundaryAction() {
     updateHUDState({
@@ -275,6 +397,7 @@
         probe_result: "pending"
       }
     });
+    renderInSituIntervention({ level: "L2", showProbe: false });
   }
 
   function triggerErrorEscalation() {
@@ -313,9 +436,11 @@
         probe_result: "pending"
       }
     });
+    renderInSituIntervention({ level: "L3", isEscalated: true, showProbe: true });
   }
 
   function triggerStudentSnooze() {
+    removeInSituIntervention();
     updateHUDState({
       d2: {
         action: "silent",
@@ -341,6 +466,7 @@
   }
 
   function triggerMuteScope() {
+    removeInSituIntervention();
     clearInterval(cooldownTimer);
     updateHUDState({
       d2: {
@@ -366,6 +492,7 @@
   }
 
   function resetAllHUD() {
+    removeInSituIntervention();
     clearInterval(cooldownTimer);
     updateHUDState({
       d1: {
@@ -448,11 +575,134 @@
 
     document.body.append(toggleBtn, panel);
 
-    // Event Listeners
-    toggleBtn.addEventListener("click", () => {
+    // Event Listeners: Draggable Toggle Button
+    let btnPointerDown = false;
+    let btnStartX = 0;
+    let btnStartY = 0;
+    let btnInitialLeft = 0;
+    let btnInitialTop = 0;
+    let btnMoved = false;
+
+    toggleBtn.addEventListener("pointerdown", (e) => {
+      btnPointerDown = true;
+      btnMoved = false;
+      btnStartX = e.clientX;
+      btnStartY = e.clientY;
+      const rect = toggleBtn.getBoundingClientRect();
+      btnInitialLeft = rect.left;
+      btnInitialTop = rect.top;
+      try { toggleBtn.setPointerCapture(e.pointerId); } catch {}
+    });
+
+    toggleBtn.addEventListener("pointermove", (e) => {
+      if (!btnPointerDown) return;
+      const dx = e.clientX - btnStartX;
+      const dy = e.clientY - btnStartY;
+      if (!btnMoved && Math.hypot(dx, dy) > 4) {
+        btnMoved = true;
+        toggleBtn.classList.add("is-dragging");
+      }
+      if (btnMoved) {
+        let nextLeft = btnInitialLeft + dx;
+        let nextTop = btnInitialTop + dy;
+        const maxLeft = window.innerWidth - toggleBtn.offsetWidth - 8;
+        const maxTop = window.innerHeight - toggleBtn.offsetHeight - 8;
+        nextLeft = Math.max(8, Math.min(maxLeft, nextLeft));
+        nextTop = Math.max(8, Math.min(maxTop, nextTop));
+        toggleBtn.style.left = `${nextLeft}px`;
+        toggleBtn.style.top = `${nextTop}px`;
+        toggleBtn.style.bottom = "auto";
+        toggleBtn.style.right = "auto";
+      }
+    });
+
+    toggleBtn.addEventListener("pointerup", (e) => {
+      if (btnPointerDown) {
+        btnPointerDown = false;
+        try { toggleBtn.releasePointerCapture(e.pointerId); } catch {}
+        setTimeout(() => {
+          toggleBtn.classList.remove("is-dragging");
+        }, 50);
+      }
+    });
+
+    toggleBtn.addEventListener("pointercancel", () => {
+      btnPointerDown = false;
+      toggleBtn.classList.remove("is-dragging");
+    });
+
+    toggleBtn.addEventListener("click", (e) => {
+      if (btnMoved) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       hudState.isOpen = !hudState.isOpen;
       panel.classList.toggle("is-hidden", !hudState.isOpen);
-      if (hudState.isOpen) renderHUD();
+      if (hudState.isOpen) {
+        if (!panel.dataset.customPositioned) {
+          const rect = toggleBtn.getBoundingClientRect();
+          let panelTop = rect.top - 620;
+          let panelLeft = rect.left;
+          if (panelTop < 16) panelTop = 16;
+          if (panelLeft + 480 > window.innerWidth) panelLeft = Math.max(16, window.innerWidth - 490);
+          panel.style.left = `${Math.max(16, panelLeft)}px`;
+          panel.style.top = `${Math.max(16, panelTop)}px`;
+          panel.style.bottom = "auto";
+          panel.style.right = "auto";
+        }
+        renderHUD();
+      }
+    });
+
+    // Event Listeners: Draggable Panel Header
+    const panelHeader = panel.querySelector(".proactive-hud-header");
+    let panelPointerDown = false;
+    let panelStartX = 0;
+    let panelStartY = 0;
+    let panelInitialLeft = 0;
+    let panelInitialTop = 0;
+
+    panelHeader.addEventListener("pointerdown", (e) => {
+      if (e.target.closest(".proactive-hud-close")) return;
+      panelPointerDown = true;
+      panelStartX = e.clientX;
+      panelStartY = e.clientY;
+      const rect = panel.getBoundingClientRect();
+      panelInitialLeft = rect.left;
+      panelInitialTop = rect.top;
+      try { panelHeader.setPointerCapture(e.pointerId); } catch {}
+      panelHeader.classList.add("is-dragging");
+      panel.dataset.customPositioned = "true";
+    });
+
+    panelHeader.addEventListener("pointermove", (e) => {
+      if (!panelPointerDown) return;
+      const dx = e.clientX - panelStartX;
+      const dy = e.clientY - panelStartY;
+      let nextLeft = panelInitialLeft + dx;
+      let nextTop = panelInitialTop + dy;
+      const maxLeft = window.innerWidth - panel.offsetWidth - 8;
+      const maxTop = window.innerHeight - 80;
+      nextLeft = Math.max(8, Math.min(maxLeft, nextLeft));
+      nextTop = Math.max(8, Math.min(maxTop, nextTop));
+      panel.style.left = `${nextLeft}px`;
+      panel.style.top = `${nextTop}px`;
+      panel.style.bottom = "auto";
+      panel.style.right = "auto";
+    });
+
+    panelHeader.addEventListener("pointerup", (e) => {
+      if (panelPointerDown) {
+        panelPointerDown = false;
+        try { panelHeader.releasePointerCapture(e.pointerId); } catch {}
+        panelHeader.classList.remove("is-dragging");
+      }
+    });
+
+    panelHeader.addEventListener("pointercancel", () => {
+      panelPointerDown = false;
+      panelHeader.classList.remove("is-dragging");
     });
 
     panel.querySelector(".proactive-hud-close").addEventListener("click", () => {
@@ -589,7 +839,9 @@
     triggerError: triggerErrorEscalation,
     triggerSnooze: triggerStudentSnooze,
     triggerMute: triggerMuteScope,
-    reset: resetAllHUD
+    reset: resetAllHUD,
+    renderInSitu: renderInSituIntervention,
+    removeInSitu: removeInSituIntervention
   };
 
 })(window);
