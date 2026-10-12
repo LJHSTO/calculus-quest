@@ -270,6 +270,12 @@
   margin-top: 12px;
   position: relative;
   z-index: 10;
+  box-sizing: border-box;
+}
+
+.proactive-inline-host,
+.proactive-inline-host * {
+  box-sizing: border-box;
 }
 
 .proactive-insitu-card {
