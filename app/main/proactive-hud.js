@@ -253,53 +253,144 @@
     const host = document.querySelector("[data-proactive-inline-host]");
     if (!host) return;
 
+    const placement = opts.placement || hudState.d4.placement || "inline";
+    const modality = opts.modality || hudState.d4.modality || "tip";
     const level = opts.level || hudState.d3.level || "L2";
     const title = opts.title || hudState.d3.title || "知点建议：留意自变量从两侧逼近时的对应值";
     const prompt = opts.prompt || hudState.d3.check_prompt || "当 x 从负侧无限趋近 0 时，函数值是否有唯一确定极限？";
-    const showProbe = opts.showProbe === true;
+
+    if (placement === "sidebar") {
+      removeInSituIntervention();
+      hudState.d4.placement = "sidebar";
+      hudState.d4.placement_target = "#knowledge-assistant-root";
+      hudState.d4.rendered_surface = "知点助教侧栏气泡与对话流 (Sidebar)";
+      renderHUD();
+
+      const nudge = document.querySelector("[data-knowledge-proactive]");
+      if (nudge) {
+        nudge.hidden = false;
+        const eyebrow = nudge.querySelector("[data-knowledge-proactive-eyebrow]");
+        const titleEl = nudge.querySelector("[data-knowledge-proactive-title]");
+        const bodyEl = nudge.querySelector("[data-knowledge-proactive-body]");
+        if (eyebrow) eyebrow.textContent = "知点留意到 · D4 侧栏";
+        if (titleEl) titleEl.textContent = title;
+        if (bodyEl) bodyEl.textContent = "左右说的是输入从哪一侧靠近；比较的是两侧输出趋近的值。建议打开右侧助手展开研讨。";
+      }
+      return;
+    }
+
+    hudState.d4.placement = "inline";
+    hudState.d4.placement_target = "[data-proactive-inline-host]";
+
+    let bodyHtml = "";
+    let footerHtml = "";
+
+    if (modality === "tip") {
+      hudState.d4.rendered_surface = "原位嵌入卡片 · 微提示 (Tip)";
+      bodyHtml = `
+        <h4 class="proactive-insitu-title">💡 ${escapeHtml(title)}</h4>
+        <p class="proactive-insitu-desc">
+          左右极限说的是输入从哪一侧靠近，比较的是两侧输出趋近的值。先观察滑块滑动到 0 附近时，左侧蓝点与右侧橙点的纵坐标落点是否一致。
+        </p>
+      `;
+      footerHtml = `
+        <button type="button" class="insitu-btn is-primary" data-insitu-action="accept">接受线索并高亮焦点</button>
+        <button type="button" class="insitu-btn is-secondary" data-insitu-action="switch-example">📖 看典型例子 (Example)</button>
+        <button type="button" class="insitu-btn is-outline" data-insitu-action="switch-interactive">📝 随堂交互微测 (Interactive)</button>
+        <button type="button" class="insitu-btn is-outline" data-insitu-action="switch-chat">💬 助教对话 (Chat)</button>
+        <button type="button" class="insitu-btn is-subtle" data-insitu-action="snooze">稍后 (30s 冷却)</button>
+      `;
+    } else if (modality === "example") {
+      hudState.d4.rendered_surface = "原位对比学习卡片 (Example)";
+      bodyHtml = `
+        <h4 class="proactive-insitu-title">📖 典型对比范例：分段函数的左右极限</h4>
+        <div class="insitu-example-box">
+          <div class="example-case">
+            <span class="case-tag tag-diff">反例 (极限不存在)</span>
+            <div class="case-formula">f(x) = { x + 1 (x &gt; 0), x - 1 (x &lt; 0) }</div>
+            <div class="case-analysis">
+              lim(x→0⁺) f(x) = 1，lim(x→0⁻) f(x) = -1<br>
+              两侧极限不相等 ➔ <strong>整体极限不存在</strong>
+            </div>
+          </div>
+          <div class="example-case">
+            <span class="case-tag tag-same">正例 (极限存在)</span>
+            <div class="case-formula">g(x) = x² (x ≠ 0)</div>
+            <div class="case-analysis">
+              lim(x→0⁺) g(x) = 0，lim(x→0⁻) g(x) = 0<br>
+              两侧极限相等 ➔ <strong>整体极限等于 0</strong>
+            </div>
+          </div>
+        </div>
+      `;
+      footerHtml = `
+        <button type="button" class="insitu-btn is-primary" data-insitu-action="accept">弄懂了，返回继续探索</button>
+        <button type="button" class="insitu-btn is-secondary" data-insitu-action="switch-interactive">做道微测自查 (Interactive)</button>
+        <button type="button" class="insitu-btn is-outline" data-insitu-action="switch-tip">返回简要提示</button>
+        <button type="button" class="insitu-btn is-subtle" data-insitu-action="snooze">收起</button>
+      `;
+    } else if (modality === "interactive") {
+      hudState.d4.rendered_surface = "原位形成性微测探索 (Interactive)";
+      bodyHtml = `
+        <h4 class="proactive-insitu-title">📝 随堂形成性微测 · 即时交互自查 (闭环验证 D6)</h4>
+        <div class="insitu-probe-card">
+          <div class="insitu-probe-question">
+            <strong>问题：</strong> ${escapeHtml(prompt)}
+          </div>
+          <div class="insitu-probe-options">
+            <button type="button" class="insitu-probe-opt" data-opt-idx="0">A. 存在，等于两侧极限平均值</button>
+            <button type="button" class="insitu-probe-opt" data-opt-idx="1">B. 不存在，若两侧趋近值不同则整体极限不存在 (正确)</button>
+            <button type="button" class="insitu-probe-opt" data-opt-idx="2">C. 只要 x=0 处有定义，极限就必定存在</button>
+            <button type="button" class="insitu-probe-opt" data-opt-idx="3">D. 极限仅取决于定义域端点值</button>
+          </div>
+          <div class="insitu-probe-feedback is-hidden" data-insitu-probe-feedback></div>
+        </div>
+      `;
+      footerHtml = `
+        <button type="button" class="insitu-btn is-outline" data-insitu-action="switch-example">看对比范例 (Example)</button>
+        <button type="button" class="insitu-btn is-outline" data-insitu-action="switch-tip">返回简要提示 (Tip)</button>
+        <button type="button" class="insitu-btn is-subtle" data-insitu-action="snooze">稍后再测 (30s 冷却)</button>
+      `;
+    } else if (modality === "chat") {
+      hudState.d4.rendered_surface = "原位对话气泡与快速回复 (Chat)";
+      bodyHtml = `
+        <div class="insitu-chat-bubble">
+          <div class="chat-bubble-avatar">🤖 知点助教 (发起对话)</div>
+          <div class="chat-bubble-content">
+            “我看你刚才在 x=0 边界附近反复停顿。你认为自变量从负侧逼近和从正侧逼近时，函数图像的纵坐标走向有什么不同？”
+          </div>
+        </div>
+        <div class="insitu-chat-quick-replies">
+          <button type="button" class="chat-reply-chip" data-reply-text="左侧趋近 1，右侧趋近 3，两侧数值不同">💬 “左侧趋近 1，右侧趋近 3，两侧数值不同”</button>
+          <button type="button" class="chat-reply-chip" data-reply-text="我不太确定看哪里的坐标">💬 “我不太确定看哪里的坐标”</button>
+          <button type="button" class="chat-reply-chip" data-reply-text="只要有定义点，极限就应该存在吧？">💬 “只要有定义点，极限就应该存在吧？”</button>
+        </div>
+      `;
+      footerHtml = `
+        <button type="button" class="insitu-btn is-primary" data-insitu-action="open-sidebar-chat">👉 在右侧知点侧栏中深入研讨</button>
+        <button type="button" class="insitu-btn is-outline" data-insitu-action="switch-tip">返回简要提示 (Tip)</button>
+        <button type="button" class="insitu-btn is-subtle" data-insitu-action="snooze">稍后聊 (30s 冷却)</button>
+      `;
+    }
+
+    renderHUD();
 
     host.innerHTML = `
-      <div class="proactive-insitu-card ${opts.isEscalated ? 'is-escalated' : ''}" data-proactive-insitu-card>
+      <div class="proactive-insitu-card proactive-modality-${escapeHtml(modality)} ${opts.isEscalated ? 'is-escalated' : ''}" data-proactive-insitu-card>
         <div class="proactive-insitu-header">
           <div class="proactive-insitu-badge-group">
             <span class="proactive-insitu-chip chip-level">⚡ ${escapeHtml(level)} 概念支架</span>
-            <span class="proactive-insitu-chip chip-placement">D4 内嵌原位 (Inline)</span>
+            <span class="proactive-insitu-chip chip-placement">D4: ${escapeHtml(placement)} · ${escapeHtml(modality)}</span>
             <span class="proactive-insitu-chip chip-guard">🛡️ 防泄题: PASS</span>
             <span class="proactive-insitu-chip chip-auth">D5: ${escapeHtml(hudState.d5.authority_level)}</span>
           </div>
           <button type="button" class="proactive-insitu-close" title="稍后处理" data-insitu-action="snooze">&times;</button>
         </div>
         <div class="proactive-insitu-body">
-          <h4 class="proactive-insitu-title">${escapeHtml(title)}</h4>
-          <p class="proactive-insitu-desc">
-            ${level === 'L3'
-              ? '建议拆解为两个子目标：① 观察左极限 lim(x→0⁻) f(x)；② 观察右极限 lim(x→0⁺) f(x)。对比两侧是否收敛于同一数值。'
-              : '观察滑块滑动到 0 附近时，左侧蓝点与右侧橙点的纵坐标落点。两点是否在垂直方向重合？'}
-          </p>
+          ${bodyHtml}
         </div>
         <div class="proactive-insitu-footer">
-          <button type="button" class="insitu-btn is-primary" data-insitu-action="accept">接受线索并高亮焦点</button>
-          <button type="button" class="insitu-btn is-secondary" data-insitu-action="probe">${showProbe ? '收起随堂微测' : '📝 原位随堂微测 (Formative Probe)'}</button>
-          <button type="button" class="insitu-btn is-outline" data-insitu-action="alternative">换一种帮助 (A4)</button>
-          <button type="button" class="insitu-btn is-subtle" data-insitu-action="snooze">稍后 (30s 冷却)</button>
-        </div>
-        <div class="proactive-insitu-probe-container ${showProbe ? '' : 'is-hidden'}" data-insitu-probe-container>
-          <div class="insitu-probe-card">
-            <div class="insitu-probe-header">
-              <span class="insitu-probe-tag">随堂形成性微测 · 闭环评估 (D6)</span>
-              <small>此测试不计入总分，仅用于自查当前理解</small>
-            </div>
-            <div class="insitu-probe-question">
-              <strong>问题：</strong> ${escapeHtml(prompt)}
-            </div>
-            <div class="insitu-probe-options">
-              <button type="button" class="insitu-probe-opt" data-opt-idx="0">A. 有，两侧极限一定存在且相等</button>
-              <button type="button" class="insitu-probe-opt" data-opt-idx="1">B. 不一定，若左侧与右侧趋近值不同，则整体极限不存在 (正确)</button>
-              <button type="button" class="insitu-probe-opt" data-opt-idx="2">C. 只要 x=0 点有定义，极限就必定存在</button>
-              <button type="button" class="insitu-probe-opt" data-opt-idx="3">D. 极限仅取决于函数定义域的端点值</button>
-            </div>
-            <div class="insitu-probe-feedback is-hidden" data-insitu-probe-feedback></div>
-          </div>
+          ${footerHtml}
         </div>
       </div>
     `;
@@ -320,16 +411,28 @@
           renderHUD();
           btn.textContent = "✓ 已采纳线索";
           btn.disabled = true;
-        } else if (action === "probe") {
-          const probeContainer = card.querySelector("[data-insitu-probe-container]");
-          if (probeContainer) {
-            probeContainer.classList.toggle("is-hidden");
-            btn.textContent = probeContainer.classList.contains("is-hidden")
-              ? "📝 原位随堂微测 (Formative Probe)"
-              : "收起随堂微测";
-          }
-        } else if (action === "alternative") {
-          triggerErrorEscalation();
+        } else if (action === "switch-tip") {
+          triggerD4Modality("tip");
+        } else if (action === "switch-example") {
+          triggerD4Modality("example");
+        } else if (action === "switch-interactive") {
+          triggerD4Modality("interactive");
+        } else if (action === "switch-chat") {
+          triggerD4Modality("chat");
+        } else if (action === "open-sidebar-chat") {
+          triggerD4PlacementToggle();
+          if (global.KnowledgeAssistant?.open) global.KnowledgeAssistant.open();
+        }
+      }
+
+      const chip = e.target.closest(".chat-reply-chip");
+      if (chip) {
+        const text = chip.dataset.replyText || "";
+        triggerD4PlacementToggle();
+        if (global.KnowledgeAssistant?.ask) {
+          global.KnowledgeAssistant.ask(text);
+        } else if (global.KnowledgeAssistant?.open) {
+          global.KnowledgeAssistant.open();
         }
       }
 
@@ -360,6 +463,48 @@
     });
   }
 
+  function triggerD4Modality(modality = "tip") {
+    hudState.d4.placement = "inline";
+    hudState.d4.modality = modality;
+    hudState.d4.placement_target = "[data-proactive-inline-host]";
+    if (modality === "tip") {
+      hudState.d4.rendered_surface = "原位嵌入卡片 · 微提示 (Tip)";
+      hudState.d3.level = "L2";
+      hudState.d3.title = "知点建议：留意自变量从两侧逼近时的对应值";
+    } else if (modality === "example") {
+      hudState.d4.rendered_surface = "原位对比学习卡片 (Example)";
+      hudState.d3.level = "L2";
+      hudState.d3.title = "典型对比范例：分段函数的左右极限";
+    } else if (modality === "interactive") {
+      hudState.d4.rendered_surface = "原位形成性微测探索 (Interactive)";
+      hudState.d3.level = "L3";
+      hudState.d3.title = "随堂形成性微测 · 即时交互自查 (闭环验证 D6)";
+    } else if (modality === "chat") {
+      hudState.d4.rendered_surface = "原位对话气泡与快速回复 (Chat)";
+      hudState.d3.level = "L2";
+      hudState.d3.title = "助教启发对话：自变量逼近趋势研讨";
+    }
+    hudState.d6.episode_state = "offered";
+    renderHUD();
+    renderInSituIntervention({ modality, level: hudState.d3.level, placement: "inline" });
+  }
+
+  function triggerD4PlacementToggle() {
+    if (hudState.d4.placement === "inline") {
+      hudState.d4.placement = "sidebar";
+      hudState.d4.placement_target = "#knowledge-assistant-root";
+      hudState.d4.rendered_surface = "知点助教侧栏气泡与对话流 (Sidebar)";
+      renderHUD();
+      renderInSituIntervention({ placement: "sidebar" });
+    } else {
+      hudState.d4.placement = "inline";
+      hudState.d4.placement_target = "[data-proactive-inline-host]";
+      hudState.d4.rendered_surface = `课件下方原位嵌入工作区 · ${hudState.d4.modality}`;
+      renderHUD();
+      renderInSituIntervention({ placement: "inline", modality: hudState.d4.modality });
+    }
+  }
+
   // Quick Sandbox Interactive Triggers
   function triggerBoundaryAction() {
     updateHUDState({
@@ -388,7 +533,7 @@
         placement: "inline",
         modality: "tip",
         placement_target: "[data-proactive-inline-host]",
-        rendered_surface: "原位嵌入卡片 (伴随高亮)"
+        rendered_surface: "原位嵌入卡片 · 微提示 (Tip)"
       },
       d6: {
         episode_state: "offered",
@@ -397,7 +542,7 @@
         probe_result: "pending"
       }
     });
-    renderInSituIntervention({ level: "L2", showProbe: false });
+    renderInSituIntervention({ modality: "tip", level: "L2", placement: "inline" });
   }
 
   function triggerErrorEscalation() {
@@ -425,9 +570,9 @@
       },
       d4: {
         placement: "inline",
-        modality: "widget",
+        modality: "interactive",
         placement_target: "[data-proactive-inline-host]",
-        rendered_surface: "原位微测试草稿板"
+        rendered_surface: "原位形成性微测探索 (Interactive)"
       },
       d6: {
         episode_state: "engaged",
@@ -436,7 +581,7 @@
         probe_result: "pending"
       }
     });
-    renderInSituIntervention({ level: "L3", isEscalated: true, showProbe: true });
+    renderInSituIntervention({ modality: "interactive", level: "L3", placement: "inline" });
   }
 
   function triggerStudentSnooze() {
@@ -562,13 +707,21 @@
       </div>
       <div class="proactive-hud-body"></div>
       <div class="proactive-hud-actions">
-        <div class="proactive-hud-actions-title">六维交互沙盒即时仿真测试</div>
+        <div class="proactive-hud-actions-title">六维交互沙盒即时仿真测试 (D1-D6)</div>
         <div class="proactive-hud-btn-row">
           <button class="hud-action-btn" data-hud-action="boundary">边界介入 (D1/D2)</button>
-          <button class="hud-action-btn" data-hud-action="error">困难升级 (D3/D4)</button>
+          <button class="hud-action-btn" data-hud-action="error">困难升级 (D3)</button>
           <button class="hud-action-btn" data-hud-action="snooze">稍后冷却 (D5/D6)</button>
           <button class="hud-action-btn is-danger" data-hud-action="mute">静音阻断 (D5)</button>
           <button class="hud-action-btn" data-hud-action="reset">重置状态</button>
+        </div>
+        <div class="proactive-hud-actions-title" style="margin-top: 8px;">D4 呈现表面与多模态形式测试 (Placement &amp; Modality)</div>
+        <div class="proactive-hud-btn-row">
+          <button class="hud-action-btn" data-hud-action="d4-tip">💡 D4: 提示 (Tip)</button>
+          <button class="hud-action-btn" data-hud-action="d4-example">📖 D4: 例子 (Example)</button>
+          <button class="hud-action-btn" data-hud-action="d4-interactive">📝 D4: 交互 (Interactive)</button>
+          <button class="hud-action-btn" data-hud-action="d4-chat">💬 D4: 聊天 (Chat)</button>
+          <button class="hud-action-btn" data-hud-action="d4-placement">⇄ 边栏/内嵌切换</button>
         </div>
       </div>
     `;
@@ -721,6 +874,11 @@
       else if (act === "snooze") triggerStudentSnooze();
       else if (act === "mute") triggerMuteScope();
       else if (act === "reset") resetAllHUD();
+      else if (act === "d4-tip") triggerD4Modality("tip");
+      else if (act === "d4-example") triggerD4Modality("example");
+      else if (act === "d4-interactive") triggerD4Modality("interactive");
+      else if (act === "d4-chat") triggerD4Modality("chat");
+      else if (act === "d4-placement") triggerD4PlacementToggle();
     });
 
     let lastActionTime = Date.now();

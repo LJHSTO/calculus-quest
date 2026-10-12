@@ -19,8 +19,10 @@
   const fullscreenHint = document.createElement("span");
   fullscreenHint.className = "classroom-fullscreen-hint";
   fullscreenHint.setAttribute("role", "status");
-  fullscreenHint.textContent = "建议全屏学习";
   fullscreenHint.hidden = true;
+  const fullscreenHintText = document.createElement("span");
+  fullscreenHintText.className = "classroom-fullscreen-hint-text";
+  fullscreenHintText.textContent = "建议全屏学习 (5s)";
   const fullscreenHintHost = document.createElement("span");
   fullscreenHintHost.className = "classroom-fullscreen-hint-host";
   fullscreenButton.before(fullscreenHintHost);
@@ -31,7 +33,13 @@
   fullscreenHintClose.textContent = "\u00d7";
   fullscreenHintClose.setAttribute("aria-label", "今天不再显示全屏建议");
   fullscreenHintClose.title = "今天不再显示";
-  fullscreenHint.append(fullscreenHintClose);
+  fullscreenHint.append(fullscreenHintText, fullscreenHintClose);
+  let fullscreenCountdown = 5;
+  let fullscreenCountdownInterval = null;
+
+  function updateFullscreenHintText() {
+    fullscreenHintText.textContent = `建议全屏学习 (${fullscreenCountdown}s)`;
+  }
   const dismissedFullscreenHints = new Map();
   function fullscreenHintIdentity() {
     const participantId = typeof state !== "undefined" ? state.participant?.participantId : "";
@@ -53,6 +61,10 @@
 
   function hideFullscreenHint() {
     clearTimeout(fullscreenHintTimer);
+    if (fullscreenCountdownInterval) {
+      clearInterval(fullscreenCountdownInterval);
+      fullscreenCountdownInterval = null;
+    }
     fullscreenHint.hidden = true;
   }
 
@@ -76,8 +88,21 @@
     if (fullscreenHintsShown.has(key)) return;
     fullscreenHintsShown.add(key);
     clearTimeout(fullscreenHintTimer);
+    if (fullscreenCountdownInterval) {
+      clearInterval(fullscreenCountdownInterval);
+    }
+    fullscreenCountdown = 5;
+    updateFullscreenHintText();
     fullscreenHint.hidden = false;
-    fullscreenHintTimer = setTimeout(hideFullscreenHint, scene === "game" ? 6000 : 4000);
+    fullscreenCountdownInterval = setInterval(() => {
+      fullscreenCountdown -= 1;
+      if (fullscreenCountdown <= 0) {
+        hideFullscreenHint();
+      } else {
+        updateFullscreenHintText();
+      }
+    }, 1000);
+    fullscreenHintTimer = setTimeout(hideFullscreenHint, 5000);
   }
   try { toolsCollapsed = localStorage.getItem("classroomToolsCollapsed") === "1"; } catch {}
 
