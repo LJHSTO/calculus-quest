@@ -640,6 +640,7 @@
       hudState.isOpen = !hudState.isOpen;
       panel.classList.toggle("is-hidden", !hudState.isOpen);
       if (hudState.isOpen) {
+        toggleBtn.style.display = "none";
         if (!panel.dataset.customPositioned) {
           const rect = toggleBtn.getBoundingClientRect();
           let panelTop = rect.top - 620;
@@ -708,6 +709,7 @@
     panel.querySelector(".proactive-hud-close").addEventListener("click", () => {
       hudState.isOpen = false;
       panel.classList.add("is-hidden");
+      toggleBtn.style.display = "";
     });
 
     panel.addEventListener("click", (event) => {

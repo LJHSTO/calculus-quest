@@ -267,10 +267,16 @@
 /* In-Situ (Inline 原位) Presentation Styles */
 .proactive-inline-host {
   width: 100%;
-  margin-top: 12px;
+  margin-top: 14px;
+  margin-bottom: 24px;
   position: relative;
   z-index: 10;
   box-sizing: border-box;
+}
+
+.core-learning-workspace .multi-scene-scene-panel:has(.proactive-insitu-card) {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 .proactive-inline-host,
