@@ -65,6 +65,7 @@
   let toggleBtn = null;
   let panel = null;
   let cooldownTimer = null;
+  let eventCount = 0;
 
   function formatSec(sec) {
     return sec > 0 ? `${sec}s 冷却中` : "0s (随时可介入)";
@@ -72,6 +73,10 @@
 
   function renderHUD() {
     if (!panel) return;
+    const badge = panel.querySelector(".proactive-hud-badge");
+    if (badge) {
+      badge.textContent = `${hudState.currentKp} · 监听事件: ${eventCount}`;
+    }
     const body = panel.querySelector(".proactive-hud-body");
     if (!body) return;
 
@@ -466,9 +471,91 @@
       else if (act === "reset") resetAllHUD();
     });
 
-    // Listen to real workspace & assistant events
+    let lastActionTime = Date.now();
+
+    function syncActiveContext() {
+      const unit = typeof getUnit === "function" ? getUnit() : null;
+      if (unit) {
+        hudState.currentKp = unit.label || unit.id || hudState.currentKp;
+        const scene = typeof selectedKnowledgeSceneType === "function" ? selectedKnowledgeSceneType(unit) : "";
+        if (scene) hudState.d1.interaction_type = scene;
+      }
+    }
+
+    // 1. Listen to real iframe postMessage events (Simulation / Game / MindMap / 3D)
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      const now = Date.now();
+      const pauseMs = now - lastActionTime;
+      lastActionTime = now;
+      syncActiveContext();
+
+      if (data.type === "cq:interaction") {
+        eventCount += 1;
+        const et = data.eventType || "interaction";
+        const param = data.contextRef?.state?.parameter || data.contextRef?.label || "";
+        const val = data.contextRef?.state?.newValue !== undefined ? data.contextRef.state.newValue : "";
+        hudState.d1.facts.drag_count = (hudState.d1.facts.drag_count || 0) + 1;
+        hudState.d1.facts.pause_duration_ms = Math.min(pauseMs, 10000);
+        hudState.d1.recent_event = param ? `${et}: ${param}=${val}` : et;
+
+        if (et === "parameter_commit") {
+          hudState.d2.action = "boundary";
+          hudState.d2.reason = "natural_task_boundary_reached";
+          hudState.d2.boundary_detected = true;
+          hudState.d2.silent_reason = "none (dispatched_at_boundary)";
+          hudState.d1.inference.interruptible_now = 0.90;
+          hudState.d1.inference.need_help_now = Math.min(0.95, (hudState.d1.inference.need_help_now || 0.5) + 0.05);
+        } else if (et === "parameter_input") {
+          hudState.d2.action = "silent";
+          hudState.d2.reason = "continuous_slider_dragging";
+          hudState.d2.boundary_detected = false;
+          hudState.d2.silent_reason = "low_interruptibility_wait_for_boundary";
+          hudState.d1.inference.interruptible_now = 0.25;
+        } else if (et === "interactive_click") {
+          hudState.d2.action = "boundary";
+          hudState.d2.reason = "interactive_action_committed";
+          hudState.d2.boundary_detected = true;
+          hudState.d2.silent_reason = "none (action_committed)";
+        }
+        renderHUD();
+      } else if (data.type === "maic_learning_event") {
+        eventCount += 1;
+        const et = data.event_type || data.eventType || "challenge";
+        const isCorrect = data.is_correct === true || data.result === "correct";
+        hudState.d1.recent_event = `${et} (${isCorrect ? '提交正确' : '挑战受挫'})`;
+        if (!isCorrect) {
+          hudState.d1.inference.target_state = "concept_conflict_in_challenge";
+          hudState.d1.inference.need_help_now = 0.92;
+          hudState.d2.action = "immediate";
+          hudState.d2.reason = "repeated_challenge_misconception";
+          hudState.d2.silent_reason = "none (support_escalated)";
+          hudState.d3.level = "L3";
+          hudState.d6.episode_state = "offered";
+        } else {
+          hudState.d1.inference.target_state = "challenge_solved";
+          hudState.d1.inference.need_help_now = 0.20;
+          hudState.d6.episode_state = "faded";
+        }
+        renderHUD();
+      }
+    });
+
+    // 2. Listen to workspace & navigation changes
+    window.addEventListener("cq:lesson-rendered", () => {
+      syncActiveContext();
+      renderHUD();
+    });
+    window.addEventListener("cq:learning-layout-change", () => {
+      syncActiveContext();
+      renderHUD();
+    });
+
+    // 3. Listen to proactive suggestion & check lifecycle events
     window.addEventListener("cq:courseware-event", (event) => {
       const detail = event.detail || {};
+      eventCount += 1;
       hudState.d1.recent_event = detail.type || detail.action || "user_action";
       if (detail.facts) Object.assign(hudState.d1.facts, detail.facts);
       renderHUD();
@@ -483,6 +570,7 @@
       renderHUD();
     });
 
+    syncActiveContext();
     renderHUD();
   }
 

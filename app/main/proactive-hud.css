@@ -2,7 +2,7 @@
 .proactive-hud-toggle-btn {
   position: fixed;
   bottom: 24px;
-  right: 24px;
+  left: 24px;
   z-index: 9999;
   display: flex;
   align-items: center;
@@ -46,7 +46,7 @@
 .proactive-hud-panel {
   position: fixed;
   bottom: 80px;
-  right: 24px;
+  left: 24px;
   width: 460px;
   max-width: calc(100vw - 48px);
   max-height: calc(100vh - 120px);
