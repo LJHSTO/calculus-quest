@@ -95,6 +95,57 @@
   let proactiveCheckSubmitting = false;
   let proactiveCheckFeedback = null;
   let proactiveChoiceSaving = false;
+  let supportView = { placement: "sidebar", modality: "tip" };
+  let designSpaceSyncPending = false;
+
+  function supportSurfaceOwnsContent() {
+    return Boolean(global.ProactiveSurface && courseMeta().unitType === "knowledge"
+      && (supportView.placement === "inline" || supportView.modality !== "tip"));
+  }
+
+  function designSpaceSnapshot() {
+    const meta = courseMeta();
+    const locked = quizAssistantLocked(meta)
+      || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession());
+    const eligible = isSignedInNow() && meta.supported && !locked && learningViewActive();
+    const offer = eligible && proactiveDecision?.unitId === meta.unitId
+      && (!proactiveStudyManaged(meta) || proactiveDecision.serverIssued === true)
+      ? proactiveDecision : null;
+    const observation = proactiveStudy.observation?.scopeKey === proactiveScopeKey(meta)
+      ? proactiveStudy.observation : null;
+    return {
+      scopeKey: proactiveScopeKey(meta), unitId: meta.unitId, unitLabel: meta.unitLabel,
+      unitType: meta.unitType, chapterId: meta.chapterId, sceneType: meta.sceneType,
+      signedIn: isSignedInNow(), active: learningViewActive(), locked,
+      ownerKey: isSignedInNow() ? String(state?.participant?.participantId || "") : "",
+      managed: proactiveStudyManaged(meta), loaded: proactiveStudy.loaded,
+      collectionEnabled: proactiveCollectionEnabled(meta),
+      muted: proactiveScopeMuted(meta), preference: proactiveStudy.studentPreference,
+      mode: proactiveStudy.mode, view: { ...supportView },
+      policyState: proactiveScopeState(meta), observation,
+      offer: offer ? { ...offer } : null,
+      check: eligible ? proactiveVerificationCheck(meta) : null,
+      checkSelection: eligible ? proactiveCheckSelection : "",
+      prompt: eligible && usableProactivePrompt(pendingProactivePrompt, meta)
+        ? { ...pendingProactivePrompt } : null,
+      feedback: eligible && proactiveCheckFeedback?.scopeKey === proactiveScopeKey(meta)
+        ? { ...proactiveCheckFeedback } : null,
+      busy: proactiveChoiceSaving || proactiveCheckSubmitting || isAsking,
+      providerLabel: provider.live ? "AI 助教" : "本地引导",
+      assistantOpen: isOpen
+    };
+  }
+
+  function scheduleDesignSpaceSync() {
+    if (designSpaceSyncPending) return;
+    designSpaceSyncPending = true;
+    queueMicrotask(() => {
+      designSpaceSyncPending = false;
+      const snapshot = designSpaceSnapshot();
+      global.ProactiveSurface?.sync(snapshot);
+      global.dispatchEvent(new CustomEvent("cq:proactive-state", { detail: snapshot }));
+    });
+  }
 // Hint Justification：需要理由的提示在真正执行前先展开「先说你的理由」输入。
 // 学生可以一键跳过——跳过也是数据（it counts in the denominator），
 // 所以绝不把它做成必填，否则 providedRate 会因为"不想写字的人干脆不接受"而虚高。
@@ -699,12 +750,18 @@ let proactiveJustifyBuiltFor = "";
   }
 
   function applyProactiveStudy(data = {}, meta = courseMeta()) {
+    // A slow status refresh must not roll back a newer check or acceptance.
+    const latestState = incoming => {
+      const current = proactiveStudy.policyStates.find(row => row.scopeKey === incoming.scopeKey);
+      return current && Date.parse(current.updatedAt) > Date.parse(incoming.updatedAt)
+        ? current : incoming;
+    };
     let policyStates = Array.isArray(data.policyStates)
-      ? data.policyStates
+      ? data.policyStates.map(latestState)
       : proactiveStudy.policyStates;
     if (data.policyState?.scopeKey) {
       policyStates = [
-        data.policyState,
+        latestState(data.policyState),
         ...policyStates.filter((item) => item.scopeKey !== data.policyState.scopeKey)
       ];
     }
@@ -732,6 +789,7 @@ let proactiveJustifyBuiltFor = "";
       policyStates
     };
     syncProactiveCheckState(meta);
+    scheduleDesignSpaceSync();
   }
 
   async function updateProactiveParticipation(action) {
@@ -2195,10 +2253,8 @@ let proactiveJustifyBuiltFor = "";
         }
         if (payload.data?.policyState) {
           const next = payload.data.policyState;
-          proactiveStudy.policyStates = [
-            next,
-            ...proactiveStudy.policyStates.filter((item) => item.scopeKey !== next.scopeKey)
-          ];
+          applyProactiveStudy({ ...proactiveStudy, policyState: next });
+          renderMessages();
         }
         return payload.data || null;
       })
@@ -2563,8 +2619,9 @@ let proactiveJustifyBuiltFor = "";
   }
 
   function renderProactiveSuggestion() {
+    scheduleDesignSpaceSync();
     const suggestion = proactiveDecision;
-    const visible = proactiveSuggestionVisible(suggestion);
+    const visible = !supportSurfaceOwnsContent() && proactiveSuggestionVisible(suggestion);
     els.proactive.hidden = !visible;
     root.classList.toggle("has-proactive-nudge", visible);
     global.dispatchEvent(new CustomEvent("cq:workspace-support-change"));
@@ -2832,6 +2889,7 @@ let proactiveJustifyBuiltFor = "";
         action: suggestion.action,
         unitId: meta.unitId,
         sceneType: meta.sceneType,
+        scopeKey: proactiveScopeKey(meta),
         interventionId: suggestion.interventionId || "",
         contextSummary: suggestion.contextSummary || "",
         replyOptions: Array.isArray(suggestion.replyOptions)
@@ -3983,7 +4041,7 @@ let proactiveJustifyBuiltFor = "";
     return article;
   }
 
-  function proactiveInlineOfferNode(suggestion) {
+  function proactiveInlineOfferNode(suggestion, { recordShown = true } = {}) {
     const article = document.createElement("article");
     article.className = "knowledge-message assistant knowledge-proactive-inline-offer";
     article.dataset.proactiveDecisionId = suggestion.decisionId || "";
@@ -4014,6 +4072,9 @@ let proactiveJustifyBuiltFor = "";
     const justify = proactiveJustificationForm(suggestion);
     justify.hidden = true;
     accept.addEventListener("click", () => {
+      // A genuine click proves the offer was visible, even when a long surface
+      // never crosses the observer's fractional visibility threshold.
+      markProactiveSuggestionShown(suggestion);
       if (proactiveJustificationRequired(suggestion)) {
         revealProactiveJustification(suggestion, justify, actions);
         return;
@@ -4024,6 +4085,7 @@ let proactiveJustifyBuiltFor = "";
     dismiss.type = "button";
     dismiss.textContent = "稍后";
     dismiss.addEventListener("click", () => {
+      markProactiveSuggestionShown(suggestion);
       snoozeProactiveSuggestion();
     });
     actions.append(accept, dismiss);
@@ -4055,7 +4117,7 @@ let proactiveJustifyBuiltFor = "";
       }
       article.appendChild(secondary);
     }
-    markProactiveSuggestionShown(suggestion);
+    if (recordShown) markProactiveSuggestionShown(suggestion);
     return article;
   }
 
@@ -4487,6 +4549,7 @@ let proactiveJustifyBuiltFor = "";
 
   let messagesRenderKey = "";
   function renderMessages() {
+    scheduleDesignSpaceSync();
     const scrollViewport = els.scroll || els.messages;
     const previousScrollTop = scrollViewport.scrollTop;
     const nearBottom = scrollViewport.scrollHeight - scrollViewport.scrollTop - scrollViewport.clientHeight < 120;
@@ -4509,7 +4572,7 @@ let proactiveJustifyBuiltFor = "";
     const renderKey = JSON.stringify([
       meta.unitId, messages, pendingProactivePrompt, loadingHistory,
       verificationCheck, scopedFeedback, inlineOffer, proactiveCheckSelection,
-      proactiveCheckSubmitting, openMessageSourceId
+      proactiveCheckSubmitting, openMessageSourceId, supportView
     ]);
     if (renderKey === messagesRenderKey) return;
     messagesRenderKey = renderKey;
@@ -4547,19 +4610,19 @@ let proactiveJustifyBuiltFor = "";
         }));
       });
       if (
-        usableProactivePrompt(pendingProactivePrompt)
+        !supportSurfaceOwnsContent() && usableProactivePrompt(pendingProactivePrompt)
         && pendingProactivePrompt.visible !== false
       ) {
         els.messages.appendChild(proactivePromptNode(pendingProactivePrompt, { dismissible: true }));
       }
     }
-    if (verificationCheck) {
+    if (verificationCheck && !supportSurfaceOwnsContent()) {
       els.messages.appendChild(proactiveVerificationNode(verificationCheck));
     }
-    if (scopedFeedback) {
+    if (scopedFeedback && !supportSurfaceOwnsContent()) {
       els.messages.appendChild(proactiveCheckFeedbackNode(scopedFeedback));
     }
-    if (inlineOffer) {
+    if (inlineOffer && !supportSurfaceOwnsContent()) {
       els.messages.appendChild(proactiveInlineOfferNode(inlineOffer));
     }
     // Replacing the message DOM can clamp scrollTop; never override a learner reading above.
@@ -5477,6 +5540,7 @@ let proactiveJustifyBuiltFor = "";
       ignoreProactiveSuggestion(participantChanged ? "participant-change" : "unit-change");
     }
     if (participantChanged) proactiveCoach?.reset?.({ clearCooldowns: true });
+    if (participantChanged) supportView = { placement: "sidebar", modality: "tip" };
     loadProactiveStudy(meta, {
       force: participantChanged
         || quizStateChanged
@@ -5496,6 +5560,9 @@ let proactiveJustifyBuiltFor = "";
     }
 
     if (unitChanged || participantChanged || supportChanged) {
+      const retainedPrompt = !participantChanged && meta.unitType === "knowledge"
+        && !quizAssistantLocked(meta) && pendingProactivePrompt?.scopeKey === proactiveScopeKey(meta)
+        ? { ...pendingProactivePrompt, unitId: meta.unitId } : null;
       activeRequest?.abort();
       activeRequest = null;
       proactiveDecisionRequest?.abort();
@@ -5513,7 +5580,7 @@ let proactiveJustifyBuiltFor = "";
       activeContext = null;
       recentInteraction = null;
       pendingAssistantIntent = "";
-      pendingProactivePrompt = null;
+      pendingProactivePrompt = retainedPrompt;
       pendingGeneratedDraft = "";
       openMessageSourceId = "";
       els.input.value = "";
@@ -5796,6 +5863,52 @@ let proactiveJustifyBuiltFor = "";
 
   global.KnowledgeAssistant = Object.freeze({
     sync,
+    designSpaceSnapshot,
+    setSupportView(view = {}) {
+      if (!["inline", "sidebar"].includes(view.placement)
+        || !["tip", "example", "interactive", "chat"].includes(view.modality)) return false;
+      supportView = { placement: view.placement, modality: view.modality };
+      track("proactive_surface_selected", { ...supportView, decisionId: proactiveDecision?.decisionId || "",
+        supportLevel: proactiveDecision?.supportLevel || proactiveScopeState()?.currentLevel || "L0",
+        selectionSource: "learner" });
+      render();
+      return true;
+    },
+    createSupportContent() {
+      const snapshot = designSpaceSnapshot();
+      const fragment = document.createDocumentFragment();
+      if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return fragment;
+      if (snapshot.offer) fragment.appendChild(proactiveInlineOfferNode(snapshot.offer, { recordShown: false }));
+      if (snapshot.prompt) fragment.appendChild(proactivePromptNode(snapshot.prompt, { dismissible: true }));
+      if (snapshot.check) fragment.appendChild(proactiveVerificationNode(snapshot.check));
+      if (snapshot.feedback) fragment.appendChild(proactiveCheckFeedbackNode(snapshot.feedback));
+      if (supportView.modality === "chat") {
+        messages.slice(-4).forEach(message => fragment.appendChild(messageNode(message, { quizReviewActionable: false })));
+      }
+      return fragment;
+    },
+    async supportAction(action, value) {
+      const snapshot = designSpaceSnapshot();
+      if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return false;
+      if (action === "mute") return updateProactiveScopePreference("off");
+      if (action === "restore") return updateProactiveScopePreference("standard");
+      if (action === "ask") {
+        els.input.value = String(value || "").slice(0, 2000);
+        return submitQuestion();
+      }
+      if (action === "shown" && snapshot.offer) {
+        markProactiveSuggestionShown(snapshot.offer);
+        return true;
+      }
+      return false;
+    },
+    trackSupportSurface(eventType, data = {}) {
+      if (!["rendered", "visible", "opened", "interacted", "dismissed"].includes(eventType)) return;
+      const snapshot = designSpaceSnapshot();
+      if (!snapshot.signedIn || snapshot.locked) return;
+      track(`proactive_surface_${eventType}`, { ...supportView, ...data,
+        decisionId: snapshot.offer?.decisionId || "", scopeKey: snapshot.scopeKey });
+    },
     workspaceSnapshot() {
       const meta = courseMeta();
       const locked = quizAssistantLocked(meta)

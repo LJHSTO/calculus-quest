@@ -37,13 +37,29 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
   fs.mkdirSync(output, { recursive: true });
   const checkIds = new Set();
   for (let level = 1; level <= finalLevel; level += 1) {
+    if (process.env.TEST_PROACTIVE_SURFACES === "1") {
+      await page.waitForFunction(() => {
+        const s = KnowledgeAssistant.designSpaceSnapshot();
+        return s.prompt && !s.busy && s.policyState?.lifecycle?.phase === "accepted_pending_response";
+      }).catch(async error => {
+        const s = await page.evaluate(() => KnowledgeAssistant.designSpaceSnapshot());
+        const backend = await page.evaluate(async()=>{
+          const r=await fetch("/api/learning/proactive/state?chapterId=V14-C1",{headers:{Authorization:`Bearer ${state.authToken}`}});
+          const p=await r.json();return p.data.policyStates.map(s=>({scope:s.scopeKey,level:s.currentLevel,phase:s.lifecycle.phase}));
+        });
+        throw new Error(`L${level}待回应恢复失败：${JSON.stringify({prompt:s.prompt,phase:s.policyState?.lifecycle?.phase,busy:s.busy,offer:s.offer,check:s.check,backend})}；${error.message}`);
+      });
+    }
     await page.setViewportSize(level % 2
       ? { width: 1366, height: 768 } : { width: 1920, height: 1080 });
     const answerResponse = page.waitForResponse((response) =>
       response.url().includes("/api/learning/assistant/ask")
       && response.request().method() === "POST");
-    await page.locator("#knowledge-question-input").fill(replies[knowledgePointId]);
-    await page.locator("#knowledge-question-input").press("Enter");
+    const composer = process.env.TEST_PROACTIVE_SURFACES === "1"
+      ? page.locator(".support-chat-form textarea") : page.locator("#knowledge-question-input");
+    await composer.fill(replies[knowledgePointId]);
+    if (process.env.TEST_PROACTIVE_SURFACES === "1") await page.locator(".support-chat-form button[type=submit]").click();
+    else await composer.press("Enter");
     assert.equal((await answerResponse).status(), 200);
     const checkNode = page.locator(".knowledge-proactive-verification");
     await checkNode.waitFor({ state: "visible" });
@@ -141,6 +157,7 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
     await checkNode.getByRole("radio").nth(optionIndex).click();
     await checkNode.getByRole("button", { name: "提交检查", exact: true }).click({ trial: true });
     await page.screenshot({ path: path.join(output, `L${level}-独立检查.png`) });
+    await checkNode.screenshot({ path: path.join(output, `L${level}-检查卡.png`) });
     if (knowledgePointId === "GH-07-K04" && level === 4) {
       await page.setViewportSize({ width: 1366, height: 768 });
       await checkNode.getByRole("button", { name: "提交检查", exact: true }).click({ trial: true });
@@ -169,6 +186,7 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
       assert.equal(await page.locator(".knowledge-proactive-inline-offer").count(), 0,
         "独立检查通过后不能继续邀请升级支架");
       await page.screenshot({ path: path.join(output, "检查通过-停止加码.png") });
+      await page.locator(".knowledge-proactive-check-feedback").screenshot({ path: path.join(output, "渐退反馈.png") });
     } else if (level === 5) {
       assert.equal(payload.study.deliveryDecision, "stay_silent");
       assert.equal(payload.study.policyState.lifecycle.phase, "maximum_support_reached");
@@ -183,6 +201,7 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
       assert.equal(payload.decision.supportLevel, `L${level + 1}`);
       const offer = page.locator(".knowledge-proactive-inline-offer");
       await offer.waitFor({ state: "visible" });
+      await offer.screenshot({ path: path.join(output, `L${level + 1}-控制选项.png`) });
       const accept = offer.locator("footer button.is-primary");
       await accept.click();
       // 内联建议卡和悬浮提示卡共用同一套"先说理由"流程。如果只在悬浮卡上问理由，
@@ -196,7 +215,11 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
       );
       await inlineJustify.locator("[data-proactive-justify-input]")
         .fill(`L${level + 1} 之前我的理解是：${replies[knowledgePointId]}`);
+      const accepted = page.waitForResponse(response => response.url().includes("/resolution")
+        && response.request().postDataJSON()?.resolution === "accepted");
       await inlineJustify.locator("button.is-primary").click();
+      const acknowledgement = await accepted;
+      assert.equal(acknowledgement.status(), 200, JSON.stringify(await acknowledgement.json()));
     }
   }
 }
@@ -267,7 +290,7 @@ async function main() {
     await page.locator("#register-password").fill("browser-test-password");
     await page.locator("#register-password-confirm").fill("browser-test-password");
     await page.locator("#login-submit").click();
-    await page.locator("#auth-gate").waitFor({ state: "hidden" });
+    await page.locator("#auth-gate").waitFor({ state: "hidden", timeout: 30000 });
     await page.locator('[data-view="learn"]').first().click();
     const stale = await page.evaluate(async (chapterId) => {
       const questions = getUnit().scene.content.questions;
@@ -435,6 +458,59 @@ async function main() {
       "确实问过理由的接受要标记 requested=true，才会进比例的分母"
     );
     await page.locator("#knowledge-assistant-panel").waitFor({ state: "visible" });
+    if (process.env.TEST_PROACTIVE_SURFACES === "1") {
+      // Navigation eligibility is a fixture; all prompts and checks below are
+      // issued by the actual server. The separate student-flow test uses no seed.
+      await page.evaluate(id => {
+        const path = ensureAgenticPath();
+        if (!path.unlocked.includes(id)) path.unlocked.push(id);
+        path.pendingPlan = null; currentUnitId = id; renderAll(); KnowledgeAssistant.sync();
+      }, knowledgePointId);
+      const output = path.join(root, "output", "六维网站验收", "八种帮助呈现");
+      fs.mkdirSync(output, { recursive: true });
+      await page.setViewportSize({ width: 1366, height: 1000 });
+      const before = await page.evaluate(() => KnowledgeAssistant.designSpaceSnapshot());
+      for (const placement of ["sidebar", "inline"]) {
+        for (const modality of ["tip", "example", "interactive", "chat"]) {
+          const settings = page.locator(".support-display-settings");
+          if (!await settings.evaluate(el => el.open)) await settings.locator("summary").click();
+          await settings.locator(`[data-support-value="${placement}"]`).click();
+          await settings.locator(`[data-support-value="${modality}"]`).click();
+          if (await settings.evaluate(el => el.open)) await settings.locator("summary").click();
+          const after = await page.evaluate(() => KnowledgeAssistant.designSpaceSnapshot());
+          assert.deepEqual(after.policyState, before.policyState, "D4切换不得改变支架或生命周期");
+          assert.deepEqual(after.prompt, before.prompt, "政策支架内容必须原样保留");
+          if (!(placement === "sidebar" && modality === "tip")) {
+            const surface = page.locator(".learning-support-surface");
+            await surface.waitFor({ state: "visible" });
+            await surface.scrollIntoViewIfNeeded();
+            const box = await surface.boundingBox();
+            assert.ok(box.width > 200 && box.x >= 0 && box.x + box.width <= page.viewportSize().width + 1);
+            if (after.prompt) assert.equal(await page.locator(".knowledge-proactive-question:visible").count(), 1);
+          }
+          await page.screenshot({ path: path.join(output, `${placement}-${modality}.png`) });
+          const focus = placement === "sidebar" && modality === "tip"
+            ? page.locator(".knowledge-proactive-question:visible") : page.locator(".learning-support-surface");
+          await focus.screenshot({ path: path.join(output, `${placement}-${modality}-局部.png`) });
+        }
+      }
+      await page.locator(".support-display-settings summary").click();
+      await page.locator('[data-support-value="inline"]').click();
+      await page.locator('[data-support-value="chat"]').click();
+      await page.locator(".support-display-settings summary").click();
+      await page.getByRole("button", { name: "六维观察台", exact: true }).click();
+      assert.equal(await page.locator("[data-dimension]").count(), 6);
+      for (const dimension of ["D1","D2","D3","D4","D5","D6"]) {
+        const clip=await page.evaluate(dimension=>{
+          const card=document.querySelector(`[data-dimension="${dimension}"]`);card.scrollIntoView({block:"center"});
+          const r=card.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};
+        },dimension);
+        await page.screenshot({ path: path.join(output, `${dimension}-真实状态.png`), clip });
+      }
+      await page.screenshot({ path: path.join(output, "六维真实观察台.png") });
+      await page.locator("[data-observatory-close]").click();
+      console.log("D4八组合通过：同一真实提示内容、等级及生命周期保持不变。");
+    }
     await verifySupportLifecycle(page, root, knowledgePointId);
     // 整场的不变式：这一轮里**每一次**接受的提示都被问过理由。悬停卡和内联卡只要有一条
     // 路径漏了，学生就能顺着那条路一路点"接受"刷过支架后检查，而 Hint Justification
@@ -455,6 +531,28 @@ async function main() {
       acceptedResolutions.every((entry) => String(entry.body.justification || "").trim().length > 0),
       "这一轮每条接受都写了理由；空说明说明 UI 把输入吞掉了"
     );
+    if (process.env.TEST_PROACTIVE_SURFACES === "1") {
+      const draft=page.locator(".support-chat-form textarea");
+      await draft.fill("未发送的隔离草稿");
+      await page.locator(".support-display-settings summary").click();
+      await page.locator('[data-support-value="example"]').click();
+      await page.locator('[data-support-value="chat"]').click();
+      await page.locator(".support-display-settings summary").click();
+      assert.equal(await draft.inputValue(), "未发送的隔离草稿", "切换形式不能吞掉未发送文本");
+      await page.locator("#auth-menu-toggle").click();
+      await page.locator("#auth-logout").click();
+      await page.locator("#auth-gate").waitFor({state:"visible"});
+      assert.equal(await page.locator(".support-chat-form textarea").count(),0,"退出后清理本地草稿与帮助内容");
+      assert.equal(await page.locator(".learning-support-surface:visible").count(),0);
+      fs.writeFileSync(path.join(root, "output", "六维网站验收", "八种帮助呈现", "验收结果.json"), JSON.stringify({
+        generatedAt: new Date().toISOString(), passed: true, knowledgePointId,
+        placements: ["sidebar", "inline"], modalities: ["tip", "example", "interactive", "chat"],
+        combinations: 8, unchangedPolicyContent: true, unchangedPolicyState: true,
+        supportLevelsVerified: expectedLevels, acceptedAcknowledgementsVerified: true,
+        draftRestoredAcrossModalities: true, signoutClearsSupportContent: true,
+        modelProvider: "mock", navigationEligibility: "isolated-fixture", checks: "actual-server-issued-and-graded"
+      }, null, 2), "utf8");
+    }
     console.log(`${knowledgePointId} 真实作答主动干预回归通过：前测和诊断中静默，L1–L${process.env.TEST_PROACTIVE_FINAL_LEVEL || 5} 实际回复与支架后检查，每次接受都先写了理由，最终结果 ${process.env.TEST_PROACTIVE_FINAL_OUTCOME || "correct"}。模型回复使用 mock。`);
   } finally {
     await browser?.close();

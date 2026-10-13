@@ -2,7 +2,7 @@
 
 一个面向高等数学的交互式学习平台。章节路线、讲解页、互动课件、三段式测验、学习记录和管理后台。前端零框架、零打包工具，后端仅依赖 Node.js 内置模块和 SQLite。
 
-`proactive_test` 分支以 `v2` 为页面和题库基线，只向学生端投影完整章 `V14-C3`，用于可审计主动 Agent 的小范围实验。源课程路线和题目仍由 `data/multi-scene-learning-route.json` 唯一维护。
+`proactive_test` 分支以 `v2` 为页面和题库基线，当前学生端默认投影完整章 `V14-C1`（函数与极限），包含 6 个知识点与 24 份互动课件。源课程路线仍由 `data/multi-scene-learning-route.json` 唯一维护；历史 V14-C3 适配器保留供回归与研究版本隔离。
 
 ## 功能
 
@@ -14,6 +14,9 @@
 - 无提示近端验证 — 每一级支架后由服务端签发知识点验证题；学生可跳过，答案不会下发到浏览器
 - 学生主动权 — 支持“稍后”“换一种帮助”“关闭当前知识点提醒”以及全局“标准 / 少提醒 / 关闭”
 - 独立学习结果 — 章后提供近迁移、跨表征迁移与延迟保持测量；测量期间暂停知点，学生端不显示即时得分
+- 六维观察台 — 展示真实操作、服务端证据与工程估计、时机原因、支架等级、学习者控制及生命周期；缺失值明确标示
+- 帮助呈现 — 学习者选择课件旁/助教栏 × 提示/例子/动手试/对话八组合，复用同一服务端支架和独立检查；主动打开的补充练习单独记录
+- 可选诊断 — 完成知识点后可选择“小题测一测”或直接继续；实际诊断使用现有服务端题库与判分
 
 ## 快速开始
 
@@ -29,7 +32,7 @@ npm start
 
 ## 环境变量
 
-复制 .env.example 为 .env，按需修改：
+复制 .env.example 为 .env，按需修改。下表列出通用及历史配置；当前函数与极限试点以 `.env.example` 的 V14-C1、functions-limits-adapter-r2、72 小时保持配置为准。
 
 | 变量 | 默认值 | 说明 |
 |---|---|---|
@@ -84,7 +87,7 @@ npm start
 
 主动政策的触发、沉默、动作和支架强度由服务端确定性规则决定，不依赖实时大模型。V14-C3 当前支持 L1 自我解释、L2 概念线索、L3 子目标拆分、L4 下一步提示、L5 部分示例，并在每一级后要求无提示独立验证；成功后渐退并延长冷却，持续失败才升级，达到 L5 后停止继续加码。当前 OpenMAIC 场景没有完整的主动策略语义结果事件，因此支架后闭环默认使用平台自有、服务端评分的验证题；未来课件可按统一事件契约接入同一政策生命周期。学生偏好由服务端持久化并进入审计：`reduced` 屏蔽停留/调参等行为型候选，`off` 关闭主动提示并结束当前未完成回合；开始新的学习代次时会清理旧知识点生命周期，但保留学生偏好与实验 assignment。知点的学生主动问答仍沿用现有 OpenAI-compatible 配置；仓库不会读取或提交 Codex 的密钥。
 
-当前内容化覆盖范围是 `V14-C3` 的 2 个模块、7 个知识点，即全课程 11 章、72 个知识点中的 1 章、7 个知识点。Policy Kernel、生命周期、预算/冷却、实验臂、学生自主权、独立结果测量和管理 Harness 可跨章复用，但 Adapter registry 目前只注册 `V14-C3`；其他章节会以 `chapter_not_managed` 保持沉默。要接入新章，仍需提供该章的目标与误解、任务里程碑、合法支架、验证题、换表征映射和迁移蓝图。
+当前默认内容化覆盖范围是 `V14-C1` 的 2 个模块、6 个知识点与 24 份互动课件。Adapter registry 同时保留函数与极限和 V14-C3 适配器。Policy Kernel、生命周期、预算/冷却、实验臂、学生自主权、独立结果测量和管理 Harness 可跨章复用；新增章节仍需提供目标与误解、任务里程碑、合法支架、验证题、换表征映射和迁移蓝图。
 
 管理端“主动实验”页将过程指标与独立学习结果分开呈现。接受率、支架次数和换表征次数只描述交互过程；近迁移、跨表征迁移和延迟保持才属于学习结果。页面同时显示不可变 protocol fingerprint、运行时暂停/恢复记录、停止规则信号和 assignment→证据→曝光→测量→保持的参与者样本流；暂停会收束未决提示，但不会修改协议或重新分组。Shadow 编码模板会导出结构化证据及空白的 `reviewer_id`、`help_need_label`、`interruptibility_label`、`should_intervene`、`false_positive` 和 `notes` 列。小样本阶段只做描述性比较，正式因果分析仍需预注册实验臂、样本量、排除规则和主结果。
 
@@ -97,6 +100,20 @@ npm start
 ```bash
 npm run proactive:test
 ```
+
+当前 V14-C1 验收与隔离预览：
+
+```powershell
+node ops/verify-functions-limits.js
+node ops/test-design-space-projection.js
+$env:TEST_PROACTIVE_CHAPTER='V14-C1'
+$env:TEST_PROACTIVE_SURFACES='1'
+node ops/test-proactive-submission-browser.js
+node ops/test-student-learning-flow.js
+node ops/start-functions-limits-preview.js --show-proactive
+```
+
+预览地址写入 `output/函数极限预览.json`。预览使用独立数据库和 mock 回复；学生全流程脚本使用真实 UI、真实策略和真实客观判分，无学习进度注入。保持 UI 的隔离测试把测试库的后测时间提前73小时，以模拟等待；正式72小时门槛保留，另由 `test-retention-v4-api.js` 验证。工程测试不代表真人学习效果。改变支架内容、呈现器或课程结构后需新建实验 ID，避免复用冻结协议下的旧数据库。
 
 生产站点部署到 `/calculus_quest/` 时，设置 `BASE_PATH=/calculus_quest`。服务兼容 Nginx 保留或剥离前缀两种转发方式。
 

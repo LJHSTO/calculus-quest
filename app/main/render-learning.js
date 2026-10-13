@@ -1171,7 +1171,7 @@ function renderQuiz(unit) {
             .join("")}
           <div class="quiz-submit-panel${submitted ? ' submitted' : ''}">
             <button class="button primary" type="button" data-submit-quiz="${unit.id}" ${submitted || !completionAllowed ? "disabled" : ""}>${submitted ? '已提交' : adaptiveState?.needsDiagnostic ? '提交诊断题' : completionAllowed ? '提交本次测验' : '未解锁：先接受学习建议'}</button>
-            <p>${submitted ? '该测验已提交，答案、解析、每题得分和小节总分见下方。' : adaptiveState?.needsDiagnostic ? '核心题答错了，再完成一道诊断多选题，系统会据此定位具体误解。' : completionAllowed ? '先完成核心题；答对即可通过，答错时会立即出现诊断题。' : '该测验当前仅供预览；接受学习建议后才能提交并记录本节。'}</p>
+            <p>${submitted ? '该测验已提交，答案、解析与评分状态可在题目下方回看。' : adaptiveState?.needsDiagnostic ? '核心题答错了，再完成一道诊断多选题，系统会据此定位具体误解。' : completionAllowed ? unit.assessmentPhase === "formative" ? '先完成核心题；答对即可通过，答错时会立即出现诊断题。' : '请独立完成整份测验。不确定的题目可以选择“我不会”，完成后统一提交。' : '该测验当前仅供预览；接受学习建议后才能提交并记录本节。'}</p>
             <div class="answer-feedback" id="feedback-${unit.id}">${submittedTotalHtml}</div>
           </div>
         </div>

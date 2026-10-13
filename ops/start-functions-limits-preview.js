@@ -7,6 +7,7 @@ const crypto = require("node:crypto");
 const { spawn } = require("node:child_process");
 async function main() {
   const root = path.resolve(__dirname, "..");
+  const demonstrateProactive = process.argv.includes("--show-proactive");
   const dir = fs.mkdtempSync(path.join(root, "output", "functions-limits-preview-"));
   const port = await new Promise(resolve => {
     const socket = net.createServer();
@@ -22,7 +23,7 @@ async function main() {
     PROACTIVE_RETENTION_DELAY_HOURS: "72", PROACTIVE_RETENTION_CLOSE_HOURS: "0",
     PROACTIVE_ASSIGNMENT_SALT: crypto.randomBytes(32).toString("hex"),
     PROACTIVE_PARTICIPATION_MODE: "implicit-pilot", PROACTIVE_PUBLIC_CHAPTER_ONLY: "true",
-    PROACTIVE_EXPERIMENT_ARMS: "control,treatment_full", PROACTIVE_DISPLAY_ARMS: "treatment_full",
+    PROACTIVE_EXPERIMENT_ARMS: demonstrateProactive ? "treatment_full" : "control,treatment_full", PROACTIVE_DISPLAY_ARMS: "treatment_full",
     PROACTIVE_ARM_PROFILES_JSON: JSON.stringify({
       control: { display: false, maxSupportLevel: "L0", allowRepresentationSwitch: false },
       treatment_full: { display: true, maxSupportLevel: "L5", allowRepresentationSwitch: true }
@@ -39,6 +40,7 @@ async function main() {
       if ((await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1000) })).ok) {
         child.unref();
         const info = { url: `http://127.0.0.1:${port}`, pid: child.pid, directory: dir,
+          mode: demonstrateProactive ? "单臂工程演示" : "双臂工程预览",
           warning: "隔离工程预览，不连接真实模型，不用于正式学生实验。" };
         fs.writeFileSync(path.join(root, "output", "函数极限预览.json"), JSON.stringify(info, null, 2), "utf8");
         console.log(JSON.stringify(info));

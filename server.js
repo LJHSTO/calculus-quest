@@ -247,6 +247,11 @@ const proactiveStoppingRules = Object.freeze({
       outcomeArchiveV3: protocolSourceDigest("lib/proactive-outcomes/archive/v14-c3-v3.js"),
       outcomeFigureGenerator: protocolSourceDigest("ops/build-outcome-figures-r3.js"),
       studentRenderer: protocolSourceDigest("app/main/knowledge-assistant.js"),
+      supportSurface: protocolSourceDigest("app/main/proactive-surface.js"),
+      supportSurfaceStyle: protocolSourceDigest("app/main/proactive-hud.css"),
+      courseStructure: protocolSourceDigest("app/main/core.js"),
+      coursewareBridge: protocolSourceDigest("app/main/courseware-bridge.js"),
+      designSpaceProjection: protocolSourceDigest("lib/proactive-policy/design-space.js"),
       studentSignalClient: protocolSourceDigest("app/main/proactive-learning.js"),
       reactiveAssistant: protocolSourceDigest("lib/learning-assistant.js"),
       pathCoach: protocolSourceDigest("lib/agentic-coach.js"),
@@ -3308,7 +3313,8 @@ function getAssistantIntervention(
   if (
     !record
     || record.userId !== userId
-    || record.unitId !== unitId
+    || (record.unitId !== unitId
+      && !(record.decisionId && record.unitId === `${unitId}-formative`))
     || record.expiresAt <= now
   ) return null;
   if (consume) assistantInterventionRegistry.delete(id);
@@ -3364,13 +3370,15 @@ function policyAssistantInterventionAccess(userId, unitId, record = {}) {
   if (!record.decisionId) return { ok: true, code: "", terminal: false };
   const decision = db.getProactiveDecisionForUser(userId, record.decisionId);
   const intervention = db.getProactiveIntervention(record.id);
+  const returningToKnowledge = Boolean(decision && decision.scope_key === unitId
+    && decision.unit_id === `${unitId}-formative`);
   if (
     !decision
     || !intervention
     || intervention.user_id !== userId
     || intervention.decision_id !== decision.id
     || decision.experiment_id !== proactiveStudyConfig.experimentId
-    || decision.unit_id !== unitId
+    || (decision.unit_id !== unitId && !returningToKnowledge)
     || decision.delivery_decision !== "intervene"
     || decision.action !== record.action
     || Number(decision.learning_generation || 1)
@@ -4426,6 +4434,9 @@ async function handleManagedProactiveIntervention({
       runtime: publicProactiveRuntime(experimentRuntime),
       studentPreference,
       deliveryDecision: policyDecision.deliveryDecision,
+      observation: require("./lib/proactive-policy/design-space").observation({
+        decision: policyDecision, evidence, signal, scopeKey: policyScopeKey, decisionId
+      }),
       policyState: publicProactivePolicyState(policyState, {
         studentPreference
       }),

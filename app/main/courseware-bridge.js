@@ -468,6 +468,9 @@
     const style = document.createElement("style");
     style.id = "cq-context-bridge-style";
     style.textContent = [
+      "@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}",
+      "#start-screen:has(> .start-btn),#startScreen:has(> .start-btn){box-sizing:border-box!important;max-height:100dvh!important;overflow-y:auto!important;justify-content:flex-start!important}",
+      "#start-screen:has(> .start-btn)>*,#startScreen:has(> .start-btn)>*{flex-shrink:0!important}",
       "@media(max-width:600px) {",
       "body:has(#diagram-svg) { display:flex !important; flex-direction:column !important; height:100dvh !important; overflow:hidden !important; }",
       "body:has(#diagram-svg) #main { flex:1 1 0 !important; min-height:0 !important; height:0 !important; }",

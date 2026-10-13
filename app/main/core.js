@@ -1726,9 +1726,9 @@ function buildMultiSceneLearningChapter(routeChapter, chapterIndex = 0) {
   units.push(createOpenMaicQuizUnit(chapter, routeChapter, "pre", sceneOrder++, -1));
   allKnowledgePoints.forEach((entry, index) => {
     units.push(createOpenMaicKnowledgeUnit(chapter, entry.module, entry.knowledgePoint, entry.kpIndex, sceneOrder++, entry.moduleIndex));
-    if (globalThis.CQ_IN_SITU_FORMATIVE === false) {
-      units.push(createOpenMaicKnowledgeCheckUnit(chapter, entry.module, entry.knowledgePoint, sceneOrder++, entry.moduleIndex));
-    }
+    // Keep the authoritative diagnostic reachable. The learner may skip it at
+    // the knowledge transition; an ungraded surface widget cannot replace it.
+    units.push(createOpenMaicKnowledgeCheckUnit(chapter, entry.module, entry.knowledgePoint, sceneOrder++, entry.moduleIndex));
   });
   if (openMaicReviewHasCourseware(routeChapter)) units.push(createOpenMaicReviewUnit(chapter, routeChapter, sceneOrder++, -1));
   units.push(createOpenMaicQuizUnit(chapter, routeChapter, "post", sceneOrder++, -1));

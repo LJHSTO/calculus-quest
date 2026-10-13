@@ -574,6 +574,12 @@ async function prepareFormalPlayer(page, participant, token) {
   );
   await page.evaluate(() => {
     window.__coursewareBrowserSignals = [];
+    window.__coursewareBridgeReceipts = [];
+    window.addEventListener("message", event => {
+      if (event.data?.type !== "cq:interaction") return;
+      window.__coursewareBridgeReceipts.push({ type: event.data.eventType, label: event.data.payload?.label,
+        activeFrame: [...document.querySelectorAll("iframe[data-courseware-frame]")].some(frame => frame.contentWindow === event.source) });
+    });
     window.addEventListener("cq:learning-signal", (event) => {
       const signal = event.detail?.event;
       if (["iframe", "courseware_semantic"].includes(signal?.source)) {
@@ -716,11 +722,17 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
               const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
               return {
                 key: element.dataset.node || element.dataset.nodeId || element.dataset.id || element.id,
+                centerX: box.x + box.width / 2, centerY: box.y + box.height / 2,
                 usable: box.width > 0 && box.height > 0 && Number(style.opacity) >= 0.4
                   && style.pointerEvents !== "none" && (hit === element || element.contains(hit))
               };
             });
             if (!descriptor.usable) continue;
+            const visibleInHost = await frameLocator.evaluate((frame, point) => {
+              const r = frame.getBoundingClientRect();
+              return document.elementFromPoint(r.x + point.centerX, r.y + point.centerY) === frame;
+            }, descriptor);
+            if (!visibleInHost) continue;
             await node.click();
             actions.push({ kind: "node", key: descriptor.key });
             clicked = true;
@@ -753,13 +765,15 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
                       .replace(/\s+/g, "");
                 })
               ), { unitId: entry.knowledgePoint.id, action }),
-              `${label}: real ${action.kind} semantics did not reach learning signals ${JSON.stringify({
-                action,
-                signals: await page.evaluate(() => window.__coursewareBrowserSignals.map((signal) => ({
-                  eventType: signal.eventType, unitId: signal.unitId, data: signal.data
-                })))
-              })}`
-            );
+              `${label}: real ${action.kind} semantics did not reach learning signals`
+            ).catch(async error => {
+              const signals = await page.evaluate(() => window.__coursewareBrowserSignals.map(signal => ({
+                eventType: signal.eventType, unitId: signal.unitId, data: signal.data
+              })));
+              const receipts = await page.evaluate(() => ({ receipts: window.__coursewareBridgeReceipts,
+                unit: currentUnitId, signedIn: isSignedIn(), authTransition: authTransitionInProgress }));
+              throw new Error(`${error.message} ${JSON.stringify({ action, signals, ...receipts })}`);
+            });
           }
           expectedEvents.push(...await page.evaluate(() => (
             window.__coursewareBrowserSignals.filter((signal) => (
