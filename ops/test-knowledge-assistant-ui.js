@@ -32,8 +32,13 @@ assert.match(
 );
 assert.match(
   indexHtml,
-  /app\/main\/knowledge-assistant\.js\?v=20260922-hint-justification-v1/
+  /app\/main\/knowledge-assistant\.js\?v=[A-Za-z0-9._-]+/
 );
+assert.match(indexHtml, /app\/main\/proactive-exposure\.js\?v=[A-Za-z0-9._-]+/,
+  "shared visibility measurement must ship with a versioned resource");
+assert.ok(indexHtml.indexOf('src="app/main/proactive-exposure.js?')
+  < indexHtml.indexOf('src="app/main/knowledge-assistant.js?'),
+"the exposure helper must load before the assistant consumes it");
 assert.match(
   indexHtml,
   /app\/main\/proactive-learning\.js\?v=20260922-representation-switch-v1/

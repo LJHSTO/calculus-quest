@@ -38,6 +38,10 @@ async function register(page) {
 // Seed only navigation eligibility, not courseware events, answers, notes, or assistant responses.
 async function openKnowledgeFixture(page) {
   await page.evaluate(() => {
+    // This workflow exercises the integral-area simulation's actual controls
+    // (#partition_count-slider / #riemann-sum-display) and a LaTeX slide.
+    // Do not implicitly follow the platform's current default course.
+    currentChapterId = "V14-C3";
     const unit = getChapter().units.find((entry) => entry.type === "knowledge");
     const route = ensureAgenticPath();
     if (!route.unlocked.includes(unit.id)) route.unlocked.push(unit.id);
@@ -71,6 +75,7 @@ async function main() {
       ...process.env, NODE_ENV: "test", HOST: "127.0.0.1",
       DB_PATH: path.join(temp, "workspace.db"), ADMIN_TOKEN: "workspace-test-admin",
       LLM_PROVIDER: "mock", GRADING_LLM_PROVIDER: "mock",
+      PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3", PROACTIVE_PUBLIC_CHAPTER_ONLY: "false",
       PROACTIVE_POLICY_MODE: "off", RATE_LIMIT_MAX: "2000"
     },
     windowsHide: true,
@@ -427,9 +432,15 @@ async function main() {
       if (await lectureToggle.getAttribute("aria-label") === "显示讲解") await lectureToggle.click();
       await page.waitForTimeout(100);
       const beforeLecture = (await frameElement.boundingBox()).height;
+      const beforeLecturePane = (await page.locator(".multi-scene-scene-panel").boundingBox()).height;
       await page.locator('[data-classroom-action="toggle-lecture"]').click();
       await page.waitForTimeout(100);
-      assert.ok((await frameElement.boundingBox()).height > beforeLecture + 50, "隐藏讲解应真正释放画布高度");
+      const afterLecturePane = (await page.locator(".multi-scene-scene-panel").boundingBox()).height;
+      assert.ok(afterLecturePane > beforeLecturePane + 50, "隐藏讲解应真正释放可见课件区域");
+      // A short screen may already use the 480px interaction floor and scroll.
+      // Released panel space must still enlarge the actual iframe where possible.
+      assert.ok((await frameElement.boundingBox()).height > beforeLecture,
+        "释放讲解区域后，真实iframe视口应增大");
       const embeddedBounds = await frame.evaluate(() => {
         const rect = document.querySelector("#canvas").getBoundingClientRect();
         return { top: rect.top, bottom: rect.bottom, height: innerHeight,

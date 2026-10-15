@@ -81,7 +81,14 @@
         .filter((type) => type.typeId);
     }
   }) || null;
-  let lastPresentedSuggestionId = "";
+  const presentedSuggestionIds = new Set();
+  let exposureOwnerKey = "";
+  let exposureGeneration = 0;
+  const proactiveExposureMonitor = global.ProactiveExposure?.createMonitor({
+    onQualified(receipt) {
+      markProactiveSuggestionShown(receipt.suggestion, receipt);
+    }
+  });
   let proactiveTickTimer = null;
   let proactiveDecision = null;
   let proactiveDecisionRequest = null;
@@ -151,6 +158,7 @@
 // 所以绝不把它做成必填，否则 providedRate 会因为"不想写字的人干脆不接受"而虚高。
 let proactiveJustificationOpen = false;
 let proactiveJustifyBuiltFor = "";
+const proactiveJustificationDrafts = new Map();
   let proactiveParticipationSaving = false;
   let proactiveWithdrawalConfirming = false;
   let proactiveOutcomesOpen = false;
@@ -684,7 +692,12 @@ let proactiveJustifyBuiltFor = "";
     const row = proactiveStudy.policyStates.find(
       (item) => item.scopeKey === scopeKey
     );
-    return row?.verificationCheck || null;
+    const check = row?.verificationCheck;
+    // A completed check can remain in the server's audit state while the next
+    // offer awaits consent. Only the currently active independent attempt is
+    // actionable; replaying an earlier check would mix support cycles.
+    return row?.lifecycle?.phase === "awaiting_independent_attempt"
+      && check?.id && row.lifecycle.activeVerificationCheckId === check.id ? check : null;
   }
 
   function syncProactiveCheckState(meta = courseMeta()) {
@@ -2010,6 +2023,16 @@ let proactiveJustifyBuiltFor = "";
     return PROACTIVE_JUSTIFICATION_ACTIONS.has(String(suggestion.action || ""));
   }
 
+  function proactiveJustificationState(suggestion) {
+    const candidateId = String(suggestion?.decisionId || suggestion?.id || "");
+    if (!candidateId) return null;
+    const key = `${noteOwnerKey()}|${exposureGeneration}|${suggestion.unitId || ""}|${candidateId}`;
+    if (!proactiveJustificationDrafts.has(key)) {
+      proactiveJustificationDrafts.set(key, { open: false, text: "" });
+    }
+    return proactiveJustificationDrafts.get(key);
+  }
+
   /**
    * 理由输入控件的唯一实现。两个挂载点共用：
    *   1. 悬浮提示卡（els.proactiveJustifySlot）
@@ -2027,6 +2050,15 @@ let proactiveJustifyBuiltFor = "";
     input.maxLength = 600;
     input.placeholder = "一句话就行；不想写也可以直接看提示。";
     input.dataset.proactiveJustifyInput = "";
+    const justificationOwnerKey = syncProactiveExposureOwner();
+    const justificationState = proactiveJustificationState(suggestion);
+    input.value = justificationState?.text || "";
+    input.addEventListener("input", () => {
+      // Never copy a draft from a removed form into a different owner/candidate.
+      if (currentProactiveExposure(suggestion, justificationOwnerKey) && justificationState) {
+        justificationState.text = input.value.slice(0, 600);
+      }
+    });
     const footer = document.createElement("div");
     footer.className = "knowledge-proactive-justify-actions";
     const submit = document.createElement("button");
@@ -2051,6 +2083,10 @@ let proactiveJustifyBuiltFor = "";
   }
 
   function revealProactiveJustification(suggestion, form, actions) {
+    const justificationState = proactiveJustificationState(suggestion);
+    const firstPrompt = !justificationState?.open;
+    if (justificationState) justificationState.open = true;
+    proactiveJustificationOpen = true;
     if (actions) actions.hidden = true;
     form.hidden = false;
     const input = form.querySelector("[data-proactive-justify-input]");
@@ -2059,7 +2095,7 @@ let proactiveJustifyBuiltFor = "";
     } catch {
       input?.focus?.();
     }
-    track("knowledge_proactive_justification_prompted", {
+    if (firstPrompt) track("knowledge_proactive_justification_prompted", {
       suggestionId: suggestion?.id,
       decisionId: suggestion?.decisionId || "",
       interventionId: suggestion?.interventionId || "",
@@ -2098,6 +2134,7 @@ let proactiveJustifyBuiltFor = "";
   function resetProactiveJustification() {
     proactiveJustificationOpen = false;
     proactiveJustifyBuiltFor = "";
+    proactiveJustificationDrafts.clear();
     if (els.proactiveJustifySlot) {
       els.proactiveJustifySlot.replaceChildren();
       els.proactiveJustifySlot.hidden = true;
@@ -2220,11 +2257,14 @@ let proactiveJustifyBuiltFor = "";
     }
     const participantId = String(state?.participant?.participantId || "");
     const token = String(state?.authToken || "");
+    const requestGeneration = exposureGeneration;
     proactiveResolutionChain = proactiveResolutionChain
       .then(async () => {
         if (
           !token
           || participantId !== String(state?.participant?.participantId || "")
+          || token !== String(state?.authToken || "")
+          || requestGeneration !== exposureGeneration
         ) return null;
         const response = await fetch(
           `api/learning/proactive/${encodeURIComponent(decisionId)}/resolution`,
@@ -2240,7 +2280,15 @@ let proactiveJustifyBuiltFor = "";
               // 关键指标：只统计"接受且说明了理由"的提示，否则一路点接受就能刷过检查题。
               justification: String(options.justification || "").slice(0, 600),
               // 这一次到底有没有把"说理由"摆到学生面前。分母靠它才准。
-              justificationRequested: options.justificationRequested === true
+              justificationRequested: options.justificationRequested === true,
+              ...(resolution === "shown" ? {
+                exposureSource: options.exposureSource || "",
+                qualifiedVisible: options.qualifiedVisible === true,
+                fraction: Number(options.fraction) || 0,
+                visibleDurationMs: Number(options.visibleDurationMs) || 0,
+                minimumFraction: Number(options.minimumFraction) || 0,
+                minimumDurationMs: Number(options.minimumDurationMs) || 0
+              } : {})
             }),
             keepalive: resolution === "ignored"
           }
@@ -2251,7 +2299,11 @@ let proactiveJustifyBuiltFor = "";
           error.code = payload.code || "";
           throw error;
         }
-        if (payload.data?.policyState) {
+        if (participantId !== String(state?.participant?.participantId || "")
+          || token !== String(state?.authToken || "")
+          || requestGeneration !== exposureGeneration) return null;
+        if (payload.data?.policyState
+          && payload.data.policyState.scopeKey === proactiveScopeKey(courseMeta())) {
           const next = payload.data.policyState;
           applyProactiveStudy({ ...proactiveStudy, policyState: next });
           renderMessages();
@@ -2259,6 +2311,9 @@ let proactiveJustifyBuiltFor = "";
         return payload.data || null;
       })
       .catch((error) => {
+        if (participantId !== String(state?.participant?.participantId || "")
+          || token !== String(state?.authToken || "")
+          || requestGeneration !== exposureGeneration) return null;
         track("knowledge_proactive_resolution_failed", {
           decisionId,
           interventionId: suggestion?.interventionId || "",
@@ -2596,13 +2651,66 @@ let proactiveJustifyBuiltFor = "";
     );
   }
 
-  function markProactiveSuggestionShown(suggestion) {
-    if (!suggestion) return;
+  function syncProactiveExposureOwner() {
+    const nextOwnerKey = isSignedInNow()
+      ? `${String(state?.participant?.participantId || "")}|${exposureGeneration}` : "";
+    if (nextOwnerKey !== exposureOwnerKey) {
+      exposureOwnerKey = nextOwnerKey;
+      presentedSuggestionIds.clear();
+      proactiveJustificationDrafts.clear();
+      proactiveJustificationOpen = false;
+      proactiveExposureMonitor?.clear({ forget: true });
+    }
+    return nextOwnerKey;
+  }
+
+  function currentProactiveExposure(suggestion, ownerKey) {
+    const snapshot = designSpaceSnapshot();
+    const candidateId = suggestion?.decisionId || suggestion?.id;
+    return Boolean(candidateId && ownerKey && ownerKey === syncProactiveExposureOwner()
+      && snapshot.signedIn && snapshot.active && !snapshot.locked
+      && snapshot.offer && (snapshot.offer.decisionId || snapshot.offer.id) === candidateId
+      && suggestion.unitId === snapshot.unitId);
+  }
+
+  function observeProactiveOffer(element, suggestion, presentation = {}) {
+    const ownerKey = syncProactiveExposureOwner();
+    const candidateId = suggestion?.decisionId || suggestion?.id;
+    if (!ownerKey || !candidateId || !element) return;
+    proactiveExposureMonitor?.watch(element, {
+      key: `${ownerKey}|${suggestion.unitId}|${candidateId}`,
+      valid: () => currentProactiveExposure(suggestion, ownerKey),
+      metadata: { suggestion, ownerKey, ...supportView, ...presentation }
+    });
+  }
+
+  function markProactiveSuggestionShown(suggestion, receipt = {}) {
+    const ownerKey = receipt.ownerKey || syncProactiveExposureOwner();
+    if (!currentProactiveExposure(suggestion, ownerKey)) return false;
     const presentationId = suggestion.decisionId || suggestion.id;
-    if (!presentationId || lastPresentedSuggestionId === presentationId) return;
-    lastPresentedSuggestionId = presentationId;
+    const qualifiedVisible = receipt.exposureSource === "qualified_visible";
+    const exposureSource = qualifiedVisible ? "qualified_visible" : "explicit_interaction";
+    if (qualifiedVisible) {
+      track("proactive_surface_visible", {
+        placement: receipt.placement || supportView.placement,
+        modality: receipt.modality || supportView.modality,
+        decisionId: suggestion.decisionId || "", scopeKey: proactiveScopeKey(),
+        fraction: receipt.fraction, visibleDurationMs: receipt.visibleDurationMs,
+        minimumFraction: receipt.minimumFraction, minimumDurationMs: receipt.minimumDurationMs,
+        exposureSource, qualifiedVisible: true
+      });
+    } else {
+      track("knowledge_proactive_suggestion_interacted", {
+        decisionId: suggestion.decisionId || "", suggestionId: suggestion.id,
+        interaction: receipt.interaction || "offer_control", exposureSource, qualifiedVisible: false
+      });
+    }
+    if (presentedSuggestionIds.has(presentationId)) return true;
+    presentedSuggestionIds.add(presentationId);
     if (suggestion.serverIssued) {
-      queueProactiveResolution(suggestion, "shown");
+      queueProactiveResolution(suggestion, "shown", { exposureSource, qualifiedVisible,
+        fraction: receipt.fraction, visibleDurationMs: receipt.visibleDurationMs, minimumFraction: receipt.minimumFraction,
+        minimumDurationMs: receipt.minimumDurationMs });
     }
     track("knowledge_proactive_suggestion_shown", {
       suggestionId: suggestion.id,
@@ -2614,8 +2722,10 @@ let proactiveJustifyBuiltFor = "";
       confidence: suggestion.confidence,
       unitId: suggestion.unitId,
       createdAt: suggestion.createdAt || "",
-      shownAt: new Date().toISOString()
+      shownAt: new Date().toISOString(),
+      exposureSource, qualifiedVisible
     });
+    return true;
   }
 
   function renderProactiveSuggestion() {
@@ -2625,7 +2735,11 @@ let proactiveJustifyBuiltFor = "";
     els.proactive.hidden = !visible;
     root.classList.toggle("has-proactive-nudge", visible);
     global.dispatchEvent(new CustomEvent("cq:workspace-support-change"));
-    if (!visible) return;
+    syncProactiveExposureOwner();
+    if (!visible) {
+      proactiveExposureMonitor?.unwatch(els.proactive);
+      return;
+    }
     els.proactiveEyebrow.textContent = suggestion.eyebrow || "知点留意到";
     els.proactiveTitle.textContent = suggestion.title || "这里可能值得停一下";
     els.proactiveBody.textContent = suggestion.body || "先找一个观察点，再决定是否展开解释。";
@@ -2664,7 +2778,7 @@ let proactiveJustifyBuiltFor = "";
         );
       }
     }
-    markProactiveSuggestionShown(suggestion);
+    observeProactiveOffer(els.proactive, suggestion, { placement: "sidebar", modality: "tip" });
   }
 
   function proactiveSceneForScope(scopeKey = "", fallback = "") {
@@ -2690,7 +2804,8 @@ let proactiveJustifyBuiltFor = "";
     proactiveChoiceSaving = true;
     render();
     try {
-      await queueProactiveResolution(source, "shown");
+      markProactiveSuggestionShown(source, { interaction: "request_alternative" });
+      await proactiveResolutionChain;
       const currentSceneType = proactiveSceneForScope(
         targetUnitId,
         meta.sceneType
@@ -2785,6 +2900,7 @@ let proactiveJustifyBuiltFor = "";
 
   function snoozeProactiveSuggestion() {
     const presented = proactiveDecision;
+    if (presented) markProactiveSuggestionShown(presented, { interaction: "snooze" });
     const resolution = proactiveCoach?.resolve?.("snooze", Date.now()) || {};
     if (!presented && !resolution.id) return false;
     if (presented?.serverIssued) {
@@ -2920,6 +3036,7 @@ let proactiveJustifyBuiltFor = "";
   function acceptProactiveSuggestion(options = {}) {
     const suggestion = proactiveDecision;
     if (!suggestion) return false;
+    markProactiveSuggestionShown(suggestion, { interaction: "accept" });
     // 需要理由的提示：先把「你觉得这一步为什么是对的」摆出来，学生提交或一
     // 键跳过后才真正执行。理由在**看到提示之前**写才算自我解释；先给答案再问
     // 就只是复述，防不了 gaming。
@@ -4070,11 +4187,13 @@ let proactiveJustifyBuiltFor = "";
     // 内联卡也要走同一套「先说理由」流程：如果走对话流的学生不必说理由，
     // 两条路径的 Hint Justification Rate 就不可比，等于给自己开了个后门。
     const justify = proactiveJustificationForm(suggestion);
-    justify.hidden = true;
+    const justificationAlreadyOpen = proactiveJustificationState(suggestion)?.open === true;
+    justify.hidden = !justificationAlreadyOpen;
+    actions.hidden = justificationAlreadyOpen;
     accept.addEventListener("click", () => {
-      // A genuine click proves the offer was visible, even when a long surface
-      // never crosses the observer's fractional visibility threshold.
-      markProactiveSuggestionShown(suggestion);
+      // A click is an explicit interaction receipt. It does not satisfy the
+      // separate 50%-for-1-second visibility measurement.
+      if (!markProactiveSuggestionShown(suggestion, { interaction: "accept" })) return;
       if (proactiveJustificationRequired(suggestion)) {
         revealProactiveJustification(suggestion, justify, actions);
         return;
@@ -4085,7 +4204,6 @@ let proactiveJustifyBuiltFor = "";
     dismiss.type = "button";
     dismiss.textContent = "稍后";
     dismiss.addEventListener("click", () => {
-      markProactiveSuggestionShown(suggestion);
       snoozeProactiveSuggestion();
     });
     actions.append(accept, dismiss);
@@ -4111,13 +4229,14 @@ let proactiveJustifyBuiltFor = "";
         mute.textContent = "关闭此知识点提醒";
         mute.disabled = proactiveChoiceSaving;
         mute.addEventListener("click", () => {
+          if (!markProactiveSuggestionShown(suggestion, { interaction: "mute_scope" })) return;
           updateProactiveScopePreference("off");
         });
         secondary.appendChild(mute);
       }
       article.appendChild(secondary);
     }
-    if (recordShown) markProactiveSuggestionShown(suggestion);
+    if (recordShown) observeProactiveOffer(article, suggestion, { placement: "sidebar", modality: "tip" });
     return article;
   }
 
@@ -5540,7 +5659,10 @@ let proactiveJustifyBuiltFor = "";
       ignoreProactiveSuggestion(participantChanged ? "participant-change" : "unit-change");
     }
     if (participantChanged) proactiveCoach?.reset?.({ clearCooldowns: true });
-    if (participantChanged) supportView = { placement: "sidebar", modality: "tip" };
+    if (participantChanged) {
+      supportView = { placement: "sidebar", modality: "tip" };
+      syncProactiveExposureOwner();
+    }
     loadProactiveStudy(meta, {
       force: participantChanged
         || quizStateChanged
@@ -5708,6 +5830,7 @@ let proactiveJustifyBuiltFor = "";
   els.proactiveSnooze.addEventListener("click", snoozeProactiveSuggestion);
   els.proactiveAlternative.addEventListener("click", requestProactiveAlternative);
   els.proactiveMute.addEventListener("click", () => {
+    if (proactiveDecision) markProactiveSuggestionShown(proactiveDecision, { interaction: "mute_scope" });
     updateProactiveScopePreference("off");
   });
   els.proactiveScopeRestore.addEventListener("click", () => {
@@ -5887,6 +6010,12 @@ let proactiveJustifyBuiltFor = "";
       }
       return fragment;
     },
+    observeSupportOffer(element, offer) {
+      observeProactiveOffer(element, offer);
+    },
+    unobserveSupportOffer(element) {
+      proactiveExposureMonitor?.unwatch(element);
+    },
     async supportAction(action, value) {
       const snapshot = designSpaceSnapshot();
       if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return false;
@@ -5896,10 +6025,8 @@ let proactiveJustifyBuiltFor = "";
         els.input.value = String(value || "").slice(0, 2000);
         return submitQuestion();
       }
-      if (action === "shown" && snapshot.offer) {
-        markProactiveSuggestionShown(snapshot.offer);
-        return true;
-      }
+      // A render notification cannot establish exposure. Only the shared
+      // visibility monitor or a learner action can issue the business receipt.
       return false;
     },
     trackSupportSurface(eventType, data = {}) {
@@ -5957,6 +6084,8 @@ let proactiveJustifyBuiltFor = "";
       return true;
     },
     resetLearningGeneration() {
+      exposureGeneration += 1;
+      syncProactiveExposureOwner();
       const ownerKey = noteOwnerKey();
       Notes.clearOwnerNotes?.(localStorage, ownerKey);
       localStorage.removeItem(`${NOTE_MIGRATION_STORAGE_PREFIX}${ownerKey}`);

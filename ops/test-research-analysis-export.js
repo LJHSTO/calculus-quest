@@ -53,10 +53,26 @@ const source = {
     output_summary: JSON.stringify({ score: 20, gradingAudit: { requestedModel: "auto" } }) }],
   regrades: [{ id: "grade2", user_id: "u1", quiz_result_id: "short", status: "applied",
     proposed_grade_json: JSON.stringify({ score: 20, gradingAudit: { requestedModel: "auto", reportedModel: "reported" } }) }],
-  decisions: [{ id: "decision1", user_id: "u1", condition: "control",
+  decisions: [{ id: "decision1", user_id: "u1", learning_generation: 1, created_at: "2026-09-09T10:00:00Z", condition: "control",
     decision: "intervene", delivery_decision: "stay_silent", support_level: "L1",
-    followup_outcome_json: '{"independentAttempt":{"success":false}}' }]
+    shown_at: "2026-09-09T10:00:02Z", followup_outcome_json: '{"independentAttempt":{"success":false},"shownExposure":{"exposureSource":"explicit_interaction","qualifiedVisible":false}}' }]
 };
+source.events.push(
+  { id: "visible-after-click", user_id: "u1", learning_generation: 1, created_at: "2026-09-09T10:00:04Z",
+    payload: JSON.stringify({ eventType: "proactive_surface_visible", chapterId: "C", data: {
+      decisionId: "decision1", exposureSource: "qualified_visible", qualifiedVisible: true,
+      fraction: 0.75, visibleDurationMs: 1300, minimumFraction: 0.5, minimumDurationMs: 1000 },
+      research: { experimentId: "experiment", protocolFingerprint: "protocol", learningGeneration: 1 } }) },
+  { id: "bad-fraction", user_id: "u1", learning_generation: 1, created_at: "2026-09-09T10:00:05Z",
+    payload: JSON.stringify({ eventType: "proactive_surface_visible", chapterId: "C", data: {
+      decisionId: "decision1", exposureSource: "qualified_visible", qualifiedVisible: true,
+      fraction: 0.2, visibleDurationMs: 1300, minimumFraction: 0.5, minimumDurationMs: 1000 },
+      research: { experimentId: "experiment", protocolFingerprint: "protocol", learningGeneration: 1 } }) },
+  { id: "wrong-protocol-visible", user_id: "u1", learning_generation: 1, created_at: "2026-09-09T10:00:06Z",
+    payload: JSON.stringify({ eventType: "proactive_surface_visible", chapterId: "C", data: { decisionId: "decision1",
+      exposureSource: "qualified_visible", qualifiedVisible: true, fraction: 0.9, visibleDurationMs: 1400,
+      minimumFraction: 0.5, minimumDurationMs: 1000 }, research: { experimentId: "experiment", protocolFingerprint: "other", learningGeneration: 1 } }) }
+);
 const data = buildPackage({ source, protocol: { fingerprint: "protocol" }, assessmentIndex: index });
 const archivedIndex = new Map([...index].map(([id, entry]) => [id, { ...entry, assessmentStatus: "archived" }]));
 const archivedPackage = buildPackage({ source, protocol: { fingerprint: "protocol" }, assessmentIndex: archivedIndex });
@@ -94,6 +110,13 @@ assert.equal(data.tables.grading_audits[1].reported_model, "reported");
 assert.equal(data.tables.proactive_decisions[0].decision, "intervene");
 assert.equal(data.tables.proactive_decisions[0].delivery_decision, "stay_silent");
 assert.equal(JSON.parse(data.tables.proactive_decisions[0].followup_outcome_json).independentAttempt.success, false);
+assert.equal(data.tables.proactive_decisions[0].shown_at, "2026-09-09T10:00:02.000Z");
+assert.equal(data.tables.proactive_decisions[0].qualified_visible, true, "后续合格可见事件不应被首次显式点击吞掉");
+assert.equal(data.tables.proactive_decisions[0].qualified_visible_event_count, 1);
+assert.equal(data.tables.proactive_decisions[0].exposure_measurement_status, "qualified_visible");
+assert.equal(data.exposure_summary.counts.business_shown, 1);
+assert.equal(data.exposure_summary.counts.qualified_visible, 1);
+assert.equal(data.exposure_summary.rejected_visible_event_rows, 2);
 const duplicated = buildPackage({ source: {
   ...source, quizzes: [...source.quizzes, row("duplicate", objective)]
 }, protocol: { fingerprint: "protocol" }, assessmentIndex: index });

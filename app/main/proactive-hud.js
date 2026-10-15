@@ -1,12 +1,19 @@
 (function initProactiveHUD(global) {
   "use strict";
+  // Explicit engineering view only. This flag controls presentation, not access
+  // to private study data; authenticated server endpoints retain that boundary.
+  if (new URLSearchParams(global.location.search).get("research") !== "1") return;
   const names = { inline: "课件旁", sidebar: "助教栏", tip: "提示", example: "例子", interactive: "动手试", chat: "对话",
     simulation: "模拟探索", game: "闯关游戏", mindMap: "概念图", visualization3d: "三维视图",
     silent: "保持沉默", wait: "等待自然边界", boundary: "自然边界介入", immediate: "当前窗口介入",
     idle: "独立探索", support_offered: "等待学生确认", accepted_pending_response: "等待学生回应",
     awaiting_independent_attempt: "独立检查中", faded: "已渐退", maximum_support_reached: "达到支持上限",
     exited: "检查通过，已渐退", closed: "本轮已关闭", deferred: "学生选择稍后",
-    withdrawn: "已退出", declined: "学生跳过", stopped: "已停止", standard: "标准提醒", reduced: "少提醒", off: "已关闭" };
+    withdrawn: "已退出", declined: "学生跳过", stopped: "已停止", standard: "标准提醒", reduced: "少提醒", off: "已关闭",
+    ui_click: "界面点击", interactive_click: "课件点击", interactive_drag_end: "拖动完成",
+    parameter_change: "参数调整", parameter_commit: "参数确认", knowledge_scene_selected: "选择互动课件",
+    challenge_result: "挑战结果", task_progress: "任务进展", semantic_task_progress: "语义任务进展",
+    lesson_started: "进入学习单元", lesson_completed: "完成学习单元", knowledge_scene_completed: "完成互动课件" };
   const reasons = { quiet_dwell_waiting_for_boundary: "存在困难线索，等待操作边界", protected_assessment_stage: "测量阶段保护",
     help_need_below_threshold: "当前帮助需求未达到阈值", interruptibility_below_threshold: "正在连贯操作，暂不打扰",
     uncertainty_above_threshold: "证据不确定性较高", evidence_families_insufficient: "支持判断的证据不足",
@@ -14,6 +21,7 @@
     cooldown_active: "处于冷却期", policy_thresholds_met: "证据和时机达到策略条件",
     control_condition_suppressed: "当前研究条件不展示主动建议", shadow_mode_suppressed: "仅记录策略，不展示建议" };
   let snapshot = null, panel, toggle, opened = false, lastKey = "", eventCount = 0;
+  const priorInert = new Map();
   const events = [], decisions = [];
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
   const label = value => names[value] || value || "尚无记录";
@@ -40,7 +48,7 @@
     lastKey=key;
     panel.querySelector("[data-observatory-context]").textContent = `${s.unitLabel || "尚未进入学习"} · ${eventCount} 条本次操作记录`;
     panel.querySelector("[data-observatory-body]").innerHTML = [
-      card("D1", "学习状态证据", row("最近操作", latest?.type || "尚无操作") + row("当前课件", label(s.sceneType))
+      card("D1", "学习状态证据", row("最近操作", latest ? label(latest.type) : "尚无操作") + row("当前课件", label(s.sceneType))
         + row("服务端证据来源", facts?.families?.join("、") || "尚未形成决策证据")
         + row("已确认错误 / 正确", facts ? `${facts.confirmedIncorrect ?? "未记录"} / ${facts.confirmedCorrect ?? "未记录"}` : "未记录")
         + `<div class="observatory-estimates">${row("帮助需求估计", score(estimate?.helpNeed))}${row("可打断性估计", score(estimate?.interruptibility))}${row("不确定性估计", score(estimate?.uncertainty))}<small>工程评分，不是经校准的心理状态概率。</small></div>`),
@@ -58,10 +66,22 @@
         + row("独立检查", s.check?.id ? "已签发，等待独立作答" : "当前无检查")
         + `<ol class="observatory-lifecycle">${["提出建议","学生确认","独立检查","渐退或停止"].map(x=>`<li>${x}</li>`).join("")}</ol><small>检查通过只结束本轮帮助；学习效果另看后测、迁移和保持。</small>`)
     ].join("");
-    panel.querySelector("[data-observatory-history]").innerHTML = events.slice(-8).reverse().map(e=>`<li><time>${esc(e.time)}</time><span>${esc(e.type)}</span></li>`).join("") || "<li>进入课件后显示真实操作事件。</li>";
+    panel.querySelector("[data-observatory-history]").innerHTML = events.slice(-8).reverse().map(e=>`<li><time>${esc(e.time)}</time><span title="${esc(e.type)}">${esc(label(e.type))}</span></li>`).join("") || "<li>进入课件后显示真实操作事件。</li>";
   }
   function setOpen(value) {
     opened = value; panel.hidden = !value; toggle.hidden = value; toggle.setAttribute("aria-expanded",String(value));
+    document.body.classList.toggle("research-observatory-open", value);
+    document.querySelectorAll(".core-learning-workspace > .lesson-rail, .learning-workspace-tools")
+      .forEach(node => {
+        if (value) {
+          if (!priorInert.has(node)) priorInert.set(node, node.inert);
+          node.inert = true;
+        } else if (priorInert.has(node)) {
+          node.inert = priorInert.get(node);
+          priorInert.delete(node);
+        }
+      });
+    global.dispatchEvent(new CustomEvent("cq:learning-layout-change"));
     if(value){render();panel.querySelector("[data-observatory-close]").focus();}else toggle.focus();
   }
   function mount() {
@@ -73,7 +93,8 @@
       <p class="observatory-provenance">当前学习记录 · 服务端策略结果与浏览器操作分别标注</p><div class="proactive-hud-body" data-observatory-body></div>
       <details class="observatory-history"><summary>最近操作记录</summary><ol data-observatory-history></ol></details>
       <footer><button type="button" data-observatory-export>导出本次观察记录</button><span>用于工程核验，不代表真人学习效果</span></footer>`;
-    document.body.append(toggle,panel);
+    (document.querySelector(".core-learning-workspace .player-actions") || document.body).append(toggle);
+    document.body.append(panel);
     toggle.addEventListener("click",()=>setOpen(true));panel.querySelector("[data-observatory-close]").addEventListener("click",()=>setOpen(false));
     panel.addEventListener("keydown",e=>{if(e.key==="Escape")setOpen(false);});
     panel.querySelector("[data-observatory-export]").addEventListener("click",()=>{
@@ -81,11 +102,6 @@
       const url=URL.createObjectURL(new Blob([JSON.stringify(exported,null,2)],{type:"application/json"}));
       const a=document.createElement("a");a.href=url;a.download="六维学习观察记录.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
-    const header=panel.querySelector("header");let drag=null;
-    header.addEventListener("pointerdown",e=>{if(e.target.closest("button"))return;const r=panel.getBoundingClientRect();drag={x:e.clientX,y:e.clientY,left:r.left,top:r.top};header.setPointerCapture(e.pointerId);});
-    header.addEventListener("pointermove",e=>{if(!drag)return;panel.style.left=`${Math.max(8,Math.min(innerWidth-panel.offsetWidth-8,drag.left+e.clientX-drag.x))}px`;panel.style.top=`${Math.max(8,Math.min(innerHeight-panel.offsetHeight-8,drag.top+e.clientY-drag.y))}px`;panel.style.bottom="auto";});
-    ["pointerup","pointercancel"].forEach(type=>header.addEventListener(type,()=>{drag=null;}));
-    global.addEventListener("resize",()=>{panel.style.left="";panel.style.top="";panel.style.bottom="";});
     if(global.KnowledgeAssistant)snapshot=global.KnowledgeAssistant.designSpaceSnapshot();
     setInterval(()=>{if(opened)render();},1000);
   }

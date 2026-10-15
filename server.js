@@ -32,6 +32,7 @@ const db = require("./db");
 const courseAssessment = require("./lib/course-assessment");
 const learningAssistant = require("./lib/learning-assistant");
 const proactivePolicy = require("./lib/proactive-policy");
+const proactiveEvidenceAudit = require("./lib/proactive-policy/evidence-audit");
 const representationChoice = require("./lib/proactive-policy/representation-choice");
 const proactivity = require("./lib/proactive-policy/proactivity");
 const proactivityJev = require("./lib/proactive-policy/jev-client");
@@ -229,6 +230,9 @@ const proactiveStoppingRules = Object.freeze({
     },
     sourceDigests: {
       policyKernel: protocolSourceDigest("lib/proactive-policy/index.js"),
+      evidenceAudit: protocolSourceDigest("lib/proactive-policy/evidence-audit.js"),
+      evidenceServer: protocolSourceDigest("server.js"),
+      exposureMeasurement: protocolSourceDigest("app/main/proactive-exposure.js"),
       lifecycle: protocolSourceDigest("lib/proactive-policy/lifecycle.js"),
       // The representation chooser decides which activity type the agent offers.
       // It is part of the protocol: changing the selection logic without changing
@@ -254,6 +258,7 @@ const proactiveStoppingRules = Object.freeze({
       designSpaceProjection: protocolSourceDigest("lib/proactive-policy/design-space.js"),
       studentSignalClient: protocolSourceDigest("app/main/proactive-learning.js"),
       reactiveAssistant: protocolSourceDigest("lib/learning-assistant.js"),
+      conversationContext: protocolSourceDigest("lib/conversation-context.js"),
       pathCoach: protocolSourceDigest("lib/agentic-coach.js"),
       gradingAgent: protocolSourceDigest("lib/agents/grading.js"),
       assessmentAgent: protocolSourceDigest("lib/agents/assessment.js"),
@@ -2286,25 +2291,7 @@ function proactiveEventAt(row = {}) {
 }
 
 function proactivePendingQuietCandidate(row = {}, now = Date.now()) {
-  const kind = String(row.pending_candidate_kind || "");
-  const candidateAt = Date.parse(row.pending_candidate_at || "");
-  const expiresAt = Date.parse(row.pending_candidate_expires_at || "");
-  const valid = kind === "quiet_dwell"
-    && Number.isFinite(candidateAt)
-    && candidateAt <= now
-    && Number.isFinite(expiresAt)
-    && expiresAt > now;
-  return {
-    valid,
-    kind: valid ? kind : "",
-    candidateAt: valid ? candidateAt : 0,
-    candidateAtIso: valid ? row.pending_candidate_at : "",
-    expiresAt: valid ? expiresAt : 0,
-    expiresAtIso: valid ? row.pending_candidate_expires_at : "",
-    evidence: valid
-      ? parseStoredJson(row.pending_evidence_json || "{}", {})
-      : {}
-  };
+  return proactiveEvidenceAudit.pendingCandidate(row, now);
 }
 
 function proactiveParameter(row = {}) {
@@ -2350,12 +2337,13 @@ function proactiveIndependentAttemptResult(row = {}) {
   return null;
 }
 
-function proactiveConfirmedGapCount(userId, knowledgePointId = "") {
+function proactiveConfirmedGapCount(userId, knowledgePointId = "", now = Date.now(), refs = []) {
   if (!knowledgePointId) return 0;
   const latest = new Map();
   db.getQuizResultsByUser(userId, 500).forEach((row) => {
     if (
       row.chapter_id !== proactiveStudyConfig.chapterId
+      || proactiveEventAt(row) <= 0 || proactiveEventAt(row) > now
       || latest.has(row.question_id)
     ) return;
     latest.set(row.question_id, row);
@@ -2365,7 +2353,10 @@ function proactiveConfirmedGapCount(userId, knowledgePointId = "") {
     if (Number(row.is_correct) !== 0) return;
     const entry = assessmentIndex.get(row.question_id);
     const ids = entry?.question?.knowledgePointIds || [];
-    if (ids.includes(knowledgePointId)) count += 1;
+    if (ids.includes(knowledgePointId)) {
+      count += 1;
+      refs.push({ id: row.id, sourceType: "quiz_result", capturedAt: row.created_at });
+    }
   });
   return count;
 }
@@ -2397,6 +2388,8 @@ function proactiveEvidenceForRequest({
   let coursewareAttemptCount = 0;
   let coursewareAttemptFailures = 0;
   for (const row of struggleRows) {
+    if (!["courseware_challenge_result", "courseware_formative_check_submitted"]
+      .includes(proactiveEventType(row))) continue;
     const result = proactiveIndependentAttemptResult(row);
     if (typeof result !== "boolean") continue;
     coursewareAttemptCount += 1;
@@ -2418,7 +2411,9 @@ function proactiveEvidenceForRequest({
     questionCount: Number(quizAttempt?.total || 0),
     confirmedGapCount: proactiveConfirmedGapCount(
       userId,
-      resolved.unit.knowledgePointId || resolved.unit.id
+      resolved.unit.knowledgePointId || resolved.unit.id,
+      now,
+      refs
     ),
     dwellSeconds: 0,
     naturalBoundary: false,
@@ -2468,6 +2463,9 @@ function proactiveEvidenceForRequest({
     evidence.boundaryEventType = evidence.naturalBoundary ? latestEvent.type : "";
   }
   if (signal.kind === "quiet_dwell") {
+    evidence.parameterCommitCount = coursewareParameterCommits;
+    evidence.sceneAttemptCount = coursewareAttemptCount;
+    evidence.sceneAttemptFailures = coursewareAttemptFailures;
     if (signal.boundaryRecheck === true) {
       const boundaryAfterCandidate = pendingQuiet.valid
         && latestEvent
@@ -2476,24 +2474,15 @@ function proactiveEvidenceForRequest({
       evidence.naturalBoundary = Boolean(boundaryAfterCandidate);
       evidence.boundaryEventType = boundaryAfterCandidate ? latestEvent.type : "";
       if (boundaryAfterCandidate) {
-        const pendingFamilies = Array.isArray(pendingQuiet.evidence.families)
-          ? pendingQuiet.evidence.families
-          : [];
-        pendingFamilies
-          .filter((family) => ["time", "result"].includes(family))
-          .forEach((family) => families.add(family));
+        // Retain the original waiting episode, but rebuild need from current
+        // results/process. Historical errors must never be copied back as current.
+        families.add("time");
+        if (evidence.confirmedGapCount > 0) families.add("result");
+        if (coursewareAttemptFailures > 0 || coursewareParameterCommits >= 3) families.add("process");
         evidence.dwellSeconds = Math.max(
           0,
           Number(pendingQuiet.evidence.dwellSeconds || 0)
         );
-        evidence.confirmedGapCount = Math.max(
-          evidence.confirmedGapCount,
-          Number(pendingQuiet.evidence.confirmedGapCount || 0)
-        );
-        (Array.isArray(pendingQuiet.evidence.evidenceRefs)
-          ? pendingQuiet.evidence.evidenceRefs
-          : []
-        ).forEach((ref) => refs.push(ref));
         refs.push({
           id: latestEvent.row.id,
           sourceType: "interaction",
@@ -2506,9 +2495,6 @@ function proactiveEvidenceForRequest({
     ) {
       families.add("time");
       if (evidence.confirmedGapCount > 0) families.add("result");
-      evidence.parameterCommitCount = coursewareParameterCommits;
-      evidence.sceneAttemptCount = coursewareAttemptCount;
-      evidence.sceneAttemptFailures = coursewareAttemptFailures;
       if (coursewareAttemptFailures > 0 || coursewareParameterCommits >= 3) {
         families.add("process");
       }
@@ -2521,6 +2507,10 @@ function proactiveEvidenceForRequest({
         });
       }
     }
+    struggleRows.filter(row => ["parameter_commit", "courseware_challenge_result",
+      "courseware_formative_check_submitted"].includes(proactiveEventType(row)))
+      .slice(0, 20).forEach(row => refs.push({ id: row.id, sourceType: "interaction",
+        eventType: proactiveEventType(row), capturedAt: row.created_at }));
   }
 
   // The agent's own decision to change the KIND of activity, not a rung on the
@@ -2718,6 +2708,22 @@ function proactiveEvidenceForRequest({
   // 课程语义：该知识点**常见的混淆**（来自课件语义合同），不是"诊断出这个学生错了"。
   // 这两者必须分清——混淆会在策略里被当成已知事实，从而把"选哪个场景"退化成查表。
   evidence.topicMisconception = boundedLearningText(resolved.unit.misconception, 240);
+  if (signal.kind === "quiet_dwell" && signal.boundaryRecheck === true) {
+    evidence.boundaryRecheckAudit = proactiveEvidenceAudit.boundaryAudit({
+      pending: pendingQuiet, evidence, now,
+      knowledgePointId: resolved.unit.knowledgePointId || resolved.unit.id,
+      unitId: resolved.unit.id,
+      observedProgressCount: rows.filter(row => {
+        const at = proactiveEventAt(row);
+        return pendingQuiet.valid && at > pendingQuiet.candidateAt && at <= now
+          && ["courseware_interaction_complete", "courseware_observable_evidence_captured",
+            "courseware_challenge_result"].includes(proactiveEventType(row));
+      }).length
+      // There is currently no independent sub-skill mapping for the initial
+      // dwell candidate. Do not promote client progress or a same-KP answer to
+      // verified recovery. The audit explicitly records this unknown boundary.
+    });
+  }
   return evidence;
 }
 
@@ -3014,8 +3020,11 @@ function serverBoundLearningEvent(userId, type = "", payload = {}, createdAt = n
     ? payload
     : {};
   const eventType = coursewareSemanticEventType(type, sourcePayload);
+  const exposureEvent = type === "interaction" && [
+    "proactive_surface_visible", "knowledge_proactive_suggestion_interacted"
+  ].includes(String(sourcePayload.eventType || sourcePayload.data?.eventType || ""));
   const learningGeneration = db.currentLearningGeneration(userId, createdAt);
-  if (!eventType) {
+  if (!eventType && !exposureEvent) {
     return { payload: sourcePayload, learningGeneration };
   }
   const assignment = db.getExperimentAssignment(
@@ -3040,7 +3049,15 @@ function serverBoundLearningEvent(userId, type = "", payload = {}, createdAt = n
           || proactiveStudyConfig.assignmentVersion
           || "",
         learningGeneration,
-        protocolFingerprint: proactiveProtocolFingerprint
+        protocolFingerprint: proactiveProtocolFingerprint,
+        // Bind only newly ingested measurement events. INSERT OR IGNORE keeps
+        // previously stored receipts intact on replay; historical rows are not
+        // backfilled with today's protocol or generation. These fields attest
+        // to the authenticated ingestion context, not client visibility truth.
+        ...(exposureEvent ? {
+          measurementContextSource: "authenticated_server_ingest",
+          measurementContextBoundAt: nowIso()
+        } : {})
       }
     }
   };
@@ -3955,7 +3972,7 @@ async function handleManagedProactiveIntervention({
     student_preference: studentPreference
   };
   const policyStateBefore = proactivePolicyStateSnapshot(policyState);
-  const evidence = mergeProactiveEvidence(
+  let evidence = mergeProactiveEvidence(
     proactiveEvidenceForRequest({
       userId: auth.participant.id,
       resolved,
@@ -4052,6 +4069,20 @@ async function handleManagedProactiveIntervention({
     }
   }
 
+  let evaluationTime = now.getTime();
+  if (signal.kind === "quiet_dwell" && signal.boundaryRecheck === true) {
+    // An async planner may have taken time while the learner kept working.
+    // Refresh deterministic need and boundary facts immediately before policy.
+    evaluationTime = Date.now();
+    const priorPlannerEvidence = evidence;
+    evidence = {
+      ...priorPlannerEvidence,
+      ...mergeProactiveEvidence(proactiveEvidenceForRequest({
+        userId: auth.participant.id, resolved, signal, quizAttempt, policyState,
+        now: evaluationTime
+      }), trustedEvidence)
+    };
+  }
   let policyDecision = proactivePolicy.evaluate({
     config: proactiveStudyConfig,
     assignment,
@@ -4074,7 +4105,7 @@ async function handleManagedProactiveIntervention({
     policyState,
     budget: interventionBudget,
     runtime: policyRuntime,
-    now: now.getTime()
+    now: evaluationTime
   });
   const waitingForBoundary = policyDecision.reasonCodes.includes(
     "quiet_dwell_waiting_for_boundary"
@@ -4102,6 +4133,7 @@ async function handleManagedProactiveIntervention({
       return;
     }
   }
+  const decisionId = crypto.randomUUID();
   const consumedPendingBoundary = signal.kind === "quiet_dwell"
     && signal.boundaryRecheck === true
     && evidence.pendingCandidateValid
@@ -4122,13 +4154,20 @@ async function handleManagedProactiveIntervention({
         pendingCandidateAt: policyDecision.createdAt,
         pendingCandidateExpiresAt: policyDecision.expiresAt,
         pendingEvidence: {
-          families: evidence.families.filter((family) => (
-            family === "time" || family === "result"
-          )),
+          candidateDecisionId: decisionId,
+          families: evidence.families.filter(family => ["time", "result", "process"].includes(family)),
           dwellSeconds: evidence.dwellSeconds,
           confirmedGapCount: evidence.confirmedGapCount,
+          sceneAttemptCount: evidence.sceneAttemptCount || 0,
+          sceneAttemptFailures: evidence.sceneAttemptFailures || 0,
+          parameterCommitCount: evidence.parameterCommitCount || 0,
           evidenceRefs: evidence.evidenceRefs,
-          capturedAt: policyDecision.createdAt
+          capturedAt: policyDecision.createdAt,
+          initialEvidenceSnapshot: proactiveEvidenceAudit.snapshot(evidence, {
+            at: policyDecision.createdAt,
+            knowledgePointId: resolved.unit.knowledgePointId || resolved.unit.id,
+            unitId: resolved.unit.id
+          })
         }
       }
     ));
@@ -4324,18 +4363,6 @@ async function handleManagedProactiveIntervention({
   }
   const policyStateAfter = proactivePolicyStateSnapshot(policyState);
 
-  const decisionId = crypto.randomUUID();
-  db.insertProactiveDecision(proactiveDecisionRecord({
-    decisionId,
-    userId: auth.participant.id,
-    assignment,
-    policyDecision,
-    evidence,
-    budget: interventionBudget,
-    policyStateBefore,
-    policyStateAfter
-  }));
-
   // 把本次决策点的实验条件写进 evidence。`proactive_decisions` 是固定列表，
 // 新增列要走 schema 迁移；而 `evidence` 会整体写入 `evidence_snapshot_json`，
 // 所以放这里既落库又不用动表结构——分析脚本靠这些字段还原条件。
@@ -4355,6 +4382,12 @@ async function handleManagedProactiveIntervention({
     evidence.jevLatencyMs = jevDecision.latencyMs;
     evidence.jevCached = jevDecision.cached === true;
   }
+  // Persist after annotating: the analysis export must receive the same source,
+  // condition and two-snapshot audit that the live projection receives.
+  db.insertProactiveDecision(proactiveDecisionRecord({
+    decisionId, userId: auth.participant.id, assignment, policyDecision, evidence,
+    budget: interventionBudget, policyStateBefore, policyStateAfter
+  }));
 
   let interventionId = "";
   if (policyDecision.displayAllowed && renderedDecision.intervene) {
@@ -6689,6 +6722,16 @@ async function handleApi(req, res, url) {
         0,
         Date.now() - Date.parse(decision.created_at || resolvedAt)
       );
+      const exposure = resolution === "shown"
+        ? proactiveEvidenceAudit.exposureReceipt(body) : { ok: true, value: null };
+      if (!exposure.ok) {
+        sendJson(res, 400, { ok: false, code: "proactive_exposure_metadata_invalid",
+          message: "展示记录的测量信息无效。" });
+        return;
+      }
+      const priorFollowup = parseStoredJson(
+        db.getProactiveInterventionForDecision(auth.participant.id, decisionId)?.followup_outcome_json || "{}", {}
+      );
       const result = db.resolveProactiveIntervention({
         userId: auth.participant.id,
         decisionId,
@@ -6701,12 +6744,13 @@ async function handleApi(req, res, url) {
         // 需要跟着**决策行**一起被导出。分析包导出的是 proactive_decisions 表，
         // 而事件是另一张表；只写事件的话，导出的分析包算不出这个指标，
         // 分析脚本就得再去拼事件流——那正是"数据一收不可补救"的那类坑。
-        followupOutcome: justification || justificationRequested
-          ? {
+        followupOutcome: {
+          ...priorFollowup,
+          ...(justification || justificationRequested ? {
               studentJustification: justification,
               justificationRequested
-            }
-          : {}
+            } : {})
+        }
       });
       if (!result.ok) {
         const notFound = result.reason === "not_found";
@@ -6725,6 +6769,12 @@ async function handleApi(req, res, url) {
               : "这条主动建议已经处理，不能重复改变状态。"
         });
         return;
+      }
+      if (resolution === "shown" && !result.idempotent) {
+        db.updateProactiveInterventionFollowup({
+          userId: auth.participant.id, interventionId: result.intervention.id,
+          followupOutcome: { shownExposure: exposure.value }, updatedAt: resolvedAt
+        });
       }
       const studentPreference = proactiveStudentPreference(
         auth.participant.id,
@@ -6751,7 +6801,8 @@ async function handleApi(req, res, url) {
           })
         );
       }
-      db.insertEvent({
+      // A replay must not replace the original measurement with a later receipt.
+      if (!result.idempotent) db.insertEvent({
         id: `${decisionId}:${resolution}`,
         user_id: auth.participant.id,
         type: "interaction",
@@ -6773,6 +6824,7 @@ async function handleApi(req, res, url) {
             supportLevel: decision.support_level,
             resolution,
             latencyMs,
+            ...(resolution === "shown" ? exposure.value : {}),
             // 学生的理由说明（可选，接受时才有）。Hint Justification Rate 的唯一原料：
             // 只统计"接受且说明了理由"的提示，否则一路点接受就能刷过检查题。
             // 放在事件载荷里而不是新加列——不动表结构。

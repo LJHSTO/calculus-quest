@@ -110,6 +110,7 @@ function createNode(tag) {
 
 function loadFixture({ acceptedOptions = [] } = {}) {
   const tracked = [];
+  const owner = { key: "学生甲" };
   const context = vm.createContext({
     document: { createElement: (tag) => createNode(tag) },
     track: (name, payload) => tracked.push({ name, payload }),
@@ -117,6 +118,12 @@ function loadFixture({ acceptedOptions = [] } = {}) {
       acceptedOptions.push(options || {});
       return true;
     },
+    proactiveJustificationDrafts: new Map(),
+    exposureGeneration: 0,
+    proactiveJustificationOpen: false,
+    noteOwnerKey: () => owner.key,
+    syncProactiveExposureOwner: () => `${owner.key}|0`,
+    currentProactiveExposure: (_, key) => key === `${owner.key}|0`,
     console
   });
   const constants = source.match(
@@ -126,13 +133,14 @@ function loadFixture({ acceptedOptions = [] } = {}) {
   vm.runInContext(constants, context);
   for (const name of [
     "proactiveJustificationRequired",
+    "proactiveJustificationState",
     "proactiveJustificationForm",
     "revealProactiveJustification",
     "submitProactiveJustification"
   ]) {
     vm.runInContext(extractFunction(name), context);
   }
-  return { context, tracked, acceptedOptions };
+  return { context, tracked, acceptedOptions, owner };
 }
 
 // ------------------------------------------------- 1. 哪些动作要问理由
@@ -271,6 +279,33 @@ function loadFixture({ acceptedOptions = [] } = {}) {
 }
 
 // ------------------------------------------------- 6. 计量口径
+
+{
+  const { context, tracked, owner } = loadFixture();
+  const suggestion = { id: "s-draft", decisionId: "d-draft", unitId: "知识点甲", action: "concept_hint" };
+  const form = context.proactiveJustificationForm(suggestion);
+  context.revealProactiveJustification(suggestion, form, createNode("footer"));
+  const input = form.querySelector("[data-proactive-justify-input]");
+  input.value = "因为同一个输入应有唯一输出。";
+  input.dispatch("input");
+  const restored = context.proactiveJustificationForm(suggestion);
+  assert.equal(restored.querySelector("[data-proactive-justify-input]").value, input.value);
+  assert.equal(context.proactiveJustificationState(suggestion).open, true);
+  context.revealProactiveJustification(suggestion, restored, createNode("footer"));
+  assert.equal(tracked.filter(row => row.name === "knowledge_proactive_justification_prompted").length, 1,
+    "换表征/重建表单不能重复计算同一候选的理由提示");
+  assert.equal(context.proactiveJustificationForm({ ...suggestion, unitId: "知识点乙" })
+    .querySelector("[data-proactive-justify-input]").value, "", "草稿不能跨知识点");
+  assert.equal(context.proactiveJustificationForm({ ...suggestion, decisionId: "新候选" })
+    .querySelector("[data-proactive-justify-input]").value, "", "草稿不能跨候选");
+  owner.key = "学生乙";
+  assert.equal(context.proactiveJustificationForm(suggestion).querySelector("[data-proactive-justify-input]").value,
+    "", "草稿不能跨身份");
+  input.value = "旧身份的迟到输入"; input.dispatch("input");
+  assert.equal(context.proactiveJustificationForm(suggestion).querySelector("[data-proactive-justify-input]").value,
+    "", "旧身份表单事件不能污染新身份");
+  console.log("理由草稿通过：重建保留文字与展开状态、提示计数幂等、知识点/候选/身份隔离。");
+}
 
 {
   const rows = [

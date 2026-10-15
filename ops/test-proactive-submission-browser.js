@@ -171,6 +171,10 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
     const resultResponse = page.waitForResponse((response) =>
       response.url().includes("/api/learning/proactive/check")
       && response.request().method() === "POST");
+    if (process.env.TEST_PROACTIVE_EXPOSURE === "1" && level <= 2) {
+      assert.equal(process.env.TEST_PROACTIVE_SURFACES, "1", "真实曝光回归需同时启用知识点多呈现流程");
+      await require("./test-proactive-exposure-browser").armRealCandidate(page);
+    }
     await checkNode.getByRole("button", { name: "提交检查", exact: true }).click();
     const result = await resultResponse;
     assert.equal(result.status(), 200);
@@ -201,9 +205,12 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
       assert.equal(payload.decision.supportLevel, `L${level + 1}`);
       const offer = page.locator(".knowledge-proactive-inline-offer");
       await offer.waitFor({ state: "visible" });
+      const exposureCheck = process.env.TEST_PROACTIVE_EXPOSURE === "1" && level <= 2
+        ? await require("./test-proactive-exposure-browser").verifyRealCandidate(page,
+          { mode: level === 1 ? "qualified" : "interaction" }) : null;
       await offer.screenshot({ path: path.join(output, `L${level + 1}-控制选项.png`) });
       const accept = offer.locator("footer button.is-primary");
-      await accept.click();
+      if (!exposureCheck?.acceptAlreadyClicked) await accept.click();
       // 内联建议卡和悬浮提示卡共用同一套"先说理由"流程。如果只在悬浮卡上问理由，
       // 走对话流的学生就能绕过自我解释，两条路径的 Hint Justification Rate 也不可比。
       const inlineJustify = offer.locator("[data-proactive-justify]");
@@ -284,7 +291,7 @@ async function main() {
         resolutionRequests.push({ url: request.url(), body: request.postDataJSON() });
       }
     });
-    await page.goto(base);
+    await page.goto(process.env.TEST_PROACTIVE_SURFACES === "1" ? `${base}/?research=1` : base);
     await page.locator('[data-auth-mode="register"]').click();
     await page.locator("#nickname").fill(`干预回归${Date.now()}`);
     await page.locator("#register-password").fill("browser-test-password");

@@ -131,7 +131,7 @@
 .classroom-footer:has(#classroom-playback[hidden]) #classroom-lecture { display: none; }
 .core-learning-workspace.is-coach-surface .classroom-footer { display: none; }
 
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   #learn-view .core-learning-workspace .player { padding: 8px 8px 16px; }
   .core-learning-workspace .player-top { margin: 0; padding: 8px 0; gap: 8px; }
   .core-learning-workspace #workspace-coach-toggle { padding: 8px 10px; font-size: 12px; }
@@ -167,7 +167,7 @@
   #learn-view .core-learning-workspace > .player > #complete-lesson { display: none; }
 }
 
-@media (min-width: 901px) {
+@media (min-width: 1181px) {
   body:has(#learn-view.active) { overflow: hidden; }
   #learn-view.active { position: fixed; inset: 64px 0 0; }
   #learn-view .core-learning-workspace {
@@ -308,7 +308,7 @@
 @media (min-width: 1700px) {
   #learn-view .core-learning-workspace { --classroom-path-width: 252px; --classroom-agent-width: 360px; }
 }
-@media (min-width: 901px) and (max-height: 800px) {
+@media (min-width: 1181px) and (max-height: 800px) {
   .classroom-lecture { min-height: 76px; padding: 10px 20px; }
   #classroom-lecture-text { max-height: 48px; font-size: 13px; }
 }
@@ -317,7 +317,7 @@
 }
 
 /* Decisions own the central surface; the mounted lesson preserves iframe state. */
-@media (min-width: 901px) {
+@media (min-width: 1181px) {
   .core-learning-workspace #agentic-coach-panel .agentic-coach-card {
     display: flex;
     flex-direction: column;
@@ -377,4 +377,29 @@
     overflow: visible;
     max-height: none;
   }
+}
+
+/* Keep the learning canvas visually quiet and make actions comfortable to hit. */
+.core-learning-workspace .workspace-canvas-toolbar {
+  background: #fff;
+  border-top: 1px solid #edf0f4;
+}
+.core-learning-workspace .workspace-canvas-tabs button { min-height: 42px; }
+.core-learning-workspace .classroom-fullscreen-hint-host { flex-basis: auto; align-items: center; gap: 4px; }
+.core-learning-workspace .classroom-fullscreen-hint {
+  position: static; transform: none; padding: 3px 5px; border: 0;
+  background: #f0edff; box-shadow: none; font-size: 11px; gap: 2px;
+}
+.core-learning-workspace .classroom-fullscreen-hint-close { width: 24px; height: 28px; }
+.core-learning-workspace .classroom-controls { flex-wrap: wrap; }
+.core-learning-workspace .player-top h1 { font-weight: 650; overflow-wrap: anywhere; }
+.core-learning-workspace .lesson-step-card { transition: background-color .15s ease; }
+.core-learning-workspace .lesson-step-card:hover { background: #f5f4fc; }
+@media (max-width: 1180px) {
+  #learn-view .core-learning-workspace .player { padding-bottom: 16px; }
+  .core-learning-workspace .workspace-mobile-nav { position: sticky; top: var(--learning-header-height, 64px); z-index: 30; }
+  .core-learning-workspace .player-actions #workspace-tools-toggle { display: none; }
+  .core-learning-workspace .player-top { min-height: 52px; }
+  .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option { min-height: 52px !important; height: auto !important; }
+  .core-learning-workspace .classroom-controls { flex-wrap: wrap; }
 }

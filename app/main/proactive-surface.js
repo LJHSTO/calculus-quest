@@ -10,10 +10,10 @@
     "GH-02-K03": { title: "附近的趋势与点上的值", rule: "x ≠ 1 时 y = x + 2；x = 1 时 y = 5", question: "分开检查函数值、两侧的共同趋势，以及二者是否相等。", value: x => x === 1 ? 5 : x + 2 }
   };
   let shell = null, toolbar = null, snapshot = null, renderKey = "", busy = false;
-  const visibleIds = new Set();
   const widgetValues = new Map();
   const drafts = new Map();
   let ownerKey = "";
+  let observedOffer = null;
   const node = (tag, className, text) => {
     const el = document.createElement(tag);
     if (className) el.className = className;
@@ -21,14 +21,18 @@
     return el;
   };
   function record(kind, data) { global.KnowledgeAssistant?.trackSupportSurface(kind, data); }
-  const visibility = new IntersectionObserver(entries => entries.forEach(entry => {
-    if (!entry.isIntersecting || document.hidden || !snapshot?.offer) return;
-    const id = `${snapshot.offer.decisionId}:${snapshot.view.placement}:${snapshot.view.modality}`;
-    if (visibleIds.has(id)) return;
-    visibleIds.add(id);
-    record("visible", { fraction: entry.intersectionRatio });
-    global.KnowledgeAssistant.supportAction("shown");
-  }), { threshold: 0.3 });
+  function stopExposure() {
+    if (observedOffer) global.KnowledgeAssistant?.unobserveSupportOffer(observedOffer);
+    observedOffer = null;
+  }
+  function observeOffer(next) {
+    const target = next.offer && shell?.querySelector(".knowledge-proactive-inline-offer");
+    if (observedOffer && observedOffer !== target) stopExposure();
+    if (target) {
+      observedOffer = target;
+      global.KnowledgeAssistant?.observeSupportOffer(target, next.offer);
+    } else stopExposure();
+  }
 
   function makeToolbar(parent) {
     toolbar = node("details", "support-display-settings");
@@ -117,29 +121,29 @@
   }
   function sync(next) {
     if (next.ownerKey !== ownerKey) {
-      ownerKey = next.ownerKey; drafts.clear(); widgetValues.clear(); visibleIds.clear();
+      stopExposure();
+      ownerKey = next.ownerKey; drafts.clear(); widgetValues.clear();
       renderKey = ""; busy = false; shell?.replaceChildren();
     }
     snapshot = next;
     const eligible = next.signedIn && next.active && next.unitType === "knowledge" && !next.locked;
-    if (!eligible) {if(shell) shell.hidden = true; if(toolbar) toolbar.hidden = true; return;}
+    if (!eligible) {stopExposure(); if(shell) shell.hidden = true; if(toolbar) toolbar.hidden = true; return;}
     const host = mountHost(next);
-    if (!host) return;
+    if (!host) {stopExposure(); if(shell) shell.hidden = true; return;}
     toolbar.hidden = false;
     toolbar.querySelectorAll("[data-support-setting]").forEach(button => button.setAttribute("aria-pressed", String(next.view[button.dataset.supportSetting] === button.dataset.supportValue)));
     const owns = next.view.placement === "inline" || next.view.modality !== "tip";
-    if (!owns) {if(shell) shell.hidden = true; return;}
+    if (!owns) {stopExposure(); if(shell) shell.hidden = true; return;}
     if (!shell) {
       shell = node("section", "learning-support-surface");
       shell.setAttribute("aria-label", "知点学习帮助");
       shell.addEventListener("click", event => {if(event.target.closest("button")) record("interacted", { interaction: "support_control" });});
-      visibility.observe(shell);
     }
     const moved = shell.parentNode !== host;
     if (moved) host.prepend(shell);
     shell.hidden = false; shell.dataset.placement = next.view.placement; shell.dataset.modality = next.view.modality;
     const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle]);
-    if (key === renderKey && !moved) return;
+    if (key === renderKey && !moved) {observeOffer(next); return;}
     if (busy) return;
     renderKey = key;
     // Preserve a learner's unsent text across server updates and modality moves.
@@ -175,8 +179,9 @@
     if (next.check) shell.append(node("p", "support-independent-note", "先独立完成这道检查，也可以跳过。检查期间收起补充练习。"));
     record("rendered", { content: next.check ? "independent_check" : next.offer ? "policy_offer" : "learner_opened", supportLevel: next.offer?.supportLevel || next.policyState?.currentLevel || "L0" });
     if (focusOnSelection) shell.querySelector('[role="radio"][aria-checked="true"]')?.focus({ preventScroll: true });
-    // Re-observe when an offer changes while the same surface stays in view.
-    visibility.unobserve(shell); visibility.observe(shell);
+    // Use the same candidate-level 50% / 1 s exposure definition as the native
+    // sidebar. Merely rendering or changing modality does not count as shown.
+    observeOffer(next);
   }
   global.ProactiveSurface = Object.freeze({ sync });
   global.addEventListener("cq:learning-layout-change", () => {

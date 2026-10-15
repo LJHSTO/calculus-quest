@@ -14,6 +14,8 @@ const targetKnowledgePointId = String(process.env.COURSEWARE_BROWSER_TARGET || "
 const targetChapterId = String(process.env.COURSEWARE_BROWSER_CHAPTER || "").trim();
 const targetSurface = String(process.env.COURSEWARE_BROWSER_SURFACE || "both").trim().toLowerCase();
 const targetHostFeatures = process.env.COURSEWARE_BROWSER_HOST_FEATURES === "1";
+const evidenceFile = String(process.env.COURSEWARE_BROWSER_EVIDENCE_FILE || "").trim();
+const runEvidence = { cases: [] };
 const browserCandidates = [
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -406,10 +408,15 @@ async function exerciseBasicControls(frame, label) {
   const buttonCount = Math.min(await buttons.count(), 20);
   const coveredControls = [];
   for (let index = 0; index < buttonCount; index += 1) {
-    const button = buttons.nth(index);
+    let button = buttons.nth(index);
     const text = (await button.innerText().catch(() => "")).trim();
     if (!startPattern.test(text)) continue;
     if (!await button.isEnabled().catch(() => false)) continue;
+    // :visible is a live list. Pin this node before scrolling or waiting: a
+    // lesson animation can reveal another control and shift every nth index.
+    const buttonMarker = `cq-click-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    await button.evaluate((element, marker) => element.setAttribute("data-cq-browser-click", marker), buttonMarker);
+    button = frame.locator(`[data-cq-browser-click="${buttonMarker}"]`);
     await button.evaluate((element) => {
       element.scrollIntoView({ block: "center", inline: "center" });
     });
@@ -711,6 +718,7 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
         });
         // Transport probes must not count as evidence from real lesson controls.
         await page.evaluate(() => { window.__coursewareBrowserSignals = []; });
+        const pointerEvidenceStart = await page.evaluate(() => window.__coursewarePointerDiagnostics?.length || 0);
         const actions = await exerciseBasicControls(frame, label);
         if (["V14-C1", "V14-C3"].includes(entry.chapter.id) && candidate.type === "mindMap") {
           const nodes = frame.locator("svg .node-group, svg #nodesGroup > g[data-id]");
@@ -772,7 +780,9 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
               })));
               const receipts = await page.evaluate(() => ({ receipts: window.__coursewareBridgeReceipts,
                 unit: currentUnitId, signedIn: isSignedIn(), authTransition: authTransitionInProgress }));
-              throw new Error(`${error.message} ${JSON.stringify({ action, signals, ...receipts })}`);
+              const pointerDiagnostics = await page.evaluate(start => window.__coursewarePointerDiagnostics?.slice(start) || [], pointerEvidenceStart);
+              runEvidence.cases.push({ label, passed: false, action, signals, pointerDiagnostics });
+              throw new Error(`${error.message} ${JSON.stringify({ action, signals, ...receipts, pointerDiagnostics })}`);
             });
           }
           expectedEvents.push(...await page.evaluate(() => (
@@ -784,6 +794,8 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
           )));
           realInteractionChecks += 1;
         }
+        if (evidenceFile) runEvidence.cases.push({ label, passed: true, actions,
+          pointerDiagnostics: await page.evaluate(start => window.__coursewarePointerDiagnostics?.slice(start) || [], pointerEvidenceStart) });
         await page.waitForTimeout(400);
         const output = path.join(root, "output", "playwright", "全场景交互", String(page.viewportSize().width));
         fs.mkdirSync(output, { recursive: true });
@@ -1013,6 +1025,47 @@ async function main() {
       viewport: { width: Number(process.env.COURSEWARE_BROWSER_WIDTH || 1600), height: Number(process.env.COURSEWARE_BROWSER_HEIGHT || 1000) },
       reducedMotion: "reduce"
     });
+    if (evidenceFile) await context.addInitScript(() => {
+      const describe = element => element ? {
+        tag: element.tagName, id: element.id || "", className: String(element.className || ""),
+        label: (element.getAttribute?.("aria-label") || element.textContent || "").trim().slice(0, 120)
+      } : null;
+      if (window === window.top) {
+        window.__coursewarePointerDiagnostics = [];
+        window.addEventListener("message", event => {
+          if (event.data?.type !== "cq:test-browser-pointer") return;
+          window.__coursewarePointerDiagnostics.push({ ...event.data.payload,
+            activeFrame: [...document.querySelectorAll("iframe[data-courseware-frame]")].some(frame => frame.contentWindow === event.source) });
+        });
+        for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "click"]) {
+          window.addEventListener(type, event => {
+            if (!event.isTrusted) return;
+            window.__coursewarePointerDiagnostics.push({ type, surface: "host", timestamp: performance.now(),
+              target: describe(event.target), hit: describe(document.elementFromPoint(event.clientX, event.clientY)),
+              x: event.clientX, y: event.clientY,
+              frames: [...document.querySelectorAll("iframe[data-courseware-frame]")].map(frame => ({
+                rect: frame.getBoundingClientRect().toJSON(), clientWidth: frame.clientWidth, clientHeight: frame.clientHeight,
+                bridgeReady: frame.dataset.cqContextBridge, src: frame.getAttribute("src"),
+                pointerEvents: getComputedStyle(frame).pointerEvents, visibility: getComputedStyle(frame).visibility,
+                border: getComputedStyle(frame).border, transform: getComputedStyle(frame).transform
+              })) });
+          }, true);
+        }
+        return;
+      }
+      for (const type of ["pointerdown", "pointerup", "mousedown", "mouseup", "click"]) {
+        window.addEventListener(type, event => {
+          if (!event.isTrusted) return;
+          window.parent.postMessage({ type: "cq:test-browser-pointer", payload: {
+            type, timeOrigin: performance.timeOrigin, timestamp: performance.now(), path: location.pathname,
+            bridgeReady: window.__calculusQuestContextBridge === true,
+            target: describe(event.target), hit: describe(document.elementFromPoint(event.clientX, event.clientY)),
+            x: event.clientX, y: event.clientY,
+            pathTargets: event.composedPath().filter(node => node instanceof Element).slice(0, 5).map(describe)
+          } }, location.origin);
+        }, true);
+      }
+    });
     const flowPage = await context.newPage();
     const formalPage = await context.newPage();
     let pendingStudyRequests = 0;
@@ -1102,13 +1155,22 @@ async function main() {
       targetSurface
     }, null, 2));
   } finally {
+    if (evidenceFile) {
+      fs.mkdirSync(path.dirname(path.resolve(evidenceFile)), { recursive: true });
+      fs.writeFileSync(evidenceFile, JSON.stringify({ generatedAt: new Date().toISOString(),
+        width: Number(process.env.COURSEWARE_BROWSER_WIDTH || 1600),
+        height: Number(process.env.COURSEWARE_BROWSER_HEIGHT || 1000), ...runEvidence }, null, 2));
+    }
     await browser?.close().catch(() => {});
     await stopChild(child);
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 }
 
-main().catch((error) => {
-  console.error(error.stack || error.message);
-  process.exitCode = 1;
-});
+module.exports = { exerciseBasicControls };
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error.stack || error.message);
+    process.exitCode = 1;
+  });
+}

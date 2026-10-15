@@ -40,3 +40,46 @@
 .core-learning-workspace .workspace-canvas-toolbar{flex-wrap:wrap;gap:8px}
 .core-learning-workspace .workspace-canvas-toolbar>.agentic-knowledge-choice{flex:1 0 280px}
 .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option{white-space:nowrap}
+
+/* An embedded lesson needs a real viewport, including when inline support adds
+   scrolling content. Scrolling the panel is preferable to tiny game controls. */
+#learn-view .core-learning-workspace .multi-scene-courseware-stage {
+  height: clamp(480px, calc(100dvh - 250px), 800px);
+  min-height: 480px;
+}
+/* Research inspection replaces a side pane rather than covering the lesson. */
+.proactive-hud-toggle-btn { position: static; padding: 8px 12px; white-space: nowrap; box-shadow: none; }
+.proactive-hud-header { cursor: default; touch-action: auto; }
+@media (min-width: 1181px) {
+  body.research-observatory-open:has(#learn-view.active) .core-learning-workspace {
+    --classroom-path-width: 48px;
+    --classroom-agent-width: 400px;
+    grid-template-columns: 48px minmax(0, 1fr) 400px;
+  }
+  body.research-observatory-open:has(#learn-view.active) .lesson-rail,
+  body.research-observatory-open:has(#learn-view.active) .learning-rail-control-label,
+  body.research-observatory-open:has(#learn-view.active) .learning-rail-control-caret,
+  body.research-observatory-open:has(#learn-view.active) .learning-workspace-tools { visibility: hidden; }
+  body.research-observatory-open:has(#learn-view.active) .proactive-hud-panel {
+    top: 64px; right: 0; bottom: 0; left: auto;
+    width: 400px; height: calc(100dvh - 64px); max-height: none;
+    border-radius: 0; border: 0; border-left: 1px solid #dfe3ec; box-shadow: none;
+  }
+  .proactive-hud-body { grid-template-columns: 1fr; }
+}
+@media (max-width: 1180px) {
+  .proactive-hud-toggle-btn { display: block; width: max-content; }
+  body.research-observatory-open .proactive-hud-panel {
+    position: fixed; inset: var(--learning-header-height, 64px) 0 0; width: 100%; height: calc(100dvh - var(--learning-header-height, 64px));
+    max-height: none; border-radius: 0;
+  }
+  body.research-observatory-open #learn-view.active { visibility: hidden; }
+  .proactive-hud-body { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .proactive-hud-body { grid-template-columns: 1fr; }
+  .core-learning-workspace .workspace-canvas-toolbar > .agentic-knowledge-choice { flex-basis: 100%; }
+  .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option { white-space: normal; }
+  .core-learning-workspace .multi-scene-scene-option > .scene-choice-state { flex-wrap: wrap; height: auto; gap: 2px; }
+  .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option :is(.coach-recommendation-badge, .scene-selection-badge) { font-size: 10px; padding: 0 4px; }
+}

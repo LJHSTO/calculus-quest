@@ -2,6 +2,9 @@
   "use strict";
   const shell = document.querySelector(".core-learning-workspace");
   if (!shell) return;
+  // A tablet-sized browser cannot fit a course canvas and two useful sidebars.
+  // Keep this breakpoint aligned with the workspace CSS and switch whole panes.
+  const compactWorkspace = () => global.innerWidth <= 1180;
   const $ = (selector) => shell.querySelector(selector);
   let tab = "chat";
   let lastUnitId = "";
@@ -10,6 +13,7 @@
   let playbackRate = 1;
   let toolsCollapsed = false;
   let lectureCollapsed = false;
+  let compactLecturePrepared = false;
   let focusRestore = null;
   let coachKey = "";
   let coachVisible = false;
@@ -147,7 +151,7 @@
   }
 
   function enterCanvasFocus() {
-    if (global.innerWidth <= 900) return;
+    if (compactWorkspace()) return;
     if (!canvasIsFocused()) {
       focusRestore = {
         tools: toolsCollapsed, lecture: lectureCollapsed,
@@ -209,9 +213,19 @@
   }
 
   function fitClassroomCanvas() {
-    if (global.innerWidth <= 900) return;
     const interactive = $(".multi-scene-courseware-stage");
+    if (compactWorkspace()) {
+      if (interactive) { interactive.style.height = ""; interactive.style.maxWidth = ""; }
+      return;
+    }
     if (interactive?.clientHeight > 0) {
+      const pane = interactive.closest(".multi-scene-scene-panel");
+      if (pane?.clientHeight > 0) {
+        const style = getComputedStyle(pane);
+        const available = pane.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+        const height = `${Math.floor(Math.max(480, available))}px`;
+        if (interactive.style.height !== height) interactive.style.height = height;
+      }
       const width = `${Math.floor(interactive.clientHeight * 2.2)}px`;
       if (interactive.style.maxWidth !== width) interactive.style.maxWidth = width;
     }
@@ -400,6 +414,17 @@
     if (!slide || !interactive) return;
     slide.hidden = mode !== "slide";
     interactive.hidden = mode !== "interactive";
+    if (mode === "interactive" && global.innerHeight <= 800 && !compactLecturePrepared) {
+      compactLecturePrepared = true;
+      setLectureCollapsed(true);
+    }
+    // Preserve the actual embedded viewport instead of scaling its controls down.
+    // This is an initial recommendation only; the path toggle remains available.
+    if (changed && mode === "interactive" && !compactWorkspace()
+      && $(".player").clientWidth < 880 && !shell.classList.contains("lesson-collapsed")
+      && typeof setLessonRailCollapsed === "function") {
+      setLessonRailCollapsed(true, { persist: false, focusCurrent: false });
+    }
     shell.querySelectorAll("[data-workspace-canvas]").forEach((button) => {
       button.setAttribute("aria-selected", String(button.dataset.workspaceCanvas === mode));
       button.tabIndex = button.dataset.workspaceCanvas === mode ? 0 : -1;
@@ -418,6 +443,7 @@
       hideFullscreenHint();
       canvasMode = "slide";
       focusRestore = null;
+      compactLecturePrepared = false;
       setToolsCollapsed(false, false, true);
       if (typeof setLessonRailCollapsed === "function") setLessonRailCollapsed(false, { persist: true });
       setLectureCollapsed(false);
@@ -538,11 +564,11 @@
     if (event.detail?.open) {
       setToolsCollapsed(false);
       selectTab("chat");
-      if (global.innerWidth <= 900) setMobilePane("assistant");
-    } else if (event.detail?.open === false && global.innerWidth > 900) setToolsCollapsed(true, true);
+      if (compactWorkspace()) setMobilePane("assistant");
+    } else if (event.detail?.open === false && !compactWorkspace()) setToolsCollapsed(true, true);
   });
   shell.addEventListener("click", (event) => {
-    if (event.target.closest("[data-unit], [data-jump-unit]") && global.innerWidth <= 900) {
+    if (event.target.closest("[data-unit], [data-jump-unit]") && compactWorkspace()) {
       setMobilePane("course");
     }
   });
@@ -561,12 +587,16 @@
   function scheduleClassroomLayout() {
     cancelAnimationFrame(layoutFrame);
     layoutFrame = requestAnimationFrame(() => {
+      const headerHeight = document.querySelector(".app-header")?.getBoundingClientRect().height || 64;
+      document.documentElement.style.setProperty("--learning-header-height", `${Math.ceil(headerHeight)}px`);
       fitClassroomCanvas();
       syncPlayback();
       syncFocusButton();
     });
   }
   new ResizeObserver(scheduleClassroomLayout).observe($("#lesson-player"));
+  const appHeader = document.querySelector(".app-header");
+  if (appHeader) new ResizeObserver(scheduleClassroomLayout).observe(appHeader);
   new MutationObserver(scheduleClassroomLayout).observe($("#lesson-player"), { childList: true, subtree: true });
   new MutationObserver(syncCoachSurface).observe($("#agentic-coach-panel"), {
     childList: true, subtree: true, attributes: true, attributeFilter: ["hidden"]
@@ -579,7 +609,7 @@
     showCoach: () => {
       syncCoachSurface();
       if (coachKey) {
-        if (global.innerWidth <= 900) setMobilePane("course");
+        if (compactWorkspace()) setMobilePane("course");
         setCoachVisible(true);
       }
     },

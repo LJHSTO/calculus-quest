@@ -14,9 +14,15 @@
 - 无提示近端验证 — 每一级支架后由服务端签发知识点验证题；学生可跳过，答案不会下发到浏览器
 - 学生主动权 — 支持“稍后”“换一种帮助”“关闭当前知识点提醒”以及全局“标准 / 少提醒 / 关闭”
 - 独立学习结果 — 章后提供近迁移、跨表征迁移与延迟保持测量；测量期间暂停知点，学生端不显示即时得分
-- 六维观察台 — 展示真实操作、服务端证据与工程估计、时机原因、支架等级、学习者控制及生命周期；缺失值明确标示
+- 六维观察台 — 通过 `?research=1` 打开研究预览，展示真实操作、服务端证据、时机原因及生命周期；学生默认界面保留学习空间，缺失值明确标示
 - 帮助呈现 — 学习者选择课件旁/助教栏 × 提示/例子/动手试/对话八组合，复用同一服务端支架和独立检查；主动打开的补充练习单独记录
 - 可选诊断 — 完成知识点后可选择“小题测一测”或直接继续；实际诊断使用现有服务端题库与判分
+- 实际曝光 — 候选卡在前台且至少一半进入可见区域，连续一秒才记合格可见；快速点击、旧版业务显示回执与合格曝光分别记录
+- 会话连续性 — 同一服务器选定会话保留最多60条消息，以最近消息和带角色/位置的早期原文摘录控制上下文长度；不据历史聊天判断掌握
+
+学习工作区在1180px及以下使用路径、课件、助手独立面板。中等桌面进入互动时优先释放课件空间，学生可手动恢复侧栏和讲解。`?research=1` 只切换界面模式，数据访问仍由服务端鉴权。
+
+运行 `node ops/verify-functions-limits.js` 执行当前37项综合回归，覆盖六知识点L1至L5、曝光边界、D3/D4/D5真实候选、18种布局及两种桌面尺寸的24课件。`node ops/test-student-learning-flow.js` 另行验证新注册学生到保持测量的完整UI流程；保持时间仅在隔离测试库中模拟。
 
 ## 快速开始
 
@@ -65,10 +71,10 @@ npm start
 | EXPERIMENT_CONDITION | — | 实验条件 |
 | EXPERIMENT_COHORT | — | 学生队列 |
 | PROACTIVE_POLICY_MODE | shadow | `off`、`shadow` 或 `active`；只有 `active` 且实验臂允许展示时才签发主动建议 |
-| PROACTIVE_EXPERIMENT_ID | v14-c3-proactive-pilot-2026 | 主动实验编号 |
-| PROACTIVE_EXPERIMENT_CHAPTER_ID | V14-C3 | 当前主动政策适配章节 |
-| PROACTIVE_POLICY_VERSION | v14-c3-fixed-v3 | 固定政策版本 |
-| PROACTIVE_ADAPTER_VERSION | v14-c3-adapter-v3 | V14-C3 知识点支架、验证题与呈现规则版本 |
+| PROACTIVE_EXPERIMENT_ID | functions-limits-proactive-pilot-20260915 | 主动实验编号；新协议应使用新实验编号与冻结版本 |
+| PROACTIVE_EXPERIMENT_CHAPTER_ID | V14-C1 | 当前默认主动政策适配章节；V14-C3为保留的旧章适配器 |
+| PROACTIVE_POLICY_VERSION | functions-limits-r3-evidence-audit | 固定政策版本 |
+| PROACTIVE_ADAPTER_VERSION | functions-limits-adapter-r2 | 当前章节知识点支架、验证题与呈现规则版本 |
 | PROACTIVE_ASSIGNMENT_STRATEGY | hash | `hash` 为层内加盐哈希；`stratified-balanced` 为层内最少人数优先、加盐哈希打破平局的小样本平衡分配 |
 | PROACTIVE_ASSIGNMENT_VERSION | student-hash-v1 | 分配算法版本；切换策略时必须使用新版本与新实验 ID |
 | PROACTIVE_ASSIGNMENT_SALT | — | 创建任何实验分组前必须在 `.env` 中设置稳定私有值；`active` 缺失时主动展示失败关闭 |

@@ -20,7 +20,17 @@ const steps = [
   ["学习效果描述性指标", "test-functions-limits-metrics.js"],
   ["完整后台导出", "test-admin-export-all.js"],
   ["助教上下文", "test-learning-assistant.js"],
+  ["长期会话原文摘录与预算", "test-conversation-context.js"],
   ["助教图形证据边界", "test-assistant-grounding.js"],
+  ["D1D2双快照与真实曝光回执", "test-proactive-evidence-audit.js"],
+  ["曝光比例与持续时长边界", "test-proactive-exposure-browser.js"],
+  ["十八种学习布局状态", "test-learning-layout-comfort.js"],
+  ["按钮节点稳定性回归", "test-courseware-click-target.js"],
+  ["原生学习工作区与笔记", "test-learning-workspace-browser.js"],
+  ["六维公开投影", "test-design-space-projection.js"],
+  ["D3D4D5真实候选边界与八组合", "test-proactive-submission-browser.js", [], {
+    TEST_PROACTIVE_CHAPTER: "V14-C1", TEST_PROACTIVE_SURFACES: "1", TEST_PROACTIVE_EXPOSURE: "1"
+  }],
   ["不会选项桌面浏览器", "test-unknown-browser.js"],
   ["72小时保持测全过程", "test-retention-v4-api.js", [], { RETENTION_TEST_CHAPTER: "V14-C1" }],
   ...["GH-01-K01", "GH-01-K02", "GH-01-K03", "GH-02-K01", "GH-02-K02", "GH-02-K03"].map(id =>
