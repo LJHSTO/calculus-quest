@@ -73,9 +73,11 @@
       clearTimeout(entry.timeout);
       // Once a fallback is visible, a late renderer must not replace the lesson.
       if (entry.host.dataset.openmaicState === "loading") entry.host.dataset.openmaicState = "ready";
+      global.LearningWorkspace?.syncPlayback?.();
     } else if (event.data.type === "cq:openmaic-render-error") {
       clearTimeout(entry.timeout);
       entry.host.dataset.openmaicState = "fallback";
+      global.LearningWorkspace?.syncPlayback?.();
     }
   });
   global.OpenMaicSlide = Object.freeze({ mount });

@@ -163,7 +163,7 @@ async function main() {
     const status = await statusResponse.json();
     assert.equal(statusResponse.status, 200);
     assert.equal(status.provider.id, "mock");
-    assert.equal(status.provider.label, "本地引导");
+    assert.equal(status.provider.label, "模拟回复");
     assert.deepEqual(
       { limit: status.quota.limit, used: status.quota.used, remaining: status.quota.remaining },
       { limit: 3, used: 0, remaining: 3 }

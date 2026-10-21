@@ -2777,6 +2777,15 @@ async function main() {
       "stay_silent"
     );
 
+    await stopChild(runtime.child);
+    runtime = await startServer(root, dbPath, "active", adminToken);
+    const acceptedPromptAfterRestart = await requestJson(runtime.baseUrl,"GET",
+      `/api/learning/assistant/history?chapterId=V14-C3&unitId=${lifecycleUnit.id}-formative`,undefined,treatment.token);
+    assert.equal(acceptedPromptAfterRestart.response.status,200);
+    assert.equal(acceptedPromptAfterRestart.payload.pendingSupportPrompt?.interventionId,selfExplanation.payload.interventionId,
+      "服务重启后恢复原已接受帮助，不重新签发新的业务介入");
+    assert.equal(acceptedPromptAfterRestart.payload.pendingSupportPrompt?.content,selfExplanation.payload.decision.assistantPrompt);
+
     await answerProactivePrompt(
       runtime.baseUrl,
       treatment.token,

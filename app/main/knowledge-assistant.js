@@ -102,19 +102,21 @@
   let proactiveCheckSubmitting = false;
   let proactiveCheckFeedback = null;
   let proactiveChoiceSaving = false;
-  let supportView = { placement: "sidebar", modality: "tip" };
+  let supportView = { placement: "inline", modality: "tip", format:"plain" };
+  let agentRefreshAt=0, agentRefreshBusy=false;
   let designSpaceSyncPending = false;
 
   function supportSurfaceOwnsContent() {
     return Boolean(global.ProactiveSurface && courseMeta().unitType === "knowledge"
-      && (supportView.placement === "inline" || supportView.modality !== "tip"));
+      && (supportView.placement === "inline" || supportView.modality !== "tip"
+        || (supportView.format || "plain")!=="plain" || ["A1","A4"].includes(proactiveDecision?.authority?.level)));
   }
 
   function designSpaceSnapshot() {
     const meta = courseMeta();
     const locked = quizAssistantLocked(meta)
       || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession());
-    const eligible = isSignedInNow() && meta.supported && !locked && learningViewActive();
+    const eligible = isSignedInNow() && meta.supported && meta.taskReady !== false && !locked && learningViewActive();
     const offer = eligible && proactiveDecision?.unitId === meta.unitId
       && (!proactiveStudyManaged(meta) || proactiveDecision.serverIssued === true)
       ? proactiveDecision : null;
@@ -123,12 +125,20 @@
     return {
       scopeKey: proactiveScopeKey(meta), unitId: meta.unitId, unitLabel: meta.unitLabel,
       unitType: meta.unitType, chapterId: meta.chapterId, sceneType: meta.sceneType,
+      taskReady: meta.taskReady,
+      quizSubmitted: meta.quizSubmitted,
+      generation: exposureGeneration,
+      reply: messages.filter(message=>message.role==="assistant"&&!message.error).slice(-1).map(message=>({id:message.id,text:message.content||"",streaming:message.streaming===true}))[0]||null,
+      replyQuestionId: activeContext?.questionId || "",
       signedIn: isSignedInNow(), active: learningViewActive(), locked,
       ownerKey: isSignedInNow() ? String(state?.participant?.participantId || "") : "",
       managed: proactiveStudyManaged(meta), loaded: proactiveStudy.loaded,
       collectionEnabled: proactiveCollectionEnabled(meta),
       muted: proactiveScopeMuted(meta), preference: proactiveStudy.studentPreference,
       mode: proactiveStudy.mode, view: { ...supportView },
+      assignment: proactiveStudy.assignment || null,
+      researchControls: proactiveStudy.researchControls || null,
+      agentRuntime: eligible ? proactiveStudy.agentRuntime || null : null,
       policyState: proactiveScopeState(meta), observation,
       offer: offer ? { ...offer } : null,
       check: eligible ? proactiveVerificationCheck(meta) : null,
@@ -138,7 +148,7 @@
       feedback: eligible && proactiveCheckFeedback?.scopeKey === proactiveScopeKey(meta)
         ? { ...proactiveCheckFeedback } : null,
       busy: proactiveChoiceSaving || proactiveCheckSubmitting || isAsking,
-      providerLabel: provider.live ? "AI 助教" : "本地引导",
+      providerLabel: provider.live ? "AI 助教" : "模拟回复",
       assistantOpen: isOpen
     };
   }
@@ -245,7 +255,7 @@ const proactiveJustificationDrafts = new Map();
           </div>
         </div>
         <div class="knowledge-assistant-header-actions">
-          <span class="knowledge-provider-badge" data-knowledge-provider>本地引导</span>
+          <span class="knowledge-provider-badge" data-knowledge-provider>模拟回复</span>
           <button type="button" class="knowledge-icon-button knowledge-new-chat" data-knowledge-new-conversation aria-label="创建新对话" title="创建新对话">＋</button>
           <button type="button" class="knowledge-icon-button knowledge-history-toggle" data-knowledge-history-toggle aria-label="查看历史对话" title="查看历史对话" aria-pressed="false">↶</button>
           <button type="button" class="knowledge-icon-button" data-knowledge-close aria-label="关闭知点侧栏">×</button>
@@ -580,6 +590,11 @@ const proactiveJustificationDrafts = new Map();
       knowledgePointLabel: knowledgePoint?.name || (unit?.type === "knowledge" ? unit.label : ""),
       sceneType: scene.sceneType || "",
       resourceTitle: scene.candidate?.title || "",
+      // A scene picker is navigation, not an active mathematical task. Keep
+      // assistance on real slides/tasks; do not carry it into an empty picker.
+      taskReady: unit?.type !== "knowledge"
+        || document.querySelector(".core-learning-workspace")?.dataset.classroomSurface !== "interactive"
+        || Boolean(scene.candidate && document.querySelector('.multi-scene-scene-panel:not([hidden]) iframe[data-courseware-frame]')),
       learningSurface: unit?.type === "knowledge"
         ? (document.querySelector(".core-learning-workspace")?.dataset.classroomSurface === "interactive" ? "interactive" : "slide")
         : "lesson",
@@ -590,7 +605,7 @@ const proactiveJustificationDrafts = new Map();
   }
 
   function quizAssistantLocked(meta = courseMeta()) {
-    return Boolean(meta?.isQuiz && !meta.quizSubmitted);
+    return Boolean(meta?.isQuiz && !meta.quizSubmitted || global.CommonLearning?.protects());
   }
 
   function quizParticipationAccessAllowed(meta = courseMeta()) {
@@ -801,6 +816,10 @@ const proactiveJustificationDrafts = new Map();
         : proactiveStudy.studentPreference || "standard",
       policyStates
     };
+    if(proactiveStudy.researchControls?.enabled && proactiveStudy.researchControls.revision>0){
+      supportView={placement:proactiveStudy.researchControls.profile.placement,modality:"tip",
+        format:proactiveStudy.researchControls.profile.presentationFormat || "plain"};
+    }
     syncProactiveCheckState(meta);
     scheduleDesignSpaceSync();
   }
@@ -2634,6 +2653,7 @@ const proactiveJustificationDrafts = new Map();
       suggestion
       && suggestion.unitId === meta.unitId
       && meta.supported
+      && meta.taskReady !== false
       && isSignedInNow()
       && !quizAssistantLocked(meta)
       && !isOpen
@@ -2986,6 +3006,7 @@ const proactiveJustificationDrafts = new Map();
       !preparedCopy
       || !allowedActions.includes(suggestion.action)
       || !meta.supported
+      || meta.taskReady === false
       || quizAssistantLocked(meta)
     ) return false;
     if (suggestion.action === "observe_change" && suggestion.contextMode === "recent_interaction") {
@@ -3027,9 +3048,9 @@ const proactiveJustificationDrafts = new Map();
       setStatus(`${suggestion.why || "知点根据刚才的学习状态准备了一个起点"} 草稿可以修改，是否发送由你决定。`, "");
     }
     resizeComposer();
-    setOpen(true, { focus: false, preserveProactiveSuggestion: true });
+    if (supportView.placement !== "inline") setOpen(true, { focus: false, preserveProactiveSuggestion: true });
     render();
-    window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
+    if (supportView.placement !== "inline") window.setTimeout(() => els.input.focus({ preventScroll: true }), 0);
     return true;
   }
 
@@ -3165,8 +3186,10 @@ const proactiveJustificationDrafts = new Map();
   }
 
   function proactiveCandidateStillCurrent(candidate, meta, options = {}) {
+    const current = courseMeta();
+    if (current.taskReady === false || current.unitId !== meta.unitId
+      || current.learningSurface !== meta.learningSurface || current.sceneType !== meta.sceneType) return false;
     if (options.persistedBoundary === true) {
-      const current = courseMeta();
       return proactiveCandidateId === candidate.id
         && current.unitId === candidate.unitId
         && current.chapterId === meta.chapterId;
@@ -3201,6 +3224,7 @@ const proactiveJustificationDrafts = new Map();
       || !proactiveCollectionEnabled(meta)
       || candidate.unitId !== meta.unitId
       || !meta.supported
+      || meta.taskReady === false
       || !isSignedInNow()
       || quizAssistantLocked(meta)
       || (isOpen && !awaitingFollowup)
@@ -3474,6 +3498,11 @@ const proactiveJustificationDrafts = new Map();
 
   function runProactiveTick() {
     const meta = courseMeta();
+    if(isSignedInNow() && learningViewActive() && !document.hidden && !quizAssistantLocked(meta)
+      && !proactiveStudy.agentAssistanceBlocked && Date.now()-agentRefreshAt>30000 && !agentRefreshBusy) {
+      agentRefreshAt=Date.now();agentRefreshBusy=true;
+      global.KnowledgeAssistant?.agentRuntimeRequest().catch(()=>{}).finally(()=>{agentRefreshBusy=false;});
+    }
     if (
       !proactiveCoach
       || !proactiveCollectionEnabled(meta)
@@ -3482,8 +3511,18 @@ const proactiveJustificationDrafts = new Map();
       || !learningViewActive()
       || !isSignedInNow()
       || !meta.supported
+      || meta.taskReady === false
       || quizAssistantLocked(meta)
     ) return;
+    const delayed=proactiveStudy.agentRuntime?.tasks?.find(task=>task.kind==="delayed_hint" && task.status==="ready"
+      && task.payload.unitId===meta.unitId && task.payload.sceneType===meta.sceneType);
+    if(delayed && !proactiveDecision && !proactiveDecisionRequest && !proactiveVerificationCheck(meta)) {
+      requestProactiveDecision({...delayed.payload.signal,id:`task:${delayed.id}`,unitId:meta.unitId,
+        createdAt:delayed.created_at},{persistedBoundary:true}).finally(()=>{
+          global.KnowledgeAssistant.agentRuntimeRequest().catch(()=>{});
+        });
+      return;
+    }
     syncProactiveUnit(meta);
     proactiveCoach.tick(Date.now());
     considerProactiveSuggestion();
@@ -4179,6 +4218,30 @@ const proactiveJustificationDrafts = new Map();
     const detail = document.createElement("div");
     detail.className = "knowledge-proactive-inline-offer-detail";
     setQuestionMathContent(detail, suggestion.body || "");
+    const format=suggestion.presentationFormat || supportView.format || "plain";
+    article.dataset.presentationFormat=format;
+    let content=detail;
+    if(format==="steps") {
+      detail.replaceChildren();
+      const parts=String(suggestion.body||"").match(/[^。！？\n]+[。！？]?|\n/g)||[String(suggestion.body||"")];
+      const lines=parts.map((text,i)=>{const p=document.createElement("p");setQuestionMathContent(p,text);p.hidden=i>0;detail.append(p);return p;});
+      let shown=1;
+      const more=document.createElement("button");more.type="button";more.textContent="继续显示线索";more.hidden=lines.length<=1;
+      more.addEventListener("click",()=>{if(lines[shown])lines[shown++].hidden=false;more.hidden=shown>=lines.length;
+        track("proactive_content_step",{decisionId:suggestion.decisionId,shown,total:lines.length});});
+      detail.append(more);
+    }else if(format==="bubble") {
+      detail.setAttribute("role","note");detail.setAttribute("aria-label","知点的学习线索");
+    }
+    if(format==="disclosure" || suggestion.authority?.level==="A1" || suggestion.authority?.level==="A4") {
+      const wrapper=document.createElement("div"), toggle=document.createElement("button");
+      toggle.type="button";
+      detail.hidden=!(suggestion.authority?.autoExpanded && suggestion.authority?.receiptId);
+      const update=()=>{toggle.textContent=detail.hidden?"展开这条线索":"收起这条线索";toggle.setAttribute("aria-expanded",String(!detail.hidden));};
+      toggle.addEventListener("click",()=>{detail.hidden=!detail.hidden;update();
+        track("proactive_content_toggled",{decisionId:suggestion.decisionId,expanded:!detail.hidden,format});});
+      update();wrapper.append(toggle,detail);content=wrapper;
+    }
     const actions = document.createElement("footer");
     const accept = document.createElement("button");
     accept.type = "button";
@@ -4207,7 +4270,18 @@ const proactiveJustificationDrafts = new Map();
       snoozeProactiveSuggestion();
     });
     actions.append(accept, dismiss);
-    article.append(heading, title, detail, justify, actions);
+    article.append(heading, title, content, justify, actions);
+    if(suggestion.authority?.autoExpanded && suggestion.authority.receiptId) {
+      const undo=document.createElement("button");undo.type="button";undo.textContent="撤销自动展开";
+      undo.addEventListener("click",async()=>{
+        undo.disabled=true;
+        try{
+          await global.KnowledgeAssistant.agentRuntimeRequest({action:"undo",id:suggestion.authority.receiptId});
+          if(proactiveDecision?.decisionId===suggestion.decisionId)proactiveDecision.authority={...suggestion.authority,autoExpanded:false};
+          render();
+        }catch(error){undo.disabled=false;undo.textContent=error.message;}
+      });article.append(undo);
+    }
     const learnerOptions = suggestion.learnerOptions || {};
     if (
       learnerOptions.canRequestAlternative === true
@@ -4606,7 +4680,7 @@ const proactiveJustificationDrafts = new Map();
     heading.appendChild(label);
     if (message.role === "assistant" && message.provider) {
       const badge = document.createElement("small");
-      badge.textContent = ["mock", "fallback"].includes(message.provider) ? "本地引导" : "AI 助教";
+      badge.textContent = message.provider === "fallback" ? "备用引导（模型未成功回复）" : message.provider === "mock" ? "模拟回复" : "AI 助教";
       heading.appendChild(badge);
     }
     const body = document.createElement("p");
@@ -4696,6 +4770,11 @@ const proactiveJustificationDrafts = new Map();
     if (renderKey === messagesRenderKey) return;
     messagesRenderKey = renderKey;
     els.messages.replaceChildren();
+    if (verificationCheck) {
+      if (!supportSurfaceOwnsContent()) els.messages.appendChild(proactiveVerificationNode(verificationCheck));
+      else els.messages.appendChild(document.createTextNode("正在独立检查，完成或跳过后可继续对话。"));
+      return;
+    }
     if (
       !messages.length
       && !pendingProactivePrompt
@@ -4892,6 +4971,7 @@ const proactiveJustificationDrafts = new Map();
     const measurementBlocked = Boolean(
       proactiveStudy.agentAssistanceBlocked
       || activeProactiveOutcomeSession()
+      || proactiveVerificationCheck(meta)
     );
     const conversationLimited = conversationAtLimit();
     renderLauncherAvailability(meta);
@@ -5329,7 +5409,7 @@ const proactiveJustificationDrafts = new Map();
       currentQuizSubmitted = Boolean(payload.quizSubmitted);
       pendingProactivePrompt = usableProactivePrompt(payload.pendingQuizReviewPrompt, meta)
         ? payload.pendingQuizReviewPrompt
-        : null;
+        : usableProactivePrompt(payload.pendingSupportPrompt,meta) ? payload.pendingSupportPrompt : null;
       messages = (payload.messages || []).map((message) => ({
         id: message.id,
         role: message.role,
@@ -5660,7 +5740,8 @@ const proactiveJustificationDrafts = new Map();
     }
     if (participantChanged) proactiveCoach?.reset?.({ clearCooldowns: true });
     if (participantChanged) {
-      supportView = { placement: "sidebar", modality: "tip" };
+      supportView = { placement: "inline", modality: "tip", format:"plain" };
+      proactiveStudy.learningMemory = null;
       syncProactiveExposureOwner();
     }
     loadProactiveStudy(meta, {
@@ -5725,7 +5806,7 @@ const proactiveJustificationDrafts = new Map();
       proactiveDecisionRequest = null;
       proactiveDecision = null;
       proactiveCandidateId = "";
-      pendingProactivePrompt = null;
+      if(!(pendingProactivePrompt?.scopeKey===proactiveScopeKey(meta) && proactiveScopeState(meta)?.lifecycle?.phase==="accepted_pending_response")) pendingProactivePrompt = null;
       if (pendingGeneratedDraft && els.input.value === pendingGeneratedDraft) {
         els.input.value = "";
         pendingAssistantIntent = "";
@@ -5973,6 +6054,7 @@ const proactiveJustificationDrafts = new Map();
   });
   document.addEventListener("fullscreenchange", syncFullscreenHost);
   window.addEventListener("cq:lesson-rendered", scheduleSync);
+  window.addEventListener("cq:common-learning-change", scheduleSync);
   window.addEventListener("cq:classroom-surface-change", sync);
   window.addEventListener("cq:learning-signal", consumeProactiveSignal);
   proactiveTickTimer = window.setInterval(runProactiveTick, 10 * 1000);
@@ -5987,10 +6069,41 @@ const proactiveJustificationDrafts = new Map();
   global.KnowledgeAssistant = Object.freeze({
     sync,
     designSpaceSnapshot,
+    async agentRuntimeRequest(action) {
+      if(!isSignedInNow())throw new Error("请先登录。");
+      const owner=state.authToken;
+      const response=await fetch("api/learning/agent-runtime",{method:action?"POST":"GET",
+        headers:{Authorization:`Bearer ${owner}`,"Content-Type":"application/json"},
+        ...(action?{body:JSON.stringify(action)}:{})});
+      const result=await response.json();
+      if(owner!==state.authToken)throw new Error("登录账号已变化。");
+      if(!response.ok||!result.ok)throw new Error(result.message||"读取学习记录失败。");
+      proactiveStudy.agentRuntime=result.data;
+      if(proactiveDecision?.authority?.receiptId) {
+        const receipt=result.data.actions.find(r=>r.id===proactiveDecision.authority.receiptId);
+        const grant=result.data.permissions.some(r=>r.id===proactiveDecision.authority.permissionId);
+        if(receipt?.status==="undone" || !grant)proactiveDecision.authority={...proactiveDecision.authority,autoExpanded:false};
+      }
+      scheduleDesignSpaceSync();return result.data;
+    },
+    async researchControlRequest(profile,expectedRevision) {
+      if(!isSignedInNow())throw new Error("请先登录测试账号。");
+      const owner=state.authToken;
+      const response=await fetch("api/learning/research-controls",{method:profile?"POST":"GET",
+        headers:{Authorization:`Bearer ${owner}`,"Content-Type":"application/json"},
+        ...(profile?{body:JSON.stringify({profile,expectedRevision})}:{})});
+      const result=await response.json();
+      if(owner!==state.authToken)throw new Error("登录账号已变化，请重新读取。");
+      if(!response.ok||!result.ok)throw new Error(result.message||"读取设置失败。");
+      if(profile){proactiveDecision=null;pendingProactivePrompt=null;await loadProactiveStudy(courseMeta(),{force:true});render();}
+      return result.data;
+    },
     setSupportView(view = {}) {
+      if(proactiveStudy.researchControls?.enabled && proactiveStudy.researchControls.revision>0
+        && (view.placement!==proactiveStudy.researchControls.profile.placement || view.modality!=="tip"))return false;
       if (!["inline", "sidebar"].includes(view.placement)
         || !["tip", "example", "interactive", "chat"].includes(view.modality)) return false;
-      supportView = { placement: view.placement, modality: view.modality };
+      supportView = { placement: view.placement, modality: view.modality,format:supportView.format || "plain" };
       track("proactive_surface_selected", { ...supportView, decisionId: proactiveDecision?.decisionId || "",
         supportLevel: proactiveDecision?.supportLevel || proactiveScopeState()?.currentLevel || "L0",
         selectionSource: "learner" });
@@ -6001,6 +6114,7 @@ const proactiveJustificationDrafts = new Map();
       const snapshot = designSpaceSnapshot();
       const fragment = document.createDocumentFragment();
       if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return fragment;
+      if (snapshot.check) {fragment.appendChild(proactiveVerificationNode(snapshot.check));return fragment;}
       if (snapshot.offer) fragment.appendChild(proactiveInlineOfferNode(snapshot.offer, { recordShown: false }));
       if (snapshot.prompt) fragment.appendChild(proactivePromptNode(snapshot.prompt, { dismissible: true }));
       if (snapshot.check) fragment.appendChild(proactiveVerificationNode(snapshot.check));
@@ -6016,9 +6130,25 @@ const proactiveJustificationDrafts = new Map();
     unobserveSupportOffer(element) {
       proactiveExposureMonitor?.unwatch(element);
     },
+    confirmTaskExposure(offer) {
+      return markProactiveSuggestionShown(offer,{exposureSource:"qualified_visible",placement:"inside_courseware",modality:"tip",fraction:.5,visibleDurationMs:1000,minimumFraction:.5,minimumDurationMs:1000});
+    },
+    async askInTask(question, questionId="") {
+      const s=designSpaceSnapshot(),meta=courseMeta();
+      if(!s.signedIn||s.locked||s.check||!s.active||isAsking)return false;
+      if(questionId){
+        const card=[...document.querySelectorAll(".question-card[data-question]")].find(node=>node.dataset.question===questionId);
+        if(!meta.isQuiz||!meta.quizSubmitted||!card)return false;
+        activeContext=Core.normalizeContextRef({kind:"quiz",scope:"quiz",chapterId:meta.chapterId,unitId:meta.unitId,questionId,label:card.querySelector("h3")?.textContent||"题目复盘",confidence:"high"},meta);
+      }
+      const previousMessageId=messages.at(-1)?.id;
+      els.input.value=String(question||"").slice(0,2000);
+      await submitQuestion();
+      return messages.at(-1)?.id!==previousMessageId && messages.at(-1)?.role==="assistant" && !messages.at(-1)?.error;
+    },
     async supportAction(action, value) {
       const snapshot = designSpaceSnapshot();
-      if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return false;
+      if (!snapshot.signedIn || snapshot.locked || snapshot.check || !snapshot.active) return false;
       if (action === "mute") return updateProactiveScopePreference("off");
       if (action === "restore") return updateProactiveScopePreference("standard");
       if (action === "ask") {
@@ -6038,7 +6168,7 @@ const proactiveJustificationDrafts = new Map();
     },
     workspaceSnapshot() {
       const meta = courseMeta();
-      const locked = quizAssistantLocked(meta)
+      const locked = quizAssistantLocked(meta) || Boolean(proactiveVerificationCheck(meta))
         || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession());
       return {
         unitId: meta.unitId,
@@ -6052,6 +6182,8 @@ const proactiveJustificationDrafts = new Map();
           && (!proactiveStudyManaged(meta) || proactiveDecision.serverIssued === true)),
         noteSyncLabel: noteSyncState === "synced" ? "已同步" : noteSyncState === "syncing"
           ? "同步中" : ["error", "pending"].includes(noteSyncState) ? "同步未完成，本机保留" : "本机记录",
+        learningMemory: locked || !isSignedInNow() || !proactiveStudy.loaded
+          || proactiveStudyKey!==`${String(state?.participant?.participantId||'')}|${meta.chapterId}` ? null : proactiveStudy.learningMemory,
         notes: locked || !isSignedInNow() ? [] : Notes.notesFor(localStorage, {
           ownerKey: noteOwnerKey(), unitId: meta.unitId
         })
@@ -6085,6 +6217,7 @@ const proactiveJustificationDrafts = new Map();
     },
     resetLearningGeneration() {
       exposureGeneration += 1;
+      proactiveStudy.learningMemory = null;
       syncProactiveExposureOwner();
       const ownerKey = noteOwnerKey();
       Notes.clearOwnerNotes?.(localStorage, ownerKey);
@@ -6098,8 +6231,8 @@ const proactiveJustificationDrafts = new Map();
       syncNoteHighlights();
       render();
     },
-    open() {
-      setOpen(true);
+    open(options = {}) {
+      setOpen(true, options);
     },
     close() {
       setOpen(false);

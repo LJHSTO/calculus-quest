@@ -265,6 +265,12 @@ function trackCoursewareLearningEvent(frame, message = {}) {
   const source = message.payload && typeof message.payload === "object"
     ? message.payload
     : {};
+  if (source.source === "authored_playback" || source.counts_as_student_evidence === false) {
+    analyticsTrack("courseware_authored_evidence", { source: "authored_playback", data: {
+      unitId: currentUnitId || "", eventType: source.event_type || "", countsAsStudentEvidence: false
+    }});
+    return false;
+  }
   const raw = window.CoursewareEventContract
     ? window.CoursewareEventContract.normalize(source)
     : source;
@@ -541,14 +547,14 @@ function renderPlayer() {
 
 function renderCoach(scene, chapterId, unitId) {
   const audioRoot = scene.audioRoot || `open-maic/${chapterId}`;
-  const actions = (scene.actions || []).filter((action) => action.text || action.prompt || action.audioRef).slice(0, 8);
+  const actions = (scene.actions || []).filter((action) => action.text || action.prompt || action.audioRef || action.topic);
   if (!actions.length) return "";
   const audioActions = actions.filter((action) => action.audioRef);
   const collapsed = Boolean(state.narrationCollapsed);
-  const sourceNodes = audioActions
+  const sourceNodes = actions
     .map((action, index) => `
-      <span class="coach-line" data-audio-src="${resourceUrl(`resources/${audioRoot}/${action.audioRef}`)}">
-        ${escapeHtml(action.text || action.prompt || `第 ${index + 1} 段语音`)}
+      <span class="coach-line" data-playback-speech ${action.audioRef ? `data-audio-src="${resourceUrl(`resources/${audioRoot}/${action.audioRef}`)}"` : ""}>
+        ${escapeHtml(action.text || action.prompt || action.topic || `第 ${index + 1} 段讲解`)}
       </span>
     `)
     .join("");
@@ -566,7 +572,7 @@ function renderCoach(scene, chapterId, unitId) {
         </button>
       </div>
       ${
-        audioActions.length
+        actions.length
           ? `<div class="coach-toolbar" data-narration-unit="${unitId}" data-narration-total="${audioActions.length}">
               <button class="button soft" type="button" data-play-narration>播放全部</button>
               <button class="button soft" type="button" data-pause-narration>暂停</button>
@@ -2354,10 +2360,10 @@ function renderKnowledgeSceneChoicePanel(unit) {
   return `
     <div class="agentic-knowledge-choice ${selected ? "has-selection" : "awaiting-selection"}">
       <div>
-        <strong>${selected ? "已选择一种互动方式" : recommendedMeta ? `Coach 建议先试“${escapeHtml(recommendedMeta.title)}”` : "四个互动场景由你选择"}</strong>
+        <strong>${selected ? "已选择一种互动方式" : recommendedMeta ? `学习建议：先试“${escapeHtml(recommendedMeta.title)}”` : "选择适合当前问题的互动方式"}</strong>
         <small>${selected
-          ? `当前是“${escapeHtml(selectedMeta.title)}”，Coach 建议仍只是参考，点击其他场景可立即切换。`
-          : "建议根据当前知识点、掌握度和已体验场景计算，仅供参考；系统不会替你选择。"}</small>
+          ? `当前是“${escapeHtml(selectedMeta.title)}”，你可以随时切换。游戏和空间视角为可选观察活动，不用得分或拖动次数判断掌握。`
+          : "先看讲解与二维实验，带着一个问题观察。游戏和空间视角可选；建议只参考已有作答与体验记录，不代表已测得你的掌握程度。"}</small>
       </div>
       <div class="multi-scene-scene-selector agentic-knowledge-scene-selector" role="group" aria-label="${escapeHtml(unit.label)}的互动场景">${choices}</div>
     </div>

@@ -18,10 +18,10 @@
     first_learning_intuition: "首次学习优先建立直觉",
     unseen_representation: "尚未体验的新表征",
     experienced_representation: "已体验过，降低重复优先级",
-    low_mastery_game: "低掌握度优先用挑战暴露误解",
-    low_mastery_structure: "低掌握度适合关系梳理",
-    low_mastery_spatial: "低掌握度补充空间视角",
-    high_mastery_transfer: "高掌握度适合迁移观察",
+    low_mastery_game: "当前作答有错，可选挑战帮助核对",
+    low_mastery_structure: "当前作答有错，可选关系图梳理",
+    low_mastery_spatial: "当前作答有错，空间视角仅辅助观察",
+    high_mastery_transfer: "当前作答较好，可尝试迁移观察",
     review_unseen: "补学时优先未体验表征"
   };
 

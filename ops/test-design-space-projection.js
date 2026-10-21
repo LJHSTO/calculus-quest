@@ -25,4 +25,13 @@ assert.equal(suppressed.d2.action, "silent");
 const waiting = observation({ decision: { reasonCodes: ["quiet_dwell_waiting_for_boundary"] } });
 assert.equal(waiting.d2.action, "wait");
 assert.deepEqual(supplied.evidence.evidenceRefs[0].answer, "PRIVATE");
+const stale = observation({ decision: { reasonCodes: ["quiet_dwell_pending_absent"] }, evidence: {
+  boundaryRecheckAudit: { initialEvidenceSnapshot: { confirmedGapCount: 1, answer: "PRIVATE" },
+    currentEvidenceSnapshot: { confirmedGapCount: 0, answer: "PRIVATE" },
+    recovery: { status: "unknown", answer: "PRIVATE" } }
+} });
+assert.equal(stale.d2.action, "cancel");
+assert.equal(stale.d1.evidenceSnapshots.initial.confirmedGapCount, 1);
+assert.ok(!JSON.stringify(stale).includes("PRIVATE"), "双时点快照同样只能公开白名单字段");
+assert.equal(observation({ decision: { helpNeedScore: "" } }).d1.estimates.helpNeed, null);
 console.log("六维公开投影通过：缺失值、策略与曝光分离、边界等待及答案隔离。");

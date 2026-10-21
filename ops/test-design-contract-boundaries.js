@@ -1,0 +1,41 @@
+"use strict";
+const assert = require("node:assert/strict");
+const { EvidencePackage, TimingGate, SupportAction, AuthorityContract, OpportunityLogger } = require("../lib/proactive-policy");
+const facts = { current_kp: "GH-01-K01", event_type: "boundary", timestamp: 0 };
+const unknown = new EvidencePackage({ facts, inference: { need_help_now: "", interruptible_now: NaN } });
+assert.equal(unknown.facts.timestamp, 0);
+assert.equal(unknown.inference.need_help_now, null);
+assert.equal(unknown.inference.interruptible_now, null);
+assert.ok(unknown.missing.includes("need_help_now"));
+assert.equal(new TimingGate().evaluate({ evidence: unknown }).action, "silent");
+const known = new EvidencePackage({ facts, inference: { need_help_now: .9, interruptible_now: .8, confidence: .7 } });
+assert.equal(new TimingGate().evaluate({ evidence: known, studentAuthority: { proactive_preference: "off" } }).action, "silent");
+const support = new SupportAction({ depth: "L0" });
+assert.equal(support.followup_check_id, null);
+assert.throws(() => new SupportAction({ depth: "L1", functionType: "self_explanation", followupCheckId: "check" }));
+const authority = new AuthorityContract();
+assert.equal(authority.recordStudentResponse("close", {}), false);
+const policy = { currentKp: "GH-01-K01" };
+assert.equal(authority.recordStudentResponse("close", policy), true);
+assert.deepEqual(policy.disabledKnowledgePoints, ["GH-01-K01"]);
+assert.equal(authority.recordStudentResponse("close", policy), false);
+assert.equal(authority.recordStudentResponse("accept", policy), true);
+assert.equal(policy.supportAccepted, true);
+const longCooldown = { cooldownUntil: Date.now() + 86400000 };
+const preservedUntil = longCooldown.cooldownUntil;
+assert.equal(authority.recordStudentResponse("delay", longCooldown), false);
+assert.equal(authority.recordStudentResponse("reject", longCooldown), false);
+assert.equal(longCooldown.cooldownUntil, preservedUntil, "响应不能意外缩短已有冷却");
+authority.recordStudentResponse("accept", policy);
+for (const action of ["silent", "wait", "cancel", "delayed"]) {
+  const row = OpportunityLogger.formatDecisionUnit({ d1_evidence: known,
+    d2_timing: { action }, d3_support: { support_depth: "L3" }, d4_presentation: { visible: true }, d5_authority: authority });
+  assert.equal(row.d2_is_silent, true, action);
+  assert.equal(row.d3_support_depth, null, action);
+  assert.equal(row.d4_visible, false, action);
+  assert.equal(row.d5_student_action, "accept", "沉默时仍保留授权状态");
+  assert.equal(row.d6_lifecycle_state_after, null, "不可补造状态转移");
+}
+const sent = OpportunityLogger.formatDecisionUnit({ d1_evidence: known, d2_timing: { action: "boundary" } });
+assert.equal(sent.d4_visible, null, "投递动作不证明曝光");
+console.log("六维契约边界通过：缺失证据、L0、真实状态变化、取消与未知曝光。");

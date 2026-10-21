@@ -123,7 +123,7 @@ async function runAdversarialSuite() {
     console.log("  ✅ ADV-05 通过: 冷却期内拒绝重复弹窗");
   }
 
-  // ADV-06: 学生在 5 秒内连续点击'接受->稍后->关闭' -> D5 正确处理并持久化最终状态
+  // ADV-06: 顺序响应的内存状态检查；不模拟并发点击或数据库持久化。
   {
     console.log("执行 ADV-06: 快速连续控制指令处理...");
     const contract = new AuthorityContract({ level: "A1" });
@@ -135,7 +135,7 @@ async function runAdversarialSuite() {
     assert.ok(sessionState.disabledKnowledgePoints.has("GH-02-K02"));
     assert.strictEqual(contract.student_action, "close");
     assert.strictEqual(contract.policy_changed_after, true);
-    console.log("  ✅ ADV-06 通过: 最终控制状态正确持久化");
+    console.log("  ✅ ADV-06 通过: 最终控制状态已更新；跨刷新另由接口测试覆盖");
   }
 
   // ADV-07: L1-L3 支架严禁泄露当前题答案 -> D3 构造时硬校验拦截
@@ -190,7 +190,7 @@ async function runAdversarialSuite() {
     assert.strictEqual(log.d3_support_depth, null);
     assert.strictEqual(log.d4_presentation_surface, null);
     assert.ok(log.decision_id);
-    console.log("  ✅ ADV-09 通过: 沉默机会完整落盘并清空展示字段");
+    console.log("  ✅ ADV-09 通过: 沉默记录格式正确并清空展示字段；本用例不写数据库");
   }
 
   // ADV-10: 正常探索操作 (多频拖动滑块) 不被误判为困难
@@ -206,7 +206,7 @@ async function runAdversarialSuite() {
     console.log("  ✅ ADV-10 通过: 探索操作不触发错误打扰");
   }
 
-  console.log("\n🎉 10/10 项对抗测试全部通过！系统具备发布任务的最高防御基准。");
+  console.log("\n10/10 项契约场景通过；不替代真实系统回归、内容审查或真人实验放行。");
 }
 
 if (require.main === module) {

@@ -1,5 +1,6 @@
 // Narration queue, playback timeline, and fullscreen helpers.
 function playNarrationQueue(scope = document) {
+  if (getUnit()?.type === "knowledge" && window.LessonPlayback) return window.LessonPlayback.play(scope);
   const unit = getUnit();
   const toolbar = scope?.querySelector?.(".coach-toolbar[data-narration-unit]") || document.querySelector(".coach-toolbar[data-narration-unit]");
   const narrationUnitId = toolbar?.dataset?.narrationUnit || unit.id;
@@ -24,6 +25,7 @@ function playNarrationQueue(scope = document) {
 }
 
 function stopNarrationQueue() {
+  window.LessonPlayback?.stop();
   if (!activeNarration) return;
   const unitId = activeNarration.unitId;
   analyticsTrack("narration_stop", { source: "narration", data: { unitId, segmentIndex: activeNarration.index } });
@@ -35,6 +37,7 @@ function stopNarrationQueue() {
 }
 
 function pauseNarrationQueue() {
+  window.LessonPlayback?.pause();
   if (!activeNarration) return;
   activeNarration.status = "paused";
   analyticsTrack("narration_pause", { source: "narration", data: { unitId: activeNarration.unitId, segmentIndex: activeNarration.index } });
@@ -143,6 +146,7 @@ function advanceNarration() {
 }
 
 function seekNarration(ratio, scope = document) {
+  if (getUnit()?.type === "knowledge" && window.LessonPlayback) return window.LessonPlayback.seek(ratio, scope);
   if (!activeNarration) {
     const unit = getUnit();
     const toolbar = scope?.querySelector?.(".coach-toolbar[data-narration-unit]") || document.querySelector(".coach-toolbar[data-narration-unit]");

@@ -1,0 +1,40 @@
+"use strict";
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const policy=require('../lib/proactive-policy'),controls=require('../lib/research-controls');
+const root=path.resolve(__dirname,'..'),dir=fs.mkdtempSync(path.join(root,'output','research-controls-test-'));
+const config=policy.configFromEnv({PROACTIVE_POLICY_MODE:'active',PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C3',PROACTIVE_ASSIGNMENT_SALT:'synthetic'});
+const env={DB_PATH:path.join(dir,'test.db'),RESEARCH_CONTROLS_ENABLED:'true',NODE_ENV:'test',LLM_PROVIDER:'mock'};
+const store=controls.createStore({root,config,env});
+assert.equal(store.enabled,true);assert.equal(store.describe('one').revision,0);
+const saved=store.save('one',{...controls.defaults,helpNeed:.95,cooldownSeconds:120,placement:'sidebar'},0);
+assert.equal(saved.revision,1);assert.equal(store.read('two'),null);
+assert.equal(controls.createStore({root,config,env}).read('one').profile.cooldownSeconds,120);
+assert.throws(()=>store.save('one',controls.defaults,0),/另一页面/);
+assert.throws(()=>store.save('one',{...controls.defaults,helpNeed:NaN},1),/范围/);
+assert.throws(()=>controls.validate({...controls.defaults,disableExamProtection:true}),/不支持/);
+for(const overrides of [{NODE_ENV:'production'},{RESEARCH_CONTROLS_ENABLED:'false'},{DB_PATH:path.join(root,'data','test.db')},{MAIN_LEARNING_PROTOCOL_FILE:'reviewed.json'}]){
+  const locked=controls.createStore({root,config,env:{...env,...overrides}});assert.equal(locked.enabled,false);assert.throws(()=>locked.save('one',controls.defaults,0));
+}
+assert.equal(controls.createStore({root,config:{...config,participationMode:'explicit-consent'},env}).enabled,false);
+assert.equal(controls.createStore({root,config,env:{...env,LLM_PROVIDER:'openai-compatible'}}).canEdit('one'),true,'隔离测试可接真实 API');
+const live=controls.createStore({root,config,env:{...env,NODE_ENV:'production',RESEARCH_CONTROLS_DEMO:'true'}});
+assert.equal(live.canEdit('researcher'),true);assert.equal(live.describe('student').enabled,true);
+live.save('researcher',controls.defaults,0);
+assert.equal(live.read('student'),null);
+assert.equal(controls.createStore({root,config,env:{...env,NODE_ENV:'production',RESEARCH_CONTROLS_DEMO:'false'}}).read('researcher'),null,'关闭展示后旧调试配置不再生效');
+assert.equal(controls.createStore({root,config:{...config,participationMode:'explicit-consent'},env:{...env,NODE_ENV:'production',RESEARCH_CONTROLS_DEMO:'true'}}).canEdit('student'),false);
+const input={assignment:{condition:'treatment'},context:{chapterId:'V14-C3',unitId:'GH-06-K01',sceneType:'simulation',isQuiz:false,quizSubmitted:false},
+  signal:{kind:'repeated_parameter'},evidence:{families:['process','task'],parameterCommitCount:3,taskProgressSinceFirstCommit:0},budget:{remaining:10}};
+const evaluate=profile=>policy.evaluate({...input,config:controls.effectiveConfig(config,{profile:{...controls.defaults,...profile}})});
+assert.equal(evaluate({}).displayAllowed,true);
+assert.equal(evaluate({helpNeed:1}).displayAllowed,false,'D1阈值实际改变决策');
+assert.equal(evaluate({interruptibility:1}).displayAllowed,false,'D2打断阈值实际生效');
+assert.equal(evaluate({boundaryOnly:true}).displayAllowed,false,'D2非边界保持静默');
+assert.equal(evaluate({proactivity:'reactive'}).displayAllowed,false,'D5反应式关闭主动投递');
+const controlled=controls.effectiveConfig(config,{profile:{...controls.defaults,maxSupportLevel:'L1',representationSwitch:false,ttlSeconds:60}});
+assert.equal(controlled.armProfiles.treatment.maxSupportLevel,'L1');assert.equal(controlled.armProfiles.treatment.allowRepresentationSwitch,false);
+assert.equal(controlled.armProfiles.control.display,false);assert.equal(controlled.armProfiles.control.maxSupportLevel,'L0');
+assert.equal(policy.evaluate({...input,config:controlled,assignment:{condition:'control'}}).displayAllowed,false,'控制组不能被调节成实验组');
+assert.equal(policy.evaluate({...input,config:controlled,context:{...input.context,isQuiz:true,phase:'pre',quizSubmitted:false}}).reasonCodes[0],'protected_assessment_stage');
+const ttl=evaluate({ttlSeconds:60});assert.equal(Date.parse(ttl.expiresAt)-Date.parse(ttl.createdAt),60000);
+console.log('六维控制：持久化、版本冲突、账号隔离、正式锁定、实际策略与测验保护通过');

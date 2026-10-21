@@ -1,0 +1,3 @@
+"use strict";
+const fs=require('node:fs'),{mergeAnnotations}=require('../lib/education-annotation');
+try{const [bundle,a,b,target,adjudications]=process.argv.slice(2);if(!target)throw new Error('用法：node ops/merge-replay-annotations.js <索引.json> <教师甲.jsonl> <教师乙.jsonl> <新标注索引.json> [第三人裁决.jsonl]');const rows=f=>fs.readFileSync(f,'utf8').split(/\r?\n/).filter(Boolean).map(JSON.parse);const result=mergeAnnotations(JSON.parse(fs.readFileSync(bundle,'utf8')),rows(a),rows(b),adjudications?rows(adjudications):[]);fs.writeFileSync(target,JSON.stringify(result,null,2),{flag:'wx'});console.log(JSON.stringify(result.annotationAudit));}catch(e){console.error(e.message);process.exitCode=1;}

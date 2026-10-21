@@ -70,7 +70,7 @@ function decision({
       proactivityPolicy: condition === "rule" ? "fixed" : "adaptive",
       proactivityLevel,
       knowledgePointIndex,
-      decisionSource: decisionSource || (condition === "adaptive" ? "jev" : "rule"),
+      decisionSource: decisionSource || "rule",
       agentConfidence: condition === "adaptive" ? 0.9 : null,
       // 这一维只作协变量：系统从未实施随机延迟
       triggerTimingAssigned: "agent"
@@ -264,9 +264,11 @@ function buildFixtures() {
 
   const adherence = summarizeAdherence(dataset.rows);
   assert.equal(adherence.adaptiveDecisions, 18);
-  assert.equal(adherence.jevDecisions, 16, "有两次自适应档走了兜底");
-  assert.equal(adherence.fallbackBreakdown.rule_fallback, 2);
-  assert.equal(adherence.jevRate, 16 / 18);
+  assert.equal(adherence.sourceDistribution.adaptive.rule, 16);
+  assert.equal(adherence.sourceDistribution.adaptive.rule_fallback, 2);
+  assert.equal(adherence.sourceDistribution.rule.rule, 18);
+  const unknownSource = summarizeAdherence([{condition:"adaptive",decisionSource:"unrecognized_archive_provider",proactivityLevel:"suggestion"}]);
+  assert.equal(unknownSource.sourceDistribution.adaptive.unrecognized_archive_provider,1,"未知历史来源只按原样计数，不推断为模型调用或回退");
   // 操纵检验：固定档必须恒为 suggestion
   assert.deepEqual(Object.keys(adherence.levelDistribution.rule), ["suggestion"]);
   assert.ok(

@@ -11,7 +11,7 @@
   let lastScene = "";
   let canvasMode = "slide";
   let playbackRate = 1;
-  let toolsCollapsed = false;
+  let toolsCollapsed = true;
   let lectureCollapsed = false;
   let compactLecturePrepared = false;
   let focusRestore = null;
@@ -108,7 +108,7 @@
     }, 1000);
     fullscreenHintTimer = setTimeout(hideFullscreenHint, 5000);
   }
-  try { toolsCollapsed = localStorage.getItem("classroomToolsCollapsed") === "1"; } catch {}
+  try { toolsCollapsed = localStorage.getItem("classroomToolsCollapsed") !== "0"; } catch {}
 
   function updateToolsIndicator() {
     const pending = global.KnowledgeAssistant?.workspaceSnapshot?.()?.pendingSupport === true;
@@ -207,7 +207,9 @@
     $("#workspace-coach-toggle").hidden = !pending;
     if (key !== coachKey) {
       coachKey = key;
-      setCoachVisible(pending);
+      const help=global.KnowledgeAssistant?.designSpaceSnapshot?.();
+      const answerHelp=help?.unitType==='quiz' && help?.view.placement==='inline' && (help.offer||help.prompt||help.check);
+      setCoachVisible(pending&&!answerHelp);
     }
     if (typeof renderBottomNextButton === "function") renderBottomNextButton();
   }
@@ -230,6 +232,12 @@
       if (interactive.style.maxWidth !== width) interactive.style.maxWidth = width;
     }
     const host = $(".multi-scene-slide-fullscreen-stage");
+    const slidePane = host?.closest(".multi-scene-slide-panel");
+    if (slidePane?.clientHeight > 0) {
+      const style = getComputedStyle(slidePane);
+      const height = `${Math.floor(Math.max(480, slidePane.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)))}px`;
+      if (host.style.height !== height) host.style.height = height;
+    }
     const wrap = host?.querySelector("[data-slide-canvas]");
     const stage = wrap?.querySelector(".slide-stage");
     if (!host || !stage || !host.clientHeight) return;
@@ -245,28 +253,32 @@
     const playback = $("#classroom-playback");
     playback.hidden = !surface || unit?.type !== "knowledge";
     if (playback.hidden) return;
-    const sources = Array.from(surface.querySelectorAll(".coach-line[data-audio-src]"));
+    const sources = Array.from(surface.querySelectorAll(".coach-line[data-playback-speech], .coach-line[data-audio-src]"));
+    const authored = global.LessonPlayback?.snapshot(surface);
     const toolbar = surface.querySelector(".coach-toolbar[data-narration-unit]");
     const queue = typeof activeNarration !== "undefined" && activeNarration?.unitId === toolbar?.dataset.narrationUnit
       ? activeNarration : null;
-    const playing = queue?.status === "playing";
+    const playing = (authored || queue)?.status === "playing";
     const button = $('[data-classroom-action="play"]');
-    button.disabled = sources.length === 0;
+    const loading = surface.querySelector('[data-openmaic-state="loading"]');
+    button.disabled = sources.length === 0 || Boolean(loading);
     button.title = playing ? "暂停讲解" : "播放讲解";
     button.setAttribute("aria-label", button.title);
     button.querySelector("img").src = `assets/classroom-icons/${playing ? "Pause" : "Play"}.svg`;
-    $('[data-classroom-action="replay"]').disabled = sources.length === 0;
+    $('[data-classroom-action="replay"]').disabled = sources.length === 0 || Boolean(loading);
     $("#classroom-playback-rate").disabled = sources.length === 0;
     const seek = $("#classroom-narration-seek");
     seek.disabled = sources.length === 0;
     if (queue) queue.audio.playbackRate = playbackRate;
+    global.LessonPlayback?.setRate(playbackRate);
     const durations = queue ? narrationTimelineDurations(queue) : [];
-    const total = durations.reduce((sum, value) => sum + value, 0);
-    const elapsed = queue ? (queue.status === "ended" ? total : narrationElapsed(queue)) : 0;
+    const total = authored?.total ?? durations.reduce((sum, value) => sum + value, 0);
+    const elapsed = authored?.elapsed ?? (queue ? (queue.status === "ended" ? total : narrationElapsed(queue)) : 0);
     seek.value = total ? Math.min(1000, Math.round(elapsed / total * 1000)) : 0;
     $("#classroom-narration-time").textContent = formatDuration(elapsed);
     const text = sources[queue?.index || 0]?.textContent?.trim();
-    $("#classroom-lecture-text").textContent = text || (sources.length ? "讲解正在加载" : "当前场景暂无语音讲解");
+    $("#classroom-lecture-text").textContent = (authored?.warning ? `${authored.warning} ` : "")
+      + (authored?.caption || text || (sources.length ? "讲解正在加载" : "当前场景暂无语音讲解"));
     const chapter = getChapter();
     const index = (chapter?.units || []).findIndex((entry) => entry.id === unit.id);
     $("#classroom-scene-position").textContent = `${index + 1} / ${chapter?.units?.length || 0}`;
@@ -378,6 +390,16 @@
         dl.append(textElement("dt", label), textElement("dd", value));
       });
       panel.append(dl, textElement("p", "完成进度不是掌握程度；当前没有经校准的能力或情绪评估。", "workspace-caption"));
+      if(snapshot.learningMemory){
+        panel.append(textElement("h3","学习记录与复习"),textElement("p",snapshot.learningMemory.coverage,"workspace-caption"));
+        for(const point of snapshot.learningMemory.points||[]){
+          const item=textElement("article","","workspace-note");
+          item.append(textElement("strong",point.name),textElement("p",point.lastObservedAt?`最近各题提交：${point.correct} 题答对，${point.incorrect} 题答错，${point.pending} 题待复核。`:"还没有测验记录。"));
+          if(point.lastObservedAt)item.append(textElement("small",`最近记录：${new Date(point.lastObservedAt).toLocaleString("zh-CN")}`));
+          if(point.needsFreshObservation)item.append(textElement("p","这份记录已超过三天，可在复习时用新的独立作答核对当前理解。","workspace-caption"));
+          panel.append(item);
+        }
+      }
     }
     if (tab === "map") {
       const map = $("#workspace-map");
@@ -444,7 +466,7 @@
       canvasMode = "slide";
       focusRestore = null;
       compactLecturePrepared = false;
-      setToolsCollapsed(false, false, true);
+      setToolsCollapsed(toolsCollapsed, false, false);
       if (typeof setLessonRailCollapsed === "function") setLessonRailCollapsed(false, { persist: true });
       setLectureCollapsed(false);
     }
@@ -514,7 +536,8 @@
     if (action === "play") {
       const surface = activeSurface();
       const queueId = surface?.querySelector(".coach-toolbar")?.dataset.narrationUnit;
-      if (typeof activeNarration !== "undefined" && activeNarration?.unitId === queueId && activeNarration.status === "playing") pauseNarrationQueue();
+      if (global.LessonPlayback?.snapshot(surface)?.status === "playing"
+        || (typeof activeNarration !== "undefined" && activeNarration?.unitId === queueId && activeNarration.status === "playing")) pauseNarrationQueue();
       else playNarrationQueue(surface);
       syncPlayback();
     }
@@ -613,7 +636,8 @@
         setCoachVisible(true);
       }
     },
-    showInteractive: () => setCanvasMode("interactive") });
+    showInteractive: () => setCanvasMode("interactive"),
+    showTask: () => setCoachVisible(false) });
   setToolsCollapsed(toolsCollapsed);
   syncCoachSurface();
   sync();

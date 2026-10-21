@@ -21,6 +21,7 @@ const steps = [
   ["完整后台导出", "test-admin-export-all.js"],
   ["助教上下文", "test-learning-assistant.js"],
   ["长期会话原文摘录与预算", "test-conversation-context.js"],
+  ["带来源的跨会话学习记忆", "test-learner-memory.js"],
   ["助教图形证据边界", "test-assistant-grounding.js"],
   ["D1D2双快照与真实曝光回执", "test-proactive-evidence-audit.js"],
   ["曝光比例与持续时长边界", "test-proactive-exposure-browser.js"],
@@ -28,6 +29,11 @@ const steps = [
   ["按钮节点稳定性回归", "test-courseware-click-target.js"],
   ["原生学习工作区与笔记", "test-learning-workspace-browser.js"],
   ["六维公开投影", "test-design-space-projection.js"],
+  ["六维契约缺失与状态边界", "test-design-contract-boundaries.js"],
+  ["新版OpenMAIC包读取与暂存", "test-openmaic-package.js"],
+  ["共同探针与研究状态", "test-study-workbench.js"],
+  ["研究流程及等尺寸呈现浏览器", "test-study-workbench-browser.js"],
+  ["真人轨迹评测导出与隔离", "test-education-replay.js"],
   ["D3D4D5真实候选边界与八组合", "test-proactive-submission-browser.js", [], {
     TEST_PROACTIVE_CHAPTER: "V14-C1", TEST_PROACTIVE_SURFACES: "1", TEST_PROACTIVE_EXPOSURE: "1"
   }],
@@ -35,9 +41,13 @@ const steps = [
   ["72小时保持测全过程", "test-retention-v4-api.js", [], { RETENTION_TEST_CHAPTER: "V14-C1" }],
   ...["GH-01-K01", "GH-01-K02", "GH-01-K03", "GH-02-K01", "GH-02-K02", "GH-02-K03"].map(id =>
     [`${id}的L1至L5支架`, "test-proactive-submission-browser.js", [],
-      { TEST_PROACTIVE_CHAPTER: "V14-C1", TEST_PROACTIVE_KNOWLEDGE_POINT: id, TEST_PROACTIVE_FINAL_OUTCOME: "correct", TEST_PROACTIVE_FINAL_LEVEL: "5" }]),
+      { TEST_PROACTIVE_CHAPTER: "V14-C1", TEST_TASK_EMBEDDED:"1", TEST_PROACTIVE_KNOWLEDGE_POINT: id, TEST_PROACTIVE_FINAL_OUTCOME: "correct", TEST_PROACTIVE_FINAL_LEVEL: "5" }]),
   ["最高支架后停止追加", "test-proactive-submission-browser.js", [],
-    { TEST_PROACTIVE_CHAPTER: "V14-C1", TEST_PROACTIVE_KNOWLEDGE_POINT: "GH-02-K03", TEST_PROACTIVE_FINAL_OUTCOME: "incorrect", TEST_PROACTIVE_FINAL_LEVEL: "5" }],
+    { TEST_PROACTIVE_CHAPTER: "V14-C1", TEST_TASK_EMBEDDED:"1", TEST_PROACTIVE_KNOWLEDGE_POINT: "GH-02-K03", TEST_PROACTIVE_FINAL_OUTCOME: "incorrect", TEST_PROACTIVE_FINAL_LEVEL: "5" }],
+  ["原课件完整播放与取消隔离", "test-course-playback.js"],
+  ["常规共同任务与协议锁定", "test-main-common-tasks.js"],
+  ["完整前缀、多模型消融与人工标注管线", "test-education-replay-runner.js"],
+  ["常规入口完整学习与跨时段恢复", "test-student-learning-flow.js"],
   ["学生确认换表征", "test-proactive-submission-browser.js", [],
     { TEST_PROACTIVE_CHAPTER: "V14-C1", TEST_PROACTIVE_KNOWLEDGE_POINT: "GH-01-K01", TEST_PROACTIVE_ALTERNATIVE: "1" }],
   ...[1366, 1920].map(width => [`${width}桌面全课件显示与真实交互`, "test-courseware-browser.js", [], {
@@ -47,8 +57,12 @@ const steps = [
 ];
 const directory = path.join(root, "output/函数极限实验验收");
 fs.mkdirSync(directory, { recursive: true });
-const results = [];
-for (const [label, file, args = [], env = {}] of steps) {
+const retry=process.argv.includes('--retry-failed');
+const previous=retry?JSON.parse(fs.readFileSync(path.join(directory,'最新验收.json'),'utf8')):null;
+const results = previous?.results||[];
+const changed=new Set(process.argv.filter(arg=>arg.startsWith('--repeat-file=')).map(arg=>arg.slice('--repeat-file='.length)));
+const selected=retry?steps.filter(([label,file])=>changed.has(file)||!results.find(r=>r.label===label)?.passed):steps;
+for (const [label, file, args = [], env = {}] of selected) {
   console.log(`开始：${label}`);
   const started = Date.now();
   const result = spawnSync(process.execPath, [path.join(__dirname, file), ...args], {
@@ -56,9 +70,12 @@ for (const [label, file, args = [], env = {}] of steps) {
     timeout: 300000, maxBuffer: 4 * 1024 * 1024
   });
   const passed = result.status === 0;
-  results.push({ label, file, passed, exitCode: result.status, elapsedMs: Date.now() - started,
+  const earlier=results.find(r=>r.label===label);
+  const record={ label, file, passed, exitCode: result.status, elapsedMs: Date.now() - started,
     output: `${result.stdout || ""}${result.stderr || ""}`.replace(/\u001b\[[0-9;]*m/g, ""),
-    error: result.error ? String(result.error.code || "execution_error") : null });
+    error: result.error ? String(result.error.code || "execution_error") : null,
+    verifiedAt:new Date().toISOString(), ...(earlier?{priorAttempts:[...(earlier.priorAttempts||[]),{passed:earlier.passed,exitCode:earlier.exitCode,output:earlier.output,verifiedAt:earlier.verifiedAt||previous.generatedAt}]}:{})};
+  if(earlier)results[results.indexOf(earlier)]=record;else results.push(record);
   console.log(`${passed ? "通过" : "失败"}：${label}`);
   fs.writeFileSync(path.join(directory, "最新验收.json"), JSON.stringify({
     generatedAt: new Date().toISOString(), chapterId: "V14-C1", planned: steps.length,

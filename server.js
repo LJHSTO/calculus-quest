@@ -29,13 +29,21 @@ const zlib = require("zlib");
 
 const errorMonitoring = require("./lib/error-monitoring").init();
 const db = require("./db");
+const agentRuntime = require("./lib/proactive-agent-runtime").createRuntime({db,
+  canPrepare:(user,scope,generation)=>db.currentLearningGeneration(user)===generation
+    && proactiveStudyConfig.mode==="active"
+    && proactiveExperimentRuntime()?.status!=="paused"
+    && researchControlStore.read(user)?.profile.proactivity!=="reactive"
+    && proactiveStudentPreference(user,scope)!=="off"
+    && proactiveParticipationForUser(user,{createImplicit:false})?.status!=="withdrawn"});
+const { extractBehaviorFeatures } = require("./lib/proactive-policy/behavior-features");
 const courseAssessment = require("./lib/course-assessment");
 const learningAssistant = require("./lib/learning-assistant");
+const learnerMemory = require("./lib/learner-memory");
 const proactivePolicy = require("./lib/proactive-policy");
 const proactiveEvidenceAudit = require("./lib/proactive-policy/evidence-audit");
 const representationChoice = require("./lib/proactive-policy/representation-choice");
 const proactivity = require("./lib/proactive-policy/proactivity");
-const proactivityJev = require("./lib/proactive-policy/jev-client");
 const outcomeRegistry = process.env.PROACTIVE_EXPERIMENT_CHAPTER_ID === "V14-C3"
   ? require("./lib/proactive-outcomes/v14-c3")
   : require("./lib/proactive-outcomes/functions-limits");
@@ -54,6 +62,8 @@ const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
 const proactiveStudyConfig = proactivePolicy.configFromEnv();
+const researchControls = require("./lib/research-controls");
+const researchControlStore = researchControls.createStore({root,config:proactiveStudyConfig});
 const proactiveGlobalPreferenceControlEnabled = ["1", "true", "yes", "on"].includes(
   String(process.env.PROACTIVE_GLOBAL_PREFERENCE_CONTROL || "").trim().toLowerCase()
 );
@@ -104,6 +114,8 @@ try {
     path.join(root, "app", "main", "courseware-bridge.js"),
     "utf8"
   );
+  coursewareBridgeScript += "\n" + fs.readFileSync(path.join(root, "app/main/courseware-inline-support.js"), "utf8");
+  coursewareBridgeScript += "\n" + fs.readFileSync(path.join(root, "app/main/courseware-task-support.js"), "utf8");
 } catch (error) {
   console.warn("Courseware context bridge load skipped:", error.message);
 }
@@ -148,6 +160,23 @@ function protocolSourceDigest(relativePath) {
     .digest("hex");
 }
 
+const commonLearningResources = (learningRoute?.chapters.find(chapter => chapter.id === "V14-C1")?.modules || [])
+    .flatMap(module => module.knowledgePoints || []).map(point => {
+      const resource = point.resourceCandidates.find(item => item.widgetType === "simulation") || point.resourceCandidates[0];
+      const relative = resource?.root && resource?.file ? `resources/${resource.root}/${resource.file}` : resource?.path || resource?.src || "";
+      return { knowledgePointId: point.id, url: relative ? `/${relative.replace(/^\/+/, "")}?cqContextBridge=1` : "", digest: relative ? protocolSourceDigest(relative) : "missing", bridgeDigest: ["app/main/courseware-bridge.js","app/main/courseware-task-support.js","app/main/courseware-inline-support.js"].map(protocolSourceDigest).join(":"), courseDigest: protocolSourceDigest("data/multi-scene-learning-route.json") };
+    });
+const studyWorkbench = require("./lib/study-workbench").createWorkbench({
+  db, env: process.env,
+  implementationDigest: ["lib/study-workbench.js", "lib/study-allocation.js", "study-workbench.html", "app/main/study-workbench.js", "app/main/study-workbench.css", "app/main/courseware-inline-support.js", "server.js", "db.js"].map(protocolSourceDigest).join(":"),
+  resources: commonLearningResources
+});
+const mainLearningStudy = require("./lib/study-workbench").createWorkbench({
+  db, env:process.env,mainEntry:true,resources:commonLearningResources,
+  humanProtocol:process.env.MAIN_LEARNING_PROTOCOL_FILE?JSON.parse(fs.readFileSync(path.resolve(process.env.MAIN_LEARNING_PROTOCOL_FILE),"utf8")):null,
+  implementationDigest:["lib/study-workbench.js","lib/study-allocation.js","app/main/common-learning.js","app/main/openmaic-classroom.css","app/main/learning-workspace.js","server.js","db.js"].map(protocolSourceDigest).join(":")
+});
+
 const proactiveStoppingRules = Object.freeze({
   advisoryOnly: true,
   protectedAssessmentDisplays: 0,
@@ -173,6 +202,7 @@ const proactiveStoppingRules = Object.freeze({
   proactiveProtocolDefinition = {
     schemaVersion: 1,
     experimentId: proactiveStudyConfig.experimentId,
+    engineeringControlsEnabled: researchControlStore.enabled,
     chapterId: proactiveStudyConfig.chapterId,
     policy: frozenPolicy,
     assignmentSaltDigest: crypto
@@ -229,6 +259,7 @@ const proactiveStoppingRules = Object.freeze({
       }
     },
     sourceDigests: {
+      researchControls: protocolSourceDigest("lib/research-controls.js"),
       policyKernel: protocolSourceDigest("lib/proactive-policy/index.js"),
       evidenceAudit: protocolSourceDigest("lib/proactive-policy/evidence-audit.js"),
       evidenceServer: protocolSourceDigest("server.js"),
@@ -242,7 +273,6 @@ const proactiveStoppingRules = Object.freeze({
       checkBank: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits-check-bank.js"),
       // 主动水平与决策点随机化：它决定每个决策点抽到哪个条件，属于协议的一部分。
       proactivity: protocolSourceDigest("lib/proactive-policy/proactivity.js"),
-      jevClient: protocolSourceDigest("lib/proactive-policy/jev-client.js"),
       adapter: protocolSourceDigest("lib/proactive-policy/adapters/v14-c3.js"),
       verificationBank: protocolSourceDigest("lib/proactive-policy/adapters/v14-c3-verification-v3.js"),
       verificationBankV2: protocolSourceDigest("lib/proactive-policy/adapters/v14-c3-verification-v2.js"),
@@ -255,6 +285,12 @@ const proactiveStoppingRules = Object.freeze({
       supportSurfaceStyle: protocolSourceDigest("app/main/proactive-hud.css"),
       courseStructure: protocolSourceDigest("app/main/core.js"),
       coursewareBridge: protocolSourceDigest("app/main/courseware-bridge.js"),
+      coursewareInlineSupport: protocolSourceDigest("app/main/courseware-inline-support.js"),
+      coursewareTaskSupport: protocolSourceDigest("app/main/courseware-task-support.js"),
+      taskSupport: protocolSourceDigest("app/main/task-support.js"),
+      learnerMemory: protocolSourceDigest("lib/learner-memory.js"),
+      agentRuntime: protocolSourceDigest("lib/proactive-agent-runtime.js"),
+      behaviorFeatures: protocolSourceDigest("lib/proactive-policy/behavior-features.js"),
       designSpaceProjection: protocolSourceDigest("lib/proactive-policy/design-space.js"),
       studentSignalClient: protocolSourceDigest("app/main/proactive-learning.js"),
       reactiveAssistant: protocolSourceDigest("lib/learning-assistant.js"),
@@ -418,6 +454,7 @@ const types = {
 };
 const publicRootFiles = new Set([
   "index.html",
+  "study-workbench.html",
   "admin.html",
   "flow-test.html",
   "styles.css",
@@ -446,7 +483,9 @@ const publicLibFiles = new Set([
   "lib/chart.umd.min.js",
   "lib/interaction-policy.js",
   "lib/active-time-policy.js",
-  "lib/quiz-question-order.js"
+  "lib/quiz-question-order.js",
+  "lib/course-playback.js",
+  "lib/courseware-semantics.js"
 ]);
 const publicOutcomeFigureFiles = new Set([
   outcomeRegistry,
@@ -535,6 +574,7 @@ function cacheControlFor(filePath, url) {
     relative === "index.html"
     || relative === "admin.html"
     || relative === "flow-test.html"
+    || relative === "study-workbench.html"
     || relative === "assets/openmaic-classroom/frame.html"
     || publicFlowTestFiles.has(relative)
   ) return "no-store, max-age=0, no-transform";
@@ -1308,7 +1348,7 @@ function assistantProviderInfo() {
     wireApi: runtime.wireApi || "",
     credentialSource: runtime.credentialSource || "",
     verification: live ? "pending" : "local",
-    label: live ? "AI 助教" : "本地引导"
+    label: live ? "AI 助教" : "模拟回复"
   };
 }
 
@@ -2208,6 +2248,10 @@ function activeProactiveOutcomeSession(userId) {
 }
 
 function rejectAgentAssistanceDuringOutcome(res, userId) {
+  if (studyWorkbench.protects(userId) || mainLearningStudy.protects(userId) || mainLearningStudy.manages(userId)) {
+    sendJson(res, 409, { ok: false, code: "common_probe_protected", message: "共同探针作答期间暂不提供助教解答，请完成或跳过当前题目。" });
+    return true;
+  }
   const session = activeProactiveOutcomeSession(userId);
   if (!session) return false;
   sendJson(res, 409, {
@@ -2369,7 +2413,9 @@ function proactiveEvidenceForRequest({
   policyState = {},
   now = Date.now()
 }) {
-  const rows = db.recentInteractionEventsForUnit(userId, resolved.unit.id, 800);
+  const evidenceGeneration=db.currentLearningGeneration(userId);
+  const rows = db.recentInteractionEventsForUnit(userId, resolved.unit.id, 800)
+    .filter(row=>Number(row.learning_generation || 1)===evidenceGeneration);
   const pendingQuiet = proactivePendingQuietCandidate(policyState, now);
   const lifecycleState = proactivePolicy.lifecycle.normalize(
     parseStoredJson(policyState.lifecycle_json || "{}", {})
@@ -2384,6 +2430,7 @@ function proactiveEvidenceForRequest({
   });
   const coursewareParameterCommits = struggleRows.filter(
     (row) => proactiveEventType(row) === "parameter_commit"
+      && require("./lib/courseware-semantics").parameterRelevant(resolved.unit.knowledgePointId||resolved.unit.id,proactiveParameter(row))
   ).length;
   let coursewareAttemptCount = 0;
   let coursewareAttemptFailures = 0;
@@ -2422,6 +2469,15 @@ function proactiveEvidenceForRequest({
     pendingCandidateExpiresAt: pendingQuiet.expiresAtIso,
     boundaryEventType: ""
   };
+  const commonTarget=mainLearningStudy.latestEvidence(userId,resolved.unit.knowledgePointId||resolved.unit.id);
+  const currentTarget=commonTarget?.outcome||commonTarget?.current||commonTarget?.initial;
+  evidence.educationalTaskMapped=Boolean(require("./lib/courseware-semantics").definitions[resolved.unit.knowledgePointId||resolved.unit.id]);
+  if(currentTarget && Date.parse(currentTarget.at)<=now && now-Date.parse(currentTarget.at)<=30*60*1000){
+    evidence.commonProbe={id:currentTarget.id,subSkill:commonTarget.subSkill,correct:currentTarget.correct,independent:currentTarget.independent,serverGraded:true,at:currentTarget.at};
+    refs.push({id:currentTarget.id,sourceType:"common_independent_probe",capturedAt:currentTarget.at,subSkill:commonTarget.subSkill});
+    if(currentTarget.correct===false){evidence.confirmedGapCount++;families.add("result");}
+    if(commonTarget.initial?.correct===false && Date.parse(commonTarget.initial.at)<=now)evidence.recoveryTarget={knowledgePointId:resolved.unit.knowledgePointId||resolved.unit.id,subSkill:commonTarget.subSkill,evidenceScope:"sub_skill",evidenceRef:commonTarget.initial.id};
+  }
   if (["quiz_review", "formative_outcome"].includes(signal.kind)) {
     if (evidence.questionCount > 0) families.add("result");
     if (
@@ -2583,6 +2639,7 @@ function proactiveEvidenceForRequest({
       }))
       .filter((entry) => (
         entry.type === "parameter_commit"
+        && require("./lib/courseware-semantics").parameterRelevant(resolved.unit.knowledgePointId||resolved.unit.id,entry.parameter)
         && entry.at > 0
         && entry.at <= now
         && now - entry.at <= 45_000
@@ -2711,6 +2768,7 @@ function proactiveEvidenceForRequest({
   if (signal.kind === "quiet_dwell" && signal.boundaryRecheck === true) {
     evidence.boundaryRecheckAudit = proactiveEvidenceAudit.boundaryAudit({
       pending: pendingQuiet, evidence, now,
+      authoritativeResults:[commonTarget?.current,commonTarget?.outcome].filter(Boolean).map(p=>({...p,capturedAt:p.at,knowledgePointId:resolved.unit.knowledgePointId||resolved.unit.id,evidenceScope:"sub_skill"})),
       knowledgePointId: resolved.unit.knowledgePointId || resolved.unit.id,
       unitId: resolved.unit.id,
       observedProgressCount: rows.filter(row => {
@@ -2719,11 +2777,11 @@ function proactiveEvidenceForRequest({
           && ["courseware_interaction_complete", "courseware_observable_evidence_captured",
             "courseware_challenge_result"].includes(proactiveEventType(row));
       }).length
-      // There is currently no independent sub-skill mapping for the initial
-      // dwell candidate. Do not promote client progress or a same-KP answer to
-      // verified recovery. The audit explicitly records this unknown boundary.
+      // Only the server-graded, sub-skill-matched common task can establish
+      // recovery. Mere courseware clicks and successful games remain unknown.
     });
   }
+  evidence.behaviorFeatures = extractBehaviorFeatures(rows, {now});
   return evidence;
 }
 
@@ -2956,6 +3014,18 @@ function proactivePolicyStateSnapshot(row = {}) {
   };
 }
 
+function learningMemoryFor(userId, chapterId) {
+  const chapter=learningRoute.chapters.find(item=>item.id===chapterId);
+  const generation=db.currentLearningGeneration(userId);
+  const history=learnerMemory.buildLearnerMemory({userId,chapterId,generation,
+    points:(chapter?.modules||[]).flatMap(module=>module.knowledgePoints||[]),rows:db.getQuizResultsByUser(userId,500),index:assessmentIndex});
+  const scopes=new Set(history.points.map(point=>point.id));
+  history.verifiedSupportChecks=agentRuntime.state(userId,generation).memory.filter(row=>scopes.has(row.scope))
+    .map(row=>({sourceId:row.source_id,scope:row.scope,at:row.created_at,outcome:row.payload.outcome,
+      historyIsMasteryEvidence:false}));
+  return history;
+}
+
 function proactiveStudyState(userId, chapterId) {
   const managed = chapterId === proactiveStudyConfig.chapterId;
   const participation = managed
@@ -2983,9 +3053,12 @@ function proactiveStudyState(userId, chapterId) {
     runtime: runtime ? publicProactiveRuntime(runtime) : null,
     studentPreference,
     globalPreferenceControlEnabled: proactiveGlobalPreferenceControlEnabled,
+    researchControls: researchControlStore.describe(userId),
+    agentRuntime: activeOutcomeSession || mainLearningStudy.manages(userId) ? null : agentRuntime.state(userId, db.currentLearningGeneration(userId)),
     pretest,
     outcomeSession: publicProactiveOutcomeSession(activeOutcomeSession),
     agentAssistanceBlocked: Boolean(activeOutcomeSession),
+    learningMemory: activeOutcomeSession ? null : learningMemoryFor(userId, chapterId),
     candidateCollectionEnabled: Boolean(
       managed
       && proactiveStudyConfig.mode !== "off"
@@ -3134,7 +3207,7 @@ function proactivePolicyStateAfterResolution({
   const nextStreak = negative
     ? Math.min(3, priorStreak + 1)
     : resolution === "accepted" ? 0 : priorStreak;
-  const baseCooldownMs = 10 * 60 * 1000;
+  const baseCooldownMs = (researchControlStore.read(decision.user_id)?.profile.cooldownSeconds || 600) * 1000;
   const cooldownMs = resolution === "accepted"
     ? baseCooldownMs
     : resolution === "snoozed"
@@ -3462,6 +3535,23 @@ function policyAssistantInterventionAccess(userId, unitId, record = {}) {
     }
   }
   return { ok: true, code: "", terminal: false };
+}
+
+function restoreAcceptedSupportPrompt(userId, resolved, sceneType) {
+  const scopeKey=resolved.unit.knowledgePointId||resolved.unit.id;
+  const row=db.getProactivePolicyState(userId,proactiveStudyConfig.experimentId,scopeKey);
+  const life=parseStoredJson(row?.lifecycle_json||"{}",{});
+  if(life.phase!=="accepted_pending_response" || activeProactiveOutcomeSession(userId))return null;
+  const intervention=db.getProactiveIntervention(life.activeInterventionId);
+  const decision=db.getProactiveDecisionForUser(userId,life.activeDecisionId);
+  if(!intervention || !decision || decision.adapter_version!==proactiveStudyConfig.adapterVersion)return null;
+  const presentation=parseStoredJson(intervention.presentation||"{}",{});
+  if(!presentation.assistantPrompt || presentation.interactionMode!=="student_reply")return null;
+  const record={id:intervention.id,decisionId:decision.id,action:decision.action};
+  if(!policyAssistantInterventionAccess(userId,resolved.unit.id,record).ok)return null;
+  const interventionId=issueAssistantIntervention(userId,resolved,presentation,Date.now(),{id:intervention.id,decisionId:decision.id});
+  return {id:decision.id,interventionId,content:presentation.assistantPrompt,action:decision.action,unitId:resolved.unit.id,scopeKey,sceneType,
+    replyOptions:presentation.replyOptions||[],restored:true,acceptedAt:life.acceptedAt||null};
 }
 
 function normalizeAssistantQuizReviewProgress(progress = {}) {
@@ -3815,7 +3905,8 @@ async function generateAssistantTurn({
   history,
   quizSubmitted,
   assistantIntent = "",
-  proactivePrompt = ""
+  proactivePrompt = "",
+  learningMemory = null
 }) {
   const prompt = learningAssistant.buildAssistantPrompt({
     resolved,
@@ -3823,7 +3914,8 @@ async function generateAssistantTurn({
     history,
     quizSubmitted,
     assistantIntent,
-    proactivePrompt
+    proactivePrompt,
+    learningMemory
   });
   const clarification = learningAssistant.unresolvedVisualReferenceReply({ resolved, question });
   if (clarification) {
@@ -3854,6 +3946,7 @@ async function generateAssistantTurn({
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
+  const generationStarted = Date.now();
   try {
     const result = await llm.completeChat({
       system: prompt.system,
@@ -3873,6 +3966,9 @@ async function generateAssistantTurn({
     });
     return {
       provider: result.provider || providerInfo.id,
+      modelAudit: { ...result.modelInfo,
+        promptHash: crypto.createHash("sha256").update(prompt.system + "\n" + prompt.user).digest("hex"),
+        latencyMs: Date.now() - generationStarted, maxTokens: 700 },
       text: text || learningAssistant.mockAssistantAnswer({
         resolved,
         question,
@@ -3990,17 +4086,15 @@ async function handleManagedProactiveIntervention({
     participationStatus: participation?.status || "not_enrolled"
   };
 
-  // ---- 决策点随机化 + Jev 判断层 -----------------------------------------
+  // ---- 既有分配台账与规则策略 -------------------------------------------
   // 条件按**参与者内置换区块**分配，所以序号必须跨知识点连续编号。
   const decisionSequence = db.proactiveDecisionCountForUser(
     auth.participant.id,
     proactiveStudyConfig.experimentId
   ) + 1;
-  // 触发时机这一维**不作为随机化因子**。设计文档《决策点产出实测与设计修正》§5 选了
-  // 方案 A：N=20、6 个知识点分 4 格每格只有 1.5 个观测，功率不够，所以只保留"判断
-  // 来源"（规则 vs Jev）一个因子。这里仍然算出决策点层面分配到的时机格，但只当协变量
-  // 记录（evidence.triggerTimingAssigned），**绝不能当作被操纵的自变量写进主分析**：
-  // 4.5 秒级的随机延迟从未在本系统里实施，两种"时机条件"下的学生实际体验完全相同。
+  // 保留旧协议的分配字段供历史导出兼容。当前决策来源统一为规则，
+  // 不再把 adaptive 标签解释为模型调用。triggerTimingAssigned 仅是分配记录：
+  // 本系统没有实施对应随机延迟，不能把它作为已执行的时机操纵。
   const decisionCondition = proactivity.assignDecisionCondition({
     participantId: auth.participant.id,
     decisionSequence,
@@ -4022,52 +4116,18 @@ async function handleManagedProactiveIntervention({
     knowledgePointCount: Math.max(2, chapterPoints.length),
     salt: proactiveStudyConfig.assignmentSalt || proactiveStudyConfig.experimentId
   });
-  // 受保护测量阶段（未交卷的测验、预/后测）判定。两个用途：
-  //   1. 跳过 Jev 判断——这段时间不管判什么都一定会被策略层静默掉，
-  //      没有理由为它花一次模型调用（也省掉一段等待时间）；
-  //   2. 让信号校验给策略层的 `protected_assessment_stage` 让路（见下）。
+  // Unsubmitted assessments are protected before any assistance decision.
   const assessmentProtected = proactivePolicy._internals.protectedAssessmentStage({
     isQuiz: resolved.isQuiz,
     phase: resolved.unit.phase || "",
     quizSubmitted: resolved.quizSubmitted
   });
 
-  // 只有自适应条件需要问 Jev：规则条件是"恒为建议式"的基线。
-  // 这样也把模型调用量减半，并把预算留给真正需要判断的那一半知识点。
-  let jevDecision = null;
-  if (
-    !assessmentProtected
-    && proactivity.proactivityPolicyForCondition(knowledgePointAssignment.condition) === "adaptive"
-  ) {
-    jevDecision = await proactivityJev.decide({
-      knowledgePoint: resolved.unit.label || resolved.unit.id,
-      knowledgePointGoal: resolved.unit.scopeGoal || "",
-      topicMisconception: resolved.unit.misconception || "",
-      currentActivityType: sceneType || resolved.unit.scene?.type || "",
-      activityTypes: (resolved.unit.resourceCandidates || [])
-        .map((candidate) => candidate.widgetType || candidate.type)
-        .filter(Boolean),
-      activityTypesOpened: evidence.representationChoice?.experienced || [],
-      dwellSeconds: evidence.dwellSeconds,
-      parameterCommits: evidence.parameterCommitCount,
-      judgedAttempts: evidence.sceneAttemptCount,
-      judgedFailures: evidence.sceneAttemptFailures,
-      confirmedGaps: evidence.confirmedGapCount,
-      hintsUsed: evidence.hintCount,
-      lastEvent: evidence.lastEventType || ""
-    });
-    if (jevDecision?.decisionSource === "jev") {
-      evidence.agentConfidence = jevDecision.confidence;
-      evidence.decisionSource = "jev";
-      evidence.jevNeedsHelp = jevDecision.needsHelp;
-      evidence.jevNextActivity = jevDecision.nextActivity;
-      evidence.jevScaffoldDepth = jevDecision.scaffoldDepth;
-      evidence.jevProbabilities = jevDecision.probabilities;
-    } else {
-      evidence.decisionSource = "rule_fallback";
-      evidence.jevFallbackReason = jevDecision?.fallbackReason || "unknown";
-    }
-  }
+  // Deterministic policy scores remain explicitly uncalibrated.
+  evidence.decisionSource = "rule";
+  const engineeringControl = researchControlStore.read(auth.participant.id);
+  const agentProfile = {...researchControls.defaults,...engineeringControl?.profile};
+  if (engineeringControl) evidence.engineeringControl = engineeringControl;
 
   let evaluationTime = now.getTime();
   if (signal.kind === "quiet_dwell" && signal.boundaryRecheck === true) {
@@ -4084,7 +4144,7 @@ async function handleManagedProactiveIntervention({
     };
   }
   let policyDecision = proactivePolicy.evaluate({
-    config: proactiveStudyConfig,
+    config: researchControls.effectiveConfig(proactiveStudyConfig, engineeringControl),
     assignment,
     context: {
       chapterId: resolved.unit.chapterId,
@@ -4095,7 +4155,8 @@ async function handleManagedProactiveIntervention({
       isQuiz: resolved.isQuiz,
       quizSubmitted: resolved.quizSubmitted,
       phase: resolved.unit.phase || "",
-      proactivityPolicy: proactivity.proactivityPolicyForCondition(knowledgePointAssignment.condition),
+      proactivityPolicy: engineeringControl && ["fixed","adaptive"].includes(engineeringControl.profile.proactivity)
+        ? engineeringControl.profile.proactivity : proactivity.proactivityPolicyForCondition(knowledgePointAssignment.condition),
       proactivityCondition: knowledgePointAssignment.condition,
       proactivityAssignmentDigest: knowledgePointAssignment.assignmentDigest,
       knowledgePointIndex
@@ -4134,6 +4195,40 @@ async function handleManagedProactiveIntervention({
     }
   }
   const decisionId = crypto.randomUUID();
+  const generation = db.currentLearningGeneration(auth.participant.id);
+  agentRuntime.cancelStale(auth.participant.id, generation);
+  const delayed = agentRuntime.delayed(auth.participant.id, policyScopeKey, generation);
+  if (delayed) {
+    const samePolicy = delayed.payload.controlRevision === (engineeringControl?.revision || 0)
+      && delayed.payload.protocolFingerprint === proactiveProtocolFingerprint;
+    // A fresh server decision is required on every attempted delivery, including
+    // after a restart or a return from another device.
+    if (!samePolicy || !policyDecision.displayAllowed) {
+      agentRuntime.settle(delayed.id,auth.participant.id,"cancelled",samePolicy?"fresh_policy_suppressed":"policy_changed");
+      evidence.delayedTask={id:delayed.id,status:"cancelled",recheckedAt:now.toISOString()};
+    } else if (delayed.status==="ready") {
+      evidence.delayedTask={id:delayed.id,status:"ready",recheckedAt:now.toISOString(),initialDecisionId:delayed.payload.decisionId};
+    } else {
+      policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
+        reasonCodes:[...policyDecision.reasonCodes,"durable_delay_pending"]};
+      evidence.delayedTask={id:delayed.id,status:"queued",dueAt:delayed.due_at};
+    }
+  } else if (policyDecision.displayAllowed && !policyDecision.stateTransition
+      && agentProfile.timingMode==="delayed" && signal.kind!=="student_requested_alternative") {
+    const job=agentRuntime.schedule({user:auth.participant.id,scope:policyScopeKey,generation,kind:"delayed_hint",
+      dueMs:agentProfile.delaySeconds*1000,ttlMs:agentProfile.ttlSeconds*1000,
+      payload:{decisionId,controlRevision:engineeringControl?.revision || 0,protocolFingerprint:proactiveProtocolFingerprint,
+        signalKind:signal.kind,signal:{kind:signal.kind,parameter:signal.parameter || "",dwellSeconds:signal.dwellSeconds || 0},
+        unitId:resolved.unit.id,sceneType,initialEvidence:policyDecision.evidencePackage}});
+    policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
+      reasonCodes:[...policyDecision.reasonCodes,"durable_delay_pending"]};
+    evidence.delayedTask={id:job.id,status:job.status,dueAt:job.due_at};
+  }
+  evidence.evidencePackage=policyDecision.evidencePackage;
+  evidence.timingContract=policyDecision.timing;
+  evidence.supportHistory=agentRuntime.state(auth.participant.id,generation).memory
+    .filter(row=>row.scope===policyScopeKey).slice(0,10)
+    .map(row=>({sourceId:row.source_id,at:row.created_at,outcome:row.payload.outcome,masteryClaim:false}));
   const consumedPendingBoundary = signal.kind === "quiet_dwell"
     && signal.boundaryRecheck === true
     && evidence.pendingCandidateValid
@@ -4155,6 +4250,7 @@ async function handleManagedProactiveIntervention({
         pendingCandidateExpiresAt: policyDecision.expiresAt,
         pendingEvidence: {
           candidateDecisionId: decisionId,
+          recoveryTarget: evidence.recoveryTarget || null,
           families: evidence.families.filter(family => ["time", "result", "process"].includes(family)),
           dwellSeconds: evidence.dwellSeconds,
           confirmedGapCount: evidence.confirmedGapCount,
@@ -4285,6 +4381,31 @@ async function handleManagedProactiveIntervention({
     }
   }
 
+  if(evidence.delayedTask?.status==="ready") {
+    const delivered=policyDecision.displayAllowed && renderedDecision.intervene;
+    evidence.delayedTask.status=delivered?"delivered":"cancelled";
+  }
+  if(policyDecision.displayAllowed && renderedDecision.intervene) {
+    const adapter=proactivePolicy.adapterForChapter(resolved.unit.chapterId);
+    const check=adapter?.nextVerificationCheck?.(policyScopeKey,policyDecision.supportLevel,
+      parseStoredJson(policyState.lifecycle_json||"{}",{}).lastVerificationCheckId);
+    if(check) {
+      const functions={L1:"self_explanation",L2:"concept_hint",L3:"subgoal_prompt",L4:"next_step_scaffold",L5:"worked_example_step"};
+      const contract=new proactivePolicy.SupportAction({depth:policyDecision.supportLevel,
+        functionType:functions[policyDecision.supportLevel],targetKp:policyScopeKey,
+        contentText:renderedDecision.body || renderedDecision.title,
+        remainingStudentTask:"学生自行解释判断，再独立完成检查；不自动填写或提交答案。",
+        followupCheckId:check.id,contentVersion:adapter.version || "template-v1"});
+      evidence.supportContract={...contract.toJSON(),answerLeakAudit:"teacher_review_pending",checkBinding:"planned_not_yet_issued"};
+    }
+    const receipt=agentProfile.authorityLevel==="A4"
+      ? agentRuntime.openHint(auth.participant.id,policyScopeKey,decisionId) : null;
+    renderedDecision.presentationFormat=agentProfile.presentationFormat;
+    renderedDecision.authority={level:agentProfile.authorityLevel,autoExpanded:Boolean(receipt),
+      receiptId:receipt?.id||"",permissionId:receipt?.permission_id||"",reversibleAction:"expand_hint_only"};
+    evidence.authority=renderedDecision.authority;
+  }
+
   if (
     policyDecision.stateTransition
     && proactivePolicy.lifecycle.isLifecycleAction(policyDecision.action)
@@ -4334,6 +4455,13 @@ async function handleManagedProactiveIntervention({
       updatedAt: policyDecision.createdAt
     });
   }
+  if (policyDecision.followupOutcome && evidence.independentAttemptVerified===true
+      && evidence.verificationCheckId) {
+    agentRuntime.remember({user:auth.participant.id,scope:policyScopeKey,generation,
+      sourceId:`${generation}:${priorLifecycle.activeInterventionId}:${evidence.verificationCheckId}`,
+      outcome:{...policyDecision.followupOutcome,checkId:evidence.verificationCheckId,
+        success:evidence.independentAttemptSuccess===true},reviewHours:agentProfile.reviewAfterHours});
+  }
   if (policyDecision.stateTransition) {
     const transition = policyDecision.stateTransition;
     policyState = db.upsertProactivePolicyState(proactivePolicyStateRecord(
@@ -4377,11 +4505,7 @@ async function handleManagedProactiveIntervention({
   // 分配到的时机格 —— 只作协变量/依从性分析用。这一维没有被真正实施（见上文注释），
   // 所以字段名带 Assigned 后缀，避免后来的人把它误读成"学生实际经受的时机操纵"。
   evidence.triggerTimingAssigned = decisionCondition.triggerTiming;
-  if (jevDecision) {
-    evidence.jevFallbackReason = jevDecision.fallbackReason || "";
-    evidence.jevLatencyMs = jevDecision.latencyMs;
-    evidence.jevCached = jevDecision.cached === true;
-  }
+
   // Persist after annotating: the analysis export must receive the same source,
   // condition and two-snapshot audit that the live projection receives.
   db.insertProactiveDecision(proactiveDecisionRecord({
@@ -4408,6 +4532,10 @@ async function handleManagedProactiveIntervention({
       now.getTime(),
       { id: interventionId, decisionId }
     );
+  }
+  if(delayed?.status==="ready" && evidence.delayedTask?.id===delayed.id) {
+    agentRuntime.settle(delayed.id,auth.participant.id,interventionId?"delivered":"cancelled",
+      interventionId?"fresh_policy_approved":"delivery_guard");
   }
 
   db.insertEvent({
@@ -4516,7 +4644,8 @@ async function handleApi(req, res, url) {
         ok: true,
         time: nowIso(),
         appVersion: researchConfig.appVersion,
-        basePath
+        basePath,
+        sixDimensionDemo: researchControlStore.enabled && process.env.RESEARCH_CONTROLS_DEMO === "true"
       });
       return;
     }
@@ -4590,17 +4719,10 @@ async function handleApi(req, res, url) {
         return;
       }
       const manifest = JSON.parse(fs.readFileSync(resolved, "utf8"));
-      const scenes = (manifest.scenes || []).map((scene) => ({
+      const scenes = (manifest.scenes || []).filter(scene => scene.type !== "quiz").map((scene) => ({
         order: scene.order,
         title: scene.title || "",
-        actions: (scene.actions || [])
-          .filter((action) => action.audioRef)
-          .map((action) => ({
-            type: action.type || "speech",
-            text: action.text || action.prompt || "",
-            prompt: action.prompt || "",
-            audioRef: action.audioRef
-          }))
+        actions: require("./lib/course-playback").publicActions(scene.actions)
       })).filter((scene) => scene.actions.length);
       sendJson(res, 200, { ok: true, resourceRoot, scenes });
       return;
@@ -4806,6 +4928,29 @@ async function handleApi(req, res, url) {
       });
       sendJson(res, 200, { ok: true, participant: safePublicParticipant(updated) });
       return;
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/auth/password") {
+      const body = await readJsonBody(req);
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      const attemptKey = `password-change:${auth.participant.id}`;
+      const limit = checkAuthAttemptLimit(req, attemptKey);
+      if (!limit.ok) { sendJson(res, 429, { ok: false, message: "尝试次数过多，请稍后再试。", retryAfterSeconds: limit.retryAfterSeconds }); return; }
+      const currentPassword = String(body.currentPassword || ""), newPassword = String(body.newPassword || "");
+      if (!verifyPassword(currentPassword, auth.participant.password_hash)) {
+        recordFailedAuthAttempt(req, attemptKey);
+        sendJson(res, 400, { ok: false, message: "当前密码不正确。" }); return;
+      }
+      if (!isUsablePassword(newPassword) || newPassword === currentPassword) {
+        sendJson(res, 400, { ok: false, message: "请设置与原密码不同的 8–72 字符新密码。" }); return;
+      }
+      const timestamp = nowIso();
+      db.updateUserProfile(auth.participant.id, { passwordHash: hashPassword(newPassword), passwordUpdatedAt: timestamp });
+      db.revokeOtherSessions(auth.participant.id, auth.token, timestamp);
+      db.insertEvent({ id: crypto.randomUUID(), user_id: auth.participant.id, type: "password_changed", payload: {}, created_at: timestamp });
+      db.saveNow(); clearAuthAttemptLimit(req, attemptKey);
+      sendJson(res, 200, { ok: true, message: "密码已更新，其他登录会话已退出。账号和学习记录保持不变。" }); return;
     }
 
     if (req.method === "POST" && url.pathname === "/api/auth/logout") {
@@ -5280,6 +5425,102 @@ async function handleApi(req, res, url) {
         conversations
       });
       return;
+    }
+
+    if (url.pathname.startsWith("/api/learning/common-tasks")) {
+      const body=req.method==="POST"?await readJsonBody(req):{};
+      const auth=authenticate(req,body);
+      if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
+      res.setHeader("Cache-Control","no-store");
+      try{
+        let data;
+        if(req.method==="GET" && url.pathname==="/api/learning/common-tasks")data=mainLearningStudy.state(auth.participant.id);
+        else if(req.method==="POST" && url.pathname==="/api/learning/common-tasks/start"){
+          if(activeProactiveOutcomeSession(auth.participant.id))throw Object.assign(new Error("请先结束当前独立测量。"),{status:409});
+          const pretest=proactivePretestStratum(auth.participant.id);
+          if(mainLearningStudy.requiresPretest && !mainLearningStudy.state(auth.participant.id).session && !pretest.ready)
+            throw Object.assign(new Error("请先完成知识前测，再开始本次研究。"),{status:409,code:"study_pretest_required"});
+          data=mainLearningStudy.start(auth.participant.id,{acknowledged:body.acknowledged,consentVersion:body.consentVersion,knowledgePointId:body.knowledgePointId,stratum:pretest.stratum||"unstratified"});
+        }else if(req.method==="POST" && url.pathname==="/api/learning/common-tasks/action")data=mainLearningStudy.act(auth.participant.id,body);
+        else if(req.method==="POST" && url.pathname==="/api/learning/common-tasks/process")data=mainLearningStudy.recordProcess(auth.participant.id,body);
+        else {sendJson(res,404,{ok:false,message:"学习任务接口不存在。"});return;}
+        sendJson(res,200,{ok:true,data});
+      }catch(error){if(!error.status)throw error;sendJson(res,error.status,{ok:false,code:error.code,message:error.message});}
+      return;
+    }
+    if (url.pathname.startsWith("/api/learning/study-workbench")) {
+      if (!studyWorkbench.enabled) { sendJson(res, 404, { ok: false, message: "研究流程预演尚未开启。" }); return; }
+      const body = req.method === "POST" ? await readJsonBody(req) : {};
+      const auth = authenticate(req, body);
+      if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      res.setHeader("Cache-Control", "no-store");
+      try {
+        let data;
+        if (req.method === "GET" && url.pathname === "/api/learning/study-workbench") data = studyWorkbench.state(auth.participant.id);
+        else if (req.method === "POST" && url.pathname === "/api/learning/study-workbench/start") data = studyWorkbench.start(auth.participant.id, {
+          acknowledged: body.acknowledged,
+          stratum: proactivePretestStratum(auth.participant.id).stratum || "engineering_unstratified"
+        });
+        else if (req.method === "POST" && url.pathname === "/api/learning/study-workbench/action") data = studyWorkbench.act(auth.participant.id, body);
+        else { sendJson(res, 404, { ok: false, message: "研究接口不存在。" }); return; }
+        sendJson(res, 200, { ok: true, data });
+      } catch (error) {
+        if (!error.status) throw error;
+        sendJson(res, error.status, { ok: false, code: error.code, message: error.message });
+      }
+      return;
+    }
+
+    if (["GET","POST"].includes(req.method) && url.pathname === "/api/learning/agent-runtime") {
+      const auth=authenticate(req);
+      if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
+      if(activeProactiveOutcomeSession(auth.participant.id) || mainLearningStudy.manages(auth.participant.id) || studyWorkbench.protects(auth.participant.id)){
+        sendJson(res,409,{ok:false,message:"独立任务进行中，请先完成当前任务。"});return;
+      }
+      if(req.method==="POST"){
+        if(proactiveStudyConfig.participationMode==="explicit-consent"){
+          sendJson(res,403,{ok:false,message:"正式研究协议不允许临时更改授权与复习安排。"});return;
+        }
+        const body=await readJsonBody(req), user=auth.participant.id;
+        try{
+          if(body.action==="grant"){
+            const scope=String(body.scope||"");
+            if(!proactivePolicy.adapterForChapter(proactiveStudyConfig.chapterId)?.knowledgePoint(scope))throw new Error("知识点无效");
+            if(body.confirmed!==true)throw new Error("需要学生明确授权");
+            agentRuntime.grant(user,scope,body.capability,body.hours??24);
+          }else if(body.action==="revoke")agentRuntime.revoke(user,String(body.id||""));
+          else if(body.action==="undo")agentRuntime.undo(user,String(body.id||""));
+          else if(body.action==="dismiss")agentRuntime.settle(String(body.id||""),user,"cancelled","student_dismissed");
+          else throw new Error("操作无效");
+        }catch(error){sendJson(res,400,{ok:false,message:error.message});return;}
+      }
+      sendJson(res,200,{ok:true,data:agentRuntime.state(auth.participant.id,db.currentLearningGeneration(auth.participant.id))});return;
+    }
+
+    if (["GET","POST"].includes(req.method) && url.pathname === "/api/learning/research-controls") {
+      const auth=authenticate(req);
+      if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
+      if(req.method==="GET"){
+        sendJson(res,200,{ok:true,data:{...researchControlStore.describe(auth.participant.id),
+          assignment:publicProactiveAssignment(proactiveAssignmentForUser(auth.participant.id)),arms:[...proactiveStudyConfig.experimentArms]}});return;
+      }
+      if(!researchControlStore.canEdit(auth.participant.id)){sendJson(res,403,{ok:false,message:"当前账号的实验条件只读，网址参数不能解锁。"});return;}
+      const body=await readJsonBody(req);
+      const inRound=db.listProactivePolicyStates(auth.participant.id,proactiveStudyConfig.experimentId)
+        .some(s=>["accepted_pending_response","awaiting_independent_attempt"].includes(parseStoredJson(s.lifecycle_json||"{}",{}).phase));
+      if(inRound||activeProactiveOutcomeSession(auth.participant.id)){
+        sendJson(res,409,{ok:false,message:"请先结束当前帮助或独立测量，再修改策略。"});return;
+      }
+      try {
+        const data=researchControlStore.save(auth.participant.id,body.profile,body.expectedRevision);
+        db.closeOpenProactiveInterventionsForUser({userId:auth.participant.id,experimentId:proactiveStudyConfig.experimentId,
+          resolution:"configuration_changed",resolvedAt:nowIso(),followupOutcome:{outcome:"configuration_changed"}});
+        const pending=agentRuntime.state(auth.participant.id,db.currentLearningGeneration(auth.participant.id)).tasks;
+        for(const task of pending.filter(t=>t.kind==="delayed_hint"&&["queued","ready"].includes(t.status)))
+          agentRuntime.settle(task.id,auth.participant.id,"cancelled","configuration_changed");
+        db.saveNow();sendJson(res,200,{ok:true,data});
+      }
+      catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
     }
 
     if (req.method === "GET" && url.pathname === "/api/learning/proactive/state") {
@@ -6654,6 +6895,10 @@ async function handleApi(req, res, url) {
         });
         return;
       }
+      if(researchControlStore.enabled && (parseStoredJson(decision.evidence_snapshot_json||"{}",{}).engineeringControl?.revision||0)
+        !== (researchControlStore.read(auth.participant.id)?.revision||0)){
+        sendJson(res,409,{ok:false,code:"engineering_profile_changed",message:"六维设置已更新，这条旧建议已失效。"});return;
+      }
       // 学生的理由说明（可选）。它是 Hint Justification Rate 的唯一原料——防 gaming
       // 的关键：只统计"接受且说明了理由"的提示。有界截断，避免变成自由文本垃圾场。
       const justification = boundedLearningText(body.justification, 600);
@@ -7856,6 +8101,7 @@ async function handleApi(req, res, url) {
         provider: assistantProviderInfo(),
         quota: assistantQuotaInfo(auth.participant.id),
         pendingQuizReviewPrompt,
+        pendingSupportPrompt: restoreAcceptedSupportPrompt(auth.participant.id,resolved,sceneType),
         messages: messages.map(publicAssistantMessage)
       });
       return;
@@ -7906,6 +8152,13 @@ async function handleApi(req, res, url) {
       const proactiveIntervention = proactiveInterventionId
         ? getAssistantIntervention(auth.participant.id, unitId, proactiveInterventionId)
         : null;
+      const independentCheckState = db.getProactivePolicyState(
+        auth.participant.id, proactiveStudyConfig.experimentId, resolved.unit.knowledgePointId || resolved.unit.id
+      );
+      if (parseStoredJson(independentCheckState?.lifecycle_json || "{}", {}).phase === "awaiting_independent_attempt") {
+        sendJson(res, 409, { ok: false, code: "independent_check_in_progress", message: "请先完成或跳过当前独立检查，之后再继续使用学习帮助。" });
+        return;
+      }
       if (proactiveInterventionId && !proactiveIntervention) {
         sendJson(res, 409, {
           ok: false,
@@ -8075,7 +8328,8 @@ async function handleApi(req, res, url) {
         history,
         quizSubmitted,
         assistantIntent,
-        proactivePrompt
+        proactivePrompt,
+        learningMemory: learningMemoryFor(auth.participant.id,chapterId)
       });
       if ((generated.fallback || generated.provider === "grounding-guard") && quotaReserved) {
         quota = releaseAssistantQuota(auth.participant.id, requestedAt);
@@ -8151,6 +8405,8 @@ async function handleApi(req, res, url) {
         },
         assistantMessage: {
           ...messageBase,
+          context: { ...messageBase.context, modelAudit: generated.modelAudit || null,
+            fallback: generated.fallback === true },
           id: assistantMessageId,
           role: "assistant",
           content: answer,
@@ -8303,6 +8559,7 @@ async function handleApi(req, res, url) {
           proactivePrompt: "",
           provider: generated.provider,
           quizSubmitted,
+          modelAudit: generated.modelAudit || null,
           createdAt: answeredAt
         },
         policy: generated.policy,
@@ -8560,6 +8817,19 @@ async function handleApi(req, res, url) {
         if (![400, 413].includes(error.status)) throw error;
         sendJson(res, error.status, { ok: false, message: error.message });
       }
+      return;
+    }
+
+    if(req.method==="GET" && url.pathname==="/api/admin/research/common-tasks"){
+      if(!checkAdmin(req)){sendJson(res,403,{ok:false,message:"需要管理员密码。"});return;}
+      res.setHeader("Cache-Control","no-store");
+      sendJson(res,200,{ok:true,data:mainLearningStudy.exportData(),specification:mainLearningStudy.specification()});return;
+    }
+    if (req.method === "GET" && url.pathname === "/api/admin/research/study-workbench") {
+      if (!checkAdmin(req)) { sendJson(res, 403, { ok: false, message: "需要管理员密码。" }); return; }
+      if (!studyWorkbench.enabled) { sendJson(res, 404, { ok: false, message: "研究流程预演尚未开启。" }); return; }
+      res.setHeader("Cache-Control", "no-store");
+      sendJson(res, 200, { ok: true, data: studyWorkbench.exportData() });
       return;
     }
 
@@ -9502,6 +9772,9 @@ try {
 
 db.getDb().then(() => {
  console.log("Database initialized.");
+  agentRuntime.tick();
+  const agentPreparationTimer=setInterval(()=>{try{agentRuntime.tick();}catch(error){console.error("Agent preparation failed:",error.message);}},5000);
+  agentPreparationTimer.unref();
   systemAnnouncementApi.ensureSchema(db.getDbSync());
   freezeProactiveProtocol();
   db.saveNow();

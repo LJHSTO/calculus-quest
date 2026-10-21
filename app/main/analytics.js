@@ -476,6 +476,7 @@ function analyticsTrack(eventType, payload = {}) {
       ...(payload.timing || {})
     },
     context: {
+      commonLearning: window.CommonLearning?.telemetryContext?.() || null,
       completedBefore: unit?.id ? state.completed.includes(unit.id) : false,
       isRepeatVisit: unit?.id ? Boolean((state.analytics?.visitedUnits || {})[unit.id]) : false,
       pathIndex: state.analytics?.path?.length || 0,

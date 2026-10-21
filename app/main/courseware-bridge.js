@@ -3,6 +3,106 @@
   window.__calculusQuestContextBridge = true;
 
   const PARENT = window.parent;
+  let authoredPlayback = false;
+  const authoredMarks = new Map();
+  const authored3dMarks=new Set();
+  function authoredNative(data){window.dispatchEvent(new MessageEvent('message',{source:PARENT,data}));}
+  function clearAuthoredMarks() {
+    for (const [node, previous] of authoredMarks) {
+      node.style.outline = previous.outline; node.style.outlineOffset = previous.offset;
+      if (previous.title === null) node.removeAttribute("title"); else node.title = previous.title;
+    }
+    authoredMarks.clear();
+    for(const elementId of authored3dMarks)authoredNative({action:'HIGHLIGHT_ELEMENT',payload:{elementId,highlight:false},source:'authored_playback'});
+    authored3dMarks.clear();
+  }
+  function applyAuthoredWidget(message) {
+    const action = message.action;
+    if (!action || message.source !== "authored_playback") return;
+    let contract={},config={};try{contract=JSON.parse(document.querySelector('#openmaic-semantic-contract')?.textContent||'{}');config=JSON.parse(document.querySelector('#widget-config')?.textContent||'{}');}catch{}
+    const type=contract.scene_type,kp=contract.knowledge_point_id;
+    const aliases={
+      '#x-slider':'#x-position-slider','#point-y-coordinate-slider':'#point_y_coordinate-slider',
+      '#step-size-control':'.step-btns','#reading-panel-left':'#leftLimitVal','#reading-panel-right':'#rightLimitVal',
+      '#continuity-indicator':'#status-indicator','#trace-display':'#canvas','#rule-builder':'#rule-builder-area',
+      '#feedback-area':'#state-display','#scoring-display':'#scoreDisplay','#accelerate-btn':'#gasBtn','#brake-btn':'#brakeBtn',
+      '#trend-slot':'#limitSlot','#level-indicator':'#hudLevel','#bridge-gap-1':'#gameCanvas','#logic-panel':'#level-info',
+      '#start_tour-btn':'#tour-btn'
+    };
+    const conceptAliases=kp==='GH-02-K01'&&type==='mindMap'?{'#n1':'#node-input','#n2':'#node-left_seq','#n3':'#node-right_seq','#n4':'#node-trend','#n5':'#node-trap'}:{};
+    const selector=conceptAliases[action.target]||aliases[action.target]||action.target;
+    let target = null;
+    if (typeof selector === "string") {
+      try { target = document.querySelector(selector) || document.querySelector(`${selector}-slider`);
+        if(!target && /^#[\w-]+$/.test(selector)){const id=selector.slice(1);target=document.querySelector(`[data-id="${id}"],[data-node-id="${id}"],#node-${id}`);}
+        if(!target && selector==='#start-btn')target=document.querySelector('#start-screen button,#startScreen button,#overlay button');
+      } catch {}
+    }
+    const report=status=>PARENT.postMessage({type:'cq:playback-action-result',playbackId:message.playbackId,actionId:action.id,status,source:'authored_playback',countsAsStudentEvidence:false},'*');
+    if (["widget_highlight", "widget_annotation"].includes(action.type)) {
+      clearAuthoredMarks();
+      if (target) {
+        authoredMarks.set(target, { outline: target.style.outline, offset: target.style.outlineOffset, title: target.getAttribute("title") });
+        target.style.outline = "2px solid #8064d8"; target.style.outlineOffset = "2px";
+        if (action.content) target.title = action.content;
+        setTimeout(clearAuthoredMarks, 5000);
+        report('dom_highlight');
+      }else if(type==='visualization3d'){
+        const elementId=String(action.target||'').replace(/^#/,'');authored3dMarks.add(elementId);
+        authoredNative({action:'HIGHLIGHT_ELEMENT',payload:{elementId,highlight:true},source:'authored_playback'});setTimeout(clearAuthoredMarks,5000);report('native_3d_highlight_requested');
+      }else{
+        report('target_unavailable');
+      }
+      return;
+    }
+    let widgetState = { ...(action.state || {}) };
+    const preset=(config.presets||[]).find(p=>p.name===(widgetState.preset||widgetState.activePreset));
+    if(preset)widgetState={...(preset.state||Object.fromEntries(Object.entries(preset).filter(([k])=>['cameraPosition','cameraTarget'].includes(k)))),...widgetState};
+    // Earlier exports used `rule`; this lesson's public receiver names it
+    // `function_rule`. Preserve every other authored parameter unchanged.
+    if (widgetState.rule && document.getElementById("input_x-slider")) widgetState = { function_rule: widgetState.rule, ...widgetState };
+    authoredPlayback = true;
+    window.__cqAuthoredPlayback = true;
+    try {
+      if(type==='mindMap' && action.type==='widget_reveal'){
+        if(target){
+          const next=document.querySelector('#btn-next,#next-btn,#nextBtn,#btnNext');
+          const revealed=()=>!target.classList.contains('hidden')&&(target.classList.contains('revealed')||target.classList.contains('visible')||target.getAttribute('opacity')==='1');
+          // Use the lesson's own reveal sequence so connected edges and the
+          // native detail pane stay consistent. These are authored clicks.
+          for(let step=0;step<20&&next&&!next.disabled&&!revealed();step++)next.click();
+          target.classList.remove('hidden');target.classList.add('revealed');target.style.opacity='1';target.style.visibility='visible';target.dispatchEvent(new MouseEvent('click',{bubbles:true}));report('concept_node_selected');
+        }else report('target_unavailable');
+        return;
+      }
+      if(type==='game' && action.type==='widget_setState'){
+        // Old generated actions contain invented progress fields. A narrated
+        // game demonstration must never award student points or complete levels.
+        const canvas=document.querySelector('#gameCanvas,#machine-area');
+        if(canvas){authoredMarks.set(canvas,{outline:canvas.style.outline,offset:canvas.style.outlineOffset,title:canvas.getAttribute('title')});canvas.style.outline='2px solid #8064d8';setTimeout(clearAuthoredMarks,4000);}
+        report('demonstration_cue_only');return;
+      }
+      if(type==='visualization3d'){
+        if(action.type==='widget_reveal'){const elementId=String(action.target||'').replace(/^#/,'');authored3dMarks.add(elementId);authoredNative({action:'HIGHLIGHT_ELEMENT',payload:{elementId,highlight:true},source:'authored_playback'});}
+        else authoredNative({action:message.messageType,payload:widgetState,source:'authored_playback'});
+        report('native_3d_state_requested');return;
+      }
+      if(type==='simulation' && kp==='GH-01-K02' && action.type==='widget_setState'){
+        const preset=[...document.querySelectorAll('.preset-btn')].find(n=>n.textContent.includes('2x+1'));
+        if(widgetState.functionRule==='f(x)=2x+1')preset?.click();
+        // The authored targetX is an observation cue, not a solved dot.
+        report('function_preset_selected_without_solving');return;
+      }
+      window.dispatchEvent(new MessageEvent("message", { source: PARENT, data: {
+        type: message.messageType, target: action.target, state: widgetState,
+        content: action.content, source: "authored_playback"
+      }}));
+      report('native_state_requested');
+    } finally {
+      authoredPlayback = false;
+      queueMicrotask(() => { window.__cqAuthoredPlayback = false; });
+    }
+  }
   const HOVER_DELAY_MS = 120;
   const GRAPH_NODE_SELECTOR = "svg .node-group, svg #nodesGroup > g[data-id]";
   const rangeStarts = new WeakMap();
@@ -986,6 +1086,7 @@
   }
 
   function reportParameterCommit(event) {
+    if (authoredPlayback || !event.isTrusted) return;
     const target = event.target?.closest?.("input[type='range'], input[type='number'], select");
     if (!target) return;
     const oldValue = rangeStarts.get(target) || "";
@@ -1012,7 +1113,7 @@
 
   function interactionTarget(target) {
     const element = elementFromNode(target);
-    if (!element || excluded(element)) return null;
+    if (!element || excluded(element) || element.closest?.("[data-cq-embedded-help]")) return null;
     return contextTarget(element)
       || element.closest?.("[draggable='true'], .piece, .tile, .card, .draggable, .drag-item, .drag-card")
       || element;
@@ -1030,7 +1131,7 @@
   }
 
   function reportInteraction(eventType, element, extra = {}, persist = true) {
-    if (!element || picking) return;
+    if (!element || picking || authoredPlayback) return;
     post("cq:interaction", {
       eventType,
       persist,
@@ -1077,6 +1178,7 @@
   }
 
   function reportParameterInput(event) {
+    if (authoredPlayback || !event.isTrusted) return;
     const target = event.target?.closest?.("input[type='range'], input[type='number'], select");
     if (!target) return;
     const now = Date.now();
@@ -1117,6 +1219,8 @@
   window.addEventListener("message", (event) => {
     if (event.source !== PARENT || !event.data || typeof event.data !== "object") return;
     const type = String(event.data.type || "");
+    if (type === "cq:playback-widget") { applyAuthoredWidget(event.data); return; }
+    if (type === "cq:playback-clear") { clearAuthoredMarks(); return; }
     if (type === "cq:context-pick-begin") {
       beginPicking(event.data);
     } else if (type === "cq:context-pick-cancel") {

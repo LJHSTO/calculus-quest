@@ -9,6 +9,8 @@ const proactivePolicy = require("../lib/proactive-policy");
 const route = require("../data/multi-scene-learning-route.json");
 const chapterId = process.env.TEST_PROACTIVE_CHAPTER || "V14-C3";
 const functionsLimits = chapterId === "V14-C1";
+const embeddedMode = process.env.TEST_TASK_EMBEDDED === "1";
+const mvpMode = process.env.TEST_SIX_DIMENSION_MVP === "1";
 const replies = {  "GH-01-K01": "同一输入必须有唯一输出，不同输入可以得到相同输出，我会逐个检查规则。",
   "GH-01-K02": "我会先读取横坐标，代入函数规则，再比较结果与纵坐标是否相等。",
   "GH-01-K03": "我会按输入增大的方向比较输出大小，负数也可以上升。",
@@ -37,7 +39,7 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
   fs.mkdirSync(output, { recursive: true });
   const checkIds = new Set();
   for (let level = 1; level <= finalLevel; level += 1) {
-    if (process.env.TEST_PROACTIVE_SURFACES === "1") {
+    if (process.env.TEST_PROACTIVE_SURFACES === "1" || embeddedMode) {
       await page.waitForFunction(() => {
         const s = KnowledgeAssistant.designSpaceSnapshot();
         return s.prompt && !s.busy && s.policyState?.lifecycle?.phase === "accepted_pending_response";
@@ -55,14 +57,21 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
     const answerResponse = page.waitForResponse((response) =>
       response.url().includes("/api/learning/assistant/ask")
       && response.request().method() === "POST");
-    const composer = process.env.TEST_PROACTIVE_SURFACES === "1"
+    const inside=page.frameLocator('iframe[data-courseware-frame]').locator('[data-cq-embedded-help="task"]');
+    const composer = embeddedMode ? inside.locator('textarea').last() : process.env.TEST_PROACTIVE_SURFACES === "1"
       ? page.locator(".support-chat-form textarea") : page.locator("#knowledge-question-input");
     await composer.fill(replies[knowledgePointId]);
-    if (process.env.TEST_PROACTIVE_SURFACES === "1") await page.locator(".support-chat-form button[type=submit]").click();
+    if(embeddedMode)await inside.getByRole('button',{name:'发送我的想法',exact:true}).click();
+    else if (process.env.TEST_PROACTIVE_SURFACES === "1") await page.locator(".support-chat-form button[type=submit]").click();
     else await composer.press("Enter");
     assert.equal((await answerResponse).status(), 200);
     const checkNode = page.locator(".knowledge-proactive-verification");
     await checkNode.waitFor({ state: "visible" });
+    if(embeddedMode){
+      assert.equal(await inside.count(),0,"独立检查时移除课件提示");
+      const blocked=await page.evaluate(async()=>{const r=await fetch('/api/learning/assistant/ask',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.authToken}`},body:JSON.stringify({chapterId:currentChapterId,unitId:currentUnitId,question:'请给我答案'})});return {status:r.status,code:(await r.json()).code};});
+      assert.deepEqual(blocked,{status:409,code:'independent_check_in_progress'},"服务端同时关闭独立检查帮助");
+    }
     const checkId = await checkNode.getAttribute("data-proactive-check-id");
     assert.ok(!checkIds.has(checkId), "升级后必须签发新的独立检查");
     checkIds.add(checkId);
@@ -190,41 +199,42 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
       assert.equal(await page.locator(".knowledge-proactive-inline-offer").count(), 0,
         "独立检查通过后不能继续邀请升级支架");
       await page.screenshot({ path: path.join(output, "检查通过-停止加码.png") });
-      await page.locator(".knowledge-proactive-check-feedback").screenshot({ path: path.join(output, "渐退反馈.png") });
+      await (embeddedMode ? inside : page.locator(".knowledge-proactive-check-feedback")).screenshot({ path: path.join(output, "渐退反馈.png") });
     } else if (level === 5) {
       assert.equal(payload.study.deliveryDecision, "stay_silent");
       assert.equal(payload.study.policyState.lifecycle.phase, "maximum_support_reached");
       await checkNode.waitFor({ state: "hidden" });
-      const feedback = page.locator(".knowledge-proactive-check-feedback");
+      const feedback = embeddedMode ? inside : page.locator(".knowledge-proactive-check-feedback");
       await feedback.waitFor({ state: "visible" });
-      assert.match(await feedback.innerText(), /本轮帮助已到上限/);
-      assert.doesNotMatch(await feedback.innerText(), /只有你确认后|下一层/);
+      const feedbackText=embeddedMode ? await feedback.evaluate(n=>n.shadowRoot.textContent) : await feedback.innerText();
+      assert.match(feedbackText, /本轮帮助已到上限/);
+      assert.doesNotMatch(feedbackText, /只有你确认后|下一层/);
       assert.equal(await page.locator(".knowledge-proactive-inline-offer").count(), 0);
       await page.screenshot({ path: path.join(output, "达到上限-停止追加.png") });
     } else {
       assert.equal(payload.decision.supportLevel, `L${level + 1}`);
-      const offer = page.locator(".knowledge-proactive-inline-offer");
+      const offer = embeddedMode ? inside.locator('article').filter({hasText:/知点建议/}).first() : page.locator(".knowledge-proactive-inline-offer");
       await offer.waitFor({ state: "visible" });
       const exposureCheck = process.env.TEST_PROACTIVE_EXPOSURE === "1" && level <= 2
         ? await require("./test-proactive-exposure-browser").verifyRealCandidate(page,
           { mode: level === 1 ? "qualified" : "interaction" }) : null;
       await offer.screenshot({ path: path.join(output, `L${level + 1}-控制选项.png`) });
-      const accept = offer.locator("footer button.is-primary");
+      const accept = embeddedMode ? offer.locator('footer button').first() : offer.locator("footer button.is-primary");
       if (!exposureCheck?.acceptAlreadyClicked) await accept.click();
       // 内联建议卡和悬浮提示卡共用同一套"先说理由"流程。如果只在悬浮卡上问理由，
       // 走对话流的学生就能绕过自我解释，两条路径的 Hint Justification Rate 也不可比。
-      const inlineJustify = offer.locator("[data-proactive-justify]");
+      const inlineJustify = embeddedMode ? offer.locator('form') : offer.locator("[data-proactive-justify]");
       await inlineJustify.waitFor({ state: "visible" });
       assert.equal(
         await offer.locator("footer").isVisible(),
         false,
         "内联卡问理由时同样要让主操作行让位"
       );
-      await inlineJustify.locator("[data-proactive-justify-input]")
+      await inlineJustify.locator(embeddedMode ? 'textarea' : "[data-proactive-justify-input]")
         .fill(`L${level + 1} 之前我的理解是：${replies[knowledgePointId]}`);
       const accepted = page.waitForResponse(response => response.url().includes("/resolution")
         && response.request().postDataJSON()?.resolution === "accepted");
-      await inlineJustify.locator("button.is-primary").click();
+      await (embeddedMode ? inlineJustify.getByRole('button',{name:'看提示',exact:true}) : inlineJustify.locator("button.is-primary")).click();
       const acknowledgement = await accepted;
       assert.equal(acknowledgement.status(), 200, JSON.stringify(await acknowledgement.json()));
     }
@@ -251,7 +261,7 @@ async function main() {
       socket.close(() => resolve(value));
     });
   });
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), "cq-proactive-submit-"));
+  const temp = fs.mkdtempSync(path.join(mvpMode?path.join(root,"output"):os.tmpdir(), "cq-proactive-submit-"));
   const server = spawn(process.execPath, ["server.js", String(port)], {
     cwd: root,
     windowsHide: true,
@@ -260,6 +270,7 @@ async function main() {
       ...process.env, NODE_ENV: "test", HOST: "127.0.0.1",
       DB_PATH: path.join(temp, "test.db"),
       LLM_PROVIDER: "mock", GRADING_LLM_PROVIDER: "mock",
+      RESEARCH_CONTROLS_ENABLED:mvpMode?"true":"false",
       PROACTIVE_POLICY_MODE: "active", PROACTIVE_PARTICIPATION_MODE: "implicit-pilot",
       PROACTIVE_EXPERIMENT_ID: "browser-submission-regression",
       PROACTIVE_EXPERIMENT_CHAPTER_ID: chapterId,
@@ -298,6 +309,19 @@ async function main() {
     await page.locator("#register-password-confirm").fill("browser-test-password");
     await page.locator("#login-submit").click();
     await page.locator("#auth-gate").waitFor({ state: "hidden", timeout: 30000 });
+    if(mvpMode){
+      await page.evaluate(async ({scope,format,delayed,authority})=>{
+        const control=await KnowledgeAssistant.researchControlRequest();
+        await KnowledgeAssistant.researchControlRequest({...control.profile,presentationFormat:format,
+          timingMode:delayed?"delayed":"adaptive",delaySeconds:1,authorityLevel:authority},control.revision);
+        await KnowledgeAssistant.agentRuntimeRequest({action:"grant",scope,capability:"open_hint",confirmed:true,hours:168});
+        await KnowledgeAssistant.agentRuntimeRequest({action:"grant",scope,capability:"prepare_review",confirmed:true,hours:168});
+      },{scope:knowledgePointId,format:process.env.TEST_PROACTIVE_FORMAT||"plain",
+        delayed:process.env.TEST_PROACTIVE_DELAY==="1",authority:process.env.TEST_PROACTIVE_AUTHORITY||"A2"});
+    }
+    // Explicitly exercise the retained full-dialogue surface for the initial
+    // formative offer; the embedded branch below uses the regular courseware.
+    await page.evaluate(inTask=>KnowledgeAssistant.setSupportView({placement:inTask?'inline':'sidebar',modality:'tip'}),embeddedMode);
     await page.locator('[data-view="learn"]').first().click();
     const stale = await page.evaluate(async (chapterId) => {
       const questions = getUnit().scene.content.questions;
@@ -366,6 +390,8 @@ async function main() {
       KnowledgeAssistant.sync();
     }, knowledgePointId);
     const core = point.formativeQuiz.questions[0];
+    await page.evaluate(inTask=>KnowledgeAssistant.setSupportView({placement:inTask?'inline':'sidebar',modality:'tip'}),embeddedMode);
+    if(!embeddedMode && await page.locator('.core-learning-workspace').evaluate(n=>n.classList.contains('tools-collapsed')))await page.locator('#workspace-tools-toggle').click();
     const wrongChoice = core.options.find((option) => !core.answer.includes(option.value));
     await page.locator(`#lesson-player input[type=radio][value="${wrongChoice.value}"]`).check();
     await page.getByRole("button", { name: "提交本次测验", exact: true }).click();
@@ -375,25 +401,46 @@ async function main() {
     assert.equal(await page.locator("[data-knowledge-proactive-accept]").isVisible(), false);
     const decisionResponse = page.waitForResponse((response) => response.url().includes("/assistant/intervention"));
     await page.getByRole("button", { name: "提交诊断题", exact: true }).click();
-    const decision = await (await decisionResponse).json();
+    let decision = await (await decisionResponse).json();
+    if(mvpMode && process.env.TEST_PROACTIVE_DELAY==="1"){
+      assert.equal(decision.decision.intervene,false,"初始候选应进入延迟队列");
+      assert.equal(decision.study.observation.d2.action,"delayed");
+      const delayedResponse=await page.waitForResponse(response=>response.url().includes("/assistant/intervention"),{timeout:50000});
+      decision=await delayedResponse.json();
+      assert.equal(decision.study.observation.d2.delayedTask.status,"delivered","到期必须复核并真正投递");
+    }
     assert.equal(decision.provider, "deterministic-policy");
     assert.equal(decision.decision.supportLevel, "L1");
     assert.equal(decision.decision.action, "elicit_self_explanation");
     assert.equal(requests.at(-1).signal.kind, "formative_outcome");
-    await page.locator("[data-knowledge-proactive-accept]").waitFor({ state: "visible" });
+    const initialOffer=embeddedMode?page.locator('.task-support-panel .knowledge-proactive-inline-offer'):page.locator('[data-knowledge-proactive]');
+    const initialAccept=embeddedMode?initialOffer.locator('footer button').first():page.locator('[data-knowledge-proactive-accept]');
+    await initialAccept.waitFor({ state: "visible" });
+    if(mvpMode){
+      assert.equal(await initialOffer.getAttribute("data-presentation-format"),process.env.TEST_PROACTIVE_FORMAT||"plain");
+      if(process.env.TEST_PROACTIVE_AUTHORITY==="A4"){
+        await initialOffer.getByRole("button",{name:"撤销自动展开",exact:true}).click();
+        await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().offer?.authority?.autoExpanded===false);
+        const detail=initialOffer.locator(".knowledge-proactive-inline-offer-detail");
+        assert.equal(await detail.isVisible(),false,"撤销后收起已自动展开内容");
+        assert.equal(await page.evaluate(async()=>{const s=await KnowledgeAssistant.agentRuntimeRequest();return s.actions[0].status;}),"undone");
+      }
+      await page.screenshot({path:path.join(temp,"六维提示实际呈现.png"),fullPage:true});
+    }
     if (functionsLimits) {
       const output = path.join(root, "output", "playwright", "函数极限介入显示审计");
       fs.mkdirSync(output, { recursive: true });
       for (const width of [1366, 1920]) {
         await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
-        const presentation = await page.locator("[data-knowledge-proactive]").evaluate((element) => {
+        await initialOffer.scrollIntoViewIfNeeded();
+        const presentation = await initialOffer.evaluate((element) => {
           const rect = element.getBoundingClientRect();
           return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
             width: rect.width, height: rect.height, viewportWidth: innerWidth, viewportHeight: innerHeight };
         });
         assert.ok(presentation.width > 0 && presentation.height > 0);
         assert.ok(presentation.left >= 0 && presentation.right <= presentation.viewportWidth + 1);
-        assert.ok(presentation.top >= 0 && presentation.bottom <= presentation.viewportHeight + 1);
+        if(!embeddedMode)assert.ok(presentation.top >= 0 && presentation.bottom <= presentation.viewportHeight + 1);
         await page.screenshot({ path: path.join(output, `主动建议-${width}.png`) });
       }
     }
@@ -421,11 +468,11 @@ async function main() {
       console.log("主动换表征实际浏览器通过：真实替代建议、学生确认、跨课件导航、选中场景与互动画面一致。");
       return;
     }
-    await page.locator("[data-knowledge-proactive-accept]").click();
+    await initialAccept.click();
     // Hint Justification（防 gaming 的关键一环）：内容型提示在**真正执行之前**先问
     // "你觉得这一步为什么是对的"。顺序不能反——先给答案再问，学生写的就只是复述，
     // 分不出"看懂了"和"点过去了"。
-    const justifyForm = page.locator("[data-proactive-justify]");
+    const justifyForm = embeddedMode?initialOffer.locator('[data-proactive-justify]'):page.locator("[data-proactive-justify]");
     await justifyForm.waitFor({ state: "visible" });
     assert.equal(
       await page.locator("#knowledge-assistant-panel").isVisible(),
@@ -439,15 +486,15 @@ async function main() {
     );
     // 次级操作（换一种帮助 / 关闭此知识点提醒）必须始终留着，学生任何时候都有退路。
     assert.equal(
-      await page.locator("[data-knowledge-proactive-mute]").isVisible(),
+      await (embeddedMode?initialOffer.getByRole('button',{name:'关闭此知识点提醒',exact:true}):page.locator("[data-knowledge-proactive-mute]")).isVisible(),
       true,
       "问理由不能变成把学生困住的死路"
     );
     const justificationText = "因为要先确定自变量，才能对应到唯一的输出值。";
-    await page.locator("[data-proactive-justify-input]").fill(justificationText);
+    await justifyForm.locator("[data-proactive-justify-input]").fill(justificationText);
     const resolutionResponse = page.waitForResponse((response) =>
       response.url().includes("/resolution"));
-    await page.locator(".knowledge-proactive-justify-actions button.is-primary").click();
+    await justifyForm.locator(".knowledge-proactive-justify-actions button.is-primary").click();
     const resolutionPayload = await (await resolutionResponse).json();
     assert.equal(resolutionPayload.ok, true);
     const acceptedResolution = resolutionRequests.find(
@@ -464,7 +511,7 @@ async function main() {
       true,
       "确实问过理由的接受要标记 requested=true，才会进比例的分母"
     );
-    await page.locator("#knowledge-assistant-panel").waitFor({ state: "visible" });
+    if(!embeddedMode)await page.locator("#knowledge-assistant-panel").waitFor({ state: "visible" });
     if (process.env.TEST_PROACTIVE_SURFACES === "1") {
       // Navigation eligibility is a fixture; all prompts and checks below are
       // issued by the actual server. The separate student-flow test uses no seed.
@@ -488,7 +535,7 @@ async function main() {
           assert.deepEqual(after.policyState, before.policyState, "D4切换不得改变支架或生命周期");
           assert.deepEqual(after.prompt, before.prompt, "政策支架内容必须原样保留");
           if (!(placement === "sidebar" && modality === "tip")) {
-            const surface = page.locator(".learning-support-surface");
+            const surface = page.locator(placement === "inline" && modality === "tip" ? ".task-support-panel" : ".learning-support-surface");
             await surface.waitFor({ state: "visible" });
             await surface.scrollIntoViewIfNeeded();
             const box = await surface.boundingBox();
@@ -497,7 +544,7 @@ async function main() {
           }
           await page.screenshot({ path: path.join(output, `${placement}-${modality}.png`) });
           const focus = placement === "sidebar" && modality === "tip"
-            ? page.locator(".knowledge-proactive-question:visible") : page.locator(".learning-support-surface");
+            ? page.locator(".knowledge-proactive-question:visible") : page.locator(placement === "inline" && modality === "tip" ? ".task-support-panel" : ".learning-support-surface");
           await focus.screenshot({ path: path.join(output, `${placement}-${modality}-局部.png`) });
         }
       }
@@ -518,7 +565,22 @@ async function main() {
       await page.locator("[data-observatory-close]").click();
       console.log("D4八组合通过：同一真实提示内容、等级及生命周期保持不变。");
     }
+    if(embeddedMode){
+      await page.evaluate(id=>{const path=ensureAgenticPath();if(!path.unlocked.includes(id))path.unlocked.push(id);path.pendingPlan=null;currentUnitId=id;renderAll();KnowledgeAssistant.setSupportView({placement:'inline',modality:'tip'});KnowledgeAssistant.close();KnowledgeAssistant.sync();},knowledgePointId);
+      await page.locator('[data-workspace-canvas="interactive"]').click();
+      await page.locator('.workspace-canvas-toolbar [data-knowledge-scene="simulation"]').click();
+      await page.locator('.iframe-loader').waitFor({state:'hidden'});
+    }
     await verifySupportLifecycle(page, root, knowledgePointId);
+    if(mvpMode){
+      const memory=await page.evaluate(()=>KnowledgeAssistant.agentRuntimeRequest());
+      assert.ok(memory.memory.some(r=>r.scope===knowledgePointId),"服务器独立检查写入长期记录");
+      assert.ok(memory.tasks.some(r=>r.kind==="review"&&r.scope===knowledgePointId),"经授权安排持久复习任务");
+      fs.writeFileSync(path.join(temp,"六维联通验收.json"),JSON.stringify({synthetic:true,passed:true,knowledgePointId,
+        presentationFormat:process.env.TEST_PROACTIVE_FORMAT||"plain",delayed:process.env.TEST_PROACTIVE_DELAY==="1",
+        authority:process.env.TEST_PROACTIVE_AUTHORITY||"A2",memoryRecords:memory.memory.length,
+        reviewTasks:memory.tasks.filter(r=>r.kind==="review").length},null,2));
+    }
     // 整场的不变式：这一轮里**每一次**接受的提示都被问过理由。悬停卡和内联卡只要有一条
     // 路径漏了，学生就能顺着那条路一路点"接受"刷过支架后检查，而 Hint Justification
     // Rate 会把这种"没问过"当成"学生不愿说理由"，把结论往好的方向带。

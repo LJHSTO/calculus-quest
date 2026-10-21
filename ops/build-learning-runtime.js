@@ -11,7 +11,14 @@ async function main() {
   const scripts = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)]
     .filter(match => !match[1].startsWith("app/main/error-monitoring.js"))
     .map(match => ({ tag: match[0], file: match[1].split("?")[0] }));
-  if (scripts.length < 20 || scripts.at(-1).file !== "app/main/bootstrap.js") throw new Error("Unexpected script order.");
+  const bootstrapIndex = scripts.findIndex(script => script.file === "app/main/bootstrap.js");
+  const extensionTail = scripts.slice(bootstrapIndex + 1).map(script => script.file);
+  const knownTail = ["app/main/task-support.js", "app/main/proactive-surface.js", "app/main/proactive-hud.js"];
+  if (scripts.length < 20 || bootstrapIndex < 0
+    || scripts.filter(script => script.file === "app/main/bootstrap.js").length !== 1
+    || (extensionTail.length !== 0 && JSON.stringify(extensionTail) !== JSON.stringify(knownTail))) {
+    throw new Error("Unexpected script order.");
+  }
   const upstream = createRequire(path.resolve(root, "../OpenMAIC-Upstream/package.json"));
   const vite = createRequire(createRequire(upstream.resolve("vitest/package.json")).resolve("vite"));
   const esbuild = vite("esbuild");

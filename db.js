@@ -1135,6 +1135,10 @@ function revokeSession(token, timestamp) {
   execute("UPDATE sessions SET revoked_at = ?, last_seen_at = ? WHERE token = ?", [timestamp, timestamp, token]);
 }
 
+function revokeOtherSessions(userId, keepToken, timestamp) {
+  execute("UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND token <> ? AND revoked_at = ''", [timestamp, userId, keepToken]);
+}
+
 function currentLearningGeneration(userId, timestamp = new Date().toISOString()) {
   return Number(ensureLearningStateVersion(userId, timestamp).generation);
 }
@@ -2346,6 +2350,7 @@ function closeOpenProactiveInterventionsForUser({
     "preference_off",
     "learning_reset",
     "measurement_started",
+    "configuration_changed",
     "study_withdrawn"
   ].includes(terminalResolution)) {
     throw new Error("invalid_proactive_close_resolution");
@@ -7692,6 +7697,7 @@ module.exports = {
   getSession,
   touchSession,
   revokeSession,
+  revokeOtherSessions,
   currentLearningGeneration,
   insertQuizResult,
   reconcileQuizResults,

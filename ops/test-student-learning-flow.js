@@ -23,7 +23,12 @@ async function main() {
     PROACTIVE_OUTCOME_INSTRUMENT_VERSION:"functions-limits-retention-r3",PROACTIVE_ASSIGNMENT_SALT:"isolated-student-flow-fixture",
     PROACTIVE_EXPERIMENT_ARMS:"treatment_full",PROACTIVE_DISPLAY_ARMS:"treatment_full",PROACTIVE_PUBLIC_CHAPTER_ONLY:"true",
     PROACTIVE_RETENTION_DELAY_HOURS:"72",PROACTIVE_RETENTION_CLOSE_HOURS:"0",RATE_LIMIT_MAX:"5000"};
-  const startServer=()=>spawn(process.execPath,["server.js",String(port)],{cwd:root,windowsHide:true,stdio:"ignore",env:serverEnv});
+  const startServer=()=>{
+    const stdout=fs.openSync(path.join(dir,"server.stdout.log"),"a");
+    const stderr=fs.openSync(path.join(dir,"server.stderr.log"),"a");
+    try{return spawn(process.execPath,["server.js",String(port)],{cwd:root,windowsHide:true,stdio:["ignore",stdout,stderr],env:serverEnv});}
+    finally{fs.closeSync(stdout);fs.closeSync(stderr);}
+  };
   let server=startServer();
   let browser,page;
   const record=(name,detail={})=>{results.push({name,passed:true,...detail});console.log(`通过：${name}`);};
@@ -33,6 +38,16 @@ async function main() {
     browser=await chromium.launch({executablePath:"C:/Program Files/Google/Chrome/Application/chrome.exe",headless:true,args:["--use-angle=swiftshader","--enable-webgl"]});
     page=await browser.newPage({viewport:{width:1366,height:900},reducedMotion:"reduce"});page.setDefaultTimeout(20000);
     page.on("pageerror",e=>issues.push(e.message));
+    await page.addInitScript(()=>{
+      document.addEventListener("mousemove",event=>{
+        window.__observedPointer={x:event.clientX,y:event.clientY,target:event.target.id,at:performance.now()};
+      },true);
+      const arc=CanvasRenderingContext2D.prototype.arc;
+      CanvasRenderingContext2D.prototype.arc=function(x,y,r,...rest){
+        if(this.canvas.id==='gameCanvas'&&r===22)window.__observedCollector={x,y};
+        return arc.call(this,x,y,r,...rest);
+      };
+    });
     await page.goto(base);await page.locator('[data-auth-mode="register"]').click();
     await page.locator("#nickname").fill(`学生完整学习${Date.now()}`);await page.locator("#register-password").fill("student-flow-synthetic-password");
     await page.locator("#register-password-confirm").fill("student-flow-synthetic-password");await page.locator("#login-submit").click();
@@ -50,28 +65,111 @@ async function main() {
       await page.locator("[data-submit-quiz]").click();assert.equal((await response).status(),200);
     }
     assert.equal(await page.locator(".support-display-settings:visible").count(),0,"前测不能显示帮助设置");
+    assert.equal(await page.locator(".task-assessment-note").count(),chapter.flow.preQuiz.questions.length,"前测逐题关闭帮助");
     await answerQuiz(chapter.flow.preQuiz,false);await page.waitForFunction(()=>state.submittedQuizzes.includes("V14-C1-pre"));
     await page.screenshot({path:path.join(output,"01-前测与待复核.png")});record("前测独立作答与提交",{shortAnswerProvider:"mock-manual-review"});
+    await page.locator("button").filter({hasText:"返回测试"}).click();
+    assert.equal(await page.locator(".question-task-review").count(),chapter.flow.preQuiz.questions.length);
+    const review=page.locator(".question-task-review").first();await review.locator("summary").click();
+    await review.locator("textarea").fill("我想核对这道题的第一步。");
+    const reviewed=page.waitForResponse(r=>r.url().includes("/assistant/ask")&&r.request().method()==="POST");
+    await review.getByRole("button",{name:"发送我的想法"}).click();assert.equal((await reviewed).status(),200);
+    await page.waitForFunction(()=>document.querySelector(".task-review-reply")?.textContent.includes("知点的回应"));
+    assert.equal(await review.getByRole("button",{name:"发送我的想法"}).isEnabled(),true);
+    record("前测提交后原题旁复盘与重复发送可用");
+    await page.getByRole("button",{name:"选择下一步",exact:true}).click();
     await page.getByRole("button",{name:"全部学习",exact:true}).click();await page.getByRole("button",{name:"按勾选知识点开始学习"}).click();record("学生确认六知识点学习路径");
     for(const [index,point] of points.entries()){
       await page.waitForFunction(id=>currentUnitId===id,point.id);
+      if(index===0){
+        await page.locator('[data-openmaic-state="ready"]').waitFor({state:'visible'});
+        const canvas=await page.locator('.multi-scene-slide-fullscreen-stage').boundingBox();
+        assert.ok(canvas.height>=480,'讲解页不能被帮助面板挤小');
+        await page.getByTitle('播放讲解',{exact:true}).click();
+        await page.waitForFunction(()=>LessonPlayback.snapshot(document.querySelector('.multi-scene-slide-panel'))?.elapsed>.2);
+        const caption=await page.locator('#classroom-lecture-text').innerText();
+        assert.ok(caption.includes('本场景'),'原有无音频首段同样播放');
+        await page.screenshot({path:path.join(output,'02-完整讲解与聚光.png')});
+        await page.getByTitle('暂停讲解',{exact:true}).click();
+        assert.equal(await page.evaluate(()=>LessonPlayback.snapshot(document.querySelector('.multi-scene-slide-panel')).status),'paused');
+        record('原课件完整讲解、文字回退与暂停，讲解画布不受求助区挤压');
+      }
       await page.locator('[data-workspace-canvas="interactive"]').click();
+      assert.equal(await page.locator('iframe[data-courseware-frame]').count(),0);
+      await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().taskReady===false);
+      assert.equal(await page.locator('.task-support-panel:visible,.learning-support-surface:visible').count(),0,'待选页无任务内帮助');
+      record(`${point.id}待选页无错误介入`);
       for(const type of ["simulation","game","mindMap","visualization3d"]){
         await page.locator(`.workspace-canvas-toolbar [data-knowledge-scene="${type}"]`).click();
         const frameNode=page.locator("iframe[data-courseware-frame]");await frameNode.waitFor({state:"visible"});
         await page.locator(".iframe-loader").waitFor({state:"hidden"});
         const box=await frameNode.boundingBox();assert.ok(box.width>300&&box.height>=300,`${point.id}/${type}课件尺寸`);
         const frame=await(await frameNode.elementHandle()).contentFrame();
+        if(point.id==='GH-01-K02'&&type==='game'){
+          await frame.getByRole('button',{name:/开始/}).first().press('Enter');
+          for(const full of [false,true]){
+            if(full){await page.getByTitle('全屏课件',{exact:true}).click();await page.waitForFunction(()=>{const r=document.querySelector('iframe[data-courseware-frame]')?.getBoundingClientRect();return document.fullscreenElement&&r&&Math.abs(r.left)<2&&Math.abs(r.top)<2&&Math.abs(r.width-innerWidth)<2&&Math.abs(r.height-innerHeight)<2;});}
+            const game=frame.locator('#gameCanvas');
+            const sizes=await game.evaluate(e=>({rect:e.getBoundingClientRect().toJSON(),w:innerWidth,h:innerHeight}));
+            assert.ok(Math.abs(sizes.rect.width-sizes.w)<2&&Math.abs(sizes.rect.height-sizes.h)<2,'游戏填满实际视口');
+            const b=await frameNode.boundingBox();
+            for(const [side,x,y] of [['left',2,b.height/2],['right',b.width-2,b.height/2],['top',b.width/2,2],['bottom',b.width/2,b.height-2]]){
+              await page.mouse.move(b.x+x,b.y+y);
+              try{
+                await frame.waitForFunction(side=>{const p=window.__observedCollector;return p&&(side==='left'?p.x<8:side==='right'?p.x>innerWidth-8:side==='top'?p.y<8:p.y>innerHeight-8);},side);
+              }catch(error){
+                const diagnostic=await frame.evaluate(()=>({pointer:window.__observedPointer,collector:window.__observedCollector,
+                  canvas:{width:document.querySelector("#gameCanvas").width,height:document.querySelector("#gameCanvas").height},
+                  viewport:{width:innerWidth,height:innerHeight}}));
+                throw new Error(`游戏边缘操作失败：${JSON.stringify({full,side,frame:b,diagnostic})}`,{cause:error});
+              }
+            }
+            await page.screenshot({path:path.join(output,`03-游戏四边-${full?'全屏':'常规'}.png`)});
+            if(full)await page.keyboard.press('Escape');
+          }
+          record('坐标游戏常规与全屏填满、四边真实鼠标可达');
+        }
+        const embedded=frame.locator('[data-cq-embedded-help="task"]');
+        await Promise.any([embedded.waitFor({state:"attached"}),page.locator('.task-support-panel').waitFor({state:"attached"})]);
+        if(type==="simulation"){
+          await embedded.waitFor({state:"visible"});
+          await embedded.locator("summary").click();
+          await embedded.locator("textarea").fill(`我在学习${point.name}，先观察哪些关系？`);
+          const [reply]=await Promise.all([page.waitForResponse(r=>r.url().includes("/assistant/ask")&&r.request().method()==="POST"),embedded.getByRole("button",{name:"发送我的想法"}).click()]);assert.equal(reply.status(),200);
+          await page.waitForFunction(()=>!KnowledgeAssistant.designSpaceSnapshot().busy);
+          await embedded.getByText('知点的回应',{exact:true}).waitFor({state:'visible'});
+          await frame.waitForFunction(()=>document.querySelector('[data-cq-embedded-help="task"]')?.shadowRoot.querySelector('textarea')?.value==='');
+          const after=await frameNode.boundingBox();assert.equal(after.width,box.width,"嵌入提示不能压缩课件宽度");assert.equal(after.height,box.height,"嵌入提示不能压缩课件高度");
+          assert.equal(await page.locator('.core-learning-workspace').evaluate(e=>e.classList.contains('tools-collapsed')),true,"任务内回复不自动展开聊天侧栏");
+          record(`${point.id}课件内部真实问答与尺寸保持`);
+        }
         if(await frame.locator('input[type="range"]:visible').count()){
           const slider=frame.locator('input[type="range"]:visible').first();await slider.focus();await slider.press("ArrowRight");
         }else{
           const start=frame.getByRole("button",{name:/开始|启动|进入/}).filter({visible:true}).first();
-          if(await start.count())await start.click();
+          if(await start.count())await start.press('Enter');
           else if(await frame.locator("svg .node-group:visible, svg #nodesGroup > g[data-id]:visible").count())await frame.locator("svg .node-group:visible, svg #nodesGroup > g[data-id]:visible").first().click();
         }
         await page.screenshot({path:path.join(output,`${point.id}-${type}.png`)});
       }
       record(`${point.id}的四类互动课件`);
+      const common=page.locator('#common-learning-task');
+      await common.getByRole('button',{name:/^(开始判断与验证|开始本知识点)$/}).click();
+      await common.locator('input[name="response"][value="unknown"]').check();
+      await common.locator('textarea').fill('我先区分函数规则、点值与附近趋势。');
+      await common.getByRole('button',{name:'提交判断',exact:true}).click();
+      await common.getByRole('button',{name:'观察完成，独立再试',exact:true}).click();
+      await common.locator('input[name="response"][value="unknown"]').check();
+      await common.getByRole('button',{name:'提交判断',exact:true}).click();
+      await common.getByRole('button',{name:'关闭并独立试一题',exact:true}).click();
+      await common.locator('input[name="response"][value="unknown"]').waitFor();
+      assert.equal(await page.locator('.multi-scene-knowledge-resource').isVisible(),false,'独立题隐藏答案材料');
+      assert.equal(await page.locator('.task-support-panel:visible,.learning-support-surface:visible').count(),0,'独立共同题关闭帮助');
+      await common.locator('input[name="response"][value="unknown"]').check();
+      await common.getByRole('button',{name:'提交判断',exact:true}).click();
+      await common.getByRole('button',{name:'跳过问卷并完成',exact:true}).click();
+      await page.waitForFunction(()=>!CommonLearning.protects());
+      record(`${point.id}常规入口共同判断、观察、独立复查和迁移，帮助自动关闭`);
       await page.getByRole("button",{name:"完成本节并选择下一步",exact:true}).click();
       await page.getByRole("button",{name:"做小题测一测",exact:true}).click();
       await page.waitForFunction(id=>currentUnitId===`${id}-formative`,point.id);
@@ -85,6 +183,9 @@ async function main() {
     await page.waitForFunction(()=>currentUnitId==="V14-C1-post");
     await answerQuiz(chapter.flow.postQuiz,false);await page.waitForFunction(()=>state.submittedQuizzes.includes("V14-C1-post"));
     await page.screenshot({path:path.join(output,"08-后测提交.png")});record("后测独立作答与提交");
+    assert.equal(await page.locator(".question-task-review").count(),chapter.flow.postQuiz.questions.length,"后测逐题复盘");
+    const memory=await page.evaluate(async()=>{const r=await fetch('/api/learning/proactive/state?chapterId=V14-C1',{headers:{Authorization:`Bearer ${state.authToken}`}});return (await r.json()).data.learningMemory;});
+    assert.equal(memory.points.length,6);assert.ok(memory.points.every(p=>p.sources.length>0));record("六知识点带来源学习记忆生成");
     // Use the course's public research measurement entry; no progress injection.
     const available=page.locator(".outcome-path-step.is-available");await available.first().click();
     await page.locator(".knowledge-outcome-stage.is-available > button").first().click();
@@ -106,8 +207,11 @@ async function main() {
     const SQL=await require("sql.js")();const database=new SQL.Database(fs.readFileSync(dbPath));
     database.run("UPDATE quiz_results SET created_at = ? WHERE phase = 'post'",[new Date(Date.now()-73*3600000).toISOString()]);
     fs.writeFileSync(dbPath,Buffer.from(database.export()));database.close();server=startServer();
-    for(let i=0;i<100;i++){try{if((await fetch(`${base}/api/health`)).ok)break;}catch{}await new Promise(r=>setTimeout(r,100));}
+    let restarted=false;for(let i=0;i<300;i++){if(server.exitCode!==null)throw new Error(`隔离服务重启退出，代码 ${server.exitCode}`);try{if((await fetch(`${base}/api/health`)).ok){restarted=true;break;}}catch{}await new Promise(r=>setTimeout(r,100));}
+    assert.ok(restarted,'隔离服务重启未通过健康检查');
     await page.reload();await page.locator("#app-loader").waitFor({state:"hidden"});await page.locator('[data-view="learn"]').first().click();
+    const restored=await page.evaluate(async()=>{const r=await fetch('/api/learning/proactive/state?chapterId=V14-C1',{headers:{Authorization:`Bearer ${state.authToken}`}});return (await r.json()).data.learningMemory;});
+    assert.equal(restored.generation,memory.generation);assert.deepEqual(restored.points.map(p=>[p.correct,p.incorrect,p.pending]),memory.points.map(p=>[p.correct,p.incorrect,p.pending]));record("服务重启与跨时段恢复学习记忆");
     await page.locator(".outcome-path-step.is-available").filter({hasText:"保持测量"}).click();
     await page.locator(".knowledge-outcome-stage.is-available > button").first().click();
     await active.waitFor({state:"visible"});

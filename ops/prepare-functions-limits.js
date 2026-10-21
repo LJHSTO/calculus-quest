@@ -67,6 +67,12 @@ for (const module of chapter.modules) {
       q.instrumentVersion = bank.version;
     }
     // A finite list supports a conjecture, not a mathematical assertion of a limit.
+    if (point.id === "GH-01-K02") {
+      const q = existing[0];
+      q.options.find(o => o.value === "C").label = "这个点的横坐标和纵坐标可以交换，位置保持不变";
+      q.analysis = "坐标(4,2)按顺序表示横坐标4、纵坐标2。交换为(2,4)会得到另一个点，因此选B。";
+      q.instrumentVersion = "functions-limits-formative-r3";
+    }
     if (point.id === "GH-02-K02") {
       const q = existing[0];
       q.question = "已知当 x 从小于3的一侧趋近3时，f(x) 趋近6。函数在 x=3 处的左极限是？";

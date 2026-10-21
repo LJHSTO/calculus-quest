@@ -167,6 +167,32 @@ async function main() {
         }
       }
       await page.screenshot({ path: path.join(output, `学生课件-${viewport.width}.png`) });
+      assert.equal(await page.locator('.proactive-inline-host:empty').evaluateAll(nodes =>
+        nodes.every(node => getComputedStyle(node).display === 'none')), true,
+        "空的课件旁帮助不能制造额外留白与滚动");
+      const settings = page.locator(".support-display-settings");
+      await settings.locator("summary").click();
+      const options = await page.locator(".support-display-options").boundingBox();
+      const lesson = await page.locator("iframe[data-courseware-frame]").boundingBox();
+      assert.ok(options && lesson && options.y + options.height <= lesson.y + 1,
+        `${viewport.width}: 帮助设置必须在课件之前占据布局空间，不能遮住课件`);
+      for (const control of await settings.locator("button").all()) {
+        assert.equal(await control.evaluate(element => {
+          const r = element.getBoundingClientRect();
+          return [.15, .5, .85].every(x => {
+            const hit = document.elementFromPoint(r.x + r.width * x, r.y + r.height / 2);
+            return hit === element || element.contains(hit);
+          });
+        }), true, `${viewport.width}: 设置选项不能被裁切或遮挡`);
+      }
+      await settings.locator('[data-support-setting="placement"][data-support-value="inline"]').click();
+      await settings.locator('[data-support-setting="placement"][data-support-value="sidebar"]').click();
+      assert.equal(await page.locator('.proactive-inline-host').evaluateAll(nodes => nodes.every(node =>
+        [...node.children].some(child => !child.hidden) || getComputedStyle(node).display === 'none')), true,
+        "切回助教栏后，隐藏的课件旁帮助也不能留下滚动间距");
+      await settings.locator("summary").focus();
+      await settings.press("Escape");
+      assert.equal(await settings.getAttribute("open"), null, "Escape 应收起设置并保留键盘焦点");
       if (viewport.width <= 1180) {
         await page.locator('button[data-workspace-pane="assistant"]').click();
         assert.equal(await page.locator(".player").isVisible(), false);

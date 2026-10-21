@@ -126,7 +126,7 @@ function buildDataset(packageData = {}) {
       supportLevel: String(raw.support_level || ""),
       resolution,
       accepted: resolution === "accepted" ? 1 : 0,
-      // 决策来源：jev = 真的问了模型；rule_fallback = 兜底
+      // 原样保留来源用于版本审计；自适应策略并不意味着调用了模型。
       decisionSource: String(evidence.decisionSource || ""),
       agentConfidence: Number.isFinite(Number(evidence.agentConfidence))
         ? Number(evidence.agentConfidence)
@@ -263,18 +263,15 @@ function summarizeProcess(rows) {
   return { overall: metrics, byCondition, hintJustification: justification };
 }
 
-/** 依从性：自适应档里到底有多少次真的走了模型。 */
+/** 来源与操纵检查：不把规则自适应误当成模型调用或模型失败。 */
 function summarizeAdherence(rows) {
   const adaptive = rows.filter((row) => row.condition === "adaptive");
   const rule = rows.filter((row) => row.condition === "rule");
-  const jev = adaptive.filter((row) => row.decisionSource === "jev");
-  const fallbackReasons = {};
-  for (const row of adaptive) {
-    if (row.decisionSource !== "jev") {
-      const key = row.decisionSource || "unknown";
-      fallbackReasons[key] = (fallbackReasons[key] || 0) + 1;
-    }
-  }
+  const sourceCounts = list => list.reduce((counts, row) => {
+    const key = row.decisionSource || "unknown";
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
   const levelCounts = (list) => list.reduce((accumulator, row) => {
     const key = row.proactivityLevel || "unknown";
     accumulator[key] = (accumulator[key] || 0) + 1;
@@ -282,9 +279,7 @@ function summarizeAdherence(rows) {
   }, {});
   return {
     adaptiveDecisions: adaptive.length,
-    jevDecisions: jev.length,
-    jevRate: rate(jev.length, adaptive.length),
-    fallbackBreakdown: fallbackReasons,
+    sourceDistribution: { rule: sourceCounts(rule), adaptive: sourceCounts(adaptive) },
     // 操纵检验：自适应档应该真的出现 notification / intervention，
     // 固定档应该恒为 suggestion。如果两者分布一样，说明这一档没被实施。
     levelDistribution: { rule: levelCounts(rule), adaptive: levelCounts(adaptive) }
@@ -383,20 +378,18 @@ function renderReport(analysis) {
   push();
 
   const a = analysis.adherence;
-  push("## 2. 依从性（Jev 判断层真的被调用了吗）");
+  push("## 2. 决策来源与历史版本依从性");
   push();
-  push(`自适应档决策 ${a.adaptiveDecisions} 次，其中真的走了模型 ${a.jevDecisions} 次（${pct(a.jevRate)}）。`);
-  if (Object.keys(a.fallbackBreakdown).length) {
-    push();
-    push("兜底分布：");
-    push();
-    push("| 来源 | 次数 |");
-    push("|---|---|");
-    for (const [key, count] of Object.entries(a.fallbackBreakdown)) push(`| ${key} | ${count} |`);
+  push(`自适应档决策 ${a.adaptiveDecisions} 次。以下原样列出来源标签，不根据条件名称推断模型调用，不把未知来源自动算作兜底。`);
+  push();
+  push("| 条件 | 来源标签 | 次数 |");
+  push("|---|---|---|");
+  for (const [condition, counts] of Object.entries(a.sourceDistribution)) {
+    for (const [key, count] of Object.entries(counts)) push(`| ${condition} | ${key} | ${count} |`);
   }
   push();
-  push("**兜底不是失败，是设计**：模型超时/不可用时会退回规则档并记录原因，实验不停摆。");
-  push("代价是这一格的干预变少，所以 `jevRate` 是依从性指标，必须报出来。");
+  push("按冻结版本核验规则来源、实验条件和实际呈现的一致性；不要把当前规则决策错误地算成模型调用失败。");
+  push("历史来源标签只按原记录保留；当前政策是规则策略，离线候选模型比较使用独立回放报告。");
   push();
   push("主动档位分布（操纵检验）：");
   push();

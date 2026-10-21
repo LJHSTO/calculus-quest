@@ -193,9 +193,9 @@ function setAuthMode(mode) {
     if (modeChanged && authMode !== "register") els.registerPasswordConfirm.value = "";
   }
   if (els.loginFeedback) els.loginFeedback.textContent = "";
-  setTimeout(() => {
+  if (modeChanged) {
     (authMode === "register" ? els.nickname || els.email : els.loginIdentifier)?.focus();
-  }, 0);
+  }
 }
 
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
@@ -222,6 +222,9 @@ els.authLogout?.addEventListener("click", async () => {
   els.authLogout.textContent = "正在退出…";
   try {
     await logoutParticipant();
+    document.querySelector("#password-change-form")?.reset();
+    const passwordFeedback = document.querySelector("[data-password-feedback]");
+    if (passwordFeedback) passwordFeedback.textContent = "";
     window.dispatchEvent(new CustomEvent("cq:participant-change", {
       detail: { participantId: "" }
     }));
@@ -348,6 +351,19 @@ els.profileForm?.addEventListener("submit", async (event) => {
   } finally {
     if (els.profileSave) els.profileSave.disabled = false;
   }
+});
+
+document.querySelector("#password-change-form")?.addEventListener("submit", async event => {
+  event.preventDefault();
+  const form = event.currentTarget, feedback = form.querySelector("[data-password-feedback]"), button = form.querySelector("button");
+  const currentPassword = form.elements.currentPassword.value, newPassword = form.elements.newPassword.value;
+  if (newPassword !== form.elements.confirmPassword.value) { feedback.textContent = "两次新密码不一致。"; return; }
+  button.disabled = true; feedback.textContent = "正在更新密码…";
+  try {
+    const result = await apiRequest("/api/auth/password", { currentPassword, newPassword });
+    form.reset(); feedback.textContent = result.message;
+  } catch (error) { feedback.textContent = error.message || "密码未更新，请稍后重试。"; }
+  finally { button.disabled = false; }
 });
 
 [els.profileNickname, els.profileEmail].forEach((input) => {

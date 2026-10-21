@@ -177,6 +177,9 @@
     }
 
     function post(payload) {
+      // Authored widget demonstrations can invoke the same handlers as a
+      // learner. Keep that origin explicit and never call them independent.
+      if (windowRef?.__cqAuthoredPlayback) payload = { ...payload, source: "authored_playback", independent: false, counts_as_student_evidence: false };
       const message = { type: "maic_learning_event", payload };
       try {
         const target = windowRef?.parent || windowRef;

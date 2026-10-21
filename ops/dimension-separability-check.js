@@ -4,7 +4,7 @@
  * @file dimension-separability-check.js
  * @description 维度可分离性自动化操纵检验套件 (SEP-01 ~ SEP-05)
  * 验证在限定取值范围内，操纵目标维度时，非目标维度的字段与上下文保持严格一致性。
- * 直接为顶会论文的 Manipulation Check 章节提供自动化证明。
+ * 仅验证对象层字段约束；真实系统接线、剂量相等和学生感知仍需独立验证。
  */
 
 const assert = require("node:assert/strict");
@@ -200,7 +200,7 @@ async function runSeparabilitySuite() {
     console.log("  ✅ SEP-05 通过: D6 状态转移独立演化，不破坏输入决策一致性");
   }
 
-  console.log("\n🎉 5/5 项可分离性检验全部通过！具备直接写入论文操纵检查章节的实证数据。");
+  console.log("\n5/5 项对象契约检查通过；不等同于真人操纵检验或教育效果证据。");
 }
 
 if (require.main === module) {

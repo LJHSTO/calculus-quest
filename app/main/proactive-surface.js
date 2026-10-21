@@ -1,6 +1,6 @@
 (function initProactiveSurface(global) {
   "use strict";
-  const labels = { inline: "课件旁", sidebar: "助教栏", tip: "提示", example: "例子", interactive: "动手试", chat: "对话" };
+  const labels = { inline: "任务内", sidebar: "助教栏", tip: "提示", example: "例子", interactive: "动手试", chat: "对话" };
   const examples = {
     "GH-01-K01": { title: "输入如何对应输出", rule: "y = 2x + 1", question: "改变输入后，输出如何变化？同一个输入能否同时对应两个不同输出？", value: x => 2 * x + 1 },
     "GH-01-K02": { title: "把坐标放回函数规则", rule: "y = x + 3", question: "点的第一个数是输入。试着写出一个满足规则的有序对。", value: x => x + 3 },
@@ -38,6 +38,13 @@
     toolbar = node("details", "support-display-settings");
     const summary = node("summary", "", "帮助怎么显示");
     toolbar.append(summary);
+    toolbar.addEventListener("keydown", event => {
+      if (event.key !== "Escape" || !toolbar.open) return;
+      event.preventDefault();
+      event.stopPropagation();
+      toolbar.open = false;
+      summary.focus({ preventScroll: true });
+    });
     const body = node("div", "support-display-options");
     [["placement", ["sidebar", "inline"], "位置"], ["modality", ["tip", "example", "interactive", "chat"], "形式"]].forEach(([key, options, label]) => {
       const group = node("fieldset"); group.append(node("legend", "", label));
@@ -45,18 +52,72 @@
         const button = node("button", "", labels[value]);
         button.type = "button"; button.dataset.supportSetting = key; button.dataset.supportValue = value;
         button.addEventListener("click", () => {
-          global.KnowledgeAssistant.setSupportView({ ...snapshot.view, [key]: value });
-          record("opened", { reason: "learner_selected_surface" });
+          if (global.KnowledgeAssistant.setSupportView({ ...snapshot.view, [key]: value })) {
+            record("opened", { reason: "learner_selected_surface" });
+          }
         });
         group.append(button);
       });
       body.append(group);
     });
-    body.append(node("p", "", "只调整帮助的显示方式；是否接受由你决定。"));
+    body.append(node("p", "support-display-note"));
+    const memory=node("section","support-memory-controls");memory.dataset.agentControls="";
+    body.append(memory);
+    memory.addEventListener("click",async event=>{
+      const button=event.target.closest("[data-agent-action]");if(!button)return;
+      button.disabled=true;
+      const action=button.dataset.agentAction;
+      const command=action==="grant"?{action,scope:snapshot.scopeKey,capability:button.dataset.capability,confirmed:true,hours:168}
+        :{action,id:button.dataset.id};
+      try{await global.KnowledgeAssistant.agentRuntimeRequest(command);}
+      catch(error){button.disabled=false;memory.querySelector("[role=status]").textContent=error.message;}
+    });
     toolbar.append(body); parent.append(toolbar);
   }
+  function syncToolbarSettings(next) {
+    const fixed = Boolean(next.researchControls?.enabled && next.researchControls.revision > 0);
+    const engineering = Boolean(next.researchControls?.enabled);
+    toolbar.querySelector("summary").textContent = engineering ? "提示呈现 · D4" : "帮助怎么显示";
+    toolbar.querySelectorAll("fieldset").forEach(group => { group.hidden = engineering; });
+    toolbar.querySelectorAll("[data-support-setting]").forEach(button => {
+      button.disabled = fixed || engineering;
+      button.setAttribute("aria-pressed", String(next.view[button.dataset.supportSetting] === button.dataset.supportValue));
+    });
+    toolbar.querySelector(".support-display-note").textContent = engineering
+      ? `当前：${labels[next.view.placement]} · ${labels[next.view.modality]}。请在六维观察台的 D4 中统一设置；这里显示同一项设置的结果。是否接受帮助仍由你决定。`
+      : fixed
+      ? "当前提示位置由六维控制台固定；可在控制台调整后续提示的位置。是否接受帮助仍由你决定。"
+      : "提示保留原有支架；例子和动手试会增加补充练习。是否接受帮助由你决定。";
+    const memory=toolbar.querySelector("[data-agent-controls]");
+    if(memory) {
+      const data=next.agentRuntime;
+      const key=JSON.stringify([next.scopeKey,data,next.locked,next.check?.id]);
+      if(memory.dataset.key!==key) {
+        memory.dataset.key=key;memory.replaceChildren();
+        memory.hidden=!data || next.locked || Boolean(next.check);
+        if(!memory.hidden) {
+          memory.append(node("h4","","学习记忆与提醒"));
+          const records=data.memory.filter(r=>r.scope===next.scopeKey);
+          memory.append(node("p","",`已保存本知识点 ${records.length} 次独立检查记录。记录跨登录保留，不代表已经掌握。`));
+          for(const [capability,title] of [["open_hint","允许自动展开本知识点线索（7天）"],["prepare_review","允许准备本知识点复习提醒（7天）"]]) {
+            const permission=data.permissions.find(p=>p.scope===next.scopeKey&&p.capability===capability);
+            const button=node("button","",permission?(capability==="open_hint"?"撤回自动展开授权":"撤回复习提醒授权"):title);
+            button.type="button";button.dataset.agentAction=permission?"revoke":"grant";
+            button.dataset.capability=capability;button.dataset.id=permission?.id||"";memory.append(button);
+          }
+          for(const task of data.tasks.filter(t=>t.kind==="review"&&t.scope===next.scopeKey&&t.status==="ready")) {
+            memory.append(node("p","",task.payload.message));
+            const dismiss=node("button","","关闭这条提醒");dismiss.type="button";dismiss.dataset.agentAction="dismiss";dismiss.dataset.id=task.id;memory.append(dismiss);
+          }
+          memory.append(node("small","","授权仅作用于当前知识点，可随时撤回；不会自动答题或提交。提醒在登录平台时查看。"),
+            node("p","", ""));
+          memory.lastChild.setAttribute("role","status");
+        }
+      }
+    }
+  }
   function mountHost(next) {
-    const tabs = document.querySelector(".workspace-canvas-tabs");
+    const tabs = document.querySelector(".workspace-canvas-toolbar");
     if (!tabs) return null;
     if (!toolbar?.isConnected) makeToolbar(tabs);
     let host;
@@ -93,8 +154,11 @@
       label.append(input); section.append(label, output); update();
     } else {
       const grid = node("div", "support-example-grid");
-      [-2, 0, 2].forEach(x => {
-        const item = node("div"); item.append(node("span", "", `输入 ${x}`), node("strong", "", "输出由你计算")); grid.append(item);
+      [-2, 0, 2].forEach((x, index) => {
+        const item = node("div");
+        item.append(node("span", "", `${index === 0 ? "一起看" : "你来试"} · 输入 ${x}`),
+          node("strong", "", index === 0 ? `代入规则，输出为 ${data.value(x)}` : "输出由你计算"));
+        grid.append(item);
       });
       section.append(grid);
     }
@@ -126,13 +190,21 @@
       renderKey = ""; busy = false; shell?.replaceChildren();
     }
     snapshot = next;
-    const eligible = next.signedIn && next.active && next.unitType === "knowledge" && !next.locked;
+    if (global.TaskSupport?.sync(next)) {
+      stopExposure(); if(shell)shell.hidden=true;
+      const tabs=document.querySelector(".workspace-canvas-toolbar");
+      if(tabs&&!toolbar?.isConnected)makeToolbar(tabs);
+      if(toolbar){toolbar.hidden=Boolean(next.locked || next.check);syncToolbarSettings(next);}
+      return;
+    }
+    const eligible = next.signedIn && next.active && next.unitType === "knowledge" && !next.locked && next.taskReady !== false;
     if (!eligible) {stopExposure(); if(shell) shell.hidden = true; if(toolbar) toolbar.hidden = true; return;}
     const host = mountHost(next);
     if (!host) {stopExposure(); if(shell) shell.hidden = true; return;}
     toolbar.hidden = false;
-    toolbar.querySelectorAll("[data-support-setting]").forEach(button => button.setAttribute("aria-pressed", String(next.view[button.dataset.supportSetting] === button.dataset.supportValue)));
-    const owns = next.view.placement === "inline" || next.view.modality !== "tip";
+    syncToolbarSettings(next);
+    const owns = next.view.placement === "inline" || next.view.modality !== "tip"
+      || (next.view.format||"plain")!=="plain" || ["A1","A4"].includes(next.offer?.authority?.level);
     if (!owns) {stopExposure(); if(shell) shell.hidden = true; return;}
     if (!shell) {
       shell = node("section", "learning-support-surface");
@@ -156,6 +228,7 @@
     const header = node("header", "support-surface-header");
     header.append(node("strong", "", "知点 · 学习帮助"), node("span", "", labels[next.view.modality]));
     const close = node("button", "support-surface-collapse", "收起"); close.type = "button";
+    close.title = "收起补充展示，当前帮助保留在助教栏；不会替你拒绝帮助";
     close.addEventListener("click", () => {record("dismissed", { reason: "surface_collapsed" }); global.KnowledgeAssistant.setSupportView({ placement: "sidebar", modality: "tip" });});
     header.append(close); shell.append(header);
     if (next.muted) {

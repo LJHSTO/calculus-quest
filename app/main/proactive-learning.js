@@ -298,6 +298,7 @@
     function recordParameterCommit(event, at) {
       const change = parameterChange(event);
       if (!change) return null;
+      if(typeof window!=="undefined" && window.CoursewareSemantics?.parameterRelevant(currentUnit?.unitId,change.parameter)===false)return null;
       const key = `${currentUnit?.sceneType || event.sceneType || "scene"}:${change.parameter}`;
       const fingerprint = `${change.oldValue}\n${change.newValue}`;
       const recent = (commits.get(key) || [])

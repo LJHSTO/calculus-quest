@@ -6,6 +6,8 @@ const root = createRoot(document.getElementById("slide"));
 let model = null;
 let picking = false;
 let noteRanges = [];
+let playbackEffects = {};
+function renderCanvas() { root.render(<RenderBoundary key={model.slide.id}><Canvas effects={playbackEffects} /></RenderBoundary>); }
 const post = (payload) => parent.postMessage(payload, "*");
 
 function plain(value) {
@@ -77,12 +79,14 @@ class RenderBoundary extends React.Component {
   render() { return this.state.failed ? <p>课件暂时无法显示</p> : this.props.children; }
 }
 
-function Canvas() {
+function Canvas({ effects }) {
   React.useEffect(() => {
     let cancelled = false;
     const slideId = model.slide.id;
     (async () => {
-      await document.fonts.ready;
+      // A slow optional web font must not hold the whole classroom blank.
+      // Microsoft YaHei remains a readable CJK fallback during font loading.
+      await Promise.race([document.fonts.ready, new Promise(resolve => setTimeout(resolve, 1500))]);
       await new Promise(requestAnimationFrame);
       await new Promise(requestAnimationFrame);
       if (cancelled) return;
@@ -91,7 +95,7 @@ function Canvas() {
     })();
     return () => { cancelled = true; };
   }, []);
-  return <SlideCanvas slide={model.slide} canvasPercentage={100} chrome={false}
+  return <SlideCanvas slide={model.slide} canvasPercentage={100} chrome={false} effects={effects}
     onElementClick={(element, event) => {
       if (!picking) return;
       event.preventDefault();
@@ -107,8 +111,16 @@ window.addEventListener("message", (event) => {
   const message = event.data;
   if (message.type === "cq:openmaic-slide-load" && message.slide && Array.isArray(message.slide.elements)) {
     model = message;
-    root.render(<RenderBoundary key={message.slide.id}><Canvas /></RenderBoundary>);
+    playbackEffects = {};
+    renderCanvas();
   }
+  if (message.type === "cq:playback-effect" && model && message.source === "authored_playback") {
+    const action = message.action;
+    if (action?.type === "spotlight") playbackEffects = { ...playbackEffects, spotlight: { elementId: action.elementId, dimness: action.dimOpacity ?? .5 } };
+    if (action?.type === "laser") playbackEffects = { ...playbackEffects, laser: { elementId: action.elementId, color: action.color || "#d43a37", duration: 3000 } };
+    renderCanvas();
+  }
+  if (message.type === "cq:playback-clear" && model) { playbackEffects = {}; renderCanvas(); }
   if (message.type === "cq:context-pick-begin") {
     picking = true;
     document.body.classList.add("picking");

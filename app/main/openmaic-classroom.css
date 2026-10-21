@@ -246,7 +246,7 @@
   .core-learning-workspace[data-classroom-surface="slide"] .workspace-canvas-toolbar > .agentic-knowledge-choice { display: none; }
   .core-learning-workspace :is(.multi-scene-slide-panel, .multi-scene-scene-panel) { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; padding: 8px 12px; background: transparent; overflow: hidden; }
   .core-learning-workspace .multi-scene-slide-heading { display: none; }
-  .core-learning-workspace .multi-scene-slide-fullscreen-stage { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; min-width: 0; overflow: hidden; }
+  .core-learning-workspace .multi-scene-slide-fullscreen-stage { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; min-height: 480px; min-width: 0; overflow: hidden; }
   .core-learning-workspace .multi-scene-slide-fullscreen-stage .slide-wrap { flex: 0 0 auto; max-width: 100%; margin: 0; border: 1px solid #e7eaf0; border-radius: 6px; box-shadow: 0 3px 16px #20263208; }
   .core-learning-workspace .multi-scene-knowledge-player [data-coach-strip] { display: none; }
   .core-learning-workspace .multi-scene-scene-selector { flex: 0 0 auto; }
@@ -403,3 +403,29 @@
   .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option { min-height: 52px !important; height: auto !important; }
   .core-learning-workspace .classroom-controls { flex-wrap: wrap; }
 }
+/* Independent probes occupy normal document flow. Lesson geometry is preserved
+   during exploration; measurement temporarily hides answer-bearing material. */
+.common-learning-task{max-width:100%;margin:18px 0;padding:22px 24px;background:var(--panel-bg,#fff);border:1px solid #d1ded7;border-radius:12px;color:#253b35;line-height:1.8;flex:0 0 auto;overflow-wrap:anywhere}
+.common-learning-task h3{margin:0 0 10px;font-size:18px}
+.common-learning-task fieldset{display:flex;flex-wrap:wrap;gap:8px 16px;margin:16px 0;border:0;padding:0}
+.common-learning-task legend{font-weight:600;margin-bottom:6px}
+.common-learning-task label{display:flex;align-items:center;gap:7px;min-height:40px}
+.common-learning-task label:has(textarea){display:block}
+.common-learning-task textarea{display:block;width:100%;font:inherit;padding:10px;border:1px solid #aebfb5;border-radius:6px;margin:6px 0}
+.common-learning-task label:has(select){flex-wrap:wrap}
+.common-learning-task select{max-width:100%;min-height:40px;font:inherit;color:inherit;background:#fff;border:1px solid #aebfb5;border-radius:6px;padding:5px 10px}
+.common-learning-task select:disabled{opacity:.55}
+.common-learning-task select:focus-visible{outline:3px solid #8265cb;outline-offset:2px}
+.common-learning-task button{font:inherit;min-height:40px;margin:6px 10px 6px 0;padding:7px 14px;border:1px solid #9cb6a8;border-radius:6px;background:#f0f7f3;color:#24513c;cursor:pointer;white-space:normal}
+.common-learning-task button:disabled{opacity:.55;cursor:wait}
+.common-learning-task input:focus-visible,.common-learning-task button:focus-visible,.common-learning-task textarea:focus-visible{outline:3px solid #8265cb;outline-offset:2px}
+.common-task-hint{padding:16px;background:#eef6f0;border-left:3px solid #4b8868}
+.common-probe-active .multi-scene-knowledge-resource,.common-probe-active .task-support-panel{display:none!important}
+@media(max-width:700px){.common-learning-task{padding:16px}.common-learning-task fieldset{display:block}.common-learning-task button{max-width:100%}}
+/* Same support text, alternate D4 forms; all remain in document flow. */
+.knowledge-proactive-inline-offer[data-presentation-format="bubble"] [role="note"] {
+  padding: 12px 16px; border-radius: 16px 16px 16px 4px; background: #e9f4ee;
+  color: #244b39; border: 1px solid #bbd5c7; overflow-wrap: anywhere;
+}
+.support-memory-controls { border-top: 1px solid #d8dedb; margin-top: 12px; padding-top: 12px; }
+.support-memory-controls button { white-space: normal; max-width: 100%; margin: 4px; }

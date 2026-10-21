@@ -5629,6 +5629,8 @@ textarea,
   right: 0;
   z-index: 120;
   width: min(340px, calc(100vw - 24px));
+  max-height: calc(100dvh - 100px);
+  overflow-y: auto;
   border: 1px solid rgba(18, 35, 32, 0.12);
   border-radius: 8px;
   background: #fffdf7;

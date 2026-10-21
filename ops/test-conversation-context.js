@@ -36,4 +36,11 @@ assert.doesNotMatch(JSON.stringify(over), /窗口外的旧内容/);
 const separate = buildConversationContext([{role:"user",content:"新会话只讨论极限"}], {threadKey:"knowledge:KP2"});
 assert.doesNotMatch(JSON.stringify(separate), /先看函数图像/);
 assert.equal(separate.coverage.threadKey, "knowledge:KP2");
+const longCorrection = buildConversationContext([
+  { role: "user", content: "函数定义域。".repeat(600) + "末尾更正：只讨论正数。" }
+]);
+assert.match(longCorrection.recentConversation[0].content, /末尾更正：只讨论正数/);
+assert.equal(longCorrection.coverage.containsTruncation, true);
+assert.equal(longCorrection.coverage.historyIsMasteryEvidence, false);
+assert.equal(over.earlierConversation[0].messagePosition, 2);
 console.log("会话上下文通过：60条有界覆盖、早期首尾摘录、最新练习连续性、字符预算、角色隔离和窗口边界。");

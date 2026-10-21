@@ -1,0 +1,34 @@
+"use strict";
+const assert=require('node:assert/strict'),{createWorkbench,points}=require('../lib/study-workbench');
+async function main(){
+  const SQL=await require('sql.js')(),sql=new SQL.Database(),db={getDbSync:()=>sql,saveNow(){},currentLearningGeneration:()=>1};
+  const env={NODE_ENV:'test',PROACTIVE_STUDY_SEED:'synthetic-common-task-seed'};
+  const practice=createWorkbench({db,env,mainEntry:true});
+  let view=practice.start('ordinary',{acknowledged:true,knowledgePointId:points[3]});
+  assert.equal(view.session.knowledgePointId,points[3]);assert.equal(practice.exportData().dataClass,'ordinary_learning_not_research');
+  const action=(name,extra={})=>view=practice.act('ordinary',{action:name,fingerprint:view.protocol.fingerprint,revision:view.session.revision,...extra});
+  assert.equal(practice.protects('ordinary'),true);
+  action('answer',{probeId:view.session.probe.id,response:'2',explanation:'我把点值当成了极限',confidence:2});
+  assert.equal(practice.protects('ordinary'),false);
+  const revision=view.session.revision;
+  practice.recordProcess('ordinary',{fingerprint:view.protocol.fingerprint,knowledgePointId:points[3],event:{type:'parameter_commit',data:{parameter:'x_position',value:2.99,secret:'omit'}}});
+  assert.equal(practice.state('ordinary').session.revision,revision,'过程事件不能使答题页面过期');
+  await new Promise(r=>setTimeout(r,1050));action('continue');
+  action('answer',{probeId:view.session.probe.id,response:'1'});assert.equal(view.session.stage,'support');assert.equal(view.session.help.placement,'inline');
+  action('close');assert.equal(view.session.help,null);assert.equal(practice.protects('ordinary'),true);
+  action('answer',{probeId:view.session.probe.id,response:'1'});assert.ok(view.session.feedback);
+  action('survey',{answers:{interruption:null,control:5,effort:4}});assert.equal(view.session.stage,'between_units');
+  action('select_unit',{knowledgePointId:points[0]});assert.equal(view.session.knowledgePointId,points[0]);
+  const before=practice.state('ordinary'),restored=createWorkbench({db,env,mainEntry:true});assert.deepEqual(restored.state('ordinary'),before);
+  const spec=practice.specification(),protocol={...spec,id:'reviewed-fixture-only',kind:'recheck',reviewedBy:'合成教师',reviewedAt:'2026-10-19',approvalReference:'TEST-ONLY-NOT-APPROVAL',consentVersion:'fixture-v1',consentText:'合成同意书，用于自动化验证。',contact:'合成联系人',retentionPolicy:'合成保留方案',withdrawalPolicy:'合成退出方案'};
+  assert.throws(()=>createWorkbench({db,env,mainEntry:true,humanProtocol:{...protocol,questionHash:'wrong'}}),/摘要/);
+  const formal=createWorkbench({db,env,mainEntry:true,humanProtocol:protocol});
+  assert.throws(()=>formal.start('human-fixture',{acknowledged:true}),/知情同意/);
+  let s=formal.start('human-fixture',{acknowledged:true,consentVersion:'fixture-v1'});assert.equal(formal.manages('human-fixture'),true);
+  formal.act('human-fixture',{action:'withdraw',revision:s.session.revision,fingerprint:s.protocol.fingerprint});assert.equal(formal.manages('human-fixture'),false);
+  assert.equal(formal.exportData().sessions[0].consent.status,'withdrawn');
+  assert.equal(JSON.stringify(practice.exportData().processEvents).includes('omit'),false);
+  const semantics=require('../lib/courseware-semantics');assert.equal(semantics.parameterRelevant(points[0],'演示速度'),false);assert.equal(semantics.parameterRelevant(points[0],'输入值 x'),true);assert.equal(semantics.parameterRelevant(points[1],'snap_tolerance'),false);
+  sql.close();console.log('通过：常规入口六知识点任务、独立保护、过程与答题并发、持久恢复、正式同意/退出/摘要锁定、数学参数白名单');
+}
+main().catch(e=>{console.error(e);process.exitCode=1;});

@@ -22,9 +22,29 @@
 
 学习工作区在1180px及以下使用路径、课件、助手独立面板。中等桌面进入互动时优先释放课件空间，学生可手动恢复侧栏和讲解。`?research=1` 只切换界面模式，数据访问仍由服务端鉴权。
 
-运行 `node ops/verify-functions-limits.js` 执行当前37项综合回归，覆盖六知识点L1至L5、曝光边界、D3/D4/D5真实候选、18种布局及两种桌面尺寸的24课件。`node ops/test-student-learning-flow.js` 另行验证新注册学生到保持测量的完整UI流程；保持时间仅在隔离测试库中模拟。
+运行 `node ops/verify-functions-limits.js` 执行当前44项综合回归，覆盖六知识点L1至L5、曝光边界、D3/D4/D5真实候选、18种布局、六维契约缺失值、两种桌面尺寸的24课件，以及新版课件包、共同探针工作台与评测导出。`node ops/test-student-learning-flow.js` 另行验证新注册学生到保持测量的完整UI流程；保持时间仅在隔离测试库中模拟。工程通过不能证明课件数学表述、任务有效性或学习效果合格。
+
+2026-10-17 更新：帮助设置在课件上方展开，避免遮挡与裁切，支持 Escape 收起；长对话摘录保留末尾更正；缺失推断、取消与未知曝光分开记录。`EvidencePackage` 等独立契约模块用于工程约束检查，不等同于主策略接线、真人操纵检验或学习效果证据。研究同步、文献复核和 30–60 人实验建议见本地 `research/平台优化与真人实验研究总报告-2026-10-17.md`；可阅读版位于 `output/平台优化与实验方案-2026-10-17/项目总结与实验方案.html`。
 
 ## 快速开始
+
+### 2026-10-18 常规入口更新
+
+任务内提示现已接入首页“学习”入口，不再只在独立预演页运行。六份滑块实验在原生操作区接收提示和作答，知识图使用已展开侧栏；游戏、3D 和静态讲解采用课件下方的正常流答题区，保持画面尺寸。前后测和形成性检查提交前关闭帮助，提交后支持原题旁复盘；完整聊天保留在学习侧栏。
+
+后台已移除 Jev 运行时与专用环境配置，主动策略使用规则，客观题由服务端判分。新增带来源、时间和学习轮次的跨会话测验记忆，以及已接受帮助的服务重启恢复；历史表现不等于当前掌握，未实现离线自主推送。
+
+`node ops/test-student-learning-flow.js` 走完整常规学习流程；`node ops/verify-functions-limits.js` 运行综合验收。最新说明由 `node ops/build-main-entry-report.js` 生成于 `output/正式学习入口升级-2026-10-18/常规学习入口、智能体与实验路线核验.html`。六维均有基础实现，但共同探针与正式条件锁定迁入常规入口、全部授权/渐退取值、真实模型校准及真人研究仍须继续完成，不能把工程通过等同论文证据。
+
+### 研究工程预演与新版课件迁移
+
+`node ops/start-study-workbench-preview.js recheck`（或`placement`）启动隔离数据库的研究工作台，支持六知识点共同探针、服务端分配/判分、固定L2提示、条件锁定、退出与完整机会导出。题目和问卷尚未审定，默认关闭且禁止生产环境启用；它与主平台rule/adaptive研究是不同协议。启动器输出的PID用于结束本次预览，种子仅保留在该进程环境，正式发布需另行完成安全种子保管和备份恢复。
+
+`node ops/start-study-workbench-preview.js embedded` 启动真正的任务内提示预演：六个知识点的已适配互动课件内，在操作控件后嵌入线索；聚焦练习输入框后，线索移到题干和输入框之间。切换保留课件状态与作答草稿，独立测量阶段收起帮助。它是单条件工程演示，不进行随机分组，不替换主平台既有呈现条件；新增课件需审核并提供明确锚点。运行 `node ops/test-embedded-help-browser.js` 验证六单元完整流程，图示说明位于 `output/课件内与作答区嵌入-2026-10-18/嵌入式提示说明.html`。
+
+`ops/inspect-openmaic-package.js`读取1.2.0结构包或离线HTML；`ops/stage-openmaic-courseware.js`暂存经人工审核的映射，不自动替换现有课程。离线课堂播放不等于已经接入主动策略。
+
+`ops/build-education-replay.js`按人划分研究轨迹并隔离未来结果；`ops/evaluate-education-replay.js`只对已裁决标签评分，不把工程数据或实际规则动作当真人金标准。操作和研究材料见本地`research/OpenMAIC迁移与六维开发复核-2026-10-17.md`、`research/真人研究方向与执行材料-2026-10-17.md`及`research/教育主动帮助评测平台方案-2026-10-17.md`；阅读入口由`node ops/build-study-package.js`生成于`output/OpenMAIC迁移与研究方案-2026-10-17/项目更新与研究选择.html`。
 
 ```bash
 npm install
@@ -119,7 +139,9 @@ node ops/test-student-learning-flow.js
 node ops/start-functions-limits-preview.js --show-proactive
 ```
 
-预览地址写入 `output/函数极限预览.json`。预览使用独立数据库和 mock 回复；学生全流程脚本使用真实 UI、真实策略和真实客观判分，无学习进度注入。保持 UI 的隔离测试把测试库的后测时间提前73小时，以模拟等待；正式72小时门槛保留，另由 `test-retention-v4-api.js` 验证。工程测试不代表真人学习效果。改变支架内容、呈现器或课程结构后需新建实验 ID，避免复用冻结协议下的旧数据库。
+预览地址写入 `output/函数极限预览.json`。启动器默认持续复用固定端口与数据库，首次会就地接管上次发布的预览，保留账号、密码、登录会话与学习记录。`--restart` 安全保存、备份后重启；只有显式 `--isolated` 才创建临时测试库，且不会覆盖用户入口。`output/函数极限固定入口.json` 含本地配置，勿提交、公开或清理；其指向的数据目录和备份也须保留。配置改变时，本地工程预览可以创建新的实验 ID，账号数据库仍不变；正式研究必须人工审核并冻结新协议，不能用这个模拟启动器运行真人实验。
+
+预览当前使用 mock 回复。学生全流程脚本使用真实 UI、真实规则和真实客观判分，无学习进度注入。保持 UI 的隔离测试把测试库的后测时间提前73小时，以模拟等待；正式72小时门槛保留。工程测试不代表真人学习效果。持续使用验收：`node ops/test-persistent-preview.js`。
 
 生产站点部署到 `/calculus_quest/` 时，设置 `BASE_PATH=/calculus_quest`。服务兼容 Nginx 保留或剥离前缀两种转发方式。
 
@@ -129,7 +151,24 @@ Linux 一键部署继续使用 `./install_run.sh [端口]`，未传端口时为�
 
 ## 课程数据
 
+六维观察台支持两类工程环境：output 下的隔离测试库，以及显式开启的全量展示服务。展示服务同时设置 `RESEARCH_CONTROLS_ENABLED=true`、`RESEARCH_CONTROLS_DEMO=true` 与 `PROACTIVE_PARTICIPATION_MODE=implicit-pilot`，所有登录账号均可调整自己的六维设置，普通学习入口直接显示观察台。配置按账号持久化，保存时关闭旧建议并取消旧延迟任务；不能替学生授权，也不关闭独立测验保护。正式同意模式或加载正式共同任务协议时始终只读。
+
+D1 提供证据、规则阈值和最少证据类别；D2 提供自然边界、延迟队列、到期复核与过期取消；D3 提供 L1–L5 起始支持与上限；D4 提供任务内／侧栏及四种同内容形式；D5 提供反应式、固定／自适应建议、A1–A4 权限；D6 提供独立检查、升级上限、渐退、冷却和授权复习。规则分数尚未通过真人标注校准，持久记忆不等于经过验证的知识追踪模型。
+
+真实接口使用显式模型名，避免 `auto` 隐式改变供应商路由。对话保存请求／报告模型、提示词摘要和耗时；理由评分保存量规及模型审计，客观题由服务器规则判分。连通检查只使用合成内容：设置 `LIVE_MODEL_SMOKE=1` 和 `LLM_CONFIG_FILE` 后运行 `node ops/test-live-model-integration.js`；可通过 `LIVE_GRADING_MODEL` 指定评分模型。该检查会调用付费接口，但不使用已有学生记录。
+
+验收入口：`node ops/test-research-controls.js`、`node ops/test-research-controls-browser.js`、`node ops/test-six-dimension-runtime.js`。Jev 专用运行时与配置已移除；主策略使用可追溯规则，模型决策比较由独立回放工具承担。
 核心课程路线文件：data/multi-scene-learning-route.json。它是“多场景自适应学习路线”的课程事实源，包含章节、知识点、讲解页、互动资源引用和每章三段 quiz。
+
+2026-10-19：常规六知识点入口已接入“判断与验证”，包含初判、课件探索、独立复查、固定线索、无辅助迁移与单元问卷。默认属于普通学习，不进入研究回放数据集。`MAIN_LEARNING_PROTOCOL_FILE` 可指定经过审题和机构审核的 `recheck` 或 `placement` 配置；摘要和必填告知项不匹配时拒绝启动，字段齐全并不代表系统替机构核验过审批。配置摘要由管理员接口 `/api/admin/research/common-tasks` 的 `specification` 获取，分配种子使用独立的 `PROACTIVE_STUDY_SEED`。冻结协议使用相同二维课件，禁用通用助教绕过条件；学生始终可退出。修改正式协议须使用新 ID，不能覆盖已有分配。
+
+原课件的讲解由 `lib/course-playback.js` 驱动，保留现有音频和作者动作。修订过数学表述的旧录音引用停用，转文字讲解；作者演示事件不作为学生能力证据。游戏和三维探索不自动代表学习进步。判断只采用经审查的数学参数和可追溯作答；“当前作答得分率”不是已经验证的潜在知识掌握概率。
+
+新增验收：`node ops/test-main-common-tasks.js`、`node ops/test-main-human-browser.js`、`node ops/test-course-playback.js`。真人协议浏览器测试使用合成审核信息和隔离测试账号，实际等待45秒探索，并检查同意、固定课件、通用助教隔离、独立题与刷新恢复。
+
+研究回放工具依次为 `ops/build-education-replay.js`、`ops/prepare-replay-annotation.js`、`ops/merge-replay-annotations.js`、`ops/run-education-replay.js`、`ops/evaluate-education-replay.js`、`ops/judge-education-replay.js`。运行器与辅助裁判默认仅展示计划，传入 `--execute` 才调用服务。回放只判断已观察前缀上的决策质量，不推断替代策略的真人学习效果；教师双标、裁决与有效同意不能由模型生成代替。核验入口：`node ops/test-education-replay-runner.js`。
+
+课程范围仍为原六知识点，研究人群为尚未系统学习极限的大一学生，总样本30–60人，正式课题尚未选择。
 
 互动课件资源（HTML 交互、音频、图片）位于 resources/open-maic/ 目录。
 

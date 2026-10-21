@@ -105,6 +105,8 @@ async function main() {
     await page.locator("#app-loader").waitFor({ state: "hidden" });
     await register(page);
     await page.locator('[data-view="learn"]').first().click();
+    // The ordinary entry now reserves space for courseware by default.
+    await page.locator('#workspace-tools-toggle').click();
     await page.locator('[data-workspace-tab="notes"]').click();
     assert.equal(await page.locator("#workspace-note-new").isDisabled(), true);
     assert.match(await page.locator("#workspace-notes").innerText(), /独立作答/);
@@ -152,11 +154,11 @@ async function main() {
     assert.ok(slideJitter.width <= 1 && slideJitter.height <= 1, "讲解画布静置后仍然抖动");
     await page.waitForFunction(() => !document.querySelector('[data-classroom-action="play"]').disabled);
     await page.locator('[data-classroom-action="play"]').click();
-    await page.waitForFunction(() => typeof activeNarration !== "undefined" && activeNarration?.status === "playing");
+    await page.waitForFunction(() => LessonPlayback.snapshot(document.querySelector('.multi-scene-slide-panel'))?.status === "playing");
     await page.locator("#classroom-playback-rate").selectOption("1.5");
-    assert.equal(await page.evaluate(() => activeNarration.audio.playbackRate), 1.5);
+    assert.equal(await page.evaluate(() => LessonPlayback.snapshot(document.querySelector('.multi-scene-slide-panel')).rate), 1.5);
     await page.locator('[data-classroom-action="play"]').click();
-    assert.equal(await page.evaluate(() => activeNarration.status), "paused");
+    assert.equal(await page.evaluate(() => LessonPlayback.snapshot(document.querySelector('.multi-scene-slide-panel')).status), "paused");
     await page.screenshot({ path: path.join(output, "OpenMAIC学习页-讲解.png") });
     const beforeCollapse = await page.locator(".player").boundingBox();
     await page.locator("#lesson-rail-toggle").click();
@@ -177,6 +179,7 @@ async function main() {
     await page.reload();
     await page.locator("#app-loader").waitFor({ state: "hidden" });
     await openKnowledgeFixture(page);
+    if(await page.locator('#workspace-tools-toggle').getAttribute('aria-expanded')==='false')await page.locator('#workspace-tools-toggle').click();
     assert.equal(await page.locator("#workspace-tools-toggle").getAttribute("aria-expanded"), "true");
     assert.equal(await page.locator("#lesson-rail-toggle").getAttribute("aria-expanded"), "true");
     await page.locator('[data-classroom-action="quote"]').click();
