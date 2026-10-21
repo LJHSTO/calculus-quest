@@ -41,8 +41,10 @@
   }
   function geometry() {
     if (!host?.isConnected) return;
-    const r = host.getBoundingClientRect();
-    send("cq:task-visibility", { fraction: document.hidden ? 0 : visibleRatio, rect: { x:r.x,y:r.y,width:r.width,height:r.height }, viewport:{width:innerWidth,height:innerHeight} });
+    const body=content.querySelector('[data-support-body]'), target=body||host, r=target.getBoundingClientRect();
+    const area=Math.max(0,Math.min(r.bottom,innerHeight)-Math.max(r.top,0))*Math.max(0,Math.min(r.right,innerWidth)-Math.max(r.left,0));
+    const fraction=r.width*r.height>0?area/(r.width*r.height):0;
+    send("cq:task-visibility", { supportBodyVisible:Boolean(body&&visible(body)&&!body.closest("details:not([open])")),fraction:document.hidden?0:fraction, rect: { x:r.x,y:r.y,width:r.width,height:r.height }, viewport:{width:innerWidth,height:innerHeight} });
   }
   function clear() {
     intersection?.disconnect(); layoutObserver?.disconnect(); host?.remove();
@@ -56,7 +58,9 @@
     if (!tags.has(item.tag) && !mathTags.has(item.tag)) return document.createTextNode("");
     const el = mathTags.has(item.tag) ? document.createElementNS('http://www.w3.org/1998/Math/MathML',item.tag) : document.createElement(item.tag);
     if (item.hidden) el.hidden = true;
-    for (const key of ["type","placeholder","aria-label","role","aria-checked","rows","maxLength","display","mathvariant","stretchy","fence","separator","scriptlevel","columnalign"]) if (item.attrs?.[key] != null) el.setAttribute(key, String(item.attrs[key]).slice(0, 300));
+    if (item.supportBody) el.dataset.supportBody=item.supportBody;
+    for (const key of ["type","placeholder","aria-label","aria-pressed","role","aria-checked","min","max","step","rows","maxLength","display","mathvariant","stretchy","fence","separator","scriptlevel","columnalign"]) if (item.attrs?.[key] != null) el.setAttribute(key, String(item.attrs[key]).slice(0, 300));
+    if(item.tag==="details") {el.open=item.open===true;el.addEventListener("toggle",()=>{send("cq:task-control",{id:item.id,kind:"toggle",open:el.open,revision});geometry();});}
     if (item.tag === "button") el.type = "button";
     if (item.disabled) el.disabled = true;
     if (item.value != null) el.value = String(item.value);
@@ -77,6 +81,7 @@
       const shadow = host.attachShadow({mode:"open"}), style = document.createElement("style");
       style.textContent = ":host{font:14px/1.75 'Microsoft YaHei',sans-serif;color:#243c35;color-scheme:light}*{box-sizing:border-box}[hidden]{display:none!important}.card{padding:14px;background:#eff7f3;border:1px solid #a9cbbd;border-left:3px solid #397e63;border-radius:8px;overflow-wrap:anywhere}article{margin:0 0 12px}p{margin:8px 0}header,footer{display:flex;gap:8px;flex-wrap:wrap;align-items:center}strong{font-size:14px}small{display:block;color:#536b61;font-size:12px}button{font:inherit;line-height:1.5;min-height:38px;max-width:100%;padding:7px 10px;margin:4px 5px 4px 0;border:1px solid #9cbbad;border-radius:5px;background:white;color:#245c46;cursor:pointer;white-space:normal}button:hover{background:#dfede5}button:disabled{opacity:.6;cursor:wait}label{display:block}textarea{display:block;width:100%;min-height:94px;resize:vertical;background:#fff;color:#26394a;border:1px solid #9cbbad;border-radius:5px;padding:10px;font:inherit;margin:10px 0}input{max-width:100%;font:inherit}button:focus-visible,textarea:focus-visible{outline:3px solid #8b79d4;outline-offset:2px}";
       style.textContent += '[role="note"]{padding:12px 16px;border-radius:16px 16px 16px 4px;background:#e2f0e8;border:1px solid #bbd5c7}';
+      style.textContent += 'button[aria-pressed="true"]{background:#d5e9dd;border-color:#397e63}summary{cursor:pointer;padding:8px 0}details{margin:6px 0}';
       content = document.createElement("div"); content.className = "card"; shadow.append(style, content);
       intersection = new IntersectionObserver(entries => {visibleRatio=entries[0].intersectionRatio;geometry();},{threshold:[0,.5,1]}); intersection.observe(host);
     }

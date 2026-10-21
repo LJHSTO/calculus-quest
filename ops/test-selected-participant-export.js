@@ -33,6 +33,8 @@ async function main() {
   assert.ok(legacy.collection_coverage.unavailable_tables.includes("study_workbench_process"));
   assert.ok(legacy.collection_coverage.unavailable_tables.includes("agent_tasks"));
   const agent=require("../lib/proactive-agent-runtime").createRuntime({db});
+  const support=require("../lib/support-cycle").createStore({db,experimentId:"synthetic"});
+  support.state("selected-a",1);
   for(const id of ["selected-a","selected-b","excluded"]){
     agent.grant(id,"GH-01-K01","open_hint",24);
     agent.grant(id,"GH-01-K01","prepare_review",168);
@@ -152,6 +154,13 @@ async function main() {
     assert.throws(() => buildSelectedParticipantPackage(raw, ids), error => error.status === 400);
   }
   assert.throws(() => buildSelectedParticipantPackage(raw, ["selected-a"], { maxRows: 1 }), error => error.status === 413);
-  console.log("选中人员导出通过：历史库兼容、共同任务三表与材料快照、理由/信心、事件关联和重试去重、序列化恢复、用户隔离、排除登录凭据、UTC归一化、字典与指纹。");
+  for(const id of ['selected-a','excluded'])support.report(id,'GH-01-K01',1,{need:'value',confirmed:true},require('../lib/research-controls').defaults,0);
+  const exportedSupport=buildSelectedParticipantPackage(raw,['selected-a']);
+  assert.equal(exportedSupport.tables.learner_support_cycles.length,1);
+  const cycle=JSON.parse(exportedSupport.tables.learner_support_cycles[0].payload_json);
+  assert.equal(cycle.plan.primaryGoal,'motivational');
+  assert.ok(exportedSupport.tables.events.some(e=>JSON.stringify(e).includes('support_cycle_need_confirmed')));
+  assert.equal(exportedSupport.tables.learner_support_cycles[0].user_id,'selected-a');
+  console.log("选中人员导出通过：含多目标支持原记录与事件、用户隔离、旧库兼容、材料快照、凭据排除和数据指纹。");
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

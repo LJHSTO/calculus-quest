@@ -1,6 +1,6 @@
 {
-  "version": "c3ee9ff0bc6cf27c80e2",
-  "indexSha256": "a5377fb122bafcfe380d166575735009d30c06f244d76c4fb8c6545ffa9dbecb",
+  "version": "b4e5892e342bddd97e4c",
+  "indexSha256": "d98c88b0c9bccc67a19350bf6aff356a4823e075e818fcc2e2f86a3ebed67f1d",
   "scripts": [
     {
       "tag": "<script src=\"app/main/request-coalescing.js?v=20260917\"></script>",
@@ -180,7 +180,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "75b5b46a5cdf3b793233574f1f322a5ec75c1d8794dc2c951a52004da4c01396"
+      "sha256": "4b2487af203cf601094490f28b437d1edb5f857a815904766667573d2c35be78"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -208,19 +208,24 @@
       "sha256": "ad4480f9144da7b7507f6954d770d736071bf5d142a6ad1b8582848630e9184f"
     },
     {
+      "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
+      "file": "app/main/support-cycle.js",
+      "sha256": "3ef414ddfa886d2e5104a20717664bd4428e3a74e646460021e953a0eb7c3af2"
+    },
+    {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
       "file": "app/main/task-support.js",
-      "sha256": "0df6479c099ceefaf4e75f708cda61ff53ae503157a5117422cb5601159800c9"
+      "sha256": "b29141007ada2065daec295e725f13600a445770ecfd84e279d6af1da6412cd6"
     },
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
       "file": "app/main/proactive-surface.js",
-      "sha256": "95dc63bea4f876a27bf71b8a4e6d754802782cc369c174013689a659fa46c840"
+      "sha256": "a6e99259637694272ebfa412ba7cdf421f051ce149b21bc0601966d03dabe9f4"
     },
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",
       "file": "app/main/proactive-hud.js",
-      "sha256": "704bc99a5653654ebff9a35db21b3fdbcc5fd5bdd0bf260b6d932058f24f74c7"
+      "sha256": "0ddfa1e3f3444e4d7753b72786a7b72137700043a54c169990cc00ce9ae99cac"
     }
   ],
   "styles": [
@@ -261,7 +266,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "106069321d0464f49d9f",
+  "styleVersion": "e951b1ba48eda47f4855",
   "styleSources": [
     {
       "file": "styles.css",
@@ -297,7 +302,7 @@
     },
     {
       "file": "app/main/proactive-hud.css",
-      "sha256": "303487fecf96455cc7d1010b0d49a82f49787e07825d66f276dce617d17c5037"
+      "sha256": "7f33505dcda80b9ae8c08bdcf8e3b9617149ff97de78317e898654944590f800"
     }
   ],
   "icons": [

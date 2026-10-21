@@ -108,13 +108,13 @@
 
   function supportSurfaceOwnsContent() {
     return Boolean(global.ProactiveSurface && courseMeta().unitType === "knowledge"
-      && (supportView.placement === "inline" || supportView.modality !== "tip"
+      && (proactiveStudy.researchControls?.enabled || supportView.placement === "inline" || supportView.modality !== "tip"
         || (supportView.format || "plain")!=="plain" || ["A1","A4"].includes(proactiveDecision?.authority?.level)));
   }
 
   function designSpaceSnapshot() {
     const meta = courseMeta();
-    const locked = quizAssistantLocked(meta)
+    const locked = quizAssistantLocked(meta, false)
       || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession());
     const eligible = isSignedInNow() && meta.supported && meta.taskReady !== false && !locked && learningViewActive();
     const offer = eligible && proactiveDecision?.unitId === meta.unitId
@@ -139,6 +139,8 @@
       assignment: proactiveStudy.assignment || null,
       researchControls: proactiveStudy.researchControls || null,
       agentRuntime: eligible ? proactiveStudy.agentRuntime || null : null,
+      supportCycle: eligible ? (proactiveStudy.supportCycles||[]).find(c=>c.scope===proactiveScopeKey(meta)) || null : null,
+      supportBusy: Boolean(global.SupportCycleUI?.busy),
       policyState: proactiveScopeState(meta), observation,
       offer: offer ? { ...offer } : null,
       check: eligible ? proactiveVerificationCheck(meta) : null,
@@ -604,8 +606,9 @@ const proactiveJustificationDrafts = new Map();
     };
   }
 
-  function quizAssistantLocked(meta = courseMeta()) {
-    return Boolean(meta?.isQuiz && !meta.quizSubmitted || global.CommonLearning?.protects());
+  function quizAssistantLocked(meta = courseMeta(), includeSupportCheck = true) {
+    return Boolean(meta?.isQuiz && !meta.quizSubmitted || global.CommonLearning?.protects()
+      || includeSupportCheck && (proactiveStudy.supportCycles||[]).some(c=>c.status==="awaiting_check"));
   }
 
   function quizParticipationAccessAllowed(meta = courseMeta()) {
@@ -6069,6 +6072,21 @@ const proactiveJustificationDrafts = new Map();
   global.KnowledgeAssistant = Object.freeze({
     sync,
     designSpaceSnapshot,
+    refreshSupportSurface() { scheduleDesignSpaceSync(); },
+    async supportCycleRequest(action) {
+      const s=designSpaceSnapshot(),owner=state.authToken;
+      if(!s.signedIn||!s.active||s.locked||s.check||s.unitType!=="knowledge")throw new Error("请在知识点学习时使用，独立测验期间关闭帮助。");
+      const response=await fetch("api/learning/support-cycle",{method:"POST",headers:{Authorization:`Bearer ${owner}`,"Content-Type":"application/json"},
+        body:JSON.stringify({...action,...(action.action==="report"?{requestId:action.requestId||crypto.randomUUID()}:{}) ,scope:s.scopeKey,unitId:s.unitId,sceneType:s.sceneType})});
+      const result=await response.json();
+      if(owner!==state.authToken)throw new Error("登录账号已变化。");
+      if(s.generation!==designSpaceSnapshot().generation)throw new Error("学习轮次已变化，请重新读取。");
+      if(!response.ok||!result.ok)throw new Error(result.message||"本次操作未保存，请重试。");
+      const known=new Map((proactiveStudy.supportCycles||[]).map(c=>[c.id,c]));
+      proactiveStudy.supportCycles=result.data.cycles.map(c=>known.get(c.id)?.revision>c.revision?known.get(c.id):c);
+      if(["report","start_check"].includes(action.action)){proactiveDecision=null;pendingProactivePrompt=null;}
+      render();scheduleDesignSpaceSync();return result.data;
+    },
     async agentRuntimeRequest(action) {
       if(!isSignedInNow())throw new Error("请先登录。");
       const owner=state.authToken;
@@ -6115,6 +6133,10 @@ const proactiveJustificationDrafts = new Map();
       const fragment = document.createDocumentFragment();
       if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return fragment;
       if (snapshot.check) {fragment.appendChild(proactiveVerificationNode(snapshot.check));return fragment;}
+      if(snapshot.unitType==="knowledge" && snapshot.researchControls?.enabled) {
+        const content=global.SupportCycleUI?.render(snapshot);if(content)fragment.append(content);
+        if(global.SupportCycleUI?.active(snapshot.supportCycle))return fragment;
+      }
       if (snapshot.offer) fragment.appendChild(proactiveInlineOfferNode(snapshot.offer, { recordShown: false }));
       if (snapshot.prompt) fragment.appendChild(proactivePromptNode(snapshot.prompt, { dismissible: true }));
       if (snapshot.check) fragment.appendChild(proactiveVerificationNode(snapshot.check));
@@ -6135,7 +6157,7 @@ const proactiveJustificationDrafts = new Map();
     },
     async askInTask(question, questionId="") {
       const s=designSpaceSnapshot(),meta=courseMeta();
-      if(!s.signedIn||s.locked||s.check||!s.active||isAsking)return false;
+      if(!s.signedIn||s.locked||s.check||s.supportCycle?.status==="awaiting_check"||!s.active||isAsking)return false;
       if(questionId){
         const card=[...document.querySelectorAll(".question-card[data-question]")].find(node=>node.dataset.question===questionId);
         if(!meta.isQuiz||!meta.quizSubmitted||!card)return false;

@@ -16,9 +16,9 @@
       if(n.nodeType!==1)return{text:""};
       if(n.classList.contains("katex")){const math=n.querySelector('math');return math?tree(math):{text:n.querySelector(".katex-html")?.textContent||n.textContent};}
       if(n.tagName.toLowerCase()==='annotation')return{text:''};
-      const tag=n.tagName.toLowerCase(), item={tag,hidden:n.hidden,disabled:n.disabled===true,attrs:{},children:[]};
-      if(["button","input","textarea","form"].includes(tag)){if(!controlIds.has(n))controlIds.set(n,`c${++nextControlId}`);item.id=controlIds.get(n);controls.set(item.id,n);}
-      for(const a of ["type","placeholder","aria-label","role","aria-checked","rows","maxLength","display","mathvariant","stretchy","fence","separator","scriptlevel","columnalign"])if(n.hasAttribute(a))item.attrs[a]=n.getAttribute(a);
+      const tag=n.tagName.toLowerCase(), item={tag,supportBody:n.dataset.supportBody||null,hidden:n.hidden,open:n.open===true,disabled:n.disabled===true,attrs:{},children:[]};
+      if(["button","input","textarea","form","details"].includes(tag)){if(!controlIds.has(n))controlIds.set(n,`c${++nextControlId}`);item.id=controlIds.get(n);controls.set(item.id,n);}
+      for(const a of ["type","placeholder","aria-label","aria-pressed","role","aria-checked","min","max","step","rows","maxLength","display","mathvariant","stretchy","fence","separator","scriptlevel","columnalign"])if(n.hasAttribute(a))item.attrs[a]=n.getAttribute(a);
       if(["textarea","input"].includes(tag))item.value=n.value;
       item.children=[...n.childNodes].map(tree);return item;
     }
@@ -67,6 +67,7 @@
     if(snapshot.offer)global.KnowledgeAssistant.observeSupportOffer(source.querySelector('.knowledge-proactive-inline-offer'),snapshot.offer);
   }
   function sync(next){
+    next={...next,check:next.check||(next.supportCycle?.status==="awaiting_check"?{id:next.supportCycle.check.id}:null)};
     const nextOwner=`${next.ownerKey}:${next.generation||0}`;
     if(nextOwner!==owner){clear();owner=nextOwner;drafts.clear();exposed.clear();replyContext="";}
     snapshot=next;
@@ -78,7 +79,7 @@
       if(helpKey!==lastQuizSupport && (next.offer||next.prompt||next.check)){lastQuizSupport=helpKey;global.LearningWorkspace?.showTask?.();}
     }
     const nextFrame=/^GH-0[12]-K0[123]$/.test(next.scopeKey) ? document.querySelector('.multi-scene-scene-panel:not([hidden]) iframe[data-courseware-frame]') : null;
-    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply]);
+    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy]);
     if(nextFrame!==frame){message("cq:task-clear");frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
     if(nextKey!==key){
       clearTimeout(exposureTimer);exposureTimer=null;
@@ -86,7 +87,7 @@
       if(next.check){message("cq:task-clear");source.prepend(el("p","独立检查中，提示和对话帮助已暂停。","task-assessment-note"));}
       else {
         if(next.prompt)draftForm(source,"写下你的想法，再独立检查",`${next.scopeKey}:${next.prompt.id}`);
-        if(!next.offer&&!next.prompt){
+        if(!next.offer&&!next.prompt&&!global.SupportCycleUI?.active(next.supportCycle)){
           const question=el("details",null,"task-manual-help");question.append(el("summary","需要一个思考线索"));
           draftForm(question,"告诉知点你卡在哪一步",`${next.scopeKey}:manual`);source.append(question);
           if(next.reply?.text && replyContext===`${next.unitId}:${next.sceneType}`){const response=el('details');response.open=true;response.append(el('summary','知点的回应'),replyBody(next.reply.text));source.prepend(response);}
@@ -100,12 +101,15 @@
   }
   function checkExposure(){
     const stop=()=>{clearTimeout(exposureTimer);exposureTimer=null;};
-    const s=snapshot,v=visibility;if(!s?.offer||s.locked||s.check||!frame?.isConnected||document.hidden||!v||v.fraction<.5){stop();return;}
+    const s=snapshot,v=visibility,cycle=s?.supportCycle,cycleOffer=cycle&&["offered","engaged"].includes(cycle.status);
+    if((!s?.offer&&!cycleOffer)||s.locked||s.check||!frame?.isConnected||document.hidden||!v||v.fraction<.5||(cycleOffer&&v.supportBodyVisible!==true)){stop();return;}
     const f=frame.getBoundingClientRect(),r=v.rect,x=f.left+r.x,y=f.top+r.y;
     const area=Math.max(0,Math.min(x+r.width,f.right,innerWidth)-Math.max(x,f.left,0))*Math.max(0,Math.min(y+r.height,f.bottom,innerHeight)-Math.max(y,f.top,0));
-    const id=`${owner}:${s.offer.decisionId||s.offer.id}`;if(r.width<=0||r.height<=0||area/(r.width*r.height)<.5||exposed.has(id)){stop();return;}
+    const id=`${owner}:${cycleOffer?cycle.id+':'+cycle.rounds:s.offer.decisionId||s.offer.id}`;if(r.width<=0||r.height<=0||area/(r.width*r.height)<.5||exposed.has(id)){stop();return;}
     if(exposureTimer)return;
-    const activeChannel=channel;exposureTimer=setTimeout(()=>{exposureTimer=null;if(channel!==activeChannel||document.hidden||snapshot?.check||snapshot?.offer?.id!==s.offer.id)return;exposed.add(id);global.KnowledgeAssistant.confirmTaskExposure(s.offer);},1000);
+    const activeChannel=channel;exposureTimer=setTimeout(()=>{exposureTimer=null;if(channel!==activeChannel||document.hidden||snapshot?.check)return;
+      if(cycleOffer){if(snapshot.supportCycle?.id!==cycle.id)return;exposed.add(id);global.SupportCycleUI.expose(cycle);}
+      else {if(snapshot?.offer?.id!==s.offer.id)return;exposed.add(id);global.KnowledgeAssistant.confirmTaskExposure(s.offer);}},1000);
   }
   window.addEventListener("message",event=>{
     if(!frame||event.source!==frame.contentWindow)return;const m=event.data;
@@ -115,6 +119,7 @@
       // IDs belong to original DOM controls and are never reused. A stale
       // offer cannot invoke a new offer, while typing does not invalidate clicks.
       const target=controls.get(m.id);if(!target||target.disabled)return;
+      if(m.kind==="toggle"&&target.tagName==="DETAILS"){target.open=m.open===true;return;}
       if(m.kind==="input"&&["INPUT","TEXTAREA"].includes(target.tagName)){target.value=String(m.value||"").slice(0,target.maxLength>0?target.maxLength:2000);target.dispatchEvent(new Event("input",{bubbles:true}));return;}
       if(m.kind==="click"&&target.tagName==="BUTTON"){
         if(target.type==="submit"&&target.closest("form"))target.closest("form").dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));else target.click();

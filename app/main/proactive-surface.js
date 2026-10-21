@@ -187,6 +187,7 @@
     return form;
   }
   function sync(next) {
+    next={...next,check:next.check||(next.supportCycle?.status==="awaiting_check"?{id:next.supportCycle.check.id}:null)};
     if (next.ownerKey !== ownerKey) {
       stopExposure();
       ownerKey = next.ownerKey; drafts.clear(); widgetValues.clear();
@@ -206,7 +207,7 @@
     if (!host) {stopExposure(); if(shell) shell.hidden = true; return;}
     toolbar.hidden = false;
     syncToolbarSettings(next);
-    const owns = next.view.placement === "inline" || next.view.modality !== "tip"
+    const owns = next.researchControls?.enabled || next.view.placement === "inline" || next.view.modality !== "tip"
       || (next.view.format||"plain")!=="plain" || ["A1","A4"].includes(next.offer?.authority?.level);
     if (!owns) {stopExposure(); if(shell) shell.hidden = true; return;}
     if (!shell) {
@@ -217,7 +218,7 @@
     const moved = shell.parentNode !== host;
     if (moved) host.prepend(shell);
     shell.hidden = false; shell.dataset.placement = next.view.placement; shell.dataset.modality = next.view.modality;
-    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle]);
+    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy]);
     if (key === renderKey && !moved) {observeOffer(next); return;}
     if (busy) return;
     renderKey = key;
@@ -241,7 +242,7 @@
     }
     const content = node("div", "support-surface-content");
     content.append(global.KnowledgeAssistant.createSupportContent()); shell.append(content);
-    if (!next.offer && !next.prompt && !next.check && !next.feedback && next.view.modality === "tip") {
+    if (!next.offer && !next.prompt && !next.check && !next.feedback && !global.SupportCycleUI?.active(next.supportCycle) && next.view.modality === "tip") {
       shell.append(node("p", "support-quiet-state", "你可以继续独立探索。出现值得关注的学习证据时，知点才会提出建议。"));
     }
     // Supplements are explicitly learner-requested, never claimed to be the

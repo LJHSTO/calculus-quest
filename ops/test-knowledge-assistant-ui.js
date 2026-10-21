@@ -84,7 +84,7 @@ assert.match(assistantSource, /data-knowledge-new-conversation/);
 assert.match(assistantSource, /data-knowledge-quota/);
 assert.match(
   serverSource,
-  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "AI 助教" : "本地引导"/,
+  /verification:\s*live \? "pending" : "local"[\s\S]*?label:\s*live \? "AI 助教" : "模拟回复"/,
   "助教名称不应显示为不可用；连接验证仍保持 pending"
 );
 assert.match(
@@ -477,7 +477,7 @@ assert.match(
 );
 assert.match(assistantSource, /let currentSupported = false/);
 assert.match(assistantSource, /const supportChanged = meta\.supported !== currentSupported/);
-assert.match(assistantSource, /function quizAssistantLocked\(meta = courseMeta\(\)\)/);
+assert.match(assistantSource, /function quizAssistantLocked\(meta = courseMeta\(\), includeSupportCheck = true\)/);
 assert.match(
   assistantSource,
   /function quizParticipationAccessAllowed\(meta = courseMeta\(\)\)/

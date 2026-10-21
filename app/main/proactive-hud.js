@@ -42,11 +42,15 @@
       <p>配置分组：${esc((d.arms||[]).join(' / ')||'读取中')}；当前分配：${esc(d.assignment?.condition||'完成前测后分配')}。调节不会更改分组。</p>
       <form data-controls-form><fieldset ${disabled}><legend>D1 · 判断证据的阈值</legend>${num('helpNeed','帮助需求下限',0,1,.05)}${num('uncertainty','不确定性上限',0,1,.05)}${num('minimumEvidenceFamilies','至少需要的证据类别数',1,4,1)}<small>事实、行为特征与规则估计分别记录；评分尚未由真人标注校准。</small></fieldset>
       <fieldset ${disabled}><legend>D2 · 时机与有效期</legend>${num('interruptibility','可打断性下限',0,1,.05)}${num('ttlSeconds','候选有效期（秒）',60,3600,60)}${check('boundaryOnly','只在已有证据确认的任务边界投递')}${select('timingMode','新一轮建议的投递方式',[['adaptive','满足条件即投递'],['delayed','保存后延迟复核']])}${num('delaySeconds','延迟（秒）',1,900,1)}<small>延迟任务写入数据库；到期后须在当前学习上下文重新通过判断。检查后的升级不额外延迟。</small></fieldset>
-      <fieldset ${disabled}><legend>D3 · 支架深度</legend>${select('initialSupportLevel','起始支持',[['auto','按触发规则'],...[1,2,3,4,5].map(n=>['L'+n,'L'+n])])}${select('maxSupportLevel','本轮支持上限',[1,2,3,4,5].map(n=>['L'+n,'L'+n]))}${check('representationSwitch','允许建议切换表征')}<small>使用课程模板与服务器判分的独立检查；内容仍需教师审校。</small></fieldset>
+      <fieldset ${disabled}><legend>D3 · 支持目标、策略与份量</legend>${select('supportGoal','支持目标',[['auto','按学生确认的需要'],...Object.entries(global.SupportCycleUI?.goalNames||{})])}${select('supportStrategy','具体策略',[['auto','按目标和需要选择'],...Object.entries(global.SupportCycleUI?.strategyNames||{})])}${select('supportDose','该策略的帮助份量',[['brief','一个线索或问题'],['guided','引导两个到三个小步骤']])}<small>五类是本平台的操作性分类。观察台指定目标会记录为人工覆盖，不当作系统识别结论。</small>${select('initialSupportLevel','知识支架起始级别',[['auto','按触发规则'],...[1,2,3,4,5].map(n=>['L'+n,'L'+n])])}${select('maxSupportLevel','知识支架上限',[1,2,3,4,5].map(n=>['L'+n,'L'+n]))}${check('representationSwitch','允许建议切换表征')}<small>L1–L5 仅用于原有知识支架，不比较鼓励、情绪支持和知识提示的强弱。</small></fieldset>
       <fieldset ${disabled}><legend>D4 · 同内容呈现</legend>${select('placement','提示位置',[['inline','课件／题目任务区'],['sidebar','完整对话侧栏']])}${select('presentationFormat','提示形式',[['plain','文字卡片'],['disclosure','点击展开'],['steps','逐句展开'],['bubble','对话气泡']])}<small>四种形式使用同一条支架正文。补充例子和练习另计。</small></fieldset>
       <fieldset ${disabled}><legend>D5 · 主动程度与控制权</legend>${select('proactivity','主动策略',[['assigned','沿用已分配策略'],['fixed','固定建议式'],['adaptive','规则分数自适应'],['reactive','仅回应主动求助']])}${select('authorityLevel','允许的呈现行为',[['A1','A1 · 学生展开线索'],['A2','A2 · 直接展示低风险线索'],['A3','A3 · 确认后切换表征'],['A4','A4 · 授权后自动展开，可撤销']])}<small>A4 需要下方的单独授权；选择档位不会自动授权。</small><section class="observatory-runtime-controls" data-runtime-controls="authority"></section></fieldset>
-      <fieldset ${disabled}><legend>D6 · 升级、退出与复习</legend>${num('cooldownSeconds','接受帮助后的基础冷却（秒）',60,3600,60)}${num('maxEscalations','最多升级次数',0,4,1)}${num('reviewAfterHours','独立检查后复习间隔（小时）',1,168,1)}<small>通过则渐退，达到上限则停止。复习按下方授权准备，登录后查看。</small><section class="observatory-runtime-controls" data-runtime-controls="memory"></section></fieldset>
+      <fieldset ${disabled}><legend>D6 · 升级、退出与复习</legend>${num('cooldownSeconds','接受帮助后的基础冷却（秒）',60,3600,60)}${num('maxEscalations','知识支架最多升级次数',0,4,1)}${num('supportFollowups','确认需要后最多补充轮数',0,2,1)}${num('reviewAfterHours','独立检查后复习间隔（小时）',1,168,1)}<small>补充建议需要学生在反馈中选择。自评、接受行为和独立检查分别记录，不能互相替代。</small><section class="observatory-runtime-controls" data-runtime-controls="memory"></section></fieldset>
       <p>当前版本 ${d.revision}。${esc(d.reason)}。这些记录不能混入正式实验。</p><button type="submit" ${disabled}>保存并应用于后续决策</button><button type="button" data-controls-reload>重新读取</button><button type="button" data-controls-export>导出六维配置</button></form></details><p role="status" data-controls-status></p>`;
+    const goal=host.querySelector('[name="supportGoal"]'),strategy=host.querySelector('[name="supportStrategy"]');
+    const strategies={auto:[],cognitive:['concept_hint','counterexample'],metacognitive:['self_check','plan_monitor'],motivational:['value_connection','progress_feedback','cost_reduction'],emotional:['acknowledge_reframe','calm_choice'],behavioral:['study_plan','resource_navigation']};
+    const filterStrategies=()=>{const allowed=strategies[goal.value]||[];for(const option of strategy.options){option.hidden=option.value!=='auto'&&!allowed.includes(option.value);option.disabled=option.hidden;}if(strategy.selectedOptions[0]?.disabled)strategy.value='auto';};
+    goal.addEventListener('change',filterStrategies);filterStrategies();
     drawRuntimeControls();
   }
   function drawRuntimeControls() {
@@ -110,6 +114,7 @@
     if (!panel || !opened) return;
     drawRuntimeControls();
     const s = snapshot || {}, o = s.observation, facts = o?.d1?.facts, estimate = o?.d1?.estimates;
+    const cycle=s.supportCycle,g=global.SupportCycleUI;
     const phase = s.policyState?.lifecycle?.phase || "idle";
     const until = Date.parse(s.policyState?.cooldownUntil || "");
     const seconds = Number.isFinite(until) ? Math.max(0, Math.ceil((until-Date.now())/1000)) : 0;
@@ -128,13 +133,21 @@
     panel.querySelector("[data-observatory-context]").textContent = `${s.unitLabel || "尚未进入学习"} · ${eventCount} 条本次操作记录`;
     panel.querySelector("[data-observatory-body]").innerHTML = [
       card("D1", "学习状态证据", row("最近操作", latest ? label(latest.type) : "尚无操作") + row("当前课件", label(s.sceneType))
+        + row("学生确认的需要",g?.needs[cycle?.need?.need]||"尚未确认，不推断动机")
         + row("服务端证据来源", facts?.families?.join("、") || "尚未形成决策证据")
         + row("已确认错误 / 正确", facts ? `${facts.confirmedIncorrect ?? "未记录"} / ${facts.confirmedCorrect ?? "未记录"}` : "未记录")
         + `<div class="observatory-estimates">${row("帮助需求估计", score(estimate?.helpNeed))}${row("可打断性估计", score(estimate?.interruptibility))}${row("不确定性估计", score(estimate?.uncertainty))}<small>工程评分，不是经校准的心理状态概率。</small></div>`),
       card("D2", "教学时机与沉默", row("当前决策", action ? label(action) : "尚未判断")
+        + row("多目标帮助",g?.statuses[cycle?.status]||"未发起")
+        + row("多目标时机记录",({eligible:"满足当前条件",independent_assessment:"独立测量保护",configuration_changed:"配置已变化",student_or_protocol_disabled:"偏好或协议暂停",another_support_cycle_active:"帮助预算暂不可用",expired:"超过有效期",waiting_for_due_time:"等待预定时间",waiting_for_boundary:"等待任务边界"})[cycle?.lastGate]||"尚无")
         + row("自然边界证据", facts ? facts.naturalBoundary ? "已记录" : "未记录" : "尚无判断")
         + `<p>${esc(reason)}</p>`),
-      card("D3", "教学支持深度", row("实际支持", support === "L0" ? "L0 · 独立探索" : support)
+      card("D3", "支持目标与教学策略", row("知识支架", support === "L0" ? "L0 · 无知识支架" : support)
+        + row("主要支持目标",g?.goalNames[cycle?.plan?.primaryGoal]||"尚无")
+        + row("具体策略",g?.strategyNames[cycle?.plan?.strategy]||"尚无")
+        + row("帮助份量",cycle?.plan?cycle.plan.dose==="guided"?"引导少量步骤":"一个线索或问题":"尚无")
+        + row("选择依据",cycle?.plan?cycle.plan.selectionSource==="engineering_override"?"观察台人工指定":"学生确认需要后的规则匹配":"尚无")
+        + row("内容来源",cycle?.content?cycle.content.audit.fallback?"课程备用建议":"真实模型生成":"尚未生成")
         + row("本次动作", s.offer?.action || o?.d3?.action || "无")
         + `<p>${esc(s.offer?.title || "尚未呈现新的教学支架。")}</p><small>检查由服务端判分。未执行的防泄题审计不显示通过。</small>`),
       card("D4", "同内容的呈现位置", row("位置", label(s.view?.placement)) + row("形式", ({plain:"文字卡片",disclosure:"点击展开",steps:"逐句展开",bubble:"对话气泡"})[s.view?.format] || label(s.view?.modality))
@@ -142,6 +155,8 @@
       card("D5", "学习者控制权", row("提醒偏好", label(s.preference)) + row("本知识点", s.muted ? "提醒已关闭" : "允许按策略建议")
         + row("进一步行动", "等待学生确认") + `<small>稍后、换一种帮助、关闭和恢复均使用真实服务端流程。</small>`),
       card("D6", "支架生命周期", row("当前阶段", label(phase)) + row("服务端冷却", seconds ? `${seconds} 秒` : "无有效冷却", true)
+        + row("多目标支持反馈",({helped:"学生自评有帮助",not_helped:"学生自评暂时没帮助",mismatch:"学生认为不匹配",prefer_stop:"学生要求停止"})[cycle?.feedback?.result]||"未反馈")
+        + row("多目标独立检查",cycle?.checkResult?cycle.checkResult.correct===null?"跳过":cycle.checkResult.correct?"本次正确":"本次错误":"未完成")
         + row("独立检查", s.check?.id ? "已签发，等待独立作答" : "当前无检查")
         + `<ol class="observatory-lifecycle">${["提出建议","学生确认","独立检查","渐退或停止"].map(x=>`<li>${x}</li>`).join("")}</ol><small>检查通过只结束本轮帮助；学习效果另看后测、迁移和保持。</small>`)
     ].join("");

@@ -64,6 +64,12 @@ const root = process.cwd();
 const proactiveStudyConfig = proactivePolicy.configFromEnv();
 const researchControls = require("./lib/research-controls");
 const researchControlStore = researchControls.createStore({root,config:proactiveStudyConfig});
+const supportGoals = require("./lib/support-goals");
+const supportCycles = require("./lib/support-cycle").createStore({db,experimentId:proactiveStudyConfig.experimentId});
+function publicSupportCycles(user,generation){
+  const rows=supportCycles.state(user,generation),protectedCheck=rows.some(c=>c.status==="awaiting_check");
+  return rows.map(c=>({...c,content:protectedCheck?null:c.content&&{...c.content,audit:{...c.content.audit,promptSnapshot:undefined}}}));
+}
 const proactiveGlobalPreferenceControlEnabled = ["1", "true", "yes", "on"].includes(
   String(process.env.PROACTIVE_GLOBAL_PREFERENCE_CONTROL || "").trim().toLowerCase()
 );
@@ -260,6 +266,8 @@ const proactiveStoppingRules = Object.freeze({
     },
     sourceDigests: {
       researchControls: protocolSourceDigest("lib/research-controls.js"),
+      supportGoals: protocolSourceDigest("lib/support-goals.js"),
+      supportCycle: protocolSourceDigest("lib/support-cycle.js"),
       policyKernel: protocolSourceDigest("lib/proactive-policy/index.js"),
       evidenceAudit: protocolSourceDigest("lib/proactive-policy/evidence-audit.js"),
       evidenceServer: protocolSourceDigest("server.js"),
@@ -2130,6 +2138,7 @@ function proactiveOutcomeState(
 }
 
 function closeProactiveSupportForOutcomeSession(userId, startedAt) {
+  supportCycles.cancel(userId,db.currentLearningGeneration(userId),"measurement_started");
   const closedInterventions = db.closeOpenProactiveInterventionsForUser({
     userId,
     experimentId: proactiveStudyConfig.experimentId,
@@ -2177,6 +2186,7 @@ function closeProactiveSupportForOutcomeSession(userId, startedAt) {
 }
 
 function closeProactiveSupportForStudyWithdrawal(userId, withdrawnAt) {
+  supportCycles.cancel(userId,db.currentLearningGeneration(userId),"study_withdrawn");
   const closedInterventions = db.closeOpenProactiveInterventionsForUser({
     userId,
     experimentId: proactiveStudyConfig.experimentId,
@@ -2248,6 +2258,9 @@ function activeProactiveOutcomeSession(userId) {
 }
 
 function rejectAgentAssistanceDuringOutcome(res, userId) {
+  if(supportCycles.protects(userId,db.currentLearningGeneration(userId))) {
+    sendJson(res,409,{ok:false,code:"support_cycle_check_protected",message:"独立检查进行中，请先完成或跳过，期间暂停学习帮助。"});return true;
+  }
   if (studyWorkbench.protects(userId) || mainLearningStudy.protects(userId) || mainLearningStudy.manages(userId)) {
     sendJson(res, 409, { ok: false, code: "common_probe_protected", message: "共同探针作答期间暂不提供助教解答，请完成或跳过当前题目。" });
     return true;
@@ -3054,6 +3067,7 @@ function proactiveStudyState(userId, chapterId) {
     studentPreference,
     globalPreferenceControlEnabled: proactiveGlobalPreferenceControlEnabled,
     researchControls: researchControlStore.describe(userId),
+    supportCycles: activeOutcomeSession ? [] : publicSupportCycles(userId,db.currentLearningGeneration(userId)),
     agentRuntime: activeOutcomeSession || mainLearningStudy.manages(userId) ? null : agentRuntime.state(userId, db.currentLearningGeneration(userId)),
     pretest,
     outcomeSession: publicProactiveOutcomeSession(activeOutcomeSession),
@@ -4196,6 +4210,11 @@ async function handleManagedProactiveIntervention({
   }
   const decisionId = crypto.randomUUID();
   const generation = db.currentLearningGeneration(auth.participant.id);
+  if(supportCycles.blocksAutomatic(auth.participant.id,policyScopeKey,generation)) {
+    policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
+      reasonCodes:[...policyDecision.reasonCodes,"confirmed_support_cycle_active"]};
+    evidence.confirmedSupportCycleId=supportCycles.current(auth.participant.id,policyScopeKey,generation).id;
+  }
   agentRuntime.cancelStale(auth.participant.id, generation);
   const delayed = agentRuntime.delayed(auth.participant.id, policyScopeKey, generation);
   if (delayed) {
@@ -5471,6 +5490,73 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (["GET","POST"].includes(req.method) && url.pathname === "/api/learning/support-cycle") {
+      const auth=authenticate(req);
+      if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
+      const user=auth.participant.id,generation=db.currentLearningGeneration(user);
+      if(!researchControlStore.canEdit(user)){sendJson(res,403,{ok:false,message:"当前协议未开放多目标支持；正式研究需另行冻结条件。"});return;}
+      if(req.method==="GET"){
+        const protectedMeasure=activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user);
+        sendJson(res,200,{ok:true,data:{cycles:protectedMeasure?[]:publicSupportCycles(user,generation),goals:supportGoals.GOALS,strategies:supportGoals.STRATEGIES,needs:supportGoals.NEEDS}});return;
+      }
+      const body=await readJsonBody(req),scope=boundedLearningText(body.scope,180),unitId=boundedLearningText(body.unitId,180);
+      try {
+        const resolved=learningAssistant.resolveAssistantContext({index:assistantContextIndex,chapterId:proactiveStudyConfig.chapterId,
+          unitId,sceneType:boundedLearningText(body.sceneType,80),contextRef:{kind:"lesson",scope:"lesson"},quizSubmitted:false});
+        if(resolved.isQuiz || (resolved.unit.knowledgePointId||resolved.unit.id)!==scope || !supportGoals.CURRICULUM[scope])throw Object.assign(new Error("请在对应知识点的学习任务中使用帮助"),{status:409});
+        if(!proactiveAssignmentForUser(user))throw Object.assign(new Error("请先完成本章前测"),{status:409});
+        const protectedNow=()=>Boolean(activeProactiveOutcomeSession(user) || mainLearningStudy.manages(user) || studyWorkbench.protects(user)
+          || db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId).some(s=>["accepted_pending_response","awaiting_independent_attempt"].includes(parseStoredJson(s.lifecycle_json||"{}",{}).phase)));
+        if(protectedNow())throw Object.assign(new Error("独立测量期间暂停学习帮助"),{status:409});
+        const record=researchControlStore.read(user),profile={...researchControls.defaults,...record?.profile},revision=record?.revision||0;
+        const adapter=proactivePolicy.adapterForChapter(proactiveStudyConfig.chapterId);
+        let cycle;
+        if(body.action==="report") {
+          if(supportCycles.protects(user,generation))throw Object.assign(new Error("请先完成或跳过独立检查"),{status:409});
+          cycle=supportCycles.report(user,scope,generation,body,profile,revision);
+          db.closeOpenProactiveInterventionsForUser({userId:user,experimentId:proactiveStudyConfig.experimentId,
+            resolution:"ignored",resolvedAt:nowIso(),followupOutcome:{outcome:"student_confirmed_different_support"}});
+        } else if(body.action!=="advance") {
+          const owned=supportCycles.current(user,scope,generation);
+          if(!owned || owned.id!==body.id)throw Object.assign(new Error("帮助记录与当前知识点不匹配"),{status:409});
+          if(body.action==="start_check" && supportCycles.protects(user,generation))throw Object.assign(new Error("请先完成已有的独立检查"),{status:409});
+          cycle=supportCycles.act(user,body.id,generation,body,{adapter});
+          if(cycle.checkResult && body.action==="submit_check")agentRuntime.remember({user,scope,generation,sourceId:`support-cycle:${cycle.id}:${cycle.checkResult.checkId}`,
+            outcome:{...cycle.checkResult,success:cycle.checkResult.correct===true},reviewHours:profile.reviewAfterHours});
+        }
+        if(["report","advance"].includes(body.action)) {
+          const budget=checkAssistantRateLimit(user);
+          if(!budget.ok)throw Object.assign(new Error("请求较频繁，请稍后再试"),{status:429});
+          let automaticBudgetReserved=false;
+          cycle=await supportCycles.advance(user,scope,generation,{
+            guard:()=>{
+              const fresh=supportCycles.current(user,scope,generation), explicit=body.action==="report";
+              const evidence=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:"quiet_dwell"},sceneType:body.sceneType,policyState:{},now:Date.now()});
+              return {protected:protectedNow() || supportCycles.protects(user,generation),
+                profileRevision:researchControlStore.read(user)?.revision||0,
+                disabled:db.currentLearningGeneration(user)!==generation || proactiveStudyConfig.mode!=="active" || proactiveExperimentRuntime()?.status==="paused"
+                  || (!explicit && (proactiveStudentPreference(user,scope)==="off" || profile.proactivity==="reactive"))
+                  || proactiveParticipationForUser(user,{createImplicit:false})?.status==="withdrawn",
+                occupied:!explicit && !automaticBudgetReserved && proactiveInterventionBudgetInfo(user).remaining<=0,boundary:explicit || evidence.naturalBoundary===true || Boolean(fresh?.need.source==="student_confirmed" && body.boundary===true && body.action==="report")};
+            },
+            memory:agentRuntime.state(user,generation).memory.filter(r=>r.scope===scope).slice(0,3).map(r=>({sourceId:r.source_id,outcome:r.payload.outcome,at:r.created_at})),
+            generate:async input=>{
+              const at=new Date(), live=assistantProviderInfo().live;
+              if(body.action!=="report" && !consumeAssistantInterventionBudget(user,at).ok)throw Object.assign(new Error("今日主动建议预算已用完，可以主动选择当前需要"),{status:429});
+              automaticBudgetReserved=body.action!=="report";
+              const reserved=assistantRequestConsumesQuota();
+              if(reserved && !consumeAssistantQuota(user,at).ok)throw Object.assign(new Error("今日模型调用额度已用完，请稍后再试"),{status:429});
+              const content=await supportGoals.generateSupport(input,{complete:llm.completeChat,live,model:process.env.LEARNING_ASSISTANT_MODEL});
+              if(reserved && content.audit.fallback)releaseAssistantQuota(user,at);
+              return content;
+            }
+          });
+        }
+        const cycles=publicSupportCycles(user,generation);
+        db.saveNow();sendJson(res,200,{ok:true,data:{cycle:cycles.find(c=>c.id===cycle?.id)||null,cycles}});
+      }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
+    }
+
     if (["GET","POST"].includes(req.method) && url.pathname === "/api/learning/agent-runtime") {
       const auth=authenticate(req);
       if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
@@ -5508,11 +5594,12 @@ async function handleApi(req, res, url) {
       const body=await readJsonBody(req);
       const inRound=db.listProactivePolicyStates(auth.participant.id,proactiveStudyConfig.experimentId)
         .some(s=>["accepted_pending_response","awaiting_independent_attempt"].includes(parseStoredJson(s.lifecycle_json||"{}",{}).phase));
-      if(inRound||activeProactiveOutcomeSession(auth.participant.id)){
+      if(inRound||activeProactiveOutcomeSession(auth.participant.id)||supportCycles.protects(auth.participant.id,db.currentLearningGeneration(auth.participant.id))){
         sendJson(res,409,{ok:false,message:"请先结束当前帮助或独立测量，再修改策略。"});return;
       }
       try {
         const data=researchControlStore.save(auth.participant.id,body.profile,body.expectedRevision);
+        supportCycles.cancelForConfiguration(auth.participant.id,db.currentLearningGeneration(auth.participant.id));
         db.closeOpenProactiveInterventionsForUser({userId:auth.participant.id,experimentId:proactiveStudyConfig.experimentId,
           resolution:"configuration_changed",resolvedAt:nowIso(),followupOutcome:{outcome:"configuration_changed"}});
         const pending=agentRuntime.state(auth.participant.id,db.currentLearningGeneration(auth.participant.id)).tasks;
