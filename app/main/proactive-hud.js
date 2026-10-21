@@ -24,7 +24,7 @@
   let snapshot = null, panel, toggle, opened = false, lastKey = "", eventCount = 0;
   const priorInert = new Map();
   const events = [], decisions = [];
-  let controlData=null, controlOwner="", controlBusy=false;
+  let controlData=null, controlOwner="", controlBusy=false, runtimeBusy=false;
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
   const label = value => names[value] || value || "尚无记录";
   const score = value => value === null || value === undefined ? "未估计" : Number(value).toFixed(2);
@@ -44,9 +44,60 @@
       <fieldset ${disabled}><legend>D2 · 时机与有效期</legend>${num('interruptibility','可打断性下限',0,1,.05)}${num('ttlSeconds','候选有效期（秒）',60,3600,60)}${check('boundaryOnly','只在已有证据确认的任务边界投递')}${select('timingMode','新一轮建议的投递方式',[['adaptive','满足条件即投递'],['delayed','保存后延迟复核']])}${num('delaySeconds','延迟（秒）',1,900,1)}<small>延迟任务写入数据库；到期后须在当前学习上下文重新通过判断。检查后的升级不额外延迟。</small></fieldset>
       <fieldset ${disabled}><legend>D3 · 支架深度</legend>${select('initialSupportLevel','起始支持',[['auto','按触发规则'],...[1,2,3,4,5].map(n=>['L'+n,'L'+n])])}${select('maxSupportLevel','本轮支持上限',[1,2,3,4,5].map(n=>['L'+n,'L'+n]))}${check('representationSwitch','允许建议切换表征')}<small>使用课程模板与服务器判分的独立检查；内容仍需教师审校。</small></fieldset>
       <fieldset ${disabled}><legend>D4 · 同内容呈现</legend>${select('placement','提示位置',[['inline','课件／题目任务区'],['sidebar','完整对话侧栏']])}${select('presentationFormat','提示形式',[['plain','文字卡片'],['disclosure','点击展开'],['steps','逐句展开'],['bubble','对话气泡']])}<small>四种形式使用同一条支架正文。补充例子和练习另计。</small></fieldset>
-      <fieldset ${disabled}><legend>D5 · 主动程度与控制权</legend>${select('proactivity','主动策略',[['assigned','沿用已分配策略'],['fixed','固定建议式'],['adaptive','规则分数自适应'],['reactive','仅回应主动求助']])}${select('authorityLevel','允许的呈现行为',[['A1','A1 · 学生展开线索'],['A2','A2 · 直接展示低风险线索'],['A3','A3 · 确认后切换表征'],['A4','A4 · 授权后自动展开，可撤销']])}<small>A4 还需学生在“学习记忆与提醒”中明确授权；这里不能替学生同意。A5 不自动执行。</small></fieldset>
-      <fieldset ${disabled}><legend>D6 · 升级、退出与复习</legend>${num('cooldownSeconds','接受帮助后的基础冷却（秒）',60,3600,60)}${num('maxEscalations','最多升级次数',0,4,1)}${num('reviewAfterHours','独立检查后复习间隔（小时）',1,168,1)}<small>通过则渐退，达到上限则停止。复习需学生授权；服务器持续运行时可离线准备，登录后查看。</small></fieldset>
+      <fieldset ${disabled}><legend>D5 · 主动程度与控制权</legend>${select('proactivity','主动策略',[['assigned','沿用已分配策略'],['fixed','固定建议式'],['adaptive','规则分数自适应'],['reactive','仅回应主动求助']])}${select('authorityLevel','允许的呈现行为',[['A1','A1 · 学生展开线索'],['A2','A2 · 直接展示低风险线索'],['A3','A3 · 确认后切换表征'],['A4','A4 · 授权后自动展开，可撤销']])}<small>A4 需要下方的单独授权；选择档位不会自动授权。</small><section class="observatory-runtime-controls" data-runtime-controls="authority"></section></fieldset>
+      <fieldset ${disabled}><legend>D6 · 升级、退出与复习</legend>${num('cooldownSeconds','接受帮助后的基础冷却（秒）',60,3600,60)}${num('maxEscalations','最多升级次数',0,4,1)}${num('reviewAfterHours','独立检查后复习间隔（小时）',1,168,1)}<small>通过则渐退，达到上限则停止。复习按下方授权准备，登录后查看。</small><section class="observatory-runtime-controls" data-runtime-controls="memory"></section></fieldset>
       <p>当前版本 ${d.revision}。${esc(d.reason)}。这些记录不能混入正式实验。</p><button type="submit" ${disabled}>保存并应用于后续决策</button><button type="button" data-controls-reload>重新读取</button><button type="button" data-controls-export>导出六维配置</button></form></details><p role="status" data-controls-status></p>`;
+    drawRuntimeControls();
+  }
+  function drawRuntimeControls() {
+    const s=snapshot||{},data=s.agentRuntime;
+    for(const kind of ['authority','memory']) {
+      const host=panel?.querySelector(`[data-runtime-controls="${kind}"]`);
+      if(!host)return;
+      const key=JSON.stringify([s.ownerKey,s.scopeKey,s.unitType,s.active,s.locked,s.check?.id,data,runtimeBusy]);
+      if(host.dataset.key===key)continue;
+      host.dataset.key=key;
+      const title=kind==='authority'?'自动展开授权':'检查记录与复习';
+      if(!s.active||s.unitType!=='knowledge'||s.locked||s.check) {
+        host.innerHTML=`<h4>${title}</h4><p>${s.locked||s.check?'独立作答期间暂停，请完成后返回知识点查看。':'进入知识点后可管理本知识点的授权与记录。'}</p>`;
+        continue;
+      }
+      if(!data){host.innerHTML=`<h4>${title}</h4><p>正在读取当前知识点的记录…</p>`;continue;}
+      const capability=kind==='authority'?'open_hint':'prepare_review';
+      const permission=data.permissions.find(p=>p.scope===s.scopeKey&&p.capability===capability);
+      const action=permission?'revoke':'grant';
+      const text=kind==='authority'
+        ?permission?'撤回自动展开授权':'允许自动展开线索（7天）'
+        :permission?'撤回复习授权':'允许准备复习提醒（7天）';
+      const button=`<button type="button" data-agent-action="${action}" data-capability="${capability}" data-id="${esc(permission?.id||'')}" ${runtimeBusy?'disabled':''}>${text}</button>`;
+      const records=data.memory.filter(r=>r.scope===s.scopeKey);
+      const tasks=data.tasks.filter(t=>t.kind==='review'&&t.scope===s.scopeKey&&t.status==='ready');
+      host.innerHTML=`<h4>${title}</h4><p>${kind==='authority'
+        ?'仅在本知识点允许自动展开线索，不会自动答题或提交。'
+        :`可读取本轮本知识点 ${records.length} 次最近独立检查记录，重新登录后保留。这些记录不等于已经掌握。`}</p>${button}
+        <small>${kind==='authority'?'授权立即生效，可随时撤回；实际展开仍须满足A4及当前帮助条件。':'授权后，新的独立检查可产生复习任务。服务器到期准备，在下次登录时查看。'}</small>
+        ${kind==='memory'?tasks.map(t=>`<div class="observatory-review"><p>${esc(t.payload.message)}</p><button type="button" data-agent-action="dismiss" data-id="${esc(t.id)}" ${runtimeBusy?'disabled':''}>关闭这条提醒</button></div>`).join(''):''}<p role="status" data-runtime-status></p>`;
+    }
+  }
+  async function handleRuntimeAction(button) {
+    const s=snapshot,host=button.closest('[data-runtime-controls]');
+    if(runtimeBusy||!s?.signedIn||s.locked||s.check||s.unitType!=='knowledge')return;
+    const owner=s.ownerKey,scope=s.scopeKey,kind=host.dataset.runtimeControls,action=button.dataset.agentAction;
+    const command=action==='grant'?{action,scope,capability:button.dataset.capability,confirmed:true,hours:168}:{action,id:button.dataset.id};
+    runtimeBusy=true;drawRuntimeControls();
+    try{await global.KnowledgeAssistant.agentRuntimeRequest(command);}
+    catch(error){
+      if(owner===snapshot?.ownerKey&&scope===snapshot?.scopeKey)host.querySelector('[data-runtime-status]').textContent=error.message;
+    }finally{
+      runtimeBusy=false;
+      if(owner===snapshot?.ownerKey&&scope===snapshot?.scopeKey){
+        // Refresh only the permission section; keep unsaved strategy inputs.
+        const message=host.querySelector('[data-runtime-status]')?.textContent;
+        drawRuntimeControls();
+        const current=panel.querySelector(`[data-runtime-controls="${kind}"]`);
+        if(message)current.querySelector('[data-runtime-status]').textContent=message;
+      }
+    }
   }
   async function loadControls(){
     if(!snapshot?.signedIn||controlBusy)return;
@@ -57,6 +108,7 @@
   }
   function render() {
     if (!panel || !opened) return;
+    drawRuntimeControls();
     const s = snapshot || {}, o = s.observation, facts = o?.d1?.facts, estimate = o?.d1?.estimates;
     const phase = s.policyState?.lifecycle?.phase || "idle";
     const until = Date.parse(s.policyState?.cooldownUntil || "");
@@ -134,6 +186,8 @@
       finally{controlBusy=false;}
     });
     panel.addEventListener('click',event=>{
+      const runtimeButton=event.target.closest('[data-runtime-controls] [data-agent-action]');
+      if(runtimeButton){handleRuntimeAction(runtimeButton);return;}
       if(event.target.closest('[data-controls-reload]'))loadControls();
       if(event.target.closest('[data-controls-export]')&&controlData){const url=URL.createObjectURL(new Blob([JSON.stringify(controlData,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='六维工程配置.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
     });

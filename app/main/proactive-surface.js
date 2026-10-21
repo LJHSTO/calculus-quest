@@ -77,7 +77,10 @@
   function syncToolbarSettings(next) {
     const fixed = Boolean(next.researchControls?.enabled && next.researchControls.revision > 0);
     const engineering = Boolean(next.researchControls?.enabled);
-    toolbar.querySelector("summary").textContent = engineering ? "提示呈现 · D4" : "帮助怎么显示";
+    // The demonstration console owns D4 settings and D5/D6 permissions.
+    // Keep the learner toolbar only when that console is not enabled.
+    if (engineering) { toolbar.hidden = true; toolbar.open = false; return; }
+    toolbar.querySelector("summary").textContent = "帮助怎么显示";
     toolbar.querySelectorAll("fieldset").forEach(group => { group.hidden = engineering; });
     toolbar.querySelectorAll("[data-support-setting]").forEach(button => {
       button.disabled = fixed || engineering;

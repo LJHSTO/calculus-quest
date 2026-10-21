@@ -1,5 +1,5 @@
 {
-  "version": "2954c93d436cf1aa00f6",
+  "version": "c3ee9ff0bc6cf27c80e2",
   "indexSha256": "a5377fb122bafcfe380d166575735009d30c06f244d76c4fb8c6545ffa9dbecb",
   "scripts": [
     {
@@ -215,12 +215,12 @@
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
       "file": "app/main/proactive-surface.js",
-      "sha256": "f0e7f236498326680014f0b72628ff909f46c8c8a6adedbc2b88d1355a312117"
+      "sha256": "95dc63bea4f876a27bf71b8a4e6d754802782cc369c174013689a659fa46c840"
     },
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",
       "file": "app/main/proactive-hud.js",
-      "sha256": "2fe6332da2b5faa66baf4c5090ecc7ccae17630b3984f796f45dafc502b49c25"
+      "sha256": "704bc99a5653654ebff9a35db21b3fdbcc5fd5bdd0bf260b6d932058f24f74c7"
     }
   ],
   "styles": [
@@ -261,7 +261,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "4eb5e4f0855d97c84a94",
+  "styleVersion": "106069321d0464f49d9f",
   "styleSources": [
     {
       "file": "styles.css",
@@ -297,7 +297,7 @@
     },
     {
       "file": "app/main/proactive-hud.css",
-      "sha256": "4a6088cead05f81975749910c2130bc20061770743964f9eabe304ce0d085e56"
+      "sha256": "303487fecf96455cc7d1010b0d49a82f49787e07825d66f276dce617d17c5037"
     }
   ],
   "icons": [

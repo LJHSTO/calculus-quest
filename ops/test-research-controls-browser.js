@@ -38,17 +38,35 @@ async function main(){
     await page.locator('[data-submit-quiz]').click();await page.waitForFunction(()=>state.submittedQuizzes.includes('V14-C1-pre'));
     await page.getByRole('button',{name:'全部学习',exact:true}).click();await page.getByRole('button',{name:'按勾选知识点开始学习'}).click();
     await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().unitType==='knowledge');
-    await page.locator('.support-display-settings summary').click();
-    assert.equal(await page.locator('[data-support-setting]:disabled').count(),6,'侧栏固定时明确禁用学生位置与形式调节');
-    assert.match(await page.locator('.support-display-note').innerText(),/D4 中统一设置/);
-    assert.equal(await page.locator('[data-support-setting]:visible').count(),0,'工程模式不重复展示 D4 编辑按钮');
+    assert.equal(await page.locator('.support-display-settings:visible').count(),0,'展示模式不在课件上方重复显示 D4 与记忆设置');
+    assert.ok((await page.locator('.workspace-canvas-toolbar').boundingBox()).height<160,'设置不能占用课件顶部的大块空间');
     await page.getByRole('button',{name:'六维观察台',exact:true}).click();
     if(!await page.locator('[data-controls-form]').isVisible())await page.locator('[data-research-controls] summary').click();
+    await page.locator('[data-runtime-controls="authority"] [data-agent-action="grant"]').waitFor();
+    assert.equal(await page.locator('[data-runtime-controls="authority"]').evaluate(e=>e.closest('fieldset').querySelector('legend').textContent.startsWith('D5')),true);
+    assert.equal(await page.locator('[data-runtime-controls="memory"]').evaluate(e=>e.closest('fieldset').querySelector('legend').textContent.startsWith('D6')),true);
+    await page.locator('[name="delaySeconds"]').fill('45');
+    for(const kind of ['authority','memory']){
+     const controls=page.locator(`[data-runtime-controls="${kind}"]`);
+     await controls.locator('[data-agent-action="grant"]').click();
+     await controls.locator('[data-agent-action="revoke"]').waitFor();
+    }
+    assert.equal(await page.locator('[name="delaySeconds"]').inputValue(),'45','授权更新不重置尚未保存的策略参数');
+    await page.evaluate(()=>syncLearningSnapshot('permission_refresh_check'));
+    await page.reload();await page.waitForFunction(()=>learningSnapshotReady===true);await page.locator('[data-view="learn"]').first().click();await page.getByRole('button',{name:'六维观察台',exact:true}).click();await page.locator('[data-research-controls] summary').click();
+    for(const kind of ['authority','memory']){
+     const controls=page.locator(`[data-runtime-controls="${kind}"]`);
+     await controls.locator('[data-agent-action="revoke"]').waitFor();
+     await controls.locator('[data-agent-action="revoke"]').click();
+     await controls.locator('[data-agent-action="grant"]').waitFor();
+    }
+    await page.locator('[data-runtime-controls="memory"]').scrollIntoViewIfNeeded();
+    await page.screenshot({path:path.join(output,'六维授权与记忆归位.png')});
     await page.locator('[name="placement"]').selectOption('inline');await page.getByRole('button',{name:'保存并应用于后续决策'}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls.revision===2);
     await page.getByRole('button',{name:'收起观察台'}).click();
-    assert.equal(await page.locator('[data-support-setting]:disabled').count(),6,'任务内固定时也明确禁用学生位置与形式调节');
+    assert.equal(await page.locator('.support-display-settings:visible').count(),0,'切换任务内呈现后不重新出现重复设置');
     assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().view.placement),'inline');
-    results.push({name:'完成前测进入真实学习后，侧栏与任务内控制锁均有明确界面反馈',passed:true});
+    results.push({name:'课件上方无重复设置；D5/D6授权可保存、刷新恢复及撤回，不重置策略草稿',passed:true});
     await page.goto(base+'/');await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('#auth-gate').waitFor({state:'hidden'});
     await page.locator('[data-view="learn"]').first().click();
     await page.locator('#learn-view.active').waitFor();
