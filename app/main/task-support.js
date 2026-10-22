@@ -8,7 +8,8 @@
   const el = (tag, text, cls) => {const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;};
   const replyBody=text=>{const n=el('p');if(typeof setQuestionMathContent==='function')setQuestionMathContent(n,text);else n.textContent=text;return n;};
   function message(type, extra={}){frame?.contentWindow?.postMessage({type,channel,...extra},"*");}
-  function clear(){message("cq:task-clear");frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;}
+  let frameBusy=false;
+  function clear(){message("cq:task-clear");frameBusy=false;frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;}
   function serialize(root){
     controls=new Map();
     function tree(n){
@@ -79,8 +80,8 @@
       if(helpKey!==lastQuizSupport && (next.offer||next.prompt||next.check)){lastQuizSupport=helpKey;global.LearningWorkspace?.showTask?.();}
     }
     const nextFrame=/^GH-0[12]-K0[123]$/.test(next.scopeKey) ? document.querySelector('.multi-scene-scene-panel:not([hidden]) iframe[data-courseware-frame]') : null;
-    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy]);
-    if(nextFrame!==frame){message("cq:task-clear");frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
+    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy,global.SupportCycleUI?.deferInquiry(next.supportCycle)]);
+    if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
     if(nextKey!==key){
       clearTimeout(exposureTimer);exposureTimer=null;
       key=nextKey;source=el("div",null,"task-support-content");source.append(global.KnowledgeAssistant.createSupportContent());
@@ -101,7 +102,7 @@
   }
   function checkExposure(){
     const stop=()=>{clearTimeout(exposureTimer);exposureTimer=null;};
-    const s=snapshot,v=visibility,cycle=s?.supportCycle,cycleOffer=cycle&&["offered","engaged"].includes(cycle.status);
+    const s=snapshot,v=visibility,cycle=s?.supportCycle,cycleOffer=cycle&&["awaiting_confirmation","offered","engaged"].includes(cycle.status);
     if((!s?.offer&&!cycleOffer)||s.locked||s.check||!frame?.isConnected||document.hidden||!v||v.fraction<.5||(cycleOffer&&v.supportBodyVisible!==true)){stop();return;}
     const f=frame.getBoundingClientRect(),r=v.rect,x=f.left+r.x,y=f.top+r.y;
     const area=Math.max(0,Math.min(x+r.width,f.right,innerWidth)-Math.max(x,f.left,0))*Math.max(0,Math.min(y+r.height,f.bottom,innerHeight)-Math.max(y,f.top,0));
@@ -115,7 +116,10 @@
     if(!frame||event.source!==frame.contentWindow)return;const m=event.data;
     if(m?.type==="cq:task-ready"){deliver();return;}
     if(!m||m.channel!==channel||snapshot.locked||snapshot.check)return;
-    if(m.type==="cq:task-control"){
+    if(m.type==="cq:task-busy"){
+      const wasBusy=frameBusy;frameBusy=m.busy===true;
+      if(wasBusy&&!frameBusy&&snapshot.supportCycle?.status==="awaiting_confirmation")setTimeout(()=>global.KnowledgeAssistant.refreshSupportSurface(),0);
+    }else if(m.type==="cq:task-control"){
       // IDs belong to original DOM controls and are never reused. A stale
       // offer cannot invoke a new offer, while typing does not invalidate clicks.
       const target=controls.get(m.id);if(!target||target.disabled)return;
@@ -134,5 +138,5 @@
     }
   });
   document.addEventListener("visibilitychange",checkExposure);window.addEventListener("scroll",checkExposure,true);window.addEventListener("resize",checkExposure);
-  global.TaskSupport=Object.freeze({sync,clear});
+  global.TaskSupport=Object.freeze({sync,clear,get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
 })(window);

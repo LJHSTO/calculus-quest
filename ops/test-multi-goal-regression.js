@@ -1,9 +1,9 @@
 "use strict";
 // All server fixtures choose isolated databases. Never point this runner at a live database.
 const fs=require('node:fs'),path=require('node:path'),{spawnSync}=require('node:child_process');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'output/六维多目标支持-2026-10-21/验证日志');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'output/主动询问与设计依据核验-2026-10-22/验证日志');
 fs.mkdirSync(out,{recursive:true});
-const tests=['test-support-cycle','test-support-cycle-browser','test-research-controls','test-research-controls-browser',
+const tests=['test-support-inquiry','test-support-cycle','test-support-cycle-browser','test-research-controls','test-research-controls-browser',
  'test-six-dimension-runtime','test-selected-participant-export','test-student-data-chain-api','test-main-common-tasks','test-study-workbench',
  'test-proactive-policy','test-proactive-study-api','test-proactive-verification-v3','test-courseware-verification-match',
  'test-learning-assistant-api','test-knowledge-assistant-ui','test-courseware-embedded-layout',

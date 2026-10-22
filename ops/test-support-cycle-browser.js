@@ -1,7 +1,7 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),net=require("node:net");
 const {spawn}=require("node:child_process"),{chromium}=require("playwright-core");
-const root=path.resolve(__dirname,".."),out=path.join(root,"output/六维多目标支持-2026-10-21");
+const root=path.resolve(__dirname,".."),out=path.join(root,"output/主动询问与设计依据核验-2026-10-22");
 const scopes=Object.keys(require("../lib/support-goals").CURRICULUM);
 const results=[];
 async function main(){
@@ -22,6 +22,21 @@ async function main(){
   await page.getByRole("button",{name:"全部学习",exact:true}).click();await page.getByRole("button",{name:"按勾选知识点开始学习"}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().unitType==="knowledge");
   await page.locator('[data-openmaic-state="ready"]').waitFor({timeout:30000});
   assert.ok(await page.frameLocator('iframe[data-openmaic-slide]').locator('.slide-element').count()>3,'讲解课件必须实际渲染');
+  await page.locator('[data-workspace-canvas="interactive"]').click();
+  await page.locator('[data-knowledge-scene="simulation"]').click();
+  const native=page.frameLocator('iframe[data-courseware-frame]');
+  const slider=native.locator('#input_x-slider');await slider.waitFor();
+  for(const key of ['ArrowRight','ArrowRight','ArrowRight']){await slider.press(key);await page.waitForTimeout(900);}
+  await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='awaiting_confirmation',null,{timeout:25000});
+  const invited=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle);
+  assert.equal(invited.initiation,'agent_initiated_confirmation');assert.equal(invited.need,null);assert.equal(invited.content,null);
+  assert.ok(invited.inquiry.sourceIds.length);assert.equal(invited.inquiry.psychologicalState,'unknown');
+  const invitation=native.locator('[data-cq-embedded-help="task"]');
+  await invitation.getByText('要不要一起看看刚才的问题？',{exact:true}).waitFor();
+  assert.ok(await invitation.getByRole('button',{name:'暂时不需要',exact:true}).count());
+  await page.screenshot({path:path.join(out,'常规学习主动询问.png')});
+  await page.locator('[data-workspace-canvas="slide"]').click();
+  results.push('原生滑块操作产生过程证据，服务端结合错题在任务边界主动询问，确认前不生成支持');
   // The first lesson uses the normal student entry, subsequent points use the
   // existing test-only navigation seam, without replacing DOM or server data.
   await page.getByText("这一步需要什么帮助？",{exact:true}).click();
@@ -30,6 +45,7 @@ async function main(){
   await page.getByRole("button",{name:"确认当前需要",exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==="offered");
   let c=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle);assert.equal(c.plan.primaryGoal,"motivational");assert.equal(c.need.source,"student_confirmed");assert.equal(c.content.audit.fallback,true);
+  assert.equal(c.id,invited.id);assert.equal(c.initiation,'agent_initiated_confirmation');assert.equal(c.inquiry.response,'value');
   await page.locator(".support-goal-message").scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,"常规学习多目标支持.png")});
   await page.getByText("反馈这次帮助",{exact:true}).click();await page.getByRole("button",{name:"有帮助",exact:true}).click();await page.getByRole("button",{name:"保存反馈",exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.feedback?.result==="helped");
@@ -45,8 +61,15 @@ async function main(){
   await page.locator('[data-knowledge-scene="simulation"]').click();
   const frame=page.frameLocator('iframe[data-courseware-frame]');
   const host=frame.locator('[data-cq-embedded-help="task"]');await host.waitFor();
-  await host.getByText('这一步需要什么帮助？',{exact:true}).click();
+  const needSummary=host.getByText('这一步需要什么帮助？',{exact:true});
+  if(!await needSummary.evaluate(n=>n.closest('details').open))await needSummary.click();
   await host.getByRole('button',{name:'担心自己学不会',exact:true}).click();
+  await host.getByLabel('补充一句你的目标或困难（可不填）').fill('合成输入：正在说明目前的困难');
+  await page.waitForFunction(()=>SupportCycleUI.interactionBusy===true);
+  assert.equal(await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return SupportCycleUI.render({...s,supportCycle:{id:'synthetic-deferred',status:'awaiting_confirmation',inquiry:{text:'合成依据'}}}).querySelector('.support-inquiry')!==null;}),false,'输入期间新询问暂缓呈现');
+  await frame.locator('#input_x-slider').focus();
+  await page.waitForFunction(()=>SupportCycleUI.interactionBusy===false);
+  assert.equal(await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return SupportCycleUI.render({...s,supportCycle:{id:'synthetic-deferred',status:'awaiting_confirmation',inquiry:{text:'合成依据'}}}).querySelector('.support-inquiry')!==null;}),true,'离开输入框后可呈现询问');
   await host.getByRole('button',{name:'确认当前需要',exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.need?.need==='confidence'&&KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='offered');
   const shape=await host.evaluate(n=>({position:getComputedStyle(n).position,width:n.getBoundingClientRect().width,bottom:n.previousElementSibling.getBoundingClientRect().bottom,top:n.getBoundingClientRect().top}));

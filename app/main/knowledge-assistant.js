@@ -3233,6 +3233,7 @@ const proactiveJustificationDrafts = new Map();
       || (isOpen && !awaitingFollowup)
       || document.hidden
       || !learningViewActive()
+      || global.SupportCycleUI?.interactionBusy
     ) return false;
     if (proactiveCandidateId === candidate.id && (proactiveDecision || proactiveDecisionRequest)) return true;
     proactiveDecisionRequest?.abort();

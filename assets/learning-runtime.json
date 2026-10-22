@@ -1,5 +1,5 @@
 {
-  "version": "b4e5892e342bddd97e4c",
+  "version": "98ec495772c7275af1c1",
   "indexSha256": "d98c88b0c9bccc67a19350bf6aff356a4823e075e818fcc2e2f86a3ebed67f1d",
   "scripts": [
     {
@@ -180,7 +180,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "4b2487af203cf601094490f28b437d1edb5f857a815904766667573d2c35be78"
+      "sha256": "3732b21df8f976254ee14c00403b358175b48739f728e9d6d1a9923322f8b494"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -210,22 +210,22 @@
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
       "file": "app/main/support-cycle.js",
-      "sha256": "3ef414ddfa886d2e5104a20717664bd4428e3a74e646460021e953a0eb7c3af2"
+      "sha256": "d3b84c7e6be8403c675fc1a3f70e92ec60743c9cc3cda4165fb81ff06ee4564b"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
       "file": "app/main/task-support.js",
-      "sha256": "b29141007ada2065daec295e725f13600a445770ecfd84e279d6af1da6412cd6"
+      "sha256": "cb3798ede8453fd6acdb2f0562a59ecc3210e149960aa5dbe4802cd3c38dc5d7"
     },
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
       "file": "app/main/proactive-surface.js",
-      "sha256": "a6e99259637694272ebfa412ba7cdf421f051ce149b21bc0601966d03dabe9f4"
+      "sha256": "87921c30c8db4d20ac4e279817749c5a57482e613e268627f09abace448026f3"
     },
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",
       "file": "app/main/proactive-hud.js",
-      "sha256": "0ddfa1e3f3444e4d7753b72786a7b72137700043a54c169990cc00ce9ae99cac"
+      "sha256": "397ab7a28f8b0cabd5248ecb007da49976343e806ff75c077264bedaaa144756"
     }
   ],
   "styles": [

@@ -218,7 +218,7 @@
     const moved = shell.parentNode !== host;
     if (moved) host.prepend(shell);
     shell.hidden = false; shell.dataset.placement = next.view.placement; shell.dataset.modality = next.view.modality;
-    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy]);
+    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy,global.SupportCycleUI?.deferInquiry(next.supportCycle)]);
     if (key === renderKey && !moved) {observeOffer(next); return;}
     if (busy) return;
     renderKey = key;

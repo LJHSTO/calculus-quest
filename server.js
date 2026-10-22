@@ -4400,8 +4400,24 @@ async function handleManagedProactiveIntervention({
     }
   }
 
+  let needInquiry=null;
+  if(policyDecision.displayAllowed && renderedDecision.intervene && !policyDecision.stateTransition
+      && !resolved.isQuiz && signal.kind!=="student_requested_alternative"
+      && researchControlStore.canEdit(auth.participant.id)) {
+    const recentCheck=agentRuntime.state(auth.participant.id,generation).memory.find(r=>r.scope===policyScopeKey);
+    const latestAnswerAt=Math.max(0,...(evidence.evidenceRefs||[]).filter(r=>["quiz_result","common_independent_probe"].includes(r.sourceType)).map(r=>Date.parse(r.capturedAt)||0));
+    const inquiryContext={...evidence,independentAttemptSuccess:evidence.independentAttemptSuccess===true||Boolean(recentCheck?.payload.outcome.success===true&&Date.parse(recentCheck.created_at)>latestAnswerAt)};
+    needInquiry=supportCycles.invite(auth.participant.id,policyScopeKey,generation,{
+      evidence:inquiryContext,signal,decisionId,profile:agentProfile,profileRevision:engineeringControl?.revision||0});
+    if(needInquiry){
+      evidence.needInquiry={id:needInquiry.id,stage:"awaiting_student_confirmation",cue:needInquiry.inquiry};
+      policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
+        reasonCodes:[...policyDecision.reasonCodes,"need_confirmation_offered"]};
+      renderedDecision=proactiveSilentAssistantDecision(policyDecision);
+    }
+  }
   if(evidence.delayedTask?.status==="ready") {
-    const delivered=policyDecision.displayAllowed && renderedDecision.intervene;
+    const delivered=Boolean(needInquiry)||(policyDecision.displayAllowed && renderedDecision.intervene);
     evidence.delayedTask.status=delivered?"delivered":"cancelled";
   }
   if(policyDecision.displayAllowed && renderedDecision.intervene) {
@@ -4553,8 +4569,8 @@ async function handleManagedProactiveIntervention({
     );
   }
   if(delayed?.status==="ready" && evidence.delayedTask?.id===delayed.id) {
-    agentRuntime.settle(delayed.id,auth.participant.id,interventionId?"delivered":"cancelled",
-      interventionId?"fresh_policy_approved":"delivery_guard");
+    agentRuntime.settle(delayed.id,auth.participant.id,interventionId||needInquiry?"delivered":"cancelled",
+      needInquiry?"need_confirmation_offered":interventionId?"fresh_policy_approved":"delivery_guard");
   }
 
   db.insertEvent({
@@ -4614,6 +4630,7 @@ async function handleManagedProactiveIntervention({
       runtime: publicProactiveRuntime(experimentRuntime),
       studentPreference,
       deliveryDecision: policyDecision.deliveryDecision,
+      supportCycles: publicSupportCycles(auth.participant.id,generation),
       observation: require("./lib/proactive-policy/design-space").observation({
         decision: policyDecision, evidence, signal, scopeKey: policyScopeKey, decisionId
       }),
@@ -5525,6 +5542,16 @@ async function handleApi(req, res, url) {
             outcome:{...cycle.checkResult,success:cycle.checkResult.correct===true},reviewHours:profile.reviewAfterHours});
         }
         if(["report","advance"].includes(body.action)) {
+          const pendingInquiry=supportCycles.current(user,scope,generation);
+          if(body.action==="advance"&&pendingInquiry?.status==="awaiting_confirmation"){
+            const fresh=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:"quiet_dwell"},policyState:{},now:Date.now()});
+            const disabled=proactiveStudentPreference(user,scope)==="off"||profile.proactivity==="reactive"||!profile.supportInquiryEnabled
+              ||proactiveStudyConfig.mode!=="active"||proactiveExperimentRuntime()?.status==="paused";
+            const latestCheck=agentRuntime.state(user,generation).memory.find(r=>r.scope===scope);
+            const resolvedGap=fresh.commonProbe?.correct===true||Boolean(latestCheck?.payload.outcome.success===true&&Date.parse(latestCheck.created_at)>Date.parse(pendingInquiry.createdAt))||(pendingInquiry.inquiry.basis==="unresolved_recorded_answer"&&Number(fresh.confirmedGapCount||0)===0);
+            if(disabled||resolvedGap||revision!==pendingInquiry.profileRevision)supportCycles.retractInquiry(user,scope,generation,
+              disabled?"student_or_protocol_disabled":resolvedGap?"evidence_resolved":"configuration_changed");
+          }
           const budget=checkAssistantRateLimit(user);
           if(!budget.ok)throw Object.assign(new Error("请求较频繁，请稍后再试"),{status:429});
           let automaticBudgetReserved=false;

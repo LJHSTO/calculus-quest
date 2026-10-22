@@ -44,15 +44,25 @@ async function main(){
     const blocked=await req("/api/learning/assistant/ask",{chapterId:"V14-C1",unitId:"V14-C1-pre",question:"告诉我第一题答案",contextRef:{kind:"unit",scope:"quiz"}});
     assert.ok([403,409].includes(blocked.status),"独立前测不能调用答题助教");
     const pre=require('../data/multi-scene-learning-route.json').chapters.find(c=>c.id==='V14-C1').flow.preQuiz;
-    const submitted=await req('/api/learning/quiz/submit',{unitId:'V14-C1-pre',chapterId:'V14-C1',phase:'pre',answers:pre.questions.map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.type==='multiple'?q.answer:q.answer[0]}))});
+    const inquirySmoke=process.env.LIVE_SUPPORT_INQUIRY==='1';
+    const submitted=await req('/api/learning/quiz/submit',{unitId:'V14-C1-pre',chapterId:'V14-C1',phase:'pre',answers:pre.questions.map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':inquirySmoke&&q.id===pre.questions[0].id?'B':q.type==='multiple'?q.answer:q.answer[0]}))});
     assert.equal(submitted.status,200,submitted.data.message||'前测提交失败');
     await req('/api/learning/proactive/state?chapterId=V14-C1');
+    let inquiry=null;
+    if(inquirySmoke){
+      const events=[0,1,2].map(i=>{const id=crypto.randomUUID(),value={parameter:'input_x',oldValue:String(i),newValue:String(i+1)};return {eventId:id,type:'interaction',payload:{schemaVersion:1,eventId:id,eventType:'parameter_commit',source:'iframe',chapterId:'V14-C1',unitId:'GH-01-K01',unitType:'knowledge',sceneType:'simulation',value,data:{parameter:'input_x',value},timing:{clientAt:new Date(Date.now()-3000+i*1000).toISOString(),durationMs:400}}};});
+      assert.equal((await req('/api/learning/events',{events})).status,200);
+      const decision=await req('/api/learning/assistant/intervention',{chapterId:'V14-C1',unitId:'GH-01-K01',sceneType:'simulation',signal:{kind:'repeated_parameter',parameter:'input_x',oldValue:'2',newValue:'3'},contextRef:{kind:'interaction',scope:'interactive',state:{parameter:'input_x',oldValue:'2',newValue:'3'}}});
+      assert.equal(decision.status,200);inquiry=decision.data.study?.supportCycles?.find(c=>c.status==='awaiting_confirmation');
+      assert.ok(inquiry,'合格过程与结果证据须触发系统询问');assert.equal(inquiry.need,null);assert.equal(inquiry.content,null);
+    }
     const supportResults=[];
     for(const [need,goal] of [['concept','cognitive'],['monitoring','metacognitive'],['value','motivational'],['frustration','emotional'],['planning','behavioral']]){
       let cycle;const attempts=[];
       for(let attempt=0;attempt<2;attempt++){
-        const supported=await req('/api/learning/support-cycle',{action:'report',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:'slide',confirmed:true,need,note:'合成验收：正在学习输入、输出和函数规则，请围绕当前知识点提供建议。'});
+        const supported=await req('/api/learning/support-cycle',{action:'report',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:'slide',confirmed:true,need,...(inquiry&&need==='concept'&&attempt===0?{inquiryId:inquiry.id}:{}),note:'合成验收：正在学习输入、输出和函数规则，请围绕当前知识点提供建议。'});
         assert.equal(supported.status,200,supported.data.message);cycle=supported.data.data.cycle;
+        if(inquiry&&need==='concept'&&attempt===0){assert.equal(cycle.id,inquiry.id);assert.equal(cycle.initiation,'agent_initiated_confirmation');assert.equal(cycle.content.audit.fallback,false,'系统询问确认后须验证一次真实生成');}
         attempts.push({fallback:cycle.content.audit.fallback,failure:cycle.content.audit.failure||null,latencyMs:cycle.content.audit.latencyMs});
         if(!cycle.content.audit.fallback)break;
         assert.equal((await req('/api/learning/support-cycle',{action:'close',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:'slide',id:cycle.id})).status,200);
@@ -78,7 +88,7 @@ async function main(){
     const wrong=await grade.gradeOne({...q,response:"可以，一个输入可以随意对应两个不同输出。"});
     assert.equal(grade.isUnavailableGradingResult(correct),false,"正确答案评分须可用："+correct.errorType);assert.equal(grade.isUnavailableGradingResult(wrong),false,"错误答案评分须可用："+wrong.errorType);
     assert.equal(correct.score,2);assert.equal(wrong.score,0);assert.ok(correct.gradingAudit.reportedModel);
-    const report={passed:true,synthetic:true,at:new Date().toISOString(),assistant:done.message.modelAudit,multiGoalSupport:supportResults,
+    const report={passed:true,synthetic:true,at:new Date().toISOString(),agentInitiatedInquiry:inquiry?{passed:true,confirmedBeforeGeneration:true,psychologicalState:inquiry.inquiry.psychologicalState}:null,assistant:done.message.modelAudit,multiGoalSupport:supportResults,
       grading:{correct:correct.score,incorrect:wrong.score,requestedModel:correct.gradingAudit.requestedModel,reportedModel:correct.gradingAudit.reportedModel},
       checks:["子路径服务","普通入口展示标记","全账号六维配置","真实对话与模型审计落盘","前测拒绝助教","正确与错误理由量规评分"]};
     fs.writeFileSync(path.join(dir,"真实接口验收.json"),JSON.stringify(report,null,2));console.log(JSON.stringify(report));console.log(dir);

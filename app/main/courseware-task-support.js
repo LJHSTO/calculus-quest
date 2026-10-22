@@ -18,6 +18,15 @@
   };
   let current, host, content, visibleRatio = 0, intersection, treeKey = "", layoutObserver;
   const send = (type, fields = {}) => parent.postMessage({ type, channel: current?.channel, ...fields }, "*");
+  let pointerHeld=false;
+  function reportActivity(){
+    const focus=host?.shadowRoot?.activeElement||document.activeElement;
+    send("cq:task-busy",{busy:pointerHeld||Boolean(focus?.matches('textarea,input:not([type=button]):not([type=checkbox]):not([type=range]),[contenteditable=true]'))});
+  }
+  document.addEventListener("pointerdown",()=>{pointerHeld=true;reportActivity();},true);
+  for(const event of ["pointerup","pointercancel"])document.addEventListener(event,()=>{pointerHeld=false;reportActivity();},true);
+  document.addEventListener("focusin",reportActivity,true);
+  document.addEventListener("focusout",()=>setTimeout(reportActivity,0),true);
   const visible = el => el && el.getClientRects().length && getComputedStyle(el).visibility !== "hidden";
   function anchor() {
     const kp = current.scope, type = current.sceneType;
@@ -111,7 +120,7 @@
     if (data.type === "cq:task-show") {
       let contract; try{contract=JSON.parse(document.querySelector("#openmaic-semantic-contract")?.textContent || "{}");}catch{return;}
       if(!simulation[data.scope] || contract.knowledge_point_id!==data.scope || contract.scene_type!==data.sceneType || typeof data.channel!=="string" || data.channel.length>100 || !data.tree || JSON.stringify(data.tree).length>60000)return;
-      if(current?.channel!==data.channel)clear();current=data;place();
+      if(current?.channel!==data.channel)clear();current=data;place();reportActivity();
       if(!layoutObserver){layoutObserver=new MutationObserver(()=>{if(current)place();});layoutObserver.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style","hidden"]});}
     } else if(data.channel===current?.channel && data.type==="cq:task-clear"){current=null;clear();}
     else if(data.channel===current?.channel && data.type==="cq:task-locate"){host?.scrollIntoView({block:"nearest"});host?.focus({preventScroll:true});}
