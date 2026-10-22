@@ -312,6 +312,9 @@ async function toggleFullscreenLearning() {
 
 async function toggleResourceFullscreen(shell) {
   if (!shell) return;
+  // Keep the normal task, pending support locator and exit controls in fullscreen.
+  // Fullscreening the iframe stage alone hides game/3D help in the task footer.
+  shell = shell.closest('.core-learning-workspace') || shell;
   try {
     if (shell.classList.contains("is-local-fullscreen-target")) {
       shell.classList.remove("is-local-fullscreen-target");
@@ -340,6 +343,8 @@ async function toggleResourceFullscreen(shell) {
 
 function resourceFullscreenTargetForButton(button) {
   if (!button) return null;
+  const workspace=button.closest('.core-learning-workspace');
+  if(workspace)return workspace;
   const shell = button.closest("[data-resource-shell]");
   return button.closest("[data-resource-fullscreen-target]")
     || shell?.querySelector("[data-resource-fullscreen-target]")
@@ -368,7 +373,8 @@ function updateResourceFullscreenButtons() {
   });
   document.querySelectorAll("[data-knowledge-scene-panel]").forEach((panel) => {
     const stage = panel.querySelector("[data-knowledge-scene-stage]");
-      const active = Boolean(stage && (document.fullscreenElement === stage || stage.classList.contains("is-local-fullscreen-target")));
+      const target=stage?.closest('.core-learning-workspace')||stage;
+      const active = Boolean(target && (document.fullscreenElement === target || target.classList.contains("is-local-fullscreen-target")));
       panel.querySelectorAll("[data-knowledge-scene-fullscreen]").forEach((button) => {
       button.disabled = !stage;
       button.textContent = active ? "退出全屏" : "课件全屏";

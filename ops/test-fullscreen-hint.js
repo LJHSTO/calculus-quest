@@ -18,6 +18,7 @@ function boot(participant = "student-a", brokenStorage = false) {
   const context = vm.createContext({
     document: { createElement: element, fullscreenElement: null },
     $: () => element(), clearTimeout() {}, setTimeout() { return 1; },
+    clearInterval() {}, setInterval() { return 2; },
     shell: { classList: { contains: () => false } },
     state: { participant: { participantId: participant } },
     canvasMode: "interactive",

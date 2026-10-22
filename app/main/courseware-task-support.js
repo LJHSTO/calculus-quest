@@ -27,7 +27,8 @@
   for(const event of ["pointerup","pointercancel"])document.addEventListener(event,()=>{pointerHeld=false;reportActivity();},true);
   document.addEventListener("focusin",reportActivity,true);
   document.addEventListener("focusout",()=>setTimeout(reportActivity,0),true);
-  const visible = el => el && el.getClientRects().length && getComputedStyle(el).visibility !== "hidden";
+  const visible = el => el && el.getClientRects().length && getComputedStyle(el).visibility !== "hidden"
+    && getComputedStyle(el).pointerEvents !== 'none' && getComputedStyle(el).opacity !== '0';
   function anchor() {
     const kp = current.scope, type = current.sceneType;
     // These exports position their game screens and 3D controls over the canvas.
@@ -53,13 +54,13 @@
     const body=content.querySelector('[data-support-body]'), target=body||host, r=target.getBoundingClientRect();
     const area=Math.max(0,Math.min(r.bottom,innerHeight)-Math.max(r.top,0))*Math.max(0,Math.min(r.right,innerWidth)-Math.max(r.left,0));
     const fraction=r.width*r.height>0?area/(r.width*r.height):0;
-    send("cq:task-visibility", { supportBodyVisible:Boolean(body&&visible(body)&&!body.closest("details:not([open])")),fraction:document.hidden?0:fraction, rect: { x:r.x,y:r.y,width:r.width,height:r.height }, viewport:{width:innerWidth,height:innerHeight} });
+    send("cq:task-visibility", { pilotProbe:content.querySelector('[data-pilot-probe]')?.dataset.pilotProbe||null,supportBodyVisible:Boolean(body&&visible(body)&&!body.closest("details:not([open])")),fraction:document.hidden?0:fraction, rect: { x:r.x,y:r.y,width:r.width,height:r.height }, viewport:{width:innerWidth,height:innerHeight} });
   }
   function clear() {
     intersection?.disconnect(); layoutObserver?.disconnect(); host?.remove();
     host = content = intersection = layoutObserver = null; treeKey = ""; visibleRatio = 0;
   }
-  const tags = new Set(["div","section","article","header","footer","p","strong","span","small","label","form","textarea","input","button","br","ul","ol","li","h3","h4","output","details","summary"]);
+  const tags = new Set(["div","section","article","header","footer","p","strong","span","small","label","form","fieldset","legend","textarea","input","button","br","ul","ol","li","h3","h4","output","details","summary"]);
   const mathTags=new Set(['math','semantics','mrow','mi','mn','mo','mfrac','msup','msub','msubsup','msqrt','mroot','mover','munder','munderover','mtable','mtr','mtd','mtext','mspace','menclose','mstyle','mpadded']);
   function fromTree(item, depth = 0, revision = current.revision) {
     if (!item || depth > 18) return document.createTextNode("");
@@ -68,6 +69,7 @@
     const el = mathTags.has(item.tag) ? document.createElementNS('http://www.w3.org/1998/Math/MathML',item.tag) : document.createElement(item.tag);
     if (item.hidden) el.hidden = true;
     if (item.supportBody) el.dataset.supportBody=item.supportBody;
+    if (item.pilotProbe) el.dataset.pilotProbe=String(item.pilotProbe).slice(0,100);
     for (const key of ["type","placeholder","aria-label","aria-pressed","role","aria-checked","min","max","step","rows","maxLength","display","mathvariant","stretchy","fence","separator","scriptlevel","columnalign"]) if (item.attrs?.[key] != null) el.setAttribute(key, String(item.attrs[key]).slice(0, 300));
     if(item.tag==="details") {el.open=item.open===true;el.addEventListener("toggle",()=>{send("cq:task-control",{id:item.id,kind:"toggle",open:el.open,revision});geometry();});}
     if (item.tag === "button") el.type = "button";
@@ -91,6 +93,7 @@
       style.textContent = ":host{font:14px/1.75 'Microsoft YaHei',sans-serif;color:#243c35;color-scheme:light}*{box-sizing:border-box}[hidden]{display:none!important}.card{padding:14px;background:#eff7f3;border:1px solid #a9cbbd;border-left:3px solid #397e63;border-radius:8px;overflow-wrap:anywhere}article{margin:0 0 12px}p{margin:8px 0}header,footer{display:flex;gap:8px;flex-wrap:wrap;align-items:center}strong{font-size:14px}small{display:block;color:#536b61;font-size:12px}button{font:inherit;line-height:1.5;min-height:38px;max-width:100%;padding:7px 10px;margin:4px 5px 4px 0;border:1px solid #9cbbad;border-radius:5px;background:white;color:#245c46;cursor:pointer;white-space:normal}button:hover{background:#dfede5}button:disabled{opacity:.6;cursor:wait}label{display:block}textarea{display:block;width:100%;min-height:94px;resize:vertical;background:#fff;color:#26394a;border:1px solid #9cbbad;border-radius:5px;padding:10px;font:inherit;margin:10px 0}input{max-width:100%;font:inherit}button:focus-visible,textarea:focus-visible{outline:3px solid #8b79d4;outline-offset:2px}";
       style.textContent += '[role="note"]{padding:12px 16px;border-radius:16px 16px 16px 4px;background:#e2f0e8;border:1px solid #bbd5c7}';
       style.textContent += 'button[aria-pressed="true"]{background:#d5e9dd;border-color:#397e63}summary{cursor:pointer;padding:8px 0}details{margin:6px 0}';
+      style.textContent += '[data-pilot-probe]{max-height:340px;overflow:auto;overscroll-behavior:contain;scroll-padding:8px}fieldset{min-width:0;margin:12px 0;padding:8px;border:1px solid #c4d6cd;border-radius:6px}legend{font-weight:600;max-width:100%;padding:0 4px}';
       content = document.createElement("div"); content.className = "card"; shadow.append(style, content);
       intersection = new IntersectionObserver(entries => {visibleRatio=entries[0].intersectionRatio;geometry();},{threshold:[0,.5,1]}); intersection.observe(host);
     }
@@ -124,6 +127,10 @@
       if(!layoutObserver){layoutObserver=new MutationObserver(()=>{if(current)place();});layoutObserver.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class","style","hidden"]});}
     } else if(data.channel===current?.channel && data.type==="cq:task-clear"){current=null;clear();}
     else if(data.channel===current?.channel && data.type==="cq:task-locate"){host?.scrollIntoView({block:"nearest"});host?.focus({preventScroll:true});}
+    else if(data.channel===current?.channel && data.type==="cq:task-return"){
+      const target=anchor()?.el;target?.scrollIntoView({block:'start'});
+      target?.querySelector('input,button,textarea')?.focus({preventScroll:true});
+    }
   });
   document.addEventListener("focusin",()=>{if(current)place();});
   document.addEventListener("scroll",geometry,true);document.addEventListener("visibilitychange",geometry);window.addEventListener("resize",geometry);

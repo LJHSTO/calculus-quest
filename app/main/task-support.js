@@ -17,7 +17,7 @@
       if(n.nodeType!==1)return{text:""};
       if(n.classList.contains("katex")){const math=n.querySelector('math');return math?tree(math):{text:n.querySelector(".katex-html")?.textContent||n.textContent};}
       if(n.tagName.toLowerCase()==='annotation')return{text:''};
-      const tag=n.tagName.toLowerCase(), item={tag,supportBody:n.dataset.supportBody||null,hidden:n.hidden,open:n.open===true,disabled:n.disabled===true,attrs:{},children:[]};
+      const tag=n.tagName.toLowerCase(), item={tag,supportBody:n.dataset.supportBody||null,pilotProbe:n.dataset.pilotProbe||null,hidden:n.hidden,open:n.open===true,disabled:n.disabled===true,attrs:{},children:[]};
       if(["button","input","textarea","form","details"].includes(tag)){if(!controlIds.has(n))controlIds.set(n,`c${++nextControlId}`);item.id=controlIds.get(n);controls.set(item.id,n);}
       for(const a of ["type","placeholder","aria-label","aria-pressed","role","aria-checked","min","max","step","rows","maxLength","display","mathvariant","stretchy","fence","separator","scriptlevel","columnalign"])if(n.hasAttribute(a))item.attrs[a]=n.getAttribute(a);
       if(["textarea","input"].includes(tag))item.value=n.value;
@@ -64,6 +64,7 @@
     const pane=snapshot.unitType==="quiz" ? [...document.querySelectorAll('.question-card[data-question]')].find(n=>n.dataset.question===(snapshot.offer?.questionId||snapshot.replyQuestionId))||document.querySelector('.question-card[data-question]') : document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
     if(!pane)return;
     if(!panel?.isConnected){panel=el("section",null,"task-support-panel");panel.setAttribute("aria-label",snapshot.check?"独立检查作答":"当前任务的学习帮助");pane.append(panel);}
+    if(panel.parentElement!==pane)pane.append(panel);
     if(source.parentElement!==panel)panel.replaceChildren(source);panel.hidden=false;
     if(snapshot.offer)global.KnowledgeAssistant.observeSupportOffer(source.querySelector('.knowledge-proactive-inline-offer'),snapshot.offer);
   }
@@ -95,6 +96,9 @@
           if(!next.feedback && !next.reply?.text)source.prepend(el("small","可以继续独立探索；需要时在当前步骤求助。"));
         }
         const open=el("button","打开完整对话");open.type="button";open.addEventListener("click",()=>global.KnowledgeAssistant.open({preserveProactiveSuggestion:true}));source.append(open);
+        if(next.unitType==='knowledge'){
+          const back=el('button','返回课件操作');back.type='button';back.addEventListener('click',returnToTask);source.append(back);
+        }
       }
     }
     if(frame&&!next.check&&!unavailable){panel?.remove();panel=null;deliver();}else showPanel();
@@ -138,5 +142,24 @@
     }
   });
   document.addEventListener("visibilitychange",checkExposure);window.addEventListener("scroll",checkExposure,true);window.addEventListener("resize",checkExposure);
-  global.TaskSupport=Object.freeze({sync,clear,get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
+  function locate(){
+    if(frame?.isConnected&&!unavailable){frame.scrollIntoView({block:'nearest'});message('cq:task-locate');return true;}
+    if(panel?.isConnected){panel.tabIndex=-1;panel.scrollIntoView({block:'start'});panel.focus({preventScroll:true});return true;}
+    return false;
+  }
+  function returnToTask(){
+    if(frame?.isConnected&&!unavailable){frame.scrollIntoView({block:'nearest'});message('cq:task-return');return;}
+    const pane=panel?.parentElement;
+    pane?.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]')?.scrollIntoView({block:'start'});
+  }
+  function visibleProbeId(){
+    if(document.hidden||!frame?.isConnected||!visibility?.pilotProbe||visibility.fraction<.5)return null;
+    const f=frame.getBoundingClientRect(),r=visibility.rect;
+    const x=f.left+r.x,y=f.top+r.y;
+    const area=Math.max(0,Math.min(x+r.width,f.right,innerWidth)-Math.max(x,f.left,0))*Math.max(0,Math.min(y+r.height,f.bottom,innerHeight)-Math.max(y,f.top,0));
+    // A child frame cannot determine whether its parent pane is hidden or covered.
+    const cx=Math.max(f.left,Math.min(f.right-1,x+r.width/2)),cy=Math.max(f.top,Math.min(f.bottom-1,y+r.height/2));
+    return r.width*r.height>0&&area/(r.width*r.height)>=.5&&document.elementFromPoint(cx,cy)===frame?visibility.pilotProbe:null;
+  }
+  global.TaskSupport=Object.freeze({sync,clear,locate,visibleProbeId,get interactionBusy(){return Boolean(frame?.isConnected&&frameBusy);}});
 })(window);

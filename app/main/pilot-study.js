@@ -47,6 +47,15 @@
     const status=el("p",message);status.setAttribute("role","status");dialog.append(status);
   }
   async function open(){try{update(await call(""));}catch(e){message=e.message;}showDialog();if(!dialog.open)dialog.showModal();}
+  function probeVisible(node){
+    const r=node.getBoundingClientRect();if(!r.width||!r.height)return false;
+    let left=Math.max(0,r.left),top=Math.max(0,r.top),right=Math.min(innerWidth,r.right),bottom=Math.min(innerHeight,r.bottom);
+    for(let p=node.parentElement;p;p=p.parentElement){const style=getComputedStyle(p),box=p.getBoundingClientRect();
+      if(/auto|scroll|hidden|clip/.test(style.overflowX)){left=Math.max(left,box.left);right=Math.min(right,box.right);}
+      if(/auto|scroll|hidden|clip/.test(style.overflowY)){top=Math.max(top,box.top);bottom=Math.min(bottom,box.bottom);}
+    }
+    return Math.max(0,right-left)*Math.max(0,bottom-top)/(r.width*r.height)>=.5&&node.contains(document.elementFromPoint((left+right)/2,(top+bottom)/2));
+  }
   async function tick(){
     if(busy||!snapshot?.signedIn)return;
     const s=snapshot,requestedOwner=owner;
@@ -60,9 +69,8 @@
         global.KnowledgeAssistant?.refreshSupportSurface();
         const p=data.pending;
         if(p&&active(s)&&!shown.has(p.id)&&!document.hidden){
-          const docs=[document,...[...document.querySelectorAll("iframe")].flatMap(f=>{try{return f.contentDocument?[f.contentDocument]:[];}catch{return [];}})];
-          const node=docs.flatMap(d=>[...d.querySelectorAll("[data-pilot-probe]")]).find(n=>n.dataset.pilotProbe===p.id&&n.getClientRects().length&&n.getBoundingClientRect().bottom>0&&n.getBoundingClientRect().top<(n.ownerDocument.defaultView?.innerHeight||innerHeight));
-          if(node){shown.add(p.id);call("/action",{action:"shown",id:p.id}).catch(()=>shown.delete(p.id));}
+          const node=[...document.querySelectorAll('[data-pilot-probe]')].find(n=>n.dataset.pilotProbe===p.id&&probeVisible(n));
+          if(node||global.TaskSupport?.visibleProbeId?.()===p.id){shown.add(p.id);call("/action",{action:"shown",id:p.id}).catch(()=>shown.delete(p.id));}
         }
       }
     }catch(e){if(owner===requestedOwner)message=e.message;}

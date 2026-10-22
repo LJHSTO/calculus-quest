@@ -815,6 +815,9 @@ function trustedClientEventTime(item = {}, receivedAt = new Date()) {
   const delta = parsed - receivedAt.getTime();
   const maxPastSkewMs = 7 * 24 * 60 * 60 * 1000;
   const maxFutureSkewMs = 10 * 60 * 1000;
+  // Small device-clock jitter must not make an event we already received
+  // disappear from the causal window. Larger future dates remain quarantined.
+  if(delta>0 && delta<=5000)return receivedAt.getTime();
   return delta >= -maxPastSkewMs && delta <= maxFutureSkewMs
     ? parsed
     : receivedAt.getTime();

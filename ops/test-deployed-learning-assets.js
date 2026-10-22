@@ -69,6 +69,15 @@ async function main() {
     const styles = await download("assets/learning-runtime.css?v=20260917");
     assert.equal(crypto.createHash("sha256").update(styles).digest("hex"),
       crypto.createHash("sha256").update(fs.readFileSync(path.join(root, "assets/learning-runtime.css"))).digest("hex"));
+    const checked=new Set();
+    for(const page of ['admin.html','pilot-workbench.html','study-workbench.html']){
+      const html=(await download(page)).toString('utf8');
+      for(const match of html.matchAll(/(?:src|href)=["']([^"']+)["']/g)){
+        const resource=match[1];
+        if(/^(?:https?:|\/\/|#)/.test(resource)||!/[.](?:js|css)(?:\?|$)/.test(resource)||checked.has(resource))continue;
+        checked.add(resource);await download(resource);
+      }
+    }
     for (const module of require("../assets/courseware-modules/manifest.json")) {
       const bytes = await download("assets/courseware-modules/" + module.file);
       assert.equal(crypto.createHash("sha256").update(bytes).digest("hex"), module.sha256);

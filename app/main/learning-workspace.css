@@ -52,6 +52,18 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
 .core-learning-workspace *::before,
 .core-learning-workspace *::after { box-sizing: border-box; letter-spacing: 0; }
 .core-learning-workspace [hidden] { display: none !important; }
+.workspace-support-status { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+.core-learning-workspace #workspace-support-notice { min-height:36px; padding:7px 10px; border:1px solid #c7bdf4; border-radius:6px; background:#f0edff; color:#44369e; font:inherit; font-size:13px; line-height:1.5; cursor:pointer; white-space:normal; }
+@media(max-width:1180px){
+  .core-learning-workspace .player-top:has(#workspace-support-notice:not([hidden])) { position:sticky; top:0; z-index:8; background:#fff; }
+}
+.workspace-reading-toggle,.workspace-reading-note{display:none}
+@media(max-width:650px){
+  .core-learning-workspace[data-classroom-surface="slide"] .workspace-reading-toggle{display:block;min-height:40px;border:1px solid #d8d1f7;border-radius:6px;background:#fff;color:#5143b4;padding:7px 10px;font:inherit;font-size:13px}
+  .core-learning-workspace:not(.slide-overview) .workspace-reading-note{display:block;font-size:13px;line-height:1.7;color:#556273;margin:8px 0}
+  #learn-view .core-learning-workspace:not(.slide-overview) .multi-scene-slide-fullscreen-stage{display:block!important;overflow:auto!important;height:450px!important;min-height:450px!important;max-width:100%}
+  #learn-view .core-learning-workspace:not(.slide-overview) .multi-scene-slide-fullscreen-stage>iframe.openmaic-slide-frame{width:800px!important;min-width:800px!important;height:450px!important;max-width:none!important}
+}
 .core-learning-workspace button:focus-visible,
 .core-learning-workspace textarea:focus-visible {
   outline: 2px solid #6757d9;

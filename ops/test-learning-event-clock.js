@@ -1,0 +1,12 @@
+"use strict";
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
+const source=fs.readFileSync(path.join(__dirname,'../server.js'),'utf8');
+const start=source.indexOf('function trustedClientEventTime('),end=source.indexOf('\nfunction clientEventId',start);
+const context=vm.createContext({Date});vm.runInContext(source.slice(start,end),context);
+const received=new Date('2026-10-22T16:00:00Z'),stamp=received.getTime();
+const check=offset=>context.trustedClientEventTime({payload:{timing:{clientAt:new Date(stamp+offset).toISOString()}}},received);
+for(const skew of [1,1500,4999,5000,3600000])assert.equal(check(skew),stamp,'small jitter and grossly invalid clocks normalize to receipt time');
+for(const skew of [5001,30000,600000])assert.equal(check(skew),stamp+skew,'larger future-dated evidence remains excluded from current decisions');
+for(const age of [0,-1500,-45000,-86400000])assert.equal(check(age),stamp+age,'valid historical timestamps must not become fresh evidence');
+assert.equal(check(-8*86400000),stamp);assert.equal(context.trustedClientEventTime({payload:{timing:{clientAt:'invalid'}}},received),stamp);
+console.log('事件时间边界通过：5秒以内正向时钟偏差使用接收时间，更大未来时间保留隔离，合法历史与原始 clientAt 保留。');

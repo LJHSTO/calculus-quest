@@ -1,5 +1,5 @@
 {
-  "version": "e5dda3727cbd92b4b876",
+  "version": "05194293a0152ef032c9",
   "indexSha256": "8702c447c72cc3904ec95660d8784d616f38b6a61030cda1d76c1a6b5431c244",
   "scripts": [
     {
@@ -140,7 +140,7 @@
     {
       "tag": "<script src=\"app/main/narration.js?v=20260908-classroom-v1\"></script>",
       "file": "app/main/narration.js",
-      "sha256": "e2b2c9b5aa095ebe1926305e73acccece853dbcc7ac18e1a8bf67d47cda1c9a6"
+      "sha256": "aa9730b12a786ada6f4f21064e25d194ea3405b33e6a8d349541acd5b81dcfdf"
     },
     {
       "tag": "<script src=\"app/main/quiz.js?v=20260909-feedback-r1\"></script>",
@@ -190,7 +190,7 @@
     {
       "tag": "<script src=\"app/main/learning-workspace.js?v=20261014-workspace-v6\"></script>",
       "file": "app/main/learning-workspace.js",
-      "sha256": "c5e7aa3c60823b9b44f1200ea5de640038c27c4385b230a6335c0c5083c6295a"
+      "sha256": "6b8fe2a41817cb6e9f2fb1077db58260aec5a0f241315fb020d314606111f893"
     },
     {
       "tag": "<script src=\"app/main/textbook-reading.js?v=20260916\"></script>",
@@ -215,12 +215,12 @@
     {
       "tag": "<script src=\"app/main/pilot-study.js?v=20261022-pilot-v1\"></script>",
       "file": "app/main/pilot-study.js",
-      "sha256": "3076da4ca779d87dddfbbd90b80af222ed868ce0fe16629571fdb9882dba8c0a"
+      "sha256": "ac844d7a4e85ea79d1fa76c9d448ca7da539965ea72448f4b46d9e91f72b1cf4"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
       "file": "app/main/task-support.js",
-      "sha256": "4917f08c2d48945a23a0217f7a4856bf3954e71cb806481a76da024a5c1f4aa5"
+      "sha256": "44876c2c5fc5326af0a317f8e59079feaf47a7991007c8d3fb749a0e6e085b3e"
     },
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
@@ -275,7 +275,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "8456e5bf62c670672edd",
+  "styleVersion": "c42848743024936f5e9e",
   "styleSources": [
     {
       "file": "styles.css",
@@ -291,7 +291,7 @@
     },
     {
       "file": "app/main/learning-workspace.css",
-      "sha256": "d511be2c6e394a762eff3d807b2e7454412a40ed4c05ea9b65e118a3835178c1"
+      "sha256": "5cd2e0656ff7dea954162eb1e1d2ef80f084905569af898dda9624493f8b311d"
     },
     {
       "file": "app/main/openmaic-classroom.css",

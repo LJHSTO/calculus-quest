@@ -50,12 +50,13 @@
     report({ code: "browser_error", file: event.filename, line: event.lineno, column: event.colno });
   }, true);
   window.addEventListener("unhandledrejection", (event) => {
-    // Carry a short reason: without it this is the one signal that could point at
-    // a failed logout, and it used to arrive with no context at all.
-    const reason = event?.reason;
+    // Rejection messages may contain student answers, chat or credentials.
+    // Keep a bounded category; fetch failures separately carry a whitelisted route.
+    const allowed=new Set(['Error','TypeError','RangeError','SyntaxError','ReferenceError','AbortError','TimeoutError','NetworkError']);
+    const name=event?.reason?.name;
     report({
       code: "browser_rejection",
-      detail: String(reason?.message || reason || "").replace(/\s+/g, " ").slice(0, 160)
+      detail: allowed.has(name)?name:'UnknownError'
     });
   });
   window.fetch = async function (...args) {

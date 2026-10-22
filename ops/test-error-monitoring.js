@@ -60,9 +60,9 @@ async function main() {
     assert.equal(scope.status().rows[0].route, "/api/other", "unknown routes still collapse");
     scope.capture({ code: "browser_rejection", detail: `boom\n${"x".repeat(400)}` }, "browser");
     const rejectionRow = scope.status().rows[0];
-    assert.ok(rejectionRow.detail.startsWith("boom "), "rejection detail must be kept");
-    assert.ok(rejectionRow.detail.length <= 160, "rejection detail must stay bounded");
-    assert.doesNotMatch(rejectionRow.detail, /\n/, "rejection detail must stay single-line");
+    assert.equal(rejectionRow.detail,"", "free-text rejection reasons must not be retained");
+    scope.capture({code:'browser_rejection',detail:'TypeError'},'browser');
+    assert.equal(scope.status().rows[0].detail,'TypeError','a fixed error category remains useful');
 
     console.log("错误监控通过：真实Sentry SDK本地接收、敏感信息剔除、重复合并、重启恢复、分来源限流、关闭和磁盘故障降级、超时与登出可归因。");
   } finally { await new Promise((resolve) => receiver.close(resolve)); }

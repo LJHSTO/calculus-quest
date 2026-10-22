@@ -110,8 +110,50 @@
   }
   try { toolsCollapsed = localStorage.getItem("classroomToolsCollapsed") !== "0"; } catch {}
 
+  // This is a locator, not a help exposure receipt. Content stays beside the task.
+  const supportNotice = document.createElement('button');
+  supportNotice.id = 'workspace-support-notice';
+  supportNotice.type = 'button';
+  supportNotice.hidden = true;
+  const noticeStatus = document.createElement('span');
+  noticeStatus.className = 'workspace-support-status';
+  noticeStatus.setAttribute('role','status');
+  noticeStatus.setAttribute('aria-live','polite');
+  $('.player-top .player-actions').prepend(noticeStatus,supportNotice);
+  let pendingSnapshot = null;
+  function syncSupportNotice(next=global.KnowledgeAssistant?.designSpaceSnapshot?.()) {
+    pendingSnapshot=next;
+    const eligible=next?.signedIn&&next.active&&!next.locked&&next.unitType==='knowledge'&&next.taskReady!==false;
+    const cycle=next?.supportCycle;
+    const probe=eligible&&global.PilotStudyUI?.active(next);
+    const checking=eligible&&(next.check||cycle?.status==='awaiting_check');
+    const inquiry=eligible&&cycle?.status==='awaiting_confirmation'&&!global.SupportCycleUI?.deferInquiry(cycle);
+    const support=eligible&&!checking&&(next.offer||next.prompt||['offered','engaged'].includes(cycle?.status));
+    const label=probe?'有一条预试记录 · 查看':checking?'继续独立检查':inquiry?'知点想询问你 · 查看':support?'有一条学习支持 · 查看':'';
+    supportNotice.hidden=!label;
+    if(supportNotice.textContent!==label){supportNotice.textContent=label;noticeStatus.textContent=label;}
+    updateToolsIndicator();
+  }
+  supportNotice.addEventListener('click',async()=>{
+    const s=pendingSnapshot;if(!s||s.locked)return;
+    setCoachVisible(false);
+    if(s.view.placement==='inline'){
+      if(compactWorkspace())setMobilePane('course');
+      if(global.TaskSupport?.locate?.())return;
+    }else{
+      if(document.fullscreenElement)await document.exitFullscreen();
+      if(shell.classList.contains('is-local-fullscreen-target')){
+        shell.classList.remove('is-local-fullscreen-target');document.body.classList.remove('is-resource-local-fullscreen','is-learning-local-fullscreen');
+      }
+      setToolsCollapsed(false);selectTab('chat');
+      if(compactWorkspace())setMobilePane('assistant');
+    }
+    const target=[...document.querySelectorAll('.learning-support-surface,.knowledge-proactive-inline-offer,.support-cycle')].find(n=>n.getClientRects().length);
+    if(target){target.tabIndex=-1;target.scrollIntoView({block:'nearest'});target.focus({preventScroll:true});}
+  });
+
   function updateToolsIndicator() {
-    const pending = global.KnowledgeAssistant?.workspaceSnapshot?.()?.pendingSupport === true;
+    const pending = !supportNotice.hidden || global.KnowledgeAssistant?.workspaceSnapshot?.()?.pendingSupport === true;
     const button = $("#workspace-tools-toggle");
     button.classList.toggle("has-pending-support", toolsCollapsed && pending);
     button.title = toolsCollapsed
@@ -497,6 +539,17 @@
       const toolbar = document.createElement("div");
       toolbar.className = "workspace-canvas-toolbar";
       toolbar.append(tabs);
+      const readingButton=textElement('button','查看课件整页','workspace-reading-toggle');
+      readingButton.type='button';readingButton.setAttribute('aria-pressed','false');
+      readingButton.addEventListener('click',()=>{
+        const overview=shell.classList.toggle('slide-overview');
+        readingButton.textContent=overview?'放大阅读课件':'查看课件整页';readingButton.setAttribute('aria-pressed',String(overview));
+      });toolbar.append(readingButton);
+      const slidePane=player.querySelector('.multi-scene-slide-panel');
+      const readingNote=textElement('p','课件已放大，可左右滚动阅读；也可以横屏学习。','workspace-reading-note');
+      slidePane.prepend(readingNote);
+      const readingStage=slidePane.querySelector('[data-resource-fullscreen-target]');
+      if(readingStage){readingStage.tabIndex=0;readingStage.setAttribute('aria-label','课件阅读区，可用方向键滚动');}
       const sceneChoice = player.querySelector(".agentic-knowledge-choice");
       if (sceneChoice) toolbar.append(sceneChoice);
       player.prepend(toolbar);
@@ -583,8 +636,14 @@
     fullscreenHintsShown.clear();
     hideFullscreenHint();
   });
-  global.addEventListener("cq:knowledge-assistant-visibility", (event) => {
+  global.addEventListener("cq:knowledge-assistant-visibility", async (event) => {
     if (event.detail?.open) {
+      // The dedicated fullscreen layout hides side columns. Restore the normal
+      // layout before opening a conversation so it cannot open invisibly.
+      if(document.fullscreenElement)await document.exitFullscreen();
+      if(shell.classList.contains('is-local-fullscreen-target')){
+        shell.classList.remove('is-local-fullscreen-target');document.body.classList.remove('is-resource-local-fullscreen','is-learning-local-fullscreen');
+      }
       setToolsCollapsed(false);
       selectTab("chat");
       if (compactWorkspace()) setMobilePane("assistant");
@@ -628,6 +687,7 @@
   global.addEventListener("cq:learning-layout-change", scheduleClassroomLayout);
   global.addEventListener("cq:workspace-data-change", syncPlayback);
   global.addEventListener("cq:workspace-support-change", updateToolsIndicator);
+  global.addEventListener('cq:proactive-state',event=>syncSupportNotice(event.detail));
   global.LearningWorkspace = Object.freeze({ sync, syncPlayback,
     showCoach: () => {
       syncCoachSurface();
