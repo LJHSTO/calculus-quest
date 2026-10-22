@@ -141,6 +141,7 @@
       agentRuntime: eligible ? proactiveStudy.agentRuntime || null : null,
       supportCycle: eligible ? (proactiveStudy.supportCycles||[]).find(c=>c.scope===proactiveScopeKey(meta)) || null : null,
       supportBusy: Boolean(global.SupportCycleUI?.busy),
+      pilotRevision: global.PilotStudyUI?.revision || 0,
       policyState: proactiveScopeState(meta), observation,
       offer: offer ? { ...offer } : null,
       check: eligible ? proactiveVerificationCheck(meta) : null,
@@ -6074,6 +6075,12 @@ const proactiveJustificationDrafts = new Map();
     sync,
     designSpaceSnapshot,
     refreshSupportSurface() { scheduleDesignSpaceSync(); },
+    async pilotRequest(path="",body) {
+      const token=state.authToken;if(!isSignedInNow())throw new Error("请先登录。");
+      const response=await fetch("api/learning/pilot"+path,{method:body?"POST":"GET",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},...(body?{body:JSON.stringify(body)}:{})});
+      const result=await response.json();if(token!==state.authToken)throw new Error("登录账号已变化。");
+      if(!response.ok||!result.ok)throw new Error(result.message||"预试记录暂未保存");return result.data;
+    },
     async supportCycleRequest(action) {
       const s=designSpaceSnapshot(),owner=state.authToken;
       if(!s.signedIn||!s.active||s.locked||s.check||s.unitType!=="knowledge")throw new Error("请在知识点学习时使用，独立测验期间关闭帮助。");
@@ -6134,6 +6141,7 @@ const proactiveJustificationDrafts = new Map();
       const fragment = document.createDocumentFragment();
       if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return fragment;
       if (snapshot.check) {fragment.appendChild(proactiveVerificationNode(snapshot.check));return fragment;}
+      if(global.PilotStudyUI?.active(snapshot)){fragment.append(global.PilotStudyUI.render(snapshot));return fragment;}
       if(snapshot.unitType==="knowledge" && snapshot.researchControls?.enabled) {
         const content=global.SupportCycleUI?.render(snapshot);if(content)fragment.append(content);
         if(global.SupportCycleUI?.active(snapshot.supportCycle))return fragment;

@@ -4,6 +4,7 @@
   "description": "微积分闯关学习平台 - 带数据分析面板",
   "private": true,
   "scripts": {
+    "pilot:test": "node ops/test-pilot-study.js && node ops/test-pilot-analysis.js && node ops/test-pilot-study-browser.js",
     "runtime:build": "node ops/build-learning-runtime.js",
     "courseware:modules:build": "node ops/build-courseware-modules.js",
     "functions:prepare": "node ops/prepare-functions-limits.js && node ops/build-knowledge-graph.js",

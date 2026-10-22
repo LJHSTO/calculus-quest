@@ -66,6 +66,32 @@ const researchControls = require("./lib/research-controls");
 const researchControlStore = researchControls.createStore({root,config:proactiveStudyConfig});
 const supportGoals = require("./lib/support-goals");
 const supportCycles = require("./lib/support-cycle").createStore({db,experimentId:proactiveStudyConfig.experimentId});
+const pilotStudy = require("./lib/pilot-study").createStore({db,implementation:Object.fromEntries(
+  ["server.js","lib/pilot-study.js","lib/support-cycle.js","lib/support-goals.js","lib/research-controls.js",
+    "lib/proactive-policy/index.js","lib/proactive-policy/timing-gate.js","lib/proactive-policy/evidence-package.js",
+    "app/main/pilot-study.js","admin/pilot.js","data/multi-scene-learning-route.json"]
+    .map(file=>[file,crypto.createHash("sha256").update(fs.readFileSync(path.join(root,file))).digest("hex")]))});
+function pilotRuntime(user) {
+  const control=researchControlStore.describe(user);
+  return {experimentId:proactiveStudyConfig.experimentId,mode:proactiveStudyConfig.mode,controlRevision:control.revision,
+    profile:control.profile,profileHash:control.hash,protocolFingerprint:proactiveProtocolFingerprint,
+    supportContentVersion:supportGoals.VERSION,provider:assistantProviderInfo().id,
+    model:assistantProviderInfo().model,
+    rules:{maximumInquiriesPerKnowledgePoint:2,clientRecheckSeconds:10},notCalibrated:true};
+}
+function pilotProtection(user,generation) {
+  return Boolean(activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user)
+    ||supportCycles.protects(user,generation)||db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId)
+      .some(s=>["accepted_pending_response","awaiting_independent_attempt"].includes(parseStoredJson(s.lifecycle_json||"{}",{}).phase)));
+}
+function pilotFacts(user,scope,unitId,generation) {
+  const events=db.recentInteractionEventsForUnit(user,unitId,40).filter(r=>Number(r.learning_generation||1)===generation)
+    .map(r=>{const p=r.payload||parseStoredJson(r.payload_json||"{}",{}),details=p.data||p;return {at:r.created_at,type:p.eventType||r.type,
+      parameter:details.parameter||details.parameterName||null,value:details.value??null,correct:details.correct??details.result?.correct??null,
+      response:boundedLearningText(details.response||details.answer||"",600)};});
+  return {scope,courseFacts:supportGoals.CURRICULUM[scope],events,
+    evidenceLimit:"只显示作答和操作事实；未记录的困难和心理状态均为未知，不据此猜测动机。"};
+}
 function publicSupportCycles(user,generation){
   const rows=supportCycles.state(user,generation),protectedCheck=rows.some(c=>c.status==="awaiting_check");
   return rows.map(c=>({...c,content:protectedCheck?null:c.content&&{...c.content,audit:{...c.content.audit,promptSnapshot:undefined}}}));
@@ -462,6 +488,7 @@ const types = {
 };
 const publicRootFiles = new Set([
   "index.html",
+  "pilot-workbench.html",
   "study-workbench.html",
   "admin.html",
   "flow-test.html",
@@ -4384,6 +4411,19 @@ async function handleManagedProactiveIntervention({
     }
   }
 
+  if(pilotStudy.enrolled(auth.participant.id,generation)&&policyDecision.displayAllowed&&renderedDecision.intervene&&!resolved.isQuiz) {
+    const source=pilotStudy.observe(auth.participant.id,generation,{source:"candidate",scope:policyScopeKey,
+      blockers:pilotProtection(auth.participant.id,generation)?["independent_assessment"]:[],runtime:pilotRuntime(auth.participant.id),
+      evidence,decision:{id:decisionId,...policyDecision},teacherFacts:pilotFacts(auth.participant.id,policyScopeKey,resolved.unit.id,generation)});
+    if(source?.status==="pending") {
+      policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",reasonCodes:[...policyDecision.reasonCodes,"pilot_measurement_before_support"]};
+      renderedDecision=proactiveSilentAssistantDecision(policyDecision);
+    }
+  }
+  if(pilotStudy.activeProbe(auth.participant.id,generation)) {
+    policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",reasonCodes:[...policyDecision.reasonCodes,"pilot_probe_pending"]};
+    renderedDecision=proactiveSilentAssistantDecision(policyDecision);
+  }
   if (policyDecision.displayAllowed) {
     interventionBudget = consumeAssistantInterventionBudget(auth.participant.id, now);
     if (!interventionBudget.ok) {
@@ -5507,6 +5547,63 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if(url.pathname.startsWith("/api/learning/pilot")) {
+      const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
+      res.setHeader("Cache-Control","no-store");
+      const user=auth.participant.id,generation=db.currentLearningGeneration(user);
+      try {
+        const input=req.method==="POST"?await readJsonBody(req):{};let data;
+        if(req.method==="GET"&&url.pathname==="/api/learning/pilot")data=pilotStudy.state(user,generation);
+        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/preview")data=pilotStudy.preview(input.joinCode);
+        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/start")data=pilotStudy.start(user,generation,input,pilotRuntime(user));
+        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/action")data=pilotStudy.action(user,generation,input);
+        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/opportunity") {
+          if(pilotStudy.enrolled(user,generation)) {
+            const scope=boundedLearningText(input.scope,100),unitId=boundedLearningText(input.unitId,100),blockers=[];
+            const resolved=learningAssistant.resolveAssistantContext({index:assistantContextIndex,chapterId:proactiveStudyConfig.chapterId,
+              unitId,sceneType:boundedLearningText(input.sceneType,80),contextRef:{kind:"lesson",scope:"lesson"},quizSubmitted:false});
+            if(resolved.isQuiz||scope!==(resolved.unit.knowledgePointId||resolved.unit.id)||!supportGoals.CURRICULUM[scope])blockers.push("outside_learning_task");
+            if(pilotProtection(user,generation))blockers.push("independent_assessment");
+            if(input.foreground!==true||input.active!==true)blockers.push("not_foreground_learning");
+            if(input.interactionBusy!==false)blockers.push("interaction_busy");
+            if(proactiveStudentPreference(user,scope)==="off")blockers.push("student_disabled");
+            const cycle=supportCycles.current(user,scope,generation);
+            if(cycle&&["awaiting_confirmation","queued","offered","engaged","awaiting_check","postponed"].includes(cycle.status))blockers.push("support_in_progress");
+            const open=db.getDbSync().prepare("SELECT id FROM proactive_interventions WHERE user_id=? AND status IN ('offered','accepted') LIMIT 1");
+            try{open.bind([user]);if(open.step())blockers.push("support_in_progress");}finally{open.free();}
+            const pending=pilotStudy.activeProbe(user,generation);
+            if(pending&&(pending.scope!==scope||blockers.some(b=>["independent_assessment","outside_learning_task","not_foreground_learning"].includes(b))))
+              pilotStudy.action(user,generation,{action:"context_changed"});
+            const stmt=db.getDbSync().prepare("SELECT * FROM proactive_decisions WHERE user_id=? AND learning_generation=? AND scope_key=? ORDER BY rowid DESC LIMIT 1");
+            let decision=null;try{stmt.bind([user,generation,scope]);if(stmt.step())decision=stmt.getAsObject();}finally{stmt.free();}
+            pilotStudy.observe(user,generation,{source:"window",scope,blockers,runtime:pilotRuntime(user),
+              evidence:{recentDecisionId:decision?.id||null,decisionAgeMs:decision?Date.now()-Date.parse(decision.created_at):null,
+                currentPolicyNotRecomputed:true,clientState:{foreground:input.foreground===true,interactionBusy:input.interactionBusy!==false}},
+              decision:decision?{id:decision.id,at:decision.created_at,helpNeed:decision.help_need_score,interruptibility:decision.interruptibility_score,
+                reasons:parseStoredJson(decision.reason_codes_json,[]),historicalNotCurrent:true}:null,
+              teacherFacts:pilotFacts(user,scope,unitId,generation),priorSupport:cycle?{id:cycle.id,status:cycle.status}:null});
+          }
+          data=pilotStudy.state(user,generation);
+        }else {sendJson(res,404,{ok:false,message:"预试接口不存在"});return;}
+        sendJson(res,200,{ok:true,data});
+      }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
+    }
+    if(url.pathname.startsWith("/api/admin/pilot")||url.pathname.startsWith("/api/pilot-rater")) {
+      res.setHeader("Cache-Control","no-store");
+      const administrative=url.pathname.startsWith("/api/admin/");
+      if(administrative&&!checkAdmin(req)){sendJson(res,403,{ok:false,message:"需要管理员密码。"});return;}
+      try {
+        const input=req.method==="POST"?await readJsonBody(req):{};let data;
+        if(req.method==="GET"&&url.pathname==="/api/admin/pilot")data={versions:pilotStudy.versions()};
+        else if(req.method==="POST"&&url.pathname==="/api/admin/pilot/version")data=pilotStudy.createVersion(input);
+        else if(req.method==="POST"&&url.pathname==="/api/admin/pilot/rater")data=pilotStudy.createRater(input.project,input.name,input.role);
+        else if(req.method==="GET"&&url.pathname==="/api/admin/pilot/export")data=pilotStudy.exportData(url.searchParams.get("project"));
+        else if(req.method==="GET"&&url.pathname==="/api/pilot-rater/cases")data=pilotStudy.cases(bearerToken(req));
+        else if(req.method==="POST"&&url.pathname==="/api/pilot-rater/annotation")data=pilotStudy.annotate(bearerToken(req),input);
+        else {sendJson(res,404,{ok:false,message:"预试管理接口不存在"});return;}
+        sendJson(res,200,{ok:true,data});
+      }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
+    }
     if (["GET","POST"].includes(req.method) && url.pathname === "/api/learning/support-cycle") {
       const auth=authenticate(req);
       if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
@@ -5518,6 +5615,7 @@ async function handleApi(req, res, url) {
       }
       const body=await readJsonBody(req),scope=boundedLearningText(body.scope,180),unitId=boundedLearningText(body.unitId,180);
       try {
+        if(pilotStudy.activeProbe(user,generation)&&["report","advance"].includes(body.action))throw Object.assign(new Error("请先回答或跳过这次预试记录，再继续请求帮助。"),{status:409});
         const resolved=learningAssistant.resolveAssistantContext({index:assistantContextIndex,chapterId:proactiveStudyConfig.chapterId,
           unitId,sceneType:boundedLearningText(body.sceneType,80),contextRef:{kind:"lesson",scope:"lesson"},quizSubmitted:false});
         if(resolved.isQuiz || (resolved.unit.knowledgePointId||resolved.unit.id)!==scope || !supportGoals.CURRICULUM[scope])throw Object.assign(new Error("请在对应知识点的学习任务中使用帮助"),{status:409});
@@ -5626,6 +5724,7 @@ async function handleApi(req, res, url) {
       }
       try {
         const data=researchControlStore.save(auth.participant.id,body.profile,body.expectedRevision);
+        pilotStudy.recordConfiguration(auth.participant.id,db.currentLearningGeneration(auth.participant.id),pilotRuntime(auth.participant.id),body.changeReason);
         supportCycles.cancelForConfiguration(auth.participant.id,db.currentLearningGeneration(auth.participant.id));
         db.closeOpenProactiveInterventionsForUser({userId:auth.participant.id,experimentId:proactiveStudyConfig.experimentId,
           resolution:"configuration_changed",resolvedAt:nowIso(),followupOutcome:{outcome:"configuration_changed"}});
@@ -8225,6 +8324,9 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if(pilotStudy.activeProbe(auth.participant.id,db.currentLearningGeneration(auth.participant.id))) {
+        sendJson(res,409,{ok:false,message:"请先回答或跳过当前预试记录，再请求帮助。"});return;
+      }
       if (rejectAgentAssistanceDuringOutcome(res, auth.participant.id)) return;
       const question = String(body.question || "").replace(/\u0000/g, "").trim().slice(0, 1200);
       const assistantIntent = ["self_check", "rephrase", "practice"].includes(String(body.assistantIntent || "").trim())

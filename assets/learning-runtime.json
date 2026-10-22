@@ -1,6 +1,6 @@
 {
-  "version": "98ec495772c7275af1c1",
-  "indexSha256": "d98c88b0c9bccc67a19350bf6aff356a4823e075e818fcc2e2f86a3ebed67f1d",
+  "version": "e5dda3727cbd92b4b876",
+  "indexSha256": "8702c447c72cc3904ec95660d8784d616f38b6a61030cda1d76c1a6b5431c244",
   "scripts": [
     {
       "tag": "<script src=\"app/main/request-coalescing.js?v=20260917\"></script>",
@@ -180,7 +180,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "3732b21df8f976254ee14c00403b358175b48739f728e9d6d1a9923322f8b494"
+      "sha256": "0a949b8f56d8c399a96a7c0bf8e7dc8ca5b09d3e95de912a0824b8a28370a068"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -213,14 +213,19 @@
       "sha256": "d3b84c7e6be8403c675fc1a3f70e92ec60743c9cc3cda4165fb81ff06ee4564b"
     },
     {
+      "tag": "<script src=\"app/main/pilot-study.js?v=20261022-pilot-v1\"></script>",
+      "file": "app/main/pilot-study.js",
+      "sha256": "3076da4ca779d87dddfbbd90b80af222ed868ce0fe16629571fdb9882dba8c0a"
+    },
+    {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
       "file": "app/main/task-support.js",
-      "sha256": "cb3798ede8453fd6acdb2f0562a59ecc3210e149960aa5dbe4802cd3c38dc5d7"
+      "sha256": "4917f08c2d48945a23a0217f7a4856bf3954e71cb806481a76da024a5c1f4aa5"
     },
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
       "file": "app/main/proactive-surface.js",
-      "sha256": "87921c30c8db4d20ac4e279817749c5a57482e613e268627f09abace448026f3"
+      "sha256": "700fdd07e5a21f13c9b8b0325934816fed529b12c39ef31d0ccdc4be21c7fa46"
     },
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",
@@ -236,6 +241,10 @@
     {
       "tag": "<link rel=\"stylesheet\" href=\"app/main/knowledge-assistant.css?v=20260922-hint-justification-v1\" />",
       "file": "app/main/knowledge-assistant.css"
+    },
+    {
+      "tag": "<link rel=\"stylesheet\" href=\"app/main/pilot-study.css?v=20261022\" />",
+      "file": "app/main/pilot-study.css"
     },
     {
       "tag": "<link rel=\"stylesheet\" href=\"app/main/learning-workspace.css?v=20261014-workspace-v4\" />",
@@ -266,7 +275,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "e951b1ba48eda47f4855",
+  "styleVersion": "8456e5bf62c670672edd",
   "styleSources": [
     {
       "file": "styles.css",
@@ -275,6 +284,10 @@
     {
       "file": "app/main/knowledge-assistant.css",
       "sha256": "5c1e9a54416fa454170ae25fc14bf0501c990bdf8b17c7e206363e47d32e55b4"
+    },
+    {
+      "file": "app/main/pilot-study.css",
+      "sha256": "49cfbf8b2664824eb0c55bcedd120b8534408fdf91a9f32e8fddcb7458ee14eb"
     },
     {
       "file": "app/main/learning-workspace.css",

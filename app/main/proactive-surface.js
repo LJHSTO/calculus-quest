@@ -218,7 +218,7 @@
     const moved = shell.parentNode !== host;
     if (moved) host.prepend(shell);
     shell.hidden = false; shell.dataset.placement = next.view.placement; shell.dataset.modality = next.view.modality;
-    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy,global.SupportCycleUI?.deferInquiry(next.supportCycle)]);
+    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle)]);
     if (key === renderKey && !moved) {observeOffer(next); return;}
     if (busy) return;
     renderKey = key;
@@ -247,10 +247,10 @@
     }
     // Supplements are explicitly learner-requested, never claimed to be the
     // same D3 manipulation as the policy-issued, unchanged support above.
-    if (!next.check && ["example", "interactive"].includes(next.view.modality)) {
+    if (!next.check && !global.PilotStudyUI?.active(next) && ["example", "interactive"].includes(next.view.modality)) {
       const practice = practiceExample(next.view.modality === "interactive"); if(practice) shell.append(practice);
     }
-    if (next.view.modality === "chat" && !next.check) {
+    if (next.view.modality === "chat" && !next.check && !global.PilotStudyUI?.active(next)) {
       const form = conversationForm(); form.querySelector("textarea").value = draft; shell.append(form);
     }
     if (next.check) shell.append(node("p", "support-independent-note", "先独立完成这道检查，也可以跳过。检查期间收起补充练习。"));
