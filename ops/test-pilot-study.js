@@ -33,6 +33,10 @@ async function main(){
  assert.throws(()=>store.annotate(left.token,annotation),/版本已变化/);
  store.annotate(left.token,{...annotation,revision:1,note:"重新审查，保留原始版本"});assert.equal(store.exportData(input.project).annotations.length,3);
  const next=store.createVersion({...input,previousVersionId:v.id,reason:"第二轮修订"});assert.notEqual(next.version.hash,v.hash);assert.equal(store.state("alice",1).version.id,v.id);
+ const prepared=require('./prepare-pilot-evaluation').prepare(store.exportData(input.project),{versionId:v.id,splitSalt:'synthetic-roundtrip-pilot-only',dataClass:'engineering_synthetic_only'});
+ assert.equal(prepared.bundle.caseCount,3);assert.equal(prepared.labels.find(x=>x.responseStatus==='uncertain').needLabel,null);
+ assert.equal(prepared.labels.some(x=>x.teacherLabels.length===2),true,'真实导出格式保留双人独立标注');
+ assert.equal(prepared.audit.probabilityCalibrated,false);
  store.action("alice",2,{action:"withdraw",dataRequest:"请删除研究数据"});assert.equal(store.observe("alice",1,{scope:"GH-01-K01"}),null);assert.equal(store.cases(left.token).cases.length,0);
  assert.ok(store.exportData(input.project).events.some(e=>e.requiresResearcherDataHandling));
  const saved=database.export();database=new SQL.Database(saved);const again=createStore({db,clock:()=>time});assert.equal(again.state("alice",1).enrollment.status,"withdrawn");assert.equal(again.exportData(input.project).versions.length,2);
