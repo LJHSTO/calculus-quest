@@ -1539,7 +1539,8 @@ function animationLoop() {
 function checkContinuity() {
   const limitVal = limitAtHole();
   const gap = Math.abs(state.point_y_coordinate - limitVal);
-  const isContinuous = gap < 0.15;
+  // Only numerical round-off is tolerated; visual proximity is not equality.
+  const isContinuous = gap <= 1e-9;
 
   state.checked = true;
   state.continuous = isContinuous;
@@ -1714,7 +1715,7 @@ document.getElementById('point_y_coordinate-slider').addEventListener('input', f
   document.getElementById('point_y_coordinate-display').textContent = state.point_y_coordinate.toFixed(2);
   if (state.checked) {
     const gap = Math.abs(state.point_y_coordinate - holeY);
-    state.continuous = gap < 0.15;
+    state.continuous = gap <= 1e-9;
     const statusDot = document.getElementById('status-dot');
     const statusText = document.getElementById('status-text');
     if (state.continuous) {
@@ -1769,13 +1770,13 @@ function handlePointerMove(e) {
 
   if (state.isDragging) {
     const mathY = toMathY(my);
-    state.point_y_coordinate = Math.max(yMin, Math.min(yMax, mathY));
+    state.point_y_coordinate = Math.round(Math.max(yMin, Math.min(yMax, mathY)) * 20) / 20;
     document.getElementById('point_y_coordinate-slider').value = state.point_y_coordinate;
     document.getElementById('point_y_coordinate-display').textContent = state.point_y_coordinate.toFixed(2);
 
     if (state.checked) {
       const gap = Math.abs(state.point_y_coordinate - holeY);
-      state.continuous = gap < 0.15;
+      state.continuous = gap <= 1e-9;
       const statusDot = document.getElementById('status-dot');
       const statusText = document.getElementById('status-text');
       if (state.continuous) {

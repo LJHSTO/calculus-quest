@@ -1,0 +1,11 @@
+"use strict";
+const assert=require("node:assert/strict"),{summarize}=require("./analyze-research-sites");
+const probes=Array.from({length:6},(_,i)=>({probes:{t0:{correct:true,confidence:100,independent:true},outcome:{correct:i<4,confidence:50,independent:true}},offers:[],feedback:[]}));
+const base={participant:"anon-1",id:"session-1",allocation:{arm:"A"},dataClass:"demonstration_not_research",phase:"survey",units:probes,quizzes:{pre:{pendingReview:1,results:[{maxScore:8,score:4},{maxScore:10,score:10}]}},survey:{responses:{choice_accept:6,choice_continue:6,choice_correct:6,choice_pressure:2}}};
+const fixture={schemaVersion:"research-sites-export-v1",protocol:{id:"synthetic",fingerprint:"synthetic"},dataClass:"demonstration_not_research",sessions:[base]};
+const r=summarize(fixture);assert.equal(r.participants[0].confidenceBrier,.25);assert.equal(r.participants[0].confidencePairs,6);assert.equal(r.participants[0].pre.score,4);assert.equal(r.participants[0].pre.maxScore,80);assert.equal(r.participants[0].perceivedChoiceControl,6);assert.equal(r.participants[0].transferScore,null);assert.equal(r.groups[0].allocated,1);assert.equal(r.groups[0].completed,0);
+base.units.slice(0,4).forEach(u=>{u.probes.outcome.confidence=null;});assert.equal(summarize(fixture).participants[0].confidenceBrier,null);
+assert.throws(()=>summarize({}),/不支持|不是支持/);console.log(JSON.stringify({passed:true,checks:"participant units, missing outcomes, reverse item, minimum confidence pairs and no future baseline contamination"}));
+fixture.protocol.study={id:"memory"};base.units[0].commonFeedback=[{window:{returnVisit:false,offered:true},responses:{need:"需要"}},{window:{returnVisit:true,offered:false},responses:{need:"需要"}}];
+assert.equal(summarize(fixture).participants[0].perceivedWindowMismatch,1);
+assert.equal(summarize(fixture).participants[0].primaryWindowReports,1);

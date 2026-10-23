@@ -5,11 +5,13 @@
   const drafts = new Map();
   const controlIds = new WeakMap();let nextControlId=0;
   let lastQuizSupport="";
+  let quizOwner="";
+  const quizOpen=new Map(), quizReplies=new Map();
   const el = (tag, text, cls) => {const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;};
   const replyBody=text=>{const n=el('p');if(typeof setQuestionMathContent==='function')setQuestionMathContent(n,text);else n.textContent=text;return n;};
   function message(type, extra={}){frame?.contentWindow?.postMessage({type,channel,...extra},"*");}
-  let frameBusy=false;
-  function clear(){message("cq:task-clear");frameBusy=false;frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;}
+  let frameBusy=false,locateRequested=false,frameMounted=false;
+  function clear(){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;}
   function serialize(root){
     controls=new Map();
     function tree(n){
@@ -45,14 +47,20 @@
     });parent.append(form);
   }
   function quizReview(next){
+    const currentOwner=`${next.ownerKey}:${next.unitId}`;
+    if(currentOwner!==quizOwner){quizOwner=currentOwner;quizOpen.clear();quizReplies.clear();}
+    if(next.reply?.text&&next.replyQuestionId)quizReplies.set(next.replyQuestionId,next.reply);
     for(const card of document.querySelectorAll(".question-card[data-question]")){
       const existing=card.querySelector(".question-task-review");
       if(next.locked || next.check || !next.quizSubmitted){existing?.remove();if(!card.querySelector(".task-assessment-note"))card.append(el("p","独立作答中，学习提示已关闭。提交后可在题目旁复盘。","task-assessment-note"));continue;}
       card.querySelector(".task-assessment-note")?.remove();if(existing)continue;
       const questionId=card.dataset.question, details=el("details",null,"question-task-review");details.dataset.unitId=next.unitId;
+      details.open=quizOpen.get(questionId)===true;
+      details.addEventListener('toggle',()=>{if(details.isConnected&&quizOwner===currentOwner)quizOpen.set(questionId,details.open);});
       details.append(el("summary","在这道题旁复盘"),el("p","原提交与成绩保持不变；这里记录你重新理解的过程。","task-assessment-note"));
       draftForm(details,"写下你想核对的步骤或疑问",`${next.unitId}:${questionId}`,questionId);
       const reply=el("div",null,"task-review-reply");reply.setAttribute("aria-live","polite");details.append(reply);card.append(details);
+      const saved=quizReplies.get(questionId);if(saved){reply.dataset.messageId=`${saved.id}:${saved.text.length}`;reply.append(el('strong','知点的回应'),replyBody(saved.text));}
     }
     if(next.reply?.text && next.replyQuestionId){
       const card=[...document.querySelectorAll(".question-card")].find(n=>n.dataset.question===next.replyQuestionId), slot=card?.querySelector(".task-review-reply");
@@ -82,7 +90,7 @@
     }
     const nextFrame=/^GH-0[12]-K0[123]$/.test(next.scopeKey) ? document.querySelector('.multi-scene-scene-panel:not([hidden]) iframe[data-courseware-frame]') : null;
     const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle)]);
-    if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
+    if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
     if(nextKey!==key){
       clearTimeout(exposureTimer);exposureTimer=null;
       key=nextKey;source=el("div",null,"task-support-content");source.append(global.KnowledgeAssistant.createSupportContent());
@@ -134,16 +142,18 @@
       }else if(m.kind==="submit"&&target.tagName==="FORM")target.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));
       queueMicrotask(deliver);
     }else if(m.type==="cq:task-mounted"){
+      frameMounted=true;
       unavailable=false;panel?.remove();panel=null;global.KnowledgeAssistant.trackSupportSurface("rendered",{location:"inside_courseware",anchor:String(m.anchor||"").slice(0,100)});
+      if(locateRequested){locateRequested=false;message('cq:task-locate');}
     }else if(m.type==="cq:task-unavailable"){
-      if(!unavailable){unavailable=true;showPanel();global.KnowledgeAssistant.trackSupportSurface("rendered",{location:"task_area",reason:"no_visible_reviewed_anchor"});}
+      if(!unavailable){unavailable=true;showPanel();if(locateRequested){locateRequested=false;locate();}global.KnowledgeAssistant.trackSupportSurface("rendered",{location:"task_area",reason:"no_visible_reviewed_anchor"});}
     }else if(m.type==="cq:task-visibility"){
       const r=m.rect,v=m.viewport;if(r&&v&&[r.x,r.y,r.width,r.height,v.width,v.height,m.fraction].every(Number.isFinite)){visibility=m;checkExposure();}
     }
   });
   document.addEventListener("visibilitychange",checkExposure);window.addEventListener("scroll",checkExposure,true);window.addEventListener("resize",checkExposure);
   function locate(){
-    if(frame?.isConnected&&!unavailable){frame.scrollIntoView({block:'nearest'});message('cq:task-locate');return true;}
+    if(frame?.isConnected&&!unavailable){locateRequested=!frameMounted;frame.scrollIntoView({block:'nearest'});message('cq:task-locate');return true;}
     if(panel?.isConnected){panel.tabIndex=-1;panel.scrollIntoView({block:'start'});panel.focus({preventScroll:true});return true;}
     return false;
   }

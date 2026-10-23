@@ -129,7 +129,7 @@
       quizSubmitted: meta.quizSubmitted,
       generation: exposureGeneration,
       reply: messages.filter(message=>message.role==="assistant"&&!message.error).slice(-1).map(message=>({id:message.id,text:message.content||"",streaming:message.streaming===true}))[0]||null,
-      replyQuestionId: activeContext?.questionId || "",
+      replyQuestionId: messages.filter(message=>message.role==="assistant"&&!message.error).at(-1)?.contextRef?.questionId || activeContext?.questionId || "",
       signedIn: isSignedInNow(), active: learningViewActive(), locked,
       ownerKey: isSignedInNow() ? String(state?.participant?.participantId || "") : "",
       managed: proactiveStudyManaged(meta), loaded: proactiveStudy.loaded,
@@ -5278,7 +5278,9 @@ const proactiveJustificationDrafts = new Map();
     return params;
   }
 
+  let conversationListRequestId = 0;
   async function loadConversations(meta = courseMeta(), options = {}) {
+    const requestId = ++conversationListRequestId;
     if (!meta.unitId || !meta.supported || !isSignedInNow() || quizAssistantLocked(meta)) {
       conversations = [];
       activeConversationId = "";
@@ -5293,6 +5295,7 @@ const proactiveJustificationDrafts = new Map();
         headers: { Authorization: `Bearer ${state.authToken}` }
       });
       const payload = await response.json().catch(() => ({}));
+      if (requestId !== conversationListRequestId) return;
       if (!response.ok || payload.ok === false) throw new Error(payload.message || "历史对话加载失败。");
       provider = payload.provider || provider;
       applyQuota(payload.quota);
@@ -5308,6 +5311,7 @@ const proactiveJustificationDrafts = new Map();
         }
       }
     } catch (error) {
+      if (requestId !== conversationListRequestId) return;
       conversations = [];
       if (options.loadActive !== false) {
         activeConversationId = "";
@@ -5315,8 +5319,7 @@ const proactiveJustificationDrafts = new Map();
       }
       setStatus(error.message || "历史对话暂时不可用。", "error");
     } finally {
-      loadingConversations = false;
-      render();
+      if (requestId === conversationListRequestId) { loadingConversations = false; render(); }
     }
   }
 
@@ -5575,6 +5578,11 @@ const proactiveJustificationDrafts = new Map();
     pendingGeneratedDraft = "";
     activeRequest = new AbortController();
     isAsking = true;
+    // A delayed history refresh must not erase a new in-task response.
+    conversationListRequestId += 1;
+    historyRequestId += 1;
+    loadingHistory = false;
+    loadingConversations = false;
     const requestPayload = {
       chapterId: meta.chapterId,
       unitId: meta.unitId,
@@ -5609,6 +5617,7 @@ const proactiveJustificationDrafts = new Map();
       provider: "",
       streaming: true
     };
+    assistantMessage.contextRef = requestPayload.contextRef;
     messages.push(userMessage, assistantMessage);
     els.input.value = "";
     resizeComposer();

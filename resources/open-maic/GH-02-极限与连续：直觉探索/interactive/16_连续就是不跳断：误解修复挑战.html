@@ -1027,17 +1027,17 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     <div class="patch-card" data-type="solid" draggable="false">
       <span class="patch-icon">🔴</span>
       <span class="patch-name">实心点</span>
-      <span class="patch-label">函数值 = 极限值</span>
+      <span class="patch-label">在指定高度补定义</span>
     </div>
     <div class="patch-card" data-type="hollow" draggable="false">
       <span class="patch-icon">⭕</span>
       <span class="patch-name">空心点</span>
-      <span class="patch-label">函数值 ≠ 极限值</span>
+      <span class="patch-label">此处不取该值</span>
     </div>
     <div class="patch-card" data-type="bridge" draggable="false">
       <span class="patch-icon">🔗</span>
       <span class="patch-name">连接补块</span>
-      <span class="patch-label">填补断阶</span>
+      <span class="patch-label">改动附近曲线</span>
     </div>
     <div class="patch-card" data-type="none" draggable="false">
       <span class="patch-icon">🚫</span>
@@ -1060,10 +1060,10 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
   <p>你是道路维修工！桥梁（函数图像）上出现了断裂和空洞，导致车辆无法安全通过。你需要选择合适的修复补丁，让桥梁恢复<strong style="color:#ffd700">连续</strong>！</p>
   <div class="hint-box">
     <p>💡 <strong>连续的本质</strong>：极限值 = 函数值<br>
-    左极限 = 右极限，且该点有定义（实心点），才能连续！<br>
+    在内点，左右有限极限相等，且等于该点函数值，才连续！<br>
     ⚠️ 看起来连着 ≠ 真的连续！</p>
   </div>
-  <p>🔴 实心点 = 函数在该点有定义且连续<br>
+  <p>🔴 实心点只表示函数值有定义；还要检查它是否等于两侧共同极限<br>
      ⭕ 空心点 = 函数在该点不连续<br>
      🔗 连接补块 = 修复跳跃间断<br>
      🚫 无需修复 = 已经连续</p>
@@ -1161,7 +1161,7 @@ document.addEventListener('DOMContentLoaded', function() {
       desc: "左极限 = 右极限，但该点是空心点。需要实心点填补！",
       functionType: "removable",
       holes: [
-        { x: 0.5, correctPatch: "solid", explanation: "左极限 = 右极限 = 3，只需将空心点改为实心点，函数在该点连续。" }
+        { x: 0.5, correctPatch: "solid", explanation: "左极限 = 右极限 = 3，需在高度3处补定义，函数才在该点连续。" }
       ],
       stars: [10, 7, 5]
     },
@@ -1188,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', function() {
       desc: "桥梁上有两个问题点！仔细分析每个点的左极限和右极限。",
       functionType: "double",
       holes: [
-        { x: 0.35, correctPatch: "solid", explanation: "x=1处：左右极限都等于2，放实心点即可连续。" },
+        { x: 0.35, correctPatch: "solid", explanation: "x=1处：左右极限都等于2，须在高度2处补定义才连续。" },
         { x: 0.7, correctPatch: "bridge", explanation: "x=3处左右极限不等，不能只改f(3)修复。连接补块表示改动邻近一段曲线，并非原函数单点连续修复。" }
       ],
       stars: [15, 10, 7]
@@ -1208,7 +1208,7 @@ document.addEventListener('DOMContentLoaded', function() {
       functionType: "triple",
       holes: [
         { x: 0.3, correctPatch: "none", explanation: "x=1处：已有实心点且极限=函数值，已经连续！" },
-        { x: 0.55, correctPatch: "solid", explanation: "x=2处：空心点，左右极限相等，放实心点。" },
+        { x: 0.55, correctPatch: "solid", explanation: "x=2处：空心点，左右极限均为3，须在高度3处补定义。" },
         { x: 0.8, correctPatch: "bridge", explanation: "x=3处左右极限不等，改一个点无效。桥表示改动邻近一段曲线，不代表单点修复原函数。" }
       ],
       stars: [20, 14, 10]
@@ -1841,6 +1841,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function toCanvasX(t) { return margin.left + t * graphW; }
     function toCanvasY(val) { return margin.top + (h - margin.top - margin.bottom) - (val + 2) / 10 * (h - margin.top - margin.bottom); }
 
+    const bounds = canvas.getBoundingClientRect();
+    const localX = (clientX - bounds.left) * w / bounds.width;
+    const localY = (clientY - bounds.top) * h / bounds.height;
+
     // Check if dropped near any unrepaired hole
     let droppedOnHole = null;
     let minDist = Infinity;
@@ -1855,7 +1859,7 @@ document.addEventListener('DOMContentLoaded', function() {
       else if (level.functionType === "triple") hy = hole.x === 0.3 ? toCanvasY(3) : hole.x === 0.55 ? toCanvasY(3) : toCanvasY(4.5);
       else hy = toCanvasY(3);
       
-      let dist = Math.sqrt((clientX - hx) ** 2 + (clientY - hy) ** 2);
+      let dist = Math.sqrt((localX - hx) ** 2 + (localY - hy) ** 2);
       if (dist < 35 && dist < minDist) {
         minDist = dist;
         droppedOnHole = i;
@@ -1880,8 +1884,8 @@ document.addEventListener('DOMContentLoaded', function() {
         levelScore += 10;
         totalScore += 10;
         
-        addFloatingText(clientX, clientY - 20, '✅ 正确！', '#44ff44');
-        createSuccessParticles(clientX, clientY);
+        addFloatingText(localX, localY - 20, '✅ 正确！', '#44ff44');
+        createSuccessParticles(localX, localY);
         
         updateHUD();
         
@@ -1908,8 +1912,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Wrong!
         dragState.card.classList.add('wrong');
         setTimeout(() => dragState.card.classList.remove('wrong'), 600);
-        addFloatingText(clientX, clientY - 20, '❌ 不对，再想想！', '#ff4444');
-        createCrashParticles(clientX, clientY);
+        addFloatingText(localX, localY - 20, '❌ 不对，再想想！', '#ff4444');
+        createCrashParticles(localX, localY);
         
         // Small penalty
         levelScore = Math.max(0, levelScore - 2);

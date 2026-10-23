@@ -20,7 +20,7 @@ async function main() {
     LLM_PROVIDER:"mock",GRADING_LLM_PROVIDER:"mock",ASSESSMENT_LLM_ENABLED:"false",COACH_NARRATION_LLM_ENABLED:"false",
     PROACTIVE_POLICY_MODE:"active",PROACTIVE_PARTICIPATION_MODE:"implicit-pilot",PROACTIVE_EXPERIMENT_ID:path.basename(dir),
     PROACTIVE_EXPERIMENT_CHAPTER_ID:"V14-C1",PROACTIVE_ADAPTER_VERSION:"functions-limits-adapter-r2",
-    PROACTIVE_OUTCOME_INSTRUMENT_VERSION:"functions-limits-retention-r3",PROACTIVE_ASSIGNMENT_SALT:"isolated-student-flow-fixture",
+    PROACTIVE_OUTCOME_INSTRUMENT_VERSION:"functions-limits-retention-r4",PROACTIVE_ASSIGNMENT_SALT:"isolated-student-flow-fixture",
     PROACTIVE_EXPERIMENT_ARMS:"treatment_full",PROACTIVE_DISPLAY_ARMS:"treatment_full",PROACTIVE_PUBLIC_CHAPTER_ONLY:"true",
     PROACTIVE_RETENTION_DELAY_HOURS:"72",PROACTIVE_RETENTION_CLOSE_HOURS:"0",RATE_LIMIT_MAX:"5000"};
   const startServer=()=>{
@@ -108,13 +108,15 @@ async function main() {
         if(point.id==='GH-01-K02'&&type==='game'){
           await frame.getByRole('button',{name:/开始/}).first().press('Enter');
           for(const full of [false,true]){
-            if(full){await page.getByTitle('全屏课件',{exact:true}).click();await page.waitForFunction(()=>{const r=document.querySelector('iframe[data-courseware-frame]')?.getBoundingClientRect();return document.fullscreenElement&&r&&Math.abs(r.left)<2&&Math.abs(r.top)<2&&Math.abs(r.width-innerWidth)<2&&Math.abs(r.height-innerHeight)<2;});}
+            if(full){await page.getByTitle('全屏课件',{exact:true}).click();await page.waitForFunction(()=>{const host=document.fullscreenElement;const r=document.querySelector('iframe[data-courseware-frame]')?.getBoundingClientRect();return host?.classList.contains('core-learning-workspace')&&r&&r.left>=0&&r.top>=0&&r.right<=innerWidth+2&&r.bottom<=innerHeight+2&&r.width>=innerWidth*.7&&r.height>=300;});}
             const game=frame.locator('#gameCanvas');
             const sizes=await game.evaluate(e=>({rect:e.getBoundingClientRect().toJSON(),w:innerWidth,h:innerHeight}));
             assert.ok(Math.abs(sizes.rect.width-sizes.w)<2&&Math.abs(sizes.rect.height-sizes.h)<2,'游戏填满实际视口');
             const b=await frameNode.boundingBox();
             for(const [side,x,y] of [['left',2,b.height/2],['right',b.width-2,b.height/2],['top',b.width/2,2],['bottom',b.width/2,b.height-2]]){
-              await page.mouse.move(b.x+x,b.y+y);
+              // Hover waits for the canvas to settle after fullscreen reparenting.
+              // A raw page mouse move can be dropped while Chrome switches surfaces.
+              await game.hover({position:{x,y}});
               try{
                 await frame.waitForFunction(side=>{const p=window.__observedCollector;return p&&(side==='left'?p.x<8:side==='right'?p.x>innerWidth-8:side==='top'?p.y<8:p.y>innerHeight-8);},side);
               }catch(error){

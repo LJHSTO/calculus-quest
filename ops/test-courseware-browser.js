@@ -290,6 +290,52 @@ async function frameHealth(frame, label, options = {}) {
 
 async function exerciseBasicControls(frame, label) {
   const actions = [];
+  if (label.includes("EXT-04-K03/simulation")) {
+    const regression = await frame.locator("body").evaluate(() => {
+      const h = 1e-5;
+      let gradientError = 0;
+      for (const terrain of Object.values(terrains)) {
+        for (const [x, y] of [[0.4, -0.7], [1.3, 0.8], [-1.1, 0.3]]) {
+          const expected = [
+            (terrain.f(x + h, y) - terrain.f(x - h, y)) / (2 * h),
+            (terrain.f(x, y + h) - terrain.f(x, y - h)) / (2 * h)
+          ];
+          const actual = terrain.grad(x, y);
+          gradientError = Math.max(gradientError, ...actual.map((v, i) => Math.abs(v - expected[i])));
+        }
+      }
+      // Exercise the terminal branch deterministically; UI controls are tested below.
+      applyPreset("convex_preset");
+      for (let i = 0; i < 2000 && !simState.ended; i++) simulateStep();
+      const result = {
+        gradientError, ended: simState.ended,
+        finalLoss: Number(document.getElementById("lossDisplay").textContent),
+        message: document.getElementById("infoPanel").textContent
+      };
+      resetSimulation();
+      return result;
+    });
+    assert.ok(regression.gradientError < 1e-6, `${label}: gradient disagrees with loss ${JSON.stringify(regression)}`);
+    assert.equal(regression.ended, true, `${label}: convex simulation must terminate`);
+    assert.ok(Number.isFinite(regression.finalLoss) && regression.finalLoss < 1e-5, `${label}: invalid final loss`);
+    assert.match(regression.message, /极小|收敛/, `${label}: missing terminal feedback`);
+    actions.push({ kind: "numerical-regression", ...regression });
+  }
+  if (label.includes("EXT-04-K04/mindMap")) {
+    const next = frame.locator("#btn-next");
+    const toggle = frame.locator("#toggle-sidebar");
+    assert.equal(await next.isVisible(), false, `${label}: collapsed navigation must be hidden`);
+    await toggle.click();
+    await next.waitFor({ state: "visible" });
+    const before = await frame.locator("#step-num").innerText();
+    await next.click();
+    assert.notEqual(await frame.locator("#step-num").innerText(), before, `${label}: next step must advance`);
+    await toggle.click();
+    await next.waitFor({ state: "hidden" });
+    await toggle.click();
+    await next.waitFor({ state: "visible" });
+    actions.push({ kind: "sidebar", expandedAndCollapsed: true, stepAdvanced: true });
+  }
   const ranges = frame.locator("input[type='range']:visible");
   if (await ranges.count()) {
     let range = ranges.first();
@@ -299,9 +345,7 @@ async function exerciseBasicControls(frame, label) {
         element.setAttribute("data-cq-browser-range", marker);
       }, rangeMarker);
       range = frame.locator(`[data-cq-browser-range="${rangeMarker}"]`);
-      await range.evaluate((element) => {
-        element.scrollIntoView({ block: "center", inline: "center" });
-      });
+      await range.scrollIntoViewIfNeeded();
       const box = await waitForUsableBox(range, { minWidth: 40, minHeight: 4 });
       assert.ok(box, `${label}: range control has no layout box`);
       const before = Number(await range.inputValue());
@@ -341,7 +385,9 @@ async function exerciseBasicControls(frame, label) {
         );
         let pointerError = "";
         try {
-          await range.click({ timeout: 5000 });
+          // The hit-test above already verifies pointer reachability. Animated
+          // lesson containers need not stop moving before a real pointer click.
+          await range.click({ timeout: 5000, force: true });
         } catch (error) {
           pointerError = String(error?.message || error);
         }
@@ -417,9 +463,7 @@ async function exerciseBasicControls(frame, label) {
     const buttonMarker = `cq-click-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     await button.evaluate((element, marker) => element.setAttribute("data-cq-browser-click", marker), buttonMarker);
     button = frame.locator(`[data-cq-browser-click="${buttonMarker}"]`);
-    await button.evaluate((element) => {
-      element.scrollIntoView({ block: "center", inline: "center" });
-    });
+    await button.scrollIntoViewIfNeeded();
     await new Promise((resolve) => setTimeout(resolve, 100));
     const pointerHit = await button.evaluate((element) => {
       const rect = element.getBoundingClientRect();
@@ -539,9 +583,7 @@ async function auditFlowTest(page, entries) {
         await page.locator("[data-resource-index]").nth(index + 1).click();
         const frameLocator = page.locator("#resource-frame");
         const frame = await waitForCoursewareFrame(frameLocator, expectedPath);
-        await frameLocator.evaluate((element) => {
-          element.scrollIntoView({ block: "center", inline: "center" });
-        });
+        await frameLocator.scrollIntoViewIfNeeded();
         await page.waitForTimeout(150);
         const frameBox = await frameLocator.boundingBox();
         assert.ok(frameBox && frameBox.width >= 500 && frameBox.height >= 250, `${label}: iframe is too small`);
@@ -707,9 +749,7 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
     for (const candidate of entry.resources) {
       await auditResource("正式站", entry, candidate, async (label) => {
         const { frame, frameLocator } = await selectFormalResource(page, entry, candidate);
-        await frameLocator.evaluate((element) => {
-          element.scrollIntoView({ block: "center", inline: "center" });
-        });
+        await frameLocator.scrollIntoViewIfNeeded();
         await page.waitForTimeout(150);
         const frameBox = await frameLocator.boundingBox();
         assert.ok(frameBox && frameBox.width >= 500 && frameBox.height >= 250, `${label}: iframe is too small`);
@@ -839,7 +879,7 @@ async function auditFormalPlayer(page, entries, baseUrl, adminToken) {
   return { slides, resources, realInteractionChecks, persistedInteractionChecks };
 }
 
-async function assertFullscreen(page, button, target, label) {
+async function assertFullscreen(page, button, target, label, workspace = false) {
   await button.click();
   await assertEventually(
     () => page.evaluate(() => Boolean(document.fullscreenElement || document.querySelector(".is-local-fullscreen, .is-local-fullscreen-target"))),
@@ -855,8 +895,28 @@ async function assertFullscreen(page, button, target, label) {
   );
   const viewport = page.viewportSize();
   const box = await target.boundingBox();
-  assert.ok(box && box.width >= viewport.width * 0.8, `${label}: fullscreen width is too small`);
-  assert.ok(box && box.height >= viewport.height * 0.75, `${label}: fullscreen height is too small`);
+  if (workspace) {
+    // The regular learning entry keeps navigation and help in the fullscreen workspace.
+    // Assert that workspace fills the screen and the task remains usable within it.
+    const host = await page.evaluate(() => {
+      const node = document.fullscreenElement || document.querySelector('.is-local-fullscreen-target');
+      const rect = node?.getBoundingClientRect();
+      return rect ? { workspace: node.classList.contains('core-learning-workspace'),
+        x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    assert.ok(host?.workspace, `${label}: learning workspace must own fullscreen`);
+    assert.ok(Math.abs(host.x) <= 2 && Math.abs(host.y) <= 2
+      && host.width >= viewport.width - 2 && host.height >= viewport.height - 2,
+    `${label}: fullscreen workspace must fill the viewport`);
+    assert.ok(box && box.x >= -2 && box.y >= -2
+      && box.x + box.width <= viewport.width + 2 && box.y + box.height <= viewport.height + 2,
+    `${label}: task must remain inside the viewport`);
+    assert.ok(box.width >= viewport.width * 0.7 && box.height >= 300,
+      `${label}: task canvas must retain usable dimensions`);
+  } else {
+    assert.ok(box && box.width >= viewport.width * 0.8, `${label}: fullscreen width is too small`);
+    assert.ok(box && box.height >= viewport.height * 0.75, `${label}: fullscreen height is too small`);
+  }
   if (await page.evaluate(() => Boolean(document.fullscreenElement))) {
     await page.evaluate(() => document.exitFullscreen());
   } else {
@@ -942,14 +1002,16 @@ async function verifyFormalHostFeatures(formalPage) {
     formalPage,
     formalPage.locator('[data-classroom-action="fullscreen"]'),
     formalPage.locator("[data-knowledge-scene-stage]"),
-    "正式站互动课件全屏"
+    "正式站互动课件全屏",
+    true
   );
   await formalPage.locator('[data-workspace-canvas="slide"]').click();
   await assertFullscreen(
     formalPage,
     formalPage.locator('[data-classroom-action="fullscreen"]'),
     formalPage.locator("[data-resource-fullscreen-target]").first(),
-    "正式站讲解页全屏"
+    "正式站讲解页全屏",
+    true
   );
 }
 
@@ -1093,6 +1155,8 @@ async function main() {
     if (targetSurface !== "flow") {
       await prepareFormalPlayer(formalPage, registration.participant, registration.token);
       formalResult = await auditFormalPlayer(formalPage, entries, baseUrl, adminToken);
+      assert.deepEqual(formalIssues, [], `Formal player browser issues:\n${JSON.stringify(formalIssues, null, 2)}`);
+      console.log(JSON.stringify({ checkpoint: 'formal', ...formalResult, browserIssues: 0 }));
       if (process.env.COURSEWARE_BROWSER_SLOW_STATE === "1") {
         assert.ok(maximumStudyRequests <= 1, `Slow state requests must be coalesced, saw ${maximumStudyRequests} concurrent requests`);
         console.log(`SLOW_STATE_MAX_CONCURRENT=${maximumStudyRequests}`);
@@ -1102,6 +1166,8 @@ async function main() {
     }
     if (targetSurface !== "formal") {
       flowResult = await auditFlowTest(flowPage, entries);
+      assert.deepEqual(flowIssues, [], `Flow Test browser issues:\n${JSON.stringify(flowIssues, null, 2)}`);
+      console.log(JSON.stringify({ checkpoint: 'flow', ...flowResult, browserIssues: 0 }));
     }
     const shouldCheckGh04Drag = (
       (!targetKnowledgePointId && (!targetChapterId || targetChapterId === "V14-C2"))

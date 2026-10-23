@@ -81,7 +81,7 @@ async function startPreview(options = {}) {
       COACH_NARRATION_LLM_ENABLED: "false", PROACTIVE_POLICY_MODE: "active",
       PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C1", PROACTIVE_EXPERIMENT_ID: state.experimentId,
       PROACTIVE_ADAPTER_VERSION: "functions-limits-adapter-r2",
-      PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "functions-limits-retention-r3",
+      PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "functions-limits-retention-r4",
       PROACTIVE_RETENTION_DELAY_HOURS: "72", PROACTIVE_RETENTION_CLOSE_HOURS: "0",
       PROACTIVE_ASSIGNMENT_SALT: state.assignmentSalt,
       PROACTIVE_PARTICIPATION_MODE: "implicit-pilot", PROACTIVE_PUBLIC_CHAPTER_ONLY: "true",

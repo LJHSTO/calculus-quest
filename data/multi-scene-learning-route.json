@@ -140,11 +140,11 @@
                     },
                     {
                       "id": "text_MwoPt9wh",
-                      "top": 129,
+                      "top": 112,
                       "left": 70,
                       "type": "text",
                       "width": 860,
-                      "height": 49,
+                      "height": 44,
                       "rotate": 0,
                       "content": "<p style=\"font-size: 18px; text-align: center; color: #F3F6F8;\">核心定义：函数不是你算出的数，而是你加工的方式</p>",
                       "defaultColor": "#F3F6F8",
@@ -186,7 +186,7 @@
                       "width": 260,
                       "height": 64,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">可以是任何值，</p><p style=\"font-size: 14px; text-align: center; color: #555555;\">如 2、-5、a</p>",
+                      "content": "<p style=\"font-size: 14px; text-align: center; color: #555555;\">取自函数的定义域，</p><p style=\"font-size: 14px; text-align: center; color: #555555;\">如规则允许的 2、-5</p>",
                       "defaultColor": "#555555",
                       "defaultFontName": "Microsoft YaHei"
                     },
@@ -366,7 +366,7 @@
                       "width": 860,
                       "height": 94,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 16px; font-weight: bold; color: #2C3E50;\">⚠️ 常见误解</p><p style=\"font-size: 14px; color: #333333;\">• 误解1：认为函数是一个固定的数值（如“y=2”）。→ 正解：函数是变量间的对应规则，输出随输入变化。</p><p style=\"font-size: 14px; color: #333333;\">• 误解2：认为函数只是一个名字。→ 正解：f(x)表示按规则得到的结果，函数本身是那套规则。</p>",
+                      "content": "<p style=\"font-size: 16px; font-weight: bold; color: #2C3E50;\">⚠️ 常见误解</p><p style=\"font-size: 14px; color: #333333;\">• 函数与输出值不同：f 是对应规则，f(x) 是给定输入的输出。常函数 f(x)=2 也是函数。</p><p style=\"font-size: 14px; color: #333333;\">• 输出不必随输入改变；关键是定义域中每个输入恰有一个输出。</p>",
                       "defaultColor": "#333333",
                       "defaultFontName": "Microsoft YaHei"
                     }
@@ -466,7 +466,7 @@
                       "GH-01-K01"
                     ],
                     "adaptiveRole": "core",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   },
                   {
                     "id": "GH-01-K01-check-q2",
@@ -507,7 +507,7 @@
                       "GH-01-K01"
                     ],
                     "adaptiveRole": "diagnostic",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   }
                 ]
               }
@@ -1681,7 +1681,7 @@
                     "id": "GH-01-K02-check-q1",
                     "sourceId": "GH-01-K02-check-q1",
                     "type": "single",
-                    "question": "在使用落点模拟器时，你点击了一个位置，屏幕上显示了坐标 (4, 2)。关于这个点，以下哪个说法是完全正确的？",
+                    "question": "在平面直角坐标系中，点P的坐标为(4,2)。以下哪项正确说明了这两个坐标？",
                     "options": [
                       {
                         "value": "A",
@@ -1693,7 +1693,7 @@
                       },
                       {
                         "value": "C",
-                        "label": "这个点一定在第一象限的右上角"
+                        "label": "这个点的横坐标和纵坐标可以交换，位置保持不变"
                       },
                       {
                         "value": "D",
@@ -1707,7 +1707,7 @@
                     "answer": [
                       "B"
                     ],
-                    "analysis": "根据坐标读取规则，括号里第一个数字是x坐标，对应横轴（水平方向）的数值；第二个数字是y坐标，对应纵轴（竖直方向）的数值。因此(4,2)表示在x轴上走4个单位，y轴上走2个单位。选项A将数值颠倒了。选项C虽然事实正确（正数坐标确实在第一象限），但不能通过一个点的坐标就概括说“一定”在右上角，但核心错误是B才是完全正确的坐标读取描述。D选项错误，因为坐标顺序不同代表完全不同的点。所以B是严格正确的。",
+                    "analysis": "坐标(4,2)按顺序表示横坐标4、纵坐标2。交换为(2,4)会得到另一个点，因此选B。",
                     "commentPrompt": "",
                     "points": 10,
                     "hasAnswer": true,
@@ -1715,7 +1715,7 @@
                       "GH-01-K02"
                     ],
                     "adaptiveRole": "core",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   },
                   {
                     "id": "GH-01-K02-check-q2",
@@ -1757,7 +1757,7 @@
                     "adaptiveRole": "diagnostic",
                     "hasAnswer": true,
                     "commentPrompt": "",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   }
                 ]
               }
@@ -2047,7 +2047,7 @@
                     "id": "GH-01-K03-check-q1",
                     "sourceId": "GH-01-K03-check-q1",
                     "type": "single",
-                    "question": "想象一下，你把输入输出机器的数据点 (1,4), (2,6), (3,8) 画在了坐标图上，并且按照从左到右的顺序连成了一条线。你觉得这条线看起来最像下面哪种变化趋势？",
+                    "question": "将点(1,4)、(2,6)、(3,8)按横坐标从小到大依次用直线段连接。所得折线的变化方向是什么？",
                     "options": [
                       {
                         "value": "A",
@@ -2055,7 +2055,7 @@
                       },
                       {
                         "value": "B",
-                        "label": "一个从左往右一直向上爬的楼梯"
+                        "label": "从左向右持续上升"
                       },
                       {
                         "value": "C",
@@ -2073,7 +2073,7 @@
                     "answer": [
                       "B"
                     ],
-                    "analysis": "分析数据点：当x（横轴值）从1增加到2再到3时，y（纵轴值）从4增加到6再到8。这意味着随着我们向右移动，点的高度一直在增加。因此将这些点光滑连接后，整体趋势是从左往右不断上升的。选项A描述的是下降趋势。选项C是水平无变化。选项D是先上升后下降。只有选项B“一直向上爬的楼梯”准确地描述了这种持续增长的趋势。",
+                    "analysis": "两段直线的斜率都是2，因此这条明确指定的折线持续上升。有限观测点不能证明另一个未知函数在点间也持续上升。",
                     "commentPrompt": "",
                     "points": 10,
                     "hasAnswer": true,
@@ -2081,20 +2081,20 @@
                       "GH-01-K03"
                     ],
                     "adaptiveRole": "core",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   },
                   {
                     "id": "GH-01-K03-check-q2",
                     "type": "multiple",
-                    "question": "从左向右阅读函数图像时，哪些观察能够说明函数值正在下降？请选择所有正确说法。",
+                    "question": "按横坐标从小到大比较函数值。下列哪些描述支持所描述范围内的下降判断？请选择所有正确说法。",
                     "options": [
                       {
                         "value": "A",
-                        "label": "横坐标增大而纵坐标减小"
+                        "label": "在整个区间内，横坐标越大，纵坐标越小"
                       },
                       {
                         "value": "B",
-                        "label": "曲线整体从左上方向右下方延伸"
+                        "label": "在整个区间内，曲线从左上向右下延伸，途中没有回升或水平段"
                       },
                       {
                         "value": "C",
@@ -2102,7 +2102,7 @@
                       },
                       {
                         "value": "D",
-                        "label": "后一个点的纵坐标小于前一个点"
+                        "label": "只比较两个观测点，后一个点的纵坐标较小，说明这两个观测值之间有下降；不据此判断整个区间"
                       },
                       {
                         "value": "__unknown__",
@@ -2114,7 +2114,7 @@
                       "B",
                       "D"
                     ],
-                    "analysis": "输入从左向右增大时，纵坐标降低就是下降，因此A、B、D正确。",
+                    "analysis": "A、B描述整个区间；D只比较两个观测值。两点之间仍可能有未观测到的起伏，不能把两点比较扩展为整个区间的严格单调性。",
                     "points": 10,
                     "knowledgePointIds": [
                       "GH-01-K03"
@@ -2123,7 +2123,7 @@
                     "adaptiveRole": "diagnostic",
                     "hasAnswer": true,
                     "commentPrompt": "",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   }
                 ]
               }
@@ -3054,13 +3054,13 @@
                       "GH-02-K01"
                     ],
                     "adaptiveRole": "core",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   },
                   {
                     "id": "GH-02-K01-check-q2",
                     "sourceId": "GH-02-K01-check-q2",
                     "type": "multiple",
-                    "question": "在数表实验中观察左右两侧分别趋近于某点，以下哪些说法是正确的？（多选）",
+                    "question": "在定义域内点a的两侧讨论有限极限。以下哪些说法正确？请选择所有正确说法。",
                     "options": [
                       {
                         "value": "A",
@@ -3096,7 +3096,7 @@
                       "GH-02-K01"
                     ],
                     "adaptiveRole": "diagnostic",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   }
                 ]
               }
@@ -3598,7 +3598,7 @@
                     "adaptiveRole": "core",
                     "hasAnswer": true,
                     "commentPrompt": "",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   },
                   {
                     "id": "GH-02-K02-check-q2",
@@ -3650,7 +3650,7 @@
                     "adaptiveRole": "diagnostic",
                     "hasAnswer": true,
                     "commentPrompt": "",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   }
                 ]
               }
@@ -4286,12 +4286,12 @@
                     "adaptiveRole": "core",
                     "hasAnswer": true,
                     "commentPrompt": "",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   },
                   {
                     "id": "GH-02-K03-check-q2",
                     "type": "multiple",
-                    "question": "判断函数在某点连续时，以下哪些条件需要同时满足？请选择所有正确说法。",
+                    "question": "判断函数在定义域内点a连续时，以下哪些条件需要同时满足？请选择所有正确说法。",
                     "options": [
                       {
                         "value": "A",
@@ -4328,7 +4328,7 @@
                     "adaptiveRole": "diagnostic",
                     "hasAnswer": true,
                     "commentPrompt": "",
-                    "instrumentVersion": "functions-limits-assessment-r2"
+                    "instrumentVersion": "functions-limits-formative-r4"
                   }
                 ]
               }
@@ -4691,28 +4691,28 @@
             "multiple",
             "short_answer"
           ],
-          "instrumentVersion": "functions-limits-assessment-r2",
+          "instrumentVersion": "functions-limits-assessment-r4",
           "questions": [
             {
               "id": "V14-C1-fl-r2-pre-1",
               "type": "single",
-              "question": "寄件价格由重量和一张固定价目表唯一确定。把重量作为输入，输出是什么？",
+              "question": "一条固定规则把输入数对应到输出数。下列哪组记录违反函数的唯一性要求？",
               "options": [
                 {
                   "value": "A",
-                  "label": "寄件价格"
+                  "label": "2→5，2→6"
                 },
                 {
                   "value": "B",
-                  "label": "价目表"
+                  "label": "2→5，3→5"
                 },
                 {
                   "value": "C",
-                  "label": "寄件日期"
+                  "label": "2→5，3→6"
                 },
                 {
                   "value": "D",
-                  "label": "寄件重量"
+                  "label": "2→6，3→6"
                 },
                 {
                   "value": "__unknown__",
@@ -4722,19 +4722,20 @@
               "answer": [
                 "A"
               ],
-              "analysis": "固定规则将每个重量对应到唯一价格。",
+              "analysis": "同一个输入2同时对应5和6，违反唯一性；不同输入允许对应同一输出。",
               "points": 8,
               "hasAnswer": true,
               "knowledgePointIds": [
                 "GH-01-K01"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P1",
               "equivalence": {
                 "constructId": "GH-01-K01",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -4781,13 +4782,14 @@
               "knowledgePointIds": [
                 "GH-01-K01"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P2",
               "equivalence": {
                 "constructId": "GH-01-K01",
                 "points": 8,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -4802,19 +4804,19 @@
             {
               "id": "V14-C1-fl-r2-pre-3",
               "type": "single",
-              "question": "在横轴表示时间、纵轴表示温度的图中，点 (2,5) 表示什么？",
+              "question": "在横轴表示时间、纵轴表示温度的坐标系中，点(2,5)表示什么？",
               "options": [
                 {
                   "value": "A",
-                  "label": "2时刻温度为5"
-                },
-                {
-                  "value": "B",
                   "label": "5时刻温度为2"
                 },
                 {
-                  "value": "C",
+                  "value": "B",
                   "label": "温度始终为5"
+                },
+                {
+                  "value": "C",
+                  "label": "2时刻温度为5"
                 },
                 {
                   "value": "D",
@@ -4826,7 +4828,7 @@
                 }
               ],
               "answer": [
-                "A"
+                "C"
               ],
               "analysis": "有序对先读横坐标时间，再读纵坐标温度。",
               "points": 8,
@@ -4834,13 +4836,14 @@
               "knowledgePointIds": [
                 "GH-01-K02"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P3",
               "equivalence": {
                 "constructId": "GH-01-K02",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -4859,19 +4862,19 @@
               "options": [
                 {
                   "value": "A",
-                  "label": "在，因为 f(-1)=3"
-                },
-                {
-                  "value": "B",
                   "label": "不在，因为横坐标为负"
                 },
                 {
-                  "value": "C",
+                  "value": "B",
                   "label": "不在，因为3不等于-1"
                 },
                 {
-                  "value": "D",
+                  "value": "C",
                   "label": "不在，因为 f(3)=7 与横坐标不相等"
+                },
+                {
+                  "value": "D",
+                  "label": "在，因为 f(-1)=3"
                 },
                 {
                   "value": "__unknown__",
@@ -4879,7 +4882,7 @@
                 }
               ],
               "answer": [
-                "A"
+                "D"
               ],
               "analysis": "图像上的点满足纵坐标等于对应横坐标的函数值。",
               "points": 8,
@@ -4887,13 +4890,14 @@
               "knowledgePointIds": [
                 "GH-01-K02"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P4",
               "equivalence": {
                 "constructId": "GH-01-K02",
                 "points": 8,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -4940,13 +4944,14 @@
               "knowledgePointIds": [
                 "GH-01-K03"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P5",
               "equivalence": {
                 "constructId": "GH-01-K03",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -4993,13 +4998,14 @@
               "knowledgePointIds": [
                 "GH-01-K03"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P6",
               "equivalence": {
                 "constructId": "GH-01-K03",
                 "points": 8,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -5046,13 +5052,14 @@
               "knowledgePointIds": [
                 "GH-02-K01"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P7",
               "equivalence": {
                 "constructId": "GH-02-K01",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-02",
@@ -5071,19 +5078,19 @@
               "options": [
                 {
                   "value": "A",
-                  "label": "7"
-                },
-                {
-                  "value": "B",
                   "label": "10"
                 },
                 {
-                  "value": "C",
+                  "value": "B",
                   "label": "不存在"
                 },
                 {
-                  "value": "D",
+                  "value": "C",
                   "label": "3"
+                },
+                {
+                  "value": "D",
+                  "label": "7"
                 },
                 {
                   "value": "__unknown__",
@@ -5091,7 +5098,7 @@
                 }
               ],
               "answer": [
-                "A"
+                "D"
               ],
               "analysis": "极限考察邻近趋势，不由该点函数值决定。",
               "points": 8,
@@ -5099,13 +5106,14 @@
               "knowledgePointIds": [
                 "GH-02-K01"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P8",
               "equivalence": {
                 "constructId": "GH-02-K01",
                 "points": 8,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-02",
@@ -5153,13 +5161,14 @@
               "knowledgePointIds": [
                 "GH-02-K02"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P9",
               "equivalence": {
                 "constructId": "GH-02-K02",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-02",
@@ -5183,13 +5192,14 @@
               "knowledgePointIds": [
                 "GH-02-K02"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P10",
               "equivalence": {
                 "constructId": "GH-02-K02",
                 "points": 10,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "referenceAnswer": "不能断定。还须确认右极限存在且等于3，因为双侧极限要求两侧极限存在且相等。",
@@ -5257,13 +5267,14 @@
               "knowledgePointIds": [
                 "GH-02-K03"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P11",
               "equivalence": {
                 "constructId": "GH-02-K03",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-02",
@@ -5278,25 +5289,26 @@
             {
               "id": "V14-C1-fl-r2-pre-12",
               "type": "short_answer",
-              "question": "函数在内点 a 两侧都趋近4，但 f(a) 未定义。它现在在 a 连续吗？只补这个点的函数值，应补多少？说明理由。",
+              "question": "在点 a 的左右两侧，函数在足够接近 a 的位置均有定义。当 x 从两侧趋近 a 时，f(x) 都趋近4，但 f(a) 未定义。当前是否满足在 a 连续的条件？只补这个点的函数值，应补多少？说明理由。",
               "options": [],
               "answer": [],
-              "analysis": "现在不连续。应设为4，因为连续要求函数值有定义且等于两侧共同的极限。",
+              "analysis": "当前不满足连续条件，因为 f(a) 未定义。应补定义 f(a)=4，使该点函数值存在且等于两侧共同的极限。",
               "points": 10,
               "hasAnswer": true,
               "knowledgePointIds": [
                 "GH-02-K03"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P12",
               "equivalence": {
                 "constructId": "GH-02-K03",
                 "points": 10,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
-              "referenceAnswer": "现在不连续。应设为4，因为连续要求函数值有定义且等于两侧共同的极限。",
+              "referenceAnswer": "当前不满足连续条件，因为 f(a) 未定义。应补定义 f(a)=4，使该点函数值存在且等于两侧共同的极限。",
               "commentPrompt": "共10分：判断不连续2分；正确补值或改值4分；说明函数值应等于共同极限4分。",
               "rubric": [
                 {
@@ -5838,7 +5850,7 @@
             "multiple",
             "short_answer"
           ],
-          "instrumentVersion": "functions-limits-assessment-r2",
+          "instrumentVersion": "functions-limits-assessment-r4",
           "questions": [
             {
               "id": "V14-C1-fl-r2-post-1",
@@ -5875,13 +5887,14 @@
               "knowledgePointIds": [
                 "GH-01-K01"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P1",
               "equivalence": {
                 "constructId": "GH-01-K01",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -5928,13 +5941,14 @@
               "knowledgePointIds": [
                 "GH-01-K01"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P2",
               "equivalence": {
                 "constructId": "GH-01-K01",
                 "points": 8,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -5957,15 +5971,15 @@
                 },
                 {
                   "value": "B",
-                  "label": "(3,7)"
-                },
-                {
-                  "value": "C",
                   "label": "(3,3)"
                 },
                 {
-                  "value": "D",
+                  "value": "C",
                   "label": "(7,7)"
+                },
+                {
+                  "value": "D",
+                  "label": "(3,7)"
                 },
                 {
                   "value": "__unknown__",
@@ -5973,7 +5987,7 @@
                 }
               ],
               "answer": [
-                "B"
+                "D"
               ],
               "analysis": "横坐标是时间3，纵坐标是水位7。",
               "points": 8,
@@ -5981,13 +5995,14 @@
               "knowledgePointIds": [
                 "GH-01-K02"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P3",
               "equivalence": {
                 "constructId": "GH-01-K02",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -6006,15 +6021,15 @@
               "options": [
                 {
                   "value": "A",
-                  "label": "(2,2)"
+                  "label": "(2,4)"
                 },
                 {
                   "value": "B",
-                  "label": "(2,3)"
+                  "label": "(2,2)"
                 },
                 {
                   "value": "C",
-                  "label": "(2,4)"
+                  "label": "(2,3)"
                 },
                 {
                   "value": "D",
@@ -6026,7 +6041,7 @@
                 }
               ],
               "answer": [
-                "C"
+                "A"
               ],
               "analysis": "g(2)=4，所以(2,4)在图像上。",
               "points": 8,
@@ -6034,13 +6049,14 @@
               "knowledgePointIds": [
                 "GH-01-K02"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P4",
               "equivalence": {
                 "constructId": "GH-01-K02",
                 "points": 8,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -6087,13 +6103,14 @@
               "knowledgePointIds": [
                 "GH-01-K03"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P5",
               "equivalence": {
                 "constructId": "GH-01-K03",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -6140,13 +6157,14 @@
               "knowledgePointIds": [
                 "GH-01-K03"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P6",
               "equivalence": {
                 "constructId": "GH-01-K03",
                 "points": 8,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-01",
@@ -6169,15 +6187,15 @@
                 },
                 {
                   "value": "B",
-                  "label": "4"
-                },
-                {
-                  "value": "C",
                   "label": "1"
                 },
                 {
-                  "value": "D",
+                  "value": "C",
                   "label": "6"
+                },
+                {
+                  "value": "D",
+                  "label": "4"
                 },
                 {
                   "value": "__unknown__",
@@ -6185,7 +6203,7 @@
                 }
               ],
               "answer": [
-                "B"
+                "D"
               ],
               "analysis": "由函数规则，2x+2趋近4。",
               "points": 8,
@@ -6193,13 +6211,14 @@
               "knowledgePointIds": [
                 "GH-02-K01"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P7",
               "equivalence": {
                 "constructId": "GH-02-K01",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-02",
@@ -6218,15 +6237,15 @@
               "options": [
                 {
                   "value": "A",
-                  "label": "极限不存在"
+                  "label": "极限等于6"
                 },
                 {
                   "value": "B",
-                  "label": "极限等于4"
+                  "label": "极限不存在"
                 },
                 {
                   "value": "C",
-                  "label": "极限等于6"
+                  "label": "极限等于4"
                 },
                 {
                   "value": "D",
@@ -6238,7 +6257,7 @@
                 }
               ],
               "answer": [
-                "C"
+                "A"
               ],
               "analysis": "该点未定义不妨碍两侧趋近同一值。",
               "points": 8,
@@ -6246,13 +6265,14 @@
               "knowledgePointIds": [
                 "GH-02-K01"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P8",
               "equivalence": {
                 "constructId": "GH-02-K01",
                 "points": 8,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-02",
@@ -6300,13 +6320,14 @@
               "knowledgePointIds": [
                 "GH-02-K02"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P9",
               "equivalence": {
                 "constructId": "GH-02-K02",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-02",
@@ -6330,13 +6351,14 @@
               "knowledgePointIds": [
                 "GH-02-K02"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P10",
               "equivalence": {
                 "constructId": "GH-02-K02",
                 "points": 10,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "referenceAnswer": "不能断定。还须确认左极限存在且等于6，因为双侧极限要求两侧极限存在且相等。",
@@ -6404,13 +6426,14 @@
               "knowledgePointIds": [
                 "GH-02-K03"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P11",
               "equivalence": {
                 "constructId": "GH-02-K03",
                 "points": 8,
-                "estimatedSteps": 1
+                "estimatedSteps": 1,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "moduleId": "GH-02",
@@ -6434,13 +6457,14 @@
               "knowledgePointIds": [
                 "GH-02-K03"
               ],
-              "instrumentVersion": "functions-limits-assessment-r2",
+              "instrumentVersion": "functions-limits-assessment-r4",
               "cognitiveLevel": "理解与基础应用",
               "pairId": "FL-P12",
               "equivalence": {
                 "constructId": "GH-02-K03",
                 "points": 10,
-                "estimatedSteps": 2
+                "estimatedSteps": 2,
+                "validationStatus": "content-aligned-not-empirically-equated"
               },
               "difficulty": "introductory",
               "referenceAnswer": "现在不连续。应设为2，因为连续要求函数值有定义且等于两侧共同的极限。",
@@ -7010,13 +7034,13 @@
                 "GH-01-K01"
               ],
               "adaptiveRole": "core",
-              "instrumentVersion": "functions-limits-assessment-r2"
+              "instrumentVersion": "functions-limits-formative-r4"
             },
             {
               "id": "V14-C1-fl-r2-formative-2",
               "sourceId": "GH-01-K02-check-q1",
               "type": "single",
-              "question": "在使用落点模拟器时，你点击了一个位置，屏幕上显示了坐标 (4, 2)。关于这个点，以下哪个说法是完全正确的？",
+              "question": "在平面直角坐标系中，点P的坐标为(4,2)。以下哪项正确说明了这两个坐标？",
               "options": [
                 {
                   "value": "A",
@@ -7028,7 +7052,7 @@
                 },
                 {
                   "value": "C",
-                  "label": "这个点一定在第一象限的右上角"
+                  "label": "这个点的横坐标和纵坐标可以交换，位置保持不变"
                 },
                 {
                   "value": "D",
@@ -7042,7 +7066,7 @@
               "answer": [
                 "B"
               ],
-              "analysis": "根据坐标读取规则，括号里第一个数字是x坐标，对应横轴（水平方向）的数值；第二个数字是y坐标，对应纵轴（竖直方向）的数值。因此(4,2)表示在x轴上走4个单位，y轴上走2个单位。选项A将数值颠倒了。选项C虽然事实正确（正数坐标确实在第一象限），但不能通过一个点的坐标就概括说“一定”在右上角，但核心错误是B才是完全正确的坐标读取描述。D选项错误，因为坐标顺序不同代表完全不同的点。所以B是严格正确的。",
+              "analysis": "坐标(4,2)按顺序表示横坐标4、纵坐标2。交换为(2,4)会得到另一个点，因此选B。",
               "commentPrompt": "",
               "points": 10,
               "hasAnswer": true,
@@ -7050,13 +7074,13 @@
                 "GH-01-K02"
               ],
               "adaptiveRole": "core",
-              "instrumentVersion": "functions-limits-assessment-r2"
+              "instrumentVersion": "functions-limits-formative-r4"
             },
             {
               "id": "V14-C1-fl-r2-formative-3",
               "sourceId": "GH-01-K03-check-q1",
               "type": "single",
-              "question": "想象一下，你把输入输出机器的数据点 (1,4), (2,6), (3,8) 画在了坐标图上，并且按照从左到右的顺序连成了一条线。你觉得这条线看起来最像下面哪种变化趋势？",
+              "question": "将点(1,4)、(2,6)、(3,8)按横坐标从小到大依次用直线段连接。所得折线的变化方向是什么？",
               "options": [
                 {
                   "value": "A",
@@ -7064,7 +7088,7 @@
                 },
                 {
                   "value": "B",
-                  "label": "一个从左往右一直向上爬的楼梯"
+                  "label": "从左向右持续上升"
                 },
                 {
                   "value": "C",
@@ -7082,7 +7106,7 @@
               "answer": [
                 "B"
               ],
-              "analysis": "分析数据点：当x（横轴值）从1增加到2再到3时，y（纵轴值）从4增加到6再到8。这意味着随着我们向右移动，点的高度一直在增加。因此将这些点光滑连接后，整体趋势是从左往右不断上升的。选项A描述的是下降趋势。选项C是水平无变化。选项D是先上升后下降。只有选项B“一直向上爬的楼梯”准确地描述了这种持续增长的趋势。",
+              "analysis": "两段直线的斜率都是2，因此这条明确指定的折线持续上升。有限观测点不能证明另一个未知函数在点间也持续上升。",
               "commentPrompt": "",
               "points": 10,
               "hasAnswer": true,
@@ -7090,12 +7114,12 @@
                 "GH-01-K03"
               ],
               "adaptiveRole": "core",
-              "instrumentVersion": "functions-limits-assessment-r2"
+              "instrumentVersion": "functions-limits-formative-r4"
             }
           ]
         }
       },
-      "assessmentVersion": "functions-limits-assessment-r2"
+      "assessmentVersion": "functions-limits-assessment-r4"
     },
     {
       "id": "V14-C2",

@@ -1268,9 +1268,9 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     <div class="subtitle">误解修复挑战 · 抓住趋势，远离陷阱</div>
     <div class="instructions">
       <strong>🎮 玩法：</strong>拖动底部的篮子接住正确的数值卡片！<br><br>
-      <span class="good">✅ 绿色卡片</span>：趋近趋势值（正确！接住它）<br>
+      卡片外观相同，请根据数表与函数规则判断哪些值接近目标趋势<br>
       <span class="bad">❌ 红色卡片</span>：干扰噪音（避开！）<br>
-      <span class="bad">⚠️ 橙色卡片</span>：f(a) 陷阱值（避开！极限≠函数值！）<br><br>
+      点上的值 f(a) 需要与附近趋势分开判断；二者可以相同，也可以不同<br><br>
       <strong>🏆 目标：</strong>集齐4张趋势卡片，揭示极限值！<br>
       <strong>❤️</strong> 接错卡片会损失能量，5次机会用完则挑战失败。
     </div>
@@ -1365,7 +1365,7 @@ const LEVELS = [
     faLabel: 'f(2)=15',
     trendValues: [3.5, 3.8, 3.95, 3.99],
     noiseValues: [6.0, 1.5, 8.3, 10.0],
-    explanation: `当 x→2 时，<em>(x²-4)/(x-2) = (x-2)(x+2)/(x-2) = x+2</em>。所以极限 = <em>2+2=4</em>。即使 f(2) 被定义为 15，极限依然是 4。<br><br>⚡ <strong>函数在某点的值 ≠ 该点的极限！</strong>`
+    explanation: `当 x→2 时，<em>(x²-4)/(x-2) = (x-2)(x+2)/(x-2) = x+2</em>。所以极限 = <em>2+2=4</em>。即使 f(2) 被定义为 15，极限依然是 4。<br><br>⚡ <strong>函数在某点的值不必等于该点的极限！</strong>`
   },
   {
     func: 'f(x) = sin(x)/x',
@@ -1706,7 +1706,7 @@ function drawFallingCards() {
       fa: { bg: '#f59e0b', border: '#fbbf24', glow: 'rgba(245,158,11,0.4)' }
     };
     
-    const c = colors[card.type];
+    const c = { bg: '#334e78', border: '#b5cff5', glow: 'rgba(120,160,220,0.25)' };
     
     // Glow
     ctx.shadowColor = c.glow;
@@ -2094,7 +2094,7 @@ function showFinalScreen() {
   document.getElementById('levelExplanation').innerHTML = `
     <strong>🎓 极限概念总结：</strong><br><br>
     极限 <em>lim(x→a) f(x)</em> 描述的是当 x 从两侧<strong>趋近</strong> a 时，f(x) 的<strong>趋势值</strong>。<br><br>
-    ⚡ 极限 ≠ f(a)（函数在 a 点的值）<br>
+    ⚡ 极限不必等于 f(a)（函数在 a 点的值）<br>
     ⚡ 极限存在时，f(a) 可以不存在或不相等<br>
     ⚡ 极限由“趋近过程”决定，不是"到达那个点"<br><br>
     <strong>你已经掌握了这个重要概念！🎉</strong>

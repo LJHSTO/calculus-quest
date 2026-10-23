@@ -840,20 +840,20 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     {
       "id": "trap",
       "label": "常见误解",
-      "labelSub": "⚠ 极限 ≠ 函数值",
+      "labelSub": "⚠ 极限不必等于点值",
       "icon": "⚠️",
       "x": 700,
       "y": 450,
-      "details": "<div class='detail-icon'>⚠️</div><div class='detail-title'>常见误解陷阱</div><div class='detail-subtitle'>学生最容易犯的错误</div><div class='detail-body'><div class='warning'>❌ 错误理解：<br>\"lim(x→a) f(x) = f(a)\"<br>（极限值等于函数值）</div><p>这种误解在以下情况会导致错误：</p><ul><li><b>可去间断点</b>：f(a) 不存在但极限存在</li><li><b>跳跃间断点</b>：左极限 ≠ 右极限</li><li><b>函数定义修改</b>：人为修改 f(a) 的值不影响极限</li></ul><div class='formula'>反例：f(x) = { (x²-4)/(x-2), x≠2; 5, x=2 }<br>lim(x→2) f(x) = 4，但 f(2) = 5</div><div class='warning'>🔴 极限描述趋势，函数值描述状态——它们是两个不同的概念！</div></div>"
+      "details": "<div class='detail-icon'>⚠️</div><div class='detail-title'>常见误解陷阱</div><div class='detail-subtitle'>学生最容易犯的错误</div><div class='detail-body'><div class='warning'>❌ 错误理解：不分情形，总认为<br>\"lim(x→a) f(x) = f(a)\"<br>（未经判断就断定二者相等）</div><p>这种误解在以下情况会导致错误：</p><ul><li><b>可去间断点</b>：f(a) 不存在但极限存在</li><li><b>跳跃间断点</b>：左极限 ≠ 右极限</li><li><b>函数定义修改</b>：人为修改 f(a) 的值不影响极限</li></ul><div class='formula'>反例：f(x) = { (x²-4)/(x-2), x≠2; 5, x=2 }<br>lim(x→2) f(x) = 4，但 f(2) = 5</div><div class='warning'>🔴 极限描述趋势，函数值描述状态——它们是两个不同的概念！</div></div>"
     },
     {
       "id": "insight",
-      "label": "趋势 ≠ 点值",
+      "label": "趋势与点值分别判断",
       "labelSub": "核心结论 ✓",
       "icon": "💡",
       "x": 450,
       "y": 520,
-      "details": "<div class='detail-icon'>💡</div><div class='detail-title'>趋势 ≠ 点值</div><div class='detail-subtitle'>本节课的核心结论</div><div class='detail-body'><div class='insight'>✅ <b>lim(x→a) f(x)</b> 描述的是 x 趋近 a 时 f(x) 的<b>趋势</b><br>✅ <b>f(a)</b> 描述的是 x = a 时 f(x) 的<b>实际值</b></div><p>它们可能相等，也可能不等：</p><table><tr><th>情况</th><th>极限</th><th>函数值</th><th>关系</th></tr><tr><td>连续</td><td>存在</td><td>存在</td><td style='color:#3fb950'>相等 ✓</td></tr><tr><td>可去间断</td><td>存在</td><td>不存在/不等</td><td style='color:#f0883e'>不等 ✗</td></tr><tr><td>跳跃间断</td><td>不存在</td><td>存在</td><td style='color:#f0883e'>不可比 ✗</td></tr></table><div class='formula'>核心公式：<br>lim(x→a) f(x) = L ≠ f(a)<br>（趋势值不一定等于函数值）</div><p>🌊 物理隐喻：就像你走向一扇门（趋近），但你永远不推开门（不等于）——你描述的是\"走近\"的过程，而非\"进入\"的状态。</p></div>"
+      "details": "<div class='detail-icon'>💡</div><div class='detail-title'>趋势与点值分别判断</div><div class='detail-subtitle'>本节课的核心结论</div><div class='detail-body'><div class='insight'>✅ <b>lim(x→a) f(x)</b> 描述的是 x 趋近 a 时 f(x) 的<b>趋势</b><br>✅ <b>f(a)</b> 描述的是 x = a 时 f(x) 的<b>实际值</b></div><p>它们可能相等，也可能不等：</p><table><tr><th>情况</th><th>极限</th><th>函数值</th><th>关系</th></tr><tr><td>连续</td><td>存在</td><td>存在</td><td style='color:#3fb950'>相等 ✓</td></tr><tr><td>可去间断</td><td>存在</td><td>不存在/不等</td><td style='color:#f0883e'>不等 ✗</td></tr><tr><td>跳跃间断</td><td>不存在</td><td>存在</td><td style='color:#f0883e'>不可比 ✗</td></tr></table><div class='formula'>核心公式：<br>lim(x→a) f(x) = L ≠ f(a)<br>（趋势值不一定等于函数值）</div><p>🌊 物理隐喻：就像你走向一扇门（趋近），但你永远不推开门（不等于）——你描述的是\"走近\"的过程，而非\"进入\"的状态。</p></div>"
     }
   ],
   "edges": [

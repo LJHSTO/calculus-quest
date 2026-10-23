@@ -172,8 +172,16 @@ async function main() {
         "空的课件旁帮助不能制造额外留白与滚动");
       const settings = page.locator(".support-display-settings");
       await settings.locator("summary").click();
-      const options = await page.locator(".support-display-options").boundingBox();
-      const lesson = await page.locator("iframe[data-courseware-frame]").boundingBox();
+      // Responsive header updates can settle between separate protocol reads.
+      const {options,lesson}=await page.evaluate(()=>({
+        options:document.querySelector('.support-display-options')?.getBoundingClientRect().toJSON(),
+        lesson:document.querySelector('iframe[data-courseware-frame]')?.getBoundingClientRect().toJSON()
+      }));
+      if(!(options && lesson && options.y + options.height <= lesson.y + 1)) {
+        const detail=await page.evaluate(()=>({settingsOpen:document.querySelector('.support-display-settings')?.open,
+          nodes:[...document.querySelectorAll('.support-display-settings,.support-display-options,.workspace-canvas-toolbar,iframe[data-courseware-frame]')].map(e=>({tag:e.tagName,class:e.className,rect:e.getBoundingClientRect().toJSON(),display:getComputedStyle(e).display,flexShrink:getComputedStyle(e).flexShrink,overflow:getComputedStyle(e).overflow}))}));
+        fs.writeFileSync(path.join(output,`布局失败-${viewport.width}.json`),JSON.stringify({options,lesson,detail},null,2));await page.screenshot({path:path.join(output,`布局失败-${viewport.width}.png`)});
+      }
       assert.ok(options && lesson && options.y + options.height <= lesson.y + 1,
         `${viewport.width}: 帮助设置必须在课件之前占据布局空间，不能遮住课件`);
       for (const control of await settings.locator("button").all()) {

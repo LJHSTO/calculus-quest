@@ -1263,7 +1263,7 @@ let state = {
 // ====== Functions ======
 function f_left(x, a, type) {
   // Left limit function: what y approaches as x→a⁻
-  if (type === 0) return (x * x - a * a) / (x - a + 0.0001); // removable: limit = 2a → but let's simplify: limit = a+2
+  if (type === 0) return x === a ? null : x + a; // (x²-a²)/(x-a), only for x ≠ a; limit is 2a
   if (type === 1) return x + 2; // jump: left limit = a+2
   if (type === 2) return 1 / (a - x); // infinity: left→+∞
   if (type === 3) return x + 1; // continuous: limit = a+1
@@ -1272,7 +1272,7 @@ function f_left(x, a, type) {
 
 function f_right(x, a, type) {
   // Right limit function: what y approaches as x→a⁺
-  if (type === 0) return (x * x - a * a) / (x - a + 0.0001); // removable: same as left
+  if (type === 0) return x === a ? null : x + a;
   if (type === 1) return x - 1; // jump: right limit = a-1
   if (type === 2) return 1 / (x - a); // infinity: right→+∞
   if (type === 3) return x + 1; // continuous: same as left
@@ -1289,7 +1289,7 @@ function f_at_a(a, type) {
 
 function f_eval(x, a, type) {
   // Actual function value at x
-  if (Math.abs(x - a) < 0.001) {
+  if (x === a) {
     return f_at_a(a, type);
   }
   if (x < a) return f_left(x, a, type);
@@ -1297,12 +1297,12 @@ function f_eval(x, a, type) {
 }
 
 function getLimitY(a, side, type) {
-  const dx = 0.001;
-  if (side === 'left') {
-    return f_eval(a - dx, a, type);
-  } else {
-    return f_eval(a + dx, a, type);
-  }
+  // Exact limits of the four specified functions, not nearby sample values.
+  if (type === 0) return 2 * a;
+  if (type === 1) return side === 'left' ? a + 2 : a - 1;
+  if (type === 2) return Infinity;
+  if (type === 3) return a + 1;
+  return null;
 }
 
 // ====== Drawing ======

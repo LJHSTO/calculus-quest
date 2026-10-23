@@ -1118,8 +1118,8 @@ const terrains = {
       const g3 = 0.6*x;
       const g1y = 3*Math.exp(-a/0.8) * (dy/0.8) * 2;
       const g2y = 2*Math.exp(-b/1.2) * (tdy/1.2) * 2;
-      const g3y = 0.6*y*2;
-      return [g1 + g2 - g3, g1y + g2y - g3y];
+      const g3y = 2.4*y;
+      return [g1 + g2 + g3, g1y + g2y + g3y];
     },
     hessian: () => null,
     range: [-3, 3]
@@ -1311,7 +1311,7 @@ function detectFeature(x, y) {
       if (tr > 0) return { type: '局部极小 Local Minima', color: '#22c55e' };
       return { type: '局部极大 Local Maxima', color: '#ef4444' };
     }
-    return { type: '平坦区 Flat Region', color: '#94a3b8' };
+    return { type: '驻点附近（类型待判）', color: '#94a3b8' };
   }
   return { type: '下降中 Descending', color: '#8b5cf6' };
 }
@@ -1362,6 +1362,7 @@ function simulateStep() {
   if (simState.trail.length > 500) simState.trail.shift();
 
   // Check end conditions
+  const loss = t.f(simState.x, simState.y);
   const feature = detectFeature(simState.x, simState.y);
   if (simState.steps >= simState.maxSteps || (simState.steps > 50 && gradNorm < 0.001)) {
     simState.running = false;
@@ -1370,7 +1371,7 @@ function simulateStep() {
     if (feature.type.includes('鞍点')) {
       updateInfoPanel(`<span class="highlight">⚠️ 检测到鞍点!</span> 尝试增大 <span style="color:#8b5cf6">动量</span> 或添加 <span style="color:#06b6d4">噪声</span> 来逃逸。当前梯度模: ${(Number.isFinite(Number(gradNorm)) ? Number(gradNorm) : 0).toFixed(6)}`);
     } else if (feature.type.includes('局部极小')) {
-      updateInfoPanel(`<span class="danger">📍 陷入局部极小!</span> 尝试增大 <span style="color:#06b6d4">噪声</span> 或调整 <span style="color:#8b5cf6">学习率</span> 来继续优化。当前 Loss: ${(Number.isFinite(Number(loss)) ? Number(loss) : 0).toFixed(4)}`);
+      updateInfoPanel(`<span class="success">📍 到达极小值附近。</span> 当前损失：${loss.toFixed(4)}。${currentTerrain === 'convex' ? '该凸函数在原点取得全局最小值，无需逃逸。' : '这只是当前位置附近的判断，不能据此断定它是否也是全局最小值；可更换起点比较。'}`);
     } else if (simState.steps >= simState.maxSteps) {
       updateInfoPanel(`<span class="success">✅ 达到最大迭代步数!</span> 最终 Loss: ${t.f(simState.x, simState.y).toFixed(4)}, 位置: (${(Number.isFinite(Number(simState.x)) ? Number(simState.x) : 0).toFixed(2)}, ${(Number.isFinite(Number(simState.y)) ? Number(simState.y) : 0).toFixed(2)})`);
     } else {

@@ -4932,7 +4932,7 @@ function proactiveExperimentAnalysis({
       : 0;
     const participantOutcomeVersion = participant._sessions[0]?.instrument_version
       || participant._attempts[0]?.instrument_version || outcomeInstrumentVersion;
-    const retentionOnly = ["v14-c3-retention-v4", "functions-limits-retention-r1", "functions-limits-retention-r2", "functions-limits-retention-r3"].includes(participantOutcomeVersion);
+    const retentionOnly = ["v14-c3-retention-v4", "functions-limits-retention-r1", "functions-limits-retention-r2", "functions-limits-retention-r3", "functions-limits-retention-r4"].includes(participantOutcomeVersion);
     if (retentionOnly) {
       near.status = "not_applicable";
       representation.status = "not_applicable";

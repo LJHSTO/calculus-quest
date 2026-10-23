@@ -85,6 +85,7 @@ for (const module of chapter.modules) {
       q.answer = ["C"];
       q.analysis = "根据明确的函数规则，x+2趋近3。数表只能提供直觉，有限项数值本身不能证明极限。";
     }
+    for (let i = 0; i < existing.length; i++) existing[i] = require("../lib/assessments/functions-limits-formative-review").revise(existing[i]);
     point.formativeQuiz.questions = existing;
     point.formativeQuiz.questionCount = point.formativeQuiz.questions.length;
     formative.push({ ...existing[0], id: `V14-C1-fl-r2-formative-${index + 1}` });

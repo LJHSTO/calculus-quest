@@ -360,7 +360,7 @@ async function main() {
     assert.equal(storedContexts.length, functionsLimits ? 12 : 10);
     for (const record of storedContexts) {
       assert.equal(record.experimentId, "browser-submission-regression");
-      assert.equal(record.context.instrumentVersion, functionsLimits ? "functions-limits-assessment-r2" : "v14-c3-assessments-r3");
+      assert.equal(record.context.instrumentVersion, functionsLimits ? "functions-limits-assessment-r4" : "v14-c3-assessments-r3");
       assert.match(record.context.questionDigest, /^[a-f0-9]{64}$/);
       assert.match(record.context.protocolFingerprint, /^[a-f0-9]{64}$/);
     }

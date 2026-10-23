@@ -902,13 +902,13 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 
   <div id="info">
     <h2>🔗 连续就是不跳断</h2>
-    <p>质点沿曲线平滑滑行，体验“无瞬移”的连续感。旋转视角观察曲线在关键点处是否实心且无错位。</p>
+    <p>观察附近趋势与点值是否一致。连续不要求光滑，例如 y=|x| 在0处有尖角仍连续。旋转视角仅辅助观察。</p>
     <p style="margin-top:6px;color:#fbbf24;">💡 提示：开启巡航模式，观察质点运动</p>
   </div>
 
   <div id="status-indicator">
     <div id="status-dot"></div>
-    <span id="status-text">连续 · 平滑</span>
+    <span id="status-text">连续 · 无跳跃</span>
   </div>
 
   <canvas id="2d-fallback" width="400" height="150"></canvas>
@@ -1318,7 +1318,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 
             document.getElementById('status-dot').style.background = '#22c55e';
             document.getElementById('status-dot').style.boxShadow = '0 0 8px #22c55e';
-            document.getElementById('status-text').textContent = '连续 · 平滑';
+            document.getElementById('status-text').textContent = '连续 · 无跳跃';
             document.getElementById('status-text').style.color = '#22c55e';
           }
 

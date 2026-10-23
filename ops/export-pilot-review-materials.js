@@ -2,11 +2,11 @@
 const fs = require("node:fs"), path = require("node:path"), crypto = require("node:crypto");
 const hash = x => crypto.createHash("sha256").update(JSON.stringify(x)).digest("hex");
 async function build(snapshot) {
-  if (snapshot.source !== "production-courseware" || !Array.isArray(snapshot.questions) || !snapshot.sha256) throw new Error("需要线上题目快照及来源摘要");
+  if (!["production-courseware", "local-courseware"].includes(snapshot.source) || !Array.isArray(snapshot.questions) || !snapshot.sha256) throw new Error("需要线上或本地题目快照及来源摘要");
   const rows = [], seen = new Set();
   function add(q, source, kp) {
     if (seen.has(q.id)) return; seen.add(q.id);
-    rows.push({ 题目编号: q.id, 材料来源: source, 材料摘要: hash(q), 使用范围: /archivedQuestions/.test(source) ? "历史归档，核对是否误用" : "需按最终协议确认启用",
+    rows.push({ 题目编号: q.id, 材料来源: source, 材料摘要: hash(q), 使用范围: /archivedQuestions|legacy-module/.test(source) ? "历史归档，核对是否误用" : "需按最终协议确认启用",
       知识点: kp || q.knowledgePointIds?.join("；") || q.knowledgePointId || "", 题型: q.type || "选择",
       题干: q.question || q.row?.[0], 选项: JSON.stringify(q.options || q.row?.[1] || []),
       现有答案: JSON.stringify(q.referenceAnswer ?? q.answer ?? q.row?.[2] ?? ""),
@@ -14,9 +14,16 @@ async function build(snapshot) {
       分值: q.points ?? "", 配对: q.pairId || "", 教师甲结论: "", 教师乙结论: "", 缺陷与修改建议: "", 等难性依据: "", 复核日期: "" });
   }
   for (const { q, source } of snapshot.questions) add(q, source);
-  for (const name of ["functions-limits-transfer-r3", "functions-limits-retention-r3"]) for (const q of require("../lib/assessments/" + name).items) add(q, name);
-  const bank = require("../lib/proactive-policy/adapters/functions-limits-check-bank"), points = Object.keys(require("../lib/support-goals").CURRICULUM);
-  for (let i = 0; i < 6; i++) for (let j = 0; j < 5; j++) for (const [n, row] of bank.variantsFor(i, j).entries()) add({ id: `${points[i]}-L${j + 1}-平行${n + 1}`, row }, bank.version, points[i]);
+  for (const name of ["functions-limits-transfer-r4", "functions-limits-retention-r3"]) for (const q of require("../lib/assessments/" + name).items) add(q, name);
+  // Export the actual served forms, including the primary form and fourth option.
+  const adapter = require("../lib/proactive-policy/adapters/functions-limits-r2"), points = Object.keys(require("../lib/support-goals").CURRICULUM);
+  for (const kp of points) for (let j = 1; j <= 5; j++) for (let form = 1; form <= 3; form++) {
+    const level = `L${j}`, checkId = form === 1 ? "" : `${kp}-probe-l${j}-fl-r2-v${form}`;
+    const check = adapter.publicVerificationCheck(kp, level, checkId);
+    if (!check || (checkId && check.id !== checkId)) throw new Error(`检查题缺失：${kp}/${level}/${form}`);
+    const answer = check.options.filter(o => adapter.gradeVerificationCheck({ knowledgePointId: kp, supportLevel: level, checkId: check.id, response: o.value })?.correct).map(o => o.value);
+    add({ ...check, question: check.prompt, answer, type: "single" }, `支架后检查 ${check.instrumentVersion}`, kp);
+  }
   const SQL = await require("sql.js")(), sql = new SQL.Database();
   const work = require("../lib/study-workbench").createWorkbench({ db: { getDbSync: () => sql, saveNow() {} }, mainEntry: true, env: {} });
   work.state("synthetic-material-export-no-student");

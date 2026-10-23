@@ -1,5 +1,5 @@
 {
-  "version": "05194293a0152ef032c9",
+  "version": "a0d32448ad9c9f09c48c",
   "indexSha256": "8702c447c72cc3904ec95660d8784d616f38b6a61030cda1d76c1a6b5431c244",
   "scripts": [
     {
@@ -180,7 +180,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "0a949b8f56d8c399a96a7c0bf8e7dc8ca5b09d3e95de912a0824b8a28370a068"
+      "sha256": "836afa45f7d03dceac811a59d85f6b3996d035c2593dc99249627ef937383748"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -190,7 +190,7 @@
     {
       "tag": "<script src=\"app/main/learning-workspace.js?v=20261014-workspace-v6\"></script>",
       "file": "app/main/learning-workspace.js",
-      "sha256": "6b8fe2a41817cb6e9f2fb1077db58260aec5a0f241315fb020d314606111f893"
+      "sha256": "73fcf6fc7360bf018581e3ff4888c046ad7fcfec43fbdef50bd7fccf3519e34e"
     },
     {
       "tag": "<script src=\"app/main/textbook-reading.js?v=20260916\"></script>",
@@ -220,7 +220,7 @@
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
       "file": "app/main/task-support.js",
-      "sha256": "44876c2c5fc5326af0a317f8e59079feaf47a7991007c8d3fb749a0e6e085b3e"
+      "sha256": "92f9f72164835904e801106b583b6068466f52a9f217ee8289920994d74775e4"
     },
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",

@@ -8,7 +8,7 @@ async function main(){
  const port=await new Promise(resolve=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>resolve(p));});});
  const external=process.env.WEB_ACCEPTANCE_BASE;
  const base=external||`http://127.0.0.1:${port}`,admin='synthetic-web-acceptance',project='web-acceptance-'+Date.now();
- const env={...process.env,NODE_ENV:'test',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:path.join(dir,'synthetic.db'),ADMIN_TOKEN:admin,LOCAL_ADMIN_AUTH_BYPASS:'false',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:path.basename(dir),PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-web-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r2',PROACTIVE_OUTCOME_INSTRUMENT_VERSION:'functions-limits-retention-r3',RESEARCH_CONTROLS_ENABLED:'true',RESEARCH_CONTROLS_DEMO:'true',RATE_LIMIT_MAX:'10000'};
+ const env={...process.env,NODE_ENV:'test',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:path.join(dir,'synthetic.db'),ADMIN_TOKEN:admin,LOCAL_ADMIN_AUTH_BYPASS:'false',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:path.basename(dir),PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-web-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r2',PROACTIVE_OUTCOME_INSTRUMENT_VERSION:'functions-limits-retention-r4',RESEARCH_CONTROLS_ENABLED:'true',RESEARCH_CONTROLS_DEMO:'true',RATE_LIMIT_MAX:'10000'};
  const log=fs.openSync(path.join(dir,'server.log'),'w'),server=external?null:spawn(process.execPath,['server.js',String(port)],{cwd:root,env,windowsHide:true,stdio:['ignore',log,log]});let browser,page;
  async function api(route,body,token=admin){const r=await fetch(base+route,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,...await r.json()};}
  async function geometry(label){
@@ -41,6 +41,10 @@ async function main(){
     for(const scene of ['simulation','game','mindMap','visualization3d']){
      await page.locator(`[data-knowledge-scene="${scene}"]`).click();await page.waitForTimeout(500);await notice();await geometry(scope+'-'+scene+'-'+viewport.width);
      if(viewport.width===1366){await page.locator('[data-classroom-action="fullscreen"]').click();await page.waitForFunction(()=>Boolean(document.fullscreenElement||document.querySelector('.is-local-fullscreen-target')));await notice();await page.locator('#workspace-support-notice').click();await page.waitForTimeout(200);
+      await Promise.any([
+        frame().locator('[data-cq-embedded-help="task"]').waitFor({state:'attached'}),
+        page.locator('.task-support-panel').waitFor({state:'visible'})
+      ]);
       const inside=await frame().locator('[data-cq-embedded-help="task"]').count();
       if(inside)await frame().getByRole('button',{name:'返回课件操作',exact:true}).click();
       else assert.equal(await page.locator('.task-support-panel:visible').count(),1,scope+'-'+scene+' 全屏支持必须可达');

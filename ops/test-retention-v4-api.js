@@ -8,7 +8,7 @@ const { chromium } = require("playwright-core");
 const route = require("../data/multi-scene-learning-route.json");
 const chapterId = process.env.RETENTION_TEST_CHAPTER || "V14-C3";
 const functionsLimits = chapterId === "V14-C1";
-const instrumentVersion = functionsLimits ? "functions-limits-retention-r3" : "v14-c3-retention-v4";
+const instrumentVersion = functionsLimits ? "functions-limits-retention-r4" : "v14-c3-retention-v4";
 const itemCount = functionsLimits ? 18 : 7;
 const chapter = route.chapters.find((item) => item.id === chapterId);
 const endpoint = "/api/learning/proactive/outcomes";

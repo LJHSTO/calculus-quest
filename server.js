@@ -61,6 +61,8 @@ const quizReconciliation = require("./lib/quiz-reconciliation");
 const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
+const researchSitesHttp = require("./lib/research-sites/http").createHttp({ db, root, readJsonBody, sendJson, authenticate, checkAdmin,
+  providerInfo: assistantProviderInfo, complete: llm.completeChat, consumeQuota: consumeAssistantQuota, releaseQuota: releaseAssistantQuota });
 const proactiveStudyConfig = proactivePolicy.configFromEnv();
 const researchControls = require("./lib/research-controls");
 const researchControlStore = researchControls.createStore({root,config:proactiveStudyConfig});
@@ -80,7 +82,7 @@ function pilotRuntime(user) {
     rules:{maximumInquiriesPerKnowledgePoint:2,clientRecheckSeconds:10},notCalibrated:true};
 }
 function pilotProtection(user,generation) {
-  return Boolean(activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user)
+  return Boolean(researchSitesHttp.store.protects(user)||activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user)
     ||supportCycles.protects(user,generation)||db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId)
       .some(s=>["accepted_pending_response","awaiting_independent_attempt"].includes(parseStoredJson(s.lifecycle_json||"{}",{}).phase)));
 }
@@ -338,7 +340,9 @@ const proactiveStoppingRules = Object.freeze({
       functionsLimitsAdapter: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits-r2.js"),
       functionsLimitsAdapterArchive: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits.js"),
       functionsLimitsOutcomes: protocolSourceDigest("lib/proactive-outcomes/functions-limits.js"),
-      functionsLimitsTransfer: protocolSourceDigest("lib/assessments/functions-limits-transfer-r3.js"),
+      functionsLimitsTransfer: protocolSourceDigest("lib/assessments/functions-limits-transfer-r4.js"),
+      functionsLimitsFormative: protocolSourceDigest("lib/assessments/functions-limits-formative-review.js"),
+      functionsLimitsCheckVariants: protocolSourceDigest("lib/proactive-policy/adapters/functions-limits-check-bank.js"),
       functionsLimitsRetention: protocolSourceDigest("lib/assessments/functions-limits-retention-r3.js"),
       functionsLimitsRetentionArchive: protocolSourceDigest("lib/assessments/functions-limits-retention-r2.js"),
       textbookReadings: protocolSourceDigest("app/main/textbook-reading.js"),
@@ -490,6 +494,8 @@ const publicRootFiles = new Set([
   "index.html",
   "pilot-workbench.html",
   "study-workbench.html",
+  "research-study.html",
+  "research-rater.html",
   "admin.html",
   "flow-test.html",
   "styles.css",
@@ -610,6 +616,8 @@ function cacheControlFor(filePath, url) {
     || relative === "admin.html"
     || relative === "flow-test.html"
     || relative === "study-workbench.html"
+    || relative === "research-study.html"
+    || relative === "research-rater.html"
     || relative === "assets/openmaic-classroom/frame.html"
     || publicFlowTestFiles.has(relative)
   ) return "no-store, max-age=0, no-transform";
@@ -1322,6 +1330,7 @@ function safeStaticPath(urlPath) {
     decoded === "/" ? "index.html"
     : decoded === "/admin" ? "admin.html"
     : decoded === "/flow-test" ? "flow-test.html"
+    : /^\/studies\/(?:index|authorization|timing|recheck|clarification|value|memory|placement|efficacy|design-space)\/$/.test(decoded) ? "research-study.html"
     : decoded.replace(/^\/+/, "");
   const normalized = publicPath.replaceAll("\\", "/");
   const extension = path.extname(normalized).toLowerCase();
@@ -2291,7 +2300,7 @@ function rejectAgentAssistanceDuringOutcome(res, userId) {
   if(supportCycles.protects(userId,db.currentLearningGeneration(userId))) {
     sendJson(res,409,{ok:false,code:"support_cycle_check_protected",message:"独立检查进行中，请先完成或跳过，期间暂停学习帮助。"});return true;
   }
-  if (studyWorkbench.protects(userId) || mainLearningStudy.protects(userId) || mainLearningStudy.manages(userId)) {
+  if (researchSitesHttp.store.protects(userId) || studyWorkbench.protects(userId) || mainLearningStudy.protects(userId) || mainLearningStudy.manages(userId)) {
     sendJson(res, 409, { ok: false, code: "common_probe_protected", message: "共同探针作答期间暂不提供助教解答，请完成或跳过当前题目。" });
     return true;
   }
@@ -4696,6 +4705,7 @@ async function handleApi(req, res, url) {
     return;
   }
   try {
+    if (await researchSitesHttp.handle(req, res, url)) return;
     // ---- Auth ----
     if (req.method === "POST" && url.pathname === "/api/monitoring/errors") {
       const body = await readJsonBody(req);
@@ -9852,6 +9862,9 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (url.pathname === "/studies" || url.pathname === "/studies/") {
+    res.writeHead(302, { Location: `${basePath}/studies/index/` }); res.end(); return;
+  }
   const filePath = safeStaticPath(url.pathname);
   if (!filePath) {
     send(res, 403, "禁止访问");

@@ -17,6 +17,7 @@
   let focusRestore = null;
   let coachKey = "";
   let coachVisible = false;
+  let coachDismissedUnit = "";
   let fullscreenHintTimer = 0;
   const fullscreenHintsShown = new Set();
   const fullscreenButton = $('[data-classroom-action="fullscreen"]');
@@ -245,13 +246,15 @@
     const card = panel.querySelector(".decision, .grading-pending");
     const pending = Boolean(card) && !panel.hidden;
     // Ignore busy labels and checkbox changes: neither should reopen a dismissed surface.
-    const key = pending ? `${typeof currentUnitId === "string" ? currentUnitId : ""}:${card.className}` : "";
+    const unitId = typeof currentUnitId === "string" ? currentUnitId : "";
+    if (coachDismissedUnit && coachDismissedUnit !== unitId) coachDismissedUnit = "";
+    const key = pending ? `${unitId}:${card.className}` : "";
     $("#workspace-coach-toggle").hidden = !pending;
     if (key !== coachKey) {
       coachKey = key;
       const help=global.KnowledgeAssistant?.designSpaceSnapshot?.();
       const answerHelp=help?.unitType==='quiz' && help?.view.placement==='inline' && (help.offer||help.prompt||help.check);
-      setCoachVisible(pending&&!answerHelp);
+      setCoachVisible(pending&&!answerHelp&&coachDismissedUnit!==unitId);
     }
     if (typeof renderBottomNextButton === "function") renderBottomNextButton();
   }
@@ -566,7 +569,10 @@
   }
 
   shell.addEventListener("click", (event) => {
-    if (event.target.closest("#workspace-coach-toggle")) setCoachVisible(!coachVisible);
+    if (event.target.closest("#workspace-coach-toggle")) {
+      coachDismissedUnit = coachVisible && typeof currentUnitId === "string" ? currentUnitId : "";
+      setCoachVisible(!coachVisible);
+    }
     if (event.target.closest("#workspace-tools-toggle")) {
       const nextCollapsed = !toolsCollapsed;
       setToolsCollapsed(nextCollapsed, true);
@@ -690,6 +696,7 @@
   global.addEventListener('cq:proactive-state',event=>syncSupportNotice(event.detail));
   global.LearningWorkspace = Object.freeze({ sync, syncPlayback,
     showCoach: () => {
+      coachDismissedUnit = "";
       syncCoachSurface();
       if (coachKey) {
         if (compactWorkspace()) setMobilePane("course");

@@ -38,7 +38,7 @@ async function main() {
     PROACTIVE_POLICY_MODE: "active", PROACTIVE_PARTICIPATION_MODE: "implicit-pilot",
     PROACTIVE_EXPERIMENT_ID: path.basename(directory),
     PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C1",
-    PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "functions-limits-retention-r2",
+    PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "functions-limits-retention-r4",
     PROACTIVE_ADAPTER_VERSION: require("../lib/proactive-policy/adapters/functions-limits").version,
     PROACTIVE_ASSIGNMENT_STRATEGY: "hash",
     PROACTIVE_ASSIGNMENT_SALT: crypto.randomBytes(32).toString("hex"),

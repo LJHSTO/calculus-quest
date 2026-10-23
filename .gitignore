@@ -58,6 +58,9 @@ tools/_encoding_test.txt
 # Private local research and deployment notes; never publish to GitHub.
 docs/
 research/
+!app/research/
+!app/research/*.js
+!app/research/*.css
 prompts/
 resources/assessment/
 

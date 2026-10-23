@@ -264,11 +264,11 @@
             },
             {
               "id": "text_MwoPt9wh",
-              "top": 129,
+              "top": 112,
               "left": 70,
               "type": "text",
               "width": 860,
-              "height": 49,
+              "height": 44,
               "rotate": 0,
               "content": "<p style=\"font-size: 18px; text-align: center; color: #F3F6F8;\">核心定义：函数不是你算出的数，而是你加工的方式</p>",
               "defaultColor": "#F3F6F8",
@@ -533,9 +533,9 @@
         },
         {
           "id": "action_CB98sf9I",
-          "text": "注意，它可以是任何值，比如一个具体的数字2、-5，也可以是一个代表未知数的字母a。它就像我们放进加工厂的原材料。",
+          "text": "输入必须取自这条函数规则允许的定义域。在当前线性规则中，可以输入2、-5等实数，也可以用字母表示定义域中的未知输入。",
           "type": "speech",
-          "audioRef": "audio/tts_s2_action_CB98sf9I.mp3"
+          "narrationRevision": "teaching-review-20261019"
         },
         {
           "id": "action_auGSTZjU",
@@ -566,9 +566,9 @@
         },
         {
           "id": "action_jtXUvF_L",
-          "text": "这个比喻能帮我们避开一个常见的坑：千万不要再把函数当成一个固定的数值了。它不是‘y等于2’这种答案，而是一套灵活多变的、把输入变成输出的对应规则。我们来消化一下这个想法。",
+          "text": "函数 f 是对应规则，f(x) 是给定输入时的输出。常函数 f(x)=2 仍然是函数，因为每个合法输入恰好对应一个输出。不同输入可以得到相同的输出。",
           "type": "speech",
-          "audioRef": "audio/tts_s2_action_jtXUvF_L.mp3"
+          "narrationRevision": "teaching-review-20261019"
         }
       ],
       "whiteboards": null

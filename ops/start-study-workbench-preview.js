@@ -10,7 +10,7 @@ async function main() {
     ...process.env, NODE_ENV: "test", HOST: "127.0.0.1", BASE_PATH: "", DB_PATH: path.join(dir, "test.db"),
     PROACTIVE_STUDY_WORKBENCH: kind, PROACTIVE_STUDY_SEED: crypto.randomBytes(32).toString("hex"), PROACTIVE_STUDY_PROTOCOL_ID: path.basename(dir),
     PROACTIVE_POLICY_MODE: "off", PROACTIVE_EXPERIMENT_ID: path.basename(dir), PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C1",
-    PROACTIVE_ADAPTER_VERSION: "functions-limits-adapter-r2", PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "functions-limits-retention-r3",
+    PROACTIVE_ADAPTER_VERSION: "functions-limits-adapter-r2", PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "functions-limits-retention-r4",
     LLM_PROVIDER: "mock", GRADING_LLM_PROVIDER: "mock", ASSESSMENT_LLM_ENABLED: "false", COACH_NARRATION_LLM_ENABLED: "false",
     LOCAL_ADMIN_AUTH_BYPASS: "true", RATE_LIMIT_MAX: "5000"
   } });

@@ -398,6 +398,20 @@ async function main() {
     await page.locator("#workspace-coach-toggle").click();
     await frame.locator("#mainBtn").waitFor({ state: "visible" });
     assert.equal(await page.locator("#workspace-coach-toggle").innerText(), "选择下一步");
+    // Async grading changes the card kind after a student has returned to the task.
+    const priorCoachClass = await page.locator('#agentic-coach-panel .decision').first().getAttribute('class');
+    await page.evaluate(() => {
+      const node=document.querySelector('#agentic-coach-panel .decision');
+      node.className='grading-pending';node.append(document.createTextNode(''));
+    });
+    await page.waitForTimeout(100);
+    assert.equal(await page.locator('.core-learning-workspace').evaluate(e=>e.classList.contains('is-coach-surface')),false,'批改状态变化不能抢走已返回的学习画布');
+    await page.evaluate(className=>{
+      const node=document.querySelector('#agentic-coach-panel .grading-pending');
+      node.className=className;node.append(document.createTextNode(''));
+    },priorCoachClass);
+    await page.waitForTimeout(100);
+    assert.equal(await page.locator('.core-learning-workspace').evaluate(e=>e.classList.contains('is-coach-surface')),false,'建议完成后仍须尊重学生返回题目的选择');
     await page.evaluate(() => focusAgenticCoachPanel());
     await page.locator("#agentic-coach-panel").waitFor({ state: "visible" });
     assert.equal(await page.locator("#workspace-coach-toggle").innerText(), "返回课件");

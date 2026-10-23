@@ -4538,7 +4538,7 @@ function renderProactiveOutcomes(outcomes = {}, policy = {}) {
   if (overview) {
     overview.innerHTML = [
       ["全部测量提交", Number(outcomes.total || rows.length), `量表 ${outcomes.instrumentVersion || "未标记"}`],
-      ...(["v14-c3-retention-v4", "functions-limits-retention-r1", "functions-limits-retention-r2", "functions-limits-retention-r3"].includes(outcomes.instrumentVersion) ? [] : [
+      ...(["v14-c3-retention-v4", "functions-limits-retention-r1", "functions-limits-retention-r2", "functions-limits-retention-r3", "functions-limits-retention-r4"].includes(outcomes.instrumentVersion) ? [] : [
         ["近迁移（历史）", stageSubmissionCount("near_transfer"), "新情境应用"],
         ["跨表征迁移（历史）", stageSubmissionCount("representation_transfer"), "图像、语言与符号转换"]
       ]),
