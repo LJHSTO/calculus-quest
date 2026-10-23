@@ -32,14 +32,25 @@ const {chromium}=require("playwright-core");
    }
    await page.goto(base+`/studies/${study.id}/`);
    if(study.id==="design-space"){await page.locator(".case-box").first().waitFor();assert.equal(await page.locator(".case-box").count(),4);}
-   else {await page.frameLocator("#canvas iframe").locator(".slide-canvas,#slide").first().waitFor();const f=await page.locator("#canvas iframe").boundingBox();assert.ok(f.width>500&&f.height>400);}
+   else {
+    const lecture=page.frameLocator("#canvas iframe");
+    await lecture.locator("#slide .text").first().waitFor({state:"visible"});
+    assert.ok((await lecture.locator("#slide").innerText()).trim().length>30,"讲解内容须实际渲染，不能只检查空画布容器");
+    const f=await page.locator("#canvas iframe").boundingBox();assert.ok(f.width>500&&f.height>400);
+   }
    assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+2));
    if(study.id==="authorization")await page.screenshot({path:path.join(out,"上线学习页.png")});
    report.sites.push({id:study.id,phase:s.session.phase,passed:true});
+   console.log(JSON.stringify({study:study.id,passed:true}));
+   // Pace this cross-site batch; keep the production API rate limit unchanged.
+   await new Promise(resolve=>setTimeout(resolve,8000));
   }
   await page.goto(base+"/studies/authorization/?mode=formal");await page.getByText("该方向尚未开放正式参与。",{exact:false}).waitFor();assert.ok(await page.getByRole("button",{name:"开始",exact:true}).isDisabled());report.formalRecruitmentClosed=true;
   await page.goto(base+"/research-rater.html");await page.getByLabel("研究方向",{exact:true}).waitFor();report.raterPage=true;
-  await page.goto(base+"/");await page.locator("#app-loader.hidden").waitFor({state:"attached"});assert.equal(await page.locator("#auth-gate:visible").count(),0);report.originalRouteAndSession=true;
+  await page.goto(base+"/");await page.locator("#app-loader.hidden").waitFor({state:"attached"});
+  // The startup shell can finish before the saved login request resolves.
+  await page.locator("#auth-gate").waitFor({state:"hidden",timeout:15000});
+  assert.equal(await page.locator("#auth-gate:visible").count(),0);report.originalRouteAndSession=true;
   assert.deepEqual(errors,[]);report.errors=errors;report.passed=true;fs.writeFileSync(path.join(out,"结果.json"),JSON.stringify(report,null,2));console.log(JSON.stringify({passed:true,sites:report.sites.length,liveDialogue:true,output:out}));
  }finally{await browser?.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

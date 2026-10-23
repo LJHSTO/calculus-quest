@@ -41,6 +41,10 @@ const root=path.resolve(__dirname,".."),out=path.join(root,"output/多研究网�
      await page.getByLabel("学习材料",{exact:true}).selectOption(String(type));await page.waitForTimeout(500);
      const frame=page.frameLocator("#canvas iframe");
      if(type>=0)await frame.locator("body").waitFor();
+     else {
+      await frame.locator("#slide .text").first().waitFor({state:"visible"});
+      assert.ok((await frame.locator("#slide").innerText()).trim().length>30,"讲解须有实际内容，不能仅有空画布容器");
+     }
      const layout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,frame:{w:document.querySelector("iframe").clientWidth,h:document.querySelector("iframe").clientHeight},body:document.querySelector("[data-support-text]")?.textContent}));
      assert.ok(layout.scroll<=layout.width+2,JSON.stringify(layout));assert.ok(layout.frame.w>=400&&layout.frame.h>=300,JSON.stringify(layout));
      await page.getByRole("button",{name:"查看学习支持",exact:true}).click();await page.getByRole("button",{name:"定位学习支持",exact:true}).click();

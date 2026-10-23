@@ -9,6 +9,7 @@ extra.push('test-functions-limits-review');
 extra.push('test-research-sites-policy','test-research-sites-materials','test-research-sites-session','test-research-sites-store','test-research-sites-browser','test-research-sites-analysis','test-research-sites-api','test-research-sites-layout-browser');
 extra.push('test-score-evidence','test-learning-event-clock','test-functions-limits-metrics','test-transfer-instrument');
 extra.push('test-research-sites-parameter-sensitivity');
+extra.push('test-cross-entry-auth-browser');
 const browser=/browser|layout-comfort|fullscreen-hint|proactive-exposure|learning-web-acceptance/;
 const suite=process.argv[2]||'core';
 // The old seven-point V14-C3 smoke script assumes a retired consent/outcome UI.

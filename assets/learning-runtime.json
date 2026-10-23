@@ -1,5 +1,5 @@
 {
-  "version": "a0d32448ad9c9f09c48c",
+  "version": "7dc5b9bdb01937ac6b8b",
   "indexSha256": "8702c447c72cc3904ec95660d8784d616f38b6a61030cda1d76c1a6b5431c244",
   "scripts": [
     {
@@ -205,7 +205,7 @@
     {
       "tag": "<script src=\"app/main/bootstrap.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/bootstrap.js",
-      "sha256": "ad4480f9144da7b7507f6954d770d736071bf5d142a6ad1b8582848630e9184f"
+      "sha256": "47bbb558aca287cd8712ae7c02a833a75d1d4db31ed7218a87dcaf20bb92d35a"
     },
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",

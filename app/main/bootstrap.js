@@ -636,13 +636,44 @@ async function init() {
 
   try {
     renderAuth();
-    if (isSignedIn()) {
+    if (state.authToken) {
+      const restoringToken = state.authToken, restoringGeneration = logoutGeneration;
+      const restoreIsCurrent = () => state.authToken === restoringToken && logoutGeneration === restoringGeneration;
       try {
-        await hydrateLearningState();
+        // A login from another entry can have a valid token without this page's
+        // cached participant, or can belong to a different cached participant.
+        const identity = await apiRequest("/api/auth/me", {});
+        if (restoreIsCurrent()) {
+          const participant = identity.participant;
+          const changedParticipant = state.participant?.participantId !== participant.participantId;
+          let hasSavedState = !changedParticipant;
+          if (changedParticipant) {
+            const authToken = state.authToken;
+            const saved = localStorage.getItem(storageKeyFor(participant.participantId));
+            let restored = {};
+            try { restored = saved ? JSON.parse(saved) : {}; } catch {}
+            if (!restored || typeof restored !== "object" || Array.isArray(restored)) restored = {};
+            hasSavedState = Boolean(saved && Object.keys(restored).length);
+            delete restored.authToken;
+            delete restored.participant;
+            Object.assign(state, learningDefaults(), restored, { authToken, participant });
+            normalizeLearningStateCompatibility(state);
+            clearPreviewKnowledgeSceneSelections();
+            currentChapterId = state.currentChapterId || chapters[0]?.id || "V14-C1";
+            currentUnitId = state.currentUnitId || "";
+            currentView = validViews.has(state.currentView) ? state.currentView : "home";
+          } else state.participant = participant;
+          localStorage.setItem(LAST_PARTICIPANT_KEY, participant.participantId);
+          await hydrateLearningState({ replace: changedParticipant && !hasSavedState });
+        }
       } catch (error) {
-        if (error.status === 401) {
+        if (!restoreIsCurrent()) {
+          // A later logout or login owns the current state.
+        } else if (error.status === 401) {
           state.authToken = "";
+          state.participant = null;
           learningSnapshotReady = false;
+          sessionStorage.removeItem(AUTH_TOKEN_KEY);
           localStorage.removeItem(AUTH_TOKEN_KEY);
           renderAuth();
           window.dispatchEvent(new CustomEvent("cq:participant-change", {
@@ -650,6 +681,9 @@ async function init() {
           }));
           showLogin("登录状态已过期，请重新登录后继续学习。");
         } else {
+          state.participant = null;
+          renderAuth();
+          showLogin("暂时无法核验登录，请检查网络后刷新；无需重新注册。");
           console.warn("Learning snapshot restore failed:", error.message);
         }
       }
