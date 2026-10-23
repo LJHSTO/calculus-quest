@@ -15,6 +15,9 @@ async function main(){
   assert.throws(()=>mergeAnnotations(bundle,[label('same')],[label('same')]),/不同标注员/);
   const scores=evaluateRuns(labeled,predictions,'test');assert.equal(scores.runs.length,3);assert.equal(scores.runs.find(r=>r.model==='synthetic-valid').successRateAllGold,1);assert.equal(scores.runs.find(r=>r.model==='synthetic-failure').successRateAllGold,0);
   const human={...source,dataClass:'human_consented_research'};assert.equal(buildReplay(human,{splitSalt:'synthetic-prefix-check'}).caseCount,0);
+  const restricted=structuredClone(inputs.slice(0,1));restricted[0].input.allowedActions=['silent','present','defer'];
+  const rejected=await run(restricted,{models:['synthetic-invalid-action'],complete:async()=>({text:JSON.stringify({action:'cancel',rationale:'无候选不能撤销',confidence:.9})})});
+  assert.equal(rejected[0].status,'failed');assert.equal(rejected[0].error,'invalid_output');assert.equal(rejected[0].action,null);
   const output=path.resolve(__dirname,'../output/常规平台全量完善-2026-10-18/回放合成验收');fs.mkdirSync(output,{recursive:true});
   fs.writeFileSync(path.join(output,'合成索引.json'),JSON.stringify(bundle,null,2));fs.writeFileSync(path.join(output,'合成模型输入.jsonl'),inputs.map(JSON.stringify).join('\n'));fs.writeFileSync(path.join(output,'合成预测.jsonl'),predictions.map(JSON.stringify).join('\n'));fs.writeFileSync(path.join(output,'合成评分.json'),JSON.stringify(scores,null,2));
   console.log('通过：完整已采集前缀、截止时间/身份/条件隔离、消融防旁路、三模型执行与技术失败保留、双标/裁决、分组评分。全部为合成数据，无真实模型调用。');
