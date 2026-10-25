@@ -6084,6 +6084,10 @@ const proactiveJustificationDrafts = new Map();
     sync,
     designSpaceSnapshot,
     refreshSupportSurface() { scheduleDesignSpaceSync(); },
+    async reloadLearnerPolicy() {
+      proactiveDecision=null;pendingProactivePrompt=null;
+      await loadProactiveStudy(courseMeta(),{force:true});render();scheduleDesignSpaceSync();
+    },
     async pilotRequest(path="",body) {
       const token=state.authToken;if(!isSignedInNow())throw new Error("请先登录。");
       const response=await fetch("api/learning/pilot"+path,{method:body?"POST":"GET",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},...(body?{body:JSON.stringify(body)}:{})});

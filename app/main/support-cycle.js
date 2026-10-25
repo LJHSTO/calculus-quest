@@ -66,7 +66,9 @@
     const section=el("section");section.className="support-goal-message";section.dataset.supportCycleId=c.id;
     const header=el("header");header.append(el("strong",`知点 · ${goalNames[c.plan.primaryGoal]}`));section.append(header);
     const body=el("div");body.dataset.supportBody=c.id;body.append(el("p",c.content.message),el("p",c.content.nextStep));
-    if(next.view.format==="disclosure" || c.profile.authorityLevel==="A1") {const details=el("details");details.append(el("summary","查看这条帮助"),body);section.append(details);}
+    // This content exists only after the learner has confirmed a need. A1 has
+    // already been satisfied; D4 alone controls whether this body is folded.
+    if(next.view.format==="disclosure") {const details=el("details");details.append(el("summary","查看这条帮助"),body);section.append(details);}
     else if(next.view.format==="steps") {const parts=c.content.message.split(/(?<=[。！？])\s*/).filter(Boolean);let index=0;const p=el("p",parts[0]||c.content.message);p.dataset.supportBody=c.id;const more=button("继续阅读",()=>{index++;p.textContent=parts.slice(0,index+1).join("");if(index>=parts.length-1){more.hidden=true;section.append(el("p",c.content.nextStep));}});section.append(p,more);}
     else{if(next.view.format==="bubble")body.setAttribute("role","note");section.append(body);}
     section.append(el("small",c.content.audit.fallback?"当前为课程备用建议，未由实时模型生成。":"本次为 AI 生成建议，可纠正或拒绝；内容尚未经教师逐条审校。"));

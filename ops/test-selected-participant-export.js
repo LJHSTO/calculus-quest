@@ -9,6 +9,8 @@ async function main() {
   const db = require("../db");
   await db.getDb();
   const raw = db.getDbSync();
+  const learnerPreferences=require('../lib/learner-preferences').createStore({db});
+  learnerPreferences.read('selected-a');
   for (const id of ["selected-a", "selected-b", "excluded"]) {
     db.upsertUser(id, id === "selected-b" ? "" : id, "2020-01-01", "2026-09-18");
     db.insertEvent({ id: `event-${id}`, user_id: id, type: "test", payload: { action: id }, created_at: "2020-01-01" });

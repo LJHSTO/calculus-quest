@@ -24,95 +24,15 @@
   let snapshot = null, panel, toggle, opened = false, lastKey = "", eventCount = 0;
   const priorInert = new Map();
   const events = [], decisions = [];
-  let controlData=null, controlOwner="", controlBusy=false, runtimeBusy=false;
+
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
   const label = value => names[value] || value || "尚无记录";
   const score = value => value === null || value === undefined ? "未估计" : Number(value).toFixed(2);
   const row = (name, value, liveCooldown = false) => `<div class="observatory-row"><span>${esc(name)}</span><strong${liveCooldown ? " data-cooldown-remaining" : ""}>${esc(value)}</strong></div>`;
   const card = (id, title, body) => `<section class="observatory-dimension" data-dimension="${id}"><h3><span>${id}</span>${title}</h3>${body}</section>`;
-  function drawControls(){
-    const host=panel.querySelector('[data-research-controls]');
-    const wasOpen=host.querySelector('details')?.open;
-    if(!controlData){host.innerHTML='<p>登录后可读取当前分组和六维控制范围。</p>';return;}
-    const d=controlData,p=d.profile,disabled=d.enabled?'':'disabled';
-    const num=(key,title,min,max,step)=>`<label>${title}<input name="${key}" type="number" min="${min}" max="${max}" step="${step}" value="${p[key]}" ${disabled}></label>`;
-    const select=(key,title,opts)=>`<label>${title}<select name="${key}" ${disabled}>${opts.map(([v,t])=>`<option value="${v}" ${p[key]===v?'selected':''}>${t}</option>`).join('')}</select></label>`;
-    const check=(key,title)=>`<label class="research-control-check"><input name="${key}" type="checkbox" ${p[key]?'checked':''} ${disabled}>${title}</label>`;
-    host.innerHTML=`<details ${wasOpen?'open':''}><summary>六维控制 · ${d.enabled?'可调整':'当前只读'}</summary>
-      <p>配置分组：${esc((d.arms||[]).join(' / ')||'读取中')}；当前分配：${esc(d.assignment?.condition||'完成前测后分配')}。调节不会更改分组。</p>
-      <form data-controls-form><fieldset ${disabled}><legend>D1 · 判断证据的阈值</legend>${num('helpNeed','帮助需求下限',0,1,.05)}${num('uncertainty','不确定性上限',0,1,.05)}${num('minimumEvidenceFamilies','至少需要的证据类别数',1,4,1)}<small>事实、行为特征与规则估计分别记录；评分尚未由真人标注校准。</small></fieldset>
-      <fieldset ${disabled}><legend>D2 · 时机与有效期</legend>${num('interruptibility','可打断性下限',0,1,.05)}${num('ttlSeconds','候选有效期（秒）',60,3600,60)}${check('boundaryOnly','只在已有证据确认的任务边界投递')}${select('timingMode','新一轮建议的投递方式',[['adaptive','满足条件即投递'],['delayed','保存后延迟复核']])}${num('delaySeconds','延迟（秒）',1,900,1)}<small>延迟任务写入数据库；到期后须在当前学习上下文重新通过判断。检查后的升级不额外延迟。</small></fieldset>
-      <fieldset ${disabled}><legend>D3 · 支持目标、策略与份量</legend>${select('supportGoal','支持目标',[['auto','按学生确认的需要'],...Object.entries(global.SupportCycleUI?.goalNames||{})])}${select('supportStrategy','具体策略',[['auto','按目标和需要选择'],...Object.entries(global.SupportCycleUI?.strategyNames||{})])}${select('supportDose','该策略的帮助份量',[['brief','一个线索或问题'],['guided','引导两个到三个小步骤']])}<small>五类是本平台的操作性分类。观察台指定目标会记录为人工覆盖，不当作系统识别结论。</small>${select('initialSupportLevel','知识支架起始级别',[['auto','按触发规则'],...[1,2,3,4,5].map(n=>['L'+n,'L'+n])])}${select('maxSupportLevel','知识支架上限',[1,2,3,4,5].map(n=>['L'+n,'L'+n]))}${check('representationSwitch','允许建议切换表征')}<small>L1–L5 仅用于原有知识支架，不比较鼓励、情绪支持和知识提示的强弱。</small></fieldset>
-      <fieldset ${disabled}><legend>D4 · 同内容呈现</legend>${select('placement','提示位置',[['inline','课件／题目任务区'],['sidebar','完整对话侧栏']])}${select('presentationFormat','提示形式',[['plain','文字卡片'],['disclosure','点击展开'],['steps','逐句展开'],['bubble','对话气泡']])}<small>四种形式使用同一条支架正文。补充例子和练习另计。</small></fieldset>
-      <fieldset ${disabled}><legend>D5 · 主动程度与控制权</legend>${check('supportInquiryEnabled','允许系统在任务边界主动询问需要')}${select('proactivity','主动策略',[['assigned','沿用已分配策略'],['fixed','固定建议式'],['adaptive','规则分数自适应'],['reactive','仅回应主动求助']])}${select('authorityLevel','允许的呈现行为',[['A1','A1 · 学生展开线索'],['A2','A2 · 直接展示低风险线索'],['A3','A3 · 确认后切换表征'],['A4','A4 · 授权后自动展开，可撤销']])}<small>A4 需要下方的单独授权；选择档位不会自动授权。</small><section class="observatory-runtime-controls" data-runtime-controls="authority"></section></fieldset>
-      <fieldset ${disabled}><legend>D6 · 升级、退出与复习</legend>${num('cooldownSeconds','接受帮助后的基础冷却（秒）',60,3600,60)}${num('maxEscalations','知识支架最多升级次数',0,4,1)}${num('supportFollowups','确认需要后最多补充轮数',0,2,1)}${num('reviewAfterHours','独立检查后复习间隔（小时）',1,168,1)}<small>补充建议需要学生在反馈中选择。自评、接受行为和独立检查分别记录，不能互相替代。</small><section class="observatory-runtime-controls" data-runtime-controls="memory"></section></fieldset>
-      <p>当前版本 ${d.revision}。${esc(d.reason)}。这些记录不能混入正式实验。</p><button type="submit" ${disabled}>保存并应用于后续决策</button><button type="button" data-controls-reload>重新读取</button><button type="button" data-controls-export>导出六维配置</button></form></details><p role="status" data-controls-status></p>`;
-    const goal=host.querySelector('[name="supportGoal"]'),strategy=host.querySelector('[name="supportStrategy"]');
-    const strategies={auto:[],cognitive:['concept_hint','counterexample'],metacognitive:['self_check','plan_monitor'],motivational:['value_connection','progress_feedback','cost_reduction'],emotional:['acknowledge_reframe','calm_choice'],behavioral:['study_plan','resource_navigation']};
-    const filterStrategies=()=>{const allowed=strategies[goal.value]||[];for(const option of strategy.options){option.hidden=option.value!=='auto'&&!allowed.includes(option.value);option.disabled=option.hidden;}if(strategy.selectedOptions[0]?.disabled)strategy.value='auto';};
-    goal.addEventListener('change',filterStrategies);filterStrategies();
-    drawRuntimeControls();
-  }
-  function drawRuntimeControls() {
-    const s=snapshot||{},data=s.agentRuntime;
-    for(const kind of ['authority','memory']) {
-      const host=panel?.querySelector(`[data-runtime-controls="${kind}"]`);
-      if(!host)return;
-      const key=JSON.stringify([s.ownerKey,s.scopeKey,s.unitType,s.active,s.locked,s.check?.id,data,runtimeBusy]);
-      if(host.dataset.key===key)continue;
-      host.dataset.key=key;
-      const title=kind==='authority'?'自动展开授权':'检查记录与复习';
-      if(!s.active||s.unitType!=='knowledge'||s.locked||s.check) {
-        host.innerHTML=`<h4>${title}</h4><p>${s.locked||s.check?'独立作答期间暂停，请完成后返回知识点查看。':'进入知识点后可管理本知识点的授权与记录。'}</p>`;
-        continue;
-      }
-      if(!data){host.innerHTML=`<h4>${title}</h4><p>正在读取当前知识点的记录…</p>`;continue;}
-      const capability=kind==='authority'?'open_hint':'prepare_review';
-      const permission=data.permissions.find(p=>p.scope===s.scopeKey&&p.capability===capability);
-      const action=permission?'revoke':'grant';
-      const text=kind==='authority'
-        ?permission?'撤回自动展开授权':'允许自动展开线索（7天）'
-        :permission?'撤回复习授权':'允许准备复习提醒（7天）';
-      const button=`<button type="button" data-agent-action="${action}" data-capability="${capability}" data-id="${esc(permission?.id||'')}" ${runtimeBusy?'disabled':''}>${text}</button>`;
-      const records=data.memory.filter(r=>r.scope===s.scopeKey);
-      const tasks=data.tasks.filter(t=>t.kind==='review'&&t.scope===s.scopeKey&&t.status==='ready');
-      host.innerHTML=`<h4>${title}</h4><p>${kind==='authority'
-        ?'仅在本知识点允许自动展开线索，不会自动答题或提交。'
-        :`可读取本轮本知识点 ${records.length} 次最近独立检查记录，重新登录后保留。这些记录不等于已经掌握。`}</p>${button}
-        <small>${kind==='authority'?'授权立即生效，可随时撤回；实际展开仍须满足A4及当前帮助条件。':'授权后，新的独立检查可产生复习任务。服务器到期准备，在下次登录时查看。'}</small>
-        ${kind==='memory'?tasks.map(t=>`<div class="observatory-review"><p>${esc(t.payload.message)}</p><button type="button" data-agent-action="dismiss" data-id="${esc(t.id)}" ${runtimeBusy?'disabled':''}>关闭这条提醒</button></div>`).join(''):''}<p role="status" data-runtime-status></p>`;
-    }
-  }
-  async function handleRuntimeAction(button) {
-    const s=snapshot,host=button.closest('[data-runtime-controls]');
-    if(runtimeBusy||!s?.signedIn||s.locked||s.check||s.unitType!=='knowledge')return;
-    const owner=s.ownerKey,scope=s.scopeKey,kind=host.dataset.runtimeControls,action=button.dataset.agentAction;
-    const command=action==='grant'?{action,scope,capability:button.dataset.capability,confirmed:true,hours:168}:{action,id:button.dataset.id};
-    runtimeBusy=true;drawRuntimeControls();
-    try{await global.KnowledgeAssistant.agentRuntimeRequest(command);}
-    catch(error){
-      if(owner===snapshot?.ownerKey&&scope===snapshot?.scopeKey)host.querySelector('[data-runtime-status]').textContent=error.message;
-    }finally{
-      runtimeBusy=false;
-      if(owner===snapshot?.ownerKey&&scope===snapshot?.scopeKey){
-        // Refresh only the permission section; keep unsaved strategy inputs.
-        const message=host.querySelector('[data-runtime-status]')?.textContent;
-        drawRuntimeControls();
-        const current=panel.querySelector(`[data-runtime-controls="${kind}"]`);
-        if(message)current.querySelector('[data-runtime-status]').textContent=message;
-      }
-    }
-  }
-  async function loadControls(){
-    if(!snapshot?.signedIn||controlBusy)return;
-    controlBusy=true;const owner=snapshot.ownerKey;
-    try{const data=await global.KnowledgeAssistant.researchControlRequest();if(owner!==snapshot?.ownerKey)return;controlData=data;controlOwner=owner;drawControls();}
-    catch(e){panel.querySelector('[data-controls-status]')?.replaceChildren(document.createTextNode(e.message));}
-    finally{controlBusy=false;}
-  }
   function render() {
     if (!panel || !opened) return;
-    drawRuntimeControls();
+
     const s = snapshot || {}, o = s.observation, facts = o?.d1?.facts, estimate = o?.d1?.estimates;
     const cycle=s.supportCycle,g=global.SupportCycleUI;
     const phase = s.policyState?.lifecycle?.phase || "idle";
@@ -148,14 +68,15 @@
         + row("主要支持目标",g?.goalNames[cycle?.plan?.primaryGoal]||"尚无")
         + row("具体策略",g?.strategyNames[cycle?.plan?.strategy]||"尚无")
         + row("帮助份量",cycle?.plan?cycle.plan.dose==="guided"?"引导少量步骤":"一个线索或问题":"尚无")
-        + row("选择依据",cycle?.plan?cycle.plan.selectionSource==="engineering_override"?"观察台人工指定":"学生确认需要后的规则匹配":"尚无")
+        + row("选择依据",cycle?.plan?cycle.plan.selectionSource==="engineering_override"?"已保存偏好指定":"学生确认需要后的规则匹配":"尚无")
         + row("内容来源",cycle?.content?cycle.content.audit.fallback?"课程备用建议":"真实模型生成":"尚未生成")
         + row("本次动作", s.offer?.action || o?.d3?.action || "无")
         + `<p>${esc(s.offer?.title || "尚未呈现新的教学支架。")}</p><small>检查由服务端判分。未执行的防泄题审计不显示通过。</small>`),
       card("D4", "同内容的呈现位置", row("位置", label(s.view?.placement)) + row("形式", ({plain:"文字卡片",disclosure:"点击展开",steps:"逐句展开",bubble:"对话气泡"})[s.view?.format] || label(s.view?.modality))
         + `<p>位置与正文形式分别设置；独立测验期间关闭。额外例子与练习改变教学内容，另行记录。</p>`),
       card("D5", "学习者控制权", row("提醒偏好", label(s.preference)) + row("本知识点", s.muted ? "提醒已关闭" : "允许按策略建议")
-        + row("进一步行动", "等待学生确认") + `<small>稍后、换一种帮助、关闭和恢复均使用真实服务端流程。</small>`),
+        + row("当前主动方式",s.researchControls?.profile?.proactivity==='reactive'?"仅回应主动求助":s.researchControls?.profile?.supportInquiryEnabled?"先询问，确认后支持":s.researchControls?.profile?.authorityLevel==='A2'?"允许直接展示知识线索":"按当前已保存策略")
+        + `<small>稍后、换一种帮助、关闭和恢复均使用真实服务端流程。</small>`),
       card("D6", "支架生命周期", row("当前阶段", label(phase)) + row("服务端冷却", seconds ? `${seconds} 秒` : "无有效冷却", true)
         + row("多目标支持反馈",({helped:"学生自评有帮助",not_helped:"学生自评暂时没帮助",mismatch:"学生认为不匹配",prefer_stop:"学生要求停止"})[cycle?.feedback?.result]||"未反馈")
         + row("多目标独立检查",cycle?.checkResult?cycle.checkResult.correct===null?"跳过":cycle.checkResult.correct?"本次正确":"本次错误":"未完成")
@@ -179,35 +100,19 @@
         }
       });
     global.dispatchEvent(new CustomEvent("cq:learning-layout-change"));
-    if(value){render();loadControls();panel.querySelector("[data-observatory-close]").focus();}else toggle.focus();
+    if(value){render();panel.querySelector("[data-observatory-close]").focus();}else toggle.focus();
   }
   function mount() {
     toggle=document.createElement("button"); toggle.type="button";toggle.className="proactive-hud-toggle-btn";
     toggle.textContent="六维观察台";toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-controls","proactive-observatory");
     panel=document.createElement("aside");panel.id="proactive-observatory";panel.className="proactive-hud-panel";panel.hidden=true;
-    panel.setAttribute("aria-label","六维策略观察台");
+    panel.setAttribute("aria-label","六维实时观察台");
     panel.innerHTML=`<header class="proactive-hud-header"><div><strong>六维策略观察台</strong><small data-observatory-context></small></div><button type="button" data-observatory-close aria-label="收起观察台">×</button></header>
-      <p class="observatory-provenance">当前学习记录 · 服务端策略结果与浏览器操作分别标注</p><div class="observatory-scroll"><section class="research-controls" data-research-controls></section><div class="proactive-hud-body" data-observatory-body></div></div>
+      <p class="observatory-provenance">当前学习记录 · 服务端策略结果与浏览器操作分别标注</p><div class="observatory-scroll"><div class="proactive-hud-body" data-observatory-body></div></div>
       <details class="observatory-history"><summary>最近操作记录</summary><ol data-observatory-history></ol></details>
       <footer><button type="button" data-observatory-export>导出本次观察记录</button><span>用于工程核验，不代表真人学习效果</span></footer>`;
     (document.querySelector(".core-learning-workspace .player-actions") || document.body).append(toggle);
     document.body.append(panel);
-    drawControls();
-    panel.addEventListener('submit',async event=>{
-      if(!event.target.matches('[data-controls-form]'))return;event.preventDefault();if(controlBusy||!controlData?.enabled)return;
-      const form=event.target,profile={...controlData.profile},owner=snapshot.ownerKey;
-      for(const el of form.elements){if(!el.name)continue;profile[el.name]=el.type==='checkbox'?el.checked:el.type==='number'?Number(el.value):el.value;}
-      controlBusy=true;const button=form.querySelector('[type=submit]');button.disabled=true;
-      try{const next=await global.KnowledgeAssistant.researchControlRequest(profile,controlData.revision);if(owner!==snapshot?.ownerKey)return;controlData={...controlData,...next};drawControls();panel.querySelector('[data-controls-status]').textContent='已保存；对后续新决策生效，分组与独立测验保护保持锁定。';}
-      catch(e){panel.querySelector('[data-controls-status]').textContent=e.message;button.disabled=false;}
-      finally{controlBusy=false;}
-    });
-    panel.addEventListener('click',event=>{
-      const runtimeButton=event.target.closest('[data-runtime-controls] [data-agent-action]');
-      if(runtimeButton){handleRuntimeAction(runtimeButton);return;}
-      if(event.target.closest('[data-controls-reload]'))loadControls();
-      if(event.target.closest('[data-controls-export]')&&controlData){const url=URL.createObjectURL(new Blob([JSON.stringify(controlData,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='六维工程配置.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-    });
     toggle.addEventListener("click",()=>setOpen(true));panel.querySelector("[data-observatory-close]").addEventListener("click",()=>setOpen(false));
     panel.addEventListener("keydown",e=>{if(e.key==="Escape")setOpen(false);});
     panel.querySelector("[data-observatory-export]").addEventListener("click",()=>{
@@ -220,7 +125,7 @@
   }
   global.addEventListener("cq:proactive-state",event=>{
     const next=event.detail;if(!next)return;
-    if(snapshot?.ownerKey !== next.ownerKey){events.length=0;decisions.length=0;eventCount=0;controlData=null;controlOwner='';if(panel)drawControls();}
+    if(snapshot?.ownerKey !== next.ownerKey){events.length=0;decisions.length=0;eventCount=0;}
     snapshot=next;
     if(next.observation?.decisionId && !decisions.some(d=>d.decisionId===next.observation.decisionId)){
       decisions.push(next.observation);if(decisions.length>100)decisions.shift();

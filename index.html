@@ -50,6 +50,7 @@
     <link rel="stylesheet" href="styles.css?v=20260922-stage-scroll-v3" />
     <link rel="stylesheet" href="app/main/knowledge-assistant.css?v=20260922-hint-justification-v1" />
     <link rel="stylesheet" href="app/main/pilot-study.css?v=20261022" />
+    <link rel="stylesheet" href="app/main/learner-setup.css?v=20261024" />
     <link rel="stylesheet" href="app/main/learning-workspace.css?v=20261014-workspace-v4" />
     <link rel="stylesheet" href="app/main/openmaic-classroom.css?v=20261014-course-space-v8" />
     <link rel="stylesheet" href="app/main/system-announcements.css?v=20260726-announcements-v5" />
@@ -282,6 +283,7 @@
             <div class="hero-actions">
               <button class="button primary" type="button" data-view="learn">开始学习 <span aria-hidden="true">→</span></button>
               <button class="button secondary" type="button" data-view="progress">查看学习记录</button>
+              <button class="button secondary" type="button" id="home-pilot-entry">参加学习预试</button>
             </div>
           </div>
           <div class="home-metrics-proxy" aria-hidden="true" hidden>
@@ -367,6 +369,7 @@
               </div>
               <div class="player-actions">
                 <button class="button soft" type="button" id="pilot-entry-button">预试</button>
+                <button class="button soft" type="button" id="learner-preferences-button">学习偏好</button>
                 <button class="button soft" id="workspace-coach-toggle" type="button" aria-controls="agentic-coach-panel" aria-expanded="false" hidden>待确认选择</button>
                 <button class="classroom-icon-button" id="workspace-tools-toggle" type="button" aria-controls="workspace-tools-body" aria-expanded="true" aria-label="收起学习助手" title="收起学习助手"><img src="assets/classroom-icons/PanelRightClose.svg" alt="" /></button>
               </div>
@@ -624,7 +627,9 @@
     <script src="app/main/theme.js?v=20260724-home-themes-v1"></script>
     <script src="app/main/bootstrap.js?v=20260921-fast-logout-v1"></script>
     <script src="app/main/support-cycle.js?v=20261021-multi-goal"></script>
-    <script src="app/main/pilot-study.js?v=20261022-pilot-v1"></script>
+    <script src="app/shared/learner-preferences.js?v=20261024"></script>
+    <script src="app/main/pilot-study.js?v=20261024"></script>
+    <script src="app/main/learner-setup.js?v=20261024"></script>
     <script src="app/main/task-support.js?v=20261018-task-support"></script>
     <script src="app/main/proactive-surface.js?v=20261018-task-support"></script>
     <script src="app/main/proactive-hud.js?v=20261017-comfort-v1"></script>

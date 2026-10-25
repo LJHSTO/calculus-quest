@@ -62,17 +62,40 @@ const feedback = require("./lib/feedback");
 const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
 const researchSitesHttp = require("./lib/research-sites/http").createHttp({ db, root, readJsonBody, sendJson, authenticate, checkAdmin,
-  providerInfo: assistantProviderInfo, complete: llm.completeChat, consumeQuota: consumeAssistantQuota, releaseQuota: releaseAssistantQuota });
+  providerInfo: assistantProviderInfo, complete: llm.completeChat, consumeQuota: consumeAssistantQuota, releaseQuota: releaseAssistantQuota,
+  canUseStandalone:user=>learnerEnrollment(user)?.status!=='active' });
 const proactiveStudyConfig = proactivePolicy.configFromEnv();
 const researchControls = require("./lib/research-controls");
-const researchControlStore = researchControls.createStore({root,config:proactiveStudyConfig});
+const engineeringControlStore = researchControls.createStore({root,config:proactiveStudyConfig});
+const learnerPreferences = require('./lib/learner-preferences').createStore({db});
+const learnerDesign = require('./lib/pilot-study').LEARNER_DESIGN;
+function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.studyDesign===learnerDesign?e:null;}
+function learnerStudyBlocked(user){const e=learnerEnrollment(user);return Boolean(e&&(e.status!=='active'||e.generation!==db.currentLearningGeneration(user)||e.stage!=='ready'||e.arm==='control'));}
+function rejectUnpreparedLearner(res,user){const e=learnerEnrollment(user);if(e?.status==='active'&&(e.stage!=='ready'||e.generation!==db.currentLearningGeneration(user))){sendJson(res,409,{ok:false,code:'learner_preparation_required',message:'请先在预试入口完成学习前问卷和本组准备，再开始本轮学习。'});return true;}return false;}
+const researchControlStore = {
+  enabled:engineeringControlStore.enabled,
+  canEdit:user=>engineeringControlStore.canEdit(user),
+  read(user){const e=learnerEnrollment(user);if(e){const r=e.configuration||{revision:0,profile:{...researchControls.defaults},kind:'learner_pilot'};
+    const profile=learnerStudyBlocked(user)?{...researchControls.defaults,proactivity:'reactive',supportInquiryEnabled:false}:r.profile;
+    return {...r,profile,hash:crypto.createHash('sha256').update(JSON.stringify(profile)).digest('hex'),studyArm:e.arm,studyVersion:e.versionId};}
+    return learnerPreferences.read(user)||engineeringControlStore.read(user);},
+  describe(user){const r=this.read(user);return {...engineeringControlStore.describe(user),...(r||{}),kind:r?.kind||'engineering-only',learnerStudy:learnerEnrollment(user)?{arm:learnerEnrollment(user).arm,stage:learnerEnrollment(user).stage}:null};},
+  save:(...args)=>engineeringControlStore.save(...args)
+};
 const supportGoals = require("./lib/support-goals");
 const supportCycles = require("./lib/support-cycle").createStore({db,experimentId:proactiveStudyConfig.experimentId});
 const pilotStudy = require("./lib/pilot-study").createStore({db,implementation:Object.fromEntries(
   ["server.js","lib/pilot-study.js","lib/support-cycle.js","lib/support-goals.js","lib/research-controls.js",
     "lib/proactive-policy/index.js","lib/proactive-policy/timing-gate.js","lib/proactive-policy/evidence-package.js",
-    "app/main/pilot-study.js","admin/pilot.js","data/multi-scene-learning-route.json"]
+    "app/main/pilot-study.js","app/shared/learner-preferences.js","lib/learner-preferences.js","admin/pilot.js","data/multi-scene-learning-route.json"]
     .map(file=>[file,crypto.createHash("sha256").update(fs.readFileSync(path.join(root,file))).digest("hex")]))});
+const pilotReplay=require('./lib/pilot-replay').createReplay({db,pilot:pilotStudy});
+function cancelLearnerSupport(user,generation){
+  supportCycles.cancelForConfiguration(user,generation);
+  db.closeOpenProactiveInterventionsForUser({userId:user,experimentId:proactiveStudyConfig.experimentId,resolution:'configuration_changed',resolvedAt:nowIso(),followupOutcome:{outcome:'configuration_changed'}});
+  for(const t of agentRuntime.state(user,generation).tasks.filter(t=>['queued','ready'].includes(t.status)))agentRuntime.settle(t.id,user,'cancelled','configuration_changed');
+  db.saveNow();
+}
 function pilotRuntime(user) {
   const control=researchControlStore.describe(user);
   return {experimentId:proactiveStudyConfig.experimentId,mode:proactiveStudyConfig.mode,controlRevision:control.revision,
@@ -961,13 +984,18 @@ const RATE_LIMIT_MAX = Math.max(
   Number(process.env.RATE_LIMIT_MAX || 120) || 120
 );
 
-function checkRateLimit(req) {
+function checkRateLimit(req, pathname = "") {
   const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket.remoteAddress || "unknown";
+  // Students on a classroom NAT must not consume one another's API budget.
+  // Only verified sessions get an account bucket; login and invalid tokens
+  // retain the anonymous network bucket. Different sessions share one user key.
+  const account = pathname.startsWith('/api/auth/') ? null : authenticate(req)?.participant.id;
+  const key = account ? 'user:'+account : 'ip:'+ip;
   const now = Date.now();
-  let entry = rateLimitMap.get(ip);
+  let entry = rateLimitMap.get(key);
   if (!entry || now >= entry.resetAt) {
     entry = { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
-    rateLimitMap.set(ip, entry);
+    rateLimitMap.set(key, entry);
   }
   entry.count++;
   if (entry.count > RATE_LIMIT_MAX) return false;
@@ -2316,6 +2344,13 @@ function rejectAgentAssistanceDuringOutcome(res, userId) {
 }
 
 function proactiveAssignmentForUser(userId) {
+  const pilot=learnerEnrollment(userId);
+  if(pilot&&pilot.status==='active'&&pilot.generation===db.currentLearningGeneration(userId)&&pilot.arm){
+    if(!proactivePretestStratum(userId).ready)return null;
+    const condition=pilot.arm==='control'?'control':proactiveStudyConfig.displayArms[0];
+    return {user_id:userId,experiment_id:proactiveStudyConfig.experimentId,condition,assignment_digest:pilot.id,
+      assigned_at:pilot.allocatedAt,stratum:'pilot_random_10_10',assignment_basis:learnerDesign,protocol_fingerprint:proactiveProtocolFingerprint};
+  }
   const participation = proactiveParticipationForUser(userId);
   if (participation?.status !== "enrolled") return null;
   const existing = db.getExperimentAssignment(userId, proactiveStudyConfig.experimentId);
@@ -4700,7 +4735,7 @@ async function handleManagedProactiveIntervention({
 }
 
 async function handleApi(req, res, url) {
-  if (!checkRateLimit(req)) {
+  if (!checkRateLimit(req, url.pathname)) {
     sendJson(res, 429, { ok: false, message: "请求过于频繁，请稍后再试。" });
     return;
   }
@@ -5271,6 +5306,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if(learnerEnrollment(auth.participant.id)?.status==='active'){sendJson(res,409,{ok:false,message:'预试进行中不能重置学习轮次。请先结束或退出本轮预试。'});return;}
       const version = snapshotVersion(body);
       if (!version.validGeneration || !version.validBaseRevision) {
         const state = db.getLearningSnapshotState(auth.participant.id, nowIso());
@@ -5522,6 +5558,11 @@ async function handleApi(req, res, url) {
       if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
       res.setHeader("Cache-Control","no-store");
       try{
+        if(learnerEnrollment(auth.participant.id)?.status==='active'){
+          if(req.method==='GET')sendJson(res,200,{ok:true,data:{...mainLearningStudy.state(auth.participant.id),session:null,disabledForPilot:true}});
+          else sendJson(res,409,{ok:false,code:'pilot_condition_isolation',message:'本轮预试使用常规课程和练习；请完成或退出预试后再进入其他验证流程。'});
+          return;
+        }
         let data;
         if(req.method==="GET" && url.pathname==="/api/learning/common-tasks")data=mainLearningStudy.state(auth.participant.id);
         else if(req.method==="POST" && url.pathname==="/api/learning/common-tasks/start"){
@@ -5542,6 +5583,7 @@ async function handleApi(req, res, url) {
       const body = req.method === "POST" ? await readJsonBody(req) : {};
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if(learnerEnrollment(auth.participant.id)?.status==='active'){sendJson(res,409,{ok:false,code:'pilot_condition_isolation',message:'请先完成或退出当前预试，再进入其他研究流程。'});return;}
       res.setHeader("Cache-Control", "no-store");
       try {
         let data;
@@ -5560,6 +5602,21 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if(url.pathname==='/api/learning/learner-preferences'&&['GET','POST'].includes(req.method)){
+      const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:'请先登录'});return;}
+      res.setHeader('Cache-Control','no-store');const user=auth.participant.id,generation=db.currentLearningGeneration(user),e=learnerEnrollment(user);
+      try{
+        const enabled=researchControlStore.canEdit(user)&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)));
+        if(req.method==='POST'){
+          if(!enabled)throw Object.assign(new Error('当前预试条件不能修改学习偏好'),{status:403});
+          if(pilotProtection(user,generation))throw Object.assign(new Error('请先结束独立测量或当前帮助，再修改偏好'),{status:409});
+          const input=await readJsonBody(req);const record=learnerPreferences.save(user,input);
+          pilotStudy.configure(user,generation,record);cancelLearnerSupport(user,generation);
+          pilotStudy.recordConfiguration(user,generation,pilotRuntime(user),'学生通过学习偏好页面保存六维选择与理由');
+        }
+        sendJson(res,200,{ok:true,data:{enabled,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
+      }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
+    }
     if(url.pathname.startsWith("/api/learning/pilot")) {
       const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
       res.setHeader("Cache-Control","no-store");
@@ -5568,8 +5625,21 @@ async function handleApi(req, res, url) {
         const input=req.method==="POST"?await readJsonBody(req):{};let data;
         if(req.method==="GET"&&url.pathname==="/api/learning/pilot")data=pilotStudy.state(user,generation);
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/preview")data=pilotStudy.preview(input.joinCode);
-        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/start")data=pilotStudy.start(user,generation,input,pilotRuntime(user));
-        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/action")data=pilotStudy.action(user,generation,input);
+        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/start"){
+          const v=pilotStudy.preview(input.joinCode);
+          if(v.studyType===learnerDesign&&!pilotStudy.enrolled(user,generation)){
+            const ongoing=s=>s&&!['complete','withdrawn','between_units'].includes(s.stage);
+            if(ongoing(mainLearningStudy.state(user).session)||ongoing(studyWorkbench.state?.(user)?.session)||researchSitesHttp.store.protects(user)||activeProactiveOutcomeSession(user))throw Object.assign(new Error('请先完成或退出正在进行的独立测量或其他研究流程，再加入本轮预试。'),{status:409});
+          }
+          if(v.studyType===learnerDesign&&(!researchControlStore.enabled||proactiveStudyConfig.mode!=='active'||!proactiveStudyConfig.displayArms.length))throw Object.assign(new Error('当前服务器未启用六维学习支持，请联系研究负责人'),{status:409});
+          if(v.studyType===learnerDesign&&!pilotStudy.enrolled(user,generation)&&db.getQuizResultsByUser(user).some(q=>q.chapter_id===proactiveStudyConfig.chapterId))throw Object.assign(new Error('本轮已有学习作答。请与研究负责人确认后，在加入预试前开启新一轮学习；原账号及历史数据会保留。'),{status:409});
+          data=pilotStudy.start(user,generation,input,pilotRuntime(user));cancelLearnerSupport(user,generation);
+        }
+        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/action"){
+          if(input.action==='finish'&&learnerEnrollment(user)?.status==='active'&&!db.getQuizResultsByUser(user).some(q=>q.chapter_id===proactiveStudyConfig.chapterId&&q.phase==='post'))throw Object.assign(new Error('请先完成本章后测，再提交结束问卷。需要提前离开时，可选择退出预试。'),{status:409});
+          data=pilotStudy.action(user,generation,input);
+          if(['withdraw','finish','baseline'].includes(input.action)&&data.enrollment?.studyDesign===learnerDesign)cancelLearnerSupport(user,generation);
+        }
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/opportunity") {
           if(pilotStudy.enrolled(user,generation)) {
             const scope=boundedLearningText(input.scope,100),unitId=boundedLearningText(input.unitId,100),blockers=[];
@@ -5611,6 +5681,8 @@ async function handleApi(req, res, url) {
         else if(req.method==="POST"&&url.pathname==="/api/admin/pilot/version")data=pilotStudy.createVersion(input);
         else if(req.method==="POST"&&url.pathname==="/api/admin/pilot/rater")data=pilotStudy.createRater(input.project,input.name,input.role);
         else if(req.method==="GET"&&url.pathname==="/api/admin/pilot/export")data=pilotStudy.exportData(url.searchParams.get("project"));
+        else if(req.method==='GET'&&url.pathname==='/api/admin/pilot/roster')data=pilotReplay.roster(url.searchParams.get('project'));
+        else if(req.method==='GET'&&url.pathname==='/api/admin/pilot/replay')data=pilotReplay.exportProject(url.searchParams.get('project'),url.searchParams.get('participant')||'');
         else if(req.method==="GET"&&url.pathname==="/api/pilot-rater/cases")data=pilotStudy.cases(bearerToken(req));
         else if(req.method==="POST"&&url.pathname==="/api/pilot-rater/annotation")data=pilotStudy.annotate(bearerToken(req),input);
         else {sendJson(res,404,{ok:false,message:"预试管理接口不存在"});return;}
@@ -5708,6 +5780,7 @@ async function handleApi(req, res, url) {
         const body=await readJsonBody(req), user=auth.participant.id;
         try{
           if(body.action==="grant"){
+            if(learnerEnrollment(user)?.status==='active')throw Object.assign(new Error('本轮预试通过学习偏好设置控制权限，不另行开启跨时段授权。'),{status:403});
             const scope=String(body.scope||"");
             if(!proactivePolicy.adapterForChapter(proactiveStudyConfig.chapterId)?.knowledgePoint(scope))throw new Error("知识点无效");
             if(body.confirmed!==true)throw new Error("需要学生明确授权");
@@ -5716,7 +5789,7 @@ async function handleApi(req, res, url) {
           else if(body.action==="undo")agentRuntime.undo(user,String(body.id||""));
           else if(body.action==="dismiss")agentRuntime.settle(String(body.id||""),user,"cancelled","student_dismissed");
           else throw new Error("操作无效");
-        }catch(error){sendJson(res,400,{ok:false,message:error.message});return;}
+        }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});return;}
       }
       sendJson(res,200,{ok:true,data:agentRuntime.state(auth.participant.id,db.currentLearningGeneration(auth.participant.id))});return;
     }
@@ -5728,6 +5801,7 @@ async function handleApi(req, res, url) {
         sendJson(res,200,{ok:true,data:{...researchControlStore.describe(auth.participant.id),
           assignment:publicProactiveAssignment(proactiveAssignmentForUser(auth.participant.id)),arms:[...proactiveStudyConfig.experimentArms]}});return;
       }
+      if(learnerEnrollment(auth.participant.id)){sendJson(res,403,{ok:false,message:'预试期间请通过学习偏好页面修改，不能覆盖组别和保护参数。'});return;}
       if(!researchControlStore.canEdit(auth.participant.id)){sendJson(res,403,{ok:false,message:"当前账号的实验条件只读，网址参数不能解锁。"});return;}
       const body=await readJsonBody(req);
       const inRound=db.listProactivePolicyStates(auth.participant.id,proactiveStudyConfig.experimentId)
@@ -8337,6 +8411,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if(rejectUnpreparedLearner(res,auth.participant.id))return;
       if(pilotStudy.activeProbe(auth.participant.id,db.currentLearningGeneration(auth.participant.id))) {
         sendJson(res,409,{ok:false,message:"请先回答或跳过当前预试记录，再请求帮助。"});return;
       }
@@ -8813,6 +8888,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if(rejectUnpreparedLearner(res,auth.participant.id))return;
       const unitId = String(body.unitId || "").trim();
       const chapterId = String(body.chapterId || "").trim();
       const phase = String(body.phase || "").trim();
@@ -9571,6 +9647,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
+      if(rejectUnpreparedLearner(res,auth.participant.id))return;
       const requestedUnitId = String(body.unitId || "").trim();
       const fallbackToZero = body.fallbackToZero === true;
       const requestedIds = new Set(

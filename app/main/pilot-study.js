@@ -4,7 +4,7 @@
   const drafts=new Map(),presented=new Set();
   const el=(tag,value)=>{const n=document.createElement(tag);if(value!==undefined)n.textContent=value;return n;};
   const button=(label,run)=>{const n=el("button",label);n.type="button";n.className="button soft";n.onclick=run;return n;};
-  function update(next){const serialized=JSON.stringify(next);data=next;if(serialized!==lastState){lastState=serialized;revision++;global.KnowledgeAssistant?.refreshSupportSurface();}}
+  function update(next){const serialized=JSON.stringify(next);data=next;if(serialized!==lastState){lastState=serialized;revision++;global.KnowledgeAssistant?.refreshSupportSurface();global.LearnerSetup?.setPilot(next);}}
   async function call(path,body){return global.KnowledgeAssistant.pilotRequest(path,body);}
   async function run(path,body){if(busy)return;const requestedOwner=owner;busy=true;message="";try{const next=await call(path,body);if(owner===requestedOwner)update(next);}catch(e){if(owner===requestedOwner)message=e.message;}finally{busy=false;revision++;global.KnowledgeAssistant?.refreshSupportSurface();if(dialog?.open&&owner===requestedOwner)showDialog();}}
   function active(s){return Boolean(data.enrollment?.status==="active"&&data.pending&&data.pending.scope===s.scopeKey&&s.signedIn&&s.active&&!s.locked&&!s.check&&s.unitType==="knowledge"&&s.supportCycle?.status!=="awaiting_check"&&(presented.has(data.pending.id)||!global.SupportCycleUI?.interactionBusy));}
@@ -26,6 +26,7 @@
     return root;
   }
   function showDialog(){
+    if(data.enrollment?.studyDesign==='learner-configurable-20-v1'){dialog?.close();global.LearnerSetup?.openPilot(data);return;}
     if(!dialog){dialog=el("dialog");dialog.id="pilot-dialog";dialog.style.cssText="width:min(620px,calc(100vw - 32px));max-height:85vh;border:1px solid #dce0ed;border-radius:18px;padding:24px;color:#24324a;background:white;overflow:auto";document.body.append(dialog);}
     dialog.replaceChildren(el("h2",data.enrollment?.status==="active"?"预试记录":"参加学习预试"));
     dialog.append(button("关闭",()=>dialog.close()));
@@ -46,7 +47,7 @@
     }
     const status=el("p",message);status.setAttribute("role","status");dialog.append(status);
   }
-  async function open(){try{update(await call(""));}catch(e){message=e.message;}showDialog();if(!dialog.open)dialog.showModal();}
+  async function open(){try{update(await call(""));}catch(e){message=e.message;}showDialog();if(data.enrollment?.studyDesign!=='learner-configurable-20-v1'&&!dialog.open)dialog.showModal();}
   function probeVisible(node){
     const r=node.getBoundingClientRect();if(!r.width||!r.height)return false;
     let left=Math.max(0,r.left),top=Math.max(0,r.top),right=Math.min(innerWidth,r.right),bottom=Math.min(innerHeight,r.bottom);
@@ -75,8 +76,9 @@
       }
     }catch(e){if(owner===requestedOwner)message=e.message;}
   }
-  global.PilotStudyUI=Object.freeze({active,render,open,get revision(){return revision+":"+Boolean(data.pending&&!presented.has(data.pending.id)&&global.SupportCycleUI?.interactionBusy);}});
+  global.PilotStudyUI=Object.freeze({active,render,open,reload:async()=>update(await call('')),get revision(){return revision+":"+Boolean(data.pending&&!presented.has(data.pending.id)&&global.SupportCycleUI?.interactionBusy);}});
   document.getElementById("pilot-entry-button")?.addEventListener("click",open);
+  document.getElementById("home-pilot-entry")?.addEventListener("click",open);
   global.addEventListener("cq:proactive-state",async e=>{snapshot=e.detail;const key=snapshot.signedIn?snapshot.ownerKey+":"+snapshot.generation:"";
     if(key!==owner){owner=key;data={enrollment:null};preview=null;joinCode="";drafts.clear();shown.clear();presented.clear();lastState="";dialog?.close();if(key){try{const next=await call("");if(key===owner)update(next);}catch{}}}
   });

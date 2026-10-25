@@ -12,7 +12,8 @@
     const choice=document.querySelector('.workspace-canvas-toolbar [data-knowledge-scene="simulation"]');
     if(choice&&choice.getAttribute('aria-pressed')!=='true')choice.click();
   }
-  function protects(){return Boolean(busy || data?.session && (["t0","t1","outcome"].includes(data.session.stage)
+  const pilotActive=()=>global.LearnerSetup?.enrollment?.studyDesign==='learner-configurable-20-v1'&&global.LearnerSetup.enrollment.status==='active';
+  function protects(){return !pilotActive()&&Boolean(busy || data?.session && (["t0","t1","outcome"].includes(data.session.stage)
     || data.protocol.status==="reviewed_human_protocol" && !["complete","withdrawn"].includes(data.session.stage)));}
   async function api(path="",body){
     const r=await fetch(`/api/learning/common-tasks${path}`,{method:body?"POST":"GET",headers:{Authorization:`Bearer ${token()}`,...(body?{"Content-Type":"application/json"}:{})},...(body?{body:JSON.stringify(body)}:{})});
@@ -37,7 +38,7 @@
   function render(){
     const player=document.querySelector('#lesson-player');if(!player)return;
     const id=unit(),s=data?.session,active=s&&!['complete','withdrawn','between_units'].includes(s.stage);
-    if(!token() || !data || (!isPoint(id)&&!active)){host?.remove();host=null;lastRender="";clearTimeout(exposure);clearTimeout(exploreTimer);exposureObserver?.disconnect();document.querySelector('#common-learning-sidebar')?.remove();if(!token()||!data)player.classList.remove('common-probe-active');return;}
+    if(!token() || !data || data.disabledForPilot || pilotActive() || (!isPoint(id)&&!active)){host?.remove();host=null;lastRender="";clearTimeout(exposure);clearTimeout(exploreTimer);exposureObserver?.disconnect();document.querySelector('#common-learning-sidebar')?.remove();if(!token()||!data||data?.disabledForPilot||pilotActive())player.classList.remove('common-probe-active');return;}
     if(!host?.isConnected){host=node('section');host.id='common-learning-task';host.className='common-learning-task';host.setAttribute('aria-label','判断与验证');player.append(host);lastRender="";}
     const key=JSON.stringify([id,data.protocol.fingerprint,s?.revision,busy,lastError]);if(key===lastRender)return;lastRender=key;
     clearTimeout(exposure);exposure=null;exposureObserver?.disconnect();document.querySelector('#common-learning-sidebar')?.remove();host.replaceChildren(node('h3','判断与验证'));
@@ -112,6 +113,7 @@
     if(invalid){event.preventDefault();event.stopImmediatePropagation();lastError='本段研究学习使用固定的二维课件。完成当前验证后继续，或随时退出研究。';lastRender='';render();}
   },true);
   global.addEventListener('cq:lesson-rendered',()=>{sync();changed();});
+  global.addEventListener('cq:pilot-enrollment',()=>{owner='';sync();});
   global.addEventListener('cq:learning-layout-change',render);
   let processChain=Promise.resolve();
   global.addEventListener('cq:learning-signal',e=>{

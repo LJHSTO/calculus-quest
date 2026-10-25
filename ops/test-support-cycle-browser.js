@@ -99,12 +99,14 @@ async function main(){
    await page.locator('[data-workspace-canvas="slide"]').click();
   }
   results.push("六知识点的需要、课程支持、服务器独立判分全部贯通");
-  await page.getByRole("button",{name:"六维观察台",exact:true}).click();await page.locator("[data-research-controls] summary").click();
-  for(const [name,value] of [["supportGoal","emotional"],["supportStrategy","calm_choice"],["supportDose","guided"],["presentationFormat","disclosure"]])await page.locator(`[name="${name}"]`).selectOption(value);
-  await page.getByRole("button",{name:"保存并应用于后续决策"}).click();await page.locator("[data-controls-status]").filter({hasText:"已保存"}).waitFor();
-  assert.equal(await page.locator("[data-controls-form] fieldset").count(),6);
-  await page.screenshot({path:path.join(out,"六维多目标控制台.png")});await page.getByRole("button",{name:"收起观察台"}).click();
-  const changed=await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:"report",confirmed:true,need:"value",note:"希望先知道用途"}));assert.equal(changed.cycle.plan.selectionSource,"engineering_override");assert.equal(changed.cycle.plan.primaryGoal,"emotional");
+  await page.getByRole("button",{name:"六维观察台",exact:true}).click();
+  assert.equal(await page.locator('#proactive-observatory [data-dimension]').count(),6);
+  assert.equal(await page.locator('#proactive-observatory input,#proactive-observatory select').count(),0);
+  await page.screenshot({path:path.join(out,"六维多目标实时指标.png")});await page.getByRole("button",{name:"收起观察台"}).click();
+  await page.locator('#learner-preferences-button').click();await page.getByRole('button',{name:'先使用全部默认设置',exact:true}).click();
+  await page.getByRole('button',{name:'修改提示呈现',exact:true}).click();await page.locator('#learner-setup input[value="compact"]').check();await page.locator('#learner-setup select[name=preference-reason]').selectOption('focus');
+  await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'核对选择',exact:true}).click();await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls?.revision===1);
+  const changed=await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:"report",confirmed:true,need:"frustration",note:"反复出错后有些着急，想缓一缓"}));assert.equal(changed.cycle.plan.selectionSource,"confirmed_need_mapping");assert.equal(changed.cycle.plan.primaryGoal,"emotional");
   await page.locator('.support-goal-message').scrollIntoViewIfNeeded();await page.waitForTimeout(1300);
   assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.exposure),null,'折叠正文不算展示');
   await page.getByText('查看这条帮助',{exact:true}).click();
@@ -120,7 +122,13 @@ async function main(){
   const mobileGeometry=await page.locator('.support-goal-message footer button').evaluateAll(nodes=>nodes.map(n=>{const r=n.getBoundingClientRect(),p=n.closest('.support-goal-message').getBoundingClientRect();const ancestors=[];for(let a=n;a;a=a.parentElement)ancestors.push(a);return {label:n.textContent,left:r.left,right:r.right,parentLeft:p.left,parentRight:p.right,viewport:innerWidth,ancestors:ancestors.map(el=>({class:el.className,tag:el.tagName,width:el.getBoundingClientRect().width,display:getComputedStyle(el).display,wrap:getComputedStyle(el).flexWrap,minWidth:getComputedStyle(el).minWidth,position:getComputedStyle(el).position}))};}));
   assert.ok(mobileGeometry.every(r=>r.left>=r.parentLeft&&r.right<=r.parentRight+1&&r.right<=r.viewport),'窄屏操作按钮必须换行且不被裁切：'+JSON.stringify(mobileGeometry));
   await page.screenshot({path:path.join(out,"多目标支持窄屏.png")});
-  results.push("六维控制保存、人工覆盖标记、刷新恢复、窄屏无横向溢出");
+  await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:'close',id:KnowledgeAssistant.designSpaceSnapshot().supportCycle.id}));
+  await page.locator('#learner-preferences-button').click();await page.getByRole('button',{name:'提示呈现',exact:true}).click();await page.locator('#learner-setup input[value="inline"]').check();
+  await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'核对选择',exact:true}).click();await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls?.revision===2);
+  const plain=await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:'report',confirmed:true,need:'frustration',note:'已确认需要，请直接显示支持'}));assert.equal(plain.cycle.profile.authorityLevel,'A1');assert.equal(plain.cycle.profile.presentationFormat,'plain');
+  await page.locator('.support-goal-message:visible [data-support-body]').waitFor({state:'visible'});assert.equal(await page.locator('.support-goal-message:visible').getByText('查看这条帮助',{exact:true}).count(),0,'确认需要后，D5询问权限不能覆盖D4直接呈现');
+  results.push('先询问权限与D4解耦：确认需要后直接显示正文；折叠设置仍需展开才记录可见');
+  results.push("六维指标只读、学习偏好保存与理由、学生确认的支持目标、刷新恢复、窄屏无横向溢出");
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,"浏览器测试结果.json"),JSON.stringify({passed:true,synthetic:true,results,errors},null,2));console.log("多目标支持常规学习浏览器测试通过");
  }catch(e){if(page){await page.screenshot({path:path.join(out,"失败诊断.png")}).catch(()=>{});console.error((await page.locator("body").innerText()).slice(-5000));}console.error("隔离测试日志："+dir);throw e;}
  finally{if(browser)await browser.close();server.kill();await new Promise(resolve=>server.once("exit",resolve));fs.closeSync(log);}
