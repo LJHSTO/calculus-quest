@@ -12,13 +12,19 @@ async function main(){
  assert.equal(created.version.capacity,20);assert.ok(!JSON.stringify(store.preview(created.joinCode)).includes('schedule'));assert.match(created.version.consentText,/随机/);
  const baseline=Object.fromEntries(C.surveys.baseline.map(([k])=>[k,3])),counts={control:0,configurable:0};let configured;
  for(let n=0;n<20;n++){const user='synthetic-'+n;const started=store.start(user,1,{joinCode:created.joinCode,versionHash:created.version.hash,consent:true},{});assert.equal(started.enrollment.arm,null);
-  assert.equal(store.observe(user,1,{scope:'GH-01-K01'}),null);assert.throws(()=>store.action(user,1,{action:'baseline',survey:{}}));const s=store.action(user,1,{action:'baseline',survey:baseline});counts[s.enrollment.arm]++;
+  assert.equal(store.observe(user,1,{scope:'GH-01-K01'}),null);assert.throws(()=>store.action(user,1,{action:'baseline',survey:{}}));const before=store.action(user,1,{action:'baseline',survey:baseline});assert.equal(before.enrollment.stage,'pretest');assert.equal(before.enrollment.arm,null);assert.throws(()=>store.configure(user,1,{profile:{}}));store.recordPretest(user,1,['server-result-'+n]);const s=store.state(user,1);counts[s.enrollment.arm]++;
   assert.equal(store.action(user,1,{action:'baseline',survey:baseline}).enrollment.arm,s.enrollment.arm);
   if(s.enrollment.arm==='control')assert.throws(()=>store.configure(user,1,{profile:{}}),/不允许/);
   else {const r=prefs.save(user,{answers:a,expectedRevision:0,elapsedMs:100});store.configure(user,1,r);assert.equal(store.state(user,1).enrollment.stage,'ready');assert.throws(()=>prefs.save(user,{answers:a,expectedRevision:0}),/另一页面/);configured=user;}
   assert.equal(store.observe(user,1,{source:'candidate',scope:'GH-01-K01'}),null,'两组均只按共同周期抽样');
  }
  assert.deepEqual(counts,{control:10,configurable:10});assert.throws(()=>store.start('extra',1,{joinCode:created.joinCode,versionHash:created.version.hash,consent:true},{}),/20/);
+ const completed=Array.from({length:20},(_,n)=>'synthetic-'+n).find(user=>user!=='synthetic-0'&&store.state(user,1).enrollment.arm==='control');
+ const final=Object.fromEntries(C.surveys.final.map(([k])=>[k,4]));
+ const ended=store.action(completed,1,{action:'finish',survey:final}).enrollment;
+ assert.equal(ended.status,'finished');assert.equal(Date.parse(ended.followupEndsAt)-Date.parse(ended.endedAt),168*3600000);
+ assert.equal(ended.finalSurvey.subscales.autonomySatisfaction.mean,4);
+ assert.equal(store.action(completed,1,{action:'withdraw'}).enrollment.status,'withdrawn');
  store.action('synthetic-0',1,{action:'withdraw'});assert.throws(()=>store.start('extra',1,{joinCode:created.joinCode,versionHash:created.version.hash,consent:true},{}),/20/);
  const old=store.state(configured,1).enrollment.configuration;
  d=new SQL.Database(d.export());const again=require('../lib/pilot-study').createStore({db});assert.deepEqual(again.state(configured,1).enrollment.configuration,old);

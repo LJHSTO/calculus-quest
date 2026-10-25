@@ -36,7 +36,7 @@
     const s = snapshot || {}, o = s.observation, facts = o?.d1?.facts, estimate = o?.d1?.estimates;
     const cycle=s.supportCycle,g=global.SupportCycleUI;
     const phase = s.policyState?.lifecycle?.phase || "idle";
-    const until = Date.parse(s.policyState?.cooldownUntil || "");
+    const until = Math.max(Date.parse(s.policyState?.cooldownUntil || "")||0,Date.parse(cycle?.blockedUntil||'')||0);
     const seconds = Number.isFinite(until) ? Math.max(0, Math.ceil((until-Date.now())/1000)) : 0;
     const action = s.locked || s.muted ? "silent" : o?.d2?.action;
     const reason = s.locked ? "测验与独立测量期间暂停帮助" : s.muted ? "学生已关闭本知识点提醒"
@@ -78,6 +78,9 @@
         + row("当前主动方式",s.researchControls?.profile?.proactivity==='reactive'?"仅回应主动求助":s.researchControls?.profile?.supportInquiryEnabled?"先询问，确认后支持":s.researchControls?.profile?.authorityLevel==='A2'?"允许直接展示知识线索":"按当前已保存策略")
         + `<small>稍后、换一种帮助、关闭和恢复均使用真实服务端流程。</small>`),
       card("D6", "支架生命周期", row("当前阶段", label(phase)) + row("服务端冷却", seconds ? `${seconds} 秒` : "无有效冷却", true)
+        + row("当前基础间隔",`${s.researchControls?.profile?.cooldownSeconds??'—'} 秒`)
+        + row("询问来源",cycle?.initiation==='agent_initiated_confirmation'?'系统根据作答证据主动询问':cycle?'学生主动报告需要':'尚未发起')
+        + row("证据编号",cycle?.inquiry?.sourceIds?.join('、')||'尚无询问证据')
         + row("多目标支持反馈",({helped:"学生自评有帮助",not_helped:"学生自评暂时没帮助",mismatch:"学生认为不匹配",prefer_stop:"学生要求停止"})[cycle?.feedback?.result]||"未反馈")
         + row("多目标独立检查",cycle?.checkResult?cycle.checkResult.correct===null?"跳过":cycle.checkResult.correct?"本次正确":"本次错误":"未完成")
         + row("独立检查", s.check?.id ? "已签发，等待独立作答" : "当前无检查")

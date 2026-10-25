@@ -31,6 +31,8 @@
     && getComputedStyle(el).pointerEvents !== 'none' && getComputedStyle(el).opacity !== '0';
   function anchor() {
     const kp = current.scope, type = current.sceneType;
+    const explicit=document.querySelector('[data-cq-support-anchor]');
+    if(visible(explicit))return {el:explicit,after:false,name:'data-cq-support-anchor'};
     // These exports position their game screens and 3D controls over the canvas.
     // Growing those containers would cover learning content. Use the parent's
     // normal-flow task footer, keeping the full original interactive viewport.

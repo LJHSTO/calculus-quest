@@ -188,6 +188,11 @@
   }
   function sync(next) {
     next={...next,check:next.check||(next.supportCycle?.status==="awaiting_check"?{id:next.supportCycle.check.id}:null)};
+    global.SupportCycleUI?.sync(next);
+    const tabsForHelp=document.querySelector('.workspace-canvas-toolbar');
+    let helpButton=document.getElementById('support-need-launcher');
+    if(tabsForHelp&&!helpButton){helpButton=node('button','support-need-launcher','需要帮助');helpButton.id='support-need-launcher';helpButton.type='button';helpButton.onclick=()=>global.SupportCycleUI?.openManual();tabsForHelp.append(helpButton);}
+    if(helpButton)helpButton.hidden=!(next.signedIn&&next.active&&next.unitType==='knowledge'&&!next.locked&&!next.check&&next.taskReady!==false);
     if (next.ownerKey !== ownerKey) {
       stopExposure();
       ownerKey = next.ownerKey; drafts.clear(); widgetValues.clear();
@@ -207,6 +212,7 @@
     if (!host) {stopExposure(); if(shell) shell.hidden = true; return;}
     toolbar.hidden = false;
     syncToolbarSettings(next);
+    if(!next.offer&&!next.prompt&&!next.check&&!next.feedback&&!global.SupportCycleUI?.active(next.supportCycle)&&!global.SupportCycleUI?.manualOpen(next)&&!global.PilotStudyUI?.active(next)&&next.view.modality==='tip'){if(shell)shell.hidden=true;return;}
     const owns = next.researchControls?.enabled || next.view.placement === "inline" || next.view.modality !== "tip"
       || (next.view.format||"plain")!=="plain" || ["A1","A4"].includes(next.offer?.authority?.level);
     if (!owns) {stopExposure(); if(shell) shell.hidden = true; return;}
@@ -218,7 +224,7 @@
     const moved = shell.parentNode !== host;
     if (moved) host.prepend(shell);
     shell.hidden = false; shell.dataset.placement = next.view.placement; shell.dataset.modality = next.view.modality;
-    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle)]);
+    const key = JSON.stringify([next.scopeKey, next.view, next.offer, next.check, next.checkSelection, next.prompt, next.feedback, next.busy, next.muted, next.policyState?.lifecycle,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
     if (key === renderKey && !moved) {observeOffer(next); return;}
     if (busy) return;
     renderKey = key;

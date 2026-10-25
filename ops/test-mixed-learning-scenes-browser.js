@@ -1,0 +1,14 @@
+'use strict';
+const fs=require('fs'),path=require('path'),assert=require('node:assert/strict'),{pathToFileURL}=require('url'),{chromium}=require('playwright-core');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'output/短课预试与混合课件-2026-10-25');
+async function main(){fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true}),cases=[],errors=[];
+ try{const p=await browser.newPage({viewport:{width:1120,height:850}});p.on('pageerror',e=>errors.push(e.message));await p.addInitScript(()=>{window.records=[];window.OpenMaicLearningEvidence={recordChallenge:x=>records.push(x),emit:(type,data)=>records.push({type,data})};});
+ const specs=[['GH-01-K01','是','再加一条 1 → 3 的箭头','否'],['GH-01-K02','不一定','取 x=-1','不一定'],['GH-01-K03','上升',null,'上升'],['GH-02-K01','不会改变','只改变中心点值','不会改变'],['GH-02-K02','是','换成跳跃的两侧','否'],['GH-02-K03','否',null,'是']];
+ for(const [id,right,change,after]of specs){await p.goto(pathToFileURL(path.join(root,'resources/open-maic/函数极限混合探索',id+'.html')).href);await p.getByRole('button',{name:right,exact:true}).click();await p.locator('#check').click();assert.match(await p.locator('#result').innerText(),/^观察吻合/);let r=await p.evaluate(()=>records.filter(x=>x.challenge_id).at(-1));assert.equal(r.is_correct,true);assert.equal(r.independent,false);
+ if(change)await p.getByRole('button',{name:change,exact:true}).click();else{await p.locator('input[type=range]').fill(id==='GH-02-K03'?'2':'3');await p.locator('input[type=range]').dispatchEvent('change');}
+ await p.getByRole('button',{name:after,exact:true}).click();await p.locator('#check').click();assert.match(await p.locator('#result').innerText(),/^观察吻合/);
+ const wrong=await p.locator('[role=group] button').all();for(const b of wrong){if(await b.innerText()!==after){await b.click();break;}}await p.locator('#check').click();assert.match(await p.locator('#result').innerText(),/^再核对/);r=await p.evaluate(()=>records.filter(x=>x.challenge_id));assert.deepEqual(r.map(x=>x.is_correct),[true,true,false]);
+ await p.screenshot({path:path.join(out,id+'-概念探索.png'),fullPage:true});await p.setViewportSize({width:390,height:844});assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await p.screenshot({path:path.join(out,id+'-窄屏.png'),fullPage:true});await p.setViewportSize({width:1120,height:850});cases.push({id,correctWrongEvents:true,numericTextInputs:await p.locator('input[type=number],input[type=text]').count(),noHorizontalOverflow:true});}
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'混合课件验收.json'),JSON.stringify({synthetic:true,passed:true,cases,errors},null,2));console.log('通过：六项概念探索18次真实判定、参数变化、非独立证据、桌面与窄屏。');
+ }finally{await browser.close();}}
+main().catch(e=>{console.error(e);process.exitCode=1;});

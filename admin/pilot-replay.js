@@ -1,7 +1,8 @@
 (function(global){
   'use strict';
-  const names={control:'对照组',configurable:'自主配置组',active:'进行中',finished:'已结束',withdrawn:'已退出',baseline:'学习前问卷',configuration:'六维设置',ready:'已就绪'};
+  const names={control:'对照组',configurable:'自主配置组',active:'进行中',finished:'主流程已结束',withdrawn:'已退出',baseline:'学习前问卷',pretest:'知识前测（尚未分组）',configuration:'六维设置',ready:'学习与后测'};
   const eventNames={consented:'同意参加预试',baseline_and_allocation:'提交学习前问卷并完成随机分组',learner_configuration_saved:'保存六维偏好与理由',effective_parameters_changed:'实际策略参数更新',probe_selected:'抽中一个测量时点',probe_shown:'测量问题可见回执',probe_answered:'学生回答时点问题',probe_skipped:'学生跳过时点问题',finished:'提交结束问卷',withdrawn:'退出预试',quiz_results:'提交测验答案',lesson_started:'进入学习单元',lesson_completed:'完成学习单元',support_cycle_inquiry_offered:'系统主动询问需要',support_cycle_need_confirmed:'学生确认需要',support_cycle_offered:'提供支持内容',support_cycle_feedback:'学生反馈支持效果',support_cycle_closed:'结束本轮帮助'};
+  eventNames.baseline_saved='保存学习前问卷（未分组）';eventNames.pretest_completed_and_allocated='提交知识前测并完成随机分组';
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
   global.PilotResearchDashboard={mount(root,{request,download,csv,versions}){
     const host=el('section');host.className='pilot-dashboard';host.append(el('span','研究管理'),el('h2','20人预试 · 学习进度与回放'),el('p','各版本最多20个名额，退出不自动补位。检查条件执行和缺失记录；预试结果不能证明学习效果。'));

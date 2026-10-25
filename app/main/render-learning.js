@@ -602,6 +602,11 @@ function knowledgeAudioRoot(unit) {
 function knowledgeAudioActions(unit, sceneOrder = null) {
   const root = knowledgeAudioRoot(unit);
   const order = Number(sceneOrder || unit?.scene?.content?.knowledgePoint?.slide?.sceneOrder || 0);
+  const resource = (unit?.resourceCandidates || unit?.scene?.content?.knowledgePoint?.resourceCandidates || [])
+    .find(item => Number(item.sceneOrder) === order && Array.isArray(item.teachingActions));
+  // A replacement activity must carry its own instruction track; the imported
+  // audio map still belongs to the original activity at this scene number.
+  if (resource) return resource.teachingActions;
   if (!order) {
     return (unit?.scene?.actions || []).filter((action) => action.audioRef);
   }

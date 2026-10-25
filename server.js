@@ -71,7 +71,7 @@ const learnerPreferences = require('./lib/learner-preferences').createStore({db}
 const learnerDesign = require('./lib/pilot-study').LEARNER_DESIGN;
 function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.studyDesign===learnerDesign?e:null;}
 function learnerStudyBlocked(user){const e=learnerEnrollment(user);return Boolean(e&&(e.status!=='active'||e.generation!==db.currentLearningGeneration(user)||e.stage!=='ready'||e.arm==='control'));}
-function rejectUnpreparedLearner(res,user){const e=learnerEnrollment(user);if(e?.status==='active'&&(e.stage!=='ready'||e.generation!==db.currentLearningGeneration(user))){sendJson(res,409,{ok:false,code:'learner_preparation_required',message:'请先在预试入口完成学习前问卷和本组准备，再开始本轮学习。'});return true;}return false;}
+function rejectUnpreparedLearner(res,user,assessment){const e=learnerEnrollment(user);const pretest=e?.stage==='pretest'&&assessment?.phase==='pre'&&assessment?.chapterId===proactiveStudyConfig.chapterId;if(e?.status==='active'&&((e.stage!=='ready'&&!pretest)||e.generation!==db.currentLearningGeneration(user))){sendJson(res,409,{ok:false,code:'learner_preparation_required',message:'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;}return false;}
 const researchControlStore = {
   enabled:engineeringControlStore.enabled,
   canEdit:user=>engineeringControlStore.canEdit(user),
@@ -8888,7 +8888,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      if(rejectUnpreparedLearner(res,auth.participant.id))return;
+      if(rejectUnpreparedLearner(res,auth.participant.id,body))return;
       const unitId = String(body.unitId || "").trim();
       const chapterId = String(body.chapterId || "").trim();
       const phase = String(body.phase || "").trim();
@@ -9051,6 +9051,7 @@ async function handleApi(req, res, url) {
           }
         });
       });
+      if(phase==='pre'&&chapterId===proactiveStudyConfig.chapterId)pilotStudy.recordPretest(auth.participant.id,learningGeneration,prepared.map(result=>result.id));
       db.saveNow();
 
       sendJson(res, 200, {

@@ -449,7 +449,7 @@ async function exerciseBasicControls(frame, label) {
     }
   }
 
-  const startPattern = /开始|启动|进入|继续|体验|挑战|演示|下一步|展开|start|play/i;
+  const startPattern = /开始|启动|进入|继续|体验|挑战|演示|下一步|展开|加一条|取 x=|靠近一步|换成|start|play/i;
   const buttons = frame.locator("button:visible, [role='button']:visible");
   const buttonCount = Math.min(await buttons.count(), 20);
   const coveredControls = [];

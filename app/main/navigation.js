@@ -215,6 +215,7 @@ async function selectChapter(chapterId) {
 function selectUnit(unitId) {
   const unit = getUnit(unitId);
   if (!unit) return false;
+  if(window.LearnerSetup&&!window.LearnerSetup.allowsUnit(unit)){window.LearnerSetup.renderGuide();return false;}
   if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unitId, { allowPrevious: true })) return false;
   const previousUnit = getUnit(currentUnitId);
   retireQuizReturnContext(unit.id);

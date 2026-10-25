@@ -4,7 +4,7 @@
   const strategyNames = {concept_hint:"概念线索",counterexample:"反例辨析",self_check:"把握与自检",plan_monitor:"计划与监控",value_connection:"个人价值联系",progress_feedback:"基于证据的信心支持",cost_reduction:"降低感知负担",acknowledge_reframe:"承认困难与重新理解失败",calm_choice:"继续或暂停的选择",study_plan:"短时学习计划",resource_navigation:"资源与求助路径"};
   const needs = {concept:"概念或步骤没弄懂",monitoring:"不知道自己是否理解",value:"不清楚学这个有什么用",confidence:"担心自己学不会",cost:"现在觉得投入太多",frustration:"有些挫败或紧张",planning:"不知道接下来怎么安排",uncertain:"暂时说不清",none:"暂时不需要帮助"};
   const statuses = {queued:"等待合适时机",offered:"已提供支持",engaged:"由你继续尝试",awaiting_check:"独立检查中",postponed:"稍后再说",closed:"本轮已结束",expired:"需要已过期，请重新确认"};
-  let owner="", snapshot=null, busy=false, error="", lastPoll=0, exposureTimer=null, exposureKey="";
+  let owner="", snapshot=null, busy=false, error="", lastPoll=0, exposureTimer=null, exposureKey="", manualScope="";
   const drafts=new Map(), sentExposure=new Set(), opened=new Map(), presentedInquiries=new Set();
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
   statuses.awaiting_confirmation="系统已主动询问，等待学生确认";
@@ -16,6 +16,7 @@
   function sync(next){
     const identity=`${next.ownerKey}:${next.generation}`;
     if(identity!==owner){owner=identity;drafts.clear();sentExposure.clear();opened.clear();presentedInquiries.clear();busy=false;error="";lastPoll=0;clearTimeout(exposureTimer);exposureTimer=null;exposureKey="";}
+    if(snapshot?.scopeKey!==next.scopeKey||snapshot?.ownerKey!==next.ownerKey||next.locked||next.check)manualScope="";
     snapshot=next;
   }
   async function request(command){
@@ -97,7 +98,7 @@
         root.append(el("p",`${statuses[c.status]}。你可以继续学习；到时还会检查当前任务和提醒偏好。`),button("结束这轮帮助",()=>request({action:"close",id:c.id})));
       }else if(c?.checkResult)root.append(el("p",c.checkResult.correct===null?"本次独立检查已跳过。":c.checkResult.correct?"这次独立检查回答正确。本轮帮助已结束。":"这次独立检查尚未答对。本轮已结束，你可以重新选择需要的帮助。"));
       else if(c?.closeReason==="need_unresolved")root.append(el("p","暂时不确定也没关系。可以补充一句你卡住的地方，或先继续探索。"));
-      root.append(checkin(next));
+      if(manualScope===next.scopeKey)root.append(checkin(next,true),button('收起求助入口',()=>{manualScope="";global.KnowledgeAssistant.refreshSupportSurface();}));
     }
     const status=el("p",busy?"正在处理，当前课件可以继续查看…":error);status.setAttribute("role","status");root.append(status);
     for(const details of root.querySelectorAll('details')){
@@ -124,7 +125,10 @@
     const key=`${c.id}:${c.rounds}`;if(exposureTimer&&exposureKey===key)return;
     stop();exposureKey=key;exposureTimer=setTimeout(()=>{exposureTimer=null;if(snapshot?.supportCycle?.id===c.id&&snapshot.supportCycle.rounds===c.rounds&&!document.hidden&&visible())expose(c);},1000);
   }
-  global.SupportCycleUI=Object.freeze({render,sync,active,deferInquiry,goalNames,strategyNames,needs,statuses,expose,get busy(){return busy;},get interactionBusy(){return interactionBusy();}});
+  global.SupportCycleUI=Object.freeze({render,sync,active,deferInquiry,goalNames,strategyNames,needs,statuses,expose,
+    manualOpen:next=>manualScope===next.scopeKey,
+    openManual(){if(!snapshot||snapshot.locked||snapshot.check)return;manualScope=snapshot.scopeKey;global.KnowledgeAssistant.refreshSupportSurface();global.TaskSupport?.locate?.();},
+    get busy(){return busy;},get interactionBusy(){return interactionBusy();}});
   document.addEventListener('pointerdown',()=>{pointerBusy=true;},true);
   const releaseInteraction=()=>{pointerBusy=false;if(snapshot?.supportCycle?.status==='awaiting_confirmation')setTimeout(()=>global.KnowledgeAssistant.refreshSupportSurface(),0);};
   document.addEventListener('pointerup',releaseInteraction,true);document.addEventListener('pointercancel',releaseInteraction,true);

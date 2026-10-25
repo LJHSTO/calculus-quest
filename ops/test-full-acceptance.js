@@ -11,6 +11,7 @@ extra.push('test-score-evidence','test-learning-event-clock','test-functions-lim
 extra.push('test-research-sites-parameter-sensitivity');
 extra.push('test-cross-entry-auth-browser','test-learner-pilot','test-learner-pilot-browser');
 extra.push('test-shared-network-limit','test-rate-limit-window');
+extra.push('test-pilot-v2-boundaries','test-mixed-learning-scenes-browser');
 const browser=/browser|layout-comfort|fullscreen-hint|proactive-exposure|learning-web-acceptance/;
 const suite=process.argv[2]||'core';
 // The old seven-point V14-C3 smoke script assumes a retired consent/outcome UI.

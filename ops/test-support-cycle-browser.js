@@ -60,6 +60,7 @@ async function main(){
   await page.locator('[data-workspace-canvas="interactive"]').click();
   await page.locator('[data-knowledge-scene="simulation"]').click();
   const frame=page.frameLocator('iframe[data-courseware-frame]');
+  await page.locator('#support-need-launcher').click();
   const host=frame.locator('[data-cq-embedded-help="task"]');await host.waitFor();
   const needSummary=host.getByText('这一步需要什么帮助？',{exact:true});
   if(!await needSummary.evaluate(n=>n.closest('details').open))await needSummary.click();
@@ -84,6 +85,7 @@ async function main(){
    await page.waitForFunction(id=>KnowledgeAssistant.designSpaceSnapshot().scopeKey===id,scopes[i]);
    await page.locator('[data-workspace-canvas="interactive"]').click();
    await page.locator('[data-knowledge-scene="simulation"]').click();
+   await page.locator('#support-need-launcher').click();
    await page.frameLocator('iframe[data-courseware-frame]').locator('[data-cq-embedded-help="task"]').waitFor();
    const result=await page.evaluate(async need=>KnowledgeAssistant.supportCycleRequest({action:"report",confirmed:true,need,note:"合成测试：请针对当前知识点提供帮助",ratings:{value:0}}),needed[i]);
    assert.equal(result.cycle.scope,scopes[i]);assert.ok(result.cycle.content.message.length>20);assert.equal(result.cycle.content.audit.contentVersion,require("../lib/support-goals").VERSION);

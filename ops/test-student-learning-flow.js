@@ -105,7 +105,7 @@ async function main() {
         await page.locator(".iframe-loader").waitFor({state:"hidden"});
         const box=await frameNode.boundingBox();assert.ok(box.width>300&&box.height>=300,`${point.id}/${type}课件尺寸`);
         const frame=await(await frameNode.elementHandle()).contentFrame();
-        if(point.id==='GH-01-K02'&&type==='game'){
+        if(point.id==='GH-01-K02'&&type==='game'&&await frame.locator('#gameCanvas').count()){
           await frame.getByRole('button',{name:/开始/}).first().press('Enter');
           for(const full of [false,true]){
             if(full){await page.getByTitle('全屏课件',{exact:true}).click();await page.waitForFunction(()=>{const host=document.fullscreenElement;const r=document.querySelector('iframe[data-courseware-frame]')?.getBoundingClientRect();return host?.classList.contains('core-learning-workspace')&&r&&r.left>=0&&r.top>=0&&r.right<=innerWidth+2&&r.bottom<=innerHeight+2&&r.width>=innerWidth*.7&&r.height>=300;});}
@@ -132,6 +132,7 @@ async function main() {
           record('坐标游戏常规与全屏填满、四边真实鼠标可达');
         }
         const embedded=frame.locator('[data-cq-embedded-help="task"]');
+        if(!await embedded.count()&&!await page.locator('.task-support-panel:visible').count())await page.locator('#support-need-launcher').click();
         await Promise.any([embedded.waitFor({state:"attached"}),page.locator('.task-support-panel').waitFor({state:"attached"})]);
         if(type==="simulation"){
           await embedded.waitFor({state:"visible"});
@@ -151,6 +152,15 @@ async function main() {
           const start=frame.getByRole("button",{name:/开始|启动|进入/}).filter({visible:true}).first();
           if(await start.count())await start.press('Enter');
           else if(await frame.locator("svg .node-group:visible, svg #nodesGroup > g[data-id]:visible").count())await frame.locator("svg .node-group:visible, svg #nodesGroup > g[data-id]:visible").first().click();
+        }
+        if(type==='game'){
+          const resource=point.resourceCandidates.find(r=>r.type===type);
+          if(resource?.teachingActions){
+            const narration=page.locator('[data-knowledge-audio-slot="scene-game"]');
+            await narration.getByText(resource.teachingActions[0].text,{exact:true}).waitFor({state:'attached'});
+            await page.getByText(resource.teachingActions[0].text,{exact:true}).filter({visible:true}).waitFor();
+            assert.equal(await narration.locator('[data-audio-src]').count(),0,'替换活动不能播放旧活动的录音');
+          }
         }
         await page.screenshot({path:path.join(output,`${point.id}-${type}.png`)});
       }

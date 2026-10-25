@@ -4,14 +4,14 @@
   else root.LearnerPreferences = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
-  const version = 'learner-preferences-20261024-v1';
+  const version = 'learner-preferences-20261025-v2';
   const dimensions = [
     {id:'D1',title:'怎样判断我可能需要帮助',short:'判断依据',description:'操作少不代表不想学。助手结合回答和任务记录发现线索，判断可能出错，也会先向你确认。',options:[
       ['standard','有明确线索，就先问问我','出现有依据的困难线索时，允许助手询问。'],
       ['cautious','等多个线索一致，再问我','减少只凭一种线索发起的询问，也可能错过一些帮助机会。']],default:'standard',preview:'例如：一次独立检查答错后，助手可以询问你是否卡住；选择谨慎判断时，它会等待更多类别的证据。'},
     {id:'D2',title:'什么时候可以来问我',short:'介入时机',description:'输入、拖动和独立测验期间都会保持安静。这里决定其他学习时刻的等待方式。',options:[
       ['boundary','等我完成当前小步','在提交、切换等任务边界再出现。'],
-      ['quiet','完成小步后，少来打扰','仍等到任务边界，并将两轮帮助之间的基础间隔从10分钟延长到20分钟。']],default:'boundary',preview:'你正拖动图中的点时不会弹出帮助。完成这一小步后，助手再判断是否需要询问。较长间隔减少新的打扰，不影响你主动求助。'},
+      ['quiet','完成小步后，少来打扰','仍等任务边界，两轮帮助之间至少等待3分钟；通常模式至少等待1分钟。']],default:'boundary',preview:'你正拖动图中的点时不会弹出帮助。完成这一小步后，还要有明确的困难证据。间隔到期不会自动弹窗；同一证据不重复询问，每个知识点最多询问两次。你仍可随时求助。'},
     {id:'D3',title:'知识上的帮助，先给到哪一步',short:'支持内容',description:'你仍可以说明需要概念、学习方法、价值、情绪或安排上的支持。这里选择知识提示的起点和默认份量。',options:[
       ['hint','先给一个线索','保留更多自己尝试的空间。'],
       ['guided','引导我想几个小步骤','用少量问题或步骤帮助我继续。'],
@@ -43,7 +43,7 @@
   function profile(answers,base) {
     const a=validate(answers),p={...base,proactivity:'adaptive',supportGoal:'auto',supportStrategy:'auto',timingMode:'adaptive',ttlSeconds:900,cooldownSeconds:600,representationSwitch:false,reviewAfterHours:24};
     Object.assign(p,a.D1.value==='cautious'?{helpNeed:.8,minimumEvidenceFamilies:2}:{helpNeed:.7,minimumEvidenceFamilies:1});
-    p.boundaryOnly=true;p.cooldownSeconds=a.D2.value==='quiet'?1200:600;p.interruptibility=.75;p.uncertainty=.3;
+    p.boundaryOnly=true;p.cooldownSeconds=a.D2.value==='quiet'?180:60;p.interruptibility=.75;p.uncertainty=.3;
     Object.assign(p,({hint:{initialSupportLevel:'L2',maxSupportLevel:'L3',supportDose:'brief'},guided:{initialSupportLevel:'L3',maxSupportLevel:'L5',supportDose:'guided'},example:{initialSupportLevel:'L5',maxSupportLevel:'L5',supportDose:'guided'}})[a.D3.value]);
     p.placement=a.D4.value==='sidebar'?'sidebar':'inline';p.presentationFormat=a.D4.value==='compact'?'disclosure':'plain';
     p.authorityLevel=a.D5.value==='cue'?'A2':'A1';p.supportInquiryEnabled=a.D5.value==='ask';if(a.D5.value==='request')p.proactivity='reactive';
@@ -55,5 +55,21 @@
     final:[['agency','本次学习中，我能按自己的目标决定学习和求助方式。'],['efficacy','不借助助手，我有把握完成同类函数与极限任务。'],['interest','本次学习内容让我感兴趣。'],['value','我觉得本次学习内容有用。'],['workload','本次学习让我感到费力。'],['disruption','学习过程中出现的信息打断了我的思路。'],['usability','我能顺利找到并使用需要的功能。']],
     configuration:[['understood','我理解这些设置会怎样影响助手。'],['burden','选择和调整设置让我感到负担。'],['alignment','助手的实际行为符合我对设置的理解。']]
   };
-  return {version,dimensions,reasons,defaults,validate,profile,surveys};
+  // Preserve complete satisfaction subscales, not a new total "agency" score.
+  // Chinese source: BPNSFS manual (2022), pp.29–30; task-specific instructions
+  // are an adaptation and require cognitive interviews in this pilot.
+  const needsItems=[
+    ['autonomy1','对于我所做的事情，我有可以自己去自由选择的感觉'],
+    ['competence5','我有信心自己能把事情做好'],
+    ['autonomy7','我感觉我的决定反映了我真正想要的'],
+    ['competence11','我觉得自己做事能力挺强的'],
+    ['autonomy13','我感觉我所做的选择表达了我真实的自己'],
+    ['competence17','我觉得我有能力去达成自己的目标'],
+    ['autonomy19','我感觉我一直在做自己真正感兴趣的事情'],
+    ['competence23','我感到我能成功完成有难度的任务']
+  ];
+  surveys.final=[...needsItems,...surveys.final.filter(([k])=>!['agency','efficacy'].includes(k))];
+  const instrument={version:'pilot-questionnaire-20261025-v2',source:'https://selfdeterminationtheory.org/wp-content/uploads/2022/08/BPNSFS_Complete_2022.pdf',sourcePages:'29–30',status:'Chinese_source_task_instruction_adaptation_not_revalidated',instructions:'请只回想刚才这一次学习，判断下面的描述有多符合你的实际感受。1＝完全不符合，5＝完全符合；可选择不愿回答。',groups:{autonomySatisfaction:['autonomy1','autonomy7','autonomy13','autonomy19'],competenceSatisfaction:['competence5','competence11','competence17','competence23']},interpretation:'自主需求满足不等于完整 agency；能力需求满足不等于任务自我效能。其他单项及设置问卷为自编预试条目。'};
+  function scoreSurvey(input){return Object.fromEntries(Object.entries(instrument.groups).map(([k,ids])=>{const complete=ids.every(id=>Number.isInteger(input?.[id])&&input[id]>=1&&input[id]<=5);return [k,{mean:complete?ids.reduce((s,id)=>s+input[id],0)/ids.length:null,answered:ids.filter(id=>Number.isInteger(input?.[id])).length,total:ids.length,missingRule:'all_four_required_no_imputation'}];}));}
+  return {version,dimensions,reasons,defaults,validate,profile,surveys,instrument,scoreSurvey};
 });

@@ -634,6 +634,7 @@ async function submitQuiz(unitId) {
   }
   state.submittedQuizzes = state.submittedQuizzes || [];
   if (!state.submittedQuizzes.includes(unit.id)) state.submittedQuizzes.push(unit.id);
+  if(unit.assessmentPhase==='pre'||unit.assessmentPhase==='post')await window.PilotStudyUI?.reload?.();
   if (!state.completed.includes(unit.id)) {
     state.completed.push(unit.id);
     addLog(`提交并完成「${unit.label}」。`);

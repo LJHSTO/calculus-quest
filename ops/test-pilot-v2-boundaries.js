@@ -1,0 +1,10 @@
+'use strict';
+const assert=require('node:assert/strict'),C=require('../app/shared/learner-preferences'),{includesRecord}=require('../lib/pilot-replay');
+const a=C.defaults();for(const v of Object.values(a))v.reason='default';assert.equal(C.profile(a,{}).cooldownSeconds,60);a.D2.value='quiet';assert.equal(C.profile(a,{}).cooldownSeconds,180);
+const answers=Object.fromEntries(C.surveys.final.map(([k])=>[k,4]));assert.equal(C.scoreSurvey(answers).autonomySatisfaction.mean,4);answers.autonomy1=null;assert.equal(C.scoreSurvey(answers).autonomySatisfaction.mean,null);assert.equal(C.scoreSurvey(answers).competenceSatisfaction.mean,4);
+const e={status:'finished',generation:1,consentAt:'2026-10-01T10:00:00Z',endedAt:'2026-10-01T11:00:00Z',followupEndsAt:'2026-10-08T11:00:00Z'},now=Date.parse('2026-10-10T00:00:00Z');
+const record={learning_generation:1,created_at:'2026-10-04T11:00:00Z'};
+assert.equal(includesRecord(e,'proactive_outcome_attempts',record,now),true);assert.equal(includesRecord(e,'learning_assistant_messages',record,now),false);assert.equal(includesRecord(e,'events',record,now),false);
+for(const r of [{...record,learning_generation:2},{...record,created_at:'2026-09-30T10:00:00Z'},{...record,created_at:'2026-10-09T12:00:00Z'},{...record,created_at:''}])assert.equal(includesRecord(e,'proactive_outcome_attempts',r,now),false);
+assert.equal(includesRecord({...e,status:'withdrawn'},'proactive_outcome_attempts',record,now),false);assert.equal(includesRecord({...e,followupEndsAt:null},'proactive_outcome_attempts',record,now),false);
+console.log('通过：1/3分钟偏好、完整子量表与缺失不插补、延迟测量限定窗口、其他学习及退出排除、旧版本不扩展。');

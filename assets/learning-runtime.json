@@ -1,5 +1,5 @@
 {
-  "version": "acea8fcabde7a32d65f5",
+  "version": "f272bf9073bff2c08d8e",
   "indexSha256": "74997667978e79db925dc6525d26ee541d96a60e10349e4dd6d964447975056b",
   "scripts": [
     {
@@ -105,7 +105,7 @@
     {
       "tag": "<script src=\"app/main/render-learning.js?v=20260922-slide-deck-v2\"></script>",
       "file": "app/main/render-learning.js",
-      "sha256": "ac506e6b89f890c5c620ce8914a541260e349af1a4bf223fd4b5beb991cdcb9e"
+      "sha256": "daa72bd849d4230a23cee8ad3bfdd0541a5d6f1eb332852a8e9006dafaef95e6"
     },
     {
       "tag": "<script src=\"app/main/recommendations.js?v=20260722-multi-scene-v1\"></script>",
@@ -120,7 +120,7 @@
     {
       "tag": "<script src=\"app/main/navigation.js?v=20260902-pilot-ux-v2\"></script>",
       "file": "app/main/navigation.js",
-      "sha256": "5744f9ca7b078361a5092f86cbb3a6ab529fe574b0c1b2e04bb468e8526a6e28"
+      "sha256": "6e25cec9064f0ccab8d8f8f90d7bdcb400b4247c65f10f0ff9742e91f8289ee1"
     },
     {
       "tag": "<script src=\"app/main/events.js?v=20260819-v2-knowledge-transition-v5\"></script>",
@@ -145,7 +145,7 @@
     {
       "tag": "<script src=\"app/main/quiz.js?v=20260909-feedback-r1\"></script>",
       "file": "app/main/quiz.js",
-      "sha256": "fca3834396a052aedee6debd7c89c9da0a78d899f3e35417415c933d1c8ad9e2"
+      "sha256": "fe53d347ec11e83e976f7677992b7e4fd2132e9f7e1776dede90470e50a44536"
     },
     {
       "tag": "<script src=\"app/main/agentic-path.js?v=20260909-flow-v5\"></script>",
@@ -210,37 +210,37 @@
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
       "file": "app/main/support-cycle.js",
-      "sha256": "8888c2a43980df5fbf8875591616c8eb53b594ce54e06a041560c001c6f9845c"
+      "sha256": "9e88d1b5459c304a7530360608c0d3a333c51df7885f26460008db7b9d8988ab"
     },
     {
       "tag": "<script src=\"app/shared/learner-preferences.js?v=20261024\"></script>",
       "file": "app/shared/learner-preferences.js",
-      "sha256": "988a8c48d588cb4f36e6b6561991e34f981a8edd941913f44091126dcc049880"
+      "sha256": "6413066420e500ffd22a537f1ae9cd981c347bb24b04f46e72b31bd9416581ec"
     },
     {
       "tag": "<script src=\"app/main/pilot-study.js?v=20261024\"></script>",
       "file": "app/main/pilot-study.js",
-      "sha256": "9aebb67d7517e7be95682f2ee2af360e735afb11442fbbb7187c31aad951672f"
+      "sha256": "4475aa3e339b3dafa52f893ed92a01e41f8ad7965249e21a083ba36fa1c48f19"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
       "file": "app/main/learner-setup.js",
-      "sha256": "c12fd3b5fba96d21aca85c1e40360b4ac5b1d9cc6750e41784e6bd2d96d4ae96"
+      "sha256": "7a8007e39923c98632443549dc873e44de4d935ecc637555ab0aebc219609df2"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
       "file": "app/main/task-support.js",
-      "sha256": "92f9f72164835904e801106b583b6068466f52a9f217ee8289920994d74775e4"
+      "sha256": "b234afc47c419b8c45bcdf72a317f6db4761494620ad7ebf85cfada2cb33c412"
     },
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
       "file": "app/main/proactive-surface.js",
-      "sha256": "700fdd07e5a21f13c9b8b0325934816fed529b12c39ef31d0ccdc4be21c7fa46"
+      "sha256": "ced6d568231fa1d9bfee52471d1b9a9c84b5c895d6a9af7340a79852bff96079"
     },
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",
       "file": "app/main/proactive-hud.js",
-      "sha256": "42e49ad2f606d681fd2f13771262f9ddb2bd8e8b62fad398f3fff913c3dd4cff"
+      "sha256": "c2cc51f73867a94273c517c967ccc595c0bf3a7fa0e65c03ce130a2965a052f6"
     }
   ],
   "styles": [
@@ -289,7 +289,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "0653df04f9d5b94a94d8",
+  "styleVersion": "803456e257f5854edaab",
   "styleSources": [
     {
       "file": "styles.css",
@@ -305,7 +305,7 @@
     },
     {
       "file": "app/main/learner-setup.css",
-      "sha256": "7bc2433fe1f99243d3896135c6951288614b426baaaa7098f21f7262fdf729a6"
+      "sha256": "1c00892aba792854cf0c19ffe62533ae486ba163d244dc40d324f9cac06b6410"
     },
     {
       "file": "app/main/learning-workspace.css",

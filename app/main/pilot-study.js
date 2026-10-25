@@ -42,7 +42,7 @@
       if(data.enrollment)dialog.append(el("p",data.enrollment.status==="withdrawn"?"你已退出预试。":"本次预试已结束。"));
       const label=el("label","研究者提供的加入码"),input=el("input");input.value=joinCode;input.autocomplete="off";input.setAttribute("aria-label","预试加入码");input.oninput=()=>joinCode=input.value;label.append(input);dialog.append(label);
       dialog.append(button("阅读预试说明",async()=>{try{preview=await call("/preview",{joinCode});message="";}catch(e){message=e.message;}showDialog();}));
-      if(preview){dialog.append(el("h3",preview.title),el("p",preview.consentText),el("p",`负责人：${preview.responsible}；联系：${preview.contact}`),el("p",`数据保存：${preview.retention}`),el("p",`退出及数据处理：${preview.withdrawal}`));
+      if(preview){dialog.append(el("h3",preview.title),el("p",preview.useMode==='internal_rehearsal'?'内部演练入口：仅供研究团队检查流程，不用于招募学生。':'请阅读本版本的研究说明。'),el("p",preview.consentText),el("p",`负责人：${preview.responsible}；联系：${preview.contact}`),el("p",`研究审核依据：${preview.reviewReference}`),el("p",`数据保存：${preview.retention}`),el("p",`退出及数据处理：${preview.withdrawal}`));
         const agree=el("label"),box=el("input");box.type="checkbox";agree.append(box,document.createTextNode("我已阅读以上说明，自愿参加本版本预试。"));dialog.append(agree,button("确认并加入",()=>{if(!box.checked){message="请先阅读并勾选自愿参加。";showDialog();return;}run("/start",{joinCode,consent:true,versionHash:preview.hash});}));}
     }
     const status=el("p",message);status.setAttribute("role","status");dialog.append(status);

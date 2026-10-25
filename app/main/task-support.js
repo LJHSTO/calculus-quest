@@ -84,12 +84,14 @@
     if(next.unitType==="quiz")quizReview(next);
     const handles=next.signedIn&&next.active&&next.taskReady!==false&&(next.unitType==="knowledge"||(next.unitType==="quiz"&&next.quizSubmitted&&Boolean(next.offer||next.prompt||next.check||next.feedback)))&&!next.locked&&next.view.placement==="inline"&&next.view.modality==="tip";
     if(!handles){clear();lastQuizSupport="";return false;}
+    const hasHelp=next.offer||next.prompt||next.check||next.feedback||global.SupportCycleUI?.active(next.supportCycle)||global.SupportCycleUI?.manualOpen(next)||global.PilotStudyUI?.active(next);
+    if(next.unitType==='knowledge'&&!hasHelp){clear();return true;}
     if(next.unitType==='quiz'){
       const helpKey=`${next.unitId}:${next.offer?.decisionId||next.prompt?.interventionId||next.check?.id||''}`;
       if(helpKey!==lastQuizSupport && (next.offer||next.prompt||next.check)){lastQuizSupport=helpKey;global.LearningWorkspace?.showTask?.();}
     }
     const nextFrame=/^GH-0[12]-K0[123]$/.test(next.scopeKey) ? document.querySelector('.multi-scene-scene-panel:not([hidden]) iframe[data-courseware-frame]') : null;
-    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle)]);
+    const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
     if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
     if(nextKey!==key){
       clearTimeout(exposureTimer);exposureTimer=null;
@@ -97,7 +99,7 @@
       if(next.check){message("cq:task-clear");source.prepend(el("p","独立检查中，提示和对话帮助已暂停。","task-assessment-note"));}
       else if(!global.PilotStudyUI?.active(next)) {
         if(next.prompt)draftForm(source,"写下你的想法，再独立检查",`${next.scopeKey}:${next.prompt.id}`);
-        if(!next.offer&&!next.prompt&&!global.SupportCycleUI?.active(next.supportCycle)){
+        if(global.SupportCycleUI?.manualOpen(next)&&!next.offer&&!next.prompt&&!global.SupportCycleUI?.active(next.supportCycle)){
           const question=el("details",null,"task-manual-help");question.append(el("summary","需要一个思考线索"));
           draftForm(question,"告诉知点你卡在哪一步",`${next.scopeKey}:manual`);source.append(question);
           if(next.reply?.text && replyContext===`${next.unitId}:${next.sceneType}`){const response=el('details');response.open=true;response.append(el('summary','知点的回应'),replyBody(next.reply.text));source.prepend(response);}

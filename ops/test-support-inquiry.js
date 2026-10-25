@@ -29,10 +29,13 @@ async function main(){
  c=await store.advance('alice',scope,1,{guard,generate});assert.equal(c.status,'offered');assert.equal(calls,1);
  c=store.act('alice',c.id,1,{action:'close'},{adapter});assert.equal(store.invite('alice',scope,1,args),null);
  time+=61000;assert.equal(store.invite('alice',scope,1,args),null,'同一证据冷却结束也不重复询问');
- const fresh={...args,evidence:{...evidence,evidenceRefs:[{...evidence.evidenceRefs[0],id:'answer-2'}]}};
+ const stale={...args,evidence:{...evidence,evidenceRefs:[{...evidence.evidenceRefs[0],id:'answer-2'}]}};
+ assert.equal(store.invite('alice',scope,1,stale),null,'增加旧时间戳的来源不构成新证据');
+ const fresh={...args,evidence:{...evidence,evidenceRefs:[{...evidence.evidenceRefs[0],id:'answer-2',capturedAt:new Date(time).toISOString()}]}};
  c=store.invite('alice',scope,1,fresh);assert.ok(c);c=store.act('alice',c.id,1,{action:'postpone'},{adapter});assert.equal(c.closeReason,'inquiry_postponed');
  time+=301000;assert.equal(store.invite('alice',scope,1,{...fresh,evidence:{...evidence,evidenceRefs:[{...evidence.evidenceRefs[0],id:'answer-3'}]}}),null,'每个知识点每个学习轮次最多两次');
  c=store.invite('bob',scope,1,args);store.act('bob',c.id,1,{action:'decline'},{adapter});assert.equal(store.invite('bob','GH-02-K01',1,args),null,'拒绝跨知识点退避');
+ time+=61000;assert.equal(store.invite('bob',scope,1,{...fresh,evidence:{...fresh.evidence,evidenceRefs:[{id:'new-after-decline',sourceType:'quiz_result',capturedAt:new Date(time).toISOString()}]}}),null,'拒绝后本轮本知识点不再自动问');
  c=store.invite('carol',scope,1,args);time+=121000;assert.equal(store.current('carol',scope,1).status,'expired');
  assert.throws(()=>store.report('carol',scope,1,{need:'concept',confirmed:true,inquiryId:c.id},profile,0),/过期/);
  c=store.invite('dave',scope,1,args);assert.equal(store.retractInquiry('dave',scope,1,'evidence_resolved').closeReason,'evidence_resolved');
