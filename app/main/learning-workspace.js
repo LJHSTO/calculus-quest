@@ -254,7 +254,9 @@
       coachKey = key;
       const help=global.KnowledgeAssistant?.designSpaceSnapshot?.();
       const answerHelp=help?.unitType==='quiz' && help?.view.placement==='inline' && (help.offer||help.prompt||help.check);
-      setCoachVisible(pending&&!answerHelp&&coachDismissedUnit!==unitId);
+      // A completed pretest stays on its result page until the learner continues.
+      const pretest=typeof getUnit==='function'&&getUnit(unitId)?.assessmentPhase==='pre';
+      setCoachVisible(pending&&!answerHelp&&!pretest&&coachDismissedUnit!==unitId);
     }
     if (typeof renderBottomNextButton === "function") renderBottomNextButton();
   }
@@ -570,6 +572,7 @@
 
   shell.addEventListener("click", (event) => {
     if (event.target.closest("#workspace-coach-toggle")) {
+      if(typeof getUnit==='function'&&getUnit()?.assessmentPhase==='pre'&&global.LearnerSetup?.enrollment?.studyDesign==='learner-configurable-20-v1'&&global.LearnerSetup.enrollment.status==='active'){global.LearnerSetup.continueAfterPretest();return;}
       coachDismissedUnit = coachVisible && typeof currentUnitId === "string" ? currentUnitId : "";
       setCoachVisible(!coachVisible);
     }

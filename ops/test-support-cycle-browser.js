@@ -8,6 +8,9 @@ async function main(){
  fs.mkdirSync(out,{recursive:true});const dir=fs.mkdtempSync(path.join(root,"output/support-browser-"));
  const port=await new Promise(resolve=>{const s=net.createServer();s.listen(0,"127.0.0.1",()=>{const p=s.address().port;s.close(()=>resolve(p));});});
  const base=`http://127.0.0.1:${port}`,env={...process.env,NODE_ENV:"test",HOST:"127.0.0.1",BASE_PATH:"",DB_PATH:path.join(dir,"synthetic.db"),LLM_PROVIDER:"mock",GRADING_LLM_PROVIDER:"mock",ASSESSMENT_LLM_ENABLED:"false",COACH_NARRATION_LLM_ENABLED:"false",PROACTIVE_EXPERIMENT_ID:path.basename(dir),PROACTIVE_EXPERIMENT_CHAPTER_ID:"V14-C1",PROACTIVE_POLICY_MODE:"active",PROACTIVE_ASSIGNMENT_SALT:"synthetic-support-test",PROACTIVE_PARTICIPATION_MODE:"implicit-pilot",PROACTIVE_EXPERIMENT_ARMS:"treatment_full",PROACTIVE_DISPLAY_ARMS:"treatment_full",PROACTIVE_ADAPTER_VERSION:"functions-limits-adapter-r2",PROACTIVE_OUTCOME_INSTRUMENT_VERSION:"functions-limits-retention-r4",RESEARCH_CONTROLS_ENABLED:"true",RESEARCH_CONTROLS_DEMO:"true"};
+ // This fixture drives many operations faster than a learner. Rate limiting has
+ // separate boundary tests; do not let its shared budget mask UI assertions.
+ env.RATE_LIMIT_MAX='10000';
  const log=fs.openSync(path.join(dir,"server.log"),"w"),server=spawn(process.execPath,["server.js",String(port)],{cwd:root,env,windowsHide:true,stdio:["ignore",log,log]});let browser,page;
  try{
   for(let n=0;n<100;n++){let ready=false;try{ready=(await fetch(base+"/api/health")).ok;}catch{}if(ready)break;await new Promise(r=>setTimeout(r,100));}
@@ -19,7 +22,7 @@ async function main(){
   const pre=require("../data/multi-scene-learning-route.json").chapters.find(c=>c.id==="V14-C1").flow.preQuiz;
   for(const q of pre.questions){const card=page.locator(`.question-card[data-question="${q.id}"]`);if(q.type==="short_answer")await card.locator("textarea").fill("合成验收回答：区分点上的值与附近的趋势。");else await card.locator("input").first().check();}
   await page.locator("[data-submit-quiz]").click();await page.waitForFunction(()=>state.submittedQuizzes.includes("V14-C1-pre"));
-  await page.getByRole("button",{name:"全部学习",exact:true}).click();await page.getByRole("button",{name:"按勾选知识点开始学习"}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().unitType==="knowledge");
+  await page.locator('#workspace-coach-toggle').click();await page.getByRole("button",{name:"全部学习",exact:true}).click();await page.getByRole("button",{name:"按勾选知识点开始学习"}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().unitType==="knowledge");
   await page.locator('[data-openmaic-state="ready"]').waitFor({timeout:30000});
   assert.ok(await page.frameLocator('iframe[data-openmaic-slide]').locator('.slide-element').count()>3,'讲解课件必须实际渲染');
   await page.locator('[data-workspace-canvas="interactive"]').click();
@@ -46,6 +49,8 @@ async function main(){
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==="offered");
   let c=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle);assert.equal(c.plan.primaryGoal,"motivational");assert.equal(c.need.source,"student_confirmed");assert.equal(c.content.audit.fallback,true);
   assert.equal(c.id,invited.id);assert.equal(c.initiation,'agent_initiated_confirmation');assert.equal(c.inquiry.response,'value');
+  const followupControls=await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return [0,1].map(limit=>{const root=SupportCycleUI.render({...s,supportCycle:{...s.supportCycle,profile:{...s.supportCycle.profile,supportFollowups:limit}}});return [...root.querySelectorAll('button')].some(b=>b.textContent==='我还需要帮助，请稍后再补充一次');});});
+  assert.deepEqual(followupControls,[false,true],'D6停止时不显示无效补充按钮，允许一次时显示明确请求');
   await page.locator(".support-goal-message").scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,"常规学习多目标支持.png")});
   await page.getByText("反馈这次帮助",{exact:true}).click();await page.getByRole("button",{name:"有帮助",exact:true}).click();await page.getByRole("button",{name:"保存反馈",exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.feedback?.result==="helped");
@@ -126,6 +131,7 @@ async function main(){
   await page.screenshot({path:path.join(out,"多目标支持窄屏.png")});
   await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:'close',id:KnowledgeAssistant.designSpaceSnapshot().supportCycle.id}));
   await page.locator('#learner-preferences-button').click();await page.getByRole('button',{name:'提示呈现',exact:true}).click();await page.locator('#learner-setup input[value="inline"]').check();
+  await page.locator('#learner-setup select[name=preference-reason]').selectOption('near_task');
   await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'核对选择',exact:true}).click();await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls?.revision===2);
   const plain=await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:'report',confirmed:true,need:'frustration',note:'已确认需要，请直接显示支持'}));assert.equal(plain.cycle.profile.authorityLevel,'A1');assert.equal(plain.cycle.profile.presentationFormat,'plain');
   await page.locator('.support-goal-message:visible [data-support-body]').waitFor({state:'visible'});assert.equal(await page.locator('.support-goal-message:visible').getByText('查看这条帮助',{exact:true}).count(),0,'确认需要后，D5询问权限不能覆盖D4直接呈现');

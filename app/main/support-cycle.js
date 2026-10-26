@@ -59,7 +59,9 @@
     choices(result,{helped:"有帮助",not_helped:"暂时没帮助",mismatch:"没有对上我的需要",prefer_stop:"我想停止本轮帮助"},d.result,v=>d.result=v);form.append(result);
     const perceived=el("details");perceived.append(el("summary","你感受到的主要帮助（可不选）"));const options=el("div");choices(options,goalNames,d.perceivedGoal,v=>d.perceivedGoal=v);perceived.append(options);form.append(perceived);
     note(form,d,"具体哪里有用或不合适（可不填）");selfRatings(form,d);
-    const follow=button(d.requestMore?"已选择：稍后再给一个建议":"需要时，稍后再给一个建议",()=>{d.requestMore=!d.requestMore;follow.textContent=d.requestMore?"已选择：稍后再给一个建议":"需要时，稍后再给一个建议";});follow.setAttribute("aria-pressed",String(d.requestMore));form.append(follow);
+    if(c.rounds<=Number(c.profile?.supportFollowups||0)){
+      const follow=button(d.requestMore?'已选择：我还需要一次补充帮助':'我还需要帮助，请稍后再补充一次',()=>{d.requestMore=!d.requestMore;follow.textContent=d.requestMore?'已选择：我还需要一次补充帮助':'我还需要帮助，请稍后再补充一次';follow.setAttribute('aria-pressed',String(d.requestMore));});follow.setAttribute('aria-pressed',String(d.requestMore));form.append(follow,el('p','保存反馈后才会安排补充；仍会等待所选间隔和合适的任务边界。'));
+    }else{d.requestMore=false;form.append(el('p','本轮不再追加帮助。你可以继续自己尝试，之后仍可重新求助。'));}
     const submit=el("button","保存反馈");submit.type="submit";submit.disabled=busy;form.append(submit);
     form.onsubmit=e=>{e.preventDefault();if(!d.result){error="请选择反馈。";global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"feedback",id:c.id,...d});};details.append(form);return details;
   }

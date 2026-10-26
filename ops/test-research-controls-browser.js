@@ -14,13 +14,19 @@ async function main(){
    browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});
    const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.setDefaultTimeout(12000);page.on('pageerror',e=>errors.push(e.message));page.on('response',async r=>{if(r.url().includes('/api/auth/') && r.status()>=400){const p=await r.json().catch(()=>({}));console.log(JSON.stringify({status:r.status(),message:p.message}));}});
    await page.goto(base+'/?research=1');await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.locator('[data-auth-mode="register"]').click();await page.locator('#nickname').fill('六维核验'+Date.now());await page.locator('#register-password').fill('control-browser-synthetic');await page.locator('#register-password-confirm').fill('control-browser-synthetic');await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});
-   await page.locator('[data-view="learn"]').first().click();await page.getByRole('button',{name:'六维观察台',exact:true}).click();
+   await page.locator('[data-view="learn"]').first().click();
+   assert.equal(await page.locator('#learner-preferences-button:visible,.proactive-hud-toggle-btn:visible').count(),0,'前测隐藏设置与观察台');
+   assert.equal((await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot())).locked,true,'独立前测受保护');
+   const pre=require('../data/multi-scene-learning-route.json').chapters.find(c=>c.id==='V14-C1').flow.preQuiz;
+   for(const q of pre.questions){const card=page.locator(`.question-card[data-question="${q.id}"]`);if(q.type==='short_answer')await card.locator('textarea').fill('合成作答');else await card.locator('input').first().check();}
+   await page.locator('[data-submit-quiz]').click();await page.waitForFunction(()=>state.submittedQuizzes.includes('V14-C1-pre'));await page.locator('#workspace-coach-toggle').click();await page.getByRole('button',{name:'全部学习',exact:true}).click();await page.getByRole('button',{name:'按勾选知识点开始学习',exact:true}).click();
+   await page.getByRole('button',{name:'六维观察台',exact:true}).click();
    assert.equal(await page.locator('#proactive-observatory [data-dimension]').count(),6);
    assert.equal(await page.locator('#proactive-observatory form,#proactive-observatory input,#proactive-observatory select').count(),0);
    await page.getByRole('button',{name:'收起观察台'}).click();await page.locator('#learner-preferences-button').click();await page.locator('#learner-setup').waitFor();
    if(enabled){
     await page.getByRole('button',{name:'先使用全部默认设置',exact:true}).click();await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls?.revision===1);
-    assert.equal((await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot())).locked,true,'前测仍保护');
+    assert.equal((await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot())).unitType,'knowledge','保存后保留课件');
     await page.reload();await page.locator('[data-view="learn"]').first().click();await page.locator('#learner-preferences-button').click();await page.locator('#learner-setup .learner-steps').waitFor();
     await page.setViewportSize({width:390,height:844});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     results.push({name:'观察台只读，普通入口保存六维偏好、刷新恢复、前测保护与窄屏',passed:true});

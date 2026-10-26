@@ -1,5 +1,5 @@
 {
-  "version": "f272bf9073bff2c08d8e",
+  "version": "09f5fa038ef84d3b20fe",
   "indexSha256": "74997667978e79db925dc6525d26ee541d96a60e10349e4dd6d964447975056b",
   "scripts": [
     {
@@ -125,7 +125,7 @@
     {
       "tag": "<script src=\"app/main/events.js?v=20260819-v2-knowledge-transition-v5\"></script>",
       "file": "app/main/events.js",
-      "sha256": "43502c57ea334143466ea6076999e0556842ac04aaf3d4a645f98814630ec249"
+      "sha256": "eba7cd3356a7cc7c416ac40d703325acecbd0bad4dedd7223361373a7b7904b4"
     },
     {
       "tag": "<script src=\"lib/course-playback.js?v=20261019\"></script>",
@@ -145,7 +145,7 @@
     {
       "tag": "<script src=\"app/main/quiz.js?v=20260909-feedback-r1\"></script>",
       "file": "app/main/quiz.js",
-      "sha256": "fe53d347ec11e83e976f7677992b7e4fd2132e9f7e1776dede90470e50a44536"
+      "sha256": "f6141082c06d2f3120bfb8d34ce781f4a27913aa4ccf42dd8b769c26f550b287"
     },
     {
       "tag": "<script src=\"app/main/agentic-path.js?v=20260909-flow-v5\"></script>",
@@ -190,7 +190,7 @@
     {
       "tag": "<script src=\"app/main/learning-workspace.js?v=20261014-workspace-v6\"></script>",
       "file": "app/main/learning-workspace.js",
-      "sha256": "73fcf6fc7360bf018581e3ff4888c046ad7fcfec43fbdef50bd7fccf3519e34e"
+      "sha256": "e93d50e0301e3f9bc312549e4ad18efbcb833d39dd10c7a1b9c13fc488e70e66"
     },
     {
       "tag": "<script src=\"app/main/textbook-reading.js?v=20260916\"></script>",
@@ -205,27 +205,27 @@
     {
       "tag": "<script src=\"app/main/bootstrap.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/bootstrap.js",
-      "sha256": "47bbb558aca287cd8712ae7c02a833a75d1d4db31ed7218a87dcaf20bb92d35a"
+      "sha256": "74b3777c834efe216484e631439dc9011f782ebef4804cb78c911e55d73e1c08"
     },
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
       "file": "app/main/support-cycle.js",
-      "sha256": "9e88d1b5459c304a7530360608c0d3a333c51df7885f26460008db7b9d8988ab"
+      "sha256": "f3ec382de2fa2bc4ed19a563694b7abdefdee7d5fb03ef9f2385cc6bfe71cbfe"
     },
     {
       "tag": "<script src=\"app/shared/learner-preferences.js?v=20261024\"></script>",
       "file": "app/shared/learner-preferences.js",
-      "sha256": "6413066420e500ffd22a537f1ae9cd981c347bb24b04f46e72b31bd9416581ec"
+      "sha256": "8edde17a02a4303342cfe623d3540c5f662ed3ed0357d24ac54834c47ac1694a"
     },
     {
       "tag": "<script src=\"app/main/pilot-study.js?v=20261024\"></script>",
       "file": "app/main/pilot-study.js",
-      "sha256": "4475aa3e339b3dafa52f893ed92a01e41f8ad7965249e21a083ba36fa1c48f19"
+      "sha256": "73972d0d97f2a3c0b559d60fd8998636014e296cffb1a52b68720eb95e0d24f2"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
       "file": "app/main/learner-setup.js",
-      "sha256": "7a8007e39923c98632443549dc873e44de4d935ecc637555ab0aebc219609df2"
+      "sha256": "43e0c90ac14d372e66e35dd3a13913efc93de9e8ad7f656aeef11867d47a5108"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
@@ -289,7 +289,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "803456e257f5854edaab",
+  "styleVersion": "d80c301e83703ee591f0",
   "styleSources": [
     {
       "file": "styles.css",
@@ -301,11 +301,11 @@
     },
     {
       "file": "app/main/pilot-study.css",
-      "sha256": "49cfbf8b2664824eb0c55bcedd120b8534408fdf91a9f32e8fddcb7458ee14eb"
+      "sha256": "1a3c200bffc9099e7b00e1cf7e71295a0d1cac348451ff442986640ccf00776b"
     },
     {
       "file": "app/main/learner-setup.css",
-      "sha256": "1c00892aba792854cf0c19ffe62533ae486ba163d244dc40d324f9cac06b6410"
+      "sha256": "98d8a83be1f57a9f0b756bb268aaaa71e3a80d07a6743afadd5893325be09069"
     },
     {
       "file": "app/main/learning-workspace.css",

@@ -137,6 +137,7 @@ document.addEventListener("click", (event) => {
 
   const quizPathAction = event.target.closest("[data-quiz-path-action]");
   if (quizPathAction) {
+    if(quizPathAction.dataset.quizPathAction==='pilot-next')window.LearnerSetup?.continueAfterPretest?.();
     if (quizPathAction.dataset.quizPathAction === "coach" && typeof focusAgenticCoachPanel === "function") {
       focusAgenticCoachPanel();
     }

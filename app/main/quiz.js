@@ -424,13 +424,15 @@ function findNavTargets(unitId) {
 }
 
 function renderQuizPathNavigation(unit) {
+  const pilot=window.LearnerSetup?.enrollment;
+  if(unit.assessmentPhase==='pre'&&pilot?.studyDesign==='learner-configurable-20-v1'&&pilot.status==='active')return '<div class="quiz-nav-buttons"><button class="button primary quiz-nav-btn guided-next" type="button" data-quiz-path-action="pilot-next">下一步：准备学习方式</button></div>';
   const { prevId, nextId } = findNavTargets(unit.id);
   const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
   const pathReady = typeof agenticQuizPathReady !== "function" || agenticQuizPathReady(unit);
   const nextUnit = nextId ? getUnit(nextId) : null;
   const nextLabel = nextUnit?.chapterId && nextUnit.chapterId !== unit.chapterId ? "进入下一章" : "下一节";
   const nextButton = pending
-    ? '<button class="button primary quiz-nav-btn" type="button" data-quiz-path-action="coach">选择下一步</button>'
+    ? '<button class="button primary quiz-nav-btn guided-next" type="button" data-quiz-path-action="coach">下一步：选择学习内容</button>'
     : nextId
       ? `<button class="button primary quiz-nav-btn" type="button" data-unit="${escapeHtml(nextId)}">${nextLabel}</button>`
       : !pathReady

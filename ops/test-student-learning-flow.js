@@ -39,6 +39,8 @@ async function main() {
     page=await browser.newPage({viewport:{width:1366,height:900},reducedMotion:"reduce"});page.setDefaultTimeout(20000);
     page.on("pageerror",e=>issues.push(e.message));
     await page.addInitScript(()=>{
+      window.__taskMessages=[];
+      window.addEventListener('message',event=>{const m=event.data;if(m?.type==='cq:task-control')window.__taskMessages.push({type:m.type,kind:m.kind,id:m.id,revision:m.revision,length:String(m.value||'').length});});
       document.addEventListener("mousemove",event=>{
         window.__observedPointer={x:event.clientX,y:event.clientY,target:event.target.id,at:performance.now()};
       },true);
@@ -68,7 +70,7 @@ async function main() {
     assert.equal(await page.locator(".task-assessment-note").count(),chapter.flow.preQuiz.questions.length,"前测逐题关闭帮助");
     await answerQuiz(chapter.flow.preQuiz,false);await page.waitForFunction(()=>state.submittedQuizzes.includes("V14-C1-pre"));
     await page.screenshot({path:path.join(output,"01-前测与待复核.png")});record("前测独立作答与提交",{shortAnswerProvider:"mock-manual-review"});
-    await page.locator("button").filter({hasText:"返回测试"}).click();
+    assert.equal(await page.locator('.is-coach-surface').count(),0,'前测提交后应留在结果页');
     assert.equal(await page.locator(".question-task-review").count(),chapter.flow.preQuiz.questions.length);
     const review=page.locator(".question-task-review").first();await review.locator("summary").click();
     await review.locator("textarea").fill("我想核对这道题的第一步。");
@@ -77,7 +79,7 @@ async function main() {
     await page.waitForFunction(()=>document.querySelector(".task-review-reply")?.textContent.includes("知点的回应"));
     assert.equal(await review.getByRole("button",{name:"发送我的想法"}).isEnabled(),true);
     record("前测提交后原题旁复盘与重复发送可用");
-    await page.getByRole("button",{name:"选择下一步",exact:true}).click();
+    await page.locator("#workspace-coach-toggle").click();
     await page.getByRole("button",{name:"全部学习",exact:true}).click();await page.getByRole("button",{name:"按勾选知识点开始学习"}).click();record("学生确认六知识点学习路径");
     for(const [index,point] of points.entries()){
       await page.waitForFunction(id=>currentUnitId===id,point.id);
@@ -138,7 +140,10 @@ async function main() {
           await embedded.waitFor({state:"visible"});
           await embedded.locator("summary").click();
           await embedded.locator("textarea").fill(`我在学习${point.name}，先观察哪些关系？`);
-          const [reply]=await Promise.all([page.waitForResponse(r=>r.url().includes("/assistant/ask")&&r.request().method()==="POST"),embedded.getByRole("button",{name:"发送我的想法"}).click()]);assert.equal(reply.status(),200);
+          let reply;
+          try { [reply]=await Promise.all([page.waitForResponse(r=>r.url().includes("/assistant/ask")&&r.request().method()==="POST"),embedded.getByRole("button",{name:"发送我的想法"}).click()]); }
+          catch(error){const diagnostic=await page.evaluate(()=>({messages:window.__taskMessages,snapshot:KnowledgeAssistant.designSpaceSnapshot()}));fs.writeFileSync(path.join(output,'嵌入求助诊断.json'),JSON.stringify(diagnostic,null,2));throw error;}
+          assert.equal(reply.status(),200);
           await page.waitForFunction(()=>!KnowledgeAssistant.designSpaceSnapshot().busy);
           await embedded.getByText('知点的回应',{exact:true}).waitFor({state:'visible'});
           await frame.waitForFunction(()=>document.querySelector('[data-cq-embedded-help="task"]')?.shadowRoot.querySelector('textarea')?.value==='');

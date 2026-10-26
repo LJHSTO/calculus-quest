@@ -1087,6 +1087,8 @@ async function main() {
       viewport: { width: Number(process.env.COURSEWARE_BROWSER_WIDTH || 1600), height: Number(process.env.COURSEWARE_BROWSER_HEIGHT || 1000) },
       reducedMotion: "reduce"
     });
+    context.setDefaultTimeout(20000);
+    context.setDefaultNavigationTimeout(45000);
     if (evidenceFile) await context.addInitScript(() => {
       const describe = element => element ? {
         tag: element.tagName, id: element.id || "", className: String(element.className || ""),

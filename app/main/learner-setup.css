@@ -7,4 +7,17 @@
 .pilot-learning-guide[hidden]{display:none}.pilot-progress-steps{display:flex;flex-wrap:wrap;gap:6px 18px;list-style:none;padding:0;margin:0 0 10px;counter-reset:step}
 .pilot-progress-steps li{counter-increment:step;color:#66777c}.pilot-progress-steps li::before{content:counter(step) ' ';font-variant-numeric:tabular-nums}.pilot-progress-steps [data-state=current]{font-weight:700;color:#136a5b}.pilot-progress-steps [data-state=done]{color:#5e766f}
 .pilot-guide-next{display:flex;align-items:center;justify-content:space-between;gap:12px}.pilot-guide-next button{flex-shrink:0}.support-need-launcher{margin-left:auto;border:1px solid #b6d3cb;background:#fff;color:#24665a;border-radius:10px;padding:9px 14px;cursor:pointer}.support-need-launcher[hidden]{display:none}
+.pilot-guide-next button{font:inherit;min-height:40px;padding:8px 14px;border:1px solid #c3d4cf;border-radius:9px;background:white;color:#245d52;cursor:pointer}.pilot-guide-next .learner-primary{background:#246f60;color:white;border-color:#246f60}.pilot-guide-next button:focus-visible{outline:3px solid #71b9a8;outline-offset:2px}
 @media(max-width:640px){.pilot-learning-guide{margin:0 8px 8px;padding:10px}.pilot-progress-steps{gap:6px 10px;font-size:12px}.pilot-guide-next{align-items:stretch;flex-direction:column}}
+/* Journey transitions guide attention without covering the course. */
+#pilot-entry-button[hidden],#learner-preferences-button[hidden],.proactive-hud-toggle-btn[hidden]{display:none!important}
+.learner-setup-body{animation:learner-step-enter .22s ease-out}
+.guided-next{animation:learner-step-enter .22s ease-out}
+@keyframes learner-step-enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.learner-setup-body,.guided-next{animation:none}}
+#learner-setup[data-mode=preferences][open]{display:flex;flex-direction:column;height:min(920px,calc(100dvh - 40px));overflow:hidden}
+#learner-setup[data-mode=preferences]>.learner-setup-body{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding-right:6px}
+#learner-setup[data-mode=preferences]>.learner-setup-header,#learner-setup[data-mode=preferences]>.learner-steps,#learner-setup[data-mode=preferences]>.learner-setup-footer{flex-shrink:0}
+#learner-setup[data-mode=preferences]>.learner-steps{margin:16px 0 12px}
+#learner-setup[data-mode=preferences]>.learner-setup-footer{background:#fff;padding-top:12px}
+@media(max-width:600px){#learner-setup[data-mode=preferences][open]{height:calc(100dvh - 16px)}}

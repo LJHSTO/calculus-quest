@@ -70,6 +70,10 @@ const engineeringControlStore = researchControls.createStore({root,config:proact
 const learnerPreferences = require('./lib/learner-preferences').createStore({db});
 const learnerDesign = require('./lib/pilot-study').LEARNER_DESIGN;
 function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.studyDesign===learnerDesign?e:null;}
+function pilotAdmission(user,version){
+  const questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===proactiveStudyConfig.chapterId)?.flow?.preQuiz?.questions||[];
+  return require('./lib/learner-journey').admission(db.getQuizResultsByUser(user).filter(q=>q.chapter_id===proactiveStudyConfig.chapterId),questions.map(q=>q.id),version.allowPretestReuse===true);
+}
 function learnerStudyBlocked(user){const e=learnerEnrollment(user);return Boolean(e&&(e.status!=='active'||e.generation!==db.currentLearningGeneration(user)||e.stage!=='ready'||e.arm==='control'));}
 function rejectUnpreparedLearner(res,user,assessment){const e=learnerEnrollment(user);const pretest=e?.stage==='pretest'&&assessment?.phase==='pre'&&assessment?.chapterId===proactiveStudyConfig.chapterId;if(e?.status==='active'&&((e.stage!=='ready'&&!pretest)||e.generation!==db.currentLearningGeneration(user))){sendJson(res,409,{ok:false,code:'learner_preparation_required',message:'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;}return false;}
 const researchControlStore = {
@@ -87,7 +91,7 @@ const supportCycles = require("./lib/support-cycle").createStore({db,experimentI
 const pilotStudy = require("./lib/pilot-study").createStore({db,implementation:Object.fromEntries(
   ["server.js","lib/pilot-study.js","lib/support-cycle.js","lib/support-goals.js","lib/research-controls.js",
     "lib/proactive-policy/index.js","lib/proactive-policy/timing-gate.js","lib/proactive-policy/evidence-package.js",
-    "app/main/pilot-study.js","app/shared/learner-preferences.js","lib/learner-preferences.js","admin/pilot.js","data/multi-scene-learning-route.json"]
+    "app/main/pilot-study.js","app/main/learner-setup.js","app/main/quiz.js","app/main/learning-workspace.js","app/shared/learner-preferences.js","lib/learner-preferences.js","lib/learner-journey.js","lib/pilot-replay.js","admin/pilot.js","data/multi-scene-learning-route.json"]
     .map(file=>[file,crypto.createHash("sha256").update(fs.readFileSync(path.join(root,file))).digest("hex")]))});
 const pilotReplay=require('./lib/pilot-replay').createReplay({db,pilot:pilotStudy});
 function cancelLearnerSupport(user,generation){
@@ -5606,15 +5610,17 @@ async function handleApi(req, res, url) {
       const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:'请先登录'});return;}
       res.setHeader('Cache-Control','no-store');const user=auth.participant.id,generation=db.currentLearningGeneration(user),e=learnerEnrollment(user);
       try{
-        const enabled=researchControlStore.canEdit(user)&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)));
+        const snapshot=parseStoredJson(db.getLearningSnapshotState(user,nowIso()).snapshot?.data||'{}',{});
+        const window=require('./lib/learner-journey').editWindow(e,snapshot,db.getQuizResultsByUser(user));
+        const enabled=researchControlStore.canEdit(user)&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
         if(req.method==='POST'){
-          if(!enabled)throw Object.assign(new Error('当前预试条件不能修改学习偏好'),{status:403});
+          if(!enabled)throw Object.assign(new Error(window.message||'当前预试条件不能修改学习偏好'),{status:403});
           if(pilotProtection(user,generation))throw Object.assign(new Error('请先结束独立测量或当前帮助，再修改偏好'),{status:409});
-          const input=await readJsonBody(req);const record=learnerPreferences.save(user,input);
+          const input=await readJsonBody(req);const record=learnerPreferences.save(user,{...input,experimental:e?.arm==='configurable',configurationWindow:window});
           pilotStudy.configure(user,generation,record);cancelLearnerSupport(user,generation);
           pilotStudy.recordConfiguration(user,generation,pilotRuntime(user),'学生通过学习偏好页面保存六维选择与理由');
         }
-        sendJson(res,200,{ok:true,data:{enabled,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
+        sendJson(res,200,{ok:true,data:{enabled,configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
       }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
     }
     if(url.pathname.startsWith("/api/learning/pilot")) {
@@ -5624,7 +5630,7 @@ async function handleApi(req, res, url) {
       try {
         const input=req.method==="POST"?await readJsonBody(req):{};let data;
         if(req.method==="GET"&&url.pathname==="/api/learning/pilot")data=pilotStudy.state(user,generation);
-        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/preview")data=pilotStudy.preview(input.joinCode);
+        else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/preview"){const v=pilotStudy.preview(input.joinCode);data={...v,admission:v.studyType===learnerDesign?pilotAdmission(user,v):null};}
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/start"){
           const v=pilotStudy.preview(input.joinCode);
           if(v.studyType===learnerDesign&&!pilotStudy.enrolled(user,generation)){
@@ -5632,8 +5638,10 @@ async function handleApi(req, res, url) {
             if(ongoing(mainLearningStudy.state(user).session)||ongoing(studyWorkbench.state?.(user)?.session)||researchSitesHttp.store.protects(user)||activeProactiveOutcomeSession(user))throw Object.assign(new Error('请先完成或退出正在进行的独立测量或其他研究流程，再加入本轮预试。'),{status:409});
           }
           if(v.studyType===learnerDesign&&(!researchControlStore.enabled||proactiveStudyConfig.mode!=='active'||!proactiveStudyConfig.displayArms.length))throw Object.assign(new Error('当前服务器未启用六维学习支持，请联系研究负责人'),{status:409});
-          if(v.studyType===learnerDesign&&!pilotStudy.enrolled(user,generation)&&db.getQuizResultsByUser(user).some(q=>q.chapter_id===proactiveStudyConfig.chapterId))throw Object.assign(new Error('本轮已有学习作答。请与研究负责人确认后，在加入预试前开启新一轮学习；原账号及历史数据会保留。'),{status:409});
-          data=pilotStudy.start(user,generation,input,pilotRuntime(user));cancelLearnerSupport(user,generation);
+          const prior=v.studyType===learnerDesign&&!pilotStudy.enrolled(user,generation)?pilotAdmission(user,v):{kind:'fresh'};
+          if(prior.kind==='new_round_required')throw Object.assign(new Error('这轮已有未完成的前测或课程作答。请先开启新一轮学习，再加入；账号和历史记录会保留。'),{status:409});
+          if(prior.kind==='reuse_pretest'&&input.reusePretest!==true)throw Object.assign(new Error('请确认是否将刚完成的前测纳入本次预试。'),{status:409});
+          data=pilotStudy.start(user,generation,input,pilotRuntime(user));if(prior.kind==='reuse_pretest')data=pilotStudy.attachPretest(user,generation,prior);cancelLearnerSupport(user,generation);
         }
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/action"){
           if(input.action==='finish'&&learnerEnrollment(user)?.status==='active'&&!db.getQuizResultsByUser(user).some(q=>q.chapter_id===proactiveStudyConfig.chapterId&&q.phase==='post'))throw Object.assign(new Error('请先完成本章后测，再提交结束问卷。需要提前离开时，可选择退出预试。'),{status:409});

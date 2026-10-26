@@ -23,7 +23,7 @@ async function main(){
   assert.equal(await page.locator('#workspace-support-notice:visible').count(),0,'前测不显示帮助通知');
   const pre=require('../data/multi-scene-learning-route.json').chapters.find(c=>c.id==='V14-C1').flow.preQuiz;
   for(const q of pre.questions){const card=page.locator(`.question-card[data-question="${q.id}"]`);if(q.type==='short_answer')await card.locator('textarea').fill('合成测试：先判断函数值和附近趋势。');else await card.locator('input').first().check();}
-  await page.locator('[data-submit-quiz]').click();await page.waitForFunction(()=>state.submittedQuizzes.includes('V14-C1-pre'));await page.getByRole('button',{name:'全部学习',exact:true}).click();await page.getByRole('button',{name:'按勾选知识点开始学习'}).click();await page.locator('[data-openmaic-state="ready"]').waitFor({timeout:30000});
+  await page.locator('[data-submit-quiz]').click();await page.waitForFunction(()=>state.submittedQuizzes.includes('V14-C1-pre'));await page.locator('#workspace-coach-toggle').click();await page.getByRole('button',{name:'全部学习',exact:true}).click();await page.getByRole('button',{name:'按勾选知识点开始学习'}).click();await page.locator('[data-openmaic-state="ready"]').waitFor({timeout:30000});
   await page.locator('[data-workspace-canvas="interactive"]').click();await page.locator('[data-knowledge-scene="simulation"]').click();const frame=()=>page.frameLocator('iframe[data-courseware-frame]');
   const nativeFrame=await (await page.locator('iframe[data-courseware-frame]').elementHandle()).contentFrame();
   await nativeFrame.waitForFunction(()=>window.__cqTaskSupport&&window.__calculusQuestContextBridge);
