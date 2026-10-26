@@ -572,7 +572,7 @@
 
   shell.addEventListener("click", (event) => {
     if (event.target.closest("#workspace-coach-toggle")) {
-      if(typeof getUnit==='function'&&getUnit()?.assessmentPhase==='pre'&&global.LearnerSetup?.enrollment?.studyDesign==='learner-configurable-20-v1'&&global.LearnerSetup.enrollment.status==='active'){global.LearnerSetup.continueAfterPretest();return;}
+      if(typeof getUnit==='function'&&global.LearnerSetup?.afterPretest(getUnit())){global.LearnerSetup.continueAfterPretest();return;}
       coachDismissedUnit = coachVisible && typeof currentUnitId === "string" ? currentUnitId : "";
       setCoachVisible(!coachVisible);
     }

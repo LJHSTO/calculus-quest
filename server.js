@@ -70,19 +70,32 @@ const engineeringControlStore = researchControls.createStore({root,config:proact
 const learnerPreferences = require('./lib/learner-preferences').createStore({db});
 const learnerDesign = require('./lib/pilot-study').LEARNER_DESIGN;
 function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.studyDesign===learnerDesign?e:null;}
+function ordinaryPreparation(user){
+  const chapterId=proactiveStudyConfig.chapterId,questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===chapterId)?.flow?.preQuiz?.questions||[];
+  return require('./lib/learner-journey').preparation({required:process.env.LEARNER_ONBOARDING_REQUIRED==='true'&&researchControlStore.enabled,enrollment:learnerEnrollment(user),chapterId,questionIds:questions.map(q=>q.id),results:db.getQuizResultsByUser(user),record:learnerPreferences.read(user),generation:db.currentLearningGeneration(user)});
+}
 function pilotAdmission(user,version){
   const questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===proactiveStudyConfig.chapterId)?.flow?.preQuiz?.questions||[];
   return require('./lib/learner-journey').admission(db.getQuizResultsByUser(user).filter(q=>q.chapter_id===proactiveStudyConfig.chapterId),questions.map(q=>q.id),version.allowPretestReuse===true);
 }
 function learnerStudyBlocked(user){const e=learnerEnrollment(user);return Boolean(e&&(e.status!=='active'||e.generation!==db.currentLearningGeneration(user)||e.stage!=='ready'||e.arm==='control'));}
-function rejectUnpreparedLearner(res,user,assessment){const e=learnerEnrollment(user);const pretest=e?.stage==='pretest'&&assessment?.phase==='pre'&&assessment?.chapterId===proactiveStudyConfig.chapterId;if(e?.status==='active'&&((e.stage!=='ready'&&!pretest)||e.generation!==db.currentLearningGeneration(user))){sendJson(res,409,{ok:false,code:'learner_preparation_required',message:'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;}return false;}
+function rejectUnpreparedLearner(res,user,assessment){
+  const e=learnerEnrollment(user),p=ordinaryPreparation(user),chapter=proactiveStudyConfig.chapterId;
+  const pretest=assessment?.phase==='pre'&&assessment?.chapterId===chapter&&assessment?.unitId===chapter+'-pre';
+  const ordinaryBlocked=p.required&&p.stage!=='ready'&&!pretest&&(!assessment?.chapterId||assessment.chapterId===chapter);
+  const allowedPretest=pretest&&(e?.stage==='pretest'||(assessment?.existingPretestGrade===true&&e?.stage==='configuration'));
+  if(ordinaryBlocked||(e?.status==='active'&&((e.stage!=='ready'&&!allowedPretest)||e.generation!==db.currentLearningGeneration(user)))){
+    sendJson(res,409,{ok:false,code:'learner_preparation_required',stage:p.stage,message:ordinaryBlocked?'请先完成知识前测，点击“下一步：设置学习方式”，保存六项选择后开始学习。':'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;
+  }return false;
+}
 const researchControlStore = {
   enabled:engineeringControlStore.enabled,
   canEdit:user=>engineeringControlStore.canEdit(user),
   read(user){const e=learnerEnrollment(user);if(e){const r=e.configuration||{revision:0,profile:{...researchControls.defaults},kind:'learner_pilot'};
     const profile=learnerStudyBlocked(user)?{...researchControls.defaults,proactivity:'reactive',supportInquiryEnabled:false}:r.profile;
     return {...r,profile,hash:crypto.createHash('sha256').update(JSON.stringify(profile)).digest('hex'),studyArm:e.arm,studyVersion:e.versionId};}
-    return learnerPreferences.read(user)||engineeringControlStore.read(user);},
+    const r=learnerPreferences.read(user)||engineeringControlStore.read(user),p=ordinaryPreparation(user);
+    return p.required&&p.stage!=='ready'?{...r,profile:{...researchControls.defaults,proactivity:'reactive',supportInquiryEnabled:false},kind:'preparation_required'}:r;},
   describe(user){const r=this.read(user);return {...engineeringControlStore.describe(user),...(r||{}),kind:r?.kind||'engineering-only',learnerStudy:learnerEnrollment(user)?{arm:learnerEnrollment(user).arm,stage:learnerEnrollment(user).stage}:null};},
   save:(...args)=>engineeringControlStore.save(...args)
 };
@@ -5612,15 +5625,16 @@ async function handleApi(req, res, url) {
       try{
         const snapshot=parseStoredJson(db.getLearningSnapshotState(user,nowIso()).snapshot?.data||'{}',{});
         const window=require('./lib/learner-journey').editWindow(e,snapshot,db.getQuizResultsByUser(user));
-        const enabled=researchControlStore.canEdit(user)&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
+        const preparation=ordinaryPreparation(user);
+        const enabled=researchControlStore.canEdit(user)&&(!preparation.required||preparation.stage!=='pretest')&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
         if(req.method==='POST'){
-          if(!enabled)throw Object.assign(new Error(window.message||'当前预试条件不能修改学习偏好'),{status:403});
+          if(!enabled)throw Object.assign(new Error(preparation.stage==='pretest'?'请先完成知识前测，再设置学习方式。':window.message||'当前预试条件不能修改学习偏好'),{status:403});
           if(pilotProtection(user,generation))throw Object.assign(new Error('请先结束独立测量或当前帮助，再修改偏好'),{status:409});
-          const input=await readJsonBody(req);const record=learnerPreferences.save(user,{...input,experimental:e?.arm==='configurable',configurationWindow:window});
+          const input=await readJsonBody(req);const record=learnerPreferences.save(user,{...input,generation,experimental:e?.arm==='configurable',configurationWindow:window});
           pilotStudy.configure(user,generation,record);cancelLearnerSupport(user,generation);
           pilotStudy.recordConfiguration(user,generation,pilotRuntime(user),'学生通过学习偏好页面保存六维选择与理由');
         }
-        sendJson(res,200,{ok:true,data:{enabled,configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
+        sendJson(res,200,{ok:true,data:{enabled,preparation:ordinaryPreparation(user),configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
       }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
     }
     if(url.pathname.startsWith("/api/learning/pilot")) {
@@ -5707,6 +5721,7 @@ async function handleApi(req, res, url) {
         sendJson(res,200,{ok:true,data:{cycles:protectedMeasure?[]:publicSupportCycles(user,generation),goals:supportGoals.GOALS,strategies:supportGoals.STRATEGIES,needs:supportGoals.NEEDS}});return;
       }
       const body=await readJsonBody(req),scope=boundedLearningText(body.scope,180),unitId=boundedLearningText(body.unitId,180);
+      if(rejectUnpreparedLearner(res,user))return;
       try {
         if(pilotStudy.activeProbe(user,generation)&&["report","advance"].includes(body.action))throw Object.assign(new Error("请先回答或跳过这次预试记录，再继续请求帮助。"),{status:409});
         const resolved=learningAssistant.resolveAssistantContext({index:assistantContextIndex,chapterId:proactiveStudyConfig.chapterId,
@@ -9656,7 +9671,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      if(rejectUnpreparedLearner(res,auth.participant.id))return;
+      if(rejectUnpreparedLearner(res,auth.participant.id,body.unitId===proactiveStudyConfig.chapterId+'-pre'?{unitId:body.unitId,chapterId:proactiveStudyConfig.chapterId,phase:'pre',existingPretestGrade:true}:body))return;
       const requestedUnitId = String(body.unitId || "").trim();
       const fallbackToZero = body.fallbackToZero === true;
       const requestedIds = new Set(

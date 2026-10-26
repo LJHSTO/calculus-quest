@@ -37,8 +37,8 @@ function renderBottomNextButton() {
     wrapper.hidden = true;
     return;
   }
-  if(unit.assessmentPhase==='pre'&&(state.submittedQuizzes||[]).includes(unit.id)&&window.LearnerSetup?.enrollment?.studyDesign==='learner-configurable-20-v1'&&window.LearnerSetup.enrollment.status==='active'){
-    const next=document.createElement('button');next.type='button';next.className='button primary bottom-nav-btn guided-next';next.dataset.quizPathAction='pilot-next';next.textContent='下一步：准备学习方式';wrapper.append(next);wrapper.hidden=false;scheduleLearningActionDockPosition();return;
+  if((state.submittedQuizzes||[]).includes(unit.id)&&window.LearnerSetup?.afterPretest(unit)){
+    const next=document.createElement('button');next.type='button';next.className='button primary bottom-nav-btn guided-next';next.dataset.quizPathAction='pilot-next';next.textContent=window.LearnerSetup.preparation?.required?'下一步：设置学习方式':'下一步：准备学习方式';wrapper.append(next);wrapper.hidden=false;scheduleLearningActionDockPosition();return;
   }
   if (document.querySelector(".core-learning-workspace.is-coach-surface")) {
     wrapper.hidden = true;

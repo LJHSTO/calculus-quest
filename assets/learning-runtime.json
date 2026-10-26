@@ -1,5 +1,5 @@
 {
-  "version": "09f5fa038ef84d3b20fe",
+  "version": "c8e2666205ab33414a10",
   "indexSha256": "74997667978e79db925dc6525d26ee541d96a60e10349e4dd6d964447975056b",
   "scripts": [
     {
@@ -120,7 +120,7 @@
     {
       "tag": "<script src=\"app/main/navigation.js?v=20260902-pilot-ux-v2\"></script>",
       "file": "app/main/navigation.js",
-      "sha256": "6e25cec9064f0ccab8d8f8f90d7bdcb400b4247c65f10f0ff9742e91f8289ee1"
+      "sha256": "acc934897271c43a4098cb6d2d766e94902decf6eea3691c00b93129b3530207"
     },
     {
       "tag": "<script src=\"app/main/events.js?v=20260819-v2-knowledge-transition-v5\"></script>",
@@ -145,7 +145,7 @@
     {
       "tag": "<script src=\"app/main/quiz.js?v=20260909-feedback-r1\"></script>",
       "file": "app/main/quiz.js",
-      "sha256": "f6141082c06d2f3120bfb8d34ce781f4a27913aa4ccf42dd8b769c26f550b287"
+      "sha256": "2adc075e5356655f7082d9d4f05a0761928dffed770cef196582a0c96406b2da"
     },
     {
       "tag": "<script src=\"app/main/agentic-path.js?v=20260909-flow-v5\"></script>",
@@ -190,7 +190,7 @@
     {
       "tag": "<script src=\"app/main/learning-workspace.js?v=20261014-workspace-v6\"></script>",
       "file": "app/main/learning-workspace.js",
-      "sha256": "e93d50e0301e3f9bc312549e4ad18efbcb833d39dd10c7a1b9c13fc488e70e66"
+      "sha256": "2a0b9d3eddcf2d46328c1aed592d590f82a39c15c14440244e21867d36fab9da"
     },
     {
       "tag": "<script src=\"app/main/textbook-reading.js?v=20260916\"></script>",
@@ -205,7 +205,7 @@
     {
       "tag": "<script src=\"app/main/bootstrap.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/bootstrap.js",
-      "sha256": "74b3777c834efe216484e631439dc9011f782ebef4804cb78c911e55d73e1c08"
+      "sha256": "6fb18daa09c02663a1e7c6312cc3e6bc518efe41b5fbb8f99a9c3883e69683ae"
     },
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
@@ -225,7 +225,7 @@
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
       "file": "app/main/learner-setup.js",
-      "sha256": "43e0c90ac14d372e66e35dd3a13913efc93de9e8ad7f656aeef11867d47a5108"
+      "sha256": "085d81e37119d7bfd7822ab04a3509525461080191c7edb5a6228699d7f18e8f"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
@@ -235,7 +235,7 @@
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
       "file": "app/main/proactive-surface.js",
-      "sha256": "ced6d568231fa1d9bfee52471d1b9a9c84b5c895d6a9af7340a79852bff96079"
+      "sha256": "63e5d86c80f6b0c48ab70be89a3b219e61b6a42ee95198956c17ae78922e33c0"
     },
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",

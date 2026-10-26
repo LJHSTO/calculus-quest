@@ -13,6 +13,13 @@ for(const d of C.dimensions){
 }
 assert.notDeepEqual(C.reasonsFor('D1'),C.reasonsFor('D6'));
 const J=require('../lib/learner-journey'),pre=[{id:'p1',question_id:'q1',phase:'pre',created_at:'2026-10-26T00:00:00Z'}];
+const preparation={required:true,chapterId:'V14-C1',results:[{chapter_id:'V14-C1',unit_id:'V14-C1-pre',phase:'pre',question_id:'q1'}],questionIds:['q1'],generation:2};
+assert.equal(J.preparation({...preparation,results:[]}).stage,'pretest');
+assert.equal(J.preparation(preparation).stage,'configuration');
+assert.equal(J.preparation({...preparation,record:{generation:2}}).stage,'ready');
+assert.equal(J.preparation({...preparation,record:{generation:1}}).stage,'configuration');
+assert.equal(J.preparation({...preparation,record:{revision:1}}).stage,'ready','保留已有旧版本配置');
+assert.equal(J.preparation({...preparation,enrollment:{arm:'control'}}).required,false,'预试按组别走，不强迫对照组配置');
 assert.equal(J.admission([],['q1'],true).kind,'fresh');
 assert.equal(J.admission(pre,['q1'],true).kind,'reuse_pretest');
 assert.equal(J.admission(pre,['q1','q2'],true).kind,'new_round_required');

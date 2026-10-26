@@ -4,6 +4,17 @@
   let dialog=null,pilot=null,record=null,answers=C.defaults(),step=0,busy=false,started=0,owner='',message='',mode='preferences',enabled=false,lastFocus=null;
   const drafts={};
   let configurationWindow=null,selectionSource='reviewed_choices',lastStep='';
+  let preparation=null,refreshing=null,routing=false;
+  function applyData(d){record=d.record;enabled=d.enabled;pilot=d.pilot;configurationWindow=d.configurationWindow;preparation=d.preparation;}
+  async function refreshPreparation(){if(refreshing)return refreshing;const token=state.authToken;if(!token)return;refreshing=request().then(d=>{if(token===state.authToken){applyData(d);renderGuide();if(typeof renderBottomNextButton==='function')renderBottomNextButton();}return d;}).finally(()=>refreshing=null);return refreshing;}
+  const ordinaryRequired=unit=>preparation?.required&&unit?.chapterId===preparation.chapterId;
+  function afterPretest(unit){return unit?.assessmentPhase==='pre'&&(ordinaryRequired(unit)||(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'));}
+  async function resumePreparation(){if(routing)return;routing=true;try{await refreshPreparation();if(pilot?.enrollment?.status==='active'){await openPilot(pilot);return;}if(preparation?.required&&preparation.stage!=='ready'){if(preparation.stage==='pretest'){await goPretest();}else await open();}}catch(e){message=e.message;mode='entry-error';show();}finally{routing=false;}}
+  function allowsUnit(unit){
+    const resultPage=unit.assessmentPhase==='pre'&&pilot?.enrollment?.stage==='configuration';
+    const allowed=(!isPreparing(pilot?.enrollment)||resultPage)&&(pilot?.enrollment?.stage!=='pretest'||unit.id==='V14-C1-pre')&&!(ordinaryRequired(unit)&&preparation.stage!=='ready'&&unit.id!==preparation.chapterId+'-pre');
+    if(!allowed)resumePreparation();return allowed;
+  }
   function logJourney(type,data={}){if(typeof trackLearningEvent==='function')trackLearningEvent(type,{...data,preferenceContract:C.version},false).catch(()=>{});}
   const experimental=()=>pilot?.enrollment?.arm==='configurable'&&pilot.enrollment.status==='active';
   const surveyContract=()=>pilot?.version?.configurationContract||C;
@@ -17,8 +28,9 @@
   }
   function show(){if(!dialog){dialog=el('dialog');dialog.id='learner-setup';dialog.setAttribute('aria-labelledby','learner-setup-title');document.body.append(dialog);dialog.addEventListener('cancel',e=>{e.preventDefault();leave();});}
     lastFocus=document.activeElement;draw();if(!dialog.open)dialog.showModal();dialog.querySelector('h2')?.focus();}
-  function leave(){dialog.close();if(pilot?.enrollment?.status==='active'&&pilot.enrollment.stage!=='ready'&&typeof switchView==='function')switchView('home');lastFocus?.focus?.();}
-  async function open(){message='';const d=await request();record=d.record;enabled=d.enabled;pilot=d.pilot;configurationWindow=d.configurationWindow;
+  function leave(){dialog.close();if((preparation?.required&&preparation.stage!=='ready'||pilot?.enrollment?.status==='active'&&pilot.enrollment.stage!=='ready')&&typeof switchView==='function')switchView('home');lastFocus?.focus?.();}
+  async function open(){message='';const d=await request();applyData(d);
+    if(preparation?.required&&preparation.stage==='pretest'){mode='pretest';show();return;}
     if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'&&pilot.enrollment.stage==='baseline'){openPilot(pilot);return;}
     mode='preferences';answers=record&&pilot?.enrollment?.stage!=='configuration'?structuredClone(record.answers):C.defaults();if(experimental()&&answers.D5.value==='request'){answers.D5={value:'ask',reason:'',note:''};}step=0;selectionSource='reviewed_choices';lastStep='';started=Date.now();show();}
   async function openPilot(p){pilot=p;message='';const e=p.enrollment;
@@ -27,12 +39,12 @@
     if(e.stage==='pretest'){mode='pretest';show();return;}
     mode='study';show();}
   async function goPretest(){dialog?.close();await ensureChapterLoaded('V14-C1');switchView('learn');selectUnit('V14-C1-pre');renderGuide();}
-  async function continueAfterPretest(){logJourney('pilot_pretest_continue');await global.PilotStudyUI?.reload?.();await openPilot(pilot);}
+  async function continueAfterPretest(){logJourney('pilot_pretest_continue');await global.PilotStudyUI?.reload?.();if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active')await openPilot(pilot);else await open();}
   async function beginLearning(){dialog?.close();switchView('learn');await ensureChapterLoaded('V14-C1',{showLoading:false});
     if(typeof currentUnitId==='string'&&currentUnitId==='V14-C1-pre'){
       const path=typeof ensureAgenticPath==='function'?ensureAgenticPath():null;
       if(path?.pendingPlan?.phase==='pre_knowledge_selection'){
-        if(pilot?.enrollment?.status==='active'){const action=path.pendingPlan.actions.find(a=>a.type==='select_knowledge');for(const c of action?.knowledgeChoices||[])c.checked=true;await agenticApplyDecision('select_knowledge');await syncLearningSnapshot('pilot_learning_started');return;}
+        if(pilot?.enrollment?.status==='active'||preparation?.required){const action=path.pendingPlan.actions.find(a=>a.type==='select_knowledge');for(const c of action?.knowledgeChoices||[])c.checked=true;await agenticApplyDecision('select_knowledge');await syncLearningSnapshot('pilot_learning_started');return;}
         global.LearningWorkspace?.showCoach();return;}
       if(typeof agenticOpenUnit==='function'){agenticUnlockUnit('GH-01-K01','pilot_ready');await agenticOpenUnit('GH-01-K01',{source:'pilot_ready'});}
     }await syncLearningSnapshot('pilot_learning_started');renderGuide();}
@@ -43,7 +55,12 @@
     syncEntrances();
     let guide=document.getElementById('pilot-learning-guide');const host=document.querySelector('.player-top');if(!host)return;
     if(!guide){guide=el('section');guide.id='pilot-learning-guide';guide.className='pilot-learning-guide';guide.setAttribute('aria-label','本次学习步骤');host.after(guide);}
-    const e=pilot?.enrollment;guide.hidden=!e||e.studyDesign!=='learner-configurable-20-v1';if(guide.hidden)return;
+    const e=pilot?.enrollment;guide.hidden=(!e||e.studyDesign!=='learner-configurable-20-v1')&&!preparation?.required;if(guide.hidden)return;
+    if(preparation?.required){guide.replaceChildren();const done=(state.submittedQuizzes||[]).includes(preparation.chapterId+'-pre');const current=preparation.stage==='ready'?2:done?1:0;
+      const steps=el('ol');steps.className='pilot-progress-steps';['知识前测','六维学习方式','开始学习'].forEach((text,i)=>{const li=el('li',text);li.dataset.state=i<current?'done':i===current?'current':'pending';if(i===current)li.setAttribute('aria-current','step');steps.append(li);});guide.append(steps);
+      const row=el('div');row.className='pilot-guide-next';row.append(el('span',current===0?'先独立完成前测；提交后查看结果，再点击下一步。':current===1?'前测已完成。接下来确认六项帮助偏好，再进入课件。':'助手会根据学习过程判断是否需要询问；不用先点击求助。'));
+      if(current===1)row.append(button('下一步：设置学习方式',continueAfterPretest,true));guide.append(row);return;
+    }
     guide.replaceChildren();const post=(state.submittedQuizzes||[]).includes('V14-C1-post');
     const preResult=typeof currentUnitId==='string'&&currentUnitId==='V14-C1-pre'&&(state.submittedQuizzes||[]).includes(currentUnitId);
     const current=e.status!=='active'?5:e.stage==='baseline'?0:e.stage==='pretest'?1:e.stage==='configuration'||preResult?2:post?4:3;
@@ -60,11 +77,12 @@
   function validSurvey(kind){return surveyContract().surveys[kind].every(([k])=>Object.hasOwn(drafts[kind]||{},k));}
   function header(title,kicker){const h=el('header');h.className='learner-setup-header';const t=el('div');t.append(el('span',kicker));const titleNode=el('h2',title);titleNode.id='learner-setup-title';titleNode.tabIndex=-1;t.append(titleNode);h.append(t,button('稍后继续',leave));dialog.append(h);}
   function draw(){if(!dialog)return;dialog.dataset.mode=mode;dialog.replaceChildren();
-    if(mode==='baseline'){
+    if(mode==='entry-error'){header('暂时无法读取学习步骤','学习准备');dialog.append(el('p','请检查网络后重试，已保存的作答不会丢失。'),button('重试',resumePreparation,true));
+    }else if(mode==='baseline'){
       header('学习前，先了解一下你','学习预试 · 开始前');const body=el('div');body.className='learner-setup-body';body.append(el('p','没有正确或错误的答案。接下来先完成知识前测，再准备本次学习方式。'));survey(body,'baseline');dialog.append(body);
       dialog.append(button('保存并继续',async()=>{if(!validSurvey('baseline'))throw new Error('请逐项作答或选择不愿回答');const p=await KnowledgeAssistant.pilotRequest('/action',{action:'baseline',survey:drafts.baseline});pilot=p;await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();if(p.enrollment.stage==='pretest')await goPretest();else await openPilot(p);},true));
     }else if(mode==='pretest'){
-      header('先完成知识前测','学习预试 · 第2步');dialog.append(el('p','请独立作答，不会的题可以选择“我不会”。前测提交后才会分配学习方式并开放六维设置。'),button('进入知识前测',goPretest,true));
+      header('先完成知识前测',preparation?.required?'学习准备 · 第1步':'学习预试 · 第2步');dialog.append(el('p',preparation?.required?'请独立作答，不会的题可以选择“我不会”。提交后先查看结果，再点击“下一步：设置学习方式”。无需预试码也可以设置六项帮助偏好。':'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步：实验组设置六项帮助偏好，对照组确认学习说明。'),button('进入知识前测',goPretest,true));
     }else if(mode==='study'){
       const e=pilot.enrollment;header(e.status==='active'?'本次学习已准备好':'本次预试记录','学习预试');const body=el('div');body.className='learner-setup-body';
       body.append(el('p',`参与编号 ${e.participantCode}`),el('p',e.arm==='control'?'本次学习中，助手不会主动出现。课件、练习和知点提问入口照常使用。':'你的六项学习偏好已保存。助手会按设置判断是否介入，你可以拒绝或暂停。'));
@@ -91,16 +109,16 @@
       footer.append(button('先使用全部默认设置',()=>{logJourney('configuration_defaults_chosen');answers=C.defaults();for(const a of Object.values(answers))a.reason='default';selectionSource='defaults_button';step=6;draw();}));
       if(step>0)footer.append(button('上一步',()=>{step--;draw();}));
       footer.append(button(step<5?'下一项':step===5?'核对选择':'保存并开始学习',async()=>{if(step<6){const d=C.dimensions[step],a=answers[d.id];if(!a.reason||(a.reason==='other'&&!a.note.trim()))throw new Error('请选择理由；其他原因需要补充说明');step++;draw();return;}
-        C.validate(answers,{experimental:experimental()});busy=true;try{const result=await request({answers,expectedRevision:record?.revision||0,elapsedMs:Date.now()-started,selectionSource});record=result.record;pilot=result.pilot;dialog.close();await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();KnowledgeAssistant.refreshSupportSurface();await beginLearning();}finally{busy=false;}},true));dialog.append(footer);
+        C.validate(answers,{experimental:experimental()});busy=true;try{const result=await request({answers,expectedRevision:record?.revision||0,elapsedMs:Date.now()-started,selectionSource});applyData(result);dialog.close();await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();KnowledgeAssistant.refreshSupportSurface();await beginLearning();}finally{busy=false;}},true));dialog.append(footer);
     }
     if(mode==='study'&&pilot?.enrollment?.status==='finished'&&pilot.enrollment.followupEndsAt)dialog.append(button('退出后续测量并排除本次研究回放',async()=>{pilot=await KnowledgeAssistant.pilotRequest('/action',{action:'withdraw',dataRequest:'主流程后退出后续测量'});await global.PilotStudyUI?.reload?.();draw();}));
     const status=el('p',message);status.className='learner-error';status.setAttribute('role','alert');dialog.append(status);
     dialog.scrollTop=0;if(message)status.scrollIntoView({block:'nearest'});
   }
-  global.LearnerSetup={open,openPilot,setPilot,renderGuide,continueAfterPretest,allowsUnit:unit=>!isPreparing(pilot?.enrollment)&&(pilot?.enrollment?.stage!=='pretest'||unit.id==='V14-C1-pre'),get enrollment(){return pilot?.enrollment;}};
-  global.addEventListener('cq:lesson-rendered',()=>{syncEntrances();renderGuide();});
+  global.LearnerSetup={open,openPilot,setPilot,renderGuide,continueAfterPretest,allowsUnit,afterPretest,resumePreparation,get preparation(){return preparation;},get enrollment(){return pilot?.enrollment;}};
+  global.addEventListener('cq:lesson-rendered',()=>{syncEntrances();renderGuide();if(typeof currentView==='string'&&currentView==='learn'&&typeof getUnit==='function'&&!routing&&!dialog?.open)allowsUnit(getUnit()||{});});
   document.getElementById('learner-preferences-button')?.addEventListener('click',()=>open().catch(e=>{message=e.message;enabled=false;mode='preferences';show();}));
-  global.addEventListener('cq:proactive-state',event=>{const s=event.detail;const key=s.signedIn?s.ownerKey+':'+s.generation:'';if(key!==owner){owner=key;record=null;pilot=null;dialog?.close();for(const k of Object.keys(drafts))delete drafts[k];}
+  global.addEventListener('cq:proactive-state',event=>{const s=event.detail;const key=s.signedIn?s.ownerKey+':'+s.generation:'';if(key!==owner){owner=key;record=null;pilot=null;preparation=null;dialog?.close();for(const k of Object.keys(drafts))delete drafts[k];if(key)refreshPreparation().then(()=>{if(typeof currentView==='string'&&currentView==='learn')allowsUnit(getUnit()||{});}).catch(()=>{});}
     renderGuide();
   });
 })(window);

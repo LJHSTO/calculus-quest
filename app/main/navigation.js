@@ -52,6 +52,7 @@ function switchView(view) {
   saveState();
   window.scrollTo({ top: 0, behavior: "smooth" });
   trackLearningEvent("switch_view", { view: currentView });
+  if(currentView==='learn'&&window.LearnerSetup)window.LearnerSetup.allowsUnit(getUnit()||{});
 }
 
 async function returnToLearningCourseware() {
