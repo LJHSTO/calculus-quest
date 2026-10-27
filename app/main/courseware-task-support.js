@@ -29,6 +29,14 @@
   document.addEventListener("focusout",()=>setTimeout(reportActivity,0),true);
   const visible = el => el && el.getClientRects().length && getComputedStyle(el).visibility !== "hidden"
     && getComputedStyle(el).pointerEvents !== 'none' && getComputedStyle(el).opacity !== '0';
+  function themeAt(element) {
+    for(let node=element;node;node=node.parentElement){
+      const rgb=getComputedStyle(node).backgroundColor.match(/[\d.]+/g)?.map(Number);
+      if(!rgb||rgb.length<3||(rgb.length>3&&rgb[3]<.85))continue;
+      return .2126*rgb[0]+.7152*rgb[1]+.0722*rgb[2]<140?'dark':'light';
+    }
+    return 'light';
+  }
   function anchor() {
     const kp = current.scope, type = current.sceneType;
     const explicit=document.querySelector('[data-cq-support-anchor]');
@@ -92,13 +100,16 @@
       host = document.createElement("section"); host.dataset.cqEmbeddedHelp = "task"; host.tabIndex = -1; host.setAttribute("aria-label","当前任务的学习帮助");
       host.style.cssText = "display:block;position:static;flex:0 0 auto;box-sizing:border-box;width:100%;min-width:0;grid-column:1/-1;margin:12px 0;clear:both;";
       const shadow = host.attachShadow({mode:"open"}), style = document.createElement("style");
-      style.textContent = ":host{font:14px/1.75 'Microsoft YaHei',sans-serif;color:#243c35;color-scheme:light}*{box-sizing:border-box}[hidden]{display:none!important}.card{padding:14px;background:#eff7f3;border:1px solid #a9cbbd;border-left:3px solid #397e63;border-radius:8px;overflow-wrap:anywhere}article{margin:0 0 12px}p{margin:8px 0}header,footer{display:flex;gap:8px;flex-wrap:wrap;align-items:center}strong{font-size:14px}small{display:block;color:#536b61;font-size:12px}button{font:inherit;line-height:1.5;min-height:38px;max-width:100%;padding:7px 10px;margin:4px 5px 4px 0;border:1px solid #9cbbad;border-radius:5px;background:white;color:#245c46;cursor:pointer;white-space:normal}button:hover{background:#dfede5}button:disabled{opacity:.6;cursor:wait}label{display:block}textarea{display:block;width:100%;min-height:94px;resize:vertical;background:#fff;color:#26394a;border:1px solid #9cbbad;border-radius:5px;padding:10px;font:inherit;margin:10px 0}input{max-width:100%;font:inherit}button:focus-visible,textarea:focus-visible{outline:3px solid #8b79d4;outline-offset:2px}";
-      style.textContent += '[role="note"]{padding:12px 16px;border-radius:16px 16px 16px 4px;background:#e2f0e8;border:1px solid #bbd5c7}';
-      style.textContent += 'button[aria-pressed="true"]{background:#d5e9dd;border-color:#397e63}summary{cursor:pointer;padding:8px 0}details{margin:6px 0}';
-      style.textContent += '[data-pilot-probe]{max-height:340px;overflow:auto;overscroll-behavior:contain;scroll-padding:8px}fieldset{min-width:0;margin:12px 0;padding:8px;border:1px solid #c4d6cd;border-radius:6px}legend{font-weight:600;max-width:100%;padding:0 4px}';
+      style.textContent = ":host{font:14px/1.6 'Microsoft YaHei',sans-serif;color:#293345;color-scheme:light}*{box-sizing:border-box}[hidden]{display:none!important}.card{padding:12px;background:#faf9ff;border:1px solid #ddd8ee;border-left:3px solid #7565d6;border-radius:8px;overflow-wrap:anywhere}article{margin:0 0 12px}p{margin:8px 0}header,footer{display:flex;gap:8px;flex-wrap:wrap;align-items:center}strong{font-size:14px}small{display:block;color:#697386;font-size:12px}button{font:inherit;line-height:1.5;min-height:40px;max-width:100%;padding:7px 10px;margin:4px 5px 4px 0;border:1px solid #d8d3eb;border-radius:5px;background:white;color:#5143b4;cursor:pointer;white-space:normal}button:hover{background:#f0edff}button:disabled{opacity:.6;cursor:wait}label{display:block}textarea{display:block;width:100%;min-height:94px;resize:vertical;background:#fff;color:#26394a;border:1px solid #d8d3eb;border-radius:5px;padding:10px;font:inherit;margin:10px 0}input{max-width:100%;font:inherit}button:focus-visible,textarea:focus-visible{outline:3px solid #8b79d4;outline-offset:2px}";
+      style.textContent += '[role="note"]{padding:12px 16px;border-radius:16px 16px 16px 4px;background:#f1eeff;border:1px solid #ddd8ee}';
+      style.textContent += 'button[aria-pressed="true"]{background:#eeebff;border-color:#7565d6}summary{cursor:pointer;padding:8px 0}details{margin:6px 0}';
+      style.textContent += '[data-pilot-probe]{max-height:340px;overflow:auto;overscroll-behavior:contain;scroll-padding:8px}fieldset{min-width:0;margin:12px 0;padding:8px;border:1px solid #ddd8ee;border-radius:6px}legend{font-weight:600;max-width:100%;padding:0 4px}';
+      style.textContent += ':host{color:var(--support-text,#293345)}.card{background:var(--support-bg,#faf9ff);border-color:var(--support-border,#ddd8ee);border-left:2px solid var(--support-accent,#7565d6)}button,textarea,input{background:var(--support-control,#fff);color:var(--support-text,#293345);border-color:var(--support-border,#ddd8ee)}small{color:var(--support-muted,#697386)}button:hover,button[aria-pressed="true"]{background:var(--support-hover,#eeebff)}summary{min-height:40px}';
       content = document.createElement("div"); content.className = "card"; shadow.append(style, content);
       intersection = new IntersectionObserver(entries => {visibleRatio=entries[0].intersectionRatio;geometry();},{threshold:[0,.5,1]}); intersection.observe(host);
     }
+    const dark=themeAt(target.el)==='dark';host.dataset.theme=dark?'dark':'light';
+    for(const [name,value] of Object.entries(dark?{text:'#e6e8f4',bg:'#202a3d',border:'#4c536d',accent:'#b5a8ff',control:'#28334a',muted:'#b0b8cc',hover:'#39425f'}:{text:'#293345',bg:'#faf9ff',border:'#ddd8ee',accent:'#7565d6',control:'#fff',muted:'#697386',hover:'#eeebff'}))host.style.setProperty('--support-'+name,value);
     if (target.after ? target.el.nextElementSibling !== host : host.parentElement !== target.el) {
       if (target.after) target.el.after(host); else target.el.append(host);
       send("cq:task-mounted",{anchor:target.name});

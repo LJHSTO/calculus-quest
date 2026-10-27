@@ -46,9 +46,9 @@
   function checkin(next,open=false,inquiryId=null){
     const d=draft(`${owner}:${next.scopeKey}:need`),details=el("details");details.open=open;
     details.className="support-need-entry";details.append(el("summary","这一步需要什么帮助？"));
-    details.append(el("p","可以选择最接近的一项，也可以继续自己学。我们不会根据操作少就判断你不想学。"));
+    details.append(el("p","选最接近的一项，确认后再提供帮助。也可以不选。"));
     const form=el("form"),list=el("div");choices(list,needs,d.need,v=>d.need=v);form.append(list);
-    note(form,d,"补充一句你的目标或困难（可不填）");selfRatings(form,d);
+    const extra=el('details');extra.append(el('summary','补充说明（可不填）'));note(extra,d,"补充一句你的目标或困难（可不填）");selfRatings(extra,d);form.append(extra);
     const submit=el("button","确认当前需要");submit.type="submit";submit.disabled=busy;form.append(submit);
     form.onsubmit=e=>{e.preventDefault();if(!d.need){error="请先选择当前需要。";global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"report",confirmed:true,need:d.need,note:d.note,ratings:d.ratings,...(inquiryId?{inquiryId}: {})});};
     details.append(form);return details;
@@ -87,9 +87,10 @@
       if(deferInquiry(c))return root;
       presentedInquiries.add(c.id);
       const card=el("section");card.className="support-goal-message support-inquiry";
-      const body=el("div");body.dataset.supportBody=c.id;body.append(el("strong","要不要一起看看刚才的问题？"),el("p",c.inquiry.text),el("p","这可能有不同原因。现在需要哪种帮助，由你来决定，也可以继续自己学。"));
+      const body=el("div");body.dataset.supportBody=c.id;body.append(el("strong","要不要一起看看刚才的问题？"));
+      const evidence=el('details');evidence.className='support-inquiry-evidence';evidence.append(el('summary','为什么现在问我？'),el('p',c.inquiry.text),el('small','这只是当前作答或尝试的线索，不代表你不想学。'));
       const actions=el("footer");actions.append(button("暂时不需要",()=>request({action:"decline",id:c.id})),button("稍后再问",()=>request({action:"postpone",id:c.id})));
-      card.append(body,actions,checkin(next,false,c.id));root.append(card);
+      card.append(body,checkin(next,false,c.id),actions,evidence);root.append(card);
     }else if(c?.status==="awaiting_check"){
       root.append(el("h4","独立检查"),el("p","提示和对话已暂停。也可以跳过，不会把跳过记成答错。"),el("p",c.check.prompt));
       const d=draft(`${owner}:${c.id}:check`),list=el("div");choices(list,Object.fromEntries(c.check.options.map(o=>[o.value,o.label])),d.response,v=>d.response=v);root.append(list);

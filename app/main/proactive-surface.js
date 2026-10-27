@@ -196,7 +196,12 @@
     }
     snapshot = next;
     if (global.TaskSupport?.sync(next)) {
-      stopExposure(); if(shell)shell.hidden=true;
+      stopExposure();
+      if(shell){
+        const draft=shell.querySelector('.support-chat-form textarea');
+        if(draft)drafts.set(shell.dataset.scopeKey||next.scopeKey,draft.value);
+        shell.hidden=true;shell.replaceChildren();renderKey='';
+      }
       const tabs=document.querySelector(".workspace-canvas-toolbar");
       if(tabs&&!toolbar?.isConnected)makeToolbar(tabs);
       if(toolbar){toolbar.hidden=Boolean(next.locked || next.check);syncToolbarSettings(next);}
@@ -208,7 +213,7 @@
     if (!host) {stopExposure(); if(shell) shell.hidden = true; return;}
     toolbar.hidden = false;
     syncToolbarSettings(next);
-    if(!next.offer&&!next.prompt&&!next.check&&!next.feedback&&!global.SupportCycleUI?.active(next.supportCycle)&&!global.SupportCycleUI?.manualOpen(next)&&!global.PilotStudyUI?.active(next)&&next.view.modality==='tip'){if(shell)shell.hidden=true;return;}
+    if(!next.offer&&!next.prompt&&!next.check&&!next.feedback&&!global.SupportCycleUI?.active(next.supportCycle)&&!global.SupportCycleUI?.manualOpen(next)&&next.view.modality==='tip'){if(shell)shell.hidden=true;return;}
     const owns = next.researchControls?.enabled || next.view.placement === "inline" || next.view.modality !== "tip"
       || (next.view.format||"plain")!=="plain" || ["A1","A4"].includes(next.offer?.authority?.level);
     if (!owns) {stopExposure(); if(shell) shell.hidden = true; return;}
@@ -232,11 +237,14 @@
     const focusOnSelection = shell.contains(document.activeElement) && document.activeElement?.getAttribute("role") === "radio";
     shell.replaceChildren();
     const header = node("header", "support-surface-header");
-    header.append(node("strong", "", "知点 · 学习帮助"), node("span", "", labels[next.view.modality]));
+    const cycleActive=global.SupportCycleUI?.active(next.supportCycle);
+    shell.dataset.cycle=String(Boolean(cycleActive));
+    header.append(node("strong", "", cycleActive ? "知点" : "知点 · 学习帮助"));
+    if(!cycleActive)header.append(node("span", "", labels[next.view.modality]));
     const close = node("button", "support-surface-collapse", "收起"); close.type = "button";
     close.title = "收起补充展示，当前帮助保留在助教栏；不会替你拒绝帮助";
     close.addEventListener("click", () => {record("dismissed", { reason: "surface_collapsed" }); global.KnowledgeAssistant.setSupportView({ placement: "sidebar", modality: "tip" });});
-    header.append(close); shell.append(header);
+    if(!cycleActive)header.append(close); shell.append(header);
     if (next.muted) {
       const notice = node("div", "support-quiet-state", "本知识点的主动提醒已关闭。你仍可主动提问。");
       const restore = node("button", "", "恢复本知识点提醒"); restore.type = "button"; restore.disabled = next.busy;

@@ -1,5 +1,5 @@
 {
-  "version": "6e06e22fc6d75aeb5d3e",
+  "version": "0314433c20b5d1b2cd89",
   "indexSha256": "0a4e0f27fc1c87f44c318d9546f3406eaecd222ec76a4135076d7854ca70060d",
   "scripts": [
     {
@@ -210,7 +210,7 @@
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
       "file": "app/main/support-cycle.js",
-      "sha256": "d38c96fa66270c323b658bff4c12d4bacf5ba23ca713c1cf340e8182c95381a2"
+      "sha256": "8c1928987790dcb1c937b2c9f0190a83687ceaf5c5d6be9ba74a47708f49661b"
     },
     {
       "tag": "<script src=\"app/shared/learner-preferences.js?v=20261024\"></script>",
@@ -220,7 +220,7 @@
     {
       "tag": "<script src=\"app/main/pilot-study.js?v=20261024\"></script>",
       "file": "app/main/pilot-study.js",
-      "sha256": "28152197fa75973acda030e661281d74fe0bde50bfe3ff409b8f913401f2e402"
+      "sha256": "c33f7d6b76c1645350b4e9a1250edbdfe8c19fe0b653afe940045bd4d85c950f"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
@@ -235,7 +235,7 @@
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
       "file": "app/main/proactive-surface.js",
-      "sha256": "b209ed941e033dc3cd4acfc59650d04315466f069c32813ded2aa86849ec569a"
+      "sha256": "9494249d9e82317366b20fc633b09eeaf5efded6a6280d07f27c6b1764ec81a7"
     },
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",
@@ -289,7 +289,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "a141bfa1f3c7faa260af",
+  "styleVersion": "116c7e3ace1af2b71b35",
   "styleSources": [
     {
       "file": "styles.css",
@@ -309,7 +309,7 @@
     },
     {
       "file": "app/main/learning-workspace.css",
-      "sha256": "3e10c7f9bfa56ecf978db29e212b2085a5256d46ee366bdf3f43d55f8fce9340"
+      "sha256": "72bb3deed9f3a563fb37cd472f1851a676e8b8208ec893838755acf8a676290b"
     },
     {
       "file": "app/main/openmaic-classroom.css",
@@ -333,7 +333,7 @@
     },
     {
       "file": "app/main/proactive-hud.css",
-      "sha256": "b5ede510069cd415b56ea60c890e13bfed88b35b0bd71e75b1ec984fcdce715a"
+      "sha256": "52f720231d46bb9c3e77256ce7482f9e45bac9a56bdac3ce01b5ea586ba4362a"
     }
   ],
   "icons": [

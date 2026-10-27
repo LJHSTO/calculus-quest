@@ -28,6 +28,7 @@ async function main(){
   await page.locator("[data-submit-quiz]").click();await page.waitForFunction(()=>state.submittedQuizzes.includes("V14-C1-pre"));
   await page.locator('#workspace-coach-toggle').click();await page.getByRole("button",{name:"全部学习",exact:true}).click();await page.getByRole("button",{name:"按勾选知识点开始学习"}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().unitType==="knowledge");
   await page.locator(".pilot-probe-notice button").click({timeout:45000});await page.locator(".pilot-probe").waitFor({timeout:45000});await page.locator(".pilot-probe").scrollIntoViewIfNeeded();
+  assert.equal(await page.locator('#pilot-probe-dialog').evaluate(n=>n.matches(':modal')),false,'研究抽样应为用户打开的任务内记录，不应锁住整个学习页面');
   const student=await page.evaluate(()=>state.authToken);
   const during=await api("/api/learning/assistant/ask",{question:"帮我",unitId:"GH-01-K01",chapterId:"V14-C1"},student);assert.equal(during.status,409);
   await page.locator(".pilot-probe").getByRole("button",{name:"不确定",exact:true}).click();await page.getByText("补充困难、打扰程度或拒绝原因（可不填）",{exact:true}).click();await page.getByLabel("刚才主要卡在哪里，或正在做什么？（可不填）").fill("合成反馈：正在独立比较输入和输出");

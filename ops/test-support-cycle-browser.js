@@ -38,12 +38,20 @@ async function main(){
   await invitation.getByText('要不要一起看看刚才的问题？',{exact:true}).waitFor();
   assert.ok(await invitation.getByRole('button',{name:'暂时不需要',exact:true}).count());
   await page.screenshot({path:path.join(out,'常规学习主动询问.png')});
+  await page.evaluate(()=>{KnowledgeAssistant.setSupportView({placement:'sidebar',modality:'tip'});KnowledgeAssistant.open({preserveProactiveSuggestion:true});});
+  const sidebar=page.locator('.learning-support-surface[data-placement="sidebar"]');await sidebar.waitFor({state:'visible'});
+  assert.equal(await sidebar.locator('.support-surface-collapse').count(),0,'同一询问不应另设会改变呈现偏好的收起操作');
+  assert.equal(await sidebar.locator('.support-inquiry').count(),1,'侧栏只呈现一份询问');
+  assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.id),invited.id,'移动呈现位置不能生成新一轮询问');
+  await page.screenshot({path:path.join(out,'侧栏主动询问.png')});
+  await page.evaluate(()=>{KnowledgeAssistant.setSupportView({placement:'inline',modality:'tip'});KnowledgeAssistant.close();});
   await page.locator('[data-workspace-canvas="slide"]').click();
   results.push('原生滑块操作产生过程证据，服务端结合错题在任务边界主动询问，确认前不生成支持');
   // The first lesson uses the normal student entry, subsequent points use the
   // existing test-only navigation seam, without replacing DOM or server data.
   await page.getByText("这一步需要什么帮助？",{exact:true}).click();
   await page.getByRole("button",{name:"不清楚学这个有什么用",exact:true}).click();
+  await page.getByText('补充说明（可不填）',{exact:true}).click();
   await page.getByLabel("补充一句你的目标或困难（可不填）").fill("想知道如何理解费用与使用量的关系");
   await page.getByRole("button",{name:"确认当前需要",exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==="offered");
@@ -71,6 +79,7 @@ async function main(){
   const needSummary=host.getByText('这一步需要什么帮助？',{exact:true});
   if(!await needSummary.evaluate(n=>n.closest('details').open))await needSummary.click();
   await host.getByRole('button',{name:'担心自己学不会',exact:true}).click();
+  if(!await host.getByLabel('补充一句你的目标或困难（可不填）').isVisible())await host.getByText('补充说明（可不填）',{exact:true}).click();
   await host.getByLabel('补充一句你的目标或困难（可不填）').fill('合成输入：正在说明目前的困难');
   await page.waitForFunction(()=>SupportCycleUI.interactionBusy===true);
   assert.equal(await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return SupportCycleUI.render({...s,supportCycle:{id:'synthetic-deferred',status:'awaiting_confirmation',inquiry:{text:'合成依据'}}}).querySelector('.support-inquiry')!==null;}),false,'输入期间新询问暂缓呈现');

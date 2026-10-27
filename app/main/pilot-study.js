@@ -15,8 +15,8 @@
   function rating(parent,label,d,key){choices(parent,label,[[null,"无法判断／不愿回答"],...[1,2,3,4,5].map(n=>[n,String(n)])],d,key);}
   function note(parent,d,label){const field=el("label",label),input=el("textarea");input.rows=2;input.maxLength=1200;input.value=d.note||"";input.setAttribute("aria-label",label);input.oninput=()=>d.note=input.value;field.append(input);parent.append(field);}
   function render(s){const p=data.pending,d=drafts.get(p.id)||{need:"",timing:null,disruption:null,reason:"",note:""};drafts.set(p.id,d);
-    const root=el("section");root.className="support-cycle pilot-probe";root.dataset.pilotProbe=p.id;root.style.cssText="max-height:340px;overflow:auto;overscroll-behavior:contain";presented.add(p.id);
-    root.append(el("small","对应学习时刻："+new Date(p.at).toLocaleTimeString("zh-CN",{hour12:false})),el("strong","预试记录 · 刚才的学习情况"),el("p","这是一次研究记录，可以跳过。请回想提醒出现前的情况；记不清时可以选择不确定。"));
+    const root=el("section");root.className="support-cycle pilot-probe";root.dataset.pilotProbe=p.id;presented.add(p.id);
+    root.append(el("small","对应学习时刻："+new Date(p.at).toLocaleTimeString("zh-CN",{hour12:false})),el("strong","研究记录 · 刚才的学习情况"),el("p","这不是学习提示，可以跳过。请回想上面时刻的情况；记不清可选“不确定”。"));
     choices(root,"刚才是否需要一点帮助？",[["yes","需要"],["no","不需要"],["uncertain","不确定"],["decline","不愿回答"]],d,"need");
     rating(root,"这个时刻适合出现一句帮助询问吗？1很不合适—5很合适",d,"timing");
     const extra=el("details");extra.append(el("summary","补充困难、打扰程度或拒绝原因（可不填）"));
@@ -29,10 +29,15 @@
   }
   function openProbe(){
     if(!snapshot||!active(snapshot))return;
-    if(!probeDialog){probeDialog=el('dialog');probeDialog.id='pilot-probe-dialog';probeDialog.setAttribute('aria-label','本次学习情况记录');document.body.append(probeDialog);}
+    const host=document.fullscreenElement||document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
+    if(!host||host.tagName==='IFRAME')return;
+    if(!probeDialog){probeDialog=el('dialog');probeDialog.id='pilot-probe-dialog';probeDialog.setAttribute('aria-label','本次学习情况记录');}
+    if(probeDialog.parentElement!==host)host.append(probeDialog);
     probeDialogId=data.pending.id;
     probeDialog.replaceChildren(button('返回学习，稍后再填',()=>probeDialog.close()),render(snapshot));
-    if(!probeDialog.open)probeDialog.showModal();
+    // User-opened, in normal document flow: the lesson remains operable.
+    if(!probeDialog.open)probeDialog.show();
+    probeDialog.scrollIntoView({block:'nearest',behavior:'instant'});
     requestAnimationFrame(()=>{const node=probeDialog.querySelector('[data-pilot-probe]');if(probeDialog.open&&node&&probeVisible(node)&&!shown.has(probeDialogId)){const id=probeDialogId;shown.add(id);call('/action',{action:'shown',id}).catch(()=>shown.delete(id));}});
   }
   function syncProbeNotice(){
