@@ -42,6 +42,8 @@
 .learning-support-surface[data-cycle=true]>.support-surface-content{padding:0}
 .learning-support-surface[data-cycle=true] .support-goal-message{border:0;padding:0;background:transparent}
 .learning-support-surface[data-cycle=true] .support-need-entry>summary{color:#5143b4}
+.knowledge-assistant-scroll>.learning-support-surface[data-placement=sidebar]{margin:0 0 14px;width:100%;max-height:none;overflow:visible;border-top:0;border-bottom:1px solid #e5e2ee;padding-bottom:14px}
+.knowledge-assistant-scroll>.learning-support-surface[data-cycle=true]>.support-surface-header{display:none}
 .task-support-panel .support-goal-message{background:transparent;border:0;padding:0}
 /* A scrollable support card needs an independently sized courseware viewport;
    an auto-sized parent plus flex-basis:0 collapses the absolutely placed iframe. */

@@ -132,7 +132,8 @@
         if (!host) {host = node("div", "proactive-inline-host"); host.dataset.proactiveInlineHost = ""; pane.append(host);}
       }
     } else {
-      host = document.querySelector(".workspace-chat-pane");
+      host = document.querySelector(".workspace-chat-pane [data-knowledge-scroll]")
+        || document.querySelector(".workspace-chat-pane");
     }
     return host;
   }

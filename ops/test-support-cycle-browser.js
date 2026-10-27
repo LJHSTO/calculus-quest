@@ -40,6 +40,7 @@ async function main(){
   await page.screenshot({path:path.join(out,'常规学习主动询问.png')});
   await page.evaluate(()=>{KnowledgeAssistant.setSupportView({placement:'sidebar',modality:'tip'});KnowledgeAssistant.open({preserveProactiveSuggestion:true});});
   const sidebar=page.locator('.learning-support-surface[data-placement="sidebar"]');await sidebar.waitFor({state:'visible'});
+  assert.equal(await sidebar.evaluate(el=>el.parentElement.hasAttribute('data-knowledge-scroll')),true,'侧栏询问应位于知点对话正文内，不另设顶部面板');
   assert.equal(await sidebar.locator('.support-surface-collapse').count(),0,'同一询问不应另设会改变呈现偏好的收起操作');
   assert.equal(await sidebar.locator('.support-inquiry').count(),1,'侧栏只呈现一份询问');
   assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.id),invited.id,'移动呈现位置不能生成新一轮询问');
