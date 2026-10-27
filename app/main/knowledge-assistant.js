@@ -1420,66 +1420,6 @@ const proactiveJustificationDrafts = new Map();
     }
   }
 
-  async function skipProactiveOutcomeStage() {
-    const meta = courseMeta();
-    const session = activeProactiveOutcomeSession();
-    if (
-      !session
-      || proactiveOutcomesSubmitting
-      || proactiveOutcomeDraftSaving
-      || proactiveOutcomeWithdrawing
-    ) return false;
-    proactiveOutcomeWithdrawing = true;
-    proactiveOutcomeStatus = "正在永久跳过本阶段并记录缺失原因。";
-    renderProactiveOutcomes();
-    try {
-      const response = await fetch("api/learning/proactive/outcomes/skip", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${state.authToken}`
-        },
-        body: JSON.stringify({
-          chapterId: meta.chapterId,
-          sessionId: session.id,
-          reason: "student_skip"
-        })
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) {
-        const error = new Error(payload.message || "本阶段暂时无法跳过。");
-        error.code = payload.code || "";
-        throw error;
-      }
-      proactiveOutcomes = payload.data || proactiveOutcomes;
-      proactiveOutcomeStageId = "";
-      proactiveOutcomeReviewStageId = "";
-      proactiveOutcomeResponses = {};
-      proactiveOutcomeSkipConfirming = false;
-      track("knowledge_proactive_outcome_skipped", {
-        stageId: session.stageId,
-        sessionId: session.id,
-        skipReason: payload.skipReason || "student_skip"
-      });
-      await loadProactiveStudy(meta, { force: true });
-      proactiveOutcomeStatus = "本阶段已永久跳过；后续阶段会按原路径继续开放。";
-      notifyProactiveOutcomesChanged();
-      render();
-      return true;
-    } catch (error) {
-      proactiveOutcomeStatus = error.message || "本阶段暂时无法跳过。";
-      track("knowledge_proactive_outcome_failed", {
-        stageId: session.stageId,
-        sessionId: session.id,
-        reason: error.code || error.message || "skip_failed"
-      });
-      return false;
-    } finally {
-      proactiveOutcomeWithdrawing = false;
-      render();
-    }
-  }
-
   async function submitProactiveOutcomeStage() {
     const meta = courseMeta();
     const session = activeProactiveOutcomeSession();
@@ -1848,44 +1788,9 @@ const proactiveJustificationDrafts = new Map();
       || proactiveOutcomeDraftSaving
       || proactiveOutcomeWithdrawing;
     pause.addEventListener("click", pauseProactiveOutcomeStage);
-    const skip = document.createElement("button");
-    skip.type = "button";
-    skip.className = "knowledge-outcome-skip";
-    skip.textContent = "永久跳过";
-    skip.disabled = proactiveOutcomesSubmitting
-      || proactiveOutcomeDraftSaving
-      || proactiveOutcomeWithdrawing;
-    skip.addEventListener("click", () => {
-      proactiveOutcomeSkipConfirming = true;
-      proactiveOutcomeStatus = "永久跳过后，本阶段不能重新作答；后续阶段仍可继续。";
-      renderProactiveOutcomes();
-    });
-    actions.append(pause, skip);
+    actions.append(pause);
     heading.append(copy, actions);
     section.appendChild(heading);
-
-    if (proactiveOutcomeSkipConfirming) {
-      const confirmation = document.createElement("div");
-      confirmation.className = "knowledge-outcome-skip-confirm";
-      const message = document.createElement("p");
-      message.textContent = "确认永久跳过本阶段吗？当前草稿会作为未完成记录保留，本阶段不能再次进入。";
-      const controls = document.createElement("div");
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.textContent = "继续作答";
-      cancel.addEventListener("click", () => {
-        proactiveOutcomeSkipConfirming = false;
-        proactiveOutcomeStatus = "";
-        renderProactiveOutcomes();
-      });
-      const confirm = document.createElement("button");
-      confirm.type = "button";
-      confirm.textContent = "确认永久跳过";
-      confirm.addEventListener("click", skipProactiveOutcomeStage);
-      controls.append(cancel, confirm);
-      confirmation.append(message, controls);
-      section.appendChild(confirmation);
-    }
 
     stage.items.forEach((item, index) => {
       const fieldset = document.createElement("fieldset");
@@ -1949,6 +1854,17 @@ const proactiveJustificationDrafts = new Map();
     );
     els.outcomes.hidden = !proactiveOutcomesOpen;
     if (!proactiveOutcomesOpen) return;
+    const focused = els.outcomes.contains(document.activeElement) ? document.activeElement : null;
+    const focusedName = focused?.getAttribute('name');
+    const focusedValue = focused?.value;
+    // Polling/draft updates replace the form. Restore its focus instead of
+    // dropping keyboard users onto the dimmed lesson behind the measurement.
+    window.requestAnimationFrame(() => {
+      if (!proactiveOutcomesOpen || els.outcomes.hidden || els.outcomes.contains(document.activeElement)) return;
+      const replacement = focusedName && [...els.outcomes.querySelectorAll('[name]')]
+        .find(node => node.getAttribute('name') === focusedName && node.value === focusedValue && !node.disabled);
+      (replacement || els.outcomesDialog)?.focus({ preventScroll: true });
+    });
     const retentionOnly = Array.isArray(proactiveOutcomes?.stages)
       && proactiveOutcomes.stages.length === 1 && proactiveOutcomes.stages[0].id === "retention";
     els.outcomes.querySelector("#knowledge-outcomes-title").textContent = retentionOnly

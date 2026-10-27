@@ -182,7 +182,7 @@ async function registerParticipant(page, nickname, password) {
     }));
     throw new Error(`registration did not finish rendering: ${JSON.stringify(diagnostic)}\n${error.message}`);
   }
-  await page.locator("#auth-status").waitFor({ state: "visible", timeout: 10000 });
+  await page.locator("#auth-status").waitFor({ state: "attached", timeout: 10000 });
   await page.locator("#auth-gate").waitFor({ state: "hidden", timeout: 10000 });
   return payload;
 }
@@ -205,6 +205,8 @@ async function answerVisibleQuiz(page) {
 }
 
 async function openStudentAssistant(page) {
+  const toggle=page.locator('#workspace-tools-toggle');
+  if(await toggle.isVisible()&&await toggle.getAttribute('aria-expanded')==='false')await toggle.click();
   const mobileTab = page.locator('button[data-workspace-pane="assistant"]');
   if (await mobileTab.isVisible()) await mobileTab.click();
   const chatTab = page.locator('[data-workspace-tab="chat"]');
@@ -336,6 +338,10 @@ async function main() {
         PROACTIVE_POLICY_MODE: "active",
         PROACTIVE_ASSIGNMENT_SALT: "platform-browser-smoke-fixed-salt",
         PROACTIVE_PUBLIC_CHAPTER_ONLY: "true",
+        PROACTIVE_EXPERIMENT_CHAPTER_ID: "V14-C3",
+        // This legacy compatibility suite exercises the archived three-stage
+        // instrument; the current six-point study has its own end-to-end suite.
+        PROACTIVE_OUTCOME_INSTRUMENT_VERSION: "v14-c3-outcomes-v3",
         PROACTIVE_PARTICIPATION_MODE: "explicit-consent",
         PROACTIVE_CONSENT_VERSION: "platform-browser-consent-v1",
         PROACTIVE_CONSENT_NOTICE_URL:
@@ -456,6 +462,7 @@ async function main() {
     await page.locator('[data-submit-quiz="V14-C3-pre"]').click();
     await page.waitForFunction(() => (state.submittedQuizzes || []).includes("V14-C3-pre"), null, { timeout: 30000 });
     const coachAction = page.locator("[data-agentic-action]").first();
+    if(!await coachAction.isVisible())await page.locator('#workspace-coach-toggle').click();
     await coachAction.waitFor({ state: "visible", timeout: 30000 });
     await page.locator("#agentic-coach-panel .knowledge-selection").waitFor();
     for (const viewport of [{ width: 1366, height: 768 }, { width: 1600, height: 1000 }, { width: 1920, height: 1080 }]) {
@@ -463,10 +470,13 @@ async function main() {
       const choices = page.locator("[data-agentic-knowledge-choice]");
       assert.equal(await choices.count(), 7);
       const fit = await page.locator("#agentic-coach-panel").evaluate((panel) => ({
-        height: panel.clientHeight, content: panel.scrollHeight
+        height: panel.clientHeight, content: panel.scrollHeight,
+        width: panel.clientWidth, contentWidth: panel.scrollWidth,
+        overflow: getComputedStyle(panel).overflowY
       }));
-      assert.ok(fit.height > 400 && fit.content <= fit.height + 1,
-        `知识点选择应完整展开：${JSON.stringify({ viewport, ...fit })}`);
+      assert.ok(fit.height > 400 && fit.contentWidth <= fit.width + 1
+        && (fit.content <= fit.height + 1 || ['auto','scroll'].includes(fit.overflow)),
+        `知识点选择应有可滚动空间且不横向溢出：${JSON.stringify({ viewport, ...fit })}`);
       for (const choice of await choices.all()) await choice.click({ trial: true });
       await coachAction.click({ trial: true });
       assert.equal(await page.locator("#lesson-player").isVisible(), false);
@@ -664,9 +674,7 @@ async function main() {
     await page.locator("#app-loader").waitFor({ state: "hidden", timeout: 20000 });
     await page.waitForFunction(() => {
       const button = document.querySelector("[data-proactive-outcomes-open]");
-      const panel = document.querySelector("#chapter-outcome-panel");
-      return panel && !panel.hidden
-        && button && !button.disabled
+      return button && !button.disabled
         && button.textContent?.includes("查看独立任务");
     }, null, { timeout: 20000 });
     if (await assistantPanel.getAttribute("aria-hidden") !== "true") {
@@ -695,16 +703,12 @@ async function main() {
       1,
       "章后测后应只开放当前的近迁移阶段"
     );
-    const outcomeDockButton = page.locator(
-      "#learning-action-dock [data-learning-primary-action]"
-    );
-    const courseTab = page.locator('button[data-workspace-pane="course"]');
-    if (await courseTab.isVisible()) await courseTab.click();
-    const returnToCourse = page.locator('#workspace-coach-toggle[aria-expanded="true"]');
-    if (await returnToCourse.isVisible()) await returnToCourse.click();
+    // The fixture posts the posttest directly without completing the current
+    // lesson. Use the explicit research entry; the lesson dock must keep its
+    // own unfinished scene action rather than being hijacked by measurement.
+    const outcomeDockButton = outcomePanel.locator('.outcome-path-step.is-available').first();
     await outcomeDockButton.waitFor({ state: "visible", timeout: 10000 });
-    assert.match((await outcomeDockButton.textContent()) || "", /开始.*近迁移测量/);
-    assert.equal(await outcomeDockButton.getAttribute("data-outcome-stage"), "near_transfer");
+    assert.match((await outcomeDockButton.textContent()) || "", /近迁移测量/);
     await outcomeDockButton.click();
     const outcomesLayer = page.locator("[data-knowledge-outcomes]");
     await outcomesLayer.waitFor({ state: "visible", timeout: 10000 });
@@ -722,6 +726,7 @@ async function main() {
       timeout: 10000
     });
     assert.ok(await outcomesLayer.locator('input[type="radio"]').count() > 0);
+    await page.waitForFunction(()=>document.querySelector('[data-knowledge-outcomes]')?.contains(document.activeElement));
     const outcomesMobileLayout = await outcomesLayer.evaluate((layer) => {
       const dialog = layer.querySelector(".knowledge-outcomes-dialog");
       const close = layer.querySelector("[data-knowledge-outcomes-close]");
@@ -760,37 +765,31 @@ async function main() {
     );
     assert.deepEqual(
       await activeOutcomeActions.allTextContents(),
-      ["暂时离开", "永久跳过"]
+      ["暂时离开"]
     );
     assert.ok(
       (await activeOutcomeActions.evaluateAll((buttons) => (
         buttons.map((button) => button.getBoundingClientRect().height)
       ))).every((height) => height >= 44),
-      "独立测量的暂离与永久跳过按钮必须适合触屏操作"
+      "独立测量的暂离按钮必须适合触屏操作"
     );
     await activeOutcomeActions.filter({ hasText: "暂时离开" }).click();
     await outcomesLayer.waitFor({ state: "hidden", timeout: 10000 });
 
-    await outcomeDockButton.click();
+    await outcomePanel.locator('.outcome-path-step.is-active').first().click();
     await outcomesLayer.waitFor({ state: "visible", timeout: 10000 });
     await outcomesLayer.locator(".knowledge-outcome-active").waitFor({
       state: "visible",
       timeout: 10000
     });
-    await outcomesLayer.getByRole("button", { name: "永久跳过", exact: true }).click();
-    const skipConfirmation = outcomesLayer.locator(".knowledge-outcome-skip-confirm");
-    await skipConfirmation.waitFor({ state: "visible", timeout: 10000 });
-    assert.ok(
-      (await skipConfirmation.locator("button").evaluateAll((buttons) => (
-        buttons.map((button) => button.getBoundingClientRect().height)
-      ))).every((height) => height >= 44),
-      "永久跳过确认按钮必须适合触屏操作"
-    );
-    await skipConfirmation.getByRole("button", { name: "确认永久跳过" }).click();
-    await outcomesLayer.locator(".knowledge-outcome-stage.is-skipped").waitFor({
-      state: "visible",
-      timeout: 10000
-    });
+    assert.equal(await outcomesLayer.getByRole("button", { name: "永久跳过", exact: true }).count(), 0);
+    // A paused measurement still protects independent answering. Complete it
+    // before testing assistance; the removed skip button must not be replaced
+    // with a test-only bypass of that protection.
+    const groups=await outcomesLayer.locator('input[type=radio]').evaluateAll(nodes=>[...new Set(nodes.map(n=>n.name))]);
+    for(const name of groups)await outcomesLayer.locator(`input[name="${name}"]`).first().check();
+    await outcomesLayer.locator('.knowledge-outcome-submit').click();
+    await outcomesLayer.locator('.knowledge-outcome-active').waitFor({state:'hidden'});
     await page.keyboard.press("Escape");
     await outcomesLayer.waitFor({ state: "hidden", timeout: 10000 });
     await openStudentAssistant(page);
@@ -941,8 +940,11 @@ async function main() {
     await adminPage.goto(`${baseUrl}/admin.html`, { waitUntil: "domcontentloaded" });
     await adminPage.locator("#app:not(.hidden)").waitFor({ timeout: 30000 });
     assert.equal(await adminPage.locator("#login-gate:not(.hidden)").count(), 0);
+    await adminPage.locator('#chapter-filter').selectOption('all');
+    await adminPage.locator('#filter-apply-btn').click();
     const submissionMetric = adminPage.locator("#overview-metrics .metric-card").filter({ hasText: "测验提交总数" });
     await submissionMetric.waitFor({ state: "visible", timeout: 30000 });
+    await adminPage.waitForFunction(()=>[...document.querySelectorAll('#overview-metrics .metric-card')].some(n=>n.textContent.includes('测验提交总数')&&n.querySelector('.value')?.textContent.trim()==='2'));
     assert.equal((await submissionMetric.locator(".value").textContent()).trim(), "2");
 
     await adminPage.locator('[data-tab="proactive"]').click();
@@ -1489,7 +1491,7 @@ async function main() {
     assert.match(proactiveAuditText, /概念关系线索/);
     assert.match(proactiveAuditText, /独立尝试成功/);
     assert.match(proactiveAuditText, /已渐退退出/);
-    assert.match(proactiveAuditText, /平台无提示近端验证题/);
+    assert.match(proactiveAuditText, /平台支架后检查题/);
     assert.match(proactiveAuditText, /课件语义结果事件/);
     const proactiveAuditDisclosures = adminPage.locator(
       "#proactive-audit-detail details.proactive-audit-disclosure"

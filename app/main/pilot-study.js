@@ -24,7 +24,7 @@
     rating(extra,"这次询问打断了正在做的事吗？1完全没有—5非常明显",d,"disruption");
     choices(extra,"请选择最接近的原因",[["none","不需要"],["bad_time","时机不好"],["try_myself","想自己试"],["mismatch","内容不对"],["decline","不愿回答"],["other","其他"]],d,"reason");root.append(extra);
     const status=el("p",message);status.setAttribute("role","status");root.append(status);
-    root.append(button(busy?"正在保存…":"保存这次记录",()=>{if(!d.need){status.textContent="请选择需要、不需要、不确定或不愿回答。";return;}run("/action",{action:"answer",id:p.id,...d});}),button("跳过，继续学习",()=>run("/action",{action:"skip",id:p.id})),button("退出预试",()=>open()));
+    root.append(button(busy?"正在保存…":"保存这次记录",()=>{if(!d.need){status.textContent="请选择需要、不需要、不确定或不愿回答。";return;}run("/action",{action:"answer",id:p.id,...d});}),button("这次不答，继续学习",()=>run("/action",{action:"skip",id:p.id})));
     return root;
   }
   function openProbe(){
@@ -62,7 +62,7 @@
       for(const [key,label] of [["burden","记录和询问的负担：1很轻—5很重"],["control","能自主拒绝或结束帮助：1完全不能—5完全可以"],["usefulness","帮助对本次学习有用：1完全无用—5非常有用"],["appropriateness","整体出现时机合适：1很不合适—5很合适"]])rating(details,label,d,key);
       note(details,d,"最不合适的一次、遗漏的帮助或其他建议（可不填）");details.append(button("提交结束问卷",()=>run("/action",{action:"finish",...d})));dialog.append(details);
       const request=el("textarea");request.rows=2;request.maxLength=500;request.setAttribute("aria-label","退出后的数据处理请求");
-      dialog.append(el("p","退出会停止预试抽样，正常学习仍可继续。数据处理请求将交由研究负责人按同意书处理。"),el("label","退出后的数据处理请求（可不填）"),request,button("确认退出预试",()=>run("/action",{action:"withdraw",dataRequest:request.value})));
+      dialog.append(el("p","暂时离开会保留进度。如需正式处理参与或数据问题，可提交请求，由研究人员按参与说明处理；不会因关闭页面自动排除回放。"),el("label","参与或数据处理请求"),request,button("提交处理请求",()=>run("/action",{action:"data_request",dataRequest:request.value})));
     } else {
       if(data.enrollment)dialog.append(el("p",data.enrollment.status==="withdrawn"?"你已退出预试。":"本次预试已结束。"));
       dialog.append(el("p","有加入码：输入后阅读说明，确认加入，再完成问卷、前测和学习方式设置。没有加入码：可选择普通学习。"));
@@ -76,12 +76,12 @@
           ['你会做什么','先回答3道学习感受题，再独立完成知识前测。不会的题可以选“我不会”。随后学习6个知识点，完成后测和学习体验问卷。每一步都有继续按钮，你可以按自己的速度操作。'],
           ['学习方式',preview.useMode==='internal_rehearsal'?'本次演练不分组。每个人都先设置6项帮助偏好，再体验完整主动支持功能。助手根据学习过程判断何时询问，你确认后再提供对应帮助；也可以拒绝或暂停。':'系统会随机安排两种学习方式，不能自行选择组别。一种方式中，助手只在你提问时回答；另一种方式中，你先设置6项帮助偏好，助手再按设置主动询问或提示。两组都能使用相同的课件、练习和知点提问入口。'],
           ['哪些内容会被记录','平台记录作答、学习操作、提问与回答、偏好及选择理由，以及帮助何时出现、你是否接受或拒绝。问卷可以选“不愿回答”。请不要在自由输入框填写姓名、电话等个人信息。'],
-          ['你可以决定什么','每次帮助都可以拒绝或暂停。完成一个知识点的检测后，可以调整下一节的帮助方式。点击右上角头像，在本次演练或预试记录中查看问卷、退出；退出后的数据按下方说明处理。'],
+          ['你可以决定什么','每次帮助都可以拒绝或暂停。完成一个知识点的检测后，可以调整下一节的帮助方式。点击右上角头像可查看记录与问卷。暂时离开会保留进度；正式退出或数据处理请求由研究人员按下方说明处理。'],
           ['完成后还要回来吗','如果工作人员安排了延迟测量，请在后测至少72小时后按页面提示返回，在主流程结束后7天内完成。没有参加不会被记为答错。']
         ]:[
           ['你会做什么','按页面指引完成课程学习。部分时刻会出现一份简短记录，请回想询问出现前是否需要帮助、当时是否方便被打断。它不是知识考试，可以跳过。'],
           ['哪些内容会被记录','平台记录学习操作、作答、提问与回答，以及你对需要、时机和打扰程度的反馈。请不要在自由输入框填写姓名、电话等个人信息。'],
-          ['你可以决定什么','你可以跳过记录或选择不愿回答，也可以通过“预试”入口退出。退出后的数据按下方说明处理。']
+          ['你可以决定什么','你可以对当次记录选择不愿回答，或稍后继续学习。正式退出或数据处理请求可在记录入口提交，由研究人员按下方说明处理。']
         ];
         for(const [title,content]of sections){const s=el('section');s.className='pilot-consent-section';s.append(el('h4',title),el('p',content));dialog.append(s);}
         const details=el('details');details.className='pilot-consent-details';details.append(el('summary','负责人、数据保存与完整参与说明'));for(const [title,value]of [['负责人',preview.responsible],['联系方式',preview.contact],['研究审核',preview.reviewReference],['数据保存',preview.retention],['退出及数据处理',preview.withdrawal],['本次参与说明',preview.useMode==='internal_rehearsal'?'本次为内部功能演练，不随机分组。所有加入者均可设置六项帮助偏好，体验主动询问、确认、拒绝和后续反馈。平台会记录学习过程，并通过已配置的模型接口生成支持；请只输入合成或非敏感内容。演练数据不作为正式真人实验结果。':preview.consentText]])details.append(el('h4',title),el('p',value));dialog.append(details);

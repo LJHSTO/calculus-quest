@@ -51,17 +51,17 @@ async function main(){
   // The first lesson uses the normal student entry, subsequent points use the
   // existing test-only navigation seam, without replacing DOM or server data.
   await page.getByText("这一步需要什么帮助？",{exact:true}).click();
-  await page.getByRole("button",{name:"不清楚学这个有什么用",exact:true}).click();
-  await page.getByText('补充说明（可不填）',{exact:true}).click();
-  await page.getByLabel("补充一句你的目标或困难（可不填）").fill("想知道如何理解费用与使用量的关系");
-  await page.getByRole("button",{name:"确认当前需要",exact:true}).click();
+  await page.getByLabel('其他需要',{exact:true}).selectOption('value');
+  await page.getByText('补充一句（选填）',{exact:true}).click();
+  await page.getByLabel("想补充的目标或困难").fill("想知道如何理解费用与使用量的关系");
+  await page.getByRole("button",{name:"开始帮助",exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==="offered");
   let c=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle);assert.equal(c.plan.primaryGoal,"motivational");assert.equal(c.need.source,"student_confirmed");assert.equal(c.content.audit.fallback,true);
   assert.equal(c.id,invited.id);assert.equal(c.initiation,'agent_initiated_confirmation');assert.equal(c.inquiry.response,'value');
   const followupControls=await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return [0,1].map(limit=>{const root=SupportCycleUI.render({...s,supportCycle:{...s.supportCycle,profile:{...s.supportCycle.profile,supportFollowups:limit}}});return [...root.querySelectorAll('button')].some(b=>b.textContent==='我还需要帮助，请稍后再补充一次');});});
   assert.deepEqual(followupControls,[false,true],'D6停止时不显示无效补充按钮，允许一次时显示明确请求');
   await page.locator(".support-goal-message").scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,"常规学习多目标支持.png")});
-  await page.getByText("反馈这次帮助",{exact:true}).click();await page.getByRole("button",{name:"有帮助",exact:true}).click();await page.getByRole("button",{name:"保存反馈",exact:true}).click();
+  await page.getByText("反馈与下一步",{exact:true}).click();await page.getByRole("button",{name:"有帮助",exact:true}).click();await page.getByRole("button",{name:"保存反馈",exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.feedback?.result==="helped");
   assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.checkResult),null);
   await page.getByRole("button",{name:"做一次独立检查",exact:true}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==="awaiting_check");
@@ -79,15 +79,15 @@ async function main(){
   const host=frame.locator('[data-cq-embedded-help="task"]');await host.waitFor();
   const needSummary=host.getByText('这一步需要什么帮助？',{exact:true});
   if(!await needSummary.evaluate(n=>n.closest('details').open))await needSummary.click();
-  await host.getByRole('button',{name:'担心自己学不会',exact:true}).click();
-  if(!await host.getByLabel('补充一句你的目标或困难（可不填）').isVisible())await host.getByText('补充说明（可不填）',{exact:true}).click();
-  await host.getByLabel('补充一句你的目标或困难（可不填）').fill('合成输入：正在说明目前的困难');
+  await host.getByLabel('其他需要',{exact:true}).selectOption('confidence');
+  if(!await host.getByLabel('想补充的目标或困难').isVisible())await host.getByText('补充一句（选填）',{exact:true}).click();
+  await host.getByLabel('想补充的目标或困难').fill('合成输入：正在说明目前的困难');
   await page.waitForFunction(()=>SupportCycleUI.interactionBusy===true);
   assert.equal(await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return SupportCycleUI.render({...s,supportCycle:{id:'synthetic-deferred',status:'awaiting_confirmation',inquiry:{text:'合成依据'}}}).querySelector('.support-inquiry')!==null;}),false,'输入期间新询问暂缓呈现');
   await frame.locator('#input_x-slider').focus();
   await page.waitForFunction(()=>SupportCycleUI.interactionBusy===false);
   assert.equal(await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return SupportCycleUI.render({...s,supportCycle:{id:'synthetic-deferred',status:'awaiting_confirmation',inquiry:{text:'合成依据'}}}).querySelector('.support-inquiry')!==null;}),true,'离开输入框后可呈现询问');
-  await host.getByRole('button',{name:'确认当前需要',exact:true}).click();
+  await host.getByRole('button',{name:'开始帮助',exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.need?.need==='confidence'&&KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='offered');
   const shape=await host.evaluate(n=>({position:getComputedStyle(n).position,width:n.getBoundingClientRect().width,bottom:n.previousElementSibling.getBoundingClientRect().bottom,top:n.getBoundingClientRect().top}));
   assert.equal(shape.position,'static');assert.ok(shape.width>=180&&shape.top>=shape.bottom-1);
@@ -108,6 +108,7 @@ async function main(){
    assert.equal(result.cycle.scope,scopes[i]);assert.ok(result.cycle.content.message.length>20);assert.equal(result.cycle.content.audit.contentVersion,require("../lib/support-goals").VERSION);
    assert.equal(result.cycle.plan.knowledgeScaffoldLevel,null);
    const embedded=page.frameLocator('iframe[data-courseware-frame]').locator('[data-cq-embedded-help="task"]');
+   if(!await embedded.getByRole('button',{name:'做一次独立检查',exact:true}).isVisible())await embedded.getByText('反馈与下一步',{exact:true}).click();
    await embedded.getByRole('button',{name:'做一次独立检查',exact:true}).waitFor();
    const box=await embedded.evaluate(n=>({position:getComputedStyle(n).position,width:n.getBoundingClientRect().width}));assert.equal(box.position,'static');assert.ok(box.width>=180);
    await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:"start_check",id:KnowledgeAssistant.designSpaceSnapshot().supportCycle.id}));

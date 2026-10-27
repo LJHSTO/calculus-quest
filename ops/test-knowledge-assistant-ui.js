@@ -157,9 +157,9 @@ assert.match(
   "学生端必须把独立测量提交到服务端评分"
 );
 assert.match(assistantSource, /api\/learning\/proactive\/outcomes\/\$\{nextAction\}/);
-assert.match(assistantSource, /api\/learning\/proactive\/outcomes\/skip/);
+assert.doesNotMatch(assistantSource, /api\/learning\/proactive\/outcomes\/skip/);
 assert.match(assistantSource, /保存草稿并暂时离开/);
-assert.match(assistantSource, /永久跳过/);
+assert.doesNotMatch(assistantSource, /skip\.textContent = "永久跳过"/);
 assert.match(
   assistantSource,
   /let proactiveOutcomeDraftGeneration = 0[\s\S]*?proactiveOutcomeDraftGeneration \+= 1/,

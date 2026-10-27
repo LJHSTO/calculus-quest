@@ -35,7 +35,7 @@ let sessionStorage = window.__openMaicSessionStorage;
 <script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
 {
   "schema_version": "openmaic.semantic-contract.v1",
-  "contract_revision": "2026-09-03",
+  "contract_revision": "concept-exploration-20261027-v1",
   "course_version": "multi-scene-functions-limits-20260917-r2",
   "chapter_id": "V14-C1",
   "chapter_title": "函数与极限",
@@ -51,18 +51,21 @@ let sessionStorage = window.__openMaicSessionStorage;
   "observable_evidence": "我们在拖动实验里亲手修好了断裂点，现在用这张关系图把连续性的逻辑彻底理清。这就像一个三层漏斗——只有每一层都通过，函数在这一点才是连续的。 点击顶部的‘连续判定’节点，我们开始逐层往下走。第一层先问：f(a) 有没有定义？也就是铁轨在这个位置是不是真的铺了一截。",
   "evidence_events": [
     "scene_entered",
-    "scene_completed"
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "task_progress"
   ],
   "capabilities": {
     "widget_type": "mindMap",
     "controls": [
       "button"
     ],
-    "reports_attempt": false,
-    "reports_challenge": false,
+    "reports_attempt": true,
+    "reports_challenge": true,
     "reports_hint": false,
     "reports_reset": false,
-    "judges_correctness": false,
+    "judges_correctness": true,
     "requires_webgl": false,
     "requires_network": false,
     "keeps_local_state": true
@@ -82,6 +85,12 @@ let sessionStorage = window.__openMaicSessionStorage;
   "completion_semantics": {
     "success_requires": "产生与本知识点目标一致的可观察交互变化",
     "failure_is_evidence": false
+  },
+  "concept_exploration": {
+    "version": "concept-exploration-20261027-v1",
+    "optional": true,
+    "grading": "server_rechecked_process",
+    "independent": false
   }
 }
 </script>
@@ -2254,5 +2263,11 @@ showNodeDetails(nodeMap[data.revealOrder[0]]);
 })();
 </script>
 
+
+<!-- concept-exploration:start -->
+<script type="application/json" data-concept-exploration>{"point":"GH-02-K03","scene":"mindMap"}</script>
+<script src="../../主动探索证据/exploration-model.js"></script>
+<script src="../../主动探索证据/exploration-runtime.js"></script>
+<!-- concept-exploration:end -->
 </body>
 </html>

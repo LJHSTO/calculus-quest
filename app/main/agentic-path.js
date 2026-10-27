@@ -2750,7 +2750,32 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
   const phase = unit.assessmentPhase;
   const reviewUnavailableNotice = agenticQuizReviewUnavailableNotice(records);
 
+  // The study ends with its experience questionnaire. Do not replace the
+  // submitted posttest with ordinary next-chapter/remediation recommendations.
+  if (phase === "post" && globalThis.LearnerSetup?.afterPosttest?.(unit)) {
+    const path = ensureAgenticPath();
+    if (path.pendingPlan?.unitId === unit.id) {
+      path.pendingPlan = null;
+      path.pendingAt = "";
+    }
+    saveState();
+    if (currentUnitId === unit.id) agenticRenderLearningUpdate();
+    return;
+  }
+
   if (phase === "pre") {
+    // Preparation owns the fixed six-point route. A late short-answer grading
+    // response must not recreate a selection gate after preferences were saved.
+    if (globalThis.LearnerSetup?.afterPretest?.(unit)) {
+      const path = ensureAgenticPath();
+      if (path.pendingPlan?.unitId === unit.id) {
+        path.pendingPlan = null;
+        path.pendingAt = "";
+      }
+      saveState();
+      if (currentUnitId === unit.id) agenticRenderLearningUpdate();
+      return;
+    }
     const knowledgePlan = agenticBuildPreKnowledgeSelectionPlan(unit, records, null);
     if (knowledgePlan) {
       const path = ensureAgenticPath();

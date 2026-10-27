@@ -35,7 +35,7 @@ let sessionStorage = window.__openMaicSessionStorage;
 <script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
 {
   "schema_version": "openmaic.semantic-contract.v1",
-  "contract_revision": "2026-09-03",
+  "contract_revision": "concept-exploration-20261027-v1",
   "course_version": "multi-scene-functions-limits-20260917-r2",
   "chapter_id": "V14-C1",
   "chapter_title": "函数与极限",
@@ -51,7 +51,10 @@ let sessionStorage = window.__openMaicSessionStorage;
   "observable_evidence": "通过调节孤立点的高度使其与函数极限值重合，直观理解函数连续性的本质：lim f(x) = f(a)。学生拖动紫色点嵌入曲线的空心缺口，当点与空洞完美匹配时触发'连续'视觉反馈。",
   "evidence_events": [
     "scene_entered",
-    "scene_completed"
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "task_progress"
   ],
   "capabilities": {
     "widget_type": "simulation",
@@ -61,11 +64,11 @@ let sessionStorage = window.__openMaicSessionStorage;
       "drag",
       "canvas"
     ],
-    "reports_attempt": false,
-    "reports_challenge": false,
+    "reports_attempt": true,
+    "reports_challenge": true,
     "reports_hint": false,
     "reports_reset": false,
-    "judges_correctness": false,
+    "judges_correctness": true,
     "requires_webgl": false,
     "requires_network": false,
     "keeps_local_state": true
@@ -85,6 +88,12 @@ let sessionStorage = window.__openMaicSessionStorage;
   "completion_semantics": {
     "success_requires": "产生与本知识点目标一致的可观察交互变化",
     "failure_is_evidence": false
+  },
+  "concept_exploration": {
+    "version": "concept-exploration-20261027-v1",
+    "optional": true,
+    "grading": "server_rechecked_process",
+    "independent": false
   }
 }
 </script>
@@ -2549,5 +2558,11 @@ draw();
 })();
 </script>
 
+
+<!-- concept-exploration:start -->
+<script type="application/json" data-concept-exploration>{"point":"GH-02-K03","scene":"simulation"}</script>
+<script src="../../主动探索证据/exploration-model.js"></script>
+<script src="../../主动探索证据/exploration-runtime.js"></script>
+<!-- concept-exploration:end -->
 </body>
 </html>

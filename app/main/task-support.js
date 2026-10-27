@@ -20,9 +20,9 @@
       if(n.classList.contains("katex")){const math=n.querySelector('math');return math?tree(math):{text:n.querySelector(".katex-html")?.textContent||n.textContent};}
       if(n.tagName.toLowerCase()==='annotation')return{text:''};
       const tag=n.tagName.toLowerCase(), item={tag,supportBody:n.dataset.supportBody||null,pilotProbe:n.dataset.pilotProbe||null,hidden:n.hidden,open:n.open===true,disabled:n.disabled===true,attrs:{},children:[]};
-      if(["button","input","textarea","form","details"].includes(tag)){if(!controlIds.has(n))controlIds.set(n,`c${++nextControlId}`);item.id=controlIds.get(n);controls.set(item.id,n);}
+      if(["button","input","textarea","select","form","details"].includes(tag)){if(!controlIds.has(n))controlIds.set(n,`c${++nextControlId}`);item.id=controlIds.get(n);controls.set(item.id,n);}
       for(const a of ["type","placeholder","aria-label","aria-pressed","role","aria-checked","min","max","step","rows","maxLength","display","mathvariant","stretchy","fence","separator","scriptlevel","columnalign"])if(n.hasAttribute(a))item.attrs[a]=n.getAttribute(a);
-      if(["textarea","input"].includes(tag))item.value=n.value;
+      if(["textarea","input","select","option"].includes(tag))item.value=n.value;
       item.children=[...n.childNodes].map(tree);return item;
     }
     return tree(root);
@@ -139,6 +139,7 @@
       const target=controls.get(m.id);if(!target||target.disabled)return;
       if(m.kind==="toggle"&&target.tagName==="DETAILS"){target.open=m.open===true;return;}
       if(m.kind==="input"&&["INPUT","TEXTAREA"].includes(target.tagName)){target.value=String(m.value||"").slice(0,target.maxLength>0?target.maxLength:2000);target.dispatchEvent(new Event("input",{bubbles:true}));return;}
+      if(m.kind==='change'&&target.tagName==='SELECT'&&[...target.options].some(o=>o.value===m.value)){target.value=m.value;target.dispatchEvent(new Event('change',{bubbles:true}));deliver();return;}
       if(m.kind==="click"&&target.tagName==="BUTTON"){
         if(target.type==="submit"&&target.closest("form"))target.closest("form").dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));else target.click();
       }else if(m.kind==="submit"&&target.tagName==="FORM")target.dispatchEvent(new Event("submit",{bubbles:true,cancelable:true}));

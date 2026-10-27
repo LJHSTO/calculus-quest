@@ -42,7 +42,7 @@ async function main(){
   await page.waitForFunction(()=>PilotStudyUI.active(KnowledgeAssistant.designSpaceSnapshot()),null,{timeout:25000});
   exportData=(await api('/api/admin/pilot/export?project=pilot-browser')).data;
   assert.ok(exportData.opportunities.some(o=>o.stratum==='triggered'&&o.sampled),'真实课件事件产生主动候选抽样');
-  await page.locator('.pilot-probe-notice button').click();await page.locator('#pilot-probe-dialog').getByRole('button',{name:'跳过，继续学习',exact:true}).click();await page.waitForFunction(()=>!PilotStudyUI.active(KnowledgeAssistant.designSpaceSnapshot()));
+  await page.locator('.pilot-probe-notice button').click();await page.locator('#pilot-probe-dialog').getByRole('button',{name:'这次不答，继续学习',exact:true}).click();await page.waitForFunction(()=>!PilotStudyUI.active(KnowledgeAssistant.designSpaceSnapshot()));
   for(const scope of Object.keys(require('../lib/support-goals').CURRICULUM)){
     const result=await api('/api/learning/pilot/opportunity',{scope,unitId:scope,sceneType:'textbook',foreground:true,active:true,interactionBusy:true},student);
     assert.equal(result.status,200,'六个知识点接受有效上下文');

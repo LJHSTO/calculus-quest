@@ -34,6 +34,10 @@ async function main(){
  store.annotate(left.token,{...annotation,revision:1,note:"重新审查，保留原始版本"});assert.equal(store.exportData(input.project).annotations.length,3);
  const next=store.createVersion({...input,previousVersionId:v.id,reason:"第二轮修订"});assert.notEqual(next.version.hash,v.hash);assert.equal(store.state("alice",1).version.id,v.id);
  const prepared=require('./prepare-pilot-evaluation').prepare(store.exportData(input.project),{versionId:v.id,splitSalt:'synthetic-roundtrip-pilot-only',dataClass:'engineering_synthetic_only'});
+ store.action('alice',1,{action:'data_request',dataRequest:'希望与研究人员核对数据用途'});
+ assert.equal(store.state('alice',1).enrollment.status,'active');
+ assert.equal(store.cases(left.token).cases.length,3,'普通处理请求不自动移除标注与回放');
+ assert.ok(store.exportData(input.project).events.some(e=>e.type==='participant_data_request'&&e.automaticallyExcluded===false));
  assert.equal(prepared.bundle.caseCount,3);assert.equal(prepared.labels.find(x=>x.responseStatus==='uncertain').needLabel,null);
  assert.equal(prepared.labels.some(x=>x.teacherLabels.length===2),true,'真实导出格式保留双人独立标注');
  assert.equal(prepared.audit.probabilityCalibrated,false);

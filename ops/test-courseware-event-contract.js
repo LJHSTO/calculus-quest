@@ -75,3 +75,13 @@ assert.equal(sandbox.trackCoursewareLearningEvent(frame, { payload: {
   event_type: "unknown-event"
 } }), false);
 console.log("OpenMAIC 事件适配测试通过：新旧字段、兼容副本与独立作答证据边界。");
+const exploration=require('../resources/open-maic/主动探索证据/exploration-model');
+const point=exploration.points[0],task=exploration.get(point,'simulation');
+for(const response of task.options.map((_,i)=>i)){
+ const payload={event_type:'challenge_result',task_version:exploration.version,scene_type:'simulation',knowledge_point_id:point,challenge_id:`${point}:simulation:concept`,response,independent:false,evidence_scope:'concept_exploration_attempt',feedback_seen:true};
+ assert.equal(sandbox.trackCoursewareLearningEvent(frame,{payload}),true);
+ const persisted=received.at(-1).payload;
+ assert.equal(persisted.task_version,exploration.version);
+ assert.equal(persisted.feedback_seen,true);
+ assert.equal(require('../lib/assisted-game-evidence').grade(persisted,point),response===task.answer,'iframe→主页面→服务端复核不丢失任务版本');
+}

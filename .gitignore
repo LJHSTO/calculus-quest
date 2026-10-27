@@ -21,6 +21,10 @@ config/model.env
 courseware-inbox/*
 !courseware-inbox/.gitkeep
 resources/open-maic/*
+!resources/open-maic/主动探索证据/
+resources/open-maic/主动探索证据/*
+!resources/open-maic/主动探索证据/exploration-model.js
+!resources/open-maic/主动探索证据/exploration-runtime.js
 !resources/open-maic/.gitkeep
 # EXT-05 has 31 repaired narration files synthesized from its Guard-rewritten text.
 !resources/open-maic/EXT-05-数值优化进阶：从梯度到二阶与约束/

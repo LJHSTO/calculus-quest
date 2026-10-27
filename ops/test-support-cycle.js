@@ -26,6 +26,17 @@ async function main(){
  }
  const timeout=await goals.generateSupport({scope:'GH-01-K01',need:input,plan:goals.selectPlan(input,defaults)},{live:true,complete:async()=>{throw Object.assign(new Error('synthetic'),{name:'TimeoutError'});}});
  assert.equal(timeout.audit.failure,'timeout');
+ assert.equal(timeout.audit.attempts.length,2,'临时错误最多重试一次');
+ let providerAttempts=0;
+ const recovered=await goals.generateSupport({scope:'GH-01-K01',need:input,plan:goals.selectPlan(input,defaults)},{live:true,complete:async()=>{
+   if(providerAttempts++===0)throw Object.assign(new Error('synthetic timeout'),{name:'TimeoutError'});
+   return {provider:'synthetic',text:JSON.stringify({message:'先区分输入与输出，再说明它们之间使用了什么规则。',nextStep:'你可以先试一小步。'})};
+ }});
+ assert.equal(recovered.audit.fallback,false);assert.deepEqual(recovered.audit.attempts.map(a=>a.outcome),['timeout','received']);
+ for(const model of ['Qwen3.8-Flash-Next','MiniMax-M3.1-Flash']) {
+ const budgeted=await goals.generateSupport({scope:'GH-01-K01',need:input,plan:goals.selectPlan(input,defaults)},{model,complete:async args=>{assert.equal(args.maxTokens,1600);return {provider:'synthetic',text:JSON.stringify({message:'可以先比较输入与输出的含义，再独立说出一个例子。',nextStep:'由你选择是否继续。'})};}});
+ assert.equal(budgeted.audit.requestOptions.maxTokens,1600);assert.equal(budgeted.audit.fallback,false);
+ }
  const scope="GH-02-K01",profile={...defaults,ttlSeconds:120,cooldownSeconds:60,supportFollowups:1};
  let c=store.report("alice",scope,1,input,profile,0);assert.equal(c.status,"queued");
  const idem={...input,requestId:'synthetic-idempotency-request'};

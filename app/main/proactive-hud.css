@@ -35,6 +35,7 @@
 .support-cycle p{margin:8px 0}
 .support-cycle summary{min-height:40px}
 .support-cycle button{min-height:40px}
+.support-cycle form{max-width:480px}.support-cycle select{display:block;width:100%;max-width:100%;min-height:40px;font:inherit;padding:6px;border:1px solid #d8d3eb;border-radius:6px;background:#fff;color:#293345;margin-top:5px}.support-cycle .support-primary-action{background:#6757d9;color:#fff}.support-cycle .support-primary-needs{display:flex;flex-wrap:wrap;gap:6px}.support-cycle textarea{min-height:64px}.support-need-entry form{margin-top:4px}
 .support-inquiry-evidence{font-size:12px;color:#697386}
 .support-inquiry-evidence summary{font-weight:400;color:#697386}
 .learning-support-surface[data-cycle=true]{border:0;border-top:1px solid #e5e2ee;border-radius:0;background:transparent}

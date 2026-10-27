@@ -3873,21 +3873,10 @@ async function main() {
       withdrawalParticipant.token,
       withdrawalStarted.payload.data.activeSession.id
     );
-    assert.equal(skipped.response.status, 200);
-    assert.equal(skipped.payload.data.activeSession, null);
-    assert.equal(
-      skipped.payload.data.stages.find(
-        (stage) => stage.id === "near_transfer"
-      ).status,
-      "skipped"
-    );
-    assert.equal(
-      skipped.payload.data.stages.find(
-        (stage) => stage.id === "representation_transfer"
-      ).status,
-      "available",
-      "永久跳过当前阶段后，后续阶段必须继续开放而不能锁死路径"
-    );
+    assert.equal(skipped.response.status, 409);
+    assert.equal(skipped.payload.code, "permanent_skip_disabled");
+    const stillActive = await requestJson(runtime.baseUrl,"GET","/api/learning/proactive/outcomes?chapterId=V14-C3",undefined,withdrawalParticipant.token);
+    assert.equal(stillActive.payload.data.activeSession.id,withdrawalStarted.payload.data.activeSession.id,"拒绝永久跳过后原测量会话仍保留");
 
     const activeAdmin = await adminDecisions(runtime.baseUrl, adminToken);
     assert.equal(activeAdmin.response.status, 200);
@@ -4104,8 +4093,9 @@ async function main() {
     assert.ok(treatmentFlow.retentionSubmitted >= 1);
     assert.ok(
       activeAdmin.payload.data.participantFlow.some(
-        (row) => row.nearSkipped >= 1
+        (row) => row.nearSkipped > 0
       )
+      === false, '禁止永久跳过不会制造跳过记录'
     );
     assert.equal(
       activeAdmin.payload.data.integrity.signals.find(

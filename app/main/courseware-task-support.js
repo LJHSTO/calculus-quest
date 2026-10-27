@@ -70,7 +70,7 @@
     intersection?.disconnect(); layoutObserver?.disconnect(); host?.remove();
     host = content = intersection = layoutObserver = null; treeKey = ""; visibleRatio = 0;
   }
-  const tags = new Set(["div","section","article","header","footer","p","strong","span","small","label","form","fieldset","legend","textarea","input","button","br","ul","ol","li","h3","h4","output","details","summary"]);
+  const tags = new Set(["div","section","article","header","footer","p","strong","span","small","label","form","fieldset","legend","textarea","input","select","option","button","br","ul","ol","li","h3","h4","output","details","summary"]);
   const mathTags=new Set(['math','semantics','mrow','mi','mn','mo','mfrac','msup','msub','msubsup','msqrt','mroot','mover','munder','munderover','mtable','mtr','mtd','mtext','mspace','menclose','mstyle','mpadded']);
   function fromTree(item, depth = 0, revision = current.revision) {
     if (!item || depth > 18) return document.createTextNode("");
@@ -87,6 +87,8 @@
     if (item.value != null) el.value = String(item.value);
     if (item.id) el.dataset.taskControl = item.id;
     for (const child of (item.children || []).slice(0, 200)) el.append(fromTree(child, depth + 1, revision));
+    if(item.tag==='select'&&item.value!=null)el.value=String(item.value);
+    if(item.id&&item.tag==='select')el.addEventListener('change',()=>send('cq:task-control',{id:item.id,kind:'change',revision,value:el.value}));
     if (item.id && ["textarea","input"].includes(item.tag)) el.addEventListener("input", () => send("cq:task-control", { id:item.id, kind:"input", revision, value:el.value.slice(0,2000) }));
     if (item.id && item.tag === "button") el.addEventListener("click", () => send("cq:task-control", { id:item.id, kind:"click", revision }));
     if (item.id && item.tag === "form") el.addEventListener("submit", e => { e.preventDefault(); send("cq:task-control", { id:item.id, kind:"submit", revision }); });
@@ -105,6 +107,7 @@
       style.textContent += 'button[aria-pressed="true"]{background:#eeebff;border-color:#7565d6}summary{cursor:pointer;padding:8px 0}details{margin:6px 0}';
       style.textContent += '[data-pilot-probe]{max-height:340px;overflow:auto;overscroll-behavior:contain;scroll-padding:8px}fieldset{min-width:0;margin:12px 0;padding:8px;border:1px solid #ddd8ee;border-radius:6px}legend{font-weight:600;max-width:100%;padding:0 4px}';
       style.textContent += ':host{color:var(--support-text,#293345)}.card{background:var(--support-bg,#faf9ff);border-color:var(--support-border,#ddd8ee);border-left:2px solid var(--support-accent,#7565d6)}button,textarea,input{background:var(--support-control,#fff);color:var(--support-text,#293345);border-color:var(--support-border,#ddd8ee)}small{color:var(--support-muted,#697386)}button:hover,button[aria-pressed="true"]{background:var(--support-hover,#eeebff)}summary{min-height:40px}';
+      style.textContent += 'form{max-width:480px}select{display:block;max-width:100%;width:100%;font:inherit;min-height:40px;padding:6px;margin:5px 0 10px;border:1px solid var(--support-border,#ddd8ee);border-radius:5px;background:var(--support-control,#fff);color:var(--support-text,#293345)}details{margin:6px 0}textarea{min-height:64px}';
       content = document.createElement("div"); content.className = "card"; shadow.append(style, content);
       intersection = new IntersectionObserver(entries => {visibleRatio=entries[0].intersectionRatio;geometry();},{threshold:[0,.5,1]}); intersection.observe(host);
     }

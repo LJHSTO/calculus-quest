@@ -35,7 +35,7 @@ let sessionStorage = window.__openMaicSessionStorage;
 <script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
 {
   "schema_version": "openmaic.semantic-contract.v1",
-  "contract_revision": "2026-09-03",
+  "contract_revision": "concept-exploration-20261027-v1",
   "course_version": "multi-scene-functions-limits-20260917-r2",
   "chapter_id": "V14-C1",
   "chapter_title": "函数与极限",
@@ -51,18 +51,21 @@ let sessionStorage = window.__openMaicSessionStorage;
   "observable_evidence": "我们在刚才的拖动实验里亲眼看到了，x 从左右两边一步一步靠近1的时候，f(x) 都拼命往2跑，却不一定能刚好“抵达”2。现在我们把这种“靠近”的感觉，用一张逻辑关系图拆开来看清楚。 图上有两股力量——左侧的序列和右侧的序列——它们像两列队伍，从不同方向朝同一个目标前进。先点开“左侧序列”看看，里面记录了什么？",
   "evidence_events": [
     "scene_entered",
-    "scene_completed"
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "task_progress"
   ],
   "capabilities": {
     "widget_type": "mindMap",
     "controls": [
       "button"
     ],
-    "reports_attempt": false,
-    "reports_challenge": false,
+    "reports_attempt": true,
+    "reports_challenge": true,
     "reports_hint": false,
     "reports_reset": false,
-    "judges_correctness": false,
+    "judges_correctness": true,
     "requires_webgl": false,
     "requires_network": false,
     "keeps_local_state": true
@@ -82,6 +85,12 @@ let sessionStorage = window.__openMaicSessionStorage;
   "completion_semantics": {
     "success_requires": "产生与本知识点目标一致的可观察交互变化",
     "failure_is_evidence": false
+  },
+  "concept_exploration": {
+    "version": "concept-exploration-20261027-v1",
+    "optional": true,
+    "grading": "server_rechecked_process",
+    "independent": false
   }
 }
 </script>
@@ -1846,5 +1855,11 @@ showNodeStep(0);
 })();
 </script>
 
+
+<!-- concept-exploration:start -->
+<script type="application/json" data-concept-exploration>{"point":"GH-02-K01","scene":"mindMap"}</script>
+<script src="../../主动探索证据/exploration-model.js"></script>
+<script src="../../主动探索证据/exploration-runtime.js"></script>
+<!-- concept-exploration:end -->
 </body>
 </html>

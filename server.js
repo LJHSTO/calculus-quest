@@ -361,6 +361,8 @@ const proactiveStoppingRules = Object.freeze({
       supportSurfaceStyle: protocolSourceDigest("app/main/proactive-hud.css"),
       courseStructure: protocolSourceDigest("app/main/core.js"),
       coursewareBridge: protocolSourceDigest("app/main/courseware-bridge.js"),
+      conceptExploration: protocolSourceDigest("resources/open-maic/主动探索证据/exploration-model.js"),
+      conceptExplorationUI: protocolSourceDigest("resources/open-maic/主动探索证据/exploration-runtime.js"),
       coursewareInlineSupport: protocolSourceDigest("app/main/courseware-inline-support.js"),
       coursewareTaskSupport: protocolSourceDigest("app/main/courseware-task-support.js"),
       taskSupport: protocolSourceDigest("app/main/task-support.js"),
@@ -1384,6 +1386,7 @@ function safeStaticPath(urlPath) {
     && !/^resources\/open-maic\/(?:prompts|versions)(?:\/|$)/.test(normalized)
     && (
       normalized === "resources/open-maic/course-index.json"
+      || ["resources/open-maic/主动探索证据/exploration-model.js","resources/open-maic/主动探索证据/exploration-runtime.js"].includes(normalized)
       || publicResourceExtensions.has(extension)
     );
   const allowed = publicRootFiles.has(normalized)
@@ -6579,116 +6582,12 @@ async function handleApi(req, res, url) {
       return;
     }
 
-    if (
-      req.method === "POST"
-      && url.pathname === "/api/learning/proactive/outcomes/skip"
-    ) {
+    if (req.method === "POST" && url.pathname === "/api/learning/proactive/outcomes/skip") {
       const body = await readJsonBody(req);
-      const auth = authenticate(req, body);
-      if (!auth) {
-        sendJson(res, 401, { ok: false, message: "请先登录。" });
-        return;
-      }
-      const chapterId = boundedLearningText(
-        body.chapterId || proactiveStudyConfig.chapterId,
-        120
-      );
-      const sessionId = boundedLearningText(body.sessionId, 180);
-      const requestedReason = boundedLearningText(body.reason, 80);
-      const skipReason = [
-        "student_skip",
-        "time_constraint",
-        "technical_issue",
-        "prefer_not_to_answer"
-      ].includes(requestedReason)
-        ? requestedReason
-        : "student_skip";
-      const session = sessionId
-        ? db.getProactiveOutcomeSessionById(auth.participant.id, sessionId)
-        : null;
-      if (
-        !session
-        || session.experiment_id !== proactiveStudyConfig.experimentId
-        || session.chapter_id !== chapterId
-      ) {
-        sendJson(res, 404, {
-          ok: false,
-          code: "proactive_outcome_session_not_found",
-          message: "当前测量会话不存在。"
-        });
-        return;
-      }
-      const endedAt = nowIso();
-      const skipped = db.skipProactiveOutcomeSession({
-        userId: auth.participant.id,
-        sessionId,
-        reason: skipReason,
-        endedAt
-      });
-      if (!skipped.ok) {
-        sendJson(res, 409, {
-          ok: false,
-          code: "proactive_outcome_session_not_active",
-          message: "当前测量会话已经结束，不能再次跳过。"
-        });
-        return;
-      }
-      if (!skipped.idempotent) {
-        const started = Date.parse(session.started_at || "");
-        const ended = Date.parse(endedAt);
-        const elapsedMs = Number.isFinite(started) && Number.isFinite(ended)
-          ? Math.max(0, Math.trunc(ended - started))
-          : 0;
-        const activeDurationMs = Math.max(
-          0,
-          elapsedMs - Number(skipped.session.paused_duration_ms || 0)
-        );
-        const assignment = proactiveAssignmentForUser(auth.participant.id);
-        db.insertEvent({
-          id: `${sessionId}:skipped`,
-          user_id: auth.participant.id,
-          type: "interaction",
-          payload: {
-            schemaVersion: 1,
-            eventType: "proactive_outcome_skipped",
-            source: "proactive_outcome_measurement",
-            chapterId,
-            unitId: `${chapterId}-${session.stage}`,
-            sceneType: "",
-            research: {
-              experimentId: proactiveStudyConfig.experimentId,
-              condition: session.condition,
-              cohort: session.cohort || proactiveStudyConfig.cohort || "",
-              assignmentVersion: assignment?.assignment_version || "",
-              protocolFingerprint: session.protocol_fingerprint || proactiveProtocolFingerprint
-            },
-            data: {
-              sessionId,
-              stageId: session.stage,
-              skipReason,
-              instrumentVersion: session.instrument_version,
-              learningGeneration: Number(session.learning_generation || 1),
-              pauseCount: Number(skipped.session.pause_count || 0),
-              pausedDurationMs: Number(skipped.session.paused_duration_ms || 0),
-              agentAssistanceAllowed: false
-            },
-            timing: { clientAt: endedAt, durationMs: activeDurationMs }
-          },
-          created_at: endedAt
-        });
-      }
-      db.saveNow();
-      sendJson(res, 200, {
-        ok: true,
-        idempotent: skipped.idempotent,
-        sessionId,
-        endedAt: skipped.session.ended_at || endedAt,
-        skipReason,
-        data: proactiveOutcomeState(auth.participant.id, chapterId)
-      });
+      if (!authenticate(req, body)) { sendJson(res, 401, { ok:false, message:"请先登录。" }); return; }
+      sendJson(res, 409, { ok:false, code:"permanent_skip_disabled", message:"后续测量不再提供永久跳过。请保存并暂时离开，之后继续。" });
       return;
     }
-
     if (
       req.method === "POST"
       && url.pathname === "/api/learning/proactive/outcomes/submit"

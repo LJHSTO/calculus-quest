@@ -46,19 +46,23 @@
   function checkin(next,open=false,inquiryId=null){
     const d=draft(`${owner}:${next.scopeKey}:need`),details=el("details");details.open=open;
     details.className="support-need-entry";details.append(el("summary","这一步需要什么帮助？"));
-    details.append(el("p","选最接近的一项，确认后再提供帮助。也可以不选。"));
-    const form=el("form"),list=el("div");choices(list,needs,d.need,v=>d.need=v);form.append(list);
-    const extra=el('details');extra.append(el('summary','补充说明（可不填）'));note(extra,d,"补充一句你的目标或困难（可不填）");selfRatings(extra,d);form.append(extra);
-    const submit=el("button","确认当前需要");submit.type="submit";submit.disabled=busy;form.append(submit);
+    const form=el("form"),list=el("div"),other=el('select');list.className='support-primary-needs';
+    choices(list,{concept:needs.concept,monitoring:needs.monitoring},d.need,v=>{d.need=v;other.value='';});form.append(list);
+    const label=el('label','其他方面');other.setAttribute('aria-label','其他需要');
+    const blank=el('option','选择其他需要（可选）');blank.value='';other.append(blank);
+    for(const [value,text]of Object.entries(needs).filter(([k])=>!['concept','monitoring','none'].includes(k))){const option=el('option',text);option.value=value;other.append(option);}
+    other.value=['concept','monitoring'].includes(d.need)?'':d.need;other.onchange=()=>{d.need=other.value;for(const b of list.querySelectorAll('button'))b.setAttribute('aria-pressed','false');};label.append(other);form.append(label);
+    const extra=el('details');extra.append(el('summary','补充一句（选填）'));note(extra,d,"想补充的目标或困难");form.append(extra);
+    const submit=el("button","开始帮助");submit.type="submit";submit.className='support-primary-action';submit.disabled=busy;form.append(submit);
     form.onsubmit=e=>{e.preventDefault();if(!d.need){error="请先选择当前需要。";global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"report",confirmed:true,need:d.need,note:d.note,ratings:d.ratings,...(inquiryId?{inquiryId}: {})});};
     details.append(form);return details;
   }
   function feedback(next,c){
-    const d=draft(`${owner}:${c.id}:feedback`),details=el("details");details.append(el("summary","反馈这次帮助"));
+    const d=draft(`${owner}:${c.id}:feedback`),details=el("details");details.append(el("summary","反馈与下一步"));
     const form=el("form"),result=el("div");
     choices(result,{helped:"有帮助",not_helped:"暂时没帮助",mismatch:"没有对上我的需要",prefer_stop:"我想停止本轮帮助"},d.result,v=>d.result=v);form.append(result);
     const perceived=el("details");perceived.append(el("summary","你感受到的主要帮助（可不选）"));const options=el("div");choices(options,goalNames,d.perceivedGoal,v=>d.perceivedGoal=v);perceived.append(options);form.append(perceived);
-    note(form,d,"具体哪里有用或不合适（可不填）");selfRatings(form,d);
+    const extra=el('details');extra.append(el('summary','补充说明（选填）'));note(extra,d,"具体哪里有用或不合适（可不填）");selfRatings(extra,d);form.append(extra);
     if(c.rounds<=Number(c.profile?.supportFollowups||0)){
       const follow=button(d.requestMore?'已选择：我还需要一次补充帮助':'我还需要帮助，请稍后再补充一次',()=>{d.requestMore=!d.requestMore;follow.textContent=d.requestMore?'已选择：我还需要一次补充帮助':'我还需要帮助，请稍后再补充一次';follow.setAttribute('aria-pressed',String(d.requestMore));});follow.setAttribute('aria-pressed',String(d.requestMore));form.append(follow,el('p','保存反馈后才会安排补充；仍会等待所选间隔和合适的任务边界。'));
     }else{d.requestMore=false;form.append(el('p','本轮不再追加帮助。你可以继续自己尝试，之后仍可重新求助。'));}
@@ -67,17 +71,19 @@
   }
   function content(next,c){
     const section=el("section");section.className="support-goal-message";section.dataset.supportCycleId=c.id;
-    const header=el("header");header.append(el("strong",`知点 · ${goalNames[c.plan.primaryGoal]}`));section.append(header);
+    const header=el("header");header.append(el("strong","先试这一步"));section.append(header);
     const body=el("div");body.dataset.supportBody=c.id;body.append(el("p",c.content.message),el("p",c.content.nextStep));
     // This content exists only after the learner has confirmed a need. A1 has
     // already been satisfied; D4 alone controls whether this body is folded.
     if(next.view.format==="disclosure") {const details=el("details");details.append(el("summary","查看这条帮助"),body);section.append(details);}
     else if(next.view.format==="steps") {const parts=c.content.message.split(/(?<=[。！？])\s*/).filter(Boolean);let index=0;const p=el("p",parts[0]||c.content.message);p.dataset.supportBody=c.id;const more=button("继续阅读",()=>{index++;p.textContent=parts.slice(0,index+1).join("");if(index>=parts.length-1){more.hidden=true;section.append(el("p",c.content.nextStep));}});section.append(p,more);}
     else{if(next.view.format==="bubble")body.setAttribute("role","note");section.append(body);}
-    section.append(el("small",c.content.audit.fallback?"当前为课程备用建议，未由实时模型生成。":"本次为 AI 生成建议，可纠正或拒绝；内容尚未经教师逐条审校。"));
+    section.append(el("small",c.content.audit.fallback?"课程备用建议":"AI 生成建议"));
     const actions=el("footer");if(c.status==="offered")actions.append(button("我先试一试",()=>request({action:"accept",id:c.id})));
-    actions.append(button("稍后再说",()=>request({action:"postpone",id:c.id})),button("结束这轮帮助",()=>request({action:"close",id:c.id})),button("做一次独立检查",()=>request({action:"start_check",id:c.id})));
-    section.append(actions,feedback(next,c));return section;
+    actions.append(button("结束这轮帮助",()=>request({action:"close",id:c.id})));
+    const nextSteps=feedback(next,c);nextSteps.append(button("做一次独立检查",()=>request({action:"start_check",id:c.id})));
+    const provenance=el('details');provenance.className='support-inquiry-evidence';provenance.append(el('summary','关于这条建议'),el('p',`支持方向：${goalNames[c.plan.primaryGoal]}。${c.content.audit.fallback?'模型暂不可用，使用课程备用内容。':'内容由模型生成，尚未经教师逐条审校；可以提出异议。'}`));
+    section.append(actions,nextSteps,provenance);return section;
   }
   function render(next){
     sync(next);const root=el("section");root.className="support-cycle";

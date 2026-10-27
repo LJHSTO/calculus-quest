@@ -1140,6 +1140,24 @@ function testSideNavigationClearsQuizReturnContext() {
 }
 
 Promise.resolve()
+  .then(async()=>{
+    reset({state:learningState(),chapterId:'C1',unitId:'C1-pre'});
+    context.LearnerSetup={afterPretest:()=>true};
+    const pre=context.getUnit('C1-pre'),path=context.ensureAgenticPath();
+    path.pendingPlan={unitId:pre.id,phase:'pending_grading'};
+    path.unlocked.push('C1-k1');path.visibleUnits.push('C1-k1');
+    context.currentUnitId='C1-k1';
+    await context.agenticBuildRecommendationAfterGrading(pre,[],null);
+    assert.equal(path.pendingPlan,null,'迟到的前测评分不得重新建立已完成准备的选择门槛');
+    assert.equal(context.currentUnitId,'C1-k1','评分回调不能强制切回前测');
+    const post=context.getUnit('C1-post');
+    context.LearnerSetup.afterPosttest=()=>true;
+    path.pendingPlan={unitId:post.id,phase:'grading_pending'};
+    await context.agenticBuildRecommendationAfterGrading(post,[],null);
+    assert.equal(path.pendingPlan,null,'预试后测不得被普通下一章建议取代');
+    assert.equal(context.currentUnitId,'C1-k1','迟到后测评分不能抢走当前页面');
+    delete context.LearnerSetup;
+  })
   .then(testDeferredReviewAndExtensionFlows)
   .then(testDirectExtensionPostReturnsToMainRoute)
   .then(testQuizReviewReadySignalWaitsForAllScoring)

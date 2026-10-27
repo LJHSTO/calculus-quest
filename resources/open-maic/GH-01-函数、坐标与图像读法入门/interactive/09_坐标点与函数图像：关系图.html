@@ -35,7 +35,7 @@ let sessionStorage = window.__openMaicSessionStorage;
 <script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
 {
   "schema_version": "openmaic.semantic-contract.v1",
-  "contract_revision": "2026-09-03",
+  "contract_revision": "concept-exploration-20261027-v1",
   "course_version": "multi-scene-functions-limits-20260917-r2",
   "chapter_id": "V14-C1",
   "chapter_title": "函数与极限",
@@ -51,18 +51,21 @@ let sessionStorage = window.__openMaicSessionStorage;
   "observable_evidence": "刚才我们亲手拖动出了一个个坐标点，看到了它们是如何出现在图像上的。现在，小慧给我们带来了一张关系图，帮我们把这些步骤背后的逻辑看得更清楚。 我们先看最左边这个节点，它代表输入值 x。x 就是横坐标，它决定了点在水平方向上的位置。你可以想象成，x 告诉我们在一条东西向的路上，从起点出发走了多远。",
   "evidence_events": [
     "scene_entered",
-    "scene_completed"
+    "scene_completed",
+    "attempt_submitted",
+    "challenge_result",
+    "task_progress"
   ],
   "capabilities": {
     "widget_type": "mindMap",
     "controls": [
       "button"
     ],
-    "reports_attempt": false,
-    "reports_challenge": false,
+    "reports_attempt": true,
+    "reports_challenge": true,
     "reports_hint": false,
     "reports_reset": false,
-    "judges_correctness": false,
+    "judges_correctness": true,
     "requires_webgl": false,
     "requires_network": false,
     "keeps_local_state": true
@@ -82,6 +85,12 @@ let sessionStorage = window.__openMaicSessionStorage;
   "completion_semantics": {
     "success_requires": "产生与本知识点目标一致的可观察交互变化",
     "failure_is_evidence": false
+  },
+  "concept_exploration": {
+    "version": "concept-exploration-20261027-v1",
+    "optional": true,
+    "grading": "server_rechecked_process",
+    "independent": false
   }
 }
 </script>
@@ -1987,5 +1996,11 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 })();
 </script>
 
+
+<!-- concept-exploration:start -->
+<script type="application/json" data-concept-exploration>{"point":"GH-01-K02","scene":"mindMap"}</script>
+<script src="../../主动探索证据/exploration-model.js"></script>
+<script src="../../主动探索证据/exploration-runtime.js"></script>
+<!-- concept-exploration:end -->
 </body>
 </html>

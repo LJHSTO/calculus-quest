@@ -49,6 +49,10 @@
   async function goPretest(){dialog?.close();await ensureChapterLoaded('V14-C1');switchView('learn');selectUnit('V14-C1-pre');renderGuide();}
   async function continueAfterPretest(){logJourney('pilot_pretest_continue');await global.PilotStudyUI?.reload?.();await refreshPreparation();if(isReady()){await beginLearning();return;}if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active')await openPilot(pilot);else await open();}
   async function beginLearning(){dialog?.close();switchView('learn');await ensureChapterLoaded('V14-C1',{showLoading:false});
+    const preparedPath=typeof ensureAgenticPath==='function'?ensureAgenticPath():null;
+    if(isReady()&&preparedPath?.pendingPlan?.unitId==='V14-C1-pre'){
+      preparedPath.pendingPlan=null;preparedPath.pendingAt='';saveState();
+    }
     if(typeof currentUnitId==='string'&&currentUnitId==='V14-C1-pre'){
       const path=typeof ensureAgenticPath==='function'?ensureAgenticPath():null;
       if(path?.pendingPlan?.phase==='pre_knowledge_selection'){
@@ -110,7 +114,7 @@
         const note=el('textarea');note.rows=3;note.maxLength=1200;note.setAttribute('aria-label','本次学习建议');note.placeholder='哪次帮助或设置最让你意外？还有什么需要改进？（选填）';details.append(note);
         details.append(button('保存问卷并结束本轮预试',async()=>{if(!validSurvey('final')||(e.arm==='configurable'&&!validSurvey('configuration')))throw new Error('请逐项作答或选择不愿回答');pilot=await KnowledgeAssistant.pilotRequest('/action',{action:'finish',survey:drafts.final,configuration:drafts.configuration,note:note.value});await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();draw();},true));body.append(details);
         }else body.append(el('p','完成本章后测后，这里会开放学习体验问卷。现在可以继续学习。'));
-        const withdraw=el('details');withdraw.append(el('summary','退出预试与数据处理'));withdraw.append(el('p',pilot.version.withdrawal));const reason=el('textarea');reason.rows=2;reason.maxLength=500;reason.setAttribute('aria-label','数据处理请求');withdraw.append(reason,button('确认退出预试',async()=>{pilot=await KnowledgeAssistant.pilotRequest('/action',{action:'withdraw',dataRequest:reason.value});await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();draw();}));body.append(withdraw);
+        body.append(el('p','可以关闭页面，之后从保存的位置继续。暂时离开不会删除作答，也不会排除研究回放。'));
       }else {body.append(el('p',e.status==='withdrawn'?'你已退出；研究回放默认不再导出你的记录。数据处理请求由研究负责人按同意书处理。':'问卷已经保存，谢谢参与。'));if(e.status==='finished'&&e.followupEndsAt)body.append(el('p','若研究人员安排了延迟测量，请在后测至少72小时后返回“学习 → 本章路径 → 研究测量”。以页面开放时间为准；请在主流程结束后7天内完成。已有作答和进度会持续保留。'));body.append(button('返回平台',leave));}dialog.append(body);
     }else{
       header('让帮助适合你的学习方式',hasSavedPreferences()?'学习偏好 · 已设置':experimental()?'学习偏好 · 完成每个知识点检测后可调整':'学习偏好');
@@ -133,7 +137,10 @@
       footer.append(button(step<5?'下一项':step===5?'核对选择':'保存并开始学习',async()=>{if(step<6){const d=C.dimensions[step],a=answers[d.id];if(!a.reason||(a.reason==='other'&&!a.note.trim()))throw new Error('请选择理由；其他原因需要补充说明');step++;draw();return;}
         C.validate(answers,{experimental:experimental()});busy=true;try{const result=await request({answers,expectedRevision:record?.revision||0,elapsedMs:Date.now()-started,selectionSource});applyData(result);dialog.close();await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();KnowledgeAssistant.refreshSupportSurface();await beginLearning();}finally{busy=false;}},true));dialog.append(footer);
     }
-    if(mode==='study'&&pilot?.enrollment?.status==='finished'&&pilot.enrollment.followupEndsAt)dialog.append(button('退出后续测量并排除本次研究回放',async()=>{pilot=await KnowledgeAssistant.pilotRequest('/action',{action:'withdraw',dataRequest:'主流程后退出后续测量'});await global.PilotStudyUI?.reload?.();draw();}));
+    if(mode==='study'&&['active','finished'].includes(pilot?.enrollment?.status)){
+      const handling=el('details');handling.append(el('summary','联系研究人员处理参与或数据问题'),el('p','如需正式退出研究或处理已提交数据，请说明请求。普通暂停和暂时离开不会排除回放；研究人员按参与说明处理正式请求。'));
+      const text=el('textarea');text.rows=2;text.maxLength=500;text.setAttribute('aria-label','数据处理请求');handling.append(text,button('提交处理请求',async()=>{await KnowledgeAssistant.pilotRequest('/action',{action:'data_request',dataRequest:text.value});message='请求已记录，等待研究人员处理。已有学习记录未被自动排除。';draw();}));dialog.append(handling);
+    }
     const status=el('p',message);status.className='learner-error';status.setAttribute('role','alert');dialog.append(status);
     dialog.scrollTop=0;if(message)status.scrollIntoView({block:'nearest'});
   }
