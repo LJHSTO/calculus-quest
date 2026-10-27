@@ -543,6 +543,9 @@ function renderPlayer() {
   if (typeof syncAgenticPlayerCta === "function") syncAgenticPlayerCta(unit);
   if (typeof renderAgenticCoachPanel === "function") renderAgenticCoachPanel();
   syncNarrationUi();
+  // Partial renders also replace the canvas DOM. Rebuild its tabs and restore
+  // the selected pane before exposing it, not only after a full renderAll().
+  window.LearningWorkspace?.sync();
 }
 
 function renderCoach(scene, chapterId, unitId) {

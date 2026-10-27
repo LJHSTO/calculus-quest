@@ -5,7 +5,7 @@
   let consentAccepted=false,reuseAccepted=false;
   const el=(tag,value)=>{const n=document.createElement(tag);if(value!==undefined)n.textContent=value;return n;};
   const button=(label,run)=>{const n=el("button",label);n.type="button";n.className="button soft";n.onclick=run;return n;};
-  function update(next){const serialized=JSON.stringify(next);data=next;if(serialized!==lastState){lastState=serialized;revision++;global.KnowledgeAssistant?.refreshSupportSurface();global.LearnerSetup?.setPilot(next);}}
+  function update(next){const serialized=JSON.stringify(next);data=next;if(next.enrollment){joinCode='';preview=null;}if(serialized!==lastState){lastState=serialized;revision++;global.KnowledgeAssistant?.refreshSupportSurface();global.LearnerSetup?.setPilot(next);}}
   async function call(path,body){return global.KnowledgeAssistant.pilotRequest(path,body);}
   async function run(path,body){if(busy)return;const requestedOwner=owner;busy=true;message="";try{const next=await call(path,body);if(owner===requestedOwner)update(next);}catch(e){if(owner===requestedOwner)message=e.message;}finally{busy=false;revision++;global.KnowledgeAssistant?.refreshSupportSurface();if(dialog?.open&&owner===requestedOwner)showDialog();}}
   function active(s){return Boolean(data.enrollment?.status==="active"&&data.pending&&data.pending.scope===s.scopeKey&&s.signedIn&&s.active&&!s.locked&&!s.check&&s.unitType==="knowledge"&&s.supportCycle?.status!=="awaiting_check"&&(presented.has(data.pending.id)||!global.SupportCycleUI?.interactionBusy));}
@@ -48,9 +48,9 @@
         if(preview.useMode==='internal_rehearsal'){const notice=el('p','当前是流程演练版，只供团队检查使用，尚未开放正式学生预试。');notice.className='pilot-consent-notice';dialog.append(notice);}
         const sections=preview.studyType==='learner-configurable-20-v1'?[
           ['你会做什么','先回答3道学习感受题，再独立完成知识前测。不会的题可以选“我不会”。随后学习6个知识点，完成后测和学习体验问卷。每一步都有继续按钮，你可以按自己的速度操作。'],
-          ['学习方式有什么不同','系统会随机安排两种学习方式，不能自行选择组别。一种方式中，助手只在你提问时回答；另一种方式中，你先设置6项帮助偏好，助手再按设置主动询问或提示。两组都能使用相同的课件、练习和知点提问入口。'],
+          ['学习方式',preview.useMode==='internal_rehearsal'?'本次演练不分组。每个人都先设置6项帮助偏好，再体验完整主动支持功能。助手根据学习过程判断何时询问，你确认后再提供对应帮助；也可以拒绝或暂停。':'系统会随机安排两种学习方式，不能自行选择组别。一种方式中，助手只在你提问时回答；另一种方式中，你先设置6项帮助偏好，助手再按设置主动询问或提示。两组都能使用相同的课件、练习和知点提问入口。'],
           ['哪些内容会被记录','平台记录作答、学习操作、提问与回答、偏好及选择理由，以及帮助何时出现、你是否接受或拒绝。问卷可以选“不愿回答”。请不要在自由输入框填写姓名、电话等个人信息。'],
-          ['你可以决定什么','每次帮助都可以拒绝或暂停。完成一个知识点的检测后，可以调整下一节的帮助方式。你也可以通过“预试”入口退出；退出后的数据按下方说明处理。'],
+          ['你可以决定什么','每次帮助都可以拒绝或暂停。完成一个知识点的检测后，可以调整下一节的帮助方式。点击右上角头像，在本次演练或预试记录中查看问卷、退出；退出后的数据按下方说明处理。'],
           ['完成后还要回来吗','如果工作人员安排了延迟测量，请在后测至少72小时后按页面提示返回，在主流程结束后7天内完成。没有参加不会被记为答错。']
         ]:[
           ['你会做什么','按页面指引完成课程学习。部分时刻会出现一份简短记录，请回想询问出现前是否需要帮助、当时是否方便被打断。它不是知识考试，可以跳过。'],
@@ -101,6 +101,7 @@
   global.PilotStudyUI=Object.freeze({active,render,open,reload:async()=>update(await call('')),get revision(){return revision+":"+Boolean(data.pending&&!presented.has(data.pending.id)&&global.SupportCycleUI?.interactionBusy);}});
   document.getElementById("pilot-entry-button")?.addEventListener("click",open);
   document.getElementById("home-pilot-entry")?.addEventListener("click",open);
+  document.getElementById('account-pilot-status')?.addEventListener('click',()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);open();});
   global.addEventListener("cq:proactive-state",async e=>{snapshot=e.detail;const key=snapshot.signedIn?snapshot.ownerKey+":"+snapshot.generation:"";
     if(key!==owner){owner=key;data={enrollment:null};preview=null;joinCode="";drafts.clear();shown.clear();presented.clear();lastState="";dialog?.close();if(key){try{const next=await call("");if(key===owner)update(next);}catch{}}}
   });

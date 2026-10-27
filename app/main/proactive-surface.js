@@ -189,10 +189,6 @@
   function sync(next) {
     next={...next,check:next.check||(next.supportCycle?.status==="awaiting_check"?{id:next.supportCycle.check.id}:null)};
     global.SupportCycleUI?.sync(next);
-    const tabsForHelp=document.querySelector('.workspace-canvas-toolbar');
-    let helpButton=document.getElementById('support-need-launcher');
-    if(tabsForHelp&&!helpButton){helpButton=node('button','support-need-launcher','主动求助');helpButton.id='support-need-launcher';helpButton.type='button';helpButton.title='你也可以随时提出需要；助手的主动询问不依赖这个按钮。';helpButton.setAttribute('aria-description',helpButton.title);helpButton.onclick=()=>global.SupportCycleUI?.openManual();tabsForHelp.append(helpButton);}
-    if(helpButton)helpButton.hidden=!(next.signedIn&&next.active&&next.unitType==='knowledge'&&!next.locked&&!next.check&&next.taskReady!==false);
     if (next.ownerKey !== ownerKey) {
       stopExposure();
       ownerKey = next.ownerKey; drafts.clear(); widgetValues.clear();

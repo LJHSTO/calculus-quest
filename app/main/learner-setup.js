@@ -22,7 +22,7 @@
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
   function button(text,fn,primary=false){const b=el('button',text);b.type='button';b.className=primary?'learner-primary':'learner-secondary';b.onclick=async()=>{if(busy)return;message='';b.disabled=true;try{await fn();}catch(e){message=e.message;draw();}finally{b.disabled=false;}};return b;}
   async function request(body){const token=state.authToken;if(!token)throw new Error('请先登录');const r=await fetch('api/learning/learner-preferences',{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const p=await r.json();if(token!==state.authToken)throw new Error('登录账号已变化，请重新打开');if(!r.ok||!p.ok)throw new Error(p.message||'暂未保存，请重试');return p.data;}
-  function setPilot(p){pilot=p;global.dispatchEvent(new CustomEvent('cq:pilot-enrollment',{detail:p}));
+  function setPilot(p){pilot=p;if(p.enrollment)preparation=null;global.dispatchEvent(new CustomEvent('cq:pilot-enrollment',{detail:p}));
     renderGuide();
     // Preparing is resumed by explicit journey buttons; result pages never auto-close.
   }
@@ -49,13 +49,18 @@
       if(typeof agenticOpenUnit==='function'){agenticUnlockUnit('GH-01-K01','pilot_ready');await agenticOpenUnit('GH-01-K01',{source:'pilot_ready'});}
     }await syncLearningSnapshot('pilot_learning_started');renderGuide();}
   function syncEntrances(){const unit=typeof getUnit==='function'&&typeof currentUnitId==='string'?getUnit(currentUnitId):null;
-    const pre=unit?.assessmentPhase==='pre';for(const selector of ['#pilot-entry-button','#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=pre;}
+    const pre=unit?.assessmentPhase==='pre',joined=Boolean(pilot?.enrollment);
+    for(const selector of ['#pilot-entry-button','#home-pilot-entry']){const node=document.querySelector(selector);if(node)node.hidden=joined||(pre&&selector==='#pilot-entry-button');}
+    for(const selector of ['#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=pre;}
+    const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';}
   }
   function renderGuide(){
     syncEntrances();
     let guide=document.getElementById('pilot-learning-guide');const host=document.querySelector('.player-top');if(!host)return;
     if(!guide){guide=el('section');guide.id='pilot-learning-guide';guide.className='pilot-learning-guide';guide.setAttribute('aria-label','本次学习步骤');host.after(guide);}
-    const e=pilot?.enrollment;guide.hidden=(!e||e.studyDesign!=='learner-configurable-20-v1')&&!preparation?.required;if(guide.hidden)return;
+    const e=pilot?.enrollment,unit=typeof getUnit==='function'?getUnit():null;
+    guide.hidden=unit?.type==='knowledge'||unit?.assessmentPhase==='pre'||((!e||e.studyDesign!=='learner-configurable-20-v1')&&!preparation?.required);
+    if(guide.hidden){guide.replaceChildren();return;}
     if(preparation?.required){guide.replaceChildren();const done=(state.submittedQuizzes||[]).includes(preparation.chapterId+'-pre');const current=preparation.stage==='ready'?2:done?1:0;
       const steps=el('ol');steps.className='pilot-progress-steps';['知识前测','六维学习方式','开始学习'].forEach((text,i)=>{const li=el('li',text);li.dataset.state=i<current?'done':i===current?'current':'pending';if(i===current)li.setAttribute('aria-current','step');steps.append(li);});guide.append(steps);
       const row=el('div');row.className='pilot-guide-next';row.append(el('span',current===0?'先独立完成前测；提交后查看结果，再点击下一步。':current===1?'前测已完成。接下来确认六项帮助偏好，再进入课件。':'助手会根据学习过程判断是否需要询问；不用先点击求助。'));
@@ -82,7 +87,7 @@
       header('学习前，先了解一下你','学习预试 · 开始前');const body=el('div');body.className='learner-setup-body';body.append(el('p','没有正确或错误的答案。接下来先完成知识前测，再准备本次学习方式。'));survey(body,'baseline');dialog.append(body);
       dialog.append(button('保存并继续',async()=>{if(!validSurvey('baseline'))throw new Error('请逐项作答或选择不愿回答');const p=await KnowledgeAssistant.pilotRequest('/action',{action:'baseline',survey:drafts.baseline});pilot=p;await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();if(p.enrollment.stage==='pretest')await goPretest();else await openPilot(p);},true));
     }else if(mode==='pretest'){
-      header('先完成知识前测',preparation?.required?'学习准备 · 第1步':'学习预试 · 第2步');dialog.append(el('p',preparation?.required?'请独立作答，不会的题可以选择“我不会”。提交后先查看结果，再点击“下一步：设置学习方式”。无需预试码也可以设置六项帮助偏好。':'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步：实验组设置六项帮助偏好，对照组确认学习说明。'),button('进入知识前测',goPretest,true));
+      header('先完成知识前测',preparation?.required?'学习准备 · 第1步':'学习预试 · 第2步');dialog.append(el('p',preparation?.required?'请独立作答，不会的题可以选择“我不会”。提交后先查看结果，再点击“下一步：设置学习方式”。无需预试码也可以设置六项帮助偏好。':pilot?.version?.useMode==='internal_rehearsal'?'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步，设置六项帮助偏好。':'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步：实验组设置六项帮助偏好，对照组确认学习说明。'),button('进入知识前测',goPretest,true));
     }else if(mode==='study'){
       const e=pilot.enrollment;header(e.status==='active'?'本次学习已准备好':'本次预试记录','学习预试');const body=el('div');body.className='learner-setup-body';
       body.append(el('p',`参与编号 ${e.participantCode}`),el('p',e.arm==='control'?'本次学习中，助手不会主动出现。课件、练习和知点提问入口照常使用。':'你的六项学习偏好已保存。助手会按设置判断是否介入，你可以拒绝或暂停。'));

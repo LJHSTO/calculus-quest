@@ -129,7 +129,7 @@
   }
   global.SupportCycleUI=Object.freeze({render,sync,active,deferInquiry,goalNames,strategyNames,needs,statuses,expose,
     manualOpen:next=>manualScope===next.scopeKey,
-    openManual(){if(!snapshot||snapshot.locked||snapshot.check)return;manualScope=snapshot.scopeKey;global.KnowledgeAssistant.refreshSupportSurface();global.TaskSupport?.locate?.();},
+    openManual(){if(!snapshot||snapshot.locked||snapshot.check||global.LearnerSetup?.enrollment?.experiencePolicy)return;manualScope=snapshot.scopeKey;global.KnowledgeAssistant.refreshSupportSurface();global.TaskSupport?.locate?.();},
     get busy(){return busy;},get interactionBusy(){return interactionBusy();}});
   document.addEventListener('pointerdown',()=>{pointerBusy=true;},true);
   const releaseInteraction=()=>{pointerBusy=false;if(snapshot?.supportCycle?.status==='awaiting_confirmation')setTimeout(()=>global.KnowledgeAssistant.refreshSupportSurface(),0);};

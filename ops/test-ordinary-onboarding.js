@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),net=require('node:net');
 const {spawn}=require('node:child_process'),{chromium}=require('playwright-core');
-const root=path.resolve(__dirname,'..'),out=path.join(root,'output/学习必经流程-2026-10-26');
+const root=path.resolve(__dirname,'..'),out=path.join(root,'output/全功能演练与清爽学习-2026-10-27');
 async function main(){
  fs.mkdirSync(out,{recursive:true});const dir=fs.mkdtempSync(path.join(out,'合成测试-'));
  const port=await new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p));});}),base=`http://127.0.0.1:${port}`;
@@ -31,12 +31,15 @@ async function main(){
   await page.screenshot({path:path.join(out,'无预试码进入六维.png'),animations:'disabled'});
   await page.getByRole('button',{name:'稍后继续',exact:true}).click();await page.evaluate(()=>selectUnit('GH-01-K01'));await page.locator('#learner-setup[open]').waitFor();checks.push('关闭设置后点课件仍回到必经设置');
   await page.getByRole('button',{name:'先使用全部默认设置',exact:true}).click();await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});
-  await page.waitForFunction(()=>currentUnitId==='GH-01-K01');await page.locator('#support-need-launcher').waitFor();assert.equal(await page.locator('#support-need-launcher').innerText(),'主动求助');
+  await page.waitForFunction(()=>currentUnitId==='GH-01-K01');
+  await page.evaluate(()=>renderPlayer());
+  assert.equal(await page.locator('.workspace-canvas-tabs:visible').count(),1,'局部重绘后课件工具栏必须保留');
+  assert.equal(await page.locator('#support-need-launcher').count(),0);assert.equal(await page.locator('#pilot-learning-guide').isVisible(),false);
   const d=(await api('/api/learning/learner-preferences',null,token)).data;assert.equal(d.preparation.stage,'ready');assert.equal(d.record.generation,1);assert.equal(d.record.selectionSource,'defaults_button');
-  await page.reload();await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.waitForFunction(()=>LearnerSetup.preparation?.stage==='ready');assert.equal(await page.locator('#learner-setup[open]').count(),0);checks.push('默认确认和理由持久化；保存后进入课件；刷新无需重设；主动求助只是备用入口');
+  await page.reload();await page.locator('#app-loader.hidden').waitFor({state:'attached'});await page.waitForFunction(()=>LearnerSetup.preparation?.stage==='ready');assert.equal(await page.locator('#learner-setup[open]').count(),0);checks.push('默认确认和理由持久化；保存后进入课件；刷新无需重设；学习页无主动求助入口和准备横幅');
   await page.locator('[data-openmaic-state="ready"]').first().waitFor();
   await page.setViewportSize({width:1366,height:768});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-  await page.screenshot({path:path.join(out,'正常学习与主动求助.png'),animations:'disabled'});
+  await page.screenshot({path:path.join(out,'正常学习页.png'),animations:'disabled'});
   await page.close();const snapshot=await api('/api/learning/snapshot',null,token);const reset=await api('/api/learning/reset',{generation:snapshot.generation,baseRevision:snapshot.revision,snapshot:{}},token);assert.equal(reset.status,200,JSON.stringify(reset));assert.equal((await api('/api/learning/learner-preferences',null,token)).data.preparation.stage,'pretest');checks.push('新学习轮次重新核对前测和设置，历史配置保留');
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'普通学习必经流程测试.json'),JSON.stringify({passed:true,checks,errors,synthetic:true},null,2));console.log(JSON.stringify({passed:true,checks}));
  }finally{await browser?.close();if(server.exitCode===null){const done=new Promise(r=>server.once('exit',r));server.kill();await done;}fs.closeSync(log);}

@@ -1,6 +1,6 @@
 {
-  "version": "c8e2666205ab33414a10",
-  "indexSha256": "74997667978e79db925dc6525d26ee541d96a60e10349e4dd6d964447975056b",
+  "version": "329105d7a7e1f822191d",
+  "indexSha256": "dbd8bb610ea1019ac0c1dd9f5a1f8f62913d59f9df9257175689699a714cbcc4",
   "scripts": [
     {
       "tag": "<script src=\"app/main/request-coalescing.js?v=20260917\"></script>",
@@ -105,7 +105,7 @@
     {
       "tag": "<script src=\"app/main/render-learning.js?v=20260922-slide-deck-v2\"></script>",
       "file": "app/main/render-learning.js",
-      "sha256": "daa72bd849d4230a23cee8ad3bfdd0541a5d6f1eb332852a8e9006dafaef95e6"
+      "sha256": "a0643297778ae58bcb19c88473bb2d915d49f32020a6f0f4c8980fff764ea008"
     },
     {
       "tag": "<script src=\"app/main/recommendations.js?v=20260722-multi-scene-v1\"></script>",
@@ -180,7 +180,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "2b8d51f178c4621e4444d86a9be5823ecea7ca644902a689e73f13a38234988f"
+      "sha256": "0b5a70fd446d5d138076aab5fd53a9f9bfd119ca8a63c62a919ace7e80bdb26c"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -210,22 +210,22 @@
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
       "file": "app/main/support-cycle.js",
-      "sha256": "f3ec382de2fa2bc4ed19a563694b7abdefdee7d5fb03ef9f2385cc6bfe71cbfe"
+      "sha256": "d38c96fa66270c323b658bff4c12d4bacf5ba23ca713c1cf340e8182c95381a2"
     },
     {
       "tag": "<script src=\"app/shared/learner-preferences.js?v=20261024\"></script>",
       "file": "app/shared/learner-preferences.js",
-      "sha256": "8edde17a02a4303342cfe623d3540c5f662ed3ed0357d24ac54834c47ac1694a"
+      "sha256": "c4f4a743f9433ee9427b730aeb6ffacbdd24a4cdbbca3138bac4a34e668975cd"
     },
     {
       "tag": "<script src=\"app/main/pilot-study.js?v=20261024\"></script>",
       "file": "app/main/pilot-study.js",
-      "sha256": "73972d0d97f2a3c0b559d60fd8998636014e296cffb1a52b68720eb95e0d24f2"
+      "sha256": "2c4bb8ad60d07a6acc03f7b8ca4ccc625b9ae2233e8aa0dbf36b6ebc8e84e263"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
       "file": "app/main/learner-setup.js",
-      "sha256": "085d81e37119d7bfd7822ab04a3509525461080191c7edb5a6228699d7f18e8f"
+      "sha256": "230274339856f1e91618e1a3008cbb4a16e2f7991bf33fe9f78236907e075abd"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
@@ -235,7 +235,7 @@
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
       "file": "app/main/proactive-surface.js",
-      "sha256": "63e5d86c80f6b0c48ab70be89a3b219e61b6a42ee95198956c17ae78922e33c0"
+      "sha256": "b209ed941e033dc3cd4acfc59650d04315466f069c32813ded2aa86849ec569a"
     },
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",

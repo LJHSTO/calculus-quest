@@ -5735,6 +5735,7 @@ async function handleApi(req, res, url) {
         const adapter=proactivePolicy.adapterForChapter(proactiveStudyConfig.chapterId);
         let cycle;
         if(body.action==="report") {
+          if(learnerEnrollment(user)?.experiencePolicy && !body.inquiryId)throw Object.assign(new Error('本次演练由助手主动发起询问，请在当前询问中确认需要。'),{status:409});
           if(supportCycles.protects(user,generation))throw Object.assign(new Error("请先完成或跳过独立检查"),{status:409});
           cycle=supportCycles.report(user,scope,generation,body,profile,revision);
           db.closeOpenProactiveInterventionsForUser({userId:user,experimentId:proactiveStudyConfig.experimentId,
@@ -8527,6 +8528,11 @@ async function handleApi(req, res, url) {
         return;
       }
       let proactiveReviewSourceMessage = null;
+      if(learnerEnrollment(auth.participant.id)?.experiencePolicy && !resolved.isQuiz && !proactiveIntervention){
+        const scope=resolved.unit.knowledgePointId||resolved.unit.id;
+        const cycle=supportCycles.current(auth.participant.id,scope,db.currentLearningGeneration(auth.participant.id));
+        if(!cycle?.confirmedAt || !cycle.content){sendJson(res,409,{ok:false,code:'awaiting_agent_support',message:'本次演练由助手先发起支持；确认需要后，可以在这里继续讨论。'});return;}
+      }
       const proactivePrompt = proactiveIntervention?.assistantPrompt || "";
       if (proactiveIntervention?.action === "review_mistake") {
         resolved.quizReviewIndex = Math.max(

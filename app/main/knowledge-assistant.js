@@ -4970,8 +4970,16 @@ const proactiveJustificationDrafts = new Map();
       : "确认退出";
   }
 
+  function rehearsalConversationPending(meta = courseMeta()) {
+    if(!global.LearnerSetup?.enrollment?.experiencePolicy || meta.isQuiz)return false;
+    const scope=meta.knowledgePointId||meta.unitId;
+    const cycle=(proactiveStudy.supportCycles||[]).find(c=>c.scope===scope&&c.confirmedAt&&c.content);
+    return !cycle && !usableProactivePrompt(pendingProactivePrompt,meta);
+  }
+
   function renderUnit() {
     const meta = courseMeta();
+    const awaitingAgent=rehearsalConversationPending(meta);
     const quizLocked = quizAssistantLocked(meta);
     const measurementBlocked = Boolean(
       proactiveStudy.agentAssistanceBlocked
@@ -4989,15 +4997,18 @@ const proactiveJustificationDrafts = new Map();
         ? meta.quizSubmitted
           ? "已提交，可以围绕题目、错因和解法继续复盘"
           : QUIZ_LOCKED_MESSAGE
-        : "可直接提问，也可以先选择课件中的文字、公式或对象";
+        : awaitingAgent?"助手发起支持后，可以在这里继续讨论。":"可直接提问，也可以先选择课件中的文字、公式或对象";
     els.quizPolicy.hidden = !quizLocked;
     root.classList.toggle("is-unavailable", !meta.supported || !isSignedInNow());
     els.input.disabled = !meta.supported
       || !isSignedInNow()
       || quizLocked
       || measurementBlocked
+      || awaitingAgent
       || conversationLimited;
-    els.input.placeholder = measurementBlocked
+    els.input.placeholder = awaitingAgent
+      ? "助手发起支持后可继续讨论"
+      : measurementBlocked
       ? "独立测量期间暂停知点"
       : quizLocked
       ? "提交测验后可继续提问"
@@ -5015,6 +5026,7 @@ const proactiveJustificationDrafts = new Map();
       || measurementBlocked;
     els.selectionAsk.disabled = quizLocked
       || measurementBlocked
+      || awaitingAgent
       || conversationLimited;
     els.selectionAsk.title = measurementBlocked
       ? "独立测量期间暂停知点"

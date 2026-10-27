@@ -1,3 +1,4 @@
+// Legacy conversation component coverage uses the test seam; rehearsal entry is agent initiated.
 "use strict";
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -134,7 +135,7 @@ async function main() {
           record('坐标游戏常规与全屏填满、四边真实鼠标可达');
         }
         const embedded=frame.locator('[data-cq-embedded-help="task"]');
-        if(!await embedded.count()&&!await page.locator('.task-support-panel:visible').count())await page.locator('#support-need-launcher').click();
+        if(!await embedded.count()&&!await page.locator('.task-support-panel:visible').count())await page.evaluate(()=>SupportCycleUI.openManual());
         await Promise.any([embedded.waitFor({state:"attached"}),page.locator('.task-support-panel').waitFor({state:"attached"})]);
         if(type==="simulation"){
           await embedded.waitFor({state:"visible"});
