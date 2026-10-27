@@ -139,7 +139,7 @@ node ops/test-student-learning-flow.js
 node ops/start-functions-limits-preview.js --show-proactive
 ```
 
-预览地址写入 `output/函数极限预览.json`。启动器默认持续复用固定端口与数据库，首次会就地接管上次发布的预览，保留账号、密码、登录会话与学习记录。`--restart` 安全保存、备份后重启；只有显式 `--isolated` 才创建临时测试库，且不会覆盖用户入口。`output/函数极限固定入口.json` 含本地配置，勿提交、公开或清理；其指向的数据目录和备份也须保留。配置改变时，本地工程预览可以创建新的实验 ID，账号数据库仍不变；正式研究必须人工审核并冻结新协议，不能用这个模拟启动器运行真人实验。
+预览地址写入 `output/函数极限预览.json`。启动器默认持续复用固定端口与数据库，首次会就地接管上次发布的预览，保留账号、密码、登录会话与学习记录。`--restart` 安全保存、备份后重启；只有显式 `--isolated` 才创建临时测试库，且不会覆盖用户入口。隔离模式不把管理令牌或学习库写入固定入口文件，输出里的 `adminTokenPersisted` 为 false，进程结束后不保留。非隔离模式的管理令牌在 `output/函数极限固定入口.json`，勿提交、公开或清理；其指向的数据目录和备份也须保留。配置改变时，本地工程预览可以创建新的实验 ID，账号数据库仍不变；正式研究必须人工审核并冻结新协议，不能用这个模拟启动器运行真人实验。
 
 预览当前使用 mock 回复。学生全流程脚本使用真实 UI、真实规则和真实客观判分，无学习进度注入。保持 UI 的隔离测试把测试库的后测时间提前73小时，以模拟等待；正式72小时门槛保留。工程测试不代表真人学习效果。持续使用验收：`node ops/test-persistent-preview.js`。
 
@@ -160,9 +160,11 @@ D1 提供证据、规则阈值和最少证据类别；D2 提供自然边界、�
 验收入口：`node ops/test-research-controls.js`、`node ops/test-research-controls-browser.js`、`node ops/test-six-dimension-runtime.js`。Jev 专用运行时与配置已移除；主策略使用可追溯规则，模型决策比较由独立回放工具承担。
 核心课程路线文件：data/multi-scene-learning-route.json。它是“多场景自适应学习路线”的课程事实源，包含章节、知识点、讲解页、互动资源引用和每章三段 quiz。
 
+V14-C1 的课件任务合同在 `data/functions-limits-courseware-contracts.json`（已入库）。V14-C3 的 `data/proactive-courseware-contracts.json` 可选：文件不存在时，`lib/proactive-courseware-contracts.js` 用已入库的 V14-C3 适配器和课程路线生成合同，服务可以启动。需要落盘审阅时运行 `node ops/prepare-proactive-courseware-contracts.js`；`data/*` 默认忽略，不要把空的占位 JSON 提交成合同。
+
 2026-10-19：常规六知识点入口已接入“判断与验证”，包含初判、课件探索、独立复查、固定线索、无辅助迁移与单元问卷。默认属于普通学习，不进入研究回放数据集。`MAIN_LEARNING_PROTOCOL_FILE` 可指定经过审题和机构审核的 `recheck` 或 `placement` 配置；摘要和必填告知项不匹配时拒绝启动，字段齐全并不代表系统替机构核验过审批。配置摘要由管理员接口 `/api/admin/research/common-tasks` 的 `specification` 获取，分配种子使用独立的 `PROACTIVE_STUDY_SEED`。冻结协议使用相同二维课件，禁用通用助教绕过条件；学生始终可退出。修改正式协议须使用新 ID，不能覆盖已有分配。
 
-原课件的讲解由 `lib/course-playback.js` 驱动，保留现有音频和作者动作。修订过数学表述的旧录音引用停用，转文字讲解；作者演示事件不作为学生能力证据。游戏和三维探索不自动代表学习进步。判断只采用经审查的数学参数和可追溯作答；“当前作答得分率”不是已经验证的潜在知识掌握概率。
+原课件的讲解由 `lib/course-playback.js` 驱动，保留现有音频和作者动作。修订过数学表述的旧录音引用停用，转文字讲解；作者演示事件不作为学生能力证据。游戏和三维探索不自动代表学习进步。判断只采用经审查的数学参数和可追溯作答。选知识点时显示的“目前答对的比例”只是当前作答对错的比例，不是已经验证的潜在知识掌握概率。
 
 新增验收：`node ops/test-main-common-tasks.js`、`node ops/test-main-human-browser.js`、`node ops/test-course-playback.js`。真人协议浏览器测试使用合成审核信息和隔离测试账号，实际等待45秒探索，并检查同意、固定课件、通用助教隔离、独立题与刷新恢复。
 

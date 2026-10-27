@@ -110,7 +110,9 @@ body #home-view .hero {
 }
 #home-view .hero-bg {
   display: block;
-  background: url("../../assets/首页数学探索.webp") center right / cover no-repeat;
+  background:
+    linear-gradient(90deg, #f3f4fb 0 42%, rgba(243, 244, 251, 0.72) 52%, rgba(243, 244, 251, 0) 68%),
+    url("../../assets/calculus-quest-lighthouse.png") center right / cover no-repeat;
   filter: none;
   transform: none;
 }

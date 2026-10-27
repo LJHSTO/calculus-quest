@@ -1,7 +1,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const contracts = require("../data/proactive-courseware-contracts.json");
+const contracts = require("../lib/proactive-courseware-contracts");
 const route = require("../data/multi-scene-learning-route.json");
 
 const chapter = route.chapters.find((item) => item.id === contracts.chapterId);

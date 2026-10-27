@@ -1,5 +1,5 @@
 const assert = require("node:assert/strict");
-const v14c3Contracts = require("../data/proactive-courseware-contracts.json");
+const v14c3Contracts = require("../lib/proactive-courseware-contracts");
 const v14c1Contracts = require("../data/functions-limits-courseware-contracts.json");
 const { buildCourseContextIndex } = require("../lib/learning-assistant");
 

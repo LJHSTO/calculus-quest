@@ -4115,7 +4115,7 @@ function agenticRenderReviewSelectionPlan(pending, inFlight = "") {
       <div class="agentic-knowledge-group">
         <strong>${escapeHtml(moduleTitle)}</strong>
         ${items.map((choice) => {
-          const mastery = choice.mastery === null || choice.mastery === undefined ? "" : `当前作答得分率 ${Math.round(Number(choice.mastery) * 100)}%`;
+          const mastery = choice.mastery === null || choice.mastery === undefined ? "" : `目前答对的比例 ${Math.round(Number(choice.mastery) * 100)}%`;
           const isUnskip = choice.reviewMode === "unskip";
           const activeMode = choice.choiceMode || (choice.checked ? (isUnskip ? "learn" : "review") : "skip");
           const primaryMode = isUnskip ? "learn" : "review";
@@ -4183,7 +4183,7 @@ function agenticRenderKnowledgeSelectionPlan(pending, inFlight = "") {
     <div class="agentic-knowledge-group">
       <strong>${escapeHtml(moduleTitle)}</strong>
       ${items.map((choice) => {
-        const mastery = choice.mastery === null || choice.mastery === undefined ? "证据不足" : `当前作答得分率 ${Math.round(Number(choice.mastery) * 100)}%`;
+        const mastery = choice.mastery === null || choice.mastery === undefined ? "证据不足" : `目前答对的比例 ${Math.round(Number(choice.mastery) * 100)}%`;
         return `
           <label class="agentic-knowledge-check ${choice.checked ? "checked" : ""}">
             <input type="checkbox" data-agentic-knowledge-choice="${escapeHtml(choice.id)}" ${choice.checked ? "checked" : ""} ${inFlight ? "disabled" : ""} />
