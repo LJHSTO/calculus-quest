@@ -136,6 +136,7 @@
     // the struggle is seen: a learner mid-drag should not be interrupted, and the
     // boundary is what makes "stop and look at it differently" a reasonable ask.
     const struggle = new Map();
+    const practiceFailures = new Map();
     // Which activity types a knowledge point offers. Injected because the coach
     // only sees events, and the route is the only place that knows the candidate
     // set. Which types the learner has already opened is tracked here instead:
@@ -425,6 +426,23 @@
         "courseware_challenge_result",
         "courseware_formative_check_submitted"
       ].includes(eventType)) {
+        const data=event.data||{};
+        if(eventType==='courseware_challenge_result' && data.independent===false
+          && data.evidence_scope==='assisted_game_attempt' && typeof data.is_correct==='boolean') {
+          const key=currentUnit.unitId;
+          const recent=(practiceFailures.get(key)||[]).filter(x=>at-x.at<=300000);
+          if(data.is_correct)practiceFailures.set(key,[]);
+          else {
+            const id=data.attempt_id||`${data.challenge_id}:${data.attempt_number}`;
+            if(!recent.some(x=>x.id===id))recent.push({id,at});
+            practiceFailures.set(key,recent);
+            if(recent.length>=2)return createSuggestion('task_difficulty',at,{
+              attemptId:id,sourceEventType:eventType,contextMode:'unit',
+              title:'核对当前任务困难',body:'根据已记录的尝试，在完成这一步后判断是否询问。'
+            });
+          }
+          return null;
+        }
         const attempt = independentAttemptResult(event);
         if (attempt === false && currentUnit.unitType !== "quiz") {
           noteStruggle(currentUnit.unitId, "failure", at);
@@ -519,6 +537,7 @@
       lastResolution = null;
       commits.clear();
       if (options.clearCooldowns === true) {
+        practiceFailures.clear();
         cooldowns.clear();
         dismissStreaks.clear();
       }

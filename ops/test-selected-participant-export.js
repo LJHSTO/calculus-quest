@@ -35,6 +35,19 @@ async function main() {
   const legacy = buildSelectedParticipantPackage(raw, ["selected-a"]);
   assert.ok(legacy.collection_coverage.unavailable_tables.includes("study_workbench_process"));
   assert.ok(legacy.collection_coverage.unavailable_tables.includes("agent_tasks"));
+  assert.ok(legacy.collection_coverage.unavailable_tables.includes("pilot_enrollments"));
+  require('../lib/pilot-study').createStore({db}).versions();
+  raw.run('INSERT INTO pilot_versions VALUES(?,?,?,?,?)',['pilot-v1','synthetic',1,'private-join-hash',JSON.stringify({id:'pilot-v1',questionnaireVersion:'fixture'})]);
+  for(const id of ['selected-a','selected-b','excluded']) {
+    const enrollment='enrollment-'+id, opportunity='opportunity-'+id;
+    raw.run('INSERT INTO pilot_enrollments VALUES(?,?,?,?,?,?)',[enrollment,id,1,'pilot-v1','finished',JSON.stringify({baselineSurvey:{value:2},finalSurvey:{value:4},status:'finished'})]);
+    raw.run('INSERT INTO pilot_opportunities VALUES(?,?,?,?,?)',[opportunity,enrollment,'window-1','answered','{}']);
+    raw.run('INSERT INTO pilot_answers VALUES(?,?)',[opportunity,JSON.stringify({need:'yes'})]);
+    raw.run('INSERT INTO pilot_events VALUES(?,?,?,?)',['pilot-event-'+id,enrollment,'2026-10-27T10:00:00Z',JSON.stringify({type:'finished'})]);
+    raw.run('INSERT INTO pilot_annotations VALUES(?,?,?,?,?)',['annotation-'+id,opportunity,'rater1',1,JSON.stringify({need:'yes'})]);
+  }
+  raw.run('INSERT INTO pilot_raters VALUES(?,?,?,?)',['rater1','synthetic','private-rater-token-hash','{}']);
+  raw.run('INSERT INTO pilot_allocations VALUES(?,?)',['pilot-v1',JSON.stringify({schedule:['control','configurable']})]);
   const agent=require("../lib/proactive-agent-runtime").createRuntime({db});
   const support=require("../lib/support-cycle").createStore({db,experimentId:"synthetic"});
   support.state("selected-a",1);
@@ -75,10 +88,16 @@ async function main() {
   assert.equal(data.tables.learner_entry.length,2,'入口选择随所选学生导出，不能遗漏或包含其他人');
   assert.equal(data.tables.events.length, 4);
   assert.equal(data.tables.sessions.length, 2);
+  for(const table of ['pilot_enrollments','pilot_opportunities','pilot_answers','pilot_events','pilot_annotations']) assert.equal(data.tables[table].length,2,table+' follows selected participants only');
+  assert.equal(data.tables.pilot_versions.length,1);
+  assert.equal(JSON.parse(data.tables.pilot_enrollments[0].document).finalSurvey.value,4);
   const text = JSON.stringify(data);
   assert.ok(!text.includes("excluded"));
   assert.ok(!text.includes("secret-"));
   assert.ok(!text.includes("password-"));
+  assert.ok(!text.includes('private-join-hash'));
+  assert.ok(!text.includes('private-rater-token-hash'));
+  assert.equal(data.tables.pilot_allocations,undefined);
   // Plain date keys are not instants and must not be rewritten.
   assert.equal(data.tables.events.find(row => row.id === "event-selected-a").created_at, "2020-01-01");
   assert.equal(data.tables.learning_assistant_daily_usage[0].usage_date, "2026-09-18");
@@ -120,7 +139,7 @@ async function main() {
   reopened.close();
 
   // --- B5: UTC normalisation, chronological order, dictionary, fingerprint ---
-  assert.equal(data.schema_version, "selected-participant-package-v2");
+  assert.equal(data.schema_version, "selected-participant-package-v3");
   assert.equal(data.scope.timestamps_normalized_to, "UTC");
   const beijing = data.tables.events.find(row => row.id === "event-beijing");
   const utc = data.tables.events.find(row => row.id === "event-utc");

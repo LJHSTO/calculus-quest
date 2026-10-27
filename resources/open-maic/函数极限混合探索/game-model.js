@@ -25,7 +25,7 @@
     s.attempts++;
     let correct=false,text='';
     if(s.kind===0){correct=s.links.every(a=>a.length===1);text=correct?'每个输入都只有一条去向。不同输入可以去同一个输出。':s.links.some(a=>a.length>1)?'有输入被分到了两个不同输出。先拆掉多余连线，再发车。':'还有输入没有去向。为它接上一条连线。';}
-    if(s.kind===1){const x=targets(s)[s.parcel];correct=Array.isArray(position)&&position[0]===x&&position[1]===f(s,x);text=correct?'到达正确坐标，补给已收集。':`这次没找到补给：先横向找到 x=${x}，再按规则确定纵坐标。`;if(correct){s.collected.push(position);s.parcel++;}if(s.parcel===3)text='三个补给点已连成航线：先横坐标，再纵坐标。';}
+    if(s.kind===1){const x=targets(s)[s.parcel];correct=Array.isArray(position)&&position[0]===x&&position[1]===f(s,x);text=correct?'到达正确坐标，补给已收集。':Array.isArray(position)?position[0]!==x?`你选的是 (${position[0]}, ${position[1]})。这次要找横坐标 x = ${x} 的补给，请先看高亮的这一列。`:`横坐标 ${x} 找对了。你选的纵坐标是 ${position[1]}；把 x = ${x} 代入 ${s.round?'y = −x + 1':'y = x + 1'}，再在这一列选择算出的高度。`:'请在坐标棋盘上选择一个点。';if(correct){s.collected.push(position);s.parcel++;}if(s.parcel===3)text='三个补给点已连成航线：先横坐标，再纵坐标。';}
     if(s.kind===2){correct=s.segments.every((v,i)=>v===targetSegments(s)[i]);text=correct?'路线与每一段要求一致。上升、水平、下降都按从左向右判断。':'路线还不能通行。逐段比较：往右走时，高度应该升高、保持还是降低？';}
     if(s.kind===3){correct=s.distance<epsilon(s);text=correct?'两侧飞船都进入目标带，中心点值并未改变附近的趋向。':'两侧还没全部进入目标带。缩小与 x=1 的距离；改变中心点值不能代替趋近。';}
     if(s.kind===4){correct=s.docks.every((v,i)=>v===sides(s)[i]);text=correct?(s.round?'两个泊位不同：左右极限分别存在，但没有共同的双侧极限。':'两个泊位相同：左右两边趋向同一高度，双侧极限存在。'):'泊位没有对准图中的趋向。分别沿左、右曲线靠近 x=0，空心点不等于中心点值。';}

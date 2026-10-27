@@ -79,7 +79,7 @@
           ['你可以决定什么','你可以跳过记录或选择不愿回答，也可以通过“预试”入口退出。退出后的数据按下方说明处理。']
         ];
         for(const [title,content]of sections){const s=el('section');s.className='pilot-consent-section';s.append(el('h4',title),el('p',content));dialog.append(s);}
-        const details=el('details');details.className='pilot-consent-details';details.append(el('summary','负责人、数据保存与完整参与说明'));for(const [title,value]of [['负责人',preview.responsible],['联系方式',preview.contact],['研究审核',preview.reviewReference],['数据保存',preview.retention],['退出及数据处理',preview.withdrawal],['本版本完整说明',preview.consentText]])details.append(el('h4',title),el('p',value));dialog.append(details);
+        const details=el('details');details.className='pilot-consent-details';details.append(el('summary','负责人、数据保存与完整参与说明'));for(const [title,value]of [['负责人',preview.responsible],['联系方式',preview.contact],['研究审核',preview.reviewReference],['数据保存',preview.retention],['退出及数据处理',preview.withdrawal],['本次参与说明',preview.useMode==='internal_rehearsal'?'本次为内部功能演练，不随机分组。所有加入者均可设置六项帮助偏好，体验主动询问、确认、拒绝和后续反馈。平台会记录学习过程，并通过已配置的模型接口生成支持；请只输入合成或非敏感内容。演练数据不作为正式真人实验结果。':preview.consentText]])details.append(el('h4',title),el('p',value));dialog.append(details);
         if(preview.admission?.kind==='new_round_required'){
           dialog.append(el('p','这个正式预试要求从学习前开始。你已有的作答和进度会保留，请联系研究人员确认参与安排。'));
         }else{

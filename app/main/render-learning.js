@@ -97,6 +97,8 @@ const COURSEWARE_LEARNING_EVENT_KEYS = new Set([
   "reason",
   "verification_source",
   "evidence_scope",
+  "parameters",
+  "feedback_version",
   "mathematically_valid_split",
   "accepted_choices",
   "target",

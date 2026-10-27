@@ -1,5 +1,5 @@
 {
-  "version": "e722dd27e02edc45c5be",
+  "version": "6e06e22fc6d75aeb5d3e",
   "indexSha256": "0a4e0f27fc1c87f44c318d9546f3406eaecd222ec76a4135076d7854ca70060d",
   "scripts": [
     {
@@ -85,7 +85,7 @@
     {
       "tag": "<script src=\"app/main/proactive-learning.js?v=20260922-representation-switch-v1\"></script>",
       "file": "app/main/proactive-learning.js",
-      "sha256": "c6c2968d6b08fc527651bd4e3384bb761891c7f91fd851983f968a1ee2b51f6a"
+      "sha256": "d98bdc0848969243e679f4f821c9ac6c00705a8b98e061179d47045f58af29fb"
     },
     {
       "tag": "<script src=\"lib/active-time-policy.js?v=20260818-active-time-v1\"></script>",
@@ -105,7 +105,7 @@
     {
       "tag": "<script src=\"app/main/render-learning.js?v=20260922-slide-deck-v2\"></script>",
       "file": "app/main/render-learning.js",
-      "sha256": "a0643297778ae58bcb19c88473bb2d915d49f32020a6f0f4c8980fff764ea008"
+      "sha256": "de3610f0be687155d3b5a5b28c3247510b5c1c04a7ddbf46ed908821c5544e73"
     },
     {
       "tag": "<script src=\"app/main/recommendations.js?v=20260722-multi-scene-v1\"></script>",
@@ -180,7 +180,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "6deb2de913a9414acb7af021d7402891c6f35ae1397fc9c6403380b584eaa76c"
+      "sha256": "7dd0067833039916df26d42a6d7e02ede9bd6e71512154bde6b1d69a3c8e1ca0"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -205,7 +205,7 @@
     {
       "tag": "<script src=\"app/main/bootstrap.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/bootstrap.js",
-      "sha256": "dc29c2d1401638672a0230b1adf99d76ad2464d13118a84b1e2df5da5acbe506"
+      "sha256": "120552b91ddc83a6d814ff25e1dec98ab7c86cae94fadb2c5c118fe60bcbf24e"
     },
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
@@ -220,12 +220,12 @@
     {
       "tag": "<script src=\"app/main/pilot-study.js?v=20261024\"></script>",
       "file": "app/main/pilot-study.js",
-      "sha256": "db27e003cceb5a1b674ddaaf4f41f23794dbb30855d94377d5eac95190a353fa"
+      "sha256": "28152197fa75973acda030e661281d74fe0bde50bfe3ff409b8f913401f2e402"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
       "file": "app/main/learner-setup.js",
-      "sha256": "66a1b15541c75991b515d85e6a777b1a312e0f022dfbdca30bfa410566a6dad2"
+      "sha256": "11c6765e45fb5b81fa1ab5f59a8523a9d98121243fa1ffbee6adf14e7e26cc9f"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",

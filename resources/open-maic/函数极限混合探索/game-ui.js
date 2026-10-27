@@ -4,11 +4,11 @@
   let s=M.create(cfg.gameKind),feedback='',selectedSegment=0;
   const board=document.querySelector('#board'),tools=document.querySelector('#tools'),result=document.querySelector('#result');
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!=null)n.textContent=text;return n;};
-  const emit=(type,data)=>window.OpenMaicLearningEvidence?.emit(type,{...data,independent:false,game_version:'concept-games-20261027-v2'});
+  const emit=(type,data)=>window.OpenMaicLearningEvidence?.emit(type,{...data,independent:false,game_version:'concept-games-20261027-v3'});
   function button(label,fn,selected=false){const b=el('button',label);b.type='button';b.onclick=fn;if(selected)b.setAttribute('aria-pressed','true');return b;}
   function change(name,value){M.act(s,name,value);feedback='';emit('parameter_commit',{parameter:name,value,round:s.round});draw();}
   function verify(position){const before=structuredClone(s),r=M.check(s,position);if(r.duplicate)return;feedback=r.text;
-    window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:cfg.id+'-game-r'+s.round+(s.kind===1?'-p'+before.parcel:''),is_correct:r.correct,independent:false,attempt_number:s.attempts,response:position||before,parameters:before,evidence_scope:'assisted_game_attempt',feedback_version:'concept-games-20261027-v2'});
+    window.OpenMaicLearningEvidence?.recordChallenge({challenge_id:cfg.id+'-game-r'+s.round+(s.kind===1?'-p'+before.parcel:''),is_correct:r.correct,independent:false,attempt_number:s.attempts,response:position||before,parameters:before,evidence_scope:'assisted_game_attempt',feedback_version:'concept-games-20261027-v3'});
     if(r.completed)emit('task_progress',{stage:'round_complete',round:s.round,completed:true});draw();
   }
   const X=x=>210+x*48,Y=y=>260-y*38;
@@ -23,7 +23,7 @@
       for(let i=0;i<3;i++){const row=el('div');row.className='choice-row';row.append(el('strong','输入 '+(i+1)));for(let j=0;j<2;j++){const on=s.links[i].includes(j);const b=button(`${i+1} → ${j?4:2}${on?' · 已连':''}`,()=>change('link',[i,j]),on);b.dataset.link=`${i}-${j}`;row.append(b);}tools.append(row);}tools.append(button('发车检查',()=>verify()));
     }else if(s.kind===1){const target=M.targets(s)[Math.min(s.parcel,2)];intro.textContent=`沿 ${s.round?'y=−x+1':'y=x+1'} 寻宝。${s.won?'航线已完成。':`下一件补给的横坐标是 ${target}，请在坐标棋盘上点击它的位置。`}`;
       const grid=el('div');grid.className='coordinate-grid';grid.setAttribute('role','group');grid.setAttribute('aria-label','坐标棋盘');
-      for(let y=3;y>=-3;y--)for(let x=-3;x<=3;x++){const got=s.collected.some(p=>p[0]===x&&p[1]===y),b=button(got?'★':`${x},${y}`,()=>verify([x,y]));b.setAttribute('aria-label',`坐标 (${x}, ${y})`);b.dataset.point=`${x},${y}`;b.classList.toggle('collected',got);grid.append(b);}board.append(grid);tools.append(el('p',`已找到 ${s.collected.length} / 3 件补给`),el('p','纵坐标向上增大，横坐标向右增大。选错会留下反馈，可以继续找。'));
+      for(let y=3;y>=-3;y--)for(let x=-3;x<=3;x++){const got=s.collected.some(p=>p[0]===x&&p[1]===y),b=button(got?'★':`${x},${y}`,()=>verify([x,y]));b.setAttribute('aria-label',`坐标 (${x}, ${y})`);b.dataset.point=`${x},${y}`;b.classList.toggle('collected',got);b.classList.toggle('target-column',x===target&&!s.won);b.disabled=got;grid.append(b);}board.append(grid);tools.append(el('p',`已找到 ${s.collected.length} / 3 件补给`),el('p','纵坐标向上增大，横坐标向右增大。选错会留下反馈，可以继续找。'));
     }else if(s.kind===2){const names={'1':'上升','0':'水平','-1':'下降'};intro.textContent='为探险车铺三段路：'+M.targetSegments(s).map((v,i)=>`第${i+1}段${names[v]}`).join('，')+'。选择路段，再放入坡道。';
       let y=2;const pts=[[-3,y]];for(let i=0;i<3;i++){y+=(s.segments[i]||0);pts.push([-1+2*i,y]);}board.innerHTML=svg([pts.map(([x,y],i)=>(i?'L':'M')+X(x)+','+Y(y)).join('')],pts);
       const slots=el('div');slots.className='choice-row';for(let i=0;i<3;i++)slots.append(button(`第${i+1}段：${s.segments[i]===null?'待铺':names[s.segments[i]]}`,()=>{selectedSegment=i;draw();},i===selectedSegment));tools.append(slots);

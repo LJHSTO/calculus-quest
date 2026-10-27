@@ -2622,6 +2622,19 @@ function proactiveEvidenceForRequest({
       && boundaryAgeMs <= 12_000;
     evidence.boundaryEventType = evidence.naturalBoundary ? latestEvent.type : "";
   }
+  if(signal.kind === "task_difficulty") {
+    const practice=require('./lib/assisted-game-evidence').collect(rows,resolved.unit.knowledgePointId||resolved.unit.id,now);
+    evidence.assistedTaskFailures=practice.failures.length;
+    evidence.sceneAttemptFailures=practice.failures.length;
+    evidence.sceneAttemptCount=practice.attempts.length;
+    evidence.practiceEvidenceScope='server_rechecked_assisted_process_not_mastery';
+    const last=practice.latest;
+    const laterInput=rows.some(row=>proactiveEventAt(row)>last?.at && ['interactive_input','interactive_drag_start','parameter_change','unit_exit'].includes(proactiveEventType(row)));
+    evidence.naturalBoundary=Boolean(last&&!last.correct&&now-last.at<=12000&&!laterInput);
+    evidence.boundaryEventType=evidence.naturalBoundary?'courseware_challenge_result':'';
+    if(practice.failures.length>=2){families.add('process');if(evidence.naturalBoundary)families.add('task');}
+    for(const entry of practice.failures)refs.push({id:entry.row.id,sourceType:'interaction',eventType:'courseware_challenge_result',capturedAt:entry.row.created_at,assisted:true,serverRechecked:true});
+  }
   if (signal.kind === "quiet_dwell") {
     evidence.parameterCommitCount = coursewareParameterCommits;
     evidence.sceneAttemptCount = coursewareAttemptCount;
@@ -4509,7 +4522,7 @@ async function handleManagedProactiveIntervention({
       && !resolved.isQuiz && signal.kind!=="student_requested_alternative"
       && researchControlStore.canEdit(auth.participant.id)) {
     const recentCheck=agentRuntime.state(auth.participant.id,generation).memory.find(r=>r.scope===policyScopeKey);
-    const latestAnswerAt=Math.max(0,...(evidence.evidenceRefs||[]).filter(r=>["quiz_result","common_independent_probe"].includes(r.sourceType)).map(r=>Date.parse(r.capturedAt)||0));
+    const latestAnswerAt=Math.max(0,...(evidence.evidenceRefs||[]).filter(r=>["quiz_result","common_independent_probe"].includes(r.sourceType)||r.serverRechecked===true).map(r=>Date.parse(r.capturedAt)||0));
     const inquiryContext={...evidence,independentAttemptSuccess:evidence.independentAttemptSuccess===true||Boolean(recentCheck?.payload.outcome.success===true&&Date.parse(recentCheck.created_at)>latestAnswerAt)};
     needInquiry=supportCycles.invite(auth.participant.id,policyScopeKey,generation,{
       evidence:inquiryContext,signal,decisionId,profile:agentProfile,profileRevision:engineeringControl?.revision||0});
@@ -4517,6 +4530,12 @@ async function handleManagedProactiveIntervention({
       evidence.needInquiry={id:needInquiry.id,stage:"awaiting_student_confirmation",cue:needInquiry.inquiry};
       policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
         reasonCodes:[...policyDecision.reasonCodes,"need_confirmation_offered"]};
+      renderedDecision=proactiveSilentAssistantDecision(policyDecision);
+    } else if(agentProfile.supportInquiryEnabled===true) {
+      // A pending/declined/cooling inquiry must never fall through to an
+      // unsolicited legacy knowledge hint when the learner chose ask first.
+      policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
+        reasonCodes:[...policyDecision.reasonCodes,"need_confirmation_unavailable"]};
       renderedDecision=proactiveSilentAssistantDecision(policyDecision);
     }
   }
@@ -7680,6 +7699,7 @@ async function handleApi(req, res, url) {
         ? body.signal
         : {};
       if (![
+        "task_difficulty",
         "repeated_parameter",
         "quiz_review",
         "quiet_dwell",

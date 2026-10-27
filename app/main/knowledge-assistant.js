@@ -70,6 +70,9 @@
   // knows which types a knowledge point offers, so it is handed a resolver. Which
   // types the learner has already opened is tracked inside the coach.
   const proactiveCoach = Proactive?.createProactiveCoach?.({
+    // Server owns the selected 60/180-second policy and rejection guards.
+    // This local delay only coalesces duplicate UI candidates.
+    cooldownMs: 1000,
     sceneTypesFor: (unitId) => {
       const unit = typeof getUnit === "function" ? getUnit() : null;
       if (!unit || unit.id !== unitId) return [];

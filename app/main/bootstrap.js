@@ -40,6 +40,9 @@ function renderBottomNextButton() {
   if((state.submittedQuizzes||[]).includes(unit.id)&&window.LearnerSetup?.afterPretest(unit)){
     const next=document.createElement('button');next.type='button';next.className='button primary bottom-nav-btn guided-next';next.dataset.quizPathAction='pilot-next';next.textContent=window.LearnerSetup.pretestActionLabel();if(next.textContent==='继续学习'){const status=document.createElement('span');status.className='learner-configured-status';status.textContent=window.LearnerSetup.pretestStatusLabel();wrapper.append(status);}wrapper.append(next);wrapper.hidden=false;scheduleLearningActionDockPosition();return;
   }
+  if((state.submittedQuizzes||[]).includes(unit.id)&&window.LearnerSetup?.afterPosttest(unit)){
+    const next=document.createElement('button');next.type='button';next.className='button primary bottom-nav-btn guided-next';next.textContent=window.LearnerSetup.posttestActionLabel();next.onclick=()=>window.LearnerSetup.continueAfterPosttest();wrapper.append(next);wrapper.hidden=false;scheduleLearningActionDockPosition();return;
+  }
   if (document.querySelector(".core-learning-workspace.is-coach-surface")) {
     wrapper.hidden = true;
     return;

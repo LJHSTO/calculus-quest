@@ -3143,15 +3143,25 @@
                 "visualization3d"
               ],
               "slide": {
-                "title": "图像上的左右极限",
+                "title": "左右极限与双侧极限",
                 "sceneOrder": 7,
-                "summary": "刚才我们从数表的角度，感受了函数值一点点向某个目标靠近的趋势。现在我们把这种直觉搬到图像上，就像看地图一样，来直观理解“左右极限”。 看，屏幕上有一条函数曲线。想象一下，有两只小蚂蚁，一只从左边沿着曲线爬，另一只从右边沿着曲线爬，它们的目标都是去往 x₀ 这个位置。",
+                "summary": "先分别观察输入从左右两侧靠近时，输出趋向哪个值。只有左右有限极限都存在且相等，双侧有限极限才存在；该点函数值不决定极限。",
                 "canvas": {
-                  "id": "VFu0Rc-OTw9paeUhuXWIR",
-                  "viewportSize": 1000,
-                  "viewportRatio": 0.5625,
+                  "id": "v-7ixHqaB25ve5BR9VWw-",
                   "theme": {
-                    "backgroundColor": "#ffffff",
+                    "shadow": {
+                      "h": 0,
+                      "v": 0,
+                      "blur": 10,
+                      "color": "#000000"
+                    },
+                    "outline": {
+                      "color": "#d14424",
+                      "style": "solid",
+                      "width": 2
+                    },
+                    "fontName": "Microsoft YaHei",
+                    "fontColor": "#333333",
                     "themeColors": [
                       "#5b9bd5",
                       "#ed7d31",
@@ -3159,375 +3169,199 @@
                       "#ffc000",
                       "#4472c4"
                     ],
-                    "fontColor": "#333333",
-                    "fontName": "Microsoft YaHei",
-                    "outline": {
-                      "color": "#d14424",
-                      "width": 2,
-                      "style": "solid"
-                    },
-                    "shadow": {
-                      "h": 0,
-                      "v": 0,
-                      "blur": 10,
-                      "color": "#000000"
-                    }
+                    "backgroundColor": "#ffffff"
                   },
                   "elements": [
                     {
-                      "type": "text",
-                      "id": "text_vjQ0V7fW",
-                      "left": 60,
+                      "id": "text_VLH0rncH",
                       "top": 50,
+                      "left": 60,
+                      "type": "text",
                       "width": 880,
                       "height": 70,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 32px; font-weight: bold; color: #1e3a8a;\">极限的直观理解：函数图像与左右极限</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333"
+                      "content": "<p style=\"font-size:32px;font-weight:bold;text-align:center;color:#1e40af\">左右极限与双侧极限</p>",
+                      "defaultColor": "#1e40af",
+                      "defaultFontName": "Microsoft YaHei"
                     },
                     {
-                      "type": "shape",
-                      "id": "shape_89iPg5hO",
+                      "id": "text_2yIsX_Ki",
+                      "top": 110,
                       "left": 60,
-                      "top": 125,
+                      "type": "text",
                       "width": 880,
-                      "height": 2,
-                      "rotate": 0,
-                      "viewBox": [
-                        1,
-                        1
-                      ],
-                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                      "fixedRatio": false,
-                      "fill": "#e2e8f0"
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_s8KZs9GU",
-                      "left": 60,
-                      "top": 140,
-                      "width": 420,
                       "height": 52,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 20px; font-weight: bold; color: #334155;\">1. 函数图像与极限趋势</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333"
+                      "content": "<p style=\"font-size:20px;text-align:center;color:#64748b\">双侧极限存在的充要条件</p>",
+                      "defaultColor": "#64748b",
+                      "defaultFontName": "Microsoft YaHei"
                     },
                     {
-                      "type": "text",
-                      "id": "text_sbHvsEXa",
-                      "left": 520,
-                      "top": 140,
-                      "width": 420,
-                      "height": 52,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 20px; font-weight: bold; color: #334155;\">2. 极限存在的充要条件</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333"
-                    },
-                    {
-                      "type": "shape",
-                      "id": "shape_S9L6q4Yh",
+                      "id": "shape_IR_6LGAn",
+                      "top": 175,
+                      "fill": "#f0f7ff",
                       "left": 60,
-                      "top": 195,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
                       "width": 420,
-                      "height": 310,
+                      "height": 130,
                       "rotate": 0,
                       "viewBox": [
                         1,
                         1
                       ],
-                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                      "fixedRatio": false,
-                      "fill": "#f8fafc"
+                      "fixedRatio": false
                     },
                     {
-                      "type": "shape",
-                      "id": "shape_enYMiaot",
-                      "left": 520,
-                      "top": 195,
-                      "width": 420,
-                      "height": 310,
-                      "rotate": 0,
-                      "viewBox": [
-                        1,
-                        1
-                      ],
-                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                      "fixedRatio": false,
-                      "fill": "#f8fafc"
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_b1Wtiv2O",
-                      "left": 90,
-                      "top": 235,
-                      "width": 3,
-                      "start": [
-                        0,
-                        110
-                      ],
-                      "end": [
-                        300,
-                        110
-                      ],
-                      "style": "solid",
-                      "color": "#64748b",
-                      "points": [
-                        "",
-                        "arrow"
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_XZ0kbtyF",
-                      "left": 90,
-                      "top": 235,
-                      "width": 3,
-                      "start": [
-                        150,
-                        210
-                      ],
-                      "end": [
-                        150,
-                        0
-                      ],
-                      "style": "solid",
-                      "color": "#64748b",
-                      "points": [
-                        "",
-                        "arrow"
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_PUSa8UTA",
-                      "left": 208,
-                      "top": 346,
-                      "width": 64,
-                      "height": 46,
-                      "content": "<p style=\"font-size: 16px; text-align: center; color: #334155;\">x₀</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333",
-                      "rotate": 0
-                    },
-                    {
-                      "type": "line",
-                      "id": "line__rICS2gf",
-                      "left": 90,
-                      "top": 235,
-                      "width": 2,
-                      "start": [
-                        150,
-                        110
-                      ],
-                      "end": [
-                        150,
-                        55
-                      ],
-                      "style": "dashed",
-                      "color": "#94a3b8",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_iE1tnzIs",
-                      "left": 120,
-                      "top": 265,
-                      "width": 3,
-                      "start": [
-                        0,
-                        80
-                      ],
-                      "end": [
-                        120,
-                        20
-                      ],
-                      "curve": [
-                        60,
-                        40
-                      ],
-                      "style": "solid",
-                      "color": "#2563eb",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_XY3JPcaO",
-                      "left": 240,
-                      "top": 285,
-                      "width": 3,
-                      "start": [
-                        0,
-                        0
-                      ],
-                      "end": [
-                        120,
-                        60
-                      ],
-                      "curve": [
-                        60,
-                        20
-                      ],
-                      "style": "solid",
-                      "color": "#2563eb",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "shape",
-                      "id": "shape_aJGa03Nn",
-                      "left": 234,
-                      "top": 279,
-                      "width": 12,
-                      "height": 12,
-                      "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-                      "viewBox": [
-                        1,
-                        1
-                      ],
-                      "fill": "#ffffff",
-                      "fixedRatio": true,
-                      "rotate": 0
-                    },
-                    {
-                      "type": "shape",
-                      "id": "shape_lJfmj0ti",
-                      "left": 234,
-                      "top": 279,
-                      "width": 12,
-                      "height": 12,
-                      "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-                      "viewBox": [
-                        1,
-                        1
-                      ],
-                      "fill": "#ffffff",
-                      "fixedRatio": true,
-                      "rotate": 0
-                    },
-                    {
-                      "type": "shape",
-                      "id": "shape_nbHzpvDG",
-                      "left": 234,
-                      "top": 279,
-                      "width": 12,
-                      "height": 12,
-                      "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-                      "viewBox": [
-                        1,
-                        1
-                      ],
-                      "fill": "#ef4444",
-                      "fixedRatio": true,
-                      "rotate": 0
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_4xseEgiv",
-                      "left": 105,
-                      "top": 208,
-                      "width": 110,
-                      "height": 46,
-                      "content": "<p style=\"font-size: 16px; color: #2563eb;\">左侧趋近</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333",
-                      "rotate": 0
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_y2uzq4Ph",
-                      "left": 275,
-                      "top": 208,
-                      "width": 110,
-                      "height": 46,
-                      "content": "<p style=\"font-size: 16px; text-align: right; color: #2563eb;\">右侧趋近</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333",
-                      "rotate": 0
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_8-oVfi_k",
-                      "left": 270,
-                      "top": 258,
-                      "width": 120,
-                      "height": 46,
-                      "content": "<p style=\"font-size: 16px; color: #ef4444;\">L</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333",
-                      "rotate": 0
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_5DKbaEQc",
-                      "left": 100,
-                      "top": 258,
-                      "width": 140,
-                      "height": 70,
-                      "content": "<p style=\"font-size: 16px; color: #2563eb;\">两侧靠近</p><p style=\"font-size: 16px; color: #2563eb;\">同一高度 L</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333",
-                      "rotate": 0
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_3HQSKZBw",
+                      "id": "text_faHUFrcV",
+                      "top": 185,
                       "left": 80,
-                      "top": 405,
+                      "type": "text",
                       "width": 380,
-                      "height": 94,
+                      "height": 52,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 16px; color: #475569;\">• <b>左极限</b>：从左侧趋近时的函数值趋势</p><p style=\"font-size: 16px; color: #475569;\">• <b>右极限</b>：从右侧趋近时的函数值趋势</p><p style=\"font-size: 16px; color: #475569;\">• 注意：单一方向趋势不代表整体极限</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333"
+                      "content": "<p style=\"font-size:20px;font-weight:bold;text-align:center;color:#2563eb\">左极限：从左侧趋近 x0</p>",
+                      "defaultColor": "#2563eb",
+                      "defaultFontName": "Microsoft YaHei"
                     },
                     {
+                      "id": "latex_YESmyeog",
+                      "top": 235,
+                      "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.8087em;vertical-align:-1.0587em\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em\"><span style=\"top:-2.2593em;margin-left:0em\"><span class=\"pstrut\" style=\"height:3em\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.821em\"><span style=\"top:-2.1885em;margin-left:0em;margin-right:0.0714em\"><span class=\"pstrut\" style=\"height:2.5em\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span><span style=\"top:-2.9043em;margin-right:0.0714em\"><span class=\"pstrut\" style=\"height:2.5em\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mbin mtight\">−</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3115em\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em\"><span class=\"pstrut\" style=\"height:3em\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0587em\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em\"></span><span class=\"mord mathnormal\">A</span></span></span></span></span>",
+                      "left": 80,
                       "type": "latex",
-                      "id": "latex_3iS3c7ws",
-                      "left": 540,
-                      "top": 210,
-                      "width": 380,
-                      "height": 120,
-                      "rotate": 0,
-                      "latex": "\\lim_{x \\to x_0} f(x) = L \\\\ \\Longleftrightarrow \\\\ \\lim_{x \\to x_0^-} f(x) = L \\text{ 且 } \\lim_{x \\to x_0^+} f(x) = L",
-                      "color": "#1e3a8a",
                       "align": "center",
-                      "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.5501em;vertical-align:-0.8001em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.4em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3173em;\"><span style=\"top:-2.357em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.143em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8001em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">L</span></span><span class=\"mspace newline\"></span><span class=\"base\"><span class=\"strut\" style=\"height:0.549em;vertical-align:-0.024em;\"></span><span class=\"mrel\">⟺</span></span><span class=\"mspace newline\"></span><span class=\"base\"><span class=\"strut\" style=\"height:1.8087em;vertical-align:-1.0587em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.2593em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.821em;\"><span style=\"top:-2.1885em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span><span style=\"top:-2.9043em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mbin mtight\">−</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3115em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0587em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:1.8087em;vertical-align:-1.0587em;\"></span><span class=\"mord mathnormal\">L</span><span class=\"mord text\"><span class=\"mord\"> </span><span class=\"mord cjk_fallback\">且</span><span class=\"mord\"> </span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em;\"><span style=\"top:-2.2593em;margin-left:0em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.821em;\"><span style=\"top:-2.1885em;margin-left:0em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span><span style=\"top:-2.9043em;margin-right:0.0714em;\"><span class=\"pstrut\" style=\"height:2.5em;\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mbin mtight\">+</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3115em;\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0587em;\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em;\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em;\"></span><span class=\"mord mathnormal\">L</span></span></span></span></span>",
+                      "color": "#1e293b",
+                      "latex": "\\lim_{x \\to x_0^-} f(x) = A",
+                      "width": 380,
+                      "height": 50,
+                      "rotate": 0,
                       "fixedRatio": true
                     },
                     {
-                      "type": "text",
-                      "id": "text_9di3lpEA",
-                      "left": 540,
-                      "top": 350,
-                      "width": 380,
-                      "height": 118,
+                      "id": "shape_8EWyxSqZ",
+                      "top": 175,
+                      "fill": "#f0f7ff",
+                      "left": 520,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
+                      "width": 420,
+                      "height": 130,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 16px; color: #475569;\">• <b>充要条件</b>：左右极限必须相等</p><p style=\"font-size: 16px; color: #475569;\">• <b>常见误区</b>：仅看单一方向趋势</p><p style=\"font-size: 16px; color: #475569;\">• <b>几何意义</b>：函数在趋近点处“无缝对接”</p><p style=\"font-size: 16px; color: #475569;\">• <b>结论</b>：若左右极限不等，则极限不存在</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#333333"
+                      "viewBox": [
+                        1,
+                        1
+                      ],
+                      "fixedRatio": false
+                    },
+                    {
+                      "id": "text_el1XrKLh",
+                      "top": 185,
+                      "left": 540,
+                      "type": "text",
+                      "width": 380,
+                      "height": 52,
+                      "rotate": 0,
+                      "content": "<p style=\"font-size:20px;font-weight:bold;text-align:center;color:#2563eb\">右极限：从右侧趋近 x0</p>",
+                      "defaultColor": "#2563eb",
+                      "defaultFontName": "Microsoft YaHei"
+                    },
+                    {
+                      "id": "latex_Aa6LTYoY",
+                      "top": 235,
+                      "html": "<span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.8087em;vertical-align:-1.0587em\"></span><span class=\"mop op-limits\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6944em\"><span style=\"top:-2.2593em;margin-left:0em\"><span class=\"pstrut\" style=\"height:3em\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"mrel mtight\">→</span><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span><span class=\"msupsub\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.821em\"><span style=\"top:-2.1885em;margin-left:0em;margin-right:0.0714em\"><span class=\"pstrut\" style=\"height:2.5em\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mord mtight\">0</span></span></span><span style=\"top:-2.9043em;margin-right:0.0714em\"><span class=\"pstrut\" style=\"height:2.5em\"></span><span class=\"sizing reset-size3 size1 mtight\"><span class=\"mbin mtight\">+</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.3115em\"><span></span></span></span></span></span></span></span></span></span><span style=\"top:-3em\"><span class=\"pstrut\" style=\"height:3em\"></span><span><span class=\"mop\">lim</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.0587em\"><span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.1667em\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.10764em\">f</span><span class=\"mopen\">(</span><span class=\"mord mathnormal\">x</span><span class=\"mclose\">)</span><span class=\"mspace\" style=\"margin-right:0.2778em\"></span><span class=\"mrel\">=</span><span class=\"mspace\" style=\"margin-right:0.2778em\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6833em\"></span><span class=\"mord mathnormal\">A</span></span></span></span></span>",
+                      "left": 540,
+                      "type": "latex",
+                      "align": "center",
+                      "color": "#1e293b",
+                      "latex": "\\lim_{x \\to x_0^+} f(x) = A",
+                      "width": 380,
+                      "height": 50,
+                      "rotate": 0,
+                      "fixedRatio": true
+                    },
+                    {
+                      "id": "shape_ssofaDa8",
+                      "top": 325,
+                      "fill": "#e0f2fe",
+                      "left": 60,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
+                      "width": 880,
+                      "height": 100,
+                      "rotate": 0,
+                      "viewBox": [
+                        1,
+                        1
+                      ],
+                      "fixedRatio": false
+                    },
+                    {
+                      "id": "text_92Hgasp0",
+                      "top": 334,
+                      "left": 80,
+                      "type": "text",
+                      "width": 840,
+                      "height": 82,
+                      "rotate": 0,
+                      "content": "<p style=\"font-size:20px;font-weight:bold;text-align:center;color:#0369a1\">双侧有限极限存在 ⇔ 左右有限极限都存在且相等</p><p style=\"font-size:16px;text-align:center;color:#0284c7;margin-top:6px\">只有当从左侧与右侧趋近同一极限值时，双侧极限才存在</p>",
+                      "defaultColor": "#0369a1",
+                      "defaultFontName": "Microsoft YaHei"
+                    },
+                    {
+                      "id": "shape_ole1hs0V",
+                      "top": 445,
+                      "fill": "#f8fafc",
+                      "left": 60,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
+                      "width": 880,
+                      "height": 60,
+                      "rotate": 0,
+                      "viewBox": [
+                        1,
+                        1
+                      ],
+                      "fixedRatio": false
+                    },
+                    {
+                      "id": "text_KVZqn0Ov",
+                      "top": 452,
+                      "left": 80,
+                      "type": "text",
+                      "width": 400,
+                      "height": 46,
+                      "rotate": 0,
+                      "content": "<p style=\"font-size:16px;color:#475569\"><span style=\"color:#2563eb;font-weight:bold\">○</span> 空心点表示极限趋向位置，而非函数取值</p>",
+                      "defaultColor": "#475569",
+                      "defaultFontName": "Microsoft YaHei"
+                    },
+                    {
+                      "id": "text_3ucInPKb",
+                      "top": 452,
+                      "left": 520,
+                      "type": "text",
+                      "width": 400,
+                      "height": 46,
+                      "rotate": 0,
+                      "content": "<p style=\"font-size:16px;color:#475569\"><span style=\"color:#dc2626;font-weight:bold\">⚠</span> 若两侧极限值不一致，则双侧极限不存在</p>",
+                      "defaultColor": "#475569",
+                      "defaultFontName": "Microsoft YaHei"
                     }
                   ],
                   "background": {
                     "type": "solid",
                     "color": "#ffffff"
                   },
-                  "animations": []
+                  "viewportSize": 1000,
+                  "viewportRatio": 0.5625
+                },
+                "provenance": {
+                  "provider": "OpenMAIC",
+                  "classroom": "stage-uOem_ZpmZS4Z",
+                  "exportedAt": "2026-10-27T11:03:03.024Z",
+                  "sceneOrder": 8,
+                  "review": "数学措辞复核；其余生成页缺图或交互接口未适配，未替换"
                 }
               },
               "resourceCandidates": [
@@ -3704,15 +3538,25 @@
                 "visualization3d"
               ],
               "slide": {
-                "title": "连续就是不跳断",
+                "title": "连续性的三个条件",
                 "sceneOrder": 13,
-                "summary": "上一页我们建好了连接极限和函数值的桥梁。今天这座桥有个非常形象的名字，叫“连续”。用我们最直观的话来说，连续就是不跳断。 来，我们先一起看左边这个完美的例子。当x趋近于a的时候，极限值是L。",
+                "summary": "对于定义在内点附近的函数，连续需要该点函数值有定义、双侧极限存在，并且极限等于函数值。连续不要求光滑或可导，跳跃也不能只靠修改单点函数值修复。",
                 "canvas": {
-                  "id": "V7QeBhdqgvDyt4BWACk2y",
-                  "viewportSize": 1000,
-                  "viewportRatio": 0.5625,
+                  "id": "Y_hqS0BEGP6GsQ0C3A_60",
                   "theme": {
-                    "backgroundColor": "#ffffff",
+                    "shadow": {
+                      "h": 0,
+                      "v": 0,
+                      "blur": 10,
+                      "color": "#000000"
+                    },
+                    "outline": {
+                      "color": "#d14424",
+                      "style": "solid",
+                      "width": 2
+                    },
+                    "fontName": "Microsoft YaHei",
+                    "fontColor": "#333333",
                     "themeColors": [
                       "#5b9bd5",
                       "#ed7d31",
@@ -3720,509 +3564,203 @@
                       "#ffc000",
                       "#4472c4"
                     ],
-                    "fontColor": "#333333",
-                    "fontName": "Microsoft YaHei",
-                    "outline": {
-                      "color": "#d14424",
-                      "width": 2,
-                      "style": "solid"
-                    },
-                    "shadow": {
-                      "h": 0,
-                      "v": 0,
-                      "blur": 10,
-                      "color": "#000000"
-                    }
+                    "backgroundColor": "#ffffff"
                   },
                   "elements": [
                     {
-                      "type": "text",
-                      "id": "text_RDRLv5Rz",
-                      "left": 100,
+                      "id": "text_JvFg_TbI",
                       "top": 50,
-                      "width": 800,
+                      "left": 60,
+                      "type": "text",
+                      "width": 880,
                       "height": 70,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 32px; font-weight: bold; text-align: center; color: #1A5276;\">连续就是不跳断</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#1A5276"
+                      "content": "<p style=\"font-size:32px;font-weight:bold;color:#1e3a8a\">连续性的三个条件</p>",
+                      "defaultColor": "#1e3a8a",
+                      "defaultFontName": "Microsoft YaHei"
                     },
                     {
+                      "id": "text_t7TkG97f",
+                      "top": 110,
+                      "left": 60,
                       "type": "text",
-                      "id": "text_FvtwlvcG",
-                      "left": 100,
-                      "top": 120,
-                      "width": 800,
+                      "width": 880,
                       "height": 52,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 20px; text-align: center; color: #2471A3;\">将极限与点值统一，定义完美的“平滑连接”</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#2471A3"
+                      "content": "<p style=\"font-size:20px;color:#64748b\">函数在某点连续的充要条件与直观理解</p>",
+                      "defaultColor": "#64748b",
+                      "defaultFontName": "Microsoft YaHei"
                     },
                     {
-                      "type": "line",
-                      "id": "line_DcYMu2Oq",
-                      "left": 365,
-                      "top": 225,
-                      "width": 1,
-                      "start": [
-                        0,
-                        0
-                      ],
-                      "end": [
-                        0,
-                        140
-                      ],
-                      "style": "solid",
-                      "color": "#AAB7B8",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_posz2bSU",
-                      "left": 470,
-                      "top": 180,
-                      "width": 1,
-                      "start": [
-                        0,
-                        0
-                      ],
-                      "end": [
-                        0,
-                        260
-                      ],
-                      "style": "dashed",
-                      "color": "#BDC3C7",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_3Lurj2eO",
-                      "left": 80,
-                      "top": 260,
-                      "width": 3,
-                      "start": [
-                        0,
-                        0
-                      ],
-                      "end": [
-                        170,
-                        0
-                      ],
-                      "style": "solid",
-                      "color": "#2980B9",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "shape",
-                      "id": "shape_GKdL6ZQ6",
-                      "left": 161,
-                      "top": 256,
-                      "width": 8,
-                      "height": 8,
-                      "rotate": 0,
-                      "viewBox": [
-                        1,
-                        1
-                      ],
-                      "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-                      "fixedRatio": true,
-                      "fill": "#27AE60"
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_Q57G2UJC",
-                      "left": 80,
-                      "top": 242,
-                      "width": 75,
-                      "height": 28,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 15px; color: #2980B9; text-align: center;\">极限值 L</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#2980B9"
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_BVyF5CtA",
-                      "left": 378,
-                      "top": 260,
-                      "width": 3,
-                      "start": [
-                        0,
-                        0
-                      ],
-                      "end": [
-                        72,
-                        0
-                      ],
-                      "style": "solid",
-                      "color": "#2980B9",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_3zoKsbob",
-                      "left": 90,
-                      "top": 278,
-                      "width": 150,
-                      "height": 38,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 16px; color: #1E8449; text-align: center;\">函数值 f(a)=L</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#1E8449"
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_XPL0amKy",
-                      "left": 80,
-                      "top": 178,
-                      "width": 175,
-                      "height": 63,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 18px; font-weight: bold; color: #1E8449; text-align: center;\">连续</p><p style=\"font-size: 14px; color: #1E8449; text-align: center;\">趋势与点值对齐</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#1E8449"
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_zs0whevW",
-                      "left": 280,
-                      "top": 260,
-                      "width": 3,
-                      "start": [
-                        0,
-                        0
-                      ],
-                      "end": [
-                        72,
-                        0
-                      ],
-                      "style": "solid",
-                      "color": "#2980B9",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "shape",
-                      "id": "shape_Kt75jMzi",
-                      "left": 361,
-                      "top": 306,
-                      "width": 8,
-                      "height": 8,
-                      "rotate": 0,
-                      "viewBox": [
-                        1,
-                        1
-                      ],
-                      "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-                      "fixedRatio": true,
-                      "fill": "#E74C3C"
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_ZaCPR9BP",
-                      "left": 290,
-                      "top": 322,
-                      "width": 150,
-                      "height": 38,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 16px; color: #E74C3C; text-align: center;\">函数值 f(a)≠L</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#E74C3C"
-                    },
-                    {
-                      "type": "line",
-                      "id": "line_poRbN7n6",
-                      "left": 165,
-                      "top": 225,
-                      "width": 1,
-                      "start": [
-                        0,
-                        0
-                      ],
-                      "end": [
-                        0,
-                        95
-                      ],
-                      "style": "solid",
-                      "color": "#AAB7B8",
-                      "points": [
-                        "",
-                        ""
-                      ],
-                      "rotate": 0
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_AVO3EXtf",
-                      "left": 300,
-                      "top": 220,
-                      "width": 130,
-                      "height": 34,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 15px; color: #2980B9; text-align: center;\">极限仍为 L</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#2980B9"
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_vHiMrwTc",
-                      "left": 270,
-                      "top": 180,
-                      "width": 185,
-                      "height": 36,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 18px; font-weight: bold; color: #C0392B; text-align: center;\">间断：趋势与点值分离</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#C0392B"
-                    },
-                    {
-                      "type": "shape",
-                      "id": "shape_hPPSVMq1",
-                      "left": 500,
-                      "top": 180,
-                      "width": 440,
-                      "height": 46,
-                      "rotate": 0,
-                      "viewBox": [
-                        1,
-                        1
-                      ],
+                      "id": "shape_8iYU8G0p",
+                      "top": 165,
+                      "fill": "#e2e8f0",
+                      "left": 60,
                       "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                      "fixedRatio": false,
-                      "fill": "#2471A3"
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_8PrYABZp",
-                      "left": 500,
-                      "top": 180,
-                      "width": 440,
-                      "height": 46,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 16px; text-align: center; font-weight: bold; color: #ffffff;\">连续条件</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#ffffff"
-                    },
-                    {
-                      "type": "table",
-                      "id": "table_O2_IUaJo",
-                      "left": 500,
-                      "top": 230,
-                      "width": 440,
-                      "height": 200,
-                      "rotate": 0,
-                      "outline": {
-                        "style": "solid",
-                        "width": 1,
-                        "color": "#BDC3C7"
-                      },
-                      "colWidths": [
-                        0.32,
-                        0.68
-                      ],
-                      "cellMinHeight": 50,
-                      "data": [
-                        [
-                          {
-                            "id": "h1",
-                            "colspan": 1,
-                            "rowspan": 1,
-                            "text": "条件",
-                            "style": {
-                              "bold": true,
-                              "color": "#1A5276",
-                              "backcolor": "#E8F4FD",
-                              "align": "center",
-                              "fontsize": 16
-                            }
-                          },
-                          {
-                            "id": "h2",
-                            "colspan": 1,
-                            "rowspan": 1,
-                            "text": "含义",
-                            "style": {
-                              "bold": true,
-                              "color": "#1A5276",
-                              "backcolor": "#E8F4FD",
-                              "align": "center",
-                              "fontsize": 16
-                            }
-                          }
-                        ],
-                        [
-                          {
-                            "id": "r1c1",
-                            "colspan": 1,
-                            "rowspan": 1,
-                            "text": "极限存在",
-                            "style": {
-                              "bold": true,
-                              "color": "#2C3E50",
-                              "align": "center",
-                              "fontsize": 15
-                            }
-                          },
-                          {
-                            "id": "r1c2",
-                            "colspan": 1,
-                            "rowspan": 1,
-                            "text": "当 x→a 时，f(x) 趋近于确定实数 L",
-                            "style": {
-                              "color": "#2C3E50",
-                              "fontsize": 15
-                            }
-                          }
-                        ],
-                        [
-                          {
-                            "id": "r2c1",
-                            "colspan": 1,
-                            "rowspan": 1,
-                            "text": "函数值存在",
-                            "style": {
-                              "bold": true,
-                              "color": "#2C3E50",
-                              "align": "center",
-                              "fontsize": 15
-                            }
-                          },
-                          {
-                            "id": "r2c2",
-                            "colspan": 1,
-                            "rowspan": 1,
-                            "text": "f(a) 有定义，且为某个实数",
-                            "style": {
-                              "color": "#2C3E50",
-                              "fontsize": 15
-                            }
-                          }
-                        ],
-                        [
-                          {
-                            "id": "r3c1",
-                            "colspan": 1,
-                            "rowspan": 1,
-                            "text": "两者相等",
-                            "style": {
-                              "bold": true,
-                              "color": "#2C3E50",
-                              "align": "center",
-                              "fontsize": 15
-                            }
-                          },
-                          {
-                            "id": "r3c2",
-                            "colspan": 1,
-                            "rowspan": 1,
-                            "text": "极限值 L = 函数值 f(a)",
-                            "style": {
-                              "color": "#2C3E50",
-                              "fontsize": 15
-                            }
-                          }
-                        ]
-                      ]
-                    },
-                    {
                       "type": "shape",
-                      "id": "shape_pvy3DOha",
-                      "left": 100,
-                      "top": 450,
-                      "width": 800,
+                      "width": 880,
+                      "height": 2,
+                      "rotate": 0,
+                      "viewBox": [
+                        1,
+                        1
+                      ],
+                      "fixedRatio": false
+                    },
+                    {
+                      "id": "shape_lXqs5ci2",
+                      "top": 180,
+                      "fill": "#f8fafc",
+                      "left": 60,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
+                      "width": 420,
+                      "height": 86,
+                      "rotate": 0,
+                      "viewBox": [
+                        1,
+                        1
+                      ],
+                      "fixedRatio": false
+                    },
+                    {
+                      "id": "text_BGm_DgQA",
+                      "top": 185,
+                      "left": 70,
+                      "type": "text",
+                      "width": 400,
+                      "height": 76,
+                      "rotate": 0,
+                      "content": "<p style=\"font-size:18px;font-weight:bold;color:#1e3a8a\">1. 点值存在</p><p style=\"font-size:16px;color:#475569\">函数在该点必须有定义，即 f(x₀) 存在</p>",
+                      "defaultColor": "#333333",
+                      "defaultFontName": "Microsoft YaHei"
+                    },
+                    {
+                      "id": "shape__WTXJkzA",
+                      "top": 276,
+                      "fill": "#f8fafc",
+                      "left": 60,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
+                      "width": 420,
+                      "height": 86,
+                      "rotate": 0,
+                      "viewBox": [
+                        1,
+                        1
+                      ],
+                      "fixedRatio": false
+                    },
+                    {
+                      "id": "text_vQOQ6Dq2",
+                      "top": 281,
+                      "left": 70,
+                      "type": "text",
+                      "width": 400,
+                      "height": 76,
+                      "rotate": 0,
+                      "content": "<p style=\"font-size:18px;font-weight:bold;color:#1e3a8a\">2. 极限存在</p><p style=\"font-size:16px;color:#475569\">当 x 趋近 x₀ 时，左极限与右极限必须相等且有限</p>",
+                      "defaultColor": "#333333",
+                      "defaultFontName": "Microsoft YaHei"
+                    },
+                    {
+                      "id": "shape_WXimdMaV",
+                      "top": 372,
+                      "fill": "#f8fafc",
+                      "left": 60,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
+                      "width": 420,
+                      "height": 86,
+                      "rotate": 0,
+                      "viewBox": [
+                        1,
+                        1
+                      ],
+                      "fixedRatio": false
+                    },
+                    {
+                      "id": "text_Z-2pY2D-",
+                      "top": 377,
+                      "left": 70,
+                      "type": "text",
+                      "width": 400,
+                      "height": 76,
+                      "rotate": 0,
+                      "content": "<p style=\"font-size:18px;font-weight:bold;color:#1e3a8a\">3. 极限值等于点值</p><p style=\"font-size:16px;color:#475569\">lim(x→x₀) f(x) = f(x₀)，这是连续性的最终判据</p>",
+                      "defaultColor": "#333333",
+                      "defaultFontName": "Microsoft YaHei"
+                    },
+                    {
+                      "id": "shape_v6OXhVPN",
+                      "top": 180,
+                      "fill": "#f1f5f9",
+                      "left": 520,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
+                      "width": 420,
+                      "height": 278,
+                      "rotate": 0,
+                      "viewBox": [
+                        1,
+                        1
+                      ],
+                      "fixedRatio": false
+                    },
+                    {
+                      "id": "text_dciNQLdL",
+                      "top": 224,
+                      "left": 540,
+                      "type": "text",
+                      "width": 380,
+                      "height": 190,
+                      "rotate": 0,
+                      "content": "<p style=\"font-size:20px;font-weight:bold;color:#1e3a8a\">桥的比喻</p><p style=\"font-size:16px;color:#334155;line-height:1.5\">桥面（函数值）必须存在，桥头两侧必须趋向同一高度（极限存在），且桥头连接处不能有缺口（点值与极限一致）。若桥面断裂（跳跃间断），仅修补桥面（修改点值）无法恢复通行。</p>",
+                      "defaultColor": "#333333",
+                      "defaultFontName": "Microsoft YaHei"
+                    },
+                    {
+                      "id": "shape_xYeIa5RP",
+                      "top": 470,
+                      "fill": "#fef2f2",
+                      "left": 60,
+                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
+                      "type": "shape",
+                      "width": 880,
                       "height": 60,
                       "rotate": 0,
                       "viewBox": [
                         1,
                         1
                       ],
-                      "path": "M 0 0 L 1 0 L 1 1 L 0 1 Z",
-                      "fixedRatio": false,
-                      "fill": "#F2F3F4"
+                      "fixedRatio": false
                     },
                     {
+                      "id": "text_nOdnbp_I",
+                      "top": 475,
+                      "left": 80,
                       "type": "text",
-                      "id": "text_IvdrgbNd",
-                      "left": 100,
-                      "top": 454,
-                      "width": 800,
-                      "height": 52,
+                      "width": 840,
+                      "height": 49,
                       "rotate": 0,
-                      "content": "<p style=\"font-size: 20px; text-align: center; font-style: italic; color: #2C3E50;\">趋势与点值对齐，连接即连续。</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#2C3E50"
-                    },
-                    {
-                      "type": "shape",
-                      "id": "shape_gh02_limit_open",
-                      "left": 359,
-                      "top": 254,
-                      "width": 12,
-                      "height": 12,
-                      "rotate": 0,
-                      "viewBox": [
-                        1,
-                        1
-                      ],
-                      "path": "M 1 0.5 A 0.5 0.5 0 1 1 0 0.5 A 0.5 0.5 0 1 1 1 0.5 Z",
-                      "fixedRatio": true,
-                      "fill": "#FFFFFF",
-                      "outline": {
-                        "color": "#2980B9",
-                        "style": "solid",
-                        "width": 2
-                      }
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_gh02_xa_continuous",
-                      "left": 145,
-                      "top": 315,
-                      "width": 40,
-                      "height": 28,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 13px; color: #566573; text-align: center;\">x=a</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#566573"
-                    },
-                    {
-                      "type": "text",
-                      "id": "text_gh02_xa_discontinuous",
-                      "left": 345,
-                      "top": 365,
-                      "width": 40,
-                      "height": 28,
-                      "rotate": 0,
-                      "content": "<p style=\"font-size: 13px; color: #566573; text-align: center;\">x=a</p>",
-                      "defaultFontName": "Microsoft YaHei",
-                      "defaultColor": "#566573"
+                      "content": "<p style=\"font-size:18px;color:#991b1b\"><strong>重要提醒：</strong>跳跃型间断不能仅通过修改点值来修复，必须调整函数在间断点附近的整体行为。</p>",
+                      "defaultColor": "#991b1b",
+                      "defaultFontName": "Microsoft YaHei"
                     }
                   ],
                   "background": {
                     "type": "solid",
                     "color": "#ffffff"
                   },
-                  "animations": []
+                  "viewportSize": 1000,
+                  "viewportRatio": 0.5625
+                },
+                "provenance": {
+                  "provider": "OpenMAIC",
+                  "classroom": "stage-uOem_ZpmZS4Z",
+                  "exportedAt": "2026-10-27T11:03:03.024Z",
+                  "sceneOrder": 10,
+                  "review": "数学措辞复核；其余生成页缺图或交互接口未适配，未替换"
                 }
               },
               "resourceCandidates": [

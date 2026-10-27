@@ -10,6 +10,9 @@
   async function refreshPreparation(){if(refreshing)return refreshing;const token=state.authToken;if(!token)return;refreshing=request().then(d=>{if(token===state.authToken){applyData(d);renderGuide();if(typeof renderBottomNextButton==='function')renderBottomNextButton();}return d;}).finally(()=>refreshing=null);return refreshing;}
   const ordinaryRequired=unit=>preparation?.required&&unit?.chapterId===preparation.chapterId;
   function afterPretest(unit){return unit?.assessmentPhase==='pre'&&(ordinaryRequired(unit)||(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'));}
+  function afterPosttest(unit){return unit?.assessmentPhase==='post'&&pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&['active','finished'].includes(pilot.enrollment.status);}
+  const posttestActionLabel=()=>pilot?.enrollment?.status==='finished'?'本轮已完成 · 查看记录':'下一步：填写学习体验问卷';
+  async function continueAfterPosttest(){await refreshPreparation();if(pilot?.enrollment)await openPilot(pilot);}
   const isReady=()=>pilot?.enrollment?.status==='active'?pilot.enrollment.stage==='ready':preparation?.stage==='ready';
   const pretestActionLabel=()=>isReady()?'继续学习':pilot?.enrollment?.stage==='baseline'?'下一步：学习前问卷':'下一步：设置学习方式';
   const pretestStatusLabel=()=>pilot?.enrollment?.arm==='control'?'学习准备已完成':'学习方式已设置';
@@ -30,7 +33,7 @@
     renderGuide();
     // Preparing is resumed by explicit journey buttons; result pages never auto-close.
   }
-  function show(){if(!dialog){dialog=el('dialog');dialog.id='learner-setup';dialog.setAttribute('aria-labelledby','learner-setup-title');document.body.append(dialog);dialog.addEventListener('cancel',e=>{e.preventDefault();leave();});}
+  async function show(){if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});if(!dialog){dialog=el('dialog');dialog.id='learner-setup';dialog.setAttribute('aria-labelledby','learner-setup-title');document.body.append(dialog);dialog.addEventListener('cancel',e=>{e.preventDefault();leave();});}
     lastFocus=document.activeElement;draw();if(!dialog.open)dialog.showModal();dialog.querySelector('h2')?.focus();}
   function leave(){dialog.close();if((preparation?.required&&preparation.stage!=='ready'||pilot?.enrollment?.status==='active'&&pilot.enrollment.stage!=='ready')&&typeof switchView==='function')switchView('home');lastFocus?.focus?.();}
   async function open(){message='';const d=await request();applyData(d);
@@ -65,7 +68,9 @@
     let guide=document.getElementById('pilot-learning-guide');const host=document.querySelector('.player-top');if(!host)return;
     if(!guide){guide=el('section');guide.id='pilot-learning-guide';guide.className='pilot-learning-guide';guide.setAttribute('aria-label','本次学习步骤');host.after(guide);}
     const e=pilot?.enrollment,unit=typeof getUnit==='function'?getUnit():null;
-    guide.hidden=unit?.type==='knowledge'||unit?.assessmentPhase==='pre'||((!e||e.studyDesign!=='learner-configurable-20-v1')&&!preparation?.required);
+    // The lesson already has a path, current title and one next-step action.
+    // Keep the journey overview out of every courseware and assessment surface.
+    guide.hidden=Boolean(unit)||((!e||e.studyDesign!=='learner-configurable-20-v1')&&!preparation?.required);
     if(guide.hidden){guide.replaceChildren();return;}
     if(preparation?.required){guide.replaceChildren();const done=(state.submittedQuizzes||[]).includes(preparation.chapterId+'-pre');const current=preparation.stage==='ready'?2:done?1:0;
       const steps=el('ol');steps.className='pilot-progress-steps';['知识前测','六维学习方式','开始学习'].forEach((text,i)=>{const li=el('li',text);li.dataset.state=i<current?'done':i===current?'current':'pending';if(i===current)li.setAttribute('aria-current','step');steps.append(li);});guide.append(steps);
@@ -95,11 +100,11 @@
     }else if(mode==='pretest'){
       header('先完成知识前测',preparation?.required?'学习准备 · 第1步':'学习预试 · 第2步');dialog.append(el('p',preparation?.required?'请独立作答，不会的题可以选择“我不会”。提交后先查看结果，再点击“下一步：设置学习方式”。无需预试码也可以设置六项帮助偏好。':pilot?.version?.useMode==='internal_rehearsal'?'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步，设置六项帮助偏好。':'请独立作答，不会的题可以选择“我不会”。提交后查看结果，再点击下一步：实验组设置六项帮助偏好，对照组确认学习说明。'),button('进入知识前测',goPretest,true));
     }else if(mode==='study'){
-      const e=pilot.enrollment;header(e.status==='active'?'本次学习已准备好':'本次预试记录','学习预试');const body=el('div');body.className='learner-setup-body';
+      const e=pilot.enrollment;header(e.status==='active'?(posttestComplete?'最后一步：填写学习体验':'本次学习已准备好'):'本次预试记录','学习预试');const body=el('div');body.className='learner-setup-body';
       body.append(el('p',`参与编号 ${e.participantCode}`),el('p',e.arm==='control'?'本次学习中，助手不会主动出现。课件、练习和知点提问入口照常使用。':'你的六项学习偏好已保存。助手会按设置判断是否介入，你可以拒绝或暂停。'));
       if(e.status==='active'){
-        body.append(button('开始学习',beginLearning,true));
-        if(e.arm==='configurable')body.append(button('查看或修改学习偏好',open));
+        if(!posttestComplete){body.append(button('开始学习',beginLearning,true));
+        if(e.arm==='configurable')body.append(button('查看或修改学习偏好',open));}
         if(posttestComplete){
         const details=el('details');details.open=true;details.append(el('summary','填写本次学习体验'));survey(details,'final');if(e.arm==='configurable'){details.append(el('h3','关于学习偏好设置'));survey(details,'configuration');}
         const note=el('textarea');note.rows=3;note.maxLength=1200;note.setAttribute('aria-label','本次学习建议');note.placeholder='哪次帮助或设置最让你意外？还有什么需要改进？（选填）';details.append(note);
@@ -132,7 +137,7 @@
     const status=el('p',message);status.className='learner-error';status.setAttribute('role','alert');dialog.append(status);
     dialog.scrollTop=0;if(message)status.scrollIntoView({block:'nearest'});
   }
-  global.LearnerSetup={open,openPilot,setPilot,renderGuide,continueAfterPretest,allowsUnit,afterPretest,pretestActionLabel,pretestStatusLabel,resumePreparation,get preparation(){return preparation;},get enrollment(){return pilot?.enrollment;}};
+  global.LearnerSetup={open,openPilot,setPilot,renderGuide,continueAfterPretest,continueAfterPosttest,allowsUnit,afterPretest,afterPosttest,pretestActionLabel,posttestActionLabel,pretestStatusLabel,resumePreparation,get preparation(){return preparation;},get enrollment(){return pilot?.enrollment;}};
   global.addEventListener('cq:lesson-rendered',()=>{syncEntrances();renderGuide();if(typeof currentView==='string'&&currentView==='learn'&&typeof getUnit==='function'&&!routing&&!dialog?.open)allowsUnit(getUnit()||{});});
   document.getElementById('learner-preferences-button')?.addEventListener('click',()=>open().catch(e=>{message=e.message;enabled=false;mode='preferences';show();}));
   global.addEventListener('cq:proactive-state',event=>{const s=event.detail;const key=s.signedIn?s.ownerKey+':'+s.generation:'';if(key!==owner){owner=key;record=null;pilot=null;preparation=null;dialog?.close();for(const k of Object.keys(drafts))delete drafts[k];if(key)refreshPreparation().then(()=>{if(typeof currentView==='string'&&currentView==='learn')allowsUnit(getUnit()||{});}).catch(()=>{});}
