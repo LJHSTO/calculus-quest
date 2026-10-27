@@ -4972,6 +4972,7 @@ const proactiveJustificationDrafts = new Map();
 
   function rehearsalConversationPending(meta = courseMeta()) {
     if(!global.LearnerSetup?.enrollment?.experiencePolicy || meta.isQuiz)return false;
+    if(activeContext&&activeContext.kind!=='unit'&&activeContext.unitId===meta.unitId&&(activeContext.excerpt?.trim()||activeContext.latex||activeContext.semanticId))return false;
     const scope=meta.knowledgePointId||meta.unitId;
     const cycle=(proactiveStudy.supportCycles||[]).find(c=>c.scope===scope&&c.confirmedAt&&c.content);
     return !cycle && !usableProactivePrompt(pendingProactivePrompt,meta);
@@ -5026,7 +5027,6 @@ const proactiveJustificationDrafts = new Map();
       || measurementBlocked;
     els.selectionAsk.disabled = quizLocked
       || measurementBlocked
-      || awaitingAgent
       || conversationLimited;
     els.selectionAsk.title = measurementBlocked
       ? "独立测量期间暂停知点"
@@ -5980,7 +5980,10 @@ const proactiveJustificationDrafts = new Map();
   els.outcomesClose.addEventListener("click", closeProactiveOutcomes);
   els.selectionToolbar.addEventListener("pointerdown", (event) => event.preventDefault());
   els.selectionAsk.addEventListener("click", () => {
-    if (pendingSelection?.contextRef) useContext(pendingSelection.contextRef, "text-selection");
+    if (pendingSelection?.contextRef && useContext(pendingSelection.contextRef, "text-selection")) {
+      els.input.value='请解释我选中的这段内容，并说明它与当前知识点的关系。';
+      submitQuestion();
+    }
     window.getSelection?.()?.removeAllRanges?.();
   });
   els.selectionNote.addEventListener("click", () => showNoteEditor());
@@ -6166,7 +6169,6 @@ const proactiveJustificationDrafts = new Map();
       const fragment = document.createDocumentFragment();
       if (!snapshot.signedIn || snapshot.locked || !snapshot.active) return fragment;
       if (snapshot.check) {fragment.appendChild(proactiveVerificationNode(snapshot.check));return fragment;}
-      if(global.PilotStudyUI?.active(snapshot)){fragment.append(global.PilotStudyUI.render(snapshot));return fragment;}
       if(snapshot.unitType==="knowledge" && snapshot.researchControls?.enabled) {
         const content=global.SupportCycleUI?.render(snapshot);if(content)fragment.append(content);
         if(global.SupportCycleUI?.active(snapshot.supportCycle))return fragment;

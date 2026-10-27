@@ -21,13 +21,13 @@ async function main(){
   browser=await chromium.launch({executablePath:"C:/Program Files/Google/Chrome/Application/chrome.exe",headless:true});page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(15000);const errors=[];page.on("pageerror",e=>errors.push(e.message));
   await page.goto(base+"/");await page.locator("#app-loader.hidden").waitFor({state:"attached"});await page.locator('[data-auth-mode="register"]').click();await page.locator("#nickname").fill("预试合成验收"+Date.now());
   await page.locator("#register-password").fill("Synthetic-only-pilot-2026");await page.locator("#register-password-confirm").fill("Synthetic-only-pilot-2026");await page.locator("#login-submit").click();await page.locator("#auth-gate").waitFor({state:"hidden"});
-  await page.locator('#home-pilot-entry').click();await page.getByLabel("预试加入码",{exact:true}).fill(p.data.joinCode);await page.getByRole("button",{name:"阅读预试说明",exact:true}).click();await page.locator("#pilot-dialog input[type=checkbox]").check();await page.getByRole("button",{name:"确认并加入",exact:true}).click();await page.getByText(/参与编号：P-/).waitFor();await page.locator("#pilot-dialog").getByRole("button",{name:"关闭",exact:true}).click();await page.locator('[data-view="learn"]').first().click();
+  await page.locator('#home-pilot-entry').click();await page.getByLabel("预试加入码",{exact:true}).fill(p.data.joinCode);await page.getByRole("button",{name:"阅读预试说明",exact:true}).click();await page.locator("#pilot-dialog input[type=checkbox]").check();await page.getByRole("button",{name:"确认并加入",exact:true}).click();await page.getByText(/参与编号：P-/).waitFor();await page.locator("#pilot-dialog").getByRole("button",{name:"稍后继续",exact:true}).click();await page.locator('[data-view="learn"]').first().click();
   assert.equal(await page.locator(".pilot-probe:visible").count(),0,"前测不能出现预试探针");
   const pre=require("../data/multi-scene-learning-route.json").chapters.find(c=>c.id==="V14-C1").flow.preQuiz;
   for(const q of pre.questions){const card=page.locator(`.question-card[data-question="${q.id}"]`);if(q.type==="short_answer")await card.locator("textarea").fill("合成回答：区分点值与附近趋势。");else await card.locator("input").first().check();}
   await page.locator("[data-submit-quiz]").click();await page.waitForFunction(()=>state.submittedQuizzes.includes("V14-C1-pre"));
   await page.locator('#workspace-coach-toggle').click();await page.getByRole("button",{name:"全部学习",exact:true}).click();await page.getByRole("button",{name:"按勾选知识点开始学习"}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().unitType==="knowledge");
-  await page.locator(".pilot-probe").waitFor({timeout:45000});await page.locator(".pilot-probe").scrollIntoViewIfNeeded();
+  await page.locator(".pilot-probe-notice button").click({timeout:45000});await page.locator(".pilot-probe").waitFor({timeout:45000});await page.locator(".pilot-probe").scrollIntoViewIfNeeded();
   const student=await page.evaluate(()=>state.authToken);
   const during=await api("/api/learning/assistant/ask",{question:"帮我",unitId:"GH-01-K01",chapterId:"V14-C1"},student);assert.equal(during.status,409);
   await page.locator(".pilot-probe").getByRole("button",{name:"不确定",exact:true}).click();await page.getByText("补充困难、打扰程度或拒绝原因（可不填）",{exact:true}).click();await page.getByLabel("刚才主要卡在哪里，或正在做什么？（可不填）").fill("合成反馈：正在独立比较输入和输出");
@@ -36,12 +36,12 @@ async function main(){
   await page.locator('[data-workspace-canvas="interactive"]').click();await page.locator('[data-knowledge-scene="simulation"]').click();
   const native=page.frameLocator('iframe[data-courseware-frame]');await native.locator('#input_x-slider').waitFor();
   // Wait across the configured measurement gap; typing blocks periodic sampling.
-  await page.locator('#pilot-entry-button').click();await page.waitForTimeout(31000);await page.locator('#pilot-dialog').getByRole('button',{name:'关闭',exact:true}).click();
+  await page.locator('#auth-menu-toggle').click();await page.locator('#account-pilot-status').click();await page.waitForTimeout(31000);await page.locator('#pilot-dialog').getByRole('button',{name:'稍后继续',exact:true}).click();
   for(const key of ['ArrowRight','ArrowRight','ArrowRight']){await native.locator('#input_x-slider').press(key);await page.waitForTimeout(700);}
   await page.waitForFunction(()=>PilotStudyUI.active(KnowledgeAssistant.designSpaceSnapshot()),null,{timeout:25000});
   exportData=(await api('/api/admin/pilot/export?project=pilot-browser')).data;
   assert.ok(exportData.opportunities.some(o=>o.stratum==='triggered'&&o.sampled),'真实课件事件产生主动候选抽样');
-  await native.getByRole('button',{name:'跳过，继续学习',exact:true}).click();await page.waitForFunction(()=>!PilotStudyUI.active(KnowledgeAssistant.designSpaceSnapshot()));
+  await page.locator('.pilot-probe-notice button').click();await page.locator('#pilot-probe-dialog').getByRole('button',{name:'跳过，继续学习',exact:true}).click();await page.waitForFunction(()=>!PilotStudyUI.active(KnowledgeAssistant.designSpaceSnapshot()));
   for(const scope of Object.keys(require('../lib/support-goals').CURRICULUM)){
     const result=await api('/api/learning/pilot/opportunity',{scope,unitId:scope,sceneType:'textbook',foreground:true,active:true,interactionBusy:true},student);
     assert.equal(result.status,200,'六个知识点接受有效上下文');
@@ -51,7 +51,7 @@ async function main(){
   assert.ok(!(await staff.locator("#pilot-workspace").textContent()).includes("合成反馈"));
   await staff.locator("article").first().locator('[name="note"]').fill("独立记录：当前证据不足，不判断动机。");await staff.getByRole("button",{name:"保存标注版本",exact:true}).first().click();await staff.getByText(/已标注，可修订/).first().waitFor();
   await staff.screenshot({path:path.join(out,"教师独立标注.png")});await staff.setViewportSize({width:390,height:844});assert.ok(await staff.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
-  await page.locator("#pilot-entry-button").click();await page.getByText("结束本次预试并填写问卷",{exact:true}).click();await page.getByRole("button",{name:"提交结束问卷",exact:true}).click();await page.getByText("本次预试已结束。",{exact:true}).waitFor();
+  await page.locator('#auth-menu-toggle').click();await page.locator('#account-pilot-status').click();await page.getByText("结束本次预试并填写问卷",{exact:true}).click();await page.getByRole("button",{name:"提交结束问卷",exact:true}).click();await page.getByText("本次预试已结束。",{exact:true}).waitFor();
   await page.reload();await page.locator("#app-loader.hidden").waitFor({state:"attached"});assert.equal((await api("/api/learning/pilot",null,student)).data.enrollment.status,"finished");
   exportData=(await api("/api/admin/pilot/export?project=pilot-browser")).data;assert.equal(exportData.annotations.length,1);assert.equal(exportData.enrollments[0].finalSurvey.burden,null);assert.deepEqual(errors,[]);
   fs.writeFileSync(path.join(out,"预试浏览器验收.json"),JSON.stringify({synthetic:true,passed:true,opportunities:exportData.opportunities.length,answers:exportData.answers.length,annotations:exportData.annotations.length,checks:["真实注册与常规学习","知情加入","前测保护","静默抽样","缺失与不确定分离","帮助顺序保护","教师盲化","标注保存","窄屏","结束问卷","刷新恢复"]},null,2));

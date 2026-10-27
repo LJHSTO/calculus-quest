@@ -5643,7 +5643,7 @@ async function handleApi(req, res, url) {
           pilotStudy.configure(user,generation,record);cancelLearnerSupport(user,generation);
           pilotStudy.recordConfiguration(user,generation,pilotRuntime(user),'学生通过学习偏好页面保存六维选择与理由');
         }
-        sendJson(res,200,{ok:true,data:{enabled,generation,preparation:ordinaryPreparation(user),configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
+        sendJson(res,200,{ok:true,data:{enabled,generation,posttestComplete:proactiveAssessmentCompletion(user,'post').ready,preparation:ordinaryPreparation(user),configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
       }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
     }
     if(url.pathname.startsWith("/api/learning/pilot")) {
@@ -5667,7 +5667,7 @@ async function handleApi(req, res, url) {
           data=pilotStudy.start(user,generation,input,pilotRuntime(user));if(prior.kind==='reuse_pretest')data=pilotStudy.attachPretest(user,generation,prior);if(prior.kind==='resume_rehearsal')data=pilotStudy.attachRehearsal(user,generation,prior,learnerPreferences.read(user));cancelLearnerSupport(user,generation);
         }
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/action"){
-          if(input.action==='finish'&&learnerEnrollment(user)?.status==='active'&&!db.getQuizResultsByUser(user).some(q=>q.chapter_id===proactiveStudyConfig.chapterId&&q.phase==='post'))throw Object.assign(new Error('请先完成本章后测，再提交结束问卷。需要提前离开时，可选择退出预试。'),{status:409});
+          if(input.action==='finish'&&learnerEnrollment(user)?.status==='active'&&!proactiveAssessmentCompletion(user,'post').ready)throw Object.assign(new Error('请先完成本章后测，再提交结束问卷。需要提前离开时，可选择退出预试。'),{status:409});
           data=pilotStudy.action(user,generation,input);
           if(['withdraw','finish','baseline'].includes(input.action)&&data.enrollment?.studyDesign===learnerDesign)cancelLearnerSupport(user,generation);
         }
@@ -8537,7 +8537,8 @@ async function handleApi(req, res, url) {
         return;
       }
       let proactiveReviewSourceMessage = null;
-      if(learnerEnrollment(auth.participant.id)?.experiencePolicy && !resolved.isQuiz && !proactiveIntervention){
+      const selectedTextRequest=resolved.contextRef&&resolved.contextRef.kind!=='unit'&&Boolean(resolved.contextRef.excerpt?.trim()||resolved.contextRef.latex||resolved.contextRef.semanticId);
+      if(learnerEnrollment(auth.participant.id)?.experiencePolicy && !resolved.isQuiz && !proactiveIntervention && !selectedTextRequest){
         const scope=resolved.unit.knowledgePointId||resolved.unit.id;
         const cycle=supportCycles.current(auth.participant.id,scope,db.currentLearningGeneration(auth.participant.id));
         if(!cycle?.confirmedAt || !cycle.content){sendJson(res,409,{ok:false,code:'awaiting_agent_support',message:'本次演练由助手先发起支持；确认需要后，可以在这里继续讨论。'});return;}

@@ -50,7 +50,7 @@
   }
 
   function sync() {
-    const toolbar = shell.querySelector(".workspace-canvas-toolbar");
+    const toolbar = shell.querySelector(".workspace-header-controls");
     const reading = currentReading();
     let link = shell.querySelector(".textbook-reading");
     if (!toolbar || !reading) {

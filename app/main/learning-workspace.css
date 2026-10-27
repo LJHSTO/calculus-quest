@@ -58,6 +58,17 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
   .core-learning-workspace .player-top:has(#workspace-support-notice:not([hidden])) { position:sticky; top:0; z-index:8; background:#fff; }
 }
 .workspace-reading-toggle,.workspace-reading-note{display:none}
+.core-learning-workspace .workspace-header-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
+.core-learning-workspace .player-top{display:flex;flex-wrap:wrap;gap:8px 16px}
+.core-learning-workspace .player-top>div:first-child{flex:1 1 200px;min-width:0}
+.core-learning-workspace .player-top .workspace-canvas-tabs{padding:0;border:0}
+.core-learning-workspace .workspace-header-controls .textbook-reading{color:#5143b4;font-size:13px;text-decoration:none;padding:8px;white-space:nowrap}
+.workspace-header-controls .textbook-reading span{margin-left:6px;color:#65748b;font-size:11px}
+.core-learning-workspace[data-classroom-surface="slide"] .workspace-canvas-toolbar{display:none}
+.pilot-probe-notice button{font-size:12px;padding:7px 10px;min-height:36px}
+#pilot-probe-dialog{width:min(560px,calc(100vw - 24px));max-height:85dvh;overflow:auto;border:1px solid #dce0ed;border-radius:16px;padding:22px;color:#24324a;background:#fff}
+#pilot-probe-dialog::backdrop{background:#25304b55}
+#pilot-probe-dialog .pilot-probe{max-height:none!important;overflow:visible!important;background:transparent;border:0;padding:16px 0 0}
 @media(max-width:650px){
   .core-learning-workspace[data-classroom-surface="slide"] .workspace-reading-toggle{display:block;min-height:40px;border:1px solid #d8d1f7;border-radius:6px;background:#fff;color:#5143b4;padding:7px 10px;font:inherit;font-size:13px}
   .core-learning-workspace:not(.slide-overview) .workspace-reading-note{display:block;font-size:13px;line-height:1.7;color:#556273;margin:8px 0}
@@ -494,4 +505,11 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .core-learning-workspace * { scroll-behavior: auto !important; transition: none !important; }
+}
+
+.pilot-probe-notice[data-fullscreen="true"]{position:fixed;top:8px;right:12px;z-index:10000;background:white;border-radius:8px;box-shadow:0 2px 10px #25304b22}
+.core-learning-workspace .player-top:has(.pilot-probe-notice){position:sticky;top:0;z-index:8;background:#f7f8fc}
+@media(max-width:1180px){
+  .core-learning-workspace .player-top:has(#workspace-support-notice:not([hidden]),.pilot-probe-notice){top:calc(var(--learning-header-height,64px) + 48px);z-index:29}
+  .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target) .player-top:has(#workspace-support-notice:not([hidden]),.pilot-probe-notice){top:0}
 }

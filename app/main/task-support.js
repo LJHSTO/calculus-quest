@@ -84,7 +84,7 @@
     if(next.unitType==="quiz")quizReview(next);
     const handles=next.signedIn&&next.active&&next.taskReady!==false&&(next.unitType==="knowledge"||(next.unitType==="quiz"&&next.quizSubmitted&&Boolean(next.offer||next.prompt||next.check||next.feedback)))&&!next.locked&&next.view.placement==="inline"&&next.view.modality==="tip";
     if(!handles){clear();lastQuizSupport="";return false;}
-    const hasHelp=next.offer||next.prompt||next.check||next.feedback||global.SupportCycleUI?.active(next.supportCycle)||global.SupportCycleUI?.manualOpen(next)||global.PilotStudyUI?.active(next);
+    const hasHelp=next.offer||next.prompt||next.check||next.feedback||global.SupportCycleUI?.active(next.supportCycle)||global.SupportCycleUI?.manualOpen(next);
     if(next.unitType==='knowledge'&&!hasHelp){clear();return true;}
     if(next.unitType==='quiz'){
       const helpKey=`${next.unitId}:${next.offer?.decisionId||next.prompt?.interventionId||next.check?.id||''}`;
@@ -97,7 +97,7 @@
       clearTimeout(exposureTimer);exposureTimer=null;
       key=nextKey;source=el("div",null,"task-support-content");source.append(global.KnowledgeAssistant.createSupportContent());
       if(next.check){message("cq:task-clear");source.prepend(el("p","独立检查中，提示和对话帮助已暂停。","task-assessment-note"));}
-      else if(!global.PilotStudyUI?.active(next)) {
+      else {
         if(next.prompt)draftForm(source,"写下你的想法，再独立检查",`${next.scopeKey}:${next.prompt.id}`);
         if(global.SupportCycleUI?.manualOpen(next)&&!next.offer&&!next.prompt&&!global.SupportCycleUI?.active(next.supportCycle)){
           const question=el("details",null,"task-manual-help");question.append(el("summary","需要一个思考线索"));

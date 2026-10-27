@@ -21,7 +21,7 @@
     scope_preference_off: "学生关闭了本知识点提醒", student_preference_off: "学生关闭了主动提醒",
     cooldown_active: "处于冷却期", policy_thresholds_met: "证据和时机达到策略条件",
     control_condition_suppressed: "当前研究条件不展示主动建议", shadow_mode_suppressed: "仅记录策略，不展示建议" };
-  let snapshot = null, panel, toggle, opened = false, lastKey = "", eventCount = 0;
+  let snapshot = null, panel, toggle, opened = false, lastKey = "", eventCount = 0, decisionReceivedAt='';
   const priorInert = new Map();
   const events = [], decisions = [];
 
@@ -51,6 +51,8 @@
     }
     lastKey=key;
     panel.querySelector("[data-observatory-context]").textContent = `${s.unitLabel || "尚未进入学习"} · ${eventCount} 条本次操作记录`;
+    panel.querySelector('[data-observatory-live]').textContent=latest?`${latest.time} · ${label(latest.type)}${latest.value?' · '+latest.value:''}`:'等待当前课件的操作记录';
+    panel.querySelector('[data-observatory-server]').textContent=decisionReceivedAt?`最近策略返回 ${decisionReceivedAt}；分数仅在服务端重新判断后更新。`:'浏览器操作会即时记录；满足判断条件后才会返回策略结果。';
     panel.querySelector("[data-observatory-body]").innerHTML = [
       card("D1", "学习状态证据", row("最近操作", latest ? label(latest.type) : "尚无操作") + row("当前课件", label(s.sceneType))
         + row("帮助发起方",cycle?.initiation==="agent_initiated_confirmation"?"系统发现候选后主动询问":cycle?"学生主动选择":"尚无")
@@ -78,7 +80,7 @@
         + row("当前主动方式",s.researchControls?.profile?.proactivity==='reactive'?"仅回应主动求助":s.researchControls?.profile?.supportInquiryEnabled?"先询问，确认后支持":s.researchControls?.profile?.authorityLevel==='A2'?"允许直接展示知识线索":"按当前已保存策略")
         + `<small>稍后、换一种帮助、关闭和恢复均使用真实服务端流程。</small>`),
       card("D6", "支架生命周期", row("当前阶段", label(phase)) + row("服务端冷却", seconds ? `${seconds} 秒` : "无有效冷却", true)
-        + row("当前基础间隔",`${s.researchControls?.profile?.cooldownSeconds??'—'} 秒`)
+        + row("已选基础间隔",`${s.researchControls?.profile?.cooldownSeconds??'—'} 秒`)
         + row("询问来源",cycle?.initiation==='agent_initiated_confirmation'?'系统根据作答证据主动询问':cycle?'学生主动报告需要':'尚未发起')
         + row("证据编号",cycle?.inquiry?.sourceIds?.join('、')||'尚无询问证据')
         + row("多目标支持反馈",({helped:"学生自评有帮助",not_helped:"学生自评暂时没帮助",mismatch:"学生认为不匹配",prefer_stop:"学生要求停止"})[cycle?.feedback?.result]||"未反馈")
@@ -111,7 +113,7 @@
     panel=document.createElement("aside");panel.id="proactive-observatory";panel.className="proactive-hud-panel";panel.hidden=true;
     panel.setAttribute("aria-label","六维实时观察台");
     panel.innerHTML=`<header class="proactive-hud-header"><div><strong>六维策略观察台</strong><small data-observatory-context></small></div><button type="button" data-observatory-close aria-label="收起观察台">×</button></header>
-      <p class="observatory-provenance">当前学习记录 · 服务端策略结果与浏览器操作分别标注</p><div class="observatory-scroll"><div class="proactive-hud-body" data-observatory-body></div></div>
+      <div class="observatory-live"><strong data-observatory-live aria-live="polite"></strong><small data-observatory-server></small></div><div class="observatory-scroll"><div class="proactive-hud-body" data-observatory-body></div></div>
       <details class="observatory-history"><summary>最近操作记录</summary><ol data-observatory-history></ol></details>
       <footer><button type="button" data-observatory-export>导出本次观察记录</button><span>用于工程核验，不代表真人学习效果</span></footer>`;
     (document.querySelector(".core-learning-workspace .player-actions") || document.body).append(toggle);
@@ -128,9 +130,10 @@
   }
   global.addEventListener("cq:proactive-state",event=>{
     const next=event.detail;if(!next)return;
-    if(snapshot?.ownerKey !== next.ownerKey){events.length=0;decisions.length=0;eventCount=0;}
+    if(snapshot?.ownerKey !== next.ownerKey||snapshot?.generation!==next.generation){events.length=0;decisions.length=0;eventCount=0;decisionReceivedAt='';}
     snapshot=next;
     if(next.observation?.decisionId && !decisions.some(d=>d.decisionId===next.observation.decisionId)){
+      decisionReceivedAt=new Date().toLocaleTimeString('zh-CN',{hour12:false});
       decisions.push(next.observation);if(decisions.length>100)decisions.shift();
     }
     render();
@@ -139,7 +142,9 @@
     const e=event.detail?.event;if(!e || !snapshot?.signedIn)return;
     if(String(e.eventType).startsWith("proactive_surface_"))return;
     eventCount++;
-    events.push({time:new Date().toLocaleTimeString("zh-CN",{hour12:false}),type:e.eventType,unitId:e.unitId,sceneType:e.sceneType,eventId:e.eventId});
+    const data=e.data||{},v=data.value??data.is_correct??data.correct??data.result?.correct;
+    const detail=[data.parameter||data.parameterName||'',v===undefined?'':typeof v==='boolean'?(v?'正确':'未通过'):String(v)].filter(Boolean).join(' = ');
+    events.push({time:new Date().toLocaleTimeString("zh-CN",{hour12:false}),type:e.eventType,unitId:e.unitId,sceneType:e.sceneType,eventId:e.eventId,value:detail.slice(0,160)});
     if(events.length>100)events.shift();render();
   });
   global.CalculusQuest6DHUD=Object.freeze({get state(){return snapshot;},open:()=>setOpen(true),close:()=>setOpen(false)});

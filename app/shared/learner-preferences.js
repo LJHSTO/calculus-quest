@@ -4,7 +4,7 @@
   else root.LearnerPreferences = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
-  const version = 'learner-preferences-20261027-v5';
+  const version = 'learner-preferences-20261027-v6';
   const dimensions = [
     {id:'D1',title:'怎样判断我可能需要帮助',short:'判断依据',description:'操作少不代表不想学。助手结合回答和任务记录发现线索，判断可能出错。是否先询问，由“主动权”设置决定。',options:[
       ['standard','有明确线索，就考虑帮助','出现有依据的困难线索时，允许助手考虑介入。'],
@@ -16,9 +16,9 @@
       ['hint','先给一个线索','保留更多自己尝试的空间。'],
       ['guided','引导我想几个小步骤','用少量问题或步骤帮助我继续。'],
       ['example','先看一个局部例子','可以展示局部示范，但不会替我提交答案。']],default:'hint',preview:'遇到极限题：可以先提醒你比较左右趋势，也可以逐步引导；局部示例只演示相关的一步。'},
-    {id:'D4',title:'帮助出现后，在哪里阅读',short:'提示呈现',description:'位置和正文展开方式分别选择。这里不决定是否接受帮助；先问你还是直接提供，由下一项“主动权”决定。完整对话始终在侧栏。',options:[
-      ['inline','任务旁 · 正文展开'],['compact','任务旁 · 点击展开正文'],
-      ['sidebar','侧栏 · 正文展开'],['sidebar_compact','侧栏 · 点击展开正文']],default:'inline',preview:'同一条帮助可以放在任务旁或侧栏；两种位置都可以先折叠正文。询问及拒绝入口始终可见，不藏在折叠正文里。'},
+    {id:'D4',title:'帮助放在哪里',short:'提示位置',description:'只选择阅读帮助的位置。是否先征求你的同意，由下一项“主动权”决定。',options:[
+      ['inline','当前任务旁','在课件或题目的独立帮助区阅读。'],['compact','任务旁 · 点击展开正文'],
+      ['sidebar','对话侧栏','通过提醒打开侧栏，集中阅读和继续讨论。'],['sidebar_compact','侧栏 · 点击展开正文']],default:'inline',preview:'同一条帮助可以放在任务旁或侧栏。选择位置不会改变帮助内容，也不会代替你同意接受帮助。'},
     {id:'D5',title:'助手可以主动到哪一步',short:'主动权',description:'所有选择都允许拒绝和暂停。系统不会替你答题，也不会把未回应当成同意。',options:[
       ['ask','先问我，再提供帮助','发现可能困难时先询问，确认后再给对应支持。'],
       ['cue','允许直接显示知识提示','按前面选择的程度直接显示知识提示；其他支持仍由你确认需要。'],
@@ -44,10 +44,11 @@
     D5:{ask:'发现可能困难后先问“这一步需要帮助吗？”。你选择需要后才给支持，也可以拒绝或稍后；没有回应不会视为同意。',cue:'发现有依据的知识困难后，可以直接显示你在“支持内容”中选的线索、小步骤或局部示例，你可以关闭。涉及动机、情绪等支持时仍需你说明需要；不会替你作答。',request:'普通学习中关闭自动询问，仅在你主动向知点提问时回应。此项不作为本轮实验组的常规选择，实验中仍可暂停帮助或退出。'},
     D6:{stop:'看完这次提示后结束本轮帮助，不自动接上第二轮。你可以自己尝试、反馈有没有用。之后出现新线索时，助手再判断是否询问。',followup:'看完提示仍不理解时，你可以反馈“仍有困难”并选择继续，再获得一次补充帮助。补充仍会等待所选间隔和合适的小步结束；没有请求或选择结束时，不会追着询问，也不包含跨天提醒。'}
   };
-  const optionsFor=(id,experimental=false)=>dimensions.find(d=>d.id===id).options.filter(o=>!(experimental&&id==='D5'&&o[0]==='request'));
+  // Retain legacy values for reading historical records; new choices use two locations.
+  const optionsFor=(id,experimental=false)=>dimensions.find(d=>d.id===id).options.filter(o=>!(experimental&&id==='D5'&&o[0]==='request')&&!(id==='D4'&&o[0].includes('compact')));
   const reasonsFor=id=>[...(dimensionReasons[id]||[]),...reasons];
   const previewFor=(id,value)=>previews[id]?.[value]||dimensions.find(d=>d.id===id).preview;
-  const configurationPolicy={version:'boundary-edits-v1',editing:'before_learning_or_after_submitted_formative',experimentalD5:['ask','cue'],defaultRationale:'先确认、少量线索、任务旁呈现；等待任务边界并限制重复询问。默认值是可调整的设计起点，尚未证明最优。',defaultProvenance:'designer_selected_not_empirically_optimal'};
+  const configurationPolicy={version:'context-edits-20261027-v2',editing:'before_learning_or_after_submitted_formative',rehearsalEditing:'knowledge_units_with_assessment_and_support_protection',experimentalD5:['ask','cue'],defaultRationale:'先确认、少量线索、任务旁呈现；等待任务边界并限制重复询问。默认值是可调整的设计起点，尚未证明最优。',defaultProvenance:'designer_selected_not_empirically_optimal'};
   const defaults = () => Object.fromEntries(dimensions.map(d=>[d.id,{value:d.default,reason:'',note:''}]));
   function validate(input,context={}) {
     if(!input || typeof input!=='object' || Array.isArray(input) || Object.keys(input).some(k=>!dimensions.some(d=>d.id===k))) throw new Error('请完成六项学习偏好');

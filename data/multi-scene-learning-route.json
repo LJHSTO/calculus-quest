@@ -404,22 +404,17 @@
                 {
                   "root": "open-maic/函数极限混合探索",
                   "file": "GH-01-K01.html",
-                  "title": "对应关系修理台",
+                  "title": "函数分流站",
                   "type": "game",
                   "widgetType": "game",
                   "sceneOrder": 5,
                   "score": 100,
-                  "description": "用按钮添加或移除一条对应，比较“一对多”与“多对一”。 同一个输入只能有一个输出；不同输入可以有相同输出。",
+                  "description": "连接和拆除运输线路，让每个输入有唯一输出。",
                   "teachingActions": [
                     {
-                      "id": "GH-01-K01-mixed-intro",
+                      "id": "GH-01-K01-game-intro",
                       "type": "speech",
-                      "text": "用按钮添加或移除一条对应，比较“一对多”与“多对一”。 可以先自由探索，再按需要点击“核对我的观察”。"
-                    },
-                    {
-                      "id": "GH-01-K01-mixed-purpose",
-                      "type": "speech",
-                      "text": "同一个输入只能有一个输出；不同输入可以有相同输出。"
+                      "text": "连接和拆除运输线路，让每个输入有唯一输出。 阅读任务说明后动手尝试；遇到反馈时，可以调整方案。"
                     }
                   ]
                 },
@@ -1665,22 +1660,17 @@
                 {
                   "root": "open-maic/函数极限混合探索",
                   "file": "GH-01-K02.html",
-                  "title": "坐标取证台",
+                  "title": "坐标寻宝航线",
                   "type": "game",
                   "widgetType": "game",
                   "sceneOrder": 10,
                   "score": 100,
-                  "description": "选一个输入，在图上找到它的输出。 点 (x, y) 在图像上，当且仅当 y=f(x)。横坐标和纵坐标不能任意调换。",
+                  "description": "在坐标棋盘上寻找补给，并连接函数航线。",
                   "teachingActions": [
                     {
-                      "id": "GH-01-K02-mixed-intro",
+                      "id": "GH-01-K02-game-intro",
                       "type": "speech",
-                      "text": "选一个输入，在图上找到它的输出。 可以先自由探索，再按需要点击“核对我的观察”。"
-                    },
-                    {
-                      "id": "GH-01-K02-mixed-purpose",
-                      "type": "speech",
-                      "text": "点 (x, y) 在图像上，当且仅当 y=f(x)。横坐标和纵坐标不能任意调换。"
+                      "text": "在坐标棋盘上寻找补给，并连接函数航线。 阅读任务说明后动手尝试；遇到反馈时，可以调整方案。"
                     }
                   ]
                 },
@@ -2043,22 +2033,17 @@
                 {
                   "root": "open-maic/函数极限混合探索",
                   "file": "GH-01-K03.html",
-                  "title": "趋势对照窗",
+                  "title": "山地路线拼图",
                   "type": "game",
                   "widgetType": "game",
                   "sceneOrder": 16,
                   "score": 100,
-                  "description": "把整条曲线上下移动，观察变化方向是否改变。 看 x 增大时 y 怎样变化；低于横轴不等于下降。",
+                  "description": "选择坡道拼成指定趋势的山地路线。",
                   "teachingActions": [
                     {
-                      "id": "GH-01-K03-mixed-intro",
+                      "id": "GH-01-K03-game-intro",
                       "type": "speech",
-                      "text": "把整条曲线上下移动，观察变化方向是否改变。 可以先自由探索，再按需要点击“核对我的观察”。"
-                    },
-                    {
-                      "id": "GH-01-K03-mixed-purpose",
-                      "type": "speech",
-                      "text": "看 x 增大时 y 怎样变化；低于横轴不等于下降。"
+                      "text": "选择坡道拼成指定趋势的山地路线。 阅读任务说明后动手尝试；遇到反馈时，可以调整方案。"
                     }
                   ]
                 },
@@ -3028,22 +3013,17 @@
                 {
                   "root": "open-maic/函数极限混合探索",
                   "file": "GH-02-K01.html",
-                  "title": "靠近观察站",
+                  "title": "趋近着陆任务",
                   "type": "game",
                   "widgetType": "game",
                   "sceneOrder": 5,
                   "score": 100,
-                  "description": "从两侧取越来越近的点，再单独改变中心点值。 附近的趋近趋势与中心点的函数值是两件事。有限数表提供线索，不构成一般性证明。",
+                  "description": "缩小两侧距离，让飞船进入越来越窄的目标带。",
                   "teachingActions": [
                     {
-                      "id": "GH-02-K01-mixed-intro",
+                      "id": "GH-02-K01-game-intro",
                       "type": "speech",
-                      "text": "从两侧取越来越近的点，再单独改变中心点值。 可以先自由探索，再按需要点击“核对我的观察”。"
-                    },
-                    {
-                      "id": "GH-02-K01-mixed-purpose",
-                      "type": "speech",
-                      "text": "附近的趋近趋势与中心点的函数值是两件事。有限数表提供线索，不构成一般性证明。"
+                      "text": "缩小两侧距离，让飞船进入越来越窄的目标带。 阅读任务说明后动手尝试；遇到反馈时，可以调整方案。"
                     }
                   ]
                 },
@@ -3574,22 +3554,17 @@
                 {
                   "root": "open-maic/函数极限混合探索",
                   "file": "GH-02-K02.html",
-                  "title": "两侧会合实验室",
+                  "title": "双侧会合港",
                   "type": "game",
                   "widgetType": "game",
                   "sceneOrder": 10,
                   "score": 100,
-                  "description": "在“会合”和“跳跃”之间切换，试试只改点值会怎样。 左右极限相等时双侧极限才存在；改变一个点不能修复两侧的跳跃。",
+                  "description": "沿左右曲线设置泊位，比较两侧的会合高度。",
                   "teachingActions": [
                     {
-                      "id": "GH-02-K02-mixed-intro",
+                      "id": "GH-02-K02-game-intro",
                       "type": "speech",
-                      "text": "在“会合”和“跳跃”之间切换，试试只改点值会怎样。 可以先自由探索，再按需要点击“核对我的观察”。"
-                    },
-                    {
-                      "id": "GH-02-K02-mixed-purpose",
-                      "type": "speech",
-                      "text": "左右极限相等时双侧极限才存在；改变一个点不能修复两侧的跳跃。"
+                      "text": "沿左右曲线设置泊位，比较两侧的会合高度。 阅读任务说明后动手尝试；遇到反馈时，可以调整方案。"
                     }
                   ]
                 },
@@ -4274,22 +4249,17 @@
                 {
                   "root": "open-maic/函数极限混合探索",
                   "file": "GH-02-K03.html",
-                  "title": "缺口修复工作台",
+                  "title": "连续桥维修",
                   "type": "game",
                   "widgetType": "game",
                   "sceneOrder": 16,
                   "score": 100,
-                  "description": "先修复一个点，再比较不能只靠改点修好的情况。 连续需要点值存在、极限存在且相等。局部的点修复不能改变两侧趋势。",
+                  "description": "调整桥身接缝与中心点，让路线连续通过。",
                   "teachingActions": [
                     {
-                      "id": "GH-02-K03-mixed-intro",
+                      "id": "GH-02-K03-game-intro",
                       "type": "speech",
-                      "text": "先修复一个点，再比较不能只靠改点修好的情况。 可以先自由探索，再按需要点击“核对我的观察”。"
-                    },
-                    {
-                      "id": "GH-02-K03-mixed-purpose",
-                      "type": "speech",
-                      "text": "连续需要点值存在、极限存在且相等。局部的点修复不能改变两侧趋势。"
+                      "text": "调整桥身接缝与中心点，让路线连续通过。 阅读任务说明后动手尝试；遇到反馈时，可以调整方案。"
                     }
                   ]
                 },

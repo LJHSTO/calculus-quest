@@ -1,13 +1,14 @@
 (function(global){
   "use strict";
   let data={enrollment:null},snapshot=null,owner="",busy=false,revision=0,dialog=null,message="",preview=null,joinCode="",shown=new Set(),lastState="";
-  const drafts=new Map(),presented=new Set();
+  const drafts=new Map(),presented=new Set(),noticed=new Set();
   let consentAccepted=false,reuseAccepted=false;
+  let probeDialog=null,probeNotice=null,probeDialogId='';
   const el=(tag,value)=>{const n=document.createElement(tag);if(value!==undefined)n.textContent=value;return n;};
   const button=(label,run)=>{const n=el("button",label);n.type="button";n.className="button soft";n.onclick=run;return n;};
-  function update(next){const serialized=JSON.stringify(next);data=next;if(next.enrollment){joinCode='';preview=null;}if(serialized!==lastState){lastState=serialized;revision++;global.KnowledgeAssistant?.refreshSupportSurface();global.LearnerSetup?.setPilot(next);}}
+  function update(next){const serialized=JSON.stringify(next);data=next;if(next.enrollment){joinCode='';preview=null;}if(serialized!==lastState){lastState=serialized;revision++;global.KnowledgeAssistant?.refreshSupportSurface();global.LearnerSetup?.setPilot(next);}syncProbeNotice();}
   async function call(path,body){return global.KnowledgeAssistant.pilotRequest(path,body);}
-  async function run(path,body){if(busy)return;const requestedOwner=owner;busy=true;message="";try{const next=await call(path,body);if(owner===requestedOwner)update(next);}catch(e){if(owner===requestedOwner)message=e.message;}finally{busy=false;revision++;global.KnowledgeAssistant?.refreshSupportSurface();if(dialog?.open&&owner===requestedOwner)showDialog();}}
+  async function run(path,body){if(busy)return;const requestedOwner=owner;busy=true;message="";try{const next=await call(path,body);if(owner===requestedOwner)update(next);}catch(e){if(owner===requestedOwner)message=e.message;}finally{busy=false;revision++;global.KnowledgeAssistant?.refreshSupportSurface();if(dialog?.open&&owner===requestedOwner)showDialog();if(probeDialog?.open&&owner===requestedOwner){const status=probeDialog.querySelector('[role="status"]');if(status)status.textContent=message;}}}
   function active(s){return Boolean(data.enrollment?.status==="active"&&data.pending&&data.pending.scope===s.scopeKey&&s.signedIn&&s.active&&!s.locked&&!s.check&&s.unitType==="knowledge"&&s.supportCycle?.status!=="awaiting_check"&&(presented.has(data.pending.id)||!global.SupportCycleUI?.interactionBusy));}
   function choices(parent,label,options,d,key){const field=el("fieldset"),legend=el("legend",label);field.append(legend);const row=el("div");row.style.cssText="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0";
     for(const [value,name] of options){const b=button(name,()=>{d[key]=value;for(const child of row.children)child.setAttribute("aria-pressed",String(child===b));});b.setAttribute("aria-pressed",String(d[key]===value));row.append(b);}field.append(row);parent.append(field);}
@@ -15,7 +16,7 @@
   function note(parent,d,label){const field=el("label",label),input=el("textarea");input.rows=2;input.maxLength=1200;input.value=d.note||"";input.setAttribute("aria-label",label);input.oninput=()=>d.note=input.value;field.append(input);parent.append(field);}
   function render(s){const p=data.pending,d=drafts.get(p.id)||{need:"",timing:null,disruption:null,reason:"",note:""};drafts.set(p.id,d);
     const root=el("section");root.className="support-cycle pilot-probe";root.dataset.pilotProbe=p.id;root.style.cssText="max-height:340px;overflow:auto;overscroll-behavior:contain";presented.add(p.id);
-    root.append(el("strong","预试记录 · 刚才的学习情况"),el("p","这是一次研究记录，可以跳过。请回想这条询问出现前的情况。"));
+    root.append(el("small","对应学习时刻："+new Date(p.at).toLocaleTimeString("zh-CN",{hour12:false})),el("strong","预试记录 · 刚才的学习情况"),el("p","这是一次研究记录，可以跳过。请回想提醒出现前的情况；记不清时可以选择不确定。"));
     choices(root,"刚才是否需要一点帮助？",[["yes","需要"],["no","不需要"],["uncertain","不确定"],["decline","不愿回答"]],d,"need");
     rating(root,"这个时刻适合出现一句帮助询问吗？1很不合适—5很合适",d,"timing");
     const extra=el("details");extra.append(el("summary","补充困难、打扰程度或拒绝原因（可不填）"));
@@ -25,6 +26,24 @@
     const status=el("p",message);status.setAttribute("role","status");root.append(status);
     root.append(button(busy?"正在保存…":"保存这次记录",()=>{if(!d.need){status.textContent="请选择需要、不需要、不确定或不愿回答。";return;}run("/action",{action:"answer",id:p.id,...d});}),button("跳过，继续学习",()=>run("/action",{action:"skip",id:p.id})),button("退出预试",()=>open()));
     return root;
+  }
+  function openProbe(){
+    if(!snapshot||!active(snapshot))return;
+    if(!probeDialog){probeDialog=el('dialog');probeDialog.id='pilot-probe-dialog';probeDialog.setAttribute('aria-label','本次学习情况记录');document.body.append(probeDialog);}
+    probeDialogId=data.pending.id;
+    probeDialog.replaceChildren(button('返回学习，稍后再填',()=>probeDialog.close()),render(snapshot));
+    if(!probeDialog.open)probeDialog.showModal();
+    requestAnimationFrame(()=>{const node=probeDialog.querySelector('[data-pilot-probe]');if(probeDialog.open&&node&&probeVisible(node)&&!shown.has(probeDialogId)){const id=probeDialogId;shown.add(id);call('/action',{action:'shown',id}).catch(()=>shown.delete(id));}});
+  }
+  function syncProbeNotice(){
+    const available=snapshot&&active(snapshot);
+    if(probeDialog?.open&&(!available||data.pending?.id!==probeDialogId))probeDialog.close();
+    if(!available){probeNotice?.remove();probeNotice=null;return;}
+    if(!probeNotice){probeNotice=el('div');probeNotice.className='pilot-probe-notice';probeNotice.setAttribute('aria-label','可跳过的学习情况记录');
+      probeNotice.append(button('学习情况 · 回答或跳过',openProbe));}
+    const host=document.fullscreenElement||document.querySelector('.core-learning-workspace .player-actions');
+    if(host&&probeNotice.parentElement!==host)host.append(probeNotice);
+    probeNotice.dataset.fullscreen=String(Boolean(document.fullscreenElement));probeNotice.dataset.opportunityId=data.pending.id;if(!noticed.has(data.pending.id)&&!document.hidden&&probeVisible(probeNotice)){noticed.add(data.pending.id);if(typeof trackLearningEvent==='function')trackLearningEvent('pilot_probe_notice_visible',{opportunityId:data.pending.id,windowAt:data.pending.at,source:'client_visible_notification',notQuestionnaireExposure:true},false).catch(()=>{});}
   }
   function showDialog(){
     if(data.enrollment?.studyDesign==='learner-configurable-20-v1'){dialog?.close();global.LearnerSetup?.openPilot(data);return;}
@@ -75,9 +94,13 @@
   function probeVisible(node){
     const r=node.getBoundingClientRect();if(!r.width||!r.height)return false;
     let left=Math.max(0,r.left),top=Math.max(0,r.top),right=Math.min(innerWidth,r.right),bottom=Math.min(innerHeight,r.bottom);
-    for(let p=node.parentElement;p;p=p.parentElement){const style=getComputedStyle(p),box=p.getBoundingClientRect();
+    for(let p=node.parentElement;p;p=p.parentElement){
+      // Root overflow applies to the viewport; modal dialogs escape ancestor clipping.
+      if(p===document.body||p===document.documentElement)break;
+      const style=getComputedStyle(p),box=p.getBoundingClientRect();
       if(/auto|scroll|hidden|clip/.test(style.overflowX)){left=Math.max(left,box.left);right=Math.min(right,box.right);}
       if(/auto|scroll|hidden|clip/.test(style.overflowY)){top=Math.max(top,box.top);bottom=Math.min(bottom,box.bottom);}
+      if(p.matches('dialog:modal'))break;
     }
     return Math.max(0,right-left)*Math.max(0,bottom-top)/(r.width*r.height)>=.5&&node.contains(document.elementFromPoint((left+right)/2,(top+bottom)/2));
   }
@@ -89,7 +112,7 @@
         const changed=data.pending&&(data.pending.scope!==s.scopeKey||s.locked||s.check||s.supportCycle?.status==="awaiting_check"||!s.active||document.hidden);
         if(changed){await run("/action",{action:"context_changed"});return;}
         const next=s.unitId&&s.unitType==="knowledge"?await call("/opportunity",{scope:s.scopeKey,unitId:s.unitId,sceneType:s.sceneType,
-          foreground:!document.hidden,active:s.active,interactionBusy:global.SupportCycleUI?.interactionBusy===true||s.busy||s.supportBusy||dialog?.open===true}):await call("");
+          foreground:!document.hidden,active:s.active,interactionBusy:global.SupportCycleUI?.interactionBusy===true||s.busy||s.supportBusy||dialog?.open===true||probeDialog?.open===true}):await call("");
         if(owner!==requestedOwner)return;update(next);
         global.KnowledgeAssistant?.refreshSupportSurface();
         const p=data.pending;
@@ -105,7 +128,8 @@
   document.getElementById("home-pilot-entry")?.addEventListener("click",open);
   document.getElementById('account-pilot-status')?.addEventListener('click',()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);open();});
   global.addEventListener("cq:proactive-state",async e=>{snapshot=e.detail;const key=snapshot.signedIn?snapshot.ownerKey+":"+snapshot.generation:"";
-    if(key!==owner){owner=key;data={enrollment:null};preview=null;joinCode="";drafts.clear();shown.clear();presented.clear();lastState="";dialog?.close();if(key){try{const next=await call("");if(key===owner)update(next);}catch{}}}
+    if(key!==owner){owner=key;data={enrollment:null};preview=null;joinCode="";drafts.clear();shown.clear();presented.clear();noticed.clear();lastState="";dialog?.close();if(key){try{const next=await call("");if(key===owner)update(next);}catch{}}}syncProbeNotice();
   });
+  document.addEventListener('fullscreenchange',syncProbeNotice);
   setInterval(tick,5000);
 })(window);

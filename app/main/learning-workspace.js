@@ -126,11 +126,11 @@
     pendingSnapshot=next;
     const eligible=next?.signedIn&&next.active&&!next.locked&&next.unitType==='knowledge'&&next.taskReady!==false;
     const cycle=next?.supportCycle;
-    const probe=eligible&&global.PilotStudyUI?.active(next);
+    // Research probes have their own compact entry and dialog.
     const checking=eligible&&(next.check||cycle?.status==='awaiting_check');
     const inquiry=eligible&&cycle?.status==='awaiting_confirmation'&&!global.SupportCycleUI?.deferInquiry(cycle);
     const support=eligible&&!checking&&(next.offer||next.prompt||['offered','engaged'].includes(cycle?.status));
-    const label=probe?'有一条预试记录 · 查看':checking?'继续独立检查':inquiry?'知点想询问你 · 查看':support?'有一条学习支持 · 查看':'';
+    const label=checking?'继续独立检查':inquiry?'知点想询问你 · 查看':support?'有一条学习支持 · 查看':'';
     supportNotice.hidden=!label;
     if(supportNotice.textContent!==label){supportNotice.textContent=label;noticeStatus.textContent=label;}
     updateToolsIndicator();
@@ -521,7 +521,10 @@
     lastUnitId = unit?.id || "";
     lastScene = scene;
     const player = $(".multi-scene-knowledge-player");
-    if (player && !player.querySelector(".workspace-canvas-tabs")) {
+    const titleBar=shell.querySelector('.player-top');
+    const oldHeader=titleBar?.querySelector('.workspace-header-controls');
+    if(!player || !player.querySelector('.workspace-canvas-toolbar'))oldHeader?.remove();
+    if (player && !player.querySelector(".workspace-canvas-toolbar")) {
       const tabs = document.createElement("div");
       tabs.className = "workspace-canvas-tabs";
       tabs.setAttribute("role", "tablist");
@@ -543,13 +546,14 @@
       });
       const toolbar = document.createElement("div");
       toolbar.className = "workspace-canvas-toolbar";
-      toolbar.append(tabs);
+      const headerControls=document.createElement('div');headerControls.className='workspace-header-controls';
+      headerControls.append(tabs);titleBar?.querySelector('.player-actions')?.before(headerControls);
       const readingButton=textElement('button','查看课件整页','workspace-reading-toggle');
       readingButton.type='button';readingButton.setAttribute('aria-pressed','false');
       readingButton.addEventListener('click',()=>{
         const overview=shell.classList.toggle('slide-overview');
         readingButton.textContent=overview?'放大阅读课件':'查看课件整页';readingButton.setAttribute('aria-pressed',String(overview));
-      });toolbar.append(readingButton);
+      });headerControls.append(readingButton);
       const slidePane=player.querySelector('.multi-scene-slide-panel');
       const readingNote=textElement('p','课件已放大，可左右滚动阅读；也可以横屏学习。','workspace-reading-note');
       slidePane.prepend(readingNote);

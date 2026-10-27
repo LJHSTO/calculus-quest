@@ -42,6 +42,8 @@
    its text into narrow columns in the assistant sidebar. */
 .knowledge-message > .knowledge-proactive-evidence{display:block}
 /* Keep scene names readable when the display selector shares a narrow canvas. */
+.observatory-live{padding:12px 20px;background:#f2f6ff;border-bottom:1px solid #e0e5ef;display:grid;gap:5px;flex:none;font-size:13px;overflow-wrap:anywhere}
+.observatory-live small{font-size:11px;color:#61718b}
 .core-learning-workspace .workspace-canvas-toolbar{flex-wrap:wrap;gap:8px}
 .core-learning-workspace .workspace-canvas-toolbar>.agentic-knowledge-choice{flex:1 0 280px}
 .core-learning-workspace .workspace-canvas-toolbar .multi-scene-scene-option{white-space:nowrap}

@@ -344,7 +344,12 @@ async function exerciseBasicControls(frame, label) {
       await range.evaluate((element, marker) => {
         element.setAttribute("data-cq-browser-range", marker);
       }, rangeMarker);
-      range = frame.locator(`[data-cq-browser-range="${rangeMarker}"]`);
+      // A stateful resource may recreate the control after a committed move.
+      // Follow its unique accessible name so the value assertion checks the
+      // replacement control, instead of waiting for an obsolete DOM marker.
+      const rangeLabel=await range.getAttribute('aria-label');
+      const namedRange=rangeLabel?frame.getByLabel(rangeLabel,{exact:true}):null;
+      range = namedRange&&await namedRange.count()===1?namedRange:frame.locator(`[data-cq-browser-range="${rangeMarker}"]`);
       await range.scrollIntoViewIfNeeded();
       const box = await waitForUsableBox(range, { minWidth: 40, minHeight: 4 });
       assert.ok(box, `${label}: range control has no layout box`);
@@ -449,14 +454,14 @@ async function exerciseBasicControls(frame, label) {
     }
   }
 
-  const startPattern = /开始|启动|进入|继续|体验|挑战|演示|下一步|展开|加一条|取 x=|靠近一步|换成|start|play/i;
+  const startPattern = /开始|启动|进入|继续|体验|挑战|演示|下一步|展开|加一条|取 x=|靠近一步|换成|发车|通行|着陆|入港|过桥|start|play/i;
   const buttons = frame.locator("button:visible, [role='button']:visible");
   const buttonCount = Math.min(await buttons.count(), 20);
   const coveredControls = [];
   for (let index = 0; index < buttonCount; index += 1) {
     let button = buttons.nth(index);
     const text = (await button.innerText().catch(() => "")).trim();
-    if (!startPattern.test(text)) continue;
+    if (!startPattern.test(text) && !await button.evaluate(n=>n.hasAttribute("data-link")||n.hasAttribute("data-point"))) continue;
     if (!await button.isEnabled().catch(() => false)) continue;
     // :visible is a live list. Pin this node before scrolling or waiting: a
     // lesson animation can reveal another control and shift every nth index.
@@ -526,6 +531,7 @@ function resourceLabel(surface, entry, candidate) {
 
 async function auditResource(surface, entry, candidate, check) {
   const label = resourceLabel(surface, entry, candidate);
+  if (process.env.COURSEWARE_BROWSER_TRACE === '1') console.log(`开始检查 ${label}`);
   try {
     return await check(label);
   } catch (error) {
