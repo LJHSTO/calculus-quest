@@ -60,10 +60,11 @@
       dialog.append(el("p","退出会停止预试抽样，正常学习仍可继续。数据处理请求将交由研究负责人按同意书处理。"),el("label","退出后的数据处理请求（可不填）"),request,button("确认退出预试",()=>run("/action",{action:"withdraw",dataRequest:request.value})));
     } else {
       if(data.enrollment)dialog.append(el("p",data.enrollment.status==="withdrawn"?"你已退出预试。":"本次预试已结束。"));
-      dialog.append(el("p","有加入码：输入后阅读说明，确认加入，再完成问卷、前测和学习方式设置。没有加入码：可选择普通学习。"));
-      const label=el("label","请输入工作人员提供的加入码"),input=el("input");input.value=joinCode;input.autocomplete="off";input.setAttribute("aria-label","预试加入码");input.oninput=()=>{joinCode=input.value;preview=null;consentAccepted=false;reuseAccepted=false;};label.append(input);dialog.append(label);
-      dialog.append(button("阅读预试说明",async()=>{try{preview=await call("/preview",{joinCode});message="";consentAccepted=false;reuseAccepted=false;}catch(e){preview=null;message=e.message;}showDialog();dialog.scrollTop=0;}));
-      if(!preview)dialog.append(button("没有加入码，进入普通学习",async()=>{const r=await fetch("api/learning/entry",{method:"POST",headers:{Authorization:`Bearer ${state.authToken}`,"Content-Type":"application/json"},body:JSON.stringify({mode:"ordinary"})});if(!r.ok){message="暂时未能保存，请重试。";showDialog();return;}dialog.close();await global.LearnerSetup.resumePreparation();}));
+      dialog.append(el("p","先确认你有没有加入码。有码：输入后继续，阅读说明再加入。没有码：走下面的普通学习，不参加这次预试。"));
+      const withCode=el("section");withCode.className="pilot-entry-with-code";withCode.append(el("h3","我有加入码"));
+      const label=el("label","请输入工作人员提供的加入码"),input=el("input");input.value=joinCode;input.autocomplete="off";input.setAttribute("aria-label","预试加入码");input.oninput=()=>{joinCode=input.value;preview=null;consentAccepted=false;reuseAccepted=false;};label.append(input);withCode.append(label);
+      const read=button("用此加入码继续",async()=>{if(!String(joinCode||"").trim()){preview=null;message="请先输入加入码，再继续。";showDialog();return;}try{preview=await call("/preview",{joinCode});message="";consentAccepted=false;reuseAccepted=false;}catch(e){preview=null;message=e.message;}showDialog();dialog.scrollTop=0;});read.classList.add("pilot-entry-primary");withCode.append(read);dialog.append(withCode);
+      if(!preview){const without=el("section");without.className="pilot-entry-without-code";without.append(el("h3","我没有加入码"),el("p","不参加本次预试，按普通学习继续。"));const ordinary=button("进入普通学习",async()=>{const r=await fetch("api/learning/entry",{method:"POST",headers:{Authorization:`Bearer ${state.authToken}`,"Content-Type":"application/json"},body:JSON.stringify({mode:"ordinary"})});if(!r.ok){message="暂时未能保存，请重试。";showDialog();return;}dialog.close();await global.LearnerSetup.resumePreparation();});ordinary.classList.add("pilot-entry-secondary");without.append(ordinary);dialog.append(without);}
       if(preview){
         dialog.append(el('h3',preview.title));
         if(preview.useMode==='internal_rehearsal'){const notice=el('p','当前是流程演练版，只供团队检查使用，尚未开放正式学生预试。');notice.className='pilot-consent-notice';dialog.append(notice);}

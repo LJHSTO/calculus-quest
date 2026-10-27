@@ -25,6 +25,7 @@
     if(measuring){global.LessonPlayback?.pause?.();if(typeof pauseNarration==='function')pauseNarration();global.KnowledgeAssistant?.close();}
     global.dispatchEvent(new CustomEvent('cq:common-learning-change'));render();
     if(humanActive())queueMicrotask(fixedHumanResource);
+    queueMicrotask(reflectLessonProgress);
   }
   async function transact(path,body){
     if(busy)return;const activeOwner=owner;busy=true;lastError="";changed();
@@ -34,6 +35,37 @@
   }
   const act=(action,extra={})=>transact('/action',{action,fingerprint:data.protocol.fingerprint,revision:data.session.revision,...extra});
   function button(label,fn){const b=node('button',label);b.type='button';b.disabled=busy;b.onclick=fn;return b;}
+  function probeDraftId(probeId){return `common-probe:${probeId}`;}
+  function readProbeDraft(probeId){
+    const value=typeof readQuizDraft==="function"?readQuizDraft("common-learning",probeDraftId(probeId),null):null;
+    return value&&typeof value==="object"?value:{};
+  }
+  function writeProbeDraft(probeId,draft){if(typeof rememberQuizDraft==="function")rememberQuizDraft("common-learning",probeDraftId(probeId),draft);}
+  function interactiveSceneReady(){
+    const surface=document.querySelector(".core-learning-workspace")?.dataset.classroomSurface;
+    return surface==="interactive"&&Boolean(document.querySelector(".multi-scene-scene-panel:not([hidden]) iframe[data-courseware-frame]"));
+  }
+  let reflectedKey="";
+  function reflectLessonProgress(){
+    const id=unit(),s=data?.session;
+    if(!id||!s||s.knowledgePointId!==id||!(s.completedPoints||[]).includes(id))return;
+    if((typeof state==="undefined"?[]:state.completed||[]).includes(id))return;
+    if(typeof currentUnitId==="undefined"||currentUnitId!==id||typeof completeAndAdvanceCurrentUnit!=="function")return;
+    const key=`${id}:${s.revision}`;if(reflectedKey===key)return;reflectedKey=key;
+    Promise.resolve(completeAndAdvanceCurrentUnit(null,{allowWithoutScene:true})).catch(()=>{});
+  }
+  function withdrawControl(label){
+    const wrap=node("div");wrap.className="common-learning-exit";
+    let armed=false;
+    const confirm=button(label,()=>{
+      if(!armed){armed=true;confirm.textContent="确认退出？这会结束本轮全部验证";cancel.hidden=false;return;}
+      act("withdraw");
+    });
+    confirm.classList.add("common-learning-exit-button");
+    const cancel=button("取消",()=>{armed=false;confirm.textContent=label;cancel.hidden=true;});
+    cancel.hidden=true;cancel.classList.add("common-learning-exit-cancel");
+    wrap.append(confirm,cancel);return wrap;
+  }
   function fieldset(parent,label,name,options){const f=node('fieldset');f.append(node('legend',label));for(const [value,text]of options){const l=node('label'),r=node('input');r.type='radio';r.name=name;r.value=value;l.append(r,node('span',text));f.append(l);}parent.append(f);return f;}
   function render(){
     const player=document.querySelector('#lesson-player');if(!player)return;
@@ -55,7 +87,7 @@
     if(s.stage==='between_units'){
       host.append(node('p','上一个学习单元已完成。开始当前知识点的判断与验证。'),button('开始本知识点',()=>act('select_unit',{knowledgePointId:id})));return;
     }
-    if(s.knowledgePointId!==id){host.append(node('p',`还有一段“${s.title}”的验证未完成。独立作答期间，学习提示保持关闭。`),button('回到当前验证',()=>{const card=document.querySelector(`.lesson-card[data-unit="${s.knowledgePointId}"]`);const details=card?.closest('details');if(details)details.open=true;card?.click();}),button('退出本次流程',()=>act('withdraw')));return;}
+    if(s.knowledgePointId!==id){host.append(node('p',`还有一段“${s.title}”的验证未完成。独立作答期间，学习提示保持关闭。`),button('回到当前验证',()=>{const card=document.querySelector(`.lesson-card[data-unit="${s.knowledgePointId}"]`);const details=card?.closest('details');if(details)details.open=true;card?.click();}),withdrawControl('退出本次流程'));return;}
     if(s.probe){
       host.append(node('p',s.stage==='t0'?'先独立判断：当前不展示提示和得分。':s.stage==='t1'?'观察后换一道题，独立判断。':'提示已关闭，请独立检验能否迁移。'));
       const form=node('form');form.append(node('p',s.probe.prompt));
@@ -67,9 +99,25 @@
       input.addEventListener('input',()=>{missing.disabled=Boolean(input.value.trim());if(missing.disabled)missing.value='';});
       fieldset(form,'你有多大把握？（可不选）','confidence',[['0','没把握'],['1','有一些把握'],['2','很有把握']]);
       const submit=node('button','提交判断');submit.type='submit';submit.disabled=busy;form.append(submit);
-      form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),response=f.get('response');if(!response)return;act('answer',{probeId:s.probe.id,response,explanation:f.get('explanation'),explanationMissingReason:f.get('explanationMissingReason')||null,confidence:f.has('confidence')?Number(f.get('confidence')):null});};host.append(form);
+      const status=node('p','');status.setAttribute('role','alert');form.append(status);
+      const draft=readProbeDraft(s.probe.id);
+      const savedResponse=["0","1","2","unknown","skip"].includes(draft.response)?form.querySelector(`input[name=response][value="${draft.response}"]`):null;
+      if(savedResponse)savedResponse.checked=true;
+      if(draft.explanation){input.value=draft.explanation;missing.value="";}
+      else if(["cannot_explain","prefer_not_to_answer"].includes(draft.explanationMissingReason))missing.value=draft.explanationMissingReason;
+      missing.disabled=Boolean(input.value.trim());
+      const savedConfidence=["0","1","2"].includes(String(draft.confidence))?form.querySelector(`input[name=confidence][value="${draft.confidence}"]`):null;
+      if(savedConfidence)savedConfidence.checked=true;
+      const remember=()=>{const f=new FormData(form);writeProbeDraft(s.probe.id,{response:f.get('response')||'',explanation:f.get('explanation')||'',explanationMissingReason:f.get('explanationMissingReason')||'',confidence:f.get('confidence')||''});};
+      form.addEventListener('change',remember);input.addEventListener('input',remember);
+      form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),response=f.get('response');remember();if(!response){status.textContent='请先选择本题判断（某个选项、我不会或跳过），再提交。';return;}act('answer',{probeId:s.probe.id,response,explanation:f.get('explanation'),explanationMissingReason:f.get('explanationMissingReason')||null,confidence:f.has('confidence')?Number(f.get('confidence')):null});};host.append(form);
     }else if(s.stage==='explore'){
-      host.append(node('p',s.practicePrompt),node('p','试着构造一个支持你判断的例子，再找一个可能推翻它的例子。动画、旋转和游戏只辅助观察。'));
+      if(!interactiveSceneReady()){
+        host.append(node('p','当前是讲解页，这里不能填写输入和输出。请先打开「互动探索」，选择一种场景，再按下面的任务观察。'));
+        host.append(button('去选择互动场景',()=>{global.LearningWorkspace?.showInteractive?.();if(typeof focusKnowledgeSceneChoicePanel==='function')focusKnowledgeSceneChoicePanel();lastRender='';render();}));
+        const task=node('p');task.append(node('strong','选好场景后的任务：'),document.createTextNode(s.practicePrompt));host.append(task);
+      }else host.append(node('p',s.practicePrompt));
+      host.append(node('p','试着构造一个支持你判断的例子，再找一个可能推翻它的例子。动画、旋转和游戏只辅助观察。'));
       if(s.help)host.append(node('p',s.help.text),button('收起线索',()=>act('dismiss_manual_help')));
       const next=button('观察完成，独立再试',()=>act('continue')),remaining=Date.parse(s.exploreReadyAt)-Date.now();
       if(remaining>0){next.disabled=true;host.append(node('p','请先观察并尝试课件，稍后可以继续。'));clearTimeout(exploreTimer);exploreTimer=setTimeout(()=>{lastRender='';render();},remaining+50);}
@@ -83,11 +131,16 @@
       if(!s.exposureRecorded){exposureObserver=new IntersectionObserver(entries=>{clearTimeout(exposure);if(entries[0]?.intersectionRatio>=.5&&!document.hidden)exposure=setTimeout(()=>{exposureObserver?.disconnect();if(data?.session?.stage==='support'&&!document.hidden)act('exposure',{fraction:.5,visibleDurationMs:1000});},1000);},{threshold:[.5]});exposureObserver.observe(help);}
     }else if(s.stage==='survey'){
       if(s.feedback)host.append(node('p',s.feedback.text),node('p','选择题由规则判分；文字解释留待复核，不把猜对等同于稳定掌握。'));
-      const form=node('form');for(const [name,label] of [['interruption','刚才的帮助打断了我的思路'],['control','我能够决定接受或停止帮助'],['effort','理解刚才的内容需要较多脑力']])fieldset(form,label,name,[[1,'1 完全不同意'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[7,'7 完全同意'],['skip','跳过 / 不适用']]);
-      const b=node('button','保存并完成本知识点');b.type='submit';b.disabled=busy;form.append(b);form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),answers={};for(const name of ['interruption','control','effort']){const v=f.get(name);if(v===null)return;answers[name]=v==='skip'?null:Number(v);}act('survey',{answers});};host.append(form);
+      const form=node('form');
+      form.append(node('p','下面三题都要选。没有出现提示，或你觉得题干不适合这次情况时，选「跳过 / 不适用」。'));
+      const surveyItems=[['interruption','刚才的提示打断了我的思路（系统弹出或我自己点开都算）'],['control','我能够决定接受或停止帮助'],['effort','理解刚才的内容需要较多脑力']];
+      for(const [name,label] of surveyItems)fieldset(form,label,name,[[1,'1 完全不同意'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[7,'7 完全同意'],['skip','跳过 / 不适用']]);
+      const b=node('button','保存并完成本知识点');b.type='submit';b.disabled=busy;form.append(b);
+      const status=node('p','');status.setAttribute('role','alert');form.append(status);
+      form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),answers={},missing=[];for(const [name,label] of surveyItems){const v=f.get(name);if(v===null){missing.push(label);continue;}answers[name]=v==='skip'?null:Number(v);}if(missing.length){status.textContent=`还有未作答：${missing.join("、")}。每题请选择 1–7，或选「跳过 / 不适用」。`;return;}act('survey',{answers});};host.append(form);
       host.append(button('跳过问卷并完成',()=>act('survey',{answers:{interruption:null,control:null,effort:null}})));
     }
-    host.append(button(data.protocol.consent?'退出研究':'退出本轮全部验证',()=>act('withdraw')));
+    host.append(withdrawControl(data.protocol.consent?'退出研究':'退出本轮全部验证'));
   }
   async function sync(){
     const next=token();if(next!==owner){owner=next;data=null;busy=false;lastError="";lastRender="";request++;const serial=request;changed();

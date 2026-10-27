@@ -7,6 +7,11 @@
 .pilot-consent-notice{background:#fff5df;color:#6b4e12;border-radius:10px;padding:12px}
 .pilot-consent-details{margin:16px 0;padding:12px;background:#f5f7fb;border-radius:10px}.pilot-consent-details summary{cursor:pointer}.pilot-consent-details h4{margin-top:12px!important}
 .pilot-consent-footer{margin-top:18px;padding:16px;border-radius:12px;background:#f1f5fc}.pilot-consent-footer button{background:#5746bd!important;color:white!important;min-height:44px}
+.pilot-entry-with-code,.pilot-entry-without-code{margin:16px 0;padding:14px 16px;border:1px solid #e5eaf1;border-radius:12px}
+.pilot-entry-with-code h3,.pilot-entry-without-code h3{margin:0 0 8px;font-size:18px}
+.pilot-entry-without-code{background:#f7f8fb}
+.pilot-entry-primary{background:#5746bd!important;color:#fff!important}
+.pilot-entry-secondary{background:transparent!important;color:#3d4d66!important}
 #pilot-dialog [role=alert]{color:#a52b3e;font-weight:600}#pilot-dialog [role=alert]:empty{display:none}
 #pilot-dialog button{min-height:44px;max-width:100%;white-space:normal}#pilot-dialog :focus-visible{outline:3px solid #8d83e8;outline-offset:2px}
 @media(max-width:600px){#pilot-dialog{padding:18px!important;max-height:calc(100dvh - 20px)!important}#pilot-dialog h2{font-size:21px}}

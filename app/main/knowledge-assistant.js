@@ -391,7 +391,7 @@ const proactiveJustificationDrafts = new Map();
       <div class="knowledge-outcomes-dialog" id="knowledge-outcomes-dialog" tabindex="-1">
         <header>
           <div>
-            <small>本章研究测量</small>
+            <small>本章课后检测</small>
             <strong id="knowledge-outcomes-title">保持测量</strong>
           </div>
           <button type="button" data-knowledge-outcomes-close aria-label="关闭学习结果记录">×</button>
@@ -1652,7 +1652,8 @@ const proactiveJustificationDrafts = new Map();
       const copy = document.createElement("span");
       copy.className = "lesson-card-body";
       const title = document.createElement("strong");
-      title.textContent = stage.label || stage.id;
+      const studentTitle = { retention: "过几天再做一次", transfer: "换个情境再做一次" }[stage.id] || "";
+      title.textContent = studentTitle ? `${studentTitle} · ${stage.label || stage.id}` : (stage.label || stage.id);
       const purpose = document.createElement("small");
       purpose.textContent = stage.purpose || "独立完成本阶段任务";
       copy.append(title, purpose);

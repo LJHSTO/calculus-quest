@@ -309,7 +309,7 @@ function focusQuizSubmitPanel(unit) {
   return true;
 }
 
-async function completeAndAdvanceCurrentUnit(event) {
+async function completeAndAdvanceCurrentUnit(event, options = {}) {
   event?.preventDefault?.();
   const unit = getUnit();
   if (!unit) return false;
@@ -333,7 +333,7 @@ async function completeAndAdvanceCurrentUnit(event) {
     return returnToQuizFromCourseware(unit.id);
   }
 
-  if (unit.type === "knowledge" && !selectedKnowledgeSceneType(unit)) {
+  if (unit.type === "knowledge" && !options.allowWithoutScene && !selectedKnowledgeSceneType(unit)) {
     addLog("请先选择一个互动场景，再完成本节。");
     if (typeof focusKnowledgeSceneChoicePanel === "function") focusKnowledgeSceneChoicePanel();
     return false;

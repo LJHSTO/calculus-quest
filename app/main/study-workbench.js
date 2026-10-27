@@ -144,7 +144,7 @@
     } else if (s.stage === "survey") {
       stage.append(node("p", "以下问题用于检查问卷流程，可以跳过。1表示完全不同意，7表示完全同意。", "small"));
       const form = node("div");
-      for (const [key, label] of [["interruption", "刚才系统主动提供的帮助打断了我的解题思路。"], ["control", "我能够决定是否接受和停止系统的帮助。"], ["effort", "理解刚才的学习内容需要我付出较多脑力。"]]) {
+      for (const [key, label] of [["interruption", "刚才的提示打断了我的思路（系统弹出或我自己点开都算；没有提示请选跳过）。"], ["control", "我能够决定是否接受和停止系统的帮助。"], ["effort", "理解刚才的学习内容需要我付出较多脑力。"]]) {
         const field = node("fieldset", "", "survey-item"); field.append(node("legend", label)); const ratings = node("div", "", "ratings");
         for (const value of [1, 2, 3, 4, 5, 6, 7, "skip"]) {
           const option = node("label"), input = node("input"); input.type = "radio"; input.name = key; input.value = value;

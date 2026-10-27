@@ -46,8 +46,11 @@ async function startPreview(options = {}) {
   const publish = (reused) => {
     persist();
     const info = { url, pid: state.pid, directory: dir, persistent: !isolated, reused,
+      adminTokenPersisted: !isolated,
       mode: demonstrateProactive ? "单臂工程演示" : "双臂工程预览",
-      warning: "本地模拟模式，账号和学习记录持续保留；不用于正式学生实验。" };
+      warning: isolated
+        ? "隔离预览：账号、学习记录和管理令牌只活在本次临时进程里，不会写入固定入口文件，进程结束后不保留。不用于正式学生实验。"
+        : "本地模拟模式：账号、学习记录和管理令牌会写入 output/函数极限固定入口.json 并持续保留。不用于正式学生实验。" };
     if (!isolated && !options.stateFile) fs.writeFileSync(publicFile, JSON.stringify(info, null, 2), "utf8");
     return info;
   };

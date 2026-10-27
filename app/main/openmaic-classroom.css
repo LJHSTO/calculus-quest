@@ -420,6 +420,9 @@
 .common-learning-task button:disabled{opacity:.55;cursor:wait}
 .common-learning-task input:focus-visible,.common-learning-task button:focus-visible,.common-learning-task textarea:focus-visible{outline:3px solid #8265cb;outline-offset:2px}
 .common-task-hint{padding:16px;background:#eef6f0;border-left:3px solid #4b8868}
+.common-learning-exit{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;padding-top:14px;border-top:1px dashed #c5d5cc}
+.common-learning-task .common-learning-exit-button{margin:0;background:transparent;color:#8a4b3a;border-color:#e4cfc6}
+.common-learning-task .common-learning-exit-cancel{margin:0;background:#fff}
 .common-probe-active .multi-scene-knowledge-resource,.common-probe-active .task-support-panel{display:none!important}
 @media(max-width:700px){.common-learning-task{padding:16px}.common-learning-task fieldset{display:block}.common-learning-task button{max-width:100%}}
 /* Same support text, alternate D4 forms; all remain in document flow. */
