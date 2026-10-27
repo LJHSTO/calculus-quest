@@ -4,7 +4,7 @@
   else root.LearnerPreferences = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
-  const version = 'learner-preferences-20261027-v4';
+  const version = 'learner-preferences-20261027-v5';
   const dimensions = [
     {id:'D1',title:'怎样判断我可能需要帮助',short:'判断依据',description:'操作少不代表不想学。助手结合回答和任务记录发现线索，判断可能出错。是否先询问，由“主动权”设置决定。',options:[
       ['standard','有明确线索，就考虑帮助','出现有依据的困难线索时，允许助手考虑介入。'],
@@ -16,10 +16,9 @@
       ['hint','先给一个线索','保留更多自己尝试的空间。'],
       ['guided','引导我想几个小步骤','用少量问题或步骤帮助我继续。'],
       ['example','先看一个局部例子','可以展示局部示范，但不会替我提交答案。']],default:'hint',preview:'遇到极限题：可以先提醒你比较左右趋势，也可以逐步引导；局部示例只演示相关的一步。'},
-    {id:'D4',title:'帮助怎样显示',short:'提示呈现',description:'选择的是提示位置和展开方式。课件与答题区始终保留操作空间，完整对话仍在侧栏。',options:[
-      ['inline','放在当前任务旁','任务内的独立提示区域，不覆盖题目或图形。'],
-      ['compact','先显示可展开的小提示','你点击后再阅读正文。'],
-      ['sidebar','放在对话侧栏','在侧栏阅读帮助，课件保留在主区域。']],default:'inline',preview:'同一条“先比较左右趋势”的提示，可以显示在任务旁，也可以先折叠，或放到侧栏。'},
+    {id:'D4',title:'帮助出现后，在哪里阅读',short:'提示呈现',description:'位置和正文展开方式分别选择。这里不决定是否接受帮助；先问你还是直接提供，由下一项“主动权”决定。完整对话始终在侧栏。',options:[
+      ['inline','任务旁 · 正文展开'],['compact','任务旁 · 点击展开正文'],
+      ['sidebar','侧栏 · 正文展开'],['sidebar_compact','侧栏 · 点击展开正文']],default:'inline',preview:'同一条帮助可以放在任务旁或侧栏；两种位置都可以先折叠正文。询问及拒绝入口始终可见，不藏在折叠正文里。'},
     {id:'D5',title:'助手可以主动到哪一步',short:'主动权',description:'所有选择都允许拒绝和暂停。系统不会替你答题，也不会把未回应当成同意。',options:[
       ['ask','先问我，再提供帮助','发现可能困难时先询问，确认后再给对应支持。'],
       ['cue','允许直接显示知识提示','按前面选择的程度直接显示知识提示；其他支持仍由你确认需要。'],
@@ -66,7 +65,7 @@
     Object.assign(p,a.D1.value==='cautious'?{helpNeed:.8,minimumEvidenceFamilies:2}:{helpNeed:.7,minimumEvidenceFamilies:1});
     p.boundaryOnly=true;p.cooldownSeconds=a.D2.value==='quiet'?180:60;p.interruptibility=.75;p.uncertainty=.3;
     Object.assign(p,({hint:{initialSupportLevel:'L2',maxSupportLevel:'L3',supportDose:'brief'},guided:{initialSupportLevel:'L3',maxSupportLevel:'L5',supportDose:'guided'},example:{initialSupportLevel:'L5',maxSupportLevel:'L5',supportDose:'guided'}})[a.D3.value]);
-    p.placement=a.D4.value==='sidebar'?'sidebar':'inline';p.presentationFormat=a.D4.value==='compact'?'disclosure':'plain';
+    const display=displayParts(a.D4.value);p.placement=display.placement;p.presentationFormat=display.format;
     p.authorityLevel=a.D5.value==='cue'?'A2':'A1';p.supportInquiryEnabled=a.D5.value==='ask';if(a.D5.value==='request')p.proactivity='reactive';
     p.supportFollowups=a.D6.value==='followup'?1:0;p.maxEscalations=a.D6.value==='followup'?1:0;
     return p;
@@ -92,5 +91,7 @@
   surveys.final=[...needsItems,...surveys.final.filter(([k])=>!['agency','efficacy'].includes(k))];
   const instrument={version:'pilot-questionnaire-20261025-v2',source:'https://selfdeterminationtheory.org/wp-content/uploads/2022/08/BPNSFS_Complete_2022.pdf',sourcePages:'29–30',status:'Chinese_source_task_instruction_adaptation_not_revalidated',instructions:'请只回想刚才这一次学习，判断下面的描述有多符合你的实际感受。1＝完全不符合，5＝完全符合；可选择不愿回答。',groups:{autonomySatisfaction:['autonomy1','autonomy7','autonomy13','autonomy19'],competenceSatisfaction:['competence5','competence11','competence17','competence23']},interpretation:'自主需求满足不等于完整 agency；能力需求满足不等于任务自我效能。其他单项及设置问卷为自编预试条目。'};
   function scoreSurvey(input){return Object.fromEntries(Object.entries(instrument.groups).map(([k,ids])=>{const complete=ids.every(id=>Number.isInteger(input?.[id])&&input[id]>=1&&input[id]<=5);return [k,{mean:complete?ids.reduce((s,id)=>s+input[id],0)/ids.length:null,answered:ids.filter(id=>Number.isInteger(input?.[id])).length,total:ids.length,missingRule:'all_four_required_no_imputation'}];}));}
-  return {version,dimensions,reasons,defaults,validate,profile,surveys,instrument,scoreSurvey,optionsFor,reasonsFor,previewFor,configurationPolicy};
+  function displayParts(value){return {placement:value.startsWith('sidebar')?'sidebar':'inline',format:value.includes('compact')?'disclosure':'plain'};}
+  function displayValue(placement,format){return placement==='sidebar'?(format==='disclosure'?'sidebar_compact':'sidebar'):(format==='disclosure'?'compact':'inline');}
+  return {version,dimensions,reasons,defaults,validate,profile,surveys,instrument,scoreSurvey,optionsFor,reasonsFor,previewFor,configurationPolicy,displayParts,displayValue};
 });

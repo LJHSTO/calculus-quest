@@ -72,20 +72,20 @@ const learnerDesign = require('./lib/pilot-study').LEARNER_DESIGN;
 function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.studyDesign===learnerDesign?e:null;}
 function ordinaryPreparation(user){
   const chapterId=proactiveStudyConfig.chapterId,questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===chapterId)?.flow?.preQuiz?.questions||[];
-  return require('./lib/learner-journey').preparation({required:process.env.LEARNER_ONBOARDING_REQUIRED==='true'&&researchControlStore.enabled,enrollment:learnerEnrollment(user),chapterId,questionIds:questions.map(q=>q.id),results:db.getQuizResultsByUser(user),record:learnerPreferences.read(user),generation:db.currentLearningGeneration(user)});
+  return require('./lib/learner-journey').preparation({required:process.env.LEARNER_ONBOARDING_REQUIRED==='true'&&researchControlStore.enabled,enrollment:learnerEnrollment(user),chapterId,questionIds:questions.map(q=>q.id),results:db.getQuizResultsByUser(user),record:learnerPreferences.read(user),generation:db.currentLearningGeneration(user),entry:learnerPreferences.readEntry(user),entryRequired:true});
 }
 function pilotAdmission(user,version){
   const questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===proactiveStudyConfig.chapterId)?.flow?.preQuiz?.questions||[];
-  return require('./lib/learner-journey').admission(db.getQuizResultsByUser(user).filter(q=>q.chapter_id===proactiveStudyConfig.chapterId),questions.map(q=>q.id),version.allowPretestReuse===true);
+  return require('./lib/learner-journey').admission(db.getQuizResultsByUser(user).filter(q=>q.chapter_id===proactiveStudyConfig.chapterId),questions.map(q=>q.id),version.allowPretestReuse===true,version.useMode==='internal_rehearsal');
 }
 function learnerStudyBlocked(user){const e=learnerEnrollment(user);return Boolean(e&&(e.status!=='active'||e.generation!==db.currentLearningGeneration(user)||e.stage!=='ready'||e.arm==='control'));}
 function rejectUnpreparedLearner(res,user,assessment){
   const e=learnerEnrollment(user),p=ordinaryPreparation(user),chapter=proactiveStudyConfig.chapterId;
   const pretest=assessment?.phase==='pre'&&assessment?.chapterId===chapter&&assessment?.unitId===chapter+'-pre';
-  const ordinaryBlocked=p.required&&p.stage!=='ready'&&!pretest&&(!assessment?.chapterId||assessment.chapterId===chapter);
+  const ordinaryBlocked=p.required&&p.stage!=='ready'&&(!pretest||p.stage==='entry')&&(!assessment?.chapterId||assessment.chapterId===chapter);
   const allowedPretest=pretest&&(e?.stage==='pretest'||(assessment?.existingPretestGrade===true&&e?.stage==='configuration'));
   if(ordinaryBlocked||(e?.status==='active'&&((e.stage!=='ready'&&!allowedPretest)||e.generation!==db.currentLearningGeneration(user)))){
-    sendJson(res,409,{ok:false,code:'learner_preparation_required',stage:p.stage,message:ordinaryBlocked?'请先完成知识前测，点击“下一步：设置学习方式”，保存六项选择后开始学习。':'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;
+    sendJson(res,409,{ok:false,code:'learner_preparation_required',stage:p.stage||e?.stage,message:p.stage==='entry'?'请先输入加入码并确认参加，或选择普通学习，再完成知识前测。':ordinaryBlocked?'请先完成知识前测，点击“下一步：设置学习方式”，保存六项选择后开始学习。':'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;
   }return false;
 }
 const researchControlStore = {
@@ -5319,7 +5319,11 @@ async function handleApi(req, res, url) {
       return;
     }
 
-    if (req.method === "POST" && url.pathname === "/api/learning/reset") {
+    if(req.method==="POST"&&url.pathname==="/api/learning/reset"){const auth=authenticate(req);sendJson(res,auth?403:401,{ok:false,code:"student_reset_disabled",message:auth?"学习记录会持续保存，学生端不提供重置。":"请先登录。"});return;}
+    if (req.method === "POST" && url.pathname === "/api/admin/learning/reset") {
+      // Maintenance requires both the administrator secret and a valid learner session.
+      // A student token alone can never invoke this operation, including on localhost.
+      if(!getAdminToken()||req.headers['x-admin-token']!==getAdminToken()){sendJson(res,403,{ok:false,message:"仅管理员可维护学习记录"});return;}
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
@@ -5619,6 +5623,11 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if(url.pathname==='/api/learning/entry'&&req.method==='POST'){
+      const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:'请先登录'});return;}
+      const input=await readJsonBody(req);if(input.mode!=='ordinary'){sendJson(res,400,{ok:false,message:'请选择普通学习，或通过加入码阅读说明后参加演练'});return;}
+      learnerPreferences.enterOrdinary(auth.participant.id);sendJson(res,200,{ok:true});return;
+    }
     if(url.pathname==='/api/learning/learner-preferences'&&['GET','POST'].includes(req.method)){
       const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:'请先登录'});return;}
       res.setHeader('Cache-Control','no-store');const user=auth.participant.id,generation=db.currentLearningGeneration(user),e=learnerEnrollment(user);
@@ -5626,7 +5635,7 @@ async function handleApi(req, res, url) {
         const snapshot=parseStoredJson(db.getLearningSnapshotState(user,nowIso()).snapshot?.data||'{}',{});
         const window=require('./lib/learner-journey').editWindow(e,snapshot,db.getQuizResultsByUser(user));
         const preparation=ordinaryPreparation(user);
-        const enabled=researchControlStore.canEdit(user)&&(!preparation.required||preparation.stage!=='pretest')&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
+        const enabled=researchControlStore.canEdit(user)&&(!preparation.required||!['entry','pretest'].includes(preparation.stage))&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
         if(req.method==='POST'){
           if(!enabled)throw Object.assign(new Error(preparation.stage==='pretest'?'请先完成知识前测，再设置学习方式。':window.message||'当前预试条件不能修改学习偏好'),{status:403});
           if(pilotProtection(user,generation))throw Object.assign(new Error('请先结束独立测量或当前帮助，再修改偏好'),{status:409});
@@ -5634,7 +5643,7 @@ async function handleApi(req, res, url) {
           pilotStudy.configure(user,generation,record);cancelLearnerSupport(user,generation);
           pilotStudy.recordConfiguration(user,generation,pilotRuntime(user),'学生通过学习偏好页面保存六维选择与理由');
         }
-        sendJson(res,200,{ok:true,data:{enabled,preparation:ordinaryPreparation(user),configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
+        sendJson(res,200,{ok:true,data:{enabled,generation,preparation:ordinaryPreparation(user),configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
       }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
     }
     if(url.pathname.startsWith("/api/learning/pilot")) {
@@ -5653,9 +5662,9 @@ async function handleApi(req, res, url) {
           }
           if(v.studyType===learnerDesign&&(!researchControlStore.enabled||proactiveStudyConfig.mode!=='active'||!proactiveStudyConfig.displayArms.length))throw Object.assign(new Error('当前服务器未启用六维学习支持，请联系研究负责人'),{status:409});
           const prior=v.studyType===learnerDesign&&!pilotStudy.enrolled(user,generation)?pilotAdmission(user,v):{kind:'fresh'};
-          if(prior.kind==='new_round_required')throw Object.assign(new Error('这轮已有未完成的前测或课程作答。请先开启新一轮学习，再加入；账号和历史记录会保留。'),{status:409});
-          if(prior.kind==='reuse_pretest'&&input.reusePretest!==true)throw Object.assign(new Error('请确认是否将刚完成的前测纳入本次预试。'),{status:409});
-          data=pilotStudy.start(user,generation,input,pilotRuntime(user));if(prior.kind==='reuse_pretest')data=pilotStudy.attachPretest(user,generation,prior);cancelLearnerSupport(user,generation);
+          if(prior.kind==='new_round_required')throw Object.assign(new Error('已有学习记录不能直接纳入这个正式预试，请联系研究人员确认参与安排。原账号、作答和进度不会清除。'),{status:409});
+          if((prior.kind==='reuse_pretest'||prior.kind==='resume_rehearsal')&&input.reusePretest!==true)throw Object.assign(new Error('请确认是否将刚完成的前测纳入本次预试。'),{status:409});
+          data=pilotStudy.start(user,generation,input,pilotRuntime(user));if(prior.kind==='reuse_pretest')data=pilotStudy.attachPretest(user,generation,prior);if(prior.kind==='resume_rehearsal')data=pilotStudy.attachRehearsal(user,generation,prior,learnerPreferences.read(user));cancelLearnerSupport(user,generation);
         }
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/action"){
           if(input.action==='finish'&&learnerEnrollment(user)?.status==='active'&&!db.getQuizResultsByUser(user).some(q=>q.chapter_id===proactiveStudyConfig.chapterId&&q.phase==='post'))throw Object.assign(new Error('请先完成本章后测，再提交结束问卷。需要提前离开时，可选择退出预试。'),{status:409});

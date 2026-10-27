@@ -24,6 +24,16 @@ assert.equal(J.admission([],['q1'],true).kind,'fresh');
 assert.equal(J.admission(pre,['q1'],true).kind,'reuse_pretest');
 assert.equal(J.admission(pre,['q1','q2'],true).kind,'new_round_required');
 assert.equal(J.admission([...pre,{phase:'post'}],['q1'],true).kind,'new_round_required');
+assert.equal(J.admission([...pre,{phase:'post'}],['q1'],true,true).kind,'resume_rehearsal');
+assert.equal(J.admission([...pre,{phase:'post'}],['q1'],true,true).priorLearning,true);
+assert.equal(J.admission(pre,['q1','q2'],true,true).pretestComplete,false);
+assert.equal(J.preparation({...preparation,results:[],entryRequired:true}).stage,'entry');
+assert.equal(J.preparation({...preparation,results:[],entryRequired:true,entry:{mode:'ordinary'}}).stage,'pretest');
+for(const [value,placement,format] of [['inline','inline','plain'],['compact','inline','disclosure'],['sidebar','sidebar','plain'],['sidebar_compact','sidebar','disclosure']]){
+ const answers=structuredClone(a);answers.D4.value=value;const profile=C.profile(answers,{});
+ assert.equal(profile.placement,placement);assert.equal(profile.presentationFormat,format);assert.equal(C.displayValue(placement,format),value);
+ assert.equal(profile.authorityLevel,'A1','D4不改变D5的确认规则');assert.equal(profile.supportInquiryEnabled,true);
+}
 assert.equal(J.editWindow({stage:'configuration'},{currentUnitId:'GH-01-K01'},[]).allowed,true);
 assert.equal(J.editWindow({stage:'ready'},{currentUnitId:'GH-01-K01'},[]).allowed,false);
 assert.equal(J.editWindow({stage:'ready'},{currentUnitId:'GH-01-K01-formative'},[{unit_id:'GH-01-K01-formative',phase:'formative',question_id:'GH-01-K01-check-q1',is_correct:1}]).allowed,true);

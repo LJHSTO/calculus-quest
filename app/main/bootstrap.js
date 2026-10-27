@@ -38,7 +38,7 @@ function renderBottomNextButton() {
     return;
   }
   if((state.submittedQuizzes||[]).includes(unit.id)&&window.LearnerSetup?.afterPretest(unit)){
-    const next=document.createElement('button');next.type='button';next.className='button primary bottom-nav-btn guided-next';next.dataset.quizPathAction='pilot-next';next.textContent=window.LearnerSetup.preparation?.required?'下一步：设置学习方式':'下一步：准备学习方式';wrapper.append(next);wrapper.hidden=false;scheduleLearningActionDockPosition();return;
+    const next=document.createElement('button');next.type='button';next.className='button primary bottom-nav-btn guided-next';next.dataset.quizPathAction='pilot-next';next.textContent=window.LearnerSetup.pretestActionLabel();if(next.textContent==='继续学习'){const status=document.createElement('span');status.className='learner-configured-status';status.textContent=window.LearnerSetup.pretestStatusLabel();wrapper.append(status);}wrapper.append(next);wrapper.hidden=false;scheduleLearningActionDockPosition();return;
   }
   if (document.querySelector(".core-learning-workspace.is-coach-surface")) {
     wrapper.hidden = true;
@@ -374,81 +374,6 @@ document.querySelector("#password-change-form")?.addEventListener("submit", asyn
     input.removeAttribute("aria-invalid");
     if (els.profileFeedback?.dataset.tone === "error") setProfileFeedback("");
   });
-});
-
-document.querySelector("#reset-progress").addEventListener("click", async () => {
-  setUserMenuOpen(false);
-  if (!confirm("确定要开始一轮新的学习记录吗？当前进度、测验结果、知点对话和笔记将从学生端清空，历史研究记录会保留。")) return;
-  const completedCount = state.completed.length;
-  const quizResultCount = (state.quizResults || []).length;
-  await trackLearningEvent("reset_progress", {
-    completed: state.completed.length,
-    quizResults: (state.quizResults || []).length
-  }, false);
-  analyticsTrack("reset_progress", {
-    data: {
-      completedCount,
-      quizResultCount
-    }
-  });
-
-  if (!isSignedIn()) return;
-  if (!learningSnapshotReady) {
-    try {
-      await hydrateLearningState();
-    } catch (error) {
-      alert(error.message || "学习记录尚未完成同步，请重新登录后再重置。");
-      return;
-    }
-  }
-
-  await pauseLearningSnapshotSync();
-  const firstChapterId = chapters[0]?.id || "V14-C1";
-  const firstUnitId = getChapter(firstChapterId)?.units?.[0]?.id || "";
-  const resetSnapshot = {
-    ...learningDefaults(),
-    participant: state.participant,
-    currentChapterId: firstChapterId,
-    currentUnitId: firstUnitId,
-    currentView: "home",
-    logs: ["已开始新一轮学习记录，历史研究数据已保留。"],
-    capturedAt: beijingNow()
-  };
-
-  try {
-    const payload = await apiRequest("api/learning/reset", {
-      token: state.authToken,
-      generation: learningSnapshotGeneration,
-      baseRevision: learningSnapshotRevision,
-      snapshot: resetSnapshot
-    });
-    setLearningSnapshotVersion(payload);
-    if (typeof clearPreviewKnowledgeSceneSelections === "function") {
-      clearPreviewKnowledgeSceneSelections();
-    }
-    window.KnowledgeAssistant?.resetLearningGeneration?.();
-    Object.assign(state, learningDefaults(), resetSnapshot, {
-      participant: state.participant,
-      authToken: state.authToken
-    });
-    currentChapterId = firstChapterId;
-    currentUnitId = firstUnitId;
-    switchView("home");
-    if (typeof ensureAgenticPath === "function") {
-      ensureAgenticPath();
-      if (typeof agenticUnlockUnit === "function") {
-        agenticUnlockUnit(currentUnitId, "reset_initial_load");
-      }
-    }
-    lastSnapshotJson = snapshotContentJson(learningSnapshot());
-    persistStateLocally();
-    renderAll();
-  } catch (error) {
-    console.warn("Learning reset sync failed:", error.message);
-    alert(error.message || "学习记录重置失败，原记录已保留。");
-  } finally {
-    resumeLearningSnapshotSync();
-  }
 });
 
 const CHAPTER_HOVER_OPEN_DELAY_MS = 120;

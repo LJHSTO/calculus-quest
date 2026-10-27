@@ -113,7 +113,7 @@ async function main(){
   assert.equal(await page.locator('#proactive-observatory input,#proactive-observatory select').count(),0);
   await page.screenshot({path:path.join(out,"六维多目标实时指标.png")});await page.getByRole("button",{name:"收起观察台"}).click();
   await page.locator('#learner-preferences-button').click();await page.getByRole('button',{name:'先使用全部默认设置',exact:true}).click();
-  await page.getByRole('button',{name:'修改提示呈现',exact:true}).click();await page.locator('#learner-setup input[value="compact"]').check();await page.locator('#learner-setup select[name=preference-reason]').selectOption('focus');
+  await page.getByRole('button',{name:'修改提示呈现',exact:true}).click();await page.locator('#learner-setup input[name="D4-format"][value="disclosure"]').check();await page.locator('#learner-setup select[name=preference-reason]').selectOption('focus');
   await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'核对选择',exact:true}).click();await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls?.revision===1);
   const changed=await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:"report",confirmed:true,need:"frustration",note:"反复出错后有些着急，想缓一缓"}));assert.equal(changed.cycle.plan.selectionSource,"confirmed_need_mapping");assert.equal(changed.cycle.plan.primaryGoal,"emotional");
   await page.locator('.support-goal-message').scrollIntoViewIfNeeded();await page.waitForTimeout(1300);
@@ -132,8 +132,8 @@ async function main(){
   assert.ok(mobileGeometry.every(r=>r.left>=r.parentLeft&&r.right<=r.parentRight+1&&r.right<=r.viewport),'窄屏操作按钮必须换行且不被裁切：'+JSON.stringify(mobileGeometry));
   await page.screenshot({path:path.join(out,"多目标支持窄屏.png")});
   await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:'close',id:KnowledgeAssistant.designSpaceSnapshot().supportCycle.id}));
-  await page.locator('#learner-preferences-button').click();await page.getByRole('button',{name:'提示呈现',exact:true}).click();await page.locator('#learner-setup input[value="inline"]').check();
-  await page.locator('#learner-setup select[name=preference-reason]').selectOption('near_task');
+  await page.locator('#learner-preferences-button').click();await page.getByRole('button',{name:'提示呈现',exact:true}).click();await page.locator('#learner-setup input[name="D4-placement"][value="inline"]').check();
+  await page.locator('#learner-setup input[name="D4-format"][value="plain"]').check();await page.locator('#learner-setup select[name=preference-reason]').selectOption('near_task');
   await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'核对选择',exact:true}).click();await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls?.revision===2);
   const plain=await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:'report',confirmed:true,need:'frustration',note:'已确认需要，请直接显示支持'}));assert.equal(plain.cycle.profile.authorityLevel,'A1');assert.equal(plain.cycle.profile.presentationFormat,'plain');
   await page.locator('.support-goal-message:visible [data-support-body]').waitFor({state:'visible'});assert.equal(await page.locator('.support-goal-message:visible').getByText('查看这条帮助',{exact:true}).count(),0,'确认需要后，D5询问权限不能覆盖D4直接呈现');

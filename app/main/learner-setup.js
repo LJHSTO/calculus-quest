@@ -4,15 +4,19 @@
   let dialog=null,pilot=null,record=null,answers=C.defaults(),step=0,busy=false,started=0,owner='',message='',mode='preferences',enabled=false,lastFocus=null;
   const drafts={};
   let configurationWindow=null,selectionSource='reviewed_choices',lastStep='';
-  let preparation=null,refreshing=null,routing=false;
-  function applyData(d){record=d.record;enabled=d.enabled;pilot=d.pilot;configurationWindow=d.configurationWindow;preparation=d.preparation;}
+  let preparation=null,refreshing=null,routing=false,currentGeneration=null;
+  const hasSavedPreferences=()=>Boolean(record&&(record.generation==null||record.generation===currentGeneration));
+  function applyData(d){currentGeneration=d.generation;record=d.record;enabled=d.enabled;pilot=d.pilot;configurationWindow=d.configurationWindow;preparation=d.preparation;}
   async function refreshPreparation(){if(refreshing)return refreshing;const token=state.authToken;if(!token)return;refreshing=request().then(d=>{if(token===state.authToken){applyData(d);renderGuide();if(typeof renderBottomNextButton==='function')renderBottomNextButton();}return d;}).finally(()=>refreshing=null);return refreshing;}
   const ordinaryRequired=unit=>preparation?.required&&unit?.chapterId===preparation.chapterId;
   function afterPretest(unit){return unit?.assessmentPhase==='pre'&&(ordinaryRequired(unit)||(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'));}
-  async function resumePreparation(){if(routing)return;routing=true;try{await refreshPreparation();if(pilot?.enrollment?.status==='active'){await openPilot(pilot);return;}if(preparation?.required&&preparation.stage!=='ready'){if(preparation.stage==='pretest'){await goPretest();}else await open();}}catch(e){message=e.message;mode='entry-error';show();}finally{routing=false;}}
+  const isReady=()=>pilot?.enrollment?.status==='active'?pilot.enrollment.stage==='ready':preparation?.stage==='ready';
+  const pretestActionLabel=()=>isReady()?'继续学习':pilot?.enrollment?.stage==='baseline'?'下一步：学习前问卷':'下一步：设置学习方式';
+  const pretestStatusLabel=()=>pilot?.enrollment?.arm==='control'?'学习准备已完成':'学习方式已设置';
+  async function resumePreparation(){if(routing)return;routing=true;try{await refreshPreparation();if(pilot?.enrollment?.status==='active'){await openPilot(pilot);return;}if(preparation?.required&&preparation.stage!=='ready'){if(preparation.stage==='entry'){await global.PilotStudyUI.open();}else if(preparation.stage==='pretest'){await goPretest();}else await open();}}catch(e){message=e.message;mode='entry-error';show();}finally{routing=false;}}
   function allowsUnit(unit){
     const resultPage=unit.assessmentPhase==='pre'&&pilot?.enrollment?.stage==='configuration';
-    const allowed=(!isPreparing(pilot?.enrollment)||resultPage)&&(pilot?.enrollment?.stage!=='pretest'||unit.id==='V14-C1-pre')&&!(ordinaryRequired(unit)&&preparation.stage!=='ready'&&unit.id!==preparation.chapterId+'-pre');
+    const allowed=preparation?.stage!=='entry'&&(!isPreparing(pilot?.enrollment)||resultPage)&&(pilot?.enrollment?.stage!=='pretest'||unit.id==='V14-C1-pre')&&!(ordinaryRequired(unit)&&preparation.stage!=='ready'&&unit.id!==preparation.chapterId+'-pre');
     if(!allowed)resumePreparation();return allowed;
   }
   function logJourney(type,data={}){if(typeof trackLearningEvent==='function')trackLearningEvent(type,{...data,preferenceContract:C.version},false).catch(()=>{});}
@@ -30,28 +34,30 @@
     lastFocus=document.activeElement;draw();if(!dialog.open)dialog.showModal();dialog.querySelector('h2')?.focus();}
   function leave(){dialog.close();if((preparation?.required&&preparation.stage!=='ready'||pilot?.enrollment?.status==='active'&&pilot.enrollment.stage!=='ready')&&typeof switchView==='function')switchView('home');lastFocus?.focus?.();}
   async function open(){message='';const d=await request();applyData(d);
+    if(preparation?.required&&preparation.stage==='entry'){await global.PilotStudyUI.open();return;}
     if(preparation?.required&&preparation.stage==='pretest'){mode='pretest';show();return;}
     if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'&&pilot.enrollment.stage==='baseline'){openPilot(pilot);return;}
-    mode='preferences';answers=record&&pilot?.enrollment?.stage!=='configuration'?structuredClone(record.answers):C.defaults();if(experimental()&&answers.D5.value==='request'){answers.D5={value:'ask',reason:'',note:''};}step=0;selectionSource='reviewed_choices';lastStep='';started=Date.now();show();}
+    mode='preferences';answers=hasSavedPreferences()?structuredClone(record.answers):C.defaults();if(experimental()&&answers.D5.value==='request'){answers.D5={value:'ask',reason:'',note:''};}step=hasSavedPreferences()?6:0;selectionSource='reviewed_choices';lastStep='';started=Date.now();show();}
   async function openPilot(p){pilot=p;message='';const e=p.enrollment;
     if(e.stage==='baseline'){mode='baseline';show();return;}
     if(e.stage==='configuration'){await open();return;}
     if(e.stage==='pretest'){mode='pretest';show();return;}
     mode='study';show();}
   async function goPretest(){dialog?.close();await ensureChapterLoaded('V14-C1');switchView('learn');selectUnit('V14-C1-pre');renderGuide();}
-  async function continueAfterPretest(){logJourney('pilot_pretest_continue');await global.PilotStudyUI?.reload?.();if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active')await openPilot(pilot);else await open();}
+  async function continueAfterPretest(){logJourney('pilot_pretest_continue');await global.PilotStudyUI?.reload?.();await refreshPreparation();if(isReady()){await beginLearning();return;}if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active')await openPilot(pilot);else await open();}
   async function beginLearning(){dialog?.close();switchView('learn');await ensureChapterLoaded('V14-C1',{showLoading:false});
     if(typeof currentUnitId==='string'&&currentUnitId==='V14-C1-pre'){
       const path=typeof ensureAgenticPath==='function'?ensureAgenticPath():null;
       if(path?.pendingPlan?.phase==='pre_knowledge_selection'){
         if(pilot?.enrollment?.status==='active'||preparation?.required){const action=path.pendingPlan.actions.find(a=>a.type==='select_knowledge');for(const c of action?.knowledgeChoices||[])c.checked=true;await agenticApplyDecision('select_knowledge');await syncLearningSnapshot('pilot_learning_started');return;}
         global.LearningWorkspace?.showCoach();return;}
-      if(typeof agenticOpenUnit==='function'){agenticUnlockUnit('GH-01-K01','pilot_ready');await agenticOpenUnit('GH-01-K01',{source:'pilot_ready'});}
+      if(typeof agenticOpenUnit==='function'){const chapter=getChapter('V14-C1'),target=chapter?.units?.find(u=>u.id!=='V14-C1-pre'&&!['retention','transfer'].includes(u.assessmentPhase)&&!(state.completed||[]).includes(u.id));if(target){agenticUnlockUnit(target.id,'pilot_ready');await agenticOpenUnit(target.id,{source:'pilot_ready'});}}
     }await syncLearningSnapshot('pilot_learning_started');renderGuide();}
   function syncEntrances(){const unit=typeof getUnit==='function'&&typeof currentUnitId==='string'?getUnit(currentUnitId):null;
     const pre=unit?.assessmentPhase==='pre',joined=Boolean(pilot?.enrollment);
     for(const selector of ['#pilot-entry-button','#home-pilot-entry']){const node=document.querySelector(selector);if(node)node.hidden=joined||(pre&&selector==='#pilot-entry-button');}
     for(const selector of ['#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=pre;}
+    const prefs=document.getElementById('learner-preferences-button');if(prefs){prefs.textContent=hasSavedPreferences()?'学习偏好 · 已设置':'学习偏好';prefs.dataset.configured=String(hasSavedPreferences());}
     const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';}
   }
   function renderGuide(){
@@ -76,7 +82,7 @@
     if(current===3&&e.arm==='configurable'&&typeof currentUnitId==='string'&&currentUnitId.endsWith('-formative')&&(state.submittedQuizzes||[]).includes(currentUnitId))row.append(button('调整下一节的帮助方式',async()=>{await syncLearningSnapshot('configuration_boundary');await open();}));
     guide.append(row);
   }
-  function radioGroup(parent,name,choices,value,onChange){const f=el('fieldset');f.className='learner-options';for(const [v,title,detail] of choices){const label=el('label'),i=el('input');i.type='radio';i.name=name;i.value=v;i.checked=value===v;i.onchange=()=>{onChange(v);for(const row of f.children)row.classList.toggle('selected',row.contains(i));};label.className=i.checked?'selected':'';const text=el('span');text.append(el('strong',title));if(detail)text.append(el('small',detail));label.append(i,text);f.append(label);}parent.append(f);return f;}
+  function radioGroup(parent,name,choices,value,onChange){const f=el('fieldset');f.className='learner-options';f.dataset.group=name;f.setAttribute('aria-label',name==='D4-placement'?'显示位置':name==='D4-format'?'帮助正文':C.dimensions.find(d=>d.id===name)?.title||name);for(const [v,title,detail] of choices){const label=el('label'),i=el('input');i.type='radio';i.name=name;i.value=v;i.checked=value===v;i.onchange=()=>{onChange(v);for(const row of f.children)row.classList.toggle('selected',row.contains(i));};label.className=i.checked?'selected':'';const text=el('span');text.append(el('strong',title));if(detail)text.append(el('small',detail));label.append(i,text);f.append(label);}parent.append(f);return f;}
   function survey(parent,kind){const data=drafts[kind]||{};drafts[kind]=data;const p=el('p',kind==='final'&&surveyContract().instrument?surveyContract().instrument.instructions:'1＝完全不同意，5＝完全同意；也可以选择不愿回答。');parent.append(p);
     for(const [key,title] of surveyContract().surveys[kind]){const f=el('fieldset');f.className='learner-survey-row';f.append(el('legend',title));radioGroup(f,kind+'-'+key,[...Array.from({length:5},(_,n)=>[String(n+1),String(n+1)]),['skip','不愿回答']],data[key]===null?'skip':String(data[key]||''),v=>data[key]=v==='skip'?null:Number(v));parent.append(f);}return data;}
   function validSurvey(kind){return surveyContract().surveys[kind].every(([k])=>Object.hasOwn(drafts[kind]||{},k));}
@@ -98,13 +104,18 @@
         const note=el('textarea');note.rows=3;note.maxLength=1200;note.setAttribute('aria-label','本次学习建议');note.placeholder='哪次帮助或设置最让你意外？还有什么需要改进？（选填）';details.append(note);
         details.append(button('保存问卷并结束本轮预试',async()=>{if(!validSurvey('final')||(e.arm==='configurable'&&!validSurvey('configuration')))throw new Error('请逐项作答或选择不愿回答');pilot=await KnowledgeAssistant.pilotRequest('/action',{action:'finish',survey:drafts.final,configuration:drafts.configuration,note:note.value});await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();draw();},true));body.append(details);
         const withdraw=el('details');withdraw.append(el('summary','退出预试与数据处理'));withdraw.append(el('p',pilot.version.withdrawal));const reason=el('textarea');reason.rows=2;reason.maxLength=500;reason.setAttribute('aria-label','数据处理请求');withdraw.append(reason,button('确认退出预试',async()=>{pilot=await KnowledgeAssistant.pilotRequest('/action',{action:'withdraw',dataRequest:reason.value});await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();draw();}));body.append(withdraw);
-      }else {body.append(el('p',e.status==='withdrawn'?'你已退出；研究回放默认不再导出你的记录。数据处理请求由研究负责人按同意书处理。':'问卷已经保存，谢谢参与。'));if(e.status==='finished'&&e.followupEndsAt)body.append(el('p','若研究人员安排了延迟测量，请在后测至少72小时后返回“学习 → 本章路径 → 研究测量”。以页面开放时间为准；请在主流程结束后7天内完成。期间不要重置学习轮次。'));body.append(button('返回平台',leave));}dialog.append(body);
+      }else {body.append(el('p',e.status==='withdrawn'?'你已退出；研究回放默认不再导出你的记录。数据处理请求由研究负责人按同意书处理。':'问卷已经保存，谢谢参与。'));if(e.status==='finished'&&e.followupEndsAt)body.append(el('p','若研究人员安排了延迟测量，请在后测至少72小时后返回“学习 → 本章路径 → 研究测量”。以页面开放时间为准；请在主流程结束后7天内完成。已有作答和进度会持续保留。'));body.append(button('返回平台',leave));}dialog.append(body);
     }else{
-      header('让帮助适合你的学习方式',experimental()?'学习偏好 · 完成每个知识点检测后可调整':'学习偏好');
+      header('让帮助适合你的学习方式',hasSavedPreferences()?'学习偏好 · 已设置':experimental()?'学习偏好 · 完成每个知识点检测后可调整':'学习偏好');
       if(!enabled){dialog.append(el('p',pilot?.enrollment?.arm==='control'?'本次预试使用无主动介入的学习方式，六维偏好保持锁定。':configurationWindow?.message||'当前研究条件尚未开放偏好修改。'));if(record)for(const d of C.dimensions)dialog.append(el('p',d.short+'：'+(d.options.find(o=>o[0]===record.answers[d.id].value)?.[1]||'')));dialog.append(button('返回学习',()=>dialog.close()));return;}
       const nav=el('nav');nav.setAttribute('aria-label','六项学习偏好');nav.className='learner-steps';C.dimensions.forEach((d,i)=>{const b=button(d.short,()=>{step=i;draw();});b.setAttribute('aria-current',step===i?'step':'false');if(answers[d.id].reason)b.dataset.complete='true';nav.append(b);});dialog.append(nav);
       const body=el('div');body.className='learner-setup-body';
-      if(step<6){const d=C.dimensions[step],a=answers[d.id];if(lastStep!==d.id){lastStep=d.id;logJourney('configuration_step_viewed',{dimension:d.id,elapsedMs:Date.now()-started});}body.append(el('span',`${step+1} / 6`),el('h3',d.title),el('p',d.description));radioGroup(body,d.id,C.optionsFor(d.id,experimental()),a.value,v=>{logJourney('configuration_choice_changed',{dimension:d.id,from:a.value,to:v});a.value=v;a.reason='';selectionSource='reviewed_choices';draw();dialog.querySelector('input[name='+d.id+'][value='+v+']')?.focus({preventScroll:true});});
+      if(step<6){const d=C.dimensions[step],a=answers[d.id];if(lastStep!==d.id){lastStep=d.id;logJourney('configuration_step_viewed',{dimension:d.id,elapsedMs:Date.now()-started});}body.append(el('span',`${step+1} / 6`),el('h3',d.title),el('p',d.description));const change=(v,name=d.id,focusValue=v)=>{logJourney('configuration_choice_changed',{dimension:d.id,from:a.value,to:v});a.value=v;a.reason='';selectionSource='reviewed_choices';draw();dialog.querySelector('input[name='+name+'][value='+focusValue+']')?.focus({preventScroll:true});};
+        if(d.id==='D4'){const parts=C.displayParts(a.value);body.append(el('h4','显示位置'));radioGroup(body,'D4-placement',[
+          ['inline','当前任务旁','在课件或题目的独立帮助区阅读，不覆盖操作控件。'],['sidebar','对话侧栏','通过可见提醒打开侧栏；窄屏切换面板，避免压缩课件。']],parts.placement,v=>change(C.displayValue(v,parts.format),'D4-placement',v));
+          body.append(el('h4','帮助正文'));radioGroup(body,'D4-format',[
+          ['plain','提供帮助后展开正文','是否需要先确认，由下一项“主动权”决定。'],['disclosure','先折叠正文，点击后阅读','只折叠帮助正文，接受、拒绝和稍后按钮始终可见。']],parts.format,v=>change(C.displayValue(parts.placement,v),'D4-format',v));
+        }else radioGroup(body,d.id,C.optionsFor(d.id,experimental()),a.value,change);
         const preview=el('aside');preview.className='learner-preview';preview.append(el('strong','会发生什么'),el('p',C.previewFor(d.id,a.value)));body.append(preview);
         const label=el('label','为什么这样选？'),select=el('select');select.name='preference-reason';select.setAttribute('aria-label','为什么这样选');const blank=el('option','请选择最接近的理由');blank.value='';select.append(blank);for(const [v,t]of C.reasonsFor(d.id)){const o=el('option',t);o.value=v;select.append(o);}select.value=a.reason;select.onchange=()=>a.reason=select.value;label.append(select);body.append(label);
         const note=el('textarea');note.rows=2;note.maxLength=500;note.value=a.note;note.setAttribute('aria-label','补充说明');note.placeholder='补充说明（选填；选择“其他原因”时填写）';note.oninput=()=>a.note=note.value;body.append(note);
@@ -120,7 +131,7 @@
     const status=el('p',message);status.className='learner-error';status.setAttribute('role','alert');dialog.append(status);
     dialog.scrollTop=0;if(message)status.scrollIntoView({block:'nearest'});
   }
-  global.LearnerSetup={open,openPilot,setPilot,renderGuide,continueAfterPretest,allowsUnit,afterPretest,resumePreparation,get preparation(){return preparation;},get enrollment(){return pilot?.enrollment;}};
+  global.LearnerSetup={open,openPilot,setPilot,renderGuide,continueAfterPretest,allowsUnit,afterPretest,pretestActionLabel,pretestStatusLabel,resumePreparation,get preparation(){return preparation;},get enrollment(){return pilot?.enrollment;}};
   global.addEventListener('cq:lesson-rendered',()=>{syncEntrances();renderGuide();if(typeof currentView==='string'&&currentView==='learn'&&typeof getUnit==='function'&&!routing&&!dialog?.open)allowsUnit(getUnit()||{});});
   document.getElementById('learner-preferences-button')?.addEventListener('click',()=>open().catch(e=>{message=e.message;enabled=false;mode='preferences';show();}));
   global.addEventListener('cq:proactive-state',event=>{const s=event.detail;const key=s.signedIn?s.ownerKey+':'+s.generation:'';if(key!==owner){owner=key;record=null;pilot=null;preparation=null;dialog?.close();for(const k of Object.keys(drafts))delete drafts[k];if(key)refreshPreparation().then(()=>{if(typeof currentView==='string'&&currentView==='learn')allowsUnit(getUnit()||{});}).catch(()=>{});}

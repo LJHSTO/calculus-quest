@@ -76,11 +76,13 @@ async function simulateArchivedWaitingCheck(dbPath, userId, scopeKey, checkId = 
   } finally { database.close(); }
 }
 
+const maintenanceTokens=new Map();
 async function requestJson(baseUrl, method, pathname, body, token = "") {
   const response = await fetch(`${baseUrl}${pathname}`, {
     method,
     headers: {
       ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(pathname==='/api/admin/learning/reset'?{'x-admin-token':maintenanceTokens.get(baseUrl)}:{}),
       ...(token ? { Authorization: `Bearer ${token}` } : {})
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) })
@@ -91,7 +93,7 @@ async function requestJson(baseUrl, method, pathname, body, token = "") {
 
 async function startServer(root, dbPath, mode, adminToken, options = {}) {
   const port = await freePort();
-  const baseUrl = `http://127.0.0.1:${port}`;
+  const baseUrl = `http://127.0.0.1:${port}`;maintenanceTokens.set(baseUrl,adminToken);
   const logs = [];
   const child = spawn(process.execPath, ["server.js", String(port)], {
     cwd: root,
@@ -1938,7 +1940,7 @@ async function runDecisionAuthorizationRegression({
     const reset = await requestJson(
       runtime.baseUrl,
       "POST",
-      "/api/learning/reset",
+      "/api/admin/learning/reset",
       {
         generation: snapshot.payload.generation,
         baseRevision: snapshot.payload.revision,
@@ -4293,7 +4295,7 @@ async function main() {
     const resetResult = await requestJson(
       runtime.baseUrl,
       "POST",
-      "/api/learning/reset",
+      "/api/admin/learning/reset",
       {
         generation: snapshotBeforeReset.payload.generation,
         baseRevision: snapshotBeforeReset.payload.revision,

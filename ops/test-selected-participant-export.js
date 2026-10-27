@@ -16,6 +16,7 @@ async function main() {
     db.insertEvent({ id: `event-${id}`, user_id: id, type: "test", payload: { action: id }, created_at: "2020-01-01" });
     raw.run("INSERT INTO sessions (token,user_id,created_at) VALUES (?,?,?)", [`secret-${id}`, id, "2020-01-01"]);
     raw.run("UPDATE users SET password_hash=? WHERE id=?", [`password-${id}`, id]);
+    learnerPreferences.enterOrdinary(id);
   }
   const { buildSelectedParticipantPackage } = require("../lib/selected-participant-export");
   // One row carries real instants in the +08:00 form the app writes, plus a plain
@@ -71,6 +72,7 @@ async function main() {
   const data = buildSelectedParticipantPackage(raw, ["selected-a", "selected-b", "selected-a"]);
   assert.deepEqual(data.selected_user_ids, ["selected-a", "selected-b"]);
   assert.equal(data.tables.users.length, 2);
+  assert.equal(data.tables.learner_entry.length,2,'入口选择随所选学生导出，不能遗漏或包含其他人');
   assert.equal(data.tables.events.length, 4);
   assert.equal(data.tables.sessions.length, 2);
   const text = JSON.stringify(data);

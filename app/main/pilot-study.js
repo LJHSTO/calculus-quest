@@ -30,7 +30,7 @@
     if(data.enrollment?.studyDesign==='learner-configurable-20-v1'){dialog?.close();global.LearnerSetup?.openPilot(data);return;}
     if(!dialog){dialog=el("dialog");dialog.id="pilot-dialog";dialog.style.cssText="width:min(620px,calc(100vw - 32px));max-height:85vh;border:1px solid #dce0ed;border-radius:18px;padding:24px;color:#24324a;background:white;overflow:auto";document.body.append(dialog);}
     dialog.replaceChildren(el("h2",data.enrollment?.status==="active"?"预试记录":"开始前，请先了解这次学习"));
-    dialog.append(button("关闭",()=>dialog.close()));
+    dialog.append(button("稍后继续",()=>{dialog.close();if(global.LearnerSetup?.preparation?.stage==="entry")switchView("home");}));
     if(data.enrollment?.status==="active"){
       dialog.append(el("p",`参与编号：${data.enrollment.participantCode}；已抽取${data.completedProbes}次记录。`),el("p",`版本：${data.version.sequence}。${data.version.withdrawal}`));
       const details=el("details");details.append(el("summary","结束本次预试并填写问卷"));
@@ -41,8 +41,10 @@
       dialog.append(el("p","退出会停止预试抽样，正常学习仍可继续。数据处理请求将交由研究负责人按同意书处理。"),el("label","退出后的数据处理请求（可不填）"),request,button("确认退出预试",()=>run("/action",{action:"withdraw",dataRequest:request.value})));
     } else {
       if(data.enrollment)dialog.append(el("p",data.enrollment.status==="withdrawn"?"你已退出预试。":"本次预试已结束。"));
+      dialog.append(el("p","有加入码：输入后阅读说明，确认加入，再完成问卷、前测和学习方式设置。没有加入码：可选择普通学习。"));
       const label=el("label","请输入工作人员提供的加入码"),input=el("input");input.value=joinCode;input.autocomplete="off";input.setAttribute("aria-label","预试加入码");input.oninput=()=>{joinCode=input.value;preview=null;consentAccepted=false;reuseAccepted=false;};label.append(input);dialog.append(label);
       dialog.append(button("阅读预试说明",async()=>{try{preview=await call("/preview",{joinCode});message="";consentAccepted=false;reuseAccepted=false;}catch(e){preview=null;message=e.message;}showDialog();dialog.scrollTop=0;}));
+      if(!preview)dialog.append(button("没有加入码，进入普通学习",async()=>{const r=await fetch("api/learning/entry",{method:"POST",headers:{Authorization:`Bearer ${state.authToken}`,"Content-Type":"application/json"},body:JSON.stringify({mode:"ordinary"})});if(!r.ok){message="暂时未能保存，请重试。";showDialog();return;}dialog.close();await global.LearnerSetup.resumePreparation();}));
       if(preview){
         dialog.append(el('h3',preview.title));
         if(preview.useMode==='internal_rehearsal'){const notice=el('p','当前是流程演练版，只供团队检查使用，尚未开放正式学生预试。');notice.className='pilot-consent-notice';dialog.append(notice);}
@@ -60,10 +62,10 @@
         for(const [title,content]of sections){const s=el('section');s.className='pilot-consent-section';s.append(el('h4',title),el('p',content));dialog.append(s);}
         const details=el('details');details.className='pilot-consent-details';details.append(el('summary','负责人、数据保存与完整参与说明'));for(const [title,value]of [['负责人',preview.responsible],['联系方式',preview.contact],['研究审核',preview.reviewReference],['数据保存',preview.retention],['退出及数据处理',preview.withdrawal],['本版本完整说明',preview.consentText]])details.append(el('h4',title),el('p',value));dialog.append(details);
         if(preview.admission?.kind==='new_round_required'){
-          dialog.append(el('p','这轮已有未完成的前测或课程作答，不能直接接续。开启新一轮会保留账号和历史研究记录，但清空学生端本轮进度。'),button('开启新一轮学习',()=>{dialog.close();document.getElementById('reset-progress')?.click();}));
+          dialog.append(el('p','这个正式预试要求从学习前开始。你已有的作答和进度会保留，请联系研究人员确认参与安排。'));
         }else{
-          if(preview.admission?.kind==='reuse_pretest'){const reuse=el('label'),check=el('input');check.type='checkbox';check.checked=reuseAccepted;check.onchange=()=>reuseAccepted=check.checked;reuse.append(check,document.createTextNode('同意将刚完成的前测纳入本次预试，不用重答；之前的其他记录不纳入。'));dialog.append(reuse);}
-          const footer=el('div');footer.className='pilot-consent-footer';const agree=el('label'),box=el('input');box.type='checkbox';box.checked=consentAccepted;box.onchange=()=>consentAccepted=box.checked;agree.append(box,document.createTextNode('我已阅读以上说明，自愿参加。'));const join=button('确认并加入',async()=>{if(!consentAccepted){message='请先勾选已阅读并自愿参加。';showDialog();return;}if(preview.admission?.kind==='reuse_pretest'&&!reuseAccepted){message='请确认是否将刚完成的前测纳入本次预试。';showDialog();return;}join.disabled=true;join.textContent='正在保存，马上进入下一步…';await run('/start',{joinCode,consent:true,versionHash:preview.hash,reusePretest:reuseAccepted});});footer.append(agree,join);dialog.append(footer);
+          if(['reuse_pretest','resume_rehearsal'].includes(preview.admission?.kind)){const reuse=el('label'),check=el('input');check.type='checkbox';check.checked=reuseAccepted;check.onchange=()=>reuseAccepted=check.checked;reuse.append(check,document.createTextNode(preview.admission.kind==='resume_rehearsal'?'同意接续已有进度参加演练。已答题目和已保存的偏好均保留；这次记录只用于流程检查，不作为正式实验结果。':'同意将刚完成的前测纳入本次预试，不用重答；之前的其他记录不纳入。'));dialog.append(reuse);}
+          const footer=el('div');footer.className='pilot-consent-footer';const agree=el('label'),box=el('input');box.type='checkbox';box.checked=consentAccepted;box.onchange=()=>consentAccepted=box.checked;agree.append(box,document.createTextNode('我已阅读以上说明，自愿参加。'));const join=button('确认并加入',async()=>{if(!consentAccepted){message='请先勾选已阅读并自愿参加。';showDialog();return;}if(['reuse_pretest','resume_rehearsal'].includes(preview.admission?.kind)&&!reuseAccepted){message='请确认是否将刚完成的前测纳入本次预试。';showDialog();return;}join.disabled=true;join.textContent='正在保存，马上进入下一步…';await run('/start',{joinCode,consent:true,versionHash:preview.hash,reusePretest:reuseAccepted});});footer.append(agree,join);dialog.append(footer);
         }
       }
     }

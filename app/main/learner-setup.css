@@ -3,6 +3,10 @@
 .learner-setup-header>button{flex-shrink:0;white-space:nowrap!important}@media(max-width:600px){.learner-steps{display:grid;grid-template-columns:repeat(3,1fr);overflow:visible}.learner-steps button{min-width:0;padding:8px!important}.learner-setup-header{display:grid;grid-template-columns:1fr auto}#learner-setup .learner-setup-header button{min-width:0;padding:8px;white-space:nowrap;font-size:13px}}
 
 #learner-setup textarea{min-height:76px;height:80px}
+.learner-configured-status{color:#327365;font-size:14px;margin-right:14px;align-self:center}
+#learner-preferences-button[data-configured=true]{color:#327365}
+#learner-setup h4{font-size:15px;margin:18px 0 8px}
+@media(min-width:601px){#learner-setup .learner-options[data-group^="D4-"]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}#learner-setup .learner-options[data-group^="D4-"] label{margin:0}}
 .pilot-learning-guide{margin:0 16px 12px;padding:12px 16px;border:1px solid #dbe5e8;border-radius:14px;background:#f6faf9;color:#233f43;font-size:14px}
 .pilot-learning-guide[hidden]{display:none}.pilot-progress-steps{display:flex;flex-wrap:wrap;gap:6px 18px;list-style:none;padding:0;margin:0 0 10px;counter-reset:step}
 .pilot-progress-steps li{counter-increment:step;color:#66777c}.pilot-progress-steps li::before{content:counter(step) ' ';font-variant-numeric:tabular-nums}.pilot-progress-steps [data-state=current]{font-weight:700;color:#136a5b}.pilot-progress-steps [data-state=done]{color:#5e766f}

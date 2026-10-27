@@ -26,6 +26,15 @@ async function main(){
  const exported=store.exportData(created.version.project);assert.equal(exported.enrollments.length,20);assert.match(exported.exclusions,/internal_rehearsal/);assert.equal(exported.versions[0].hash,created.version.hash);
  store.action('rehearsal-1',1,{action:'withdraw'});assert.equal(store.state('rehearsal-1',1).enrollment.status,'withdrawn');assert.equal(store.enrolled('rehearsal-1',1),null);
  assert.equal(store.enrolled('rehearsal-0',2),null);
+ const resumedVersion=store.createVersion({design:'learner-configurable-20-v1',useMode:'rehearsal',project:'resume-contract',title:'接续测试',reason:'合成',responsible:'合成',contact:'合成',reviewReference:'合成',retention:'合成',withdrawal:'合成'});
+ for(const complete of [true,false]){
+  const user='resume-'+complete;store.start(user,1,{joinCode:resumedVersion.joinCode,versionHash:resumedVersion.version.hash,consent:true},{});
+  store.attachRehearsal(user,1,{pretestComplete:complete,resultIds:['old-pre'],completedAt:'2026-10-25T00:00:00Z',priorResultCount:2,priorLearning:true},record);
+  let e=store.action(user,1,{action:'baseline',survey:baseline}).enrollment;
+  assert.equal(e.stage,complete?'ready':'pretest');assert.equal(e.rehearsalResume.baselineTiming,'after_learning_exposure');
+  if(!complete){store.recordPretest(user,1,['old-pre','new-pre']);e=store.latest(user);assert.equal(e.stage,'ready');}
+  assert.deepEqual(e.configuration,record);assert.equal(e.arm,'configurable');
+ }
  console.log(JSON.stringify({passed:true,synthetic:true,checks:['20个演练名额全部可配置','旧控制条件转完整功能且保留原分组','读取不修改历史行或版本哈希','旧码有效、配置和历史重启后保留','导出明确标记演练数据','退出和学习轮次保护']}));
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

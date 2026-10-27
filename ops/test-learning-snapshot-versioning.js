@@ -182,7 +182,7 @@ function freePort() {
 }
 
 async function requestJson(baseUrl, pathname, options = {}) {
-  const headers = {};
+  const headers = pathname==='/api/admin/learning/reset'?{'x-admin-token':'synthetic-snapshot-admin'}:{};
   if (options.token) headers.Authorization = `Bearer ${options.token}`;
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   const response = await fetch(baseUrl + pathname, {
@@ -366,7 +366,7 @@ async function main() {
         DB_PATH: dbPath,
         HOST: "127.0.0.1",
         LLM_PROVIDER: "mock",
-        NODE_ENV: "development"
+        NODE_ENV: "development", ADMIN_TOKEN:"synthetic-snapshot-admin"
       },
       stdio: ["ignore", "pipe", "pipe"],
       windowsHide: true
@@ -565,7 +565,7 @@ async function main() {
       regressionFailures.push(error);
     }
 
-    const reset = await requestJson(baseUrl, "/api/learning/reset", {
+    const reset = await requestJson(baseUrl, "/api/admin/learning/reset", {
       method: "POST",
       token,
       body: {

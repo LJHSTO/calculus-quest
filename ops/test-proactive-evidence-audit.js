@@ -123,7 +123,7 @@ async function main() {
   };
   const call = async (route, body, token) => {
     const response = await fetch(address + route, { method: body === undefined ? "GET" : "POST",
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { "Content-Type": "application/json", ...(route==='/api/admin/learning/reset'?{'x-admin-token':'audit-test-only'}:{}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }) });
     return { status: response.status, data: await response.json() };
   };
@@ -257,7 +257,7 @@ async function main() {
 
       const resetParticipant = await participant(), oldDecisionId = await hint(resetParticipant);
       const snapshotState = await call("/api/learning/snapshot", undefined, resetParticipant.token);
-      const reset = await call("/api/learning/reset", { generation: snapshotState.data.generation,
+      const reset = await call("/api/admin/learning/reset", { generation: snapshotState.data.generation,
         baseRevision: snapshotState.data.revision, snapshot: {} }, resetParticipant.token);
       assert.equal(reset.status, 200);
       const staleGenerationId = await event(resetParticipant, "proactive_surface_visible", 0, {

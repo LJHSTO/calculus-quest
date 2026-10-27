@@ -424,9 +424,7 @@ function findNavTargets(unitId) {
 }
 
 function renderQuizPathNavigation(unit) {
-  const pilot=window.LearnerSetup?.enrollment;
-  if(unit.assessmentPhase==='pre'&&pilot?.studyDesign==='learner-configurable-20-v1'&&pilot.status==='active')return '<div class="quiz-nav-buttons"><button class="button primary quiz-nav-btn guided-next" type="button" data-quiz-path-action="pilot-next">下一步：准备学习方式</button></div>';
-  if(window.LearnerSetup?.afterPretest(unit))return '<div class="quiz-nav-buttons"><button class="button primary quiz-nav-btn guided-next" type="button" data-quiz-path-action="pilot-next">下一步：设置学习方式</button></div>';
+  if(window.LearnerSetup?.afterPretest(unit))return `<div class="quiz-nav-buttons"><button class="button primary quiz-nav-btn guided-next" type="button" data-quiz-path-action="pilot-next">${escapeHtml(window.LearnerSetup.pretestActionLabel())}</button></div>`;
   const { prevId, nextId } = findNavTargets(unit.id);
   const pending = typeof agenticIsCurrentPending === "function" && agenticIsCurrentPending(unit.id);
   const pathReady = typeof agenticQuizPathReady !== "function" || agenticQuizPathReady(unit);
