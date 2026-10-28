@@ -2,7 +2,7 @@
   "use strict";
   const goalNames = { cognitive:"认知与知识建构",metacognitive:"元认知与学习调节",motivational:"动机支持",emotional:"情绪调节支持",behavioral:"学习行为与资源管理" };
   const strategyNames = {concept_hint:"概念线索",counterexample:"反例辨析",self_check:"把握与自检",plan_monitor:"计划与监控",value_connection:"个人价值联系",progress_feedback:"基于证据的信心支持",cost_reduction:"降低感知负担",acknowledge_reframe:"承认困难与重新理解失败",calm_choice:"继续或暂停的选择",study_plan:"短时学习计划",resource_navigation:"资源与求助路径"};
-  const needs = {concept:"概念或步骤没弄懂",monitoring:"不知道自己是否理解",value:"不清楚学这个有什么用",confidence:"担心自己学不会",cost:"现在觉得投入太多",frustration:"有些挫败或紧张",planning:"不知道接下来怎么安排",uncertain:"暂时说不清",none:"暂时不需要帮助"};
+  const needs = {concept:"概念或步骤没弄懂",monitoring:"不知道自己是否理解",clarify_concept:"想解释其中一个概念",reflection:"想整理刚才的探索发现",value:"不清楚学这个有什么用",confidence:"担心自己学不会",cost:"现在觉得投入太多",frustration:"有些挫败或紧张",planning:"不知道接下来怎么安排",uncertain:"暂时说不清",none:"暂时不需要帮助"};
   const statuses = {queued:"等待合适时机",offered:"已提供支持",engaged:"由你继续尝试",awaiting_check:"独立检查中",postponed:"稍后再说",closed:"本轮已结束",expired:"需要已过期，请重新确认"};
   let owner="", snapshot=null, busy=false, error="", lastPoll=0, exposureTimer=null, exposureKey="", manualScope="";
   const drafts=new Map(), sentExposure=new Set(), opened=new Map(), presentedInquiries=new Set();
@@ -44,14 +44,16 @@
   }
   function note(form,d,label){const row=el("label",label),input=el("textarea");input.rows=2;input.maxLength=600;input.value=d.note;input.setAttribute("aria-label",label);input.oninput=()=>{d.note=input.value;};row.append(input);form.append(row);}
   function checkin(next,open=false,inquiryId=null){
+    const reflection=next.supportCycle?.inquiry?.basis==='exploration_comparison';
     const d=draft(`${owner}:${next.scopeKey}:need`),details=el("details");details.open=open;
     details.className="support-need-entry";details.append(el("summary","这一步需要什么帮助？"));
     const form=el("form"),list=el("div"),other=el('select');list.className='support-primary-needs';
-    choices(list,{concept:needs.concept,monitoring:needs.monitoring},d.need,v=>{d.need=v;other.value='';});form.append(list);
+    const primary=reflection?{clarify_concept:'解释其中一个概念',reflection:'整理刚才的发现'}:{concept:needs.concept,monitoring:needs.monitoring};
+    choices(list,primary,d.need,v=>{d.need=v;other.value='';});form.append(list);
     const label=el('label','其他方面');other.setAttribute('aria-label','其他需要');
     const blank=el('option','选择其他需要（可选）');blank.value='';other.append(blank);
-    for(const [value,text]of Object.entries(needs).filter(([k])=>!['concept','monitoring','none'].includes(k))){const option=el('option',text);option.value=value;other.append(option);}
-    other.value=['concept','monitoring'].includes(d.need)?'':d.need;other.onchange=()=>{d.need=other.value;for(const b of list.querySelectorAll('button'))b.setAttribute('aria-pressed','false');};label.append(other);form.append(label);
+    for(const [value,text]of Object.entries(needs).filter(([k])=>!['concept','monitoring','clarify_concept','reflection','none'].includes(k))){const option=el('option',text);option.value=value;other.append(option);}
+    other.value=Object.hasOwn(primary,d.need)?'':d.need;other.onchange=()=>{d.need=other.value;for(const b of list.querySelectorAll('button'))b.setAttribute('aria-pressed','false');};label.append(other);form.append(label);
     const extra=el('details');extra.append(el('summary','补充一句（选填）'));note(extra,d,"想补充的目标或困难");form.append(extra);
     const submit=el("button","开始帮助");submit.type="submit";submit.className='support-primary-action';submit.disabled=busy;form.append(submit);
     form.onsubmit=e=>{e.preventDefault();if(!d.need){error="请先选择当前需要。";global.KnowledgeAssistant.refreshSupportSurface();return;}request({action:"report",confirmed:true,need:d.need,note:d.note,ratings:d.ratings,...(inquiryId?{inquiryId}: {})});};
@@ -93,8 +95,9 @@
       if(deferInquiry(c))return root;
       presentedInquiries.add(c.id);
       const card=el("section");card.className="support-goal-message support-inquiry";
-      const body=el("div");body.dataset.supportBody=c.id;body.append(el("strong","要不要一起看看刚才的问题？"));
-      const evidence=el('details');evidence.className='support-inquiry-evidence';evidence.append(el('summary','为什么现在问我？'),el('p',c.inquiry.text),el('small','这只是当前作答或尝试的线索，不代表你不想学。'));
+      const reflection=c.inquiry.basis==='exploration_comparison';
+      const body=el("div");body.dataset.supportBody=c.id;body.append(el("strong",reflection?"要不要一起整理刚才的发现？":"要不要一起看看刚才的问题？"));
+      const evidence=el('details');evidence.className='support-inquiry-evidence';evidence.append(el('summary','为什么现在问我？'),el('p',c.inquiry.text),el('small',reflection?'这只是一次整理机会，不表示你有困难或已经掌握。':'这只是当前作答或尝试的线索，不代表你不想学。'));
       const actions=el("footer");actions.append(button("暂时不需要",()=>request({action:"decline",id:c.id})),button("稍后再问",()=>request({action:"postpone",id:c.id})));
       card.append(body,checkin(next,false,c.id),actions,evidence);root.append(card);
     }else if(c?.status==="awaiting_check"){

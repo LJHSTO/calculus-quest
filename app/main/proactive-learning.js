@@ -137,6 +137,7 @@
     // boundary is what makes "stop and look at it differently" a reasonable ask.
     const struggle = new Map();
     const practiceFailures = new Map();
+    const explorationObservations = new Map();
     // Which activity types a knowledge point offers. Injected because the coach
     // only sees events, and the route is the only place that knows the candidate
     // set. Which types the learner has already opened is tracked here instead:
@@ -422,6 +423,16 @@
       if (["quiz_submit_success", "quiz_review_ready"].includes(eventType)) {
         return quizSuggestion(event, at);
       }
+      if(eventType==='courseware_exploration_observed' && currentUnit.unitType!=='quiz') {
+        const data=event.data||{},key=currentUnit.unitId+':'+data.scene_type+':'+data.parameters?.channel;
+        if(data.evidence_scope!=='free_exploration_observation'||data.independent!==false)return null;
+        const value=JSON.stringify(data.parameters?.value),recent=(explorationObservations.get(key)||[]).filter(e=>at-e.at<=300000);
+        if(!recent.some(e=>e.value===value))recent.push({value,at});explorationObservations.set(key,recent);
+        if(recent.length>=(data.scene_type==='mindMap'?3:2)&&at-recent[0].at>=3000)return createSuggestion('exploration_reflection',at,{
+          sourceEventType:eventType,contextMode:'unit',title:'整理探索发现',body:'在完成比较后，询问是否需要一起整理；不推断学习困难。'
+        });
+        return null;
+      }
       if ([
         "courseware_challenge_result",
         "courseware_formative_check_submitted"
@@ -538,6 +549,7 @@
       commits.clear();
       if (options.clearCooldowns === true) {
         practiceFailures.clear();
+        explorationObservations.clear();
         cooldowns.clear();
         dismissStreaks.clear();
       }

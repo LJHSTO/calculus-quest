@@ -1,5 +1,5 @@
 {
-  "version": "a193fd47c51e98320a69",
+  "version": "f001c2f572b4b3acc26b",
   "indexSha256": "0a4e0f27fc1c87f44c318d9546f3406eaecd222ec76a4135076d7854ca70060d",
   "scripts": [
     {
@@ -85,7 +85,7 @@
     {
       "tag": "<script src=\"app/main/proactive-learning.js?v=20260922-representation-switch-v1\"></script>",
       "file": "app/main/proactive-learning.js",
-      "sha256": "f7e83e31623f6cdeabfc72076a05ea76b0fa02cca4b96490103cfc0ede055efd"
+      "sha256": "4403e5409e5ef160d45149576339b05deac0a389a88e9b9af15d9da43395220d"
     },
     {
       "tag": "<script src=\"lib/active-time-policy.js?v=20260818-active-time-v1\"></script>",
@@ -105,7 +105,7 @@
     {
       "tag": "<script src=\"app/main/render-learning.js?v=20260922-slide-deck-v2\"></script>",
       "file": "app/main/render-learning.js",
-      "sha256": "cb7175936f4461576c766b40aadcf85335c9d9f291d684a59a4a594a5210bcc0"
+      "sha256": "19fe93ef82c22a63866f99b25336ac873aa32325cfdb6b29bd2afa27a6e195ac"
     },
     {
       "tag": "<script src=\"app/main/recommendations.js?v=20260722-multi-scene-v1\"></script>",
@@ -170,7 +170,7 @@
     {
       "tag": "<script src=\"lib/courseware-semantics.js?v=20261019\"></script>",
       "file": "lib/courseware-semantics.js",
-      "sha256": "a0c525f41882a458f663ff22ca14264518ea0fb0f05098729e7e0f49d74429f7"
+      "sha256": "33960a0da3781b9487200d01eb3947a62d5a136f7c021e5f5010764d59b3dd85"
     },
     {
       "tag": "<script src=\"app/main/common-learning.js?v=20261019\"></script>",
@@ -210,12 +210,12 @@
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
       "file": "app/main/support-cycle.js",
-      "sha256": "5a3d8aeaec48d879eaca7fc46970a7deb1e72c90f4d9eec7d0123a755049d1d1"
+      "sha256": "c25a515cd3ea0c817f32a3e1e5dda3bd205519edc592f7a47775fd3fbeedcf68"
     },
     {
       "tag": "<script src=\"app/shared/learner-preferences.js?v=20261024\"></script>",
       "file": "app/shared/learner-preferences.js",
-      "sha256": "098ccb0dd2497153be19b276a4797250eb1c3f1d8cb5ab55d0535a953b37abb5"
+      "sha256": "71e313cfeb1674a1eb87148b730786b453643aebfe7983bb610e4a59608a071b"
     },
     {
       "tag": "<script src=\"app/main/pilot-study.js?v=20261024\"></script>",
@@ -240,7 +240,7 @@
     {
       "tag": "<script src=\"app/main/proactive-hud.js?v=20261017-comfort-v1\"></script>",
       "file": "app/main/proactive-hud.js",
-      "sha256": "a61f23adfb5c91f1db6ca13a8966bf5d5653f2749f8941642cec7baae06e4402"
+      "sha256": "5ba1af7ea8a0568acfba28d795c6cce29ba731ad5db3bd07dcd19c5abf7e00db"
     }
   ],
   "styles": [

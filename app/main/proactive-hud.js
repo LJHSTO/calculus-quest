@@ -6,7 +6,7 @@
   const names = { inline: "任务内", sidebar: "助教栏", tip: "提示", example: "例子", interactive: "动手试", chat: "对话",
     simulation: "模拟探索", game: "闯关游戏", mindMap: "概念图", visualization3d: "三维视图",
     silent: "保持沉默", wait: "等待自然边界", boundary: "自然边界介入", immediate: "当前窗口介入",
-    cancel: "取消过时建议", delayed: "暂缓投递",
+    cancel: "取消过时建议", delayed: "暂缓投递", confirmation:"已主动询问，等待确认",
     idle: "独立探索", support_offered: "等待学生确认", accepted_pending_response: "等待学生回应",
     awaiting_independent_attempt: "独立检查中", faded: "已渐退", maximum_support_reached: "达到支持上限",
     exited: "检查通过，已渐退", closed: "本轮已关闭", deferred: "学生选择稍后",
@@ -17,6 +17,9 @@
     lesson_started: "进入学习单元", lesson_completed: "完成学习单元", knowledge_scene_completed: "完成互动课件" };
   const reasons = { quiet_dwell_waiting_for_boundary: "存在困难线索，等待操作边界", protected_assessment_stage: "测量阶段保护",
     help_need_below_threshold: "当前帮助需求未达到阈值", interruptibility_below_threshold: "正在连贯操作，暂不打扰",
+    verified_exploration_opportunity:"已记录可比较的探索状态",need_not_inferred:"整理机会，未推断有困难",confirmation_required:"先询问，由学生决定",
+    exploration_opportunity_not_verified:"尚无可复核的探索比较",need_confirmation_offered:"已询问，等待学生确认",
+    cautious_exploration_more_observations:"按谨慎设置，等待更多不同的探索状态",
     uncertainty_above_threshold: "证据不确定性较高", evidence_families_insufficient: "支持判断的证据不足",
     scope_preference_off: "学生关闭了本知识点提醒", student_preference_off: "学生关闭了主动提醒",
     cooldown_active: "处于冷却期", policy_thresholds_met: "证据和时机达到策略条件",
@@ -57,6 +60,7 @@
       card("D1", "学习状态证据", row("最近操作", latest ? label(latest.type) : "尚无操作") + row("当前课件", label(s.sceneType))
         + row("帮助发起方",cycle?.initiation==="agent_initiated_confirmation"?"系统发现候选后主动询问":cycle?"学生主动选择":"尚无")
         + row("主动询问依据",cycle?.inquiry?.text||"尚无")
+        + row("本次判断目的",facts?.interventionPurpose==='reflection_opportunity'?'整理探索发现，不认定有困难':facts?.interventionPurpose==='difficulty_support'?'核对已记录的困难线索':'尚未判断')
         + row("学生确认的需要",g?.needs[cycle?.need?.need]||"尚未确认，不推断动机")
         + row("服务端证据来源", facts?.families?.join("、") || "尚未形成决策证据")
         + row("已确认错误 / 正确", facts ? `${facts.confirmedIncorrect ?? "未记录"} / ${facts.confirmedCorrect ?? "未记录"}` : "未记录")

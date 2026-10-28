@@ -14,6 +14,7 @@ const COURSEWARE_BRIDGE_INTERACTION_EVENTS = new Set([
   "parameter_commit"
 ]);
 const COURSEWARE_LEARNING_EVENT_TYPES = Object.freeze({
+  exploration_observed: "courseware_exploration_observed",
   scene_entered: "courseware_page_loaded",
   page_loaded: "courseware_page_loaded",
   pre_check_submitted: "courseware_pre_check_submitted",

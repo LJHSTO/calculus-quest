@@ -363,6 +363,8 @@ const proactiveStoppingRules = Object.freeze({
       coursewareBridge: protocolSourceDigest("app/main/courseware-bridge.js"),
       conceptExploration: protocolSourceDigest("resources/open-maic/主动探索证据/exploration-model.js"),
       conceptExplorationUI: protocolSourceDigest("resources/open-maic/主动探索证据/exploration-runtime.js"),
+      freeExploration: protocolSourceDigest("resources/open-maic/主动探索证据/free-exploration.js"),
+      freeExplorationUI: protocolSourceDigest("resources/open-maic/主动探索证据/free-exploration-runtime.js"),
       coursewareInlineSupport: protocolSourceDigest("app/main/courseware-inline-support.js"),
       coursewareTaskSupport: protocolSourceDigest("app/main/courseware-task-support.js"),
       taskSupport: protocolSourceDigest("app/main/task-support.js"),
@@ -1386,7 +1388,7 @@ function safeStaticPath(urlPath) {
     && !/^resources\/open-maic\/(?:prompts|versions)(?:\/|$)/.test(normalized)
     && (
       normalized === "resources/open-maic/course-index.json"
-      || ["resources/open-maic/主动探索证据/exploration-model.js","resources/open-maic/主动探索证据/exploration-runtime.js"].includes(normalized)
+      || ["resources/open-maic/主动探索证据/exploration-model.js","resources/open-maic/主动探索证据/exploration-runtime.js","resources/open-maic/主动探索证据/free-exploration.js","resources/open-maic/主动探索证据/free-exploration-runtime.js"].includes(normalized)
       || publicResourceExtensions.has(extension)
     );
   const allowed = publicRootFiles.has(normalized)
@@ -2625,6 +2627,14 @@ function proactiveEvidenceForRequest({
       && boundaryAgeMs <= 12_000;
     evidence.boundaryEventType = evidence.naturalBoundary ? latestEvent.type : "";
   }
+  if(signal.kind === 'exploration_reflection') {
+    const opportunity=require('./resources/open-maic/主动探索证据/free-exploration').collect(rows,resolved.unit.knowledgePointId||resolved.unit.id,resolved.scene?.type||resolved.contextRef?.sceneType,now);
+    const laterActivity=opportunity&&rows.some(row=>proactiveEventAt(row)>opportunity.latestAt&&['interactive_input','interactive_drag_start','parameter_change','unit_exit','knowledge_scene_select'].includes(proactiveEventType(row)));
+    evidence.explorationOpportunity=opportunity;
+    evidence.naturalBoundary=Boolean(opportunity&&now-opportunity.latestAt<=12000&&!laterActivity);
+    evidence.boundaryEventType=evidence.naturalBoundary?'courseware_exploration_observed':'';
+    if(opportunity){families.add('process');if(evidence.naturalBoundary)families.add('task');refs.push(...opportunity.sources);}
+  }
   if(signal.kind === "task_difficulty") {
     const practice=require('./lib/assisted-game-evidence').collect(rows,resolved.unit.knowledgePointId||resolved.unit.id,now);
     evidence.assistedTaskFailures=practice.failures.length;
@@ -2868,6 +2878,7 @@ function proactiveEvidenceForRequest({
     time: evidence.dwellSeconds ? clamp01(Number(evidence.dwellSeconds) / 180) : 0,
     // 3 次参数提交或 1 次判定失败即达满强度
     process: Math.max(
+      evidence.explorationOpportunity?.verified===true?0.8:0,
       clamp01(Number(evidence.parameterCommitCount || 0) / 3),
       clamp01(Number(evidence.sceneAttemptFailures || 0))
     ),
@@ -4528,13 +4539,13 @@ async function handleManagedProactiveIntervention({
     const latestAnswerAt=Math.max(0,...(evidence.evidenceRefs||[]).filter(r=>["quiz_result","common_independent_probe"].includes(r.sourceType)||r.serverRechecked===true).map(r=>Date.parse(r.capturedAt)||0));
     const inquiryContext={...evidence,independentAttemptSuccess:evidence.independentAttemptSuccess===true||Boolean(recentCheck?.payload.outcome.success===true&&Date.parse(recentCheck.created_at)>latestAnswerAt)};
     needInquiry=supportCycles.invite(auth.participant.id,policyScopeKey,generation,{
-      evidence:inquiryContext,signal,decisionId,profile:agentProfile,profileRevision:engineeringControl?.revision||0});
+      evidence:inquiryContext,signal,decisionId,profile:signal.kind==='exploration_reflection'?{...agentProfile,supportInquiryEnabled:true}:agentProfile,profileRevision:engineeringControl?.revision||0});
     if(needInquiry){
       evidence.needInquiry={id:needInquiry.id,stage:"awaiting_student_confirmation",cue:needInquiry.inquiry};
       policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
         reasonCodes:[...policyDecision.reasonCodes,"need_confirmation_offered"]};
       renderedDecision=proactiveSilentAssistantDecision(policyDecision);
-    } else if(agentProfile.supportInquiryEnabled===true) {
+    } else if(agentProfile.supportInquiryEnabled===true || signal.kind==='exploration_reflection') {
       // A pending/declined/cooling inquiry must never fall through to an
       // unsolicited legacy knowledge hint when the learner chose ask first.
       policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
@@ -7599,6 +7610,7 @@ async function handleApi(req, res, url) {
         : {};
       if (![
         "task_difficulty",
+        "exploration_reflection",
         "repeated_parameter",
         "quiz_review",
         "quiet_dwell",

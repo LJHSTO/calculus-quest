@@ -54,7 +54,8 @@ let sessionStorage = window.__openMaicSessionStorage;
     "scene_completed",
     "attempt_submitted",
     "challenge_result",
-    "task_progress"
+    "task_progress",
+    "exploration_observed"
   ],
   "capabilities": {
     "widget_type": "mindMap",
@@ -92,6 +93,10 @@ let sessionStorage = window.__openMaicSessionStorage;
     "optional": true,
     "grading": "server_rechecked_process",
     "independent": false
+  },
+  "free_exploration": {
+    "version": "free-exploration-20261027-v1",
+    "role": "observation_not_need_or_mastery"
   }
 }
 </script>
@@ -2197,10 +2202,13 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 </script>
 
 
+
 <!-- concept-exploration:start -->
 <script type="application/json" data-concept-exploration>{"point":"GH-01-K01","scene":"mindMap"}</script>
 <script src="../../主动探索证据/exploration-model.js"></script>
 <script src="../../主动探索证据/exploration-runtime.js"></script>
+<script src="../../主动探索证据/free-exploration.js"></script>
+<script src="../../主动探索证据/free-exploration-runtime.js"></script>
 <!-- concept-exploration:end -->
 </body>
 </html>
