@@ -10,6 +10,13 @@ for(const p of M.points)for(const s of ['simulation','mindMap','visualization3d'
  const d=rows[0].payload.data;assert.equal(M.verify({...d,task_version:'old'},p),null);assert.equal(M.verify({...d,parameters:{channel:'speed',value:1}},p),null);
 }
 const opportunity=M.collect(rowsFor(point,scene),point,scene,now),evidence={explorationOpportunity:opportunity,naturalBoundary:true,boundaryEventType:'courseware_exploration_observed',families:['process','task'],familyStrength:{process:.8,task:.8},evidenceRefs:opportunity.sources};
+// A device 3 seconds ahead can have both events clamped to their batch receipt.
+// Preserve the within-session comparison duration, not its absolute wall clock.
+const batched=rowsFor(point,scene).map((r,i)=>({...r,created_at:new Date(now-500+i*250).toISOString(),payload:{...r.payload,sessionId:'one-learning-session',timing:{clientAt:new Date(now-500+i*3500).toISOString()}}}));
+assert.ok(M.collect(batched,point,scene,now),'小幅时钟偏差与批量上报不能抹去真实比较间隔');
+assert.equal(M.collect(batched.map((r,i)=>({...r,payload:{...r.payload,sessionId:'different-'+i}})),point,scene,now),null,'不能用不同会话的客户端时钟拼出比较间隔');
+assert.equal(M.collect(batched.map(r=>({...r,payload:{...r.payload,timing:{clientAt:new Date(now+60000).toISOString()}}})),point,scene,now),null,'过大的时钟偏差不能放宽时间条件');
+assert.equal(M.collect(batched.map((r,i)=>({...r,payload:{...r.payload,timing:{clientAt:new Date(now+i*100).toISOString()}}})),point,scene,now),null,'快速连续点击仍不满足比较间隔');
 const config=P.configFromEnv({PROACTIVE_POLICY_MODE:'active',PROACTIVE_EXPERIMENT_ID:'free-exploration-unit',PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_ASSIGNMENT_SALT:'test-only'});
 const params={config,assignment:{condition:'treatment'},context:{chapterId:'V14-C1',unitId:point,knowledgePointId:point,sceneType:scene,isQuiz:false},signal:{kind:'exploration_reflection'},evidence,budget:{remaining:10},now};
 const decision=P.evaluate(params);assert.equal(decision.displayAllowed,true,JSON.stringify(decision.reasonCodes));assert.equal(decision.helpNeedScore,null);assert.equal(decision.evidencePackage.inference.need_help_now,null);assert.equal(decision.timing.action,'boundary');

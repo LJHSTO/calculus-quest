@@ -1,13 +1,13 @@
 'use strict';
-// Runs the actual student UI against an already-running local instance. No
+// Runs the actual student UI against an already-running instance. No
 // snapshot writes, navigation seams, fabricated learning events or mock model.
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),assert=require('node:assert/strict'),{chromium}=require('playwright-core');
 const freeOnly=process.env.CQ_FREE_EXPLORATION==='1';
 const requireLiveModel=process.env.CQ_ALLOW_MODEL_FALLBACK!=='1';
-const root=path.resolve(__dirname,'..'),dir=path.join(root,'output/本地学习运行'),out=path.join(root,freeOnly?'output/自由探索触发核验-2026-10-27':'output/课件语义与完整流程验收-2026-10-27');
+const root=path.resolve(__dirname,'..'),dir=process.env.CQ_TEST_OUTPUT_DIR?path.resolve(process.env.CQ_TEST_OUTPUT_DIR):path.join(root,'output/本地学习运行'),out=process.env.CQ_TEST_OUTPUT_DIR?dir:path.join(root,freeOnly?'output/自由探索触发核验-2026-10-27':'output/课件语义与完整流程验收-2026-10-27');
 const route=require('../data/multi-scene-learning-route.json'),chapter=route.chapters.find(c=>c.id==='V14-C1'),C=require('../app/shared/learner-preferences'),M=require('../resources/open-maic/主动探索证据/exploration-model');
 async function main(){
- const runtime=JSON.parse(fs.readFileSync(path.join(dir,'运行状态.json'),'utf8')),code=JSON.parse(fs.readFileSync(path.join(dir,'演练凭据.json'),'utf8')).joinCode,base=`http://127.0.0.1:${runtime.port}`;
+ const runtime=process.env.CQ_TEST_BASE_URL?{baseUrl:process.env.CQ_TEST_BASE_URL,adminToken:process.env.CQ_TEST_ADMIN_TOKEN,joinCode:process.env.CQ_TEST_JOIN_CODE}:JSON.parse(fs.readFileSync(process.env.CQ_TEST_RUNTIME_FILE||path.join(dir,'运行状态.json'),'utf8')),code=runtime.joinCode||JSON.parse(fs.readFileSync(path.join(dir,'演练凭据.json'),'utf8')).joinCode,base=(runtime.baseUrl||`http://127.0.0.1:${runtime.port}`).replace(/\/$/,'');
  const credentials={nickname:'完整流程演练'+Date.now(),password:crypto.randomBytes(16).toString('base64url')+'9aA!'};fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(dir,'本轮完整流程账号.json'),JSON.stringify(credentials));
  const browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true});const page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(20000);
  const checks=[],errors=[],cycles=[],decisions=[];let userId=null,failure=null;page.on('pageerror',e=>errors.push(e.message));
@@ -101,6 +101,6 @@ async function main(){
   checks.push('管理员界面下载与接口核对真实新账号回放，关联配置、判断、模型支持、反馈、作答和问卷');
   assert.deepEqual(errors,[]);console.log('完整新账号学习流程通过：'+checks.join('；'));
  }catch(e){failure=e.message;await shot('完整流程失败现场');console.log((await page.locator('body').innerText()).slice(-4500));console.log(JSON.stringify(decisions).slice(-3500));throw e;}
- finally{fs.writeFileSync(path.join(out,'新账号完整学习验收.json'),JSON.stringify({synthetic:true,liveLocal:true,mockedModel:false,requireLiveModel,liveModelVerified:cycles.some(c=>c.audit.fallback===false),passed:checks.length===10&&!failure,failure,checks,errors,cycles:cycles.map(c=>({...c,audit:{fallback:c.audit.fallback,provider:c.audit.provider,model:c.audit.model,latencyMs:c.audit.latencyMs}}))},null,2));await browser.close();}
+ finally{fs.writeFileSync(path.join(out,'新账号完整学习验收.json'),JSON.stringify({synthetic:true,baseUrl:base,liveLocal:new URL(base).hostname==='127.0.0.1',mockedModel:false,requireLiveModel,liveModelVerified:cycles.some(c=>c.audit.fallback===false),passed:checks.length===10&&!failure,failure,checks,errors,cycles:cycles.map(c=>({...c,audit:{fallback:c.audit.fallback,provider:c.audit.provider,model:c.audit.model,latencyMs:c.audit.latencyMs}}))},null,2));await browser.close();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

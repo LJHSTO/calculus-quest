@@ -36,7 +36,11 @@
   async function show(){if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});if(!dialog){dialog=el('dialog');dialog.id='learner-setup';dialog.setAttribute('aria-labelledby','learner-setup-title');document.body.append(dialog);dialog.addEventListener('cancel',e=>{e.preventDefault();leave();});}
     lastFocus=document.activeElement;draw();if(!dialog.open)dialog.showModal();dialog.querySelector('h2')?.focus();}
   function leave(){dialog.close();if((preparation?.required&&preparation.stage!=='ready'||pilot?.enrollment?.status==='active'&&pilot.enrollment.stage!=='ready')&&typeof switchView==='function')switchView('home');lastFocus?.focus?.();}
-  async function open(){message='';const d=await request();applyData(d);
+  async function open(){message='';
+    // Persist the unit currently on screen before asking the server for its edit
+    // window; the previous quiz snapshot must not lock a newly opened lesson.
+    if(typeof syncLearningSnapshot==='function'&&typeof currentView==='string'&&currentView==='learn')await syncLearningSnapshot('preferences_opened');
+    const d=await request();applyData(d);
     if(preparation?.required&&preparation.stage==='entry'){await global.PilotStudyUI.open();return;}
     if(preparation?.required&&preparation.stage==='pretest'){mode='pretest';show();return;}
     if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'&&pilot.enrollment.stage==='baseline'){openPilot(pilot);return;}
@@ -117,7 +121,7 @@
         body.append(el('p','可以关闭页面，之后从保存的位置继续。暂时离开不会删除作答，也不会排除研究回放。'));
       }else {body.append(el('p',e.status==='withdrawn'?'你已退出；研究回放默认不再导出你的记录。数据处理请求由研究负责人按同意书处理。':'问卷已经保存，谢谢参与。'));if(e.status==='finished'&&e.followupEndsAt)body.append(el('p','若研究人员安排了延迟测量，请在后测至少72小时后返回“学习 → 本章路径 → 研究测量”。以页面开放时间为准；请在主流程结束后7天内完成。已有作答和进度会持续保留。'));body.append(button('返回平台',leave));}dialog.append(body);
     }else{
-      header('让帮助适合你的学习方式',hasSavedPreferences()?'学习偏好 · 已设置':experimental()?'学习偏好 · 完成每个知识点检测后可调整':'学习偏好');
+      header('让帮助适合你的学习方式',hasSavedPreferences()?'学习偏好 · 已设置':pilot?.version?.useMode==='internal_rehearsal'?'学习偏好 · 学习中可调整':experimental()?'学习偏好 · 完成每个知识点检测后可调整':'学习偏好');
       if(!enabled){dialog.append(el('p',pilot?.enrollment?.arm==='control'?'本次预试使用无主动介入的学习方式，六维偏好保持锁定。':configurationWindow?.message||'当前研究条件尚未开放偏好修改。'));if(record)for(const d of C.dimensions)dialog.append(el('p',d.short+'：'+(d.options.find(o=>o[0]===record.answers[d.id].value)?.[1]||'')));dialog.append(button('返回学习',()=>dialog.close()));return;}
       const nav=el('nav');nav.setAttribute('aria-label','六项学习偏好');nav.className='learner-steps';C.dimensions.forEach((d,i)=>{const b=button(d.short,()=>{step=i;draw();});b.setAttribute('aria-current',step===i?'step':'false');if(answers[d.id].reason)b.dataset.complete='true';nav.append(b);});dialog.append(nav);
       const body=el('div');body.className='learner-setup-body';
@@ -129,12 +133,12 @@
         const preview=el('aside');preview.className='learner-preview';preview.append(el('strong','会发生什么'),el('p',C.previewFor(d.id,a.value)));body.append(preview);
         const label=el('label','为什么这样选？'),select=el('select');select.name='preference-reason';select.setAttribute('aria-label','为什么这样选');const blank=el('option','请选择最接近的理由');blank.value='';select.append(blank);for(const [v,t]of C.reasonsFor(d.id)){const o=el('option',t);o.value=v;select.append(o);}select.value=a.reason;select.onchange=()=>a.reason=select.value;label.append(select);body.append(label);
         const note=el('textarea');note.rows=2;note.maxLength=500;note.value=a.note;note.setAttribute('aria-label','补充说明');note.placeholder='补充说明（选填；选择“其他原因”时填写）';note.oninput=()=>a.note=note.value;body.append(note);
-      }else{body.append(el('h3','核对你的选择'),el('p','这些设置只影响之后的帮助，不替你作答，也不改变测验评分。'));for(const d of C.dimensions){const row=el('div');row.className='learner-review-row';const a=answers[d.id];row.append(el('strong',d.short),el('span',d.options.find(o=>o[0]===a.value)?.[1]),el('small',C.reasonsFor(d.id).find(o=>o[0]===a.reason)?.[1]||'尚未选择理由'),button('修改'+d.short,()=>{step=C.dimensions.indexOf(d);draw();}));body.append(row);}}
+      }else{body.append(el('h3',hasSavedPreferences()?'已保存的学习偏好':'核对你的选择'),el('p',hasSavedPreferences()?'点击下方“修改”调整任意一项，保存后用于之后的帮助。已有作答和历史设置会保留。':'这些设置只影响之后的帮助，不替你作答，也不改变测验评分。'));for(const d of C.dimensions){const row=el('div');row.className='learner-review-row';const a=answers[d.id];row.append(el('strong',d.short),el('span',d.options.find(o=>o[0]===a.value)?.[1]),el('small',C.reasonsFor(d.id).find(o=>o[0]===a.reason)?.[1]||'尚未选择理由'),button('修改'+d.short,()=>{step=C.dimensions.indexOf(d);draw();}));body.append(row);}}
       dialog.append(body);const footer=el('footer');footer.className='learner-setup-footer';
       body.append(el('p','默认设置：先确认是否需要帮助，从少量线索开始，等当前小步完成再出现。它是便于开始的选择，不代表最适合每个人；你可以逐项调整。'));
       footer.append(button('先使用全部默认设置',()=>{logJourney('configuration_defaults_chosen');answers=C.defaults();for(const a of Object.values(answers))a.reason='default';selectionSource='defaults_button';step=6;draw();}));
       if(step>0)footer.append(button('上一步',()=>{step--;draw();}));
-      footer.append(button(step<5?'下一项':step===5?'核对选择':'保存并开始学习',async()=>{if(step<6){const d=C.dimensions[step],a=answers[d.id];if(!a.reason||(a.reason==='other'&&!a.note.trim()))throw new Error('请选择理由；其他原因需要补充说明');step++;draw();return;}
+      footer.append(button(step<5?'下一项':step===5?'核对选择':hasSavedPreferences()?'保存修改并返回学习':'保存并开始学习',async()=>{if(step<6){const d=C.dimensions[step],a=answers[d.id];if(!a.reason||(a.reason==='other'&&!a.note.trim()))throw new Error('请选择理由；其他原因需要补充说明');step++;draw();return;}
         C.validate(answers,{experimental:experimental()});busy=true;try{const result=await request({answers,expectedRevision:record?.revision||0,elapsedMs:Date.now()-started,selectionSource});applyData(result);dialog.close();await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();KnowledgeAssistant.refreshSupportSurface();await beginLearning();}finally{busy=false;}},true));dialog.append(footer);
     }
     if(mode==='study'&&['active','finished'].includes(pilot?.enrollment?.status)){

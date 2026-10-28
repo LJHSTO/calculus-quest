@@ -1314,6 +1314,11 @@ function reconcileQuizResults(records = []) {
         && String(existing.question_type || record.question_type || "").trim().toLowerCase() === "short_answer"
         && incomingQuizReviewIsGraded(record)
         && !quizResultHasAppliedRegrade(existing.id)
+        // An unsuccessful client snapshot is not a new grading result. Keep
+        // the server's recorded cause and feedback across reloads and deploys.
+        && !(existing.status === 'ai_reviewed'
+          && FAILED_AI_REVIEW_TYPES.includes(String(existing.ai_error_type || '').trim().toLowerCase())
+          && FAILED_AI_REVIEW_TYPES.includes(String(record.ai_error_type || '').trim().toLowerCase()))
       ) {
         const aiScore = finiteQuizValue(record.ai_score);
         const aiConfidence = finiteQuizValue(record.ai_confidence);

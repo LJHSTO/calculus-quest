@@ -1,5 +1,5 @@
 {
-  "version": "f001c2f572b4b3acc26b",
+  "version": "251837c74619d2860788",
   "indexSha256": "0a4e0f27fc1c87f44c318d9546f3406eaecd222ec76a4135076d7854ca70060d",
   "scripts": [
     {
@@ -220,12 +220,12 @@
     {
       "tag": "<script src=\"app/main/pilot-study.js?v=20261024\"></script>",
       "file": "app/main/pilot-study.js",
-      "sha256": "b881b876302f4e9403ef7f3457faadeaaaeb10ba6e7652025fef4c651951c556"
+      "sha256": "8ce3b34fad4b3e98503744876631b705708f9305c4664621077a574865dc62f8"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
       "file": "app/main/learner-setup.js",
-      "sha256": "f25e2093d3089740ee8a323c6d343a4006dc38a9d869bc41375c87ed3628f0a0"
+      "sha256": "bf4ce7aa9d07b8612bd978d7a382bfb5b86e64455f1c74a46e0726c2e5dfee38"
     },
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",

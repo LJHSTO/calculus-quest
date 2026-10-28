@@ -1011,7 +1011,12 @@ function checkRateLimit(req, pathname = "") {
   // Only verified sessions get an account bucket; login and invalid tokens
   // retain the anonymous network bucket. Different sessions share one user key.
   const account = pathname.startsWith('/api/auth/') ? null : authenticate(req)?.participant.id;
-  const key = account ? 'user:'+account : 'ip:'+ip;
+  // Polling and event/snapshot synchronization must not spend the quota needed
+  // to submit answers or save preferences. Every bucket remains bounded, and
+  // all sessions of the same verified account still share those limits.
+  const traffic = ['/api/learning/event','/api/learning/events','/api/learning/snapshot'].includes(pathname)
+    ? 'sync' : req.method === 'GET' ? 'read' : 'action';
+  const key = account ? 'user:'+account+':'+traffic : 'ip:'+ip;
   const now = Date.now();
   let entry = rateLimitMap.get(key);
   if (!entry || now >= entry.resetAt) {

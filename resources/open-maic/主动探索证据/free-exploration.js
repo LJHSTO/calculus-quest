@@ -1,6 +1,17 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(root)root.FreeExploration=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){
  'use strict';
  const version='free-exploration-20261027-v1';
+ function comparisonTiming(first,last){
+  const start=Date.parse(first.row.payload?.timing?.clientAt),end=Date.parse(last.row.payload?.timing?.clientAt);
+  const session=first.row.payload?.sessionId;
+  // Small clock skew is clamped at ingestion. Batch receipt times can therefore
+  // collapse a genuine comparison. Use only relative time in the same session,
+  // within the ingestion clock tolerance; freshness still uses stored server time.
+  if(session&&session===last.row.payload?.sessionId&&Number.isFinite(start)&&Number.isFinite(end)
+    &&Math.abs(start-first.at)<=5000&&Math.abs(end-last.at)<=5000&&end>=start&&end-start<=300000)
+   return {durationMs:end-start,source:'same_session_relative_clock_within_5s_tolerance'};
+  return {durationMs:last.at-first.at,source:'stored_event_time'};
+ }
  const points=['GH-01-K01','GH-01-K02','GH-01-K03','GH-02-K01','GH-02-K02','GH-02-K03'];
  const guides=[
   '保持规则不变，比较两个输入和对应输出；再换规则。输入、输出和规则是三个不同的对象。',
@@ -69,11 +80,11 @@
    const entries=groups.get(group)||[];
    if(!entries.some(e=>e.key===observation.key))entries.push(entry);groups.set(group,entries);
   }
-  const found=[...groups.values()].filter(a=>a.length>=config.minimum&&changes.get(a[0].group).at(-1).at-a[0].at>=3000).sort((a,b)=>changes.get(b[0].group).at(-1).at-changes.get(a[0].group).at(-1).at)[0];
+  const found=[...groups.values()].filter(a=>a.length>=config.minimum&&comparisonTiming(a[0],changes.get(a[0].group).at(-1)).durationMs>=3000).sort((a,b)=>changes.get(b[0].group).at(-1).at-changes.get(a[0].group).at(-1).at)[0];
   if(!found)return null;
   const selected=found.slice(-config.minimum),latest=changes.get(found[0].group).at(-1),sources=[...selected];
   if(!sources.some(e=>e.row.id===latest.row.id))sources.push(latest);
-  return{verified:true,version,scope:point,scene,channel:latest.channel,latestAt:latest.at,observationCount:changes.get(latest.group).length,minimum:config.minimum,
+  return{verified:true,version,scope:point,scene,channel:latest.channel,latestAt:latest.at,comparisonTiming:comparisonTiming(found[0],latest),observationCount:changes.get(latest.group).length,minimum:config.minimum,
    purpose:'reflection_opportunity',psychologicalState:'unknown',needEstimateApplicable:false,
    text:'刚才你操作查看了'+selected.map(e=>e.label).join('、')+'。',guide:config.guide,
    sources:sources.map(e=>({id:e.row.id,sourceType:'interaction',eventType:'courseware_exploration_observed',capturedAt:e.row.created_at,serverRechecked:true,observation:{channel:e.channel,context:e.context||'',value:e.value,label:e.label}}))};

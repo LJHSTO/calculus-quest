@@ -10,6 +10,10 @@ async function main(){
   const users=[];for(let i=0;i<20;i++){const r=await fetch(base+'/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nickname:'同网段合成'+i,password:'synthetic-network-test-only',email:''})});assert.equal(r.status,200);users.push(await r.json());}
   const start=Date.now();const responses=await Promise.all(users.flatMap(u=>Array.from({length:8},()=>get(u.token))));assert.equal(responses.length,160);assert.ok(responses.every(r=>r.status===200),'同一IP的20账号不应互相耗尽配额');
   for(let i=0;i<52;i++)assert.equal((await get(users[0].token)).status,200);assert.equal((await get(users[0].token)).status,429,'同一账号仍受限制');assert.equal((await get(users[1].token)).status,200,'不影响另一账号');
+  const headers={Authorization:'Bearer '+users[0].token,'Content-Type':'application/json'};
+  const snapshot=await fetch(base+'/api/learning/snapshot',{headers});assert.equal(snapshot.status,200,'后台读取耗尽额度后，进度同步仍须可用');const state=await snapshot.json();
+  const saved=await fetch(base+'/api/learning/snapshot',{method:'POST',headers,body:JSON.stringify({generation:state.generation,baseRevision:state.revision,snapshot:state.snapshot||{}})});assert.equal(saved.status,200,'后台轮询不得耗尽学生保存进度的额度');
+  const submit=await fetch(base+'/api/learning/quiz/submit',{method:'POST',headers,body:JSON.stringify({})});assert.notEqual(submit.status,429,'学生明确提交作答使用独立于后台读取的额度');
   const login=await fetch(base+'/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:'同网段合成0',password:'synthetic-network-test-only'})});assert.equal(login.status,200);const secondSession=await login.json();assert.equal((await get(secondSession.token)).status,429,'新增登录会话不能重置账号额度');
   let limited=false;for(let i=0;i<65;i++){if((await get('invalid-'+i)).status===429){limited=true;break;}}assert.ok(limited,'伪造不同令牌不能逃离匿名限流');
   console.log(JSON.stringify({passed:true,synthetic:true,users:20,concurrentReads:160,allSucceeded:true,accountLimit:true,sharedSessionLimit:true,invalidTokenLimit:true,elapsedMs:Date.now()-start}));

@@ -173,6 +173,11 @@ async function testDatabaseReconciliation(db, objectiveEntry, shortEntry) {
     "existing objective evidence must not be overwritten"
   );
 
+  const pendingShort=pendingRows.find(r=>r.question_type==='short_answer');
+  db.getDbSync().run("UPDATE quiz_results SET status='ai_reviewed',is_correct=0,score=0,ai_score=0,ai_confidence=0,ai_error_type='api_timeout',ai_feedback='服务端保留的超时说明' WHERE id=?",[pendingShort.id]);
+  const staleFailure={...pendingShort,status:'ai_reviewed',is_correct:0,score:0,ai_score:0,ai_confidence:0,ai_error_type:'api_error',ai_feedback:'旧页面中的通用失败说明'};
+  assert.equal(db.reconcileQuizResults([staleFailure]).updated,0,'旧快照中的另一种失败占位不能覆盖服务器已记录的失败原因');
+  assert.equal(queryRows(db,'SELECT ai_error_type FROM quiz_results WHERE id=?',[pendingShort.id])[0].ai_error_type,'api_timeout');
   const gradedShort = snapshotRecord(shortEntry, {
     aiScore: Number(shortEntry.question.points || 0),
     aiConfidence: 0.97,
