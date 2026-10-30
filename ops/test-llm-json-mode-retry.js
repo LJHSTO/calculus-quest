@@ -52,6 +52,11 @@ global.fetch = async (_url, options = {}) => {
     assert.equal(requests[1].response_format, undefined);
     assert.equal(requests[1].enable_thinking, false);
     assert.equal(result.text, '{"action":"stay_silent","confidence":0.8}');
+    const deepseek = llm._internals.completionRequest({wireApi:'chat-completions',model:'DeepSeek-V4-Flash',system:'Return JSON.',user:'Synthetic request',jsonHint:true,maxTokens:600});
+    assert.deepEqual(deepseek.thinking,{type:'disabled'},'Bounded DeepSeek V4 JSON requests must disable the default thinking mode');
+    assert.equal(deepseek.enable_thinking,undefined,'Use the documented DeepSeek parameter, not the Qwen extension');
+    assert.equal(llm._internals.completionRequest({model:'DeepSeek-V4-Flash',jsonHint:false}).thinking,undefined,'Ordinary conversation remains unchanged');
+    assert.equal(llm._internals.completionRequest({model:'unrelated-model',jsonHint:true}).thinking,undefined,'Do not send provider-specific parameters to unrelated models');
     console.log("llm JSON mode retry tests passed");
   } finally {
     global.fetch = originalFetch;
