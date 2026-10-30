@@ -17,6 +17,15 @@ assert.match(css, /\.\.\/lib\/fonts\/KaTeX_Main-Regular\.woff2/);
 assert.ok(!css.includes("D:") && !css.includes("\\Projects\\"));
 const read = fs.readFileSync;
 try {
+  for (const endings of ["\n", "\r\n"]) {
+    fs.readFileSync = (file, ...args) => {
+      const value = read(file, ...args);
+      if (!/\.(?:js|css|html|svg)$/.test(String(file))) return value;
+      const converted = String(value).replace(/\r?\n/g, endings);
+      return Buffer.isBuffer(value) ? Buffer.from(converted) : converted;
+    };
+    assert.ok(loadLearningRuntime(root), "Equivalent Windows/Linux line endings must keep the validated runtime usable.");
+  }
   for (const source of ["app/main/core.js", "styles.css", "assets/classroom-icons/Play.svg"]) {
     fs.readFileSync = (file, ...args) => {
       const value = read(file, ...args);

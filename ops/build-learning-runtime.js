@@ -28,7 +28,8 @@ async function main() {
     target: "es2022", legalComments: "inline"
   })).code;
   const bytes = Buffer.from(code);
-  const digest = value => crypto.createHash("sha256").update(value).digest("hex");
+  // Git checkouts on Windows and Linux may differ only in text line endings.
+  const digest = value => crypto.createHash("sha256").update(String(value).replace(/\r\n/g, "\n")).digest("hex");
   const styles = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)" \/>/g)]
     .map(match => ({ tag: match[0], file: match[1].split("?")[0] }));
   const styleBuild = await esbuild.build({
@@ -53,6 +54,7 @@ async function main() {
   const icons = [...new Set([...html.matchAll(/src="(assets\/classroom-icons\/[^"]+\.svg)"/g)].map(match => match[1]))]
     .map(file => ({ file, sha256: digest(fs.readFileSync(path.join(root, file))) }));
   const manifest = {
+    sourceLineEndings: "lf",
     version: digest(bytes).slice(0, 20),
     indexSha256: digest(html),
     scripts: scripts.map((script, index) => ({ ...script, sha256: digest(contents[index]) })),
