@@ -2,7 +2,62 @@
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>坐标寻宝航线</title><style>*{box-sizing:border-box}body{margin:0;background:#f7f8fc;color:#25334b;font:15px/1.65 'Microsoft YaHei','PingFang SC',sans-serif}main{max-width:1100px;margin:auto;padding:20px}header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}h1{font-size:24px;margin:0}#progress{color:#6551b7;font-weight:600}#mission{margin:8px 0 18px;max-width:80ch}.game-layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(240px,.85fr);gap:20px;align-items:start}.board{background:white;border:1px solid #e0e5ef;border-radius:16px;padding:14px;min-width:0}svg{display:block;width:100%;max-height:390px}svg text{font:14px 'Microsoft YaHei',sans-serif;fill:#36445d}#tools{min-width:0}button{font:inherit;min-height:42px;padding:8px 12px;margin:4px 4px 4px 0;border:1px solid #d6d5e7;border-radius:8px;background:#fff;color:#423b68;cursor:pointer}button:hover{background:#efecfb}button[aria-pressed=true],#next-round{background:#6250c3;color:white;border-color:#6250c3}button:focus-visible,input:focus-visible{outline:3px solid #d88b16;outline-offset:2px}button:disabled{cursor:default;opacity:.65}.choice-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px}.choice-row strong{min-width:58px}label{display:block;margin:12px 0}input[type=range]{display:block;width:100%;min-height:36px;accent-color:#6250c3}.coordinate-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.coordinate-grid button{margin:0;padding:0;min-height:40px;font:12px/1.3 sans-serif}.coordinate-grid button.collected{background:#e8b746;color:#302300}.coordinate-grid button:nth-child(7n+4){border-color:#8f82bc}.coordinate-grid button:nth-child(n+22):nth-child(-n+28){border-color:#8f82bc}#result{padding:12px 0;min-height:56px;color:#354469;font-weight:600}table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:6px;border-bottom:1px solid #dbe2ef;text-align:center}caption{font-weight:600;color:#6250c3}.learning-note{font-size:12px;color:#65718b;border-top:1px solid #e0e5ef;padding-top:12px}small{display:block;color:#65718b}.support-anchor{min-width:0;width:100%}@media(max-width:660px){main{padding:12px}.game-layout{grid-template-columns:1fr;gap:10px}h1{font-size:20px}.board{padding:8px}svg{max-height:280px}.coordinate-grid button{min-height:36px}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
 
 .coordinate-grid button.target-column{border:2px solid #6152c9;background:#f0edff}.coordinate-grid button.collected{background:#d5f0e7;color:#145d4c}
-</style><script type="application/json" id="openmaic-semantic-contract">{"schema_version":"openmaic.semantic-contract.v1","contract_revision":"2026-10-27","course_version":"concept-games-20261027-v3","chapter_id":"V14-C1","chapter_title":"函数与极限","module_id":"GH-01","module_title":"函数、坐标与图像读法入门","knowledge_point_id":"GH-01-K02","concept_tag":"坐标点与函数图像","scene_type":"game","resource_id":"GH-01-K02:game","resource_title":"坐标寻宝航线","learning_objective":"点 (x, y) 在图像上，当且仅当 y=f(x)。横坐标和纵坐标不能任意调换。","misconception":"有序对先横后纵；图像上的点还必须满足 y=f(x)，不能只看点在哪里。","observable_evidence":"具体路线构建、坐标定位、接缝操作及实际任务判定；不把点击数量或完成游戏视为独立掌握。","evidence_events":["scene_entered","parameter_commit","attempt_submitted","challenge_result"],"capabilities":{"widget_type":"game","controls":["button","range"],"reports_attempt":true,"reports_challenge":true,"reports_hint":false,"reports_reset":false,"judges_correctness":true,"requires_webgl":false,"requires_network":false,"keeps_local_state":false},"safe_entry_points":{"open_at_start":true,"deep_link_supported":false,"resume_supported":false,"reentry_after_help":"resume_or_restart"},"assessment_restrictions":{"independent_evidence_allowed":false,"independent_requires":"该场景不上报提示使用，无法确认本次尝试是否无辅助，因此不作为独立掌握证据","counts_toward_mastery":false,"mastery_source":"platform_verification_items"},"completion_semantics":{"success_requires":"由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替","independent_requires":"游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题","failure_is_evidence":true}}</script></head><body><main><header><h1>坐标寻宝航线</h1><span id="progress"></span></header><p id="mission"></p><div class="game-layout"><section class="board" id="board" aria-label="游戏操作画布"></section><section><div id="tools"></div><p id="result" role="status"></p></section></div><section class="support-anchor" data-cq-support-anchor></section><p class="learning-note">请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。 游戏不计入测验成绩；可以根据反馈调整，再次尝试。</p></main><script type="application/json" id="lesson">{"id":"GH-01-K02","gameKind":1,"title":"坐标寻宝航线"}</script><script>(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.ConceptGame=api;})(typeof globalThis==='object'?globalThis:this,function(){
+</style><script type="application/json" id="openmaic-semantic-contract" data-openmaic-semantic-contract="1">
+{
+  "schema_version": "openmaic.semantic-contract.v1",
+  "contract_revision": "2026-10-27",
+  "course_version": "concept-games-20261027-v3",
+  "chapter_id": "V14-C1",
+  "chapter_title": "函数与极限",
+  "module_id": "GH-01",
+  "module_title": "函数、坐标与图像读法入门",
+  "knowledge_point_id": "GH-01-K02",
+  "concept_tag": "坐标点与函数图像",
+  "scene_type": "game",
+  "resource_id": "GH-01-K02:game",
+  "resource_title": "坐标寻宝航线",
+  "learning_objective": "请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。",
+  "misconception": "有序对先横后纵；图像上的点还必须满足 y=f(x)，不能只看点在哪里。",
+  "observable_evidence": "在坐标棋盘上寻找补给，并连接函数航线。",
+  "evidence_events": [
+    "scene_entered",
+    "parameter_commit",
+    "attempt_submitted",
+    "challenge_result",
+    "task_progress"
+  ],
+  "capabilities": {
+    "widget_type": "game",
+    "controls": [],
+    "reports_attempt": true,
+    "reports_challenge": true,
+    "reports_hint": false,
+    "reports_reset": false,
+    "judges_correctness": true,
+    "requires_webgl": false,
+    "requires_network": false,
+    "keeps_local_state": false
+  },
+  "safe_entry_points": {
+    "open_at_start": true,
+    "deep_link_supported": false,
+    "resume_supported": false,
+    "reentry_after_help": "restart_scene"
+  },
+  "assessment_restrictions": {
+    "independent_evidence_allowed": false,
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "counts_toward_mastery": false,
+    "mastery_source": "platform_verification_items"
+  },
+  "completion_semantics": {
+    "success_requires": "由关卡真实判定函数产生 is_correct=true，不能由点击次数或打开页面代替",
+    "independent_requires": "游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题",
+    "failure_is_evidence": true
+  }
+}
+</script><style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
+</head><body><main><header><h1>坐标寻宝航线</h1><span id="progress"></span></header><p id="mission"></p><div class="game-layout"><section class="board" id="board" aria-label="游戏操作画布"></section><section><div id="tools"></div><p id="result" role="status"></p></section></div><section class="support-anchor" data-cq-support-anchor></section><p class="learning-note">请解释一个点的横坐标与纵坐标各表示什么，怎样判断它是否属于函数图像。 游戏不计入测验成绩；可以根据反馈调整，再次尝试。</p></main><script type="application/json" id="lesson">{"id":"GH-01-K02","gameKind":1,"title":"坐标寻宝航线"}</script><script>(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.ConceptGame=api;})(typeof globalThis==='object'?globalThis:this,function(){
   'use strict';
   const titles=['函数分流站','坐标寻宝航线','山地路线拼图','趋近着陆任务','双侧会合港','连续桥维修'];
   function create(kind,round=0){return {kind,round,won:false,attempts:0,moves:0,links:round?[[0],[0,1],[]]:[[0,1],[],[1]],parcel:0,collected:[],segments:[null,null,null],distance:1,point:5,docks:[0,0],right:round?4:2};}

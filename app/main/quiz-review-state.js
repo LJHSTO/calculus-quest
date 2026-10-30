@@ -12,7 +12,7 @@
     "manual_fallback",
     "unknown"
   ]);
-  const CONTINUE_SUFFIX = "已暂记 0 分，可继续学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。";
+  const CONTINUE_SUFFIX = "评分暂不可用，未计分；可以继续学习，之后可重新评分或人工复核。";
   const FAILED_FEEDBACK_RE = /评分超时|评分出错|解析失败|评分.*未返回|模型接口返回了空文本|未启用真实(?:大模型|智能评分)|(?:已先按|已暂记)\s*0\s*分|fetch failed|failed to fetch/i;
 
   function errorType(result = {}) {
@@ -28,7 +28,7 @@
   }
 
   function aiReviewFailed(result = {}) {
-    if (FAILURE_TYPES.has(errorType(result))) return true;
+    if (result.status === "grading_unavailable" || FAILURE_TYPES.has(errorType(result))) return true;
     if (FAILED_FEEDBACK_RE.test(feedback(result))) return true;
     // A manual-review recommendation is not a failed score. Without an
     // explicit failure type or legacy failure message, keep the record as
@@ -45,25 +45,25 @@
   }
 
   function continuationFeedback(value = "") {
-    const text = String(value || "").trim();
-    if (text.includes("已先按 0 分计入") || text.includes("已暂记 0 分") || text.includes("可以继续学习")) return text;
+    const text = String(value || "").trim().replace(/(?:已先按|已暂记)\s*0\s*分[\s\S]*$/u, "").replace(/评分暂不可用，未计分[\s\S]*$/u, "");
     const prefix = text ? `${text.replace(/[。.!！？?\s]+$/u, "")}。` : "";
     return `${prefix}${CONTINUE_SUFFIX}`;
   }
 
   function normalizeFailed(result = {}) {
-    if (!rawPending(result) || !aiReviewFailed(result)) return result;
+    if (!aiReviewFailed(result)) return result;
+    if (result.status === "grading_unavailable" && result.score === null && result.aiScore === null && result.isCorrect === null && result.fallbackScored === false) return result;
     return {
       ...result,
-      aiScore: 0,
+      aiScore: null,
       aiConfidence: Number(result.aiConfidence ?? result.ai_confidence ?? 0) || 0,
       aiFeedback: continuationFeedback(feedback(result)),
       aiErrorType: errorType(result) || "unknown",
       aiNeedsReview: true,
-      status: "ai_reviewed",
-      isCorrect: false,
-      score: 0,
-      fallbackScored: true
+      status: "grading_unavailable",
+      isCorrect: null,
+      score: null,
+      fallbackScored: false
     };
   }
 

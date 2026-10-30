@@ -246,7 +246,11 @@ async function main() {
     );
     assert.equal(fallback.response.status, 200);
     assert.equal(fallback.payload.results.length, 1);
-    assert.equal(fallback.payload.results[0].score, 0);
+    assert.equal(fallback.payload.results[0].score, null);
+    assert.equal(fallback.payload.results[0].isCorrect, null);
+    assert.equal(fallback.payload.results[0].status, "grading_unavailable");
+    assert.equal(fallback.payload.results[0].needsReview, true);
+    assert.doesNotMatch(fallback.payload.results[0].feedback, /已暂记.*0 分/);
     assert.equal(fallback.payload.results[0].errorType, "manual_fallback");
 
     const fallbackStoredResponse = await fetch(baseUrl + "/api/learning/quiz-results", {
@@ -254,10 +258,10 @@ async function main() {
     });
     const fallbackStored = await fallbackStoredResponse.json();
     const storedShort = fallbackStored.data.find((result) => result.question_id === sourceShortQuestion.id);
-    assert.equal(storedShort.status, "ai_reviewed");
-    assert.equal(storedShort.is_correct, 0);
-    assert.equal(storedShort.score, 0);
-    assert.equal(storedShort.ai_score, 0);
+    assert.equal(storedShort.status, "grading_unavailable");
+    assert.equal(storedShort.is_correct, -1);
+    assert.equal(storedShort.score, null);
+    assert.equal(storedShort.ai_score, null);
     assert.equal(storedShort.ai_error_type, "manual_fallback");
 
     const wrongCoreAnswer = adaptiveCore.options.find((option) => !adaptiveCore.answer.includes(option.value)).value;

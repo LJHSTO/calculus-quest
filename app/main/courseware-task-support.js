@@ -122,11 +122,13 @@
     const key = JSON.stringify(current.tree,(name,value)=>name==='value'?undefined:value);
     if (key !== treeKey) {
       const active=host.shadowRoot.activeElement, focused=active?.dataset.taskControl, label=active?.getAttribute('aria-label');
+      const selection=active&&typeof active.selectionStart==='number'?{start:active.selectionStart,end:active.selectionEnd,direction:active.selectionDirection,scrollTop:active.scrollTop,value:active.value}:null;
       const expanded=new Map([...content.querySelectorAll('details')].map(n=>[n.querySelector('summary')?.textContent,n.open]));
       treeKey=key; content.replaceChildren(fromTree(current.tree));
       for(const node of content.querySelectorAll('details')){const key=node.querySelector('summary')?.textContent;if(expanded.has(key))node.open=expanded.get(key);}
       const field=focused&&content.querySelector(`[data-task-control="${focused}"]`) || label&&[...content.querySelectorAll('textarea,input')].find(n=>n.getAttribute('aria-label')===label);
       field?.focus({preventScroll:true});
+      if(field&&selection&&field.value===selection.value){try{field.setSelectionRange(selection.start,selection.end,selection.direction);}catch{}field.scrollTop=selection.scrollTop;}
     }else{
       function syncValues(item){if(!item||typeof item!=='object')return;if(item.id&&item.value!=null){const field=content.querySelector(`[data-task-control="${item.id}"]`);if(field&&field!==host.shadowRoot.activeElement&&field.value!==String(item.value))field.value=String(item.value);}for(const child of item.children||[])syncValues(child);}
       syncValues(current.tree);

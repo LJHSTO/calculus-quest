@@ -136,7 +136,7 @@ function pilotFacts(user,scope,unitId,generation) {
 }
 function publicSupportCycles(user,generation){
   const rows=supportCycles.state(user,generation),protectedCheck=rows.some(c=>c.status==="awaiting_check");
-  return rows.map(c=>({...c,content:protectedCheck?null:c.content&&{...c.content,audit:{...c.content.audit,promptSnapshot:undefined}}}));
+  return rows.map(({pendingContent,...c})=>({...c,content:protectedCheck?null:c.content&&{...c.content,audit:{...c.content.audit,promptSnapshot:undefined}}}));
 }
 const proactiveGlobalPreferenceControlEnabled = ["1", "true", "yes", "on"].includes(
   String(process.env.PROACTIVE_GLOBAL_PREFERENCE_CONTROL || "").trim().toLowerCase()
@@ -2156,7 +2156,7 @@ function proactiveOutcomeState(
       feedbackPolicy: instrument.feedbackPolicy,
       status,
       reason,
-      unlockAt,
+      unlockAt: stageId === "retention" && Number.isFinite(retentionUnlockAt) ? new Date(retentionUnlockAt).toISOString() : unlockAt,
       closeAt: stageId === "retention" && Number.isFinite(retentionCloseAt)
         ? new Date(retentionCloseAt).toISOString()
         : "",
@@ -2620,17 +2620,16 @@ function proactiveEvidenceForRequest({
       }));
   }
 
-  const latestEvent = rows
-    .map((row) => ({ row, at: proactiveEventAt(row), type: proactiveEventType(row) }))
+  const eventEntries = rows.map((row) => ({ row, at: proactiveEventAt(row), type: proactiveEventType(row) }));
+  const boundaryState = require("./lib/support-boundary").latestBoundary(eventEntries, proactiveNaturalBoundaryEventTypes, now);
+  const latestEvent = eventEntries
     .filter((entry) => entry.at > 0 && entry.at <= now)
     .sort((left, right) => right.at - left.at)[0] || null;
   if (latestEvent) {
     evidence.dwellSeconds = Math.max(0, Math.floor((now - latestEvent.at) / 1000));
-    const boundaryAgeMs = now - latestEvent.at;
-    evidence.naturalBoundary = proactiveNaturalBoundaryEventTypes.has(latestEvent.type)
-      && boundaryAgeMs >= 0
-      && boundaryAgeMs <= 12_000;
-    evidence.boundaryEventType = evidence.naturalBoundary ? latestEvent.type : "";
+    evidence.naturalBoundary = boundaryState.active;
+    evidence.boundaryToken = boundaryState.token;
+    evidence.boundaryEventType = evidence.naturalBoundary ? boundaryState.entry.type : "";
   }
   if(signal.kind === 'exploration_reflection') {
     const opportunity=require('./resources/open-maic/主动探索证据/free-exploration').collect(rows,resolved.unit.knowledgePointId||resolved.unit.id,resolved.scene?.type||resolved.contextRef?.sceneType,now);
@@ -2659,11 +2658,11 @@ function proactiveEvidenceForRequest({
     evidence.sceneAttemptFailures = coursewareAttemptFailures;
     if (signal.boundaryRecheck === true) {
       const boundaryAfterCandidate = pendingQuiet.valid
-        && latestEvent
+        && boundaryState.entry
         && evidence.naturalBoundary
-        && latestEvent.at >= pendingQuiet.candidateAt;
+        && boundaryState.entry.at >= pendingQuiet.candidateAt;
       evidence.naturalBoundary = Boolean(boundaryAfterCandidate);
-      evidence.boundaryEventType = boundaryAfterCandidate ? latestEvent.type : "";
+      evidence.boundaryEventType = boundaryAfterCandidate ? boundaryState.entry.type : "";
       if (boundaryAfterCandidate) {
         // Retain the original waiting episode, but rebuild need from current
         // results/process. Historical errors must never be copied back as current.
@@ -2675,10 +2674,10 @@ function proactiveEvidenceForRequest({
           Number(pendingQuiet.evidence.dwellSeconds || 0)
         );
         refs.push({
-          id: latestEvent.row.id,
+          id: boundaryState.entry.row.id,
           sourceType: "interaction",
-          eventType: latestEvent.type,
-          capturedAt: latestEvent.row.created_at
+          eventType: boundaryState.entry.type,
+          capturedAt: boundaryState.entry.row.created_at
         });
       }
     } else if (
@@ -4077,7 +4076,7 @@ async function generateAssistantTurn({
       }),
       policy: prompt.policy,
       guidance: prompt.guidance,
-      fallback: false
+      fallback: true
     };
   }
 
@@ -5799,7 +5798,7 @@ async function handleApi(req, res, url) {
           const pendingInquiry=supportCycles.current(user,scope,generation);
           if(body.action==="advance"&&pendingInquiry?.status==="awaiting_confirmation"){
             const fresh=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:"quiet_dwell"},policyState:{},now:Date.now()});
-            const disabled=proactiveStudentPreference(user,scope)==="off"||profile.proactivity==="reactive"||!profile.supportInquiryEnabled
+            const disabled=proactiveStudentPreference(user,scope)==="off"||!require('./lib/support-cycle').inquiryAllowed(profile,pendingInquiry.inquiry)
               ||proactiveStudyConfig.mode!=="active"||proactiveExperimentRuntime()?.status==="paused";
             const latestCheck=agentRuntime.state(user,generation).memory.find(r=>r.scope===scope);
             const resolvedGap=fresh.commonProbe?.correct===true||Boolean(latestCheck?.payload.outcome.success===true&&Date.parse(latestCheck.created_at)>Date.parse(pendingInquiry.createdAt))||(pendingInquiry.inquiry.basis==="unresolved_recorded_answer"&&Number(fresh.confirmedGapCount||0)===0);
@@ -5814,11 +5813,13 @@ async function handleApi(req, res, url) {
               const fresh=supportCycles.current(user,scope,generation), explicit=body.action==="report";
               const evidence=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:"quiet_dwell"},sceneType:body.sceneType,policyState:{},now:Date.now()});
               return {protected:protectedNow() || supportCycles.protects(user,generation),
+                contextKey:db.getLearningSnapshotState(user,nowIso()).snapshot?.data?.currentUnitId || scope,
+                boundaryToken:explicit ? `explicit:${fresh?.id}` : evidence.boundaryToken,
                 profileRevision:researchControlStore.read(user)?.revision||0,
                 disabled:db.currentLearningGeneration(user)!==generation || proactiveStudyConfig.mode!=="active" || proactiveExperimentRuntime()?.status==="paused"
                   || (!explicit && (proactiveStudentPreference(user,scope)==="off" || profile.proactivity==="reactive"))
                   || proactiveParticipationForUser(user,{createImplicit:false})?.status==="withdrawn",
-                occupied:!explicit && !automaticBudgetReserved && proactiveInterventionBudgetInfo(user).remaining<=0,boundary:explicit || evidence.naturalBoundary===true || Boolean(fresh?.need.source==="student_confirmed" && body.boundary===true && body.action==="report")};
+                occupied:!explicit && !fresh?.pendingContent && !automaticBudgetReserved && proactiveInterventionBudgetInfo(user).remaining<=0,boundary:explicit || evidence.naturalBoundary===true || Boolean(fresh?.need.source==="student_confirmed" && body.boundary===true && body.action==="report")};
             },
             memory:agentRuntime.state(user,generation).memory.filter(r=>r.scope===scope).slice(0,3).map(r=>({sourceId:r.source_id,outcome:r.payload.outcome,at:r.created_at})),
             generate:async input=>{
@@ -9665,17 +9666,14 @@ async function handleApi(req, res, url) {
           return;
         }
         const results = fallbackQuestions.map((question) => {
-          const row = latest.get(`${question.unitId || ""}:${question.questionId || ""}`) || {};
-          const existingFeedback = String(row.ai_feedback || "").trim();
-          const feedback = /已先按 0 分计入|已暂记 0 分|可以继续学习/.test(existingFeedback)
-            ? existingFeedback
-            : `${existingFeedback ? `${existingFeedback.replace(/[。.!！？?\s]+$/u, "")}。` : ""}你选择继续学习。这题已暂记为 0 分并保留待复核，暂记分数不会用于学习建议。`;
+          const feedback = "你选择继续学习。这题暂时无法评分，已保留作答供后续复核；缺失的评分不会按零分计入成绩或学习建议。";
           return {
             questionId: question.questionId,
             unitId: question.unitId,
             chapterId: question.chapterId,
-            score: 0,
-            isCorrect: false,
+            score: null,
+            isCorrect: null,
+            status: "grading_unavailable",
             confidence: 0,
             errorType: "manual_fallback",
             weakConcepts: [],

@@ -52,7 +52,8 @@ function testClientFallbackEvidence(reviewState) {
     aiErrorType: "api_timeout"
   };
   assert.equal(context.quizHasScoredEvidence(timedOut), false);
-  assert.equal(context.quizQuestionScoreLabel({ points: 2 }, timedOut), "本题暂记：0 / 2 分（待复核）");
+  assert.equal(context.quizQuestionScoreLabel({ points: 2 }, timedOut), "本题评分暂不可用（未计分；满分 2 分）");
+  assert.equal(context.quizEarnedScore(timedOut, { points: 2 }), null);
   const timeoutSummary = context.summarizeQuizAttempt([timedOut], [{ id: "timeout-q", points: 2 }]);
   assert.equal(timeoutSummary.reviewUnavailable, 1);
   assert.equal(timeoutSummary.scoredQuestions, 0);
@@ -74,6 +75,11 @@ function testClientFallbackEvidence(reviewState) {
   assert.equal(scoredSummary.reviewUnavailable, 0);
   assert.equal(scoredSummary.scoredQuestions, 1);
   assert.equal(scoredSummary.scoreReady, true);
+  const questions = Array.from({length:10},(_,i)=>({id:`q${i}`,type:'single',points:1})).concat([{id:'unknown',type:'short_answer',points:2},{id:'fail',type:'short_answer',points:2}]);
+  const records = questions.map(q=>({questionId:q.id,questionType:q.type,isCorrect:false,score:0,maxScore:q.points,aiErrorType:'none'}));
+  records[10].response='__unknown__'; records[11]={...timedOut,questionId:'fail'};
+  const mixed=context.summarizeQuizAttempt(records,questions);
+  assert.equal(mixed.objectiveTotal,10);assert.equal(mixed.scoredQuestions,11);assert.equal(mixed.reviewUnavailable,1);assert.equal(mixed.scoredPossible,12);
 }
 
 async function testDatabaseRecovery() {
@@ -178,8 +184,8 @@ async function testDatabaseRecovery() {
     const failed = db.getDbSync().exec(
       "SELECT status, is_correct, score, ai_score, ai_error_type, ai_feedback FROM quiz_results WHERE id = 'failed-review'"
     )[0].values[0];
-    assert.deepEqual(failed.slice(0, 5), ["ai_reviewed", 0, 0, 0, "api_error"]);
-    assert.match(failed[5], /已暂记 0 分/);
+    assert.deepEqual(failed.slice(0, 5), ["grading_unavailable", -1, null, null, "api_error"]);
+    assert.match(failed[5], /未计分/);
 
     const updatedIds = db.updateQuizResultAiGrading("GH-07-pre-q5", "recovery-user", {
       unitId: "V14-C3-pre",
@@ -209,7 +215,8 @@ async function testDatabaseRecovery() {
     const futureFailure = db.getDbSync().exec(
       "SELECT status, is_correct, score, ai_score FROM quiz_results WHERE id = 'genuine-pending'"
     )[0].values[0];
-    assert.deepEqual(futureFailure, ["ai_reviewed", 0, 0, 0]);
+    assert.deepEqual(futureFailure, ["grading_unavailable", -1, null, null]);
+    assert.equal(db.normalizeFailedPendingQuizReviews(),0,'normalization is idempotent');
   } finally {
     db.saveNow();
     db.releaseWriteLock();
@@ -236,15 +243,15 @@ async function main() {
     reviewState.normalizeFailed(failedPending),
     {
       ...failedPending,
-      aiScore: 0,
+      aiScore: null,
       aiConfidence: 0,
-      aiFeedback: "评分出错：fetch failed。已暂记 0 分，可继续学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。",
+      aiFeedback: "评分出错：fetch failed。评分暂不可用，未计分；可以继续学习，之后可重新评分或人工复核。",
       aiErrorType: "api_error",
       aiNeedsReview: true,
-      status: "ai_reviewed",
-      isCorrect: false,
-      score: 0,
-      fallbackScored: true
+      status: "grading_unavailable",
+      isCorrect: null,
+      score: null,
+      fallbackScored: false
     }
   );
   assert.equal(

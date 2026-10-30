@@ -155,7 +155,20 @@ function contractTag(contract, newline) {
       // contract from promising evidence that never arrives.
       const facts = capabilities.describeScene(source);
       const contract = semanticContract(module, knowledgePoint, candidate, facts);
-      const unverifiable = capabilities.unverifiableEvents(source, contract.evidence_events);
+      if (source.includes('data-concept-exploration')) {
+        const config = JSON.parse(source.match(/<script[^>]*data-concept-exploration[^>]*>([\s\S]*?)<\/script>/)?.[1] || 'null');
+        assert.deepEqual(config, { point: knowledgePoint.id, scene: candidate.type });
+        require('../lib/courseware-semantic-overlays').applyExploration(contract, knowledgePoint.id, candidate.type);
+      }
+      if (candidate.type === 'game' && source.includes("game_version:'concept-games-20261027-v3'")) {
+        contract.contract_revision = '2026-10-27';
+        contract.course_version = 'concept-games-20261027-v3';
+        contract.evidence_events = ['scene_entered', 'parameter_commit', 'attempt_submitted', 'challenge_result', 'task_progress'];
+        Object.assign(contract.capabilities, { reports_attempt: true, reports_challenge: true, judges_correctness: true });
+        contract.assessment_restrictions.independent_evidence_allowed = false;
+        contract.assessment_restrictions.independent_requires = '游戏结果只作辅助行为记录，independent=false；掌握度必须使用平台独立验证题';
+      }
+      const unverifiable = capabilities.unverifiableEvents(capabilities.sourceWithLocalScripts(file), contract.evidence_events);
       assert.equal(
         unverifiable.length,
         0,

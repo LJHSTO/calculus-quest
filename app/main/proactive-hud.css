@@ -91,8 +91,8 @@
      normal classroom. Remove the whole rail while its column is collapsed. */
   body.research-observatory-open:has(#learn-view.active) .lesson-rail { display: none !important; }
   body.research-observatory-open:has(#learn-view.active) .proactive-hud-panel {
-    top: 64px; right: 0; bottom: 0; left: auto;
-    width: 400px; height: calc(100dvh - 64px); max-height: none;
+    top: var(--learning-header-height, 64px); right: 0; bottom: 0; left: auto;
+    width: 400px; height: calc(100dvh - var(--learning-header-height, 64px)); max-height: none;
     border-radius: 0; border: 0; border-left: 1px solid #dfe3ec; box-shadow: none;
   }
   .proactive-hud-body { grid-template-columns: 1fr; }

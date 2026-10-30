@@ -234,6 +234,11 @@
     const previousDraft = shell.querySelector(".support-chat-form textarea");
     if (previousDraft) drafts.set(shell.dataset.scopeKey || next.scopeKey, previousDraft.value);
     const draft = drafts.get(next.scopeKey) || "";
+    const sameScope = shell.dataset.scopeKey === next.scopeKey;
+    const activeField = shell.contains(document.activeElement) && document.activeElement.matches('textarea,input:not([type=radio]):not([type=checkbox])') ? document.activeElement : null;
+    const fieldState = sameScope && activeField ? { tag: activeField.tagName, label: activeField.getAttribute('aria-label'), name: activeField.name,
+      index: [...shell.querySelectorAll(activeField.tagName)].indexOf(activeField), start: activeField.selectionStart, end: activeField.selectionEnd,
+      direction: activeField.selectionDirection, scrollTop: activeField.scrollTop, value: activeField.value } : null;
     shell.dataset.scopeKey = next.scopeKey;
     const focusOnSelection = shell.contains(document.activeElement) && document.activeElement?.getAttribute("role") === "radio";
     shell.replaceChildren();
@@ -267,6 +272,8 @@
     if (next.check) shell.append(node("p", "support-independent-note", "先独立完成这道检查，也可以跳过。检查期间收起补充练习。"));
     record("rendered", { content: next.check ? "independent_check" : next.offer ? "policy_offer" : "learner_opened", supportLevel: next.offer?.supportLevel || next.policyState?.currentLevel || "L0" });
     if (focusOnSelection) shell.querySelector('[role="radio"][aria-checked="true"]')?.focus({ preventScroll: true });
+    if(fieldState){const fields=[...shell.querySelectorAll(fieldState.tag)],field=fields.find(n=>fieldState.label&&n.getAttribute('aria-label')===fieldState.label)||fields.find(n=>fieldState.name&&n.name===fieldState.name)||fields[fieldState.index];
+      if(field&&!field.disabled&&field.value===fieldState.value){field.focus({preventScroll:true});if(fieldState.start!==null)try{field.setSelectionRange(fieldState.start,fieldState.end,fieldState.direction);}catch{}field.scrollTop=fieldState.scrollTop;}}
     // Use the same candidate-level 50% / 1 s exposure definition as the native
     // sidebar. Merely rendering or changing modality does not count as shown.
     observeOffer(next);

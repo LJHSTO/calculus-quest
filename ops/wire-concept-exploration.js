@@ -8,10 +8,8 @@ for(const module of route.chapters.find(c=>c.id==='V14-C1').modules)for(const po
  const file=path.join(root,'resources',candidate.root,candidate.file);let source=fs.readFileSync(file,'utf8');
  source=source.replace(/\n<!-- concept-exploration:start -->[\s\S]*?<!-- concept-exploration:end -->\n?/g,'\n');
  source=source.replace(/(<script[^>]*id="openmaic-semantic-contract"[^>]*>)([\s\S]*?)(<\/script>)/,(_,a,json,b)=>{
-  const contract=JSON.parse(json);contract.contract_revision=M.version;contract.evidence_events=[...new Set([...contract.evidence_events,'attempt_submitted','challenge_result','task_progress','exploration_observed'])];
-  Object.assign(contract.capabilities,{reports_attempt:true,reports_challenge:true,judges_correctness:true});
-  contract.free_exploration={version:require('../resources/open-maic/主动探索证据/free-exploration').version,role:'observation_not_need_or_mastery'};
-  contract.concept_exploration={version:M.version,optional:true,grading:'server_rechecked_process',independent:false};return a+'\n'+JSON.stringify(contract,null,2)+'\n'+b;
+  const contract=require('../lib/courseware-semantic-overlays').applyExploration(JSON.parse(json),point.id,candidate.type);
+  return a+'\n'+JSON.stringify(contract,null,2)+'\n'+b;
  });
  const relative=path.relative(path.dirname(file),path.join(root,'resources/open-maic/主动探索证据')).replace(/\\/g,'/');
  const block=`\n<!-- concept-exploration:start -->\n<script type="application/json" data-concept-exploration>${JSON.stringify({point:point.id,scene:candidate.type})}</script>\n<script src="${relative}/exploration-model.js"></script>\n<script src="${relative}/exploration-runtime.js"></script>\n<script src="${relative}/free-exploration.js"></script>\n<script src="${relative}/free-exploration-runtime.js"></script>\n<!-- concept-exploration:end -->\n`;

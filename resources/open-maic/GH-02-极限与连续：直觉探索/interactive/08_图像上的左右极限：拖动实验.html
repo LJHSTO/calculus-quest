@@ -1204,6 +1204,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       </div>
 
       <div class="control-group full-width">
+        <p id="startValidation" role="status" aria-live="polite" style="color:#fca5a5;margin:0 0 8px" hidden></p>
         <div class="btn-row">
           <button class="btn btn-primary" id="mainBtn" onclick="handleMainButton()">▶ 启动</button>
           <button class="btn btn-secondary" id="resetBtn" onclick="resetSimulation()">↺ 重置</button>
@@ -1602,22 +1603,12 @@ function animate(timestamp) {
   const eps = state.epsilon;
 
   // Move left ant toward a from left
-  if (state.leftAntX < a - eps) {
-    state.leftAntX += 0.8 * speed * dt;
-    if (state.leftAntX > a - eps) {
-      state.leftAntX = a - eps;
-      state.leftLimitReached = true;
-    }
-  }
+  state.leftAntX = Math.min(a - eps, state.leftAntX + 0.8 * speed * dt);
+  state.leftLimitReached = state.leftAntX >= a - eps;
 
   // Move right ant toward a from right
-  if (state.rightAntX > a + eps) {
-    state.rightAntX -= 0.8 * speed * dt;
-    if (state.rightAntX < a + eps) {
-      state.rightAntX = a + eps;
-      state.rightLimitReached = true;
-    }
-  }
+  state.rightAntX = Math.max(a + eps, state.rightAntX - 0.8 * speed * dt);
+  state.rightLimitReached = state.rightAntX <= a + eps;
 
   // Check if both reached
   if (state.leftLimitReached && state.rightLimitReached) {
@@ -1712,24 +1703,35 @@ function showMessage(text, type) {
 }
 
 // ====== Controls ======
-function handleMainButton() {
-  if (state.ended) {
-    resetSimulation();
-    setTimeout(() => {
-      state.running = true;
-      state.paused = false;
-      lastTime = performance.now();
-      updateStatus('running');
-      document.getElementById('mainBtn').innerHTML = '⏸ 暂停';
-    }, 100);
-    return;
+function validateStartConfiguration() {
+  const {breakpoint:a,epsilon:eps,leftAntStartX:left,rightAntStartX:right,speed}=state;
+  const finite=[a,eps,left,right,speed].every(Number.isFinite)&&eps>0&&speed>0;
+  const leftValid=finite&&left<a-eps, rightValid=finite&&right>a+eps;
+  const errors=[];
+  if(!finite)errors.push('请设置有效的有限数值，速度和精度须大于零。');
+  else {
+    if(!leftValid)errors.push('左起点须在断点左侧且小于 '+(a-eps).toFixed(2)+'（a−ε）。');
+    if(!rightValid)errors.push('右起点须在断点右侧且大于 '+(a+eps).toFixed(2)+'（a+ε）。');
   }
-
-  if (state.running) {
+  const hint=document.getElementById('startValidation');
+  hint.textContent=errors.join(' ');hint.hidden=!errors.length;
+  for(const [id,valid] of [['leftStart-slider',leftValid],['rightStart-slider',rightValid]]){
+    const slider=document.getElementById(id);slider.setAttribute('aria-invalid',String(!valid));slider.setAttribute('aria-describedby','startValidation');
+  }
+  return errors.length===0;
+}
+function handleMainButton() {
+  if (state.running && !state.paused) {
+    state.running = false;
     state.paused = true;
     updateStatus('paused');
     document.getElementById('mainBtn').innerHTML = '▶ 继续';
   } else {
+    if (!validateStartConfiguration()) {
+      showMessage(document.getElementById('startValidation').textContent,'fail');
+      return;
+    }
+    if (state.ended) resetSimulation();
     if (state.paused) {
       state.paused = false;
     } else {
@@ -1777,6 +1779,7 @@ function resetSimulation() {
 
   updateHUD();
   draw();
+  validateStartConfiguration();
 }
 
 function setFunctionType(type) {
@@ -1811,27 +1814,20 @@ document.getElementById('breakpoint-slider').addEventListener('input', function(
 
 document.getElementById('leftStart-slider').addEventListener('input', function() {
   state.leftAntStartX = parseFloat(this.value);
-  document.getElementById('leftStart-slider-val').textContent = (this.value.startsWith('-') ? '−' : '') + this.value;
-  if (!state.running) {
-    state.leftAntX = state.leftAntStartX;
-    draw();
-    updateHUD();
-  }
+  document.getElementById('leftStart-slider-val').textContent = Number(this.value).toFixed(1).replace('-', '−');
+  resetSimulation();
 });
 
 document.getElementById('rightStart-slider').addEventListener('input', function() {
   state.rightAntStartX = parseFloat(this.value);
   document.getElementById('rightStart-slider-val').textContent = this.value;
-  if (!state.running) {
-    state.rightAntX = state.rightAntStartX;
-    draw();
-    updateHUD();
-  }
+  resetSimulation();
 });
 
 document.getElementById('epsilon-slider').addEventListener('input', function() {
   state.epsilon = parseFloat(this.value);
   document.getElementById('epsilon-slider-val').textContent = parseFloat(this.value).toFixed(2);
+  resetSimulation();
 });
 
 // Keyboard shortcuts

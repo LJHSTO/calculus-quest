@@ -65,6 +65,11 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
     else if (process.env.TEST_PROACTIVE_SURFACES === "1") await page.locator(".support-chat-form button[type=submit]").click();
     else await composer.press("Enter");
     assert.equal((await answerResponse).status(), 200);
+    await page.waitForFunction(() => Boolean(KnowledgeAssistant.designSpaceSnapshot().check));
+    const checkNotice = page.locator('#workspace-support-notice');
+    await checkNotice.waitFor({ state: 'visible' });
+    assert.equal(await checkNotice.innerText(), '继续独立检查', '支架后检查须有明显接续入口');
+    await checkNotice.click();
     const checkNode = page.locator(".knowledge-proactive-verification");
     await checkNode.waitFor({ state: "visible" });
     if(embeddedMode){
@@ -523,10 +528,18 @@ async function main() {
       const output = path.join(root, "output", "六维网站验收", "八种帮助呈现");
       fs.mkdirSync(output, { recursive: true });
       await page.setViewportSize({ width: 1366, height: 1000 });
+      // The presentation controls belong to the interactive workspace toolbar.
+      await page.locator('[data-workspace-canvas="interactive"]').click();
+      await page.locator('.workspace-canvas-toolbar [data-knowledge-scene="simulation"]').click();
+      await page.locator('.iframe-loader').waitFor({state:'hidden'});
       const before = await page.evaluate(() => KnowledgeAssistant.designSpaceSnapshot());
       for (const placement of ["sidebar", "inline"]) {
         for (const modality of ["tip", "example", "interactive", "chat"]) {
           const settings = page.locator(".support-display-settings");
+          await settings.waitFor({state:'visible'}).catch(async error=>{
+            const state=await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return {locked:s.locked,active:s.active,unitType:s.unitType,taskReady:s.taskReady,check:s.check,research:s.researchControls.enabled};});
+            throw new Error(`呈现设置不可见：${JSON.stringify(state)}；${error.message}`);
+          });
           if (!await settings.evaluate(el => el.open)) await settings.locator("summary").click();
           await settings.locator(`[data-support-value="${placement}"]`).click();
           await settings.locator(`[data-support-value="${modality}"]`).click();
@@ -534,17 +547,23 @@ async function main() {
           const after = await page.evaluate(() => KnowledgeAssistant.designSpaceSnapshot());
           assert.deepEqual(after.policyState, before.policyState, "D4切换不得改变支架或生命周期");
           assert.deepEqual(after.prompt, before.prompt, "政策支架内容必须原样保留");
+          const inlineEmbedded=placement === 'inline' && modality === 'tip';
+          const surface = inlineEmbedded
+            ? page.frameLocator('iframe[data-courseware-frame]').locator('[data-cq-embedded-help="task"]')
+            : page.locator('.learning-support-surface');
           if (!(placement === "sidebar" && modality === "tip")) {
-            const surface = page.locator(placement === "inline" && modality === "tip" ? ".task-support-panel" : ".learning-support-surface");
             await surface.waitFor({ state: "visible" });
             await surface.scrollIntoViewIfNeeded();
             const box = await surface.boundingBox();
             assert.ok(box.width > 200 && box.x >= 0 && box.x + box.width <= page.viewportSize().width + 1);
-            if (after.prompt) assert.equal(await page.locator(".knowledge-proactive-question:visible").count(), 1);
+            if (after.prompt) {
+              if(inlineEmbedded) assert.ok((await surface.locator('.card').innerText()).includes(after.prompt.content));
+              else assert.equal(await page.locator(".knowledge-proactive-question:visible").count(), 1);
+            }
           }
           await page.screenshot({ path: path.join(output, `${placement}-${modality}.png`) });
           const focus = placement === "sidebar" && modality === "tip"
-            ? page.locator(".knowledge-proactive-question:visible") : page.locator(placement === "inline" && modality === "tip" ? ".task-support-panel" : ".learning-support-surface");
+            ? page.locator(".knowledge-proactive-question:visible") : surface;
           await focus.screenshot({ path: path.join(output, `${placement}-${modality}-局部.png`) });
         }
       }

@@ -1632,6 +1632,7 @@ const proactiveJustificationDrafts = new Map();
           ? `${outcomeUnlockLabel(stage.unlockAt)} 后开放`
           : "尚未开放";
     copy.append(heading, purpose, stateLabel);
+    if(stage.id==='retention'&&global.FollowupWindow){const timing=document.createElement('p');timing.className='knowledge-outcome-window';timing.textContent=global.FollowupWindow.describe({unlockAt:stage.unlockAt,closeAt:stage.closeAt,researchEndsAt:global.LearnerSetup?.enrollment?.followupEndsAt,platformKnown:true});copy.append(timing);}
     const action = document.createElement("button");
     action.type = "button";
     action.textContent = ({
@@ -3761,6 +3762,12 @@ const proactiveJustificationDrafts = new Map();
   }
 
   function renderQuota() {
+    if (els.input.disabled) {
+      els.quota.textContent = "当前提问暂停";
+      els.quota.title = els.input.placeholder;
+      els.quota.dataset.exhausted = "false";
+      return;
+    }
     els.quota.textContent = `今日还可提问 ${quota.remaining} 次`;
     els.quota.title = `每日额度 ${quota.limit} 次，已使用 ${quota.used} 次`;
     els.quota.dataset.exhausted = quota.remaining <= 0 ? "true" : "false";
@@ -4607,8 +4614,12 @@ const proactiveJustificationDrafts = new Map();
       badge.textContent = message.provider === "fallback" ? "备用引导（模型未成功回复）" : message.provider === "mock" ? "模拟回复" : "AI 助教";
       heading.appendChild(badge);
     }
-    const body = document.createElement("p");
-    setQuestionMathContent(body, message.content || (message.streaming ? "正在组织解释…" : ""));
+    const body = document.createElement(message.role === "assistant" ? "div" : "p");
+    const messageText = message.content || (message.streaming ? "正在组织解释…" : "");
+    if (message.role === "assistant" && global.AssistantContent) {
+      body.className = "assistant-content";
+      global.AssistantContent.renderInto(body, messageText, { streaming: message.streaming === true });
+    } else setQuestionMathContent(body, messageText);
     article.append(heading, body);
     if (message.role === "assistant" && !message.streaming && !message.error) {
       const guidance = message.guidance || {};
@@ -4926,7 +4937,7 @@ const proactiveJustificationDrafts = new Map();
       || measurementBlocked
       || awaitingAgent
       || conversationLimited;
-    els.input.placeholder = awaitingAgent
+    els.input.placeholder = !isSignedInNow() ? "登录后可以提问" : !meta.supported ? "当前页面暂不支持提问" : awaitingAgent
       ? "助手发起支持后可继续讨论"
       : measurementBlocked
       ? "独立测量期间暂停知点"
@@ -4940,6 +4951,7 @@ const proactiveJustificationDrafts = new Map();
             ? "写下你的回答……"
           : "例如：为什么 h 变小时，割线更接近切线？";
     els.send.disabled = els.input.disabled || isAsking || (provider.live && quota.remaining <= 0);
+    if (els.input.disabled) els.unitDetail.textContent = els.input.placeholder;
     els.pick.disabled = !meta.supported
       || !isSignedInNow()
       || quizLocked

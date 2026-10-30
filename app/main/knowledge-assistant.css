@@ -4445,3 +4445,32 @@ body.knowledge-outcomes-open {
     transition: none;
   }
 }
+
+/* Assistant Markdown owns its blocks; question-bank math remains unchanged. */
+.knowledge-message .assistant-content {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f2f7f8;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.knowledge-message .assistant-content p {
+  display: block;
+  margin: 0 0 0.65em;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font: inherit;
+  color: inherit;
+}
+.knowledge-message .assistant-content :last-child { margin-bottom: 0; }
+.knowledge-message .assistant-content strong { font-size: inherit; color: inherit; }
+.knowledge-message .assistant-content ol,
+.knowledge-message .assistant-content ul { margin: 0.4em 0; padding-left: 1.7em; }
+.knowledge-message .assistant-content li { margin: 0.3em 0; }
+.knowledge-message .assistant-content pre,
+.knowledge-message .assistant-content .katex-display { max-width: 100%; overflow-x: auto; }
+.knowledge-message .assistant-content pre { padding: 0.5em; white-space: pre; }

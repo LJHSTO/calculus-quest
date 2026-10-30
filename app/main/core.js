@@ -618,7 +618,7 @@ function normalizeFailedQuizReviews() {
 function quizEarnedScore(result = {}, question = {}) {
   const max = quizMaxScoreFor(question, result);
   if (!max) return 0;
-  if (quizAiReviewFailed(result)) return 0;
+  if (quizAiReviewFailed(result)) return null;
   if (result.aiScore !== undefined && result.aiScore !== null) return quizScoreFromAiScore(result.aiScore, max);
   if (quizReviewIsPending(result)) return null;
   if (result.score !== undefined && result.score !== null) return Math.max(0, Math.min(max, quizNumber(result.score, 0)));
@@ -631,7 +631,7 @@ function quizQuestionScoreLabel(question = {}, result = null) {
   const max = quizMaxScoreFor(question, result || {});
   if (!max) return "";
   if (!result) return `\u672c\u9898 ${quizFormatScore(max)} \u5206`;
-  if (quizAiReviewFailed(result)) return `\u672c\u9898\u6682\u8bb0\uff1a0 / ${quizFormatScore(max)} \u5206\uff08\u5f85\u590d\u6838\uff09`;
+  if (quizAiReviewFailed(result)) return `本题评分暂不可用（未计分；满分 ${quizFormatScore(max)} 分）`;
   const earned = quizEarnedScore(result, question);
   if (earned === null) return `\u672c\u9898\u5f97\u5206\uff1a\u590d\u6838\u4e2d / ${quizFormatScore(max)} \u5206`;
   return `\u672c\u9898\u5f97\u5206\uff1a${quizFormatScore(earned)} / ${quizFormatScore(max)} \u5206`;
@@ -640,13 +640,14 @@ function quizQuestionScoreLabel(question = {}, result = null) {
 function summarizeQuizAttempt(records = [], questions = []) {
   const latest = quizLatestResultsByQuestion(records);
   const results = Object.values(latest);
+  const questionById = new Map((questions || []).map((question) => [question.id, question]));
   const objective = results.filter((result) => (
-    (result?.isCorrect === true || result?.isCorrect === false)
+    ["single", "multiple", "true_false", "judgment", "choice"].includes(questionById.get(result.questionId || result.question_id)?.type || result.questionType || result.question_type)
+    && (result?.isCorrect === true || result?.isCorrect === false)
     && quizHasScoredEvidence(result)
   ));
   const pendingReview = results.filter((result) => quizReviewIsPending(result)).length;
   const reviewUnavailable = results.filter((result) => quizAiReviewFailed(result)).length;
-  const questionById = new Map((questions || []).map((question) => [question.id, question]));
   const totalPossible = (questions || []).reduce((sum, question) => sum + quizMaxScoreFor(question, {}), 0) || results.reduce((sum, result) => sum + quizMaxScoreFor({}, result), 0);
   let earnedScore = 0;
   let scoredPossible = 0;
@@ -689,7 +690,7 @@ function quizOutcomeHtml(summary) {
     parts.push(scoreText);
   }
   if (summary.objectiveTotal > 0) {
-    const objectiveLabel = summary.pendingReview > 0 || summary.reviewUnavailable > 0 ? "\u5ba2\u89c2\u9898" : "\u9898";
+    const objectiveLabel = "客观题";
     parts.push(`${summary.objectiveTotal} \u9053${objectiveLabel}\u4e2d\u7b54\u5bf9\u4e86 <strong>${summary.correctObjective}</strong> \u9053`);
   }
   if (summary.pendingReview > 0) {
@@ -744,13 +745,30 @@ function setUserMenuOpen(open) {
   els.authMenuPanel.hidden = !open;
 }
 
+function setAuthGateVisible(visible) {
+  const gate=els.authGate;if(!gate)return;
+  const wasOpen=gate.open;
+  if(visible){
+    gate.hidden=false;
+    if(!gate.open)gate.showModal();
+  }else{
+    if(gate.open)gate.close();
+    gate.hidden=true;
+  }
+  document.body.classList.toggle('auth-gate-open',visible);
+  if(wasOpen!==visible)window.dispatchEvent(new CustomEvent('cq:authentication-changed',{detail:{visible}}));
+  if(!visible&&wasOpen)requestAnimationFrame(()=>{
+    if(els.userMenu&&!els.userMenu.hidden)els.authMenuToggle?.focus({preventScroll:true});
+  });
+}
+
 function renderAuth() {
   if (!els.authGate) return;
   const signedIn = isSignedIn();
   const participantId = signedIn ? state.participant.participantId : "";
   const participantChanged = participantId !== lastRenderedProfileParticipantId;
   lastRenderedProfileParticipantId = participantId;
-  els.authGate.hidden = signedIn;
+  setAuthGateVisible(!signedIn);
   if (els.authAction) els.authAction.hidden = signedIn;
   if (els.userMenu) els.userMenu.hidden = !signedIn;
   const displayName = signedIn ? participantDisplayName() : "未登录";
@@ -804,7 +822,7 @@ function renderAuth() {
 
 function showLogin(message = "") {
   if (!els.authGate) return;
-  els.authGate.hidden = false;
+  setAuthGateVisible(true);
   if (els.loginFeedback) els.loginFeedback.textContent = message;
   els.loginIdentifier?.focus();
 }

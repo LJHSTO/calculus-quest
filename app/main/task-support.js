@@ -8,7 +8,7 @@
   let quizOwner="";
   const quizOpen=new Map(), quizReplies=new Map();
   const el = (tag, text, cls) => {const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;};
-  const replyBody=text=>{const n=el('p');if(typeof setQuestionMathContent==='function')setQuestionMathContent(n,text);else n.textContent=text;return n;};
+  const replyBody=text=>{const n=el('div',null,'assistant-content');if(global.AssistantContent)global.AssistantContent.renderInto(n,text);else n.textContent=text;return n;};
   function message(type, extra={}){frame?.contentWindow?.postMessage({type,channel,...extra},"*");}
   let frameBusy=false,locateRequested=false,frameMounted=false;
   function clear(){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;}
@@ -34,8 +34,10 @@
     input.dataset.taskDraftKey=draftKey;
     input.addEventListener("input",()=>drafts.set(draftKey,input.value));label.append(input);
     const submit=el("button","发送我的想法"), status=el("p",null,"task-response-status");submit.type="submit";submit.disabled=snapshot.busy;
+    status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+    if(snapshot.busy)status.textContent='正在核对你的想法，可能需要一些时间；请稍候。';
     form.append(label,submit,status);form.addEventListener("submit",async event=>{
-      event.preventDefault();if(!input.value.trim()||snapshot.busy)return;const submittedText=input.value;drafts.set(draftKey,submittedText);submit.disabled=true;
+      event.preventDefault();if(snapshot.busy)return;if(!input.value.trim()){status.textContent='请先写下想核对的想法或疑问。';input.focus();return;}const submittedText=input.value;drafts.set(draftKey,submittedText);submit.disabled=true;status.textContent='正在核对你的想法，可能需要一些时间；请稍候。';
       if(!questionId)replyContext=`${snapshot.unitId}:${snapshot.sceneType}`;
       const ok=await global.KnowledgeAssistant.askInTask(input.value,questionId);
       submit.disabled=false;
@@ -69,7 +71,7 @@
   }
   function showPanel(){
     if(!source)return;
-    const pane=snapshot.unitType==="quiz" ? [...document.querySelectorAll('.question-card[data-question]')].find(n=>n.dataset.question===(snapshot.offer?.questionId||snapshot.replyQuestionId))||document.querySelector('.question-card[data-question]') : document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
+    const pane=snapshot.unitType==="quiz" ? [...document.querySelectorAll('.question-card[data-question]')].find(n=>n.dataset.question===(snapshot.offer?.questionId||snapshot.replyQuestionId))||document.querySelector('.question-card[data-question]')||document.querySelector('#lesson-player') : document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
     if(!pane)return;
     if(!panel?.isConnected){panel=el("section",null,"task-support-panel");panel.setAttribute("aria-label",snapshot.check?"独立检查作答":"当前任务的学习帮助");pane.append(panel);}
     if(panel.parentElement!==pane)pane.append(panel);
@@ -105,7 +107,7 @@
           if(next.reply?.text && replyContext===`${next.unitId}:${next.sceneType}`){const response=el('details');response.open=true;response.append(el('summary','知点的回应'),replyBody(next.reply.text));source.prepend(response);}
           if(!next.feedback && !next.reply?.text)source.prepend(el("small","可以继续独立探索；需要时在当前步骤求助。"));
         }
-        const open=el("button","打开完整对话");open.type="button";open.addEventListener("click",()=>global.KnowledgeAssistant.open({preserveProactiveSuggestion:true}));source.append(open);
+        const open=el("button","打开提问对话");open.type="button";open.addEventListener("click",()=>global.KnowledgeAssistant.open({preserveProactiveSuggestion:true}));source.append(open,el('small','这里的主动支持保留在当前任务旁；提问对话显示你在该对话中发送的问题与回复。'));
         if(next.unitType==='knowledge'){
           const back=el('button','返回课件操作');back.type='button';back.addEventListener('click',returnToTask);source.append(back);
         }

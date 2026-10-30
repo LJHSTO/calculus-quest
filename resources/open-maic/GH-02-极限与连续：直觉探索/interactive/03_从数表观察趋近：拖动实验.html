@@ -1722,6 +1722,11 @@ function checkPredictionUnlock(fn) {
   const panel = document.getElementById('prediction-panel');
   const locked = document.getElementById('pred-locked');
   const unlocked = document.getElementById('pred-unlocked');
+  const remaining = Math.max(0, 3 - state.records.length);
+  const needs = [];
+  if (delta >= 0.01) needs.push('把 |x-a| 减小到 0.01 以下');
+  if (remaining > 0) needs.push(`再记录 ${remaining} 次观察（至少 3 次）`);
+  locked.textContent = needs.length ? '🔒 ' + needs.join('，并且') : '已满足预测条件';
 
   if (delta < 0.01 && state.records.length >= 3) {
     if (!state.predictionUnlocked) {
@@ -1773,6 +1778,7 @@ function addRecord() {
   `;
   tbody.appendChild(tr);
   tbody.parentElement.scrollTop = tbody.parentElement.scrollHeight;
+  checkPredictionUnlock(fn);
 }
 
 // ============ CONTROLS ============

@@ -2068,7 +2068,7 @@ function agenticQuizReviewUnavailableCount(records = []) {
 function agenticQuizReviewUnavailableNotice(records = []) {
   const count = agenticQuizReviewUnavailableCount(records);
   return count
-    ? `有 ${count} 道简答题尚待复核，暂记分数不会用于判断你的掌握程度。`
+    ? `有 ${count} 道简答题尚待复核，未评分题目不会用于判断你的掌握程度。`
     : "";
 }
 
@@ -2359,22 +2359,22 @@ function agenticApplyGradingResults(gradingResults = [], unit = null) {
     const grade = byQuestion.get(entry.questionId);
     if (!grade) return entry;
     const maxScore = quizMaxScoreFor({}, entry);
-    if (grade.score == null) {
-      const fallbackFeedback = grade.feedback || "智能评分暂时未得到可用结果。已暂记 0 分以便继续本次学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。";
+    if (grade.score == null || QuizReviewState.aiReviewFailed({aiErrorType:grade.errorType,aiFeedback:grade.feedback})) {
+      const fallbackFeedback = grade.feedback || "智能评分暂时未得到可用结果。评分暂不可用，未计分；可以继续学习，之后可重新评分或人工复核。";
       changed = true;
       return {
         ...entry,
-        aiScore: 0,
+        aiScore: null,
         aiConfidence: grade.confidence ?? 0,
         aiFeedback: fallbackFeedback,
-        aiErrorType: grade.errorType || "pending_review",
+        aiErrorType: grade.errorType || "unknown",
         aiWeakConcepts: Array.isArray(grade.weakConcepts) ? grade.weakConcepts : [],
         aiReasoning: grade.reasoning || "",
         aiNeedsReview: true,
-        status: "ai_reviewed",
-        isCorrect: false,
-        score: 0,
-        fallbackScored: true
+        status: "grading_unavailable",
+        isCorrect: null,
+        score: null,
+        fallbackScored: false
       };
     }
     const earnedScore = Math.max(0, Math.min(maxScore, Number(grade.score) || 0));
@@ -2568,7 +2568,7 @@ function agenticApplyRemoteGrading(remote, unit) {
   }
 }
 
-function agenticScorePendingShortAnswersAsZero(unit, reason = "智能评分暂时未得到可用结果。已暂记 0 分以便继续本次学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。") {
+function agenticMarkShortAnswersUnavailable(unit, reason = "智能评分暂时未得到可用结果。评分暂不可用，未计分；可以继续学习，之后可重新评分或人工复核。") {
   if (!unit?.id) return false;
   let changed = false;
   state.quizResults = (state.quizResults || []).map((entry) => {
@@ -2580,17 +2580,17 @@ function agenticScorePendingShortAnswersAsZero(unit, reason = "智能评分暂�
     changed = true;
     return {
       ...entry,
-      aiScore: 0,
+      aiScore: null,
       aiConfidence: 0,
       aiFeedback: reason,
-      aiErrorType: entry.aiErrorType || "api_error",
+      aiErrorType: entry.aiErrorType && entry.aiErrorType !== "none" ? entry.aiErrorType : "manual_fallback",
       aiWeakConcepts: Array.isArray(entry.aiWeakConcepts) ? entry.aiWeakConcepts : [],
       aiReasoning: entry.aiReasoning || "",
       aiNeedsReview: true,
-      status: "ai_reviewed",
-      isCorrect: false,
-      score: 0,
-      fallbackScored: true
+      status: "grading_unavailable",
+      isCorrect: null,
+      score: null,
+      fallbackScored: false
     };
   });
   if (changed) saveState();
@@ -2665,9 +2665,9 @@ async function agenticResolvePendingGrading(action = "retry") {
     records = agenticQuizRecordsForUnit(unit.id);
 
     if (action === "continue" && agenticQuizHasPendingShortAnswer(records)) {
-      agenticScorePendingShortAnswersAsZero(
+      agenticMarkShortAnswersUnavailable(
         unit,
-        "智能评分暂时未完成；这题已暂记为 0 分并保留待复核，暂记分数不会用于学习建议。"
+        "智能评分暂时未完成；这题未计分并保留待复核；你可以继续学习。"
       );
       records = agenticQuizRecordsForUnit(unit.id);
     }
@@ -2683,7 +2683,7 @@ async function agenticResolvePendingGrading(action = "retry") {
     agenticNotifyQuizReviewReady(unit, records, action === "continue" ? "grading_fallback" : "grading_retry");
     if (unit.id === currentUnitId && typeof renderQuiz === "function") renderQuiz(unit);
     addLog(action === "continue"
-      ? `「${unit.label}」的暂记评分未用于学习建议，仍可稍后重新评分或人工复核。`
+      ? `「${unit.label}」的未评分题目未用于学习建议，仍可稍后重新评分或人工复核。`
       : `「${unit.label}」简答题已重新批改并生成学习建议。`);
     return true;
   } catch (error) {
@@ -2721,7 +2721,7 @@ function agenticMarkGradingRecoveryAvailable(unit, error = null) {
   const pending = path.pendingPlan;
   if (!unit?.id || pending?.phase !== "grading_pending" || pending.unitId !== unit.id) return false;
   pending.gradingRecoveryAvailable = true;
-  pending.narration = "简答题评分暂时未完成。你可以重试评分，也可以先按 0 分继续学习；之后仍可人工复核。";
+  pending.narration = "简答题评分暂时未完成。你可以重试评分，也可以保留未评分状态继续学习；之后仍可人工复核。";
   path.decisionInFlight = "";
   if (error) console.warn("Agentic grading follow-up failed:", error);
   if (typeof analyticsTrack === "function") {
@@ -2978,7 +2978,7 @@ async function agenticAfterQuizSubmit(unit, records) {
     agenticApplyRemoteGrading(remote, unit);
     const scoredRecords = agenticQuizRecordsForUnit(unit.id);
     if (agenticQuizHasPendingShortAnswer(scoredRecords)) {
-      agenticScorePendingShortAnswersAsZero(unit);
+      agenticMarkShortAnswersUnavailable(unit);
       const fallbackRecords = agenticQuizRecordsForUnit(unit.id);
       if (unit?.id === currentUnitId && typeof renderQuiz === "function") renderQuiz(unit);
       await agenticBuildRecommendationAfterGrading(unit, fallbackRecords.length ? fallbackRecords : records, remote);
@@ -4299,7 +4299,7 @@ function renderAgenticCoachPanel() {
         <p>${escapeHtml(agenticStudentFacingText(pending.narration, "简答题批改完成后，我会再给出学习路径建议。"))}</p>
         ${recoveryAvailable
           ? `<div class="agentic-actions grading-recovery-actions">
-              <button class="button primary" type="button" data-agentic-grading-action="continue" ${inFlight ? "disabled" : ""}>${continuing ? "正在整理后续学习建议" : "先按 0 分继续学习"}</button>
+              <button class="button primary" type="button" data-agentic-grading-action="continue" ${inFlight ? "disabled" : ""}>${continuing ? "正在整理后续学习建议" : "保留未评分状态继续学习"}</button>
               <button class="button soft" type="button" data-agentic-grading-action="retry" ${inFlight ? "disabled" : ""}>${retrying ? "正在重新批改简答题" : "再试一次评分"}</button>
             </div>`
           : "<small>系统会自动完成批改并更新学习建议，你无需进行选择。</small>"}

@@ -1024,6 +1024,13 @@ code {
 }
 
 .auth-gate {
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
   position: fixed;
   inset: 0;
   z-index: 90;
@@ -1037,6 +1044,10 @@ code {
 .auth-gate[hidden] {
   display: none;
 }
+
+body.auth-gate-open { overflow: hidden; }
+body.auth-gate-open .proactive-hud-toggle-btn,
+body.auth-gate-open .proactive-hud-panel { display: none !important; }
 
 .login-panel {
   width: min(430px, 100%);

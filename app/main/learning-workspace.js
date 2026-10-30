@@ -124,7 +124,7 @@
   let pendingSnapshot = null;
   function syncSupportNotice(next=global.KnowledgeAssistant?.designSpaceSnapshot?.()) {
     pendingSnapshot=next;
-    const eligible=next?.signedIn&&next.active&&!next.locked&&next.unitType==='knowledge'&&next.taskReady!==false;
+    const eligible=next?.signedIn&&next.active&&!next.locked&&(next.unitType==='knowledge'||next.unitType==='quiz'&&next.quizSubmitted)&&next.taskReady!==false;
     const cycle=next?.supportCycle;
     // Research probes have their own compact entry and dialog.
     const checking=eligible&&(next.check||cycle?.status==='awaiting_check');

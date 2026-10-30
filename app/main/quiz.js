@@ -160,17 +160,17 @@ function aiReviewStatus(result, question = {}) {
   const aiFailed = quizAiReviewFailed(result);
   const pendingReview = quizReviewIsPending(result);
   const fallbackScored = aiFailed && !pendingReview;
-  const displayScore = hasAiScore ? quizScoreFromAiScore(aiScore, maxScore) : fallbackScored ? 0 : null;
+  const displayScore = !aiFailed && hasAiScore ? quizScoreFromAiScore(aiScore, maxScore) : null;
   const reviewCompleted = !pendingReview && !aiFailed && hasAiScore;
   const badgeText = aiFailed ? "待复核" : reviewCompleted ? (Number(displayScore) === 0 ? "需复盘" : "已批改") : "待批改";
   const badgeClass = reviewCompleted && Number(displayScore) > 0 ? "done" : "todo";
   let line = "智能批改正在等待返回；结果回来后会保留在这里。";
   if (aiFailed) {
     line = aiErrorType === "mock_provider"
-      ? "当前环境未启用真实智能评分。这题已暂记为 0 分并保留待复核；你可以继续学习，暂记分数不会用于学习建议。"
+      ? "当前环境未启用真实智能评分。这题未计分并保留待复核；你可以继续学习，之后可重新评分。"
       : aiErrorType === "api_timeout"
-        ? "智能评分在规定时间内未返回。这题已暂记为 0 分并保留待复核；你可以继续学习，暂记分数不会用于学习建议。"
-        : "智能评分暂时未得到可用结果。这题已暂记为 0 分并保留待复核；你可以继续学习，暂记分数不会用于学习建议。";
+        ? "智能评分在规定时间内未返回。这题未计分并保留待复核；你可以继续学习，之后可重新评分。"
+        : "智能评分暂时未得到可用结果。这题未计分并保留待复核；你可以继续学习，之后可重新评分。";
   } else if (hasAiScore) {
     const confidence = result.aiConfidence != null ? ` · 判断把握 ${Math.round(Number(result.aiConfidence) * 100)}%` : "";
     const denominator = maxScore ? ` / ${quizFormatScore(maxScore)}` : "";

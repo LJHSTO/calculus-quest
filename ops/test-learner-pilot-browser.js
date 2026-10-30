@@ -43,7 +43,36 @@ async function main(){
   await page.locator('#auth-menu-toggle').click();await page.locator('#account-pilot-status').click();await page.locator('#learner-setup').waitFor();assert.equal(await page.locator('#learner-setup .learner-steps button').count(),6);
   await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByText('请选择理由；其他原因需要补充说明',{exact:true}).waitFor();
   await page.screenshot({animations:'disabled',path:path.join(out,'学习前偏好-桌面.png')});
-  for(let i=0;i<6;i++){if(i===3)assert.equal(await page.locator('#learner-setup input[name=D4-format]').count(),0);if(i===4)assert.equal(await page.locator('#learner-setup input[value=request]').count(),0);if(i>=4)await page.screenshot({animations:'disabled',path:path.join(out,'六维设置-D'+(i+1)+'.png')});await page.locator('#learner-setup select[name=preference-reason]').selectOption('independence');await page.getByRole('button',{name:i===5?'核对选择':'下一项',exact:true}).click();}
+  const configurationLayouts=[];
+  for(let i=0;i<6;i++){
+    const d=C.dimensions[i],name=i===3?'D4-placement':d.id;
+    if(i===3)assert.equal(await page.locator('#learner-setup input[name=D4-format]').count(),0);
+    if(i===4)assert.equal(await page.locator('#learner-setup input[value=request]').count(),0);
+    for(const [value]of C.optionsFor(d.id,true)){
+      await page.locator('#learner-setup input[name="'+name+'"][value="'+value+'"]').check();
+      assert.equal(await page.locator('.learner-preview p').innerText(),C.previewFor(d.id,value));
+      assert.equal(await page.locator('[name=preference-reason] option').count(),7,'blank plus six reasons');
+      for(const viewport of [{width:1440,height:1000},{width:640,height:360},{width:320,height:568},{width:590,height:379}]){
+        await page.setViewportSize(viewport);
+        const layout=await page.locator('#learner-setup').evaluate(n=>{
+          const body=n.querySelector('.learner-setup-body'),footer=n.querySelector('.learner-setup-footer'),r=n.getBoundingClientRect(),f=footer.getBoundingClientRect();
+          return {width:innerWidth,height:innerHeight,left:r.left,right:r.right,bottom:r.bottom,bodyHeight:body.clientHeight,bodyWidth:body.clientWidth,scrollWidth:body.scrollWidth,footerTop:f.top,footerBottom:f.bottom};
+        });
+        assert.ok(layout.left>=-1&&layout.right<=viewport.width+1&&layout.bottom<=viewport.height+1,JSON.stringify(layout));
+        assert.ok(layout.bodyHeight>=90&&layout.scrollWidth<=layout.bodyWidth+1,JSON.stringify(layout));
+        assert.ok(layout.footerTop>=0&&layout.footerBottom<=viewport.height,JSON.stringify(layout));
+        await page.locator('.learner-setup-footer .learner-primary').click({trial:true});
+        configurationLayouts.push({dimension:d.id,value,...layout});
+      }
+      await page.setViewportSize({width:1440,height:1000});
+    }
+    await page.locator('#learner-setup input[name="'+name+'"][value="'+d.default+'"]').check();
+    await page.screenshot({animations:'disabled',path:path.join(out,'六维设置-D'+(i+1)+'.png')});
+    await page.locator('#learner-setup select[name=preference-reason]').selectOption('try');
+    await page.getByRole('button',{name:i===5?'核对选择':'下一项',exact:true}).click();
+  }
+  assert.equal(await page.locator('.learner-review-effect').count(),6);
+  fs.writeFileSync(path.join(out,'六维13选项布局.json'),JSON.stringify({passed:true,synthetic:true,configurations:13,viewports:4,checks:configurationLayouts},null,2));
   assert.equal(await page.locator('.learner-review-row').count(),6);await page.emulateMedia({reducedMotion:'reduce'});assert.equal(await page.locator('.learner-setup-body').evaluate(n=>getComputedStyle(n).animationName),'none');await page.emulateMedia({reducedMotion:'no-preference'});await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.screenshot({animations:'disabled',path:path.join(out,'学习前偏好-窄屏.png')});
   await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});await page.setViewportSize({width:1440,height:1000});
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls?.revision===1);assert.equal((await api('/api/learning/learner-preferences',null,experimental.token)).data.record.answers.D4.value,'inline');

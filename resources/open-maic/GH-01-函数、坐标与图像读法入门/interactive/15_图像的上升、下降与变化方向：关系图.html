@@ -947,6 +947,14 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
   const NODE_W = 160, NODE_H = 64, ARROW_OFFSET = 10;
   const config = JSON.parse(document.getElementById('widget-config').textContent);
   const { nodes, edges, revealOrder, nodePositions } = config;
+  // Fit the complete graph once, including nodes revealed in later steps.
+  // Keeping this viewBox stable avoids zooming as the learner progresses.
+  const positions=Object.values(nodePositions),padding=20;
+  const minX=Math.min(0,...positions.map(p=>p.x-NODE_W/2-padding));
+  const minY=Math.min(0,...positions.map(p=>p.y-NODE_H/2-padding));
+  const maxX=Math.max(900,...positions.map(p=>p.x+NODE_W/2+padding));
+  const maxY=Math.max(420,...positions.map(p=>p.y+NODE_H/2+padding));
+  document.getElementById('diagram').setAttribute('viewBox',`${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
 
   const nodeMap = {};
   nodes.forEach(n => nodeMap[n.id] = n);
@@ -1085,7 +1093,6 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       currentStep++;
       revealUpTo(currentStep);
       updateControls();
-      autoScrollToNode(revealOrder[currentStep]);
     }
   });
 
@@ -1096,21 +1103,6 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       updateControls();
     }
   });
-
-  // Auto-scroll on mobile
-  function autoScrollToNode(nodeId){
-    const pos = nodePositions[nodeId];
-    if(window.innerWidth <= 768){
-      const svg = document.getElementById('diagram');
-      const vb = svg.viewBox.baseVal;
-      const scale = Math.min(svg.clientWidth / vb.width, svg.clientHeight / vb.height);
-      const offsetX = svg.clientWidth / 2 - pos.x * scale;
-      const offsetY = svg.clientHeight / 2 - pos.y * scale;
-      svg.style.transition = 'transform 0.4s ease';
-      svg.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
-      setTimeout(() => { svg.style.transform = ''; }, 1500);
-    }
-  }
 
   // Detail panel
   function showDetail(node){

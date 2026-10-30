@@ -1,5 +1,14 @@
 // View, chapter, unit, completion, and activity-log navigation.
 let completionNavigationInFlight = "";
+function scrollLearningStart() {
+  const targetUnit=currentUnitId;
+  requestAnimationFrame(()=>{
+    if(currentView!=="learn"||currentUnitId!==targetUnit)return;
+    const top=document.querySelector(".player-top"),player=document.querySelector("#lesson-player");
+    for(let node=player;node&&node!==document.body;node=node.parentElement){if(node.scrollHeight>node.clientHeight&&/auto|scroll/.test(getComputedStyle(node).overflowY))node.scrollTop=0;}
+    if(top){const header=document.querySelector(".app-header")?.getBoundingClientRect().height||0;window.scrollTo({top:Math.max(0,top.getBoundingClientRect().top+window.scrollY-header-8),behavior:"instant"});}
+  });
+}
 function renderAll() {
   applyView(currentView);
   renderAuth();
@@ -26,6 +35,7 @@ function applyView(view) {
   document.querySelectorAll("[data-view]").forEach((node) => {
     if (node.classList.contains("nav-button")) node.classList.toggle("active", node.dataset.view === nextView);
   });
+  window.dispatchEvent(new CustomEvent('cq:view-changed',{detail:{view:nextView}}));
   if (typeof scheduleLearningActionDockPosition === "function") {
     scheduleLearningActionDockPosition();
   }
@@ -53,6 +63,7 @@ function switchView(view) {
   window.scrollTo({ top: 0, behavior: "smooth" });
   trackLearningEvent("switch_view", { view: currentView });
   if(currentView==='learn'&&window.LearnerSetup)window.LearnerSetup.allowsUnit(getUnit()||{});
+  if(currentView==='learn'&&getUnit()?.assessmentPhase==='pre')scrollLearningStart();
 }
 
 async function returnToLearningCourseware() {
@@ -86,7 +97,7 @@ async function returnToLearningCourseware() {
 
   const playerTop = document.querySelector(".player-top");
   if (playerTop) {
-    window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+    scrollLearningStart();
   }
 }
 
@@ -208,7 +219,7 @@ async function selectChapter(chapterId) {
   renderAll();
   const playerTop = document.querySelector(".player-top");
   if (playerTop) {
-      window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+      scrollLearningStart();
   }
   return true;
 }
@@ -236,7 +247,7 @@ function selectUnit(unitId) {
   renderAll();
   const playerTop = document.querySelector(".player-top");
   if (playerTop) {
-    window.scrollTo({ top: playerTop.getBoundingClientRect().top + window.scrollY - 80, behavior: "smooth" });
+    scrollLearningStart();
   }
   return true;
 }

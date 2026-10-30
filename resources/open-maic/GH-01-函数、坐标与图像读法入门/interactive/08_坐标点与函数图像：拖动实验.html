@@ -992,6 +992,13 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
     border-bottom: 1px solid #334155;
   }
 </style>
+<style id="cq-coordinate-layout">
+body{display:block!important;overflow:auto!important;max-height:none!important}
+#app-container{display:grid!important;grid-template-columns:minmax(0,1fr) 280px!important;grid-template-rows:minmax(0,1fr)!important;min-height:420px!important;height:100dvh!important;max-height:none!important;width:100%!important}
+#canvas-container{grid-column:1;grid-row:1;position:relative!important;inset:auto!important;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;max-height:none!important;transform:none!important}
+#controls{grid-column:2;grid-row:1;position:static!important;inset:auto!important;transform:none!important;max-width:none!important;width:100%!important;min-width:0!important;height:100%!important;max-height:none!important;overflow:auto!important;margin:0!important;flex:none!important}
+@media(max-width:767px){#app-container{grid-template-columns:minmax(0,1fr)!important;grid-template-rows:minmax(300px,55dvh) auto!important;height:auto!important;min-height:100dvh!important}#controls{grid-column:1;grid-row:2;height:auto!important;overflow:visible!important}}
+</style>
 <body>
 <div id="app-container">
   <div id="controls">
@@ -1046,7 +1053,7 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       <h2 id="msg-title">🎉 太棒了！</h2>
       <p id="msg-text">所有点都已正确放置！</p>
     </div>
-    <div id="instructions">👆 点击“启动”后，拖动橙色圆点到正确的高度（横轴x对应纵轴f(x)）</div>
+    <div id="instructions">👆 点击“启动”后，拖动橙色圆点到正确的高度（横纵轴按各自刻度显示）</div>
   </div>
 </div>
 
@@ -1078,7 +1085,7 @@ let config = {
 
 // Coordinate system
 let origin = { x: 0, y: 0 };
-let scale = 60;
+let scaleX = 60, scaleY = 60;
 let canvasW = 0, canvasH = 0;
 
 // Function definitions
@@ -1124,86 +1131,22 @@ function resizeCanvas() {
 
 function updateCoordinateSystem() {
   const fn = functions[state.functionType];
-  const xMin = fn.xRange[0], xMax = fn.xRange[1];
-  const yMin = fn.yRange[0], yMax = fn.yRange[1];
-
-  const padX = 50, padY = 60;
-  const availW = canvasW - padX * 2;
-  const availH = canvasH - padY * 2;
-
-  const xSpan = xMax - xMin;
-  const ySpan = yMax - yMin;
-  const scaleX = availW / xSpan;
-  const scaleY = availH / ySpan;
-  scale = Math.min(scaleX, scaleY);
-
-  const graphW = xSpan * scale;
-  const graphH = ySpan * scale;
-
-  origin.x = padX + (availW - graphW) / 2;
-  origin.y = canvasH - padY + (availH - graphH) / 2;
-
-  // Adjust origin for actual zero position
-  origin.y -= 0 * scale; // y=0 offset handled in mathToCanvas
+  scaleX = Math.max(1, canvasW - 100) / (fn.xRange[1] - fn.xRange[0]);
+  scaleY = Math.max(1, canvasH - 120) / (fn.yRange[1] - fn.yRange[0]);
 }
-
-function mathToCanvas(mx, my) {
-  const fn = functions[state.functionType];
-  const yMin = fn.yRange[0];
-  return {
-    x: origin.x + (mx - fn.xRange[0]) * scale / (fn.xRange[1] - fn.xRange[0]) * ((fn.xRange[1] - fn.xRange[0]) / ((canvasW - 100) / scale)) * scale,
-    y: origin.y + (0 - my) * scale
-  };
-}
-
-function canvasToMath(cx, cy) {
-  const fn = functions[state.functionType];
-  const xSpan = fn.xRange[1] - fn.xRange[0];
-  const graphW = xSpan * scale;
-  const xMin = fn.xRange[0];
-  const startX = origin.x;
-  const roughX = xMin + (cx - startX) / scale * (xSpan / (graphW / scale));
-  // Simpler approach
-  const pxPerUnit = scale;
-  const x = (cx - origin.x) / pxPerUnit + fn.xRange[0];
-  const y = (origin.y - cy) / pxPerUnit;
-  return { x, y };
-}
-
-function recalcCoords() {
-  const fn = functions[state.functionType];
-  const xSpan = fn.xRange[1] - fn.xRange[0];
-  const availW = canvasW - 100;
-  const availH = canvasH - 120;
-  const ySpan = fn.yRange[1] - fn.yRange[0];
-  scale = Math.min(availW / xSpan, availH / ySpan);
-
-  const graphW = xSpan * scale;
-  const graphH = ySpan * scale;
-
-  origin.x = (canvasW - graphW) / 2;
-  origin.y = canvasH / 2 + (graphH / 2) * (fn.yRange[1] + fn.yRange[0]) / ySpan * 0.3;
-
-  // Recenter
-  origin.x = canvasW / 2;
-  origin.y = canvasH / 2;
-}
-
-// Better coordinate mapping
 function m2c(mx, my) {
   const fn = functions[state.functionType];
-  const xRange = fn.xRange[1] - fn.xRange[0];
-  const cx = canvasW / 2 + (mx - (fn.xRange[0] + fn.xRange[1]) / 2) * scale;
-  const cy = canvasH / 2 - (my - (fn.yRange[0] + fn.yRange[1]) / 2) * scale;
-  return { x: cx, y: cy };
+  return {x: canvasW / 2 + (mx - (fn.xRange[0] + fn.xRange[1]) / 2) * scaleX,
+    y: canvasH / 2 - (my - (fn.yRange[0] + fn.yRange[1]) / 2) * scaleY};
 }
-
 function c2m(cx, cy) {
   const fn = functions[state.functionType];
-  const mx = (cx - canvasW / 2) / scale + (fn.xRange[0] + fn.xRange[1]) / 2;
-  const my = -(cy - canvasH / 2) / scale + (fn.yRange[0] + fn.yRange[1]) / 2;
-  return { x: mx, y: my };
+  return {x: (cx - canvasW / 2) / scaleX + (fn.xRange[0] + fn.xRange[1]) / 2,
+    y: -(cy - canvasH / 2) / scaleY + (fn.yRange[0] + fn.yRange[1]) / 2};
 }
+function mathToCanvas(mx,my) {return m2c(mx,my);}
+function canvasToMath(cx,cy) {return c2m(cx,cy);}
+function recalcCoords() {updateCoordinateSystem();}
 
 function initDots() {
   const fn = functions[state.functionType];
@@ -1370,7 +1313,9 @@ function drawTargetMarkers() {
     ctx.fillStyle = 'rgba(249, 115, 22, 0.5)';
     ctx.font = '11px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('x=' + dot.mx.toFixed(1), xAxPos.x, xAxPos.y + 24);
+    const spacing = Math.max(1,(canvasW-100)/Math.max(1,state.dots.length-1));
+    const rows = Math.max(1,Math.ceil(ctx.measureText('x=-3.0').width / spacing));
+    ctx.fillText('x=' + dot.mx.toFixed(1), xAxPos.x, xAxPos.y + 22 + (i % rows) * 14);
   });
 }
 
@@ -1603,7 +1548,7 @@ function updateStateDisplay() {
 function handleMainBtn() {
   if (state.ended) {
     resetSimulation();
-    setTimeout(() => startSimulation(), 100);
+    startSimulation();
     return;
   }
 
@@ -1657,6 +1602,8 @@ function resetSimulation() {
   document.getElementById('main-btn').classList.remove('ended');
   document.getElementById('message-overlay').classList.remove('show');
   document.getElementById('instructions').style.display = '';
+  document.getElementById('instructions').textContent = '点击“启动”后，拖动橙色圆点到正确的高度。横纵轴按各自刻度显示。';
+  updateCoordinateSystem();
 
   updateStateDisplay();
   updateProgress();
@@ -1665,7 +1612,7 @@ function resetSimulation() {
 
 function checkLock(dot) {
   const dist = Math.abs(dot.my - dot.correctMy);
-  const threshold = config.snapTolerance / scale;
+  const threshold = config.snapTolerance / scaleY;
 
   if (dist < threshold && !dot.locked) {
     dot.locked = true;
@@ -1726,15 +1673,13 @@ function getCanvasPos(e) {
 }
 
 function findDotAt(pos) {
-  for (let i = state.dots.length - 1; i >= 0; i--) {
-    const dot = state.dots[i];
-    if (dot.locked) continue;
-    const dotPos = m2c(dot.mx, dot.my);
-    const dx = pos.x - dotPos.x;
-    const dy = pos.y - dotPos.y;
-    if (dx * dx + dy * dy < 20 * 20) return dot;
+  let nearest=null, best=20*20;
+  for(const dot of state.dots){
+    if(dot.locked)continue;
+    const p=m2c(dot.mx,dot.my),d=(pos.x-p.x)**2+(pos.y-p.y)**2;
+    if(d<best){nearest=dot;best=d;}
   }
-  return null;
+  return nearest;
 }
 
 function onPointerDown(e) {
@@ -1908,6 +1853,8 @@ window.addEventListener('message', function(event) {
 const style = document.createElement('style');
 style.textContent = '@keyframes pulse-highlight { 0%, 100% { outline-color: rgba(139, 92, 246, 0.8); } 50% { outline-color: rgba(139, 92, 246, 0.4); } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }';
 document.head.appendChild(style);
+
+new ResizeObserver(resizeCanvas).observe(container);
 
 // Init
 document.getElementById('func-display').textContent = functions.linear.label;
@@ -2110,6 +2057,7 @@ animationLoop();
   }
 
   function findLayout() {
+    if (document.getElementById("cq-coordinate-layout")) return null;
     var canvases = Array.from(document.querySelectorAll("canvas")).filter(visible);
     if (!canvases.length) return null;
     var candidates = [];

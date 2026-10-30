@@ -33,6 +33,17 @@
   const score = value => value === null || value === undefined ? "未估计" : Number(value).toFixed(2);
   const row = (name, value, liveCooldown = false) => `<div class="observatory-row"><span>${esc(name)}</span><strong${liveCooldown ? " data-cooldown-remaining" : ""}>${esc(value)}</strong></div>`;
   const card = (id, title, body) => `<section class="observatory-dimension" data-dimension="${id}"><h3><span>${id}</span>${title}</h3>${body}</section>`;
+  function updateDimensions(html){
+    const body=panel.querySelector('[data-observatory-body]'),scroller=panel.querySelector('.observatory-scroll'),top=scroller.scrollTop;
+    const template=document.createElement('template');template.innerHTML=html;
+    const selection=global.getSelection();
+    for(const next of template.content.children){const old=body.querySelector(`[data-dimension="${next.dataset.dimension}"]`);
+      if(old?.outerHTML===next.outerHTML)continue;
+      if(old&&selection&&!selection.isCollapsed&&selection.containsNode(old,true)){lastKey='';continue;}
+      if(old)old.replaceWith(next.cloneNode(true));else body.append(next.cloneNode(true));
+    }
+    scroller.scrollTop=top;
+  }
   function render() {
     if (!panel || !opened) return;
 
@@ -56,7 +67,7 @@
     panel.querySelector("[data-observatory-context]").textContent = `${s.unitLabel || "尚未进入学习"} · ${eventCount} 条本次操作记录`;
     panel.querySelector('[data-observatory-live]').textContent=latest?`${latest.time} · ${label(latest.type)}${latest.value?' · '+latest.value:''}`:'等待当前课件的操作记录';
     panel.querySelector('[data-observatory-server]').textContent=decisionReceivedAt?`最近策略返回 ${decisionReceivedAt}；分数仅在服务端重新判断后更新。`:'浏览器操作会即时记录；满足判断条件后才会返回策略结果。';
-    panel.querySelector("[data-observatory-body]").innerHTML = [
+    updateDimensions([
       card("D1", "学习状态证据", row("最近操作", latest ? label(latest.type) : "尚无操作") + row("当前课件", label(s.sceneType))
         + row("帮助发起方",cycle?.initiation==="agent_initiated_confirmation"?"系统发现候选后主动询问":cycle?"学生主动选择":"尚无")
         + row("主动询问依据",cycle?.inquiry?.text||"尚无")
@@ -91,12 +102,19 @@
         + row("多目标独立检查",cycle?.checkResult?cycle.checkResult.correct===null?"跳过":cycle.checkResult.correct?"本次正确":"本次错误":"未完成")
         + row("独立检查", s.check?.id ? "已签发，等待独立作答" : "当前无检查")
         + `<ol class="observatory-lifecycle">${["提出建议","学生确认","独立检查","渐退或停止"].map(x=>`<li>${x}</li>`).join("")}</ol><small>检查通过只结束本轮帮助；学习效果另看后测、迁移和保持。</small>`)
-    ].join("");
+    ].join(""));
     panel.querySelector("[data-observatory-history]").innerHTML = events.slice(-8).reverse().map(e=>`<li><time>${esc(e.time)}</time><span title="${esc(e.type)}">${esc(label(e.type))}</span></li>`).join("") || "<li>进入课件后显示真实操作事件。</li>";
   }
-  function setOpen(value) {
+  const canShow=()=>{
+    const unit=typeof getUnit==='function'&&typeof currentUnitId==='string'?getUnit(currentUnitId):null;
+    return Boolean(snapshot?.signedIn&&typeof currentView==='string'&&currentView==='learn'
+      &&unit?.assessmentPhase!=='pre'&&!document.getElementById('auth-gate')?.open);
+  };
+  function setOpen(value,{restoreFocus=true}={}) {
     if(!panel)return;
-    opened = value; panel.hidden = !value; toggle.hidden = value; toggle.setAttribute("aria-expanded",String(value));
+    if(value&&!canShow())return;
+    const wasOpen=opened;
+    opened = value; panel.hidden = !value; toggle.hidden = value||!canShow(); toggle.setAttribute("aria-expanded",String(value));
     document.body.classList.toggle("research-observatory-open", value);
     document.querySelectorAll(".core-learning-workspace > .lesson-rail, .learning-workspace-tools")
       .forEach(node => {
@@ -109,8 +127,13 @@
         }
       });
     global.dispatchEvent(new CustomEvent("cq:learning-layout-change"));
-    if(value){render();panel.querySelector("[data-observatory-close]").focus();}else toggle.focus();
+    if(value){render();panel.querySelector("[data-observatory-close]").focus();}
+    else if(wasOpen&&restoreFocus&&canShow()&&toggle.isConnected&&toggle.getClientRects().length)toggle.focus({preventScroll:true});
   }
+  function syncAvailability(){if(!canShow()&&opened)setOpen(false,{restoreFocus:false});if(toggle)toggle.hidden=opened||!canShow();}
+  global.addEventListener('cq:view-changed',syncAvailability);
+  global.addEventListener('cq:authentication-changed',syncAvailability);
+  global.addEventListener('cq:lesson-rendered',syncAvailability);
   function mount() {
     toggle=document.createElement("button"); toggle.type="button";toggle.className="proactive-hud-toggle-btn";
     toggle.textContent="六维观察台";toggle.setAttribute("aria-expanded","false");toggle.setAttribute("aria-controls","proactive-observatory");
@@ -123,6 +146,7 @@
     (document.querySelector(".core-learning-workspace .player-actions") || document.body).append(toggle);
     document.body.append(panel);
     toggle.addEventListener("click",()=>setOpen(true));panel.querySelector("[data-observatory-close]").addEventListener("click",()=>setOpen(false));
+    document.querySelector('#auth-menu-toggle')?.addEventListener('click',()=>{if(opened)setOpen(false,{restoreFocus:false});});
     panel.addEventListener("keydown",e=>{if(e.key==="Escape")setOpen(false);});
     panel.querySelector("[data-observatory-export]").addEventListener("click",()=>{
       const exported={version:1,generatedAt:new Date().toISOString(),kind:"engineering-observation",events,decisions,current:snapshot};
@@ -130,12 +154,15 @@
       const a=document.createElement("a");a.href=url;a.download="六维学习观察记录.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
     if(global.KnowledgeAssistant)snapshot=global.KnowledgeAssistant.designSpaceSnapshot();
+    syncAvailability();
     setInterval(()=>{if(opened)render();},1000);
   }
   global.addEventListener("cq:proactive-state",event=>{
     const next=event.detail;if(!next)return;
+    if(opened&&snapshot&&(snapshot.ownerKey!==next.ownerKey||snapshot.generation!==next.generation||snapshot.unitId!==next.unitId||snapshot.unitType!==next.unitType))setOpen(false,{restoreFocus:false});
     if(snapshot?.ownerKey !== next.ownerKey||snapshot?.generation!==next.generation){events.length=0;decisions.length=0;eventCount=0;decisionReceivedAt='';}
     snapshot=next;
+    syncAvailability();
     if(next.observation?.decisionId && !decisions.some(d=>d.decisionId===next.observation.decisionId)){
       decisionReceivedAt=new Date().toLocaleTimeString('zh-CN',{hour12:false});
       decisions.push(next.observation);if(decisions.length>100)decisions.shift();

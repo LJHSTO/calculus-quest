@@ -107,8 +107,10 @@
     } else {
       if(c?.content&&["offered","engaged"].includes(c.status))root.append(content(next,c));
       else if(c&&["queued","postponed"].includes(c.status)){
-        root.append(el("p",`${statuses[c.status]}。你可以继续学习；到时还会检查当前任务和提醒偏好。`),button("结束这轮帮助",()=>request({action:"close",id:c.id})));
+        const reason = c.lastGate === "waiting_for_boundary" ? "正在等待当前操作结束。完成一次提交或参数确认后会继续检查。" : c.lastGate === "waiting_for_due_time" ? "正在等待你设置的帮助间隔结束。" : "正在核对当前任务和提醒偏好。";
+        root.append(el("p",`${statuses[c.status]}。${reason}你可以继续学习。`),button("结束这轮帮助",()=>request({action:"close",id:c.id})));
       }else if(c?.checkResult)root.append(el("p",c.checkResult.correct===null?"本次独立检查已跳过。":c.checkResult.correct?"这次独立检查回答正确。本轮帮助已结束。":"这次独立检查尚未答对。本轮已结束，你可以重新选择需要的帮助。"));
+      else if(c?.status === "expired") root.append(el("p",c.lastGate === "context_changed" ? "学习位置已变化，这次未交付的帮助已取消。需要时可在当前任务重新求助。" : "这次帮助未在有效时限内交付，或设置已变化；没有记为已收到。需要时可重新选择帮助。"));
       else if(c?.closeReason==="need_unresolved")root.append(el("p","暂时不确定也没关系。可以补充一句你卡住的地方，或先继续探索。"));
       if(manualScope===next.scopeKey)root.append(checkin(next,true),button('收起求助入口',()=>{manualScope="";global.KnowledgeAssistant.refreshSupportSurface();}));
     }

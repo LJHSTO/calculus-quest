@@ -159,7 +159,7 @@ function setAuthMode(mode) {
   }
   document.querySelectorAll("[data-auth-mode]").forEach((button) => {
     button.classList.toggle("active", button.dataset.authMode === authMode);
-    button.setAttribute("aria-selected", button.dataset.authMode === authMode ? "true" : "false");
+    button.setAttribute("aria-pressed", button.dataset.authMode === authMode ? "true" : "false");
   });
   document.querySelectorAll("[data-register-fields]").forEach((node) => {
     node.hidden = authMode !== "register";
@@ -206,6 +206,16 @@ function setAuthMode(mode) {
 
 document.querySelectorAll("[data-auth-mode]").forEach((button) => {
   button.addEventListener("click", () => setAuthMode(button.dataset.authMode));
+});
+els.authGate?.addEventListener('cancel',event=>event.preventDefault());
+els.authGate?.addEventListener('keydown',event=>{
+  if(event.key!=='Tab'||event.altKey||event.ctrlKey||event.metaKey)return;
+  const items=[...els.authGate.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')]
+    .filter(node=>!node.disabled&&node.tabIndex>=0&&node.getClientRects().length>0);
+  if(!items.length)return;
+  const first=items[0],last=items.at(-1);
+  if(event.shiftKey&&document.activeElement===first){event.preventDefault();last.focus();}
+  else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first.focus();}
 });
 
 els.authAction?.addEventListener("click", () => {

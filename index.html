@@ -214,14 +214,14 @@
       </div>
     </section>
 
-    <section id="auth-gate" class="auth-gate" hidden>
+    <dialog id="auth-gate" class="auth-gate" aria-labelledby="login-title" aria-describedby="login-copy" hidden>
       <form id="login-form" class="login-panel is-login" data-auth-form-mode="login">
         <p class="eyebrow">高等数学互动学习</p>
         <h1 id="login-title">登录账号</h1>
         <p id="login-copy">输入注册时使用的昵称或邮箱，继续你的学习进度。</p>
-        <div class="auth-mode-tabs" role="tablist" aria-label="账号操作">
-          <button class="active" type="button" data-auth-mode="login">登录</button>
-          <button type="button" data-auth-mode="register">注册</button>
+        <div class="auth-mode-tabs" role="group" aria-label="账号操作">
+          <button class="active" type="button" data-auth-mode="login" aria-pressed="true">登录</button>
+          <button type="button" data-auth-mode="register" aria-pressed="false">注册</button>
         </div>
         <div class="auth-mode-note" data-login-note>
           <strong>登录</strong>
@@ -264,7 +264,7 @@
         <div id="login-feedback" class="login-feedback" role="status"></div>
         <button class="button primary full" id="login-submit" type="submit">登录</button>
       </form>
-    </section>
+    </dialog>
 
     <main>
       <section id="home-view" class="view active">
@@ -620,6 +620,8 @@
     <script src="app/main/proactive-exposure.js?v=20261014-visible-v1"></script>
     <script src="lib/courseware-semantics.js?v=20261019"></script>
     <script src="app/main/common-learning.js?v=20261019"></script>
+    <script src="app/shared/followup-window.js?v=20261030-report-repair"></script>
+    <script src="app/main/assistant-content.js?v=20261030-report-repair"></script>
     <script src="app/main/knowledge-assistant.js?v=20261014-visible-v1"></script>
     <script src="app/main/openmaic-slide.js?v=20260909-loading-v2"></script>
     <script src="app/main/learning-workspace.js?v=20261014-workspace-v6"></script>

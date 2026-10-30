@@ -35,6 +35,7 @@
   const act=(action,extra={})=>transact('/action',{action,fingerprint:data.protocol.fingerprint,revision:data.session.revision,...extra});
   function button(label,fn){const b=node('button',label);b.type='button';b.disabled=busy;b.onclick=fn;return b;}
   function fieldset(parent,label,name,options){const f=node('fieldset');f.append(node('legend',label));for(const [value,text]of options){const l=node('label'),r=node('input');r.type='radio';r.name=name;r.value=value;l.append(r,node('span',text));f.append(l);}parent.append(f);return f;}
+  function missingChoice(form,name,text){let alert=form.querySelector('[data-choice-error]');if(!alert){alert=node('p');alert.dataset.choiceError='true';alert.setAttribute('role','alert');form.append(alert);}alert.textContent=text;const input=form.querySelector(`input[name="${name}"]`);input?.focus();}
   function render(){
     const player=document.querySelector('#lesson-player');if(!player)return;
     const id=unit(),s=data?.session,active=s&&!['complete','withdrawn','between_units'].includes(s.stage);
@@ -67,7 +68,7 @@
       input.addEventListener('input',()=>{missing.disabled=Boolean(input.value.trim());if(missing.disabled)missing.value='';});
       fieldset(form,'你有多大把握？（可不选）','confidence',[['0','没把握'],['1','有一些把握'],['2','很有把握']]);
       const submit=node('button','提交判断');submit.type='submit';submit.disabled=busy;form.append(submit);
-      form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),response=f.get('response');if(!response)return;act('answer',{probeId:s.probe.id,response,explanation:f.get('explanation'),explanationMissingReason:f.get('explanationMissingReason')||null,confidence:f.has('confidence')?Number(f.get('confidence')):null});};host.append(form);
+      form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),response=f.get('response');if(!response){missingChoice(form,'response','请先选择一个判断，也可以选择“我不会”或“跳过”。');return;}act('answer',{probeId:s.probe.id,response,explanation:f.get('explanation'),explanationMissingReason:f.get('explanationMissingReason')||null,confidence:f.has('confidence')?Number(f.get('confidence')):null});};host.append(form);
     }else if(s.stage==='explore'){
       host.append(node('p',s.practicePrompt),node('p','试着构造一个支持你判断的例子，再找一个可能推翻它的例子。动画、旋转和游戏只辅助观察。'));
       if(s.help)host.append(node('p',s.help.text),button('收起线索',()=>act('dismiss_manual_help')));
@@ -84,7 +85,7 @@
     }else if(s.stage==='survey'){
       if(s.feedback)host.append(node('p',s.feedback.text),node('p','选择题由规则判分；文字解释留待复核，不把猜对等同于稳定掌握。'));
       const form=node('form');for(const [name,label] of [['interruption','刚才的帮助打断了我的思路'],['control','我能够决定接受或停止帮助'],['effort','理解刚才的内容需要较多脑力']])fieldset(form,label,name,[[1,'1 完全不同意'],[2,'2'],[3,'3'],[4,'4'],[5,'5'],[6,'6'],[7,'7 完全同意'],['skip','跳过 / 不适用']]);
-      const b=node('button','保存并完成本知识点');b.type='submit';b.disabled=busy;form.append(b);form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),answers={};for(const name of ['interruption','control','effort']){const v=f.get(name);if(v===null)return;answers[name]=v==='skip'?null:Number(v);}act('survey',{answers});};host.append(form);
+      const b=node('button','保存并完成本知识点');b.type='submit';b.disabled=busy;form.append(b);form.onsubmit=e=>{e.preventDefault();const f=new FormData(form),answers={};for(const name of ['interruption','control','effort']){const v=f.get(name);if(v===null){missingChoice(form,name,'请完成这一项，或选择“跳过 / 不适用”。');return;}answers[name]=v==='skip'?null:Number(v);}act('survey',{answers});};host.append(form);
       host.append(button('跳过问卷并完成',()=>act('survey',{answers:{interruption:null,control:null,effort:null}})));
     }
     host.append(button(data.protocol.consent?'退出研究':'退出本轮全部验证',()=>act('withdraw')));

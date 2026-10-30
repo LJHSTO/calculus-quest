@@ -129,7 +129,10 @@ let sessionStorage = window.__openMaicSessionStorage;
     transition: transform 0.3s ease;
     z-index: 100;
     position: relative;
+    min-height: 0;
+    overflow-y: auto;
   }
+  #sidebar > * { flex-shrink: 0; }
 
   #sidebar.collapsed {
     transform: translateX(-300px);
@@ -157,8 +160,8 @@ let sessionStorage = window.__openMaicSessionStorage;
   }
 
   #details-panel {
-    flex: 1;
-    overflow-y: auto;
+    flex: 0 0 auto;
+    overflow-y: visible;
     padding: 16px;
   }
 
@@ -1077,6 +1080,13 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
 }
 </style>
 
+<style id="cq-function-map-sidebar">
+/* This authored sidebar uses .collapsed, not the generic .open convention. */
+@media(max-width:768px){
+  body:has(#diagram-svg) #sidebar{position:absolute!important;height:100dvh!important;max-height:100dvh!important;overflow-y:auto!important}
+  body:has(#diagram-svg) #sidebar:not(.collapsed){visibility:visible;opacity:1;pointer-events:auto}
+}
+</style>
 <style id="functions-limits-reduced-motion">@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0s!important;animation-iteration-count:1!important;transition-duration:0s!important}}</style>
 </head>
 <body>
@@ -2060,6 +2070,9 @@ body:has(#lossChart):has(#controls-panel):has(#gameCanvas) #lossChart {
       groups.get(group).push(button);
     });
     groups.forEach(function (buttons, group) {
+      // Native navigation belongs to the scrollable sidebar. Moving the whole
+      // controls container would also move the expanded relation exercise.
+      if (group.closest("#sidebar")) return;
       if (!buttons.some(outsideViewport) && !dockedGroups.has(group)) return;
       if (!dockedGroups.has(group)) {
         document.body.appendChild(group);

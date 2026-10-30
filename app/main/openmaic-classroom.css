@@ -169,13 +169,13 @@
 
 @media (min-width: 1181px) {
   body:has(#learn-view.active) { overflow: hidden; }
-  #learn-view.active { position: fixed; inset: 64px 0 0; }
+  #learn-view.active { position: fixed; inset: var(--learning-header-height, 64px) 0 0; }
   #learn-view .core-learning-workspace {
     --classroom-path-width: 236px;
     --classroom-agent-width: 336px;
     grid-template-columns: var(--classroom-path-width) minmax(0, 1fr) var(--classroom-agent-width);
     grid-template-rows: 44px minmax(0, 1fr);
-    height: calc(100dvh - 64px);
+    height: calc(100dvh - var(--learning-header-height, 64px));
     min-height: 0;
     overflow: hidden;
     background: #f8f9fb;

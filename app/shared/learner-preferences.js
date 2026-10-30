@@ -4,7 +4,7 @@
   else root.LearnerPreferences = api;
 })(typeof window === 'undefined' ? globalThis : window, function () {
   'use strict';
-  const version = 'learner-preferences-20261027-v6';
+  const version = 'learner-preferences-20261030-v7';
   const dimensions = [
     {id:'D1',title:'怎样判断我可能需要帮助',short:'判断依据',description:'操作少不代表不想学。助手结合回答和任务记录发现线索，判断可能出错。是否先询问，由“主动权”设置决定。',options:[
       ['standard','有明确线索，就考虑帮助','出现有依据的困难线索时，允许助手考虑介入。'],
@@ -46,7 +46,16 @@
   };
   // Retain legacy values for reading historical records; new choices use two locations.
   const optionsFor=(id,experimental=false)=>dimensions.find(d=>d.id===id).options.filter(o=>!(experimental&&id==='D5'&&o[0]==='request')&&!(id==='D4'&&o[0].includes('compact')));
-  const reasonsFor=id=>[...(dimensionReasons[id]||[]),...reasons];
+  // Keep historical codes valid; the learner sees six reasons at a time.
+  // A saved legacy choice is shown as a seventh item rather than silently lost.
+  const allReasonsFor=id=>[...(dimensionReasons[id]||[]),...reasons];
+  const reasonLabel=(id,value)=>allReasonsFor(id).find(r=>r[0]===value)?.[1]||'';
+  const reasonsFor=(id,savedReason='')=>{
+    const choices=[...(dimensionReasons[id]||[]),...reasons.filter(r=>['try','other','decline'].includes(r[0]))];
+    const saved=allReasonsFor(id).find(r=>r[0]===savedReason);
+    if(saved&&!choices.some(r=>r[0]===savedReason))choices.push(saved);
+    return choices;
+  };
   const previewFor=(id,value)=>previews[id]?.[value]||dimensions.find(d=>d.id===id).preview;
   const configurationPolicy={version:'context-edits-20261027-v2',editing:'before_learning_or_after_submitted_formative',rehearsalEditing:'knowledge_units_with_assessment_and_support_protection',experimentalD5:['ask','cue'],defaultRationale:'先确认、少量线索、任务旁呈现；等待任务边界并限制重复询问。默认值是可调整的设计起点，尚未证明最优。',defaultProvenance:'designer_selected_not_empirically_optimal'};
   const defaults = () => Object.fromEntries(dimensions.map(d=>[d.id,{value:d.default,reason:'',note:''}]));
@@ -55,7 +64,7 @@
     return Object.fromEntries(dimensions.map(d=>{
       const a=input[d.id];
       if(context.experimental&&d.id==='D5'&&a?.value==='request')throw new Error('本轮实验组须保留主动帮助；仍可拒绝、暂停或退出预试');
-      if(!a || !d.options.some(o=>o[0]===a.value) || !reasonsFor(d.id).some(r=>r[0]===a.reason))throw new Error('请选择'+d.short+'及选择理由');
+      if(!a || !d.options.some(o=>o[0]===a.value) || !allReasonsFor(d.id).some(r=>r[0]===a.reason))throw new Error('请选择'+d.short+'及选择理由');
       if(typeof a.note!=='string'||a.note.length>500)throw new Error('补充说明请控制在500字内');
       if(a.reason==='other'&&!a.note.trim())throw new Error('选择其他原因时，请补充说明');
       return [d.id,{value:a.value,reason:a.reason,note:a.note.trim()}];
@@ -94,5 +103,18 @@
   function scoreSurvey(input){return Object.fromEntries(Object.entries(instrument.groups).map(([k,ids])=>{const complete=ids.every(id=>Number.isInteger(input?.[id])&&input[id]>=1&&input[id]<=5);return [k,{mean:complete?ids.reduce((s,id)=>s+input[id],0)/ids.length:null,answered:ids.filter(id=>Number.isInteger(input?.[id])).length,total:ids.length,missingRule:'all_four_required_no_imputation'}];}));}
   function displayParts(value){return {placement:value.startsWith('sidebar')?'sidebar':'inline',format:value.includes('compact')?'disclosure':'plain'};}
   function displayValue(placement,format){return placement==='sidebar'?(format==='disclosure'?'sidebar_compact':'sidebar'):(format==='disclosure'?'compact':'inline');}
-  return {version,dimensions,reasons,defaults,validate,profile,surveys,instrument,scoreSurvey,optionsFor,reasonsFor,previewFor,configurationPolicy,displayParts,displayValue};
+  function behaviorSummary(answers) {
+    // A preview uses the same mapping as the saved policy, without requiring a rationale yet.
+    const draft=Object.fromEntries(dimensions.map(d=>[d.id,{value:answers?.[d.id]?.value||d.default,reason:'default',note:''}]));
+    const p=profile(draft,{});
+    return [
+      ['D1',p.minimumEvidenceFamilies===2?'等待至少两类一致的困难线索':'有明确困难线索时考虑帮助'],
+      ['D2',`在任务边界出现；两次主动介入至少间隔${p.cooldownSeconds/60}分钟`],
+      ['D3',({L2:'先给一个概念线索',L3:'先给少量引导步骤',L5:'先给一个局部示例'})[p.initialSupportLevel]],
+      ['D4',p.placement==='inline'?'在当前任务旁阅读；不覆盖操作区':'通过提醒打开侧栏；窄屏切换面板'],
+      ['D5',p.proactivity==='reactive'?'只回应你的主动求助':p.supportInquiryEnabled?'确认需要后才提供帮助':'可直接显示知识提示；其他支持仍先确认'],
+      ['D6',p.supportFollowups?'你表示仍有困难并选择继续后，再补充一次':'结束本轮帮助，留给你独立尝试']
+    ];
+  }
+  return {version,dimensions,reasons,defaults,validate,profile,surveys,instrument,scoreSurvey,optionsFor,reasonsFor,reasonLabel,previewFor,behaviorSummary,configurationPolicy,displayParts,displayValue};
 });

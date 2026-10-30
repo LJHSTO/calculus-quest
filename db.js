@@ -19,7 +19,7 @@ const FAILED_AI_REVIEW_TYPES = [
   "manual_fallback",
   "unknown"
 ];
-const FAILED_AI_REVIEW_SUFFIX = "。已暂记 0 分以便继续本次学习；该暂记分数不会用于学习建议，仍可重新评分或人工复核。";
+const FAILED_AI_REVIEW_SUFFIX = "。评分暂不可用，未计分；可以继续学习，之后可重新评分或人工复核。";
 const LEGACY_AI_REVIEW_FAILURE_PATTERNS = [
   "评分出错",
   "评分超时",
@@ -1160,7 +1160,7 @@ function insertQuizResult(record) {
       record.question_type || "", record.phase || "", record.points || 0,
       typeof record.response === "string" ? record.response : JSON.stringify(record.response),
       typeof record.is_correct === "number" ? record.is_correct : (record.is_correct ? 1 : 0), record.status || "",
-      record.score || 0, record.max_score || 0, generation, record.created_at,
+      ["grading_unavailable", "pending_review"].includes(record.status) || record.is_correct === -1 ? null : record.score ?? 0, record.max_score || 0, generation, record.created_at,
       record.research_context?.experimentId || "",
       JSON.stringify(record.research_context || {})
     ]
@@ -1238,7 +1238,7 @@ function reconciledQuizResultParams(record = {}) {
     normalizedQuizResultResponse(record.response),
     isCorrect === -1 ? -1 : isCorrect === 1 ? 1 : 0,
     record.status || "",
-    finiteQuizValue(record.score) ?? 0,
+    ["grading_unavailable", "pending_review"].includes(record.status) || isCorrect === -1 ? null : finiteQuizValue(record.score) ?? 0,
     finiteQuizValue(record.max_score) ?? finiteQuizValue(record.points) ?? 0,
     Number(record.learning_generation),
     record.created_at,
@@ -1316,14 +1316,14 @@ function reconcileQuizResults(records = []) {
         && !quizResultHasAppliedRegrade(existing.id)
         // An unsuccessful client snapshot is not a new grading result. Keep
         // the server's recorded cause and feedback across reloads and deploys.
-        && !(existing.status === 'ai_reviewed'
+        && !(['ai_reviewed','grading_unavailable'].includes(existing.status)
           && FAILED_AI_REVIEW_TYPES.includes(String(existing.ai_error_type || '').trim().toLowerCase())
           && FAILED_AI_REVIEW_TYPES.includes(String(record.ai_error_type || '').trim().toLowerCase()))
       ) {
         const aiScore = finiteQuizValue(record.ai_score);
         const aiConfidence = finiteQuizValue(record.ai_confidence);
-        const score = finiteQuizValue(record.score) ?? 0;
-        const isCorrect = Number(record.is_correct) === 1 ? 1 : 0;
+        const score = ["grading_unavailable", "pending_review"].includes(record.status) || Number(record.is_correct) === -1 ? null : finiteQuizValue(record.score) ?? 0;
+        const isCorrect = Number(record.is_correct) === -1 ? -1 : Number(record.is_correct) === 1 ? 1 : 0;
         const status = record.status || "ai_reviewed";
         const feedback = String(record.ai_feedback || "").slice(0, 4000);
         const errorType = String(record.ai_error_type || "").trim().toLowerCase();
@@ -1333,7 +1333,7 @@ function reconcileQuizResults(records = []) {
           && String(existing.ai_error_type || "").trim().toLowerCase() === errorType
           && Number(existing.is_correct) === isCorrect
           && String(existing.status || "") === status
-          && (existing.score == null ? 0 : Number(existing.score)) === score;
+          && (existing.score == null ? null : Number(existing.score)) === score;
         if (unchanged) {
           skipped += 1;
           continue;
@@ -5230,14 +5230,13 @@ function updateQuizResultAiGrading(questionId, userId, {
   let resolvedScore = aiScore;
   let resolvedFeedback = aiFeedback || "";
 
-  if (resolvedScore == null && FAILED_AI_REVIEW_TYPES.includes(normalizedErrorType)) {
-    resolvedScore = 0;
-    if (!/已先按 0 分计入|已暂记 0 分|可以继续学习/.test(resolvedFeedback)) {
-      const feedbackPrefix = String(resolvedFeedback || "").replace(/[。.!！？?\s]+$/u, "");
-      resolvedFeedback = feedbackPrefix
-        ? `${feedbackPrefix}${FAILED_AI_REVIEW_SUFFIX}`
-        : FAILED_AI_REVIEW_SUFFIX.slice(1);
-    }
+  if (FAILED_AI_REVIEW_TYPES.includes(normalizedErrorType)) {
+    resolvedFeedback = require("./app/main/quiz-review-state").continuationFeedback(resolvedFeedback);
+    execute(
+      `UPDATE quiz_results SET ai_score = NULL, score = NULL, is_correct = -1, status = 'grading_unavailable', ai_confidence = ?, ai_feedback = ?, ai_error_type = ? WHERE question_id = ? AND user_id = ?${unitScope}${reviewableScope}`,
+      [aiConfidence || 0, resolvedFeedback, normalizedErrorType, questionId, userId, ...reviewableParams]
+    );
+    return targetIds;
   }
 
   // Keep genuinely unresolved reviews pending when no explicit failure was reported.
@@ -5508,20 +5507,22 @@ function normalizeFailedPendingQuizReviews() {
   const placeholders = FAILED_AI_REVIEW_TYPES.map(() => "?").join(", ");
   execute(
     `UPDATE quiz_results
-     SET ai_score = 0,
+     SET ai_score = NULL,
          ai_confidence = COALESCE(ai_confidence, 0),
          ai_feedback = CASE
            WHEN trim(COALESCE(ai_feedback, '')) = '' THEN ?
-           WHEN instr(ai_feedback, '已先按 0 分计入') > 0 OR instr(ai_feedback, '已暂记 0 分') > 0 OR instr(ai_feedback, '可以继续学习') > 0 THEN ai_feedback
+           WHEN instr(ai_feedback, '已先按 0 分计入') > 0 OR instr(ai_feedback, '已暂记 0 分') > 0 THEN ?
+           WHEN instr(ai_feedback, '评分暂不可用，未计分') > 0 THEN ai_feedback
            ELSE rtrim(ai_feedback, '。.!！？? ') || ?
          END,
-         is_correct = 0,
-         status = 'ai_reviewed',
-         score = 0
+         is_correct = -1,
+         status = 'grading_unavailable',
+         score = NULL
      WHERE question_type = 'short_answer'
-       AND (status = 'pending_review' OR is_correct = -1)
+       AND (status != 'grading_unavailable' OR score IS NOT NULL OR ai_score IS NOT NULL OR is_correct != -1)
        AND lower(trim(COALESCE(ai_error_type, ''))) IN (${placeholders})`,
     [
+      FAILED_AI_REVIEW_SUFFIX.slice(1),
       FAILED_AI_REVIEW_SUFFIX.slice(1),
       FAILED_AI_REVIEW_SUFFIX,
       ...FAILED_AI_REVIEW_TYPES

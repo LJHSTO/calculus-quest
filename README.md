@@ -107,7 +107,15 @@ npm start
 | PROACTIVE_ARM_PROFILES_JSON | — | 按实验臂设置 `display`、`maxSupportLevel` 与 `allowRepresentationSwitch` |
 | PROACTIVE_RETENTION_DELAY_HOURS | 168 | 延迟保持测量相对章后测的开放时长 |
 
-当 LLM_PROVIDER=mock 时，简答题统一按 0 分兜底并标记需人工复核，不会卡住学习流程。
+当 LLM_PROVIDER=mock 或评分失败时，简答题保留为未评分并标记待复核，分数与正确性为缺失值；不能将接口不可用记作学生答错。真实评分得到的有效 0 分仍保留。
+
+### 自主配置验收
+
+学习者界面提供六维共 13 个可选等级、96 种实验组组合。每维提供 6 个简短理由；历史理由不在新列表时作为第 7 项保留。逐项预览与核对页解释帮助的实际边界；历史设置仍可读取，保存会生成新版本，不改写旧选择。
+
+`node ops/test-learner-configuration-contract.js` 验证全部组合的保存、实际策略决策、知识支持程度、确认、静默、备用内容和补充轮数。`node ops/test-learner-pilot-browser.js` 另检验全部 13 个等级在四种尺寸下的界面、20 人合成分组、保存恢复、研究权限和问卷流程。真实接口需显式设置 `LIVE_MODEL_SMOKE=1`，以现有服务端 `LLM_CONFIG_FILE` 运行 `node ops/test-live-learner-configurations.js`；结果分别保留成功与 fallback，不能用备用路径代替真实模型通过。
+
+这些属于工程验收。真人能否区分六维、选择是否更适合学习、问卷与测验效度，应通过独立预试和冻结的研究方案评估；20 人设计用于可行性探索，不自动支持六维因果主效应或学习收益结论。
 
 推荐只在本地 `.env` 中保存 `LLM_CONFIG_FILE` 的绝对路径。文件中的密钥只在服务端内存中使用；不要把真实密钥写进 `.env`、源码、日志或 Git。若配置文件是供应商提供的 `curl` 示例，系统会同时识别其中的请求地址、Bearer 密钥、模型名和 `chat/completions`/`responses` 请求形态。
 
