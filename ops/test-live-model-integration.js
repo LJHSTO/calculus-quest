@@ -60,17 +60,17 @@ async function main(){
     for(const [need,goal] of [['concept','cognitive'],['monitoring','metacognitive'],['value','motivational'],['frustration','emotional'],['planning','behavioral']]){
       let cycle;const attempts=[];
       for(let attempt=0;attempt<2;attempt++){
-        const supported=await req('/api/learning/support-cycle',{action:'report',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:'slide',confirmed:true,need,...(inquiry&&need==='concept'&&attempt===0?{inquiryId:inquiry.id}:{}),note:'合成验收：正在学习输入、输出和函数规则，请围绕当前知识点提供建议。'});
+        const supported=await req('/api/learning/support-cycle',{action:'report',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:inquiry?.sceneType||'slide',confirmed:true,need,...(inquiry&&need==='concept'&&attempt===0?{inquiryId:inquiry.id}:{}),note:'合成验收：正在学习输入、输出和函数规则，请围绕当前知识点提供建议。'});
         assert.equal(supported.status,200,supported.data.message);cycle=supported.data.data.cycle;
         if(inquiry&&need==='concept'&&attempt===0){assert.equal(cycle.id,inquiry.id);assert.equal(cycle.initiation,'agent_initiated_confirmation');assert.equal(cycle.content.audit.fallback,false,'系统询问确认后须验证一次真实生成');}
         attempts.push({fallback:cycle.content.audit.fallback,failure:cycle.content.audit.failure||null,latencyMs:cycle.content.audit.latencyMs});
         if(!cycle.content.audit.fallback)break;
-        assert.equal((await req('/api/learning/support-cycle',{action:'close',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:'slide',id:cycle.id})).status,200);
+        assert.equal((await req('/api/learning/support-cycle',{action:'close',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:inquiry?.sceneType||'slide',id:cycle.id})).status,200);
       }
       assert.equal(cycle.plan.primaryGoal,goal);assert.equal(cycle.content.audit.fallback,false,goal+' 必须使用真实接口');
       assert.equal(cycle.content.audit.promptSnapshot,undefined);
       supportResults.push({goal,provider:cycle.content.audit.provider,model:cycle.content.audit.model,latencyMs:cycle.content.audit.latencyMs,fallback:false,attempts});
-      assert.equal((await req('/api/learning/support-cycle',{action:'close',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:'slide',id:cycle.id})).status,200);
+      assert.equal((await req('/api/learning/support-cycle',{action:'close',scope:'GH-01-K01',unitId:'GH-01-K01',sceneType:inquiry?.sceneType||'slide',id:cycle.id})).status,200);
     }
     await req("/api/admin/shutdown",{},"POST",admin);
     if(child.exitCode===null)await new Promise(r=>child.once("exit",r));
