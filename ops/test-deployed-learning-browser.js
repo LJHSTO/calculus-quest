@@ -123,14 +123,12 @@ async function main() {
       await page.locator(`[data-knowledge-scene="${type}"]`).click();
       const iframe = page.locator("iframe[data-courseware-frame]");
       await iframe.waitFor();
-      const frame = iframe.contentFrame();
+      const frame = await (await iframe.elementHandle()).contentFrame();
+      // Wait for the sandboxed frame through Playwright; its initial about:blank
+      // document is transient and is intentionally unreadable by the parent.
+      await frame.waitForURL(url=>url.pathname.includes('/resources/open-maic/'),{waitUntil:'load'});
+      await page.waitForFunction(() => document.querySelector("iframe[data-courseware-frame]")?.dataset.cqContextBridge==='ready');
       await frame.locator("body").waitFor();
-      await frame.locator("body").evaluate(() => new Promise(resolve => {
-        if (document.readyState === "complete") resolve();
-        else window.addEventListener("load", resolve, { once: true });
-      }));
-      await page.waitForFunction(() => document.querySelector("iframe[data-courseware-frame]")
-        ?.dataset.cqContextBridge === "ready");
       const ranges = frame.locator('input[type="range"]:visible');
       if (await ranges.count()) {
         const range = ranges.first();
