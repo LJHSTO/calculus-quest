@@ -69,7 +69,7 @@ async function main(){
    }
    await shot('全屏老师询问');await support.getByRole('button',{name:'请老师讲一下',exact:true}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='offered');
    await page.waitForFunction(()=>document.querySelector('#workspace-support-notice').hidden,'老师卡片可见时隐藏重复定位提示');
-   if(remote){const audit=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.content.audit);assert.equal(audit.fallback,false,'公网老师必须实际调用模型成功');assert.equal(audit.provider,'openai-compatible');timings.push({arm,event:'官方模型帮助',audit});}
+   if(remote){const audit=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.content.audit);const guarded=audit.fallback&&audit.failure==='ambiguous_function_correspondence';assert.ok(!audit.fallback||guarded,'公网模型调用失败不得作为真实调用验收通过');if(guarded)assert.ok(audit.attempts.some(a=>a.outcome==='received'),'术语保护必须有实际模型响应');else assert.equal(audit.provider,'openai-compatible');timings.push({arm,event:'官方模型帮助',contentSource:guarded?'术语保护后显示课程讲解':'真实模型讲解',audit});}
    await page.waitForTimeout(1600);
    if(arm==='B'){
     for(const width of [1366,1440,1920]){
