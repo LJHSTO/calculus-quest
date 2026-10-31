@@ -32,6 +32,7 @@
   let currentUnitKey = "";
   let currentSceneType = "";
   let currentQuizSubmitted = false;
+  let proactiveOutcomesRefreshOwner = "";
   let currentParticipantId = "";
   let currentSupported = false;
   let historyRequestId = 0;
@@ -1016,6 +1017,7 @@ const proactiveJustificationDrafts = new Map();
   } = {}) {
     if (close) proactiveOutcomesOpen = false;
     proactiveOutcomesLoading = false;
+    proactiveOutcomesRefreshOwner = "";
     proactiveOutcomesSubmitting = false;
     proactiveOutcomeDraftSaving = false;
     proactiveOutcomeDraftPending = 0;
@@ -1072,6 +1074,11 @@ const proactiveJustificationDrafts = new Map();
   async function loadProactiveOutcomes(options = {}) {
     const meta = courseMeta();
     const ownerKey = proactiveOutcomesOwner(meta);
+    if (proactiveOutcomesLoading && options.force === true) {
+      // A submission can finish while an older request is still in flight.
+      // Refresh after it settles instead of losing the newer server state.
+      proactiveOutcomesRefreshOwner = ownerKey;
+    }
     if (
       proactiveOutcomesLoading
       || !proactiveStudyManaged(meta)
@@ -1125,6 +1132,10 @@ const proactiveJustificationDrafts = new Map();
       if (ownerKey === proactiveOutcomesOwner()) {
         proactiveOutcomesLoading = false;
         renderProactiveOutcomes();
+        if (proactiveOutcomesRefreshOwner === ownerKey) {
+          proactiveOutcomesRefreshOwner = "";
+          await loadProactiveOutcomes({ force: true, restoreActive: true });
+        }
       }
     }
   }
@@ -3363,6 +3374,12 @@ const proactiveJustificationDrafts = new Map();
     const signal = event?.detail?.event;
     if (!proactiveCoach || !signal) return;
     const meta = courseMeta();
+    if (signal.eventType === "quiz_submit_success") {
+      // The quiz API has committed the answers. Refresh measurement eligibility
+      // independently of conversation history and intervention availability.
+      await loadProactiveStudy(meta, { force: true });
+      scheduleSync();
+    }
     if (
       proactiveStudyManaged(meta)
       && (!proactiveStudy.loaded || proactiveStudyKey !== `${String(

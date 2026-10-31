@@ -76,6 +76,9 @@ async function main() {
     await page.locator("#auth-gate").waitFor({ state: "hidden" });
     record("注册测试账号", since);
     await page.locator('[data-view="learn"]').first().click();
+    const ordinaryEntry=page.getByRole('button',{name:'没有加入码，进入普通学习',exact:true});
+    await Promise.race([ordinaryEntry.waitFor({state:'visible'}),page.locator('[data-choice-answer][value="__unknown__"]').first().waitFor({state:'visible'})]);
+    if(await ordinaryEntry.isVisible())await ordinaryEntry.click();
     await page.locator('[data-choice-answer][value="__unknown__"]').first().waitFor();
     for (const input of await page.locator('[data-choice-answer][value="__unknown__"],[data-short-unknown]').all()) {
       await input.check();
@@ -88,7 +91,18 @@ async function main() {
     const payload = await response.json();
     assert.equal(payload.results.length, 12);
     record("前测提交与服务端判分", since);
-    await page.getByRole("button", { name: /按.*开始学习/ }).first().click();
+    const prepare=page.locator('[data-quiz-path-action="pilot-next"]');
+    if(await prepare.count()){
+      await prepare.last().click();
+      await page.getByRole('button',{name:'先使用全部默认设置',exact:true}).click();
+      await page.getByRole('button',{name:'保存并开始学习',exact:true}).click();
+      await page.locator('#learner-setup').waitFor({state:'hidden'});
+      record('六维默认设置保存与进入学习',since);
+    }else{
+      const coach=page.locator('#workspace-coach-toggle');
+      if(await coach.isVisible())await coach.click();
+      await page.getByRole("button", { name: /按.*开始学习/ }).first().click();
+    }
     since = Date.now();
     await page.locator('[data-openmaic-state="ready"]').waitFor({ timeout: 45000 });
     const native = page.locator("iframe[data-openmaic-slide]").contentFrame();
@@ -139,6 +153,22 @@ async function main() {
       }
       record(`互动-${type}`, since);
       await page.screenshot({ path: path.join(output, `03-${type}.png`) });
+    }
+    if(process.env.LEARNING_LIVE_MODEL_SMOKE==='1'){
+      since=Date.now();
+      await page.locator('[data-knowledge-open]').click();
+      await page.locator('#knowledge-question-input').fill('请用一个简单例子解释函数为什么要求每个输入只有一个输出，并用数学公式表示这个例子。');
+      const answer=page.waitForResponse(r=>r.url().includes('/api/learning/assistant/ask')&&r.request().method()==='POST');
+      await page.locator('[data-knowledge-send]').click();
+      const response=await answer;assert.equal(response.status(),200);
+      const events=(await response.text()).trim().split('\n').filter(Boolean).map(line=>JSON.parse(line));
+      const done=events.find(e=>e.type==='done');assert.ok(done,'完整收到回答');assert.notEqual(done.fallback,true,'必须由真实模型回答');
+      assert.match(done.message?.modelAudit?.requestedModel||'',/^gpt-5\.4-mini/,'当前公开网站使用指定的官方模型');
+      const text=events.filter(e=>e.type==='delta').map(e=>e.delta).join('');assert.ok(text.length>30);
+      fs.writeFileSync(path.join(output,'真实模型回答.json'),JSON.stringify({synthetic:true,provider:done.message?.provider||null,modelAudit:done.message?.modelAudit||null,fallback:done.fallback===true,text},null,2));
+      await page.screenshot({path:path.join(output,'04-真实模型数学回答.png')});
+      await page.locator('[data-knowledge-close]').click();
+      record('公网真实模型回答与完整流传输',since);
     }
     assert.equal(await page.evaluate(() => analyticsFlushUntilSettled()), true);
     since = Date.now();

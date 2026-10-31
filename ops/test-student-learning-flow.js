@@ -199,7 +199,22 @@ async function main() {
       await page.getByRole("button",{name:"下一节",exact:true}).click();
     }
     await page.waitForFunction(()=>currentUnitId==="V14-C1-post");
+    // Hold a pre-submission outcome response so the refresh race is reproducible.
+    let releaseOldOutcome, markOldOutcome;
+    const oldOutcomeHeld=new Promise(resolve=>{markOldOutcome=resolve;});
+    const oldOutcomeRelease=new Promise(resolve=>{releaseOldOutcome=resolve;});
+    let holdOneOutcome=true;
+    await page.route('**/api/learning/proactive/outcomes?*',async route=>{
+      if(!holdOneOutcome)return route.continue();
+      holdOneOutcome=false;
+      const response=await route.fetch();markOldOutcome();
+      await oldOutcomeRelease;await route.fulfill({response});
+    });
+    await page.evaluate(()=>{void KnowledgeAssistant.reloadLearnerPolicy();});
+    await oldOutcomeHeld;
+    const postStateRefresh=page.waitForResponse(r=>r.url().includes('/api/learning/proactive/state?'));
     await answerQuiz(chapter.flow.postQuiz,false);await page.waitForFunction(()=>state.submittedQuizzes.includes("V14-C1-post"));
+    await postStateRefresh;releaseOldOutcome();
     await page.screenshot({path:path.join(output,"08-后测提交.png")});record("后测独立作答与提交");
     assert.equal(await page.locator(".question-task-review").count(),chapter.flow.postQuiz.questions.length,"后测逐题复盘");
     const memory=await page.evaluate(async()=>{const r=await fetch('/api/learning/proactive/state?chapterId=V14-C1',{headers:{Authorization:`Bearer ${state.authToken}`}});return (await r.json()).data.learningMemory;});
@@ -214,7 +229,7 @@ async function main() {
     assert.equal(groups.length,12,"先开放12题迁移测量，保持测量须等待72小时");
     await page.screenshot({path:path.join(output,"09-独立迁移测量.png")});
     const submitted=page.waitForResponse(r=>r.url().includes("/proactive/outcomes/submit"));await active.locator(".knowledge-outcome-submit").click();
-    assert.equal((await submitted).status(),200);record("迁移测量UI",{items:groups.length});
+    assert.equal((await submitted).status(),200);record("迁移测量UI与后测提交期间旧请求刷新",{items:groups.length});
     await page.getByRole("button",{name:"返回任务列表",exact:true}).click();
     assert.equal(await page.locator(".knowledge-outcome-stage.is-available").count(),0,"72小时前保持测量未开放");
     record("保持测量72小时前锁定");
@@ -242,7 +257,10 @@ async function main() {
     assert.equal(issues.length,0,`页面脚本错误：${issues.join("；")}`);
     record("浏览器无未捕获脚本错误");
   }catch(error){
-    if(page){await page.screenshot({path:path.join(output,"失败现场.png")}).catch(()=>{});fs.writeFileSync(path.join(output,"失败界面.txt"),await page.locator("body").innerText().catch(()=>""),"utf8");}
+    if(page){await page.screenshot({path:path.join(output,"失败现场.png")}).catch(()=>{});fs.writeFileSync(path.join(output,"失败界面.txt"),await page.locator("body").innerText().catch(()=>""),"utf8");
+      const diagnostic=await page.evaluate(async()=>({unitId:currentUnitId,submittedQuizzes:state.submittedQuizzes,
+        outcomes:await fetch('/api/learning/proactive/outcomes?chapterId=V14-C1',{headers:{Authorization:`Bearer ${state.authToken}`}}).then(r=>r.json())})).catch(()=>null);
+      fs.writeFileSync(path.join(output,'测量入口诊断.json'),JSON.stringify(diagnostic,null,2),'utf8');}
     results.push({name:"学生流程未完成",passed:false,error:error.message});throw error;
   }finally{
     fs.writeFileSync(path.join(output,"验收结果.json"),JSON.stringify({generatedAt:new Date().toISOString(),passed:results.length>0&&results.every(r=>r.passed),navigation:"真实UI，无学习进度注入",models:"mock",results,issues},null,2),"utf8");
