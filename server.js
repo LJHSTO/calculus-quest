@@ -8724,7 +8724,8 @@ async function handleApi(req, res, url) {
         proactivePrompt,
         learningMemory: learningMemoryFor(auth.participant.id,chapterId)
       });
-      if ((generated.fallback || generated.provider === "grounding-guard") && quotaReserved) {
+      const countedMock = generated.provider === 'mock' && process.env.LEARNING_ASSISTANT_COUNT_MOCK_USAGE === 'true';
+      if ((generated.fallback && !countedMock || generated.provider === "grounding-guard") && quotaReserved) {
         quota = releaseAssistantQuota(auth.participant.id, requestedAt);
         quotaReserved = false;
       }

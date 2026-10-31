@@ -7,8 +7,8 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "u
 
 const assistantSource = read("app/main/knowledge-assistant.js");
 assert.match(assistantSource, /const awaitingFollowup = candidate\?\.kind === "independent_attempt_outcome"\s*&& proactiveScopeState\(meta\)\?\.lifecycle\?\.phase === "awaiting_independent_attempt"/);
-assert.match(assistantSource, /\|\| \(isOpen && !awaitingFollowup\)/,
-  "面板打开时只允许已接受帮助后的结果核对，不放开所有主动候选");
+// Opening the teacher pane alone no longer blocks fresh help. Actual typing
+// and independent assessments are checked in the browser lifecycle tests.
 const assistantCss = read("app/main/knowledge-assistant.css");
 const proactiveSource = read("app/main/proactive-learning.js");
 const analyticsSource = read("app/main/analytics.js");
@@ -820,7 +820,7 @@ assert.match(
 assert.match(stylesCss, /\.learning-shell\.is-local-fullscreen-target\s*\{/);
 assert.match(narrationSource, /scheduleLearningCanvasLayoutSync\("learning-fullscreen-toggle"\)/);
 assert.match(eventsSource, /scheduleLearningCanvasLayoutSync\("fullscreen-change"\)/);
-assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20260909-v10"/);
+assert.match(contextSource, /BRIDGE_VERSION\s*=\s*"20261031-v11"/);
 assert.match(contextSource, /function selectionLocator/);
 assert.match(contextSource, /function renderNotes/);
 assert.match(contextSource, /type:\s*"cq:notes-sync"/);

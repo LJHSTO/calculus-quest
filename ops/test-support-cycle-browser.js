@@ -34,23 +34,22 @@ async function main(){
   const invited=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle);
   assert.equal(invited.initiation,'agent_initiated_confirmation');assert.equal(invited.need,null);assert.equal(invited.content,null);
   assert.ok(invited.inquiry.sourceIds.length);assert.equal(invited.inquiry.psychologicalState,'unknown');
-  const invitation=native.locator('[data-cq-embedded-help="task"]');
-  await invitation.getByText('要不要一起看看刚才的问题？',{exact:true}).waitFor();
-  assert.ok(await invitation.getByRole('button',{name:'暂时不需要',exact:true}).count());
+  const invitation=page.locator('.task-support-panel');
+  await invitation.getByRole('button',{name:'请老师讲一下',exact:true}).waitFor();
+  assert.ok(await invitation.getByRole('button',{name:'我先自己试',exact:true}).count());
   await page.screenshot({path:path.join(out,'常规学习主动询问.png')});
   await page.evaluate(()=>{KnowledgeAssistant.setSupportView({placement:'sidebar',modality:'tip'});KnowledgeAssistant.open({preserveProactiveSuggestion:true});});
   const sidebar=page.locator('.learning-support-surface[data-placement="sidebar"]');await sidebar.waitFor({state:'visible'});
-  assert.equal(await sidebar.evaluate(el=>el.parentElement.hasAttribute('data-knowledge-scroll')),true,'侧栏询问应位于知点对话正文内，不另设顶部面板');
+  assert.equal(await sidebar.evaluate(el=>Boolean(el.closest('.learning-workspace-tools'))),true,'侧栏询问应位于老师工作区');
   assert.equal(await sidebar.locator('.support-surface-collapse').count(),0,'同一询问不应另设会改变呈现偏好的收起操作');
   assert.equal(await sidebar.locator('.support-inquiry').count(),1,'侧栏只呈现一份询问');
   assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.id),invited.id,'移动呈现位置不能生成新一轮询问');
   await page.screenshot({path:path.join(out,'侧栏主动询问.png')});
   await page.evaluate(()=>{KnowledgeAssistant.setSupportView({placement:'inline',modality:'tip'});KnowledgeAssistant.close();});
-  await page.locator('[data-workspace-canvas="slide"]').click();
   results.push('原生滑块操作产生过程证据，服务端结合错题在任务边界主动询问，确认前不生成支持');
   // The first lesson uses the normal student entry, subsequent points use the
   // existing test-only navigation seam, without replacing DOM or server data.
-  await page.getByText("这一步需要什么帮助？",{exact:true}).click();
+  await page.getByText("我需要其他帮助",{exact:true}).click();
   await page.getByLabel('其他需要',{exact:true}).selectOption('value');
   await page.getByText('补充一句（选填）',{exact:true}).click();
   await page.getByLabel("想补充的目标或困难").fill("想知道如何理解费用与使用量的关系");
@@ -70,13 +69,13 @@ async function main(){
   await page.getByRole("button",{name:"跳过检查",exact:true}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==="closed");
   assert.equal(await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.checkResult.correct),null);
   results.push("常规入口确认需要、反馈保存、独立检查保护、跳过不判错");
-  // Verify the actual iframe controls, not just an outer engineering preview.
+  // The help surface now lives beside the preserved courseware iframe.
   await page.locator('[data-workspace-canvas="interactive"]').click();
   await page.locator('[data-knowledge-scene="simulation"]').click();
   const frame=page.frameLocator('iframe[data-courseware-frame]');
   // Component coverage for legacy manual support; the normal UI has no manual launcher.
   await page.evaluate(()=>SupportCycleUI.openManual());
-  const host=frame.locator('[data-cq-embedded-help="task"]');await host.waitFor();
+  const host=page.locator('.task-support-panel');await host.waitFor();
   const needSummary=host.getByText('这一步需要什么帮助？',{exact:true});
   if(!await needSummary.evaluate(n=>n.closest('details').open))await needSummary.click();
   await host.getByLabel('其他需要',{exact:true}).selectOption('confidence');
@@ -89,12 +88,13 @@ async function main(){
   assert.equal(await page.evaluate(()=>{const s=KnowledgeAssistant.designSpaceSnapshot();return SupportCycleUI.render({...s,supportCycle:{id:'synthetic-deferred',status:'awaiting_confirmation',inquiry:{text:'合成依据'}}}).querySelector('.support-inquiry')!==null;}),true,'离开输入框后可呈现询问');
   await host.getByRole('button',{name:'开始帮助',exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.need?.need==='confidence'&&KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='offered');
-  const shape=await host.evaluate(n=>({position:getComputedStyle(n).position,width:n.getBoundingClientRect().width,bottom:n.previousElementSibling.getBoundingClientRect().bottom,top:n.getBoundingClientRect().top}));
-  assert.equal(shape.position,'static');assert.ok(shape.width>=180&&shape.top>=shape.bottom-1);
+  const shape=await host.evaluate(n=>({position:getComputedStyle(n).position,width:n.getBoundingClientRect().width,help:n.getBoundingClientRect().toJSON(),course:document.querySelector('iframe[data-courseware-frame]').getBoundingClientRect().toJSON()}));
+  assert.ok(!['absolute','fixed'].includes(shape.position));assert.ok(shape.width>=180);
+  assert.ok(shape.help.left>=shape.course.right-1||shape.help.top>=shape.course.bottom-1||shape.help.right<=shape.course.left+1||shape.help.bottom<=shape.course.top+1,'帮助与课件不重叠');
   await host.getByRole('button',{name:'结束这轮帮助',exact:true}).click();
   await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.status==='closed');
   await page.locator('[data-workspace-canvas="slide"]').click();
-  results.push('课件原生控件旁选择需要、生成和结束支持；正常文档流不覆盖原控件');
+  results.push('课件旁选择需要、生成和结束支持；保留iframe且不覆盖原控件');
   const needed=["concept","monitoring","value","confidence","frustration","planning"];
   for(let i=0;i<scopes.length;i++){
    await page.evaluate(id=>{const p=ensureAgenticPath();if(!p.unlocked.includes(id))p.unlocked.push(id);p.pendingPlan=null;currentUnitId=id;renderAll();KnowledgeAssistant.setSupportView({placement:"inline",modality:"tip"});KnowledgeAssistant.sync();},scopes[i]);
@@ -103,14 +103,14 @@ async function main(){
    await page.locator('[data-knowledge-scene="simulation"]').click();
    // Component coverage for legacy manual support; the normal UI has no manual launcher.
   await page.evaluate(()=>SupportCycleUI.openManual());
-   await page.frameLocator('iframe[data-courseware-frame]').locator('[data-cq-embedded-help="task"]').waitFor();
+   await page.locator('.task-support-panel').waitFor();
    const result=await page.evaluate(async need=>KnowledgeAssistant.supportCycleRequest({action:"report",confirmed:true,need,note:"合成测试：请针对当前知识点提供帮助",ratings:{value:0}}),needed[i]);
    assert.equal(result.cycle.scope,scopes[i]);assert.ok(result.cycle.content.message.length>20);assert.equal(result.cycle.content.audit.contentVersion,require("../lib/support-goals").VERSION);
    assert.equal(result.cycle.plan.knowledgeScaffoldLevel,null);
-   const embedded=page.frameLocator('iframe[data-courseware-frame]').locator('[data-cq-embedded-help="task"]');
+   const embedded=page.locator('.task-support-panel');
    if(!await embedded.getByRole('button',{name:'做一次独立检查',exact:true}).isVisible())await embedded.getByText('反馈与下一步',{exact:true}).click();
    await embedded.getByRole('button',{name:'做一次独立检查',exact:true}).waitFor();
-   const box=await embedded.evaluate(n=>({position:getComputedStyle(n).position,width:n.getBoundingClientRect().width}));assert.equal(box.position,'static');assert.ok(box.width>=180);
+   const box=await embedded.evaluate(n=>({position:getComputedStyle(n).position,width:n.getBoundingClientRect().width}));assert.ok(!['absolute','fixed'].includes(box.position));assert.ok(box.width>=180);
    await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:"start_check",id:KnowledgeAssistant.designSpaceSnapshot().supportCycle.id}));
    c=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle);assert.equal(c.check.answer,undefined);
    const adapter=require("../lib/proactive-policy/adapters/functions-limits-r2"),answer=c.check.options.find(o=>adapter.gradeVerificationCheck({knowledgePointId:c.scope,supportLevel:"L1",checkId:c.check.id,response:o.value})?.correct);
@@ -142,7 +142,7 @@ async function main(){
   assert.ok(mobileGeometry.every(r=>r.left>=r.parentLeft&&r.right<=r.parentRight+1&&r.right<=r.viewport),'窄屏操作按钮必须换行且不被裁切：'+JSON.stringify(mobileGeometry));
   await page.screenshot({path:path.join(out,"多目标支持窄屏.png")});
   await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:'close',id:KnowledgeAssistant.designSpaceSnapshot().supportCycle.id}));
-  await page.locator('#learner-preferences-button').click();await page.getByRole('button',{name:'提示位置',exact:true}).click();await page.locator('#learner-setup input[name="D4-placement"][value="inline"]').check();
+  await page.locator('#auth-menu-toggle').click();await page.locator('#account-learning-preferences').click();await page.getByRole('button',{name:'提示位置',exact:true}).click();await page.locator('#learner-setup input[name="D4-placement"][value="inline"]').check();
   await page.locator('#learner-setup select[name=preference-reason]').selectOption('near_task');
   await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'下一项',exact:true}).click();await page.getByRole('button',{name:'核对选择',exact:true}).click();await page.getByRole('button',{name:'保存修改并返回学习',exact:true}).click();await page.locator('#learner-setup').waitFor({state:'hidden'});await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().researchControls?.revision===2);
   const plain=await page.evaluate(()=>KnowledgeAssistant.supportCycleRequest({action:'report',confirmed:true,need:'frustration',note:'已确认需要，请直接显示支持'}));assert.equal(plain.cycle.profile.authorityLevel,'A1');assert.equal(plain.cycle.profile.presentationFormat,'plain');

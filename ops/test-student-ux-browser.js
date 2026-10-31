@@ -10,7 +10,8 @@ async function main(){
  const base=remote.replace(/\/$/,'')||`http://127.0.0.1:${port}`;
  const env={...process.env,NODE_ENV:'test',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:path.join(dir,'synthetic.db'),MAIN_LEARNING_PROTOCOL_FILE:'',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:path.basename(dir),PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r2',PROACTIVE_OUTCOME_INSTRUMENT_VERSION:'functions-limits-retention-r4',RESEARCH_CONTROLS_ENABLED:'true',RESEARCH_CONTROLS_DEMO:'true',LEARNER_ONBOARDING_REQUIRED:'true',RATE_LIMIT_MAX:'5000'};
  const log=fs.openSync(path.join(dir,'server.log'),'w'),server=remote?{exitCode:0}:spawn(process.execPath,['server.js',String(port)],{cwd:root,env,windowsHide:true,stdio:['ignore',log,log]});
- let browser,page,arm='';const errors=[],checks=[],timings=[];
+ let browser,page,arm='',registered=false;const errors=[],checks=[],timings=[],networkErrors=[];
+ const account='合成体验修复'+Date.now();
  const pass=text=>{checks.push(text);console.log('通过：'+text);};
  const shot=name=>page.screenshot({path:path.join(dir,arm+'组-'+name+'.png')});
  async function answer(unit,questions){
@@ -30,8 +31,12 @@ async function main(){
   browser=await chromium.launch({executablePath:'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--use-angle=swiftshader','--enable-webgl']});
   for(arm of (process.env.TEST_ARM?[process.env.TEST_ARM]:['A','B','C'])){
    const context=await browser.newContext({viewport:{width:1440,height:960},reducedMotion:'reduce'});page=await context.newPage();page.setDefaultTimeout(remote?60000:20000);page.on('pageerror',e=>errors.push({arm,message:e.message}));
+   page.on('requestfailed',r=>networkErrors.push({arm,path:new URL(r.url()).pathname,error:r.failure()?.errorText}));
    await page.addInitScript(()=>{window.uxLongTasks=[];new PerformanceObserver(list=>{for(const e of list.getEntries())window.uxLongTasks.push({at:e.startTime,ms:e.duration});}).observe({type:'longtask',buffered:true});});
-   await page.goto(base+'/?study='+arm);await page.locator('[data-auth-mode=register]').click();await page.locator('#nickname').fill('合成体验修复'+arm+(remote?Date.now():''));await page.locator('#register-password').fill('synthetic-browser-password');await page.locator('#register-password-confirm').fill('synthetic-browser-password');await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});
+   await page.goto(base+'/?study='+arm);
+   if(!registered){await page.locator('[data-auth-mode=register]').click();await page.locator('#nickname').fill(account);await page.locator('#register-password').fill('synthetic-browser-password');await page.locator('#register-password-confirm').fill('synthetic-browser-password');}
+   else{await page.locator('#login-identifier').fill(account);await page.locator('#login-password').fill('synthetic-browser-password');}
+   const authentication=page.waitForResponse(r=>/\/api\/auth\/(register|login)$/.test(new URL(r.url()).pathname));await page.locator('#login-submit').click();const auth=await authentication;assert.equal(auth.status(),200,'认证接口应成功');await page.locator('#auth-gate').waitFor({state:'hidden'});registered=true;
    await page.locator('[data-view=learn]').first().click();await page.locator('#three-arm-dialog[open]').waitFor();
    for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="3"]').check();
    await page.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();
@@ -124,8 +129,8 @@ async function main(){
    timings.push({arm,event:'学习期间长任务',items:await page.evaluate(()=>window.uxLongTasks)});pass(arm+'组六个知识点实际下一步导航、两次手动回顾与配置窗口、后测问卷接续');
    await context.close();
   }
-  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(dir,'验收结果.json'),JSON.stringify({passed:true,helpOnly:process.env.STUDENT_UX_HELP_ONLY==='1',checks,errors,timings},null,2));
- }catch(e){console.error('页面错误：'+JSON.stringify(errors));if(page&&!page.isClosed()){await shot('失败现场').catch(()=>{});fs.writeFileSync(path.join(dir,'失败状态.json'),JSON.stringify({errors,...await page.evaluate(()=>({unit:typeof currentUnitId==='undefined'?null:currentUnitId,study:window.ThreeArmStudyUI?.run,snapshot:window.KnowledgeAssistant?.designSpaceSnapshot?.(),body:document.body.innerText.slice(-10000)})).catch(()=>({}))},null,2));}throw e;}
+  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(dir,'验收结果.json'),JSON.stringify({passed:true,helpOnly:process.env.STUDENT_UX_HELP_ONLY==='1',checks,errors,networkErrors,timings},null,2));
+ }catch(e){console.error('页面错误：'+JSON.stringify(errors));if(page&&!page.isClosed()){await shot('失败现场').catch(()=>{});fs.writeFileSync(path.join(dir,'失败状态.json'),JSON.stringify({errors,networkErrors,...await page.evaluate(()=>({unit:typeof currentUnitId==='undefined'?null:currentUnitId,study:window.ThreeArmStudyUI?.run,snapshot:window.KnowledgeAssistant?.designSpaceSnapshot?.(),body:document.body.innerText.slice(-10000)})).catch(()=>({}))},null,2));}throw e;}
  finally{await browser?.close();if(server.exitCode===null){const closed=new Promise(r=>server.once('exit',r));server.kill();await closed;}fs.closeSync(log);console.log('浏览器证据：'+dir);}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
