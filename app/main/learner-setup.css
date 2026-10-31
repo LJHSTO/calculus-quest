@@ -46,3 +46,21 @@
   #learner-setup[data-mode=preferences]>.learner-setup-footer{gap:6px;padding-top:8px}
   #learner-setup[data-mode=preferences]>.learner-setup-footer button{flex:1;flex-basis:auto;font-size:13px;padding:7px 10px;min-height:40px}
 }
+#three-arm-dialog{width:min(760px,calc(100vw - 24px));max-height:88dvh;padding:24px;border:1px solid #d9d5e7;border-radius:16px;overflow:auto;box-sizing:border-box;font:16px/1.7 "Microsoft YaHei",sans-serif;color:#26334b;background:white;}
+#three-arm-dialog::backdrop{background:#18253770;}
+#three-arm-dialog h2{font-size:23px;margin-top:0;}#three-arm-dialog h3{font-size:19px;}
+#three-arm-dialog button{font:inherit;min-height:42px;padding:8px 13px;margin:5px;border:1px solid #a59bc6;border-radius:8px;background:#f7f5fc;color:#3d2e72;cursor:pointer;}
+#three-arm-dialog button[aria-pressed=true]{background:#5745a6;color:white;}
+#three-arm-dialog fieldset{margin:12px 0;border:1px solid #d9d5e7;border-radius:10px;}
+#three-arm-dialog textarea{width:100%;box-sizing:border-box;font:inherit;padding:10px;}
+#three-arm-dialog .study-linked-card{background:#f6f4fc;border-radius:10px;padding:16px;margin:12px 0;}
+#three-arm-dialog .study-linked-card h4{margin:0 0 8px;}
+#three-arm-dialog [role=status]{color:#a02640;}
+.study-rating{display:flex;flex-wrap:wrap;gap:6px;}.study-review-results{max-height:200px;overflow:auto;border-bottom:1px solid #e2e5ec;}
+.three-arm-entry-label{font-size:12px;color:#544377;background:#f0edf9;padding:6px 9px;border-radius:7px;}
+#three-arm-dialog .study-rating label{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border:1px solid #d7d2e6;border-radius:7px;cursor:pointer;}
+#three-arm-dialog .study-rating label:has(input:checked){background:#eee8ff;border-color:#7354bd;}
+#three-arm-dialog button:disabled{opacity:.5;cursor:default;}
+#three-arm-review,#three-arm-tasks{padding:8px 12px;border:1px solid #d5cdea;border-radius:9px;background:#fff;color:#4c3c80;font:500 13px/1.5 "Microsoft YaHei",sans-serif;cursor:pointer;}
+#three-arm-review:hover,#three-arm-tasks:hover{background:#f4f0ff;border-color:#947ad1;}
+#three-arm-dialog .study-linked-card small{display:block;margin:7px 0;color:#53627a;}

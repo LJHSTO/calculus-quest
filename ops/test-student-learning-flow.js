@@ -134,7 +134,7 @@ async function main() {
           }
           record('坐标游戏常规与全屏填满、四边真实鼠标可达');
         }
-        const embedded=frame.locator('[data-cq-embedded-help="task"]');
+        const embedded=page.locator('.task-support-panel');
         if(!await embedded.count()&&!await page.locator('.task-support-panel:visible').count())await page.evaluate(()=>SupportCycleUI.openManual());
         await Promise.any([embedded.waitFor({state:"attached"}),page.locator('.task-support-panel').waitFor({state:"attached"})]);
         if(type==="simulation"){
@@ -147,8 +147,9 @@ async function main() {
           assert.equal(reply.status(),200);
           await page.waitForFunction(()=>!KnowledgeAssistant.designSpaceSnapshot().busy);
           await embedded.getByText('知点的回应',{exact:true}).waitFor({state:'visible'});
-          await frame.waitForFunction(()=>document.querySelector('[data-cq-embedded-help="task"]')?.shadowRoot.querySelector('textarea')?.value==='');
-          const after=await frameNode.boundingBox();assert.equal(after.width,box.width,"嵌入提示不能压缩课件宽度");assert.equal(after.height,box.height,"嵌入提示不能压缩课件高度");
+          await page.waitForFunction(()=>document.querySelector('.task-support-panel textarea')?.value==='');
+          await embedded.getByRole('button',{name:'放大课件',exact:true}).click();
+          const after=await frameNode.boundingBox();assert.equal(after.width,box.width,"放大后课件恢复原宽度");assert.equal(after.height,box.height,"放大后课件恢复原高度");
           assert.equal(await page.locator('.core-learning-workspace').evaluate(e=>e.classList.contains('tools-collapsed')),true,"任务内回复不自动展开聊天侧栏");
           record(`${point.id}课件内部真实问答与尺寸保持`);
         }
@@ -189,10 +190,10 @@ async function main() {
       await page.waitForFunction(()=>!CommonLearning.protects());
       record(`${point.id}常规入口共同判断、观察、独立复查和迁移，帮助自动关闭`);
       await page.getByRole("button",{name:"完成本节并选择下一步",exact:true}).click();
-      await page.getByRole("button",{name:"做小题测一测",exact:true}).click();
+      await page.getByRole("button",{name:"完成三题检测",exact:true}).click();
       await page.waitForFunction(id=>currentUnitId===`${id}-formative`,point.id);
       assert.equal(await page.locator(".learning-support-surface:visible").count(),0,"未提交诊断期间暂停帮助");
-      await answerQuiz({questions:[point.formativeQuiz.questions[0]]},true);
+      await answerQuiz({questions:point.formativeQuiz.questions},true);
       await page.waitForFunction(id=>state.submittedQuizzes.includes(`${id}-formative`),point.id);
       await page.screenshot({path:path.join(output,`${point.id}-形成性检查.png`)});
       record(`${point.id}的可选形成性检查`);

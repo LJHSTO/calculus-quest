@@ -10,3 +10,6 @@
 #pilot-dialog [role=alert]{color:#a52b3e;font-weight:600}#pilot-dialog [role=alert]:empty{display:none}
 #pilot-dialog button{min-height:44px;max-width:100%;white-space:normal}#pilot-dialog :focus-visible{outline:3px solid #8d83e8;outline-offset:2px}
 @media(max-width:600px){#pilot-dialog{padding:18px!important;max-height:calc(100dvh - 20px)!important}#pilot-dialog h2{font-size:21px}}
+#pilot-probe-dialog{width:min(620px,calc(100vw - 28px));max-height:86dvh;border:1px solid #c9d1e4;border-radius:14px;padding:16px;overflow:auto;box-sizing:border-box;font:16px/1.7 "Microsoft YaHei",sans-serif;}
+#pilot-probe-dialog::backdrop{background:#1c284466;}
+#pilot-probe-dialog .pilot-probe{max-height:none;overflow:visible;}

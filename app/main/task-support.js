@@ -6,12 +6,13 @@
   const controlIds = new WeakMap();let nextControlId=0;
   let lastQuizSupport="";
   let quizOwner="";
+  let workspaceHost=null, focusHelp=true, workspaceHelpKey="";
   const quizOpen=new Map(), quizReplies=new Map();
   const el = (tag, text, cls) => {const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;};
   const replyBody=text=>{const n=el('div',null,'assistant-content');if(global.AssistantContent)global.AssistantContent.renderInto(n,text);else n.textContent=text;return n;};
   function message(type, extra={}){frame?.contentWindow?.postMessage({type,channel,...extra},"*");}
   let frameBusy=false,locateRequested=false,frameMounted=false;
-  function clear(){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;}
+  function clear(){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=null;channel="";source=null;key="";visibility=null;controls.clear();clearTimeout(exposureTimer);exposureTimer=null;panel?.remove();panel=null;unavailable=false;workspaceHost?.classList.remove('task-support-workspace','support-focus-help');workspaceHost=null;workspaceHelpKey="";}
   function serialize(root){
     controls=new Map();
     function tree(n){
@@ -73,9 +74,20 @@
     if(!source)return;
     const pane=snapshot.unitType==="quiz" ? [...document.querySelectorAll('.question-card[data-question]')].find(n=>n.dataset.question===(snapshot.offer?.questionId||snapshot.replyQuestionId))||document.querySelector('.question-card[data-question]')||document.querySelector('#lesson-player') : document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
     if(!pane)return;
-    if(!panel?.isConnected){panel=el("section",null,"task-support-panel");panel.setAttribute("aria-label",snapshot.check?"独立检查作答":"当前任务的学习帮助");pane.append(panel);}
-    if(panel.parentElement!==pane)pane.append(panel);
-    if(source.parentElement!==panel)panel.replaceChildren(source);panel.hidden=false;
+    const host=pane.querySelector('.multi-scene-selected-resource.has-resource')||pane;
+    if(workspaceHost!==host){workspaceHost?.classList.remove('task-support-workspace','support-focus-help');workspaceHost=host;}
+    if(!panel?.isConnected){panel=el("section",null,"task-support-panel");panel.setAttribute("aria-label",snapshot.check?"独立检查作答":"工作区中的知点帮助");host.append(panel);}
+    if(panel.parentElement!==host)host.append(panel);
+    if(source.parentElement!==panel){
+      const bar=el('header',null,'task-support-heading');bar.append(el('strong',snapshot.check?'独立检查':'知点 · 工作区帮助'));
+      if(snapshot.unitType==='knowledge'&&!snapshot.check){
+        const toggle=el('button',focusHelp?'放大课件':'查看帮助与课件小窗');toggle.type='button';toggle.dataset.supportFocusToggle='';
+        toggle.onclick=()=>{focusHelp=!focusHelp;host.classList.toggle('support-focus-help',focusHelp);toggle.textContent=focusHelp?'放大课件':'查看帮助与课件小窗';global.dispatchEvent(new Event('resize'));};bar.append(toggle);
+      }
+      panel.replaceChildren(bar,source);
+    }panel.hidden=false;
+    host.classList.toggle('task-support-workspace',snapshot.unitType==='knowledge'&&!snapshot.check);
+    host.classList.toggle('support-focus-help',snapshot.unitType==='knowledge'&&!snapshot.check&&focusHelp);
     if(snapshot.offer)global.KnowledgeAssistant.observeSupportOffer(source.querySelector('.knowledge-proactive-inline-offer'),snapshot.offer);
   }
   function sync(next){
@@ -92,7 +104,11 @@
       const helpKey=`${next.unitId}:${next.offer?.decisionId||next.prompt?.interventionId||next.check?.id||''}`;
       if(helpKey!==lastQuizSupport && (next.offer||next.prompt||next.check)){lastQuizSupport=helpKey;global.LearningWorkspace?.showTask?.();}
     }
-    const nextFrame=/^GH-0[12]-K0[123]$/.test(next.scopeKey) ? document.querySelector('.multi-scene-scene-panel:not([hidden]) iframe[data-courseware-frame]') : null;
+    // Keep the actual courseware iframe in place. Moving or cloning it reloads
+    // games and loses in-progress interactions. CSS supplies the small window.
+    const helpKey=next.supportCycle?.id||next.offer?.id||next.prompt?.id||next.scopeKey;
+    if(helpKey!==workspaceHelpKey){workspaceHelpKey=helpKey;focusHelp=true;}
+    const nextFrame=null;
     const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
     if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
     if(nextKey!==key){
@@ -158,11 +174,13 @@
   });
   document.addEventListener("visibilitychange",checkExposure);window.addEventListener("scroll",checkExposure,true);window.addEventListener("resize",checkExposure);
   function locate(){
+    if(workspaceHost?.isConnected){focusHelp=true;workspaceHost.classList.add('support-focus-help');const b=panel?.querySelector('[data-support-focus-toggle]');if(b)b.textContent='放大课件';}
     if(frame?.isConnected&&!unavailable){locateRequested=!frameMounted;frame.scrollIntoView({block:'nearest'});message('cq:task-locate');return true;}
     if(panel?.isConnected){panel.tabIndex=-1;panel.scrollIntoView({block:'start'});panel.focus({preventScroll:true});return true;}
     return false;
   }
   function returnToTask(){
+    if(workspaceHost?.isConnected){focusHelp=false;workspaceHost.classList.remove('support-focus-help');const b=panel?.querySelector('[data-support-focus-toggle]');if(b)b.textContent='查看帮助与课件小窗';global.dispatchEvent(new Event('resize'));}
     if(frame?.isConnected&&!unavailable){frame.scrollIntoView({block:'nearest'});message('cq:task-return');return;}
     const pane=panel?.parentElement;
     pane?.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]')?.scrollIntoView({block:'start'});

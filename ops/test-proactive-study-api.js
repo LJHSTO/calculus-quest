@@ -4121,8 +4121,8 @@ async function main() {
     const storedExpired = expiryAdmin.payload.data.rows.find(
       (row) => row.id === quietBoundary.payload.decisionId
     );
-    assert.equal(storedExpired.intervention_status, "measurement_started");
-    assert.equal(storedExpired.resolution, "measurement_started");
+    assert.equal(storedExpired.intervention_status, "ignored");
+    assert.equal(storedExpired.resolution, "ignored",'切换场景时旧候选已经关闭，不再留到测量开始');
     assert.equal(expiryAdmin.payload.data.summary.unresolved_offers, 0);
 
     const cooldownAfterRestart = await requestRepeatedDecision(

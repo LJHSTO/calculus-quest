@@ -848,7 +848,7 @@ function agenticKnowledgeTransitionCtaFor(unit) {
     && resume.target.knowledgePointId === unit?.id
   ) {
     return {
-      label: "复习后做小题测一测",
+      label: "复习后完成三题检测",
       disabled: false,
       targetId: resume.target.id,
       targetUnitId: resume.target.id,
@@ -916,11 +916,11 @@ function agenticRenderKnowledgeTransitionPanel(pending, inFlight = "") {
       <div class="agentic-coach-header">
         <strong>选择下一步</strong>
       </div>
-      <p>当前知识点已完成。请选择直接进入下一步，或先做一道小题检查理解。</p>
-      <small class="knowledge-transition-target">${escapeHtml(targetCopy)} 做小题时，核心题答错会再补一道诊断题，帮助定位卡点。</small>
+      <p>${window.StudyEntry?'完成当前学习后，请独立完成三道共同检测，再查看下一步建议。':'当前知识点已完成。可以进入下一步，或先用三道题检查理解。'}</p>
+      <small class="knowledge-transition-target">${window.StudyEntry?'三组都完成基本应用、误解辨析和新情境应用，提交后统一查看反馈。':escapeHtml(targetCopy)+' 检测包含基本应用、误解辨析和新情境应用。'}</small>
       <div class="agentic-actions knowledge-transition-actions" role="group" aria-label="知识点完成后的下一步">
-        <button class="button soft" type="button" data-knowledge-transition="continue" ${busy ? "disabled" : ""}>${busyChoice === "continue" ? escapeHtml(continueBusyLabel) : "直接继续"}</button>
-        <button class="button soft" type="button" data-knowledge-transition="formative" ${busy ? "disabled" : ""}>${busyChoice === "formative" ? "正在打开即时检测" : "做小题测一测"}</button>
+        ${window.StudyEntry?'':`<button class="button soft" type="button" data-knowledge-transition="continue" ${busy ? "disabled" : ""}>${busyChoice === "continue" ? escapeHtml(continueBusyLabel) : "直接继续"}</button>`}
+        <button class="button soft" type="button" data-knowledge-transition="formative" ${busy ? "disabled" : ""}>${busyChoice === "formative" ? "正在打开即时检测" : "完成三题检测"}</button>
       </div>
     </section>
   `;
@@ -936,9 +936,9 @@ function agenticRenderKnowledgeTransitionPreviewPanel(preview) {
       <div class="agentic-coach-header">
         <strong>完成当前互动后，选择下一步</strong>
       </div>
-      <p>互动场景已经选好。先完成这次互动；完成后，你可以直接进入下一知识点，或做一道小题检查理解。</p>
+      <p>互动场景已经选好。先完成这次互动；随后用三道题检查理解。</p>
       <small class="knowledge-transition-target">${escapeHtml(targetCopy)} 完成本节后，这里会自动变为可操作的选择。</small>
-      <p class="knowledge-transition-preview-options"><span>完成互动后可选：</span><strong>直接继续</strong><span>或</span><strong>做小题测一测</strong></p>
+      <p class="knowledge-transition-preview-options"><span>完成互动后：</span><strong>${window.StudyEntry?'独立完成三题检测':'进入下一步，或完成三题检测'}</strong></p>
     </section>
   `;
 }
@@ -1002,6 +1002,7 @@ function agenticBeginKnowledgeTransition(unit) {
 async function agenticChooseKnowledgeTransition(choice = "") {
   const pending = state.pendingKnowledgeTransition;
   const normalizedChoice = choice === "continue" || choice === "formative" ? choice : "";
+  if(window.StudyEntry&&normalizedChoice==='continue')return false;
   if (!pending || !normalizedChoice || knowledgeTransitionChoiceInFlight) return false;
   if (currentUnitId !== pending.knowledgeUnitId) return false;
 
@@ -1037,7 +1038,7 @@ async function agenticChooseKnowledgeTransition(choice = "") {
 
     if (targetId) agenticUnlockUnit(targetId, normalizedChoice === "formative" ? "knowledge_formative_choice" : "knowledge_formative_bypass");
     const targetLabel = targetId ? agenticUnitLabel(targetId) : "当前章节的收束步骤";
-    const actionLabel = normalizedChoice === "formative" ? "做小题测一测" : "直接继续学习";
+    const actionLabel = normalizedChoice === "formative" ? "完成三题检测" : "直接继续学习";
     addLog(`${actionLabel}：${targetLabel}。`);
     analyticsTrack("knowledge_transition_choice", {
       source: "knowledge",
@@ -3275,7 +3276,7 @@ function agenticOnUnitCompleted(unit) {
     } else if (knowledgeCompletionInFlight === unit.id) {
       const transition = agenticBeginKnowledgeTransition(unit);
       if (transition) {
-        path.lastNarration = "这个知识点已经完成。请选择直接进入下一步，还是先做一道小题测一测。";
+        path.lastNarration = window.StudyEntry?"这个知识点已经完成，接下来独立完成三题检测。":"这个知识点已经完成。可以继续学习，或先完成三题检测。";
         return null;
       }
     }
@@ -3328,7 +3329,7 @@ function renderAgenticDecisionTrail() {
 function agenticNextStatusText(unit) {
   if (!unit?.id) return "完成当前小节后，我会根据学习记录更新下一步。";
   if (agenticPendingKnowledgeTransitionFor(unit.id)) {
-    return "这个知识点已经完成，请先选择直接继续，还是做一道小题测一测。";
+    return window.StudyEntry?"这个知识点已经完成，请先完成三题检测。":"这个知识点已经完成，请选择直接继续，或完成三题检测。";
   }
   const next = agenticNextUnlockedUnitAfter(unit.id);
   if (next?.id) return `当前已解锁的下一步是「${next.label || agenticUnitLabel(next.id)}」。`;
@@ -3426,10 +3427,10 @@ function agenticCurrentUnitNarration(unit, path) {
 
   if (unit.type === "knowledge") {
     if (agenticPendingKnowledgeTransitionFor(unit.id)) {
-      return "这个知识点已经完成。请选择直接进入下一步，还是先做一道小题测一测。你的选择会保留在学习记录中。";
+      return window.StudyEntry?"这个知识点已经完成，接下来独立完成三题检测。":"这个知识点已经完成。可以继续学习，或先完成三题检测。你的选择会保留在学习记录中。";
     }
     if (agenticKnowledgeTransitionPreviewFor(unit)) {
-      return "互动场景已经选好。完成当前互动后，我会在这里让你选择直接继续，还是先做一道小题测一测。";
+      return "互动场景已经选好。完成当前互动后，可以在这里进入三题检测。";
     }
     const selectedType = typeof selectedKnowledgeSceneType === "function" ? selectedKnowledgeSceneType(unit) : "";
     const types = typeof knowledgeInteractionTypes === "function" ? knowledgeInteractionTypes(unit) : [];

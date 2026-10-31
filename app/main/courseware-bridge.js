@@ -116,6 +116,7 @@
   let selectedTarget = null;
   let listenersActive = false;
   let selectionReportTimer = null;
+  let selectionReported = false;
   let pickPreview = null;
   let coursewareLayoutRepairScheduled = false;
   const candidateElements = new Set();
@@ -1020,7 +1021,11 @@
   function reportSelection() {
     if (picking) return;
     const selection = window.getSelection?.();
-    if (!selection || selection.rangeCount < 1 || selection.isCollapsed) return;
+    if (!selection || selection.rangeCount < 1 || selection.isCollapsed) {
+      if (selectionReported) post("cq:text-selection-cleared");
+      selectionReported = false;
+      return;
+    }
     const excerpt = compactMultiline(selection.toString(), 900);
     if (!excerpt) return;
     const range = selection.getRangeAt(0);
@@ -1028,6 +1033,7 @@
     if (!host) return;
     const rect = range.getBoundingClientRect();
     const latex = selectionLatex(range);
+    selectionReported = true;
     post("cq:text-selection", {
       contextRef: {
         ...describe(host, latex ? "formula" : "text"),
@@ -1060,9 +1066,7 @@
   }
 
   function handleSelectionKeyUp(event) {
-    if (!event.shiftKey && event.key !== "Shift") return;
-    const selection = window.getSelection?.();
-    if (!selection || selection.isCollapsed) return;
+    if (!event.shiftKey && !["Shift", "Escape", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
     scheduleSelectionReport();
   }
 
@@ -1242,8 +1246,16 @@
   document.addEventListener("pointerup", scheduleSelectionReport, true);
   document.addEventListener("mouseup", scheduleSelectionReport, true);
   document.addEventListener("keyup", handleSelectionKeyUp, true);
+  document.addEventListener("selectionchange", () => {
+    // Only clear here. Opening during a drag would repeatedly move the toolbar.
+    if (!window.getSelection?.() || window.getSelection().isCollapsed) reportSelection();
+  });
   document.addEventListener("click", reportClick, true);
   document.addEventListener("pointerdown", rememberPointerStart, true);
+  document.addEventListener('pointerdown',()=>post('cq:interaction-busy',{busy:true}),true);
+  document.addEventListener('pointerup',()=>post('cq:interaction-busy',{busy:false}),true);
+  document.addEventListener('pointercancel',()=>post('cq:interaction-busy',{busy:false}),true);
+  window.addEventListener('blur',()=>post('cq:interaction-busy',{busy:false}));
   document.addEventListener("pointerup", reportPointerEnd, true);
   document.addEventListener("pointercancel", clearPointerStart, true);
   document.addEventListener("keydown", rememberParameterStart, true);

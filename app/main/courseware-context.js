@@ -4,7 +4,7 @@
   if (global && global.document) global.CoursewareContextCore = Object.freeze(api);
 })(typeof globalThis !== "undefined" ? globalThis : this, function coursewareContextFactory() {
   const SCHEMA_VERSION = 1;
-  const BRIDGE_VERSION = "20260909-v10";
+  const BRIDGE_VERSION = "20261031-v11";
   const CONTEXT_KINDS = new Set([
     "unit",
     "text",
@@ -1106,6 +1106,11 @@
       const type = String(event.data.type || "");
       if (!type.startsWith("cq:")) return;
 
+      if (type === "cq:text-selection-cleared") {
+        notify("onTextSelectionCleared", { source: "iframe" });
+        return;
+      }
+
       if (type === "cq:context-pick-state") {
         if (event.data.active === false && picker.getState().phase === "picking") {
           cancelObjectPick(event.data.reason || "iframe-cancel");
@@ -1197,9 +1202,16 @@
       win.setTimeout(() => captureTextSelection(), 0);
     }
 
+    function handleDocumentSelectionChange() {
+      if (!win.getSelection?.() || win.getSelection().isCollapsed) {
+        notify("onTextSelectionCleared", { source: "document" });
+      }
+    }
+
     win.addEventListener("message", handleBridgeMessage);
     doc.addEventListener("pointerup", handleDocumentPointerUp, true);
     doc.addEventListener("keyup", handleDocumentKeyUp, true);
+    doc.addEventListener("selectionchange", handleDocumentSelectionChange);
 
     return {
       captureTextSelection,
@@ -1221,6 +1233,7 @@
         clearSelectedElement();
       },
       syncUnit() {
+        notify("onTextSelectionCleared", { source: "navigation" });
         const current = currentCourseMeta();
         if (selectedContext?.unitId && current.unitId && selectedContext.unitId !== current.unitId) {
           selectedContext = null;
@@ -1243,6 +1256,7 @@
         win.removeEventListener("message", handleBridgeMessage);
         doc.removeEventListener("pointerup", handleDocumentPointerUp, true);
         doc.removeEventListener("keyup", handleDocumentKeyUp, true);
+        doc.removeEventListener("selectionchange", handleDocumentSelectionChange);
       }
     };
   }

@@ -122,6 +122,8 @@
   noticeStatus.setAttribute('aria-live','polite');
   $('.player-top .player-actions').prepend(noticeStatus,supportNotice);
   let pendingSnapshot = null;
+  let announcedHelp="";
+  let fullscreenSupportNotice=null;
   function syncSupportNotice(next=global.KnowledgeAssistant?.designSpaceSnapshot?.()) {
     pendingSnapshot=next;
     const eligible=next?.signedIn&&next.active&&!next.locked&&(next.unitType==='knowledge'||next.unitType==='quiz'&&next.quizSubmitted)&&next.taskReady!==false;
@@ -130,13 +132,28 @@
     const checking=eligible&&(next.check||cycle?.status==='awaiting_check');
     const inquiry=eligible&&cycle?.status==='awaiting_confirmation'&&!global.SupportCycleUI?.deferInquiry(cycle);
     const support=eligible&&!checking&&(next.offer||next.prompt||['offered','engaged'].includes(cycle?.status));
-    const label=checking?'继续独立检查':inquiry?'知点想询问你 · 查看':support?'有一条学习支持 · 查看':'';
+    const place=next?.view?.placement==='sidebar'?'侧栏':'工作区';
+    const label=checking?'继续独立检查':inquiry?`知点正在${place}询问你 · 查看并决定`:support?`知点已在${place}提供帮助 · 点击查看`:'';
     supportNotice.hidden=!label;
     if(supportNotice.textContent!==label){supportNotice.textContent=label;noticeStatus.textContent=label;}
+    const full=document.fullscreenElement||document.querySelector('.is-local-fullscreen-target');
+    if(full&&full!==document.documentElement&&label){
+      if(!fullscreenSupportNotice){fullscreenSupportNotice=document.createElement('button');fullscreenSupportNotice.type='button';fullscreenSupportNotice.className='fullscreen-support-notice';fullscreenSupportNotice.onclick=()=>supportNotice.click();}
+      if(fullscreenSupportNotice.parentElement!==full)full.append(fullscreenSupportNotice);
+      fullscreenSupportNotice.textContent=label;fullscreenSupportNotice.hidden=false;
+    }else if(fullscreenSupportNotice){fullscreenSupportNotice.remove();}
+    const helpId=label&&(cycle?.id||next.offer?.id||next.prompt?.id);
+    if(helpId&&helpId!==announcedHelp&&!global.SupportCycleUI?.interactionBusy){
+      announcedHelp=helpId;
+      if(next.view.placement==='sidebar'&&!compactWorkspace()){setToolsCollapsed(false,false,false);selectTab('chat');}
+    }
     updateToolsIndicator();
   }
   supportNotice.addEventListener('click',async()=>{
     const s=pendingSnapshot;if(!s||s.locked)return;
+    if(document.fullscreenElement)await document.exitFullscreen();
+    for(const node of document.querySelectorAll('.is-local-fullscreen-target'))node.classList.remove('is-local-fullscreen-target');
+    document.body.classList.remove('is-resource-local-fullscreen','is-learning-local-fullscreen');
     setCoachVisible(false);
     if(s.view.placement==='inline'){
       if(compactWorkspace())setMobilePane('course');
@@ -152,6 +169,7 @@
     const target=[...document.querySelectorAll('.learning-support-surface,.knowledge-proactive-inline-offer,.support-cycle')].find(n=>n.getClientRects().length);
     if(target){target.tabIndex=-1;target.scrollIntoView({block:'nearest'});target.focus({preventScroll:true});}
   });
+  document.addEventListener('fullscreenchange',()=>syncSupportNotice());
 
   function updateToolsIndicator() {
     const pending = !supportNotice.hidden || global.KnowledgeAssistant?.workspaceSnapshot?.()?.pendingSupport === true;

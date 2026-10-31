@@ -106,6 +106,7 @@
     panel.querySelector("[data-observatory-history]").innerHTML = events.slice(-8).reverse().map(e=>`<li><time>${esc(e.time)}</time><span title="${esc(e.type)}">${esc(label(e.type))}</span></li>`).join("") || "<li>进入课件后显示真实操作事件。</li>";
   }
   const canShow=()=>{
+    if(global.StudyEntry)return false;
     const unit=typeof getUnit==='function'&&typeof currentUnitId==='string'?getUnit(currentUnitId):null;
     return Boolean(snapshot?.signedIn&&typeof currentView==='string'&&currentView==='learn'
       &&unit?.assessmentPhase!=='pre'&&!document.getElementById('auth-gate')?.open);

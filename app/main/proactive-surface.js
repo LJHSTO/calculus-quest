@@ -132,8 +132,9 @@
         if (!host) {host = node("div", "proactive-inline-host"); host.dataset.proactiveInlineHost = ""; pane.append(host);}
       }
     } else {
-      host = document.querySelector(".workspace-chat-pane [data-knowledge-scroll]")
-        || document.querySelector(".workspace-chat-pane");
+      // Proactive support owns a visible sidebar region even when the manual
+      // conversation is closed. Do not mount it inside that hidden panel.
+      host = document.querySelector(".workspace-chat-pane");
     }
     return host;
   }

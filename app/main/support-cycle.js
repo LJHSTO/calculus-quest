@@ -146,6 +146,9 @@
   document.addEventListener('pointerdown',()=>{pointerBusy=true;},true);
   const releaseInteraction=()=>{pointerBusy=false;if(snapshot?.supportCycle?.status==='awaiting_confirmation')setTimeout(()=>global.KnowledgeAssistant.refreshSupportSurface(),0);};
   document.addEventListener('pointerup',releaseInteraction,true);document.addEventListener('pointercancel',releaseInteraction,true);
+  global.addEventListener('message',e=>{if(e.data?.type!=='cq:interaction-busy')return;const frame=[...document.querySelectorAll('iframe[data-courseware-frame]')].find(f=>f.contentWindow===e.source&&f.getClientRects().length);if(!frame)return;if(e.data.busy===true)pointerBusy=true;else releaseInteraction();});
+  global.addEventListener('blur',releaseInteraction);
+  global.addEventListener('cq:lesson-rendered',releaseInteraction);
   document.addEventListener('focusout',()=>{if(snapshot?.supportCycle?.status==='awaiting_confirmation')setTimeout(()=>global.KnowledgeAssistant.refreshSupportSurface(),0);},true);
   global.addEventListener("cq:proactive-state",e=>{sync(e.detail);requestAnimationFrame(observe);});
   global.addEventListener("scroll",observe,true);global.addEventListener("resize",observe);document.addEventListener("visibilitychange",observe);

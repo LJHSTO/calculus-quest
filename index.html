@@ -10,6 +10,23 @@
     />
     <link rel="icon" href="data:," />
     <script>
+      (function(){
+        var value=new URLSearchParams(location.search).get('study');
+        if(!['A','B','C','assigned'].includes(value))return;
+        window.StudyEntry=Object.freeze({arm:value,storageSuffix:':study:'+value});
+        var originalFetch=window.fetch;
+        window.fetch=function(input,init){
+          var url=new URL(typeof input==='string'?input:input.url,document.baseURI);
+          if(url.origin===location.origin&&url.pathname.includes('/api/')){
+            var options=Object.assign({},init||{}),headers=new Headers(options.headers||(input instanceof Request?input.headers:undefined));
+            headers.set('X-Study-Arm',value);options.headers=headers;
+            return originalFetch.call(window,input,options);
+          }
+          return originalFetch.call(window,input,init);
+        };
+      })();
+    </script>
+    <script>
       (function() {
         try {
           var savedTheme = localStorage.getItem("calculus-quest-home-theme");
@@ -631,6 +648,7 @@
     <script src="app/main/support-cycle.js?v=20261021-multi-goal"></script>
     <script src="app/shared/learner-preferences.js?v=20261024"></script>
     <script src="app/main/pilot-study.js?v=20261024"></script>
+    <script src="app/main/three-arm-study.js?v=20261031"></script>
     <script src="app/main/learner-setup.js?v=20261024"></script>
     <script src="app/main/task-support.js?v=20261018-task-support"></script>
     <script src="app/main/proactive-surface.js?v=20261018-task-support"></script>

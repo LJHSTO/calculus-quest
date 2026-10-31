@@ -468,9 +468,17 @@ for (const chapter of route.chapters || []) {
   for (const module of chapter.modules) {
     for (const point of module.knowledgePoints || []) {
       const checks = point.formativeQuiz?.questions || [];
-      assert.equal(checks.length, 2, `${point.id} must have one core and one diagnostic question`);
-      assert.deepEqual(checks.map((question) => question.adaptiveRole), ["core", "diagnostic"]);
-      assert.deepEqual(checks.map((question) => question.type), ["single", "multiple"]);
+      if(point.formativeQuiz.instrumentVersion==='functions-limits-formative-r5'){
+        assert.equal(checks.length,3,`${point.id}应有三道共同检测`);
+        assert.deepEqual(checks.map(q=>q.adaptiveRole),['common_core','common_core','common_core']);
+        assert.deepEqual(checks.map(q=>q.measurementTarget),['concept_application','misconception_discrimination','near_transfer']);
+        assert.deepEqual(checks.map(q=>q.type),['single','multiple','single']);
+        assert.equal(point.formativeQuiz.adaptive,false);
+      }else{
+        assert.equal(checks.length, 2, `${point.id} must have one core and one diagnostic question`);
+        assert.deepEqual(checks.map((question) => question.adaptiveRole), ["core", "diagnostic"]);
+        assert.deepEqual(checks.map((question) => question.type), ["single", "multiple"]);
+      }
       checks.forEach((question) => {
         assert.deepEqual(question.knowledgePointIds, [point.id]);
         questionCount += 1;

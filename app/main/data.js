@@ -1,8 +1,8 @@
 // Course data, global state, and runtime flags.
 // Keep this legacy key so existing browsers continue loading their local fallback state.
-const STORAGE_KEY = "calculus-quest-openmaic-v14-player-v1";
+const STORAGE_KEY = "calculus-quest-openmaic-v14-player-v1"+(window.StudyEntry?.storageSuffix||"");
 const AUTH_TOKEN_KEY = "calculus-quest-auth-token-v1";
-const LAST_PARTICIPANT_KEY = "calculus-quest-last-participant-v1";
+const LAST_PARTICIPANT_KEY = "calculus-quest-last-participant-v1"+(window.StudyEntry?.storageSuffix||"");
 const COURSE_MODE = "multi-scene-adaptive";
 const MULTI_SCENE_ROUTE_PATH = "/api/course/multi-scene-learning-route";
 let activeNarration = null;

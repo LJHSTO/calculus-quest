@@ -61,6 +61,11 @@ for (const module of chapter.modules) {
     const profile = adapter.knowledgePoint(point.id);
     point.goal = profile.selfExplanationPrompt;
     point.misconception = profile.misconception;
+    if(point.formativeQuiz.instrumentVersion==='functions-limits-formative-r5'){
+      assert.equal(point.formativeQuiz.questions.length,3);
+      formative.push({...point.formativeQuiz.questions[0],id:`V14-C1-fl-r2-formative-${index+1}`});
+      continue;
+    }
     const existing = point.formativeQuiz.questions.filter(q => q.adaptiveRole !== "supplemental");
     for (const q of existing) {
       if (q.options && !q.options.some(o => o.value === bank.unknown.value)) q.options.push({ ...bank.unknown });

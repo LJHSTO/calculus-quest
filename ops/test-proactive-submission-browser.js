@@ -57,7 +57,7 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
     const answerResponse = page.waitForResponse((response) =>
       response.url().includes("/api/learning/assistant/ask")
       && response.request().method() === "POST");
-    const inside=page.frameLocator('iframe[data-courseware-frame]').locator('[data-cq-embedded-help="task"]');
+    const inside=page.locator('.task-support-panel');
     const composer = embeddedMode ? inside.locator('textarea').last() : process.env.TEST_PROACTIVE_SURFACES === "1"
       ? page.locator(".support-chat-form textarea") : page.locator("#knowledge-question-input");
     await composer.fill(replies[knowledgePointId]);
@@ -73,7 +73,7 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
     const checkNode = page.locator(".knowledge-proactive-verification");
     await checkNode.waitFor({ state: "visible" });
     if(embeddedMode){
-      assert.equal(await inside.count(),0,"独立检查时移除课件提示");
+      assert.equal(await inside.locator('.knowledge-proactive-inline-offer').count(),0,"独立检查时移除帮助提示，保留独立作答卡");
       const blocked=await page.evaluate(async()=>{const r=await fetch('/api/learning/assistant/ask',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${state.authToken}`},body:JSON.stringify({chapterId:currentChapterId,unitId:currentUnitId,question:'请给我答案'})});return {status:r.status,code:(await r.json()).code};});
       assert.deepEqual(blocked,{status:409,code:'independent_check_in_progress'},"服务端同时关闭独立检查帮助");
     }
@@ -211,7 +211,7 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
       await checkNode.waitFor({ state: "hidden" });
       const feedback = embeddedMode ? inside : page.locator(".knowledge-proactive-check-feedback");
       await feedback.waitFor({ state: "visible" });
-      const feedbackText=embeddedMode ? await feedback.evaluate(n=>n.shadowRoot.textContent) : await feedback.innerText();
+      const feedbackText=await feedback.innerText();
       assert.match(feedbackText, /本轮帮助已到上限/);
       assert.doesNotMatch(feedbackText, /只有你确认后|下一层/);
       assert.equal(await page.locator(".knowledge-proactive-inline-offer").count(), 0);
@@ -398,14 +398,16 @@ async function main() {
     await page.evaluate(inTask=>KnowledgeAssistant.setSupportView({placement:inTask?'inline':'sidebar',modality:'tip'}),embeddedMode);
     if(!embeddedMode && await page.locator('.core-learning-workspace').evaluate(n=>n.classList.contains('tools-collapsed')))await page.locator('#workspace-tools-toggle').click();
     const wrongChoice = core.options.find((option) => !core.answer.includes(option.value));
-    await page.locator(`#lesson-player input[type=radio][value="${wrongChoice.value}"]`).check();
+    await page.locator(`#lesson-player [data-question="${core.id}"] input[type=radio][value="${wrongChoice.value}"]`).check();
     await page.getByRole("button", { name: "提交本次测验", exact: true }).click();
-    await page.locator("#lesson-player input[type=checkbox]").first().check();
+    if(point.formativeQuiz.adaptive===false){
+      for(const q of point.formativeQuiz.questions.slice(1)){const wrong=q.options.find(o=>!q.answer.includes(o.value));await page.locator(`[data-question="${q.id}"] input[value="${wrong.value}"]`).check();}
+    }else await page.locator("#lesson-player input[type=checkbox]").first().check();
     assert.equal(requests.filter((request) => request.unitId === `${knowledgePointId}-formative`).length, 0,
       "未完成形成性独立作答时不可请求本题干预");
     assert.equal(await page.locator("[data-knowledge-proactive-accept]").isVisible(), false);
     const decisionResponse = page.waitForResponse((response) => response.url().includes("/assistant/intervention"));
-    await page.getByRole("button", { name: "提交诊断题", exact: true }).click();
+    await page.getByRole("button", { name: point.formativeQuiz.adaptive===false?"提交本次测验":"提交诊断题", exact: true }).click();
     let decision = await (await decisionResponse).json();
     if(mvpMode && process.env.TEST_PROACTIVE_DELAY==="1"){
       assert.equal(decision.decision.intervene,false,"初始候选应进入延迟队列");
@@ -549,7 +551,7 @@ async function main() {
           assert.deepEqual(after.prompt, before.prompt, "政策支架内容必须原样保留");
           const inlineEmbedded=placement === 'inline' && modality === 'tip';
           const surface = inlineEmbedded
-            ? page.frameLocator('iframe[data-courseware-frame]').locator('[data-cq-embedded-help="task"]')
+            ? page.locator('.task-support-panel')
             : page.locator('.learning-support-surface');
           if (!(placement === "sidebar" && modality === "tip")) {
             await surface.waitFor({ state: "visible" });
@@ -557,7 +559,7 @@ async function main() {
             const box = await surface.boundingBox();
             assert.ok(box.width > 200 && box.x >= 0 && box.x + box.width <= page.viewportSize().width + 1);
             if (after.prompt) {
-              if(inlineEmbedded) assert.ok((await surface.locator('.card').innerText()).includes(after.prompt.content));
+              if(inlineEmbedded) assert.ok((await surface.innerText()).includes(after.prompt.content));
               else assert.equal(await page.locator(".knowledge-proactive-question:visible").count(), 1);
             }
           }

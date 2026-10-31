@@ -119,9 +119,10 @@
   function designSpaceSnapshot() {
     const meta = courseMeta();
     const locked = quizAssistantLocked(meta, false)
-      || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession());
+      || Boolean(proactiveStudy.agentAssistanceBlocked || activeProactiveOutcomeSession() || global.ThreeArmStudyUI?.judgmentActive);
     const eligible = isSignedInNow() && meta.supported && meta.taskReady !== false && !locked && learningViewActive();
     const offer = eligible && proactiveDecision?.unitId === meta.unitId
+      && (!proactiveDecision.sceneType || proactiveDecision.sceneType === (meta.sceneType||'slide'))
       && (!proactiveStudyManaged(meta) || proactiveDecision.serverIssued === true)
       ? proactiveDecision : null;
     const observation = proactiveStudy.observation?.scopeKey === proactiveScopeKey(meta)
@@ -143,7 +144,7 @@
       assignment: proactiveStudy.assignment || null,
       researchControls: proactiveStudy.researchControls || null,
       agentRuntime: eligible ? proactiveStudy.agentRuntime || null : null,
-      supportCycle: eligible ? (proactiveStudy.supportCycles||[]).find(c=>c.scope===proactiveScopeKey(meta)) || null : null,
+      supportCycle: eligible ? (proactiveStudy.supportCycles||[]).find(c=>c.scope===proactiveScopeKey(meta)&&(!c.sceneType||c.sceneType===(meta.sceneType||'slide')||c.status==='awaiting_check')) || null : null,
       supportBusy: Boolean(global.SupportCycleUI?.busy),
       pilotRevision: global.PilotStudyUI?.revision || 0,
       policyState: proactiveScopeState(meta), observation,
@@ -3162,7 +3163,7 @@ const proactiveJustificationDrafts = new Map();
       || meta.taskReady === false
       || !isSignedInNow()
       || quizAssistantLocked(meta)
-      || (isOpen && !awaitingFollowup)
+      || isAsking
       || document.hidden
       || !learningViewActive()
       || global.SupportCycleUI?.interactionBusy
@@ -3291,6 +3292,7 @@ const proactiveJustificationDrafts = new Map();
         decisionId: payload.decisionId || "",
         kind: candidate.kind,
         unitId: candidate.unitId,
+        sceneType: meta.sceneType||'slide',
         createdAt: candidate.createdAt || "",
         dismissStreak: candidate.dismissStreak || 0,
         interventionId: payload.interventionId || "",
@@ -5209,6 +5211,12 @@ const proactiveJustificationDrafts = new Map();
     },
     onPickingChange: handlePickingChange,
     onTextSelection: showSelectionAction,
+    onTextSelectionCleared: ({ source }) => {
+      // Editing a note deliberately keeps its captured excerpt after selection
+      // disappears. A background document must not clear another frame's selection.
+      if (!els.noteEditor.hidden) return;
+      if (source === "navigation" || source === pendingSelection?.source) hideSelectionAction();
+    },
     onNoteSelect: ({ note, rect, source }) => {
       if (!note || !rect) return;
       pendingSelection = {

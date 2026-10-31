@@ -149,7 +149,7 @@ async function main() {
   const formative = async (p, correct) => {
     const q = p.point.formativeQuiz.questions[0];
     const result = await call("/api/learning/quiz/submit", { chapterId: "V14-C1", unitId: `${p.point.id}-formative`, phase: "formative",
-      answers: [{ questionId: q.id, response: correct ? q.answer[0] : q.options.find(x => !q.answer.includes(x.value)).value }] }, p.token);
+      answers: p.point.formativeQuiz.questions.map(q=>{const wrong=q.options.find(x=>!q.answer.includes(x.value)).value;return {questionId:q.id,response:correct?(q.type==='multiple'?q.answer:q.answer[0]):q.type==='multiple'?[wrong]:wrong};}) }, p.token);
     assert.equal(result.status, 200, JSON.stringify(result.data)); return result;
   };
   const event = async (p, type, age = 0, data = {}, research) => {

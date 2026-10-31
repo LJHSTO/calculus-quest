@@ -16,34 +16,34 @@
   function note(parent,d,label){const field=el("label",label),input=el("textarea");input.rows=2;input.maxLength=1200;input.value=d.note||"";input.setAttribute("aria-label",label);input.oninput=()=>d.note=input.value;field.append(input);parent.append(field);}
   function render(s){const p=data.pending,d=drafts.get(p.id)||{need:"",timing:null,disruption:null,reason:"",note:""};drafts.set(p.id,d);
     const root=el("section");root.className="support-cycle pilot-probe";root.dataset.pilotProbe=p.id;presented.add(p.id);
-    root.append(el("small","对应学习时刻："+new Date(p.at).toLocaleTimeString("zh-CN",{hour12:false})),el("strong","研究记录 · 刚才的学习情况"),el("p","这不是学习提示，可以跳过。请回想上面时刻的情况；记不清可选“不确定”。"));
-    choices(root,"刚才是否需要一点帮助？",[["yes","需要"],["no","不需要"],["uncertain","不确定"],["decline","不愿回答"]],d,"need");
-    rating(root,"这个时刻适合出现一句帮助询问吗？1很不合适—5很合适",d,"timing");
+    root.append(el("small","对应学习时刻："+new Date(p.support?.at||p.at).toLocaleTimeString("zh-CN",{hour12:false})),el("strong",p.support?"只问这一次 · 知点帮助体验":"研究记录 · 这次学习体验"),el("p",p.support?`请回想上面时刻出现的那次${p.support.kind||'知点询问'}。这份体验反馈可以跳过；本轮不再自动弹出。`:"请回想标注时刻的学习情况。这是体验反馈，可以跳过；记不清可选“不确定”。"));
+    choices(root,p.support?"那次询问出现前，你是否需要帮助？":"标注时刻你是否需要帮助？",[["yes","需要"],["no","不需要"],["uncertain","不确定"],["decline","不愿回答"]],d,"need");
+    rating(root,"那次询问出现的时机合适吗？1很不合适—5很合适",d,"timing");
     const extra=el("details");extra.append(el("summary","补充困难、打扰程度或拒绝原因（可不填）"));
     note(extra,d,"刚才主要卡在哪里，或正在做什么？（可不填）");
     rating(extra,"这次询问打断了正在做的事吗？1完全没有—5非常明显",d,"disruption");
     choices(extra,"请选择最接近的原因",[["none","不需要"],["bad_time","时机不好"],["try_myself","想自己试"],["mismatch","内容不对"],["decline","不愿回答"],["other","其他"]],d,"reason");root.append(extra);
     const status=el("p",message);status.setAttribute("role","status");root.append(status);
-    root.append(button(busy?"正在保存…":"保存这次记录",()=>{if(!d.need){status.textContent="请选择需要、不需要、不确定或不愿回答。";return;}run("/action",{action:"answer",id:p.id,...d});}),button("这次不答，继续学习",()=>run("/action",{action:"skip",id:p.id})));
+    root.append(button(busy?"正在保存…":"保存这次记录",()=>{if(!d.need){status.textContent="请选择需要、不需要、不确定或不愿回答。";return;}run("/action",{action:"answer",id:p.id,...d});}),button("跳过，继续学习",()=>run("/action",{action:"skip",id:p.id})));
     return root;
   }
   function openProbe(){
     if(!snapshot||!active(snapshot))return;
-    const host=document.fullscreenElement||document.querySelector('.multi-scene-scene-panel:not([hidden])')||document.querySelector('.multi-scene-slide-panel:not([hidden])');
+    const host=document.fullscreenElement||document.body;
     if(!host||host.tagName==='IFRAME')return;
     if(!probeDialog){probeDialog=el('dialog');probeDialog.id='pilot-probe-dialog';probeDialog.setAttribute('aria-label','本次学习情况记录');}
     if(probeDialog.parentElement!==host)host.append(probeDialog);
     probeDialogId=data.pending.id;
-    probeDialog.replaceChildren(button('返回学习，稍后再填',()=>probeDialog.close()),render(snapshot));
-    // User-opened, in normal document flow: the lesson remains operable.
-    if(!probeDialog.open)probeDialog.show();
-    probeDialog.scrollIntoView({block:'nearest',behavior:'instant'});
+    probeDialog.replaceChildren(render(snapshot));
+    probeDialog.oncancel=e=>{e.preventDefault();run('/action',{action:'skip',id:probeDialogId});};
+    if(!probeDialog.open)probeDialog.showModal();
     requestAnimationFrame(()=>{const node=probeDialog.querySelector('[data-pilot-probe]');if(probeDialog.open&&node&&probeVisible(node)&&!shown.has(probeDialogId)){const id=probeDialogId;shown.add(id);call('/action',{action:'shown',id}).catch(()=>shown.delete(id));}});
   }
   function syncProbeNotice(){
     const available=snapshot&&active(snapshot);
     if(probeDialog?.open&&(!available||data.pending?.id!==probeDialogId))probeDialog.close();
     if(!available){probeNotice?.remove();probeNotice=null;return;}
+    if(data.enrollment?.experiencePolicy&&!data.pending.hasShown&&!shown.has(data.pending.id)&&!document.hidden&&!document.querySelector('dialog[open]')&&!global.SupportCycleUI?.interactionBusy){openProbe();}
     if(!probeNotice){probeNotice=el('div');probeNotice.className='pilot-probe-notice';probeNotice.setAttribute('aria-label','可跳过的学习情况记录');
       probeNotice.append(button('学习情况 · 回答或跳过',openProbe));}
     const host=document.fullscreenElement||document.querySelector('.core-learning-workspace .player-actions');

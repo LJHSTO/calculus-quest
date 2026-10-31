@@ -13,7 +13,7 @@ async function main() {
     .map(match => ({ tag: match[0], file: match[1].split("?")[0] }));
   const bootstrapIndex = scripts.findIndex(script => script.file === "app/main/bootstrap.js");
   const extensionTail = scripts.slice(bootstrapIndex + 1).map(script => script.file);
-  const knownTail = ["app/main/support-cycle.js", "app/shared/learner-preferences.js", "app/main/pilot-study.js", "app/main/learner-setup.js", "app/main/task-support.js", "app/main/proactive-surface.js", "app/main/proactive-hud.js"];
+  const knownTail = ["app/main/support-cycle.js", "app/shared/learner-preferences.js", "app/main/pilot-study.js", "app/main/three-arm-study.js", "app/main/learner-setup.js", "app/main/task-support.js", "app/main/proactive-surface.js", "app/main/proactive-hud.js"];
   if (scripts.length < 20 || bootstrapIndex < 0
     || scripts.filter(script => script.file === "app/main/bootstrap.js").length !== 1
     || (extensionTail.length !== 0 && JSON.stringify(extensionTail) !== JSON.stringify(knownTail))) {

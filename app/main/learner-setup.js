@@ -7,24 +7,26 @@
   let preparation=null,refreshing=null,routing=false,currentGeneration=null,posttestComplete=false;
   let continuing=null;
   const hasSavedPreferences=()=>Boolean(record&&(record.generation==null||record.generation===currentGeneration));
-  function applyData(d){posttestComplete=d.posttestComplete===true;currentGeneration=d.generation;record=d.record;enabled=d.enabled;pilot=d.pilot;configurationWindow=d.configurationWindow;preparation=d.preparation;}
+  let study=null;
+  function applyData(d){study=d.study||null;posttestComplete=d.posttestComplete===true;currentGeneration=d.generation;record=d.record;enabled=d.enabled;pilot=d.pilot;configurationWindow=d.configurationWindow;preparation=d.preparation;global.ThreeArmStudyUI?.setRun(study);}
   async function refreshPreparation(){if(refreshing)return refreshing;const token=state.authToken;if(!token)return;refreshing=request().then(d=>{if(token===state.authToken){applyData(d);renderGuide();if(typeof renderBottomNextButton==='function')renderBottomNextButton();}return d;}).finally(()=>refreshing=null);return refreshing;}
   const ordinaryRequired=unit=>preparation?.required&&unit?.chapterId===preparation.chapterId;
   function afterPretest(unit){return unit?.assessmentPhase==='pre'&&(ordinaryRequired(unit)||(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'));}
-  function afterPosttest(unit){return unit?.assessmentPhase==='post'&&pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&['active','finished'].includes(pilot.enrollment.status);}
-  const posttestActionLabel=()=>pilot?.enrollment?.status==='finished'?'本轮已完成 · 查看记录':'下一步：填写学习体验问卷';
-  async function continueAfterPosttest(){await refreshPreparation();if(pilot?.enrollment)await openPilot(pilot);}
+  function afterPosttest(unit){return unit?.assessmentPhase==='post'&&(Boolean(study)||pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&['active','finished'].includes(pilot.enrollment.status));}
+  const posttestActionLabel=()=>study?.finalSurveyAt?'查看后续任务':pilot?.enrollment?.status==='finished'?'本轮已完成 · 查看记录':'下一步：填写学习体验问卷';
+  async function continueAfterPosttest(){await refreshPreparation();if(study){await global.ThreeArmStudyUI.openSurvey('final');return;}if(pilot?.enrollment)await openPilot(pilot);}
   const isReady=()=>pilot?.enrollment?.status==='active'?pilot.enrollment.stage==='ready':preparation?.stage==='ready';
   const pretestActionLabel=()=>continuing?'正在准备下一步…':isReady()?'继续学习':pilot?.enrollment?.stage==='baseline'?'下一步：学习前问卷':'下一步：设置学习方式';
   const pretestStatusLabel=()=>pilot?.enrollment?.arm==='control'?'学习准备已完成':'学习方式已设置';
   async function resumePreparation(){if(routing)return;routing=true;try{await refreshPreparation();if(pilot?.enrollment?.status==='active'){await openPilot(pilot);return;}if(preparation?.required&&preparation.stage!=='ready'){if(preparation.stage==='entry'){await global.PilotStudyUI.open();}else if(preparation.stage==='pretest'){await goPretest();}else await open();}}catch(e){message=e.message;mode='entry-error';show();}finally{routing=false;}}
   function allowsUnit(unit){
+    if(global.ThreeArmStudyUI?.allowsUnit(unit)===false)return false;
     const resultPage=unit.assessmentPhase==='pre'&&pilot?.enrollment?.stage==='configuration';
-    const allowed=preparation?.stage!=='entry'&&(!isPreparing(pilot?.enrollment)||resultPage)&&(pilot?.enrollment?.stage!=='pretest'||unit.id==='V14-C1-pre')&&!(ordinaryRequired(unit)&&preparation.stage!=='ready'&&unit.id!==preparation.chapterId+'-pre');
+    const allowed=!['entry','baseline'].includes(preparation?.stage)&&(!isPreparing(pilot?.enrollment)||resultPage)&&(pilot?.enrollment?.stage!=='pretest'||unit.id==='V14-C1-pre')&&!(ordinaryRequired(unit)&&preparation.stage!=='ready'&&unit.id!==preparation.chapterId+'-pre');
     if(!allowed)resumePreparation();return allowed;
   }
   function logJourney(type,data={}){if(typeof trackLearningEvent==='function')trackLearningEvent(type,{...data,preferenceContract:C.version},false).catch(()=>{});}
-  const experimental=()=>pilot?.enrollment?.arm==='configurable'&&pilot.enrollment.status==='active';
+  const experimental=()=>Boolean(study)||pilot?.enrollment?.arm==='configurable'&&pilot.enrollment.status==='active';
   const surveyContract=()=>pilot?.version?.configurationContract||C;
   const isPreparing=e=>e?.studyDesign==='learner-configurable-20-v1'&&e.status==='active'&&!['ready','pretest'].includes(e.stage);
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
@@ -43,6 +45,7 @@
     if(typeof syncLearningSnapshot==='function'&&typeof currentView==='string'&&currentView==='learn')await syncLearningSnapshot('preferences_opened');
     if(!isCurrent())return;const d=await request();if(!isCurrent())return;applyData(d);
     if(preparation?.required&&preparation.stage==='entry'){await global.PilotStudyUI.open();return;}
+    if(study&&preparation?.stage==='baseline'){dialog?.close();await global.ThreeArmStudyUI.openSurvey('baseline');return;}
     if(preparation?.required&&preparation.stage==='pretest'){mode='pretest';show();return;}
     if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'&&pilot.enrollment.stage==='baseline'){openPilot(pilot);return;}
     mode='preferences';answers=hasSavedPreferences()?structuredClone(record.answers):C.defaults();if(experimental()&&answers.D5.value==='request'){answers.D5={value:'ask',reason:'',note:''};}step=hasSavedPreferences()?6:0;selectionSource='reviewed_choices';lastStep='';started=Date.now();show();}
@@ -86,11 +89,11 @@
       if(typeof agenticOpenUnit==='function'){const chapter=getChapter('V14-C1'),target=chapter?.units?.find(u=>u.id!=='V14-C1-pre'&&!['retention','transfer'].includes(u.assessmentPhase)&&!(state.completed||[]).includes(u.id));if(target){agenticUnlockUnit(target.id,'pilot_ready');await agenticOpenUnit(target.id,{source:'pilot_ready'});}}
     }await syncLearningSnapshot('pilot_learning_started');renderGuide();}
   function syncEntrances(){const unit=typeof getUnit==='function'&&typeof currentUnitId==='string'?getUnit(currentUnitId):null;
-    const pre=unit?.assessmentPhase==='pre',joined=Boolean(pilot?.enrollment);
+    const pre=unit?.assessmentPhase==='pre',joined=Boolean(pilot?.enrollment||study||global.StudyEntry);
     for(const selector of ['#pilot-entry-button','#home-pilot-entry']){const node=document.querySelector(selector);if(node)node.hidden=joined||(pre&&selector==='#pilot-entry-button');}
     for(const selector of ['#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=pre;}
     const prefs=document.getElementById('learner-preferences-button');if(prefs){prefs.textContent=hasSavedPreferences()?'学习偏好 · 已设置':'学习偏好';prefs.dataset.configured=String(hasSavedPreferences());}
-    const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';}
+    const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=study?'本次学习与后续任务':pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';if(study)status.onclick=()=>global.ThreeArmStudyUI.openTasks();}
   }
   function renderGuide(){
     syncEntrances();
@@ -143,7 +146,9 @@
       }else {body.append(el('p',e.status==='withdrawn'?'你已退出；研究回放默认不再导出你的记录。数据处理请求由研究负责人按同意书处理。':'问卷已经保存，谢谢参与。'));if(e.status==='finished'&&e.followupEndsAt)body.append(el('p','若研究人员安排了延迟测量，请在后测至少72小时后返回“学习 → 本章路径 → 研究测量”。'+global.FollowupWindow.describe({researchEndsAt:e.followupEndsAt})));body.append(button('返回平台',leave));}dialog.append(body);
     }else{
       header('让帮助适合你的学习方式',hasSavedPreferences()?'学习偏好 · 已设置':pilot?.version?.useMode==='internal_rehearsal'?'学习偏好 · 学习中可调整':experimental()?'学习偏好 · 完成每个知识点检测后可调整':'学习偏好');
-      if(!enabled){dialog.append(el('p',pilot?.enrollment?.arm==='control'?'本次预试使用无主动介入的学习方式，六维偏好保持锁定。':configurationWindow?.message||'当前研究条件尚未开放偏好修改。'));if(record)for(const d of C.dimensions)dialog.append(el('p',d.short+'：'+(d.options.find(o=>o[0]===record.answers[d.id].value)?.[1]||'')));dialog.append(button('返回学习',()=>dialog.close()));return;}
+      if(!enabled){dialog.append(el('p',pilot?.enrollment?.arm==='control'?'本次预试使用无主动介入的学习方式，六维偏好保持锁定。':configurationWindow?.message||'当前研究条件尚未开放偏好修改。'));if(record)for(const d of C.dimensions)dialog.append(el('p',d.short+'：'+(d.options.find(o=>o[0]===record.answers[d.id].value)?.[1]||'')));
+        if(study?.arm==='A'&&preparation?.stage==='configuration')dialog.append(button('确认默认设置并开始学习',async()=>{const r=await fetch('api/study/confirm-defaults',{method:'POST',headers:{Authorization:`Bearer ${state.authToken}`}});const p=await r.json();if(!r.ok)throw new Error(p.message);await refreshPreparation();dialog.close();await KnowledgeAssistant.reloadLearnerPolicy();await beginLearning();},true));
+        else dialog.append(button('返回学习',()=>dialog.close()));return;}
       const nav=el('nav');nav.setAttribute('aria-label','六项学习偏好');nav.className='learner-steps';C.dimensions.forEach((d,i)=>{const b=button(d.short,()=>{step=i;draw();});b.setAttribute('aria-current',step===i?'step':'false');if(answers[d.id].reason)b.dataset.complete='true';nav.append(b);});dialog.append(nav);
       const body=el('div');body.className='learner-setup-body';
       if(step<6){const d=C.dimensions[step],a=answers[d.id];if(lastStep!==d.id){lastStep=d.id;logJourney('configuration_step_viewed',{dimension:d.id,elapsedMs:Date.now()-started});}body.append(el('span',`${step+1} / 6`),el('h3',d.title),el('p',d.description));const change=(v,name=d.id,focusValue=v)=>{logJourney('configuration_choice_changed',{dimension:d.id,from:a.value,to:v});a.value=v;a.reason='';selectionSource='reviewed_choices';draw();dialog.querySelector('input[name='+name+'][value='+focusValue+']')?.focus({preventScroll:true});};

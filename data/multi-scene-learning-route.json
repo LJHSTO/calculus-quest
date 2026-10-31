@@ -432,9 +432,136 @@
               "formativeQuiz": {
                 "title": "知识点检测：输入、输出和函数规则",
                 "difficulty": "medium",
-                "adaptive": true,
-                "questionCount": 2,
+                "adaptive": false,
+                "questionCount": 3,
                 "questions": [
+                  {
+                    "id": "GH-01-K01-formative-v5-q1",
+                    "sourceId": "GH-01-K01-formative-v5-q1",
+                    "type": "single",
+                    "question": "某输入输出机器使用一条固定规则。现有记录为：输入0，输出1；输入1，输出3；输入2，输出5。下列哪条规则与全部记录一致？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "输出 = 输入 × 2 + 1"
+                      },
+                      {
+                        "value": "B",
+                        "label": "输出 = 输入 + 1"
+                      },
+                      {
+                        "value": "C",
+                        "label": "输出 = 输入² + 1"
+                      },
+                      {
+                        "value": "D",
+                        "label": "输出 = 输入 × 3 + 1"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "A"
+                    ],
+                    "analysis": "逐一检验三组记录。按“输出 = 输入 × 2 + 1”，输入0、1、2时分别得到1、3、5，与全部记录一致。其余三条规则至少有一组结果与记录不符，因此选A。这里判断的是哪条候选规则与全部记录一致，而不是用单独一组数据猜测机器规则。",
+                    "commentPrompt": "",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-01-K01"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-01-K01-check-q1",
+                    "measurementTarget": "concept_application"
+                  },
+                  {
+                    "id": "GH-01-K01-formative-v5-q2",
+                    "sourceId": "GH-01-K01-formative-v5-q2",
+                    "type": "multiple",
+                    "question": "已知输入输出机器的三组记录为：f(1)=4、f(2)=7、f(3)=10。根据这些记录，选出所有正确说法。",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "规则 f(x)=3x+1 与三组记录全部一致"
+                      },
+                      {
+                        "value": "B",
+                        "label": "如果只知道 f(1)=4，尚不能在 f(x)=3x+1 与 f(x)=x+3 之间作出判断"
+                      },
+                      {
+                        "value": "C",
+                        "label": "仅凭这三组记录，就能证明对所有实数 x 都有 f(x)=3x+1"
+                      },
+                      {
+                        "value": "D",
+                        "label": "规则 f(x)=x+3 与三组记录全部一致"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "A",
+                      "B"
+                    ],
+                    "analysis": "A正确：把1、2、3代入f(x)=3x+1，分别得到4、7、10，与三组记录全部一致。B正确：只看f(1)=4时，3×1+1=4且1+3=4，两条规则都符合这一组数据，不能据此区分。C错误：有限个输入输出记录只能检验候选规则在这些点是否一致，不能单独证明该公式对所有实数都成立。D错误：f(x)=x+3在x=2时得到5，与记录f(2)=7不符。因此答案为A、B。",
+                    "commentPrompt": "",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-01-K01"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-01-K01-check-q2",
+                    "measurementTarget": "misconception_discrimination"
+                  },
+                  {
+                    "id": "GH-01-K01-formative-v5-q3",
+                    "sourceId": "GH-01-K01-formative-v5-q3",
+                    "type": "single",
+                    "question": "某停车场按停放时长 t 收费：每个允许的时长都对应唯一费用 c。同一费用可能对应不同的时长。关于“费用是时长的函数”，哪项正确？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "只要每个时长的费用唯一，就满足函数要求"
+                      },
+                      {
+                        "value": "B",
+                        "label": "不同的时长必须有不同的费用"
+                      },
+                      {
+                        "value": "C",
+                        "label": "费用只能按一次函数计算"
+                      },
+                      {
+                        "value": "D",
+                        "label": "同一时长可以随机对应两个费用"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "A"
+                    ],
+                    "analysis": "函数要求每个允许的输入对应唯一输出，并不要求不同输入对应不同输出，也不要求规则是一次函数。",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-01-K01"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "measurementTarget": "near_transfer",
+                    "instrumentVersion": "functions-limits-formative-r5"
+                  }
+                ],
+                "archivedQuestions": [
                   {
                     "id": "GH-01-K01-check-q1",
                     "sourceId": "GH-01-K01-check-q1",
@@ -516,7 +643,9 @@
                     "adaptiveRole": "diagnostic",
                     "instrumentVersion": "functions-limits-formative-r4"
                   }
-                ]
+                ],
+                "instrumentVersion": "functions-limits-formative-r5",
+                "description": "三道共同检测：基本应用、误解辨析和新情境应用。统一独立作答后查看反馈；是否回看由你决定。"
               }
             },
             {
@@ -1688,9 +1817,137 @@
               "formativeQuiz": {
                 "title": "知识点检测：坐标点与函数图像",
                 "difficulty": "medium",
-                "adaptive": true,
-                "questionCount": 2,
+                "adaptive": false,
+                "questionCount": 3,
                 "questions": [
+                  {
+                    "id": "GH-01-K02-formative-v5-q1",
+                    "sourceId": "GH-01-K02-formative-v5-q1",
+                    "type": "single",
+                    "question": "在平面直角坐标系中，点P的坐标为(4,2)。以下哪项正确说明了这两个坐标？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "这个点在水平方向（x轴）上离原点 2 个单位，在竖直方向（y轴）上离原点 4 个单位"
+                      },
+                      {
+                        "value": "B",
+                        "label": "这个点在水平方向（x轴）上离原点 4 个单位，在竖直方向（y轴）上离原点 2 个单位"
+                      },
+                      {
+                        "value": "C",
+                        "label": "这个点的横坐标和纵坐标可以交换，位置保持不变"
+                      },
+                      {
+                        "value": "D",
+                        "label": "无法判断这个点的具体位置，因为坐标 (4,2) 和 (2,4) 代表的是同一个地方"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "B"
+                    ],
+                    "analysis": "坐标(4,2)按顺序表示横坐标4、纵坐标2。交换为(2,4)会得到另一个点，因此选B。",
+                    "commentPrompt": "",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-01-K02"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-01-K02-check-q1",
+                    "measurementTarget": "concept_application"
+                  },
+                  {
+                    "id": "GH-01-K02-formative-v5-q2",
+                    "type": "multiple",
+                    "question": "关于平面直角坐标系中的点，哪些说法正确？请选择所有正确说法。",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "点(a,b)的第一个数表示横坐标"
+                      },
+                      {
+                        "value": "B",
+                        "label": "点(a,b)的第二个数表示纵坐标"
+                      },
+                      {
+                        "value": "C",
+                        "label": "点(0,0)是两条坐标轴的交点"
+                      },
+                      {
+                        "value": "D",
+                        "label": "点(2,-3)位于横轴上"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "analysis": "A、B、C正确；点(2,-3)的纵坐标不为0，所以不在横轴上。",
+                    "points": 10,
+                    "knowledgePointIds": [
+                      "GH-01-K02"
+                    ],
+                    "sourceId": "GH-01-K02-formative-v5-q2",
+                    "adaptiveRole": "common_core",
+                    "hasAnswer": true,
+                    "commentPrompt": "",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-01-K02-check-q2",
+                    "measurementTarget": "misconception_discrimination"
+                  },
+                  {
+                    "id": "GH-01-K02-formative-v5-q3",
+                    "sourceId": "GH-01-K02-formative-v5-q3",
+                    "type": "single",
+                    "question": "传感器图的横轴是时间 t（秒），纵轴是温度 T（℃）。记录“第 3 秒温度为 −2℃”应画在哪个点？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "(−2,3)"
+                      },
+                      {
+                        "value": "B",
+                        "label": "(3,−2)"
+                      },
+                      {
+                        "value": "C",
+                        "label": "(3,2)"
+                      },
+                      {
+                        "value": "D",
+                        "label": "(−3,2)"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "B"
+                    ],
+                    "analysis": "横坐标对应时间3，纵坐标对应温度−2。坐标次序由轴的含义决定，负号表示温度低于0。",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-01-K02"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "measurementTarget": "near_transfer",
+                    "instrumentVersion": "functions-limits-formative-r5"
+                  }
+                ],
+                "archivedQuestions": [
                   {
                     "id": "GH-01-K02-check-q1",
                     "sourceId": "GH-01-K02-check-q1",
@@ -1773,7 +2030,9 @@
                     "commentPrompt": "",
                     "instrumentVersion": "functions-limits-formative-r4"
                   }
-                ]
+                ],
+                "instrumentVersion": "functions-limits-formative-r5",
+                "description": "三道共同检测：基本应用、误解辨析和新情境应用。统一独立作答后查看反馈；是否回看由你决定。"
               }
             },
             {
@@ -2061,9 +2320,137 @@
               "formativeQuiz": {
                 "title": "知识点检测：图像的上升、下降与变化方向",
                 "difficulty": "medium",
-                "adaptive": true,
-                "questionCount": 2,
+                "adaptive": false,
+                "questionCount": 3,
                 "questions": [
+                  {
+                    "id": "GH-01-K03-formative-v5-q1",
+                    "sourceId": "GH-01-K03-formative-v5-q1",
+                    "type": "single",
+                    "question": "将点(1,4)、(2,6)、(3,8)按横坐标从小到大依次用直线段连接。所得折线的变化方向是什么？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "一个从左往右一直向下掉的滑梯"
+                      },
+                      {
+                        "value": "B",
+                        "label": "从左向右持续上升"
+                      },
+                      {
+                        "value": "C",
+                        "label": "一条像山坡一样，左右一样高的平路"
+                      },
+                      {
+                        "value": "D",
+                        "label": "一个先往上冲，然后又掉下来的过山车（像倒V字）"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "B"
+                    ],
+                    "analysis": "两段直线的斜率都是2，因此这条明确指定的折线持续上升。有限观测点不能证明另一个未知函数在点间也持续上升。",
+                    "commentPrompt": "",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-01-K03"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-01-K03-check-q1",
+                    "measurementTarget": "concept_application"
+                  },
+                  {
+                    "id": "GH-01-K03-formative-v5-q2",
+                    "type": "multiple",
+                    "question": "按横坐标从小到大比较函数值。下列哪些描述支持所描述范围内的下降判断？请选择所有正确说法。",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "在整个区间内，横坐标越大，纵坐标越小"
+                      },
+                      {
+                        "value": "B",
+                        "label": "在整个区间内，曲线从左上向右下延伸，途中没有回升或水平段"
+                      },
+                      {
+                        "value": "C",
+                        "label": "横坐标和纵坐标同时增大"
+                      },
+                      {
+                        "value": "D",
+                        "label": "只比较两个观测点，后一个点的纵坐标较小，说明这两个观测值之间有下降；不据此判断整个区间"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "A",
+                      "B",
+                      "D"
+                    ],
+                    "analysis": "A、B描述整个区间；D只比较两个观测值。两点之间仍可能有未观测到的起伏，不能把两点比较扩展为整个区间的严格单调性。",
+                    "points": 10,
+                    "knowledgePointIds": [
+                      "GH-01-K03"
+                    ],
+                    "sourceId": "GH-01-K03-formative-v5-q2",
+                    "adaptiveRole": "common_core",
+                    "hasAnswer": true,
+                    "commentPrompt": "",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-01-K03-check-q2",
+                    "measurementTarget": "misconception_discrimination"
+                  },
+                  {
+                    "id": "GH-01-K03-formative-v5-q3",
+                    "sourceId": "GH-01-K03-formative-v5-q3",
+                    "type": "single",
+                    "question": "某冷库温度在 0≤t≤4 分钟内满足 T(t)=2t−10。小李说“温度一直小于0，因此温度在下降”。哪项判断正确？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "小李正确，负数一定表示下降"
+                      },
+                      {
+                        "value": "B",
+                        "label": "小李错误，温度虽然为负，但随时间增加而上升"
+                      },
+                      {
+                        "value": "C",
+                        "label": "温度既不是上升也不是下降"
+                      },
+                      {
+                        "value": "D",
+                        "label": "只在温度超过0后才能判断变化方向"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "B"
+                    ],
+                    "analysis": "函数值的正负与变化方向不同。规则中的系数2为正，时间每增加1分钟，温度上升2℃；这一范围内温度仍为负。",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-01-K03"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "measurementTarget": "near_transfer",
+                    "instrumentVersion": "functions-limits-formative-r5"
+                  }
+                ],
+                "archivedQuestions": [
                   {
                     "id": "GH-01-K03-check-q1",
                     "sourceId": "GH-01-K03-check-q1",
@@ -2146,7 +2533,9 @@
                     "commentPrompt": "",
                     "instrumentVersion": "functions-limits-formative-r4"
                   }
-                ]
+                ],
+                "instrumentVersion": "functions-limits-formative-r5",
+                "description": "三道共同检测：基本应用、误解辨析和新情境应用。统一独立作答后查看反馈；是否回看由你决定。"
               }
             }
           ],
@@ -3041,9 +3430,137 @@
               "formativeQuiz": {
                 "title": "知识点检测：从数表观察趋近",
                 "difficulty": "medium",
-                "adaptive": true,
-                "questionCount": 2,
+                "adaptive": false,
+                "questionCount": 3,
                 "questions": [
+                  {
+                    "id": "GH-02-K01-formative-v5-q1",
+                    "sourceId": "GH-02-K01-formative-v5-q1",
+                    "type": "single",
+                    "question": "已知 x≠1 时 f(x)=x+2。当 x 从两侧趋近1时，f(x) 趋近多少？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "1"
+                      },
+                      {
+                        "value": "B",
+                        "label": "2"
+                      },
+                      {
+                        "value": "C",
+                        "label": "3"
+                      },
+                      {
+                        "value": "D",
+                        "label": "不存在"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "C"
+                    ],
+                    "analysis": "根据明确的函数规则，x+2趋近3。数表只能提供直觉，有限项数值本身不能证明极限。",
+                    "commentPrompt": "",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-02-K01"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-02-K01-check-q1",
+                    "measurementTarget": "concept_application"
+                  },
+                  {
+                    "id": "GH-02-K01-formative-v5-q2",
+                    "sourceId": "GH-02-K01-formative-v5-q2",
+                    "type": "multiple",
+                    "question": "在定义域内点a的两侧讨论有限极限。以下哪些说法正确？请选择所有正确说法。",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "左极限是从小于该点的方向趋近得到的极限值"
+                      },
+                      {
+                        "value": "B",
+                        "label": "右极限是从大于该点的方向趋近得到的极限值"
+                      },
+                      {
+                        "value": "C",
+                        "label": "只要左极限存在，函数在该点的极限就一定存在"
+                      },
+                      {
+                        "value": "D",
+                        "label": "极限存在要求左极限和右极限都存在并且相等"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "A",
+                      "B",
+                      "D"
+                    ],
+                    "analysis": "左右极限分别从两个方向趋近，极限存在的充要条件是左右极限都存在且相等。选项C错误，因为单侧极限存在不能保证极限存在，必须双侧极限相等才行，这就是为什么我们需要分别检查左右两侧。",
+                    "commentPrompt": "",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-02-K01"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-02-K01-check-q2",
+                    "measurementTarget": "misconception_discrimination"
+                  },
+                  {
+                    "id": "GH-02-K01-formative-v5-q3",
+                    "sourceId": "GH-02-K01-formative-v5-q3",
+                    "type": "single",
+                    "question": "仪器在 x≠2 时按 R(x)=3x+2 显示读数，在 x=2 时没有显示。根据这条规则，x 从两侧趋近2时读数如何变化？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "趋近2"
+                      },
+                      {
+                        "value": "B",
+                        "label": "趋近6"
+                      },
+                      {
+                        "value": "C",
+                        "label": "趋近8，即使该点没有显示"
+                      },
+                      {
+                        "value": "D",
+                        "label": "没有该点读数就无法判断极限"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "C"
+                    ],
+                    "analysis": "在2附近，读数3x+2从两侧趋近8。极限描述附近的趋势，点上缺少读数不影响这个结论。",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-02-K01"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "measurementTarget": "near_transfer",
+                    "instrumentVersion": "functions-limits-formative-r5"
+                  }
+                ],
+                "archivedQuestions": [
                   {
                     "id": "GH-02-K01-check-q1",
                     "sourceId": "GH-02-K01-check-q1",
@@ -3126,7 +3643,9 @@
                     "adaptiveRole": "diagnostic",
                     "instrumentVersion": "functions-limits-formative-r4"
                   }
-                ]
+                ],
+                "instrumentVersion": "functions-limits-formative-r5",
+                "description": "三道共同检测：基本应用、误解辨析和新情境应用。统一独立作答后查看反馈；是否回看由你决定。"
               }
             },
             {
@@ -3416,9 +3935,157 @@
               "formativeQuiz": {
                 "title": "知识点检测：图像上的左右极限",
                 "difficulty": "medium",
-                "adaptive": true,
-                "questionCount": 2,
+                "adaptive": false,
+                "questionCount": 3,
                 "questions": [
+                  {
+                    "id": "GH-02-K02-formative-v5-q1",
+                    "type": "single",
+                    "question": "已知当 x 从小于3的一侧趋近3时，f(x) 趋近6。函数在 x=3 处的左极限是？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "3"
+                      },
+                      {
+                        "value": "B",
+                        "label": "5.99"
+                      },
+                      {
+                        "value": "C",
+                        "label": "6"
+                      },
+                      {
+                        "value": "D",
+                        "label": "不存在"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "C"
+                    ],
+                    "analysis": "题目明确给出左侧趋近条件，因此左极限为6；不能仅凭有限个观测值证明极限。",
+                    "points": 10,
+                    "knowledgePointIds": [
+                      "GH-02-K02"
+                    ],
+                    "cognitiveLevel": "理解",
+                    "estimatedSteps": 2,
+                    "pairId": "P03",
+                    "equivalence": {
+                      "presentationMode": "text",
+                      "knownConditionCount": 3,
+                      "operationCount": 0,
+                      "symbolComplexity": "low",
+                      "conclusionClass": "one_sided_limit_judgment"
+                    },
+                    "sourceId": "GH-02-K02-formative-v5-q1",
+                    "adaptiveRole": "common_core",
+                    "hasAnswer": true,
+                    "commentPrompt": "",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-02-K02-check-q1",
+                    "measurementTarget": "concept_application"
+                  },
+                  {
+                    "id": "GH-02-K02-formative-v5-q2",
+                    "type": "multiple",
+                    "question": "已知 x 趋近 2 时，f(x) 的左极限和右极限都等于 5，而 f(2)=8。请选择所有正确说法。",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "双侧极限存在"
+                      },
+                      {
+                        "value": "B",
+                        "label": "双侧极限等于 5"
+                      },
+                      {
+                        "value": "C",
+                        "label": "函数值 8 不影响双侧极限是否存在"
+                      },
+                      {
+                        "value": "D",
+                        "label": "因为 f(2) 不等于 5，所以双侧极限不存在"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "analysis": "左右极限都存在且相等，因此双侧极限存在并等于 5。函数在该点的取值是否等于极限值，会影响连续性，但不影响双侧极限本身是否存在。",
+                    "points": 10,
+                    "knowledgePointIds": [
+                      "GH-02-K02"
+                    ],
+                    "cognitiveLevel": "应用",
+                    "estimatedSteps": 3,
+                    "pairId": "P04",
+                    "equivalence": {
+                      "presentationMode": "text",
+                      "knownConditionCount": 3,
+                      "operationCount": 0,
+                      "symbolComplexity": "low",
+                      "conclusionClass": "two_sided_limit_exists"
+                    },
+                    "sourceId": "GH-02-K02-formative-v5-q2",
+                    "adaptiveRole": "common_core",
+                    "hasAnswer": true,
+                    "commentPrompt": "",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-02-K02-check-q2",
+                    "measurementTarget": "misconception_discrimination"
+                  },
+                  {
+                    "id": "GH-02-K02-formative-v5-q3",
+                    "sourceId": "GH-02-K02-formative-v5-q3",
+                    "type": "single",
+                    "question": "某分段收费函数在 t 趋近2时，左侧费用趋近4元、右侧费用趋近7元；系统把 t=2 时的费用设为4元。它在2处的双侧极限是什么？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "4元，因为点上的费用是4元"
+                      },
+                      {
+                        "value": "B",
+                        "label": "7元，因为应看右侧"
+                      },
+                      {
+                        "value": "C",
+                        "label": "5.5元，是两侧平均值"
+                      },
+                      {
+                        "value": "D",
+                        "label": "不存在，因为左右极限不同"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "D"
+                    ],
+                    "analysis": "双侧极限要求左右极限存在且相等。4与7不相等，点上的取值或两侧平均值都不能补出双侧极限。",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-02-K02"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "measurementTarget": "near_transfer",
+                    "instrumentVersion": "functions-limits-formative-r5"
+                  }
+                ],
+                "archivedQuestions": [
                   {
                     "id": "GH-02-K02-check-q1",
                     "type": "single",
@@ -3521,7 +4188,9 @@
                     "commentPrompt": "",
                     "instrumentVersion": "functions-limits-formative-r4"
                   }
-                ]
+                ],
+                "instrumentVersion": "functions-limits-formative-r5",
+                "description": "三道共同检测：基本应用、误解辨析和新情境应用。统一独立作答后查看反馈；是否回看由你决定。"
               }
             },
             {
@@ -3815,9 +4484,147 @@
               "formativeQuiz": {
                 "title": "知识点检测：连续就是不跳断",
                 "difficulty": "medium",
-                "adaptive": true,
-                "questionCount": 2,
+                "adaptive": false,
+                "questionCount": 3,
                 "questions": [
+                  {
+                    "id": "GH-02-K03-formative-v5-q1",
+                    "type": "single",
+                    "question": "小明写道：‘f(x) 在 x=1 处的左极限和右极限都等于 2，所以 f(x) 在 x=1 处一定连续。’对这段推理评价最准确的是？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "推理完整，左右极限相等就能保证连续"
+                      },
+                      {
+                        "value": "B",
+                        "label": "推理不完整，还必须确认 f(1) 有定义且等于 2"
+                      },
+                      {
+                        "value": "C",
+                        "label": "推理错误，因为左右极限相等时极限不存在"
+                      },
+                      {
+                        "value": "D",
+                        "label": "无法评价，因为连续性与极限没有关系"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "B"
+                    ],
+                    "analysis": "左右极限相等只能说明双侧极限存在。判断连续还需确认函数在该点有定义，并且函数值等于极限值。",
+                    "points": 10,
+                    "knowledgePointIds": [
+                      "GH-02-K03"
+                    ],
+                    "cognitiveLevel": "分析",
+                    "estimatedSteps": 3,
+                    "pairId": "P05",
+                    "equivalence": {
+                      "presentationMode": "text",
+                      "knownConditionCount": 2,
+                      "operationCount": 0,
+                      "symbolComplexity": "low",
+                      "conclusionClass": "continuity_reasoning_diagnosis"
+                    },
+                    "sourceId": "GH-02-K03-formative-v5-q1",
+                    "adaptiveRole": "common_core",
+                    "hasAnswer": true,
+                    "commentPrompt": "",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-02-K03-check-q1",
+                    "measurementTarget": "concept_application"
+                  },
+                  {
+                    "id": "GH-02-K03-formative-v5-q2",
+                    "type": "multiple",
+                    "question": "判断函数在定义域内点a连续时，以下哪些条件需要同时满足？请选择所有正确说法。",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "该点函数值有定义"
+                      },
+                      {
+                        "value": "B",
+                        "label": "左右极限存在且相等"
+                      },
+                      {
+                        "value": "C",
+                        "label": "函数值等于该点的极限值"
+                      },
+                      {
+                        "value": "D",
+                        "label": "函数值必须等于0"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "A",
+                      "B",
+                      "C"
+                    ],
+                    "analysis": "连续要求函数值有定义、双侧极限存在，并且二者相等；函数值不必等于0。",
+                    "points": 10,
+                    "knowledgePointIds": [
+                      "GH-02-K03"
+                    ],
+                    "sourceId": "GH-02-K03-formative-v5-q2",
+                    "adaptiveRole": "common_core",
+                    "hasAnswer": true,
+                    "commentPrompt": "",
+                    "instrumentVersion": "functions-limits-formative-r5",
+                    "legacyQuestionId": "GH-02-K03-check-q2",
+                    "measurementTarget": "misconception_discrimination"
+                  },
+                  {
+                    "id": "GH-02-K03-formative-v5-q3",
+                    "sourceId": "GH-02-K03-formative-v5-q3",
+                    "type": "single",
+                    "question": "为了修复显示曲线，设 x≠3 时 g(x)=2x−1，x=3 时 g(3)=k。要使曲线在 x=3 处连续，k 应是多少？",
+                    "options": [
+                      {
+                        "value": "A",
+                        "label": "3"
+                      },
+                      {
+                        "value": "B",
+                        "label": "5"
+                      },
+                      {
+                        "value": "C",
+                        "label": "6"
+                      },
+                      {
+                        "value": "D",
+                        "label": "任意值都可以"
+                      },
+                      {
+                        "value": "__unknown__",
+                        "label": "我不会"
+                      }
+                    ],
+                    "answer": [
+                      "B"
+                    ],
+                    "analysis": "当x从两侧趋近3，2x−1趋近5。连续要求点上的函数值等于这个极限，因此k=5。",
+                    "points": 10,
+                    "hasAnswer": true,
+                    "knowledgePointIds": [
+                      "GH-02-K03"
+                    ],
+                    "adaptiveRole": "common_core",
+                    "measurementTarget": "near_transfer",
+                    "instrumentVersion": "functions-limits-formative-r5"
+                  }
+                ],
+                "archivedQuestions": [
                   {
                     "id": "GH-02-K03-check-q1",
                     "type": "single",
@@ -3910,7 +4717,9 @@
                     "commentPrompt": "",
                     "instrumentVersion": "functions-limits-formative-r4"
                   }
-                ]
+                ],
+                "instrumentVersion": "functions-limits-formative-r5",
+                "description": "三道共同检测：基本应用、误解辨析和新情境应用。统一独立作答后查看反馈；是否回看由你决定。"
               }
             }
           ],
@@ -6578,7 +7387,7 @@
           "questions": [
             {
               "id": "V14-C1-fl-r2-formative-1",
-              "sourceId": "GH-01-K01-check-q1",
+              "sourceId": "GH-01-K01-formative-v5-q1",
               "type": "single",
               "question": "某输入输出机器使用一条固定规则。现有记录为：输入0，输出1；输入1，输出3；输入2，输出5。下列哪条规则与全部记录一致？",
               "options": [
@@ -6613,12 +7422,14 @@
               "knowledgePointIds": [
                 "GH-01-K01"
               ],
-              "adaptiveRole": "core",
-              "instrumentVersion": "functions-limits-formative-r4"
+              "adaptiveRole": "common_core",
+              "instrumentVersion": "functions-limits-formative-r5",
+              "legacyQuestionId": "GH-01-K01-check-q1",
+              "measurementTarget": "concept_application"
             },
             {
               "id": "V14-C1-fl-r2-formative-2",
-              "sourceId": "GH-01-K02-check-q1",
+              "sourceId": "GH-01-K02-formative-v5-q1",
               "type": "single",
               "question": "在平面直角坐标系中，点P的坐标为(4,2)。以下哪项正确说明了这两个坐标？",
               "options": [
@@ -6653,12 +7464,14 @@
               "knowledgePointIds": [
                 "GH-01-K02"
               ],
-              "adaptiveRole": "core",
-              "instrumentVersion": "functions-limits-formative-r4"
+              "adaptiveRole": "common_core",
+              "instrumentVersion": "functions-limits-formative-r5",
+              "legacyQuestionId": "GH-01-K02-check-q1",
+              "measurementTarget": "concept_application"
             },
             {
               "id": "V14-C1-fl-r2-formative-3",
-              "sourceId": "GH-01-K03-check-q1",
+              "sourceId": "GH-01-K03-formative-v5-q1",
               "type": "single",
               "question": "将点(1,4)、(2,6)、(3,8)按横坐标从小到大依次用直线段连接。所得折线的变化方向是什么？",
               "options": [
@@ -6693,8 +7506,10 @@
               "knowledgePointIds": [
                 "GH-01-K03"
               ],
-              "adaptiveRole": "core",
-              "instrumentVersion": "functions-limits-formative-r4"
+              "adaptiveRole": "common_core",
+              "instrumentVersion": "functions-limits-formative-r5",
+              "legacyQuestionId": "GH-01-K03-check-q1",
+              "measurementTarget": "concept_application"
             }
           ]
         }
@@ -60042,7 +60857,7 @@
     "version": "knowledge-checks-v2",
     "questionSetPreserved": false,
     "selectionReplacements": [],
-    "questionSetFingerprint": "446af1211d0d54c78773a16b16d488de5ed7fd75f6addde46e6d06c0a2831c79"
+    "questionSetFingerprint": "547b2cc9739133e60b8115cef0bd0c81573e026c842e8ea4387aba463a603a7a"
   },
   "assessmentDesign": {
     "version": "knowledge-checks-v2",

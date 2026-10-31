@@ -77,8 +77,8 @@ async function main() {
   const sourceFormativeQuestions = sourceRoute.chapters[0].flow.postQuiz.questions;
   const sourceShortQuestion = sourceFormativeQuestions.find((question) => question.type === "short_answer");
   const adaptiveQuestions = sourceRoute.chapters[0].modules[0].knowledgePoints[0].formativeQuiz.questions;
-  const adaptiveCore = adaptiveQuestions.find((question) => question.adaptiveRole === "core");
-  const adaptiveDiagnostic = adaptiveQuestions.find((question) => question.adaptiveRole === "diagnostic");
+  const adaptiveCore = adaptiveQuestions[0];
+  const adaptiveDiagnostic = adaptiveQuestions[1];
   assert.ok(sourceQuestion?.answer?.length);
   assert.ok(sourceShortQuestion);
 
@@ -271,25 +271,25 @@ async function main() {
       phase: "formative",
       answers: [{ questionId: adaptiveCore.id, response: wrongCoreAnswer }]
     }, token);
-    assert.equal(adaptiveCoreSubmission.response.status, 200);
-    assert.equal(adaptiveCoreSubmission.payload.results[0].isCorrect, false);
-    assert.equal(adaptiveCoreSubmission.payload.requiresDiagnostic, true);
+    assert.equal(adaptiveCoreSubmission.response.status, 400,'共同检测不能只提交第一题');
 
     const adaptiveDiagnosticSubmission = await postJson(baseUrl, "/api/learning/quiz/submit", {
       unitId: "GH-01-K01-formative",
       chapterId: "V14-C1",
       phase: "formative",
-      answers: [{ questionId: adaptiveDiagnostic.id, response: adaptiveDiagnostic.answer }]
+      answers: adaptiveQuestions.map((q,i)=>({questionId:q.id,response:i===0?wrongCoreAnswer:q.type==='multiple'?q.answer:q.answer[0]}))
     }, token);
     assert.equal(adaptiveDiagnosticSubmission.response.status, 200);
-    assert.equal(adaptiveDiagnosticSubmission.payload.results[0].questionId, adaptiveDiagnostic.id);
-    assert.equal(adaptiveDiagnosticSubmission.payload.requiresDiagnostic, false);
+    assert.equal(adaptiveDiagnosticSubmission.payload.results.length,3);
+    assert.equal(adaptiveDiagnosticSubmission.payload.results[0].isCorrect,false);
+    assert.equal(adaptiveDiagnosticSubmission.payload.results[1].isCorrect,true);
+    assert.notEqual(adaptiveDiagnosticSubmission.payload.requiresDiagnostic,true);
 
     const adaptiveResubmission = await postJson(baseUrl, "/api/learning/quiz/submit", {
       unitId: "GH-01-K01-formative",
       chapterId: "V14-C1",
       phase: "formative",
-      answers: [{ questionId: adaptiveDiagnostic.id, response: adaptiveDiagnostic.answer }]
+      answers: adaptiveQuestions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))
     }, token);
     assert.equal(adaptiveResubmission.response.status, 409);
 

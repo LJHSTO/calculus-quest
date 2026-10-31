@@ -63,15 +63,18 @@ const systemAnnouncementApi = require("./lib/system-announcement-api");
 const root = process.cwd();
 const researchSitesHttp = require("./lib/research-sites/http").createHttp({ db, root, readJsonBody, sendJson, authenticate, checkAdmin,
   providerInfo: assistantProviderInfo, complete: llm.completeChat, consumeQuota: consumeAssistantQuota, releaseQuota: releaseAssistantQuota,
-  canUseStandalone:user=>learnerEnrollment(user)?.status!=='active' });
+  canUseStandalone:user=>learnerEnrollment(user)?.status!=='active'&&!threeArmStudy.get(user) });
 const proactiveStudyConfig = proactivePolicy.configFromEnv();
 const researchControls = require("./lib/research-controls");
 const engineeringControlStore = researchControls.createStore({root,config:proactiveStudyConfig});
 const learnerPreferences = require('./lib/learner-preferences').createStore({db});
+const threeArmStudy = require('./lib/three-arm-study').createStore({db,preferences:learnerPreferences});
 const learnerDesign = require('./lib/pilot-study').LEARNER_DESIGN;
 function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.studyDesign===learnerDesign?e:null;}
 function ordinaryPreparation(user){
   const chapterId=proactiveStudyConfig.chapterId,questions=require('./data/multi-scene-learning-route.json').chapters.find(c=>c.id===chapterId)?.flow?.preQuiz?.questions||[];
+  const run=threeArmStudy.get(user);
+  if(run){const results=db.getQuizResultsByUser(user);const complete=questions.every(q=>results.some(r=>r.phase==='pre'&&r.question_id===q.id&&r.chapter_id===chapterId));return {required:true,chapterId,stage:!run.baselineAt?'baseline':!complete?'pretest':run.configuredAt?'ready':'configuration',configured:Boolean(run.configuredAt),version:'three-arm-common-preparation-v1'};}
   return require('./lib/learner-journey').preparation({required:process.env.LEARNER_ONBOARDING_REQUIRED==='true'&&researchControlStore.enabled,enrollment:learnerEnrollment(user),chapterId,questionIds:questions.map(q=>q.id),results:db.getQuizResultsByUser(user),record:learnerPreferences.read(user),generation:db.currentLearningGeneration(user),entry:learnerPreferences.readEntry(user),entryRequired:true});
 }
 function pilotAdmission(user,version){
@@ -82,7 +85,7 @@ function learnerStudyBlocked(user){const e=learnerEnrollment(user);return Boolea
 function rejectUnpreparedLearner(res,user,assessment){
   const e=learnerEnrollment(user),p=ordinaryPreparation(user),chapter=proactiveStudyConfig.chapterId;
   const pretest=assessment?.phase==='pre'&&assessment?.chapterId===chapter&&assessment?.unitId===chapter+'-pre';
-  const ordinaryBlocked=p.required&&p.stage!=='ready'&&(!pretest||p.stage==='entry')&&(!assessment?.chapterId||assessment.chapterId===chapter);
+  const ordinaryBlocked=p.required&&p.stage!=='ready'&&(!pretest||['entry','baseline'].includes(p.stage))&&(!assessment?.chapterId||assessment.chapterId===chapter);
   const allowedPretest=pretest&&(e?.stage==='pretest'||(assessment?.existingPretestGrade===true&&e?.stage==='configuration'));
   if(ordinaryBlocked||(e?.status==='active'&&((e.stage!=='ready'&&!allowedPretest)||e.generation!==db.currentLearningGeneration(user)))){
     sendJson(res,409,{ok:false,code:'learner_preparation_required',stage:p.stage||e?.stage,message:p.stage==='entry'?'请先输入加入码并确认参加，或选择普通学习，再完成知识前测。':ordinaryBlocked?'请先完成知识前测，点击“下一步：设置学习方式”，保存六项选择后开始学习。':'请按引导完成学习前问卷、知识前测和本组准备，再开始学习。'});return true;
@@ -122,7 +125,7 @@ function pilotRuntime(user) {
     rules:{maximumInquiriesPerKnowledgePoint:2,clientRecheckSeconds:10},notCalibrated:true};
 }
 function pilotProtection(user,generation) {
-  return Boolean(researchSitesHttp.store.protects(user)||activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user)
+  return Boolean(threeArmStudy.protects(user)||researchSitesHttp.store.protects(user)||activeProactiveOutcomeSession(user)||mainLearningStudy.manages(user)||studyWorkbench.protects(user)
     ||supportCycles.protects(user,generation)||db.listProactivePolicyStates(user,proactiveStudyConfig.experimentId)
       .some(s=>["accepted_pending_response","awaiting_independent_attempt"].includes(parseStoredJson(s.lifecycle_json||"{}",{}).phase)));
 }
@@ -137,6 +140,13 @@ function pilotFacts(user,scope,unitId,generation) {
 function publicSupportCycles(user,generation){
   const rows=supportCycles.state(user,generation),protectedCheck=rows.some(c=>c.status==="awaiting_check");
   return rows.map(({pendingContent,...c})=>({...c,content:protectedCheck?null:c.content&&{...c.content,audit:{...c.content.audit,promptSnapshot:undefined}}}));
+}
+function leaveHelpContext(user,generation,scope,sceneType=''){
+  scope=String(scope||'').replace(/-formative$/,'');
+  supportCycles.leaveContext(user,generation,scope,sceneType||'slide');
+  const s=db.getDbSync().prepare("SELECT d.id FROM proactive_decisions d JOIN proactive_interventions i ON i.decision_id=d.id WHERE d.user_id=? AND d.learning_generation=? AND i.status IN ('offered','shown') AND (d.scope_key<>? OR COALESCE(NULLIF(d.scene_type,''),'slide')<>?)");
+  const ids=[];try{s.bind([user,generation,scope,sceneType||'slide']);while(s.step())ids.push(s.getAsObject().id);}finally{s.free();}
+  for(const id of ids)db.resolveProactiveIntervention({userId:user,decisionId:id,resolution:'ignored',resolvedAt:nowIso(),followupOutcome:{outcome:'context_changed'}});
 }
 const proactiveGlobalPreferenceControlEnabled = ["1", "true", "yes", "on"].includes(
   String(process.env.PROACTIVE_GLOBAL_PREFERENCE_CONTROL || "").trim().toLowerCase()
@@ -357,6 +367,9 @@ const proactiveStoppingRules = Object.freeze({
       outcomeArchiveV3: protocolSourceDigest("lib/proactive-outcomes/archive/v14-c3-v3.js"),
       outcomeFigureGenerator: protocolSourceDigest("ops/build-outcome-figures-r3.js"),
       studentRenderer: protocolSourceDigest("app/main/knowledge-assistant.js"),
+      threeArmStudy: protocolSourceDigest('lib/three-arm-study.js'),
+      threeArmMeasures: protocolSourceDigest('lib/assessments/three-arm-design-v1.js'),
+      threeArmStudentFlow: protocolSourceDigest('app/main/three-arm-study.js'),
       supportSurface: protocolSourceDigest("app/main/proactive-surface.js"),
       supportSurfaceStyle: protocolSourceDigest("app/main/proactive-hud.css"),
       courseStructure: protocolSourceDigest("app/main/core.js"),
@@ -541,6 +554,7 @@ const publicRootFiles = new Set([
   "research-study.html",
   "research-rater.html",
   "admin.html",
+  "three-arm-admin.html",
   "flow-test.html",
   "styles.css",
   "favicon.ico"
@@ -658,6 +672,7 @@ function cacheControlFor(filePath, url) {
   if (
     relative === "index.html"
     || relative === "admin.html"
+    || relative === "three-arm-admin.html"
     || relative === "flow-test.html"
     || relative === "study-workbench.html"
     || relative === "research-study.html"
@@ -1131,6 +1146,15 @@ function bearerToken(req, body = {}) {
 
 const sessionTouchIntervalMs = 60 * 1000;
 
+function studyRunForRequest(req,participant){
+  const choice=String(req.headers['x-study-arm']||'');
+  return choice?threeArmStudy.resolve(participant,choice):null;
+}
+function publicParticipantForRequest(req,participant){
+  let run;
+  try{run=studyRunForRequest(req,participant);}catch(e){if(e.status!==409)throw e;}
+  return {...safePublicParticipant(participant),...(run?{participantId:run.id,study:threeArmStudy.publicRun(run)}:{})};
+}
 function authenticate(req, body = {}) {
   const token = bearerToken(req, body);
   if (!token) return null;
@@ -1153,7 +1177,9 @@ function authenticate(req, body = {}) {
       profileUpdatedAt: participant.profile_updated_at || ""
     });
   }
-  return { participant, token };
+  const accountRoute=/\/api\/(auth\/|study\/enroll)/.test(req.url)||/\/api\/admin\//.test(req.url);
+  const run=accountRoute?null:studyRunForRequest(req,participant);
+  return { participant:run?db.getUser(run.id):participant, account:participant, study:run, token };
 }
 
 function findUserByIdentifier(identifier = "") {
@@ -1978,6 +2004,7 @@ function proactiveOutcomeState(
     ? proactiveAssessmentCompletion(userId, "post")
     : { ready: false, completedAt: "", submitted: 0, expected: 0 };
   const postCompletedAt = Date.parse(posttest.completedAt || "");
+  const isThreeArm=Boolean(threeArmStudy.get(userId));
   const retentionUnlockAt = Number.isFinite(postCompletedAt)
     ? postCompletedAt + proactiveRetentionDelayHours * 60 * 60 * 1000
     : NaN;
@@ -2119,7 +2146,11 @@ function proactiveOutcomeState(
       && !stageTerminal("near_transfer")
     ) {
       reason = "完成或明确跳过近迁移测量后按路径开放。";
-    } else if (stageId === "retention" && !transferComplete) {
+    } else if(isThreeArm && now < retentionUnlockAt){
+      unlockAt=new Date(retentionUnlockAt).toISOString();reason='后测提交满72小时后开放保持与迁移任务。';
+    } else if(isThreeArm && stageId==='transfer'&&!stageTerminal('retention')){
+      reason='先完成独立保持测验，再进入迁移测验。';
+    } else if (stageId === "retention" && !transferComplete && !isThreeArm) {
       reason = "完成或明确跳过两项迁移测量后进入延迟保持阶段。";
     } else if (
       stageId === "retention"
@@ -2371,6 +2402,8 @@ function rejectAgentAssistanceDuringOutcome(res, userId) {
 }
 
 function proactiveAssignmentForUser(userId) {
+  const run=threeArmStudy.get(userId);
+  if(run){if(!proactivePretestStratum(userId).ready)return null;return {user_id:userId,experiment_id:proactiveStudyConfig.experimentId,condition:proactiveStudyConfig.displayArms.includes('treatment_full')?'treatment_full':proactiveStudyConfig.displayArms[0],assignment_digest:run.id,assigned_at:run.createdAt,stratum:'three_arm_'+run.arm,assignment_basis:run.studyId,protocol_fingerprint:proactiveProtocolFingerprint};}
   const pilot=learnerEnrollment(userId);
   if(pilot&&pilot.status==='active'&&pilot.generation===db.currentLearningGeneration(userId)&&pilot.arm){
     if(!proactivePretestStratum(userId).ready)return null;
@@ -4192,6 +4225,7 @@ async function handleManagedProactiveIntervention({
     auth.participant.id,
     policyScopeKey
   );
+  leaveHelpContext(auth.participant.id,db.currentLearningGeneration(auth.participant.id),policyScopeKey,sceneType||resolved.sceneType||'slide');
   let policyState = assignment
     ? db.getProactivePolicyState(
         auth.participant.id,
@@ -4543,7 +4577,7 @@ async function handleManagedProactiveIntervention({
     const latestAnswerAt=Math.max(0,...(evidence.evidenceRefs||[]).filter(r=>["quiz_result","common_independent_probe"].includes(r.sourceType)||r.serverRechecked===true).map(r=>Date.parse(r.capturedAt)||0));
     const inquiryContext={...evidence,independentAttemptSuccess:evidence.independentAttemptSuccess===true||Boolean(recentCheck?.payload.outcome.success===true&&Date.parse(recentCheck.created_at)>latestAnswerAt)};
     needInquiry=supportCycles.invite(auth.participant.id,policyScopeKey,generation,{
-      evidence:inquiryContext,signal,decisionId,profile:signal.kind==='exploration_reflection'?{...agentProfile,supportInquiryEnabled:true}:agentProfile,profileRevision:engineeringControl?.revision||0});
+      sceneType:sceneType||resolved.sceneType||'slide',evidence:inquiryContext,signal,decisionId,profile:signal.kind==='exploration_reflection'?{...agentProfile,supportInquiryEnabled:true}:agentProfile,profileRevision:engineeringControl?.revision||0});
     if(needInquiry){
       evidence.needInquiry={id:needInquiry.id,stage:"awaiting_student_confirmation",cue:needInquiry.inquiry};
       policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
@@ -4794,6 +4828,9 @@ async function handleApi(req, res, url) {
     return;
   }
   try {
+    if(/^\/api\/learning\/(assistant|support-cycle|agent-runtime|proactive)\b/.test(url.pathname)){
+      const owner=authenticate(req);if(owner&&threeArmStudy.protects(owner.participant.id)){sendJson(res,409,{ok:false,code:'configuration_judgment_protected',message:'配置判断任务正在独立作答，完成后恢复学习帮助。'});return;}
+    }
     if (await researchSitesHttp.handle(req, res, url)) return;
     // ---- Auth ----
     if (req.method === "POST" && url.pathname === "/api/monitoring/errors") {
@@ -4962,7 +4999,7 @@ async function handleApi(req, res, url) {
       });
       const user = db.getUser(participantId);
       db.saveNow();
-      sendJson(res, 200, { ok: true, participant: safePublicParticipant(user), token });
+      sendJson(res, 200, { ok: true, participant: publicParticipantForRequest(req,user), token });
       return;
     }
 
@@ -5034,7 +5071,7 @@ async function handleApi(req, res, url) {
         created_at: timestamp
       });
       const updated = db.getUser(user.id);
-      sendJson(res, 200, { ok: true, participant: safePublicParticipant(updated), token });
+      sendJson(res, 200, { ok: true, participant: publicParticipantForRequest(req,updated), token });
       return;
     }
 
@@ -5048,7 +5085,7 @@ async function handleApi(req, res, url) {
       const currentEmail = auth.participant.email || "";
       const noChange = nickname === currentNickname && email === currentEmail;
       if (noChange) {
-        sendJson(res, 200, { ok: true, participant: safePublicParticipant(db.getUser(auth.participant.id)) });
+        sendJson(res, 200, { ok: true, participant: publicParticipantForRequest(req,db.getUser(auth.participant.id)) });
         return;
       }
       if (auth.participant.profile_updated_at) {
@@ -5104,7 +5141,7 @@ async function handleApi(req, res, url) {
         payload: { hasNickname: Boolean(nickname), hasEmail: Boolean(email) },
         created_at: timestamp
       });
-      sendJson(res, 200, { ok: true, participant: safePublicParticipant(updated) });
+      sendJson(res, 200, { ok: true, participant: publicParticipantForRequest(req,updated) });
       return;
     }
 
@@ -5143,7 +5180,7 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      sendJson(res, 200, { ok: true, participant: safePublicParticipant(auth.participant) });
+      sendJson(res, 200, { ok: true, participant: publicParticipantForRequest(req,auth.participant) });
       return;
     }
 
@@ -5326,6 +5363,7 @@ async function handleApi(req, res, url) {
       }
 
       db.upsertUser(auth.participant.id, auth.participant.nickname, auth.participant.created_at, timestamp);
+      if(snapshotData.currentUnitId)leaveHelpContext(auth.participant.id,version.generation,snapshotData.currentUnitId,snapshotData.learningSurface==='slide'?'slide':snapshotData.selectedKnowledgeScenes?.[snapshotData.currentUnitId]||'slide');
       let quizReconciliationResult = {
         inserted: 0,
         updated: 0,
@@ -5616,7 +5654,7 @@ async function handleApi(req, res, url) {
       if(!auth){sendJson(res,401,{ok:false,message:"请先登录。"});return;}
       res.setHeader("Cache-Control","no-store");
       try{
-        if(learnerEnrollment(auth.participant.id)?.status==='active'){
+        if(learnerEnrollment(auth.participant.id)?.status==='active'||threeArmStudy.get(auth.participant.id)){
           if(req.method==='GET')sendJson(res,200,{ok:true,data:{...mainLearningStudy.state(auth.participant.id),session:null,disabledForPilot:true}});
           else sendJson(res,409,{ok:false,code:'pilot_condition_isolation',message:'本轮预试使用常规课程和练习；请完成或退出预试后再进入其他验证流程。'});
           return;
@@ -5641,7 +5679,7 @@ async function handleApi(req, res, url) {
       const body = req.method === "POST" ? await readJsonBody(req) : {};
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      if(learnerEnrollment(auth.participant.id)?.status==='active'){sendJson(res,409,{ok:false,code:'pilot_condition_isolation',message:'请先完成或退出当前预试，再进入其他研究流程。'});return;}
+      if(learnerEnrollment(auth.participant.id)?.status==='active'||threeArmStudy.get(auth.participant.id)){sendJson(res,409,{ok:false,code:'pilot_condition_isolation',message:'本实验入口使用统一课程流程。其他研究演示请从普通入口查看。'});return;}
       res.setHeader("Cache-Control", "no-store");
       try {
         let data;
@@ -5660,6 +5698,60 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if(url.pathname.startsWith('/api/admin/three-arm')){
+      if(!checkAdmin(req)){sendJson(res,403,{ok:false,message:'需要管理员身份'});return;}
+      try{let data;
+        if(req.method==='GET'&&url.pathname.endsWith('/export'))data=threeArmStudy.exportData();
+        else if(req.method==='GET'&&url.pathname.endsWith('/rating'))data=threeArmStudy.ratingCases();
+        else if(req.method==='POST'&&url.pathname.endsWith('/rating'))data=threeArmStudy.rateJudgment(await readJsonBody(req));
+        else if(req.method==='POST'&&url.pathname.endsWith('/baseline'))data=threeArmStudy.approveBaseline(await readJsonBody(req));
+        else if(req.method==='GET')data={protocol:threeArmStudy.protocol()};
+        else throw Object.assign(new Error('接口不存在'),{status:404});
+        sendJson(res,200,{ok:true,data});
+      }catch(e){sendJson(res,e.status||400,{ok:false,message:e.message});}return;
+    }
+    if(url.pathname.startsWith('/api/study/')){
+      try{
+        const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:'请先登录'});return;}
+        const user=auth.participant.id,generation=db.currentLearningGeneration(user),run=threeArmStudy.get(user);
+        const body=req.method==='POST'?await readJsonBody(req):{};
+        if(url.pathname==='/api/study/enroll'&&req.method==='POST'){
+          sendJson(res,200,{ok:true,data:threeArmStudy.publicRun(threeArmStudy.enroll(auth.account,body))});return;
+        }
+        if(!run){sendJson(res,404,{ok:false,message:'请从本次实验入口进入'});return;}
+        const cycles=publicSupportCycles(user,generation);
+        if(url.pathname==='/api/study/state'&&req.method==='GET'){
+          sendJson(res,200,{ok:true,data:{run:threeArmStudy.publicRun(run),preparation:ordinaryPreparation(user),posttestComplete:proactiveAssessmentCompletion(user,'post').ready,probe:threeArmStudy.probe(user,cycles),judgment:threeArmStudy.judgmentState(user)}});return;
+        }
+        if(url.pathname==='/api/study/confirm-defaults'&&req.method==='POST'){
+          if(run.arm!=='A'||ordinaryPreparation(user).stage!=='configuration')throw Object.assign(new Error('请先完成前测，再确认本组默认设置'),{status:409});
+          sendJson(res,200,{ok:true,data:threeArmStudy.publicRun(threeArmStudy.confirm(user))});return;
+        }
+        if(url.pathname==='/api/study/survey'){
+          const stage=String(body.stage||url.searchParams.get('stage')||'');
+          const data=req.method==='POST'?threeArmStudy.submitSurvey(user,stage,body):{items:threeArmStudy.surveyItems(user,stage),saved:threeArmStudy.readRecord(user,'survey',stage)};
+          sendJson(res,200,{ok:true,data});return;
+        }
+        if(url.pathname==='/api/study/judgment'){
+          if(req.method==='POST'&&body.action==='start'){if(pilotProtection(user,generation))throw Object.assign(new Error('请先完成当前独立测量'),{status:409});cancelLearnerSupport(user,generation);}
+          sendJson(res,200,{ok:true,data:req.method==='POST'?threeArmStudy.judgment(user,body):threeArmStudy.judgmentState(user)});return;
+        }
+        if(pilotProtection(user,generation))throw Object.assign(new Error('独立检查结束后再打开学习回顾'),{status:409});
+        if(url.pathname==='/api/study/review'&&req.method==='GET'){
+          sendJson(res,200,{ok:true,data:threeArmStudy.review(user,cycles)});return;
+        }
+        if(url.pathname==='/api/study/review'&&req.method==='POST'){
+          sendJson(res,200,{ok:true,data:threeArmStudy.completeReview(user,body,cycles)});return;
+        }
+        if(url.pathname==='/api/study/probe'&&req.method==='POST'){
+          sendJson(res,200,{ok:true,data:threeArmStudy.answerProbe(user,body,cycles)});return;
+        }
+        if(url.pathname==='/api/study/probe-claim'&&req.method==='POST'){
+          sendJson(res,200,{ok:true,data:threeArmStudy.claimProbe(user,body,cycles)});return;
+        }
+        sendJson(res,404,{ok:false,message:'实验接口不存在'});
+      }catch(e){sendJson(res,e.status||400,{ok:false,message:e.message});}return;
+    }
     if(url.pathname==='/api/learning/entry'&&req.method==='POST'){
       const auth=authenticate(req);if(!auth){sendJson(res,401,{ok:false,message:'请先登录'});return;}
       const input=await readJsonBody(req);if(input.mode!=='ordinary'){sendJson(res,400,{ok:false,message:'请选择普通学习，或通过加入码阅读说明后参加演练'});return;}
@@ -5670,17 +5762,19 @@ async function handleApi(req, res, url) {
       res.setHeader('Cache-Control','no-store');const user=auth.participant.id,generation=db.currentLearningGeneration(user),e=learnerEnrollment(user);
       try{
         const snapshot=parseStoredJson(db.getLearningSnapshotState(user,nowIso()).snapshot?.data||'{}',{});
-        const window=require('./lib/learner-journey').editWindow(e,snapshot,db.getQuizResultsByUser(user));
+        const run=threeArmStudy.get(user);
+        const window=threeArmStudy.editWindow(run,snapshot,pilotProtection(user,generation))||require('./lib/learner-journey').editWindow(e,snapshot,db.getQuizResultsByUser(user));
         const preparation=ordinaryPreparation(user);
-        const enabled=researchControlStore.canEdit(user)&&(!preparation.required||!['entry','pretest'].includes(preparation.stage))&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
+        const enabled=researchControlStore.canEdit(user)&&(!preparation.required||!['entry','baseline','pretest'].includes(preparation.stage))&&(!e||(e.status==='active'&&e.generation===generation&&e.arm==='configurable'&&['configuration','ready'].includes(e.stage)))&&window.allowed;
         if(req.method==='POST'){
           if(!enabled)throw Object.assign(new Error(preparation.stage==='pretest'?'请先完成知识前测，再设置学习方式。':window.message||'当前预试条件不能修改学习偏好'),{status:403});
           if(pilotProtection(user,generation))throw Object.assign(new Error('请先结束独立测量或当前帮助，再修改偏好'),{status:409});
-          const input=await readJsonBody(req);const record=learnerPreferences.save(user,{...input,generation,experimental:e?.arm==='configurable',configurationWindow:window});
+          const input=await readJsonBody(req);const record=learnerPreferences.save(user,{...input,generation,experimental:Boolean(run)||e?.arm==='configurable',configurationWindow:window});
+          if(run)threeArmStudy.confirm(user);
           pilotStudy.configure(user,generation,record);cancelLearnerSupport(user,generation);
           pilotStudy.recordConfiguration(user,generation,pilotRuntime(user),'学生通过学习偏好页面保存六维选择与理由');
         }
-        sendJson(res,200,{ok:true,data:{enabled,generation,posttestComplete:proactiveAssessmentCompletion(user,'post').ready,preparation:ordinaryPreparation(user),configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
+        sendJson(res,200,{ok:true,data:{enabled,generation,study:threeArmStudy.publicRun(threeArmStudy.get(user)),posttestComplete:proactiveAssessmentCompletion(user,'post').ready,preparation:ordinaryPreparation(user),configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
       }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
     }
     if(url.pathname.startsWith("/api/learning/pilot")) {
@@ -5692,6 +5786,7 @@ async function handleApi(req, res, url) {
         if(req.method==="GET"&&url.pathname==="/api/learning/pilot")data=pilotStudy.state(user,generation);
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/preview"){const v=pilotStudy.preview(input.joinCode);data={...v,admission:v.studyType===learnerDesign?pilotAdmission(user,v):null};}
         else if(req.method==="POST"&&url.pathname==="/api/learning/pilot/start"){
+          if(threeArmStudy.get(user))throw Object.assign(new Error('本入口已使用三组实验流程，无需再加入旧预试'),{status:409});
           const v=pilotStudy.preview(input.joinCode);
           if(v.studyType===learnerDesign&&!pilotStudy.enrolled(user,generation)){
             const ongoing=s=>s&&!['complete','withdrawn','between_units'].includes(s.stage);
@@ -5732,7 +5827,7 @@ async function handleApi(req, res, url) {
                 currentPolicyNotRecomputed:true,clientState:{foreground:input.foreground===true,interactionBusy:input.interactionBusy!==false}},
               decision:decision?{id:decision.id,at:decision.created_at,helpNeed:decision.help_need_score,interruptibility:decision.interruptibility_score,
                 reasons:parseStoredJson(decision.reason_codes_json,[]),historicalNotCurrent:true}:null,
-              teacherFacts:pilotFacts(user,scope,unitId,generation),priorSupport:cycle?{id:cycle.id,status:cycle.status}:null});
+              teacherFacts:pilotFacts(user,scope,unitId,generation),priorSupport:(()=>{const seen=supportCycles.state(user,generation).find(c=>c.exposure?.at||c.inquiry?.exposure?.at);return seen?{id:seen.id,status:seen.status,at:seen.exposure?.at||seen.inquiry?.exposure?.at,scope:seen.scope,sceneType:seen.sceneType,kind:seen.exposure?'帮助内容':'帮助询问'}:null;})()});
           }
           data=pilotStudy.state(user,generation);
         }else {sendJson(res,404,{ok:false,message:"预试接口不存在"});return;}
@@ -5779,11 +5874,12 @@ async function handleApi(req, res, url) {
         if(protectedNow())throw Object.assign(new Error("独立测量期间暂停学习帮助"),{status:409});
         const record=researchControlStore.read(user),profile={...researchControls.defaults,...record?.profile},revision=record?.revision||0;
         const adapter=proactivePolicy.adapterForChapter(proactiveStudyConfig.chapterId);
+        supportCycles.leaveScene(user,scope,generation,boundedLearningText(body.sceneType,80)||'slide');
         let cycle;
         if(body.action==="report") {
           if(learnerEnrollment(user)?.experiencePolicy && !body.inquiryId)throw Object.assign(new Error('本次演练由助手主动发起询问，请在当前询问中确认需要。'),{status:409});
           if(supportCycles.protects(user,generation))throw Object.assign(new Error("请先完成或跳过独立检查"),{status:409});
-          cycle=supportCycles.report(user,scope,generation,body,profile,revision);
+          cycle=supportCycles.report(user,scope,generation,{...body,sceneType:body.sceneType||'slide'},profile,revision);
           db.closeOpenProactiveInterventionsForUser({userId:user,experimentId:proactiveStudyConfig.experimentId,
             resolution:"ignored",resolvedAt:nowIso(),followupOutcome:{outcome:"student_confirmed_different_support"}});
         } else if(body.action!=="advance") {
@@ -5813,7 +5909,7 @@ async function handleApi(req, res, url) {
               const fresh=supportCycles.current(user,scope,generation), explicit=body.action==="report";
               const evidence=proactiveEvidenceForRequest({userId:user,resolved,signal:{kind:"quiet_dwell"},sceneType:body.sceneType,policyState:{},now:Date.now()});
               return {protected:protectedNow() || supportCycles.protects(user,generation),
-                contextKey:db.getLearningSnapshotState(user,nowIso()).snapshot?.data?.currentUnitId || scope,
+                contextKey:(()=>{const raw=db.getLearningSnapshotState(user,nowIso()).snapshot?.data;const s=typeof raw==='string'?parseStoredJson(raw,{}):raw||{};return `${s.currentUnitId||scope}:${s.learningSurface==='slide'?'slide':s.selectedKnowledgeScenes?.[s.currentUnitId]||body.sceneType||'slide'}`;})(),
                 boundaryToken:explicit ? `explicit:${fresh?.id}` : evidence.boundaryToken,
                 profileRevision:researchControlStore.read(user)?.revision||0,
                 disabled:db.currentLearningGeneration(user)!==generation || proactiveStudyConfig.mode!=="active" || proactiveExperimentRuntime()?.status==="paused"
@@ -5873,7 +5969,7 @@ async function handleApi(req, res, url) {
         sendJson(res,200,{ok:true,data:{...researchControlStore.describe(auth.participant.id),
           assignment:publicProactiveAssignment(proactiveAssignmentForUser(auth.participant.id)),arms:[...proactiveStudyConfig.experimentArms]}});return;
       }
-      if(learnerEnrollment(auth.participant.id)){sendJson(res,403,{ok:false,message:'预试期间请通过学习偏好页面修改，不能覆盖组别和保护参数。'});return;}
+      if(learnerEnrollment(auth.participant.id)||threeArmStudy.get(auth.participant.id)){sendJson(res,403,{ok:false,message:'研究期间请通过学习偏好页面修改，不能覆盖组别和保护参数。'});return;}
       if(!researchControlStore.canEdit(auth.participant.id)){sendJson(res,403,{ok:false,message:"当前账号的实验条件只读，网址参数不能解锁。"});return;}
       const body=await readJsonBody(req);
       const inRound=db.listProactivePolicyStates(auth.participant.id,proactiveStudyConfig.experimentId)
@@ -8868,6 +8964,12 @@ async function handleApi(req, res, url) {
       const unitId = String(body.unitId || "").trim();
       const chapterId = String(body.chapterId || "").trim();
       const phase = String(body.phase || "").trim();
+      const studyRun=threeArmStudy.get(auth.participant.id);
+      if(studyRun&&phase==='post'){
+        const results=db.getQuizResultsByUser(auth.participant.id);
+        const pending=['GH-01','GH-02'].some(m=>![1,2,3].every(n=>results.filter(r=>r.unit_id===`${m}-K0${n}-formative`).length>=3)||!(studyRun.reviewedModules||[]).includes(m));
+        if(pending){sendJson(res,409,{ok:false,code:'study_review_required',message:'请先完成六个知识点的三题检测，以及两次阶段学习回顾，再提交后测。'});return;}
+      }
       const answers = Array.isArray(body.answers) ? body.answers.slice(0, 50) : [];
       if (!unitId || !chapterId || !phase || !answers.length) {
         sendJson(res, 400, { ok: false, message: "测验提交信息不完整。" });

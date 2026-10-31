@@ -12,7 +12,7 @@
     const choice=document.querySelector('.workspace-canvas-toolbar [data-knowledge-scene="simulation"]');
     if(choice&&choice.getAttribute('aria-pressed')!=='true')choice.click();
   }
-  const pilotActive=()=>global.LearnerSetup?.enrollment?.studyDesign==='learner-configurable-20-v1'&&global.LearnerSetup.enrollment.status==='active';
+  const pilotActive=()=>Boolean(global.StudyEntry)||global.LearnerSetup?.enrollment?.studyDesign==='learner-configurable-20-v1'&&global.LearnerSetup.enrollment.status==='active';
   function protects(){return !pilotActive()&&Boolean(busy || data?.session && (["t0","t1","outcome"].includes(data.session.stage)
     || data.protocol.status==="reviewed_human_protocol" && !["complete","withdrawn"].includes(data.session.stage)));}
   async function api(path="",body){

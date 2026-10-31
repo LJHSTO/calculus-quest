@@ -881,6 +881,7 @@ function learningSnapshot() {
     quizAttempts: state.quizAttempts || {},
     submittedQuizzes: state.submittedQuizzes || [],
     selectedKnowledgeScenes: state.selectedKnowledgeScenes || {},
+    learningSurface: typeof document==='undefined'?'':document.querySelector('.core-learning-workspace')?.dataset.classroomSurface || '',
     pendingKnowledgeTransition: state.pendingKnowledgeTransition || null,
     knowledgeTransitionChoices: state.knowledgeTransitionChoices || {},
     returnToQuiz: state.returnToQuiz || null,
@@ -1779,7 +1780,7 @@ function createOpenMaicKnowledgeCheckUnit(chapter, module, knowledgePoint, scene
     summary: `完成「${knowledgePoint.name}」后的即时检测`,
     type: "quiz",
     assessmentPhase: "formative",
-    adaptiveFormative: true,
+    adaptiveFormative: rawFlow.adaptive === true,
     knowledgePointId: knowledgePoint.id,
     placeholderQuiz: !(flow.questions || []).length,
     conceptClusterId: knowledgePoint.id,
@@ -1796,7 +1797,7 @@ function createOpenMaicKnowledgeCheckUnit(chapter, module, knowledgePoint, scene
         questions: flow.questions || [],
         quizConfig: flow,
         knowledgePoint,
-        adaptiveFormative: true
+        adaptiveFormative: rawFlow.adaptive === true
       },
       actions: []
     }
