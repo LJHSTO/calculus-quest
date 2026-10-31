@@ -305,11 +305,11 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "02a3eea755ab6f053bfd",
+  "styleVersion": "120f94be7934fc6e20f0",
   "styleSources": [
     {
       "file": "styles.css",
-      "sha256": "432e31a0e21529c4a88bad80d5968e035f6e0392cbaa70463eae8e10be1275be"
+      "sha256": "931f2f95277279bad84869ac27d48be759df81a554b37b9fca6f68c2c0ff9deb"
     },
     {
       "file": "app/main/knowledge-assistant.css",

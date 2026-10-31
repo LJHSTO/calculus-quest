@@ -63,13 +63,31 @@ async function main(){
    }
    await shot('全屏老师询问');await support.getByRole('button',{name:'请老师讲一下',exact:true}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='offered');
    if(remote){const audit=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.content.audit);assert.equal(audit.fallback,false,'公网老师必须实际调用模型成功');assert.equal(audit.provider,'openai-compatible');timings.push({arm,event:'官方模型帮助',audit});}
-   await page.waitForTimeout(1600);await shot('全屏老师讲解');await support.getByRole('button',{name:'结束这轮帮助',exact:true}).click();await closeProbe();
+   await page.waitForTimeout(1600);
+   if(arm==='B'){
+    for(const width of [1366,1440,1920]){
+     await page.setViewportSize({width,height:960});
+     await page.waitForFunction(w=>innerWidth===w,width);
+     await shot('全屏老师讲解-'+width);
+     const layout=await page.evaluate(()=>{
+      const box=s=>{const r=document.querySelector(s).getBoundingClientRect();return {x:r.x,width:r.width,right:r.right};};
+      return {viewport:innerWidth,course:box('.core-learning-workspace>.player'),teacher:box('.learning-workspace-tools')};
+     });
+     assert.ok(layout.teacher.width>=300&&layout.teacher.width<=361,'老师侧栏宽度稳定，不随长回复扩张：'+JSON.stringify(layout));
+     assert.ok(layout.course.width>layout.teacher.width*2,'课件保留主要画布');
+     assert.ok(layout.course.right<=layout.teacher.x+1&&layout.teacher.right<=layout.viewport+1,'课件与老师不重叠、不超出视口');
+     timings.push({arm,event:'全屏长回复布局',...layout});
+    }
+    await page.setViewportSize({width:1440,height:960});
+   }
+   await shot('全屏老师讲解');await support.getByRole('button',{name:'结束这轮帮助',exact:true}).click();await closeProbe();
    const retryAt=Date.now();for(let i=0;i<2;i++){await frame.getByRole('button',{name:'发车检查',exact:true}).click();await page.waitForTimeout(350);}
    await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='awaiting_confirmation');timings.push({arm,event:'结束帮助后新的连续错误再次询问',ms:Date.now()-retryAt});
    await support.getByRole('button',{name:'我先自己试',exact:true}).click();
    assert.equal(await page.evaluate(()=>Boolean(document.fullscreenElement)),true);await page.locator('[data-classroom-action=fullscreen]').click();
    await page.setViewportSize({width:390,height:844});await shot('窄屏课程');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'窄屏无横向溢出');await page.locator('[data-workspace-canvas=slide]').click();await page.locator('[data-workspace-canvas=interactive]').click();await page.setViewportSize({width:1440,height:960});
    pass(arm+'组真实错误及时询问、一键帮助、全屏保留、课件状态保留及窄屏适配');
+   if(process.env.STUDENT_UX_HELP_ONLY==='1'){await context.close();continue;}
    await page.reload();await page.waitForFunction(()=>ThreeArmStudyUI.run?.arm===new URLSearchParams(location.search).get('study'));await page.waitForTimeout(5500);assert.equal(await page.locator('#three-arm-dialog[open]').count(),0,'刷新不重复体验询问');
    for(const module of course.modules){
     for(const point of module.knowledgePoints){
@@ -103,7 +121,7 @@ async function main(){
    timings.push({arm,event:'学习期间长任务',items:await page.evaluate(()=>window.uxLongTasks)});pass(arm+'组六个知识点实际下一步导航、两次手动回顾与配置窗口、后测问卷接续');
    await context.close();
   }
-  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(dir,'验收结果.json'),JSON.stringify({passed:true,checks,errors,timings},null,2));
+  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(dir,'验收结果.json'),JSON.stringify({passed:true,helpOnly:process.env.STUDENT_UX_HELP_ONLY==='1',checks,errors,timings},null,2));
  }catch(e){if(page&&!page.isClosed()){await shot('失败现场').catch(()=>{});fs.writeFileSync(path.join(dir,'失败状态.json'),JSON.stringify(await page.evaluate(()=>({unit:typeof currentUnitId==='undefined'?null:currentUnitId,study:window.ThreeArmStudyUI?.run,snapshot:window.KnowledgeAssistant?.designSpaceSnapshot?.(),body:document.body.innerText.slice(-10000)})).catch(()=>({})),null,2));}throw e;}
  finally{await browser?.close();if(server.exitCode===null){const closed=new Promise(r=>server.once('exit',r));server.kill();await closed;}fs.closeSync(log);console.log('浏览器证据：'+dir);}
 }

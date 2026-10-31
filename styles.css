@@ -7190,9 +7190,9 @@ body[data-cq-theme="E"] .theme-menu { background: #102022; color: var(--ink); }
   .button { transition: none; }
 }
 
-/* 全屏学习最终约束：导航不占位，播放器独占画布。 */
-.learning-shell:fullscreen,
-.learning-shell.is-local-fullscreen-target {
+/* 旧学习壳的单列全屏；新工作区由 learning-workspace.css 管理课件与老师侧栏。 */
+.learning-shell:not(.core-learning-workspace):fullscreen,
+.learning-shell:not(.core-learning-workspace).is-local-fullscreen-target {
   grid-template-columns: minmax(0, 1fr) !important;
 }
 
