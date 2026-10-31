@@ -4448,6 +4448,9 @@ body.knowledge-outcomes-open {
 
 /* Assistant Markdown owns its blocks; question-bank math remains unchanged. */
 .knowledge-message .assistant-content {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   padding: 12px 14px;
   border-radius: 14px;
   background: #f2f7f8;

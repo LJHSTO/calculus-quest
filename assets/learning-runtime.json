@@ -300,7 +300,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "a581e0b0f9b16022ad8d",
+  "styleVersion": "16c26d8f45601235250a",
   "styleSources": [
     {
       "file": "styles.css",
@@ -308,7 +308,7 @@
     },
     {
       "file": "app/main/knowledge-assistant.css",
-      "sha256": "3bf9fe9b8690e057db0fd0fa713ada8113e74b23680e9b0d3800593bef75d714"
+      "sha256": "6c2ed7cc57f08ed5d0d45dac07a93baddf6579e6bf5fd899d310a8f0a8abbe6f"
     },
     {
       "file": "app/main/pilot-study.css",

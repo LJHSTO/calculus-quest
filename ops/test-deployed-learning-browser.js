@@ -174,6 +174,11 @@ async function main() {
       const done=events.find(e=>e.type==='done');assert.ok(done,'完整收到回答');assert.notEqual(done.fallback,true,'必须由真实模型回答');
       assert.match(done.message?.modelAudit?.requestedModel||'',/^gpt-5\.4-mini/,'当前公开网站使用指定的官方模型');
       const text=events.filter(e=>e.type==='delta').map(e=>e.delta).join('');assert.ok(text.length>30);
+      await page.waitForFunction(()=>document.querySelector('.knowledge-message.assistant .assistant-content .katex'));
+      const geometry=await page.locator('.knowledge-message.assistant .assistant-content').last().evaluate(e=>({width:e.clientWidth,scroll:e.scrollWidth,blocks:[...e.children].map(c=>{const r=c.getBoundingClientRect();return {y:r.y,w:r.width,h:r.height};})}));
+      assert.ok(geometry.scroll<=geometry.width+2,'数学回答不得撑出侧栏');
+      assert.ok(geometry.blocks.every(b=>b.w>=geometry.width*.7),'正文段落不得挤成竖列');
+      for(let i=1;i<geometry.blocks.length;i++)assert.ok(geometry.blocks[i].y>=geometry.blocks[i-1].y+geometry.blocks[i-1].h-1,'回答正文应纵向阅读');
       fs.writeFileSync(path.join(output,'真实模型回答.json'),JSON.stringify({synthetic:true,provider:done.message?.provider||null,modelAudit:done.message?.modelAudit||null,fallback:done.fallback===true,text},null,2));
       await page.screenshot({path:path.join(output,'04-真实模型数学回答.png')});
       await toolsToggle.click();
