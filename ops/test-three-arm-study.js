@@ -4,14 +4,14 @@ const {spawn}=require('node:child_process');
 const root=path.resolve(__dirname,'..'),C=require('../app/shared/learner-preferences');
 async function main(){
  const output=path.join(root,'output/三组实验上线验收');fs.mkdirSync(output,{recursive:true});const dir=fs.mkdtempSync(path.join(output,'接口隔离-'));
- const port=await new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p));});});
- const base=`http://127.0.0.1:${port}`,admin='synthetic-three-arm-admin';
+ let port=await new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p));});});
+ let base=`http://127.0.0.1:${port}`;const admin='synthetic-three-arm-admin';
  const env={...process.env,NODE_ENV:'test',HOST:'127.0.0.1',BASE_PATH:'',DB_PATH:path.join(dir,'synthetic.db'),ADMIN_TOKEN:admin,LOCAL_ADMIN_AUTH_BYPASS:'false',MAIN_LEARNING_PROTOCOL_FILE:'',LLM_PROVIDER:'mock',GRADING_LLM_PROVIDER:'mock',ASSESSMENT_LLM_ENABLED:'false',COACH_NARRATION_LLM_ENABLED:'false',PROACTIVE_EXPERIMENT_ID:path.basename(dir),PROACTIVE_EXPERIMENT_CHAPTER_ID:'V14-C1',PROACTIVE_POLICY_MODE:'active',PROACTIVE_ASSIGNMENT_SALT:'synthetic-only',PROACTIVE_PARTICIPATION_MODE:'implicit-pilot',PROACTIVE_EXPERIMENT_ARMS:'treatment_full',PROACTIVE_DISPLAY_ARMS:'treatment_full',PROACTIVE_ADAPTER_VERSION:'functions-limits-adapter-r2',PROACTIVE_OUTCOME_INSTRUMENT_VERSION:'functions-limits-retention-r4',RESEARCH_CONTROLS_ENABLED:'true',RESEARCH_CONTROLS_DEMO:'true',LEARNER_ONBOARDING_REQUIRED:'true',RATE_LIMIT_MAX:'5000'};
  const log=fs.openSync(path.join(dir,'server.log'),'w');let server;
  const checks=[];let token='';
  async function api(route,body,arm='',auth=token){const r=await fetch(base+route,{method:body?'POST':'GET',headers:{'Content-Type':'application/json',...(auth?{Authorization:`Bearer ${auth}`} :{}),...(arm?{'X-Study-Arm':arm}:{})},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,...await r.json()};}
  const check=(name)=>{checks.push(name);console.log('通过：'+name);};
- async function boot(){server=spawn(process.execPath,['server.js',String(port)],{cwd:root,env,windowsHide:true,stdio:['ignore',log,log]});for(let i=0;i<120;i++){try{if((await fetch(base+'/api/health')).ok)return;}catch{}if(server.exitCode!==null)throw new Error('隔离服务未启动，日志：'+path.join(dir,'server.log'));await new Promise(r=>setTimeout(r,100));}throw new Error('服务启动超时');}
+ async function boot(){if(server){port=await new Promise(r=>{const s=net.createServer();s.listen(0,'127.0.0.1',()=>{const p=s.address().port;s.close(()=>r(p));});});base=`http://127.0.0.1:${port}`;}server=spawn(process.execPath,['server.js',String(port)],{cwd:root,env,windowsHide:true,stdio:['ignore',log,log]});for(let i=0;i<120;i++){try{if((await fetch(base+'/api/health')).ok)return;}catch{}if(server.exitCode!==null)throw new Error('隔离服务未启动，日志：'+path.join(dir,'server.log'));await new Promise(r=>setTimeout(r,100));}throw new Error('服务启动超时');}
  async function stop(){if(server?.exitCode===null){const closed=new Promise(r=>server.once('exit',r));server.kill();await closed;}}
  try{
   await boot();const reg=await api('/api/auth/register',{nickname:'三组隔离验收',password:'synthetic-test-password'},'A');assert.equal(reg.status,200,JSON.stringify(reg));token=reg.token;
@@ -48,23 +48,25 @@ async function main(){
   assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:before.revision},'C')).status,403,'C在普通学习中不可修改');
   assert.equal((await api('/api/learning/learner-preferences',null,'B')).data.record.answers.D4.value,'inline');
   assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:2},'B')).status,403,'B与C采用相同修改窗口');check('学习中前后端均锁定B/C设置');
-  for(const module of course.modules){
+  for(const module of require('../app/shared/study-stages').stages.map(s=>({...s,knowledgePoints:s.points.map(id=>course.modules.flatMap(m=>m.knowledgePoints).find(p=>p.id===id))}))){
    for(const p of module.knowledgePoints){const result=await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:p.id+'-formative',phase:'formative',answers:p.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))},'C');assert.equal(result.status,200,JSON.stringify(result));}
+   if(!module.review)continue;
    assert.equal((await api('/api/learning/learner-preferences',null,'C')).data.enabled,false,'检测完成也要等回顾决策后开放');
-   const decision={module:module.id,review_understanding:4,review_action:4,decision:'change'};
+   const decision={stage:module.id,review_understanding:4,review_action:4,decision:'change'};
    assert.equal((await api('/api/study/review',{...decision,decision:'bypass'},'C')).status,400);
    assert.equal((await api('/api/study/review',decision,'C')).status,200);
-   const open=(await api('/api/learning/learner-preferences',null,'C')).data;assert.equal(open.enabled,true);assert.equal(open.configurationWindow.kind,'module_review_configuration');
+   const open=(await api('/api/learning/learner-preferences',null,'C')).data;assert.equal(open.enabled,true);assert.equal(open.configurationWindow.kind,'stage_review_configuration');
    const blocked=await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:point.id+'-formative',phase:'formative',answers:answer.answers},'C');assert.equal(blocked.status,409,'尚未保存配置不能绕过窗口提交');
    assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:open.record.revision-1},'C')).status,409,'窗口内旧版本不能覆盖');
    assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:open.record.revision},'C')).status,200);
    assert.equal((await api('/api/learning/learner-preferences',null,'C')).data.enabled,false,'保存后立即关闭窗口');
   }
   check('两次回顾后的配置窗口、旧版本冲突与保存后锁定均由服务器执行');
-  for(const module of course.modules){
+  for(const module of require('../app/shared/study-stages').stages.map(s=>({...s,knowledgePoints:s.points.map(id=>course.modules.flatMap(m=>m.knowledgePoints).find(p=>p.id===id))}))){
    for(const p of module.knowledgePoints){if(p.id===point.id)continue;const result=await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:p.id+'-formative',phase:'formative',answers:p.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))},'B');assert.equal(result.status,200,JSON.stringify(result));}
-   const review=(await api('/api/study/review',null,'B')).data;assert.equal(review.pendingModule,module.id);
-   const saved=await api('/api/study/review',{module:module.id,review_understanding:4,review_action:4,decision:'keep',reason:'合成测试：保持并观察下一阶段独立作答'},'B');assert.equal(saved.status,200,JSON.stringify(saved));
+   if(!module.review)continue;
+   const review=(await api('/api/study/review',null,'B')).data;assert.equal(review.pendingStage.id,module.id);
+   const saved=await api('/api/study/review',{stage:module.id,review_understanding:4,review_action:4,decision:'keep',reason:'合成测试：保持并观察下一阶段独立作答'},'B');assert.equal(saved.status,200,JSON.stringify(saved));
   }
   assert.equal((await api('/api/study/survey',{stage:'final',answers:{}},'B')).status,409);
   assert.equal((await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:course.id+'-post',phase:'post',answers:course.flow.postQuiz.questions.map(q=>({questionId:q.id,response:q.type==='short_answer'?'__unknown__':q.type==='multiple'?q.answer:q.answer[0]}))},'B')).status,200);
@@ -92,7 +94,9 @@ async function main(){
    for(const item of judgment.data.items)await page.locator(`[data-judgment=${item.id}]`).fill('合成答卷：参考独立表现保持设置，并观察后续证据。');
    await page.getByRole('button',{name:'保存草稿，稍后继续',exact:true}).click();await page.reload();await page.evaluate(()=>ThreeArmStudyUI.openJudgment());await page.locator('[data-judgment=J6]').waitFor();assert.match(await page.locator('[data-judgment=J6]').inputValue(),/合成答卷/);
    await page.screenshot({path:path.join(dir,'配置判断-草稿恢复.png')});await page.getByRole('button',{name:'提交六个情境回答',exact:true}).click();await page.getByText('配置判断已提交，等待研究人员评分。',{exact:true}).waitFor();assert.deepEqual(errors,[]);check('三天后配置判断真实页面填写、刷新恢复、提交接续');
-   await page.goto(base+'/three-arm-admin.html');await page.locator('#study-admin-token').fill(admin);await page.locator('#study-admin-enter').click();await page.getByRole('button',{name:'打开匿名配置判断评分',exact:true}).click();await page.getByRole('heading',{name:'配置判断人工评分',exact:true}).waitFor();assert.equal(await page.locator('select').count(),18);await page.screenshot({path:path.join(dir,'管理端-匿名评分.png')});
+   await page.goto(base+'/three-arm-admin.html');await page.locator('#study-admin-token').fill(admin);await page.locator('#study-admin-enter').click();
+   await page.getByRole('button',{name:'查看介入与静默回放',exact:true}).click();await page.getByRole('heading',{name:'介入与静默回放',exact:true}).waitFor();await page.getByLabel('回放数据来源').selectOption('preview');await page.getByRole('button',{name:'读取所选版本',exact:true}).click();await page.getByRole('button',{name:'下载回放与人工标注文件',exact:true}).waitFor();await page.screenshot({path:path.join(dir,'管理端-决策回放.png')});await page.getByRole('button',{name:'返回管理',exact:true}).click();
+   await page.getByRole('button',{name:'打开匿名配置判断评分',exact:true}).click();await page.getByRole('heading',{name:'配置判断人工评分',exact:true}).waitFor();assert.equal(await page.locator('select').count(),18);await page.screenshot({path:path.join(dir,'管理端-匿名评分.png')});
   }finally{await browser.close();}
   assert.equal((await api('/api/study/judgment',null,'B')).data.status,'submitted');
   const rating=await api('/api/admin/three-arm/rating',{runId:ids.B,rater:'合成评分员',scores:Object.fromEntries(judgment.data.items.map(q=>[q.id,[2,1,2]]))},'',admin);assert.equal(rating.data.total,30);check('保持与迁移、配置判断草稿保护、无答案泄露、人工评分');

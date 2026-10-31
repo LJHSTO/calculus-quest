@@ -71,6 +71,7 @@
   // knows which types a knowledge point offers, so it is handed a resolver. Which
   // types the learner has already opened is tracked inside the coach.
   const proactiveCoach = Proactive?.createProactiveCoach?.({
+    onSuppressed(data){if(typeof trackLearningEvent==='function')trackLearningEvent('proactive_candidate_suppressed',data,false).catch(()=>{});},
     // Server owns the selected 60/180-second policy and rejection guards.
     // This local delay only coalesces duplicate UI candidates.
     cooldownMs: 1000,

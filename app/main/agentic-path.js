@@ -1400,7 +1400,7 @@ function agenticCompletionCta(unit) {
   if (!unit) return { label: "完成本节", disabled: false };
   if(globalThis.StudyEntry&&unit.chapterId==='V14-C1'){
     if(unit.type==='knowledge')return {label:(state.submittedQuizzes||[]).includes(unit.id+'-formative')?'继续下一节':'完成学习，进入三题检测',disabled:false};
-    if(unit.assessmentPhase==='formative'&&(state.submittedQuizzes||[]).includes(unit.id))return {label: /-K03-formative$/.test(unit.id)?'完成本部分，查看学习回顾':'下一节',disabled:false};
+    if(unit.assessmentPhase==='formative'&&(state.submittedQuizzes||[]).includes(unit.id))return {label: window.StudyStages?.reviewAfter(unit.id)?'完成本段，查看学习回顾':unit.id==='GH-02-K03-formative'?'进入独立后测':'下一节',disabled:false};
   }
   if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
     return { label: "返回测验", disabled: false };

@@ -68,7 +68,17 @@ const proactiveStudyConfig = proactivePolicy.configFromEnv();
 const researchControls = require("./lib/research-controls");
 const engineeringControlStore = researchControls.createStore({root,config:proactiveStudyConfig});
 const learnerPreferences = require('./lib/learner-preferences').createStore({db});
-const threeArmStudy = require('./lib/three-arm-study').createStore({db,preferences:learnerPreferences});
+const studyStages = require('./app/shared/study-stages');
+let threeArmRuntimeManifest;
+const threeArmStudy = require('./lib/three-arm-study').createStore({db,preferences:learnerPreferences,runtimeManifest:()=>{
+  if(!threeArmRuntimeManifest){
+    const route=JSON.parse(fs.readFileSync(path.join(root,'data/multi-scene-learning-route.json'),'utf8'));
+    const content=route.chapters.find(c=>c.id==='V14-C1').modules.flatMap(m=>m.knowledgePoints).flatMap(p=>p.resourceCandidates).map(r=>r.root&&r.file?'resources/'+r.root+'/'+r.file:r.path||r.src).filter(Boolean);
+    const files=['data/multi-scene-learning-route.json','assets/learning-runtime.json','assets/learning-runtime.js','assets/learning-runtime.css','app/shared/study-stages.js','app/shared/learner-preferences.js','lib/learner-preferences.js','lib/three-arm-study.js','lib/assessments/three-arm-design-v1.js','lib/support-history.js','lib/support-spec.js',...content];
+    threeArmRuntimeManifest={appVersion:process.env.APP_VERSION||'development',proactiveFingerprint:proactiveProtocolFingerprint,proactiveDefinition:proactiveProtocolDefinition,files:Object.fromEntries([...new Set(files)].map(f=>[f,protocolSourceDigest(f)]))};
+  }
+  return threeArmRuntimeManifest;
+}});
 const learnerDesign = require('./lib/pilot-study').LEARNER_DESIGN;
 function learnerEnrollment(user){const e=pilotStudy.latest(user);return e?.studyDesign===learnerDesign?e:null;}
 function ordinaryPreparation(user){
@@ -4614,6 +4624,10 @@ async function handleManagedProactiveIntervention({
     renderedDecision.authority={level:agentProfile.authorityLevel,autoExpanded:Boolean(receipt),
       receiptId:receipt?.id||"",permissionId:receipt?.permission_id||"",reversibleAction:"expand_hint_only"};
     evidence.authority=renderedDecision.authority;
+    renderedDecision.supportSpec=require('./lib/support-spec').create({id:decisionId,run:threeArmStudy.get(auth.participant.id),scope:policyScopeKey,sceneType,
+      profileRevision:engineeringControl?.revision,profile:agentProfile,content:renderedDecision,supportLevel:policyDecision.supportLevel,
+      expiresAt:policyDecision.expiresAt,source:'template',contentVersion:adapter?.version});
+    evidence.supportSpec=renderedDecision.supportSpec;
   }
 
   if (
@@ -4764,7 +4778,8 @@ async function handleManagedProactiveIntervention({
       research: {
         experimentId: proactiveStudyConfig.experimentId,
         condition: policyDecision.condition || "unassigned",
-        cohort: assignment?.cohort || proactiveStudyConfig.cohort || ""
+        cohort: assignment?.cohort || proactiveStudyConfig.cohort || "",
+        ...(threeArmStudy.get(auth.participant.id)?{runId:auth.participant.id,kind:threeArmStudy.get(auth.participant.id).mode,protocolFingerprint:threeArmStudy.get(auth.participant.id).protocolFingerprint}: {})
       },
       data: {
         decisionId,
@@ -5702,6 +5717,7 @@ async function handleApi(req, res, url) {
       if(!checkAdmin(req)){sendJson(res,403,{ok:false,message:'需要管理员身份'});return;}
       try{let data;
         if(req.method==='GET'&&url.pathname.endsWith('/export'))data=threeArmStudy.exportData();
+        else if(req.method==='GET'&&url.pathname.endsWith('/replay'))data=threeArmStudy.replay({mode:url.searchParams.get('mode')||'formal',fingerprint:url.searchParams.get('fingerprint')||undefined});
         else if(req.method==='GET'&&url.pathname.endsWith('/rating'))data=threeArmStudy.ratingCases();
         else if(req.method==='POST'&&url.pathname.endsWith('/rating'))data=threeArmStudy.rateJudgment(await readJsonBody(req));
         else if(req.method==='POST'&&url.pathname.endsWith('/baseline'))data=threeArmStudy.approveBaseline(await readJsonBody(req));
@@ -8967,10 +8983,10 @@ async function handleApi(req, res, url) {
       const phase = String(body.phase || "").trim();
       const studyRun=threeArmStudy.get(auth.participant.id);
       if(studyRun&&phase!=='pre'&&studyRun.pendingConfiguration){sendJson(res,409,{ok:false,code:'study_configuration_required',message:'请先保存本次回顾后的帮助设置，再继续独立检测。'});return;}
-      if(studyRun&&unitId.startsWith('GH-02')&&!(studyRun.reviewedModules||[]).includes('GH-01')){sendJson(res,409,{ok:false,code:'study_review_required',message:'请先完成函数部分的学习回顾，再继续极限部分。'});return;}
+      if(studyRun&&studyStages.reviews.some(s=>studyStages.crosses(s,unitId)&&!(studyRun.reviewedStages||[]).includes(s.id))){sendJson(res,409,{ok:false,code:'study_review_required',message:'请先完成上一段学习回顾，再继续下一段。'});return;}
       if(studyRun&&phase==='post'){
         const results=db.getQuizResultsByUser(auth.participant.id);
-        const pending=['GH-01','GH-02'].some(m=>![1,2,3].every(n=>results.filter(r=>r.unit_id===`${m}-K0${n}-formative`).length>=3)||!(studyRun.reviewedModules||[]).includes(m));
+        const pending=studyStages.stages.some(s=>!studyStages.completed(s,results))||studyStages.reviews.some(s=>!(studyRun.reviewedStages||[]).includes(s.id));
         if(pending){sendJson(res,409,{ok:false,code:'study_review_required',message:'请先完成六个知识点的三题检测，以及两次阶段学习回顾，再提交后测。'});return;}
       }
       const answers = Array.isArray(body.answers) ? body.answers.slice(0, 50) : [];

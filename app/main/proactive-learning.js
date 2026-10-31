@@ -153,6 +153,8 @@
     let activeSuggestion = null;
     let lastResolution = null;
     let suggestionSequence = 0;
+    const onSuppressed=typeof options.onSuppressed==='function'?options.onSuppressed:()=>{};
+    const suppressionTimes=new Map();
 
     function enterUnit(event, at) {
       currentUnit = unitFromEvent(event);
@@ -202,7 +204,12 @@
     }
 
     function createSuggestion(kind, at, content = {}, options = {}) {
-      if (!canSuggest(at, options)) return null;
+      if (!canSuggest(at, options)) {
+        const reason=!currentUnit?.supported?'unsupported_unit':activeSuggestion?'active_candidate_exists':'client_cooldown';
+        const key=`${currentUnit?.unitId}:${kind}:${reason}`;
+        if(at-(suppressionTimes.get(key)||0)>=30000){suppressionTimes.set(key,at);onSuppressed({kind,reason,unitId:currentUnit?.unitId,sceneType:currentUnit?.sceneType,at:new Date(at).toISOString(),source:'client_candidate_filter'});}
+        return null;
+      }
       activeSuggestion = Object.freeze({
         id: `${currentUnit.unitId}:${kind}:${++suggestionSequence}`,
         kind,

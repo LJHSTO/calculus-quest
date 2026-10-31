@@ -4,7 +4,7 @@
   const strategyNames = {concept_hint:"概念线索",counterexample:"反例辨析",self_check:"把握与自检",plan_monitor:"计划与监控",value_connection:"个人价值联系",progress_feedback:"基于证据的信心支持",cost_reduction:"降低感知负担",acknowledge_reframe:"承认困难与重新理解失败",calm_choice:"继续或暂停的选择",study_plan:"短时学习计划",resource_navigation:"资源与求助路径"};
   const needs = {concept:"概念或步骤没弄懂",monitoring:"不知道自己是否理解",clarify_concept:"想解释其中一个概念",reflection:"想整理刚才的探索发现",value:"不清楚学这个有什么用",confidence:"担心自己学不会",cost:"现在觉得投入太多",frustration:"有些挫败或紧张",planning:"不知道接下来怎么安排",uncertain:"暂时说不清",none:"暂时不需要帮助"};
   const statuses = {queued:"等待合适时机",offered:"已提供支持",engaged:"由你继续尝试",awaiting_check:"独立检查中",postponed:"稍后再说",closed:"本轮已结束",expired:"需要已过期，请重新确认"};
-  let owner="", snapshot=null, busy=false, error="", lastPoll=0, exposureTimer=null, exposureKey="", manualScope="";
+  let owner="", snapshot=null, busy=false, error="", lastPoll=0, exposureMonitor=null, manualScope="";
   const drafts=new Map(), sentExposure=new Set(), opened=new Map(), presentedInquiries=new Set();
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
   statuses.awaiting_confirmation="系统已主动询问，等待学生确认";
@@ -15,7 +15,7 @@
   function draft(key){if(!drafts.has(key))drafts.set(key,{need:"",note:"",ratings:{},result:"",perceivedGoal:null,requestMore:false});return drafts.get(key);}
   function sync(next){
     const identity=`${next.ownerKey}:${next.generation}`;
-    if(identity!==owner){owner=identity;drafts.clear();sentExposure.clear();opened.clear();presentedInquiries.clear();busy=false;error="";lastPoll=0;clearTimeout(exposureTimer);exposureTimer=null;exposureKey="";}
+    if(identity!==owner){owner=identity;drafts.clear();sentExposure.clear();opened.clear();presentedInquiries.clear();busy=false;error="";lastPoll=0;exposureMonitor?.clear({forget:true});}
     if(snapshot?.scopeKey!==next.scopeKey||snapshot?.ownerKey!==next.ownerKey||next.locked||next.check)manualScope="";
     snapshot=next;
   }
@@ -127,22 +127,21 @@
     }
     return root;
   }
-  function expose(c){
+  function expose(c,receipt={visibleDurationMs:1000,fraction:.5}){
     const key=c&&`${c.id}:${c.rounds}`;
     const inquiry=c?.status==="awaiting_confirmation";
     if(!c || (inquiry?c.inquiry?.exposure:c.exposure) || sentExposure.has(key)||busy||!snapshot?.active||snapshot.locked)return;
     sentExposure.add(key);
-    global.KnowledgeAssistant.supportCycleRequest({action:inquiry?"inquiry_exposed":"exposed",id:c.id,round:c.rounds,visibleMs:1000,visibleFraction:.5}).catch(()=>sentExposure.delete(key));
+    global.KnowledgeAssistant.supportCycleRequest({action:inquiry?"inquiry_exposed":"exposed",id:c.id,round:c.rounds,visibleMs:Math.floor(receipt.visibleDurationMs),visibleFraction:Math.min(1,receipt.fraction)}).catch(()=>{sentExposure.delete(key);exposureMonitor?.forget(key);});
   }
   function observe(){
-    const stop=()=>{clearTimeout(exposureTimer);exposureTimer=null;exposureKey="";};
+    if(!exposureMonitor)exposureMonitor=global.ProactiveExposure?.createMonitor({onQualified:receipt=>{const c=snapshot?.supportCycle;if(c&&receipt.key===`${c.id}:${c.rounds}`)expose(c,receipt);}});
+    if(!exposureMonitor)return;
+    const stop=()=>exposureMonitor.clear();
     const c=snapshot?.supportCycle,inquiry=c?.status==="awaiting_confirmation";if(!c||(!inquiry&&!c.content)||(inquiry?c.inquiry.exposure:c.exposure)||!['awaiting_confirmation','offered','engaged'].includes(c.status)||document.hidden){stop();return;}
     const n=[...document.querySelectorAll('[data-support-body]')].find(n=>n.dataset.supportBody===c.id&&!n.closest("details:not([open])")&&n.getClientRects().length);
     if(!n){stop();return;}
-    const visible=()=>{const r=n.getBoundingClientRect();let left=Math.max(r.left,0),top=Math.max(r.top,0),right=Math.min(r.right,innerWidth),bottom=Math.min(r.bottom,innerHeight);for(let p=n.parentElement;p&&p!==document.body&&p!==document.documentElement;p=p.parentElement){const style=getComputedStyle(p),b=p.getBoundingClientRect();if(/auto|scroll|hidden|clip/.test(style.overflowX)){left=Math.max(left,b.left);right=Math.min(right,b.right);}if(/auto|scroll|hidden|clip/.test(style.overflowY)){top=Math.max(top,b.top);bottom=Math.min(bottom,b.bottom);}}return n.isConnected&&!n.closest("details:not([open])")&&n.getClientRects().length&&r.width*r.height>0&&Math.max(0,right-left)*Math.max(0,bottom-top)/(r.width*r.height)>=.5;};
-    if(!visible()){stop();return;}
-    const key=`${c.id}:${c.rounds}`;if(exposureTimer&&exposureKey===key)return;
-    stop();exposureKey=key;exposureTimer=setTimeout(()=>{exposureTimer=null;if(snapshot?.supportCycle?.id===c.id&&snapshot.supportCycle.rounds===c.rounds&&!document.hidden&&visible())expose(c);},1000);
+    exposureMonitor.watch(n,{key:`${c.id}:${c.rounds}`,valid:()=>!busy&&snapshot?.active&&!snapshot.locked&&!snapshot.check&&snapshot.supportCycle?.id===c.id&&snapshot.supportCycle.rounds===c.rounds&&!n.closest('details:not([open])')});
   }
   global.SupportCycleUI=Object.freeze({render,sync,active,deferInquiry,goalNames,strategyNames,needs,statuses,expose,
     manualOpen:next=>manualScope===next.scopeKey,

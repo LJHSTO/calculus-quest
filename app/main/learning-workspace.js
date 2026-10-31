@@ -124,6 +124,21 @@
   let pendingSnapshot = null;
   let announcedHelp="";
   let fullscreenSupportNotice=null;
+  function updateSupportLocator() {
+    const visible=[...document.querySelectorAll('.support-inquiry,.support-goal-message,.knowledge-proactive-inline-offer,.knowledge-proactive-verification')].some(node=>{
+      if(node.closest('[hidden],[inert],[aria-hidden="true"],details:not([open])'))return false;
+      if(node.checkVisibility&&!node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}))return false;
+      const full=document.fullscreenElement;
+      if(full&&!full.contains(node))return false;
+      const rect=node.getBoundingClientRect();
+      if(rect.width<=0||rect.height<=0)return false;
+      const width=Math.max(0,Math.min(innerWidth,rect.right)-Math.max(0,rect.left));
+      const height=Math.max(0,Math.min(innerHeight,rect.bottom)-Math.max(0,rect.top));
+      return width*height/(rect.width*rect.height)>=.5;
+    });
+    supportNotice.hidden=!supportNotice.textContent||visible;
+    if(visible&&fullscreenSupportNotice)fullscreenSupportNotice.remove();
+  }
   function syncSupportNotice(next=global.KnowledgeAssistant?.designSpaceSnapshot?.()) {
     pendingSnapshot=next;
     const eligible=next?.signedIn&&next.active&&!next.locked&&(next.unitType==='knowledge'||next.unitType==='quiz'&&next.quizSubmitted)&&next.taskReady!==false;
@@ -146,6 +161,7 @@
       announcedHelp=helpId;
       if(next.view.placement==='sidebar'&&!compactWorkspace()){setToolsCollapsed(false,false,false);selectTab('chat');}
     }
+    requestAnimationFrame(updateSupportLocator);
     updateToolsIndicator();
   }
   supportNotice.addEventListener('click',async()=>{
@@ -162,6 +178,7 @@
     if(target){target.tabIndex=-1;target.scrollIntoView({block:'nearest'});target.focus({preventScroll:true});}
   });
   document.addEventListener('fullscreenchange',()=>syncSupportNotice());
+  global.addEventListener('scroll',()=>requestAnimationFrame(updateSupportLocator),true);
 
   function updateToolsIndicator() {
     const pending = !supportNotice.hidden || global.KnowledgeAssistant?.workspaceSnapshot?.()?.pendingSupport === true;
@@ -693,6 +710,7 @@
       fitClassroomCanvas();
       syncPlayback();
       syncFocusButton();
+      updateSupportLocator();
     });
   }
   new ResizeObserver(scheduleClassroomLayout).observe($("#lesson-player"));

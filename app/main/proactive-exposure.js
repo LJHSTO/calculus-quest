@@ -13,6 +13,13 @@
 
     function visibleFraction(element) {
       if (!element.isConnected || document.hidden || element.closest('[hidden], [inert], [aria-hidden="true"]')) return 0;
+      // Native modal dialogs make the rest of the page inert without adding
+      // an inert attribute. Fullscreen also hides elements outside its tree.
+      const modals = document.querySelectorAll('dialog:modal');
+      const modal = modals[modals.length - 1];
+      if (modal && !modal.contains(element)) return 0;
+      if (document.fullscreenElement && !document.fullscreenElement.contains(element)
+        && !(modal && modal.contains(element))) return 0;
       let rect = element.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return 0;
       const area = rect.width * rect.height;
@@ -114,6 +121,7 @@
     global.addEventListener("scroll", check, true);
     global.addEventListener("resize", check);
     return Object.freeze({ watch, unwatch, clear, refresh: check,
+      forget(key) {qualifiedKeys.delete(key);for(const entry of targets.values())if(entry.key===key)reset(entry);},
       dispose() {
         clear({ forget: true }); disposed = true;
         observer.disconnect(); mutation.disconnect();

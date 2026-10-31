@@ -20,7 +20,7 @@
   async function openReview(){
     modal('学习回顾').append(el('p','正在汇总本次学习…'));await show();
     const data=await request('review');setRun(data.run);const d=modal(run.linkedFeedback?'学习回顾与配置关联':'学习回顾');
-    d.append(el('p',data.pendingModule==='GH-01'?'函数部分已完成。先看看三个知识点的检测结果，再继续学习极限与连续。':data.pendingModule==='GH-02'?'六个知识点已学完。回顾这部分的检测结果，然后进入后测。':'这里汇总你已完成的独立检测。'));
+    d.append(el('p',data.pendingStage?`“${data.pendingStage.title}”两个知识点已完成。回顾检测结果并决定下一段怎样接受帮助，设置会用于接下来的两个知识点。`:'这里汇总你已完成的独立检测。'));
     d.append(el('p',`已完成 ${data.ordinary.answered} 题，答对 ${data.ordinary.correct} 题${data.ordinary.scored<data.ordinary.answered?`，另有 ${data.ordinary.answered-data.ordinary.scored} 题等待评分`:''}。`));
     const results=el('div');results.className='study-review-results';
     for(const id of [...new Set(data.results.map(r=>r.unitId))]){const unit=typeof getUnit==='function'?getUnit(id):null,rows=data.results.filter(r=>r.unitId===id);const p=el('p',`${(unit?.label||'知识点检测').replace(/^检测[：:]/,'')}：${rows.filter(r=>r.correct===true).length} / ${rows.length} 题正确`);results.append(p);}
@@ -31,7 +31,7 @@
         const card=el('article');card.className='study-linked-card';card.dataset.configurationRevision=item.revision;
         card.append(el('h4',`第 ${item.revision} 版配置`));
         const settings=el('details'),list=el('ul');settings.append(el('summary','查看当时的六项帮助设置'));for(const [id,value]of item.behavior)list.append(el('li',`${value}`));settings.append(list);card.append(settings);
-        card.append(el('p',`帮助经历：系统发起 ${item.offered} 轮询问或帮助，实际可见的帮助 ${item.visible} 轮，确认或接受 ${item.accepted} 轮。`));
+        card.append(el('p',`帮助经历：${item.supportCycles} 次帮助过程，共提供 ${item.helpRounds} 轮内容，其中实际看到 ${item.visible} 轮；确认或接受了 ${item.accepted} 次帮助。`));
         for(const experience of (item.experiences||[]).slice(-5)){const unit=typeof getUnit==='function'?getUnit(experience.scope):null;card.append(el('small',`${new Date(experience.at).toLocaleTimeString('zh-CN',{hour12:false})} · ${unit?.label||'本知识点'} / ${sceneNames[experience.sceneType]||'讲解页'}：${experience.seen?'已看到帮助内容':'询问或提示未展开为可见帮助内容'}。`));}
         const scored=item.independentResults.filter(r=>r.correct!==null);
         card.append(el('p',scored.length?`这些帮助之后、下次修改设置之前的独立检测：${scored.length} 道已判定，${scored.filter(r=>r.correct).length} 道正确。`:'还没有可以对应的独立检测结果。'));
@@ -40,9 +40,9 @@
       linked.append(el('p','下一步可以保持设置，也可以只改一项，并在下一次独立检测后再判断是否适合自己。'));d.append(linked);
     }
     const actions=el('footer');
-    if(data.pendingModule){
-      seenReviews.add(run.id+data.pendingModule);
-      const answers={module:data.pendingModule};
+    if(data.pendingStage){
+      seenReviews.add(run.id+data.pendingStage.id);
+      const answers={stage:data.pendingStage.id};
       d.append(el('h3','这次回顾对你有帮助吗？'),el('p','1＝完全不同意，2＝比较不同意，3＝一般，4＝比较同意，5＝完全同意。'));
       rating(d,'review_understanding','这次回顾帮助我看清了自己的学习情况。',answers);
       rating(d,'review_action','这次回顾帮助我决定接下来怎样学习。',answers);
@@ -76,7 +76,7 @@
     if(global.StudyEntry.arm==='assigned'&&!run){await openEnrollment();return;}
     const data=await request('state');setRun(data.run);const d=modal('本次学习与后续任务');
     const p=data.preparation;
-    d.append(el('p',p.stage==='ready'?'学习中：每个知识点有三道独立检测，学完两个部分后分别回顾，最后完成后测与体验问卷。':'准备流程：学习前问卷 → 独立前测 → 确认六维帮助方式 → 开始学习。'));
+    d.append(el('p',p.stage==='ready'?'学习分为三段，每段两个知识点。前两段结束后回顾，接着用决定好的设置学习下一段；第三段完成后进入后测与体验问卷。':'准备流程：学习前问卷 → 独立前测 → 准备帮助方式 → 开始学习。'));
     if(p.stage!=='ready')d.append(button('继续准备',async()=>{dialog.close();await global.LearnerSetup.resumePreparation();}));
     else d.append(button('查看学习回顾',openReview));
     if(!run.finalSurveyAt&&data.posttestComplete)d.append(button('填写学习体验问卷',()=>openSurvey('final')));else if(run.finalSurveyAt)d.append(el('p','学习体验已保存。'));
@@ -124,7 +124,7 @@
       }
     }catch(e){if(e.status===409&&global.StudyEntry.arm==='assigned'&&!run&&!dialog?.open&&!attempted.has('enroll')){attempted.add('enroll');openEnrollment();}}finally{loading=false;}
   }
-  function allowsUnit(unit){if(!run||!unit?.id)return true;const crosses=m=>(m==='GH-01'&&unit.id.startsWith('GH-02'))||unit.assessmentPhase==='post';if(run.pendingConfiguration&&crosses(run.pendingConfiguration.module)){pendingUnit=unit.id;global.LearnerSetup.open();return false;}const required=['GH-01','GH-02'].find(m=>state.submittedQuizzes?.includes(m+'-K03-formative')&&!(run.reviewedModules||[]).includes(m)&&crosses(m));if(!required)return true;pendingUnit=unit.id;if(!dialog?.open)openReview().catch(()=>{});return false;}
+  function allowsUnit(unit){if(!run||!unit?.id)return true;const stages=global.StudyStages,pending=stages.reviews.find(s=>s.id===run.pendingConfiguration?.stage);if(pending&&stages.crosses(pending,unit.id)){pendingUnit=unit.id;global.LearnerSetup.open();return false;}const required=stages.reviews.find(s=>s.points.every(id=>state.submittedQuizzes?.includes(id+'-formative'))&&!(run.reviewedStages||[]).includes(s.id)&&stages.crosses(s,unit.id));if(!required)return true;pendingUnit=unit.id;if(!dialog?.open)openReview().catch(()=>{});return false;}
   function resumeAfterConfiguration(){if(!pendingUnit||run?.pendingConfiguration)return;const target=pendingUnit;pendingUnit=null;selectUnit(target);}
   global.ThreeArmStudyUI=Object.freeze({setRun,openReview,openSurvey,openTasks,openJudgment,allowsUnit,resumeAfterConfiguration,request,get run(){return run;},get judgmentActive(){return judgmentActive;}});
   global.addEventListener('cq:proactive-state',e=>{snapshot=e.detail;if(snapshot.ownerKey!==lastOwner){const changed=Boolean(lastOwner);lastOwner=snapshot.ownerKey;if(changed){dialog?.close();attempted.clear();seenReviews.clear();for(const k of Object.keys(surveyDrafts))delete surveyDrafts[k];run=null;judgmentActive=false;pendingUnit=null;}}install();tick();});

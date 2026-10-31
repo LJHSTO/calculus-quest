@@ -224,6 +224,7 @@ async function fixtureMain() {
       ["滚出可见区域后重新计时", () => { document.querySelector("#clip").scrollTop = 200; }, () => { document.querySelector("#clip").scrollTop = 0; }],
       ["父容器折叠后重新计时", () => { document.querySelector("#clip").hidden = true; }, () => { document.querySelector("#clip").hidden = false; }],
       ["父容器透明后重新计时", () => { document.querySelector("#clip").style.opacity = "0"; }, () => { document.querySelector("#clip").style.opacity = "1"; }],
+      ["原生弹窗覆盖后重新计时", () => { const dialog=document.createElement('dialog');dialog.id='exposure-blocker';dialog.textContent='学习回顾';document.body.append(dialog);dialog.showModal(); }, () => { document.querySelector('#exposure-blocker').close();document.querySelector('#exposure-blocker').remove(); }],
       ["隐藏页恢复后重新计时", () => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); },
         () => { delete document.hidden; document.dispatchEvent(new Event("visibilitychange")); }]
     ]) {

@@ -48,6 +48,7 @@ async function main(){
    assert.match(await frame.locator('.learning-note').innerText(),/进入三题检测/);
    await page.locator('[data-classroom-action=fullscreen]').click();await page.waitForFunction(()=>Boolean(document.fullscreenElement));
    assert.equal(await page.locator('.player-top').isVisible(),false,'全屏隐藏头部');
+   await shot('全屏课件就绪');
    await frame.locator('body').evaluate(n=>n.dataset.uxIdentity='same-iframe');
    const t=Date.now();for(let i=0;i<2;i++){await frame.getByRole('button',{name:'发车检查',exact:true}).click();await page.waitForTimeout(350);}
    await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='awaiting_confirmation');timings.push({arm,event:'两次游戏错误后出现询问',ms:Date.now()-t});
@@ -62,6 +63,7 @@ async function main(){
     await support.getByRole('button',{name:'放大课件',exact:true}).click();assert.equal(await frame.locator('body').getAttribute('data-ux-identity'),'same-iframe');
    }
    await shot('全屏老师询问');await support.getByRole('button',{name:'请老师讲一下',exact:true}).click();await page.waitForFunction(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle?.status==='offered');
+   await page.waitForFunction(()=>document.querySelector('#workspace-support-notice').hidden,'老师卡片可见时隐藏重复定位提示');
    if(remote){const audit=await page.evaluate(()=>KnowledgeAssistant.designSpaceSnapshot().supportCycle.content.audit);assert.equal(audit.fallback,false,'公网老师必须实际调用模型成功');assert.equal(audit.provider,'openai-compatible');timings.push({arm,event:'官方模型帮助',audit});}
    await page.waitForTimeout(1600);
    if(arm==='B'){
@@ -89,7 +91,7 @@ async function main(){
    pass(arm+'组真实错误及时询问、一键帮助、全屏保留、课件状态保留及窄屏适配');
    if(process.env.STUDENT_UX_HELP_ONLY==='1'){await context.close();continue;}
    await page.reload();await page.waitForFunction(()=>ThreeArmStudyUI.run?.arm===new URLSearchParams(location.search).get('study'));await page.waitForTimeout(5500);assert.equal(await page.locator('#three-arm-dialog[open]').count(),0,'刷新不重复体验询问');
-   for(const module of course.modules){
+   for(const module of require('../app/shared/study-stages').stages.map(s=>({...s,knowledgePoints:s.points.map(id=>course.modules.flatMap(m=>m.knowledgePoints).find(p=>p.id===id))}))){
     for(const point of module.knowledgePoints){
      await page.waitForFunction(id=>currentUnitId===id,point.id);
      await page.locator('[data-workspace-canvas=interactive]').click();await page.locator('[data-knowledge-scene=game]').click();
@@ -103,10 +105,11 @@ async function main(){
      }
      await next('完成学习，进入三题检测');await answer(point.id+'-formative',point.formativeQuiz.questions);
      assert.equal(await page.locator('#workspace-coach-toggle').isVisible(),false,'无旧回看路径门');
-     if(!point.id.endsWith('K03'))await next('下一节');
+     if(point.id!==module.points.at(-1))await next('下一节');
     }
+    if(!module.review){await next('进入独立后测');continue;}
     await page.waitForTimeout(5500);assert.equal(await page.locator('#three-arm-dialog[open]').count(),0,'阶段回顾不自行弹出');
-    await next('完成本部分，查看学习回顾');await page.locator('#three-arm-dialog[open]').waitFor();await page.getByText('这次回顾对你有帮助吗？',{exact:true}).waitFor();
+    await next('完成本段，查看学习回顾');await page.locator('#three-arm-dialog[open]').waitFor();await page.getByText('这次回顾对你有帮助吗？',{exact:true}).waitFor();
     assert.equal(await page.locator('[data-linked-feedback]').count(),arm==='B'?1:0);await shot(module.id+'阶段回顾');
     for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="4"]').check();
     if(arm!=='A')await page.locator('input[name=review-decision][value=change]').check();
@@ -122,7 +125,7 @@ async function main(){
    await context.close();
   }
   assert.deepEqual(errors,[]);fs.writeFileSync(path.join(dir,'验收结果.json'),JSON.stringify({passed:true,helpOnly:process.env.STUDENT_UX_HELP_ONLY==='1',checks,errors,timings},null,2));
- }catch(e){if(page&&!page.isClosed()){await shot('失败现场').catch(()=>{});fs.writeFileSync(path.join(dir,'失败状态.json'),JSON.stringify(await page.evaluate(()=>({unit:typeof currentUnitId==='undefined'?null:currentUnitId,study:window.ThreeArmStudyUI?.run,snapshot:window.KnowledgeAssistant?.designSpaceSnapshot?.(),body:document.body.innerText.slice(-10000)})).catch(()=>({})),null,2));}throw e;}
+ }catch(e){console.error('页面错误：'+JSON.stringify(errors));if(page&&!page.isClosed()){await shot('失败现场').catch(()=>{});fs.writeFileSync(path.join(dir,'失败状态.json'),JSON.stringify({errors,...await page.evaluate(()=>({unit:typeof currentUnitId==='undefined'?null:currentUnitId,study:window.ThreeArmStudyUI?.run,snapshot:window.KnowledgeAssistant?.designSpaceSnapshot?.(),body:document.body.innerText.slice(-10000)})).catch(()=>({}))},null,2));}throw e;}
  finally{await browser?.close();if(server.exitCode===null){const closed=new Promise(r=>server.once('exit',r));server.kill();await closed;}fs.closeSync(log);console.log('浏览器证据：'+dir);}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});
