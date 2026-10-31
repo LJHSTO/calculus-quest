@@ -8,7 +8,29 @@
   const sceneNames={simulation:'动手实验',game:'误解挑战',mindMap:'关系图',visualization3d:'空间视角',slide:'讲解页'};
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
   function button(text,fn){const b=el('button',text);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){let p=dialog?.querySelector('[role=status]');if(!p){p=el('p');p.setAttribute('role','status');dialog?.append(p);}if(p)p.textContent=e.message;}finally{b.disabled=false;}};return b;}
-  async function request(path,body){const token=state.authToken;const r=await fetch('api/study/'+path,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const p=await r.json();if(token!==state.authToken)throw new Error('账号已变化，请重新打开');if(!r.ok)throw Object.assign(new Error(p.message||'请求未完成'),{status:r.status});return p.data;}
+  async function request(path,body){
+    const token=state.authToken,payload=body?JSON.stringify(body):null;
+    // These writes are keyed records on the server. Repeating an identical
+    // save after a lost response cannot add a second survey or review.
+    const retrySafe=!body||['survey','review','enroll'].includes(path);
+    for(let attempt=0;attempt<3;attempt++){
+      if(token!==state.authToken)throw new Error('账号已变化，请重新打开');
+      const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+      try{
+        const r=await fetch('api/study/'+path,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:payload}:{}),signal:controller.signal});
+        const raw=await r.text();let p;try{p=JSON.parse(raw);}catch{throw Object.assign(new Error('连接暂时中断，页面中的填写内容仍保留。请重试。'),{status:r.status,retryable:true});}
+        if(token!==state.authToken)throw new Error('账号已变化，请重新打开');
+        if(!r.ok||p?.ok!==true)throw Object.assign(new Error(p?.message||'请求未完成，请重试。'),{status:r.status,retryable:[408,429,502,503,504].includes(r.status)});
+        return p.data;
+      }catch(error){
+        if(token!==state.authToken)throw new Error('账号已变化，请重新打开');
+        const transient=error.retryable||['TypeError','AbortError'].includes(error.name);
+        if(!transient)throw error;
+        if(!retrySafe||attempt===2)throw Object.assign(new Error('连接暂时中断，页面中的填写内容仍保留。请重试。'),{status:error.status||0});
+      }finally{clearTimeout(timeout);}
+      await new Promise(resolve=>setTimeout(resolve,500*(attempt+1)));
+    }
+  }
   function modal(title){if(!dialog){dialog=el('dialog');dialog.id='three-arm-dialog';document.body.append(dialog);}dialog.oncancel=null;dialog.onclose=null;dialog.replaceChildren(el('h2',title));dialog.setAttribute('aria-label',title);return dialog;}
   async function show(){const host=document.fullscreenElement||document.body;if(dialog.parentElement!==host)host.append(dialog);if(!dialog.open)dialog.showModal();dialog.scrollTop=0;}
   function setRun(value){run=value;judgmentActive=Boolean(value?.activeJudgment);const label=document.getElementById('three-arm-entry-label');if(label&&run){const text=run.mode==='preview'?`${run.arm}组 · ${labels[run.arm]} · 体验`:'本次学习';if(label.textContent!==text)label.textContent=text;}}
