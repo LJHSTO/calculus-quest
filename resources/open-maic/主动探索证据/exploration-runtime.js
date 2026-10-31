@@ -30,14 +30,14 @@
   `;
   document.head.append(style);
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
-  const title=el('summary',t.title+' · 可选'),intro=el('p',t.context),prompt=el('p',t.prompt),form=el('form'),choices=el('div'),result=el('p');
+  const title=el('summary','课件练习'),intro=el('p',t.context),prompt=el('p',t.prompt),form=el('form'),choices=el('div'),result=el('p');
   result.className='concept-result';result.hidden=true;result.setAttribute('role','status');
   let selection=null,attempts=0,feedbackSeen=false;const submitted=new Set();
   t.options.forEach((text,index)=>{const label=el('label'),input=el('input');input.type='radio';input.name='concept-choice';input.value=String(index);input.onchange=()=>{selection=index;submit.disabled=submitted.has(index);};label.append(input,el('span',text));choices.append(label);});
   const submit=el('button',scene==='mindMap'?'核对这条连接':scene==='visualization3d'?'核对我的观察':'核对我的预测');submit.type='submit';
   const explanation=el('details');explanation.hidden=true;explanation.append(el('summary','查看依据'),el('p',t.explanation));
   const collapse=el('button','收起，继续探索');collapse.type='button';collapse.onclick=()=>{details.open=false;title.focus();};
-  form.append(choices,submit);details.append(title,el('small','自由探索后，可以在这里核对一个想法；不影响继续学习。'),intro,prompt,form,result,explanation,collapse);host.append(details);
+  form.append(choices,submit);details.append(title,intro,prompt,form,result,explanation,collapse);host.append(details);
   const emit=(event,data)=>window.OpenMaicLearningEvidence?.emit(event,{...data,task_version:M.version,knowledge_point_id:point,scene_type:scene,evidence_scope:'concept_exploration_process',independent:false});
   details.addEventListener('toggle',()=>emit('task_progress',{stage:details.open?'concept_opened':'concept_closed',completed:false}));
   explanation.addEventListener('toggle',()=>{if(explanation.open){feedbackSeen=true;window.OpenMaicLearningEvidence?.recordHint({stage:'concept_explanation',task_version:M.version,knowledge_point_id:point,scene_type:scene,evidence_scope:'concept_exploration_process',independent:false});}});

@@ -449,8 +449,8 @@
             practiceFailures.set(key,recent);
             if(recent.length>=2)return createSuggestion('task_difficulty',at,{
               attemptId:id,sourceEventType:eventType,contextMode:'unit',
-              title:'核对当前任务困难',body:'根据已记录的尝试，在完成这一步后判断是否询问。'
-            });
+              title:'老师可以帮你看这一步',body:'连续两次尝试尚未成功，请服务端核对当前帮助设置。'
+            },{bypassCooldown:true});
           }
           return null;
         }

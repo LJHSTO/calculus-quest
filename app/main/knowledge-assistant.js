@@ -1975,6 +1975,7 @@ const proactiveJustificationDrafts = new Map();
 
   function proactiveJustificationRequired(suggestion) {
     if (!suggestion) return false;
+    if(global.StudyEntry)return false;
     return PROACTIVE_JUSTIFICATION_ACTIONS.has(String(suggestion.action || ""));
   }
 
@@ -4057,14 +4058,14 @@ const proactiveJustificationDrafts = new Map();
     article.dataset.proactivePromptId = prompt?.id || "";
     const heading = document.createElement("div");
     const label = document.createElement("strong");
-    label.textContent = "知点想先了解";
+    label.textContent = "老师带你看这一步";
     const badge = document.createElement("small");
-    badge.textContent = "等你回答";
+    badge.textContent = "学习帮助";
     heading.append(label, badge);
     const body = document.createElement("p");
     setQuestionMathContent(body, prompt?.content || "");
     article.append(heading, body);
-    if (prompt?.contextSummary) {
+    if (prompt?.contextSummary && !global.StudyEntry) {
       const evidence = document.createElement("div");
       evidence.className = "knowledge-proactive-evidence";
       evidence.setAttribute("aria-label", "本次复盘依据");
@@ -4102,7 +4103,7 @@ const proactiveJustificationDrafts = new Map();
     if (options.dismissible) {
       const footer = document.createElement("footer");
       const hint = document.createElement("span");
-      hint.textContent = "直接在下方写下你的想法";
+      hint.textContent = "可以回到课件试一试，也可以继续提问。";
       const dismiss = document.createElement("button");
       dismiss.type = "button";
       dismiss.textContent = "改为自由提问";
@@ -4154,11 +4155,11 @@ const proactiveJustificationDrafts = new Map();
     const heading = document.createElement("div");
     const label = document.createElement("strong");
     label.textContent = {
-      L1: "知点建议先做最小澄清",
-      L2: "知点建议只加一层线索",
-      L3: "知点建议拆成两个子目标",
-      L4: "知点建议只推进下一步",
-      L5: "知点建议接着完成半成品"
+      L1: "老师帮你理清思路",
+      L2: "老师给你一个提示",
+      L3: "老师带你分步思考",
+      L4: "老师带你做下一步",
+      L5: "老师给你一个例子"
     }[suggestion.supportLevel] || "知点建议";
     const badge = document.createElement("small");
     badge.textContent = suggestion.supportLevel || "可选";

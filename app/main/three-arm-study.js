@@ -10,30 +10,32 @@
   function button(text,fn){const b=el('button',text);b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}catch(e){let p=dialog?.querySelector('[role=status]');if(!p){p=el('p');p.setAttribute('role','status');dialog?.append(p);}if(p)p.textContent=e.message;}finally{b.disabled=false;}};return b;}
   async function request(path,body){const token=state.authToken;const r=await fetch('api/study/'+path,{method:body?'POST':'GET',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const p=await r.json();if(token!==state.authToken)throw new Error('账号已变化，请重新打开');if(!r.ok)throw Object.assign(new Error(p.message||'请求未完成'),{status:r.status});return p.data;}
   function modal(title){if(!dialog){dialog=el('dialog');dialog.id='three-arm-dialog';document.body.append(dialog);}dialog.oncancel=null;dialog.onclose=null;dialog.replaceChildren(el('h2',title));dialog.setAttribute('aria-label',title);return dialog;}
-  async function show(){if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});if(!dialog.open)dialog.showModal();dialog.scrollTop=0;}
-  function setRun(value){run=value;judgmentActive=Boolean(value?.activeJudgment);const label=document.getElementById('three-arm-entry-label');if(label&&run)label.textContent=run.mode==='preview'?`${run.arm}组 · ${labels[run.arm]} · 体验`:'本次学习';}
+  async function show(){const host=document.fullscreenElement||document.body;if(dialog.parentElement!==host)host.append(dialog);if(!dialog.open)dialog.showModal();dialog.scrollTop=0;}
+  function setRun(value){run=value;judgmentActive=Boolean(value?.activeJudgment);const label=document.getElementById('three-arm-entry-label');if(label&&run){const text=run.mode==='preview'?`${run.arm}组 · ${labels[run.arm]} · 体验`:'本次学习';if(label.textContent!==text)label.textContent=text;}}
   function install(){
     const host=document.querySelector('.player-top .player-actions');if(!host||document.getElementById('three-arm-review'))return;
     const label=el('span');label.id='three-arm-entry-label';label.className='three-arm-entry-label';
-    const review=button('学习回顾',openReview);review.id='three-arm-review';const tasks=button('本次任务',openTasks);tasks.id='three-arm-tasks';host.prepend(label,review,tasks);setRun(run);
+    const review=button('学习回顾',()=>openReview());review.id='three-arm-review';host.prepend(label,review);setRun(run);
   }
   async function openReview(){
+    modal('学习回顾').append(el('p','正在汇总本次学习…'));await show();
     const data=await request('review');setRun(data.run);const d=modal(run.linkedFeedback?'学习回顾与配置关联':'学习回顾');
-    d.append(el('p',`本轮已提交 ${data.ordinary.answered} 道题，其中已判定 ${data.ordinary.scored} 道、答对 ${data.ordinary.correct} 道。待评分的题不算答错。`));
+    d.append(el('p',data.pendingModule==='GH-01'?'函数部分已完成。先看看三个知识点的检测结果，再继续学习极限与连续。':data.pendingModule==='GH-02'?'六个知识点已学完。回顾这部分的检测结果，然后进入后测。':'这里汇总你已完成的独立检测。'));
+    d.append(el('p',`已完成 ${data.ordinary.answered} 题，答对 ${data.ordinary.correct} 题${data.ordinary.scored<data.ordinary.answered?`，另有 ${data.ordinary.answered-data.ordinary.scored} 题等待评分`:''}。`));
     const results=el('div');results.className='study-review-results';
-    for(const r of data.results){const unit=typeof getUnit==='function'?getUnit(r.unitId):null,position=unit?.scene?.content?.questions?.findIndex(q=>q.id===r.questionId);const p=el('p',`${unit?.label||(r.phase==='post'?'后测':'知识点检测')} · 第 ${position>=0?position+1:data.results.indexOf(r)+1} 题：${r.correct===null?'待评分':r.correct?'正确':'还需巩固'}`);results.append(p);}
+    for(const id of [...new Set(data.results.map(r=>r.unitId))]){const unit=typeof getUnit==='function'?getUnit(id):null,rows=data.results.filter(r=>r.unitId===id);const p=el('p',`${(unit?.label||'知识点检测').replace(/^检测[：:]/,'')}：${rows.filter(r=>r.correct===true).length} / ${rows.length} 题正确`);results.append(p);}
     if(!data.results.length)results.append(el('p','完成知识点检测后，这里会出现独立作答记录。'));d.append(results);
     if(data.linked){
       const linked=el('section');linked.dataset.linkedFeedback='';linked.append(el('h3','把设置、帮助经历和独立表现放在一起看'));
-      for(const item of data.linked){
+      for(const item of data.linked.filter((item,i)=>item.offered||item.visible||item.independentResults.length||i===data.linked.length-1)){
         const card=el('article');card.className='study-linked-card';card.dataset.configurationRevision=item.revision;
         card.append(el('h4',`第 ${item.revision} 版配置`));
-        const list=el('ul');for(const [id,value]of item.behavior)list.append(el('li',`${id}：${value}`));card.append(list);
+        const settings=el('details'),list=el('ul');settings.append(el('summary','查看当时的六项帮助设置'));for(const [id,value]of item.behavior)list.append(el('li',`${value}`));settings.append(list);card.append(settings);
         card.append(el('p',`帮助经历：系统发起 ${item.offered} 轮询问或帮助，实际可见的帮助 ${item.visible} 轮，确认或接受 ${item.accepted} 轮。`));
         for(const experience of (item.experiences||[]).slice(-5)){const unit=typeof getUnit==='function'?getUnit(experience.scope):null;card.append(el('small',`${new Date(experience.at).toLocaleTimeString('zh-CN',{hour12:false})} · ${unit?.label||'本知识点'} / ${sceneNames[experience.sceneType]||'讲解页'}：${experience.seen?'已看到帮助内容':'询问或提示未展开为可见帮助内容'}。`));}
         const scored=item.independentResults.filter(r=>r.correct!==null);
         card.append(el('p',scored.length?`这些帮助之后、下次修改设置之前的独立检测：${scored.length} 道已判定，${scored.filter(r=>r.correct).length} 道正确。`:'还没有可以对应的独立检测结果。'));
-        card.append(el('p',item.interpretation));linked.append(card);
+        linked.append(card);
       }
       linked.append(el('p','下一步可以保持设置，也可以只改一项，并在下一次独立检测后再判断是否适合自己。'));d.append(linked);
     }
@@ -41,18 +43,18 @@
     if(data.pendingModule){
       seenReviews.add(run.id+data.pendingModule);
       const answers={module:data.pendingModule};
-      d.append(el('h3',data.pendingModule==='GH-01'?'函数部分学完了，停一下做个回顾':'极限与连续学完了，回顾本轮学习'));
+      d.append(el('h3','这次回顾对你有帮助吗？'),el('p','1＝完全不同意，2＝比较不同意，3＝一般，4＝比较同意，5＝完全同意。'));
       rating(d,'review_understanding','这次回顾帮助我看清了自己的学习情况。',answers);
       rating(d,'review_action','这次回顾帮助我决定接下来怎样学习。',answers);
       if(run.editable){
         const field=el('fieldset');field.append(el('legend','接下来准备怎样配置帮助？'));
         for(const [value,title]of [['keep','先保持当前设置'],['change','调整设置再学习']]){const label=el('label'),input=el('input');input.type='radio';input.name='review-decision';input.value=value;input.onchange=()=>answers.decision=value;label.append(input,document.createTextNode(title));field.append(label);}d.append(field);
-        const reason=el('textarea');reason.rows=3;reason.maxLength=1000;reason.placeholder='说说依据，以及下一阶段准备观察什么；也可以填写“暂不说明”。';reason.setAttribute('aria-label','保持或修改配置的依据');reason.oninput=()=>answers.reason=reason.value;d.append(reason);
+        const reason=el('textarea');reason.rows=2;reason.maxLength=1000;reason.placeholder='例如：提示出现太早，我想减少打扰；下一部分看看能否更连贯地做题。（可不填）';reason.setAttribute('aria-label','保持或修改配置的依据');reason.oninput=()=>answers.reason=reason.value;d.append(reason);
       }
       actions.append(button('保存回顾并继续',async()=>{if(run.editable&&!answers.decision)throw new Error('请选择保持或调整');setRun(await request('review',answers));dialog.close();if(answers.decision==='change')await global.LearnerSetup.open();else if(pendingUnit){const target=pendingUnit;pendingUnit=null;selectUnit(target);}}));
     }else{
       actions.append(button('继续学习',()=>dialog.close()));
-      if(run.editable)actions.append(button('查看或调整六维设置',()=>{dialog.close();document.getElementById('learner-preferences-button')?.click();}));
+      if(run.editable)actions.append(button('查看帮助设置',()=>{dialog.close();global.LearnerSetup.open();}));
     }d.append(actions);show();
     if(typeof trackLearningEvent==='function')trackLearningEvent('study_review_opened',{studyId:run.studyId,runId:run.id,arm:run.arm,linkedFeedback:run.linkedFeedback,configurationRevisions:data.linked?.map(r=>r.revision)||[]},false).catch(()=>{});
   }
@@ -117,17 +119,14 @@
     loading=true;lastPoll=Date.now();const identity=snapshot.ownerKey;
     try{const data=await request('state');if(snapshot.ownerKey!==identity)return;setRun(data.run);install();
       if(snapshot.active&&!dialog?.open&&!document.querySelector('dialog[open]')&&data.judgment?.status==='active'&&!attempted.has('judgment')){await openJudgment();return;}
-      if(snapshot.active&&!snapshot.locked&&!dialog?.open&&!document.querySelector('dialog[open]')){
-        const module=['GH-01','GH-02'].find(m=>snapshot.unitId===m+'-K03-formative'&&snapshot.quizSubmitted&&!(run.reviewedModules||[]).includes(m)&&!seenReviews.has(run.id+m));
-        if(module){await openReview();return;}
-      }
       if(data.probe&&snapshot.active&&!snapshot.locked&&!snapshot.check&&!global.SupportCycleUI?.interactionBusy&&!dialog?.open&&!document.querySelector('dialog[open]')&&!attempted.has(data.probe.id)){
         attempted.add(data.probe.id);await showProbe(data.probe);
       }
     }catch(e){if(e.status===409&&global.StudyEntry.arm==='assigned'&&!run&&!dialog?.open&&!attempted.has('enroll')){attempted.add('enroll');openEnrollment();}}finally{loading=false;}
   }
-  function allowsUnit(unit){if(!run||!unit?.id)return true;const required=['GH-01','GH-02'].find(m=>state.submittedQuizzes?.includes(m+'-K03-formative')&&!(run.reviewedModules||[]).includes(m)&&((m==='GH-01'&&unit.id.startsWith('GH-02'))||unit.assessmentPhase==='post'));if(!required)return true;pendingUnit=unit.id;if(!dialog?.open)openReview().catch(()=>{});return false;}
-  global.ThreeArmStudyUI=Object.freeze({setRun,openReview,openSurvey,openTasks,openJudgment,allowsUnit,request,get run(){return run;},get judgmentActive(){return judgmentActive;}});
+  function allowsUnit(unit){if(!run||!unit?.id)return true;const crosses=m=>(m==='GH-01'&&unit.id.startsWith('GH-02'))||unit.assessmentPhase==='post';if(run.pendingConfiguration&&crosses(run.pendingConfiguration.module)){pendingUnit=unit.id;global.LearnerSetup.open();return false;}const required=['GH-01','GH-02'].find(m=>state.submittedQuizzes?.includes(m+'-K03-formative')&&!(run.reviewedModules||[]).includes(m)&&crosses(m));if(!required)return true;pendingUnit=unit.id;if(!dialog?.open)openReview().catch(()=>{});return false;}
+  function resumeAfterConfiguration(){if(!pendingUnit||run?.pendingConfiguration)return;const target=pendingUnit;pendingUnit=null;selectUnit(target);}
+  global.ThreeArmStudyUI=Object.freeze({setRun,openReview,openSurvey,openTasks,openJudgment,allowsUnit,resumeAfterConfiguration,request,get run(){return run;},get judgmentActive(){return judgmentActive;}});
   global.addEventListener('cq:proactive-state',e=>{snapshot=e.detail;if(snapshot.ownerKey!==lastOwner){const changed=Boolean(lastOwner);lastOwner=snapshot.ownerKey;if(changed){dialog?.close();attempted.clear();seenReviews.clear();for(const k of Object.keys(surveyDrafts))delete surveyDrafts[k];run=null;judgmentActive=false;pendingUnit=null;}}install();tick();});
   setInterval(tick,5000);
 })(window);

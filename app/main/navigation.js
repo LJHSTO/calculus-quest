@@ -324,6 +324,9 @@ async function completeAndAdvanceCurrentUnit(event) {
   event?.preventDefault?.();
   const unit = getUnit();
   if (!unit) return false;
+  if(globalThis.StudyEntry&&(unit.type==='knowledge'||unit.assessmentPhase==='formative')){
+    const path=ensureAgenticPath();path.pendingPlan=null;path.pendingAt='';state.pendingKnowledgeTransition=null;
+  }
 
   if (
     unit.type === "knowledge"

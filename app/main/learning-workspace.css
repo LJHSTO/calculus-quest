@@ -537,3 +537,59 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
   .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target) .player-top:has(#workspace-support-notice:not([hidden]),.pilot-probe-notice){top:0}
 }
 .fullscreen-support-notice{position:absolute;z-index:10000;top:12px;right:12px;max-width:calc(100% - 24px);min-height:44px;padding:10px 16px;border:2px solid white;border-radius:12px;background:#5b3fc1;color:white;box-shadow:0 4px 20px #27154c60;font:600 16px/1.5 "Microsoft YaHei",sans-serif;cursor:pointer;}
+
+/* A single course header, with teaching beside the activity rather than above it. */
+#learn-view .core-learning-workspace .player-top{display:flex;flex-wrap:nowrap;align-items:center;gap:12px;margin:0;padding:6px 12px;min-height:52px;border-bottom:1px solid #e5e8f0;}
+#learn-view .core-learning-workspace .player-top>div:first-child{flex:1 1 auto;min-width:90px;}
+#learn-view .core-learning-workspace .player-top h1{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
+#learn-view .core-learning-workspace .player-actions{display:flex;flex-flow:row nowrap;align-items:center;gap:8px;flex:0 0 auto;}
+#learn-view .core-learning-workspace .player-top :is(#lesson-summary,#lesson-type){display:none;}
+#learn-view .core-learning-workspace .player-top :is(button,.three-arm-entry-label){white-space:nowrap;}
+#learn-view .core-learning-workspace #learner-preferences-button{font-size:13px;padding:7px 10px;min-height:36px;}
+#learn-view .core-learning-workspace .workspace-canvas-tabs{flex:0 0 auto;gap:3px;}
+#learn-view .core-learning-workspace .workspace-header-controls{flex:0 0 auto;flex-wrap:nowrap;}
+#learn-view .core-learning-workspace .workspace-canvas-tabs button{padding:7px 9px;font-size:13px;}
+#learn-view .core-learning-workspace .task-support-workspace{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(290px,340px);grid-template-areas:'course teacher';gap:14px;align-items:start;position:relative;}
+#learn-view .task-support-workspace>:is([data-knowledge-scene-stage],[data-resource-fullscreen-target]){grid-area:course;min-width:0;width:100%!important;max-width:100%!important;}
+#learn-view .task-support-workspace>:not([data-knowledge-scene-stage]):not([data-resource-fullscreen-target]):not(.task-support-panel){display:none!important;}
+#learn-view .task-support-workspace>.task-support-panel{grid-area:teacher;margin:0;max-height:calc(100dvh - 220px);overflow:auto;overscroll-behavior:contain;}
+#learn-view .task-support-panel{border:0;border-top:3px solid #6b50d1;background:#fff;padding:16px;border-radius:12px;box-shadow:0 3px 18px #26304d18;}
+#learn-view .task-support-heading{font-size:15px;gap:8px;padding-bottom:10px;flex-wrap:nowrap;}
+#learn-view .task-support-heading>strong:before,.support-surface-header>strong:before{content:'知';display:inline-grid;place-items:center;width:27px;height:27px;margin-right:8px;border-radius:8px;background:#6550c7;color:white;font-size:14px;}
+#learn-view .task-support-heading button{font-size:12px;min-height:32px;padding:4px 8px;white-space:nowrap;}
+#learn-view :is(.task-support-content,.learning-support-surface){font:15px/1.7 'Microsoft YaHei',sans-serif;}
+#learn-view .support-inquiry footer{display:flex;gap:8px;flex-wrap:wrap;}
+#learn-view .support-inquiry footer button{flex:1 1 auto;min-height:42px;padding:8px 10px;border:1px solid #d9d3e9;border-radius:8px;cursor:pointer;font:inherit;}
+#learn-view .support-inquiry .support-primary-action{background:#6550c7;color:#fff;border-color:#6550c7;}
+#learn-view .support-inquiry .support-need-entry{margin-top:14px;font-size:13px;}
+#learn-view .support-cycle [role=status]:empty{display:none;}
+#learn-view .task-support-workspace.support-focus-help{grid-template-columns:minmax(220px,320px) minmax(0,1fr);}
+#learn-view .task-support-workspace.support-focus-help>:is([data-knowledge-scene-stage],[data-resource-fullscreen-target]){position:sticky;top:10px;height:auto!important;min-height:0!important;max-height:none!important;aspect-ratio:16/10;overflow:hidden!important;border:1px solid #ddd7eb;border-radius:10px;}
+#learn-view .task-support-workspace.support-focus-help :is(iframe[data-courseware-frame],iframe.openmaic-slide-frame){width:1280px!important;min-width:1280px!important;max-width:none!important;height:800px!important;min-height:800px!important;transform:scale(var(--course-mini-scale,.25));transform-origin:top left;}
+#workspace-support-notice{flex:0 0 auto!important;min-height:38px!important;padding:7px 12px!important;font:600 13px/1.4 'Microsoft YaHei',sans-serif!important;white-space:nowrap;border:1px solid #b6a9e0;border-radius:9px;color:#5135a8;background:#f2ecff;box-shadow:none!important;}
+#workspace-support-notice[hidden]{display:none!important;}
+#learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target) .player-top{display:none!important;}
+#learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target) :is(#classroom-lecture,.classroom-fullscreen-hint,.pilot-probe-notice){display:none!important;}
+#learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target) .classroom-controls>:not([data-classroom-action=play]):not(.classroom-fullscreen-hint-host){display:none!important;}
+#learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target) .task-support-workspace>.task-support-panel{max-height:calc(100dvh - 120px);}
+#learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target):not(.tools-collapsed){grid-template-columns:minmax(0,1fr) 360px;}
+#learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target):not(.tools-collapsed)>.learning-workspace-tools{display:flex!important;grid-column:2;grid-row:1/3;min-width:0;height:100dvh;}
+@media(max-width:1180px){
+ #learn-view .core-learning-workspace .three-arm-entry-label{display:none;}
+ #learn-view .core-learning-workspace .player-top{gap:5px;overflow-x:auto;}
+ #learn-view .core-learning-workspace .player-top h1{font-size:15px;}
+ #learn-view .core-learning-workspace .task-support-workspace{grid-template-columns:minmax(0,1fr) 300px;}
+}
+@media(max-width:760px){
+ #learn-view .core-learning-workspace .player-top .workspace-canvas-tabs{display:flex;}
+ #learn-view .core-learning-workspace .player-top .workspace-canvas-tabs button{font-size:12px;padding:6px;}
+ #learn-view .core-learning-workspace .player-actions{gap:4px;}
+ #learn-view .core-learning-workspace .player-actions>:not(#workspace-tools-toggle){display:none!important;}
+ #learn-view .core-learning-workspace .player-top h1{max-width:95px;font-size:13px;}
+ #learn-view .core-learning-workspace .task-support-workspace{display:flex!important;flex-direction:column;}
+ #learn-view .task-support-workspace>.task-support-panel{width:100%;order:-1;max-height:none;}
+ #learn-view .task-support-workspace.support-focus-help>:is([data-knowledge-scene-stage],[data-resource-fullscreen-target]){position:relative;top:0;width:min(320px,100%)!important;order:0;}
+ #learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target):not(.tools-collapsed){grid-template-columns:minmax(0,1fr);}
+ #learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target):not(.tools-collapsed)>.learning-workspace-tools{grid-column:1;}
+ #workspace-support-notice{font-size:12px!important;padding:6px!important;}
+}

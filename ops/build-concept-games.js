@@ -3,6 +3,16 @@ const fs=require('node:fs'),path=require('node:path'),M=require('../resources/op
 const root=path.resolve(__dirname,'..'),dir=path.join(root,'resources/open-maic/函数极限混合探索'),routeFile=path.join(root,'data/multi-scene-learning-route.json');
 const route=JSON.parse(fs.readFileSync(routeFile,'utf8')),points=route.chapters.find(c=>c.id==='V14-C1').modules.flatMap(m=>m.knowledgePoints);
 const css=fs.readFileSync(path.join(dir,'game.css'),'utf8'),js=['game-model.js','game-ui.js'].map(f=>fs.readFileSync(path.join(dir,f),'utf8')).join('\n');
+// Refresh the embedded UI without replacing reviewed semantic contracts.
+if(process.argv.includes('--ui-only')){
+ const ui=fs.readFileSync(path.join(dir,'game-ui.js'),'utf8');
+ for(const p of points){const file=path.join(dir,p.id+'.html'),old=fs.readFileSync(file,'utf8');
+  const pattern=/\(function\(\)\{\s*'use strict';\s*const cfg=[\s\S]*?(?=<\/script>\s*<\/body>)/;
+  if(!pattern.test(old))throw Error('找不到内嵌游戏界面：'+p.id);
+  fs.writeFileSync(file,old.replace(pattern,()=>ui));
+ }
+ console.log('六个游戏界面已同步；语义契约、课程和用户数据保持原状。');process.exit(0);
+}
 const leads=['连接和拆除运输线路，让每个输入有唯一输出。','在坐标棋盘上寻找补给，并连接函数航线。','选择坡道拼成指定趋势的山地路线。','缩小两侧距离，让飞船进入越来越窄的目标带。','沿左右曲线设置泊位，比较两侧的会合高度。','调整桥身接缝与中心点，让路线连续通过。'];
 for(const [gameKind,p]of points.entries()){
  const file=path.join(dir,p.id+'.html'),old=fs.readFileSync(file,'utf8');

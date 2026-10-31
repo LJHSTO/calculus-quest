@@ -218,7 +218,7 @@ async function verifySupportLifecycle(page, root, knowledgePointId) {
       await page.screenshot({ path: path.join(output, "达到上限-停止追加.png") });
     } else {
       assert.equal(payload.decision.supportLevel, `L${level + 1}`);
-      const offer = embeddedMode ? inside.locator('article').filter({hasText:/知点建议/}).first() : page.locator(".knowledge-proactive-inline-offer");
+      const offer = embeddedMode ? inside.locator('.knowledge-proactive-inline-offer') : page.locator(".knowledge-proactive-inline-offer");
       await offer.waitFor({ state: "visible" });
       const exposureCheck = process.env.TEST_PROACTIVE_EXPOSURE === "1" && level <= 2
         ? await require("./test-proactive-exposure-browser").verifyRealCandidate(page,
@@ -439,7 +439,7 @@ async function main() {
       fs.mkdirSync(output, { recursive: true });
       for (const width of [1366, 1920]) {
         await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
-        await initialOffer.scrollIntoViewIfNeeded();
+        await initialOffer.evaluate(element=>element.scrollIntoView({block:'nearest'}));
         const presentation = await initialOffer.evaluate((element) => {
           const rect = element.getBoundingClientRect();
           return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,

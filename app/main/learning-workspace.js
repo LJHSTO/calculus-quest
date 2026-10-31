@@ -120,7 +120,7 @@
   noticeStatus.className = 'workspace-support-status';
   noticeStatus.setAttribute('role','status');
   noticeStatus.setAttribute('aria-live','polite');
-  $('.player-top .player-actions').prepend(noticeStatus,supportNotice);
+  $('#classroom-playback').append(noticeStatus,supportNotice);
   let pendingSnapshot = null;
   let announcedHelp="";
   let fullscreenSupportNotice=null;
@@ -132,12 +132,11 @@
     const checking=eligible&&(next.check||cycle?.status==='awaiting_check');
     const inquiry=eligible&&cycle?.status==='awaiting_confirmation'&&!global.SupportCycleUI?.deferInquiry(cycle);
     const support=eligible&&!checking&&(next.offer||next.prompt||['offered','engaged'].includes(cycle?.status));
-    const place=next?.view?.placement==='sidebar'?'侧栏':'工作区';
-    const label=checking?'继续独立检查':inquiry?`知点正在${place}询问你 · 查看并决定`:support?`知点已在${place}提供帮助 · 点击查看`:'';
+    const label=checking?'继续独立检查':inquiry?'智能体老师想帮你':support?'查看老师的帮助':'';
     supportNotice.hidden=!label;
     if(supportNotice.textContent!==label){supportNotice.textContent=label;noticeStatus.textContent=label;}
     const full=document.fullscreenElement||document.querySelector('.is-local-fullscreen-target');
-    if(full&&full!==document.documentElement&&label){
+    if(full&&full!==document.documentElement&&!full.contains(supportNotice)&&label){
       if(!fullscreenSupportNotice){fullscreenSupportNotice=document.createElement('button');fullscreenSupportNotice.type='button';fullscreenSupportNotice.className='fullscreen-support-notice';fullscreenSupportNotice.onclick=()=>supportNotice.click();}
       if(fullscreenSupportNotice.parentElement!==full)full.append(fullscreenSupportNotice);
       fullscreenSupportNotice.textContent=label;fullscreenSupportNotice.hidden=false;
@@ -151,18 +150,11 @@
   }
   supportNotice.addEventListener('click',async()=>{
     const s=pendingSnapshot;if(!s||s.locked)return;
-    if(document.fullscreenElement)await document.exitFullscreen();
-    for(const node of document.querySelectorAll('.is-local-fullscreen-target'))node.classList.remove('is-local-fullscreen-target');
-    document.body.classList.remove('is-resource-local-fullscreen','is-learning-local-fullscreen');
     setCoachVisible(false);
     if(s.view.placement==='inline'){
       if(compactWorkspace())setMobilePane('course');
       if(global.TaskSupport?.locate?.())return;
     }else{
-      if(document.fullscreenElement)await document.exitFullscreen();
-      if(shell.classList.contains('is-local-fullscreen-target')){
-        shell.classList.remove('is-local-fullscreen-target');document.body.classList.remove('is-resource-local-fullscreen','is-learning-local-fullscreen');
-      }
       setToolsCollapsed(false);selectTab('chat');
       if(compactWorkspace())setMobilePane('assistant');
     }
@@ -246,6 +238,7 @@
   }
 
   function setCoachVisible(visible) {
+    const changed=coachVisible!==Boolean(visible);
     coachVisible = Boolean(visible);
     shell.classList.toggle("is-coach-surface", coachVisible);
     const button = $("#workspace-coach-toggle");
@@ -256,10 +249,11 @@
     button.classList.toggle("primary", true);
     button.classList.remove("soft");
     button.setAttribute("aria-expanded", String(coachVisible));
-    global.dispatchEvent(new CustomEvent("cq:learning-layout-change"));
+    if(changed)global.dispatchEvent(new CustomEvent("cq:learning-layout-change"));
   }
 
   function syncCoachSurface() {
+    if(global.StudyEntry){$('#workspace-coach-toggle').hidden=true;coachKey='';setCoachVisible(false);if(typeof renderBottomNextButton==='function')renderBottomNextButton();return;}
     const panel = $("#agentic-coach-panel");
     const card = panel.querySelector(".decision, .grading-pending");
     const pending = Boolean(card) && !panel.hidden;
@@ -669,12 +663,6 @@
   });
   global.addEventListener("cq:knowledge-assistant-visibility", async (event) => {
     if (event.detail?.open) {
-      // The dedicated fullscreen layout hides side columns. Restore the normal
-      // layout before opening a conversation so it cannot open invisibly.
-      if(document.fullscreenElement)await document.exitFullscreen();
-      if(shell.classList.contains('is-local-fullscreen-target')){
-        shell.classList.remove('is-local-fullscreen-target');document.body.classList.remove('is-resource-local-fullscreen','is-learning-local-fullscreen');
-      }
       setToolsCollapsed(false);
       selectTab("chat");
       if (compactWorkspace()) setMobilePane("assistant");

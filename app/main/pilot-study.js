@@ -131,7 +131,7 @@
   global.PilotStudyUI=Object.freeze({active,render,open,reload:async()=>update(await call('')),get revision(){return revision+":"+Boolean(data.pending&&!presented.has(data.pending.id)&&global.SupportCycleUI?.interactionBusy);}});
   document.getElementById("pilot-entry-button")?.addEventListener("click",open);
   document.getElementById("home-pilot-entry")?.addEventListener("click",open);
-  document.getElementById('account-pilot-status')?.addEventListener('click',()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);open();});
+  document.getElementById('account-pilot-status')?.addEventListener('click',()=>{if(global.StudyEntry)return;if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);open();});
   global.addEventListener("cq:proactive-state",async e=>{snapshot=e.detail;const key=snapshot.signedIn?snapshot.ownerKey+":"+snapshot.generation:"";
     if(key!==owner){owner=key;data={enrollment:null};preview=null;joinCode="";drafts.clear();shown.clear();presented.clear();noticed.clear();lastState="";dialog?.close();if(key){try{const next=await call("");if(key===owner)update(next);}catch{}}}syncProbeNotice();
   });

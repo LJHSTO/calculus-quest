@@ -16,7 +16,7 @@
   const posttestActionLabel=()=>study?.finalSurveyAt?'查看后续任务':pilot?.enrollment?.status==='finished'?'本轮已完成 · 查看记录':'下一步：填写学习体验问卷';
   async function continueAfterPosttest(){await refreshPreparation();if(study){await global.ThreeArmStudyUI.openSurvey('final');return;}if(pilot?.enrollment)await openPilot(pilot);}
   const isReady=()=>pilot?.enrollment?.status==='active'?pilot.enrollment.stage==='ready':preparation?.stage==='ready';
-  const pretestActionLabel=()=>continuing?'正在准备下一步…':isReady()?'继续学习':pilot?.enrollment?.stage==='baseline'?'下一步：学习前问卷':'下一步：设置学习方式';
+  const pretestActionLabel=()=>continuing?'正在进入课程…':study?.arm==='A'?'开始学习':isReady()?'继续学习':pilot?.enrollment?.stage==='baseline'?'下一步：学习前问卷':'下一步：设置学习方式';
   const pretestStatusLabel=()=>pilot?.enrollment?.arm==='control'?'学习准备已完成':'学习方式已设置';
   async function resumePreparation(){if(routing)return;routing=true;try{await refreshPreparation();if(pilot?.enrollment?.status==='active'){await openPilot(pilot);return;}if(preparation?.required&&preparation.stage!=='ready'){if(preparation.stage==='entry'){await global.PilotStudyUI.open();}else if(preparation.stage==='pretest'){await goPretest();}else await open();}}catch(e){message=e.message;mode='entry-error';show();}finally{routing=false;}}
   function allowsUnit(unit){
@@ -36,7 +36,8 @@
     renderGuide();
     // Preparing is resumed by explicit journey buttons; result pages never auto-close.
   }
-  async function show(){if(document.fullscreenElement)await document.exitFullscreen().catch(()=>{});if(!dialog){dialog=el('dialog');dialog.id='learner-setup';dialog.setAttribute('aria-labelledby','learner-setup-title');document.body.append(dialog);dialog.addEventListener('cancel',e=>{e.preventDefault();leave();});}
+  async function show(){if(!dialog){dialog=el('dialog');dialog.id='learner-setup';dialog.setAttribute('aria-labelledby','learner-setup-title');dialog.addEventListener('cancel',e=>{e.preventDefault();leave();});}
+    const host=document.fullscreenElement||document.body;if(dialog.parentElement!==host)host.append(dialog);
     lastFocus=document.activeElement;draw();if(!dialog.open)dialog.showModal();dialog.querySelector('h2')?.focus();}
   function leave(){dialog.close();if((preparation?.required&&preparation.stage!=='ready'||pilot?.enrollment?.status==='active'&&pilot.enrollment.stage!=='ready')&&typeof switchView==='function')switchView('home');lastFocus?.focus?.();}
   async function open(isCurrent=()=>true){message='';
@@ -46,6 +47,11 @@
     if(!isCurrent())return;const d=await request();if(!isCurrent())return;applyData(d);
     if(preparation?.required&&preparation.stage==='entry'){await global.PilotStudyUI.open();return;}
     if(study&&preparation?.stage==='baseline'){dialog?.close();await global.ThreeArmStudyUI.openSurvey('baseline');return;}
+    if(study?.arm==='A'&&preparation?.stage==='configuration'){
+      const response=await fetch('api/study/confirm-defaults',{method:'POST',headers:{Authorization:`Bearer ${state.authToken}`}});
+      const result=await response.json();if(!response.ok)throw new Error(result.message||'暂未进入课程，请重试');
+      await refreshPreparation();await KnowledgeAssistant.reloadLearnerPolicy();await beginLearning(isCurrent);return;
+    }
     if(preparation?.required&&preparation.stage==='pretest'){mode='pretest';show();return;}
     if(pilot?.enrollment?.studyDesign==='learner-configurable-20-v1'&&pilot.enrollment.status==='active'&&pilot.enrollment.stage==='baseline'){openPilot(pilot);return;}
     mode='preferences';answers=hasSavedPreferences()?structuredClone(record.answers):C.defaults();if(experimental()&&answers.D5.value==='request'){answers.D5={value:'ask',reason:'',note:''};}step=hasSavedPreferences()?6:0;selectionSource='reviewed_choices';lastStep='';started=Date.now();show();}
@@ -91,9 +97,12 @@
   function syncEntrances(){const unit=typeof getUnit==='function'&&typeof currentUnitId==='string'?getUnit(currentUnitId):null;
     const pre=unit?.assessmentPhase==='pre',joined=Boolean(pilot?.enrollment||study||global.StudyEntry);
     for(const selector of ['#pilot-entry-button','#home-pilot-entry']){const node=document.querySelector(selector);if(node)node.hidden=joined||(pre&&selector==='#pilot-entry-button');}
-    for(const selector of ['#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=pre;}
+    for(const selector of ['#learner-preferences-button','.proactive-hud-toggle-btn']){const node=document.querySelector(selector);if(node)node.hidden=pre||study?.arm==='A';}
+    let accountPrefs=document.getElementById('account-learning-preferences');
+    if(!accountPrefs){accountPrefs=el('button','智能体老师的帮助设置');accountPrefs.id='account-learning-preferences';accountPrefs.type='button';accountPrefs.className='user-menu-item';accountPrefs.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);open();};document.getElementById('account-pilot-status')?.before(accountPrefs);}
+    accountPrefs.hidden=!state.authToken;accountPrefs.textContent=enabled?'调整老师的帮助设置':'查看老师的帮助设置';
     const prefs=document.getElementById('learner-preferences-button');if(prefs){prefs.textContent=hasSavedPreferences()?'学习偏好 · 已设置':'学习偏好';prefs.dataset.configured=String(hasSavedPreferences());}
-    const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=study?'本次学习与后续任务':pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';if(study)status.onclick=()=>global.ThreeArmStudyUI.openTasks();}
+    const status=document.getElementById('account-pilot-status');if(status){status.hidden=!joined;status.textContent=study?'本次学习与后续任务':pilot?.version?.useMode==='internal_rehearsal'?'本次演练与问卷':'本次预试与问卷';if(study)status.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);global.ThreeArmStudyUI.openTasks();};}
   }
   function renderGuide(){
     syncEntrances();
@@ -145,10 +154,9 @@
         body.append(el('p','可以关闭页面，之后从保存的位置继续。暂时离开不会删除作答，也不会排除研究回放。'));
       }else {body.append(el('p',e.status==='withdrawn'?'你已退出；研究回放默认不再导出你的记录。数据处理请求由研究负责人按同意书处理。':'问卷已经保存，谢谢参与。'));if(e.status==='finished'&&e.followupEndsAt)body.append(el('p','若研究人员安排了延迟测量，请在后测至少72小时后返回“学习 → 本章路径 → 研究测量”。'+global.FollowupWindow.describe({researchEndsAt:e.followupEndsAt})));body.append(button('返回平台',leave));}dialog.append(body);
     }else{
-      header('让帮助适合你的学习方式',hasSavedPreferences()?'学习偏好 · 已设置':pilot?.version?.useMode==='internal_rehearsal'?'学习偏好 · 学习中可调整':experimental()?'学习偏好 · 完成每个知识点检测后可调整':'学习偏好');
+      header(enabled?'让帮助适合你的学习方式':'老师的帮助设置',study?.arm==='A'?'本组使用固定帮助设置':study?'开始学习前和每部分回顾后可配置':hasSavedPreferences()?'学习偏好 · 已设置':experimental()?'学习偏好 · 检测后可调整':'学习偏好');
       if(!enabled){dialog.append(el('p',pilot?.enrollment?.arm==='control'?'本次预试使用无主动介入的学习方式，六维偏好保持锁定。':configurationWindow?.message||'当前研究条件尚未开放偏好修改。'));if(record)for(const d of C.dimensions)dialog.append(el('p',d.short+'：'+(d.options.find(o=>o[0]===record.answers[d.id].value)?.[1]||'')));
-        if(study?.arm==='A'&&preparation?.stage==='configuration')dialog.append(button('确认默认设置并开始学习',async()=>{const r=await fetch('api/study/confirm-defaults',{method:'POST',headers:{Authorization:`Bearer ${state.authToken}`}});const p=await r.json();if(!r.ok)throw new Error(p.message);await refreshPreparation();dialog.close();await KnowledgeAssistant.reloadLearnerPolicy();await beginLearning();},true));
-        else dialog.append(button('返回学习',()=>dialog.close()));return;}
+        dialog.append(button('返回学习',()=>dialog.close()));return;}
       const nav=el('nav');nav.setAttribute('aria-label','六项学习偏好');nav.className='learner-steps';C.dimensions.forEach((d,i)=>{const b=button(d.short,()=>{step=i;draw();});b.setAttribute('aria-current',step===i?'step':'false');if(answers[d.id].reason)b.dataset.complete='true';nav.append(b);});dialog.append(nav);
       const body=el('div');body.className='learner-setup-body';
       if(step<6){const d=C.dimensions[step],a=answers[d.id];if(lastStep!==d.id){lastStep=d.id;logJourney('configuration_step_viewed',{dimension:d.id,elapsedMs:Date.now()-started});}body.append(el('span',`${step+1} / 6`),el('h3',d.title),el('p',d.description));const change=(v,name=d.id,focusValue=v)=>{logJourney('configuration_choice_changed',{dimension:d.id,from:a.value,to:v});a.value=v;a.reason='';selectionSource='reviewed_choices';draw();dialog.querySelector('input[name='+name+'][value='+focusValue+']')?.focus({preventScroll:true});};
@@ -165,7 +173,7 @@
       footer.append(button('先使用全部默认设置',()=>{logJourney('configuration_defaults_chosen');answers=C.defaults();for(const a of Object.values(answers))a.reason='default';selectionSource='defaults_button';step=6;draw();}));
       if(step>0)footer.append(button('上一步',()=>{step--;draw();}));
       footer.append(button(step<5?'下一项':step===5?'核对选择':hasSavedPreferences()?'保存修改并返回学习':'保存并开始学习',async()=>{if(step<6){const d=C.dimensions[step],a=answers[d.id];if(!a.reason||(a.reason==='other'&&!a.note.trim()))throw new Error('请选择理由；其他原因需要补充说明');step++;draw();return;}
-        C.validate(answers,{experimental:experimental()});busy=true;try{const result=await request({answers,expectedRevision:record?.revision||0,elapsedMs:Date.now()-started,selectionSource});applyData(result);dialog.close();await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();KnowledgeAssistant.refreshSupportSurface();await beginLearning();}finally{busy=false;}},true));dialog.append(footer);
+        C.validate(answers,{experimental:experimental()});busy=true;try{const result=await request({answers,expectedRevision:record?.revision||0,elapsedMs:Date.now()-started,selectionSource});applyData(result);dialog.close();await global.PilotStudyUI?.reload?.();await KnowledgeAssistant.reloadLearnerPolicy();KnowledgeAssistant.refreshSupportSurface();await beginLearning();global.ThreeArmStudyUI?.resumeAfterConfiguration();}finally{busy=false;}},true));dialog.append(footer);
     }
     if(mode==='study'&&['active','finished'].includes(pilot?.enrollment?.status)){
       const handling=el('details');handling.append(el('summary','联系研究人员处理参与或数据问题'),el('p','如需正式退出研究或处理已提交数据，请说明请求。普通暂停和暂时离开不会排除回放；研究人员按参与说明处理正式请求。'));

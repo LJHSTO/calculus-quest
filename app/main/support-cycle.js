@@ -80,11 +80,11 @@
     if(next.view.format==="disclosure") {const details=el("details");details.append(el("summary","查看这条帮助"),body);section.append(details);}
     else if(next.view.format==="steps") {const parts=c.content.message.split(/(?<=[。！？])\s*/).filter(Boolean);let index=0;const p=el("p",parts[0]||c.content.message);p.dataset.supportBody=c.id;const more=button("继续阅读",()=>{index++;p.textContent=parts.slice(0,index+1).join("");if(index>=parts.length-1){more.hidden=true;section.append(el("p",c.content.nextStep));}});section.append(p,more);}
     else{if(next.view.format==="bubble")body.setAttribute("role","note");section.append(body);}
-    section.append(el("small",c.content.audit.fallback?"课程备用建议":"AI 生成建议"));
+    section.append(el("small",c.content.audit.fallback?"课程提示":"知点 · 智能体老师"));
     const actions=el("footer");if(c.status==="offered")actions.append(button("我先试一试",()=>request({action:"accept",id:c.id})));
     actions.append(button("结束这轮帮助",()=>request({action:"close",id:c.id})));
     const nextSteps=feedback(next,c);nextSteps.append(button("做一次独立检查",()=>request({action:"start_check",id:c.id})));
-    const provenance=el('details');provenance.className='support-inquiry-evidence';provenance.append(el('summary','关于这条建议'),el('p',`支持方向：${goalNames[c.plan.primaryGoal]}。${c.content.audit.fallback?'模型暂不可用，使用课程备用内容。':'内容由模型生成，尚未经教师逐条审校；可以提出异议。'}`));
+    const provenance=el('details');provenance.className='support-inquiry-evidence';provenance.append(el('summary','讲解信息'),el('p',`这次主要帮助你${({cognitive:'理解概念与步骤',metacognitive:'检查理解、调整方法',motivational:'找到学习的价值与信心',emotional:'缓解学习中的紧张',behavioral:'安排接下来的学习'})[c.plan.primaryGoal]}。${c.content.audit.fallback?'当前使用课程内的讲解。':'由智能体老师根据当前任务生成。'}`));
     section.append(actions,nextSteps,provenance);return section;
   }
   function render(next){
@@ -96,10 +96,15 @@
       presentedInquiries.add(c.id);
       const card=el("section");card.className="support-goal-message support-inquiry";
       const reflection=c.inquiry.basis==='exploration_comparison';
-      const body=el("div");body.dataset.supportBody=c.id;body.append(el("strong",reflection?"要不要一起整理刚才的发现？":"要不要一起看看刚才的问题？"));
-      const evidence=el('details');evidence.className='support-inquiry-evidence';evidence.append(el('summary','为什么现在问我？'),el('p',c.inquiry.text),el('small',reflection?'这只是一次整理机会，不表示你有困难或已经掌握。':'这只是当前作答或尝试的线索，不代表你不想学。'));
-      const actions=el("footer");actions.append(button("暂时不需要",()=>request({action:"decline",id:c.id})),button("稍后再问",()=>request({action:"postpone",id:c.id})));
-      card.append(body,checkin(next,false,c.id),actions,evidence);root.append(card);
+      const body=el("div");body.dataset.supportBody=c.id;
+      const focuses={'GH-01-K01':'输入与输出的对应关系','GH-01-K02':'横坐标和纵坐标的位置','GH-01-K03':'从左到右的上升、下降方向','GH-02-K01':'输入靠近时输出的趋势','GH-02-K02':'左边和右边分别趋向哪里','GH-02-K03':'函数值与极限是否相等'};
+      const focus=focuses[next.scopeKey]||'这一步的解法';
+      body.append(el('p',reflection?`你已经比较了几个不同状态。我可以带你整理${focus}。`:c.inquiry.basis==='repeated_task_failures'?`刚才连续两次尝试还没成功。我可以带你检查${focus}。`:`前面的检测里还有需要巩固的地方。我可以带你看懂${focus}。`));
+      const actions=el('footer'),start=button(reflection?'请老师带我整理':'请老师讲一下',()=>request({action:'report',confirmed:true,need:reflection?'reflection':'concept',inquiryId:c.id}));start.className='support-primary-action';
+      actions.append(start,button('我先自己试',()=>request({action:'decline',id:c.id})));
+      const more=checkin(next,false,c.id);more.querySelector('summary').textContent='我需要其他帮助';
+      more.append(button('两分钟后再提醒',()=>request({action:'postpone',id:c.id})));
+      card.append(body,actions,more);root.append(card);
     }else if(c?.status==="awaiting_check"){
       root.append(el("h4","独立检查"),el("p","提示和对话已暂停。也可以跳过，不会把跳过记成答错。"),el("p",c.check.prompt));
       const d=draft(`${owner}:${c.id}:check`),list=el("div");choices(list,Object.fromEntries(c.check.options.map(o=>[o.value,o.label])),d.response,v=>d.response=v);root.append(list);
@@ -107,14 +112,14 @@
     } else {
       if(c?.content&&["offered","engaged"].includes(c.status))root.append(content(next,c));
       else if(c&&["queued","postponed"].includes(c.status)){
-        const reason = c.lastGate === "waiting_for_boundary" ? "正在等待当前操作结束。完成一次提交或参数确认后会继续检查。" : c.lastGate === "waiting_for_due_time" ? "正在等待你设置的帮助间隔结束。" : "正在核对当前任务和提醒偏好。";
-        root.append(el("p",`${statuses[c.status]}。${reason}你可以继续学习。`),button("结束这轮帮助",()=>request({action:"close",id:c.id})));
+        const reason = c.lastGate === "waiting_for_boundary" ? "完成手上的操作后，老师会接着讲。" : c.lastGate === "waiting_for_due_time" ? "稍后继续这次讲解。" : "老师正在准备这一步的讲解…";
+        root.append(el("p",reason),button("结束这轮帮助",()=>request({action:"close",id:c.id})));
       }else if(c?.checkResult)root.append(el("p",c.checkResult.correct===null?"本次独立检查已跳过。":c.checkResult.correct?"这次独立检查回答正确。本轮帮助已结束。":"这次独立检查尚未答对。本轮已结束，你可以重新选择需要的帮助。"));
       else if(c?.status === "expired") root.append(el("p",c.lastGate === "context_changed" ? "学习位置已变化，这次未交付的帮助已取消。需要时可在当前任务重新求助。" : "这次帮助未在有效时限内交付，或设置已变化；没有记为已收到。需要时可重新选择帮助。"));
       else if(c?.closeReason==="need_unresolved")root.append(el("p","暂时不确定也没关系。可以补充一句你卡住的地方，或先继续探索。"));
       if(manualScope===next.scopeKey)root.append(checkin(next,true),button('收起求助入口',()=>{manualScope="";global.KnowledgeAssistant.refreshSupportSurface();}));
     }
-    const status=el("p",busy?"正在处理，当前课件可以继续查看…":error);status.setAttribute("role","status");root.append(status);
+    const status=el("p",busy?"老师正在准备，请稍候…":error);status.setAttribute("role","status");if(!busy&&!error)status.hidden=true;root.append(status);
     for(const details of root.querySelectorAll('details')){
       const key=`${owner}:${next.scopeKey}:${c?.id||'need'}:${details.querySelector('summary')?.textContent}`;
       if(opened.has(key))details.open=opened.get(key);

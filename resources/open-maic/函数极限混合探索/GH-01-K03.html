@@ -99,6 +99,7 @@
   const cfg=JSON.parse(document.querySelector('#lesson').textContent),M=ConceptGame;
   let s=M.create(cfg.gameKind),feedback='',selectedSegment=0;
   const board=document.querySelector('#board'),tools=document.querySelector('#tools'),result=document.querySelector('#result');
+  const note=document.querySelector('.learning-note');if(note)note.textContent='完成挑战后，点击页面右下角“完成学习，进入三题检测”。';
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!=null)n.textContent=text;return n;};
   const emit=(type,data)=>window.OpenMaicLearningEvidence?.emit(type,{...data,independent:false,game_version:'concept-games-20261027-v3'});
   function button(label,fn,selected=false){const b=el('button',label);b.type='button';b.onclick=fn;if(selected)b.setAttribute('aria-pressed','true');return b;}

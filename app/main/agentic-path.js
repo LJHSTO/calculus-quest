@@ -755,6 +755,7 @@ function agenticKnowledgeTransitionChoiceFor(knowledgeUnitId = "") {
 }
 
 function agenticPendingKnowledgeTransitionFor(knowledgeUnitId = currentUnitId) {
+  if(globalThis.StudyEntry)return null;
   const pending = state.pendingKnowledgeTransition;
   return pending?.knowledgeUnitId === knowledgeUnitId ? pending : null;
 }
@@ -1397,6 +1398,10 @@ function agenticQuizPathReady(unit) {
 
 function agenticCompletionCta(unit) {
   if (!unit) return { label: "完成本节", disabled: false };
+  if(globalThis.StudyEntry&&unit.chapterId==='V14-C1'){
+    if(unit.type==='knowledge')return {label:(state.submittedQuizzes||[]).includes(unit.id+'-formative')?'继续下一节':'完成学习，进入三题检测',disabled:false};
+    if(unit.assessmentPhase==='formative'&&(state.submittedQuizzes||[]).includes(unit.id))return {label: /-K03-formative$/.test(unit.id)?'完成本部分，查看学习回顾':'下一节',disabled:false};
+  }
   if (typeof quizResourceReviewContext === "function" && quizResourceReviewContext(unit.id)) {
     return { label: "返回测验", disabled: false };
   }
@@ -2750,6 +2755,11 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
   const stats = agenticQuizStats(records);
   const phase = unit.assessmentPhase;
   const reviewUnavailableNotice = agenticQuizReviewUnavailableNotice(records);
+  if(globalThis.StudyEntry&&phase==='formative'){
+    const path=ensureAgenticPath();path.pendingPlan=null;path.pendingAt='';state.pendingKnowledgeTransition=null;
+    agenticUnlockDefaultNext(unit.id,'study_formative_completed');saveState();
+    if(currentUnitId===unit.id)agenticRenderLearningUpdate();return;
+  }
 
   // The study ends with its experience questionnaire. Do not replace the
   // submitted posttest with ordinary next-chapter/remediation recommendations.
@@ -2973,6 +2983,9 @@ async function agenticBuildRecommendationAfterGrading(unit, records, remote = nu
 
 async function agenticAfterQuizSubmit(unit, records) {
   ensureAgenticPath();
+  if(globalThis.StudyEntry&&unit.assessmentPhase==='formative'&&!agenticQuizHasPendingShortAnswer(records)){
+    await agenticBuildRecommendationAfterGrading(unit,records);return;
+  }
   if (agenticQuizHasPendingShortAnswer(records)) {
     agenticSetPendingGrading(unit, records);
     const remote = await agenticRequestPlan(unit, records);
@@ -3104,6 +3117,12 @@ async function agenticRefreshPendingSceneChoicePlan(unit) {
 function agenticOnUnitCompleted(unit) {
   if (!unit) return;
   const path = ensureAgenticPath();
+  if(globalThis.StudyEntry&&unit.chapterId==='V14-C1'&&(unit.type==='knowledge'||unit.assessmentPhase==='formative')){
+    path.pendingPlan=null;path.pendingAt='';state.pendingKnowledgeTransition=null;path.reviewQueue=null;path.reviewResume=null;
+    const formative=unit.type==='knowledge'?agenticKnowledgeCheckUnit(unit.id+'-formative'):null;
+    const target=formative&&!(state.submittedQuizzes||[]).includes(formative.id)?formative:agenticNextMainUnitAfter(formative?.id||unit.id);
+    if(target?.id)agenticUnlockUnit(target.id,'study_linear_progress');saveState();return target;
+  }
   if (path.pendingPlan?.unitId === unit.id) return;
   if (unit.type === "quiz" && (unit.assessmentPhase === "pre" || unit.assessmentPhase === "post")) return;
   const reviewQueue = agenticNormalizeReviewQueue(path);

@@ -45,9 +45,22 @@ async function main(){
   assert.equal((await api('/api/study/review',null,'B')).data.results.length,3);assert.equal((await api('/api/study/review',null,'C')).data.results.length,0);check('三道共同检测整批提交与不同组成绩隔离');
   const before=(await api('/api/learning/learner-preferences',null,'C')).data.record;
   const changed=structuredClone(before.answers);changed.D4={value:'sidebar',reason:'try',note:''};
-  assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:before.revision},'C')).status,200);
+  assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:before.revision},'C')).status,403,'C在普通学习中不可修改');
   assert.equal((await api('/api/learning/learner-preferences',null,'B')).data.record.answers.D4.value,'inline');
-  assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:before.revision},'C')).status,409);check('修改只影响本组，过时版本不能覆盖新配置');
+  assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:2},'B')).status,403,'B与C采用相同修改窗口');check('学习中前后端均锁定B/C设置');
+  for(const module of course.modules){
+   for(const p of module.knowledgePoints){const result=await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:p.id+'-formative',phase:'formative',answers:p.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))},'C');assert.equal(result.status,200,JSON.stringify(result));}
+   assert.equal((await api('/api/learning/learner-preferences',null,'C')).data.enabled,false,'检测完成也要等回顾决策后开放');
+   const decision={module:module.id,review_understanding:4,review_action:4,decision:'change'};
+   assert.equal((await api('/api/study/review',{...decision,decision:'bypass'},'C')).status,400);
+   assert.equal((await api('/api/study/review',decision,'C')).status,200);
+   const open=(await api('/api/learning/learner-preferences',null,'C')).data;assert.equal(open.enabled,true);assert.equal(open.configurationWindow.kind,'module_review_configuration');
+   const blocked=await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:point.id+'-formative',phase:'formative',answers:answer.answers},'C');assert.equal(blocked.status,409,'尚未保存配置不能绕过窗口提交');
+   assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:open.record.revision-1},'C')).status,409,'窗口内旧版本不能覆盖');
+   assert.equal((await api('/api/learning/learner-preferences',{answers:changed,expectedRevision:open.record.revision},'C')).status,200);
+   assert.equal((await api('/api/learning/learner-preferences',null,'C')).data.enabled,false,'保存后立即关闭窗口');
+  }
+  check('两次回顾后的配置窗口、旧版本冲突与保存后锁定均由服务器执行');
   for(const module of course.modules){
    for(const p of module.knowledgePoints){if(p.id===point.id)continue;const result=await api('/api/learning/quiz/submit',{chapterId:course.id,unitId:p.id+'-formative',phase:'formative',answers:p.formativeQuiz.questions.map(q=>({questionId:q.id,response:q.type==='multiple'?q.answer:q.answer[0]}))},'B');assert.equal(result.status,200,JSON.stringify(result));}
    const review=(await api('/api/study/review',null,'B')).data;assert.equal(review.pendingModule,module.id);

@@ -4366,7 +4366,7 @@ async function handleManagedProactiveIntervention({
   }
   const decisionId = crypto.randomUUID();
   const generation = db.currentLearningGeneration(auth.participant.id);
-  if(supportCycles.blocksAutomatic(auth.participant.id,policyScopeKey,generation)) {
+  if(supportCycles.blocksAutomatic(auth.participant.id,policyScopeKey,generation,{evidence,profile:agentProfile})) {
     policyDecision={...policyDecision,displayAllowed:false,deliveryDecision:"stay_silent",
       reasonCodes:[...policyDecision.reasonCodes,"confirmed_support_cycle_active"]};
     evidence.confirmedSupportCycleId=supportCycles.current(auth.participant.id,policyScopeKey,generation).id;
@@ -5774,7 +5774,8 @@ async function handleApi(req, res, url) {
           pilotStudy.configure(user,generation,record);cancelLearnerSupport(user,generation);
           pilotStudy.recordConfiguration(user,generation,pilotRuntime(user),'学生通过学习偏好页面保存六维选择与理由');
         }
-        sendJson(res,200,{ok:true,data:{enabled,generation,study:threeArmStudy.publicRun(threeArmStudy.get(user)),posttestComplete:proactiveAssessmentCompletion(user,'post').ready,preparation:ordinaryPreparation(user),configurationWindow:window,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
+        const currentWindow=run?threeArmStudy.editWindow(threeArmStudy.get(user),snapshot,pilotProtection(user,generation)):window;
+        sendJson(res,200,{ok:true,data:{enabled:enabled&&currentWindow.allowed,generation,study:threeArmStudy.publicRun(threeArmStudy.get(user)),posttestComplete:proactiveAssessmentCompletion(user,'post').ready,preparation:ordinaryPreparation(user),configurationWindow:currentWindow,record:learnerPreferences.read(user),pilot:pilotStudy.state(user,generation),contractVersion:require('./app/shared/learner-preferences').version}});
       }catch(error){sendJson(res,error.status||400,{ok:false,message:error.message});}return;
     }
     if(url.pathname.startsWith("/api/learning/pilot")) {
@@ -8965,6 +8966,8 @@ async function handleApi(req, res, url) {
       const chapterId = String(body.chapterId || "").trim();
       const phase = String(body.phase || "").trim();
       const studyRun=threeArmStudy.get(auth.participant.id);
+      if(studyRun&&phase!=='pre'&&studyRun.pendingConfiguration){sendJson(res,409,{ok:false,code:'study_configuration_required',message:'请先保存本次回顾后的帮助设置，再继续独立检测。'});return;}
+      if(studyRun&&unitId.startsWith('GH-02')&&!(studyRun.reviewedModules||[]).includes('GH-01')){sendJson(res,409,{ok:false,code:'study_review_required',message:'请先完成函数部分的学习回顾，再继续极限部分。'});return;}
       if(studyRun&&phase==='post'){
         const results=db.getQuizResultsByUser(auth.participant.id);
         const pending=['GH-01','GH-02'].some(m=>![1,2,3].every(n=>results.filter(r=>r.unit_id===`${m}-K0${n}-formative`).length>=3)||!(studyRun.reviewedModules||[]).includes(m));

@@ -148,8 +148,10 @@ async function main() {
           await page.waitForFunction(()=>!KnowledgeAssistant.designSpaceSnapshot().busy);
           await embedded.getByText('知点的回应',{exact:true}).waitFor({state:'visible'});
           await page.waitForFunction(()=>document.querySelector('.task-support-panel textarea')?.value==='');
+          await embedded.getByRole('button',{name:'课件小窗',exact:true}).click();
+          const mini=await frameNode.boundingBox();assert.ok(mini.width<=330,'小窗真实缩放而非裁切');
           await embedded.getByRole('button',{name:'放大课件',exact:true}).click();
-          const after=await frameNode.boundingBox();assert.equal(after.width,box.width,"放大后课件恢复原宽度");assert.equal(after.height,box.height,"放大后课件恢复原高度");
+          const after=await frameNode.boundingBox();assert.ok(after.width>mini.width*2&&after.width>=box.width*.6,'放大后课件占主要区域，旁边保留帮助');assert.ok(after.height>=box.height*.8,'保留足够课件高度');
           assert.equal(await page.locator('.core-learning-workspace').evaluate(e=>e.classList.contains('tools-collapsed')),true,"任务内回复不自动展开聊天侧栏");
           record(`${point.id}课件内部真实问答与尺寸保持`);
         }

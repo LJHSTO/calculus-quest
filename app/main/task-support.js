@@ -6,7 +6,9 @@
   const controlIds = new WeakMap();let nextControlId=0;
   let lastQuizSupport="";
   let quizOwner="";
-  let workspaceHost=null, focusHelp=true, workspaceHelpKey="";
+  let workspaceHost=null, focusHelp=false, workspaceHelpKey="";
+  function fitMini(){if(!workspaceHost?.isConnected)return;const stage=workspaceHost.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]');if(!stage)return;const scale=Math.min(1,stage.clientWidth/1280);const value=String(scale);if(workspaceHost.style.getPropertyValue('--course-mini-scale')!==value)workspaceHost.style.setProperty('--course-mini-scale',value);}
+  global.addEventListener('resize',()=>requestAnimationFrame(fitMini));
   const quizOpen=new Map(), quizReplies=new Map();
   const el = (tag, text, cls) => {const n=document.createElement(tag);if(text)n.textContent=text;if(cls)n.className=cls;return n;};
   const replyBody=text=>{const n=el('div',null,'assistant-content');if(global.AssistantContent)global.AssistantContent.renderInto(n,text);else n.textContent=text;return n;};
@@ -79,15 +81,16 @@
     if(!panel?.isConnected){panel=el("section",null,"task-support-panel");panel.setAttribute("aria-label",snapshot.check?"独立检查作答":"工作区中的知点帮助");host.append(panel);}
     if(panel.parentElement!==host)host.append(panel);
     if(source.parentElement!==panel){
-      const bar=el('header',null,'task-support-heading');bar.append(el('strong',snapshot.check?'独立检查':'知点 · 工作区帮助'));
+      const bar=el('header',null,'task-support-heading');bar.append(el('strong',snapshot.check?'独立检查':'知点 · 智能体老师'));
       if(snapshot.unitType==='knowledge'&&!snapshot.check){
-        const toggle=el('button',focusHelp?'放大课件':'查看帮助与课件小窗');toggle.type='button';toggle.dataset.supportFocusToggle='';
-        toggle.onclick=()=>{focusHelp=!focusHelp;host.classList.toggle('support-focus-help',focusHelp);toggle.textContent=focusHelp?'放大课件':'查看帮助与课件小窗';global.dispatchEvent(new Event('resize'));};bar.append(toggle);
+        const toggle=el('button',focusHelp?'放大课件':'课件小窗');toggle.type='button';toggle.dataset.supportFocusToggle='';toggle.title='在完整课件和缩放小窗之间切换';
+        toggle.onclick=()=>{focusHelp=!focusHelp;host.classList.toggle('support-focus-help',focusHelp);toggle.textContent=focusHelp?'放大课件':'课件小窗';fitMini();global.dispatchEvent(new Event('resize'));};bar.append(toggle);
       }
       panel.replaceChildren(bar,source);
     }panel.hidden=false;
     host.classList.toggle('task-support-workspace',snapshot.unitType==='knowledge'&&!snapshot.check);
     host.classList.toggle('support-focus-help',snapshot.unitType==='knowledge'&&!snapshot.check&&focusHelp);
+    requestAnimationFrame(fitMini);
     if(snapshot.offer)global.KnowledgeAssistant.observeSupportOffer(source.querySelector('.knowledge-proactive-inline-offer'),snapshot.offer);
   }
   function sync(next){
@@ -107,7 +110,7 @@
     // Keep the actual courseware iframe in place. Moving or cloning it reloads
     // games and loses in-progress interactions. CSS supplies the small window.
     const helpKey=next.supportCycle?.id||next.offer?.id||next.prompt?.id||next.scopeKey;
-    if(helpKey!==workspaceHelpKey){workspaceHelpKey=helpKey;focusHelp=true;}
+    if(helpKey!==workspaceHelpKey){workspaceHelpKey=helpKey;focusHelp=false;}
     const nextFrame=null;
     const nextKey=JSON.stringify([owner,next.scopeKey,next.sceneType,next.view,next.offer,next.prompt,next.check,next.checkSelection,next.feedback,next.busy,next.reply,next.supportCycle,next.supportBusy,next.pilotRevision,global.SupportCycleUI?.deferInquiry(next.supportCycle),global.SupportCycleUI?.manualOpen(next)]);
     if(nextFrame!==frame){message("cq:task-clear");frameBusy=false;locateRequested=false;frameMounted=false;frame=nextFrame;channel=crypto.randomUUID();key="";unavailable=false;visibility=null;clearTimeout(exposureTimer);exposureTimer=null;}
@@ -116,17 +119,14 @@
       key=nextKey;source=el("div",null,"task-support-content");source.append(global.KnowledgeAssistant.createSupportContent());
       if(next.check){message("cq:task-clear");source.prepend(el("p","独立检查中，提示和对话帮助已暂停。","task-assessment-note"));}
       else {
-        if(next.prompt)draftForm(source,"写下你的想法，再独立检查",`${next.scopeKey}:${next.prompt.id}`);
+        if(next.prompt){if(global.StudyEntry){const follow=el('details',null,'task-followup-question');follow.append(el('summary','还有不明白的？继续问老师'));draftForm(follow,'写下具体问题，例如“为什么同一个输入不能对应两个输出？”',`${next.scopeKey}:${next.prompt.id}`);source.append(follow);}else draftForm(source,'写下你对这一步的解释或疑问',`${next.scopeKey}:${next.prompt.id}`);}
         if(global.SupportCycleUI?.manualOpen(next)&&!next.offer&&!next.prompt&&!global.SupportCycleUI?.active(next.supportCycle)){
           const question=el("details",null,"task-manual-help");question.append(el("summary","需要一个思考线索"));
           draftForm(question,"告诉知点你卡在哪一步",`${next.scopeKey}:manual`);source.append(question);
           if(next.reply?.text && replyContext===`${next.unitId}:${next.sceneType}`){const response=el('details');response.open=true;response.append(el('summary','知点的回应'),replyBody(next.reply.text));source.prepend(response);}
           if(!next.feedback && !next.reply?.text)source.prepend(el("small","可以继续独立探索；需要时在当前步骤求助。"));
         }
-        const open=el("button","打开提问对话");open.type="button";open.addEventListener("click",()=>global.KnowledgeAssistant.open({preserveProactiveSuggestion:true}));source.append(open,el('small','这里的主动支持保留在当前任务旁；提问对话显示你在该对话中发送的问题与回复。'));
-        if(next.unitType==='knowledge'){
-          const back=el('button','返回课件操作');back.type='button';back.addEventListener('click',returnToTask);source.append(back);
-        }
+        if(!global.SupportCycleUI?.active(next.supportCycle)){const open=el('button','继续问老师');open.type='button';open.addEventListener('click',()=>global.KnowledgeAssistant.open({preserveProactiveSuggestion:true}));source.append(open);}
       }
     }
     if(frame&&!next.check&&!unavailable){panel?.remove();panel=null;deliver();}else showPanel();
@@ -174,13 +174,12 @@
   });
   document.addEventListener("visibilitychange",checkExposure);window.addEventListener("scroll",checkExposure,true);window.addEventListener("resize",checkExposure);
   function locate(){
-    if(workspaceHost?.isConnected){focusHelp=true;workspaceHost.classList.add('support-focus-help');const b=panel?.querySelector('[data-support-focus-toggle]');if(b)b.textContent='放大课件';}
     if(frame?.isConnected&&!unavailable){locateRequested=!frameMounted;frame.scrollIntoView({block:'nearest'});message('cq:task-locate');return true;}
-    if(panel?.isConnected){panel.tabIndex=-1;panel.scrollIntoView({block:'start'});panel.focus({preventScroll:true});return true;}
+    if(panel?.isConnected){panel.tabIndex=-1;panel.scrollIntoView({block:'nearest'});panel.focus({preventScroll:true});return true;}
     return false;
   }
   function returnToTask(){
-    if(workspaceHost?.isConnected){focusHelp=false;workspaceHost.classList.remove('support-focus-help');const b=panel?.querySelector('[data-support-focus-toggle]');if(b)b.textContent='查看帮助与课件小窗';global.dispatchEvent(new Event('resize'));}
+    if(workspaceHost?.isConnected){focusHelp=false;workspaceHost.classList.remove('support-focus-help');const b=panel?.querySelector('[data-support-focus-toggle]');if(b)b.textContent='课件小窗';global.dispatchEvent(new Event('resize'));}
     if(frame?.isConnected&&!unavailable){frame.scrollIntoView({block:'nearest'});message('cq:task-return');return;}
     const pane=panel?.parentElement;
     pane?.querySelector('[data-knowledge-scene-stage],[data-resource-fullscreen-target]')?.scrollIntoView({block:'start'});

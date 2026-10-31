@@ -246,7 +246,7 @@
     const header = node("header", "support-surface-header");
     const cycleActive=global.SupportCycleUI?.active(next.supportCycle);
     shell.dataset.cycle=String(Boolean(cycleActive));
-    header.append(node("strong", "", cycleActive ? "知点" : "知点 · 学习帮助"));
+    header.append(node("strong", "", "知点 · 智能体老师"));
     if(!cycleActive)header.append(node("span", "", labels[next.view.modality]));
     const close = node("button", "support-surface-collapse", "收起"); close.type = "button";
     close.title = "收起补充展示，当前帮助保留在助教栏；不会替你拒绝帮助";
