@@ -439,7 +439,9 @@ async function main() {
       fs.mkdirSync(output, { recursive: true });
       for (const width of [1366, 1920]) {
         await page.setViewportSize({ width, height: width === 1366 ? 768 : 1080 });
+        await initialOffer.waitFor({state:'visible'});
         await initialOffer.evaluate(element=>element.scrollIntoView({block:'nearest'}));
+        await page.screenshot({ path: path.join(output, `主动建议-${width}.png`) });
         const presentation = await initialOffer.evaluate((element) => {
           const rect = element.getBoundingClientRect();
           return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
@@ -448,7 +450,6 @@ async function main() {
         assert.ok(presentation.width > 0 && presentation.height > 0);
         assert.ok(presentation.left >= 0 && presentation.right <= presentation.viewportWidth + 1);
         if(!embeddedMode)assert.ok(presentation.top >= 0 && presentation.bottom <= presentation.viewportHeight + 1);
-        await page.screenshot({ path: path.join(output, `主动建议-${width}.png`) });
       }
     }
     if (process.env.TEST_PROACTIVE_ALTERNATIVE === "1") {
