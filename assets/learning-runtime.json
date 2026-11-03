@@ -1,6 +1,6 @@
 {
   "sourceLineEndings": "lf",
-  "version": "7ee18fd3b3f0290a224a",
+  "version": "344a31d69518378d9666",
   "indexSha256": "af96464da15fd360ca10fe600056a4e16607e99ea5efcc233c7357d82fb65649",
   "scripts": [
     {
@@ -66,7 +66,7 @@
     {
       "tag": "<script src=\"app/main/core.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/core.js",
-      "sha256": "fec9853eb1df88eb8b11d7cec1db0f607ae78f4197b10101b1c9a5e288a1b330"
+      "sha256": "615a33357b18d661288c4d6cd87e18c29bceb984683331ebd0ca23a6155976fa"
     },
     {
       "tag": "<script src=\"app/main/system-announcements.js?v=20260726-announcements-v7\"></script>",
@@ -121,7 +121,7 @@
     {
       "tag": "<script src=\"app/main/navigation.js?v=20260902-pilot-ux-v2\"></script>",
       "file": "app/main/navigation.js",
-      "sha256": "86d2861496643ad9e2fdcb128a341cb32a9d9adc8db28a866164936680960a25"
+      "sha256": "ba0fd0138bd74418eff1f49c677425413359fe0e38bfd1495b8040e236ba7eaf"
     },
     {
       "tag": "<script src=\"app/main/events.js?v=20260819-v2-knowledge-transition-v5\"></script>",
@@ -146,7 +146,7 @@
     {
       "tag": "<script src=\"app/main/quiz.js?v=20260909-feedback-r1\"></script>",
       "file": "app/main/quiz.js",
-      "sha256": "a38491cc086360b38588550e0070c99d4433c3d927dc5932913a2b512094d916"
+      "sha256": "74bdc00e102116c97e55677578b84327a67413a57ba3df5cf426f269451483f5"
     },
     {
       "tag": "<script src=\"app/main/agentic-path.js?v=20260909-flow-v5\"></script>",
@@ -191,7 +191,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "f1de74e87e013e4da7e521b1e3bb12e335c2c5cf488a47bd4f633abe7571cc0f"
+      "sha256": "60b1ec64fa78140bfd53583aa160f9f3208bdcdef4692ee09f86a4cdec85402c"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -216,7 +216,7 @@
     {
       "tag": "<script src=\"app/main/bootstrap.js?v=20260921-fast-logout-v1\"></script>",
       "file": "app/main/bootstrap.js",
-      "sha256": "ae914f94ae047f56f95c320a88dff2b5a2ebe46705d01c29957b4525215963bb"
+      "sha256": "37fed77be9dc946ef3ab426c79e592db2cef6b1ff55e8bd48b7ba19b7bcea8d8"
     },
     {
       "tag": "<script src=\"app/main/support-cycle.js?v=20261021-multi-goal\"></script>",
@@ -241,7 +241,7 @@
     {
       "tag": "<script src=\"app/main/three-arm-study.js?v=20261031\"></script>",
       "file": "app/main/three-arm-study.js",
-      "sha256": "bb5b9763981a8a56064c5eb1c6dd939b5f2122bbac10bb502e12d0080821203c"
+      "sha256": "9da1cf654a9fb65d9dbf8dcdbe8d97932c6119877f4b39b48f01582305c6ca17"
     },
     {
       "tag": "<script src=\"app/main/learner-setup.js?v=20261024\"></script>",
@@ -251,7 +251,7 @@
     {
       "tag": "<script src=\"app/main/task-support.js?v=20261018-task-support\"></script>",
       "file": "app/main/task-support.js",
-      "sha256": "7484f36ce2429d2a2a896b9c09afb293d51b3fa6872d3e01e52a6cf4a5e50e7a"
+      "sha256": "2484d12a9319638aa99bb1fb2f8b27ede393b271d81d061202dfebb15e1762a6"
     },
     {
       "tag": "<script src=\"app/main/proactive-surface.js?v=20261018-task-support\"></script>",
@@ -310,7 +310,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "a1dc09f715cd9b5027d9",
+  "styleVersion": "5140fbf4045b036e17ff",
   "styleSources": [
     {
       "file": "styles.css",
@@ -330,7 +330,7 @@
     },
     {
       "file": "app/main/learning-workspace.css",
-      "sha256": "ff326265cee5fb69df8fa92bb92b9698b39eab2b696e8aae5bf8008678a9bb36"
+      "sha256": "e05ba1b6b6c1229d4af7b086b2c045a9ad689b6672de1d54511727c616ec4a2f"
     },
     {
       "file": "app/main/openmaic-classroom.css",

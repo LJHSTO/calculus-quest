@@ -140,7 +140,7 @@ async function main(){
    page.on('requestfailed',r=>networkErrors.push({arm,path:new URL(r.url()).pathname,error:r.failure()?.errorText}));
    page.on('response',async r=>{
     const pathname=new URL(r.url()).pathname,status=r.status();if(status<400||!pathname.includes('/api/')||pathname.includes('/auth/'))return;
-    const row={arm,path:pathname,status,contentType:r.headers()['content-type'],injectedFault:['review-retry','assistant-retry'].includes(r.headers()['x-synthetic-fault'])};httpErrors.push(row);
+    const row={arm,path:pathname,status,contentType:r.headers()['content-type'],injectedFault:['review-retry','assistant-retry','quiz-receipt'].includes(r.headers()['x-synthetic-fault'])};httpErrors.push(row);
     try{const payload=await r.json();row.code=payload?.code;row.message=payload?.message;}catch{}
     fs.writeFileSync(path.join(dir,'接口异常响应.json'),JSON.stringify(httpErrors,null,2));
    });
@@ -158,7 +158,47 @@ async function main(){
    await page.locator('[data-view=learn]').first().click();await page.locator('#three-arm-dialog[open]').waitFor();
    for(const field of await page.locator('#three-arm-dialog [data-study-question]').all())await field.locator('input[value="3"]').check();
    await page.locator('#three-arm-dialog').getByRole('button',{name:'保存并继续',exact:true}).click();
-   await answer('V14-C1-pre',course.flow.preQuiz.questions);await page.locator('[data-quiz-path-action=pilot-next]').last().click();
+   if(process.env.TEST_RECOVERY_BOUNDARIES==='1'&&!remote){
+    let lost=false;await page.route('**/api/learning/quiz/submit',async route=>{
+     if(lost||route.request().postDataJSON().phase!=='pre')return route.continue();
+     const response=await route.fetch();assert.equal(response.status(),200);lost=true;
+     await route.fulfill({status:503,contentType:'application/json',headers:{'x-synthetic-fault':'quiz-receipt'},body:JSON.stringify({ok:false,message:'合成回执丢失'})});
+    });
+   }
+   await answer('V14-C1-pre',course.flow.preQuiz.questions);
+   if(process.env.TEST_RECOVERY_BOUNDARIES==='1'&&!remote){
+    await page.getByRole('button',{name:'和知点讨论这道题',exact:true}).first().click();
+    await page.locator('.task-response-form textarea').waitFor({state:'visible'});
+    for(const width of [1920,500]){
+     await page.setViewportSize({width,height:912});
+     assert.equal(await page.getByRole('button',{name:'回到本知识点课件',exact:true}).count(),0,'前测没有对应的知识点课件入口');
+     const height=await page.locator('.task-conversation-scroll').evaluate(n=>n.getBoundingClientRect().height);
+     assert.ok((await page.locator('.task-support-panel').boundingBox()).height<400,'空对话面板应按内容撑高，包含窄屏规则');
+     assert.ok(height<60,'空对话不应保留大块高度：'+height);await shot('前测空对话-'+width);
+    }
+    await page.setViewportSize({width:1440,height:960});pass(arm+'组前测回执丢失后恢复，宽窄屏无空白占位和错误课件入口');
+   }
+   if(process.env.STUDENT_UX_RECOVERY_ONLY==='1'&&!remote){
+    const conflict=await page.evaluate(async()=>{
+     await syncLearningSnapshot('before_synthetic_conflict');
+     const current=await (await fetch('api/learning/snapshot',{headers:{Authorization:`Bearer ${state.authToken}`}})).json();
+     await apiRequest('/api/learning/snapshot',{generation:current.generation,baseRevision:current.revision,snapshot:{...current.snapshot,note:'合成另一页面笔记'}});
+     state.note='合成本页未同步笔记';state.quizDrafts['synthetic-unit:question']='合成本页草稿';
+     await syncLearningSnapshot('synthetic_conflict');renderAll();
+     return {note:state.note,draft:state.quizDrafts['synthetic-unit:question'],backups:state.learningConflicts};
+    });
+    assert.equal(conflict.note,'合成另一页面笔记');assert.equal(conflict.draft,undefined);assert.equal(conflict.backups.at(-1).content.note,'合成本页未同步笔记');
+    await page.locator('#learning-sync-status summary').click();assert.match(await page.getByLabel('未同步的答案与笔记副本').last().inputValue(),/合成本页草稿/);await shot('冲突副本');
+    let release,entered;const waitForResults=new Promise(r=>entered=r),gate=new Promise(r=>release=r);
+    await page.route('**/api/learning/quiz-results',async route=>{const response=await route.fetch();entered();await gate;await route.fulfill({response});});
+    await page.evaluate(()=>{window.syntheticHydration=hydrateLearningState();});await waitForResults;
+    await page.locator('#auth-menu-toggle').click();await page.locator('#auth-logout').click();await page.locator('#auth-gate').waitFor({state:'visible'});
+    release();await page.evaluate(()=>window.syntheticHydration);
+    const after=await page.evaluate(()=>({participant:state.participant,results:state.quizResults.length,ready:learningSnapshotReady}));
+    assert.equal(after.participant,null);assert.equal(after.results,0);assert.equal(after.ready,false);pass(arm+'组真实接口冲突保全和退出后迟到响应隔离');
+    await context.close();continue;
+   }
+   await page.locator('[data-quiz-path-action=pilot-next]').last().click();
    if(arm!=='A')await saveSettings(arm==='B'&&(process.env.STUDENT_UX_QUIZ_SUPPORT!=='1'||process.env.STUDENT_UX_QUIZ_SIDEBAR==='1'));
    await page.waitForFunction(()=>currentUnitId==='GH-01-K01');assert.equal(await page.locator('#learner-setup[open]').count(),0);
    await page.locator('[data-openmaic-state=ready]').first().waitFor();

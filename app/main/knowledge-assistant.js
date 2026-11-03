@@ -134,6 +134,7 @@
       unitType: meta.unitType, chapterId: meta.chapterId, sceneType: meta.sceneType,
       taskReady: meta.taskReady,
       quizSubmitted: meta.quizSubmitted,
+      quizResourceUnitId: meta.quizResourceUnitId,
       generation: exposureGeneration,
       taskMessages: messages.map(({id,role,content,error,streaming})=>({id,role,content,error:Boolean(error),streaming:Boolean(streaming)})),
       taskError: taskRequestError?.unitId===meta.unitId&&taskRequestError.sceneType===(meta.sceneType||'slide')?taskRequestError.message:'',
@@ -612,6 +613,8 @@ const proactiveJustificationDrafts = new Map();
         : "lesson",
       quizSubmitted,
       isQuiz: unit?.type === "quiz",
+      quizResourceUnitId: unit?.type === "quiz" && unit.assessmentPhase === "formative"
+        ? unit.scene?.content?.knowledgePoint?.id || unit.knowledgePointId || unit.id.replace(/-formative$/, "") : "",
       supported
     };
   }
@@ -4117,7 +4120,7 @@ const proactiveJustificationDrafts = new Map();
       hint.textContent = "回到课件尝试，或在下方继续交流。";
       const returnButton=document.createElement('button');returnButton.type='button';returnButton.textContent='回到本知识点课件';
       const meta=courseMeta();
-      if(meta.isQuiz){returnButton.dataset.quizResourceLink=proactiveScopeKey(meta);returnButton.dataset.quizResourceScene=proactiveSceneForScope(proactiveScopeKey(meta),'simulation');}
+      if(meta.isQuiz && meta.quizResourceUnitId){returnButton.dataset.quizResourceLink=meta.quizResourceUnitId;returnButton.dataset.quizResourceScene=proactiveSceneForScope(meta.quizResourceUnitId,'simulation');}
       else returnButton.addEventListener('click',()=>global.TaskSupport?.returnToTask());
       const dismiss = document.createElement("button");
       dismiss.type = "button";
@@ -4145,7 +4148,8 @@ const proactiveJustificationDrafts = new Map();
           unitId: prompt?.unitId || courseMeta().unitId
         });
       });
-      footer.append(returnButton, dismiss);
+      if (!meta.isQuiz || meta.quizResourceUnitId) footer.append(returnButton);
+      footer.append(dismiss);
       article.appendChild(footer);
     }
     return article;

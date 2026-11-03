@@ -82,7 +82,10 @@ async function main(){
    const done=await api(outcomes+'/submit',{chapterId:course.id,stageId,sessionId:started.sessionId,responses:Object.fromEntries(stage.items.map(q=>[q.id,q.options?.[0]?.value||'A']))},'B');assert.equal(done.status,200,JSON.stringify(done));
   }
   const judgment=await api('/api/study/judgment',{action:'start'},'B');assert.equal(judgment.status,200,JSON.stringify(judgment));assert.equal(judgment.data.items.length,6);assert.ok(judgment.data.items.every(q=>!q.guide));
-  const draft=await api('/api/study/judgment',{action:'draft',revision:0,answers:{J1:'合成判断草稿'}},'B');assert.equal(draft.data.revision,1);
+  const draftBody={action:'draft',revision:0,answers:{J1:'合成判断草稿'},outsidePractice:'合成课外练习记录',requestId:'synthetic-draft-one'};
+  const draft=await api('/api/study/judgment',draftBody,'B');assert.equal(draft.data.revision,1);
+  const repeated=await api('/api/study/judgment',draftBody,'B');assert.equal(repeated.status,200);assert.equal(repeated.data.revision,1);assert.equal(repeated.data.outsidePractice,draftBody.outsidePractice);
+  assert.equal((await api('/api/study/judgment',{...draftBody,answers:{J1:'改变内容'}},'B')).status,409);
   assert.equal((await api('/api/study/judgment',{action:'draft',revision:0,answers:{}},'B')).status,409);
   assert.equal((await api('/api/learning/assistant/ask',{question:'配置任务期间索要提示'},'B')).status,409);
   assert.equal((await api('/api/study/judgment',{action:'submit',revision:1,answers:{}},'B')).status,400);
@@ -91,8 +94,19 @@ async function main(){
    const page=await browser.newPage({viewport:{width:1366,height:900}});const errors=[];page.on('pageerror',e=>errors.push(e.message));
    await page.goto(base+'/?study=B');await page.locator('#login-identifier').fill('三组隔离验收');await page.locator('#login-password').fill('synthetic-test-password');await page.locator('#login-submit').click();await page.locator('#auth-gate').waitFor({state:'hidden'});
    await page.evaluate(()=>ThreeArmStudyUI.openJudgment());await page.locator('[data-judgment=J1]').waitFor();assert.equal(await page.locator('[data-judgment=J1]').inputValue(),'合成判断草稿');
+   assert.equal(await page.getByLabel('课外练习情况',{exact:true}).inputValue(),'合成课外练习记录');
+   let lostDraftResponses=0;
+   await page.route('**/api/study/judgment',async route=>{
+    if(route.request().method()!=='POST'||route.request().postDataJSON().action!=='draft')return route.continue();
+    const response=await route.fetch();lostDraftResponses++;
+    if(lostDraftResponses<=3)return route.fulfill({status:200,contentType:'application/json',body:''});
+    return route.fulfill({response});
+   });
+   await page.getByLabel('课外练习情况',{exact:true}).fill('合成补充：练习20分钟');
+   await page.waitForFunction(()=>document.querySelector('#three-arm-dialog [role=status]')?.textContent.includes('连接暂时中断'));
    for(const item of judgment.data.items)await page.locator(`[data-judgment=${item.id}]`).fill('合成答卷：参考独立表现保持设置，并观察后续证据。');
    await page.getByRole('button',{name:'保存草稿，稍后继续',exact:true}).click();await page.reload();await page.evaluate(()=>ThreeArmStudyUI.openJudgment());await page.locator('[data-judgment=J6]').waitFor();assert.match(await page.locator('[data-judgment=J6]').inputValue(),/合成答卷/);
+   assert.equal(await page.getByLabel('课外练习情况',{exact:true}).inputValue(),'合成补充：练习20分钟');assert.ok(lostDraftResponses>=4);
    await page.screenshot({path:path.join(dir,'配置判断-草稿恢复.png')});await page.getByRole('button',{name:'提交六个情境回答',exact:true}).click();await page.getByText('配置判断已提交，等待研究人员评分。',{exact:true}).waitFor();assert.deepEqual(errors,[]);check('三天后配置判断真实页面填写、刷新恢复、提交接续');
    await page.goto(base+'/three-arm-admin.html');await page.locator('#study-admin-token').fill(admin);await page.locator('#study-admin-enter').click();
    await page.getByRole('button',{name:'查看介入与静默回放',exact:true}).click();await page.getByRole('heading',{name:'介入与静默回放',exact:true}).waitFor();await page.getByLabel('回放数据来源').selectOption('preview');await page.getByRole('button',{name:'读取所选版本',exact:true}).click();await page.getByRole('button',{name:'下载回放与人工标注文件',exact:true}).waitFor();await page.screenshot({path:path.join(dir,'管理端-决策回放.png')});await page.getByRole('button',{name:'返回管理',exact:true}).click();

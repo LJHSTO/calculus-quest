@@ -354,11 +354,11 @@ document.addEventListener("DOMContentLoaded", function() {
   <div id="info">
     <h2>🏔️ 函数的上升与下降</h2>
     <p>想象你在爬山：<br>
-    • <b>山越高</b> → 函数值 f(x) 越大<br>
+    • <b>固定 z 的截面</b> → 用 f(x) 表示该截面的高度<br>
     • <b>坡越陡</b> → 函数变化越快<br>
     • <b>x 从小到大时高度增加</b> → 函数上升<br>
     • <b>x 从小到大时高度降低</b> → 函数下降</p>
-    <div class="hint">💡 点击「开始滑动」观察小球在坡度变化时的速度变化</div>
+    <div class="hint">💡 小球沿坡滑动时的高度变化，与函数沿 x 增大方向的增减不同。判断函数增减，请固定截面并从左向右读图。</div>
   </div>
 
   <div id="status-bar">
@@ -367,11 +367,11 @@ document.addEventListener("DOMContentLoaded", function() {
       <span class="status-value" id="status-x">0.00</span>
     </div>
     <div class="status-row">
-      <span class="status-label">高度 f(x):</span>
+      <span class="status-label">地形高度 h(x,z):</span>
       <span class="status-value" id="status-fx">0.00</span>
     </div>
     <div class="status-row">
-      <span class="status-label">坡度 (变化率):</span>
+      <span class="status-label">坡度大小:</span>
       <span class="status-value" id="status-slope">0.00</span>
     </div>
     <div class="status-row">
@@ -379,7 +379,7 @@ document.addEventListener("DOMContentLoaded", function() {
       <span class="status-value" id="status-speed">0.00</span>
     </div>
     <div class="status-row">
-      <span class="status-label">变化方向:</span>
+      <span class="status-label">运动中高度变化:</span>
       <span class="status-value" id="status-dir">—</span>
     </div>
   </div>
@@ -758,11 +758,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
           if (isSliding && ballState.active) {
             const pos = ballState.position;
+            const previousHeight = getTerrainHeight(pos.x, pos.z);
             const slope = getTerrainSlope(pos.x, pos.z);
 
             // Gravity along the slope
-            const accelX = slope.x * gravityStrength * animationSpeed * 0.016;
-            const accelZ = slope.z * gravityStrength * animationSpeed * 0.016;
+            const accelX = -slope.x * gravityStrength * animationSpeed * 0.016;
+            const accelZ = -slope.z * gravityStrength * animationSpeed * 0.016;
 
             ballState.velocity.x += accelX;
             ballState.velocity.z += accelZ;
@@ -783,6 +784,7 @@ document.addEventListener("DOMContentLoaded", function() {
               ballState.velocity.multiplyScalar(-0.3);
               pos.x = Math.max(-bound, Math.min(bound, pos.x));
               pos.z = Math.max(-bound, Math.min(bound, pos.z));
+              pos.y = getTerrainHeight(pos.x, pos.z) + ballRadius;
             }
 
             ball.position.copy(pos);
@@ -829,17 +831,18 @@ document.addEventListener("DOMContentLoaded", function() {
             document.getElementById('status-slope').textContent = (Number.isFinite(Number(slopeMag)) ? Number(slopeMag) : 0).toFixed(3);
             document.getElementById('status-speed').textContent = (Number.isFinite(Number(speed)) ? Number(speed) : 0).toFixed(3);
 
-            const speedZ = ballState.velocity.z;
-            if (speedZ > 0.01) {
-              document.getElementById('status-dir').textContent = '↗ 上升 (f(x)增大)';
+            const heightChange = pos.y - ballRadius - previousHeight;
+            if (heightChange > 0.0001) {
+              document.getElementById('status-dir').textContent = '↗ 上升（小球高度增加）';
               document.getElementById('status-dir').style.color = '#22c55e';
-            } else if (speedZ < -0.01) {
-              document.getElementById('status-dir').textContent = '↘ 下降 (f(x)减小)';
+            } else if (heightChange < -0.0001) {
+              document.getElementById('status-dir').textContent = '↘ 下降（小球高度降低）';
               document.getElementById('status-dir').style.color = '#ef4444';
             } else {
-              document.getElementById('status-dir').textContent = '— 平缓';
+              document.getElementById('status-dir').textContent = '— 高度基本不变';
               document.getElementById('status-dir').style.color = '#94a3b8';
             }
+            // End direction status
           }
 
           controls.update();

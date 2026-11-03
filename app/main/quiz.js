@@ -388,6 +388,31 @@ function renderQuizPathNavigation(unit) {
   `;
 }
 
+async function submitQuizWithRecovery(unit, answers) {
+  const session = learningSession();
+  try {
+    const result = await apiRequest("/api/learning/quiz/submit", {
+      unitId: unit.id, chapterId: unit.chapterId, phase: unit.assessmentPhase || "", answers
+    }, { timeoutMs: 15000 });
+    if (!Array.isArray(result.results) || !answers.every(a => result.results.some(r => r.questionId === a.questionId))) {
+      throw Object.assign(new Error("成绩回执不完整，正在核对已保存的结果。"), { status: 502 });
+    }
+    return result;
+  } catch (error) {
+    if (!learningSessionIsCurrent(session)) return null;
+    if (error.code !== "quiz_already_submitted" && error.code !== "quiz_question_set_mismatch"
+      && !learningSnapshotSyncErrorIsRetryable(error)) throw error;
+    // A lost acknowledgement must not turn a saved attempt into another submission.
+    const saved = await fetchAuthoritativeQuizResults(unit.id).catch(() => null);
+    if (!learningSessionIsCurrent(session)) return null;
+    const results = (saved || []).filter(row => row.unitId === unit.id && answers.some(a => a.questionId === row.questionId));
+    if (results.length !== answers.length || !answers.every(a => results.some(r => r.questionId === a.questionId))) throw error;
+    return { results, requiresDiagnostic: Boolean(unit.adaptiveFormative
+      && results.some(r => r.questionId.endsWith("-check-q1") && r.isCorrect === false)
+      && !saved.some(r => r.questionId.endsWith("-check-q2"))), recovered: true };
+  }
+}
+
 async function submitQuiz(unitId) {
   const unit = getUnit(unitId);
   const diagnosticPending = Boolean(
@@ -404,6 +429,7 @@ async function submitQuiz(unitId) {
   submitInProgress = unitId;
   let feedback = null;
   let submitButton = null;
+  let requestSession = null;
   try {
   if (!unit?.scene?.content?.questions) return;
   if (
@@ -479,15 +505,14 @@ async function submitQuiz(unitId) {
     submitButton.textContent = "正在提交";
   }
   if (feedback) feedback.textContent = "正在由服务器核对答案...";
-  const submitted = await apiRequest("/api/learning/quiz/submit", {
-    unitId: unit.id,
-    chapterId: unit.chapterId,
-    phase: unit.assessmentPhase || "",
-    answers: submissions.map(({ question, response }) => ({
+  requestSession = learningSession();
+  const submitted = await submitQuizWithRecovery(unit,
+    submissions.map(({ question, response }) => ({
       questionId: question.id,
       response
     }))
-  });
+  );
+  if (!submitted || !learningSessionIsCurrent(requestSession)) return;
   const authoritative = new Map(
     (submitted.results || []).map((result) => [result.questionId, result])
   );
@@ -644,6 +669,7 @@ async function submitQuiz(unitId) {
     agenticOnUnitCompleted(unit);
   }
   } catch (error) {
+    if (requestSession && !learningSessionIsCurrent(requestSession)) return;
     console.warn("Quiz submission failed:", error);
     if (feedback) feedback.textContent = error.message || "测验提交失败，请稍后重试。";
     if (submitButton) {
@@ -651,7 +677,7 @@ async function submitQuiz(unitId) {
       submitButton.textContent = "提交本次测验";
     }
   } finally {
-    submitInProgress = null;
+    if (!requestSession || learningSessionIsCurrent(requestSession)) submitInProgress = null;
   }
 }
 

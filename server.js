@@ -9204,7 +9204,9 @@ async function handleApi(req, res, url) {
     if (req.method === "GET" && url.pathname === "/api/learning/quiz-results") {
       const auth = authenticate(req);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      const results = db.getQuizResultsByUser(auth.participant.id, 500).map((row) => {
+      const unitId = String(url.searchParams.get("unitId") || "").trim();
+      const savedResults = unitId ? db.getQuizResultsByUserUnit(auth.participant.id, unitId) : db.getQuizResultsByUser(auth.participant.id, 500);
+      const results = savedResults.map((row) => {
         const entry = courseAssessment.assessmentEntry(assessmentIndex, row);
         const archived = !entry && row.chapter_id === "V14-C1" && ["pre", "post"].includes(row.phase)
           ? require("./lib/assessments/functions-limits-r1").questions(row.phase)

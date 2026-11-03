@@ -292,7 +292,7 @@ document.addEventListener("DOMContentLoaded", function() {
       "icon": "💡",
       "x": 450,
       "y": 520,
-      "details": "<div class='detail-icon'>💡</div><div class='detail-title'>趋势与点值分别判断</div><div class='detail-subtitle'>本节课的核心结论</div><div class='detail-body'><div class='insight'>✅ <b>lim(x→a) f(x)</b> 描述的是 x 趋近 a 时 f(x) 的<b>趋势</b><br>✅ <b>f(a)</b> 描述的是 x = a 时 f(x) 的<b>实际值</b></div><p>它们可能相等，也可能不等：</p><table><tr><th>情况</th><th>极限</th><th>函数值</th><th>关系</th></tr><tr><td>连续</td><td>存在</td><td>存在</td><td style='color:#3fb950'>相等 ✓</td></tr><tr><td>可去间断</td><td>存在</td><td>不存在/不等</td><td style='color:#f0883e'>不等 ✗</td></tr><tr><td>跳跃间断</td><td>不存在</td><td>存在</td><td style='color:#f0883e'>不可比 ✗</td></tr></table><div class='formula'>核心公式：<br>lim(x→a) f(x) = L ≠ f(a)<br>（趋势值不一定等于函数值）</div><p>🌊 物理隐喻：就像你走向一扇门（趋近），但你永远不推开门（不等于）——你描述的是\"走近\"的过程，而非\"进入\"的状态。</p></div>"
+      "details": "<div class='detail-icon'>💡</div><div class='detail-title'>趋势与点值分别判断</div><div class='detail-subtitle'>本节课的核心结论</div><div class='detail-body'><div class='insight'>✅ <b>lim(x→a) f(x)</b> 描述的是 x 趋近 a 时 f(x) 的<b>趋势</b><br>✅ <b>f(a)</b> 描述的是 x = a 时 f(x) 的<b>实际值</b></div><p>它们可能相等，也可能不等：</p><table><tr><th>情况</th><th>极限</th><th>函数值</th><th>关系</th></tr><tr><td>连续</td><td>存在</td><td>存在</td><td style='color:#3fb950'>相等 ✓</td></tr><tr><td>可去间断</td><td>存在</td><td>未定义或不等于极限</td><td style='color:#f0883e'>未定义时不比较；定义后可不等</td></tr><tr><td>跳跃间断</td><td>不存在</td><td>存在</td><td style='color:#f0883e'>不可比 ✗</td></tr></table><div class='formula'>核心公式：<br>lim(x→a) f(x) = L<br>若在 a 连续，则 L = f(a)；<br>f(a) 已定义但不连续时，二者可能不等；<br>f(a) 未定义时，不能写它与 L 相等或不等。</div><p>例如：f(x)=x 在 x→2 时的极限是 2，也等于 f(2)。若只把 f(2) 改为 5，极限仍为 2；若不定义 f(2)，极限也仍可存在。</p></div>"
     }
   ],
   "edges": [

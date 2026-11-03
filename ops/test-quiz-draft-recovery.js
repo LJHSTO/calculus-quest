@@ -19,6 +19,7 @@ async function run({ draftGeneration = 1, draftRevision = 2, submitted = false, 
     learningSnapshotReady: false, lastSnapshotJson: "", logoutGeneration: 0,
     AbortSignal: globalThis.AbortSignal,
     isSignedIn: () => true,
+    learningSession: () => ({ token: "test" }), learningSessionIsCurrent: session => session.token === state.authToken,
     fetch: async () => ({ ok: true, json: async () => ({
       ok: true, generation: 1, revision: 2,
       snapshot: { quizDrafts: {}, submittedQuizzes: submitted ? ["unit"] : [], quizResults: [],

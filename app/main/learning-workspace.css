@@ -606,10 +606,14 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
 #study-experience-prompt .study-experience-invitation{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;}
 #study-experience-prompt .study-experience-invitation strong{margin-right:auto;font-size:13px;}
 #study-experience-prompt[data-expanded=true]{padding:12px 16px;}
-#learn-view :is(.task-support-panel,.learning-support-surface):has(.has-task-conversation){display:flex;flex-direction:column;height:calc(100dvh - 230px);overflow:hidden;}
+#learn-view :is(.task-support-panel,.learning-support-surface):has(.has-task-conversation){display:flex;flex-direction:column;height:auto;max-height:none;overflow:visible;}
 #learn-view :is(.task-support-heading,.support-surface-header){flex-shrink:0;}
-#learn-view .has-task-conversation{display:flex;flex-direction:column;flex:1 1 0;min-height:0;overflow:hidden;}
-#learn-view .task-conversation-scroll{flex:1 1 0;min-height:0;overflow:auto;overscroll-behavior:contain;padding-right:4px;}
+#learn-view .has-task-conversation{display:flex;flex-direction:column;min-height:0;}
+#learn-view .task-conversation-scroll{max-height:45dvh;overflow:auto;overscroll-behavior:contain;padding-right:4px;}
+#learn-view .task-conversation-scroll:empty{display:none;}
+#learning-sync-status{margin:8px 16px;padding:10px 14px;border:1px solid #c7b9ee;border-radius:8px;background:#faf8ff;}
+#learning-sync-status summary{cursor:pointer;}
+#learning-sync-status textarea{display:block;box-sizing:border-box;width:100%;margin:8px 0;}
 #learn-view .has-task-conversation>.task-response-form{flex:0 0 auto;margin-top:10px;background:inherit;}
 #learn-view .has-task-conversation>.task-response-form textarea{resize:none;}
 #learn-view [data-quiz-support-host]:not(:empty){margin:16px 0 24px;}
@@ -628,5 +632,3 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
 #learn-view .question-task-review{margin-top:12px;padding-top:0;border:0;}
 #learn-view .quiz-resource .quiz-coverage{display:flex;align-items:baseline;gap:8px;margin:10px 0 0;padding:0;border:0;background:none;font-size:12px;color:#687382;}
 #learn-view .question-task-review button{min-height:36px;padding:5px 10px;border:1px solid #dcd6ed;border-radius:7px;background:white;color:#5b45b7;font:13px/1.5 'Microsoft YaHei',sans-serif;cursor:pointer;}
-#learn-view .core-learning-workspace:is(:fullscreen,.is-local-fullscreen-target) :is(.task-support-panel,.learning-support-surface):has(.has-task-conversation){height:calc(100dvh - 200px);}
-@media(max-width:700px){#learn-view :is(.task-support-panel,.learning-support-surface):has(.has-task-conversation){height:60dvh;min-height:320px;}}

@@ -181,9 +181,8 @@ function testSelectedSceneShowsTransitionPreview() {
   assert.match(markup, /完成当前互动后，选择下一步/);
   assert.match(markup, /互动场景已经选好/);
   assert.match(markup, /data-knowledge-transition-stage="preview"/);
-  assert.match(markup, /完成互动后可选：/);
-  assert.match(markup, /<strong>直接继续<\/strong>/);
-  assert.match(markup, /<strong>做小题测一测<\/strong>/);
+  assert.match(markup, /完成互动后：/);
+  assert.match(markup, /<strong>进入下一步，或完成三题检测<\/strong>/);
   assert.doesNotMatch(markup, /data-knowledge-transition=/);
 
   const active = {
@@ -383,7 +382,7 @@ async function testReviewFollowsSavedTransitionChoice() {
     "KP1-formative",
     "选择做小题且尚未完成时，复习路径必须先经过当前知识点检测"
   );
-  assert.equal(context.agenticCompletionCta(context.getUnit("KP1")).label, "复习后做小题测一测");
+  assert.equal(context.agenticCompletionCta(context.getUnit("KP1")).label, "复习后完成三题检测");
   assert.equal(await context.completeAndAdvanceCurrentUnit({ preventDefault() {} }), true);
   assert.equal(context.currentUnitId, "KP1-formative", "选择小题后，复习应回到未完成的小题");
 
@@ -409,7 +408,7 @@ async function testReviewFollowsSavedTransitionChoice() {
     "KP1-formative",
     "即使检测已有记录，显式选择做小题也必须保留检测在复习路径中"
   );
-  assert.equal(context.agenticCompletionCta(context.getUnit("KP1")).label, "复习后做小题测一测");
+  assert.equal(context.agenticCompletionCta(context.getUnit("KP1")).label, "复习后完成三题检测");
   assert.equal(await context.completeAndAdvanceCurrentUnit({ preventDefault() {} }), true);
   assert.equal(context.currentUnitId, "KP1-formative", "小题已有完成记录时，复习仍应按已选路径经过检测");
 }

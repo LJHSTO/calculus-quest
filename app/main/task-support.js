@@ -85,8 +85,8 @@
     }
     for(const turn of turns.slice(-8)){const response=el('div',null,'task-conversation-reply');response.append(el('p',turn.question,'task-student-message'));if(turn.reply)response.append(replyBody(turn.reply));else if(turn.pending)response.append(el('p','知点正在回应…','task-response-status'));parent.append(response);}
     parent.classList.add('has-task-conversation');const history=el('div',null,'task-conversation-scroll');history.append(...parent.childNodes);parent.append(history);
-    if(!next.prompt&&next.unitType==='quiz'){
-      const back=el('button','回到本知识点课件','task-course-return');back.type='button';back.dataset.quizResourceLink=next.scopeKey;back.dataset.quizResourceScene='simulation';parent.append(back);
+    if(!next.prompt&&next.unitType==='quiz'&&next.quizResourceUnitId){
+      const back=el('button','回到本知识点课件','task-course-return');back.type='button';back.dataset.quizResourceLink=next.quizResourceUnitId;back.dataset.quizResourceScene='simulation';parent.append(back);
     }
     draftForm(parent,'把你的想法告诉知点',`${next.scopeKey}:${next.sceneType||'slide'}:conversation`);
   }

@@ -66,6 +66,8 @@ let learningSnapshotReady = false;
 let learningSnapshotSyncPaused = false;
 let learningSnapshotSyncChain = Promise.resolve();
 let learningSnapshotRetryTimer = null;
+let learningSnapshotRetryAttempt = 0;
+let learningSnapshotSyncError = "";
 let authTransitionInProgress = false;
 // Bumped on every logout. In-flight async work captures it and refuses to write
 // state once it no longer matches.
@@ -84,6 +86,7 @@ function learningDefaults() {
     quizResults: [],
     quizDrafts: {},
     quizDraftRecovery: {},
+    learningConflicts: [],
     quizAttempts: {},
     submittedQuizzes: [],
     selectedKnowledgeScenes: {},
@@ -1021,14 +1024,31 @@ function applyServerLearningSnapshot(serverSnapshot, options = {}) {
   normalizeLearningStateCompatibility(state);
 }
 
-async function loadAuthoritativeQuizResults(options = {}) {
-  const response = await fetch("api/learning/quiz-results", {
-    headers: { Authorization: `Bearer ${state.authToken}` }
+function learningSession() {
+  return { token: state.authToken, participantId: state.participant?.participantId || state.participant?.id, generation: logoutGeneration };
+}
+
+function learningSessionIsCurrent(session) {
+  const current = learningSession();
+  return isSignedIn() && session.token === current.token
+    && session.participantId === current.participantId && session.generation === current.generation;
+}
+
+async function fetchAuthoritativeQuizResults(unitId = "") {
+  const session = learningSession();
+  const response = await fetch("api/learning/quiz-results" + (unitId ? `?unitId=${encodeURIComponent(unitId)}` : ""), {
+    headers: { Authorization: `Bearer ${session.token}` },
+    signal: AbortSignal.timeout(15000)
   });
-  if (!response.ok) return;
   const payload = await response.json().catch(() => ({}));
-  if (!payload.ok || !Array.isArray(payload.data)) return;
-  const results = payload.data.map(quizResultFromServer);
+  if (!learningSessionIsCurrent(session)) return null;
+  if (!response.ok || !payload.ok || !Array.isArray(payload.data)) throw new Error("暂时无法读取已保存的成绩，请重试。");
+  return payload.data.map(quizResultFromServer);
+}
+
+async function loadAuthoritativeQuizResults(options = {}) {
+  const results = await fetchAuthoritativeQuizResults();
+  if (!results) return;
   if (options.replace && results.length) {
     state.quizResults = results;
   } else if (!options.replace) {
@@ -1049,7 +1069,8 @@ async function loadAuthoritativeQuizResults(options = {}) {
 
 async function hydrateLearningState(options = {}) {
   if (!isSignedIn()) return false;
-  const generation = logoutGeneration;
+  const session = learningSession();
+  const conflicts = state.learningConflicts || [];
   learningSnapshotReady = false;
   // A bare fetch here had no timeout, so a hung snapshot request could leave the
   // logout button disabled forever (only a reload recovered). Bound it.
@@ -1063,8 +1084,9 @@ async function hydrateLearningState(options = {}) {
   // The participant may have logged out while this was in flight; reviving their
   // learning state afterwards is exactly the "old callback resurrects the old
   // session" failure.
-  if (generation !== logoutGeneration || !isSignedIn()) return false;
+  if (!learningSessionIsCurrent(session)) return false;
   const payload = await response.json().catch(() => ({}));
+  if (!learningSessionIsCurrent(session)) return false;
   if (!response.ok || payload.ok === false) {
     const error = new Error(payload.message || "学习记录恢复失败，请重新登录。");
     error.status = response.status;
@@ -1076,7 +1098,9 @@ async function hydrateLearningState(options = {}) {
   setLearningSnapshotVersion(payload);
   const replaceWithServer = options.replace === true || Boolean(payload.snapshot);
   applyServerLearningSnapshot(payload.snapshot, { ...options, replace: replaceWithServer });
+  state.learningConflicts = conflicts;
   await loadAuthoritativeQuizResults({ ...options, replace: replaceWithServer }).catch(() => {});
+  if (!learningSessionIsCurrent(session)) return false;
   state.quizDraftRecovery = {};
   for (const [key, draft] of Object.entries(recovery)) {
     // Only recover unsynced drafts from this server generation and revision.
@@ -1105,6 +1129,7 @@ function queueLearningSnapshot(reason = "state_change") {
 
 async function performLearningSnapshotSync(reason = "manual") {
   if (!isSignedIn() || !learningSnapshotReady || learningSnapshotSyncPaused) return;
+  const session = learningSession();
   const snapshot = learningSnapshot();
   const snapshotJson = snapshotContentJson(snapshot);
   if (reason === "state_change" && snapshotJson === lastSnapshotJson) return;
@@ -1116,6 +1141,7 @@ async function performLearningSnapshotSync(reason = "manual") {
       reason,
       snapshot
     }, { timeoutMs: 15000 });
+    if (!learningSessionIsCurrent(session)) return;
     setLearningSnapshotVersion(payload);
     for (const [key, draft] of Object.entries(state.quizDraftRecovery || {})) {
       if (JSON.stringify(snapshot.quizDrafts[key]) === JSON.stringify(draft.value)) {
@@ -1128,19 +1154,30 @@ async function performLearningSnapshotSync(reason = "manual") {
     persistStateLocally();
     lastSnapshotJson = snapshotJson;
     clearLearningSnapshotRetry();
+    learningSnapshotRetryAttempt = 0;
+    learningSnapshotSyncError = "";
+    renderLearningSyncStatus();
   } catch (error) {
+    if (!learningSessionIsCurrent(session)) return;
     if (
       error.code === "snapshot_generation_conflict"
       || error.code === "snapshot_revision_conflict"
     ) {
       clearLearningSnapshotRetry();
-      await hydrateLearningState({ replace: true }).catch(() => {});
-    } else if (
-      reason !== "retry_after_failure"
-      && learningSnapshotSyncErrorIsRetryable(error)
-    ) {
-      scheduleLearningSnapshotRetry();
+      preserveLearningConflict(error.code);
+      try {
+        await hydrateLearningState({ replace: true });
+        if (!learningSessionIsCurrent(session)) return;
+        learningSnapshotSyncError = "另一页面或学习重置更新了记录。本页未同步内容已保留，请核对后继续。";
+      } catch {
+        if (!learningSessionIsCurrent(session)) return;
+        learningSnapshotSyncError = "未同步内容已保留，暂时无法读取最新记录，请重试。";
+      }
+    } else {
+      learningSnapshotSyncError = "部分学习记录尚未同步，内容已保存在本机。";
+      if (learningSnapshotSyncErrorIsRetryable(error)) scheduleLearningSnapshotRetry();
     }
+    renderLearningSyncStatus();
     console.warn("Learning snapshot sync failed:", error.message);
   }
 }
@@ -1160,8 +1197,9 @@ function clearLearningSnapshotRetry() {
 }
 
 function scheduleLearningSnapshotRetry() {
-  if (learningSnapshotRetryTimer) return;
+  if (learningSnapshotRetryTimer || learningSnapshotRetryAttempt >= 5) return;
   const token = state.authToken;
+  const delay = Math.min(300000, 30000 * 2 ** learningSnapshotRetryAttempt++);
   learningSnapshotRetryTimer = setTimeout(() => {
     learningSnapshotRetryTimer = null;
     if (
@@ -1173,7 +1211,57 @@ function scheduleLearningSnapshotRetry() {
     ) {
       syncLearningSnapshot("retry_after_failure");
     }
-  }, 30000);
+  }, delay);
+}
+
+function preserveLearningConflict(reason) {
+  const content = { reason, generation: learningSnapshotGeneration, revision: learningSnapshotRevision,
+    courseAssessmentFingerprint: learningSnapshot().courseAssessmentFingerprint,
+    quizDrafts: { ...(state.quizDrafts || {}) }, note: state.note || "" };
+  state.learningConflicts = state.learningConflicts || [];
+  if (JSON.stringify(state.learningConflicts.at(-1)?.content) !== JSON.stringify(content)) {
+    state.learningConflicts.push({ at: new Date().toISOString(), content });
+  }
+  persistStateLocally();
+}
+
+function renderLearningSyncStatus() {
+  if (typeof document === "undefined") return;
+  let panel = document.querySelector("#learning-sync-status");
+  if (!isSignedIn() || (!learningSnapshotSyncError && !state.learningConflicts?.length)) { panel?.remove(); return; }
+  if (!panel) {
+    const host = document.querySelector("#learn-view .player-top");
+    if (!host) return;
+    panel = document.createElement("details"); panel.id = "learning-sync-status"; host.after(panel);
+  }
+  panel.replaceChildren();
+  const summary = document.createElement("summary");
+  summary.textContent = state.learningConflicts?.length ? "有未同步内容，点击查看本机保留副本" : learningSnapshotSyncError;
+  panel.append(summary);
+  const message = document.createElement("p"); message.textContent = learningSnapshotSyncError || "这些副本只保存在本机，不会自动覆盖服务器记录。"; panel.append(message);
+  for (const entry of state.learningConflicts || []) {
+    const text = document.createElement("textarea"); text.readOnly = true; text.rows = 5;
+    text.setAttribute("aria-label", "未同步的答案与笔记副本");
+    text.value = `${entry.at}\n笔记：${entry.content.note}\n作答：${JSON.stringify(entry.content.quizDrafts, null, 2)}`;
+    panel.append(text);
+  }
+  const retry = document.createElement("button"); retry.type = "button"; retry.textContent = "重新同步";
+  retry.onclick = async () => {
+    retry.disabled = true; learningSnapshotRetryAttempt = 0;
+    try {
+      if (!learningSnapshotReady) await hydrateLearningState({ replace: true });
+      await syncLearningSnapshot("manual_retry");
+    } catch { learningSnapshotSyncError = "暂时无法同步，请稍后再试。本机副本仍保留。"; }
+    finally { retry.disabled = false; renderLearningSyncStatus(); }
+  };
+  panel.append(retry);
+}
+
+function resumePendingLearningSync() {
+  if (!isSignedIn() || !learningSnapshotSyncError || learningSnapshotSyncPaused) return;
+  learningSnapshotRetryAttempt = 0;
+  clearLearningSnapshotRetry();
+  if (learningSnapshotReady) syncLearningSnapshot("connection_restored");
 }
 
 function syncLearningSnapshot(reason = "manual") {
@@ -1362,6 +1450,9 @@ async function logoutParticipant() {
   if (authTransitionInProgress) return;
   authTransitionInProgress = true;
   const generation = ++logoutGeneration;
+  clearLearningSnapshotRetry();
+  learningSnapshotRetryAttempt = 0;
+  learningSnapshotSyncError = "";
   clearTimeout(syncTimer);
   if (typeof analyticsEndParticipantSession === "function") {
     analyticsEndParticipantSession("logout");
@@ -1381,6 +1472,8 @@ async function logoutParticipant() {
   onlinePeriodStart = null;
   clearPreviewKnowledgeSceneSelections();
   Object.assign(state, learningDefaults(), { participant: null });
+  if (typeof submitInProgress !== "undefined") submitInProgress = null;
+  renderLearningSyncStatus();
   currentChapterId = chapters[0]?.id || "V14-C1";
   currentUnitId = "";
   switchView("home");

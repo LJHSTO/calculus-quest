@@ -1,5 +1,6 @@
 // View, chapter, unit, completion, and activity-log navigation.
 let completionNavigationInFlight = "";
+let navigationRevision = 0;
 function scrollLearningStart() {
   const targetUnit=currentUnitId;
   requestAnimationFrame(()=>{
@@ -18,6 +19,7 @@ function renderAll() {
   renderPlayer();
   renderLibrary();
   renderProgress();
+  if (typeof renderLearningSyncStatus === "function") renderLearningSyncStatus();
   if (typeof renderFeedbackPage === "function") renderFeedbackPage();
   window.dispatchEvent(new CustomEvent("cq:lesson-rendered", {
     detail: {
@@ -174,6 +176,8 @@ async function selectChapter(chapterId) {
     return false;
   }
   const previousChapterId = currentChapterId;
+  const requestRevision = ++navigationRevision;
+  const requestToken = state.authToken;
   const previousUnitId = currentUnitId;
   const previousReturnToQuiz = state.returnToQuiz;
   analyticsTrack("chapter_select", {
@@ -195,6 +199,7 @@ async function selectChapter(chapterId) {
     renderAll();
     try {
       const loaded = await ensureChapterLoaded(chapterId);
+      if (requestRevision !== navigationRevision || requestToken !== state.authToken || currentChapterId !== chapterId) return false;
       if (loaded === false) throw new Error("chapter_load_rejected");
       const loadedChapter = getChapter(chapterId);
       const loadedPathUnits = typeof agenticDisplayUnitsForChapter === "function"
@@ -205,6 +210,7 @@ async function selectChapter(chapterId) {
       currentUnitId = loadedFirst?.id || "";
       preloadChapterResources(chapterId);
     } catch {
+      if (requestRevision !== navigationRevision || requestToken !== state.authToken || currentChapterId !== chapterId) return false;
       // Chapter load failed; stay on current chapter view
       currentChapterId = previousChapterId;
       currentUnitId = previousUnitId;
@@ -230,6 +236,7 @@ function selectUnit(unitId) {
   if(window.LearnerSetup&&!window.LearnerSetup.allowsUnit(unit)){window.LearnerSetup.renderGuide();return false;}
   if (typeof agenticGuardNavigation === "function" && !agenticGuardNavigation(unitId, { allowPrevious: true })) return false;
   const previousUnit = getUnit(currentUnitId);
+  navigationRevision++;
   retireQuizReturnContext(unit.id);
   currentChapterId = unit.chapterId;
   currentUnitId = unit.id;

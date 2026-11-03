@@ -13,7 +13,7 @@
     const token=state.authToken,payload=body?JSON.stringify(body):null;
     // These writes are keyed records on the server. Repeating an identical
     // save after a lost response cannot add a second survey or review.
-    const retrySafe=!body||['survey','review','enroll'].includes(path);
+    const retrySafe=!body||['survey','review','enroll'].includes(path)||(path==='judgment'&&body.action==='draft'&&Boolean(body.requestId));
     const attempts=options.attempts||3;
     for(let attempt=0;attempt<attempts;attempt++){
       if(token!==state.authToken)throw new Error('账号已变化，请重新打开');
@@ -127,13 +127,19 @@
     let task=await request('judgment');if(task.status==='available')task=await request('judgment',{action:'start'});if(task.status!=='active')throw new Error(task.status==='submitted'?'配置判断已经提交':task.reason);
     attempted.add('judgment');judgmentActive=true;global.KnowledgeAssistant.refreshSupportSurface();const d=modal('配置判断：根据经历决定怎样帮助');
     d.append(el('p','请独立回答六个情境。没有要求你一定多用或少用AI：请说明保持还是调整、依据是什么、之后观察什么。不会可写“暂时无法判断”。草稿会自动保存，离开后可继续。'));
-    const answers={...task.draft};let timer=0,saving=Promise.resolve(),closed=false;
+    const answers={...task.draft};let timer=0,saving=Promise.resolve(),closed=false,pendingWrite=null;
     const status=el('p');status.setAttribute('role','status');
-    function persist(){saving=saving.catch(()=>{}).then(async()=>{const copy={...answers};status.textContent='正在保存草稿…';task=await request('judgment',{action:'draft',answers:copy,revision:task.revision});status.textContent='草稿已保存';});return saving;}
+    function persist(){saving=saving.catch(()=>{}).then(async()=>{
+      status.textContent='正在保存草稿…';
+      // Reuse an unacknowledged write before sending later edits with a new revision.
+      if(pendingWrite){task=await request('judgment',pendingWrite);pendingWrite=null;}
+      pendingWrite={action:'draft',answers:{...answers},outsidePractice:extra.value,revision:task.revision,requestId:crypto.randomUUID()};
+      task=await request('judgment',pendingWrite);pendingWrite=null;status.textContent='草稿已保存';
+    });return saving;}
     for(const q of task.items){const field=el('fieldset');field.append(el('legend',q.focus),el('p',q.prompt));const input=el('textarea');input.rows=4;input.maxLength=3000;input.dataset.judgment=q.id;input.setAttribute('aria-label',q.focus);input.value=answers[q.id]||'';input.oninput=()=>{answers[q.id]=input.value;clearTimeout(timer);timer=setTimeout(()=>{if(!closed)persist().catch(e=>status.textContent=e.message);},700);};field.append(input);d.append(field);}
-    const extra=el('textarea');extra.rows=2;extra.maxLength=1000;extra.setAttribute('aria-label','课外练习情况');extra.placeholder='从上次学习到现在，是否另外练习过？大约多久、用了什么资源？没有可写“没有”。';d.append(el('p','最后补充一下三天内的额外学习情况（可不填）：'),extra,status);
+    const extra=el('textarea');extra.rows=2;extra.maxLength=1000;extra.setAttribute('aria-label','课外练习情况');extra.placeholder='从上次学习到现在，是否另外练习过？大约多久、用了什么资源？没有可写“没有”。';extra.value=task.outsidePractice||'';extra.oninput=()=>{clearTimeout(timer);timer=setTimeout(()=>{if(!closed)persist().catch(e=>status.textContent=e.message);},700);};d.append(el('p','最后补充一下三天内的额外学习情况（可不填）：'),extra,status);
     const leave=async()=>{clearTimeout(timer);await persist();closed=true;dialog.close();};
-    d.append(button('保存草稿，稍后继续',leave),button('提交六个情境回答',async()=>{clearTimeout(timer);await saving;const result=await request('judgment',{action:'submit',answers,revision:task.revision,outsidePractice:extra.value});judgmentActive=result.status==='active';closed=true;dialog.close();global.KnowledgeAssistant.refreshSupportSurface();await openTasks();}));
+    d.append(button('保存草稿，稍后继续',leave),button('提交六个情境回答',async()=>{clearTimeout(timer);await persist();const result=await request('judgment',{action:'submit',answers,revision:task.revision,outsidePractice:extra.value});judgmentActive=result.status==='active';closed=true;dialog.close();global.KnowledgeAssistant.refreshSupportSurface();await openTasks();}));
     d.oncancel=e=>{e.preventDefault();leave().catch(err=>status.textContent=err.message);};show();
   }
   async function openEnrollment(){const d=modal('参加本次学习研究');d.append(el('p','本次包括一次学习，以及三天后的独立任务。系统会分配一种帮助方式；将记录你的学习操作、设置、答题与问卷，用于研究学习与帮助之间的关系。你可以暂时离开，已有作答会保留；参与或数据问题请联系研究负责人。'));const label=el('label'),input=el('input');input.type='checkbox';label.append(input,document.createTextNode('我已了解研究安排，自愿参加'));d.append(label,button('确认参加并进入学习',async()=>{if(!input.checked)throw new Error('请先确认自愿参加');await request('enroll',{consent:true});location.reload();}),button('暂不参加',()=>dialog.close()));show();}

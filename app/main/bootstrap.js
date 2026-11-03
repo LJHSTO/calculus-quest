@@ -223,6 +223,9 @@ els.authAction?.addEventListener("click", () => {
   showLogin();
 });
 
+window.addEventListener("online", resumePendingLearningSync);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) resumePendingLearningSync(); });
+
 els.authMenuToggle?.addEventListener("click", (event) => {
   event.stopPropagation();
   setUserMenuOpen(els.authMenuPanel?.hidden ?? true);
