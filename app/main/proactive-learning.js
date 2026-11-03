@@ -581,5 +581,33 @@
     });
   }
 
-  return Object.freeze({ createProactiveCoach });
+  // A navigation reminder, not a difficulty score or an agent intervention.
+  function createHelpEntryObserver() {
+    let key='',lastTick=0,elapsed=0,moves=[],lastMove=0,shown=new Set();
+    function resetActivity(at){elapsed=0;moves=[];lastMove=0;lastTick=at;}
+    return {
+      activity(kind,at=Date.now()) {
+        if(kind==='pointer'){
+          if(at-lastMove>=10000){moves.push(at);lastMove=at;}
+          moves=moves.filter(t=>at-t<=60000);
+        }else resetActivity(at);
+      },
+      tick(context={},at=Date.now()) {
+        if(key!==context.key){key=context.key||'';resetActivity(at);}
+        if(!key||!context.eligible){resetActivity(at);return null;}
+        const delta=at-lastTick;lastTick=at;
+        if(delta<0||delta>15000){resetActivity(at);return null;}
+        elapsed+=delta;
+        if(shown.has(key))return null;
+        // shortcut: conservative engineering timers; revise only after labeled local pilot data.
+        const pointer=elapsed>=60000&&at-lastMove<=15000&&moves.filter(t=>at-t<=60000).length>=3;
+        if(!pointer&&elapsed<(context.reading?240000:180000))return null;
+        shown.add(key);
+        return {kind:pointer?'pointer_without_action':'quiet_pause',visibleSeconds:Math.round(elapsed/1000),calibrated:false};
+      },
+      clear(){key='';shown.clear();resetActivity(0);}
+    };
+  }
+
+  return Object.freeze({ createProactiveCoach, createHelpEntryObserver });
 });

@@ -91,7 +91,7 @@
 .classroom-icon-button:disabled { opacity: .4; cursor: default; }
 .classroom-icon-button.has-pending-support { position: relative; background: #fff3df; }
 .classroom-icon-button.has-pending-support::after { content: ""; position: absolute; right: 4px; top: 4px; width: 6px; height: 6px; border-radius: 50%; background: #dc8a2b; }
-.core-learning-workspace [data-note-color="mint"] { background: #e4dcff; }
+.core-learning-workspace .knowledge-note-colors [data-note-color="mint"] { background: #e4dcff; }
 .core-learning-workspace .knowledge-note-editor[data-note-color="mint"] .knowledge-note-mark { background: #e4dcff; box-shadow: inset 0 -2px #6757d9; }
 .core-learning-workspace .status-pill.done,
 .core-learning-workspace .knowledge-proactive-check-feedback.is-success { background: #eef2f8; color: #536784; border-color: #cad5e4; }

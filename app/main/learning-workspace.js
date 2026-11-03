@@ -111,6 +111,70 @@
   }
   try { toolsCollapsed = localStorage.getItem("classroomToolsCollapsed") !== "0"; } catch {}
 
+  const guide = document.createElement('aside');
+  guide.id='workspace-first-guide';guide.className='workspace-entry-guide';guide.hidden=true;
+  guide.innerHTML='<span>第一次使用？知点是你的学习助手。点击右上角的“知点”可打开，也可以划选课件文字提问。</span><button type="button" data-guide-open>查看操作指引</button><button type="button" data-guide-dismiss aria-label="收起新用户操作指引">知道了</button>';
+  $('.player-top').after(guide);
+  const guideDialog=document.createElement('dialog');guideDialog.className='workspace-guide-dialog';guideDialog.setAttribute('aria-labelledby','workspace-guide-title');
+  guideDialog.innerHTML='<h2 id="workspace-guide-title" tabindex="-1">认识知点与学习工具</h2><ol><li><strong>知点在哪里：</strong>学习页右上角的“知点”按钮会打开对话区；窄屏时会切换到助手页面。</li><li><strong>怎样提问：</strong>直接输入问题，或在 PPT、互动课件中划选文字，点击旁边的“问知点”。可继续追问。</li><li><strong>怎样记笔记：</strong>划选文字后点“记一笔”，颜色会同步应用到笔记窗口与划线；保存后可从笔记页回看。</li><li><strong>测验与帮助：</strong>测验作答期间请独立完成；提交前测后即可主动提问，无需先设置学习方式。继续正式课程前仍需完成本组设置。</li><li><strong>主动提醒：</strong>知点会按当前帮助设置判断是否提出建议。你可以暂不接受、继续思考，也可以随时主动找它。</li></ol><footer><button type="button" data-guide-locate>找到知点</button><button type="button" data-guide-close>返回学习</button></footer>';
+  let guideOwner='',guideReturnFocus=null;const guideSeen=new Set();
+  function markGuideSeen(){if(!guideOwner)return;guideSeen.add(guideOwner);try{localStorage.setItem('cq-operation-guide-v1:'+guideOwner,'seen');}catch{}guide.hidden=true;}
+  function closeGuide(){guideDialog.close();guideReturnFocus?.focus?.();}
+  guideDialog.addEventListener('cancel',event=>{event.preventDefault();closeGuide();});
+  function openGuide(){guideReturnFocus=document.activeElement;(document.fullscreenElement||document.body).append(guideDialog);guideDialog.showModal();guideDialog.querySelector('h2').focus();markGuideSeen();}
+  guide.querySelector('[data-guide-open]').onclick=openGuide;
+  guide.querySelector('[data-guide-dismiss]').onclick=markGuideSeen;
+  guideDialog.querySelector('[data-guide-close]').onclick=closeGuide;
+  guideDialog.querySelector('[data-guide-locate]').onclick=()=>{closeGuide();global.KnowledgeAssistant?.open();};
+  const guideMenu=document.createElement('button');guideMenu.id='account-operation-guide';guideMenu.type='button';guideMenu.className='user-menu-item';guideMenu.textContent='操作指引 · 找到知点';
+  guideMenu.onclick=()=>{if(typeof setUserMenuOpen==='function')setUserMenuOpen(false);openGuide();};document.getElementById('account-pilot-status')?.before(guideMenu);
+  function syncEntryGuide(){
+    const s=global.KnowledgeAssistant?.designSpaceSnapshot?.();guideOwner=s?.signedIn?s.ownerKey:'';
+    let seen=guideSeen.has(guideOwner);try{seen=seen||localStorage.getItem('cq-operation-guide-v1:'+guideOwner)==='seen';}catch{}
+    guide.hidden=!guideOwner||!s?.active||seen;guideMenu.hidden=!guideOwner;
+    if(!guideOwner&&guideDialog.open)guideDialog.close();
+  }
+  global.addEventListener('cq:proactive-state',syncEntryGuide);
+
+  const pauseObserver=global.ProactiveLearningCore.createHelpEntryObserver();
+  const pauseEntry=document.createElement('aside');pauseEntry.id='workspace-pause-entry';pauseEntry.className='workspace-entry-guide';pauseEntry.hidden=true;
+  pauseEntry.innerHTML='<span role="status">需要找个切入点吗？可以继续思考，也可以打开知点聊一聊。</span><button type="button" data-pause-help>找知点</button><button type="button" data-pause-dismiss>继续思考</button>';
+  $('.classroom-footer').prepend(pauseEntry);
+  let pauseEvidence=null,pauseOwner='';
+  function entryEvent(action){if(typeof trackLearningEvent==='function')trackLearningEvent('help_entry_reminder_'+action,{...pauseEvidence,reminderVersion:'help-entry-v1',kindBoundary:'navigation_reminder'},false).catch(()=>{});}
+  pauseEntry.querySelector('[data-pause-help]').onclick=()=>{entryEvent('accepted');pauseEntry.hidden=true;global.KnowledgeAssistant?.open();};
+  pauseEntry.querySelector('[data-pause-dismiss]').onclick=()=>{entryEvent('dismissed');pauseEntry.hidden=true;};
+  function pauseActivity(kind){pauseObserver.activity(kind);if(kind!=='pointer')pauseEntry.hidden=true;}
+  for(const type of ['pointerdown','keydown','input','wheel'])shell.addEventListener(type,event=>{if(!event.target.closest('#workspace-pause-entry'))pauseActivity('action');},{passive:true});
+  shell.addEventListener('pointermove',()=>pauseActivity('pointer'),{passive:true});
+  global.addEventListener('cq:learning-signal',event=>{const type=event.detail?.eventType||'';
+    if(/^(unit_enter|repeat_unit_enter|knowledge_scene_select|interactive_(click|input|change|submit|drag_start|drag_end|scroll|wheel)|parameter_(change|commit)|short_answer_input|knowledge_question_asked|courseware_challenge_result)$/.test(type))pauseActivity('action');});
+  const observedDocuments=new WeakSet();
+  function observeFrameActivity(){for(const frame of shell.querySelectorAll('iframe')){try{
+    const doc=frame.contentDocument;if(!doc||observedDocuments.has(doc))continue;observedDocuments.add(doc);
+    doc.addEventListener('pointermove',()=>pauseActivity('pointer'),{passive:true});
+    for(const type of ['pointerdown','keydown','input','wheel'])doc.addEventListener(type,()=>pauseActivity('action'),{passive:true});
+  }catch{/* Cross-origin courseware keeps its existing semantic event bridge. */}}}
+  function tickHelpEntry(){
+    observeFrameActivity();
+    const s=global.KnowledgeAssistant?.designSpaceSnapshot?.();if(!s)return;
+    const owner=s.ownerKey+':'+s.generation;if(owner!==pauseOwner){pauseOwner=owner;pauseObserver.clear();pauseEntry.hidden=true;}
+    const playing=global.LessonPlayback?.snapshot(activeSurface())?.status==='playing'
+      ||(typeof activeNarration!=='undefined'&&activeNarration?.status==='playing');
+    const textField='textarea,[contenteditable="true"],input:not([type="button"]):not([type="submit"]):not([type="checkbox"]):not([type="radio"]):not([type="range"])';
+    let editing=document.activeElement?.matches(textField);
+    if(document.activeElement?.tagName==='IFRAME')try{editing=document.activeElement.contentDocument?.activeElement?.matches(textField);}catch{}
+    const eligible=s.signedIn&&s.active&&s.loaded&&s.taskReady!==false&&s.unitType!=='quiz'&&!s.locked&&!s.busy&&!s.assistantOpen
+      &&!s.check&&!s.offer&&!s.supportBusy&&!['awaiting_confirmation','queued','offered','engaged','awaiting_check'].includes(s.supportCycle?.status)
+      &&!s.muted&&s.preference!=='off'&&s.mode==='active'&&s.researchControls?.profile?.proactivity!=='reactive'
+      &&!document.hidden&&document.hasFocus()&&!playing&&!document.querySelector('dialog[open],.knowledge-note-editor:not([hidden]),.knowledge-selection-toolbar:not([hidden])')
+      &&!editing;
+    if(!eligible)pauseEntry.hidden=true;
+    const candidate=pauseObserver.tick({key:owner+':'+s.unitId+':'+s.sceneType,eligible,reading:!s.sceneType||s.sceneType==='slide'});
+    if(candidate){pauseEvidence={...candidate,unitId:s.unitId,sceneType:s.sceneType};pauseEntry.hidden=false;entryEvent('rendered');}
+  }
+  setInterval(tickHelpEntry,5000);
+
   // This is a locator, not a help exposure receipt. Content stays beside the task.
   const supportNotice = document.createElement('button');
   supportNotice.id = 'workspace-support-notice';
@@ -186,8 +250,8 @@
     const button = $("#workspace-tools-toggle");
     button.classList.toggle("has-pending-support", toolsCollapsed && pending);
     button.title = toolsCollapsed
-      ? pending ? "展开学习助手，查看学习建议" : "展开学习助手"
-      : "收起学习助手";
+      ? pending ? "展开知点，查看学习建议" : "展开知点"
+      : "收起知点";
     button.setAttribute("aria-label", button.title);
   }
 
@@ -729,6 +793,7 @@
   global.addEventListener("cq:workspace-support-change", updateToolsIndicator);
   global.addEventListener('cq:proactive-state',event=>syncSupportNotice(event.detail));
   global.LearningWorkspace = Object.freeze({ sync, syncPlayback,
+    openGuide,
     showCoach: () => {
       coachDismissedUnit = "";
       syncCoachSurface();

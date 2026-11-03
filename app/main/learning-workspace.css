@@ -280,6 +280,17 @@ body:has(#learn-view.active) .mobile-browser-notice { display: none; }
   box-shadow: 0 4px 18px #2026320c;
 }
 #learn-view .core-learning-workspace.lesson-collapsed { grid-template-columns: 72px minmax(0, 1fr) 336px; }
+#learn-view .core-learning-workspace #workspace-tools-toggle { display: inline-flex; align-items: center; justify-content: center; width: auto; min-width: 74px; gap: 6px; padding-inline: 8px; }
+.workspace-entry-guide { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: #f4f1ff; color: #40376f; font-size: 13px; line-height: 1.6; }
+.workspace-entry-guide[hidden] { display: none; }
+.workspace-entry-guide > span { flex: 1 1 230px; }
+.workspace-entry-guide button,.workspace-guide-dialog button { border: 1px solid #cfc6ef; border-radius: 8px; background: #fff; color: #5143a9; padding: 7px 10px; cursor: pointer; font: inherit; }
+.workspace-guide-dialog { max-width: min(600px,calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; border: 1px solid #dcd5f2; border-radius: 16px; padding: 24px; color: #253b4a; background: #fff; }
+.workspace-guide-dialog::backdrop { background: #15223566; }
+.workspace-guide-dialog h2 { font-size: 20px; margin-top: 0; }
+.workspace-guide-dialog ol { padding-left: 24px; line-height: 1.85; }
+.workspace-guide-dialog li + li { margin-top: 10px; }
+.workspace-guide-dialog footer { display: flex; justify-content: flex-end; gap: 10px; }
 #learn-view .core-learning-workspace.lesson-collapsed .lesson-rail { display: none; }
 #learn-view .core-learning-workspace .learning-workspace-tools {
   position: sticky;

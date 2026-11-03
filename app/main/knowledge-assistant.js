@@ -442,7 +442,7 @@ const proactiveJustificationDrafts = new Map();
       <label class="knowledge-note-input-label" for="knowledge-note-input">写下你的理解、疑问或提醒</label>
       <textarea id="knowledge-note-input" data-knowledge-note-input rows="5" maxlength="1200" placeholder="写下你的笔记……"></textarea>
       <fieldset class="knowledge-note-colors" data-knowledge-note-colors>
-        <legend>划线颜色</legend>
+        <legend>笔记主题与划线颜色</legend>
         <button type="button" data-note-color="amber" aria-label="琥珀色划线" aria-pressed="true"></button>
         <button type="button" data-note-color="mint" aria-label="淡紫色划线" aria-pressed="false"></button>
         <button type="button" data-note-color="blue" aria-label="天空蓝划线" aria-pressed="false"></button>
@@ -5079,7 +5079,7 @@ const proactiveJustificationDrafts = new Map();
 
   function placeFloatingElement(element, rect, width, estimatedHeight, gap = 10) {
     const apply = (height) => {
-      const position = floatingPosition(rect, width, height, gap);
+      const position = floatingPosition(rect, element.offsetWidth || width, height, gap);
       element.style.left = `${position.left}px`;
       element.style.top = `${position.top}px`;
     };

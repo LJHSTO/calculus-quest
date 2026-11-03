@@ -1,7 +1,7 @@
 {
   "sourceLineEndings": "lf",
-  "version": "344a31d69518378d9666",
-  "indexSha256": "af96464da15fd360ca10fe600056a4e16607e99ea5efcc233c7357d82fb65649",
+  "version": "c07f5f49cad2fd2a4727",
+  "indexSha256": "c34101c8bc9844e61dc320a4e354d53df209b47d4f2b8e5712385de5fe22ec2c",
   "scripts": [
     {
       "tag": "<script src=\"app/main/request-coalescing.js?v=20260917\"></script>",
@@ -51,7 +51,7 @@
     {
       "tag": "<script src=\"app/main/courseware-context.js?v=20260909-canvas-v4\"></script>",
       "file": "app/main/courseware-context.js",
-      "sha256": "fc949702b9c525995405522b8b3122365c643e7827d8c41460e6ef7494e76449"
+      "sha256": "8e7c78508b5ee2f0b692adee276dc628d89470a7112b7bb953cdb46b64e27e48"
     },
     {
       "tag": "<script src=\"app/main/learning-notes.js?v=20260726-sync-v1\"></script>",
@@ -86,7 +86,7 @@
     {
       "tag": "<script src=\"app/main/proactive-learning.js?v=20260922-representation-switch-v1\"></script>",
       "file": "app/main/proactive-learning.js",
-      "sha256": "a730e84565cdeac4cc69be5a5fd1fd047075d3362293d83cb616e2b9f5a280cb"
+      "sha256": "d2a46d659d4018cccbcd11a6d8387a37bbdc7c3f425cebc9e356aba927843da9"
     },
     {
       "tag": "<script src=\"lib/active-time-policy.js?v=20260818-active-time-v1\"></script>",
@@ -191,7 +191,7 @@
     {
       "tag": "<script src=\"app/main/knowledge-assistant.js?v=20261014-visible-v1\"></script>",
       "file": "app/main/knowledge-assistant.js",
-      "sha256": "60b1ec64fa78140bfd53583aa160f9f3208bdcdef4692ee09f86a4cdec85402c"
+      "sha256": "a9595a1935b77b4dce3022803098a8f3b0648c513360230b24b837f1e08c45cb"
     },
     {
       "tag": "<script src=\"app/main/openmaic-slide.js?v=20260909-loading-v2\"></script>",
@@ -201,7 +201,7 @@
     {
       "tag": "<script src=\"app/main/learning-workspace.js?v=20261014-workspace-v6\"></script>",
       "file": "app/main/learning-workspace.js",
-      "sha256": "f41c5d8fb5a130770b1ecb370836241e5d3beaff19b047db766a04afe6f775cb"
+      "sha256": "6e8ebdd3e0a29868339a190d6f5bce4214fe85cf6dec2c6c7a8c7d6605342e6d"
     },
     {
       "tag": "<script src=\"app/main/textbook-reading.js?v=20260916\"></script>",
@@ -310,7 +310,7 @@
       "file": "app/main/proactive-hud.css"
     }
   ],
-  "styleVersion": "5140fbf4045b036e17ff",
+  "styleVersion": "dd285f807c39566e64fa",
   "styleSources": [
     {
       "file": "styles.css",
@@ -318,7 +318,7 @@
     },
     {
       "file": "app/main/knowledge-assistant.css",
-      "sha256": "6c2ed7cc57f08ed5d0d45dac07a93baddf6579e6bf5fd899d310a8f0a8abbe6f"
+      "sha256": "bd0d39d8c118c4ae661440ecfd9c2e9c23f82b51c0c40168a23e33591f3a8859"
     },
     {
       "file": "app/main/pilot-study.css",
@@ -330,11 +330,11 @@
     },
     {
       "file": "app/main/learning-workspace.css",
-      "sha256": "e05ba1b6b6c1229d4af7b086b2c045a9ad689b6672de1d54511727c616ec4a2f"
+      "sha256": "5bf5e3930b1e651c22abbe7f447fa05fef7db64961607c76158d34f0a486bcd4"
     },
     {
       "file": "app/main/openmaic-classroom.css",
-      "sha256": "37c91f780891b4e14307f873645071850ed2eac0b7b777de1191badca1a256b5"
+      "sha256": "79b4b99c06fb220059d1465f231afb3e1fa961a4998ac3a34784571aaba0b61e"
     },
     {
       "file": "app/main/system-announcements.css",

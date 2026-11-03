@@ -8536,7 +8536,6 @@ async function handleApi(req, res, url) {
       const body = await readJsonBody(req);
       const auth = authenticate(req, body);
       if (!auth) { sendJson(res, 401, { ok: false, message: "请先登录。" }); return; }
-      if(rejectUnpreparedLearner(res,auth.participant.id))return;
       if(pilotStudy.activeProbe(auth.participant.id,db.currentLearningGeneration(auth.participant.id))) {
         sendJson(res,409,{ok:false,message:"请先回答或跳过当前预试记录，再请求帮助。"});return;
       }
@@ -8577,6 +8576,13 @@ async function handleApi(req, res, url) {
         sendAssistantQuizLocked(res, auth.participant.id);
         return;
       }
+      // Only a complete, server-recorded pretest opens discussion before setup.
+      const completedPretest = resolved.isQuiz && resolved.unit.phase === "pre"
+        && resolved.unit.quizQuestions.length > 0
+        && resolved.unit.quizQuestions.every(q => quizResults.some(r => r.question_id === q.id));
+      if(rejectUnpreparedLearner(res,auth.participant.id,completedPretest
+        ? {phase:"pre",chapterId:resolved.unit.chapterId,unitId:resolved.unit.id,existingPretestGrade:true}
+        : null))return;
       attachAssistantQuizAttempt(resolved, quizResults);
       const proactiveIntervention = proactiveInterventionId
         ? getAssistantIntervention(auth.participant.id, unitId, proactiveInterventionId)

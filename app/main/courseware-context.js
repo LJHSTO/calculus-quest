@@ -768,13 +768,19 @@
       const rect = bridgeRect || range?.getBoundingClientRect?.();
       if (!rect) return null;
       const frameRect = frame?.getBoundingClientRect?.();
+      const left = Number(rect.left ?? rect.x ?? 0), top = Number(rect.top ?? rect.y ?? 0);
+      const width = Number(rect.width ?? 0), height = Number(rect.height ?? 0);
+      const scaleX = frame?.offsetWidth ? frameRect.width / frame.offsetWidth : 1;
+      const scaleY = frame?.offsetHeight ? frameRect.height / frame.offsetHeight : 1;
+      const originX = Number(frameRect?.left || 0) + Number(frame?.clientLeft || 0) * scaleX;
+      const originY = Number(frameRect?.top || 0) + Number(frame?.clientTop || 0) * scaleY;
       return {
-        left: Number(rect.left || 0) + Number(frameRect?.left || 0),
-        top: Number(rect.top || 0) + Number(frameRect?.top || 0),
-        right: Number(rect.right || rect.left || 0) + Number(frameRect?.left || 0),
-        bottom: Number(rect.bottom || rect.top || 0) + Number(frameRect?.top || 0),
-        width: Number(rect.width || 0),
-        height: Number(rect.height || 0)
+        left: left * scaleX + originX,
+        top: top * scaleY + originY,
+        right: Number(rect.right ?? left + width) * scaleX + originX,
+        bottom: Number(rect.bottom ?? top + height) * scaleY + originY,
+        width: width * scaleX,
+        height: height * scaleY
       };
     }
 
