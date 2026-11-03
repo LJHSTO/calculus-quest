@@ -89,6 +89,7 @@ const SAVE_MAX_WAIT_MS = 10000;
 
 function writeDatabaseAtomically() {
   if (!db) return;
+  if (db.native) return; // Native SQLite has already committed with synchronous=FULL.
   const data = db.export();
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -145,6 +146,7 @@ function releaseWriteLock() {
 
 function databaseSafetyInfo() {
   return {
+    driver: process.env.DB_DRIVER === "native" ? "native-sqlite" : "sql.js",
     path: DB_PATH,
     configured: Boolean(configuredDbPath),
     externalToWorkspace: !pathInside(WORKSPACE_ROOT, DB_PATH),
@@ -157,6 +159,12 @@ async function getDb() {
   if (db) return db;
   const dir = path.dirname(DB_PATH);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+  if (process.env.DB_DRIVER === "native") {
+    db = require("./lib/native-sqlite").openDatabase(DB_PATH);
+    initSchema();
+    return db;
+  }
 
   const SQL = await initSqlJs();
   if (fs.existsSync(DB_PATH)) {

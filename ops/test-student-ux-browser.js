@@ -76,6 +76,8 @@ async function main(){
       assert.equal(await page.evaluate(()=>TaskSupport.selectedQuestion),await third.getAttribute('data-question'),'第三题入口必须切换当前题');
      }
      await teacher.getByRole('textbox',{name:'把你的想法告诉知点',exact:true}).fill(question);
+     // A recovery banner can push Send below the viewport; finish intentional scrolling before measuring redraws.
+     await teacher.getByRole('button',{name:'发送我的想法',exact:true}).scrollIntoViewIfNeeded();
      await page.evaluate(selector=>{window.flowPanel=document.querySelector(selector);window.flowLostPanel=0;window.flowPositions=[];window.flowObserving=true;const record=()=>{if(!window.flowObserving)return;const p=document.querySelector(selector);if(p!==window.flowPanel||!p?.isConnected)window.flowLostPanel++;if(p)window.flowPositions.push(p.getBoundingClientRect().top);requestAnimationFrame(record);};record();},selector);
      const response=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/api/learning/assistant/ask'));
      const capturedCount=await page.evaluate(()=>uxAssistantResponses.length);

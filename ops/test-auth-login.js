@@ -69,6 +69,7 @@ async function main() {
     passwordHash: ""
   });
   db.saveNow();
+  db.getDbSync().close();
 
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;

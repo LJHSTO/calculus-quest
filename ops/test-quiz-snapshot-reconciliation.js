@@ -386,6 +386,7 @@ async function testStartupRecovery(dbPath, db, objectiveEntry, shortEntry) {
     }
   });
   db.saveNow();
+  db.getDbSync().close();
   db.releaseWriteLock();
 
   const port = await freePort();
