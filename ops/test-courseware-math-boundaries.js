@@ -29,4 +29,6 @@ for (const start of [[5, 0], [-3, 2], [1, -4]]) {
 const graph = read("GH-02-极限与连续：直觉探索/interactive/04_从数表观察趋近：关系图.html");
 assert.ok(!graph.includes("= L ≠ f(a)")); assert.ok(!graph.includes("永远不推开门"));
 assert.match(graph, /f\(a\) 未定义时/);
+assert.match(graph, /误认为必然相等/);
+assert.match(graph, /<td>跳跃间断<\/td><td>不存在<\/td><td>可存在或未定义<\/td>/);
 console.log("通过：函数值、默认运动高度与方向标签、极限与点值的结论");
